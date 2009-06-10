@@ -1,0 +1,97 @@
+TODO LIST
+=============
+
+# Contact ITK mail list to see why warning is happening when we import Analyze
+files (noticed both under Windows and MacOS). Appears to be something related to
+wrapper.
+
+# Presets do Analyze
+Pensar sobre como estruturá-los
+
+# List Ctrl - Notebook data
+organizar decentemente classe pai
+? colocar em coluna separada a cor?
+verificar questão de ordenação - no windows e no linux nao funciona, no mac sim
+
+# Import - 0013
+1st file is corrupted
+---> InVesalius 3 quits
+todo: simply ignore corrupted file and check other!
+
+# Import
+dcm_reader.py
+-> change current structure to class
+-> force return "axial" imagedata always
+
+# GUI - insert acquistion modality
+where?
+
+# GUI / mask
+When editing a mask name in notebook -> change combobox and change info inside mask
+Update combo-box related to threshold mode (Bone / etc) to go to custom when user sets another mask or changes the threshold range
+
+# Progress bar
+implement both cursor and progress bar
+
+# Gradient
+never, ever, can min > max or max < min
+
+# After editting mask name in notebook, change Mask instance ando combobox
+
+# Change icon used in inner fold panel (invert upword arrow / dowward arrow)
+
+# Change combo_thresh value according to mask selected / define a good treatment
+# for "Custom"
+
+# Develop tool similar to mimics, in order to show where user has clicked
+both on volume, axial, coronal and sagital
+
+# Develop import interface - see how mimics, osirix and others behave
+# a good start could be a sort of wizard, similar to wifi on macos
+
+# Change references of AXIAL, SAGITAL, etc.. for constants
+
+#-----------------------------------------------------------------------------
+
+Version 3.0
+=============
+ - Totally new GUI
+ - New 3D measures feature
+ - New slice editor feature
+ - New threshold control feature
+ - Threshold presets
+ - New import DICOM process (slice reader, slice grouper)
+ - Reads JPEG lossless DICOM data
+ - New volume surface (polydata) creation pipeline - optimal quality
+ - Does not use Slicer 3D lib anymore
+ - Uses GDCM library for reading DICOM
+
+Operations in volume:
+linear measure
+angular measure
+annotation
+cut
+3d presets
+MIP ou volume rendering
+
+Operations in 2D     
+linear measure
+angular measure
+area measure
+
+Generate 3D Surface
+[Preparing 3d Surface]
+- Resolution : low - high (slider 10 units)
+- Decimate: resolution (0.1 ... 1.0) default: 0.5
+- Smooth: iteration(1 ..100) default: 20
+- Pixel value (default: 300) -- (skin: -500, bone: 500, 2000) # threshold min
+- Transparency: slider
+- color: botao
+
+Export 3D
+botao com setinha
+Export as STL (.stl)
+Export as WaveFront (.obj)
+Export as Renderman (.rib)
+Export as VRML (.vrml)
+Export as Inventor (.iv)

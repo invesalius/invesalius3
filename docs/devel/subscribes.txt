@@ -1,0 +1,92 @@
+Arquivo binário ./gui/frame.pyc casa com o padrão
+Arquivo binário ./gui/task_data/notebook.pyc casa com o padrão
+./gui/task_data/notebook.py:77:        ps.Publisher().subscribe(self.AddMask, 'Add mask')
+./gui/task_data/notebook.py:78:        ps.Publisher().subscribe(self.EditMaskThreshold,
+./gui/task_data/notebook.py:80:        ps.Publisher().subscribe(self.EditMaskColour,
+Arquivo binário ./gui/viewer_volume.pyc casa com o padrão
+./gui/task_slice/task.py:318:        ps.Publisher().subscribe(self.AddMask, 'Add mask')
+./gui/task_slice/task.py:319:        ps.Publisher().subscribe(self.SetThresholdBounds,
+./gui/task_slice/task.py:321:        ps.Publisher().subscribe(self.SetThresholdModes, 'Set threshold modes')
+./gui/task_slice/task.py:322:        ps.Publisher().subscribe(self.SetItemsColour, 'Set GUI items colour')
+./gui/task_slice/task.py:323:        ps.Publisher().subscribe(self.SetThresholdValues,
+./gui/task_slice/task.py:473:        ps.Publisher().subscribe(self.SetThresholdBounds,
+./gui/task_slice/task.py:475:        ps.Publisher().subscribe(self.SetThresholdValues,
+./gui/task_slice/task.py:477:        ps.Publisher().subscribe(self.ChangeMaskColour, 'Change mask colour')
+Arquivo binário ./gui/task_slice/task.pyc casa com o padrão
+./gui/frame.py:94:        ps.Publisher().subscribe(self.ShowContentPanel, 'Show content panel')
+./gui/viewer_slice.py:76:        ps.Publisher().subscribe(self.LoadImagedata, 'Load slice to viewer')
+./gui/viewer_slice.py:77:        ps.Publisher().subscribe(self.SetColour, 'Change mask colour')
+./gui/viewer_slice.py:78:        ps.Publisher().subscribe(self.UpdateRender, 'Update slice viewer')
+Arquivo binário ./gui/viewer_slice.pyc casa com o padrão
+./gui/viewer_volume.py:68:        #ps.Publisher().subscribe(self.LoadImagedata, 'Load imagedata')
+./gui/viewer_volume.py:69:        ps.Publisher().subscribe(self.LoadImagedata, 'Create surface')
+Arquivo binário ./gui/widgets/gradient.pyc casa com o padrão
+./gui/widgets/gradient.py.orig:100:        ps.Publisher().subscribe(self.SetMinValue, "ChangeMinValue")
+./gui/widgets/gradient.py.orig:101:        ps.Publisher().subscribe(self.SetMaxValue, "ChangeMaxValue")
+./gui/widgets/gradient.py.orig:168:        ps.Publisher().subscribe(self.SetMinValue, "SetMinValue")
+./gui/widgets/gradient.py.orig:472:        #ps.Publisher().subscribe(self.SetMinValue, ('SetMinValue'))
+./gui/widgets/gradient.py.orig:477:        ps.Publisher().subscribe(self.SetColour, 'Change Gradient Colour')
+./gui/widgets/gradient.py.orig:478:        ps.Publisher().subscribe(self.SetMinValue, 'Change Gradient MinValue')
+./gui/widgets/gradient.py.orig:479:        ps.Publisher().subscribe(self.SetMaxValue, 'Change Gradient MaxValue')
+./gui/widgets/gradient.py:100:        ps.Publisher().subscribe(self.SetMinValue, "ChangeMinValue")
+./gui/widgets/gradient.py:101:        ps.Publisher().subscribe(self.SetMaxValue, "ChangeMaxValue")
+./gui/widgets/gradient.py:168:        ps.Publisher().subscribe(self.SetMinValue, "SetMinValue")
+./gui/widgets/gradient.py:471:        #ps.Publisher().subscribe(self.SetMinValue, ('SetMinValue'))
+./gui/widgets/gradient.py:476:        ps.Publisher().subscribe(self.SetColour, 'Change Gradient Colour')
+./gui/widgets/gradient.py:477:        ps.Publisher().subscribe(self.SetMinValue, 'Change Gradient MinValue')
+./gui/widgets/gradient.py:478:        ps.Publisher().subscribe(self.SetMaxValue, 'Change Gradient MaxValue')
+Arquivo binário ./data/slice_.pyc casa com o padrão
+./data/slice_.py.orig:22:        ps.Publisher().subscribe(self.SetThresholdRange, 'Set threshold values')
+./data/slice_.py.orig:23:        ps.Publisher().subscribe(self.SetEditionThresholdRange,
+./data/slice_.py.orig:25:        ps.Publisher().subscribe(self.OnChangeCurrentMaskColour,
+./data/slice_.py.orig:27:        ps.Publisher().subscribe(self.AddMask, 'Create new mask')
+./data/slice_.py.orig:28:        ps.Publisher().subscribe(self.OnChangeCurrentMask, 'Change mask selected')
+Arquivo binário ./data/.slice_.py.swp casa com o padrão
+./data/slice_.py:22:        ps.Publisher().subscribe(self.SetThresholdRange, 'Set threshold values')
+./data/slice_.py:23:        ps.Publisher().subscribe(self.SetEditionThresholdRange,
+./data/slice_.py:25:        ps.Publisher().subscribe(self.OnChangeCurrentMaskColour,
+./data/slice_.py:27:        ps.Publisher().subscribe(self.AddMask, 'Create new mask')
+./data/slice_.py:28:        ps.Publisher().subscribe(self.OnChangeCurrentMask, 'Change mask selected')
+./presets.py:46:        ps.Publisher.subscribe(self.UpdateThresholdModes,
+./invesalius.py:59:        ps.Publisher().subscribe(print_events, ps.ALL_TOPICS)
+Arquivo binário ./presets.pyc casa com o padrão
+./subscribes.txt:3:./gui/task_data/notebook.py:77:        ps.Publisher().subscribe(self.AddMask, 'Add mask')
+./subscribes.txt:4:./gui/task_data/notebook.py:78:        ps.Publisher().subscribe(self.EditMaskThreshold,
+./subscribes.txt:5:./gui/task_data/notebook.py:80:        ps.Publisher().subscribe(self.EditMaskColour,
+./subscribes.txt:7:./gui/task_slice/task.py:318:        ps.Publisher().subscribe(self.AddMask, 'Add mask')
+./subscribes.txt:8:./gui/task_slice/task.py:319:        ps.Publisher().subscribe(self.SetThresholdBounds,
+./subscribes.txt:9:./gui/task_slice/task.py:321:        ps.Publisher().subscribe(self.SetThresholdModes, 'Set threshold modes')
+./subscribes.txt:10:./gui/task_slice/task.py:322:        ps.Publisher().subscribe(self.SetItemsColour, 'Set GUI items colour')
+./subscribes.txt:11:./gui/task_slice/task.py:323:        ps.Publisher().subscribe(self.SetThresholdValues,
+./subscribes.txt:12:./gui/task_slice/task.py:473:        ps.Publisher().subscribe(self.SetThresholdBounds,
+./subscribes.txt:13:./gui/task_slice/task.py:475:        ps.Publisher().subscribe(self.SetThresholdValues,
+./subscribes.txt:14:./gui/task_slice/task.py:477:        ps.Publisher().subscribe(self.ChangeMaskColour, 'Change mask colour')
+./subscribes.txt:16:./gui/frame.py:94:        ps.Publisher().subscribe(self.ShowContentPanel, 'Show content panel')
+./subscribes.txt:17:./gui/viewer_slice.py:76:        ps.Publisher().subscribe(self.LoadImagedata, 'Load slice to viewer')
+./subscribes.txt:18:./gui/viewer_slice.py:77:        ps.Publisher().subscribe(self.SetColour, 'Change mask colour')
+./subscribes.txt:19:./gui/viewer_slice.py:78:        ps.Publisher().subscribe(self.UpdateRender, 'Update slice viewer')
+./subscribes.txt:21:./gui/viewer_volume.py:68:        #ps.Publisher().subscribe(self.LoadImagedata, 'Load imagedata')
+./subscribes.txt:22:./gui/viewer_volume.py:69:        ps.Publisher().subscribe(self.LoadImagedata, 'Create surface')
+./subscribes.txt:24:./gui/widgets/gradient.py.orig:100:        ps.Publisher().subscribe(self.SetMinValue, "ChangeMinValue")
+./subscribes.txt:25:./gui/widgets/gradient.py.orig:101:        ps.Publisher().subscribe(self.SetMaxValue, "ChangeMaxValue")
+./subscribes.txt:26:./gui/widgets/gradient.py.orig:168:        ps.Publisher().subscribe(self.SetMinValue, "SetMinValue")
+./subscribes.txt:27:./gui/widgets/gradient.py.orig:472:        #ps.Publisher().subscribe(self.SetMinValue, ('SetMinValue'))
+./subscribes.txt:28:./gui/widgets/gradient.py.orig:477:        ps.Publisher().subscribe(self.SetColour, 'Change Gradient Colour')
+./subscribes.txt:29:./gui/widgets/gradient.py.orig:478:        ps.Publisher().subscribe(self.SetMinValue, 'Change Gradient MinValue')
+./subscribes.txt:30:./gui/widgets/gradient.py.orig:479:        ps.Publisher().subscribe(self.SetMaxValue, 'Change Gradient MaxValue')
+./subscribes.txt:31:./gui/widgets/gradient.py:100:        ps.Publisher().subscribe(self.SetMinValue, "ChangeMinValue")
+./subscribes.txt:32:./gui/widgets/gradient.py:101:        ps.Publisher().subscribe(self.SetMaxValue, "ChangeMaxValue")
+./subscribes.txt:33:./gui/widgets/gradient.py:168:        ps.Publisher().subscribe(self.SetMinValue, "SetMinValue")
+./subscribes.txt:34:./gui/widgets/gradient.py:471:        #ps.Publisher().subscribe(self.SetMinValue, ('SetMinValue'))
+./subscribes.txt:35:./gui/widgets/gradient.py:476:        ps.Publisher().subscribe(self.SetColour, 'Change Gradient Colour')
+./subscribes.txt:36:./gui/widgets/gradient.py:477:        ps.Publisher().subscribe(self.SetMinValue, 'Change Gradient MinValue')
+./subscribes.txt:37:./gui/widgets/gradient.py:478:        ps.Publisher().subscribe(self.SetMaxValue, 'Change Gradient MaxValue')
+./subscribes.txt:39:./data/slice_.py.orig:22:        ps.Publisher().subscribe(self.SetThresholdRange, 'Set threshold values')
+./subscribes.txt:40:./data/slice_.py.orig:23:        ps.Publisher().subscribe(self.SetEditionThresholdRange,
+./subscribes.txt:41:./data/slice_.py.orig:25:        ps.Publisher().subscribe(self.OnChangeCurrentMaskColour,
+./subscribes.txt:42:./data/slice_.py.orig:27:        ps.Publisher().subscribe(self.AddMask, 'Create new mask')
+./subscribes.txt:43:./data/slice_.py.orig:28:        ps.Publisher().subscribe(self.OnChangeCurrentMask, 'Change mask selected')
+./subscribes.txt:45:./data/slice_.py:22:        ps.Publisher().subscribe(self.Set
+Arquivo binário ./control.pyc casa com o padrão
+./control.py:24:        Publisher().subscribe(self.ImportDirectory, 'Import directory')
+./control.py:25:        Publisher().subscribe(self.CreateSurfaceFromIndex, 'Create surface from index')

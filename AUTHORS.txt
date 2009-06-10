@@ -1,0 +1,28 @@
+InVesalius was originally created in late 2002 at CenPRA,the Renato Archer 
+Research Centre, of the Ministry of Science and Technology in Campinas, Brazil. Since November 2008, InVesalius 3 has been written from 0. This list represents only people involved with this development on.
+
+The PRIMARY AUTHORS of InVesalius 3 are (and/or have been):
+
+    * Tatiana Al-Chueyr Pereira Martins
+    * Paulo Henrique Junqueira Amorim
+    * Thiago Franco de Moraes
+
+More information on the main contributors to InVesalius can be found in
+docs/internals/committers.txt.
+
+And here is an inevitably incomplete list of MUCH-APPRECIATED CONTRIBUTORS:
+people who have submitted patches, reported bugs, added translations, helped
+answer newbie questions, and generally made InVesalius that much better:
+
+    Mathieu Malaterre <mathieu.malaterre@gmail.com>
+    
+A big THANK YOU goes to:
+
+    CTI Renato Archer directors for letting us open-source InVesalius.
+
+    Glauber Costa de Oliveira and Corinto Meffe for free software advices.
+
+    Robin Dunn for the marriage of the Python programming language and the
+    wxWindows, in the form of wxPython
+
+    Guido van Rossum for creating Python.
