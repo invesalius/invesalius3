@@ -164,7 +164,7 @@ class MenuBar(wx.MenuBar):
 
     def OnNew(self, event):
         print "New"
-        Publisher().sendMessage(('NEW PROJECT'))
+        ps.Publisher().sendMessage(('NEW PROJECT'))
         event.Skip()
 
     def OnOpen(self, event):
