@@ -96,8 +96,8 @@ class Panel(wx.Panel):
                           size=wx.Size(280, 656))
         
         sizer = wx.BoxSizer(wx.VERTICAL)        
-        sizer.Add(UpperTaskPanel(self), 4, wx.EXPAND|wx.GROW)
-        sizer.Add(LowerTaskPanel(self), 2, wx.EXPAND|wx.GROW)
+        sizer.Add(UpperTaskPanel(self), 5, wx.EXPAND|wx.GROW)
+        sizer.Add(LowerTaskPanel(self), 3, wx.EXPAND|wx.GROW)
         
         self.SetSizer(sizer)
 
@@ -105,7 +105,7 @@ class Panel(wx.Panel):
 class LowerTaskPanel(wx.Panel):
     def __init__(self, parent):
         wx.Panel.__init__(self, parent, pos=wx.Point(5, 5),
-                          size=wx.Size(280, 656))
+                          size=wx.Size(280, 700))
         
         fold_panel = fpb.FoldPanelBar(self, -1, wx.DefaultPosition,
                                       self.GetSize(),fpb.FPB_DEFAULT_STYLE,

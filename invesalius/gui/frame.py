@@ -80,15 +80,22 @@ class Frame(wx.Frame):
 
 
         # Add toolbars to manager
-        aui_manager.AddPane(ToolBar(self), wx.aui.AuiPaneInfo().
+
+        aui_manager.AddPane(ObjectToolBar(self), wx.aui.AuiPaneInfo().
+                          Name("General Features Toolbar").
+                          ToolbarPane().Top().Floatable(False).
+                          LeftDockable(False).RightDockable(False))
+
+        #aui_manager.AddPane(LayoutToolBar(self), wx.aui.AuiPaneInfo().
+        #                  Name("Layout Toolbar").
+        #                  ToolbarPane().Top().Floatable(False).
+        #                  LeftDockable(False).RightDockable(False))
+
+        aui_manager.AddPane(ProjectToolBar(self), wx.aui.AuiPaneInfo().
                           Name("Project Toolbar").
                           ToolbarPane().Top().Floatable(False).
                           LeftDockable(False).RightDockable(False))
 
-        aui_manager.AddPane(ToolBar(self), wx.aui.AuiPaneInfo().
-                          Name("General Features Toolbar").
-                          ToolbarPane().Top().Floatable(False).
-                          LeftDockable(False).RightDockable(False))
 
         aui_manager.Update()
 
@@ -246,21 +253,83 @@ class TaskBarIcon(wx.TaskBarIcon):
 
 # ------------------------------------------------------------------------------
 
-class ToolBar(wx.ToolBar):
+class ProjectToolBar(wx.ToolBar):
     # TODO: what will appear in menubar?
     def __init__(self, parent):
         wx.ToolBar.__init__(self, parent, -1, wx.DefaultPosition, wx.DefaultSize, wx.TB_FLAT|wx.TB_NODIVIDER)
-        self.SetToolBitmapSize(wx.Size(16,16))
+        self.SetToolBitmapSize(wx.Size(25,25))
         self.parent = parent
         self.__init_items()
         self.__bind_events()
 
     def __init_items(self):
-        bmp = wx.ArtProvider_GetBitmap(wx.ART_QUESTION, wx.ART_OTHER, wx.Size(16,16))
-        self.AddLabelTool(101, "Test", bmp)
-        self.AddLabelTool(101, "Test", bmp)
-        self.AddLabelTool(101, "Test", bmp)
-        self.AddLabelTool(101, "Test", bmp)
+
+        BMP_IMPORT = wx.Bitmap("../icons/file_import.png", wx.BITMAP_TYPE_PNG)
+        BMP_EXPORT = wx.Bitmap("../icons/file_export.png", wx.BITMAP_TYPE_PNG)
+        BMP_NET = wx.Bitmap("../icons/file_from_internet.png", wx.BITMAP_TYPE_PNG)
+        BMP_SAVE = wx.Bitmap("../icons/file_save.png", wx.BITMAP_TYPE_PNG)
+                
+        self.AddLabelTool(101, "Import medical image...", BMP_IMPORT)
+        self.AddLabelTool(101, "Export data.", BMP_EXPORT)
+        self.AddLabelTool(101, "Load medical image...", BMP_NET)
+        self.AddLabelTool(101, "Save InVesalius project", BMP_SAVE)
+
+        self.Realize()
+
+    def __bind_events(self):
+        pass
+        
+class ObjectToolBar(wx.ToolBar):
+    # TODO: what will appear in menubar?
+    def __init__(self, parent):
+        wx.ToolBar.__init__(self, parent, -1, wx.DefaultPosition, wx.DefaultSize, wx.TB_FLAT|wx.TB_NODIVIDER)
+        self.SetToolBitmapSize(wx.Size(25,25))
+        self.parent = parent
+        self.__init_items()
+        self.__bind_events()
+
+    def __init_items(self):
+
+        #BMP_ROTATE = wx.Bitmap("../icons/tool_rotate.gif", wx.BITMAP_TYPE_GIF)
+        #BMP_TRANSLATE = wx.Bitmap("../icons/tool_translate.gif", wx.BITMAP_TYPE_GIF)
+        BMP_ZOOM = wx.Bitmap("../icons/tool_zoom.png", wx.BITMAP_TYPE_PNG)
+        BMP_PHOTO = wx.Bitmap("../icons/tool_photo.png", wx.BITMAP_TYPE_PNG)
+        BMP_PRINT = wx.Bitmap("../icons/tool_print.png", wx.BITMAP_TYPE_PNG)
+
+        #self.AddLabelTool(101, "Rotate image", BMP_ROTATE)
+        #self.AddLabelTool(101, "Translate image", BMP_TRANSLATE)        
+        self.AddLabelTool(101, "Zoom image", BMP_ZOOM)
+        self.AddLabelTool(101, "Take photo of screen", BMP_PHOTO)
+        self.AddLabelTool(101, "Print screen", BMP_PRINT)
+
+        self.Realize()
+
+    def __bind_events(self):
+        pass
+
+class LayoutToolBar(wx.ToolBar):
+    # TODO: what will appear in menubar?
+    def __init__(self, parent):
+        wx.ToolBar.__init__(self, parent, -1, wx.DefaultPosition, wx.DefaultSize, wx.TB_FLAT|wx.TB_NODIVIDER)
+        self.SetToolBitmapSize(wx.Size(25,25))
+        self.parent = parent
+        self.__init_items()
+        self.__bind_events()
+
+    def __init_items(self):
+
+        BMP_ROTATE = wx.Bitmap("../icons/layout_data_only.png", wx.BITMAP_TYPE_PNG)
+        BMP_TRANSLATE = wx.Bitmap("../icons/layout_full.png", wx.BITMAP_TYPE_PNG)
+        #BMP_ZOOM = wx.Bitmap("../icons/tool_zoom.png", wx.BITMAP_TYPE_PNG)
+        #BMP_PHOTO = wx.Bitmap("../icons/tool_photo.png", wx.BITMAP_TYPE_PNG)
+        #BMP_PRINT = wx.Bitmap("../icons/tool_print.png", wx.BITMAP_TYPE_PNG)
+
+        self.AddLabelTool(101, "Rotate image", BMP_ROTATE)
+        self.AddLabelTool(101, "Translate image", BMP_TRANSLATE)        
+        #self.AddLabelTool(101, "Zoom image", BMP_ZOOM)
+        #self.AddLabelTool(101, "Take photo of screen", BMP_PHOTO)
+        #self.AddLabelTool(101, "Print screen", BMP_PRINT)
+
         self.Realize()
 
     def __bind_events(self):
