@@ -120,13 +120,13 @@ class Slice(object):
         blend_imagedata.GetOutput().ReleaseDataFlagOn()
         #self.blend_imagedata = blend_imagedata
 
-
-        #blend_imagedata.GetExtent()
+        #blend_imagedata.Update()
+        #extent = blend_imagedata.GetOutput().GetWholeExtent()
 
         # global values
-        CURSOR_X = 0 # SAGITAL
-        CURSOR_Y = 0 # CORONAL
-        CURSOR_Z = 0 # AXIAL
+        CURSOR_X = -1 # SAGITAL
+        CURSOR_Y = -1 # CORONAL
+        CURSOR_Z = -1 # AXIAL
 
         CURSOR_VALUE = 4095
         CURSOR_RADIUS = 1000
