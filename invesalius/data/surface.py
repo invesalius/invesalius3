@@ -5,6 +5,7 @@ import constants as const
 import imagedata_utils as iu
 from project import Project
 import vtk_utils as vu
+import polydata_utils as pu
 
 class Surface():
     """
@@ -147,6 +148,9 @@ class SurfaceManager():
                                UpdateProgress(filled_polydata,
                                               "Filling polydata..."))
         polydata = filled_polydata.GetOutput()
+
+        print "Area: %f mm2" % pu.CalculateSurfaceArea(polydata)
+        print "Volume: %f mm3" % pu.CalculateSurfaceVolume(polydata)
 
         # Orient normals from inside to outside
         normals = vtk.vtkPolyDataNormals()
