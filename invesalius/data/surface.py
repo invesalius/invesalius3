@@ -137,6 +137,17 @@ class SurfaceManager():
                                UpdateProgress(smoother, "Smoothing surface..."))
             polydata = smoother.GetOutput()
   
+        # Filter used to detect and fill holes. Only fill boundary edges holes.
+        #TODO: Hey! This piece of code is the same from
+        # polydata_utils.FillSurfaceHole, we need to review this.
+        filled_polydata = vtk.vtkFillHolesFilter()
+        filled_polydata.SetInput(polydata)
+        filled_polydata.SetHoleSize(500)
+        filled_polydata.AddObserver("ProgressEvent", lambda obj, evt:
+                               UpdateProgress(filled_polydata,
+                                              "Filling polydata..."))
+        polydata = filled_polydata.GetOutput()
+
         # Orient normals from inside to outside
         normals = vtk.vtkPolyDataNormals()
         normals.SetInput(polydata)
