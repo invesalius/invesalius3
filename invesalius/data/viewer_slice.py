@@ -225,7 +225,7 @@ class Viewer(wx.Panel):
         text_actor = vtk.vtkActor2D()
         text_actor.SetMapper(text_mapper)
         text_actor.SetLayerNumber(1)
-        text_actor.GetPositionCoordinate().SetValue(self.GetSize()[0] - 80, 20)
+        text_actor.GetPositionCoordinate().SetValue(20, 20)
         text_actor.SetVisibility(1)
 
         ren.AddActor(actor)
