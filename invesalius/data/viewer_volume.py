@@ -74,8 +74,6 @@ class Viewer(wx.Panel):
     
     def HideRaycastingVolume(self, pubsub_evt):
         pass
-    
-    
 
     def ChangeBackgroundColour(self, pubsub_evt):
         colour = pubsub_evt.data

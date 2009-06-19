@@ -258,7 +258,10 @@ class ProjectToolBar(wx.ToolBar):
     # TODO: what will appear in menubar?
     def __init__(self, parent):
         wx.ToolBar.__init__(self, parent, -1, wx.DefaultPosition, wx.DefaultSize, wx.TB_FLAT|wx.TB_NODIVIDER)
-        self.SetToolBitmapSize(wx.Size(25,25))
+        if sys.platform == 'darwin':
+            self.SetToolBitmapSize(wx.Size(25,25))
+        else:
+            self.SetToolBitmapSize(wx.Size(16,16))
         self.parent = parent
         self.__init_items()
         self.__bind_events()
@@ -284,7 +287,10 @@ class ObjectToolBar(wx.ToolBar):
     # TODO: what will appear in menubar?
     def __init__(self, parent):
         wx.ToolBar.__init__(self, parent, -1, wx.DefaultPosition, wx.DefaultSize, wx.TB_FLAT|wx.TB_NODIVIDER)
-        self.SetToolBitmapSize(wx.Size(25,25))
+        if sys.platform == 'darwin':
+            self.SetToolBitmapSize(wx.Size(25,25))
+        else:
+            self.SetToolBitmapSize(wx.Size(16,16))
         self.parent = parent
         self.__init_items()
         self.__bind_events()
