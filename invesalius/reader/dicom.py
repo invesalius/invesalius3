@@ -1339,7 +1339,10 @@ class Parser():
         img = self.gdcm_reader.GetImage()
         direc_cosines = img.GetDirectionCosines()
         orientation = gdcm.Orientation()
-        type = orientation.GetType(tuple(direc_cosines))
+        try:
+            type = orientation.GetType(tuple(direc_cosines))
+        except TypeError:
+            type = orientation.GetType(direc_cosines)
         label = orientation.GetLabel(type)
         
         if (label):
