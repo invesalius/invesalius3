@@ -38,6 +38,7 @@ icons/tool_print.png -text
 icons/tool_rotate.gif -text
 icons/tool_translate.gif -text
 icons/tool_zoom.png -text
+icons/volume_raycasting.png -text
 invesalius/constants.py -text
 invesalius/control.py -text
 invesalius/data/__init__.py -text
