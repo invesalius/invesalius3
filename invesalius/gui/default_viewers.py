@@ -21,18 +21,6 @@ import wx.lib.agw.fourwaysplitter as fws
 import data.viewer_slice as slice_viewer
 import data.viewer_volume as volume_viewer
 
-class SamplePane(wx.Panel):
-    """
-    Just a simple test window to put into the splitter.
-    """
-    def __init__(self, parent, colour, label):
-        wx.Panel.__init__(self, parent, style=wx.BORDER_SUNKEN)
-        self.SetBackgroundColour(colour)
-        wx.StaticText(self, -1, label, (5,5))
-
-    def SetOtherLabel(self, label):
-        wx.StaticText(self, -1, label, (5, 30))
-
 
 class Panel(wx.Panel):
     def __init__(self, parent):
@@ -89,7 +77,8 @@ class Panel(wx.Panel):
                                    Name("Sagital Slice").Caption("Sagital slice").
                                    MaximizeButton(True).CloseButton(False))
 
-        self.aui_manager.AddPane(volume_viewer.Viewer(self),
+        self.aui_manager.AddPane(VolumeViewerCover(self),
+        #self.aui_manager.AddPane(volume_viewer.Viewer(self)
                                  wx.aui.AuiPaneInfo().Row(1).Name("Volume").
                                  Bottom().Centre().Caption("Volume").
                                  MaximizeButton(True).CloseButton(False))
@@ -150,8 +139,8 @@ class Panel(wx.Panel):
                                  Name("Sagittal Slice").Caption("Sagittal slice").
                                  MaximizeButton(True).CloseButton(False))
 
-        p4 = volume_viewer.Viewer(self)
-        aui_manager.AddPane(p4, 
+        #p4 = volume_viewer.Viewer(self)
+        aui_manager.AddPane(VolumeViewerCover, 
                                  wx.aui.AuiPaneInfo().
                                  Name("Volume").Caption("Volume").
                                  MaximizeButton(True).CloseButton(False))
@@ -163,3 +152,50 @@ class Panel(wx.Panel):
 
 
         aui_manager.Update()
+        
+class VolumeViewerCover(wx.Panel):
+    def __init__(self, parent):
+        wx.Panel.__init__(self, parent)
+        
+        sizer = wx.BoxSizer(wx.HORIZONTAL)
+        sizer.Add(volume_viewer.Viewer(self), 1, wx.EXPAND|wx.GROW)
+        sizer.Add(VolumeToolPanel(self), 0, wx.EXPAND)
+        self.SetSizer(sizer)
+        sizer.Fit(self)
+        
+#import wx.lib.platebtn as pbtn
+import wx.lib.buttons as btn
+import wx.lib.pubsub as ps
+import wx.lib.colourselect as csel
+
+class VolumeToolPanel(wx.Panel):
+    def __init__(self, parent):
+        wx.Panel.__init__(self, parent, size = (8,100))
+        
+        BMP_RAYCASTING = wx.Bitmap("../icons/volume_raycasting.png", wx.BITMAP_TYPE_PNG)
+        BMP_RAYCASTING.SetWidth(22)
+        BMP_RAYCASTING.SetHeight(22)
+
+        button_raycasting=btn.GenBitmapToggleButton(self, 1, BMP_RAYCASTING, size=(24,24))
+        button_raycasting.Bind(wx.EVT_BUTTON, self.OnToggleRaycasting)
+        self.button_raycasting = button_raycasting
+        
+        button_colour= csel.ColourSelect(self, 111,colour=(0,0,0),size=(24,24))
+        button_colour.Bind(csel.EVT_COLOURSELECT, self.OnSelectColour)
+        self.button_colour = button_colour
+
+        sizer = wx.BoxSizer(wx.VERTICAL)
+        sizer.Add(button_colour, 0, wx.ALL, 1)
+        sizer.Add(button_raycasting, 0, wx.ALL, 1)
+        self.SetSizer(sizer)
+        sizer.Fit(self)
+
+    def OnSelectColour(self, evt):
+        colour = c = [i/255.0 for i in evt.GetValue()]
+        ps.Publisher().sendMessage('Change volume viewer background colour', colour)
+
+    def OnToggleRaycasting(self, evt):
+        if self.button_raycasting.GetToggle():
+            ps.Publisher().sendMessage('Show raycasting volume')
+        else:
+            ps.Publisher().sendMessage('Hide raycasting volume')

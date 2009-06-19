@@ -61,6 +61,26 @@ class Viewer(wx.Panel):
     def __bind_events(self):
         ps.Publisher().subscribe(self.LoadActor, 'Load surface actor into viewer')
         ps.Publisher().subscribe(self.UpdateRender, 'Render volume viewer')
+        ps.Publisher().subscribe(self.ChangeBackgroundColour,
+                                'Change volume viewer background colour')
+        ps.Publisher().subscribe(self.ShowRaycastingVolume,
+                                'Show raycasting volume')
+        ps.Publisher().subscribe(self.HideRaycastingVolume,
+                                'Hide raycasting volume')
+
+
+    def ShowRaycastingVolume(self, pubsub_evt):
+        pass
+    
+    def HideRaycastingVolume(self, pubsub_evt):
+        pass
+    
+    
+
+    def ChangeBackgroundColour(self, pubsub_evt):
+        colour = pubsub_evt.data
+        self.ren.SetBackground(colour)
+        self.UpdateRender()
 
     def LoadActor(self, pubsub_evt):
         actor = pubsub_evt.data
@@ -76,7 +96,7 @@ class Viewer(wx.Panel):
 
         self.iren.Render()
 
-    def UpdateRender(self, evt_pubsub):
+    def UpdateRender(self, evt_pubsub=None):
         self.iren.Render()
 
     def CreatePlanes(self):

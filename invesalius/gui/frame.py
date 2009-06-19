@@ -30,7 +30,8 @@ import default_viewers as viewers
 class Frame(wx.Frame):
     def __init__(self, prnt):
         wx.Frame.__init__(self, id=-1, name='', parent=prnt,
-              pos=wx.Point(0, 0), size=wx.Size(1024, 768),
+              pos=wx.Point(0, 0),
+              size=wx.Size(1024, 768), #size = wx.DisplaySize(),
               style=wx.DEFAULT_FRAME_STYLE, title='InVesalius 3.0')
         self.Center(wx.BOTH)
         self.SetIcon(wx.Icon("../icons/invesalius.ico", wx.BITMAP_TYPE_ICO))

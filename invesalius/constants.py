@@ -78,3 +78,10 @@ WINDOW_LEVEL = ({"Abdomen":(350,50),
                  "Vasculature - Hard":(240,80),
                  "Vasculature - Soft":(650,160)
                  })
+                 
+ORIENTATION_COLOUR = {'AXIAL': (1,0,0), # Red
+                      'CORONAL': (0,1,0), # Green
+                      'SAGITAL': (0,0,1)} # Blue
+CAM_POSITION = {"AXIAL":(0, 0, 1), "CORONAL":(0, -1, 0), "SAGITAL":(1, 0, 0)}
+CAM_VIEW_UP =  {"AXIAL":(0, 1, 0), "CORONAL":(0, 0, 1), "SAGITAL":(0, 0, 1)}
+

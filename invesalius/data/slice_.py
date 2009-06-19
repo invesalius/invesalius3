@@ -28,6 +28,8 @@ class Slice(object):
         ps.Publisher().subscribe(self.OnChangeCurrentMask, 'Change mask selected')
         ps.Publisher().subscribe(self.CreateSurfaceFromIndex,
                                  'Create surface from index')
+        ps.Publisher().subscribe(self.UpdateCursorPosition,
+                                 'Update cursor position in slice')
 
     def CreateSurfaceFromIndex(self, pubsub_evt):
         mask_index = pubsub_evt.data
@@ -116,7 +118,46 @@ class Slice(object):
         blend_imagedata.SetInput(1, imagedata_mask)
         blend_imagedata.SetBlendModeToNormal()
         blend_imagedata.GetOutput().ReleaseDataFlagOn()
-        self.blend_imagedata = blend_imagedata
+        #self.blend_imagedata = blend_imagedata
+
+
+        #blend_imagedata.GetExtent()
+
+        # global values
+        CURSOR_X = 0 # SAGITAL
+        CURSOR_Y = 0 # CORONAL
+        CURSOR_Z = 0 # AXIAL
+
+        CURSOR_VALUE = 4095
+        CURSOR_RADIUS = 1000
+
+        cross = vtk.vtkImageCursor3D()
+        cross.GetOutput().ReleaseDataFlagOn()
+        cross.SetInput(blend_imagedata.GetOutput())   
+        cross.SetCursorPosition(CURSOR_X, CURSOR_Y, CURSOR_Z)
+        cross.SetCursorValue(CURSOR_VALUE)
+        cross.SetCursorRadius(CURSOR_RADIUS)                                         
+        cross.Modified()
+        self.cross = cross
+        
+        cast = vtk.vtkImageCast()        
+        cast.SetInput(cross.GetOutput())
+        cast.GetOutput().SetUpdateExtentToWholeExtent()
+        cast.SetOutputScalarTypeToUnsignedChar()        
+        cast.Update()
+        
+        self.blend_imagedata = cast
+
+
+    def UpdateCursorPosition(self, pubsub_evt):
+
+        new_pos = pubsub_evt.data
+        self.cross.SetCursorPosition(new_pos)
+        self.cross.Modified()
+        self.blend_imagedata.Update()
+        ps.Publisher().sendMessage('Update slice viewer', None)
+        
+        
 
     def __create_background(self, imagedata):
 
