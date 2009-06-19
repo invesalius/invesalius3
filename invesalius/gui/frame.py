@@ -261,9 +261,10 @@ class ProjectToolBar(wx.ToolBar):
     def __init__(self, parent):
         wx.ToolBar.__init__(self, parent, -1, wx.DefaultPosition, wx.DefaultSize, wx.TB_FLAT|wx.TB_NODIVIDER)
         if sys.platform == 'darwin':
-            self.SetToolBitmapSize(wx.Size(25,25))
+            self._size = 25
         else:
-            self.SetToolBitmapSize(wx.Size(16,16))
+            self._size = 16
+        self.SetToolBitmapSize(wx.Size(self._size,self._size))
         self.parent = parent
         self.__init_items()
         self.__bind_events()
@@ -274,7 +275,13 @@ class ProjectToolBar(wx.ToolBar):
         BMP_EXPORT = wx.Bitmap("../icons/file_export.png", wx.BITMAP_TYPE_PNG)
         BMP_NET = wx.Bitmap("../icons/file_from_internet.png", wx.BITMAP_TYPE_PNG)
         BMP_SAVE = wx.Bitmap("../icons/file_save.png", wx.BITMAP_TYPE_PNG)
-                
+        
+        if sys.platform != 'darwin':
+            bmp_list = [BMP_IMPORT, BMP_EXPORT, BMP_NET, BMP_SAVE]
+            for bmp in bmp_list:
+                bmp.SetWidth(self._size)
+                bmp.SetHeight(self._size)
+
         self.AddLabelTool(101, "Import medical image...", BMP_IMPORT)
         self.AddLabelTool(101, "Export data.", BMP_EXPORT)
         self.AddLabelTool(101, "Load medical image...", BMP_NET)
@@ -290,9 +297,11 @@ class ObjectToolBar(wx.ToolBar):
     def __init__(self, parent):
         wx.ToolBar.__init__(self, parent, -1, wx.DefaultPosition, wx.DefaultSize, wx.TB_FLAT|wx.TB_NODIVIDER)
         if sys.platform == 'darwin':
-            self.SetToolBitmapSize(wx.Size(25,25))
+            self._size = 25
         else:
-            self.SetToolBitmapSize(wx.Size(16,16))
+            self._size = 16
+        self.SetToolBitmapSize(wx.Size(self._size,self._size))
+        
         self.parent = parent
         self.__init_items()
         self.__bind_events()
@@ -304,6 +313,12 @@ class ObjectToolBar(wx.ToolBar):
         BMP_ZOOM = wx.Bitmap("../icons/tool_zoom.png", wx.BITMAP_TYPE_PNG)
         BMP_PHOTO = wx.Bitmap("../icons/tool_photo.png", wx.BITMAP_TYPE_PNG)
         BMP_PRINT = wx.Bitmap("../icons/tool_print.png", wx.BITMAP_TYPE_PNG)
+
+        if sys.platform != 'darwin':
+            bmp_list = [BMP_ZOOM, BMP_PHOTO, BMP_PRINT]
+            for bmp in bmp_list:
+                bmp.SetWidth(self._size)
+                bmp.SetHeight(self._size)
 
         #self.AddLabelTool(101, "Rotate image", BMP_ROTATE)
         #self.AddLabelTool(101, "Translate image", BMP_TRANSLATE)        
@@ -321,9 +336,11 @@ class LayoutToolBar(wx.ToolBar):
     def __init__(self, parent):
         wx.ToolBar.__init__(self, parent, -1, wx.DefaultPosition, wx.DefaultSize, wx.TB_FLAT|wx.TB_NODIVIDER)
         if sys.platform == 'darwin':
-            self.SetToolBitmapSize(wx.Size(25,25))
+            self._size = 25
         else:
-            self.SetToolBitmapSize(wx.Size(16,16))
+            self._size = 16
+        self.SetToolBitmapSize(wx.Size(self._size,self._size))
+        
         self.parent = parent
         self.__init_items()
         self.__bind_events()
@@ -332,6 +349,13 @@ class LayoutToolBar(wx.ToolBar):
 
         BMP_ROTATE = wx.Bitmap("../icons/layout_data_only.png", wx.BITMAP_TYPE_PNG)
         BMP_TRANSLATE = wx.Bitmap("../icons/layout_full.png", wx.BITMAP_TYPE_PNG)
+
+        if sys.platform != 'darwin':
+            bmp_list = [BMP_ROTATE, BMP_TRANSLATE]
+            for bmp in bmp_list:
+                bmp.SetWidth(self._size)
+                bmp.SetHeight(self._size)
+            
         #BMP_ZOOM = wx.Bitmap("../icons/tool_zoom.png", wx.BITMAP_TYPE_PNG)
         #BMP_PHOTO = wx.Bitmap("../icons/tool_photo.png", wx.BITMAP_TYPE_PNG)
         #BMP_PRINT = wx.Bitmap("../icons/tool_print.png", wx.BITMAP_TYPE_PNG)
