@@ -16,6 +16,8 @@
 #    PARTICULAR. Consulte a Licenca Publica Geral GNU para obter mais
 #    detalhes.
 #--------------------------------------------------------------------------
+import sys
+
 import wx
 import wx.aui
 import wx.lib.pubsub as ps
