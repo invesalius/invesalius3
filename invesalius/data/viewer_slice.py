@@ -173,8 +173,7 @@ class Viewer(wx.Panel):
                 coord[index] = extent_max[index]
             elif coord[index] < extent_min[index]:
                 coord[index] = extent_min[index]
-        
-        print "New coordinate: ", coord
+        #print "New coordinate: ", coord
         
         return coord
             

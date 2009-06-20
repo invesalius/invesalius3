@@ -35,7 +35,6 @@ class SurfaceManager():
     
     """
     def __init__(self):
-        print "surface manager was created"
         self.actors_dict = {}
         self.__bind_events()
         

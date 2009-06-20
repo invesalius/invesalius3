@@ -33,7 +33,6 @@ class InVesalius(wx.App):
         self.main = Frame(None)
         self.control = Controller(self.main)
         self.SetAppName("InVesalius 3.0")
-        self.SetTopWindow(self.main)
         return True
         
     def ShowFrame(self):

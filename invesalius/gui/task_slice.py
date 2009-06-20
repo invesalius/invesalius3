@@ -285,11 +285,17 @@ class MaskProperties(wx.Panel):
         ps.Publisher().subscribe(self.SetItemsColour, 'Set GUI items colour')
         ps.Publisher().subscribe(self.SetThresholdValues,
                                  'Set threshold values in gradient')
+        ps.Publisher().subscribe(self.SelectMaskName, 'Select mask name in combo')
         
     def __bind_events_wx(self):
         self.combo_thresh.Bind(wx.EVT_COMBOBOX, self.OnComboThresh)
         self.Bind(grad.EVT_THRESHOLD_CHANGE, self.OnSlideChanged,
                   self.gradient)
+                  
+    def SelectMaskName(self, pubsub_evt):
+        index = pubsub_evt.data
+        self.combo_mask_name.SetSelection(index)
+        print dir(self.combo_mask_name)
                   
     def SetThresholdValues(self, pubsub_evt):
         thresh_min, thresh_max = pubsub_evt.data
@@ -308,6 +314,7 @@ class MaskProperties(wx.Panel):
         mask_thresh = evt_pubsub.data[2]
         mask_colour = [int(c*255) for c in evt_pubsub.data[3]]
         index = self.combo_mask_name.Append(mask_name)
+        self.combo_mask_name.SetSelection(index)
         self.button_colour.SetColour(mask_colour)
         self.gradient.SetColour(mask_colour)
         self.combo_mask_name.SetSelection(index)

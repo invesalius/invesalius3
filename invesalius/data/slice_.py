@@ -17,6 +17,7 @@ class Slice(object):
     def __init__(self):
         self.imagedata = None
         self.__bind_events()
+        self.current_mask = None
 
     def __bind_events(self):
         ps.Publisher().subscribe(self.SetThresholdRange, 'Set threshold values')
@@ -30,9 +31,33 @@ class Slice(object):
                                  'Create surface from index')
         ps.Publisher().subscribe(self.UpdateCursorPosition,
                                  'Update cursor position in slice')
+        ps.Publisher().subscribe(self.ShowMask, 'Show mask')
+
+
+    def ShowMask(self, pubsub_evt):
+    
+        # This is necessary because wx events are calling this before it was created
+        if self.current_mask:
+            mask_index, value = pubsub_evt.data
+            
+            proj = Project()
+            proj.mask_dict[mask_index].is_shown = value
+            
+    
+            if (mask_index == self.current_mask.index):
+                if value:
+                    self.blend_filter.SetOpacity(1, self.current_mask.opacity)
+                else:
+                    
+                    self.blend_filter.SetOpacity(1, 0)    
+                self.blend_filter.Update()
+                ps.Publisher().sendMessage('Update slice viewer')
+                
+            
 
     def CreateSurfaceFromIndex(self, pubsub_evt):
         mask_index = pubsub_evt.data
+        
 
         proj = Project()
         mask = proj.mask_dict[mask_index]
@@ -65,24 +90,29 @@ class Slice(object):
             self.current_mask = future_mask
 
             colour = future_mask.colour
-            self.ChangeCurrentMaskColour(colour)
+            self.ChangeCurrentMaskColour(colour, update=False)
 
             imagedata = future_mask.imagedata
             self.img_colours_mask.SetInput(imagedata)
+
+            if self.current_mask.is_shown:
+                self.blend_filter.SetOpacity(1, self.current_mask.opacity)
+            else:
+                
+                self.blend_filter.SetOpacity(1, 0)    
+            self.blend_filter.Update()
 
             ps.Publisher().sendMessage('Set mask threshold in notebook',
                                         (self.current_mask.index,
                                             self.current_mask.threshold_range))
             ps.Publisher().sendMessage('Set threshold values in gradient',
                                         self.current_mask.threshold_range)
+            ps.Publisher().sendMessage('Select mask name in combo', mask_index)
             ps.Publisher().sendMessage('Update slice viewer')
 
-    def ChangeCurrentMaskColour(self, colour):
-        try:
-            self.current_mask
-        except AttributeError:
-            pass
-        else:
+    def ChangeCurrentMaskColour(self, colour, update=True):
+        # This is necessary because wx events are calling this before it was created
+        if self.current_mask:
             (r,g,b) = colour
             scalar_range = int(self.imagedata.GetScalarRange()[1])
             self.current_mask.colour = colour
@@ -94,11 +124,12 @@ class Slice(object):
             ps.Publisher().sendMessage('Change mask colour in notebook',
                                        (self.current_mask.index, (r,g,b)))
             ps.Publisher().sendMessage('Set GUI items colour', colour_wx)
-            ps.Publisher().sendMessage('Update slice viewer')
+            if update:
+                ps.Publisher().sendMessage('Update slice viewer')
 
 
     def GetOutput(self):
-        return self.blend_imagedata.GetOutput()
+        return self.cast_filter.GetOutput()
 
     def SetInput(self, imagedata):
         self.imagedata = imagedata
@@ -110,18 +141,18 @@ class Slice(object):
         mask_opacity = self.current_mask.opacity
 
         # blend both imagedatas, so it can be inserted into viewer
-        blend_imagedata = vtk.vtkImageBlend()
-        blend_imagedata.SetBlendModeToNormal()
-        blend_imagedata.SetOpacity(0, 1)
-        blend_imagedata.SetOpacity(1, mask_opacity)
-        blend_imagedata.SetInput(0, imagedata_bg)
-        blend_imagedata.SetInput(1, imagedata_mask)
-        blend_imagedata.SetBlendModeToNormal()
-        blend_imagedata.GetOutput().ReleaseDataFlagOn()
-        #self.blend_imagedata = blend_imagedata
-
-        #blend_imagedata.Update()
-        #extent = blend_imagedata.GetOutput().GetWholeExtent()
+        blend_filter = vtk.vtkImageBlend()
+        blend_filter.SetBlendModeToNormal()
+        blend_filter.SetOpacity(0, 1)
+        if self.current_mask.is_shown:
+            blend_filter.SetOpacity(1, mask_opacity)
+        else:
+            blend_filter.SetOpacity(1, 0)
+        blend_filter.SetInput(0, imagedata_bg)
+        blend_filter.SetInput(1, imagedata_mask)
+        blend_filter.SetBlendModeToNormal()
+        blend_filter.GetOutput().ReleaseDataFlagOn()
+        self.blend_filter = blend_filter
 
         # global values
         CURSOR_X = -1 # SAGITAL
@@ -133,7 +164,7 @@ class Slice(object):
 
         cross = vtk.vtkImageCursor3D()
         cross.GetOutput().ReleaseDataFlagOn()
-        cross.SetInput(blend_imagedata.GetOutput())   
+        cross.SetInput(blend_filter.GetOutput())   
         cross.SetCursorPosition(CURSOR_X, CURSOR_Y, CURSOR_Z)
         cross.SetCursorValue(CURSOR_VALUE)
         cross.SetCursorRadius(CURSOR_RADIUS)                                         
@@ -146,7 +177,7 @@ class Slice(object):
         cast.SetOutputScalarTypeToUnsignedChar()        
         cast.Update()
         
-        self.blend_imagedata = cast
+        self.cast_filter = cast
 
 
     def UpdateCursorPosition(self, pubsub_evt):
@@ -154,11 +185,9 @@ class Slice(object):
         new_pos = pubsub_evt.data
         self.cross.SetCursorPosition(new_pos)
         self.cross.Modified()
-        self.blend_imagedata.Update()
-        ps.Publisher().sendMessage('Update slice viewer', None)
+        self.cast_filter.Update()
+        ps.Publisher().sendMessage('Update slice viewer')
         
-        
-
     def __create_background(self, imagedata):
 
         thresh_min, thresh_max = imagedata.GetScalarRange()
@@ -208,14 +237,18 @@ class Slice(object):
 
         # when this is not the first instance, user will have defined a name
         if name is not None:
+            print "new mask, we will check if it will be shown"
             future_mask.name = name
+            if future_mask.is_shown:
+                self.blend_filter.SetOpacity(1, future_mask.opacity)
+            else:
+                self.blend_filter.SetOpacity(1, 0)
+            self.blend_filter.Update()
 
         # insert new mask into project and retrieve its index
         proj = Project()
         proj.AddMask(future_mask.index, future_mask)
 
-
-        imagedata1 = proj.mask_dict[0].imagedata
 
         # update gui related to mask
         ps.Publisher().sendMessage('Add mask',
@@ -225,7 +258,6 @@ class Slice(object):
                                      future_mask.colour))
 
         self.current_mask = future_mask
-
 
 
     def __create_mask(self, imagedata):

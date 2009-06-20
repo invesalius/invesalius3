@@ -93,17 +93,17 @@ class MasksListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
     def __init_image_list(self):
         self.imagelist = wx.ImageList(16, 16)
 
-        image = wx.Image("../icons/object_visible.jpg")
-        bitmap = wx.BitmapFromImage(image.Scale(16, 16))
-        bitmap.SetWidth(16)
-        bitmap.SetHeight(16)
-        img_check = self.imagelist.Add(bitmap)
-        
         image = wx.Image("../icons/object_invisible.jpg")
         bitmap = wx.BitmapFromImage(image.Scale(16, 16))
         bitmap.SetWidth(16)
         bitmap.SetHeight(16)
         img_null = self.imagelist.Add(bitmap)
+
+        image = wx.Image("../icons/object_visible.jpg")
+        bitmap = wx.BitmapFromImage(image.Scale(16, 16))
+        bitmap.SetWidth(16)
+        bitmap.SetHeight(16)
+        img_check = self.imagelist.Add(bitmap)
         
         self.SetImageList(self.imagelist, wx.IMAGE_LIST_SMALL)
 
@@ -113,35 +113,37 @@ class MasksListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
         print "Editing label", evt.GetLabel()
         #print evt.GetImage()
         #print evt.GetId()
-        #print evt.GetIndex()
-        print "--------"
-        print evt.m_oldItemIndex
-        print evt.m_itemIndex
-        index = evt.GetIndex()
+        print evt.GetIndex()
+        #print "--------"
+        #print evt.m_oldItemIndex
+        #print evt.m_itemIndex
+        #index = evt.GetIndex()
         #print dir(evt)
         
-        print "Get item data:", self.GetItemData(index)
-        print "Get item position:", self.GetItemPosition(index)
-        print "Get next item:", self.GetNextItem(index)
+        #print "Get item data:", self.GetItemData(index)
+        #print "Get item position:", self.GetItemPosition(index)
+        #print "Get next item:", self.GetNextItem(index)
         evt.Skip()
         
     def OnItemActivated(self, evt):
         print "OnItemActivated"
         self.ToggleItem(evt.m_itemIndex)
         
+
     def OnCheckItem(self, index, flag):
-        # TODO: use pubsub to communicate to models
+    
         if flag:
-            print "checked, ", index
-        else:
-            print "unchecked, ", index
+            for key in self.mask_list_index.keys():
+                if key != index:
+                    self.SetItemImage(key, 0)
+            ps.Publisher().sendMessage('Change mask selected',index)
+        ps.Publisher().sendMessage('Show mask', (index, flag))
 
     def CreateColourBitmap(self, colour):
         """
         Create a wx Image with a mask colour.
         colour: colour in rgb format(0 - 1)
         """
-        print "Colour", colour
         image = self.image_gray
         new_image = Image.new("RGB", image.size)
         for x in xrange(image.size[0]):
@@ -157,24 +159,19 @@ class MasksListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
 
     def InsertNewItem(self, index=0, label="Mask 1", threshold="(1000, 4500)",
                       colour=None):
-        print "InsertNewItem"
         self.InsertStringItem(index, "")
         self.SetStringItem(index, 1, label, 
                            imageId=self.mask_list_index[index]) 
         self.SetStringItem(index, 2, threshold)
-        
-        print "Get item data:", self.GetItemData(index)
-        print "Get item position:", self.GetItemPosition(index)
-        print "Get next item:", self.GetNextItem(index)
-        # FindItem
-        # FindItemData
-        # FindItemAtPos
+        self.SetItemImage(index, 1)
+        for key in self.mask_list_index.keys():
+            if key != index:
+                self.SetItemImage(key, 0)
         
     def AddMask(self, pubsub_evt):
         index, mask_name, threshold_range, colour = pubsub_evt.data
         image = self.CreateColourBitmap(colour)
         image_index = self.imagelist.Add(image)
-        print "image_index: ", image_index
         self.mask_list_index[index] = image_index
         self.InsertNewItem(index, mask_name, str(threshold_range))
         
@@ -292,11 +289,7 @@ class SurfacesListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
         self.ToggleItem(evt.m_itemIndex)
         
     def OnCheckItem(self, index, flag):
-        # TODO: use pubsub to communicate to models
-        if flag:
-            print "checked, ", index
-        else:
-            print "unchecked, ", index
+        ps.Publisher().sendMessage('Show surface', (index, not flag))
 
 
     
@@ -417,7 +410,6 @@ class AnnotationsListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
         self.imagelist = wx.ImageList(16, 16)
 
         image = wx.Image("../icons/object_visible.jpg")
-        #image = wx.Image("../img/object_visible-v2.jpg")
         bitmap = wx.BitmapFromImage(image.Scale(16, 16))
         bitmap.SetWidth(16)
         bitmap.SetHeight(16)
@@ -439,6 +431,7 @@ class AnnotationsListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
         
     def OnItemActivated(self, evt):
         self.ToggleItem(evt.m_itemIndex)
+        print m_itemIndex
         
     def OnCheckItem(self, index, flag):
         # TODO: use pubsub to communicate to models
