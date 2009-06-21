@@ -80,6 +80,16 @@ class MasksListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
         ps.Publisher().subscribe(self.EditMaskColour,
                                  'Change mask colour in notebook')
 
+        ps.Publisher().subscribe(self.OnChangeCurrentMask, 'Change mask selected')
+    
+    def OnChangeCurrentMask(self, pubsub_evt):
+
+        mask_index = pubsub_evt.data
+        self.SetItemImage(mask_index, 1)
+        for key in self.mask_list_index.keys():
+            if key != mask_index:
+                self.SetItemImage(key, 0)
+
     def __init_columns(self):
         
         self.InsertColumn(0, "", wx.LIST_FORMAT_CENTER)

@@ -295,7 +295,6 @@ class MaskProperties(wx.Panel):
     def SelectMaskName(self, pubsub_evt):
         index = pubsub_evt.data
         self.combo_mask_name.SetSelection(index)
-        print dir(self.combo_mask_name)
                   
     def SetThresholdValues(self, pubsub_evt):
         thresh_min, thresh_max = pubsub_evt.data
