@@ -120,26 +120,13 @@ class MasksListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
         self.image_gray = Image.open("../icons/object_colour.jpg")
         
     def OnEditLabel(self, evt):
-        print "Editing label", evt.GetLabel()
-        #print evt.GetImage()
-        #print evt.GetId()
-        print evt.GetIndex()
-        #print "--------"
-        #print evt.m_oldItemIndex
-        #print evt.m_itemIndex
-        #index = evt.GetIndex()
-        #print dir(evt)
-        
-        #print "Get item data:", self.GetItemData(index)
-        #print "Get item position:", self.GetItemPosition(index)
-        #print "Get next item:", self.GetNextItem(index)
+        print "Editing label", evt.GetIndex(), evt.GetLabel()
+        ps.Publisher().sendMessage('Change mask name', (evt.GetIndex(), evt.GetLabel()))
         evt.Skip()
         
     def OnItemActivated(self, evt):
-        print "OnItemActivated"
         self.ToggleItem(evt.m_itemIndex)
         
-
     def OnCheckItem(self, index, flag):
     
         if flag:

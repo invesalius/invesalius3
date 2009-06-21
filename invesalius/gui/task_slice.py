@@ -1,3 +1,4 @@
+
 #--------------------------------------------------------------------------
 # Software:     InVesalius - Software de Reconstrucao 3D de Imagens Medicas
 # Copyright:    (C) 2001  Centro de Pesquisas Renato Archer
@@ -286,6 +287,7 @@ class MaskProperties(wx.Panel):
         ps.Publisher().subscribe(self.SetThresholdValues,
                                  'Set threshold values in gradient')
         ps.Publisher().subscribe(self.SelectMaskName, 'Select mask name in combo')
+        ps.Publisher().subscribe(self.ChangeMaskName, 'Change mask name')
         
     def __bind_events_wx(self):
         self.combo_thresh.Bind(wx.EVT_COMBOBOX, self.OnComboThresh)
@@ -295,6 +297,11 @@ class MaskProperties(wx.Panel):
     def SelectMaskName(self, pubsub_evt):
         index = pubsub_evt.data
         self.combo_mask_name.SetSelection(index)
+        
+    def ChangeMaskName(self, pubsub_evt):
+        index, name = pubsub_evt.data
+        self.combo_mask_name.SetString(index, name)
+        self.combo_mask_name.Refresh()
                   
     def SetThresholdValues(self, pubsub_evt):
         thresh_min, thresh_max = pubsub_evt.data

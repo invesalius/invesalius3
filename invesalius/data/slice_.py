@@ -32,6 +32,13 @@ class Slice(object):
         ps.Publisher().subscribe(self.UpdateCursorPosition,
                                  'Update cursor position in slice')
         ps.Publisher().subscribe(self.ShowMask, 'Show mask')
+        ps.Publisher().subscribe(self.ChangeMaskName, 'Change mask name')
+        
+    def ChangeMaskName(self, pubsub_evt):
+        index, name = pubsub_evt.data
+
+        proj = Project()
+        proj.mask_dict[index].name = name
 
 
     def ShowMask(self, pubsub_evt):
