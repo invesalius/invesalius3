@@ -97,9 +97,7 @@ class Panel(wx.Panel):
         
         self.aui_manager.Update()
         
-      
 
-        
     def __init_four_way_splitter(self):
 
         splitter = fws.FourWaySplitter(self, style=wx.SP_LIVE_UPDATE)
