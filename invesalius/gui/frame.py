@@ -27,14 +27,15 @@ import default_tasks as tasks
 import default_viewers as viewers
 
 
-[ID_NEW, ID_OPEN, ID_FULLSCREEN] = [wx.NewId() for number in range(3)]
+
+[ID_FILE_IMPORT, ID_FILE_LOAD_INTERNET, ID_FILE_SAVE, ID_FILE_PRINT] = [wx.NewId() for number in range(4)]
 
 class Frame(wx.Frame):
     def __init__(self, prnt):
         wx.Frame.__init__(self, id=-1, name='', parent=prnt,
               pos=wx.Point(0, 0),
               size=wx.Size(1024, 768), #size = wx.DisplaySize(),
-              style=wx.DEFAULT_FRAME_STYLE, title='InVesalius 3.0')
+              style=wx.DEFAULT_FRAME_STYLE, title='InVesalius 3')
         self.Center(wx.BOTH)
         self.SetIcon(wx.Icon("../icons/invesalius.ico", wx.BITMAP_TYPE_ICO))
 
@@ -84,17 +85,26 @@ class Frame(wx.Frame):
 
         # Add toolbars to manager
 
-        aui_manager.AddPane(ObjectToolBar(self), wx.aui.AuiPaneInfo().
+        if sys.platform == 'win32':
+            t1 = ProjectToolBar(self)
+            t2 = LayoutToolBar(self)
+            t3 = ObjectToolBar(self)
+        else:
+            t3 = ProjectToolBar(self)
+            t2 = LayoutToolBar(self)
+            t1 = ObjectToolBar(self)        
+        
+        aui_manager.AddPane(t1, wx.aui.AuiPaneInfo().
                           Name("General Features Toolbar").
                           ToolbarPane().Top().Floatable(False).
                           LeftDockable(False).RightDockable(False))
 
-        #aui_manager.AddPane(LayoutToolBar(self), wx.aui.AuiPaneInfo().
-        #                  Name("Layout Toolbar").
-        #                  ToolbarPane().Top().Floatable(False).
-        #                  LeftDockable(False).RightDockable(False))
+        aui_manager.AddPane(t2, wx.aui.AuiPaneInfo().
+                          Name("Layout Toolbar").
+                          ToolbarPane().Top().Floatable(False).
+                          LeftDockable(False).RightDockable(False))
 
-        aui_manager.AddPane(ProjectToolBar(self), wx.aui.AuiPaneInfo().
+        aui_manager.AddPane(t3, wx.aui.AuiPaneInfo().
                           Name("Project Toolbar").
                           ToolbarPane().Top().Floatable(False).
                           LeftDockable(False).RightDockable(False))
@@ -137,12 +147,11 @@ class MenuBar(wx.MenuBar):
     def __init_items(self):
 
         file_menu = wx.Menu()
-        file_menu.Append(ID_NEW, "New")
-        file_menu.Append(ID_OPEN, "Open")
-        file_menu.Append(wx.ID_EXIT, "Exit")
+        file_menu.Append(ID_FILE_IMPORT, "Import...")
+        file_menu.Append(101, "Exit")
 
         view_menu = wx.Menu()
-        view_menu.Append(ID_FULLSCREEN, "Fullscreen")
+        view_menu.Append(101, "Fullscreen")
 
         tools_menu = wx.Menu()
 
@@ -169,8 +178,9 @@ class MenuBar(wx.MenuBar):
         # events should be binded directly from wx.Menu / wx.MenuBar
         # message "Binding events of wx.MenuBar" on [wxpython-users]
         # mail list in Oct 20 2008
-        self.parent.Bind(wx.EVT_MENU, self.OnNew, id=ID_NEW)
-        self.parent.Bind(wx.EVT_MENU, self.OnOpen, id=ID_OPEN)
+        #self.parent.Bind(wx.EVT_MENU, self.OnNew, id=ID_NEW)
+        #self.parent.Bind(wx.EVT_MENU, self.OnOpen, id=ID_OPEN)
+        pass
 
     def OnNew(self, event):
         print "New"
@@ -215,7 +225,7 @@ class StatusBar(wx.StatusBar):
         self.SetFieldsCount(3)
         self.SetStatusWidths([-2,-2,-1])
         self.SetStatusText("Ready", 0)
-        self.SetStatusText("Welcome to InVesalius 3.0", 1)
+        self.SetStatusText("", 1)
         self.SetStatusText("", 2)
         
         self.progress_bar = ProgressBar(self)
@@ -257,35 +267,36 @@ class TaskBarIcon(wx.TaskBarIcon):
 # ------------------------------------------------------------------------------
 
 class ProjectToolBar(wx.ToolBar):
-    # TODO: what will appear in menubar?
     def __init__(self, parent):
-        wx.ToolBar.__init__(self, parent, -1, wx.DefaultPosition, wx.DefaultSize, wx.TB_FLAT|wx.TB_NODIVIDER)
+        wx.ToolBar.__init__(self, parent, -1, wx.DefaultPosition,
+                            wx.DefaultSize, wx.TB_FLAT|wx.TB_NODIVIDER)
         if sys.platform == 'darwin':
-            self._size = 25
-        else:
-            self._size = 16
-        self.SetToolBitmapSize(wx.Size(self._size,self._size))
+            self.SetToolBitmapSize(wx.Size(32,32))
         self.parent = parent
         self.__init_items()
         self.__bind_events()
 
     def __init_items(self):
 
-        BMP_IMPORT = wx.Bitmap("../icons/file_import.png", wx.BITMAP_TYPE_PNG)
-        BMP_EXPORT = wx.Bitmap("../icons/file_export.png", wx.BITMAP_TYPE_PNG)
-        BMP_NET = wx.Bitmap("../icons/file_from_internet.png", wx.BITMAP_TYPE_PNG)
-        BMP_SAVE = wx.Bitmap("../icons/file_save.png", wx.BITMAP_TYPE_PNG)
-        
-        if sys.platform != 'darwin':
-            bmp_list = [BMP_IMPORT, BMP_EXPORT, BMP_NET, BMP_SAVE]
-            for bmp in bmp_list:
-                bmp.SetWidth(self._size)
-                bmp.SetHeight(self._size)
 
-        self.AddLabelTool(101, "Import medical image...", BMP_IMPORT)
-        self.AddLabelTool(101, "Export data.", BMP_EXPORT)
-        self.AddLabelTool(101, "Load medical image...", BMP_NET)
-        self.AddLabelTool(101, "Save InVesalius project", BMP_SAVE)
+        if sys.platform == 'darwin':
+            BMP_IMPORT = wx.Bitmap("../icons/file_import_original.png", wx.BITMAP_TYPE_PNG)
+            BMP_NET = wx.Bitmap("../icons/file_from_internet_original.png", wx.BITMAP_TYPE_PNG)
+            BMP_SAVE = wx.Bitmap("../icons/file_save_original.png", wx.BITMAP_TYPE_PNG)
+            BMP_PRINT = wx.Bitmap("../icons/print_original.png", wx.BITMAP_TYPE_PNG)
+            BMP_PHOTO = wx.Bitmap("../icons/tool_photo_original.png", wx.BITMAP_TYPE_PNG)
+        else:
+            BMP_IMPORT = wx.Bitmap("../icons/file_import.png", wx.BITMAP_TYPE_PNG)
+            BMP_NET = wx.Bitmap("../icons/file_from_internet.png", wx.BITMAP_TYPE_PNG)
+            BMP_SAVE = wx.Bitmap("../icons/file_save.png", wx.BITMAP_TYPE_PNG)
+            BMP_PRINT = wx.Bitmap("../icons/print.png", wx.BITMAP_TYPE_PNG)
+            BMP_PHOTO = wx.Bitmap("../icons/tool_photo.png", wx.BITMAP_TYPE_PNG)
+        
+        self.AddLabelTool(ID_FILE_IMPORT, "Import medical image...", BMP_IMPORT)
+        self.AddLabelTool(ID_FILE_LOAD_INTERNET, "Load medical image...", BMP_NET)
+        self.AddLabelTool(ID_FILE_SAVE, "Save InVesalius project", BMP_SAVE)
+        self.AddLabelTool(101, "Take photo of screen", BMP_PHOTO)
+        self.AddLabelTool(ID_FILE_PRINT, "Print medical image...", BMP_PRINT)
 
         self.Realize()
 
@@ -297,10 +308,7 @@ class ObjectToolBar(wx.ToolBar):
     def __init__(self, parent):
         wx.ToolBar.__init__(self, parent, -1, wx.DefaultPosition, wx.DefaultSize, wx.TB_FLAT|wx.TB_NODIVIDER)
         if sys.platform == 'darwin':
-            self._size = 25
-        else:
-            self._size = 16
-        self.SetToolBitmapSize(wx.Size(self._size,self._size))
+            self.SetToolBitmapSize(wx.Size(32,32))
         
         self.parent = parent
         self.__init_items()
@@ -308,24 +316,18 @@ class ObjectToolBar(wx.ToolBar):
 
     def __init_items(self):
 
-        #BMP_ROTATE = wx.Bitmap("../icons/tool_rotate.gif", wx.BITMAP_TYPE_GIF)
-        #BMP_TRANSLATE = wx.Bitmap("../icons/tool_translate.gif", wx.BITMAP_TYPE_GIF)
-        BMP_ZOOM = wx.Bitmap("../icons/tool_zoom.png", wx.BITMAP_TYPE_PNG)
-        BMP_PHOTO = wx.Bitmap("../icons/tool_photo.png", wx.BITMAP_TYPE_PNG)
-        BMP_PRINT = wx.Bitmap("../icons/tool_print.png", wx.BITMAP_TYPE_PNG)
 
-        if sys.platform != 'darwin':
-            bmp_list = [BMP_ZOOM, BMP_PHOTO, BMP_PRINT]
-            for bmp in bmp_list:
-                bmp.SetWidth(self._size)
-                bmp.SetHeight(self._size)
+        if sys.platform == 'darwin':
+            BMP_ROTATE = wx.Bitmap("../icons/tool_rotate_original.gif", wx.BITMAP_TYPE_GIF)
+            BMP_TRANSLATE = wx.Bitmap("../icons/tool_translate_original.png", wx.BITMAP_TYPE_PNG)
+            BMP_ZOOM_IN = wx.Bitmap("../icons/tool_zoom_in_original.png", wx.BITMAP_TYPE_PNG)
+            BMP_ZOOM_OUT = wx.Bitmap("../icons/tool_zoom_out_original.png", wx.BITMAP_TYPE_PNG)
 
-        #self.AddLabelTool(101, "Rotate image", BMP_ROTATE)
-        #self.AddLabelTool(101, "Translate image", BMP_TRANSLATE)        
-        self.AddLabelTool(101, "Zoom image", BMP_ZOOM)
-        self.AddLabelTool(101, "Take photo of screen", BMP_PHOTO)
-        self.AddLabelTool(101, "Print screen", BMP_PRINT)
-
+        self.AddLabelTool(101, "Zoom in image", BMP_ZOOM_IN)
+        self.AddLabelTool(101, "Zoom out image", BMP_ZOOM_OUT)
+        self.AddLabelTool(101, "Rotate image", BMP_ROTATE)
+        self.AddLabelTool(101, "Translate image", BMP_TRANSLATE)        
+        
         self.Realize()
 
     def __bind_events(self):
@@ -336,10 +338,7 @@ class LayoutToolBar(wx.ToolBar):
     def __init__(self, parent):
         wx.ToolBar.__init__(self, parent, -1, wx.DefaultPosition, wx.DefaultSize, wx.TB_FLAT|wx.TB_NODIVIDER)
         if sys.platform == 'darwin':
-            self._size = 25
-        else:
-            self._size = 16
-        self.SetToolBitmapSize(wx.Size(self._size,self._size))
+            self.SetToolBitmapSize(wx.Size(32,32))
         
         self.parent = parent
         self.__init_items()
@@ -347,14 +346,9 @@ class LayoutToolBar(wx.ToolBar):
 
     def __init_items(self):
 
-        BMP_ROTATE = wx.Bitmap("../icons/layout_data_only.png", wx.BITMAP_TYPE_PNG)
-        BMP_TRANSLATE = wx.Bitmap("../icons/layout_full.png", wx.BITMAP_TYPE_PNG)
+        BMP_ROTATE = wx.Bitmap("../icons/layout_data_only_original.gif", wx.BITMAP_TYPE_GIF)
+        BMP_TRANSLATE = wx.Bitmap("../icons/layout_full_original.gif", wx.BITMAP_TYPE_GIF)
 
-        if sys.platform != 'darwin':
-            bmp_list = [BMP_ROTATE, BMP_TRANSLATE]
-            for bmp in bmp_list:
-                bmp.SetWidth(self._size)
-                bmp.SetHeight(self._size)
             
         #BMP_ZOOM = wx.Bitmap("../icons/tool_zoom.png", wx.BITMAP_TYPE_PNG)
         #BMP_PHOTO = wx.Bitmap("../icons/tool_photo.png", wx.BITMAP_TYPE_PNG)

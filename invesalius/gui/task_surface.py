@@ -311,14 +311,14 @@ class SurfaceProperties(wx.Panel):
                               (slider_transparency, 1, flag_slider,4)])
      
         # LINE 4
-        cb = wx.CheckBox(self, -1, "Fill largest surface holes")
-        cb.SetValue(True)
+        #cb = wx.CheckBox(self, -1, "Fill largest surface holes")
+        #cb.SetValue(True)
         
         # Add all lines into main sizer
         sizer = wx.BoxSizer(wx.VERTICAL)
         sizer.Add(line1, 1, wx.GROW|wx.EXPAND|wx.LEFT|wx.RIGHT|wx.TOP, 5)
         sizer.Add(fixed_sizer, 0, wx.GROW|wx.EXPAND|wx.LEFT|wx.RIGHT|wx.TOP, 5)
-        sizer.Add(cb, 0, wx.GROW|wx.EXPAND|wx.RIGHT|wx.LEFT|wx.TOP|wx.BOTTOM, 5)
+        #sizer.Add(cb, 0, wx.GROW|wx.EXPAND|wx.RIGHT|wx.LEFT|wx.TOP|wx.BOTTOM, 5)
         sizer.Fit(self)
         
         self.SetSizer(sizer)
@@ -328,17 +328,21 @@ class SurfaceProperties(wx.Panel):
         self.__bind_events()
         
     def __bind_events(self):
-        #ps.Publisher().sendMessage('Update surface info in GUI',
-        #                        (surface.name, surface.colour,
-        #                        surface.transparency))
         ps.Publisher().subscribe(self.InsertNewSurface,
                                 'Update surface info in GUI')
+        ps.Publisher().subscribe(self.ChangeMaskName,
+                                'Change surface name')
 
+
+    def ChangeMaskName(self, pubsub_evt):
+        index, name = pubsub_evt.data
+        self.combo_surface_name.SetString(index, name)
+        self.combo_surface_name.Refresh()
 
     def InsertNewSurface(self, pubsub_evt):
         name = pubsub_evt.data[1]
         colour = [value*255 for value in pubsub_evt.data[2]]
-        transparency = 100*pubsub_evt.data[3]
+        transparency = 100*pubsub_evt.data[4]
         index = self.combo_surface_name.Append(name)
         self.combo_surface_name.SetSelection(index) 
         self.button_colour.SetColour(colour)

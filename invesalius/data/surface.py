@@ -18,6 +18,7 @@ class Surface():
         self.polydata = None
         self.colour = None
         self.transparency = const.SURFACE_TRANSPARENCY
+        self.volume = 0
         self.is_shown = 1
         self.name = const.SURFACE_NAME_PATTERN %(Surface.general_index+1)
 
@@ -44,6 +45,9 @@ class SurfaceManager():
                                  'Set surface transparency')
         ps.Publisher().subscribe(self.SetActorColour,
                                  'Set surface colour')
+    
+        ps.Publisher().subscribe(self.OnChangeSurfaceName, 'Change surface name')
+        ps.Publisher().subscribe(self.OnShowSurface, 'Show surface')
     
     def AddNewActor(self, pubsub_evt):
         """
@@ -144,12 +148,9 @@ class SurfaceManager():
         filled_polydata.SetInput(polydata)
         filled_polydata.SetHoleSize(500)
         filled_polydata.AddObserver("ProgressEvent", lambda obj, evt:
-                               UpdateProgress(filled_polydata,
-                                              "Filling polydata..."))
+                                    UpdateProgress(filled_polydata,
+                                    "Filling polydata..."))
         polydata = filled_polydata.GetOutput()
-
-        print "Area: %f mm2" % pu.CalculateSurfaceArea(polydata)
-        print "Volume: %f mm3" % pu.CalculateSurfaceVolume(polydata)
 
         # Orient normals from inside to outside
         normals = vtk.vtkPolyDataNormals()
@@ -183,6 +184,7 @@ class SurfaceManager():
         surface = Surface()
         surface.colour = colour
         surface.polydata = polydata
+
         
         # Set actor colour and transparency
         actor.GetProperty().SetColor(colour)
@@ -201,9 +203,17 @@ class SurfaceManager():
         ps.Publisher().sendMessage('Update status text in GUI',
                                     "Surface created.")
                                     
+        # The following lines have to be here, otherwise all volumes disappear
+        measured_polydata = vtk.vtkMassProperties()
+        measured_polydata.SetInput(polydata)
+        volume =  measured_polydata.GetVolume()
+        surface.volume = volume
+                
         ps.Publisher().sendMessage('Update surface info in GUI',
                                     (surface.index, surface.name, 
-                                    surface.colour, surface.transparency))
+                                    surface.colour, surface.volume,
+                                    surface.transparency))
+                                    
         
     def RemoveActor(self, index):
         """
@@ -216,6 +226,16 @@ class SurfaceManager():
         proj.surface_dict.pop(index)
 
         
+    def OnChangeSurfaceName(self, pubsub_evt):
+        index, name = pubsub_evt.data
+        proj = Project()
+        proj.surface_dict[index].name = name
+        
+    def OnShowSurface(self, pubsub_evt):
+        index, value = pubsub_evt.data
+        print "OnShowSurface", index, value
+        self.ShowActor(index, value)
+        
     def ShowActor(self, index, value):
         """
         Show or hide actor, according to given actor index and value.
@@ -224,6 +244,7 @@ class SurfaceManager():
         # Update value in project's surface_dict
         proj = Project()
         proj.surface_dict[index].is_shown = value
+        ps.Publisher().sendMessage('Render volume viewer')
         
     def SetActorTransparency(self, pubsub_evt):
         """

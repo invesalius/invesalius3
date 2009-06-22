@@ -58,8 +58,8 @@ class InnerTaskPanel(wx.Panel):
         self.float_hyper_list = []
 
         # Fixed hyperlink items
-        tooltip = wx.ToolTip("Select DICOM files to be reconstructed")
-        link_import_local = hl.HyperLinkCtrl(self, -1, "Open DICOM files...")
+        tooltip = wx.ToolTip("Select DICOM or Analyze files to be reconstructed")
+        link_import_local = hl.HyperLinkCtrl(self, -1, "Import medical images...")
         link_import_local.SetUnderlines(False, False, False)
         link_import_local.SetColours("BLACK", "BLACK", "BLACK")
         link_import_local.SetToolTip(tooltip)
@@ -182,9 +182,9 @@ class InnerTaskPanel(wx.Panel):
             self.OnLinkOpenProject()
         
     def TestLoadProjects(self):
-        self.LoadProject("test1.inv")
-        self.LoadProject("test2.inv")
-        self.LoadProject("test3.inv")
+        self.LoadProject("test1.iv3")
+        self.LoadProject("test2.iv3")
+        self.LoadProject("test3.iv3")
     
     def LoadProject(self, proj_name="Unnamed"):
         """

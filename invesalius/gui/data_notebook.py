@@ -120,7 +120,6 @@ class MasksListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
         self.image_gray = Image.open("../icons/object_colour.jpg")
         
     def OnEditLabel(self, evt):
-        print "Editing label", evt.GetIndex(), evt.GetLabel()
         ps.Publisher().sendMessage('Change mask name', (evt.GetIndex(), evt.GetLabel()))
         evt.Skip()
         
@@ -128,7 +127,6 @@ class MasksListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
         self.ToggleItem(evt.m_itemIndex)
         
     def OnCheckItem(self, index, flag):
-    
         if flag:
             for key in self.mask_list_index.keys():
                 if key != index:
@@ -183,13 +181,6 @@ class MasksListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
         self.imagelist.Replace(image_index, image)
         self.Refresh()
         
-    def Populate(self):
-        dict = ((0,"Mask 1", "(1000,4500)"),
-                (1,"Mask 2", "(2000, 4500)"),
-                (2,"Background","(0,4500)"))
-        for data in dict:
-            self.InsertNewItem(data[0], data[1], data[2])
-        
 class SurfacesListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
 
     def __init__(self, parent, ID=-1, pos=wx.DefaultPosition,
@@ -205,27 +196,42 @@ class SurfacesListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
         self.__init_columns()
         self.__init_image_list()
         self.__init_evt()
-        
+        self.__bind_events_wx()
         self.surface_list_index = {}
         self.surface_bmp_idx_to_name = {}
 
     def __init_evt(self):
-        self.Bind(wx.EVT_LIST_ITEM_ACTIVATED, self.OnItemActivated)
         ps.Publisher().subscribe(self.AddSurface,
                                 'Update surface info in GUI')
+        ps.Publisher().subscribe(self.EditSurfaceTransparency,
+                                 'Set surface transparency')
+        ps.Publisher().subscribe(self.EditSurfaceColour,
+                                 'Set surface colour')
+
+    def __bind_events_wx(self):
+        self.Bind(wx.EVT_LIST_ITEM_ACTIVATED, self.OnItemActivated)
+        self.Bind(wx.EVT_LIST_END_LABEL_EDIT, self.OnEditLabel)
 
     def __init_columns(self):
         
         self.InsertColumn(0, "", wx.LIST_FORMAT_CENTER)
         self.InsertColumn(1, "Name")
-        self.InsertColumn(2, "Transparency", wx.LIST_FORMAT_RIGHT)
+        self.InsertColumn(2, "Volume (mm3)")
+        self.InsertColumn(3, "Transparency", wx.LIST_FORMAT_RIGHT)
         
         self.SetColumnWidth(0, 20)
-        self.SetColumnWidth(1, 120)
-        self.SetColumnWidth(2, 90)
+        self.SetColumnWidth(1, 85)
+        self.SetColumnWidth(2, 85)
+        self.SetColumnWidth(3, 80)
         
     def __init_image_list(self):
         self.imagelist = wx.ImageList(16, 16)
+
+        image = wx.Image("../icons/object_invisible.jpg")
+        bitmap = wx.BitmapFromImage(image.Scale(16, 16))
+        bitmap.SetWidth(16)
+        bitmap.SetHeight(16)
+        img_null = self.imagelist.Add(bitmap)
 
         image = wx.Image("../icons//object_visible.jpg")
         bitmap = wx.BitmapFromImage(image.Scale(16, 16))
@@ -233,37 +239,44 @@ class SurfacesListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
         bitmap.SetHeight(16)
         img_check = self.imagelist.Add(bitmap)
         
-        image = wx.Image("../icons/object_invisible.jpg")
-        bitmap = wx.BitmapFromImage(image.Scale(16, 16))
-        bitmap.SetWidth(16)
-        bitmap.SetHeight(16)
-        img_null = self.imagelist.Add(bitmap)
-        
         self.SetImageList(self.imagelist, wx.IMAGE_LIST_SMALL)
 
         self.image_gray = Image.open("../icons/object_colour.jpg")
+
+
+    def OnEditLabel(self, evt):
+        ps.Publisher().sendMessage('Change surface name', (evt.GetIndex(), evt.GetLabel()))
+        evt.Skip()
+        
+    def OnItemActivated(self, evt):
+        self.ToggleItem(evt.m_itemIndex)
+        #ps.Publisher().sendMessage('Change surface selected',index)
+        
+    def OnCheckItem(self, index, flag):
+        ps.Publisher().sendMessage('Show surface', (index, flag))
 
     def AddSurface(self, pubsub_evt):
         index = pubsub_evt.data[0]
         name = pubsub_evt.data[1]
         colour = pubsub_evt.data[2]
-        transparency = "%d%%"%(int(100*pubsub_evt.data[3]))
+        volume = "%d"%(int(pubsub_evt.data[3]))
+        transparency = "%d%%"%(int(100*pubsub_evt.data[4]))
 
         image = self.CreateColourBitmap(colour)
         image_index = self.imagelist.Add(image)
         self.surface_list_index[index] = image_index
         
-        self.InsertNewItem(index, name, str(transparency), colour)
+        self.InsertNewItem(index, name, volume, transparency, colour)
 
-    def InsertNewItem(self, index=0, label="Surface 1",
-                      transparency="(1000, 4500)", colour=None):
+    def InsertNewItem(self, index=0, label="Surface 1", volume="0 mm3",
+                      transparency="0%%", colour=None):
         self.InsertStringItem(index, "")
         self.SetStringItem(index, 1, label,
                             imageId = self.surface_list_index[index]) 
-        self.SetStringItem(index, 2, transparency)
+        self.SetStringItem(index, 2, volume)
+        self.SetStringItem(index, 3, transparency)
+        self.SetItemImage(index, 1)
         
-
-
     def CreateColourBitmap(self, colour):
         """
         Create a wx Image with a mask colour.
@@ -280,16 +293,27 @@ class SurfacesListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
         wx_image = wx.EmptyImage(new_image.size[0],
                                  new_image.size[1])
         wx_image.SetData(new_image.tostring())
-        return wx.BitmapFromImage(wx_image.Scale(16, 16))            
+        return wx.BitmapFromImage(wx_image.Scale(16, 16))
+
+    def EditSurfaceTransparency(self, pubsub_evt):
+        """
+        Set actor transparency (oposite to opacity) according to given actor
+        index and value.
+        """
+        index, value = pubsub_evt.data
+        print "EditSurfaceTransparency", index, value
+        self.SetStringItem(index, 3, "%d%%"%(int(value*100)))
         
-    def OnItemActivated(self, evt):
-        self.ToggleItem(evt.m_itemIndex)
-        
-    def OnCheckItem(self, index, flag):
-        ps.Publisher().sendMessage('Show surface', (index, not flag))
+    def EditSurfaceColour(self, pubsub_evt):
+        """
+        """
+        index, colour = pubsub_evt.data
+        image = self.CreateColourBitmap(colour)
+        image_index = self.surface_list_index[index]
+        self.imagelist.Replace(image_index, image)
+        self.Refresh()
 
 
-    
 class MeasuresListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
     # TODO: Change edimixin to affect third column also
     def __init__(self, parent, ID=-1, pos=wx.DefaultPosition,

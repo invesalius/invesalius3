@@ -81,15 +81,16 @@ class Viewer(wx.Panel):
         self.UpdateRender()
 
     def LoadActor(self, pubsub_evt):
+        print "****** Load actor"
         actor = pubsub_evt.data
 
         ren = self.ren
         ren.AddActor(actor)
         ren.ResetCamera()
-        ren.GetActiveCamera().Elevation(90)
-        ren.GetActiveCamera().SetViewUp(0, 0, 1)
+        #ren.GetActiveCamera().Elevation(90)
+        #ren.GetActiveCamera().SetViewUp(0, 0, 1)
 
-        ren.GetActiveCamera().Dolly(1.5)
+        #ren.GetActiveCamera().Dolly(1.5)
         ren.ResetCameraClippingRange()
 
         self.iren.Render()
