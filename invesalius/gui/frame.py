@@ -25,6 +25,7 @@ import math
 
 import default_tasks as tasks
 import default_viewers as viewers
+import import_panel as imp
 
 
 [ID_FILE_IMPORT, ID_FILE_LOAD_INTERNET, ID_FILE_SAVE, ID_FILE_PRINT] = [wx.NewId() for number in range(4)]
@@ -53,10 +54,14 @@ class Frame(wx.Frame):
 
         # Initialize bind to pubsub events
         self.__bind_events()
+        self.__bind_events_wx()
 
 
     def __bind_events(self):
         ps.Publisher().subscribe(self.ShowContentPanel, 'Show content panel')
+        ps.Publisher().subscribe(self.ShowImportPanel, "Show import panel")
+        
+    def __bind_events_wx(self):
         self.Bind(wx.EVT_SIZE, self.OnSize)
 
     def __init_aui(self):
@@ -81,16 +86,22 @@ class Frame(wx.Frame):
                           Hide().Layer(1).MaximizeButton(True).Name("Data").
                           Position(1))
 
+                          
+        aui_manager.AddPane(imp.Panel(self), wx.aui.AuiPaneInfo().
+                          Name("Import").Centre().Hide().
+                          Caption("Preview medical data to be reconstructed").
+                          CaptionVisible(True))
+                          
 
         # Add toolbars to manager
 
         if sys.platform == 'win32':
             t1 = ProjectToolBar(self)
-            t2 = LayoutToolBar(self)
+            #t2 = LayoutToolBar(self)
             t3 = ObjectToolBar(self)
         else:
             t3 = ProjectToolBar(self)
-            t2 = LayoutToolBar(self)
+            #t2 = LayoutToolBar(self)
             t1 = ObjectToolBar(self)        
         
         aui_manager.AddPane(t1, wx.aui.AuiPaneInfo().
@@ -98,10 +109,10 @@ class Frame(wx.Frame):
                           ToolbarPane().Top().Floatable(False).
                           LeftDockable(False).RightDockable(False))
 
-        aui_manager.AddPane(t2, wx.aui.AuiPaneInfo().
-                          Name("Layout Toolbar").
-                          ToolbarPane().Top().Floatable(False).
-                          LeftDockable(False).RightDockable(False))
+        #aui_manager.AddPane(t2, wx.aui.AuiPaneInfo().
+        #                  Name("Layout Toolbar").
+        #                  ToolbarPane().Top().Floatable(False).
+        #                  LeftDockable(False).RightDockable(False))
 
         aui_manager.AddPane(t3, wx.aui.AuiPaneInfo().
                           Name("Project Toolbar").
@@ -114,6 +125,16 @@ class Frame(wx.Frame):
         self.perspective_all = aui_manager.SavePerspective()
 
         self.aui_manager = aui_manager
+
+    def ShowImportPanel(self, evt_pubsub):
+        path = evt_pubsub.data
+        ps.Publisher().sendMessage("Load data to import panel", path)
+        
+        aui_manager = self.aui_manager
+        aui_manager.GetPane("Import").Show(1)
+        aui_manager.GetPane("Data").Show(0)
+        aui_manager.GetPane("Tasks").Show(0)
+        aui_manager.Update()
 
 
     def ShowContentPanel(self, evt_pubsub):
@@ -297,6 +318,7 @@ class ProjectToolBar(wx.ToolBar):
         self.AddLabelTool(101, "Take photo of screen", BMP_PHOTO)
         self.AddLabelTool(ID_FILE_PRINT, "Print medical image...", BMP_PRINT)
 
+
         self.Realize()
 
     def __bind_events(self):
@@ -322,6 +344,13 @@ class ObjectToolBar(wx.ToolBar):
             BMP_ZOOM_IN = wx.Bitmap("../icons/tool_zoom_in_original.png", wx.BITMAP_TYPE_PNG)
             BMP_ZOOM_OUT = wx.Bitmap("../icons/tool_zoom_out_original.png", wx.BITMAP_TYPE_PNG)
             BMP_CONTRAST = wx.Bitmap("../icons/tool_contrast.png", wx.BITMAP_TYPE_PNG)
+        else:
+            BMP_ROTATE = wx.Bitmap("../icons/tool_rotate.gif", wx.BITMAP_TYPE_GIF)
+            BMP_TRANSLATE = wx.Bitmap("../icons/tool_translate.png", wx.BITMAP_TYPE_PNG)
+            BMP_ZOOM_IN = wx.Bitmap("../icons/tool_zoom_in.png", wx.BITMAP_TYPE_PNG)
+            BMP_ZOOM_OUT = wx.Bitmap("../icons/tool_zoom_out.png", wx.BITMAP_TYPE_PNG)
+            BMP_CONTRAST = wx.Bitmap("../icons/tool_contrast.png", wx.BITMAP_TYPE_PNG)
+
 
         self.AddLabelTool(101, "Zoom in image", BMP_ZOOM_IN)
         self.AddLabelTool(101, "Zoom out image", BMP_ZOOM_OUT)
@@ -346,20 +375,11 @@ class LayoutToolBar(wx.ToolBar):
         self.__bind_events()
 
     def __init_items(self):
-
         BMP_ROTATE = wx.Bitmap("../icons/layout_data_only_original.gif", wx.BITMAP_TYPE_GIF)
         BMP_TRANSLATE = wx.Bitmap("../icons/layout_full_original.gif", wx.BITMAP_TYPE_GIF)
 
-            
-        #BMP_ZOOM = wx.Bitmap("../icons/tool_zoom.png", wx.BITMAP_TYPE_PNG)
-        #BMP_PHOTO = wx.Bitmap("../icons/tool_photo.png", wx.BITMAP_TYPE_PNG)
-        #BMP_PRINT = wx.Bitmap("../icons/tool_print.png", wx.BITMAP_TYPE_PNG)
-
         self.AddLabelTool(101, "Rotate image", BMP_ROTATE)
         self.AddLabelTool(101, "Translate image", BMP_TRANSLATE)        
-        #self.AddLabelTool(101, "Zoom image", BMP_ZOOM)
-        #self.AddLabelTool(101, "Take photo of screen", BMP_PHOTO)
-        #self.AddLabelTool(101, "Print screen", BMP_PRINT)
 
         self.Realize()
 
