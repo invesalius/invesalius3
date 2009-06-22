@@ -214,18 +214,12 @@ class Viewer(wx.Panel):
         text_property.SetFontFamilyToTimes()
         text_property.BoldOn()
         text_property.SetColor(colour)
-        
-        # Text related to slice number shown
-        text_mapper = vtk.vtkTextMapper()
-        text_mapper.SetInput("%d"%(self.slice_number))
-        text_mapper.GetTextProperty().ShallowCopy(text_property)
-        self.text_mapper = text_mapper
 
-        text_actor = vtk.vtkActor2D()
-        text_actor.SetMapper(text_mapper)
-        text_actor.SetLayerNumber(1)
-        text_actor.GetPositionCoordinate().SetValue(2, 2)
-        text_actor.SetVisibility(1)
+        text_actor = vtk.vtkTextActor()
+        text_actor.SetInput("%d" % self.slice_number)
+        text_actor.GetTextProperty().ShallowCopy(text_property)
+        text_actor.SetPosition(2,2)
+        self.text_actor = text_actor
 
         ren.AddActor(actor)
         ren.AddActor(text_actor)
@@ -284,7 +278,7 @@ class Viewer(wx.Panel):
             evt.Skip()
 
     def SetSliceNumber(self, index):
-        self.text_mapper.SetInput(str(index))
+        self.text_actor.SetInput(str(index))
         self.slice_number = index
         self.__update_display_extent()
 
