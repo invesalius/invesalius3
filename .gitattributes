@@ -110,3 +110,15 @@ invesalius/reader/dicom.py -text
 invesalius/reader/dicom_grouper.py -text
 invesalius/reader/dicom_reader.py -text
 invesalius/utils.py -text
+presets/raycasting/Airways[!!-~]II.plist -text
+presets/raycasting/Airways.plist -text
+presets/raycasting/Bone[!!-~]+[!!-~]Skin[!!-~]II.plist -text
+presets/raycasting/Bone[!!-~]+[!!-~]Skin.plist -text
+presets/raycasting/Dark[!!-~]Bone.plist -text
+presets/raycasting/Gold[!!-~]Bone.plist -text
+presets/raycasting/Skin[!!-~]On[!!-~]Blue[!!-~]II.plist -text
+presets/raycasting/Skin[!!-~]On[!!-~]Blue.plist -text
+presets/raycasting/Soft[!!-~]+[!!-~]Skin[!!-~]II.plist -text
+presets/raycasting/Soft[!!-~]+[!!-~]Skin[!!-~]III.plist -text
+presets/raycasting/Soft[!!-~]+[!!-~]Skin.plist -text
+presets/raycasting/Yellow[!!-~]Bone.plist -text

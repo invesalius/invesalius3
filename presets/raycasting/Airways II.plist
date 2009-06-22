@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple Computer//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>16bitClutColors</key>
+	<array>
+		<array>
+			<dict>
+				<key>blue</key>
+				<real>0.70577555894851685</real>
+				<key>green</key>
+				<real>0.60537117719650269</real>
+				<key>red</key>
+				<real>0.0</real>
+			</dict>
+			<dict>
+				<key>blue</key>
+				<real>0.70577555894851685</real>
+				<key>green</key>
+				<real>0.60537117719650269</real>
+				<key>red</key>
+				<real>0.0</real>
+			</dict>
+			<dict>
+				<key>blue</key>
+				<real>0.70577555894851685</real>
+				<key>green</key>
+				<real>0.60537117719650269</real>
+				<key>red</key>
+				<real>0.0</real>
+			</dict>
+			<dict>
+				<key>blue</key>
+				<real>0.70577555894851685</real>
+				<key>green</key>
+				<real>0.60537117719650269</real>
+				<key>red</key>
+				<real>0.0</real>
+			</dict>
+		</array>
+	</array>
+	<key>16bitClutCurves</key>
+	<array>
+		<array>
+			<dict>
+				<key>x</key>
+				<real>-742.113037109375</real>
+				<key>y</key>
+				<real>0.0</real>
+			</dict>
+			<dict>
+				<key>x</key>
+				<real>-682.990966796875</real>
+				<key>y</key>
+				<real>0.049316491931676865</real>
+			</dict>
+			<dict>
+				<key>x</key>
+				<real>-480.99169921875</real>
+				<key>y</key>
+				<real>0.24969108402729034</real>
+			</dict>
+			<dict>
+				<key>x</key>
+				<real>-333.48757934570312</real>
+				<key>y</key>
+				<real>0.0</real>
+			</dict>
+		</array>
+	</array>
+	<key>CLUT</key>
+	<string>16-bit CLUT</string>
+	<key>advancedCLUT</key>
+	<true/>
+	<key>backgroundColorBlueComponent</key>
+	<real>0.0</real>
+	<key>backgroundColorGreenComponent</key>
+	<real>0.0</real>
+	<key>backgroundColorRedComponent</key>
+	<real>0.0</real>
+	<key>convolutionFilters</key>
+	<array>
+		<string>Basic Smooth 5x5</string>
+	</array>
+	<key>groupName</key>
+	<string>Soft Tissue CT</string>
+	<key>name</key>
+	<string>Airways II</string>
+	<key>opacity</key>
+	<string>Logarithmic Inverse Table</string>
+	<key>projection</key>
+	<integer>1</integer>
+	<key>shading</key>
+	<string>Endoscopy</string>
+	<key>useShading</key>
+	<false/>
+	<key>wl</key>
+	<real>-537.80029296875</real>
+	<key>ww</key>
+	<real>408.62545776367188</real>
+</dict>
+</plist>
