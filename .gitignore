@@ -1,0 +1,8 @@
+invesalius/data/*.log
+invesalius/data/*.pyc
+invesalius/gui/*.log
+invesalius/gui/*.pyc
+invesalius/gui/widgets/*.log
+invesalius/gui/widgets/*.pyc
+invesalius/reader/*.log
+invesalius/reader/*.pyc
