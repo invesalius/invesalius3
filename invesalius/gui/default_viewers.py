@@ -62,27 +62,37 @@ class Panel(wx.Panel):
         # problema: sash control soh aparece no sentido ertical
         # tentativa de solucionar problema seria utilizar Fixed, mas qdo se aciona maximizar nao maximiza inteiro
 
-        self.aui_manager.AddPane(slice_viewer.Viewer(self, "AXIAL"), 
-                                 wx.aui.AuiPaneInfo().Centre().Row(0).
-                                 Name("Axial Slice").Caption("Axial slice").
-                                 MaximizeButton(True).CloseButton(False))
-
-        self.aui_manager.AddPane(slice_viewer.Viewer(self, "CORONAL"), 
-                                 wx.aui.AuiPaneInfo().Centre().Row(0).#Fixed().
-                                 Name("Coronal Slice").Caption("Coronal slice").
-                                 MaximizeButton(True).CloseButton(False))
-                          
-        self.aui_manager.AddPane(slice_viewer.Viewer(self, "SAGITAL"), 
-                                 wx.aui.AuiPaneInfo().Centre().Row(1).#Fixed().
-                                   Name("Sagital Slice").Caption("Sagital slice").
-                                   MaximizeButton(True).CloseButton(False))
-
-        self.aui_manager.AddPane(VolumeViewerCover(self),
-        #self.aui_manager.AddPane(volume_viewer.Viewer(self)
-                                 wx.aui.AuiPaneInfo().Row(1).Name("Volume").
-                                 Bottom().Centre().Caption("Volume").
-                                 MaximizeButton(True).CloseButton(False))
-
+        p1 = slice_viewer.Viewer(self, "AXIAL")
+        s1 = wx.aui.AuiPaneInfo().Centre().Row(0).
+             Name("Axial Slice").Caption("Axial slice").
+             MaximizeButton(True).CloseButton(False)
+             
+        p2 = slice_viewer.Viewer(self, "CORONAL")
+        s2 = wx.aui.AuiPaneInfo().Centre().Row(0).#Fixed().
+             Name("Coronal Slice").Caption("Coronal slice").
+             MaximizeButton(True).CloseButton(False)
+        
+        p3 = slice_viewer.Viewer(self, "SAGITAL")
+        s3 = wx.aui.AuiPaneInfo().Centre().Row(1).#Fixed().
+             Name("Sagital Slice").Caption("Sagital slice").
+             MaximizeButton(True).CloseButton(False)
+             
+        p4 = VolumeViewerCover(self)
+        s4 = wx.aui.AuiPaneInfo().Row(1).Name("Volume").
+             Bottom().Centre().Caption("Volume").
+             MaximizeButton(True).CloseButton(False)
+        
+        if sys.platform == 'win32':
+            self.aui_manager.AddPane(p1, s1)
+            self.aui_manager.AddPane(p2, s2)
+            self.aui_manager.AddPane(p3, s3)
+            self.aui_manager.AddPane(p4, s4)
+        else:
+            self.aui_manager.AddPane(p4, s4)
+            self.aui_manager.AddPane(p3, s3)
+            self.aui_manager.AddPane(p2, s2)
+            self.aui_manager.AddPane(p1, s1)
+        
         self.aui_manager.Update()
         
       
