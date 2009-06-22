@@ -25,6 +25,7 @@ import gdcm
 
 import dicom
 import dicom_grouper
+from data.imagedata_utils import ResampleMatrix
 
 def LoadImages(dir_):
     #  TODO!!! SUPER GAMBIARRA!!! DO THIS BETTER
@@ -82,16 +83,52 @@ def LoadImages(dir_):
 
     array = vtk.vtkStringArray()
 
-    for x in xrange(len(files)):
-        array.InsertValue(x,files[x])
+    #Case Reduce Matrix of the Image
+    flag = 1
+    reduce_factor = 4
 
-    read = vtkgdcm.vtkGDCMImageReader()
-    read.SetFileNames(array)
-    read.Update()
+    img_app = vtk.vtkImageAppend()
+    img_app.SetAppendAxis(2) #Define Stack in Z
+
+    for x in xrange(len(files)):
+        if not(flag):
+            array.InsertValue(x,files[x])
+        else:            
+            #SIf the resolution of the
+            #matrix is very large
+            read = vtkgdcm.vtkGDCMImageReader()
+            read.SetFileName(files[x])
+            read.Update()
+            
+            #Stack images in Z axes
+            img = ResampleMatrix(read.GetOutput(), reduce_factor)
+            img_app.AddInput(img)
 
     img_axial = vtk.vtkImageData()
-    img_axial.DeepCopy(read.GetOutput())
-    img_axial.SetSpacing(spacing, spacing, spacing_z)
+    
+    if (flag):
+        img_app.Update()
+        img_axial.DeepCopy(img_app.GetOutput())
+        
+        #TODO: Code challenge (imagedata_utils.ResampleMatrix), 
+        #it is necessary to know the new spacing. 
+        #spacing = read.GetOutput().GetSpacing()
+        extent = read.GetOutput().GetExtent()
+        size = read.GetOutput().GetDimensions()
+        height = float(size[1]/reduce_factor)
+        resolution = (height/(extent[1]-extent[0])+1)*spacing
+        print "\n"
+        print spacing
+        print spacing_z*resolution
+        img_axial.SetSpacing(spacing, spacing, spacing_z * resolution)
+    else:
+        read = vtkgdcm.vtkGDCMImageReader()
+        read.SetFileNames(array)
+        read.Update()
+        
+        img_axial.DeepCopy(read.GetOutput())
+        img_axial.SetSpacing(spacing, spacing, spacing_z)
+
     img_axial.Update()
 
     return img_axial, acquisition_modality, tilt
