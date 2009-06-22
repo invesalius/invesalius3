@@ -49,8 +49,12 @@ icons/object_remove_original.png -text
 icons/object_visible.jpg -text
 icons/print.png -text
 icons/print_original.png -text
+icons/show_task.png -text
+icons/show_task_min.png -text
 icons/tool_annotation.png -text
 icons/tool_annotation_original.png -text
+icons/tool_contrast.png -text
+icons/tool_contrast_original.png -text
 icons/tool_photo.png -text
 icons/tool_photo_original.png -text
 icons/tool_rotate.gif -text
