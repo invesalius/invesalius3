@@ -196,6 +196,7 @@ class VolumeToolPanel(wx.Panel):
 
     def OnToggleRaycasting(self, evt):
         if self.button_raycasting.GetToggle():
+            #ps.Publisher().sendMessage('Create volume raycasting')
             ps.Publisher().sendMessage('Show raycasting volume')
         else:
             ps.Publisher().sendMessage('Hide raycasting volume')

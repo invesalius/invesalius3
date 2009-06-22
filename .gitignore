@@ -1,3 +1,5 @@
+invesalius/*.log
+invesalius/*.pyc
 invesalius/data/*.log
 invesalius/data/*.pyc
 invesalius/gui/*.log

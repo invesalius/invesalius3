@@ -5,6 +5,7 @@ import project as prj
 
 import data.imagedata_utils as utils
 import data.surface as surface
+import data.volume as volume
 import reader.dicom_reader as dicom
 import reader.analyze_reader as analyze
 
@@ -14,6 +15,7 @@ class Controller():
 
     def __init__(self, frame):
         self.surface_manager = surface.SurfaceManager()
+        self.volume = volume.Volume()
         self.__bind_events()
 
     def __bind_events(self):

@@ -27,7 +27,6 @@ import default_tasks as tasks
 import default_viewers as viewers
 
 
-
 [ID_FILE_IMPORT, ID_FILE_LOAD_INTERNET, ID_FILE_SAVE, ID_FILE_PRINT] = [wx.NewId() for number in range(4)]
 
 class Frame(wx.Frame):
@@ -322,7 +321,7 @@ class ObjectToolBar(wx.ToolBar):
             BMP_TRANSLATE = wx.Bitmap("../icons/tool_translate_original.png", wx.BITMAP_TYPE_PNG)
             BMP_ZOOM_IN = wx.Bitmap("../icons/tool_zoom_in_original.png", wx.BITMAP_TYPE_PNG)
             BMP_ZOOM_OUT = wx.Bitmap("../icons/tool_zoom_out_original.png", wx.BITMAP_TYPE_PNG)
-            BMP_CONTRAST = wx.Bitmap("../icons/tool_constrast.png", wx.BITMAP_TYPE_PNG)
+            BMP_CONTRAST = wx.Bitmap("../icons/tool_contrast.png", wx.BITMAP_TYPE_PNG)
 
         self.AddLabelTool(101, "Zoom in image", BMP_ZOOM_IN)
         self.AddLabelTool(101, "Zoom out image", BMP_ZOOM_OUT)

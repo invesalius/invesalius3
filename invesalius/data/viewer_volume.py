@@ -63,17 +63,16 @@ class Viewer(wx.Panel):
         ps.Publisher().subscribe(self.UpdateRender, 'Render volume viewer')
         ps.Publisher().subscribe(self.ChangeBackgroundColour,
                                 'Change volume viewer background colour')
-        ps.Publisher().subscribe(self.ShowRaycastingVolume,
-                                'Show raycasting volume')
-        ps.Publisher().subscribe(self.HideRaycastingVolume,
-                                'Hide raycasting volume')
+        ps.Publisher().subscribe(self.LoadVolume, 'Load volume into viewer')
 
-
-    def ShowRaycastingVolume(self, pubsub_evt):
-        pass
-    
-    def HideRaycastingVolume(self, pubsub_evt):
-        pass
+    def LoadVolume(self, pubsub_evt):
+        volume, colour = pubsub_evt.data
+        self.light = self.ren.GetLights().GetNextItem()
+        self.ren.AddVolume(volume)
+        #self.ren.SetBackground(colour)
+        self.ren.ResetCamera()
+        self.ren.ResetCameraClippingRange()
+        self.UpdateRender()
 
     def ChangeBackgroundColour(self, pubsub_evt):
         colour = pubsub_evt.data
@@ -81,7 +80,6 @@ class Viewer(wx.Panel):
         self.UpdateRender()
 
     def LoadActor(self, pubsub_evt):
-        print "****** Load actor"
         actor = pubsub_evt.data
 
         ren = self.ren
