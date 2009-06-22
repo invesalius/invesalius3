@@ -322,11 +322,13 @@ class ObjectToolBar(wx.ToolBar):
             BMP_TRANSLATE = wx.Bitmap("../icons/tool_translate_original.png", wx.BITMAP_TYPE_PNG)
             BMP_ZOOM_IN = wx.Bitmap("../icons/tool_zoom_in_original.png", wx.BITMAP_TYPE_PNG)
             BMP_ZOOM_OUT = wx.Bitmap("../icons/tool_zoom_out_original.png", wx.BITMAP_TYPE_PNG)
+            BMP_CONTRAST = wx.Bitmap("../icons/tool_constrast.png", wx.BITMAP_TYPE_PNG)
 
         self.AddLabelTool(101, "Zoom in image", BMP_ZOOM_IN)
         self.AddLabelTool(101, "Zoom out image", BMP_ZOOM_OUT)
         self.AddLabelTool(101, "Rotate image", BMP_ROTATE)
-        self.AddLabelTool(101, "Translate image", BMP_TRANSLATE)        
+        self.AddLabelTool(101, "Translate image", BMP_TRANSLATE)
+        self.AddLabelTool(101, "Bright and contrast adjustment", BMP_CONTRAST)  
         
         self.Realize()
 
