@@ -60,9 +60,10 @@ class Volume():
 
     def LoadConfig(self, label):
         if not label:
-            label = "Skin on Blue"
+            label = "Skin On Blue"
 
-        path = os.path.abspath("../presets/raycasting/"+label+".plist")
+        path = os.path.join("..", "presets", "raycasting",
+                         label+".plist")
         self.config = plistlib.readPlist(path)
         
     def OnHideVolume(self, pubsub_evt):
