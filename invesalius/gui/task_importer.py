@@ -20,6 +20,7 @@ import os
 import wx
 import wx.lib.hyperlink as hl
 import wx.lib.platebtn as pbtn
+import wx.lib.pubsub as ps
 
 BTN_IMPORT_LOCAL = wx.NewId()
 BTN_IMPORT_PACS = wx.NewId()
@@ -136,7 +137,18 @@ class InnerTaskPanel(wx.Panel):
 
         
     def OnLinkImport(self, evt=None):
-        print "TODO: Send Signal - Import DICOM files"
+        dlg = wx.DirDialog(self, "Choose a directory:", "",
+                        style=wx.DD_DEFAULT_STYLE
+                        | wx.DD_DIR_MUST_EXIST
+                        | wx.DD_CHANGE_DIR)
+
+        if dlg.ShowModal() == wx.ID_OK:
+            path = dlg.GetPath()
+            ps.Publisher().sendMessage("Show import panel", path)
+            
+        # Only destroy a dialog after you're done with it.
+        dlg.Destroy()
+    
         if evt:
             evt.Skip()
         

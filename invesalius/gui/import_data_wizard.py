@@ -173,10 +173,10 @@ class DirPage(BasePage):
         
         t1 = wx.TextCtrl(self, -1, "", size=(125, -1))
         
-        #dbb = filebrowse.DirBrowseButton(
-        #    self, -1, size=(450, -1), changeCallback = self.dbbCallback)
-        #dbb.SetLabel("")
-        #line2 = dbb
+        dbb = filebrowse.DirBrowseButton(
+            self, -1, size=(450, -1), changeCallback = self.dbbCallback)
+        dbb.SetLabel("")
+        line2 = dbb
         #line2 = wx.BoxSizer(wx.HORIZONTAL)
 
         #line3 = wx.BoxSizer(wx.VERTICAL)
@@ -198,8 +198,8 @@ class DirPage(BasePage):
         
         self.sizer.Add(line1, 0, wx.LEFT|wx.RIGHT|wx.TOP, 5)
         self.sizer.Add(line2, 0, wx.ALL, 5)
-        self.sizer.Add(line3, 0, wx.ALL, 5)
-        self.sizer.Add(link_add_another_dir, 0, wx.LEFT|wx.BOTTOM, 10)
+        #self.sizer.Add(line3, 0, wx.ALL, 5)
+        #self.sizer.Add(link_add_another_dir, 0, wx.LEFT|wx.BOTTOM, 10)
         
         
         fold_panel = fpb.FoldPanelBar(self, -1, wx.DefaultPosition,

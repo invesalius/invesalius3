@@ -174,7 +174,7 @@ class UpperTaskPanel(wx.Panel):
 
         fold_panel.AddFoldPanelWindow(item, importer.TaskPanel(item), Spacing= 0,
                                       leftSpacing=0, rightSpacing=0)
-        #fold_panel.Expand(fold_panel.GetFoldPanel(0))
+        fold_panel.Expand(fold_panel.GetFoldPanel(0))
         
         # Fold 2 - Mask for segmentation and edition
         
@@ -185,7 +185,7 @@ class UpperTaskPanel(wx.Panel):
         
         fold_panel.AddFoldPanelWindow(item, slice_.TaskPanel(item), Spacing= 0,
                                       leftSpacing=0, rightSpacing=0)
-        fold_panel.Expand(fold_panel.GetFoldPanel(1))
+        #fold_panel.Expand(fold_panel.GetFoldPanel(1))
 
         # Fold 3
         # select mask - combo

@@ -244,7 +244,6 @@ class Slice(object):
 
         # when this is not the first instance, user will have defined a name
         if name is not None:
-            print "new mask, we will check if it will be shown"
             future_mask.name = name
             if future_mask.is_shown:
                 self.blend_filter.SetOpacity(1, future_mask.opacity)

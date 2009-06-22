@@ -211,7 +211,7 @@ class Viewer(wx.Panel):
 
         text_property = vtk.vtkTextProperty()
         text_property.SetFontSize(16)
-        text_property.SetFontFamilyToArial()
+        text_property.SetFontFamilyToTimes()
         text_property.BoldOn()
         text_property.SetColor(colour)
         

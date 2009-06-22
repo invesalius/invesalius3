@@ -20,6 +20,15 @@ class Controller():
 
     def __bind_events(self):
         ps.Publisher().subscribe(self.ImportDirectory, 'Import directory')
+        ps.Publisher().subscribe(self.StartImportPanel, "Load data to import panel")
+
+    def StartImportPanel(self, pubsub_evt):
+        path = pubsub_evt.data
+        # TODO: Load information
+        dict = {"Joao": {"Serie 1": (0, 1, 2, 3, 4, 5, 6, 7),
+                        "Serie 2": (1, 2, 3, 4, 5, 6, 7, 8)}
+                }
+        ps.Publisher().sendMessage("Load import panel", dict)
 
     def ImportDirectory(self, pubsub_evt=None, dir_=None):
         """
