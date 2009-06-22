@@ -16,6 +16,8 @@
 #    PARTICULAR. Consulte a Licenca Publica Geral GNU para obter mais
 #    detalhes.
 #--------------------------------------------------------------------------
+import sys
+
 import wx
 import wx.lib.agw.fourwaysplitter as fws
 import data.viewer_slice as slice_viewer
@@ -63,23 +65,23 @@ class Panel(wx.Panel):
         # tentativa de solucionar problema seria utilizar Fixed, mas qdo se aciona maximizar nao maximiza inteiro
 
         p1 = slice_viewer.Viewer(self, "AXIAL")
-        s1 = wx.aui.AuiPaneInfo().Centre().Row(0).
-             Name("Axial Slice").Caption("Axial slice").
+        s1 = wx.aui.AuiPaneInfo().Centre().Row(0).\
+             Name("Axial Slice").Caption("Axial slice").\
              MaximizeButton(True).CloseButton(False)
              
         p2 = slice_viewer.Viewer(self, "CORONAL")
-        s2 = wx.aui.AuiPaneInfo().Centre().Row(0).#Fixed().
-             Name("Coronal Slice").Caption("Coronal slice").
+        s2 = wx.aui.AuiPaneInfo().Centre().Row(0).\
+             Name("Coronal Slice").Caption("Coronal slice").\
              MaximizeButton(True).CloseButton(False)
         
         p3 = slice_viewer.Viewer(self, "SAGITAL")
-        s3 = wx.aui.AuiPaneInfo().Centre().Row(1).#Fixed().
-             Name("Sagital Slice").Caption("Sagital slice").
+        s3 = wx.aui.AuiPaneInfo().Centre().Row(1).\
+             Name("Sagital Slice").Caption("Sagital slice").\
              MaximizeButton(True).CloseButton(False)
              
         p4 = VolumeViewerCover(self)
-        s4 = wx.aui.AuiPaneInfo().Row(1).Name("Volume").
-             Bottom().Centre().Caption("Volume").
+        s4 = wx.aui.AuiPaneInfo().Row(1).Name("Volume").\
+             Bottom().Centre().Caption("Volume").\
              MaximizeButton(True).CloseButton(False)
         
         if sys.platform == 'win32':
