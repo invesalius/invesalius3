@@ -300,20 +300,31 @@ class ProjectToolBar(wx.ToolBar):
 
 
         if sys.platform == 'darwin':
-            BMP_IMPORT = wx.Bitmap("../icons/file_import_original.png", wx.BITMAP_TYPE_PNG)
-            BMP_NET = wx.Bitmap("../icons/file_from_internet_original.png", wx.BITMAP_TYPE_PNG)
-            BMP_SAVE = wx.Bitmap("../icons/file_save_original.png", wx.BITMAP_TYPE_PNG)
-            BMP_PRINT = wx.Bitmap("../icons/print_original.png", wx.BITMAP_TYPE_PNG)
-            BMP_PHOTO = wx.Bitmap("../icons/tool_photo_original.png", wx.BITMAP_TYPE_PNG)
+            BMP_IMPORT = wx.Bitmap("../icons/file_import_original.png", 
+                                   wx.BITMAP_TYPE_PNG)
+            BMP_NET = wx.Bitmap("../icons/file_from_internet_original.png",
+                                wx.BITMAP_TYPE_PNG)
+            BMP_SAVE = wx.Bitmap("../icons/file_save_original.png",
+                                 wx.BITMAP_TYPE_PNG)
+            BMP_PRINT = wx.Bitmap("../icons/print_original.png",
+                                    wx.BITMAP_TYPE_PNG)
+            BMP_PHOTO = wx.Bitmap("../icons/tool_photo_original.png",
+                                    wx.BITMAP_TYPE_PNG)
         else:
-            BMP_IMPORT = wx.Bitmap("../icons/file_import.png", wx.BITMAP_TYPE_PNG)
-            BMP_NET = wx.Bitmap("../icons/file_from_internet.png", wx.BITMAP_TYPE_PNG)
-            BMP_SAVE = wx.Bitmap("../icons/file_save.png", wx.BITMAP_TYPE_PNG)
-            BMP_PRINT = wx.Bitmap("../icons/print.png", wx.BITMAP_TYPE_PNG)
-            BMP_PHOTO = wx.Bitmap("../icons/tool_photo.png", wx.BITMAP_TYPE_PNG)
+            BMP_IMPORT = wx.Bitmap("../icons/file_import.png",
+                                    wx.BITMAP_TYPE_PNG)
+            BMP_NET = wx.Bitmap("../icons/file_from_internet.png",
+                                wx.BITMAP_TYPE_PNG)
+            BMP_SAVE = wx.Bitmap("../icons/file_save.png",
+                                    wx.BITMAP_TYPE_PNG)
+            BMP_PRINT = wx.Bitmap("../icons/print.png",
+                                    wx.BITMAP_TYPE_PNG)
+            BMP_PHOTO = wx.Bitmap("../icons/tool_photo.png",
+                                    wx.BITMAP_TYPE_PNG)
         
         self.AddLabelTool(ID_FILE_IMPORT, "Import medical image...", BMP_IMPORT)
-        self.AddLabelTool(ID_FILE_LOAD_INTERNET, "Load medical image...", BMP_NET)
+        self.AddLabelTool(ID_FILE_LOAD_INTERNET, "Load medical image...",
+                          BMP_NET)
         self.AddLabelTool(ID_FILE_SAVE, "Save InVesalius project", BMP_SAVE)
         self.AddLabelTool(101, "Take photo of screen", BMP_PHOTO)
         self.AddLabelTool(ID_FILE_PRINT, "Print medical image...", BMP_PRINT)
@@ -327,7 +338,8 @@ class ProjectToolBar(wx.ToolBar):
 class ObjectToolBar(wx.ToolBar):
     # TODO: what will appear in menubar?
     def __init__(self, parent):
-        wx.ToolBar.__init__(self, parent, -1, wx.DefaultPosition, wx.DefaultSize, wx.TB_FLAT|wx.TB_NODIVIDER)
+        wx.ToolBar.__init__(self, parent, -1, wx.DefaultPosition, wx.DefaultSize, 
+                            wx.TB_FLAT|wx.TB_NODIVIDER)
         if sys.platform == 'darwin':
             self.SetToolBitmapSize(wx.Size(32,32))
         
@@ -339,14 +351,19 @@ class ObjectToolBar(wx.ToolBar):
 
 
         if sys.platform == 'darwin':
-            BMP_ROTATE = wx.Bitmap("../icons/tool_rotate_original.gif", wx.BITMAP_TYPE_GIF)
-            BMP_TRANSLATE = wx.Bitmap("../icons/tool_translate_original.png", wx.BITMAP_TYPE_PNG)
-            BMP_ZOOM_IN = wx.Bitmap("../icons/tool_zoom_in_original.png", wx.BITMAP_TYPE_PNG)
-            BMP_ZOOM_OUT = wx.Bitmap("../icons/tool_zoom_out_original.png", wx.BITMAP_TYPE_PNG)
-            BMP_CONTRAST = wx.Bitmap("../icons/tool_contrast.png", wx.BITMAP_TYPE_PNG)
+            BMP_ROTATE = wx.Bitmap("../icons/tool_rotate_original.gif", 
+                                    wx.BITMAP_TYPE_GIF)
+            BMP_TRANSLATE = wx.Bitmap("../icons/tool_translate_original.png", 
+                                        wx.BITMAP_TYPE_PNG)
+            BMP_ZOOM_IN = wx.Bitmap("../icons/tool_zoom_in_original.png", 
+                                    wx.BITMAP_TYPE_PNG)
+            BMP_ZOOM_OUT = wx.Bitmap("../icons/tool_zoom_out_original.png", 
+                                    wx.BITMAP_TYPE_PNG)
+            BMP_CONTRAST = wx.Bitmap("../icons/tool_contrast.png",
+                                     wx.BITMAP_TYPE_PNG)
         else:
             BMP_ROTATE = wx.Bitmap("../icons/tool_rotate.gif", wx.BITMAP_TYPE_GIF)
-            BMP_TRANSLATE = wx.Bitmap("../icons/tool_translate.png", wx.BITMAP_TYPE_PNG)
+            BMP_TRANSLATE = wx.Bitmap("../icons/tool_translate.gif", wx.BITMAP_TYPE_GIF)
             BMP_ZOOM_IN = wx.Bitmap("../icons/tool_zoom_in.png", wx.BITMAP_TYPE_PNG)
             BMP_ZOOM_OUT = wx.Bitmap("../icons/tool_zoom_out.png", wx.BITMAP_TYPE_PNG)
             BMP_CONTRAST = wx.Bitmap("../icons/tool_contrast.png", wx.BITMAP_TYPE_PNG)
