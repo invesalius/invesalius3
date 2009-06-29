@@ -136,6 +136,7 @@ class Viewer(wx.Panel):
             ps.Publisher().sendMessage(('Set scroll position', 'CORONAL'), coord[1])
             ps.Publisher().sendMessage(('Set scroll position', 'AXIAL'), coord[2])
             
+            
     def GetCoordinate(self):
     
         # Find position
