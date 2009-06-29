@@ -161,7 +161,15 @@ class SurfaceManager():
         normals.AddObserver("ProgressEvent", lambda obj, evt:
                                UpdateProgress(normals, "Orienting normals..."))
         polydata = normals.GetOutput()
-      
+        
+        #======= Temporary Code =======
+        stl = vtk.vtkSTLWriter()
+        stl.SetFileTypeToBinary()
+        stl.SetInputConnection(normals.GetOutputPort())
+        stl.SetFileName("surface.stl")
+        stl.Write()
+        #==============================
+
         # TODO (Paulo): Why do we need this filter?
         # without this the volume does not appear
         stripper = vtk.vtkStripper()
