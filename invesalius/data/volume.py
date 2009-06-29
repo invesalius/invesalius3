@@ -253,10 +253,64 @@ class Volume():
         volume_mapper.SetGradientEstimator(gradientEstimator)
         volume_mapper.IntermixIntersectingGeometryOn()
 
-        #clip = vtk.vtkPlane()
+        #============================ TESTE =============================================
+      
+        self.plane_widget = plane_widget = vtk.vtkImagePlaneWidget()
+        plane_widget.SetInput(image2.GetOutput())
+        plane_widget.SetPlaneOrientationToXAxes()
+        plane_widget.SetResliceInterpolateToLinear()
+        plane_widget.TextureVisibilityOff()
+        
+        #Set left mouse button to move and rotate plane
+        plane_widget.SetLeftButtonAction(1)
+        
+        #SetColor margin to green
+        margin_property = plane_widget.GetMarginProperty()
+        margin_property.SetColor(0,0.8,0)
+        
+        #Disable cross
+        cursor_property = plane_widget.GetCursorProperty()
+        cursor_property.SetOpacity(0) 
+       
+        
+        self.plane_source = vtk.vtkPlaneSource()
+        self.plane_source.SetOrigin(plane_widget.GetOrigin())
+        self.plane_source.SetPoint1(plane_widget.GetPoint1())
+        self.plane_source.SetPoint2(plane_widget.GetPoint2())
+        self.plane_source.SetNormal(plane_widget.GetNormal())
+           
+        plane_mapper = vtk.vtkPolyDataMapper()
+        plane_mapper.SetInput(self.plane_source.GetOutput())
+        
+        self.plane_actor = vtk.vtkActor()
+        self.plane_actor.SetMapper(plane_mapper)
+        self.plane_actor.GetProperty().BackfaceCullingOn()
+        self.plane_actor.GetProperty().SetOpacity(0)
+        
+        self.plane_actor.SetVisibility(1)
+        
+        self.plane_widget.AddObserver("InteractionEvent", self.UpdatePlane)
+        
+        ps.Publisher().sendMessage('ADD Actor', self.plane_actor)
+        ps.Publisher().sendMessage('Get Interactor Volume', self.plane_widget)
+        
+        self.plane_actor.SetVisibility(1)
+        self.plane_widget.On() 
+        
+        
+        self.plane = plane = vtk.vtkPlane()
+        plane.SetNormal(self.plane_source.GetNormal())
+        plane.SetOrigin(self.plane_source.GetOrigin())
+        
+        volume_mapper.AddClippingPlane(plane)
+        
 
-        #volume_mapper.AddClippingPlane(clip)
-
+        
+        
+        
+        #===============================================================================
+        
+        
         self.color_transfer = color_transfer
 
         volume_properties = vtk.vtkVolumeProperty()
@@ -298,6 +352,19 @@ class Volume():
         return value - scale[0]
 
 
-
-
-
+    def MovePlane(self):
+        pass
+    
+    def UpdatePlane(self, a, b):        
+        plane_source = self.plane_source
+        plane_source.SetOrigin(self.plane_widget.GetOrigin())
+        plane_source.SetPoint1(self.plane_widget.GetPoint1())
+        plane_source.SetPoint2(self.plane_widget.GetPoint2())
+        plane_source.SetNormal(self.plane_widget.GetNormal())        
+        self.plane_actor.VisibilityOn()
+        
+        self.plane.SetNormal(plane_source.GetNormal())
+        self.plane.SetOrigin(plane_source.GetOrigin())
+        
+        ps.Publisher().sendMessage('Render volume viewer', None)
+        
