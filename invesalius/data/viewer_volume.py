@@ -64,9 +64,9 @@ class Viewer(wx.Panel):
         ps.Publisher().subscribe(self.ChangeBackgroundColour,
                                 'Change volume viewer background colour')
         ps.Publisher().subscribe(self.LoadVolume, 'Load volume into viewer')
+        ps.Publisher().subscribe(self.AppendActor,'AppendActor')
+        ps.Publisher().subscribe(self.SetWidgetInteractor, 'Set Widget Interactor')
         
-        ps.Publisher().subscribe(self.GetInteractorVolume, 'Get Interactor Volume')
-        ps.Publisher().subscribe(self.ADDActor, 'ADD Actor')
         
     def LoadVolume(self, pubsub_evt):
         volume, colour = pubsub_evt.data
@@ -130,8 +130,8 @@ class Viewer(wx.Panel):
         sagital_plane.Show()
         sagital_plane.Update()
     
-    def GetInteractorVolume(self, evt_pubsub=None):
+    def SetWidgetInteractor(self, evt_pubsub=None):
         evt_pubsub.data.SetInteractor(self.iren._Iren)
-
-    def ADDActor(self, evt_pubsub=None):
+        
+    def AppendActor(self, evt_pubsub=None):
         self.ren.AddActor(evt_pubsub.data)

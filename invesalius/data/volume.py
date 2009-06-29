@@ -252,64 +252,9 @@ class Volume():
         volume_mapper.SetVolumeRayCastFunction(composite_function)
         volume_mapper.SetGradientEstimator(gradientEstimator)
         volume_mapper.IntermixIntersectingGeometryOn()
-
-        #============================ TESTE =============================================
-      
-        self.plane_widget = plane_widget = vtk.vtkImagePlaneWidget()
-        plane_widget.SetInput(image2.GetOutput())
-        plane_widget.SetPlaneOrientationToXAxes()
-        plane_widget.SetResliceInterpolateToLinear()
-        plane_widget.TextureVisibilityOff()
         
-        #Set left mouse button to move and rotate plane
-        plane_widget.SetLeftButtonAction(1)
-        
-        #SetColor margin to green
-        margin_property = plane_widget.GetMarginProperty()
-        margin_property.SetColor(0,0.8,0)
-        
-        #Disable cross
-        cursor_property = plane_widget.GetCursorProperty()
-        cursor_property.SetOpacity(0) 
-       
-        
-        self.plane_source = vtk.vtkPlaneSource()
-        self.plane_source.SetOrigin(plane_widget.GetOrigin())
-        self.plane_source.SetPoint1(plane_widget.GetPoint1())
-        self.plane_source.SetPoint2(plane_widget.GetPoint2())
-        self.plane_source.SetNormal(plane_widget.GetNormal())
-           
-        plane_mapper = vtk.vtkPolyDataMapper()
-        plane_mapper.SetInput(self.plane_source.GetOutput())
-        
-        self.plane_actor = vtk.vtkActor()
-        self.plane_actor.SetMapper(plane_mapper)
-        self.plane_actor.GetProperty().BackfaceCullingOn()
-        self.plane_actor.GetProperty().SetOpacity(0)
-        
-        self.plane_actor.SetVisibility(1)
-        
-        self.plane_widget.AddObserver("InteractionEvent", self.UpdatePlane)
-        
-        ps.Publisher().sendMessage('ADD Actor', self.plane_actor)
-        ps.Publisher().sendMessage('Get Interactor Volume', self.plane_widget)
-        
-        self.plane_actor.SetVisibility(1)
-        self.plane_widget.On() 
-        
-        
-        self.plane = plane = vtk.vtkPlane()
-        plane.SetNormal(self.plane_source.GetNormal())
-        plane.SetOrigin(self.plane_source.GetOrigin())
-        
-        volume_mapper.AddClippingPlane(plane)
-        
-
-        
-        
-        
-        #===============================================================================
-        
+        #Cut Plane
+        CutPlane(image2.GetOutput(), volume_mapper)
         
         self.color_transfer = color_transfer
 
@@ -347,24 +292,96 @@ class Volume():
         #if value < 0:
         #    valor = 2**16 - abs(value)
         #else:
-        #    valor = value
-        
+        #    valor = value 
         return value - scale[0]
-
-
-    def MovePlane(self):
-        pass
+   
+        
+class CutPlane: 
+    def __init__(self, img, volume_mapper):
+        self.img = img
+        self.volume_mapper = volume_mapper
+        self.CreatePlane()
+        self.__bind_events()
     
+    def __bind_events(self):
+        ps.Publisher().subscribe(self.ResetPlane,
+                                'Reset Cut Plane')
+        ps.Publisher().subscribe(self.EnablePlane,
+                                'Enable Cut Plane')
+        ps.Publisher().subscribe(self.DisablePlane,
+                                'Disable Cut Plane')
+            
+    def CreatePlane(self):
+        self.plane_widget = plane_widget = vtk.vtkImagePlaneWidget()
+        plane_widget.SetInput(self.img)
+        plane_widget.SetPlaneOrientationToXAxes()
+        #plane_widget.SetResliceInterpolateToLinear()
+        plane_widget.TextureVisibilityOff()
+        #Set left mouse button to move and rotate plane
+        plane_widget.SetLeftButtonAction(1)
+        #SetColor margin to green
+        margin_property = plane_widget.GetMarginProperty()
+        margin_property.SetColor(0,0.8,0)
+        #Disable cross
+        cursor_property = plane_widget.GetCursorProperty()
+        cursor_property.SetOpacity(0) 
+        self.plane_source = plane_source = vtk.vtkPlaneSource()
+        plane_source.SetOrigin(plane_widget.GetOrigin())
+        plane_source.SetPoint1(plane_widget.GetPoint1())
+        plane_source.SetPoint2(plane_widget.GetPoint2())
+        plane_source.SetNormal(plane_widget.GetNormal())
+        plane_mapper = vtk.vtkPolyDataMapper()
+        plane_mapper.SetInput(plane_source.GetOutput())
+        self.plane_actor = plane_actor = vtk.vtkActor()
+        plane_actor.SetMapper(plane_mapper)
+        plane_actor.GetProperty().BackfaceCullingOn()
+        plane_actor.GetProperty().SetOpacity(0)
+        plane_widget.AddObserver("InteractionEvent", self.UpdatePlane)
+        ps.Publisher().sendMessage('AppendActor', self.plane_actor)
+        ps.Publisher().sendMessage('Set Widget Interactor', self.plane_widget)
+        plane_actor.SetVisibility(1)
+        plane_widget.On() 
+        self.plane = plane = vtk.vtkPlane()
+        plane.SetNormal(self.plane_source.GetNormal())
+        plane.SetOrigin(self.plane_source.GetOrigin())
+        self.volume_mapper.AddClippingPlane(plane) 
+        #Storage First Position
+        self.origin = plane_widget.GetOrigin()
+        self.p1 = plane_widget.GetPoint1()
+        self.p2 = plane_widget.GetPoint2()
+        self.normal = plane_widget.GetNormal()
+        
     def UpdatePlane(self, a, b):        
         plane_source = self.plane_source
-        plane_source.SetOrigin(self.plane_widget.GetOrigin())
-        plane_source.SetPoint1(self.plane_widget.GetPoint1())
-        plane_source.SetPoint2(self.plane_widget.GetPoint2())
-        plane_source.SetNormal(self.plane_widget.GetNormal())        
+        plane_widget = self.plane_widget
+        plane_source.SetOrigin(plane_widget.GetOrigin())
+        plane_source.SetPoint1(plane_widget.GetPoint1())
+        plane_source.SetPoint2(plane_widget.GetPoint2())
+        plane_source.SetNormal(plane_widget.GetNormal())        
         self.plane_actor.VisibilityOn()
-        
         self.plane.SetNormal(plane_source.GetNormal())
         self.plane.SetOrigin(plane_source.GetOrigin())
-        
         ps.Publisher().sendMessage('Render volume viewer', None)
+        
+    def EnablePlane(self, evt_pubsub=None):
+        self.plane_actor.SetVisibility(1)
+        ps.Publisher().sendMessage('Render volume viewer', None)
+        
+    def DisablePlane(self,evt_pubsub=None):
+        self.plane_actor.SetVisibility(0)
+        ps.Publisher().sendMessage('Render volume viewer', None)
+        
+    def ResetPlane(self, evt_pubsub=None):
+        plane_source = self.plane_source
+        plane_widget = self.plane_widget
+        plane_source.SetOrigin(self.origin)
+        plane_source.SetPoint1(self.p1)
+        plane_source.SetPoint2(self.p2)
+        plane_source.SetNormal(self.normal)        
+        self.plane_actor.VisibilityOn() 
+        self.plane.SetNormal(self.normal)
+        self.plane.SetOrigin(self.origin)
+        ps.Publisher().sendMessage('Render volume viewer', None)     
+        
+        
         
