@@ -84,8 +84,8 @@ def LoadImages(dir_):
     array = vtk.vtkStringArray()
 
     #Case Reduce Matrix of the Image
-    flag = 1
-    reduce_factor = 4
+    flag = 0
+    reduce_factor = 3
 
     img_app = vtk.vtkImageAppend()
     img_app.SetAppendAxis(2) #Define Stack in Z
@@ -117,9 +117,6 @@ def LoadImages(dir_):
         size = read.GetOutput().GetDimensions()
         height = float(size[1]/reduce_factor)
         resolution = (height/(extent[1]-extent[0])+1)*spacing
-        print "\n"
-        print spacing
-        print spacing_z*resolution
         img_axial.SetSpacing(spacing, spacing, spacing_z * resolution)
     else:
         read = vtkgdcm.vtkGDCMImageReader()
