@@ -20,6 +20,7 @@ import plistlib
 import os
 
 import vtk
+import wx
 import wx.lib.pubsub as ps
 
 from project import Project
@@ -42,6 +43,8 @@ class Volume():
     def __init__(self):
         self.config = None
         self.exist = None
+        self.color_transfer = None
+        self.opacity_transfer_func = None
         
         self.__bind_events()
         
@@ -51,7 +54,10 @@ class Volume():
                                 'Show raycasting volume')
         ps.Publisher().subscribe(self.OnHideVolume,
                                 'Hide raycasting volume')
-
+        ps.Publisher().subscribe(self.SetRaycastPreset,
+                                'Set raycasting preset')
+        ps.Publisher().subscribe(self.SetWWWL,
+                                'Set raycasting wwwl')
 
     def OnLoadVolume(self, pubsub_evt):
         label = pubsub_evt.data
@@ -65,24 +71,62 @@ class Volume():
         path = os.path.join("..", "presets", "raycasting",
                          label+".plist")
         self.config = plistlib.readPlist(path)
-        
+        print path
+
     def OnHideVolume(self, pubsub_evt):
         self.volume.SetVisibility(0)
         ps.Publisher().sendMessage('Render volume viewer')
-        
+
     def OnShowVolume(self, pubsub_evt):
-        if self.exist:        
+        if self.exist:
             self.volume.SetVisibility(1)
             ps.Publisher().sendMessage('Render volume viewer')
         else:
             self.LoadConfig(None)
             self.LoadVolume()
             self.exist = 1
-            
-        
+
+    def SetRaycastPreset(self, pubsub_evt):
+        self.LoadConfig(pubsub_evt.data)
+        self.Create16bColorTable(self.scale)
+        self.CreateOpacityTable(self.scale)
+
+    def SetWWWL(self, pubsub_evt):
+        ww, wl, n = pubsub_evt.data
+        print "Setting ww, wl", ww, wl
+        curve = self.config['16bitClutCurves'][n]
+
+        p1 = curve[0]
+        p2 = curve[-1]
+        half = (p2['x'] - p1['x']) / 2.0
+        middle = p1['x'] + half
+
+        shiftWL = wl - middle
+        shiftWW = p1['x'] + shiftWL - (wl - 0.5 * ww)
+
+        factor = 1.0
+        for n,i in enumerate(curve):
+            factor = abs(i['x'] - middle) / half
+            if factor < 0:
+                factor = 0
+            i['x'] += shiftWL
+            if n < len(curve)/2.0:
+                i['x'] -= shiftWW * factor
+            else:
+                i['x'] += shiftWW * factor
+
+        self.CreateOpacityTable(self.scale)
+        print curve
+        ps.Publisher().sendMessage('Render volume viewer', None)
+
+
 #***************
     def Create16bColorTable(self, scale):
-        color_transfer = vtk.vtkColorTransferFunction()
+        if self.color_transfer:
+            color_transfer = self.color_transfer
+        else:
+            color_transfer = vtk.vtkColorTransferFunction()
+        color_transfer.RemoveAllPoints()
         curve_table = self.config['16bitClutCurves']
         color_table = self.config['16bitClutColors']
         colors = []
@@ -97,7 +141,7 @@ class Volume():
                 color_transfer.AddRGBPoint(
                     self.TranslateScale(scale, gray_level), 
                     r, g, b)
-        return color_transfer
+        self.color_transfer = color_transfer
 
     def Create8bColorTable(self):
         color_transfer = vtk.vtkColorTransferFunction()
@@ -112,7 +156,11 @@ class Volume():
         return color_transfer
 
     def CreateOpacityTable(self, scale):
-        opacity_transfer_func = vtk.vtkPiecewiseFunction()
+        if self.opacity_transfer_func:
+            opacity_transfer_func = self.opacity_transfer_func
+        else:
+            opacity_transfer_func = vtk.vtkPiecewiseFunction()
+        opacity_transfer_func.RemoveAllPoints()
         curve_table = self.config['16bitClutCurves']
         opacities = []
 
@@ -124,6 +172,8 @@ class Volume():
 
         k1 = 0.0
         k2 = 1.0
+
+        opacity_transfer_func.AddSegment(0, 0, 2**16-1, 0)
 
         for i, l in enumerate(curve_table):
             for j, lopacity in enumerate(l):
@@ -137,7 +187,7 @@ class Volume():
                 opacities.append((gray_level, opacity))
                 opacity_transfer_func.AddPoint(
                     self.TranslateScale(scale, gray_level), opacity)
-        return opacity_transfer_func
+        self.opacity_transfer_func = opacity_transfer_func
 
     def Create8bOpacityTable(self):
         opacity_transfer_func = vtk.vtkPiecewiseFunction()
@@ -211,6 +261,7 @@ class Volume():
 
 
         scale = image.GetScalarRange()
+        self.scale = scale
 
         cast = vtk.vtkImageShiftScale()
         cast.SetInput(image)
@@ -219,8 +270,8 @@ class Volume():
             #cast.SetScale(2**16-1)
             cast.SetOutputScalarTypeToUnsignedShort()
             #scale = image.GetScalarRange()
-            color_transfer = self.Create16bColorTable(scale)
-            opacity_transfer_func = self.CreateOpacityTable(scale)
+            self.Create16bColorTable(scale)
+            self.CreateOpacityTable(scale)
             cast.Update()
             image2 = cast
         else:
@@ -246,17 +297,17 @@ class Volume():
         gradientEstimator = vtk.vtkFiniteDifferenceGradientEstimator()
         gradientEstimator.SetGradientMagnitudeScale(1)
 
-        volume_mapper = vtk.vtkVolumeRayCastMapper()
+        volume_mapper = vtk.vtkFixedPointVolumeRayCastMapper()
         #volume_mapper.AutoAdjustSampleDistancesOff()
         volume_mapper.SetInput(image2.GetOutput())
-        volume_mapper.SetVolumeRayCastFunction(composite_function)
-        volume_mapper.SetGradientEstimator(gradientEstimator)
+        #volume_mapper.SetVolumeRayCastFunction(composite_function)
+        #volume_mapper.SetGradientEstimator(gradientEstimator)
         volume_mapper.IntermixIntersectingGeometryOn()
         
         #Cut Plane
         CutPlane(image2.GetOutput(), volume_mapper)
         
-        self.color_transfer = color_transfer
+        #self.color_transfer = color_transfer
 
         volume_properties = vtk.vtkVolumeProperty()
         #volume_properties.IndependentComponentsOn()
@@ -270,10 +321,10 @@ class Volume():
         volume_properties.SetSpecularPower(44.0)
 
         volume_properties.SetInterpolationTypeToLinear()
-        volume_properties.SetColor(color_transfer)
+        volume_properties.SetColor(self.color_transfer)
 
         try:
-            volume_properties.SetScalarOpacity(opacity_transfer_func)
+            volume_properties.SetScalarOpacity(self.opacity_transfer_func)
         except NameError:
             pass
 
@@ -382,6 +433,4 @@ class CutPlane:
         self.plane.SetNormal(self.normal)
         self.plane.SetOrigin(self.origin)
         ps.Publisher().sendMessage('Render volume viewer', None)     
-        
-        
-        
+
