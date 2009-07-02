@@ -90,6 +90,8 @@ class Volume():
         self.LoadConfig(pubsub_evt.data)
         self.Create16bColorTable(self.scale)
         self.CreateOpacityTable(self.scale)
+        colour = self.CreateBackgroundColor()
+        ps.Publisher.sendMessage('Set colour interactor', colour)
 
     def SetWWWL(self, pubsub_evt):
         ww, wl, n = pubsub_evt.data
@@ -115,6 +117,7 @@ class Volume():
             else:
                 i['x'] += shiftWW * factor
 
+        self.Create16bColorTable(self.scale)
         self.CreateOpacityTable(self.scale)
         print curve
         ps.Publisher().sendMessage('Render volume viewer', None)
@@ -297,11 +300,11 @@ class Volume():
         gradientEstimator = vtk.vtkFiniteDifferenceGradientEstimator()
         gradientEstimator.SetGradientMagnitudeScale(1)
 
-        volume_mapper = vtk.vtkFixedPointVolumeRayCastMapper()
+        volume_mapper = vtk.vtkVolumeRayCastMapper()
         #volume_mapper.AutoAdjustSampleDistancesOff()
         volume_mapper.SetInput(image2.GetOutput())
-        #volume_mapper.SetVolumeRayCastFunction(composite_function)
-        #volume_mapper.SetGradientEstimator(gradientEstimator)
+        volume_mapper.SetVolumeRayCastFunction(composite_function)
+        volume_mapper.SetGradientEstimator(gradientEstimator)
         volume_mapper.IntermixIntersectingGeometryOn()
         
         #Cut Plane
