@@ -33,6 +33,35 @@ Kernels = {
                           1.0, 1.0, 1.0, 1.0, 1.0]
 }
 
+SHADING = {
+    "Default": {
+        "ambient"       :0.15,
+        "diffuse"       :0.9,
+        "specular"      :0.3,
+        "specularPower" :15,
+    },
+
+    "Glossy Vascular":{
+        "ambient"       :0.15,
+        "diffuse"       :0.28,
+        "specular"      :1.42,
+        "specularPower" :50,
+    },
+
+    "Glossy Bone": {
+        "ambient"       :0.15,
+        "diffuse"       :0.24,
+        "specular"      :1.17,
+        "specularPower" :6.98,
+    },
+
+    "Endoscopy": {
+        "ambient"       :0.12,
+        "diffuse"       :0.64,
+        "specular"      :0.73,
+        "specularPower" :50,
+    }
+}
 
 PRESETS = ["Airways", "Airways II", "Bone + Skin", "Bone + Skin II", "Dark Bone",
 "Gold Bone", "Skin On Blue", "Skin On Blue II", "Soft + Skin", "Soft + Skin II",
@@ -58,20 +87,24 @@ class Volume():
                                 'Set raycasting preset')
         ps.Publisher().subscribe(self.SetWWWL,
                                 'Set raycasting wwwl')
+        ps.Publisher().subscribe(self.Refresh,
+                                'Set raycasting refresh')
 
     def OnLoadVolume(self, pubsub_evt):
         label = pubsub_evt.data
-        self.LoadConfig(label)
+        #self.LoadConfig(label)
         self.LoadVolume()
 
     def LoadConfig(self, label):
+        print label
         if not label:
             label = "Skin On Blue"
 
-        path = os.path.join("..", "presets", "raycasting",
-                         label+".plist")
-        self.config = plistlib.readPlist(path)
-        print path
+            path = os.path.join("..", "presets", "raycasting",
+                                label+".plist")
+            label = plistlib.readPlist(path)
+        self.config = label
+        #print path
 
     def OnHideVolume(self, pubsub_evt):
         self.volume.SetVisibility(0)
@@ -90,6 +123,7 @@ class Volume():
         self.LoadConfig(pubsub_evt.data)
         self.Create16bColorTable(self.scale)
         self.CreateOpacityTable(self.scale)
+        self.SetShading()
         colour = self.CreateBackgroundColor()
         ps.Publisher.sendMessage('Set colour interactor', colour)
 
@@ -122,6 +156,9 @@ class Volume():
         print curve
         ps.Publisher().sendMessage('Render volume viewer', None)
 
+    def Refresh(self, pubsub_evt):
+        self.Create16bColorTable(self.scale)
+        self.CreateOpacityTable(self.scale)
 
 #***************
     def Create16bColorTable(self, scale):
@@ -130,6 +167,7 @@ class Volume():
         else:
             color_transfer = vtk.vtkColorTransferFunction()
         color_transfer.RemoveAllPoints()
+        print self.config
         curve_table = self.config['16bitClutCurves']
         color_table = self.config['16bitClutColors']
         colors = []
@@ -247,7 +285,13 @@ class Volume():
 
         return colors, opacities, color_background, p['useShading']
 
-
+    def SetShading(self):
+        print "Shading"
+        shading = SHADING[self.config['shading']]
+        self.volume_properties.SetAmbient(shading['ambient'])
+        self.volume_properties.SetDiffuse(shading['diffuse'])
+        self.volume_properties.SetSpecular(shading['specular'])
+        self.volume_properties.SetSpecularPower(shading['specularPower'])
 
     def LoadVolume(self):
         proj = Project()
@@ -318,13 +362,10 @@ class Volume():
             volume_properties.ShadeOn()
         else:
             volume_properties.ShadeOff()
-        volume_properties.SetAmbient(0.1)
-        volume_properties.SetDiffuse(0.6)
-        volume_properties.SetSpecular(0.5)
-        volume_properties.SetSpecularPower(44.0)
 
         volume_properties.SetInterpolationTypeToLinear()
         volume_properties.SetColor(self.color_transfer)
+        self.volume_properties = volume_properties
 
         try:
             volume_properties.SetScalarOpacity(self.opacity_transfer_func)
