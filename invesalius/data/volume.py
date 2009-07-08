@@ -286,7 +286,11 @@ class Volume():
         return colors, opacities, color_background, p['useShading']
 
     def SetShading(self):
-        print "Shading"
+        if self.config['useShading']:
+            self.volume_properties.ShadeOn()
+        else:
+            self.volume_properties.ShadeOff()
+        
         shading = SHADING[self.config['shading']]
         self.volume_properties.SetAmbient(shading['ambient'])
         self.volume_properties.SetDiffuse(shading['diffuse'])
