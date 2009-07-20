@@ -372,7 +372,7 @@ class Slice(object):
         """
         x, y, z = position
         imagedata = self.current_mask.imagedata
-        colour = imagedata.GetScalarRange()[0]# - 1 # Important to effect erase
+        colour = self.imagedata.GetScalarRange()[0]# - 1 # Important to effect erase
         imagedata.SetScalarComponentFromDouble(x, y, z, 0, colour)
         imagedata.Update()
 
@@ -382,7 +382,7 @@ class Slice(object):
         """
         imagedata = self.current_mask.imagedata
         if colour is None:
-            colour = imagedata.GetScalarRange()[1]
+            colour = self.imagedata.GetScalarRange()[1]
         imagedata.SetScalarComponentFromDouble(x, y, z, 0, colour)
 
     def EditPixelBasedOnThreshold(self, x, y, z):
