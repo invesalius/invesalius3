@@ -129,6 +129,12 @@ class Viewer(wx.Panel):
         
         self.cursor = cursor
 
+    def ChangeBrushSize(self, pubsub_evt):
+        print "*****ChangeBrushSize"
+        size = pubsub_evt.data
+        self.cursor.SetSize(size)
+        self.ren.Render()
+        self.interactor.Render()
         
 
     def OnMouseClick(self, obj, evt_vtk):
@@ -258,6 +264,7 @@ class Viewer(wx.Panel):
         ps.Publisher().subscribe(self.UpdateRender, 'Update slice viewer')
         ps.Publisher().subscribe(self.ChangeSliceNumber, ('Set scroll position', 
                                                      self.orientation))
+        ps.Publisher().subscribe(self.ChangeBrushSize,'Set edition brush size')
 
     def __bind_events_wx(self):
         self.scroll.Bind(wx.EVT_SCROLL, self.OnScrollBar)
@@ -269,10 +276,7 @@ class Viewer(wx.Panel):
     def SetInput(self, imagedata):
 
         self.imagedata = imagedata
-        
-        print "************************************"
-        print "spacing:", imagedata.GetSpacing()
-        print "************************************"
+
         ren = self.ren
         interactor = self.interactor
 

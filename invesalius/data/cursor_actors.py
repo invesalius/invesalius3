@@ -77,7 +77,8 @@ class CursorCircle:
 
     def SetSize(self, radius):
         self.radius = radius
-        disk.SetInnerRadius(radius)
+        self.disk.SetInnerRadius(radius-1) # filled = self.radius
+        self.disk.SetOuterRadius(radius) # filled = 0x
         self.__calculate_area_pixels()
         
     def SetColour(self, colour):
