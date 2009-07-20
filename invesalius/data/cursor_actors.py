@@ -2,6 +2,28 @@ from  math import *
 
 import vtk
 
+def frange(start, end=None, inc=None):
+    "A range function, that does accept float increments..."
+
+    if end == None:
+        end = start + 0.0
+        start = 0.0
+
+    if inc == None:
+        inc = 1.0
+
+    L = []
+    while 1:
+        next = start + len(L) * inc
+        if inc > 0 and next >= end:
+            break
+        elif inc < 0 and next <= end:
+            break
+        L.append(next)
+        
+    return L
+
+
 class CursorCircle:
    # TODO: Think and try to change this class to an actor
    # CursorCircleActor(vtk.vtkActor)
@@ -14,6 +36,7 @@ class CursorCircle:
         self.position = (0 ,0, 1)
         self.points = []
         self.orientation = "AXIAL"
+        self.spacing = (1, 1, 1)
         
         self.mapper = vtk.vtkPolyDataMapper()
         self.disk = vtk.vtkDiskSource()
@@ -54,19 +77,24 @@ class CursorCircle:
         xc = 0
         yc = 0
         z = 0
+        xs, ys, zs = self.spacing 
+        orientation_based_spacing = {"AXIAL" : (xs, ys),
+                                     "SAGITAL" : (ys, zs),
+                                     "CORONAL" : (xs, zs) }
+        xs, ys = orientation_based_spacing[self.orientation]
         self.pixel_list = []
-        radius = int(self.radius)
-        for i in xrange(int(yc - radius), int(yc + radius)):
+        radius = self.radius
+        for i in frange(yc - radius, yc + radius, ys):
             # distance from the line to the circle's center
             d = yc - i
             # line size
-            line = sqrt(round(radius ** 2) - round(d ** 2)) * 2
+            line = sqrt(radius**2 - d**2) * 2
             # line initial x
-            xi = int(xc - line/2)
+            xi = xc - line/2
             # line final
-            xf = int(line/2 + xc)
+            xf = line/2 + xc
             yi = i
-            for k in xrange(xi,xf):
+            for k in frange(xi,xf,xs):
                 self.pixel_list.append((k, yi))
 
     def SetSize(self, radius):
@@ -97,15 +125,22 @@ class CursorCircle:
         self.position = position
         self.actor.SetPosition(position)
 
+    def SetEditionPosition(self, position):
+        self.edition_position = position
+
+    def SetSpacing(self, spacing):
+        self.spacing = spacing
+
     def GetPixels(self):
-        px, py, pz = self.position
+        px, py, pz = self.edition_position
         orient = self.orientation
+        xs, ys, zs = self.spacing
         for pixel_0,pixel_1 in self.pixel_list:
             # The position of the pixels in this list is relative (based only on
             # the area, and not the cursor position).
             # Let's calculate the absolute position
             # TODO: Optimize this!!!!
-            absolute_pixel = {"AXIAL": (px + pixel_0, py + pixel_1, pz),
-                              "CORONAL": (px + pixel_0, py, pz + pixel_1),
-                              "SAGITAL": (px, py + pixel_0, pz + pixel_1)}
+            absolute_pixel = {"AXIAL": (px + pixel_0 / xs , py + pixel_1 / ys, pz),
+                              "CORONAL": (px + pixel_0 / xs, py, pz + pixel_1 / zs),
+                              "SAGITAL": (px, py + pixel_0 / ys, pz + pixel_1 / zs) }
             yield absolute_pixel[orient]

@@ -145,6 +145,7 @@ class Viewer(wx.Panel):
     def OnBrushMove(self, obj, evt_vtk):
         coord = self.GetCoordinateCursor()
         self.cursor.SetPosition(coord)
+        self.cursor.SetEditionPosition(self.GetCoordinateCursorEdition())
         self.ren.Render()
         if self.mouse_pressed:
             print "Edit pixel region based on origin:", coord
@@ -208,8 +209,15 @@ class Viewer(wx.Panel):
         
         return coord
      
-     
     def GetCoordinateCursor(self):
+    
+        # Find position
+        mouse_x, mouse_y = self.interactor.GetEventPosition()
+        self.pick.Pick(mouse_x, mouse_y, 0, self.ren)
+        x, y, z = self.pick.GetPickPosition()
+        return x, y, z
+     
+    def GetCoordinateCursorEdition(self):
     
         # Find position
         mouse_x, mouse_y = self.interactor.GetEventPosition()
@@ -241,7 +249,7 @@ class Viewer(wx.Panel):
             z = (z * dimensions[2]) / dz
         except ZeroDivisionError:
             z = self.slice_number
-        
+
         return x,y,z
             
     def __bind_events(self):
@@ -296,6 +304,7 @@ class Viewer(wx.Panel):
         self.scroll.SetScrollbar(wx.SB_VERTICAL, 1, max_slice_number,
                                                      max_slice_number)
         self.SetScrollPosition(0)
+        self.cursor.SetSpacing(imagedata.GetSpacing())
 
     def SetOrientation(self, orientation):
         self.orientation = orientation
