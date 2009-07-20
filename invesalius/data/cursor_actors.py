@@ -1,28 +1,6 @@
 from  math import *
-
 import vtk
-
-def frange(start, end=None, inc=None):
-    "A range function, that does accept float increments..."
-
-    if end == None:
-        end = start + 0.0
-        start = 0.0
-
-    if inc == None:
-        inc = 1.0
-
-    L = []
-    while 1:
-        next = start + len(L) * inc
-        if inc > 0 and next >= end:
-            break
-        elif inc < 0 and next <= end:
-            break
-        L.append(next)
-        
-    return L
-
+import utils
 
 class CursorCircle:
    # TODO: Think and try to change this class to an actor
@@ -51,8 +29,8 @@ class CursorCircle:
         """
         
         disk = self.disk
-        disk.SetInnerRadius(self.radius)
-        disk.SetOuterRadius(0) # filled
+        disk.SetInnerRadius(self.radius-1) # filled = self.radius
+        disk.SetOuterRadius(self.radius) # filled = 0x
         disk.SetRadialResolution(50)
         disk.SetCircumferentialResolution(50)
      
@@ -84,7 +62,7 @@ class CursorCircle:
         xs, ys = orientation_based_spacing[self.orientation]
         self.pixel_list = []
         radius = self.radius
-        for i in frange(yc - radius, yc + radius, ys):
+        for i in utils.frange(yc - radius, yc + radius, ys):
             # distance from the line to the circle's center
             d = yc - i
             # line size
@@ -94,7 +72,7 @@ class CursorCircle:
             # line final
             xf = line/2 + xc
             yi = i
-            for k in frange(xi,xf,xs):
+            for k in utils.frange(xi,xf,xs):
                 self.pixel_list.append((k, yi))
 
     def SetSize(self, radius):

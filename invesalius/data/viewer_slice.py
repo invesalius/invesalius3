@@ -269,7 +269,10 @@ class Viewer(wx.Panel):
     def SetInput(self, imagedata):
 
         self.imagedata = imagedata
-
+        
+        print "************************************"
+        print "spacing:", imagedata.GetSpacing()
+        print "************************************"
         ren = self.ren
         interactor = self.interactor
 
