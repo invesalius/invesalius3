@@ -490,7 +490,6 @@ class EditionTools(wx.Panel):
         # FIXME: Using wx.EVT_SPINCTRL in MacOS it doesnt capture changes only
         # in the text ctrl - so we are capturing only changes on text
         # Strangelly this is being called twice
-        print "TODO: Send Signal - Change brush size to %s" %self.spin.GetValue()
         ps.Publisher().sendMessage('Set edition brush size',self.spin.GetValue())
         
     def OnComboBrushOp(self, evt):

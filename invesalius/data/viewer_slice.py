@@ -130,7 +130,6 @@ class Viewer(wx.Panel):
         self.cursor = cursor
 
     def ChangeBrushSize(self, pubsub_evt):
-        print "*****ChangeBrushSize"
         size = pubsub_evt.data
         self.cursor.SetSize(size)
         self.ren.Render()
