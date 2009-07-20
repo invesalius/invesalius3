@@ -76,7 +76,8 @@ class Slice(object):
         colour = mask.colour
         threshold = mask.threshold_range
 
-        ps.Publisher().sendMessage('Create surface', (imagedata,colour,threshold))
+        ps.Publisher().sendMessage('Create surface',
+                                   (imagedata,colour,threshold))
 
     def OnChangeCurrentMaskColour(self, pubsub_evt):
         colour_wx = pubsub_evt.data

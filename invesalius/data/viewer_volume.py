@@ -70,7 +70,8 @@ class Viewer(wx.Panel):
         
         
     def __bind_events_wx(self):
-        self.Bind(wx.EVT_SIZE, self.OnSize)
+        #self.Bind(wx.EVT_SIZE, self.OnSize)
+        pass
         
     def OnSize(self, evt):
         print "viewer_volume :: OnSize"

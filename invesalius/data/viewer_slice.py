@@ -108,8 +108,9 @@ class Viewer(wx.Panel):
         # Bind method according to current mode
         style = self.style
         
-        for event in action:
-            style.AddObserver(event, action[mode][event])
+        for event in action[mode]:
+            style.AddObserver(event,
+                              action[mode][event])
         
 
     def OnMouseClick(self, obj, evt_vtk):
