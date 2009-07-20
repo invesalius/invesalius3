@@ -33,6 +33,12 @@ class Slice(object):
                                  'Update cursor position in slice')
         ps.Publisher().subscribe(self.ShowMask, 'Show mask')
         ps.Publisher().subscribe(self.ChangeMaskName, 'Change mask name')
+        ps.Publisher().subscribe(self.EraseMaskPixel, 'Erase mask pixel')
+        
+        
+    def EraseMaskPixel(self, pubsub_evt):
+        position = pubsub_evt.data
+        self.ErasePixel(position)
         
     def ChangeMaskName(self, pubsub_evt):
         index, name = pubsub_evt.data
@@ -117,6 +123,8 @@ class Slice(object):
                                         self.current_mask.threshold_range)
             ps.Publisher().sendMessage('Select mask name in combo', mask_index)
             ps.Publisher().sendMessage('Update slice viewer')
+
+
 
     def ChangeCurrentMaskColour(self, colour, update=True):
         # This is necessary because wx events are calling this before it was created
@@ -358,27 +366,31 @@ class Slice(object):
     #    thresh_min, thresh_max = evt.data
     #    self.current_mask.edition_threshold_range = thresh_min, thresh_max
 
-    def ErasePixel(self, x, y, z):
+    def ErasePixel(self, position):
         """
         Delete pixel, based on x, y and z position coordinates.
         """
-        colour = imagedata.GetScalarRange()[0]
-        self.imagedata.SetScalarComponentFromDouble(x, y, z, 0, colour)
-        self.imagedata.Update()
+        x, y, z = position
+        imagedata = self.current_mask.imagedata
+        colour = imagedata.GetScalarRange()[0]# - 1 # Important to effect erase
+        imagedata.SetScalarComponentFromDouble(x, y, z, 0, colour)
+        imagedata.Update()
 
     def DrawPixel(self, x, y, z, colour=None):
         """
         Draw pixel, based on x, y and z position coordinates.
         """
+        imagedata = self.current_mask.imagedata
         if colour is None:
             colour = imagedata.GetScalarRange()[1]
-        self.imagedata.SetScalarComponentFromDouble(x, y, z, 0, colour)
+        imagedata.SetScalarComponentFromDouble(x, y, z, 0, colour)
 
     def EditPixelBasedOnThreshold(self, x, y, z):
         """
         Erase or draw pixel based on edition threshold range.
         """
-        pixel_colour = self.imagedata.GetScalarComponentAsDouble(x, y, z, 0)
+        
+        pixel_colour = imagedata.GetScalarComponentAsDouble(x, y, z, 0)
         thresh_min, thresh_max = self.current_mask.edition_threshold_range
 
         if (pixel_colour >= thresh_min) and (pixel_colour <= thresh_max):

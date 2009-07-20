@@ -26,6 +26,7 @@ import wx.lib.pubsub as ps
 import data.slice_ as sl
 import constants as const
 import project
+import cursor_actors as ca
 
 class Viewer(wx.Panel):
     
@@ -36,7 +37,7 @@ class Viewer(wx.Panel):
         self.SetBackgroundColour(colour)
         
         # Interactor aditional style
-        self.modes = []
+        self.modes = ['DEFAULT']
         self.mouse_pressed = 0
         
         self.__init_gui()
@@ -83,7 +84,7 @@ class Viewer(wx.Panel):
         self.cam = ren.GetActiveCamera()
         self.ren = ren
         
-        self.AppendMode('DEFAULT')
+        self.AppendMode('EDITOR')
         
     def AppendMode(self, mode):
     
@@ -115,6 +116,19 @@ class Viewer(wx.Panel):
                 # Bind event
                 style.AddObserver(event,
                                   action[mode][event])
+
+        # Insert cursor
+        cursor = ca.CursorCircle()
+        cursor.SetOrientation(self.orientation)
+        coordinates = {"SAGITAL": [self.slice_number, 0, 0],
+                       "CORONAL": [0, self.slice_number, 0],
+                       "AXIAL": [0, 0, self.slice_number]}
+        cursor.SetPosition(coordinates[self.orientation])
+        self.ren.AddActor(cursor.actor)
+        self.ren.Render()
+        
+        self.cursor = cursor
+
         
 
     def OnMouseClick(self, obj, evt_vtk):
@@ -129,9 +143,15 @@ class Viewer(wx.Panel):
         print "Edit pixel region based on origin:", coord
 
     def OnBrushMove(self, obj, evt_vtk):
-        coord = self.GetCoordinate()
+        coord = self.GetCoordinateCursor()
+        self.cursor.SetPosition(coord)
+        self.ren.Render()
         if self.mouse_pressed:
             print "Edit pixel region based on origin:", coord
+            pixels = self.cursor.GetPixels()
+            for coord in pixels:
+                ps.Publisher().sendMessage('Erase mask pixel', coord)
+            self.interactor.Render()
                 
     def OnCrossMove(self, obj, evt_vtk):
         coord = self.GetCoordinate()
@@ -184,6 +204,48 @@ class Viewer(wx.Panel):
                 coord[index] = extent_max[index]
             elif coord[index] < extent_min[index]:
                 coord[index] = extent_min[index]
+        #print "New coordinate: ", coord
+        
+        return coord
+     
+     
+    def GetCoordinateCursor(self):
+    
+        # Find position
+        mouse_x, mouse_y = self.interactor.GetEventPosition()
+        self.pick.Pick(mouse_x, mouse_y, 0, self.ren)
+        x, y, z = self.pick.GetPickPosition()
+        
+        # First we fix the position origin, based on vtkActor bounds
+        bounds = self.actor.GetBounds()
+        bound_xi, bound_xf, bound_yi, bound_yf, bound_zi, bound_zf = bounds
+        x = float(x - bound_xi)
+        y = float(y - bound_yi)
+        z = float(z - bound_zi)
+        
+        # Then we fix the porpotion, based on vtkImageData spacing
+        #spacing_x, spacing_y, spacing_z = self.imagedata.GetSpacing()
+        #x = x/spacing_x
+        #y = y/spacing_y
+        #z = z/spacing_z
+        
+        # Based on the current orientation, we define 3D position
+        coordinates = {"SAGITAL": [self.slice_number, y, z],
+                       "CORONAL": [x, self.slice_number, z],
+                       "AXIAL": [x, y, self.slice_number]}
+        coord = [int(coord) for coord in coordinates[self.orientation]]
+        
+        # According to vtkImageData extent, we limit min and max value
+        # If this is not done, a VTK Error occurs when mouse is pressed outside
+        # vtkImageData extent
+        #extent = self.imagedata.GetWholeExtent()
+        #extent_min = extent[0], extent[2], extent[4]
+        #extent_max = extent[1], extent[3], extent[5]
+        #for index in xrange(3):
+        #    if coord[index] > extent_max[index]:
+        #        coord[index] = extent_max[index]
+        #    elif coord[index] < extent_min[index]:
+        #        coord[index] = extent_min[index]
         #print "New coordinate: ", coord
         
         return coord
