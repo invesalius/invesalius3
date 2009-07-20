@@ -222,33 +222,27 @@ class Viewer(wx.Panel):
         x = float(x - bound_xi)
         y = float(y - bound_yi)
         z = float(z - bound_zi)
+
+        dx = bound_xf - bound_xi;
+        dy = bound_yf - bound_yi
+        dz = bound_zf - bound_zi
+
+        dimensions = self.imagedata.GetDimensions()
+
+        try:
+            x = (x * dimensions[0]) / dx
+        except ZeroDivisionError:
+            x = self.slice_number
+        try:
+            y = (y * dimensions[1]) / dy
+        except ZeroDivisionError:
+            y = self.slice_number
+        try:
+            z = (z * dimensions[2]) / dz
+        except ZeroDivisionError:
+            z = self.slice_number
         
-        # Then we fix the porpotion, based on vtkImageData spacing
-        #spacing_x, spacing_y, spacing_z = self.imagedata.GetSpacing()
-        #x = x/spacing_x
-        #y = y/spacing_y
-        #z = z/spacing_z
-        
-        # Based on the current orientation, we define 3D position
-        coordinates = {"SAGITAL": [self.slice_number, y, z],
-                       "CORONAL": [x, self.slice_number, z],
-                       "AXIAL": [x, y, self.slice_number]}
-        coord = [int(coord) for coord in coordinates[self.orientation]]
-        
-        # According to vtkImageData extent, we limit min and max value
-        # If this is not done, a VTK Error occurs when mouse is pressed outside
-        # vtkImageData extent
-        #extent = self.imagedata.GetWholeExtent()
-        #extent_min = extent[0], extent[2], extent[4]
-        #extent_max = extent[1], extent[3], extent[5]
-        #for index in xrange(3):
-        #    if coord[index] > extent_max[index]:
-        #        coord[index] = extent_max[index]
-        #    elif coord[index] < extent_min[index]:
-        #        coord[index] = extent_min[index]
-        #print "New coordinate: ", coord
-        
-        return coord
+        return x,y,z
             
     def __bind_events(self):
         ps.Publisher().subscribe(self.LoadImagedata, 'Load slice to viewer')
@@ -295,7 +289,7 @@ class Viewer(wx.Panel):
         self.text_actor = text_actor
 
         ren.AddActor(actor)
-        ren.AddActor(text_actor)
+        #ren.AddActor(text_actor)
         self.__update_camera()
 
         max_slice_number = actor.GetSliceNumberMax()
