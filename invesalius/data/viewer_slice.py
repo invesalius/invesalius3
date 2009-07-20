@@ -28,26 +28,25 @@ import constants as const
 import project
 
 class Viewer(wx.Panel):
-
+    
     def __init__(self, prnt, orientation='AXIAL'):
         wx.Panel.__init__(self, prnt, size=wx.Size(320, 300))
         
         colour = [255*c for c in const.ORIENTATION_COLOUR[orientation]]
         self.SetBackgroundColour(colour)
         
+        # Interactor aditional style
+        self.modes = []
+        self.mouse_pressed = 0
+        
         self.__init_gui()
 
         self.orientation = orientation
         self.slice_number = 0
-
-        # Interactor aditional style
-        self.mode = 'DEFAULT'
-        self.mouse_pressed = 0
         
         # VTK pipeline and actors
         self.__config_interactor()
         self.pick = vtk.vtkCellPicker()
-        #self.cursor = 
         
         self.__bind_events()
         self.__bind_events_wx()
@@ -75,23 +74,22 @@ class Viewer(wx.Panel):
         self.interactor = interactor
 
     def __config_interactor(self):
-        
-        style = vtk.vtkInteractorStyleImage()
-        self.style = style
-        
+                
         ren = vtk.vtkRenderer()
 
         interactor = self.interactor
-        interactor.SetInteractorStyle(style)
         interactor.GetRenderWindow().AddRenderer(ren)
 
         self.cam = ren.GetActiveCamera()
         self.ren = ren
         
-        self.SetMode(self.mode)
+        self.AppendMode('DEFAULT')
         
-    def SetMode(self, mode):
-        self.mode = mode
+    def AppendMode(self, mode):
+    
+        # Retrieve currently set modes
+        self.modes.append(mode)
+        
         # All modes and bindings
         action = {'DEFAULT': {
                              "MouseMoveEvent": self.OnCrossMove,
@@ -106,11 +104,17 @@ class Viewer(wx.Panel):
                  }
 
         # Bind method according to current mode
-        style = self.style
+        style = vtk.vtkInteractorStyleImage()
+        self.style = style
+        self.interactor.SetInteractorStyle(style)
         
-        for event in action[mode]:
-            style.AddObserver(event,
-                              action[mode][event])
+        # Check all modes set by user
+        for mode in self.modes:
+            # Check each event available for each mode
+            for event in action[mode]:
+                # Bind event
+                style.AddObserver(event,
+                                  action[mode][event])
         
 
     def OnMouseClick(self, obj, evt_vtk):
@@ -133,10 +137,14 @@ class Viewer(wx.Panel):
         coord = self.GetCoordinate()
         # Update position in other slices
         if self.mouse_pressed:
-            ps.Publisher().sendMessage('Update cursor position in slice', coord)
-            ps.Publisher().sendMessage(('Set scroll position', 'SAGITAL'), coord[0])
-            ps.Publisher().sendMessage(('Set scroll position', 'CORONAL'), coord[1])
-            ps.Publisher().sendMessage(('Set scroll position', 'AXIAL'), coord[2])
+            ps.Publisher().sendMessage('Update cursor position in slice',
+                                        coord)
+            ps.Publisher().sendMessage(('Set scroll position', 'SAGITAL'),
+                                        coord[0])
+            ps.Publisher().sendMessage(('Set scroll position', 'CORONAL'),
+                                        coord[1])
+            ps.Publisher().sendMessage(('Set scroll position', 'AXIAL'),
+                                        coord[2])
             
             
     def GetCoordinate(self):

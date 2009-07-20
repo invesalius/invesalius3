@@ -78,7 +78,6 @@ class Viewer(wx.Panel):
         self.UpdateRender()
         self.Refresh()
         print dir(self.iren)
-        self.UpdateRender()
         self.iren.UpdateWindowUI()
         self.iren.Update()
         evt.Skip()
