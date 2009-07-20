@@ -104,12 +104,13 @@ class Viewer(wx.Panel):
                             "LeftButtonReleaseEvent": self.OnMouseRelease
                             }
                  }
-                 
+
         # Bind method according to current mode
         style = self.style
-        style.AddObserver("MouseMoveEvent", action[mode]["MouseMoveEvent"])
-        style.AddObserver("LeftButtonPressEvent", action[mode]["LeftButtonPressEvent"])
-        style.AddObserver("LeftButtonReleaseEvent", action[mode]["LeftButtonReleaseEvent"])
+        
+        for event in action:
+            style.AddObserver(event, action[mode][event])
+        
 
     def OnMouseClick(self, obj, evt_vtk):
         self.mouse_pressed = 1

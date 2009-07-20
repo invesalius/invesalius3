@@ -57,6 +57,7 @@ class Viewer(wx.Panel):
         self.ren = ren
 
         self.__bind_events()
+        self.__bind_events_wx()
 
     def __bind_events(self):
         ps.Publisher().subscribe(self.LoadActor, 'Load surface actor into viewer')
@@ -67,6 +68,19 @@ class Viewer(wx.Panel):
         ps.Publisher().subscribe(self.AppendActor,'AppendActor')
         ps.Publisher().subscribe(self.SetWidgetInteractor, 'Set Widget Interactor')
         
+        
+    def __bind_events_wx(self):
+        self.Bind(wx.EVT_SIZE, self.OnSize)
+        
+    def OnSize(self, evt):
+        print "viewer_volume :: OnSize"
+        self.UpdateRender()
+        self.Refresh()
+        print dir(self.iren)
+        self.UpdateRender()
+        self.iren.UpdateWindowUI()
+        self.iren.Update()
+        evt.Skip()
         
     def LoadVolume(self, pubsub_evt):
         volume, colour = pubsub_evt.data
@@ -88,10 +102,6 @@ class Viewer(wx.Panel):
         ren = self.ren
         ren.AddActor(actor)
         ren.ResetCamera()
-        #ren.GetActiveCamera().Elevation(90)
-        #ren.GetActiveCamera().SetViewUp(0, 0, 1)
-
-        #ren.GetActiveCamera().Dolly(1.5)
         ren.ResetCameraClippingRange()
 
         self.iren.Render()
