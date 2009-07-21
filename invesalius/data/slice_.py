@@ -21,8 +21,8 @@ class Slice(object):
 
     def __bind_events(self):
         ps.Publisher().subscribe(self.SetThresholdRange, 'Set threshold values')
-        #ps.Publisher().subscribe(self.SetEditionThresholdRange,
-        #                         'Set edition threshold values')
+        ps.Publisher().subscribe(self.SetEditionThresholdRange,
+                                 'Set edition threshold values')
         ps.Publisher().subscribe(self.OnChangeCurrentMaskColour,
                                  'Change mask colour')
         ps.Publisher().subscribe(self.AddMask, 'Create new mask')
@@ -34,11 +34,20 @@ class Slice(object):
         ps.Publisher().subscribe(self.ShowMask, 'Show mask')
         ps.Publisher().subscribe(self.ChangeMaskName, 'Change mask name')
         ps.Publisher().subscribe(self.EraseMaskPixel, 'Erase mask pixel')
-        
+        ps.Publisher().subscribe(self.EditMaskPixel, 'Edit mask pixel')
+        ps.Publisher().subscribe(self.AddMaskPixel, 'Add mask pixel')        
         
     def EraseMaskPixel(self, pubsub_evt):
         position = pubsub_evt.data
         self.ErasePixel(position)
+        
+    def EditMaskPixel(self, pubsub_evt):
+        position = pubsub_evt.data
+        self.EditPixelBasedOnThreshold(position)
+
+    def AddMaskPixel(self, pubsub_evt):
+        position = pubsub_evt.data
+        self.DrawPixel(position)        
         
     def ChangeMaskName(self, pubsub_evt):
         index, name = pubsub_evt.data
@@ -362,43 +371,41 @@ class Slice(object):
                                      self.current_mask.threshold_range))
         ps.Publisher().sendMessage('Update slice viewer')
 
-    #def SetEditionThresholdRange(self, evt):
-    #    thresh_min, thresh_max = evt.data
-    #    self.current_mask.edition_threshold_range = thresh_min, thresh_max
+    def SetEditionThresholdRange(self, evt_pubsub):
+        if self.current_mask:
+            thresh_min, thresh_max = evt_pubsub.data
+            self.current_mask.edition_threshold_range = thresh_min, thresh_max
 
     def ErasePixel(self, position):
         """
         Delete pixel, based on x, y and z position coordinates.
         """
         x, y, z = position
-        imagedata = self.current_mask.imagedata
         colour = self.imagedata.GetScalarRange()[0]# - 1 # Important to effect erase
+        imagedata = self.current_mask.imagedata
         imagedata.SetScalarComponentFromDouble(x, y, z, 0, colour)
         imagedata.Update()
 
-    def DrawPixel(self, x, y, z, colour=None):
+    def DrawPixel(self, position, colour=None):
         """
         Draw pixel, based on x, y and z position coordinates.
         """
-        imagedata = self.current_mask.imagedata
-        if colour is None:
+        x, y, z = position
+        if not colour:
             colour = self.imagedata.GetScalarRange()[1]
+        imagedata = self.current_mask.imagedata
         imagedata.SetScalarComponentFromDouble(x, y, z, 0, colour)
+        imagedata.Update()
 
-    def EditPixelBasedOnThreshold(self, x, y, z):
+    def EditPixelBasedOnThreshold(self, position):
         """
         Erase or draw pixel based on edition threshold range.
         """
-        
-        pixel_colour = imagedata.GetScalarComponentAsDouble(x, y, z, 0)
+        x, y, z = position
+        colour = self.imagedata.GetScalarComponentAsDouble(x, y, z, 0)
         thresh_min, thresh_max = self.current_mask.edition_threshold_range
 
-        if (pixel_colour >= thresh_min) and (pixel_colour <= thresh_max):
-            self.DrawPixel(x, y, z, pixel_colour)
-            # TODO: See if the code bellow is really necessary
-            #if (pixel_colour <= 0):
-            #    self.DrawPixel(x, y, z, 1)
-            #else:
-            #    self.DrawPixel(x, y, z, pixel_colour)
+        if (colour >= thresh_min) and (colour <= thresh_max):
+            self.DrawPixel(position, colour)
         else:
-            self.ErasePixel(x, y, z)
+            self.ErasePixel(position)

@@ -303,7 +303,8 @@ class MaskProperties(wx.Panel):
         index, name = pubsub_evt.data
         self.combo_mask_name.SetString(index, name)
         self.combo_mask_name.Refresh()
-                  
+
+
     def SetThresholdValues(self, pubsub_evt):
         thresh_min, thresh_max = pubsub_evt.data
         self.bind_evt_gradient = False
@@ -421,6 +422,7 @@ class EditionTools(wx.Panel):
         gradient_thresh = grad.GradientSlider(self, -1, 0, 5000, 0, 5000, 
                                        (0, 0, 255, 100))
         self.gradient_thresh = gradient_thresh
+        self.bind_evt_gradient = True
 
         # Add lines into main sizer
         sizer = wx.BoxSizer(wx.VERTICAL)
@@ -439,38 +441,48 @@ class EditionTools(wx.Panel):
 
 
     def __bind_events_wx(self):
-        pass
-        #self.Bind(grad.EVT_THRESHOLD_CHANGE, self.OnGradientChanged,
-        #          self.gradient_thresh)
+        self.Bind(grad.EVT_THRESHOLD_CHANGE, self.OnGradientChanged,
+                  self.gradient_thresh)
                   
     def __bind_events(self):
-        #ps.Publisher().subscribe(self.SetThresholdBounds,
-        #                                'Update threshold limits')
+        ps.Publisher().subscribe(self.SetThresholdBounds,
+                                        'Update threshold limits')
         #ps.Publisher().subscribe(self.SetThresholdValues,
         #                         'Set threshold values in gradient')
         ps.Publisher().subscribe(self.ChangeMaskColour, 'Change mask colour')
+        ps.Publisher().subscribe(self.SetGradientColour, 'Add mask')
 
     def ChangeMaskColour(self, pubsub_evt):
         colour = pubsub_evt.data
         self.gradient_thresh.SetColour(colour)
-                                        
-    #def SetThresholdValues(self, pubsub_evt):
-    #    thresh_min = pubsub_evt.data[0][0]
-    #    thresh_max  = pubsub_evt.data[0][1]
-    #    self.gradient_thresh.SetMinValue(thresh_min)
-    #    self.gradient_thresh.SetMaxValue(thresh_max)
-                  
-    #def SetThresholdBounds(self, pubsub_evt):
-    #    thresh_min = pubsub_evt.data[0]
-    #    thresh_max  = pubsub_evt.data[1]
-    #    self.gradient_thresh.SetMinRange(thresh_min)
-    #    self.gradient_thresh.SetMaxRange(thresh_max)
+                                   
+    def SetGradientColour(self, pubsub_evt):
+        vtk_colour = pubsub_evt.data[3]
+        wx_colour = [c*255 for c in vtk_colour]
+        self.gradient_thresh.SetColour(wx_colour)
+    
+    def SetThresholdValues(self, pubsub_evt):
+        thresh_min, thresh_max = pubsub_evt.data
+        self.bind_evt_gradient = False
+        self.gradient_thresh.SetMinValue(thresh_min)
+        self.gradient_thresh.SetMaxValue(thresh_max)
+        self.bind_evt_gradient = True
+ 
+    def SetThresholdBounds(self, pubsub_evt):
+        thresh_min = pubsub_evt.data[0]
+        thresh_max  = pubsub_evt.data[1]
+        print thresh_min, thresh_max
+        self.gradient_thresh.SetMinRange(thresh_min)
+        self.gradient_thresh.SetMaxRange(thresh_max)
+        self.gradient_thresh.SetMinValue(thresh_min)
+        self.gradient_thresh.SetMaxValue(thresh_max)
         
-    #def OnGradientChanged(self, evt):
-    #    thresh_min = self.gradient_thresh.GetMinValue()
-    #    thresh_max = self.gradient_thresh.GetMaxValue()
-    #    #ps.Publisher().sendMessage('Set edition threshold values',
-    #    #                             (thresh_min, thresh_max))
+    def OnGradientChanged(self, evt):
+        thresh_min = self.gradient_thresh.GetMinValue()
+        thresh_max = self.gradient_thresh.GetMaxValue()
+        if self.bind_evt_gradient:
+            ps.Publisher().sendMessage('Set edition threshold values',
+                                     (thresh_min, thresh_max))
         
     def OnMenu(self, evt):
         """Button's menu event"""

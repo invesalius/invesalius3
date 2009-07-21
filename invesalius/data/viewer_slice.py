@@ -45,6 +45,9 @@ class Viewer(wx.Panel):
         self.orientation = orientation
         self.slice_number = 0
         
+        self._brush_cursor_op = 'Draw'
+        self.brush_cursor_size = 30
+        
         # VTK pipeline and actors
         self.__config_interactor()
         self.pick = vtk.vtkCellPicker()
@@ -184,11 +187,19 @@ class Viewer(wx.Panel):
         self.cursor.SetPosition(coord)
         self.cursor.SetEditionPosition(self.GetCoordinateCursorEdition())
         self.ren.Render()
+        
+        if self._brush_cursor_op == 'Erase':
+            evt_msg = 'Erase mask pixel'
+        elif self._brush_cursor_op == 'Draw':
+            evt_msg = 'Add mask pixel'
+        elif self._brush_cursor_op == 'Threshold':
+            evt_msg = 'Edit mask pixel'
+        
         if self.mouse_pressed:
             print "Edit pixel region based on origin:", coord
             pixels = self.cursor.GetPixels()
             for coord in pixels:
-                ps.Publisher().sendMessage('Erase mask pixel', coord)
+                ps.Publisher().sendMessage(evt_msg, coord)
             self.interactor.Render()
                 
     def OnCrossMove(self, obj, evt_vtk):
@@ -300,6 +311,12 @@ class Viewer(wx.Panel):
         ps.Publisher().subscribe(self.ChangeBrushSize,'Set edition brush size')
         ps.Publisher().subscribe(self.ChangeBrushColour, 'Add mask')
         ps.Publisher().subscribe(self.ChangeBrushActor, 'Set brush format')
+        ps.Publisher().subscribe(self.ChangeBrushOperation, 'Set edition operation')
+    
+    
+    def ChangeBrushOperation(self, pubsub_evt):
+        print pubsub_evt.data
+        self._brush_cursor_op = pubsub_evt.data
 
     def __bind_events_wx(self):
         self.scroll.Bind(wx.EVT_SCROLL, self.OnScrollBar)
@@ -409,7 +426,7 @@ class Viewer(wx.Panel):
     def SetColour(self, pubsub_evt):
         colour_wx = pubsub_evt.data
         colour_vtk = [colour/float(255) for colour in colour_wx]
-        self._brush_cursor_colour = vtk_colour
+        self._brush_cursor_colour = colour_vtk
         self.cursor.SetColour(colour_vtk)
         self.interactor.Render()
 
