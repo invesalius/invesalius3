@@ -131,10 +131,42 @@ class Viewer(wx.Panel):
 
     def ChangeBrushSize(self, pubsub_evt):
         size = pubsub_evt.data
+        self.brush_cursor_size = size
         self.cursor.SetSize(size)
         self.ren.Render()
         self.interactor.Render()
+
+    def ChangeBrushColour(self, pubsub_evt):
+        vtk_colour = pubsub_evt.data[3]
+        self.cursor.SetColour(vtk_colour)
+        self._brush_cursor_colour = vtk_colour
+        self.ren.Render()
+        self.interactor.Render()
         
+
+    def ChangeBrushActor(self, pubsub_evt):
+        brush_type = pubsub_evt.data
+        self.ren.RemoveActor(self.cursor.actor)
+    
+        if brush_type == 'square':
+            cursor = ca.CursorRectangle()
+        elif brush_type == 'circle':
+            cursor = ca.CursorCircle()
+        self.cursor = cursor
+            
+        cursor.SetOrientation(self.orientation)
+        coordinates = {"SAGITAL": [self.slice_number, 0, 0],
+                       "CORONAL": [0, self.slice_number, 0],
+                       "AXIAL": [0, 0, self.slice_number]}
+        cursor.SetPosition(coordinates[self.orientation])
+        cursor.SetSpacing(self.imagedata.GetSpacing())
+        cursor.SetColour(self._brush_cursor_colour)
+        cursor.SetSize(self.brush_cursor_size)
+        self.ren.AddActor(cursor.actor)
+        self.ren.Render()
+        self.interactor.Render()
+        self.cursor = cursor
+
 
     def OnMouseClick(self, obj, evt_vtk):
         self.mouse_pressed = 1
@@ -263,7 +295,11 @@ class Viewer(wx.Panel):
         ps.Publisher().subscribe(self.UpdateRender, 'Update slice viewer')
         ps.Publisher().subscribe(self.ChangeSliceNumber, ('Set scroll position', 
                                                      self.orientation))
+                                                     
+        ###
         ps.Publisher().subscribe(self.ChangeBrushSize,'Set edition brush size')
+        ps.Publisher().subscribe(self.ChangeBrushColour, 'Add mask')
+        ps.Publisher().subscribe(self.ChangeBrushActor, 'Set brush format')
 
     def __bind_events_wx(self):
         self.scroll.Bind(wx.EVT_SCROLL, self.OnScrollBar)
@@ -373,6 +409,7 @@ class Viewer(wx.Panel):
     def SetColour(self, pubsub_evt):
         colour_wx = pubsub_evt.data
         colour_vtk = [colour/float(255) for colour in colour_wx]
-        #self.editor.SetColour(colour_vtk)
+        self._brush_cursor_colour = vtk_colour
+        self.cursor.SetColour(colour_vtk)
         self.interactor.Render()
 
