@@ -84,14 +84,13 @@ def LoadImages(dir_):
     array = vtk.vtkStringArray()
 
     #Case Reduce Matrix of the Image
-    flag = 0
-    reduce_factor = 3
+    reduce_matrix = 1
 
     img_app = vtk.vtkImageAppend()
     img_app.SetAppendAxis(2) #Define Stack in Z
 
     for x in xrange(len(files)):
-        if not(flag):
+        if not(reduce_matrix):
             array.InsertValue(x,files[x])
         else:            
             #SIf the resolution of the
@@ -100,24 +99,20 @@ def LoadImages(dir_):
             read.SetFileName(files[x])
             read.Update()
             
+            #Resample image in x,y dimension
+            img = ResampleMatrix(read.GetOutput(), 256)
+            
             #Stack images in Z axes
-            img = ResampleMatrix(read.GetOutput(), reduce_factor)
             img_app.AddInput(img)
-
+    
+    img_app.Update()
     img_axial = vtk.vtkImageData()
     
-    if (flag):
-        img_app.Update()
+    if (reduce_matrix):
         img_axial.DeepCopy(img_app.GetOutput())
-        
-        #TODO: Code challenge (imagedata_utils.ResampleMatrix), 
-        #it is necessary to know the new spacing. 
-        #spacing = read.GetOutput().GetSpacing()
-        extent = read.GetOutput().GetExtent()
-        size = read.GetOutput().GetDimensions()
-        height = float(size[1]/reduce_factor)
-        resolution = (height/(extent[1]-extent[0])+1)*spacing
-        img_axial.SetSpacing(spacing, spacing, spacing_z * resolution)
+        img_axial.SetSpacing(img_axial.GetSpacing()[0],\
+                             img_axial.GetSpacing()[1],\
+                             spacing_z)
     else:
         read = vtkgdcm.vtkGDCMImageReader()
         read.SetFileNames(array)
