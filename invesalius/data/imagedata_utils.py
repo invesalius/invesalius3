@@ -4,25 +4,41 @@ import vtk
 # TODO: Test cases which are originally in sagittal/coronal orientation
 # and have gantry
 
-def ResampleMatrix(imagedata, value):
+def ResampleMatrix(imagedata, xy_dimension):
     """
     Resample vtkImageData matrix.
     """
-    spacing = imagedata.GetSpacing()
     extent = imagedata.GetExtent()
-    size = imagedata.GetDimensions()
+    spacing = imagedata.GetSpacing()
 
-    width = float(size[0])
-    height = float(size[1]/value)
+    if extent[1]==extent[3]:
+        f = extent[1]
+        x = 0
+        y = 1
 
-    resolution = (height/(extent[1]-extent[0])+1)*spacing[1]
+    elif extent[1]==extent[5]:
+        f = extent[1]
+        x=0
+        y=2
 
+    elif extent[3]==extent[5]:
+        f = extent[3]
+        x = 1
+        y = 2
+
+    factor = xy_dimension/float(f+1)
+    
     resample = vtk.vtkImageResample()
     resample.SetInput(imagedata)
-    resample.SetAxisMagnificationFactor(0, resolution)
-    resample.SetAxisMagnificationFactor(1, resolution)
-
+    resample.SetAxisMagnificationFactor(0, factor)
+    resample.SetAxisMagnificationFactor(1, factor)
+    resample.SetOutputSpacing(spacing[0] * factor, spacing[1] * factor, spacing[2])
+    resample.Update()
+    
+    
     return resample.GetOutput()
+        
+            
 
 def FixGantryTilt(imagedata, tilt):
     """
