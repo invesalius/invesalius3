@@ -29,34 +29,34 @@ import project
 import cursor_actors as ca
 
 class Viewer(wx.Panel):
-    
+
     def __init__(self, prnt, orientation='AXIAL'):
         wx.Panel.__init__(self, prnt, size=wx.Size(320, 300))
-        
+
         colour = [255*c for c in const.ORIENTATION_COLOUR[orientation]]
         self.SetBackgroundColour(colour)
-        
+
         # Interactor aditional style
         self.modes = ['DEFAULT']
         self.mouse_pressed = 0
-        
+
         self.__init_gui()
 
         self.orientation = orientation
         self.slice_number = 0
-        
+
         self._brush_cursor_op = 'Draw'
         self.brush_cursor_size = 30
-        
+        self.cursor = None
         # VTK pipeline and actors
         self.__config_interactor()
         self.pick = vtk.vtkCellPicker()
-        
+
         self.__bind_events()
         self.__bind_events_wx()
 
     def __init_gui(self):
-    
+
         interactor = wxVTKRenderWindowInteractor(self, -1, size=self.GetSize())
 
         scroll = wx.ScrollBar(self, -1, style=wx.SB_VERTICAL)
@@ -78,7 +78,7 @@ class Viewer(wx.Panel):
         self.interactor = interactor
 
     def __config_interactor(self):
-                
+
         ren = vtk.vtkRenderer()
 
         interactor = self.interactor
@@ -86,14 +86,13 @@ class Viewer(wx.Panel):
 
         self.cam = ren.GetActiveCamera()
         self.ren = ren
-        
-        self.AppendMode('EDITOR')
-        
+
+
     def AppendMode(self, mode):
-    
+
         # Retrieve currently set modes
         self.modes.append(mode)
-        
+
         # All modes and bindings
         action = {'DEFAULT': {
                              "MouseMoveEvent": self.OnCrossMove,
@@ -111,7 +110,7 @@ class Viewer(wx.Panel):
         style = vtk.vtkInteractorStyleImage()
         self.style = style
         self.interactor.SetInteractorStyle(style)
-        
+
         # Check all modes set by user
         for mode in self.modes:
             # Check each event available for each mode
@@ -120,17 +119,7 @@ class Viewer(wx.Panel):
                 style.AddObserver(event,
                                   action[mode][event])
 
-        # Insert cursor
-        cursor = ca.CursorCircle()
-        cursor.SetOrientation(self.orientation)
-        coordinates = {"SAGITAL": [self.slice_number, 0, 0],
-                       "CORONAL": [0, self.slice_number, 0],
-                       "AXIAL": [0, 0, self.slice_number]}
-        cursor.SetPosition(coordinates[self.orientation])
-        self.ren.AddActor(cursor.actor)
-        self.ren.Render()
-        
-        self.cursor = cursor
+
 
     def ChangeBrushSize(self, pubsub_evt):
         size = pubsub_evt.data
@@ -140,23 +129,24 @@ class Viewer(wx.Panel):
         self.interactor.Render()
 
     def ChangeBrushColour(self, pubsub_evt):
-        vtk_colour = pubsub_evt.data[3]
-        self.cursor.SetColour(vtk_colour)
-        self._brush_cursor_colour = vtk_colour
-        self.ren.Render()
-        self.interactor.Render()
-        
+        if (self.cursor):
+            vtk_colour = pubsub_evt.data[3]
+            self.cursor.SetColour(vtk_colour)
+            self._brush_cursor_colour = vtk_colour
+            self.ren.Render()
+            self.interactor.Render()
+
 
     def ChangeBrushActor(self, pubsub_evt):
         brush_type = pubsub_evt.data
         self.ren.RemoveActor(self.cursor.actor)
-    
+
         if brush_type == 'square':
             cursor = ca.CursorRectangle()
         elif brush_type == 'circle':
             cursor = ca.CursorCircle()
         self.cursor = cursor
-            
+
         cursor.SetOrientation(self.orientation)
         coordinates = {"SAGITAL": [self.slice_number, 0, 0],
                        "CORONAL": [0, self.slice_number, 0],
@@ -187,21 +177,21 @@ class Viewer(wx.Panel):
         self.cursor.SetPosition(coord)
         self.cursor.SetEditionPosition(self.GetCoordinateCursorEdition())
         self.ren.Render()
-        
+
         if self._brush_cursor_op == 'Erase':
             evt_msg = 'Erase mask pixel'
         elif self._brush_cursor_op == 'Draw':
             evt_msg = 'Add mask pixel'
         elif self._brush_cursor_op == 'Threshold':
             evt_msg = 'Edit mask pixel'
-        
+
         if self.mouse_pressed:
             print "Edit pixel region based on origin:", coord
             pixels = self.cursor.GetPixels()
             for coord in pixels:
                 ps.Publisher().sendMessage(evt_msg, coord)
             self.interactor.Render()
-                
+
     def OnCrossMove(self, obj, evt_vtk):
         coord = self.GetCoordinate()
         # Update position in other slices
@@ -214,34 +204,34 @@ class Viewer(wx.Panel):
                                         coord[1])
             ps.Publisher().sendMessage(('Set scroll position', 'AXIAL'),
                                         coord[2])
-            
-            
+
+
     def GetCoordinate(self):
-    
+
         # Find position
         mouse_x, mouse_y = self.interactor.GetEventPosition()
         self.pick.Pick(mouse_x, mouse_y, 0, self.ren)
         x, y, z = self.pick.GetPickPosition()
-        
+
         # First we fix the position origin, based on vtkActor bounds
         bounds = self.actor.GetBounds()
         bound_xi, bound_xf, bound_yi, bound_yf, bound_zi, bound_zf = bounds
         x = float(x - bound_xi)
         y = float(y - bound_yi)
         z = float(z - bound_zi)
-        
+
         # Then we fix the porpotion, based on vtkImageData spacing
         spacing_x, spacing_y, spacing_z = self.imagedata.GetSpacing()
         x = x/spacing_x
         y = y/spacing_y
         z = z/spacing_z
-        
+
         # Based on the current orientation, we define 3D position
         coordinates = {"SAGITAL": [self.slice_number, y, z],
                        "CORONAL": [x, self.slice_number, z],
                        "AXIAL": [x, y, self.slice_number]}
         coord = [int(coord) for coord in coordinates[self.orientation]]
-        
+
         # According to vtkImageData extent, we limit min and max value
         # If this is not done, a VTK Error occurs when mouse is pressed outside
         # vtkImageData extent
@@ -254,24 +244,24 @@ class Viewer(wx.Panel):
             elif coord[index] < extent_min[index]:
                 coord[index] = extent_min[index]
         #print "New coordinate: ", coord
-        
+
         return coord
-     
+
     def GetCoordinateCursor(self):
-    
+
         # Find position
         mouse_x, mouse_y = self.interactor.GetEventPosition()
         self.pick.Pick(mouse_x, mouse_y, 0, self.ren)
         x, y, z = self.pick.GetPickPosition()
         return x, y, z
-     
+
     def GetCoordinateCursorEdition(self):
-    
+
         # Find position
         mouse_x, mouse_y = self.interactor.GetEventPosition()
         self.pick.Pick(mouse_x, mouse_y, 0, self.ren)
         x, y, z = self.pick.GetPickPosition()
-        
+
         # First we fix the position origin, based on vtkActor bounds
         bounds = self.actor.GetBounds()
         bound_xi, bound_xf, bound_yi, bound_yf, bound_zi, bound_zf = bounds
@@ -299,21 +289,21 @@ class Viewer(wx.Panel):
             z = self.slice_number
 
         return x,y,z
-            
+
     def __bind_events(self):
         ps.Publisher().subscribe(self.LoadImagedata, 'Load slice to viewer')
         ps.Publisher().subscribe(self.SetColour, 'Change mask colour')
         ps.Publisher().subscribe(self.UpdateRender, 'Update slice viewer')
-        ps.Publisher().subscribe(self.ChangeSliceNumber, ('Set scroll position', 
+        ps.Publisher().subscribe(self.ChangeSliceNumber, ('Set scroll position',
                                                      self.orientation))
-                                                     
+
         ###
         ps.Publisher().subscribe(self.ChangeBrushSize,'Set edition brush size')
         ps.Publisher().subscribe(self.ChangeBrushColour, 'Add mask')
         ps.Publisher().subscribe(self.ChangeBrushActor, 'Set brush format')
         ps.Publisher().subscribe(self.ChangeBrushOperation, 'Set edition operation')
-    
-    
+
+
     def ChangeBrushOperation(self, pubsub_evt):
         print pubsub_evt.data
         self._brush_cursor_op = pubsub_evt.data
@@ -339,6 +329,7 @@ class Viewer(wx.Panel):
 
         actor = vtk.vtkImageActor()
         actor.SetInput(slice_.GetOutput())
+        actor_bound = actor.GetBounds()
         self.actor = actor
 
         colour = const.ORIENTATION_COLOUR[self.orientation]
@@ -363,7 +354,30 @@ class Viewer(wx.Panel):
         self.scroll.SetScrollbar(wx.SB_VERTICAL, 1, max_slice_number,
                                                      max_slice_number)
         self.SetScrollPosition(0)
-        self.cursor.SetSpacing(imagedata.GetSpacing())
+
+        actor_bound = actor.GetBounds()
+
+        # Insert cursor
+        cursor = ca.CursorCircle()
+        cursor.SetOrientation(self.orientation)
+        self.__update_cursor_position()
+        cursor.SetSpacing(imagedata.GetSpacing())
+        self.ren.AddActor(cursor.actor)
+        self.ren.Render()
+
+        self.cursor = cursor
+
+        self.AppendMode('EDITOR')
+
+    def __update_cursor_position(self, position = None):
+
+        if (self.cursor):
+            slice_number = self.slice_number
+            actor_bound = self.actor.GetBounds()
+            coordinates = {"SAGITAL": [actor_bound[1] + 1 + slice_number, actor_bound[3], actor_bound[5]],
+                           "CORONAL": [actor_bound[1], actor_bound[3] + 1 + slice_number, actor_bound[5]],
+                           "AXIAL": [actor_bound[1], actor_bound[3], actor_bound[5] + 1 + slice_number]}
+            self.cursor.SetPosition(coordinates[self.orientation])
 
     def SetOrientation(self, orientation):
         self.orientation = orientation
@@ -378,10 +392,10 @@ class Viewer(wx.Panel):
         cam.SetViewUp(const.CAM_VIEW_UP[self.orientation])
         cam.ComputeViewPlaneNormal()
         cam.OrthogonalizeViewUp()
-        cam.ParallelProjectionOn()        
+        cam.ParallelProjectionOn()
 
         self.__update_display_extent()
-        
+
         self.ren.ResetCamera()
         self.ren.Render()
 
@@ -389,11 +403,11 @@ class Viewer(wx.Panel):
 
         pos = self.slice_number
         e = self.imagedata.GetWholeExtent()
-        
+
         new_extent = {"SAGITAL": (pos, pos, e[2], e[3], e[4], e[5]),
                       "CORONAL": (e[0], e[1], pos, pos, e[4], e[5]),
                       "AXIAL": (e[0], e[1], e[2], e[3], pos, pos)}
-                       
+
         self.actor.SetDisplayExtent(new_extent[self.orientation])
         self.ren.ResetCameraClippingRange()
         self.ren.Render()
@@ -416,6 +430,7 @@ class Viewer(wx.Panel):
         self.text_actor.SetInput(str(index))
         self.slice_number = index
         self.__update_display_extent()
+        self.__update_cursor_position()
 
     def ChangeSliceNumber(self, pubsub_evt):
         index = pubsub_evt.data
