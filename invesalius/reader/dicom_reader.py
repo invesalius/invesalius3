@@ -25,7 +25,7 @@ import gdcm
 
 import dicom
 import dicom_grouper
-from data.imagedata_utils import ResampleMatrix
+from data.imagedata_utils import ResampleImage2D
 
 def LoadImages(dir_):
     #  TODO!!! SUPER GAMBIARRA!!! DO THIS BETTER
@@ -92,22 +92,22 @@ def LoadImages(dir_):
     for x in xrange(len(files)):
         if not(reduce_matrix):
             array.InsertValue(x,files[x])
-        else:            
+        else:
             #SIf the resolution of the
             #matrix is very large
             read = vtkgdcm.vtkGDCMImageReader()
             read.SetFileName(files[x])
             read.Update()
-            
+
             #Resample image in x,y dimension
-            img = ResampleMatrix(read.GetOutput(), 256)
-            
+            img = ResampleImage2D(read.GetOutput(), 256)
+
             #Stack images in Z axes
             img_app.AddInput(img)
-    
+
     img_app.Update()
     img_axial = vtk.vtkImageData()
-    
+
     if (reduce_matrix):
         img_axial.DeepCopy(img_app.GetOutput())
         img_axial.SetSpacing(img_axial.GetSpacing()[0],\
@@ -117,7 +117,7 @@ def LoadImages(dir_):
         read = vtkgdcm.vtkGDCMImageReader()
         read.SetFileNames(array)
         read.Update()
-        
+
         img_axial.DeepCopy(read.GetOutput())
         img_axial.SetSpacing(spacing, spacing, spacing_z)
 
