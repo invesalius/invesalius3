@@ -18,6 +18,7 @@ class Slice(object):
     def __init__(self):
         self.imagedata = None
         self.current_mask = None
+        self.blend_filter = None
         self.__bind_events()
         
     def __bind_events(self):
@@ -216,7 +217,8 @@ class Slice(object):
 
         # This condition is not necessary in Linux, only under mac and windows
         # because combobox event is binded when the same item is selected again.
-        if index != self.current_mask.index:
+        #if index != self.current_mask.index:
+        if self.current_mask and self.blend_filter:
             proj = Project()
             future_mask = proj.GetMask(index)
 
@@ -398,6 +400,11 @@ class Slice(object):
                                      future_mask.colour))
 
         self.current_mask = future_mask
+        
+        ps.Publisher().sendMessage('Change mask selected', future_mask.index)
+        #ps.Publisher().sendMessage('Show mask', (future_mask.index, 1))
+        ps.Publisher().sendMessage('Update slice viewer')
+        
 
 
     def __create_mask(self, imagedata):
