@@ -31,16 +31,16 @@ class CursorCircle:
         """
         Function to plot the circle
         """
-        
+
         disk = self.disk
         disk.SetInnerRadius(self.radius-1) # filled = self.radius
         disk.SetOuterRadius(self.radius) # filled = 0x
         disk.SetRadialResolution(50)
         disk.SetCircumferentialResolution(50)
-     
+
         mapper = self.mapper
         mapper.SetInput(disk.GetOutput())
-        
+
         actor = self.actor      
         actor.SetMapper(mapper)
         actor.GetProperty().SetOpacity(self.opacity)
@@ -48,7 +48,7 @@ class CursorCircle:
         actor.SetPosition(self.position)
         actor.SetVisibility(1)
         actor.PickableOff()
-        
+
     def __calculate_area_pixels(self):
         """
         Return the cursor's pixels.
@@ -62,7 +62,7 @@ class CursorCircle:
         xs, ys, zs = self.spacing 
         orientation_based_spacing = {"AXIAL" : (xs, ys),
                                      "SAGITAL" : (ys, zs),
-                                     "CORONAL" : (xs, zs) }
+                                     "CORONAL" : (xs, zs)}
         xs, ys = orientation_based_spacing[self.orientation]
         self.pixel_list = []
         radius = self.radius
@@ -149,6 +149,8 @@ class CursorRectangle:
         
         self.dimension = (self.x_length, self.y_length)
         self.position = (0 ,0)
+        self.orientation = "AXIAL"
+        self.spacing = (1, 1, 1)
         
         self.mapper = vtk.vtkPolyDataMapper()
     
@@ -229,7 +231,7 @@ class CursorRectangle:
         retangle = self.retangle
         retangle.SetXLength(self.x_length)
         retangle.SetYLength(self.y_length)
-              
+        
         seeds_yi = self.seeds_yi
         seeds_yi.SetPoint1(0, 0, 0)
         seeds_yi.SetPoint2(0, self.y_length, 0)
@@ -270,9 +272,14 @@ class CursorRectangle:
         xc = 0
         yc = 0
         z = 0
+        xs, ys, zs = self.spacing 
+        orientation_based_spacing = {"AXIAL" : (xs, ys),
+                                     "SAGITAL" : (ys, zs),
+                                     "CORONAL" : (xs, zs)}
+        xs, ys = orientation_based_spacing[self.orientation]
         self.pixel_list = []
-        for i in xrange(int(yc - self.y_length/2), int(yc + self.y_length/2)):
-            for k in xrange(xc - self.x_length/2, xc + self.x_length/2):
+        for i in utils.frange(yc - self.y_length/2, yc + self.y_length/2, ys):
+            for k in utils.frange(xc - self.x_length/2, xc + self.x_length/2, xs):
                 self.pixel_list.append((k, i))
 
 
