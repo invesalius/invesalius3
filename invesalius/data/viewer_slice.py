@@ -47,7 +47,7 @@ class Viewer(wx.Panel):
 
         self._brush_cursor_op = 'Draw'
         self._brush_cursor_size = 30
-        self._brush_cursor_colour = [0,0,1]
+        self._brush_cursor_colour = None
         self._brush_cursor_type = 'circle'
         self.cursor = None
         # VTK pipeline and actors
@@ -131,12 +131,21 @@ class Viewer(wx.Panel):
         self.interactor.Render()
 
     def ChangeBrushColour(self, pubsub_evt):
+        print "********************* ChangeBrushColour"
+        vtk_colour = pubsub_evt.data[3]
+        self._brush_cursor_colour = vtk_colour
         if (self.cursor):
-            vtk_colour = pubsub_evt.data[3]
             self.cursor.SetColour(vtk_colour)
-            self._brush_cursor_colour = vtk_colour
             self.ren.Render()
             self.interactor.Render()
+
+    def SetBrushColour(self, pubsub_evt):
+        colour_wx = pubsub_evt.data
+        colour_vtk = [colour/float(255) for colour in colour_wx]
+        self._brush_cursor_colour = colour_vtk
+        self.cursor.SetColour(colour_vtk)
+        self.interactor.Render()
+
 
 
     def ChangeBrushActor(self, pubsub_evt):
@@ -315,7 +324,7 @@ class Viewer(wx.Panel):
 
     def __bind_events(self):
         ps.Publisher().subscribe(self.LoadImagedata, 'Load slice to viewer')
-        ps.Publisher().subscribe(self.SetColour, 'Change mask colour')
+        ps.Publisher().subscribe(self.SetBrushColour, 'Change mask colour')
         ps.Publisher().subscribe(self.UpdateRender, 'Update slice viewer')
         ps.Publisher().subscribe(self.ChangeSliceNumber, ('Set scroll position',
                                                      self.orientation))
@@ -384,6 +393,7 @@ class Viewer(wx.Panel):
         cursor = ca.CursorCircle()
         cursor.SetOrientation(self.orientation)
         self.__update_cursor_position([i for i in actor_bound[1::2]])
+        cursor.SetColour(self._brush_cursor_colour)
         cursor.SetSpacing(imagedata.GetSpacing())
         self.ren.AddActor(cursor.actor)
         self.ren.Render()
@@ -461,10 +471,5 @@ class Viewer(wx.Panel):
         self.scroll.SetThumbPosition(index)
         self.interactor.Render()
 
-    def SetColour(self, pubsub_evt):
-        colour_wx = pubsub_evt.data
-        colour_vtk = [colour/float(255) for colour in colour_wx]
-        self._brush_cursor_colour = colour_vtk
-        self.cursor.SetColour(colour_vtk)
-        self.interactor.Render()
+
 
