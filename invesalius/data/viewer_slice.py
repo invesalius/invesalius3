@@ -463,7 +463,13 @@ class Viewer(wx.Panel):
         self.text_actor.SetInput(str(index))
         self.slice_number = index
         self.__update_display_extent()
-        actor_bound = self.actor.GetBounds()
+        
+        position = {"SAGITAL": {0: self.slice_number},
+                    "CORONAL": {1: self.slice_number},
+                    "AXIAL": {2: self.slice_number}}
+        
+        ps.Publisher().sendMessage('Update cursor single position in slice',
+                                    position[self.orientation])
 
     def ChangeSliceNumber(self, pubsub_evt):
         index = pubsub_evt.data
