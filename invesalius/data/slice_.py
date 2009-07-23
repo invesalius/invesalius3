@@ -59,7 +59,7 @@ class Slice(object):
     def __add_mask(self, pubsub_evt):
         mask_name = pubsub_evt.data
         self.CreateMask(name=mask_name)
-        self.ChangeCurrentMaskColour(self.current_mask.colour)
+        self.SetMaskColour(self.current_mask.index, self.current_mask.colour)
     
     def __select_current_mask(self, pubsub_evt):
         mask_index = pubsub_evt.data
@@ -175,7 +175,7 @@ class Slice(object):
         "Show a mask given its index and 'show' value (0: hide, other: show)"
         proj = Project()
         proj.mask_dict[index].is_shown = value
-        if (mask_index == self.current_mask.index):
+        if (index == self.current_mask.index):
             if value:
                 self.blend_filter.SetOpacity(1, self.current_mask.opacity)
             else:
@@ -241,7 +241,7 @@ class Slice(object):
                                             self.current_mask.threshold_range))
             ps.Publisher().sendMessage('Set threshold values in gradient',
                                         self.current_mask.threshold_range)
-            ps.Publisher().sendMessage('Select mask name in combo', mask_index)
+            ps.Publisher().sendMessage('Select mask name in combo', index)
             ps.Publisher().sendMessage('Update slice viewer')
     #---------------------------------------------------------------------------
 
