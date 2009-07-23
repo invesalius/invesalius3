@@ -11,109 +11,220 @@ from utils import Singleton
 
 class Slice(object):
     __metaclass__= Singleton
-    # Only one project will be initialized per time. Therefore, we use
-    # Singleton design pattern for implementing it
+    # Only one slice will be initialized per time (despite several viewers
+    # show it from distinct perspectives).
+    # Therefore, we use Singleton design pattern for implementing it.
 
     def __init__(self):
         self.imagedata = None
-        self.__bind_events()
         self.current_mask = None
-
+        self.__bind_events()
+        
     def __bind_events(self):
-        ps.Publisher().subscribe(self.SetThresholdRange, 'Set threshold values')
-        ps.Publisher().subscribe(self.SetEditionThresholdRange,
-                                 'Set edition threshold values')
-        ps.Publisher().subscribe(self.OnChangeCurrentMaskColour,
-                                 'Change mask colour')
-        ps.Publisher().subscribe(self.AddMask, 'Create new mask')
-        ps.Publisher().subscribe(self.OnChangeCurrentMask, 'Change mask selected')
-        ps.Publisher().subscribe(self.CreateSurfaceFromIndex,
-                                 'Create surface from index')
+        # Slice properties
         ps.Publisher().subscribe(self.UpdateCursorPosition,
                                  'Update cursor position in slice')
-        ps.Publisher().subscribe(self.ShowMask, 'Show mask')
-        ps.Publisher().subscribe(self.ChangeMaskName, 'Change mask name')
-        ps.Publisher().subscribe(self.EraseMaskPixel, 'Erase mask pixel')
-        ps.Publisher().subscribe(self.EditMaskPixel, 'Edit mask pixel')
-        ps.Publisher().subscribe(self.AddMaskPixel, 'Add mask pixel')        
+        # General slice control
+        ps.Publisher().subscribe(self.CreateSurfaceFromIndex,
+                                 'Create surface from index')
+        # Mask control
+        ps.Publisher().subscribe(self.__add_mask, 'Create new mask')
+        ps.Publisher().subscribe(self.__select_current_mask,
+                                 'Change mask selected')
+        # Mask properties           
+        ps.Publisher().subscribe(self.__set_current_mask_edition_threshold,
+                                 'Set edition threshold values')
+        ps.Publisher().subscribe(self.__set_current_mask_threshold,
+                                 'Set threshold values')
+        ps.Publisher().subscribe(self.__set_current_mask_colour,
+                                'Change mask colour')
+        ps.Publisher().subscribe(self.__set_mask_name, 'Change mask name')
+        ps.Publisher().subscribe(self.__show_mask, 'Show mask')
+                                 
+        # Operations related to slice editor
+        ps.Publisher().subscribe(self.__erase_mask_pixel, 'Erase mask pixel')
+        ps.Publisher().subscribe(self.__edit_mask_pixel, 'Edit mask pixel')
+        ps.Publisher().subscribe(self.__add_mask_pixel, 'Add mask pixel')      
+    
+    #---------------------------------------------------------------------------
+    # BEGIN PUBSUB_EVT METHODS
+    #---------------------------------------------------------------------------
+    def __get_mask_data_for_surface_creation(self, pubsub_evt):
+        mask_index = pubsub_evt.data
+        CreateSurfaceFromIndex
         
-    def EraseMaskPixel(self, pubsub_evt):
+    
+    
+    
+    def __add_mask(self, pubsub_evt):
+        mask_name = pubsub_evt.data
+        self.CreateMask(name=mask_name)
+        self.ChangeCurrentMaskColour(self.current_mask.colour)
+    
+    def __select_current_mask(self, pubsub_evt):
+        mask_index = pubsub_evt.data
+        self.SelectCurrentMask(mask_index)
+    #---------------------------------------------------------------------------   
+    def __set_current_mask_edition_threshold(self, evt_pubsub):
+        if self.current_mask:
+            threshold_range = evt_pubsub.data
+            index = self.current_mask.index
+            self.SetMaskEditionThreshold(index, threshold_range)
+            
+    def __set_current_mask_threshold(self, evt_pubsub):
+        threshold_range = evt_pubsub.data
+        index = self.current_mask.index
+        self.SetMaskThreshold(index, threshold_range)
+
+    def __set_current_mask_colour(self, pubsub_evt):
+        # "if" is necessary because wx events are calling this before any mask
+        # has been created
+        if self.current_mask:
+            colour_wx = pubsub_evt.data
+            colour_vtk = [c/255.0 for c in colour_wx]
+            self.SetMaskColour(self.current_mask.index, colour_vtk)
+
+    def __set_mask_name(self, pubsub_evt):
+        index, name = pubsub_evt.data
+        self.SetMaskName(index, name)
+
+    def __show_mask(self, pubsub_evt):
+        # "if" is necessary because wx events are calling this before any mask
+        # has been created
+        if self.current_mask:
+            index, value = pubsub_evt.data
+            self.ShowMask(index, value)
+    #---------------------------------------------------------------------------
+    def __erase_mask_pixel(self, pubsub_evt):
         position = pubsub_evt.data
         self.ErasePixel(position)
         
-    def EditMaskPixel(self, pubsub_evt):
+    def __edit_mask_pixel(self, pubsub_evt):
         position = pubsub_evt.data
         self.EditPixelBasedOnThreshold(position)
 
-    def AddMaskPixel(self, pubsub_evt):
+    def __add_mask_pixel(self, pubsub_evt):
         position = pubsub_evt.data
         self.DrawPixel(position)        
-        
-    def ChangeMaskName(self, pubsub_evt):
-        index, name = pubsub_evt.data
+    #---------------------------------------------------------------------------
+    # END PUBSUB_EVT METHODS
+    #---------------------------------------------------------------------------
+    
+    
+    def SetMaskColour(self, index, colour, update=True):
+        "Set a mask colour given its index and colour (RGB 0-1 values)"
+        proj = Project()
+        proj.mask_dict[index].colour = colour
+    
+        (r,g,b) = colour
+        scalar_range = int(self.imagedata.GetScalarRange()[1])
+        self.lut_mask.SetTableValue(1, r, g, b, 1.0)
+        self.lut_mask.SetTableValue(scalar_range - 1, r, g, b, 1.0)
 
+        colour_wx = [r*255, g*255, b*255]
+        ps.Publisher().sendMessage('Change mask colour in notebook',
+                                    (self.current_mask.index, (r,g,b)))
+        ps.Publisher().sendMessage('Set GUI items colour', colour_wx)
+        if update:
+            ps.Publisher().sendMessage('Update slice viewer')
+            
+    def SetMaskName(self, index, name):
+        "Rename a mask given its index and the new name"
         proj = Project()
         proj.mask_dict[index].name = name
 
-
-    def ShowMask(self, pubsub_evt):
-    
-        # This is necessary because wx events are calling this before it was created
-        if self.current_mask:
-            mask_index, value = pubsub_evt.data
-            
-            proj = Project()
-            proj.mask_dict[mask_index].is_shown = value
-            
-    
-            if (mask_index == self.current_mask.index):
-                if value:
-                    self.blend_filter.SetOpacity(1, self.current_mask.opacity)
-                else:
-                    
-                    self.blend_filter.SetOpacity(1, 0)    
-                self.blend_filter.Update()
-                ps.Publisher().sendMessage('Update slice viewer')
-                
-            
-
-    def CreateSurfaceFromIndex(self, pubsub_evt):
-        mask_index = pubsub_evt.data
-        
-
+    def SetMaskEditionThreshold(self, index, threshold_range):
+        "Set threshold bounds to be used while editing slice"
         proj = Project()
-        mask = proj.mask_dict[mask_index]
-    
-        # This is very important. Do not use masks' imagedata. It would mess up
-        # surface quality event when using contour
-        imagedata = self.imagedata
+        proj.mask_dict[index].edition_threshold_range = threshold_range
+
+    def SetMaskThreshold(self, index, threshold_range):
+        """
+        Set a mask threshold range given its index and tuple of min and max
+        threshold values.
+        """
+        thresh_min, thresh_max = threshold_range
         
-        colour = mask.colour
-        threshold = mask.threshold_range
+        if self.current_mask.index == index:
+            # Update pipeline (this must be here, so pipeline is not broken)
+            self.img_thresh_mask.SetInput(self.imagedata)
+            self.img_thresh_mask.ThresholdBetween(float(thresh_min),
+                                                  float(thresh_max))
+            self.img_thresh_mask.Update()
+            
+            # Create imagedata copy so the pipeline is not broken
+            imagedata = self.img_thresh_mask.GetOutput()
+            self.current_mask.imagedata.DeepCopy(imagedata)
+            self.current_mask.threshold_range = threshold_range
+            
+            # Update pipeline (this must be here, so pipeline is not broken)
+            self.img_colours_mask.SetInput(self.current_mask.imagedata)
+            
+            # Update viewer
+            ps.Publisher().sendMessage('Update slice viewer')
+            
+            # Update data notebook (GUI)
+            ps.Publisher().sendMessage('Set mask threshold in notebook',
+                                (self.current_mask.index,
+                                self.current_mask.threshold_range))
+        else:
+            proj = Project()
+            proj.mask_dict[index].threshold_range = threshold_range
+        
+    def ShowMask(self, index, value):
+        "Show a mask given its index and 'show' value (0: hide, other: show)"
+        proj = Project()
+        proj.mask_dict[index].is_shown = value
+        if (mask_index == self.current_mask.index):
+            if value:
+                self.blend_filter.SetOpacity(1, self.current_mask.opacity)
+            else:
+                self.blend_filter.SetOpacity(1, 0)    
+            self.blend_filter.Update()
+            ps.Publisher().sendMessage('Update slice viewer')
+    #---------------------------------------------------------------------------
+    def ErasePixel(self, position):
+        "Delete pixel, based on x, y and z position coordinates."
+        x, y, z = position
+        colour = self.imagedata.GetScalarRange()[0]# - 1 # Important to effect erase
+        imagedata = self.current_mask.imagedata
+        imagedata.SetScalarComponentFromDouble(x, y, z, 0, colour)
+        imagedata.Update()
 
-        ps.Publisher().sendMessage('Create surface',
-                                   (imagedata,colour,threshold))
+    def DrawPixel(self, position, colour=None):
+        "Draw pixel, based on x, y and z position coordinates."
+        x, y, z = position
+        if not colour:
+            colour = self.imagedata.GetScalarRange()[1]
+        imagedata = self.current_mask.imagedata
+        imagedata.SetScalarComponentFromDouble(x, y, z, 0, colour)
+        imagedata.Update()
 
-    def OnChangeCurrentMaskColour(self, pubsub_evt):
-        colour_wx = pubsub_evt.data
-        colour_vtk = [c/255.0 for c in colour_wx]
-        self.ChangeCurrentMaskColour(colour_vtk)
+    def EditPixelBasedOnThreshold(self, position):
+        "Erase or draw pixel based on edition threshold range."
+        x, y, z = position
+        colour = self.imagedata.GetScalarComponentAsDouble(x, y, z, 0)
+        thresh_min, thresh_max = self.current_mask.edition_threshold_range
 
-    def OnChangeCurrentMask(self, pubsub_evt):
-
-        mask_index = pubsub_evt.data
+        if (colour >= thresh_min) and (colour <= thresh_max):
+            self.DrawPixel(position, colour)
+        else:
+            self.ErasePixel(position)
+    #---------------------------------------------------------------------------
+    def SelectCurrentMask(self, index):
+        "Insert mask data, based on given index, into pipeline."
 
         # This condition is not necessary in Linux, only under mac and windows
-        # in these platforms, because the combobox event is binded when the
-        # same item is selected again.
-        if mask_index != self.current_mask.index:
+        # because combobox event is binded when the same item is selected again.
+        if index != self.current_mask.index:
             proj = Project()
-            future_mask = proj.GetMask(mask_index)
+            future_mask = proj.GetMask(index)
 
             self.current_mask = future_mask
 
             colour = future_mask.colour
-            self.ChangeCurrentMaskColour(colour, update=False)
+            index = future_mask.index
+            self.SetMaskColour(index, colour, update=False)
 
             imagedata = future_mask.imagedata
             self.img_colours_mask.SetInput(imagedata)
@@ -132,25 +243,35 @@ class Slice(object):
                                         self.current_mask.threshold_range)
             ps.Publisher().sendMessage('Select mask name in combo', mask_index)
             ps.Publisher().sendMessage('Update slice viewer')
+    #---------------------------------------------------------------------------
 
 
 
-    def ChangeCurrentMaskColour(self, colour, update=True):
-        # This is necessary because wx events are calling this before it was created
-        if self.current_mask:
-            (r,g,b) = colour
-            scalar_range = int(self.imagedata.GetScalarRange()[1])
-            self.current_mask.colour = colour
 
-            self.lut_mask.SetTableValue(1, r, g, b, 1.0)
-            self.lut_mask.SetTableValue(scalar_range - 1, r, g, b, 1.0)
 
-            colour_wx = [r*255, g*255, b*255]
-            ps.Publisher().sendMessage('Change mask colour in notebook',
-                                       (self.current_mask.index, (r,g,b)))
-            ps.Publisher().sendMessage('Set GUI items colour', colour_wx)
-            if update:
-                ps.Publisher().sendMessage('Update slice viewer')
+
+    def CreateSurfaceFromIndex(self, pubsub_evt):
+        mask_index = pubsub_evt.data
+        
+
+        proj = Project()
+        mask = proj.mask_dict[mask_index]
+    
+        # This is very important. Do not use masks' imagedata. It would mess up
+        # surface quality event when using contour
+        imagedata = self.imagedata
+        
+        colour = mask.colour
+        threshold = mask.threshold_range
+
+        ps.Publisher().sendMessage('Create surface',
+                                   (imagedata,colour,threshold))
+
+
+
+
+
+    
 
 
     def GetOutput(self):
@@ -235,11 +356,6 @@ class Slice(object):
 
         return img_colours_bg.GetOutput()
 
-    def AddMask(self, pubsub_evt):
-        mask_name = pubsub_evt.data
-        self.CreateMask(name=mask_name)
-        self.ChangeCurrentMaskColour(self.current_mask.colour)
-
     def CreateMask(self, imagedata=None, name=None):
 
         future_mask = Mask()
@@ -311,15 +427,6 @@ class Slice(object):
         mask_thresh_imagedata = self.__create_mask_threshold(imagedata)
         current_mask.imagedata.DeepCopy(mask_thresh_imagedata)
 
-        #import time
-        #viewer = vtk.vtkImageViewer()
-        #viewer.SetInput(mask_thresh_imagedata)
-        #viewer.SetColorWindow(400)
-        #viewer.SetColorLevel(200)
-        #viewer.Render()
-        #time.sleep(5)
-
-
         # map the input image through a lookup table
         img_colours_mask = vtk.vtkImageMapToColors()
         img_colours_mask.SetOutputFormatToRGBA()
@@ -348,64 +455,3 @@ class Slice(object):
         imagedata_mask.Update()
 
         return imagedata_mask
-
-    def SetThresholdRange(self, evt_pubsub):
-        thresh_min, thresh_max = evt_pubsub.data
-
-        self.img_thresh_mask.SetInput(self.imagedata)
-        self.img_thresh_mask.ThresholdBetween(float(thresh_min),
-                                              float(thresh_max))
-        self.img_thresh_mask.Update()
-
-        imagedata = self.img_thresh_mask.GetOutput()
-
-        self.current_mask.imagedata.DeepCopy(imagedata)
-
-        self.img_colours_mask.SetInput(self.current_mask.imagedata)
-
-        # save new data inside current mask
-        self.current_mask.threshold_range = (thresh_min, thresh_max)
-
-        ps.Publisher().sendMessage('Set mask threshold in notebook',
-                                   (self.current_mask.index,
-                                     self.current_mask.threshold_range))
-        ps.Publisher().sendMessage('Update slice viewer')
-
-    def SetEditionThresholdRange(self, evt_pubsub):
-        if self.current_mask:
-            thresh_min, thresh_max = evt_pubsub.data
-            self.current_mask.edition_threshold_range = thresh_min, thresh_max
-
-    def ErasePixel(self, position):
-        """
-        Delete pixel, based on x, y and z position coordinates.
-        """
-        x, y, z = position
-        colour = self.imagedata.GetScalarRange()[0]# - 1 # Important to effect erase
-        imagedata = self.current_mask.imagedata
-        imagedata.SetScalarComponentFromDouble(x, y, z, 0, colour)
-        imagedata.Update()
-
-    def DrawPixel(self, position, colour=None):
-        """
-        Draw pixel, based on x, y and z position coordinates.
-        """
-        x, y, z = position
-        if not colour:
-            colour = self.imagedata.GetScalarRange()[1]
-        imagedata = self.current_mask.imagedata
-        imagedata.SetScalarComponentFromDouble(x, y, z, 0, colour)
-        imagedata.Update()
-
-    def EditPixelBasedOnThreshold(self, position):
-        """
-        Erase or draw pixel based on edition threshold range.
-        """
-        x, y, z = position
-        colour = self.imagedata.GetScalarComponentAsDouble(x, y, z, 0)
-        thresh_min, thresh_max = self.current_mask.edition_threshold_range
-
-        if (colour >= thresh_min) and (colour <= thresh_max):
-            self.DrawPixel(position, colour)
-        else:
-            self.ErasePixel(position)

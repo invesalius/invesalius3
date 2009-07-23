@@ -1,22 +1,30 @@
 from project import Project
 
+# Slice orientation
 AXIAL = 0
 CORONAL = 1
 SAGITAL = 2
 
+# Colour representing each orientation
+ORIENTATION_COLOUR = {'AXIAL': (1,0,0), # Red
+                      'CORONAL': (0,1,0), # Green
+                      'SAGITAL': (0,0,1)} # Blue
 
+# Camera according to slice's orientation
+CAM_POSITION = {"AXIAL":(0, 0, 1), "CORONAL":(0, -1, 0), "SAGITAL":(1, 0, 0)}
+CAM_VIEW_UP =  {"AXIAL":(0, 1, 0), "CORONAL":(0, 0, 1), "SAGITAL":(0, 0, 1)}
+
+# Mask threshold options
 proj = Project()
-
 THRESHOLD_RANGE = proj.threshold_modes["Bone"]
-
 THRESHOLD_PRESETS_INDEX = 0 #Bone
-
 THRESHOLD_HUE_RANGE = (0, 0.6667)
 THRESHOLD_INVALUE = 5000
 THRESHOLD_OUTVALUE = 0
 
+# Mask properties
 MASK_NAME_PATTERN = "Mask %d"
-
+MASK_OPACITY = 0.3
 MASK_COLOUR =  [(0.33, 1, 0.33),
                 (1, 1, 0.33),
                 (0.33, 0.91, 1),
@@ -34,33 +42,32 @@ MASK_COLOUR =  [(0.33, 1, 0.33),
                 #(0.792156862745098, 1.0, 0.66666666666666663), # too "light"
                 #(0.66666666666666663, 0.792156862745098, 1.0)]
 
-MASK_OPACITY = 0.3
+# Related to slice editor brush
+BRUSH_FORMAT = 0 # 0: circle, 1: square
+BRUSH_SIZE = 30
+BRUSH_OP = 0 # 0: erase, 1: add, 2: threshold
+BRUSH_COLOUR = (0,0,1.0)
 
-OP_ADD = 0
-OP_DEL = 1
-OP_THRESH =2
 
-# Surface creation default values. List contains:
+# Surface creation values. Each element's list contains:
 # 0: imagedata reformat ratio
 # 1: smooth_iterations
 # 2: smooth_relaxation_factor
 # 3: decimate_reduction
-
 SURFACE_QUALITY = {
     "Low": (3, 2, 0.3000, 0.4),
     "Medium": (2, 2, 0.3000, 0.4),
     "High": (0, 1, 0.3000, 0.1),
     "Optimal": (0, 2, 0.3000, 0.4),
-    "Custom": (None, None, None, None)
-}
-
+    "Custom": (None, None, None, None)}
 DEFAULT_SURFACE_QUALITY = "Optimal"
 
-
+# Surface properties
 SURFACE_TRANSPARENCY = 0.0
 SURFACE_NAME_PATTERN = "Surface %d"
 
-WINDOW_LEVEL = ({"Abdomen":(350,50),
+# Imagedata - window and level presets
+WINDOW_LEVEL = {"Abdomen":(350,50),
                  "Bone":(2000, 300),
                  "Brain Posterior Fossa":(120,40),
                  "Brain":(80,40),
@@ -76,12 +83,6 @@ WINDOW_LEVEL = ({"Abdomen":(350,50),
                  "Pelvis": (450,50),
                  "Sinus":(4000, 400),
                  "Vasculature - Hard":(240,80),
-                 "Vasculature - Soft":(650,160)
-                 })
+                 "Vasculature - Soft":(650,160)}
                  
-ORIENTATION_COLOUR = {'AXIAL': (1,0,0), # Red
-                      'CORONAL': (0,1,0), # Green
-                      'SAGITAL': (0,0,1)} # Blue
-CAM_POSITION = {"AXIAL":(0, 0, 1), "CORONAL":(0, -1, 0), "SAGITAL":(1, 0, 0)}
-CAM_VIEW_UP =  {"AXIAL":(0, 1, 0), "CORONAL":(0, 0, 1), "SAGITAL":(0, 0, 1)}
 
