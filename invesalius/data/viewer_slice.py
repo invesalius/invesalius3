@@ -176,6 +176,7 @@ class Viewer(wx.Panel):
         coord = self.GetCoordinateCursor()
         self.cursor.SetPosition(coord)
         self.cursor.SetEditionPosition(self.GetCoordinateCursorEdition())
+        self.__update_cursor_position(coord)
         self.ren.Render()
 
         if self._brush_cursor_op == 'Erase':
@@ -360,7 +361,7 @@ class Viewer(wx.Panel):
         # Insert cursor
         cursor = ca.CursorCircle()
         cursor.SetOrientation(self.orientation)
-        self.__update_cursor_position()
+        self.__update_cursor_position([i for i in actor_bound[1::2]])
         cursor.SetSpacing(imagedata.GetSpacing())
         self.ren.AddActor(cursor.actor)
         self.ren.Render()
@@ -369,14 +370,14 @@ class Viewer(wx.Panel):
 
         self.AppendMode('EDITOR')
 
-    def __update_cursor_position(self, position = None):
-
+    def __update_cursor_position(self, position):
+        x, y, z = position
         if (self.cursor):
             slice_number = self.slice_number
             actor_bound = self.actor.GetBounds()
-            coordinates = {"SAGITAL": [actor_bound[1] + 1 + slice_number, actor_bound[3], actor_bound[5]],
-                           "CORONAL": [actor_bound[1], actor_bound[3] + 1 + slice_number, actor_bound[5]],
-                           "AXIAL": [actor_bound[1], actor_bound[3], actor_bound[5] + 1 + slice_number]}
+            coordinates = {"SAGITAL": [actor_bound[1] + 1 + slice_number, y, z],
+                           "CORONAL": [x, actor_bound[3] - 1 - slice_number, z],
+                           "AXIAL": [x, y, actor_bound[5] + 1 + slice_number]}
             self.cursor.SetPosition(coordinates[self.orientation])
 
     def SetOrientation(self, orientation):
@@ -430,7 +431,7 @@ class Viewer(wx.Panel):
         self.text_actor.SetInput(str(index))
         self.slice_number = index
         self.__update_display_extent()
-        self.__update_cursor_position()
+        actor_bound = self.actor.GetBounds()
 
     def ChangeSliceNumber(self, pubsub_evt):
         index = pubsub_evt.data
