@@ -109,3 +109,18 @@ def FixGantryTilt(imagedata, tilt):
     imagedata.UpdateInformation()
 
     return imagedata
+
+
+def BuildEditedImage(imagedata, points):
+    """
+    Editing the original image in accordance with the edit
+    points in the editor, it is necessary to generate the
+    vtkPolyData via vtkContourFilter
+    """
+    for point in points:
+        x, y, z = point
+        colour = points[point]
+        imagedata.SetScalarComponentFromDouble(x, y, z, 0, colour)
+        imagedata.Update()
+
+    return imagedata
