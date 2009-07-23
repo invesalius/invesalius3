@@ -46,7 +46,9 @@ class Viewer(wx.Panel):
         self.slice_number = 0
 
         self._brush_cursor_op = 'Draw'
-        self.brush_cursor_size = 30
+        self._brush_cursor_size = 30
+        self._brush_cursor_colour = [0,0,1]
+        self._brush_cursor_type = 'circle'
         self.cursor = None
         # VTK pipeline and actors
         self.__config_interactor()
@@ -123,7 +125,7 @@ class Viewer(wx.Panel):
 
     def ChangeBrushSize(self, pubsub_evt):
         size = pubsub_evt.data
-        self.brush_cursor_size = size
+        self._brush_cursor_size = size
         self.cursor.SetSize(size)
         self.ren.Render()
         self.interactor.Render()
@@ -139,6 +141,7 @@ class Viewer(wx.Panel):
 
     def ChangeBrushActor(self, pubsub_evt):
         brush_type = pubsub_evt.data
+        self._brush_cursor_type = brush_type
         self.ren.RemoveActor(self.cursor.actor)
 
         if brush_type == 'square':
@@ -154,7 +157,7 @@ class Viewer(wx.Panel):
         cursor.SetPosition(coordinates[self.orientation])
         cursor.SetSpacing(self.imagedata.GetSpacing())
         cursor.SetColour(self._brush_cursor_colour)
-        cursor.SetSize(self.brush_cursor_size)
+        cursor.SetSize(self._brush_cursor_size)
         self.ren.AddActor(cursor.actor)
         self.ren.Render()
         self.interactor.Render()

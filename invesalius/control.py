@@ -7,7 +7,7 @@ import data.imagedata_utils as utils
 import data.surface as surface
 import data.volume as volume
 import reader.dicom_reader as dicom
-#import reader.analyze_reader as analyze
+import reader.analyze_reader as analyze
 
 DEFAULT_THRESH_MODE = 0
 
