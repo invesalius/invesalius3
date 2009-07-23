@@ -172,8 +172,27 @@ class Viewer(wx.Panel):
 
     def OnBrushClick(self, obj, evt_vtk):
         self.mouse_pressed = 1
-        coord = self.GetCoordinate()
-        print "Edit pixel region based on origin:", coord
+        
+        
+        coord = self.GetCoordinateCursor()
+        self.cursor.SetPosition(coord)
+        self.cursor.SetEditionPosition(self.GetCoordinateCursorEdition())
+        self.__update_cursor_position(coord)
+        self.ren.Render()
+
+        if self._brush_cursor_op == 'Erase':
+            evt_msg = 'Erase mask pixel'
+        elif self._brush_cursor_op == 'Draw':
+            evt_msg = 'Add mask pixel'
+        elif self._brush_cursor_op == 'Threshold':
+            evt_msg = 'Edit mask pixel'
+            
+        pixels = self.cursor.GetPixels()
+        for coord in pixels:
+            ps.Publisher().sendMessage(evt_msg, coord)
+
+        self.OnCrossMove(None, None)
+
 
     def OnBrushMove(self, obj, evt_vtk):
         coord = self.GetCoordinateCursor()
@@ -190,11 +209,11 @@ class Viewer(wx.Panel):
             evt_msg = 'Edit mask pixel'
 
         if self.mouse_pressed:
-            print "Edit pixel region based on origin:", coord
             pixels = self.cursor.GetPixels()
             for coord in pixels:
                 ps.Publisher().sendMessage(evt_msg, coord)
             self.interactor.Render()
+            
 
     def OnCrossMove(self, obj, evt_vtk):
         coord = self.GetCoordinate()
