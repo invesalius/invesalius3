@@ -27,6 +27,7 @@ class Slice(object):
                                  'Update cursor position in slice')
         ps.Publisher().subscribe(self.UpdateCursorPositionSingleAxis,
                                  'Update cursor single position in slice')
+                                 
         # General slice control
         ps.Publisher().subscribe(self.CreateSurfaceFromIndex,
                                  'Create surface from index')
@@ -55,10 +56,7 @@ class Slice(object):
     def __get_mask_data_for_surface_creation(self, pubsub_evt):
         mask_index = pubsub_evt.data
         CreateSurfaceFromIndex
-        
-    
-    
-    
+      
     def __add_mask(self, pubsub_evt):
         mask_name = pubsub_evt.data
         self.CreateMask(name=mask_name)
@@ -280,6 +278,8 @@ class Slice(object):
 
     def GetOutput(self):
         return self.cast_filter.GetOutput()
+        
+
 
     def SetInput(self, imagedata):
         self.imagedata = imagedata
@@ -337,7 +337,6 @@ class Slice(object):
         self.cross.Modified()
         self.cast_filter.Update()
         ps.Publisher().sendMessage('Update slice viewer')
-        
         
     def UpdateCursorPositionSingleAxis(self, pubsub_evt):
         axis_pos = pubsub_evt.data

@@ -36,7 +36,7 @@ class Viewer(wx.Panel):
         self.SetBackgroundColour(colour)
 
         # Interactor aditional style
-        self.modes = ['DEFAULT']
+        self.modes = []#['DEFAULT']
         self.mouse_pressed = 0
 
         self.__init_gui()
@@ -195,8 +195,10 @@ class Viewer(wx.Panel):
         for coord in pixels:
             ps.Publisher().sendMessage(evt_msg, coord)
 
-        self.OnCrossMove(None, None)
-
+        # FIXME: This is idiot, but is the only way that brush operations are
+        # working when cross is disabled
+        ps.Publisher().sendMessage('Update slice viewer')
+        ps.Publisher().sendMessage('Update slice viewer')
 
     def OnBrushMove(self, obj, evt_vtk):
         coord = self.GetCoordinateCursor()
@@ -216,6 +218,8 @@ class Viewer(wx.Panel):
             for coord in pixels:
                 ps.Publisher().sendMessage(evt_msg, coord)
         self.interactor.Render()
+        ps.Publisher().sendMessage('Update slice viewer')
+
 
     def OnCrossMove(self, obj, evt_vtk):
         coord = self.GetCoordinate()
