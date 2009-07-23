@@ -29,26 +29,26 @@ class SurfaceManager():
      - creating new surfaces;
      - managing surfaces' properties;
      - removing existing surfaces.
-    
+
     Send pubsub events to other classes:
      - GUI: Update progress status
      - volume_viewer: Sends surface actors as the are created
-    
+
     """
     def __init__(self):
         self.actors_dict = {}
         self.__bind_events()
-        
+
     def __bind_events(self):
         ps.Publisher().subscribe(self.AddNewActor, 'Create surface')
         ps.Publisher().subscribe(self.SetActorTransparency,
                                  'Set surface transparency')
         ps.Publisher().subscribe(self.SetActorColour,
                                  'Set surface colour')
-    
+
         ps.Publisher().subscribe(self.OnChangeSurfaceName, 'Change surface name')
         ps.Publisher().subscribe(self.OnShowSurface, 'Show surface')
-    
+
     def AddNewActor(self, pubsub_evt):
         """
         Create surface actor, save into project and send it to viewer.
@@ -56,7 +56,7 @@ class SurfaceManager():
         imagedata, colour, [min_value, max_value] = pubsub_evt.data
         quality='Optimal'
         mode = 'CONTOUR' # 'GRAYSCALE'
-        
+
         if quality in const.SURFACE_QUALITY.keys():
             imagedata_resolution = const.SURFACE_QUALITY[quality][0]
             smooth_iterations = const.SURFACE_QUALITY[quality][1]
@@ -64,8 +64,8 @@ class SurfaceManager():
             decimate_reduction = const.SURFACE_QUALITY[quality][3]
 
         if imagedata_resolution:
-            imagedata = iu.ResampleMatrix(imagedata)
-            
+            imagedata = iu.ResampleImage3D(imagedata, imagedata_resolution)
+
         pipeline_size = 3
         if decimate_reduction:
             pipeline_size += 1
@@ -74,7 +74,7 @@ class SurfaceManager():
 
         # Update progress value in GUI
         UpdateProgress = vu.ShowProgress(pipeline_size)
-        
+
         # Flip original vtkImageData
         flip = vtk.vtkImageFlip()
         flip.SetInput(imagedata)
@@ -103,7 +103,7 @@ class SurfaceManager():
             mcubes.AddObserver("ProgressEvent", lambda obj, evt:
                            UpdateProgress(contour, "Generating 3D surface..."))
             polydata = mcubes.GetOutput()
-        
+
         # Reduce number of triangles (previous classes create a large amount)
         # Important: vtkQuadricDecimation presented better results than
         # vtkDecimatePro
@@ -112,10 +112,10 @@ class SurfaceManager():
             decimation.SetInput(polydata)
             decimation.SetTargetReduction(decimate_reduction)
             decimation.GetOutput().ReleaseDataFlagOn()
-            decimation.AddObserver("ProgressEvent", lambda obj, evt: 
+            decimation.AddObserver("ProgressEvent", lambda obj, evt:
                   UpdateProgress(decimation, "Reducing number of triangles..."))
             polydata = decimation.GetOutput()
-                                
+
         # TODO (Paulo): Why do we need this filter?
         #triangle = vtk.vtkTriangleFilter()
         #triangle.SetInput(polydata)
@@ -127,7 +127,7 @@ class SurfaceManager():
 
         # Smooth surface without changing structures
         # Important: vtkSmoothPolyDataFilter presented better results than
-        # vtkImageGaussianSmooth and vtkWindowedSincPolyDataFilter  
+        # vtkImageGaussianSmooth and vtkWindowedSincPolyDataFilter
         if smooth_iterations and smooth_relaxation_factor:
             smoother = vtk.vtkSmoothPolyDataFilter()
             smoother.SetInput(polydata)
@@ -140,7 +140,7 @@ class SurfaceManager():
             smoother.AddObserver("ProgressEvent", lambda obj, evt:
                                UpdateProgress(smoother, "Smoothing surface..."))
             polydata = smoother.GetOutput()
-  
+
         # Filter used to detect and fill holes. Only fill boundary edges holes.
         #TODO: Hey! This piece of code is the same from
         # polydata_utils.FillSurfaceHole, we need to review this.
@@ -161,7 +161,7 @@ class SurfaceManager():
         normals.AddObserver("ProgressEvent", lambda obj, evt:
                                UpdateProgress(normals, "Orienting normals..."))
         polydata = normals.GetOutput()
-        
+
         #======= Temporary Code =======
         stl = vtk.vtkSTLWriter()
         stl.SetFileTypeToBinary()
@@ -176,24 +176,24 @@ class SurfaceManager():
         stripper.SetInput(normals.GetOutput())
         stripper.PassThroughCellIdsOn()
         stripper.PassThroughPointIdsOn()
-        stripper.AddObserver("ProgressEvent", lambda obj, evt: 
+        stripper.AddObserver("ProgressEvent", lambda obj, evt:
                                UpdateProgress(stripper, "Stripping surface..."))
-    
-        # Map polygonal data (vtkPolyData) to graphics primitives. 
+
+        # Map polygonal data (vtkPolyData) to graphics primitives.
         mapper = vtk.vtkPolyDataMapper()
         mapper.SetInput(stripper.GetOutput())
         mapper.ScalarVisibilityOff()
 
-        # Represent an object (geometry & properties) in the rendered scene 
+        # Represent an object (geometry & properties) in the rendered scene
         actor = vtk.vtkActor()
         actor.SetMapper(mapper)
-        
+
         # Create Surface instance
         surface = Surface()
         surface.colour = colour
         surface.polydata = polydata
 
-        
+
         # Set actor colour and transparency
         actor.GetProperty().SetColor(colour)
         actor.GetProperty().SetOpacity(1-surface.transparency)
@@ -201,28 +201,28 @@ class SurfaceManager():
         # Append surface into Project.surface_dict
         proj = Project()
         proj.surface_dict[surface.index] = surface
-        
+
         # Save actor for future management tasks
         self.actors_dict[surface.index] = actor
-        
+
         # Send actor by pubsub to viewer's render
         ps.Publisher().sendMessage('Load surface actor into viewer', (actor))
-        
+
         ps.Publisher().sendMessage('Update status text in GUI',
                                     "Surface created.")
-                                    
+
         # The following lines have to be here, otherwise all volumes disappear
         measured_polydata = vtk.vtkMassProperties()
         measured_polydata.SetInput(polydata)
         volume =  measured_polydata.GetVolume()
         surface.volume = volume
-                
+
         ps.Publisher().sendMessage('Update surface info in GUI',
-                                    (surface.index, surface.name, 
+                                    (surface.index, surface.name,
                                     surface.colour, surface.volume,
                                     surface.transparency))
-                                    
-        
+
+
     def RemoveActor(self, index):
         """
         Remove actor, according to given actor index.
@@ -233,17 +233,17 @@ class SurfaceManager():
         proj = Project()
         proj.surface_dict.pop(index)
 
-        
+
     def OnChangeSurfaceName(self, pubsub_evt):
         index, name = pubsub_evt.data
         proj = Project()
         proj.surface_dict[index].name = name
-        
+
     def OnShowSurface(self, pubsub_evt):
         index, value = pubsub_evt.data
         print "OnShowSurface", index, value
         self.ShowActor(index, value)
-        
+
     def ShowActor(self, index, value):
         """
         Show or hide actor, according to given actor index and value.
@@ -253,7 +253,7 @@ class SurfaceManager():
         proj = Project()
         proj.surface_dict[index].is_shown = value
         ps.Publisher().sendMessage('Render volume viewer')
-        
+
     def SetActorTransparency(self, pubsub_evt):
         """
         Set actor transparency (oposite to opacity) according to given actor
@@ -265,7 +265,7 @@ class SurfaceManager():
         proj = Project()
         proj.surface_dict[index].transparency = value
         ps.Publisher().sendMessage('Render volume viewer')
-        
+
     def SetActorColour(self, pubsub_evt):
         """
         """
