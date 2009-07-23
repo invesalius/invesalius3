@@ -56,9 +56,9 @@ class CursorCircle:
         Extracted equation. 
         http://www.mathopenref.com/chord.html
         """
-        xc = 0
-        yc = 0
-        z = 0
+        xc = 0.0
+        yc = 0.0
+        z = 0.0
         xs, ys, zs = self.spacing 
         orientation_based_spacing = {"AXIAL" : (xs, ys),
                                      "SAGITAL" : (ys, zs),
@@ -72,9 +72,9 @@ class CursorCircle:
             # line size
             line = sqrt(radius**2 - d**2) * 2
             # line initial x
-            xi = xc - line/2
+            xi = xc - line/2.0
             # line final
-            xf = line/2 + xc
+            xf = line/2.0 + xc
             yi = i
             for k in utils.frange(xi,xf,xs):
                 self.pixel_list.append((k, yi))
@@ -190,11 +190,11 @@ class CursorRectangle:
         seeds_xf.SetPoint1(0, 0, 0)
         seeds_xf.SetPoint2(self.x_length, 0, 0)
         
-        join_lines = self.join_lines
-        join_lines.AddInput(seeds_yi.GetOutput())
-        join_lines.AddInput(seeds_yf.GetOutput())
-        join_lines.AddInput(seeds_xi.GetOutput())
-        join_lines.AddInput(seeds_xf.GetOutput())
+        #join_lines = self.join_lines
+        #join_lines.AddInput(seeds_yi.GetOutput())
+        #join_lines.AddInput(seeds_yf.GetOutput())
+        #join_lines.AddInput(seeds_xi.GetOutput())
+        #join_lines.AddInput(seeds_xf.GetOutput())
         
         self.__calculate_area_pixels()
         
@@ -215,8 +215,15 @@ class CursorRectangle:
             self.actor.RotateY(90)
 
     def SetPosition(self, position):
-        self.position = position
-        self.actor.SetPosition(position)
+        x,y,z = position
+        x_half = self.x_length / 2.0
+        y_half = self.y_length / 2.0
+        orientation_position_based = {"AXIAL" : (x - x_half,y - y_half, z),
+                                      "CORONAL" : (x - x_half, y, z - y_half),
+                                      "SAGITAL" : (x, y - y_half, z + x_half)}
+        xc,yc,zc = orientation_position_based[self.orientation]
+        self.position = (xc,yc,zc)
+        self.actor.SetPosition(xc,yc,zc)
 
     def SetEditionPosition(self, position):
         self.edition_position = position

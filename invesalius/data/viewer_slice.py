@@ -17,7 +17,6 @@
 #    detalhes.
 #--------------------------------------------------------------------------
 
-
 import vtk
 from vtk.wx.wxVTKRenderWindowInteractor import wxVTKRenderWindowInteractor
 import wx
@@ -121,8 +120,6 @@ class Viewer(wx.Panel):
                 style.AddObserver(event,
                                   action[mode][event])
 
-
-
     def ChangeBrushSize(self, pubsub_evt):
         size = pubsub_evt.data
         self._brush_cursor_size = size
@@ -145,8 +142,6 @@ class Viewer(wx.Panel):
         self._brush_cursor_colour = colour_vtk
         self.cursor.SetColour(colour_vtk)
         self.interactor.Render()
-
-
 
     def ChangeBrushActor(self, pubsub_evt):
         brush_type = pubsub_evt.data
@@ -208,7 +203,6 @@ class Viewer(wx.Panel):
         self.cursor.SetPosition(coord)
         self.cursor.SetEditionPosition(self.GetCoordinateCursorEdition())
         self.__update_cursor_position(coord)
-        self.ren.Render()
 
         if self._brush_cursor_op == 'Erase':
             evt_msg = 'Erase mask pixel'
@@ -221,8 +215,7 @@ class Viewer(wx.Panel):
             pixels = self.cursor.GetPixels()
             for coord in pixels:
                 ps.Publisher().sendMessage(evt_msg, coord)
-            self.interactor.Render()
-            
+        self.interactor.Render()
 
     def OnCrossMove(self, obj, evt_vtk):
         coord = self.GetCoordinate()
