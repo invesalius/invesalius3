@@ -104,8 +104,8 @@ def LoadImages(dir_):
 
             #Stack images in Z axes
             img_app.AddInput(img)
+            img_app.Update()
 
-    img_app.Update()
     img_axial = vtk.vtkImageData()
 
     if (reduce_matrix):
