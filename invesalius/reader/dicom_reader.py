@@ -84,7 +84,7 @@ def LoadImages(dir_):
     array = vtk.vtkStringArray()
 
     #Case Reduce Matrix of the Image
-    reduce_matrix = 1
+    reduce_matrix = 0
 
     img_app = vtk.vtkImageAppend()
     img_app.SetAppendAxis(2) #Define Stack in Z
