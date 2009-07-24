@@ -6,6 +6,7 @@ import imagedata_utils as iu
 from project import Project
 import vtk_utils as vu
 import polydata_utils as pu
+from imagedata_utils import BuildEditedImage
 
 class Surface():
     """
@@ -53,9 +54,12 @@ class SurfaceManager():
         """
         Create surface actor, save into project and send it to viewer.
         """
-        imagedata, colour, [min_value, max_value] = pubsub_evt.data
+        imagedata, colour, [min_value, max_value], edited_points = pubsub_evt.data
         quality='Optimal'
         mode = 'CONTOUR' # 'GRAYSCALE'
+
+        if (edited_points):
+            imagedata = BuildEditedImage(imagedata, edited_points)
 
         if quality in const.SURFACE_QUALITY.keys():
             imagedata_resolution = const.SURFACE_QUALITY[quality][0]

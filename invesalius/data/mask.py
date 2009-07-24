@@ -13,4 +13,4 @@ class Mask():
         self.name = const.MASK_NAME_PATTERN %(Mask.general_index+1)
         self.edition_threshold_range = const.THRESHOLD_RANGE
         self.is_shown = 1
-        
+        self.edited_points = {}
