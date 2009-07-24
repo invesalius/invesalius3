@@ -178,8 +178,8 @@ class Viewer(wx.Panel):
 
     def OnBrushClick(self, obj, evt_vtk):
         self.mouse_pressed = 1
-        
-        
+
+
         coord = self.GetCoordinateCursor()
         self.cursor.SetPosition(coord)
         self.cursor.SetEditionPosition(self.GetCoordinateCursorEdition())
@@ -192,8 +192,8 @@ class Viewer(wx.Panel):
             evt_msg = 'Add mask pixel'
         elif self._brush_cursor_op == 'Threshold':
             evt_msg = 'Edit mask pixel'
-            
-        pixels = itertools.ifilter(self.TestOperationPosition, 
+
+        pixels = itertools.ifilter(self.TestOperationPosition,
                                    self.cursor.GetPixels())
         for coord in pixels:
             ps.Publisher().sendMessage(evt_msg, coord)
@@ -217,7 +217,7 @@ class Viewer(wx.Panel):
             evt_msg = 'Edit mask pixel'
 
         if self.mouse_pressed:
-            pixels = itertools.ifilter(self.TestOperationPosition, 
+            pixels = itertools.ifilter(self.TestOperationPosition,
                                        self.cursor.GetPixels())
             for coord in pixels:
                 ps.Publisher().sendMessage(evt_msg, coord)
@@ -338,6 +338,7 @@ class Viewer(wx.Panel):
 
     def __bind_events_wx(self):
         self.scroll.Bind(wx.EVT_SCROLL, self.OnScrollBar)
+        self.interactor.Bind(wx.EVT_KEY_DOWN, self.OnKeyDown)
 
     def LoadImagedata(self, pubsub_evt):
         imagedata = pubsub_evt.data
@@ -453,15 +454,33 @@ class Viewer(wx.Panel):
         if evt:
             evt.Skip()
 
+    def OnKeyDown(self, evt=None):
+        pos = self.scroll.GetThumbPosition()
+
+        min = 0
+        max = self.actor.GetSliceNumberMax()
+
+        if (evt.GetKeyCode() == 315 and pos > min):
+            pos = pos - 1
+            self.scroll.SetThumbPosition(pos)
+            self.OnScrollBar()
+        elif (evt.GetKeyCode() == 317 and pos < max):
+            pos = pos + 1
+            self.scroll.SetThumbPosition(pos)
+            self.OnScrollBar()
+        self.interactor.Render()
+        if evt:
+            evt.Skip()
+
     def SetSliceNumber(self, index):
         self.text_actor.SetInput(str(index))
         self.slice_number = index
         self.__update_display_extent()
-        
+
         position = {"SAGITAL": {0: self.slice_number},
                     "CORONAL": {1: self.slice_number},
                     "AXIAL": {2: self.slice_number}}
-        
+
         ps.Publisher().sendMessage('Update cursor single position in slice',
                                     position[self.orientation])
 
