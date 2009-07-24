@@ -75,6 +75,7 @@ class Slice(object):
     def __set_current_mask_threshold(self, evt_pubsub):
         threshold_range = evt_pubsub.data
         index = self.current_mask.index
+        self.current_mask.edited_points = {}
         self.SetMaskThreshold(index, threshold_range)
 
     def __set_current_mask_colour(self, pubsub_evt):
