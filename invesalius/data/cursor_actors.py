@@ -78,7 +78,6 @@ class CursorCircle:
             yi = i
             for k in utils.frange(xi,xf,xs):
                 self.pixel_list.append((k, yi))
-                print k,yi, xs, ys
 
     def SetSize(self, diameter):
         radius = self.radius = diameter/2.0
