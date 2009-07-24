@@ -224,7 +224,6 @@ class Viewer(wx.Panel):
         self.interactor.Render()
         ps.Publisher().sendMessage('Update slice viewer')
 
-
     def OnCrossMove(self, obj, evt_vtk):
         coord = self.GetCoordinate()
         # Update position in other slices
@@ -238,9 +237,7 @@ class Viewer(wx.Panel):
             ps.Publisher().sendMessage(('Set scroll position', 'AXIAL'),
                                         coord[2])
 
-
     def GetCoordinate(self):
-
         # Find position
         mouse_x, mouse_y = self.interactor.GetEventPosition()
         self.pick.Pick(mouse_x, mouse_y, 0, self.ren)
@@ -281,7 +278,6 @@ class Viewer(wx.Panel):
         return coord
 
     def GetCoordinateCursor(self):
-
         # Find position
         mouse_x, mouse_y = self.interactor.GetEventPosition()
         self.pick.Pick(mouse_x, mouse_y, 0, self.ren)
@@ -289,7 +285,6 @@ class Viewer(wx.Panel):
         return x, y, z
 
     def GetCoordinateCursorEdition(self):
-
         # Find position
         mouse_x, mouse_y = self.interactor.GetEventPosition()
         self.pick.Pick(mouse_x, mouse_y, 0, self.ren)
@@ -349,7 +344,6 @@ class Viewer(wx.Panel):
         self.SetInput(imagedata)
 
     def SetInput(self, imagedata):
-
         self.imagedata = imagedata
 
         ren = self.ren
@@ -434,7 +428,6 @@ class Viewer(wx.Panel):
         self.ren.Render()
 
     def __update_display_extent(self):
-
         pos = self.slice_number
         e = self.imagedata.GetWholeExtent()
 
@@ -479,6 +472,9 @@ class Viewer(wx.Panel):
         self.interactor.Render()
 
     def TestOperationPosition(self, coord):
+        """
+        Test if coord is into the imagedata limits.
+        """
         x, y, z = coord
         xi, yi, zi = 0, 0, 0
         xf, yf, zf = self.imagedata.GetDimensions()
@@ -487,6 +483,3 @@ class Viewer(wx.Panel):
            and zi <= z <= zf:
             return True
         return False
-
-
-
