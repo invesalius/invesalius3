@@ -17,6 +17,8 @@
 #    detalhes.
 #--------------------------------------------------------------------------
 
+import itertools
+
 import vtk
 from vtk.wx.wxVTKRenderWindowInteractor import wxVTKRenderWindowInteractor
 import wx
@@ -191,7 +193,8 @@ class Viewer(wx.Panel):
         elif self._brush_cursor_op == 'Threshold':
             evt_msg = 'Edit mask pixel'
             
-        pixels = self.cursor.GetPixels()
+        pixels = itertools.ifilter(self.TestOperationPosition, 
+                                   self.cursor.GetPixels())
         for coord in pixels:
             ps.Publisher().sendMessage(evt_msg, coord)
 
@@ -214,7 +217,8 @@ class Viewer(wx.Panel):
             evt_msg = 'Edit mask pixel'
 
         if self.mouse_pressed:
-            pixels = self.cursor.GetPixels()
+            pixels = itertools.ifilter(self.TestOperationPosition, 
+                                       self.cursor.GetPixels())
             for coord in pixels:
                 ps.Publisher().sendMessage(evt_msg, coord)
         self.interactor.Render()
@@ -473,6 +477,16 @@ class Viewer(wx.Panel):
         self.SetSliceNumber(index)
         self.scroll.SetThumbPosition(index)
         self.interactor.Render()
+
+    def TestOperationPosition(self, coord):
+        x, y, z = coord
+        xi, yi, zi = 0, 0, 0
+        xf, yf, zf = self.imagedata.GetDimensions()
+        if xi <= x <= xf \
+           and yi <= y <= yf\
+           and zi <= z <= zf:
+            return True
+        return False
 
 
 
