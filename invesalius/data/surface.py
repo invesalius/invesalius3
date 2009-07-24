@@ -58,8 +58,12 @@ class SurfaceManager():
         quality='Optimal'
         mode = 'CONTOUR' # 'GRAYSCALE'
 
+        imagedata_tmp = None
         if (edited_points):
-            imagedata = BuildEditedImage(imagedata, edited_points)
+            imagedata_tmp = vtk.vtkImageData()
+            imagedata_tmp.DeepCopy(imagedata)
+            imagedata_tmp.Update()
+            imagedata = BuildEditedImage(imagedata_tmp, edited_points)
 
         if quality in const.SURFACE_QUALITY.keys():
             imagedata_resolution = const.SURFACE_QUALITY[quality][0]
@@ -226,6 +230,9 @@ class SurfaceManager():
                                     surface.colour, surface.volume,
                                     surface.transparency))
 
+        #Destroy Copy original imagedata
+        if(imagedata_tmp):
+            del imagedata_tmp
 
     def RemoveActor(self, index):
         """
