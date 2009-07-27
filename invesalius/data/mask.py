@@ -11,6 +11,6 @@ class Mask():
         self.opacity = const.MASK_OPACITY
         self.threshold_range = const.THRESHOLD_RANGE
         self.name = const.MASK_NAME_PATTERN %(Mask.general_index+1)
-        self.edition_threshold_range = const.THRESHOLD_RANGE
+        self.edition_threshold_range = [const.THRESHOLD_OUTVALUE, const.THRESHOLD_INVALUE]
         self.is_shown = 1
         self.edited_points = {}
