@@ -27,14 +27,15 @@ import dicom
 import dicom_grouper
 from data.imagedata_utils import ResampleImage2D
 
+import constants as const
 def LoadImages(dir_):
     #  TODO!!! SUPER GAMBIARRA!!! DO THIS BETTER
 
-    if 0:
-        fow = vtk.vtkFileOutputWindow()
-        fow.SetFileName('vtk_output.txt')
-        ow = vtk.vtkOutputWindow ()
-        ow.SetInstance (fow)
+    #if 0:
+    fow = vtk.vtkFileOutputWindow()
+    fow.SetFileName('vtk_output.txt')
+    ow = vtk.vtkOutputWindow ()
+    ow.SetInstance (fow)
 
     dcm_files, acquisition_modality = GetDicomFiles(dir_)
 
@@ -122,6 +123,10 @@ def LoadImages(dir_):
         img_axial.SetSpacing(spacing, spacing, spacing_z)
 
     img_axial.Update()
+
+    thresh_min, thresh_max = img_axial.GetScalarRange()
+    const.THRESHOLD_INVALUE = thresh_max
+    const.THRESHOLD_OUTVALUE = thresh_min
 
     return img_axial, acquisition_modality, tilt
 
