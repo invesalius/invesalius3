@@ -179,6 +179,8 @@ class Viewer(wx.Panel):
     def OnBrushClick(self, obj, evt_vtk):
         self.mouse_pressed = 1
 
+        mouse_x, mouse_y = self.interactor.GetEventPosition()
+        self.pick.Pick(mouse_x, mouse_y, 0, self.ren)
 
         coord = self.GetCoordinateCursor()
         self.cursor.SetPosition(coord)
@@ -203,6 +205,8 @@ class Viewer(wx.Panel):
         ps.Publisher().sendMessage('Update slice viewer')
 
     def OnBrushMove(self, obj, evt_vtk):
+        mouse_x, mouse_y = self.interactor.GetEventPosition()
+        self.pick.Pick(mouse_x, mouse_y, 0, self.ren)
         coord = self.GetCoordinateCursor()
         self.cursor.SetPosition(coord)
         self.cursor.SetEditionPosition(self.GetCoordinateCursorEdition())
@@ -237,8 +241,6 @@ class Viewer(wx.Panel):
 
     def GetCoordinate(self):
         # Find position
-        mouse_x, mouse_y = self.interactor.GetEventPosition()
-        self.pick.Pick(mouse_x, mouse_y, 0, self.ren)
         x, y, z = self.pick.GetPickPosition()
 
         # First we fix the position origin, based on vtkActor bounds
@@ -277,15 +279,11 @@ class Viewer(wx.Panel):
 
     def GetCoordinateCursor(self):
         # Find position
-        mouse_x, mouse_y = self.interactor.GetEventPosition()
-        self.pick.Pick(mouse_x, mouse_y, 0, self.ren)
         x, y, z = self.pick.GetPickPosition()
         return x, y, z
 
     def GetCoordinateCursorEdition(self):
         # Find position
-        mouse_x, mouse_y = self.interactor.GetEventPosition()
-        self.pick.Pick(mouse_x, mouse_y, 0, self.ren)
         x, y, z = self.pick.GetPickPosition()
 
         # First we fix the position origin, based on vtkActor bounds
