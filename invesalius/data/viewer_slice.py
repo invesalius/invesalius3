@@ -194,9 +194,7 @@ class Viewer(wx.Panel):
 
         pixels = itertools.ifilter(self.TestOperationPosition,
                                    self.cursor.GetPixels())
-        for coord in pixels:
-            print coord
-            ps.Publisher().sendMessage(msg, coord)
+        ps.Publisher().sendMessage(msg, pixels)
 
         # FIXME: This is idiot, but is the only way that brush operations are
         # working when cross is disabled
@@ -221,10 +219,10 @@ class Viewer(wx.Panel):
         if self.mouse_pressed:
             pixels = itertools.ifilter(self.TestOperationPosition,
                                        self.cursor.GetPixels())
-            for coord in pixels:
-                ps.Publisher().sendMessage(evt_msg, coord)
-        self.interactor.Render()
-        ps.Publisher().sendMessage('Update slice viewer')
+            ps.Publisher().sendMessage(evt_msg, pixels)
+            ps.Publisher().sendMessage('Update slice viewer')
+        else:
+            self.interactor.Render()
 
     def OnCrossMove(self, obj, evt_vtk):
         coord = self.GetCoordinate()
