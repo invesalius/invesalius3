@@ -43,11 +43,18 @@ MASK_COLOUR =  [(0.33, 1, 0.33),
                 #(0.66666666666666663, 0.792156862745098, 1.0)]
 
 # Related to slice editor brush
-BRUSH_FORMAT = 0 # 0: circle, 1: square
-BRUSH_SIZE = 30
-BRUSH_OP = 0 # 0: erase, 1: add, 2: threshold
-BRUSH_COLOUR = (0,0,1.0)
+BRUSH_CIRCLE = 0 #
+BRUSH_SQUARE = 1
+DEFAULT_BRUSH_FORMAT = BRUSH_CIRCLE
 
+BRUSH_DRAW = 0
+BRUSH_ERASE = 1
+BRUSH_THRESH = 2
+DEFAULT_BRUSH_OP = BRUSH_THRESH
+BRUSH_OP_NAME = ["Draw", "Erase", "Threshold"]
+
+BRUSH_COLOUR = (0,0,1.0)
+BRUSH_SIZE = 30
 
 # Surface creation values. Each element's list contains:
 # 0: imagedata reformat ratio

@@ -50,6 +50,21 @@ class Slice(object):
         ps.Publisher().subscribe(self.__edit_mask_pixel, 'Edit mask pixel')
         ps.Publisher().subscribe(self.__add_mask_pixel, 'Add mask pixel')
 
+        ps.Publisher().subscribe(self.__set_current_mask_threshold_limits,
+                                        'Update threshold limits')
+
+    def __set_current_mask_threshold_limits(self, pubsub_evt):
+        thresh_min = pubsub_evt.data[0]
+        thresh_max  = pubsub_evt.data[1]
+        print "***********"
+        print thresh_min, thresh_max
+        print "***********"
+        if self.current_mask:
+            index = self.current_mask.index
+            self.SetMaskEditionThreshold(index, (thresh_min, thresh_max))
+            
+
+
     #---------------------------------------------------------------------------
     # BEGIN PUBSUB_EVT METHODS
     #---------------------------------------------------------------------------
@@ -75,7 +90,6 @@ class Slice(object):
     def __set_current_mask_threshold(self, evt_pubsub):
         threshold_range = evt_pubsub.data
         index = self.current_mask.index
-        self.current_mask.edited_points = {}
         self.SetMaskThreshold(index, threshold_range)
 
     def __set_current_mask_colour(self, pubsub_evt):
@@ -98,19 +112,16 @@ class Slice(object):
             self.ShowMask(index, value)
     #---------------------------------------------------------------------------
     def __erase_mask_pixel(self, pubsub_evt):
-        positions = pubsub_evt.data
-        for position in positions:
-            self.ErasePixel(position)
+        position = pubsub_evt.data
+        self.ErasePixel(position)
 
     def __edit_mask_pixel(self, pubsub_evt):
-        positions = pubsub_evt.data
-        for position in positions:
-            self.EditPixelBasedOnThreshold(position)
+        position = pubsub_evt.data
+        self.EditPixelBasedOnThreshold(position)
 
     def __add_mask_pixel(self, pubsub_evt):
-        positions = pubsub_evt.data
-        for position in positions:
-            self.DrawPixel(position)
+        position = pubsub_evt.data
+        self.DrawPixel(position)
     #---------------------------------------------------------------------------
     # END PUBSUB_EVT METHODS
     #---------------------------------------------------------------------------
@@ -191,19 +202,19 @@ class Slice(object):
     def ErasePixel(self, position):
         "Delete pixel, based on x, y and z position coordinates."
         x, y, z = position
-        colour = self.imagedata.GetScalarRange()[0]# - 1 # Important to effect erase
+        colour = self.imagedata.GetScalarRange()[0]
         imagedata = self.current_mask.imagedata
         imagedata.SetScalarComponentFromDouble(x, y, z, 0, colour)
-        #imagedata.Update()
+        imagedata.Update()
         self.current_mask.edited_points[(x, y, z)] = colour
 
     def DrawPixel(self, position, colour=None):
         "Draw pixel, based on x, y and z position coordinates."
         x, y, z = position
-        #if not colour:
         colour = self.imagedata.GetScalarRange()[1]
         imagedata = self.current_mask.imagedata
         imagedata.SetScalarComponentFromDouble(x, y, z, 0, colour)
+        imagedata.Update()
         self.current_mask.edited_points[(x, y, z)] = colour
 
     def EditPixelBasedOnThreshold(self, position):
@@ -392,7 +403,6 @@ class Slice(object):
 
         # if not defined in the method call, this will have been computed on
         # previous if
-        #future_mask.imagedata = imagedata
         future_mask.imagedata = vtk.vtkImageData()
         future_mask.imagedata.DeepCopy(imagedata)
         future_mask.imagedata.Update()
@@ -421,7 +431,6 @@ class Slice(object):
         self.current_mask = future_mask
 
         ps.Publisher().sendMessage('Change mask selected', future_mask.index)
-        #ps.Publisher().sendMessage('Show mask', (future_mask.index, 1))
         ps.Publisher().sendMessage('Update slice viewer')
 
 

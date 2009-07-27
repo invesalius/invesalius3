@@ -46,10 +46,10 @@ class Viewer(wx.Panel):
         self.orientation = orientation
         self.slice_number = 0
 
-        self._brush_cursor_op = 'Draw'
-        self._brush_cursor_size = 30
-        self._brush_cursor_colour = None
-        self._brush_cursor_type = 'circle'
+        self._brush_cursor_op = const.DEFAULT_BRUSH_OP
+        self._brush_cursor_size = const.BRUSH_SIZE
+        self._brush_cursor_colour = const.BRUSH_COLOUR
+        self._brush_cursor_type = const.DEFAULT_BRUSH_OP
         self.cursor = None
         # VTK pipeline and actors
         self.__config_interactor()
@@ -130,7 +130,6 @@ class Viewer(wx.Panel):
         self.interactor.Render()
 
     def ChangeBrushColour(self, pubsub_evt):
-        print "********************* ChangeBrushColour"
         vtk_colour = pubsub_evt.data[3]
         self._brush_cursor_colour = vtk_colour
         if (self.cursor):
@@ -150,9 +149,9 @@ class Viewer(wx.Panel):
         self._brush_cursor_type = brush_type
         self.ren.RemoveActor(self.cursor.actor)
 
-        if brush_type == 'square':
+        if brush_type == const.BRUSH_SQUARE:
             cursor = ca.CursorRectangle()
-        elif brush_type == 'circle':
+        elif brush_type == const.BRUSH_CIRCLE:
             cursor = ca.CursorCircle()
         self.cursor = cursor
 
@@ -188,16 +187,16 @@ class Viewer(wx.Panel):
         self.__update_cursor_position(coord)
         self.ren.Render()
 
-        if self._brush_cursor_op == 'Erase':
-            evt_msg = 'Erase mask pixel'
-        elif self._brush_cursor_op == 'Draw':
-            evt_msg = 'Add mask pixel'
-        elif self._brush_cursor_op == 'Threshold':
-            evt_msg = 'Edit mask pixel'
+        evt_msg = {const.BRUSH_ERASE: 'Erase mask pixel',
+                   const.BRUSH_DRAW: 'Add mask pixel',
+                   const.BRUSH_THRESH: 'Edit mask pixel'}
+        msg = evt_msg[self._brush_cursor_op]
 
         pixels = itertools.ifilter(self.TestOperationPosition,
                                    self.cursor.GetPixels())
-        ps.Publisher().sendMessage(evt_msg, pixels)
+        for coord in pixels:
+            print coord
+            ps.Publisher().sendMessage(msg, coord)
 
         # FIXME: This is idiot, but is the only way that brush operations are
         # working when cross is disabled
@@ -212,19 +211,20 @@ class Viewer(wx.Panel):
         self.cursor.SetEditionPosition(self.GetCoordinateCursorEdition())
         self.__update_cursor_position(coord)
 
-        if self._brush_cursor_op == 'Erase':
+        if self._brush_cursor_op == const.BRUSH_ERASE:
             evt_msg = 'Erase mask pixel'
-        elif self._brush_cursor_op == 'Draw':
+        elif self._brush_cursor_op == const.BRUSH_DRAW:
             evt_msg = 'Add mask pixel'
-        elif self._brush_cursor_op == 'Threshold':
+        elif self._brush_cursor_op == const.BRUSH_THRESH:
             evt_msg = 'Edit mask pixel'
 
         if self.mouse_pressed:
             pixels = itertools.ifilter(self.TestOperationPosition,
                                        self.cursor.GetPixels())
-            ps.Publisher().sendMessage(evt_msg, pixels)
-            ps.Publisher().sendMessage('Update slice viewer')
+            for coord in pixels:
+                ps.Publisher().sendMessage(evt_msg, coord)
         self.interactor.Render()
+        ps.Publisher().sendMessage('Update slice viewer')
 
     def OnCrossMove(self, obj, evt_vtk):
         coord = self.GetCoordinate()
@@ -477,8 +477,9 @@ class Viewer(wx.Panel):
                     "CORONAL": {1: self.slice_number},
                     "AXIAL": {2: self.slice_number}}
 
-        ps.Publisher().sendMessage('Update cursor single position in slice',
-                                    position[self.orientation])
+        if 'DEFAULT' in self.modes:
+            ps.Publisher().sendMessage('Update cursor single position in slice',
+                                        position[self.orientation])
 
     def ChangeSliceNumber(self, pubsub_evt):
         index = pubsub_evt.data

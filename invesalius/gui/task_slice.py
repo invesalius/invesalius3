@@ -31,21 +31,15 @@ import gui.widgets.foldpanelbar as fpb
 from project import Project
 
 BTN_NEW = wx.NewId()
-MENU_SQUARE = wx.NewId()
-MENU_CIRCLE = wx.NewId()
-        
-#THRESHOLD_LIST = ["Bone (CT)", "Soft Tissue (CT)", "Enamel (CT, Adult)",
-#               "Enamel (CT, Child)", "Compact Bone (CT, Adult)",
-#               "Compact Bone (CT, Child)", "Spongial Bone (CT, Adult)",
-#               "Spongial Bone (CT, Child)", "Muscle Tissue (CT, Adult)",
-#               "Muscle Tissue (CT, Child)", "Fat Tissue (CT, Adult)",
-#               "Fat Tissue (CT, Adult)", "Skin Tissue (CT, Adult)",
-#               "Skin Tissue (CT, Child)"]
+
+MENU_BRUSH_SQUARE = wx.NewId()
+MENU_BRUSH_CIRCLE = wx.NewId()
+
+MENU_BRUSH_ADD = wx.NewId()
+MENU_BRUSH_DEL = wx.NewId()
+MENU_BRUSH_THRESH = wx.NewId()
 
 MASK_LIST = []
-
-OP_LIST = ["Draw", "Erase", "Threshold"]
-
 
 class TaskPanel(wx.Panel):
     def __init__(self, parent):
@@ -227,12 +221,10 @@ class MaskProperties(wx.Panel):
                                      style=wx.CB_DROPDOWN|wx.CB_READONLY)
         combo_mask_name.SetSelection(0) # wx.CB_SORT
         combo_mask_name.SetWindowVariant(wx.WINDOW_VARIANT_SMALL)
-        combo_mask_name.Bind(wx.EVT_COMBOBOX, self.OnComboName)
         self.combo_mask_name = combo_mask_name
         
         # Mask colour
         button_colour= csel.ColourSelect(self, 111,colour=(0,255,0),size=(-1,22))
-        button_colour.Bind(csel.EVT_COLOURSELECT, self.OnSelectColour)
         self.button_colour = button_colour
         
         # Sizer which represents the first line
@@ -290,20 +282,19 @@ class MaskProperties(wx.Panel):
         ps.Publisher().subscribe(self.ChangeMaskName, 'Change mask name')
         
     def __bind_events_wx(self):
+        self.Bind(grad.EVT_THRESHOLD_CHANGE, self.OnSlideChanged, self.gradient)
         self.combo_thresh.Bind(wx.EVT_COMBOBOX, self.OnComboThresh)
-        self.Bind(grad.EVT_THRESHOLD_CHANGE, self.OnSlideChanged,
-                  self.gradient)
-                  
+        self.combo_mask_name.Bind(wx.EVT_COMBOBOX, self.OnComboName)
+        self.button_colour.Bind(csel.EVT_COLOURSELECT, self.OnSelectColour)
+
     def SelectMaskName(self, pubsub_evt):
         index = pubsub_evt.data
         self.combo_mask_name.SetSelection(index)
-        
         
     def ChangeMaskName(self, pubsub_evt):
         index, name = pubsub_evt.data
         self.combo_mask_name.SetString(index, name)
         self.combo_mask_name.Refresh()
-
 
     def SetThresholdValues(self, pubsub_evt):
         thresh_min, thresh_max = pubsub_evt.data
@@ -376,42 +367,44 @@ class EditionTools(wx.Panel):
         text1 = wx.StaticText(self, -1, "Choose brush type, size or operation:")
         
         ## LINE 2
+        menu = wx.Menu()
+        
+        CIRCLE_BMP = wx.Bitmap("../icons/brush_circle.jpg", wx.BITMAP_TYPE_JPEG)
+        item = wx.MenuItem(menu, MENU_BRUSH_CIRCLE, "Circle")
+        item.SetBitmap(CIRCLE_BMP)
 
         SQUARE_BMP = wx.Bitmap("../icons/brush_square.jpg", wx.BITMAP_TYPE_JPEG)
-        CIRCLE_BMP = wx.Bitmap("../icons/brush_circle.jpg", wx.BITMAP_TYPE_JPEG)
-
-        menu = wx.Menu()
-
-        item = wx.MenuItem(menu, MENU_CIRCLE,"Circle")
-        item.SetBitmap(CIRCLE_BMP)
-        item2 = wx.MenuItem(menu, MENU_SQUARE, "Square")
+        item2 = wx.MenuItem(menu, MENU_BRUSH_SQUARE, "Square")
         item2.SetBitmap(SQUARE_BMP)
-        self.Bind(wx.EVT_MENU, self.OnMenu)
-        
+
         menu.AppendItem(item)
         menu.AppendItem(item2)        
         
-        btn_brush_type = pbtn.PlateButton(self, wx.ID_ANY,"", CIRCLE_BMP,
+        bmp_brush_format = {const.BRUSH_CIRCLE: CIRCLE_BMP,
+                            const.BRUSH_SQUARE: SQUARE_BMP}
+        selected_bmp = bmp_brush_format[const.DEFAULT_BRUSH_FORMAT]
+        
+        btn_brush_format = pbtn.PlateButton(self, wx.ID_ANY,"", selected_bmp,
                                           style=pbtn.PB_STYLE_SQUARE)
-        btn_brush_type.SetMenu(menu)
-        self.btn_brush_type = btn_brush_type
+        btn_brush_format.SetMenu(menu)
+        self.btn_brush_format = btn_brush_format
 
         spin_brush_size = wx.SpinCtrl(self, -1, "", (30, 50))
         spin_brush_size.SetRange(1,100)
-        spin_brush_size.SetValue(30)
+        spin_brush_size.SetValue(const.BRUSH_SIZE)
         spin_brush_size.Bind(wx.EVT_TEXT, self.OnBrushSize)
         self.spin = spin_brush_size
 
         combo_brush_op = wx.ComboBox(self, -1, "", size=(15,-1),
-                                     choices= OP_LIST,
-                                     style=wx.CB_DROPDOWN|wx.CB_READONLY)
-        combo_brush_op.SetSelection(0)
+                                     choices = const.BRUSH_OP_NAME,
+                                     style = wx.CB_DROPDOWN|wx.CB_READONLY)
+        combo_brush_op.SetSelection(const.DEFAULT_BRUSH_OP)
         combo_brush_op.SetWindowVariant(wx.WINDOW_VARIANT_SMALL)
-        combo_brush_op.Bind(wx.EVT_COMBOBOX, self.OnComboBrushOp)
+        self.combo_brush_op = combo_brush_op
 
         # Sizer which represents the second line
         line2 = wx.BoxSizer(wx.HORIZONTAL)
-        line2.Add(btn_brush_type, 0, wx.EXPAND|wx.GROW|wx.TOP|wx.RIGHT, 0)
+        line2.Add(btn_brush_format, 0, wx.EXPAND|wx.GROW|wx.TOP|wx.RIGHT, 0)
         line2.Add(spin_brush_size, 0, wx.RIGHT, 5)
         line2.Add(combo_brush_op, 1, wx.TOP|wx.RIGHT|wx.LEFT, 5)
 
@@ -429,7 +422,8 @@ class EditionTools(wx.Panel):
         sizer.Add(text1, 0, wx.GROW|wx.EXPAND|wx.LEFT|wx.RIGHT|wx.TOP, 5)
         sizer.Add(line2, 0, wx.GROW|wx.EXPAND|wx.LEFT|wx.RIGHT|wx.TOP, 5)
         sizer.Add(text_thresh, 0, wx.GROW|wx.EXPAND|wx.LEFT|wx.RIGHT|wx.TOP, 5)
-        sizer.Add(gradient_thresh, 0, wx.EXPAND|wx.TOP|wx.LEFT|wx.RIGHT|wx.BOTTOM, 6)
+        sizer.Add(gradient_thresh, 0, wx.EXPAND|wx.TOP|wx.LEFT|wx.RIGHT|
+                  wx.BOTTOM, 6)
         sizer.Fit(self)
         
         self.SetSizer(sizer)
@@ -441,14 +435,14 @@ class EditionTools(wx.Panel):
 
 
     def __bind_events_wx(self):
+        self.Bind(wx.EVT_MENU, self.OnMenu)
         self.Bind(grad.EVT_THRESHOLD_CHANGE, self.OnGradientChanged,
                   self.gradient_thresh)
+        self.combo_brush_op.Bind(wx.EVT_COMBOBOX, self.OnComboBrushOp)
                   
     def __bind_events(self):
         ps.Publisher().subscribe(self.SetThresholdBounds,
                                         'Update threshold limits')
-        #ps.Publisher().subscribe(self.SetThresholdValues,
-        #                         'Set threshold values in gradient')
         ps.Publisher().subscribe(self.ChangeMaskColour, 'Change mask colour')
         ps.Publisher().subscribe(self.SetGradientColour, 'Add mask')
 
@@ -471,7 +465,6 @@ class EditionTools(wx.Panel):
     def SetThresholdBounds(self, pubsub_evt):
         thresh_min = pubsub_evt.data[0]
         thresh_max  = pubsub_evt.data[1]
-        print thresh_min, thresh_max
         self.gradient_thresh.SetMinRange(thresh_min)
         self.gradient_thresh.SetMaxRange(thresh_max)
         self.gradient_thresh.SetMinValue(thresh_min)
@@ -485,17 +478,17 @@ class EditionTools(wx.Panel):
                                      (thresh_min, thresh_max))
         
     def OnMenu(self, evt):
-        """Button's menu event"""
         SQUARE_BMP = wx.Bitmap("../icons/brush_square.jpg", wx.BITMAP_TYPE_JPEG)
         CIRCLE_BMP = wx.Bitmap("../icons/brush_circle.jpg", wx.BITMAP_TYPE_JPEG)
 
-        name = {MENU_CIRCLE:"circle", MENU_SQUARE:"square"}
-        bitmap = {MENU_CIRCLE:CIRCLE_BMP, MENU_SQUARE:SQUARE_BMP}
+        brush = {MENU_BRUSH_CIRCLE: const.BRUSH_CIRCLE,
+                 MENU_BRUSH_SQUARE: const.BRUSH_SQUARE}
+        bitmap = {MENU_BRUSH_CIRCLE: CIRCLE_BMP,
+                  MENU_BRUSH_SQUARE: SQUARE_BMP}
 
-        self.btn_brush_type.SetBitmap(bitmap[evt.GetId()])
+        self.btn_brush_format.SetBitmap(bitmap[evt.GetId()])
         
-        print "TODO: Send Signal - Change brush format to %s"% name[evt.GetId()]
-        ps.Publisher().sendMessage('Set brush format', name[evt.GetId()])
+        ps.Publisher().sendMessage('Set brush format', brush[evt.GetId()])
 
     def OnBrushSize(self, evt):
         """ """
@@ -505,7 +498,7 @@ class EditionTools(wx.Panel):
         ps.Publisher().sendMessage('Set edition brush size',self.spin.GetValue())
         
     def OnComboBrushOp(self, evt):
-        print "TODO: Send Signal - Change brush operation: %s" %(evt.GetString())
-        ps.Publisher().sendMessage('Set edition operation',evt.GetString())
+        brush_op_id = evt.GetSelection()
+        ps.Publisher().sendMessage('Set edition operation', brush_op_id)
         
 
