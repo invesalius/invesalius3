@@ -98,16 +98,19 @@ class Slice(object):
             self.ShowMask(index, value)
     #---------------------------------------------------------------------------
     def __erase_mask_pixel(self, pubsub_evt):
-        position = pubsub_evt.data
-        self.ErasePixel(position)
+        positions = pubsub_evt.data
+        for position in positions:
+            self.ErasePixel(position)
 
     def __edit_mask_pixel(self, pubsub_evt):
-        position = pubsub_evt.data
-        self.EditPixelBasedOnThreshold(position)
+        positions = pubsub_evt.data
+        for position in positions:
+            self.EditPixelBasedOnThreshold(position)
 
     def __add_mask_pixel(self, pubsub_evt):
-        position = pubsub_evt.data
-        self.DrawPixel(position)
+        positions = pubsub_evt.data
+        for position in positions:
+            self.DrawPixel(position)
     #---------------------------------------------------------------------------
     # END PUBSUB_EVT METHODS
     #---------------------------------------------------------------------------
@@ -191,7 +194,7 @@ class Slice(object):
         colour = self.imagedata.GetScalarRange()[0]# - 1 # Important to effect erase
         imagedata = self.current_mask.imagedata
         imagedata.SetScalarComponentFromDouble(x, y, z, 0, colour)
-        imagedata.Update()
+        #imagedata.Update()
         self.current_mask.edited_points[(x, y, z)] = colour
 
     def DrawPixel(self, position, colour=None):
@@ -201,7 +204,6 @@ class Slice(object):
         colour = self.imagedata.GetScalarRange()[1]
         imagedata = self.current_mask.imagedata
         imagedata.SetScalarComponentFromDouble(x, y, z, 0, colour)
-        imagedata.Update()
         self.current_mask.edited_points[(x, y, z)] = colour
 
     def EditPixelBasedOnThreshold(self, position):

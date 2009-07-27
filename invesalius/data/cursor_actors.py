@@ -26,7 +26,6 @@ class CursorCircle:
         self.__build_actor()
         self.__calculate_area_pixels()
         
-        
     def __build_actor(self):
         """
         Function to plot the circle
@@ -113,15 +112,18 @@ class CursorCircle:
         px, py, pz = self.edition_position
         orient = self.orientation
         xs, ys, zs = self.spacing
+        abs_pixel = {"AXIAL": lambda x,y: (px + x / xs, py+(y/ys), pz),
+                     "CORONAL": lambda x,y: (px+(x/xs), py,
+                                            pz+(y/zs)),
+                     "SAGITAL": lambda x,y: (px, py+(x/ys),
+                                             pz+(y/zs))}
+        function_orientation = abs_pixel[orient]
         for pixel_0,pixel_1 in self.pixel_list:
             # The position of the pixels in this list is relative (based only on
             # the area, and not the cursor position).
             # Let's calculate the absolute position
             # TODO: Optimize this!!!!
-            abs_pixel = {"AXIAL": [px+pixel_0/xs, py+(pixel_1/ys), pz],
-                         "CORONAL": [px+(pixel_0/xs), py, pz+(pixel_1/zs)],
-                         "SAGITAL": [px, py+(pixel_0/ys), pz+(pixel_1/zs)]}
-            yield abs_pixel[orient]
+            yield function_orientation(pixel_0, pixel_1)
             
             
 #-------------------------------------------------------------------------------
