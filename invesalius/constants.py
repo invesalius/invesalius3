@@ -92,4 +92,5 @@ WINDOW_LEVEL = {"Abdomen":(350,50),
                  "Vasculature - Hard":(240,80),
                  "Vasculature - Soft":(650,160)}
                  
+REDUCE_IMAGEDATA_QUALITY = 1
 

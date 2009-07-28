@@ -23,19 +23,19 @@ import vtk
 import vtkgdcm
 import gdcm
 
+import constants as const
 import dicom
 import dicom_grouper
 from data.imagedata_utils import ResampleImage2D
 
-import constants as const
 def LoadImages(dir_):
     #  TODO!!! SUPER GAMBIARRA!!! DO THIS BETTER
 
-    #if 0:
-    fow = vtk.vtkFileOutputWindow()
-    fow.SetFileName('vtk_output.txt')
-    ow = vtk.vtkOutputWindow ()
-    ow.SetInstance (fow)
+    if 0:
+        fow = vtk.vtkFileOutputWindow()
+        fow.SetFileName('vtk_output.txt')
+        ow = vtk.vtkOutputWindow ()
+        ow.SetInstance (fow)
 
     dcm_files, acquisition_modality = GetDicomFiles(dir_)
 
@@ -84,15 +84,19 @@ def LoadImages(dir_):
 
     array = vtk.vtkStringArray()
 
-    #Case Reduce Matrix of the Image
-    reduce_matrix = 0
-
     img_app = vtk.vtkImageAppend()
     img_app.SetAppendAxis(2) #Define Stack in Z
 
     for x in xrange(len(files)):
-        if not(reduce_matrix):
+        if not(const.REDUCE_IMAGEDATA_QUALITY):
             array.InsertValue(x,files[x])
+            read = vtkgdcm.vtkGDCMImageReader()
+            read.SetFileNames(array)
+            read.Update()
+    
+            img_axial = vtk.vtkImageData()
+            img_axial.DeepCopy(read.GetOutput())
+            img_axial.SetSpacing(spacing, spacing, spacing_z)
         else:
             #SIf the resolution of the
             #matrix is very large
@@ -107,26 +111,14 @@ def LoadImages(dir_):
             img_app.AddInput(img)
             img_app.Update()
 
-    img_axial = vtk.vtkImageData()
-
-    if (reduce_matrix):
-        img_axial.DeepCopy(img_app.GetOutput())
-        img_axial.SetSpacing(img_axial.GetSpacing()[0],\
+            img_axial = vtk.vtkImageData()
+            img_axial.DeepCopy(img_app.GetOutput())
+            img_axial.SetSpacing(img_axial.GetSpacing()[0],\
                              img_axial.GetSpacing()[1],\
                              spacing_z)
-    else:
-        read = vtkgdcm.vtkGDCMImageReader()
-        read.SetFileNames(array)
-        read.Update()
 
-        img_axial.DeepCopy(read.GetOutput())
-        img_axial.SetSpacing(spacing, spacing, spacing_z)
 
     img_axial.Update()
-
-    thresh_min, thresh_max = img_axial.GetScalarRange()
-    const.THRESHOLD_INVALUE = thresh_max
-    const.THRESHOLD_OUTVALUE = thresh_min
 
     return img_axial, acquisition_modality, tilt
 
