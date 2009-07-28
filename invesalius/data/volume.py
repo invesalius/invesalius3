@@ -343,7 +343,7 @@ class Volume():
         image2 = convolve
         
         composite_function = vtk.vtkVolumeRayCastCompositeFunction()
-        composite_function.SetCompositeMethodToClassifyFirst()
+        composite_function.SetCompositeMethodToInterpolateFirst()
 
         gradientEstimator = vtk.vtkFiniteDifferenceGradientEstimator()
         gradientEstimator.SetGradientMagnitudeScale(1)
@@ -352,9 +352,9 @@ class Volume():
         #volume_mapper.AutoAdjustSampleDistancesOff()
         volume_mapper.SetInput(image2.GetOutput())
         volume_mapper.SetVolumeRayCastFunction(composite_function)
-        volume_mapper.SetGradientEstimator(gradientEstimator)
+        #volume_mapper.SetGradientEstimator(gradientEstimator)
         volume_mapper.IntermixIntersectingGeometryOn()
-        
+
         #Cut Plane
         CutPlane(image2.GetOutput(), volume_mapper)
         
@@ -369,12 +369,20 @@ class Volume():
 
         volume_properties.SetInterpolationTypeToLinear()
         volume_properties.SetColor(self.color_transfer)
-        self.volume_properties = volume_properties
 
         try:
             volume_properties.SetScalarOpacity(self.opacity_transfer_func)
         except NameError:
             pass
+
+        # Using these lines to improve the raycasting quality. These values
+        # seems related to the distance from ray from raycasting.
+        # TODO: Need to see values that improve the quality and don't decrease
+        # the performance. 2.0 seems to be a good value to pix_diag
+        pix_diag = 2.0
+        volume_mapper.SetImageSampleDistance(0.25)
+        volume_mapper.SetSampleDistance(pix_diag / 5.0)
+        volume_properties.SetScalarOpacityUnitDistance(pix_diag)
 
         self.volume_properties = volume_properties
 
