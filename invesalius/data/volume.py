@@ -348,12 +348,15 @@ class Volume():
         gradientEstimator = vtk.vtkFiniteDifferenceGradientEstimator()
         gradientEstimator.SetGradientMagnitudeScale(1)
 
-        volume_mapper = vtk.vtkVolumeRayCastMapper()
+        # Changed the vtkVolumeRayCast to vtkFixedPointVolumeRayCastMapper
+        # because it's faster and the image is better
+        # TODO: To test if it's true.
+        volume_mapper = vtk.vtkFixedPointVolumeRayCastMapper()
         #volume_mapper.AutoAdjustSampleDistancesOff()
         volume_mapper.SetInput(image2.GetOutput())
-        volume_mapper.SetVolumeRayCastFunction(composite_function)
+        #volume_mapper.SetVolumeRayCastFunction(composite_function)
         #volume_mapper.SetGradientEstimator(gradientEstimator)
-        volume_mapper.IntermixIntersectingGeometryOn()
+        #volume_mapper.IntermixIntersectingGeometryOn()
 
         #Cut Plane
         CutPlane(image2.GetOutput(), volume_mapper)
@@ -393,7 +396,6 @@ class Volume():
         
         colour = self.CreateBackgroundColor()
         ps.Publisher().sendMessage('Load volume into viewer', (volume, colour))
-        
 
     def TranslateScale(self, scale, value):
         #if value < 0:
