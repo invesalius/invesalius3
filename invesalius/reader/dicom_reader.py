@@ -87,17 +87,19 @@ def LoadImages(dir_):
     img_app = vtk.vtkImageAppend()
     img_app.SetAppendAxis(2) #Define Stack in Z
 
-    for x in xrange(len(files)):
-        if not(const.REDUCE_IMAGEDATA_QUALITY):
+    if not(const.REDUCE_IMAGEDATA_QUALITY):
+        for x in xrange(len(files)):
             array.InsertValue(x,files[x])
-            read = vtkgdcm.vtkGDCMImageReader()
-            read.SetFileNames(array)
-            read.Update()
+
+        read = vtkgdcm.vtkGDCMImageReader()
+        read.SetFileNames(array)
+        read.Update()
     
-            img_axial = vtk.vtkImageData()
-            img_axial.DeepCopy(read.GetOutput())
-            img_axial.SetSpacing(spacing, spacing, spacing_z)
-        else:
+        img_axial = vtk.vtkImageData()
+        img_axial.DeepCopy(read.GetOutput())
+        img_axial.SetSpacing(spacing, spacing, spacing_z)
+    else:
+        for x in xrange(len(files)):
             #SIf the resolution of the
             #matrix is very large
             read = vtkgdcm.vtkGDCMImageReader()
@@ -111,11 +113,11 @@ def LoadImages(dir_):
             img_app.AddInput(img)
             img_app.Update()
 
-            img_axial = vtk.vtkImageData()
-            img_axial.DeepCopy(img_app.GetOutput())
-            img_axial.SetSpacing(img_axial.GetSpacing()[0],\
-                             img_axial.GetSpacing()[1],\
-                             spacing_z)
+        img_axial = vtk.vtkImageData()
+        img_axial.DeepCopy(img_app.GetOutput())
+        img_axial.SetSpacing(img_axial.GetSpacing()[0],\
+                         img_axial.GetSpacing()[1],\
+                         spacing_z)
 
 
     img_axial.Update()
