@@ -23,6 +23,7 @@ import vtk
 import wx
 import wx.lib.pubsub as ps
 
+import constants
 from project import Project
 
 Kernels = { 
@@ -351,12 +352,18 @@ class Volume():
         # Changed the vtkVolumeRayCast to vtkFixedPointVolumeRayCastMapper
         # because it's faster and the image is better
         # TODO: To test if it's true.
-        volume_mapper = vtk.vtkFixedPointVolumeRayCastMapper()
-        #volume_mapper.AutoAdjustSampleDistancesOff()
-        volume_mapper.SetInput(image2.GetOutput())
-        #volume_mapper.SetVolumeRayCastFunction(composite_function)
-        #volume_mapper.SetGradientEstimator(gradientEstimator)
-        #volume_mapper.IntermixIntersectingGeometryOn()
+        if constants.TYPE_RAYCASTING_MAPPER:
+            volume_mapper = vtk.vtkVolumeRayCastMapper()
+            #volume_mapper.AutoAdjustSampleDistancesOff()
+            volume_mapper.SetInput(image2.GetOutput())
+            volume_mapper.SetVolumeRayCastFunction(composite_function)
+            #volume_mapper.SetGradientEstimator(gradientEstimator)
+            volume_mapper.IntermixIntersectingGeometryOn()
+        else:
+            volume_mapper = vtk.vtkFixedPointVolumeRayCastMapper()
+            #volume_mapper.AutoAdjustSampleDistancesOff()
+            volume_mapper.SetInput(image2.GetOutput())
+            volume_mapper.IntermixIntersectingGeometryOn()
 
         #Cut Plane
         CutPlane(image2.GetOutput(), volume_mapper)
