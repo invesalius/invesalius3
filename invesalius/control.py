@@ -18,6 +18,7 @@ class Controller():
         self.volume = volume.Volume()
         self.__bind_events()
 
+
     def __bind_events(self):
         ps.Publisher().subscribe(self.ImportDirectory, 'Import directory')
         ps.Publisher().subscribe(self.StartImportPanel, "Load data to import panel")
@@ -63,6 +64,10 @@ class Controller():
             proj.SetAcquisitionModality(acquisition_modality)
             proj.imagedata = imagedata
 
+            threshold_range = proj.imagedata.GetScalarRange()
+            const.THRESHOLD_OUTVALUE = threshold_range[0]
+            const.THRESHOLD_INVALUE = threshold_range[1]
+
             # Based on imagedata, load data to GUI
             ps.Publisher().sendMessage('Load slice to viewer', (imagedata))
 
@@ -83,5 +88,7 @@ class Controller():
         # Set default value into slices' default mask
         key= thresh_modes[const.THRESHOLD_PRESETS_INDEX]
         (min_thresh, max_thresh) = proj.threshold_modes.get_value(key)
+
+
 
 
