@@ -52,7 +52,7 @@ class Viewer(wx.Panel):
         self._brush_cursor_type = const.DEFAULT_BRUSH_OP
         self.cursor = None
         # VTK pipeline and actors
-        self.__config_interactor()
+        #self.__config_interactor()
         self.pick = vtk.vtkCellPicker()
 
         self.__bind_events()
@@ -341,7 +341,7 @@ class Viewer(wx.Panel):
     def SetInput(self, imagedata):
         self.imagedata = imagedata
 
-        ren = self.ren
+        #ren = self.ren
         interactor = self.interactor
 
         # Slice pipeline, to be inserted into current viewer
@@ -349,10 +349,14 @@ class Viewer(wx.Panel):
         if slice_.imagedata is None:
             slice_.SetInput(imagedata)
 
-        actor = vtk.vtkImageActor()
-        actor.SetInput(slice_.GetOutput())
+
+        #actor = vtk.vtkImageActor()
+        #actor.SetInput(slice_.GetOutput())
+        ren, actor = self.add_actor(slice_.GetOutput())
         actor_bound = actor.GetBounds()
         self.actor = actor
+        self.ren = ren
+        self.cam = ren.GetActiveCamera()
 
         colour = const.ORIENTATION_COLOUR[self.orientation]
 
@@ -368,7 +372,7 @@ class Viewer(wx.Panel):
         text_actor.SetPosition(2,2)
         self.text_actor = text_actor
 
-        ren.AddActor(actor)
+        #ren.AddActor(actor)
         #ren.AddActor(text_actor)
         self.__update_camera()
 
@@ -405,6 +409,14 @@ class Viewer(wx.Panel):
     def SetOrientation(self, orientation):
         self.orientation = orientation
         self.__update_camera()
+
+    def add_actor(self, image):
+        render = vtk.vtkRenderer()
+        self.interactor.GetRenderWindow().AddRenderer(render)
+        actor = vtk.vtkImageActor()
+        actor.SetInput(image)
+        render.AddActor(actor)
+        return render, actor
 
     def __update_camera(self):
         orientation = self.orientation
