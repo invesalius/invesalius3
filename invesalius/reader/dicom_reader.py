@@ -71,17 +71,20 @@ def LoadImages(dir_):
     tilt = groups[key][0][x][11]
     spacing = groups[key][1][14]
     spacing_z = groups[key][1][30]
-
-
-    #Organize reversed image
-    sorter = gdcm.IPPSorter()
-    sorter.SetComputeZSpacing(True)
-    sorter.SetZSpacingTolerance(1e-10)
-    sorter.Sort(file_list)
-
-    #Getting organized image
-    files = sorter.GetFilenames()
-
+    localization = groups[key][0][x][12]
+    
+    files = file_list 
+    #Coronal or Sagital with 
+    #localization None Crash. necessary verify
+    if (localization):
+        #Organize reversed image
+        sorter = gdcm.IPPSorter()
+        sorter.SetComputeZSpacing(True)
+        sorter.SetZSpacingTolerance(1e-10)
+        sorter.Sort(file_list)
+        #Getting organized image
+        files = sorter.GetFilenames()
+    
     array = vtk.vtkStringArray()
 
     img_app = vtk.vtkImageAppend()
@@ -121,7 +124,7 @@ def LoadImages(dir_):
 
 
     img_axial.Update()
-
+    
     return img_axial, acquisition_modality, tilt
 
 def GetDicomFiles(path, recursive = False):
