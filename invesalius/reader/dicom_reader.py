@@ -109,7 +109,7 @@ def LoadImages(dir_):
             read.Update()
 
             #Resample image in x,y dimension
-            img = ResampleImage2D(read.GetOutput(), 256)
+            img = ResampleImage2D(read.GetOutput(), 200)
 
             #Stack images in Z axes
             img_app.AddInput(img)

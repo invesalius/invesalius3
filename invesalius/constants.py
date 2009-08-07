@@ -15,7 +15,7 @@ CAM_POSITION = {"AXIAL":(0, 0, 1), "CORONAL":(0, -1, 0), "SAGITAL":(1, 0, 0)}
 CAM_VIEW_UP =  {"AXIAL":(0, 1, 0), "CORONAL":(0, 0, 1), "SAGITAL":(0, 0, 1)}
 
 # Camera according to volume's orientation
-AXIAL_VOLUME_CAM_VIEW_UP = {"FRONT":(-1,0,1), "BACK":(0,0,1), "RIGHT":(0,0,1),\
+AXIAL_VOLUME_CAM_VIEW_UP = {"FRONT":(0,0,1), "BACK":(0,0,1), "RIGHT":(0,0,1),\
                             "LEFT":(0,0,1), "TOP":(0,1,0), "BOTTOM":(0,-1,0)}
 AXIAL_VOLUME_CAM_POSITION = {"FRONT":(0,-1,0), "BACK":(0,1,0), "RIGHT":(-1,0,0),\
                              "LEFT":(1,0,0), "TOP":(0,0,1), "BOTTOM":(0,0,-1)}

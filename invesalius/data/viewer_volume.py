@@ -22,8 +22,8 @@ import sys
 import wx
 import vtk
 from vtk.wx.wxVTKRenderWindowInteractor import wxVTKRenderWindowInteractor
-
 import wx.lib.pubsub as ps
+import constants as const
 
 class Viewer(wx.Panel):
     def __init__(self, parent):
@@ -67,6 +67,7 @@ class Viewer(wx.Panel):
         ps.Publisher().subscribe(self.LoadVolume, 'Load volume into viewer')
         ps.Publisher().subscribe(self.AppendActor,'AppendActor')
         ps.Publisher().subscribe(self.SetWidgetInteractor, 'Set Widget Interactor')
+        ps.Publisher().subscribe(self.RepositionActor, 'Reposition Actor')
         
         
     def __bind_events_wx(self):
@@ -86,9 +87,7 @@ class Viewer(wx.Panel):
         volume, colour = pubsub_evt.data
         self.light = self.ren.GetLights().GetNextItem()
         self.ren.AddVolume(volume)
-        #self.ren.SetBackground(colour)
-        self.ren.ResetCamera()
-        self.ren.ResetCameraClippingRange()
+        self.RepositionActor()
         self.UpdateRender()
 
     def ChangeBackgroundColour(self, pubsub_evt):
@@ -104,6 +103,26 @@ class Viewer(wx.Panel):
         ren.ResetCamera()
         ren.ResetCameraClippingRange()
 
+        self.iren.Render()
+
+    def RepositionActor(self, evt_pubsub=None):
+        
+        if (evt_pubsub):
+            position = evt_pubsub.data
+        else:
+            position = "FRONT"
+            
+        cam = self.ren.GetActiveCamera()
+        cam.SetFocalPoint(0,0,0)
+        
+        xv,yv,zv = const.AXIAL_VOLUME_CAM_VIEW_UP[position]
+        xp,yp,zp = const.AXIAL_VOLUME_CAM_POSITION[position]
+        
+        cam.SetViewUp(xv,yv,zv)
+        cam.SetPosition(xp,yp,zp)
+        
+        self.ren.ResetCameraClippingRange() 
+        self.ren.ResetCamera()
         self.iren.Render()
 
     def UpdateRender(self, evt_pubsub=None):

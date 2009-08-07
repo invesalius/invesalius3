@@ -173,7 +173,7 @@ class VolumeViewerCover(wx.Panel):
         self.SetSizer(sizer)
         sizer.Fit(self)
         
-#import wx.lib.platebtn as pbtn
+import wx.lib.platebtn as pbtn
 import wx.lib.buttons as btn
 import wx.lib.pubsub as ps
 import wx.lib.colourselect as csel
@@ -186,9 +186,54 @@ class VolumeToolPanel(wx.Panel):
         BMP_RAYCASTING.SetWidth(22)
         BMP_RAYCASTING.SetHeight(22)
 
+        BMP_POSITION = wx.Bitmap("../icons/brush_square.jpg", wx.BITMAP_TYPE_JPEG)
+        BMP_POSITION.SetWidth(22)
+        BMP_POSITION.SetHeight(22)
+
         button_raycasting=btn.GenBitmapToggleButton(self, 1, BMP_RAYCASTING, size=(24,24))
         button_raycasting.Bind(wx.EVT_BUTTON, self.OnToggleRaycasting)
         self.button_raycasting = button_raycasting
+        
+        menu = wx.Menu()
+        
+        FRONT_BMP = wx.Bitmap("../icons/brush_circle.jpg", wx.BITMAP_TYPE_JPEG)
+        item = wx.MenuItem(menu, 0, "Front")
+        item.SetBitmap(FRONT_BMP)
+
+        BACK_BMP = wx.Bitmap("../icons/brush_square.jpg", wx.BITMAP_TYPE_JPEG)
+        item2 = wx.MenuItem(menu, 1, "Back")
+        item2.SetBitmap(BACK_BMP)
+        
+        TOP_BMP = wx.Bitmap("../icons/brush_square.jpg", wx.BITMAP_TYPE_JPEG)
+        item3 = wx.MenuItem(menu, 2, "Top")
+        item3.SetBitmap(TOP_BMP)
+
+        BOTTOM_BMP = wx.Bitmap("../icons/brush_square.jpg", wx.BITMAP_TYPE_JPEG)
+        item4 = wx.MenuItem(menu, 3, "Bottom")
+        item4.SetBitmap(BOTTOM_BMP)
+
+        RIGHT_BMP = wx.Bitmap("../icons/brush_square.jpg", wx.BITMAP_TYPE_JPEG)
+        item5 = wx.MenuItem(menu, 4, "Right")
+        item5.SetBitmap(RIGHT_BMP)
+
+        LEFT_BMP = wx.Bitmap("../icons/brush_square.jpg", wx.BITMAP_TYPE_JPEG)
+        item6 = wx.MenuItem(menu, 5, "Left")
+        item6.SetBitmap(LEFT_BMP)
+        
+        self.Bind(wx.EVT_MENU, self.OnMenu)
+        
+        menu.AppendItem(item)
+        menu.AppendItem(item2)        
+        menu.AppendItem(item3)
+        menu.AppendItem(item4)
+        menu.AppendItem(item5)
+        menu.AppendItem(item6)
+    
+        button_position = pbtn.PlateButton(self, wx.ID_ANY,"", BMP_POSITION,
+                                          style=pbtn.PB_STYLE_SQUARE, size=(24,24))
+        
+        button_position.SetMenu(menu)
+        self.button_position = button_position
         
         button_colour= csel.ColourSelect(self, 111,colour=(0,0,0),size=(24,24))
         button_colour.Bind(csel.EVT_COLOURSELECT, self.OnSelectColour)
@@ -197,8 +242,15 @@ class VolumeToolPanel(wx.Panel):
         sizer = wx.BoxSizer(wx.VERTICAL)
         sizer.Add(button_colour, 0, wx.ALL, 1)
         sizer.Add(button_raycasting, 0, wx.ALL, 1)
+        sizer.Add(button_position, 0, wx.ALL, 1)
         self.SetSizer(sizer)
         sizer.Fit(self)
+        
+    def OnMenu(self, evt):
+        values = {0:"FRONT", 1:"BACK", 2:"TOP",\
+                  3:"BOTTOM", 4:"RIGHT", 5:"LEFT"}
+        ps.Publisher().sendMessage('Reposition Actor',\
+                                   values[evt.GetId()])
 
     def OnSelectColour(self, evt):
         colour = c = [i/255.0 for i in evt.GetValue()]
