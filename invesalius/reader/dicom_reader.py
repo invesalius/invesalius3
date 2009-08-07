@@ -71,12 +71,11 @@ def LoadImages(dir_):
     tilt = groups[key][0][x][11]
     spacing = groups[key][1][14]
     spacing_z = groups[key][1][30]
-    localization = groups[key][0][x][12]
-    
+    orientation = groups[key][0][x][7]
+
     files = file_list 
-    #Coronal or Sagital with 
-    #localization None Crash. necessary verify
-    if (localization):
+    #Coronal Crash. necessary verify
+    if (orientation <> "CORONAL"):      
         #Organize reversed image
         sorter = gdcm.IPPSorter()
         sorter.SetComputeZSpacing(True)
