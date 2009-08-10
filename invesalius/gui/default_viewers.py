@@ -220,6 +220,10 @@ class VolumeToolPanel(wx.Panel):
         item6 = wx.MenuItem(menu, 5, "Left")
         item6.SetBitmap(LEFT_BMP)
         
+        ISOMETRIC_BMP = wx.Bitmap("../icons/brush_square.jpg", wx.BITMAP_TYPE_JPEG)
+        item7 = wx.MenuItem(menu, 6, "Isometric")
+        item7.SetBitmap(LEFT_BMP)
+        
         self.Bind(wx.EVT_MENU, self.OnMenu)
         
         menu.AppendItem(item)
@@ -228,6 +232,7 @@ class VolumeToolPanel(wx.Panel):
         menu.AppendItem(item4)
         menu.AppendItem(item5)
         menu.AppendItem(item6)
+        menu.AppendItem(item7)
     
         button_position = pbtn.PlateButton(self, wx.ID_ANY,"", BMP_POSITION,
                                           style=pbtn.PB_STYLE_SQUARE, size=(24,24))
@@ -248,7 +253,8 @@ class VolumeToolPanel(wx.Panel):
         
     def OnMenu(self, evt):
         values = {0:"FRONT", 1:"BACK", 2:"TOP",\
-                  3:"BOTTOM", 4:"RIGHT", 5:"LEFT"}
+                  3:"BOTTOM", 4:"RIGHT", 5:"LEFT",\
+                  6:"ISOMETRIC"}
         ps.Publisher().sendMessage('Reposition Actor',\
                                    values[evt.GetId()])
 
