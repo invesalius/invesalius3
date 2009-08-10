@@ -45,7 +45,7 @@ class Viewer(wx.Panel):
         self.image_windows = []
         # The layout from image_window, the first is number of cols, the second
         # is the number of rows
-        self.layout = (2, 2)
+        self.layout = (1, 1)
 
         self.__init_gui()
 
@@ -460,11 +460,13 @@ class Viewer(wx.Panel):
 
     def __update_camera(self, ren, actor, pos):
         orientation = self.orientation
-
+        proj = project.Project()
+        orig_orien = proj.original_orientation
+        
         cam = ren.GetActiveCamera()
         cam.SetFocalPoint(0, 0, 0)
-        cam.SetPosition(const.CAM_POSITION[self.orientation])
-        cam.SetViewUp(const.CAM_VIEW_UP[self.orientation])
+        cam.SetViewUp(const.SLICE_POSITION[orig_orien][0][self.orientation])
+        cam.SetPosition(const.SLICE_POSITION[orig_orien][1][self.orientation])
         cam.ComputeViewPlaneNormal()
         cam.OrthogonalizeViewUp()
         cam.ParallelProjectionOn()
@@ -476,10 +478,21 @@ class Viewer(wx.Panel):
 
     def __update_display_extent(self, actor, render, pos):
         e = self.imagedata.GetWholeExtent()
-
-        new_extent = {"SAGITAL": (pos, pos, e[2], e[3], e[4], e[5]),
-                      "CORONAL": (e[0], e[1], pos, pos, e[4], e[5]),
-                      "AXIAL": (e[0], e[1], e[2], e[3], pos, pos)}
+        proj = project.Project()
+        
+        if (proj.original_orientation == const.AXIAL):        
+            new_extent = {"SAGITAL": (pos, pos, e[2], e[3], e[4], e[5]),
+                          "CORONAL": (e[0], e[1], pos, pos, e[4], e[5]),
+                          "AXIAL": (e[0], e[1], e[2], e[3], pos, pos)}
+        elif(proj.original_orientation == const.SAGITAL):
+            new_extent = {"SAGITAL": (e[0], e[1], e[2], e[3], pos, pos),
+                  "CORONAL": (pos, pos, e[2], e[3], e[4], e[5]),
+                  "AXIAL": (e[0], e[1], pos, pos, e[4], e[5])}   
+        elif(proj.original_orientation == const.CORONAL):
+            new_extent = {"SAGITAL": (pos, pos, e[2], e[3], e[4], e[5]),
+                          "CORONAL": (e[0], e[1], e[2], e[3], pos, pos),
+                          "AXIAL": (e[0], e[1], pos, pos, e[4], e[5])}
+             
 
         actor.SetDisplayExtent(new_extent[self.orientation])
         render.ResetCameraClippingRange()
