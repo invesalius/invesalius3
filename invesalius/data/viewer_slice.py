@@ -37,12 +37,14 @@ class Viewer(wx.Panel):
         colour = [255*c for c in const.ORIENTATION_COLOUR[orientation]]
         self.SetBackgroundColour(colour)
 
-        # Interactor aditional style
+        # Interactor additional style
         self.modes = []#['DEFAULT']
         self.mouse_pressed = 0
 
         # All renderers and image actors in this viewer
         self.image_windows = []
+        # The layout from image_window, the first is number of cols, the second
+        # is the number of rows
         self.layout = (2, 2)
 
         self.__init_gui()
@@ -95,7 +97,7 @@ class Viewer(wx.Panel):
         self.ren = ren
 
 
-    def AppendMode(self, mode):
+    def append_mode(self, mode):
 
         # Retrieve currently set modes
         self.modes.append(mode)
@@ -159,7 +161,7 @@ class Viewer(wx.Panel):
             cursor = ca.CursorCircle()
         self.cursor = cursor
 
-        cursor.SetOrientation(self.orientation)
+        cursor.set_orientation(self.orientation)
         coordinates = {"SAGITAL": [self.slice_number, 0, 0],
                        "CORONAL": [0, self.slice_number, 0],
                        "AXIAL": [0, 0, self.slice_number]}
@@ -187,9 +189,10 @@ class Viewer(wx.Panel):
         image_window = self.get_image_window(render)
         self.pick.Pick(mouse_x, mouse_y, 0, render)
 
-        coord = self.GetCoordinateCursor()
+        coord = self.get_coordinate_cursor()
         self.cursor.SetPosition(coord)
-        self.cursor.SetEditionPosition(self.GetCoordinateCursorEdition(image_window))
+        self.cursor.SetEditionPosition(
+            self.get_coordinate_cursor_edition(image_window))
         self.__update_cursor_position(coord)
         #render.Render()
 
@@ -198,7 +201,7 @@ class Viewer(wx.Panel):
                    const.BRUSH_THRESH: 'Edit mask pixel'}
         msg = evt_msg[self._brush_cursor_op]
 
-        pixels = itertools.ifilter(self.TestOperationPosition,
+        pixels = itertools.ifilter(self.test_operation_position,
                                    self.cursor.GetPixels())
         ps.Publisher().sendMessage(msg, pixels)
 
@@ -212,9 +215,10 @@ class Viewer(wx.Panel):
         render = self.interactor.FindPokedRenderer(mouse_x, mouse_y)
         image_window = self.get_image_window(render)
         self.pick.Pick(mouse_x, mouse_y, 0, render)
-        coord = self.GetCoordinateCursor()
+        coord = self.get_coordinate_cursor()
         self.cursor.SetPosition(coord)
-        self.cursor.SetEditionPosition(self.GetCoordinateCursorEdition(image_window))
+        self.cursor.SetEditionPosition(
+            self.get_coordinate_cursor_edition(image_window))
         self.__update_cursor_position(coord)
 
         if self._brush_cursor_op == const.BRUSH_ERASE:
@@ -225,7 +229,7 @@ class Viewer(wx.Panel):
             evt_msg = 'Edit mask pixel'
 
         if self.mouse_pressed:
-            pixels = itertools.ifilter(self.TestOperationPosition,
+            pixels = itertools.ifilter(self.test_operation_position,
                                        self.cursor.GetPixels())
             ps.Publisher().sendMessage(evt_msg, pixels)
             ps.Publisher().sendMessage('Update slice viewer')
@@ -233,7 +237,7 @@ class Viewer(wx.Panel):
             self.interactor.Render()
 
     def OnCrossMove(self, obj, evt_vtk):
-        coord = self.GetCoordinate()
+        coord = self.get_coordinate()
         # Update position in other slices
         if self.mouse_pressed:
             ps.Publisher().sendMessage('Update cursor position in slice',
@@ -250,7 +254,7 @@ class Viewer(wx.Panel):
             if i[0] is render:
                 return i
 
-    def GetCoordinate(self):
+    def get_coordinate(self):
         # Find position
         x, y, z = self.pick.GetPickPosition()
 
@@ -288,12 +292,12 @@ class Viewer(wx.Panel):
 
         return coord
 
-    def GetCoordinateCursor(self):
+    def get_coordinate_cursor(self):
         # Find position
         x, y, z = self.pick.GetPickPosition()
         return x, y, z
 
-    def GetCoordinateCursorEdition(self, image_window):
+    def get_coordinate_cursor_edition(self, image_window):
         # Find position
         actor, slice_number = image_window[1::]
         x, y, z = self.pick.GetPickPosition()
@@ -305,7 +309,7 @@ class Viewer(wx.Panel):
         y = float(y - bound_yi)
         z = float(z - bound_zi)
 
-        dx = bound_xf - bound_xi;
+        dx = bound_xf - bound_xi
         dy = bound_yf - bound_yi
         dz = bound_zf - bound_zi
 
@@ -324,21 +328,27 @@ class Viewer(wx.Panel):
         except ZeroDivisionError:
             z = slice_number
 
-        return x,y,z
+        return x, y, z
 
     def __bind_events(self):
-        ps.Publisher().subscribe(self.LoadImagedata, 'Load slice to viewer')
-        ps.Publisher().subscribe(self.SetBrushColour, 'Change mask colour')
-        ps.Publisher().subscribe(self.UpdateRender, 'Update slice viewer')
-        ps.Publisher().subscribe(self.ChangeSliceNumber, ('Set scroll position',
-                                                     self.orientation))
-
+        ps.Publisher().subscribe(self.LoadImagedata,
+                                 'Load slice to viewer')
+        ps.Publisher().subscribe(self.SetBrushColour,
+                                 'Change mask colour')
+        ps.Publisher().subscribe(self.UpdateRender,
+                                 'Update slice viewer')
+        ps.Publisher().subscribe(self.ChangeSliceNumber,
+                                 ('Set scroll position',
+                                  self.orientation))
         ###
-        ps.Publisher().subscribe(self.ChangeBrushSize,'Set edition brush size')
-        ps.Publisher().subscribe(self.ChangeBrushColour, 'Add mask')
-        ps.Publisher().subscribe(self.ChangeBrushActor, 'Set brush format')
-        ps.Publisher().subscribe(self.ChangeBrushOperation, 'Set edition operation')
-
+        ps.Publisher().subscribe(self.ChangeBrushSize,
+                                 'Set edition brush size')
+        ps.Publisher().subscribe(self.ChangeBrushColour, 
+                                 'Add mask')
+        ps.Publisher().subscribe(self.ChangeBrushActor, 
+                                 'Set brush format')
+        ps.Publisher().subscribe(self.ChangeBrushOperation,
+                                 'Set edition operation')
 
     def ChangeBrushOperation(self, pubsub_evt):
         print pubsub_evt.data
@@ -408,7 +418,7 @@ class Viewer(wx.Panel):
                 (self.layout[0] * self.layout[1])
         self.scroll.SetScrollbar(wx.SB_VERTICAL, 1, max_slice_number,
                                                      max_slice_number)
-        self.SetScrollPosition(0)
+        self.set_scroll_position(0)
 
         actor_bound = actor.GetBounds()
 
@@ -423,7 +433,7 @@ class Viewer(wx.Panel):
 
         self.cursor = cursor
 
-        self.AppendMode('EDITOR')
+        self.append_mode('EDITOR')
 
     def __update_cursor_position(self, position):
         x, y, z = position
@@ -435,7 +445,7 @@ class Viewer(wx.Panel):
                            "AXIAL": [x, y, actor_bound[5] + 1 + slice_number]}
             self.cursor.SetPosition(coordinates[self.orientation])
 
-    def SetOrientation(self, orientation):
+    def set_orientation(self, orientation):
         self.orientation = orientation
         for ren, actor, n in self.image_windows:
             self.__update_camera(ren, actor, n)
@@ -478,13 +488,13 @@ class Viewer(wx.Panel):
     def UpdateRender(self, evt):
         self.interactor.Render()
 
-    def SetScrollPosition(self, position):
+    def set_scroll_position(self, position):
         self.scroll.SetThumbPosition(position)
         self.OnScrollBar()
 
     def OnScrollBar(self, evt=None):
         pos = self.scroll.GetThumbPosition()
-        self.SetSliceNumber(pos)
+        self.set_slice_number(pos)
         self.interactor.Render()
         if evt:
             evt.Skip()
@@ -507,7 +517,7 @@ class Viewer(wx.Panel):
         if evt:
             evt.Skip()
 
-    def SetSliceNumber(self, index):
+    def set_slice_number(self, index):
         self.text_actor.SetInput(str(index))
         self.slice_number = index
         for n, window in enumerate(self.image_windows):
@@ -528,11 +538,11 @@ class Viewer(wx.Panel):
 
     def ChangeSliceNumber(self, pubsub_evt):
         index = pubsub_evt.data
-        self.SetSliceNumber(index)
+        self.set_slice_number(index)
         self.scroll.SetThumbPosition(index)
         self.interactor.Render()
 
-    def TestOperationPosition(self, coord):
+    def test_operation_position(self, coord):
         """
         Test if coord is into the imagedata limits.
         """
