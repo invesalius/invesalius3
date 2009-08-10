@@ -43,7 +43,7 @@ class Viewer(wx.Panel):
 
         # All renderers and image actors in this viewer
         self.image_windows = []
-        self.slice_dispostion = (2, 2)
+        self.layout = (2, 2)
 
         self.__init_gui()
 
@@ -184,14 +184,14 @@ class Viewer(wx.Panel):
 
         mouse_x, mouse_y = self.interactor.GetEventPosition()
         render = self.interactor.FindPokedRenderer(mouse_x, mouse_y)
-        actor = self.get_image_window(render)
+        image_window = self.get_image_window(render)
         self.pick.Pick(mouse_x, mouse_y, 0, render)
 
         coord = self.GetCoordinateCursor()
         self.cursor.SetPosition(coord)
-        self.cursor.SetEditionPosition(self.GetCoordinateCursorEdition(actor))
+        self.cursor.SetEditionPosition(self.GetCoordinateCursorEdition(image_window))
         self.__update_cursor_position(coord)
-        self.ren.Render()
+        #render.Render()
 
         evt_msg = {const.BRUSH_ERASE: 'Erase mask pixel',
                    const.BRUSH_DRAW: 'Add mask pixel',
@@ -210,11 +210,11 @@ class Viewer(wx.Panel):
     def OnBrushMove(self, obj, evt_vtk):
         mouse_x, mouse_y = self.interactor.GetEventPosition()
         render = self.interactor.FindPokedRenderer(mouse_x, mouse_y)
-        actor = self.get_image_window(render)
+        image_window = self.get_image_window(render)
         self.pick.Pick(mouse_x, mouse_y, 0, render)
         coord = self.GetCoordinateCursor()
         self.cursor.SetPosition(coord)
-        self.cursor.SetEditionPosition(self.GetCoordinateCursorEdition(actor))
+        self.cursor.SetEditionPosition(self.GetCoordinateCursorEdition(image_window))
         self.__update_cursor_position(coord)
 
         if self._brush_cursor_op == const.BRUSH_ERASE:
@@ -246,9 +246,9 @@ class Viewer(wx.Panel):
                                         coord[2])
 
     def get_image_window(self, render):
-        for r, a in self.image_windows:
-            if r is render:
-                return a
+        for i in self.image_windows:
+            if i[0] is render:
+                return i
 
     def GetCoordinate(self):
         # Find position
@@ -293,8 +293,9 @@ class Viewer(wx.Panel):
         x, y, z = self.pick.GetPickPosition()
         return x, y, z
 
-    def GetCoordinateCursorEdition(self, actor):
+    def GetCoordinateCursorEdition(self, image_window):
         # Find position
+        actor, slice_number = image_window[1::]
         x, y, z = self.pick.GetPickPosition()
 
         # First we fix the position origin, based on vtkActor bounds
@@ -313,15 +314,15 @@ class Viewer(wx.Panel):
         try:
             x = (x * dimensions[0]) / dx
         except ZeroDivisionError:
-            x = self.slice_number
+            x = slice_number
         try:
             y = (y * dimensions[1]) / dy
         except ZeroDivisionError:
-            y = self.slice_number
+            y = slice_number
         try:
             z = (z * dimensions[2]) / dz
         except ZeroDivisionError:
-            z = self.slice_number
+            z = slice_number
 
         return x,y,z
 
@@ -352,15 +353,15 @@ class Viewer(wx.Panel):
         self.SetInput(imagedata)
 
     def load_renderers(self, image):
-        proportion_x = 1.0 / self.slice_dispostion[0]
-        proportion_y = 1.0 / self.slice_dispostion[1]
-        for i in xrange(self.slice_dispostion[0]):
-            for j in xrange(self.slice_dispostion[1]):
+        proportion_x = 1.0 / self.layout[0]
+        proportion_y = 1.0 / self.layout[1]
+        for i in xrange(self.layout[0]):
+            for j in xrange(self.layout[1]):
                 position = ((i*proportion_x, j * proportion_y, 
                              (i+1)*proportion_x, (j+1)*proportion_y))
                 ren, actor = self.create_slice_window(image)
                 ren.SetViewport(position)
-                self.image_windows.append((ren, actor))
+                self.image_windows.append([ren, actor, 0])
 
 
     def SetInput(self, imagedata):
@@ -378,7 +379,7 @@ class Viewer(wx.Panel):
         #actor = vtk.vtkImageActor()
         #actor.SetInput(slice_.GetOutput())
         self.load_renderers(slice_.GetOutput())
-        ren, actor = self.image_windows[0]
+        ren, actor = self.image_windows[0][:2]
         actor_bound = actor.GetBounds()
         self.actor = actor
         self.ren = ren
@@ -400,10 +401,11 @@ class Viewer(wx.Panel):
 
         #ren.AddActor(actor)
         #ren.AddActor(text_actor)
-        for ren, actor in self.image_windows:
-            self.__update_camera(ren, actor)
+        for ren, actor, n in self.image_windows:
+            self.__update_camera(ren, actor, n)
 
-        max_slice_number = actor.GetSliceNumberMax()
+        max_slice_number = actor.GetSliceNumberMax() / \
+                (self.layout[0] * self.layout[1])
         self.scroll.SetScrollbar(wx.SB_VERTICAL, 1, max_slice_number,
                                                      max_slice_number)
         self.SetScrollPosition(0)
@@ -435,8 +437,8 @@ class Viewer(wx.Panel):
 
     def SetOrientation(self, orientation):
         self.orientation = orientation
-        for ren, actor in self.image_windows:
-            self.__update_camera(ren, actor)
+        for ren, actor, n in self.image_windows:
+            self.__update_camera(ren, actor, n)
 
     def create_slice_window(self, image):
         render = vtk.vtkRenderer()
@@ -446,7 +448,7 @@ class Viewer(wx.Panel):
         render.AddActor(actor)
         return render, actor
 
-    def __update_camera(self, ren, actor):
+    def __update_camera(self, ren, actor, pos):
         orientation = self.orientation
 
         cam = ren.GetActiveCamera()
@@ -457,13 +459,12 @@ class Viewer(wx.Panel):
         cam.OrthogonalizeViewUp()
         cam.ParallelProjectionOn()
 
-        self.__update_display_extent(actor, ren)
+        self.__update_display_extent(actor, ren, pos)
 
         ren.ResetCamera()
         ren.Render()
 
-    def __update_display_extent(self, actor, render):
-        pos = self.slice_number
+    def __update_display_extent(self, actor, render, pos):
         e = self.imagedata.GetWholeExtent()
 
         new_extent = {"SAGITAL": (pos, pos, e[2], e[3], e[4], e[5]),
@@ -472,7 +473,7 @@ class Viewer(wx.Panel):
 
         actor.SetDisplayExtent(new_extent[self.orientation])
         render.ResetCameraClippingRange()
-        render.Render()
+        #render.Render()
 
     def UpdateRender(self, evt):
         self.interactor.Render()
@@ -509,7 +510,13 @@ class Viewer(wx.Panel):
     def SetSliceNumber(self, index):
         self.text_actor.SetInput(str(index))
         self.slice_number = index
-        self.__update_display_extent(self.actor, self.ren)
+        for n, window in enumerate(self.image_windows):
+            ren, actor = window[:2]
+            pos = self.layout[0] * self.layout[1] * index + n
+            print pos
+            self.__update_display_extent(actor, ren, pos)
+            self.image_windows[n][2] = pos
+        print
 
         position = {"SAGITAL": {0: self.slice_number},
                     "CORONAL": {1: self.slice_number},
