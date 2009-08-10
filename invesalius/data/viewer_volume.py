@@ -58,6 +58,8 @@ class Viewer(wx.Panel):
 
         self.__bind_events()
         self.__bind_events_wx()
+        
+        self.first_reposition_actor = 0
 
     def __bind_events(self):
         ps.Publisher().subscribe(self.LoadActor, 'Load surface actor into viewer')
@@ -87,7 +89,12 @@ class Viewer(wx.Panel):
         volume, colour = pubsub_evt.data
         self.light = self.ren.GetLights().GetNextItem()
         self.ren.AddVolume(volume)
-        self.RepositionActor()
+        if not (self.first_reposition_actor):
+            self.RepositionActor()
+            self.first_reposition_actor = 1
+        else:
+            ren.ResetCamera()
+            ren.ResetCameraClippingRange()  
         self.UpdateRender()
 
     def ChangeBackgroundColour(self, pubsub_evt):
@@ -97,11 +104,16 @@ class Viewer(wx.Panel):
 
     def LoadActor(self, pubsub_evt):
         actor = pubsub_evt.data
-
+        
         ren = self.ren
         ren.AddActor(actor)
-        ren.ResetCamera()
-        ren.ResetCameraClippingRange()
+        
+        if not (self.first_reposition_actor):
+            self.RepositionActor()
+            self.first_reposition_actor = 1
+        else:
+            ren.ResetCamera()
+            ren.ResetCameraClippingRange()
 
         self.iren.Render()
 
