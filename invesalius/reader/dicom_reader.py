@@ -109,7 +109,7 @@ def LoadImages(dir_):
             read.Update()
 
             #Resample image in x,y dimension
-            img = ResampleImage2D(read.GetOutput(), 200)
+            img = ResampleImage2D(read.GetOutput(), 256)
 
             #Stack images in Z axes
             img_app.AddInput(img)
@@ -124,7 +124,7 @@ def LoadImages(dir_):
 
     img_axial.Update()
     
-    return img_axial, acquisition_modality, tilt
+    return img_axial, acquisition_modality, tilt, orientation
 
 def GetDicomFiles(path, recursive = False):
     #  TODO!!! SUPER GAMBIARRA!!! DO THIS BETTER

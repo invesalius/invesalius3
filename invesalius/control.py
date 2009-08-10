@@ -44,7 +44,15 @@ class Controller():
         output = dicom.LoadImages(dir_)
 
         if output:
-            imagedata, acquisition_modality, tilt_value = output
+            imagedata, acquisition_modality, tilt_value, orientation = output
+            print orientation
+            if (orientation == "CORONAL"):
+                orientation = const.CORONAL
+            elif(orientation == "SAGITTAL"):
+                orientation = const.SAGITAL
+            else:
+                orientation = const.AXIAL
+                
             if (tilt_value):
                 #TODO: Show dialog so user can set not other value
                 tilt_value *= -1
@@ -54,7 +62,10 @@ class Controller():
             "No DICOM files were found. Trying to read with ITK..."
             imagedata = analyze.ReadDirectory(dir_)
             acquisition_modality = "MRI"
-
+            
+            #TODO: Verify if all Analyse is AXIAL orientation
+            orientation = const.AXIAL
+        
         if not imagedata:
             print "Sorry, but there are no medical images supported on this dir."
         else:
@@ -63,7 +74,8 @@ class Controller():
             proj.name = "Untitled"
             proj.SetAcquisitionModality(acquisition_modality)
             proj.imagedata = imagedata
-
+            proj.original_orientation = orientation
+            
             threshold_range = proj.imagedata.GetScalarRange()
             const.THRESHOLD_OUTVALUE = threshold_range[0]
             const.THRESHOLD_INVALUE = threshold_range[1]

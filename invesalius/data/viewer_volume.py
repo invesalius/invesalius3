@@ -24,6 +24,7 @@ import vtk
 from vtk.wx.wxVTKRenderWindowInteractor import wxVTKRenderWindowInteractor
 import wx.lib.pubsub as ps
 import constants as const
+import project as prj
 
 class Viewer(wx.Panel):
     def __init__(self, parent):
@@ -127,8 +128,11 @@ class Viewer(wx.Panel):
         cam = self.ren.GetActiveCamera()
         cam.SetFocalPoint(0,0,0)
         
-        xv,yv,zv = const.AXIAL_VOLUME_CAM_VIEW_UP[position]
-        xp,yp,zp = const.AXIAL_VOLUME_CAM_POSITION[position]
+        proj = prj.Project()
+        orig_orien = proj.original_orientation
+        
+        xv,yv,zv = const.VOLUME_POSITION[orig_orien][0][position]
+        xp,yp,zp = const.VOLUME_POSITION[orig_orien][1][position]
         
         cam.SetViewUp(xv,yv,zv)
         cam.SetPosition(xp,yp,zp)

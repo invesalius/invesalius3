@@ -37,6 +37,11 @@ CORONAL_VOLUME_CAM_POSITION = {"FRONT":(0,0,-1), "BACK":(0,0,1), "RIGHT":(-1,0,0
                                "LEFT":(1,0,0), "TOP":(0,-1,0), "BOTTOM":(0,1,0),\
                                "ISOMETRIC":(-0.5,-0.5,-1)}
 
+VOLUME_POSITION = {AXIAL: [AXIAL_VOLUME_CAM_VIEW_UP, AXIAL_VOLUME_CAM_POSITION],
+                 SAGITAL: [SAGITAL_VOLUME_CAM_VIEW_UP, SAGITAL_VOLUME_CAM_POSITION],
+                 CORONAL: [CORONAL_VOLUME_CAM_VIEW_UP, CORONAL_VOLUME_CAM_POSITION]}
+
+
 # Mask threshold options
 proj = Project()
 THRESHOLD_RANGE = proj.threshold_modes["Bone"]

@@ -49,6 +49,7 @@ class Project(object):
 
         self.presets = Presets()
         
+        self.original_orientation = None
         # MRI ? CT?
         self.threshold_modes = self.presets.thresh_ct
 
