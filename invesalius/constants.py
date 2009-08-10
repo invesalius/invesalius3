@@ -11,8 +11,20 @@ ORIENTATION_COLOUR = {'AXIAL': (1,0,0), # Red
                       'SAGITAL': (0,0,1)} # Blue
 
 # Camera according to slice's orientation
-CAM_POSITION = {"AXIAL":(0, 0, 1), "CORONAL":(0, -1, 0), "SAGITAL":(1, 0, 0)}
-CAM_VIEW_UP =  {"AXIAL":(0, 1, 0), "CORONAL":(0, 0, 1), "SAGITAL":(0, 0, 1)}
+#CAM_POSITION = {"AXIAL":(0, 0, 1), "CORONAL":(0, -1, 0), "SAGITAL":(1, 0, 0)}
+#CAM_VIEW_UP =  {"AXIAL":(0, 1, 0), "CORONAL":(0, 0, 1), "SAGITAL":(0, 0, 1)}
+AXIAL_SLICE_CAM_POSITION = {"AXIAL":(0, 0, 1), "CORONAL":(0, -1, 0), "SAGITAL":(1, 0, 0)}
+AXIAL_SLICE_CAM_VIEW_UP =  {"AXIAL":(0, 1, 0), "CORONAL":(0, 0, 1), "SAGITAL":(0, 0, 1)}
+
+SAGITAL_SLICE_CAM_POSITION = {"AXIAL":(0, -1, 0), "CORONAL":(1, 0, 0), "SAGITAL":(0, 0, 1)}
+SAGITAL_SLICE_CAM_VIEW_UP =  {"AXIAL":(-1, 0, 0), "CORONAL":(0, 1, 0), "SAGITAL":(0, 1, 0)}
+
+CORONAL_SLICE_CAM_POSITION = {"AXIAL":(0, -1, 0), "CORONAL":(0, 0, 1), "SAGITAL":(1, 0, 0)}
+CORONAL_SLICE_CAM_VIEW_UP =  {"AXIAL":(0, 0, -1), "CORONAL":(0, 1, 0), "SAGITAL":(0, 1, 0)}
+
+SLICE_POSITION = {AXIAL:[AXIAL_SLICE_CAM_VIEW_UP, AXIAL_SLICE_CAM_POSITION], 
+                  SAGITAL:[SAGITAL_SLICE_CAM_VIEW_UP, SAGITAL_SLICE_CAM_POSITION], 
+                  CORONAL:[CORONAL_SLICE_CAM_VIEW_UP, CORONAL_SLICE_CAM_POSITION]}
 
 # Camera according to volume's orientation
 AXIAL_VOLUME_CAM_VIEW_UP = {"FRONT":(0,0,1), "BACK":(0,0,1), "RIGHT":(0,0,1),\
