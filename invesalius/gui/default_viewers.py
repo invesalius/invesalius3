@@ -219,7 +219,7 @@ class VolumeToolPanel(wx.Panel):
 
         ISOMETRIC_BMP = wx.Bitmap("../icons/view_isometric.png", wx.BITMAP_TYPE_PNG)
         item7 = wx.MenuItem(menu, 6, "Isometric")
-        item7.SetBitmap(LEFT_BMP)
+        item7.SetBitmap(ISOMETRIC_BMP)
 
         self.Bind(wx.EVT_MENU, self.OnMenu)
 
