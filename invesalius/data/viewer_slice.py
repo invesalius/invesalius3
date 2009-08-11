@@ -355,9 +355,9 @@ class Viewer(wx.Panel):
         ###
         ps.Publisher().subscribe(self.ChangeBrushSize,
                                  'Set edition brush size')
-        ps.Publisher().subscribe(self.ChangeBrushColour, 
+        ps.Publisher().subscribe(self.ChangeBrushColour,
                                  'Add mask')
-        ps.Publisher().subscribe(self.ChangeBrushActor, 
+        ps.Publisher().subscribe(self.ChangeBrushActor,
                                  'Set brush format')
         ps.Publisher().subscribe(self.ChangeBrushOperation,
                                  'Set edition operation')
@@ -379,7 +379,7 @@ class Viewer(wx.Panel):
         proportion_y = 1.0 / self.layout[1]
         for i in xrange(self.layout[0]):
             for j in xrange(self.layout[1]):
-                position = ((i*proportion_x, j * proportion_y, 
+                position = ((i*proportion_x, j * proportion_y,
                              (i+1)*proportion_x, (j+1)*proportion_y))
                 slice_data = self.create_slice_window(image)
                 slice_data.renderer.SetViewport(position)
@@ -456,12 +456,12 @@ class Viewer(wx.Panel):
         if (slice_data.cursor):
             slice_number = slice_data.number
             actor_bound = slice_data.actor.GetBounds()
-            
+
             yz = [actor_bound[1] + 1 + slice_number, y, z]
             xz = [x, actor_bound[3] - 1 - slice_number, z]
             xy = [x, y, actor_bound[5] + 1 + slice_number]
-            
-            proj = project.Project() 
+
+            proj = project.Project()
             orig_orien = proj.original_orientation
 
             if (orig_orien == const.SAGITAL):
@@ -470,7 +470,7 @@ class Viewer(wx.Panel):
                 coordinates = {"SAGITAL": yz, "CORONAL": xy, "AXIAL": xz}
             else:
                 coordinates = {"SAGITAL": yz, "CORONAL": xz, "AXIAL": xy}
-            
+
             slice_data.cursor.SetPosition(coordinates[self.orientation])
 
     def SetOrientation(self, orientation):
@@ -494,7 +494,7 @@ class Viewer(wx.Panel):
         orientation = self.orientation
         proj = project.Project()
         orig_orien = proj.original_orientation
-        
+
         cam = slice_data.renderer.GetActiveCamera()
         cam.SetFocalPoint(0, 0, 0)
         cam.SetViewUp(const.SLICE_POSITION[orig_orien][0][self.orientation])
@@ -513,15 +513,15 @@ class Viewer(wx.Panel):
         proj = project.Project()
 
         pos = slice_data.number
-        
+
         x = (pos, pos, e[2], e[3], e[4], e[5])
         y = (e[0], e[1], pos, pos, e[4], e[5])
         z = (e[0], e[1], e[2], e[3], pos, pos)
-        
-        if (proj.original_orientation == const.AXIAL):        
+
+        if (proj.original_orientation == const.AXIAL):
             new_extent = {"SAGITAL": x, "CORONAL": y, "AXIAL": z}
         elif(proj.original_orientation == const.SAGITAL):
-            new_extent = {"SAGITAL": z,"CORONAL": x,"AXIAL": y}   
+            new_extent = {"SAGITAL": z,"CORONAL": x,"AXIAL": y}
         elif(proj.original_orientation == const.CORONAL):
             new_extent = {"SAGITAL": x,"CORONAL": z,"AXIAL": y}
 
@@ -548,11 +548,11 @@ class Viewer(wx.Panel):
         min = 0
         max = self.actor.GetSliceNumberMax()
 
-        if (evt.GetKeyCode() == 315 and pos > min):
+        if (evt.GetKeyCode() == wx.WXK_UP and pos > min):
             pos = pos - 1
             self.scroll.SetThumbPosition(pos)
             self.OnScrollBar()
-        elif (evt.GetKeyCode() == 317 and pos < max):
+        elif (evt.GetKeyCode() == wx.WXK_DOWN and pos < max):
             pos = pos + 1
             self.scroll.SetThumbPosition(pos)
             self.OnScrollBar()
