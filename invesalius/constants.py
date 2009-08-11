@@ -30,24 +30,23 @@ SLICE_POSITION = {AXIAL:[AXIAL_SLICE_CAM_VIEW_UP, AXIAL_SLICE_CAM_POSITION],
 AXIAL_VOLUME_CAM_VIEW_UP = {"FRONT":(0,0,1), "BACK":(0,0,1), "RIGHT":(0,0,1),\
                             "LEFT":(0,0,1), "TOP":(0,1,0), "BOTTOM":(0,-1,0),\
                             "ISOMETRIC":(0,0,1)}
-
 AXIAL_VOLUME_CAM_POSITION = {"FRONT":(0,-1,0), "BACK":(0,1,0), "RIGHT":(-1,0,0),\
                              "LEFT":(1,0,0), "TOP":(0,0,1), "BOTTOM":(0,0,-1),\
-                             "ISOMETRIC":(-0.5,-1,0.5)}
+                             "ISOMETRIC":(0.5,-1,0.5)}
 
 SAGITAL_VOLUME_CAM_VIEW_UP = {"FRONT":(0,-1,0), "BACK":(0,-1,0), "RIGHT":(0,-1,1),\
                               "LEFT":(0,-1,1), "TOP":(1,-1,0), "BOTTOM":(-1,1,0),\
                               "ISOMETRIC":(0,-1,0)}
 SAGITAL_VOLUME_CAM_POSITION = {"FRONT":(-1,0,0), "BACK":(1,0,0), "RIGHT":(0,0,1),\
                                "LEFT":(0,0,-1), "TOP":(0,-1,0), "BOTTOM":(0,1,0),\
-                               "ISOMETRIC":(-1,-0.5,0.5)}
+                               "ISOMETRIC":(-1,-0.5,-0.5)}
 
 CORONAL_VOLUME_CAM_VIEW_UP = {"FRONT":(0,-1,0), "BACK":(0,-1,0), "RIGHT":(0,-1,0),\
                               "LEFT":(0,-1,0), "TOP":(0,1,0), "BOTTOM":(0,-1,0),\
                               "ISOMETRIC":(0,-1,0)}
 CORONAL_VOLUME_CAM_POSITION = {"FRONT":(0,0,-1), "BACK":(0,0,1), "RIGHT":(-1,0,0),\
                                "LEFT":(1,0,0), "TOP":(0,-1,0), "BOTTOM":(0,1,0),\
-                               "ISOMETRIC":(-0.5,-0.5,-1)}
+                               "ISOMETRIC":(0.5,-0.5,-1)}
 
 VOLUME_POSITION = {AXIAL: [AXIAL_VOLUME_CAM_VIEW_UP, AXIAL_VOLUME_CAM_POSITION],
                  SAGITAL: [SAGITAL_VOLUME_CAM_VIEW_UP, SAGITAL_VOLUME_CAM_POSITION],
