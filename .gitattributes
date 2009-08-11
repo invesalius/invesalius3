@@ -87,6 +87,7 @@ invesalius/data/mask.py -text
 invesalius/data/orientation.py -text
 invesalius/data/polydata_utils.py -text
 invesalius/data/slice_.py -text
+invesalius/data/slice_data.py -text
 invesalius/data/styles.py -text
 invesalius/data/surface.py -text
 invesalius/data/viewer.py -text
