@@ -230,6 +230,7 @@ class VolumeToolPanel(wx.Panel):
         menu.AppendItem(item5)
         menu.AppendItem(item6)
         menu.AppendItem(item7)
+        self.menu = menu
 
         button_position = pbtn.PlateButton(self, wx.ID_ANY,"", FRONT_BMP,
                                           style=pbtn.PB_STYLE_SQUARE, size=(24,24))
@@ -248,12 +249,16 @@ class VolumeToolPanel(wx.Panel):
         self.SetSizer(sizer)
         sizer.Fit(self)
 
+        self.orientations = {0:("FRONT", FRONT_BMP), 1:("BACK", BACK_BMP),\
+                  2:("TOP",TOP_BMP), 3:("BOTTOM",BOTTOM_BMP),\
+                  4:("RIGHT",RIGHT_BMP), 5:("LEFT", LEFT_BMP),\
+                  6:("ISOMETRIC",ISOMETRIC_BMP)}
+
     def OnMenu(self, evt):
-        values = {0:"FRONT", 1:"BACK", 2:"TOP",\
-                  3:"BOTTOM", 4:"RIGHT", 5:"LEFT",\
-                  6:"ISOMETRIC"}
+
+        self.button_position.SetBitmapSelected(self.orientations[evt.GetId()][1])
         ps.Publisher().sendMessage('Reposition Actor',\
-                                   values[evt.GetId()])
+                                   self.orientations[evt.GetId()][0])
 
     def OnSelectColour(self, evt):
         colour = c = [i/255.0 for i in evt.GetValue()]
