@@ -440,9 +440,21 @@ class Viewer(wx.Panel):
         if (self.cursor):
             slice_number = self.slice_number
             actor_bound = self.actor.GetBounds()
-            coordinates = {"SAGITAL": [actor_bound[1] + 1 + slice_number, y, z],
-                           "CORONAL": [x, actor_bound[3] - 1 - slice_number, z],
-                           "AXIAL": [x, y, actor_bound[5] + 1 + slice_number]}
+            
+            yz = [actor_bound[1] + 1 + slice_number, y, z]
+            xz = [x, actor_bound[3] - 1 - slice_number, z]
+            xy = [x, y, actor_bound[5] + 1 + slice_number]
+            
+            proj = project.Project() 
+            orig_orien = proj.original_orientation
+
+            if (orig_orien == const.SAGITAL):
+                coordinates = {"SAGITAL": xy, "CORONAL": yz, "AXIAL": xz}
+            elif(orig_orien == const.CORONAL):
+                coordinates = {"SAGITAL": yz, "CORONAL": xy, "AXIAL": xz}
+            else:
+                coordinates = {"SAGITAL": yz, "CORONAL": xz, "AXIAL": xy}
+            
             self.cursor.SetPosition(coordinates[self.orientation])
 
     def set_orientation(self, orientation):
