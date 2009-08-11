@@ -492,19 +492,16 @@ class Viewer(wx.Panel):
         e = self.imagedata.GetWholeExtent()
         proj = project.Project()
         
+        x = (pos, pos, e[2], e[3], e[4], e[5])
+        y = (e[0], e[1], pos, pos, e[4], e[5])
+        z = (e[0], e[1], e[2], e[3], pos, pos)
+        
         if (proj.original_orientation == const.AXIAL):        
-            new_extent = {"SAGITAL": (pos, pos, e[2], e[3], e[4], e[5]),
-                          "CORONAL": (e[0], e[1], pos, pos, e[4], e[5]),
-                          "AXIAL": (e[0], e[1], e[2], e[3], pos, pos)}
+            new_extent = {"SAGITAL": x, "CORONAL": y, "AXIAL": z}
         elif(proj.original_orientation == const.SAGITAL):
-            new_extent = {"SAGITAL": (e[0], e[1], e[2], e[3], pos, pos),
-                  "CORONAL": (pos, pos, e[2], e[3], e[4], e[5]),
-                  "AXIAL": (e[0], e[1], pos, pos, e[4], e[5])}   
+            new_extent = {"SAGITAL": z,"CORONAL": x,"AXIAL": y}   
         elif(proj.original_orientation == const.CORONAL):
-            new_extent = {"SAGITAL": (pos, pos, e[2], e[3], e[4], e[5]),
-                          "CORONAL": (e[0], e[1], e[2], e[3], pos, pos),
-                          "AXIAL": (e[0], e[1], pos, pos, e[4], e[5])}
-             
+            new_extent = {"SAGITAL": x,"CORONAL": z,"AXIAL": y}
 
         actor.SetDisplayExtent(new_extent[self.orientation])
         render.ResetCameraClippingRange()
