@@ -34,7 +34,7 @@ class CLUTRaycastingWidget(wx.Panel):
         self.padding = 10
         self.to_render = False
         self.histogram_pixel_points = [[0,0]]
-        self.histogram_array = [[100,100],[100,100]]
+        self.histogram_array = [100,100]
         self.CreatePixelArray()
         #self.sizer = wx.BoxSizer(wx.HORIZONTAL)
         #self.SetSizer(self.sizer)
@@ -293,6 +293,7 @@ class CLUTRaycastingWidget(wx.Panel):
         x,y = self.histogram_pixel_points[0]
         print "=>", x,y
         ctx.move_to(x,y)
+        ctx.set_line_width(0.5)
         for x,y in self.histogram_pixel_points:
             ctx.line_to(x,y)
         ctx.stroke()
@@ -313,6 +314,7 @@ class CLUTRaycastingWidget(wx.Panel):
         height -= self.padding
         width -= self.padding
 
+        self._draw_histogram(ctx)
         self._draw_gradient(ctx, height)
         self._draw_curves(ctx)
         self._draw_points(ctx)
@@ -326,17 +328,17 @@ class CLUTRaycastingWidget(wx.Panel):
         width -= self.padding
         height -= self.padding
         y_init = 0
-        y_end = max(self.histogram_array[0])
+        y_end = max(self.histogram_array)
+        print y_end
         proportion_x = width * 1.0 / (self.end - self.init)
         proportion_y = height * 1.0 / (y_end - y_init)
         print ":) ", y_end, proportion_y
         self.histogram_pixel_points = []
-        for i in xrange(len(self.histogram_array[0])):
-            x = self.histogram_array[1][i]
-            y = self.histogram_array[0][i]
-            print x, y
+        for i in xrange(len(self.histogram_array)):
+            y = self.histogram_array[i]
+            x = self.init+ i
             x = (x + abs(self.init)) * proportion_x
-            y = height - (y + abs(y_init)) * proportion_y
+            y = height - y * proportion_y
             self.histogram_pixel_points.append((x, y))
 
 
@@ -344,7 +346,7 @@ class CLUTRaycastingWidget(wx.Panel):
         self.pixels_points = []
         for curve in self.points:
             self.pixels_points.append([self.HounsfieldToPixel(i) for i in curve])
-        #self._build_histogram()
+        self._build_histogram()
 
     def HounsfieldToPixel(self, h_pt):
         """
