@@ -139,6 +139,12 @@ class CursorCircle:
         self.spacing = spacing
         self.__calculate_area_pixels()
 
+    def Show(self, value=1):
+        if value:
+            self.actor.VisibilityOn()
+        else:
+            self.actor.VisibilityOff()
+
     def GetPixels(self):
         px, py, pz = self.edition_position
         orient = self.orientation

@@ -112,7 +112,7 @@ class Viewer(wx.Panel):
                   'EDITOR': {
                             "MouseMoveEvent": self.OnBrushMove,
                             "LeftButtonPressEvent": self.OnBrushClick,
-                            "LeftButtonReleaseEvent": self.OnMouseRelease
+                            "LeftButtonReleaseEvent": self.OnMouseRelease,
                             }
                  }
 
@@ -128,6 +128,9 @@ class Viewer(wx.Panel):
                 # Bind event
                 style.AddObserver(event,
                                   action[mode][event])
+
+    def OnEnter(self, obj, evt):
+        print "Entrei"
 
     def ChangeBrushSize(self, pubsub_evt):
         size = pubsub_evt.data
@@ -190,10 +193,10 @@ class Viewer(wx.Panel):
         self.pick.Pick(mouse_x, mouse_y, 0, render)
 
         coord = self.get_coordinate_cursor()
-        self.cursor.SetPosition(coord)
-        self.cursor.SetEditionPosition(
+        slice_data.cursor.SetPosition(coord)
+        slice_data.cursor.SetEditionPosition(
             self.get_coordinate_cursor_edition(slice_data))
-        self.__update_cursor_position(coord)
+        self.__update_cursor_position(slice_data, coord)
         #render.Render()
 
         evt_msg = {const.BRUSH_ERASE: 'Erase mask pixel',
@@ -202,7 +205,7 @@ class Viewer(wx.Panel):
         msg = evt_msg[self._brush_cursor_op]
 
         pixels = itertools.ifilter(self.test_operation_position,
-                                   self.cursor.GetPixels())
+                                   slice_data.cursor.GetPixels())
         ps.Publisher().sendMessage(msg, pixels)
 
         # FIXME: This is idiot, but is the only way that brush operations are
@@ -214,12 +217,20 @@ class Viewer(wx.Panel):
         mouse_x, mouse_y = self.interactor.GetEventPosition()
         render = self.interactor.FindPokedRenderer(mouse_x, mouse_y)
         slice_data = self.get_slice_data(render)
+
+        # TODO: Improve!
+        for i in self.slice_data_list:
+            if i is slice_data:
+                i.cursor.Show()
+            else:
+                i.cursor.Show(0)
+
         self.pick.Pick(mouse_x, mouse_y, 0, render)
         coord = self.get_coordinate_cursor()
-        self.cursor.SetPosition(coord)
-        self.cursor.SetEditionPosition(
+        slice_data.cursor.SetPosition(coord)
+        slice_data.cursor.SetEditionPosition(
             self.get_coordinate_cursor_edition(slice_data))
-        self.__update_cursor_position(coord)
+        self.__update_cursor_position(slice_data, coord)
 
         if self._brush_cursor_op == const.BRUSH_ERASE:
             evt_msg = 'Erase mask pixel'
@@ -230,7 +241,7 @@ class Viewer(wx.Panel):
 
         if self.mouse_pressed:
             pixels = itertools.ifilter(self.test_operation_position,
-                                       self.cursor.GetPixels())
+                                       slice_data.cursor.GetPixels())
             ps.Publisher().sendMessage(evt_msg, pixels)
             ps.Publisher().sendMessage('Update slice viewer')
         else:
@@ -372,7 +383,17 @@ class Viewer(wx.Panel):
                              (i+1)*proportion_x, (j+1)*proportion_y))
                 slice_data = self.create_slice_window(image)
                 slice_data.renderer.SetViewport(position)
+                slice_data.SetCursor(self.__create_cursor())
                 self.slice_data_list.append(slice_data)
+
+    def __create_cursor(self):
+        cursor = ca.CursorCircle()
+        cursor.SetOrientation(self.orientation)
+        #self.__update_cursor_position([i for i in actor_bound[1::2]])
+        cursor.SetColour(self._brush_cursor_colour)
+        cursor.SetSpacing(self.imagedata.GetSpacing())
+        cursor.Show(0)
+        return cursor
 
     def SetInput(self, imagedata):
         self.imagedata = imagedata
@@ -426,23 +447,15 @@ class Viewer(wx.Panel):
         actor_bound = actor.GetBounds()
 
         # Insert cursor
-        cursor = ca.CursorCircle()
-        cursor.SetOrientation(self.orientation)
-        self.__update_cursor_position([i for i in actor_bound[1::2]])
-        cursor.SetColour(self._brush_cursor_colour)
-        cursor.SetSpacing(imagedata.GetSpacing())
-        self.ren.AddActor(cursor.actor)
-        self.ren.Render()
 
-        self.cursor = cursor
 
         self.append_mode('EDITOR')
 
-    def __update_cursor_position(self, position):
+    def __update_cursor_position(self, slice_data, position):
         x, y, z = position
-        if (self.cursor):
-            slice_number = self.slice_number
-            actor_bound = self.actor.GetBounds()
+        if (slice_data.cursor):
+            slice_number = slice_data.number
+            actor_bound = slice_data.actor.GetBounds()
             
             yz = [actor_bound[1] + 1 + slice_number, y, z]
             xz = [x, actor_bound[3] - 1 - slice_number, z]
@@ -458,9 +471,9 @@ class Viewer(wx.Panel):
             else:
                 coordinates = {"SAGITAL": yz, "CORONAL": xz, "AXIAL": xy}
             
-            self.cursor.SetPosition(coordinates[self.orientation])
+            slice_data.cursor.SetPosition(coordinates[self.orientation])
 
-    def set_orientation(self, orientation):
+    def SetOrientation(self, orientation):
         self.orientation = orientation
         for slice_data in self.slice_data_list:
             self.__update_camera(slice_data)
@@ -474,6 +487,7 @@ class Viewer(wx.Panel):
         slice_data = SliceData()
         slice_data.renderer = renderer
         slice_data.actor = actor
+        renderer.AddObserver("EnterEvent", self.OnEnter)
         return slice_data
 
     def __update_camera(self, slice_data):
@@ -558,13 +572,14 @@ class Viewer(wx.Panel):
                 slice_data.number = pos
                 self.__update_display_extent(slice_data)
 
-        position = {"SAGITAL": {0: self.slice_number},
-                    "CORONAL": {1: self.slice_number},
-                    "AXIAL": {2: self.slice_number}}
+                position = {"SAGITAL": {0: slice_data.number},
+                            "CORONAL": {1: slice_data.number},
+                            "AXIAL": {2: slice_data.number}}
 
-        if 'DEFAULT' in self.modes:
-            ps.Publisher().sendMessage('Update cursor single position in slice',
-                                        position[self.orientation])
+                if 'DEFAULT' in self.modes:
+                    ps.Publisher().sendMessage(
+                        'Update cursor single position in slice',
+                        position[self.orientation])
 
     def ChangeSliceNumber(self, pubsub_evt):
         index = pubsub_evt.data
