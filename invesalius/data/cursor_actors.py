@@ -2,7 +2,8 @@ from  math import *
 
 import vtk
 import wx.lib.pubsub as ps
-
+from project import Project
+import constants as const
 import utils
 
 class CursorCircle:
@@ -59,9 +60,27 @@ class CursorCircle:
         yc = 0.0
         z = 0.0
         xs, ys, zs = self.spacing 
-        orientation_based_spacing = {"AXIAL" : (xs, ys),
-                                     "SAGITAL" : (ys, zs),
-                                     "CORONAL" : (xs, zs)}
+        
+        proj = Project()
+        orig_orien = proj.original_orientation
+        
+        xy = (xs, ys)
+        yz = (ys, zs)
+        xz = (xs, zs)
+        
+        if (orig_orien == const.SAGITAL):
+            orientation_based_spacing = {"SAGITAL" : xy,
+                                     "AXIAL" : yz,
+                                     "CORONAL" : xz}
+        elif(orig_orien == const.CORONAL):
+            orientation_based_spacing = {"CORONAL" : xy,
+                                         "AXIAL" : xz,
+                                         "SAGITAL" : yz}
+        else:
+            orientation_based_spacing = {"AXIAL" : xy,
+                                         "SAGITAL" : yz,
+                                         "CORONAL" : xz}
+        
         xs, ys = orientation_based_spacing[self.orientation]
         self.pixel_list = []
         radius = self.radius
@@ -90,12 +109,24 @@ class CursorCircle:
 
     def SetOrientation(self, orientation):
         self.orientation = orientation
-
-        if orientation == "CORONAL":
-            self.actor.RotateX(90)
-
-        if orientation == "SAGITAL":
-            self.actor.RotateY(90)
+        proj = Project() 
+        
+        orig_orien = proj.original_orientation
+        if (orig_orien == const.SAGITAL):
+            if orientation == "CORONAL":
+                self.actor.RotateY(90)
+            if orientation == "AXIAL":
+                self.actor.RotateX(90)
+        elif(orig_orien == const.CORONAL):
+            if orientation == "AXIAL":
+                self.actor.RotateX(270)
+            if orientation == "SAGITAL":
+                self.actor.RotateY(90)
+        else:
+            if orientation == "CORONAL":
+                self.actor.RotateX(90)
+            if orientation == "SAGITAL":
+                self.actor.RotateY(90)
 
     def SetPosition(self, position):
         self.position = position
@@ -112,12 +143,28 @@ class CursorCircle:
         px, py, pz = self.edition_position
         orient = self.orientation
         xs, ys, zs = self.spacing
-        abs_pixel = {"AXIAL": lambda x,y: (px + x / xs, py+(y/ys), pz),
-                     "CORONAL": lambda x,y: (px+(x/xs), py,
-                                            pz+(y/zs)),
-                     "SAGITAL": lambda x,y: (px, py+(x/ys),
-                                             pz+(y/zs))}
+        proj = Project()
+        orig_orien = proj.original_orientation
+        
+        xy1 = lambda x,y: (px + x / xs, py+(y/ys), pz)
+        xy2 = lambda x,y: (px+(x/xs), py, pz+(y/zs))
+        xy3 = lambda x,y: (px, py+(x/ys), pz+(y/zs))
+        
+        if (orig_orien == const.SAGITAL):
+            abs_pixel = {"SAGITAL": xy1,
+                         "AXIAL": xy2,
+                         "CORONAL": xy3}
+        elif(orig_orien == const.CORONAL):
+            abs_pixel = {"CORONAL": xy1,
+                         "SAGITAL": xy3,
+                         "AXIAL": xy2}
+        else:
+            abs_pixel = {"AXIAL": xy1,
+                        "CORONAL": xy2,
+                        "SAGITAL": xy3}
+            
         function_orientation = abs_pixel[orient]
+        
         for pixel_0,pixel_1 in self.pixel_list:
             # The position of the pixels in this list is relative (based only on
             # the area, and not the cursor position).
@@ -131,7 +178,8 @@ class CursorCircle:
 #-------------------------------------------------------------------------------
 #-------------------------------------------------------------------------------
 #-------------------------------------------------------------------------------
-#-------------------------------------------------------------------------------#-------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------
 #-------------------------------------------------------------------------------
 #-------------------------------------------------------------------------------
 #-------------------------------------------------------------------------------
