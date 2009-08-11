@@ -39,26 +39,26 @@ class Panel(wx.Panel):
 
 
         # TODO: Testar mais e verificar melhor opcao
-        
+
         # Position
         # volume          | pos = 0
         # sagital         | pos = 1
         # coronal         | pos = 2
         # axial           | pos = 3
         # Automatico: assim que painel eh inserido ele ocupa local mais acima na janela (menor numero de posicao)
-        
+
         # Layer
         # Layer 0 | Layer 1 | Layer 2 | ...
         # Automatico: todos sao colocados no mesmo layer
-        
+
         # O que eh o Dockable?
-        
+
         # Row
         # Row 0 | Row 1
         # Idem ao layer
-        
+
         # Como funciona Direction?
-        
+
         # Primeira alternativa:
         # modo: 2 no Layer 0, 2 no Layer 1 por exemplo - posicao automatica (ao inves de Layer pode ser utilizado Row)
         # problema: sash control soh aparece no sentido ertical
@@ -68,22 +68,22 @@ class Panel(wx.Panel):
         s1 = wx.aui.AuiPaneInfo().Centre().Row(0).\
              Name("Axial Slice").Caption("Axial slice").\
              MaximizeButton(True).CloseButton(False)
-             
+
         p2 = slice_viewer.Viewer(self, "CORONAL")
         s2 = wx.aui.AuiPaneInfo().Centre().Row(0).\
              Name("Coronal Slice").Caption("Coronal slice").\
              MaximizeButton(True).CloseButton(False)
-        
+
         p3 = slice_viewer.Viewer(self, "SAGITAL")
         s3 = wx.aui.AuiPaneInfo().Centre().Row(1).\
              Name("Sagital Slice").Caption("Sagital slice").\
              MaximizeButton(True).CloseButton(False)
-             
+
         p4 = VolumeViewerCover(self)
         s4 = wx.aui.AuiPaneInfo().Row(1).Name("Volume").\
              Bottom().Centre().Caption("Volume").\
              MaximizeButton(True).CloseButton(False)
-        
+
         if sys.platform == 'win32':
             self.aui_manager.AddPane(p1, s1)
             self.aui_manager.AddPane(p2, s2)
@@ -94,9 +94,9 @@ class Panel(wx.Panel):
             self.aui_manager.AddPane(p3, s3)
             self.aui_manager.AddPane(p2, s2)
             self.aui_manager.AddPane(p1, s1)
-        
+
         self.aui_manager.Update()
-        
+
 
     def __init_four_way_splitter(self):
 
@@ -108,49 +108,49 @@ class Panel(wx.Panel):
 
         p1 = slice_viewer.Viewer(self, "AXIAL")
         splitter.AppendWindow(p1)
-        
+
         p2 = slice_viewer.Viewer(self, "CORONAL")
         splitter.AppendWindow(p2)
-        
+
         p3 = slice_viewer.Viewer(self, "SAGITAL")
         splitter.AppendWindow(p3)
-        
+
         p4 = volume_viewer.Viewer(self)
         splitter.AppendWindow(p4)
 
-        
+
     def __init_mix(self):
         aui_manager = wx.aui.AuiManager()
         aui_manager.SetManagedWindow(self)
 
 
         splitter = fws.FourWaySplitter(self, style=wx.SP_LIVE_UPDATE)
-        
+
         sizer = wx.BoxSizer(wx.HORIZONTAL)
         sizer.Add(splitter, 1, wx.EXPAND)
         self.SetSizer(sizer)
 
 
         p1 = slice_viewer.Viewer(self, "AXIAL")
-        aui_manager.AddPane(p1, 
+        aui_manager.AddPane(p1,
                                  wx.aui.AuiPaneInfo().
                                  Name("Axial Slice").Caption("Axial slice").
                                  MaximizeButton(True).CloseButton(False))
-        
+
         p2 = slice_viewer.Viewer(self, "CORONAL")
-        aui_manager.AddPane(p2, 
+        aui_manager.AddPane(p2,
                                  wx.aui.AuiPaneInfo().
                                  Name("Coronal Slice").Caption("Coronal slice").
                                  MaximizeButton(True).CloseButton(False))
 
         p3 = slice_viewer.Viewer(self, "SAGITAL")
-        aui_manager.AddPane(p3, 
+        aui_manager.AddPane(p3,
                                  wx.aui.AuiPaneInfo().
                                  Name("Sagittal Slice").Caption("Sagittal slice").
                                  MaximizeButton(True).CloseButton(False))
 
         #p4 = volume_viewer.Viewer(self)
-        aui_manager.AddPane(VolumeViewerCover, 
+        aui_manager.AddPane(VolumeViewerCover,
                                  wx.aui.AuiPaneInfo().
                                  Name("Volume").Caption("Volume").
                                  MaximizeButton(True).CloseButton(False))
@@ -162,17 +162,17 @@ class Panel(wx.Panel):
 
 
         aui_manager.Update()
-        
+
 class VolumeViewerCover(wx.Panel):
     def __init__(self, parent):
         wx.Panel.__init__(self, parent)
-        
+
         sizer = wx.BoxSizer(wx.HORIZONTAL)
         sizer.Add(volume_viewer.Viewer(self), 1, wx.EXPAND|wx.GROW)
         sizer.Add(VolumeToolPanel(self), 0, wx.EXPAND)
         self.SetSizer(sizer)
         sizer.Fit(self)
-        
+
 import wx.lib.platebtn as pbtn
 import wx.lib.buttons as btn
 import wx.lib.pubsub as ps
@@ -181,65 +181,62 @@ import wx.lib.colourselect as csel
 class VolumeToolPanel(wx.Panel):
     def __init__(self, parent):
         wx.Panel.__init__(self, parent, size = (8,100))
-        
+
         BMP_RAYCASTING = wx.Bitmap("../icons/volume_raycasting.png", wx.BITMAP_TYPE_PNG)
         BMP_RAYCASTING.SetWidth(22)
         BMP_RAYCASTING.SetHeight(22)
 
-        BMP_POSITION = wx.Bitmap("../icons/brush_square.jpg", wx.BITMAP_TYPE_JPEG)
-        BMP_POSITION.SetWidth(22)
-        BMP_POSITION.SetHeight(22)
+        FRONT_BMP = wx.Bitmap("../icons/view_front.png", wx.BITMAP_TYPE_PNG)
 
         button_raycasting=btn.GenBitmapToggleButton(self, 1, BMP_RAYCASTING, size=(24,24))
         button_raycasting.Bind(wx.EVT_BUTTON, self.OnToggleRaycasting)
         self.button_raycasting = button_raycasting
-        
+
         menu = wx.Menu()
-        
-        FRONT_BMP = wx.Bitmap("../icons/brush_circle.jpg", wx.BITMAP_TYPE_JPEG)
+
         item = wx.MenuItem(menu, 0, "Front")
         item.SetBitmap(FRONT_BMP)
 
-        BACK_BMP = wx.Bitmap("../icons/brush_square.jpg", wx.BITMAP_TYPE_JPEG)
+        BACK_BMP = wx.Bitmap("../icons/view_back.png", wx.BITMAP_TYPE_PNG)
         item2 = wx.MenuItem(menu, 1, "Back")
         item2.SetBitmap(BACK_BMP)
-        
-        TOP_BMP = wx.Bitmap("../icons/brush_square.jpg", wx.BITMAP_TYPE_JPEG)
+
+        TOP_BMP = wx.Bitmap("../icons/view_top.png", wx.BITMAP_TYPE_PNG)
         item3 = wx.MenuItem(menu, 2, "Top")
         item3.SetBitmap(TOP_BMP)
 
-        BOTTOM_BMP = wx.Bitmap("../icons/brush_square.jpg", wx.BITMAP_TYPE_JPEG)
+        BOTTOM_BMP = wx.Bitmap("../icons/view_bottom.png", wx.BITMAP_TYPE_PNG)
         item4 = wx.MenuItem(menu, 3, "Bottom")
         item4.SetBitmap(BOTTOM_BMP)
 
-        RIGHT_BMP = wx.Bitmap("../icons/brush_square.jpg", wx.BITMAP_TYPE_JPEG)
+        RIGHT_BMP = wx.Bitmap("../icons/view_right.png", wx.BITMAP_TYPE_PNG)
         item5 = wx.MenuItem(menu, 4, "Right")
         item5.SetBitmap(RIGHT_BMP)
 
-        LEFT_BMP = wx.Bitmap("../icons/brush_square.jpg", wx.BITMAP_TYPE_JPEG)
+        LEFT_BMP = wx.Bitmap("../icons/view_left.png", wx.BITMAP_TYPE_PNG)
         item6 = wx.MenuItem(menu, 5, "Left")
         item6.SetBitmap(LEFT_BMP)
-        
-        ISOMETRIC_BMP = wx.Bitmap("../icons/brush_square.jpg", wx.BITMAP_TYPE_JPEG)
+
+        ISOMETRIC_BMP = wx.Bitmap("../icons/view_isometric.png", wx.BITMAP_TYPE_PNG)
         item7 = wx.MenuItem(menu, 6, "Isometric")
         item7.SetBitmap(LEFT_BMP)
-        
+
         self.Bind(wx.EVT_MENU, self.OnMenu)
-        
+
         menu.AppendItem(item)
-        menu.AppendItem(item2)        
+        menu.AppendItem(item2)
         menu.AppendItem(item3)
         menu.AppendItem(item4)
         menu.AppendItem(item5)
         menu.AppendItem(item6)
         menu.AppendItem(item7)
-    
-        button_position = pbtn.PlateButton(self, wx.ID_ANY,"", BMP_POSITION,
+
+        button_position = pbtn.PlateButton(self, wx.ID_ANY,"", FRONT_BMP,
                                           style=pbtn.PB_STYLE_SQUARE, size=(24,24))
-        
+
         button_position.SetMenu(menu)
         self.button_position = button_position
-        
+
         button_colour= csel.ColourSelect(self, 111,colour=(0,0,0),size=(24,24))
         button_colour.Bind(csel.EVT_COLOURSELECT, self.OnSelectColour)
         self.button_colour = button_colour
@@ -250,7 +247,7 @@ class VolumeToolPanel(wx.Panel):
         sizer.Add(button_position, 0, wx.ALL, 1)
         self.SetSizer(sizer)
         sizer.Fit(self)
-        
+
     def OnMenu(self, evt):
         values = {0:"FRONT", 1:"BACK", 2:"TOP",\
                   3:"BOTTOM", 4:"RIGHT", 5:"LEFT",\
