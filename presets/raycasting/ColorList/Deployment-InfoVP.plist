@@ -1,0 +1,185 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CFBundleDevelopmentRegion</key>
+	<string>English</string>
+	<key>CFBundleDocumentTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeExtensions</key>
+			<array>
+				<string>dcm</string>
+			</array>
+			<key>CFBundleTypeIconFile</key>
+			<string>dcm.icns</string>
+			<key>CFBundleTypeMIMETypes</key>
+			<array>
+				<string>application/dicom</string>
+			</array>
+			<key>CFBundleTypeName</key>
+			<string>DICOM Image</string>
+			<key>CFBundleTypeOSTypes</key>
+			<array>
+				<string>DCM </string>
+				<string>****</string>
+				<string>fold</string>
+				<string>disk</string>
+			</array>
+			<key>CFBundleTypeRole</key>
+			<string>Viewer</string>
+		</dict>
+		<dict>
+			<key>CFBundleTypeExtensions</key>
+			<array>
+				<string>sql</string>
+			</array>
+			<key>CFBundleTypeIconFile</key>
+			<string>DAT.icns</string>
+			<key>CFBundleTypeMIMETypes</key>
+			<array>
+				<string>text/sql</string>
+			</array>
+			<key>CFBundleTypeName</key>
+			<string>OsiriX database</string>
+			<key>CFBundleTypeOSTypes</key>
+			<array>
+				<string>sql </string>
+			</array>
+			<key>CFBundleTypeRole</key>
+			<string>Viewer</string>
+		</dict>
+		<dict>
+			<key>CFBundleTypeExtensions</key>
+			<array>
+				<string>roi</string>
+			</array>
+			<key>CFBundleTypeIconFile</key>
+			<string>roi.icns</string>
+			<key>CFBundleTypeMIMETypes</key>
+			<array>
+				<string>text/roi</string>
+			</array>
+			<key>CFBundleTypeName</key>
+			<string>OsiriX Region Of Interest</string>
+			<key>CFBundleTypeOSTypes</key>
+			<array>
+				<string>roi </string>
+			</array>
+			<key>CFBundleTypeRole</key>
+			<string>Viewer</string>
+		</dict>
+		<dict>
+			<key>CFBundleTypeExtensions</key>
+			<array>
+				<string>lsm</string>
+			</array>
+			<key>CFBundleTypeIconFile</key>
+			<string>lsm.icns</string>
+			<key>CFBundleTypeMIMETypes</key>
+			<array>
+				<string>text/lsm</string>
+			</array>
+			<key>CFBundleTypeName</key>
+			<string>OsiriX LSM</string>
+			<key>CFBundleTypeOSTypes</key>
+			<array>
+				<string>lsm </string>
+			</array>
+			<key>CFBundleTypeRole</key>
+			<string>Viewer</string>
+		</dict>
+		<dict>
+			<key>CFBundleTypeExtensions</key>
+			<array>
+				<string>PIC</string>
+			</array>
+			<key>CFBundleTypeIconFile</key>
+			<string>PIC.icns</string>
+			<key>CFBundleTypeMIMETypes</key>
+			<array>
+				<string>text/PIC</string>
+			</array>
+			<key>CFBundleTypeName</key>
+			<string>OsiriX BioRAD PIC</string>
+			<key>CFBundleTypeOSTypes</key>
+			<array>
+				<string>PIC </string>
+			</array>
+			<key>CFBundleTypeRole</key>
+			<string>Viewer</string>
+		</dict>
+	</array>
+	<key>CFBundleExecutable</key>
+	<string>OsiriXVP</string>
+	<key>SVNRevision</key>
+	<string>$Rev: 4512 $ $Date: 2008-08-16 14:18:05 -0300 (Sat, 16 Aug 2008) $</string>
+	<key>CFBundleGetInfoString</key>
+	<string>OsiriX v.3.2.2b4</string>
+	<key>CFBundleShortVersionString</key>
+	<string>3.2.2b4</string>
+	<key>CFBundleVersion</key>
+	<string>4331M</string>
+	<key>CFBundleIconFile</key>
+	<string>Osirix.icns</string>
+	<key>CFBundleIdentifier</key>
+	<string>com.rossetantoine.osirix</string>
+	<key>CFBundleInfoDictionaryVersion</key>
+	<string>6.0</string>
+	<key>CFBundlePackageType</key>
+	<string>APPL</string>
+	<key>CFBundleSignature</key>
+	<string>OsiX</string>
+	<key>NSAppleScriptEnabled</key>
+	<string>YES</string>
+	<key>NSHumanReadableCopyright</key>
+	<string>Copyright 2004-2008, OsiriX Team</string>
+	<key>NSMainNibFile</key>
+	<string>MainMenu</string>
+	<key>NSPrincipalClass</key>
+	<string>NSApplication</string>
+	<key>UTImportedTypeDeclarations</key>
+	<array>
+		<dict>
+			<key>UTTypeConformsTo</key>
+			<array>
+				<string>public.data</string>
+			</array>
+			<key>UTTypeDescription</key>
+			<string>DICOM</string>
+			<key>UTTypeIdentifier</key>
+			<string>org.nema.dicom</string>
+			<key>UTTypeReferenceURL</key>
+			<string>http://dicom.nema.org</string>
+			<key>UTTypeTagSpecification</key>
+			<dict>
+				<key>com.apple.ostype</key>
+				<string>DICM</string>
+				<key>public.filename-extension</key>
+				<array>
+					<string>dcm</string>
+				</array>
+				<key>public.mime-type</key>
+				<string>Application/dicom</string>
+			</dict>
+		</dict>
+	</array>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLName</key>
+			<string>OsiriX Remote Access</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>osirix</string>
+			</array>
+			<key>LSIsAppleDefaultForType</key>
+			<string>Yes</string>
+		</dict>
+	</array>
+	<key>LSCanProvideIMVideoDataSource</key>
+	<string>Yes</string>
+</dict>
+</plist>
