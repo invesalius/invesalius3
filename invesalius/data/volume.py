@@ -365,6 +365,10 @@ class Volume():
             volume_mapper.SetInput(image2.GetOutput())
             volume_mapper.IntermixIntersectingGeometryOn()
 
+        # TODO: Look to this
+        #volume_mapper = vtk.vtkVolumeTextureMapper2D()
+        #volume_mapper.SetInput(image2.GetOutput())
+
         #Cut Plane
         CutPlane(image2.GetOutput(), volume_mapper)
         

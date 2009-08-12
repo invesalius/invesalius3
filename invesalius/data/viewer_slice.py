@@ -167,9 +167,9 @@ class Viewer(wx.Panel):
             #self.cursor = cursor
 
             cursor.SetOrientation(self.orientation)
-            coordinates = {"SAGITAL": [self.slice_number, 0, 0],
-                           "CORONAL": [0, self.slice_number, 0],
-                           "AXIAL": [0, 0, self.slice_number]}
+            coordinates = {"SAGITAL": [slice_data.number, 0, 0],
+                           "CORONAL": [0, slice_data.number, 0],
+                           "AXIAL": [0, 0, slice_data.number]}
             cursor.SetPosition(coordinates[self.orientation])
             cursor.SetSpacing(self.imagedata.GetSpacing())
             cursor.SetColour(self._brush_cursor_colour)
