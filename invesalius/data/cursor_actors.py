@@ -288,6 +288,12 @@ class CursorRectangle:
     def SetSpacing(self, spacing):
         self.spacing = spacing
 
+    def Show(self, value=1):
+        if value:
+            self.actor.VisibilityOn()
+        else:
+            self.actor.VisibilityOff()
+
     def __build_actor(self):
         """
         Function to plot the Retangle

@@ -156,27 +156,29 @@ class Viewer(wx.Panel):
 
     def ChangeBrushActor(self, pubsub_evt):
         brush_type = pubsub_evt.data
-        self._brush_cursor_type = brush_type
-        self.ren.RemoveActor(self.cursor.actor)
+        for slice_data in self.slice_data_list:
+            self._brush_cursor_type = brush_type
+            #self.ren.RemoveActor(self.cursor.actor)
 
-        if brush_type == const.BRUSH_SQUARE:
-            cursor = ca.CursorRectangle()
-        elif brush_type == const.BRUSH_CIRCLE:
-            cursor = ca.CursorCircle()
-        self.cursor = cursor
+            if brush_type == const.BRUSH_SQUARE:
+                cursor = ca.CursorRectangle()
+            elif brush_type == const.BRUSH_CIRCLE:
+                cursor = ca.CursorCircle()
+            #self.cursor = cursor
 
-        cursor.SetOrientation(self.orientation)
-        coordinates = {"SAGITAL": [self.slice_number, 0, 0],
-                       "CORONAL": [0, self.slice_number, 0],
-                       "AXIAL": [0, 0, self.slice_number]}
-        cursor.SetPosition(coordinates[self.orientation])
-        cursor.SetSpacing(self.imagedata.GetSpacing())
-        cursor.SetColour(self._brush_cursor_colour)
-        cursor.SetSize(self._brush_cursor_size)
-        self.ren.AddActor(cursor.actor)
-        self.ren.Render()
+            cursor.SetOrientation(self.orientation)
+            coordinates = {"SAGITAL": [self.slice_number, 0, 0],
+                           "CORONAL": [0, self.slice_number, 0],
+                           "AXIAL": [0, 0, self.slice_number]}
+            cursor.SetPosition(coordinates[self.orientation])
+            cursor.SetSpacing(self.imagedata.GetSpacing())
+            cursor.SetColour(self._brush_cursor_colour)
+            cursor.SetSize(self._brush_cursor_size)
+            slice_data.SetCursor(cursor)
+        #self.ren.AddActor(cursor.actor)
+        #self.ren.Render()
         self.interactor.Render()
-        self.cursor = cursor
+        #self.cursor = cursor
 
     def OnMouseClick(self, obj, evt_vtk):
         self.mouse_pressed = 1
