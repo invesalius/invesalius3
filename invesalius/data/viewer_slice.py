@@ -113,6 +113,7 @@ class Viewer(wx.Panel):
                             "MouseMoveEvent": self.OnBrushMove,
                             "LeftButtonPressEvent": self.OnBrushClick,
                             "LeftButtonReleaseEvent": self.OnMouseRelease,
+                            "EnterEvent": self.OnEnterInteractor,
                             "LeaveEvent": self.OnLeaveInteractor
                             }
                  }
@@ -129,6 +130,9 @@ class Viewer(wx.Panel):
                 # Bind event
                 style.AddObserver(event,
                                   action[mode][event])
+
+    def OnEnterInteractor(self, obj, evt):
+        print dir(self.GetCursor())
 
     def OnLeaveInteractor(self, obj, evt):
         for slice_data in self.slice_data_list:
