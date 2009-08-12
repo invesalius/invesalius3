@@ -135,17 +135,15 @@ class Viewer(wx.Panel):
     def ChangeBrushSize(self, pubsub_evt):
         size = pubsub_evt.data
         self._brush_cursor_size = size
-        self.cursor.SetSize(size)
-        self.ren.Render()
-        self.interactor.Render()
+        for slice_data in self.slice_data_list:
+            slice_data.cursor.SetSize(size)
 
     def ChangeBrushColour(self, pubsub_evt):
         vtk_colour = pubsub_evt.data[3]
         self._brush_cursor_colour = vtk_colour
         if (self.cursor):
-            self.cursor.SetColour(vtk_colour)
-            self.ren.Render()
-            self.interactor.Render()
+            for slice_data in self.slice_data_list:
+                slice_data.cursor.SetColour(vtk_colour)
 
     def SetBrushColour(self, pubsub_evt):
         colour_wx = pubsub_evt.data
