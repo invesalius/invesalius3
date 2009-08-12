@@ -113,6 +113,7 @@ class Viewer(wx.Panel):
                             "MouseMoveEvent": self.OnBrushMove,
                             "LeftButtonPressEvent": self.OnBrushClick,
                             "LeftButtonReleaseEvent": self.OnMouseRelease,
+                            "LeaveEvent": self.OnLeaveInteractor
                             }
                  }
 
@@ -129,8 +130,10 @@ class Viewer(wx.Panel):
                 style.AddObserver(event,
                                   action[mode][event])
 
-    def OnEnter(self, obj, evt):
-        print "Entrei"
+    def OnLeaveInteractor(self, obj, evt):
+        for slice_data in self.slice_data_list:
+            slice_data.cursor.Show(0)
+            self.interactor.Render()
 
     def ChangeBrushSize(self, pubsub_evt):
         size = pubsub_evt.data
@@ -219,11 +222,7 @@ class Viewer(wx.Panel):
         slice_data = self.get_slice_data(render)
 
         # TODO: Improve!
-        for i in self.slice_data_list:
-            if i is slice_data:
-                i.cursor.Show()
-            else:
-                i.cursor.Show(0)
+        slice_data.cursor.Show()
 
         self.pick.Pick(mouse_x, mouse_y, 0, render)
         coord = self.get_coordinate_cursor()
@@ -246,6 +245,8 @@ class Viewer(wx.Panel):
             ps.Publisher().sendMessage('Update slice viewer')
         else:
             self.interactor.Render()
+
+        slice_data.cursor.Show(0)
 
     def OnCrossMove(self, obj, evt_vtk):
         coord = self.get_coordinate()
@@ -489,7 +490,6 @@ class Viewer(wx.Panel):
         slice_data = SliceData()
         slice_data.renderer = renderer
         slice_data.actor = actor
-        renderer.AddObserver("EnterEvent", self.OnEnter)
         return slice_data
 
     def __update_camera(self, slice_data):
