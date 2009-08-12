@@ -379,8 +379,10 @@ class Viewer(wx.Panel):
     def load_renderers(self, image):
         proportion_x = 1.0 / self.layout[0]
         proportion_y = 1.0 / self.layout[1]
-        for i in xrange(self.layout[0]):
-            for j in xrange(self.layout[1]):
+        # The (0,0) in VTK is in bottom left. So the creation from renderers
+        # must be # in inverted order, from the top left to bottom right
+        for j in xrange(self.layout[1]-1, -1, -1):
+            for i in xrange(self.layout[0]):
                 position = ((i*proportion_x, j * proportion_y,
                              (i+1)*proportion_x, (j+1)*proportion_y))
                 slice_data = self.create_slice_window(image)
@@ -573,15 +575,18 @@ class Viewer(wx.Panel):
             if pos < max:
                 slice_data.number = pos
                 self.__update_display_extent(slice_data)
+                ren.AddActor(actor)
+            else:
+                ren.RemoveActor(actor)
 
-                position = {"SAGITAL": {0: slice_data.number},
-                            "CORONAL": {1: slice_data.number},
-                            "AXIAL": {2: slice_data.number}}
+            position = {"SAGITAL": {0: slice_data.number},
+                        "CORONAL": {1: slice_data.number},
+                        "AXIAL": {2: slice_data.number}}
 
-                if 'DEFAULT' in self.modes:
-                    ps.Publisher().sendMessage(
-                        'Update cursor single position in slice',
-                        position[self.orientation])
+            if 'DEFAULT' in self.modes:
+                ps.Publisher().sendMessage(
+                    'Update cursor single position in slice',
+                    position[self.orientation])
 
     def ChangeSliceNumber(self, pubsub_evt):
         index = pubsub_evt.data
