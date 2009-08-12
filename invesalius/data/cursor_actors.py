@@ -110,7 +110,6 @@ class CursorCircle:
     def SetOrientation(self, orientation):
         self.orientation = orientation
         proj = Project() 
-        
         orig_orien = proj.original_orientation
         if (orig_orien == const.SAGITAL):
             if orientation == "CORONAL":
@@ -151,7 +150,6 @@ class CursorCircle:
         xs, ys, zs = self.spacing
         proj = Project()
         orig_orien = proj.original_orientation
-        
         xy1 = lambda x,y: (px + x / xs, py+(y/ys), pz)
         xy2 = lambda x,y: (px+(x/xs), py, pz+(y/zs))
         xy3 = lambda x,y: (px, py+(x/ys), pz+(y/zs))
@@ -178,21 +176,8 @@ class CursorCircle:
             # TODO: Optimize this!!!!
             yield function_orientation(pixel_0, pixel_1)
             
-            
-#-------------------------------------------------------------------------------
-#-------------------------------------------------------------------------------
-#-------------------------------------------------------------------------------
-#-------------------------------------------------------------------------------
-#-------------------------------------------------------------------------------
-#-------------------------------------------------------------------------------
-#-------------------------------------------------------------------------------
-#-------------------------------------------------------------------------------
-#-------------------------------------------------------------------------------
-#-------------------------------------------------------------------------------
-#-------------------------------------------------------------------------------
-#-------------------------------------------------------------------------------
-#-------------------------------------------------------------------------------
-#-------------------------------------------------------------------------------
+
+
 
 class CursorRectangle:
     
@@ -208,51 +193,16 @@ class CursorRectangle:
         self.position = (0 ,0)
         self.orientation = "AXIAL"
         self.spacing = (1, 1, 1)
-        
-        self.mapper = vtk.vtkPolyDataMapper()
-    
-        self.retangle = vtk.vtkCubeSource()
-        self.actor = vtk.vtkActor()
-        
-        self.seeds_yi = vtk.vtkLineSource()
-        self.seeds_yf = vtk.vtkLineSource()
-        self.seeds_xi = vtk.vtkLineSource()
-        self.seeds_xf = vtk.vtkLineSource()
-        self.join_lines = vtk.vtkAppendPolyData()
-        
+                
         self.__build_actor()
         self.__calculate_area_pixels()
         
     def SetSize(self, size):
-        print "SetSize", size
         self.x_length = size
         self.y_length = size
         retangle = self.retangle
         retangle.SetXLength(size)
-        retangle.SetYLength(size)
-        
-        seeds_yi = self.seeds_yi
-        seeds_yi.SetPoint1(0, 0, 0)
-        seeds_yi.SetPoint2(0, self.y_length, 0)
-        
-        seeds_yf = self.seeds_yf
-        seeds_yf.SetPoint1(self.x_length, self.y_length, 0)
-        seeds_yf.SetPoint2(self.x_length, 0, 0)
-        
-        seeds_xi = self.seeds_xi
-        seeds_xi.SetPoint1(0, self.y_length, 0)
-        seeds_xi.SetPoint2(self.x_length, self.y_length, 0)
-        
-        seeds_xf = self.seeds_xf
-        seeds_xf.SetPoint1(0, 0, 0)
-        seeds_xf.SetPoint2(self.x_length, 0, 0)
-        
-        #join_lines = self.join_lines
-        #join_lines.AddInput(seeds_yi.GetOutput())
-        #join_lines.AddInput(seeds_yf.GetOutput())
-        #join_lines.AddInput(seeds_xi.GetOutput())
-        #join_lines.AddInput(seeds_xf.GetOutput())
-        
+        retangle.SetYLength(size)        
         self.__calculate_area_pixels()
         
     def SetOrientation(self, orientation):
@@ -264,24 +214,29 @@ class CursorRectangle:
 
     def SetOrientation(self, orientation):
         self.orientation = orientation
-
-        if orientation == "CORONAL":
-            self.actor.RotateX(90)
-
-        if orientation == "SAGITAL":
-            self.actor.RotateY(90)
+        proj = Project() 
+        orig_orien = proj.original_orientation
+        if (orig_orien == const.SAGITAL):
+            if orientation == "CORONAL":
+                self.actor.RotateY(90)
+            if orientation == "AXIAL":
+                self.actor.RotateX(90)
+        elif(orig_orien == const.CORONAL):
+            if orientation == "AXIAL":
+                self.actor.RotateX(270)
+            if orientation == "SAGITAL":
+                self.actor.RotateY(90)
+        else:
+            if orientation == "CORONAL":
+                self.actor.RotateX(90)
+            if orientation == "SAGITAL":
+                self.actor.RotateY(90)
 
     def SetPosition(self, position):
         x,y,z = position
-        x_half = self.x_length / 2.0
-        y_half = self.y_length / 2.0
-        orientation_position_based = {"AXIAL" : (x - x_half,y - y_half, z),
-                                      "CORONAL" : (x - x_half, y, z - y_half),
-                                      "SAGITAL" : (x, y - y_half, z + x_half)}
-        xc,yc,zc = orientation_position_based[self.orientation]
-        self.position = (xc,yc,zc)
-        self.actor.SetPosition(xc,yc,zc)
-
+        self.position = position
+        self.actor.SetPosition(x,y,z)
+        
     def SetEditionPosition(self, position):
         self.edition_position = position
 
@@ -298,40 +253,17 @@ class CursorRectangle:
         """
         Function to plot the Retangle
         """
-        retangle = self.retangle
-        retangle.SetXLength(self.x_length)
-        retangle.SetYLength(self.y_length)
+        mapper = vtk.vtkPolyDataMapper()
+        self.retangle = vtk.vtkCubeSource()
+        self.actor = actor = vtk.vtkActor()
         
-        seeds_yi = self.seeds_yi
-        seeds_yi.SetPoint1(0, 0, 0)
-        seeds_yi.SetPoint2(0, self.y_length, 0)
+        prop = vtk.vtkProperty()
+        prop.SetRepresentationToWireframe()
+        self.actor.SetProperty(prop)
         
-        seeds_yf = self.seeds_yf
-        seeds_yf.SetPoint1(self.x_length, self.y_length, 0)
-        seeds_yf.SetPoint2(self.x_length, 0, 0)
-        
-        seeds_xi = self.seeds_xi
-        seeds_xi.SetPoint1(0, self.y_length, 0)
-        seeds_xi.SetPoint2(self.x_length, self.y_length, 0)
-        
-        seeds_xf = self.seeds_xf
-        seeds_xf.SetPoint1(0, 0, 0)
-        seeds_xf.SetPoint2(self.x_length, 0, 0)
-        
-        join_lines = self.join_lines
-        join_lines.AddInput(seeds_yi.GetOutput())
-        join_lines.AddInput(seeds_yf.GetOutput())
-        join_lines.AddInput(seeds_xi.GetOutput())
-        join_lines.AddInput(seeds_xf.GetOutput())
-
-        mapper = self.mapper
-        mapper.SetScalarRange(0, 360)
-        
-        actor = self.actor
-
-        mapper.SetInput(join_lines.GetOutput())
-        actor.SetPosition(self.position[0]-self.x_length/2, # if filled remov -
-                            self.position[1]-self.y_length/2, 1) # idem
+        mapper.SetInput(self.retangle.GetOutput())
+        actor.SetPosition(self.position[0] - self.x_length,\
+                          self.position[1] - self.y_length, 1)
         
         actor.SetMapper(mapper)
         actor.GetProperty().SetOpacity(self.opacity)
@@ -343,9 +275,27 @@ class CursorRectangle:
         yc = 0
         z = 0
         xs, ys, zs = self.spacing 
-        orientation_based_spacing = {"AXIAL" : (xs, ys),
-                                     "SAGITAL" : (ys, zs),
-                                     "CORONAL" : (xs, zs)}
+        
+        proj = Project()
+        orig_orien = proj.original_orientation
+        
+        xy = (xs, ys)
+        yz = (ys, zs)
+        xz = (xs, zs)
+        
+        if (orig_orien == const.SAGITAL):
+            orientation_based_spacing = {"SAGITAL" : xy,
+                                     "AXIAL" : yz,
+                                     "CORONAL" : xz}
+        elif(orig_orien == const.CORONAL):
+            orientation_based_spacing = {"CORONAL" : xy,
+                                         "AXIAL" : xz,
+                                         "SAGITAL" : yz}
+        else:
+            orientation_based_spacing = {"AXIAL" : xy,
+                                         "SAGITAL" : yz,
+                                         "CORONAL" : xz}
+        
         xs, ys = orientation_based_spacing[self.orientation]
         self.pixel_list = []
         for i in utils.frange(yc - self.y_length/2, yc + self.y_length/2, ys):
@@ -360,11 +310,24 @@ class CursorRectangle:
         px, py, pz = self.edition_position
         orient = self.orientation
         xs, ys, zs = self.spacing
-        abs_pixel = {"AXIAL": lambda x,y: (px + x / xs, py+(y/ys), pz),
-                     "CORONAL": lambda x,y: (px+(x/xs), py,
-                                            pz+(y/zs)),
-                     "SAGITAL": lambda x,y: (px, py+(x/ys),
-                                             pz+(y/zs))}
+        proj = Project()
+        orig_orien = proj.original_orientation
+        xy1 = lambda x,y: (px + x / xs, py+(y/ys), pz)
+        xy2 = lambda x,y: (px+(x/xs), py, pz+(y/zs))
+        xy3 = lambda x,y: (px, py+(x/ys), pz+(y/zs))
+        
+        if (orig_orien == const.SAGITAL):
+            abs_pixel = {"SAGITAL": xy1,
+                         "AXIAL": xy2,
+                         "CORONAL": xy3}
+        elif(orig_orien == const.CORONAL):
+            abs_pixel = {"CORONAL": xy1,
+                         "SAGITAL": xy3,
+                         "AXIAL": xy2}
+        else:
+            abs_pixel = {"AXIAL": xy1,
+                        "CORONAL": xy2,
+                        "SAGITAL": xy3}
         function_orientation = abs_pixel[orient]
         for pixel_0,pixel_1 in self.pixel_list:
             # The position of the pixels in this list is relative (based only on
