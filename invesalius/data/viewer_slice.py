@@ -132,8 +132,7 @@ class Viewer(wx.Panel):
                                   action[mode][event])
 
     def OnEnterInteractor(self, obj, evt):
-        mouse_cursor = wx.StockCursor(wx.CURSOR_BLANK)
-        self.SetCursor(mouse_cursor)
+        self.interactor.SetCursor(wx.StockCursor(wx.CURSOR_BLANK))
 
     def OnLeaveInteractor(self, obj, evt):
         for slice_data in self.slice_data_list:
