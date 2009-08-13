@@ -268,9 +268,11 @@ class VolumeToolPanel(wx.Panel):
 
     def OnMenuView(self, evt):
         """Events from button menus."""
-        self.button_view.SetBitmapSelected(ID_TO_BMP[evt.GetId()][1])
+        bmp = wx.Bitmap(ID_TO_BMP[evt.GetId()][1], wx.BITMAP_TYPE_PNG)
+        self.button_view.SetBitmapSelected(bmp)
+        
         ps.Publisher().sendMessage('Set volume view angle',
-                                   ID_TO_BMP[evt.GetId()][0])
+                                   evt.GetId())
 
     def OnSelectColour(self, evt):
         colour = c = [i/255.0 for i in evt.GetValue()]
