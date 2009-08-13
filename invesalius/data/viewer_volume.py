@@ -60,7 +60,7 @@ class Viewer(wx.Panel):
         self.__bind_events()
         self.__bind_events_wx()
         
-        self.first_reposition_actor = 0
+        self.view_angle = None
 
     def __bind_events(self):
         ps.Publisher().subscribe(self.LoadActor, 'Load surface actor into viewer')
@@ -69,8 +69,10 @@ class Viewer(wx.Panel):
                                 'Change volume viewer background colour')
         ps.Publisher().subscribe(self.LoadVolume, 'Load volume into viewer')
         ps.Publisher().subscribe(self.AppendActor,'AppendActor')
-        ps.Publisher().subscribe(self.SetWidgetInteractor, 'Set Widget Interactor')
-        ps.Publisher().subscribe(self.RepositionActor, 'Reposition Actor')
+        ps.Publisher().subscribe(self.SetWidgetInteractor, 
+                                'Set Widget Interactor')
+        ps.Publisher().subscribe(self.OnSetViewAngle,
+                                'Set volume view angle')
         
         
     def __bind_events_wx(self):
@@ -90,9 +92,8 @@ class Viewer(wx.Panel):
         volume, colour = pubsub_evt.data
         self.light = self.ren.GetLights().GetNextItem()
         self.ren.AddVolume(volume)
-        if not (self.first_reposition_actor):
-            self.RepositionActor()
-            self.first_reposition_actor = 1
+        if not (self.view_angle):
+            self.SetViewAngle(const.VOL_FRONT)
         else:
             ren.ResetCamera()
             ren.ResetCameraClippingRange()  
@@ -118,21 +119,20 @@ class Viewer(wx.Panel):
 
         self.iren.Render()
 
-    def RepositionActor(self, evt_pubsub=None):
+    def OnSetViewAngle(self, evt_pubsub):
+        view = evt_pubsub.data
+        self.SetViewAngle(view)
+
+    def SetViewAngle(self, view):
         
-        if (evt_pubsub):
-            position = evt_pubsub.data
-        else:
-            position = "FRONT"
-            
         cam = self.ren.GetActiveCamera()
         cam.SetFocalPoint(0,0,0)
         
         proj = prj.Project()
         orig_orien = proj.original_orientation
         
-        xv,yv,zv = const.VOLUME_POSITION[orig_orien][0][position]
-        xp,yp,zp = const.VOLUME_POSITION[orig_orien][1][position]
+        xv,yv,zv = const.VOLUME_POSITION[orig_orien][0][view]
+        xp,yp,zp = const.VOLUME_POSITION[orig_orien][1][view]
         
         cam.SetViewUp(xv,yv,zv)
         cam.SetPosition(xp,yp,zp)

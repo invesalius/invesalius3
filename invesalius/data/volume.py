@@ -64,9 +64,6 @@ SHADING = {
     }
 }
 
-PRESETS = ["Airways", "Airways II", "Bone + Skin", "Bone + Skin II", "Dark Bone",
-"Gold Bone", "Skin On Blue", "Skin On Blue II", "Soft + Skin", "Soft + Skin II",
-"Soft + Skin III", "Yellow Bone"]
 
 class Volume():
     
@@ -101,9 +98,9 @@ class Volume():
         if not label:
             label = "Skin On Blue"
 
-            path = os.path.join("..", "presets", "raycasting",
-                                label+".plist")
-            label = plistlib.readPlist(path)
+        path = os.path.join("..", "presets", "raycasting",
+                             label+".plist")
+        label = plistlib.readPlist(path)
         self.config = label
         #print path
 

@@ -1,4 +1,5 @@
 import os.path
+import wx
 from project import Project
 
 # Slice orientation
@@ -27,27 +28,36 @@ SLICE_POSITION = {AXIAL:[AXIAL_SLICE_CAM_VIEW_UP, AXIAL_SLICE_CAM_POSITION],
                   SAGITAL:[SAGITAL_SLICE_CAM_VIEW_UP, SAGITAL_SLICE_CAM_POSITION], 
                   CORONAL:[CORONAL_SLICE_CAM_VIEW_UP, CORONAL_SLICE_CAM_POSITION]}
 
+# Volume view angle
+VOL_FRONT = wx.NewId() 
+VOL_BACK = wx.NewId()
+VOL_RIGHT = wx.NewId()
+VOL_LEFT = wx.NewId()
+VOL_TOP = wx.NewId()
+VOL_BOTTOM = wx.NewId()
+VOL_ISO = wx.NewId()
+
 # Camera according to volume's orientation
-AXIAL_VOLUME_CAM_VIEW_UP = {"FRONT":(0,0,1), "BACK":(0,0,1), "RIGHT":(0,0,1),\
-                            "LEFT":(0,0,1), "TOP":(0,1,0), "BOTTOM":(0,-1,0),\
-                            "ISOMETRIC":(0,0,1)}
-AXIAL_VOLUME_CAM_POSITION = {"FRONT":(0,-1,0), "BACK":(0,1,0), "RIGHT":(-1,0,0),\
-                             "LEFT":(1,0,0), "TOP":(0,0,1), "BOTTOM":(0,0,-1),\
-                             "ISOMETRIC":(0.5,-1,0.5)}
+AXIAL_VOLUME_CAM_VIEW_UP = {VOL_FRONT:(0,0,1), VOL_BACK:(0,0,1), VOL_RIGHT:(0,0,1),\
+                            VOL_LEFT:(0,0,1), VOL_TOP:(0,1,0), VOL_BOTTOM:(0,-1,0),\
+                            VOL_ISO:(0,0,1)}
+AXIAL_VOLUME_CAM_POSITION = {VOL_FRONT:(0,-1,0), VOL_BACK:(0,1,0), VOL_RIGHT:(-1,0,0),\
+                             VOL_LEFT:(1,0,0), VOL_TOP:(0,0,1), VOL_BOTTOM:(0,0,-1),\
+                             VOL_ISO:(0.5,-1,0.5)}
 
-SAGITAL_VOLUME_CAM_VIEW_UP = {"FRONT":(0,-1,0), "BACK":(0,-1,0), "RIGHT":(0,-1,1),\
-                              "LEFT":(0,-1,1), "TOP":(1,-1,0), "BOTTOM":(-1,1,0),\
-                              "ISOMETRIC":(0,-1,0)}
-SAGITAL_VOLUME_CAM_POSITION = {"FRONT":(-1,0,0), "BACK":(1,0,0), "RIGHT":(0,0,1),\
-                               "LEFT":(0,0,-1), "TOP":(0,-1,0), "BOTTOM":(0,1,0),\
-                               "ISOMETRIC":(-1,-0.5,-0.5)}
+SAGITAL_VOLUME_CAM_VIEW_UP = {VOL_FRONT:(0,-1,0), VOL_BACK:(0,-1,0), VOL_RIGHT:(0,-1,1),\
+                              VOL_LEFT:(0,-1,1), VOL_TOP:(1,-1,0), VOL_BOTTOM:(-1,1,0),\
+                              VOL_ISO:(0,-1,0)}
+SAGITAL_VOLUME_CAM_POSITION = {VOL_FRONT:(-1,0,0), VOL_BACK:(1,0,0), VOL_RIGHT:(0,0,1),\
+                               VOL_LEFT:(0,0,-1), VOL_TOP:(0,-1,0), VOL_BOTTOM:(0,1,0),\
+                               VOL_ISO:(-1,-0.5,-0.5)}
 
-CORONAL_VOLUME_CAM_VIEW_UP = {"FRONT":(0,-1,0), "BACK":(0,-1,0), "RIGHT":(0,-1,0),\
-                              "LEFT":(0,-1,0), "TOP":(0,1,0), "BOTTOM":(0,-1,0),\
-                              "ISOMETRIC":(0,-1,0)}
-CORONAL_VOLUME_CAM_POSITION = {"FRONT":(0,0,-1), "BACK":(0,0,1), "RIGHT":(-1,0,0),\
-                               "LEFT":(1,0,0), "TOP":(0,-1,0), "BOTTOM":(0,1,0),\
-                               "ISOMETRIC":(0.5,-0.5,-1)}
+CORONAL_VOLUME_CAM_VIEW_UP = {VOL_FRONT:(0,-1,0), VOL_BACK:(0,-1,0), VOL_RIGHT:(0,-1,0),\
+                              VOL_LEFT:(0,-1,0), VOL_TOP:(0,1,0), VOL_BOTTOM:(0,-1,0),\
+                              VOL_ISO:(0,-1,0)}
+CORONAL_VOLUME_CAM_POSITION = {VOL_FRONT:(0,0,-1), VOL_BACK:(0,0,1), VOL_RIGHT:(-1,0,0),\
+                               VOL_LEFT:(1,0,0), VOL_TOP:(0,-1,0), VOL_BOTTOM:(0,1,0),\
+                               VOL_ISO:(0.5,-0.5,-1)}
 
 VOLUME_POSITION = {AXIAL: [AXIAL_VOLUME_CAM_VIEW_UP, AXIAL_VOLUME_CAM_POSITION],
                  SAGITAL: [SAGITAL_VOLUME_CAM_VIEW_UP, SAGITAL_VOLUME_CAM_POSITION],
@@ -137,4 +147,8 @@ REDUCE_IMAGEDATA_QUALITY = 1
 # if 1, use vtkVolumeRaycastMapper, if 0, use vtkFixedPointVolumeRayCastMapper
 TYPE_RAYCASTING_MAPPER = 0
 
-RAYCASTING_PRESETS_DIRECTORY= os.path.join("..", "presets", "raycasting")
+folder=RAYCASTING_PRESETS_DIRECTORY= os.path.join("..", "presets", "raycasting")
+
+RAYCASTING_TYPES = [filename.split(".")[0] for filename in 
+                    os.listdir(folder) if
+                    os.path.isfile(os.path.join(folder,filename))]

@@ -163,6 +163,32 @@ class Panel(wx.Panel):
 
         aui_manager.Update()
 
+
+
+
+
+
+
+import wx.lib.platebtn as pbtn
+import wx.lib.buttons as btn
+import wx.lib.pubsub as ps
+import wx.lib.colourselect as csel
+import constants as const
+
+[BUTTON_RAYCASTING, BUTTON_VIEW] = [wx.NewId() for num in xrange(2)]
+
+
+ID_TO_BMP = {const.VOL_FRONT: ["Front", "../icons/view_front.png"],
+             const.VOL_BACK: ["Back", "../icons/view_back.png"],
+             const.VOL_TOP: ["Top", "../icons/view_top.png"],
+             const.VOL_BOTTOM: ["Bottom", "../icons/view_bottom.png"],
+             const.VOL_RIGHT: ["Right", "../icons/view_right.png"], 
+             const.VOL_LEFT: ["Left", "../icons/view_left.png"],
+             const.VOL_ISO:["Isometric","../icons/view_isometric.png"]
+             }
+
+ID_TO_NAME = {}
+
 class VolumeViewerCover(wx.Panel):
     def __init__(self, parent):
         wx.Panel.__init__(self, parent)
@@ -173,100 +199,90 @@ class VolumeViewerCover(wx.Panel):
         self.SetSizer(sizer)
         sizer.Fit(self)
 
-import wx.lib.platebtn as pbtn
-import wx.lib.buttons as btn
-import wx.lib.pubsub as ps
-import wx.lib.colourselect as csel
-
 class VolumeToolPanel(wx.Panel):
     def __init__(self, parent):
         wx.Panel.__init__(self, parent, size = (8,100))
 
-        BMP_RAYCASTING = wx.Bitmap("../icons/volume_raycasting.png", wx.BITMAP_TYPE_PNG)
-        BMP_RAYCASTING.SetWidth(22)
-        BMP_RAYCASTING.SetHeight(22)
-
-        FRONT_BMP = wx.Bitmap("../icons/view_front.png", wx.BITMAP_TYPE_PNG)
-
-        button_raycasting=btn.GenBitmapToggleButton(self, 1, BMP_RAYCASTING, size=(24,24))
-        button_raycasting.Bind(wx.EVT_BUTTON, self.OnToggleRaycasting)
-        self.button_raycasting = button_raycasting
+        # VOLUME RAYCASTING BUTTON
+        BMP_RAYCASTING = wx.Bitmap("../icons/volume_raycasting.png",
+                                    wx.BITMAP_TYPE_PNG)
 
         menu = wx.Menu()
+        for name in const.RAYCASTING_TYPES:
+            id = wx.NewId()
+            item = wx.MenuItem(menu, id, name)
+            menu.AppendItem(item)
+            ID_TO_NAME[id] = name
+        self.menu_raycasting = menu
+        menu.Bind(wx.EVT_MENU, self.OnMenuRaycasting)    
 
-        item = wx.MenuItem(menu, 0, "Front")
-        item.SetBitmap(FRONT_BMP)
+        #button_raycasting=btn.GenBitmapToggleButton(self, 1, BMP_RAYCASTING, size=(24,24))
+        self.button_raycasting_toggle = 0
+        button_raycasting = pbtn.PlateButton(self, BUTTON_RAYCASTING,"",
+                BMP_RAYCASTING, style=pbtn.PB_STYLE_SQUARE,
+                size=(24,24))
+        self.Bind(wx.EVT_BUTTON, self.OnToggleRaycasting)
+        button_raycasting.SetMenu(menu)
+        
+        self.button_raycasting = button_raycasting
 
-        BACK_BMP = wx.Bitmap("../icons/view_back.png", wx.BITMAP_TYPE_PNG)
-        item2 = wx.MenuItem(menu, 1, "Back")
-        item2.SetBitmap(BACK_BMP)
+        # VOLUME VIEW ANGLE BUTTON
+        menu = wx.Menu()
+        for id in ID_TO_BMP:
+            bmp =  wx.Bitmap(ID_TO_BMP[id][1], wx.BITMAP_TYPE_PNG)
+            item = wx.MenuItem(menu, id, ID_TO_BMP[id][0])
+            item.SetBitmap(bmp)
+            menu.AppendItem(item)
+        menu.Bind(wx.EVT_MENU, self.OnMenuView)
+        self.menu_view = menu
 
-        TOP_BMP = wx.Bitmap("../icons/view_top.png", wx.BITMAP_TYPE_PNG)
-        item3 = wx.MenuItem(menu, 2, "Top")
-        item3.SetBitmap(TOP_BMP)
+        BMP_FRONT = wx.Bitmap(ID_TO_BMP[const.VOL_FRONT][1],
+                              wx.BITMAP_TYPE_PNG)
+        button_view = pbtn.PlateButton(self, BUTTON_VIEW, "",
+                                        BMP_FRONT, size=(24,24),
+                                        style=pbtn.PB_STYLE_SQUARE)
+        button_view.SetMenu(menu)
+        self.button_view = button_view
 
-        BOTTOM_BMP = wx.Bitmap("../icons/view_bottom.png", wx.BITMAP_TYPE_PNG)
-        item4 = wx.MenuItem(menu, 3, "Bottom")
-        item4.SetBitmap(BOTTOM_BMP)
-
-        RIGHT_BMP = wx.Bitmap("../icons/view_right.png", wx.BITMAP_TYPE_PNG)
-        item5 = wx.MenuItem(menu, 4, "Right")
-        item5.SetBitmap(RIGHT_BMP)
-
-        LEFT_BMP = wx.Bitmap("../icons/view_left.png", wx.BITMAP_TYPE_PNG)
-        item6 = wx.MenuItem(menu, 5, "Left")
-        item6.SetBitmap(LEFT_BMP)
-
-        ISOMETRIC_BMP = wx.Bitmap("../icons/view_isometric.png", wx.BITMAP_TYPE_PNG)
-        item7 = wx.MenuItem(menu, 6, "Isometric")
-        item7.SetBitmap(ISOMETRIC_BMP)
-
-        self.Bind(wx.EVT_MENU, self.OnMenu)
-
-        menu.AppendItem(item)
-        menu.AppendItem(item2)
-        menu.AppendItem(item3)
-        menu.AppendItem(item4)
-        menu.AppendItem(item5)
-        menu.AppendItem(item6)
-        menu.AppendItem(item7)
-        self.menu = menu
-
-        button_position = pbtn.PlateButton(self, wx.ID_ANY,"", FRONT_BMP,
-                                          style=pbtn.PB_STYLE_SQUARE, size=(24,24))
-
-        button_position.SetMenu(menu)
-        self.button_position = button_position
-
-        button_colour= csel.ColourSelect(self, 111,colour=(0,0,0),size=(24,24))
+        # VOLUME COLOUR BUTTOM
+        button_colour= csel.ColourSelect(self, 111,colour=(0,0,0),
+                                        size=(24,24))
         button_colour.Bind(csel.EVT_COLOURSELECT, self.OnSelectColour)
         self.button_colour = button_colour
 
+        # SIZER TO ORGANIZE ALL
         sizer = wx.BoxSizer(wx.VERTICAL)
         sizer.Add(button_colour, 0, wx.ALL, 1)
         sizer.Add(button_raycasting, 0, wx.ALL, 1)
-        sizer.Add(button_position, 0, wx.ALL, 1)
+        sizer.Add(button_view, 0, wx.ALL, 1)
         self.SetSizer(sizer)
         sizer.Fit(self)
 
-        self.orientations = {0:("FRONT", FRONT_BMP), 1:("BACK", BACK_BMP),\
-                  2:("TOP",TOP_BMP), 3:("BOTTOM",BOTTOM_BMP),\
-                  4:("RIGHT",RIGHT_BMP), 5:("LEFT", LEFT_BMP),\
-                  6:("ISOMETRIC",ISOMETRIC_BMP)}
+    def OnMenuRaycasting(self, evt):
+        """Events from button menus."""
+        ps.Publisher().sendMessage('Set raycasting preset',
+                                    ID_TO_NAME[evt.GetId()])
+        ps.Publisher().sendMessage('Render volume viewer')
 
-    def OnMenu(self, evt):
-
-        self.button_position.SetBitmapSelected(self.orientations[evt.GetId()][1])
-        ps.Publisher().sendMessage('Reposition Actor',\
-                                   self.orientations[evt.GetId()][0])
+    def OnMenuView(self, evt):
+        """Events from button menus."""
+        self.button_view.SetBitmapSelected(ID_TO_BMP[evt.GetId()][1])
+        ps.Publisher().sendMessage('Set volume view angle',
+                                   ID_TO_BMP[evt.GetId()][0])
 
     def OnSelectColour(self, evt):
         colour = c = [i/255.0 for i in evt.GetValue()]
         ps.Publisher().sendMessage('Change volume viewer background colour', colour)
 
     def OnToggleRaycasting(self, evt):
-        if self.button_raycasting.GetToggle():
-            #ps.Publisher().sendMessage('Create volume raycasting')
-            ps.Publisher().sendMessage('Show raycasting volume')
-        else:
+        print "oi" 
+        if self.button_raycasting_toggle:
             ps.Publisher().sendMessage('Hide raycasting volume')
+            self.button_raycasting.SetBackgroundColour(self.GetParent().GetBackgroundColour())
+            #self.button_raycasting.SetBitmapSelected(ID_TO_BMP2[0])
+            self.button_raycasting_toggle = 0
+        else:
+            ps.Publisher().sendMessage('Show raycasting volume')
+            self.button_raycasting_toggle = 1
+            #self.button_raycasting.SetBitmapSelected(ID_TO_BMP2[1])
+            self.button_raycasting.SetBackgroundColour((255,255,255))
