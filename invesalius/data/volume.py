@@ -122,11 +122,20 @@ class Volume():
 
     def SetRaycastPreset(self, pubsub_evt):
         self.LoadConfig(pubsub_evt.data)
+        self.__config_preset()
         self.Create16bColorTable(self.scale)
         self.CreateOpacityTable(self.scale)
         self.SetShading()
         colour = self.CreateBackgroundColor()
         ps.Publisher.sendMessage('Set colour interactor', colour)
+
+    def __config_preset(self):
+        if self.config['advancedCLUT']:
+            self.Create16bColorTable(self.scale)
+            self.CreateOpacityTable(self.scale)
+        else:
+            self.Create8bColorTable()
+            self.Create8bOpacityTable()
 
     def SetWWWL(self, pubsub_evt):
         ww, wl, n = pubsub_evt.data
@@ -188,13 +197,18 @@ class Volume():
     def Create8bColorTable(self):
         color_transfer = vtk.vtkColorTransferFunction()
         color_preset = self.config['CLUT']
-        p = plistlib.readPlist( os.path.join('ColorList', color_preset + '.plist'))
-        r = p['Red']
-        g = p['Green']
-        b = p['Blue']
-        colors = zip(r,g,b)
-        for i,rgb in enumerate(colors):
-            color_transfer.AddRGBPoint(i, *rgb)
+        if color_preset != "No CLUT":
+            p = plistlib.readPlist( os.path.join('ColorList', color_preset + '.plist'))
+            r = p['Red']
+            g = p['Green']
+            b = p['Blue']
+            colors = zip(r,g,b)
+            ww = self.config['ww']
+            wl = self.TranslateScale(scale, self.config['wl'])
+            inc = ww / 254.0
+            for i,rgb in enumerate(colors):
+                print i,inc, ww, wl - ww/2 + i * inc, rgb
+                color_transfer.AddRGBPoint((wl - ww/2) + (i * inc), *[i/255.0 for i in rgb])
         return color_transfer
 
     def CreateOpacityTable(self, scale):
@@ -236,22 +250,23 @@ class Volume():
         opacities = []
 
         ww = self.config['ww']
-        wl = self.config['wl']
+        wl = self.TranslateScale(scale, self.config['wl'])
 
         print ww, wl
 
         l1 = wl - ww/2.0
         l2 = wl + ww/2.0
 
+        opacity_transfer_func.RemoveAllPoints()
+        opacity_transfer_func.AddSegment(0, 0, 2**16-1, 0)
+
+        print "l1, l2", l1, l2
+
         k1 = 0.0
         k2 = 1.0
 
-        opacity_transfer_func.AddPoint(0, 0)
-        opacity_transfer_func.AddPoint(l1-1, 0)
-        opacity_transfer_func.AddPoint(l1, 1)
+        opacity_transfer_func.AddPoint(l1, 0)
         opacity_transfer_func.AddPoint(l2, 1)
-        opacity_transfer_func.AddPoint(l2+1, 0)
-        opacity_transfer_func.AddPoint(255, 0)
 
         return opacity_transfer_func
 
@@ -317,6 +332,7 @@ class Volume():
 
         cast = vtk.vtkImageShiftScale()
         cast.SetInput(image)
+        print "> ", self.config['advancedCLUT']
         if self.config['advancedCLUT']:
             cast.SetShift(abs(scale[0]))
             #cast.SetScale(2**16-1)
@@ -328,8 +344,8 @@ class Volume():
             image2 = cast
         else:
             cast.SetShift(abs(scale[0]))
-            cast.SetScale(255.0/(scale[1] - scale[0]))
-            cast.SetOutputScalarTypeToUnsignedChar()
+            #cast.SetScale(255.0/(scale[1] - scale[0]))
+            cast.SetOutputScalarTypeToUnsignedShort()
             color_transfer = self.Create8bColorTable()
             opacity_transfer_func = self.Create8bOpacityTable()
             cast.Update()
