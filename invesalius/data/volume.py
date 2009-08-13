@@ -289,7 +289,6 @@ class Volume():
                             self.config['backgroundColorBlueComponent'])
         return color_background
 
-
     def BuildTable():
         curve_table = p['16bitClutCurves']
         color_background = (p['backgroundColorRedComponent'],
