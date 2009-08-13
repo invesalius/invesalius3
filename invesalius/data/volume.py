@@ -23,7 +23,7 @@ import vtk
 import wx
 import wx.lib.pubsub as ps
 
-import constants
+import constants as const
 from project import Project
 
 Kernels = { 
@@ -96,7 +96,7 @@ class Volume():
     def LoadConfig(self, label):
         print label
         if not label:
-            label = "Skin On Blue"
+            label = const.RAYCASTING_LABEL
 
         path = os.path.join("..", "presets", "raycasting",
                              label+".plist")

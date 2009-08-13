@@ -153,3 +153,5 @@ RAYCASTING_TYPES = [filename.split(".")[0] for filename in
                     os.listdir(folder) if
                     os.path.isfile(os.path.join(folder,filename))] 
 RAYCASTING_TYPES.sort()
+RAYCASTING_LABEL =  "Skin On Blue"
+

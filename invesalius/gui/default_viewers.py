@@ -210,8 +210,10 @@ class VolumeToolPanel(wx.Panel):
         menu = wx.Menu()
         for name in const.RAYCASTING_TYPES:
             id = wx.NewId()
-            item = wx.MenuItem(menu, id, name)
+            item = wx.MenuItem(menu, id, name, kind=wx.ITEM_RADIO)
             menu.AppendItem(item)
+            if name == const.RAYCASTING_LABEL:
+                item.Check(1)
             ID_TO_NAME[id] = name
         self.menu_raycasting = menu
         menu.Bind(wx.EVT_MENU, self.OnMenuRaycasting)    
