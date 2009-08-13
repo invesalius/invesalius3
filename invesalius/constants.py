@@ -151,4 +151,5 @@ folder=RAYCASTING_PRESETS_DIRECTORY= os.path.join("..", "presets", "raycasting")
 
 RAYCASTING_TYPES = [filename.split(".")[0] for filename in 
                     os.listdir(folder) if
-                    os.path.isfile(os.path.join(folder,filename))]
+                    os.path.isfile(os.path.join(folder,filename))] 
+RAYCASTING_TYPES.sort()
