@@ -200,7 +200,7 @@ class Volume():
         print ">>>", color_preset
         if color_preset != "No CLUT":
             p = plistlib.readPlist(
-                os.path.join(constants.RAYCASTING_PRESETS_DIRECTORY,
+                os.path.join(const.RAYCASTING_PRESETS_DIRECTORY,
                              'color_list', color_preset + '.plist'))
             print "nome clut", p
             r = p['Red']
@@ -377,7 +377,7 @@ class Volume():
         # Changed the vtkVolumeRayCast to vtkFixedPointVolumeRayCastMapper
         # because it's faster and the image is better
         # TODO: To test if it's true.
-        if constants.TYPE_RAYCASTING_MAPPER:
+        if const.TYPE_RAYCASTING_MAPPER:
             volume_mapper = vtk.vtkVolumeRayCastMapper()
             #volume_mapper.AutoAdjustSampleDistancesOff()
             volume_mapper.SetInput(image2.GetOutput())
