@@ -123,19 +123,19 @@ class Volume():
     def SetRaycastPreset(self, pubsub_evt):
         self.LoadConfig(pubsub_evt.data)
         self.__config_preset()
-        self.Create16bColorTable(self.scale)
-        self.CreateOpacityTable(self.scale)
         self.SetShading()
         colour = self.CreateBackgroundColor()
         ps.Publisher.sendMessage('Set colour interactor', colour)
 
     def __config_preset(self):
+        print ">>Config"
         if self.config['advancedCLUT']:
             self.Create16bColorTable(self.scale)
             self.CreateOpacityTable(self.scale)
         else:
-            self.Create8bColorTable()
-            self.Create8bOpacityTable()
+            print ">>>here"
+            self.Create8bColorTable(self.scale)
+            self.Create8bOpacityTable(self.scale)
 
     def SetWWWL(self, pubsub_evt):
         ww, wl, n = pubsub_evt.data
@@ -194,11 +194,13 @@ class Volume():
                     r, g, b)
         self.color_transfer = color_transfer
 
-    def Create8bColorTable(self):
+    def Create8bColorTable(self, scale):
         color_transfer = vtk.vtkColorTransferFunction()
+        color_transfer.RemoveAllPoints()
         color_preset = self.config['CLUT']
         if color_preset != "No CLUT":
-            p = plistlib.readPlist( os.path.join('ColorList', color_preset + '.plist'))
+            p = plistlib.readPlist(os.path.join('ColorList', color_preset + '.plist'))
+            print "nome clut", p
             r = p['Red']
             g = p['Green']
             b = p['Blue']
@@ -245,8 +247,9 @@ class Volume():
                     self.TranslateScale(scale, gray_level), opacity)
         self.opacity_transfer_func = opacity_transfer_func
 
-    def Create8bOpacityTable(self):
+    def Create8bOpacityTable(self, scale):
         opacity_transfer_func = vtk.vtkPiecewiseFunction()
+        opacity_transfer_func.RemoveAllPoints()
         opacities = []
 
         ww = self.config['ww']
@@ -346,8 +349,8 @@ class Volume():
             cast.SetShift(abs(scale[0]))
             #cast.SetScale(255.0/(scale[1] - scale[0]))
             cast.SetOutputScalarTypeToUnsignedShort()
-            color_transfer = self.Create8bColorTable()
-            opacity_transfer_func = self.Create8bOpacityTable()
+            color_transfer = self.Create8bColorTable(scale)
+            opacity_transfer_func = self.Create8bOpacityTable(scale)
             cast.Update()
             image2 = cast
         #cast.ClampOverflowOff()
