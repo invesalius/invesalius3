@@ -128,12 +128,10 @@ class Volume():
         ps.Publisher.sendMessage('Set colour interactor', colour)
 
     def __config_preset(self):
-        print ">>Config"
         if self.config['advancedCLUT']:
             self.Create16bColorTable(self.scale)
             self.CreateOpacityTable(self.scale)
         else:
-            print ">>>here"
             self.Create8bColorTable(self.scale)
             self.Create8bOpacityTable(self.scale)
 
@@ -195,11 +193,17 @@ class Volume():
         self.color_transfer = color_transfer
 
     def Create8bColorTable(self, scale):
-        color_transfer = vtk.vtkColorTransferFunction()
+        if self.color_transfer:
+            color_transfer = self.color_transfer
+        else:
+            color_transfer = vtk.vtkColorTransferFunction()
         color_transfer.RemoveAllPoints()
         color_preset = self.config['CLUT']
+        print ">>>", color_preset
         if color_preset != "No CLUT":
-            p = plistlib.readPlist(os.path.join('ColorList', color_preset + '.plist'))
+            p = plistlib.readPlist(
+                os.path.join(constants.RAYCASTING_PRESETS_DIRECTORY,
+                             'ColorList', color_preset + '.plist'))
             print "nome clut", p
             r = p['Red']
             g = p['Green']
@@ -211,6 +215,7 @@ class Volume():
             for i,rgb in enumerate(colors):
                 print i,inc, ww, wl - ww/2 + i * inc, rgb
                 color_transfer.AddRGBPoint((wl - ww/2) + (i * inc), *[i/255.0 for i in rgb])
+        self.color_transfer = color_transfer
         return color_transfer
 
     def CreateOpacityTable(self, scale):
@@ -248,7 +253,10 @@ class Volume():
         self.opacity_transfer_func = opacity_transfer_func
 
     def Create8bOpacityTable(self, scale):
-        opacity_transfer_func = vtk.vtkPiecewiseFunction()
+        if self.opacity_transfer_func:
+            opacity_transfer_func = self.opacity_transfer_func
+        else:
+            opacity_transfer_func = vtk.vtkPiecewiseFunction()
         opacity_transfer_func.RemoveAllPoints()
         opacities = []
 
@@ -271,6 +279,7 @@ class Volume():
         opacity_transfer_func.AddPoint(l1, 0)
         opacity_transfer_func.AddPoint(l2, 1)
 
+        self.opacity_transfer_func = opacity_transfer_func
         return opacity_transfer_func
 
     def CreateBackgroundColor(self):

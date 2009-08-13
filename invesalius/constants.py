@@ -1,3 +1,4 @@
+import os.path
 from project import Project
 
 # Slice orientation
@@ -135,3 +136,5 @@ REDUCE_IMAGEDATA_QUALITY = 1
 
 # if 1, use vtkVolumeRaycastMapper, if 0, use vtkFixedPointVolumeRayCastMapper
 TYPE_RAYCASTING_MAPPER = 0
+
+RAYCASTING_PRESETS_DIRECTORY= os.path.join("..", "presets", "raycasting")
