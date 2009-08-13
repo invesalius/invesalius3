@@ -138,35 +138,36 @@ class Volume():
     def SetWWWL(self, pubsub_evt):
         ww, wl, n = pubsub_evt.data
         print "Setting ww, wl", ww, wl
-        curve = self.config['16bitClutCurves'][n]
+        if self.config['advancedCLUT']:
+            curve = self.config['16bitClutCurves'][n]
 
-        p1 = curve[0]
-        p2 = curve[-1]
-        half = (p2['x'] - p1['x']) / 2.0
-        middle = p1['x'] + half
+            p1 = curve[0]
+            p2 = curve[-1]
+            half = (p2['x'] - p1['x']) / 2.0
+            middle = p1['x'] + half
 
-        shiftWL = wl - middle
-        shiftWW = p1['x'] + shiftWL - (wl - 0.5 * ww)
+            shiftWL = wl - middle
+            shiftWW = p1['x'] + shiftWL - (wl - 0.5 * ww)
 
-        factor = 1.0
-        for n,i in enumerate(curve):
-            factor = abs(i['x'] - middle) / half
-            if factor < 0:
-                factor = 0
-            i['x'] += shiftWL
-            if n < len(curve)/2.0:
-                i['x'] -= shiftWW * factor
-            else:
-                i['x'] += shiftWW * factor
+            factor = 1.0
+            for n,i in enumerate(curve):
+                factor = abs(i['x'] - middle) / half
+                if factor < 0:
+                    factor = 0
+                i['x'] += shiftWL
+                if n < len(curve)/2.0:
+                    i['x'] -= shiftWW * factor
+                else:
+                    i['x'] += shiftWW * factor
+        else:
+            self.config['wl'] = wl
+            self.config['ww'] = ww
 
-        self.Create16bColorTable(self.scale)
-        self.CreateOpacityTable(self.scale)
-        print curve
+        self.__config_preset()
         ps.Publisher().sendMessage('Render volume viewer', None)
 
     def Refresh(self, pubsub_evt):
-        self.Create16bColorTable(self.scale)
-        self.CreateOpacityTable(self.scale)
+        self.__config_preset()
 
 #***************
     def Create16bColorTable(self, scale):
