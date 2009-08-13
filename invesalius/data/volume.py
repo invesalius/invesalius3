@@ -203,7 +203,7 @@ class Volume():
         if color_preset != "No CLUT":
             p = plistlib.readPlist(
                 os.path.join(constants.RAYCASTING_PRESETS_DIRECTORY,
-                             'ColorList', color_preset + '.plist'))
+                             'color_list', color_preset + '.plist'))
             print "nome clut", p
             r = p['Red']
             g = p['Green']
