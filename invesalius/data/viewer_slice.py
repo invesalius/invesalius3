@@ -132,12 +132,13 @@ class Viewer(wx.Panel):
                                   action[mode][event])
 
     def OnEnterInteractor(self, obj, evt):
-        print dir(self.GetCursor())
+        mouse_cursor = wx.StockCursor(wx.CURSOR_BLANK)
+        self.SetCursor(mouse_cursor)
 
     def OnLeaveInteractor(self, obj, evt):
         for slice_data in self.slice_data_list:
             slice_data.cursor.Show(0)
-            self.interactor.Render()
+        self.interactor.Render()
 
     def ChangeBrushSize(self, pubsub_evt):
         size = pubsub_evt.data
@@ -226,6 +227,8 @@ class Viewer(wx.Panel):
         slice_data = self.get_slice_data(render)
 
         # TODO: Improve!
+        for i in self.slice_data_list:
+            i.cursor.Show(0)
         slice_data.cursor.Show()
 
         self.pick.Pick(mouse_x, mouse_y, 0, render)
@@ -249,8 +252,6 @@ class Viewer(wx.Panel):
             ps.Publisher().sendMessage('Update slice viewer')
         else:
             self.interactor.Render()
-
-        slice_data.cursor.Show(0)
 
     def OnCrossMove(self, obj, evt_vtk):
         coord = self.get_coordinate()
