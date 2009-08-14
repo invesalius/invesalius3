@@ -60,7 +60,7 @@ class Frame(wx.Frame):
     def __bind_events(self):
         ps.Publisher().subscribe(self.ShowContentPanel, 'Show content panel')
         ps.Publisher().subscribe(self.ShowImportPanel, "Show import panel")
-        
+
     def __bind_events_wx(self):
         self.Bind(wx.EVT_SIZE, self.OnSize)
 
@@ -86,12 +86,12 @@ class Frame(wx.Frame):
                           Hide().Layer(1).MaximizeButton(True).Name("Data").
                           Position(1))
 
-                          
+
         aui_manager.AddPane(imp.Panel(self), wx.aui.AuiPaneInfo().
                           Name("Import").Centre().Hide().
                           Caption("Preview medical data to be reconstructed").
                           CaptionVisible(True))
-                          
+
 
         # Add toolbars to manager
 
@@ -102,8 +102,8 @@ class Frame(wx.Frame):
         else:
             t3 = ProjectToolBar(self)
             #t2 = LayoutToolBar(self)
-            t1 = ObjectToolBar(self)        
-        
+            t1 = ObjectToolBar(self)
+
         aui_manager.AddPane(t1, wx.aui.AuiPaneInfo().
                           Name("General Features Toolbar").
                           ToolbarPane().Top().Floatable(False).
@@ -129,7 +129,7 @@ class Frame(wx.Frame):
     def ShowImportPanel(self, evt_pubsub):
         path = evt_pubsub.data
         ps.Publisher().sendMessage("Load data to import panel", path)
-        
+
         aui_manager = self.aui_manager
         aui_manager.GetPane("Import").Show(1)
         aui_manager.GetPane("Data").Show(0)
@@ -222,7 +222,7 @@ class ProgressBar(wx.Gauge):
 
    def __bind_events(self):
       ps.Publisher().subscribe(self.Reposition, 'ProgressBar Reposition')
-      
+
    def UpdateValue(self, value):
       #value = int(math.ceil(evt_pubsub.data[0]))
       self.SetValue(int(value))
@@ -247,25 +247,25 @@ class StatusBar(wx.StatusBar):
         self.SetStatusText("Ready", 0)
         self.SetStatusText("", 1)
         self.SetStatusText("", 2)
-        
+
         self.progress_bar = ProgressBar(self)
-        
+
         self.__bind_events()
-        
+
     def __bind_events(self):
         ps.Publisher().subscribe(self.UpdateStatus, 'Update status in GUI')
         ps.Publisher().subscribe(self.UpdateStatusLabel,
                                  'Update status text in GUI')
-        
+
     def UpdateStatus(self, pubsub_evt):
         value, label = pubsub_evt.data
         self.progress_bar.UpdateValue(value)
         self.SetStatusText(label, 0)
-        
+
     def UpdateStatusLabel(self, pubsub_evt):
         label = pubsub_evt.data
         self.SetStatusText(label, 0)
-        
+
 
 # ------------------------------------------------------------------------------
 
@@ -300,7 +300,7 @@ class ProjectToolBar(wx.ToolBar):
 
 
         if sys.platform == 'darwin':
-            BMP_IMPORT = wx.Bitmap("../icons/file_import_original.png", 
+            BMP_IMPORT = wx.Bitmap("../icons/file_import_original.png",
                                    wx.BITMAP_TYPE_PNG)
             BMP_NET = wx.Bitmap("../icons/file_from_internet_original.png",
                                 wx.BITMAP_TYPE_PNG)
@@ -321,7 +321,7 @@ class ProjectToolBar(wx.ToolBar):
                                     wx.BITMAP_TYPE_PNG)
             BMP_PHOTO = wx.Bitmap("../icons/tool_photo.png",
                                     wx.BITMAP_TYPE_PNG)
-        
+
         self.AddLabelTool(ID_FILE_IMPORT, "Import medical image...", BMP_IMPORT)
         self.AddLabelTool(ID_FILE_LOAD_INTERNET, "Load medical image...",
                           BMP_NET)
@@ -334,15 +334,15 @@ class ProjectToolBar(wx.ToolBar):
 
     def __bind_events(self):
         pass
-        
+
 class ObjectToolBar(wx.ToolBar):
     # TODO: what will appear in menubar?
     def __init__(self, parent):
-        wx.ToolBar.__init__(self, parent, -1, wx.DefaultPosition, wx.DefaultSize, 
-                            wx.TB_FLAT|wx.TB_NODIVIDER)
+        wx.ToolBar.__init__(self, parent, -1, wx.DefaultPosition, wx.DefaultSize,
+                            wx.TB_FLAT|wx.TB_NODIVIDER | wx.TB_DOCKABLE)
         if sys.platform == 'darwin':
             self.SetToolBitmapSize(wx.Size(32,32))
-        
+
         self.parent = parent
         self.__init_items()
         self.__bind_events()
@@ -351,13 +351,13 @@ class ObjectToolBar(wx.ToolBar):
 
 
         if sys.platform == 'darwin':
-            BMP_ROTATE = wx.Bitmap("../icons/tool_rotate_original.gif", 
+            BMP_ROTATE = wx.Bitmap("../icons/tool_rotate_original.gif",
                                     wx.BITMAP_TYPE_GIF)
-            BMP_TRANSLATE = wx.Bitmap("../icons/tool_translate_original.png", 
+            BMP_TRANSLATE = wx.Bitmap("../icons/tool_translate_original.png",
                                         wx.BITMAP_TYPE_PNG)
-            BMP_ZOOM_IN = wx.Bitmap("../icons/tool_zoom_in_original.png", 
+            BMP_ZOOM_IN = wx.Bitmap("../icons/tool_zoom_in_original.png",
                                     wx.BITMAP_TYPE_PNG)
-            BMP_ZOOM_OUT = wx.Bitmap("../icons/tool_zoom_out_original.png", 
+            BMP_ZOOM_OUT = wx.Bitmap("../icons/tool_zoom_out_original.png",
                                     wx.BITMAP_TYPE_PNG)
             BMP_CONTRAST = wx.Bitmap("../icons/tool_contrast.png",
                                      wx.BITMAP_TYPE_PNG)
@@ -369,16 +369,23 @@ class ObjectToolBar(wx.ToolBar):
             BMP_CONTRAST = wx.Bitmap("../icons/tool_contrast.png", wx.BITMAP_TYPE_PNG)
 
 
-        self.AddLabelTool(101, "Zoom in image", BMP_ZOOM_IN)
-        self.AddLabelTool(101, "Zoom out image", BMP_ZOOM_OUT)
-        self.AddLabelTool(101, "Rotate image", BMP_ROTATE)
-        self.AddLabelTool(101, "Translate image", BMP_TRANSLATE)
-        self.AddLabelTool(101, "Bright and contrast adjustment", BMP_CONTRAST)  
-        
+        self.AddLabelTool(101, "Zoom in image", BMP_ZOOM_IN,kind = wx.ITEM_RADIO)
+        self.AddLabelTool(102, "Zoom out image", BMP_ZOOM_OUT)
+        self.AddLabelTool(103, "Rotate image", BMP_ROTATE)
+        self.AddLabelTool(104, "Translate image", BMP_TRANSLATE)
+        self.AddLabelTool(105, "Bright and contrast adjustment", BMP_CONTRAST)
+
+        self.Bind(wx.EVT_TOOL, self.OnClick)
         self.Realize()
 
     def __bind_events(self):
         pass
+
+    def OnClick(self, evt):
+        id = evt.GetId()
+        print self.GetToolState(id)
+        self.SetToggle(id, not self.GetToolState(id))
+        evt.Skip()
 
 class LayoutToolBar(wx.ToolBar):
     # TODO: what will appear in menubar?
@@ -386,7 +393,7 @@ class LayoutToolBar(wx.ToolBar):
         wx.ToolBar.__init__(self, parent, -1, wx.DefaultPosition, wx.DefaultSize, wx.TB_FLAT|wx.TB_NODIVIDER)
         if sys.platform == 'darwin':
             self.SetToolBitmapSize(wx.Size(32,32))
-        
+
         self.parent = parent
         self.__init_items()
         self.__bind_events()
@@ -396,7 +403,7 @@ class LayoutToolBar(wx.ToolBar):
         BMP_TRANSLATE = wx.Bitmap("../icons/layout_full_original.gif", wx.BITMAP_TYPE_GIF)
 
         self.AddLabelTool(101, "Rotate image", BMP_ROTATE)
-        self.AddLabelTool(101, "Translate image", BMP_TRANSLATE)        
+        self.AddLabelTool(101, "Translate image", BMP_TRANSLATE)
 
         self.Realize()
 
