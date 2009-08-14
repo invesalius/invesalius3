@@ -116,7 +116,7 @@ class Volume():
         self.__config_preset()
         self.SetShading()
         colour = self.CreateBackgroundColor()
-        ps.Publisher.sendMessage('Set colour interactor', colour)
+        ps.Publisher.sendMessage('Change volume viewer background colour', colour)
 
     def __config_preset(self):
         if self.config['advancedCLUT']:
