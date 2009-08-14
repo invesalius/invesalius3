@@ -369,22 +369,41 @@ class ObjectToolBar(wx.ToolBar):
             BMP_CONTRAST = wx.Bitmap("../icons/tool_contrast.png", wx.BITMAP_TYPE_PNG)
 
 
-        self.AddLabelTool(101, "Zoom in image", BMP_ZOOM_IN,kind = wx.ITEM_RADIO)
-        self.AddLabelTool(102, "Zoom out image", BMP_ZOOM_OUT)
-        self.AddLabelTool(103, "Rotate image", BMP_ROTATE)
-        self.AddLabelTool(104, "Translate image", BMP_TRANSLATE)
-        self.AddLabelTool(105, "Bright and contrast adjustment", BMP_CONTRAST)
+        self.AddLabelTool(1, "Zoom in image", BMP_ZOOM_IN, kind = wx.ITEM_CHECK)
+        self.AddLabelTool(2, "Zoom out image", BMP_ZOOM_OUT, kind = wx.ITEM_CHECK)
+        self.AddLabelTool(3, "Rotate image", BMP_ROTATE, kind = wx.ITEM_CHECK)
+        self.AddLabelTool(4, "Translate image", BMP_TRANSLATE, kind = wx.ITEM_CHECK)
+        self.AddLabelTool(5, "Bright and contrast adjustment", BMP_CONTRAST, kind = wx.ITEM_CHECK)
 
         self.Bind(wx.EVT_TOOL, self.OnClick)
         self.Realize()
-
+        
+        self.states = {1:"Zoom in image", 2:"Zoom out image",
+                       3:"Rotate image", 4:"Translate image",
+                       5: "Bright and contrast adjustment"}
+    
     def __bind_events(self):
         pass
 
     def OnClick(self, evt):
+        
         id = evt.GetId()
-        print self.GetToolState(id)
-        self.SetToggle(id, not self.GetToolState(id))
+        exist_enable_state = 0
+ 
+        for x in xrange(1,6):
+            #necessary if the usurio enable another state 
+            #with a longer allow, disable the previous state
+            state = self.GetToolState(x)
+            if not (x == id) and (state == True):
+                self.ToggleTool(x, False)
+            elif(state == True) and (id == x):
+                ps.Publisher().sendMessage(self.states[id])
+                exist_enable_state = 1
+        
+        #Not exist's tool enbled, change to default state
+        if not (exist_enable_state):
+            print "Default State"
+            
         evt.Skip()
 
 class LayoutToolBar(wx.ToolBar):
