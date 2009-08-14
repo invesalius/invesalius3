@@ -99,7 +99,7 @@ class Viewer(wx.Panel):
         self.ren = ren
 
     def append_mode(self, mode):
-
+        self.modes = []
         # Retrieve currently set modes
         self.modes.append(mode)
   
@@ -120,6 +120,11 @@ class Viewer(wx.Panel):
                          "MouseMoveEvent": self.OnPanMove,
                          "LeftButtonPressEvent": self.OnPanClick,
                          "LeftButtonReleaseEvent": self.OnPanRelease
+                        },
+                  'SPIN':{
+                         "MouseMoveEvent": self.OnSpinMove,
+                         "LeftButtonPressEvent": self.OnSpinClick,
+                         "LeftButtonReleaseEvent": self.OnSpinRelease
                         }
                  }
 
@@ -136,6 +141,11 @@ class Viewer(wx.Panel):
                 style.AddObserver(event,
                                   action[mode][event])
     
+    def ChangeEditorMode(self, pubsub_evt):
+        self.append_mode('EDITOR')
+        self.mouse_pressed = 0    
+        self.interactor.SetCursor(wx.StockCursor(wx.CURSOR_BLANK))
+        
     def ChangePanMode(self, pubsub_evt):
         self.append_mode('PAN')
         self.mouse_pressed = 0    
@@ -152,7 +162,24 @@ class Viewer(wx.Panel):
     def OnPanClick(self, evt, obj):
         self.mouse_pressed = 1
         evt.StartPan()
+
+    def ChangeSpinMode(self, pubsub_evt):
+        self.append_mode('SPIN')
+        self.mouse_pressed = 0    
+        self.interactor.SetCursor(wx.StockCursor(wx.CURSOR_SIZING))
     
+    def OnSpinRelease(self, evt, obj):
+        self.mouse_pressed = 0
+
+    def OnSpinMove(self, evt, obj):
+        if (self.mouse_pressed):
+            evt.Spin()
+            evt.OnRightButtonDown()
+    
+    def OnSpinClick(self, evt, obj):
+        self.mouse_pressed = 1
+        evt.StartSpin()
+            
     def OnEnterInteractor(self, obj, evt):
         self.interactor.SetCursor(wx.StockCursor(wx.CURSOR_BLANK))
 
@@ -390,6 +417,11 @@ class Viewer(wx.Panel):
                                  'Set edition operation')
         ps.Publisher().subscribe(self.ChangePanMode,
                                  'Set Pan Mode')
+        ps.Publisher().subscribe(self.ChangeEditorMode, 
+                                 'Set Editor Mode')
+        ps.Publisher().subscribe(self.ChangeSpinMode, 
+                                 'Set Spin Mode')
+        
     def ChangeBrushOperation(self, pubsub_evt):
         print pubsub_evt.data
         self._brush_cursor_op = pubsub_evt.data
