@@ -379,7 +379,7 @@ class ObjectToolBar(wx.ToolBar):
         self.Realize()
         
         self.states = {1:"Zoom in image", 2:"Zoom out image",
-                       3:"Rotate image", 4:"Set Pan Mode",
+                       3:"Set Spin Mode", 4:"Set Pan Mode",
                        5: "Bright and contrast adjustment"}
     
     def __bind_events(self):
@@ -402,7 +402,7 @@ class ObjectToolBar(wx.ToolBar):
         
         #Not exist's tool enbled, change to default state
         if not (exist_enable_state):
-            print "Default State"
+            ps.Publisher().sendMessage('Set Editor Mode')
             
         evt.Skip()
 
