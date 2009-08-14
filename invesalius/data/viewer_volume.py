@@ -23,8 +23,10 @@ import wx
 import vtk
 from vtk.wx.wxVTKRenderWindowInteractor import wxVTKRenderWindowInteractor
 import wx.lib.pubsub as ps
+
 import constants as const
 import project as prj
+import data.vtk_utils as vtku
 
 class Viewer(wx.Panel):
     def __init__(self, parent):
@@ -32,35 +34,56 @@ class Viewer(wx.Panel):
         self.SetBackgroundColour(wx.Colour(0, 0, 0))
 
         style =  vtk.vtkInteractorStyleTrackballCamera()
+        self.style = style
 
-        iren = wxVTKRenderWindowInteractor(self, -1, size = self.GetSize())
-        iren.SetInteractorStyle(style)
+        interactor = wxVTKRenderWindowInteractor(self, -1, size = self.GetSize())
+        interactor.SetInteractorStyle(style)
 
         sizer = wx.BoxSizer(wx.VERTICAL)
-        sizer.Add(iren, 1, wx.EXPAND)
+        sizer.Add(interactor, 1, wx.EXPAND)
         self.SetSizer(sizer)
         self.Layout()
 
-        # It would be more correct (API-wise) to call iren.Initialize() and
-        # iren.Start() here, but Initialize() calls RenderWindow.Render().
+        # It would be more correct (API-wise) to call interactor.Initialize() and
+        # interactor.Start() here, but Initialize() calls RenderWindow.Render().
         # That Render() call will get through before we can setup the
         # RenderWindow() to render via the wxWidgets-created context; this
         # causes flashing on some platforms and downright breaks things on
         # other platforms.  Instead, we call widget.Enable().  This means
         # that the RWI::Initialized ivar is not set, but in THIS SPECIFIC CASE,
         # that doesn't matter.
-        iren.Enable(1)
+        interactor.Enable(1)
 
         ren = vtk.vtkRenderer()
-        iren.GetRenderWindow().AddRenderer(ren)
+        interactor.GetRenderWindow().AddRenderer(ren)
 
-        self.iren = iren
+        self.interactor = interactor
         self.ren = ren
+
+        self.onclick = False
 
         self.__bind_events()
         self.__bind_events_wx()
         
         self.view_angle = None
+
+    def OnMove(self, obj, evt):
+        if self.onclick:
+            mouse_x, mouse_y = self.interactor.GetEventPosition()
+            diff_x = mouse_x - self.last_x
+            diff_y = mouse_y - self.last_y
+            self.last_x, self.last_y = mouse_x, mouse_y
+            ps.Publisher().sendMessage('Set raycasting relative window and level',
+                (diff_x, diff_y))
+            self.interactor.Render()
+
+    def OnClick(self, obj, evt):
+        self.onclick = True
+        mouse_x, mouse_y = self.interactor.GetEventPosition()
+        self.last_x, self.last_y = mouse_x, mouse_y
+
+    def OnRelease(self, obj, evt):
+        self.onclick = False
 
     def __bind_events(self):
         ps.Publisher().subscribe(self.LoadActor, 'Load surface actor into viewer')
@@ -73,25 +96,52 @@ class Viewer(wx.Panel):
                                 'Set Widget Interactor')
         ps.Publisher().subscribe(self.OnSetViewAngle,
                                 'Set volume view angle')
-        
+        ps.Publisher().subscribe(self.OnSetWindowLevelText,
+                                 'Set volume window and level text')
+        ps.Publisher().subscribe(self.OnEnableBrightContrast, 
+                                  'Bright and contrast adjustment')
+        ps.Publisher().subscribe(self.OnDisableBrightContrast,
+                                  'Set Editor Mode')
         
     def __bind_events_wx(self):
         #self.Bind(wx.EVT_SIZE, self.OnSize)
         pass
-        
+
+
+    def OnEnableBrightContrast(self, pubsub_evt):
+        style = self.style
+        style.AddObserver("MouseMoveEvent", self.OnMove)
+        style.AddObserver("LeftButtonPressEvent", self.OnClick)
+        style.AddObserver("LeftButtonReleaseEvent", self.OnRelease)
+
+
+    def OnDisableBrightContrast(self, pubsub_evt):
+        style = vtk.vtkInteractorStyleTrackballCamera()
+        self.interactor.SetInteractorStyle(style)
+        self.style = style
+
+
     def OnSize(self, evt):
-        print "viewer_volume :: OnSize"
         self.UpdateRender()
         self.Refresh()
-        print dir(self.iren)
-        self.iren.UpdateWindowUI()
-        self.iren.Update()
+        self.interactor.UpdateWindowUI()
+        self.interactor.Update()
         evt.Skip()
         
+    def OnSetWindowLevelText(self, pubsub_evt):
+        ww, wl = pubsub_evt.data
+        self.text.SetValue("WL: %d  WW: %d"%(wl, ww))
+
     def LoadVolume(self, pubsub_evt):
-        volume, colour = pubsub_evt.data
+        volume = pubsub_evt.data[0]
         self.light = self.ren.GetLights().GetNextItem()
+        
+        text = vtku.Text()
+        self.text = text
+
         self.ren.AddVolume(volume)
+        self.ren.AddActor(text.actor)
+        
         if not (self.view_angle):
             self.SetViewAngle(const.VOL_FRONT)
         else:
@@ -117,7 +167,7 @@ class Viewer(wx.Panel):
             ren.ResetCamera()
             ren.ResetCameraClippingRange()
 
-        self.iren.Render()
+        self.interactor.Render()
 
     def OnSetViewAngle(self, evt_pubsub):
         view = evt_pubsub.data
@@ -139,21 +189,21 @@ class Viewer(wx.Panel):
         
         self.ren.ResetCameraClippingRange() 
         self.ren.ResetCamera()
-        self.iren.Render()
+        self.interactor.Render()
 
     def UpdateRender(self, evt_pubsub=None):
-        self.iren.Render()
+        self.interactor.Render()
 
     def CreatePlanes(self):
 
         imagedata = self.imagedata
         ren = self.ren
-        iren = self.iren
+        interactor = self.interactor
 
         import ivVolumeWidgets as vw
         axial_plane = vw.Plane()
         axial_plane.SetRender(ren)
-        axial_plane.SetInteractor(iren)
+        axial_plane.SetInteractor(interactor)
         axial_plane.SetOrientation(vw.AXIAL)
         axial_plane.SetInput(imagedata)
         axial_plane.Show()
@@ -161,7 +211,7 @@ class Viewer(wx.Panel):
 
         coronal_plane = vw.Plane()
         coronal_plane.SetRender(ren)
-        coronal_plane.SetInteractor(iren)
+        coronal_plane.SetInteractor(interactor)
         coronal_plane.SetOrientation(vw.CORONAL)
         coronal_plane.SetInput(imagedata)
         coronal_plane.Show()
@@ -169,14 +219,14 @@ class Viewer(wx.Panel):
 
         sagital_plane = vw.Plane()
         sagital_plane.SetRender(ren)
-        sagital_plane.SetInteractor(iren)
+        sagital_plane.SetInteractor(interactor)
         sagital_plane.SetOrientation(vw.SAGITAL)
         sagital_plane.SetInput(imagedata)
         sagital_plane.Show()
         sagital_plane.Update()
     
     def SetWidgetInteractor(self, evt_pubsub=None):
-        evt_pubsub.data.SetInteractor(self.iren._Iren)
+        evt_pubsub.data.SetInteractor(self.interactor._Iren)
         
     def AppendActor(self, evt_pubsub=None):
         self.ren.AddActor(evt_pubsub.data)

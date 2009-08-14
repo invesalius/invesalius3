@@ -72,6 +72,9 @@ class Volume():
         self.exist = None
         self.color_transfer = None
         self.opacity_transfer_func = None
+        self.ww = None
+        self.wl = None
+        self.n = 0
         
         self.__bind_events()
         
@@ -83,10 +86,12 @@ class Volume():
                                 'Hide raycasting volume')
         ps.Publisher().subscribe(self.SetRaycastPreset,
                                 'Set raycasting preset')
-        ps.Publisher().subscribe(self.SetWWWL,
+        ps.Publisher().subscribe(self.OnSetWindowLevel,
                                 'Set raycasting wwwl')
         ps.Publisher().subscribe(self.Refresh,
                                 'Set raycasting refresh')
+        ps.Publisher().subscribe(self.OnSetRelativeWindowLevel,
+                                 'Set raycasting relative window and level')
 
     def OnLoadVolume(self, pubsub_evt):
         label = pubsub_evt.data
@@ -95,7 +100,6 @@ class Volume():
 
     def LoadConfig(self):
         self.config = Project().raycasting_preset
-        #print path
 
     def OnHideVolume(self, pubsub_evt):
         self.volume.SetVisibility(0)
@@ -126,11 +130,24 @@ class Volume():
             self.Create8bColorTable(self.scale)
             self.Create8bOpacityTable(self.scale)
 
-    def SetWWWL(self, pubsub_evt):
+    def OnSetRelativeWindowLevel(self, pubsub_evt):
+        diff_ww, diff_wl = pubsub_evt.data
+        ww = self.ww + diff_ww
+        wl = self.wl + diff_wl
+        ps.Publisher().sendMessage('Set volume window and level text',
+                                    (ww, wl))
+        self.SetWWWL(ww, wl)
+        self.ww = ww
+        self.wl = wl
+
+    def OnSetWindowLevel(self, pubsub_evt):
         ww, wl, n = pubsub_evt.data
-        print "Setting ww, wl", ww, wl
+        self.SetWWWL(ww,wl,n)
+
+    def SetWWWL(self, ww, wl):
+        
         if self.config['advancedCLUT']:
-            curve = self.config['16bitClutCurves'][n]
+            curve = self.config['16bitClutCurves'][self.n]
 
             p1 = curve[0]
             p2 = curve[-1]
@@ -155,7 +172,7 @@ class Volume():
             self.config['ww'] = ww
 
         self.__config_preset()
-        ps.Publisher().sendMessage('Render volume viewer', None)
+        #ps.Publisher().sendMessage('Render volume viewer', None)
 
     def Refresh(self, pubsub_evt):
         self.__config_preset()
@@ -167,7 +184,6 @@ class Volume():
         else:
             color_transfer = vtk.vtkColorTransferFunction()
         color_transfer.RemoveAllPoints()
-        print self.config
         curve_table = self.config['16bitClutCurves']
         color_table = self.config['16bitClutColors']
         colors = []
@@ -191,12 +207,10 @@ class Volume():
             color_transfer = vtk.vtkColorTransferFunction()
         color_transfer.RemoveAllPoints()
         color_preset = self.config['CLUT']
-        print ">>>", color_preset
         if color_preset != "No CLUT":
             p = plistlib.readPlist(
                 os.path.join(const.RAYCASTING_PRESETS_DIRECTORY,
                              'color_list', color_preset + '.plist'))
-            print "nome clut", p
             r = p['Red']
             g = p['Green']
             b = p['Blue']
@@ -205,7 +219,6 @@ class Volume():
             wl = self.TranslateScale(scale, self.config['wl'])
             inc = ww / 254.0
             for i,rgb in enumerate(colors):
-                print i,inc, ww, wl - ww/2 + i * inc, rgb
                 color_transfer.AddRGBPoint((wl - ww/2) + (i * inc), *[i/255.0 for i in rgb])
         self.color_transfer = color_transfer
         return color_transfer
@@ -221,6 +234,8 @@ class Volume():
 
         ww = self.config['ww']
         wl = self.config['wl']
+        self.ww = ww
+        self.wl = wl
 
         l1 = wl - ww/2.0
         l2 = wl + ww/2.0
@@ -255,15 +270,11 @@ class Volume():
         ww = self.config['ww']
         wl = self.TranslateScale(scale, self.config['wl'])
 
-        print ww, wl
-
         l1 = wl - ww/2.0
         l2 = wl + ww/2.0
 
         opacity_transfer_func.RemoveAllPoints()
         opacity_transfer_func.AddSegment(0, 0, 2**16-1, 0)
-
-        print "l1, l2", l1, l2
 
         k1 = 0.0
         k2 = 1.0

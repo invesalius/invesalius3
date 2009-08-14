@@ -1,4 +1,7 @@
 import wx.lib.pubsub as ps
+import vtk
+
+import constants as const
 
 # If you are frightened by the code bellow, or think it must have been result of
 # an identation error, lookup at:
@@ -48,3 +51,40 @@ def ShowProgress(number_of_filters = 1):
         return progress[0]
         
     return UpdateProgress
+
+class Text(object):
+    def __init__(self):
+
+        property = vtk.vtkTextProperty()
+        property.SetFontSize(const.TEXT_SIZE)
+        property.SetFontFamilyToArial()
+        property.BoldOff()
+        property.ItalicOff()
+        property.ShadowOn()
+        property.SetJustificationToLeft()
+        property.SetVerticalJustificationToTop()
+        property.SetColor(const.TEXT_COLOUR)
+        self.property = property
+
+        mapper = vtk.vtkTextMapper()
+        mapper.SetTextProperty(property)
+        self.mapper = mapper
+
+        x, y = const.TEXT_POSITION
+        actor = vtk.vtkActor2D()
+        actor.SetMapper(mapper)
+        actor.GetPositionCoordinate().SetCoordinateSystemToNormalizedDisplay()
+        actor.GetPositionCoordinate().SetValue(x,y)
+        self.actor = actor
+
+    def SetValue(self, value):
+        self.mapper.SetInput(str(value))
+
+    def SetPosition(self, position):
+        self.actor.SetPositionCoordinate().SetValue(position)
+
+    def Show(self, value=1):
+        if value:
+            self.actor.VisibilityOn()
+        else:
+            self.actor.VisibilityOff()

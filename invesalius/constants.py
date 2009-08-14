@@ -2,6 +2,11 @@ import os.path
 import wx
 from project import Project
 
+# VTK text
+TEXT_SIZE = 12
+TEXT_COLOUR = (1,1,1)
+TEXT_POSITION = (0.03, 0.97)
+
 # Slice orientation
 AXIAL = 0
 CORONAL = 1
