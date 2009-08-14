@@ -110,9 +110,9 @@ class Viewer(wx.Panel):
         ren = self.ren
         ren.AddActor(actor)
         
-        if not (self.first_reposition_actor):
-            self.RepositionActor()
-            self.first_reposition_actor = 1
+        if not (self.view_angle):
+            self.SetViewAngle(const.VOL_FRONT)
+            self.view_angle = 1
         else:
             ren.ResetCamera()
             ren.ResetCameraClippingRange()
