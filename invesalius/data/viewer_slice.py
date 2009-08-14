@@ -47,7 +47,7 @@ class Viewer(wx.Panel):
         self.slice_data_list = []
         # The layout from slice_data, the first is number of cols, the second
         # is the number of rows
-        self.layout = (2, 2)
+        self.layout = (1, 1)
 
         self.__init_gui()
 
@@ -102,7 +102,7 @@ class Viewer(wx.Panel):
 
         # Retrieve currently set modes
         self.modes.append(mode)
-
+  
         # All modes and bindings
         action = {'DEFAULT': {
                              "MouseMoveEvent": self.OnCrossMove,
@@ -115,7 +115,12 @@ class Viewer(wx.Panel):
                             "LeftButtonReleaseEvent": self.OnMouseRelease,
                             "EnterEvent": self.OnEnterInteractor,
                             "LeaveEvent": self.OnLeaveInteractor
-                            }
+                            },
+                  'PAN':{
+                         "MouseMoveEvent": self.OnPanMove,
+                         "LeftButtonPressEvent": self.OnPanClick,
+                         "LeftButtonReleaseEvent": self.OnPanRelease
+                        }
                  }
 
         # Bind method according to current mode
@@ -130,7 +135,24 @@ class Viewer(wx.Panel):
                 # Bind event
                 style.AddObserver(event,
                                   action[mode][event])
+    
+    def ChangePanMode(self, pubsub_evt):
+        self.append_mode('PAN')
+        self.mouse_pressed = 0    
+        self.interactor.SetCursor(wx.StockCursor(wx.CURSOR_SIZING))
+    
+    def OnPanRelease(self, evt, obj):
+        self.mouse_pressed = 0
 
+    def OnPanMove(self, evt, obj):
+        if (self.mouse_pressed):
+            evt.Pan()
+            evt.OnRightButtonDown()
+    
+    def OnPanClick(self, evt, obj):
+        self.mouse_pressed = 1
+        evt.StartPan()
+    
     def OnEnterInteractor(self, obj, evt):
         self.interactor.SetCursor(wx.StockCursor(wx.CURSOR_BLANK))
 
@@ -366,7 +388,8 @@ class Viewer(wx.Panel):
                                  'Set brush format')
         ps.Publisher().subscribe(self.ChangeBrushOperation,
                                  'Set edition operation')
-
+        ps.Publisher().subscribe(self.ChangePanMode,
+                                 'Set Pan Mode')
     def ChangeBrushOperation(self, pubsub_evt):
         print pubsub_evt.data
         self._brush_cursor_op = pubsub_evt.data
