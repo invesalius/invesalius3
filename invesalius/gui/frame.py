@@ -379,7 +379,7 @@ class ObjectToolBar(wx.ToolBar):
         self.Realize()
         
         self.states = {1:"Zoom in image", 2:"Zoom out image",
-                       3:"Rotate image", 4:"Translate image",
+                       3:"Rotate image", 4:"Set Pan Mode",
                        5: "Bright and contrast adjustment"}
     
     def __bind_events(self):
