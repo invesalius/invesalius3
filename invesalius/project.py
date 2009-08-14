@@ -17,7 +17,10 @@
 #    detalhes.
 #--------------------------------------------------------------------------
 
+import os
+import plistlib
 import wx
+import wx.lib.pubsub as ps
 
 from utils import Singleton
 from presets import Presets
@@ -78,10 +81,13 @@ class Project(object):
         # InVesalius configuration file
         # self.render_mode = {}
         
+        # The raycasting preset setted in this project
+        self.raycasting_preset = None
+
         self.debug = 0
-        
+
     ####### MASK OPERATIONS
-    
+
     def AddMask(self, index, mask):
         """
         Insert new mask (Mask) into project data.
@@ -106,5 +112,7 @@ class Project(object):
         else:
             print "Different Acquisition Modality!!!"
 
-
-        
+    def SetRaycastPreset(self, label):
+        path = os.path.join(RAYCASTING_PRESETS_DIRECTORY, label + '.plist')
+        preset = plistlib.readPlist(path)
+        ps.Publisher.sendMessage('Set raycasting preset', preset)

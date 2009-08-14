@@ -262,8 +262,9 @@ class VolumeToolPanel(wx.Panel):
 
     def OnMenuRaycasting(self, evt):
         """Events from button menus."""
-        ps.Publisher().sendMessage('Set raycasting preset',
+        ps.Publisher().sendMessage('Load raycasting preset',
                                     ID_TO_NAME[evt.GetId()])
+        ps.Publisher().sendMessage('Set raycasting preset', None)
         ps.Publisher().sendMessage('Render volume viewer')
 
     def OnMenuView(self, evt):

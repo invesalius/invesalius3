@@ -9,6 +9,8 @@ import wx
 import wx.lib.pubsub as ps
 import wx.lib.wxcairo
 
+import project
+
 FONT_COLOUR = (1, 1, 1)
 LINE_COLOUR = (0.5, 0.5, 0.5)
 LINE_WIDTH = 2
@@ -301,10 +303,11 @@ class CLUTRaycastingWidget(wx.Panel):
         ctx.set_line_width(HISTOGRAM_LINE_WIDTH)
         for x,y in self.histogram_pixel_points:
             ctx.line_to(x,y)
+        ctx.line_to(x, height)
         ctx.line_to(0, height)
         x,y = self.histogram_pixel_points[0]
-        ctx.set_source_rgb(*HISTOGRAM_FILL_COLOUR)
         ctx.line_to(x, y)
+        ctx.set_source_rgb(*HISTOGRAM_FILL_COLOUR)
         ctx.fill_preserve()
         ctx.set_source_rgb(*HISTOGRAM_LINE_COLOUR)
         ctx.stroke()
@@ -351,7 +354,6 @@ class CLUTRaycastingWidget(wx.Panel):
                 y = math.log(self.histogram_array[i])
             else:
                 y = 0
-            print y
             x = self.init+ i
             x = (x + abs(self.init)) * proportion_x
             y = height - y * proportion_y
@@ -392,10 +394,12 @@ class CLUTRaycastingWidget(wx.Panel):
         print x,y
 
     def SetRaycastPreset(self, preset):
-        if preset.data['advancedCLUT']:
+        preset = project.Project().raycasting_preset
+        print preset
+        if preset['advancedCLUT']:
             self.to_draw_points = 1
-            self.points = preset.data['16bitClutCurves']
-            self.colours = preset.data['16bitClutColors']
+            self.points = preset['16bitClutCurves']
+            self.colours = preset['16bitClutColors']
             self.CreatePixelArray()
         else:
             self.to_draw_points = 0

@@ -93,15 +93,8 @@ class Volume():
         #self.LoadConfig(label)
         self.LoadVolume()
 
-    def LoadConfig(self, label):
-        print label
-        if not label:
-            label = const.RAYCASTING_LABEL
-
-        path = os.path.join("..", "presets", "raycasting",
-                             label+".plist")
-        label = plistlib.readPlist(path)
-        self.config = label
+    def LoadConfig(self):
+        self.config = Project().raycasting_preset
         #print path
 
     def OnHideVolume(self, pubsub_evt):
@@ -113,12 +106,13 @@ class Volume():
             self.volume.SetVisibility(1)
             ps.Publisher().sendMessage('Render volume viewer')
         else:
-            self.LoadConfig(None)
+            ps.Publisher.sendMessage('Load raycasting preset', const.RAYCASTING_LABEL)
+            self.LoadConfig()
             self.LoadVolume()
             self.exist = 1
 
     def SetRaycastPreset(self, pubsub_evt):
-        self.LoadConfig(pubsub_evt.data)
+        self.LoadConfig()
         self.__config_preset()
         self.SetShading()
         colour = self.CreateBackgroundColor()
@@ -341,25 +335,16 @@ class Volume():
 
         cast = vtk.vtkImageShiftScale()
         cast.SetInput(image)
-        print "> ", self.config['advancedCLUT']
+        cast.SetShift(abs(scale[0]))
+        cast.SetOutputScalarTypeToUnsignedShort()
+        cast.Update()
+        image2 = cast
         if self.config['advancedCLUT']:
-            cast.SetShift(abs(scale[0]))
-            #cast.SetScale(2**16-1)
-            cast.SetOutputScalarTypeToUnsignedShort()
-            #scale = image.GetScalarRange()
             self.Create16bColorTable(scale)
             self.CreateOpacityTable(scale)
-            cast.Update()
-            image2 = cast
         else:
-            cast.SetShift(abs(scale[0]))
-            #cast.SetScale(255.0/(scale[1] - scale[0]))
-            cast.SetOutputScalarTypeToUnsignedShort()
-            color_transfer = self.Create8bColorTable(scale)
-            opacity_transfer_func = self.Create8bOpacityTable(scale)
-            cast.Update()
-            image2 = cast
-        #cast.ClampOverflowOff()
+            self.Create8bColorTable(scale)
+            self.Create8bOpacityTable(scale)
 
         convolve = vtk.vtkImageConvolve()
         convolve.SetInput(image2.GetOutput())
@@ -367,7 +352,7 @@ class Volume():
         convolve.Update()
 
         image2 = convolve
-        
+
         composite_function = vtk.vtkVolumeRayCastCompositeFunction()
         composite_function.SetCompositeMethodToInterpolateFirst()
 

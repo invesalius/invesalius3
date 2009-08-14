@@ -1,3 +1,6 @@
+import os
+import plistlib
+
 import wx.lib.pubsub as ps
 
 import constants as const
@@ -18,10 +21,11 @@ class Controller():
         self.volume = volume.Volume()
         self.__bind_events()
 
-
     def __bind_events(self):
         ps.Publisher().subscribe(self.ImportDirectory, 'Import directory')
         ps.Publisher().subscribe(self.StartImportPanel, "Load data to import panel")
+        ps.Publisher().subscribe(self.LoadRaycastingPreset,
+                                 'Load raycasting preset')
 
     def StartImportPanel(self, pubsub_evt):
         path = pubsub_evt.data
@@ -101,6 +105,12 @@ class Controller():
         key= thresh_modes[const.THRESHOLD_PRESETS_INDEX]
         (min_thresh, max_thresh) = proj.threshold_modes.get_value(key)
 
+    def LoadRaycastingPreset(self, pubsub_evt):
+        label = pubsub_evt.data
+        if not label:
+            label = const.RAYCASTING_LABEL
 
-
-
+        path = os.path.join(const.RAYCASTING_PRESETS_DIRECTORY,
+                             label+".plist")
+        preset = plistlib.readPlist(path)
+        prj.Project().raycasting_preset = preset
