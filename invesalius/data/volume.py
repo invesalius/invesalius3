@@ -152,6 +152,7 @@ class Volume():
 
     def OnSetRelativeWindowLevel(self, pubsub_evt):
         diff_ww, diff_wl = pubsub_evt.data
+        print diff_ww
         ww = self.ww + diff_ww
         wl = self.wl + diff_wl
         ps.Publisher().sendMessage('Set volume window and level text',
@@ -294,6 +295,9 @@ class Volume():
         l1 = wl - ww/2.0
         l2 = wl + ww/2.0
 
+        self.ww = ww
+        self.wl = wl
+
         opacity_transfer_func.RemoveAllPoints()
         opacity_transfer_func.AddSegment(0, 0, 2**16-1, 0)
 
@@ -349,7 +353,9 @@ class Volume():
         self.volume_properties.SetSpecularPower(shading['specularPower'])
 
     def ApplyConvolution(self, imagedata):
+        number_filters = len(self.config['convolutionFilters'])
         for filter in self.config['convolutionFilters']:
+            print "convolving", filter
             convolve = vtk.vtkImageConvolve()
             convolve.SetInput(imagedata)
             convolve.SetKernel5x5([i/60.0 for i in Kernels[filter]])
