@@ -129,6 +129,8 @@ class Volume():
         else:
             self.Create8bColorTable(self.scale)
             self.Create8bOpacityTable(self.scale)
+        image = self.DoConvolutionFilters(self.imagedata.GetOutput())
+        self.volume_mapper.SetInput(image)
 
     def OnSetRelativeWindowLevel(self, pubsub_evt):
         diff_ww, diff_wl = pubsub_evt.data
@@ -327,6 +329,15 @@ class Volume():
         self.volume_properties.SetSpecular(shading['specular'])
         self.volume_properties.SetSpecularPower(shading['specularPower'])
 
+    def DoConvolutionFilters(self, imagedata):
+        for filter in self.config['convolutionFilters']:
+            convolve = vtk.vtkImageConvolve()
+            convolve.SetInput(imagedata)
+            convolve.SetKernel5x5([i/60.0 for i in Kernels[filter]])
+            convolve.Update()
+            imagedata = convolve.GetOutput()
+        return imagedata
+
     def LoadVolume(self):
         proj = Project()
         image = proj.imagedata
@@ -340,7 +351,6 @@ class Volume():
         
         image = flip.GetOutput()
 
-
         scale = image.GetScalarRange()
         self.scale = scale
 
@@ -350,6 +360,7 @@ class Volume():
         cast.SetOutputScalarTypeToUnsignedShort()
         cast.Update()
         image2 = cast
+        self.imagedata = image2
         if self.config['advancedCLUT']:
             self.Create16bColorTable(scale)
             self.CreateOpacityTable(scale)
@@ -357,12 +368,7 @@ class Volume():
             self.Create8bColorTable(scale)
             self.Create8bOpacityTable(scale)
 
-        convolve = vtk.vtkImageConvolve()
-        convolve.SetInput(image2.GetOutput())
-        convolve.SetKernel5x5([i/60.0 for i in Kernels[self.config['convolutionFilters'][0]]])
-        convolve.Update()
-
-        image2 = convolve
+        image2 = self.DoConvolutionFilters(image2.GetOutput())
 
         composite_function = vtk.vtkVolumeRayCastCompositeFunction()
         composite_function.SetCompositeMethodToInterpolateFirst()
@@ -376,22 +382,24 @@ class Volume():
         if const.TYPE_RAYCASTING_MAPPER:
             volume_mapper = vtk.vtkVolumeRayCastMapper()
             #volume_mapper.AutoAdjustSampleDistancesOff()
-            volume_mapper.SetInput(image2.GetOutput())
+            volume_mapper.SetInput(image2)
             volume_mapper.SetVolumeRayCastFunction(composite_function)
             #volume_mapper.SetGradientEstimator(gradientEstimator)
             volume_mapper.IntermixIntersectingGeometryOn()
         else:
             volume_mapper = vtk.vtkFixedPointVolumeRayCastMapper()
             #volume_mapper.AutoAdjustSampleDistancesOff()
-            volume_mapper.SetInput(image2.GetOutput())
+            volume_mapper.SetInput(image2)
             volume_mapper.IntermixIntersectingGeometryOn()
+
+        self.volume_mapper = volume_mapper
 
         # TODO: Look to this
         #volume_mapper = vtk.vtkVolumeTextureMapper2D()
         #volume_mapper.SetInput(image2.GetOutput())
 
         #Cut Plane
-        CutPlane(image2.GetOutput(), volume_mapper)
+        CutPlane(image2, volume_mapper)
         
         #self.color_transfer = color_transfer
 
