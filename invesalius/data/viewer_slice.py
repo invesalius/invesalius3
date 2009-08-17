@@ -132,8 +132,12 @@ class Viewer(wx.Panel):
                   'ZOOM':{
                          "MouseMoveEvent": self.OnZoomMove,
                          "LeftButtonPressEvent": self.OnZoomClick,
-                         "LeftButtonReleaseEvent": self.OnReleaseModes
-                        }
+                         "LeftButtonReleaseEvent": self.OnReleaseModes,
+                         "RightButtonReleaseEvent":self.OnUnZoom
+                        },
+                  'ZOOMSELECT':{
+                         "RightButtonReleaseEvent":self.OnUnZoom
+                              }
                  }
 
         # Bind method according to current mode
@@ -142,13 +146,13 @@ class Viewer(wx.Panel):
         else:
             style = vtk.vtkInteractorStyleImage()
 
-            # Check all modes set by user
-            for mode in self.modes:
-                # Check each event available for each mode
-                for event in action[mode]:
-                    # Bind event
-                    style.AddObserver(event,
-                                      action[mode][event])
+        # Check all modes set by user
+        for mode in self.modes:
+            # Check each event available for each mode
+            for event in action[mode]:
+                # Bind event
+                style.AddObserver(event,
+                                  action[mode][event])
         self.style = style
         self.interactor.SetInteractorStyle(style)
 
@@ -165,7 +169,8 @@ class Viewer(wx.Panel):
     def ChangeZoomMode(self, pubsub_evt):
         self.append_mode('ZOOM')
         self.mouse_pressed = 0
-        self.interactor.SetCursor(wx.StockCursor(wx.CURSOR_SIZENS))
+        ICON_IMAGE = wx.Image("../icons/tool_zoom.png",wx.BITMAP_TYPE_PNG)
+        self.interactor.SetCursor(wx.CursorFromImage(ICON_IMAGE))
 
     def ChangePanMode(self, pubsub_evt):
         self.append_mode('PAN')
@@ -174,7 +179,8 @@ class Viewer(wx.Panel):
 
     def ChangeZoomSelectMode(self, pubsub_evt):
         self.append_mode('ZOOMSELECT')
-        self.mouse_pressed = 0
+        ICON_IMAGE = wx.Image("../icons/tool_zoom.png",wx.BITMAP_TYPE_PNG)
+        self.interactor.SetCursor(wx.CursorFromImage(ICON_IMAGE))
 
     def OnPanMove(self, evt, obj):
         if (self.mouse_pressed):
@@ -193,7 +199,12 @@ class Viewer(wx.Panel):
     def OnZoomClick(self, evt, obj):
         self.mouse_pressed = 1
         evt.StartDolly()
-
+    
+    def OnUnZoom(self, evt, obj):
+        self.ren.ResetCamera()
+        self.ren.ResetCameraClippingRange()
+        self.interactor.Render()
+    
     def OnSpinMove(self, evt, obj):
         if (self.mouse_pressed):
             evt.Spin()
