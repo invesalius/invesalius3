@@ -99,10 +99,13 @@ class Viewer(wx.Panel):
         self.ren = ren
 
     def append_mode(self, mode):
+
+        #TODO: Temporary
         self.modes = []
+
         # Retrieve currently set modes
         self.modes.append(mode)
-  
+
         # All modes and bindings
         action = {'DEFAULT': {
                              "MouseMoveEvent": self.OnCrossMove,
@@ -119,67 +122,90 @@ class Viewer(wx.Panel):
                   'PAN':{
                          "MouseMoveEvent": self.OnPanMove,
                          "LeftButtonPressEvent": self.OnPanClick,
-                         "LeftButtonReleaseEvent": self.OnPanRelease
+                         "LeftButtonReleaseEvent": self.OnReleaseModes
                         },
                   'SPIN':{
                          "MouseMoveEvent": self.OnSpinMove,
                          "LeftButtonPressEvent": self.OnSpinClick,
-                         "LeftButtonReleaseEvent": self.OnSpinRelease
+                         "LeftButtonReleaseEvent": self.OnReleaseModes
+                        },
+                  'ZOOM':{
+                         "MouseMoveEvent": self.OnZoomMove,
+                         "LeftButtonPressEvent": self.OnZoomClick,
+                         "LeftButtonReleaseEvent": self.OnReleaseModes
                         }
                  }
 
         # Bind method according to current mode
-        style = vtk.vtkInteractorStyleImage()
+        if(mode == 'ZOOMSELECT'):
+            style = vtk.vtkInteractorStyleRubberBandZoom()
+        else:
+            style = vtk.vtkInteractorStyleImage()
+
+            # Check all modes set by user
+            for mode in self.modes:
+                # Check each event available for each mode
+                for event in action[mode]:
+                    # Bind event
+                    style.AddObserver(event,
+                                      action[mode][event])
         self.style = style
         self.interactor.SetInteractorStyle(style)
 
-        # Check all modes set by user
-        for mode in self.modes:
-            # Check each event available for each mode
-            for event in action[mode]:
-                # Bind event
-                style.AddObserver(event,
-                                  action[mode][event])
-    
     def ChangeEditorMode(self, pubsub_evt):
         self.append_mode('EDITOR')
-        self.mouse_pressed = 0    
+        self.mouse_pressed = 0
         self.interactor.SetCursor(wx.StockCursor(wx.CURSOR_BLANK))
-        
+
+    def ChangeSpinMode(self, pubsub_evt):
+        self.append_mode('SPIN')
+        self.mouse_pressed = 0
+        self.interactor.SetCursor(wx.StockCursor(wx.CURSOR_SIZING))
+
+    def ChangeZoomMode(self, pubsub_evt):
+        self.append_mode('ZOOM')
+        self.mouse_pressed = 0
+        self.interactor.SetCursor(wx.StockCursor(wx.CURSOR_SIZENS))
+
     def ChangePanMode(self, pubsub_evt):
         self.append_mode('PAN')
-        self.mouse_pressed = 0    
+        self.mouse_pressed = 0
         self.interactor.SetCursor(wx.StockCursor(wx.CURSOR_SIZING))
-    
-    def OnPanRelease(self, evt, obj):
+
+    def ChangeZoomSelectMode(self, pubsub_evt):
+        self.append_mode('ZOOMSELECT')
         self.mouse_pressed = 0
 
     def OnPanMove(self, evt, obj):
         if (self.mouse_pressed):
             evt.Pan()
             evt.OnRightButtonDown()
-    
+
     def OnPanClick(self, evt, obj):
         self.mouse_pressed = 1
         evt.StartPan()
 
-    def ChangeSpinMode(self, pubsub_evt):
-        self.append_mode('SPIN')
-        self.mouse_pressed = 0    
-        self.interactor.SetCursor(wx.StockCursor(wx.CURSOR_SIZING))
-    
-    def OnSpinRelease(self, evt, obj):
-        self.mouse_pressed = 0
+    def OnZoomMove(self, evt, obj):
+        if (self.mouse_pressed):
+            evt.Dolly()
+            evt.OnRightButtonDown()
+
+    def OnZoomClick(self, evt, obj):
+        self.mouse_pressed = 1
+        evt.StartDolly()
 
     def OnSpinMove(self, evt, obj):
         if (self.mouse_pressed):
             evt.Spin()
             evt.OnRightButtonDown()
-    
+
     def OnSpinClick(self, evt, obj):
         self.mouse_pressed = 1
         evt.StartSpin()
-            
+
+    def OnReleaseModes(self, evt, obj):
+        self.mouse_pressed = 0
+
     def OnEnterInteractor(self, obj, evt):
         self.interactor.SetCursor(wx.StockCursor(wx.CURSOR_BLANK))
 
@@ -417,11 +443,15 @@ class Viewer(wx.Panel):
                                  'Set edition operation')
         ps.Publisher().subscribe(self.ChangePanMode,
                                  'Set Pan Mode')
-        ps.Publisher().subscribe(self.ChangeEditorMode, 
+        ps.Publisher().subscribe(self.ChangeEditorMode,
                                  'Set Editor Mode')
-        ps.Publisher().subscribe(self.ChangeSpinMode, 
+        ps.Publisher().subscribe(self.ChangeSpinMode,
                                  'Set Spin Mode')
-        
+        ps.Publisher().subscribe(self.ChangeZoomMode,
+                                 'Set Zoom Mode')
+        ps.Publisher().subscribe(self.ChangeZoomSelectMode,
+                                 'Set Zoom Select Mode')
+
     def ChangeBrushOperation(self, pubsub_evt):
         print pubsub_evt.data
         self._brush_cursor_op = pubsub_evt.data
