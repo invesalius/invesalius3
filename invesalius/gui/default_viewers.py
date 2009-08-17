@@ -267,6 +267,7 @@ class VolumeToolPanel(wx.Panel):
         button_colour.Bind(csel.EVT_COLOURSELECT, self.OnSelectColour)
         self.button_colour = button_colour
 
+        self.__bind_events()
         # SIZER TO ORGANIZE ALL
         sizer = wx.BoxSizer(wx.VERTICAL)
         sizer.Add(button_colour, 0, wx.ALL, 1)
@@ -274,6 +275,14 @@ class VolumeToolPanel(wx.Panel):
         sizer.Add(button_view, 0, wx.ALL, 1)
         self.SetSizer(sizer)
         sizer.Fit(self)
+
+    def __bind_events(self):
+        ps.Publisher().subscribe(self.ChangeButtonColour,
+                                 'Change volume viewer gui colour')
+
+    def ChangeButtonColour(self, pubsub_evt):
+        colour = [i*255 for i in pubsub_evt.data]
+        self.button_colour.SetColour(colour)
 
     def OnMenuRaycasting(self, evt):
         """Events from raycasting menu."""

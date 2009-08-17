@@ -148,6 +148,7 @@ class Volume():
         self.SetShading()
         colour = self.GetBackgroundColour()
         ps.Publisher.sendMessage('Change volume viewer background colour', colour)
+        ps.Publisher.sendMessage('Change volume viewer gui colour', colour)
         
 
     def OnSetRelativeWindowLevel(self, pubsub_evt):
