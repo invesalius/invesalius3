@@ -355,7 +355,7 @@ class ObjectToolBar(wx.ToolBar):
                                     wx.BITMAP_TYPE_GIF)
             BMP_TRANSLATE = wx.Bitmap("../icons/tool_translate_original.png",
                                         wx.BITMAP_TYPE_PNG)
-            BMP_ZOOM_IN = wx.Bitmap("../icons/tool_zoom_in_original.png",
+            BMP_ZOOM = wx.Bitmap("../icons/tool_zoom_original.png",
                                     wx.BITMAP_TYPE_PNG)
             BMP_ZOOM_OUT = wx.Bitmap("../icons/tool_zoom_out_original.png",
                                     wx.BITMAP_TYPE_PNG)
@@ -364,12 +364,12 @@ class ObjectToolBar(wx.ToolBar):
         else:
             BMP_ROTATE = wx.Bitmap("../icons/tool_rotate.gif", wx.BITMAP_TYPE_GIF)
             BMP_TRANSLATE = wx.Bitmap("../icons/tool_translate.gif", wx.BITMAP_TYPE_GIF)
-            BMP_ZOOM_IN = wx.Bitmap("../icons/tool_zoom_in.png", wx.BITMAP_TYPE_PNG)
+            BMP_ZOOM = wx.Bitmap("../icons/tool_zoom.png", wx.BITMAP_TYPE_PNG)
             BMP_ZOOM_OUT = wx.Bitmap("../icons/tool_zoom_out.png", wx.BITMAP_TYPE_PNG)
             BMP_CONTRAST = wx.Bitmap("../icons/tool_contrast.png", wx.BITMAP_TYPE_PNG)
 
 
-        self.AddLabelTool(1, "Zoom in image", BMP_ZOOM_IN, kind = wx.ITEM_CHECK)
+        self.AddLabelTool(1, "Zoom in image", BMP_ZOOM, kind = wx.ITEM_CHECK)
         self.AddLabelTool(2, "Zoom out image", BMP_ZOOM_OUT, kind = wx.ITEM_CHECK)
         self.AddLabelTool(3, "Rotate image", BMP_ROTATE, kind = wx.ITEM_CHECK)
         self.AddLabelTool(4, "Translate image", BMP_TRANSLATE, kind = wx.ITEM_CHECK)
@@ -377,21 +377,21 @@ class ObjectToolBar(wx.ToolBar):
 
         self.Bind(wx.EVT_TOOL, self.OnClick)
         self.Realize()
-        
-        self.states = {1:"Zoom in image", 2:"Zoom out image",
+
+        self.states = {1:"Set Zoom Mode", 2:"Set Zoom Select Mode",
                        3:"Set Spin Mode", 4:"Set Pan Mode",
                        5: "Bright and contrast adjustment"}
-    
+
     def __bind_events(self):
         pass
 
     def OnClick(self, evt):
-        
+
         id = evt.GetId()
         exist_enable_state = 0
- 
+
         for x in xrange(1,6):
-            #necessary if the usurio enable another state 
+            #necessary if the usurio enable another state
             #with a longer allow, disable the previous state
             state = self.GetToolState(x)
             if not (x == id) and (state == True):
@@ -399,11 +399,11 @@ class ObjectToolBar(wx.ToolBar):
             elif(state == True) and (id == x):
                 ps.Publisher().sendMessage(self.states[id])
                 exist_enable_state = 1
-        
+
         #Not exist's tool enbled, change to default state
         if not (exist_enable_state):
             ps.Publisher().sendMessage('Set Editor Mode')
-            
+
         evt.Skip()
 
 class LayoutToolBar(wx.ToolBar):
