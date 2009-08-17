@@ -188,6 +188,7 @@ ID_TO_BMP = {const.VOL_FRONT: ["Front", "../icons/view_front.png"],
              }
 
 ID_TO_NAME = {}
+ID_TO_TOOL = {}
 
 class VolumeViewerCover(wx.Panel):
     def __init__(self, parent):
@@ -215,6 +216,15 @@ class VolumeToolPanel(wx.Panel):
             if name == const.RAYCASTING_OFF_LABEL:
                 item.Check(1)
             ID_TO_NAME[id] = name
+
+        menu.AppendSeparator()
+        submenu = wx.Menu()
+        for tool in const.RAYCASTING_TOOLS:
+           id = wx.NewId()
+           item = wx.MenuItem(submenu, id, name, kind=wx.ITEM_CHECK)
+           submenu.AppendItem(item)
+           ID_TO_TOOL[id] = name
+
         self.menu_raycasting = menu
         menu.Bind(wx.EVT_MENU, self.OnMenuRaycasting)    
 
@@ -262,11 +272,13 @@ class VolumeToolPanel(wx.Panel):
 
     def OnMenuRaycasting(self, evt):
         """Events from raycasting menu."""
-        ps.Publisher().sendMessage('Load raycasting preset',
-                                    ID_TO_NAME[evt.GetId()])
-    #    ps.Publisher().sendMessage('Set raycasting preset', None)
-    #    ps.Publisher().sendMessage('Render volume viewer')
-
+        id = evt.GetId()
+        if id in ID_TO_NAME.keys():
+            ps.Publisher().sendMessage('Load raycasting preset',
+                                          ID_TO_NAME[evt.GetId()])
+        else:
+            ps.Publisher().sendMessage('Enable raycasting tool',
+                                          ID_TO_TOOL(evt.GetId())  
 
     def OnMenuView(self, evt):
         """Events from button menus."""

@@ -160,4 +160,5 @@ RAYCASTING_TYPES = [filename.split(".")[0] for filename in
 RAYCASTING_TYPES.append(' Off')
 RAYCASTING_TYPES.sort()
 RAYCASTING_OFF_LABEL = ' Off'
+RAYCASTING_TOOLS = ["Plane cutter"]
 
