@@ -24,7 +24,7 @@ import wx
 import wx.lib.pubsub as ps
 
 import constants as const
-from project import Project
+import project as prj
 
 Kernels = { 
     "Basic Smooth 5x5" : [1.0, 1.0, 1.0, 1.0, 1.0,
@@ -80,12 +80,12 @@ class Volume():
         
     def __bind_events(self):
         #ps.Publisher().subscribe(self.OnLoadVolume, 'Create volume raycasting')
-        ps.Publisher().subscribe(self.OnShowVolume,
-                                'Show raycasting volume')
+        #ps.Publisher().subscribe(self.OnShowVolume,
+        #                        'Show raycasting volume')
         ps.Publisher().subscribe(self.OnHideVolume,
                                 'Hide raycasting volume')
-        ps.Publisher().subscribe(self.SetRaycastPreset,
-                                'Set raycasting preset')
+        ps.Publisher().subscribe(self.OnUpdatePreset,
+                                'Update raycasting preset')
         ps.Publisher().subscribe(self.OnSetWindowLevel,
                                 'Set raycasting wwwl')
         ps.Publisher().subscribe(self.Refresh,
@@ -97,9 +97,6 @@ class Volume():
         label = pubsub_evt.data
         #self.LoadConfig(label)
         self.LoadVolume()
-
-    def LoadConfig(self):
-        self.config = Project().raycasting_preset
 
     def OnHideVolume(self, pubsub_evt):
         self.volume.SetVisibility(0)
@@ -115,22 +112,41 @@ class Volume():
             self.LoadVolume()
             self.exist = 1
 
-    def SetRaycastPreset(self, pubsub_evt):
-        self.LoadConfig()
-        self.__config_preset()
-        self.SetShading()
-        colour = self.CreateBackgroundColor()
-        ps.Publisher.sendMessage('Change volume viewer background colour', colour)
+    def OnUpdatePreset(self, pubsub_evt):
+        self.__load_preset_config()
+        if self.exist:
+            self.__load_preset()
+            self.volume.SetVisibility(1)
+            ps.Publisher().sendMessage('Render volume viewer')
+        else:
+            self.LoadVolume()
+            self.exist = 1
 
-    def __config_preset(self):
+    def __load_preset_config(self):
+        self.config = prj.Project().raycasting_preset
+       
+    def __update_colour_table(self):
         if self.config['advancedCLUT']:
             self.Create16bColorTable(self.scale)
             self.CreateOpacityTable(self.scale)
         else:
             self.Create8bColorTable(self.scale)
             self.Create8bOpacityTable(self.scale)
-        image = self.DoConvolutionFilters(self.imagedata.GetOutput())
-        self.volume_mapper.SetInput(image)
+
+    def __load_preset(self):   
+        # Update colour table
+        self.__update_colour_table()
+
+        # Update convolution filter
+        original_imagedata = self.imagedata.GetOutput()
+        imagedata = self.ApplyConvolution(original_imagedata)
+        self.volume_mapper.SetInput(imagedata)
+
+        # Update other information
+        self.SetShading()
+        colour = self.GetBackgroundColour()
+        ps.Publisher.sendMessage('Change volume viewer background colour', colour)
+        
 
     def OnSetRelativeWindowLevel(self, pubsub_evt):
         diff_ww, diff_wl = pubsub_evt.data
@@ -144,7 +160,8 @@ class Volume():
 
     def OnSetWindowLevel(self, pubsub_evt):
         ww, wl, n = pubsub_evt.data
-        self.SetWWWL(ww,wl,n)
+        self.n = n
+        self.SetWWWL(ww,wl)
 
     def SetWWWL(self, ww, wl):
         
@@ -173,11 +190,11 @@ class Volume():
             self.config['wl'] = wl
             self.config['ww'] = ww
 
-        self.__config_preset()
-        #ps.Publisher().sendMessage('Render volume viewer', None)
+        self.__update_colour_table()
+        ps.Publisher().sendMessage('Render volume viewer')
 
     def Refresh(self, pubsub_evt):
-        self.__config_preset()
+        self.__set_preset()
 
 #***************
     def Create16bColorTable(self, scale):
@@ -287,11 +304,11 @@ class Volume():
         self.opacity_transfer_func = opacity_transfer_func
         return opacity_transfer_func
 
-    def CreateBackgroundColor(self):
-        color_background = (self.config['backgroundColorRedComponent'],
+    def GetBackgroundColour(self):
+        colour = (self.config['backgroundColorRedComponent'],
                             self.config['backgroundColorGreenComponent'],
                             self.config['backgroundColorBlueComponent'])
-        return color_background
+        return colour
 
     def BuildTable():
         curve_table = p['16bitClutCurves']
@@ -329,7 +346,7 @@ class Volume():
         self.volume_properties.SetSpecular(shading['specular'])
         self.volume_properties.SetSpecularPower(shading['specularPower'])
 
-    def DoConvolutionFilters(self, imagedata):
+    def ApplyConvolution(self, imagedata):
         for filter in self.config['convolutionFilters']:
             convolve = vtk.vtkImageConvolve()
             convolve.SetInput(imagedata)
@@ -339,7 +356,7 @@ class Volume():
         return imagedata
 
     def LoadVolume(self):
-        proj = Project()
+        proj = prj.Project()
         image = proj.imagedata
 
         # Flip original vtkImageData
@@ -368,7 +385,7 @@ class Volume():
             self.Create8bColorTable(scale)
             self.Create8bOpacityTable(scale)
 
-        image2 = self.DoConvolutionFilters(image2.GetOutput())
+        image2 = self.ApplyConvolution(image2.GetOutput())
 
         composite_function = vtk.vtkVolumeRayCastCompositeFunction()
         composite_function.SetCompositeMethodToInterpolateFirst()
@@ -399,7 +416,7 @@ class Volume():
         #volume_mapper.SetInput(image2.GetOutput())
 
         #Cut Plane
-        CutPlane(image2, volume_mapper)
+        #CutPlane(image2, volume_mapper)
         
         #self.color_transfer = color_transfer
 
@@ -434,7 +451,7 @@ class Volume():
         volume.SetProperty(volume_properties)
         self.volume = volume
         
-        colour = self.CreateBackgroundColor()
+        colour = self.GetBackgroundColour()
         ps.Publisher().sendMessage('Load volume into viewer', (volume, colour))
 
     def TranslateScale(self, scale, value):

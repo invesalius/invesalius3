@@ -212,18 +212,18 @@ class VolumeToolPanel(wx.Panel):
             id = wx.NewId()
             item = wx.MenuItem(menu, id, name, kind=wx.ITEM_RADIO)
             menu.AppendItem(item)
-            if name == const.RAYCASTING_LABEL:
+            if name == const.RAYCASTING_OFF_LABEL:
                 item.Check(1)
             ID_TO_NAME[id] = name
         self.menu_raycasting = menu
         menu.Bind(wx.EVT_MENU, self.OnMenuRaycasting)    
 
         #button_raycasting=btn.GenBitmapToggleButton(self, 1, BMP_RAYCASTING, size=(24,24))
-        self.button_raycasting_toggle = 0
+        #self.button_raycasting_toggle = 0
         button_raycasting = pbtn.PlateButton(self, BUTTON_RAYCASTING,"",
                 BMP_RAYCASTING, style=pbtn.PB_STYLE_SQUARE,
                 size=(24,24))
-        self.Bind(wx.EVT_BUTTON, self.OnToggleRaycasting)
+        #self.Bind(wx.EVT_BUTTON, self.OnToggleRaycasting)
         button_raycasting.SetMenu(menu)
         
         self.button_raycasting = button_raycasting
@@ -261,11 +261,12 @@ class VolumeToolPanel(wx.Panel):
         sizer.Fit(self)
 
     def OnMenuRaycasting(self, evt):
-        """Events from button menus."""
+        """Events from raycasting menu."""
         ps.Publisher().sendMessage('Load raycasting preset',
                                     ID_TO_NAME[evt.GetId()])
-        ps.Publisher().sendMessage('Set raycasting preset', None)
-        ps.Publisher().sendMessage('Render volume viewer')
+    #    ps.Publisher().sendMessage('Set raycasting preset', None)
+    #    ps.Publisher().sendMessage('Render volume viewer')
+
 
     def OnMenuView(self, evt):
         """Events from button menus."""
@@ -279,15 +280,15 @@ class VolumeToolPanel(wx.Panel):
         colour = c = [i/255.0 for i in evt.GetValue()]
         ps.Publisher().sendMessage('Change volume viewer background colour', colour)
 
-    def OnToggleRaycasting(self, evt):
-        print "oi" 
-        if self.button_raycasting_toggle:
-            ps.Publisher().sendMessage('Hide raycasting volume')
-            self.button_raycasting.SetBackgroundColour(self.GetParent().GetBackgroundColour())
-            #self.button_raycasting.SetBitmapSelected(ID_TO_BMP2[0])
-            self.button_raycasting_toggle = 0
-        else:
-            ps.Publisher().sendMessage('Show raycasting volume')
-            self.button_raycasting_toggle = 1
-            #self.button_raycasting.SetBitmapSelected(ID_TO_BMP2[1])
-            self.button_raycasting.SetBackgroundColour((255,255,255))
+    #def OnToggleRaycasting(self, evt):
+    #    print "oi" 
+    #    if self.button_raycasting_toggle:
+    #        ps.Publisher().sendMessage('Hide raycasting volume')
+    #        self.button_raycasting.SetBackgroundColour(self.GetParent().GetBackgroundColour())
+    #        #self.button_raycasting.SetBitmapSelected(ID_TO_BMP2[0])
+    #        self.button_raycasting_toggle = 0
+    #    else:
+    #        ps.Publisher().sendMessage('Show raycasting volume')
+    #        self.button_raycasting_toggle = 1
+    #        #self.button_raycasting.SetBitmapSelected(ID_TO_BMP2[1])
+    #        self.button_raycasting.SetBackgroundColour((255,255,255))

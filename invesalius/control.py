@@ -107,10 +107,13 @@ class Controller():
 
     def LoadRaycastingPreset(self, pubsub_evt):
         label = pubsub_evt.data
-        if not label:
-            label = const.RAYCASTING_LABEL
-
-        path = os.path.join(const.RAYCASTING_PRESETS_DIRECTORY,
-                             label+".plist")
-        preset = plistlib.readPlist(path)
-        prj.Project().raycasting_preset = preset
+        if label != const.RAYCASTING_OFF_LABEL:
+            path = os.path.join(const.RAYCASTING_PRESETS_DIRECTORY,
+                                label+".plist")
+            preset = plistlib.readPlist(path)
+            prj.Project().raycasting_preset = preset
+            # Notify volume
+            # TODO: Chamar grafico tb!
+            ps.Publisher().sendMessage('Update raycasting preset')
+        else:
+            ps.Publisher().sendMessage("Hide raycasting volume")
