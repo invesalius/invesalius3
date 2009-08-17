@@ -357,7 +357,7 @@ class ObjectToolBar(wx.ToolBar):
                                         wx.BITMAP_TYPE_PNG)
             BMP_ZOOM = wx.Bitmap("../icons/tool_zoom_original.png",
                                     wx.BITMAP_TYPE_PNG)
-            BMP_ZOOM_OUT = wx.Bitmap("../icons/tool_zoom_out_original.png",
+            BMP_ZOOM_OUT = wx.Bitmap("../icons/tool_zoom_select_original.png",
                                     wx.BITMAP_TYPE_PNG)
             BMP_CONTRAST = wx.Bitmap("../icons/tool_contrast.png",
                                      wx.BITMAP_TYPE_PNG)
@@ -365,12 +365,12 @@ class ObjectToolBar(wx.ToolBar):
             BMP_ROTATE = wx.Bitmap("../icons/tool_rotate.gif", wx.BITMAP_TYPE_GIF)
             BMP_TRANSLATE = wx.Bitmap("../icons/tool_translate.gif", wx.BITMAP_TYPE_GIF)
             BMP_ZOOM = wx.Bitmap("../icons/tool_zoom.png", wx.BITMAP_TYPE_PNG)
-            BMP_ZOOM_OUT = wx.Bitmap("../icons/tool_zoom_out.png", wx.BITMAP_TYPE_PNG)
+            BMP_ZOOM_SELECT = wx.Bitmap("../icons/tool_zoom_select.png", wx.BITMAP_TYPE_PNG)
             BMP_CONTRAST = wx.Bitmap("../icons/tool_contrast.png", wx.BITMAP_TYPE_PNG)
 
 
         self.AddLabelTool(1, "Zoom in image", BMP_ZOOM, kind = wx.ITEM_CHECK)
-        self.AddLabelTool(2, "Zoom out image", BMP_ZOOM_OUT, kind = wx.ITEM_CHECK)
+        self.AddLabelTool(2, "Zoom out image", BMP_ZOOM_SELECT, kind = wx.ITEM_CHECK)
         self.AddLabelTool(3, "Rotate image", BMP_ROTATE, kind = wx.ITEM_CHECK)
         self.AddLabelTool(4, "Translate image", BMP_TRANSLATE, kind = wx.ITEM_CHECK)
         self.AddLabelTool(5, "Bright and contrast adjustment", BMP_CONTRAST, kind = wx.ITEM_CHECK)
