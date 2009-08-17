@@ -176,7 +176,7 @@ import wx.lib.colourselect as csel
 import constants as const
 
 [BUTTON_RAYCASTING, BUTTON_VIEW] = [wx.NewId() for num in xrange(2)]
-
+RAYCASTING_TOOLS = wx.NewId()
 
 ID_TO_BMP = {const.VOL_FRONT: ["Front", "../icons/view_front.png"],
              const.VOL_BACK: ["Back", "../icons/view_back.png"],
@@ -189,6 +189,7 @@ ID_TO_BMP = {const.VOL_FRONT: ["Front", "../icons/view_front.png"],
 
 ID_TO_NAME = {}
 ID_TO_TOOL = {}
+ID_TO_TOOL_ITEM = {}
 
 class VolumeViewerCover(wx.Panel):
     def __init__(self, parent):
@@ -208,6 +209,7 @@ class VolumeToolPanel(wx.Panel):
         BMP_RAYCASTING = wx.Bitmap("../icons/volume_raycasting.png",
                                     wx.BITMAP_TYPE_PNG)
 
+        # MENU RELATED TO RAYCASTING TYPES
         menu = wx.Menu()
         for name in const.RAYCASTING_TYPES:
             id = wx.NewId()
@@ -218,22 +220,25 @@ class VolumeToolPanel(wx.Panel):
             ID_TO_NAME[id] = name
 
         menu.AppendSeparator()
+        # MENU RELATED TO RAYCASTING TOOLS
         submenu = wx.Menu()
-        for tool in const.RAYCASTING_TOOLS:
+        for name in const.RAYCASTING_TOOLS:
            id = wx.NewId()
            item = wx.MenuItem(submenu, id, name, kind=wx.ITEM_CHECK)
            submenu.AppendItem(item)
            ID_TO_TOOL[id] = name
+           ID_TO_TOOL_ITEM[id] = item
+        #submenu.Enable(0)   
+        self.submenu_raycasting_tools = submenu
+        menu.AppendMenu(RAYCASTING_TOOLS, "Tools", submenu)
+        menu.Enable(RAYCASTING_TOOLS, 0)
 
         self.menu_raycasting = menu
         menu.Bind(wx.EVT_MENU, self.OnMenuRaycasting)    
 
-        #button_raycasting=btn.GenBitmapToggleButton(self, 1, BMP_RAYCASTING, size=(24,24))
-        #self.button_raycasting_toggle = 0
         button_raycasting = pbtn.PlateButton(self, BUTTON_RAYCASTING,"",
                 BMP_RAYCASTING, style=pbtn.PB_STYLE_SQUARE,
                 size=(24,24))
-        #self.Bind(wx.EVT_BUTTON, self.OnToggleRaycasting)
         button_raycasting.SetMenu(menu)
         
         self.button_raycasting = button_raycasting
@@ -274,11 +279,26 @@ class VolumeToolPanel(wx.Panel):
         """Events from raycasting menu."""
         id = evt.GetId()
         if id in ID_TO_NAME.keys():
+            name = ID_TO_NAME[evt.GetId()]
             ps.Publisher().sendMessage('Load raycasting preset',
                                           ID_TO_NAME[evt.GetId()])
+            if name != const.RAYCASTING_OFF_LABEL:
+                self.menu_raycasting.Enable(RAYCASTING_TOOLS, 1)
+            else:
+                self.menu_raycasting.Enable(RAYCASTING_TOOLS, 0)
         else:
-            ps.Publisher().sendMessage('Enable raycasting tool',
-                                          ID_TO_TOOL(evt.GetId())  
+            item = ID_TO_TOOL_ITEM[evt.GetId()]
+            if not item.IsChecked():
+                for i in ID_TO_TOOL_ITEM.values():
+                    if i is not item:
+                        i.Check(0)
+
+                ps.Publisher().sendMessage('Enable raycasting tool',
+                                          [ID_TO_TOOL[evt.GetId()],1])
+            else:
+                ps.Publisher().sendMessage('Enable raycasting tool',
+                                            [ID_TO_TOOL[evt.GetId()],0])
+                        
 
     def OnMenuView(self, evt):
         """Events from button menus."""

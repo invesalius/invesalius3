@@ -92,6 +92,8 @@ class Volume():
                                 'Set raycasting refresh')
         ps.Publisher().subscribe(self.OnSetRelativeWindowLevel,
                                  'Set raycasting relative window and level')
+        ps.Publisher().subscribe(self.OnEnableTool,
+                                 'Enable raycasting tool')
 
     def OnLoadVolume(self, pubsub_evt):
         label = pubsub_evt.data
@@ -386,6 +388,7 @@ class Volume():
             self.Create8bOpacityTable(scale)
 
         image2 = self.ApplyConvolution(image2.GetOutput())
+        self.final_imagedata = image2
 
         composite_function = vtk.vtkVolumeRayCastCompositeFunction()
         composite_function.SetCompositeMethodToInterpolateFirst()
@@ -453,6 +456,11 @@ class Volume():
         
         colour = self.GetBackgroundColour()
         ps.Publisher().sendMessage('Load volume into viewer', (volume, colour))
+
+    def OnEnableTool(self, pubsub_evt):
+        tool_name = pubsub_evt.data
+        if tool_name == "Cut plane":
+            plane = CutPlane(self.final_imagedata, self.volume_mapper)
 
     def TranslateScale(self, scale, value):
         #if value < 0:
