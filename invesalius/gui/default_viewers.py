@@ -288,20 +288,25 @@ class VolumeToolPanel(wx.Panel):
         """Events from raycasting menu."""
         id = evt.GetId()
         if id in ID_TO_NAME.keys():
+            # Raycassting type was selected
             name = ID_TO_NAME[evt.GetId()]
             ps.Publisher().sendMessage('Load raycasting preset',
                                           ID_TO_NAME[evt.GetId()])
+            # Enable or disable tools
             if name != const.RAYCASTING_OFF_LABEL:
-                self.menu_raycasting.Enable(RAYCASTING_TOOLS, 1)
+ 	            self.menu_raycasting.Enable(RAYCASTING_TOOLS, 1)
             else:
                 self.menu_raycasting.Enable(RAYCASTING_TOOLS, 0)
+            
         else:
+            # Raycasting tool 
+            # TODO: In future, when more tools are available
             item = ID_TO_TOOL_ITEM[evt.GetId()]
-            if not item.IsChecked():
-                for i in ID_TO_TOOL_ITEM.values():
-                    if i is not item:
-                        i.Check(0)
-
+            #if not item.IsChecked():
+            #    for i in ID_TO_TOOL_ITEM.values():
+            #        if i is not item:
+            #            i.Check(0)
+            if item.IsChecked():
                 ps.Publisher().sendMessage('Enable raycasting tool',
                                           [ID_TO_TOOL[evt.GetId()],1])
             else:
@@ -321,15 +326,3 @@ class VolumeToolPanel(wx.Panel):
         colour = c = [i/255.0 for i in evt.GetValue()]
         ps.Publisher().sendMessage('Change volume viewer background colour', colour)
 
-    #def OnToggleRaycasting(self, evt):
-    #    print "oi" 
-    #    if self.button_raycasting_toggle:
-    #        ps.Publisher().sendMessage('Hide raycasting volume')
-    #        self.button_raycasting.SetBackgroundColour(self.GetParent().GetBackgroundColour())
-    #        #self.button_raycasting.SetBitmapSelected(ID_TO_BMP2[0])
-    #        self.button_raycasting_toggle = 0
-    #    else:
-    #        ps.Publisher().sendMessage('Show raycasting volume')
-    #        self.button_raycasting_toggle = 1
-    #        #self.button_raycasting.SetBitmapSelected(ID_TO_BMP2[1])
-    #        self.button_raycasting.SetBackgroundColour((255,255,255))

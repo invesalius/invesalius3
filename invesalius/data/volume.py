@@ -465,9 +465,12 @@ class Volume():
         ps.Publisher().sendMessage('Load volume into viewer', (volume, colour))
 
     def OnEnableTool(self, pubsub_evt):
-        tool_name = pubsub_evt.data
+        tool_name, enable = pubsub_evt.data
         if tool_name == "Cut plane":
-            plane = CutPlane(self.final_imagedata, self.volume_mapper)
+            if enable:
+                plane = CutPlane(self.final_imagedata, self.volume_mapper)
+            else:
+                print "TODO: Desabilitar plano" 
 
     def TranslateScale(self, scale, value):
         #if value < 0:
