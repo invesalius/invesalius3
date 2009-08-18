@@ -65,6 +65,7 @@ class Viewer(wx.Panel):
 
         self.__bind_events()
         self.__bind_events_wx()
+        
 
     def __init_gui(self):
 
@@ -155,7 +156,76 @@ class Viewer(wx.Panel):
                                   action[mode][event])
         self.style = style
         self.interactor.SetInteractorStyle(style)
-
+    
+    
+    def Reposition(self):
+        """
+        Based on code of method Zoom in the 
+        vtkInteractorStyleRubberBandZoom, the of 
+        vtk 5.4.3
+        """
+        size = self.ren.GetSize()
+        
+        if (size[0] <= size[1] + 100):
+            
+            bound = self.actor.GetBounds()
+            
+            width = abs((bound[3] - bound[2]) * -1)
+            height = abs((bound[1] - bound[0]) * -1)     
+        
+            origin = self.ren.GetOrigin()        
+            cam = self.ren.GetActiveCamera()
+        
+            min = []
+            min.append(bound[0])
+            min.append(bound[2])
+          
+            rbcenter = []
+            rbcenter.append(min[0] + 0.5 * width)
+            rbcenter.append(min[1] + 0.5 * height)
+            rbcenter.append(0)
+            
+            self.ren.SetDisplayPoint(rbcenter)
+            self.ren.DisplayToView()
+            self.ren.ViewToWorld()
+            
+            worldRBCenter = self.ren.GetWorldPoint()
+            worldRBCenter = list(worldRBCenter)
+            
+            invw = 1.0/worldRBCenter[3]
+              
+            worldRBCenter[0] *= invw
+            worldRBCenter[1] *= invw
+            worldRBCenter[2] *= invw
+            
+            winCenter = []
+            winCenter.append(origin[0] + 0.5 * size[0])
+            winCenter.append(origin[1] + 0.5 * size[1])
+            winCenter.append(0)
+            
+            self.ren.SetDisplayPoint(winCenter)
+            self.ren.DisplayToView()
+            self.ren.ViewToWorld()
+                    
+            worldWinCenter = list(self.ren.GetWorldPoint())
+            invw = 1.0/worldWinCenter[3]
+            worldWinCenter[0] *= invw
+            worldWinCenter[1] *= invw
+            worldWinCenter[2] *= invw
+            
+            translation = []
+            translation.append(worldRBCenter[0] - worldWinCenter[0])
+            translation.append(worldRBCenter[1] - worldWinCenter[1])
+            translation.append(worldRBCenter[2] - worldWinCenter[2])
+            
+            if (width > height):
+                cam.Zoom(size[0] / width)    
+            else:
+                cam.Zoom(size[1] / height)
+               
+        self.interactor.Render()
+                    
+    
     def ChangeEditorMode(self, pubsub_evt):
         self.append_mode('EDITOR')
         self.mouse_pressed = 0
@@ -165,7 +235,7 @@ class Viewer(wx.Panel):
         self.append_mode('SPIN')
         self.mouse_pressed = 0
         self.interactor.SetCursor(wx.StockCursor(wx.CURSOR_SIZING))
-
+        
     def ChangeZoomMode(self, pubsub_evt):
         self.append_mode('ZOOM')
         self.mouse_pressed = 0
@@ -203,7 +273,7 @@ class Viewer(wx.Panel):
     def OnUnZoom(self, evt, obj):
         self.ren.ResetCamera()
         self.ren.ResetCameraClippingRange()
-        self.interactor.Render()
+        self.Reposition()
     
     def OnSpinMove(self, evt, obj):
         if (self.mouse_pressed):
@@ -496,6 +566,7 @@ class Viewer(wx.Panel):
         cursor.SetColour(self._brush_cursor_colour)
         cursor.SetSpacing(self.imagedata.GetSpacing())
         cursor.Show(0)
+        self.cursor_ = cursor
         return cursor
 
     def SetInput(self, imagedata):
@@ -550,10 +621,10 @@ class Viewer(wx.Panel):
         actor_bound = actor.GetBounds()
 
         # Insert cursor
-
-
         self.append_mode('EDITOR')
 
+        self.Reposition()
+        
     def __update_cursor_position(self, slice_data, position):
         x, y, z = position
         if (slice_data.cursor):
@@ -640,6 +711,7 @@ class Viewer(wx.Panel):
     def OnScrollBar(self, evt=None):
         pos = self.scroll.GetThumbPosition()
         self.set_slice_number(pos)
+        self.cursor_.Show(1)
         self.interactor.Render()
         if evt:
             evt.Skip()
