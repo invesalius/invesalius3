@@ -312,8 +312,9 @@ class Viewer(wx.Panel):
         colour_wx = pubsub_evt.data
         colour_vtk = [colour/float(255) for colour in colour_wx]
         self._brush_cursor_colour = colour_vtk
-        self.cursor.SetColour(colour_vtk)
-        self.interactor.Render()
+        if self.cursor:
+            self.cursor.SetColour(colour_vtk)
+            self.interactor.Render()
 
     def ChangeBrushActor(self, pubsub_evt):
         brush_type = pubsub_evt.data
