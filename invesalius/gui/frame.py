@@ -99,7 +99,9 @@ class Frame(wx.Frame):
             t1 = ProjectToolBar(self)
             #t2 = LayoutToolBar(self)
             t3 = ObjectToolBar(self)
+            t4 = SliceToolBar(self)
         else:
+            t4 = SliceToolBar(self)
             t3 = ProjectToolBar(self)
             #t2 = LayoutToolBar(self)
             t1 = ObjectToolBar(self)
@@ -119,6 +121,10 @@ class Frame(wx.Frame):
                           ToolbarPane().Top().Floatable(False).
                           LeftDockable(False).RightDockable(False))
 
+        aui_manager.AddPane(t4, wx.aui.AuiPaneInfo().
+                          Name("Slice Toolbar").
+                          ToolbarPane().Top().Floatable(False).
+                          LeftDockable(False).RightDockable(False))
 
         aui_manager.Update()
 
@@ -290,8 +296,9 @@ class ProjectToolBar(wx.ToolBar):
     def __init__(self, parent):
         wx.ToolBar.__init__(self, parent, -1, wx.DefaultPosition,
                             wx.DefaultSize, wx.TB_FLAT|wx.TB_NODIVIDER)
-        if sys.platform == 'darwin':
-            self.SetToolBitmapSize(wx.Size(32,32))
+        
+        self.SetToolBitmapSize(wx.Size(32,32))
+
         self.parent = parent
         self.__init_items()
         self.__bind_events()
@@ -335,13 +342,15 @@ class ProjectToolBar(wx.ToolBar):
     def __bind_events(self):
         pass
 
+# ------------------------------------------------------------------------------
+
 class ObjectToolBar(wx.ToolBar):
     # TODO: what will appear in menubar?
     def __init__(self, parent):
         wx.ToolBar.__init__(self, parent, -1, wx.DefaultPosition, wx.DefaultSize,
                             wx.TB_FLAT|wx.TB_NODIVIDER | wx.TB_DOCKABLE)
-        if sys.platform == 'darwin':
-            self.SetToolBitmapSize(wx.Size(32,32))
+        
+        self.SetToolBitmapSize(wx.Size(32,32))
 
         self.parent = parent
         self.__init_items()
@@ -369,28 +378,28 @@ class ObjectToolBar(wx.ToolBar):
             BMP_CONTRAST = wx.Bitmap("../icons/tool_contrast.png", wx.BITMAP_TYPE_PNG)
 
 
-        self.AddLabelTool(1, "Zoom in image", BMP_ZOOM, kind = wx.ITEM_CHECK)
-        self.AddLabelTool(2, "Zoom out image", BMP_ZOOM_SELECT, kind = wx.ITEM_CHECK)
-        self.AddLabelTool(3, "Rotate image", BMP_ROTATE, kind = wx.ITEM_CHECK)
-        self.AddLabelTool(4, "Translate image", BMP_TRANSLATE, kind = wx.ITEM_CHECK)
-        self.AddLabelTool(5, "Bright and contrast adjustment", BMP_CONTRAST, kind = wx.ITEM_CHECK)
+        self.AddLabelTool(0, "Zoom in image", BMP_ZOOM, kind = wx.ITEM_CHECK)
+        self.AddLabelTool(1, "Zoom out image", BMP_ZOOM_SELECT, kind = wx.ITEM_CHECK)
+        self.AddLabelTool(2, "Rotate image", BMP_ROTATE, kind = wx.ITEM_CHECK)
+        self.AddLabelTool(3, "Translate image", BMP_TRANSLATE, kind = wx.ITEM_CHECK)
+        self.AddLabelTool(4, "Bright and contrast adjustment", BMP_CONTRAST, kind = wx.ITEM_CHECK)
 
-        self.Bind(wx.EVT_TOOL, self.OnClick)
         self.Realize()
-
-        self.states = {1:"Set Zoom Mode", 2:"Set Zoom Select Mode",
-                       3:"Set Spin Mode", 4:"Set Pan Mode",
-                       5: "Bright and contrast adjustment"}
+        
+        self.states = {0:"Set Zoom Mode", 1:"Set Zoom Select Mode",
+                       2:"Set Spin Mode", 3:"Set Pan Mode",
+                       4: "Bright and contrast adjustment"}
 
     def __bind_events(self):
-        pass
+        self.Bind(wx.EVT_TOOL, self.OnClick)
+        ps.Publisher().subscribe(self.UnToggleAllItem, 'UnToogle All Object Item')
 
     def OnClick(self, evt):
 
         id = evt.GetId()
         exist_enable_state = 0
 
-        for x in xrange(1,6):
+        for x in xrange(0,len(self.states)):
             #necessary if the usurio enable another state
             #with a longer allow, disable the previous state
             state = self.GetToolState(x)
@@ -403,8 +412,82 @@ class ObjectToolBar(wx.ToolBar):
         #Not exist's tool enbled, change to default state
         if not (exist_enable_state):
             ps.Publisher().sendMessage('Set Editor Mode')
-
+            
+        ps.Publisher().sendMessage('UnToogle All Slice Item')
         evt.Skip()
+        
+        
+    def UnToggleAllItem(self, pubsub_evt):
+        for x in xrange(0,len(self.states)):
+            #necessary if the usurio enable another state
+            #with a longer allow, disable the previous state
+            state = self.GetToolState(x)
+            if not (x == id) and (state == True):
+                self.ToggleTool(x, False)
+
+# ------------------------------------------------------------------------------
+    
+class SliceToolBar(wx.ToolBar):
+    # TODO: what will appear in menubar?
+    def __init__(self, parent):
+        wx.ToolBar.__init__(self, parent, -1, wx.DefaultPosition, wx.DefaultSize, wx.TB_FLAT|wx.TB_NODIVIDER)
+        
+        self.SetToolBitmapSize(wx.Size(32,32))
+
+        self.parent = parent
+        self.__init_items()
+        self.__bind_events()
+
+    def __init_items(self):
+        if sys.platform == 'darwin':
+            BMP_SLICE = wx.Bitmap("../icons/slice_original.png",
+                                   wx.BITMAP_TYPE_PNG)
+        else:
+            BMP_SLICE = wx.Bitmap("../icons/slice.png",
+                                    wx.BITMAP_TYPE_PNG)
+
+        self.AddLabelTool(0, "Change Slice", BMP_SLICE, kind = wx.ITEM_CHECK)
+
+        self.Realize()
+
+        self.states = {0:"Set Change Slice Mode"}
+
+    def __bind_events(self):
+        self.Bind(wx.EVT_TOOL, self.OnClick)
+        ps.Publisher().subscribe(self.UnToggleAllItem, "UnToogle All Slice Item")
+        
+    def OnClick(self, evt):
+        
+        id = evt.GetId()
+        exist_enable_state = 0
+
+        for x in xrange(0,len(self.states)):
+            #necessary if the usurio enable another state
+            #with a longer allow, disable the previous state
+            state = self.GetToolState(x)
+            if not (x == id) and (state == True):
+                self.ToggleTool(x, False)
+            elif(state == True) and (id == x):
+                ps.Publisher().sendMessage(self.states[x])
+                exist_enable_state = 1
+
+        #Not exist's tool enbled, change to default state
+        if not (exist_enable_state):
+            ps.Publisher().sendMessage('Set Editor Mode')
+        
+        ps.Publisher().sendMessage('UnToogle All Object Item')
+        
+        evt.Skip()
+
+    def UnToggleAllItem(self, pubsub_evt):
+        for x in xrange(0, len(self.states)):
+            #necessary if the usurio enable another state
+            #with a longer allow, disable the previous state
+            state = self.GetToolState(x)
+            if not (x == id) and (state == True):
+                self.ToggleTool(x, False)
+                
+# ------------------------------------------------------------------------------
 
 class LayoutToolBar(wx.ToolBar):
     # TODO: what will appear in menubar?
