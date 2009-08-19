@@ -51,6 +51,8 @@ icons/print.png -text
 icons/print_original.png -text
 icons/show_task.png -text
 icons/show_task_min.png -text
+icons/slice.png -text
+icons/slice_original.png -text
 icons/tool_annotation.png -text
 icons/tool_annotation_original.png -text
 icons/tool_contrast.png -text
