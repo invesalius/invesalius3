@@ -147,7 +147,7 @@ WINDOW_LEVEL = {"Abdomen":(350,50),
                  "Vasculature - Hard":(240,80),
                  "Vasculature - Soft":(650,160)}
                  
-REDUCE_IMAGEDATA_QUALITY = 1
+REDUCE_IMAGEDATA_QUALITY = 0
 
 # if 1, use vtkVolumeRaycastMapper, if 0, use vtkFixedPointVolumeRayCastMapper
 TYPE_RAYCASTING_MAPPER = 0

@@ -294,7 +294,7 @@ class Slice(object):
 
 
     def GetOutput(self):
-        return self.cast_filter.GetOutput()
+        return self.cross.GetOutput()
 
 
 
@@ -338,13 +338,13 @@ class Slice(object):
         cross.Modified()
         self.cross = cross
 
-        cast = vtk.vtkImageCast()
-        cast.SetInput(cross.GetOutput())
-        cast.GetOutput().SetUpdateExtentToWholeExtent()
-        cast.SetOutputScalarTypeToUnsignedChar()
-        cast.Update()
+        #cast = vtk.vtkImageCast()
+        #cast.SetInput(cross.GetOutput())
+        #cast.GetOutput().SetUpdateExtentToWholeExtent()
+        #cast.SetOutputScalarTypeToUnsignedChar()
+        #cast.Update()
 
-        self.cast_filter = cast
+        #self.cast_filter = cast
 
 
     def UpdateCursorPosition(self, pubsub_evt):
@@ -352,7 +352,7 @@ class Slice(object):
         new_pos = pubsub_evt.data
         self.cross.SetCursorPosition(new_pos)
         self.cross.Modified()
-        self.cast_filter.Update()
+        self.cross.Update()
         ps.Publisher().sendMessage('Update slice viewer')
 
     def UpdateCursorPositionSingleAxis(self, pubsub_evt):
@@ -363,7 +363,7 @@ class Slice(object):
             new_pos[key] = axis_pos[key]
         self.cross.SetCursorPosition(new_pos)
         self.cross.Modified()
-        self.cast_filter.Update()
+        self.cross.Update()
         ps.Publisher().sendMessage('Update slice viewer')
 
 

@@ -40,14 +40,14 @@ class Viewer(wx.Panel):
         self.SetBackgroundColour(colour)
 
         # Interactor additional style
-        self.modes = []#['DEFAULT']
+        self.modes = ['DEFAULT']
         self.mouse_pressed = 0
 
         # All renderers and image actors in this viewer
         self.slice_data_list = []
         # The layout from slice_data, the first is number of cols, the second
         # is the number of rows
-        self.layout = (1, 1)
+        self.layout = (2, 2)
 
         self.__init_gui()
 
@@ -102,7 +102,7 @@ class Viewer(wx.Panel):
     def append_mode(self, mode):
 
         #TODO: Temporary
-        self.modes = []
+        #self.modes = []
 
         # Retrieve currently set modes
         self.modes.append(mode)
@@ -238,9 +238,12 @@ class Viewer(wx.Panel):
         
     def ChangeZoomMode(self, pubsub_evt):
         self.append_mode('ZOOM')
+        print "Zoom"
         self.mouse_pressed = 0
         ICON_IMAGE = wx.Image("../icons/tool_zoom.png",wx.BITMAP_TYPE_PNG)
-        self.interactor.SetCursor(wx.CursorFromImage(ICON_IMAGE))
+        ICON_IMAGE.SetOptionInt(wx.IMAGE_OPTION_CUR_HOTSPOT_X, 0)
+        ICON_IMAGE.SetOptionInt(wx.IMAGE_OPTION_CUR_HOTSPOT_Y, 0)
+        wx.SetCursor(wx.CursorFromImage(ICON_IMAGE))
 
     def ChangePanMode(self, pubsub_evt):
         self.append_mode('PAN')
@@ -250,7 +253,7 @@ class Viewer(wx.Panel):
     def ChangeZoomSelectMode(self, pubsub_evt):
         self.append_mode('ZOOMSELECT')
         ICON_IMAGE = wx.Image("../icons/tool_zoom.png",wx.BITMAP_TYPE_PNG)
-        self.interactor.SetCursor(wx.CursorFromImage(ICON_IMAGE))
+        wx.SetCursor(wx.CursorFromImage(ICON_IMAGE))
 
     def OnPanMove(self, evt, obj):
         if (self.mouse_pressed):
