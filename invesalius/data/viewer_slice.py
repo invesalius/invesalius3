@@ -47,7 +47,7 @@ class Viewer(wx.Panel):
         self.slice_data_list = []
         # The layout from slice_data, the first is number of cols, the second
         # is the number of rows
-        self.layout = (2, 2)
+        self.layout = (1, 1)
 
         self.__init_gui()
 
@@ -138,7 +138,12 @@ class Viewer(wx.Panel):
                         },
                   'ZOOMSELECT':{
                          "RightButtonReleaseEvent":self.OnUnZoom
-                              }
+                              },
+                  'CHANGESLICE':{
+                         "MouseMoveEvent": self.OnChangeSliceMove,
+                         "LeftButtonPressEvent": self.OnChangeSliceClick,
+                         "LeftButtonReleaseEvent": self.OnReleaseModes
+                         }
                  }
 
         # Bind method according to current mode
@@ -156,8 +161,108 @@ class Viewer(wx.Panel):
                                   action[mode][event])
         self.style = style
         self.interactor.SetInteractorStyle(style)
+        
+    def EditorMode(self, pubsub_evt):
+        self.append_mode('EDITOR')
+        self.mouse_pressed = 0
+        self.interactor.SetCursor(wx.StockCursor(wx.CURSOR_BLANK))
+
+    def SpinMode(self, pubsub_evt):
+        self.append_mode('SPIN')
+        self.mouse_pressed = 0
+        self.interactor.SetCursor(wx.StockCursor(wx.CURSOR_SIZING))
+        
+    def ZoomMode(self, pubsub_evt):
+        self.append_mode('ZOOM')
+        self.mouse_pressed = 0
+        ICON_IMAGE = wx.Image("../icons/tool_zoom.png",wx.BITMAP_TYPE_PNG)
+        self.interactor.SetCursor(wx.CursorFromImage(ICON_IMAGE))
+
+    def PanMode(self, pubsub_evt):
+        self.append_mode('PAN')
+        self.mouse_pressed = 0
+        self.interactor.SetCursor(wx.StockCursor(wx.CURSOR_SIZING))
+
+    def ZoomSelectMode(self, pubsub_evt):
+        self.append_mode('ZOOMSELECT')
+        ICON_IMAGE = wx.Image("../icons/tool_zoom.png",wx.BITMAP_TYPE_PNG)
+        self.interactor.SetCursor(wx.CursorFromImage(ICON_IMAGE))
+
+    def ChangeSliceMode(self, pubsub_evt):
+        self.append_mode('CHANGESLICE')
+        self.mouse_pressed = 0
+        self.interactor.SetCursor(wx.StockCursor(wx.CURSOR_SIZENS))
+
+    def OnChangeSliceMove(self, evt, obj):
+        
+        min = 0
+        max = self.actor.GetSliceNumberMax()
+        
+        if (self.mouse_pressed):
+            position = self.interactor.GetLastEventPosition()
+            scroll_position = self.scroll.GetThumbPosition()
+        
+            if (position[1] > self.last_position) and\
+                            (self.acum_achange_slice > min):
+                self.acum_achange_slice -= 1
+            elif(position[1] < self.last_position) and\
+                            (self.acum_achange_slice < max):
+                 self.acum_achange_slice += 1
+            self.last_position = position[1]
+            
+            self.scroll.SetThumbPosition(self.acum_achange_slice)
+            self.OnScrollBar()
+
+        
+    def OnChangeSliceClick(self, evt, obj):
+        self.mouse_pressed = 1
+        position = list(self.interactor.GetLastEventPosition())
+        self.acum_achange_slice = self.scroll.GetThumbPosition()
+        self.last_position = position[1]
+        
+    def OnPanMove(self, evt, obj):
+        if (self.mouse_pressed):
+            evt.Pan()
+            evt.OnRightButtonDown()
+ 
+    def OnPanClick(self, evt, obj):
+        self.mouse_pressed = 1
+        evt.StartPan()
+
+    def OnZoomMove(self, evt, obj):
+        if (self.mouse_pressed):
+            evt.Dolly()
+            evt.OnRightButtonDown()
+
+    def OnZoomClick(self, evt, obj):
+        self.mouse_pressed = 1
+        evt.StartDolly()
     
+    def OnUnZoom(self, evt, obj):
+        self.ren.ResetCamera()
+        self.ren.ResetCameraClippingRange()
+        self.Reposition()
     
+    def OnSpinMove(self, evt, obj):
+        if (self.mouse_pressed):
+            evt.Spin()
+            evt.OnRightButtonDown()
+
+    def OnSpinClick(self, evt, obj):
+        self.mouse_pressed = 1
+        evt.StartSpin()
+
+    def OnReleaseModes(self, evt, obj):
+        self.mouse_pressed = 0
+
+    def OnEnterInteractor(self, obj, evt):
+        self.interactor.SetCursor(wx.StockCursor(wx.CURSOR_BLANK))
+
+    def OnLeaveInteractor(self, obj, evt):
+        for slice_data in self.slice_data_list:
+            slice_data.cursor.Show(0)
+        self.interactor.Render()
+
     def Reposition(self):
         """
         Based on code of method Zoom in the 
@@ -224,80 +329,7 @@ class Viewer(wx.Panel):
                 cam.Zoom(size[1] / height)
                
         self.interactor.Render()
-                    
-    
-    def ChangeEditorMode(self, pubsub_evt):
-        self.append_mode('EDITOR')
-        self.mouse_pressed = 0
-        self.interactor.SetCursor(wx.StockCursor(wx.CURSOR_BLANK))
-
-    def ChangeSpinMode(self, pubsub_evt):
-        self.append_mode('SPIN')
-        self.mouse_pressed = 0
-        self.interactor.SetCursor(wx.StockCursor(wx.CURSOR_SIZING))
         
-    def ChangeZoomMode(self, pubsub_evt):
-        self.append_mode('ZOOM')
-        print "Zoom"
-        self.mouse_pressed = 0
-        ICON_IMAGE = wx.Image("../icons/tool_zoom.png",wx.BITMAP_TYPE_PNG)
-        ICON_IMAGE.SetOptionInt(wx.IMAGE_OPTION_CUR_HOTSPOT_X, 0)
-        ICON_IMAGE.SetOptionInt(wx.IMAGE_OPTION_CUR_HOTSPOT_Y, 0)
-        wx.SetCursor(wx.CursorFromImage(ICON_IMAGE))
-
-    def ChangePanMode(self, pubsub_evt):
-        self.append_mode('PAN')
-        self.mouse_pressed = 0
-        self.interactor.SetCursor(wx.StockCursor(wx.CURSOR_SIZING))
-
-    def ChangeZoomSelectMode(self, pubsub_evt):
-        self.append_mode('ZOOMSELECT')
-        ICON_IMAGE = wx.Image("../icons/tool_zoom.png",wx.BITMAP_TYPE_PNG)
-        wx.SetCursor(wx.CursorFromImage(ICON_IMAGE))
-
-    def OnPanMove(self, evt, obj):
-        if (self.mouse_pressed):
-            evt.Pan()
-            evt.OnRightButtonDown()
-
-    def OnPanClick(self, evt, obj):
-        self.mouse_pressed = 1
-        evt.StartPan()
-
-    def OnZoomMove(self, evt, obj):
-        if (self.mouse_pressed):
-            evt.Dolly()
-            evt.OnRightButtonDown()
-
-    def OnZoomClick(self, evt, obj):
-        self.mouse_pressed = 1
-        evt.StartDolly()
-    
-    def OnUnZoom(self, evt, obj):
-        self.ren.ResetCamera()
-        self.ren.ResetCameraClippingRange()
-        self.Reposition()
-    
-    def OnSpinMove(self, evt, obj):
-        if (self.mouse_pressed):
-            evt.Spin()
-            evt.OnRightButtonDown()
-
-    def OnSpinClick(self, evt, obj):
-        self.mouse_pressed = 1
-        evt.StartSpin()
-
-    def OnReleaseModes(self, evt, obj):
-        self.mouse_pressed = 0
-
-    def OnEnterInteractor(self, obj, evt):
-        self.interactor.SetCursor(wx.StockCursor(wx.CURSOR_BLANK))
-
-    def OnLeaveInteractor(self, obj, evt):
-        for slice_data in self.slice_data_list:
-            slice_data.cursor.Show(0)
-        self.interactor.Render()
-
     def ChangeBrushSize(self, pubsub_evt):
         size = pubsub_evt.data
         self._brush_cursor_size = size
@@ -526,17 +558,22 @@ class Viewer(wx.Panel):
                                  'Set brush format')
         ps.Publisher().subscribe(self.ChangeBrushOperation,
                                  'Set edition operation')
-        ps.Publisher().subscribe(self.ChangePanMode,
+        ps.Publisher().subscribe(self.PanMode,
                                  'Set Pan Mode')
-        ps.Publisher().subscribe(self.ChangeEditorMode,
+        ps.Publisher().subscribe(self.EditorMode,
                                  'Set Editor Mode')
-        ps.Publisher().subscribe(self.ChangeSpinMode,
+        ps.Publisher().subscribe(self.SpinMode,
                                  'Set Spin Mode')
-        ps.Publisher().subscribe(self.ChangeZoomMode,
+        ps.Publisher().subscribe(self.ZoomMode,
                                  'Set Zoom Mode')
-        ps.Publisher().subscribe(self.ChangeZoomSelectMode,
+        ps.Publisher().subscribe(self.ZoomSelectMode,
                                  'Set Zoom Select Mode')
-
+        ps.Publisher().subscribe(self.ZoomSelectMode,
+                                 'Set Zoom Select Mode')
+        
+        ps.Publisher().subscribe(self.ChangeSliceMode,
+                                 'Set Change Slice Mode')
+        
     def ChangeBrushOperation(self, pubsub_evt):
         print pubsub_evt.data
         self._brush_cursor_op = pubsub_evt.data
