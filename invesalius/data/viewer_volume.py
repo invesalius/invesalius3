@@ -145,8 +145,8 @@ class Viewer(wx.Panel):
         if not (self.view_angle):
             self.SetViewAngle(const.VOL_FRONT)
         else:
-            ren.ResetCamera()
-            ren.ResetCameraClippingRange()  
+            self.ren.ResetCamera()
+            self.ren.ResetCameraClippingRange()  
         self.UpdateRender()
 
     def ChangeBackgroundColour(self, pubsub_evt):
