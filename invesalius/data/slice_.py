@@ -53,6 +53,9 @@ class Slice(object):
         ps.Publisher().subscribe(self.__set_current_mask_threshold_limits,
                                         'Update threshold limits')
 
+        ps.Publisher().subscribe(self.UpdateWindowLevelBackground,\
+                                 'Bright and contrast adjustment image')
+
     def __set_current_mask_threshold_limits(self, pubsub_evt):
         thresh_min = pubsub_evt.data[0]
         thresh_max  = pubsub_evt.data[1]
@@ -62,7 +65,7 @@ class Slice(object):
         if self.current_mask:
             index = self.current_mask.index
             self.SetMaskEditionThreshold(index, (thresh_min, thresh_max))
-            
+
 
 
     #---------------------------------------------------------------------------
@@ -338,6 +341,7 @@ class Slice(object):
         cross.Modified()
         self.cross = cross
 
+        self.window_level = vtk.vtkImageMapToWindowLevelColors()
         #cast = vtk.vtkImageCast()
         #cast.SetInput(cross.GetOutput())
         #cast.GetOutput().SetUpdateExtentToWholeExtent()
@@ -368,13 +372,14 @@ class Slice(object):
 
 
     def __create_background(self, imagedata):
+        self.imagedata = imagedata
 
         thresh_min, thresh_max = imagedata.GetScalarRange()
         ps.Publisher().sendMessage('Update threshold limits list', (thresh_min,
                                     thresh_max))
 
         # map scalar values into colors
-        lut_bg = vtk.vtkLookupTable()
+        lut_bg = self.lut_bg = vtk.vtkLookupTable()
         lut_bg.SetTableRange(thresh_min, thresh_max)
         lut_bg.SetSaturationRange(0, 0)
         lut_bg.SetHueRange(0, 0)
@@ -382,12 +387,25 @@ class Slice(object):
         lut_bg.Build()
 
         # map the input image through a lookup table
-        img_colours_bg = vtk.vtkImageMapToColors()
+        img_colours_bg = self.img_colours_bg = vtk.vtkImageMapToColors()
         img_colours_bg.SetOutputFormatToRGBA()
         img_colours_bg.SetLookupTable(lut_bg)
         img_colours_bg.SetInput(imagedata)
 
         return img_colours_bg.GetOutput()
+
+    def UpdateWindowLevelBackground(self, pubsub_evt):
+        window, level = pubsub_evt.data
+        window_level = self.window_level
+        window_level.SetInput(self.imagedata)
+        window_level.SetWindow(window)
+        window_level.SetLevel(level)
+        window_level.SetOutputFormatToLuminance()
+        window_level.Update()
+
+        thresh_min, thresh_max = window_level.GetOutput().GetScalarRange()
+        self.lut_bg.SetTableRange(thresh_min, thresh_max)
+        self.img_colours_bg.SetInput(window_level.GetOutput())
 
     def CreateMask(self, imagedata=None, name=None):
 
