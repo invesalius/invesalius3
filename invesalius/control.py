@@ -56,7 +56,7 @@ class Controller():
                 orientation = const.SAGITAL
             else:
                 orientation = const.AXIAL
-                
+
             if (tilt_value):
                 #TODO: Show dialog so user can set not other value
                 tilt_value *= -1
@@ -66,10 +66,10 @@ class Controller():
             "No DICOM files were found. Trying to read with ITK..."
             imagedata = analyze.ReadDirectory(dir_)
             acquisition_modality = "MRI"
-            
+
             #TODO: Verify if all Analyse is AXIAL orientation
             orientation = const.AXIAL
-        
+
         if not imagedata:
             print "Sorry, but there are no medical images supported on this dir."
         else:
@@ -79,7 +79,10 @@ class Controller():
             proj.SetAcquisitionModality(acquisition_modality)
             proj.imagedata = imagedata
             proj.original_orientation = orientation
-            
+            proj.window = const.WINDOW_LEVEL['Bone'][0]
+            proj.level = const.WINDOW_LEVEL['Bone'][1]
+
+
             threshold_range = proj.imagedata.GetScalarRange()
             const.THRESHOLD_OUTVALUE = threshold_range[0]
             const.THRESHOLD_INVALUE = threshold_range[1]
@@ -92,6 +95,11 @@ class Controller():
 
             # Call frame so it shows slice and volume related panels
             ps.Publisher().sendMessage('Show content panel')
+
+            #Initial Window and Level
+            ps.Publisher().sendMessage('Bright and contrast adjustment image',\
+                                   (proj.window, proj.level))
+
 
     def LoadImagedataInfo(self):
         proj = prj.Project()
