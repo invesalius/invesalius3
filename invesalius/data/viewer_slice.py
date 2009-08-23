@@ -217,8 +217,9 @@ class Viewer(wx.Panel):
 
             ps.Publisher().sendMessage('Bright and contrast adjustment image',
                 (proj.window, proj.level))
-            self.interactor.Render()
-            #ps.Publisher().sendMessage('Update slice viewer')
+
+        self.interactor.Render()
+
 
 
     def OnWindowLevelClick(self, evt, obj):
@@ -288,6 +289,7 @@ class Viewer(wx.Panel):
 
     def OnReleaseModes(self, evt, obj):
         self.mouse_pressed = 0
+        ps.Publisher().sendMessage('Update slice viewer')
 
     def OnEnterInteractor(self, obj, evt):
         self.interactor.SetCursor(wx.StockCursor(wx.CURSOR_BLANK))
