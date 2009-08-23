@@ -137,13 +137,18 @@ class Viewer(wx.Panel):
                          "RightButtonReleaseEvent":self.OnUnZoom
                         },
                   'ZOOMSELECT':{
-                         "RightButtonReleaseEvent":self.OnUnZoom
+                               "RightButtonReleaseEvent":self.OnUnZoom
                               },
                   'CHANGESLICE':{
-                         "MouseMoveEvent": self.OnChangeSliceMove,
-                         "LeftButtonPressEvent": self.OnChangeSliceClick,
-                         "LeftButtonReleaseEvent": self.OnReleaseModes
-                         }
+                                "MouseMoveEvent": self.OnChangeSliceMove,
+                                "LeftButtonPressEvent": self.OnChangeSliceClick,
+                                "LeftButtonReleaseEvent": self.OnReleaseModes
+                         },
+                  'WINDOWLEVEL':{
+                                "MouseMoveEvent": self.OnWindowLevelMove,
+                                "LeftButtonPressEvent": self.OnWindowLevelClick,
+                                "LeftButtonReleaseEvent": self.OnReleaseModes
+                                }
                  }
 
         # Bind method according to current mode
@@ -189,13 +194,20 @@ class Viewer(wx.Panel):
         self.interactor.SetCursor(wx.CursorFromImage(ICON_IMAGE))
 
     def WindowLevelMode(self, pubsub_evt):
-        #self.append_mode('WINDOWLEVEL')
-        print "Window And Level"
+        self.append_mode('WINDOWLEVEL')
+        proj = project.Project()
+        self.interactor.Render()
 
     def ChangeSliceMode(self, pubsub_evt):
         self.append_mode('CHANGESLICE')
         self.mouse_pressed = 0
         self.interactor.SetCursor(wx.StockCursor(wx.CURSOR_SIZENS))
+
+    def OnWindowLevelMove(self, evt, obj):
+        print 'Move...'
+
+    def OnWindowLevelClick(self, evt, obj):
+        print 'Click'
 
     def OnChangeSliceMove(self, evt, obj):
 
