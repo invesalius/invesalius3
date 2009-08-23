@@ -102,7 +102,7 @@ class Viewer(wx.Panel):
     def append_mode(self, mode):
 
         #TODO: Temporary
-        #self.modes = []
+        self.modes = []
 
         # Retrieve currently set modes
         self.modes.append(mode)
@@ -195,8 +195,8 @@ class Viewer(wx.Panel):
 
     def WindowLevelMode(self, pubsub_evt):
         self.append_mode('WINDOWLEVEL')
-        proj = project.Project()
-        self.interactor.Render()
+        self.mouse_pressed = 0
+        self.interactor.SetCursor(wx.StockCursor(wx.CURSOR_SIZING))
 
     def ChangeSliceMode(self, pubsub_evt):
         self.append_mode('CHANGESLICE')
@@ -204,10 +204,28 @@ class Viewer(wx.Panel):
         self.interactor.SetCursor(wx.StockCursor(wx.CURSOR_SIZENS))
 
     def OnWindowLevelMove(self, evt, obj):
-        print 'Move...'
+        if self.mouse_pressed:
+            position = self.interactor.GetLastEventPosition()
+            mouse_x, mouse_y = self.interactor.GetEventPosition()
+            self.acum_achange_window += mouse_x - self.last_x
+            self.acum_achange_level += mouse_y - self.last_y
+            self.last_x, self.last_y = mouse_x, mouse_y
+
+            proj = project.Project()
+            proj.window = self.acum_achange_window
+            proj.level = self.acum_achange_level
+
+            ps.Publisher().sendMessage('Bright and contrast adjustment image',
+                (proj.window, proj.level))
+            self.interactor.Render()
+            #ps.Publisher().sendMessage('Update slice viewer')
+
 
     def OnWindowLevelClick(self, evt, obj):
-        print 'Click'
+        proj = project.Project()
+        self.acum_achange_window, self.acum_achange_level = (proj.window, proj.level)
+        self.last_x, self.last_y = self.interactor.GetLastEventPosition()
+        self.mouse_pressed = 1
 
     def OnChangeSliceMove(self, evt, obj):
 
