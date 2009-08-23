@@ -65,7 +65,7 @@ class Viewer(wx.Panel):
 
         self.__bind_events()
         self.__bind_events_wx()
-        
+
 
     def __init_gui(self):
 
@@ -161,7 +161,7 @@ class Viewer(wx.Panel):
                                   action[mode][event])
         self.style = style
         self.interactor.SetInteractorStyle(style)
-        
+
     def EditorMode(self, pubsub_evt):
         self.append_mode('EDITOR')
         self.mouse_pressed = 0
@@ -171,7 +171,7 @@ class Viewer(wx.Panel):
         self.append_mode('SPIN')
         self.mouse_pressed = 0
         self.interactor.SetCursor(wx.StockCursor(wx.CURSOR_SIZING))
-        
+
     def ZoomMode(self, pubsub_evt):
         self.append_mode('ZOOM')
         self.mouse_pressed = 0
@@ -188,20 +188,24 @@ class Viewer(wx.Panel):
         ICON_IMAGE = wx.Image("../icons/tool_zoom.png",wx.BITMAP_TYPE_PNG)
         self.interactor.SetCursor(wx.CursorFromImage(ICON_IMAGE))
 
+    def WindowLevelMode(self, pubsub_evt):
+        #self.append_mode('WINDOWLEVEL')
+        print "Window And Level"
+
     def ChangeSliceMode(self, pubsub_evt):
         self.append_mode('CHANGESLICE')
         self.mouse_pressed = 0
         self.interactor.SetCursor(wx.StockCursor(wx.CURSOR_SIZENS))
 
     def OnChangeSliceMove(self, evt, obj):
-        
+
         min = 0
         max = self.actor.GetSliceNumberMax()
-        
+
         if (self.mouse_pressed):
             position = self.interactor.GetLastEventPosition()
             scroll_position = self.scroll.GetThumbPosition()
-        
+
             if (position[1] > self.last_position) and\
                             (self.acum_achange_slice > min):
                 self.acum_achange_slice -= 1
@@ -209,22 +213,22 @@ class Viewer(wx.Panel):
                             (self.acum_achange_slice < max):
                  self.acum_achange_slice += 1
             self.last_position = position[1]
-            
+
             self.scroll.SetThumbPosition(self.acum_achange_slice)
             self.OnScrollBar()
 
-        
+
     def OnChangeSliceClick(self, evt, obj):
         self.mouse_pressed = 1
         position = list(self.interactor.GetLastEventPosition())
         self.acum_achange_slice = self.scroll.GetThumbPosition()
         self.last_position = position[1]
-        
+
     def OnPanMove(self, evt, obj):
         if (self.mouse_pressed):
             evt.Pan()
             evt.OnRightButtonDown()
- 
+
     def OnPanClick(self, evt, obj):
         self.mouse_pressed = 1
         evt.StartPan()
@@ -237,12 +241,12 @@ class Viewer(wx.Panel):
     def OnZoomClick(self, evt, obj):
         self.mouse_pressed = 1
         evt.StartDolly()
-    
+
     def OnUnZoom(self, evt, obj):
         self.ren.ResetCamera()
         self.ren.ResetCameraClippingRange()
         self.Reposition()
-    
+
     def OnSpinMove(self, evt, obj):
         if (self.mouse_pressed):
             evt.Spin()
@@ -265,71 +269,71 @@ class Viewer(wx.Panel):
 
     def Reposition(self):
         """
-        Based on code of method Zoom in the 
-        vtkInteractorStyleRubberBandZoom, the of 
+        Based on code of method Zoom in the
+        vtkInteractorStyleRubberBandZoom, the of
         vtk 5.4.3
         """
         size = self.ren.GetSize()
-        
+
         if (size[0] <= size[1] + 100):
-            
+
             bound = self.actor.GetBounds()
-            
+
             width = abs((bound[3] - bound[2]) * -1)
-            height = abs((bound[1] - bound[0]) * -1)     
-        
-            origin = self.ren.GetOrigin()        
+            height = abs((bound[1] - bound[0]) * -1)
+
+            origin = self.ren.GetOrigin()
             cam = self.ren.GetActiveCamera()
-        
+
             min = []
             min.append(bound[0])
             min.append(bound[2])
-          
+
             rbcenter = []
             rbcenter.append(min[0] + 0.5 * width)
             rbcenter.append(min[1] + 0.5 * height)
             rbcenter.append(0)
-            
+
             self.ren.SetDisplayPoint(rbcenter)
             self.ren.DisplayToView()
             self.ren.ViewToWorld()
-            
+
             worldRBCenter = self.ren.GetWorldPoint()
             worldRBCenter = list(worldRBCenter)
-            
+
             invw = 1.0/worldRBCenter[3]
-              
+
             worldRBCenter[0] *= invw
             worldRBCenter[1] *= invw
             worldRBCenter[2] *= invw
-            
+
             winCenter = []
             winCenter.append(origin[0] + 0.5 * size[0])
             winCenter.append(origin[1] + 0.5 * size[1])
             winCenter.append(0)
-            
+
             self.ren.SetDisplayPoint(winCenter)
             self.ren.DisplayToView()
             self.ren.ViewToWorld()
-                    
+
             worldWinCenter = list(self.ren.GetWorldPoint())
             invw = 1.0/worldWinCenter[3]
             worldWinCenter[0] *= invw
             worldWinCenter[1] *= invw
             worldWinCenter[2] *= invw
-            
+
             translation = []
             translation.append(worldRBCenter[0] - worldWinCenter[0])
             translation.append(worldRBCenter[1] - worldWinCenter[1])
             translation.append(worldRBCenter[2] - worldWinCenter[2])
-            
+
             if (width > height):
-                cam.Zoom(size[0] / width)    
+                cam.Zoom(size[0] / width)
             else:
                 cam.Zoom(size[1] / height)
-               
+
         self.interactor.Render()
-        
+
     def ChangeBrushSize(self, pubsub_evt):
         size = pubsub_evt.data
         self._brush_cursor_size = size
@@ -570,10 +574,13 @@ class Viewer(wx.Panel):
                                  'Set Zoom Select Mode')
         ps.Publisher().subscribe(self.ZoomSelectMode,
                                  'Set Zoom Select Mode')
-        
+
         ps.Publisher().subscribe(self.ChangeSliceMode,
                                  'Set Change Slice Mode')
-        
+
+        ps.Publisher().subscribe(self.WindowLevelMode,
+                                 'Bright and contrast adjustment')
+
     def ChangeBrushOperation(self, pubsub_evt):
         print pubsub_evt.data
         self._brush_cursor_op = pubsub_evt.data
@@ -665,7 +672,7 @@ class Viewer(wx.Panel):
         self.append_mode('EDITOR')
 
         self.Reposition()
-        
+
     def __update_cursor_position(self, slice_data, position):
         x, y, z = position
         if (slice_data.cursor):
