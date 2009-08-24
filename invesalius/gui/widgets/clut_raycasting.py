@@ -334,8 +334,8 @@ class CLUTRaycastingWidget(wx.Panel):
         self._draw_curves(ctx)
         self._draw_points(ctx)
         self._draw_selection_curve(ctx, width)
-        if self.point_dragged:
-            self._draw_selected_point_text(ctx)
+        #if self.point_dragged:
+        #    self._draw_selected_point_text(ctx)
             
 
     def _build_histogram(self):

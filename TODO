@@ -2,32 +2,32 @@
 
 FIXME:
 
-1. Multiple slice: 1st is smaller
-2. Raycasting WW WL text (hide / show)
-3. Raycasting plane disable
-4. Cursor icon in linux and osx
-5. Plane intersection cross
-6. Initial zoom in Analyze 01 (?)
-7. OS X "black floating render"
-8. Toolbar at OS X and Linux order
-9. Coronal, sagittal, axial - orientation for Analyze (02)
-10. Bright and contrast in Analyze
-11. Insert WW e WL text on the top of the slice
-12. Insert slice number text
-13. Disable raycasting WW & WL if it is not shown
-14. Toolbar items affect 3D
-15. Surface after threshold and edition "undo"
-16. Slice cursor actor is hiding
-17. Zoom by selection when left clicked is not being shown ok
-18. Disable toggle of Windows' platebuttons
-19. Show "Annotation" icon on Linux
-20. Sagittal, axial and coronal planes in 3D
+1. Multiple slice: 1st is smaller - OK (Paulo + Thiago)
+2. Raycasting WW WL text (hide / show) - Tati
+3. Raycasting plane disable - Tati
+4. Cursor icon in linux and osx - Esperar evolução wx
+5. Plane intersection cross - Thiago
+6. Initial zoom in Analyze 01 (?) - Depois v3.1
+7. OS X "black floating render" - Tati
+8. Toolbar at OS X and Linux order - OK (Tati)
+9. Coronal, sagittal, axial - orientation for Analyze (02) - Depois v3.1
+10. Bright and contrast in Analyze - Depois v3.1
+11. Insert WW e WL text on the top of the slice - Paulo
+12. Insert slice number text - Paulo
+13. Disable raycasting WW & WL if it is not shown - Tati
+14. Toolbar items affect 3D - Paulo
+15. Surface after threshold and edition "undo" - Paulo
+16. Slice cursor actor is hiding - Pensar
+17. Zoom by selection when right iiii clicked is wrong - Paulo
+18. Disable toggle of Windows' platebuttons on Windows - Paulo
+19. Show "Annotation" icon on Linux - Thiago
+20. Sagittal, axial and coronal planes in 3D - Paulo
 
 TODO:
-a. Import
-b. Export
-c. Measure
-d. Slice menu:
+a. Import - Todos
+b. Export - Tati
+c. Measure - Thiago
+d. Slice menu: - Paulo
     Window Width & Level >
       x Default WL & WW
         Other
@@ -77,9 +77,9 @@ d. Slice menu:
         ----------------
         Add new size
         
-e. Project
-f. Insert raycasting widget when larger size
-g. Take photo
-h. Print
-i. Add annotation
-j. Layout toolbar
+e. Project - Thiago
+f. Insert raycasting widget when larger size - Thiago
+g. Take photo - Tati
+h. Print - Tati
+i. Add annotation - Thiago
+j. Layout toolbar - Tati

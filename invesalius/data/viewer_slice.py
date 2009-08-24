@@ -685,7 +685,7 @@ class Viewer(wx.Panel):
         text_actor = vtk.vtkTextActor()
         text_actor.SetInput("%d" % self.slice_number)
         text_actor.GetTextProperty().ShallowCopy(text_property)
-        text_actor.SetPosition(2,2)
+        text_actor.SetPosition(1,1)
         self.text_actor = text_actor
 
         #ren.AddActor(actor)
