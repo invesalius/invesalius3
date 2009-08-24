@@ -47,7 +47,7 @@ class Viewer(wx.Panel):
         self.slice_data_list = []
         # The layout from slice_data, the first is number of cols, the second
         # is the number of rows
-        self.layout = (1, 1)
+        self.layout = (2, 2)
 
         self.__init_gui()
 
@@ -274,9 +274,13 @@ class Viewer(wx.Panel):
         evt.StartDolly()
 
     def OnUnZoom(self, evt, obj):
-        self.ren.ResetCamera()
-        self.ren.ResetCameraClippingRange()
-        self.Reposition()
+        mouse_x, mouse_y = self.interactor.GetLastEventPosition()
+        ren = self.interactor.FindPokedRenderer(mouse_x, mouse_y)
+        slice_data = self.get_slice_data(ren)
+        ren.ResetCamera()
+        ren.ResetCameraClippingRange()
+        self.Reposition(slice_data)
+        self.interactor.Render()
 
     def OnSpinMove(self, evt, obj):
         if (self.mouse_pressed):
@@ -299,23 +303,24 @@ class Viewer(wx.Panel):
             slice_data.cursor.Show(0)
         self.interactor.Render()
 
-    def Reposition(self):
+    def Reposition(self, slice_data):
         """
         Based on code of method Zoom in the
         vtkInteractorStyleRubberBandZoom, the of
         vtk 5.4.3
         """
-        size = self.ren.GetSize()
+        ren = slice_data.renderer
+        size = ren.GetSize()
 
         if (size[0] <= size[1] + 100):
 
-            bound = self.actor.GetBounds()
+            bound = slice_data.actor.GetBounds()
 
             width = abs((bound[3] - bound[2]) * -1)
             height = abs((bound[1] - bound[0]) * -1)
 
-            origin = self.ren.GetOrigin()
-            cam = self.ren.GetActiveCamera()
+            origin = ren.GetOrigin()
+            cam = ren.GetActiveCamera()
 
             min = []
             min.append(bound[0])
@@ -344,11 +349,11 @@ class Viewer(wx.Panel):
             winCenter.append(origin[1] + 0.5 * size[1])
             winCenter.append(0)
 
-            self.ren.SetDisplayPoint(winCenter)
-            self.ren.DisplayToView()
-            self.ren.ViewToWorld()
+            ren.SetDisplayPoint(winCenter)
+            ren.DisplayToView()
+            ren.ViewToWorld()
 
-            worldWinCenter = list(self.ren.GetWorldPoint())
+            worldWinCenter = list(ren.GetWorldPoint())
             invw = 1.0/worldWinCenter[3]
             worldWinCenter[0] *= invw
             worldWinCenter[1] *= invw
@@ -364,7 +369,6 @@ class Viewer(wx.Panel):
             else:
                 cam.Zoom(size[1] / height)
 
-        self.interactor.Render()
 
     def ChangeBrushSize(self, pubsub_evt):
         size = pubsub_evt.data
@@ -688,6 +692,7 @@ class Viewer(wx.Panel):
         #ren.AddActor(text_actor)
         for slice_data in self.slice_data_list:
             self.__update_camera(slice_data)
+            self.Reposition(slice_data)
 
         number_of_slices = self.layout[0] * self.layout[1]
         max_slice_number = actor.GetSliceNumberMax() / \
@@ -702,8 +707,6 @@ class Viewer(wx.Panel):
 
         # Insert cursor
         self.append_mode('EDITOR')
-
-        self.Reposition()
 
     def __update_cursor_position(self, slice_data, position):
         x, y, z = position
