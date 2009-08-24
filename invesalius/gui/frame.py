@@ -105,7 +105,7 @@ class Frame(wx.Frame):
             t3 = LayoutToolBar(self)
             t2 = ObjectToolBar(self)
             t1 = SliceToolBar(self)
-            
+
         aui_manager.AddPane(t1, wx.aui.AuiPaneInfo().
                           Name("General Features Toolbar").
                           ToolbarPane().Top().Floatable(False).
@@ -296,7 +296,7 @@ class ProjectToolBar(wx.ToolBar):
     def __init__(self, parent):
         wx.ToolBar.__init__(self, parent, -1, wx.DefaultPosition,
                             wx.DefaultSize, wx.TB_FLAT|wx.TB_NODIVIDER)
-        
+
         self.SetToolBitmapSize(wx.Size(32,32))
 
         self.parent = parent
@@ -349,7 +349,7 @@ class ObjectToolBar(wx.ToolBar):
     def __init__(self, parent):
         wx.ToolBar.__init__(self, parent, -1, wx.DefaultPosition, wx.DefaultSize,
                             wx.TB_FLAT|wx.TB_NODIVIDER | wx.TB_DOCKABLE)
-        
+
         self.SetToolBitmapSize(wx.Size(32,32))
 
         self.parent = parent
@@ -385,7 +385,7 @@ class ObjectToolBar(wx.ToolBar):
         self.AddLabelTool(4, "Bright and contrast adjustment", BMP_CONTRAST, kind = wx.ITEM_CHECK)
 
         self.Realize()
-        
+
         self.states = {0:"Set Zoom Mode", 1:"Set Zoom Select Mode",
                        2:"Set Spin Mode", 3:"Set Pan Mode",
                        4: "Bright and contrast adjustment"}
@@ -412,11 +412,11 @@ class ObjectToolBar(wx.ToolBar):
         #Not exist's tool enbled, change to default state
         if not (exist_enable_state):
             ps.Publisher().sendMessage('Set Editor Mode')
-            
+
         ps.Publisher().sendMessage('UnToogle All Slice Item')
         evt.Skip()
-        
-        
+
+
     def UnToggleAllItem(self, pubsub_evt):
         for x in xrange(0,len(self.states)):
             #necessary if the usurio enable another state
@@ -426,12 +426,12 @@ class ObjectToolBar(wx.ToolBar):
                 self.ToggleTool(x, False)
 
 # ------------------------------------------------------------------------------
-    
+
 class SliceToolBar(wx.ToolBar):
     # TODO: what will appear in menubar?
     def __init__(self, parent):
         wx.ToolBar.__init__(self, parent, -1, wx.DefaultPosition, wx.DefaultSize, wx.TB_FLAT|wx.TB_NODIVIDER)
-        
+
         self.SetToolBitmapSize(wx.Size(32,32))
 
         self.parent = parent
@@ -455,9 +455,9 @@ class SliceToolBar(wx.ToolBar):
     def __bind_events(self):
         self.Bind(wx.EVT_TOOL, self.OnClick)
         ps.Publisher().subscribe(self.UnToggleAllItem, "UnToogle All Slice Item")
-        
+
     def OnClick(self, evt):
-        
+
         id = evt.GetId()
         exist_enable_state = 0
 
@@ -474,9 +474,9 @@ class SliceToolBar(wx.ToolBar):
         #Not exist's tool enbled, change to default state
         if not (exist_enable_state):
             ps.Publisher().sendMessage('Set Editor Mode')
-        
+
         ps.Publisher().sendMessage('UnToogle All Object Item')
-        
+
         evt.Skip()
 
     def UnToggleAllItem(self, pubsub_evt):
@@ -486,23 +486,27 @@ class SliceToolBar(wx.ToolBar):
             state = self.GetToolState(x)
             if not (x == id) and (state == True):
                 self.ToggleTool(x, False)
-                
+
 # ------------------------------------------------------------------------------
 
 class LayoutToolBar(wx.ToolBar):
     # TODO: what will appear in menubar?
     def __init__(self, parent):
         wx.ToolBar.__init__(self, parent, -1, wx.DefaultPosition, wx.DefaultSize, wx.TB_FLAT|wx.TB_NODIVIDER)
-        if sys.platform == 'darwin':
-            self.SetToolBitmapSize(wx.Size(32,32))
+
+        self.SetToolBitmapSize(wx.Size(32,32))
 
         self.parent = parent
         self.__init_items()
         self.__bind_events()
 
     def __init_items(self):
-        BMP_ROTATE = wx.Bitmap("../icons/layout_data_only_original.gif", wx.BITMAP_TYPE_GIF)
-        BMP_TRANSLATE = wx.Bitmap("../icons/layout_full_original.gif", wx.BITMAP_TYPE_GIF)
+        if sys.platform == 'darwin':
+            BMP_ROTATE = wx.Bitmap("../icons/layout_data_only_original.gif", wx.BITMAP_TYPE_GIF)
+            BMP_TRANSLATE = wx.Bitmap("../icons/layout_full_original.gif", wx.BITMAP_TYPE_GIF)
+        else:
+            BMP_ROTATE = wx.Bitmap("../icons/layout_data_only.gif", wx.BITMAP_TYPE_GIF)
+            BMP_TRANSLATE = wx.Bitmap("../icons/layout_full.gif", wx.BITMAP_TYPE_GIF)
 
         self.AddLabelTool(101, "Rotate image", BMP_ROTATE)
         self.AddLabelTool(101, "Translate image", BMP_TRANSLATE)
