@@ -97,24 +97,24 @@ class Frame(wx.Frame):
 
         if sys.platform == 'win32':
             t1 = ProjectToolBar(self)
-            #t2 = LayoutToolBar(self)
+            t2 = LayoutToolBar(self)
             t3 = ObjectToolBar(self)
             t4 = SliceToolBar(self)
         else:
-            t4 = SliceToolBar(self)
-            t3 = ProjectToolBar(self)
-            #t2 = LayoutToolBar(self)
-            t1 = ObjectToolBar(self)
-
+            t4 = ProjectToolBar(self)
+            t3 = LayoutToolBar(self)
+            t2 = ObjectToolBar(self)
+            t1 = SliceToolBar(self)
+            
         aui_manager.AddPane(t1, wx.aui.AuiPaneInfo().
                           Name("General Features Toolbar").
                           ToolbarPane().Top().Floatable(False).
                           LeftDockable(False).RightDockable(False))
 
-        #aui_manager.AddPane(t2, wx.aui.AuiPaneInfo().
-        #                  Name("Layout Toolbar").
-        #                  ToolbarPane().Top().Floatable(False).
-        #                  LeftDockable(False).RightDockable(False))
+        aui_manager.AddPane(t2, wx.aui.AuiPaneInfo().
+                          Name("Layout Toolbar").
+                          ToolbarPane().Top().Floatable(False).
+                          LeftDockable(False).RightDockable(False))
 
         aui_manager.AddPane(t3, wx.aui.AuiPaneInfo().
                           Name("Project Toolbar").
@@ -366,7 +366,7 @@ class ObjectToolBar(wx.ToolBar):
                                         wx.BITMAP_TYPE_PNG)
             BMP_ZOOM = wx.Bitmap("../icons/tool_zoom_original.png",
                                     wx.BITMAP_TYPE_PNG)
-            BMP_ZOOM_OUT = wx.Bitmap("../icons/tool_zoom_select_original.png",
+            BMP_ZOOM_SELECT = wx.Bitmap("../icons/tool_zoom_select_original.png",
                                     wx.BITMAP_TYPE_PNG)
             BMP_CONTRAST = wx.Bitmap("../icons/tool_contrast.png",
                                      wx.BITMAP_TYPE_PNG)
