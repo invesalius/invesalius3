@@ -28,6 +28,7 @@ import data.slice_ as sl
 import constants as const
 import project
 import cursor_actors as ca
+import data.vtk_utils as vtku
 
 from slice_data import SliceData
 
@@ -47,7 +48,7 @@ class Viewer(wx.Panel):
         self.slice_data_list = []
         # The layout from slice_data, the first is number of cols, the second
         # is the number of rows
-        self.layout = (2, 2)
+        self.layout = (1, 1)
 
         self.__init_gui()
 
@@ -59,6 +60,7 @@ class Viewer(wx.Panel):
         self._brush_cursor_colour = const.BRUSH_COLOUR
         self._brush_cursor_type = const.DEFAULT_BRUSH_OP
         self.cursor = None
+        self.text = None
         # VTK pipeline and actors
         #self.__config_interactor()
         self.pick = vtk.vtkCellPicker()
@@ -197,6 +199,7 @@ class Viewer(wx.Panel):
         self.append_mode('WINDOWLEVEL')
         self.mouse_pressed = 0
         self.interactor.SetCursor(wx.StockCursor(wx.CURSOR_SIZING))
+        self.interactor.Render()
 
     def ChangeSliceMode(self, pubsub_evt):
         self.append_mode('CHANGESLICE')
@@ -218,8 +221,9 @@ class Viewer(wx.Panel):
             ps.Publisher().sendMessage('Bright and contrast adjustment image',
                 (proj.window, proj.level))
 
+            ps.Publisher().sendMessage('Update window and level text',\
+                                       "WL: %d  WW: %d"%(proj.level, proj.window))
         self.interactor.Render()
-
 
 
     def OnWindowLevelClick(self, evt, obj):
@@ -302,6 +306,21 @@ class Viewer(wx.Panel):
         for slice_data in self.slice_data_list:
             slice_data.cursor.Show(0)
         self.interactor.Render()
+
+    def UpdateText(self, pubsub_evt):
+        if (self.text):
+            self.text.SetValue(pubsub_evt.data)
+            self.interactor.Render()
+
+    def EnableText(self):
+        if not (self.text):
+            text = self.text = vtku.Text()
+            self.ren.AddActor(text.actor)
+            proj = project.Project()
+
+        ps.Publisher().sendMessage('Update window and level text',\
+                                       "WL: %d  WW: %d"%(proj.level, proj.window))
+
 
     def Reposition(self, slice_data):
         """
@@ -610,12 +629,12 @@ class Viewer(wx.Panel):
                                  'Set Zoom Select Mode')
         ps.Publisher().subscribe(self.ZoomSelectMode,
                                  'Set Zoom Select Mode')
-
         ps.Publisher().subscribe(self.ChangeSliceMode,
                                  'Set Change Slice Mode')
-
         ps.Publisher().subscribe(self.WindowLevelMode,
                                  'Bright and contrast adjustment')
+        ps.Publisher().subscribe(self.UpdateText,\
+                                 'Update window and level text')
 
     def ChangeBrushOperation(self, pubsub_evt):
         print pubsub_evt.data
@@ -705,6 +724,7 @@ class Viewer(wx.Panel):
 
         actor_bound = actor.GetBounds()
 
+        self.EnableText()
         # Insert cursor
         self.append_mode('EDITOR')
 
