@@ -6,6 +6,7 @@
 /LICENSE.txt -text
 /NEWS.txt -text
 /README.txt -text
+/TODO -text
 /TODO.txt -text
 docs/devel/example_closure.py -text
 docs/devel/example_pubsub.py -text
