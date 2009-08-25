@@ -121,6 +121,8 @@ class ivDicomGroups:
             spacing = parser.GetPixelSpacing()
             id_study = parser.GetStudyID()
             tilt = parser.GetAcquisitionGantryTilt()
+            window = parser.GetImageWindowWidth()
+            level = parser.GetImageWindowLevel()
 
             if (parser.GetImageThickness()):
                 spacing.append(parser.GetImageThickness())
@@ -135,7 +137,9 @@ class ivDicomGroups:
                            image_position, patient_position,
                            image_type,patient_name,
                            image_orientation_label, file,
-                           series_description, id_study, tilt])
+                           series_description, id_study, tilt,
+                           window, level])
+
         self.filelist = filelist
 
     def __GetInformations(self, ind):
@@ -160,12 +164,15 @@ class ivDicomGroups:
         series_description = filelist[ind][9]
         id_study = filelist[ind][10]
         tilt = filelist[ind][11]
+        window = filelist[ind][12]
+        level = filelist[ind][13]
 
         list = [image_number, serie_number, spacing,
                image_position, patient_position,
                image_type,patient_name,
                image_orientation_label, file,
-               series_description, id_study, tilt]
+               series_description, id_study, tilt,
+               window, level]
 
         return list
 
@@ -311,6 +318,8 @@ class ivDicomGroups:
                 series_description = groups_dcm[key][0][y][9]
                 id_study = groups_dcm[key][0][y][10]
                 tilt = groups_dcm[key][0][y][11]
+                window = groups_dcm[key][0][y][12]
+                level = groups_dcm[key][0][y][13]
 
                 #Generate new key to dictionary
                 key_ = (image_pos[0], image_pos[1], image_pos[2])
@@ -320,7 +329,8 @@ class ivDicomGroups:
                        image_position, patient_position,
                        image_type,patient_name,
                        image_orientation_label, file,
-                       series_description, id_study, tilt]
+                       series_description, id_study, tilt,
+                       window, level]
 
                 #If list Null, create dictionary
                 #and add list with information
@@ -379,6 +389,8 @@ class ivDicomGroups:
                 series_description = tmp1[key][9]
                 id_study = tmp1[key][10]
                 tilt = tmp1[key][11]
+                window = tmp1[key][12]
+                level = tmp1[key][13]
 
                 new_key = (patient_name, None, x, image_orientation_label)
 
@@ -387,8 +399,8 @@ class ivDicomGroups:
                        image_position, patient_position,
                        image_type,patient_name,
                        image_orientation_label, file,
-                       series_description, id_study, tilt]
-
+                       series_description, id_study, tilt,
+                       window, level]
 
                 if (new_key in groups_dcm_.keys()):
                     groups_dcm_[new_key][0].append(list)

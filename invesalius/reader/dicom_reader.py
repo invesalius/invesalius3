@@ -72,10 +72,13 @@ def LoadImages(dir_):
     spacing = groups[key][1][14]
     spacing_z = groups[key][1][30]
     orientation = groups[key][0][x][7]
+    window = groups[key][0][x][12]
+    level = groups[key][0][x][13]
 
-    files = file_list 
+
+    files = file_list
     #Coronal Crash. necessary verify
-    if (orientation <> "CORONAL"):      
+    if (orientation <> "CORONAL"):
         #Organize reversed image
         sorter = gdcm.IPPSorter()
         sorter.SetComputeZSpacing(True)
@@ -83,7 +86,7 @@ def LoadImages(dir_):
         sorter.Sort(file_list)
         #Getting organized image
         files = sorter.GetFilenames()
-    
+
     array = vtk.vtkStringArray()
 
     img_app = vtk.vtkImageAppend()
@@ -96,7 +99,7 @@ def LoadImages(dir_):
         read = vtkgdcm.vtkGDCMImageReader()
         read.SetFileNames(array)
         read.Update()
-    
+
         img_axial = vtk.vtkImageData()
         img_axial.DeepCopy(read.GetOutput())
         img_axial.SetSpacing(spacing, spacing, spacing_z)
@@ -123,8 +126,8 @@ def LoadImages(dir_):
 
 
     img_axial.Update()
-    
-    return img_axial, acquisition_modality, tilt, orientation
+
+    return img_axial, acquisition_modality, tilt, orientation, window, level
 
 def GetDicomFiles(path, recursive = False):
     #  TODO!!! SUPER GAMBIARRA!!! DO THIS BETTER
