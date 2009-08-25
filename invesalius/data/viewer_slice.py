@@ -42,7 +42,7 @@ class Viewer(wx.Panel):
         self.SetBackgroundColour(colour)
 
         # Interactor additional style
-        self.modes = ['DEFAULT']
+        self.modes = [] #['DEFAULT']
         self.mouse_pressed = 0
 
         # All renderers and image actors in this viewer
@@ -181,6 +181,7 @@ class Viewer(wx.Panel):
         self.interactor.SetCursor(wx.StockCursor(wx.CURSOR_SIZING))
 
     def __set_mode_zoom(self, pubsub_evt):
+        print "Zoom"
         self.append_mode('ZOOM')
         self.mouse_pressed = 0
         ICON_IMAGE = wx.Image("../icons/tool_zoom.png",wx.BITMAP_TYPE_PNG)
@@ -496,14 +497,15 @@ class Viewer(wx.Panel):
             evt_msg = 'Add mask pixel'
         elif self._brush_cursor_op == const.BRUSH_THRESH:
             evt_msg = 'Edit mask pixel'
+        
+        self.__update_cross_position(*coord)
 
         if self.mouse_pressed:
             pixels = itertools.ifilter(self.test_operation_position,
                                        slice_data.cursor.GetPixels())
             ps.Publisher().sendMessage(evt_msg, pixels)
             ps.Publisher().sendMessage('Update slice viewer')
-        else:
-            self.interactor.Render()
+        self.interactor.Render()
 
     def OnCrossMove(self, obj, evt_vtk):
         coord = self.get_coordinate()
@@ -737,6 +739,91 @@ class Viewer(wx.Panel):
         self.EnableText()
         # Insert cursor
         self.append_mode('EDITOR')
+
+        self.__build_cross_lines()
+
+    def __build_cross_lines(self):
+        actor = self.slice_data_list[0].actor
+        renderer = self.slice_data_list[0].renderer
+        xi, xf, yi, yf, zi, zf = actor.GetBounds()
+
+        #vline = vtk.vtkLineSource()
+        #vline.SetPoint1(xi, yi, zi)
+        #vline.SetPoint2(xi, yf, zi)
+        #self.vline = vline
+
+        #hline = vtk.vtkLineSource()
+        #hline.SetPoint1(xi, yi, zi)
+        #hline.SetPoint2(xf, yi, zi)
+        #self.hline = hline
+
+        #cross = vtk.vtkAppendPolyData()
+        #cross.AddInput(vline.GetOutput())
+        #cross.AddInput(hline.GetOutput())
+        cross = vtk.vtkCursor3D()
+        cross.AllOff()
+        cross.AxesOn()
+        #cross.WrapOn()
+        #cross.OutlineOff()
+        #cross.ZShadowsOff()
+        #cross.YShadowsOff()
+        #cross.XShadowsOff()
+        cross.SetModelBounds(self.imagedata.GetBounds())
+        self.cross = cross
+
+        cross_mapper = vtk.vtkPolyDataMapper()
+        cross_mapper.SetInput(cross.GetOutput())
+
+        property = vtk.vtkProperty()
+        property.SetColor(1, 0, 0)
+
+        cross_actor = vtk.vtkActor()
+        cross_actor.SetMapper(cross_mapper)
+        cross_actor.SetProperty(property)
+        # Only the slices are pickable
+        cross_actor.PickableOff()
+
+        renderer.AddActor(cross_actor)
+
+    def __update_cross_position(self, x, y, z):
+        #xi, yi, zi = self.vline.GetPoint1()
+        #xf, yf, zf = self.vline.GetPoint2()
+        #self.vline.SetPoint1(x, yi, z)
+        #self.vline.SetPoint2(x, yf, z)
+        #self.vline.Update()
+
+        #xi, yi, zi = self.hline.GetPoint1()
+        #xf, yf, zf = self.hline.GetPoint2()
+        #self.hline.SetPoint1(xi, y, z)
+        #self.hline.SetPoint2(xf, y, z)
+        #self.hline.Update()
+        slice_data = self.slice_data_list[0]
+        slice_number = slice_data.number
+        actor_bound = slice_data.actor.GetBounds()
+
+        yz = [actor_bound[1] + 1 + slice_number, y, z]
+        xz = [x, actor_bound[3] - 1 - slice_number, z]
+        xy = [x, y, actor_bound[5] + 1 + slice_number]
+
+        proj = project.Project()
+        orig_orien = proj.original_orientation
+
+        if (orig_orien == const.SAGITAL):
+            coordinates = {"SAGITAL": xy, "CORONAL": yz, "AXIAL": xz}
+        elif(orig_orien == const.CORONAL):
+            coordinates = {"SAGITAL": yz, "CORONAL": xy, "AXIAL": xz}
+        else:
+            coordinates = {"SAGITAL": yz, "CORONAL": xz, "AXIAL": xy}
+
+        self.cross.SetFocalPoint(coordinates[self.orientation])
+
+        #print 
+        #print slice_number
+        #print x, y, z
+        #print "Focal", self.cross.GetFocalPoint()
+        #print "bounds", self.cross.GetModelBounds()
+        #print "actor bounds", slice_data.actor.GetBounds()
+        #print 
 
     def __update_cursor_position(self, slice_data, position):
         x, y, z = position
