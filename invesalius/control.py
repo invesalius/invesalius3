@@ -46,10 +46,13 @@ class Controller():
 
         # Select medical images from directory and generate vtkImageData
         output = dicom.LoadImages(dir_)
+        proj = prj.Project()
+        proj.name = "Untitled"
 
         if output:
-            imagedata, acquisition_modality, tilt_value, orientation = output
-            print orientation
+            imagedata, acquisition_modality, tilt_value, orientation,\
+            window, level = output
+
             if (orientation == "CORONAL"):
                 orientation = const.CORONAL
             elif(orientation == "SAGITTAL"):
@@ -70,17 +73,21 @@ class Controller():
             #TODO: Verify if all Analyse is AXIAL orientation
             orientation = const.AXIAL
 
-        if not imagedata:
-            print "Sorry, but there are no medical images supported on this dir."
-        else:
-            # Create new project
-            proj = prj.Project()
-            proj.name = "Untitled"
             proj.SetAcquisitionModality(acquisition_modality)
             proj.imagedata = imagedata
             proj.original_orientation = orientation
             proj.window = const.WINDOW_LEVEL['Bone'][0]
             proj.level = const.WINDOW_LEVEL['Bone'][1]
+
+        if not imagedata:
+            print "Sorry, but there are no medical images supported on this dir."
+        else:
+            # Create new project
+            proj.SetAcquisitionModality(acquisition_modality)
+            proj.imagedata = imagedata
+            proj.original_orientation = orientation
+            proj.window = float(window)
+            proj.level = float(level)
 
 
             threshold_range = proj.imagedata.GetScalarRange()
