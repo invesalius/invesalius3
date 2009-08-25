@@ -20,6 +20,8 @@ import sys
 
 import wx
 import wx.lib.agw.fourwaysplitter as fws
+import wx.lib.pubsub as ps
+
 import data.viewer_slice as slice_viewer
 import data.viewer_volume as volume_viewer
 
@@ -80,6 +82,7 @@ class Panel(wx.Panel):
              MaximizeButton(True).CloseButton(False)
 
         p4 = VolumeViewerCover(self)
+        #p4 = volume_viewer.Viewer(self)
         s4 = wx.aui.AuiPaneInfo().Row(1).Name("Volume").\
              Bottom().Centre().Caption("Volume").\
              MaximizeButton(True).CloseButton(False)
@@ -209,6 +212,46 @@ class VolumeToolPanel(wx.Panel):
         BMP_RAYCASTING = wx.Bitmap("../icons/volume_raycasting.png",
                                     wx.BITMAP_TYPE_PNG)
 
+
+        button_raycasting = pbtn.PlateButton(self, BUTTON_RAYCASTING,"",
+                BMP_RAYCASTING, style=pbtn.PB_STYLE_SQUARE,
+                size=(24,24))        
+        self.button_raycasting = button_raycasting
+
+        # VOLUME VIEW ANGLE BUTTON
+        BMP_FRONT = wx.Bitmap(ID_TO_BMP[const.VOL_FRONT][1],
+                              wx.BITMAP_TYPE_PNG)
+        button_view = pbtn.PlateButton(self, BUTTON_VIEW, "",
+                                        BMP_FRONT, size=(24,24),
+                                        style=pbtn.PB_STYLE_SQUARE)
+        self.button_view = button_view
+
+        # VOLUME COLOUR BUTTON
+        button_colour= csel.ColourSelect(self, 111,colour=(0,0,0),
+                                        size=(24,24))
+        button_colour.Bind(csel.EVT_COLOURSELECT, self.OnSelectColour)
+        self.button_colour = button_colour
+
+        self.__bind_events()
+
+        # SIZER TO ORGANIZE ALL
+        sizer = wx.BoxSizer(wx.VERTICAL)
+        sizer.Add(button_colour, 0, wx.ALL, 1)
+        sizer.Add(button_raycasting, 0, wx.ALL, 1)
+        sizer.Add(button_view, 0, wx.ALL, 1)
+        self.SetSizer(sizer)
+        sizer.Fit(self)
+
+        self.__bind_events()
+
+    def __bind_events(self):
+        ps.Publisher().subscribe(self.ChangeButtonColour,
+                                 'Change volume viewer gui colour')
+        ps.Publisher().subscribe(self.__init_menus, 'TESTE TATI')
+
+    def __init_menus(self, pubsub_evt=None):
+        print "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" 
+        print "__init_menus"
         # MENU RELATED TO RAYCASTING TYPES
         menu = wx.Menu()
         for name in const.RAYCASTING_TYPES:
@@ -235,13 +278,7 @@ class VolumeToolPanel(wx.Panel):
 
         self.menu_raycasting = menu
         menu.Bind(wx.EVT_MENU, self.OnMenuRaycasting)    
-
-        button_raycasting = pbtn.PlateButton(self, BUTTON_RAYCASTING,"",
-                BMP_RAYCASTING, style=pbtn.PB_STYLE_SQUARE,
-                size=(24,24))
-        button_raycasting.SetMenu(menu)
-        
-        self.button_raycasting = button_raycasting
+        self.button_raycasting.SetMenu(menu)
 
         # VOLUME VIEW ANGLE BUTTON
         menu = wx.Menu()
@@ -252,33 +289,10 @@ class VolumeToolPanel(wx.Panel):
             menu.AppendItem(item)
         menu.Bind(wx.EVT_MENU, self.OnMenuView)
         self.menu_view = menu
+        self.button_view.SetMenu(menu)
 
-        BMP_FRONT = wx.Bitmap(ID_TO_BMP[const.VOL_FRONT][1],
-                              wx.BITMAP_TYPE_PNG)
-        button_view = pbtn.PlateButton(self, BUTTON_VIEW, "",
-                                        BMP_FRONT, size=(24,24),
-                                        style=pbtn.PB_STYLE_SQUARE)
-        button_view.SetMenu(menu)
-        self.button_view = button_view
-
-        # VOLUME COLOUR BUTTOM
-        button_colour= csel.ColourSelect(self, 111,colour=(0,0,0),
-                                        size=(24,24))
-        button_colour.Bind(csel.EVT_COLOURSELECT, self.OnSelectColour)
-        self.button_colour = button_colour
-
-        self.__bind_events()
-        # SIZER TO ORGANIZE ALL
-        sizer = wx.BoxSizer(wx.VERTICAL)
-        sizer.Add(button_colour, 0, wx.ALL, 1)
-        sizer.Add(button_raycasting, 0, wx.ALL, 1)
-        sizer.Add(button_view, 0, wx.ALL, 1)
-        self.SetSizer(sizer)
-        sizer.Fit(self)
-
-    def __bind_events(self):
-        ps.Publisher().subscribe(self.ChangeButtonColour,
-                                 'Change volume viewer gui colour')
+        self.Update()
+        self.Refresh()
 
     def ChangeButtonColour(self, pubsub_evt):
         colour = [i*255 for i in pubsub_evt.data]

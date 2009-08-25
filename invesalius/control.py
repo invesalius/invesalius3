@@ -93,12 +93,16 @@ class Controller():
             # TODO: where to insert!!!
             self.LoadImagedataInfo()
 
-            # Call frame so it shows slice and volume related panels
-            ps.Publisher().sendMessage('Show content panel')
-
             #Initial Window and Level
             ps.Publisher().sendMessage('Bright and contrast adjustment image',\
                                    (proj.window, proj.level))
+
+            # Call frame so it shows slice and volume related panels
+            ps.Publisher().sendMessage('Show content panel')
+
+            ps.Publisher().sendMessage('Update AUI')
+
+            ps.Publisher().sendMessage('TESTE TATI')
 
 
     def LoadImagedataInfo(self):

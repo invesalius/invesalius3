@@ -77,6 +77,11 @@ class Frame(wx.Frame):
     def __bind_events(self):
         ps.Publisher().subscribe(self.ShowContentPanel, 'Show content panel')
         ps.Publisher().subscribe(self.ShowImportPanel, "Show import panel")
+        ps.Publisher().subscribe(self.UpdateAui, "Update AUI")
+
+
+    def UpdateAui(self, pubsub_evt):
+        self.aui_manager.Update()
 
     def __bind_events_wx(self):
         self.Bind(wx.EVT_SIZE, self.OnSize)

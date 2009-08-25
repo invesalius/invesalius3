@@ -225,6 +225,7 @@ class Viewer(wx.Panel):
             ps.Publisher().sendMessage('Update window and level text',\
                                        "WL: %d  WW: %d"%(proj.level, proj.window))
         self.interactor.Render()
+        #ps.Publisher().sendMessage("Update slice viewer")
 
 
     def OnWindowLevelClick(self, evt, obj):

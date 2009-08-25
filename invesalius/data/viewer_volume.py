@@ -86,23 +86,27 @@ class Viewer(wx.Panel):
         self.onclick = False
 
     def __bind_events(self):
-        ps.Publisher().subscribe(self.LoadActor, 'Load surface actor into viewer')
-        ps.Publisher().subscribe(self.UpdateRender, 'Render volume viewer')
+        ps.Publisher().subscribe(self.LoadActor,
+                                 'Load surface actor into viewer')
+        ps.Publisher().subscribe(self.UpdateRender,
+                                 'Render volume viewer')
         ps.Publisher().subscribe(self.ChangeBackgroundColour,
-                                'Change volume viewer background colour')
-        ps.Publisher().subscribe(self.LoadVolume, 'Load volume into viewer')
+                        'Change volume viewer background colour')
+        ps.Publisher().subscribe(self.LoadVolume,
+                                 'Load volume into viewer')
         ps.Publisher().subscribe(self.AppendActor,'AppendActor')
         ps.Publisher().subscribe(self.SetWidgetInteractor, 
                                 'Set Widget Interactor')
         ps.Publisher().subscribe(self.OnSetViewAngle,
                                 'Set volume view angle')
         ps.Publisher().subscribe(self.OnSetWindowLevelText,
-                                 'Set volume window and level text')
+                            'Set volume window and level text')
         ps.Publisher().subscribe(self.OnEnableBrightContrast, 
-                                  'Bright and contrast adjustment')
+                          ('Set interaction mode', const.MODE_WW_WL)) 
         ps.Publisher().subscribe(self.OnDisableBrightContrast,
-                                  'Set Editor Mode')
-        
+                                 ('Set interaction mode',
+                                  const.MODE_SLICE_EDITOR))
+
     def __bind_events_wx(self):
         #self.Bind(wx.EVT_SIZE, self.OnSize)
         pass
