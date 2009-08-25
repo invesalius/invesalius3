@@ -22,7 +22,6 @@ import sys
 
 import wx
 import wx.aui
-import wx.lib.agw.aui as aui
 import wx.lib.pubsub as ps
 
 import constants as const
@@ -316,12 +315,13 @@ class TaskBarIcon(wx.TaskBarIcon):
 
 # ------------------------------------------------------------------
 
-class ProjectToolBar(aui.AuiToolBar):
+class ProjectToolBar(wx.ToolBar):
     def __init__(self, parent):
-        aui.AuiToolBar.__init__(self, parent, -1, wx.DefaultPosition,
-                            wx.DefaultSize, aui.AUI_TB_DEFAULT_STYLE)
+        wx.ToolBar.__init__(self, parent, -1, wx.DefaultPosition,
+                            wx.DefaultSize,
+                            wx.TB_FLAT|wx.TB_NODIVIDER | wx.TB_DOCKABLE)
 
-        self.SetToolBitmapSize(wx.Size(16,16))
+        self.SetToolBitmapSize(wx.Size(32,32))
 
         self.parent = parent
 
@@ -342,19 +342,42 @@ class ProjectToolBar(aui.AuiToolBar):
         BMP_PHOTO = wx.Bitmap("../icons/tool_photo.png",
                                     wx.BITMAP_TYPE_PNG)
 
-        self.AddSimpleTool(ID_FILE_IMPORT,
+        if sys.platform == 'darwin':
+            BMP_IMPORT = wx.Bitmap("../icons/file_import_original.png",
+                                   wx.BITMAP_TYPE_PNG)
+            BMP_NET = wx.Bitmap("../icons/file_from_internet_original.png",
+ 	                                wx.BITMAP_TYPE_PNG)
+            BMP_SAVE = wx.Bitmap("../icons/file_save_original.png",
+ 	                                 wx.BITMAP_TYPE_PNG)
+            BMP_PRINT = wx.Bitmap("../icons/print_original.png",
+ 	                                    wx.BITMAP_TYPE_PNG)
+            BMP_PHOTO = wx.Bitmap("../icons/tool_photo_original.png",
+ 	                                    wx.BITMAP_TYPE_PNG)
+        else:
+            BMP_IMPORT = wx.Bitmap("../icons/file_import.png",
+                                    wx.BITMAP_TYPE_PNG)
+            BMP_NET = wx.Bitmap("../icons/file_from_internet.png",
+                                wx.BITMAP_TYPE_PNG)
+            BMP_SAVE = wx.Bitmap("../icons/file_save.png",
+                                  wx.BITMAP_TYPE_PNG)
+            BMP_PRINT = wx.Bitmap("../icons/print.png",
+                                  wx.BITMAP_TYPE_PNG)
+            BMP_PHOTO = wx.Bitmap("../icons/tool_photo.png",
+                                   wx.BITMAP_TYPE_PNG)
+
+        self.AddLabelTool(ID_FILE_IMPORT,
                            "Import medical image...",
                            BMP_IMPORT)
-        self.AddSimpleTool(ID_FILE_LOAD_INTERNET,
+        self.AddLabelTool(ID_FILE_LOAD_INTERNET,
                            "Load medical image...",
                            BMP_NET)
-        self.AddSimpleTool(ID_FILE_SAVE,
+        self.AddLabelTool(ID_FILE_SAVE,
                            "Save InVesalius project",
                            BMP_SAVE)
-        self.AddSimpleTool(ID_FILE_PHOTO,
+        self.AddLabelTool(ID_FILE_PHOTO,
                            "Take photo of screen",
                            BMP_PHOTO)
-        self.AddSimpleTool(ID_FILE_PRINT,
+        self.AddLabelTool(ID_FILE_PRINT,
                            "Print medical image...",
                            BMP_PRINT)
 
@@ -365,12 +388,13 @@ class ProjectToolBar(aui.AuiToolBar):
 
 # ------------------------------------------------------------------
 
-class ObjectToolBar(aui.AuiToolBar):
+class ObjectToolBar(wx.ToolBar):
     def __init__(self, parent):
-        aui.AuiToolBar.__init__(self, parent, -1, wx.DefaultPosition,
-                            wx.DefaultSize, aui.AUI_TB_DEFAULT_STYLE)
-        self.SetToolBitmapSize(wx.Size(16,16))
+        wx.ToolBar.__init__(self, parent, -1, wx.DefaultPosition,
+                            wx.DefaultSize,
+                            wx.TB_FLAT|wx.TB_NODIVIDER | wx.TB_DOCKABLE)
 
+        self.SetToolBitmapSize(wx.Size(32,32))  
         self.parent = parent
 
         self.__init_items()
@@ -379,40 +403,51 @@ class ObjectToolBar(aui.AuiToolBar):
 
     def __init_items(self):
 
-
-        BMP_ROTATE = wx.Bitmap("../icons/tool_rotate.gif",
-                               wx.BITMAP_TYPE_GIF)
-        BMP_MOVE = wx.Bitmap("../icons/tool_translate.gif",
-                                  wx.BITMAP_TYPE_GIF)
-        BMP_ZOOM = wx.Bitmap("../icons/tool_zoom.png",
-                             wx.BITMAP_TYPE_PNG)
-        BMP_ZOOM_SELECT = wx.Bitmap("../icons/tool_zoom_select.png",
-                                    wx.BITMAP_TYPE_PNG)
-        BMP_CONTRAST = wx.Bitmap("../icons/tool_contrast.png",
+        if sys.platform == 'darwin':
+            BMP_ROTATE = wx.Bitmap("../icons/tool_rotate_original.gif",
+                                   wx.BITMAP_TYPE_GIF)
+            BMP_MOVE =wx.Bitmap("../icons/tool_translate_original.png",
+                                      wx.BITMAP_TYPE_PNG)
+            BMP_ZOOM = wx.Bitmap("../icons/tool_zoom_original.png",
                                  wx.BITMAP_TYPE_PNG)
-        
+            BMP_ZOOM_SELECT = wx.Bitmap("../icons/tool_zoom_select_original.png",
+                                        wx.BITMAP_TYPE_PNG)
+            BMP_CONTRAST = wx.Bitmap("../icons/tool_contrast.png",
+                                     wx.BITMAP_TYPE_PNG)
+        else:
+            
+            BMP_ROTATE = wx.Bitmap("../icons/tool_rotate.gif",
+                                   wx.BITMAP_TYPE_GIF)
+            BMP_MOVE = wx.Bitmap("../icons/tool_translate.gif",
+                                   wx.BITMAP_TYPE_GIF)
+            BMP_ZOOM = wx.Bitmap("../icons/tool_zoom.png",
+                                 wx.BITMAP_TYPE_PNG)
+            BMP_ZOOM_SELECT = wx.Bitmap("../icons/tool_zoom_select.png",
+                                        wx.BITMAP_TYPE_PNG)
+            BMP_CONTRAST = wx.Bitmap("../icons/tool_contrast.png",
+                                     wx.BITMAP_TYPE_PNG)
 
-        self.AddSimpleTool(ID_ZOOM,
+        self.AddLabelTool(ID_ZOOM,
                            "Zoom",
                            BMP_ZOOM,
-                           kind = aui.ITEM_RADIO)
+                           kind = wx.ITEM_CHECK)
 
-        self.AddSimpleTool(ID_ZOOM_SELECT,
+        self.AddLabelTool(ID_ZOOM_SELECT,
                            "Zoom based on selection",
                            BMP_ZOOM_SELECT,
-                           kind = aui.ITEM_RADIO)
+                           kind = wx.ITEM_CHECK)
 
-        self.AddSimpleTool(ID_ROTATE,
+        self.AddLabelTool(ID_ROTATE,
                            "Rotate", BMP_ROTATE,
-                           kind = aui.ITEM_RADIO)
+                           kind = wx.ITEM_CHECK)
 
-        self.AddSimpleTool(ID_MOVE,
+        self.AddLabelTool(ID_MOVE,
                            "Move", BMP_MOVE,
-                            kind = aui.ITEM_RADIO)
+                            kind = wx.ITEM_CHECK)
 
-        self.AddSimpleTool(ID_CONTRAST,
+        self.AddLabelTool(ID_CONTRAST,
                            "Window and Level", BMP_CONTRAST,
-                           kind = aui.ITEM_RADIO)
+                           kind = wx.ITEM_CHECK)
         self.Realize()
 
 
@@ -424,42 +459,41 @@ class ObjectToolBar(aui.AuiToolBar):
                                  'Untoggle object toolbar items')
 
     def OnClick(self, evt):
-        print "OnClick", evt.GetId()
         id = evt.GetId()
-        state = self.GetToolToggled(id)
-        label = self.GetToolLabel(id)
-        
-        #if id != ID_ZOOM:
-        #    print "Toggled zoom off"
-        #    self.ToggleTool(ID_ZOOM, 0)
+        state = self.GetToolState(id)
 
         if state:
             ps.Publisher().sendMessage(('Set interaction mode',
                                         MODE_BY_ID[id]))
+            ps.Publisher().sendMessage('Untoggle slice toolbar items')
         else:
             ps.Publisher().sendMessage(('Set interaction mode',
-                                        MODE_SLICE_EDITOR))
-            ps.Publisher().sendMessage('Untoggle slice toolbar items')
+                                        const.MODE_SLICE_EDITOR))
+            
         
-        for id in OBJ_TOOLS:
-            print "-- id: %d, state: %d", id, self.GetToolToggled(id)
 
-        
+        for item in OBJ_TOOLS:
+            state = self.GetToolState(item)
+            if state and (item != id):
+                self.ToggleTool(item, False)
+
         evt.Skip()
 
-    def UntoggleAllItems(self, pubsub_evt):
+    def UntoggleAllItems(self, pubsub_evt=None):
         for id in OBJ_TOOLS:
-            state = self.GetToolToggled(id)
+            state = self.GetToolState(id)
             if state:
                 self.ToggleTool(id, False)
 
 # -------------------------------------------------------------------
 
-class SliceToolBar(aui.AuiToolBar):
+class SliceToolBar(wx.ToolBar):
     def __init__(self, parent):
-        aui.AuiToolBar.__init__(self, parent, -1, wx.DefaultPosition,
-                            wx.DefaultSize, aui.AUI_TB_DEFAULT_STYLE)
-        self.SetToolBitmapSize(wx.Size(16,16))
+        wx.ToolBar.__init__(self, parent, -1, wx.DefaultPosition,
+                            wx.DefaultSize,
+                            wx.TB_FLAT|wx.TB_NODIVIDER | wx.TB_DOCKABLE)
+
+        self.SetToolBitmapSize(wx.Size(32,32))
 
         self.parent = parent
         self.__init_items()
@@ -467,10 +501,15 @@ class SliceToolBar(aui.AuiToolBar):
         self.__bind_events_wx()
 
     def __init_items(self):
-        BMP_SLICE = wx.Bitmap("../icons/slice.png",
-                              wx.BITMAP_TYPE_PNG)
-        self.AddSimpleTool(ID_SLICE_SCROLL, "Scroll slice",
-                           BMP_SLICE, kind = aui.ITEM_RADIO)
+        if sys.platform == 'darwin':
+            BMP_SLICE = wx.Bitmap("../icons/slice_original.png",
+                                  wx.BITMAP_TYPE_PNG)
+        else:
+            BMP_SLICE = wx.Bitmap("../icons/slice.png",
+                                  wx.BITMAP_TYPE_PNG)
+
+        self.AddLabelTool(ID_SLICE_SCROLL, "Scroll slice",
+                           BMP_SLICE, kind = wx.ITEM_CHECK)
 
         self.Realize()
 
@@ -484,47 +523,63 @@ class SliceToolBar(aui.AuiToolBar):
     def OnClick(self, evt):
 
         id = evt.GetId()
-        state = self.GetToolToggled(id)
-        label = self.GetToolLabel(id)
+        state = self.GetToolState(id)
 
         if state:
             ps.Publisher().sendMessage(('Set interaction mode',
                                         SLICE_MODE_BY_ID[id]))
+            ps.Publisher().sendMessage('Untoggle object toolbar items')
         else:
             ps.Publisher().sendMessage(('Set interaction mode',
                                         const.MODE_SLICE_EDITOR))
-            ps.Publisher().sendMessage('Untoggle object toolbar items')
+
+
+        for item in SLICE_TOOLS:
+            state = self.GetToolState(item)
+            if state and (item != id):
+                self.ToggleTool(item, False)
 
         evt.Skip()
 
 
     def UntoggleAllItem(self, pubsub_evt):
         for id in SLICE_TOOLS:
-            state = self.GetToolToggled(id)
+            state = self.GetToolState(id)
             if state:
                 self.ToggleTool(id, False)
 
 # ---------------------------------------------------------------------
 
-class LayoutToolBar(aui.AuiToolBar):
+class LayoutToolBar(wx.ToolBar):
     # TODO: what will appear in menubar?
     def __init__(self, parent):
-        aui.AuiToolBar.__init__(self, parent, -1, wx.DefaultPosition,
-                            wx.DefaultSize, aui.AUI_TB_DEFAULT_STYLE)
+        wx.ToolBar.__init__(self, parent, -1, wx.DefaultPosition,
+                            wx.DefaultSize,
+                            wx.TB_FLAT|wx.TB_NODIVIDER | wx.TB_DOCKABLE)
 
-        self.SetToolBitmapSize(wx.Size(16,16))
+        self.SetToolBitmapSize(wx.Size(32,32))
 
         self.parent = parent
         self.__init_items()
         self.__bind_events()
 
     def __init_items(self):
-        BMP_ROTATE = wx.Bitmap("../icons/layout_data_only.gif",
+
+        if sys.platform == 'darwin':
+            BMP_WITHOUT_MENU =\
+            wx.Bitmap("../icons/layout_data_only_original.gif",
                                wx.BITMAP_TYPE_GIF)
-        BMP_TRANSLATE = wx.Bitmap("../icons/layout_full.gif",
+            BMP_WITH_MENU = wx.Bitmap("../icons/layout_full_original.gif",
                                   wx.BITMAP_TYPE_GIF)
-        self.AddSimpleTool(101, "Rotate image", BMP_ROTATE)
-        self.AddSimpleTool(101, "Translate image", BMP_TRANSLATE)
+
+        else:
+            BMP_WITHOUT_MENU = wx.Bitmap("../icons/layout_data_only.gif",
+                                   wx.BITMAP_TYPE_GIF)
+            BMP_WITH_MENU = wx.Bitmap("../icons/layout_full.gif",
+                                      wx.BITMAP_TYPE_GIF)
+
+        self.AddLabelTool(101, "Rotate image", BMP_WITHOUT_MENU)
+        self.AddLabelTool(101, "Translate image", BMP_WITH_MENU)
 
         self.Realize()
 
