@@ -76,13 +76,11 @@ class Volume():
         self.wl = None
         self.n = 0
         self.plane = None
+        self.plane_on = False
         
         self.__bind_events()
         
     def __bind_events(self):
-        #ps.Publisher().subscribe(self.OnLoadVolume, 'Create volume raycasting')
-        #ps.Publisher().subscribe(self.OnShowVolume,
-        #                        'Show raycasting volume')
         ps.Publisher().subscribe(self.OnHideVolume,
                                 'Hide raycasting volume')
         ps.Publisher().subscribe(self.OnUpdatePreset,
@@ -102,12 +100,19 @@ class Volume():
         self.LoadVolume()
 
     def OnHideVolume(self, pubsub_evt):
+        print "Hide", self.plane, self.plane_on
         self.volume.SetVisibility(0)
+        if (self.plane and self.plane_on):
+            print "--- Hide Plane"
+            self.plane.Disable()
         ps.Publisher().sendMessage('Render volume viewer')
 
     def OnShowVolume(self, pubsub_evt):
         if self.exist:
             self.volume.SetVisibility(1)
+            if (self.plane and self.plane_on):
+                print "----- Show Plane"
+                self.plane.Enable()
             ps.Publisher().sendMessage('Render volume viewer')
         else:
             ps.Publisher.sendMessage('Load raycasting preset', const.RAYCASTING_LABEL)
@@ -124,6 +129,9 @@ class Volume():
         else:
             self.LoadVolume()
             self.exist = 1
+
+        if (self.plane and self.plane_on):
+            self.plane.Enable()
 
     def __load_preset_config(self):
         self.config = prj.Project().raycasting_preset
@@ -470,11 +478,13 @@ class Volume():
         if tool_name == "Cut plane":
             if self.plane:
                 if enable:
-                    self.plane.EnablePlane()
+                    self.plane_on = True
+                    self.plane.Enable()
                 else:
-                    print "TODO: Desabilitar plano"
-                    self.plane.DisablePlane()
+                    self.plane_on = False
+                    self.plane.Disable()
             else:
+                self.plane_on = True
                 self.plane = CutPlane(self.final_imagedata,
                                       self.volume_mapper)
 
@@ -491,18 +501,18 @@ class CutPlane:
     def __init__(self, img, volume_mapper):
         self.img = img
         self.volume_mapper = volume_mapper
-        self.CreatePlane()
+        self.Create()
         self.__bind_events()
     
     def __bind_events(self):
-        ps.Publisher().subscribe(self.ResetPlane,
+        ps.Publisher().subscribe(self.Reset,
                                 'Reset Cut Plane')
-        ps.Publisher().subscribe(self.EnablePlane,
+        ps.Publisher().subscribe(self.Enable,
                                 'Enable Cut Plane')
-        ps.Publisher().subscribe(self.DisablePlane,
+        ps.Publisher().subscribe(self.Disable,
                                 'Disable Cut Plane')
             
-    def CreatePlane(self):
+    def Create(self):
         self.plane_widget = plane_widget = vtk.vtkImagePlaneWidget()
         plane_widget.SetInput(self.img)
         plane_widget.SetPlaneOrientationToXAxes()
@@ -527,7 +537,7 @@ class CutPlane:
         plane_actor.SetMapper(plane_mapper)
         plane_actor.GetProperty().BackfaceCullingOn()
         plane_actor.GetProperty().SetOpacity(0)
-        plane_widget.AddObserver("InteractionEvent", self.UpdatePlane)
+        plane_widget.AddObserver("InteractionEvent", self.Update)
         ps.Publisher().sendMessage('AppendActor', self.plane_actor)
         ps.Publisher().sendMessage('Set Widget Interactor', self.plane_widget)
         plane_actor.SetVisibility(1)
@@ -542,7 +552,7 @@ class CutPlane:
         self.p2 = plane_widget.GetPoint2()
         self.normal = plane_widget.GetNormal()
         
-    def UpdatePlane(self, a, b):        
+    def Update(self, a, b):        
         plane_source = self.plane_source
         plane_widget = self.plane_widget
         plane_source.SetOrigin(plane_widget.GetOrigin())
@@ -554,19 +564,19 @@ class CutPlane:
         self.plane.SetOrigin(plane_source.GetOrigin())
         ps.Publisher().sendMessage('Render volume viewer', None)
         
-    def EnablePlane(self, evt_pubsub=None):
+    def Enable(self, evt_pubsub=None):
         self.plane_widget.On()
         self.plane_actor.VisibilityOn()
         self.volume_mapper.RemoveClippingPlane(self.plane)
         ps.Publisher().sendMessage('Render volume viewer', None)
         
-    def DisablePlane(self,evt_pubsub=None):
+    def Disable(self,evt_pubsub=None):
         self.plane_widget.Off() 
         self.plane_actor.VisibilityOff()
         self.volume_mapper.AddClippingPlane(self.plane)
         ps.Publisher().sendMessage('Render volume viewer', None)
         
-    def ResetPlane(self, evt_pubsub=None):
+    def Reset(self, evt_pubsub=None):
         plane_source = self.plane_source
         plane_widget = self.plane_widget
         plane_source.SetOrigin(self.origin)
