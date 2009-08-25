@@ -225,7 +225,7 @@ class Parser():
                 # If multiple values are present for the "Window Center"
                 # we choose only one. As this should be paired to "Window
                 # Width", it is set based on WL_PRESET
-                value_list = [eval(value) for value in data.split('\\')]
+                value_list = [float(value) for value in data.split('\\')]
                 if multiple:
                     return value_list
                 else:
