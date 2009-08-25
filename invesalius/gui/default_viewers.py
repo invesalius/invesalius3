@@ -220,6 +220,8 @@ class VolumeToolPanel(wx.Panel):
                 BMP_RAYCASTING, style=pbtn.PB_STYLE_SQUARE,
                 size=(24,24))        
         self.button_raycasting = button_raycasting
+        self.button_raycasting.Bind(wx.EVT_LEFT_DOWN, self.OnButtonRaycasting)
+
 
         # VOLUME VIEW ANGLE BUTTON
         BMP_FRONT = wx.Bitmap(ID_TO_BMP[const.VOL_FRONT][1],
@@ -228,36 +230,50 @@ class VolumeToolPanel(wx.Panel):
                                         BMP_FRONT, size=(24,24),
                                         style=pbtn.PB_STYLE_SQUARE)
         self.button_view = button_view
+        self.button_view.Bind(wx.EVT_LEFT_DOWN, self.OnButtonView)
 
         # VOLUME COLOUR BUTTON
+        if sys.platform == 'linux2':
+            size = (28,28)
+            sp = 2
+        else:
+            size = (24,24)
+            sp = 5
+        
         button_colour= csel.ColourSelect(self, 111,colour=(0,0,0),
-                                        size=(24,24))
+                                        size=size)
         button_colour.Bind(csel.EVT_COLOURSELECT, self.OnSelectColour)
         self.button_colour = button_colour
 
-        sizer_colour = wx.BoxSizer(wx.HORIZONTAL)
-        sizer_colour.Add(button_colour, 0, wx.RIGHT, 15)
-
         # SIZER TO ORGANIZE ALL
         sizer = wx.BoxSizer(wx.VERTICAL)
+        sizer.Add(button_colour, 0, wx.ALL, sp)
         sizer.Add(button_raycasting, 0, wx.TOP|wx.BOTTOM, 1)
         sizer.Add(button_view, 0, wx.TOP|wx.BOTTOM, 1)
-        #sizer.AddStretchSpacer()
-        sizer.Add(sizer_colour, 0, wx.ALL, 5)
-        sizer.Fit(self)
 
-        self.__init_menus()
+        sizer.Fit(self)
 
         self.SetSizer(sizer)
         self.SetAutoLayout(1)
         self.Update()
         self.Refresh()
 
+        self.__init_menus()
         self.__bind_events()
 
     def __bind_events(self):
         ps.Publisher().subscribe(self.ChangeButtonColour,
                                  'Change volume viewer gui colour')
+
+
+    def OnButtonRaycasting(self, evt):
+        print "menu ray"
+        # MENU RELATED TO RAYCASTING TYPES
+        self.button_raycasting.PopupMenu(self.menu_raycasting)
+
+    def OnButtonView(self, evt):
+        print "menu view"
+        self.button_view.PopupMenu(self.menu_view)
 
     def __init_menus(self, pubsub_evt=None):
         # MENU RELATED TO RAYCASTING TYPES
@@ -279,14 +295,12 @@ class VolumeToolPanel(wx.Panel):
            submenu.AppendItem(item)
            ID_TO_TOOL[id] = name
            ID_TO_TOOL_ITEM[id] = item
-        #submenu.Enable(0)   
         self.submenu_raycasting_tools = submenu
         menu.AppendMenu(RAYCASTING_TOOLS, "Tools", submenu)
         menu.Enable(RAYCASTING_TOOLS, 0)
 
         self.menu_raycasting = menu
         menu.Bind(wx.EVT_MENU, self.OnMenuRaycasting)    
-        self.button_raycasting.SetMenu(menu)
 
         # VOLUME VIEW ANGLE BUTTON
         menu = wx.Menu()
@@ -297,7 +311,6 @@ class VolumeToolPanel(wx.Panel):
             menu.AppendItem(item)
         menu.Bind(wx.EVT_MENU, self.OnMenuView)
         self.menu_view = menu
-        self.button_view.SetMenu(menu)
 
         self.Fit()
         self.Update()
