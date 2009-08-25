@@ -75,6 +75,7 @@ class Volume():
         self.ww = None
         self.wl = None
         self.n = 0
+        self.plane = None
         
         self.__bind_events()
         
@@ -467,10 +468,16 @@ class Volume():
     def OnEnableTool(self, pubsub_evt):
         tool_name, enable = pubsub_evt.data
         if tool_name == "Cut plane":
-            if enable:
-                plane = CutPlane(self.final_imagedata, self.volume_mapper)
+            if self.plane:
+                if enable:
+                    self.plane.EnablePlane()
+                else:
+                    print "TODO: Desabilitar plano"
+                    self.plane.DisablePlane()
             else:
-                print "TODO: Desabilitar plano" 
+                self.plane = CutPlane(self.final_imagedata,
+                                      self.volume_mapper)
+
 
     def TranslateScale(self, scale, value):
         #if value < 0:
@@ -548,11 +555,15 @@ class CutPlane:
         ps.Publisher().sendMessage('Render volume viewer', None)
         
     def EnablePlane(self, evt_pubsub=None):
-        self.plane_actor.SetVisibility(1)
+        self.plane_widget.On()
+        self.plane_actor.VisibilityOn()
+        self.volume_mapper.RemoveClippingPlane(self.plane)
         ps.Publisher().sendMessage('Render volume viewer', None)
         
     def DisablePlane(self,evt_pubsub=None):
-        self.plane_actor.SetVisibility(0)
+        self.plane_widget.Off() 
+        self.plane_actor.VisibilityOff()
+        self.volume_mapper.AddClippingPlane(self.plane)
         ps.Publisher().sendMessage('Render volume viewer', None)
         
     def ResetPlane(self, evt_pubsub=None):

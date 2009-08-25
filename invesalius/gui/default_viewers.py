@@ -267,12 +267,10 @@ class VolumeToolPanel(wx.Panel):
 
 
     def OnButtonRaycasting(self, evt):
-        print "menu ray"
         # MENU RELATED TO RAYCASTING TYPES
         self.button_raycasting.PopupMenu(self.menu_raycasting)
 
     def OnButtonView(self, evt):
-        print "menu view"
         self.button_view.PopupMenu(self.menu_view)
 
     def __init_menus(self, pubsub_evt=None):
