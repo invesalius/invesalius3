@@ -20,6 +20,7 @@ import sys
 
 import wx
 import wx.aui
+import wx.lib.agw.aui as aui
 import wx.lib.pubsub as ps
 import math
 
@@ -292,10 +293,11 @@ class TaskBarIcon(wx.TaskBarIcon):
 
 # ------------------------------------------------------------------------------
 
-class ProjectToolBar(wx.ToolBar):
+class ProjectToolBar(aui.AuiToolBar):
     def __init__(self, parent):
-        wx.ToolBar.__init__(self, parent, -1, wx.DefaultPosition,
-                            wx.DefaultSize, wx.TB_FLAT|wx.TB_NODIVIDER)
+        aui.AuiToolBar.__init__(self, parent, -1, wx.DefaultPosition,
+                            wx.DefaultSize,
+                            aui.AUI_TB_DEFAULT_STYLE|aui.AUI_TB_OVERFLOW)
 
         self.SetToolBitmapSize(wx.Size(32,32))
 
@@ -306,35 +308,23 @@ class ProjectToolBar(wx.ToolBar):
     def __init_items(self):
 
 
-        if sys.platform == 'darwin':
-            BMP_IMPORT = wx.Bitmap("../icons/file_import_original.png",
-                                   wx.BITMAP_TYPE_PNG)
-            BMP_NET = wx.Bitmap("../icons/file_from_internet_original.png",
+        BMP_IMPORT = wx.Bitmap("../icons/file_import.png",
+                                    wx.BITMAP_TYPE_PNG)
+        BMP_NET = wx.Bitmap("../icons/file_from_internet.png",
                                 wx.BITMAP_TYPE_PNG)
-            BMP_SAVE = wx.Bitmap("../icons/file_save_original.png",
-                                 wx.BITMAP_TYPE_PNG)
-            BMP_PRINT = wx.Bitmap("../icons/print_original.png",
+        BMP_SAVE = wx.Bitmap("../icons/file_save.png",
                                     wx.BITMAP_TYPE_PNG)
-            BMP_PHOTO = wx.Bitmap("../icons/tool_photo_original.png",
+        BMP_PRINT = wx.Bitmap("../icons/print.png",
                                     wx.BITMAP_TYPE_PNG)
-        else:
-            BMP_IMPORT = wx.Bitmap("../icons/file_import.png",
-                                    wx.BITMAP_TYPE_PNG)
-            BMP_NET = wx.Bitmap("../icons/file_from_internet.png",
-                                wx.BITMAP_TYPE_PNG)
-            BMP_SAVE = wx.Bitmap("../icons/file_save.png",
-                                    wx.BITMAP_TYPE_PNG)
-            BMP_PRINT = wx.Bitmap("../icons/print.png",
-                                    wx.BITMAP_TYPE_PNG)
-            BMP_PHOTO = wx.Bitmap("../icons/tool_photo.png",
+        BMP_PHOTO = wx.Bitmap("../icons/tool_photo.png",
                                     wx.BITMAP_TYPE_PNG)
 
-        self.AddLabelTool(ID_FILE_IMPORT, "Import medical image...", BMP_IMPORT)
-        self.AddLabelTool(ID_FILE_LOAD_INTERNET, "Load medical image...",
+        self.AddSimpleTool(ID_FILE_IMPORT, "Import medical image...", BMP_IMPORT)
+        self.AddSimpleTool(ID_FILE_LOAD_INTERNET, "Load medical image...",
                           BMP_NET)
-        self.AddLabelTool(ID_FILE_SAVE, "Save InVesalius project", BMP_SAVE)
-        self.AddLabelTool(101, "Take photo of screen", BMP_PHOTO)
-        self.AddLabelTool(ID_FILE_PRINT, "Print medical image...", BMP_PRINT)
+        self.AddSimpleTool(ID_FILE_SAVE, "Save InVesalius project", BMP_SAVE)
+        self.AddSimpleTool(101, "Take photo of screen", BMP_PHOTO)
+        self.AddSimpleTool(ID_FILE_PRINT, "Print medical image...", BMP_PRINT)
 
 
         self.Realize()
