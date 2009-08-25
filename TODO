@@ -2,14 +2,14 @@
 
 FIXME:
 
-1. Multiple slice: 1st is smaller - OK (Paulo + Thiago)
+Ok rev 885 1. Multiple slice: 1st is smaller - Paulo + Thiago
 2. Raycasting WW WL text (hide / show) - Tati
-3. Raycasting plane disable - Tati
+OK rev 906 3. Raycasting plane disable - Tati
 4. Cursor icon in linux and osx - Esperar evolução wx
 5. Plane intersection cross - Thiago
 6. Initial zoom in Analyze 01 (?) - Depois v3.1
-7. OS X "black floating render" - Tati
-8. Toolbar at OS X and Linux order - OK (Tati)
+OK rev 904 7. OS X "black floating render" - Tati
+OK rev 785 8. Toolbar at OS X and Linux order - Tati
 9. Coronal, sagittal, axial - orientation for Analyze (02) - Depois v3.1
 10. Bright and contrast in Analyze - Depois v3.1
 OK rev.886 11. Insert WW e WL text on the top of the slice - Paulo
