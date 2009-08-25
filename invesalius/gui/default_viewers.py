@@ -200,13 +200,16 @@ class VolumeViewerCover(wx.Panel):
 
         sizer = wx.BoxSizer(wx.HORIZONTAL)
         sizer.Add(volume_viewer.Viewer(self), 1, wx.EXPAND|wx.GROW)
-        sizer.Add(VolumeToolPanel(self), 0, wx.EXPAND)
-        self.SetSizer(sizer)
+        sizer.Add(VolumeToolPanel(self), 0, wx.EXPAND|wx.GROW)
         sizer.Fit(self)
+
+        self.SetSizer(sizer)
+        self.Update()
+        self.SetAutoLayout(1)
 
 class VolumeToolPanel(wx.Panel):
     def __init__(self, parent):
-        wx.Panel.__init__(self, parent, size = (8,100))
+        wx.Panel.__init__(self, parent, size = (10,100))
 
         # VOLUME RAYCASTING BUTTON
         BMP_RAYCASTING = wx.Bitmap("../icons/volume_raycasting.png",
@@ -232,26 +235,31 @@ class VolumeToolPanel(wx.Panel):
         button_colour.Bind(csel.EVT_COLOURSELECT, self.OnSelectColour)
         self.button_colour = button_colour
 
-        self.__bind_events()
+        sizer_colour = wx.BoxSizer(wx.HORIZONTAL)
+        sizer_colour.Add(button_colour, 0, wx.RIGHT, 15)
 
         # SIZER TO ORGANIZE ALL
         sizer = wx.BoxSizer(wx.VERTICAL)
-        sizer.Add(button_colour, 0, wx.ALL, 1)
-        sizer.Add(button_raycasting, 0, wx.ALL, 1)
-        sizer.Add(button_view, 0, wx.ALL, 1)
-        self.SetSizer(sizer)
+        sizer.Add(button_raycasting, 0, wx.TOP|wx.BOTTOM, 1)
+        sizer.Add(button_view, 0, wx.TOP|wx.BOTTOM, 1)
+        #sizer.AddStretchSpacer()
+        sizer.Add(sizer_colour, 0, wx.ALL, 5)
         sizer.Fit(self)
+
+        self.__init_menus()
+
+        self.SetSizer(sizer)
+        self.SetAutoLayout(1)
+        self.Update()
+        self.Refresh()
 
         self.__bind_events()
 
     def __bind_events(self):
         ps.Publisher().subscribe(self.ChangeButtonColour,
                                  'Change volume viewer gui colour')
-        ps.Publisher().subscribe(self.__init_menus, 'TESTE TATI')
 
     def __init_menus(self, pubsub_evt=None):
-        print "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" 
-        print "__init_menus"
         # MENU RELATED TO RAYCASTING TYPES
         menu = wx.Menu()
         for name in const.RAYCASTING_TYPES:
@@ -291,8 +299,8 @@ class VolumeToolPanel(wx.Panel):
         self.menu_view = menu
         self.button_view.SetMenu(menu)
 
+        self.Fit()
         self.Update()
-        self.Refresh()
 
     def ChangeButtonColour(self, pubsub_evt):
         colour = [i*255 for i in pubsub_evt.data]

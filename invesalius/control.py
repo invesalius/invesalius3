@@ -109,8 +109,6 @@ class Controller():
 
             ps.Publisher().sendMessage('Update AUI')
 
-            ps.Publisher().sendMessage('TESTE TATI')
-
 
     def LoadImagedataInfo(self):
         proj = prj.Project()
