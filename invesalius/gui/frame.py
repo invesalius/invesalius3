@@ -297,7 +297,7 @@ class ProjectToolBar(aui.AuiToolBar):
     def __init__(self, parent):
         aui.AuiToolBar.__init__(self, parent, -1, wx.DefaultPosition,
                             wx.DefaultSize,
-                            aui.AUI_TB_DEFAULT_STYLE|aui.AUI_TB_OVERFLOW)
+                            aui.AUI_TB_DEFAULT_STYLE)
 
         self.SetToolBitmapSize(wx.Size(32,32))
 
