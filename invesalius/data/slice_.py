@@ -59,9 +59,6 @@ class Slice(object):
     def __set_current_mask_threshold_limits(self, pubsub_evt):
         thresh_min = pubsub_evt.data[0]
         thresh_max  = pubsub_evt.data[1]
-        print "***********"
-        print thresh_min, thresh_max
-        print "***********"
         if self.current_mask:
             index = self.current_mask.index
             self.SetMaskEditionThreshold(index, (thresh_min, thresh_max))
@@ -94,6 +91,8 @@ class Slice(object):
         threshold_range = evt_pubsub.data
         index = self.current_mask.index
         self.SetMaskThreshold(index, threshold_range)
+        #Clear edited points
+        self.current_mask.edited_points = {}
 
     def __set_current_mask_colour(self, pubsub_evt):
         # "if" is necessary because wx events are calling this before any mask
