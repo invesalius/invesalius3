@@ -21,15 +21,16 @@ import itertools
 
 import vtk
 from vtk.wx.wxVTKRenderWindowInteractor import wxVTKRenderWindowInteractor
+
 import wx
 import wx.lib.pubsub as ps
 
-import data.slice_ as sl
-import constants as const
-import project
-import cursor_actors as ca
-import data.vtk_utils as vtku
 
+import constants as const
+import cursor_actors as ca
+import data.slice_ as sl
+import data.vtk_utils as vtku
+import project
 from slice_data import SliceData
 
 class Viewer(wx.Panel):
@@ -169,39 +170,39 @@ class Viewer(wx.Panel):
         self.style = style
         self.interactor.SetInteractorStyle(style)
 
-    def EditorMode(self, pubsub_evt):
+    def __set_mode_editor(self, pubsub_evt):
         self.append_mode('EDITOR')
         self.mouse_pressed = 0
         self.interactor.SetCursor(wx.StockCursor(wx.CURSOR_BLANK))
 
-    def SpinMode(self, pubsub_evt):
+    def __set_mode_spin(self, pubsub_evt):
         self.append_mode('SPIN')
         self.mouse_pressed = 0
         self.interactor.SetCursor(wx.StockCursor(wx.CURSOR_SIZING))
 
-    def ZoomMode(self, pubsub_evt):
+    def __set_mode_zoom(self, pubsub_evt):
         self.append_mode('ZOOM')
         self.mouse_pressed = 0
         ICON_IMAGE = wx.Image("../icons/tool_zoom.png",wx.BITMAP_TYPE_PNG)
         self.interactor.SetCursor(wx.CursorFromImage(ICON_IMAGE))
 
-    def PanMode(self, pubsub_evt):
+    def __set_mode_pan(self, pubsub_evt):
         self.append_mode('PAN')
         self.mouse_pressed = 0
         self.interactor.SetCursor(wx.StockCursor(wx.CURSOR_SIZING))
 
-    def ZoomSelectMode(self, pubsub_evt):
+    def __set_mode_zoom_select(self, pubsub_evt):
         self.append_mode('ZOOMSELECT')
         ICON_IMAGE = wx.Image("../icons/tool_zoom.png",wx.BITMAP_TYPE_PNG)
         self.interactor.SetCursor(wx.CursorFromImage(ICON_IMAGE))
 
-    def WindowLevelMode(self, pubsub_evt):
+    def __set_mode_window_level(self, pubsub_evt):
         self.append_mode('WINDOWLEVEL')
         self.mouse_pressed = 0
         self.interactor.SetCursor(wx.StockCursor(wx.CURSOR_SIZING))
         self.interactor.Render()
 
-    def ChangeSliceMode(self, pubsub_evt):
+    def __set_mode_slice_scroll(self, pubsub_evt):
         self.append_mode('CHANGESLICE')
         self.mouse_pressed = 0
         self.interactor.SetCursor(wx.StockCursor(wx.CURSOR_SIZENS))
@@ -617,22 +618,30 @@ class Viewer(wx.Panel):
                                  'Set brush format')
         ps.Publisher().subscribe(self.ChangeBrushOperation,
                                  'Set edition operation')
-        ps.Publisher().subscribe(self.PanMode,
-                                 'Set Pan Mode')
-        ps.Publisher().subscribe(self.EditorMode,
-                                 'Set Editor Mode')
-        ps.Publisher().subscribe(self.SpinMode,
-                                 'Set Spin Mode')
-        ps.Publisher().subscribe(self.ZoomMode,
-                                 'Set Zoom Mode')
-        ps.Publisher().subscribe(self.ZoomSelectMode,
-                                 'Set Zoom Select Mode')
-        ps.Publisher().subscribe(self.ZoomSelectMode,
-                                 'Set Zoom Select Mode')
-        ps.Publisher().subscribe(self.ChangeSliceMode,
-                                 'Set Change Slice Mode')
-        ps.Publisher().subscribe(self.WindowLevelMode,
-                                 'Bright and contrast adjustment')
+
+        ###
+        ps.Publisher().subscribe(self.__set_mode_pan,
+                                 ('Set interaction mode',
+                                  const.MODE_MOVE))
+        ps.Publisher().subscribe(self.__set_mode_editor,
+                                 ('Set interaction mode',
+                                  const.MODE_SLICE_EDITOR))
+        ps.Publisher().subscribe(self.__set_mode_spin,
+                                 ('Set interaction mode',
+                                  const.MODE_ROTATE))
+        ps.Publisher().subscribe(self.__set_mode_zoom,
+                                 ('Set interaction mode',
+                                  const.MODE_ZOOM))
+        ps.Publisher().subscribe(self.__set_mode_zoom_select,
+                                 ('Set interaction mode',
+                                  const.MODE_ZOOM_SELECTION))
+        ps.Publisher().subscribe(self.__set_mode_slice_scroll,
+                                 ('Set interaction mode',
+                                  const.MODE_SLICE_SCROLL))
+        ps.Publisher().subscribe(self.__set_mode_window_level,
+                                 ('Set interaction mode',
+                                  const.MODE_WW_WL))
+        ####
         ps.Publisher().subscribe(self.UpdateText,\
                                  'Update window and level text')
 

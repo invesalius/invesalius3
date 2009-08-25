@@ -162,3 +162,28 @@ RAYCASTING_TYPES.sort()
 RAYCASTING_OFF_LABEL = ' Off'
 RAYCASTING_TOOLS = ["Cut plane"]
 
+
+
+####
+MODE_ZOOM = 0 #"Set Zoom Mode",
+MODE_ZOOM_SELECTION = 1 #:"Set Zoom Select Mode",
+MODE_ROTATE = 2#:"Set Spin Mode",
+MODE_MOVE = 3#:"Set Pan Mode",
+MODE_WW_WL = 4#:"Bright and contrast adjustment"}
+
+
+#        self.states = {0:"Set Zoom Mode", 1:"Set Zoom Select Mode",
+#                       2:"Set Spin Mode", 3:"Set Pan Mode",
+#                       4:"Bright and contrast adjustment"}
+
+
+#ps.Publisher().sendMessage('Set interaction mode %d'%
+#                                        (MODE_BY_ID[id]))
+
+#('Set Editor Mode')
+#{0:"Set Change Slice Mode"}
+
+####
+MODE_SLICE_SCROLL = -1
+MODE_SLICE_EDITOR = -2
+

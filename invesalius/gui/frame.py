@@ -1,10 +1,10 @@
-#--------------------------------------------------------------------------
+#--------------------------------------------------------------------
 # Software:     InVesalius - Software de Reconstrucao 3D de Imagens Medicas
 # Copyright:    (C) 2001  Centro de Pesquisas Renato Archer
 # Homepage:     http://www.softwarepublico.gov.br
 # Contact:      invesalius@cti.gov.br
 # License:      GNU - GPL 2 (LICENSE.txt/LICENCA.txt)
-#--------------------------------------------------------------------------
+#--------------------------------------------------------------------
 #    Este programa e software livre; voce pode redistribui-lo e/ou
 #    modifica-lo sob os termos da Licenca Publica Geral GNU, conforme
 #    publicada pela Free Software Foundation; de acordo com a versao 2
@@ -15,21 +15,37 @@
 #    COMERCIALIZACAO ou de ADEQUACAO A QUALQUER PROPOSITO EM
 #    PARTICULAR. Consulte a Licenca Publica Geral GNU para obter mais
 #    detalhes.
-#--------------------------------------------------------------------------
+#--------------------------------------------------------------------
+
+import math
 import sys
 
 import wx
 import wx.aui
 import wx.lib.agw.aui as aui
 import wx.lib.pubsub as ps
-import math
 
+import constants as const
 import default_tasks as tasks
 import default_viewers as viewers
 import import_panel as imp
 
+# File toolbar
+[ID_FILE_IMPORT, ID_FILE_LOAD_INTERNET, ID_FILE_SAVE, ID_FILE_PHOTO,
+ID_FILE_PRINT] = [wx.NewId() for number in range(5)]
 
-[ID_FILE_IMPORT, ID_FILE_LOAD_INTERNET, ID_FILE_SAVE, ID_FILE_PRINT] = [wx.NewId() for number in range(4)]
+# Object toolbar
+OBJ_TOOLS = [ID_ZOOM, ID_ZOOM_SELECT, ID_ROTATE, ID_MOVE, 
+ID_CONTRAST] = [wx.NewId() for number in range(5)]
+MODE_BY_ID = {ID_ZOOM: const.MODE_ZOOM,
+              ID_ZOOM_SELECT: const.MODE_ZOOM_SELECTION,
+              ID_ROTATE: const.MODE_ROTATE,
+              ID_MOVE: const.MODE_MOVE,
+              ID_CONTRAST: const.MODE_WW_WL}
+
+# Slice toolbar
+SLICE_TOOLS = [ID_SLICE_SCROLL] = [wx.NewId() for number in range(1)]
+SLICE_MODE_BY_ID = {ID_SLICE_SCROLL: const.MODE_SLICE_SCROLL}
 
 class Frame(wx.Frame):
     def __init__(self, prnt):
@@ -218,7 +234,7 @@ class MenuBar(wx.MenuBar):
         print "Open"
         event.Skip()
 
-# ------------------------------------------------------------------------------
+# ------------------------------------------------------------------
 class ProgressBar(wx.Gauge):
 
    def __init__(self, parent):
@@ -228,7 +244,8 @@ class ProgressBar(wx.Gauge):
       self.__bind_events()
 
    def __bind_events(self):
-      ps.Publisher().subscribe(self.Reposition, 'ProgressBar Reposition')
+      ps.Publisher().subscribe(self.Reposition,
+                                'ProgressBar Reposition')
 
    def UpdateValue(self, value):
       #value = int(math.ceil(evt_pubsub.data[0]))
@@ -245,7 +262,7 @@ class ProgressBar(wx.Gauge):
       self.SetPosition((rect.x + 2, rect.y + 2))
       self.SetSize((rect.width - 4, rect.height - 4))
 
-# ------------------------------------------------------------------------------
+# ------------------------------------------------------------------
 class StatusBar(wx.StatusBar):
     def __init__(self, parent):
         wx.StatusBar.__init__(self, parent, -1)
@@ -260,7 +277,8 @@ class StatusBar(wx.StatusBar):
         self.__bind_events()
 
     def __bind_events(self):
-        ps.Publisher().subscribe(self.UpdateStatus, 'Update status in GUI')
+        ps.Publisher().subscribe(self.UpdateStatus,
+                                 'Update status in GUI')
         ps.Publisher().subscribe(self.UpdateStatusLabel,
                                  'Update status text in GUI')
 
@@ -274,7 +292,7 @@ class StatusBar(wx.StatusBar):
         self.SetStatusText(label, 0)
 
 
-# ------------------------------------------------------------------------------
+# ------------------------------------------------------------------
 
 class TaskBarIcon(wx.TaskBarIcon):
     def __init__(self, parent=None):
@@ -291,17 +309,17 @@ class TaskBarIcon(wx.TaskBarIcon):
     def OnTaskBarActivate(self):
         pass
 
-# ------------------------------------------------------------------------------
+# ------------------------------------------------------------------
 
 class ProjectToolBar(aui.AuiToolBar):
     def __init__(self, parent):
         aui.AuiToolBar.__init__(self, parent, -1, wx.DefaultPosition,
-                            wx.DefaultSize,
-                            aui.AUI_TB_DEFAULT_STYLE)
+                            wx.DefaultSize, aui.AUI_TB_DEFAULT_STYLE)
 
-        self.SetToolBitmapSize(wx.Size(32,32))
+        self.SetToolBitmapSize(wx.Size(16,16))
 
         self.parent = parent
+
         self.__init_items()
         self.__bind_events()
 
@@ -319,187 +337,189 @@ class ProjectToolBar(aui.AuiToolBar):
         BMP_PHOTO = wx.Bitmap("../icons/tool_photo.png",
                                     wx.BITMAP_TYPE_PNG)
 
-        self.AddSimpleTool(ID_FILE_IMPORT, "Import medical image...", BMP_IMPORT)
-        self.AddSimpleTool(ID_FILE_LOAD_INTERNET, "Load medical image...",
-                          BMP_NET)
-        self.AddSimpleTool(ID_FILE_SAVE, "Save InVesalius project", BMP_SAVE)
-        self.AddSimpleTool(101, "Take photo of screen", BMP_PHOTO)
-        self.AddSimpleTool(ID_FILE_PRINT, "Print medical image...", BMP_PRINT)
-
+        self.AddSimpleTool(ID_FILE_IMPORT,
+                           "Import medical image...",
+                           BMP_IMPORT)
+        self.AddSimpleTool(ID_FILE_LOAD_INTERNET,
+                           "Load medical image...",
+                           BMP_NET)
+        self.AddSimpleTool(ID_FILE_SAVE,
+                           "Save InVesalius project",
+                           BMP_SAVE)
+        self.AddSimpleTool(ID_FILE_PHOTO,
+                           "Take photo of screen",
+                           BMP_PHOTO)
+        self.AddSimpleTool(ID_FILE_PRINT,
+                           "Print medical image...",
+                           BMP_PRINT)
 
         self.Realize()
 
     def __bind_events(self):
         pass
 
-# ------------------------------------------------------------------------------
+# ------------------------------------------------------------------
 
-class ObjectToolBar(wx.ToolBar):
-    # TODO: what will appear in menubar?
+class ObjectToolBar(aui.AuiToolBar):
     def __init__(self, parent):
-        wx.ToolBar.__init__(self, parent, -1, wx.DefaultPosition, wx.DefaultSize,
-                            wx.TB_FLAT|wx.TB_NODIVIDER | wx.TB_DOCKABLE)
-
-        self.SetToolBitmapSize(wx.Size(32,32))
+        aui.AuiToolBar.__init__(self, parent, -1, wx.DefaultPosition,
+                            wx.DefaultSize, aui.AUI_TB_DEFAULT_STYLE)
+        self.SetToolBitmapSize(wx.Size(16,16))
 
         self.parent = parent
+
         self.__init_items()
         self.__bind_events()
+        self.__bind_events_wx()
 
     def __init_items(self):
 
 
-        if sys.platform == 'darwin':
-            BMP_ROTATE = wx.Bitmap("../icons/tool_rotate_original.gif",
-                                    wx.BITMAP_TYPE_GIF)
-            BMP_TRANSLATE = wx.Bitmap("../icons/tool_translate_original.png",
-                                        wx.BITMAP_TYPE_PNG)
-            BMP_ZOOM = wx.Bitmap("../icons/tool_zoom_original.png",
+        BMP_ROTATE = wx.Bitmap("../icons/tool_rotate.gif",
+                               wx.BITMAP_TYPE_GIF)
+        BMP_MOVE = wx.Bitmap("../icons/tool_translate.gif",
+                                  wx.BITMAP_TYPE_GIF)
+        BMP_ZOOM = wx.Bitmap("../icons/tool_zoom.png",
+                             wx.BITMAP_TYPE_PNG)
+        BMP_ZOOM_SELECT = wx.Bitmap("../icons/tool_zoom_select.png",
                                     wx.BITMAP_TYPE_PNG)
-            BMP_ZOOM_SELECT = wx.Bitmap("../icons/tool_zoom_select_original.png",
-                                    wx.BITMAP_TYPE_PNG)
-            BMP_CONTRAST = wx.Bitmap("../icons/tool_contrast.png",
-                                     wx.BITMAP_TYPE_PNG)
+        BMP_CONTRAST = wx.Bitmap("../icons/tool_contrast.png",
+                                 wx.BITMAP_TYPE_PNG)
+        
+
+        self.AddSimpleTool(ID_ZOOM,
+                           "Zoom",
+                           BMP_ZOOM,
+                           kind = aui.ITEM_RADIO)
+
+        self.AddSimpleTool(ID_ZOOM_SELECT,
+                           "Zoom based on selection",
+                           BMP_ZOOM_SELECT,
+                           kind = aui.ITEM_RADIO)
+
+        self.AddSimpleTool(ID_ROTATE,
+                           "Rotate", BMP_ROTATE,
+                           kind = aui.ITEM_RADIO)
+
+        self.AddSimpleTool(ID_MOVE,
+                           "Move", BMP_MOVE,
+                            kind = aui.ITEM_RADIO)
+
+        self.AddSimpleTool(ID_CONTRAST,
+                           "Window and Level", BMP_CONTRAST,
+                           kind = aui.ITEM_RADIO)
+        self.Realize()
+
+
+    def __bind_events_wx(self):
+        self.Bind(wx.EVT_TOOL, self.OnClick)
+
+    def __bind_events(self):
+        ps.Publisher().subscribe(self.UntoggleAllItems,
+                                 'Untoggle object toolbar items')
+
+    def OnClick(self, evt):
+        print "OnClick", evt.GetId()
+        id = evt.GetId()
+        state = self.GetToolToggled(id)
+        label = self.GetToolLabel(id)
+        
+        #if id != ID_ZOOM:
+        #    print "Toggled zoom off"
+        #    self.ToggleTool(ID_ZOOM, 0)
+
+        if state:
+            ps.Publisher().sendMessage(('Set interaction mode',
+                                        MODE_BY_ID[id]))
         else:
-            BMP_ROTATE = wx.Bitmap("../icons/tool_rotate.gif", wx.BITMAP_TYPE_GIF)
-            BMP_TRANSLATE = wx.Bitmap("../icons/tool_translate.gif", wx.BITMAP_TYPE_GIF)
-            BMP_ZOOM = wx.Bitmap("../icons/tool_zoom.png", wx.BITMAP_TYPE_PNG)
-            BMP_ZOOM_SELECT = wx.Bitmap("../icons/tool_zoom_select.png", wx.BITMAP_TYPE_PNG)
-            BMP_CONTRAST = wx.Bitmap("../icons/tool_contrast.png", wx.BITMAP_TYPE_PNG)
+            ps.Publisher().sendMessage(('Set interaction mode',
+                                        MODE_SLICE_EDITOR))
+            ps.Publisher().sendMessage('Untoggle slice toolbar items')
+        
+        for id in OBJ_TOOLS:
+            print "-- id: %d, state: %d", id, self.GetToolToggled(id)
 
+        
+        evt.Skip()
 
-        self.AddLabelTool(0, "Zoom in image", BMP_ZOOM, kind = wx.ITEM_CHECK)
-        self.AddLabelTool(1, "Zoom out image", BMP_ZOOM_SELECT, kind = wx.ITEM_CHECK)
-        self.AddLabelTool(2, "Rotate image", BMP_ROTATE, kind = wx.ITEM_CHECK)
-        self.AddLabelTool(3, "Translate image", BMP_TRANSLATE, kind = wx.ITEM_CHECK)
-        self.AddLabelTool(4, "Bright and contrast adjustment", BMP_CONTRAST, kind = wx.ITEM_CHECK)
+    def UntoggleAllItems(self, pubsub_evt):
+        for id in OBJ_TOOLS:
+            state = self.GetToolToggled(id)
+            if state:
+                self.ToggleTool(id, False)
+
+# -------------------------------------------------------------------
+
+class SliceToolBar(aui.AuiToolBar):
+    def __init__(self, parent):
+        aui.AuiToolBar.__init__(self, parent, -1, wx.DefaultPosition,
+                            wx.DefaultSize, aui.AUI_TB_DEFAULT_STYLE)
+        self.SetToolBitmapSize(wx.Size(16,16))
+
+        self.parent = parent
+        self.__init_items()
+        self.__bind_events()
+        self.__bind_events_wx()
+
+    def __init_items(self):
+        BMP_SLICE = wx.Bitmap("../icons/slice.png",
+                              wx.BITMAP_TYPE_PNG)
+        self.AddSimpleTool(ID_SLICE_SCROLL, "Scroll slice",
+                           BMP_SLICE, kind = aui.ITEM_RADIO)
 
         self.Realize()
 
-        self.states = {0:"Set Zoom Mode", 1:"Set Zoom Select Mode",
-                       2:"Set Spin Mode", 3:"Set Pan Mode",
-                       4: "Bright and contrast adjustment"}
+    def __bind_events_wx(self):
+        self.Bind(wx.EVT_TOOL, self.OnClick)
 
     def __bind_events(self):
-        self.Bind(wx.EVT_TOOL, self.OnClick)
-        ps.Publisher().subscribe(self.UnToggleAllItem, 'UnToogle All Object Item')
+        ps.Publisher().subscribe(self.UntoggleAllItem,
+                                'Untoggle slice toolbar items')
 
     def OnClick(self, evt):
 
         id = evt.GetId()
-        exist_enable_state = 0
+        state = self.GetToolToggled(id)
+        label = self.GetToolLabel(id)
 
-        for x in xrange(0,len(self.states)):
-            #necessary if the usurio enable another state
-            #with a longer allow, disable the previous state
-            state = self.GetToolState(x)
-            if not (x == id) and (state == True):
-                self.ToggleTool(x, False)
-            elif(state == True) and (id == x):
-                ps.Publisher().sendMessage(self.states[id])
-                exist_enable_state = 1
+        if state:
+            ps.Publisher().sendMessage(('Set interaction mode',
+                                        SLICE_MODE_BY_ID[id]))
+        else:
+            ps.Publisher().sendMessage(('Set interaction mode',
+                                        const.MODE_SLICE_EDITOR))
+            ps.Publisher().sendMessage('Untoggle object toolbar items')
 
-        #Not exist's tool enbled, change to default state
-        if not (exist_enable_state):
-            ps.Publisher().sendMessage('Set Editor Mode')
-
-        ps.Publisher().sendMessage('UnToogle All Slice Item')
         evt.Skip()
 
 
-    def UnToggleAllItem(self, pubsub_evt):
-        for x in xrange(0,len(self.states)):
-            #necessary if the usurio enable another state
-            #with a longer allow, disable the previous state
-            state = self.GetToolState(x)
-            if not (x == id) and (state == True):
-                self.ToggleTool(x, False)
+    def UntoggleAllItem(self, pubsub_evt):
+        for id in SLICE_TOOLS:
+            state = self.GetToolToggled(id)
+            if state:
+                self.ToggleTool(id, False)
 
-# ------------------------------------------------------------------------------
+# ---------------------------------------------------------------------
 
-class SliceToolBar(wx.ToolBar):
+class LayoutToolBar(aui.AuiToolBar):
     # TODO: what will appear in menubar?
     def __init__(self, parent):
-        wx.ToolBar.__init__(self, parent, -1, wx.DefaultPosition, wx.DefaultSize, wx.TB_FLAT|wx.TB_NODIVIDER)
+        aui.AuiToolBar.__init__(self, parent, -1, wx.DefaultPosition,
+                            wx.DefaultSize, aui.AUI_TB_DEFAULT_STYLE)
 
-        self.SetToolBitmapSize(wx.Size(32,32))
+        self.SetToolBitmapSize(wx.Size(16,16))
 
         self.parent = parent
         self.__init_items()
         self.__bind_events()
 
     def __init_items(self):
-        if sys.platform == 'darwin':
-            BMP_SLICE = wx.Bitmap("../icons/slice_original.png",
-                                   wx.BITMAP_TYPE_PNG)
-        else:
-            BMP_SLICE = wx.Bitmap("../icons/slice.png",
-                                    wx.BITMAP_TYPE_PNG)
-
-        self.AddLabelTool(0, "Change Slice", BMP_SLICE, kind = wx.ITEM_CHECK)
-
-        self.Realize()
-
-        self.states = {0:"Set Change Slice Mode"}
-
-    def __bind_events(self):
-        self.Bind(wx.EVT_TOOL, self.OnClick)
-        ps.Publisher().subscribe(self.UnToggleAllItem, "UnToogle All Slice Item")
-
-    def OnClick(self, evt):
-
-        id = evt.GetId()
-        exist_enable_state = 0
-
-        for x in xrange(0,len(self.states)):
-            #necessary if the usurio enable another state
-            #with a longer allow, disable the previous state
-            state = self.GetToolState(x)
-            if not (x == id) and (state == True):
-                self.ToggleTool(x, False)
-            elif(state == True) and (id == x):
-                ps.Publisher().sendMessage(self.states[x])
-                exist_enable_state = 1
-
-        #Not exist's tool enbled, change to default state
-        if not (exist_enable_state):
-            ps.Publisher().sendMessage('Set Editor Mode')
-
-        ps.Publisher().sendMessage('UnToogle All Object Item')
-
-        evt.Skip()
-
-    def UnToggleAllItem(self, pubsub_evt):
-        for x in xrange(0, len(self.states)):
-            #necessary if the usurio enable another state
-            #with a longer allow, disable the previous state
-            state = self.GetToolState(x)
-            if not (x == id) and (state == True):
-                self.ToggleTool(x, False)
-
-# ------------------------------------------------------------------------------
-
-class LayoutToolBar(wx.ToolBar):
-    # TODO: what will appear in menubar?
-    def __init__(self, parent):
-        wx.ToolBar.__init__(self, parent, -1, wx.DefaultPosition, wx.DefaultSize, wx.TB_FLAT|wx.TB_NODIVIDER)
-
-        self.SetToolBitmapSize(wx.Size(32,32))
-
-        self.parent = parent
-        self.__init_items()
-        self.__bind_events()
-
-    def __init_items(self):
-        if sys.platform == 'darwin':
-            BMP_ROTATE = wx.Bitmap("../icons/layout_data_only_original.gif", wx.BITMAP_TYPE_GIF)
-            BMP_TRANSLATE = wx.Bitmap("../icons/layout_full_original.gif", wx.BITMAP_TYPE_GIF)
-        else:
-            BMP_ROTATE = wx.Bitmap("../icons/layout_data_only.gif", wx.BITMAP_TYPE_GIF)
-            BMP_TRANSLATE = wx.Bitmap("../icons/layout_full.gif", wx.BITMAP_TYPE_GIF)
-
-        self.AddLabelTool(101, "Rotate image", BMP_ROTATE)
-        self.AddLabelTool(101, "Translate image", BMP_TRANSLATE)
+        BMP_ROTATE = wx.Bitmap("../icons/layout_data_only.gif",
+                               wx.BITMAP_TYPE_GIF)
+        BMP_TRANSLATE = wx.Bitmap("../icons/layout_full.gif",
+                                  wx.BITMAP_TYPE_GIF)
+        self.AddSimpleTool(101, "Rotate image", BMP_ROTATE)
+        self.AddSimpleTool(101, "Translate image", BMP_TRANSLATE)
 
         self.Realize()
 
