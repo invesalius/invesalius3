@@ -215,8 +215,9 @@ class InnerTaskPanel(wx.Panel):
                                             (filename, filetype))
         else:
             dlg = wx.MessageDialog(None,
-                    "Create a surface and make it visible in order to export it.",
-                    'InVesalius 3 - Warning',
+                    "You need to create a surface and make it "+
+                    "visible before exporting it.",
+                    'InVesalius Information',
                     wx.OK | wx.ICON_INFORMATION)
             try:
                 dlg.ShowModal()
