@@ -38,6 +38,7 @@ class Viewer(wx.Panel):
 
         interactor = wxVTKRenderWindowInteractor(self, -1, size = self.GetSize())
         interactor.SetInteractorStyle(style)
+        self.interactor = interactor
 
         sizer = wx.BoxSizer(wx.VERTICAL)
         sizer.Add(interactor, 1, wx.EXPAND)
@@ -56,8 +57,6 @@ class Viewer(wx.Panel):
 
         ren = vtk.vtkRenderer()
         interactor.GetRenderWindow().AddRenderer(ren)
-
-        self.interactor = interactor
         self.ren = ren
 
         self.raycasting_volume = False
@@ -89,6 +88,44 @@ class Viewer(wx.Panel):
 
     def OnRelease(self, obj, evt):
         self.onclick = False
+
+
+    def ShowOrientationCube(self):
+        print "ORIENTATION CUBE!"
+        cube = vtk.vtkAnnotatedCubeActor()
+        cube.GetXMinusFaceProperty().SetColor(1,0,0)
+        cube.GetXPlusFaceProperty().SetColor(1,0,0)
+        cube.GetYMinusFaceProperty().SetColor(0,1,0)
+        cube.GetYPlusFaceProperty().SetColor(0,1,0)
+        cube.GetZMinusFaceProperty().SetColor(0,0,1)
+        cube.GetZPlusFaceProperty().SetColor(0,0,1)
+        cube.GetTextEdgesProperty().SetColor(0,0,0)
+
+        # anatomic labelling
+        cube.SetXPlusFaceText ("A")
+        cube.SetXMinusFaceText("P")
+        cube.SetYPlusFaceText ("L")
+        cube.SetYMinusFaceText("R")
+        cube.SetZPlusFaceText ("S")
+        cube.SetZMinusFaceText("I")
+
+        axes = vtk.vtkAxesActor()
+        axes.SetShaftTypeToCylinder()
+        axes.SetTipTypeToCone()
+        axes.SetXAxisLabelText("X")
+        axes.SetYAxisLabelText("Y")
+        axes.SetZAxisLabelText("Z")
+        #axes.SetNormalizedLabelPosition(.5, .5, .5)
+
+        orientation_widget = vtk.vtkOrientationMarkerWidget()
+        orientation_widget.SetOrientationMarker(cube)
+        orientation_widget.SetViewport(0.85,0.85,1.0,1.0)
+        #orientation_widget.SetOrientationMarker(axes)
+        orientation_widget.SetInteractor(self.interactor)
+        orientation_widget.SetEnabled(1)
+        orientation_widget.On()
+        orientation_widget.InteractiveOff()
+        
 
     def __bind_events(self):
         ps.Publisher().subscribe(self.LoadActor,
@@ -176,7 +213,10 @@ class Viewer(wx.Panel):
             self.SetViewAngle(const.VOL_FRONT)
         else:
             self.ren.ResetCamera()
-            self.ren.ResetCameraClippingRange()  
+            self.ren.ResetCameraClippingRange()
+
+        #self.ShowOrientationCube()
+
         self.UpdateRender()
 
     def ChangeBackgroundColour(self, pubsub_evt):
@@ -196,6 +236,9 @@ class Viewer(wx.Panel):
         else:
             ren.ResetCamera()
             ren.ResetCameraClippingRange()
+
+
+        self.ShowOrientationCube()
 
         self.interactor.Render()
 
