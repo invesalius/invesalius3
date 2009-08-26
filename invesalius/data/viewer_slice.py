@@ -70,7 +70,6 @@ class Viewer(wx.Panel):
 
         self.__bind_events()
         self.__bind_events_wx()
-        self.__init_menus()
 
 
     def __init_gui(self):
@@ -88,47 +87,21 @@ class Viewer(wx.Panel):
         background_sizer.Add(scroll, 0, wx.EXPAND|wx.GROW)
         self.SetSizer(background_sizer)
         background_sizer.Fit(self)
-        
-        
+
+
         self.Layout()
         self.Update()
         self.SetAutoLayout(1)
 
         self.interactor = interactor
-        
-        
-    
-    def __init_menus(self):
-        
-        menu = self.menu = wx.Menu()
-        submenu_wl = wx.Menu()
-            
-        for name in sorted(const.WINDOW_LEVEL):
-            new_id = wx.NewId()
-            wl_item = wx.MenuItem(submenu_wl, new_id, name, kind=wx.ITEM_RADIO)
-            submenu_wl.AppendItem(wl_item)
-            ID_TO_TOOL_ITEM[new_id] = wl_item
-        
-        menu.AppendMenu(1, "Window Width & Level", submenu_wl)
-        self.Bind(wx.EVT_MENU, self.OnPopupWindowLevel)
-        self.Fit()
-        
-        
-        
-    def OnPopupWindowLevel(self, evt):
-        item = ID_TO_TOOL_ITEM[evt.GetId()]
-        key = item.GetLabel()
-        window, level = const.WINDOW_LEVEL[key]
-        
-        ps.Publisher().sendMessage('Bright and contrast adjustment image',
-                (window, level))    
-        ps.Publisher().sendMessage('Update slice viewer')    
-        evt.Skip()
-        
+
+
     def OnContextMenu(self, evt):
         self.PopupMenu(self.menu)
-        #evt.Skip()
-        
+
+    def SetPopupMenu(self, menu):
+        self.menu = menu
+
     def __config_interactor(self):
 
         ren = vtk.vtkRenderer()
@@ -138,9 +111,6 @@ class Viewer(wx.Panel):
 
         self.cam = ren.GetActiveCamera()
         self.ren = ren
-        
-
-        
 
     def append_mode(self, mode):
 
@@ -266,7 +236,7 @@ class Viewer(wx.Panel):
             ps.Publisher().sendMessage('Update window and level text',\
                                        "WL: %d  WW: %d"%(proj.level, proj.window))
             self.interactor.Render()
-        
+
 
     def OnWindowLevelClick(self, evt, obj):
         proj = project.Project()
@@ -373,7 +343,7 @@ class Viewer(wx.Panel):
         ren = slice_data.renderer
         size = ren.GetSize()
 
-        if (size[0] <= size[1] + 100):
+        if (size[0] <= size[1] + 60):
 
             bound = slice_data.actor.GetBounds()
 
@@ -536,7 +506,7 @@ class Viewer(wx.Panel):
             evt_msg = 'Add mask pixel'
         elif self._brush_cursor_op == const.BRUSH_THRESH:
             evt_msg = 'Edit mask pixel'
-        
+
         self.__update_cross_position(*coord)
 
         if self.mouse_pressed:
@@ -686,28 +656,17 @@ class Viewer(wx.Panel):
         ####
         ps.Publisher().subscribe(self.UpdateText,\
                                  'Update window and level text')
+        #ps.Publisher().subscribe(self.UpdateCkeckPopUpMenu,\
+        #                         'Update ckeck popup menu')
 
     def ChangeBrushOperation(self, pubsub_evt):
         print pubsub_evt.data
         self._brush_cursor_op = pubsub_evt.data
 
-
-    def popupID1(self, evt):
-        print "A"
-        print "...b..."
-        
-        evt.Skip()
-    
-    def popupID8(self, evt):
-        print "B"
-        evt.Skip()
-
     def __bind_events_wx(self):
         self.scroll.Bind(wx.EVT_SCROLL, self.OnScrollBar)
-        self.interactor.Bind(wx.EVT_KEY_DOWN, self.OnKeyDown)        
-        self.interactor.Bind(wx.EVT_RIGHT_DOWN, self.OnContextMenu)
-        
-
+        self.interactor.Bind(wx.EVT_KEY_DOWN, self.OnKeyDown)
+        self.interactor.Bind(wx.EVT_CONTEXT_MENU, self.OnContextMenu)
 
     def LoadImagedata(self, pubsub_evt):
         imagedata = pubsub_evt.data
@@ -870,13 +829,13 @@ class Viewer(wx.Panel):
 
         self.cross.SetFocalPoint(coordinates[self.orientation])
 
-        #print 
+        #print
         #print slice_number
         #print x, y, z
         #print "Focal", self.cross.GetFocalPoint()
         #print "bounds", self.cross.GetModelBounds()
         #print "actor bounds", slice_data.actor.GetBounds()
-        #print 
+        #print
 
     def __update_cursor_position(self, slice_data, position):
         x, y, z = position
@@ -956,7 +915,7 @@ class Viewer(wx.Panel):
 
     def UpdateRender(self, evt):
         self.interactor.Render()
-        
+
     def set_scroll_position(self, position):
         self.scroll.SetThumbPosition(position)
         self.OnScrollBar()

@@ -23,6 +23,7 @@ import wx.lib.agw.fourwaysplitter as fws
 import wx.lib.pubsub as ps
 import data.viewer_slice as slice_viewer
 import data.viewer_volume as volume_viewer
+import widgets.slice_menu as slice_menu_
 
 from gui.widgets.clut_raycasting import CLUTRaycastingWidget, \
         EVT_CLUT_POINT_CHANGED
@@ -91,6 +92,12 @@ class Panel(wx.Panel):
 
         self.s4 = s4
         self.p4 = p4
+
+        menu = slice_menu_.SliceMenu()
+        p1.SetPopupMenu(menu)
+        p2.SetPopupMenu(menu)
+        p3.SetPopupMenu(menu)
+
 
         if sys.platform == 'win32':
             self.aui_manager.AddPane(p1, s1)
@@ -236,7 +243,7 @@ class VolumeInteraction(wx.Panel):
 
     def OnPointChanged(self, evt):
         ps.Publisher.sendMessage('Set raycasting refresh', None)
-        ps.Publisher().sendMessage('Render volume viewer', None)     
+        ps.Publisher().sendMessage('Render volume viewer', None)
 
 import wx.lib.platebtn as pbtn
 import wx.lib.buttons as btn
@@ -251,7 +258,7 @@ ID_TO_BMP = {const.VOL_FRONT: ["Front", "../icons/view_front.png"],
              const.VOL_BACK: ["Back", "../icons/view_back.png"],
              const.VOL_TOP: ["Top", "../icons/view_top.png"],
              const.VOL_BOTTOM: ["Bottom", "../icons/view_bottom.png"],
-             const.VOL_RIGHT: ["Right", "../icons/view_right.png"], 
+             const.VOL_RIGHT: ["Right", "../icons/view_right.png"],
              const.VOL_LEFT: ["Left", "../icons/view_left.png"],
              const.VOL_ISO:["Isometric","../icons/view_isometric.png"]
              }
@@ -284,7 +291,7 @@ class VolumeToolPanel(wx.Panel):
 
         button_raycasting = pbtn.PlateButton(self, BUTTON_RAYCASTING,"",
                 BMP_RAYCASTING, style=pbtn.PB_STYLE_SQUARE,
-                size=(24,24))        
+                size=(24,24))
         self.button_raycasting = button_raycasting
         self.button_raycasting.Bind(wx.EVT_LEFT_DOWN, self.OnButtonRaycasting)
 
@@ -305,7 +312,7 @@ class VolumeToolPanel(wx.Panel):
         else:
             size = (24,24)
             sp = 5
-        
+
         button_colour= csel.ColourSelect(self, 111,colour=(0,0,0),
                                         size=size)
         button_colour.Bind(csel.EVT_COLOURSELECT, self.OnSelectColour)
@@ -364,7 +371,7 @@ class VolumeToolPanel(wx.Panel):
         menu.Enable(RAYCASTING_TOOLS, 0)
 
         self.menu_raycasting = menu
-        menu.Bind(wx.EVT_MENU, self.OnMenuRaycasting)    
+        menu.Bind(wx.EVT_MENU, self.OnMenuRaycasting)
 
         # VOLUME VIEW ANGLE BUTTON
         menu = wx.Menu()
@@ -396,9 +403,9 @@ class VolumeToolPanel(wx.Panel):
  	            self.menu_raycasting.Enable(RAYCASTING_TOOLS, 1)
             else:
                 self.menu_raycasting.Enable(RAYCASTING_TOOLS, 0)
-            
+
         else:
-            # Raycasting tool 
+            # Raycasting tool
             # TODO: In future, when more tools are available
             item = ID_TO_TOOL_ITEM[evt.GetId()]
             #if not item.IsChecked():
@@ -411,13 +418,13 @@ class VolumeToolPanel(wx.Panel):
             else:
                 ps.Publisher().sendMessage('Enable raycasting tool',
                                             [ID_TO_TOOL[evt.GetId()],0])
-                        
+
 
     def OnMenuView(self, evt):
         """Events from button menus."""
         bmp = wx.Bitmap(ID_TO_BMP[evt.GetId()][1], wx.BITMAP_TYPE_PNG)
         self.button_view.SetBitmapSelected(bmp)
-        
+
         ps.Publisher().sendMessage('Set volume view angle',
                                    evt.GetId())
 
