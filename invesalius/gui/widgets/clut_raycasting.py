@@ -219,7 +219,6 @@ class CLUTRaycastingWidget(wx.Panel):
             self.Render(dc)
 
     def OnSize(self, evt):
-        print "Resizing"
         self.CreatePixelArray()
         self.Refresh()
     
@@ -282,7 +281,6 @@ class CLUTRaycastingWidget(wx.Panel):
                 = ctx.text_extents("Value %6d" % value)
 
         fheight = ctx.font_extents()[2]
-        print "font", x_bearing, y_bearing
 
         ctx.set_source_rgba(*BACKGROUND_TEXT_COLOUR_RGBA)
         ctx.rectangle(x + RADIUS + 1 + x_bearing, y - RADIUS * 2 - 2 +
@@ -334,8 +332,9 @@ class CLUTRaycastingWidget(wx.Panel):
         self._draw_curves(ctx)
         self._draw_points(ctx)
         self._draw_selection_curve(ctx, width)
-        if self.point_dragged:
-            self._draw_selected_point_text(ctx)
+        if sys.platform != "darwin": 
+            if self.point_dragged:
+                self._draw_selected_point_text(ctx)
             
 
     def _build_histogram(self):
