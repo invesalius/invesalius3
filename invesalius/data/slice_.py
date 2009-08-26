@@ -341,6 +341,7 @@ class Slice(object):
         self.cross = cross
 
         self.window_level = vtk.vtkImageMapToWindowLevelColors()
+        self.window_level.SetInput(self.imagedata)
         #cast = vtk.vtkImageCast()
         #cast.SetInput(cross.GetOutput())
         #cast.GetOutput().SetUpdateExtentToWholeExtent()
@@ -396,15 +397,19 @@ class Slice(object):
     def UpdateWindowLevelBackground(self, pubsub_evt):
         window, level = pubsub_evt.data
         window_level = self.window_level
-        window_level.SetInput(self.imagedata)
-        window_level.SetWindow(window)
-        window_level.SetLevel(level)
-        window_level.SetOutputFormatToLuminance()
-        window_level.Update()
-
-        thresh_min, thresh_max = window_level.GetOutput().GetScalarRange()
-        self.lut_bg.SetTableRange(thresh_min, thresh_max)
-        self.img_colours_bg.SetInput(window_level.GetOutput())
+    
+        if not((window == window_level.GetWindow()) and\
+                (level == window_level.GetLevel())):
+                        
+            window_level.SetWindow(window)
+            window_level.SetLevel(level)
+            window_level.SetOutputFormatToLuminance()
+            window_level.Update()
+    
+            thresh_min, thresh_max = window_level.GetOutput().GetScalarRange()
+            self.lut_bg.SetTableRange(thresh_min, thresh_max)
+            self.img_colours_bg.SetInput(window_level.GetOutput())
+        
 
     def CreateMask(self, imagedata=None, name=None):
 
