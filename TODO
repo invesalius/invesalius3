@@ -3,7 +3,7 @@
 FIXME:
 
 Ok rev 885 1. Multiple slice: 1st is smaller - Paulo + Thiago
-2. Raycasting WW WL text (hide / show) - Tati
+Ok rev 909 2. Raycasting WW WL text (hide / show) - Tati
 OK rev 906 3. Raycasting plane disable - Tati
 4. Cursor icon in linux and osx - Esperar evolução wx
 5. Plane intersection cross - Thiago
@@ -14,7 +14,7 @@ OK rev 785 8. Toolbar at OS X and Linux order - Tati
 10. Bright and contrast in Analyze - Depois v3.1
 OK rev.886 11. Insert WW e WL text on the top of the slice - Paulo
 12. Insert slice number text - Paulo
-13. Disable raycasting WW & WL if it is not shown - Tati
+Ok rev 909 13. Disable raycasting WW & WL if it is not shown - Tati
 14. Toolbar items affect 3D - Paulo
 OK rev.889 15. Surface after threshold and edition "undo" - Paulo
 16. Slice cursor actor is hiding - Pensar
@@ -23,6 +23,7 @@ OK rev.892 18. Disable toggle of Windows' platebuttons on Windows - Paulo
 19. Show "Annotation" icon on Linux - Thiago
 20. Sagittal, axial and coronal planes in 3D - Paulo
 OK rev.899 21. Default window & level from DICOM - Paulo
+22. When preset is changed, update WW and WL text on viewer volume - Thiago
 
 TODO:
 a. Import - Todos
