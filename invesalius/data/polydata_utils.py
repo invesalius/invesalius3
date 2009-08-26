@@ -84,3 +84,17 @@ def CalculateSurfaceArea(polydata):
     measured_polydata = vtk.vtkMassProperties()
     measured_polydata.SetInput(polydata)
     return measured_polydata.GetSurfaceArea()
+
+def Merge(polydata_list):
+    append = vtk.vtkAppendPolyData()
+
+    for polydata in polydata_list:
+        triangle = vtk.TriangleFilter()
+        triangle.SetInput(polydata)
+        append.AddInput(triangle.GetOutput())
+
+    clean = vtk.vtkCleanPolyData()
+    clean.SetInput(append.GetOutput())
+
+    return append.GetOutput()
+

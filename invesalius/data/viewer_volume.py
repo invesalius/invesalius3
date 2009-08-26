@@ -158,6 +158,32 @@ class Viewer(wx.Panel):
                                  ('Set interaction mode',
                                   const.MODE_SLICE_EDITOR))
 
+        ps.Publisher().subscribe(self.OnExportSurface, 'Export surface to file')
+
+    def OnExportSurface(self, pubsub_evt):
+        filename, filetype = pubsub_evt.data
+        renwin = self.interactor.GetRenderWindow()
+
+        if filetype == const.FILETYPE_RIB:
+            writer = vtk.vtkIVExporter()
+            writer.SetFileName(filename)
+            writer.SetInput(renwin)
+        elif filetype == const.FILETYPE_VRML:
+            writer = vtk.vtkVRMLExporter()
+            writer.SetFileName(filename)
+            writer.SetInput(renwin)
+        elif filetype == const.FILETYPE_OBJ:
+            writer = vtk.vtkOBJExporter()
+            writer.SetFilePrefix(filename.split(".")[-2])
+            writer.SetInput(renwin)
+        else: # const.FILETYPE_IV:
+            writer = vtk.vtkIVExporter()
+            writer.SetFileName(filename)
+            writer.SetInput(renwin)
+        writer.Write()
+
+
+
     def __bind_events_wx(self):
         #self.Bind(wx.EVT_SIZE, self.OnSize)
         pass
@@ -216,7 +242,6 @@ class Viewer(wx.Panel):
             self.ren.ResetCamera()
             self.ren.ResetCameraClippingRange()
 
-        #self.ShowOrientationCube()
 
         self.UpdateRender()
 
@@ -239,7 +264,7 @@ class Viewer(wx.Panel):
             ren.ResetCameraClippingRange()
 
 
-        self.ShowOrientationCube()
+        #self.ShowOrientationCube()
 
         self.interactor.Render()
 

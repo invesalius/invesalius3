@@ -3,7 +3,7 @@ import wx.lib.pubsub as ps
 
 import constants as const
 import imagedata_utils as iu
-from project import Project
+import project as prj
 import vtk_utils as vu
 import polydata_utils as pu
 from imagedata_utils import BuildEditedImage
@@ -49,6 +49,7 @@ class SurfaceManager():
 
         ps.Publisher().subscribe(self.OnChangeSurfaceName, 'Change surface name')
         ps.Publisher().subscribe(self.OnShowSurface, 'Show surface')
+        ps.Publisher().subscribe(self.OnExportSurface,'Export surface to file')
 
     def AddNewActor(self, pubsub_evt):
         """
@@ -170,13 +171,6 @@ class SurfaceManager():
                                UpdateProgress(normals, "Orienting normals..."))
         polydata = normals.GetOutput()
 
-        #======= Temporary Code =======
-        stl = vtk.vtkSTLWriter()
-        stl.SetFileTypeToBinary()
-        stl.SetInputConnection(normals.GetOutputPort())
-        stl.SetFileName("surface.stl")
-        stl.Write()
-        #==============================
 
         # TODO (Paulo): Why do we need this filter?
         # without this the volume does not appear
@@ -207,7 +201,7 @@ class SurfaceManager():
         actor.GetProperty().SetOpacity(1-surface.transparency)
 
         # Append surface into Project.surface_dict
-        proj = Project()
+        proj = prj.Project()
         proj.surface_dict[surface.index] = surface
 
         # Save actor for future management tasks
@@ -241,13 +235,13 @@ class SurfaceManager():
         ps.Publisher().sendMessage('Remove surface actor from viewer', (index))
         self.actors_dict.pop(index)
         # Remove surface from project's surface_dict
-        proj = Project()
+        proj = prj.Project()
         proj.surface_dict.pop(index)
 
 
     def OnChangeSurfaceName(self, pubsub_evt):
         index, name = pubsub_evt.data
-        proj = Project()
+        proj = prj.Project()
         proj.surface_dict[index].name = name
 
     def OnShowSurface(self, pubsub_evt):
@@ -261,7 +255,7 @@ class SurfaceManager():
         """
         self.actors_dict[index].SetVisibility(value)
         # Update value in project's surface_dict
-        proj = Project()
+        proj = prj.Project()
         proj.surface_dict[index].is_shown = value
         ps.Publisher().sendMessage('Render volume viewer')
 
@@ -273,7 +267,7 @@ class SurfaceManager():
         index, value = pubsub_evt.data
         self.actors_dict[index].GetProperty().SetOpacity(1-value)
         # Update value in project's surface_dict
-        proj = Project()
+        proj = prj.Project()
         proj.surface_dict[index].transparency = value
         ps.Publisher().sendMessage('Render volume viewer')
 
@@ -283,6 +277,32 @@ class SurfaceManager():
         index, colour = pubsub_evt.data
         self.actors_dict[index].GetProperty().SetColor(colour)
         # Update value in project's surface_dict
-        proj = Project()
+        proj = prj.Project()
         proj.surface_dict[index].colour = colour
         ps.Publisher().sendMessage('Render volume viewer')
+
+
+    def OnExportSurface(self, pubsub_evt):
+        filename, filetype = pubsub_evt.data
+
+        if filetype == const.FILETYPE_STL:
+            proj = prj.Project()
+            polydata_list = []
+            for index in proj.surface_dict:
+                surface = proj.surface_dict[index]
+                if surface.is_shown:
+                    polydata_list.append(surface.polydata)
+            if len(polydata_list) < 0:
+                print "oops - no polydata"
+                return
+            elif len(polydata_list) == 1:
+                polydata = polydata_list[0]
+            else:
+                polydata = pu.Merge(polydata_list)
+            writer = vtk.vtkSTLWriter()
+            writer.SetFileTypeToBinary()
+            writer.SetFileName(filename)
+            writer.SetInput(polydata)
+            writer.Write()
+
+

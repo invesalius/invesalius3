@@ -1,5 +1,7 @@
 import os.path
+
 import wx
+
 from project import Project
 
 # VTK text
@@ -186,4 +188,20 @@ MODE_WW_WL = 4#:"Bright and contrast adjustment"}
 ####
 MODE_SLICE_SCROLL = -1
 MODE_SLICE_EDITOR = -2
+
+############
+
+
+FILETYPE_IV = wx.NewId()
+FILETYPE_RIB = wx.NewId()
+FILETYPE_STL = wx.NewId()
+FILETYPE_VRML = wx.NewId()
+FILETYPE_OBJ = wx.NewId()
+
+FILETYPE_BMP = wx.NewId()
+FILETYPE_JPG = wx.NewId()
+FILETYPE_PNG = wx.NewId()
+FILETYPE_PS = wx.NewId()
+FILETYPE_POV = wx.NewId()
+FILETYPE_OBJ = wx.NewId()
 
