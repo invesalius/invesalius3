@@ -24,6 +24,7 @@ import wx
 import wx.lib.pubsub as ps
 
 import constants as const
+from data import vtk_utils
 import project as prj
 
 Kernels = { 
@@ -132,7 +133,7 @@ class Volume():
 
     def __load_preset_config(self):
         self.config = prj.Project().raycasting_preset
-       
+
     def __update_colour_table(self):
         if self.config['advancedCLUT']:
             self.Create16bColorTable(self.scale)
@@ -155,7 +156,7 @@ class Volume():
         colour = self.GetBackgroundColour()
         ps.Publisher.sendMessage('Change volume viewer background colour', colour)
         ps.Publisher.sendMessage('Change volume viewer gui colour', colour)
-        
+
 
     def OnSetRelativeWindowLevel(self, pubsub_evt):
         diff_ww, diff_wl = pubsub_evt.data
@@ -360,10 +361,13 @@ class Volume():
 
     def ApplyConvolution(self, imagedata):
         number_filters = len(self.config['convolutionFilters'])
+        update_progress= vtk_utils.ShowProgress(number_filters)
         for filter in self.config['convolutionFilters']:
             convolve = vtk.vtkImageConvolve()
             convolve.SetInput(imagedata)
             convolve.SetKernel5x5([i/60.0 for i in Kernels[filter]])
+            convolve.AddObserver("ProgressEvent", lambda obj,evt:
+                                 update_progress(convolve, "%s ..." % filter))
             convolve.Update()
             imagedata = convolve.GetOutput()
         return imagedata
@@ -372,11 +376,15 @@ class Volume():
         proj = prj.Project()
         image = proj.imagedata
 
+        update_progress= vtk_utils.ShowProgress(4)
+
         # Flip original vtkImageData
         flip = vtk.vtkImageFlip()
         flip.SetInput(image)
         flip.SetFilteredAxis(1)
         flip.FlipAboutOriginOn()
+        flip.AddObserver("ProgressEvent", lambda obj,evt:
+                            update_progress(flip, "Fliping ..."))
         flip.Update()
         
         image = flip.GetOutput()
@@ -388,6 +396,8 @@ class Volume():
         cast.SetInput(image)
         cast.SetShift(abs(scale[0]))
         cast.SetOutputScalarTypeToUnsignedShort()
+        cast.AddObserver("ProgressEvent", lambda obj,evt:
+                            update_progress(cast, "Casting ..."))
         cast.Update()
         image2 = cast
         self.imagedata = image2
@@ -423,6 +433,8 @@ class Volume():
             volume_mapper.SetInput(image2)
             volume_mapper.IntermixIntersectingGeometryOn()
 
+        volume_mapper.AddObserver("ProgressEvent", lambda obj,evt:
+                                  update_progress(volume_mapper, "Mapper ..."))
         self.volume_mapper = volume_mapper
 
         # TODO: Look to this
@@ -463,6 +475,8 @@ class Volume():
         volume = vtk.vtkVolume()
         volume.SetMapper(volume_mapper)
         volume.SetProperty(volume_properties)
+        volume.AddObserver("ProgressEvent", lambda obj,evt:
+                                  update_progress(volume, "Volume ..."))
         self.volume = volume
         
         colour = self.GetBackgroundColour()

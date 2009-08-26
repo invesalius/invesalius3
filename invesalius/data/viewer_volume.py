@@ -27,6 +27,7 @@ import wx.lib.pubsub as ps
 import constants as const
 import project as prj
 import data.vtk_utils as vtku
+from gui.widgets.clut_raycasting import CLUTRaycastingWidget
 
 class Viewer(wx.Panel):
     def __init__(self, parent):
@@ -42,6 +43,7 @@ class Viewer(wx.Panel):
 
         sizer = wx.BoxSizer(wx.VERTICAL)
         sizer.Add(interactor, 1, wx.EXPAND)
+        self.sizer = sizer
         self.SetSizer(sizer)
         self.Layout()
 
@@ -159,7 +161,6 @@ class Viewer(wx.Panel):
     def __bind_events_wx(self):
         #self.Bind(wx.EVT_SIZE, self.OnSize)
         pass
-
 
     def OnEnableBrightContrast(self, pubsub_evt):
         style = self.style
@@ -300,6 +301,6 @@ class Viewer(wx.Panel):
     
     def SetWidgetInteractor(self, evt_pubsub=None):
         evt_pubsub.data.SetInteractor(self.interactor._Iren)
-        
+
     def AppendActor(self, evt_pubsub=None):
         self.ren.AddActor(evt_pubsub.data)

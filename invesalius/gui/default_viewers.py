@@ -21,10 +21,10 @@ import sys
 import wx
 import wx.lib.agw.fourwaysplitter as fws
 import wx.lib.pubsub as ps
-
 import data.viewer_slice as slice_viewer
 import data.viewer_volume as volume_viewer
 
+from gui.widgets.clut_raycasting import CLUTRaycastingWidget
 
 class Panel(wx.Panel):
     def __init__(self, parent):
@@ -32,6 +32,7 @@ class Panel(wx.Panel):
                           size=wx.Size(744, 656))
 
         self.__init_aui_manager()
+        self.__bind_events_wx()
         #self.__init_four_way_splitter()
         #self.__init_mix()
 
@@ -87,6 +88,9 @@ class Panel(wx.Panel):
              Bottom().Centre().Caption("Volume").\
              MaximizeButton(True).CloseButton(False)
 
+        self.s4 = s4
+        self.p4 = p4
+
         if sys.platform == 'win32':
             self.aui_manager.AddPane(p1, s1)
             self.aui_manager.AddPane(p2, s2)
@@ -100,6 +104,17 @@ class Panel(wx.Panel):
 
         self.aui_manager.Update()
 
+    def __bind_events_wx(self):
+        self.aui_manager.Bind(wx.aui.EVT_AUI_PANE_MAXIMIZE, self.OnMaximize)
+        self.aui_manager.Bind(wx.aui.EVT_AUI_PANE_RESTORE, self.OnRestore)
+
+    def OnMaximize(self, evt):
+        if evt.GetPane().name == self.s4.name:
+            ps.Publisher().sendMessage('Show raycasting widget', None)
+
+    def OnRestore(self, evt):
+        if evt.GetPane().name == self.s4.name:
+            ps.Publisher().sendMessage('Hide raycasting widget', None)
 
     def __init_four_way_splitter(self):
 
@@ -166,10 +181,57 @@ class Panel(wx.Panel):
 
         aui_manager.Update()
 
+class VolumeInteraction(wx.Panel):
+    def __init__(self, parent, id):
+        super(VolumeInteraction, self).__init__(parent, id)
+        self.__init_aui_manager()
+        ps.Publisher().subscribe(self.ShowRaycastingWidget,
+                                'Show raycasting widget')
+        ps.Publisher().subscribe(self.HideRaycastingWidget,
+                                'Hide raycasting widget')
+        #sizer = wx.BoxSizer(wx.HORIZONTAL)
+        #sizer.Add(volume_viewer.Viewer(self), 1, wx.EXPAND|wx.GROW)
+        #self.SetSizer(sizer)
+        #self.__bind_events_wx()
+        #sizer.Fit(self)
 
+    def __init_aui_manager(self):
+        self.aui_manager = wx.aui.AuiManager()
+        self.aui_manager.SetManagedWindow(self)
 
+        p1 = volume_viewer.Viewer(self)
+        s1 = wx.aui.AuiPaneInfo().Centre().\
+                CloseButton(False).MaximizeButton(False).CaptionVisible(0)
+        self.s1 = s1
 
+        self.clut_raycasting = CLUTRaycastingWidget(self, -1)
+        self.s2 = wx.aui.AuiPaneInfo().Centre().\
+                CloseButton(False).MaximizeButton(False).CaptionVisible(0).\
+                Hide()
 
+        if sys.platform == 'win32':
+            self.aui_manager.AddPane(p1, s1)
+            self.aui_manager.AddPane(self.clut_raycasting, self.s2)
+        else:
+            self.aui_manager.AddPane(self.clut_raycasting, self.s2)
+            self.aui_manager.AddPane(p1, s1)
+        self.aui_manager.Update()
+
+    def ShowRaycastingWidget(self, evt_pubsub=None):
+        p = self.aui_manager.GetPane(self.clut_raycasting)
+        p.Show()
+        self.aui_manager.Update()
+        self.clut_raycasting.SetRaycastPreset(None)
+
+    def HideRaycastingWidget(self, evt_pubsub=None):
+        p = self.aui_manager.GetPane(self.clut_raycasting)
+        p.Hide()
+        self.aui_manager.Update()
+
+    def __bind_events_wx(self):
+        #self.Bind(wx.EVT_SIZE, self.OnSize)
+        #self.Bind(wx.EVT_MAXIMIZE, self.OnMaximize)
+        pass
 
 
 import wx.lib.platebtn as pbtn
@@ -199,7 +261,7 @@ class VolumeViewerCover(wx.Panel):
         wx.Panel.__init__(self, parent)
 
         sizer = wx.BoxSizer(wx.HORIZONTAL)
-        sizer.Add(volume_viewer.Viewer(self), 1, wx.EXPAND|wx.GROW)
+        sizer.Add(VolumeInteraction(self, -1), 1, wx.EXPAND|wx.GROW)
         sizer.Add(VolumeToolPanel(self), 0, wx.EXPAND|wx.GROW)
         sizer.Fit(self)
 
