@@ -76,8 +76,8 @@ class Controller():
             proj.SetAcquisitionModality(acquisition_modality)
             proj.imagedata = imagedata
             proj.original_orientation = orientation
-            proj.window = const.WINDOW_LEVEL['Bone'][0]
-            proj.level = const.WINDOW_LEVEL['Bone'][1]
+            proj.window = window = const.WINDOW_LEVEL['Bone'][0]
+            proj.level = level = const.WINDOW_LEVEL['Bone'][1]
 
         if not imagedata:
             print "Sorry, but there are no medical images supported on this dir."
