@@ -486,16 +486,20 @@ class Volume():
                                     (volume, colour, (self.ww, self.wl)))
 
     def OnEnableTool(self, pubsub_evt):
+        print "OnEnableTool"
         tool_name, enable = pubsub_evt.data
         if tool_name == "Cut plane":
             if self.plane:
                 if enable:
+                    print "Enable"
                     self.plane_on = True
                     self.plane.Enable()
                 else:
+                    print "Disable"
                     self.plane_on = False
                     self.plane.Disable()
             else:
+                print "Enable"
                 self.plane_on = True
                 self.plane = CutPlane(self.final_imagedata,
                                       self.volume_mapper)

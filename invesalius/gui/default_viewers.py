@@ -266,6 +266,7 @@ ID_TO_BMP = {const.VOL_FRONT: ["Front", "../icons/view_front.png"],
 ID_TO_NAME = {}
 ID_TO_TOOL = {}
 ID_TO_TOOL_ITEM = {}
+TOOL_STATE = {}
 
 class VolumeViewerCover(wx.Panel):
     def __init__(self, parent):
@@ -366,6 +367,7 @@ class VolumeToolPanel(wx.Panel):
            submenu.AppendItem(item)
            ID_TO_TOOL[id] = name
            ID_TO_TOOL_ITEM[id] = item
+           TOOL_STATE[id] = False
         self.submenu_raycasting_tools = submenu
         menu.AppendMenu(RAYCASTING_TOOLS, "Tools", submenu)
         menu.Enable(RAYCASTING_TOOLS, 0)
@@ -393,11 +395,12 @@ class VolumeToolPanel(wx.Panel):
     def OnMenuRaycasting(self, evt):
         """Events from raycasting menu."""
         id = evt.GetId()
+        evt.Skip()
         if id in ID_TO_NAME.keys():
             # Raycassting type was selected
-            name = ID_TO_NAME[evt.GetId()]
+            name = ID_TO_NAME[id]
             ps.Publisher().sendMessage('Load raycasting preset',
-                                          ID_TO_NAME[evt.GetId()])
+                                          ID_TO_NAME[id])
             # Enable or disable tools
             if name != const.RAYCASTING_OFF_LABEL:
  	            self.menu_raycasting.Enable(RAYCASTING_TOOLS, 1)
@@ -407,17 +410,23 @@ class VolumeToolPanel(wx.Panel):
         else:
             # Raycasting tool
             # TODO: In future, when more tools are available
-            item = ID_TO_TOOL_ITEM[evt.GetId()]
+            item = ID_TO_TOOL_ITEM[id]
             #if not item.IsChecked():
             #    for i in ID_TO_TOOL_ITEM.values():
             #        if i is not item:
             #            i.Check(0)
-            if item.IsChecked():
+            if not TOOL_STATE[id]:
+                print "item is checked"
                 ps.Publisher().sendMessage('Enable raycasting tool',
-                                          [ID_TO_TOOL[evt.GetId()],1])
+                                          [ID_TO_TOOL[id],1])
+                TOOL_STATE[id] = True
+                item.Check(1)
             else:
+                print "item is not checked"
                 ps.Publisher().sendMessage('Enable raycasting tool',
-                                            [ID_TO_TOOL[evt.GetId()],0])
+                                            [ID_TO_TOOL[id],0])
+                TOOL_STATE[id] = False
+                item.Check(0)
 
 
     def OnMenuView(self, evt):
