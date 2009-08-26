@@ -24,7 +24,8 @@ import wx.lib.pubsub as ps
 import data.viewer_slice as slice_viewer
 import data.viewer_volume as volume_viewer
 
-from gui.widgets.clut_raycasting import CLUTRaycastingWidget
+from gui.widgets.clut_raycasting import CLUTRaycastingWidget, \
+        EVT_CLUT_POINT_CHANGED
 
 class Panel(wx.Panel):
     def __init__(self, parent):
@@ -192,7 +193,7 @@ class VolumeInteraction(wx.Panel):
         #sizer = wx.BoxSizer(wx.HORIZONTAL)
         #sizer.Add(volume_viewer.Viewer(self), 1, wx.EXPAND|wx.GROW)
         #self.SetSizer(sizer)
-        #self.__bind_events_wx()
+        self.__bind_events_wx()
         #sizer.Fit(self)
 
     def __init_aui_manager(self):
@@ -229,10 +230,13 @@ class VolumeInteraction(wx.Panel):
         self.aui_manager.Update()
 
     def __bind_events_wx(self):
+        self.clut_raycasting.Bind(EVT_CLUT_POINT_CHANGED, self.OnPointChanged)
         #self.Bind(wx.EVT_SIZE, self.OnSize)
         #self.Bind(wx.EVT_MAXIMIZE, self.OnMaximize)
-        pass
 
+    def OnPointChanged(self, evt):
+        ps.Publisher.sendMessage('Set raycasting refresh', None)
+        ps.Publisher().sendMessage('Render volume viewer', None)     
 
 import wx.lib.platebtn as pbtn
 import wx.lib.buttons as btn

@@ -204,7 +204,7 @@ class Volume():
         ps.Publisher().sendMessage('Render volume viewer')
 
     def Refresh(self, pubsub_evt):
-        self.__set_preset()
+        self.__update_colour_table()
 
 #***************
     def Create16bColorTable(self, scale):
@@ -361,15 +361,16 @@ class Volume():
 
     def ApplyConvolution(self, imagedata):
         number_filters = len(self.config['convolutionFilters'])
-        update_progress= vtk_utils.ShowProgress(number_filters)
-        for filter in self.config['convolutionFilters']:
-            convolve = vtk.vtkImageConvolve()
-            convolve.SetInput(imagedata)
-            convolve.SetKernel5x5([i/60.0 for i in Kernels[filter]])
-            convolve.AddObserver("ProgressEvent", lambda obj,evt:
-                                 update_progress(convolve, "%s ..." % filter))
-            convolve.Update()
-            imagedata = convolve.GetOutput()
+        if number_filters:
+            update_progress= vtk_utils.ShowProgress(number_filters)
+            for filter in self.config['convolutionFilters']:
+                convolve = vtk.vtkImageConvolve()
+                convolve.SetInput(imagedata)
+                convolve.SetKernel5x5([i/60.0 for i in Kernels[filter]])
+                convolve.AddObserver("ProgressEvent", lambda obj,evt:
+                                     update_progress(convolve, "%s ..." % filter))
+                convolve.Update()
+                imagedata = convolve.GetOutput()
         return imagedata
 
     def LoadVolume(self):
