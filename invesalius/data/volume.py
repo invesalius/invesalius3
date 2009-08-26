@@ -100,10 +100,8 @@ class Volume():
         self.LoadVolume()
 
     def OnHideVolume(self, pubsub_evt):
-        print "Hide", self.plane, self.plane_on
         self.volume.SetVisibility(0)
         if (self.plane and self.plane_on):
-            print "--- Hide Plane"
             self.plane.Disable()
         ps.Publisher().sendMessage('Render volume viewer')
 
@@ -111,7 +109,6 @@ class Volume():
         if self.exist:
             self.volume.SetVisibility(1)
             if (self.plane and self.plane_on):
-                print "----- Show Plane"
                 self.plane.Enable()
             ps.Publisher().sendMessage('Render volume viewer')
         else:
@@ -162,7 +159,6 @@ class Volume():
 
     def OnSetRelativeWindowLevel(self, pubsub_evt):
         diff_ww, diff_wl = pubsub_evt.data
-        print diff_ww
         ww = self.ww + diff_ww
         wl = self.wl + diff_wl
         ps.Publisher().sendMessage('Set volume window and level text',
@@ -365,7 +361,6 @@ class Volume():
     def ApplyConvolution(self, imagedata):
         number_filters = len(self.config['convolutionFilters'])
         for filter in self.config['convolutionFilters']:
-            print "convolving", filter
             convolve = vtk.vtkImageConvolve()
             convolve.SetInput(imagedata)
             convolve.SetKernel5x5([i/60.0 for i in Kernels[filter]])
@@ -471,7 +466,9 @@ class Volume():
         self.volume = volume
         
         colour = self.GetBackgroundColour()
-        ps.Publisher().sendMessage('Load volume into viewer', (volume, colour))
+
+        ps.Publisher().sendMessage('Load volume into viewer',
+                                    (volume, colour, (self.ww, self.wl)))
 
     def OnEnableTool(self, pubsub_evt):
         tool_name, enable = pubsub_evt.data

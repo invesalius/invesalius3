@@ -88,3 +88,6 @@ class Text(object):
             self.actor.VisibilityOn()
         else:
             self.actor.VisibilityOff()
+
+    def Hide(self):
+        self.actor.VisibilityOff()

@@ -60,15 +60,20 @@ class Viewer(wx.Panel):
         self.interactor = interactor
         self.ren = ren
 
+        self.raycasting_volume = False
+
         self.onclick = False
+
+        self.text = vtku.Text()
+
+        self.view_angle = None
 
         self.__bind_events()
         self.__bind_events_wx()
         
-        self.view_angle = None
-
+        
     def OnMove(self, obj, evt):
-        if self.onclick:
+        if self.onclick and self.raycasting_volume:
             mouse_x, mouse_y = self.interactor.GetEventPosition()
             diff_x = mouse_x - self.last_x
             diff_y = mouse_y - self.last_y
@@ -92,15 +97,22 @@ class Viewer(wx.Panel):
                                  'Render volume viewer')
         ps.Publisher().subscribe(self.ChangeBackgroundColour,
                         'Change volume viewer background colour')
+        # Raycating - related
         ps.Publisher().subscribe(self.LoadVolume,
                                  'Load volume into viewer')
+        ps.Publisher().subscribe(self.OnSetWindowLevelText,
+                            'Set volume window and level text')
+        ps.Publisher().subscribe(self.OnHideRaycasting,
+                                'Hide raycasting volume')
+        ps.Publisher().subscribe(self.OnShowRaycasting,
+                                'Update raycasting preset')
+        ###
         ps.Publisher().subscribe(self.AppendActor,'AppendActor')
         ps.Publisher().subscribe(self.SetWidgetInteractor, 
                                 'Set Widget Interactor')
         ps.Publisher().subscribe(self.OnSetViewAngle,
                                 'Set volume view angle')
-        ps.Publisher().subscribe(self.OnSetWindowLevelText,
-                            'Set volume window and level text')
+
         ps.Publisher().subscribe(self.OnEnableBrightContrast, 
                           ('Set interaction mode', const.MODE_WW_WL)) 
         ps.Publisher().subscribe(self.OnDisableBrightContrast,
@@ -133,19 +145,33 @@ class Viewer(wx.Panel):
         evt.Skip()
         
     def OnSetWindowLevelText(self, pubsub_evt):
-        ww, wl = pubsub_evt.data
-        self.text.SetValue("WL: %d  WW: %d"%(wl, ww))
+        if self.raycasting_volume:
+            ww, wl = pubsub_evt.data
+            self.text.SetValue("WL: %d  WW: %d"%(wl, ww))
+
+    def OnShowRaycasting(self, pubsub_evt):
+        self.raycasting_volume = True
+        self.text.Show()
+
+    def OnHideRaycasting(self, pubsub_evt):
+        self.raycasting_volume = False
+        self.text.Hide()
 
     def LoadVolume(self, pubsub_evt):
+        self.raycasting_volume = True
+
         volume = pubsub_evt.data[0]
+        colour = pubsub_evt.data[1]
+        ww, wl = pubsub_evt.data[2]
+        
         self.light = self.ren.GetLights().GetNextItem()
         
-        text = vtku.Text()
-        self.text = text
-
         self.ren.AddVolume(volume)
-        self.ren.AddActor(text.actor)
-        
+        self.text.SetValue("WL: %d  WW: %d"%(wl, ww))
+        self.ren.AddActor(self.text.actor)
+        self.ren.SetBackground(colour)
+
+
         if not (self.view_angle):
             self.SetViewAngle(const.VOL_FRONT)
         else:
