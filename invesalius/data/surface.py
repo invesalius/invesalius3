@@ -284,7 +284,6 @@ class SurfaceManager():
 
     def OnExportSurface(self, pubsub_evt):
         filename, filetype = pubsub_evt.data
-
         if filetype == const.FILETYPE_STL:
             proj = prj.Project()
             polydata_list = []
@@ -292,13 +291,14 @@ class SurfaceManager():
                 surface = proj.surface_dict[index]
                 if surface.is_shown:
                     polydata_list.append(surface.polydata)
-            if len(polydata_list) < 0:
+            if len(polydata_list) == 0:
                 print "oops - no polydata"
                 return
             elif len(polydata_list) == 1:
                 polydata = polydata_list[0]
             else:
                 polydata = pu.Merge(polydata_list)
+
             writer = vtk.vtkSTLWriter()
             writer.SetFileTypeToBinary()
             writer.SetFileName(filename)

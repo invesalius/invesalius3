@@ -156,7 +156,7 @@ class InnerTaskPanel(wx.Panel):
         flag_link = wx.EXPAND|wx.GROW|wx.LEFT|wx.TOP
         flag_button = wx.EXPAND | wx.GROW
 
-        fixed_sizer = wx.FlexGridSizer(rows=3, cols=2, hgap=2, vgap=0)
+        fixed_sizer = wx.FlexGridSizer(rows=4, cols=2, hgap=2, vgap=0)
         fixed_sizer.AddGrowableCol(0, 1)
         fixed_sizer.AddMany([ (link_export_picture, 1, flag_link, 3),
                               (button_picture, 0, flag_button),
@@ -182,16 +182,22 @@ class InnerTaskPanel(wx.Panel):
 
     def OnLinkExportSurface(self, evt=None):
         project = proj.Project()
-        if sys.platform == 'win32':
-            project_name = project.name
-        else:
-            project_name = project.name+".stl"
+        n_surface = 0
 
-        if project.surface_dict:
+        for index in project.surface_dict:
+            if project.surface_dict[index].is_shown:
+                n_surface += 1
+
+        if n_surface:
+            if sys.platform == 'win32':
+                project_name = project.name
+            else:
+                project_name = project.name+".stl"
+
 
             dlg = wx.FileDialog(None,
-                                "Export 3D surface", # title
-                                "", # directory
+                                "Save 3D surface as...", # title
+                                "", # last used directory
                                 project_name, # filename
                                 WILDCARD_SAVE_3D,
                                 wx.SAVE|wx.OVERWRITE_PROMPT)
@@ -208,7 +214,14 @@ class InnerTaskPanel(wx.Panel):
                 ps.Publisher().sendMessage('Export surface to file',
                                             (filename, filetype))
         else:
-            print "Nao tem superficie, nao podemos exportar"
+            dlg = wx.MessageDialog(None,
+                    "Create a surface and make it visible in order to export it.",
+                    'InVesalius 3 - Warning',
+                    wx.OK | wx.ICON_INFORMATION)
+            try:
+                dlg.ShowModal()
+            finally:
+                dlg.Destroy()
 
     def OnLinkRequestRP(self, evt=None):
         pass
