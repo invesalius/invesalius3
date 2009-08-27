@@ -246,11 +246,11 @@ class Volume():
             colors = zip(r,g,b)
             ww = self.config['ww']
             wl = self.TranslateScale(scale, self.config['wl'])
-            inc = ww / 254.0
-            for i,rgb in enumerate(colors):
-                color_transfer.AddRGBPoint((wl - ww/2) + (i * inc), *[i/255.0 for i in rgb])
+            init = wl - ww/2.0
+            inc = ww / (len(colors) - 1.0)
+            for n,rgb in enumerate(colors):
+                color_transfer.AddRGBPoint(init + n * inc, *[i/255.0 for i in rgb])
         self.color_transfer = color_transfer
-        return color_transfer
 
     def CreateOpacityTable(self, scale):
         if self.opacity_transfer_func:
