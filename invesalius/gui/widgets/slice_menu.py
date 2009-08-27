@@ -36,7 +36,7 @@ class SliceMenu(wx.Menu):
             submenu_wl.AppendItem(wl_item)
             self.ID_TO_TOOL_ITEM[new_id] = name
         self.AppendMenu(-1, "Window Width & Level", submenu_wl)
-        self.Bind(wx.EVT_MENU, self.OnPopupWindowLevel)
+        submenu_wl.Bind(wx.EVT_MENU, self.OnPopupWindowLevel)
 
 
     def OnPopupWindowLevel(self, evt):
