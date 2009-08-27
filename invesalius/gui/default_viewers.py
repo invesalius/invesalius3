@@ -373,6 +373,11 @@ class VolumeToolPanel(wx.Panel):
         menu.Enable(RAYCASTING_TOOLS, 0)
 
         self.menu_raycasting = menu
+        # In MacOS X and Windows, binding parent menu is enough. But
+        # not in GNU Linux - in the last it is necessary to bind the
+        # submenu
+        if sys.platform == 'linux2':
+            submenu.Bind(wx.EVT_MENU, self.OnMenuRaycasting)
         menu.Bind(wx.EVT_MENU, self.OnMenuRaycasting)
 
         # VOLUME VIEW ANGLE BUTTON
