@@ -19,6 +19,7 @@
 #    PARTICULAR. Consulte a Licenca Publica Geral GNU para obter mais
 #    detalhes.
 #--------------------------------------------------------------------------
+import sys
 
 import wx
 import wx.lib.pubsub as ps
@@ -36,8 +37,11 @@ class SliceMenu(wx.Menu):
             submenu_wl.AppendItem(wl_item)
             self.ID_TO_TOOL_ITEM[new_id] = name
         self.AppendMenu(-1, "Window Width & Level", submenu_wl)
-        submenu_wl.Bind(wx.EVT_MENU, self.OnPopupWindowLevel)
-
+        # It doesn't work in Linux
+        self.Bind(wx.EVT_MENU, self.OnPopupWindowLevel)
+        # In Linux the bind must be putted in the submenu
+        if sys.platform == 'linux2':
+            submenu_wl.Bind(wx.EVT_MENU, self.OnPopupWindowLevel)
 
     def OnPopupWindowLevel(self, evt):
         key = self.ID_TO_TOOL_ITEM[evt.GetId()]
@@ -46,4 +50,3 @@ class SliceMenu(wx.Menu):
                 (window, level))
         ps.Publisher().sendMessage('Update slice viewer')
         evt.Skip()
-
