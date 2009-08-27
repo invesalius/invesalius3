@@ -55,6 +55,9 @@ class Slice(object):
 
         ps.Publisher().subscribe(self.UpdateWindowLevelBackground,\
                                  'Bright and contrast adjustment image')
+        
+        ps.Publisher().subscribe(self.UpdateColorTableBackground,\
+                                 'Change color table from background image')
 
     def __set_current_mask_threshold_limits(self, pubsub_evt):
         thresh_min = pubsub_evt.data[0]
@@ -395,12 +398,13 @@ class Slice(object):
         return img_colours_bg.GetOutput()
 
     def UpdateWindowLevelBackground(self, pubsub_evt):
+
         window, level = pubsub_evt.data
         window_level = self.window_level
-    
+
         if not((window == window_level.GetWindow()) and\
                 (level == window_level.GetLevel())):
-                        
+            
             window_level.SetWindow(window)
             window_level.SetLevel(level)
             window_level.SetOutputFormatToLuminance()
@@ -410,7 +414,20 @@ class Slice(object):
             self.lut_bg.SetTableRange(thresh_min, thresh_max)
             self.img_colours_bg.SetInput(window_level.GetOutput())
         
-
+    def UpdateColorTableBackground(self, pubsub_evt):
+        values = pubsub_evt.data
+        
+        if (values[0]):
+            self.lut_bg.SetNumberOfColors(values[0])
+        
+        self.lut_bg.SetSaturationRange(values[1])
+        self.lut_bg.SetHueRange(values[2])
+        self.lut_bg.SetValueRange(values[3])
+        
+        thresh_min, thresh_max = self.window_level.GetOutput().GetScalarRange()
+        self.lut_bg.SetTableRange(thresh_min, thresh_max)
+        
+        
     def CreateMask(self, imagedata=None, name=None):
 
         future_mask = Mask()
