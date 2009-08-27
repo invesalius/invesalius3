@@ -29,19 +29,19 @@ class SliceMenu(wx.Menu):
     def __init__(self):
         wx.Menu.__init__(self)
         self.ID_TO_TOOL_ITEM = {}
-        new_id = 0
+        
         
         submenu_wl = wx.Menu()
         for name in sorted(const.WINDOW_LEVEL):
+            new_id = wx.NewId()
             wl_item = wx.MenuItem(submenu_wl, new_id,\
                                 name, kind=wx.ITEM_RADIO)
             submenu_wl.AppendItem(wl_item)
             self.ID_TO_TOOL_ITEM[new_id] = name
-            new_id += 1
         
         submenu_pseudo_colors = wx.Menu()
         for name in sorted(const.SLICE_COLOR_TABLE):
-            new_id += 1
+            new_id = wx.NewId()
             color_item = wx.MenuItem(submenu_wl, new_id,\
                                 name, kind=wx.ITEM_RADIO)
             submenu_pseudo_colors.AppendItem(color_item)
@@ -62,18 +62,16 @@ class SliceMenu(wx.Menu):
         id = evt.GetId()
         key = self.ID_TO_TOOL_ITEM[evt.GetId()]
         
-        if (id <= len(const.WINDOW_LEVEL)):    
+        if(key in const.WINDOW_LEVEL.keys()):
             window, level = const.WINDOW_LEVEL[key]
             ps.Publisher().sendMessage('Bright and contrast adjustment image',
                     (window, level))
             ps.Publisher().sendMessage('Update slice viewer')
             
-        elif(id > len(const.WINDOW_LEVEL) and\
-             (id <= len(const.SLICE_COLOR_TABLE) + len(const.WINDOW_LEVEL))):
+        elif(key in const.SLICE_COLOR_TABLE.keys()):
             values = const.SLICE_COLOR_TABLE[key]
-            
             ps.Publisher().sendMessage('Change color table from background image', values)
             ps.Publisher().sendMessage('Update slice viewer')
-
+            
         evt.Skip()
 
