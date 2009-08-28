@@ -29,9 +29,9 @@ class SliceMenu(wx.Menu):
     def __init__(self):
         wx.Menu.__init__(self)
         self.ID_TO_TOOL_ITEM = {}
-    
-        submenu_wl = wx.Menu()
         
+        #------------ Sub menu of the window and level ----------
+        submenu_wl = wx.Menu()        
         new_id = wx.NewId()
         wl_item = wx.MenuItem(submenu_wl, new_id,\
                             'Default', kind=wx.ITEM_RADIO)
@@ -45,7 +45,7 @@ class SliceMenu(wx.Menu):
                 submenu_wl.AppendItem(wl_item)
                 self.ID_TO_TOOL_ITEM[new_id] = name
 
-
+        #------------ Sub menu of the pseudo colors -------------
         submenu_pseudo_colors = wx.Menu()
         new_id = wx.NewId()
         color_item = wx.MenuItem(submenu_pseudo_colors, new_id,\
@@ -60,16 +60,28 @@ class SliceMenu(wx.Menu):
                 submenu_pseudo_colors.AppendItem(color_item)
                 self.ID_TO_TOOL_ITEM[new_id] = name
         
+        #------------ Sub menu of the image tiling ---------------
+        submenu_image_tiling = wx.Menu()
+        for name in sorted(const.IMAGE_TILING):
+            new_id = wx.NewId()
+            image_tiling_item = wx.MenuItem(submenu_image_tiling, new_id,\
+                                name, kind=wx.ITEM_RADIO)
+            submenu_image_tiling.AppendItem(image_tiling_item)
+            self.ID_TO_TOOL_ITEM[new_id] = name
+
+        # Add sub itens in the menu
         self.AppendMenu(-1, "Window Width & Level", submenu_wl)
         self.AppendMenu(-1, "Pseudo Colors", submenu_pseudo_colors)
-                    
+        self.AppendMenu(-1, "Image Tiling", submenu_image_tiling)            
+        
         # It doesn't work in Linux
         self.Bind(wx.EVT_MENU, self.OnPopup)
         # In Linux the bind must be putted in the submenu
         if sys.platform == 'linux2':
             submenu_wl.Bind(wx.EVT_MENU, self.OnPopup)
             submenu_pseudo_colors.Bind(wx.EVT_MENU, self.OnPopup)
-            
+            submenu_image_tiling.Bind(wx.EVT_MENU, self.OnPopup)
+    
     def OnPopup(self, evt):
         
         id = evt.GetId()
@@ -89,6 +101,10 @@ class SliceMenu(wx.Menu):
             values = const.SLICE_COLOR_TABLE[key]
             ps.Publisher().sendMessage('Change color table from background image', values)
             ps.Publisher().sendMessage('Update slice viewer')
+            
+        elif(key in const.IMAGE_TILING.keys()):
+            values = const.IMAGE_TILING[key]
+            print "Changed Window to ", values
             
         evt.Skip()
 

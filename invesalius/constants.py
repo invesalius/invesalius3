@@ -160,7 +160,7 @@ WINDOW_LEVEL = {"Abdomen":(350,50),
                  "Vasculature - Hard":(240,80),
                  "Vasculature - Soft":(650,160)}
                  
-REDUCE_IMAGEDATA_QUALITY = 0
+REDUCE_IMAGEDATA_QUALITY = 1
 
 # if 1, use vtkVolumeRaycastMapper, if 0, use vtkFixedPointVolumeRayCastMapper
 TYPE_RAYCASTING_MAPPER = 0
@@ -216,3 +216,14 @@ FILETYPE_PS = wx.NewId()
 FILETYPE_POV = wx.NewId()
 FILETYPE_OBJ = wx.NewId()
 
+IMAGE_TILING = {"1 x 1":(1,1), "1 x 2":(1,2),
+                "1 x 3":(1,3), "1 x 4":(1,4),
+                "2 x 1":(2,1), "2 x 2":(2,2),
+                "2 x 3":(2,3), "2 x 4":(2,4),
+                "3 x 1":(3,1), "3 x 2":(3,2),
+                "3 x 3":(3,3), "3 x 4":(3,4),
+                "4 x 1":(4,1), "4 x 2":(4,2),
+                "4 x 3":(4,3), "4 x 4":(4,4),
+                "4 x 5":(4,5), "5 x 4":(5,4)}
+     
+        
