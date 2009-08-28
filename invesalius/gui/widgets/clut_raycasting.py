@@ -37,7 +37,7 @@ class CLUTRaycastingWidget(wx.Panel):
         self.colours = []#plistlib.readPlist(sys.argv[-1])['16bitClutColors']
         self.init = -1024
         self.end = 2000
-        self.padding = 10
+        self.padding = 5
         self.to_render = False
         self.to_draw_points = 0
         self.histogram_pixel_points = [[0,0]]
@@ -59,6 +59,9 @@ class CLUTRaycastingWidget(wx.Panel):
         self.init, self.end = range
         print "Range", range
         self.CreatePixelArray()
+
+    def SetPadding(self, padding):
+        self.padding = padding
 
     def DoBind(self):
         self.Bind(wx.EVT_ERASE_BACKGROUND, self.OnEraseBackground)
@@ -181,17 +184,19 @@ class CLUTRaycastingWidget(wx.Panel):
             x = evt.GetX()
             y = evt.GetY()
 
-            if y > self.GetVirtualSizeTuple()[1] - self.padding:
-                y = self.GetVirtualSizeTuple()[1] - self.padding
+            width, height= self.GetVirtualSizeTuple()
+
+            if y >= height - self.padding:
+                y = height - self.padding
             
-            if y <= 0:
-                y = 0
+            if y <= self.padding:
+                y = self.padding
 
             if x < 0:
                 x = 0
 
-            if x > self.GetVirtualSizeTuple()[0]:
-                x = self.GetVirtualSizeTuple()[0]
+            if x > width:
+                x = width
 
             # A point must be greater than the previous one, but the first one
             if j > 0 and x <= self.pixels_points[i][j-1][0]:
@@ -224,6 +229,7 @@ class CLUTRaycastingWidget(wx.Panel):
     
     def _draw_gradient(self, ctx, height):
         #The gradient
+        height += self.padding
         for i, curve in enumerate(self.pixels_points):
             x, y = curve[0]
             xini, yini = curve[0]
@@ -280,18 +286,42 @@ class CLUTRaycastingWidget(wx.Panel):
         x_bearing, y_bearing, width, height, x_advance, y_advance\
                 = ctx.text_extents("Value %6d" % value)
 
+        widget_width = self.GetVirtualSizeTuple()[0]
+
         fheight = ctx.font_extents()[2]
+        y_superior = y - RADIUS * 2 - 2 + y_bearing * 2
+        y_inferior = fheight * 2
+
+        # The bottom position of the text box mustn't be upper thant the top of
+        # the width to always appears in the widget
+        if y_superior <= self.padding:
+            y_superior = y
+            y_text1 = y + height
+            y_text2 = y_text1 + 1 + fheight
+        else:
+            y_text1 = y - RADIUS - 1
+            y_text2 = y_text1 - 1 - fheight
+
+        x_left = x + RADIUS + 1
+        rectangle_width = width + RADIUS + 1
+        # The right position of the text box mustn't be in the widget area to
+        # always appears in the widget
+        if x_left + rectangle_width > widget_width:
+            x_left = x - rectangle_width - 1 - RADIUS
+            x_text = x_left - 1
+        else:
+            x_text = x + RADIUS + 1
 
         ctx.set_source_rgba(*BACKGROUND_TEXT_COLOUR_RGBA)
-        ctx.rectangle(x + RADIUS + 1 + x_bearing, y - RADIUS * 2 - 2 +
-                      y_bearing * 2, width  + RADIUS + 1, fheight * 2)
+        ctx.rectangle(x_left, y_superior,
+                      rectangle_width, y_inferior)
         ctx.fill()
         
         ctx.set_source_rgb(1, 1, 1)
-        ctx.move_to(x + RADIUS + 1, y - RADIUS - 1)
-        ctx.show_text("Alpha: %.3f" % alpha)
-        ctx.move_to(x + RADIUS + 1, y - RADIUS - 1 - fheight)
+        ctx.move_to(x_text, y_text1)
         ctx.show_text("Value: %6d" % value) 
+        ctx.move_to(x_text, y_text2)
+        ctx.show_text("Alpha: %.3f" % alpha)
 
     def _draw_histogram(self, ctx, height):
         # The histogram
@@ -323,7 +353,7 @@ class CLUTRaycastingWidget(wx.Panel):
     def Render(self, dc):
         ctx = wx.lib.wxcairo.ContextFromDC(dc)
         width, height= self.GetVirtualSizeTuple()
-        height -= self.padding
+        height -= (self.padding * 2)
         width -= self.padding
 
         self._draw_histogram(ctx, height)
@@ -369,12 +399,13 @@ class CLUTRaycastingWidget(wx.Panel):
         """
         Given a Hounsfield point(graylevel, opacity), returns a pixel point in the canvas.
         """
-        width, height= self.GetVirtualSizeTuple()
+        width,height = self.GetVirtualSizeTuple()
         width -= self.padding
-        height -= self.padding
+        height -= (self.padding * 2)
         proportion = width * 1.0 / (self.end - self.init)
         x = (h_pt['x'] - self.init) * proportion
-        y = height - (h_pt['y'] * height)
+        y = height - (h_pt['y'] * height) + self.padding
+        print y
         return [x,y]
 
     def PixelToHounsfield(self, i, j):
@@ -383,10 +414,10 @@ class CLUTRaycastingWidget(wx.Panel):
         """
         width, height= self.GetVirtualSizeTuple()
         width -= self.padding
-        height -= self.padding
+        height -= (self.padding * 2)
         proportion = width * 1.0 / (self.end - self.init)
         x = self.pixels_points[i][j][0] / proportion - abs(self.init)
-        y = (height - self.pixels_points[i][j][1]) * 1.0 / height
+        y = (height - self.pixels_points[i][j][1] + self.padding) * 1.0 / height
         self.points[i][j]['x'] = x
         self.points[i][j]['y'] = y
         self.colours[i][j]
