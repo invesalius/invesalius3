@@ -102,6 +102,17 @@ class Viewer(wx.Panel):
     def SetPopupMenu(self, menu):
         self.menu = menu
 
+    def SetLayout(self, layout):
+        self.layout = layout
+        slice_ = sl.Slice()
+        self.load_renderers(slice_.GetOutput())
+        self.__configure_renderers()
+        self.__configure_scroll()
+
+    def __set_layout(self, pubsub_evt):
+        layout = pubsub_evt.data
+        self.SetLayout(layout)
+
     def __config_interactor(self):
 
         ren = vtk.vtkRenderer()
@@ -659,6 +670,10 @@ class Viewer(wx.Panel):
         ps.Publisher().subscribe(self.UpdateWindowLevelValue,\
                                  'Update window level value')
 
+        ###
+        ps.Publisher().subscribe(self.__set_layout,
+                                'Set slice viewer layout')
+
     def ChangeBrushOperation(self, pubsub_evt):
         print pubsub_evt.data
         self._brush_cursor_op = pubsub_evt.data
@@ -673,18 +688,32 @@ class Viewer(wx.Panel):
         self.SetInput(imagedata)
 
     def load_renderers(self, image):
+        number_renderers = self.layout[0] * self.layout[1]
+        diff = number_renderers - len(self.slice_data_list)
+        if diff > 0:
+            for i in xrange(diff):
+                slice_data = self.create_slice_window(image)
+                self.slice_data_list.append(slice_data)
+        elif diff < 0:
+            to_remove = self.slice_data_list[number_renderers::]
+            for slice_data in to_remove:
+                self.interactor.GetRenderWindow().RemoveRenderer(slice_data.renderer)
+            self.slice_data_list = self.slice_data_list[:number_renderers]
+
+    def __configure_renderers(self):
         proportion_x = 1.0 / self.layout[0]
         proportion_y = 1.0 / self.layout[1]
         # The (0,0) in VTK is in bottom left. So the creation from renderers
         # must be # in inverted order, from the top left to bottom right
+        n = 0
         for j in xrange(self.layout[1]-1, -1, -1):
             for i in xrange(self.layout[0]):
                 position = ((i*proportion_x, j * proportion_y,
                              (i+1)*proportion_x, (j+1)*proportion_y))
-                slice_data = self.create_slice_window(image)
+                slice_data = self.slice_data_list[n]
                 slice_data.renderer.SetViewport(position)
                 slice_data.SetCursor(self.__create_cursor())
-                self.slice_data_list.append(slice_data)
+                n += 1
 
     def __create_cursor(self):
         cursor = ca.CursorCircle()
@@ -710,6 +739,7 @@ class Viewer(wx.Panel):
         #actor = vtk.vtkImageActor()
         #actor.SetInput(slice_.GetOutput())
         self.load_renderers(slice_.GetOutput())
+        self.__configure_renderers()
         ren = self.slice_data_list[0].renderer
         actor = self.slice_data_list[0].actor
         actor_bound = actor.GetBounds()
@@ -915,6 +945,17 @@ class Viewer(wx.Panel):
 
     def UpdateRender(self, evt):
         self.interactor.Render()
+
+    def __configure_scroll(self):
+        actor = self.slice_data_list[0].actor
+        number_of_slices = self.layout[0] * self.layout[1]
+        max_slice_number = actor.GetSliceNumberMax() / \
+                number_of_slices
+        if actor.GetSliceNumberMax() % number_of_slices:
+            max_slice_number += 1
+        self.scroll.SetScrollbar(wx.SB_VERTICAL, 1, max_slice_number,
+                                                     max_slice_number)
+        self.set_scroll_position(0)
 
     def set_scroll_position(self, position):
         self.scroll.SetThumbPosition(position)

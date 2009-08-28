@@ -104,7 +104,8 @@ class SliceMenu(wx.Menu):
             
         elif(key in const.IMAGE_TILING.keys()):
             values = const.IMAGE_TILING[key]
-            print "Changed Window to ", values
+            ps.Publisher().sendMessage('Set slice viewer layout', values)
+            ps.Publisher().sendMessage('Update slice viewer')
             
         evt.Skip()
 
