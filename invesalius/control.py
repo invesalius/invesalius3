@@ -79,6 +79,9 @@ class Controller():
             proj.window = window = const.WINDOW_LEVEL['Bone'][0]
             proj.level = level = const.WINDOW_LEVEL['Bone'][1]
 
+            ps.Publisher().sendMessage('Update window level value',\
+                           (proj.window, proj.level))
+
         if not imagedata:
             print "Sorry, but there are no medical images supported on this dir."
         else:
@@ -86,9 +89,9 @@ class Controller():
             proj.SetAcquisitionModality(acquisition_modality)
             proj.imagedata = imagedata
             proj.original_orientation = orientation
-            proj.window = float(window)
-            proj.level = float(level)
-
+            proj.window = window = float(window)
+            proj.level = level = float(level)
+            
 
             threshold_range = proj.imagedata.GetScalarRange()
             const.THRESHOLD_OUTVALUE = threshold_range[0]
@@ -103,6 +106,9 @@ class Controller():
             #Initial Window and Level
             ps.Publisher().sendMessage('Bright and contrast adjustment image',\
                                    (proj.window, proj.level))
+            
+            ps.Publisher().sendMessage('Update window level value',\
+                                       (proj.window, proj.level))
 
             # Call frame so it shows slice and volume related panels
             ps.Publisher().sendMessage('Show content panel')

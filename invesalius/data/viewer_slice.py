@@ -226,24 +226,24 @@ class Viewer(wx.Panel):
             self.acum_achange_level += mouse_y - self.last_y
             self.last_x, self.last_y = mouse_x, mouse_y
 
-            proj = project.Project()
-            proj.window = self.acum_achange_window
-            proj.level = self.acum_achange_level
-
             ps.Publisher().sendMessage('Bright and contrast adjustment image',
-                (proj.window, proj.level))
+                (self.acum_achange_window, self.acum_achange_level))
 
             ps.Publisher().sendMessage('Update window and level text',\
-                                       "WL: %d  WW: %d"%(proj.level, proj.window))
+                                       "WL: %d  WW: %d"%(self.acum_achange_window,\
+                                                         self.acum_achange_level))
         self.interactor.Render()
 
 
     def OnWindowLevelClick(self, evt, obj):
-        proj = project.Project()
-        self.acum_achange_window, self.acum_achange_level = (proj.window, proj.level)
         self.last_x, self.last_y = self.interactor.GetLastEventPosition()
         self.mouse_pressed = 1
 
+    def UpdateWindowLevelValue(self, pubsub_evt):
+        window, level = pubsub_evt.data
+        self.acum_achange_window, self.acum_achange_level = (window, level)
+        
+        
     def OnChangeSliceMove(self, evt, obj):
 
         min = 0
@@ -656,8 +656,8 @@ class Viewer(wx.Panel):
         ####
         ps.Publisher().subscribe(self.UpdateText,\
                                  'Update window and level text')
-        #ps.Publisher().subscribe(self.UpdateCkeckPopUpMenu,\
-        #                         'Update ckeck popup menu')
+        ps.Publisher().subscribe(self.UpdateWindowLevelValue,\
+                                 'Update window level value')
 
     def ChangeBrushOperation(self, pubsub_evt):
         print pubsub_evt.data
