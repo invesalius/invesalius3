@@ -29,23 +29,36 @@ class SliceMenu(wx.Menu):
     def __init__(self):
         wx.Menu.__init__(self)
         self.ID_TO_TOOL_ITEM = {}
-        
-        
+    
         submenu_wl = wx.Menu()
-        for name in sorted(const.WINDOW_LEVEL):
-            new_id = wx.NewId()
-            wl_item = wx.MenuItem(submenu_wl, new_id,\
-                                name, kind=wx.ITEM_RADIO)
-            submenu_wl.AppendItem(wl_item)
-            self.ID_TO_TOOL_ITEM[new_id] = name
         
+        new_id = wx.NewId()
+        wl_item = wx.MenuItem(submenu_wl, new_id,\
+                            'Default', kind=wx.ITEM_RADIO)
+        submenu_wl.AppendItem(wl_item)
+        self.ID_TO_TOOL_ITEM[new_id] = 'Default'
+        for name in sorted(const.WINDOW_LEVEL):
+            if not(name == 'Default'):
+                new_id = wx.NewId()
+                wl_item = wx.MenuItem(submenu_wl, new_id,\
+                                    name, kind=wx.ITEM_RADIO)
+                submenu_wl.AppendItem(wl_item)
+                self.ID_TO_TOOL_ITEM[new_id] = name
+
+
         submenu_pseudo_colors = wx.Menu()
+        new_id = wx.NewId()
+        color_item = wx.MenuItem(submenu_pseudo_colors, new_id,\
+                            'Default (Gray)', kind=wx.ITEM_RADIO)
+        submenu_pseudo_colors.AppendItem(color_item)
+        self.ID_TO_TOOL_ITEM[new_id] = 'Default (Gray)'
         for name in sorted(const.SLICE_COLOR_TABLE):
-            new_id = wx.NewId()
-            color_item = wx.MenuItem(submenu_wl, new_id,\
-                                name, kind=wx.ITEM_RADIO)
-            submenu_pseudo_colors.AppendItem(color_item)
-            self.ID_TO_TOOL_ITEM[new_id] = name
+            if not(name == 'Default (Gray)'):
+                new_id = wx.NewId()
+                color_item = wx.MenuItem(submenu_wl, new_id,\
+                                    name, kind=wx.ITEM_RADIO)
+                submenu_pseudo_colors.AppendItem(color_item)
+                self.ID_TO_TOOL_ITEM[new_id] = name
         
         self.AppendMenu(-1, "Window Width & Level", submenu_wl)
         self.AppendMenu(-1, "Pseudo Colors", submenu_pseudo_colors)
@@ -66,6 +79,10 @@ class SliceMenu(wx.Menu):
             window, level = const.WINDOW_LEVEL[key]
             ps.Publisher().sendMessage('Bright and contrast adjustment image',
                     (window, level))
+            ps.Publisher().sendMessage('Update window level value',\
+               (window, level))
+            ps.Publisher().sendMessage('Update window and level text',\
+                           "WL: %d  WW: %d"%(level, window))
             ps.Publisher().sendMessage('Update slice viewer')
             
         elif(key in const.SLICE_COLOR_TABLE.keys()):

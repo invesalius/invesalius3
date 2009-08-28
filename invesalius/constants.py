@@ -37,7 +37,7 @@ SLICE_POSITION = {AXIAL:[AXIAL_SLICE_CAM_VIEW_UP, AXIAL_SLICE_CAM_POSITION],
 
 #Color Table from Slice
 #NumberOfColors, SaturationRange, HueRange, ValueRange
-SLICE_COLOR_TABLE = {"Gray":(None,(0,0),(0,0),(0,1)), 
+SLICE_COLOR_TABLE = {"Default (Gray)":(None,(0,0),(0,0),(0,1)), 
                      "Hue":(None,(1,1),(0,1),(1,1)),
                      "Saturation":(None,(0,1),(0.6,0.6),(1,1)), 
                      "Desert":(256, (1,1), (0, 0.1), (1,1)),
@@ -146,6 +146,7 @@ WINDOW_LEVEL = {"Abdomen":(350,50),
                  "Bone":(2000, 300),
                  "Brain Posterior Fossa":(120,40),
                  "Brain":(80,40),
+                 "Default":(None, None), #Control class set window and level from DICOM
                  "Emphysema":(500,-850),
                  "Ischemia - Hard Non Contrast":(15,32),
                  "Ischemia - Soft Non Contrast":(80,20),

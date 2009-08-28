@@ -91,7 +91,7 @@ class Controller():
             proj.original_orientation = orientation
             proj.window = window = float(window)
             proj.level = level = float(level)
-            
+            const.WINDOW_LEVEL['Default'] = (window, level)
 
             threshold_range = proj.imagedata.GetScalarRange()
             const.THRESHOLD_OUTVALUE = threshold_range[0]

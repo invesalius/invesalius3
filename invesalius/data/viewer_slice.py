@@ -230,8 +230,8 @@ class Viewer(wx.Panel):
                 (self.acum_achange_window, self.acum_achange_level))
 
             ps.Publisher().sendMessage('Update window and level text',\
-                                       "WL: %d  WW: %d"%(self.acum_achange_window,\
-                                                         self.acum_achange_level))
+                                       "WL: %d  WW: %d"%(self.acum_achange_level,\
+                                                         self.acum_achange_window))
         self.interactor.Render()
 
 
