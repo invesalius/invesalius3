@@ -213,23 +213,20 @@ class VolumeInteraction(wx.Panel):
         self.s1 = s1
 
         self.clut_raycasting = CLUTRaycastingWidget(self, -1)
-        self.s2 = wx.aui.AuiPaneInfo().Centre().\
+        self.s2 = wx.aui.AuiPaneInfo().Bottom().BestSize((200, 200)).\
                 CloseButton(False).MaximizeButton(False).CaptionVisible(0).\
                 Hide()
 
-        if sys.platform == 'win32':
-            self.aui_manager.AddPane(p1, s1)
-            self.aui_manager.AddPane(self.clut_raycasting, self.s2)
-        else:
-            self.aui_manager.AddPane(self.clut_raycasting, self.s2)
-            self.aui_manager.AddPane(p1, s1)
+        self.aui_manager.AddPane(p1, s1)
+        self.aui_manager.AddPane(self.clut_raycasting, self.s2)
         self.aui_manager.Update()
 
     def ShowRaycastingWidget(self, evt_pubsub=None):
-        p = self.aui_manager.GetPane(self.clut_raycasting)
-        p.Show()
-        self.aui_manager.Update()
         self.clut_raycasting.SetRaycastPreset(None)
+        if self.clut_raycasting.to_draw_points:
+            p = self.aui_manager.GetPane(self.clut_raycasting)
+            p.Show()
+            self.aui_manager.Update()
 
     def HideRaycastingWidget(self, evt_pubsub=None):
         p = self.aui_manager.GetPane(self.clut_raycasting)
