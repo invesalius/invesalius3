@@ -713,6 +713,7 @@ class Viewer(wx.Panel):
                 slice_data = self.slice_data_list[n]
                 slice_data.renderer.SetViewport(position)
                 slice_data.SetCursor(self.__create_cursor())
+                self.__update_camera(slice_data)
                 n += 1
 
     def __create_cursor(self):
