@@ -129,10 +129,19 @@ class InnerTaskPanel(wx.Panel):
 
 
         # Image(s) for buttons
-        BMP_EXPORT_SURFACE = wx.Bitmap("../icons/surface_export.png",
+        if sys.platform == 'darwin':
+            BMP_EXPORT_SURFACE = wx.Bitmap(\
+                                  "../icons/surface_export_original.png",
+                                  wx.BITMAP_TYPE_PNG)
+            BMP_TAKE_PICTURE = wx.Bitmap(\
+                                 "../icons/tool_photo_original.png",
+                                 wx.BITMAP_TYPE_PNG)
+        else:
+            BMP_EXPORT_SURFACE = wx.Bitmap("../icons/surface_export.png",
                                         wx.BITMAP_TYPE_PNG)
-        BMP_TAKE_PICTURE = wx.Bitmap("../icons/tool_photo_original.png",
+            BMP_TAKE_PICTURE = wx.Bitmap("../icons/tool_photo.png",
                                      wx.BITMAP_TYPE_PNG)
+
 
         bmp_list = [BMP_TAKE_PICTURE, BMP_EXPORT_SURFACE]
         for bmp in bmp_list:
