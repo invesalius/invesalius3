@@ -99,7 +99,7 @@ class SliceMenu(wx.Menu):
 
         elif(key in const.SLICE_COLOR_TABLE.keys()):
             values = const.SLICE_COLOR_TABLE[key]
-            ps.Publisher().sendMessage('Change color table from background image', values)
+            ps.Publisher().sendMessage('Change colour table from background image', values)
             ps.Publisher().sendMessage('Update slice viewer')
 
         elif(key in const.IMAGE_TILING.keys()):
