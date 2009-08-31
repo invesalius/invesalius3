@@ -92,6 +92,7 @@ class Controller():
             proj.window = window = float(window)
             proj.level = level = float(level)
             const.WINDOW_LEVEL['Default'] = (window, level)
+            const.WINDOW_LEVEL['Other'] = (window, level)
 
             threshold_range = proj.imagedata.GetScalarRange()
             const.THRESHOLD_OUTVALUE = threshold_range[0]
@@ -106,7 +107,7 @@ class Controller():
             #Initial Window and Level
             ps.Publisher().sendMessage('Bright and contrast adjustment image',\
                                    (proj.window, proj.level))
-            
+
             ps.Publisher().sendMessage('Update window level value',\
                                        (proj.window, proj.level))
 

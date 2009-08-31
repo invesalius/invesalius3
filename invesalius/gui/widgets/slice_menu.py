@@ -32,18 +32,28 @@ class SliceMenu(wx.Menu):
 
         #------------ Sub menu of the window and level ----------
         submenu_wl = wx.Menu()
+
+        #Window and level from DICOM
         new_id = wx.NewId()
         wl_item = wx.MenuItem(submenu_wl, new_id,\
                             'Default', kind=wx.ITEM_RADIO)
         submenu_wl.AppendItem(wl_item)
-        self.ID_TO_TOOL_ITEM[new_id] = 'Default'
+        self.ID_TO_TOOL_ITEM[new_id] = wl_item
+
+        #Case the user change window and level
+        new_id = self.other_wl_id = wx.NewId()
+        wl_item = wx.MenuItem(submenu_wl, new_id,\
+                            'Other', kind=wx.ITEM_RADIO)
+        submenu_wl.AppendItem(wl_item)
+        self.ID_TO_TOOL_ITEM[new_id] = wl_item
+
         for name in sorted(const.WINDOW_LEVEL):
-            if not(name == 'Default'):
+            if not(name == 'Default' or name == 'Other'):
                 new_id = wx.NewId()
                 wl_item = wx.MenuItem(submenu_wl, new_id,\
                                     name, kind=wx.ITEM_RADIO)
                 submenu_wl.AppendItem(wl_item)
-                self.ID_TO_TOOL_ITEM[new_id] = name
+                self.ID_TO_TOOL_ITEM[new_id] = wl_item
 
         #------------ Sub menu of the pseudo colors -------------
         submenu_pseudo_colours = wx.Menu()
@@ -51,14 +61,15 @@ class SliceMenu(wx.Menu):
         color_item = wx.MenuItem(submenu_pseudo_colours, new_id,\
                             'Default ', kind=wx.ITEM_RADIO)
         submenu_pseudo_colours.AppendItem(color_item)
-        self.ID_TO_TOOL_ITEM[new_id] = 'Default '
+        self.ID_TO_TOOL_ITEM[new_id] = color_item
+
         for name in sorted(const.SLICE_COLOR_TABLE):
             if not(name == 'Default '):
                 new_id = wx.NewId()
                 color_item = wx.MenuItem(submenu_wl, new_id,\
                                     name, kind=wx.ITEM_RADIO)
                 submenu_pseudo_colours.AppendItem(color_item)
-                self.ID_TO_TOOL_ITEM[new_id] = name
+                self.ID_TO_TOOL_ITEM[new_id] = color_item
 
         #------------ Sub menu of the image tiling ---------------
         submenu_image_tiling = wx.Menu()
@@ -67,7 +78,7 @@ class SliceMenu(wx.Menu):
             image_tiling_item = wx.MenuItem(submenu_image_tiling, new_id,\
                                 name, kind=wx.ITEM_RADIO)
             submenu_image_tiling.AppendItem(image_tiling_item)
-            self.ID_TO_TOOL_ITEM[new_id] = name
+            self.ID_TO_TOOL_ITEM[new_id] = image_tiling_item
 
         # Add sub itens in the menu
         self.AppendMenu(-1, "Window Width and Level", submenu_wl)
@@ -82,10 +93,20 @@ class SliceMenu(wx.Menu):
             submenu_pseudo_colours.Bind(wx.EVT_MENU, self.OnPopup)
             submenu_image_tiling.Bind(wx.EVT_MENU, self.OnPopup)
 
+        self.__bind_events()
+
+    def __bind_events(self):
+        ps.Publisher().subscribe(self.CheckWindowLevelOther, 'Check window and level other')
+
+    def CheckWindowLevelOther(self, pubsub_evt):
+        item = self.ID_TO_TOOL_ITEM[self.other_wl_id]
+        item.Check()
+
     def OnPopup(self, evt):
 
         id = evt.GetId()
-        key = self.ID_TO_TOOL_ITEM[evt.GetId()]
+        item = self.ID_TO_TOOL_ITEM[evt.GetId()]
+        key = item.GetLabel()
 
         if(key in const.WINDOW_LEVEL.keys()):
             window, level = const.WINDOW_LEVEL[key]

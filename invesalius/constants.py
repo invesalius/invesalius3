@@ -155,6 +155,7 @@ WINDOW_LEVEL = {"Abdomen":(350,50),
                  "Lung - Soft":(1600,-600),
                  "Lung - Hard":(1000,-600),
                  "Mediastinum":(350,25),
+                 "Other":(None, None), #Case the user change window and level
                  "Pelvis": (450,50),
                  "Sinus":(4000, 400),
                  "Vasculature - Hard":(240,80),
