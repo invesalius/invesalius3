@@ -31,23 +31,23 @@ SAGITAL_SLICE_CAM_VIEW_UP =  {"AXIAL":(-1, 0, 0), "CORONAL":(0, 1, 0), "SAGITAL"
 CORONAL_SLICE_CAM_POSITION = {"AXIAL":(0, -1, 0), "CORONAL":(0, 0, 1), "SAGITAL":(1, 0, 0)}
 CORONAL_SLICE_CAM_VIEW_UP =  {"AXIAL":(0, 0, -1), "CORONAL":(0, 1, 0), "SAGITAL":(0, 1, 0)}
 
-SLICE_POSITION = {AXIAL:[AXIAL_SLICE_CAM_VIEW_UP, AXIAL_SLICE_CAM_POSITION], 
-                  SAGITAL:[SAGITAL_SLICE_CAM_VIEW_UP, SAGITAL_SLICE_CAM_POSITION], 
+SLICE_POSITION = {AXIAL:[AXIAL_SLICE_CAM_VIEW_UP, AXIAL_SLICE_CAM_POSITION],
+                  SAGITAL:[SAGITAL_SLICE_CAM_VIEW_UP, SAGITAL_SLICE_CAM_POSITION],
                   CORONAL:[CORONAL_SLICE_CAM_VIEW_UP, CORONAL_SLICE_CAM_POSITION]}
 
 #Color Table from Slice
 #NumberOfColors, SaturationRange, HueRange, ValueRange
-SLICE_COLOR_TABLE = {"Default (Gray)":(None,(0,0),(0,0),(0,1)), 
+SLICE_COLOR_TABLE = {"Default ":(None,(0,0),(0,0),(0,1)),
                      "Hue":(None,(1,1),(0,1),(1,1)),
-                     "Saturation":(None,(0,1),(0.6,0.6),(1,1)), 
+                     "Saturation":(None,(0,1),(0.6,0.6),(1,1)),
                      "Desert":(256, (1,1), (0, 0.1), (1,1)),
-                     "Rainbow":(256,(1,1),(0,0.8),(1,1)), 
+                     "Rainbow":(256,(1,1),(0,0.8),(1,1)),
                      "Ocen":(256,(1,1),(0.667, 0.5),(1,1)),
                      "Inverse Gray":(256, (0, 0), (0, 0), (1,0)),
-                     } 
+                     }
 
 # Volume view angle
-VOL_FRONT = wx.NewId() 
+VOL_FRONT = wx.NewId()
 VOL_BACK = wx.NewId()
 VOL_RIGHT = wx.NewId()
 VOL_LEFT = wx.NewId()
@@ -159,7 +159,7 @@ WINDOW_LEVEL = {"Abdomen":(350,50),
                  "Sinus":(4000, 400),
                  "Vasculature - Hard":(240,80),
                  "Vasculature - Soft":(650,160)}
-                 
+
 REDUCE_IMAGEDATA_QUALITY = 1
 
 # if 1, use vtkVolumeRaycastMapper, if 0, use vtkFixedPointVolumeRayCastMapper
@@ -167,9 +167,9 @@ TYPE_RAYCASTING_MAPPER = 0
 
 folder=RAYCASTING_PRESETS_DIRECTORY= os.path.join("..", "presets", "raycasting")
 
-RAYCASTING_TYPES = [filename.split(".")[0] for filename in 
+RAYCASTING_TYPES = [filename.split(".")[0] for filename in
                     os.listdir(folder) if
-                    os.path.isfile(os.path.join(folder,filename))] 
+                    os.path.isfile(os.path.join(folder,filename))]
 RAYCASTING_TYPES.append(' Off')
 RAYCASTING_TYPES.sort()
 RAYCASTING_OFF_LABEL = ' Off'
@@ -225,5 +225,5 @@ IMAGE_TILING = {"1 x 1":(1,1), "1 x 2":(1,2),
                 "4 x 1":(4,1), "4 x 2":(4,2),
                 "4 x 3":(4,3), "4 x 4":(4,4),
                 "4 x 5":(4,5), "5 x 4":(5,4)}
-     
-        
+
+
