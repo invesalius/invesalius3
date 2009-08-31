@@ -412,7 +412,7 @@ class ObjectToolBar(wx.ToolBar):
                                  wx.BITMAP_TYPE_PNG)
             BMP_ZOOM_SELECT = wx.Bitmap("../icons/tool_zoom_select_original.png",
                                         wx.BITMAP_TYPE_PNG)
-            BMP_CONTRAST = wx.Bitmap("../icons/tool_contrast.png",
+            BMP_CONTRAST = wx.Bitmap("../icons/tool_contrast_original.png",
                                      wx.BITMAP_TYPE_PNG)
         else:
             

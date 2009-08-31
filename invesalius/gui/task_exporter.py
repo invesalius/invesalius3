@@ -109,29 +109,32 @@ class InnerTaskPanel(wx.Panel):
         link_export_surface.Bind(hl.EVT_HYPERLINK_LEFT,
                               self.OnLinkExportSurface)
 
-        tooltip = wx.ToolTip("Request rapid prototyping services")
-        link_request_rp = hl.HyperLinkCtrl(self,-1,"Request rapid prototyping...")
-        link_request_rp.SetUnderlines(False, False, False)
-        link_request_rp.SetColours("BLACK", "BLACK", "BLACK")
-        link_request_rp.SetToolTip(tooltip)
-        link_request_rp.AutoBrowse(False)
-        link_request_rp.UpdateLink()
-        link_request_rp.Bind(hl.EVT_HYPERLINK_LEFT, self.OnLinkRequestRP)
+        #tooltip = wx.ToolTip("Request rapid prototyping services")
+        #link_request_rp = hl.HyperLinkCtrl(self,-1,"Request rapid prototyping...")
+        #link_request_rp.SetUnderlines(False, False, False)
+        #link_request_rp.SetColours("BLACK", "BLACK", "BLACK")
+        #link_request_rp.SetToolTip(tooltip)
+        #link_request_rp.AutoBrowse(False)
+        #link_request_rp.UpdateLink()
+        #link_request_rp.Bind(hl.EVT_HYPERLINK_LEFT, self.OnLinkRequestRP)
 
-        tooltip = wx.ToolTip("Open report tool...")
-        link_report = hl.HyperLinkCtrl(self,-1,"Open report tool...")
-        link_report.SetUnderlines(False, False, False)
-        link_report.SetColours("BLACK", "BLACK", "BLACK")
-        link_report.SetToolTip(tooltip)
-        link_report.AutoBrowse(False)
-        link_report.UpdateLink()
-        link_report.Bind(hl.EVT_HYPERLINK_LEFT, self.OnLinkReport)
+        #tooltip = wx.ToolTip("Open report tool...")
+        #link_report = hl.HyperLinkCtrl(self,-1,"Open report tool...")
+        #link_report.SetUnderlines(False, False, False)
+        #link_report.SetColours("BLACK", "BLACK", "BLACK")
+        #link_report.SetToolTip(tooltip)
+        #link_report.AutoBrowse(False)
+        #link_report.UpdateLink()
+        #link_report.Bind(hl.EVT_HYPERLINK_LEFT, self.OnLinkReport)
 
 
         # Image(s) for buttons
-        BMP_IMPORT = wx.Bitmap("../icons/file_import.png", wx.BITMAP_TYPE_PNG)
+        BMP_EXPORT_SURFACE = wx.Bitmap("../icons/surface_export.png",
+                                        wx.BITMAP_TYPE_PNG)
+        BMP_TAKE_PICTURE = wx.Bitmap("../icons/tool_photo_original.png",
+                                     wx.BITMAP_TYPE_PNG)
 
-        bmp_list = [BMP_IMPORT]
+        bmp_list = [BMP_TAKE_PICTURE, BMP_EXPORT_SURFACE]
         for bmp in bmp_list:
             bmp.SetWidth(25)
             bmp.SetHeight(25)
@@ -140,14 +143,16 @@ class InnerTaskPanel(wx.Panel):
         button_style = pbtn.PB_STYLE_SQUARE | pbtn.PB_STYLE_DEFAULT
 
         button_picture = pbtn.PlateButton(self, BTN_PICTURE, "",
-                                               BMP_IMPORT, style=button_style)
-        button_surface = pbtn.PlateButton(self, BTN_SURFACE, "", BMP_IMPORT,
+                                               BMP_TAKE_PICTURE,
+                                               style=button_style)
+        button_surface = pbtn.PlateButton(self, BTN_SURFACE, "",
+                                                BMP_EXPORT_SURFACE,
                                               style=button_style)
-        button_request_rp = pbtn.PlateButton(self, BTN_REQUEST_RP, "",
-                                            BMP_IMPORT, style=button_style)
-        button_report = pbtn.PlateButton(self, BTN_REPORT, "",
-                                         BMP_IMPORT,
-                                         style=button_style)
+        #button_request_rp = pbtn.PlateButton(self, BTN_REQUEST_RP, "",
+        #                                    BMP_IMPORT, style=button_style)
+        #button_report = pbtn.PlateButton(self, BTN_REPORT, "",
+        #                                 BMP_IMPORT,
+        #                                 style=button_style)
 
         # When using PlaneButton, it is necessary to bind events from parent win
         self.Bind(wx.EVT_BUTTON, self.OnButton)
@@ -156,16 +161,16 @@ class InnerTaskPanel(wx.Panel):
         flag_link = wx.EXPAND|wx.GROW|wx.LEFT|wx.TOP
         flag_button = wx.EXPAND | wx.GROW
 
-        fixed_sizer = wx.FlexGridSizer(rows=4, cols=2, hgap=2, vgap=0)
+        fixed_sizer = wx.FlexGridSizer(rows=2, cols=2, hgap=2, vgap=0)
         fixed_sizer.AddGrowableCol(0, 1)
         fixed_sizer.AddMany([ (link_export_picture, 1, flag_link, 3),
                               (button_picture, 0, flag_button),
                               (link_export_surface, 1, flag_link, 3),
-                              (button_surface, 0, flag_button),
-                              (link_report, 0, flag_link, 3),
-                              (button_report, 0, flag_button),
-                              (link_request_rp, 1, flag_link, 3),
-                              (button_request_rp, 0, flag_button)])
+                              (button_surface, 0, flag_button)])#,
+                              #(link_report, 0, flag_link, 3),
+                              #(button_report, 0, flag_button),
+                              #(link_request_rp, 1, flag_link, 3),
+                              #(button_request_rp, 0, flag_button)])
 
         # Add line sizers into main sizer
         main_sizer = wx.BoxSizer(wx.VERTICAL)
