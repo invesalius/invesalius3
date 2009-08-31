@@ -243,6 +243,11 @@ class Viewer(wx.Panel):
             ps.Publisher().sendMessage('Update window and level text',\
                                        "WL: %d  WW: %d"%(self.acum_achange_level,\
                                                          self.acum_achange_window))
+
+            const.WINDOW_LEVEL['Other'] = (self.acum_achange_window,\
+                                           self.acum_achange_level)
+            ps.Publisher().sendMessage('Check window and level other')
+
         self.interactor.Render()
 
 
@@ -253,8 +258,8 @@ class Viewer(wx.Panel):
     def UpdateWindowLevelValue(self, pubsub_evt):
         window, level = pubsub_evt.data
         self.acum_achange_window, self.acum_achange_level = (window, level)
-        
-        
+
+
     def OnChangeSliceMove(self, evt, obj):
 
         min = 0
