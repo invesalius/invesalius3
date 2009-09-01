@@ -297,14 +297,15 @@ class DicomGroups:
                 else:
                     groups_dcm_[new_key] = [[information]]
 
-        for j in xrange(len(groups_dcm_.keys())):
-            key = groups_dcm_.keys()[j]
-            groups_dcm_[key][0].sort()
         #the number of previously existing number is
         #greater or equal then the group keeps up,
         #but maintains the same group of positions.
         if len(self.groups_dcm.keys()) < len(groups_dcm_.keys()):
             self.groups_dcm = groups_dcm_
+
+        for j in xrange(len(self.groups_dcm.keys())):
+            key = self.groups_dcm.keys()[j]
+            self.groups_dcm[key][0].sort(key=lambda x: x.image.number)
 
 
     def __UpdateZSpacing(self):
@@ -316,16 +317,15 @@ class DicomGroups:
 
             key = self.groups_dcm.keys()[x]
             information = self.groups_dcm[key][0]
-            
             if (len(self.groups_dcm[key][0]) > 1):
                 #Catch a slice of middle and the next to find the spacing.
                 center = len(self.groups_dcm[key][0])/2
                 if (center == 1):
                     center = 0 
-                
+
                 information = self.groups_dcm[key][0][center]
                 current_position = information.image.position
-                
+
                 information = self.groups_dcm[key][0][center + 1]
                 next_position = information.image.position
 
@@ -345,6 +345,6 @@ class DicomGroups:
 
             else:
                 spacing = None
-            
+
             for information in self.groups_dcm[key][0]:
                 information.image.spacing[2] = spacing
