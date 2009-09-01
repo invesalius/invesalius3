@@ -39,7 +39,7 @@ def LoadImages(dir_):
 
     dcm_files, acquisition_modality = GetDicomFiles(dir_)
 
-    dcm_series = dicom_grouper.ivDicomGroups()
+    dcm_series = dicom_grouper.DicomGroups()
     dcm_series.SetFileList(dcm_files)
     dcm_series.Update()
 
@@ -52,8 +52,8 @@ def LoadImages(dir_):
         key = groups.keys()[x]
 
         for y in xrange(len(groups[key][0])):
-
-            file = groups[key][0][y][8]
+            dicom = groups[key][0][y]
+            file = dicom.image.file
             tmp_list.append(file)
 
         list_files.append([len(tmp_list), key])
@@ -66,19 +66,22 @@ def LoadImages(dir_):
 
     file_list = []
     for x in xrange(len(groups[key][0])):
-        file_list.append(groups[key][0][x][8])
+        dicom = groups[key][0][x]
+        file_list.append(dicom.image.file)
 
-    tilt = groups[key][0][x][11]
-    spacing = groups[key][1][14]
-    spacing_z = groups[key][1][30]
-    orientation = groups[key][0][x][7]
-    window = groups[key][0][x][12]
-    level = groups[key][0][x][13]
-
+    information = groups[key][0][x]
+    
+    tilt = dicom.acquisition.tilt#groups[key][0][x][11]
+    spacing = dicom.image.spacing#groups[key][1][14]
+    #spacing_z = #groups[key][1][30]
+    orientation = dicom.image.orientation_label#groups[key][0][x][7]
+    window = dicom.image.window#groups[key][0][x][12]
+    level = dicom.image.level#groups[key][0][x][13]
 
     files = file_list
+    print dicom.image.orientation_label
     #Coronal Crash. necessary verify
-    if (orientation <> "CORONAL"):
+    if (dicom.image.orientation_label <> "CORONAL"):
         #Organize reversed image
         sorter = gdcm.IPPSorter()
         sorter.SetComputeZSpacing(True)
@@ -100,9 +103,9 @@ def LoadImages(dir_):
         read.SetFileNames(array)
         read.Update()
 
-        img_axial = vtk.vtkImageData()
-        img_axial.DeepCopy(read.GetOutput())
-        img_axial.SetSpacing(spacing, spacing, spacing_z)
+        image_data = vtk.vtkImageData()
+        image_data.DeepCopy(read.GetOutput())
+        image_data.SetSpacing(spacing, spacing, spacing_z)
     else:
         for x in xrange(len(files)):
             #SIf the resolution of the
@@ -118,16 +121,15 @@ def LoadImages(dir_):
             img_app.AddInput(img)
             img_app.Update()
 
-        img_axial = vtk.vtkImageData()
-        img_axial.DeepCopy(img_app.GetOutput())
-        img_axial.SetSpacing(img_axial.GetSpacing()[0],\
-                         img_axial.GetSpacing()[1],\
-                         spacing_z)
+        image_data = vtk.vtkImageData()
+        image_data.DeepCopy(img_app.GetOutput())
+        image_data.SetSpacing(image_data.GetSpacing()[0],\
+                         image_data.GetSpacing()[1],\
+                         dicom.image.spacing[2])
 
+    image_data.Update()
 
-    img_axial.Update()
-
-    return img_axial, acquisition_modality, tilt, orientation, window, level
+    return image_data, acquisition_modality, tilt, orientation, window, level
 
 def GetDicomFiles(path, recursive = False):
     #  TODO!!! SUPER GAMBIARRA!!! DO THIS BETTER

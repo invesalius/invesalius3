@@ -1620,3 +1620,79 @@ if __name__ == "__main__":
             #print info
 
 
+
+
+
+class Dicom(object):
+    def __init__(self):
+        pass
+
+    def SetParser(self, parser):
+        self.parser = parser
+
+        self.LoadImageInfo()
+        self.LoadPatientInfo()
+        self.LoadAcquisitionInfo()
+        #self.LoadStudyInfo()
+
+    def LoadImageInfo(self):
+        self.image = Image()
+        self.image.SetParser(self.parser)
+
+    def LoadPatientInfo(self):
+        self.patient = Patient()
+        self.patient.SetParser(self.parser)
+
+    def LoadAcquisitionInfo(self):
+        self.acquisition = Acquisition()
+        self.acquisition.SetParser(self.parser)
+
+
+
+class Patient(object):
+    def __init__(self):
+        pass
+
+    def SetParser(self, parser):
+        self.name = parser.GetPatientName()
+        self.physician = parser.GetPhysicianName()
+
+class Acquisition(object):
+
+    def __init__(self):
+        pass
+
+    def SetParser(self, parser):
+        self.patient_orientation = parser.GetImagePatientOrientation()
+        self.series_description = parser.GetSeriesDescrition()
+        self.tilt = parser.GetAcquisitionGantryTilt()
+        self.serie_number = parser.GetImageSeriesNumber()
+        self.id_study = parser.GetStudyID()
+
+class Image(object):
+
+    def __init__(self):
+        pass
+
+    def SetParser(self, parser):
+        self.level = parser.GetImageWindowLevel()
+        self.window = parser.GetImageWindowWidth()
+        self.position = parser.GetImagePosition()
+        self.number = parser.GetImageNumber()
+        self.spacing = spacing = parser.GetPixelSpacing()
+        self.orientation_label = parser.GetImageOrientationLabel()
+        self.file = parser.filename
+
+        if (parser.GetImageThickness()):
+            spacing.append(parser.GetImageThickness())
+        else:
+            spacing.append(1.5)
+
+        spacing[0] = round(spacing[0],2)
+        spacing[1] = round(spacing[1],2)
+        spacing[2] = round(spacing[2],2)
+
+        try:
+            self.type = parser.GetImageType()[2]
+        except(IndexError):
+            self.type = None
