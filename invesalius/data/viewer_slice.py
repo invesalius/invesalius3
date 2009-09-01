@@ -44,7 +44,7 @@ class Viewer(wx.Panel):
         self.SetBackgroundColour(colour)
 
         # Interactor additional style
-        self.modes = [] #['DEFAULT']
+        self.modes = []#['DEFAULT']
         self.mouse_pressed = 0
 
         # All renderers and image actors in this viewer
@@ -105,7 +105,7 @@ class Viewer(wx.Panel):
     def SetLayout(self, layout):
         self.layout = layout
         slice_ = sl.Slice()
-        self.load_renderers(slice_.GetOutput())
+        self.LoadRenderers(slice_.GetOutput())
         self.__configure_renderers()
         self.__configure_scroll()
 
@@ -132,10 +132,10 @@ class Viewer(wx.Panel):
         self.modes.append(mode)
 
         # All modes and bindings
-        action = {'DEFAULT': {
+        action = {'CROSS': {
                              "MouseMoveEvent": self.OnCrossMove,
-                             "LeftButtonPressEvent": self.OnMouseClick,
-                             "LeftButtonReleaseEvent": self.OnMouseRelease
+                             "LeftButtonPressEvent": self.OnCrossMouseClick,
+                             "LeftButtonReleaseEvent": self.OnCrossMouseRelease
                              },
                   'EDITOR': {
                             "MouseMoveEvent": self.OnBrushMove,
@@ -228,6 +228,11 @@ class Viewer(wx.Panel):
         self.append_mode('CHANGESLICE')
         self.mouse_pressed = 0
         self.interactor.SetCursor(wx.StockCursor(wx.CURSOR_SIZENS))
+
+    def __set_mode_cross(self, pubsub_evt):
+        self.append_mode('CROSS')
+        self.mouse_pressed = 0
+        self.interactor.SetCursor(wx.StockCursor(wx.CURSOR_NONE))
 
     def OnWindowLevelMove(self, evt, obj):
         if self.mouse_pressed:
@@ -523,7 +528,6 @@ class Viewer(wx.Panel):
         elif self._brush_cursor_op == const.BRUSH_THRESH:
             evt_msg = 'Edit mask pixel'
 
-        self.__update_cross_position(*coord)
 
         if self.mouse_pressed:
             pixels = itertools.ifilter(self.test_operation_position,
@@ -533,17 +537,38 @@ class Viewer(wx.Panel):
         self.interactor.Render()
 
     def OnCrossMove(self, obj, evt_vtk):
-        coord = self.get_coordinate()
         # Update position in other slices
         if self.mouse_pressed:
-            ps.Publisher().sendMessage('Update cursor position in slice',
-                                        coord)
+            mouse_x, mouse_y = self.interactor.GetEventPosition()
+            renderer = self.slice_data_list[0].renderer
+            self.pick.Pick(mouse_x, mouse_y, 0, renderer)
+            coord_cross = self.get_coordinate_cursor()
+            coord = self.get_coordinate()
+            ps.Publisher().sendMessage('Update cross position', coord_cross)
             ps.Publisher().sendMessage(('Set scroll position', 'SAGITAL'),
-                                        coord[0])
+                                       coord[0])
             ps.Publisher().sendMessage(('Set scroll position', 'CORONAL'),
-                                        coord[1])
+                                       coord[1])
             ps.Publisher().sendMessage(('Set scroll position', 'AXIAL'),
-                                        coord[2])
+                                       coord[2])
+
+    def OnCrossMouseClick(self, obj, evt_vtk):
+        mouse_x, mouse_y = self.interactor.GetEventPosition()
+        renderer = self.slice_data_list[0].renderer
+        self.pick.Pick(mouse_x, mouse_y, 0, renderer)
+        coord_cross = self.get_coordinate_cursor()
+        coord = self.get_coordinate()
+        ps.Publisher().sendMessage('Update cross position', coord_cross)
+        ps.Publisher().sendMessage(('Set scroll position', 'SAGITAL'),
+                                   coord[0])
+        ps.Publisher().sendMessage(('Set scroll position', 'CORONAL'),
+                                   coord[1])
+        ps.Publisher().sendMessage(('Set scroll position', 'AXIAL'),
+                                   coord[2])
+        self.mouse_pressed = 1
+
+    def OnCrossMouseRelease(self, obj, evt_vtk):
+        self.mouse_pressed = 0
 
     def get_slice_data(self, render):
         for slice_data in self.slice_data_list:
@@ -637,6 +662,8 @@ class Viewer(wx.Panel):
         ps.Publisher().subscribe(self.ChangeSliceNumber,
                                  ('Set scroll position',
                                   self.orientation))
+        ps.Publisher().subscribe(self.__update_cross_position,
+                                'Update cross position')
         ###
         ps.Publisher().subscribe(self.ChangeBrushSize,
                                  'Set edition brush size')
@@ -669,6 +696,9 @@ class Viewer(wx.Panel):
         ps.Publisher().subscribe(self.__set_mode_window_level,
                                  ('Set interaction mode',
                                   const.MODE_WW_WL))
+        ps.Publisher().subscribe(self.__set_mode_cross,
+                                 ('Set interaction mode',
+                                  const.MODE_SLICE_CROSS))
         ####
         ps.Publisher().subscribe(self.UpdateText,\
                                  'Update window and level text')
@@ -692,7 +722,7 @@ class Viewer(wx.Panel):
         imagedata = pubsub_evt.data
         self.SetInput(imagedata)
 
-    def load_renderers(self, image):
+    def LoadRenderers(self, image):
         number_renderers = self.layout[0] * self.layout[1]
         diff = number_renderers - len(self.slice_data_list)
         if diff > 0:
@@ -744,7 +774,7 @@ class Viewer(wx.Panel):
 
         #actor = vtk.vtkImageActor()
         #actor.SetInput(slice_.GetOutput())
-        self.load_renderers(slice_.GetOutput())
+        self.LoadRenderers(slice_.GetOutput())
         self.__configure_renderers()
         ren = self.slice_data_list[0].renderer
         actor = self.slice_data_list[0].actor
@@ -830,10 +860,12 @@ class Viewer(wx.Panel):
         cross_actor.SetProperty(property)
         # Only the slices are pickable
         cross_actor.PickableOff()
+        self.cross_actor = cross_actor
 
         renderer.AddActor(cross_actor)
 
-    def __update_cross_position(self, x, y, z):
+    def __update_cross_position(self, pubsub_evt):
+        x, y, z = pubsub_evt.data
         #xi, yi, zi = self.vline.GetPoint1()
         #xf, yf, zf = self.vline.GetPoint2()
         #self.vline.SetPoint1(x, yi, z)
@@ -863,7 +895,7 @@ class Viewer(wx.Panel):
         else:
             coordinates = {"SAGITAL": yz, "CORONAL": xz, "AXIAL": xy}
 
-        self.cross.SetFocalPoint(coordinates[self.orientation])
+        self.cross.SetFocalPoint(x, y, z)
 
         #print
         #print slice_number
@@ -1012,10 +1044,10 @@ class Viewer(wx.Panel):
                         "CORONAL": {1: slice_data.number},
                         "AXIAL": {2: slice_data.number}}
 
-            if 'DEFAULT' in self.modes:
-                ps.Publisher().sendMessage(
-                    'Update cursor single position in slice',
-                    position[self.orientation])
+            #if 'DEFAULT' in self.modes:
+            #    ps.Publisher().sendMessage(
+            #        'Update cursor single position in slice',
+            #        position[self.orientation])
 
     def ChangeSliceNumber(self, pubsub_evt):
         index = pubsub_evt.data

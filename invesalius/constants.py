@@ -200,6 +200,7 @@ MODE_WW_WL = 4#:"Bright and contrast adjustment"}
 ####
 MODE_SLICE_SCROLL = -1
 MODE_SLICE_EDITOR = -2
+MODE_SLICE_CROSS = -3
 
 ############
 

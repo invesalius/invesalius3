@@ -43,8 +43,9 @@ MODE_BY_ID = {ID_ZOOM: const.MODE_ZOOM,
               ID_CONTRAST: const.MODE_WW_WL}
 
 # Slice toolbar
-SLICE_TOOLS = [ID_SLICE_SCROLL] = [wx.NewId() for number in range(1)]
-SLICE_MODE_BY_ID = {ID_SLICE_SCROLL: const.MODE_SLICE_SCROLL}
+SLICE_TOOLS = [ID_SLICE_SCROLL, ID_CROSS] = [wx.NewId() for number in range(2)]
+SLICE_MODE_BY_ID = {ID_SLICE_SCROLL: const.MODE_SLICE_SCROLL,
+                    ID_CROSS: const.MODE_SLICE_CROSS}
 
 class Frame(wx.Frame):
     def __init__(self, prnt):
@@ -508,8 +509,14 @@ class SliceToolBar(wx.ToolBar):
             BMP_SLICE = wx.Bitmap("../icons/slice.png",
                                   wx.BITMAP_TYPE_PNG)
 
+        BMP_CROSS = wx.Bitmap("../icons/cross.png",
+                              wx.BITMAP_TYPE_PNG)
+
         self.AddLabelTool(ID_SLICE_SCROLL, "Scroll slice",
                            BMP_SLICE, kind = wx.ITEM_CHECK)
+
+        self.AddLabelTool(ID_CROSS, "Cross",
+                           BMP_CROSS, kind = wx.ITEM_CHECK)
 
         self.Realize()
 
