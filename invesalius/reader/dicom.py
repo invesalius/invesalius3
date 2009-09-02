@@ -1668,6 +1668,7 @@ class Acquisition(object):
         self.tilt = parser.GetAcquisitionGantryTilt()
         self.serie_number = parser.GetImageSeriesNumber()
         self.id_study = parser.GetStudyID()
+        self.modality = parser.GetAcquisitionModality()
 
 class Image(object):
 

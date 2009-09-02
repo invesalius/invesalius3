@@ -69,17 +69,9 @@ def LoadImages(dir_):
         dicom = groups[key][0][x]
         file_list.append(dicom.image.file)
 
-    information = groups[key][0][x]
-    
-    tilt = dicom.acquisition.tilt#groups[key][0][x][11]
-    spacing = dicom.image.spacing#groups[key][1][14]
-    #spacing_z = #groups[key][1][30]
-    orientation = dicom.image.orientation_label#groups[key][0][x][7]
-    window = dicom.image.window#groups[key][0][x][12]
-    level = dicom.image.level#groups[key][0][x][13]
-
     files = file_list
-    print dicom.image.orientation_label
+    spacing = dicom.image.spacing
+    
     #Coronal Crash. necessary verify
     if (dicom.image.orientation_label <> "CORONAL"):
         #Organize reversed image
@@ -87,6 +79,7 @@ def LoadImages(dir_):
         sorter.SetComputeZSpacing(True)
         sorter.SetZSpacingTolerance(1e-10)
         sorter.Sort(file_list)
+
         #Getting organized image
         files = sorter.GetFilenames()
 
@@ -130,7 +123,7 @@ def LoadImages(dir_):
 
     image_data.Update()
 
-    return image_data, acquisition_modality, tilt, orientation, window, level
+    return image_data, dicom
 
 def GetDicomFiles(path, recursive = False):
     #  TODO!!! SUPER GAMBIARRA!!! DO THIS BETTER

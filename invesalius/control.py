@@ -9,7 +9,7 @@ import project as prj
 import data.imagedata_utils as utils
 import data.surface as surface
 import data.volume as volume
-import reader.dicom_reader as dicom
+import reader.dicom_reader as dcm
 import reader.analyze_reader as analyze
 
 DEFAULT_THRESH_MODE = 0
@@ -45,21 +45,22 @@ class Controller():
             dir_ = pubsub_evt.data
 
         # Select medical images from directory and generate vtkImageData
-        output = dicom.LoadImages(dir_)
+        output = dcm.LoadImages(dir_)
         proj = prj.Project()
         proj.name = "Untitled"
 
         if output:
-            imagedata, acquisition_modality, tilt_value, orientation,\
-            window, level = output
-
+            #acquisition_modality, tilt_value, orientation,window, level
+            imagedata, dicom = output
+            orientation = dicom.image.orientation_label
             if (orientation == "CORONAL"):
                 orientation = const.CORONAL
             elif(orientation == "SAGITTAL"):
                 orientation = const.SAGITAL
             else:
                 orientation = const.AXIAL
-
+            
+            tilt_value = dicom.acquisition.tilt
             if (tilt_value):
                 #TODO: Show dialog so user can set not other value
                 tilt_value *= -1
@@ -86,11 +87,11 @@ class Controller():
             print "Sorry, but there are no medical images supported on this dir."
         else:
             # Create new project
-            proj.SetAcquisitionModality(acquisition_modality)
+            proj.SetAcquisitionModality(dicom.acquisition.modality)
             proj.imagedata = imagedata
             proj.original_orientation = orientation
-            proj.window = window = float(window)
-            proj.level = level = float(level)
+            proj.window = window = float(dicom.image.window)
+            proj.level = level = float(dicom.image.level)
             const.WINDOW_LEVEL['Default'] = (window, level)
             const.WINDOW_LEVEL['Other'] = (window, level)
 
