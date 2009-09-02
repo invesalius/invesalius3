@@ -158,11 +158,8 @@ class Viewer(wx.Panel):
                          "MouseMoveEvent": self.OnZoomMove,
                          "LeftButtonPressEvent": self.OnZoomClick,
                          "LeftButtonReleaseEvent": self.OnReleaseModes,
-                         "RightButtonReleaseEvent":self.OnUnZoom
+                         #"RightButtonReleaseEvent":self.OnUnZoom
                         },
-                  'ZOOMSELECT':{
-                               "RightButtonReleaseEvent":self.OnUnZoom
-                              },
                   'CHANGESLICE':{
                                 "MouseMoveEvent": self.OnChangeSliceMove,
                                 "LeftButtonPressEvent": self.OnChangeSliceClick,
@@ -181,13 +178,17 @@ class Viewer(wx.Panel):
         else:
             style = vtk.vtkInteractorStyleImage()
 
-        # Check all modes set by user
-        for mode in self.modes:
-            # Check each event available for each mode
-            for event in action[mode]:
-                # Bind event
-                style.AddObserver(event,
-                                  action[mode][event])
+            # Check all modes set by user
+            for mode in self.modes:
+                # Check each event available for each mode
+                for event in action[mode]:
+                    # Bind event
+                    style.AddObserver(event,
+                                      action[mode][event])
+        
+        if ((mode == "ZOOM") or (mode == "ZOOMSELECT")):
+            self.interactor.Bind(wx.EVT_LEFT_DCLICK, self.OnUnZoom)
+            
         self.style = style
         self.interactor.SetInteractorStyle(style)
 
@@ -310,7 +311,7 @@ class Viewer(wx.Panel):
         self.mouse_pressed = 1
         evt.StartDolly()
 
-    def OnUnZoom(self, evt, obj):
+    def OnUnZoom(self, evt, obj = None):
         mouse_x, mouse_y = self.interactor.GetLastEventPosition()
         ren = self.interactor.FindPokedRenderer(mouse_x, mouse_y)
         slice_data = self.get_slice_data(ren)
