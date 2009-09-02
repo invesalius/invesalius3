@@ -158,7 +158,6 @@ class Viewer(wx.Panel):
                          "MouseMoveEvent": self.OnZoomMove,
                          "LeftButtonPressEvent": self.OnZoomClick,
                          "LeftButtonReleaseEvent": self.OnReleaseModes,
-                         #"RightButtonReleaseEvent":self.OnUnZoom
                         },
                   'CHANGESLICE':{
                                 "MouseMoveEvent": self.OnChangeSliceMove,
@@ -188,6 +187,8 @@ class Viewer(wx.Panel):
         
         if ((mode == "ZOOM") or (mode == "ZOOMSELECT")):
             self.interactor.Bind(wx.EVT_LEFT_DCLICK, self.OnUnZoom)
+        else:
+            self.interactor.Bind(wx.EVT_LEFT_DCLICK, None)
             
         self.style = style
         self.interactor.SetInteractorStyle(style)
