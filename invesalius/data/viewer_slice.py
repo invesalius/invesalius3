@@ -66,7 +66,7 @@ class Viewer(wx.Panel):
         self.text = None
         # VTK pipeline and actors
         #self.__config_interactor()
-        self.pick = vtk.vtkCellPicker()
+        self.pick = vtk.vtkWorldPointPicker()
 
         self.__bind_events()
         self.__bind_events_wx()
@@ -883,9 +883,15 @@ class Viewer(wx.Panel):
         slice_number = slice_data.number
         actor_bound = slice_data.actor.GetBounds()
 
-        yz = [actor_bound[1] + 1 + slice_number, y, z]
-        xz = [x, actor_bound[3] - 1 - slice_number, z]
-        xy = [x, y, actor_bound[5] + 1 + slice_number]
+        print
+        print self.orientation
+        print x, y, z
+        print actor_bound
+        print
+
+        xy = [x, y, actor_bound[0]]
+        yz = [actor_bound[2], y, z]
+        xz = [x, actor_bound[4], z]
 
         proj = project.Project()
         orig_orien = proj.original_orientation
@@ -927,7 +933,7 @@ class Viewer(wx.Panel):
             else:
                 coordinates = {"SAGITAL": yz, "CORONAL": xz, "AXIAL": xy}
 
-            slice_data.cursor.SetPosition(coordinates[self.orientation])
+            slice_data.cursor.SetPosition((x, y, z))
 
     def SetOrientation(self, orientation):
         self.orientation = orientation
