@@ -1678,7 +1678,11 @@ class Image(object):
     def SetParser(self, parser):
         self.level = parser.GetImageWindowLevel()
         self.window = parser.GetImageWindowWidth()
+        
         self.position = parser.GetImagePosition()
+        if not (self.position):
+            self.position = [1, 1, 1]
+            
         self.number = parser.GetImageNumber()
         self.spacing = spacing = parser.GetPixelSpacing()
         self.orientation_label = parser.GetImageOrientationLabel()
@@ -1687,12 +1691,16 @@ class Image(object):
         if (parser.GetImageThickness()):
             spacing.append(parser.GetImageThickness())
         else:
-            spacing.append(1.5)
-
+            try:
+                spacing.append(1.5)
+            except(AttributeError):
+                spacing = [1, 1, 1]
+                
         spacing[0] = round(spacing[0],2)
         spacing[1] = round(spacing[1],2)
         spacing[2] = round(spacing[2],2)
-
+        self.spacing = spacing
+        
         try:
             self.type = parser.GetImageType()[2]
         except(IndexError):
