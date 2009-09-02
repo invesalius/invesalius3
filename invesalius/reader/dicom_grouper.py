@@ -330,7 +330,7 @@ class DicomGroups:
                 next_position = information.image.position
 
                 try:
-                    image_orientation_label = self.groups_dcm.keys()[3]
+                    image_orientation_label = self.groups_dcm.keys()[x][3]
                 except(IndexError):
                     image_orientation_label = None
 
