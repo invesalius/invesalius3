@@ -105,7 +105,8 @@ def LoadImages(dir_):
 
         image_data = vtk.vtkImageData()
         image_data.DeepCopy(read.GetOutput())
-        image_data.SetSpacing(spacing, spacing, dicom.image.spacing[2])
+        spacing = dicom.image.spacing
+        image_data.SetSpacing(spacing)
     else:
         for x in xrange(len(files)):
             #SIf the resolution of the
