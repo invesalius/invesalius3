@@ -71,7 +71,7 @@ class Viewer(wx.Panel):
 
         self.__bind_events()
         self.__bind_events_wx()
-        
+    
         
     def OnMove(self, obj, evt):
         if self.onclick and self.raycasting_volume:
@@ -234,16 +234,20 @@ class Viewer(wx.Panel):
         self.text.SetValue("WL: %d  WW: %d"%(wl, ww))
         self.ren.AddActor(self.text.actor)
         self.ren.SetBackground(colour)
-
-
+        
         if not (self.view_angle):
             self.SetViewAngle(const.VOL_FRONT)
         else:
             self.ren.ResetCamera()
             self.ren.ResetCameraClippingRange()
 
-
         self.UpdateRender()
+
+    def LoadPlane(self):
+        self.plane = SlicePlane()
+        self.plane.EnableX()
+        self.plane.EnableY()
+        self.plane.EnableZ()
 
     def ChangeBackgroundColour(self, pubsub_evt):
         colour = pubsub_evt.data
@@ -262,7 +266,6 @@ class Viewer(wx.Panel):
         else:
             ren.ResetCamera()
             ren.ResetCameraClippingRange()
-
 
         #self.ShowOrientationCube()
 
@@ -292,40 +295,92 @@ class Viewer(wx.Panel):
 
     def UpdateRender(self, evt_pubsub=None):
         self.interactor.Render()
-
-    def CreatePlanes(self):
-
-        imagedata = self.imagedata
-        ren = self.ren
-        interactor = self.interactor
-
-        import ivVolumeWidgets as vw
-        axial_plane = vw.Plane()
-        axial_plane.SetRender(ren)
-        axial_plane.SetInteractor(interactor)
-        axial_plane.SetOrientation(vw.AXIAL)
-        axial_plane.SetInput(imagedata)
-        axial_plane.Show()
-        axial_plane.Update()
-
-        coronal_plane = vw.Plane()
-        coronal_plane.SetRender(ren)
-        coronal_plane.SetInteractor(interactor)
-        coronal_plane.SetOrientation(vw.CORONAL)
-        coronal_plane.SetInput(imagedata)
-        coronal_plane.Show()
-        coronal_plane.Update()
-
-        sagital_plane = vw.Plane()
-        sagital_plane.SetRender(ren)
-        sagital_plane.SetInteractor(interactor)
-        sagital_plane.SetOrientation(vw.SAGITAL)
-        sagital_plane.SetInput(imagedata)
-        sagital_plane.Show()
-        sagital_plane.Update()
     
     def SetWidgetInteractor(self, evt_pubsub=None):
         evt_pubsub.data.SetInteractor(self.interactor._Iren)
 
     def AppendActor(self, evt_pubsub=None):
         self.ren.AddActor(evt_pubsub.data)
+
+
+
+
+class SlicePlane:
+    
+    def __init__(self):
+    
+        self.Create()
+        self.__bind_events()
+        
+    def __bind_events(self):
+        self.plane_x.AddObserver("InteractionEvent", self.Update)
+    
+    def Create(self):
+
+        plane_x = self.plane_x = vtk.vtkImagePlaneWidget()
+        plane_x.DisplayTextOff()
+        ps.Publisher().sendMessage('Input Image in the widget', plane_x)
+        plane_x.SetPlaneOrientationToXAxes()
+        plane_x.TextureVisibilityOn()
+        plane_x.SetLeftButtonAction(1)
+        plane_x.SetRightButtonAction(0)
+        prop1 = plane_x.GetPlaneProperty()
+        prop1.SetColor(0, 0, 1)
+        cursor_property = plane_x.GetCursorProperty()
+        cursor_property.SetOpacity(0) 
+
+        plane_y = self.plane_y = vtk.vtkImagePlaneWidget()
+        plane_y.DisplayTextOff()
+        ps.Publisher().sendMessage('Input Image in the widget', plane_y)
+        plane_y.SetPlaneOrientationToYAxes()
+        plane_y.TextureVisibilityOn()
+        plane_y.SetLeftButtonAction(1)
+        plane_y.SetRightButtonAction(0)
+        prop1 = plane_y.GetPlaneProperty()
+        prop1.SetColor(0, 1, 0)
+        cursor_property = plane_y.GetCursorProperty()
+        cursor_property.SetOpacity(0) 
+        
+        plane_z = self.plane_z = vtk.vtkImagePlaneWidget()
+        plane_z.DisplayTextOff()
+        ps.Publisher().sendMessage('Input Image in the widget', plane_z)
+        plane_z.SetPlaneOrientationToZAxes()
+        plane_z.TextureVisibilityOn()
+        plane_z.SetLeftButtonAction(1)
+        plane_z.SetRightButtonAction(0)
+        prop1 = plane_z.GetPlaneProperty()
+        prop1.SetColor(1, 0, 0)
+        cursor_property = plane_z.GetCursorProperty()
+        cursor_property.SetOpacity(0) 
+
+        ps.Publisher().sendMessage('Set Widget Interactor', plane_x)
+        ps.Publisher().sendMessage('Set Widget Interactor', plane_y)
+        ps.Publisher().sendMessage('Set Widget Interactor', plane_z)
+        
+    def EnableX(self, evt_pubsub=None):
+        self.plane_x.On()
+        self.Update()
+
+    def EnableY(self, evt_pubsub=None):
+        self.plane_y.On()
+        self.Update()    
+
+    def EnableZ(self, evt_pubsub=None):
+        self.plane_z.On()
+        self.Update()    
+        
+    def DisableX(self, evt_pubsub=None):
+        self.plane_x.Off()
+        self.Update()  
+
+    def DisableY(self, evt_pubsub=None):
+        self.plane_y.Off()
+        self.Update()   
+
+    def DisableZ(self, evt_pubsub=None):
+        self.plane_z.Off()
+        self.Update()
+        
+    def Update(self, obj, evt):
+        ps.Publisher().sendMessage('Render volume viewer', None)    
+        

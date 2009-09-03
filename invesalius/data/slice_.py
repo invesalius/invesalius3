@@ -58,6 +58,8 @@ class Slice(object):
 
         ps.Publisher().subscribe(self.UpdateColourTableBackground,\
                                  'Change colour table from background image')
+        
+        ps.Publisher().subscribe(self.InputImageWidget, 'Input Image in the widget')
 
     def __set_current_mask_threshold_limits(self, pubsub_evt):
         thresh_min = pubsub_evt.data[0]
@@ -427,7 +429,19 @@ class Slice(object):
         thresh_min, thresh_max = self.window_level.GetOutput().GetScalarRange()
         self.lut_bg.SetTableRange(thresh_min, thresh_max)
 
-
+    
+    def InputImageWidget(self, pubsub_evt):
+        widget = pubsub_evt.data
+        
+        flip = vtk.vtkImageFlip()
+        flip.SetInput(self.window_level.GetOutput())
+        flip.SetFilteredAxis(1)
+        flip.FlipAboutOriginOn()
+        flip.Update()
+        
+        widget.SetInput(flip.GetOutput())
+ 
+    
     def CreateMask(self, imagedata=None, name=None):
 
         future_mask = Mask()
