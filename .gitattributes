@@ -55,6 +55,8 @@ icons/show_task.png -text
 icons/show_task_min.png -text
 icons/slice.png -text
 icons/slice_original.png -text
+icons/slice_plane.png -text
+icons/slice_plane_original.png -text
 icons/surface_export.png -text
 icons/surface_export_original.png -text
 icons/tool_annotation.png -text
