@@ -46,9 +46,13 @@ class CLUTRaycastingWidget(wx.Panel):
         self.dragged = False
         self.point_dragged = None
         self.__bind_events_wx()
+        self.__bind_events()
         self.Show()
 
     def SetRange(self, range):
+        """
+        Se the range from hounsfield
+        """
         self.init, self.end = range
         print "Range", range
         self.CreatePixelArray()
@@ -67,14 +71,18 @@ class CLUTRaycastingWidget(wx.Panel):
         self.Bind(wx.EVT_SIZE, self.OnSize)
         self.Bind(wx.EVT_MOUSEWHEEL, self.OnWheel)
 
+    def __bind_events(self):
         ps.Publisher().subscribe(self.SetRaycastPreset,
                                 'Set raycasting preset')
+        ps.Publisher().subscribe( self.RefreshPoints,
+                                'Refresh raycasting widget points')
 
     def OnEraseBackground(self, evt):
         pass
 
     def OnClick(self, evt):
         point = self._has_clicked_in_a_point(evt.GetPositionTuple())
+        # A point has been selected. It can be dragged.
         if point:
             self.dragged = True
             self.point_dragged = point
@@ -82,6 +90,7 @@ class CLUTRaycastingWidget(wx.Panel):
             return
         else:
             p = self._has_clicked_in_line(evt.GetPositionTuple())
+            # The user clicked in the line. Insert a new point.
             if p:
                 n, p = p
                 self.points[n].insert(p, {'x': 0, 'y': 0})
@@ -129,6 +138,10 @@ class CLUTRaycastingWidget(wx.Panel):
         evt.Skip()
 
     def OnRelease(self, evt):
+        """
+        Generate a EVT_CLUT_POINT_CHANGED event indicating that a change has
+        been occurred in the preset points.
+        """
         if self.to_render:
             evt = CLUTEvent(myEVT_CLUT_POINT_CHANGED, self.GetId())
             self.GetEventHandler().ProcessEvent(evt)
@@ -136,6 +149,10 @@ class CLUTRaycastingWidget(wx.Panel):
         self.to_render = False
 
     def OnWheel(self, evt):
+        """
+        Increase or decrease the range from hounsfield scale showed. It
+        doesn't change values in preset, only to visualization.
+        """
         direction = evt.GetWheelRotation() / evt.GetWheelDelta()
         init = self.init - 10 * direction
         end = self.end + 10 * direction
@@ -144,6 +161,7 @@ class CLUTRaycastingWidget(wx.Panel):
         self.Refresh()
 
     def OnMotion(self, evt):
+        # User dragging a point
         if self.dragged:
             self.to_render = True
             i,j = self.point_dragged
@@ -154,7 +172,7 @@ class CLUTRaycastingWidget(wx.Panel):
 
             if y >= height - self.padding:
                 y = height - self.padding
-            
+
             if y <= self.padding:
                 y = self.padding
 
@@ -226,6 +244,10 @@ class CLUTRaycastingWidget(wx.Panel):
         return None
 
     def _has_clicked_in_line(self, position):
+        """ 
+        Verify if was clicked in a line. If yes, it returns the insertion
+        position in the point list.
+        """
         for n, point in enumerate(self.pixels_points):
             p = bisect.bisect([i[0] for i in point], position[0])
             print p
@@ -404,10 +426,27 @@ class CLUTRaycastingWidget(wx.Panel):
             self.histogram_pixel_points.append((x, y))
 
     def CreatePixelArray(self):
+        """
+        Create a list with points (in pixel x, y coordinate) to draw based in
+        the preset points (Hounsfield scale, opacity).
+        """
         self.pixels_points = []
+        self.__sort_pixel_points()
         for curve in self.points:
             self.pixels_points.append([self.HounsfieldToPixel(i) for i in curve])
         self._build_histogram()
+
+    def __sort_pixel_points(self):
+        """
+        Sort the pixel points (colours and points) maintaining the reference
+        between colours and points. It's necessary mainly in negative window
+        width when the user interacts with this widgets.
+        """
+        for n, (point, colour) in enumerate(zip(self.points, self.colours)):
+            point_colour = zip(point, colour)
+            point_colour.sort(key=lambda x: x[0]['x'])
+            self.points[n] = [i[0] for i in point_colour]
+            self.colours[n] = [i[1] for i in point_colour]
 
     def HounsfieldToPixel(self, h_pt):
         """
@@ -419,7 +458,6 @@ class CLUTRaycastingWidget(wx.Panel):
         proportion = width * 1.0 / (self.end - self.init)
         x = (h_pt['x'] - self.init) * proportion
         y = height - (h_pt['y'] * height) + self.padding
-        print y
         return [x,y]
 
     def PixelToHounsfield(self, i, j):
@@ -434,8 +472,6 @@ class CLUTRaycastingWidget(wx.Panel):
         y = (height - self.pixels_points[i][j][1] + self.padding) * 1.0 / height
         self.points[i][j]['x'] = x
         self.points[i][j]['y'] = y
-        self.colours[i][j]
-        print x,y
 
     def SetRaycastPreset(self, preset):
         preset = project.Project().raycasting_preset
@@ -449,6 +485,11 @@ class CLUTRaycastingWidget(wx.Panel):
             self.CreatePixelArray()
         else:
             self.to_draw_points = 0
+        self.Refresh()
+
+    def RefreshPoints(self, pubsub_evt):
+        self.CreatePixelArray()
+        self.Refresh()
 
     def SetHistrogramArray(self, h_array):
         self.histogram_array = h_array

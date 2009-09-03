@@ -369,8 +369,8 @@ class Volume():
                 convolve.SetKernel5x5([i/60.0 for i in Kernels[filter]])
                 convolve.AddObserver("ProgressEvent", lambda obj,evt:
                                      update_progress(convolve, "%s ..." % filter))
-                convolve.Update()
                 imagedata = convolve.GetOutput()
+                convolve.GetOutput().ReleaseDataFlagOn()
         return imagedata
 
     def LoadVolume(self):
@@ -408,7 +408,6 @@ class Volume():
         else:
             self.Create8bColorTable(scale)
             self.Create8bOpacityTable(scale)
-
         image2 = self.ApplyConvolution(image2.GetOutput())
         self.final_imagedata = image2
 
