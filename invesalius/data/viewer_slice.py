@@ -254,7 +254,10 @@ class Viewer(wx.Panel):
             const.WINDOW_LEVEL['Other'] = (self.acum_achange_window,\
                                            self.acum_achange_level)
             ps.Publisher().sendMessage('Check window and level other')
-
+            
+            #Necessary update the slice plane in the volume case exists
+            ps.Publisher().sendMessage('Render volume viewer')
+            
         self.interactor.Render()
 
 
