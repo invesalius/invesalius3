@@ -319,7 +319,11 @@ class SlicePlane:
         project = prj.Project()
         self.original_orientation = project.original_orientation
         self.Create()
-
+        self.__bind_evt()
+        
+    def __bind_evt(self):
+        ps.Publisher().subscribe(self.Enable, 'Enable plane')
+        ps.Publisher().subscribe(self.Disable, 'Disable plane')
     
     def Create(self):
 
@@ -386,10 +390,7 @@ class SlicePlane:
         ps.Publisher().sendMessage('Set Widget Interactor', plane_x)
         ps.Publisher().sendMessage('Set Widget Interactor', plane_y)
         ps.Publisher().sendMessage('Set Widget Interactor', plane_z)
-        
-        ps.Publisher().subscribe(self.Enable, 'Enable plane')
-        ps.Publisher().subscribe(self.Disable, 'Disable plane')
-        
+                
         self.Enable()
         self.Disable()
            
