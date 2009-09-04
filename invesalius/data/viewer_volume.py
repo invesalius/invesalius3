@@ -316,7 +316,10 @@ class Viewer(wx.Panel):
 class SlicePlane:
     
     def __init__(self):
+        project = prj.Project()
+        self.original_orientation = project.original_orientation
         self.Create()
+
     
     def Create(self):
 
@@ -327,8 +330,6 @@ class SlicePlane:
         plane_x.TextureVisibilityOn()
         plane_x.SetLeftButtonAction(1)
         plane_x.SetRightButtonAction(0)
-        prop1 = plane_x.GetPlaneProperty()
-        prop1.SetColor(0, 0, 1)
         cursor_property = plane_x.GetCursorProperty()
         cursor_property.SetOpacity(0) 
 
@@ -339,8 +340,6 @@ class SlicePlane:
         plane_y.TextureVisibilityOn()
         plane_y.SetLeftButtonAction(1)
         plane_y.SetRightButtonAction(0)
-        prop1 = plane_y.GetPlaneProperty()
-        prop1.SetColor(0, 1, 0)
         cursor_property = plane_y.GetCursorProperty()
         cursor_property.SetOpacity(0) 
         
@@ -351,11 +350,39 @@ class SlicePlane:
         plane_z.TextureVisibilityOn()
         plane_z.SetLeftButtonAction(1)
         plane_z.SetRightButtonAction(0)
-        prop1 = plane_z.GetPlaneProperty()
-        prop1.SetColor(1, 0, 0)
         cursor_property = plane_z.GetCursorProperty()
         cursor_property.SetOpacity(0) 
-        
+       
+        if(self.original_orientation == const.AXIAL):
+            prop3 = plane_z.GetPlaneProperty()
+            prop3.SetColor(1, 0, 0)
+
+            prop1 = plane_x.GetPlaneProperty()
+            prop1.SetColor(0, 0, 1)
+                        
+            prop2 = plane_y.GetPlaneProperty()
+            prop2.SetColor(0, 1, 0)
+                        
+        elif(self.original_orientation == const.SAGITAL):
+            prop3 = plane_y.GetPlaneProperty()
+            prop3.SetColor(1, 0, 0)
+
+            prop1 = plane_z.GetPlaneProperty()
+            prop1.SetColor(0, 0, 1)
+                        
+            prop2 = plane_x.GetPlaneProperty()
+            prop2.SetColor(0, 1, 0)
+                        
+        else:
+            prop3 = plane_y.GetPlaneProperty()
+            prop3.SetColor(1, 0, 0)
+
+            prop1 = plane_x.GetPlaneProperty()
+            prop1.SetColor(0, 0, 1)
+                        
+            prop2 = plane_z.GetPlaneProperty()
+            prop2.SetColor(0, 1, 0)
+            
         ps.Publisher().sendMessage('Set Widget Interactor', plane_x)
         ps.Publisher().sendMessage('Set Widget Interactor', plane_y)
         ps.Publisher().sendMessage('Set Widget Interactor', plane_z)
@@ -372,13 +399,27 @@ class SlicePlane:
         if (evt_pubsub):
             label = evt_pubsub.data
             
-            if(label == "Axial"):
-                self.plane_z.On()
-            elif(label == "Coronal"):
-                self.plane_x.On()
-            elif(label == "Sagital"):
-                self.plane_y.On()
-            
+            if(self.original_orientation == const.AXIAL):
+                if(label == "Axial"):
+                    self.plane_z.On()
+                elif(label == "Coronal"):
+                    self.plane_x.On()
+                elif(label == "Sagital"):
+                    self.plane_y.On()
+            elif(self.original_orientation == const.SAGITAL):
+                if(label == "Axial"):
+                    self.plane_y.On()
+                elif(label == "Coronal"):
+                    self.plane_x.On()
+                elif(label == "Sagital"):
+                    self.plane_z.On()
+            else:
+                if(label == "Axial"):
+                    self.plane_y.On()
+                elif(label == "Coronal"):
+                    self.plane_z.On()
+                elif(label == "Sagital"):
+                    self.plane_x.On()
         else:
             self.plane_z.On()
             self.plane_x.On()
@@ -390,12 +431,29 @@ class SlicePlane:
         if (evt_pubsub):
             label = evt_pubsub.data
             
-            if(label == "Axial"):
-                self.plane_z.Off()
-            elif(label == "Coronal"):
-                self.plane_x.Off()
-            elif(label == "Sagital"):
-                self.plane_y.Off()
+            if(self.original_orientation == const.AXIAL):
+                if(label == "Axial"):
+                    self.plane_z.Off()
+                elif(label == "Coronal"):
+                    self.plane_x.Off()
+                elif(label == "Sagital"):
+                    self.plane_y.Off()
+            
+            elif(self.original_orientation == const.SAGITAL):
+                if(label == "Axial"):
+                    self.plane_y.Off()
+                elif(label == "Coronal"):
+                    self.plane_x.Off()
+                elif(label == "Sagital"):
+                    self.plane_z.Off()
+            else:
+                if(label == "Axial"):
+                    self.plane_y.Off()
+                elif(label == "Coronal"):
+                    self.plane_z.Off()
+                elif(label == "Sagital"):
+                    self.plane_x.Off()
+                    
         else:
             self.plane_z.Off()
             self.plane_x.Off()
