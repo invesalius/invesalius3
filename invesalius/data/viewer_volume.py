@@ -403,9 +403,9 @@ class SlicePlane:
                 if(label == "Axial"):
                     self.plane_z.On()
                 elif(label == "Coronal"):
-                    self.plane_x.On()
-                elif(label == "Sagital"):
                     self.plane_y.On()
+                elif(label == "Sagital"):
+                    self.plane_x.On()
             elif(self.original_orientation == const.SAGITAL):
                 if(label == "Axial"):
                     self.plane_y.On()
@@ -435,9 +435,9 @@ class SlicePlane:
                 if(label == "Axial"):
                     self.plane_z.Off()
                 elif(label == "Coronal"):
-                    self.plane_x.Off()
-                elif(label == "Sagital"):
                     self.plane_y.Off()
+                elif(label == "Sagital"):
+                    self.plane_x.Off()
             
             elif(self.original_orientation == const.SAGITAL):
                 if(label == "Axial"):
