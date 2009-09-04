@@ -82,6 +82,7 @@ class Viewer(wx.Panel):
             self.last_x, self.last_y = mouse_x, mouse_y
             ps.Publisher().sendMessage('Set raycasting relative window and level',
                 (diff_x, diff_y))
+            ps.Publisher().sendMessage('Refresh raycasting widget points', None)
             self.interactor.Render()
 
     def OnClick(self, obj, evt):
