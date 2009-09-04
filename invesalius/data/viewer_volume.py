@@ -72,6 +72,7 @@ class Viewer(wx.Panel):
         self.__bind_events()
         self.__bind_events_wx()
     
+    
         
     def OnMove(self, obj, evt):
         if self.onclick and self.raycasting_volume:
@@ -157,8 +158,18 @@ class Viewer(wx.Panel):
         ps.Publisher().subscribe(self.OnDisableBrightContrast,
                                  ('Set interaction mode',
                                   const.MODE_SLICE_EDITOR))
-
+        
         ps.Publisher().subscribe(self.OnExportSurface, 'Export surface to file')
+        
+        ps.Publisher().subscribe(self.LoadSlicePlane, 'Load slice plane')
+        
+        ps.Publisher().subscribe(self.ResetCamClippingRange, 'Reset cam clipping range')
+        
+    
+    def ResetCamClippingRange(self, pubsub_evt):
+        self.ren.ResetCamera()
+        self.ren.ResetCameraClippingRange()
+        
 
     def OnExportSurface(self, pubsub_evt):
         filename, filetype = pubsub_evt.data
@@ -243,11 +254,8 @@ class Viewer(wx.Panel):
 
         self.UpdateRender()
 
-    def LoadPlane(self):
-        self.plane = SlicePlane()
-        self.plane.EnableX()
-        self.plane.EnableY()
-        self.plane.EnableZ()
+    def LoadSlicePlane(self, pubsub_evt):
+        self.slice_plane = SlicePlane()
 
     def ChangeBackgroundColour(self, pubsub_evt):
         colour = pubsub_evt.data
@@ -308,12 +316,7 @@ class Viewer(wx.Panel):
 class SlicePlane:
     
     def __init__(self):
-    
         self.Create()
-        self.__bind_events()
-        
-    def __bind_events(self):
-        self.plane_x.AddObserver("InteractionEvent", self.Update)
     
     def Create(self):
 
@@ -352,35 +355,55 @@ class SlicePlane:
         prop1.SetColor(1, 0, 0)
         cursor_property = plane_z.GetCursorProperty()
         cursor_property.SetOpacity(0) 
-
+        
         ps.Publisher().sendMessage('Set Widget Interactor', plane_x)
         ps.Publisher().sendMessage('Set Widget Interactor', plane_y)
         ps.Publisher().sendMessage('Set Widget Interactor', plane_z)
         
-    def EnableX(self, evt_pubsub=None):
-        self.plane_x.On()
-        self.Update()
-
-    def EnableY(self, evt_pubsub=None):
-        self.plane_y.On()
-        self.Update()    
-
-    def EnableZ(self, evt_pubsub=None):
-        self.plane_z.On()
-        self.Update()    
+        ps.Publisher().subscribe(self.Enable, 'Enable plane')
+        ps.Publisher().subscribe(self.Disable, 'Disable plane')
         
-    def DisableX(self, evt_pubsub=None):
-        self.plane_x.Off()
-        self.Update()  
+        self.Enable()
+        self.Disable()
+           
+        self.Render()
+                
+    def Enable(self, evt_pubsub=None):
+        if (evt_pubsub):
+            label = evt_pubsub.data
+            
+            if(label == "Axial"):
+                self.plane_z.On()
+            elif(label == "Coronal"):
+                self.plane_x.On()
+            elif(label == "Sagital"):
+                self.plane_y.On()
+            
+        else:
+            self.plane_z.On()
+            self.plane_x.On()
+            self.plane_y.On()
+            ps.Publisher().sendMessage('Set volume view angle', const.VOL_ISO)
+        self.Render()
 
-    def DisableY(self, evt_pubsub=None):
-        self.plane_y.Off()
-        self.Update()   
+    def Disable(self, evt_pubsub=None):
+        if (evt_pubsub):
+            label = evt_pubsub.data
+            
+            if(label == "Axial"):
+                self.plane_z.Off()
+            elif(label == "Coronal"):
+                self.plane_x.Off()
+            elif(label == "Sagital"):
+                self.plane_y.Off()
+        else:
+            self.plane_z.Off()
+            self.plane_x.Off()
+            self.plane_y.Off()
 
-    def DisableZ(self, evt_pubsub=None):
-        self.plane_z.Off()
-        self.Update()
+        self.Render()
+
         
-    def Update(self, obj, evt):
-        ps.Publisher().sendMessage('Render volume viewer', None)    
+    def Render(self):
+        ps.Publisher().sendMessage('Render volume viewer')    
         

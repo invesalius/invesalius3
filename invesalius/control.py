@@ -116,7 +116,8 @@ class Controller():
             ps.Publisher().sendMessage('Show content panel')
 
             ps.Publisher().sendMessage('Update AUI')
-
+            
+            ps.Publisher().sendMessage('Load slice plane')
 
     def LoadImagedataInfo(self):
         proj = prj.Project()

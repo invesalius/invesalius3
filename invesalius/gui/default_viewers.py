@@ -248,7 +248,7 @@ import wx.lib.pubsub as ps
 import wx.lib.colourselect as csel
 import constants as const
 
-[BUTTON_RAYCASTING, BUTTON_VIEW] = [wx.NewId() for num in xrange(2)]
+[BUTTON_RAYCASTING, BUTTON_VIEW, BUTTON_SLICE_PLANE] = [wx.NewId() for num in xrange(3)]
 RAYCASTING_TOOLS = wx.NewId()
 
 ID_TO_BMP = {const.VOL_FRONT: ["Front", "../icons/view_front.png"],
@@ -264,6 +264,7 @@ ID_TO_NAME = {}
 ID_TO_TOOL = {}
 ID_TO_TOOL_ITEM = {}
 TOOL_STATE = {}
+ID_TO_ITEMSLICEMENU = {}
 
 class VolumeViewerCover(wx.Panel):
     def __init__(self, parent):
@@ -286,10 +287,19 @@ class VolumeToolPanel(wx.Panel):
         BMP_RAYCASTING = wx.Bitmap("../icons/volume_raycasting.png",
                                     wx.BITMAP_TYPE_PNG)
 
+        BMP_SLICE_PLANE = wx.Bitmap("../icons/slice_plane.png",
+                                    wx.BITMAP_TYPE_PNG)
+
 
         button_raycasting = pbtn.PlateButton(self, BUTTON_RAYCASTING,"",
                 BMP_RAYCASTING, style=pbtn.PB_STYLE_SQUARE,
                 size=(24,24))
+
+        button_slice_plane = self.button_slice_plane = pbtn.PlateButton(self, BUTTON_SLICE_PLANE,"",
+        BMP_SLICE_PLANE, style=pbtn.PB_STYLE_SQUARE,
+        size=(24,24))
+        button_slice_plane.Bind(wx.EVT_LEFT_DOWN, self.OnButtonSlicePlane)
+        
         self.button_raycasting = button_raycasting
         self.button_raycasting.Bind(wx.EVT_LEFT_DOWN, self.OnButtonRaycasting)
 
@@ -321,6 +331,7 @@ class VolumeToolPanel(wx.Panel):
         sizer.Add(button_colour, 0, wx.ALL, sp)
         sizer.Add(button_raycasting, 0, wx.TOP|wx.BOTTOM, 1)
         sizer.Add(button_view, 0, wx.TOP|wx.BOTTOM, 1)
+        sizer.Add(button_slice_plane, 0, wx.TOP|wx.BOTTOM, 1)
 
         sizer.Fit(self)
 
@@ -343,6 +354,9 @@ class VolumeToolPanel(wx.Panel):
 
     def OnButtonView(self, evt):
         self.button_view.PopupMenu(self.menu_view)
+        
+    def OnButtonSlicePlane(self, evt):
+        self.button_slice_plane.PopupMenu(self.slice_plane_menu)
 
     def __init_menus(self, pubsub_evt=None):
         # MENU RELATED TO RAYCASTING TYPES
@@ -386,10 +400,37 @@ class VolumeToolPanel(wx.Panel):
             menu.AppendItem(item)
         menu.Bind(wx.EVT_MENU, self.OnMenuView)
         self.menu_view = menu
-
+        
+        #SLICE PLANES BUTTON
+        self.slice_plane_menu = slice_plane_menu = wx.Menu()
+        itens = ["Axial", "Coronal", "Sagital"]
+        
+        for value in itens:
+            new_id = wx.NewId()
+            
+            item = wx.MenuItem(slice_plane_menu, new_id, value, 
+                                            kind = wx.ITEM_CHECK)
+            ID_TO_ITEMSLICEMENU[new_id] = item
+            slice_plane_menu.AppendItem(item)
+        
+        slice_plane_menu.Bind(wx.EVT_MENU, self.OnMenuPlaneSlice)
+        
         self.Fit()
         self.Update()
+        
+    def OnMenuPlaneSlice(self, evt):
+       
+        id = evt.GetId()
+        item = ID_TO_ITEMSLICEMENU[id]
+        checked = item.IsChecked()
+        label = item.GetLabel()
+        
+        if not (checked):
+            ps.Publisher().sendMessage('Disable plane', label)
+        else:
+            ps.Publisher().sendMessage('Enable plane', label)
 
+            
     def ChangeButtonColour(self, pubsub_evt):
         colour = [i*255 for i in pubsub_evt.data]
         self.button_colour.SetColour(colour)
