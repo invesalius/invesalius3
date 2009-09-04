@@ -78,7 +78,8 @@ class Frame(wx.Frame):
         ps.Publisher().subscribe(self.ShowContentPanel, 'Show content panel')
         ps.Publisher().subscribe(self.ShowImportPanel, "Show import panel")
         ps.Publisher().subscribe(self.UpdateAui, "Update AUI")
-
+        ps.Publisher().subscribe(self.ShowTask, 'Show task panel')
+        ps.Publisher().subscribe(self.HideTask, 'Hide task panel')
 
     def UpdateAui(self, pubsub_evt):
         self.aui_manager.Update()
@@ -89,7 +90,7 @@ class Frame(wx.Frame):
     def __init_aui(self):
 
         # Tell aui_manager to manage this frame
-        aui_manager = wx.aui.AuiManager()
+        aui_manager = self.aui_manager = wx.aui.AuiManager()
         aui_manager.SetManagedWindow(self)
 
         # Add panels to manager
@@ -101,6 +102,7 @@ class Frame(wx.Frame):
                           #CloseButton(False).Floatable(False).
                           #Layer(1).Left().MaximizeButton(False).Name("Task").
                           #Position(0))
+                          
 
         aui_manager.AddPane(viewers.Panel(self), wx.aui.AuiPaneInfo().
                           Caption("Data panel").CaptionVisible(False).
@@ -173,7 +175,15 @@ class Frame(wx.Frame):
     def OnSize(self, evt):
        ps.Publisher().sendMessage(('ProgressBar Reposition'))
        evt.Skip()
-
+    
+    def ShowTask(self, pubsub_evt):
+        self.aui_manager.GetPane("Tasks").Show()
+        self.aui_manager.Update()
+    
+    def HideTask(self, pubsub_evt):
+        self.aui_manager.GetPane("Tasks").Hide()
+        self.aui_manager.Update()
+    
 
     #def OnClose(self):
     #    # TODO: implement this, based on wx.Demo
@@ -568,7 +578,7 @@ class LayoutToolBar(wx.ToolBar):
 
         self.parent = parent
         self.__init_items()
-        self.__bind_events()
+        self.__bind_events_wx()
 
     def __init_items(self):
 
@@ -585,10 +595,18 @@ class LayoutToolBar(wx.ToolBar):
             BMP_WITH_MENU = wx.Bitmap("../icons/layout_full.gif",
                                       wx.BITMAP_TYPE_GIF)
 
-        self.AddLabelTool(101, "Rotate image", BMP_WITHOUT_MENU)
-        self.AddLabelTool(101, "Translate image", BMP_WITH_MENU)
-
+        self.AddLabelTool(101, "Full layout", BMP_WITHOUT_MENU, kind = wx.ITEM_RADIO)
+        self.AddLabelTool(102, "Original layout", BMP_WITH_MENU, kind = wx.ITEM_RADIO)
+        self.ToggleTool(102, True)
+        
         self.Realize()
 
-    def __bind_events(self):
-        pass
+    def __bind_events_wx(self):
+        self.Bind(wx.EVT_TOOL, self.OnClick)
+    
+    def OnClick(self, evt):
+            
+        if (evt.GetId() == 101):
+            ps.Publisher().sendMessage('Hide task panel')
+        else:
+            ps.Publisher().sendMessage('Show task panel')
