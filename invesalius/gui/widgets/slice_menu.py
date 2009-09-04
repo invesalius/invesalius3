@@ -117,7 +117,10 @@ class SliceMenu(wx.Menu):
             ps.Publisher().sendMessage('Update window and level text',\
                            "WL: %d  WW: %d"%(level, window))
             ps.Publisher().sendMessage('Update slice viewer')
-
+            
+            #Necessary update the slice plane in the volume case exists
+            ps.Publisher().sendMessage('Render volume viewer')
+            
         elif(key in const.SLICE_COLOR_TABLE.keys()):
             values = const.SLICE_COLOR_TABLE[key]
             ps.Publisher().sendMessage('Change colour table from background image', values)
