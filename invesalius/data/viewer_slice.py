@@ -1013,6 +1013,8 @@ class Viewer(wx.Panel):
     def OnScrollBar(self, evt=None):
         pos = self.scroll.GetThumbPosition()
         self.set_slice_number(pos)
+        ps.Publisher().sendMessage('Change slice from slice plane',\
+                                   (self.orientation, pos))
         self.cursor_.Show(1)
         self.interactor.Render()
         if evt:

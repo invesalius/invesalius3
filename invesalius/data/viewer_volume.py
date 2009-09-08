@@ -325,7 +325,8 @@ class SlicePlane:
     def __bind_evt(self):
         ps.Publisher().subscribe(self.Enable, 'Enable plane')
         ps.Publisher().subscribe(self.Disable, 'Disable plane')
-    
+        ps.Publisher().subscribe(self.ChangeSlice, 'Change slice from slice plane')
+        
     def Create(self):
 
         plane_x = self.plane_x = vtk.vtkImagePlaneWidget()
@@ -335,6 +336,8 @@ class SlicePlane:
         plane_x.TextureVisibilityOn()
         plane_x.SetLeftButtonAction(1)
         plane_x.SetRightButtonAction(0)
+        prop1 = plane_x.GetPlaneProperty()
+        prop1.SetColor(0, 0, 1)
         cursor_property = plane_x.GetCursorProperty()
         cursor_property.SetOpacity(0) 
 
@@ -345,6 +348,8 @@ class SlicePlane:
         plane_y.TextureVisibilityOn()
         plane_y.SetLeftButtonAction(1)
         plane_y.SetRightButtonAction(0)
+        prop1 = plane_y.GetPlaneProperty()
+        prop1.SetColor(0, 1, 0)
         cursor_property = plane_y.GetCursorProperty()
         cursor_property.SetOpacity(0) 
         
@@ -355,9 +360,11 @@ class SlicePlane:
         plane_z.TextureVisibilityOn()
         plane_z.SetLeftButtonAction(1)
         plane_z.SetRightButtonAction(0)
+        prop1 = plane_z.GetPlaneProperty()
+        prop1.SetColor(1, 0, 0)
         cursor_property = plane_z.GetCursorProperty()
         cursor_property.SetOpacity(0) 
-       
+
         if(self.original_orientation == const.AXIAL):
             prop3 = plane_z.GetPlaneProperty()
             prop3.SetColor(1, 0, 0)
@@ -391,10 +398,9 @@ class SlicePlane:
         ps.Publisher().sendMessage('Set Widget Interactor', plane_x)
         ps.Publisher().sendMessage('Set Widget Interactor', plane_y)
         ps.Publisher().sendMessage('Set Widget Interactor', plane_z)
-                
+        
         self.Enable()
         self.Disable()
-           
         self.Render()
                 
     def Enable(self, evt_pubsub=None):
@@ -422,6 +428,7 @@ class SlicePlane:
                     self.plane_z.On()
                 elif(label == "Sagital"):
                     self.plane_x.On()
+            
         else:
             self.plane_z.On()
             self.plane_x.On()
@@ -455,7 +462,6 @@ class SlicePlane:
                     self.plane_z.Off()
                 elif(label == "Sagital"):
                     self.plane_x.Off()
-                    
         else:
             self.plane_z.Off()
             self.plane_x.Off()
@@ -466,4 +472,43 @@ class SlicePlane:
         
     def Render(self):
         ps.Publisher().sendMessage('Render volume viewer')    
+    
+    def ChangeSlice(self, pubsub_evt = None):
+        orientation, number = pubsub_evt.data
         
+        if (self.original_orientation == const.AXIAL):
+            if (orientation == "CORONAL"):
+                self.SetSliceNumber(number, "Y")
+            elif(orientation == "SAGITAL"):
+                self.SetSliceNumber(number, "X")
+            else:
+                self.SetSliceNumber(number, "Z")
+        
+        elif(self.original_orientation == const.SAGITAL):
+            if (orientation == "CORONAL"):
+                self.SetSliceNumber(number, "X")
+            elif(orientation == "SAGITAL"):
+                self.SetSliceNumber(number, "Z")
+            else:
+                self.SetSliceNumber(number, "Y")
+        
+        else:
+            if (orientation == "CORONAL"):
+                self.SetSliceNumber(number, "Z")
+            elif(orientation == "SAGITAL"):
+                self.SetSliceNumber(number, "X")
+            else:
+                self.SetSliceNumber(number, "Y")
+            
+        self.Render()
+    
+    def SetSliceNumber(self, number, axis):
+        if (axis == "X"):
+            self.plane_x.SetPlaneOrientationToXAxes()
+            self.plane_x.SetSliceIndex(number)
+        elif(axis == "Y"):
+            self.plane_y.SetPlaneOrientationToYAxes()
+            self.plane_y.SetSliceIndex(number)
+        else:
+            self.plane_z.SetPlaneOrientationToZAxes()
+            self.plane_z.SetSliceIndex(number)
