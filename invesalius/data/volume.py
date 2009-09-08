@@ -303,7 +303,7 @@ class Volume():
         l2 = wl + ww/2.0
 
         self.ww = ww
-        self.wl = wl
+        self.wl = self.config['wl']
 
         opacity_transfer_func.RemoveAllPoints()
         opacity_transfer_func.AddSegment(0, 0, 2**16-1, 0)
