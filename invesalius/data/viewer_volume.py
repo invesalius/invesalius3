@@ -321,11 +321,56 @@ class SlicePlane:
         self.original_orientation = project.original_orientation
         self.Create()
         self.__bind_evt()
-        
+        self.__bind_vtk_evt()
+    
     def __bind_evt(self):
         ps.Publisher().subscribe(self.Enable, 'Enable plane')
         ps.Publisher().subscribe(self.Disable, 'Disable plane')
         ps.Publisher().subscribe(self.ChangeSlice, 'Change slice from slice plane')
+    
+    def __bind_vtk_evt(self):
+        self.plane_x.AddObserver("InteractionEvent", self.PlaneEvent)
+        self.plane_y.AddObserver("InteractionEvent", self.PlaneEvent)
+        self.plane_z.AddObserver("InteractionEvent", self.PlaneEvent)
+        
+    def PlaneEvent(self, obj, evt):
+        
+        number = obj.GetSliceIndex()
+        plane_axis = obj.GetPlaneOrientation()
+        
+        if (self.original_orientation == const.AXIAL):
+            if (plane_axis == 0):
+                orientation = "SAGITAL"
+            elif(plane_axis == 1):
+                orientation = "CORONAL"
+                dimen = obj.GetInput().GetDimensions()
+                number = abs(dimen[0] - number)
+            else:
+                orientation = "AXIAL"
+        
+        elif(self.original_orientation == const.SAGITAL):
+            if (plane_axis == 0):
+                orientation = "CORONAL"
+            elif(plane_axis == 1):
+                orientation = "AXIAL"
+                dimen = obj.GetInput().GetDimensions()
+                number = abs(dimen[0] - number)
+            else:
+                orientation = "SAGITAL"
+        else:
+            if (plane_axis == 0):
+                orientation = "SAGITAL"
+            elif(plane_axis == 1):
+                orientation = "AXIAL"
+                dimen = obj.GetInput().GetDimensions()
+                number = abs(dimen[0] - number)
+            else:
+                orientation = "CORONAL"
+        
+        
+        if (obj.GetSlicePosition() != 0.0):
+            ps.Publisher().sendMessage(('Set scroll position', \
+                                        orientation), number)
         
     def Create(self):
 
@@ -414,6 +459,12 @@ class SlicePlane:
                     self.plane_y.On()
                 elif(label == "Sagital"):
                     self.plane_x.On()
+                    a = self.plane_x.GetTexturePlaneProperty()
+                    a.SetBackfaceCulling(0)
+                    c = self.plane_x.GetTexture()
+                    c.SetRestrictPowerOf2ImageSmaller(1)
+                    #print dir(a)
+                    
             elif(self.original_orientation == const.SAGITAL):
                 if(label == "Axial"):
                     self.plane_y.On()
