@@ -80,9 +80,10 @@ class Controller():
             proj.SetAcquisitionModality(acquisition_modality)
             proj.imagedata = imagedata
             proj.original_orientation = orientation
-            proj.window = window = const.WINDOW_LEVEL['Bone'][0]
-            proj.level = level = const.WINDOW_LEVEL['Bone'][1]
-
+            threshold_range = proj.imagedata.GetScalarRange()
+            proj.window = window = threshold_range[1] - threshold_range[0]
+            proj.level = level = (0.5 * (threshold_range[1] + threshold_range[0]))
+            
             ps.Publisher().sendMessage('Update window level value',\
                            (proj.window, proj.level))
 
@@ -93,13 +94,11 @@ class Controller():
             proj.SetAcquisitionModality(acquisition_modality)
             proj.imagedata = imagedata
             proj.original_orientation = orientation
-        
+            proj.window = window
+            proj.level = level           
 
             threshold_range = proj.imagedata.GetScalarRange()
-            
-            proj.window = window = threshold_range[1] - threshold_range[0]
-            proj.level = level = (0.5 * (threshold_range[1] + threshold_range[0]))
-            
+        
             const.WINDOW_LEVEL['Default'] = (window, level)
             const.WINDOW_LEVEL['Other'] = (window, level)
                         
