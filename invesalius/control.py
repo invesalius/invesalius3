@@ -59,7 +59,10 @@ class Controller():
                 orientation = const.SAGITAL
             else:
                 orientation = const.AXIAL
-            
+                
+            window = window = float(dicom.image.window)
+            level = level = float(dicom.image.level)
+            acquisition_modality = dicom.acquisition.modality
             tilt_value = dicom.acquisition.tilt
             if (tilt_value):
                 #TODO: Show dialog so user can set not other value
@@ -87,11 +90,12 @@ class Controller():
             print "Sorry, but there are no medical images supported on this dir."
         else:
             # Create new project
-            proj.SetAcquisitionModality(dicom.acquisition.modality)
+            proj.SetAcquisitionModality(acquisition_modality)
             proj.imagedata = imagedata
             proj.original_orientation = orientation
-            proj.window = window = float(dicom.image.window)
-            proj.level = level = float(dicom.image.level)
+            proj.window = window
+            proj.level = level
+            
             const.WINDOW_LEVEL['Default'] = (window, level)
             const.WINDOW_LEVEL['Other'] = (window, level)
 
