@@ -26,7 +26,7 @@ import data.viewer_volume as volume_viewer
 import widgets.slice_menu as slice_menu_
 
 from gui.widgets.clut_raycasting import CLUTRaycastingWidget, \
-        EVT_CLUT_POINT_CHANGED
+        EVT_CLUT_POINT_CHANGED, EVT_CLUT_CURVE_SELECTED 
 
 class Panel(wx.Panel):
     def __init__(self, parent):
@@ -235,12 +235,16 @@ class VolumeInteraction(wx.Panel):
 
     def __bind_events_wx(self):
         self.clut_raycasting.Bind(EVT_CLUT_POINT_CHANGED, self.OnPointChanged)
+        self.clut_raycasting.Bind(EVT_CLUT_CURVE_SELECTED , self.OnCurveSelected)
         #self.Bind(wx.EVT_SIZE, self.OnSize)
         #self.Bind(wx.EVT_MAXIMIZE, self.OnMaximize)
 
     def OnPointChanged(self, evt):
         ps.Publisher.sendMessage('Set raycasting refresh', None)
         ps.Publisher().sendMessage('Render volume viewer', None)
+
+    def OnCurveSelected(self, evt):
+        ps.Publisher.sendMessage('Set raycasting curve', evt.GetCurve())
 
 import wx.lib.platebtn as pbtn
 import wx.lib.buttons as btn

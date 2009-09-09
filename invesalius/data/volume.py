@@ -75,7 +75,7 @@ class Volume():
         self.opacity_transfer_func = None
         self.ww = None
         self.wl = None
-        self.n = 0
+        self.curve = 0
         self.plane = None
         self.plane_on = False
         
@@ -86,6 +86,8 @@ class Volume():
                                 'Hide raycasting volume')
         ps.Publisher().subscribe(self.OnUpdatePreset,
                                 'Update raycasting preset')
+        ps.Publisher().subscribe(self.OnSetCurve,
+                                'Set raycasting curve')
         ps.Publisher().subscribe(self.OnSetWindowLevel,
                                 'Set raycasting wwwl')
         ps.Publisher().subscribe(self.Refresh,
@@ -157,6 +159,8 @@ class Volume():
         ps.Publisher.sendMessage('Change volume viewer background colour', colour)
         ps.Publisher.sendMessage('Change volume viewer gui colour', colour)
 
+    def OnSetCurve(self, pubsub_evt):
+        self.curve = pubsub_evt.data
 
     def OnSetRelativeWindowLevel(self, pubsub_evt):
         diff_ww, diff_wl = pubsub_evt.data
@@ -170,13 +174,13 @@ class Volume():
 
     def OnSetWindowLevel(self, pubsub_evt):
         ww, wl, n = pubsub_evt.data
-        self.n = n
+        self.curve = n
         self.SetWWWL(ww,wl)
 
     def SetWWWL(self, ww, wl):
         
         if self.config['advancedCLUT']:
-            curve = self.config['16bitClutCurves'][self.n]
+            curve = self.config['16bitClutCurves'][self.curve]
 
             p1 = curve[0]
             p2 = curve[-1]

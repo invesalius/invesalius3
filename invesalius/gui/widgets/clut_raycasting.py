@@ -20,6 +20,7 @@ HISTOGRAM_FILL_COLOUR = (0.25, 0.25, 0.25)
 BACKGROUND_TEXT_COLOUR_RGBA = (1, 0, 0, 0.5)
 GRADIENT_RGBA = 0.75
 RADIUS = 5
+SELECTION_SIZE = 10
 
 class Node(object):
     """
@@ -41,7 +42,12 @@ class Curve(object):
     def __init__(self):
         self.wl = 0
         self.ww = 0
+        self.wl_px = 0
         self.nodes = []
+
+    def CalculateWWWl(self):
+        self.ww = self.nodes[-1].graylevel - self.nodes[0].graylevel
+        self.wl = self.nodes[0].graylevel + self.ww / 2.0
 
 class CLUTRaycastingWidget(wx.Panel):
     """
@@ -65,6 +71,7 @@ class CLUTRaycastingWidget(wx.Panel):
         self.to_draw_points = 0
         self.histogram_pixel_points = [[0,0]]
         self.histogram_array = [100,100]
+        self.previous_wl = 0
         self.CalculatePixelPoints()
         self.dragged = False
         self.point_dragged = None
@@ -104,18 +111,27 @@ class CLUTRaycastingWidget(wx.Panel):
         pass
 
     def OnClick(self, evt):
-        point = self._has_clicked_in_a_point(evt.GetPositionTuple())
+        x, y = evt.GetPositionTuple()
+        point = self._has_clicked_in_a_point((x, y))
         # A point has been selected. It can be dragged.
         if point:
             self.dragged = True
             self.point_dragged = point
             self.Refresh()
             return
+        curve = self._has_clicked_in_selection_curve((x, y))
+        if curve is not None:
+            print "Selecionou a curva", curve
+            self.dragged = True
+            self.previous_wl = x
+            self.curve_dragged = curve
+            evt = CLUTEvent(myEVT_CLUT_CURVE_SELECTED, self.GetId(), curve)
+            self.GetEventHandler().ProcessEvent(evt)
+            return
         else:
-            p = self._has_clicked_in_line(evt.GetPositionTuple())
+            p = self._has_clicked_in_line((x, y))
             # The user clicked in the line. Insert a new point.
             if p:
-                x, y = evt.GetPositionTuple()
                 n, p = p
                 self.points[n].insert(p, {'x': 0, 'y': 0})
                 self.colours[n].insert(p, {'red': 0, 'green': 0, 'blue': 0})
@@ -131,7 +147,7 @@ class CLUTRaycastingWidget(wx.Panel):
                 self.curves[n].nodes.insert(p, node)
 
                 self.Refresh()
-                nevt = CLUTEvent(myEVT_CLUT_POINT_CHANGED, self.GetId())
+                nevt = CLUTEvent(myEVT_CLUT_POINT_CHANGED, self.GetId(), n)
                 self.GetEventHandler().ProcessEvent(nevt)
                 return
         evt.Skip()
@@ -152,7 +168,7 @@ class CLUTRaycastingWidget(wx.Panel):
                 print self.curves[i].nodes
                 self.curves[i].nodes[j].colour = (r, g, b)
                 self.Refresh()
-                nevt = CLUTEvent(myEVT_CLUT_POINT_CHANGED, self.GetId())
+                nevt = CLUTEvent(myEVT_CLUT_POINT_CHANGED, self.GetId(), i)
                 self.GetEventHandler().ProcessEvent(nevt)
                 return
         evt.Skip()
@@ -167,7 +183,7 @@ class CLUTRaycastingWidget(wx.Panel):
             print "RightClick", i, j
             self.RemovePoint(i, j)
             self.Refresh()
-            nevt = CLUTEvent(myEVT_CLUT_POINT_CHANGED, self.GetId())
+            nevt = CLUTEvent(myEVT_CLUT_POINT_CHANGED, self.GetId(), i)
             self.GetEventHandler().ProcessEvent(nevt)
             return
         evt.Skip()
@@ -178,10 +194,13 @@ class CLUTRaycastingWidget(wx.Panel):
         been occurred in the preset points.
         """
         if self.to_render:
-            evt = CLUTEvent(myEVT_CLUT_POINT_CHANGED, self.GetId())
+            evt = CLUTEvent(myEVT_CLUT_POINT_CHANGED, self.GetId(), 0)
             self.GetEventHandler().ProcessEvent(evt)
         self.dragged = False
+        self.curve_dragged = None
+        self.point_dragged = None
         self.to_render = False
+        self.previous_wl = 0
 
     def OnWheel(self, evt):
         """
@@ -197,11 +216,11 @@ class CLUTRaycastingWidget(wx.Panel):
 
     def OnMotion(self, evt):
         # User dragging a point
-        if self.dragged:
+        x = evt.GetX()
+        y = evt.GetY()
+        if self.dragged and self.point_dragged:
             self.to_render = True
             i,j = self.point_dragged
-            x = evt.GetX()
-            y = evt.GetY()
 
             width, height= self.GetVirtualSizeTuple()
 
@@ -234,9 +253,25 @@ class CLUTRaycastingWidget(wx.Panel):
             self.curves[i].nodes[j].y = y
             self.curves[i].nodes[j].graylevel = graylevel
             self.curves[i].nodes[j].opacity = opacity
+            for curve in self.curves:
+                curve.CalculateWWWl()
+                curve.wl_px = (self.HounsfieldToPixel(curve.wl),
+                               self.OpacityToPixel(0))
             self.Refresh()
-            evt = CLUTEvent(myEVT_CLUT_POINT , self.GetId())
+            evt = CLUTEvent(myEVT_CLUT_POINT , self.GetId(), i)
             self.GetEventHandler().ProcessEvent(evt)
+
+        elif self.dragged and self.curve_dragged is not None:
+            curve = self.curves[self.curve_dragged]
+            curve.wl = self.PixelToHounsfield(x)
+            curve.wl_px = x, self.OpacityToPixel(0)
+            for node in curve.nodes:
+                node.x += (x - self.previous_wl)
+                node.graylevel = self.PixelToHounsfield(node.x)
+            ps.Publisher().sendMessage('Set raycasting wwwl',
+                (curve.ww, curve.wl, self.curve_dragged))
+            self.previous_wl = x
+            self.Refresh()
         else:
             evt.Skip()
 
@@ -257,9 +292,17 @@ class CLUTRaycastingWidget(wx.Panel):
         """
         for i, curve in enumerate(self.curves):
             for j, node in enumerate(curve.nodes):
-                if self._calculate_distance(node, position) <= RADIUS:
+                if self._calculate_distance((node.x, node.y), position) <= RADIUS:
                     return (i, j)
         return None
+
+    def _has_clicked_in_selection_curve(self, position):
+        x, y = position
+        for i, curve in enumerate(self.curves):
+            if self._calculate_distance(curve.wl_px, position) <= RADIUS:
+                return i
+        return None
+
 
     def _has_clicked_in_line(self, position):
         """ 
@@ -278,7 +321,7 @@ class CLUTRaycastingWidget(wx.Panel):
         return None
 
     def _calculate_distance(self, p1, p2):
-        return ((p1.x-p2[0])**2 + (p1.y-p2[1])**2) ** 0.5
+        return ((p1[0]-p2[0])**2 + (p1[1]-p2[1])**2) ** 0.5
 
     def RemovePoint(self, i, j):
         """
@@ -413,12 +456,13 @@ class CLUTRaycastingWidget(wx.Panel):
 
     def _draw_selection_curve(self, ctx, height):
         for curve in self.curves:
-            x_center = (curve.nodes[0].x + curve.nodes[-1].x)/2.0
-            ctx.set_source_rgb(*LINE_COLOUR)
-            ctx.stroke()
-            ctx.rectangle(x_center-5, height, 10, 10)
+            x_center, y_center = curve.wl_px
+            ctx.rectangle(x_center-SELECTION_SIZE/2.0, y_center, SELECTION_SIZE,
+                         SELECTION_SIZE)
             ctx.set_source_rgb(0,0,0)
             ctx.fill_preserve()
+            ctx.set_source_rgb(*LINE_COLOUR)
+            ctx.stroke()
 
     def Render(self, dc):
         ctx = wx.lib.wxcairo.ContextFromDC(dc)
@@ -488,6 +532,9 @@ class CLUTRaycastingWidget(wx.Panel):
                 node.opacity = point['y']
                 node.colour = colour['red'], colour['green'], colour['blue']
                 curve.nodes.append(node)
+            curve.CalculateWWWl()
+            curve.wl_px = (self.HounsfieldToPixel(curve.wl),
+                           self.OpacityToPixel(0))
             self.curves.append(curve)
         self._build_histogram()
 
@@ -551,8 +598,11 @@ class CLUTRaycastingWidget(wx.Panel):
         self.histogram_array = h_array
 
 class CLUTEvent(wx.PyCommandEvent):
-    def __init__(self , evtType, id):
+    def __init__(self , evtType, id, curve):
         wx.PyCommandEvent.__init__(self, evtType, id)
+        self.curve = curve
+    def GetCurve(self):
+        return self.curve
 
 
 # Occurs when CLUT is sliding
@@ -570,3 +620,7 @@ EVT_CLUT_POINT = wx.PyEventBinder(myEVT_CLUT_POINT, 1)
 # Occurs when a CLUT point was changed
 myEVT_CLUT_POINT_CHANGED = wx.NewEventType()
 EVT_CLUT_POINT_CHANGED = wx.PyEventBinder(myEVT_CLUT_POINT_CHANGED, 1)
+
+# Selected a curve
+myEVT_CLUT_CURVE_SELECTED = wx.NewEventType()
+EVT_CLUT_CURVE_SELECTED = wx.PyEventBinder(myEVT_CLUT_CURVE_SELECTED, 1)
