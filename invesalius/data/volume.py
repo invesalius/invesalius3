@@ -161,6 +161,12 @@ class Volume():
 
     def OnSetCurve(self, pubsub_evt):
         self.curve = pubsub_evt.data
+        self.CalculateWWWL()
+        ww = self.ww
+        wl = self.wl
+        ps.Publisher().sendMessage('Set volume window and level text',
+                                   (ww, wl))
+        ps.Publisher().sendMessage('Render volume viewer')
 
     def OnSetRelativeWindowLevel(self, pubsub_evt):
         diff_ww, diff_wl = pubsub_evt.data
@@ -206,6 +212,16 @@ class Volume():
 
         self.__update_colour_table()
         ps.Publisher().sendMessage('Render volume viewer')
+
+    def CalculateWWWL(self):
+        """
+        Get the window width & level from the selected curve
+        """
+        curve = self.config['16bitClutCurves'][self.curve]
+        first_point = curve[0]['x']
+        last_point = curve[-1]['x']
+        self.ww = last_point - first_point
+        self.wl = first_point + self.ww
 
     def Refresh(self, pubsub_evt):
         self.__update_colour_table()
