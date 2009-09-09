@@ -166,7 +166,6 @@ class Volume():
         wl = self.wl
         ps.Publisher().sendMessage('Set volume window and level text',
                                    (ww, wl))
-        ps.Publisher().sendMessage('Render volume viewer')
 
     def OnSetRelativeWindowLevel(self, pubsub_evt):
         diff_ww, diff_wl = pubsub_evt.data

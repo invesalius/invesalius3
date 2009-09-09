@@ -1,15 +1,11 @@
 import bisect
 import math
-import plistlib
 import sys
 
 import cairo
 import numpy
 import wx
-import wx.lib.pubsub as ps
 import wx.lib.wxcairo
-
-import project
 
 FONT_COLOUR = (1, 1, 1)
 LINE_COLOUR = (0.5, 0.5, 0.5)
@@ -67,16 +63,16 @@ class CLUTRaycastingWidget(wx.Panel):
         self.init = -1024
         self.end = 2000
         self.padding = 5
+        self.previous_wl = 0
         self.to_render = False
+        self.dragged = False
         self.to_draw_points = 0
+        self.point_dragged = None
+        self.curve_dragged = None
         self.histogram_pixel_points = [[0,0]]
         self.histogram_array = [100,100]
-        self.previous_wl = 0
         self.CalculatePixelPoints()
-        self.dragged = False
-        self.point_dragged = None
         self.__bind_events_wx()
-        self.__bind_events()
         self.Show()
 
     def SetRange(self, range):
@@ -100,12 +96,6 @@ class CLUTRaycastingWidget(wx.Panel):
         self.Bind(wx.EVT_PAINT, self.OnPaint)
         self.Bind(wx.EVT_SIZE, self.OnSize)
         self.Bind(wx.EVT_MOUSEWHEEL, self.OnWheel)
-
-    def __bind_events(self):
-        ps.Publisher().subscribe(self.SetRaycastPreset,
-                                'Set raycasting preset')
-        ps.Publisher().subscribe( self.RefreshPoints,
-                                'Refresh raycasting widget points')
 
     def OnEraseBackground(self, evt):
         pass
@@ -258,6 +248,8 @@ class CLUTRaycastingWidget(wx.Panel):
                 curve.wl_px = (self.HounsfieldToPixel(curve.wl),
                                self.OpacityToPixel(0))
             self.Refresh()
+
+            # A point in the preset has been changed, raising a event
             evt = CLUTEvent(myEVT_CLUT_POINT , self.GetId(), i)
             self.GetEventHandler().ProcessEvent(evt)
 
@@ -268,8 +260,12 @@ class CLUTRaycastingWidget(wx.Panel):
             for node in curve.nodes:
                 node.x += (x - self.previous_wl)
                 node.graylevel = self.PixelToHounsfield(node.x)
-            ps.Publisher().sendMessage('Set raycasting wwwl',
-                (curve.ww, curve.wl, self.curve_dragged))
+
+            # The window level has been changed, raising a event!
+            evt = CLUTEvent(myEVT_CLUT_CHANGED_CURVE_WL, self.GetId(),
+                            self.curve_dragged)
+            self.GetEventHandler().ProcessEvent(evt)
+
             self.previous_wl = x
             self.Refresh()
         else:
@@ -302,7 +298,6 @@ class CLUTRaycastingWidget(wx.Panel):
             if self._calculate_distance(curve.wl_px, position) <= RADIUS:
                 return i
         return None
-
 
     def _has_clicked_in_line(self, position):
         """ 
@@ -430,7 +425,7 @@ class CLUTRaycastingWidget(wx.Panel):
         ctx.rectangle(x_left, y_superior,
                       rectangle_width, y_inferior)
         ctx.fill()
-        
+
         ctx.set_source_rgb(1, 1, 1)
         ctx.move_to(x_text, y_text1)
         ctx.show_text("Value: %6d" % value) 
@@ -577,8 +572,6 @@ class CLUTRaycastingWidget(wx.Panel):
         return opacity
 
     def SetRaycastPreset(self, preset):
-        preset = project.Project().raycasting_preset
-        print preset
         if not preset:
             self.to_draw_points = 0
         elif preset['advancedCLUT']:
@@ -590,12 +583,11 @@ class CLUTRaycastingWidget(wx.Panel):
             self.to_draw_points = 0
         self.Refresh()
 
-    def RefreshPoints(self, pubsub_evt):
-        self.CalculatePixelPoints()
-        self.Refresh()
-
     def SetHistrogramArray(self, h_array):
         self.histogram_array = h_array
+
+    def GetCurveWWWl(self, curve):
+        return (self.curves[curve].ww, self.curves[curve].wl)
 
 class CLUTEvent(wx.PyCommandEvent):
     def __init__(self , evtType, id, curve):
@@ -624,3 +616,7 @@ EVT_CLUT_POINT_CHANGED = wx.PyEventBinder(myEVT_CLUT_POINT_CHANGED, 1)
 # Selected a curve
 myEVT_CLUT_CURVE_SELECTED = wx.NewEventType()
 EVT_CLUT_CURVE_SELECTED = wx.PyEventBinder(myEVT_CLUT_CURVE_SELECTED, 1)
+
+# Changed the wl from a curve
+myEVT_CLUT_CHANGED_CURVE_WL = wx.NewEventType()
+EVT_CLUT_CHANGED_CURVE_WL = wx.PyEventBinder(myEVT_CLUT_CHANGED_CURVE_WL, 1)

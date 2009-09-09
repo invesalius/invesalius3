@@ -21,12 +21,15 @@ import sys
 import wx
 import wx.lib.agw.fourwaysplitter as fws
 import wx.lib.pubsub as ps
+
 import data.viewer_slice as slice_viewer
 import data.viewer_volume as volume_viewer
+import project
 import widgets.slice_menu as slice_menu_
 
 from gui.widgets.clut_raycasting import CLUTRaycastingWidget, \
-        EVT_CLUT_POINT_CHANGED, EVT_CLUT_CURVE_SELECTED 
+        EVT_CLUT_POINT_CHANGED, EVT_CLUT_CURVE_SELECTED, \
+        EVT_CLUT_CHANGED_CURVE_WL
 
 class Panel(wx.Panel):
     def __init__(self, parent):
@@ -192,14 +195,12 @@ class Panel(wx.Panel):
 class VolumeInteraction(wx.Panel):
     def __init__(self, parent, id):
         super(VolumeInteraction, self).__init__(parent, id)
+        self.can_show_raycasting_widget = 0
         self.__init_aui_manager()
-        ps.Publisher().subscribe(self.ShowRaycastingWidget,
-                                'Show raycasting widget')
-        ps.Publisher().subscribe(self.HideRaycastingWidget,
-                                'Hide raycasting widget')
         #sizer = wx.BoxSizer(wx.HORIZONTAL)
         #sizer.Add(volume_viewer.Viewer(self), 1, wx.EXPAND|wx.GROW)
         #self.SetSizer(sizer)
+        self.__bind_events()
         self.__bind_events_wx()
         #sizer.Fit(self)
 
@@ -221,23 +222,36 @@ class VolumeInteraction(wx.Panel):
         self.aui_manager.AddPane(self.clut_raycasting, self.s2)
         self.aui_manager.Update()
 
+    def __bind_events_wx(self):
+        self.clut_raycasting.Bind(EVT_CLUT_POINT_CHANGED, self.OnPointChanged)
+        self.clut_raycasting.Bind(EVT_CLUT_CURVE_SELECTED , self.OnCurveSelected)
+        self.clut_raycasting.Bind(EVT_CLUT_CHANGED_CURVE_WL,
+                                  self.OnChangeCurveWL)
+        #self.Bind(wx.EVT_SIZE, self.OnSize)
+        #self.Bind(wx.EVT_MAXIMIZE, self.OnMaximize)
+
+    def __bind_events(self):
+        ps.Publisher().subscribe(self.ShowRaycastingWidget,
+                                'Show raycasting widget')
+        ps.Publisher().subscribe(self.HideRaycastingWidget,
+                                'Hide raycasting widget')
+        ps.Publisher().subscribe(self.OnSetRaycastPreset,
+                                'Update raycasting preset')
+        ps.Publisher().subscribe( self.RefreshPoints,
+                                'Refresh raycasting widget points')
+
     def ShowRaycastingWidget(self, evt_pubsub=None):
-        self.clut_raycasting.SetRaycastPreset(None)
+        self.can_show_raycasting_widget = 1
         if self.clut_raycasting.to_draw_points:
             p = self.aui_manager.GetPane(self.clut_raycasting)
             p.Show()
             self.aui_manager.Update()
 
     def HideRaycastingWidget(self, evt_pubsub=None):
+        self.can_show_raycasting_widget = 0
         p = self.aui_manager.GetPane(self.clut_raycasting)
         p.Hide()
         self.aui_manager.Update()
-
-    def __bind_events_wx(self):
-        self.clut_raycasting.Bind(EVT_CLUT_POINT_CHANGED, self.OnPointChanged)
-        self.clut_raycasting.Bind(EVT_CLUT_CURVE_SELECTED , self.OnCurveSelected)
-        #self.Bind(wx.EVT_SIZE, self.OnSize)
-        #self.Bind(wx.EVT_MAXIMIZE, self.OnMaximize)
 
     def OnPointChanged(self, evt):
         ps.Publisher.sendMessage('Set raycasting refresh', None)
@@ -245,6 +259,28 @@ class VolumeInteraction(wx.Panel):
 
     def OnCurveSelected(self, evt):
         ps.Publisher.sendMessage('Set raycasting curve', evt.GetCurve())
+        ps.Publisher().sendMessage('Render volume viewer')
+
+    def OnChangeCurveWL(self, evt):
+        curve = evt.GetCurve()
+        ww, wl = self.clut_raycasting.GetCurveWWWl(curve)
+        ps.Publisher().sendMessage('Set raycasting wwwl', (ww, wl, curve))
+        ps.Publisher().sendMessage('Render volume viewer')
+
+    def OnSetRaycastPreset(self, evt_pubsub):
+        preset = project.Project().raycasting_preset
+        p = self.aui_manager.GetPane(self.clut_raycasting)
+        self.clut_raycasting.SetRaycastPreset(preset)
+        if self.clut_raycasting.to_draw_points and \
+           self.can_show_raycasting_widget:
+            p.Show()
+        else:
+            p.Hide()
+        self.aui_manager.Update()
+
+    def RefreshPoints(self, pubsub_evt):
+        self.clut_raycasting.CalculatePixelPoints()
+        self.clut_raycasting.Refresh()
 
 import wx.lib.platebtn as pbtn
 import wx.lib.buttons as btn
