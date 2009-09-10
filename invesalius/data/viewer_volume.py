@@ -91,7 +91,12 @@ class Viewer(wx.Panel):
                   "MouseMoveEvent": self.OnSpinMove,
                   "LeftButtonPressEvent": self.OnSpinClick,
                   "LeftButtonReleaseEvent": self.OnReleaseSpinClick,
-                  }
+                  },
+              'WINDOWLEVEL':{ 
+                         "MouseMoveEvent": self.OnWindowLevelMove,
+                         "LeftButtonPressEvent": self.OnWindowLevelClick,
+                         "LeftButtonReleaseEvent":self.OnWindowLevelRelease
+                          }
               }
     
        if (new_mode == 'ZOOMSELECT'):
@@ -149,7 +154,6 @@ class Viewer(wx.Panel):
         evt.EndPan()
         
     def SetNewMode(self, pubsub_evt):
-       print "__________________________"
        mode = pubsub_evt.topic[1]
        
        if (mode == const.MODE_ZOOM_SELECTION):
@@ -160,8 +164,10 @@ class Viewer(wx.Panel):
            self.SetMode('ZOOM')
        elif(mode == const.MODE_ROTATE):
            self.SetMode('SPIN')
+       elif(mode == const.MODE_WW_WL):
+           self.SetMode('WINDOWLEVEL')
            
-    def OnMove(self, obj, evt):
+    def OnWindowLevelMove(self, obj, evt):
         if self.onclick and self.raycasting_volume:
             mouse_x, mouse_y = self.interactor.GetEventPosition()
             diff_x = mouse_x - self.last_x
@@ -172,12 +178,12 @@ class Viewer(wx.Panel):
             ps.Publisher().sendMessage('Refresh raycasting widget points', None)
             self.interactor.Render()
 
-    def OnClick(self, obj, evt):
+    def OnWindowLevelClick(self, obj, evt):
         self.onclick = True
         mouse_x, mouse_y = self.interactor.GetEventPosition()
         self.last_x, self.last_y = mouse_x, mouse_y
 
-    def OnRelease(self, obj, evt):
+    def OnWindowLevelRelease(self, obj, evt):
         self.onclick = False
 
 
@@ -241,7 +247,7 @@ class Viewer(wx.Panel):
         ps.Publisher().subscribe(self.OnSetViewAngle,
                                 'Set volume view angle')
 
-        ps.Publisher().subscribe(self.OnEnableBrightContrast, 
+        ps.Publisher().subscribe(self.SetNewMode, 
                           ('Set interaction mode', const.MODE_WW_WL)) 
         ps.Publisher().subscribe(self.OnDisableBrightContrast,
                                  ('Set interaction mode',
