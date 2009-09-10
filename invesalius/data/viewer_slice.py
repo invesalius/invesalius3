@@ -1013,6 +1013,18 @@ class Viewer(wx.Panel):
     def OnScrollBar(self, evt=None):
         pos = self.scroll.GetThumbPosition()
         self.set_slice_number(pos)
+        original_orientation = project.Project().original_orientation
+      
+        if (self.orientation == "CORONAL") and \
+                (original_orientation == const.AXIAL):
+            pos = abs(self.scroll.GetRange() - pos)
+        elif(self.orientation == "AXIAL") and \
+            (original_orientation == const.CORONAL):
+                pos = abs(self.scroll.GetRange() - pos)
+        elif(self.orientation == "AXIAL") and \
+            (original_orientation == const.SAGITAL):            
+                pos = abs(self.scroll.GetRange() - pos)
+                        
         ps.Publisher().sendMessage('Change slice from slice plane',\
                                    (self.orientation, pos))
         self.cursor_.Show(1)
