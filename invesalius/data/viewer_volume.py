@@ -71,9 +71,96 @@ class Viewer(wx.Panel):
 
         self.__bind_events()
         self.__bind_events_wx()
-    
-    
         
+        self.mouse_pressed = 0
+    
+    def SetMode(self, new_mode):
+        
+       action = {
+              'PAN':{
+                  "MouseMoveEvent": self.OnPanMove,
+                  "LeftButtonPressEvent": self.OnPanClick,
+                  "LeftButtonReleaseEvent": self.OnReleasePanClick
+                  },
+              'ZOOM':{
+                  "MouseMoveEvent": self.OnZoomMove,
+                  "LeftButtonPressEvent": self.OnZoomClick,
+                  "LeftButtonReleaseEvent": self.OnReleaseZoomClick,
+                  },
+              'SPIN':{
+                  "MouseMoveEvent": self.OnSpinMove,
+                  "LeftButtonPressEvent": self.OnSpinClick,
+                  "LeftButtonReleaseEvent": self.OnReleaseSpinClick,
+                  }
+              }
+    
+       if (new_mode == 'ZOOMSELECT'):
+           style = vtk.vtkInteractorStyleRubberBandZoom()
+           self.interactor.SetInteractorStyle(style)
+           self.style = style
+       else:
+          style = vtk.vtkInteractorStyleTrackballCamera()
+          self.interactor.SetInteractorStyle(style)
+          self.style = style  
+                      
+          # Check each event available for each mode
+          for event in action[new_mode]:
+              # Bind event
+              style.AddObserver(event,action[new_mode][event])
+    
+    def OnSpinMove(self, evt, obj):
+        if (self.mouse_pressed):
+            evt.Spin()
+            evt.OnRightButtonDown()
+
+    def OnSpinClick(self, evt, obj):
+        self.mouse_pressed = 1
+        evt.StartSpin()
+        
+    def OnReleaseSpinClick(self,evt,obj):
+        self.mouse_pressed = 0
+        evt.EndSpin()
+        
+    def OnZoomMove(self, evt, obj):
+        if (self.mouse_pressed):
+            evt.Dolly()
+            evt.OnRightButtonDown()
+
+    def OnZoomClick(self, evt, obj):
+        self.mouse_pressed = 1
+        evt.StartDolly()
+        
+    def OnReleaseZoomClick(self,evt,obj):
+        self.mouse_pressed = 0
+        evt.EndDolly()
+                 
+            
+    def OnPanMove(self, evt, obj):
+        if (self.mouse_pressed):
+            evt.Pan()
+            evt.OnRightButtonDown()
+
+    def OnPanClick(self, evt, obj):
+        self.mouse_pressed = 1
+        evt.StartPan()
+        
+    def OnReleasePanClick(self,evt,obj):
+        self.mouse_pressed = 0
+        evt.EndPan()
+        
+    def SetNewMode(self, pubsub_evt):
+       print "__________________________"
+       mode = pubsub_evt.topic[1]
+       
+       if (mode == const.MODE_ZOOM_SELECTION):
+            self.SetMode('ZOOMSELECT')
+       elif(mode == const.MODE_MOVE):
+           self.SetMode('PAN')
+       elif(mode == const.MODE_ZOOM):
+           self.SetMode('ZOOM')
+       elif(mode == const.MODE_ROTATE):
+           self.SetMode('SPIN')
+           
     def OnMove(self, obj, evt):
         if self.onclick and self.raycasting_volume:
             mouse_x, mouse_y = self.interactor.GetEventPosition()
@@ -166,7 +253,21 @@ class Viewer(wx.Panel):
         
         ps.Publisher().subscribe(self.ResetCamClippingRange, 'Reset cam clipping range')
         
+        ps.Publisher().subscribe(self.SetNewMode,
+                                 ('Set interaction mode',
+                                  const.MODE_ZOOM_SELECTION))
+        ps.Publisher().subscribe(self.SetNewMode,
+                                 ('Set interaction mode',
+                                  const.MODE_ZOOM))
     
+        ps.Publisher().subscribe(self.SetNewMode,
+                             ('Set interaction mode',
+                              const.MODE_MOVE))
+
+        ps.Publisher().subscribe(self.SetNewMode,
+                             ('Set interaction mode',
+                              const.MODE_ROTATE))
+                
     def ResetCamClippingRange(self, pubsub_evt):
         self.ren.ResetCamera()
         self.ren.ResetCameraClippingRange()
@@ -211,7 +312,7 @@ class Viewer(wx.Panel):
         style = vtk.vtkInteractorStyleTrackballCamera()
         self.interactor.SetInteractorStyle(style)
         self.style = style
-
+        
 
     def OnSize(self, evt):
         self.UpdateRender()
