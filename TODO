@@ -15,13 +15,13 @@ OK rev 785 8. Toolbar at OS X and Linux order - Tati
 OK rev.886 11. Insert WW e WL text on the top of the slice - Paulo
 12. Insert slice number text - Paulo
 Ok rev 909 13. Disable raycasting WW & WL if it is not shown - Tati
-14. Toolbar items affect 3D - Paulo
+OK 14. Toolbar items affect 3D - Paulo
 OK rev.889 15. Surface after threshold and edition "undo" - Paulo
 16. Slice cursor actor is hiding - Pensar
 17. Zoom by selection when right iiii clicked is wrong - Paulo
 OK rev.892 18. Disable toggle of Windows' platebuttons on Windows - Paulo
 19. Show "Annotation" icon on Linux - Thiago
-20. Sagittal, axial and coronal planes in 3D - Paulo
+OK 20. Sagittal, axial and coronal planes in 3D - Paulo
 OK rev.899 21. Default window & level from DICOM - Paulo
 22. When preset is changed, update WW and WL text on viewer volume - Thiago
 
