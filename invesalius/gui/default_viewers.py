@@ -519,6 +519,7 @@ class VolumeToolPanel(wx.Panel):
 
         ps.Publisher().sendMessage('Set volume view angle',
                                    evt.GetId())
+        self.Refresh()
 
     def OnSelectColour(self, evt):
         colour = c = [i/255.0 for i in evt.GetValue()]
