@@ -125,7 +125,7 @@ class Volume():
         if self.exist:
             self.__load_preset()
             self.volume.SetVisibility(1)
-            ps.Publisher().sendMessage('Render volume viewer')
+            #ps.Publisher().sendMessage('Render volume viewer')
         else:
             self.LoadVolume()
             self.exist = 1
@@ -140,9 +140,15 @@ class Volume():
         if self.config['advancedCLUT']:
             self.Create16bColorTable(self.scale)
             self.CreateOpacityTable(self.scale)
+            self.CalculateWWWL()
+            ww = self.ww
+            wl = self.wl
+            ps.Publisher().sendMessage('Set volume window and level text',
+                                       (ww, wl))
         else:
             self.Create8bColorTable(self.scale)
             self.Create8bOpacityTable(self.scale)
+
 
     def __load_preset(self):   
         # Update colour table
@@ -185,7 +191,11 @@ class Volume():
     def SetWWWL(self, ww, wl):
         
         if self.config['advancedCLUT']:
-            curve = self.config['16bitClutCurves'][self.curve]
+            try:
+                curve = self.config['16bitClutCurves'][self.curve]
+            except IndexError:
+                self.curve = 0
+                curve = self.config['16bitClutCurves'][self.curve]
 
             p1 = curve[0]
             p2 = curve[-1]
@@ -210,7 +220,6 @@ class Volume():
             self.config['ww'] = ww
 
         self.__update_colour_table()
-        ps.Publisher().sendMessage('Render volume viewer')
 
     def CalculateWWWL(self):
         """
@@ -220,7 +229,7 @@ class Volume():
         first_point = curve[0]['x']
         last_point = curve[-1]['x']
         self.ww = last_point - first_point
-        self.wl = first_point + self.ww
+        self.wl = first_point + self.ww / 2.0
 
     def Refresh(self, pubsub_evt):
         self.__update_colour_table()
@@ -457,8 +466,8 @@ class Volume():
         self.volume_mapper = volume_mapper
 
         # TODO: Look to this
-        #volume_mapper = vtk.vtkVolumeTextureMapper2D()
-        #volume_mapper.SetInput(image2.GetOutput())
+        #volume_mapper_hw = vtk.vtkVolumeTextureMapper3D()
+        #volume_mapper_hw.SetInput(image2)
 
         #Cut Plane
         #CutPlane(image2, volume_mapper)
@@ -495,7 +504,7 @@ class Volume():
         volume.SetMapper(volume_mapper)
         volume.SetProperty(volume_properties)
         volume.AddObserver("ProgressEvent", lambda obj,evt:
-                                  update_progress(volume, "Volume ..."))
+            update_progress(volume, "Volume ..."))
         self.volume = volume
         
         colour = self.GetBackgroundColour()

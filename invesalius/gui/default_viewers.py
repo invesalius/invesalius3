@@ -255,6 +255,7 @@ class VolumeInteraction(wx.Panel):
 
     def OnPointChanged(self, evt):
         ps.Publisher.sendMessage('Set raycasting refresh', None)
+        ps.Publisher.sendMessage('Set raycasting curve', evt.GetCurve())
         ps.Publisher().sendMessage('Render volume viewer', None)
 
     def OnCurveSelected(self, evt):

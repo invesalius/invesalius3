@@ -150,7 +150,7 @@ class CLUTRaycastingWidget(wx.Panel):
         if point:
             colour = wx.GetColourFromUser(self)
             if colour.IsOk():
-                i,j = self.point_dragged
+                i,j = point
                 r, g, b = [x/255.0 for x in colour.Get()]
                 self.colours[i][j]['red'] = r
                 self.colours[i][j]['green'] = g
