@@ -176,6 +176,13 @@ class CLUTRaycastingWidget(wx.Panel):
             nevt = CLUTEvent(myEVT_CLUT_POINT_CHANGED, self.GetId(), i)
             self.GetEventHandler().ProcessEvent(nevt)
             return
+        n_curve = self._has_clicked_in_selection_curve(evt.GetPositionTuple())
+        if n_curve is not None:
+            print "Removing a curve"
+            self.RemoveCurve(n_curve)
+            self.Refresh()
+            nevt = CLUTEvent(myEVT_CLUT_POINT_CHANGED, self.GetId(), n_curve)
+            self.GetEventHandler().ProcessEvent(nevt)
         evt.Skip()
 
     def OnRelease(self, evt):
@@ -339,11 +346,20 @@ class CLUTRaycastingWidget(wx.Panel):
             self.point_dragged = (new_i, new_j)
         # Can't have only one point in the curve
         if len(self.points[i]) == 1:
-            self.points.pop(i)
-            self.colours.pop(i)
-            self.point_dragged = None
+            self.RemoveCurve(i)
+        else:
+            curve = self.curves[i]
+            curve.CalculateWWWl()
+            curve.wl_px = (self.HounsfieldToPixel(curve.wl),
+                           self.OpacityToPixel(0))
 
-            self.curves.pop(i)
+    def RemoveCurve(self, n_curve):
+        self.points.pop(n_curve)
+        self.colours.pop(n_curve)
+        self.point_dragged = None
+
+        self.curves.pop(n_curve)
+
 
     def _draw_gradient(self, ctx, height):
         #The gradient

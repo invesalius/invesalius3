@@ -140,11 +140,6 @@ class Volume():
         if self.config['advancedCLUT']:
             self.Create16bColorTable(self.scale)
             self.CreateOpacityTable(self.scale)
-            self.CalculateWWWL()
-            ww = self.ww
-            wl = self.wl
-            ps.Publisher().sendMessage('Set volume window and level text',
-                                       (ww, wl))
         else:
             self.Create8bColorTable(self.scale)
             self.Create8bOpacityTable(self.scale)
@@ -225,7 +220,11 @@ class Volume():
         """
         Get the window width & level from the selected curve
         """
-        curve = self.config['16bitClutCurves'][self.curve]
+        try:
+            curve = self.config['16bitClutCurves'][self.curve]
+        except IndexError:
+            self.curve -= 1
+            curve = self.config['16bitClutCurves'][self.curve]
         first_point = curve[0]['x']
         last_point = curve[-1]['x']
         self.ww = last_point - first_point

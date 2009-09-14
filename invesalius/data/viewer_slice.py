@@ -66,7 +66,7 @@ class Viewer(wx.Panel):
         self.text = None
         # VTK pipeline and actors
         #self.__config_interactor()
-        self.pick = vtk.vtkWorldPointPicker()
+        self.pick = vtk.vtkPropPicker()
 
         self.__bind_events()
         self.__bind_events_wx()

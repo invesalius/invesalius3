@@ -240,6 +240,10 @@ class VolumeInteraction(wx.Panel):
         ps.Publisher().subscribe( self.RefreshPoints,
                                 'Refresh raycasting widget points')
 
+    def __update_curve_wwwl_text(self, curve):
+        ww, wl = self.clut_raycasting.GetCurveWWWl(curve)
+        ps.Publisher().sendMessage('Set raycasting wwwl', (ww, wl, curve))
+
     def ShowRaycastingWidget(self, evt_pubsub=None):
         self.can_show_raycasting_widget = 1
         if self.clut_raycasting.to_draw_points:
@@ -254,9 +258,10 @@ class VolumeInteraction(wx.Panel):
         self.aui_manager.Update()
 
     def OnPointChanged(self, evt):
+        print "Removed"
         ps.Publisher.sendMessage('Set raycasting refresh', None)
         ps.Publisher.sendMessage('Set raycasting curve', evt.GetCurve())
-        ps.Publisher().sendMessage('Render volume viewer', None)
+        ps.Publisher().sendMessage('Render volume viewer')
 
     def OnCurveSelected(self, evt):
         ps.Publisher.sendMessage('Set raycasting curve', evt.GetCurve())
@@ -264,8 +269,7 @@ class VolumeInteraction(wx.Panel):
 
     def OnChangeCurveWL(self, evt):
         curve = evt.GetCurve()
-        ww, wl = self.clut_raycasting.GetCurveWWWl(curve)
-        ps.Publisher().sendMessage('Set raycasting wwwl', (ww, wl, curve))
+        self.__update_curve_wwwl_text(curve)
         ps.Publisher().sendMessage('Render volume viewer')
 
     def OnSetRaycastPreset(self, evt_pubsub):
