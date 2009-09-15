@@ -1010,14 +1010,12 @@ class Viewer(wx.Panel):
     def set_scroll_position(self, position):
         self.scroll.SetThumbPosition(position)
         self.OnScrollBar()
-
-    def OnScrollBar(self, evt=None):
-        pos = self.scroll.GetThumbPosition()
-        self.set_slice_number(pos)
+    
+    def UpdateSlice3D(self, pos):
         original_orientation = project.Project().original_orientation
-      
+        pos = self.scroll.GetThumbPosition()
         if (self.orientation == "CORONAL") and \
-                (original_orientation == const.AXIAL):
+            (original_orientation == const.AXIAL):
             pos = abs(self.scroll.GetRange() - pos)
         elif(self.orientation == "AXIAL") and \
             (original_orientation == const.CORONAL):
@@ -1025,7 +1023,13 @@ class Viewer(wx.Panel):
         elif(self.orientation == "AXIAL") and \
             (original_orientation == const.SAGITAL):            
                 pos = abs(self.scroll.GetRange() - pos)
-        
+        ps.Publisher().sendMessage('Change slice from slice plane',\
+                                   (self.orientation, pos))
+                
+    def OnScrollBar(self, evt=None):
+        pos = self.scroll.GetThumbPosition()
+        self.set_slice_number(pos)
+        #self.UpdateSlice3D(pos)
         self.pos = pos
         self.cursor_.Show(1)
         self.interactor.Render()
@@ -1033,10 +1037,8 @@ class Viewer(wx.Panel):
             evt.Skip()
             
     def OnScrollBarRelease(self, evt):
-        ps.Publisher().sendMessage('Change slice from slice plane',\
-                                   (self.orientation, self.pos))
-        
-
+        self.UpdateSlice3D(self.pos)
+                    
     def OnKeyDown(self, evt=None):
         pos = self.scroll.GetThumbPosition()
 
@@ -1051,7 +1053,9 @@ class Viewer(wx.Panel):
             pos = pos + 1
             self.scroll.SetThumbPosition(pos)
             self.OnScrollBar()
+        self.UpdateSlice3D(pos)
         self.interactor.Render()
+
         if evt:
             evt.Skip()
 
