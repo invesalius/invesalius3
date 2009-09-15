@@ -720,6 +720,7 @@ class Viewer(wx.Panel):
 
     def __bind_events_wx(self):
         self.scroll.Bind(wx.EVT_SCROLL, self.OnScrollBar)
+        self.scroll.Bind(wx.EVT_SCROLL_ENDSCROLL, self.OnScrollBarRelease)
         self.interactor.Bind(wx.EVT_KEY_DOWN, self.OnKeyDown)
         self.interactor.Bind(wx.EVT_CONTEXT_MENU, self.OnContextMenu)
 
@@ -1024,13 +1025,17 @@ class Viewer(wx.Panel):
         elif(self.orientation == "AXIAL") and \
             (original_orientation == const.SAGITAL):            
                 pos = abs(self.scroll.GetRange() - pos)
-                        
-        ps.Publisher().sendMessage('Change slice from slice plane',\
-                                   (self.orientation, pos))
+        
+        self.pos = pos
         self.cursor_.Show(1)
         self.interactor.Render()
         if evt:
             evt.Skip()
+            
+    def OnScrollBarRelease(self, evt):
+        ps.Publisher().sendMessage('Change slice from slice plane',\
+                                   (self.orientation, self.pos))
+        
 
     def OnKeyDown(self, evt=None):
         pos = self.scroll.GetThumbPosition()
