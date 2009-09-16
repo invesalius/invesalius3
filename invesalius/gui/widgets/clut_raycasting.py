@@ -308,7 +308,7 @@ class CLUTRaycastingWidget(wx.Panel):
         # Calculate the size from those vectors
         len_A = numpy.linalg.norm(A)
         len_B = numpy.linalg.norm(B)
-        # calculate the angle (in radians) between those vector
+        # calculate the angle theta (in radians) between those vector
         theta = math.acos(numpy.dot(A, B) / (len_A * len_B))
         # Using the sin from theta, calculate the adjacent leg, which is the
         # distance from the point to the line
