@@ -111,7 +111,6 @@ class CLUTRaycastingWidget(wx.Panel):
             return
         curve = self._has_clicked_in_selection_curve((x, y))
         if curve is not None:
-            print "Selecionou a curva", curve
             self.dragged = True
             self.previous_wl = x
             self.curve_dragged = curve
@@ -299,6 +298,23 @@ class CLUTRaycastingWidget(wx.Panel):
                     return (i, j)
         return None
 
+    def distance_from_point_line(self, p1, p2, pc):
+        """
+        Calculate the distance from point pc to a line formed by p1 and p2.
+        """
+        # Create a vector pc-p1 and p2-p1
+        A = numpy.array(pc) - numpy.array(p1)
+        B = numpy.array(p2) - numpy.array(p1)
+        # Calculate the size from those vectors
+        len_A = numpy.linalg.norm(A)
+        len_B = numpy.linalg.norm(B)
+        # calculate the angle (in radians) between those vector
+        theta = math.acos(numpy.dot(A, B) / (len_A * len_B))
+        # Using the sin from theta, calculate the adjacent leg, which is the
+        # distance from the point to the line
+        distance = math.sin(theta) * len_A
+        return distance
+
     def _has_clicked_in_selection_curve(self, position):
         x, y = position
         for i, curve in enumerate(self.curves):
@@ -306,20 +322,19 @@ class CLUTRaycastingWidget(wx.Panel):
                 return i
         return None
 
-    def _has_clicked_in_line(self, position):
+    def _has_clicked_in_line(self, clicked_point):
         """ 
         Verify if was clicked in a line. If yes, it returns the insertion
-        position in the point list.
+        clicked_point in the point list.
         """
         for n, curve in enumerate(self.curves):
-            p = bisect.bisect([node.x for node in curve.nodes], position[0])
-            print p
-            if p != 0 and p != len(curve.nodes):
-                x1, y1 = curve.nodes[p-1].x, curve.nodes[p-1].y
-                x2, y2 = position
-                x3, y3 = curve.nodes[p].x, curve.nodes[p].y
-                if  int(float(x2 - x1) / (x3 - x2)) - int(float(y2 - y1) / (y3 - y2)) == 0:
-                    return (n, p)
+            position = bisect.bisect([node.x for node in curve.nodes],
+                              clicked_point[0])
+            if position != 0 and position != len(curve.nodes):
+                p1 = curve.nodes[position-1].x, curve.nodes[position-1].y
+                p2 = curve.nodes[position].x, curve.nodes[position].y
+                if self.distance_from_point_line(p1, p2, clicked_point) <= 5:
+                    return (n, position)
         return None
 
     def _calculate_distance(self, p1, p2):
