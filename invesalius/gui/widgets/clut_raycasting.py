@@ -14,6 +14,7 @@ HISTOGRAM_LINE_WIDTH = 1
 HISTOGRAM_LINE_COLOUR = (0.5, 0.5, 0.5)
 HISTOGRAM_FILL_COLOUR = (0.25, 0.25, 0.25)
 BACKGROUND_TEXT_COLOUR_RGBA = (1, 0, 0, 0.5)
+TEXT_COLOUR = (1, 1, 1)
 GRADIENT_RGBA = 0.75
 RADIUS = 5
 SELECTION_SIZE = 10
@@ -423,43 +424,50 @@ class CLUTRaycastingWidget(wx.Panel):
         x,y = node.x, node.y
         value = node.graylevel
         alpha = node.opacity
-        x_bearing, y_bearing, width, height, x_advance, y_advance\
-                = ctx.text_extents("Value %6d" % value)
-
         widget_width = self.GetVirtualSizeTuple()[0]
 
-        fheight = ctx.font_extents()[2]
-        y_superior = y - RADIUS * 2 - 2 + y_bearing * 2
-        y_inferior = fheight * 2
+        # To better understand text in cairo, see:
+        # http://www.tortall.net/mu/wiki/CairoTutorial#understanding-text
+        if ctx.text_extents("Value %d" % value)[2] > \
+           ctx.text_extents("Alpha: %.3f" % alpha)[2]:
+            text = "Value: %6d" % value
+        else:
+            text = "Alpha: %.3f" % alpha
+
+        x_bearing, y_bearing, width, height, x_advance, y_advance\
+                = ctx.text_extents(text)
+        fascent, fdescent, fheight, fxadvance, fyadvance = ctx.font_extents()
+        
+        # The text box height is the double of text height plus 2, that is text
+        # box border
+        box_height = fheight * 2 + 2
+        box_y = y - RADIUS - 1 - box_height
 
         # The bottom position of the text box mustn't be upper than the top of
         # the width to always appears in the widget
-        if y_superior <= self.padding:
-            y_superior = y
-            y_text1 = y + height
-            y_text2 = y_text1 + 1 + fheight
-        else:
-            y_text2 = y - RADIUS - 1
-            y_text1 = y_text2 - 1 - fheight
+        if box_y <= self.padding:
+            box_y = y + RADIUS + 1
+
+        y_text1 = box_y + fascent
+        y_text2 = y_text1 + fheight
 
         x_left = x + RADIUS + 1
-        rectangle_width = width + RADIUS + 1
+        box_width = width + 2
         # The right position of the text box mustn't be in the widget area to
         # always appears in the widget
-        if x_left + rectangle_width > widget_width:
-            x_left = x - rectangle_width - 1 - RADIUS
-            x_text = x_left - 1
-        else:
-            x_text = x + RADIUS + 1
+        if x_left + box_width > widget_width:
+            x_left = x - box_width - 1 - RADIUS
+
+        x_text = x_left + 1
 
         ctx.set_source_rgba(*BACKGROUND_TEXT_COLOUR_RGBA)
-        ctx.rectangle(x_left, y_superior,
-                      rectangle_width, y_inferior)
+        ctx.rectangle(x_left, box_y,
+                      box_width, box_height)
         ctx.fill()
 
-        ctx.set_source_rgb(1, 1, 1)
+        ctx.set_source_rgb(*TEXT_COLOUR)
         ctx.move_to(x_text, y_text1)
-        ctx.show_text("Value: %6d" % value) 
+        ctx.show_text("Value: %d" % value) 
         ctx.move_to(x_text, y_text2)
         ctx.show_text("Alpha: %.3f" % alpha)
 
