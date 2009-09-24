@@ -483,7 +483,6 @@ class VolumeToolPanel(wx.Panel):
     def OnMenuRaycasting(self, evt):
         """Events from raycasting menu."""
         id = evt.GetId()
-        evt.Skip()
         if id in ID_TO_NAME.keys():
             # Raycassting type was selected
             name = ID_TO_NAME[id]
