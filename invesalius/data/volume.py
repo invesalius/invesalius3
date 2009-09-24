@@ -397,7 +397,7 @@ class Volume():
                 convolve.AddObserver("ProgressEvent", lambda obj,evt:
                                      update_progress(convolve, "%s ..." % filter))
                 imagedata = convolve.GetOutput()
-                convolve.GetOutput().ReleaseDataFlagOn()
+                #convolve.GetOutput().ReleaseDataFlagOn()
         return imagedata
 
     def LoadVolume(self):
