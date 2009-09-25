@@ -720,7 +720,8 @@ class Viewer(wx.Panel):
 
     def __bind_events_wx(self):
         self.scroll.Bind(wx.EVT_SCROLL, self.OnScrollBar)
-        self.scroll.Bind(wx.EVT_SCROLL_ENDSCROLL, self.OnScrollBarRelease)
+        self.scroll.Bind(wx.EVT_SCROLL_THUMBTRACK, self.OnScrollBarRelease)
+        #self.scroll.Bind(wx.EVT_SCROLL_ENDSCROLL, self.OnScrollBarRelease)
         self.interactor.Bind(wx.EVT_KEY_DOWN, self.OnKeyDown)
         self.interactor.Bind(wx.EVT_CONTEXT_MENU, self.OnContextMenu)
 
@@ -1037,8 +1038,10 @@ class Viewer(wx.Panel):
             evt.Skip()
             
     def OnScrollBarRelease(self, evt):
+        print "OnScrollBarRelease"
         self.UpdateSlice3D(self.pos)
-                    
+        evt.Skip()
+
     def OnKeyDown(self, evt=None):
         pos = self.scroll.GetThumbPosition()
 
