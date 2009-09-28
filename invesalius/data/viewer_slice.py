@@ -196,7 +196,7 @@ class Viewer(wx.Panel):
     def __set_mode_editor(self, pubsub_evt):
         self.append_mode('EDITOR')
         self.mouse_pressed = 0
-        self.interactor.SetCursor(wx.StockCursor(wx.CURSOR_BLANK))
+        #self.interactor.SetCursor(wx.StockCursor(wx.CURSOR_BLANK))
 
     def __set_mode_spin(self, pubsub_evt):
         self.append_mode('SPIN')
@@ -338,8 +338,9 @@ class Viewer(wx.Panel):
         ps.Publisher().sendMessage('Update slice viewer')
 
     def OnEnterInteractor(self, obj, evt):
-        self.interactor.SetCursor(wx.StockCursor(wx.CURSOR_BLANK))
-
+        #self.interactor.SetCursor(wx.StockCursor(wx.CURSOR_BLANK))
+        pass
+        
     def OnLeaveInteractor(self, obj, evt):
         for slice_data in self.slice_data_list:
             slice_data.cursor.Show(0)
