@@ -54,8 +54,21 @@ class SliceMenu(wx.Menu):
                                     name, kind=wx.ITEM_RADIO)
                 submenu_wl.AppendItem(wl_item)
                 self.ID_TO_TOOL_ITEM[new_id] = wl_item
+                
+            
+        #----------- Sub menu of the save and load options ---------
+        submenu_wl.AppendSeparator()
+        options = ["Save current values",
+                   "Save current values as...","Load values"]
+        
+        for name in options:  
+            new_id = wx.NewId()
+            wl_item = wx.MenuItem(submenu_wl, new_id,\
+                            name)
+            submenu_wl.AppendItem(wl_item)
+            self.ID_TO_TOOL_ITEM[new_id] = wl_item
 
-        #------------ Sub menu of the pseudo colors -------------
+        #------------ Sub menu of the pseudo colors ----------------
         submenu_pseudo_colours = wx.Menu()
         new_id = wx.NewId()
         color_item = wx.MenuItem(submenu_pseudo_colours, new_id,\
@@ -79,6 +92,8 @@ class SliceMenu(wx.Menu):
                                 name, kind=wx.ITEM_RADIO)
             submenu_image_tiling.AppendItem(image_tiling_item)
             self.ID_TO_TOOL_ITEM[new_id] = image_tiling_item
+        
+        
 
         # Add sub itens in the menu
         self.AppendMenu(-1, "Window Width and Level", submenu_wl)
