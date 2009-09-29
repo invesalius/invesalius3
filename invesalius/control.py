@@ -100,7 +100,7 @@ class Controller():
             threshold_range = proj.imagedata.GetScalarRange()
         
             const.WINDOW_LEVEL['Default'] = (window, level)
-            const.WINDOW_LEVEL['Other'] = (window, level)
+            const.WINDOW_LEVEL['Manual'] = (window, level)
                         
             const.THRESHOLD_OUTVALUE = threshold_range[0]
             const.THRESHOLD_INVALUE = threshold_range[1]

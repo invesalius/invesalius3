@@ -251,7 +251,7 @@ class Viewer(wx.Panel):
                                        "WL: %d  WW: %d"%(self.acum_achange_level,\
                                                          self.acum_achange_window))
 
-            const.WINDOW_LEVEL['Other'] = (self.acum_achange_window,\
+            const.WINDOW_LEVEL['Manual'] = (self.acum_achange_window,\
                                            self.acum_achange_level)
             ps.Publisher().sendMessage('Check window and level other')
             

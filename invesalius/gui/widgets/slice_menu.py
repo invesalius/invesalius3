@@ -43,12 +43,12 @@ class SliceMenu(wx.Menu):
         #Case the user change window and level
         new_id = self.other_wl_id = wx.NewId()
         wl_item = wx.MenuItem(submenu_wl, new_id,\
-                            'Other', kind=wx.ITEM_RADIO)
+                            'Manual', kind=wx.ITEM_RADIO)
         submenu_wl.AppendItem(wl_item)
         self.ID_TO_TOOL_ITEM[new_id] = wl_item
 
         for name in sorted(const.WINDOW_LEVEL):
-            if not(name == 'Default' or name == 'Other'):
+            if not(name == 'Default' or name == 'Manual'):
                 new_id = wx.NewId()
                 wl_item = wx.MenuItem(submenu_wl, new_id,\
                                     name, kind=wx.ITEM_RADIO)

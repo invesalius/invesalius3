@@ -155,13 +155,14 @@ WINDOW_LEVEL = {"Abdomen":(350,50),
                  "Lung - Soft":(1600,-600),
                  "Lung - Hard":(1000,-600),
                  "Mediastinum":(350,25),
-                 "Other":(None, None), #Case the user change window and level
+                 "Manual":(None, None), #Case the user change window and level
                  "Pelvis": (450,50),
                  "Sinus":(4000, 400),
                  "Vasculature - Hard":(240,80),
                  "Vasculature - Soft":(650,160)}
 
-REDUCE_IMAGEDATA_QUALITY = 1 
+REDUCE_IMAGEDATA_QUALITY = 1
+
 
 # if 1, use vtkVolumeRaycastMapper, if 0, use vtkFixedPointVolumeRayCastMapper
 TYPE_RAYCASTING_MAPPER = 0
