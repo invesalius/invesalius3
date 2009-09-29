@@ -165,13 +165,18 @@ REDUCE_IMAGEDATA_QUALITY = 1
 
 
 # if 1, use vtkVolumeRaycastMapper, if 0, use vtkFixedPointVolumeRayCastMapper
-TYPE_RAYCASTING_MAPPER = 0
+TYPE_RAYCASTING_MAPPER = 1
 
 folder=RAYCASTING_PRESETS_DIRECTORY= os.path.join("..", "presets", "raycasting")
 
 RAYCASTING_TYPES = [filename.split(".")[0] for filename in
                     os.listdir(folder) if
                     os.path.isfile(os.path.join(folder,filename))]
+folder = os.path.join(os.path.expanduser('~'), '.invesalius', 'presets')
+USER_RAYCASTING_PRESETS_DIRECTORY = folder
+RAYCASTING_TYPES += [filename.split(".")[0] for filename in
+                     os.listdir(folder) if
+                     os.path.isfile(os.path.join(folder,filename))]
 RAYCASTING_TYPES.append(' Off')
 RAYCASTING_TYPES.sort()
 RAYCASTING_OFF_LABEL = ' Off'

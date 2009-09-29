@@ -26,6 +26,8 @@ class Controller():
         ps.Publisher().subscribe(self.StartImportPanel, "Load data to import panel")
         ps.Publisher().subscribe(self.LoadRaycastingPreset,
                                  'Load raycasting preset')
+        ps.Publisher().subscribe(self.SaveRaycastingPreset,
+                                 'Save raycasting preset')
 
     def StartImportPanel(self, pubsub_evt):
         path = pubsub_evt.data
@@ -140,9 +142,14 @@ class Controller():
     def LoadRaycastingPreset(self, pubsub_evt):
         label = pubsub_evt.data
         if label != const.RAYCASTING_OFF_LABEL:
-            path = os.path.join(const.RAYCASTING_PRESETS_DIRECTORY,
-                                label+".plist")
-            preset = plistlib.readPlist(path)
+            try:
+                path = os.path.join(const.RAYCASTING_PRESETS_DIRECTORY,
+                                    label+".plist")
+                preset = plistlib.readPlist(path)
+            except IOError:
+                path = os.path.join(const.USER_RAYCASTING_PRESETS_DIRECTORY,
+                                    label+".plist")
+                preset = plistlib.readPlist(path)
             prj.Project().raycasting_preset = preset
             # Notify volume
             # TODO: Chamar grafico tb!
@@ -150,3 +157,9 @@ class Controller():
         else:
             prj.Project().raycasting_preset = None
             ps.Publisher().sendMessage("Hide raycasting volume")
+
+    def SaveRaycastingPreset(self, pubsub_evt):
+        preset_name = pubsub_evt.data + '.plist'
+        preset = prj.Project().raycasting_preset
+        preset_dir = os.path.join(const.USER_RAYCASTING_PRESETS_DIRECTORY, preset_name)
+        plistlib.writePlist(preset, preset_dir)
