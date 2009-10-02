@@ -70,6 +70,9 @@ def LoadImages(dir_):
         file_list.append(dicom.image.file)
 
     files = file_list
+    print "*********"
+    print file_list
+    print "*********"
     spacing = dicom.image.spacing
     
     #Coronal Crash. necessary verify
