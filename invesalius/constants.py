@@ -165,7 +165,7 @@ REDUCE_IMAGEDATA_QUALITY = 1
 
 
 # if 1, use vtkVolumeRaycastMapper, if 0, use vtkFixedPointVolumeRayCastMapper
-TYPE_RAYCASTING_MAPPER = 1
+TYPE_RAYCASTING_MAPPER = 0
 
 folder=RAYCASTING_PRESETS_DIRECTORY= os.path.join("..", "presets", "raycasting")
 
@@ -182,6 +182,8 @@ RAYCASTING_TYPES.sort()
 RAYCASTING_OFF_LABEL = ' Off'
 RAYCASTING_TOOLS = ["Cut plane"]
 
+# If 0 dont't blur, 1 blur
+RAYCASTING_WWWL_BLUR = 0
 
 
 ####

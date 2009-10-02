@@ -179,13 +179,16 @@ class Viewer(wx.Panel):
             self.interactor.Render()
 
     def OnWindowLevelClick(self, obj, evt):
+        if const.RAYCASTING_WWWL_BLUR:
+            self.style.StartZoom()
         self.onclick = True
         mouse_x, mouse_y = self.interactor.GetEventPosition()
         self.last_x, self.last_y = mouse_x, mouse_y
 
     def OnWindowLevelRelease(self, obj, evt):
         self.onclick = False
-
+        if const.RAYCASTING_WWWL_BLUR:
+            self.style.EndZoom()
 
     def ShowOrientationCube(self):
         print "ORIENTATION CUBE!"
@@ -418,11 +421,7 @@ class Viewer(wx.Panel):
     def AppendActor(self, evt_pubsub=None):
         self.ren.AddActor(evt_pubsub.data)
 
-
-
-
 class SlicePlane:
-    
     def __init__(self):
         project = prj.Project()
         self.original_orientation = project.original_orientation
@@ -670,3 +669,4 @@ class SlicePlane:
         else:
             self.plane_z.SetPlaneOrientationToZAxes()
             self.plane_z.SetSliceIndex(number)
+
