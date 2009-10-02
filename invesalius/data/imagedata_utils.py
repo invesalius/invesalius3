@@ -150,3 +150,15 @@ def View(imagedata):
     
     import time
     time.sleep(10)
+    
+def ExtractVOI(imagedata,xi,xf,yi,yf,zi,zf):
+    """
+    Cropping the vtkImagedata according 
+    with values.
+    """ 
+    voi = vtk.vtkExtractVOI()
+    voi.SetVOI(xi,xf,yi,yf,zi,zf)
+    voi.SetInput(imagedata)
+    voi.SetSampleRate(1, 1, 1)
+    voi.Update()  
+    return voi.GetOutput()
