@@ -124,3 +124,29 @@ def BuildEditedImage(imagedata, points):
         imagedata.Update()
 
     return imagedata
+
+def Export(imagedata, filename):
+    writer = vtk.vtkXMLImageDataWriter()
+    writer.SetFileName(filename)
+    writer.SetDataModeToAscii()
+    #writer.SetDataModeToBinary()
+    writer.SetInput(imagedata)
+    writer.Write()
+
+def Read(filename):
+    reader = vtk.vtkXMLImageDataReader()
+    reader.SetFileName(filename)
+    #reader.WholeSlicesOn()
+    reader.Update()
+    return reader.GetOutput()
+
+def View(imagedata):
+    viewer = vtk.vtkImageViewer()
+    viewer.SetInput(imagedata)
+    viewer.SetZSlice(10)
+    viewer.SetColorWindow(200)
+    viewer.SetColorLevel(100)
+    viewer.Render()
+    
+    import time
+    time.sleep(10)
