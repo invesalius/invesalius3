@@ -54,47 +54,7 @@ class Controller():
         if output:
             #acquisition_modality, tilt_value, orientation,window, level
             imagedata, dicom = output
-            
-            import vtk
-   
-            fow = vtk.vtkFileOutputWindow ()
-            fow.SetFileName ( 'C:\\vtk_output.txt')
-   
-            ow = vtk.vtkOutputWindow ()
-            ow.SetInstance (fow)
-            
-            b = imagedata.GetExtent()
-            
-            flip = vtk.vtkImageFlip()
-            flip.SetInput(imagedata)
-            flip.SetFilteredAxis(1)
-            flip.FlipAboutOriginOn()
-        
-            print b
-            print "______________"
-            a = vtk.vtkExtractVOI()
-            a.SetVOI(b[1]/2,180,135,b[3],b[4],b[5]) #Cond 3
-            #a.SetVOI(100,135,b[2],135,b[4],b[5]) Cond 9
-            a.SetInput(flip.GetOutput())
-            a.Update()
-            
-            from data import imagedata_utils
-            
-            imagedata_utils.Export(a.GetOutput(), "c:\\cond3")
-            
-            c = vtk.vtkContourFilter()
-            c.SetValue(0,226)
-            c.SetValue(1,3071)
-            c.SetInput(a.GetOutput())
-            c.Update()
-            
-            writer = vtk.vtkSTLWriter()
-            writer.SetInput(c.GetOutput())
-            writer.SetFileTypeToBinary()
-            writer.SetFileName("c:\\teste.stl")
-            writer.Write()
-            
-            
+                        
             orientation = dicom.image.orientation_label
             if (orientation == "CORONAL"):
                 orientation = const.CORONAL
