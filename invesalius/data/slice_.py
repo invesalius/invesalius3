@@ -4,6 +4,7 @@ import vtk
 import wx.lib.pubsub as ps
 
 import constants as const
+import imagedata_utils as iu
 from mask import Mask
 from project import Project
 from utils import Singleton
@@ -60,6 +61,7 @@ class Slice(object):
                                  'Change colour table from background image')
         
         ps.Publisher().subscribe(self.InputImageWidget, 'Input Image in the widget')
+        ps.Publisher().subscribe(self.OnExportMask,'Export mask to file')
 
     def __set_current_mask_threshold_limits(self, pubsub_evt):
         thresh_min = pubsub_evt.data[0]
@@ -544,3 +546,15 @@ class Slice(object):
         imagedata_mask.Update()
 
         return imagedata_mask
+
+
+    def OnExportMask(self, pubsub_evt):
+        #imagedata = self.current_mask.imagedata
+        imagedata = self.imagedata
+        filename, filetype = pubsub_evt.data
+        if (filetype == const.FILETYPE_IMAGEDATA):
+            iu.Export(imagedata, filename)
+
+
+
+

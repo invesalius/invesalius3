@@ -28,26 +28,34 @@ import wx.lib.pubsub as ps
 import constants as const
 import project as proj
 
+BTN_MASK = wx.NewId()
 BTN_PICTURE = wx.NewId()
 BTN_SURFACE = wx.NewId()
 BTN_REPORT = wx.NewId()
 BTN_REQUEST_RP = wx.NewId()
 
 WILDCARD_SAVE_3D = "Inventor (*.iv)|*.iv|"\
+                   "PLY (*.ply)|*.ply|"\
                    "Renderman (*.rib)|*.rib|"\
                    "STL (*.stl)|*.stl|"\
                    "VRML (*.vrml)|*.vrml|"\
+                   "VTK PolyData (*.vtp)|*.vtp|"\
                    "Wavefront (*.obj)|*.obj"
+                     
 INDEX_TO_TYPE_3D = {0: const.FILETYPE_IV,
-                    1: const.FILETYPE_RIB,
-                    2: const.FILETYPE_STL,
-                    3: const.FILETYPE_VRML,
-                    4: const.FILETYPE_OBJ}
+                    1: const.FILETYPE_PLY,
+                    2: const.FILETYPE_RIB,
+                    3: const.FILETYPE_STL,
+                    4: const.FILETYPE_VRML,
+                    5: const.FILETYPE_VTP,
+                    6: const.FILETYPE_OBJ}
 INDEX_TO_EXTENSION = {0: "iv",
-                      1: "rib",
-                      2: "stl",
-                      3: "vrml",
-                      4: "obj"}
+                      1: "ply",
+                      2: "rib",
+                      3: "stl",
+                      4: "vrml",
+                      5: "vtp",
+                      6: "obj"}
 
 WILDCARD_SAVE_2D = "BMP (*.bmp)|*.bmp|"\
                    "JPEG (*.jpg)|*.jpg|"\
@@ -61,6 +69,8 @@ INDEX_TO_TYPE_2D = {0: const.FILETYPE_BMP,
                     3: const.FILETYPE_PS,
                     4: const.FILETYPE_POV,
                     5: const.FILETYPE_OBJ}
+
+WILDCARD_SAVE_MASK = "VTK ImageData (*.vti)|*.vti"
 
 
 class TaskPanel(wx.Panel):
@@ -109,6 +119,17 @@ class InnerTaskPanel(wx.Panel):
         link_export_surface.Bind(hl.EVT_HYPERLINK_LEFT,
                               self.OnLinkExportSurface)
 
+        tooltip = wx.ToolTip("Export 3D mask (voxels)")
+        link_export_mask = hl.HyperLinkCtrl(self, -1,"Export mask...")
+        link_export_mask.SetUnderlines(False, False, False)
+        link_export_mask.SetColours("BLACK", "BLACK", "BLACK")
+        link_export_mask.SetToolTip(tooltip)
+        link_export_mask.AutoBrowse(False)
+        link_export_mask.UpdateLink()
+        link_export_mask.Bind(hl.EVT_HYPERLINK_LEFT,
+                              self.OnLinkExportMask)
+
+
         #tooltip = wx.ToolTip("Request rapid prototyping services")
         #link_request_rp = hl.HyperLinkCtrl(self,-1,"Request rapid prototyping...")
         #link_request_rp.SetUnderlines(False, False, False)
@@ -136,14 +157,19 @@ class InnerTaskPanel(wx.Panel):
             BMP_TAKE_PICTURE = wx.Bitmap(\
                                  "../icons/tool_photo_original.png",
                                  wx.BITMAP_TYPE_PNG)
+            BMP_EXPORT_MASK = wx.Bitmap("../icons/mask.png",
+                                        wx.BITMAP_TYPE_PNG)
         else:
             BMP_EXPORT_SURFACE = wx.Bitmap("../icons/surface_export.png",
                                         wx.BITMAP_TYPE_PNG)
             BMP_TAKE_PICTURE = wx.Bitmap("../icons/tool_photo.png",
                                      wx.BITMAP_TYPE_PNG)
+            BMP_EXPORT_MASK = wx.Bitmap("../icons/mask_small.png",
+                                        wx.BITMAP_TYPE_PNG)
 
 
-        bmp_list = [BMP_TAKE_PICTURE, BMP_EXPORT_SURFACE]
+        bmp_list = [BMP_TAKE_PICTURE, BMP_EXPORT_SURFACE,
+                    BMP_EXPORT_MASK]
         for bmp in bmp_list:
             bmp.SetWidth(25)
             bmp.SetHeight(25)
@@ -157,6 +183,9 @@ class InnerTaskPanel(wx.Panel):
         button_surface = pbtn.PlateButton(self, BTN_SURFACE, "",
                                                 BMP_EXPORT_SURFACE,
                                               style=button_style)
+        button_mask = pbtn.PlateButton(self, BTN_MASK, "",
+                                        BMP_EXPORT_MASK,
+                                        style=button_style)
         #button_request_rp = pbtn.PlateButton(self, BTN_REQUEST_RP, "",
         #                                    BMP_IMPORT, style=button_style)
         #button_report = pbtn.PlateButton(self, BTN_REPORT, "",
@@ -170,12 +199,14 @@ class InnerTaskPanel(wx.Panel):
         flag_link = wx.EXPAND|wx.GROW|wx.LEFT|wx.TOP
         flag_button = wx.EXPAND | wx.GROW
 
-        fixed_sizer = wx.FlexGridSizer(rows=2, cols=2, hgap=2, vgap=0)
+        fixed_sizer = wx.FlexGridSizer(rows=3, cols=2, hgap=2, vgap=0)
         fixed_sizer.AddGrowableCol(0, 1)
         fixed_sizer.AddMany([ (link_export_picture, 1, flag_link, 3),
                               (button_picture, 0, flag_button),
                               (link_export_surface, 1, flag_link, 3),
-                              (button_surface, 0, flag_button)])#,
+                              (button_surface, 0, flag_button),#])#,
+                              (link_export_mask, 1, flag_link, 3),
+                              (button_mask, 0, flag_button)])
                               #(link_report, 0, flag_link, 3),
                               #(button_report, 0, flag_button),
                               #(link_request_rp, 1, flag_link, 3),
@@ -193,8 +224,37 @@ class InnerTaskPanel(wx.Panel):
     def OnLinkExportPicture(self, evt=None):
         pass
 
+    def OnLinkExportMask(self, evt=None):
+        project = proj.Project()
+        print "OnLinkEportMask"
+        if sys.platform == 'win32':
+            project_name = project.name
+        else:
+            project_name = project.name+".vti"
+
+
+        dlg = wx.FileDialog(None,
+                            "Save mask as...", # title
+                            "", # last used directory
+                            project_name, # filename
+                            WILDCARD_SAVE_MASK,
+                            wx.SAVE|wx.OVERWRITE_PROMPT)
+        dlg.SetFilterIndex(0) # default is VTI
+                                
+        if dlg.ShowModal() == wx.ID_OK:
+            filename = dlg.GetPath()
+            print "filename", filename
+            extension = "vti"
+            if sys.platform != 'win32':
+                if filename.split(".")[-1] != extension:
+                    filename = filename + "."+ extension
+            filetype = const.FILETYPE_IMAGEDATA
+            ps.Publisher().sendMessage('Export mask to file',
+                                            (filename, filetype))
+
 
     def OnLinkExportSurface(self, evt=None):
+        "OnLinkExportSurface"
         project = proj.Project()
         n_surface = 0
 
@@ -215,7 +275,7 @@ class InnerTaskPanel(wx.Panel):
                                 project_name, # filename
                                 WILDCARD_SAVE_3D,
                                 wx.SAVE|wx.OVERWRITE_PROMPT)
-            dlg.SetFilterIndex(2) # default is STL
+            dlg.SetFilterIndex(3) # default is STL
                                 
             if dlg.ShowModal() == wx.ID_OK:
                 filetype_index = dlg.GetFilterIndex()
@@ -252,5 +312,7 @@ class InnerTaskPanel(wx.Panel):
             self.OnLinkExportSurface()
         elif id == BTN_REPORT:
             self.OnLinkReport()
-        else: #elif id == BTN_REQUEST_RP:
+        elif id == BTN_REQUEST_RP:
             self.OnLinkRequestRP()
+        else:# id == BTN_MASK:
+            self.OnLinkExportMask()

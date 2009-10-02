@@ -218,6 +218,10 @@ FILETYPE_RIB = wx.NewId()
 FILETYPE_STL = wx.NewId()
 FILETYPE_VRML = wx.NewId()
 FILETYPE_OBJ = wx.NewId()
+FILETYPE_VTP = wx.NewId()
+FILETYPE_PLY = wx.NewId()
+
+FILETYPE_IMAGEDATA = wx.NewId()
 
 FILETYPE_BMP = wx.NewId()
 FILETYPE_JPG = wx.NewId()

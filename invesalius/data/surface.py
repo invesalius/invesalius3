@@ -284,7 +284,11 @@ class SurfaceManager():
 
     def OnExportSurface(self, pubsub_evt):
         filename, filetype = pubsub_evt.data
-        if filetype == const.FILETYPE_STL:
+        if (filetype == const.FILETYPE_STL) or\
+                    (filetype == const.FILETYPE_VTP):
+
+            # First we identify all surfaces that are selected
+            # (if any)
             proj = prj.Project()
             polydata_list = []
             for index in proj.surface_dict:
@@ -299,10 +303,24 @@ class SurfaceManager():
             else:
                 polydata = pu.Merge(polydata_list)
 
-            writer = vtk.vtkSTLWriter()
-            writer.SetFileTypeToBinary()
+
+            # Having a polydata that represents all surfaces
+            # selected, we write it, according to filetype
+            if filetype == const.FILETYPE_STL:
+                writer = vtk.vtkSTLWriter()
+                writer.SetFileTypeToBinary()
+            elif filetype == const.FILETYPE_VTP:
+                writer = vtk.vtkXMLPolyDataWriter()
+            elif filetype == const.FILETYPE_IV:
+                writer = vtk.vtkIVWriter()
+            elif filetype == const.FILETYPE_PLY: 
+                writer = vtk.vtkPLYWriter()
+                writer.SetFileTypeToBinary()
+                writer.SetDataByteOrderToLittleEndian()
+                #writer.SetColorModeToUniformCellColor()
+                #writer.SetColor(255, 0, 0) 
+
             writer.SetFileName(filename)
             writer.SetInput(polydata)
             writer.Write()
-
 
