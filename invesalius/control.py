@@ -9,6 +9,7 @@ import project as prj
 import data.imagedata_utils as utils
 import data.surface as surface
 import data.volume as volume
+import gui.dialogs as dialog
 import reader.dicom_reader as dcm
 import reader.analyze_reader as analyze
 
@@ -52,9 +53,10 @@ class Controller():
         proj.name = "Untitled"
 
         if output:
-            #acquisition_modality, tilt_value, orientation,window, level
+            # In this case, there were DICOM files on the folder
             imagedata, dicom = output
-                        
+
+            # Set orientation
             orientation = dicom.image.orientation_label
             if (orientation == "CORONAL"):
                 orientation = const.CORONAL
@@ -62,16 +64,20 @@ class Controller():
                 orientation = const.SAGITAL
             else:
                 orientation = const.AXIAL
-                
-            window = window = float(dicom.image.window)
-            level = level = float(dicom.image.level)
+            
+            # Retrieve window, level, modalit
+            window = float(dicom.image.window)
+            level = float(dicom.image.level)
             acquisition_modality = dicom.acquisition.modality
+
+            # If there was gantry tilt, fix it:
             tilt_value = dicom.acquisition.tilt
             if (tilt_value):
-                #TODO: Show dialog so user can set not other value
-                tilt_value *= -1
+                # Tell user gantry tilt and fix, according to answer
+                message = "Fix gantry tilt applying the degrees bellow"
+                value = -1*tilt_value
+                tilt_value = dialog.ShowNumberDialog(message, value)
                 imagedata = utils.FixGantryTilt(imagedata, tilt_value)
-                print "Fixed Gantry Tilt", str(tilt_value)
         else:
             "No DICOM files were found. Trying to read with ITK..."
             imagedata = analyze.ReadDirectory(dir_)

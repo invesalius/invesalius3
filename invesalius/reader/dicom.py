@@ -1198,7 +1198,7 @@ class Parser():
                                             .GetSliceThickness()
         if (data):
             return float(data)
-        return None
+        return 0
 
     def GetImageConvolutionKernel(self):
         """
@@ -1684,22 +1684,28 @@ class Image(object):
             self.position = [1, 1, 1]
             
         self.number = parser.GetImageNumber()
+        print "*****************"
         self.spacing = spacing = parser.GetPixelSpacing()
+        print "Spacing:", spacing
         self.orientation_label = parser.GetImageOrientationLabel()
         self.file = parser.filename
 
-        if (parser.GetImageThickness()):
-            spacing.append(parser.GetImageThickness())
-        else:
-            try:
-                spacing.append(1.5)
-            except(AttributeError):
-                spacing = [1, 1, 1]
-                
-        spacing[0] = round(spacing[0],2)
-        spacing[1] = round(spacing[1],2)
-        spacing[2] = round(spacing[2],2)
-        self.spacing = spacing
+        if self.spacing:
+            print "Thickness:", parser.GetImageThickness()
+            # If the image is "alone", we set thickness as z axis
+            if (parser.GetImageThickness()):
+                spacing.append(parser.GetImageThickness()) 
+            else:
+                try:
+                    spacing.append(1.5)
+                except(AttributeError):
+                    spacing = [1, 1, 1]
+            
+            # If there are too many float digits
+            spacing[0] = round(spacing[0],2)
+            spacing[1] = round(spacing[1],2)
+            spacing[2] = round(spacing[2],2)
+            self.spacing = spacing
         
         try:
             self.type = parser.GetImageType()[2]

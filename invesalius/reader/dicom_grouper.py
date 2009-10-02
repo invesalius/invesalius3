@@ -78,7 +78,7 @@ class DicomGroups:
         """
         return self.groups_dcm
 
-    def GetSplitterTyoe(self):
+    def GetSplitterType(self):
         """
         Return Integer with the SplitterType
         0 option used the name of patient information,
@@ -347,4 +347,5 @@ class DicomGroups:
                 spacing = None
 
             for information in self.groups_dcm[key][0]:
-                information.image.spacing[2] = spacing
+                if information.image.spacing:
+                    information.image.spacing[2] = spacing
