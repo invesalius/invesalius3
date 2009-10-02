@@ -25,11 +25,11 @@ import sys
 # ----------------------------------------------------------------------
 
 path = os.path.join(os.path.expanduser('~'), ".invesalius", "presets")
-print path
 try:
     os.makedirs(path)
 except OSError:
-    print "Warning: Directory (probably) exists"
+    #print "Warning: Directory (probably) exists"
+    pass
 # ----------------------------------------------------------------------
 
 import wx
