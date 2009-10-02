@@ -17,9 +17,18 @@
 #    detalhes.
 #--------------------------------------------------------------------------
 
+from optparse import OptionParser
+import os
 import sys
 
-from optparse import OptionParser
+# TODO: This should be called during installation
+# ----------------------------------------------------------------------
+path = os.path.join(os.getenv("HOME"), ".invesalius", "presets")
+try:
+    os.makedirs(path)
+except OSError:
+    print "Warning: Directory (probably) exists"
+# ----------------------------------------------------------------------
 
 import wx
 import wx.lib.pubsub as ps
@@ -67,14 +76,14 @@ def parse_comand_line():
     else:
         print "Hey, guy you must pass a directory to me!"
 
+def print_events(data):
+    print data.topic
+
 def main():
     application = InVesalius(0)
     parse_comand_line()
     application.ShowFrame()
     application.MainLoop()
-
-def print_events(data):
-    print data.topic
 
 if __name__ == '__main__':
     # Add current directory to PYTHONPATH
