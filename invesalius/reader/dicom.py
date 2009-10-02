@@ -329,7 +329,7 @@ class Parser():
         ds = self.gdcm_reader.GetFile().GetDataSet()
         if ds.FindDataElement(tag):
             data =  str(ds.GetDataElement(tag).GetValue())
-            if (data):
+            if (data) and (data != 'None'):
                 return int(data)
         return None
 
