@@ -23,7 +23,9 @@ import sys
 
 # TODO: This should be called during installation
 # ----------------------------------------------------------------------
-path = os.path.join(os.getenv("HOME"), ".invesalius", "presets")
+
+path = os.path.join(os.path.expanduser('~'), ".invesalius", "presets")
+print path
 try:
     os.makedirs(path)
 except OSError:
