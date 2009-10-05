@@ -28,8 +28,8 @@ import project
 import widgets.slice_menu as slice_menu_
 
 from gui.widgets.clut_raycasting import CLUTRaycastingWidget, \
-        EVT_CLUT_POINT_CHANGED, EVT_CLUT_CURVE_SELECTED, \
-        EVT_CLUT_CHANGED_CURVE_WL
+        EVT_CLUT_POINT_RELEASE, EVT_CLUT_CURVE_SELECT, \
+        EVT_CLUT_CURVE_WL_CHANGE
 
 class Panel(wx.Panel):
     def __init__(self, parent):
@@ -223,9 +223,9 @@ class VolumeInteraction(wx.Panel):
         self.aui_manager.Update()
 
     def __bind_events_wx(self):
-        self.clut_raycasting.Bind(EVT_CLUT_POINT_CHANGED, self.OnPointChanged)
-        self.clut_raycasting.Bind(EVT_CLUT_CURVE_SELECTED , self.OnCurveSelected)
-        self.clut_raycasting.Bind(EVT_CLUT_CHANGED_CURVE_WL,
+        self.clut_raycasting.Bind(EVT_CLUT_POINT_RELEASE, self.OnPointChanged)
+        self.clut_raycasting.Bind(EVT_CLUT_CURVE_SELECT, self.OnCurveSelected)
+        self.clut_raycasting.Bind(EVT_CLUT_CURVE_WL_CHANGE,
                                   self.OnChangeCurveWL)
         #self.Bind(wx.EVT_SIZE, self.OnSize)
         #self.Bind(wx.EVT_MAXIMIZE, self.OnMaximize)

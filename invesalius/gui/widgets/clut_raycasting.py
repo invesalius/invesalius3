@@ -31,6 +31,7 @@ class Node(object):
         self.graylevel = 0
         self.opacity = 0
 
+
 class Curve(object):
     """
     Represents the curves in the raycasting preset. It contains the point nodes from
@@ -43,8 +44,12 @@ class Curve(object):
         self.nodes = []
 
     def CalculateWWWl(self):
+        """
+        Called when the curve width(ww) or position(wl) is modified.
+        """
         self.ww = self.nodes[-1].graylevel - self.nodes[0].graylevel
         self.wl = self.nodes[0].graylevel + self.ww / 2.0
+
 
 class CLUTRaycastingWidget(wx.Panel):
     """
@@ -115,7 +120,7 @@ class CLUTRaycastingWidget(wx.Panel):
             self.dragged = True
             self.previous_wl = x
             self.curve_dragged = curve
-            evt = CLUTEvent(myEVT_CLUT_CURVE_SELECTED, self.GetId(), curve)
+            evt = CLUTEvent(myEVT_CLUT_CURVE_SELECT, self.GetId(), curve)
             self.GetEventHandler().ProcessEvent(evt)
             return
         else:
@@ -137,7 +142,7 @@ class CLUTRaycastingWidget(wx.Panel):
                 self.curves[n].nodes.insert(p, node)
 
                 self.Refresh()
-                nevt = CLUTEvent(myEVT_CLUT_POINT_CHANGED, self.GetId(), n)
+                nevt = CLUTEvent(myEVT_CLUT_POINT_RELEASE, self.GetId(), n)
                 self.GetEventHandler().ProcessEvent(nevt)
                 return
         evt.Skip()
@@ -158,7 +163,7 @@ class CLUTRaycastingWidget(wx.Panel):
                 print self.curves[i].nodes
                 self.curves[i].nodes[j].colour = (r, g, b)
                 self.Refresh()
-                nevt = CLUTEvent(myEVT_CLUT_POINT_CHANGED, self.GetId(), i)
+                nevt = CLUTEvent(myEVT_CLUT_POINT_RELEASE, self.GetId(), i)
                 self.GetEventHandler().ProcessEvent(nevt)
                 return
         evt.Skip()
@@ -173,7 +178,7 @@ class CLUTRaycastingWidget(wx.Panel):
             print "RightClick", i, j
             self.RemovePoint(i, j)
             self.Refresh()
-            nevt = CLUTEvent(myEVT_CLUT_POINT_CHANGED, self.GetId(), i)
+            nevt = CLUTEvent(myEVT_CLUT_POINT_RELEASE, self.GetId(), i)
             self.GetEventHandler().ProcessEvent(nevt)
             return
         n_curve = self._has_clicked_in_selection_curve(evt.GetPositionTuple())
@@ -181,7 +186,7 @@ class CLUTRaycastingWidget(wx.Panel):
             print "Removing a curve"
             self.RemoveCurve(n_curve)
             self.Refresh()
-            nevt = CLUTEvent(myEVT_CLUT_POINT_CHANGED, self.GetId(), n_curve)
+            nevt = CLUTEvent(myEVT_CLUT_POINT_RELEASE, self.GetId(), n_curve)
             self.GetEventHandler().ProcessEvent(nevt)
         evt.Skip()
 
@@ -191,7 +196,7 @@ class CLUTRaycastingWidget(wx.Panel):
         been occurred in the preset points.
         """
         if self.to_render:
-            evt = CLUTEvent(myEVT_CLUT_POINT_CHANGED, self.GetId(), 0)
+            evt = CLUTEvent(myEVT_CLUT_POINT_RELEASE, self.GetId(), 0)
             self.GetEventHandler().ProcessEvent(evt)
         self.dragged = False
         self.curve_dragged = None
@@ -257,7 +262,7 @@ class CLUTRaycastingWidget(wx.Panel):
             self.Refresh()
 
             # A point in the preset has been changed, raising a event
-            evt = CLUTEvent(myEVT_CLUT_POINT , self.GetId(), i)
+            evt = CLUTEvent(myEVT_CLUT_POINT_MOVE , self.GetId(), i)
             self.GetEventHandler().ProcessEvent(evt)
 
         elif self.dragged and self.curve_dragged is not None:
@@ -269,7 +274,7 @@ class CLUTRaycastingWidget(wx.Panel):
                 node.graylevel = self.PixelToHounsfield(node.x)
 
             # The window level has been changed, raising a event!
-            evt = CLUTEvent(myEVT_CLUT_CHANGED_CURVE_WL, self.GetId(),
+            evt = CLUTEvent(myEVT_CLUT_CURVE_WL_CHANGE, self.GetId(),
                             self.curve_dragged)
             self.GetEventHandler().ProcessEvent(evt)
 
@@ -641,21 +646,21 @@ myEVT_CLUT_SLIDER = wx.NewEventType()
 EVT_CLUT_SLIDER = wx.PyEventBinder(myEVT_CLUT_SLIDER, 1)
 
 # Occurs when CLUT was slided
-myEVT_CLUT_SLIDER_CHANGED = wx.NewEventType()
-EVT_CLUT_SLIDER_CHANGED = wx.PyEventBinder(myEVT_CLUT_SLIDER_CHANGED, 1)
+myEVT_CLUT_SLIDER_CHANGE = wx.NewEventType()
+EVT_CLUT_SLIDER_CHANGE = wx.PyEventBinder(myEVT_CLUT_SLIDER_CHANGE, 1)
 
 # Occurs when CLUT point is changing
-myEVT_CLUT_POINT = wx.NewEventType()
-EVT_CLUT_POINT = wx.PyEventBinder(myEVT_CLUT_POINT, 1)
+myEVT_CLUT_POINT_MOVE = wx.NewEventType()
+EVT_CLUT_POINT_MOVE = wx.PyEventBinder(myEVT_CLUT_POINT_MOVE, 1)
 
 # Occurs when a CLUT point was changed
-myEVT_CLUT_POINT_CHANGED = wx.NewEventType()
-EVT_CLUT_POINT_CHANGED = wx.PyEventBinder(myEVT_CLUT_POINT_CHANGED, 1)
+myEVT_CLUT_POINT_RELEASE = wx.NewEventType()
+EVT_CLUT_POINT_RELEASE = wx.PyEventBinder(myEVT_CLUT_POINT_RELEASE, 1)
 
 # Selected a curve
-myEVT_CLUT_CURVE_SELECTED = wx.NewEventType()
-EVT_CLUT_CURVE_SELECTED = wx.PyEventBinder(myEVT_CLUT_CURVE_SELECTED, 1)
+myEVT_CLUT_CURVE_SELECT = wx.NewEventType()
+EVT_CLUT_CURVE_SELECT = wx.PyEventBinder(myEVT_CLUT_CURVE_SELECT, 1)
 
 # Changed the wl from a curve
-myEVT_CLUT_CHANGED_CURVE_WL = wx.NewEventType()
-EVT_CLUT_CHANGED_CURVE_WL = wx.PyEventBinder(myEVT_CLUT_CHANGED_CURVE_WL, 1)
+myEVT_CLUT_CURVE_WL_CHANGE = wx.NewEventType()
+EVT_CLUT_CURVE_WL_CHANGE = wx.PyEventBinder(myEVT_CLUT_CURVE_WL_CHANGE, 1)
