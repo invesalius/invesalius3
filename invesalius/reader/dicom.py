@@ -124,6 +124,20 @@ class Parser():
                 return int(str(data))
         return None
 
+    def GetAccessionNumber(self):
+        """
+        Return integer related to acession number
+
+        DICOM standard tag (0x0008, 0x0050) was used.
+        """
+        tag = gdcm.Tag(0x0008, 0x0050)
+        ds = self.gdcm_reader.GetFile().GetDataSet()
+        if ds.FindDataElement(tag):
+            data =  ds.GetDataElement(tag).GetValue()
+            if (data):
+                return int(str(data))
+        return None
+    
     def GetAcquisitionTime(self):
         """
         Return string containing the acquisition time using the
@@ -582,16 +596,16 @@ class Parser():
                 return data
         return None
 
-    def GetPhysicianName(self):
+
+    def GetPhysicianReferringName(self):
         """
-        Return string containing patient's primary (reffering)
-        physician.
+        Return string containing physician
+        of the patient.
         Return None if field is not defined.
 
         DICOM standard tag (0x0008, 0x0090) was used.
         """
-        #tag = gdcm.Tag(0x0008, 0x0090)
-        tag = gdcm.Tag(0x0008,0x1060)
+        tag = gdcm.Tag(0x0008,0x0090)
         ds = self.gdcm_reader.GetFile().GetDataSet()
         if ds.FindDataElement(tag):
             data = str(ds.GetDataElement(tag).GetValue())
@@ -599,7 +613,8 @@ class Parser():
                 return data
         return ""
 
-    def GetPhysicianAddress(self):
+    
+    def GetPhysicianReferringAddress(self):
         """
         Return string containing physician's address.
         Return None if field is not defined.
@@ -614,7 +629,7 @@ class Parser():
                 return data
         return None
 
-    def GetPhysicianTelephone(self):
+    def GetPhysicianeReferringTelephone(self):
         """
         Return string containing physician's telephone.
         Return None if field is not defined.
@@ -679,6 +694,20 @@ class Parser():
                 return data
         return None
 
+    def GetSeriesDescription(self):
+        """
+        Return string containing Series description.
+
+        DICOM tag (0x0008, 0x1030). Cannot be edited.
+        """
+        tag = gdcm.Tag(0x0008, 0x1030)
+        ds = self.gdcm_reader.GetFile().GetDataSet()
+        if ds.FindDataElement(tag):
+            data = str(ds.GetDataElement(tag).GetValue())
+            if (data):
+                return data
+        return None
+    
     def GetStudyInstanceUID(self):
         """
         Return string containing Unique Identifier of the
@@ -1655,8 +1684,13 @@ class Patient(object):
 
     def SetParser(self, parser):
         self.name = parser.GetPatientName()
-        self.physician = parser.GetPhysicianName()
-
+        self.id = parser.GetPatientID()
+        self.age = parser.GetPatientAge()
+        self.birthdate = parser.GetPatientBirthDate() 
+        self.gender = parser.GetPatientGender()
+        self.physician = parser.GetPhysicianReferringName()
+        
+        
 class Acquisition(object):
 
     def __init__(self):
@@ -1669,7 +1703,13 @@ class Acquisition(object):
         self.serie_number = parser.GetImageSeriesNumber()
         self.id_study = parser.GetStudyID()
         self.modality = parser.GetAcquisitionModality()
-
+        self.study_description = parser.GetStudyDescription()
+        self.acquisition_date = parser.GetAcquisitionDate()
+        self.institution = parser.GetInstitutionName()
+        self.date = parser.GetAcquisitionDate()
+        self.acession_number = parser.GetAccessionNumber()
+        self.series_description = parser.GetSeriesDescription()
+        
 class Image(object):
 
     def __init__(self):
@@ -1684,30 +1724,28 @@ class Image(object):
             self.position = [1, 1, 1]
             
         self.number = parser.GetImageNumber()
-        print "*****************"
         self.spacing = spacing = parser.GetPixelSpacing()
-        print "Spacing:", spacing
         self.orientation_label = parser.GetImageOrientationLabel()
         self.file = parser.filename
 
-        if self.spacing:
-            print "Thickness:", parser.GetImageThickness()
-            # If the image is "alone", we set thickness as z axis
-            if (parser.GetImageThickness()):
-                spacing.append(parser.GetImageThickness()) 
-            else:
-                try:
-                    spacing.append(1.5)
-                except(AttributeError):
-                    spacing = [1, 1, 1]
-            
-            # If there are too many float digits
-            spacing[0] = round(spacing[0],2)
-            spacing[1] = round(spacing[1],2)
-            spacing[2] = round(spacing[2],2)
-            self.spacing = spacing
+        if (parser.GetImageThickness()):
+            try:
+                spacing.append(parser.GetImageThickness())
+            except(AttributeError):
+                spacing = [1, 1, 1]                            
+        else:
+            try:
+                spacing.append(1.5)
+            except(AttributeError):
+                spacing = [1, 1, 1]
+                
+        spacing[0] = round(spacing[0],2)
+        spacing[1] = round(spacing[1],2)
+        spacing[2] = round(spacing[2],2)
+        self.spacing = spacing
         
         try:
             self.type = parser.GetImageType()[2]
         except(IndexError):
             self.type = None
+            
