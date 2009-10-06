@@ -31,13 +31,7 @@ from data.imagedata_utils import ResampleImage2D
 def LoadImages(dir_):
     #  TODO!!! SUPER GAMBIARRA!!! DO THIS BETTER
 
-    if 0:
-        fow = vtk.vtkFileOutputWindow()
-        fow.SetFileName('vtk_output.txt')
-        ow = vtk.vtkOutputWindow ()
-        ow.SetInstance (fow)
-
-    dcm_files, acquisition_modality = GetDicomFiles(dir_)
+    dcm_files = GetDicomFiles(dir_)
 
     dcm_series = dicom_grouper.DicomGroups()
     dcm_series.SetFileList(dcm_files)
@@ -70,9 +64,6 @@ def LoadImages(dir_):
         file_list.append(dicom.image.file)
 
     files = file_list
-    print "*********"
-    print file_list
-    print "*********"
     spacing = dicom.image.spacing
     
     #Coronal Crash. necessary verify
@@ -128,7 +119,7 @@ def LoadImages(dir_):
 
     return image_data, dicom
 
-def GetDicomFiles(path, recursive = False):
+def GetDicomFilesOld(path, recursive = False):
     #  TODO!!! SUPER GAMBIARRA!!! DO THIS BETTER
     """
     Separate only files of a DICOM Determined
@@ -136,7 +127,6 @@ def GetDicomFiles(path, recursive = False):
     the directory. (recursive = True)
     """
     result = []
-    acquisition_modality = None
 
     if (recursive == True):
 
@@ -151,7 +141,6 @@ def GetDicomFiles(path, recursive = False):
             read_dicom = dicom.Parser()
             if(read_dicom.SetFileName(path)):
                 if (read_dicom.GetImagePosition()):
-                    acquisition_modality = read_dicom.GetAcquisitionModality()
                     result.append(path)
     else:
         files = glob.glob(path + os.sep + "*")
@@ -159,6 +148,41 @@ def GetDicomFiles(path, recursive = False):
             read_dicom = dicom.Parser()
             if (read_dicom.SetFileName(files[x])):
                 result.append(files[x])
-                acquisition_modality = read_dicom.GetAcquisitionModality()
         #  TODO!!! SUPER GAMBIARRA!!! DO THIS BETTER
-    return result, acquisition_modality
+    return result
+
+def GetSeries(path):
+    """
+    Return DICOM group of files inside given directory.
+    """
+    dcm_files = GetDicomFiles(path)
+
+    dcm_series = dicom_grouper.DicomGroups()
+    dcm_series.SetFileList(dcm_files)
+    dcm_series.Update()
+
+    return dcm_series.GetOutput()
+
+def GetDicomFiles(path):
+    """
+    Return all full paths to DICOM files inside given directory.
+    """
+    list_paths = os.walk(path)
+    
+    # Recursivelly, find all files inside this folder
+    file_list = []
+    for p in list_paths:
+        p_file_list = p[-1]
+        file_path = p[0]
+        for filename in p_file_list:
+            file_list.append(str(os.path.join(file_path,filename)))
+
+    # Check if given file is in DICOM format
+    dicom_files = []
+    for file in file_list:
+        read_dicom = dicom.Parser()
+        if (read_dicom.SetFileName(file)):
+            dicom_files.append(file)
+
+
+    return dicom_files
