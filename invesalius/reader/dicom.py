@@ -1432,9 +1432,6 @@ class Parser():
             data = time.strptime(value, "%D/%M/%Y")
         else:
             data = time.strptime(value, "%Y%M%d")
-            
-        print time.strftime("%d/%M/%Y",data)
-        
         return time.strftime("%d/%M/%Y",data)       
         
     def GetAcquisitionTime(self):
@@ -1677,7 +1674,6 @@ if __name__ == "__main__":
 
     for i in xrange(1,total+1):
         filename = "..//data//"+str(i)+".dcm"
-        print "\nfilename:", filename
         parser = Parser()
         if parser.SetFileName(filename):
             print "p:", parser.GetPatientName()
