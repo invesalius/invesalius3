@@ -660,8 +660,6 @@ class Parser():
             if (data):
                 return data
         return None
-    
-    def Get
 
     def GetImageType(self):
         """
