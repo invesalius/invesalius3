@@ -646,6 +646,23 @@ class Parser():
                 return data
         return ""
 
+    def GetProtocolName(self):
+        """
+        Return string containing the protocal name
+        used in the acquisition
+
+        DICOM standard tag (0x0018, 0x1030) was used.
+        """
+        tag = gdcm.Tag(0x0018, 0x1030)
+        ds = self.gdcm_reader.GetFile().GetDataSet()
+        if ds.FindDataElement(tag):
+            data = str(ds.GetDataElement(tag).GetValue())
+            if (data):
+                return data
+        return None
+    
+    def Get
+
     def GetImageType(self):
         """
         Return list containing strings related to image origin.
@@ -1396,6 +1413,33 @@ class Parser():
                 return data
         return "unnamed"
 
+    def GetImageTime(self):
+        """
+        Return the image time.
+        DICOM standard tag (0x0008,0x0033) was used.
+        """
+        tag = gdcm.Tag(0x0008, 0x0033)
+        ds = self.gdcm_reader.GetFile().GetDataSet()
+        if ds.FindDataElement(tag):
+            data = str(ds.GetDataElement(tag).GetValue())
+            if (data):
+                return data
+        return ""
+    
+    def GetAcquisitionTime(self):
+        """
+        Return the acquisition time.
+        DICOM standard tag (0x0008,0x032) was used.
+        """
+        tag = gdcm.Tag(0x0008, 0x0032)
+        ds = self.gdcm_reader.GetFile().GetDataSet()
+        if ds.FindDataElement(tag):
+            data = str(ds.GetDataElement(tag).GetValue())
+            if (data):
+                return data
+        return ""
+    
+        
 
 
 class DicomWriter:
@@ -1698,7 +1742,7 @@ class Patient(object):
 class Acquisition(object):
 
     def __init__(self):
-        self.time = "12:34 AM"
+        pass
 
     def SetParser(self, parser):
         self.patient_orientation = parser.GetImagePatientOrientation()
@@ -1712,6 +1756,8 @@ class Acquisition(object):
         self.date = parser.GetAcquisitionDate()
         self.accession_number = parser.GetAccessionNumber()
         self.series_description = parser.GetSeriesDescription()
+        self.time = parser.GetAcquisitionTime()
+        self.protocol_name = parser.GetProtocolName()
         
 class Image(object):
 
@@ -1730,6 +1776,7 @@ class Image(object):
         self.spacing = spacing = parser.GetPixelSpacing()
         self.orientation_label = parser.GetImageOrientationLabel()
         self.file = parser.filename
+        self.time = parser.GetImageTime()
 
         if (parser.GetImageThickness()):
             try:
