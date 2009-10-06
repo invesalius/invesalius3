@@ -88,7 +88,7 @@ class Parser():
     """
 
     def __init__(self):
-        self.filename = None
+        self.filename = ""
         self.vtkgdcm_reader = vtkgdcm.vtkGDCMImageReader()
             
     def GetAcquisitionDate(self):
@@ -112,7 +112,7 @@ class Parser():
     def GetAcquisitionNumber(self):
         """
         Return integer related to acquisition of this slice.
-        Return None if field is not defined.
+        Return "" if field is not defined.
 
         DICOM standard tag (0x0020, 0x0012) was used.
         """
@@ -122,7 +122,7 @@ class Parser():
             data =  ds.GetDataElement(tag).GetValue()
             if (data):
                 return int(str(data))
-        return None
+        return ""
 
     def GetAccessionNumber(self):
         """
@@ -136,7 +136,7 @@ class Parser():
             data =  ds.GetDataElement(tag).GetValue()
             if (data):
                 return int(str(data))
-        return None
+        return ""
     
     def GetAcquisitionTime(self):
         """
@@ -216,14 +216,14 @@ class Parser():
         """
         Return image window center / level (related to brightness).
         This is an integer or a floating point. If the value can't
-        be read, return None.
+        be read, return "".
 
         By default, only one level value is returned, according to
         "preset" parameter. If no value is passed, WL_PRESET constant
         is used. In case one wishes to acquire a list with all
         level values, one should set "multiple" parameter to True.
 
-        Return None if field is not defined.
+        Return "" if field is not defined.
 
         DICOM standard tag (0x0028,0x1050) was used.
         """
@@ -244,20 +244,20 @@ class Parser():
                     return value_list
                 else:
                     return value_list[preset]
-        return None
+        return ""
 
     def GetImageWindowWidth(self, preset=WL_PRESET, multiple=WL_MULT):
         """
         Return image window width (related to contrast). This is an
         integer or a floating point. If the value can't be read,
-        return None.
+        return "".
 
         By default, only one width value is returned, according to
         "preset" parameter. If no value is passed, WL_PRESET constant
         is used. In case one wishes to acquire a list with all
         preset values, one should set "multiple" parameter to True.
 
-        Return None if field is not defined.
+        Return "" if field is not defined.
 
         DICOM standard tag (0x0028,0x1051) was used.
         """
@@ -279,7 +279,7 @@ class Parser():
                     return str(value_list)
                 else:
                     return str(value_list[preset])
-        return None
+        return ""
 
     def GetImagePosition(self):
         """
@@ -287,7 +287,7 @@ class Parser():
         of the upper left corner voxel (first voxel transmitted).
         This value is given in mm. Number might be floating point
         or integer.
-        Return None if field is not defined.
+        Return "" if field is not defined.
 
         DICOM standard tag (0x0020, 0x0032) was used.
         """
@@ -297,13 +297,13 @@ class Parser():
             data =  str(ds.GetDataElement(tag).GetValue())
             if (data):
                 return [eval(value) for value in data.split('\\')]
-        return None
+        return ""
 
     def GetImageLocation(self):
         """
         Return image location (floating value), related to the
         series acquisition.
-        Return None if field is not defined.
+        Return "" if field is not defined.
 
         DICOM standard tag (0x0020, 0x0032) was used.
         """
@@ -313,12 +313,12 @@ class Parser():
             data =  str(ds.GetDataElement(tag).GetValue())
             if (data):
                 return eval(data)
-        return None
+        return ""
 
     def GetImageOffset(self):
         """
         Return image pixel offset (memory position).
-        Return None if field is not defined.
+        Return "" if field is not defined.
 
         DICOM standard tag (0x7fe0, 0x0010) was used.
         """
@@ -328,14 +328,14 @@ class Parser():
             data =  str(ds.GetDataElement(tag).GetValue())
             if (data):
                 return int(data.split(':')[1])
-        return None
+        return ""
 
 
     def GetImageSeriesNumber(self):
         """
         Return integer related to acquisition series where this
         slice is included.
-        Return None if field is not defined.
+        Return "" if field is not defined.
 
         DICOM standard tag (0x0020, 0x0011) was used.
         """
@@ -343,9 +343,9 @@ class Parser():
         ds = self.gdcm_reader.GetFile().GetDataSet()
         if ds.FindDataElement(tag):
             data =  str(ds.GetDataElement(tag).GetValue())
-            if (data) and (data != 'None'):
+            if (data) and (data != '""'):
                 return int(data)
-        return None
+        return ""
 
 
     def GetPixelSpacing(self):
@@ -354,7 +354,7 @@ class Parser():
         each pair of pixel. That is, adjacent row spacing (delimiter)
         and adjacent column spacing. Values are usually floating point
         and represent mm.
-        Return None if field is not defined.
+        Return "" if field is not defined.
 
         DICOM standard tag (0x0028, 0x0030) was used.
         """
@@ -364,26 +364,26 @@ class Parser():
             data = str(ds.GetDataElement(tag).GetValue())
             if (data):
                 return [eval(value) for value in data.split('\\')]
-        return None
+        return ""
 
     def GetImagePixelSpacingY(self):
         """
         Return spacing between adjacent pixels considerating y axis
         (height). Values are usually floating point and represent mm.
-        Return None if field is not defined.
+        Return "" if field is not defined.
 
         DICOM standard tag (0x0028, 0x0030) was used.
         """
         spacing = self.GetPixelSpacing()
         if spacing:
             return spacing[1]
-        return None
+        return ""
 
     def GetImagePixelSpacingX(self):
         """
         Return spacing between adjacent pixels considerating x axis
         (width). Values are usually floating point and represent mm.
-        Return None if field is not defined.
+        Return "" if field is not defined.
 
         DICOM standard tag (0x0028, 0x0030) was used.
         """
@@ -391,12 +391,12 @@ class Parser():
         spacing = self.GetPixelSpacing()
         if spacing:
             return spacing[0]
-        return None
+        return ""
 
     def GetPatientWeight(self):
         """
         Return patient's weight as a float value (kilograms).
-        Return None if field is not defined.
+        Return "" if field is not defined.
 
         DICOM standard tag (0x0010, 0x1030) was used.
         """
@@ -406,12 +406,12 @@ class Parser():
             data = str(ds.GetDataElement(tag).GetValue())
             if (data):
                 return float(data)
-        return None
+        return ""
 
     def GetPatientHeight(self):
         """
         Return patient's height as a float value (meters).
-        Return None if field is not defined.
+        Return "" if field is not defined.
 
         DICOM standard tag (0x0010, 0x1030) was used.
         """
@@ -421,7 +421,7 @@ class Parser():
             data = str(ds.GetDataElement(tag).GetValue())
             if (data):
                 return float(data)
-        return None
+        return ""
 
     def GetPatientAddress(self):
         """
@@ -435,12 +435,12 @@ class Parser():
             data = str(ds.GetDataElement(tag).GetValue())
             if (data):
                 return data
-        return None
+        return ""
 
     def GetPatientMilitarRank(self):
         """
         Return string containing patient's militar rank.
-        Return None if field is not defined.
+        Return "" if field is not defined.
 
         DICOM standard tag (0x0010, 0x1080) was used.
         """
@@ -450,14 +450,14 @@ class Parser():
             data = str(ds.GetDataElement(tag).GetValue())
             if (data):
                 return data
-        return None
+        return ""
 
     def GetPatientMilitarBranch(self):
         """
         Return string containing the militar branch.
         The country allegiance may also be included
         (e.g. B.R. Army).
-        Return None if field is not defined.
+        Return "" if field is not defined.
 
         DICOM standard tag (0x0010, 0x1081) was used.
         """
@@ -467,13 +467,13 @@ class Parser():
             data = str(ds.GetDataElement(tag).GetValue())
             if (data):
                 return data
-        return None
+        return ""
 
     def GetPatientCountry(self):
         """
         Return string containing the country where the patient
         currently resides.
-        Return None if field is not defined.
+        Return "" if field is not defined.
 
         DICOM standard tag (0x0010, 0x2150) was used.
         """
@@ -483,13 +483,13 @@ class Parser():
             data = str(ds.GetDataElement(tag).GetValue())
             if (data):
                 return data
-        return None
+        return ""
 
     def GetPatientRegion(self):
         """
         Return string containing the region where the patient
         currently resides.
-        Return None if field is not defined.
+        Return "" if field is not defined.
 
         DICOM standard tag (0x0010, 0x2152) was used.
         """
@@ -499,12 +499,12 @@ class Parser():
             data = str(ds.GetDataElement(tag).GetValue())
             if (data):
                 return data
-        return None
+        return ""
 
     def GetPatientTelephone(self):
         """
         Return string containing the patient's telephone number.
-        Return None if field is not defined.
+        Return "" if field is not defined.
 
         DICOM standard tag (0x0010, 0x2154) was used.
         """
@@ -514,13 +514,13 @@ class Parser():
             data = str(ds.GetDataElement(tag).GetValue())
             if (data):
                 return data
-        return None
+        return ""
 
     def GetPatientResponsible(self):
         """
         Return string containing the name of the person with
         medical decision authority in regards to this patient.
-        Return None if field is not defined.
+        Return "" if field is not defined.
 
         DICOM standard tag (0x0010, 0x2297) was used.
         """
@@ -530,13 +530,13 @@ class Parser():
             data = str(ds.GetDataElement(tag).GetValue())
             if (data):
                 return data
-        return None
+        return ""
 
     def GetPatientResponsibleRole(self):
         """
         Return string containing the relationship of the responsible
         person in regards to this patient.
-        Return None if field is not defined.
+        Return "" if field is not defined.
 
         DICOM standard tag (0x0010, 0x2298) was used.
         """
@@ -546,13 +546,13 @@ class Parser():
             data = str(ds.GetDataElement(tag).GetValue())
             if (data):
                 return data
-        return None
+        return ""
 
     def GetPatientResponsibleOrganization(self):
         """
         Return string containing the organization name with
         medical decision authority in regards to this patient.
-        Return None if field is not defined.
+        Return "" if field is not defined.
 
         DICOM standard tag (0x0010, 0x2299) was used.
         """
@@ -562,13 +562,13 @@ class Parser():
             data = str(ds.GetDataElement(tag).GetValue())
             if (data):
                 return data
-        return None
+        return ""
 
     def GetPatientMedicalCondition(self):
         """
         Return string containing patient medical conditions
         (e.g. contagious illness, drug allergies, etc.).
-        Return None if field is not defined.
+        Return "" if field is not defined.
 
         DICOM standard tag (0x0010, 0x2000) was used.
         """
@@ -578,13 +578,13 @@ class Parser():
             data = str(ds.GetDataElement(tag).GetValue())
             if (data):
                 return data
-        return None
+        return ""
 
     def GetPatientContrastAllergies(self):
         """
         Return string containing description of prior alergical
         reactions to contrast agents.
-        Return None if field is not defined.
+        Return "" if field is not defined.
 
         DICOM standard tag (0x0008, 0x2110) was used.
         """
@@ -594,14 +594,14 @@ class Parser():
             data = str(ds.GetDataElement(tag).GetValue())
             if (data):
                 return data
-        return None
+        return ""
 
 
     def GetPhysicianReferringName(self):
         """
         Return string containing physician
         of the patient.
-        Return None if field is not defined.
+        Return "" if field is not defined.
 
         DICOM standard tag (0x0008, 0x0090) was used.
         """
@@ -609,6 +609,8 @@ class Parser():
         ds = self.gdcm_reader.GetFile().GetDataSet()
         if ds.FindDataElement(tag):
             data = str(ds.GetDataElement(tag).GetValue())
+            if data == "None":
+                return ""
             if (data):
                 return data
         return ""
@@ -617,7 +619,7 @@ class Parser():
     def GetPhysicianReferringAddress(self):
         """
         Return string containing physician's address.
-        Return None if field is not defined.
+        Return "" if field is not defined.
 
         DICOM standard tag (0x0008, 0x0092) was used.
         """
@@ -627,12 +629,12 @@ class Parser():
             data = str(ds.GetDataElement(tag).GetValue())
             if (data):
                 return data
-        return None
+        return ""
 
     def GetPhysicianeReferringTelephone(self):
         """
         Return string containing physician's telephone.
-        Return None if field is not defined.
+        Return "" if field is not defined.
 
         DICOM standard tag (0x0008, 0x0094) was used.
         """
@@ -642,14 +644,14 @@ class Parser():
             data = str(ds.GetDataElement(tag).GetValue())
             if (data):
                 return data
-        return None
+        return ""
 
     def GetImageType(self):
         """
         Return list containing strings related to image origin.
         Eg: ["ORIGINAL", "PRIMARY", "AXIAL"] or ["DERIVED",
         "SECONDARY", "OTHER"]
-        Return None if field is not defined.
+        Return "" if field is not defined.
 
         Critical DICOM tag (0x0008, 0x0008). Cannot be editted.
         """
@@ -660,13 +662,13 @@ class Parser():
             if (data):
 
                 return data.split('\\')
-        return None
+        return ""
 
     def GetSOPClassUID(self):
         """
         Return string containing the Unique Identifier for the SOP
         class.
-        Return None if field is not defined.
+        Return "" if field is not defined.
 
         Critical DICOM tag (0x0008, 0x0016). Cannot be edited.
         """
@@ -676,13 +678,13 @@ class Parser():
             data = str(ds.GetDataElement(tag).GetValue())
             if (data):
                 return data
-        return None
+        return ""
 
     def GetSOPInstanceUID(self):
         """
         Return string containing Unique Identifier for the SOP
         instance.
-        Return None if field is not defined.
+        Return "" if field is not defined.
 
         Critical DICOM tag (0x0008, 0x0018). Cannot be edited.
         """
@@ -692,7 +694,7 @@ class Parser():
             data = str(ds.GetDataElement(tag).GetValue())
             if (data):
                 return data
-        return None
+        return ""
 
     def GetSeriesDescription(self):
         """
@@ -706,13 +708,13 @@ class Parser():
             data = str(ds.GetDataElement(tag).GetValue())
             if (data):
                 return data
-        return None
+        return ""
     
     def GetStudyInstanceUID(self):
         """
         Return string containing Unique Identifier of the
         Study Instance.
-        Return None if field is not defined.
+        Return "" if field is not defined.
 
         Critical DICOM Tag (0x0020,0x000D). Cannot be edited.
         """
@@ -722,7 +724,7 @@ class Parser():
             data = str(ds.GetDataElement(tag).GetValue())
             if (data):
                 return data
-        return None
+        return ""
 
     def GetImagePatientOrientation(self):
         """
@@ -731,7 +733,7 @@ class Parser():
         point representation. The first three values are associated
         to row orientation and the three last values are related
         to column orientation.
-        Return None if field is not defined.
+        Return "" if field is not defined.
 
         Critical DICOM tag (0x0020,0x0037). Cannot be edited.
         """
@@ -748,7 +750,7 @@ class Parser():
         Return matrix [x0, x1, x2] related to patient images'
         column acquisition orientation. All values are in floating
         point representation.
-        Return None if field is not defined.
+        Return "" if field is not defined.
 
         Critical DICOM tag (0x0020,0x0037). Cannot be edited.
         """
@@ -765,7 +767,7 @@ class Parser():
         Return matrix [y0, y1, y2] related to patient images'
         row acquisition orientation. All values are in floating
         point representation.
-        Return None if field is not defined.
+        Return "" if field is not defined.
 
         Critical DICOM tag (0x0020,0x0037). Cannot be edited.
         """
@@ -780,7 +782,7 @@ class Parser():
     def GetFrameReferenceUID(self):
         """
         Return string containing Frame of Reference UID.
-        Return None if field is not defined.
+        Return "" if field is not defined.
 
         Critical DICOM tag (0x0020,0x0052). Cannot be edited.
         """
@@ -790,12 +792,12 @@ class Parser():
             data = str(ds.GetDataElement(tag).GetValue())
             if (data):
                 return data
-        return None
+        return ""
 
     def GetImageSamplesPerPixel(self):
         """
         Return integer related to Samples per Pixel. Eg. 1.
-        Return None if field is not defined.
+        Return "" if field is not defined.
 
         Critical DICOM tag (0x0028,0x0002). Cannot be edited.
         """
@@ -805,13 +807,13 @@ class Parser():
         res = sf.ToStringPair(tag)
         if (res[1]):
             return int(res[1])
-        return None
+        return ""
 
     def GetPhotometricInterpretation(self):
         """
         Return string containing the photometric interpretation.
         Eg. "MONOCHROME2".
-        Return None if field is not defined.
+        Return "" if field is not defined.
 
         Critical DICOM tag (0x0028,0x0004). Cannot be edited.
         """
@@ -821,13 +823,13 @@ class Parser():
         res = sf.ToStringPair(tag)
         if (res[1]):
             return res[1]
-        return None
+        return ""
 
     def GetBitsStored(self):
         """
         Return number related to number of bits stored.
         Eg. 12 or 16.
-        Return None if field is not defined.
+        Return "" if field is not defined.
 
         Critical DICOM tag (0x0028,0x0101). Cannot be edited.
         """
@@ -837,12 +839,12 @@ class Parser():
         res = sf.ToStringPair(tag)
         if (res[1]):
             return int(res[1])
-        return None
+        return ""
 
     def GetHighBit(self):
         """
         Return string containing hight bit. This is commonly 11 or 15.
-        Return None if field is not defined.
+        Return "" if field is not defined.
 
         Critical DICOM tag (0x0028,0x0102). Cannot be edited.
         """
@@ -852,14 +854,14 @@ class Parser():
         res = sf.ToStringPair(tag)
         if (res[1]):
             return int(res[1])
-        return None
+        return ""
 
     def GetProtocolName(self):
         """
         Return protocol name (string). This info varies according to
         manufactor and software interface. Eg. "FACE", "aFaceSpi",
         "1551515/2" or "./protocols/user1.pfossa.pro".
-        Return None if field is not defined.
+        Return "" if field is not defined.
 
         DICOM standard tag (0x0018, 0x1030) was used.
         """
@@ -869,7 +871,7 @@ class Parser():
             data = str(ds.GetDataElement(tag).GetValue())
             if (data):
                 return data
-        return None
+        return ""
 
     def GetAcquisionSequence(self):
         """
@@ -883,7 +885,7 @@ class Parser():
         In some cases this information is presented in other forms:
           - HELICAL_CT
           - SCANOSCOPE
-        Return None if field is not defined.
+        Return "" if field is not defined.
 
         Critical DICOM tag (0x0018, 0x0020). Cannot be edited.
         """
@@ -893,7 +895,7 @@ class Parser():
             data = str(ds.GetDataElement(tag).GetValue())
             if (data):
                 return data
-        return None
+        return ""
 
     def GetInstitutionName(self):
         """
@@ -916,7 +918,7 @@ class Parser():
         Return mailing address (string) of the institution where the
         acquisitin quipment is located. Some institutions record only
         the city, other record the full address.
-        Return None if field is not defined.
+        Return "" if field is not defined.
 
         DICOM standard tag (0x0008, 0x0081) was used.
         """
@@ -926,13 +928,13 @@ class Parser():
             data =  str(ds.GetDataElement(tag).GetValue())
             if (data):
                 return data
-        return None
+        return ""
 
     def GetStudyInstanceUID(self):
         """
         Return Study Instance UID (string), related to series being
         analized.
-        Return None if field is not defined.
+        Return "" if field is not defined.
 
         Critical DICOM tag (0x0020, 0x000D). Cannot be edited.
         """
@@ -942,12 +944,12 @@ class Parser():
             data = str(ds.GetDataElement(tag).GetValue())
             if (data):
                 return data
-        return None
+        return ""
 
     def GetPatientOccupation(self):
         """
         Return occupation of the patient (string).
-        Return None if field is not defined.
+        Return "" if field is not defined.
 
         DICOM standard tag (0x0010,0x2180) was used.
         """
@@ -957,7 +959,7 @@ class Parser():
             data = str(ds.GetDataElement(tag).GetValue())
             if (data):
                 return data
-        return None
+        return ""
 
     def _GetPixelRepresentation(self):
         """
@@ -974,7 +976,7 @@ class Parser():
         res = sf.ToStringPair(tag)
         if (res[1]):
             return int(res[1])
-        return None
+        return ""
 
     def _GetBitsAllocated(self):
         """
@@ -991,7 +993,7 @@ class Parser():
 
         if (res[1]):
             return int(res[1])
-        return None
+        return ""
 
     def GetImageDataType(self):
         """
@@ -1002,14 +1004,14 @@ class Parser():
           - Int16
           - Int32
           - UInt16
-        Return None otherwise.
+        Return "" otherwise.
         """
         repres = self._GetPixelRepresentation()
 
         bits = self._GetBitsAllocated()
 
         if not bits:
-            answer = None
+            answer = ""
         else:
             answer = "UInt16"
 
@@ -1049,7 +1051,7 @@ class Parser():
     def GetStudyID(self):
         """
         Return string containing the Study ID.
-        Return None if not set.
+        Return "" if not set.
 
         DICOM standard tag (0x0020,0x0010) was used.
         """
@@ -1058,7 +1060,7 @@ class Parser():
                                                 .GetStudyID()
         if (data):
             return data
-        return None
+        return ""
 
     def GetAcquisitionGantryTilt(self):
         """
@@ -1080,7 +1082,7 @@ class Parser():
           - M: male
           - F: female
           - O: other
-        If not defined, return None.
+        If not defined, return "".
 
         DICOM standard tag (0x0010,0x0040) was used.
         """
@@ -1088,13 +1090,13 @@ class Parser():
                                                 .GetPatientSex()
         if (data):
             return data
-        return None
+        return ""
 
     def GetPatientAge(self):
         """
         Return patient's age (integer). In case there are alpha
         characters in this field, a string is returned.
-        If not defined field, return None.
+        If not defined field, return "".
 
         DICOM standard tag (0x0010, 0x1010) was used.
         """
@@ -1106,12 +1108,12 @@ class Parser():
                 return int(age)
             except ValueError:
                 return age
-        return None
+        return ""
 
     def GetPatientName(self):
         """
         Return patient's full legal name (string).
-        If not defined, return None.
+        If not defined, return "".
 
         DICOM standard tag (0x0010,0x0010) was used.
         """
@@ -1119,13 +1121,13 @@ class Parser():
                                             .GetPatientName()
         if (data):
             return data
-        return None
+        return ""
 
     def GetPatientID(self):
         """
         Return primary hospital identification number (string)
         or patient's identification number (string).
-        Return None if not defined.
+        Return "" if not defined.
 
         DICOM standard tag (0x0010,0x0020) was used.
         """
@@ -1133,51 +1135,51 @@ class Parser():
                                                 .GetPatientID()
         if (data):
             return data
-        return None
+        return ""
 
 
     def GetDimensionX(self):
         """
         Return integer associated to X dimension. This is related
         to the number of columns on the image.
-        Return None if not defined.
+        Return "" if not defined.
         """
 
         data = self.vtkgdcm_reader.GetOutput()\
                             .GetDimensions()[0]
         if (data):
             return int(data)
-        return None
+        return ""
 
     def GetDimensionY(self):
         """
         Return integer associated to Y dimension. This is related
         to the number of rows on the image.
-        Return None if not defined.
+        Return "" if not defined.
         """
         data = self.vtkgdcm_reader.GetOutput()\
                             .GetDimensions()[1]
         if (data):
             return int(data)
-        return None
+        return ""
 
     def GetDimensionZ(self):
         """
         Return float value associated to Z dimension.
-        Return None if not defined.
+        Return "" if not defined.
         """
         data = self.vtkgdcm_reader.GetOutput()\
                             .GetDimensions()[2]
         if (data):
             return float(data)
-        return None
+        return ""
 
 
     def GetEquipmentXRayTubeCurrent(self):
         """
         Return float value associated to the X-ray tube current
         (expressed in mA).
-        Return None if not defined.
+        Return "" if not defined.
 
         DICOM standard tag (0x0018,0x1151) was used.
         """
@@ -1185,13 +1187,13 @@ class Parser():
                                         .GetXRayTubeCurrent()
         if (data):
             return data
-        return None
+        return ""
 
     def GetExposureTime(self):
         """
         Return float value associated to the time of X-ray tube current
         exposure (expressed in s).
-        Return None if not defined.
+        Return "" if not defined.
 
         DICOM standard tag (0x0018, 0x1152) was used.
         """
@@ -1199,13 +1201,13 @@ class Parser():
                                             .GetExposureTime()
         if (data):
             return float(data)
-        return None
+        return ""
 
     def GetEquipmentKVP(self):
         """
         Return float value associated to the kilo voltage peak
         output of the (x-ray) used generator.
-        Return None if not defined.
+        Return "" if not defined.
 
         DICOM standard tag (0x0018,0x0060) was used.
         """
@@ -1213,13 +1215,13 @@ class Parser():
                                                     .GetKVP()
         if (data):
             return float(data)
-        return None
+        return ""
 
     def GetImageThickness(self):
         """
         Return float value related to the nominal reconstructed
         slice thickness (expressed in mm).
-        Return None if not defined.
+        Return "" if not defined.
 
         DICOM standard tag (0x0018,0x0050) was used.
         """
@@ -1235,7 +1237,7 @@ class Parser():
         used to reconstruct the data. This is very dependent on the
         model and the manufactor. Eg. "standard" kernel could be
         written on various ways (STD, STND, Stand, STANDARD).
-        Return None if not defined.
+        Return "" if not defined.
 
         DICOM standard tag (0x0018,0x1210) was used.
         """
@@ -1243,7 +1245,7 @@ class Parser():
                                         .GetConvolutionKernel()
         if (data):
             return data
-        return None
+        return ""
 
     def GetEquipmentInstitutionName(self):
         """
@@ -1263,7 +1265,7 @@ class Parser():
         """
         Return user defined machine name (string) used to produce exam
         files.
-        Return None if not defined.
+        Return "" if not defined.
 
         DICOM standard tag (0x0008, 0x1010) was used.
         """
@@ -1271,13 +1273,13 @@ class Parser():
                                             .GetStationName()
         if (data):
             return data
-        return None
+        return ""
 
     def GetManufacturerModelName(self):
         """
         Return equipment model name (string) used to generate exam
         files.
-        Return None if not defined.
+        Return "" if not defined.
 
         DICOM standard tag (0x0008,0x1090) was used.
         """
@@ -1285,12 +1287,12 @@ class Parser():
                                     .GetManufacturerModelName()
         if (data):
             return data
-        return None
+        return ""
 
     def GetEquipmentManufacturer(self):
         """
         Return manufacturer name (string).
-        Return None if not defined.
+        Return "" if not defined.
 
         DICOM standard tag (0x0008, 0x1010) was used.
         """
@@ -1298,14 +1300,14 @@ class Parser():
                                             .GetManufacturer()
         if (data):
             return data
-        return None
+        return ""
 
     def GetAcquisitionModality(self):
         """
         Return modality of acquisition:
           - CT: Computed Tomography
           - MR: Magnetic Ressonance
-        Return None if not defined.
+        Return "" if not defined.
 
         DICOM standard tag (0x0008,0x0060) was used.
         """
@@ -1313,13 +1315,13 @@ class Parser():
                                                 .GetModality()
         if (data):
             return data
-        return None
+        return ""
 
 
     def GetImageNumber(self):
         """
         Return slice number (integer).
-        Return None if not defined.
+        Return "" if not defined.
 
         DICOM standard tag (0x0020,0x0013) was used.
         """
@@ -1327,12 +1329,12 @@ class Parser():
                                             .GetImageNumber()
         if (data):
             return int(data)
-        return None
+        return ""
 
     def GetStudyDescription(self):
         """
         Return study description (string).
-        Return None if not defined.
+        Return "" if not defined.
 
         DICOM standard tag (0x0008,0x1030) was used.
         """
@@ -1340,7 +1342,7 @@ class Parser():
                                         .GetStudyDescription()
         if (data):
             return data
-        return None
+        return ""
 
     def GetStudyAdmittingDiagnosis(self):
         """
@@ -1377,9 +1379,9 @@ class Parser():
         if (label):
             return label
         else:
-            return None
+            return ""
 
-    def GetSeriesDescrition(self):
+    def GetSeriesDescription(self):
         """
         Return a string with a description of the series.
         DICOM standard tag (0x0008, 0x103E) was used.
@@ -1388,9 +1390,11 @@ class Parser():
         ds = self.gdcm_reader.GetFile().GetDataSet()
         if ds.FindDataElement(tag):
             data =  str(ds.GetDataElement(tag).GetValue())
+            if data == "None":
+                return "unnamed"
             if (data):
                 return data
-        return None
+        return "unnamed"
 
 
 
@@ -1425,9 +1429,9 @@ class DicomWriter:
 
     def __init__(self):
     
-        self.reader = None
+        self.reader = ""
         self.anony = gdcm.Anonymizer()
-        self.path = None
+        self.path = ""
         self.new_dicom = vtkgdcm.vtkGDCMImageWriter()
         reader = self.reader = gdcm.Reader()
 
@@ -1694,11 +1698,10 @@ class Patient(object):
 class Acquisition(object):
 
     def __init__(self):
-        pass
+        self.time = "12:34 AM"
 
     def SetParser(self, parser):
         self.patient_orientation = parser.GetImagePatientOrientation()
-        self.series_description = parser.GetSeriesDescrition()
         self.tilt = parser.GetAcquisitionGantryTilt()
         self.serie_number = parser.GetImageSeriesNumber()
         self.id_study = parser.GetStudyID()
@@ -1707,7 +1710,7 @@ class Acquisition(object):
         self.acquisition_date = parser.GetAcquisitionDate()
         self.institution = parser.GetInstitutionName()
         self.date = parser.GetAcquisitionDate()
-        self.acession_number = parser.GetAccessionNumber()
+        self.accession_number = parser.GetAccessionNumber()
         self.series_description = parser.GetSeriesDescription()
         
 class Image(object):
@@ -1747,5 +1750,5 @@ class Image(object):
         try:
             self.type = parser.GetImageType()[2]
         except(IndexError):
-            self.type = None
+            self.type = ""
             
