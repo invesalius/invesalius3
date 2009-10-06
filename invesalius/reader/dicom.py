@@ -1,6 +1,5 @@
 #---------------------------------------------------------------------
 # Software: InVesalius Software de Reconstrucao 3D de Imagens Medicas
-
 # Copyright: (c) 2001  Centro de Pesquisas Renato Archer
 # Homepage: http://www.softwarepublico.gov.br
 # Contact:  invesalius@cenpra.gov.br
@@ -70,6 +69,7 @@ INFO_KEYS = \
 
 import vtkgdcm
 import gdcm
+import time
 
 class Parser():
     """
@@ -90,7 +90,7 @@ class Parser():
     def __init__(self):
         self.filename = ""
         self.vtkgdcm_reader = vtkgdcm.vtkGDCMImageReader()
-            
+        
     def GetAcquisitionDate(self):
         """
         Return string containing the acquisition date using the
@@ -103,10 +103,7 @@ class Parser():
         date = self.vtkgdcm_reader.GetMedicalImageProperties()\
                                             .GetAcquisitionDate()
         if (date):
-            year = date[0:4]
-            month = date[4:6]
-            day = date[6:8]
-            return day + "/" + month + "/" + year
+            return self.__format_date(date)
         return ""
 
     def GetAcquisitionNumber(self):
@@ -149,10 +146,7 @@ class Parser():
         time = self.vtkgdcm_reader.GetMedicalImageProperties()\
                                             .GetAcquisitionTime()
         if (time):
-            hh = time[0:2]
-            mm = time[2:4]
-            ss = time[4:6]
-            return hh + ":" + mm + ":" + ss
+            return self.__format_time(time)
         return ""
 
     def GetPatientAdmittingDiagnosis(self):
@@ -1055,10 +1049,7 @@ class Parser():
         date = self.vtkgdcm_reader.GetMedicalImageProperties()\
                                         .GetPatientBirthDate()
         if (date):
-            year = date[0:4]
-            month = date[4:6]
-            day = date[6:8]
-            return day + "/" + month + "/" + year
+            self.__format_date(date)
         return ""
 
 
@@ -1421,9 +1412,31 @@ class Parser():
         if ds.FindDataElement(tag):
             data = str(ds.GetDataElement(tag).GetValue())
             if (data):
-                return data
+                return  self.__format_time(data)
         return ""
     
+    def __format_time(self,value):
+        if (len(value.split(".")) >  1):
+            data = time.strptime(value, "%H.%M.%S")
+        elif(len(value.split(":")) > 1):
+            data = time.strptime(value, "%H:%M:%S")
+        else:
+            data = time.strptime(value, "%H%M%S")         
+        return time.strftime("%H:%M:%S",data)
+   
+    def __format_date(self, value):
+       
+        if (len(value.split(".")) >  1):
+            data = time.strptime(value, "%D.%M.%Y")
+        elif(len(value.split("//")) > 1):
+            data = time.strptime(value, "%D/%M/%Y")
+        else:
+            data = time.strptime(value, "%Y%M%d")
+            
+        print time.strftime("%d/%M/%Y",data)
+        
+        return time.strftime("%d/%M/%Y",data)       
+        
     def GetAcquisitionTime(self):
         """
         Return the acquisition time.
@@ -1434,7 +1447,7 @@ class Parser():
         if ds.FindDataElement(tag):
             data = str(ds.GetDataElement(tag).GetValue())
             if (data):
-                return data
+                return self.__format_time(data)
         return ""
     
         
