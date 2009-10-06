@@ -51,6 +51,12 @@ class Curve(object):
         self.wl = self.nodes[0].graylevel + self.ww / 2.0
 
 
+class Histogram(object):
+    def __init__(self):
+        self.init = -1024
+        self.end = 2000
+
+
 class CLUTRaycastingWidget(wx.Panel):
     """
     This class represents the frame where images is showed
@@ -68,6 +74,7 @@ class CLUTRaycastingWidget(wx.Panel):
         self.curves = []
         self.init = -1024
         self.end = 2000
+        self.Histogram = Histogram()
         self.padding = 5
         self.previous_wl = 0
         self.to_render = False
@@ -484,14 +491,14 @@ class CLUTRaycastingWidget(wx.Panel):
         ctx.set_line_width(HISTOGRAM_LINE_WIDTH)
         for x,y in self.histogram_pixel_points:
             ctx.line_to(x,y)
-        ctx.line_to(x, height)
-        ctx.line_to(0, height)
+        ctx.set_source_rgb(*HISTOGRAM_LINE_COLOUR)
+        ctx.stroke_preserve()
+        ctx.line_to(x, height + self.padding)
+        ctx.line_to(self.HounsfieldToPixel(self.Histogram.init), height + self.padding)
         x,y = self.histogram_pixel_points[0]
         ctx.line_to(x, y)
         ctx.set_source_rgb(*HISTOGRAM_FILL_COLOUR)
-        ctx.fill_preserve()
-        ctx.set_source_rgb(*HISTOGRAM_LINE_COLOUR)
-        ctx.stroke()
+        ctx.fill()
 
     def _draw_selection_curve(self, ctx, height):
         for curve in self.curves:
@@ -520,24 +527,23 @@ class CLUTRaycastingWidget(wx.Panel):
                 self._draw_selected_point_text(ctx)
 
     def _build_histogram(self):
-        width, height= self.GetVirtualSizeTuple()
+        width, height = self.GetVirtualSizeTuple()
         width -= self.padding
-        height -= self.padding
+        height -= (self.padding * 2)
+        x_init = self.Histogram.init
+        x_end = self.Histogram.end
         y_init = 0
         y_end = math.log(max(self.histogram_array))
-        print y_end
-        proportion_x = width * 1.0 / (self.end - self.init)
+        proportion_x = width * 1.0 / (x_end - x_init)
         proportion_y = height * 1.0 / (y_end - y_init)
-        print ":) ", y_end, proportion_y
         self.histogram_pixel_points = []
         for i in xrange(len(self.histogram_array)):
             if self.histogram_array[i]:
                 y = math.log(self.histogram_array[i])
             else:
                 y = 0
-            x = self.init+ i
-            x = (x + abs(self.init)) * proportion_x
-            y = height - y * proportion_y
+            x = self.HounsfieldToPixel(x_init + i)
+            y = height - y * proportion_y + self.padding
             self.histogram_pixel_points.append((x, y))
 
     def __sort_pixel_points(self):
@@ -627,8 +633,10 @@ class CLUTRaycastingWidget(wx.Panel):
             self.to_draw_points = 0
         self.Refresh()
 
-    def SetHistrogramArray(self, h_array):
+    def SetHistogramArray(self, h_array, range):
         self.histogram_array = h_array
+        self.Histogram.init = range[0]
+        self.Histogram.end = range[1]
 
     def GetCurveWWWl(self, curve):
         return (self.curves[curve].ww, self.curves[curve].wl)

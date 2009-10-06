@@ -19,13 +19,16 @@
 import plistlib
 import os
 
+import numpy
 import vtk
 import wx
 import wx.lib.pubsub as ps
 
 import constants as const
-from data import vtk_utils
 import project as prj
+
+from data import vtk_utils
+from vtk.util import numpy_support
 
 Kernels = { 
     "Basic Smooth 5x5" : [1.0, 1.0, 1.0, 1.0, 1.0,
@@ -128,6 +131,7 @@ class Volume():
             #ps.Publisher().sendMessage('Render volume viewer')
         else:
             self.LoadVolume()
+            self.CalculateHistogram()
             self.exist = 1
 
         if (self.plane and self.plane_on):
@@ -173,7 +177,7 @@ class Volume():
         ww = self.ww + diff_ww
         wl = self.wl + diff_wl
         ps.Publisher().sendMessage('Set volume window and level text',
-                                    (ww, wl))
+                                   (ww, wl))
         self.SetWWWL(ww, wl)
         self.ww = ww
         self.wl = wl
@@ -184,7 +188,6 @@ class Volume():
         self.SetWWWL(ww,wl)
 
     def SetWWWL(self, ww, wl):
-        
         if self.config['advancedCLUT']:
             try:
                 curve = self.config['16bitClutCurves'][self.curve]
@@ -233,7 +236,6 @@ class Volume():
     def Refresh(self, pubsub_evt):
         self.__update_colour_table()
 
-#***************
     def Create16bColorTable(self, scale):
         if self.color_transfer:
             color_transfer = self.color_transfer
@@ -530,6 +532,18 @@ class Volume():
                 self.plane = CutPlane(self.final_imagedata,
                                       self.volume_mapper)
 
+    def CalculateHistogram(self):
+        proj = prj.Project()
+        image = proj.imagedata
+        r = image.GetScalarRange()[1] - image.GetScalarRange()[0]
+        accumulate = vtk.vtkImageAccumulate()
+        accumulate.SetInput(image)
+        accumulate.SetComponentExtent(0, r -1, 0, 0, 0, 0)
+        accumulate.SetComponentOrigin(image.GetScalarRange()[0], 0, 0)
+        accumulate.Update()
+        n_image = numpy_support.vtk_to_numpy(accumulate.GetOutput().GetPointData().GetScalars())
+        ps.Publisher().sendMessage('Load histogram', (n_image,
+                                                     image.GetScalarRange()))
 
     def TranslateScale(self, scale, value):
         #if value < 0:

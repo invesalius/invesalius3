@@ -237,8 +237,10 @@ class VolumeInteraction(wx.Panel):
                                 'Hide raycasting widget')
         ps.Publisher().subscribe(self.OnSetRaycastPreset,
                                 'Update raycasting preset')
-        ps.Publisher().subscribe( self.RefreshPoints,
+        ps.Publisher().subscribe(self.RefreshPoints,
                                 'Refresh raycasting widget points')
+        ps.Publisher().subscribe(self.LoadHistogram,
+                                'Load histogram')
 
     def __update_curve_wwwl_text(self, curve):
         ww, wl = self.clut_raycasting.GetCurveWWWl(curve)
@@ -282,6 +284,12 @@ class VolumeInteraction(wx.Panel):
         else:
             p.Hide()
         self.aui_manager.Update()
+
+    def LoadHistogram(self, pubsub_evt):
+        histogram = pubsub_evt.data[0]
+        init, end = pubsub_evt.data[1]
+        self.clut_raycasting.SetRange((init, end))
+        self.clut_raycasting.SetHistogramArray(histogram, (init, end))
 
     def RefreshPoints(self, pubsub_evt):
         self.clut_raycasting.CalculatePixelPoints()
