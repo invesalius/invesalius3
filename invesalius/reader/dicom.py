@@ -1417,9 +1417,9 @@ class Parser():
     
     def __format_time(self,value):
         
-        if (len(value.split(".")) ==  1):
+        if (len(value.split(".")) ==  2):
             data = time.gmtime(float(value))
-        elif (len(value.split(".")) >  1):
+        elif (len(value.split(".")) >  2):
             data = time.strptime(value, "%H.%M.%S")
         elif(len(value.split(":")) > 1):
             data = time.strptime(value, "%H:%M:%S")
