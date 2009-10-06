@@ -49,7 +49,7 @@ class TextPanel(wx.Panel):
         self.Bind(wx.EVT_SIZE, self.OnSize)
         
         
-        self.tree = gizmos.TreeListCtrl(self, -1, style =
+        tree = gizmos.TreeListCtrl(self, -1, style =
                                         wx.TR_DEFAULT_STYLE
                                         | wx.TR_HIDE_ROOT
                                         | wx.TR_ROW_LINES
@@ -59,53 +59,89 @@ class TextPanel(wx.Panel):
                                         )
                                    
                                    
-        self.tree.AddColumn("Patient name")
-        self.tree.AddColumn("Patient ID")
-        self.tree.AddColumn("Age")
-        self.tree.AddColumn("Study description")
-        self.tree.AddColumn("Modality")
-        self.tree.AddColumn("Date acquired")
-        self.tree.AddColumn("# Images")
-        self.tree.AddColumn("Institution")
-        self.tree.AddColumn("Date of birth")
-        self.tree.AddColumn("Accession Number")
-        self.tree.AddColumn("Referring physician")
-        self.tree.AddColumn("Performing")
+        tree.AddColumn("Patient name")
+        tree.AddColumn("Patient ID")
+        tree.AddColumn("Age")
+        tree.AddColumn("Gender")
+        tree.AddColumn("Study description")
+        tree.AddColumn("Modality")
+        tree.AddColumn("Date acquired")
+        tree.AddColumn("# Images")
+        tree.AddColumn("Institution")
+        tree.AddColumn("Date of birth")
+        tree.AddColumn("Accession Number")
+        tree.AddColumn("Referring physician")
 
-        self.tree.SetMainColumn(0) # the one with the tree in it...
-        self.tree.SetColumnWidth(0, 250) # ok
-        self.tree.SetColumnWidth(1, 80) # ok
-        self.tree.SetColumnWidth(2, 40) # ok
-        self.tree.SetColumnWidth(3, 160) # ok
-        self.tree.SetColumnWidth(4, 80) # ok
-        self.tree.SetColumnWidth(5, 110)
-        self.tree.SetColumnWidth(6, 70)
-        self.tree.SetColumnWidth(7, 90)
-        self.tree.SetColumnWidth(8, 130)
-        self.tree.SetColumnWidth(9, 240)
-        self.tree.SetColumnWidth(10, 120)
+        tree.SetMainColumn(0)        # the one with the tree in it...
+        tree.SetColumnWidth(0, 280)  # Patient name
+        tree.SetColumnWidth(1, 110)  # Patient ID
+        tree.SetColumnWidth(2, 40)   # Age
+        tree.SetColumnWidth(3, 60)   # Gender
+        tree.SetColumnWidth(4, 160)  # Study description
+        tree.SetColumnWidth(5, 70)   # Modality
+        tree.SetColumnWidth(6, 200)  # Date acquired
+        tree.SetColumnWidth(7, 70)   # Number Images
+        tree.SetColumnWidth(8, 130)  # Institution
+        tree.SetColumnWidth(9, 100)  # Date of birth
+        tree.SetColumnWidth(10, 140) # Accession Number
+        tree.SetColumnWidth(11, 160) # Referring physician
         
 
-        self.root = self.tree.AddRoot("InVesalius Database")
+        self.root = tree.AddRoot("InVesalius Database")
+        self.tree = tree
 
     def Populate(self, dict):
-        
-        for i in xrange(4):
-            txt = "Name %d" % i
-            child = self.tree.AppendItem(self.root, txt)
-            if i%2:
-                self.tree.SetItemBackgroundColour(child, (242,246,254))
-            self.tree.SetItemText(child, txt, 1)
-            self.tree.SetItemText(child, "age", 2)
+        tree = self.tree
+
+        i = 0
+
+        # For each patient on dictionary
+        for patient_name in dict:
+            # In spite of the patient name, we'll show number of
+            # series also
+            title = patient_name + " (%d series)"%(len(dict[patient_name]))
+            parent = tree.AppendItem(self.root, title)
+            patient_data = dict[patient_name]
             
-            for j in xrange(4):
-                txt = "Series name %d" % i
-                child2 = self.tree.AppendItem(child, txt)
-                if j%2:
-                    self.tree.SetItemBackgroundColour(child2, (242,246,254))
-                self.tree.SetItemText(child2, txt, 1)
-                self.tree.SetItemText(child2, txt, 2)
-        
+            # Row background colour
+            if i%2:
+                tree.SetItemBackgroundColour(parent, (242,246,254))
+            
+            # Insert patient data into columns based on first series
+            for item in xrange(1, len(patient_data[0])):
+                value = patient_data[0][item]
+                # Sum slices of all patient's series
+                if (item == 7):
+                    value = 0
+                    for series in xrange(len(patient_data)):
+                        value += int(patient_data[series][7])
+                tree.SetItemText(parent, str(value), item) # ID
+
+            # For each series on patient 
+            j = 0
+            print patient_data
+            for series in xrange(len(patient_data)):
+                series_title = patient_data[series][0]
+
+                child = self.tree.AppendItem(parent, series_title)
+                if not j%2:
+                    tree.SetItemBackgroundColour(child, (242,246,254))
+
+                # TODO: change description "protocol_name"
+                description = patient_data[series][4]
+                modality = patient_data[series][5]
+                # TODO: add to date the time
+                date = patient_data[series][6]
+                nimages = patient_data[series][7]
+
+                tree.SetItemText(child, series_title, 0)
+                tree.SetItemText(child, description, 4)
+                tree.SetItemText(child, modality, 5)
+                tree.SetItemText(child, date, 6)
+                tree.SetItemText(child, nimages, 7)
+
+                j += 1
+            i += 1 
         
         self.tree.Expand(self.root)
         

@@ -32,10 +32,49 @@ class Controller():
 
     def StartImportPanel(self, pubsub_evt):
         path = pubsub_evt.data
+        print path
+
+        dicom_series = dcm.GetSeries(path)
+
+        dict = {}
+
+        for key in dicom_series:
+            patient_name = key[0]
+            dicom = dicom_series[key][0][0]
+
+            # Compute how many images per series:
+            n_images = str(len(dicom_series[key][0]))
+            # Add date and time in a single field:
+            date_time = "%s %s"%(dicom.acquisition.date,
+                                dicom.acquisition.time)
+            
+            # Data per series
+            exam_data = [dicom.acquisition.series_description,
+                        dicom.patient.id,
+                        str(dicom.patient.age),
+                        dicom.patient.gender,
+                        dicom.acquisition.study_description,
+                        dicom.acquisition.modality,
+                        date_time,
+                        n_images,
+                        dicom.acquisition.institution,
+                        dicom.patient.birthdate,
+                        dicom.acquisition.accession_number,
+                        dicom.patient.physician]
+            try:
+                dict[patient_name].append(exam_data)
+            except KeyError:
+                dict[patient_name] = [exam_data]
+        #patient_name, patient_id, patient_age, study_description,
+        #modality, date_acquired, number_images, institution,
+        #date_of_birth, accession_number, referring_physician,
+        #performing_physician
+        print dict
+
         # TODO: Load information
-        dict = {"Joao": {"Serie 1": (0, 1, 2, 3, 4, 5, 6, 7),
-                        "Serie 2": (1, 2, 3, 4, 5, 6, 7, 8)}
-                }
+        #dict = {"Joao": {"Serie 1": (0, 1, 2, 3, 4, 5, 6, 7),
+        #                "Serie 2": (1, 2, 3, 4, 5, 6, 7, 8)}
+        #        }
         ps.Publisher().sendMessage("Load import panel", dict)
 
     def ImportDirectory(self, pubsub_evt=None, dir_=None):
