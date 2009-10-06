@@ -287,7 +287,7 @@ class DicomGroups:
 
                 key = tmp1.keys()[m]
                 information = tmp1[key]
-                new_key = (information.patient.name, None, x, information.image.orientation_label)
+                new_key = (information.patient.name, None, x, information.image.orientation_label, information.acquisition.time)
 
 
                 list = [information]

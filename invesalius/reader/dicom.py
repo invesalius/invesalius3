@@ -1416,7 +1416,10 @@ class Parser():
         return ""
     
     def __format_time(self,value):
-        if (len(value.split(".")) >  1):
+        
+        if (len(value.split(".")) ==  1):
+            data = time.gmtime(float(value))
+        elif (len(value.split(".")) >  1):
             data = time.strptime(value, "%H.%M.%S")
         elif(len(value.split(":")) > 1):
             data = time.strptime(value, "%H:%M:%S")
@@ -1674,6 +1677,7 @@ if __name__ == "__main__":
 
     for i in xrange(1,total+1):
         filename = "..//data//"+str(i)+".dcm"
+
         parser = Parser()
         if parser.SetFileName(filename):
             print "p:", parser.GetPatientName()
