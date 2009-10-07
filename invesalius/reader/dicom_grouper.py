@@ -278,30 +278,31 @@ class DicomGroups:
         #for each item on the list is created
         #a new position in the dictionary.
         size_tmp_list = len(tmp_list)
-
+       
         for x in xrange(size_tmp_list):
 
             tmp1 = tmp_list[x]
+            
 
             for m in xrange(len(tmp1.keys())):
 
                 key = tmp1.keys()[m]
                 information = tmp1[key]
-                new_key = (information.patient.name, None, x, information.image.orientation_label, information.acquisition.time)
+                new_key = (information.patient.name, information.image.orientation_label, 
+                          information.acquisition.serie_number)
 
-
-                list = [information]
-
+                                
                 if (new_key in groups_dcm_.keys()):
                     groups_dcm_[new_key][0].append(information)
                 else:
                     groups_dcm_[new_key] = [[information]]
-
+        
         #the number of previously existing number is
         #greater or equal then the group keeps up,
         #but maintains the same group of positions.
         if len(self.groups_dcm.keys()) > len(groups_dcm_.keys()):
             self.groups_dcm = groups_dcm_
+            
 
         for j in xrange(len(self.groups_dcm.keys())):
             key = self.groups_dcm.keys()[j]

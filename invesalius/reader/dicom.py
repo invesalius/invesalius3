@@ -1416,21 +1416,31 @@ class Parser():
         return ""
     
     def __format_time(self,value):
+        sp1 = value.split(".")
+        sp2 = value.split(":")
         
-        if (len(value.split(".")) ==  2):
+        if (len(sp1) ==  2) and (len(sp2) == 3):
+            new_value = str(sp2[0]+sp2[1]+
+                            str(int(float(sp2[2])))) 
+            data = time.strptime(new_value, "%H%M%S")
+        elif (len(sp1) ==  2):
             data = time.gmtime(float(value))
-        elif (len(value.split(".")) >  2):
+        elif (len(sp1) >  2):
             data = time.strptime(value, "%H.%M.%S")
-        elif(len(value.split(":")) > 1):
+        elif(len(sp2) > 1):
             data = time.strptime(value, "%H:%M:%S")
         else:
             data = time.strptime(value, "%H%M%S")         
         return time.strftime("%H:%M:%S",data)
    
     def __format_date(self, value):
-       
-        if (len(value.split(".")) >  1):
-            data = time.strptime(value, "%D.%M.%Y")
+        
+        sp1 = value.split(".")
+        if (len(sp1) >  1):
+            if (len(sp1[0]) <= 2):
+                data = time.strptime(value, "%D.%M.%Y")
+            else:
+                data = time.strptime(value, "%Y.%M.%d")
         elif(len(value.split("//")) > 1):
             data = time.strptime(value, "%D/%M/%Y")
         else:
@@ -1450,7 +1460,18 @@ class Parser():
                 return self.__format_time(data)
         return ""
     
-        
+    def GetSerieNumber(self):
+        """
+        Return the serie number
+        DICOM standard tag (0x0020, 0x0011) was used.
+        """
+        tag = gdcm.Tag(0x0020, 0x0011)
+        ds = self.gdcm_reader.GetFile().GetDataSet()
+        if ds.FindDataElement(tag):
+            data = str(ds.GetDataElement(tag).GetValue())
+            if (data):
+                return data
+        return ""        
 
 
 class DicomWriter:
@@ -1622,7 +1643,7 @@ class DicomWriter:
                            str(institution))
         
 
-
+    
 
 
 
@@ -1769,6 +1790,7 @@ class Acquisition(object):
         self.series_description = parser.GetSeriesDescription()
         self.time = parser.GetAcquisitionTime()
         self.protocol_name = parser.GetProtocolName()
+        self.serie_number = parser.GetSerieNumber()
         
 class Image(object):
 
