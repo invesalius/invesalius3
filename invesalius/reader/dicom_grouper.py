@@ -282,32 +282,29 @@ class DicomGroups:
         for x in xrange(size_tmp_list):
 
             tmp1 = tmp_list[x]
-            
-
             for m in xrange(len(tmp1.keys())):
 
                 key = tmp1.keys()[m]
                 information = tmp1[key]
+                
                 new_key = (information.patient.name, information.image.orientation_label, 
                           information.acquisition.serie_number)
-
-                                
+                      
                 if (new_key in groups_dcm_.keys()):
-                    groups_dcm_[new_key][0].append(information)
+                    groups_dcm_[new_key].append(information)
                 else:
-                    groups_dcm_[new_key] = [[information]]
+                    groups_dcm_[new_key] = [information]
         
         #the number of previously existing number is
         #greater or equal then the group keeps up,
         #but maintains the same group of positions.
-        if len(self.groups_dcm.keys()) > len(groups_dcm_.keys()):
-            self.groups_dcm = groups_dcm_
+        #if len(self.groups_dcm.keys()) > len(groups_dcm_.keys()):
+        self.groups_dcm = groups_dcm_
             
-
         for j in xrange(len(self.groups_dcm.keys())):
             key = self.groups_dcm.keys()[j]
-            self.groups_dcm[key][0].sort(key=lambda x: x.image.number)
-
+            self.groups_dcm[key].sort(key=lambda x: x.image.number)
+    
 
     def __UpdateZSpacing(self):
         """
@@ -315,23 +312,27 @@ class DicomGroups:
         """
 
         for x in xrange(len(self.groups_dcm.keys())):
-
+            print len(self.groups_dcm.keys())
+            
             key = self.groups_dcm.keys()[x]
             information = self.groups_dcm[key][0]
-            if (len(self.groups_dcm[key][0]) > 1):
+            if (len(self.groups_dcm[key]) > 1):
                 #Catch a slice of middle and the next to find the spacing.
-                center = len(self.groups_dcm[key][0])/2
+                center = len(self.groups_dcm[key])/2
                 if (center == 1):
                     center = 0 
 
-                information = self.groups_dcm[key][0][center]
+                information = self.groups_dcm[key][center]
                 current_position = information.image.position
 
-                information = self.groups_dcm[key][0][center + 1]
+                information = self.groups_dcm[key][center + 1]
                 next_position = information.image.position
 
                 try:
-                    image_orientation_label = self.groups_dcm.keys()[x][3]
+                    information = self.groups_dcm[self.groups_dcm.keys()[x]][3]
+                    image_orientation_label = information.image.orientation_label
+                    print image_orientation_label
+                    
                 except(IndexError):
                     image_orientation_label = None
 
@@ -347,6 +348,6 @@ class DicomGroups:
             else:
                 spacing = None
 
-            for information in self.groups_dcm[key][0]:
+            for information in self.groups_dcm[key]:
                 if information.image.spacing:
                     information.image.spacing[2] = spacing

@@ -45,8 +45,8 @@ def LoadImages(dir_):
     for x in xrange(len(groups.keys())):
         key = groups.keys()[x]
 
-        for y in xrange(len(groups[key][0])):
-            dicom = groups[key][0][y]
+        for y in xrange(len(groups[key])):
+            dicom = groups[key][y]
             file = dicom.image.file
             tmp_list.append(file)
 
@@ -59,8 +59,8 @@ def LoadImages(dir_):
         return None
 
     file_list = []
-    for x in xrange(len(groups[key][0])):
-        dicom = groups[key][0][x]
+    for x in xrange(len(groups[key])):
+        dicom = groups[key][x]
         file_list.append(dicom.image.file)
 
     files = file_list
