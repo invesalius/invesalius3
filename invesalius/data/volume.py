@@ -134,9 +134,6 @@ class Volume():
             self.CalculateHistogram()
             self.exist = 1
 
-        if (self.plane and self.plane_on):
-            self.plane.Enable()
-
     def __load_preset_config(self):
         self.config = prj.Project().raycasting_preset
 
@@ -461,6 +458,7 @@ class Volume():
             #volume_mapper.AutoAdjustSampleDistancesOff()
             volume_mapper.SetInput(image2)
             volume_mapper.IntermixIntersectingGeometryOn()
+            #volume_mapper.SetBlendModeToMaximumIntensity()
 
         volume_mapper.AddObserver("ProgressEvent", lambda obj,evt:
                                   update_progress(volume_mapper, "Mapper ..."))
@@ -623,13 +621,13 @@ class CutPlane:
     def Enable(self, evt_pubsub=None):
         self.plane_widget.On()
         self.plane_actor.VisibilityOn()
-        self.volume_mapper.RemoveClippingPlane(self.plane)
+        self.volume_mapper.AddClippingPlane(self.plane)
         ps.Publisher().sendMessage('Render volume viewer', None)
         
     def Disable(self,evt_pubsub=None):
         self.plane_widget.Off() 
         self.plane_actor.VisibilityOff()
-        self.volume_mapper.AddClippingPlane(self.plane)
+        self.volume_mapper.RemoveClippingPlane(self.plane)
         ps.Publisher().sendMessage('Render volume viewer', None)
         
     def Reset(self, evt_pubsub=None):
