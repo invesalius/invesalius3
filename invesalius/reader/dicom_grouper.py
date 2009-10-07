@@ -62,7 +62,6 @@ class DicomGroups:
         self.__Split1()
 
         if (len(self.GetOutput().keys()) == len(self.filenamelist)):
-            print "Vai entrar na 2"
             self.__Split2()
             self.split_type = 1
 
@@ -287,7 +286,7 @@ class DicomGroups:
                 key = tmp1.keys()[m]
                 information = tmp1[key]
                 
-                new_key = (information.patient.name, information.image.orientation_label, 
+                new_key = (x,information.patient.name, information.image.orientation_label, 
                           information.acquisition.serie_number)
                       
                 if (new_key in groups_dcm_.keys()):
@@ -303,7 +302,6 @@ class DicomGroups:
             
         for j in xrange(len(self.groups_dcm.keys())):
             key = self.groups_dcm.keys()[j]
-            #print self.groups_dcm[key]
             self.groups_dcm[key].sort(key=lambda x: x.image.number)
     
 
@@ -313,7 +311,6 @@ class DicomGroups:
         """
 
         for x in xrange(len(self.groups_dcm.keys())):
-            print len(self.groups_dcm.keys())
             
             key = self.groups_dcm.keys()[x]
             information = self.groups_dcm[key][0]
@@ -332,7 +329,6 @@ class DicomGroups:
                 try:
                     information = self.groups_dcm[self.groups_dcm.keys()[x]][3]
                     image_orientation_label = information.image.orientation_label
-                    print image_orientation_label
                     
                 except(IndexError):
                     image_orientation_label = None
