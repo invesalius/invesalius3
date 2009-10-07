@@ -298,7 +298,7 @@ class DicomGroups:
         #the number of previously existing number is
         #greater or equal then the group keeps up,
         #but maintains the same group of positions.
-        if len(self.groups_dcm.keys()) > len(groups_dcm_.keys()):
+        if len(self.groups_dcm.keys()) < len(groups_dcm_.keys()):
             self.groups_dcm = groups_dcm_
             
         for j in xrange(len(self.groups_dcm.keys())):
