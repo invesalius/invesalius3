@@ -136,9 +136,9 @@ class DicomGroups:
                    information.acquisition.serie_number, information.image.orientation_label)
 
             if (key in groups_dcm.keys()):
-                groups_dcm[key][0].append(information)
+                groups_dcm[key].append(information)
             else:
-                groups_dcm[key] = [[information]]
+                groups_dcm[key] = [information]
 
         self.groups_dcm = groups_dcm
 
@@ -191,19 +191,19 @@ class DicomGroups:
                     #only adds value. Otherwise this key create in the
                     #dictionary and add value
                     if (key in groups_dcm.keys()):
-                        groups_dcm[key][0].append(information)
+                        groups_dcm[key].append(information)
                     else:
-                        groups_dcm[key] = [[information]]
+                        groups_dcm[key] = [information]
                 else:
                     cont_series = cont_series + 1
-                    groups_dcm[key] = [[information]]
+                    groups_dcm[key] = [information]
 
             else:
 
                 if (cont_series in groups_dcm.keys()):
                     groups_dcm[key].append(information)
                 else:
-                    groups_dcm[key] = [[information]]
+                    groups_dcm[key] = [information]
 
                 cont_series = cont_series + 1
 
@@ -229,12 +229,12 @@ class DicomGroups:
             key = groups_dcm.keys()[n]
 
             #Number of slices in the series
-            size_list = len(groups_dcm[key][0])
+            size_list = len(groups_dcm[key])
 
             for y in xrange(size_list):
 
                 #Slices walks in the series
-                information = groups_dcm[key][0][y]
+                information = groups_dcm[key][y]
 
                 #Generate new key to dictionary
                 image_pos = information.image.position
@@ -298,11 +298,12 @@ class DicomGroups:
         #the number of previously existing number is
         #greater or equal then the group keeps up,
         #but maintains the same group of positions.
-        #if len(self.groups_dcm.keys()) > len(groups_dcm_.keys()):
-        self.groups_dcm = groups_dcm_
+        if len(self.groups_dcm.keys()) > len(groups_dcm_.keys()):
+            self.groups_dcm = groups_dcm_
             
         for j in xrange(len(self.groups_dcm.keys())):
             key = self.groups_dcm.keys()[j]
+            #print self.groups_dcm[key]
             self.groups_dcm[key].sort(key=lambda x: x.image.number)
     
 
