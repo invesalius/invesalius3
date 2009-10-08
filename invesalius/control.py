@@ -40,10 +40,10 @@ class Controller():
 
         for key in dicom_series:
             patient_name = key[0]
-            dicom = dicom_series[key][0][0]
+            dicom = dicom_series[key][0]
 
             # Compute how many images per series:
-            n_images = str(len(dicom_series[key][0]))
+            n_images = str(len(dicom_series[key]))
             # Add date and time in a single field:
             date_time = "%s %s"%(dicom.acquisition.date,
                                 dicom.acquisition.time)

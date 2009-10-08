@@ -286,8 +286,10 @@ class DicomGroups:
                 key = tmp1.keys()[m]
                 information = tmp1[key]
                 
-                new_key = (x,information.patient.name, information.image.orientation_label, 
-                          information.acquisition.serie_number)
+                #new_key = (x,information.patient.name, information.image.orientation_label, 
+                #          information.acquisition.serie_number)
+                 
+                new_key = (information.patient.name, None, x, information.image.orientation_label)
                       
                 if (new_key in groups_dcm_.keys()):
                     groups_dcm_[new_key].append(information)
