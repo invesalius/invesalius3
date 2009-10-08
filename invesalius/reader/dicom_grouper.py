@@ -167,13 +167,17 @@ class DicomGroups:
                 #last slice.
                 if ((x < len(self.filelist) and (x != len(self.filelist) - 1))):
                     #position of next slice
-                    image_position_prox =  self.__GetInformations(x + 1)[3]
+                    information =  self.__GetInformations(x + 1)
+                    image_position_prox = information.image.position
+                    print image_position_prox
                 else:
                     #slice up the position.
-                    image_position_prox =  self.__GetInformations(x - 1)[3]
-
+                    information =  self.__GetInformations(x - 1)
+                    image_position_prox = information.image.position
                 #According to the orientation of the image subtraction
                 #will be between a specific position in the vector of positions.
+                image_orientation_label =  information.image.orientation_label
+                image_position = information.image.position
                 if(image_orientation_label == "SAGITTAL"):
                     dif_image_position = image_position_prox[0] - image_position[0]
 
@@ -185,6 +189,7 @@ class DicomGroups:
                 #If the difference in the positions is less than the
                 #spacing z-axis (thickness) multiplied by two.
                 #Otherwise this key create and add value
+                spacing = information.image.spacing
                 if ((dif_image_position) <= spacing[2] * 2):
                     #If there is already such a key in the dictionary,
                     #only adds value. Otherwise this key create in the
@@ -289,7 +294,8 @@ class DicomGroups:
                 #new_key = (x,information.patient.name, information.image.orientation_label, 
                 #          information.acquisition.serie_number)
                  
-                new_key = (information.patient.name, None, x, information.image.orientation_label)
+                new_key = (information.patient.name, None, x, 
+                           information.image.orientation_label)
                       
                 if (new_key in groups_dcm_.keys()):
                     groups_dcm_[new_key].append(information)
