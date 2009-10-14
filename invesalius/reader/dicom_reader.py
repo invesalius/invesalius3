@@ -31,41 +31,22 @@ from data.imagedata_utils import ResampleImage2D
 def LoadImages(dir_):
     #  TODO!!! SUPER GAMBIARRA!!! DO THIS BETTER
 
-    dcm_files = GetDicomFiles(dir_)
-
-    dcm_series = dicom_grouper.DicomGroups()
-    dcm_series.SetFileList(dcm_files)
-    dcm_series.Update()
-
-    groups = dcm_series.GetOutput()
-
-    tmp_list = []
-    list_files = []
-
-    for x in xrange(len(groups.keys())):
-        key = groups.keys()[x]
-
-        for y in xrange(len(groups[key])):
-            dicom = groups[key][y]
-            file = dicom.image.file
-            tmp_list.append(file)
-
-        list_files.append([len(tmp_list), key])
-        tmp_list = []
-
-    if list_files:
-        key =  max(list_files)[1]
-    else:
-        return None
-
+    patient_group = GetDicomFiles(dir_)
+  
+    for patient in patient_group:
+        group_list = patient.GetGroups()
+        for group in group_list:
+            d = group.GetList()
+            spacing = group.spacing
+            
+    #dcm_series = dicom_grouper.DicomGroup()
+    #dcm_series.SetFileList(dcm_files)
+    #dcm_series.Update()
+   
     file_list = []
-    for x in xrange(len(groups[key])):
-        dicom = groups[key][x]
+    for dicom in d:
         file_list.append(dicom.image.file)
 
-    files = file_list
-    spacing = dicom.image.spacing
-    
     #Coronal Crash. necessary verify
     if (dicom.image.orientation_label <> "CORONAL"):
         #Organize reversed image
@@ -92,7 +73,7 @@ def LoadImages(dir_):
 
         image_data = vtk.vtkImageData()
         image_data.DeepCopy(read.GetOutput())
-        spacing = dicom.image.spacing
+        
         image_data.SetSpacing(spacing)
     else:
         for x in xrange(len(files)):
@@ -112,8 +93,7 @@ def LoadImages(dir_):
         image_data = vtk.vtkImageData()
         image_data.DeepCopy(img_app.GetOutput())
         image_data.SetSpacing(image_data.GetSpacing()[0],\
-                         image_data.GetSpacing()[1],\
-                         dicom.image.spacing[2])
+                         image_data.GetSpacing()[1], spacing)
 
     image_data.Update()
 
@@ -171,19 +151,16 @@ def GetDicomFiles(path):
     
     # FIXME: Currently recursion is not working
     # Recursivelly, find all files inside this folder
-    file_list = []
+    grouper = dicom_grouper.DicomPatientGrouper()
     for p in list_paths:
         p_file_list = p[-1]
         file_path = p[0]
         for filename in p_file_list:
-            file_list.append(str(os.path.join(file_path,filename)))
-
-    # Check if given file is in DICOM format
-    dicom_files = []
-    for file in file_list:
-        read_dicom = dicom.Parser()
-        if (read_dicom.SetFileName(file)):
-            dicom_files.append(file)
-
-
-    return dicom_files
+            file = str(os.path.join(file_path,filename))
+            parser = dicom.Parser()
+            if (parser.SetFileName(file)):
+                dcm = dicom.Dicom()
+                dcm.SetParser(parser)
+                grouper.AddFile(dcm)
+                
+    return grouper.GetPatientsGroups()

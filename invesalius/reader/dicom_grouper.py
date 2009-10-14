@@ -51,7 +51,7 @@
 # <dicom.image.number> and <dicom.acquisition.series_number>
 # were swapped
 
-ORIENT_MAP = {"SAGITTAL":0, "AXIAL":1, "CORONAL":2}
+ORIENT_MAP = {"SAGITTAL":0, "CORONAL":1, "AXIAL":2}
 
 
 class DicomGroup:
@@ -65,10 +65,12 @@ class DicomGroup:
         # IDEA (13/10): Represent internally as dictionary,
         # externally as list
         self.nslices = 0
-
+        self.spacing = 0
+        
     def AddSlice(self, dicom):
-        pos = dicom.image.position 
+        pos = tuple(dicom.image.position) 
         if pos not in self.slices_dict.keys():
+            
             self.slices_dict[pos] = dicom
             self.nslices += 1
             return True
@@ -84,12 +86,27 @@ class DicomGroup:
     def GetSortedList(self):
         # This will be used to fix problem 1, after merging
         # single DicomGroups of same study_id and orientation
-        list_ = self.slices_dict_values()
-        axis = ORIENT_MAP[self.key[3]]
+        list_ = self.slices_dict.values()
+        dicom = list_[0]
+        axis = ORIENT_MAP[dicom.image.orientation_label]
         list_ = sorted(list_, key = lambda dicom:dicom.image.position[axis])
         return list_
 
-
+    def GetSpacing(self):
+        list_ = self.GetSortedList()
+        if (len(list_) > 1):
+            dicom = list_[0]
+            axis = ORIENT_MAP[dicom.image.orientation_label]
+            #print dicom.image.orientation_label
+            p1 = dicom.image.position[axis]
+            
+            dicom = list_[1]
+            p2 = dicom.image.position[axis]
+            
+            self.spacing = abs(p1 - p2)
+        else:
+            self.spacing = 1
+            
 class PatientGroup:
     def __init__(self):
         # key:
@@ -109,7 +126,7 @@ class PatientGroup:
         # implemented, dinamically during new dicom's addition
         group_key = (dicom.patient.name,
                      dicom.acquisition.id_study,
-                     dicom.acquisition.series_number,
+                     dicom.acquisition.serie_number,
                      dicom.image.orientation_label,
                      index) # This will be used to deal with Problem 2
         
@@ -120,13 +137,15 @@ class PatientGroup:
             self.groups_dict[group_key] = group
         # Group exists... Lets try to add slice
         else:
-            group = self.groups_dicom[group_key]
+            group = self.groups_dict[group_key]
             slice_added =  group.AddSlice(dicom)
             if not slice_added:
                 # If we're here, then Problem 2 occured
                 # TODO: Optimize recursion 
                 self.AddFile(file_path, index+1)
-
+        
+            group.GetSpacing()
+            
     def Update(self):
         # Ideally, AddFile would be sufficient for splitting DICOM
         # files into groups (series). However, this does not work for
@@ -144,7 +163,7 @@ class PatientGroup:
         # Fix Problem 1
         if is_there_problem_1:
             self.groups_dict = self.FixProblem1(self.groups_dict)
-
+            
     def GetGroups(self):
         return self.groups_dict.values()
 
@@ -231,18 +250,18 @@ class DicomPatientGrouper:
     # ... (repeat to all files on folder)
     # grouper.Update()
     # groups = GetPatientGroups()
-
+    
     def __init__(self):
         self.patients_dict = {}
-
+    
     def AddFile(self, dicom):
         patient_key = (dicom.patient.name,
                        dicom.patient.id)
-
+    
         # Does this patient exist?
         if patient_key not in self.patients_dict.keys():
             patient = PatientGroup()
-            patient.AddSlice(dicom)
+            patient.AddFile(dicom)
             self.patients_dict[patient_key] = patient
         # Patient exists... Lets add group to it
         else:
@@ -252,7 +271,7 @@ class DicomPatientGrouper:
     def Update(self):
         for patient in self.patients_dict.values():
             patient.Update()
-
+    
     def GetPatientsGroups(self):
         """
         How to use:
