@@ -32,19 +32,20 @@ def LoadImages(dir_):
     #  TODO!!! SUPER GAMBIARRA!!! DO THIS BETTER
 
     patient_group = GetDicomFiles(dir_)
-  
+    #select the series with the largest 
+    #number of slices.
+    nslices_old = 0
     for patient in patient_group:
         group_list = patient.GetGroups()
         for group in group_list:
-            d = group.GetList()
-            spacing = group.spacing
-            
-    #dcm_series = dicom_grouper.DicomGroup()
-    #dcm_series.SetFileList(dcm_files)
-    #dcm_series.Update()
-   
+            nslices = group.nslices
+            if (nslices >= nslices_old):
+                dicoms = group.GetList()
+                spacing = group.spacing
+                nslices_old = nslices
+    
     file_list = []
-    for dicom in d:
+    for dicom in dicoms:
         file_list.append(dicom.image.file)
 
     #Coronal Crash. necessary verify

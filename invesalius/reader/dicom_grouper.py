@@ -94,6 +94,7 @@ class DicomGroup:
 
     def GetSpacing(self):
         list_ = self.GetSortedList()
+        
         if (len(list_) > 1):
             dicom = list_[0]
             axis = ORIENT_MAP[dicom.image.orientation_label]
@@ -142,7 +143,7 @@ class PatientGroup:
             if not slice_added:
                 # If we're here, then Problem 2 occured
                 # TODO: Optimize recursion 
-                self.AddFile(file_path, index+1)
+                self.AddFile(dicom, index+1)
         
             group.GetSpacing()
             
