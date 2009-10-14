@@ -169,6 +169,7 @@ def GetDicomFiles(path):
     """
     list_paths = os.walk(path)
     
+    # FIXME: Currently recursion is not working
     # Recursivelly, find all files inside this folder
     file_list = []
     for p in list_paths:
