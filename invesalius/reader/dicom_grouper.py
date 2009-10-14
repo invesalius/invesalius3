@@ -19,340 +19,250 @@
 #    detalhes.
 #---------------------------------------------------------------------
 
-import dicom
 
-class DicomGroups:
-    """
-    It is possible to separate sets of a set
-    of files dicom.
+# ---------------------------------------------------------
+# PROBLEM 1
+# There are times when there are lots of groups on dict, but
+# each group contains only one slice (DICOM file).
+# 
+# Equipments / manufacturer:
+# TODO
+#
+# Cases:
+# TODO 0031, 0056, 1093
+#
+# What occurs in these cases:
+# <dicom.image.number> and <dicom.acquisition.series_number>
+# were swapped
 
-    To use:
-    list_dicoms = [c:\a.dcm, c:\a1.gdcm]
-    dicom_splitter = DicomGroups()
-    dicom_splitter.SetFileList(list_dicoms)
-    dicom_splitter.Update()
-    splitted = dicom_splitter.GetOutput()
-    """
 
+# -----------------------------------------------------------
+# PROBLEM 2
+# Two slices (DICOM file) inside a group have the same
+# position.
+#
+# Equipments / manufacturer:
+# TODO
+#
+# Cases:
+# TODO 0031, 0056, 1093
+#
+# What occurs in these cases:
+# <dicom.image.number> and <dicom.acquisition.series_number>
+# were swapped
+
+ORIENT_MAP = {"SAGITTAL":0, "AXIAL":1, "CORONAL":2}
+
+
+class DicomGroup:
     def __init__(self):
-        self.parser = dicom.Parser()
-        #List of DICOM from Directory
-        self.filenamelist = []
-        # List of DICOM with Informations
-        self.filelist = []
-        #is output
-        self.groups_dcm = {}
-        #It is the kind of group that was used.
-        self.split_type = 0
+        # key:
+        # (dicom.patient.name, dicom.acquisition.id_study,
+        #  dicom.acquisition.series_number,
+        #  dicom.image.orientation_label, index)
+        self.key = ()
+        self.slices_dict = {} # slice_position: Dicom.dicom
+        # IDEA (13/10): Represent internally as dictionary,
+        # externally as list
+        self.nslices = 0
 
-    def SetFileList(self, filenamelist):
-        """
-        Input is a list with the complete address
-        of each DICOM.
-        """
-        self.filenamelist = filenamelist
+    def AddSlice(self, dicom):
+        pos = dicom.image.position 
+        if pos not in self.slices_dict.keys():
+            self.slices_dict[pos] = dicom
+            self.nslices += 1
+            return True
+        else:
+            return False
+
+    def GetList(self):
+        # Should be called when user selects this group
+        # This list will be used to create the vtkImageData
+        # (interpolated)
+        return self.slices_dict.values()
+
+    def GetSortedList(self):
+        # This will be used to fix problem 1, after merging
+        # single DicomGroups of same study_id and orientation
+        list_ = self.slices_dict_values()
+        axis = ORIENT_MAP[self.key[3]]
+        list_ = sorted(list_, key = lambda dicom:dicom.image.position[axis])
+        return list_
+
+
+class PatientGroup:
+    def __init__(self):
+        # key:
+        # (dicom.patient.name, dicom.patient.id)
+        self.key = ()
+        self.groups_dict = {} # group_key: DicomGroup
+        self.slices = 0
+
+    def AddFile(self, dicom, index=0):
+        # Given general DICOM information, we group slices according
+        # to main series information (group_key)
+
+        # WARN: This was defined after years of experience
+        # (2003-2009), so THINK TWICE before changing group_key
+
+        # Problem 2 is being fixed by the way this method is
+        # implemented, dinamically during new dicom's addition
+        group_key = (dicom.patient.name,
+                     dicom.acquisition.id_study,
+                     dicom.acquisition.series_number,
+                     dicom.image.orientation_label,
+                     index) # This will be used to deal with Problem 2
+        
+        # Does this group exist? Best case ;)
+        if group_key not in self.groups_dict.keys():
+            group = DicomGroup()
+            group.AddSlice(dicom)
+            self.groups_dict[group_key] = group
+        # Group exists... Lets try to add slice
+        else:
+            group = self.groups_dicom[group_key]
+            slice_added =  group.AddSlice(dicom)
+            if not slice_added:
+                # If we're here, then Problem 2 occured
+                # TODO: Optimize recursion 
+                self.AddFile(file_path, index+1)
 
     def Update(self):
+        # Ideally, AddFile would be sufficient for splitting DICOM
+        # files into groups (series). However, this does not work for
+        # acquisitions / equipments and manufacturers.
+
+        # Although DICOM is a protocol, each one uses its fields in a
+        # different manner
+
+        # Check if Problem 1 occurs (n groups with 1 slice each)
+        is_there_problem_1 = False
+        if (self.ndicom == len(self.groups_dicom)) and\
+                (self.ndicom > 1):
+            is_there_problem_1 = True
+
+        # Fix Problem 1
+        if is_there_problem_1:
+            self.groups_dict = self.FixProblem1(self.groups_dict)
+
+    def GetGroups(self):
+        return self.groups_dict.values()
+
+    def FixProblem1(self, dict):
         """
-        Trigger processing group of series
-        """
-
-        self.__ParseFiles()
-
-        self.__Split1()
-
-        if (len(self.GetOutput().keys()) == len(self.filenamelist)):
-            self.__Split2()
-            self.split_type = 1
-
-        self.__Split3()
-
-        self.__UpdateZSpacing()
-
-
-    def GetOutput(self):
-        """
-        Returns a dictionary with groups
-        of DICOM.
-        """
-        return self.groups_dcm
-
-    def GetSplitterType(self):
-        """
-        Return Integer with the SplitterType
-        0 option used the name of patient information,
-        id of the study, number of series and orientation
-        of the image (AXIAL, SAGITAL and CORONAL).
-        1 option was checked is used to splitted the if distance
-        of the images (tag image position) is more 2x Thickness.
-        """
-        return self.split_type
-
-    def __ParseFiles(self):
-        """
-        It generates a list with information
-        concerning dicom files within a directory.
-        The Input is a List containing andress of
-        the DICOM
-        """
-        filenamelist = self.filenamelist
-        filelist = self.filelist
-        parser = self.parser
-        for x in xrange(len(filenamelist)):
-
-            if not parser.SetFileName(filenamelist[x]):
-                return None
-
-            information = dicom.Dicom()
-            information.SetParser(parser)
-
-            self.filelist.append(information)
-        self.filelist = filelist
+        Merge multiple DICOM groups in case Problem 1 (description
+        above) occurs.
         
+        WARN: We've implemented an heuristic to try to solve
+        the problem. There is no scientific background and this aims
+        to be a workaround to exams which are not in conformance with
+        the DICOM protocol.
+        """
+        # Divide existing groups into 2 groups:
+        dict_final = {} # 1
+        # those containing "3D photos" and undefined
+        # orientation - these won't be changed (groups_lost).
         
-    def __GetInformations(self, ind):
-        """
-        Return a list referring to a specific DICOM
-        in dictionary. In some cases it is necessary
-        to pass only the index
-        """
-        filelist = self.filelist
-        return filelist[ind]
+        dict_to_change = {} # 2
+        # which can be re-grouped according to our heuristic
 
+        # split existing groups in these two types of group, based on
+        # orientation label
 
-    def __Split1(self):
-        """
-        Bring together the series under the name of
-        the patient, id of the study, serial number
-        and label orientation of the image.
-        """
-        groups_dcm = self.groups_dcm
-
-        for x in xrange(len(self.filelist)):            
-            information = self.__GetInformations(x)
-
-            key = (information.patient.name, information.acquisition.id_study,\
-                   information.acquisition.serie_number, information.image.orientation_label)
-
-            if (key in groups_dcm.keys()):
-                groups_dcm[key].append(information)
+        # 1st STEP: RE-GROUP
+        for group_key in dict:
+            # values used as key of the new dictionary
+            orientation = dict[group_key].image.orientation_label
+            study_id = dict[group_key].acquisition.id_study
+            # if axial, coronal or sagittal 
+            if orientation in ORIENT_MAP:
+                group_key_s = (orientation, study_id)
+                # If this method was called, there is only one slice
+                # in this group (dicom)
+                dicom = dict[group_key].GetList()[0]
+                if group_key_s not in dict_to_change.keys():
+                    group = DicomGroup()
+                    group.AddSlice(dicom)
+                    dict_to_change[group_key_s] = group
+                else:
+                    group = dict_to_change[group_key_s]
+                    group.AddSlice(dicom)
             else:
-                groups_dcm[key] = [information]
+                dict_final[group_key] = dict[group_key]
 
-        self.groups_dcm = groups_dcm
+        # group_counter will be used as key to DicomGroups created
+        # while checking differences
+        group_counter = 0
+        for group_key in dict_to_change:
+            # 2nd STEP: SORT
+            sorted_list = dict_to_change[group_key].GetSortedList()
 
+            # 3rd STEP: CHECK DIFFERENCES
+            axis = ORIENT_MAP[group_key[0]] # based on orientation
+            for index in xrange(len(sorted_list)-1):
+                current = sorted_list[index]
+                next = sorted_list[index+1]
 
-    def __Split2(self):
-        """
-        Separate according to the difference of the current
-        share with the next.
-        If the else them is higher than the z axis
-        multiplied by two.
-        """
-        self.groups_dcm = {}
-        cont_series = 0
-        groups_dcm = self.groups_dcm
+                pos_current = current.image.position[axis]
+                pos_next = current.image.position[axis]
+                spacing = current.image.spacing
 
-        #Through in the series (index of the dictionary)
-        for x in xrange(len(self.filelist)):
-            #Slices through in the serie
-            information = self.__GetInformations(x)
-            key = (information.patient.name, cont_series)
-
-            #If there exists only one slice.
-            if (len(self.filelist) > 1):
-                #If the number of slices in the series is
-                #less than the all number of slices.
-                #It is necessary to whether and the
-                #last slice.
-                if ((x < len(self.filelist) and (x != len(self.filelist) - 1))):
-                    #position of next slice
-                    information =  self.__GetInformations(x + 1)
-                    image_position_prox = information.image.position
-                    print image_position_prox
-                else:
-                    #slice up the position.
-                    information =  self.__GetInformations(x - 1)
-                    image_position_prox = information.image.position
-                #According to the orientation of the image subtraction
-                #will be between a specific position in the vector of positions.
-                image_orientation_label =  information.image.orientation_label
-                image_position = information.image.position
-                if(image_orientation_label == "SAGITTAL"):
-                    dif_image_position = image_position_prox[0] - image_position[0]
-
-                elif (image_orientation_label == "AXIAL"):
-                    dif_image_position = image_position_prox[1] - image_position[1]
-                else:
-                    dif_image_position = image_position_prox[2] - image_position[2]
-
-                #If the difference in the positions is less than the
-                #spacing z-axis (thickness) multiplied by two.
-                #Otherwise this key create and add value
-                spacing = information.image.spacing
-                if ((dif_image_position) <= spacing[2] * 2):
-                    #If there is already such a key in the dictionary,
-                    #only adds value. Otherwise this key create in the
-                    #dictionary and add value
-                    if (key in groups_dcm.keys()):
-                        groups_dcm[key].append(information)
+                if (pos_next - pos_current) <= (spacing[2] * 2):
+                    if group_counter in dict_final:
+                        dict_final[group_counter].AddSlice(current)
                     else:
-                        groups_dcm[key] = [information]
+                        group = DicomGroup()
+                        group.AddSlice(current)
+                        dict_final[group_counter] = group
                 else:
-                    cont_series = cont_series + 1
-                    groups_dcm[key] = [information]
+                    group_counter +=1
+                    group = DicomGroup()
+                    group.AddSlice(current)
+                    dict_final[group_counter] = group
 
-            else:
-
-                if (cont_series in groups_dcm.keys()):
-                    groups_dcm[key].append(information)
-                else:
-                    groups_dcm[key] = [information]
-
-                cont_series = cont_series + 1
-
-        self.groups_dcm = groups_dcm
+        return dict_final
 
 
-    def __Split3(self):
-        """
-        Separate the slice with the positions
-        repeated.
-        """
-        groups_dcm = self.groups_dcm
-        groups_dcm_ = {}
-        size_groups = len(groups_dcm.keys())
-        tmp1 = {}
-        tmp_list = []
+class DicomPatientGrouper:
+    # read file, check if it is dicom...
+    # dicom = dicom.Dicom
+    # grouper = DicomPatientGrouper()
+    # grouper.AddFile(dicom)
+    # ... (repeat to all files on folder)
+    # grouper.Update()
+    # groups = GetPatientGroups()
 
-        #goes according to the serial number
-        #already separated.
-        for n in xrange(size_groups):
+    def __init__(self):
+        self.patients_dict = {}
 
-            #Key of dictionary
-            key = groups_dcm.keys()[n]
+    def AddFile(self, dicom):
+        patient_key = (dicom.patient.name,
+                       dicom.patient.id)
 
-            #Number of slices in the series
-            size_list = len(groups_dcm[key])
-
-            for y in xrange(size_list):
-
-                #Slices walks in the series
-                information = groups_dcm[key][y]
-
-                #Generate new key to dictionary
-                image_pos = information.image.position
-                key_ = (image_pos[0], image_pos[1], image_pos[2])
-
-                #Add informations in the list
-                list = [information]
-
-                #If list Null, create dictionary
-                #and add list with information
-                #after add in a temporary list
-                if (tmp_list == []):
-                    tmp = {}
-                    tmp[key_] = information
-                    tmp_list.append(tmp)
-
-                else:
-                    b = len(tmp_list)
-                    a = 0
-                    #flag is to control when be necessary
-                    #to create another position in the list.
-                    flag = 0
-
-                    while a < b:
-                        #if there is to share the same
-                        #position create new key in the
-                        #dictionary
-
-                        if not (key_ in (tmp_list[a]).keys()):
-                            (tmp_list[a])[key_] = information
-                            flag = 1
-                        a = a + 1
-
-                    if (flag == 0):
-                        tmp = {}
-                        tmp[key_] = information
-
-                        tmp_list.append(tmp)
-
-
-        #for each item on the list is created
-        #a new position in the dictionary.
-        size_tmp_list = len(tmp_list)
+        # Does this patient exist?
+        if patient_key not in self.patients_dict.keys():
+            patient = PatientGroup()
+            patient.AddSlice(dicom)
+            self.patients_dict[patient_key] = patient
+        # Patient exists... Lets add group to it
+        else:
+            patient = self.patients_dict[patient_key]
+            patient.AddFile(dicom)
        
-        for x in xrange(size_tmp_list):
+    def Update(self):
+        for patient in self.patients_dict.values():
+            patient.Update()
 
-            tmp1 = tmp_list[x]
-            for m in xrange(len(tmp1.keys())):
-
-                key = tmp1.keys()[m]
-                information = tmp1[key]
-                
-                #new_key = (x,information.patient.name, information.image.orientation_label, 
-                #          information.acquisition.serie_number)
-                 
-                new_key = (information.patient.name, None, x, 
-                           information.image.orientation_label)
-                      
-                if (new_key in groups_dcm_.keys()):
-                    groups_dcm_[new_key].append(information)
-                else:
-                    groups_dcm_[new_key] = [information]
-        
-        #the number of previously existing number is
-        #greater or equal then the group keeps up,
-        #but maintains the same group of positions.
-        if len(self.groups_dcm.keys()) < len(groups_dcm_.keys()):
-            self.groups_dcm = groups_dcm_
-            
-        for j in xrange(len(self.groups_dcm.keys())):
-            key = self.groups_dcm.keys()[j]
-            self.groups_dcm[key].sort(key=lambda x: x.image.number)
-    
-
-    def __UpdateZSpacing(self):
+    def GetPatientsGroups(self):
         """
-         Calculate Z spacing from slices
+        How to use:
+        patient_list = grouper.GetPatientsGroups()
+        for patient in patient_list:
+            group_list = patient.GetGroups()
+            for group in group_list:
+                group.GetList()
+                # :) you've got a list of dicom.Dicom
+                # of the same series
         """
+        return self.patients_dict.values()
 
-        for x in xrange(len(self.groups_dcm.keys())):
-            
-            key = self.groups_dcm.keys()[x]
-            information = self.groups_dcm[key][0]
-            if (len(self.groups_dcm[key]) > 1):
-                #Catch a slice of middle and the next to find the spacing.
-                center = len(self.groups_dcm[key])/2
-                if (center == 1):
-                    center = 0 
-
-                information = self.groups_dcm[key][center]
-                current_position = information.image.position
-
-                information = self.groups_dcm[key][center + 1]
-                next_position = information.image.position
-
-                try:
-                    information = self.groups_dcm[self.groups_dcm.keys()[x]][3]
-                    image_orientation_label = information.image.orientation_label
-                    
-                except(IndexError):
-                    image_orientation_label = None
-
-                if(image_orientation_label == "SAGITTAL"):
-                    spacing = current_position[0] - next_position[0]
-                elif(image_orientation_label == "CORONAL"):
-                    spacing = current_position[1] - next_position[1]
-                else:
-                    spacing = current_position[2] - next_position[2]
-
-                spacing = abs(spacing)
-
-            else:
-                spacing = None
-
-            for information in self.groups_dcm[key]:
-                if information.image.spacing:
-                    information.image.spacing[2] = spacing
