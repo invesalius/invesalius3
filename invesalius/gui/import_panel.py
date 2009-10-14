@@ -3,6 +3,8 @@ import wx.gizmos as gizmos
 import wx.lib.pubsub as ps
 import wx.lib.splitter as spl
 
+import dicom_preview_panel as dpp
+
 class Panel(wx.Panel):
     def __init__(self, parent):
         wx.Panel.__init__(self, parent, pos=wx.Point(5, 5),
@@ -108,7 +110,7 @@ class TextPanel(wx.Panel):
                 tree.SetItemBackgroundColour(parent, (242,246,254))
             
             # Insert patient data into columns based on first series
-            for item in xrange(1, len(patient_data[0])):
+            for item in xrange(1, len(patient_data[0])-1):
                 value = patient_data[0][item]
                 # Sum slices of all patient's series
                 if (item == 7):
@@ -119,7 +121,6 @@ class TextPanel(wx.Panel):
 
             # For each series on patient 
             j = 0
-            print patient_data
             for series in xrange(len(patient_data)):
                 series_title = patient_data[series][0]
 
@@ -128,7 +129,7 @@ class TextPanel(wx.Panel):
                     tree.SetItemBackgroundColour(child, (242,246,254))
 
                 # TODO: change description "protocol_name"
-                description = patient_data[series][4]
+                description = patient_data[series][-1]
                 modality = patient_data[series][5]
                 # TODO: add to date the time
                 date = patient_data[series][6]
@@ -143,10 +144,10 @@ class TextPanel(wx.Panel):
                 j += 1
             i += 1 
         
-        self.tree.Expand(self.root)
+        tree.Expand(self.root)
         
-        self.tree.GetMainWindow().Bind(wx.EVT_RIGHT_UP, self.OnRightUp)
-        self.tree.Bind(wx.EVT_TREE_ITEM_ACTIVATED, self.OnActivate)
+        tree.GetMainWindow().Bind(wx.EVT_RIGHT_UP, self.OnRightUp)
+        tree.Bind(wx.EVT_TREE_ITEM_ACTIVATED, self.OnActivate)
 
 
     def OnActivate(self, evt):
@@ -177,7 +178,7 @@ class ImagePanel(wx.Panel):
         self.SetSizer(sizer)
         
         self.text_panel = SeriesPanel(splitter)
-        splitter.AppendWindow(self.text_panel, 400)
+        splitter.AppendWindow(self.text_panel, 600)
         
         self.image_panel = SlicePanel(splitter)
         splitter.AppendWindow(self.image_panel, 250)
@@ -185,9 +186,23 @@ class ImagePanel(wx.Panel):
 class SeriesPanel(wx.Panel):
     def __init__(self, parent):
         wx.Panel.__init__(self, parent, -1)
-        self.SetBackgroundColour((255,255,255))
+        self.SetBackgroundColour((0,0,0))
+        self.serie_preview = dpp.DicomPreviewSeries(self)
+
+        self.__bind_evt()
+
+    def __bind_evt(self):
+        ps.Publisher().subscribe(self.ShowDicomSeries, "Load dicom preview")
+
+    def ShowDicomSeries(self, pubsub_evt):
+        print "---- ShowDicomSeries ----"
+        list_dicom = pubsub_evt.data
+        print list_dicom
+        self.serie_preview.SetDicomSeries(list_dicom)
         
+
+
 class SlicePanel(wx.Panel):
     def __init__(self, parent):
         wx.Panel.__init__(self, parent, -1)
-        self.SetBackgroundColour((0,0,0))
+        self.SetBackgroundColour((255,255,255))

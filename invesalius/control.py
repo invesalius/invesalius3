@@ -31,12 +31,16 @@ class Controller():
                                  'Save raycasting preset')
 
     def StartImportPanel(self, pubsub_evt):
+        # path to directory
         path = pubsub_evt.data
-        print path
 
+        # retrieve DICOM files splited into groups
         dicom_series = dcm.GetSeries(path)
 
+        # create dictionary with DICOM files' groups with
+        # information as it will be shown on import panel
         dict = {}
+        series_preview = []
 
         for key in dicom_series:
             patient_name = key[0]
@@ -53,29 +57,35 @@ class Controller():
                         dicom.patient.id,
                         str(dicom.patient.age),
                         dicom.patient.gender,
-                        dicom.acquisition.study_description,
+                        dicom.acquisition.study_description, # per patient
                         dicom.acquisition.modality,
                         date_time,
                         n_images,
                         dicom.acquisition.institution,
                         dicom.patient.birthdate,
                         dicom.acquisition.accession_number,
-                        dicom.patient.physician]
+                        dicom.patient.physician,
+                        dicom.acquisition.protocol_name] # per series
+
+            # Preview data
+            series_preview.append((dicom.image.file, # Filename
+                                 dicom.image.level, # Window level
+                                 dicom.image.window, # Window width
+                                 dicom.acquisition.series_description, # Title
+                                 "%s Images" %(n_images), # Subtitle
+                                ))
+
             try:
                 dict[patient_name].append(exam_data)
             except KeyError:
                 dict[patient_name] = [exam_data]
-        #patient_name, patient_id, patient_age, study_description,
-        #modality, date_acquired, number_images, institution,
-        #date_of_birth, accession_number, referring_physician,
-        #performing_physician
         print dict
 
-        # TODO: Load information
-        #dict = {"Joao": {"Serie 1": (0, 1, 2, 3, 4, 5, 6, 7),
-        #                "Serie 2": (1, 2, 3, 4, 5, 6, 7, 8)}
-        #        }
+
+
         ps.Publisher().sendMessage("Load import panel", dict)
+        ps.Publisher().sendMessage("Load dicom preview", series_preview)
+
 
     def ImportDirectory(self, pubsub_evt=None, dir_=None):
         """
