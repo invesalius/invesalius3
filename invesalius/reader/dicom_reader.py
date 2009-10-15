@@ -26,15 +26,19 @@ import gdcm
 import constants as const
 import dicom
 import dicom_grouper
-from data.imagedata_utils import ResampleImage2D
+import data.imagedata_utils as iu
 
 def LoadImages(dir_):
-    #  TODO!!! SUPER GAMBIARRA!!! DO THIS BETTER
 
-    patient_group = GetDicomFiles(dir_)
-    print "1111111111111"
-    #select the series with the largest 
-    #number of slices.
+    patient_group = GetDicomGroups(dir_)
+    filelist, dicom, zspacing = SelectLargerDicomGroup(patient_group)
+    filelist = SortFiles(filelist, dicom)
+    imagedata = CreateImageData(filelist, zspacing)
+    
+    return imagedata, dicom
+
+
+def SelectLargerDicomGroup(patient_group):
     nslices_old = 0
     for patient in patient_group:
         group_list = patient.GetGroups()
@@ -43,107 +47,76 @@ def LoadImages(dir_):
             print "nslices:", nslices
             if (nslices >= nslices_old):
                 dicoms = group.GetList()
-                spacing = group.spacing
+                zspacing = group.zspacing
                 nslices_old = nslices
-    print "22222222222222"
-    
-    file_list = []
+
+    filelist = []
     for dicom in dicoms:
-        file_list.append(dicom.image.file)
+        filelist.append(dicom.image.file)
+    return filelist, dicom, zspacing
 
-
-
-    #Coronal Crash. necessary verify
+def SortFiles(filelist, dicom):
+    # Sort slices
+    # FIXME: Coronal Crash. necessary verify
     if (dicom.image.orientation_label <> "CORONAL"):
         #Organize reversed image
         sorter = gdcm.IPPSorter()
         sorter.SetComputeZSpacing(True)
         sorter.SetZSpacingTolerance(1e-10)
-        sorter.Sort(file_list)
+        sorter.Sort(filelist)
 
         #Getting organized image
-        files = sorter.GetFilenames()
+        filelist = sorter.GetFilenames()
 
-    print "33333333333"
+    return filelist
 
-    array = vtk.vtkStringArray()
 
-    img_app = vtk.vtkImageAppend()
-    img_app.SetAppendAxis(2) #Define Stack in Z
+def CreateImageData(filelist, zspacing):
 
     if not(const.REDUCE_IMAGEDATA_QUALITY):
-        print "not reduce"
-        for x in xrange(len(files)):
-            array.InsertValue(x,files[x])
+        array = vtk.vtkStringArray()
+        for x in xrange(len(filelist)):
+            array.InsertValue(x,filelist[x])
 
-        read = vtkgdcm.vtkGDCMImageReader()
-        read.SetFileNames(array)
-        read.Update()
+        reader = vtkgdcm.vtkGDCMImageReader()
+        reader.SetFileNames(array)
+        reader.Update()
 
-        image_data = vtk.vtkImageData()
-        image_data.DeepCopy(read.GetOutput())
-        
-        image_data.SetSpacing(spacing)
+        # The zpacing is a DicomGroup property, so we need to set it
+        imagedata = vtk.vtkImageData()
+        imagedata.DeepCopy(reader.GetOutput())
+        spacing = imagedata.GetSpacing()
+        imagedata.SetSpacing(spacing[0], spacing[1], zspacing)
     else:
-        print "reduce"
-        for x in xrange(len(files)):
-            #SIf the resolution of the
-            #matrix is very large
-            read = vtkgdcm.vtkGDCMImageReader()
-            read.SetFileName(files[x])
-            read.Update()
+        # Reformat each slice and future append them
+        appender = vtk.vtkImageAppend()
+        appender.SetAppendAxis(2) #Define Stack in Z
+
+        # Reformat each slice
+        for x in xrange(len(filelist)):
+            # TODO: We need to check this automatically according
+            # to each computer's architecture
+            # If the resolution of the matrix is too large
+            reader = vtkgdcm.vtkGDCMImageReader()
+            reader.SetFileName(filelist[x])
+            reader.Update()
 
             #Resample image in x,y dimension
-            img = ResampleImage2D(read.GetOutput(), 256)
+            slice_imagedata = iu.ResampleImage2D(reader.GetOutput(), 256)
 
             #Stack images in Z axes
-            img_app.AddInput(img)
-            img_app.Update()
+            appender.AddInput(slice_imagedata)
+            appender.Update()
 
+        # The zpacing is a DicomGroup property, so we need to set it
+        imagedata = vtk.vtkImageData()
+        imagedata.DeepCopy(appender.GetOutput())
+        spacing = imagedata.GetSpacing()
 
-        print "444444444444444"
-        image_data = vtk.vtkImageData()
-        image_data.DeepCopy(img_app.GetOutput())
-        image_data.SetSpacing(image_data.GetSpacing()[0],\
-                         image_data.GetSpacing()[1], spacing)
-        print "555555555"
+        imagedata.SetSpacing(spacing[0], spacing[1], zspacing)
 
-    image_data.Update()
-    print "66666666666666"
-
-    return image_data, dicom
-
-def GetDicomFilesOld(path, recursive = False):
-    #  TODO!!! SUPER GAMBIARRA!!! DO THIS BETTER
-    """
-    Separate only files of a DICOM Determined
-    directory. You can go recursively within
-    the directory. (recursive = True)
-    """
-    result = []
-
-    if (recursive == True):
-
-        if os.path.isdir(path) and not os.path.islink(path):
-
-            files = os.listdir(path)
-
-            for file in files:
-                path_ = os.path.join(path, file)
-                FindDicom(path_, True)
-        else:
-            read_dicom = dicom.Parser()
-            if(read_dicom.SetFileName(path)):
-                if (read_dicom.GetImagePosition()):
-                    result.append(path)
-    else:
-        files = glob.glob(path + os.sep + "*")
-        for x in xrange(len(files)):
-            read_dicom = dicom.Parser()
-            if (read_dicom.SetFileName(files[x])):
-                result.append(files[x])
-        #  TODO!!! SUPER GAMBIARRA!!! DO THIS BETTER
-    return result
+    imagedata.Update()
+    return imagedata
 
 def GetSeries(path):
     """
@@ -157,7 +130,7 @@ def GetSeries(path):
 
     return dcm_series.GetOutput()
 
-def GetDicomFiles(directory, recursive=True):
+def GetDicomGroups(directory, recursive=True):
     """
     Return all full paths to DICOM files inside given directory.
     """
