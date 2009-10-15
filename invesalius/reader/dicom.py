@@ -102,7 +102,7 @@ class Parser():
         # TODO: internationalize data
         date = self.vtkgdcm_reader.GetMedicalImageProperties()\
                                             .GetAcquisitionDate()
-        if (date):
+        if (date) and (date != ''):
             return self.__format_date(date)
         return ""
 
@@ -145,7 +145,7 @@ class Parser():
         """
         time = self.vtkgdcm_reader.GetMedicalImageProperties()\
                                             .GetAcquisitionTime()
-        if (time):
+        if (time) and (time != 'None'):
             return self.__format_time(time)
         return ""
 
@@ -1048,7 +1048,7 @@ class Parser():
         # TODO: internationalize data
         date = self.vtkgdcm_reader.GetMedicalImageProperties()\
                                         .GetPatientBirthDate()
-        if (date):
+        if (date) and (date!='None'):
             self.__format_date(date)
         return ""
 
@@ -1410,9 +1410,9 @@ class Parser():
         tag = gdcm.Tag(0x0008, 0x0033)
         ds = self.gdcm_reader.GetFile().GetDataSet()
         if ds.FindDataElement(tag):
-            data = str(ds.GetDataElement(tag).GetValue())
-            if (data):
-                return  self.__format_time(data)
+            date = str(ds.GetDataElement(tag).GetValue())
+            if (date) and (date != 'None'):
+                return  self.__format_time(date)
         return ""
     
     def __format_time(self,value):
