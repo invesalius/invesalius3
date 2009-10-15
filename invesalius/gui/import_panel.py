@@ -40,8 +40,8 @@ class InnerPanel(wx.Panel):
         ps.Publisher().subscribe(self.ShowDicomPreview, "Load import panel")
         
     def ShowDicomPreview(self, pubsub_evt):
-        dict = pubsub_evt.data
-        self.text_panel.Populate(dict)
+        dicom_groups = pubsub_evt.data
+        self.text_panel.Populate(dicom_groups)
         
         
 class TextPanel(wx.Panel):
@@ -92,63 +92,46 @@ class TextPanel(wx.Panel):
         self.root = tree.AddRoot("InVesalius Database")
         self.tree = tree
 
-    def Populate(self, dict):
+    def Populate(self, patient_list):
         tree = self.tree
 
-        i = 0
+        for patient in patient_list:
+            ngroups = patient.ngroups
+            dicom = patient.GetDicomSample()
+            title = dicom.patient.name + " (%d series)"%(ngroups)
+            date_time = "%s %s"%(dicom.acquisition.date,
+                                 dicom.acquisition.time)
 
-        # For each patient on dictionary
-        for patient_name in dict:
-            # In spite of the patient name, we'll show number of
-            # series also
-            title = patient_name + " (%d series)"%(len(dict[patient_name]))
             parent = tree.AppendItem(self.root, title)
-            patient_data = dict[patient_name]
-            
-            # Row background colour
-            if i%2:
-                tree.SetItemBackgroundColour(parent, (242,246,254))
-            
-            # Insert patient data into columns based on first series
-            for item in xrange(1, len(patient_data[0])-1):
-                value = patient_data[0][item]
-                # Sum slices of all patient's series
-                if (item == 7):
-                    value = 0
-                    for series in xrange(len(patient_data)):
-                        value += int(patient_data[series][7])
-                tree.SetItemText(parent, str(value), item) # ID
+            tree.SetItemText(parent, str(dicom.patient.id), 1)
+            tree.SetItemText(parent, str(dicom.patient.age), 2)
+            tree.SetItemText(parent, str(dicom.patient.gender), 3)
+            tree.SetItemText(parent, str(dicom.acquisition.study_description), 4)
+            tree.SetItemText(parent, str(dicom.acquisition.modality), 5)
+            tree.SetItemText(parent, str(date_time), 6)
+            tree.SetItemText(parent, str(patient.nslices), 7)
+            tree.SetItemText(parent, str(dicom.acquisition.institution), 8)
+            tree.SetItemText(parent, str(dicom.patient.birthdate), 9)
+            tree.SetItemText(parent, str(dicom.acquisition.accession_number), 10)
+            tree.SetItemText(parent, str(dicom.patient.physician), 11)
 
-            # For each series on patient 
-            j = 0
-            for series in xrange(len(patient_data)):
-                series_title = patient_data[series][0]
+            group_list = patient.GetGroups()
+            for group in group_list:
+                dicom = group.GetDicomSample()
+                group_title = dicom.acquisition.series_description
 
-                child = self.tree.AppendItem(parent, series_title)
-                if not j%2:
-                    tree.SetItemBackgroundColour(child, (242,246,254))
+                child = self.tree.AppendItem(parent, group_title)
 
-                # TODO: change description "protocol_name"
-                description = patient_data[series][-1]
-                modality = patient_data[series][5]
-                # TODO: add to date the time
-                date = patient_data[series][6]
-                nimages = patient_data[series][7]
+                tree.SetItemText(child, str(group_title), 0)
+                tree.SetItemText(child, str(dicom.acquisition.protocol_name), 4)
+                tree.SetItemText(child, str(dicom.acquisition.modality), 5)
+                tree.SetItemText(child, str(date_time), 6)
+                tree.SetItemText(child, str(group.nslices), 7)
 
-                tree.SetItemText(child, series_title, 0)
-                tree.SetItemText(child, description, 4)
-                tree.SetItemText(child, modality, 5)
-                tree.SetItemText(child, date, 6)
-                tree.SetItemText(child, nimages, 7)
-
-                j += 1
-            i += 1 
-        
         tree.Expand(self.root)
         
         tree.GetMainWindow().Bind(wx.EVT_RIGHT_UP, self.OnRightUp)
         tree.Bind(wx.EVT_TREE_ITEM_ACTIVATED, self.OnActivate)
-
 
     def OnActivate(self, evt):
         print 'OnActivate: %s' % self.tree.GetItemText(evt.GetItem())

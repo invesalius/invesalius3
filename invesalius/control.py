@@ -35,56 +35,10 @@ class Controller():
         path = pubsub_evt.data
 
         # retrieve DICOM files splited into groups
-        dicom_series = dcm.GetSeries(path)
+        dicom_series = dcm.GetDicomGroups(path)
+        ps.Publisher().sendMessage("Load import panel", dicom_series)
 
-        # create dictionary with DICOM files' groups with
-        # information as it will be shown on import panel
-        dict = {}
-        series_preview = []
-
-        for key in dicom_series:
-            patient_name = key[0]
-            dicom = dicom_series[key][0]
-
-            # Compute how many images per series:
-            n_images = str(len(dicom_series[key]))
-            # Add date and time in a single field:
-            date_time = "%s %s"%(dicom.acquisition.date,
-                                dicom.acquisition.time)
-            
-            # Data per series
-            exam_data = [dicom.acquisition.series_description,
-                        dicom.patient.id,
-                        str(dicom.patient.age),
-                        dicom.patient.gender,
-                        dicom.acquisition.study_description, # per patient
-                        dicom.acquisition.modality,
-                        date_time,
-                        n_images,
-                        dicom.acquisition.institution,
-                        dicom.patient.birthdate,
-                        dicom.acquisition.accession_number,
-                        dicom.patient.physician,
-                        dicom.acquisition.protocol_name] # per series
-
-            # Preview data
-            series_preview.append((dicom.image.file, # Filename
-                                 dicom.image.level, # Window level
-                                 dicom.image.window, # Window width
-                                 dicom.acquisition.series_description, # Title
-                                 "%s Images" %(n_images), # Subtitle
-                                ))
-
-            try:
-                dict[patient_name].append(exam_data)
-            except KeyError:
-                dict[patient_name] = [exam_data]
-        print dict
-
-
-
-        ps.Publisher().sendMessage("Load import panel", dict)
-        ps.Publisher().sendMessage("Load dicom preview", series_preview)
+        #ps.Publisher().sendMessage("Load dicom preview", series_preview)
 
 
     def ImportDirectory(self, pubsub_evt=None, dir_=None):

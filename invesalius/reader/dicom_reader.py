@@ -118,17 +118,6 @@ def CreateImageData(filelist, zspacing):
     imagedata.Update()
     return imagedata
 
-def GetSeries(path):
-    """
-    Return DICOM group of files inside given directory.
-    """
-    dcm_files = GetDicomFiles(path)
-
-    dcm_series = dicom_grouper.DicomGroups()
-    dcm_series.SetFileList(dcm_files)
-    dcm_series.Update()
-
-    return dcm_series.GetOutput()
 
 def GetDicomGroups(directory, recursive=True):
     """

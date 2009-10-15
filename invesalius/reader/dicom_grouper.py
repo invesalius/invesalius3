@@ -66,11 +66,13 @@ class DicomGroup:
         # externally as list
         self.nslices = 0
         self.zspacing = 1
+        self.dicom = None
         
     def AddSlice(self, dicom):
+        if not self.dicom:
+            self.dicom = dicom
         pos = tuple(dicom.image.position) 
         if pos not in self.slices_dict.keys():
-            
             self.slices_dict[pos] = dicom
             self.nslices += 1
             return True
@@ -106,6 +108,9 @@ class DicomGroup:
             self.zspacing = abs(p1 - p2)
         else:
             self.zspacing = 1
+
+    def GetDicomSample(self):
+        return self.dicom
             
 class PatientGroup:
     def __init__(self):
@@ -114,6 +119,8 @@ class PatientGroup:
         self.key = ()
         self.groups_dict = {} # group_key: DicomGroup
         self.nslices = 0
+        self.ngroups = 0
+        self.dicom = None
 
     def AddFile(self, dicom, index=0):
         # Given general DICOM information, we group slices according
@@ -129,10 +136,14 @@ class PatientGroup:
                      dicom.acquisition.serie_number,
                      dicom.image.orientation_label,
                      index) # This will be used to deal with Problem 2
+        if not self.dicom:
+            self.dicom = dicom
+
         self.nslices += 1
         # Does this group exist? Best case ;)
         if group_key not in self.groups_dict.keys():
             group = DicomGroup()
+            self.ngroups += 1
             group.AddSlice(dicom)
             self.groups_dict[group_key] = group
         # Group exists... Lets try to add slice
@@ -167,6 +178,9 @@ class PatientGroup:
         
     def GetGroups(self):
         return self.groups_dict.values()
+
+    def GetDicomSample(self):
+        return self.dicom
 
     def FixProblem1(self, dict):
         """
@@ -268,6 +282,7 @@ class DicomPatientGrouper:
         # Does this patient exist?
         if patient_key not in self.patients_dict.keys():
             patient = PatientGroup()
+            patient.key = patient_key
             patient.AddFile(dicom)
             self.patients_dict[patient_key] = patient
         # Patient exists... Lets add group to it
@@ -290,5 +305,7 @@ class DicomPatientGrouper:
                 # :) you've got a list of dicom.Dicom
                 # of the same series
         """
-        return self.patients_dict.values()
+        plist = self.patients_dict.values()
+        plist = sorted(plist, key = lambda patient:patient.key[0])
+        return plist
 
