@@ -65,7 +65,7 @@ class DicomGroup:
         # IDEA (13/10): Represent internally as dictionary,
         # externally as list
         self.nslices = 0
-        self.zspacing = 0
+        self.zspacing = 1
         
     def AddSlice(self, dicom):
         pos = tuple(dicom.image.position) 
@@ -98,7 +98,6 @@ class DicomGroup:
         if (len(list_) > 1):
             dicom = list_[0]
             axis = ORIENT_MAP[dicom.image.orientation_label]
-            #print dicom.image.orientation_label
             p1 = dicom.image.position[axis]
             
             dicom = list_[1]
