@@ -57,7 +57,7 @@ class TextPanel(wx.Panel):
                                         | wx.TR_ROW_LINES
                                         | wx.TR_COLUMN_LINES
                                         | wx.TR_FULL_ROW_HIGHLIGHT
-                                        | wx.TR_FULL_ROW_HIGHLIGHT
+                                        | wx.TR_SINGLE
                                         )
                                    
                                    
@@ -87,7 +87,6 @@ class TextPanel(wx.Panel):
         tree.SetColumnWidth(9, 100)  # Date of birth
         tree.SetColumnWidth(10, 140) # Accession Number
         tree.SetColumnWidth(11, 160) # Referring physician
-        
 
         self.root = tree.AddRoot("InVesalius Database")
         self.tree = tree
@@ -103,6 +102,7 @@ class TextPanel(wx.Panel):
                                  dicom.acquisition.time)
 
             parent = tree.AppendItem(self.root, title)
+            
             tree.SetItemText(parent, str(dicom.patient.id), 1)
             tree.SetItemText(parent, str(dicom.patient.age), 2)
             tree.SetItemText(parent, str(dicom.patient.gender), 3)
@@ -118,11 +118,11 @@ class TextPanel(wx.Panel):
             group_list = patient.GetGroups()
             for group in group_list:
                 dicom = group.GetDicomSample()
-                group_title = dicom.acquisition.series_description
 
-                child = self.tree.AppendItem(parent, group_title)
+                child = tree.AppendItem(parent, group.title)
+                tree.SetItemPyData(child, group)
 
-                tree.SetItemText(child, str(group_title), 0)
+                tree.SetItemText(child, str(group.title), 0)
                 tree.SetItemText(child, str(dicom.acquisition.protocol_name), 4)
                 tree.SetItemText(child, str(dicom.acquisition.modality), 5)
                 tree.SetItemText(child, str(date_time), 6)
@@ -134,7 +134,9 @@ class TextPanel(wx.Panel):
         tree.Bind(wx.EVT_TREE_ITEM_ACTIVATED, self.OnActivate)
 
     def OnActivate(self, evt):
-        print 'OnActivate: %s' % self.tree.GetItemText(evt.GetItem())
+        print "OnActivate"
+        item = evt.GetItem()
+        print self.tree.GetItemPyData(item)
         
 
     def OnRightUp(self, evt):

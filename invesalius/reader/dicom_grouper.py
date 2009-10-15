@@ -61,6 +61,7 @@ class DicomGroup:
         #  dicom.acquisition.series_number,
         #  dicom.image.orientation_label, index)
         self.key = ()
+        self.title = ""
         self.slices_dict = {} # slice_position: Dicom.dicom
         # IDEA (13/10): Represent internally as dictionary,
         # externally as list
@@ -143,8 +144,10 @@ class PatientGroup:
         # Does this group exist? Best case ;)
         if group_key not in self.groups_dict.keys():
             group = DicomGroup()
-            self.ngroups += 1
+            group.key = group_key
+            group.title = dicom.acquisition.series_description
             group.AddSlice(dicom)
+            self.ngroups += 1
             self.groups_dict[group_key] = group
         # Group exists... Lets try to add slice
         else:
@@ -177,7 +180,10 @@ class PatientGroup:
             self.groups_dict = self.FixProblem1(self.groups_dict)
         
     def GetGroups(self):
-        return self.groups_dict.values()
+        glist = self.groups_dict.values()
+        glist = sorted(glist, key = lambda group:group.title,
+                reverse=True)
+        return glist
 
     def GetDicomSample(self):
         return self.dicom
