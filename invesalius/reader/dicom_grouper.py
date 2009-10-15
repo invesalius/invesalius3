@@ -51,7 +51,7 @@
 # <dicom.image.number> and <dicom.acquisition.series_number>
 # were swapped
 
-ORIENT_MAP = {"SAGITTAL":0, "CORONAL":1, "AXIAL":2}
+ORIENT_MAP = {"SAGITTAL":0, "CORONAL":1, "AXIAL":2, "OBLIQUE":2}
 
 
 class DicomGroup:
