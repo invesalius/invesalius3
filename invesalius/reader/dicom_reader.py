@@ -32,6 +32,7 @@ def LoadImages(dir_):
     #  TODO!!! SUPER GAMBIARRA!!! DO THIS BETTER
 
     patient_group = GetDicomFiles(dir_)
+    print "1111111111111"
     #select the series with the largest 
     #number of slices.
     nslices_old = 0
@@ -39,14 +40,18 @@ def LoadImages(dir_):
         group_list = patient.GetGroups()
         for group in group_list:
             nslices = group.nslices
+            print "nslices:", nslices
             if (nslices >= nslices_old):
                 dicoms = group.GetList()
                 spacing = group.spacing
                 nslices_old = nslices
+    print "22222222222222"
     
     file_list = []
     for dicom in dicoms:
         file_list.append(dicom.image.file)
+
+
 
     #Coronal Crash. necessary verify
     if (dicom.image.orientation_label <> "CORONAL"):
@@ -59,12 +64,15 @@ def LoadImages(dir_):
         #Getting organized image
         files = sorter.GetFilenames()
 
+    print "33333333333"
+
     array = vtk.vtkStringArray()
 
     img_app = vtk.vtkImageAppend()
     img_app.SetAppendAxis(2) #Define Stack in Z
 
     if not(const.REDUCE_IMAGEDATA_QUALITY):
+        print "not reduce"
         for x in xrange(len(files)):
             array.InsertValue(x,files[x])
 
@@ -77,6 +85,7 @@ def LoadImages(dir_):
         
         image_data.SetSpacing(spacing)
     else:
+        print "reduce"
         for x in xrange(len(files)):
             #SIf the resolution of the
             #matrix is very large
@@ -91,12 +100,16 @@ def LoadImages(dir_):
             img_app.AddInput(img)
             img_app.Update()
 
+
+        print "444444444444444"
         image_data = vtk.vtkImageData()
         image_data.DeepCopy(img_app.GetOutput())
         image_data.SetSpacing(image_data.GetSpacing()[0],\
                          image_data.GetSpacing()[1], spacing)
+        print "555555555"
 
     image_data.Update()
+    print "66666666666666"
 
     return image_data, dicom
 
@@ -144,24 +157,43 @@ def GetSeries(path):
 
     return dcm_series.GetOutput()
 
-def GetDicomFiles(path):
+def GetDicomFiles(directory, recursive=True):
     """
     Return all full paths to DICOM files inside given directory.
     """
-    list_paths = os.walk(path)
-    
-    # FIXME: Currently recursion is not working
-    # Recursivelly, find all files inside this folder
     grouper = dicom_grouper.DicomPatientGrouper()
-    for p in list_paths:
-        p_file_list = p[-1]
-        file_path = p[0]
-        for filename in p_file_list:
-            file = str(os.path.join(file_path,filename))
+
+    nfiles = 0
+    # Find total number of files
+    if recursive:
+        for dirpath, dirnames, filenames in os.walk(directory):
+            nfiles += len(filenames)
+    else:
+        dirpath, dirnames, filenames = os.walk(directory)
+        nfiles = len(filenames)
+    print "TOTAL FILES:", nfiles
+
+    # Retrieve only DICOM files, splited into groups
+    if recursive:
+        for dirpath, dirnames, filenames in os.walk(directory):
+            print "@: ",dirpath
+            for name in filenames:
+                filepath = str(os.path.join(dirpath, name))
+                parser = dicom.Parser()
+                if parser.SetFileName(filepath):
+                    dcm = dicom.Dicom()
+                    dcm.SetParser(parser)
+                    grouper.AddFile(dcm)
+    else:
+        dirpath, dirnames, filenames = os.walk(directory)
+        print "@: ",dirpath
+        for name in filenames:
+            filepath = str(os.path.join(dirpath, name))
             parser = dicom.Parser()
-            if (parser.SetFileName(file)):
+            if parser.SetFileName(filepath):
                 dcm = dicom.Dicom()
                 dcm.SetParser(parser)
                 grouper.AddFile(dcm)
-                
+
     return grouper.GetPatientsGroups()
+            
