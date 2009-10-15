@@ -114,7 +114,7 @@ class PatientGroup:
         # (dicom.patient.name, dicom.patient.id)
         self.key = ()
         self.groups_dict = {} # group_key: DicomGroup
-        self.slices = 0
+        self.nslices = 0
 
     def AddFile(self, dicom, index=0):
         # Given general DICOM information, we group slices according
@@ -130,7 +130,7 @@ class PatientGroup:
                      dicom.acquisition.serie_number,
                      dicom.image.orientation_label,
                      index) # This will be used to deal with Problem 2
-        
+        self.nslices += 1
         # Does this group exist? Best case ;)
         if group_key not in self.groups_dict.keys():
             group = DicomGroup()
@@ -144,9 +144,10 @@ class PatientGroup:
                 # If we're here, then Problem 2 occured
                 # TODO: Optimize recursion 
                 self.AddFile(dicom, index+1)
-        
-            group.GetSpacing()
-            
+                
+                #Getting the spacing in the Z axis
+                group.GetSpacing()
+                    
     def Update(self):
         # Ideally, AddFile would be sufficient for splitting DICOM
         # files into groups (series). However, this does not work for
@@ -157,14 +158,14 @@ class PatientGroup:
 
         # Check if Problem 1 occurs (n groups with 1 slice each)
         is_there_problem_1 = False
-        if (self.ndicom == len(self.groups_dicom)) and\
-                (self.ndicom > 1):
+        if (self.nslices == len(self.groups_dict)) and\
+                (self.nslices > 1):
             is_there_problem_1 = True
 
         # Fix Problem 1
         if is_there_problem_1:
             self.groups_dict = self.FixProblem1(self.groups_dict)
-            
+        
     def GetGroups(self):
         return self.groups_dict.values()
 
@@ -192,8 +193,9 @@ class PatientGroup:
         # 1st STEP: RE-GROUP
         for group_key in dict:
             # values used as key of the new dictionary
-            orientation = dict[group_key].image.orientation_label
-            study_id = dict[group_key].acquisition.id_study
+            dicom = dict[group_key].GetList()[0]
+            orientation = dicom.image.orientation_label
+            study_id = dicom.acquisition.id_study
             # if axial, coronal or sagittal 
             if orientation in ORIENT_MAP:
                 group_key_s = (orientation, study_id)
@@ -234,11 +236,16 @@ class PatientGroup:
                         group = DicomGroup()
                         group.AddSlice(current)
                         dict_final[group_counter] = group
+                        #Getting the spacing in the Z axis
+                        group.GetSpacing()
                 else:
                     group_counter +=1
                     group = DicomGroup()
                     group.AddSlice(current)
                     dict_final[group_counter] = group
+                    #Getting the spacing in the Z axis
+                    group.GetSpacing()
+                
 
         return dict_final
 
