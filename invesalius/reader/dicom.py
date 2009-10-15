@@ -17,6 +17,7 @@
 #    PARTICULAR. Consulte a Licenca Publica Geral GNU para obter mais
 #    detalhes.
 #---------------------------------------------------------------------
+from numpy.lib import type_check
 
 # In DICOM file format, if multiple values are present for the
 # "Window Center" (Level) and "Window Width", both attributes
@@ -1438,16 +1439,21 @@ class Parser():
     def __format_date(self, value):
         
         sp1 = value.split(".")
-        if (len(sp1) >  1):
-            if (len(sp1[0]) <= 2):
-                data = time.strptime(value, "%D.%M.%Y")
+        try:
+        
+            if (len(sp1) >  1):
+                if (len(sp1[0]) <= 2):
+                    data = time.strptime(value, "%D.%M.%Y")
+                else:
+                    data = time.strptime(value, "%Y.%M.%d")
+            elif(len(value.split("//")) > 1):
+                data = time.strptime(value, "%D/%M/%Y")
             else:
-                data = time.strptime(value, "%Y.%M.%d")
-        elif(len(value.split("//")) > 1):
-            data = time.strptime(value, "%D/%M/%Y")
-        else:
-            data = time.strptime(value, "%Y%M%d")
-        return time.strftime("%d/%M/%Y",data)       
+                data = time.strptime(value, "%Y%M%d")
+            return time.strftime("%d/%M/%Y",data)
+        
+        except(ValueError):
+                return ""
         
     def GetAcquisitionTime(self):
         """
