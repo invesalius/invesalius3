@@ -65,7 +65,7 @@ class DicomGroup:
         # IDEA (13/10): Represent internally as dictionary,
         # externally as list
         self.nslices = 0
-        self.spacing = 0
+        self.zspacing = 0
         
     def AddSlice(self, dicom):
         pos = tuple(dicom.image.position) 
@@ -92,7 +92,7 @@ class DicomGroup:
         list_ = sorted(list_, key = lambda dicom:dicom.image.position[axis])
         return list_
 
-    def GetSpacing(self):
+    def GetZSpacing(self):
         list_ = self.GetSortedList()
         
         if (len(list_) > 1):
@@ -104,9 +104,9 @@ class DicomGroup:
             dicom = list_[1]
             p2 = dicom.image.position[axis]
             
-            self.spacing = abs(p1 - p2)
+            self.zspacing = abs(p1 - p2)
         else:
-            self.spacing = 1
+            self.zspacing = 1
             
 class PatientGroup:
     def __init__(self):
@@ -146,7 +146,7 @@ class PatientGroup:
                 self.AddFile(dicom, index+1)
                 
                 #Getting the spacing in the Z axis
-                group.GetSpacing()
+                group.GetZSpacing()
                     
     def Update(self):
         # Ideally, AddFile would be sufficient for splitting DICOM
@@ -237,14 +237,14 @@ class PatientGroup:
                         group.AddSlice(current)
                         dict_final[group_counter] = group
                         #Getting the spacing in the Z axis
-                        group.GetSpacing()
+                        group.GetZSpacing()
                 else:
                     group_counter +=1
                     group = DicomGroup()
                     group.AddSlice(current)
                     dict_final[group_counter] = group
                     #Getting the spacing in the Z axis
-                    group.GetSpacing()
+                    group.GetZSpacing()
                 
 
         return dict_final
