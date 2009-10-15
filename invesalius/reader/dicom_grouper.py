@@ -92,7 +92,7 @@ class DicomGroup:
         list_ = sorted(list_, key = lambda dicom:dicom.image.position[axis])
         return list_
 
-    def GetZSpacing(self):
+    def UpdateZSpacing(self):
         list_ = self.GetSortedList()
         
         if (len(list_) > 1):
@@ -145,8 +145,8 @@ class PatientGroup:
                 # TODO: Optimize recursion 
                 self.AddFile(dicom, index+1)
                 
-                #Getting the spacing in the Z axis
-                group.GetZSpacing()
+            #Getting the spacing in the Z axis
+            group.UpdateZSpacing()
                     
     def Update(self):
         # Ideally, AddFile would be sufficient for splitting DICOM
@@ -237,14 +237,14 @@ class PatientGroup:
                         group.AddSlice(current)
                         dict_final[group_counter] = group
                         #Getting the spacing in the Z axis
-                        group.GetZSpacing()
+                        group.UpdateZSpacing()
                 else:
                     group_counter +=1
                     group = DicomGroup()
                     group.AddSlice(current)
                     dict_final[group_counter] = group
                     #Getting the spacing in the Z axis
-                    group.GetZSpacing()
+                    group.UpdateZSpacing()
                 
 
         return dict_final
