@@ -669,9 +669,11 @@ class Parser():
         if ds.FindDataElement(tag):
             data = str(ds.GetDataElement(tag).GetValue())
             if (data):
-
-                return data.split('\\')
-        return ""
+                try:
+                    return data.split('\\')
+                except(IndexError):
+                    return []
+        return []
 
     def GetSOPClassUID(self):
         """
@@ -1810,7 +1812,8 @@ class Image(object):
         self.orientation_label = parser.GetImageOrientationLabel()
         self.file = parser.filename
         self.time = parser.GetImageTime()
-
+        self.type = parser.GetImageType()
+        
         if (parser.GetImageThickness()):
             try:
                 spacing.append(parser.GetImageThickness())
@@ -1827,8 +1830,4 @@ class Image(object):
         spacing[2] = round(spacing[2],2)
         self.spacing = spacing
         
-        try:
-            self.type = parser.GetImageType()[2]
-        except(IndexError):
-            self.type = ""
             

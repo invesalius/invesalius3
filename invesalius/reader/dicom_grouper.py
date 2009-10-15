@@ -73,12 +73,22 @@ class DicomGroup:
         if not self.dicom:
             self.dicom = dicom
         pos = tuple(dicom.image.position) 
-        if pos not in self.slices_dict.keys():
-            self.slices_dict[pos] = dicom
+        
+        #Case to test: \other\higroma
+        #condition created, if any dicom with the same 
+        #position, but 3D, leaving the same series.
+        if not "DERIVED" in dicom.image.type:
+            #if any dicom with the same position
+            if pos not in self.slices_dict.keys():
+                self.slices_dict[pos] = dicom
+                self.nslices += 1
+                return True
+            else:
+                return False
+        else:
+            self.slices_dict[dicom.image.number] = dicom
             self.nslices += 1
             return True
-        else:
-            return False
 
     def GetList(self):
         # Should be called when user selects this group
