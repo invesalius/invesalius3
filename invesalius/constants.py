@@ -167,7 +167,9 @@ REDUCE_IMAGEDATA_QUALITY = 1
 # if 1, use vtkVolumeRaycastMapper, if 0, use vtkFixedPointVolumeRayCastMapper
 TYPE_RAYCASTING_MAPPER = 0
 
-folder=RAYCASTING_PRESETS_DIRECTORY= os.path.join("..", "presets", "raycasting")
+folder=RAYCASTING_PRESETS_DIRECTORY= os.path.abspath(os.path.join("..",
+                                                                  "presets",
+                                                                  "raycasting"))
 
 RAYCASTING_TYPES = [filename.split(".")[0] for filename in
                     os.listdir(folder) if
