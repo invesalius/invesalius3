@@ -357,8 +357,8 @@ class Viewer(wx.Panel):
             self.ren.AddActor(text.actor)
             proj = project.Project()
 
-        ps.Publisher().sendMessage('Update window and level text',\
-                                       "WL: %d  WW: %d"%(proj.level, proj.window))
+            ps.Publisher().sendMessage('Update window and level text',\
+                                           "WL: %d  WW: %d"%(proj.level, proj.window))
 
 
     def Reposition(self, slice_data):
