@@ -41,20 +41,15 @@ class Controller():
        
         reader = dcm.ProgressDicomReader()
         reader.SetWindowEvent(self.frame)
-        reader.SetDirectoryPath(str(path))
+        reader.SetDirectoryPath(path)
         
-        self.frame.Bind(dicomgroups.evt_update_progress, self.Progress)
-        self.frame.Bind(dicomgroups.evt_end_load_file, self.LoadPanel)
-        #thread.start_new_thread(t.GetDicomGroups, (path,True, lock))
+        self.frame.Bind(reader.evt_update_progress, self.Progress)
+        self.frame.Bind(reader.evt_end_load_file, self.LoadPanel)
   
     def Progress(self, evt):
         print evt.progress
-        print "AAAAA"
-        #ps.Publisher().sendMessage("Progress Import")
     
     def LoadPanel(self,evt):
-        print "LoadPanel"
-        print evt.value
         patient_series = evt.value
         if patient_series:
             ps.Publisher().sendMessage("Load import panel", patient_series)
@@ -62,9 +57,7 @@ class Controller():
             ps.Publisher().sendMessage("Load dicom preview", first_patient)
         else:
             print "No DICOM files on directory"
-
-
-      
+              
     def OnImportMedicalImages(self, pubsub_evt):
         directory = pubsub_evt.data
         self.ImportMedicalImages(directory)

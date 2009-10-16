@@ -133,8 +133,7 @@ class ProgressDicomReader:
     
     def SetDirectoryPath(self, path,recursive=True):
         self.running = True
-        print "1",path,recursive
-        thread.start_new_thread(self.GetDicomGroupsIntern,(path,recursive))
+        thread.start_new_thread(self.GetDicomGroups,(path,recursive))
         
     def UpdateLoadFileProgress(self,cont_progress):
         evt = self.LoadFilesProgress(progress = cont_progress)
@@ -151,55 +150,6 @@ class ProgressDicomReader:
             if isinstance(value_progress, float):
                 self.UpdateLoadFileProgress(value_progress)
             else:
-                print "____________________"
-                print value_progress
                 self.EndLoadFile(value_progress)
                 self.running = False
                 
-    def GetDicomGroupsOld(self):
-        """
-        Return all full paths to DICOM files inside given directory.
-        """
-        while self.running:
-            grouper = dicom_grouper.DicomPatientGrouper()
-            dirpath = directory = self.dirpath
-            nfiles = 0
-            # Find total number of files
-            if self.recursive:
-                for dirpath, dirnames, filenames in os.walk(directory):
-                    nfiles += len(filenames)
-            else:
-                dirpath, dirnames, filenames = os.walk(directory)
-                nfiles = len(filenames)
-            
-            print "TOTAL FILES:", nfiles
-            cont_progress = 0
-            # Retrieve only DICOM files, splited into groups
-            if self.recursive:
-                for dirpath, dirnames, filenames in os.walk(directory):
-                    print "@: ",dirpath
-                    for name in filenames:
-                        filepath = str(os.path.join(dirpath, name))
-                        parser = dicom.Parser()
-                        
-                        cont_progress += 1
-                        self.UpdateLoadFileProgress(cont_progress, nfiles)
-                        
-                        if parser.SetFileName(filepath):
-                            dcm = dicom.Dicom()
-                            dcm.SetParser(parser)
-                            grouper.AddFile(dcm)
-            else:
-                dirpath, dirnames, filenames = os.walk(directory)
-                print "@: ",dirpath
-                for name in filenames:
-                    filepath = str(os.path.join(dirpath, name))
-                    parser = dicom.Parser()
-                    if parser.SetFileName(filepath):
-                        dcm = dicom.Dicom()
-                        dcm.SetParser(parser)
-                        grouper.AddFile(dcm)
-            self.running = False
-            self.EndLoadFile(grouper)
-        #return grouper.GetPatientsGroups()
-            
