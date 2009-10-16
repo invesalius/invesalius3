@@ -51,6 +51,8 @@
 # <dicom.image.number> and <dicom.acquisition.series_number>
 # were swapped
 
+import gdcm
+
 ORIENT_MAP = {"SAGITTAL":0, "CORONAL":1, "AXIAL":2, "OBLIQUE":2}
 
 
@@ -96,7 +98,28 @@ class DicomGroup:
         # (interpolated)
         return self.slices_dict.values()
 
-    def GetSortedList(self):
+    def GetFilenameList(self):
+        # Should be called when user selects this group
+        # This list will be used to create the vtkImageData
+        # (interpolated)
+
+        filelist = [dicom.image.file for dicom in
+                self.slices_dict.values()]
+        
+        # Sort slices using GDCM
+        if (self.dicom.image.orientation_label <> "CORONAL"):
+            #Organize reversed image
+            sorter = gdcm.IPPSorter()
+            sorter.SetComputeZSpacing(True)
+            sorter.SetZSpacingTolerance(1e-10)
+            sorter.Sort(filelist)
+            filelist = sorter.GetFilenames()
+
+            #Getting organized image
+        return filelist
+
+
+    def GetHandSortedList(self):
         # This will be used to fix problem 1, after merging
         # single DicomGroups of same study_id and orientation
         list_ = self.slices_dict.values()
@@ -106,7 +129,7 @@ class DicomGroup:
         return list_
 
     def UpdateZSpacing(self):
-        list_ = self.GetSortedList()
+        list_ = self.GetHandSortedList()
         
         if (len(list_) > 1):
             dicom = list_[0]
@@ -246,7 +269,7 @@ class PatientGroup:
         group_counter = 0
         for group_key in dict_to_change:
             # 2nd STEP: SORT
-            sorted_list = dict_to_change[group_key].GetSortedList()
+            sorted_list = dict_to_change[group_key].GetHandSortedList()
 
             # 3rd STEP: CHECK DIFFERENCES
             axis = ORIENT_MAP[group_key[0]] # based on orientation

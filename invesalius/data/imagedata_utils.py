@@ -1,5 +1,8 @@
 import math
 import vtk
+import vtkgdcm
+
+import constants as const
 
 # TODO: Test cases which are originally in sagittal/coronal orientation
 # and have gantry
@@ -162,3 +165,52 @@ def ExtractVOI(imagedata,xi,xf,yi,yf,zi,zf):
     voi.SetSampleRate(1, 1, 1)
     voi.Update()  
     return voi.GetOutput()
+
+def CreateImageData(filelist, zspacing):
+
+    if not(const.REDUCE_IMAGEDATA_QUALITY):
+        array = vtk.vtkStringArray()
+        for x in xrange(len(filelist)):
+            array.InsertValue(x,filelist[x])
+
+        reader = vtkgdcm.vtkGDCMImageReader()
+        reader.SetFileNames(array)
+        reader.Update()
+
+        # The zpacing is a DicomGroup property, so we need to set it
+        imagedata = vtk.vtkImageData()
+        imagedata.DeepCopy(reader.GetOutput())
+        spacing = imagedata.GetSpacing()
+        imagedata.SetSpacing(spacing[0], spacing[1], zspacing)
+    else:
+        # Reformat each slice and future append them
+        appender = vtk.vtkImageAppend()
+        appender.SetAppendAxis(2) #Define Stack in Z
+
+        # Reformat each slice
+        for x in xrange(len(filelist)):
+            # TODO: We need to check this automatically according
+            # to each computer's architecture
+            # If the resolution of the matrix is too large
+            reader = vtkgdcm.vtkGDCMImageReader()
+            reader.SetFileName(filelist[x])
+            reader.Update()
+
+            #Resample image in x,y dimension
+            slice_imagedata = ResampleImage2D(reader.GetOutput(), 256)
+
+            #Stack images in Z axes
+            appender.AddInput(slice_imagedata)
+            appender.Update()
+
+        # The zpacing is a DicomGroup property, so we need to set it
+        imagedata = vtk.vtkImageData()
+        imagedata.DeepCopy(appender.GetOutput())
+        spacing = imagedata.GetSpacing()
+
+        imagedata.SetSpacing(spacing[0], spacing[1], zspacing)
+
+    imagedata.Update()
+    return imagedata
+
+

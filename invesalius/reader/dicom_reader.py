@@ -28,32 +28,26 @@ import dicom
 import dicom_grouper
 import data.imagedata_utils as iu
 
-def LoadImages(dir_):
+def ReadDicomGroup(dir_):
 
     patient_group = GetDicomGroups(dir_)
-    filelist, dicom, zspacing = SelectLargerDicomGroup(patient_group)
-    filelist = SortFiles(filelist, dicom)
-    imagedata = CreateImageData(filelist, zspacing)
-    
-    return imagedata, dicom
+    if len(patient_group) > 0:
+        filelist, dicom, zspacing = SelectLargerDicomGroup(patient_group)
+        filelist = SortFiles(filelist, dicom)
+        imagedata = CreateImageData(filelist, zspacing)
+        return imagedata, dicom
+    else:
+        return False
 
 
 def SelectLargerDicomGroup(patient_group):
-    nslices_old = 0
+    maxslices = 0
     for patient in patient_group:
         group_list = patient.GetGroups()
         for group in group_list:
-            nslices = group.nslices
-            print "nslices:", nslices
-            if (nslices >= nslices_old):
-                dicoms = group.GetList()
-                zspacing = group.zspacing
-                nslices_old = nslices
-
-    filelist = []
-    for dicom in dicoms:
-        filelist.append(dicom.image.file)
-    return filelist, dicom, zspacing
+            if group.nslices > maxslices:
+                larger_group = group
+    return larger_group
 
 def SortFiles(filelist, dicom):
     # Sort slices
@@ -70,53 +64,6 @@ def SortFiles(filelist, dicom):
 
     return filelist
 
-
-def CreateImageData(filelist, zspacing):
-
-    if not(const.REDUCE_IMAGEDATA_QUALITY):
-        array = vtk.vtkStringArray()
-        for x in xrange(len(filelist)):
-            array.InsertValue(x,filelist[x])
-
-        reader = vtkgdcm.vtkGDCMImageReader()
-        reader.SetFileNames(array)
-        reader.Update()
-
-        # The zpacing is a DicomGroup property, so we need to set it
-        imagedata = vtk.vtkImageData()
-        imagedata.DeepCopy(reader.GetOutput())
-        spacing = imagedata.GetSpacing()
-        imagedata.SetSpacing(spacing[0], spacing[1], zspacing)
-    else:
-        # Reformat each slice and future append them
-        appender = vtk.vtkImageAppend()
-        appender.SetAppendAxis(2) #Define Stack in Z
-
-        # Reformat each slice
-        for x in xrange(len(filelist)):
-            # TODO: We need to check this automatically according
-            # to each computer's architecture
-            # If the resolution of the matrix is too large
-            reader = vtkgdcm.vtkGDCMImageReader()
-            reader.SetFileName(filelist[x])
-            reader.Update()
-
-            #Resample image in x,y dimension
-            slice_imagedata = iu.ResampleImage2D(reader.GetOutput(), 256)
-
-            #Stack images in Z axes
-            appender.AddInput(slice_imagedata)
-            appender.Update()
-
-        # The zpacing is a DicomGroup property, so we need to set it
-        imagedata = vtk.vtkImageData()
-        imagedata.DeepCopy(appender.GetOutput())
-        spacing = imagedata.GetSpacing()
-
-        imagedata.SetSpacing(spacing[0], spacing[1], zspacing)
-
-    imagedata.Update()
-    return imagedata
 
 
 def GetDicomGroups(directory, recursive=True):

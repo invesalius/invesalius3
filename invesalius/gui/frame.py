@@ -80,6 +80,11 @@ class Frame(wx.Frame):
         ps.Publisher().subscribe(self.UpdateAui, "Update AUI")
         ps.Publisher().subscribe(self.ShowTask, 'Show task panel')
         ps.Publisher().subscribe(self.HideTask, 'Hide task panel')
+        ps.Publisher().subscribe(self.SetProjectName, 'Set project name')
+
+    def SetProjectName(self, pubsub_evt):
+        proj_name = pubsub_evt.data
+        self.SetTitle("InVesalius 3 - %s"%(proj_name))
 
     def UpdateAui(self, pubsub_evt):
         self.aui_manager.Update()
@@ -169,7 +174,9 @@ class Frame(wx.Frame):
 
     def ShowContentPanel(self, evt_pubsub):
         aui_manager = self.aui_manager
+        aui_manager.GetPane("Import").Show(0)
         aui_manager.GetPane("Data").Show(1)
+        aui_manager.GetPane("Tasks").Show(1)
         aui_manager.Update()
 
     def OnSize(self, evt):

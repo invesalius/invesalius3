@@ -31,6 +31,27 @@ class SerieEvent(PreviewEvent):
     def __init__(self , evtType, id):
         super(SerieEvent, self).__init__(evtType, id)
 
+class DicomImageData(object):
+    def __init__(self):
+        pass
+
+    def SetInput(self, dicom):
+        reader = vtkgdcm.vtkGDCMImageReader()
+        reader.SetFileName(dicom.image.file)
+        imagedata = reader.GetOutput()
+
+        scale = imagedata.GetScalarRange()
+        
+        cast = vtk.vtkImageMapToWindowLevelColors()
+        cast.SetInput(imagedata)
+        cast.SetWindow(float(dicom.image.window))
+        cast.SetLevel(float(dicom.image.level))
+
+        self.imagedata = cast.GetOutput()
+
+    def GetOutput(self):
+        return self.imagedata
+
 
 class DicomLoader(object):
     """
@@ -119,6 +140,15 @@ class Preview(wx.Panel):
     def SetSubtitle(self, subtitle):
         self.subtitle.SetLabel(subtitle)
 
+    def SetGroup(self, group):
+        self.SetTitle(group.title)
+        self.SetSubtitle("%d images"%(group.nslices))
+        d = DicomImageData()
+        d.SetInput(group.dicom)
+        imagedata = d.GetOutput()
+        self.actor.SetInput(imagedata)
+        self.render.ResetCamera()
+    
     def SetImage(self, image_data):
         """
         Set a Image to preview.
@@ -198,23 +228,23 @@ class DicomPreviewSeries(wx.Panel):
                        "%d Images" % len(self.series[i][0]), # Subtitle
                        i) for n, i in enumerate(self.series)]
 
-    def SetDicomSeries(self, files):
-        self.files = files
-        scroll_range = len(files)/5
-        if scroll_range * 5 < len(files):
+    def SetDicomSeries(self, patient):
+        #self.files = files
+        ngroups = patient.ngroups
+        self.groups = patient.GetGroups()
+        
+        scroll_range = ngroups/5
+        if scroll_range * 5 < ngroups:
             scroll_range +=1
         self.scroll.SetScrollbar(0, 3, scroll_range, 5)
         self._display_previews()
 
     def _display_previews(self):
-        initial = self.displayed_position * 5
-        final = initial + 15
-        for f, p in zip(self.files[initial:final], self.previews):
-            print "--------"
-            print "f:", f
-            print "p: ", p
-            p.SetImage(f)
-            p.Show()
+        begin = self.displayed_position * 5
+        end = begin + 15
+        for group, preview in zip(self.groups[begin:end], self.previews):
+            preview.SetGroup(group)
+            preview.Show()
 
     def OnScroll(self, evt):
         self.displayed_position = evt.GetPosition()

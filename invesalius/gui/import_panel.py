@@ -130,21 +130,22 @@ class TextPanel(wx.Panel):
 
         tree.Expand(self.root)
         
-        tree.GetMainWindow().Bind(wx.EVT_RIGHT_UP, self.OnRightUp)
         tree.Bind(wx.EVT_TREE_ITEM_ACTIVATED, self.OnActivate)
 
     def OnActivate(self, evt):
         print "OnActivate"
         item = evt.GetItem()
-        print self.tree.GetItemPyData(item)
-        
+        group = self.tree.GetItemPyData(item)
+        if group:
+            print "send"
+            ps.Publisher().sendMessage('Open DICOM group',
+                                        group)
 
-    def OnRightUp(self, evt):
-        pos = evt.GetPosition()
-        item, flags, col = self.tree.HitTest(pos)
-        if item:
-            print 'Flags: %s, Col:%s, Text: %s' %\
-                           (flags, col, self.tree.GetItemText(item, col))
+        else:
+            if self.tree.IsExpanded(item):
+                self.tree.Collapse(item)
+            else:
+                self.tree.Expand(item)
 
     def OnSize(self, evt):
         self.tree.SetSize(self.GetSize())
