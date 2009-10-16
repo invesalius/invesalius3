@@ -22,6 +22,7 @@ class Controller():
         self.surface_manager = surface.SurfaceManager()
         self.volume = volume.Volume()
         self.__bind_events()
+        self.frame = frame
 
     def __bind_events(self):
         ps.Publisher().subscribe(self.OnImportMedicalImages, 'Import directory')
@@ -36,9 +37,25 @@ class Controller():
     def StartImportPanel(self, pubsub_evt):
         # path to directory
         path = pubsub_evt.data
-
         # retrieve DICOM files splited into groups
-        patient_series = dcm.GetDicomGroups(path)
+       
+        reader = dcm.ProgressDicomReader()
+        reader.SetWindowEvent(self.frame)
+        reader.SetDirectoryPath(str(path))
+        
+        self.frame.Bind(dicomgroups.evt_update_progress, self.Progress)
+        self.frame.Bind(dicomgroups.evt_end_load_file, self.LoadPanel)
+        #thread.start_new_thread(t.GetDicomGroups, (path,True, lock))
+  
+    def Progress(self, evt):
+        print evt.progress
+        print "AAAAA"
+        #ps.Publisher().sendMessage("Progress Import")
+    
+    def LoadPanel(self,evt):
+        print "LoadPanel"
+        print evt.value
+        patient_series = evt.value
         if patient_series:
             ps.Publisher().sendMessage("Load import panel", patient_series)
             first_patient = patient_series[0]
@@ -46,6 +63,8 @@ class Controller():
         else:
             print "No DICOM files on directory"
 
+
+      
     def OnImportMedicalImages(self, pubsub_evt):
         directory = pubsub_evt.data
         self.ImportMedicalImages(directory)
@@ -53,6 +72,7 @@ class Controller():
     def ImportMedicalImages(self, directory): 
         # OPTION 1: DICOM?
         patients_groups = dcm.GetDicomGroups(directory)
+        
         if len(patients_groups):
             group = dcm.SelectLargerDicomGroup(patients_groups)
             imagedata, dicom = self.OpenDicomGroup(group, gui=False)
