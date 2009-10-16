@@ -43,7 +43,7 @@ class InVesalius(wx.App):
     def OnInit(self):
         self.main = Frame(None)
         self.control = Controller(self.main)
-        self.SetAppName("InVesalius 3.0")
+        self.SetAppName("InVesalius 3")
         return True
         
     def ShowFrame(self):

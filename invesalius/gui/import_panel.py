@@ -153,7 +153,7 @@ class TextPanel(wx.Panel):
 class ImagePanel(wx.Panel):
     def __init__(self, parent):
         wx.Panel.__init__(self, parent, -1)
-        self.SetBackgroundColour((0,255,0))
+        #self.SetBackgroundColour((0,255,0))
         
         splitter = spl.MultiSplitterWindow(self, style=wx.SP_LIVE_UPDATE)
         splitter.SetOrientation(wx.HORIZONTAL)
@@ -172,19 +172,48 @@ class ImagePanel(wx.Panel):
 class SeriesPanel(wx.Panel):
     def __init__(self, parent):
         wx.Panel.__init__(self, parent, -1)
-        self.SetBackgroundColour((0,0,0))
+        #self.SetBackgroundColour((0,0,0)) 
+
         self.serie_preview = dpp.DicomPreviewSeries(self)
+        self.dicom_preview = dpp.DicomPreview(self)
+        self.dicom_preview.Show(0)
+       
+        self.sizer = wx.BoxSizer(wx.VERTICAL)
+        self.sizer.Add(self.serie_preview, 1, wx.EXPAND | wx.ALL, 5)
+        self.sizer.Add(self.dicom_preview, 1, wx.EXPAND | wx.ALL, 5)
+        self.sizer.Fit(self)
+
+        self.SetSizer(self.sizer)
+        self.SetAutoLayout(True)        
+        self.Show()
+
 
         self.__bind_evt()
+        self._bind_gui_evt()
 
     def __bind_evt(self):
         ps.Publisher().subscribe(self.ShowDicomSeries, "Load dicom preview")
 
+    def _bind_gui_evt(self):
+        self.Bind(dpp.EVT_SELECT_SERIE, self.OnSelectSerie)
+
+    def OnSelectSerie(self, evt):
+        serie = evt.GetSelectID()
+        self.dicom_preview.SetDicomSerie(serie)
+
+        self.dicom_preview.Show(1)
+        #self.sizer.Detach(self.serie_preview)
+        self.serie_preview.Show(0)
+        self.sizer.Layout()
+        #self.Show()
+        self.Update()
+
+
     def ShowDicomSeries(self, pubsub_evt):
         print "---- ShowDicomSeries ----"
-        list_dicom = pubsub_evt.data
-        print list_dicom
-        self.serie_preview.SetDicomSeries(list_dicom)
+        first_patient = pubsub_evt.data
+        self.serie_preview.SetPatientGroups(first_patient)
+        self.dicom_preview.SetPatientGroups(first_patient)
         
 
 
