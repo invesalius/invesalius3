@@ -59,10 +59,10 @@ def ShowNumberDialog(message, value=0):
 
 
 class ProgressDialog(object):
-    def __init__(self):
+    def __init__(self, maximum):
         self.title = "InVesalius 3"
         self.msg = "Loading DICOM files"
-        self.maximum = 100
+        self.maximum = maximum
         self.current = 0
         self.style = wx.PD_CAN_ABORT | wx.PD_APP_MODAL
         self.dlg = wx.ProgressDialog(self.title,
@@ -77,14 +77,10 @@ class ProgressDialog(object):
                                      )
 
     def Update(self, value):
-        self.current += value
-        (keep_going, skip) = dlg.Update(count)
-        if (not keep_going) or (skip):
-            dlg.Destroy()
+        if (value == self.maximum):
+            self.dlg.Destroy()
             return False
-        elif (self.current > self.max):
-            dlg.Destroy()
-            return True
         else:
-            return self.current
-
+            self.dlg.Update(value)
+            return True
+    

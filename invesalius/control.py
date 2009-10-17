@@ -1,3 +1,4 @@
+import math
 import os
 import plistlib
 
@@ -23,6 +24,7 @@ class Controller():
         self.volume = volume.Volume()
         self.__bind_events()
         self.frame = frame
+        self.progress_dialog = None
 
     def __bind_events(self):
         ps.Publisher().subscribe(self.OnImportMedicalImages, 'Import directory')
@@ -47,8 +49,13 @@ class Controller():
         self.frame.Bind(reader.evt_end_load_file, self.LoadPanel)
   
     def Progress(self, evt):
-        print evt.progress
-    
+        if not(self.progress_dialog):
+            self.progress_dialog = dialog.ProgressDialog(maximum = evt.progress[1])
+        else:
+            if not(self.progress_dialog.Update(evt.progress[0])):
+                self.progress_dialog = None
+            
+            
     def LoadPanel(self,evt):
         patient_series = evt.value
         if patient_series:

@@ -19,6 +19,7 @@
 from vtk.util.colors import yellow
 import glob
 import os
+import math
 
 import vtk
 import vtkgdcm
@@ -95,7 +96,7 @@ def yGetDicomGroups(directory, recursive=True, gui=True):
                 parser = dicom.Parser()
                 counter += 1
                 if gui:
-                    yield counter/nfiles*100
+                    yield (counter,nfiles)
                 if parser.SetFileName(filepath):
                     dcm = dicom.Dicom()
                     dcm.SetParser(parser)
@@ -108,7 +109,7 @@ def yGetDicomGroups(directory, recursive=True, gui=True):
             parser = dicom.Parser()
             counter += 1
             if gui:
-                yield counter/nfiles*100
+                yield (counter,nfiles)
             if parser.SetFileName(filepath):
                 dcm = dicom.Dicom()
                 dcm.SetParser(parser)
@@ -147,7 +148,7 @@ class ProgressDicomReader:
         y = yGetDicomGroups(path, recursive)
         while self.running:
             value_progress = y.next()
-            if isinstance(value_progress, float):
+            if isinstance(value_progress, tuple):
                 self.UpdateLoadFileProgress(value_progress)
             else:
                 self.EndLoadFile(value_progress)
