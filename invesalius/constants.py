@@ -164,6 +164,16 @@ WINDOW_LEVEL = {"Abdomen":(350,50),
 REDUCE_IMAGEDATA_QUALITY = 1
 
 
+ICON_DIR = os.path.abspath(os.path.join('..', 'icons'))
+ID_TO_BMP = {VOL_FRONT: ["Front", os.path.join(ICON_DIR, "view_front.png")],
+             VOL_BACK: ["Back", os.path.join(ICON_DIR, "view_back.png")],
+             VOL_TOP: ["Top", os.path.join(ICON_DIR, "view_top.png")],
+             VOL_BOTTOM: ["Bottom", os.path.join(ICON_DIR, "view_bottom.png")],
+             VOL_RIGHT: ["Right", os.path.join(ICON_DIR, "view_right.png")],
+             VOL_LEFT: ["Left", os.path.join(ICON_DIR, "view_left.png")],
+             VOL_ISO:["Isometric", os.path.join(ICON_DIR,"view_isometric.png")]
+             }
+
 # if 1, use vtkVolumeRaycastMapper, if 0, use vtkFixedPointVolumeRayCastMapper
 TYPE_RAYCASTING_MAPPER = 0
 

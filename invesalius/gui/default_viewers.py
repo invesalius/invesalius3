@@ -31,6 +31,8 @@ from gui.widgets.clut_raycasting import CLUTRaycastingWidget, \
         EVT_CLUT_POINT_RELEASE, EVT_CLUT_CURVE_SELECT, \
         EVT_CLUT_CURVE_WL_CHANGE
 
+from constants import ID_TO_BMP
+
 class Panel(wx.Panel):
     def __init__(self, parent):
         wx.Panel.__init__(self, parent, pos=wx.Point(0, 50),
@@ -304,15 +306,6 @@ import constants as const
 [BUTTON_RAYCASTING, BUTTON_VIEW, BUTTON_SLICE_PLANE] = [wx.NewId() for num in xrange(3)]
 RAYCASTING_TOOLS = wx.NewId()
 
-ID_TO_BMP = {const.VOL_FRONT: ["Front", "../icons/view_front.png"],
-             const.VOL_BACK: ["Back", "../icons/view_back.png"],
-             const.VOL_TOP: ["Top", "../icons/view_top.png"],
-             const.VOL_BOTTOM: ["Bottom", "../icons/view_bottom.png"],
-             const.VOL_RIGHT: ["Right", "../icons/view_right.png"],
-             const.VOL_LEFT: ["Left", "../icons/view_left.png"],
-             const.VOL_ISO:["Isometric","../icons/view_isometric.png"]
-             }
-
 ID_TO_NAME = {}
 ID_TO_TOOL = {}
 ID_TO_TOOL_ITEM = {}
@@ -379,12 +372,16 @@ class VolumeToolPanel(wx.Panel):
         button_colour.Bind(csel.EVT_COLOURSELECT, self.OnSelectColour)
         self.button_colour = button_colour
 
+        save_preset = wx.Button(self, -1, "S", size=size)
+        self.save_preset = save_preset
+
         # SIZER TO ORGANIZE ALL
         sizer = wx.BoxSizer(wx.VERTICAL)
         sizer.Add(button_colour, 0, wx.ALL, sp)
         sizer.Add(button_raycasting, 0, wx.TOP|wx.BOTTOM, 1)
         sizer.Add(button_view, 0, wx.TOP|wx.BOTTOM, 1)
         sizer.Add(button_slice_plane, 0, wx.TOP|wx.BOTTOM, 1)
+        sizer.Add(save_preset, 0, wx.TOP|wx.BOTTOM, 1)
 
         sizer.Fit(self)
 
@@ -395,11 +392,14 @@ class VolumeToolPanel(wx.Panel):
 
         self.__init_menus()
         self.__bind_events()
+        self.__bind_events_wx()
 
     def __bind_events(self):
         ps.Publisher().subscribe(self.ChangeButtonColour,
                                  'Change volume viewer gui colour')
 
+    def __bind_events_wx(self):
+        self.save_preset.Bind(wx.EVT_BUTTON, self.OnSavePreset)
 
     def OnButtonRaycasting(self, evt):
         # MENU RELATED TO RAYCASTING TYPES
@@ -410,6 +410,13 @@ class VolumeToolPanel(wx.Panel):
         
     def OnButtonSlicePlane(self, evt):
         self.button_slice_plane.PopupMenu(self.slice_plane_menu)
+
+    def OnSavePreset(self, evt):
+        d = wx.TextEntryDialog(self, "Preset name")
+        if d.ShowModal() == wx.ID_OK:
+            preset_name = d.GetValue()
+            ps.Publisher().sendMessage('Save raycasting preset',
+                                       preset_name)
 
     def __init_menus(self, pubsub_evt=None):
         # MENU RELATED TO RAYCASTING TYPES
