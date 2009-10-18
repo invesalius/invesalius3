@@ -1,5 +1,6 @@
 import wx
 from wx.lib import masked
+import wx.lib.pubsub as ps
 
 class NumberDialog(wx.Dialog):
     def __init__(self, message, value=0):
@@ -75,12 +76,19 @@ class ProgressDialog(object):
                                      #| wx.PD_ESTIMATED_TIME
                                      #| wx.PD_REMAINING_TIME
                                      )
-
-    def Update(self, value):
-        if (value == self.maximum):
-            self.dlg.Destroy()
-            return False
-        else:
+        
+        self.dlg.Bind(wx.EVT_BUTTON, self.Cancel)
+        
+    def Cancel(self, evt):
+        ps.Publisher().sendMessage("Cancel DICOM load")
+                
+    def Update(self, value):  
+        if(value != self.maximum):      
             self.dlg.Update(value)
             return True
-    
+        else:
+            return False
+        
+    def Close(self):
+        self.dlg.Destroy()
+        

@@ -35,7 +35,9 @@ class Controller():
                                  'Save raycasting preset')
         ps.Publisher().subscribe(self.OnOpenDicomGroup,
                                  'Open DICOM group')
-
+        #ps.Publisher().subscribe(self.CancelDicomLoad, 
+        #                         "Cancel DICOM load in the control")
+    
     def StartImportPanel(self, pubsub_evt):
         # path to directory
         path = pubsub_evt.data
@@ -47,13 +49,20 @@ class Controller():
         
         self.frame.Bind(reader.evt_update_progress, self.Progress)
         self.frame.Bind(reader.evt_end_load_file, self.LoadPanel)
-  
+    
     def Progress(self, evt):
-        if not(self.progress_dialog):
-            self.progress_dialog = dialog.ProgressDialog(maximum = evt.progress[1])
+        if (evt.progress):
+            if not(self.progress_dialog):
+                self.progress_dialog = dialog.ProgressDialog(
+                                    maximum = evt.progress[1])
+            else:
+                if not(self.progress_dialog.Update(evt.progress[0])):
+                    self.progress_dialog.Close()
+                    self.progress_dialog = None       
         else:
-            if not(self.progress_dialog.Update(evt.progress[0])):
-                self.progress_dialog = None
+            #Is None if user canceled the load
+            self.progress_dialog.Close()
+            self.progress_dialog = None
             
             
     def LoadPanel(self,evt):

@@ -128,12 +128,19 @@ class ProgressDicomReader:
         
         self.evt_update_progress = EVT_LOAD_FILE_PROGRESS
         self.evt_end_load_file = EVT_END_LOAD_FILE
+        
+        ps.Publisher().subscribe(self.CancelLoad, "Cancel DICOM load")
     
+    def CancelLoad(self, evt_pubsub):
+        self.running = False
+        self.stoped = True
+        
     def SetWindowEvent(self, frame):
         self.frame = frame
-    
+        
     def SetDirectoryPath(self, path,recursive=True):
         self.running = True
+        self.stoped = False
         thread.start_new_thread(self.GetDicomGroups,(path,recursive))
         
     def UpdateLoadFileProgress(self,cont_progress):
@@ -153,4 +160,10 @@ class ProgressDicomReader:
             else:
                 self.EndLoadFile(value_progress)
                 self.running = False
+              
+        #Is necessary in the case user cancel
+        #the load, ensure that dicomdialog is closed
+        if(self.stoped):
+            self.UpdateLoadFileProgress(None)
+            self.stoped = False
                 
