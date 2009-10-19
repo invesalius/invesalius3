@@ -120,17 +120,11 @@ def yGetDicomGroups(directory, recursive=True, gui=True):
 def GetDicomGroups(directory, recursive=True):
     return yGetDicomGroups(directory, recursive, gui=False).next()
 
+
 class ProgressDicomReader:
-    
     def __init__(self):
-        #(self.LoadFilesProgress, EVT_LOAD_FILE_PROGRESS) = wx.lib.newevent.NewEvent()
-        #(self.EndLoadFiles, EVT_END_LOAD_FILE) = wx.lib.newevent.NewEvent()
-        
-        #self.evt_update_progress = EVT_LOAD_FILE_PROGRESS
-        #self.evt_end_load_file = EVT_END_LOAD_FILE
-        
         ps.Publisher().subscribe(self.CancelLoad, "Cancel DICOM load")
-    
+
     def CancelLoad(self, evt_pubsub):
         self.running = False
         self.stoped = True
@@ -142,29 +136,25 @@ class ProgressDicomReader:
         self.running = True
         self.stoped = False
         self.GetDicomGroups(path,recursive)
-        
+
     def UpdateLoadFileProgress(self,cont_progress):
         ps.Publisher().sendMessage("Update dicom load", cont_progress)
-        #evt = self.LoadFilesProgress(progress = cont_progress)
-        #wx.PostEvent(self.frame, evt)
-                        
+
     def EndLoadFile(self, grouper):
         ps.Publisher().sendMessage("End dicom load", grouper)
-        #evt = self.EndLoadFiles(value = grouper)
-        #wx.PostEvent(self.frame, evt)
-        
+
     def GetDicomGroups(self, path, recursive):
         y = yGetDicomGroups(path, recursive)
-        #while self.running:
         for value_progress in y:
+            if not self.running:
+                break
             if isinstance(value_progress, tuple):
                 self.UpdateLoadFileProgress(value_progress)
             else:
                 self.EndLoadFile(value_progress)
-              
+
         #Is necessary in the case user cancel
         #the load, ensure that dicomdialog is closed
         if(self.stoped):
             self.UpdateLoadFileProgress(None)
             self.stoped = False
-                
