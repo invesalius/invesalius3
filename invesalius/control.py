@@ -35,9 +35,9 @@ class Controller():
                                  'Save raycasting preset')
         ps.Publisher().subscribe(self.OnOpenDicomGroup,
                                  'Open DICOM group')
-        #ps.Publisher().subscribe(self.CancelDicomLoad, 
-        #                         "Cancel DICOM load in the control")
-    
+        ps.Publisher().subscribe(self.Progress, "Update dicom load")
+        ps.Publisher().subscribe(self.LoadPanel, "End dicom load")
+        
     def StartImportPanel(self, pubsub_evt):
         # path to directory
         path = pubsub_evt.data
@@ -47,16 +47,20 @@ class Controller():
         reader.SetWindowEvent(self.frame)
         reader.SetDirectoryPath(path)
         
-        self.frame.Bind(reader.evt_update_progress, self.Progress)
-        self.frame.Bind(reader.evt_end_load_file, self.LoadPanel)
+        #self.frame.Bind(reader.evt_update_progress, self.Progress)
+        #self.frame.Bind(reader.evt_end_load_file, self.LoadPanel)
     
     def Progress(self, evt):
-        if (evt.progress):
+        print evt
+        data = evt.data
+        
+        if (data):
             if not(self.progress_dialog):
                 self.progress_dialog = dialog.ProgressDialog(
-                                    maximum = evt.progress[1])
+                                    maximum = data[1])
             else:
-                if not(self.progress_dialog.Update(evt.progress[0])):
+                print data[0]
+                if not(self.progress_dialog.Update(data[0])):
                     self.progress_dialog.Close()
                     self.progress_dialog = None       
         else:
@@ -66,7 +70,7 @@ class Controller():
             
             
     def LoadPanel(self,evt):
-        patient_series = evt.value
+        patient_series = evt.data
         if patient_series:
             ps.Publisher().sendMessage("Load import panel", patient_series)
             first_patient = patient_series[0]

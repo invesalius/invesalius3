@@ -85,7 +85,7 @@ def yGetDicomGroups(directory, recursive=True, gui=True):
         nfiles = len(filenames)
     
     print "TOTAL FILES:", nfiles
-    counter = 0.0
+    counter = 0
     grouper = dicom_grouper.DicomPatientGrouper()
     # Retrieve only DICOM files, splited into groups
     if recursive:
@@ -123,11 +123,11 @@ def GetDicomGroups(directory, recursive=True):
 class ProgressDicomReader:
     
     def __init__(self):
-        (self.LoadFilesProgress, EVT_LOAD_FILE_PROGRESS) = wx.lib.newevent.NewEvent()
-        (self.EndLoadFiles, EVT_END_LOAD_FILE) = wx.lib.newevent.NewEvent()
+        #(self.LoadFilesProgress, EVT_LOAD_FILE_PROGRESS) = wx.lib.newevent.NewEvent()
+        #(self.EndLoadFiles, EVT_END_LOAD_FILE) = wx.lib.newevent.NewEvent()
         
-        self.evt_update_progress = EVT_LOAD_FILE_PROGRESS
-        self.evt_end_load_file = EVT_END_LOAD_FILE
+        #self.evt_update_progress = EVT_LOAD_FILE_PROGRESS
+        #self.evt_end_load_file = EVT_END_LOAD_FILE
         
         ps.Publisher().subscribe(self.CancelLoad, "Cancel DICOM load")
     
@@ -144,12 +144,14 @@ class ProgressDicomReader:
         thread.start_new_thread(self.GetDicomGroups,(path,recursive))
         
     def UpdateLoadFileProgress(self,cont_progress):
-        evt = self.LoadFilesProgress(progress = cont_progress)
-        wx.PostEvent(self.frame, evt)
+        ps.Publisher().sendMessage("Update dicom load", cont_progress)
+        #evt = self.LoadFilesProgress(progress = cont_progress)
+        #wx.PostEvent(self.frame, evt)
                         
     def EndLoadFile(self, grouper):
-        evt = self.EndLoadFiles(value = grouper)
-        wx.PostEvent(self.frame, evt)
+        ps.Publisher().sendMessage("End dicom load", grouper)
+        #evt = self.EndLoadFiles(value = grouper)
+        #wx.PostEvent(self.frame, evt)
         
     def GetDicomGroups(self, path, recursive):
         y = yGetDicomGroups(path, recursive)

@@ -83,8 +83,11 @@ class ProgressDialog(object):
         ps.Publisher().sendMessage("Cancel DICOM load")
                 
     def Update(self, value):  
-        if(value != self.maximum):      
-            self.dlg.Update(value)
+        if(value != self.maximum):  
+            try:    
+                self.dlg.Update(value)
+            except(wx._core.PyAssertionError):
+                pass
             return True
         else:
             return False
