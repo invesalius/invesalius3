@@ -93,7 +93,8 @@ class TextPanel(wx.Panel):
 
     def Populate(self, patient_list):
         tree = self.tree
-
+        
+        first = 0
         for patient in patient_list:
             ngroups = patient.ngroups
             dicom = patient.GetDicomSample()
@@ -103,6 +104,11 @@ class TextPanel(wx.Panel):
 
             parent = tree.AppendItem(self.root, title)
             
+            if not first:
+                tree.SelectItem(parent)
+                first += 1
+
+
             tree.SetItemText(parent, str(dicom.patient.id), 1)
             tree.SetItemText(parent, str(dicom.patient.age), 2)
             tree.SetItemText(parent, str(dicom.patient.gender), 3)
