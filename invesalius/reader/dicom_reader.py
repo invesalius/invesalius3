@@ -141,7 +141,7 @@ class ProgressDicomReader:
     def SetDirectoryPath(self, path,recursive=True):
         self.running = True
         self.stoped = False
-        thread.start_new_thread(self.GetDicomGroups,(path,recursive))
+        self.GetDicomGroups(path,recursive)
         
     def UpdateLoadFileProgress(self,cont_progress):
         ps.Publisher().sendMessage("Update dicom load", cont_progress)
@@ -155,13 +155,12 @@ class ProgressDicomReader:
         
     def GetDicomGroups(self, path, recursive):
         y = yGetDicomGroups(path, recursive)
-        while self.running:
-            value_progress = y.next()
+        #while self.running:
+        for value_progress in y:
             if isinstance(value_progress, tuple):
                 self.UpdateLoadFileProgress(value_progress)
             else:
                 self.EndLoadFile(value_progress)
-                self.running = False
               
         #Is necessary in the case user cancel
         #the load, ensure that dicomdialog is closed
