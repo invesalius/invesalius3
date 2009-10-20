@@ -36,7 +36,6 @@ import data.imagedata_utils as iu
 def ReadDicomGroup(dir_):
     
     patient_group = GetDicomGroups(dir_)
-    
     if len(patient_group) > 0:
         filelist, dicom, zspacing = SelectLargerDicomGroup(patient_group)
         filelist = SortFiles(filelist, dicom)
@@ -144,6 +143,13 @@ class ProgressDicomReader:
         ps.Publisher().sendMessage("End dicom load", grouper)
 
     def GetDicomGroups(self, path, recursive):
+        
+        if not const.VTK_WARNING:
+            fow = vtk.vtkFileOutputWindow()
+            #fow.SetFileName('c:\\vtkoutput.txt')
+            ow = vtk.vtkOutputWindow()
+            ow.SetInstance(fow)
+        
         y = yGetDicomGroups(path, recursive)
         for value_progress in y:
             if not self.running:
