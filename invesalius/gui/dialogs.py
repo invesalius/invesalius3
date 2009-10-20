@@ -78,6 +78,7 @@ class ProgressDialog(object):
                                      )
         
         self.dlg.Bind(wx.EVT_BUTTON, self.Cancel)
+        self.dlg.SetSize(wx.Size(200,150))
         
     def Cancel(self, evt):
         ps.Publisher().sendMessage("Cancel DICOM load")
