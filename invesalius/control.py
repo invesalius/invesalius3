@@ -112,6 +112,7 @@ class Controller():
                                     (proj.window, proj.level))
         ps.Publisher().sendMessage('Show content panel')
         ps.Publisher().sendMessage('Update AUI')
+        ps.Publisher().sendMessage('Load slice plane')
 
     def CreateAnalyzeProject(self, imagedata):
         proj = prj.Project()
