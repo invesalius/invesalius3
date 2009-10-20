@@ -547,7 +547,7 @@ class Viewer(wx.Panel):
         if self.mouse_pressed:
             mouse_x, mouse_y = self.interactor.GetEventPosition()
             renderer = self.slice_data_list[0].renderer
-            self.pick.Pick(mouse_x, mouse_y, 0, renderer)
+            self.pick.Pick(mouse_x, mouse_y, self.slice_data_list[0].number, renderer)
             coord_cross = self.get_coordinate_cursor()
             coord = self.get_coordinate()
             ps.Publisher().sendMessage('Update cross position', coord_cross)
@@ -561,7 +561,7 @@ class Viewer(wx.Panel):
     def OnCrossMouseClick(self, obj, evt_vtk):
         mouse_x, mouse_y = self.interactor.GetEventPosition()
         renderer = self.slice_data_list[0].renderer
-        self.pick.Pick(mouse_x, mouse_y, 0, renderer)
+        self.pick.Pick(mouse_x, mouse_y, self.slice_data_list[0].number, renderer)
         coord_cross = self.get_coordinate_cursor()
         coord = self.get_coordinate()
         ps.Publisher().sendMessage('Update cross position', coord_cross)
@@ -888,16 +888,18 @@ class Viewer(wx.Panel):
         slice_data = self.slice_data_list[0]
         slice_number = slice_data.number
         actor_bound = slice_data.actor.GetBounds()
+        extent = slice_data.actor.GetDisplayExtent()
 
         print
         print self.orientation
         print x, y, z
         print actor_bound
+        print extent
         print
 
-        xy = [x, y, actor_bound[0]]
-        yz = [actor_bound[2], y, z]
-        xz = [x, actor_bound[4], z]
+        xy = [x, y, actor_bound[4]]
+        yz = [actor_bound[0], y, z]
+        xz = [x, actor_bound[2], z]
 
         proj = project.Project()
         orig_orien = proj.original_orientation
@@ -909,7 +911,15 @@ class Viewer(wx.Panel):
         else:
             coordinates = {"SAGITAL": yz, "CORONAL": xz, "AXIAL": xy}
 
-        self.cross.SetFocalPoint(x, y, z)
+        pos = [x, y, z]
+        if self.orientation == "AXIAL":
+            pos[2] = pos[2] * 1.0001
+        elif self.orientation == "SAGITAL":
+            pos[0] = pos[0] * 1.0001
+        else:
+            pos[1] = pos[1] * 1.0001
+        print ">POS", pos
+        self.cross.SetFocalPoint(pos)
 
         #print
         #print slice_number
