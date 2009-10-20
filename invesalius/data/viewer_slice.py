@@ -913,11 +913,11 @@ class Viewer(wx.Panel):
 
         pos = [x, y, z]
         if self.orientation == "AXIAL":
-            pos[2] = pos[2] * 1.0001
+            pos[2] = pos[2] * 1.001
         elif self.orientation == "SAGITAL":
-            pos[0] = pos[0] * 1.0001
+            pos[0] = pos[0] * 1.001
         else:
-            pos[1] = pos[1] * 1.0001
+            pos[1] = pos[1] * 1.001
         print ">POS", pos
         self.cross.SetFocalPoint(pos)
 
@@ -949,7 +949,15 @@ class Viewer(wx.Panel):
             else:
                 coordinates = {"SAGITAL": yz, "CORONAL": xz, "AXIAL": xy}
 
-            slice_data.cursor.SetPosition((x, y, z))
+            pos = [x, y, z]
+            if self.orientation == "AXIAL":
+                pos[2] = pos[2] * 1.001
+            elif self.orientation == "SAGITAL":
+                pos[0] = pos[0] * 1.001
+            else:
+                pos[1] = pos[1] * 1.001
+            print ">POS", pos
+            slice_data.cursor.SetPosition(pos)
 
     def SetOrientation(self, orientation):
         self.orientation = orientation
