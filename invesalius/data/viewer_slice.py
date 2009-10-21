@@ -550,7 +550,8 @@ class Viewer(wx.Panel):
             self.pick.Pick(mouse_x, mouse_y, self.slice_data_list[0].number, renderer)
             coord_cross = self.get_coordinate_cursor()
             coord = self.get_coordinate()
-            ps.Publisher().sendMessage('Update cross position', coord_cross)
+            ps.Publisher().sendMessage('Update cross position',
+                                       (self.orientation, coord_cross))
             ps.Publisher().sendMessage(('Set scroll position', 'SAGITAL'),
                                        coord[0])
             ps.Publisher().sendMessage(('Set scroll position', 'CORONAL'),
@@ -564,7 +565,8 @@ class Viewer(wx.Panel):
         self.pick.Pick(mouse_x, mouse_y, self.slice_data_list[0].number, renderer)
         coord_cross = self.get_coordinate_cursor()
         coord = self.get_coordinate()
-        ps.Publisher().sendMessage('Update cross position', coord_cross)
+        ps.Publisher().sendMessage('Update cross position',
+                                   (self.orientation, coord_cross))
         ps.Publisher().sendMessage(('Set scroll position', 'SAGITAL'),
                                    coord[0])
         ps.Publisher().sendMessage(('Set scroll position', 'CORONAL'),
@@ -873,7 +875,8 @@ class Viewer(wx.Panel):
         renderer.AddActor(cross_actor)
 
     def __update_cross_position(self, pubsub_evt):
-        x, y, z = pubsub_evt.data
+        x, y, z = pubsub_evt.data[1]
+        orientation = pubsub_evt.data[0]
         #xi, yi, zi = self.vline.GetPoint1()
         #xf, yf, zf = self.vline.GetPoint2()
         #self.vline.SetPoint1(x, yi, z)
@@ -894,12 +897,10 @@ class Viewer(wx.Panel):
         print self.orientation
         print x, y, z
         print actor_bound
-        print extent
-        print
 
-        xy = [x, y, actor_bound[4]]
-        yz = [actor_bound[0], y, z]
-        xz = [x, actor_bound[2], z]
+        yz = [x + abs(x * 0.001), y, z]
+        xz = [x, y - abs(y * 0.001), z]
+        xy = [x, y, z + abs(z * 0.001)]
 
         proj = project.Project()
         orig_orien = proj.original_orientation
@@ -911,15 +912,16 @@ class Viewer(wx.Panel):
         else:
             coordinates = {"SAGITAL": yz, "CORONAL": xz, "AXIAL": xy}
 
-        pos = [x, y, z]
-        if self.orientation == "AXIAL":
-            pos[2] = pos[2] * 1.001
-        elif self.orientation == "SAGITAL":
-            pos[0] = pos[0] * 1.001
-        else:
-            pos[1] = pos[1] * 1.001
-        print ">POS", pos
-        self.cross.SetFocalPoint(pos)
+        #pos = [x, y, z]
+        #if orientation == "AXIAL":
+        #    pos[2] += abs(pos[2] * 0.001)
+        #elif orientation == "SAGITAL":
+        #    pos[0] += abs(pos[0] * 0.001)
+        #elif orientation == "CORONAL":
+        #    pos[1] -= abs(pos[1] * 0.001)
+        #print ">POS", pos
+        #print
+        self.cross.SetFocalPoint(coordinates[orientation])
 
         #print
         #print slice_number
@@ -935,9 +937,14 @@ class Viewer(wx.Panel):
             slice_number = slice_data.number
             actor_bound = slice_data.actor.GetBounds()
 
-            yz = [actor_bound[1] + 1 + slice_number, y, z]
-            xz = [x, actor_bound[3] - 1 - slice_number, z]
-            xy = [x, y, actor_bound[5] + 1 + slice_number]
+            print
+            print self.orientation
+            print x, y, z
+            print actor_bound
+
+            yz = [x + abs(x * 0.001), y, z]
+            xz = [x, y - abs(y * 0.001), z]
+            xy = [x, y, z + abs(z * 0.001)]
 
             proj = project.Project()
             orig_orien = proj.original_orientation
@@ -949,15 +956,7 @@ class Viewer(wx.Panel):
             else:
                 coordinates = {"SAGITAL": yz, "CORONAL": xz, "AXIAL": xy}
 
-            pos = [x, y, z]
-            if self.orientation == "AXIAL":
-                pos[2] = pos[2] * 1.001
-            elif self.orientation == "SAGITAL":
-                pos[0] = pos[0] * 1.001
-            else:
-                pos[1] = pos[1] * 1.001
-            print ">POS", pos
-            slice_data.cursor.SetPosition(pos)
+            slice_data.cursor.SetPosition(coordinates[self.orientation])
 
     def SetOrientation(self, orientation):
         self.orientation = orientation
