@@ -71,14 +71,14 @@ class ProgressDialog(object):
                                      maximum = self.maximum,
                                      parent = None,
                                      style = wx.PD_CAN_ABORT
-                                      | wx.PD_APP_MODAL
+                                      | wx.PD_APP_MODAL,
                                      #| wx.PD_ELAPSED_TIME
                                      #| wx.PD_ESTIMATED_TIME
                                      #| wx.PD_REMAINING_TIME
                                      )
         
         self.dlg.Bind(wx.EVT_BUTTON, self.Cancel)
-        self.dlg.SetSize(wx.Size(215,150))
+        self.dlg.SetSize(wx.Size(250,150))
         
     def Cancel(self, evt):
         ps.Publisher().sendMessage("Cancel DICOM load")
