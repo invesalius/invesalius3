@@ -6,6 +6,7 @@ import wx
 import vtk
 import vtkgdcm
 
+import wx.lib.agw.buttonpanel as bp
 from vtk.wx.wxVTKRenderWindowInteractor import wxVTKRenderWindowInteractor
 from reader import dicom_reader
 
@@ -39,7 +40,7 @@ class SerieEvent(PreviewEvent):
     def __init__(self , evtType, id):
         super(SerieEvent, self).__init__(evtType, id)
 
-class Preview(wx.Panel):
+#class Preview(wx.Panel):
     """
     Where the images will be showed.
     """
@@ -63,8 +64,10 @@ class Preview(wx.Panel):
 
         self.sizer = wx.BoxSizer(wx.VERTICAL)
         self.sizer.AddSpacer(2)
-        self.sizer.Add(self.title, 1, wx.GROW|wx.EXPAND)
-        self.sizer.Add(self.subtitle, 1, wx.GROW|wx.EXPAND)
+        self.sizer.Add(self.title, 1,
+                        wx.GROW|wx.EXPAND|wx. ALIGN_CENTER_HORIZONTAL)
+        self.sizer.Add(self.subtitle, 1,
+                        wx.GROW|wx.EXPAND|wx.ALIGN_CENTER_HORIZONTAL)
         self.sizer.Add(self.panel, 5, wx.GROW|wx.EXPAND|wx.ALL, 4)
         self.sizer.Fit(self)
 
