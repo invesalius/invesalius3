@@ -1,7 +1,9 @@
 import wx.lib.pubsub as ps
 import vtk
 
+
 import constants as const
+from gui.dialogs import ProgressDialog 
 
 # If you are frightened by the code bellow, or think it must have been result of
 # an identation error, lookup at:
@@ -13,7 +15,8 @@ import constants as const
 # http://www.ibm.com/developerworks/library/l-prog2.html
 # http://jjinux.blogspot.com/2006/10/python-modifying-counter-in-closure.html
 
-def ShowProgress(number_of_filters = 1):
+def ShowProgress(number_of_filters = 1,
+                 dialog_type="GaugeProgress"):
     """
     To use this closure, do something like this:
         UpdateProgress = ShowProgress(NUM_FILTERS)
@@ -21,10 +24,13 @@ def ShowProgress(number_of_filters = 1):
     """
     progress = [0]
     last_obj_progress = [0]
+    if (dialog_type == "ProgressDialog"):
+        dlg = ProgressDialog(100)
+        
 
     # when the pipeline is larger than 1, we have to consider this object
     # percentage
-    ratio = 100.0 / number_of_filters
+    ratio = (100.0 / number_of_filters)
     
     def UpdateProgress(obj, label=""):
         """
@@ -46,8 +52,16 @@ def ShowProgress(number_of_filters = 1):
         progress[0] = progress[0] + ratio*difference
         
         # Tell GUI to update progress status value
-        ps.Publisher().sendMessage('Update status in GUI',
-                                    (progress[0], label))
+        if (dialog_type == "GaugeProgress"):
+            ps.Publisher().sendMessage('Update status in GUI',
+                                        (progress[0], label))
+        else:
+            if (int(progress[0]) == 99):
+                progress[0] = 100
+                
+            if not(dlg.Update(progress[0],label)):
+                dlg.Close()
+            
         return progress[0]
         
     return UpdateProgress

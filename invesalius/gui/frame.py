@@ -308,6 +308,10 @@ class StatusBar(wx.StatusBar):
         value, label = pubsub_evt.data
         self.progress_bar.UpdateValue(value)
         self.SetStatusText(label, 0)
+        if (int(value) >= 99):
+            self.SetStatusText("",0)
+        wx.Yield()
+        
 
     def UpdateStatusLabel(self, pubsub_evt):
         label = pubsub_evt.data

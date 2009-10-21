@@ -1,8 +1,11 @@
 import math
 import vtk
 import vtkgdcm
+import wx.lib.pubsub as ps
 
 import constants as const
+from data import vtk_utils
+
 
 # TODO: Test cases which are originally in sagittal/coronal orientation
 # and have gantry
@@ -27,7 +30,8 @@ def ResampleImage3D(imagedata, value):
 
     return resample.GetOutput()
 
-def ResampleImage2D(imagedata, xy_dimension):
+def ResampleImage2D(imagedata, xy_dimension, 
+                        update_progress = None):
     """
     Resample vtkImageData matrix.
     """
@@ -56,6 +60,10 @@ def ResampleImage2D(imagedata, xy_dimension):
     resample.SetAxisMagnificationFactor(0, factor)
     resample.SetAxisMagnificationFactor(1, factor)
     resample.SetOutputSpacing(spacing[0] * factor, spacing[1] * factor, spacing[2])
+    if (update_progress):
+        message = "Generating multiplanar visualization..."
+        resample.AddObserver("ProgressEvent", lambda obj,
+                             evt:update_progress(resample,message))
     resample.Update()
 
 
@@ -167,14 +175,18 @@ def ExtractVOI(imagedata,xi,xf,yi,yf,zi,zf):
     return voi.GetOutput()
 
 def CreateImageData(filelist, zspacing):
-
+    message = "Generating multiplanar visualization..."
     if not(const.REDUCE_IMAGEDATA_QUALITY):
+        update_progress= vtk_utils.ShowProgress(1)
+
         array = vtk.vtkStringArray()
         for x in xrange(len(filelist)):
             array.InsertValue(x,filelist[x])
-
+        
         reader = vtkgdcm.vtkGDCMImageReader()
         reader.SetFileNames(array)
+        reader.AddObserver("ProgressEvent", lambda obj,evt:
+                     update_progress(reader,message))
         reader.Update()
 
         # The zpacing is a DicomGroup property, so we need to set it
@@ -183,6 +195,9 @@ def CreateImageData(filelist, zspacing):
         spacing = imagedata.GetSpacing()
         imagedata.SetSpacing(spacing[0], spacing[1], zspacing)
     else:
+        update_progress= vtk_utils.ShowProgress(2*len(filelist),
+                                            dialog_type = "ProgressDialog")
+
         # Reformat each slice and future append them
         appender = vtk.vtkImageAppend()
         appender.SetAppendAxis(2) #Define Stack in Z
@@ -194,13 +209,16 @@ def CreateImageData(filelist, zspacing):
             # If the resolution of the matrix is too large
             reader = vtkgdcm.vtkGDCMImageReader()
             reader.SetFileName(filelist[x])
+            reader.AddObserver("ProgressEvent", lambda obj,evt:
+                         update_progress(reader,message))
             reader.Update()
 
             #Resample image in x,y dimension
-            slice_imagedata = ResampleImage2D(reader.GetOutput(), 256)
+            slice_imagedata = ResampleImage2D(reader.GetOutput(), 256, update_progress)
 
             #Stack images in Z axes
             appender.AddInput(slice_imagedata)
+            #appender.AddObserver("ProgressEvent", lambda obj,evt:update_progress(appender))
             appender.Update()
 
         # The zpacing is a DicomGroup property, so we need to set it
@@ -210,7 +228,78 @@ def CreateImageData(filelist, zspacing):
 
         imagedata.SetSpacing(spacing[0], spacing[1], zspacing)
 
+    imagedata.AddObserver("ProgressEvent", lambda obj,evt:
+                 update_progress(imagedata,message))
     imagedata.Update()
+    
     return imagedata
 
+
+class ImageCreator:
+    def __init__(self):
+        ps.Publisher().sendMessage("Cancel imagedata load", self.CancelImageDataLoad)
+        
+    def CancelImageDataLoad(self, evt_pusub):
+        self.running = evt_pusub.data
+        
+    def CreateImageData(filelist, zspacing):
+        message = "Generating multiplanar visualization..."
+        if not(const.REDUCE_IMAGEDATA_QUALITY):
+            update_progress= vtk_utils.ShowProgress(1)
+    
+            array = vtk.vtkStringArray()
+            for x in xrange(len(filelist)):
+                array.InsertValue(x,filelist[x])
+            
+            reader = vtkgdcm.vtkGDCMImageReader()
+            reader.SetFileNames(array)
+            reader.AddObserver("ProgressEvent", lambda obj,evt:
+                         update_progress(reader,message))
+            reader.Update()
+    
+            # The zpacing is a DicomGroup property, so we need to set it
+            imagedata = vtk.vtkImageData()
+            imagedata.DeepCopy(reader.GetOutput())
+            spacing = imagedata.GetSpacing()
+            imagedata.SetSpacing(spacing[0], spacing[1], zspacing)
+        else:
+            update_progress= vtk_utils.ShowProgress(2*len(filelist),
+                                                dialog_type = "ProgressDialog")
+    
+            # Reformat each slice and future append them
+            appender = vtk.vtkImageAppend()
+            appender.SetAppendAxis(2) #Define Stack in Z
+    
+            # Reformat each slice
+            for x in xrange(len(filelist)):
+                # TODO: We need to check this automatically according
+                # to each computer's architecture
+                # If the resolution of the matrix is too large
+                reader = vtkgdcm.vtkGDCMImageReader()
+                reader.SetFileName(filelist[x])
+                reader.AddObserver("ProgressEvent", lambda obj,evt:
+                             update_progress(reader,message))
+                reader.Update()
+    
+                #Resample image in x,y dimension
+                slice_imagedata = ResampleImage2D(reader.GetOutput(), 256, update_progress)
+    
+                #Stack images in Z axes
+                appender.AddInput(slice_imagedata)
+                #appender.AddObserver("ProgressEvent", lambda obj,evt:update_progress(appender))
+                appender.Update()
+    
+            # The zpacing is a DicomGroup property, so we need to set it
+            imagedata = vtk.vtkImageData()
+            imagedata.DeepCopy(appender.GetOutput())
+            spacing = imagedata.GetSpacing()
+    
+            imagedata.SetSpacing(spacing[0], spacing[1], zspacing)
+    
+        imagedata.AddObserver("ProgressEvent", lambda obj,evt:
+                     update_progress(imagedata,message))
+        imagedata.Update()
+        
+        return imagedata
+    
 

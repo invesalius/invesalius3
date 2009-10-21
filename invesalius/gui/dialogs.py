@@ -78,19 +78,18 @@ class ProgressDialog(object):
                                      )
         
         self.dlg.Bind(wx.EVT_BUTTON, self.Cancel)
-        self.dlg.SetSize(wx.Size(200,150))
+        self.dlg.SetSize(wx.Size(215,150))
         
     def Cancel(self, evt):
         ps.Publisher().sendMessage("Cancel DICOM load")
                 
-    def Update(self, value):
-        message = "Loading file %d of %d"%(value,self.maximum) 
-        if(value != self.maximum):  
+    def Update(self, value, message):
+        if(int(value) != self.maximum):  
             self.dlg.Update(value,message)
             return True
         else:
             return False
-        
+                     
     def Close(self):
         self.dlg.Destroy()
         

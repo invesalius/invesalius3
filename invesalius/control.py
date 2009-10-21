@@ -51,8 +51,9 @@ class Controller():
         #self.frame.Bind(reader.evt_end_load_file, self.LoadPanel)
     
     def Progress(self, evt):
-        print evt
         data = evt.data
+        if (data):
+            message = "Loading file %d of %d"%(data[0],data[1])
         
         if (data):
             if not(self.progress_dialog):
@@ -60,7 +61,7 @@ class Controller():
                                     maximum = data[1])
             else:
                 print data[0]
-                if not(self.progress_dialog.Update(data[0])):
+                if not(self.progress_dialog.Update(data[0],message)):
                     self.progress_dialog.Close()
                     self.progress_dialog = None       
         else:
@@ -153,7 +154,7 @@ class Controller():
 
     def OnOpenDicomGroup(self, pubsub_evt):
         group = pubsub_evt.data
-        imagedata, dicom = self.OpenDicomGroup(group, gui=False)
+        imagedata, dicom = self.OpenDicomGroup(group, gui=True)
         self.CreateDicomProject(imagedata, dicom)
         self.LoadProject()
     
