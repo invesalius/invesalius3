@@ -256,9 +256,10 @@ class SeriesPanel(wx.Panel):
     def SetDicomSeries(self, pubsub_evt):
         group = pubsub_evt.data
         print "X"
+        self.dicom_preview.SetDicomGroup(group)
         self.dicom_preview.Show(1)
         self.serie_preview.Show(0)
-        self.dicom_preview.SetDicomGroup(group)
+        self.sizer.Layout()
         self.Update()
         
 
