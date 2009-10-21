@@ -40,7 +40,7 @@ class SerieEvent(PreviewEvent):
     def __init__(self , evtType, id):
         super(SerieEvent, self).__init__(evtType, id)
 
-#class Preview(wx.Panel):
+class Preview(wx.Panel):
     """
     Where the images will be showed.
     """
