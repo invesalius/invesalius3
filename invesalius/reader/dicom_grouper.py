@@ -125,7 +125,8 @@ class DicomGroup:
         list_ = self.slices_dict.values()
         dicom = list_[0]
         axis = ORIENT_MAP[dicom.image.orientation_label]
-        list_ = sorted(list_, key = lambda dicom:dicom.image.position[axis])
+        #list_ = sorted(list_, key = lambda dicom:dicom.image.position[axis])
+        list_ = sorted(list_, key = lambda dicom:dicom.image.number)
         return list_
 
     def UpdateZSpacing(self):
