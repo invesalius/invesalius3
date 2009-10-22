@@ -131,6 +131,7 @@ invesalius/gui/widgets/gradient.py -text
 invesalius/gui/widgets/listctrl.py -text
 invesalius/gui/widgets/slice_menu.py -text
 invesalius/invesalius.py -text
+invesalius/mode.py -text
 invesalius/presets.py -text
 invesalius/project.py -text
 invesalius/reader/__init__.py -text
@@ -138,6 +139,7 @@ invesalius/reader/analyze_reader.py -text
 invesalius/reader/dicom.py -text
 invesalius/reader/dicom_grouper.py -text
 invesalius/reader/dicom_reader.py -text
+invesalius/session.py -text
 invesalius/utils.py -text
 presets/raycasting/Airways[!!-~]II.plist -text
 presets/raycasting/Airways.plist -text
