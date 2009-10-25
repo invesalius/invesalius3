@@ -25,6 +25,7 @@ class Controller():
         self.__bind_events()
         self.frame = frame
         self.progress_dialog = None
+        self.cancel_import = False
  
 
     def __bind_events(self):

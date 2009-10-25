@@ -363,14 +363,14 @@ class DicomPreviewSeries(wx.Panel):
         for i in xrange(NROWS):
             for j in xrange(NCOLS):
                 p = Preview(self)
-                if (i == j == 0):
-                    self._show_shadow(p)
+                #if (i == j == 0):
+                    #self._show_shadow(p)
                 #p.Hide()
                 self.previews.append(p)
                 self.grid.Add(p, 1, flag=wx.EXPAND)
 
-    def _show_shadow(self, preview):
-        preview.ShowShadow()
+    #def _show_shadow(self, preview):
+    #    preview.ShowShadow()
         
 
     def _bind_events(self):
