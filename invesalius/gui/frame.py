@@ -18,6 +18,7 @@
 #--------------------------------------------------------------------
 
 import math
+import os.path
 import sys
 
 import wx
@@ -54,7 +55,8 @@ class Frame(wx.Frame):
               size=wx.Size(1024, 768), #size = wx.DisplaySize(),
               style=wx.DEFAULT_FRAME_STYLE, title='InVesalius 3')
         self.Center(wx.BOTH)
-        self.SetIcon(wx.Icon("../icons/invesalius.ico", wx.BITMAP_TYPE_ICO))
+        self.SetIcon(wx.Icon(os.path.join(const.ICON_DIR, "invesalius.ico"),
+                             wx.BITMAP_TYPE_ICO))
 
         # Set menus, status and task bar
         self.SetMenuBar(MenuBar(self))
@@ -325,7 +327,8 @@ class TaskBarIcon(wx.TaskBarIcon):
         wx.TaskBarIcon.__init__(self)
         self.frame = parent
 
-        icon = wx.Icon("../icons/invesalius.ico", wx.BITMAP_TYPE_ICO)
+        icon = wx.Icon(os.path.join(const.ICON_DIR, "invesalius.ico"),
+                       wx.BITMAP_TYPE_ICO)
         self.SetIcon(icon, "InVesalius")
         self.imgidx = 1
 
@@ -353,38 +356,46 @@ class ProjectToolBar(wx.ToolBar):
     def __init_items(self):
 
 
-        BMP_IMPORT = wx.Bitmap("../icons/file_import.png",
+        BMP_IMPORT = wx.Bitmap(os.path.join(const.ICON_DIR, "file_import.png"),
                                     wx.BITMAP_TYPE_PNG)
-        BMP_NET = wx.Bitmap("../icons/file_from_internet.png",
+        BMP_NET = wx.Bitmap(os.path.join(const.ICON_DIR,
+                                         "file_from_internet.png"),
                                 wx.BITMAP_TYPE_PNG)
-        BMP_SAVE = wx.Bitmap("../icons/file_save.png",
+        BMP_SAVE = wx.Bitmap(os.path.join(const.ICON_DIR, "file_save.png"),
                                     wx.BITMAP_TYPE_PNG)
-        BMP_PRINT = wx.Bitmap("../icons/print.png",
+        BMP_PRINT = wx.Bitmap(os.path.join(const.ICON_DIR, "print.png"),
                                     wx.BITMAP_TYPE_PNG)
-        BMP_PHOTO = wx.Bitmap("../icons/tool_photo.png",
+        BMP_PHOTO = wx.Bitmap(os.path.join(const.ICON_DIR, "tool_photo.png"),
                                     wx.BITMAP_TYPE_PNG)
 
         if sys.platform == 'darwin':
-            BMP_IMPORT = wx.Bitmap("../icons/file_import_original.png",
+            BMP_IMPORT = wx.Bitmap(os.path.join(const.ICON_DIR,
+                                                "file_import_original.png"),
                                    wx.BITMAP_TYPE_PNG)
-            BMP_NET = wx.Bitmap("../icons/file_from_internet_original.png",
+            BMP_NET = wx.Bitmap(os.path.join(const.ICON_DIR,
+                                             "file_from_internet_original.png"),
  	                                wx.BITMAP_TYPE_PNG)
-            BMP_SAVE = wx.Bitmap("../icons/file_save_original.png",
+            BMP_SAVE = wx.Bitmap(os.path.join(const.ICON_DIR,
+                                              "file_save_original.png"),
  	                                 wx.BITMAP_TYPE_PNG)
-            BMP_PRINT = wx.Bitmap("../icons/print_original.png",
+            BMP_PRINT = wx.Bitmap(os.path.join(const.ICON_DIR,
+                                               "print_original.png"),
  	                                    wx.BITMAP_TYPE_PNG)
-            BMP_PHOTO = wx.Bitmap("../icons/tool_photo_original.png",
+            BMP_PHOTO = wx.Bitmap(os.path.join(const.ICON_DIR,
+                                               "tool_photo_original.png"),
  	                                    wx.BITMAP_TYPE_PNG)
         else:
-            BMP_IMPORT = wx.Bitmap("../icons/file_import.png",
+            BMP_IMPORT = wx.Bitmap(os.path.join(const.ICON_DIR,
+                                                "file_import.png"),
                                     wx.BITMAP_TYPE_PNG)
-            BMP_NET = wx.Bitmap("../icons/file_from_internet.png",
+            BMP_NET = wx.Bitmap(os.path.join(const.ICON_DIR,
+                                             "file_from_internet.png"),
                                 wx.BITMAP_TYPE_PNG)
-            BMP_SAVE = wx.Bitmap("../icons/file_save.png",
+            BMP_SAVE = wx.Bitmap(os.path.join(const.ICON_DIR, "file_save.png"),
                                   wx.BITMAP_TYPE_PNG)
-            BMP_PRINT = wx.Bitmap("../icons/print.png",
+            BMP_PRINT = wx.Bitmap(os.path.join(const.ICON_DIR, "print.png"),
                                   wx.BITMAP_TYPE_PNG)
-            BMP_PHOTO = wx.Bitmap("../icons/tool_photo.png",
+            BMP_PHOTO = wx.Bitmap(os.path.join(const.ICON_DIR, "tool_photo.png"),
                                    wx.BITMAP_TYPE_PNG)
 
         self.AddLabelTool(ID_FILE_IMPORT,
@@ -426,27 +437,36 @@ class ObjectToolBar(wx.ToolBar):
     def __init_items(self):
 
         if sys.platform == 'darwin':
-            BMP_ROTATE = wx.Bitmap("../icons/tool_rotate_original.gif",
+            BMP_ROTATE = wx.Bitmap(os.path.join(const.ICON_DIR,
+                                                "tool_rotate_original.gif"),
                                    wx.BITMAP_TYPE_GIF)
-            BMP_MOVE =wx.Bitmap("../icons/tool_translate_original.png",
+            BMP_MOVE =wx.Bitmap(os.path.join(const.ICON_DIR,
+                                             "tool_translate_original.png"),
                                       wx.BITMAP_TYPE_PNG)
-            BMP_ZOOM = wx.Bitmap("../icons/tool_zoom_original.png",
+            BMP_ZOOM = wx.Bitmap(os.path.join(const.ICON_DIR,
+                                              "tool_zoom_original.png"),
                                  wx.BITMAP_TYPE_PNG)
-            BMP_ZOOM_SELECT = wx.Bitmap("../icons/tool_zoom_select_original.png",
+            BMP_ZOOM_SELECT = wx.Bitmap(os.path.join(const.ICON_DIR,
+                                                     "tool_zoom_select_original.png"),
                                         wx.BITMAP_TYPE_PNG)
-            BMP_CONTRAST = wx.Bitmap("../icons/tool_contrast_original.png",
+            BMP_CONTRAST = wx.Bitmap(os.path.join(const.ICON_DIR,
+                                                  "tool_contrast_original.png"),
                                      wx.BITMAP_TYPE_PNG)
         else:
             
-            BMP_ROTATE = wx.Bitmap("../icons/tool_rotate.gif",
+            BMP_ROTATE = wx.Bitmap(os.path.join(const.ICON_DIR,
+                                                "tool_rotate.gif"),
                                    wx.BITMAP_TYPE_GIF)
-            BMP_MOVE = wx.Bitmap("../icons/tool_translate.gif",
+            BMP_MOVE = wx.Bitmap(os.path.join(const.ICON_DIR,
+                                              "tool_translate.gif"),
                                    wx.BITMAP_TYPE_GIF)
-            BMP_ZOOM = wx.Bitmap("../icons/tool_zoom.png",
+            BMP_ZOOM = wx.Bitmap(os.path.join(const.ICON_DIR, "tool_zoom.png"),
                                  wx.BITMAP_TYPE_PNG)
-            BMP_ZOOM_SELECT = wx.Bitmap("../icons/tool_zoom_select.png",
+            BMP_ZOOM_SELECT = wx.Bitmap(os.path.join(const.ICON_DIR,
+                                                     "tool_zoom_select.png"),
                                         wx.BITMAP_TYPE_PNG)
-            BMP_CONTRAST = wx.Bitmap("../icons/tool_contrast.png",
+            BMP_CONTRAST = wx.Bitmap(os.path.join(const.ICON_DIR,
+                                                  "tool_contrast.png"),
                                      wx.BITMAP_TYPE_PNG)
 
         self.AddLabelTool(ID_ZOOM,
@@ -524,13 +544,14 @@ class SliceToolBar(wx.ToolBar):
 
     def __init_items(self):
         if sys.platform == 'darwin':
-            BMP_SLICE = wx.Bitmap("../icons/slice_original.png",
+            BMP_SLICE = wx.Bitmap(os.path.join(const.ICON_DIR,
+                                               "slice_original.png"),
                                   wx.BITMAP_TYPE_PNG)
         else:
-            BMP_SLICE = wx.Bitmap("../icons/slice.png",
+            BMP_SLICE = wx.Bitmap(os.path.join(const.ICON_DIR, "slice.png"),
                                   wx.BITMAP_TYPE_PNG)
 
-        BMP_CROSS = wx.Bitmap("../icons/cross.png",
+        BMP_CROSS = wx.Bitmap(os.path.join(const.ICON_DIR, "cross.png"),
                               wx.BITMAP_TYPE_PNG)
 
         self.AddLabelTool(ID_SLICE_SCROLL, "Scroll slice",
@@ -595,15 +616,19 @@ class LayoutToolBar(wx.ToolBar):
 
         if sys.platform == 'darwin':
             BMP_WITHOUT_MENU =\
-            wx.Bitmap("../icons/layout_data_only_original.gif",
+            wx.Bitmap(os.path.join(const.ICON_DIR,
+                                   "layout_data_only_original.gif"),
                                wx.BITMAP_TYPE_GIF)
-            BMP_WITH_MENU = wx.Bitmap("../icons/layout_full_original.gif",
+            BMP_WITH_MENU = wx.Bitmap(os.path.join(const.ICON_DIR,
+                                                   "layout_full_original.gif"),
                                   wx.BITMAP_TYPE_GIF)
 
         else:
-            BMP_WITHOUT_MENU = wx.Bitmap("../icons/layout_data_only.gif",
+            BMP_WITHOUT_MENU = wx.Bitmap(os.path.join(const.ICON_DIR,
+                                                      "layout_data_only.gif"),
                                    wx.BITMAP_TYPE_GIF)
-            BMP_WITH_MENU = wx.Bitmap("../icons/layout_full.gif",
+            BMP_WITH_MENU = wx.Bitmap(os.path.join(const.ICON_DIR,
+                                                   "layout_full.gif"),
                                       wx.BITMAP_TYPE_GIF)
 
         self.AddLabelTool(101, "Full layout", BMP_WITHOUT_MENU, kind = wx.ITEM_RADIO)

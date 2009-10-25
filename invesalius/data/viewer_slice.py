@@ -207,7 +207,8 @@ class Viewer(wx.Panel):
         print "Zoom"
         self.append_mode('ZOOM')
         self.mouse_pressed = 0
-        ICON_IMAGE = wx.Image("../icons/tool_zoom.png",wx.BITMAP_TYPE_PNG)
+        ICON_IMAGE = wx.Image(os.path.join(const.ICON_DIR,
+                                           "tool_zoom.png"),wx.BITMAP_TYPE_PNG)
         self.interactor.SetCursor(wx.CursorFromImage(ICON_IMAGE))
 
     def __set_mode_pan(self, pubsub_evt):
@@ -217,7 +218,8 @@ class Viewer(wx.Panel):
 
     def __set_mode_zoom_select(self, pubsub_evt):
         self.append_mode('ZOOMSELECT')
-        ICON_IMAGE = wx.Image("../icons/tool_zoom.png",wx.BITMAP_TYPE_PNG)
+        ICON_IMAGE = wx.Image(os.path.join(const.ICON_DIR,
+                                           "tool_zoom.png"),wx.BITMAP_TYPE_PNG)
         self.interactor.SetCursor(wx.CursorFromImage(ICON_IMAGE))
 
     def __set_mode_window_level(self, pubsub_evt):
