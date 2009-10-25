@@ -78,15 +78,20 @@ class Frame(wx.Frame):
 
     def __bind_events(self):
         ps.Publisher().subscribe(self.ShowContentPanel, 'Show content panel')
-        ps.Publisher().subscribe(self.ShowImportPanel, "Show import panel")
+        ps.Publisher().subscribe(self.ShowImportPanel, "Show import panel in frame")
         ps.Publisher().subscribe(self.UpdateAui, "Update AUI")
         ps.Publisher().subscribe(self.ShowTask, 'Show task panel')
         ps.Publisher().subscribe(self.HideTask, 'Hide task panel')
         ps.Publisher().subscribe(self.SetProjectName, 'Set project name')
+        ps.Publisher().subscribe(self.ShowContentPanel, 'Cancel DICOM load')
+        ps.Publisher().subscribe(self.HideImportPanel, 'Hide import panel')
 
     def SetProjectName(self, pubsub_evt):
         proj_name = pubsub_evt.data
-        self.SetTitle("InVesalius 3 - %s"%(proj_name))
+        if sys.platform != 'darwin':
+            self.SetTitle("%s - InVesalius 3"%(proj_name))
+        else:
+            self.SetTitle("%s"%(proj_name))
 
     def UpdateAui(self, pubsub_evt):
         self.aui_manager.Update()
@@ -173,8 +178,21 @@ class Frame(wx.Frame):
         aui_manager.GetPane("Tasks").Show(0)
         aui_manager.Update()
 
+    def HideImportPanel(self, evt_pubsub):
+        print "HideImportPanel"
+        path = evt_pubsub.data
+        #ps.Publisher().sendMessage("Load data to import panel", path)
+
+        aui_manager = self.aui_manager
+        aui_manager.GetPane("Import").Show(0)
+        aui_manager.GetPane("Data").Show(0)
+        aui_manager.GetPane("Tasks").Show(1)
+        aui_manager.Update()
+
+
 
     def ShowContentPanel(self, evt_pubsub):
+        print "ShowContentPanel"
         aui_manager = self.aui_manager
         aui_manager.GetPane("Import").Show(0)
         aui_manager.GetPane("Data").Show(1)

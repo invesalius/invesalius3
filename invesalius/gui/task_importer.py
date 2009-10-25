@@ -144,7 +144,7 @@ class InnerTaskPanel(wx.Panel):
 
         if dlg.ShowModal() == wx.ID_OK:
             path = dlg.GetPath()
-            ps.Publisher().sendMessage("Show import panel", path)
+            ps.Publisher().sendMessage("Show import panel in frame", path)
 
         # Only destroy a dialog after you're done with it.
         dlg.Destroy()

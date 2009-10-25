@@ -25,6 +25,7 @@ class Controller():
         self.__bind_events()
         self.frame = frame
         self.progress_dialog = None
+ 
 
     def __bind_events(self):
         ps.Publisher().subscribe(self.OnImportMedicalImages, 'Import directory')
@@ -36,7 +37,12 @@ class Controller():
         ps.Publisher().subscribe(self.OnOpenDicomGroup,
                                  'Open DICOM group')
         ps.Publisher().subscribe(self.Progress, "Update dicom load")
-        ps.Publisher().subscribe(self.LoadPanel, "End dicom load")
+        ps.Publisher().subscribe(self.OnLoadImportPanel, "End dicom load")
+        ps.Publisher().subscribe(self.OnCancelImport, 'Cancel DICOM load')
+        ps.Publisher().subscribe(self.OnLoadImportPanel, "Show import panel in frame")
+
+    def OnCancelImport(self, pubsub_evt):
+        self.cancel_import = True
         
     def StartImportPanel(self, pubsub_evt):
         # path to directory
@@ -69,9 +75,18 @@ class Controller():
             self.progress_dialog.Close()
             self.progress_dialog = None
             
-            
-    def LoadPanel(self,evt):
+    def OnLoadImportPanel(self, evt):
         patient_series = evt.data
+        if not self.cancel_import:
+            print "----- show"
+            self.LoadImportPanel(patient_series)
+            ps.Publisher().sendMessage('Show import panel')
+        else:
+            print "----- hide"
+            self.cancel_import = False
+            ps.Publisher().sendMessage('Hide import panel')
+ 
+    def LoadImportPanel(self, patient_series):
         if patient_series:
             ps.Publisher().sendMessage("Load import panel", patient_series)
             first_patient = patient_series[0]

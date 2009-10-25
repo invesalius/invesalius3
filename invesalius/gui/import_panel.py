@@ -52,7 +52,7 @@ class InnerPanel(wx.Panel):
         
     def __bind_evt(self):
         ps.Publisher().subscribe(self.ShowDicomPreview, "Load import panel")
-        
+    
     def ShowDicomPreview(self, pubsub_evt):
         dicom_groups = pubsub_evt.data
         self.text_panel.Populate(dicom_groups)
@@ -64,7 +64,13 @@ class TextPanel(wx.Panel):
         self.SetBackgroundColour((255,0,0))
         self.Bind(wx.EVT_SIZE, self.OnSize)
         
-        
+        self.__init_gui()
+        self.__bind_evt()
+
+    def __bind_evt(self):
+        ps.Publisher().subscribe(self.SelectSeries, 'Select series in import panel')
+
+    def __init_gui(self):
         tree = gizmos.TreeListCtrl(self, -1, style =
                                         wx.TR_DEFAULT_STYLE
                                         | wx.TR_HIDE_ROOT
@@ -104,6 +110,9 @@ class TextPanel(wx.Panel):
 
         self.root = tree.AddRoot("InVesalius Database")
         self.tree = tree
+
+    def SelectSeries(self, pubsub_evt):
+        group_index = pubsub_evt.data
 
     def Populate(self, patient_list):
         tree = self.tree
@@ -157,25 +166,17 @@ class TextPanel(wx.Panel):
 
 
     def OnSelChanged(self, evt):
-        print "OnLeftUp"
         item = self.tree.GetSelection()
         group = self.tree.GetItemPyData(item)
         if isinstance(group, dcm.DicomGroup):
-            print "     :)"
             ps.Publisher().sendMessage('Load group into import panel',
                                         group)
         elif isinstance(group, dcm.PatientGroup):
-            print "     :) patient"
             ps.Publisher().sendMessage('Load patient into import panel',
                                         group)
 
-        else:
-            print "     :("
-
-
 
     def OnActivate(self, evt):
-        print "OnActivate"
         item = evt.GetItem()
         group = self.tree.GetItemPyData(item)
         if isinstance(group, dcm.DicomGroup):
@@ -189,10 +190,8 @@ class TextPanel(wx.Panel):
 
     def OnSize(self, evt):
         self.tree.SetSize(self.GetSize())
-    
 
 
-    
 class ImagePanel(wx.Panel):
     def __init__(self, parent):
         wx.Panel.__init__(self, parent, -1)
@@ -255,7 +254,6 @@ class SeriesPanel(wx.Panel):
 
     def SetDicomSeries(self, pubsub_evt):
         group = pubsub_evt.data
-        print "X"
         self.dicom_preview.SetDicomGroup(group)
         self.dicom_preview.Show(1)
         self.serie_preview.Show(0)
@@ -264,23 +262,24 @@ class SeriesPanel(wx.Panel):
         
 
     def SetPatientSeries(self, pubsub_evt):
-        print "Z"
         patient = pubsub_evt.data
-
+        
         self.dicom_preview.Show(0)
         self.serie_preview.Show(1)
-
-
+        
+        
         self.serie_preview.SetPatientGroups(patient)
         self.dicom_preview.SetPatientGroups(patient)  
-      
+         
         self.Update()
 
 
     def OnSelectSerie(self, evt):
         serie = evt.GetSelectID()
         self.dicom_preview.SetDicomSerie(serie)
-
+        
+        data = evt.GetItemData()
+        
         self.dicom_preview.Show(1)
         self.serie_preview.Show(0)
         self.sizer.Layout()
@@ -289,7 +288,6 @@ class SeriesPanel(wx.Panel):
 
 
     def ShowDicomSeries(self, pubsub_evt):
-        print "---- ShowDicomSeries ----"
         patient = pubsub_evt.data
         self.serie_preview.SetPatientGroups(patient)
         self.dicom_preview.SetPatientGroups(patient)

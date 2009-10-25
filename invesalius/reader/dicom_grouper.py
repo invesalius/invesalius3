@@ -57,7 +57,11 @@ ORIENT_MAP = {"SAGITTAL":0, "CORONAL":1, "AXIAL":2, "OBLIQUE":2}
 
 
 class DicomGroup:
+
+    general_index = -1
     def __init__(self):
+        DicomGroup.general_index += 1
+        self.index = DicomGroup.general_index
         # key:
         # (dicom.patient.name, dicom.acquisition.id_study,
         #  dicom.acquisition.series_number,

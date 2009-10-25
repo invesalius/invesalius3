@@ -25,6 +25,14 @@ myEVT_SELECT_SERIE = wx.NewEventType()
 # This event occurs when the user select a preview
 EVT_SELECT_SERIE = wx.PyEventBinder(myEVT_SELECT_SERIE, 1)
 
+
+myEVT_CLICK = wx.NewEventType()
+EVT_CLICK = wx.PyEventBinder(myEVT_CLICK, 1)
+
+
+
+
+
 class PreviewEvent(wx.PyCommandEvent):
     def __init__(self , evtType, id):
         wx.PyCommandEvent.__init__(self, evtType, id)
@@ -34,6 +42,12 @@ class PreviewEvent(wx.PyCommandEvent):
 
     def SetSelectedID(self, id):
         self.SelectedID = id
+
+    def GetItemData(self):
+        return self.data
+
+    def SetItemData(self, data):
+        self.data = data
 
 
 class SerieEvent(PreviewEvent):
@@ -47,7 +61,7 @@ class Preview(wx.Panel):
     def __init__(self, parent):
         super(Preview, self).__init__(parent)
         # Will it be white?
-        self.SetBackgroundColour((255, 255, 255))
+        self.select_on = False
         self._init_ui()
         self._init_vtk()
         self._bind_events()
@@ -61,6 +75,8 @@ class Preview(wx.Panel):
                                          style=wx.ALIGN_CENTER)
 
         self.panel = wx.Panel(self, -1)
+
+        self.SetBackgroundColour((255,255,255))
 
         self.sizer = wx.BoxSizer(wx.VERTICAL)
         self.sizer.AddSpacer(2)
@@ -105,16 +121,74 @@ class Preview(wx.Panel):
 
 
     def _bind_events(self):
-        self.Bind( wx.EVT_LEFT_DCLICK, self.OnSelect)
-        self.interactor.Bind( wx.EVT_LEFT_DCLICK, self.OnSelect)
-        self.panel.Bind( wx.EVT_LEFT_DCLICK, self.OnSelect)
-        self.title.Bind( wx.EVT_LEFT_DCLICK, self.OnSelect)
-        self.subtitle.Bind( wx.EVT_LEFT_DCLICK, self.OnSelect)
+        self.Bind( wx.EVT_LEFT_DCLICK, self.OnDClick)
+        self.interactor.Bind( wx.EVT_LEFT_DCLICK, self.OnDClick)
+        self.panel.Bind( wx.EVT_LEFT_DCLICK, self.OnDClick)
+        self.title.Bind( wx.EVT_LEFT_DCLICK, self.OnDClick)
+        self.subtitle.Bind( wx.EVT_LEFT_DCLICK, self.OnDClick)
 
+        self.Bind(wx.EVT_ENTER_WINDOW, self.OnEnter)
+        self.interactor.Bind(wx.EVT_ENTER_WINDOW, self.OnEnter)
+        self.panel.Bind(wx.EVT_ENTER_WINDOW, self.OnEnter)
+        self.title.Bind(wx.EVT_ENTER_WINDOW, self.OnEnter)
+        self.subtitle.Bind(wx.EVT_ENTER_WINDOW, self.OnEnter)
+
+        self.Bind(wx.EVT_LEAVE_WINDOW, self.OnLeave)
+        self.interactor.Bind(wx.EVT_LEAVE_WINDOW, self.OnLeave)
+        self.panel.Bind(wx.EVT_LEAVE_WINDOW, self.OnLeave)
+        self.title.Bind(wx.EVT_LEAVE_WINDOW, self.OnLeave)
+        self.subtitle.Bind(wx.EVT_LEAVE_WINDOW, self.OnLeave)
+
+        self.Bind(wx.EVT_LEFT_DOWN, self.OnSelect)
+        self.interactor.Bind(wx.EVT_LEFT_DOWN, self.OnSelect)
+        self.panel.Bind(wx.EVT_LEFT_DOWN, self.OnSelect)
+        self.title.Bind(wx.EVT_LEFT_DOWN, self.OnSelect)
+        self.subtitle.Bind(wx.EVT_LEFT_DOWN, self.OnSelect)
+
+        
+
+
+    def OnEnter(self, evt):
+        if not self.select_on:
+            #c = wx.SystemSettings_GetColour(wx.SYS_COLOUR_3DHILIGHT)
+            c = wx.SystemSettings_GetColour(wx.SYS_COLOUR_HIGHLIGHT)
+            self.SetBackgroundColour(c)
+
+
+    def OnLeave(self, evt):
+        if not self.select_on:
+            c = (255,255,255)
+            self.SetBackgroundColour(c)
 
     def OnSelect(self, evt):
+        self.select_on = True
+        ##c = wx.SystemSettings_GetColour(wx.SYS_COLOUR_BTNHIGHLIGHT)
+        ##c = wx.SystemSettings_GetColour(wx.SYS_COLOUR_HOTLIGHT)
+        #c = wx.SystemSettings_GetColour(wx.SYS_COLOUR_HIGHLIGHT)
+        ##c = wx.SystemSettings_GetColour(wx.SYS_COLOUR_GRADIENTACTIVECAPTION)
+        #c = wx.SystemSettings_GetColour(wx.SYS_COLOUR_BTNSHADOW)
+        #c = wx.SystemSettings_GetColour(wx.SYS_COLOUR_ACTIVEBORDER)
+        #*c = wx.SystemSettings_GetColour(wx.SYS_COLOUR_3DLIGHT)
+        #*c = wx.SystemSettings_GetColour(wx.SYS_COLOUR_3DHILIGHT)
+        #c = wx.SystemSettings_GetColour(wx.SYS_COLOUR_3DHIGHLIGHT)
+        #c = wx.SystemSettings_GetColour(wx.SYS_COLOUR_3DDKSHADOW)
+        #c = wx.SystemSettings_GetColour(wx.SYS_COLOUR_3DSHADOW)
+        #self.SetBackgroundColour(c)
+        self.Select()
+
+    def Select(self, on=True):
+        self.select_on = on
+        if on:
+            c = wx.SystemSettings_GetColour(wx.SYS_COLOUR_3DHIGHLIGHT)
+        else:
+            c = (255,255,255)
+        self.SetBackgroundColour(c)
+
+
+    def OnDClick(self, evt):
         evt = PreviewEvent(myEVT_SELECT, self.GetId())
         evt.SetSelectedID(self.ID)
+        evt.SetItemData(self.data)
         self.GetEventHandler().ProcessEvent(evt)
 
     def SetTitle(self, title):
@@ -154,6 +228,8 @@ class Preview(wx.Panel):
             #TODO: These values are good?
             level = 230
             window = 150
+
+        self.data = image_file[-1]
         
         cast.SetWindow(window)
         cast.SetLevel(level)
@@ -161,7 +237,87 @@ class Preview(wx.Panel):
         self.render.ResetCamera()
         self.interactor.Render()
 
+    def ShowShadow(self):
+        self._nImgSize = 16
+        nPadding = 4
+        print "ShowShadow"
+        dc = wx.BufferedPaintDC(self)
+        style = self.GetParent().GetWindowStyleFlag()
 
+        backBrush = wx.WHITE_BRUSH
+        if 1: #style & INB_BORDER:
+            borderPen = wx.Pen(wx.SystemSettings_GetColour(wx.SYS_COLOUR_3DSHADOW))
+        #else:
+        #    borderPen = wx.TRANSPARENT_PEN
+
+        size = self.GetSize()
+
+        # Background
+        dc.SetBrush(backBrush)
+
+        borderPen.SetWidth(1)
+        dc.SetPen(borderPen)
+        dc.DrawRectangle(0, 0, size.x, size.y)
+        #bUsePin = (style & INB_USE_PIN_BUTTON and [True] or [False])[0]
+
+        borderPen = wx.BLACK_PEN
+        borderPen.SetWidth(1)
+        dc.SetPen(borderPen)
+        dc.DrawLine(0, size.y, size.x, size.y)
+        dc.DrawPoint(0, size.y)
+
+        clientSize = 0
+        #bUseYcoord = (style & INB_RIGHT or style & INB_LEFT)
+        bUseYcoord = 1
+
+        if bUseYcoord:
+            clientSize = size.GetHeight()
+        else:
+            clientSize = size.GetWidth()
+
+
+        if 1:
+            # Default values for the surronounding rectangle 
+            # around a button
+            rectWidth = self._nImgSize * 2  # To avoid the recangle to 'touch' the borders
+            rectHeight = self._nImgSize * 2
+
+            # Incase the style requires non-fixed button (fit to text)
+            # recalc the rectangle width
+            if 1:
+            #if style & INB_FIT_BUTTON and \
+            #   not ((style & INB_LEFT) or (style & INB_RIGHT)) and \
+            #   not self._pagesInfoVec[i].GetCaption() == "" and \
+            #   not (style & INB_SHOW_ONLY_IMAGES):
+            
+
+                #rectWidth = ((textWidth + nPadding * 2) > rectWidth and [nPadding * 2 + textWidth] or [rectWidth])[0]
+
+                rectWidth = ((nPadding * 2) > rectWidth and [nPadding * 2] or [rectWidth])[0]
+                # Make the width an even number
+                if rectWidth % 2 != 0:
+                    rectWidth += 1
+
+            # If Pin button is used, consider its space as well (applicable for top/botton style)
+            # since in the left/right, its size is already considered in 'pos'
+            #pinBtnSize = (bUsePin and [20] or [0])[0]
+            
+            #if pos + rectWidth + pinBtnSize > clientSize:
+            #    break
+
+            # Calculate the button rectangle
+            modRectWidth =  rectWidth - 2# or [rectWidth])[0]
+            modRectHeight = rectHeight# or [rectHeight - 2])[0]
+
+            pos = rectWidth
+
+            if bUseYcoord:
+                buttonRect = wx.Rect(1, pos, modRectWidth, modRectHeight)
+            else:
+                buttonRect = wx.Rect(pos , 1, modRectWidth, modRectHeight)
+
+    def ShowShadow2(self):
+        pass
 
 
 class DicomPreviewSeries(wx.Panel):
@@ -207,9 +363,15 @@ class DicomPreviewSeries(wx.Panel):
         for i in xrange(NROWS):
             for j in xrange(NCOLS):
                 p = Preview(self)
+                if (i == j == 0):
+                    self._show_shadow(p)
                 #p.Hide()
                 self.previews.append(p)
                 self.grid.Add(p, 1, flag=wx.EXPAND)
+
+    def _show_shadow(self, preview):
+        preview.ShowShadow()
+        
 
     def _bind_events(self):
         # When the user scrolls the window
@@ -219,6 +381,7 @@ class DicomPreviewSeries(wx.Panel):
     def OnSelect(self, evt):
         my_evt = SerieEvent(myEVT_SELECT_SERIE, self.GetId())
         my_evt.SetSelectedID(evt.GetSelectID())
+        my_evt.SetItemData(self.group_list)
         self.GetEventHandler().ProcessEvent(my_evt)
 
     def SetPatientGroups(self, patient):
@@ -226,6 +389,7 @@ class DicomPreviewSeries(wx.Panel):
         self.displayed_position = 0
         self.nhidden_last_display = 0
         group_list = patient.GetGroups()
+        self.group_list = group_list
         print "LEN:", len(group_list)
         n = 0
         for group in group_list:
@@ -234,7 +398,8 @@ class DicomPreviewSeries(wx.Panel):
                     float(group.dicom.image.level),
                     group.title,
                     "%d Images" %(group.nslices),
-                    n)
+                    n,
+                    group_list)
             self.files.append(info)
             n+=1
             
@@ -271,6 +436,7 @@ class DicomPreviewSeries(wx.Panel):
 
 
         for f, p in zip(self.files[initial:final], self.previews):
+            #print "f", f
             p.SetImage(f)
             #p.interactor.Render()
 
@@ -344,6 +510,7 @@ class DicomPreview(wx.Panel):
         self.displayed_position = 0
         self.nhidden_last_display = 0
         group = self.group_list[pos]
+        self.group = group
         #dicom_files = group.GetList()
         dicom_files = group.GetHandSortedList()
         n = 0
@@ -353,7 +520,8 @@ class DicomPreview(wx.Panel):
                     dicom.image.level,
                     "Image %d" % (dicom.image.number),
                     "%.2f" % (dicom.image.position[2]),
-                    n)
+                    n,
+                    dicom)
             self.files.append(info)
             n+=1
 
