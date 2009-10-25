@@ -18,6 +18,7 @@
 #--------------------------------------------------------------------------
 
 import itertools
+import os.path
 
 import vtk
 from vtk.wx.wxVTKRenderWindowInteractor import wxVTKRenderWindowInteractor
