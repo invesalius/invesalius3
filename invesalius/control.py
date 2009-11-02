@@ -159,7 +159,7 @@ class Controller():
         proj.original_orientation =  const.AXIAL
         proj.threshold_range = imagedata.GetScalarRange()
         proj.window = proj.threshold_range[1] - proj.threshold_range[0]
-        proj.level  (0.5 * (proj.threshold_range[1] + proj.threshold_range[0]))
+        proj.level =  (0.5 * (proj.threshold_range[1] + proj.threshold_range[0]))
 
         const.THRESHOLD_OUTVALUE = proj.threshold_range[0]
         const.THRESHOLD_INVALUE = proj.threshold_range[1]
