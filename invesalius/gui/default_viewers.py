@@ -344,11 +344,8 @@ class VolumeToolPanel(wx.Panel):
         button_slice_plane = self.button_slice_plane = pbtn.PlateButton(self, BUTTON_SLICE_PLANE,"",
         BMP_SLICE_PLANE, style=pbtn.PB_STYLE_SQUARE,
         size=(24,24))
-        button_slice_plane.Bind(wx.EVT_LEFT_DOWN, self.OnButtonSlicePlane)
         
         self.button_raycasting = button_raycasting
-        self.button_raycasting.Bind(wx.EVT_LEFT_DOWN, self.OnButtonRaycasting)
-
 
         # VOLUME VIEW ANGLE BUTTON
         BMP_FRONT = wx.Bitmap(ID_TO_BMP[const.VOL_FRONT][1],
@@ -357,7 +354,6 @@ class VolumeToolPanel(wx.Panel):
                                         BMP_FRONT, size=(24,24),
                                         style=pbtn.PB_STYLE_SQUARE)
         self.button_view = button_view
-        self.button_view.Bind(wx.EVT_LEFT_DOWN, self.OnButtonView)
 
         # VOLUME COLOUR BUTTON
         if sys.platform == 'linux2':
@@ -369,11 +365,7 @@ class VolumeToolPanel(wx.Panel):
 
         button_colour= csel.ColourSelect(self, 111,colour=(0,0,0),
                                         size=size)
-        button_colour.Bind(csel.EVT_COLOURSELECT, self.OnSelectColour)
         self.button_colour = button_colour
-
-        save_preset = wx.Button(self, -1, "S", size=size)
-        self.save_preset = save_preset
 
         # SIZER TO ORGANIZE ALL
         sizer = wx.BoxSizer(wx.VERTICAL)
@@ -381,7 +373,6 @@ class VolumeToolPanel(wx.Panel):
         sizer.Add(button_raycasting, 0, wx.TOP|wx.BOTTOM, 1)
         sizer.Add(button_view, 0, wx.TOP|wx.BOTTOM, 1)
         sizer.Add(button_slice_plane, 0, wx.TOP|wx.BOTTOM, 1)
-        sizer.Add(save_preset, 0, wx.TOP|wx.BOTTOM, 1)
 
         sizer.Fit(self)
 
@@ -399,7 +390,10 @@ class VolumeToolPanel(wx.Panel):
                                  'Change volume viewer gui colour')
 
     def __bind_events_wx(self):
-        self.save_preset.Bind(wx.EVT_BUTTON, self.OnSavePreset)
+        self.button_slice_plane.Bind(wx.EVT_LEFT_DOWN, self.OnButtonSlicePlane)
+        self.button_raycasting.Bind(wx.EVT_LEFT_DOWN, self.OnButtonRaycasting)
+        self.button_view.Bind(wx.EVT_LEFT_DOWN, self.OnButtonView)
+        self.button_colour.Bind(csel.EVT_COLOURSELECT, self.OnSelectColour)
 
     def OnButtonRaycasting(self, evt):
         # MENU RELATED TO RAYCASTING TYPES
