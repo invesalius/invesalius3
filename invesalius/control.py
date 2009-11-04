@@ -59,7 +59,7 @@ class Controller():
         ps.Publisher().subscribe(self.Progress, "Update dicom load")
         ps.Publisher().subscribe(self.OnLoadImportPanel, "End dicom load")
         ps.Publisher().subscribe(self.OnCancelImport, 'Cancel DICOM load')
-        ps.Publisher().subscribe(self.OnLoadImportPanel, "Show import panel in frame")
+        #ps.Publisher().subscribe(self.OnLoadImportPanel, "Show import panel in frame")
 
     def OnCancelImport(self, pubsub_evt):
         self.cancel_import = True
@@ -98,7 +98,6 @@ class Controller():
     def OnLoadImportPanel(self, evt):
         patient_series = evt.data
         if not self.cancel_import:
-            print "----- show"
             self.LoadImportPanel(patient_series)
             ps.Publisher().sendMessage('Show import panel')
         else:
