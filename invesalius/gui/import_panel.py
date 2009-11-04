@@ -72,7 +72,7 @@ class InnerPanel(wx.Panel):
         ps.Publisher().subscribe(self.ShowDicomPreview, "Load import panel")
     
     def ShowDicomPreview(self, pubsub_evt):
-        dicom_groups = pubsub_evt.data
+        dicom_groups = pubsub_evt.data        
         self.text_panel.Populate(dicom_groups)
         
         

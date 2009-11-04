@@ -30,10 +30,6 @@ import default_tasks as tasks
 import default_viewers as viewers
 import import_panel as imp
 
-# File toolbar
-[ID_FILE_IMPORT, ID_FILE_LOAD_INTERNET, ID_FILE_SAVE, ID_FILE_PHOTO,
-ID_FILE_PRINT] = [wx.NewId() for number in range(5)]
-
 # Object toolbar
 OBJ_TOOLS = [ID_ZOOM, ID_ZOOM_SELECT, ID_ROTATE, ID_MOVE, 
 ID_CONTRAST] = [wx.NewId() for number in range(5)]
@@ -98,7 +94,8 @@ class Frame(wx.Frame):
 
     def __bind_events_wx(self):
         self.Bind(wx.EVT_SIZE, self.OnSize)
-
+        self.Bind(wx.EVT_MENU, self.OnMenuClick)
+    
     def __init_aui(self):
 
         # Tell aui_manager to manage this frame
@@ -202,6 +199,10 @@ class Frame(wx.Frame):
     def OnSize(self, evt):
        ps.Publisher().sendMessage(('ProgressBar Reposition'))
        evt.Skip()
+       
+    def OnMenuClick(self, evt):
+        ps.Publisher().sendMessage(("Run menu item",
+                                    str(evt.GetId())))
     
     def ShowTask(self, pubsub_evt):
         self.aui_manager.GetPane("Tasks").Show()
@@ -232,7 +233,7 @@ class MenuBar(wx.MenuBar):
     def __init_items(self):
 
         file_menu = wx.Menu()
-        file_menu.Append(ID_FILE_IMPORT, "Import...")
+        file_menu.Append(const.ID_FILE_IMPORT, "Import...")
         file_menu.Append(101, "Exit")
 
         view_menu = wx.Menu()
@@ -416,19 +417,19 @@ class ProjectToolBar(wx.ToolBar):
             BMP_PHOTO = wx.Bitmap(os.path.join(const.ICON_DIR, "tool_photo.png"),
                                    wx.BITMAP_TYPE_PNG)
 
-        self.AddLabelTool(ID_FILE_IMPORT,
+        self.AddLabelTool(const.ID_FILE_IMPORT,
                            "Import medical image...",
                            BMP_IMPORT)
-        self.AddLabelTool(ID_FILE_LOAD_INTERNET,
+        self.AddLabelTool(const.ID_FILE_LOAD_INTERNET,
                            "Load medical image...",
                            BMP_NET)
-        self.AddLabelTool(ID_FILE_SAVE,
+        self.AddLabelTool(const.ID_FILE_SAVE,
                            "Save InVesalius project",
                            BMP_SAVE)
-        self.AddLabelTool(ID_FILE_PHOTO,
+        self.AddLabelTool(const.ID_FILE_PHOTO,
                            "Take photo of screen",
                            BMP_PHOTO)
-        self.AddLabelTool(ID_FILE_PRINT,
+        self.AddLabelTool(const.ID_FILE_PRINT,
                            "Print medical image...",
                            BMP_PRINT)
 

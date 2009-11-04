@@ -271,3 +271,11 @@ IMAGE_TILING = {"1 x 1":(1,1), "1 x 2":(1,2),
                 "4 x 5":(4,5), "5 x 4":(5,4)}
 
 VTK_WARNING = 0
+
+#----------------------------------------------------------
+
+[ID_FILE_IMPORT, ID_FILE_LOAD_INTERNET, ID_FILE_SAVE, ID_FILE_PHOTO,
+ID_FILE_PRINT] = [wx.NewId() for number in range(5)]
+
+
+

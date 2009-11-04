@@ -21,6 +21,7 @@ import wx
 import wx.lib.hyperlink as hl
 import wx.lib.platebtn as pbtn
 import wx.lib.pubsub as ps
+import constants as const
 
 BTN_IMPORT_LOCAL = wx.NewId()
 BTN_IMPORT_PACS = wx.NewId()
@@ -134,7 +135,8 @@ class InnerTaskPanel(wx.Panel):
         # Test load and unload specific projects' links
         self.TestLoadProjects()
         #self.UnloadProjects()
-
+        ps.Publisher().subscribe(self.OnLinkImport,("Run menu item",
+                                        str(const.ID_FILE_IMPORT)))
 
     def OnLinkImport(self, evt=None):
         dlg = wx.DirDialog(self, "Choose a directory:", "",
@@ -148,10 +150,13 @@ class InnerTaskPanel(wx.Panel):
 
         # Only destroy a dialog after you're done with it.
         dlg.Destroy()
-
-        if evt:
-            evt.Skip()
-
+        
+        try:
+            if evt:
+                evt.Skip()
+        except(AttributeError):
+            pass
+            
     def OnLinkImportPACS(self, evt=None):
         print "TODO: Send Signal - Import DICOM files from PACS"
         if evt:
