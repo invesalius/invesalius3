@@ -43,11 +43,8 @@ never, ever, can min > max or max < min
 # Change combo_thresh value according to mask selected / define a good treatment
 # for "Custom"
 
-# Develop tool similar to mimics, in order to show where user has clicked
-both on volume, axial, coronal and sagital
-
-# Develop import interface - see how mimics, osirix and others behave
-# a good start could be a sort of wizard, similar to wifi on macos
+# Develop import interface - a good start could be a sort of wizard, similar
+# to wifi on macos
 
 # Change references of AXIAL, SAGITAL, etc.. for constants
 
