@@ -385,16 +385,17 @@ class Volume():
         self.volume_properties.SetSpecular(shading['specular'])
         self.volume_properties.SetSpecularPower(shading['specularPower'])
 
-    def ApplyConvolution(self, imagedata):
+    def ApplyConvolution(self, imagedata, update_progress = None):
         number_filters = len(self.config['convolutionFilters'])
         if number_filters:
-            update_progress= vtk_utils.ShowProgress(number_filters)
+            if not(update_progress):
+                update_progress = vtk_utils.ShowProgress(number_filters)
             for filter in self.config['convolutionFilters']:
                 convolve = vtk.vtkImageConvolve()
                 convolve.SetInput(imagedata)
                 convolve.SetKernel5x5([i/60.0 for i in Kernels[filter]])
                 convolve.AddObserver("ProgressEvent", lambda obj,evt:
-                                     update_progress(convolve, "%s ..." % filter))
+                                     update_progress(convolve, "Rendering..."))
                 imagedata = convolve.GetOutput()
                 #convolve.GetOutput().ReleaseDataFlagOn()
         return imagedata
@@ -402,8 +403,9 @@ class Volume():
     def LoadVolume(self):
         proj = prj.Project()
         image = proj.imagedata
-
-        update_progress= vtk_utils.ShowProgress(4)
+        
+        number_filters = len(self.config['convolutionFilters'])
+        update_progress= vtk_utils.ShowProgress(2 + number_filters)
 
         # Flip original vtkImageData
         flip = vtk.vtkImageFlip()
@@ -411,7 +413,7 @@ class Volume():
         flip.SetFilteredAxis(1)
         flip.FlipAboutOriginOn()
         flip.AddObserver("ProgressEvent", lambda obj,evt:
-                            update_progress(flip, "Fliping ..."))
+                            update_progress(flip, "Rendering..."))
         flip.Update()
         
         image = flip.GetOutput()
@@ -424,7 +426,7 @@ class Volume():
         cast.SetShift(abs(scale[0]))
         cast.SetOutputScalarTypeToUnsignedShort()
         cast.AddObserver("ProgressEvent", lambda obj,evt:
-                            update_progress(cast, "Casting ..."))
+                            update_progress(cast, "Rendering..."))
         cast.Update()
         image2 = cast
         self.imagedata = image2
@@ -434,7 +436,9 @@ class Volume():
         else:
             self.Create8bColorTable(scale)
             self.Create8bOpacityTable(scale)
-        image2 = self.ApplyConvolution(image2.GetOutput())
+            
+            
+        image2 = self.ApplyConvolution(image2.GetOutput(), update_progress)
         self.final_imagedata = image2
 
         composite_function = vtk.vtkVolumeRayCastCompositeFunction()
@@ -449,21 +453,21 @@ class Volume():
         if const.TYPE_RAYCASTING_MAPPER:
             volume_mapper = vtk.vtkVolumeRayCastMapper()
             #volume_mapper.AutoAdjustSampleDistancesOff()
-            volume_mapper.SetInput(image2)
+            #volume_mapper.SetInput(image2)
             volume_mapper.SetVolumeRayCastFunction(composite_function)
             #volume_mapper.SetGradientEstimator(gradientEstimator)
             volume_mapper.IntermixIntersectingGeometryOn()
         else:
             volume_mapper = vtk.vtkFixedPointVolumeRayCastMapper()
             #volume_mapper.AutoAdjustSampleDistancesOff()
-            volume_mapper.SetInput(image2)
+            
             volume_mapper.IntermixIntersectingGeometryOn()
             #volume_mapper.SetBlendModeToMaximumIntensity()
-
-        volume_mapper.AddObserver("ProgressEvent", lambda obj,evt:
-                                  update_progress(volume_mapper, "Mapper ..."))
+        volume_mapper.SetInput(image2)
         self.volume_mapper = volume_mapper
-
+        
+        
+        
         # TODO: Look to this
         #volume_mapper_hw = vtk.vtkVolumeTextureMapper3D()
         #volume_mapper_hw.SetInput(image2)
@@ -496,14 +500,12 @@ class Volume():
         volume_mapper.SetImageSampleDistance(0.25)
         volume_mapper.SetSampleDistance(pix_diag / 5.0)
         volume_properties.SetScalarOpacityUnitDistance(pix_diag)
-
+        
         self.volume_properties = volume_properties
 
         volume = vtk.vtkVolume()
         volume.SetMapper(volume_mapper)
         volume.SetProperty(volume_properties)
-        volume.AddObserver("ProgressEvent", lambda obj,evt:
-            update_progress(volume, "Volume ..."))
         self.volume = volume
         
         colour = self.GetBackgroundColour()
@@ -511,6 +513,7 @@ class Volume():
         ps.Publisher().sendMessage('Load volume into viewer',
                                     (volume, colour, (self.ww, self.wl)))
 
+        
     def OnEnableTool(self, pubsub_evt):
         print "OnEnableTool"
         tool_name, enable = pubsub_evt.data
