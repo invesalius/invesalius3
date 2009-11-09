@@ -122,6 +122,7 @@ class Frame(wx.Frame):
 
         aui_manager.AddPane(imp.Panel(self), wx.aui.AuiPaneInfo().
                           Name("Import").Centre().Hide().
+                          MaximizeButton(True).Floatable(True).
                           Caption("Preview medical data to be reconstructed").
                           CaptionVisible(True))
 

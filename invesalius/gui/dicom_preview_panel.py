@@ -22,14 +22,15 @@
 
 #TODO: To create a beautiful API
 import wx
+import wx.lib.agw.buttonpanel as bp
 import vtk
+from vtk.wx.wxVTKRenderWindowInteractor import wxVTKRenderWindowInteractor
 import vtkgdcm
 
-import wx.lib.agw.buttonpanel as bp
-from vtk.wx.wxVTKRenderWindowInteractor import wxVTKRenderWindowInteractor
+
+import constants as const
 from reader import dicom_reader
-
-
+import data.vtk_utils as vtku
 
 NROWS = 3
 NCOLS = 6
@@ -48,7 +49,105 @@ EVT_SELECT_SERIE = wx.PyEventBinder(myEVT_SELECT_SERIE, 1)
 myEVT_CLICK = wx.NewEventType()
 EVT_CLICK = wx.PyEventBinder(myEVT_CLICK, 1)
 
+class SingleImagePreview(wx.Panel):
+    def __init__(self, parent):
+        wx.Panel.__init__(self, parent, -1)
+        self.__init_vtk()
+        self.filelist = []
+        self.current_index = 0
+        self.window_width = const.WINDOW_LEVEL["Bone"][0]
+        self.window_level = const.WINDOW_LEVEL["Bone"][1]
 
+    def __init_vtk(self):
+        actor = vtk.vtkImageActor()
+        self.actor = actor
+
+        LEFT_UP = (X, Y) = const.TEXT_POSITION
+        text_image_size = vtku.Text()
+        text_image_size.SetPosition(LEFT_UP)
+        text_image_size.SetValue("IMAGE SIZE")
+
+        LEFT_DOWN = (X, 1-Y)
+        text_image_location = vtku.Text()
+        text_image_location.SetVerticalJustificationToBottom()
+        text_image_location.SetPosition(LEFT_DOWN)
+        text_image_location.SetValue("IMAGE LOCAL")
+
+        value = "ID PATIENT\n TEST"
+        RIGHT_UP = (1-X, Y)
+        text_patient = vtku.Text()
+        text_patient.SetJustificationToRight()
+        text_patient.SetPosition(RIGHT_UP)
+        text_patient.SetValue(value)
+
+        value = "DATE\n Made in InVesalius"
+        RIGHT_DOWN = (1-X, 1-Y)
+        text_acquisition = vtku.Text()
+        text_acquisition.SetJustificationToRight()
+        text_acquisition.SetVerticalJustificationToBottom()
+        text_acquisition.SetPosition(RIGHT_DOWN)
+        text_acquisition.SetValue(value)
+
+        renderer = vtk.vtkRenderer()
+        renderer.AddActor(actor)
+        renderer.AddActor(text_image_size.actor)
+        renderer.AddActor(text_image_location.actor)
+        renderer.AddActor(text_patient.actor)
+        renderer.AddActor(text_acquisition.actor)
+        self.renderer = renderer
+
+        style = vtk.vtkInteractorStyleImage()
+
+        interactor = wxVTKRenderWindowInteractor(self, -1,
+                                    size=wx.Size(400,400))
+        interactor.GetRenderWindow().AddRenderer(renderer)
+        interactor.SetInteractorStyle(style)
+        interactor.Render()
+        self.interactor = interactor
+
+        sizer = wx.BoxSizer(wx.VERTICAL)
+        sizer.Add(interactor, 1, wx.GROW|wx.EXPAND)
+        sizer.Fit(self)
+        self.SetSizer(sizer)
+        self.Layout()
+        self.Update()
+        self.SetAutoLayout(1)
+        
+
+    def SetDicomGroup(self, group):
+        self.dicom_list = group.GetHandSortedList()
+        self.current_index = 0
+        self.ShowSlice()
+
+    def ShowSlice(self):
+        index = self.current_index
+        dicom = self.dicom_list[index]
+        
+        filename = dicom.image.file
+        window_level = dicom.image.level
+        window_width = dicom.image.window
+
+        reader = vtkgdcm.vtkGDCMImageReader()
+        reader.SetFileName(filename)
+
+        colorer = vtk.vtkImageMapToWindowLevelColors()
+        colorer.SetInput(reader.GetOutput())
+        colorer.SetWindow(float(window_width))
+        colorer.SetLevel(float(window_level))
+
+        a = vtkgdcm.vtkImageColorViewer()
+        a.SetInput(colorer.GetOutput())
+        #a.SetColorWindow(200)
+        #a.SetColorLevel(100)
+        a.Render()
+        import time
+        time.sleep(5)
+
+
+        self.actor.SetInput(colorer.GetOutput())
+        #self.actor.SetInput(reader.GetOutput())
+        self.renderer.ResetCamera()
+        self.interactor.Render()
 
 
 

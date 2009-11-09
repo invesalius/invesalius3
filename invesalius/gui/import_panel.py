@@ -318,4 +318,48 @@ class SeriesPanel(wx.Panel):
 class SlicePanel(wx.Panel):
     def __init__(self, parent):
         wx.Panel.__init__(self, parent, -1)
+        self.__init_gui()
+        self.__bind_evt()
+
+    def __bind_evt(self):
+        ps.Publisher().subscribe(self.ShowDicomSeries, 'Load dicom preview')
+        ps.Publisher().subscribe(self.SetDicomSeries, 'Load group into import panel')
+        ps.Publisher().subscribe(self.SetPatientSeries, 'Load patient into import panel')
+
+    def __init_gui(self):
         self.SetBackgroundColour((255,255,255))
+        print "----------------------------"
+        self.dicom_preview = dpp.SingleImagePreview(self)
+
+        sizer = wx.BoxSizer(wx.VERTICAL)
+        sizer.Add(self.dicom_preview, 1, wx.GROW|wx.EXPAND)
+        sizer.Fit(self)
+        self.SetSizer(sizer)
+        self.Layout()
+        self.Update()
+        self.SetAutoLayout(1)
+        self.sizer = sizer
+
+    def SetPatientSeries(self, pubsub_evt):
+        patient = pubsub_evt.data
+        group = patient.GetGroups()[0]
+        self.dicom_preview.SetDicomGroup(group)
+        self.sizer.Layout()
+        self.Update()
+        
+
+    def SetDicomSeries(self, pubsub_evt):
+        group = pubsub_evt.data
+        self.dicom_preview.SetDicomGroup(group)
+        self.sizer.Layout()
+        self.Update()
+
+
+    def ShowDicomSeries(self, pubsub_evt):
+        patient = pubsub_evt.data
+        group = patient.GetGroups()[0]
+        self.dicom_preview.SetDicomGroup(group)
+        self.sizer.Layout()
+        self.Update() 
+
+

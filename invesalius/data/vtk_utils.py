@@ -113,7 +113,15 @@ class Text(object):
         self.mapper.SetInput(str(value))
 
     def SetPosition(self, position):
-        self.actor.SetPositionCoordinate().SetValue(position)
+        self.actor.GetPositionCoordinate().SetValue(position[0],
+                                                    position[1])
+
+    def SetJustificationToRight(self):
+        self.property.SetJustificationToRight()
+
+    def SetVerticalJustificationToBottom(self):
+        self.property.SetVerticalJustificationToBottom()
+
 
     def Show(self, value=1):
         if value:
