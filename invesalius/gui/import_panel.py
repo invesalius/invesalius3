@@ -137,6 +137,8 @@ class TextPanel(wx.Panel):
         
         first = 0
         for patient in patient_list:
+            if not isinstance(patient, dcm.PatientGroup):
+                return None
             ngroups = patient.ngroups
             dicom = patient.GetDicomSample()
             title = dicom.patient.name + " (%d series)"%(ngroups)
@@ -307,9 +309,10 @@ class SeriesPanel(wx.Panel):
 
     def ShowDicomSeries(self, pubsub_evt):
         patient = pubsub_evt.data
-        self.serie_preview.SetPatientGroups(patient)
-        self.dicom_preview.SetPatientGroups(patient)
-        
+        if isinstance(patient, dcm.PatientGroup):        
+            self.serie_preview.SetPatientGroups(patient)
+            self.dicom_preview.SetPatientGroups(patient)
+            
 
 
 class SlicePanel(wx.Panel):
