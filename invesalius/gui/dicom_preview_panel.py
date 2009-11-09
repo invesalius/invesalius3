@@ -37,21 +37,15 @@ NCOLS = 6
 MAX_VALUE = NCOLS*NROWS
 
 
-myEVT_SELECT = wx.NewEventType()
-# This event occurs when the user select a preview
-EVT_SELECT = wx.PyEventBinder(myEVT_SELECT, 1)
-
-myEVT_SELECT_SERIE = wx.NewEventType()
-# This event occurs when the user select a preview
-EVT_SELECT_SERIE = wx.PyEventBinder(myEVT_SELECT_SERIE, 1)
-
-
-myEVT_CLICK = wx.NewEventType()
-EVT_CLICK = wx.PyEventBinder(myEVT_CLICK, 1)
+STR_SIZE = "Image size: %d x %d"
+STR_LOCAL = "Location: %.2f"
+STR_PATIENT = "%s\n%s"
+STR_ACQ = "%s %s\nMade in InVesalius"
 
 class SingleImagePreview(wx.Panel):
     def __init__(self, parent):
         wx.Panel.__init__(self, parent, -1)
+        self.__init_gui()
         self.__init_vtk()
         self.filelist = []
         self.current_index = 0
@@ -65,28 +59,32 @@ class SingleImagePreview(wx.Panel):
         LEFT_UP = (X, Y) = const.TEXT_POSITION
         text_image_size = vtku.Text()
         text_image_size.SetPosition(LEFT_UP)
-        text_image_size.SetValue("IMAGE SIZE")
+        text_image_size.SetValue("image size")
+        self.text_image_size = text_image_size
 
         LEFT_DOWN = (X, 1-Y)
         text_image_location = vtku.Text()
         text_image_location.SetVerticalJustificationToBottom()
         text_image_location.SetPosition(LEFT_DOWN)
-        text_image_location.SetValue("IMAGE LOCAL")
-
-        value = "ID PATIENT\n TEST"
+        text_image_location.SetValue("localization")
+        self.text_image_location = text_image_location
+        
+        value = "id\nprotocol"
         RIGHT_UP = (1-X, Y)
         text_patient = vtku.Text()
         text_patient.SetJustificationToRight()
         text_patient.SetPosition(RIGHT_UP)
         text_patient.SetValue(value)
-
-        value = "DATE\n Made in InVesalius"
+        self.text_patient = text_patient
+        
+        value = "date time\n Made in InVesalius"
         RIGHT_DOWN = (1-X, 1-Y)
         text_acquisition = vtku.Text()
         text_acquisition.SetJustificationToRight()
         text_acquisition.SetVerticalJustificationToBottom()
         text_acquisition.SetPosition(RIGHT_DOWN)
         text_acquisition.SetValue(value)
+        self.text_acquisition = text_acquisition
 
         renderer = vtk.vtkRenderer()
         renderer.AddActor(actor)
@@ -98,8 +96,8 @@ class SingleImagePreview(wx.Panel):
 
         style = vtk.vtkInteractorStyleImage()
 
-        interactor = wxVTKRenderWindowInteractor(self, -1,
-                                    size=wx.Size(400,400))
+        interactor = wxVTKRenderWindowInteractor(self.panel, -1,
+                                    size=wx.Size(380,380))
         interactor.GetRenderWindow().AddRenderer(renderer)
         interactor.SetInteractorStyle(style)
         interactor.Render()
@@ -107,7 +105,23 @@ class SingleImagePreview(wx.Panel):
 
         sizer = wx.BoxSizer(wx.VERTICAL)
         sizer.Add(interactor, 1, wx.GROW|wx.EXPAND)
+        sizer.Fit(self.panel)
+        self.panel.SetSizer(sizer)
+        self.Layout()
+        self.Update()
+
+
+    def __init_gui(self):
+        self.panel = wx.Panel(self, -1)
+        self.slider = wx.Slider(self, 100, 25, 1, 100, (30, 60), (250, -1), 
+                                wx.SL_HORIZONTAL | wx.SL_AUTOTICKS)
+        self.slider.SetTickFreq(1, 1)
+    
+        sizer = wx.BoxSizer(wx.VERTICAL)
+        sizer.Add(self.panel, 20, wx.GROW|wx.EXPAND)
+        sizer.Add(self.slider, 1, wx.GROW|wx.EXPAND)
         sizer.Fit(self)
+
         self.SetSizer(sizer)
         self.Layout()
         self.Update()
@@ -123,33 +137,55 @@ class SingleImagePreview(wx.Panel):
         index = self.current_index
         dicom = self.dicom_list[index]
         
-        filename = dicom.image.file
-        window_level = dicom.image.level
-        window_width = dicom.image.window
+        # UPDATE GUI
+        ## Text related to size
+        value = STR_SIZE %(dicom.image.size[0], dicom.image.size[1])
+        self.text_image_size.SetValue(value)
 
+        ## Text related to slice position
+        value = STR_LOCAL %(dicom.image.position[2])
+        self.text_image_location.SetValue(value)
+
+        ## Text related to patient/ acquisiiton data
+        value = STR_PATIENT %(dicom.patient.id,\
+                              dicom.acquisition.protocol_name)
+        self.text_patient.SetValue(value)
+
+        ## Text related to acquisition date and time
+        value = STR_ACQ % (dicom.acquisition.date,
+                            dicom.acquisition.time)
+        self.text_acquisition.SetValue(value)
+
+        # READ FILE
+        filename = dicom.image.file
         reader = vtkgdcm.vtkGDCMImageReader()
         reader.SetFileName(filename)
 
-        #colorer = vtk.vtkImageMapToWindowLevelColors()
-        #colorer.SetInput(reader.GetOutput())
-        #colorer.SetWindow(float(window_width))
-        #colorer.SetLevel(float(window_level))
+        # ADJUST CONTRAST
+        window_level = dicom.image.level
+        window_width = dicom.image.window
+        colorer = vtk.vtkImageMapToWindowLevelColors()
+        colorer.SetInput(reader.GetOutput())
+        colorer.SetWindow(float(window_width))
+        colorer.SetLevel(float(window_level))
 
-        a = vtkgdcm.vtkImageColorViewer()
-        a.SetInput(reader.GetOutput())
-        a.SetColorWindow(float(window_width))
-        a.SetColorLevel(float(window_level))
-        a.Render()
-        import time
-        time.sleep(5)
-
-
-        #self.actor.SetInput(colorer.GetOutput())
-        self.actor.SetInput(reader.GetOutput())
+        # PLOT IMAGE INTO VIEWER
+        self.actor.SetInput(colorer.GetOutput())
         self.renderer.ResetCamera()
         self.interactor.Render()
 
 
+
+myEVT_SELECT = wx.NewEventType()
+# This event occurs when the user select a preview
+EVT_SELECT = wx.PyEventBinder(myEVT_SELECT, 1)
+
+myEVT_SELECT_SERIE = wx.NewEventType()
+# This event occurs when the user select a preview
+EVT_SELECT_SERIE = wx.PyEventBinder(myEVT_SELECT_SERIE, 1)
+
+myEVT_CLICK = wx.NewEventType()
+EVT_CLICK = wx.PyEventBinder(myEVT_CLICK, 1)
 
 class PreviewEvent(wx.PyCommandEvent):
     def __init__(self , evtType, id):
@@ -508,7 +544,6 @@ class DicomPreviewSeries(wx.Panel):
         self.nhidden_last_display = 0
         group_list = patient.GetGroups()
         self.group_list = group_list
-        print "LEN:", len(group_list)
         n = 0
         for group in group_list:
             info = (group.dicom.image.file,
@@ -530,11 +565,9 @@ class DicomPreviewSeries(wx.Panel):
     def _display_previews(self):
         initial = self.displayed_position * NCOLS
         final = initial + MAX_VALUE
-        print "len:", len(self.files)
     
         if len(self.files) < final:
             for i in xrange(final-len(self.files)):
-                print "hide ", i
                 try:
                     self.previews[-i-1].Hide()
                 except IndexError:

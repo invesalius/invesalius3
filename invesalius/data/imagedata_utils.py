@@ -173,13 +173,24 @@ def Read(filename):
 def View(imagedata):
     viewer = vtk.vtkImageViewer()
     viewer.SetInput(imagedata)
-    viewer.SetZSlice(10)
     viewer.SetColorWindow(200)
     viewer.SetColorLevel(100)
     viewer.Render()
     
     import time
     time.sleep(10)
+
+def ViewGDCM(imagedata):
+    viewer = vtkgdcm.vtkImageColorViewer()
+    viewer.SetInput(reader.GetOutput())
+    viewer.SetColorWindow(500.)
+    viewer.SetColorLevel(50.)
+    viewer.Render()
+    
+    import time
+    time.sleep(5)
+
+
     
 def ExtractVOI(imagedata,xi,xf,yi,yf,zi,zf):
     """
