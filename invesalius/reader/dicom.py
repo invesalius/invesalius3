@@ -1819,6 +1819,7 @@ class Image(object):
         self.file = parser.filename
         self.time = parser.GetImageTime()
         self.type = parser.GetImageType()
+        self.size = (parser.GetDimensionX(), parser.GetDimensionY())
         
         if (parser.GetImageThickness()):
             try:
