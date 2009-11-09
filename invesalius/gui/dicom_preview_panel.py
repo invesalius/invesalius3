@@ -130,22 +130,22 @@ class SingleImagePreview(wx.Panel):
         reader = vtkgdcm.vtkGDCMImageReader()
         reader.SetFileName(filename)
 
-        colorer = vtk.vtkImageMapToWindowLevelColors()
-        colorer.SetInput(reader.GetOutput())
-        colorer.SetWindow(float(window_width))
-        colorer.SetLevel(float(window_level))
+        #colorer = vtk.vtkImageMapToWindowLevelColors()
+        #colorer.SetInput(reader.GetOutput())
+        #colorer.SetWindow(float(window_width))
+        #colorer.SetLevel(float(window_level))
 
         a = vtkgdcm.vtkImageColorViewer()
-        a.SetInput(colorer.GetOutput())
-        #a.SetColorWindow(200)
-        #a.SetColorLevel(100)
+        a.SetInput(reader.GetOutput())
+        a.SetColorWindow(float(window_width))
+        a.SetColorLevel(float(window_level))
         a.Render()
         import time
         time.sleep(5)
 
 
-        self.actor.SetInput(colorer.GetOutput())
-        #self.actor.SetInput(reader.GetOutput())
+        #self.actor.SetInput(colorer.GetOutput())
+        self.actor.SetInput(reader.GetOutput())
         self.renderer.ResetCamera()
         self.interactor.Render()
 
