@@ -51,7 +51,9 @@ def SelectLargerDicomGroup(patient_group):
         group_list = patient.GetGroups()
         for group in group_list:
             if group.nslices > maxslices:
+                maxslices = group.nslices
                 larger_group = group
+    
     return larger_group
 
 def SortFiles(filelist, dicom):
