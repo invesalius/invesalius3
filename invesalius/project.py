@@ -90,6 +90,8 @@ class Project(object):
         self.debug = 0
         self.version = "$Revision$"
 
+        print self.version
+
     ####### MASK OPERATIONS
 
     def AddMask(self, index, mask):
