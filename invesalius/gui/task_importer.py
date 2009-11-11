@@ -17,10 +17,13 @@
 #    detalhes.
 #--------------------------------------------------------------------------
 import os
+import sys
+
 import wx
 import wx.lib.hyperlink as hl
 import wx.lib.platebtn as pbtn
 import wx.lib.pubsub as ps
+
 import constants as const
 
 BTN_IMPORT_LOCAL = wx.NewId()
@@ -166,8 +169,12 @@ class InnerTaskPanel(wx.Panel):
         if proj_name:
             print "TODO: Send Signal - Open project "+ proj_name
         else:
+            if sys.platform == 'win32':
+                path = ""
+            else:
+                path = os.getcwd()
             dlg = wx.FileDialog(self, message="Open project...",
-                                defaultDir=os.getcwd(),
+                                defaultDir=path,
                                 defaultFile="", wildcard=WILDCARD_OPEN,
                                 style=wx.OPEN|wx.CHANGE_DIR)
             dlg.SetFilterIndex(3)
