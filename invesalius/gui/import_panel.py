@@ -50,8 +50,16 @@ class InnerPanel(wx.Panel):
         splitter.SetOrientation(wx.VERTICAL)
         self.splitter = splitter
         
+        panel = wx.Panel(self)
+        button = wx.Button(panel, -1, "Import medical images", (20, 20))
+
+        inner_sizer = wx.BoxSizer()
+        inner_sizer.Add(button, 0, wx.ALIGN_CENTER_HORIZONTAL, 40)
+        panel.SetSizer(inner_sizer)
+        
         sizer = wx.BoxSizer(wx.VERTICAL)
-        sizer.Add(splitter, 1, wx.EXPAND)
+        sizer.Add(splitter, 20, wx.EXPAND)
+        sizer.Add(panel, 1, wx.EXPAND)
        
         self.SetSizer(sizer)
         sizer.Fit(self)

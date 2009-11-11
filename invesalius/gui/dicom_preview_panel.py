@@ -31,6 +31,8 @@ import vtkgdcm
 import constants as const
 from reader import dicom_reader
 import data.vtk_utils as vtku
+import time
+
 
 NROWS = 3
 NCOLS = 6
@@ -47,7 +49,9 @@ class SingleImagePreview(wx.Panel):
         wx.Panel.__init__(self, parent, -1)
         self.__init_gui()
         self.__init_vtk()
-        self.filelist = []
+        self.__bind_evt_gui()
+        self.dicom_list = []
+        self.nimages = 1
         self.current_index = 0
         self.window_width = const.WINDOW_LEVEL["Bone"][0]
         self.window_level = const.WINDOW_LEVEL["Bone"][1]
@@ -97,7 +101,7 @@ class SingleImagePreview(wx.Panel):
         style = vtk.vtkInteractorStyleImage()
 
         interactor = wxVTKRenderWindowInteractor(self.panel, -1,
-                                    size=wx.Size(380,380))
+                                    size=wx.Size(340,340))
         interactor.GetRenderWindow().AddRenderer(renderer)
         interactor.SetInteractorStyle(style)
         interactor.Render()
@@ -113,28 +117,73 @@ class SingleImagePreview(wx.Panel):
 
     def __init_gui(self):
         self.panel = wx.Panel(self, -1)
-        self.slider = wx.Slider(self, 100, 25, 1, 100, (30, 60), (250, -1), 
-                                wx.SL_HORIZONTAL | wx.SL_AUTOTICKS)
-        self.slider.SetTickFreq(1, 1)
+
+        slider = wx.Slider(self,
+                            id=-1,
+                            value=0,
+                            minValue=0,
+                            maxValue=99,
+                            style=wx.SL_HORIZONTAL|wx.SL_AUTOTICKS)
+        slider.SetWindowVariant(wx.WINDOW_VARIANT_SMALL)
+        slider.SetTickFreq(1, 1)
+        self.slider = slider
+
+        checkbox = wx.CheckBox(self, -1, "Auto-play")
+        self.checkbox = checkbox
+
+        in_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        in_sizer.Add(slider, 1, wx.GROW|wx.EXPAND)
+        in_sizer.Add(checkbox, 0)
     
         sizer = wx.BoxSizer(wx.VERTICAL)
         sizer.Add(self.panel, 20, wx.GROW|wx.EXPAND)
-        sizer.Add(self.slider, 1, wx.GROW|wx.EXPAND)
+        sizer.Add(in_sizer, 1, wx.GROW|wx.EXPAND)
         sizer.Fit(self)
 
         self.SetSizer(sizer)
         self.Layout()
         self.Update()
         self.SetAutoLayout(1)
-        
 
+    def __bind_evt_gui(self):
+        self.slider.Bind(wx.EVT_SLIDER, self.OnSlider)
+        self.checkbox.Bind(wx.EVT_CHECKBOX, self.OnCheckBox)
+
+    def OnSlider(self, evt):
+        pos = evt.GetInt()
+        self.ShowSlice(pos)
+        evt.Skip()
+
+    def OnCheckBox(self, evt):
+        self.ischecked = evt.IsChecked()
+        if evt.IsChecked():
+            wx.CallAfter(self.OnRun)
+        evt.Skip()
+
+    def OnRun(self):
+        pos = self.slider.GetValue()
+        pos += 1
+        if not (self.nimages- pos):
+            pos = 0
+        self.slider.SetValue(pos)
+        self.ShowSlice(pos)
+        time.sleep(0.2)
+        if self.ischecked:
+            wx.Yield()
+            wx.CallAfter(self.OnRun)
+ 
     def SetDicomGroup(self, group):
         self.dicom_list = group.GetHandSortedList()
         self.current_index = 0
+        self.nimages = len(self.dicom_list)
+        # GUI
+        self.slider.SetMax(self.nimages-1)
+        print self.nimages
+        self.slider.SetValue(0)
         self.ShowSlice()
 
-    def ShowSlice(self):
-        index = self.current_index
+    def ShowSlice(self, index = 0):
+        print "ShowSlice"
         dicom = self.dicom_list[index]
         
         # UPDATE GUI
@@ -164,6 +213,10 @@ class SingleImagePreview(wx.Panel):
         # ADJUST CONTRAST
         window_level = dicom.image.level
         window_width = dicom.image.window
+        print "======"
+        print "WW/WL"
+        print window_level
+        print window_width
         colorer = vtk.vtkImageMapToWindowLevelColors()
         colorer.SetInput(reader.GetOutput())
         colorer.SetWindow(float(window_width))
