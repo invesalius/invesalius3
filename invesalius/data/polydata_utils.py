@@ -117,3 +117,13 @@ def Merge(polydata_list):
 
     return append.GetOutput()
 
+def Export(polydata, filename, bin=False):
+    writer = vtk.vtkXMLPolyDataWriter()
+    writer.SetFileName(filename)
+    if bin:
+        writer.SetDataModeToBinary()
+    else:
+        writer.SetDataModeToAscii()
+    writer.SetInput(polydata)
+    writer.Write()
+
