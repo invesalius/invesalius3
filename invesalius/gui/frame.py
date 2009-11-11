@@ -167,8 +167,7 @@ class Frame(wx.Frame):
         self.aui_manager = aui_manager
 
     def ShowImportPanel(self, evt_pubsub):
-        path = evt_pubsub.data
-        ps.Publisher().sendMessage("Load data to import panel", path)
+        #ps.Publisher().sendMessage("Load data to import panel", path)
 
         aui_manager = self.aui_manager
         aui_manager.GetPane("Import").Show(1)
@@ -178,8 +177,6 @@ class Frame(wx.Frame):
 
     def HideImportPanel(self, evt_pubsub):
         print "HideImportPanel"
-        path = evt_pubsub.data
-        #ps.Publisher().sendMessage("Load data to import panel", path)
 
         aui_manager = self.aui_manager
         aui_manager.GetPane("Import").Show(0)

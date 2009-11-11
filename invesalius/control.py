@@ -29,7 +29,7 @@ import project as prj
 import data.imagedata_utils as utils
 import data.surface as surface
 import data.volume as volume
-import reader.dicom_grouper
+import reader.dicom_grouper as dg
 import gui.dialogs as dialog
 import reader.dicom_reader as dcm
 import reader.analyze_reader as analyze
@@ -59,22 +59,20 @@ class Controller():
         ps.Publisher().subscribe(self.Progress, "Update dicom load")
         ps.Publisher().subscribe(self.OnLoadImportPanel, "End dicom load")
         ps.Publisher().subscribe(self.OnCancelImport, 'Cancel DICOM load')
-        ps.Publisher().subscribe(self.OnLoadImportPanel, "Show import panel in frame")
+
 
     def OnCancelImport(self, pubsub_evt):
-        self.cancel_import = True
+        #self.cancel_import = True
+        ps.Publisher().sendMessage('Hide import panel')
         
     def StartImportPanel(self, pubsub_evt):
         # path to directory
         path = pubsub_evt.data
-        # retrieve DICOM files splited into groups
-       
+
+        # retrieve DICOM files splited into groups    
         reader = dcm.ProgressDicomReader()
         reader.SetWindowEvent(self.frame)
         reader.SetDirectoryPath(path)
-        
-        #self.frame.Bind(reader.evt_update_progress, self.Progress)
-        #self.frame.Bind(reader.evt_end_load_file, self.LoadPanel)
     
     def Progress(self, evt):
         data = evt.data
@@ -97,16 +95,13 @@ class Controller():
             
     def OnLoadImportPanel(self, evt):
         patient_series = evt.data
-        if not self.cancel_import:
-            self.LoadImportPanel(patient_series)
-            ps.Publisher().sendMessage('Show import panel')
-        else:
-            print "----- hide"
-            self.cancel_import = False
-            ps.Publisher().sendMessage('Hide import panel')
+        self.LoadImportPanel(patient_series)
+        ps.Publisher().sendMessage('Show import panel')
+        ps.Publisher().sendMessage("Show import panel in frame")
+
  
     def LoadImportPanel(self, patient_series):
-        if patient_series:
+        if isinstance(patient_series, list):
             ps.Publisher().sendMessage("Load import panel", patient_series)
             first_patient = patient_series[0]
             ps.Publisher().sendMessage("Load dicom preview", first_patient)

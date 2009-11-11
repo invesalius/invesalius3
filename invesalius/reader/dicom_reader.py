@@ -141,8 +141,8 @@ class ProgressDicomReader:
     def UpdateLoadFileProgress(self,cont_progress):
         ps.Publisher().sendMessage("Update dicom load", cont_progress)
 
-    def EndLoadFile(self, grouper):
-        ps.Publisher().sendMessage("End dicom load", grouper)
+    def EndLoadFile(self, patient_list):
+        ps.Publisher().sendMessage("End dicom load", patient_list)
 
     def GetDicomGroups(self, path, recursive):
         
