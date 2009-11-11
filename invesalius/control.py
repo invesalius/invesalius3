@@ -59,7 +59,7 @@ class Controller():
         ps.Publisher().subscribe(self.Progress, "Update dicom load")
         ps.Publisher().subscribe(self.OnLoadImportPanel, "End dicom load")
         ps.Publisher().subscribe(self.OnCancelImport, 'Cancel DICOM load')
-        #ps.Publisher().subscribe(self.OnLoadImportPanel, "Show import panel in frame")
+        ps.Publisher().subscribe(self.OnLoadImportPanel, "Show import panel in frame")
 
     def OnCancelImport(self, pubsub_evt):
         self.cancel_import = True
