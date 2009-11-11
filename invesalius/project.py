@@ -42,20 +42,20 @@ class Project(object):
         # coordinate systems. It might be used, as well, for 3D raycasting.
         # rendering.
         # TODO: Discuss when this will be used.
-        self.imagedata = None
+        self.imagedata = ''
 
         # Masks are related to vtkImageData
         self.mask_dict = {}
         # Predefined threshold values
-        self.min_threshold = None
-        self.max_threshold = None
+        self.min_threshold = ''
+        self.max_threshold = ''
 
-        self.window = None
-        self.level = None
+        self.window = ''
+        self.level = ''
 
         self.presets = Presets()
 
-        self.original_orientation = None
+        self.original_orientation = ''
         # MRI ? CT?
         self.threshold_modes = self.presets.thresh_ct
 
@@ -85,9 +85,10 @@ class Project(object):
         # self.render_mode = {}
 
         # The raycasting preset setted in this project
-        self.raycasting_preset = None
+        self.raycasting_preset = ''
 
         self.debug = 0
+        self.version = "$Revision$"
 
     ####### MASK OPERATIONS
 
@@ -119,3 +120,57 @@ class Project(object):
         path = os.path.join(RAYCASTING_PRESETS_DIRECTORY, label + '.plist')
         preset = plistlib.readPlist(path)
         ps.Publisher.sendMessage('Set raycasting preset', preset)
+
+    def SavePlistProjectOld(self, filename):
+        project = {}
+        
+        for key in self.__dict__:
+            if getattr(self.__dict__[key], 'SavePlist'):
+                project[key] = {'path': self.__dict__[key].SavePlist('.')}
+            else:
+                project[key] = self.__dict__[key]
+
+        masks = {}
+        for index in self.mask_dict:
+            masks[str(index)] = "self.mask_dict[index]"
+            print index
+
+        surfaces = {}
+        for index in self.surface_dict:
+            surfaces[str(index)] = "self.surface_dict[index]"
+            print index
+        
+        project['surface_dict'] = surfaces
+        project['mask_dict'] = masks
+        project['imagedata'] = 'imagedata'
+
+        plistlib.writePlist(project, filename)
+
+    def SavePlistProject(self, filename, object=None):
+        if object is None:
+            object = self
+        supported_types = (str, int, float, bool, tuple, list, dict,
+                           plistlib.Data)
+        project = {}
+        for key in object.__dict__:
+            prop = object.__dict__[key]
+            if isinstance(prop, supported_types):
+                project[key] = prop
+                print key
+        print project
+        plistlib.writePlist(project, filename)
+
+    def OpenPlistProject(self, filename):
+        project = plistlib.readPlist(filename)
+        masks = project['masks']
+        for index in masks:
+            self.mask_dict[index] = masks[index]
+
+        surfaces = project['surfaces']
+        for index in surfaces:
+            self.surface_dict[index] = surfaces[index]
+
+        self.min_threshold = project['min threshold']
+        self.max_threshold = project['max threshold']
+        self.window = project['window']
+        self.level = project['level']
