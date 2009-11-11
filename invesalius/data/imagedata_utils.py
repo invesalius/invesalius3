@@ -155,11 +155,13 @@ def BuildEditedImage(imagedata, points):
 
     return imagedata
 
-def Export(imagedata, filename):
+def Export(imagedata, filename, bin=False):
     writer = vtk.vtkXMLImageDataWriter()
     writer.SetFileName(filename)
-    writer.SetDataModeToAscii()
-    #writer.SetDataModeToBinary()
+    if bin:
+        writer.SetDataModeToBinary()
+    else:
+        writer.SetDataModeToAscii()
     writer.SetInput(imagedata)
     writer.Write()
 
