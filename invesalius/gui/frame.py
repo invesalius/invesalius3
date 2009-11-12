@@ -329,7 +329,8 @@ class StatusBar(wx.StatusBar):
         self.SetStatusText(label, 0)
         if (int(value) >= 99):
             self.SetStatusText("",0)
-        wx.Yield()
+        if sys.platform != 'linux2':
+            wx.Yield()
         
 
     def UpdateStatusLabel(self, pubsub_evt):
@@ -434,8 +435,11 @@ class ProjectToolBar(wx.ToolBar):
         self.Realize()
 
     def __bind_events(self):
-        pass
+        self.Bind(wx.EVT_TOOL, self.OnToolSave, id=const.ID_FILE_SAVE)
 
+    def OnToolSave(self, evt):
+        print "Saving ..."
+        ps.Publisher().sendMessage('Save Project')
 # ------------------------------------------------------------------
 
 class ObjectToolBar(wx.ToolBar):

@@ -21,6 +21,10 @@ import os
 import plistlib
 import wx
 import wx.lib.pubsub as ps
+import vtk
+
+import data.imagedata_utils as iu
+import data.polydata_utils as pu
 
 from utils import Singleton
 from presets import Presets
@@ -124,42 +128,56 @@ class Project(object):
         preset = plistlib.readPlist(path)
         ps.Publisher.sendMessage('Set raycasting preset', preset)
 
-    def SavePlistProjectOld(self, filename):
+    def SavePlistProject(self, filename):
         project = {}
         
         for key in self.__dict__:
-            if getattr(self.__dict__[key], 'SavePlist'):
-                project[key] = {'path': self.__dict__[key].SavePlist('.')}
+            if getattr(self.__dict__[key], 'SavePlist', None):
+                project[key] = {'path': self.__dict__[key].SavePlist(filename)}
             else:
                 project[key] = self.__dict__[key]
 
         masks = {}
         for index in self.mask_dict:
-            masks[str(index)] = "self.mask_dict[index]"
+            masks[str(index)] = self.mask_dict[index].SavePlist(filename)
             print index
 
         surfaces = {}
         for index in self.surface_dict:
-            surfaces[str(index)] = "self.surface_dict[index]"
+            surfaces[str(index)] = self.surface_dict[index].SavePlist(filename)
             print index
-        
+
         project['surface_dict'] = surfaces
         project['mask_dict'] = masks
-        project['imagedata'] = 'imagedata'
+        img_file = '%s_%s.vti' % (filename, 'imagedata')
+        iu.Export(self.imagedata, img_file, bin=True)
+        project['imagedata'] = img_file
 
-        plistlib.writePlist(project, filename)
+        plistlib.writePlist(project, filename + '.plist')
 
-    def SavePlistProject(self, filename, object=None):
-        if object is None:
-            object = self
-        supported_types = (str, int, float, bool, tuple, list, dict,
+    def SavePlistProjectOld(self, filename, dict_object=None):
+        if dict_object is None:
+            dict_object = self.__dict__
+        supported_types = (str, int, float, bool, tuple, list,
                            plistlib.Data)
         project = {}
-        for key in object.__dict__:
-            prop = object.__dict__[key]
+        for key in dict_object:
+            prop = dict_object[key]
             if isinstance(prop, supported_types):
-                project[key] = prop
-                print key
+                project[str(key)] = prop
+            elif isinstance(prop, dict):
+                project[str(key)] = self.SavePlistProject('%s$%s' % (filename,
+                                                                     key), prop)
+            elif isinstance(prop, vtk.vtkImageData):
+                img_name = '%s_%s' % (key, filename)
+                img_file = iu.Export(prop, img_name, bin=True)
+                project[str(key)] = {'imagedatafile': img_file}
+            elif isinstance(prop, vtk.vtkPolyData):
+                pd_name = '%s_%s' % (key, filename)
+                pd_file = pu.Export(prop, pd_name, bin=True)
+                project[str(key)] = {'polydatafile': pd_file}
+            else:
+                project[str(key)] = {'plistfile': self.SavePlistProject("%s$%s" % (filename, key), prop.__dict__)}
         print project
         plistlib.writePlist(project, filename)
 

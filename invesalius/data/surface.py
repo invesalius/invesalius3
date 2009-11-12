@@ -16,6 +16,7 @@
 #    PARTICULAR. Consulte a Licenca Publica Geral GNU para obter mais
 #    detalhes.
 #--------------------------------------------------------------------------
+import plistlib
 import vtk
 import wx.lib.pubsub as ps
 
@@ -34,12 +35,26 @@ class Surface():
     def __init__(self):
         Surface.general_index += 1
         self.index = Surface.general_index
-        self.polydata = None
-        self.colour = None
+        self.polydata = ''
+        self.colour = ''
         self.transparency = const.SURFACE_TRANSPARENCY
         self.volume = 0
         self.is_shown = 1
         self.name = const.SURFACE_NAME_PATTERN %(Surface.general_index+1)
+
+    def SavePlist(self, filename):
+        surface = {}
+        filename = '%s$%s$%d' % (filename, 'surface', self.index)
+        d = self.__dict__
+        for key in d:
+            if isinstance(d[key], vtk.vtkPolyData):
+                img_name = '%s_%s.vtp' % (filename, key)
+                pu.Export(d[key], img_name, bin=True)
+                surface[key] = {'$polydata': img_name}
+            else:
+                surface[key] = d[key]
+        plistlib.writePlist(surface, filename + '.plist')
+        return filename
 
 # TODO: will be initialized inside control as it is being done?
 class SurfaceManager():

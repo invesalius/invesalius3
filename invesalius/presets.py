@@ -16,6 +16,8 @@
 #    PARTICULAR. Consulte a Licenca Publica Geral GNU para obter mais
 #    detalhes.
 #--------------------------------------------------------------------------
+import os
+import plistlib
 
 import wx.lib.pubsub as ps
 
@@ -39,7 +41,7 @@ class Presets():
             "Fat Tissue (Adult)":(-212,-72),
             "Skin Tissue (Adult)":(-718,-177),
             "Skin Tissue (Child)":(-766,-202), 
-            "Custom":(None, None)
+            "Custom":('', '')
         })
 
         self.thresh_mri = TwoWaysDictionary({
@@ -57,7 +59,7 @@ class Presets():
             "Fat Tissue (Adult)":(812,952),
             "Skin Tissue (Adult)":(306,847),
             "Skin Tissue (Child)":(258,822), 
-            "Custom":(None, None)
+            "Custom":('', '')
         })
         self.__bind_events()
         
@@ -93,3 +95,16 @@ class Presets():
                     
         ps.Publisher().sendMessage('Update threshold limits', (thresh_min,     
                                     thresh_max))
+
+    def SavePlist(self, filename):
+        filename = "%s$%s" % (filename, 'presets.plist')
+        preset = {}
+        preset['thresh_mri'] = self.thresh_mri.copy()
+        preset['thresh_ct'] = self.thresh_ct.copy()
+        plistlib.writePlist(preset, filename)
+        return filename
+
+    def OpenPlist(self, filename):
+        preset = plistlib.readPlist(filename)
+        self.thresh_mri = TwoWaysDictionary(preset['thresh_mri'])
+        self.thresh_ct = TwoWaysDictionary(preset['thresh_ct'])

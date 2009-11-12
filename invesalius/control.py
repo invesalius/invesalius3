@@ -59,6 +59,7 @@ class Controller():
         ps.Publisher().subscribe(self.Progress, "Update dicom load")
         ps.Publisher().subscribe(self.OnLoadImportPanel, "End dicom load")
         ps.Publisher().subscribe(self.OnCancelImport, 'Cancel DICOM load')
+        ps.Publisher().subscribe(self.OnSaveProject, 'Save Project')
 
 
     def OnCancelImport(self, pubsub_evt):
@@ -118,7 +119,9 @@ class Controller():
         
         if len(patients_groups):
             group = dcm.SelectLargerDicomGroup(patients_groups)
+            print "Group", group.GetHandSortedList()
             imagedata, dicom = self.OpenDicomGroup(group, gui=False)
+            print "imagedata", imagedata
             self.CreateDicomProject(imagedata, dicom)
         # OPTION 2: ANALYZE?
         else:
@@ -194,6 +197,7 @@ class Controller():
 
         # Create imagedata
         filelist = dicom_group.GetFilenameList()
+        print "filelist", filelist
         zspacing = dicom_group.zspacing
         imagedata = utils.CreateImageData(filelist, zspacing)
 
@@ -247,3 +251,7 @@ class Controller():
         preset = prj.Project().raycasting_preset
         preset_dir = os.path.join(const.USER_RAYCASTING_PRESETS_DIRECTORY, preset_name)
         plistlib.writePlist(preset, preset_dir)
+
+    def OnSaveProject(self, pubsub_evt):
+        filename = prj.Project().name
+        prj.Project().SavePlistProject(filename)

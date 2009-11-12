@@ -19,13 +19,16 @@
 
 import random
 import constants as const
+import imagedata_utils as iu
+import plistlib
+import vtk
 
 class Mask():
     general_index = -1
     def __init__(self):
         Mask.general_index += 1
         self.index = Mask.general_index
-        self.imagedata = None # vtkImageData
+        self.imagedata = '' # vtkImageData
         self.colour = random.choice(const.MASK_COLOUR)
         self.opacity = const.MASK_OPACITY
         self.threshold_range = const.THRESHOLD_RANGE
@@ -33,3 +36,19 @@ class Mask():
         self.edition_threshold_range = [const.THRESHOLD_OUTVALUE, const.THRESHOLD_INVALUE]
         self.is_shown = 1
         self.edited_points = {}
+
+    def SavePlist(self, filename):
+        mask = {}
+        filename = '%s$%s$%d' % (filename, 'mask', self.index)
+        d = self.__dict__
+        for key in d:
+            if isinstance(d[key], vtk.vtkImageData):
+                img_name = '%s_%s.vti' % (filename, key)
+                iu.Export(d[key], img_name, bin=True)
+                mask[key] = {'$imagedata': img_name}
+            else:
+                mask[key] = d[key]
+
+        print mask
+        plistlib.writePlist(mask, filename + '.plist')
+        return filename
