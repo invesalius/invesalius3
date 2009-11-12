@@ -130,7 +130,8 @@ class Project(object):
         preset = plistlib.readPlist(path)
         ps.Publisher.sendMessage('Set raycasting preset', preset)
 
-    def SavePlistProject(self, filename):
+    def SavePlistProject(self, dir_, filename):
+        filename = os.path.join(dir_, filename)
         project = {}
         
         for key in self.__dict__:
@@ -156,32 +157,8 @@ class Project(object):
         project['imagedata'] = img_file
 
         plistlib.writePlist(project, filename + '.plist')
-
-    def SavePlistProjectOld(self, filename, dict_object=None):
-        if dict_object is None:
-            dict_object = self.__dict__
-        supported_types = (str, int, float, bool, tuple, list,
-                           plistlib.Data)
-        project = {}
-        for key in dict_object:
-            prop = dict_object[key]
-            if isinstance(prop, supported_types):
-                project[str(key)] = prop
-            elif isinstance(prop, dict):
-                project[str(key)] = self.SavePlistProject('%s$%s' % (filename,
-                                                                     key), prop)
-            elif isinstance(prop, vtk.vtkImageData):
-                img_name = '%s_%s' % (key, filename)
-                img_file = iu.Export(prop, img_name, bin=True)
-                project[str(key)] = {'imagedatafile': img_file}
-            elif isinstance(prop, vtk.vtkPolyData):
-                pd_name = '%s_%s' % (key, filename)
-                pd_file = pu.Export(prop, pd_name, bin=True)
-                project[str(key)] = {'polydatafile': pd_file}
-            else:
-                project[str(key)] = {'plistfile': self.SavePlistProject("%s$%s" % (filename, key), prop.__dict__)}
-        print project
-        plistlib.writePlist(project, filename)
+        
+        Compress(dir_, "teste.inv3")#os.path.join("~/Desktop/","teste.inv3"))
 
     def OpenPlistProject(self, filename):
         project = plistlib.readPlist(filename)

@@ -16,8 +16,6 @@
 #    PARTICULAR. Consulte a Licenca Publica Geral GNU para obter mais
 #    detalhes.
 #--------------------------------------------------------------------------
-from mimetools import temp
-
 import math
 import os
 import plistlib
@@ -256,8 +254,8 @@ class Controller():
 
     def OnSaveProject(self, pubsub_evt):
         filename = prj.Project().name
-        directory = tempfile.mkdtemp(filename)
-        prj.Project().SavePlistProject(os.path.join(directory,filename))
+        dir_ = tempfile.mkdtemp(filename)
+        prj.Project().SavePlistProject(dir_, filename)
         
         
         
