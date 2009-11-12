@@ -24,6 +24,7 @@ import wx.lib.pubsub as ps
 
 from utils import Singleton
 from presets import Presets
+import version
 
 class Project(object):
     # Only one project will be initialized per time. Therefore, we use
@@ -87,10 +88,10 @@ class Project(object):
         # The raycasting preset setted in this project
         self.raycasting_preset = ''
 
-        self.debug = 0
-        self.version = "$Revision$"
+        self.invesalius_version = version.get_svn_revision() 
+        print self.invesalius_version
 
-        print self.version
+        self.debug = 0
 
     ####### MASK OPERATIONS
 

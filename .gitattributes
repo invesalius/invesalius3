@@ -142,6 +142,7 @@ invesalius/reader/dicom_grouper.py -text
 invesalius/reader/dicom_reader.py -text
 invesalius/session.py -text
 invesalius/utils.py -text
+invesalius/version.py -text
 presets/raycasting/Airways[!!-~]II.plist -text
 presets/raycasting/Airways.plist -text
 presets/raycasting/Black[!!-~]&[!!-~]White.plist -text
