@@ -16,10 +16,12 @@
 #    PARTICULAR. Consulte a Licenca Publica Geral GNU para obter mais
 #    detalhes.
 #--------------------------------------------------------------------------
+from mimetools import temp
 
 import math
 import os
 import plistlib
+import tempfile
 
 import wx.lib.pubsub as ps
 
@@ -254,4 +256,9 @@ class Controller():
 
     def OnSaveProject(self, pubsub_evt):
         filename = prj.Project().name
-        prj.Project().SavePlistProject(filename)
+        directory = tempfile.mkdtemp(filename)
+        prj.Project().SavePlistProject(os.path.join(directory,filename))
+        
+        
+        
+        
