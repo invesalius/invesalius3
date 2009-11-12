@@ -17,17 +17,19 @@
 #    detalhes.
 #--------------------------------------------------------------------------
 
+import glob
 import os
 import plistlib
+import tarfile
+
 import wx
 import wx.lib.pubsub as ps
 import vtk
 
 import data.imagedata_utils as iu
 import data.polydata_utils as pu
-
-from utils import Singleton
 from presets import Presets
+from utils import Singleton
 import version
 
 class Project(object):
@@ -195,3 +197,16 @@ class Project(object):
         self.max_threshold = project['max threshold']
         self.window = project['window']
         self.level = project['level']
+
+def Compress(folder, filename):
+    file_list = glob.glob(os.path.join(folder,"*"))
+    tar = tarfile.open(filename, "w:gz")
+    for name in file_list:
+        tar.add(name)
+    tar.close()
+
+def Extract(filename, folder):
+    tar = tarfile.open(filename, "r:gz")
+    tar.list(verbose=True)
+    tar.extractall(folder)
+    tar.close()
