@@ -127,3 +127,8 @@ def Export(polydata, filename, bin=False):
     writer.SetInput(polydata)
     writer.Write()
 
+def Import(filename):
+    reader = vtk.vtkXMLPolyDataReader()
+    reader.SetFileName(filename)
+    reader.Update()
+    return reader.GetOutput()
