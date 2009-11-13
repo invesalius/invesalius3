@@ -168,6 +168,7 @@ def Export(imagedata, filename, bin=False):
 def Import(filename):
     reader = vtk.vtkXMLImageDataReader()
     reader.SetFileName(filename)
+    # TODO: Check if the code bellow is necessary
     #reader.WholeSlicesOn()
     reader.Update()
     return reader.GetOutput()
