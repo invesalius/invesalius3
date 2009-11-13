@@ -185,7 +185,7 @@ class InnerTaskPanel(wx.Panel):
                 # This returns a Python list of files that were selected.
                 proj_path = dlg.GetPath()
                 proj_name = dlg.GetFilename()
-                print "TODO: Send Signal - Open project "+ proj_path
+                ps.Publisher().sendMessage('Open Project', proj_path)
                 print "TODO: Send Signal - Change frame title "+ proj_name
 
             # Destroy the dialog. Don't do this until you are done with it!

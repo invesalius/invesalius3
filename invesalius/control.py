@@ -60,6 +60,7 @@ class Controller():
         ps.Publisher().subscribe(self.OnLoadImportPanel, "End dicom load")
         ps.Publisher().subscribe(self.OnCancelImport, 'Cancel DICOM load')
         ps.Publisher().subscribe(self.OnSaveProject, 'Save Project')
+        ps.Publisher().subscribe(self.OnOpenProject, 'Open Project')
 
 
     def OnCancelImport(self, pubsub_evt):
@@ -256,7 +257,7 @@ class Controller():
         filename = prj.Project().name
         dir_ = tempfile.mkdtemp(filename)
         prj.Project().SavePlistProject(dir_, filename)
-        
-        
-        
-        
+
+    def OnOpenProject(self, pubsub_evt):
+        filename = pubsub_evt.data
+        prj.Project().OpenPlistProject(filename)

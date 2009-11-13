@@ -20,7 +20,9 @@
 import glob
 import os
 import plistlib
+import shutil
 import tarfile
+import tempfile
 
 import wx
 import wx.lib.pubsub as ps
@@ -159,21 +161,32 @@ class Project(object):
         plistlib.writePlist(project, filename + '.plist')
         
         Compress(dir_, "teste.inv3")#os.path.join("~/Desktop/","teste.inv3"))
+        shutil.rmtree(dir_)
 
     def OpenPlistProject(self, filename):
-        project = plistlib.readPlist(filename)
-        masks = project['masks']
-        for index in masks:
-            self.mask_dict[index] = masks[index]
+        filelist = Extract(filename, tempfile.gettempdir())
+        main_plist = min(filelist, key=lambda x: len(x))
+        print main_plist
+        project = plistlib.readPlist(main_plist)
 
-        surfaces = project['surfaces']
-        for index in surfaces:
-            self.surface_dict[index] = surfaces[index]
+        print "antes", self.__dict__
 
-        self.min_threshold = project['min threshold']
-        self.max_threshold = project['max threshold']
-        self.window = project['window']
-        self.level = project['level']
+        for key in project:
+            setattr(self, key, project[key])
+
+        print "depois", self.__dict__
+        #masks = project['masks']
+        #for index in masks:
+        #    self.mask_dict[index] = masks[index]
+
+        #surfaces = project['surfaces']
+        #for index in surfaces:
+        #    self.surface_dict[index] = surfaces[index]
+
+        #self.min_threshold = project['min threshold']
+        #self.max_threshold = project['max threshold']
+        #self.window = project['window']
+        #self.level = project['level']
 
 def Compress(folder, filename):
     file_list = glob.glob(os.path.join(folder,"*"))
@@ -186,4 +199,6 @@ def Extract(filename, folder):
     tar = tarfile.open(filename, "r:gz")
     tar.list(verbose=True)
     tar.extractall(folder)
+    filelist = [os.path.join(folder, i) for i in tar.getnames()]
     tar.close()
+    return filelist
