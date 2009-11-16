@@ -45,7 +45,7 @@ class Mask():
             if isinstance(d[key], vtk.vtkImageData):
                 img_name = '%s_%s.vti' % (filename, key)
                 iu.Export(d[key], img_name, bin=True)
-                mask[key] = {'$imagedata': img_name}
+                mask[key] = {'$vti': img_name}
             else:
                 mask[key] = d[key]
 

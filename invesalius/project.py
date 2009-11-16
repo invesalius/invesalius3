@@ -138,26 +138,28 @@ class Project(object):
         
         for key in self.__dict__:
             if getattr(self.__dict__[key], 'SavePlist', None):
-                project[key] = {'path': self.__dict__[key].SavePlist(filename)}
+                project[key] = {'$plist': self.__dict__[key].SavePlist(filename)}
             else:
                 project[key] = self.__dict__[key]
 
         masks = {}
         for index in self.mask_dict:
-            masks[str(index)] = self.mask_dict[index].SavePlist(filename)
+            masks[str(index)] = {'#mask':\
+                                 self.mask_dict[index].SavePlist(filename)}
             print index
 
         surfaces = {}
         for index in self.surface_dict:
-            surfaces[str(index)] = self.surface_dict[index].SavePlist(filename)
+            surfaces[str(index)] = {'#surface':\
+                                    self.surface_dict[index].SavePlist(filename)}
             print index
 
         project['surface_dict'] = surfaces
         project['mask_dict'] = masks
         img_file = '%s_%s.vti' % (filename, 'imagedata')
         iu.Export(self.imagedata, img_file, bin=True)
-        project['imagedata'] = img_file
-
+        project['imagedata'] = {'$vti':img_file}
+        print project
         plistlib.writePlist(project, filename + '.plist')
         
         Compress(dir_, "teste.inv3")#os.path.join("~/Desktop/","teste.inv3"))
@@ -173,7 +175,6 @@ class Project(object):
 
         for key in project:
             setattr(self, key, project[key])
-
         print "depois", self.__dict__
         #masks = project['masks']
         #for index in masks:

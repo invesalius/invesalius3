@@ -50,7 +50,7 @@ class Surface():
             if isinstance(d[key], vtk.vtkPolyData):
                 img_name = '%s_%s.vtp' % (filename, key)
                 pu.Export(d[key], img_name, bin=True)
-                surface[key] = {'$polydata': img_name}
+                surface[key] = {'$vtp': img_name}
             else:
                 surface[key] = d[key]
         plistlib.writePlist(surface, filename + '.plist')
