@@ -55,6 +55,11 @@ class Project(object):
         # TODO: Discuss when this will be used.
         self.imagedata = ''
 
+        self.name = ''
+        #self.dicom = ''
+        self.modality = ''
+        self.original_orientation = -1
+
         # Masks are related to vtkImageData
         self.mask_dict = {}
         # Predefined threshold values
@@ -65,10 +70,12 @@ class Project(object):
         self.level = ''
 
         self.presets = Presets()
-
+        self.threshold_modes = self.presets.thresh_ct
+        self.threshold_range = ''
+        
         self.original_orientation = ''
         # MRI ? CT?
-        self.threshold_modes = self.presets.thresh_ct
+
 
         # TODO: define how we will relate these threshold values to
         # default threshold labels
@@ -121,13 +128,17 @@ class Project(object):
         return self.mask_dict[index]
 
 
-    def SetAcquisitionModality(self, type_):
+    def SetAcquisitionModality(self, type_=None):
+        if type_ is None:
+            type_ = self.modality
+
         if type_ == "MRI":
             self.threshold_modes = self.presets.thresh_mri
         elif type_ == "CT":
             self.threshold_modes = self.presets.thresh_ct
         else:
             print "Different Acquisition Modality!!!"
+        self.modality = type_
 
     def SetRaycastPreset(self, label):
         path = os.path.join(RAYCASTING_PRESETS_DIRECTORY, label + '.plist')
@@ -187,9 +198,10 @@ class Project(object):
             elif key == 'presets':
                 filepath = os.path.split(project[key]["#plist"])[-1]
                 path = os.path.join(dirpath, filepath)
-                preset = Presets()
-                preset.OpenPlist(path)
-                self.presets = preset
+                p = Presets()
+                p.OpenPlist(path)
+                p.Test()
+                self.presets = p
             elif key == 'mask_dict':
                 self.mask_dict = {}
                 for mask in project[key]:
@@ -210,13 +222,6 @@ class Project(object):
                 setattr(self, key, project[key])
         print "depois", self.__dict__
 
-        #masks = project['masks']
-        #for index in masks:
-        #    self.mask_dict[index] = masks[index]
-
-        #surfaces = project['surfaces']
-        #for index in surfaces:
-        #    self.surface_dict[index] = surfaces[index]
 
 
 def Compress(folder, filename):

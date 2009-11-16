@@ -169,9 +169,15 @@ def Import(filename):
     reader = vtk.vtkXMLImageDataReader()
     reader.SetFileName(filename)
     # TODO: Check if the code bellow is necessary
-    #reader.WholeSlicesOn()
+    reader.WholeSlicesOn()
     reader.Update()
-    return reader.GetOutput()
+
+    cast = vtk.vtkImageCast()
+    cast.SetInput(reader.GetOutput())
+    cast.SetOutputScalarType(11)
+    cast.Update()
+
+    return cast.GetOutput()
 
 def View(imagedata):
     viewer = vtk.vtkImageViewer()

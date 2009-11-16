@@ -138,7 +138,11 @@ class Controller():
     def LoadProject(self):
         proj = prj.Project()
         ps.Publisher().sendMessage('Set project name', proj.name)
-        ps.Publisher().sendMessage('Load slice to viewer', (proj.imagedata))
+        ps.Publisher().sendMessage('Load slice to viewer',
+                                (proj.imagedata,
+                                proj.mask_dict))
+        ps.Publisher().sendMessage('Load surface dict',
+                                    proj.surface_dict)
         self.LoadImagedataInfo() # TODO: where do we insert this <<<?
         ps.Publisher().sendMessage('Bright and contrast adjustment image',\
                                    (proj.window, proj.level))
@@ -172,8 +176,10 @@ class Controller():
 
         proj = prj.Project()
         proj.name = dicom.patient.name
+        proj.modality = dicom.acquisition.modality
         proj.SetAcquisitionModality(dicom.acquisition.modality)
         proj.imagedata = imagedata
+        #proj.dicom = dicom
         proj.original_orientation =\
                     name_to_const[dicom.image.orientation_label]
         proj.window = float(dicom.image.window)
@@ -226,7 +232,9 @@ class Controller():
 
         # Set default value into slices' default mask
         key= thresh_modes[const.THRESHOLD_PRESETS_INDEX]
-        (min_thresh, max_thresh) = proj.threshold_modes.get_value(key)
+        #value = proj.threshold_modes.get_value(key)
+        value = proj.threshold_modes[key]
+        (min_thresh, max_thresh) = value
 
     def LoadRaycastingPreset(self, pubsub_evt):
         label = pubsub_evt.data
@@ -260,4 +268,14 @@ class Controller():
 
     def OnOpenProject(self, pubsub_evt):
         filename = pubsub_evt.data
-        prj.Project().OpenPlistProject(filename)
+
+        proj = prj.Project()
+        proj.OpenPlistProject(filename)
+        proj.SetAcquisitionModality(proj.modality)
+
+        const.THRESHOLD_OUTVALUE = proj.threshold_range[0]
+        const.THRESHOLD_INVALUE = proj.threshold_range[1]
+        const.WINDOW_LEVEL['Default'] = (proj.window, proj.level)
+        const.WINDOW_LEVEL['Manual'] = (proj.window, proj.level)
+
+        self.LoadProject()

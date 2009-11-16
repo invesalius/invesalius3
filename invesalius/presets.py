@@ -105,6 +105,16 @@ class Presets():
         return filename
 
     def OpenPlist(self, filename):
-        preset = plistlib.readPlist(filename)
-        self.thresh_mri = TwoWaysDictionary(preset['thresh_mri'])
-        self.thresh_ct = TwoWaysDictionary(preset['thresh_ct'])
+        p = plistlib.readPlist(filename)
+        d1 = p['thresh_mri'].copy()
+        d2 = p['thresh_ct'].copy()
+        
+        self.thresh_mri = TwoWaysDictionary(d1)
+        self.thresh_ct = TwoWaysDictionary(d2)
+
+
+
+    def Test(self):
+        print  "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+        print self.thresh_ct.get_value("Bone")
+        print  "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"

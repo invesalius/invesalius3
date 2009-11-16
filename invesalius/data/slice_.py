@@ -325,12 +325,19 @@ class Slice(object):
 
 
 
-    def SetInput(self, imagedata):
+    def SetInput(self, imagedata, mask_dict):
         self.imagedata = imagedata
         self.extent = imagedata.GetExtent()
 
         imagedata_bg = self.__create_background(imagedata)
-        imagedata_mask = self.__create_mask(imagedata)
+
+        if not mask_dict:
+            imagedata_mask = self.__build_mask(imagedata, create=True)
+        else:
+            self.__load_masks(mask_dict)
+            imagedata_mask = self.current_mask.imagedata
+        
+            
 
         mask_opacity = self.current_mask.opacity
 
@@ -343,7 +350,17 @@ class Slice(object):
         else:
             blend_filter.SetOpacity(1, 0)
         blend_filter.SetInput(0, imagedata_bg)
+
+        #cast = vtk.vtkImageCast()
+        ##cast.SetInput(imagedata_mask)
+        #cast.SetOutputScalarType(3)
+        #cast.Update()
+        print 1
+        #blend_filter.SetInput(1, cast.GetOutput())
         blend_filter.SetInput(1, imagedata_mask)
+        print "******", imagedata_mask.GetScalarType() #11
+        print "******", imagedata_bg.GetScalarType() #11
+        print 2
         blend_filter.SetBlendModeToNormal()
         blend_filter.GetOutput().ReleaseDataFlagOn()
         self.blend_filter = blend_filter
@@ -508,10 +525,31 @@ class Slice(object):
         ps.Publisher().sendMessage('Update slice viewer')
 
 
+    def __load_masks(self, mask_dict):
+        keys = mask_dict.keys()
+        keys.sort()
+        for key in keys:
+            mask = mask_dict[key]
+        
+            # update gui related to mask
+            ps.Publisher().sendMessage('Add mask',
+                                    (mask.index,
+                                     mask.name,
+                                     mask.threshold_range,
+                                     mask.colour))
 
-    def __create_mask(self, imagedata):
+        self.current_mask = mask
+        self.__build_mask(mask.imagedata, False)
+
+        ps.Publisher().sendMessage('Change mask selected', mask.index)
+        ps.Publisher().sendMessage('Update slice viewer')
+
+
+
+    def __build_mask(self, imagedata, create=True):
         # create new mask instance and insert it into project
-        self.CreateMask(imagedata=imagedata)
+        if create:
+            self.CreateMask(imagedata=imagedata)
         current_mask = self.current_mask
 
         # properties to be inserted into pipeline

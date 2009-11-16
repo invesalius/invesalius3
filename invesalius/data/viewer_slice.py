@@ -746,8 +746,8 @@ class Viewer(wx.Panel):
         self.interactor.Bind(wx.EVT_CONTEXT_MENU, self.OnContextMenu)
 
     def LoadImagedata(self, pubsub_evt):
-        imagedata = pubsub_evt.data
-        self.SetInput(imagedata)
+        imagedata, mask_dict = pubsub_evt.data
+        self.SetInput(imagedata, mask_dict)
 
     def LoadRenderers(self, image):
         number_renderers = self.layout[0] * self.layout[1]
@@ -788,7 +788,7 @@ class Viewer(wx.Panel):
         self.cursor_ = cursor
         return cursor
 
-    def SetInput(self, imagedata):
+    def SetInput(self, imagedata, mask_dict):
         self.imagedata = imagedata
 
         #ren = self.ren
@@ -797,7 +797,7 @@ class Viewer(wx.Panel):
         # Slice pipeline, to be inserted into current viewer
         slice_ = sl.Slice()
         if slice_.imagedata is None:
-            slice_.SetInput(imagedata)
+            slice_.SetInput(imagedata, mask_dict)
 
         #actor = vtk.vtkImageActor()
         #actor.SetInput(slice_.GetOutput())

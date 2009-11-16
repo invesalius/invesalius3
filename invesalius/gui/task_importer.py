@@ -32,7 +32,7 @@ BTN_OPEN_PROJECT = wx.NewId()
 
 WILDCARD_OPEN = "InVesalius 1 project (*.promed)|*.promed|"\
                 "InVesalius 2 project (*.inv)|*.inv|"\
-                "InVesalius 3 project (*.iv3)|*.iv3|"\
+                "InVesalius 3 project (*.inv3)|*.inv3|"\
                 "All files (*.*)|*.*"
 
 class TaskPanel(wx.Panel):
@@ -177,7 +177,10 @@ class InnerTaskPanel(wx.Panel):
                                 defaultDir=path,
                                 defaultFile="", wildcard=WILDCARD_OPEN,
                                 style=wx.OPEN|wx.CHANGE_DIR)
-            dlg.SetFilterIndex(3)
+            if sys.platform != 'darwin':
+                dlg.SetFilterIndex(2)
+            else:
+                dlg.SetFilterIndex(3)
 
             # Show the dialog and retrieve the user response. If it is the OK response,
             # process the data.
@@ -206,9 +209,9 @@ class InnerTaskPanel(wx.Panel):
             self.OnLinkOpenProject()
 
     def TestLoadProjects(self):
-        self.LoadProject("test1.iv3")
-        self.LoadProject("test2.iv3")
-        self.LoadProject("test3.iv3")
+        self.LoadProject("test1.inv3")
+        self.LoadProject("test2.inv3")
+        self.LoadProject("test3.inv3")
 
     def LoadProject(self, proj_name="Unnamed"):
         """

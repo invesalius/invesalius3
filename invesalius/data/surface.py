@@ -100,6 +100,44 @@ class SurfaceManager():
         ps.Publisher().subscribe(self.OnChangeSurfaceName, 'Change surface name')
         ps.Publisher().subscribe(self.OnShowSurface, 'Show surface')
         ps.Publisher().subscribe(self.OnExportSurface,'Export surface to file')
+        ps.Publisher().subscribe(self.OnLoadSurfaceDict, 'Load surface dict')
+
+    def OnLoadSurfaceDict(self, pubsub_evt):
+        surface_dict = pubsub_evt.data
+
+        for key in surface_dict:
+            surface = surface_dict[key]
+            # Map polygonal data (vtkPolyData) to graphics primitives.
+            mapper = vtk.vtkPolyDataMapper()
+            mapper.SetInput(surface.polydata)
+            mapper.ScalarVisibilityOff()
+
+            # Represent an object (geometry & properties) in the rendered scene
+            actor = vtk.vtkActor()
+            actor.SetMapper(mapper)
+
+            # Set actor colour and transparency
+            actor.GetProperty().SetColor(surface.colour)
+            actor.GetProperty().SetOpacity(1-surface.transparency)
+
+            self.actors_dict[surface.index] = actor
+
+
+            # Send actor by pubsub to viewer's render
+            ps.Publisher().sendMessage('Load surface actor into viewer', (actor))
+
+            ps.Publisher().sendMessage('Update status text in GUI',
+                                        "Surface created.")
+    
+            # The following lines have to be here, otherwise all volumes disappear
+
+            ps.Publisher().sendMessage('Update surface info in GUI',
+                                        (surface.index, surface.name,
+                                        surface.colour, surface.volume,
+                                        surface.transparency))
+
+
+
 
     def AddNewActor(self, pubsub_evt):
         """
