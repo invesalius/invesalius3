@@ -49,6 +49,11 @@ class Mask():
                 img_name = '%s_%s.vti' % (filename, key)
                 iu.Export(d[key], img_name, bin=True)
                 mask[key] = {'$vti': img_name}
+            elif key == 'edited_points':
+                edited_points = {}
+                for p in self.edited_points:
+                    edited_points[str(p)] = self.edited_points[p]
+                mask[key] = edited_points
             else:
                 mask[key] = d[key]
         plistlib.writePlist(mask, filename + '.plist')
@@ -58,11 +63,20 @@ class Mask():
         mask = plistlib.readPlist(filename)
         dirpath = os.path.split(filename)[0]
         for key in mask:
+            print "Key", key
             if key == 'imagedata':
                 filepath = os.path.split(mask[key]["$vti"])[-1]
                 path = os.path.join(dirpath, filepath)
                 self.imagedata = iu.Import(path)
+            elif key == 'edited_points':
+                edited_points = {}
+                for p in mask[key]:
+                    k = [float(i) for i in p.replace('(', '').replace(')', '').split(',')]
+                    print k
+                    edited_points[tuple(k)] = mask[key][p]
+                setattr(self, key, edited_points)
             else:
                 setattr(self, key, mask[key])
+        print "edited points", self.edited_points
 
 
