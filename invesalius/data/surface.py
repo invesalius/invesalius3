@@ -16,7 +16,10 @@
 #    PARTICULAR. Consulte a Licenca Publica Geral GNU para obter mais
 #    detalhes.
 #--------------------------------------------------------------------------
+
+import os
 import plistlib
+
 import vtk
 import wx.lib.pubsub as ps
 
@@ -54,7 +57,21 @@ class Surface():
             else:
                 surface[key] = d[key]
         plistlib.writePlist(surface, filename + '.plist')
-        return filename
+        return filename + '.plist'
+
+    def OpenPList(self, filename):
+        surface = plistlib.readPlist(filename)
+        dirpath = os.path.split(filename)[0]
+        for key in surface:
+            if key == 'polydata':
+                filepath = os.path.split(surface[key]["$vtp"])[-1]
+                path = os.path.join(dirpath, filepath)
+                self.polydata = pu.Import(path)
+            else:
+                setattr(self, key, surface[key])
+
+
+
 
 # TODO: will be initialized inside control as it is being done?
 class SurfaceManager():

@@ -17,11 +17,14 @@
 #    detalhes.
 #--------------------------------------------------------------------------
 
+import os
+import plistlib
 import random
+
+import vtk
+
 import constants as const
 import imagedata_utils as iu
-import plistlib
-import vtk
 
 class Mask():
     general_index = -1
@@ -48,7 +51,18 @@ class Mask():
                 mask[key] = {'$vti': img_name}
             else:
                 mask[key] = d[key]
-
-        print mask
         plistlib.writePlist(mask, filename + '.plist')
-        return filename
+        return filename + '.plist'
+
+    def OpenPList(self, filename):
+        mask = plistlib.readPlist(filename)
+        dirpath = os.path.split(filename)[0]
+        for key in mask:
+            if key == 'imagedata':
+                filepath = os.path.split(mask[key]["$vti"])[-1]
+                path = os.path.join(dirpath, filepath)
+                self.imagedata = iu.Import(path)
+            else:
+                setattr(self, key, mask[key])
+
+

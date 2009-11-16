@@ -29,7 +29,9 @@ import wx.lib.pubsub as ps
 import vtk
 
 import data.imagedata_utils as iu
+import data.mask as msk
 import data.polydata_utils as pu
+import data.surface as srf
 from presets import Presets
 from utils import Singleton
 import version
@@ -138,7 +140,7 @@ class Project(object):
         
         for key in self.__dict__:
             if getattr(self.__dict__[key], 'SavePlist', None):
-                project[key] = {'$plist': self.__dict__[key].SavePlist(filename)}
+                project[key] = {'#plist': self.__dict__[key].SavePlist(filename)}
             else:
                 project[key] = self.__dict__[key]
 
@@ -173,9 +175,41 @@ class Project(object):
 
         print "antes", self.__dict__
 
+        # Path were extracted project is
+        dirpath = os.path.split(filelist[0])[0]
+        print "* dirpath", dirpath
+
         for key in project:
-            setattr(self, key, project[key])
+            if key == 'imagedata':
+                filepath = os.path.split(project[key]["$vti"])[-1]
+                path = os.path.join(dirpath, filepath)
+                self.imagedata = iu.Import(path)
+            elif key == 'presets':
+                filepath = os.path.split(project[key]["#plist"])[-1]
+                path = os.path.join(dirpath, filepath)
+                preset = Presets()
+                preset.OpenPlist(path)
+                self.presets = preset
+            elif key == 'mask_dict':
+                self.mask_dict = {}
+                for mask in project[key]:
+                    filepath = os.path.split(project[key][mask]["#mask"])[-1]
+                    path = os.path.join(dirpath, filepath)
+                    m = msk.Mask()
+                    m.OpenPList(path)
+                    self.mask_dict[m.index] = m
+            elif key == 'surface_dict':
+                self.surface_dict = {}
+                for surface in project[key]:
+                    filepath = os.path.split(project[key][surface]["#surface"])[-1]
+                    path = os.path.join(dirpath, filepath)
+                    s = srf.Surface()
+                    s.OpenPList(path)
+                    self.surface_dict[s.index] = s
+            else: 
+                setattr(self, key, project[key])
         print "depois", self.__dict__
+
         #masks = project['masks']
         #for index in masks:
         #    self.mask_dict[index] = masks[index]
@@ -184,10 +218,6 @@ class Project(object):
         #for index in surfaces:
         #    self.surface_dict[index] = surfaces[index]
 
-        #self.min_threshold = project['min threshold']
-        #self.max_threshold = project['max threshold']
-        #self.window = project['window']
-        #self.level = project['level']
 
 def Compress(folder, filename):
     file_list = glob.glob(os.path.join(folder,"*"))
