@@ -602,7 +602,13 @@ class SliceToolBar(wx.ToolBar):
         else:
             ps.Publisher().sendMessage(('Set interaction mode',
                                         const.MODE_SLICE_EDITOR))
-
+        if id == ID_CROSS:
+            if state:
+                ps.Publisher().sendMessage('Set cross visibility', 1)
+            else:
+                ps.Publisher().sendMessage('Set cross visibility', 0)
+        else:
+            ps.Publisher().sendMessage('Set cross visibility', 0)
 
         for item in SLICE_TOOLS:
             state = self.GetToolState(item)
@@ -617,6 +623,8 @@ class SliceToolBar(wx.ToolBar):
             state = self.GetToolState(id)
             if state:
                 self.ToggleTool(id, False)
+                if id == ID_CROSS:
+                    ps.Publisher().sendMessage('Set cross visibility', 0)
 
 # ---------------------------------------------------------------------
 
