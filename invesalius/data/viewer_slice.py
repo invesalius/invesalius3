@@ -20,6 +20,8 @@
 import itertools
 import os.path
 
+import numpy
+
 import vtk
 from vtk.wx.wxVTKRenderWindowInteractor import wxVTKRenderWindowInteractor
 
@@ -190,7 +192,15 @@ class Viewer(wx.Panel):
             self.interactor.Bind(wx.EVT_LEFT_DCLICK, self.OnUnZoom)
         else:
             self.interactor.Bind(wx.EVT_LEFT_DCLICK, None)
-            
+        
+        #try:
+        #    if mode == "CROSS":
+        #        self.cross_actor.VisibilityOn()
+        #    else:
+        #        self.cross_actor.VisibilityOff()
+        #except AttributeError:
+        #    pass
+
         self.style = style
         self.interactor.SetInteractorStyle(style)
 
@@ -237,6 +247,7 @@ class Viewer(wx.Panel):
     def __set_mode_cross(self, pubsub_evt):
         self.append_mode('CROSS')
         self.mouse_pressed = 0
+        self.cross_actor.VisibilityOn()
         self.interactor.SetCursor(wx.StockCursor(wx.CURSOR_NONE))
 
     def OnWindowLevelMove(self, evt, obj):
@@ -716,6 +727,9 @@ class Viewer(wx.Panel):
         ps.Publisher().subscribe(self.UpdateWindowLevelValue,\
                                  'Update window level value')
 
+        ps.Publisher().subscribe(self.__set_cross_visibility,\
+                                 'Set cross visibility')
+
         ###
         ps.Publisher().subscribe(self.__set_layout,
                                 'Set slice viewer layout')
@@ -871,6 +885,7 @@ class Viewer(wx.Panel):
         cross_actor = vtk.vtkActor()
         cross_actor.SetMapper(cross_mapper)
         cross_actor.SetProperty(property)
+        cross_actor.VisibilityOff()
         # Only the slices are pickable
         cross_actor.PickableOff()
         self.cross_actor = cross_actor
@@ -895,25 +910,53 @@ class Viewer(wx.Panel):
         slice_number = slice_data.number
         actor_bound = slice_data.actor.GetBounds()
         extent = slice_data.actor.GetDisplayExtent()
+        cam = slice_data.renderer.GetActiveCamera()
 
         print
         print self.orientation
         print x, y, z
         print actor_bound
+        #print "ViewUp", cam.GetViewUp()
+        #print "Position", cam.GetPosition()
+        #print "Orientation", cam.GetOrientation()
+        #print "Focal Point", cam.GetFocalPoint()
+        
+        vCamera = numpy.array(cam.GetPosition()) - numpy.array(cam.GetFocalPoint())
+        n_vCamera = vCamera / numpy.linalg.norm(vCamera)
+        print "Normalized", n_vCamera
 
-        yz = [x + abs(x * 0.001), y, z]
-        xz = [x, y - abs(y * 0.001), z]
-        xy = [x, y, z + abs(z * 0.001)]
+        pos = [j + 0.01 * i for i,j in zip(n_vCamera, (x, y, z))]
+        print "posicao", pos
 
-        proj = project.Project()
-        orig_orien = proj.original_orientation
+        #yz = [x + abs(x * 0.001), y, z]
+        #xz = [x, y - abs(y * 0.001), z]
+        #xy = [x, y, z + abs(z * 0.001)]
 
-        if (orig_orien == const.SAGITAL):
-            coordinates = {"SAGITAL": xy, "CORONAL": yz, "AXIAL": xz}
-        elif(orig_orien == const.CORONAL):
-            coordinates = {"SAGITAL": yz, "CORONAL": xy, "AXIAL": xz}
-        else:
-            coordinates = {"SAGITAL": yz, "CORONAL": xz, "AXIAL": xy}
+        #proj = project.Project()
+        #orig_orien = proj.original_orientation
+        #pos = [x, y, z]
+
+        #if (orig_orien == const.SAGITAL):
+        #    coordinates = {"SAGITAL": xy, "CORONAL": yz, "AXIAL": xz}
+        #elif(orig_orien == const.CORONAL):
+        #    #coordinates = {"SAGITAL": yz, "CORONAL": xy, "AXIAL": xz}
+        #    if orientation == "AXIAL":
+        #        pos[2] += abs(pos[2] * 0.001)
+        #    elif orientation == "SAGITAL":
+        #        pos[0] += abs(pos[0] * 0.001)
+        #    elif orientation == "CORONAL":
+        #        pos[1] -= abs(pos[1] * 0.001)
+        #else:
+        #    #coordinates = {"SAGITAL": yz, "CORONAL": xz, "AXIAL": xy}
+        #    print "AXIAL"
+        #    if orientation == "AXIAL":
+        #        pos[2] += abs(pos[2] * 0.001)
+        #    elif orientation == "SAGITAL":
+        #        pos[0] += abs(pos[0] * 0.001)
+        #    elif orientation == "CORONAL":
+        #        pos[1] -= abs(pos[1] * 0.001)
+
+        #print ">POS", pos
 
         #pos = [x, y, z]
         #if orientation == "AXIAL":
@@ -924,7 +967,7 @@ class Viewer(wx.Panel):
         #    pos[1] -= abs(pos[1] * 0.001)
         #print ">POS", pos
         #print
-        self.cross.SetFocalPoint(coordinates[orientation])
+        self.cross.SetFocalPoint(pos)
 
         #print
         #print slice_number
@@ -933,6 +976,11 @@ class Viewer(wx.Panel):
         #print "bounds", self.cross.GetModelBounds()
         #print "actor bounds", slice_data.actor.GetBounds()
         #print
+
+    def __set_cross_visibility(self, pubsub_evt):
+        visibility = pubsub_evt.data
+        self.cross_actor.SetVisibility(visibility)
+        self.interactor.Render()
 
     def __update_cursor_position(self, slice_data, position):
         x, y, z = position
