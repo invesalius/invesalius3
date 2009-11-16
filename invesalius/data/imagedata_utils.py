@@ -172,12 +172,7 @@ def Import(filename):
     reader.WholeSlicesOn()
     reader.Update()
 
-    cast = vtk.vtkImageCast()
-    cast.SetInput(reader.GetOutput())
-    cast.SetOutputScalarType(11)
-    cast.Update()
-
-    return cast.GetOutput()
+    return reader.GetOutput()
 
 def View(imagedata):
     viewer = vtk.vtkImageViewer()

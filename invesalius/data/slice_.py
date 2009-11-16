@@ -313,13 +313,6 @@ class Slice(object):
         ps.Publisher().sendMessage('Create surface',
                                    (imagedata,colour,threshold, edited_points))
 
-
-
-
-
-
-
-
     def GetOutput(self):
         return self.cross.GetOutput()
 
@@ -334,8 +327,8 @@ class Slice(object):
         if not mask_dict:
             imagedata_mask = self.__build_mask(imagedata, create=True)
         else:
-            self.__load_masks(mask_dict)
-            imagedata_mask = self.current_mask.imagedata
+            self.__load_masks(imagedata, mask_dict)
+            imagedata_mask = self.img_colours_mask.GetOutput()
         
             
 
@@ -350,17 +343,7 @@ class Slice(object):
         else:
             blend_filter.SetOpacity(1, 0)
         blend_filter.SetInput(0, imagedata_bg)
-
-        #cast = vtk.vtkImageCast()
-        ##cast.SetInput(imagedata_mask)
-        #cast.SetOutputScalarType(3)
-        #cast.Update()
-        print 1
-        #blend_filter.SetInput(1, cast.GetOutput())
         blend_filter.SetInput(1, imagedata_mask)
-        print "******", imagedata_mask.GetScalarType() #11
-        print "******", imagedata_bg.GetScalarType() #11
-        print 2
         blend_filter.SetBlendModeToNormal()
         blend_filter.GetOutput().ReleaseDataFlagOn()
         self.blend_filter = blend_filter
@@ -384,13 +367,6 @@ class Slice(object):
 
         self.window_level = vtk.vtkImageMapToWindowLevelColors()
         self.window_level.SetInput(self.imagedata)
-        #cast = vtk.vtkImageCast()
-        #cast.SetInput(cross.GetOutput())
-        #cast.GetOutput().SetUpdateExtentToWholeExtent()
-        #cast.SetOutputScalarTypeToUnsignedChar()
-        #cast.Update()
-
-        #self.cast_filter = cast
 
 
     def UpdateCursorPosition(self, pubsub_evt):
@@ -525,7 +501,7 @@ class Slice(object):
         ps.Publisher().sendMessage('Update slice viewer')
 
 
-    def __load_masks(self, mask_dict):
+    def __load_masks(self, imagedata, mask_dict):
         keys = mask_dict.keys()
         keys.sort()
         for key in keys:
@@ -539,7 +515,7 @@ class Slice(object):
                                      mask.colour))
 
         self.current_mask = mask
-        self.__build_mask(mask.imagedata, False)
+        self.__build_mask(imagedata, False)
 
         ps.Publisher().sendMessage('Change mask selected', mask.index)
         ps.Publisher().sendMessage('Update slice viewer')
