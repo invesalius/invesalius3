@@ -86,7 +86,6 @@ class Controller():
                 self.progress_dialog = dialog.ProgressDialog(
                                     maximum = data[1])
             else:
-                print data[0]
                 if not(self.progress_dialog.Update(data[0],message)):
                     self.progress_dialog.Close()
                     self.progress_dialog = None       
@@ -120,9 +119,7 @@ class Controller():
         
         if len(patients_groups):
             group = dcm.SelectLargerDicomGroup(patients_groups)
-            print "Group", group.GetHandSortedList()
             imagedata, dicom = self.OpenDicomGroup(group, gui=False)
-            print "imagedata", imagedata
             self.CreateDicomProject(imagedata, dicom)
         # OPTION 2: ANALYZE?
         else:
@@ -204,7 +201,6 @@ class Controller():
 
         # Create imagedata
         filelist = dicom_group.GetFilenameList()
-        print "filelist", filelist
         zspacing = dicom_group.zspacing
         imagedata = utils.CreateImageData(filelist, zspacing)
 
@@ -227,14 +223,13 @@ class Controller():
 
         thresh_modes =  proj.threshold_modes.keys()
         thresh_modes.sort()
-        ps.Publisher().sendMessage('Set threshold modes',
-                                (thresh_modes,const.THRESHOLD_PRESETS_INDEX))
 
-        # Set default value into slices' default mask
-        key= thresh_modes[const.THRESHOLD_PRESETS_INDEX]
-        #value = proj.threshold_modes.get_value(key)
-        value = proj.threshold_modes[key]
-        (min_thresh, max_thresh) = value
+        default_threshold = const.THRESHOLD_PRESETS_INDEX
+        if proj.mask_dict:
+            last = max(proj.mask_dict.keys())
+            default_threshold = proj.mask_dict[last].threshold_range
+        ps.Publisher().sendMessage('Set threshold modes',
+                                (thresh_modes,default_threshold))
 
     def LoadRaycastingPreset(self, pubsub_evt):
         label = pubsub_evt.data

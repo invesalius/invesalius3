@@ -216,6 +216,10 @@ class Slice(object):
         else:
             proj = Project()
             proj.mask_dict[index].threshold_range = threshold_range
+       
+        proj = Project()
+        proj.mask_dict[self.current_mask.index ].threshold_range = threshold_range
+    
 
     def ShowMask(self, index, value):
         "Show a mask given its index and 'show' value (0: hide, other: show)"
@@ -508,6 +512,8 @@ class Slice(object):
             mask = mask_dict[key]
         
             # update gui related to mask
+            print "__load_masks"
+            print 'THRESHOLD_RANGE', mask.threshold_range
             ps.Publisher().sendMessage('Add mask',
                                     (mask.index,
                                      mask.name,

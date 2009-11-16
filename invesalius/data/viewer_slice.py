@@ -215,7 +215,7 @@ class Viewer(wx.Panel):
         self.interactor.SetCursor(wx.StockCursor(wx.CURSOR_SIZING))
 
     def __set_mode_zoom(self, pubsub_evt):
-        print "Zoom"
+        #print "Zoom"
         self.append_mode('ZOOM')
         self.mouse_pressed = 0
         ICON_IMAGE = wx.Image(os.path.join(const.ICON_DIR,
@@ -735,7 +735,7 @@ class Viewer(wx.Panel):
                                 'Set slice viewer layout')
 
     def ChangeBrushOperation(self, pubsub_evt):
-        print pubsub_evt.data
+        #print pubsub_evt.data
         self._brush_cursor_op = pubsub_evt.data
 
     def __bind_events_wx(self):
@@ -912,10 +912,10 @@ class Viewer(wx.Panel):
         extent = slice_data.actor.GetDisplayExtent()
         cam = slice_data.renderer.GetActiveCamera()
 
-        print
-        print self.orientation
-        print x, y, z
-        print actor_bound
+        #print
+        #print self.orientation
+        #print x, y, z
+        #print actor_bound
         #print "ViewUp", cam.GetViewUp()
         #print "Position", cam.GetPosition()
         #print "Orientation", cam.GetOrientation()
@@ -923,10 +923,10 @@ class Viewer(wx.Panel):
         
         vCamera = numpy.array(cam.GetPosition()) - numpy.array(cam.GetFocalPoint())
         n_vCamera = vCamera / numpy.linalg.norm(vCamera)
-        print "Normalized", n_vCamera
+        #print "Normalized", n_vCamera
 
         pos = [j + 0.01 * i for i,j in zip(n_vCamera, (x, y, z))]
-        print "posicao", pos
+        #print "posicao", pos
 
         #yz = [x + abs(x * 0.001), y, z]
         #xz = [x, y - abs(y * 0.001), z]
@@ -988,10 +988,10 @@ class Viewer(wx.Panel):
             slice_number = slice_data.number
             actor_bound = slice_data.actor.GetBounds()
 
-            print
-            print self.orientation
-            print x, y, z
-            print actor_bound
+            #print
+            #print self.orientation
+            #print x, y, z
+            #print actor_bound
 
             yz = [x + abs(x * 0.001), y, z]
             xz = [x, y - abs(y * 0.001), z]
@@ -1107,7 +1107,7 @@ class Viewer(wx.Panel):
             evt.Skip()
             
     def OnScrollBarRelease(self, evt):
-        print "OnScrollBarRelease"
+        #print "OnScrollBarRelease"
         self.UpdateSlice3D(self.pos)
         evt.Skip()
 

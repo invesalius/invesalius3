@@ -334,7 +334,7 @@ class SurfaceManager():
 
     def OnShowSurface(self, pubsub_evt):
         index, value = pubsub_evt.data
-        print "OnShowSurface", index, value
+        #print "OnShowSurface", index, value
         self.ShowActor(index, value)
 
     def ShowActor(self, index, value):

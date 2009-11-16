@@ -325,8 +325,14 @@ class MaskProperties(wx.Panel):
     def SetThresholdModes(self, pubsub_evt):
         (thresh_modes_names, default_thresh) = pubsub_evt.data
         self.combo_thresh.SetItems(thresh_modes_names)
-        self.combo_thresh.SetSelection(default_thresh)
-        (thresh_min, thresh_max) = self.threshold_modes[thresh_modes_names[default_thresh]]
+        if isinstance(default_thresh, int):
+            self.combo_thresh.SetSelection(default_thresh)
+            (thresh_min, thresh_max) =\
+                self.threshold_modes[thresh_modes_names[default_thresh]]
+        else:
+           self.combo_thresh.SetSelection(3)
+           thresh_min, thresh_max = default_thresh
+        
         self.gradient.SetMinValue(thresh_min)
         self.gradient.SetMaxValue(thresh_max)
 
@@ -349,6 +355,7 @@ class MaskProperties(wx.Panel):
     def OnSlideChanged(self, evt):
         thresh_min = self.gradient.GetMinValue()
         thresh_max = self.gradient.GetMaxValue()
+        print "OnSlideChanged", thresh_min, thresh_max
         if self.bind_evt_gradient:
             ps.Publisher().sendMessage('Set threshold values',
                                         (thresh_min, thresh_max))

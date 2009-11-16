@@ -85,13 +85,11 @@ def yGetDicomGroups(directory, recursive=True, gui=True):
         dirpath, dirnames, filenames = os.walk(directory)
         nfiles = len(filenames)
     
-    print "TOTAL FILES:", nfiles
     counter = 0
     grouper = dicom_grouper.DicomPatientGrouper()
     # Retrieve only DICOM files, splited into groups
     if recursive:
         for dirpath, dirnames, filenames in os.walk(directory):
-            print "@: ",dirpath
             for name in filenames:
                 filepath = str(os.path.join(dirpath, name))
                 parser = dicom.Parser()
@@ -104,7 +102,6 @@ def yGetDicomGroups(directory, recursive=True, gui=True):
                     grouper.AddFile(dcm)
     else:
         dirpath, dirnames, filenames = os.walk(directory)
-        print "@: ",dirpath
         for name in filenames:
             filepath = str(os.path.join(dirpath, name))
             parser = dicom.Parser()

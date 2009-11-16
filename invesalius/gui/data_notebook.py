@@ -172,6 +172,7 @@ class MasksListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
         
     def EditMaskThreshold(self, pubsub_evt):
         index, threshold_range = pubsub_evt.data
+        print "EditMaskThreshold", threshold_range
         self.SetStringItem(index, 2, str(threshold_range))
 
     def EditMaskColour(self, pubsub_evt):

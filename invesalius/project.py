@@ -181,14 +181,14 @@ class Project(object):
     def OpenPlistProject(self, filename):
         filelist = Extract(filename, tempfile.gettempdir())
         main_plist = min(filelist, key=lambda x: len(x))
-        print main_plist
+        #print main_plist
         project = plistlib.readPlist(main_plist)
 
-        print "antes", self.__dict__
+        #print "antes", self.__dict__
 
         # Path were extracted project is
         dirpath = os.path.split(filelist[0])[0]
-        print "* dirpath", dirpath
+        #print "* dirpath", dirpath
 
         for key in project:
             if key == 'imagedata':
@@ -220,7 +220,7 @@ class Project(object):
                     self.surface_dict[s.index] = s
             else: 
                 setattr(self, key, project[key])
-        print "depois", self.__dict__
+        #print "depois", self.__dict__
 
 
 
@@ -233,7 +233,7 @@ def Compress(folder, filename):
 
 def Extract(filename, folder):
     tar = tarfile.open(filename, "r:gz")
-    tar.list(verbose=True)
+    #tar.list(verbose=True)
     tar.extractall(folder)
     filelist = [os.path.join(folder, i) for i in tar.getnames()]
     tar.close()
