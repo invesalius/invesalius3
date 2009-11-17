@@ -28,6 +28,7 @@ import wx
 import wx.lib.pubsub as ps
 import vtk
 
+import constants as const
 import data.imagedata_utils as iu
 import data.mask as msk
 import data.polydata_utils as pu
@@ -186,6 +187,13 @@ class Project(object):
         shutil.rmtree(dir_temp)
 
     def OpenPlistProject(self, filename):
+        
+        if not const.VTK_WARNING:
+            fow = vtk.vtkFileOutputWindow()
+            #fow.SetFileName('c:\\vtkoutput.txt')
+            ow = vtk.vtkOutputWindow()
+            ow.SetInstance(fow)
+            
         filelist = Extract(filename, tempfile.gettempdir())
         main_plist = min(filelist, key=lambda x: len(x))
         #print main_plist
