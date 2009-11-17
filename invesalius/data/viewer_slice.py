@@ -248,7 +248,6 @@ class Viewer(wx.Panel):
         self.append_mode('CROSS')
         self.mouse_pressed = 0
         self.cross_actor.VisibilityOn()
-        self.interactor.SetCursor(wx.StockCursor(wx.CURSOR_NONE))
 
     def OnWindowLevelMove(self, evt, obj):
         if self.mouse_pressed:
