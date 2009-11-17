@@ -110,7 +110,8 @@ THRESHOLD_OUTVALUE = 0
 
 # Mask properties
 MASK_NAME_PATTERN = "Mask %d"
-MASK_OPACITY = 0.3
+MASK_OPACITY = 0.40
+#MASK_OPACITY = 0.35
 MASK_COLOUR =  [(0.33, 1, 0.33),
                 (1, 1, 0.33),
                 (0.33, 0.91, 1),
