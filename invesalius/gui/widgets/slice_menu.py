@@ -103,7 +103,7 @@ class SliceMenu(wx.Menu):
         # It doesn't work in Linux
         self.Bind(wx.EVT_MENU, self.OnPopup)
         # In Linux the bind must be putted in the submenu
-        if sys.platform == 'linux2':
+        if sys.platform == 'linux2' or sys.platform == 'darwin':
             submenu_wl.Bind(wx.EVT_MENU, self.OnPopup)
             submenu_pseudo_colours.Bind(wx.EVT_MENU, self.OnPopup)
             submenu_image_tiling.Bind(wx.EVT_MENU, self.OnPopup)
@@ -122,8 +122,9 @@ class SliceMenu(wx.Menu):
         id = evt.GetId()
         item = self.ID_TO_TOOL_ITEM[evt.GetId()]
         key = item.GetLabel()
-
+        print "OnPopup menu"
         if(key in const.WINDOW_LEVEL.keys()):
+            print "a"
             window, level = const.WINDOW_LEVEL[key]
             ps.Publisher().sendMessage('Bright and contrast adjustment image',
                     (window, level))
@@ -137,11 +138,13 @@ class SliceMenu(wx.Menu):
             ps.Publisher().sendMessage('Render volume viewer')
             
         elif(key in const.SLICE_COLOR_TABLE.keys()):
+            print "b"
             values = const.SLICE_COLOR_TABLE[key]
             ps.Publisher().sendMessage('Change colour table from background image', values)
             ps.Publisher().sendMessage('Update slice viewer')
 
         elif(key in const.IMAGE_TILING.keys()):
+            print "c"
             values = const.IMAGE_TILING[key]
             ps.Publisher().sendMessage('Set slice viewer layout', values)
             ps.Publisher().sendMessage('Update slice viewer')
