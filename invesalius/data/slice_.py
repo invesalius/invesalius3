@@ -39,6 +39,7 @@ class Slice(object):
         self.current_mask = None
         self.blend_filter = None
         self.__bind_events()
+        self.num_gradient = 0
 
     def __bind_events(self):
         # Slice properties
@@ -113,12 +114,15 @@ class Slice(object):
             self.SetMaskEditionThreshold(index, threshold_range)
 
     def __set_current_mask_threshold(self, evt_pubsub):
-        threshold_range = evt_pubsub.data
-        index = self.current_mask.index
-        self.SetMaskThreshold(index, threshold_range)
-        #Clear edited points
-        self.current_mask.edited_points = {}
-
+        #FIXME: find a better way to implement this
+        if (self.num_gradient >= 2):
+            threshold_range = evt_pubsub.data
+            index = self.current_mask.index
+            self.SetMaskThreshold(index, threshold_range)
+            #Clear edited points
+            self.current_mask.edited_points = {}
+        self.num_gradient += 1
+            
     def __set_current_mask_colour(self, pubsub_evt):
         # "if" is necessary because wx events are calling this before any mask
         # has been created
