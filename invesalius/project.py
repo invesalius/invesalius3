@@ -107,7 +107,9 @@ class Project(object):
 
         self.invesalius_version = version.get_svn_revision() 
         print self.invesalius_version
-
+        
+        self.save_as = True
+        self.path = ""
         self.debug = 0
 
     ####### MASK OPERATIONS
@@ -146,38 +148,42 @@ class Project(object):
         ps.Publisher.sendMessage('Set raycasting preset', preset)
 
     def SavePlistProject(self, dir_, filename):
-        filename = os.path.join(dir_, filename)
+        
+        dir_temp = tempfile.mkdtemp(filename)
+        filename_tmp = os.path.join(dir_temp, filename)
         
         project = {}
         
         for key in self.__dict__:
             if getattr(self.__dict__[key], 'SavePlist', None):
-                project[key] = {'#plist': self.__dict__[key].SavePlist(filename)}
+                project[key] = {'#plist': self.__dict__[key].SavePlist(filename_tmp)}
             else:
                 project[key] = self.__dict__[key]
 
         masks = {}
         for index in self.mask_dict:
             masks[str(index)] = {'#mask':\
-                                 self.mask_dict[index].SavePlist(filename)}
+                                 self.mask_dict[index].SavePlist(filename_tmp)}
             print index
 
         surfaces = {}
         for index in self.surface_dict:
             surfaces[str(index)] = {'#surface':\
-                                    self.surface_dict[index].SavePlist(filename)}
+                                    self.surface_dict[index].SavePlist(filename_tmp)}
             print index
 
         project['surface_dict'] = surfaces
         project['mask_dict'] = masks
-        img_file = '%s_%s.vti' % (filename, 'imagedata')
+        img_file = '%s_%s.vti' % (filename_tmp, 'imagedata')
         iu.Export(self.imagedata, img_file, bin=True)
         project['imagedata'] = {'$vti':img_file}
         print project
-        plistlib.writePlist(project, filename + '.plist')
+        plistlib.writePlist(project, filename_tmp + '.plist')
         
-        Compress(dir_, "teste.inv3")#os.path.join("~/Desktop/","teste.inv3"))
-        shutil.rmtree(dir_)
+        path = os.path.join(dir_,filename)
+        print path
+        Compress(dir_temp, path)#os.path.join("~/Desktop/","teste.inv3"))
+        shutil.rmtree(dir_temp)
 
     def OpenPlistProject(self, filename):
         filelist = Extract(filename, tempfile.gettempdir())

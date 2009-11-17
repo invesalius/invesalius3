@@ -29,6 +29,7 @@ import constants as const
 import default_tasks as tasks
 import default_viewers as viewers
 import import_panel as imp
+from project import Project
 
 # Object toolbar
 OBJ_TOOLS = [ID_ZOOM, ID_ZOOM_SELECT, ID_ROTATE, ID_MOVE, 
@@ -370,6 +371,9 @@ class ProjectToolBar(wx.ToolBar):
 
         self.__init_items()
         self.__bind_events()
+        
+        #FIXME:
+        self.save_as = True
 
     def __init_items(self):
 
@@ -438,8 +442,29 @@ class ProjectToolBar(wx.ToolBar):
         self.Bind(wx.EVT_TOOL, self.OnToolSave, id=const.ID_FILE_SAVE)
 
     def OnToolSave(self, evt):
-        print "Saving ..."
-        ps.Publisher().sendMessage('Save Project')
+        filename = None
+        project_name = (Project().name).replace(' ','_')
+        
+        if Project().save_as:
+            dlg = wx.FileDialog(None,
+                                "Save InVesalius project as...", # title
+                                "", # last used directory
+                                project_name, # filename
+                                "InVesalius project (*.inv3)|*.inv3",
+                                wx.SAVE|wx.OVERWRITE_PROMPT)
+            dlg.SetFilterIndex(0) # default is VTI
+                                    
+            if dlg.ShowModal() == wx.ID_OK:
+                filename = dlg.GetPath()
+                print "filename", filename
+                extension = "inv3"
+                if sys.platform != 'win32':
+                    if filename.split(".")[-1] != extension:
+                        filename = filename + "."+ extension
+            
+            Project().save_as = False
+            
+        ps.Publisher().sendMessage('Save Project',filename)
 # ------------------------------------------------------------------
 
 class ObjectToolBar(wx.ToolBar):

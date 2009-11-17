@@ -559,8 +559,7 @@ class Slice(object):
             # threshold pipeline
             current_mask.imagedata.DeepCopy(mask_thresh_imagedata)
         else:
-            mask_thresh_imagedata = vtk.vtkImageData()
-            mask_thresh_imagedata.DeepCopy(self.current_mask.imagedata)
+            mask_thresh_imagedata = self.current_mask.imagedata
             
         # map the input image through a lookup table
         img_colours_mask = vtk.vtkImageMapToColors()

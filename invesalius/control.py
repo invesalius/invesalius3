@@ -45,7 +45,7 @@ class Controller():
         self.frame = frame
         self.progress_dialog = None
         self.cancel_import = False
- 
+
 
     def __bind_events(self):
         ps.Publisher().subscribe(self.OnImportMedicalImages, 'Import directory')
@@ -257,20 +257,30 @@ class Controller():
         plistlib.writePlist(preset, preset_dir)
 
     def OnSaveProject(self, pubsub_evt):
-        filename = prj.Project().name
-        filename = filename.replace(' ','')
-        dir_ = tempfile.mkdtemp(filename)
+        
+        if not(pubsub_evt.data):
+            filename = prj.Project().path    
+        else:    
+            filename = pubsub_evt.data
+        dir_,filename = os.path.split(filename)
+            
+        if not (filename):
+            filename = prj.Project().name
+        else:
+            filename = filename.replace(' ','_')
+            prj.Project().name = filename
+        prj.Project().path = filename
         prj.Project().SavePlistProject(dir_, filename)
 
     def OnOpenProject(self, pubsub_evt):
         filename = os.path.abspath(pubsub_evt.data)
         
-        print filename
         
         proj = prj.Project()
         proj.OpenPlistProject(filename)
         proj.SetAcquisitionModality(proj.modality)
-
+        proj.save_as = False
+        proj.path = filename
         const.THRESHOLD_OUTVALUE = proj.threshold_range[0]
         const.THRESHOLD_INVALUE = proj.threshold_range[1]
         const.WINDOW_LEVEL['Default'] = (proj.window, proj.level)
