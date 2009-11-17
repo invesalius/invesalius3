@@ -333,7 +333,6 @@ class Slice(object):
         else:
             self.__load_masks(imagedata, mask_dict)
             imagedata_mask = self.img_colours_mask.GetOutput()
-        
             
 
         mask_opacity = self.current_mask.opacity
@@ -526,8 +525,6 @@ class Slice(object):
         ps.Publisher().sendMessage('Change mask selected', mask.index)
         ps.Publisher().sendMessage('Update slice viewer')
 
-
-
     def __build_mask(self, imagedata, create=True):
         # create new mask instance and insert it into project
         if create:
@@ -551,16 +548,23 @@ class Slice(object):
         lut_mask.SetRampToLinear()
         lut_mask.Build()
         self.lut_mask = lut_mask
-
-        # threshold pipeline
+        
         mask_thresh_imagedata = self.__create_mask_threshold(imagedata)
-        current_mask.imagedata.DeepCopy(mask_thresh_imagedata)
-
+            
+        if create:
+            # threshold pipeline
+            current_mask.imagedata.DeepCopy(mask_thresh_imagedata)
+        else:
+            mask_thresh_imagedata = vtk.vtkImageData()
+            mask_thresh_imagedata.DeepCopy(self.current_mask.imagedata)
+            
         # map the input image through a lookup table
         img_colours_mask = vtk.vtkImageMapToColors()
         img_colours_mask.SetOutputFormatToRGBA()
         img_colours_mask.SetLookupTable(lut_mask)
+        
         img_colours_mask.SetInput(mask_thresh_imagedata)
+        
         self.img_colours_mask = img_colours_mask
 
         return img_colours_mask.GetOutput()

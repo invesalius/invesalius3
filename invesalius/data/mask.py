@@ -72,11 +72,10 @@ class Mask():
                 edited_points = {}
                 for p in mask[key]:
                     k = [float(i) for i in p.replace('(', '').replace(')', '').split(',')]
-                    print k
                     edited_points[tuple(k)] = mask[key][p]
+                    
                 setattr(self, key, edited_points)
             else:
                 setattr(self, key, mask[key])
-        print "edited points", self.edited_points
 
 
