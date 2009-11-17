@@ -209,7 +209,7 @@ class Viewer(wx.Panel):
     def __set_mode_editor(self, pubsub_evt):
         self.append_mode('EDITOR')
         self.mouse_pressed = 0
-        #self.interactor.SetCursor(wx.StockCursor(wx.CURSOR_BLANK))
+        self.interactor.SetCursor(wx.StockCursor(wx.CURSOR_BLANK))
 
     def __set_mode_spin(self, pubsub_evt):
         self.append_mode('SPIN')
@@ -1020,10 +1020,11 @@ class Viewer(wx.Panel):
         self.interactor.GetRenderWindow().AddRenderer(renderer)
         actor = vtk.vtkImageActor()
         actor.SetInput(imagedata)
-        renderer.AddActor(actor)
         slice_data = SliceData()
         slice_data.renderer = renderer
         slice_data.actor = actor
+        renderer.AddActor(actor)
+        renderer.AddActor(slice_data.text_actor)
         return slice_data
 
     def __update_camera(self, slice_data):
@@ -1141,11 +1142,11 @@ class Viewer(wx.Panel):
             pos = self.layout[0] * self.layout[1] * index + n
             max = actor.GetSliceNumberMax()
             if pos < max:
-                slice_data.number = pos
+                slice_data.SetNumber(pos)
                 self.__update_display_extent(slice_data)
-                ren.AddActor(actor)
+                slice_data.Show()
             else:
-                ren.RemoveActor(actor)
+                slice_data.Hide()
 
             position = {"SAGITAL": {0: slice_data.number},
                         "CORONAL": {1: slice_data.number},
