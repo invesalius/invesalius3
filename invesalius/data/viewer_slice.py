@@ -127,6 +127,8 @@ class Viewer(wx.Panel):
         self.ren = ren
 
     def append_mode(self, mode):
+        if "ZOOM" in self.modes or "ZOOMSELECT" in self.modes:
+            self.interactor.SetCursor(wx.StockCursor(wx.CURSOR_DEFAULT))
 
         #TODO: Temporary
         self.modes = []
