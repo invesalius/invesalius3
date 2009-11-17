@@ -258,12 +258,15 @@ class Controller():
 
     def OnSaveProject(self, pubsub_evt):
         filename = prj.Project().name
+        filename = filename.replace(' ','')
         dir_ = tempfile.mkdtemp(filename)
         prj.Project().SavePlistProject(dir_, filename)
 
     def OnOpenProject(self, pubsub_evt):
-        filename = pubsub_evt.data
-
+        filename = os.path.abspath(pubsub_evt.data)
+        
+        print filename
+        
         proj = prj.Project()
         proj.OpenPlistProject(filename)
         proj.SetAcquisitionModality(proj.modality)

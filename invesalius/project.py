@@ -147,6 +147,7 @@ class Project(object):
 
     def SavePlistProject(self, dir_, filename):
         filename = os.path.join(dir_, filename)
+        
         project = {}
         
         for key in self.__dict__:
@@ -187,7 +188,7 @@ class Project(object):
         #print "antes", self.__dict__
 
         # Path were extracted project is
-        dirpath = os.path.split(filelist[0])[0]
+        dirpath = os.path.abspath(os.path.split(filelist[0])[0])
         #print "* dirpath", dirpath
 
         for key in project:

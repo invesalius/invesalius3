@@ -61,7 +61,7 @@ class Mask():
 
     def OpenPList(self, filename):
         mask = plistlib.readPlist(filename)
-        dirpath = os.path.split(filename)[0]
+        dirpath = os.path.abspath(os.path.split(filename)[0])
         for key in mask:
             print "Key", key
             if key == 'imagedata':

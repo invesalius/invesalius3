@@ -61,7 +61,7 @@ class Surface():
 
     def OpenPList(self, filename):
         surface = plistlib.readPlist(filename)
-        dirpath = os.path.split(filename)[0]
+        dirpath = os.path.abspath(os.path.split(filename)[0])
         for key in surface:
             if key == 'polydata':
                 filepath = os.path.split(surface[key]["$vtp"])[-1]
