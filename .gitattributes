@@ -62,6 +62,8 @@ icons/slice_plane.png -text
 icons/slice_plane_original.png -text
 icons/surface_export.png -text
 icons/surface_export_original.png -text
+icons/text.png -text
+icons/text_original.png -text
 icons/tool_annotation.png -text
 icons/tool_annotation_original.png -text
 icons/tool_contrast.png -text
