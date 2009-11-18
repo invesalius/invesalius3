@@ -18,20 +18,25 @@
 #--------------------------------------------------------------------------
 import vtk
 
+import constants as const
+
 class SliceData(object):
     def __init__(self):
-        self.renderer = None
         self.actor = None
-        self.number = 0
         self.cursor = None
+        self.number = 0
+        self.orientation = 'AXIAL'
+        self.renderer = None
         self.__create_text()
 
     def __create_text(self):
+        colour = const.ORIENTATION_COLOUR[self.orientation]
         text_property = vtk.vtkTextProperty()
+        text_property.SetColor(colour)
         text_property.SetFontSize(16)
         text_property.SetFontFamilyToTimes()
         text_property.BoldOn()
-        #text_property.SetColor(colour)
+        self.text_property = text_property
 
         text_actor = vtk.vtkTextActor()
         text_actor.SetInput("%d" % self.number)
@@ -48,6 +53,12 @@ class SliceData(object):
             self.renderer.RemoveActor(self.cursor.actor)
         self.renderer.AddActor(cursor.actor)
         self.cursor = cursor
+
+    def SetOrientation(self, orientation):
+        self.orientation = orientation
+        colour = const.ORIENTATION_COLOUR[self.orientation]
+        self.text_property.SetColor(colour)
+        self.text_actor.GetTextProperty().ShallowCopy(self.text_property)
 
     def Hide(self):
         self.renderer.RemoveActor(self.actor)

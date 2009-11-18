@@ -1021,6 +1021,7 @@ class Viewer(wx.Panel):
         actor = vtk.vtkImageActor()
         actor.SetInput(imagedata)
         slice_data = SliceData()
+        slice_data.SetOrientation(self.orientation)
         slice_data.renderer = renderer
         slice_data.actor = actor
         renderer.AddActor(actor)
