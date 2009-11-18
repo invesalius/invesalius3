@@ -46,6 +46,9 @@ SLICE_TOOLS = [ID_SLICE_SCROLL, ID_CROSS] = [wx.NewId() for number in range(2)]
 SLICE_MODE_BY_ID = {ID_SLICE_SCROLL: const.MODE_SLICE_SCROLL,
                     ID_CROSS: const.MODE_SLICE_CROSS}
 
+# Layout toolbar
+VIEW_TOOLS = [ID_LAYOUT, ID_TEXT] = [wx.NewId() for number in range(2)]
+
 class Frame(wx.Frame):
     def __init__(self, prnt):
         wx.Frame.__init__(self, id=-1, name='', parent=prnt,
@@ -609,11 +612,9 @@ class SliceToolBar(wx.ToolBar):
             BMP_CROSS = wx.Bitmap(os.path.join(const.ICON_DIR, "cross.png"),
                               wx.BITMAP_TYPE_PNG)
 
-        self.AddLabelTool(ID_SLICE_SCROLL, "Scroll slice",
-                           BMP_SLICE, kind = wx.ITEM_CHECK)
+        self.AddCheckTool(ID_SLICE_SCROLL, BMP_SLICE)
 
-        self.AddLabelTool(ID_CROSS, "Cross",
-                           BMP_CROSS, kind = wx.ITEM_CHECK)
+        self.AddCheckTool(ID_CROSS, BMP_CROSS)
 
         self.Realize()
 
@@ -625,7 +626,6 @@ class SliceToolBar(wx.ToolBar):
                                 'Untoggle slice toolbar items')
 
     def OnClick(self, evt):
-
         id = evt.GetId()
         state = self.GetToolState(id)
 
@@ -645,8 +645,10 @@ class SliceToolBar(wx.ToolBar):
             ps.Publisher().sendMessage('Set cross visibility', 0)
 
         for item in SLICE_TOOLS:
+            print "SLICE_TOOLS"
             state = self.GetToolState(item)
             if state and (item != id):
+                print "sim"
                 self.ToggleTool(item, False)
 
         evt.Skip()
@@ -687,6 +689,8 @@ class LayoutToolBar(wx.ToolBar):
                                                    "layout_full_original.gif"),
                                   wx.BITMAP_TYPE_GIF)
 
+            BMP_TEXT = wx.Bitmap(os.path.join(const.ICON_DIR,"text_original.png"))
+
         else:
             self.BMP_WITHOUT_MENU = wx.Bitmap(os.path.join(const.ICON_DIR,
                                                       "layout_data_only.gif"),
@@ -694,24 +698,47 @@ class LayoutToolBar(wx.ToolBar):
             self.BMP_WITH_MENU = wx.Bitmap(os.path.join(const.ICON_DIR,
                                                    "layout_full.gif"),
                                       wx.BITMAP_TYPE_GIF)
+            BMP_TEXT = wx.Bitmap(os.path.join(const.ICON_DIR,"text_original.png"))
 
-        self.AddLabelTool(101, "",bitmap=self.BMP_WITHOUT_MENU, shortHelp= "Hide task panel")
+
+        self.AddLabelTool(ID_LAYOUT, "",bitmap=self.BMP_WITHOUT_MENU, shortHelp= "Hide task panel")
+        self.AddCheckTool(ID_TEXT, bitmap=BMP_TEXT, shortHelp= "Hide texts")
         
         self.Realize()
 
     def __bind_events_wx(self):
         self.Bind(wx.EVT_TOOL, self.OnClick)
-    
-    def OnClick(self, evt):
+   
+    def OnClick(self, event):
+        id = event.GetId()
+        if id == ID_LAYOUT:
+            self.OnTask()
+        elif id== ID_TEXT:
+            self.OnText(event)
+            
+
+        for item in VIEW_TOOLS:
+            state = self.GetToolState(item)
+            if state and (item != id):
+                self.ToggleTool(item, False)
+ 
+    def OnTask(self):
+
         if self.ontool:
-            self.SetToolNormalBitmap(101,self.BMP_WITHOUT_MENU )
+            self.SetToolNormalBitmap(ID_LAYOUT,self.BMP_WITHOUT_MENU )
             ps.Publisher().sendMessage('Show task panel')
-            self.SetToolShortHelp(101,"Hide task panel")
+            self.SetToolShortHelp(ID_LAYOUT,"Hide task panel")
             self.ontool = False
         else:
             self.bitmap = self.BMP_WITH_MENU
-            self.SetToolNormalBitmap(101,self.BMP_WITH_MENU)
+            self.SetToolNormalBitmap(ID_LAYOUT,self.BMP_WITH_MENU)
             ps.Publisher().sendMessage('Hide task panel')
-            self.SetToolShortHelp(101, "Show task panel")
+            self.SetToolShortHelp(ID_LAYOUT, "Show task panel")
             self.ontool = True
+
+    def OnText(self, event):
+        if event.IsChecked():
+            print "TODO: Send message so all textactors are shown"
+        else:
+            print "TODO: Send message so all textactors are hiden"
 
