@@ -132,3 +132,16 @@ def Import(filename):
     reader.SetFileName(filename)
     reader.Update()
     return reader.GetOutput()
+
+def SelectPolyDataPart(polydata, point):
+    """
+    The function require vtkPolyData and point id
+    from vtkPolyData.
+    """
+    conn = vtk.vtkPolyDataConnectivityFilter()
+    conn.SetInput(polydata)
+    conn.SetExtractionModeToPointSeededRegions()
+    conn.AddSeed(point)
+    conn.Update()
+
+    return conn.GetOutput()

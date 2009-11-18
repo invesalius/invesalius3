@@ -670,3 +670,14 @@ class SlicePlane:
             self.plane_z.SetPlaneOrientationToZAxes()
             self.plane_z.SetSliceIndex(number)
 
+
+    def PointId(self, evt, obj):
+        #TODO: add in the code
+        #   picker = vtk.vtkPointPicker()
+        #   interactor.SetPicker(picker)
+        #   interactor.AddObserver("left...", self.PointId)
+        
+        x,y = evt.GetLastEventPosition()
+        self.picker.Pick(x, y, 0, self.ren1)
+        point_id = self.picker.GetPointId()
+        
