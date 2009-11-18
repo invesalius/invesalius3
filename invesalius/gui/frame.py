@@ -674,29 +674,28 @@ class LayoutToolBar(wx.ToolBar):
         self.parent = parent
         self.__init_items()
         self.__bind_events_wx()
+        self.ontool = False
 
     def __init_items(self):
 
         if sys.platform == 'darwin':
-            BMP_WITHOUT_MENU =\
+            self.BMP_WITHOUT_MENU =\
             wx.Bitmap(os.path.join(const.ICON_DIR,
                                    "layout_data_only_original.gif"),
                                wx.BITMAP_TYPE_GIF)
-            BMP_WITH_MENU = wx.Bitmap(os.path.join(const.ICON_DIR,
+            self.BMP_WITH_MENU = wx.Bitmap(os.path.join(const.ICON_DIR,
                                                    "layout_full_original.gif"),
                                   wx.BITMAP_TYPE_GIF)
 
         else:
-            BMP_WITHOUT_MENU = wx.Bitmap(os.path.join(const.ICON_DIR,
+            self.BMP_WITHOUT_MENU = wx.Bitmap(os.path.join(const.ICON_DIR,
                                                       "layout_data_only.gif"),
                                    wx.BITMAP_TYPE_GIF)
-            BMP_WITH_MENU = wx.Bitmap(os.path.join(const.ICON_DIR,
+            self.BMP_WITH_MENU = wx.Bitmap(os.path.join(const.ICON_DIR,
                                                    "layout_full.gif"),
                                       wx.BITMAP_TYPE_GIF)
 
-        self.AddLabelTool(101, "Full layout", BMP_WITHOUT_MENU, kind = wx.ITEM_RADIO)
-        self.AddLabelTool(102, "Original layout", BMP_WITH_MENU, kind = wx.ITEM_RADIO)
-        self.ToggleTool(102, True)
+        self.AddLabelTool(101, "",bitmap=self.BMP_WITHOUT_MENU, shortHelp= "Hide task panel")
         
         self.Realize()
 
@@ -704,8 +703,15 @@ class LayoutToolBar(wx.ToolBar):
         self.Bind(wx.EVT_TOOL, self.OnClick)
     
     def OnClick(self, evt):
-            
-        if (evt.GetId() == 101):
-            ps.Publisher().sendMessage('Hide task panel')
-        else:
+        if self.ontool:
+            self.SetToolNormalBitmap(101,self.BMP_WITHOUT_MENU )
             ps.Publisher().sendMessage('Show task panel')
+            self.SetToolShortHelp(101,"Hide task panel")
+            self.ontool = False
+        else:
+            self.bitmap = self.BMP_WITH_MENU
+            self.SetToolNormalBitmap(101,self.BMP_WITH_MENU)
+            ps.Publisher().sendMessage('Hide task panel')
+            self.SetToolShortHelp(101, "Show task panel")
+            self.ontool = True
+
