@@ -41,18 +41,18 @@ class SliceData(object):
         text_actor = vtk.vtkTextActor()
         text_actor.SetInput("%d" % self.number)
         text_actor.GetTextProperty().ShallowCopy(text_property)
-        text_actor.SetPosition(1,1)
+        text_actor.SetPosition(10, 10)
         self.text_actor = text_actor
-
-    def SetNumber(self, number):
-        self.number = number
-        self.text_actor.SetInput("%d" % self.number)
 
     def SetCursor(self, cursor):
         if self.cursor:
             self.renderer.RemoveActor(self.cursor.actor)
         self.renderer.AddActor(cursor.actor)
         self.cursor = cursor
+
+    def SetNumber(self, number):
+        self.number = number
+        self.text_actor.SetInput("%d" % self.number)
 
     def SetOrientation(self, orientation):
         self.orientation = orientation
