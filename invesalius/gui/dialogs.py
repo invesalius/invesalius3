@@ -16,9 +16,14 @@
 #    PARTICULAR. Consulte a Licenca Publica Geral GNU para obter mais
 #    detalhes.
 #--------------------------------------------------------------------------
+import os
+import sys
+
 import wx
 from wx.lib import masked
 import wx.lib.pubsub as ps
+
+import project
 
 class NumberDialog(wx.Dialog):
     def __init__(self, message, value=0):
@@ -115,4 +120,74 @@ class ProgressDialog(object):
                      
     def Close(self):
         self.dlg.Destroy()
+
+
+
+
+
+
+#---------
+WILDCARD_OPEN = "InVesalius 3 project (*.inv3)|*.inv3|"\
+                "All files (*.*)|*.*"
+
+def ShowOpenProjectDialog():
+    # Default system path
+    if sys.platform == 'win32':
+        default_path = ""
+    else:
+        default_path = os.getcwd()
+
+    dlg = wx.FileDialog(None, message="Open InVesalius 3 project...",
+                        defaultDir=default_path,
+                        defaultFile="", wildcard=WILDCARD_OPEN,
+                        style=wx.OPEN|wx.CHANGE_DIR)
+
+    # In OSX this filter is not working - wxPython 2.8.10 problem
+    if sys.platform != 'darwin':
+        dlg.SetFilterIndex(0)
+    else:
+        dlg.SetFilterIndex(1)
+
+    # Show the dialog and retrieve the user response. If it is the OK response,
+    # process the data.
+    filepath = None
+    if dlg.ShowModal() == wx.ID_OK:
+        # This returns a Python list of files that were selected.
+        filepath = dlg.GetPath()
+
+    # Destroy the dialog. Don't do this until you are done with it!
+    # BAD things can happen otherwise!
+    dlg.Destroy()
+    return filepath
+
+def ShowImportDirDialog():
+    dlg = wx.DirDialog(None, "Choose a DICOM folder:", "",
+                        style=wx.DD_DEFAULT_STYLE
+                        | wx.DD_DIR_MUST_EXIST
+                        | wx.DD_CHANGE_DIR)
+
+    path = None
+    if dlg.ShowModal() == wx.ID_OK:
+        path = dlg.GetPath()
         
+    # Only destroy a dialog after you're done with it.
+    dlg.Destroy()
+    return path
+
+def ShowSaveAsProjectDialog(default_filename=None):
+    dlg = wx.FileDialog(None,
+                        "Save project as...", # title
+                        "", # last used directory
+                        default_filename,
+                        "InVesalius project (*.inv3)|*.inv3",
+                        wx.SAVE|wx.OVERWRITE_PROMPT)
+    #dlg.SetFilterIndex(0) # default is VTI
+
+    filename = None                 
+    if dlg.ShowModal() == wx.ID_OK:
+        filename = dlg.GetPath()
+        extension = "inv3"
+        if sys.platform != 'win32':
+            if filename.split(".")[-1] != extension:
+                filename = filename + "." + extension
+    return filename 

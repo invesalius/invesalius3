@@ -276,7 +276,7 @@ VTK_WARNING = 0
 #----------------------------------------------------------
 
 [ID_FILE_IMPORT, ID_FILE_LOAD_INTERNET, ID_FILE_SAVE, ID_FILE_PHOTO,
-ID_FILE_PRINT] = [wx.NewId() for number in range(5)]
+ID_FILE_PRINT, ID_FILE_OPEN] = [wx.NewId() for number in range(6)]
 
 
 

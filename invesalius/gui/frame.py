@@ -28,6 +28,7 @@ import wx.lib.pubsub as ps
 import constants as const
 import default_tasks as tasks
 import default_viewers as viewers
+import gui.dialogs as dlg
 import import_panel as imp
 from project import Project
 
@@ -82,6 +83,15 @@ class Frame(wx.Frame):
         ps.Publisher().subscribe(self.SetProjectName, 'Set project name')
         ps.Publisher().subscribe(self.ShowContentPanel, 'Cancel DICOM load')
         ps.Publisher().subscribe(self.HideImportPanel, 'Hide import panel')
+        ps.Publisher().subscribe(self.BeginBusyCursor, 'Begin busy cursor')
+        ps.Publisher().subscribe(self.EndBusyCursor, 'End busy cursor')
+
+
+    def EndBusyCursor(self, pubsub_evt=None):
+        wx.EndBusyCursor()
+
+    def BeginBusyCursor(self, pubsub_evt=None):
+        wx.BeginBusyCursor()
 
     def SetProjectName(self, pubsub_evt):
         proj_name = pubsub_evt.data
@@ -377,26 +387,15 @@ class ProjectToolBar(wx.ToolBar):
 
     def __init_items(self):
 
-
-        BMP_IMPORT = wx.Bitmap(os.path.join(const.ICON_DIR, "file_import.png"),
-                                    wx.BITMAP_TYPE_PNG)
-        BMP_NET = wx.Bitmap(os.path.join(const.ICON_DIR,
-                                         "file_from_internet.png"),
-                                wx.BITMAP_TYPE_PNG)
-        BMP_SAVE = wx.Bitmap(os.path.join(const.ICON_DIR, "file_save.png"),
-                                    wx.BITMAP_TYPE_PNG)
-        BMP_PRINT = wx.Bitmap(os.path.join(const.ICON_DIR, "print.png"),
-                                    wx.BITMAP_TYPE_PNG)
-        BMP_PHOTO = wx.Bitmap(os.path.join(const.ICON_DIR, "tool_photo.png"),
-                                    wx.BITMAP_TYPE_PNG)
-
         if sys.platform == 'darwin':
-            BMP_IMPORT = wx.Bitmap(os.path.join(const.ICON_DIR,
-                                                "file_import_original.png"),
-                                   wx.BITMAP_TYPE_PNG)
             BMP_NET = wx.Bitmap(os.path.join(const.ICON_DIR,
                                              "file_from_internet_original.png"),
  	                                wx.BITMAP_TYPE_PNG)
+            BMP_IMPORT = wx.Bitmap(os.path.join(const.ICON_DIR,
+                                                "file_import_original.png"),
+                                   wx.BITMAP_TYPE_PNG)
+            BMP_OPEN = wx.Bitmap(os.path.join(const.ICON_DIR,"file_open_original.png"),
+                                wx.BITMAP_TYPE_PNG)
             BMP_SAVE = wx.Bitmap(os.path.join(const.ICON_DIR,
                                               "file_save_original.png"),
  	                                 wx.BITMAP_TYPE_PNG)
@@ -407,25 +406,28 @@ class ProjectToolBar(wx.ToolBar):
                                                "tool_photo_original.png"),
  	                                    wx.BITMAP_TYPE_PNG)
         else:
-            BMP_IMPORT = wx.Bitmap(os.path.join(const.ICON_DIR,
-                                                "file_import.png"),
-                                    wx.BITMAP_TYPE_PNG)
-            BMP_NET = wx.Bitmap(os.path.join(const.ICON_DIR,
-                                             "file_from_internet.png"),
+            BMP_NET = wx.Bitmap(os.path.join(const.ICON_DIR,"file_from_internet.png"),
                                 wx.BITMAP_TYPE_PNG)
+            BMP_IMPORT = wx.Bitmap(os.path.join(const.ICON_DIR, "file_import.png"),
+                                   wx.BITMAP_TYPE_PNG)
+            BMP_OPEN = wx.Bitmap(os.path.join(const.ICON_DIR,"file_open.png"),
+                                 wx.BITMAP_TYPE_PNG)
             BMP_SAVE = wx.Bitmap(os.path.join(const.ICON_DIR, "file_save.png"),
-                                  wx.BITMAP_TYPE_PNG)
+                                 wx.BITMAP_TYPE_PNG)
             BMP_PRINT = wx.Bitmap(os.path.join(const.ICON_DIR, "print.png"),
                                   wx.BITMAP_TYPE_PNG)
             BMP_PHOTO = wx.Bitmap(os.path.join(const.ICON_DIR, "tool_photo.png"),
-                                   wx.BITMAP_TYPE_PNG)
+                                  wx.BITMAP_TYPE_PNG)
 
-        self.AddLabelTool(const.ID_FILE_IMPORT,
-                           "Import medical image...",
-                           BMP_IMPORT)
         self.AddLabelTool(const.ID_FILE_LOAD_INTERNET,
                            "Load medical image...",
                            BMP_NET)
+        self.AddLabelTool(const.ID_FILE_IMPORT,
+                           "Import medical image...",
+                           BMP_IMPORT)
+        self.AddLabelTool(const.ID_FILE_OPEN,
+                           "Open InVesalius 3 project...",
+                           BMP_OPEN)
         self.AddLabelTool(const.ID_FILE_SAVE,
                            "Save InVesalius project",
                            BMP_SAVE)
@@ -440,32 +442,36 @@ class ProjectToolBar(wx.ToolBar):
 
     def __bind_events(self):
         self.Bind(wx.EVT_TOOL, self.OnToolSave, id=const.ID_FILE_SAVE)
+        self.Bind(wx.EVT_TOOL, self.OnToolOpen, id=const.ID_FILE_OPEN)
+        self.Bind(wx.EVT_TOOL, self.OnToolImport, id=const.ID_FILE_IMPORT)
 
-    def OnToolSave(self, evt):
-        filename = None
-        project_name = (Project().name).replace(' ','_')
-        
+    def OnToolImport(self, event):
+        dirpath = dlg.ShowImportDirDialog()
+        if dirpath:
+            ps.Publisher().sendMessage("Load data to import panel", path)
+        event.Skip()
+
+    def OnToolOpen(self, event):
+        filepath = dlg.ShowOpenProjectDialog()
+        if filepath:
+            ps.Publisher().sendMessage('Open Project', filepath)
+        event.Skip()
+
+    def OnToolSave(self, event):
+        filename = (Project().name).replace(' ','_')
         if Project().save_as:
-            dlg = wx.FileDialog(None,
-                                "Save InVesalius project as...", # title
-                                "", # last used directory
-                                project_name, # filename
-                                "InVesalius project (*.inv3)|*.inv3",
-                                wx.SAVE|wx.OVERWRITE_PROMPT)
-            dlg.SetFilterIndex(0) # default is VTI
-                                    
-            if dlg.ShowModal() == wx.ID_OK:
-                filename = dlg.GetPath()
-                print "filename", filename
-                extension = "inv3"
-                if sys.platform != 'win32':
-                    if filename.split(".")[-1] != extension:
-                        filename = filename + "."+ extension
-            
-            Project().save_as = False
-            
+            filename = dlg.ShowSaveAsProjectDialog(filename)
+            if filename: 
+                Project().save_as = False
+            else:
+                return
         ps.Publisher().sendMessage('Save Project',filename)
-# ------------------------------------------------------------------
+        event.Skip()
+        
+    
+
+                       
+        # ------------------------------------------------------------------
 
 class ObjectToolBar(wx.ToolBar):
     def __init__(self, parent):
@@ -593,11 +599,14 @@ class SliceToolBar(wx.ToolBar):
             BMP_SLICE = wx.Bitmap(os.path.join(const.ICON_DIR,
                                                "slice_original.png"),
                                   wx.BITMAP_TYPE_PNG)
+
+            BMP_CROSS = wx.Bitmap(os.path.join(const.ICON_DIR,"cross_original.png"),
+                              wx.BITMAP_TYPE_PNG)
         else:
             BMP_SLICE = wx.Bitmap(os.path.join(const.ICON_DIR, "slice.png"),
                                   wx.BITMAP_TYPE_PNG)
 
-        BMP_CROSS = wx.Bitmap(os.path.join(const.ICON_DIR, "cross.png"),
+            BMP_CROSS = wx.Bitmap(os.path.join(const.ICON_DIR, "cross.png"),
                               wx.BITMAP_TYPE_PNG)
 
         self.AddLabelTool(ID_SLICE_SCROLL, "Scroll slice",

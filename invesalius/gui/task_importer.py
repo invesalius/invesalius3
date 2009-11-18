@@ -25,15 +25,13 @@ import wx.lib.platebtn as pbtn
 import wx.lib.pubsub as ps
 
 import constants as const
+import gui.dialogs as dlg
 
 BTN_IMPORT_LOCAL = wx.NewId()
 BTN_IMPORT_PACS = wx.NewId()
 BTN_OPEN_PROJECT = wx.NewId()
 
-WILDCARD_OPEN = "InVesalius 1 project (*.promed)|*.promed|"\
-                "InVesalius 2 project (*.inv)|*.inv|"\
-                "InVesalius 3 project (*.inv3)|*.inv3|"\
-                "All files (*.*)|*.*"
+
 
 class TaskPanel(wx.Panel):
     def __init__(self, parent):
@@ -93,9 +91,9 @@ class InnerTaskPanel(wx.Panel):
         # Image(s) for buttons
         BMP_IMPORT = wx.Bitmap("../icons/file_import.png", wx.BITMAP_TYPE_PNG)
         BMP_NET = wx.Bitmap("../icons/file_from_internet.png", wx.BITMAP_TYPE_PNG)
-        BMP_NULL = wx.Bitmap("../icons/object_invisible.jpg", wx.BITMAP_TYPE_JPEG)
+        BMP_OPEN_PROJECT = wx.Bitmap("../icons/file_open.png", wx.BITMAP_TYPE_PNG)
 
-        bmp_list = [BMP_IMPORT, BMP_NET, BMP_NULL]
+        bmp_list = [BMP_IMPORT, BMP_NET, BMP_OPEN_PROJECT]
         for bmp in bmp_list:
             bmp.SetWidth(25)
             bmp.SetHeight(25)
@@ -103,12 +101,12 @@ class InnerTaskPanel(wx.Panel):
         # Buttons related to hyperlinks
         button_style = pbtn.PB_STYLE_SQUARE | pbtn.PB_STYLE_DEFAULT
 
-        button_import_local = pbtn.PlateButton(self, BTN_IMPORT_LOCAL, "",
-                                               BMP_IMPORT, style=button_style)
         button_import_pacs = pbtn.PlateButton(self, BTN_IMPORT_PACS, "", BMP_NET,
                                               style=button_style)
+        button_import_local = pbtn.PlateButton(self, BTN_IMPORT_LOCAL, "",
+                                               BMP_IMPORT, style=button_style)
         button_open_proj = pbtn.PlateButton(self, BTN_OPEN_PROJECT, "",
-                                            BMP_NULL, style=button_style)
+                                            BMP_OPEN_PROJECT, style=button_style)
 
         # When using PlaneButton, it is necessary to bind events from parent win
         self.Bind(wx.EVT_BUTTON, self.OnButton)
@@ -119,10 +117,10 @@ class InnerTaskPanel(wx.Panel):
 
         fixed_sizer = wx.FlexGridSizer(rows=3, cols=2, hgap=2, vgap=0)
         fixed_sizer.AddGrowableCol(0, 1)
-        fixed_sizer.AddMany([ (link_import_local, 1, flag_link, 3),
-                              (button_import_local, 0, flag_button),
-                              (link_import_pacs, 1, flag_link, 3),
+        fixed_sizer.AddMany([ (link_import_pacs, 1, flag_link, 3),
                               (button_import_pacs, 0, flag_button),
+                              (link_import_local, 1, flag_link, 3),
+                              (button_import_local, 0, flag_button),
                               (link_open_proj, 1, flag_link, 3),
                               (button_open_proj, 0, flag_button) ])
 
@@ -137,76 +135,44 @@ class InnerTaskPanel(wx.Panel):
 
         # Test load and unload specific projects' links
         self.TestLoadProjects()
-        #self.UnloadProjects()
-        ps.Publisher().subscribe(self.OnLinkImport,("Run menu item",
-                                        str(const.ID_FILE_IMPORT)))
 
-    def OnLinkImport(self, evt=None):
-        dlg = wx.DirDialog(self, "Choose a directory:", "",
-                        style=wx.DD_DEFAULT_STYLE
-                        | wx.DD_DIR_MUST_EXIST
-                        | wx.DD_CHANGE_DIR)
+    def OnLinkImport(self, event):
+        self.LinkImport()
+        event.Skip()
+    
+    def OnLinkImportPACS(self, event):
+        self.LinkImportPACS()
+        event.Skip()
 
-        if dlg.ShowModal() == wx.ID_OK:
-            path = dlg.GetPath()
-            ps.Publisher().sendMessage("Load data to import panel", path)
+    def OnLinkOpenProject(self, event):
+        self.LinkOpenProject()
+        event.Skip()
 
-        # Only destroy a dialog after you're done with it.
-        dlg.Destroy()
-        
-        try:
-            if evt:
-                evt.Skip()
-        except(AttributeError):
-            pass
-            
-    def OnLinkImportPACS(self, evt=None):
+    def LinkImport(self):
+        dirpath = dlg.ShowImportDirDialog()
+        if dirpath:
+            ps.Publisher().sendMessage("Load data to import panel", dirpath)
+ 
+    def LinkImportPACS(self):
         print "TODO: Send Signal - Import DICOM files from PACS"
-        if evt:
-            evt.Skip()
 
-    def OnLinkOpenProject(self, evt=None, proj_name=""):
-        if proj_name:
-            print "TODO: Send Signal - Open project "+ proj_name
+    def LinkOpenProject(self, filename=None):
+        if filename:
+            print "TODO: Send Signal - Open inv3 last project"
         else:
-            if sys.platform == 'win32':
-                path = ""
-            else:
-                path = os.getcwd()
-            dlg = wx.FileDialog(self, message="Open project...",
-                                defaultDir=path,
-                                defaultFile="", wildcard=WILDCARD_OPEN,
-                                style=wx.OPEN|wx.CHANGE_DIR)
-            if sys.platform != 'darwin':
-                dlg.SetFilterIndex(2)
-            else:
-                dlg.SetFilterIndex(3)
-
-            # Show the dialog and retrieve the user response. If it is the OK response,
-            # process the data.
-            if dlg.ShowModal() == wx.ID_OK:
-                # This returns a Python list of files that were selected.
-                proj_path = dlg.GetPath()
-                proj_name = dlg.GetFilename()
-                ps.Publisher().sendMessage('Open Project', proj_path)
-                print "TODO: Send Signal - Change frame title "+ proj_name
-
-            # Destroy the dialog. Don't do this until you are done with it!
-            # BAD things can happen otherwise!
-            dlg.Destroy()
-
-        if evt:
-            evt.Skip()
+            filepath = dlg.ShowOpenProjectDialog()
+            if filepath:
+                ps.Publisher().sendMessage('Open Project', filepath)
 
     def OnButton(self, evt):
         id = evt.GetId()
 
         if id == BTN_IMPORT_LOCAL:
-            self.OnLinkImport()
+            self.LinkImport()
         elif id == BTN_IMPORT_PACS:
-            self.OnLinkImportPACS()
+            self.LinkImportPACS()
         else: #elif id == BTN_OPEN_PROJECT:
-            self.OnLinkOpenProject()
+            self.LinkOpenProject()
 
     def TestLoadProjects(self):
         self.LoadProject("test1.inv3")
@@ -235,7 +201,7 @@ class InnerTaskPanel(wx.Panel):
             proj_link.AutoBrowse(False)
             proj_link.UpdateLink()
             proj_link.Bind(hl.EVT_HYPERLINK_LEFT,
-                       lambda e: self.OnLinkOpenProject(e, proj_name))
+                       lambda e: self.LinkOpenProject(proj_name))
 
             # Add to existing frame
             self.sizer.Add(proj_link, 1, wx.GROW | wx.EXPAND | wx.ALL, 2)
