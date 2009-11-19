@@ -34,11 +34,11 @@ class SliceData(object):
         colour = const.ORIENTATION_COLOUR[self.orientation]
 
         text = vu.Text()
-        text.BoldOn()
+        #text.BoldOn()
         text.SetColour(colour)
         text.SetPosition(const.TEXT_POS_LEFT_DOWN_SLC)
         text.SetSize(const.TEXT_SIZE_LARGE)
-        text.SetValue("%d" % self.number)
+        text.SetValue(self.number)
         self.text = text
 
     def SetCursor(self, cursor):

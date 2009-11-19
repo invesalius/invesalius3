@@ -16,9 +16,10 @@
 #    PARTICULAR. Consulte a Licenca Publica Geral GNU para obter mais
 #    detalhes.
 #--------------------------------------------------------------------------
-import wx.lib.pubsub as ps
-import vtk
+import sys
 
+import vtk
+import wx.lib.pubsub as ps
 
 import constants as const
 from gui.dialogs import ProgressDialog 
@@ -92,43 +93,39 @@ class Text(object):
         property.SetFontFamilyToArial()
         property.BoldOff()
         property.ItalicOff()
-        property.ShadowOff()
+        property.ShadowOn()
         property.SetJustificationToLeft()
         property.SetVerticalJustificationToTop()
         property.SetColor(const.TEXT_COLOUR)
         self.property = property
 
-        #mapper = vtk.vtkTextMapper()
-        #mapper.SetTextProperty(property)
-        #self.mapper = mapper
+        mapper = vtk.vtkTextMapper()
+        mapper.SetTextProperty(property)
+        self.mapper = mapper
 
         x, y = const.TEXT_POSITION
-        #actor = vtk.vtkActor2D()
-        #actor.SetMapper(mapper)
-        #actor.GetPositionCoordinate().SetCoordinateSystemToNormalizedDisplay()
-        #actor.GetPositionCoordinate().SetValue(x,y)
-        #self.actor = actor
-
-        actor = vtk.vtkTextActor() 
+        actor = vtk.vtkActor2D()
+        actor.SetMapper(mapper)
         actor.GetPositionCoordinate().SetCoordinateSystemToNormalizedDisplay()
-        actor.GetPositionCoordinate().SetValue(x,y) 
-        actor.GetTextProperty().ShallowCopy(property) 
+        actor.GetPositionCoordinate().SetValue(x,y)
         self.actor = actor
-
-    def BoldOn(self):
-        self.property.BoldOn()
-        self.actor.GetTextProperty().ShallowCopy(self.property)
 
     def SetColour(self, colour):
         self.property.SetColor(colour)
-        self.actor.GetTextProperty().ShallowCopy(self.property)
+
+    def ShadowOff(self):
+        self.property.ShadowOff()
 
     def SetSize(self, size):
         self.property.SetFontSize(size)
-        self.actor.GetTextProperty().ShallowCopy(self.property)
 
     def SetValue(self, value):
-        self.actor.SetInput(str(value))
+        if isinstance(value, int) or isinstance(value, float):
+            value = str(value)
+            if sys.platform == 'win32':
+                value += "" # Otherwise 0 is not shown under win32
+            
+        self.mapper.SetInput(str(value))
 
     def SetPosition(self, position):
         self.actor.GetPositionCoordinate().SetValue(position[0],
@@ -139,11 +136,10 @@ class Text(object):
 
     def SetJustificationToRight(self):
         self.property.SetJustificationToRight()
-        self.actor.GetTextProperty().ShallowCopy(self.property)
 
     def SetVerticalJustificationToBottom(self):
         self.property.SetVerticalJustificationToBottom()
-        self.actor.GetTextProperty().ShallowCopy(self.property)
+
 
     def Show(self, value=1):
         if value:

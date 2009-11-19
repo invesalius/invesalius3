@@ -56,7 +56,7 @@ class Viewer(wx.Panel):
         # The layout from slice_data, the first is number of cols, the second
         # is the number of rows
         self.layout = (1, 1)
-
+        self.orientation_texts = []
         self.__init_gui()
 
         self.orientation = orientation
@@ -109,14 +109,24 @@ class Viewer(wx.Panel):
     def SetLayout(self, layout):
         self.layout = layout
         if layout == (1,1):
-            self.wl_text.Show()
+            self.ShowTextActors()
         else:
-            self.wl_text.Hide()
-            
+            self.HideTextActors()
+
         slice_ = sl.Slice()
         self.LoadRenderers(slice_.GetOutput())
         self.__configure_renderers()
         self.__configure_scroll()
+
+    def HideTextActors(self):
+        self.wl_text.Hide()
+        [t.Hide() for t in self.orientation_texts]
+
+    def ShowTextActors(self):
+        self.wl_text.Show()
+        [t.Show() for t in self.orientation_texts]
+
+
 
     def __set_layout(self, pubsub_evt):
         layout = pubsub_evt.data
@@ -131,6 +141,7 @@ class Viewer(wx.Panel):
 
         self.cam = ren.GetActiveCamera()
         self.ren = ren
+
 
     def append_mode(self, mode):
         if "ZOOM" in self.modes or "ZOOMSELECT" in self.modes:
@@ -381,6 +392,47 @@ class Viewer(wx.Panel):
             proj = project.Project()
             self.SetWLText(proj.level, proj.window)
 
+            colour = const.ORIENTATION_COLOUR[self.orientation]
+
+            #### Orientation text
+            if self.orientation == 'AXIAL':
+                values = ['R', 'L', 'A', 'P']
+            elif self.orientation == 'SAGITAL':
+                values = ['R', 'L', 'T', 'B']
+            else:
+                values = ['P', 'A', 'T', 'B']
+
+            left_text = vtku.Text()
+            left_text.SetColour(colour)
+            left_text.ShadowOff()
+            left_text.SetPosition(const.TEXT_POS_VCENPRE_LEFT)
+            left_text.SetValue(values[0])
+
+            right_text = vtku.Text()
+            right_text.SetColour(colour)
+            right_text.ShadowOff()
+            right_text.SetPosition(const.TEXT_POS_VCENTRE_RIGHT)
+            right_text.SetValue(values[1])
+
+            up_text = vtku.Text()
+            up_text.SetColour(colour)
+            up_text.ShadowOff()
+            up_text.SetPosition(const.TEXT_POS_HCENTRE_UP)
+            up_text.SetValue(values[2])
+
+            down_text = vtku.Text()
+            down_text.SetColour(colour)
+            down_text.ShadowOff()
+            down_text.SetPosition(const.TEXT_POS_HCENTRE_DOWN)
+            down_text.SetValue(values[3])
+
+            self.orientation_texts = [left_text, right_text, up_text,
+                                down_text]
+
+            self.ren.AddActor(left_text.actor)
+            self.ren.AddActor(right_text.actor)
+            self.ren.AddActor(up_text.actor)
+            self.ren.AddActor(down_text.actor)
 
     def Reposition(self, slice_data):
         """
