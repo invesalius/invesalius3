@@ -131,6 +131,8 @@ class InnerTaskPanel(wx.Panel):
             dlg.Destroy()
         if evt:
             evt.Skip()
+        #default_colour = wx.SystemSettings_GetColour(wx.SYS_COLOUR_MENUBAR)
+        #self.SetBackgroundColour(default_colour)
 
 class NewSurfaceDialog(wx.Dialog):
     def __init__(self, parent, ID, title, size=wx.DefaultSize,
@@ -223,8 +225,8 @@ class FoldPanel(wx.Panel):
 class InnerFoldPanel(wx.Panel):
     def __init__(self, parent):
         wx.Panel.__init__(self, parent)
-        self.SetBackgroundColour(wx.Colour(221, 221, 221, 255))
-        #self.SetBackgroundColour(wx.Colour(0,0,0))
+        default_colour = wx.SystemSettings_GetColour(wx.SYS_COLOUR_MENUBAR)
+        self.SetBackgroundColour(default_colour)
 
         # Fold panel and its style settings
         # FIXME: If we dont insert a value in size or if we set wx.DefaultSize,
@@ -237,8 +239,9 @@ class InnerFoldPanel(wx.Panel):
 
         # Fold panel style
         style = fpb.CaptionBarStyle()
-        style.SetCaptionStyle(fpb.CAPTIONBAR_RECTANGLE)
-        style.SetSecondColour(wx.Colour(255,255,255))
+        style.SetCaptionStyle(fpb.CAPTIONBAR_GRADIENT_V)
+        style.SetFirstColour(default_colour)
+        style.SetSecondColour(default_colour)
 
         # Fold 1 - Surface properties
         item = fold_panel.AddFoldPanel("Surface properties", collapsed=True)
@@ -266,7 +269,8 @@ class InnerFoldPanel(wx.Panel):
 class SurfaceProperties(wx.Panel):
     def __init__(self, parent):
         wx.Panel.__init__(self, parent, size=(50,240))
-        self.SetBackgroundColour(wx.Colour(221, 221, 221, 255))
+        default_colour = wx.SystemSettings_GetColour(wx.SYS_COLOUR_MENUBAR)
+        self.SetBackgroundColour(default_colour)
 
         ## LINE 1
 
@@ -372,7 +376,8 @@ class SurfaceProperties(wx.Panel):
 class QualityAdjustment(wx.Panel):
     def __init__(self, parent):
         wx.Panel.__init__(self, parent, size=(50,240))
-        self.SetBackgroundColour(wx.Colour(221, 221, 221, 255))
+        default_colour = wx.SystemSettings_GetColour(wx.SYS_COLOUR_MENUBAR)
+        self.SetBackgroundColour(default_colour)
 
         # LINE 1
         combo_quality = wx.ComboBox(self, -1, "", choices= QUALITY_LIST,

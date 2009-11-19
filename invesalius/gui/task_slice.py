@@ -60,7 +60,6 @@ class TaskPanel(wx.Panel):
 class InnerTaskPanel(wx.Panel):
     def __init__(self, parent):
         wx.Panel.__init__(self, parent)
-        default_colour = self.GetBackgroundColour()
         self.SetBackgroundColour(wx.Colour(255,255,255))
         self.SetAutoLayout(1)
 
@@ -91,7 +90,15 @@ class InnerTaskPanel(wx.Panel):
         line_new.Add(button_new_mask, 0, wx.ALL|wx.EXPAND|wx.GROW, 0)
 
 
-        # Folde panel which contains mask properties and edition tools
+        # Fold panel which contains mask properties and edition tools
+        #print wx.SystemSettings_GetColour(wx.SYS_COLOUR_BACKGROUND)
+        #print wx.SystemSettings_GetColour(wx.SYS_COLOUR_APPWORKSPACE)
+        #print wx.SystemSettings_GetColour(wx.SYS_COLOUR_BTNFACE)
+        #print wx.SystemSettings_GetColour(wx.SYS_COLOUR_DESKTOP)
+        #print wx.SystemSettings_GetColour(wx.SYS_COLOUR_MENUBAR)
+        #print wx.SystemSettings_GetColour(wx.SYS_COLOUR_SCROLLBAR)
+        #print wx.SystemSettings_GetColour(wx.SYS_COLOUR_MENUHILIGHT)
+        default_colour = wx.SystemSettings_GetColour(wx.SYS_COLOUR_MENUBAR)
         fold_panel = FoldPanel(self)
         fold_panel.SetBackgroundColour(default_colour)
         self.fold_panel = fold_panel
@@ -165,8 +172,8 @@ class FoldPanel(wx.Panel):
 class InnerFoldPanel(wx.Panel):
     def __init__(self, parent):
         wx.Panel.__init__(self, parent)
-        self.SetBackgroundColour(wx.Colour(221, 221, 221, 255))
-        #self.SetBackgroundColour(wx.Colour(0,0,0))
+        default_colour = wx.SystemSettings_GetColour(wx.SYS_COLOUR_MENUBAR)
+        self.SetBackgroundColour(default_colour)
 
         # Fold panel and its style settings
         # FIXME: If we dont insert a value in size or if we set wx.DefaultSize,
@@ -179,8 +186,9 @@ class InnerFoldPanel(wx.Panel):
 
         # Fold panel style
         style = fpb.CaptionBarStyle()
-        style.SetCaptionStyle(fpb.CAPTIONBAR_RECTANGLE)
-        style.SetSecondColour(wx.Colour(255,255,255))
+        style.SetCaptionStyle(fpb.CAPTIONBAR_GRADIENT_V)
+        style.SetFirstColour(default_colour)
+        style.SetSecondColour(default_colour)
 
         # Fold 1 - Mask properties
         item = fold_panel.AddFoldPanel("Mask properties", collapsed=True)
@@ -212,7 +220,6 @@ class InnerFoldPanel(wx.Panel):
 class MaskProperties(wx.Panel):
     def __init__(self, parent):
         wx.Panel.__init__(self, parent, size=(50,240))
-        self.SetBackgroundColour(wx.Colour(221, 221, 221, 255))
 
         ## LINE 1
 
@@ -368,7 +375,8 @@ class MaskProperties(wx.Panel):
 class EditionTools(wx.Panel):
     def __init__(self, parent):
         wx.Panel.__init__(self, parent, size=(50,240))
-        self.SetBackgroundColour(wx.Colour(221, 221, 221, 255))
+        default_colour = wx.SystemSettings_GetColour(wx.SYS_COLOUR_MENUBAR)
+        self.SetBackgroundColour(default_colour)
 
         ## LINE 1
         text1 = wx.StaticText(self, -1, "Choose brush type, size or operation:")
