@@ -118,10 +118,7 @@ class MasksListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
         bitmap.SetHeight(16)
         img_check = self.imagelist.Add(bitmap)
 
-        if sys.platform != 'win32':
-            self.SetImageList(self.imagelist, wx.IMAGE_LIST_SMALL)
-        else:
-            self.SetImageList(self.imagelist)
+        self.SetImageList(self.imagelist,wx.IMAGE_LIST_SMALL)
 
         self.image_gray = Image.open("../icons/object_colour.jpg")
         
@@ -246,8 +243,7 @@ class SurfacesListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
         bitmap.SetHeight(16)
         img_check = self.imagelist.Add(bitmap)
         
-        if sys.platform != 'win32':
-            self.SetImageList(self.imagelist, wx.IMAGE_LIST_SMALL)
+        self.SetImageList(self.imagelist,wx.IMAGE_LIST_SMALL)
 
         self.image_gray = Image.open("../icons/object_colour.jpg")
 
@@ -375,10 +371,7 @@ class MeasuresListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
         bitmap.SetHeight(16)
         self.img_colour = self.imagelist.Add(bitmap)
         
-        if sys.platform != 'win32':
-            self.SetImageList(self.imagelist, wx.IMAGE_LIST_SMALL)
-        else:
-            self.SetImageList(self.imagelist)
+        self.SetImageList(self.imagelist,wx.IMAGE_LIST_SMALL)
     
         
     def OnItemActivated(self, evt):
@@ -460,10 +453,7 @@ class AnnotationsListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
         bitmap.SetHeight(16)
         self.img_colour = self.imagelist.Add(bitmap)
         
-        if sys.platform != 'win32':
-            self.SetImageList(self.imagelist, wx.IMAGE_LIST_SMALL)
-        else:
-            self.SetImageList(self.imagelist)
+        self.SetImageList(self.imagelist,wx.IMAGE_LIST_SMALL)
 
         
     def OnItemActivated(self, evt):
