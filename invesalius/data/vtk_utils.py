@@ -92,31 +92,43 @@ class Text(object):
         property.SetFontFamilyToArial()
         property.BoldOff()
         property.ItalicOff()
-        property.ShadowOn()
+        property.ShadowOff()
         property.SetJustificationToLeft()
         property.SetVerticalJustificationToTop()
         property.SetColor(const.TEXT_COLOUR)
         self.property = property
 
-        mapper = vtk.vtkTextMapper()
-        mapper.SetTextProperty(property)
-        self.mapper = mapper
+        #mapper = vtk.vtkTextMapper()
+        #mapper.SetTextProperty(property)
+        #self.mapper = mapper
 
         x, y = const.TEXT_POSITION
-        actor = vtk.vtkActor2D()
-        actor.SetMapper(mapper)
+        #actor = vtk.vtkActor2D()
+        #actor.SetMapper(mapper)
+        #actor.GetPositionCoordinate().SetCoordinateSystemToNormalizedDisplay()
+        #actor.GetPositionCoordinate().SetValue(x,y)
+        #self.actor = actor
+
+        actor = vtk.vtkTextActor() 
         actor.GetPositionCoordinate().SetCoordinateSystemToNormalizedDisplay()
-        actor.GetPositionCoordinate().SetValue(x,y)
+        actor.GetPositionCoordinate().SetValue(x,y) 
+        actor.GetTextProperty().ShallowCopy(property) 
         self.actor = actor
+
+    def BoldOn(self):
+        self.property.BoldOn()
+        self.actor.GetTextProperty().ShallowCopy(self.property)
 
     def SetColour(self, colour):
         self.property.SetColor(colour)
+        self.actor.GetTextProperty().ShallowCopy(self.property)
 
     def SetSize(self, size):
         self.property.SetFontSize(size)
+        self.actor.GetTextProperty().ShallowCopy(self.property)
 
     def SetValue(self, value):
-        self.mapper.SetInput(str(value))
+        self.actor.SetInput(str(value))
 
     def SetPosition(self, position):
         self.actor.GetPositionCoordinate().SetValue(position[0],
@@ -127,10 +139,11 @@ class Text(object):
 
     def SetJustificationToRight(self):
         self.property.SetJustificationToRight()
+        self.actor.GetTextProperty().ShallowCopy(self.property)
 
     def SetVerticalJustificationToBottom(self):
         self.property.SetVerticalJustificationToBottom()
-
+        self.actor.GetTextProperty().ShallowCopy(self.property)
 
     def Show(self, value=1):
         if value:

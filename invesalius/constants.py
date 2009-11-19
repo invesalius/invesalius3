@@ -26,7 +26,7 @@ from project import Project
 #---------------
 
 # VTK text
-TEXT_SIZE = 12
+TEXT_SIZE = 14
 TEXT_SIZE_LARGE = 18
 TEXT_COLOUR = (1,1,1)
 (X,Y) = (0.03, 0.97)
