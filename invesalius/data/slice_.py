@@ -25,6 +25,7 @@ import constants as const
 import imagedata_utils as iu
 from mask import Mask
 from project import Project
+import session
 from utils import Singleton
 
 
@@ -115,7 +116,10 @@ class Slice(object):
 
     def __set_current_mask_threshold(self, evt_pubsub):
         #FIXME: find a better way to implement this
-        if (self.num_gradient >= 2):
+        print session.Session().project_status
+        if (self.num_gradient >= 2) or \
+        (session.Session().project_status != const.OPEN_PROJECT):
+            print "ENTROU........................................................"
             threshold_range = evt_pubsub.data
             index = self.current_mask.index
             self.SetMaskThreshold(index, threshold_range)

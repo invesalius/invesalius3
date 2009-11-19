@@ -32,6 +32,7 @@ import constants as const
 import dicom
 import dicom_grouper
 import data.imagedata_utils as iu
+import session
 
 def ReadDicomGroup(dir_):
     
@@ -40,6 +41,7 @@ def ReadDicomGroup(dir_):
         filelist, dicom, zspacing = SelectLargerDicomGroup(patient_group)
         filelist = SortFiles(filelist, dicom)
         imagedata = CreateImageData(filelist, zspacing)
+        session.Session().project_status = const.NEW_PROJECT
         return imagedata, dicom
     else:
         return False

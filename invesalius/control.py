@@ -33,6 +33,7 @@ import reader.dicom_grouper as dg
 import gui.dialogs as dialog
 import reader.dicom_reader as dcm
 import reader.analyze_reader as analyze
+import session
 
 DEFAULT_THRESH_MODE = 0
 
@@ -45,7 +46,8 @@ class Controller():
         self.frame = frame
         self.progress_dialog = None
         self.cancel_import = False
-
+        #Init session
+        session.Session()
 
     def __bind_events(self):
         ps.Publisher().subscribe(self.OnImportMedicalImages, 'Import directory')
@@ -271,11 +273,11 @@ class Controller():
             prj.Project().name = filename
         prj.Project().path = filename
         prj.Project().SavePlistProject(dir_, filename)
+        session.Session().project_status = const.SAVE_PROJECT
 
     def OnOpenProject(self, pubsub_evt):
         filename = os.path.abspath(pubsub_evt.data)
-        
-        
+        session.Session().project_status = const.OPEN_PROJECT
         proj = prj.Project()
         proj.OpenPlistProject(filename)
         proj.SetAcquisitionModality(proj.modality)
@@ -285,5 +287,4 @@ class Controller():
         const.THRESHOLD_INVALUE = proj.threshold_range[1]
         const.WINDOW_LEVEL['Default'] = (proj.window, proj.level)
         const.WINDOW_LEVEL['Manual'] = (proj.window, proj.level)
-
         self.LoadProject()

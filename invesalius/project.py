@@ -110,6 +110,7 @@ class Project(object):
         print self.invesalius_version
         
         self.save_as = True
+     
         self.path = ""
         self.debug = 0
 
