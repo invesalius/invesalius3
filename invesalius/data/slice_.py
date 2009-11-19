@@ -116,10 +116,8 @@ class Slice(object):
 
     def __set_current_mask_threshold(self, evt_pubsub):
         #FIXME: find a better way to implement this
-        print session.Session().project_status
         if (self.num_gradient >= 2) or \
         (session.Session().project_status != const.OPEN_PROJECT):
-            print "ENTROU........................................................"
             threshold_range = evt_pubsub.data
             index = self.current_mask.index
             self.SetMaskThreshold(index, threshold_range)
