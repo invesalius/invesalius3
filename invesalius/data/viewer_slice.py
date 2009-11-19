@@ -37,6 +37,7 @@ import project
 from slice_data import SliceData
 
 ID_TO_TOOL_ITEM = {}
+STR_WL = "WL: %d  WW: %d"
 
 class Viewer(wx.Panel):
 
@@ -66,7 +67,7 @@ class Viewer(wx.Panel):
         self._brush_cursor_colour = const.BRUSH_COLOUR
         self._brush_cursor_type = const.DEFAULT_BRUSH_OP
         self.cursor = None
-        self.text = None
+        self.wl_text = None
         # VTK pipeline and actors
         #self.__config_interactor()
         self.pick = vtk.vtkPropPicker()
@@ -107,6 +108,11 @@ class Viewer(wx.Panel):
 
     def SetLayout(self, layout):
         self.layout = layout
+        if layout == (1,1):
+            self.wl_text.Show()
+        else:
+            self.wl_text.Hide()
+            
         slice_ = sl.Slice()
         self.LoadRenderers(slice_.GetOutput())
         self.__configure_renderers()
@@ -262,9 +268,10 @@ class Viewer(wx.Panel):
             ps.Publisher().sendMessage('Bright and contrast adjustment image',
                 (self.acum_achange_window, self.acum_achange_level))
 
-            ps.Publisher().sendMessage('Update window and level text',\
-                                       "WL: %d  WW: %d"%(self.acum_achange_level,\
-                                                         self.acum_achange_window))
+
+            self.SetWLText(self.acum_achange_level,
+                          self.acum_achange_window)
+
 
             const.WINDOW_LEVEL['Manual'] = (self.acum_achange_window,\
                                            self.acum_achange_level)
@@ -361,19 +368,18 @@ class Viewer(wx.Panel):
             slice_data.cursor.Show(0)
         self.interactor.Render()
 
-    def UpdateText(self, pubsub_evt):
-        if (self.text):
-            self.text.SetValue(pubsub_evt.data)
+    def SetWLText(self, window_width, window_level):
+        value = STR_WL%(window_width, window_level) 
+        if (self.wl_text):
+            self.wl_text.SetValue(value)
             self.interactor.Render()
 
     def EnableText(self):
-        if not (self.text):
-            text = self.text = vtku.Text()
+        if not (self.wl_text):
+            text = self.wl_text = vtku.Text()
             self.ren.AddActor(text.actor)
             proj = project.Project()
-
-            ps.Publisher().sendMessage('Update window and level text',\
-                                           "WL: %d  WW: %d"%(proj.level, proj.window))
+            self.SetWLText(proj.level, proj.window)
 
 
     def Reposition(self, slice_data):
@@ -722,9 +728,7 @@ class Viewer(wx.Panel):
         ps.Publisher().subscribe(self.__set_mode_cross,
                                  ('Set interaction mode',
                                   const.MODE_SLICE_CROSS))
-        ####
-        ps.Publisher().subscribe(self.UpdateText,\
-                                 'Update window and level text')
+
         ps.Publisher().subscribe(self.UpdateWindowLevelValue,\
                                  'Update window level value')
 
@@ -750,12 +754,12 @@ class Viewer(wx.Panel):
         imagedata, mask_dict = pubsub_evt.data
         self.SetInput(imagedata, mask_dict)
 
-    def LoadRenderers(self, image):
+    def LoadRenderers(self, imagedata):
         number_renderers = self.layout[0] * self.layout[1]
         diff = number_renderers - len(self.slice_data_list)
         if diff > 0:
             for i in xrange(diff):
-                slice_data = self.create_slice_window(image)
+                slice_data = self.create_slice_window(imagedata)
                 self.slice_data_list.append(slice_data)
         elif diff < 0:
             to_remove = self.slice_data_list[number_renderers::]
@@ -771,10 +775,20 @@ class Viewer(wx.Panel):
         n = 0
         for j in xrange(self.layout[1]-1, -1, -1):
             for i in xrange(self.layout[0]):
-                position = ((i*proportion_x, j * proportion_y,
-                             (i+1)*proportion_x, (j+1)*proportion_y))
+                slice_xi = i*proportion_x
+                slice_xf = (i+1)*proportion_x
+                slice_yi = j*proportion_y
+                slice_yf = (j+1)*proportion_y
+
+                position = (slice_xi, slice_yi, slice_xf, slice_yf)
                 slice_data = self.slice_data_list[n]
                 slice_data.renderer.SetViewport(position)
+                x = slice_xi + (0.03*proportion_x)
+                ratio = 0
+                if self.layout[1] > 1:
+                    ratio = 0.04
+                y = slice_yi +(0.09*proportion_y)+ratio
+                slice_data.text.SetPosition((x,y))
                 slice_data.SetCursor(self.__create_cursor())
                 self.__update_camera(slice_data)
                 n += 1
@@ -811,22 +825,6 @@ class Viewer(wx.Panel):
         self.ren = ren
         self.cam = ren.GetActiveCamera()
 
-        colour = const.ORIENTATION_COLOUR[self.orientation]
-
-        text_property = vtk.vtkTextProperty()
-        text_property.SetFontSize(16)
-        text_property.SetFontFamilyToTimes()
-        text_property.BoldOn()
-        text_property.SetColor(colour)
-
-        text_actor = vtk.vtkTextActor()
-        text_actor.SetInput("%d" % self.slice_number)
-        text_actor.GetTextProperty().ShallowCopy(text_property)
-        text_actor.SetPosition(1,1)
-        self.text_actor = text_actor
-
-        #ren.AddActor(actor)
-        #ren.AddActor(text_actor)
         for slice_data in self.slice_data_list:
             self.__update_camera(slice_data)
             self.Reposition(slice_data)
@@ -989,11 +987,6 @@ class Viewer(wx.Panel):
             slice_number = slice_data.number
             actor_bound = slice_data.actor.GetBounds()
 
-            #print
-            #print self.orientation
-            #print x, y, z
-            #print actor_bound
-
             yz = [x + abs(x * 0.001), y, z]
             xz = [x, y - abs(y * 0.001), z]
             xy = [x, y, z + abs(z * 0.001)]
@@ -1025,7 +1018,7 @@ class Viewer(wx.Panel):
         slice_data.renderer = renderer
         slice_data.actor = actor
         renderer.AddActor(actor)
-        renderer.AddActor(slice_data.text_actor)
+        renderer.AddActor(slice_data.text.actor)
         return slice_data
 
     def __update_camera(self, slice_data):
@@ -1135,7 +1128,6 @@ class Viewer(wx.Panel):
             evt.Skip()
 
     def set_slice_number(self, index):
-        self.text_actor.SetInput(str(index))
         self.slice_number = index
         for n, slice_data in enumerate(self.slice_data_list):
             ren = slice_data.renderer

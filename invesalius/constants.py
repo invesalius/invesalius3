@@ -22,10 +22,20 @@ import wx
 
 from project import Project
 
+
+#---------------
+
 # VTK text
 TEXT_SIZE = 12
+TEXT_SIZE_LARGE = 18
 TEXT_COLOUR = (1,1,1)
-TEXT_POSITION = (0.03, 0.97)
+(X,Y) = (0.03, 0.97)
+TEXT_POS_LEFT_UP = (X, Y)
+TEXT_POS_LEFT_DOWN = (X, 1-Y)
+TEXT_POS_LEFT_DOWN_SLC = (X, 1-0.93)
+TEXT_POS_RIGHT_UP = (1-X, Y)
+TEXT_POS_RIGHT_DOWN = (1-X, 1-Y)
+TEXT_POSITION = TEXT_POS_LEFT_UP
 
 # Slice orientation
 AXIAL = 0

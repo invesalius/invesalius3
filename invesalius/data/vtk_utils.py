@@ -109,12 +109,21 @@ class Text(object):
         actor.GetPositionCoordinate().SetValue(x,y)
         self.actor = actor
 
+    def SetColour(self, colour):
+        self.property.SetColor(colour)
+
+    def SetSize(self, size):
+        self.property.SetFontSize(size)
+
     def SetValue(self, value):
         self.mapper.SetInput(str(value))
 
     def SetPosition(self, position):
         self.actor.GetPositionCoordinate().SetValue(position[0],
                                                     position[1])
+
+    def GetPosition(self, position):
+        self.actor.GetPositionCoordinate().GetValue()
 
     def SetJustificationToRight(self):
         self.property.SetJustificationToRight()

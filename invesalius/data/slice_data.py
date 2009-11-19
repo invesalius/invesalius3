@@ -19,6 +19,7 @@
 import vtk
 
 import constants as const
+import vtk_utils as vu
 
 class SliceData(object):
     def __init__(self):
@@ -31,18 +32,13 @@ class SliceData(object):
 
     def __create_text(self):
         colour = const.ORIENTATION_COLOUR[self.orientation]
-        text_property = vtk.vtkTextProperty()
-        text_property.SetColor(colour)
-        text_property.SetFontSize(16)
-        text_property.SetFontFamilyToTimes()
-        text_property.BoldOn()
-        self.text_property = text_property
 
-        text_actor = vtk.vtkTextActor()
-        text_actor.SetInput("%d" % self.number)
-        text_actor.GetTextProperty().ShallowCopy(text_property)
-        text_actor.SetPosition(10, 10)
-        self.text_actor = text_actor
+        text = vu.Text()
+        text.SetColour(colour)
+        text.SetPosition(const.TEXT_POS_LEFT_DOWN_SLC)
+        text.SetSize(const.TEXT_SIZE_LARGE)
+        text.SetValue("%d" % self.number)
+        self.text = text
 
     def SetCursor(self, cursor):
         if self.cursor:
@@ -52,18 +48,17 @@ class SliceData(object):
 
     def SetNumber(self, number):
         self.number = number
-        self.text_actor.SetInput("%d" % self.number)
+        self.text.SetValue("%d" % self.number)
 
     def SetOrientation(self, orientation):
         self.orientation = orientation
         colour = const.ORIENTATION_COLOUR[self.orientation]
-        self.text_property.SetColor(colour)
-        self.text_actor.GetTextProperty().ShallowCopy(self.text_property)
+        self.text.SetColour(colour)
 
     def Hide(self):
         self.renderer.RemoveActor(self.actor)
-        self.renderer.RemoveActor(self.text_actor)
+        self.renderer.RemoveActor(self.text.actor)
 
     def Show(self):
         self.renderer.AddActor(self.actor)
-        self.renderer.AddActor(self.text_actor)
+        self.renderer.AddActor(self.text.actor)

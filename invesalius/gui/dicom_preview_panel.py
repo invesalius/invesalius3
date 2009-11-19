@@ -60,7 +60,7 @@ class SingleImagePreview(wx.Panel):
         actor = vtk.vtkImageActor()
         self.actor = actor
 
-        LEFT_UP = (X, Y) = const.TEXT_POSITION
+        LEFT_UP = (X, Y) = const.TEXT_POS_LEFT_UP
         text_image_size = vtku.Text()
         text_image_size.SetPosition(LEFT_UP)
         text_image_size.SetValue("image size")
