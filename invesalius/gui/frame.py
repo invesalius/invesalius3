@@ -451,7 +451,7 @@ class ProjectToolBar(wx.ToolBar):
     def OnToolImport(self, event):
         dirpath = dlg.ShowImportDirDialog()
         if dirpath:
-            ps.Publisher().sendMessage("Load data to import panel", path)
+            ps.Publisher().sendMessage("Load data to import panel", dirpath)
         event.Skip()
 
     def OnToolOpen(self, event):

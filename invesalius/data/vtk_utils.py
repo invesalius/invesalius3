@@ -103,12 +103,12 @@ class Text(object):
         mapper.SetTextProperty(property)
         self.mapper = mapper
 
-        x, y = const.TEXT_POSITION
         actor = vtk.vtkActor2D()
         actor.SetMapper(mapper)
         actor.GetPositionCoordinate().SetCoordinateSystemToNormalizedDisplay()
-        actor.GetPositionCoordinate().SetValue(x,y)
         self.actor = actor
+
+        self.SetPosition(const.TEXT_POS_LEFT_UP)
 
     def SetColour(self, colour):
         self.property.SetColor(colour)
@@ -137,9 +137,15 @@ class Text(object):
     def SetJustificationToRight(self):
         self.property.SetJustificationToRight()
 
+    def SetJustificationToCentered(self):
+        self.property.SetJustificationToCentered()
+
+
     def SetVerticalJustificationToBottom(self):
         self.property.SetVerticalJustificationToBottom()
 
+    def SetVerticalJustificationToCentered(self):
+        self.property.SetVerticalJustificationToCentered()
 
     def Show(self, value=1):
         if value:

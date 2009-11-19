@@ -387,14 +387,15 @@ class Viewer(wx.Panel):
 
     def EnableText(self):
         if not (self.wl_text):
-            text = self.wl_text = vtku.Text()
-            self.ren.AddActor(text.actor)
-            proj = project.Project()
-            self.SetWLText(proj.level, proj.window)
-
+            proj = project.Project()            
             colour = const.ORIENTATION_COLOUR[self.orientation]
 
-            #### Orientation text
+            # Window & Level text
+            self.wl_text = vtku.Text()
+            self.SetWLText(proj.level, proj.window)
+            
+                        
+            # Orientation text
             if self.orientation == 'AXIAL':
                 values = ['R', 'L', 'A', 'P']
             elif self.orientation == 'SAGITAL':
@@ -403,32 +404,40 @@ class Viewer(wx.Panel):
                 values = ['P', 'A', 'T', 'B']
 
             left_text = vtku.Text()
-            left_text.SetColour(colour)
             left_text.ShadowOff()
-            left_text.SetPosition(const.TEXT_POS_VCENPRE_LEFT)
+            left_text.SetColour(colour)
+            left_text.SetPosition(const.TEXT_POS_VCENTRE_LEFT)
+            left_text.SetVerticalJustificationToCentered()
             left_text.SetValue(values[0])
 
             right_text = vtku.Text()
-            right_text.SetColour(colour)
             right_text.ShadowOff()
+            right_text.SetColour(colour)
             right_text.SetPosition(const.TEXT_POS_VCENTRE_RIGHT)
+            right_text.SetVerticalJustificationToCentered()
+            right_text.SetJustificationToRight()
             right_text.SetValue(values[1])
 
             up_text = vtku.Text()
-            up_text.SetColour(colour)
             up_text.ShadowOff()
+            up_text.SetColour(colour)
             up_text.SetPosition(const.TEXT_POS_HCENTRE_UP)
+            up_text.SetJustificationToCentered()
             up_text.SetValue(values[2])
 
             down_text = vtku.Text()
-            down_text.SetColour(colour)
             down_text.ShadowOff()
+            down_text.SetColour(colour)
             down_text.SetPosition(const.TEXT_POS_HCENTRE_DOWN)
+            down_text.SetJustificationToCentered()
+            down_text.SetVerticalJustificationToBottom()
             down_text.SetValue(values[3])
 
             self.orientation_texts = [left_text, right_text, up_text,
-                                down_text]
+                                      down_text]
 
+
+            self.ren.AddActor(self.wl_text.actor)
             self.ren.AddActor(left_text.actor)
             self.ren.AddActor(right_text.actor)
             self.ren.AddActor(up_text.actor)
@@ -835,12 +844,9 @@ class Viewer(wx.Panel):
                 position = (slice_xi, slice_yi, slice_xf, slice_yf)
                 slice_data = self.slice_data_list[n]
                 slice_data.renderer.SetViewport(position)
-                x = slice_xi + (0.03*proportion_x)
-                ratio = 0
-                if self.layout[1] > 1:
-                    ratio = 0.04
-                y = slice_yi +(0.09*proportion_y)+ratio
-                slice_data.text.SetPosition((x,y))
+                # Text actor position
+                x, y = const.TEXT_POS_LEFT_DOWN
+                slice_data.text.SetPosition((x+slice_xi,y+slice_yi))
                 slice_data.SetCursor(self.__create_cursor())
                 self.__update_camera(slice_data)
                 n += 1

@@ -34,10 +34,10 @@ class SliceData(object):
         colour = const.ORIENTATION_COLOUR[self.orientation]
 
         text = vu.Text()
-        #text.BoldOn()
         text.SetColour(colour)
-        text.SetPosition(const.TEXT_POS_LEFT_DOWN_SLC)
         text.SetSize(const.TEXT_SIZE_LARGE)
+        text.SetPosition(const.TEXT_POS_LEFT_DOWN)
+        text.SetVerticalJustificationToBottom()
         text.SetValue(self.number)
         self.text = text
 

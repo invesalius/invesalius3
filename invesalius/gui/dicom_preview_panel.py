@@ -60,33 +60,29 @@ class SingleImagePreview(wx.Panel):
         actor = vtk.vtkImageActor()
         self.actor = actor
 
-        LEFT_UP = (X, Y) = const.TEXT_POS_LEFT_UP
         text_image_size = vtku.Text()
-        text_image_size.SetPosition(LEFT_UP)
+        text_image_size.SetPosition(const.TEXT_POS_LEFT_UP)
         text_image_size.SetValue("image size")
         self.text_image_size = text_image_size
 
-        LEFT_DOWN = (X, 1-Y)
         text_image_location = vtku.Text()
         text_image_location.SetVerticalJustificationToBottom()
-        text_image_location.SetPosition(LEFT_DOWN)
+        text_image_location.SetPosition(const.TEXT_POS_LEFT_DOWN)
         text_image_location.SetValue("localization")
         self.text_image_location = text_image_location
         
         value = "id\nprotocol"
-        RIGHT_UP = (1-X, Y)
         text_patient = vtku.Text()
         text_patient.SetJustificationToRight()
-        text_patient.SetPosition(RIGHT_UP)
+        text_patient.SetPosition(const.TEXT_POS_RIGHT_UP)
         text_patient.SetValue(value)
         self.text_patient = text_patient
         
         value = "date time\n Made in InVesalius"
-        RIGHT_DOWN = (1-X, 1-Y)
         text_acquisition = vtku.Text()
         text_acquisition.SetJustificationToRight()
         text_acquisition.SetVerticalJustificationToBottom()
-        text_acquisition.SetPosition(RIGHT_DOWN)
+        text_acquisition.SetPosition(const.TEXT_POS_RIGHT_DOWN)
         text_acquisition.SetValue(value)
         self.text_acquisition = text_acquisition
 
