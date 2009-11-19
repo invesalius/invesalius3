@@ -16,6 +16,8 @@
 #    PARTICULAR. Consulte a Licenca Publica Geral GNU para obter mais
 #    detalhes.
 #--------------------------------------------------------------------------
+import sys
+
 import Image
 
 import wx
@@ -34,7 +36,8 @@ class NotebookPanel(wx.Panel):
         # TODO: check under Windows and Linux
         # this was necessary under MacOS:
         #if wx.Platform == "__WXMAC__":
-        book.SetWindowVariant(wx.WINDOW_VARIANT_SMALL)
+        if sys.platform != 'win32':
+            book.SetWindowVariant(wx.WINDOW_VARIANT_SMALL)
 
         book.AddPage(MasksListCtrlPanel(book), "Masks")
         book.AddPage(SurfacesListCtrlPanel(book), "Surfaces")
@@ -114,8 +117,9 @@ class MasksListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
         bitmap.SetWidth(16)
         bitmap.SetHeight(16)
         img_check = self.imagelist.Add(bitmap)
-        
-        self.SetImageList(self.imagelist, wx.IMAGE_LIST_SMALL)
+
+        if sys.platform != 'win32':
+            self.SetImageList(self.imagelist, wx.IMAGE_LIST_SMALL)
 
         self.image_gray = Image.open("../icons/object_colour.jpg")
         
@@ -240,7 +244,8 @@ class SurfacesListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
         bitmap.SetHeight(16)
         img_check = self.imagelist.Add(bitmap)
         
-        self.SetImageList(self.imagelist, wx.IMAGE_LIST_SMALL)
+        if sys.platform != 'win32':
+            self.SetImageList(self.imagelist, wx.IMAGE_LIST_SMALL)
 
         self.image_gray = Image.open("../icons/object_colour.jpg")
 
@@ -368,7 +373,8 @@ class MeasuresListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
         bitmap.SetHeight(16)
         self.img_colour = self.imagelist.Add(bitmap)
         
-        self.SetImageList(self.imagelist, wx.IMAGE_LIST_SMALL)
+        if sys.platform != 'win32':
+            self.SetImageList(self.imagelist, wx.IMAGE_LIST_SMALL)
         
     def OnItemActivated(self, evt):
         self.ToggleItem(evt.m_itemIndex)
@@ -449,7 +455,8 @@ class AnnotationsListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
         bitmap.SetHeight(16)
         self.img_colour = self.imagelist.Add(bitmap)
         
-        self.SetImageList(self.imagelist, wx.IMAGE_LIST_SMALL)
+        if sys.platform != 'win32':
+            self.SetImageList(self.imagelist, wx.IMAGE_LIST_SMALL)
         
     def OnItemActivated(self, evt):
         self.ToggleItem(evt.m_itemIndex)

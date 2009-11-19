@@ -21,6 +21,7 @@
 #--------------------------------------------------------------------------
 
 import array
+import sys
 
 import numpy
 import vtk
@@ -506,13 +507,15 @@ class GradientSlider(wx.Panel):
         self.SpinMin = wx.lib.intctrl.IntCtrl(self, size=(40,20))
         #self.SpinMin.SetLimited(True)
         self.SpinMin.SetBounds(self.SliderData.minRange, self.SliderData.maxRange)
-        self.SpinMin.SetWindowVariant(wx.WINDOW_VARIANT_SMALL)
+        if sys.platform != 'win32':
+            self.SpinMin.SetWindowVariant(wx.WINDOW_VARIANT_SMALL)
         self.SpinMin.SetValue(self.SliderData.minRange)
 
         self.SpinMax = wx.lib.intctrl.IntCtrl(self, size=(40,20))
         #self.SpinMax.SetLimited(True)
         self.SpinMax.SetBounds(self.SliderData.minRange, self.SliderData.maxRange)
-        self.SpinMax.SetWindowVariant(wx.WINDOW_VARIANT_SMALL)
+        if sys.platform != 'win32':
+            self.SpinMax.SetWindowVariant(wx.WINDOW_VARIANT_SMALL)
         self.SpinMax.SetValue(self.SliderData.maxRange)
 
         self.GradientPanel = GradientPanel(self, -1, self.SliderData)

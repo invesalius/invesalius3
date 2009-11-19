@@ -16,6 +16,8 @@
 #    PARTICULAR. Consulte a Licenca Publica Geral GNU para obter mais
 #    detalhes.
 #--------------------------------------------------------------------------
+import sys
+
 import wx
 import wx.lib.colourselect as csel
 import wx.lib.hyperlink as hl
@@ -98,7 +100,8 @@ class InnerTaskPanel(wx.Panel):
 
         # Button to fold to select region task
         button_next = wx.Button(self, -1, "Next step")
-        button_next.SetWindowVariant(wx.WINDOW_VARIANT_SMALL)
+        if sys.platform != 'win32':
+            button_next.SetWindowVariant(wx.WINDOW_VARIANT_SMALL)
         #button_next.Bind(wx.EVT_BUTTON, self.OnButtonNextTask)
 
         # Add line sizers into main sizer
@@ -168,7 +171,8 @@ class NewSurfaceDialog(wx.Dialog):
         combo_surface_name = wx.ComboBox(self, -1, "", choices= MASK_LIST,
                                      style=wx.CB_DROPDOWN|wx.CB_READONLY)
         combo_surface_name.SetSelection(0)
-        combo_surface_name.SetWindowVariant(wx.WINDOW_VARIANT_SMALL)
+        if sys.platform != 'win32':
+            combo_surface_name.SetWindowVariant(wx.WINDOW_VARIANT_SMALL)
         self.combo_surface_name = combo_surface_name
 
 
@@ -278,7 +282,8 @@ class SurfaceProperties(wx.Panel):
         combo_surface_name = wx.ComboBox(self, -1, "", choices= SURFACE_LIST,
                                      style=wx.CB_DROPDOWN|wx.CB_READONLY)
         combo_surface_name.SetSelection(0)
-        combo_surface_name.SetWindowVariant(wx.WINDOW_VARIANT_SMALL)
+        if sys.platform != 'win32':
+            combo_surface_name.SetWindowVariant(wx.WINDOW_VARIANT_SMALL)
         combo_surface_name.Bind(wx.EVT_COMBOBOX, self.OnComboName)
         self.combo_surface_name = combo_surface_name
 
