@@ -408,7 +408,7 @@ class EditionTools(wx.Panel):
         btn_brush_format.SetMenu(menu)
         self.btn_brush_format = btn_brush_format
 
-        spin_brush_size = wx.SpinCtrl(self, -1, "", (30, 50))
+        spin_brush_size = wx.SpinCtrl(self, -1, "", (20, 50))
         spin_brush_size.SetRange(1,100)
         spin_brush_size.SetValue(const.BRUSH_SIZE)
         spin_brush_size.Bind(wx.EVT_TEXT, self.OnBrushSize)
@@ -426,7 +426,7 @@ class EditionTools(wx.Panel):
         line2 = wx.BoxSizer(wx.HORIZONTAL)
         line2.Add(btn_brush_format, 0, wx.EXPAND|wx.GROW|wx.TOP|wx.RIGHT, 0)
         line2.Add(spin_brush_size, 0, wx.RIGHT, 5)
-        line2.Add(combo_brush_op, 1, wx.TOP|wx.RIGHT|wx.LEFT, 5)
+        line2.Add(combo_brush_op, 1, wx.EXPAND|wx.TOP|wx.RIGHT|wx.LEFT, 5)
 
         ## LINE 3
         text_thresh = wx.StaticText(self, -1, "Brush threshold range:")

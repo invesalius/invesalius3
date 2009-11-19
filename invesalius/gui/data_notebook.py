@@ -120,6 +120,8 @@ class MasksListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
 
         if sys.platform != 'win32':
             self.SetImageList(self.imagelist, wx.IMAGE_LIST_SMALL)
+        else:
+            self.SetImageList(self.imagelist)
 
         self.image_gray = Image.open("../icons/object_colour.jpg")
         
@@ -375,6 +377,9 @@ class MeasuresListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
         
         if sys.platform != 'win32':
             self.SetImageList(self.imagelist, wx.IMAGE_LIST_SMALL)
+        else:
+            self.SetImageList(self.imagelist)
+    
         
     def OnItemActivated(self, evt):
         self.ToggleItem(evt.m_itemIndex)
@@ -457,6 +462,9 @@ class AnnotationsListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
         
         if sys.platform != 'win32':
             self.SetImageList(self.imagelist, wx.IMAGE_LIST_SMALL)
+        else:
+            self.SetImageList(self.imagelist)
+
         
     def OnItemActivated(self, evt):
         self.ToggleItem(evt.m_itemIndex)
