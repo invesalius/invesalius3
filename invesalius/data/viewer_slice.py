@@ -149,97 +149,77 @@ class Viewer(wx.Panel):
         if "ZOOM" in self.modes or "ZOOMSELECT" in self.modes:
             self.interactor.SetCursor(wx.StockCursor(wx.CURSOR_DEFAULT))
 
-        #TODO: Temporary
-        self.modes = []
-
-        # Retrieve currently set modes
-        self.modes.append(mode)
-
-        # All modes and bindings
-        action = {'CROSS': {
+        action = {const.SLICE_STATE_CROSS: {
                              "MouseMoveEvent": self.OnCrossMove,
                              "LeftButtonPressEvent": self.OnCrossMouseClick,
                              "LeftButtonReleaseEvent": self.OnCrossMouseRelease
                              },
-                  'EDITOR': {
+                  const.SLICE_STATE_EDITOR: {
                             "MouseMoveEvent": self.OnBrushMove,
                             "LeftButtonPressEvent": self.OnBrushClick,
                             "LeftButtonReleaseEvent": self.OnMouseRelease,
                             "EnterEvent": self.OnEnterInteractor,
                             "LeaveEvent": self.OnLeaveInteractor
                             },
-                  'PAN':{
+                  const.STATE_PAN:{
                          "MouseMoveEvent": self.OnPanMove,
                          "LeftButtonPressEvent": self.OnPanClick,
                          "LeftButtonReleaseEvent": self.OnReleaseModes
                         },
-                  'SPIN':{
+                  const.STATE_SPIN:{
                          "MouseMoveEvent": self.OnSpinMove,
                          "LeftButtonPressEvent": self.OnSpinClick,
                          "LeftButtonReleaseEvent": self.OnReleaseModes
                         },
-                  'ZOOM':{
+                  const.STATE_ZOOM:{
                          "MouseMoveEvent": self.OnZoomMove,
                          "LeftButtonPressEvent": self.OnZoomClick,
                          "LeftButtonReleaseEvent": self.OnReleaseModes,
                         },
-                  'CHANGESLICE':{
+                  const.SLICE_STATE_SCROLL:{
                                 "MouseMoveEvent": self.OnChangeSliceMove,
                                 "LeftButtonPressEvent": self.OnChangeSliceClick,
                                 "LeftButtonReleaseEvent": self.OnReleaseModes
                          },
-                  'WINDOWLEVEL':{
+                  const.STATE_WL:{
                                 "MouseMoveEvent": self.OnWindowLevelMove,
                                 "LeftButtonPressEvent": self.OnWindowLevelClick,
                                 "LeftButtonReleaseEvent": self.OnReleaseModes
                                 }
                  }
-
+        
         # Bind method according to current mode
-        if(mode == 'ZOOMSELECT'):
+        if(mode == const.STATE_ZOOM_SL):
             style = vtk.vtkInteractorStyleRubberBandZoom()
         else:
             style = vtk.vtkInteractorStyleImage()
 
-            # Check all modes set by user
-            for mode in self.modes:
-                # Check each event available for each mode
-                for event in action[mode]:
-                    # Bind event
-                    style.AddObserver(event,
-                                      action[mode][event])
-        
-        if ((mode == "ZOOM") or (mode == "ZOOMSELECT")):
+            # Check each event available for each mode
+            for event in action[mode]:
+                # Bind event
+                style.AddObserver(event,
+                                  action[mode][event])
+            
+        if ((mode == const.STATE_ZOOM) or (mode == const.STATE_ZOOM_SL)):
             self.interactor.Bind(wx.EVT_LEFT_DCLICK, self.OnUnZoom)
         else:
             self.interactor.Bind(wx.EVT_LEFT_DCLICK, None)
-        
-        #try:
-        #    if mode == "CROSS":
-        #        self.cross_actor.VisibilityOn()
-        #    else:
-        #        self.cross_actor.VisibilityOff()
-        #except AttributeError:
-        #    pass
 
         self.style = style
         self.interactor.SetInteractorStyle(style)
+    
+        
 
     def __set_mode_editor(self, pubsub_evt):
-        self.append_mode('EDITOR')
+        self.append_mode(const.SLICE_STATE_EDITOR)
         self.mouse_pressed = 0
         self.interactor.SetCursor(wx.StockCursor(wx.CURSOR_BLANK))
-        #------------------------------------------
-        ps.Publisher().sendMessage('Enable mode', const.SLICE_STATE_EDITOR)
         
     def __set_mode_spin(self, pubsub_evt):
         self.append_mode('SPIN')
         self.mouse_pressed = 0
         self.interactor.SetCursor(wx.StockCursor(wx.CURSOR_SIZING))
-        #------------------------------------------
-        ps.Publisher().sendMessage('Enable mode', const.SLICE_STATE_SPIN)
-        
-        
+                
     def __set_mode_zoom(self, pubsub_evt):
         #print "Zoom"
         self.append_mode('ZOOM')
@@ -247,46 +227,34 @@ class Viewer(wx.Panel):
         ICON_IMAGE = wx.Image(os.path.join(const.ICON_DIR,
                                            "tool_zoom.png"),wx.BITMAP_TYPE_PNG)
         self.interactor.SetCursor(wx.CursorFromImage(ICON_IMAGE))
-        #------------------------------------------
-        ps.Publisher().sendMessage('Enable mode', const.SLICE_STATE_ZOOM)
         
     def __set_mode_pan(self, pubsub_evt):
         self.append_mode('PAN')
         self.mouse_pressed = 0
         self.interactor.SetCursor(wx.StockCursor(wx.CURSOR_SIZING))
-        #------------------------------------------
-        ps.Publisher().sendMessage('Enable mode', const.SLICE_STATE_PAN)
         
     def __set_mode_zoom_select(self, pubsub_evt):
         self.append_mode('ZOOMSELECT')
         ICON_IMAGE = wx.Image(os.path.join(const.ICON_DIR,
                                            "tool_zoom.png"),wx.BITMAP_TYPE_PNG)
         self.interactor.SetCursor(wx.CursorFromImage(ICON_IMAGE))
-        #------------------------------------------
-        ps.Publisher().sendMessage('Enable mode', const.SLICE_STATE_SL)
         
     def __set_mode_window_level(self, pubsub_evt):
         self.append_mode('WINDOWLEVEL')
         self.mouse_pressed = 0
         self.interactor.SetCursor(wx.StockCursor(wx.CURSOR_SIZING))
         self.interactor.Render()
-        #------------------------------------------
-        ps.Publisher().sendMessage('Enable mode', const.SLICE_STATE_WL)
         
 
     def __set_mode_slice_scroll(self, pubsub_evt):
         self.append_mode('CHANGESLICE')
         self.mouse_pressed = 0
         self.interactor.SetCursor(wx.StockCursor(wx.CURSOR_SIZENS))
-        #------------------------------------------
-        ps.Publisher().sendMessage('Enable mode', const.SLICE_STATE_SCROLL)
 
     def __set_mode_cross(self, pubsub_evt):
         self.append_mode('CROSS')
         self.mouse_pressed = 0
         self.cross_actor.VisibilityOn()
-        #------------------------------------------
-        ps.Publisher().sendMessage('Enable mode', const.SLICE_STATE_CROSS)
 
     def OnWindowLevelMove(self, evt, obj):
         if self.mouse_pressed:
@@ -785,6 +753,7 @@ class Viewer(wx.Panel):
                                  'Set edition operation')
 
         ###
+        """
         ps.Publisher().subscribe(self.__set_mode_pan,
                                  ('Set interaction mode',
                                   const.MODE_MOVE))
@@ -809,17 +778,26 @@ class Viewer(wx.Panel):
         ps.Publisher().subscribe(self.__set_mode_cross,
                                  ('Set interaction mode',
                                   const.MODE_SLICE_CROSS))
-
+        """
+        
         ps.Publisher().subscribe(self.UpdateWindowLevelValue,\
                                  'Update window level value')
 
         ps.Publisher().subscribe(self.__set_cross_visibility,\
                                  'Set cross visibility')
-
         ###
         ps.Publisher().subscribe(self.__set_layout,
                                 'Set slice viewer layout')
 
+        ps.Publisher().subscribe(self.OnSetMode,
+                                'Set slice mode')
+
+    def OnSetMode(self, pubsub_evt):
+        mode = pubsub_evt.data
+        self.mouse_pressed = 0
+        self.append_mode(mode)
+        
+        
     def ChangeBrushOperation(self, pubsub_evt):
         #print pubsub_evt.data
         self._brush_cursor_op = pubsub_evt.data
@@ -925,7 +903,7 @@ class Viewer(wx.Panel):
 
         self.EnableText()
         # Insert cursor
-        self.append_mode('EDITOR')
+        self.append_mode(const.SLICE_STATE_EDITOR)
 
         self.__build_cross_lines()
 

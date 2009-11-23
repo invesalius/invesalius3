@@ -36,11 +36,11 @@ import session as ses
 # Object toolbar
 OBJ_TOOLS = [ID_ZOOM, ID_ZOOM_SELECT, ID_ROTATE, ID_MOVE, 
 ID_CONTRAST] = [wx.NewId() for number in range(5)]
-MODE_BY_ID = {ID_ZOOM: const.MODE_ZOOM,
-              ID_ZOOM_SELECT: const.MODE_ZOOM_SELECTION,
-              ID_ROTATE: const.MODE_ROTATE,
-              ID_MOVE: const.MODE_MOVE,
-              ID_CONTRAST: const.MODE_WW_WL}
+MODE_BY_ID = {ID_ZOOM: const.STATE_ZOOM,
+              ID_ZOOM_SELECT: const.STATE_ZOOM_SL,
+              ID_ROTATE: const.STATE_SPIN,
+              ID_MOVE: const.STATE_PAN,
+              ID_CONTRAST: const.STATE_WL}
 
 # Slice toolbar
 SLICE_TOOLS = [ID_SLICE_SCROLL, ID_CROSS] = [wx.NewId() for number in range(2)]
@@ -672,12 +672,13 @@ class ObjectToolBar(wx.ToolBar):
         state = self.GetToolState(id)
 
         if state:
-            ps.Publisher().sendMessage(('Set interaction mode',
-                                        MODE_BY_ID[id]))
-            ps.Publisher().sendMessage('Untoggle slice toolbar items')
+            ps.Publisher().sendMessage('Set slice mode',
+                                        MODE_BY_ID[id])
+            
+            #ps.Publisher().sendMessage('Untoggle slice toolbar items')
         else:
-            ps.Publisher().sendMessage(('Set interaction mode',
-                                        const.MODE_SLICE_EDITOR))
+            ps.Publisher().sendMessage('Set interaction mode',
+                                        const.MODE_SLICE_EDITOR)
             
         
 
