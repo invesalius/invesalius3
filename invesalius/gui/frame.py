@@ -213,9 +213,70 @@ class Frame(wx.Frame):
        evt.Skip()
        
     def OnMenuClick(self, evt):
-        ps.Publisher().sendMessage(("Run menu item",
-                                    str(evt.GetId())))
-    
+        #ps.Publisher().sendMessage(("Event from GUI",
+        #                            evt.GetId()))
+        id = evt.GetId()
+        if id == const.ID_DICOM_IMPORT:
+            self.ImportDicom()
+        elif id == const.ID_PROJECT_OPEN:
+            self.OpenProject()
+        elif id == const.ID_PROJECT_SAVE:
+            if Project().save_as:
+                self.SaveAsProject()
+            else:
+                self.SaveProject()
+        elif id == const.ID_PROJECT_SAVE_AS:
+            self.SaveAsProject() 
+        elif id == const.ID_PROJECT_CLOSE:
+            self.CloseProject()
+        elif id == const.ID_EXIT:
+            self.Exit()
+
+    def ImportDicom(self):
+        dirpath = dlg.ShowImportDirDialog()
+        if dirpath:
+            ps.Publisher().sendMessage("Load data to import panel", dirpath)
+
+    def OpenProject(self):
+        filepath = dlg.ShowOpenProjectDialog()
+        if filepath:
+            ps.Publisher().sendMessage('Open Project', filepath)
+
+    def SaveAsProject(self):
+        self.SaveProject(True)
+
+    def SaveProject(self, saveas=False):
+        filename = (Project().name).replace(' ','_')
+        if Project().save_as or saveas:
+            filename = dlg.ShowSaveAsProjectDialog(filename)
+            if filename: 
+                Project().save_as = False
+            else:
+                return
+        ps.Publisher().sendMessage('Save Project',filename)
+
+
+    def SaveAsOld(self):
+
+        filename = (Project().name).replace(' ','_')
+        filename = dlg.ShowSaveAsProjectDialog(filename)
+        if filename: 
+            Project().save_as = False
+        else:
+            return
+        self.SaveProject(filename)
+
+    def SaveProjectOld(self, filename=None):
+        if not filename:
+            filename = Project().name
+        ps.Publisher().sendMessage('Save Project',filename)
+
+    def CloseProject(self):
+        print "TODO: CloseProject"
+
+    def Exit(self):
+        print "TODO: Exit"
+ 
     def ShowTask(self, pubsub_evt):
         self.aui_manager.GetPane("Tasks").Show()
         self.aui_manager.Update()
@@ -244,31 +305,80 @@ class MenuBar(wx.MenuBar):
 
     def __init_items(self):
 
+        # FILE
         file_menu = wx.Menu()
-        file_menu.Append(const.ID_FILE_IMPORT, "Import...")
-        file_menu.Append(101, "Exit")
+        #file_menu.Append(const.ID_DICOM_LOAD_NET, "Import DICOM from Internet...")
+        file_menu.Append(const.ID_DICOM_IMPORT, "Import DICOM...\tCtrl+I")
+        file_menu.Append(const.ID_PROJECT_OPEN, "Open Project...\tCtrl+O")
+        file_menu.Append(const.ID_PROJECT_SAVE, "Save Project\tCtrl+S")
+        file_menu.Append(const.ID_PROJECT_SAVE_AS, "Save Project As...")
+        file_menu.Append(const.ID_PROJECT_CLOSE, "Close Project")
+        file_menu.AppendSeparator()
+        #file_menu.Append(const.ID_PROJECT_INFO, "Project Information...")
+        #file_menu.AppendSeparator()
+        #file_menu.Append(const.ID_SAVE_SCREENSHOT, "Save Screenshot")
+        #file_menu.Append(const.ID_PRINT_SCREENSHOT, "Print Screenshot")
+        #file_menu.AppendSeparator()
+        #file_menu.Append(1, "C:\InvData\sample.inv")
+        #file_menu.AppendSeparator()
+        file_menu.Append(const.ID_EXIT, "Exit")
 
-        view_menu = wx.Menu()
-        view_menu.Append(101, "Fullscreen")
+        # EDIT
+        #file_edit = wx.Menu()
+        #file_edit.Append(wx.ID_UNDO, "Undo\tCtrl+Z")
+        #file_edit.Append(wx.ID_REDO, "Redo\tCtrl+Y")
+        #file_edit.Append(const.ID_EDIT_LIST, "Show Undo List...")
 
-        tools_menu = wx.Menu()
+        # VIEW
+        #view_tool_menu = wx.Menu()
+        #view_tool_menu.Append(const.ID_TOOL_PROJECT, "Project Toolbar")
+        #view_tool_menu.Append(const.ID_TOOL_LAYOUT, "Layout Toolbar")
+        #view_tool_menu.Append(const.ID_TOOL_OBJECT, "Object Toolbar")
+        #view_tool_menu.Append(const.ID_TOOL_SLICE, "Slice Toolbar")
 
-        options_menu = wx.Menu()
+        #view_layout_menu = wx.Menu()
+        #view_layout_menu.Append(const.ID_TASK_BAR, "Task Bar")
+        #view_layout_menu.Append(const.ID_VIEW_FOUR, "Four View")
 
+
+        #view_menu = wx.Menu()
+        #view_menu.AppendMenu(-1, "Toolbars",view_tool_menu)
+        #view_menu.AppendMenu(-1, "Layout", view_layout_menu)
+        #view_menu.AppendSeparator()
+        #view_menu.Append(const.ID_VIEW_FULL, "Fullscreen\tCtrl+F")
+        #view_menu.AppendSeparator()
+        #view_menu.Append(const.ID_VIEW_TEXT, "2D & 3D Text")
+        #view_menu.AppendSeparator()
+        #view_menu.Append(const.ID_VIEW_3D_BACKGROUND, "3D Background Colour")
+
+        # TOOLS
+        #tools_menu = wx.Menu()
+
+        # OPTIONS
+        #options_menu = wx.Menu()
+        #options_menu.Append(104, "Preferences...")
+
+        # HELP
         help_menu = wx.Menu()
+        help_menu.Append(105, "Getting Started...")
+        #help_menu.Append(108, "User Manual...")
+        help_menu.AppendSeparator()
+        help_menu.Append(106, "About...")
+        #help_menu.Append(107, "Check For Updates Now...")
 
         # TODO: Check what is necessary under MacOS to show Groo and not Python
         # first menu item... Didn't manage to solve it up to now, the 3 lines
         # bellow are a frustated test, based on wxPython Demo
         # TODO: Google about this
-        test_menu = wx.Menu()
-        test_item = test_menu.Append(-1, '&About Groo', 'Groo RULES!!!')
-        wx.App.SetMacAboutMenuItemId(test_item.GetId())
+        #test_menu = wx.Menu()
+        #test_item = test_menu.Append(-1, '&About Groo', 'Groo RULES!!!')
+        #wx.App.SetMacAboutMenuItemId(test_item.GetId())
 
         self.Append(file_menu, "File")
-        self.Append(view_menu, "View")
-        self.Append(tools_menu, "Tools")
-        self.Append(options_menu, "Options")
+        #self.Append(file_edit, "Edit")
+        #self.Append(view_menu, "View")
+        #self.Append(tools_menu, "Tools")
+        #self.Append(options_menu, "Options")
         self.Append(help_menu, "Help")
 
     def __bind_events(self):
@@ -276,18 +386,7 @@ class MenuBar(wx.MenuBar):
         # events should be binded directly from wx.Menu / wx.MenuBar
         # message "Binding events of wx.MenuBar" on [wxpython-users]
         # mail list in Oct 20 2008
-        #self.parent.Bind(wx.EVT_MENU, self.OnNew, id=ID_NEW)
-        #self.parent.Bind(wx.EVT_MENU, self.OnOpen, id=ID_OPEN)
         pass
-
-    def OnNew(self, event):
-        print "New"
-        ps.Publisher().sendMessage(('NEW PROJECT'))
-        event.Skip()
-
-    def OnOpen(self, event):
-        print "Open"
-        event.Skip()
 
 # ------------------------------------------------------------------
 class ProgressBar(wx.Gauge):
@@ -422,31 +521,33 @@ class ProjectToolBar(wx.ToolBar):
             BMP_PHOTO = wx.Bitmap(os.path.join(const.ICON_DIR, "tool_photo.png"),
                                   wx.BITMAP_TYPE_PNG)
 
-        self.AddLabelTool(const.ID_FILE_LOAD_INTERNET,
-                           "Load medical image...",
-                           BMP_NET)
-        self.AddLabelTool(const.ID_FILE_IMPORT,
+
+        #self.AddLabelTool(const.ID_DICOM_LOAD_NET,
+        #                   "Load medical image...",
+        #                   BMP_NET)
+        self.AddLabelTool(const.ID_DICOM_IMPORT,
                            "Import medical image...",
                            BMP_IMPORT)
-        self.AddLabelTool(const.ID_FILE_OPEN,
+        self.AddLabelTool(const.ID_PROJECT_OPEN,
                            "Open InVesalius 3 project...",
                            BMP_OPEN)
-        self.AddLabelTool(const.ID_FILE_SAVE,
+        self.AddLabelTool(const.ID_PROJECT_SAVE,
                            "Save InVesalius project",
                            BMP_SAVE)
-        self.AddLabelTool(const.ID_FILE_PHOTO,
-                           "Take photo of screen",
-                           BMP_PHOTO)
-        self.AddLabelTool(const.ID_FILE_PRINT,
-                           "Print medical image...",
-                           BMP_PRINT)
+        #self.AddLabelTool(const.ID_SAVE_SCREENSHOT,
+        #                   "Take photo of screen",
+        #                   BMP_PHOTO)
+        #self.AddLabelTool(const.ID_PRINT_SCREENSHOT,
+        #                   "Print medical image...",
+        #                   BMP_PRINT)
 
         self.Realize()
 
     def __bind_events(self):
-        self.Bind(wx.EVT_TOOL, self.OnToolSave, id=const.ID_FILE_SAVE)
-        self.Bind(wx.EVT_TOOL, self.OnToolOpen, id=const.ID_FILE_OPEN)
-        self.Bind(wx.EVT_TOOL, self.OnToolImport, id=const.ID_FILE_IMPORT)
+
+        self.Bind(wx.EVT_TOOL, self.OnToolSave, id=const.ID_PROJECT_SAVE)
+        self.Bind(wx.EVT_TOOL, self.OnToolOpen, id=const.ID_PROJECT_OPEN)
+        self.Bind(wx.EVT_TOOL, self.OnToolImport, id=const.ID_DICOM_IMPORT)
 
     def OnToolImport(self, event):
         dirpath = dlg.ShowImportDirDialog()

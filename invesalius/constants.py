@@ -32,7 +32,6 @@ TEXT_COLOUR = (1,1,1)
 
 (X,Y) = (0.03, 0.97)
 TEXT_POS_LEFT_UP = (X, Y)
-TEXT_POSITION = TEXT_POS_LEFT_UP
 #------------------------------------------------------------------
 TEXT_POS_LEFT_DOWN = (X, 1-Y) # SetVerticalJustificationToBottom
 #------------------------------------------------------------------
@@ -306,8 +305,20 @@ VTK_WARNING = 0
 
 #----------------------------------------------------------
 
-[ID_FILE_IMPORT, ID_FILE_LOAD_INTERNET, ID_FILE_SAVE, ID_FILE_PHOTO,
-ID_FILE_PRINT, ID_FILE_OPEN] = [wx.NewId() for number in range(6)]
+[ID_DICOM_IMPORT, ID_PROJECT_OPEN, ID_PROJECT_SAVE_AS, ID_PROJECT_SAVE,
+ID_PROJECT_CLOSE, ID_PROJECT_INFO, ID_SAVE_SCREENSHOT, ID_DICOM_LOAD_NET,
+ID_PRINT_SCREENSHOT, ID_EXIT] = [wx.NewId() for number in range(10)]
+
+
+[ID_EDIT_UNDO, ID_EDIT_REDO, ID_EDIT_LIST] =\
+    [wx.NewId() for number in range(3)]
+[ID_TOOL_PROJECT, ID_TOOL_LAYOUT, ID_TOOL_OBJECT, ID_TOOL_SLICE] =\
+    [wx.NewId() for number in range(4)]
+[ID_TASK_BAR, ID_VIEW_FOUR] =\
+    [wx.NewId() for number in range(2)]
+[ID_VIEW_FULL, ID_VIEW_TEXT, ID_VIEW_3D_BACKGROUND] =\
+    [wx.NewId() for number in range(3)]
+
 
 
 #---------------------------------------------------------
