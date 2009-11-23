@@ -74,8 +74,8 @@ class SliceMode(object):
         self.stack = {}
 
         # push default value to stack
-        self.stack[const.LEVEL[const.SLICE_STATE_DEFAULT]] = \
-                    const.SLICE_STATE_DEFAULT
+        self.stack[const.LEVEL[const.STATE_DEFAULT]] = \
+                    const.STATE_DEFAULT
 
         # bind pubsub evt
         self.__bind_events()
