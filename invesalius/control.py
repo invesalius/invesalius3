@@ -272,6 +272,7 @@ class Controller():
             filename = filename.replace(' ','_')
             prj.Project().name = filename
         prj.Project().path = filename
+        print prj.Project().path 
         prj.Project().SavePlistProject(dir_, filename)
         session.Session().project_status = const.SAVE_PROJECT
 
