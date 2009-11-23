@@ -17,19 +17,14 @@
 #    detalhes.
 #--------------------------------------------------------------------------
 
+import wx.lib.pubsub as ps
+
+
 # mode.py
 # to be instanced inside Controller (control.py)
 
 
-# TODO: Add to constants.py:
-#--------------------
-# SLICE MODE
-SLICE_STATE_DEFAULT = 0
-SLICE_STATE_EDITOR = 1
-SLICE_STATE_WL = 2
-SLICE_STATE_SPIN = 3
-SLICE_STATE_ZOOM = 4
-SLICE_STATE_ZOOM_SL = 5
+
 # IMPORTANT: When adding a new state, remember o insert it into LEVEL
 # dictionary
 
@@ -38,19 +33,19 @@ SLICE_STATE_ZOOM_SL = 5
 # default is the only level 0
 # states controlled somehow by taskmenu are level 1
 # states controlled by toolbar are level 2
-LEVEL = {SLICE_STATE_DEFAULT: 0,
-         SLICE_STATE_EDITOR: 1,
-         SLICE_STATE_WL: 2,
-         SLICE_STATE_SPIN: 2,
-         SLICE_STATE_ZOOM: 2,
-         SLICE_STATE_ZOOM_SL: 2}
+#LEVEL = {SLICE_STATE_DEFAULT: 0,
+#         SLICE_STATE_EDITOR: 1,
+#         SLICE_STATE_WL: 2,
+#         SLICE_STATE_SPIN: 2,
+#         SLICE_STATE_ZOOM: 2,
+#         SLICE_STATE_ZOOM_SL: 2}
 #----------------------
 # TODO: Add to viewer_slice.py:
 
-    ps.Publisher().subscribe(self.OnSetMode, 'Set slice mode')
+#ps.Publisher().subscribe(self.OnSetMode, 'Set slice mode')
 
-def OnSetMode(self, pubsub_evt):
-    mode = pubsub_evt.data
+#def OnSetMode(self, pubsub_evt):
+#    mode = pubsub_evt.data
     # according to mode, set cursor, interaction, etc
 #----------------------
 # TODO: Add GUI classes (frame, tasks related to slice, toolbar):
@@ -59,11 +54,11 @@ def OnSetMode(self, pubsub_evt):
 # viewer_slice directly
 
 # example - pseudo code
-def OnToggleButtonSpin(self, evt)
-    if evt.toggle: # doesn't exist, just to illustrate
-        ps.Publisher().sendMessage('Enable mode', const.SLICE_STATE_ZOOM)
-    else:
-        ps.Publisher().subscribe('Disable mode', const.SLICE_STATE_ZOOM)
+#def OnToggleButtonSpin(self, evt)
+#    if evt.toggle: # doesn't exist, just to illustrate
+#        ps.Publisher().sendMessage('Enable mode', const.SLICE_STATE_ZOOM)
+#    else:
+#        ps.Publisher().subscribe('Disable mode', const.SLICE_STATE_ZOOM)
 
 
 #----------------------
@@ -83,9 +78,9 @@ class SliceMode(object):
                     const.SLICE_STATE_DEFAULT
 
         # bind pubsub evt
-        self.bind_events()
+        self.__bind_events()
 
-    def _bind_events(self):
+    def __bind_events(self):
         ps.Publisher().subscribe(self.OnEnableState, 'Enable mode')
         ps.Publisher().subscribe(self.OnDisableState, 'Disable mode')
 

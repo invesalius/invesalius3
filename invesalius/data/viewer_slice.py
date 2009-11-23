@@ -33,6 +33,7 @@ import constants as const
 import cursor_actors as ca
 import data.slice_ as sl
 import data.vtk_utils as vtku
+import mode as md
 import project
 from slice_data import SliceData
 
@@ -74,7 +75,8 @@ class Viewer(wx.Panel):
 
         self.__bind_events()
         self.__bind_events_wx()
-
+        
+        md.SliceMode()
 
     def __init_gui(self):
 
@@ -227,12 +229,17 @@ class Viewer(wx.Panel):
         self.append_mode('EDITOR')
         self.mouse_pressed = 0
         self.interactor.SetCursor(wx.StockCursor(wx.CURSOR_BLANK))
-
+        #------------------------------------------
+        ps.Publisher().sendMessage('Enable mode', const.SLICE_STATE_EDITOR)
+        
     def __set_mode_spin(self, pubsub_evt):
         self.append_mode('SPIN')
         self.mouse_pressed = 0
         self.interactor.SetCursor(wx.StockCursor(wx.CURSOR_SIZING))
-
+        #------------------------------------------
+        ps.Publisher().sendMessage('Enable mode', const.SLICE_STATE_SPIN)
+        
+        
     def __set_mode_zoom(self, pubsub_evt):
         #print "Zoom"
         self.append_mode('ZOOM')
@@ -240,33 +247,46 @@ class Viewer(wx.Panel):
         ICON_IMAGE = wx.Image(os.path.join(const.ICON_DIR,
                                            "tool_zoom.png"),wx.BITMAP_TYPE_PNG)
         self.interactor.SetCursor(wx.CursorFromImage(ICON_IMAGE))
-
+        #------------------------------------------
+        ps.Publisher().sendMessage('Enable mode', const.SLICE_STATE_ZOOM)
+        
     def __set_mode_pan(self, pubsub_evt):
         self.append_mode('PAN')
         self.mouse_pressed = 0
         self.interactor.SetCursor(wx.StockCursor(wx.CURSOR_SIZING))
-
+        #------------------------------------------
+        ps.Publisher().sendMessage('Enable mode', const.SLICE_STATE_PAN)
+        
     def __set_mode_zoom_select(self, pubsub_evt):
         self.append_mode('ZOOMSELECT')
         ICON_IMAGE = wx.Image(os.path.join(const.ICON_DIR,
                                            "tool_zoom.png"),wx.BITMAP_TYPE_PNG)
         self.interactor.SetCursor(wx.CursorFromImage(ICON_IMAGE))
-
+        #------------------------------------------
+        ps.Publisher().sendMessage('Enable mode', const.SLICE_STATE_SL)
+        
     def __set_mode_window_level(self, pubsub_evt):
         self.append_mode('WINDOWLEVEL')
         self.mouse_pressed = 0
         self.interactor.SetCursor(wx.StockCursor(wx.CURSOR_SIZING))
         self.interactor.Render()
+        #------------------------------------------
+        ps.Publisher().sendMessage('Enable mode', const.SLICE_STATE_WL)
+        
 
     def __set_mode_slice_scroll(self, pubsub_evt):
         self.append_mode('CHANGESLICE')
         self.mouse_pressed = 0
         self.interactor.SetCursor(wx.StockCursor(wx.CURSOR_SIZENS))
+        #------------------------------------------
+        ps.Publisher().sendMessage('Enable mode', const.SLICE_STATE_SCROLL)
 
     def __set_mode_cross(self, pubsub_evt):
         self.append_mode('CROSS')
         self.mouse_pressed = 0
         self.cross_actor.VisibilityOn()
+        #------------------------------------------
+        ps.Publisher().sendMessage('Enable mode', const.SLICE_STATE_CROSS)
 
     def OnWindowLevelMove(self, evt, obj):
         if self.mouse_pressed:
