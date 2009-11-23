@@ -109,9 +109,9 @@ class Project(object):
         self.invesalius_version = version.get_svn_revision() 
         print self.invesalius_version
         
-        self.save_as = True
+        #self.save_as = True
      
-        self.path = ""
+        #self.path = ""
         self.debug = 0
 
     ####### MASK OPERATIONS

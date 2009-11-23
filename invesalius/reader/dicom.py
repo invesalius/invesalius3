@@ -1129,7 +1129,7 @@ class Parser():
         data = self.vtkgdcm_reader.GetMedicalImageProperties()\
                                             .GetPatientName()
         if (data):
-            return data
+            return data.strip()
         return ""
 
     def GetPatientID(self):

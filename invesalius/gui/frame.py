@@ -30,7 +30,8 @@ import default_tasks as tasks
 import default_viewers as viewers
 import gui.dialogs as dlg
 import import_panel as imp
-from project import Project
+import project as prj
+import session as ses
 
 # Object toolbar
 OBJ_TOOLS = [ID_ZOOM, ID_ZOOM_SELECT, ID_ROTATE, ID_MOVE, 
@@ -216,12 +217,15 @@ class Frame(wx.Frame):
         #ps.Publisher().sendMessage(("Event from GUI",
         #                            evt.GetId()))
         id = evt.GetId()
+        #proj = prj.Project()
+        session = ses.Session()
         if id == const.ID_DICOM_IMPORT:
             self.ImportDicom()
         elif id == const.ID_PROJECT_OPEN:
             self.OpenProject()
         elif id == const.ID_PROJECT_SAVE:
-            if Project().save_as:
+            #if proj.save_as:
+            if session.temp_item:
                 self.SaveAsProject()
             else:
                 self.SaveProject()
@@ -246,14 +250,20 @@ class Frame(wx.Frame):
         self.SaveProject(True)
 
     def SaveProject(self, saveas=False):
-        filename = (Project().name).replace(' ','_')
-        if Project().save_as or saveas:
-            filename = dlg.ShowSaveAsProjectDialog(filename)
-            if filename: 
-                Project().save_as = False
+        
+        session = ses.Session()
+        if saveas:
+            proj = prj.Project()
+            filepath = dlg.ShowSaveAsProjectDialog(proj.name)
+            if filepath:
+                session.RemoveTemp()
+                session.OpenProject(filepath) 
             else:
                 return
-        ps.Publisher().sendMessage('Save Project',filename)
+        else:
+            dirpath, filename = session.project_path
+            filepath = os.path.join(dirpath, filename)
+        ps.Publisher().sendMessage('Save Project',filepath)
 
 
     def SaveAsOld(self):
@@ -272,7 +282,7 @@ class Frame(wx.Frame):
         ps.Publisher().sendMessage('Save Project',filename)
 
     def CloseProject(self):
-        print "TODO: CloseProject"
+        ps.Publisher().sendMessage('Close Project')
 
     def Exit(self):
         print "TODO: Exit"
@@ -544,10 +554,10 @@ class ProjectToolBar(wx.ToolBar):
         self.Realize()
 
     def __bind_events(self):
-
-        self.Bind(wx.EVT_TOOL, self.OnToolSave, id=const.ID_PROJECT_SAVE)
-        self.Bind(wx.EVT_TOOL, self.OnToolOpen, id=const.ID_PROJECT_OPEN)
-        self.Bind(wx.EVT_TOOL, self.OnToolImport, id=const.ID_DICOM_IMPORT)
+        pass
+        #self.Bind(wx.EVT_TOOL, self.OnToolSave, id=const.ID_PROJECT_SAVE)
+        #self.Bind(wx.EVT_TOOL, self.OnToolOpen, id=const.ID_PROJECT_OPEN)
+        #self.Bind(wx.EVT_TOOL, self.OnToolImport, id=const.ID_DICOM_IMPORT)
 
     def OnToolImport(self, event):
         dirpath = dlg.ShowImportDirDialog()
@@ -562,11 +572,12 @@ class ProjectToolBar(wx.ToolBar):
         event.Skip()
 
     def OnToolSave(self, event):
-        filename = (Project().name).replace(' ','_')
-        if Project().save_as:
+        proj = prj.Project()
+        filename = (prj.name).replace(' ','_')
+        if prj.save_as:
             filename = dlg.ShowSaveAsProjectDialog(filename)
             if filename: 
-                Project().save_as = False
+                prj.save_as = False
             else:
                 return
         ps.Publisher().sendMessage('Save Project',filename)

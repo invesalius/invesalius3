@@ -25,7 +25,7 @@ import constants as const
 import imagedata_utils as iu
 from mask import Mask
 from project import Project
-import session
+import session as ses
 from utils import Singleton
 
 
@@ -115,9 +115,10 @@ class Slice(object):
             self.SetMaskEditionThreshold(index, threshold_range)
 
     def __set_current_mask_threshold(self, evt_pubsub):
+        session = ses.Session()
         #FIXME: find a better way to implement this
         if (self.num_gradient >= 2) or \
-        (session.Session().project_status != const.OPEN_PROJECT):
+        (session.project_status != const.PROJ_OPEN):
             threshold_range = evt_pubsub.data
             index = self.current_mask.index
             self.SetMaskThreshold(index, threshold_range)
@@ -180,10 +181,18 @@ class Slice(object):
         if update:
             ps.Publisher().sendMessage('Update slice viewer')
 
+        session = ses.Session()
+        session.ChangeProject()
+
+
     def SetMaskName(self, index, name):
         "Rename a mask given its index and the new name"
         proj = Project()
         proj.mask_dict[index].name = name
+
+        session = ses.Session()
+        session.ChangeProject()
+
 
     def SetMaskEditionThreshold(self, index, threshold_range):
         "Set threshold bounds to be used while editing slice"
@@ -224,8 +233,13 @@ class Slice(object):
             proj.mask_dict[index].threshold_range = threshold_range
        
         proj = Project()
-        proj.mask_dict[self.current_mask.index ].threshold_range = threshold_range
-    
+        proj.mask_dict[self.current_mask.index].threshold_range = threshold_range
+   
+        session = ses.Session()
+        session.ChangeProject()
+
+
+ 
 
     def ShowMask(self, index, value):
         "Show a mask given its index and 'show' value (0: hide, other: show)"
@@ -246,6 +260,10 @@ class Slice(object):
         imagedata = self.current_mask.imagedata
         imagedata.SetScalarComponentFromDouble(x, y, z, 0, colour)
         self.current_mask.edited_points[(x, y, z)] = colour
+        
+        session = ses.Session()
+        session.ChangeProject()
+
 
     def DrawPixel(self, position, colour=None):
         "Draw pixel, based on x, y and z position coordinates."
@@ -254,6 +272,10 @@ class Slice(object):
         imagedata = self.current_mask.imagedata
         imagedata.SetScalarComponentFromDouble(x, y, z, 0, colour)
         self.current_mask.edited_points[(x, y, z)] = colour
+
+        session = ses.Session()
+        session.ChangeProject()
+
 
     def EditPixelBasedOnThreshold(self, position):
         "Erase or draw pixel based on edition threshold range."
@@ -264,6 +286,11 @@ class Slice(object):
             self.DrawPixel(position, colour)
         else:
             self.ErasePixel(position)
+
+        session = ses.Session()
+        session.ChangeProject()
+
+
     #---------------------------------------------------------------------------
     def SelectCurrentMask(self, index):
         "Insert mask data, based on given index, into pipeline."

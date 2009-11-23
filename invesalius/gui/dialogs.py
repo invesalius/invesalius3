@@ -190,4 +190,18 @@ def ShowSaveAsProjectDialog(default_filename=None):
         if sys.platform != 'win32':
             if filename.split(".")[-1] != extension:
                 filename = filename + "." + extension
-    return filename 
+    return filename
+
+def SaveChangesDialog(filename):
+    dlg = wx.MessageDialog(None,
+                           "InVesalius 3",
+                           "Save changes to "+filename+"?",
+                            wx.YES | wx.NO | wx.CANCEL | wx.ICON_INFORMATION)
+
+    if dlg.ShowModal() == wx.ID_YES:
+        return 1
+    elif dlg.ShowModal() == wx.ID_NO:
+        return 0
+    else:
+        return -1
+

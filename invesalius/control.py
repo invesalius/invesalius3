@@ -33,7 +33,7 @@ import reader.dicom_grouper as dg
 import gui.dialogs as dialog
 import reader.dicom_reader as dcm
 import reader.analyze_reader as analyze
-import session
+import session as ses
 
 DEFAULT_THRESH_MODE = 0
 
@@ -47,7 +47,7 @@ class Controller():
         self.progress_dialog = None
         self.cancel_import = False
         #Init session
-        session.Session()
+        session = ses.Session()
 
     def __bind_events(self):
         ps.Publisher().subscribe(self.OnImportMedicalImages, 'Import directory')
@@ -63,6 +63,7 @@ class Controller():
         ps.Publisher().subscribe(self.OnCancelImport, 'Cancel DICOM load')
         ps.Publisher().subscribe(self.OnSaveProject, 'Save Project')
         ps.Publisher().subscribe(self.OnOpenProject, 'Open Project')
+        ps.Publisher().subscribe(self.OnCloseProject, 'Close Project')
 
 
     def OnCancelImport(self, pubsub_evt):
@@ -136,6 +137,13 @@ class Controller():
 
     def LoadProject(self):
         proj = prj.Project()
+
+        const.THRESHOLD_OUTVALUE = proj.threshold_range[0]
+        const.THRESHOLD_INVALUE = proj.threshold_range[1]
+        const.WINDOW_LEVEL['Default'] = (proj.window, proj.level)
+        const.WINDOW_LEVEL['Manual'] = (proj.window, proj.level)
+
+
         ps.Publisher().sendMessage('Set project name', proj.name)
         ps.Publisher().sendMessage('Load slice to viewer',
                                 (proj.imagedata,
@@ -162,11 +170,6 @@ class Controller():
         proj.window = proj.threshold_range[1] - proj.threshold_range[0]
         proj.level =  (0.5 * (proj.threshold_range[1] + proj.threshold_range[0]))
 
-        const.THRESHOLD_OUTVALUE = proj.threshold_range[0]
-        const.THRESHOLD_INVALUE = proj.threshold_range[1]
-        const.WINDOW_LEVEL['Default'] = (proj.window, proj.level)
-        const.WINDOW_LEVEL['Manual'] = (proj.window, proj.level)
-
 
     def CreateDicomProject(self, imagedata, dicom):
         name_to_const = {"AXIAL":const.AXIAL,
@@ -185,10 +188,14 @@ class Controller():
         proj.level = float(dicom.image.level)
         proj.threshold_range = imagedata.GetScalarRange()
 
-        const.THRESHOLD_OUTVALUE = proj.threshold_range[0]
-        const.THRESHOLD_INVALUE = proj.threshold_range[1]
-        const.WINDOW_LEVEL['Default'] = (proj.window, proj.level)
-        const.WINDOW_LEVEL['Manual'] = (proj.window, proj.level)
+
+        ######
+        session = ses.Session()
+        filename = proj.name+".inv3"
+        dirpath = session.CreateProject(filename)
+        proj.SavePlistProject(dirpath, filename)
+        
+
 
     def OnOpenDicomGroup(self, pubsub_evt):
         group = pubsub_evt.data
@@ -259,33 +266,68 @@ class Controller():
         plistlib.writePlist(preset, preset_dir)
 
     def OnSaveProject(self, pubsub_evt):
+        session = ses.Session()
         
-        if not(pubsub_evt.data):
-            filename = prj.Project().path    
-        else:    
-            filename = pubsub_evt.data
-        dir_,filename = os.path.split(filename)
-            
-        if not (filename):
-            filename = prj.Project().name
+        path = pubsub_evt.data
+        if path:
+            print "----- FILENAME"
+            dirpath, filename = os.path.split(path)
+            session.SaveProject((dirpath, filename))
         else:
-            filename = filename.replace(' ','_')
-            prj.Project().name = filename
-        prj.Project().path = filename
-        print prj.Project().path 
-        prj.Project().SavePlistProject(dir_, filename)
-        session.Session().project_status = const.SAVE_PROJECT
+            dirpath, filename = session.project_path
+
+        print "$$$$$$$$$$$$$$$$$$$$$$$$$$"
+        print "filename: ", filename
+        print "dirpath: ", dirpath
+
+        proj = prj.Project()
+        prj.Project().SavePlistProject(dirpath, filename)
+        
+        
+
+
+        #if not(pubsub_evt.data):
+        #    filename = prj.Project().path    
+        #else:    
+        #    filename = pubsub_evt.data
+        #dir_,filename = os.path.split(filename)
+            
+        #if not (filename):
+        #    filename = prj.Project().name
+        #else:
+        #    filename = filename.replace(' ','_')
+        #    prj.Project().name = filename
+        #prj.Project().path = filename
+        #print prj.Project().path 
+
+        #prj.Project().SavePlistProject(dirpath, filename)
+        
+        #session.project_status = const.PROJ_OPEN 
+        #session.project_path = (dirpath, filename)
 
     def OnOpenProject(self, pubsub_evt):
-        filename = os.path.abspath(pubsub_evt.data)
-        session.Session().project_status = const.OPEN_PROJECT
+        path = os.path.abspath(pubsub_evt.data)
+
         proj = prj.Project()
-        proj.OpenPlistProject(filename)
+        proj.OpenPlistProject(path)
         proj.SetAcquisitionModality(proj.modality)
-        proj.save_as = False
-        proj.path = filename
-        const.THRESHOLD_OUTVALUE = proj.threshold_range[0]
-        const.THRESHOLD_INVALUE = proj.threshold_range[1]
-        const.WINDOW_LEVEL['Default'] = (proj.window, proj.level)
-        const.WINDOW_LEVEL['Manual'] = (proj.window, proj.level)
+        ###proj.path = filename
+        ###proj.save_as = False
+
+        session = ses.Session()
+        session.OpenProject(path)
+
         self.LoadProject()
+
+    def OnCloseProject(self, pubsub_evt):
+        print "OnCloseProject"
+        session = ses.Session()
+        st = session.project_status
+        filename = session.project_path[1]
+        if (st == const.PROJ_NEW) or (st == const.PROJ_CHANGE):
+            answer = dialog.SaveChangesDialog(filename)
+            if not answer:
+                print "Delete all"
+            elif answer > 1:
+                print "Save"
+            

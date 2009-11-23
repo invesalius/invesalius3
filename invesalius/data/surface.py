@@ -25,9 +25,10 @@ import wx.lib.pubsub as ps
 
 import constants as const
 import imagedata_utils as iu
-import project as prj
-import vtk_utils as vu
 import polydata_utils as pu
+import project as prj
+import session as ses
+import vtk_utils as vu
 from imagedata_utils import BuildEditedImage
 
 class Surface():
@@ -291,6 +292,11 @@ class SurfaceManager():
         # Append surface into Project.surface_dict
         proj = prj.Project()
         proj.surface_dict[surface.index] = surface
+
+
+        session = ses.Session()
+        session.ChangeProject()
+
 
         # Save actor for future management tasks
         self.actors_dict[surface.index] = actor
