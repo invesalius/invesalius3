@@ -45,8 +45,8 @@ class Viewer(wx.Panel):
     def __init__(self, prnt, orientation='AXIAL'):
         wx.Panel.__init__(self, prnt, size=wx.Size(320, 300))
 
-        colour = [255*c for c in const.ORIENTATION_COLOUR[orientation]]
-        self.SetBackgroundColour(colour)
+        #colour = [255*c for c in const.ORIENTATION_COLOUR[orientation]]
+        #self.SetBackgroundColour(colour)
 
         # Interactor additional style
         self.modes = []#['DEFAULT']
@@ -830,6 +830,7 @@ class Viewer(wx.Panel):
         #self.scroll.Bind(wx.EVT_SCROLL_ENDSCROLL, self.OnScrollBarRelease)
         self.interactor.Bind(wx.EVT_KEY_DOWN, self.OnKeyDown)
         self.interactor.Bind(wx.EVT_CONTEXT_MENU, self.OnContextMenu)
+        self.Bind(wx.EVT_SIZE, self.OnSize)
 
     def LoadImagedata(self, pubsub_evt):
         imagedata, mask_dict = pubsub_evt.data
@@ -853,6 +854,9 @@ class Viewer(wx.Panel):
         proportion_y = 1.0 / self.layout[1]
         # The (0,0) in VTK is in bottom left. So the creation from renderers
         # must be # in inverted order, from the top left to bottom right
+        w, h = self.interactor.GetRenderWindow().GetSize()
+        w *= proportion_x
+        h *= proportion_y
         n = 0
         for j in xrange(self.layout[1]-1, -1, -1):
             for i in xrange(self.layout[0]):
@@ -868,6 +872,7 @@ class Viewer(wx.Panel):
                 x, y = const.TEXT_POS_LEFT_DOWN
                 slice_data.text.SetPosition((x+slice_xi,y+slice_yi))
                 slice_data.SetCursor(self.__create_cursor())
+                slice_data.SetSize((w, h))
                 self.__update_camera(slice_data)
                 n += 1
 
@@ -1097,6 +1102,7 @@ class Viewer(wx.Panel):
         slice_data.actor = actor
         renderer.AddActor(actor)
         renderer.AddActor(slice_data.text.actor)
+        renderer.AddActor(slice_data.box_actor)
         return slice_data
 
     def __update_camera(self, slice_data):
@@ -1204,6 +1210,14 @@ class Viewer(wx.Panel):
 
         if evt:
             evt.Skip()
+
+    def OnSize(self, evt):
+        w, h = self.interactor.GetRenderWindow().GetSize()
+        w = float(w) / self.layout[0]
+        h = float(h) / self.layout[1]
+        for slice_data in self.slice_data_list:
+            slice_data.SetSize((w, h))
+        evt.Skip()
 
     def set_slice_number(self, index):
         self.slice_number = index
