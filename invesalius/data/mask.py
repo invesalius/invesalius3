@@ -78,4 +78,5 @@ class Mask():
             else:
                 setattr(self, key, mask[key])
 
-
+    def _set_class_index(self, index):
+        Mask.general_index = index

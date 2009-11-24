@@ -89,7 +89,7 @@ class Frame(wx.Frame):
         ps.Publisher().subscribe(self.HideImportPanel, 'Hide import panel')
         ps.Publisher().subscribe(self.BeginBusyCursor, 'Begin busy cursor')
         ps.Publisher().subscribe(self.EndBusyCursor, 'End busy cursor')
-
+        ps.Publisher().subscribe(self.HideContentPanel, 'Hide content panel')
 
     def EndBusyCursor(self, pubsub_evt=None):
         wx.EndBusyCursor()
@@ -208,6 +208,12 @@ class Frame(wx.Frame):
         aui_manager.GetPane("Data").Show(1)
         aui_manager.GetPane("Tasks").Show(1)
         aui_manager.Update()
+
+    def HideContentPanel(self, pubsub_evt):
+        aui_manager = self.aui_manager
+        aui_manager.GetPane("Data").Show(0)
+        aui_manager.GetPane("Tasks").Show(1)
+        aui_manager.Update()        
 
     def OnSize(self, evt):
        ps.Publisher().sendMessage(('ProgressBar Reposition'))

@@ -85,6 +85,19 @@ class Slice(object):
         ps.Publisher().subscribe(self.InputImageWidget, 'Input Image in the widget')
         ps.Publisher().subscribe(self.OnExportMask,'Export mask to file')
 
+        ps.Publisher().subscribe(self.OnCloseProject, 'Close Project')
+
+    def OnCloseProject(self, pubsub_evt):
+        self.CloseProject()
+
+    def CloseProject(self):
+        self.imagedata = None
+        self.current_mask = None
+        self.blend_filter = None
+        #self.blend_filter = None
+        #self.num_gradient = 0
+
+
     def __set_current_mask_threshold_limits(self, pubsub_evt):
         thresh_min = pubsub_evt.data[0]
         thresh_max  = pubsub_evt.data[1]
@@ -523,8 +536,8 @@ class Slice(object):
 
         # insert new mask into project and retrieve its index
         proj = Project()
-        proj.AddMask(future_mask.index, future_mask)
-
+        index = proj.AddMask(future_mask)
+        future_mask.index = index
 
         # update gui related to mask
         ps.Publisher().sendMessage('Add mask',

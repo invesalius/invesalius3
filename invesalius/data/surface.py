@@ -71,7 +71,8 @@ class Surface():
             else:
                 setattr(self, key, surface[key])
 
-
+    def _set_class_index(self, index):
+        Surface.general_index = index
 
 
 # TODO: will be initialized inside control as it is being done?
@@ -102,6 +103,15 @@ class SurfaceManager():
         ps.Publisher().subscribe(self.OnShowSurface, 'Show surface')
         ps.Publisher().subscribe(self.OnExportSurface,'Export surface to file')
         ps.Publisher().subscribe(self.OnLoadSurfaceDict, 'Load surface dict')
+        ps.Publisher().subscribe(self.OnCloseProject, 'Close Project')
+
+    def OnCloseProject(self, pubsub_evt):
+        self.CloseProject()
+
+    def CloseProject(self):
+        del self.actors_dict
+        self.actors_dict = {}
+
 
     def OnLoadSurfaceDict(self, pubsub_evt):
         surface_dict = pubsub_evt.data
@@ -291,7 +301,8 @@ class SurfaceManager():
 
         # Append surface into Project.surface_dict
         proj = prj.Project()
-        proj.surface_dict[surface.index] = surface
+        index = proj.AddSurface(surface)
+        surface.index = index
 
 
         session = ses.Session()

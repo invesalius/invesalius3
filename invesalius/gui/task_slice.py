@@ -291,6 +291,19 @@ class MaskProperties(wx.Panel):
                                  'Set threshold values in gradient')
         ps.Publisher().subscribe(self.SelectMaskName, 'Select mask name in combo')
         ps.Publisher().subscribe(self.ChangeMaskName, 'Change mask name')
+        ps.Publisher().subscribe(self.OnCloseProject, 'Close Project')
+
+    def OnCloseProject(self, pubsub_evt):
+        self.CloseProject()
+
+    def CloseProject(self):
+        n = self.combo_mask_name.GetCount()
+        for i in xrange(n-1, -1, -1):
+            self.combo_mask_name.Delete(i)
+        n = self.combo_thresh.GetCount()
+        for i in xrange(n-1, -1, -1):
+            self.combo_thresh.Delete(i)
+        
 
     def __bind_events_wx(self):
         self.Bind(grad.EVT_THRESHOLD_CHANGE, self.OnSlideChanged, self.gradient)

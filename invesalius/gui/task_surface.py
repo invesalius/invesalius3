@@ -339,11 +339,19 @@ class SurfaceProperties(wx.Panel):
     def __bind_events(self):
         ps.Publisher().subscribe(self.InsertNewSurface,
                                 'Update surface info in GUI')
-        ps.Publisher().subscribe(self.ChangeMaskName,
+        ps.Publisher().subscribe(self.ChangeSurfaceName,
                                 'Change surface name')
+        ps.Publisher().subscribe(self.OnCloseProject, 'Close Project')
 
+    def OnCloseProject(self, pubsub_evt):
+        self.CloseProject()
 
-    def ChangeMaskName(self, pubsub_evt):
+    def CloseProject(self):
+        n = self.combo_surface_name.GetCount()
+        for i in xrange(n-1, -1, -1):
+            self.combo_surface_name.Delete(i)
+
+    def ChangeSurfaceName(self, pubsub_evt):
         index, name = pubsub_evt.data
         self.combo_surface_name.SetString(index, name)
         self.combo_surface_name.Refresh()

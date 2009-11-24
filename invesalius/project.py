@@ -43,80 +43,61 @@ class Project(object):
     __metaclass__= Singleton
 
     def __init__(self):
-        # TODO: Discuss
-        # [Tati] Will this type of data be written on project file? What if user
-        # changes file name and directory? I guess no... But, who knows...
-        #self.name = "Default"
-        #self.dir_ = "C:\\"
-
-        # Original vtkImageData, build based on medical images read.
-        # To be used for general 2D slices rendering both on 2D and 3D
-        # coordinate systems. It might be used, as well, for 3D raycasting.
-        # rendering.
-        # TODO: Discuss when this will be used.
-        self.imagedata = ''
-
+        # Patient/ acquistion information
         self.name = ''
         #self.dicom = ''
         self.modality = ''
-        self.original_orientation = -1
-
-        # Masks are related to vtkImageData
-        self.mask_dict = {}
-        # Predefined threshold values
+        self.original_orientation = ''
         self.min_threshold = ''
         self.max_threshold = ''
-
         self.window = ''
         self.level = ''
 
+        # Original imagedata (shouldn't be changed)
+        self.imagedata = ''
+
+        # Masks (vtkImageData)
+        self.mask_dict = {}
+        self.last_mask_index = 0
+
+        # Surfaces are (vtkPolyData)
+        self.surface_dict = {}
+        self.last_surface_index = -1
+
+        # TODO: Future
+        self.measure_dict = {}
+
+        # TODO: Future ++
+        self.annotation_dict = {}
+
+        # InVesalius related data
+        # So we can find bugs and reproduce user-related problems
+        self.invesalius_version = version.get_svn_revision()    
+
         self.presets = Presets()
+
         self.threshold_modes = self.presets.thresh_ct
         self.threshold_range = ''
-        
-        self.original_orientation = ''
-        # MRI ? CT?
+
+        self.raycasting_preset = ''
 
 
-        # TODO: define how we will relate these threshold values to
-        # default threshold labels
-        # TODO: Future +
-        # Allow insertion of new threshold modes
-
-        # Surfaces are related to vtkPolyDataa
-        self.surface_dict = {}
         #self.surface_quality_list = ["Low", "Medium", "High", "Optimal *",
-        #                             "Custom"]
+        #                             "Custom"i]
+
         # TOOD: define how we will relate this quality possibilities to
         # values set as decimate / smooth
         # TODO: Future +
         # Allow insertion of new surface quality modes
 
-        self.measure_dict = {}
+    def Close(self):
+        for name in self.__dict__:
+            attr = getattr(self, name)
+            del attr
 
-        # TODO: Future ++
-        #self.annotation_dict = {}
+        self.__init__()
 
-        # TODO: Future +
-        # Volume rendering modes related to vtkImageData
-        # this will need to be inserted both in the project and in the user
-        # InVesalius configuration file
-        # self.render_mode = {}
-
-        # The raycasting preset setted in this project
-        self.raycasting_preset = ''
-
-        self.invesalius_version = version.get_svn_revision() 
-        print self.invesalius_version
-        
-        #self.save_as = True
-     
-        #self.path = ""
-        self.debug = 0
-
-    ####### MASK OPERATIONS
-
-    def AddMask(self, index, mask):
+    def AddMask(self, mask):
         """
         Insert new mask (Mask) into project data.
 
@@ -126,11 +107,37 @@ class Project(object):
         output
             @ index: index of item that was inserted
         """
+        self.last_mask_index = mask.index
+        index = len(self.mask_dict)
         self.mask_dict[index] = mask
+        return index
+
+    def RemoveMask(self, index):
+        new_dict = {}
+        for i in self.mask_dict:
+            if i < index:
+                new_dict[i] = self.mask_dict[i]
+            if i > index:
+                new_dict[i-1] = self.mask_dict[i]
+        self.mask_dict = new_dict
 
     def GetMask(self, index):
         return self.mask_dict[index]
 
+    def AddSurface(self, surface):
+        self.last_surface_index = surface.index
+        index = len(self.surface_dict)
+        self.surface_dict[index] = surface
+        return index
+
+    def RemoveSurface(self, index):
+        new_dict = {}
+        for i in self.surface_dict:
+            if i < index:
+                new_dict[i] = self.surface_dict[i]
+            if i > index:
+                new_dict[i-1] = self.surface_dict[i]
+        self.surface_dict = new_dict
 
     def SetAcquisitionModality(self, type_=None):
         if type_ is None:

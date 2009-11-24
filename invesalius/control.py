@@ -27,7 +27,8 @@ import constants as const
 import project as prj
 
 import data.imagedata_utils as utils
-import data.surface as surface
+import data.mask as msk
+import data.surface as srf
 import data.volume as volume
 import reader.dicom_grouper as dg
 import gui.dialogs as dialog
@@ -40,7 +41,7 @@ DEFAULT_THRESH_MODE = 0
 class Controller():
 
     def __init__(self, frame):
-        self.surface_manager = surface.SurfaceManager()
+        self.surface_manager = srf.SurfaceManager()
         self.volume = volume.Volume()
         self.__bind_events()
         self.frame = frame
@@ -51,7 +52,6 @@ class Controller():
 
     def __bind_events(self):
         ps.Publisher().subscribe(self.OnImportMedicalImages, 'Import directory')
-        #ps.Publisher().subscribe(self.StartImportPanel, "Load data to import panel")
         ps.Publisher().subscribe(self.OnShowDialogImportDirectory,
                                  'Show import directory dialog')
         ps.Publisher().subscribe(self.OnShowDialogOpenProject,
@@ -68,8 +68,6 @@ class Controller():
         ps.Publisher().subscribe(self.Progress, "Update dicom load")
         ps.Publisher().subscribe(self.OnLoadImportPanel, "End dicom load")
         ps.Publisher().subscribe(self.OnCancelImport, 'Cancel DICOM load')
-        #ps.Publisher().subscribe(self.OnSaveProject, 'Save Project')
-        #ps.Publisher().subscribe(self.OnOpenProject, 'Open Project')
         ps.Publisher().subscribe(self.OnCloseProject, 'Close Project')
 
 
@@ -110,6 +108,12 @@ class Controller():
         session = ses.Session()
         session.OpenProject(path)
 
+        mask = msk.Mask()
+        mask._set_class_index(proj.last_mask_index)
+
+        surface = srf.Surface()
+        surface._set_class_index(proj.last_surface_index)
+
         self.LoadProject()
 
     def ShowDialogSaveProject(self, saveas=False):
@@ -138,6 +142,26 @@ class Controller():
 
         proj = prj.Project()
         prj.Project().SavePlistProject(dirpath, filename)
+
+    def CloseProject(self):
+        print "Close Project"
+        session = ses.Session()
+        session.CloseProject()
+       
+        proj = prj.Project()
+        proj.Close()
+
+        # TODO:
+        # Remove items from combo of masks
+        # Remove items from combo of surfaces
+        # Remove items from dictionaries
+        # Slice
+        # Surface
+        # --------------
+        # 
+       
+        ps.Publisher().sendMessage('Hide content panel') 
+
 
 ##################################
 
@@ -348,11 +372,15 @@ class Controller():
             answer = dialog.SaveChangesDialog(filename)
             if not answer:
                 print "Close without changes"
+                self.CloseProject()
             elif answer == 1:
+                self.ShowDialogSaveProject()
                 print "Save changes and close"
+                self.CloseProject()
             #else:
             #    print "Cancel"
         else:
             print ":) Close without changes"
+            self.CloseProject()
 
             

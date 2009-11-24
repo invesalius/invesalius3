@@ -11,10 +11,11 @@ class Session(object):
     def __init__(self):
         self.project_path = ()
 
-        self.project_status = const.PROJ_NEW
-        # const.PROJ_NEW*, const.PROJ_OPEN, const.PROJ_CHANGE*
+        self.project_status = const.PROJ_CLOSE
+        # const.PROJ_NEW*, const.PROJ_OPEN, const.PROJ_CHANGE*,
+        # const.PROJ_CLOSE
 
-        self.mode = ""
+        self.mode = const.MODE_RP
         # const.MODE_RP, const.MODE_NAVIGATOR, const.MODE_RADIOLOGY,
         # const.MODE_ODONTOLOGY
 
@@ -30,6 +31,11 @@ class Session(object):
         # Recent projects list
         self.recent_projects = []
 
+    def CloseProject(self):
+        self.project_path = ()
+        self.project_status = const.PROJ_CLOSE
+        self.mode = const.MODE_RP
+        self.temp_item = False
 
     def SaveProject(self, path=()):
         self.project_status = const.PROJ_OPEN

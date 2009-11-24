@@ -84,7 +84,13 @@ class MasksListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
                                  'Change mask colour in notebook')
 
         ps.Publisher().subscribe(self.OnChangeCurrentMask, 'Change mask selected')
-    
+        ps.Publisher().subscribe(self.OnCloseProject, 'Close Project')
+
+    def OnCloseProject(self, pubsub_evt):
+        self.DeleteAllItems()
+        self.mask_list_index = {}
+        self.mask_bmp_idx_to_name = {}
+ 
     def OnChangeCurrentMask(self, pubsub_evt):
 
         mask_index = pubsub_evt.data
@@ -211,6 +217,12 @@ class SurfacesListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
                                  'Set surface transparency')
         ps.Publisher().subscribe(self.EditSurfaceColour,
                                  'Set surface colour')
+        ps.Publisher().subscribe(self.OnCloseProject, 'Close Project')
+
+    def OnCloseProject(self, pubsub_evt):
+        self.DeleteAllItems()
+        self.surface_list_index = {}
+        self.surface_bmp_idx_to_name = {}
 
     def __bind_events_wx(self):
         self.Bind(wx.EVT_LIST_ITEM_ACTIVATED, self.OnItemActivated)

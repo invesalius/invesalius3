@@ -132,13 +132,9 @@ WILDCARD_OPEN = "InVesalius 3 project (*.inv3)|*.inv3|"\
 
 def ShowOpenProjectDialog():
     # Default system path
-    if sys.platform == 'win32':
-        default_path = ""
-    else:
-        default_path = os.getcwd()
 
     dlg = wx.FileDialog(None, message="Open InVesalius 3 project...",
-                        defaultDir=default_path,
+                        defaultDir="",
                         defaultFile="", wildcard=WILDCARD_OPEN,
                         style=wx.OPEN|wx.CHANGE_DIR)
 
