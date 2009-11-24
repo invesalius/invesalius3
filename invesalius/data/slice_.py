@@ -93,7 +93,7 @@ class Slice(object):
     def CloseProject(self):
         self.imagedata = None
         self.current_mask = None
-        self.blend_filter = None
+        #self.blend_filter = None
         #self.blend_filter = None
         #self.num_gradient = 0
 
