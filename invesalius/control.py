@@ -95,26 +95,35 @@ class Controller():
 ###########################
 
     def ShowDialogImportDirectory(self):
+        # Offer to save current project if necessary
+        session = ses.Session()        
+        st = session.project_status 
+        if (st == const.PROJ_NEW) or (st == const.PROJ_CHANGE):
+            filename = session.project_path[1]
+            answer = dialog.SaveChangesDialog2(filename)
+            if answer:
+                self.ShowDialogSaveProject()
+
+        # Import project
         dirpath = dialog.ShowImportDirDialog()
         if dirpath:
-            # Close project if necessary
-            session = ses.Session()
-            st = session.project_status 
-            if st != const.PROJ_CLOSE:
-                self.ShowDialogCloseProject()
-            # Import project
             self.StartImportPanel(dirpath)
             ps.Publisher().sendMessage("Load data to import panel", dirpath)
             
     def ShowDialogOpenProject(self):
+        # Offer to save current project if necessary
+        session = ses.Session()        
+        st = session.project_status 
+        if (st == const.PROJ_NEW) or (st == const.PROJ_CHANGE):
+            filename = session.project_path[1]
+            answer = dialog.SaveChangesDialog2(filename)
+            if answer:
+                self.ShowDialogSaveProject()
+
+        # Open project
         filepath = dialog.ShowOpenProjectDialog()
         if filepath:
-            # Close project if necessary
-            session = ses.Session()
-            st = session.project_status 
-            if st != const.PROJ_CLOSE:
-                self.ShowDialogCloseProject()
-            # Open project
+            self.CloseProject()
             self.OpenProject(filepath)
 
     def ShowDialogSaveProject(self, saveas=False):
@@ -147,8 +156,8 @@ class Controller():
                 self.ShowDialogSaveProject()
                 print "Save changes and close"
                 self.CloseProject()
-            #elif answer == -1:
-            #    print "Cancel"
+            elif answer == -1:
+                print "Cancel"
         else:
             self.CloseProject()
        
