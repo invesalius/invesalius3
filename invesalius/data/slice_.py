@@ -40,9 +40,11 @@ class Slice(object):
         self.imagedata = None
         self.current_mask = None
         self.blend_filter = None
-        self.__bind_events()
+
         self.num_gradient = 0
         self.mode = md.SliceMode()
+
+        self.__bind_events()
 
     def __bind_events(self):
         # Slice properties
@@ -85,7 +87,7 @@ class Slice(object):
         ps.Publisher().subscribe(self.InputImageWidget, 'Input Image in the widget')
         ps.Publisher().subscribe(self.OnExportMask,'Export mask to file')
 
-        ps.Publisher().subscribe(self.OnCloseProject, 'Close Project')
+        ps.Publisher().subscribe(self.OnCloseProject, 'Close project data')
 
     def OnCloseProject(self, pubsub_evt):
         self.CloseProject()

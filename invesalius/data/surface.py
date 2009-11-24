@@ -103,7 +103,7 @@ class SurfaceManager():
         ps.Publisher().subscribe(self.OnShowSurface, 'Show surface')
         ps.Publisher().subscribe(self.OnExportSurface,'Export surface to file')
         ps.Publisher().subscribe(self.OnLoadSurfaceDict, 'Load surface dict')
-        ps.Publisher().subscribe(self.OnCloseProject, 'Close Project')
+        ps.Publisher().subscribe(self.OnCloseProject, 'Close project data')
 
     def OnCloseProject(self, pubsub_evt):
         self.CloseProject()

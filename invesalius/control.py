@@ -68,12 +68,16 @@ class Controller():
         ps.Publisher().subscribe(self.Progress, "Update dicom load")
         ps.Publisher().subscribe(self.OnLoadImportPanel, "End dicom load")
         ps.Publisher().subscribe(self.OnCancelImport, 'Cancel DICOM load')
-        ps.Publisher().subscribe(self.OnCloseProject, 'Close Project')
+        ps.Publisher().subscribe(self.OnShowDialogCloseProject, 'Close Project')
 
 
     def OnCancelImport(self, pubsub_evt):
         #self.cancel_import = True
         ps.Publisher().sendMessage('Hide import panel')
+
+
+###########################
+###########################
     
     def OnShowDialogImportDirectory(self, pubsub_evt):
         self.ShowDialogImportDirectory()
@@ -85,36 +89,33 @@ class Controller():
         saveas = pubsub_evt.data
         self.ShowDialogSaveProject(saveas)
 
+    def OnShowDialogCloseProject(self, pubsub_evt):
+        self.ShowDialogCloseProject()
+
 ###########################
 
     def ShowDialogImportDirectory(self):
         dirpath = dialog.ShowImportDirDialog()
         if dirpath:
+            # Close project if necessary
+            session = ses.Session()
+            st = session.project_status 
+            if st != const.PROJ_CLOSE:
+                self.ShowDialogCloseProject()
+            # Import project
             self.StartImportPanel(dirpath)
             ps.Publisher().sendMessage("Load data to import panel", dirpath)
             
     def ShowDialogOpenProject(self):
         filepath = dialog.ShowOpenProjectDialog()
         if filepath:
+            # Close project if necessary
+            session = ses.Session()
+            st = session.project_status 
+            if st != const.PROJ_CLOSE:
+                self.ShowDialogCloseProject()
+            # Open project
             self.OpenProject(filepath)
-
-    def OpenProject(self, filepath):
-        path = os.path.abspath(filepath)
-
-        proj = prj.Project()
-        proj.OpenPlistProject(path)
-        proj.SetAcquisitionModality(proj.modality)
-
-        session = ses.Session()
-        session.OpenProject(path)
-
-        mask = msk.Mask()
-        mask._set_class_index(proj.last_mask_index)
-
-        surface = srf.Surface()
-        surface._set_class_index(proj.last_surface_index)
-
-        self.LoadProject()
 
     def ShowDialogSaveProject(self, saveas=False):
         session = ses.Session()
@@ -131,6 +132,45 @@ class Controller():
             filepath = os.path.join(dirpath, filename)
         
         self.SaveProject(filepath)
+        
+
+    def ShowDialogCloseProject(self):
+        session = ses.Session()
+        st = session.project_status
+        filename = session.project_path[1]
+        if (st == const.PROJ_NEW) or (st == const.PROJ_CHANGE):
+            answer = dialog.SaveChangesDialog(filename)
+            if not answer:
+                print "Close without changes"
+                self.CloseProject()
+            elif answer == 1:
+                self.ShowDialogSaveProject()
+                print "Save changes and close"
+                self.CloseProject()
+            #elif answer == -1:
+            #    print "Cancel"
+        else:
+            self.CloseProject()
+       
+###########################
+
+    def OpenProject(self, filepath):
+        path = os.path.abspath(filepath)
+
+        proj = prj.Project()
+        proj.OpenPlistProject(path)
+        proj.SetAcquisitionModality(proj.modality)
+
+        mask = msk.Mask()
+        mask._set_class_index(proj.last_mask_index)
+
+        surface = srf.Surface()
+        surface._set_class_index(proj.last_surface_index)
+
+        self.LoadProject()
+
+        session = ses.Session()
+        session.OpenProject(filepath)
 
     def SaveProject(self, path=None):
         session = ses.Session()
@@ -143,28 +183,19 @@ class Controller():
         proj = prj.Project()
         prj.Project().SavePlistProject(dirpath, filename)
 
+        session.SaveProject()
+
     def CloseProject(self):
-        print "Close Project"
-        session = ses.Session()
-        session.CloseProject()
-       
         proj = prj.Project()
         proj.Close()
 
-        # TODO:
-        # Remove items from combo of masks
-        # Remove items from combo of surfaces
-        # Remove items from dictionaries
-        # Slice
-        # Surface
-        # --------------
-        # 
-       
         ps.Publisher().sendMessage('Hide content panel') 
+        ps.Publisher().sendMessage('Close project data')
 
+        session = ses.Session()
+        session.CloseProject()
 
-##################################
-
+###########################
 
  
     def StartImportPanel(self, path):
@@ -362,25 +393,5 @@ class Controller():
 
 
 
-
-    def OnCloseProject(self, pubsub_evt):
-        print "OnCloseProject"
-        session = ses.Session()
-        st = session.project_status
-        filename = session.project_path[1]
-        if (st == const.PROJ_NEW) or (st == const.PROJ_CHANGE):
-            answer = dialog.SaveChangesDialog(filename)
-            if not answer:
-                print "Close without changes"
-                self.CloseProject()
-            elif answer == 1:
-                self.ShowDialogSaveProject()
-                print "Save changes and close"
-                self.CloseProject()
-            #else:
-            #    print "Cancel"
-        else:
-            print ":) Close without changes"
-            self.CloseProject()
 
             

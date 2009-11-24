@@ -765,6 +765,26 @@ class Viewer(wx.Panel):
 
         ps.Publisher().subscribe(self.OnSetMode,
                                 'Set slice mode')
+        ps.Publisher().subscribe(self.OnCloseProject, 'Close project data')
+
+    def OnCloseProject(self, pubsub_evt):
+        self.CloseProject()
+
+    def CloseProject(self):
+        for slice_data in self.slice_data_list:
+            self.interactor.GetRenderWindow().RemoveRenderer(slice_data.renderer)
+            del slice_data
+            
+        self.modes = []#['DEFAULT']
+        self.mouse_pressed = 0
+        self.slice_data_list = []
+        self.layout = (1, 1)
+        self.orientation_texts = []
+        self.slice_number = 0
+        self.cursor = None
+        self.wl_text = None
+        self.pick = vtk.vtkPropPicker()
+
 
     def OnSetMode(self, pubsub_evt):
         state = pubsub_evt.data

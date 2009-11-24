@@ -84,7 +84,7 @@ class MasksListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
                                  'Change mask colour in notebook')
 
         ps.Publisher().subscribe(self.OnChangeCurrentMask, 'Change mask selected')
-        ps.Publisher().subscribe(self.OnCloseProject, 'Close Project')
+        ps.Publisher().subscribe(self.OnCloseProject, 'Close project data')
 
     def OnCloseProject(self, pubsub_evt):
         self.DeleteAllItems()
@@ -217,7 +217,7 @@ class SurfacesListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
                                  'Set surface transparency')
         ps.Publisher().subscribe(self.EditSurfaceColour,
                                  'Set surface colour')
-        ps.Publisher().subscribe(self.OnCloseProject, 'Close Project')
+        ps.Publisher().subscribe(self.OnCloseProject, 'Close project data')
 
     def OnCloseProject(self, pubsub_evt):
         self.DeleteAllItems()

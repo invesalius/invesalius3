@@ -291,7 +291,7 @@ class MaskProperties(wx.Panel):
                                  'Set threshold values in gradient')
         ps.Publisher().subscribe(self.SelectMaskName, 'Select mask name in combo')
         ps.Publisher().subscribe(self.ChangeMaskName, 'Change mask name')
-        ps.Publisher().subscribe(self.OnCloseProject, 'Close Project')
+        ps.Publisher().subscribe(self.OnCloseProject, 'Close project data')
 
     def OnCloseProject(self, pubsub_evt):
         self.CloseProject()

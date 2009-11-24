@@ -341,7 +341,7 @@ class SurfaceProperties(wx.Panel):
                                 'Update surface info in GUI')
         ps.Publisher().subscribe(self.ChangeSurfaceName,
                                 'Change surface name')
-        ps.Publisher().subscribe(self.OnCloseProject, 'Close Project')
+        ps.Publisher().subscribe(self.OnCloseProject, 'Close project data')
 
     def OnCloseProject(self, pubsub_evt):
         self.CloseProject()
