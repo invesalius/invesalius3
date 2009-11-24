@@ -251,9 +251,15 @@ def SaveChangesDialog__Old(filename):
 
 def SaveChangesDialog(filename):
 
-    dlg = wx.MessageDialog(None, "",
-                            "Save changes to "+filename+"?",
-                            wx.ICON_QUESTION | wx.YES_NO | wx.CANCEL)
+    if sys.platform == 'darwin':
+        dlg = wx.MessageDialog(None, "",
+                               "Save changes to "+filename+"?",
+                               wx.ICON_QUESTION | wx.YES_NO | wx.CANCEL)
+    else:
+        dlg = wx.MessageDialog(None, "Save changes to "+filename+"?",,
+                               "InVesalius 3",
+                               wx.ICON_QUESTION | wx.YES_NO | wx.CANCEL)
+
     answer = dlg.ShowModal()
     dlg.Destroy()
 
