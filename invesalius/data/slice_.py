@@ -24,6 +24,7 @@ import wx.lib.pubsub as ps
 import constants as const
 import imagedata_utils as iu
 from mask import Mask
+import mode as md
 from project import Project
 import session as ses
 from utils import Singleton
@@ -41,6 +42,7 @@ class Slice(object):
         self.blend_filter = None
         self.__bind_events()
         self.num_gradient = 0
+        self.mode = md.SliceMode()
 
     def __bind_events(self):
         # Slice properties

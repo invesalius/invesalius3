@@ -76,14 +76,15 @@ class SliceMode(object):
         # push default value to stack
         self.stack[const.LEVEL[const.STATE_DEFAULT]] = \
                     const.STATE_DEFAULT
-
+        print "Foi chamando............................."
         # bind pubsub evt
         self.__bind_events()
 
     def __bind_events(self):
+        print "__bind_events"
         ps.Publisher().subscribe(self.OnEnableState, 'Enable mode')
         ps.Publisher().subscribe(self.OnDisableState, 'Disable mode')
-
+    
     def OnEnableState(self, pubsub_evt):
         state = pubsub_evt.data
         self.AddState(state)
@@ -95,24 +96,28 @@ class SliceMode(object):
     def AddState(self, state):
         level = const.LEVEL[state]
         max_level = max(self.stack.keys())
-
+        
+        
         # Insert new state into stack
         self.stack[level] = state 
-
+        print "ADD---->"
+        print self.stack
+        print level
+        print state
         # Only will affect InVesalius behaviour if it is the highest
         # level in stack
-        if level == max_level:
+        #if level == max_level:
             # let viewer slice and other classes know this
             # change (cursor, interaction, etc)
-            ps.Publisher().sendMessage('Set slice mode', state)
+        ps.Publisher().sendMessage('Set slice mode', state)
 
     def RemoveState(self, state):
         level = const.LEVEL[state]
         max_level = max(self.stack.keys())
-
+        
         # Remove item from stack
-        self.stack.popitem(level)
-
+        self.stack.pop(level)
+        
         # New max level
         new_max_level =  max(self.stack.keys())
 
@@ -120,5 +125,11 @@ class SliceMode(object):
         # level in stack has been removed
         if level == max_level:
             new_state = self.stack[new_max_level]
-            ps.Publisher().sendMessage('Set slice mode', state)
-             
+        
+        #Case one state in the stack
+        if(len(self.stack) == 1):
+            state = self.stack[self.stack.keys()[0]]
+        
+        ps.Publisher().sendMessage('Set slice mode', state)
+        
+        

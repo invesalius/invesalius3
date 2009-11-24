@@ -76,7 +76,6 @@ class Viewer(wx.Panel):
         self.__bind_events()
         self.__bind_events_wx()
         
-        md.SliceMode()
 
     def __init_gui(self):
 
@@ -185,7 +184,9 @@ class Viewer(wx.Panel):
                                 "MouseMoveEvent": self.OnWindowLevelMove,
                                 "LeftButtonPressEvent": self.OnWindowLevelClick,
                                 "LeftButtonReleaseEvent": self.OnReleaseModes
-                                }
+                                },
+                  const.STATE_DEFAULT:{
+                                       }
                  }
         
         # Bind method according to current mode

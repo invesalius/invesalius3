@@ -625,24 +625,24 @@ class ObjectToolBar(wx.ToolBar):
 
 
     def __bind_events_wx(self):
-        self.Bind(wx.EVT_TOOL, self.OnClick)
+        self.Bind(wx.EVT_TOOL, self.OnToggle)
 
     def __bind_events(self):
         ps.Publisher().subscribe(self.UntoggleAllItems,
                                  'Untoggle object toolbar items')
 
-    def OnClick(self, evt):
+    def OnToggle(self, evt):
         id = evt.GetId()
         state = self.GetToolState(id)
-
         if state:
-            ps.Publisher().sendMessage('Set slice mode',
+            print "Vai enviar..................."
+            ps.Publisher().sendMessage('Enable mode',
                                         MODE_BY_ID[id])
             
             #ps.Publisher().sendMessage('Untoggle slice toolbar items')
         else:
-            ps.Publisher().sendMessage('Set interaction mode',
-                                        const.MODE_SLICE_EDITOR)
+            ps.Publisher().sendMessage('Disable mode',
+                                        MODE_BY_ID[id])
             
         
 
@@ -652,6 +652,7 @@ class ObjectToolBar(wx.ToolBar):
                 self.ToggleTool(item, False)
 
         evt.Skip()
+        
 
     def UntoggleAllItems(self, pubsub_evt=None):
         for id in OBJ_TOOLS:
