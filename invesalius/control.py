@@ -119,7 +119,7 @@ class Controller():
 
     def ShowDialogSaveProject(self, saveas=False):
         session = ses.Session()
-        if saveas:
+        if saveas or session.temp_item:
             proj = prj.Project()
             filepath = dialog.ShowSaveAsProjectDialog(proj.name)
             if filepath:
