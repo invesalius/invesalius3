@@ -214,10 +214,7 @@ class Frame(wx.Frame):
        evt.Skip()
        
     def OnMenuClick(self, evt):
-        #ps.Publisher().sendMessage(("Event from GUI",
-        #                            evt.GetId()))
         id = evt.GetId()
-        #proj = prj.Project()
         session = ses.Session()
         if id == const.ID_DICOM_IMPORT:
             self.ImportDicom()
@@ -237,49 +234,16 @@ class Frame(wx.Frame):
             self.Exit()
 
     def ImportDicom(self):
-        dirpath = dlg.ShowImportDirDialog()
-        if dirpath:
-            ps.Publisher().sendMessage("Load data to import panel", dirpath)
+        ps.Publisher().sendMessage('Show import directory dialog')
 
     def OpenProject(self):
-        filepath = dlg.ShowOpenProjectDialog()
-        if filepath:
-            ps.Publisher().sendMessage('Open Project', filepath)
+        ps.Publisher().sendMessage('Show open project dialog')
 
     def SaveAsProject(self):
-        self.SaveProject(True)
+        ps.Publisher().sendMessage('Show save dialog', True)
 
-    def SaveProject(self, saveas=False):
-        
-        session = ses.Session()
-        if saveas:
-            proj = prj.Project()
-            filepath = dlg.ShowSaveAsProjectDialog(proj.name)
-            if filepath:
-                session.RemoveTemp()
-                session.OpenProject(filepath) 
-            else:
-                return
-        else:
-            dirpath, filename = session.project_path
-            filepath = os.path.join(dirpath, filename)
-        ps.Publisher().sendMessage('Save Project',filepath)
-
-
-    def SaveAsOld(self):
-
-        filename = (Project().name).replace(' ','_')
-        filename = dlg.ShowSaveAsProjectDialog(filename)
-        if filename: 
-            Project().save_as = False
-        else:
-            return
-        self.SaveProject(filename)
-
-    def SaveProjectOld(self, filename=None):
-        if not filename:
-            filename = Project().name
-        ps.Publisher().sendMessage('Save Project',filename)
+    def SaveProject(self):
+        ps.Publisher().sendMessage('Show save dialog', False)
 
     def CloseProject(self):
         ps.Publisher().sendMessage('Close Project')

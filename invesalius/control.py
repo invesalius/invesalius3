@@ -51,7 +51,14 @@ class Controller():
 
     def __bind_events(self):
         ps.Publisher().subscribe(self.OnImportMedicalImages, 'Import directory')
-        ps.Publisher().subscribe(self.StartImportPanel, "Load data to import panel")
+        #ps.Publisher().subscribe(self.StartImportPanel, "Load data to import panel")
+        ps.Publisher().subscribe(self.OnShowDialogImportDirectory,
+                                 'Show import directory dialog')
+        ps.Publisher().subscribe(self.OnShowDialogOpenProject,
+                                 'Show open project dialog')
+
+        ps.Publisher().subscribe(self.OnShowDialogSaveProject, 'Show save dialog')
+
         ps.Publisher().subscribe(self.LoadRaycastingPreset,
                                  'Load raycasting preset')
         ps.Publisher().subscribe(self.SaveRaycastingPreset,
@@ -61,18 +68,82 @@ class Controller():
         ps.Publisher().subscribe(self.Progress, "Update dicom load")
         ps.Publisher().subscribe(self.OnLoadImportPanel, "End dicom load")
         ps.Publisher().subscribe(self.OnCancelImport, 'Cancel DICOM load')
-        ps.Publisher().subscribe(self.OnSaveProject, 'Save Project')
-        ps.Publisher().subscribe(self.OnOpenProject, 'Open Project')
+        #ps.Publisher().subscribe(self.OnSaveProject, 'Save Project')
+        #ps.Publisher().subscribe(self.OnOpenProject, 'Open Project')
         ps.Publisher().subscribe(self.OnCloseProject, 'Close Project')
 
 
     def OnCancelImport(self, pubsub_evt):
         #self.cancel_import = True
         ps.Publisher().sendMessage('Hide import panel')
+    
+    def OnShowDialogImportDirectory(self, pubsub_evt):
+        self.ShowDialogImportDirectory()
+
+    def OnShowDialogOpenProject(self, pubsub_evt):
+        self.ShowDialogOpenProject()
+
+    def OnShowDialogSaveProject(self, pubsub_evt):
+        saveas = pubsub_evt.data
+        self.ShowDialogSaveProject(saveas)
+
+###########################
+
+    def ShowDialogImportDirectory(self):
+        dirpath = dialog.ShowImportDirDialog()
+        if dirpath:
+            self.StartImportPanel(dirpath)
+            ps.Publisher().sendMessage("Load data to import panel", dirpath)
+            
+    def ShowDialogOpenProject(self):
+        filepath = dialog.ShowOpenProjectDialog()
+        if filepath:
+            self.OpenProject(filepath)
+
+    def OpenProject(self, filepath):
+        path = os.path.abspath(filepath)
+
+        proj = prj.Project()
+        proj.OpenPlistProject(path)
+        proj.SetAcquisitionModality(proj.modality)
+
+        session = ses.Session()
+        session.OpenProject(path)
+
+        self.LoadProject()
+
+    def ShowDialogSaveProject(self, saveas=False):
+        session = ses.Session()
+        if saveas:
+            proj = prj.Project()
+            filepath = dialog.ShowSaveAsProjectDialog(proj.name)
+            if filepath:
+                session.RemoveTemp()
+                session.OpenProject(filepath) 
+            else:
+                return
+        else:
+            dirpath, filename = session.project_path
+            filepath = os.path.join(dirpath, filename)
         
-    def StartImportPanel(self, pubsub_evt):
-        # path to directory
-        path = pubsub_evt.data
+        self.SaveProject(filepath)
+
+    def SaveProject(self, path=None):
+        session = ses.Session()
+        if path:
+            dirpath, filename = os.path.split(path)
+            session.SaveProject((dirpath, filename))
+        else:
+            dirpath, filename = session.project_path
+
+        proj = prj.Project()
+        prj.Project().SavePlistProject(dirpath, filename)
+
+##################################
+
+
+ 
+    def StartImportPanel(self, path):
 
         # retrieve DICOM files splited into groups    
         reader = dcm.ProgressDicomReader()
@@ -265,59 +336,8 @@ class Controller():
         preset_dir = os.path.join(const.USER_RAYCASTING_PRESETS_DIRECTORY, preset_name)
         plistlib.writePlist(preset, preset_dir)
 
-    def OnSaveProject(self, pubsub_evt):
-        session = ses.Session()
-        
-        path = pubsub_evt.data
-        if path:
-            print "----- FILENAME"
-            dirpath, filename = os.path.split(path)
-            session.SaveProject((dirpath, filename))
-        else:
-            dirpath, filename = session.project_path
-
-        print "$$$$$$$$$$$$$$$$$$$$$$$$$$"
-        print "filename: ", filename
-        print "dirpath: ", dirpath
-
-        proj = prj.Project()
-        prj.Project().SavePlistProject(dirpath, filename)
-        
-        
 
 
-        #if not(pubsub_evt.data):
-        #    filename = prj.Project().path    
-        #else:    
-        #    filename = pubsub_evt.data
-        #dir_,filename = os.path.split(filename)
-            
-        #if not (filename):
-        #    filename = prj.Project().name
-        #else:
-        #    filename = filename.replace(' ','_')
-        #    prj.Project().name = filename
-        #prj.Project().path = filename
-        #print prj.Project().path 
-
-        #prj.Project().SavePlistProject(dirpath, filename)
-        
-        #session.project_status = const.PROJ_OPEN 
-        #session.project_path = (dirpath, filename)
-
-    def OnOpenProject(self, pubsub_evt):
-        path = os.path.abspath(pubsub_evt.data)
-
-        proj = prj.Project()
-        proj.OpenPlistProject(path)
-        proj.SetAcquisitionModality(proj.modality)
-        ###proj.path = filename
-        ###proj.save_as = False
-
-        session = ses.Session()
-        session.OpenProject(path)
-
-        self.LoadProject()
 
     def OnCloseProject(self, pubsub_evt):
         print "OnCloseProject"
@@ -327,7 +347,12 @@ class Controller():
         if (st == const.PROJ_NEW) or (st == const.PROJ_CHANGE):
             answer = dialog.SaveChangesDialog(filename)
             if not answer:
-                print "Delete all"
-            elif answer > 1:
-                print "Save"
+                print "Close without changes"
+            elif answer == 1:
+                print "Save changes and close"
+            #else:
+            #    print "Cancel"
+        else:
+            print ":) Close without changes"
+
             

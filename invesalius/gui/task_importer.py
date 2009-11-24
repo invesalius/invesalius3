@@ -138,42 +138,51 @@ class InnerTaskPanel(wx.Panel):
         #self.TestLoadProjects()
 
     def OnLinkImport(self, event):
-        self.LinkImport()
+        self.ImportDicom()
         event.Skip()
     
     def OnLinkImportPACS(self, event):
-        self.LinkImportPACS()
+        self.ImportPACS()
         event.Skip()
 
     def OnLinkOpenProject(self, event):
-        self.LinkOpenProject()
+        self.OpenProject()
         event.Skip()
 
-    def LinkImport(self):
-        dirpath = dlg.ShowImportDirDialog()
-        if dirpath:
-            ps.Publisher().sendMessage("Load data to import panel", dirpath)
  
-    def LinkImportPACS(self):
+    def ImportPACS(self):
         print "TODO: Send Signal - Import DICOM files from PACS"
 
-    def LinkOpenProject(self, filename=None):
+
+#######
+    def ImportDicom(self):
+        ps.Publisher().sendMessage('Show import directory dialog')
+
+    def OpenProject(self, filename=None):
         if filename:
-            print "TODO: Send Signal - Open inv3 last project"
+            print "TODO: Send Signal - Open "+filename
         else:
-            filepath = dlg.ShowOpenProjectDialog()
-            if filepath:
-                ps.Publisher().sendMessage('Open Project', filepath)
+            ps.Publisher().sendMessage('Show open project dialog')
+
+    def SaveAsProject(self):
+        ps.Publisher().sendMessage('Show save dialog', True)
+
+    def SaveProject(self):
+        ps.Publisher().sendMessage('Show save dialog', False)
+
+    def CloseProject(self):
+        ps.Publisher().sendMessage('Close Project')
+#######
 
     def OnButton(self, evt):
         id = evt.GetId()
 
         if id == BTN_IMPORT_LOCAL:
-            self.LinkImport()
+            self.ImportDicom()
         elif id == BTN_IMPORT_PACS:
-            self.LinkImportPACS()
+            self.ImportPACS()
         else: #elif id == BTN_OPEN_PROJECT:
-            self.LinkOpenProject()
+            self.OpenProject()
 
     def TestLoadProjects(self):
         self.LoadProject("test1.inv3")

@@ -47,7 +47,7 @@ class NumberDialog(wx.Dialog):
         btn_ok.SetDefault()
 
         btn_cancel = wx.Button(self, wx.ID_CANCEL)
-        btn_cancel.SetHelpText("Value will not be applied.)")
+        btn_cancel.SetHelpText("Value will not be applied.")
 
         btnsizer = wx.StdDialogButtonSizer()
         btnsizer.AddButton(btn_ok)
@@ -192,16 +192,80 @@ def ShowSaveAsProjectDialog(default_filename=None):
                 filename = filename + "." + extension
     return filename
 
-def SaveChangesDialog(filename):
-    dlg = wx.MessageDialog(None,
-                           "InVesalius 3",
-                           "Save changes to "+filename+"?",
-                            wx.YES | wx.NO | wx.CANCEL | wx.ICON_INFORMATION)
 
-    if dlg.ShowModal() == wx.ID_YES:
+
+
+
+
+
+
+
+
+
+class MessageDialog(wx.Dialog):
+    def __init__(self, message):
+        pre = wx.PreDialog()
+        pre.Create(None, -1, "InVesalius 3",  size=(360, 370), pos=wx.DefaultPosition, 
+                    style=wx.DEFAULT_DIALOG_STYLE|wx.ICON_INFORMATION)
+        self.PostCreate(pre)
+
+        # Static text which contains message to user
+        label = wx.StaticText(self, -1, message)
+
+        # Buttons       
+        btn_yes = wx.Button(self, wx.ID_YES)
+        btn_yes.SetHelpText("")
+        btn_yes.SetDefault()
+
+        btn_no = wx.Button(self, wx.ID_NO)
+        btn_no.SetHelpText("")
+
+        btn_cancel = wx.Button(self, wx.ID_CANCEL)
+        btn_cancel.SetHelpText("")
+
+        btnsizer = wx.StdDialogButtonSizer()
+        btnsizer.AddButton(btn_yes)
+        btnsizer.AddButton(btn_cancel)
+        btnsizer.AddButton(btn_no)
+        btnsizer.Realize()        
+
+
+        sizer = wx.BoxSizer(wx.VERTICAL)
+        sizer.Add(label, 0, wx.ALIGN_CENTRE|wx.ALL, 5)
+        sizer.Add(btnsizer, 0, wx.ALIGN_CENTER_VERTICAL|
+                  wx.ALIGN_CENTER_HORIZONTAL|wx.ALL, 5)
+        self.SetSizer(sizer)
+        sizer.Fit(self)
+
+        self.Centre()
+
+def SaveChangesDialog__Old(filename):
+    message = "Save changes to "+filename+"?"
+    dlg = MessageDialog(message)
+
+    answer = dlg.ShowModal()
+    dlg.Destroy()
+    if answer == wx.ID_YES:
         return 1
-    elif dlg.ShowModal() == wx.ID_NO:
+    elif answer == wx.ID_NO:
         return 0
     else:
         return -1
+    
+
+def SaveChangesDialog(filename):
+
+    dlg = wx.MessageDialog(None, "",
+                            "Save changes to "+filename+"?",
+                            wx.ICON_QUESTION | wx.YES_NO | wx.CANCEL)
+    answer = dlg.ShowModal()
+    dlg.Destroy()
+
+    if answer == wx.ID_YES:
+        return 1
+    elif answer == wx.ID_NO:
+        return 0
+    else:
+        return -1
+
 
