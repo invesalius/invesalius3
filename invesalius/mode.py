@@ -97,19 +97,10 @@ class SliceMode(object):
         
         level = const.LEVEL[state]
         max_level = max(self.stack.keys())
-        
-        
+                
         # Insert new state into stack
         self.stack[level] = state 
-        #print "ADD---->"
-        #print self.stack
-        #print level
-        #print state
-        # Only will affect InVesalius behaviour if it is the highest
-        # level in stack
-        #if level == max_level:
-            # let viewer slice and other classes know this
-            # change (cursor, interaction, etc)
+
         ps.Publisher().sendMessage('Set slice mode', state)
 
     def RemoveState(self, state):

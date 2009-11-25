@@ -52,6 +52,7 @@ class Viewer(wx.Panel):
         self.modes = []#['DEFAULT']
         self.left_pressed = 0
         self.right_pressed = 0
+        self.last_position_mouse_move = ()
 
         # All renderers and image actors in this viewer
         self.slice_data_list = []
@@ -104,8 +105,13 @@ class Viewer(wx.Panel):
 
     def OnContextMenu(self, evt):
         self.right_pressed = 0
-        self.PopupMenu(self.menu)
-
+        if (self.last_position_mouse_move ==\
+              self.interactor.GetLastEventPosition()):
+            self.PopupMenu(self.menu)
+            
+        evt.Skip()
+           
+            
     def SetPopupMenu(self, menu):
         self.menu = menu
 
@@ -253,6 +259,9 @@ class Viewer(wx.Panel):
 
     def OnRightClick(self, evt, obj):
         print "OnRightClick"
+        self.last_position_mouse_move = \
+            self.interactor.GetLastEventPosition()
+    
         self.right_pressed = 1
 
     def OnReleaseRightButton(self, evt, obj):
@@ -261,7 +270,6 @@ class Viewer(wx.Panel):
         ps.Publisher().sendMessage('Update slice viewer') 
  
     def OnLeftClick(self, evt, obj):
-        print "OnLeftClick"
         self.left_pressed = 1
 
     def OnZoomLeftClick(self, evt, obj):
@@ -640,6 +648,8 @@ class Viewer(wx.Panel):
                                        coord[2])
 
     def OnZoomMoveRight(self, evt, obj):
+        
+        
         if (self.right_pressed):
             print "OnZoomMoveRight"
             evt.Dolly()
