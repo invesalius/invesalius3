@@ -205,6 +205,9 @@ class InnerFoldPanel(wx.Panel):
         fold_panel.ApplyCaptionStyle(item, style)
         fold_panel.AddFoldPanelWindow(item, EditionTools(item), Spacing= 0,
                                       leftSpacing=0, rightSpacing=0)
+        self.editor_panel_id = item.GetId()
+        self.last_panel_opened = None
+        
         #fold_panel.Expand(fold_panel.GetFoldPanel(1))
 
         # Panel sizer to expand fold panel
@@ -214,6 +217,22 @@ class InnerFoldPanel(wx.Panel):
         self.SetSizer(sizer)
         self.Update()
         self.SetAutoLayout(1)
+        fold_panel.Bind(fpb.EVT_CAPTIONBAR, self.OnFoldPressCaption)
+        
+    def OnFoldPressCaption(self, evt):
+        
+        if (self.editor_panel_id == evt.GetTag().GetId()):
+            if not(evt.GetFoldStatus()):
+                ps.Publisher().sendMessage('Enable mode', const.SLICE_STATE_EDITOR)
+            else:
+                ps.Publisher().sendMessage('Disable mode', const.SLICE_STATE_EDITOR)
+        else:
+            if(self.last_panel_opened == self.editor_panel_id):
+                ps.Publisher().sendMessage('Disable mode', const.SLICE_STATE_EDITOR)    
+        
+        self.last_panel_opened = evt.GetTag().GetId()
+        
+        evt.Skip()
 
     def GetMaskSelected(self):
         x= self.mask_prop_panel.GetMaskSelected()

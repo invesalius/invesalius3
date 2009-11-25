@@ -108,6 +108,7 @@ class SliceMode(object):
         max_level = max(self.stack.keys())
         
         # Remove item from stack
+       
         self.stack.pop(level)
         
         # New max level

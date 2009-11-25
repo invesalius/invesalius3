@@ -937,7 +937,7 @@ class Viewer(wx.Panel):
 
         self.EnableText()
         # Insert cursor
-        self.SetState(const.SLICE_STATE_EDITOR)
+        self.SetState(const.STATE_DEFAULT)
 
         self.__build_cross_lines()
 

@@ -165,7 +165,7 @@ class SingleImagePreview(wx.Panel):
         self.ShowSlice(pos)
         time.sleep(0.2)
         if self.ischecked:
-            wx.Yield()
+            wx.SafeYield()
             wx.CallAfter(self.OnRun)
  
     def SetDicomGroup(self, group):

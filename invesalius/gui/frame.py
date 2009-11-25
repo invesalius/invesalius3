@@ -423,7 +423,7 @@ class StatusBar(wx.StatusBar):
         if (int(value) >= 99):
             self.SetStatusText("",0)
         if sys.platform != 'linux2':
-            wx.Yield()
+            wx.SafeYield()
         
 
     def UpdateStatusLabel(self, pubsub_evt):
