@@ -44,8 +44,8 @@ MODE_BY_ID = {ID_ZOOM: const.STATE_ZOOM,
 
 # Slice toolbar
 SLICE_TOOLS = [ID_SLICE_SCROLL, ID_CROSS] = [wx.NewId() for number in range(2)]
-SLICE_MODE_BY_ID = {ID_SLICE_SCROLL: const.MODE_SLICE_SCROLL,
-                    ID_CROSS: const.MODE_SLICE_CROSS}
+SLICE_MODE_BY_ID = {ID_SLICE_SCROLL: const.SLICE_STATE_SCROLL,
+                    ID_CROSS: const.SLICE_STATE_CROSS}
 
 # Layout toolbar
 VIEW_TOOLS = [ID_LAYOUT, ID_TEXT] = [wx.NewId() for number in range(2)]
@@ -641,11 +641,10 @@ class ObjectToolBar(wx.ToolBar):
         id = evt.GetId()
         state = self.GetToolState(id)
         if state:
-            print "Vai enviar..................."
             ps.Publisher().sendMessage('Enable mode',
                                         MODE_BY_ID[id])
             
-            #ps.Publisher().sendMessage('Untoggle slice toolbar items')
+            ps.Publisher().sendMessage('Untoggle slice toolbar items')
         else:
             ps.Publisher().sendMessage('Disable mode',
                                         MODE_BY_ID[id])
@@ -712,14 +711,14 @@ class SliceToolBar(wx.ToolBar):
     def OnClick(self, evt):
         id = evt.GetId()
         state = self.GetToolState(id)
-
+        
         if state:
-            ps.Publisher().sendMessage(('Set interaction mode',
-                                        SLICE_MODE_BY_ID[id]))
+            ps.Publisher().sendMessage('Enable mode',
+                                        SLICE_MODE_BY_ID[id])
             ps.Publisher().sendMessage('Untoggle object toolbar items')
         else:
-            ps.Publisher().sendMessage(('Set interaction mode',
-                                        const.MODE_SLICE_EDITOR))
+            ps.Publisher().sendMessage('Disable mode',
+                                        SLICE_MODE_BY_ID[id])
         if id == ID_CROSS:
             if state:
                 ps.Publisher().sendMessage('Set cross visibility', 1)
@@ -729,10 +728,8 @@ class SliceToolBar(wx.ToolBar):
             ps.Publisher().sendMessage('Set cross visibility', 0)
 
         for item in SLICE_TOOLS:
-            print "SLICE_TOOLS"
             state = self.GetToolState(item)
             if state and (item != id):
-                print "sim"
                 self.ToggleTool(item, False)
 
         evt.Skip()

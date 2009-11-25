@@ -94,16 +94,17 @@ class SliceMode(object):
         self.RemoveState(state)
 
     def AddState(self, state):
+        
         level = const.LEVEL[state]
         max_level = max(self.stack.keys())
         
         
         # Insert new state into stack
         self.stack[level] = state 
-        print "ADD---->"
-        print self.stack
-        print level
-        print state
+        #print "ADD---->"
+        #print self.stack
+        #print level
+        #print state
         # Only will affect InVesalius behaviour if it is the highest
         # level in stack
         #if level == max_level:
