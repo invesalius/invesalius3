@@ -35,7 +35,7 @@ import data.slice_ as sl
 import data.vtk_utils as vtku
 import mode as md
 import project
-from slice_data import SliceData
+import slice_data as sd
 
 ID_TO_TOOL_ITEM = {}
 STR_WL = "WL: %d  WW: %d"
@@ -860,7 +860,23 @@ class Viewer(wx.Panel):
                 slice_data.SetCursor(self.__create_cursor())
                 slice_data.SetSize((w, h))
                 self.__update_camera(slice_data)
+
+                style = 0
+                if j == 0:
+                    style = style | sd.BORDER_DOWN
+                if j == self.layout[1] - 1:
+                    style = style | sd.BORDER_UP
+
+                if i == 0:
+                    style = style | sd.BORDER_LEFT
+                if i == self.layout[0] - 1:
+                    style = style | sd.BORDER_RIGHT
+
+                print "->Style", style
+
+                slice_data.SetBorderStyle(style)
                 n += 1
+
 
     def __create_cursor(self):
         cursor = ca.CursorCircle()
@@ -1082,13 +1098,14 @@ class Viewer(wx.Panel):
         self.interactor.GetRenderWindow().AddRenderer(renderer)
         actor = vtk.vtkImageActor()
         actor.SetInput(imagedata)
-        slice_data = SliceData()
+        slice_data = sd.SliceData()
         slice_data.SetOrientation(self.orientation)
         slice_data.renderer = renderer
         slice_data.actor = actor
+        slice_data.SetBorderStyle(sd.BORDER_UP | sd.BORDER_DOWN)
         renderer.AddActor(actor)
         renderer.AddActor(slice_data.text.actor)
-        renderer.AddActor(slice_data.box_actor)
+        renderer.AddViewProp(slice_data.box_actor)
         return slice_data
 
     def __update_camera(self, slice_data):
@@ -1199,6 +1216,11 @@ class Viewer(wx.Panel):
 
     def OnSize(self, evt):
         w, h = self.interactor.GetRenderWindow().GetSize()
+        print "OnSize"
+        print w, h
+        print evt.GetSize()
+        print self.interactor.GetRenderWindow().GetPosition()
+        print
         w = float(w) / self.layout[0]
         h = float(h) / self.layout[1]
         for slice_data in self.slice_data_list:

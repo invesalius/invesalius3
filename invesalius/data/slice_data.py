@@ -21,6 +21,14 @@ import vtk
 import constants as const
 import vtk_utils as vu
 
+BORDER_UP = 1
+BORDER_DOWN = 2
+BORDER_LEFT = 4
+BORDER_RIGHT = 8
+BORDER_ALL = BORDER_UP | BORDER_DOWN | BORDER_LEFT | BORDER_RIGHT
+BORDER_NONE = 0
+
+
 class SliceData(object):
     def __init__(self):
         self.actor = None
@@ -42,6 +50,14 @@ class SliceData(object):
         text.SetValue(self.number)
         self.text = text
 
+    def __create_line_actor(self, line):
+        line_mapper = vtk.vtkPolyDataMapper2D()
+        line_mapper.SetInput(line.GetOutput())
+
+        line_actor = vtk.vtkActor2D()
+        line_actor.SetMapper(line_mapper)
+        return line_actor
+
     def __create_box(self):
         xi = yi = 0.1
         xf = yf = 200
@@ -49,34 +65,67 @@ class SliceData(object):
         line_i.SetPoint1((xi, yi, 0))
         line_i.SetPoint2((xf, yi, 0))
         self.line_i = line_i
+        self.line_i_actor = self.__create_line_actor(line_i)
 
         line_s = vtk.vtkLineSource()
         line_s.SetPoint1((xi, yf, 0))
         line_s.SetPoint2((xf, yf, 0))
         self.line_s = line_s
+        self.line_s_actor = self.__create_line_actor(line_s)
 
         line_l = vtk.vtkLineSource()
         line_l.SetPoint1((xi, yi, 0))
         line_l.SetPoint2((xi, yf, 0))
         self.line_l = line_l
-        
+        self.line_l_actor = self.__create_line_actor(line_l)
+
         line_r = vtk.vtkLineSource()
         line_r.SetPoint1((xf, yi, 0))
         line_r.SetPoint2((xf, yf, 0))
         self.line_r = line_r
-        
-        box = vtk.vtkAppendPolyData()
-        box.AddInput(line_i.GetOutput())
-        box.AddInput(line_s.GetOutput())
-        box.AddInput(line_l.GetOutput())
-        box.AddInput(line_r.GetOutput())
+        self.line_r_actor = self.__create_line_actor(line_r)
 
-        box_mapper = vtk.vtkPolyDataMapper2D()
-        box_mapper.SetInput(box.GetOutput())
-
-        box_actor = vtk.vtkActor2D()
-        box_actor.SetMapper(box_mapper)
+        box_actor = vtk.vtkPropAssembly()
+        box_actor.AddPart(self.line_i_actor)
+        box_actor.AddPart(self.line_s_actor)
+        box_actor.AddPart(self.line_l_actor)
+        box_actor.AddPart(self.line_r_actor)
         self.box_actor = box_actor
+
+    def __set_border_colours(self, colours_borders):
+        for colour, actors in colours_borders.items():
+            for actor in actors:
+                actor.GetProperty().SetColor(colour)
+
+    def SetBorderStyle(self, style=BORDER_NONE):
+        colour_e = const.ORIENTATION_COLOUR[self.orientation]
+        colour_i = (1, 1, 1)
+
+        extern_borders = []
+        intern_borders = []
+
+        if style & BORDER_UP:
+            extern_borders.append(self.line_s_actor)
+        else:
+            intern_borders.append(self.line_s_actor)
+
+        if style & BORDER_DOWN:
+            extern_borders.append(self.line_i_actor)
+        else:
+            intern_borders.append(self.line_i_actor)
+
+        if style & BORDER_LEFT:
+            extern_borders.append(self.line_l_actor)
+        else:
+            intern_borders.append(self.line_l_actor)
+
+        if style & BORDER_RIGHT:
+            extern_borders.append(self.line_r_actor)
+        else:
+            intern_borders.append(self.line_r_actor)
+
+        self.__set_border_colours({colour_i: intern_borders, 
+                                   colour_e: extern_borders})
 
     def SetCursor(self, cursor):
         if self.cursor:
@@ -92,7 +141,8 @@ class SliceData(object):
         self.orientation = orientation
         colour = const.ORIENTATION_COLOUR[self.orientation]
         self.text.SetColour(colour)
-        self.box_actor.GetProperty().SetColor(colour)
+        #self.box_actor.GetProperty().SetColor(colour)
+
 
     def SetSize(self, size):
         w, h = size
@@ -115,9 +165,7 @@ class SliceData(object):
     def Hide(self):
         self.renderer.RemoveActor(self.actor)
         self.renderer.RemoveActor(self.text.actor)
-        self.renderer.RemoveActor(self.box_actor)
 
     def Show(self):
         self.renderer.AddActor(self.actor)
         self.renderer.AddActor(self.text.actor)
-        self.renderer.AddActor(self.box_actor)
