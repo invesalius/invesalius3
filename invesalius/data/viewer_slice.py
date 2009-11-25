@@ -816,7 +816,7 @@ class Viewer(wx.Panel):
         #self.scroll.Bind(wx.EVT_SCROLL_ENDSCROLL, self.OnScrollBarRelease)
         self.interactor.Bind(wx.EVT_KEY_DOWN, self.OnKeyDown)
         self.interactor.Bind(wx.EVT_RIGHT_UP, self.OnContextMenu)
-        self.Bind(wx.EVT_SIZE, self.OnSize)
+        self.interactor.Bind(wx.EVT_SIZE, self.OnSize)
 
     def LoadImagedata(self, pubsub_evt):
         imagedata, mask_dict = pubsub_evt.data
@@ -1215,12 +1215,7 @@ class Viewer(wx.Panel):
             evt.Skip()
 
     def OnSize(self, evt):
-        w, h = self.interactor.GetRenderWindow().GetSize()
-        print "OnSize"
-        print w, h
-        print evt.GetSize()
-        print self.interactor.GetRenderWindow().GetPosition()
-        print
+        w, h = evt.GetSize() 
         w = float(w) / self.layout[0]
         h = float(h) / self.layout[1]
         for slice_data in self.slice_data_list:
