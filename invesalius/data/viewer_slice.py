@@ -103,6 +103,7 @@ class Viewer(wx.Panel):
 
 
     def OnContextMenu(self, evt):
+        self.right_pressed = 0
         self.PopupMenu(self.menu)
 
     def SetPopupMenu(self, menu):
@@ -151,13 +152,11 @@ class Viewer(wx.Panel):
                              {
                              "MouseMoveEvent": self.OnCrossMove,
                              "LeftButtonPressEvent": self.OnCrossMouseClick,
-                             "LeftButtonReleaseEvent": self.OnCrossMouseRelease
                              },
                   const.SLICE_STATE_EDITOR: 
                             {
                             "MouseMoveEvent": self.OnBrushMove,
                             "LeftButtonPressEvent": self.OnBrushClick,
-                            "LeftButtonReleaseEvent": self.OnMouseRelease,
                             "EnterEvent": self.OnEnterInteractor,
                             "LeaveEvent": self.OnLeaveInteractor
                             },
@@ -165,43 +164,42 @@ class Viewer(wx.Panel):
                             {
                             "MouseMoveEvent": self.OnPanMove,
                             "LeftButtonPressEvent": self.OnPanClick,
-                            "LeftButtonReleaseEvent": self.OnReleaseLeftButton
+                            "LeftButtonReleaseEvent": self.OnVtkRightRelease
                             },
                   const.STATE_SPIN:
                             {
                             "MouseMoveEvent": self.OnSpinMove,
                             "LeftButtonPressEvent": self.OnSpinClick,
-                            "LeftButtonReleaseEvent": self.OnReleaseLeftButton
+                            "LeftButtonReleaseEvent": self.OnVtkRightRelease
                             },
                   const.STATE_ZOOM:
                             {
-                            "MouseMoveEvent": self.OnZoomMove,
+                            "MouseMoveEvent": self.OnZoomMoveLeft,
                             "LeftButtonPressEvent": self.OnZoomLeftClick,
-                            "LeftButtonReleaseEvent": self.OnReleaseLeftButton,
+                            "LeftButtonReleaseEvent": self.OnVtkRightRelease
                             },
                   const.SLICE_STATE_SCROLL:
                             {
                             "MouseMoveEvent": self.OnChangeSliceMove,
                             "LeftButtonPressEvent": self.OnChangeSliceClick,
-                            "LeftButtonReleaseEvent": self.OnReleaseLeftButton
                             },
                   const.STATE_WL:
                             {
                             "MouseMoveEvent": self.OnWindowLevelMove,
                             "LeftButtonPressEvent": self.OnWindowLevelClick,
-                            "LeftButtonReleaseEvent": self.OnReleaseLeftButton,        
                             },
                   const.STATE_DEFAULT:
                             {
-                            "MouseMoveEvent": self.OnZoomMove,
-                            "RightButtonPressEvent": self.OnZoomLeftClick,
-                            "RightButtonReleaseEvent": self.OnReleaseRightButton,
                             }
                  }
         
         # Bind method according to current mode
         if(state == const.STATE_ZOOM_SL):
             style = vtk.vtkInteractorStyleRubberBandZoom()
+
+            style.AddObserver("RightButtonPressEvent", self.QuitRubberBandZoom)
+            #style.AddObserver("RightButtonPressEvent", self.EnterRubberBandZoom)
+
         else:
             style = vtk.vtkInteractorStyleImage()
 
@@ -210,9 +208,18 @@ class Viewer(wx.Panel):
                 # Bind event
                 style.AddObserver(event,
                                   action[state][event])
-            
-            style.AddObserver("RightButtonPressEvent",self.OnRightClick)
-            style.AddObserver("RightButtonReleaseEvent", self.OnReleaseRightButton)
+
+            # Common to all styles
+            # Mouse Buttons' presses / releases
+            style.AddObserver("LeftButtonPressEvent", self.OnLeftClick)
+            style.AddObserver("LeftButtonReleaseEvent", self.OnReleaseLeftButton)
+            style.AddObserver("RightButtonPressEvent", self.OnRightClick)
+            style.AddObserver("RightButtonReleaseEvent", self.OnReleaseRightButton)            
+
+            # Zoom using right button
+            style.AddObserver("RightButtonPressEvent",self.OnZoomRightClick)
+            style.AddObserver("MouseMoveEvent", self.OnZoomMoveRight)
+            style.AddObserver("RightButtonReleaseEvent", self.OnVtkRightRelease)
             
         if ((state == const.STATE_ZOOM) or (state == const.STATE_ZOOM_SL)):
             self.interactor.Bind(wx.EVT_LEFT_DCLICK, self.OnUnZoom)
@@ -222,15 +229,51 @@ class Viewer(wx.Panel):
         self.style = style
         self.interactor.SetInteractorStyle(style)
 
-    #def OnMouseMove(self, evt, obj):
-    #    if(self.left_pressed):
-            
-    #        if(self.state == const.SLICE_STATE_CROSS):
-                
-                
+   
+    def QuitRubberBandZoom(self, evt, obj):
+        style =  vtk.vtkInteractorStyleImage()
+        self.interactor.SetInteractorStyle(style)
+        self.style = style
+
+        style.AddObserver("LeftButtonPressEvent", self.EnterRubberBandZoom)
+
+        # Zoom using right button
+        style.AddObserver("RightButtonPressEvent", self.OnRightClick)
+        style.AddObserver("RightButtonReleaseEvent", self.OnReleaseRightButton)            
+        style.AddObserver("RightButtonPressEvent",self.OnZoomRightClick)
+        style.AddObserver("MouseMoveEvent", self.OnZoomMoveRight)
+        style.AddObserver("RightButtonReleaseEvent", self.OnReleaseRightButton)
+
+    def EnterRubberBandZoom(self, evt, obj):
+        style = vtk.vtkInteractorStyleRubberBandZoom()
+        self.interactor.SetInteractorStyle(style)
+        self.style = style
+
+        style.AddObserver("RightButtonPressEvent", self.QuitRubberBandZoom)
+
     def OnRightClick(self, evt, obj):
+        print "OnRightClick"
         self.right_pressed = 1
-                
+
+    def OnReleaseRightButton(self, evt, obj):
+        print "OnReleaseRightButton"
+        self.right_pressed = 0
+        ps.Publisher().sendMessage('Update slice viewer') 
+ 
+    def OnLeftClick(self, evt, obj):
+        print "OnLeftClick"
+        self.left_pressed = 1
+
+    def OnZoomLeftClick(self, evt, obj):
+        print "OnZoomLeftClick"
+        evt.StartDolly()
+
+    def OnReleaseLeftButton(self, evt, obj):
+        self.left_pressed = 0
+        ps.Publisher().sendMessage('Update slice viewer')
+        
+
+
 
     def OnWindowLevelMove(self, evt, obj):
         if (self.left_pressed):
@@ -255,15 +298,11 @@ class Viewer(wx.Panel):
             #Necessary update the slice plane in the volume case exists
             ps.Publisher().sendMessage('Render volume viewer')
         
-        elif(self.right_pressed):
-            self.OnZoomMove(evt, obj)
-        
         self.interactor.Render()
 
 
     def OnWindowLevelClick(self, evt, obj):
         self.last_x, self.last_y = self.interactor.GetLastEventPosition()
-        self.left_pressed = 1
 
     def UpdateWindowLevelValue(self, pubsub_evt):
         window, level = pubsub_evt.data
@@ -290,11 +329,8 @@ class Viewer(wx.Panel):
                 self.scroll.SetThumbPosition(self.acum_achange_slice)
                 self.OnScrollBar()
                 
-        elif(self.right_pressed):
-            self.OnZoomMove(evt, obj)
 
     def OnChangeSliceClick(self, evt, obj):
-        self.left_pressed = 1
         position = list(self.interactor.GetLastEventPosition())
         self.acum_achange_slice = self.scroll.GetThumbPosition()
         self.last_position = position[1]
@@ -303,22 +339,21 @@ class Viewer(wx.Panel):
         if (self.left_pressed):
             evt.Pan()
             evt.OnRightButtonDown()
-        elif(self.right_pressed):
-            self.OnZoomMove(evt, obj)
-            
+
     def OnPanClick(self, evt, obj):
-        self.left_pressed = 1
         evt.StartPan()
 
-    def OnZoomMove(self, evt, obj):
-        if (self.left_pressed or self.right_pressed):
+    def OnZoomMoveLeft(self, evt, obj):
+        if self.left_pressed:
+            print "OnZoomMoveLeft:"
             evt.Dolly()
             evt.OnRightButtonDown()
 
-    def OnZoomLeftClick(self, evt, obj):
-        self.left_pressed = 1
-        evt.StartDolly()
-        
+    def OnVtkRightRelease(self, evt, obj):
+        print "On VTK"
+        evt.OnRightButtonUp()
+
+
     def OnUnZoom(self, evt, obj = None):
         mouse_x, mouse_y = self.interactor.GetLastEventPosition()
         ren = self.interactor.FindPokedRenderer(mouse_x, mouse_y)
@@ -332,23 +367,9 @@ class Viewer(wx.Panel):
         if (self.left_pressed):
             evt.Spin()
             evt.OnRightButtonDown()
-        elif(self.right_pressed):
-            self.OnZoomMove(evt, obj)
-
 
     def OnSpinClick(self, evt, obj):
-        self.left_pressed = 1
         evt.StartSpin()
-
-    def OnReleaseLeftButton(self, evt, obj):
-        self.left_pressed = 0
-        ps.Publisher().sendMessage('Update slice viewer')
-        
-    def OnReleaseRightButton(self, evt, obj):
-        self.right_pressed = 0
-        ps.Publisher().sendMessage('Update slice viewer')
-        
-        
 
     def OnEnterInteractor(self, evt, obj):
         #self.interactor.SetCursor(wx.StockCursor(wx.CURSOR_BLANK))
@@ -537,14 +558,8 @@ class Viewer(wx.Panel):
         self.interactor.Render()
         #self.cursor = cursor
 
-    def OnMouseClick(self, evt, obj):
-        self.left_pressed = 1
-
-    def OnMouseRelease(self, evt, obj):
-        self.left_pressed = 0
 
     def OnBrushClick(self, evt, obj):
-        self.left_pressed = 1
 
         mouse_x, mouse_y = self.interactor.GetEventPosition()
         render = self.interactor.FindPokedRenderer(mouse_x, mouse_y)
@@ -574,38 +589,34 @@ class Viewer(wx.Panel):
 
     def OnBrushMove(self, evt, obj):
         
-        if(self.right_pressed):
-            self.OnZoomLeftClick(evt, obj)
-            self.OnZoomMove(evt, obj)
-        else:
-            mouse_x, mouse_y = self.interactor.GetEventPosition()
-            render = self.interactor.FindPokedRenderer(mouse_x, mouse_y)
-            slice_data = self.get_slice_data(render)
-    
-            # TODO: Improve!
-            for i in self.slice_data_list:
-                i.cursor.Show(0)
-            slice_data.cursor.Show()
-    
-            self.pick.Pick(mouse_x, mouse_y, 0, render)
-            coord = self.get_coordinate_cursor()
-            slice_data.cursor.SetPosition(coord)
-            slice_data.cursor.SetEditionPosition(
-                self.get_coordinate_cursor_edition(slice_data))
-            self.__update_cursor_position(slice_data, coord)
-    
-            if self._brush_cursor_op == const.BRUSH_ERASE:
-                evt_msg = 'Erase mask pixel'
-            elif self._brush_cursor_op == const.BRUSH_DRAW:
-                evt_msg = 'Add mask pixel'
-            elif self._brush_cursor_op == const.BRUSH_THRESH:
-                evt_msg = 'Edit mask pixel'
-                
-            if (self.left_pressed):
-                pixels = itertools.ifilter(self.test_operation_position,
-                                           slice_data.cursor.GetPixels())
-                ps.Publisher().sendMessage(evt_msg, pixels)
-                ps.Publisher().sendMessage('Update slice viewer')
+        mouse_x, mouse_y = self.interactor.GetEventPosition()
+        render = self.interactor.FindPokedRenderer(mouse_x, mouse_y)
+        slice_data = self.get_slice_data(render)
+
+        # TODO: Improve!
+        for i in self.slice_data_list:
+            i.cursor.Show(0)
+        slice_data.cursor.Show()
+
+        self.pick.Pick(mouse_x, mouse_y, 0, render)
+        coord = self.get_coordinate_cursor()
+        slice_data.cursor.SetPosition(coord)
+        slice_data.cursor.SetEditionPosition(
+            self.get_coordinate_cursor_edition(slice_data))
+        self.__update_cursor_position(slice_data, coord)
+
+        if self._brush_cursor_op == const.BRUSH_ERASE:
+            evt_msg = 'Erase mask pixel'
+        elif self._brush_cursor_op == const.BRUSH_DRAW:
+            evt_msg = 'Add mask pixel'
+        elif self._brush_cursor_op == const.BRUSH_THRESH:
+            evt_msg = 'Edit mask pixel'
+            
+        if (self.left_pressed):
+            pixels = itertools.ifilter(self.test_operation_position,
+                                       slice_data.cursor.GetPixels())
+            ps.Publisher().sendMessage(evt_msg, pixels)
+            ps.Publisher().sendMessage('Update slice viewer')
 
         self.interactor.Render()
 
@@ -627,9 +638,17 @@ class Viewer(wx.Panel):
                                        coord[1])
             ps.Publisher().sendMessage(('Set scroll position', 'AXIAL'),
                                        coord[2])
-        elif(self.right_pressed):
-            self.OnZoomLeftClick(evt, obj)
-            self.OnZoomMove(evt, obj)
+
+    def OnZoomMoveRight(self, evt, obj):
+        if (self.right_pressed):
+            print "OnZoomMoveRight"
+            evt.Dolly()
+            evt.OnRightButtonDown()
+
+    def OnZoomRightClick(self, evt, obj):
+        print "OnZoomRightClick"
+        evt.StartDolly()
+
             
     def OnCrossMouseClick(self, evt, obj):
         mouse_x, mouse_y = self.interactor.GetEventPosition()
@@ -645,10 +664,7 @@ class Viewer(wx.Panel):
                                    coord[1])
         ps.Publisher().sendMessage(('Set scroll position', 'AXIAL'),
                                    coord[2])
-        self.left_pressed = 1
 
-    def OnCrossMouseRelease(self, evt, obj):
-        self.left_pressed = 0
 
     def get_slice_data(self, render):
         for slice_data in self.slice_data_list:
@@ -776,7 +792,6 @@ class Viewer(wx.Panel):
             del slice_data
             
         self.modes = []#['DEFAULT']
-        self.mouse_pressed = 0
         self.slice_data_list = []
         self.layout = (1, 1)
         self.orientation_texts = []
@@ -788,7 +803,6 @@ class Viewer(wx.Panel):
 
     def OnSetMode(self, pubsub_evt):
         state = pubsub_evt.data
-        self.left_pressed = 0
         self.SetState(state)
         
         
@@ -801,7 +815,7 @@ class Viewer(wx.Panel):
         self.scroll.Bind(wx.EVT_SCROLL_THUMBTRACK, self.OnScrollBarRelease)
         #self.scroll.Bind(wx.EVT_SCROLL_ENDSCROLL, self.OnScrollBarRelease)
         self.interactor.Bind(wx.EVT_KEY_DOWN, self.OnKeyDown)
-        self.interactor.Bind(wx.EVT_CONTEXT_MENU, self.OnContextMenu)
+        self.interactor.Bind(wx.EVT_RIGHT_UP, self.OnContextMenu)
         self.Bind(wx.EVT_SIZE, self.OnSize)
 
     def LoadImagedata(self, pubsub_evt):
