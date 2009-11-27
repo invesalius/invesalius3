@@ -227,9 +227,9 @@ class Viewer(wx.Panel):
             style.AddObserver("MouseMoveEvent", self.OnZoomMoveRight)
             style.AddObserver("RightButtonReleaseEvent", self.OnVtkRightRelease)
             
-            #Scroll change slice
-            style.AddObserver("MouseWheelForwardEvent",self.OnScrollForward)
-            style.AddObserver("MouseWheelBackwardEvent", self.OnScrollBackward)
+        #Scroll change slice
+        style.AddObserver("MouseWheelForwardEvent",self.OnScrollForward)
+        style.AddObserver("MouseWheelBackwardEvent", self.OnScrollBackward)
             
         if ((state == const.STATE_ZOOM) or (state == const.STATE_ZOOM_SL)):
             self.interactor.Bind(wx.EVT_LEFT_DCLICK, self.OnUnZoom)
