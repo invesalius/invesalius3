@@ -227,6 +227,10 @@ class Viewer(wx.Panel):
             style.AddObserver("MouseMoveEvent", self.OnZoomMoveRight)
             style.AddObserver("RightButtonReleaseEvent", self.OnVtkRightRelease)
             
+            #Scroll change slice
+            style.AddObserver("MouseWheelForwardEvent",self.OnScrollForward)
+            style.AddObserver("MouseWheelBackwardEvent", self.OnScrollBackward)
+            
         if ((state == const.STATE_ZOOM) or (state == const.STATE_ZOOM_SL)):
             self.interactor.Bind(wx.EVT_LEFT_DCLICK, self.OnUnZoom)
         else:
@@ -234,7 +238,6 @@ class Viewer(wx.Panel):
 
         self.style = style
         self.interactor.SetInteractorStyle(style)
-
    
     def QuitRubberBandZoom(self, evt, obj):
         style =  vtk.vtkInteractorStyleImage()
@@ -1190,6 +1193,7 @@ class Viewer(wx.Panel):
                                    (self.orientation, pos))
                 
     def OnScrollBar(self, evt=None):
+        print "...................................."
         pos = self.scroll.GetThumbPosition()
         self.set_slice_number(pos)
         #self.UpdateSlice3D(pos)
@@ -1204,25 +1208,47 @@ class Viewer(wx.Panel):
         self.UpdateSlice3D(self.pos)
         evt.Skip()
 
-    def OnKeyDown(self, evt=None):
+    def OnKeyDown(self, evt=None, obj=None):
         pos = self.scroll.GetThumbPosition()
 
         min = 0
         max = self.actor.GetSliceNumberMax()
 
         if (evt.GetKeyCode() == wx.WXK_UP and pos > min):
-            pos = pos - 1
-            self.scroll.SetThumbPosition(pos)
+            self.OnScrollForward()
             self.OnScrollBar()
+            
         elif (evt.GetKeyCode() == wx.WXK_DOWN and pos < max):
-            pos = pos + 1
-            self.scroll.SetThumbPosition(pos)
+            self.OnScrollBackward()
             self.OnScrollBar()
+        
         self.UpdateSlice3D(pos)
         self.interactor.Render()
 
         if evt:
             evt.Skip()
+
+    def OnScrollForward(self, evt=None, obj=None):
+        pos = self.scroll.GetThumbPosition()
+        min = 0
+        
+        if(pos > min):
+            pos = pos - 1
+            self.scroll.SetThumbPosition(pos)
+            self.OnScrollBar()
+
+    
+    
+    def OnScrollBackward(self, evt=None, obj=None):
+        pos = self.scroll.GetThumbPosition()
+        max = self.actor.GetSliceNumberMax()
+        
+        if(pos < max):
+            pos = pos + 1
+            self.scroll.SetThumbPosition(pos)
+            self.OnScrollBar()
+
+            
 
     def OnSize(self, evt):
         w, h = evt.GetSize() 
