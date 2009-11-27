@@ -207,6 +207,9 @@ class Parser():
 
         return False
 
+    def GetImageData(self):
+        return self.vtkgdcm_reader.GetOutput()
+
     def GetImageWindowLevel(self, preset=WL_PRESET, multiple=WL_MULT):
         """
         Return image window center / level (related to brightness).
@@ -1820,6 +1823,7 @@ class Image(object):
         self.time = parser.GetImageTime()
         self.type = parser.GetImageType()
         self.size = (parser.GetDimensionX(), parser.GetDimensionY())
+        self.imagedata = parser.GetImageData()
         
         if (parser.GetImageThickness()):
             try:

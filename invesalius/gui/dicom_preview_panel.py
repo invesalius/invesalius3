@@ -202,9 +202,9 @@ class SingleImagePreview(wx.Panel):
         self.text_acquisition.SetValue(value)
 
         # READ FILE
-        filename = dicom.image.file
-        reader = vtkgdcm.vtkGDCMImageReader()
-        reader.SetFileName(filename)
+        #filename = dicom.image.file
+        #reader = vtkgdcm.vtkGDCMImageReader()
+        #reader.SetFileName(filename)
 
         # ADJUST CONTRAST
         window_level = dicom.image.level
@@ -214,7 +214,7 @@ class SingleImagePreview(wx.Panel):
         print window_level
         print window_width
         colorer = vtk.vtkImageMapToWindowLevelColors()
-        colorer.SetInput(reader.GetOutput())
+        colorer.SetInput(dicom.image.imagedata)
         colorer.SetWindow(float(window_width))
         colorer.SetLevel(float(window_level))
 
@@ -222,6 +222,9 @@ class SingleImagePreview(wx.Panel):
         self.actor.SetInput(colorer.GetOutput())
         self.renderer.ResetCamera()
         self.interactor.Render()
+
+    def __del__(self):
+        print "---------> morri"
 
 
 
@@ -412,9 +415,11 @@ class Preview(wx.Panel):
 
         self.ID = image_file[5]
 
-        image_reader = vtkgdcm.vtkGDCMImageReader()
-        image_reader.SetFileName(image_file[0])
-        image = image_reader.GetOutput()
+        #image_reader = vtkgdcm.vtkGDCMImageReader()
+        #image_reader.SetFileName(image_file[0])
+        #image = image_reader.GetOutput()
+
+        image = image_file[0]
 
         scale = image.GetScalarRange()
         
@@ -595,7 +600,7 @@ class DicomPreviewSeries(wx.Panel):
         self.group_list = group_list
         n = 0
         for group in group_list:
-            info = (group.dicom.image.file,
+            info = (group.dicom.image.imagedata,
                     float(group.dicom.image.window),
                     float(group.dicom.image.level),
                     group.title,
@@ -699,6 +704,7 @@ class DicomPreview(wx.Panel):
         self.Bind(wx.EVT_SCROLL, self.OnScroll)
 
     def SetDicomDirectory(self, directory):
+        print "Setting Dicom Directory", directory
         self.directory = directory
         self.series = dicom_reader.GetSeries(directory)[0]
 
@@ -715,7 +721,7 @@ class DicomPreview(wx.Panel):
         dicom_files = group.GetHandSortedList()
         n = 0
         for dicom in dicom_files:
-            info = (dicom.image.file,
+            info = (dicom.image.imagedata,
                     dicom.image.window,
                     dicom.image.level,
                     "Image %d" % (dicom.image.number),
@@ -740,7 +746,7 @@ class DicomPreview(wx.Panel):
         dicom_files = group.GetHandSortedList()
         n = 0
         for dicom in dicom_files:
-            info = (dicom.image.file,
+            info = (dicom.image.imagedata,
                     dicom.image.window,
                     dicom.image.level,
                     "Image %d" % (dicom.image.number),
