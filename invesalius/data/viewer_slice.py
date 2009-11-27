@@ -1193,7 +1193,6 @@ class Viewer(wx.Panel):
                                    (self.orientation, pos))
                 
     def OnScrollBar(self, evt=None):
-        print "...................................."
         pos = self.scroll.GetThumbPosition()
         self.set_slice_number(pos)
         #self.UpdateSlice3D(pos)
@@ -1204,7 +1203,6 @@ class Viewer(wx.Panel):
             evt.Skip()
             
     def OnScrollBarRelease(self, evt):
-        #print "OnScrollBarRelease"
         self.UpdateSlice3D(self.pos)
         evt.Skip()
 
