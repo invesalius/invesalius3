@@ -21,7 +21,10 @@ import sys
 
 import wx
 from wx.lib import masked
+from wx.lib.wordwrap import wordwrap
 import wx.lib.pubsub as ps
+
+
 
 import project
 
@@ -288,3 +291,32 @@ def SaveChangesDialog2(filename):
         return 1
     else:# answer == wx.ID_NO:
         return 0
+
+
+
+def ShowAboutDialog(parent):
+    
+    info = wx.AboutDialogInfo()
+    info.Name = "InVesalius"
+    info.Version = "3.a.1 - RP"
+    info.Copyright = "(C) 2007 Renato Archer Research Centre"
+    info.Description = wordwrap(
+       "InVesalius is a software for medical imaging 3D reconstruction. "+\
+       "Its input is a sequency of DICOM 2D image files acquired with CT or MR.\n\n"+\
+       "The software also allows generating correspondent STL files,"+\
+       "so the user can print 3D physical models of the patient's anatomy "+\
+       "using Rapid Prototyping.", 350, wx.ClientDC(parent))
+    info.WebSite = ("http://www.softwarepublico.gov.br/",
+                    "InVesalius Community")
+    info.License = "GNU GPL (General Public License) version 2"
+
+    #info.Translators = ""
+    #info.Artists =
+    info.Developers = ["Tatiana Al-Chueyr",
+                      "Paulo Henrique Junqueira Amorim",
+                      "Thiago Franco de Moraes"]
+    #info.DocWriters =
+
+    # Then we call wx.AboutBox giving its info object
+    wx.AboutBox(info)
+
