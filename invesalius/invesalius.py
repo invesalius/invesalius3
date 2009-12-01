@@ -1,3 +1,4 @@
+#!/usr/local/bin/python
 #--------------------------------------------------------------------------
 # Software:     InVesalius - Software de Reconstrucao 3D de Imagens Medicas
 # Copyright:    (C) 2001  Centro de Pesquisas Renato Archer
@@ -38,6 +39,7 @@ import wx.lib.pubsub as ps
 from gui.frame import Frame
 from control import Controller
 from project import Project
+from session import Session
 
 class InVesalius(wx.App):
     def OnInit(self):
@@ -59,8 +61,11 @@ def parse_comand_line():
     # Add comand line option debug(-d or --debug) to print all pubsub message is
     # being sent
     parser.add_option("-d", "--debug", action="store_true", dest="debug")
-    parser.add_option("-i", "--import", action="store", dest="directory")
+    parser.add_option("-i", "--import", action="store", dest="dicom_dir")
+
     options, args = parser.parse_args()
+    print "ARRRRRGHs", args
+
 
     if options.debug:
         # The user passed the debug option?
@@ -68,15 +73,27 @@ def parse_comand_line():
         # Then all pubsub message must be printed.
         ps.Publisher().subscribe(print_events, ps.ALL_TOPICS)
         
-        proj = Project()
-        proj.debug = 1
+        session = Session()
+        session.debug = 1
     
-    if options.directory:
+    elif options.dicom_dir:
         # The user passed directory to me?
-        import_dir = options.directory
+        import_dir = options.dicom_dir
         ps.Publisher().sendMessage('Import directory', import_dir)
-    else:
-        print "Hey, guy you must pass a directory to me!"
+        #print "Hey, guy you must pass a directory to me!"
+    #else:
+    #    print "Hey, guy, you need to pass a inv3 file to me!"
+   
+    # Check if there is a file path somewhere in what the user wrote
+    i = len(args) 
+    while i:
+        i -= 1
+        file = args[i]
+        if os.path.isfile(file):
+            path = os.path.abspath(file)
+            ps.Publisher().sendMessage('Open project', path)
+            i = 0
+ 
 
 def print_events(data):
     print data.topic
