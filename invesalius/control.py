@@ -69,7 +69,7 @@ class Controller():
         ps.Publisher().subscribe(self.OnLoadImportPanel, "End dicom load")
         ps.Publisher().subscribe(self.OnCancelImport, 'Cancel DICOM load')
         ps.Publisher().subscribe(self.OnShowDialogCloseProject, 'Close Project')
-
+        ps.Publisher().subscribe(self.OnOpenProject, 'Open project')
 
     def OnCancelImport(self, pubsub_evt):
         #self.cancel_import = True
@@ -144,8 +144,12 @@ class Controller():
         
 
     def ShowDialogCloseProject(self):
+        print "ShowDialogCloseProject"
         session = ses.Session()
         st = session.project_status
+        print "* st", st
+        if st == const.PROJ_CLOSE:
+            return -1
         filename = session.project_path[1]
         if (st == const.PROJ_NEW) or (st == const.PROJ_CHANGE):
             answer = dialog.SaveChangesDialog(filename)
@@ -162,6 +166,10 @@ class Controller():
             self.CloseProject()
        
 ###########################
+    def OnOpenProject(self, pubsub_evt):
+        path = pubsub_evt.data
+        self.OpenProject(path)
+
 
     def OpenProject(self, filepath):
         path = os.path.abspath(filepath)
