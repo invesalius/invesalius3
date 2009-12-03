@@ -64,8 +64,8 @@ def parse_comand_line():
     parser.add_option("-i", "--import", action="store", dest="dicom_dir")
 
     options, args = parser.parse_args()
-    print "ARRRRRGHs", args
-
+    print "opt", options
+    print "arg", args
 
     if options.debug:
         # The user passed the debug option?
@@ -76,7 +76,7 @@ def parse_comand_line():
         session = Session()
         session.debug = 1
     
-    elif options.dicom_dir:
+    if options.dicom_dir:
         # The user passed directory to me?
         import_dir = options.dicom_dir
         ps.Publisher().sendMessage('Import directory', import_dir)
@@ -85,14 +85,15 @@ def parse_comand_line():
     #    print "Hey, guy, you need to pass a inv3 file to me!"
    
     # Check if there is a file path somewhere in what the user wrote
-    i = len(args) 
-    while i:
-        i -= 1
-        file = args[i]
-        if os.path.isfile(file):
-            path = os.path.abspath(file)
-            ps.Publisher().sendMessage('Open project', path)
-            i = 0
+    else:
+        i = len(args) 
+        while i:
+            i -= 1
+            file = args[i]
+            if os.path.isfile(file):
+                path = os.path.abspath(file)
+                ps.Publisher().sendMessage('Open project', path)
+                i = 0
  
 
 def print_events(data):
