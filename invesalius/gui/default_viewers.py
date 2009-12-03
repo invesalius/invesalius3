@@ -441,7 +441,7 @@ class VolumeToolPanel(wx.Panel):
         # In MacOS X and Windows, binding parent menu is enough. But
         # not in GNU Linux - in the last it is necessary to bind the
         # submenu
-        if sys.platform == 'linux2':
+        if sys.platform != 'win32':
             submenu.Bind(wx.EVT_MENU, self.OnMenuRaycasting)
         menu.Bind(wx.EVT_MENU, self.OnMenuRaycasting)
 
