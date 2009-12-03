@@ -157,6 +157,7 @@ class Volume():
 
         # Update other information
         self.SetShading()
+        self.SetTypeRaycasting()
         colour = self.GetBackgroundColour()
         ps.Publisher.sendMessage('Change volume viewer background colour', colour)
         ps.Publisher.sendMessage('Change volume viewer gui colour', colour)
@@ -385,6 +386,14 @@ class Volume():
         self.volume_properties.SetSpecular(shading['specular'])
         self.volume_properties.SetSpecularPower(shading['specularPower'])
 
+    def SetTypeRaycasting(self):
+        if self.config['name'].upper().startswith('MIP'):
+            print "MIP"
+            self.volume_mapper.SetBlendModeToMaximumIntensity()
+        else:
+            print "Composite"
+            self.volume_mapper.SetBlendModeToComposite()
+
     def ApplyConvolution(self, imagedata, update_progress = None):
         number_filters = len(self.config['convolutionFilters'])
         if number_filters:
@@ -457,24 +466,23 @@ class Volume():
             volume_mapper.SetVolumeRayCastFunction(composite_function)
             #volume_mapper.SetGradientEstimator(gradientEstimator)
             volume_mapper.IntermixIntersectingGeometryOn()
+            self.volume_mapper = volume_mapper
         else:
             volume_mapper = vtk.vtkFixedPointVolumeRayCastMapper()
             #volume_mapper.AutoAdjustSampleDistancesOff()
-            
+            self.volume_mapper = volume_mapper
+            self.SetTypeRaycasting()
             volume_mapper.IntermixIntersectingGeometryOn()
-            #volume_mapper.SetBlendModeToMaximumIntensity()
+
         volume_mapper.SetInput(image2)
-        self.volume_mapper = volume_mapper
-        
-        
-        
+
         # TODO: Look to this
         #volume_mapper_hw = vtk.vtkVolumeTextureMapper3D()
         #volume_mapper_hw.SetInput(image2)
 
         #Cut Plane
         #CutPlane(image2, volume_mapper)
-        
+
         #self.color_transfer = color_transfer
 
         volume_properties = vtk.vtkVolumeProperty()

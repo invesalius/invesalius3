@@ -403,9 +403,11 @@ class Controller():
             ps.Publisher().sendMessage("Hide raycasting volume")
 
     def SaveRaycastingPreset(self, pubsub_evt):
-        preset_name = pubsub_evt.data + '.plist'
+        preset_name = pubsub_evt.data 
         preset = prj.Project().raycasting_preset
-        preset_dir = os.path.join(const.USER_RAYCASTING_PRESETS_DIRECTORY, preset_name)
+        preset['name'] = preset_name
+        preset_dir = os.path.join(const.USER_RAYCASTING_PRESETS_DIRECTORY,
+                                  preset_name + '.plist')
         plistlib.writePlist(preset, preset_dir)
 
 

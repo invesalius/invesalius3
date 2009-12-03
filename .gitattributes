@@ -14,6 +14,7 @@ docs/devel/example_singleton.py -text
 docs/devel/example_singleton_pubsub.py -text
 docs/devel/sendmessages.txt -text
 docs/devel/subscribes.txt -text
+icons/Floppy.png -text
 icons/annotation.png -text
 icons/brush_circle.jpg -text
 icons/brush_square.jpg -text
