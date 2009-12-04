@@ -28,11 +28,14 @@ import constants as const
 import project as prj
 import data.vtk_utils as vtku
 from gui.widgets.clut_raycasting import CLUTRaycastingWidget
+import style as st
 
 class Viewer(wx.Panel):
     def __init__(self, parent):
         wx.Panel.__init__(self, parent, size=wx.Size(320, 320))
         self.SetBackgroundColour(wx.Colour(0, 0, 0))
+
+        self.interaction_style = st.StyleStateManager()
 
         style =  vtk.vtkInteractorStyleTrackballCamera()
         self.style = style
@@ -74,44 +77,53 @@ class Viewer(wx.Panel):
         
         self.mouse_pressed = 0
     
-    def SetMode(self, new_mode):
-        
-       action = {
-              'PAN':{
-                  "MouseMoveEvent": self.OnPanMove,
-                  "LeftButtonPressEvent": self.OnPanClick,
-                  "LeftButtonReleaseEvent": self.OnReleasePanClick
-                  },
-              'ZOOM':{
-                  "MouseMoveEvent": self.OnZoomMove,
-                  "LeftButtonPressEvent": self.OnZoomClick,
-                  "LeftButtonReleaseEvent": self.OnReleaseZoomClick,
-                  },
-              'SPIN':{
-                  "MouseMoveEvent": self.OnSpinMove,
-                  "LeftButtonPressEvent": self.OnSpinClick,
-                  "LeftButtonReleaseEvent": self.OnReleaseSpinClick,
-                  },
-              'WINDOWLEVEL':{ 
-                         "MouseMoveEvent": self.OnWindowLevelMove,
-                         "LeftButtonPressEvent": self.OnWindowLevelClick,
-                         "LeftButtonReleaseEvent":self.OnWindowLevelRelease
-                          }
+    def SetInteractorStyle(self, state):
+        action = {
+              const.STATE_PAN:
+                    {
+                    "MouseMoveEvent": self.OnPanMove,
+                    "LeftButtonPressEvent": self.OnPanClick,
+                    "LeftButtonReleaseEvent": self.OnReleasePanClick
+                    },
+              const.STATE_ZOOM:
+                    {
+                    "MouseMoveEvent": self.OnZoomMove,
+                    "LeftButtonPressEvent": self.OnZoomClick,
+                    "LeftButtonReleaseEvent": self.OnReleaseZoomClick,
+                    },
+              #const.STATE_SPIN:
+              #      {
+              #      "MouseMoveEvent": self.OnSpinMove,
+              #      "LeftButtonPressEvent": self.OnSpinClick,
+              #      "LeftButtonReleaseEvent": self.OnReleaseSpinClick,
+              #      },
+              const.STATE_SPIN:
+                    {
+                    },
+              const.STATE_WL:
+                    { 
+                    "MouseMoveEvent": self.OnWindowLevelMove,
+                    "LeftButtonPressEvent": self.OnWindowLevelClick,
+                    "LeftButtonReleaseEvent":self.OnWindowLevelRelease
+                    },
+                const.STATE_DEFAULT:
+                    {
+                    }
               }
     
-       if (new_mode == 'ZOOMSELECT'):
-           style = vtk.vtkInteractorStyleRubberBandZoom()
-           self.interactor.SetInteractorStyle(style)
-           self.style = style
-       else:
-          style = vtk.vtkInteractorStyleTrackballCamera()
-          self.interactor.SetInteractorStyle(style)
-          self.style = style  
+        if (state == const.STATE_ZOOM_SL):
+            style = vtk.vtkInteractorStyleRubberBandZoom()
+            self.interactor.SetInteractorStyle(style)
+            self.style = style
+        else:
+            style = vtk.vtkInteractorStyleTrackballCamera()
+            self.interactor.SetInteractorStyle(style)
+            self.style = style  
                       
-          # Check each event available for each mode
-          for event in action[new_mode]:
-              # Bind event
-              style.AddObserver(event,action[new_mode][event])
+            # Check each event available for each mode
+            for event in action[state]:
+                # Bind event
+              style.AddObserver(event,action[state][event])
     
     def OnSpinMove(self, evt, obj):
         if (self.mouse_pressed):
@@ -153,6 +165,22 @@ class Viewer(wx.Panel):
         self.mouse_pressed = 0
         evt.EndPan()
         
+    def SetStyle(self, pubsub_evt):
+        print "SetStyle"
+        mode = pubsub_evt.data
+
+        if (mode == const.MODE_ZOOM_SELECTION):
+             self.SetMode('ZOOMSELECT')
+        elif(mode == const.MODE_MOVE):
+            self.SetMode('PAN')
+        elif(mode == const.MODE_ZOOM):
+            self.SetMode('ZOOM')
+        elif(mode == const.MODE_ROTATE):
+            self.SetMode('SPIN')
+        elif(mode == const.MODE_WW_WL):
+            self.SetMode('WINDOWLEVEL')
+
+
     def SetNewMode(self, pubsub_evt):
        mode = pubsub_evt.topic[1]
        
@@ -262,20 +290,26 @@ class Viewer(wx.Panel):
         
         ps.Publisher().subscribe(self.ResetCamClippingRange, 'Reset cam clipping range')
         
-        ps.Publisher().subscribe(self.SetNewMode,
-                                 ('Set interaction mode',
-                                  const.MODE_ZOOM_SELECTION))
-        ps.Publisher().subscribe(self.SetNewMode,
-                                 ('Set interaction mode',
-                                  const.MODE_ZOOM))
-    
-        ps.Publisher().subscribe(self.SetNewMode,
-                             ('Set interaction mode',
-                              const.MODE_MOVE))
 
-        ps.Publisher().subscribe(self.SetNewMode,
-                             ('Set interaction mode',
-                              const.MODE_ROTATE))
+        ps.Publisher().subscribe(self.OnEnableStyle, 'Enable style')
+        ps.Publisher().subscribe(self.OnDisableStyle, 'Disable style')
+
+
+    def OnEnableStyle(self, pubsub_evt):
+        state = pubsub_evt.data
+        if (state in const.VOLUME_STYLES):
+            new_state = self.interaction_style.AddState(state)
+            self.SetInteractorStyle(new_state)
+        else:
+            #level = const.STYLE_LEVEL[state]
+            new_state = self.interaction_style.RemoveState(state)
+            self.SetInteractorStyle(new_state)
+
+    def OnDisableStyle(self, pubsub_evt):
+        state = pubsub_evt.data
+        new_state = self.interaction_style.RemoveState(state)
+        self.SetInteractorStyle(new_state)
+
                 
     def ResetCamClippingRange(self, pubsub_evt):
         self.ren.ResetCamera()

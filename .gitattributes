@@ -144,6 +144,7 @@ invesalius/reader/dicom.py -text
 invesalius/reader/dicom_grouper.py -text
 invesalius/reader/dicom_reader.py -text
 invesalius/session.py -text
+invesalius/style.py -text
 invesalius/utils.py -text
 invesalius/version.py -text
 presets/raycasting/Airways[!!-~]II.plist -text

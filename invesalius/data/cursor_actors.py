@@ -34,7 +34,7 @@ class CursorCircle:
         self.colour = (0.0, 0.0, 1.0)
         self.opacity = 1
         self.radius = 15.0
-        self.position = (0 ,0, 1)
+        #self.position = (0.5,0.5, 1)
         self.points = []
         self.orientation = "AXIAL"
         self.spacing = (1, 1, 1)
@@ -64,8 +64,8 @@ class CursorCircle:
         actor.SetMapper(mapper)
         actor.GetProperty().SetOpacity(self.opacity)
         actor.GetProperty().SetColor(self.colour) 
-        actor.SetPosition(self.position)
-        actor.SetVisibility(1)
+        #actor.SetPosition(self.position)
+        actor.SetVisibility(0)
         actor.PickableOff()
 
     def __calculate_area_pixels(self):
@@ -209,7 +209,7 @@ class CursorRectangle:
         self.y_length = 30
         
         self.dimension = (self.x_length, self.y_length)
-        self.position = (0 ,0)
+        #self.position = (0 ,0)
         self.orientation = "AXIAL"
         self.spacing = (1, 1, 1)
                 
@@ -287,7 +287,7 @@ class CursorRectangle:
         actor.SetMapper(mapper)
         actor.GetProperty().SetOpacity(self.opacity)
         actor.GetProperty().SetColor(self.colour) 
-        actor.SetVisibility(1)
+        actor.SetVisibility(0)
 
     def __calculate_area_pixels(self):
         xc = 0

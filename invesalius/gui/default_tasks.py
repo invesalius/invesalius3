@@ -19,6 +19,7 @@
 
 import wx
 import wx.lib.foldpanelbar as fpb
+import wx.lib.pubsub as ps
 
 import task_exporter as exporter
 import task_slice as slice_
@@ -182,9 +183,11 @@ class UpperTaskPanel(wx.Panel):
                                        collapsed=True, foldIcons=image_list)
         style = fold_panel.GetCaptionStyle(item)
         col = style.GetFirstColour()
-        
-        fold_panel.AddFoldPanelWindow(item, slice_.TaskPanel(item), Spacing= 0,
+        slice_panel = slice_.TaskPanel(item) 
+        fold_panel.AddFoldPanelWindow(item, slice_panel, Spacing= 0,
                                       leftSpacing=0, rightSpacing=0)
+        self.__id_slice = item.GetId()
+        self.slice_panel = slice_panel
         #fold_panel.Expand(fold_panel.GetFoldPanel(1))
 
         # Fold 3
@@ -211,3 +214,21 @@ class UpperTaskPanel(wx.Panel):
         
         fold_panel.AddFoldPanelWindow(item, exporter.TaskPanel(item), 
                                       Spacing= 0, leftSpacing=0, rightSpacing=0)
+
+        self.fold_panel = fold_panel
+        self.__bind_evt()
+
+    def __bind_evt(self):
+        self.fold_panel.Bind(fpb.EVT_CAPTIONBAR, self.OnFoldPressCaption)
+
+    def OnFoldPressCaption(self, evt):
+        id = evt.GetTag().GetId()
+        closed = evt.GetFoldStatus()
+         
+        if self.__id_slice == id:
+            ps.Publisher().sendMessage('Retrieve task slice style')
+        else:
+            ps.Publisher().sendMessage('Disable task slice style')
+
+        
+        evt.Skip()

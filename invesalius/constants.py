@@ -239,7 +239,7 @@ ID_TO_BMP = {VOL_FRONT: ["Front", os.path.join(ICON_DIR, "view_front.png")],
              }
 
 # if 1, use vtkVolumeRaycastMapper, if 0, use vtkFixedPointVolumeRayCastMapper
-TYPE_RAYCASTING_MAPPER = 0
+TYPE_RAYCASTING_MAPPER = 1
 
 folder=RAYCASTING_PRESETS_DIRECTORY= os.path.abspath(os.path.join("..",
                                                                   "presets",
@@ -334,25 +334,45 @@ ID_PRINT_SCREENSHOT, ID_EXIT] = [wx.NewId() for number in range(10)]
 [ID_VIEW_FULL, ID_VIEW_TEXT, ID_VIEW_3D_BACKGROUND] =\
     [wx.NewId() for number in range(3)]
 
-
+ID_ABOUT = wx.NewId()
 
 #---------------------------------------------------------
-STATE_DEFAULT = 0
-SLICE_STATE_EDITOR = 1
-STATE_WL = 2
-STATE_SPIN = 3
-STATE_ZOOM = 4
-STATE_ZOOM_SL = 5
-SLICE_STATE_CROSS = 6
-SLICE_STATE_SCROLL = 7
-STATE_PAN = 8
+STATE_DEFAULT = 1000
+STATE_WL = 1001
+STATE_SPIN = 1002
+STATE_ZOOM = 1003
+STATE_ZOOM_SL = 1004
+STATE_PAN = 1005
+SLICE_STATE_CROSS = 1006
+SLICE_STATE_SCROLL = 1007
+SLICE_STATE_EDITOR = 1008
 
-LEVEL = {STATE_DEFAULT: 0,
-         SLICE_STATE_EDITOR: 1,
-         STATE_WL: 2,
-         STATE_SPIN: 2,
-         STATE_ZOOM: 2,
-         STATE_ZOOM_SL: 2,
-         SLICE_STATE_CROSS: 2,
-         SLICE_STATE_SCROLL: 2,
-         STATE_PAN:2}
+
+#STATE_DEFAULT = wx.NewId()
+
+TOOL_STATES = [ STATE_WL, STATE_SPIN, STATE_ZOOM,
+               STATE_ZOOM_SL, STATE_PAN] #=\
+#               [wx.NewId() for number in range(5)]
+
+TOOL_SLICE_STATES = [SLICE_STATE_CROSS, SLICE_STATE_SCROLL]# =\
+#                    [wx.NewId() for number in range(2)]
+
+#SLICE_STATE_EDITOR = wx.NewId()
+
+SLICE_STYLES = TOOL_STATES + TOOL_SLICE_STATES
+SLICE_STYLES.append(STATE_DEFAULT)
+SLICE_STYLES.append(SLICE_STATE_EDITOR)
+
+VOLUME_STYLES = TOOL_STATES + []
+VOLUME_STYLES.append(STATE_DEFAULT)
+
+
+STYLE_LEVEL = {SLICE_STATE_EDITOR: 1,
+               SLICE_STATE_CROSS: 2,
+               SLICE_STATE_SCROLL: 2,
+               STATE_DEFAULT: 0,
+               STATE_WL: 2,
+               STATE_SPIN: 2,
+               STATE_ZOOM: 2,
+               STATE_ZOOM_SL: 2,
+               STATE_PAN:2}

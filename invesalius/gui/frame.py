@@ -34,18 +34,18 @@ import project as prj
 import session as ses
 
 # Object toolbar
-OBJ_TOOLS = [ID_ZOOM, ID_ZOOM_SELECT, ID_ROTATE, ID_MOVE, 
-ID_CONTRAST] = [wx.NewId() for number in range(5)]
-MODE_BY_ID = {ID_ZOOM: const.STATE_ZOOM,
-              ID_ZOOM_SELECT: const.STATE_ZOOM_SL,
-              ID_ROTATE: const.STATE_SPIN,
-              ID_MOVE: const.STATE_PAN,
-              ID_CONTRAST: const.STATE_WL}
+#OBJ_TOOLS = [ID_ZOOM, ID_ZOOM_SELECT, ID_ROTATE, ID_MOVE, 
+#ID_CONTRAST] = [wx.NewId() for number in range(5)]
+#MODE_BY_ID = {ID_ZOOM: const.STATE_ZOOM,
+#              ID_ZOOM_SELECT: const.STATE_ZOOM_SL,
+#              ID_ROTATE: const.STATE_SPIN,
+#              ID_MOVE: const.STATE_PAN,
+#              ID_CONTRAST: const.STATE_WL}
 
 # Slice toolbar
-SLICE_TOOLS = [ID_SLICE_SCROLL, ID_CROSS] = [wx.NewId() for number in range(2)]
-SLICE_MODE_BY_ID = {ID_SLICE_SCROLL: const.SLICE_STATE_SCROLL,
-                    ID_CROSS: const.SLICE_STATE_CROSS}
+#SLICE_TOOLS = [ID_SLICE_SCROLL, ID_CROSS] = [wx.NewId() for number in range(2)]
+#SLICE_MODE_BY_ID = {ID_SLICE_SCROLL: const.SLICE_STATE_SCROLL,
+#                    ID_CROSS: const.SLICE_STATE_CROSS}
 
 # Layout toolbar
 VIEW_TOOLS = [ID_LAYOUT, ID_TEXT] = [wx.NewId() for number in range(2)]
@@ -110,6 +110,7 @@ class Frame(wx.Frame):
     def __bind_events_wx(self):
         self.Bind(wx.EVT_SIZE, self.OnSize)
         self.Bind(wx.EVT_MENU, self.OnMenuClick)
+        #self.Bind(wx.EVT_CLOSE, self.OnExit)
     
     def __init_aui(self):
 
@@ -236,8 +237,13 @@ class Frame(wx.Frame):
             self.SaveAsProject() 
         elif id == const.ID_PROJECT_CLOSE:
             self.CloseProject()
-        elif id == const.ID_EXIT:
-            self.Exit()
+        #elif id == const.ID_EXIT:
+        #    self.OnExit(evt)
+        elif id == const.ID_ABOUT:
+            self.ShowAbout()
+
+    def ShowAbout(self):
+        dlg.ShowAboutDialog(self)
 
     def ImportDicom(self):
         ps.Publisher().sendMessage('Show import directory dialog')
@@ -252,10 +258,17 @@ class Frame(wx.Frame):
         ps.Publisher().sendMessage('Show save dialog', False)
 
     def CloseProject(self):
+        print "CloseProject"
         ps.Publisher().sendMessage('Close Project')
 
+    def OnExit(self, event):
+        print "OnExit"
+        self.Exit()
+        event.Skip()
+
     def Exit(self):
-        print "TODO: Exit"
+        print "Exit"
+        ps.Publisher().sendMessage('Close Project')
  
     def ShowTask(self, pubsub_evt):
         self.aui_manager.GetPane("Tasks").Show()
@@ -343,7 +356,7 @@ class MenuBar(wx.MenuBar):
         help_menu.Append(105, "Getting Started...")
         #help_menu.Append(108, "User Manual...")
         help_menu.AppendSeparator()
-        help_menu.Append(106, "About...")
+        help_menu.Append(const.ID_ABOUT, "About...")
         #help_menu.Append(107, "Check For Updates Now...")
 
         # TODO: Check what is necessary under MacOS to show Groo and not Python
@@ -422,7 +435,7 @@ class StatusBar(wx.StatusBar):
         self.SetStatusText(label, 0)
         if (int(value) >= 99):
             self.SetStatusText("",0)
-        if sys.platform != 'linux2':
+        if sys.platform == 'win32':
             wx.SafeYield()
         
 
@@ -606,25 +619,25 @@ class ObjectToolBar(wx.ToolBar):
                                                   "tool_contrast.png"),
                                      wx.BITMAP_TYPE_PNG)
 
-        self.AddLabelTool(ID_ZOOM,
+        self.AddLabelTool(const.STATE_ZOOM,
                            "Zoom",
                            BMP_ZOOM,
                            kind = wx.ITEM_CHECK)
 
-        self.AddLabelTool(ID_ZOOM_SELECT,
+        self.AddLabelTool(const.STATE_ZOOM_SL,
                            "Zoom based on selection",
                            BMP_ZOOM_SELECT,
                            kind = wx.ITEM_CHECK)
 
-        self.AddLabelTool(ID_ROTATE,
+        self.AddLabelTool(const.STATE_SPIN,
                            "Rotate", BMP_ROTATE,
                            kind = wx.ITEM_CHECK)
 
-        self.AddLabelTool(ID_MOVE,
+        self.AddLabelTool(const.STATE_PAN,
                            "Move", BMP_MOVE,
                             kind = wx.ITEM_CHECK)
 
-        self.AddLabelTool(ID_CONTRAST,
+        self.AddLabelTool(const.STATE_WL,
                            "Window and Level", BMP_CONTRAST,
                            kind = wx.ITEM_CHECK)
         self.Realize()
@@ -641,17 +654,12 @@ class ObjectToolBar(wx.ToolBar):
         id = evt.GetId()
         state = self.GetToolState(id)
         if state:
-            ps.Publisher().sendMessage('Enable mode',
-                                        MODE_BY_ID[id])
-            
+            ps.Publisher().sendMessage('Enable style', id)
             ps.Publisher().sendMessage('Untoggle slice toolbar items')
         else:
-            ps.Publisher().sendMessage('Disable mode',
-                                        MODE_BY_ID[id])
-            
-        
+            ps.Publisher().sendMessage('Disable style', id)
 
-        for item in OBJ_TOOLS:
+        for item in const.TOOL_STATES:
             state = self.GetToolState(item)
             if state and (item != id):
                 self.ToggleTool(item, False)
@@ -660,7 +668,7 @@ class ObjectToolBar(wx.ToolBar):
         
 
     def UntoggleAllItems(self, pubsub_evt=None):
-        for id in OBJ_TOOLS:
+        for id in const.TOOL_STATES:
             state = self.GetToolState(id)
             if state:
                 self.ToggleTool(id, False)
@@ -695,9 +703,9 @@ class SliceToolBar(wx.ToolBar):
             BMP_CROSS = wx.Bitmap(os.path.join(const.ICON_DIR, "cross.png"),
                               wx.BITMAP_TYPE_PNG)
 
-        self.AddCheckTool(ID_SLICE_SCROLL, BMP_SLICE)
 
-        self.AddCheckTool(ID_CROSS, BMP_CROSS)
+        self.AddCheckTool(const.SLICE_STATE_SCROLL, BMP_SLICE)
+        self.AddCheckTool(const.SLICE_STATE_CROSS, BMP_CROSS)
 
         self.Realize()
 
@@ -711,23 +719,14 @@ class SliceToolBar(wx.ToolBar):
     def OnClick(self, evt):
         id = evt.GetId()
         state = self.GetToolState(id)
-        
+
         if state:
-            ps.Publisher().sendMessage('Enable mode',
-                                        SLICE_MODE_BY_ID[id])
+            ps.Publisher().sendMessage('Enable style', id)
             ps.Publisher().sendMessage('Untoggle object toolbar items')
         else:
-            ps.Publisher().sendMessage('Disable mode',
-                                        SLICE_MODE_BY_ID[id])
-        if id == ID_CROSS:
-            if state:
-                ps.Publisher().sendMessage('Set cross visibility', 1)
-            else:
-                ps.Publisher().sendMessage('Set cross visibility', 0)
-        else:
-            ps.Publisher().sendMessage('Set cross visibility', 0)
+            ps.Publisher().sendMessage('Disable style', id)
 
-        for item in SLICE_TOOLS:
+        for item in const.TOOL_SLICE_STATES:
             state = self.GetToolState(item)
             if state and (item != id):
                 self.ToggleTool(item, False)
@@ -736,11 +735,11 @@ class SliceToolBar(wx.ToolBar):
 
 
     def UntoggleAllItem(self, pubsub_evt):
-        for id in SLICE_TOOLS:
+        for id in const.TOOL_SLICE_STATES:
             state = self.GetToolState(id)
             if state:
                 self.ToggleTool(id, False)
-                if id == ID_CROSS:
+                if id == const.SLICE_STATE_CROSS:
                     ps.Publisher().sendMessage('Set cross visibility', 0)
 
 # ---------------------------------------------------------------------

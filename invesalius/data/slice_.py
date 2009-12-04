@@ -24,7 +24,7 @@ import wx.lib.pubsub as ps
 import constants as const
 import imagedata_utils as iu
 from mask import Mask
-import mode as md
+import style as st
 from project import Project
 import session as ses
 from utils import Singleton
@@ -42,7 +42,7 @@ class Slice(object):
         self.blend_filter = None
 
         self.num_gradient = 0
-        self.mode = md.SliceMode()
+        self.interaction_style = st.StyleStateManager()
 
         self.__bind_events()
 
@@ -88,6 +88,25 @@ class Slice(object):
         ps.Publisher().subscribe(self.OnExportMask,'Export mask to file')
 
         ps.Publisher().subscribe(self.OnCloseProject, 'Close project data')
+
+
+
+        ps.Publisher().subscribe(self.OnEnableStyle, 'Enable style')
+        ps.Publisher().subscribe(self.OnDisableStyle, 'Disable style')
+
+
+    def OnEnableStyle(self, pubsub_evt):
+        state = pubsub_evt.data
+        if (state in const.SLICE_STYLES):
+            new_state = self.interaction_style.AddState(state)
+            ps.Publisher().sendMessage('Set slice interaction style', new_state)
+
+
+    def OnDisableStyle(self, pubsub_evt):
+        state = pubsub_evt.data
+        if (state in const.SLICE_STYLES):
+            new_state = self.interaction_style.RemoveState(state)
+            ps.Publisher().sendMessage('Set slice interaction style', new_state)
 
     def OnCloseProject(self, pubsub_evt):
         self.CloseProject()

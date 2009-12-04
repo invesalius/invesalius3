@@ -205,7 +205,7 @@ class InnerFoldPanel(wx.Panel):
         fold_panel.ApplyCaptionStyle(item, style)
         fold_panel.AddFoldPanelWindow(item, EditionTools(item), Spacing= 0,
                                       leftSpacing=0, rightSpacing=0)
-        self.editor_panel_id = item.GetId()
+        self.__id_editor = item.GetId()
         self.last_panel_opened = None
         
         #fold_panel.Expand(fold_panel.GetFoldPanel(1))
@@ -217,22 +217,44 @@ class InnerFoldPanel(wx.Panel):
         self.SetSizer(sizer)
         self.Update()
         self.SetAutoLayout(1)
-        fold_panel.Bind(fpb.EVT_CAPTIONBAR, self.OnFoldPressCaption)
-        
+
+        self.fold_panel = fold_panel
+        self.last_style = None
+
+        self.__bind_evt()
+        self.__bind_pubsub_evt()
+
+    def __bind_evt(self):
+        self.fold_panel.Bind(fpb.EVT_CAPTIONBAR, self.OnFoldPressCaption)
+       
+    def __bind_pubsub_evt(self):
+        ps.Publisher().subscribe(self.OnRetrieveStyle, 'Retrieve task slice style')
+        ps.Publisher().subscribe(self.OnDisableStyle, 'Disable task slice style')
+         
     def OnFoldPressCaption(self, evt):
-        
-        if (self.editor_panel_id == evt.GetTag().GetId()):
-            if not(evt.GetFoldStatus()):
-                ps.Publisher().sendMessage('Enable mode', const.SLICE_STATE_EDITOR)
+        id = evt.GetTag().GetId()
+        closed = evt.GetFoldStatus()
+         
+        if self.__id_editor == id:
+            if closed:
+                ps.Publisher().sendMessage('Disable style', const.SLICE_STATE_EDITOR)
+                self.last_style = None
             else:
-                ps.Publisher().sendMessage('Disable mode', const.SLICE_STATE_EDITOR)
+                ps.Publisher().sendMessage('Enable style', const.SLICE_STATE_EDITOR)
+                self.last_style = const.SLICE_STATE_EDITOR
         else:
-            if(self.last_panel_opened == self.editor_panel_id):
-                ps.Publisher().sendMessage('Disable mode', const.SLICE_STATE_EDITOR)    
-        
-        self.last_panel_opened = evt.GetTag().GetId()
+            ps.Publisher().sendMessage('Disable style', const.SLICE_STATE_EDITOR)
+            self.last_style = None
         
         evt.Skip()
+
+    def OnRetrieveStyle(self, pubsub_evt):
+        if (self.last_style == const.SLICE_STATE_EDITOR):
+            ps.Publisher().sendMessage('Enable style', const.SLICE_STATE_EDITOR)
+
+    def OnDisableStyle(self, pubsub_evt):
+        if (self.last_style == const.SLICE_STATE_EDITOR):
+            ps.Publisher().sendMessage('Disable style', const.SLICE_STATE_EDITOR)
 
     def GetMaskSelected(self):
         x= self.mask_prop_panel.GetMaskSelected()

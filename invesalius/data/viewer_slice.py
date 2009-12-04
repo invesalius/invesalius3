@@ -49,7 +49,7 @@ class Viewer(wx.Panel):
         #self.SetBackgroundColour(colour)
 
         # Interactor additional style
-        self.modes = []#['DEFAULT']
+        #self.modes = []#['DEFAULT']
         self.left_pressed = 0
         self.right_pressed = 0
         self.last_position_mouse_move = ()
@@ -60,6 +60,7 @@ class Viewer(wx.Panel):
         # is the number of rows
         self.layout = (1, 1)
         self.orientation_texts = []
+
         self.__init_gui()
 
         self.orientation = orientation
@@ -74,6 +75,7 @@ class Viewer(wx.Panel):
         # VTK pipeline and actors
         #self.__config_interactor()
         self.pick = vtk.vtkPropPicker()
+        self.cross_actor = vtk.vtkActor()
 
         self.__bind_events()
         self.__bind_events_wx()
@@ -152,7 +154,7 @@ class Viewer(wx.Panel):
         self.ren = ren
 
 
-    def SetState(self, state):
+    def SetInteractorStyle(self, state):
         self.state = state
         action = {const.SLICE_STATE_CROSS: 
                              {
@@ -198,6 +200,13 @@ class Viewer(wx.Panel):
                             {
                             }
                  }
+        if state == const.SLICE_STATE_CROSS:
+            self.__set_cross_visibility(1)
+        else:
+            self.__set_cross_visibility(0)
+
+        self.__set_editor_cursor_visibility(0)
+
         
         # Bind method according to current mode
         if(state == const.STATE_ZOOM_SL):
@@ -238,6 +247,7 @@ class Viewer(wx.Panel):
 
         self.style = style
         self.interactor.SetInteractorStyle(style)
+        self.interactor.Render()
    
     def QuitRubberBandZoom(self, evt, obj):
         style =  vtk.vtkInteractorStyleImage()
@@ -599,7 +609,9 @@ class Viewer(wx.Panel):
         ps.Publisher().sendMessage('Update slice viewer')
 
     def OnBrushMove(self, evt, obj):
-        
+       
+        self.__set_editor_cursor_visibility(1)
+ 
         mouse_x, mouse_y = self.interactor.GetEventPosition()
         render = self.interactor.FindPokedRenderer(mouse_x, mouse_y)
         slice_data = self.get_slice_data(render)
@@ -786,14 +798,14 @@ class Viewer(wx.Panel):
         ps.Publisher().subscribe(self.UpdateWindowLevelValue,\
                                  'Update window level value')
 
-        ps.Publisher().subscribe(self.__set_cross_visibility,\
-                                 'Set cross visibility')
+        #ps.Publisher().subscribe(self.__set_cross_visibility,\
+        #                         'Set cross visibility')
         ###
         ps.Publisher().subscribe(self.__set_layout,
                                 'Set slice viewer layout')
 
-        ps.Publisher().subscribe(self.OnSetMode,
-                                'Set slice mode')
+        ps.Publisher().subscribe(self.OnSetInteractorStyle,
+                                'Set slice interaction style')
         ps.Publisher().subscribe(self.OnCloseProject, 'Close project data')
 
     def OnCloseProject(self, pubsub_evt):
@@ -814,9 +826,9 @@ class Viewer(wx.Panel):
         self.pick = vtk.vtkPropPicker()
 
 
-    def OnSetMode(self, pubsub_evt):
+    def OnSetInteractorStyle(self, pubsub_evt):
         state = pubsub_evt.data
-        self.SetState(state)
+        self.SetInteractorStyle(state)
         
         
     def ChangeBrushOperation(self, pubsub_evt):
@@ -834,6 +846,7 @@ class Viewer(wx.Panel):
     def LoadImagedata(self, pubsub_evt):
         imagedata, mask_dict = pubsub_evt.data
         self.SetInput(imagedata, mask_dict)
+        
 
     def LoadRenderers(self, imagedata):
         number_renderers = self.layout[0] * self.layout[1]
@@ -911,7 +924,7 @@ class Viewer(wx.Panel):
         slice_ = sl.Slice()
         if slice_.imagedata is None:
             slice_.SetInput(imagedata, mask_dict)
-
+            
         #actor = vtk.vtkImageActor()
         #actor.SetInput(slice_.GetOutput())
         self.LoadRenderers(slice_.GetOutput())
@@ -940,7 +953,7 @@ class Viewer(wx.Panel):
 
         self.EnableText()
         # Insert cursor
-        self.SetState(const.STATE_DEFAULT)
+        self.SetInteractorStyle(const.STATE_DEFAULT)
 
         self.__build_cross_lines()
 
@@ -1074,10 +1087,12 @@ class Viewer(wx.Panel):
         #print "actor bounds", slice_data.actor.GetBounds()
         #print
 
-    def __set_cross_visibility(self, pubsub_evt):
-        visibility = pubsub_evt.data
+    def __set_cross_visibility(self, visibility):
         self.cross_actor.SetVisibility(visibility)
-        self.interactor.Render()
+
+    def __set_editor_cursor_visibility(self, visibility):
+        for slice_data in self.slice_data_list:
+            slice_data.cursor.actor.SetVisibility(visibility)
 
     def __update_cursor_position(self, slice_data, position):
         x, y, z = position

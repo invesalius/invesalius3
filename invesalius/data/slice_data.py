@@ -33,6 +33,8 @@ class SliceData(object):
     def __init__(self):
         self.actor = None
         self.cursor = None
+        self.text = None
+
         self.number = 0
         self.orientation = 'AXIAL'
         self.renderer = None
@@ -48,6 +50,7 @@ class SliceData(object):
         text.SetPosition(const.TEXT_POS_LEFT_DOWN)
         text.SetVerticalJustificationToBottom()
         text.SetValue(self.number)
+        #text.ShadowOff()
         self.text = text
 
     def __create_line_actor(self, line):
