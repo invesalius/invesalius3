@@ -626,8 +626,8 @@ class CLUTRaycastingWidget(wx.Panel):
         self._draw_curves(ctx)
         self._draw_points(ctx)
         self._draw_selection_curve(ctx, height)
-        self._draw_tool_bar(ctx, height)
         if sys.platform != "darwin": 
+            self._draw_tool_bar(ctx, height)
             if self.point_dragged:
                 self._draw_selected_point_text(ctx)
 
@@ -652,12 +652,15 @@ class CLUTRaycastingWidget(wx.Panel):
             self.Histogram.points.append((x, y))
 
     def _build_buttons(self):
-        img = cairo.ImageSurface.create_from_png(os.path.join(const.ICON_DIR, 'Floppy.png'))
-        width = img.get_width()
-        height = img.get_height()
-        self.save_button = Button()
-        self.save_button.image = img
-        self.save_button.size = (width, height)
+        if sys.platform == 'darwin':
+            self.save_button = Button()
+        else:
+            img = cairo.ImageSurface.create_from_png(os.path.join(const.ICON_DIR, 'Floppy.png'))
+            width = img.get_width()
+            height = img.get_height()
+            self.save_button = Button()
+            self.save_button.image = img
+            self.save_button.size = (width, height)
 
     def __sort_pixel_points(self):
         """
