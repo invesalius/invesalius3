@@ -320,3 +320,13 @@ def ShowAboutDialog(parent):
     # Then we call wx.AboutBox giving its info object
     wx.AboutBox(info)
 
+
+def ShowSavePresetDialog(default_filename="raycasting"):
+    dlg = wx.TextEntryDialog(None,
+                             "Save raycasting preset as:",
+                             "InVesalius 3")
+    #dlg.SetFilterIndex(0) # default is VTI
+    filename = None                 
+    if dlg.ShowModal() == wx.ID_OK:
+        filename = dlg.GetValue()
+    return filename
