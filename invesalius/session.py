@@ -4,12 +4,13 @@ import constants as const
 from utils import Singleton
 
 class Session(object):
-    # Only one project will be initialized per time. Therefore, we use
+    # Only one session will be initialized per time. Therefore, we use
     # Singleton design pattern for implementing it
     __metaclass__= Singleton
 
     def __init__(self):
         self.project_path = ()
+        self.debug = False
 
         self.project_status = const.PROJ_CLOSE
         # const.PROJ_NEW*, const.PROJ_OPEN, const.PROJ_CHANGE*,
@@ -32,12 +33,14 @@ class Session(object):
         self.recent_projects = []
 
     def CloseProject(self):
+        print "-- CloseProject"
         self.project_path = ()
         self.project_status = const.PROJ_CLOSE
         self.mode = const.MODE_RP
         self.temp_item = False
 
     def SaveProject(self, path=()):
+        print "-- SaveProject"
         self.project_status = const.PROJ_OPEN
         if path:
             self.project_path = path
@@ -46,17 +49,19 @@ class Session(object):
             self.temp_item = False
 
     def ChangeProject(self):
+        print "-- ChangeProject"
         self.project_status = const.PROJ_CHANGE
 
     def CreateProject(self, filename):
+        print "-- CreateProject"
         # Set session info
         self.project_path = (self.invdir, filename)
         self.project_status = const.PROJ_NEW
         self.temp_item = True
         return self.invdir
-        
 
     def OpenProject(self, filepath):
+        print "-- OpenProject"
         # Add item to recent projects list
         item = (path, file) = os.path.split(filepath)
         self.__add_to_list(item)
@@ -88,4 +93,16 @@ class Session(object):
         if len(l)>const.PROJ_MAX:
             for i in xrange(len(l)-const.PROJ_MAX):
                 l.pop()
-         
+
+    def SavePlist(self):
+        filename = 'session.conf'
+        filepath = os.join(self.invdir, filename)
+        plistlib.writePlist(self.__dict__, filepath)
+
+    def OpenPlist(self):
+        filename = 'session.conf'
+        filepath = os.join(self.invdir, filename)
+        # TODO: try/except
+        dict = plistlib.readPlist(main_plist)
+        for key in dict:
+            setattr(self, key, dict[key])
