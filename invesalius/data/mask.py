@@ -43,12 +43,13 @@ class Mask():
     def SavePlist(self, filename):
         mask = {}
         filename = '%s$%s$%d' % (filename, 'mask', self.index)
+        
         d = self.__dict__
         for key in d:
             if isinstance(d[key], vtk.vtkImageData):
                 img_name = '%s_%s.vti' % (filename, key)
                 iu.Export(d[key], img_name, bin=True)
-                mask[key] = {'$vti': img_name}
+                mask[key] = {'$vti': os.path.split(img_name)[1]}
             elif key == 'edited_points':
                 edited_points = {}
                 for p in self.edited_points:
@@ -57,7 +58,7 @@ class Mask():
             else:
                 mask[key] = d[key]
         plistlib.writePlist(mask, filename + '.plist')
-        return filename + '.plist'
+        return os.path.split(filename)[1] + '.plist'
 
     def OpenPList(self, filename):
         mask = plistlib.readPlist(filename)

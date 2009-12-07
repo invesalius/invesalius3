@@ -102,7 +102,7 @@ class Presets():
         preset['thresh_mri'] = self.thresh_mri.copy()
         preset['thresh_ct'] = self.thresh_ct.copy()
         plistlib.writePlist(preset, filename)
-        return filename
+        return os.path.split(filename)[1]
 
     def OpenPlist(self, filename):
         p = plistlib.readPlist(filename)

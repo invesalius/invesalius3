@@ -185,12 +185,10 @@ class Project(object):
         project['mask_dict'] = masks
         img_file = '%s_%s.vti' % (filename_tmp, 'imagedata')
         iu.Export(self.imagedata, img_file, bin=True)
-        project['imagedata'] = {'$vti':img_file}
-        print project
+        project['imagedata'] = {'$vti':os.path.split(img_file)[1]}
         plistlib.writePlist(project, filename_tmp + '.plist')
         
         path = os.path.join(dir_,filename)
-        print path
         Compress(dir_temp, path)#os.path.join("~/Desktop/","teste.inv3"))
         shutil.rmtree(dir_temp)
 
@@ -248,12 +246,18 @@ class Project(object):
 
 
 def Compress(folder, filename):
-    file_list = glob.glob(os.path.join(folder,"*"))
-    tar = tarfile.open(filename, "w:gz")
+    tmpdir, tmpdir_ = os.path.split(folder)
+    current_dir = os.path.abspath(".")
+    os.chdir(tmpdir)
+    file_list = glob.glob(os.path.join(tmpdir_,"*"))
+    
+    tar = tarfile.open(tmpdir_ + ".inv3", "w:gz")
     for name in file_list:
         tar.add(name)
     tar.close()
-
+    shutil.move(tmpdir_+ ".inv3", filename)
+    os.chdir(current_dir)
+    
 def Extract(filename, folder):
     tar = tarfile.open(filename, "r:gz")
     #tar.list(verbose=True)

@@ -132,7 +132,7 @@ class Controller():
             proj = prj.Project()
             filepath = dialog.ShowSaveAsProjectDialog(proj.name)
             if filepath:
-                session.RemoveTemp()
+                #session.RemoveTemp()
                 session.OpenProject(filepath) 
             else:
                 return

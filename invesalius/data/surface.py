@@ -54,11 +54,13 @@ class Surface():
             if isinstance(d[key], vtk.vtkPolyData):
                 img_name = '%s_%s.vtp' % (filename, key)
                 pu.Export(d[key], img_name, bin=True)
-                surface[key] = {'$vtp': img_name}
+                surface[key] = {'$vtp': os.path.split(img_name)[1]}
             else:
                 surface[key] = d[key]
+                
+                
         plistlib.writePlist(surface, filename + '.plist')
-        return filename + '.plist'
+        return os.path.split(filename)[1] + '.plist'
 
     def OpenPList(self, filename):
         surface = plistlib.readPlist(filename)
