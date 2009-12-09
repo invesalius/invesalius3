@@ -70,7 +70,7 @@ SHADING = {
 
 
 class Volume():
-    
+
     def __init__(self):
         self.config = None
         self.exist = None
@@ -81,9 +81,9 @@ class Volume():
         self.curve = 0
         self.plane = None
         self.plane_on = False
-        
+
         self.__bind_events()
-        
+
     def __bind_events(self):
         ps.Publisher().subscribe(self.OnHideVolume,
                                 'Hide raycasting volume')
@@ -387,12 +387,22 @@ class Volume():
         self.volume_properties.SetSpecularPower(shading['specularPower'])
 
     def SetTypeRaycasting(self):
-        if self.config['name'].upper().startswith('MIP'):
-            print "MIP"
-            self.volume_mapper.SetBlendModeToMaximumIntensity()
+        if self.volume_mapper.IsA("vtkFixedPointVolumeRayCastMapper"):
+            if self.config.get('MIP', False):
+                print "MIP"
+                self.volume_mapper.SetBlendModeToMaximumIntensity()
+            else:
+                print "Composite"
+                self.volume_mapper.SetBlendModeToComposite()
         else:
-            print "Composite"
-            self.volume_mapper.SetBlendModeToComposite()
+            if self.config.get('MIP', False):
+                print "MIP"
+                raycasting_function = vtk.vtkVolumeRayCastMIPFunction()
+            else:
+                print "Composite"
+                raycasting_function = vtk.vtkVolumeRayCastCompositeFunction()
+                raycasting_function.SetCompositeMethodToInterpolateFirst()
+            self.volume_mapper.SetVolumeRayCastFunction(raycasting_function)
 
     def ApplyConvolution(self, imagedata, update_progress = None):
         number_filters = len(self.config['convolutionFilters'])
@@ -412,7 +422,7 @@ class Volume():
     def LoadVolume(self):
         proj = prj.Project()
         image = proj.imagedata
-        
+
         number_filters = len(self.config['convolutionFilters'])
         update_progress= vtk_utils.ShowProgress(2 + number_filters)
 
@@ -424,7 +434,7 @@ class Volume():
         flip.AddObserver("ProgressEvent", lambda obj,evt:
                             update_progress(flip, "Rendering..."))
         flip.Update()
-        
+
         image = flip.GetOutput()
 
         scale = image.GetScalarRange()
@@ -445,16 +455,9 @@ class Volume():
         else:
             self.Create8bColorTable(scale)
             self.Create8bOpacityTable(scale)
-            
-            
+
         image2 = self.ApplyConvolution(image2.GetOutput(), update_progress)
         self.final_imagedata = image2
-
-        composite_function = vtk.vtkVolumeRayCastCompositeFunction()
-        composite_function.SetCompositeMethodToInterpolateFirst()
-
-        gradientEstimator = vtk.vtkFiniteDifferenceGradientEstimator()
-        gradientEstimator.SetGradientMagnitudeScale(1)
 
         # Changed the vtkVolumeRayCast to vtkFixedPointVolumeRayCastMapper
         # because it's faster and the image is better
@@ -463,7 +466,7 @@ class Volume():
             volume_mapper = vtk.vtkVolumeRayCastMapper()
             #volume_mapper.AutoAdjustSampleDistancesOff()
             #volume_mapper.SetInput(image2)
-            volume_mapper.SetVolumeRayCastFunction(composite_function)
+            #volume_mapper.SetVolumeRayCastFunction(composite_function)
             #volume_mapper.SetGradientEstimator(gradientEstimator)
             volume_mapper.IntermixIntersectingGeometryOn()
             self.volume_mapper = volume_mapper
@@ -471,9 +474,9 @@ class Volume():
             volume_mapper = vtk.vtkFixedPointVolumeRayCastMapper()
             #volume_mapper.AutoAdjustSampleDistancesOff()
             self.volume_mapper = volume_mapper
-            self.SetTypeRaycasting()
             volume_mapper.IntermixIntersectingGeometryOn()
 
+        self.SetTypeRaycasting()
         volume_mapper.SetInput(image2)
 
         # TODO: Look to this
@@ -487,11 +490,6 @@ class Volume():
 
         volume_properties = vtk.vtkVolumeProperty()
         #volume_properties.IndependentComponentsOn()
-        if self.config['useShading']:
-            volume_properties.ShadeOn()
-        else:
-            volume_properties.ShadeOff()
-
         volume_properties.SetInterpolationTypeToLinear()
         volume_properties.SetColor(self.color_transfer)
 
@@ -508,20 +506,21 @@ class Volume():
         volume_mapper.SetImageSampleDistance(0.25)
         volume_mapper.SetSampleDistance(pix_diag / 5.0)
         volume_properties.SetScalarOpacityUnitDistance(pix_diag)
-        
+
         self.volume_properties = volume_properties
+
+        self.SetShading()
 
         volume = vtk.vtkVolume()
         volume.SetMapper(volume_mapper)
         volume.SetProperty(volume_properties)
         self.volume = volume
-        
+
         colour = self.GetBackgroundColour()
 
         ps.Publisher().sendMessage('Load volume into viewer',
                                     (volume, colour, (self.ww, self.wl)))
 
-        
     def OnEnableTool(self, pubsub_evt):
         print "OnEnableTool"
         tool_name, enable = pubsub_evt.data

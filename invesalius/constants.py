@@ -225,7 +225,7 @@ WINDOW_LEVEL = {"Abdomen":(350,50),
                  "Vasculature - Hard":(240,80),
                  "Vasculature - Soft":(650,160)}
 
-REDUCE_IMAGEDATA_QUALITY = 1
+REDUCE_IMAGEDATA_QUALITY = 0
 
 
 ICON_DIR = os.path.abspath(os.path.join('..', 'icons'))
@@ -239,7 +239,7 @@ ID_TO_BMP = {VOL_FRONT: ["Front", os.path.join(ICON_DIR, "view_front.png")],
              }
 
 # if 1, use vtkVolumeRaycastMapper, if 0, use vtkFixedPointVolumeRayCastMapper
-TYPE_RAYCASTING_MAPPER = 1
+TYPE_RAYCASTING_MAPPER = 0
 
 folder=RAYCASTING_PRESETS_DIRECTORY= os.path.abspath(os.path.join("..",
                                                                   "presets",

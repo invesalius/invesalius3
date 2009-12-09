@@ -157,6 +157,7 @@ presets/raycasting/Glossy.plist -text
 presets/raycasting/Gold[!!-~]Bone.plist -text
 presets/raycasting/High[!!-~]Contrast.plist -text
 presets/raycasting/Low[!!-~]Contrast.plist -text
+presets/raycasting/MIP.plist -text
 presets/raycasting/Mid[!!-~]Contrast.plist -text
 presets/raycasting/No[!!-~]Shading.plist -text
 presets/raycasting/Pencil.plist -text
