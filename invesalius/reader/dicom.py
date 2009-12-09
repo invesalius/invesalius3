@@ -133,7 +133,11 @@ class Parser():
         if ds.FindDataElement(tag):
             data =  ds.GetDataElement(tag).GetValue()
             if (data):
-                return int(str(data))
+                try:
+                    value = int(str(data))
+                except(ValueError): #Problem in the other\iCatDanielaProjeto
+                    value = 0
+                return value
         return ""
     
     def GetAcquisitionTime(self):
