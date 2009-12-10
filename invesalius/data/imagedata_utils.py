@@ -211,7 +211,7 @@ def ExtractVOI(imagedata,xi,xf,yi,yf,zi,zf):
 def CreateImageData(filelist, zspacing):
     message = "Generating multiplanar visualization..."
     if not(const.REDUCE_IMAGEDATA_QUALITY):
-        update_progress= vtk_utils.ShowProgress(1)
+        update_progress= vtk_utils.ShowProgress(1, dialog_type = "ProgressDialog")
 
         array = vtk.vtkStringArray()
         for x in xrange(len(filelist)):
