@@ -40,8 +40,8 @@ class CursorCircle:
         self.spacing = (1, 1, 1)
         
         self.mapper = vtk.vtkPolyDataMapper()
-        self.disk = vtk.vtkDiskSource()
         self.actor = vtk.vtkActor()
+        self.property = vtk.vtkProperty()
         
         self.__build_actor()
         self.__calculate_area_pixels()
@@ -51,23 +51,41 @@ class CursorCircle:
         Function to plot the circle
         """
 
-        disk = self.disk
-        disk.SetInnerRadius(self.radius-1) # filled = self.radius
-        disk.SetOuterRadius(self.radius) # filled = 0x
-        disk.SetRadialResolution(50)
-        disk.SetCircumferentialResolution(50)
+        r = self.radius
+        t = 0
+        
+        self.posc_a = 0
+        self.posc_b = 0
+        
+        self.segment = vtk.vtkAppendPolyData()
+        
+        self.xa = self.posc_a + r * cos(t)
+        self.ya = self.posc_a + r * sin(t)
+                    
+        while(t <= 2 * pi):
+            self.GenerateCicleSegment(t)
+            t = t + 0.05
 
-        mapper = self.mapper
-        mapper.SetInput(disk.GetOutput())
+        self.GenerateCicleSegment(0)
+        
+        self.mapper.SetInputConnection(self.segment.GetOutputPort())
+        self.actor.SetMapper(self.mapper)
+        self.actor.PickableOff()
+        
+    def GenerateCicleSegment(self, t):
+        """
+        Generate cicle segment
+        """
+        x = self.posc_a + self.radius * cos(t)
+        y = self.posc_b + self.radius * sin(t)
+    
+        ls = vtk.vtkLineSource()
+        ls.SetPoint1(self.xa, self.ya, 0)
+        ls.SetPoint2(x, y, 0)
 
-        actor = self.actor      
-        actor.SetMapper(mapper)
-        actor.GetProperty().SetOpacity(self.opacity)
-        actor.GetProperty().SetColor(self.colour) 
-        #actor.SetPosition(self.position)
-        actor.SetVisibility(0)
-        actor.PickableOff()
-
+        self.segment.AddInput(ls.GetOutput())
+        self.xa, self.ya = x, y
+        
     def __calculate_area_pixels(self):
         """
         Return the cursor's pixels.
@@ -118,9 +136,12 @@ class CursorCircle:
 
     def SetSize(self, diameter):
         radius = self.radius = diameter/2.0
-        self.disk.SetInnerRadius(radius-1) # filled = self.radius
-        self.disk.SetOuterRadius(radius) # filled = 0
+        #self.disk.SetInnerRadius(radius-1) # filled = self.radius
+        #self.disk.SetOuterRadius(radius) # filled = 0
+        self.__build_actor()
         self.__calculate_area_pixels()
+        
+        
         
     def SetColour(self, colour):
         self.colour = colour
