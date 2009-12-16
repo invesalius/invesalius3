@@ -125,14 +125,15 @@ class Volume():
 
     def OnUpdatePreset(self, pubsub_evt):
         self.__load_preset_config()
-        if self.exist:
-            self.__load_preset()
-            self.volume.SetVisibility(1)
-            #ps.Publisher().sendMessage('Render volume viewer')
-        else:
-            self.LoadVolume()
-            self.CalculateHistogram()
-            self.exist = 1
+        if self.config:
+            if self.exist:
+                self.__load_preset()
+                self.volume.SetVisibility(1)
+                #ps.Publisher().sendMessage('Render volume viewer')
+            else:
+                self.LoadVolume()
+                self.CalculateHistogram()
+                self.exist = 1
 
     def __load_preset_config(self):
         self.config = prj.Project().raycasting_preset
