@@ -400,6 +400,7 @@ class Controller():
             ps.Publisher().sendMessage('Update raycasting preset')
         else:
             prj.Project().raycasting_preset = None
+            ps.Publisher().sendMessage('Update raycasting preset')
             ps.Publisher().sendMessage("Hide raycasting volume")
 
     def SaveRaycastingPreset(self, pubsub_evt):
