@@ -135,7 +135,7 @@ WILDCARD_OPEN = "InVesalius 3 project (*.inv3)|*.inv3|"\
 
 def ShowOpenProjectDialog():
     # Default system path
-
+    current_dir = os.path.abspath(".")
     dlg = wx.FileDialog(None, message="Open InVesalius 3 project...",
                         defaultDir="",
                         defaultFile="", wildcard=WILDCARD_OPEN,
@@ -157,9 +157,11 @@ def ShowOpenProjectDialog():
     # Destroy the dialog. Don't do this until you are done with it!
     # BAD things can happen otherwise!
     dlg.Destroy()
+    os.chdir(current_dir)
     return filepath
 
 def ShowImportDirDialog():
+    current_dir = os.path.abspath(".")
     dlg = wx.DirDialog(None, "Choose a DICOM folder:", "",
                         style=wx.DD_DEFAULT_STYLE
                         | wx.DD_DIR_MUST_EXIST
@@ -171,9 +173,11 @@ def ShowImportDirDialog():
         
     # Only destroy a dialog after you're done with it.
     dlg.Destroy()
+    os.chdir(current_dir)
     return path
 
 def ShowSaveAsProjectDialog(default_filename=None):
+    current_dir = os.path.abspath(".")    
     dlg = wx.FileDialog(None,
                         "Save project as...", # title
                         "", # last used directory
@@ -189,6 +193,8 @@ def ShowSaveAsProjectDialog(default_filename=None):
         if sys.platform != 'win32':
             if filename.split(".")[-1] != extension:
                 filename = filename + "." + extension
+    
+    os.chdir(current_dir)
     return filename
 
 
@@ -253,7 +259,7 @@ def SaveChangesDialog__Old(filename):
     
 
 def SaveChangesDialog(filename):
-
+    current_dir = os.path.abspath(".")
     if sys.platform == 'darwin':
         dlg = wx.MessageDialog(None, "",
                                "Save changes to "+filename+"?",
@@ -265,7 +271,8 @@ def SaveChangesDialog(filename):
 
     answer = dlg.ShowModal()
     dlg.Destroy()
-
+    os.chdir(current_dir)
+    
     if answer == wx.ID_YES:
         return 1
     elif answer == wx.ID_NO:
@@ -274,7 +281,7 @@ def SaveChangesDialog(filename):
         return -1
 
 def SaveChangesDialog2(filename):
-
+    current_dir = os.path.abspath(".")
     if sys.platform == 'darwin':
         dlg = wx.MessageDialog(None, "",
                                "Save changes to "+filename+"?",
@@ -286,7 +293,7 @@ def SaveChangesDialog2(filename):
 
     answer = dlg.ShowModal()
     dlg.Destroy()
-
+    os.chdir(current_dir)
     if answer == wx.ID_YES:
         return 1
     else:# answer == wx.ID_NO:
