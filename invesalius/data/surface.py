@@ -297,10 +297,10 @@ class SurfaceManager():
 
         # Update progress value in GUI
         
-        filename = tempfile.mktemp()
+        filename_img = tempfile.mktemp()
         
         writer = vtk.vtkXMLImageDataWriter()
-        writer.SetFileName(filename)
+        writer.SetFileName(filename_img)
         writer.SetInput(imagedata)
         writer.Write()
         
@@ -308,7 +308,7 @@ class SurfaceManager():
         UpdateProgress = vu.ShowProgress(pipeline_size)
         
         conn_in, conn_out = multiprocessing.Pipe()
-        sp = SurfaceProcess(conn_in, filename, mode, min_value, max_value,
+        sp = SurfaceProcess(conn_in, filename_img, mode, min_value, max_value,
                  decimate_reduction, smooth_relaxation_factor, 
                  smooth_iterations)
         sp.start()
@@ -319,10 +319,10 @@ class SurfaceManager():
                 break
             UpdateProgress(msg[0],msg[1])
         
-        filename = conn_out.recv()
+        filename_polydata = conn_out.recv()
         
         reader = vtk.vtkXMLPolyDataReader()
-        reader.SetFileName(filename)
+        reader.SetFileName(filename_polydata)
         reader.Update()
         
         polydata = reader.GetOutput()
@@ -351,7 +351,11 @@ class SurfaceManager():
         # Set actor colour and transparency
         actor.GetProperty().SetColor(colour)
         actor.GetProperty().SetOpacity(1-surface.transparency)
-
+        
+        #Remove all temp file
+        os.remove(filename_img)
+        os.remove(filename_polydata)
+        
         # Append surface into Project.surface_dict
         proj = prj.Project()
         index = proj.AddSurface(surface)
