@@ -56,7 +56,12 @@ def ShowProgress(number_of_filters = 1,
         Show progress on GUI according to pipeline execution.
         """
         # object progress is cummulative and is between 0.0 - 1.0
-        obj_progress = obj.GetProgress()
+        # is necessary verify in case is sending the progress 
+        #represented by number in case multiprocess, not vtk object
+        if isinstance(obj, float) or isinstance(obj, int):
+            obj_progress = obj
+        else:
+            obj_progress = obj.GetProgress()
         
         # as it is cummulative, we need to compute the diference, to be
         # appended on the interface

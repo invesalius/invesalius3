@@ -17,20 +17,133 @@
 #    detalhes.
 #--------------------------------------------------------------------------
 
-import os
-import plistlib
-
-import vtk
-import wx.lib.pubsub as ps
-
+from imagedata_utils import BuildEditedImage
 import constants as const
 import imagedata_utils as iu
+import multiprocessing
+import os
+import plistlib
 import polydata_utils as pu
 import project as prj
 import session as ses
+import tempfile
+import vtk
 import vtk_utils as vu
-from imagedata_utils import BuildEditedImage
+import wx.lib.pubsub as ps
 
+
+#------------------------------------------------------------------
+class SurfaceProcess(multiprocessing.Process):
+    
+    def __init__(self, conn, filename, mode, min_value, max_value,
+                 decimate_reduction, smooth_relaxation_factor, 
+                 smooth_iterations):
+        
+        multiprocessing.Process.__init__(self)
+        self.conn = conn
+        self.filename = filename
+        self.mode = mode
+        self.min_value = min_value
+        self.max_value = max_value
+        self.decimate_reduction = decimate_reduction
+        self.smooth_relaxation_factor = smooth_relaxation_factor
+        self.smooth_iterations = smooth_iterations
+        
+    def run(self):
+        self.CreateSurface()
+    
+    def SendProgress(self, obj, msg):
+        prog = obj.GetProgress()
+        self.conn.send([prog, msg])
+    
+    def CreateSurface(self):
+        
+        reader = vtk.vtkXMLImageDataReader()
+        reader.SetFileName(self.filename)
+        reader.Update()
+        
+        # Flip original vtkImageData
+        flip = vtk.vtkImageFlip()
+        flip.SetInput(reader.GetOutput())
+        flip.SetFilteredAxis(1)
+        flip.FlipAboutOriginOn()
+        
+        # Create vtkPolyData from vtkImageData
+        if self.mode == "CONTOUR":
+            contour = vtk.vtkContourFilter()
+            contour.SetInput(flip.GetOutput())
+            contour.SetValue(0, self.min_value) # initial threshold
+            contour.SetValue(1, self.max_value) # final threshold
+            contour.GetOutput().ReleaseDataFlagOn()
+            contour.AddObserver("ProgressEvent", lambda obj,evt: 
+                    self.SendProgress(obj, "Generating 3D surface..."))
+            polydata = contour.GetOutput()
+        else: #mode == "GRAYSCALE":
+            mcubes = vtk.vtkMarchingCubes()
+            mcubes.SetInput(flip.GetOutput())
+            mcubes.SetValue(0, 255)
+            mcubes.ComputeScalarsOn()
+            mcubes.ComputeGradientsOn()
+            mcubes.ComputeNormalsOn()
+            mcubes.ThresholdBetween(self.min_value, self.max_value)
+            mcubes.GetOutput().ReleaseDataFlagOn()
+            mcubes.AddObserver("ProgressEvent", lambda obj,evt: 
+                    self.SendProgress(obj, "Generating 3D surface..."))
+            polydata = mcubes.GetOutput()
+        
+        if self.decimate_reduction:
+            decimation = vtk.vtkQuadricDecimation()
+            decimation.SetInput(polydata)
+            decimation.SetTargetReduction(self.decimate_reduction)
+            decimation.GetOutput().ReleaseDataFlagOn()
+            decimation.AddObserver("ProgressEvent", lambda obj,evt: 
+                    self.SendProgress(obj, "Reducing number of triangles..."))
+            polydata = decimation.GetOutput()            
+        
+        if self.smooth_iterations and self.smooth_relaxation_factor:
+            smoother = vtk.vtkSmoothPolyDataFilter()
+            smoother.SetInput(polydata)
+            smoother.SetNumberOfIterations(self.smooth_iterations)
+            smoother.SetFeatureAngle(80)
+            smoother.SetRelaxationFactor(self.smooth_relaxation_factor)
+            smoother.FeatureEdgeSmoothingOn()
+            smoother.BoundarySmoothingOn()
+            smoother.GetOutput().ReleaseDataFlagOn()
+            smoother.AddObserver("ProgressEvent", lambda obj,evt: 
+                    self.SendProgress(obj, "Smoothing surface..."))
+            polydata = smoother.GetOutput()
+
+        # Filter used to detect and fill holes. Only fill boundary edges holes.
+        #TODO: Hey! This piece of code is the same from
+        # polydata_utils.FillSurfaceHole, we need to review this.
+        filled_polydata = vtk.vtkFillHolesFilter()
+        filled_polydata.SetInput(polydata)
+        filled_polydata.SetHoleSize(500)
+        filled_polydata.AddObserver("ProgressEvent", lambda obj,evt: 
+                self.SendProgress(obj, "Filling surface..."))        
+        polydata = filled_polydata.GetOutput()
+        # Orient normals from inside to outside
+        
+        normals = vtk.vtkPolyDataNormals()
+        normals.SetInput(polydata)
+        normals.SetFeatureAngle(80)
+        normals.AutoOrientNormalsOn()
+        normals.GetOutput().ReleaseDataFlagOn()
+        normals.AddObserver("ProgressEvent", lambda obj,evt: 
+                self.SendProgress(obj, "Orienting normals..."))        
+        normals.UpdateInformation() 
+        polydata = normals.GetOutput()
+
+        filename = tempfile.mktemp()
+        writer = vtk.vtkXMLPolyDataWriter()
+        writer.SetInput(polydata)
+        writer.SetFileName(filename)
+        writer.Write()
+        
+        self.conn.send(None)
+        self.conn.send(filename)
+        
+#----------------------------------------------------------------------------------------------
 class Surface():
     """
     Represent both vtkPolyData and associated properties.
@@ -159,7 +272,7 @@ class SurfaceManager():
         imagedata, colour, [min_value, max_value], edited_points = pubsub_evt.data
         quality='Optimal'
         mode = 'CONTOUR' # 'GRAYSCALE'
-
+                        
         imagedata_tmp = None
         if (edited_points):
             imagedata_tmp = vtk.vtkImageData()
@@ -183,105 +296,43 @@ class SurfaceManager():
             pipeline_size += 1
 
         # Update progress value in GUI
+        
+        filename = tempfile.mktemp()
+        
+        writer = vtk.vtkXMLImageDataWriter()
+        writer.SetFileName(filename)
+        writer.SetInput(imagedata)
+        writer.Write()
+        
+        pipeline_size = 5
         UpdateProgress = vu.ShowProgress(pipeline_size)
-
-        # Flip original vtkImageData
-        flip = vtk.vtkImageFlip()
-        flip.SetInput(imagedata)
-        flip.SetFilteredAxis(1)
-        flip.FlipAboutOriginOn()
-
-        # Create vtkPolyData from vtkImageData
-        if mode == "CONTOUR":
-            contour = vtk.vtkContourFilter()
-            contour.SetInput(flip.GetOutput())
-            contour.SetValue(0, min_value) # initial threshold
-            contour.SetValue(1, max_value) # final threshold
-            contour.GetOutput().ReleaseDataFlagOn()
-            contour.AddObserver("ProgressEvent", lambda obj,evt:
-                            UpdateProgress(contour, "Generating 3D surface..."))
-            polydata = contour.GetOutput()
-        else: #mode == "GRAYSCALE":
-            mcubes = vtk.vtkMarchingCubes()
-            mcubes.SetInput(flip.GetOutput())
-            mcubes.SetValue(0, 255)
-            mcubes.ComputeScalarsOn()
-            mcubes.ComputeGradientsOn()
-            mcubes.ComputeNormalsOn()
-            mcubes.ThresholdBetween(min_value, max_value)
-            mcubes.GetOutput().ReleaseDataFlagOn()
-            mcubes.AddObserver("ProgressEvent", lambda obj, evt:
-                           UpdateProgress(contour, "Generating 3D surface..."))
-            polydata = mcubes.GetOutput()
-
-        # Reduce number of triangles (previous classes create a large amount)
-        # Important: vtkQuadricDecimation presented better results than
-        # vtkDecimatePro
-        if decimate_reduction:
-            decimation = vtk.vtkQuadricDecimation()
-            decimation.SetInput(polydata)
-            decimation.SetTargetReduction(decimate_reduction)
-            decimation.GetOutput().ReleaseDataFlagOn()
-            decimation.AddObserver("ProgressEvent", lambda obj, evt:
-                  UpdateProgress(decimation, "Reducing number of triangles..."))
-            polydata = decimation.GetOutput()
-
-        # TODO (Paulo): Why do we need this filter?
-        #triangle = vtk.vtkTriangleFilter()
-        #triangle.SetInput(polydata)
-        #triangle.PassLinesOn()
-        #triangle.PassVertsOn()
-        #triangle.GetOutput().ReleaseDataFlagOn()
-        #triangle.AddObserver("ProgressEvent",
-        #                      lambda obj, evt: self.__update_progress(obj))
-
-        # Smooth surface without changing structures
-        # Important: vtkSmoothPolyDataFilter presented better results than
-        # vtkImageGaussianSmooth and vtkWindowedSincPolyDataFilter
-        if smooth_iterations and smooth_relaxation_factor:
-            smoother = vtk.vtkSmoothPolyDataFilter()
-            smoother.SetInput(polydata)
-            smoother.SetNumberOfIterations(smooth_iterations)
-            smoother.SetFeatureAngle(80)
-            smoother.SetRelaxationFactor(smooth_relaxation_factor)
-            smoother.FeatureEdgeSmoothingOn()
-            smoother.BoundarySmoothingOn()
-            smoother.GetOutput().ReleaseDataFlagOn()
-            smoother.AddObserver("ProgressEvent", lambda obj, evt:
-                               UpdateProgress(smoother, "Smoothing surface..."))
-            polydata = smoother.GetOutput()
-
-        # Filter used to detect and fill holes. Only fill boundary edges holes.
-        #TODO: Hey! This piece of code is the same from
-        # polydata_utils.FillSurfaceHole, we need to review this.
-        filled_polydata = vtk.vtkFillHolesFilter()
-        filled_polydata.SetInput(polydata)
-        filled_polydata.SetHoleSize(500)
-        filled_polydata.AddObserver("ProgressEvent", lambda obj, evt:
-                                    UpdateProgress(filled_polydata,
-                                    "Filling polydata..."))
-        polydata = filled_polydata.GetOutput()
-
-        # Orient normals from inside to outside
-        normals = vtk.vtkPolyDataNormals()
-        normals.SetInput(polydata)
-        normals.SetFeatureAngle(80)
-        normals.AutoOrientNormalsOn()
-        normals.GetOutput().ReleaseDataFlagOn()
-        normals.AddObserver("ProgressEvent", lambda obj, evt:
-                               UpdateProgress(normals, "Orienting normals..."))
-        polydata = normals.GetOutput()
-
-
-        # TODO (Paulo): Why do we need this filter?
-        # without this the volume does not appear
+        
+        conn_in, conn_out = multiprocessing.Pipe()
+        sp = SurfaceProcess(conn_in, filename, mode, min_value, max_value,
+                 decimate_reduction, smooth_relaxation_factor, 
+                 smooth_iterations)
+        sp.start()
+        
+        while 1:
+            msg = conn_out.recv()
+            if(msg is None):
+                break
+            UpdateProgress(msg[0],msg[1])
+        
+        filename = conn_out.recv()
+        
+        reader = vtk.vtkXMLPolyDataReader()
+        reader.SetFileName(filename)
+        reader.Update()
+        
+        polydata = reader.GetOutput()
+                
         stripper = vtk.vtkStripper()
-        stripper.SetInput(normals.GetOutput())
+        stripper.SetInput(polydata)
         stripper.PassThroughCellIdsOn()
         stripper.PassThroughPointIdsOn()
-        stripper.AddObserver("ProgressEvent", lambda obj, evt:
-                               UpdateProgress(stripper, "Stripping surface..."))
-
+        
+        
         # Map polygonal data (vtkPolyData) to graphics primitives.
         mapper = vtk.vtkPolyDataMapper()
         mapper.SetInput(stripper.GetOutput())
