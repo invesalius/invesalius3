@@ -335,6 +335,9 @@ class Controller():
         ######
         session = ses.Session()
         filename = proj.name+".inv3"
+        
+        filename = filename.replace("/", "") #Fix problem case other/Skull_DICOM
+        
         dirpath = session.CreateProject(filename)
         proj.SavePlistProject(dirpath, filename)
         
