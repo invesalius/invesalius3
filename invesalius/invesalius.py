@@ -17,7 +17,7 @@
 #    PARTICULAR. Consulte a Licenca Publica Geral GNU para obter mais
 #    detalhes.
 #--------------------------------------------------------------------------
-
+import multiprocessing
 from optparse import OptionParser
 import os
 import sys
@@ -106,8 +106,14 @@ def main():
     application.MainLoop()
 
 if __name__ == '__main__':
+    
+    #Necessary in case run from executable
+    if (sys.platform == "win32"):
+         multiprocessing.freeze_support()
+    
     # Add current directory to PYTHONPATH
     sys.path.append(".")
+    
     # Init application
     main()
     
