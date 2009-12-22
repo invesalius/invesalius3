@@ -33,7 +33,6 @@ import constants as const
 import cursor_actors as ca
 import data.slice_ as sl
 import data.vtk_utils as vtku
-import mode as md
 import project
 import slice_data as sd
 
