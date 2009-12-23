@@ -108,9 +108,15 @@ def main():
 if __name__ == '__main__':
     
     #Necessary in case run from executable
-    if (sys.platform == "win32"):
+    if hasattr(sys,"frozen") and sys.frozen == "windows_exe":
          multiprocessing.freeze_support()
-    
+         
+         #Remove wxPython log
+         #sys.stdout = open("stdout.log" ,"w")
+         sys.stderr = open("stderr.log", "w")
+         
+         print "Executavel...."
+         
     # Add current directory to PYTHONPATH
     sys.path.append(".")
     
