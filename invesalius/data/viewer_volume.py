@@ -484,7 +484,7 @@ class SlicePlane:
             elif(plane_axis == 1):
                 orientation = "CORONAL"
                 dimen = obj.GetInput().GetDimensions()
-                number = abs(dimen[0] - number)
+                number = abs(dimen[0] - (number + 1))
             else:
                 orientation = "AXIAL"
         
