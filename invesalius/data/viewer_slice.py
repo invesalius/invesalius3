@@ -940,8 +940,9 @@ class Viewer(wx.Panel):
             self.Reposition(slice_data)
 
         number_of_slices = self.layout[0] * self.layout[1]
-        max_slice_number = actor.GetSliceNumberMax() / \
+        max_slice_number = actor.GetSliceNumberMax() + 1/ \
                 number_of_slices
+
         if actor.GetSliceNumberMax() % number_of_slices:
             max_slice_number += 1
         self.scroll.SetScrollbar(wx.SB_VERTICAL, 1, max_slice_number,
@@ -1179,9 +1180,9 @@ class Viewer(wx.Panel):
     def __configure_scroll(self):
         actor = self.slice_data_list[0].actor
         number_of_slices = self.layout[0] * self.layout[1]
-        max_slice_number = actor.GetSliceNumberMax() / \
+        max_slice_number = actor.GetSliceNumberMax()/ \
                 number_of_slices
-        if actor.GetSliceNumberMax() % number_of_slices:
+        if actor.GetSliceNumberMax()% number_of_slices:
             max_slice_number += 1
         self.scroll.SetScrollbar(wx.SB_VERTICAL, 1, max_slice_number,
                                                      max_slice_number)
@@ -1276,7 +1277,7 @@ class Viewer(wx.Panel):
             ren = slice_data.renderer
             actor = slice_data.actor
             pos = self.layout[0] * self.layout[1] * index + n
-            max = actor.GetSliceNumberMax()
+            max = actor.GetSliceNumberMax() + 1
             if pos < max:
                 slice_data.SetNumber(pos)
                 self.__update_display_extent(slice_data)
