@@ -196,7 +196,7 @@ class Project(object):
         
         if not const.VTK_WARNING:
             fow = vtk.vtkFileOutputWindow()
-            #fow.SetFileName('c:\\vtkoutput.txt')
+            fow.SetFileName('vtkoutput.txt')
             ow = vtk.vtkOutputWindow()
             ow.SetInstance(fow)
             
