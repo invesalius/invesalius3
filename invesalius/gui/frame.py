@@ -34,7 +34,7 @@ import project as prj
 import session as ses
 
 # Object toolbar
-#OBJ_TOOLS = [ID_ZOOM, ID_ZOOM_SELECT, ID_ROTATE, ID_MOVE, 
+#OBJ_TOOLS = [ID_ZOOM, ID_ZOOM_SELECT, ID_ROTATE, ID_MOVE,
 #ID_CONTRAST] = [wx.NewId() for number in range(5)]
 #MODE_BY_ID = {ID_ZOOM: const.STATE_ZOOM,
 #              ID_ZOOM_SELECT: const.STATE_ZOOM_SL,
@@ -111,7 +111,7 @@ class Frame(wx.Frame):
         self.Bind(wx.EVT_SIZE, self.OnSize)
         self.Bind(wx.EVT_MENU, self.OnMenuClick)
         #self.Bind(wx.EVT_CLOSE, self.OnExit)
-    
+
     def __init_aui(self):
 
         # Tell aui_manager to manage this frame
@@ -127,7 +127,7 @@ class Frame(wx.Frame):
                           #CloseButton(False).Floatable(False).
                           #Layer(1).Left().MaximizeButton(False).Name("Task").
                           #Position(0))
-                          
+
 
         aui_manager.AddPane(viewers.Panel(self), wx.aui.AuiPaneInfo().
                           Caption("Data panel").CaptionVisible(False).
@@ -214,12 +214,12 @@ class Frame(wx.Frame):
         aui_manager = self.aui_manager
         aui_manager.GetPane("Data").Show(0)
         aui_manager.GetPane("Tasks").Show(1)
-        aui_manager.Update()        
+        aui_manager.Update()
 
     def OnSize(self, evt):
        ps.Publisher().sendMessage(('ProgressBar Reposition'))
        evt.Skip()
-       
+
     def OnMenuClick(self, evt):
         id = evt.GetId()
         session = ses.Session()
@@ -234,7 +234,7 @@ class Frame(wx.Frame):
             else:
                 self.SaveProject()
         elif id == const.ID_PROJECT_SAVE_AS:
-            self.SaveAsProject() 
+            self.SaveAsProject()
         elif id == const.ID_PROJECT_CLOSE:
             self.CloseProject()
         #elif id == const.ID_EXIT:
@@ -269,15 +269,15 @@ class Frame(wx.Frame):
     def Exit(self):
         print "Exit"
         ps.Publisher().sendMessage('Close Project')
- 
+
     def ShowTask(self, pubsub_evt):
         self.aui_manager.GetPane("Tasks").Show()
         self.aui_manager.Update()
-    
+
     def HideTask(self, pubsub_evt):
         self.aui_manager.GetPane("Tasks").Hide()
         self.aui_manager.Update()
-    
+
 
     #def OnClose(self):
     #    # TODO: implement this, based on wx.Demo
@@ -436,8 +436,12 @@ class StatusBar(wx.StatusBar):
         if (int(value) >= 99):
             self.SetStatusText("",0)
         if sys.platform == 'win32':
-            wx.SafeYield()
-        
+            try:
+                wx.SafeYield()
+            #TODO: temporary fix necessary in the Windows XP 64 Bits
+            #BUG in wxWidgets http://trac.wxwidgets.org/ticket/10896
+            except(wx._core.PyAssertionError):
+                print "wx._core.PyAssertionError"
 
     def UpdateStatusLabel(self, pubsub_evt):
         label = pubsub_evt.data
@@ -476,7 +480,7 @@ class ProjectToolBar(wx.ToolBar):
 
         self.__init_items()
         self.__bind_events()
-        
+
         #FIXME:
         self.save_as = True
 
@@ -559,16 +563,16 @@ class ProjectToolBar(wx.ToolBar):
         filename = (prj.name).replace(' ','_')
         if prj.save_as:
             filename = dlg.ShowSaveAsProjectDialog(filename)
-            if filename: 
+            if filename:
                 prj.save_as = False
             else:
                 return
         ps.Publisher().sendMessage('Save Project',filename)
         event.Skip()
-        
-    
 
-                       
+
+
+
         # ------------------------------------------------------------------
 
 class ObjectToolBar(wx.ToolBar):
@@ -577,7 +581,7 @@ class ObjectToolBar(wx.ToolBar):
                             wx.DefaultSize,
                             wx.TB_FLAT|wx.TB_NODIVIDER | wx.TB_DOCKABLE)
 
-        self.SetToolBitmapSize(wx.Size(32,32))  
+        self.SetToolBitmapSize(wx.Size(32,32))
         self.parent = parent
 
         self.__init_items()
@@ -603,7 +607,7 @@ class ObjectToolBar(wx.ToolBar):
                                                   "tool_contrast_original.png"),
                                      wx.BITMAP_TYPE_PNG)
         else:
-            
+
             BMP_ROTATE = wx.Bitmap(os.path.join(const.ICON_DIR,
                                                 "tool_rotate.gif"),
                                    wx.BITMAP_TYPE_GIF)
@@ -665,7 +669,7 @@ class ObjectToolBar(wx.ToolBar):
                 self.ToggleTool(item, False)
 
         evt.Skip()
-        
+
 
     def UntoggleAllItems(self, pubsub_evt=None):
         for id in const.TOOL_STATES:
@@ -783,25 +787,25 @@ class LayoutToolBar(wx.ToolBar):
 
         self.AddLabelTool(ID_LAYOUT, "",bitmap=self.BMP_WITHOUT_MENU, shortHelp= "Hide task panel")
         self.AddCheckTool(ID_TEXT, bitmap=BMP_TEXT, shortHelp= "Hide texts")
-        
+
         self.Realize()
 
     def __bind_events_wx(self):
         self.Bind(wx.EVT_TOOL, self.OnClick)
-   
+
     def OnClick(self, event):
         id = event.GetId()
         if id == ID_LAYOUT:
             self.OnTask()
         elif id== ID_TEXT:
             self.OnText(event)
-            
+
 
         for item in VIEW_TOOLS:
             state = self.GetToolState(item)
             if state and (item != id):
                 self.ToggleTool(item, False)
- 
+
     def OnTask(self):
 
         if self.ontool:

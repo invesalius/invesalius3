@@ -70,14 +70,14 @@ class SingleImagePreview(wx.Panel):
         text_image_location.SetPosition(const.TEXT_POS_LEFT_DOWN)
         text_image_location.SetValue("localization")
         self.text_image_location = text_image_location
-        
+
         value = "id\nprotocol"
         text_patient = vtku.Text()
         text_patient.SetJustificationToRight()
         text_patient.SetPosition(const.TEXT_POS_RIGHT_UP)
         text_patient.SetValue(value)
         self.text_patient = text_patient
-        
+
         value = "date time\n Made in InVesalius"
         text_acquisition = vtku.Text()
         text_acquisition.SetJustificationToRight()
@@ -130,7 +130,7 @@ class SingleImagePreview(wx.Panel):
         in_sizer = wx.BoxSizer(wx.HORIZONTAL)
         in_sizer.Add(slider, 1, wx.GROW|wx.EXPAND)
         in_sizer.Add(checkbox, 0)
-    
+
         sizer = wx.BoxSizer(wx.VERTICAL)
         sizer.Add(self.panel, 20, wx.GROW|wx.EXPAND)
         sizer.Add(in_sizer, 1, wx.GROW|wx.EXPAND)
@@ -165,9 +165,15 @@ class SingleImagePreview(wx.Panel):
         self.ShowSlice(pos)
         time.sleep(0.2)
         if self.ischecked:
-            wx.Yield()
-            wx.CallAfter(self.OnRun)
- 
+            try:
+                wx.Yield()
+            #TODO: temporary fix necessary in the Windows XP 64 Bits
+            #BUG in wxWidgets http://trac.wxwidgets.org/ticket/10896
+            except(wx._core.PyAssertionError):
+                print "wx._core.PyAssertionError"
+            finally:
+                wx.CallAfter(self.OnRun)
+
     def SetDicomGroup(self, group):
         self.dicom_list = group.GetHandSortedList()
         self.current_index = 0
@@ -181,7 +187,7 @@ class SingleImagePreview(wx.Panel):
     def ShowSlice(self, index = 0):
         print "ShowSlice"
         dicom = self.dicom_list[index]
-        
+
         # UPDATE GUI
         ## Text related to size
         value = STR_SIZE %(dicom.image.size[0], dicom.image.size[1])
@@ -274,10 +280,10 @@ class Preview(wx.Panel):
 
     def _init_ui(self):
 
-        self.title = wx.StaticText(self, -1, "Image", 
+        self.title = wx.StaticText(self, -1, "Image",
                                          style=wx.ALIGN_CENTER)
 
-        self.subtitle = wx.StaticText(self, -1, "Image", 
+        self.subtitle = wx.StaticText(self, -1, "Image",
                                          style=wx.ALIGN_CENTER)
 
         self.panel = wx.Panel(self, -1)
@@ -306,7 +312,7 @@ class Preview(wx.Panel):
     def _init_vtk(self):
 
         self.interactor = wxVTKRenderWindowInteractor(self.panel, -1, size=(70, 70))
-        
+
         sizer = wx.BoxSizer(wx.HORIZONTAL)
         sizer.Add(self.interactor, 1, wx.GROW|wx.EXPAND)
         sizer.Fit(self.panel)
@@ -316,7 +322,7 @@ class Preview(wx.Panel):
         self.panel.Layout()
         self.panel.Update()
         self.panel.SetAutoLayout(1)
-        
+
         self.actor = vtk.vtkImageActor()
 
         self.render = vtk.vtkRenderer()
@@ -351,7 +357,7 @@ class Preview(wx.Panel):
         self.title.Bind(wx.EVT_LEFT_DOWN, self.OnSelect)
         self.subtitle.Bind(wx.EVT_LEFT_DOWN, self.OnSelect)
 
-        
+
 
 
     def OnEnter(self, evt):
@@ -422,7 +428,7 @@ class Preview(wx.Panel):
         image = image_file[0]
 
         scale = image.GetScalarRange()
-        
+
         cast = vtk.vtkImageMapToWindowLevelColors()
         #cast.SetShift(abs(scale[0]))
         #cast.SetScale(255.0/(scale[1] - scale[0]))
@@ -438,7 +444,7 @@ class Preview(wx.Panel):
             window = 150
 
         self.data = image_file[-1]
-        
+
         cast.SetWindow(window)
         cast.SetLevel(level)
         self.actor.SetInput(cast.GetOutput())
@@ -485,7 +491,7 @@ class Preview(wx.Panel):
 
 
         if 1:
-            # Default values for the surronounding rectangle 
+            # Default values for the surronounding rectangle
             # around a button
             rectWidth = self._nImgSize * 2  # To avoid the recangle to 'touch' the borders
             rectHeight = self._nImgSize * 2
@@ -497,7 +503,7 @@ class Preview(wx.Panel):
             #   not ((style & INB_LEFT) or (style & INB_RIGHT)) and \
             #   not self._pagesInfoVec[i].GetCaption() == "" and \
             #   not (style & INB_SHOW_ONLY_IMAGES):
-            
+
 
                 #rectWidth = ((textWidth + nPadding * 2) > rectWidth and [nPadding * 2 + textWidth] or [rectWidth])[0]
 
@@ -509,7 +515,7 @@ class Preview(wx.Panel):
             # If Pin button is used, consider its space as well (applicable for top/botton style)
             # since in the left/right, its size is already considered in 'pos'
             #pinBtnSize = (bUsePin and [20] or [0])[0]
-            
+
             #if pos + rectWidth + pinBtnSize > clientSize:
             #    break
 
@@ -562,7 +568,7 @@ class DicomPreviewSeries(wx.Panel):
         self.SetAutoLayout(1)
 
         self.sizer = background_sizer
-        
+
         self._Add_Panels_Preview()
         self._bind_events()
 
@@ -579,7 +585,7 @@ class DicomPreviewSeries(wx.Panel):
 
     #def _show_shadow(self, preview):
     #    preview.ShowShadow()
-        
+
 
     def _bind_events(self):
         # When the user scrolls the window
@@ -609,7 +615,7 @@ class DicomPreviewSeries(wx.Panel):
                     group_list)
             self.files.append(info)
             n+=1
-            
+
         scroll_range = len(self.files)/NCOLS
         if scroll_range * NCOLS < len(self.files):
             scroll_range +=1
@@ -619,7 +625,7 @@ class DicomPreviewSeries(wx.Panel):
     def _display_previews(self):
         initial = self.displayed_position * NCOLS
         final = initial + MAX_VALUE
-    
+
         if len(self.files) < final:
             for i in xrange(final-len(self.files)):
                 try:
@@ -686,7 +692,7 @@ class DicomPreview(wx.Panel):
         self.SetAutoLayout(1)
 
         self.sizer = background_sizer
-        
+
         self._Add_Panels_Preview()
         self._bind_events()
 
@@ -767,7 +773,7 @@ class DicomPreview(wx.Panel):
         initial = self.displayed_position * NCOLS
         final = initial + MAX_VALUE
         print "len:", len(self.files)
-    
+
         if len(self.files) < final:
             for i in xrange(final-len(self.files)):
                 print "hide ", i
