@@ -616,9 +616,9 @@ class Viewer(wx.Panel):
         slice_data = self.get_slice_data(render)
 
         # TODO: Improve!
-        for i in self.slice_data_list:
-            i.cursor.Show(0)
-        slice_data.cursor.Show()
+        #for i in self.slice_data_list:
+            #i.cursor.Show(0)
+        #slice_data.cursor.Show()
 
         self.pick.Pick(mouse_x, mouse_y, 0, render)
         coord = self.get_coordinate_cursor()
