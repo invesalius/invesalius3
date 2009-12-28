@@ -584,8 +584,6 @@ class SlicePlane:
         ps.Publisher().sendMessage('Set Widget Interactor', plane_y)
         ps.Publisher().sendMessage('Set Widget Interactor', plane_z)
         
-        self.Enable()
-        self.Disable()
         self.Render()
                 
     def Enable(self, evt_pubsub=None):
