@@ -183,8 +183,7 @@ class Frame(wx.Frame):
         self.aui_manager = aui_manager
 
     def ShowImportPanel(self, evt_pubsub):
-        #ps.Publisher().sendMessage("Load data to import panel", path)
-
+        ps.Publisher().sendMessage("Set layout button data only")
         aui_manager = self.aui_manager
         aui_manager.GetPane("Import").Show(1)
         aui_manager.GetPane("Data").Show(0)
@@ -193,17 +192,15 @@ class Frame(wx.Frame):
 
     def HideImportPanel(self, evt_pubsub):
         print "HideImportPanel"
-
         aui_manager = self.aui_manager
         aui_manager.GetPane("Import").Show(0)
         aui_manager.GetPane("Data").Show(0)
         aui_manager.GetPane("Tasks").Show(1)
         aui_manager.Update()
 
-
-
     def ShowContentPanel(self, evt_pubsub):
         print "ShowContentPanel"
+        ps.Publisher().sendMessage("Set layout button full")
         aui_manager = self.aui_manager
         aui_manager.GetPane("Import").Show(0)
         aui_manager.GetPane("Data").Show(1)
@@ -760,6 +757,7 @@ class LayoutToolBar(wx.ToolBar):
         self.parent = parent
         self.__init_items()
         self.__bind_events_wx()
+        self.__bind_events()
         self.ontool = False
 
     def __init_items(self):
@@ -790,6 +788,12 @@ class LayoutToolBar(wx.ToolBar):
 
         self.Realize()
 
+    def __bind_events(self):
+        ps.Publisher().subscribe(self.SetLayoutButtonOnlyData,
+                                 "Set layout button data only")
+        ps.Publisher().subscribe(self.SetLayoutButtonFull,
+                                 "Set layout button full")
+
     def __bind_events_wx(self):
         self.Bind(wx.EVT_TOOL, self.OnClick)
 
@@ -807,9 +811,8 @@ class LayoutToolBar(wx.ToolBar):
                 self.ToggleTool(item, False)
 
     def OnTask(self):
-
         if self.ontool:
-            self.SetToolNormalBitmap(ID_LAYOUT,self.BMP_WITHOUT_MENU )
+            self.SetToolNormalBitmap(ID_LAYOUT,self.BMP_WITHOUT_MENU)
             ps.Publisher().sendMessage('Show task panel')
             self.SetToolShortHelp(ID_LAYOUT,"Hide task panel")
             self.ontool = False
@@ -826,3 +829,8 @@ class LayoutToolBar(wx.ToolBar):
         else:
             print "TODO: Send message so all textactors are hiden"
 
+    def SetLayoutButtonOnlyData(self, pubsub_evt):
+        self.SetToolNormalBitmap(ID_LAYOUT,self.BMP_WITH_MENU)
+
+    def SetLayoutButtonFull(self, pubsub_evt):
+        self.SetToolNormalBitmap(ID_LAYOUT,self.BMP_WITHOUT_MENU)
