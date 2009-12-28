@@ -402,7 +402,7 @@ class Controller():
             # TODO: Chamar grafico tb!
             ps.Publisher().sendMessage('Update raycasting preset')
         else:
-            prj.Project().raycasting_preset = None
+            prj.Project().raycasting_preset = 0
             ps.Publisher().sendMessage('Update raycasting preset')
             ps.Publisher().sendMessage("Hide raycasting volume")
 
