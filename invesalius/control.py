@@ -356,6 +356,9 @@ class Controller():
 
         # Create imagedata
         filelist = dicom_group.GetFilenameList()
+        if not filelist:
+            print ">Not used the IPPSorter"
+            filelist = [i.image.file for i in dicom_group.GetHandSortedList()]
         zspacing = dicom_group.zspacing
         imagedata = utils.CreateImageData(filelist, zspacing)
 
