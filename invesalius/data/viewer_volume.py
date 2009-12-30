@@ -282,7 +282,7 @@ class Viewer(wx.Panel):
         renwin = self.interactor.GetRenderWindow()
 
         if filetype == const.FILETYPE_RIB:
-            writer = vtk.vtkIVExporter()
+            writer = vtk.vtkRIBExporter()
             writer.SetFileName(filename)
             writer.SetInput(renwin)
         elif filetype == const.FILETYPE_VRML:
