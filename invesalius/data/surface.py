@@ -35,12 +35,12 @@ import wx.lib.pubsub as ps
 #------------------------------------------------------------------
 class SurfaceProcess(multiprocessing.Process):
     
-    def __init__(self, conn, filename, mode, min_value, max_value,
+    def __init__(self, pipe, filename, mode, min_value, max_value,
                  decimate_reduction, smooth_relaxation_factor, 
                  smooth_iterations):
         
         multiprocessing.Process.__init__(self)
-        self.conn = conn
+        self.pipe = pipe
         self.filename = filename
         self.mode = mode
         self.min_value = min_value
@@ -54,7 +54,7 @@ class SurfaceProcess(multiprocessing.Process):
     
     def SendProgress(self, obj, msg):
         prog = obj.GetProgress()
-        self.conn.send([prog, msg])
+        self.pipe.send([prog, msg])
     
     def CreateSurface(self):
         
@@ -97,7 +97,7 @@ class SurfaceProcess(multiprocessing.Process):
             decimation.SetTargetReduction(self.decimate_reduction)
             decimation.GetOutput().ReleaseDataFlagOn()
             decimation.AddObserver("ProgressEvent", lambda obj,evt: 
-                    self.SendProgress(obj, "Reducing number of triangles..."))
+                    self.SendProgress(obj, "Generating 3D surface..."))
             polydata = decimation.GetOutput()            
         
         if self.smooth_iterations and self.smooth_relaxation_factor:
@@ -110,7 +110,7 @@ class SurfaceProcess(multiprocessing.Process):
             smoother.BoundarySmoothingOn()
             smoother.GetOutput().ReleaseDataFlagOn()
             smoother.AddObserver("ProgressEvent", lambda obj,evt: 
-                    self.SendProgress(obj, "Smoothing surface..."))
+                    self.SendProgress(obj, "Generating 3D surface..."))
             polydata = smoother.GetOutput()
 
         # Filter used to detect and fill holes. Only fill boundary edges holes.
@@ -120,19 +120,9 @@ class SurfaceProcess(multiprocessing.Process):
         filled_polydata.SetInput(polydata)
         filled_polydata.SetHoleSize(500)
         filled_polydata.AddObserver("ProgressEvent", lambda obj,evt: 
-                self.SendProgress(obj, "Filling surface..."))        
+                self.SendProgress(obj, "Generating 3D surface..."))        
         polydata = filled_polydata.GetOutput()
-        # Orient normals from inside to outside
         
-        normals = vtk.vtkPolyDataNormals()
-        normals.SetInput(polydata)
-        normals.SetFeatureAngle(80)
-        normals.AutoOrientNormalsOn()
-        normals.GetOutput().ReleaseDataFlagOn()
-        normals.AddObserver("ProgressEvent", lambda obj,evt: 
-                self.SendProgress(obj, "Orienting normals..."))        
-        normals.UpdateInformation() 
-        polydata = normals.GetOutput()
 
         filename = tempfile.mktemp()
         writer = vtk.vtkXMLPolyDataWriter()
@@ -140,8 +130,8 @@ class SurfaceProcess(multiprocessing.Process):
         writer.SetFileName(filename)
         writer.Write()
         
-        self.conn.send(None)
-        self.conn.send(filename)
+        self.pipe.send(None)
+        self.pipe.send(filename)
         
 #----------------------------------------------------------------------------------------------
 class Surface():
@@ -307,19 +297,19 @@ class SurfaceManager():
         pipeline_size = 5
         UpdateProgress = vu.ShowProgress(pipeline_size)
         
-        conn_in, conn_out = multiprocessing.Pipe()
-        sp = SurfaceProcess(conn_in, filename_img, mode, min_value, max_value,
+        pipe_in, pipe_out = multiprocessing.Pipe()
+        sp = SurfaceProcess(pipe_in, filename_img, mode, min_value, max_value,
                  decimate_reduction, smooth_relaxation_factor, 
                  smooth_iterations)
         sp.start()
         
         while 1:
-            msg = conn_out.recv()
+            msg = pipe_out.recv()
             if(msg is None):
                 break
             UpdateProgress(msg[0],msg[1])
         
-        filename_polydata = conn_out.recv()
+        filename_polydata = pipe_out.recv()
         
         reader = vtk.vtkXMLPolyDataReader()
         reader.SetFileName(filename_polydata)
@@ -447,16 +437,19 @@ class SurfaceManager():
     def OnExportSurface(self, pubsub_evt):
         filename, filetype = pubsub_evt.data
         if (filetype == const.FILETYPE_STL) or\
-                    (filetype == const.FILETYPE_VTP):
+           (filetype == const.FILETYPE_VTP) or\
+           (filetype == const.FILETYPE_PLY) :
 
             # First we identify all surfaces that are selected
             # (if any)
             proj = prj.Project()
             polydata_list = []
+
             for index in proj.surface_dict:
                 surface = proj.surface_dict[index]
                 if surface.is_shown:
                     polydata_list.append(surface.polydata)
+
             if len(polydata_list) == 0:
                 print "oops - no polydata"
                 return
@@ -473,14 +466,24 @@ class SurfaceManager():
                 writer.SetFileTypeToBinary()
             elif filetype == const.FILETYPE_VTP:
                 writer = vtk.vtkXMLPolyDataWriter()
-            elif filetype == const.FILETYPE_IV:
-                writer = vtk.vtkIVWriter()
+            #elif filetype == const.FILETYPE_IV:
+            #    writer = vtk.vtkIVWriter()
             elif filetype == const.FILETYPE_PLY: 
                 writer = vtk.vtkPLYWriter()
                 writer.SetFileTypeToBinary()
                 writer.SetDataByteOrderToLittleEndian()
                 #writer.SetColorModeToUniformCellColor()
                 #writer.SetColor(255, 0, 0) 
+
+            if filetype == const.FILETYPE_STL:
+                # Invert normals
+                normals = vtk.vtkPolyDataNormals()
+                normals.SetInput(polydata)
+                normals.SetFeatureAngle(80)
+                normals.AutoOrientNormalsOn()
+                normals.GetOutput().ReleaseDataFlagOn()
+                normals.UpdateInformation() 
+                polydata = normals.GetOutput()
 
             writer.SetFileName(filename)
             writer.SetInput(polydata)

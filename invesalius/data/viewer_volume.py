@@ -279,25 +279,30 @@ class Viewer(wx.Panel):
 
     def OnExportSurface(self, pubsub_evt):
         filename, filetype = pubsub_evt.data
+        fileprefix = filename.split(".")[-2]
         renwin = self.interactor.GetRenderWindow()
 
         if filetype == const.FILETYPE_RIB:
             writer = vtk.vtkRIBExporter()
-            writer.SetFileName(filename)
+            writer.SetFilePrefix(fileprefix)
+            writer.SetTexturePrefix(fileprefix)
             writer.SetInput(renwin)
+            writer.Write()
         elif filetype == const.FILETYPE_VRML:
             writer = vtk.vtkVRMLExporter()
             writer.SetFileName(filename)
             writer.SetInput(renwin)
+            writer.Write()
         elif filetype == const.FILETYPE_OBJ:
             writer = vtk.vtkOBJExporter()
-            writer.SetFilePrefix(filename.split(".")[-2])
+            writer.SetFilePrefix(fileprefix)
             writer.SetInput(renwin)
-        else: # const.FILETYPE_IV:
+            writer.Write()
+        elif filetype == const.FILETYPE_IV:
             writer = vtk.vtkIVExporter()
             writer.SetFileName(filename)
             writer.SetInput(renwin)
-        writer.Write()
+            writer.Write()
 
     def OnEnableBrightContrast(self, pubsub_evt):
         style = self.style
