@@ -279,7 +279,7 @@ class SurfaceManager():
         if imagedata_resolution:
             imagedata = iu.ResampleImage3D(imagedata, imagedata_resolution)
 
-        pipeline_size = 3
+        pipeline_size = 2
         if decimate_reduction:
             pipeline_size += 1
         if (smooth_iterations and smooth_relaxation_factor):
@@ -294,7 +294,7 @@ class SurfaceManager():
         writer.SetInput(imagedata)
         writer.Write()
         
-        pipeline_size = 5
+        #pipeline_size = 4
         UpdateProgress = vu.ShowProgress(pipeline_size)
         
         pipe_in, pipe_out = multiprocessing.Pipe()
