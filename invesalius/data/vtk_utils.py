@@ -129,8 +129,10 @@ class Text(object):
             value = str(value)
             if sys.platform == 'win32':
                 value += "" # Otherwise 0 is not shown under win32
-            
-        self.mapper.SetInput(str(value))
+        # With some encoding in some dicom fields (like name) raises a
+        # UnicodeEncodeError because they have non-ascii characters. To avoid
+        # that we encode in utf-8.
+        self.mapper.SetInput(value.encode("utf-8"))
 
     def SetPosition(self, position):
         self.actor.GetPositionCoordinate().SetValue(position[0],

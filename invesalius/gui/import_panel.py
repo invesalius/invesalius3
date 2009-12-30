@@ -160,17 +160,17 @@ class TextPanel(wx.Panel):
                 first += 1
 
             tree.SetItemPyData(parent, patient)
-            tree.SetItemText(parent, str(dicom.patient.id), 1)
-            tree.SetItemText(parent, str(dicom.patient.age), 2)
-            tree.SetItemText(parent, str(dicom.patient.gender), 3)
-            tree.SetItemText(parent, str(dicom.acquisition.study_description), 4)
-            tree.SetItemText(parent, str(dicom.acquisition.modality), 5)
-            tree.SetItemText(parent, str(date_time), 6)
-            tree.SetItemText(parent, str(patient.nslices), 7)
-            tree.SetItemText(parent, str(dicom.acquisition.institution), 8)
-            tree.SetItemText(parent, str(dicom.patient.birthdate), 9)
-            tree.SetItemText(parent, str(dicom.acquisition.accession_number), 10)
-            tree.SetItemText(parent, str(dicom.patient.physician), 11)
+            tree.SetItemText(parent, "%s" % dicom.patient.id, 1)
+            tree.SetItemText(parent, "%s" % dicom.patient.age, 2)
+            tree.SetItemText(parent, "%s" % dicom.patient.gender, 3)
+            tree.SetItemText(parent, "%s" % dicom.acquisition.study_description, 4)
+            tree.SetItemText(parent, "%s" % dicom.acquisition.modality, 5)
+            tree.SetItemText(parent, "%s" % date_time, 6)
+            tree.SetItemText(parent, "%s" % patient.nslices, 7)
+            tree.SetItemText(parent, "%s" % dicom.acquisition.institution, 8)
+            tree.SetItemText(parent, "%s" % dicom.patient.birthdate, 9)
+            tree.SetItemText(parent, "%s" % dicom.acquisition.accession_number, 10)
+            tree.SetItemText(parent, "%s" % dicom.patient.physician, 11)
 
             group_list = patient.GetGroups()
             for group in group_list:
@@ -179,11 +179,11 @@ class TextPanel(wx.Panel):
                 child = tree.AppendItem(parent, group.title)
                 tree.SetItemPyData(child, group)
 
-                tree.SetItemText(child, str(group.title), 0)
-                tree.SetItemText(child, str(dicom.acquisition.protocol_name), 4)
-                tree.SetItemText(child, str(dicom.acquisition.modality), 5)
-                tree.SetItemText(child, str(date_time), 6)
-                tree.SetItemText(child, str(group.nslices), 7)
+                tree.SetItemText(child, "%s" % group.title, 0)
+                tree.SetItemText(child, "%s" % dicom.acquisition.protocol_name, 4)
+                tree.SetItemText(child, "%s" % dicom.acquisition.modality, 5)
+                tree.SetItemText(child, "%s" % date_time, 6)
+                tree.SetItemText(child, "%s" % group.nslices, 7)
 
         tree.Expand(self.root)
         

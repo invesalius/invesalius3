@@ -157,22 +157,27 @@ class Project(object):
         ps.Publisher.sendMessage('Set raycasting preset', preset)
 
     def SavePlistProject(self, dir_, filename):
-        
+
+        # Some filenames have non-ascii characters and encoded in a strange
+        # encoding, in that cases a UnicodeEncodeError is raised. To avoid
+        # that we encode in utf-8.
+        filename = filename.encode('utf-8')
         dir_temp = tempfile.mkdtemp(filename)
         filename_tmp = os.path.join(dir_temp, filename)
-        
+
         project = {}
-        
+
         for key in self.__dict__:
             if getattr(self.__dict__[key], 'SavePlist', None):
-                project[key] = {'#plist': self.__dict__[key].SavePlist(filename_tmp)}
+                project[key] = {'#plist':
+                                self.__dict__[key].SavePlist(filename_tmp).decode('utf-8')}
             else:
                 project[key] = self.__dict__[key]
 
         masks = {}
         for index in self.mask_dict:
             masks[str(index)] = {'#mask':\
-                                 self.mask_dict[index].SavePlist(filename_tmp)}
+                                 self.mask_dict[index].SavePlist(filename_tmp).decode('utf-8')}
             print index
 
         surfaces = {}
@@ -185,9 +190,10 @@ class Project(object):
         project['mask_dict'] = masks
         img_file = '%s_%s.vti' % (filename_tmp, 'imagedata')
         iu.Export(self.imagedata, img_file, bin=True)
-        project['imagedata'] = {'$vti':os.path.split(img_file)[1]}
+        project['imagedata'] = {'$vti':os.path.split(img_file)[1].decode('utf-8')}
+
         plistlib.writePlist(project, filename_tmp + '.plist')
-        
+
         path = os.path.join(dir_,filename)
         Compress(dir_temp, path)#os.path.join("~/Desktop/","teste.inv3"))
         shutil.rmtree(dir_temp)

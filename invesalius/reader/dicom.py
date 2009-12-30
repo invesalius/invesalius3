@@ -90,6 +90,7 @@ class Parser():
 
     def __init__(self):
         self.filename = ""
+        self.encoding = ""
         self.vtkgdcm_reader = vtkgdcm.vtkGDCMImageReader()
         
     def GetAcquisitionDate(self):
@@ -1136,7 +1137,8 @@ class Parser():
         data = self.vtkgdcm_reader.GetMedicalImageProperties()\
                                             .GetPatientName()
         if (data):
-            return data.strip()
+            # Returns a unicode decoded in the own dicom encoding
+            return data.strip().decode(self.GetEncoding())
         return ""
 
     def GetPatientID(self):
@@ -1150,7 +1152,8 @@ class Parser():
         data = self.vtkgdcm_reader.GetMedicalImageProperties()\
                                                 .GetPatientID()
         if (data):
-            return data
+            # Returns a unicode decoded in the own dicom encoding
+            return data.decode(self.GetEncoding())
         return ""
 
 
@@ -1486,7 +1489,20 @@ class Parser():
             data = str(ds.GetDataElement(tag).GetValue())
             if (data):
                 return data
-        return ""        
+        return ""
+
+    def GetEncoding(self):
+        """
+        Return the dicom encoding
+        DICOM standard tag (0x0008, 0x0005) was used.
+        """
+        if self.encoding:
+            return self.encoding
+        tag = gdcm.Tag(0x0008, 0x0005)
+        ds = self.gdcm_reader.GetFile().GetDataSet()
+        if ds.FindDataElement(tag):
+            self.encoding = str(ds.GetDataElement(tag).GetValue())
+            return self.encoding
 
 
 class DicomWriter:
