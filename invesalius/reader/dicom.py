@@ -1137,8 +1137,13 @@ class Parser():
         data = self.vtkgdcm_reader.GetMedicalImageProperties()\
                                             .GetPatientName()
         if (data):
-            # Returns a unicode decoded in the own dicom encoding
-            return data.strip().decode(self.GetEncoding())
+            name = data.strip()
+            encoding = self.GetEncoding()
+            if encoding != None:
+                # Returns a unicode decoded in the own dicom encoding
+                return name.decode(encoding)
+            else:
+                return name.strip()
         return ""
 
     def GetPatientID(self):
@@ -1152,8 +1157,12 @@ class Parser():
         data = self.vtkgdcm_reader.GetMedicalImageProperties()\
                                                 .GetPatientID()
         if (data):
-            # Returns a unicode decoded in the own dicom encoding
-            return data.decode(self.GetEncoding())
+            encoding = self.GetEncoding()
+            if encoding != None:
+                # Returns a unicode decoded in the own dicom encoding
+                return data.decode(self.GetEncoding())
+            else:
+                return data
         return ""
 
 
@@ -1496,13 +1505,11 @@ class Parser():
         Return the dicom encoding
         DICOM standard tag (0x0008, 0x0005) was used.
         """
-        if self.encoding:
-            return self.encoding
         tag = gdcm.Tag(0x0008, 0x0005)
         ds = self.gdcm_reader.GetFile().GetDataSet()
         if ds.FindDataElement(tag):
-            self.encoding = str(ds.GetDataElement(tag).GetValue())
-            return self.encoding
+            encoding = str(ds.GetDataElement(tag).GetValue())
+            return encoding
 
 
 class DicomWriter:
