@@ -169,8 +169,10 @@ def ShowImportDirDialog():
 
     path = None
     if dlg.ShowModal() == wx.ID_OK:
-        path = dlg.GetPath()
-        
+        # GetPath returns in unicode, if a path has non-ascii characters a
+        # UnicodeEncodeError is raised. To avoid this, path is encoded in utf-8
+        path = dlg.GetPath().encode('utf-8')
+
     # Only destroy a dialog after you're done with it.
     dlg.Destroy()
     os.chdir(current_dir)
