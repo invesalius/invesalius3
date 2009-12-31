@@ -69,7 +69,7 @@ def frange(start, end=None, inc=None):
         end = start + 0.0
         start = 0.0
 
-    if inc == None:
+    if (inc == None) or (inc == 0):
         inc = 1.0
 
     L = []
