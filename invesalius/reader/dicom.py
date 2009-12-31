@@ -1139,11 +1139,8 @@ class Parser():
         if (data):
             name = data.strip()
             encoding = self.GetEncoding()
-            if encoding != None:
-                # Returns a unicode decoded in the own dicom encoding
-                return name.decode(encoding)
-            else:
-                return name.strip()
+            # Returns a unicode decoded in the own dicom encoding
+            return name.decode(encoding)
         return ""
 
     def GetPatientID(self):
@@ -1158,11 +1155,8 @@ class Parser():
                                                 .GetPatientID()
         if (data):
             encoding = self.GetEncoding()
-            if encoding != None:
-                # Returns a unicode decoded in the own dicom encoding
-                return data.decode(self.GetEncoding())
-            else:
-                return data
+            # Returns a unicode decoded in the own dicom encoding
+            return data.decode(encoding)
         return ""
 
 
@@ -1509,7 +1503,10 @@ class Parser():
         ds = self.gdcm_reader.GetFile().GetDataSet()
         if ds.FindDataElement(tag):
             encoding = str(ds.GetDataElement(tag).GetValue())
-            return encoding
+            if encoding != None:
+                return encoding
+            
+        return 'ISO_IR 100'
 
 
 class DicomWriter:
