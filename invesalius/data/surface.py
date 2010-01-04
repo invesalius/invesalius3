@@ -224,8 +224,20 @@ class SurfaceManager():
         for key in surface_dict:
             surface = surface_dict[key]
             # Map polygonal data (vtkPolyData) to graphics primitives.
+            
+            normals = vtk.vtkPolyDataNormals()
+            normals.SetInput(surface.polydata)
+            normals.SetFeatureAngle(80)
+            normals.AutoOrientNormalsOn()
+            normals.GetOutput().ReleaseDataFlagOn()
+            
+            stripper = vtk.vtkStripper()
+            stripper.SetInput(normals.GetOutput())
+            stripper.PassThroughCellIdsOn()
+            stripper.PassThroughPointIdsOn()
+            
             mapper = vtk.vtkPolyDataMapper()
-            mapper.SetInput(surface.polydata)
+            mapper.SetInput(stripper.GetOutput())
             mapper.ScalarVisibilityOff()
 
             # Represent an object (geometry & properties) in the rendered scene
@@ -316,12 +328,18 @@ class SurfaceManager():
         reader.Update()
         
         polydata = reader.GetOutput()
-                
+       
+        # Orient normals from inside to outside
+        normals = vtk.vtkPolyDataNormals()
+        normals.SetInput(polydata)
+        normals.SetFeatureAngle(80)
+        normals.AutoOrientNormalsOn()
+        normals.GetOutput().ReleaseDataFlagOn()
+    
         stripper = vtk.vtkStripper()
-        stripper.SetInput(polydata)
+        stripper.SetInput(normals.GetOutput())
         stripper.PassThroughCellIdsOn()
         stripper.PassThroughPointIdsOn()
-        
         
         # Map polygonal data (vtkPolyData) to graphics primitives.
         mapper = vtk.vtkPolyDataMapper()
