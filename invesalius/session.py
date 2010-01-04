@@ -32,6 +32,9 @@ class Session(object):
         # Recent projects list
         self.recent_projects = []
 
+        # GUI language
+        self.language = "en_GB" # "pt_BR", "es"
+
     def CloseProject(self):
         print "-- CloseProject"
         self.project_path = ()
