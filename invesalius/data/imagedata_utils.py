@@ -55,22 +55,31 @@ def ResampleImage2D(imagedata, xy_dimension,
     Resample vtkImageData matrix.
     """
     extent = imagedata.GetExtent()
+    print "-----------------------------"
+    print "extent:", extent
     spacing = imagedata.GetSpacing()
+    print "spacing:", spacing
 
-    if extent[1]==extent[3]:
+    #if extent[1]==extent[3]:
+    #    f = extent[1]
+    #elif extent[1]==extent[5]:
+    #    f = extent[1]
+    #elif extent[3]==extent[5]:
+    #    f = extent[3]
+
+    if abs(extent[1]-extent[3]) < abs(extent[3]-extent[5]):
+        print 1
         f = extent[1]
-        x = 0
-        y = 1
-
-    elif extent[1]==extent[5]:
+    elif abs(extent[1]-extent[5]) < abs(extent[1] - extent[3]):
+        print 2
         f = extent[1]
-        x=0
-        y=2
-
-    elif extent[3]==extent[5]:
+    elif abs(extent[3]-extent[5]) < abs(extent[1] - extent[3]):
+        print 3
         f = extent[3]
-        x = 1
-        y = 2
+    else:
+        print 4
+        f = extent[1]
+        
 
     factor = xy_dimension/float(f+1)
 

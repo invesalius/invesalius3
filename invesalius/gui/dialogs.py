@@ -41,7 +41,9 @@ class NumberDialog(wx.Dialog):
 
         # Numeric value to be changed by user
         num_ctrl = masked.NumCtrl(self, value=value, integerWidth=3,
-                                    fractionWidth=2, allowNegative=True)
+                                    fractionWidth=2,
+                                    allowNegative=True,
+                                    signedForegroundColour = "Black")
         self.num_ctrl = num_ctrl
 
         # Buttons       

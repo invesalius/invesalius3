@@ -265,7 +265,7 @@ class Controller():
         
         if len(patients_groups):
             group = dcm.SelectLargerDicomGroup(patients_groups)
-            imagedata, dicom = self.OpenDicomGroup(group, gui=False)
+            imagedata, dicom = self.OpenDicomGroup(group, gui=True)
             self.CreateDicomProject(imagedata, dicom)
         # OPTION 2: ANALYZE?
         else:

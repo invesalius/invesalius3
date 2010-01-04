@@ -27,6 +27,7 @@ class Session(object):
             os.makedirs(invdir)
         self.invdir = invdir
 
+        # ?
         self.temp_item = False
 
         # Recent projects list

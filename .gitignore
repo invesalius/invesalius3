@@ -1,5 +1,11 @@
+invesalius/*.classpath
+invesalius/*.hg
 invesalius/*.log
+invesalius/*.project
 invesalius/*.pyc
+invesalius/*.swn
+invesalius/*.swo
+invesalius/*.swp
 invesalius/data/*.log
 invesalius/data/*.pyc
 invesalius/gui/*.log

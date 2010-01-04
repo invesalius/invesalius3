@@ -239,7 +239,7 @@ ID_TO_BMP = {VOL_FRONT: ["Front", os.path.join(ICON_DIR, "view_front.png")],
              }
 
 # if 1, use vtkVolumeRaycastMapper, if 0, use vtkFixedPointVolumeRayCastMapper
-TYPE_RAYCASTING_MAPPER = 0
+TYPE_RAYCASTING_MAPPER = 1
 
 folder=RAYCASTING_PRESETS_DIRECTORY= os.path.abspath(os.path.join("..",
                                                                   "presets",
@@ -296,7 +296,7 @@ FILETYPE_VRML = wx.NewId()
 FILETYPE_OBJ = wx.NewId()
 FILETYPE_VTP = wx.NewId()
 FILETYPE_PLY = wx.NewId()
-
+ 
 FILETYPE_IMAGEDATA = wx.NewId()
 
 FILETYPE_BMP = wx.NewId()

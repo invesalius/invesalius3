@@ -40,6 +40,7 @@ MAX_VALUE = NCOLS*NROWS
 
 
 STR_SIZE = "Image size: %d x %d"
+STR_SPC = "Spacing: %.2f"
 STR_LOCAL = "Location: %.2f"
 STR_PATIENT = "%s\n%s"
 STR_ACQ = "%s %s\nMade in InVesalius"
@@ -194,7 +195,9 @@ class SingleImagePreview(wx.Panel):
         self.text_image_size.SetValue(value)
 
         ## Text related to slice position
-        value = STR_LOCAL %(dicom.image.position[2])
+        value1 = STR_SPC %(dicom.image.spacing[2])
+        value2 = STR_LOCAL %(dicom.image.position[2])
+        value = "%s\n%s" %(value1, value2)
         self.text_image_location.SetValue(value)
 
         ## Text related to patient/ acquisiiton data
