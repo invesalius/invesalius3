@@ -69,6 +69,8 @@ class Viewer(wx.Panel):
         self.onclick = False
 
         self.text = vtku.Text()
+        self.text.SetValue("")
+        self.ren.AddActor(self.text.actor)
 
         self.view_angle = None
 
@@ -76,6 +78,7 @@ class Viewer(wx.Panel):
         self.__bind_events_wx()
 
         self.mouse_pressed = 0
+        self.on_wl = False
 
     def __bind_events(self):
         ps.Publisher().subscribe(self.LoadActor,
@@ -152,6 +155,15 @@ class Viewer(wx.Panel):
                     {
                     }
               }
+
+        if state == const.STATE_WL:
+            self.on_wl = True
+            self.text.Show()
+            self.interactor.Render()
+        else:
+            self.on_wl = False
+            self.text.Hide()
+            self.interactor.Render()
 
         if (state == const.STATE_ZOOM_SL):
             style = vtk.vtkInteractorStyleRubberBandZoom()
@@ -322,7 +334,8 @@ class Viewer(wx.Panel):
 
     def OnShowRaycasting(self, pubsub_evt):
         self.raycasting_volume = True
-        self.text.Show()
+        if self.on_wl:
+            self.text.Show()
 
     def OnHideRaycasting(self, pubsub_evt):
         self.raycasting_volume = False
@@ -370,7 +383,7 @@ class Viewer(wx.Panel):
 
         self.ren.AddVolume(volume)
         self.text.SetValue("WL: %d  WW: %d"%(wl, ww))
-        self.ren.AddActor(self.text.actor)
+        
         self.ren.SetBackground(colour)
 
         if not (self.view_angle):

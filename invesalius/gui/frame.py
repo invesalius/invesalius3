@@ -825,9 +825,9 @@ class LayoutToolBar(wx.ToolBar):
 
     def OnText(self, event):
         if event.IsChecked():
-            print "TODO: Send message so all textactors are shown"
+            ps.Publisher().sendMessage('Show text actors on viewers')
         else:
-            print "TODO: Send message so all textactors are hiden"
+            ps.Publisher().sendMessage('Hide text actors on viewers')
 
     def SetLayoutButtonOnlyData(self, pubsub_evt):
         self.SetToolNormalBitmap(ID_LAYOUT,self.BMP_WITH_MENU)

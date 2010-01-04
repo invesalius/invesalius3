@@ -71,6 +71,8 @@ class Viewer(wx.Panel):
         self._brush_cursor_type = const.DEFAULT_BRUSH_OP
         self.cursor = None
         self.wl_text = None
+        self.on_wl = False
+        self.on_text = False
         # VTK pipeline and actors
         #self.__config_interactor()
         self.pick = vtk.vtkPropPicker()
@@ -118,24 +120,30 @@ class Viewer(wx.Panel):
 
     def SetLayout(self, layout):
         self.layout = layout
-        if layout == (1,1):
+        if (layout == (1,1)) and self.on_text:
             self.ShowTextActors()
         else:
-            self.HideTextActors()
+            self.HideTextActors(change_status=False)
 
         slice_ = sl.Slice()
         self.LoadRenderers(slice_.GetOutput())
         self.__configure_renderers()
         self.__configure_scroll()
 
-    def HideTextActors(self):
+    def HideTextActors(self, change_status=True):
         self.wl_text.Hide()
         [t.Hide() for t in self.orientation_texts]
+        self.interactor.Render()
+        if change_status:
+            self.on_text = False
 
     def ShowTextActors(self):
-        self.wl_text.Show()
+        if self.on_wl:
+            self.wl_text.Show()
         [t.Show() for t in self.orientation_texts]
-
+        self.Update()
+        self.interactor.Render()
+        self.on_text = True
 
 
     def __set_layout(self, pubsub_evt):
@@ -203,6 +211,13 @@ class Viewer(wx.Panel):
             self.__set_cross_visibility(1)
         else:
             self.__set_cross_visibility(0)
+
+        if state == const.STATE_WL:
+            self.on_wl = True
+            self.wl_text.Show()
+        else:
+            self.on_wl = False
+            self.wl_text.Hide()
 
         self.__set_editor_cursor_visibility(0)
 
@@ -806,6 +821,21 @@ class Viewer(wx.Panel):
         ps.Publisher().subscribe(self.OnSetInteractorStyle,
                                 'Set slice interaction style')
         ps.Publisher().subscribe(self.OnCloseProject, 'Close project data')
+
+        #####
+        ps.Publisher().subscribe(self.OnShowText,
+                                 'Show text actors on viewers')
+        ps.Publisher().subscribe(self.OnHideText,
+                                 'Hide text actors on viewers')
+
+    def OnShowText(self, pubsub_evt):
+        print "OnShowText"
+        self.ShowTextActors()
+
+    def OnHideText(self, pubsub_evt):
+        print "OnHideText"
+        self.HideTextActors()
+
 
     def OnCloseProject(self, pubsub_evt):
         self.CloseProject()
