@@ -131,14 +131,15 @@ class Viewer(wx.Panel):
         self.__configure_scroll()
 
     def HideTextActors(self, change_status=True):
-        self.wl_text.Hide()
+        if self.wl_text:
+            self.wl_text.Hide()
         [t.Hide() for t in self.orientation_texts]
         self.interactor.Render()
         if change_status:
             self.on_text = False
 
     def ShowTextActors(self):
-        if self.on_wl:
+        if self.on_wl and self.wl_text:
             self.wl_text.Show()
         [t.Show() for t in self.orientation_texts]
         self.Update()

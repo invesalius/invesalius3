@@ -785,6 +785,7 @@ class LayoutToolBar(wx.ToolBar):
 
         self.AddLabelTool(ID_LAYOUT, "",bitmap=self.BMP_WITHOUT_MENU, shortHelp= "Hide task panel")
         self.AddCheckTool(ID_TEXT, bitmap=BMP_TEXT, shortHelp= "Hide texts")
+        self.ToggleTool(ID_TEXT, True)
 
         self.Realize()
 

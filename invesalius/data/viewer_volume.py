@@ -118,6 +118,21 @@ class Viewer(wx.Panel):
         ps.Publisher().subscribe(self.OnEnableStyle, 'Enable style')
         ps.Publisher().subscribe(self.OnDisableStyle, 'Disable style')
 
+        ps.Publisher().subscribe(self.OnHideText,
+                                 'Hide text actors on viewers')
+
+        ps.Publisher().subscribe(self.OnShowText,
+                                 'Show text actors on viewers')
+
+    def OnHideText(self, pubsub_evt):
+        self.text.Hide()
+        self.interactor.Render()
+
+    def OnShowText(self, pubsub_evt):
+        if self.on_wl:
+            self.text.Show()
+            self.interactor.Render()
+
     def __bind_events_wx(self):
         #self.Bind(wx.EVT_SIZE, self.OnSize)
         pass
@@ -158,8 +173,9 @@ class Viewer(wx.Panel):
 
         if state == const.STATE_WL:
             self.on_wl = True
-            self.text.Show()
-            self.interactor.Render()
+            if self.raycasting_volume:
+                self.text.Show()
+                self.interactor.Render()
         else:
             self.on_wl = False
             self.text.Hide()
