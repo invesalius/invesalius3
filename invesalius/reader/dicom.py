@@ -1504,8 +1504,11 @@ class Parser():
         if ds.FindDataElement(tag):
             encoding = str(ds.GetDataElement(tag).GetValue())
             if encoding != None:
-                return encoding
-            
+                #Problem with 0051 anonymized
+                if (encoding.split(":"))[0] == "Loaded":
+                    return 'ISO_IR 100' 
+                else:
+                    return encoding
         return 'ISO_IR 100'
 
 
