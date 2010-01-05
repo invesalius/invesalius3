@@ -44,7 +44,7 @@ class SplashScreen(wx.SplashScreen):
         bmp = wx.Image("../icons/splash_en.png").ConvertToBitmap()
         wx.SplashScreen.__init__(self, bitmap=bmp,
                                  splashStyle=wx.SPLASH_CENTRE_ON_SCREEN | wx.SPLASH_TIMEOUT,
-                                 milliseconds=1, id=-1, parent=None)
+                                 milliseconds=1500, id=-1, parent=None)
         self.Bind(wx.EVT_CLOSE, self.OnClose)
 
 
