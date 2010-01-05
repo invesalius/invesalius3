@@ -21,6 +21,8 @@ import multiprocessing
 from optparse import OptionParser
 import os
 import sys
+from session import Session
+
 
 # TODO: This should be called during installation
 # ----------------------------------------------------------------------
@@ -40,22 +42,21 @@ import wx.lib.pubsub as ps
 class SplashScreen(wx.SplashScreen):
     def __init__(self):
         bmp = wx.Image("../icons/splash_en.png").ConvertToBitmap()
-        wx.SplashScreen.__init__(self, bmp,
-                                 wx.SPLASH_CENTRE_ON_SCREEN | wx.SPLASH_TIMEOUT,
-                                 1500, None, -1)
+        wx.SplashScreen.__init__(self, bitmap=bmp,
+                                 splashStyle=wx.SPLASH_CENTRE_ON_SCREEN | wx.SPLASH_TIMEOUT,
+                                 milliseconds=1, id=-1, parent=None)
         self.Bind(wx.EVT_CLOSE, self.OnClose)
 
 
         from gui.frame import Frame
         from control import Controller
         from project import Project
-        from session import Session
 
 
         self.main = Frame(None)
         self.control = Controller(self.main)
 
-        self.fc = wx.FutureCall(1000, self.ShowMain)
+        self.fc = wx.FutureCall(1, self.ShowMain)
 
     def OnClose(self, evt):
         # Make sure the default handler runs too so this window gets
@@ -82,6 +83,8 @@ class InVesalius(wx.App):
         #self.control = Controller(self.main)
         self.SetAppName("InVesalius 3")
         splash = SplashScreen()
+        self.control = splash.control
+        self.frame = splash.main
         splash.Show()
 
         return True
