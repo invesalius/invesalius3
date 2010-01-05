@@ -249,7 +249,7 @@ class MessageDialog(wx.Dialog):
         self.Centre()
 
 def SaveChangesDialog__Old(filename):
-    message = "Save changes to "+filename+"?"
+    message = "Save changes to %s?"%filename
     dlg = MessageDialog(message)
 
     answer = dlg.ShowModal()
@@ -262,14 +262,28 @@ def SaveChangesDialog__Old(filename):
         return -1
     
 
+def ImportEmptyDirectory(dirpath):
+    if sys.platform == 'darwin':
+        dlg = wx.MessageDialog(None, "",
+                               "%s is an empty directory." % dirpath,
+                                wx.ICON_INFORMATION | wx.OK)
+    else:
+        dlg = wx.MessageDialog(None, "%s is an empty directory." % dirpath,
+                               "InVesalius 3",
+                                wx.ICON_INFORMATION | wx.OK) 
+    dlg.ShowModal()
+    dlg.Destroy()
+
+  
+
 def SaveChangesDialog(filename):
     current_dir = os.path.abspath(".")
     if sys.platform == 'darwin':
         dlg = wx.MessageDialog(None, "",
-                               "Save changes to "+filename+"?",
+                               "Save changes to %s?"%filename,
                                wx.ICON_QUESTION | wx.YES_NO | wx.CANCEL)
     else:
-        dlg = wx.MessageDialog(None, "Save changes to "+filename+"?",
+        dlg = wx.MessageDialog(None, "Save changes to %s?"%filename,
                                "InVesalius 3",
                                wx.ICON_QUESTION | wx.YES_NO | wx.CANCEL)
 
@@ -288,10 +302,10 @@ def SaveChangesDialog2(filename):
     current_dir = os.path.abspath(".")
     if sys.platform == 'darwin':
         dlg = wx.MessageDialog(None, "",
-                               "Save changes to "+filename+"?",
+                               "Save changes to %s?"%filename,
                                wx.ICON_QUESTION | wx.YES_NO)
     else:
-        dlg = wx.MessageDialog(None, "Save changes to "+filename+"?",
+        dlg = wx.MessageDialog(None, "Save changes to %s?"%filename,
                                "InVesalius 3",
                                wx.ICON_QUESTION | wx.YES_NO)
 

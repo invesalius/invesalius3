@@ -106,7 +106,11 @@ class Controller():
 
         # Import project
         dirpath = dialog.ShowImportDirDialog()
-        if dirpath:
+        ###
+        print dirpath
+        if dirpath and not os.listdir(dirpath):
+            dialog.ImportEmptyDirectory(dirpath)
+        elif dirpath:
             self.StartImportPanel(dirpath)
             ps.Publisher().sendMessage("Load data to import panel", dirpath)
             
