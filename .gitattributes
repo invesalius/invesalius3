@@ -20,6 +20,8 @@ icons/brush_circle.jpg -text
 icons/brush_square.jpg -text
 icons/cross.png -text
 icons/cross_original.png -text
+icons/en_GB.bmp -text
+icons/es.bmp -text
 icons/file_export.png -text
 icons/file_from_internet.png -text
 icons/file_from_internet_original.png -text
@@ -55,6 +57,7 @@ icons/object_remove_original.png -text
 icons/object_visible.jpg -text
 icons/print.png -text
 icons/print_original.png -text
+icons/pt_BR.bmp -text
 icons/show_task.png -text
 icons/show_task_min.png -text
 icons/slice.png -text
