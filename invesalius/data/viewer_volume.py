@@ -181,7 +181,6 @@ class Viewer(wx.Panel):
             self.interactor.SetInteractorStyle(style)
             self.style = style
         else:
-            print "ELSE!"
             style = vtk.vtkInteractorStyleTrackballCamera()
             self.interactor.SetInteractorStyle(style)
             self.style = style  
