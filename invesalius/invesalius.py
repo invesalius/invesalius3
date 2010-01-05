@@ -105,14 +105,17 @@ def parse_comand_line():
     parser.add_option("-i", "--import", action="store", dest="dicom_dir")
 
     options, args = parser.parse_args()
-
+        
+    session = Session()
+    if not (session.ReadSession()):
+        session.CreateItens()
+        
     if options.debug:
         # The user passed the debug option?
         # Yes!
         # Then all pubsub message must be printed.
         ps.Publisher().subscribe(print_events, ps.ALL_TOPICS)
         
-        session = Session()
         session.debug = 1
     
     if options.dicom_dir:

@@ -8,12 +8,22 @@ import constants as const
 from utils import Singleton
 
 import wx.lib.pubsub as ps
+
 class Session(object):
     # Only one session will be initialized per time. Therefore, we use
     # Singleton design pattern for implementing it
     __metaclass__= Singleton
 
     def __init__(self):
+        # ?
+        self.temp_item = False
+        
+        ws = self.ws = WriteSession(self)
+        ws.start()
+        
+        ps.Publisher().subscribe(self.StopRecording, "Stop Config Recording")
+    
+    def CreateItens(self):
         self.project_path = ()
         self.debug = False
 
@@ -31,24 +41,16 @@ class Session(object):
         if not os.path.isdir(invdir):
             os.makedirs(invdir)
         self.invdir = invdir
-
-        # ?
-        self.temp_item = False
-
+        
+        # GUI language
+        self.language = "" # "pt_BR", "es"
+        
         # Recent projects list
         self.recent_projects = []
-        
-        ws = self.ws = WriteSession(self)
-        ws.start()
-        
-        ps.Publisher().subscribe(self.StopRecording, "Stop Config Recording")
-        
     
     def StopRecording(self, pubsub_evt):
         self.ws.Stop()
-        
-        # GUI language
-        self.language = "en_GB" # "pt_BR", "es"
+
 
     def CloseProject(self):
         print "-- CloseProject"
@@ -126,17 +128,22 @@ class Session(object):
             setattr(self, key, dict[key])
       
     def ReadSession(self):
+        
         config = ConfigParser.ConfigParser()
-        path = os.path.join(self.homedir ,'.invesalius', 'config.cfg')
-        config.read(path)
-        
-        self.mode = config.get('session', 'mode')
-        self.project_status = config.get('session', 'status')
-        self.debug = config.get('session','debug')
-        self.recent_projects = eval(config.get('project','recent_projects'))
-        self.homedir = config.get('paths','homedir')
-        self.invdir = config.get('paths','invdir')
-        
+        home_path = os.path.expanduser('~')
+        path = os.path.join(home_path ,'.invesalius', 'config.cfg')
+        try:
+            config.read(path)
+            self.mode = config.get('session', 'mode')
+            self.project_status = config.get('session', 'status')
+            self.debug = config.get('session','debug')
+            self.language = config.get('session','language')
+            self.recent_projects = eval(config.get('project','recent_projects'))
+            self.homedir = config.get('paths','homedir')
+            self.invdir = config.get('paths','invdir')
+            return True
+        except(ConfigParser.NoSectionError):
+            return False
         
 class WriteSession(Thread):
     
@@ -151,7 +158,6 @@ class WriteSession(Thread):
         self.Write()
       
     def Stop(self):  
-        print "VAI PARAR A THREAD................"
         self.runing = 0
         
     def Write(self):
@@ -162,6 +168,7 @@ class WriteSession(Thread):
         config.set('session', 'mode', self.session.mode)
         config.set('session', 'status', self.session.project_status)
         config.set('session','debug', self.session.debug)
+        config.set('session', 'language', self.session.language)
         
         config.add_section('project')
         config.set('project', 'recent_projects', self.session.recent_projects)
