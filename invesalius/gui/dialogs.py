@@ -143,11 +143,8 @@ def ShowOpenProjectDialog():
                         defaultFile="", wildcard=WILDCARD_OPEN,
                         style=wx.OPEN|wx.CHANGE_DIR)
 
-    # In OSX this filter is not working - wxPython 2.8.10 problem
-    if sys.platform != 'darwin':
-        dlg.SetFilterIndex(0)
-    else:
-        dlg.SetFilterIndex(1)
+    # inv3 filter is default
+    dlg.SetFilterIndex(0)
 
     # Show the dialog and retrieve the user response. If it is the OK response,
     # process the data.
