@@ -41,16 +41,50 @@ from control import Controller
 from project import Project
 from session import Session
 
-class InVesalius(wx.App):
-    def OnInit(self):
+class SplashScreen(wx.SplashScreen):
+    def __init__(self):
+        bmp = wx.Image("../icons/splash_en.png").ConvertToBitmap()
+        wx.SplashScreen.__init__(self, bmp,
+                                 wx.SPLASH_CENTRE_ON_SCREEN | wx.SPLASH_TIMEOUT,
+                                 1500, None, -1)
+        self.Bind(wx.EVT_CLOSE, self.OnClose)
+
         self.main = Frame(None)
         self.control = Controller(self.main)
+        self.fc = wx.FutureCall(1000, self.ShowMain)
+
+    def OnClose(self, evt):
+        # Make sure the default handler runs too so this window gets
+        # destroyed
+        evt.Skip()
+        self.Hide()
+        
+        # if the timer is still running then go ahead and show the
+        # main frame now
+        if self.fc.IsRunning():
+            self.fc.Stop()
+            self.ShowMain()
+
+
+    def ShowMain(self):
+        self.main.Show()
+
+        if self.fc.IsRunning():
+            self.Raise()
+
+class InVesalius(wx.App):
+    def OnInit(self):
+        #self.main = Frame(None)
+        #self.control = Controller(self.main)
         self.SetAppName("InVesalius 3")
+        splash = SplashScreen()
+        splash.Show()
+
         return True
         
-    def ShowFrame(self):
-        self.main.Show()
-        self.SetTopWindow(self.main)
+    #def ShowFrame(self):
+    #    self.main.Show()
+    #    self.SetTopWindow(self.main)
 
 def parse_comand_line():
     """
@@ -64,8 +98,6 @@ def parse_comand_line():
     parser.add_option("-i", "--import", action="store", dest="dicom_dir")
 
     options, args = parser.parse_args()
-    print "opt", options
-    print "arg", args
 
     if options.debug:
         # The user passed the debug option?
@@ -102,20 +134,18 @@ def print_events(data):
 def main():
     application = InVesalius(0)
     parse_comand_line()
-    application.ShowFrame()
+    #application.ShowFrame()
     application.MainLoop()
 
 if __name__ == '__main__':
     
-    #Necessary in case run from executable
+    # Needed in win 32 exe
     if hasattr(sys,"frozen") and sys.frozen == "windows_exe":
          multiprocessing.freeze_support()
          
-         #Remove wxPython log
+         # wxPython log
          #sys.stdout = open("stdout.log" ,"w")
          sys.stderr = open("stderr.log", "w")
-         
-         print "Executavel...."
          
     # Add current directory to PYTHONPATH
     sys.path.append(".")
