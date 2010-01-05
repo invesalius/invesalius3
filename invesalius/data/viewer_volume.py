@@ -103,8 +103,6 @@ class Viewer(wx.Panel):
         ps.Publisher().subscribe(self.OnSetViewAngle,
                                 'Set volume view angle')
 
-        ps.Publisher().subscribe(self.SetNewMode, 
-                          ('Set interaction mode', const.MODE_WW_WL)) 
         ps.Publisher().subscribe(self.OnDisableBrightContrast,
                                  ('Set interaction mode',
                                   const.MODE_SLICE_EDITOR))
@@ -151,14 +149,11 @@ class Viewer(wx.Panel):
                     "LeftButtonPressEvent": self.OnZoomClick,
                     "LeftButtonReleaseEvent": self.OnReleaseZoomClick,
                     },
-              #const.STATE_SPIN:
-              #      {
-              #      "MouseMoveEvent": self.OnSpinMove,
-              #      "LeftButtonPressEvent": self.OnSpinClick,
-              #      "LeftButtonReleaseEvent": self.OnReleaseSpinClick,
-              #      },
               const.STATE_SPIN:
                     {
+                    "MouseMoveEvent": self.OnSpinMove,
+                    "LeftButtonPressEvent": self.OnSpinClick,
+                    "LeftButtonReleaseEvent": self.OnReleaseSpinClick,
                     },
               const.STATE_WL:
                     { 
@@ -166,7 +161,7 @@ class Viewer(wx.Panel):
                     "LeftButtonPressEvent": self.OnWindowLevelClick,
                     "LeftButtonReleaseEvent":self.OnWindowLevelRelease
                     },
-                const.STATE_DEFAULT:
+              const.STATE_DEFAULT:
                     {
                     }
               }
@@ -186,43 +181,16 @@ class Viewer(wx.Panel):
             self.interactor.SetInteractorStyle(style)
             self.style = style
         else:
+            print "ELSE!"
             style = vtk.vtkInteractorStyleTrackballCamera()
             self.interactor.SetInteractorStyle(style)
             self.style = style  
 
             # Check each event available for each mode
             for event in action[state]:
+                print event 
                 # Bind event
-              style.AddObserver(event,action[state][event])
-
-    def SetStyle(self, pubsub_evt):
-        print "SetStyle"
-        mode = pubsub_evt.data
-
-        if (mode == const.MODE_ZOOM_SELECTION):
-             self.SetMode('ZOOMSELECT')
-        elif(mode == const.MODE_MOVE):
-            self.SetMode('PAN')
-        elif(mode == const.MODE_ZOOM):
-            self.SetMode('ZOOM')
-        elif(mode == const.MODE_ROTATE):
-            self.SetMode('SPIN')
-        elif(mode == const.MODE_WW_WL):
-            self.SetMode('WINDOWLEVEL')
-
-    def SetNewMode(self, pubsub_evt):
-       mode = pubsub_evt.topic[1]
-
-       if (mode == const.MODE_ZOOM_SELECTION):
-            self.SetMode('ZOOMSELECT')
-       elif(mode == const.MODE_MOVE):
-           self.SetMode('PAN')
-       elif(mode == const.MODE_ZOOM):
-           self.SetMode('ZOOM')
-       elif(mode == const.MODE_ROTATE):
-           self.SetMode('SPIN')
-       elif(mode == const.MODE_WW_WL):
-           self.SetMode('WINDOWLEVEL')
+                style.AddObserver(event,action[state][event])
 
     def OnSpinMove(self, evt, obj):
         if (self.mouse_pressed):
@@ -292,7 +260,6 @@ class Viewer(wx.Panel):
             new_state = self.interaction_style.AddState(state)
             self.SetInteractorStyle(new_state)
         else:
-            #level = const.STYLE_LEVEL[state]
             new_state = self.interaction_style.RemoveState(state)
             self.SetInteractorStyle(new_state)
 
@@ -399,7 +366,12 @@ class Viewer(wx.Panel):
 
         self.ren.AddVolume(volume)
         self.text.SetValue("WL: %d  WW: %d"%(wl, ww))
-        
+
+        if self.on_wl:
+            self.text.Show()
+        else:
+            self.text.Hide()
+
         self.ren.SetBackground(colour)
 
         if not (self.view_angle):

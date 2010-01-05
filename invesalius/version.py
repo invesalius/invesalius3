@@ -27,10 +27,10 @@ import re
 
 def get_svn_revision(path=None):
     """
-    Returns the SVN revision in the form SVN-XXXX,
+    Returns the SVN revision in the form pspb-XXXX,
     where XXXX is the revision number.
 
-    Returns SVN-unknown if anything goes wrong, such as an unexpected
+    Returns pspb-unknown if anything goes wrong, such as an unexpected
     format of internal SVN files.
 
     If path is provided, it should be a directory whose SVN info you want to
