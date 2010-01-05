@@ -36,10 +36,6 @@ except OSError:
 import wx
 import wx.lib.pubsub as ps
 
-from gui.frame import Frame
-from control import Controller
-from project import Project
-from session import Session
 
 class SplashScreen(wx.SplashScreen):
     def __init__(self):
@@ -49,8 +45,16 @@ class SplashScreen(wx.SplashScreen):
                                  1500, None, -1)
         self.Bind(wx.EVT_CLOSE, self.OnClose)
 
+
+        from gui.frame import Frame
+        from control import Controller
+        from project import Project
+        from session import Session
+
+
         self.main = Frame(None)
         self.control = Controller(self.main)
+
         self.fc = wx.FutureCall(1000, self.ShowMain)
 
     def OnClose(self, evt):
@@ -112,9 +116,7 @@ def parse_comand_line():
         # The user passed directory to me?
         import_dir = options.dicom_dir
         ps.Publisher().sendMessage('Import directory', import_dir)
-        #print "Hey, guy you must pass a directory to me!"
-    #else:
-    #    print "Hey, guy, you need to pass a inv3 file to me!"
+        return True
    
     # Check if there is a file path somewhere in what the user wrote
     else:
@@ -126,6 +128,8 @@ def parse_comand_line():
                 path = os.path.abspath(file)
                 ps.Publisher().sendMessage('Open project', path)
                 i = 0
+                return True
+    return False
  
 
 def print_events(data):
