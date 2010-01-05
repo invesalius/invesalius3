@@ -263,27 +263,37 @@ def SaveChangesDialog__Old(filename):
     
 
 def ImportEmptyDirectory(dirpath):
+    msg = "%s is an empty directory." % dirpath
     if sys.platform == 'darwin':
         dlg = wx.MessageDialog(None, "",
-                               "%s is an empty directory." % dirpath,
+                                msg,
                                 wx.ICON_INFORMATION | wx.OK)
     else:
-        dlg = wx.MessageDialog(None, "%s is an empty directory." % dirpath,
+        dlg = wx.MessageDialog(None, msg,
                                "InVesalius 3",
                                 wx.ICON_INFORMATION | wx.OK) 
     dlg.ShowModal()
     dlg.Destroy()
 
-  
+def ImportInvalidFiles():
+    msg = "There are no DICOM files on the selected directory."
+    if sys.platform == 'darwin':
+        dlg = wx.MessageDialog(None, "", msg,
+                                wx.ICON_INFORMATION | wx.OK)
+    else:
+        dlg = wx.MessageDialog(None, msg, "InVesalius 3",
+                                wx.ICON_INFORMATION | wx.OK) 
+    dlg.ShowModal()
+    dlg.Destroy()  
 
 def SaveChangesDialog(filename):
     current_dir = os.path.abspath(".")
+    msg = "Save changes to %s?"%filename
     if sys.platform == 'darwin':
-        dlg = wx.MessageDialog(None, "",
-                               "Save changes to %s?"%filename,
+        dlg = wx.MessageDialog(None, "", msg,
                                wx.ICON_QUESTION | wx.YES_NO | wx.CANCEL)
     else:
-        dlg = wx.MessageDialog(None, "Save changes to %s?"%filename,
+        dlg = wx.MessageDialog(None, msg,
                                "InVesalius 3",
                                wx.ICON_QUESTION | wx.YES_NO | wx.CANCEL)
 
@@ -300,12 +310,12 @@ def SaveChangesDialog(filename):
 
 def SaveChangesDialog2(filename):
     current_dir = os.path.abspath(".")
+    msg = "Save changes to %s?"%filename
     if sys.platform == 'darwin':
-        dlg = wx.MessageDialog(None, "",
-                               "Save changes to %s?"%filename,
+        dlg = wx.MessageDialog(None, "", msg,
                                wx.ICON_QUESTION | wx.YES_NO)
     else:
-        dlg = wx.MessageDialog(None, "Save changes to %s?"%filename,
+        dlg = wx.MessageDialog(None, msg,
                                "InVesalius 3",
                                wx.ICON_QUESTION | wx.YES_NO)
 

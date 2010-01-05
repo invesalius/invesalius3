@@ -246,18 +246,21 @@ class Controller():
             
     def OnLoadImportPanel(self, evt):
         patient_series = evt.data
-        self.LoadImportPanel(patient_series)
-        ps.Publisher().sendMessage('Show import panel')
-        ps.Publisher().sendMessage("Show import panel in frame")
+        ok = self.LoadImportPanel(patient_series)
+        if ok:
+            ps.Publisher().sendMessage('Show import panel')
+            ps.Publisher().sendMessage("Show import panel in frame")
 
  
     def LoadImportPanel(self, patient_series):
-        if isinstance(patient_series, list):
+        if patient_series and isinstance(patient_series, list):
             ps.Publisher().sendMessage("Load import panel", patient_series)
             first_patient = patient_series[0]
             ps.Publisher().sendMessage("Load dicom preview", first_patient)
+            return True
         else:
-            print "No DICOM files on directory"
+            dialog.ImportInvalidFiles()
+        return False
               
     def OnImportMedicalImages(self, pubsub_evt):
         directory = pubsub_evt.data
