@@ -218,10 +218,6 @@ class SingleImagePreview(wx.Panel):
         # ADJUST CONTRAST
         window_level = dicom.image.level
         window_width = dicom.image.window
-        print "======"
-        print "WW/WL"
-        print window_level
-        print window_width
         colorer = vtk.vtkImageMapToWindowLevelColors()
         colorer.SetInput(dicom.image.imagedata)
         colorer.SetWindow(float(window_width))
