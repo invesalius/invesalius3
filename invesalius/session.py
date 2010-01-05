@@ -1,8 +1,13 @@
+import ConfigParser
 import os
+from threading import Thread
+import time
+import wx.lib.pubsub as ps
 
 import constants as const
 from utils import Singleton
 
+import wx.lib.pubsub as ps
 class Session(object):
     # Only one session will be initialized per time. Therefore, we use
     # Singleton design pattern for implementing it
@@ -19,9 +24,9 @@ class Session(object):
         self.mode = const.MODE_RP
         # const.MODE_RP, const.MODE_NAVIGATOR, const.MODE_RADIOLOGY,
         # const.MODE_ODONTOLOGY
-
+        
         # InVesalius default projects' directory
-        homedir = os.path.expanduser('~')
+        homedir = self.homedir = os.path.expanduser('~')
         invdir = os.path.join(homedir, ".invesalius", "temp")
         if not os.path.isdir(invdir):
             os.makedirs(invdir)
@@ -32,7 +37,16 @@ class Session(object):
 
         # Recent projects list
         self.recent_projects = []
-
+        
+        ws = self.ws = WriteSession(self)
+        ws.start()
+        
+        ps.Publisher().subscribe(self.StopRecording, "Stop Config Recording")
+        
+    
+    def StopRecording(self, pubsub_evt):
+        self.ws.Stop()
+        
         # GUI language
         self.language = "en_GB" # "pt_BR", "es"
 
@@ -110,3 +124,57 @@ class Session(object):
         dict = plistlib.readPlist(main_plist)
         for key in dict:
             setattr(self, key, dict[key])
+      
+    def ReadSession(self):
+        config = ConfigParser.ConfigParser()
+        path = os.path.join(self.homedir ,'.invesalius', 'config.cfg')
+        config.read(path)
+        
+        self.mode = config.get('session', 'mode')
+        self.project_status = config.get('session', 'status')
+        self.debug = config.get('session','debug')
+        self.recent_projects = eval(config.get('project','recent_projects'))
+        self.homedir = config.get('paths','homedir')
+        self.invdir = config.get('paths','invdir')
+        
+        
+class WriteSession(Thread):
+    
+    def __init__ (self, session):
+      Thread.__init__(self)
+      self.session = session
+      self.runing = 1
+      
+    def run(self):
+      while self.runing:
+        time.sleep(10)
+        self.Write()
+      
+    def Stop(self):  
+        print "VAI PARAR A THREAD................"
+        self.runing = 0
+        
+    def Write(self):
+        
+        config = ConfigParser.RawConfigParser()
+        
+        config.add_section('session')
+        config.set('session', 'mode', self.session.mode)
+        config.set('session', 'status', self.session.project_status)
+        config.set('session','debug', self.session.debug)
+        
+        config.add_section('project')
+        config.set('project', 'recent_projects', self.session.recent_projects)
+        
+        config.add_section('paths')
+        config.set('paths','homedir',self.session.homedir)
+        config.set('paths','invdir',self.session.invdir)
+        path = os.path.join(self.session.homedir ,
+                            '.invesalius', 'config.cfg')
+        configfile = open(path, 'wb')
+        config.write(configfile)
+        configfile.close()
+       
+
+
+    
