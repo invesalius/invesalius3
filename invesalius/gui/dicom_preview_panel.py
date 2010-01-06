@@ -39,11 +39,11 @@ NCOLS = 6
 MAX_VALUE = NCOLS*NROWS
 
 
-STR_SIZE = "Image size: %d x %d"
-STR_SPC = "Spacing: %.2f"
-STR_LOCAL = "Location: %.2f"
+STR_SIZE = _("Image size: %d x %d")
+STR_SPC = _("Spacing: %.2f")
+STR_LOCAL = _("Location: %.2f")
 STR_PATIENT = "%s\n%s"
-STR_ACQ = "%s %s\nMade in InVesalius"
+STR_ACQ = _("%s %s\nMade in InVesalius")
 
 class SingleImagePreview(wx.Panel):
     def __init__(self, parent):
@@ -63,7 +63,7 @@ class SingleImagePreview(wx.Panel):
 
         text_image_size = vtku.Text()
         text_image_size.SetPosition(const.TEXT_POS_LEFT_UP)
-        text_image_size.SetValue("image size")
+        text_image_size.SetValue(_("image size"))
         self.text_image_size = text_image_size
 
         text_image_location = vtku.Text()
@@ -72,14 +72,14 @@ class SingleImagePreview(wx.Panel):
         text_image_location.SetValue("localization")
         self.text_image_location = text_image_location
 
-        value = "id\nprotocol"
+        value = _("id\nprotocol")
         text_patient = vtku.Text()
         text_patient.SetJustificationToRight()
         text_patient.SetPosition(const.TEXT_POS_RIGHT_UP)
         text_patient.SetValue(value)
         self.text_patient = text_patient
 
-        value = "date time\n Made in InVesalius"
+        value = _("date time\n Made in InVesalius")
         text_acquisition = vtku.Text()
         text_acquisition.SetJustificationToRight()
         text_acquisition.SetVerticalJustificationToBottom()
@@ -125,7 +125,7 @@ class SingleImagePreview(wx.Panel):
         slider.SetTickFreq(1, 1)
         self.slider = slider
 
-        checkbox = wx.CheckBox(self, -1, "Auto-play")
+        checkbox = wx.CheckBox(self, -1, _("Auto-play"))
         self.checkbox = checkbox
 
         in_sizer = wx.BoxSizer(wx.HORIZONTAL)
@@ -279,10 +279,10 @@ class Preview(wx.Panel):
 
     def _init_ui(self):
 
-        self.title = wx.StaticText(self, -1, "Image",
+        self.title = wx.StaticText(self, -1, _("Image"),
                                          style=wx.ALIGN_CENTER)
 
-        self.subtitle = wx.StaticText(self, -1, "Image",
+        self.subtitle = wx.StaticText(self, -1, _("Image"),
                                          style=wx.ALIGN_CENTER)
 
         self.image_viewer = wx.StaticBitmap(self, -1)
@@ -615,7 +615,7 @@ class DicomPreviewSeries(wx.Panel):
                     float(group.dicom.image.window),
                     float(group.dicom.image.level),
                     group.title,
-                    "%d Images" %(group.nslices),
+                    _("%d Images") %(group.nslices),
                     n,
                     group_list,
                     group.dicom)
@@ -736,7 +736,7 @@ class DicomPreview(wx.Panel):
             info = (dicom.image.imagedata,
                     dicom.image.window,
                     dicom.image.level,
-                    "Image %d" % (dicom.image.number),
+                    _("Image %d") % (dicom.image.number),
                     "%.2f" % (dicom.image.position[2]),
                     n,
                     dicom)
@@ -761,7 +761,7 @@ class DicomPreview(wx.Panel):
             info = (dicom.image,
                     dicom.image.window,
                     dicom.image.level,
-                    "Image %d" % (dicom.image.number),
+                    _("Image %d") % (dicom.image.number),
                     "%.2f" % (dicom.image.position[2]),
                     n,
                     dicom)

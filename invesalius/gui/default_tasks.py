@@ -166,7 +166,7 @@ class UpperTaskPanel(wx.Panel):
 
         # Fold 1 - Import
 
-        item = fold_panel.AddFoldPanel("1. InVesalius start", collapsed=True,
+        item = fold_panel.AddFoldPanel(_("1. InVesalius start"), collapsed=True,
                                       foldIcons=image_list)
         style = fold_panel.GetCaptionStyle(item)
         col = style.GetFirstColour()
@@ -179,7 +179,7 @@ class UpperTaskPanel(wx.Panel):
         
         # Fold 2 - Mask for segmentation and edition
         
-        item = fold_panel.AddFoldPanel("2. Select region of interest",
+        item = fold_panel.AddFoldPanel(_("2. Select region of interest"),
                                        collapsed=True, foldIcons=image_list)
         style = fold_panel.GetCaptionStyle(item)
         col = style.GetFirstColour()
@@ -196,7 +196,7 @@ class UpperTaskPanel(wx.Panel):
         # apply button
         # Contour - slider
         # enable / disable Fill holes
-        item = fold_panel.AddFoldPanel("3. Configure 3D surface", collapsed=True,
+        item = fold_panel.AddFoldPanel(_("3. Configure 3D surface"), collapsed=True,
                                        foldIcons=image_list)
         style = fold_panel.GetCaptionStyle(item)
         col = style.GetFirstColour()
@@ -207,7 +207,7 @@ class UpperTaskPanel(wx.Panel):
 
         # Fold 4
         # Export volume
-        item = fold_panel.AddFoldPanel("4. Export data", collapsed=True,
+        item = fold_panel.AddFoldPanel(_("4. Export data"), collapsed=True,
                                        foldIcons=image_list)
         style = fold_panel.GetCaptionStyle(item)
         col = style.GetFirstColour()

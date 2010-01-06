@@ -76,7 +76,7 @@ class InnerTaskPanel(wx.Panel):
 
 
         # Fixed hyperlink items
-        tooltip = wx.ToolTip("Create mask for slice segmentation and edition")
+        tooltip = wx.ToolTip(_("Create mask for slice segmentation and edition"))
         link_new_mask = hl.HyperLinkCtrl(self, -1, "Create new mask")
         link_new_mask.SetUnderlines(False, False, False)
         link_new_mask.SetColours("BLACK", "BLACK", "BLACK")
@@ -105,7 +105,7 @@ class InnerTaskPanel(wx.Panel):
         self.fold_panel = fold_panel
 
         # Button to fold to select region task
-        button_next = wx.Button(self, -1, "Create 3D surface")
+        button_next = wx.Button(self, -1, _("Create 3D surface"))
         if sys.platform != 'win32':
             button_next.SetWindowVariant(wx.WINDOW_VARIANT_SMALL)
         button_next.Bind(wx.EVT_BUTTON, self.OnButtonNextTask)
@@ -134,8 +134,8 @@ class InnerTaskPanel(wx.Panel):
                                     self.GetMaskSelected())
 
     def OnLinkNewMask(self, evt=None):
-        dlg = wx.TextEntryDialog(self, 'Name of new mask:',
-                                 'InVesalius 3.0 - New mask')
+        dlg = wx.TextEntryDialog(self, _('Name of new mask:'),
+                                 _('InVesalius 3.0 - New mask'))
         dlg.CenterOnScreen()
         default_mask_name = const.MASK_NAME_PATTERN %(mask.Mask.general_index+2)
         dlg.SetValue(default_mask_name)
@@ -193,7 +193,7 @@ class InnerFoldPanel(wx.Panel):
         style.SetSecondColour(default_colour)
 
         # Fold 1 - Mask properties
-        item = fold_panel.AddFoldPanel("Mask properties", collapsed=True)
+        item = fold_panel.AddFoldPanel(_("Mask properties"), collapsed=True)
         self.mask_prop_panel = MaskProperties(item)
         fold_panel.ApplyCaptionStyle(item, style)
         fold_panel.AddFoldPanelWindow(item, self.mask_prop_panel, Spacing= 0,
@@ -201,7 +201,7 @@ class InnerFoldPanel(wx.Panel):
         fold_panel.Expand(fold_panel.GetFoldPanel(0))
 
         # Fold 2 - Advanced edition tools
-        item = fold_panel.AddFoldPanel("Advanced edition tools", collapsed=True)
+        item = fold_panel.AddFoldPanel(_("Advanced edition tools"), collapsed=True)
         fold_panel.ApplyCaptionStyle(item, style)
         fold_panel.AddFoldPanelWindow(item, EditionTools(item), Spacing= 0,
                                       leftSpacing=0, rightSpacing=0)
@@ -285,7 +285,7 @@ class MaskProperties(wx.Panel):
 
         ## LINE 2
         text_thresh = wx.StaticText(self, -1,
-                                    "Set predefined or manual threshold:")
+                                    _("Set predefined or manual threshold:"))
 
         ## LINE 3
         combo_thresh = wx.ComboBox(self, -1, "", size=(15,-1),
@@ -437,17 +437,17 @@ class EditionTools(wx.Panel):
         self.SetBackgroundColour(default_colour)
 
         ## LINE 1
-        text1 = wx.StaticText(self, -1, "Choose brush type, size or operation:")
+        text1 = wx.StaticText(self, -1, _("Choose brush type, size or operation:"))
 
         ## LINE 2
         menu = wx.Menu()
 
         CIRCLE_BMP = wx.Bitmap("../icons/brush_circle.jpg", wx.BITMAP_TYPE_JPEG)
-        item = wx.MenuItem(menu, MENU_BRUSH_CIRCLE, "Circle")
+        item = wx.MenuItem(menu, MENU_BRUSH_CIRCLE, _("Circle"))
         item.SetBitmap(CIRCLE_BMP)
 
         SQUARE_BMP = wx.Bitmap("../icons/brush_square.jpg", wx.BITMAP_TYPE_JPEG)
-        item2 = wx.MenuItem(menu, MENU_BRUSH_SQUARE, "Square")
+        item2 = wx.MenuItem(menu, MENU_BRUSH_SQUARE, _("Square"))
         item2.SetBitmap(SQUARE_BMP)
 
         menu.AppendItem(item)
@@ -483,7 +483,7 @@ class EditionTools(wx.Panel):
         line2.Add(combo_brush_op, 1, wx.EXPAND|wx.TOP|wx.RIGHT|wx.LEFT, 5)
 
         ## LINE 3
-        text_thresh = wx.StaticText(self, -1, "Brush threshold range:")
+        text_thresh = wx.StaticText(self, -1, _("Brush threshold range:"))
 
         ## LINE 4
         gradient_thresh = grad.GradientSlider(self, -1, 0, 5000, 0, 5000,

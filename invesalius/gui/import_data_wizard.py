@@ -184,8 +184,8 @@ class DirPage(BasePage):
         
     def __init_specific_gui(self):
         
-        line1 = wx.StaticText(self, -1,"Select the directory which "+\
-                              "contains medical images of the study interest.")
+        line1 = wx.StaticText(self, -1,_("Select the directory which ")+\
+                              _("contains medical images of the study interest."))
         
         
         
@@ -229,14 +229,14 @@ class DirPage(BasePage):
         style.SetSecondColour(wx.Colour(255,255,255))
 
         # Fold 1 - Surface properties
-        item = fold_panel.AddFoldPanel("Advanced options", 
+        item = fold_panel.AddFoldPanel(_("Advanced options"), 
                                         collapsed=True)
         fold_panel.ApplyCaptionStyle(item, style)
         fold_panel.AddFoldPanelWindow(item,
-            wx.CheckBox(item, wx.ID_ANY, "Use selected folder(s) as default"),
+            wx.CheckBox(item, wx.ID_ANY, _("Use selected folder(s) as default")),
                         Spacing= 0, leftSpacing=0, rightSpacing=0)
         fold_panel.AddFoldPanelWindow(item,
-            wx.CheckBox(item, wx.ID_ANY, "Enable recursion in folder(s)"),
+            wx.CheckBox(item, wx.ID_ANY, _("Enable recursion in folder(s)")),
                         Spacing= 0, leftSpacing=0, rightSpacing=0)
 
      
@@ -252,18 +252,18 @@ class DirPage(BasePage):
         self.next.GetNext().DecreasePageNumber()
 
     def OnAddDir(self, evt):
-        dlg = wx.DirDialog(self, "Choose a directory:",
+        dlg = wx.DirDialog(self, _("Choose a directory:"),
                            style=wx.DD_DIR_MUST_EXIST)
             
         if dlg.ShowModal() == wx.ID_OK:
             path = dlg.GetPath()
             self.selected_dir.append(path)
-            self.link_add_new.SetLabel("Add another directory")
+            self.link_add_new.SetLabel(_("Add another directory"))
             self.AddNewDir(path)
         dlg.Destroy()
         
     def OnChangeDir(self, prev_dir, text):
-        dlg = wx.DirDialog(self, "Choose a directory:",
+        dlg = wx.DirDialog(self, _("Choose a directory:"),
                            style=wx.DD_DIR_MUST_EXIST)
         dlg.SetPath(prev_dir)
         
@@ -282,8 +282,8 @@ class DirPage(BasePage):
     
         text_dir_path = wx.StaticText(self, -1, path)
         
-        tooltip = wx.ToolTip("Remove this directory from list")
-        link_remove = hl.HyperLinkCtrl(self, -1,"Remove")
+        tooltip = wx.ToolTip(_("Remove this directory from list"))
+        link_remove = hl.HyperLinkCtrl(self, -1,_("Remove"))
         link_remove.SetUnderlines(True, False, False)
         link_remove.SetColours("BLUE", "BLUE", "BLUE")
         link_remove.SetToolTip(tooltip)
@@ -308,7 +308,7 @@ class DirPage(BasePage):
         self.line3.Hide(sizer)
         self.line3.RemoveSizer(sizer)
         if not self.selected_dir:
-            self.link_add_new.SetLabel("Add another directory")
+            self.link_add_new.SetLabel(_("Add another directory"))
         self.Layout()
         self.Fit()
         
@@ -337,15 +337,15 @@ class DirPage(BasePage):
         self.log.write('DirBrowseButton: %s\n' % evt.GetString())
 
 def CreateWizard(parent):  
-    wizard = wiz.Wizard(parent, -1, "Import medical images", getWizTest1Bitmap())
+    wizard = wiz.Wizard(parent, -1, _("Import medical images"), getWizTest1Bitmap())
 
-    page1 = DirPage(wizard, "Choose directory", 1)
-    page2 = RawDataPage(wizard, "Define RAW data", 2)
-    page3 = StudyPage(wizard, "Select study", 3) # 2 can be 3
+    page1 = DirPage(wizard, _("Choose directory"), 1)
+    page2 = RawDataPage(wizard, _("Define RAW data"), 2)
+    page3 = StudyPage(wizard, _("Select study"), 3) # 2 can be 3
 
 
     wizard.FitToPage(page1)
-    page3.sizer.Add(wx.StaticText(page3, -1, "\nThis is the last page."))
+    page3.sizer.Add(wx.StaticText(page3, -1, _("\nThis is the last page.")))
 
     # Set the initial order of the pages
     page1.SetNext(page2)

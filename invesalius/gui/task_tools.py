@@ -54,12 +54,12 @@ class InnerTaskPanel(wx.Panel):
         self.float_hyper_list = []
 
         # Fixed text and hyperlink items
-        tooltip = wx.ToolTip("Measure distances")
-        txt_measure = wx.StaticText(self, -1, "Measure")
+        tooltip = wx.ToolTip(_("Measure distances"))
+        txt_measure = wx.StaticText(self, -1, _("Measure"))
         txt_measure.SetToolTip(tooltip)
 
-        tooltip = wx.ToolTip("Add text annotations")
-        txt_annotation = hl.HyperLinkCtrl(self, -1,"Add text annotations")
+        tooltip = wx.ToolTip(_("Add text annotations"))
+        txt_annotation = hl.HyperLinkCtrl(self, -1,_("Add text annotations"))
         txt_annotation.SetUnderlines(False, False, False)
         txt_annotation.SetColours("BLACK", "BLACK", "BLACK")
         txt_annotation.SetToolTip(tooltip)

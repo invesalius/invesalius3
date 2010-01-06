@@ -36,19 +36,19 @@ class SliceMenu(wx.Menu):
         #Window and level from DICOM
         new_id = wx.NewId()
         wl_item = wx.MenuItem(submenu_wl, new_id,\
-                            'Default', kind=wx.ITEM_RADIO)
+                            _('Default'), kind=wx.ITEM_RADIO)
         submenu_wl.AppendItem(wl_item)
         self.ID_TO_TOOL_ITEM[new_id] = wl_item
 
         #Case the user change window and level
         new_id = self.other_wl_id = wx.NewId()
         wl_item = wx.MenuItem(submenu_wl, new_id,\
-                            'Manual', kind=wx.ITEM_RADIO)
+                            _('Manual'), kind=wx.ITEM_RADIO)
         submenu_wl.AppendItem(wl_item)
         self.ID_TO_TOOL_ITEM[new_id] = wl_item
 
         for name in sorted(const.WINDOW_LEVEL):
-            if not(name == 'Default' or name == 'Manual'):
+            if not(name == _('Default') or name == _('Manual')):
                 new_id = wx.NewId()
                 wl_item = wx.MenuItem(submenu_wl, new_id,\
                                     name, kind=wx.ITEM_RADIO)
@@ -58,8 +58,8 @@ class SliceMenu(wx.Menu):
             
         #----------- Sub menu of the save and load options ---------
         submenu_wl.AppendSeparator()
-        options = ["Save current values",
-                   "Save current values as...","Load values"]
+        options = [_("Save current values"),
+                   _("Save current values as..."),_("Load values")]
         
         for name in options:  
             new_id = wx.NewId()
@@ -72,12 +72,12 @@ class SliceMenu(wx.Menu):
         submenu_pseudo_colours = wx.Menu()
         new_id = wx.NewId()
         color_item = wx.MenuItem(submenu_pseudo_colours, new_id,\
-                            'Default ', kind=wx.ITEM_RADIO)
+                            _("Default "), kind=wx.ITEM_RADIO)
         submenu_pseudo_colours.AppendItem(color_item)
         self.ID_TO_TOOL_ITEM[new_id] = color_item
 
         for name in sorted(const.SLICE_COLOR_TABLE):
-            if not(name == 'Default '):
+            if not(name == _("Default ")):
                 new_id = wx.NewId()
                 color_item = wx.MenuItem(submenu_wl, new_id,\
                                     name, kind=wx.ITEM_RADIO)
@@ -96,9 +96,9 @@ class SliceMenu(wx.Menu):
         
 
         # Add sub itens in the menu
-        self.AppendMenu(-1, "Window Width and Level", submenu_wl)
-        self.AppendMenu(-1, "Pseudo Colour", submenu_pseudo_colours)
-        self.AppendMenu(-1, "Image Tiling", submenu_image_tiling)
+        self.AppendMenu(-1, _("Window Width and Level"), submenu_wl)
+        self.AppendMenu(-1, _("Pseudo Colour"), submenu_pseudo_colours)
+        self.AppendMenu(-1, _("Image Tiling"), submenu_image_tiling)
 
         # It doesn't work in Linux
         self.Bind(wx.EVT_MENU, self.OnPopup)

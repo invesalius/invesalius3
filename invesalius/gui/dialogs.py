@@ -48,11 +48,11 @@ class NumberDialog(wx.Dialog):
 
         # Buttons       
         btn_ok = wx.Button(self, wx.ID_OK)
-        btn_ok.SetHelpText("Above value will be applied.")
+        btn_ok.SetHelpText(_("Above value will be applied."))
         btn_ok.SetDefault()
 
         btn_cancel = wx.Button(self, wx.ID_CANCEL)
-        btn_cancel.SetHelpText("Value will not be applied.")
+        btn_cancel.SetHelpText(_("Value will not be applied."))
 
         btnsizer = wx.StdDialogButtonSizer()
         btnsizer.AddButton(btn_ok)
@@ -90,7 +90,7 @@ def ShowNumberDialog(message, value=0):
 class ProgressDialog(object):
     def __init__(self, maximum):
         self.title = "InVesalius 3"
-        self.msg = "Loading DICOM files"
+        self.msg = _("Loading DICOM files")
         self.maximum = maximum
         self.current = 0
         self.style = wx.PD_CAN_ABORT | wx.PD_APP_MODAL
@@ -138,7 +138,7 @@ WILDCARD_OPEN = "InVesalius 3 project (*.inv3)|*.inv3|"\
 def ShowOpenProjectDialog():
     # Default system path
     current_dir = os.path.abspath(".")
-    dlg = wx.FileDialog(None, message="Open InVesalius 3 project...",
+    dlg = wx.FileDialog(None, message=_("Open InVesalius 3 project..."),
                         defaultDir="",
                         defaultFile="", wildcard=WILDCARD_OPEN,
                         style=wx.OPEN|wx.CHANGE_DIR)
@@ -161,7 +161,7 @@ def ShowOpenProjectDialog():
 
 def ShowImportDirDialog():
     current_dir = os.path.abspath(".")
-    dlg = wx.DirDialog(None, "Choose a DICOM folder:", "",
+    dlg = wx.DirDialog(None, _("Choose a DICOM folder:"), "",
                         style=wx.DD_DEFAULT_STYLE
                         | wx.DD_DIR_MUST_EXIST
                         | wx.DD_CHANGE_DIR)
@@ -183,10 +183,10 @@ def ShowImportDirDialog():
 def ShowSaveAsProjectDialog(default_filename=None):
     current_dir = os.path.abspath(".")    
     dlg = wx.FileDialog(None,
-                        "Save project as...", # title
+                        _("Save project as..."), # title
                         "", # last used directory
                         default_filename,
-                        "InVesalius project (*.inv3)|*.inv3",
+                        _("InVesalius project (*.inv3)|*.inv3"),
                         wx.SAVE|wx.OVERWRITE_PROMPT)
     #dlg.SetFilterIndex(0) # default is VTI
 
@@ -249,7 +249,7 @@ class MessageDialog(wx.Dialog):
         self.Centre()
 
 def SaveChangesDialog__Old(filename):
-    message = "Save changes to %s?"%filename
+    message = _("Save changes to %s?")%filename
     dlg = MessageDialog(message)
 
     answer = dlg.ShowModal()
@@ -276,7 +276,7 @@ def ImportEmptyDirectory(dirpath):
     dlg.Destroy()
 
 def ImportInvalidFiles():
-    msg = "There are no DICOM files on the selected directory."
+    msg = _("There are no DICOM files on the selected directory.")
     if sys.platform == 'darwin':
         dlg = wx.MessageDialog(None, "", msg,
                                 wx.ICON_INFORMATION | wx.OK)
@@ -288,7 +288,7 @@ def ImportInvalidFiles():
 
 def SaveChangesDialog(filename):
     current_dir = os.path.abspath(".")
-    msg = "Save changes to %s?"%filename
+    msg = _("Save changes to %s?")%filename
     if sys.platform == 'darwin':
         dlg = wx.MessageDialog(None, "", msg,
                                wx.ICON_QUESTION | wx.YES_NO | wx.CANCEL)
@@ -310,7 +310,7 @@ def SaveChangesDialog(filename):
 
 def SaveChangesDialog2(filename):
     current_dir = os.path.abspath(".")
-    msg = "Save changes to %s?"%filename
+    msg = _("Save changes to %s?")%filename
     if sys.platform == 'darwin':
         dlg = wx.MessageDialog(None, "", msg,
                                wx.ICON_QUESTION | wx.YES_NO)
@@ -334,16 +334,16 @@ def ShowAboutDialog(parent):
     info = wx.AboutDialogInfo()
     info.Name = "InVesalius"
     info.Version = "3.a.1 - RP"
-    info.Copyright = "(C) 2007 Renato Archer Research Centre"
+    info.Copyright = _("(C) 2007 Renato Archer Research Centre")
     info.Description = wordwrap(
-       "InVesalius is a software for medical imaging 3D reconstruction. "+\
-       "Its input is a sequency of DICOM 2D image files acquired with CT or MR.\n\n"+\
-       "The software also allows generating correspondent STL files,"+\
-       "so the user can print 3D physical models of the patient's anatomy "+\
-       "using Rapid Prototyping.", 350, wx.ClientDC(parent))
+       _("InVesalius is a software for medical imaging 3D reconstruction. ")+\
+       _("Its input is a sequency of DICOM 2D image files acquired with CT or MR.\n\n")+\
+       _("The software also allows generating correspondent STL files,")+\
+       _("so the user can print 3D physical models of the patient's anatomy ")+\
+       _("using Rapid Prototyping."), 350, wx.ClientDC(parent))
     info.WebSite = ("http://www.softwarepublico.gov.br/",
                     "InVesalius Community")
-    info.License = "GNU GPL (General Public License) version 2"
+    info.License = _("GNU GPL (General Public License) version 2")
 
     #info.Translators = ""
     #info.Artists =
@@ -358,7 +358,7 @@ def ShowAboutDialog(parent):
 
 def ShowSavePresetDialog(default_filename="raycasting"):
     dlg = wx.TextEntryDialog(None,
-                             "Save raycasting preset as:",
+                             _("Save raycasting preset as:"),
                              "InVesalius 3")
     #dlg.SetFilterIndex(0) # default is VTI
     filename = None                 

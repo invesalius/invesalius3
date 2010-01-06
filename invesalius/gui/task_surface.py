@@ -27,7 +27,7 @@ import wx.lib.pubsub as ps
 import gui.widgets.foldpanelbar as fpb
 
 #INTERPOLATION_MODE_LIST = ["Cubic", "Linear", "NearestNeighbor"]
-QUALITY_LIST = ["Low", "Medium", "High", "Optimal *", "Custom"]
+QUALITY_LIST = [_("Low"), _("Medium"), _("High"), _("Optimal *"), _("Custom")]
 SURFACE_LIST = []
 MASK_LIST = ["Mask 1"]
 MIN_TRANSPARENCY = 0
@@ -38,7 +38,7 @@ BTN_NEW = wx.NewId()
 MENU_SQUARE = wx.NewId()
 MENU_CIRCLE = wx.NewId()
 
-OP_LIST = ["Draw", "Erase", "Threshold"]
+OP_LIST = [_("Draw"), _("Erase"), _("Threshold")]
 
 
 class TaskPanel(wx.Panel):
@@ -80,7 +80,7 @@ class InnerTaskPanel(wx.Panel):
         self.Bind(wx.EVT_BUTTON, self.OnButton)
 
         # Fixed hyperlink items
-        tooltip = wx.ToolTip("Create 3D surface based on a mask")
+        tooltip = wx.ToolTip(_("Create 3D surface based on a mask"))
         link_new_surface = hl.HyperLinkCtrl(self, -1, "Create new 3D surface")
         link_new_surface.SetUnderlines(False, False, False)
         link_new_surface.SetColours("BLACK", "BLACK", "BLACK")
@@ -99,7 +99,7 @@ class InnerTaskPanel(wx.Panel):
         fold_panel.SetBackgroundColour(default_colour)
 
         # Button to fold to select region task
-        button_next = wx.Button(self, -1, "Next step")
+        button_next = wx.Button(self, -1, _("Next step"))
         if sys.platform != 'win32':
             button_next.SetWindowVariant(wx.WINDOW_VARIANT_SMALL)
         #button_next.Bind(wx.EVT_BUTTON, self.OnButtonNextTask)
@@ -128,7 +128,7 @@ class InnerTaskPanel(wx.Panel):
             evt.Skip()
 
     def OnLinkNewSurface(self, evt=None):
-        dlg = NewSurfaceDialog(self, -1, 'InVesalius 3.0 - New surface')
+        dlg = NewSurfaceDialog(self, -1, _('InVesalius 3.0 - New surface'))
         if dlg.ShowModal() == wx.ID_OK:
             print "TODO: Send Signal - Create 3d surface %s \n" % dlg.GetValue()
             dlg.Destroy()
@@ -165,7 +165,7 @@ class NewSurfaceDialog(wx.Dialog):
         # contents
 
         # Label related to mask name
-        label_mask = wx.StaticText(self, -1, "Select mask to be used for creating 3D surface:")
+        label_mask = wx.StaticText(self, -1, _("Select mask to be used for creating 3D surface:"))
 
         # Combo related to mask name
         combo_surface_name = wx.ComboBox(self, -1, "", choices= MASK_LIST,
@@ -176,11 +176,11 @@ class NewSurfaceDialog(wx.Dialog):
         self.combo_surface_name = combo_surface_name
 
 
-        label_surface = wx.StaticText(self, -1, "Set new surface name:")
+        label_surface = wx.StaticText(self, -1, _("Set new surface name:"))
 
         text = wx.TextCtrl(self, -1, "", size=(80,-1))
-        text.SetHelpText("Name the new surface to be created")
-        text.SetValue("Default 3D")
+        text.SetHelpText(_("Name the new surface to be created"))
+        text.SetValue(_("Default 3D"))
         self.text = text
 
         sizer = wx.BoxSizer(wx.VERTICAL)
@@ -209,7 +209,7 @@ class NewSurfaceDialog(wx.Dialog):
         sizer.Fit(self)
 
     def GetValue(self):
-        return self.text.GetValue() +"| mask: "+ MASK_LIST[self.combo_surface_name.GetSelection()]
+        return self.text.GetValue() + _("| mask: ") + MASK_LIST[self.combo_surface_name.GetSelection()]
 
 class FoldPanel(wx.Panel):
     def __init__(self, parent):
@@ -248,14 +248,14 @@ class InnerFoldPanel(wx.Panel):
         style.SetSecondColour(default_colour)
 
         # Fold 1 - Surface properties
-        item = fold_panel.AddFoldPanel("Surface properties", collapsed=True)
+        item = fold_panel.AddFoldPanel(_("Surface properties"), collapsed=True)
         fold_panel.ApplyCaptionStyle(item, style)
         fold_panel.AddFoldPanelWindow(item, SurfaceProperties(item), Spacing= 0,
                                       leftSpacing=0, rightSpacing=0)
         fold_panel.Expand(fold_panel.GetFoldPanel(0))
 
         # Fold 2 - Surface quality
-        item = fold_panel.AddFoldPanel("Surface quality", collapsed=True)
+        item = fold_panel.AddFoldPanel(_("Surface quality"), collapsed=True)
         fold_panel.ApplyCaptionStyle(item, style)
         fold_panel.AddFoldPanelWindow(item, QualityAdjustment(item), Spacing= 0,
                                       leftSpacing=0, rightSpacing=0)
@@ -300,7 +300,7 @@ class SurfaceProperties(wx.Panel):
 
         ## LINE 2
 
-        text_transparency = wx.StaticText(self, -1, "Transparency:")
+        text_transparency = wx.StaticText(self, -1, _("Transparency:"))
 
         slider_transparency = wx.Slider(self, -1, 0, MIN_TRANSPARENCY,
                                         MAX_TRANSPARENCY,
@@ -402,7 +402,7 @@ class QualityAdjustment(wx.Panel):
         # LINE 2
         check_decimate = wx.CheckBox(self, -1, "")
 
-        text_decimate = wx.StaticText(self, -1, "Decimate resolution:")
+        text_decimate = wx.StaticText(self, -1, _("Decimate resolution:"))
 
         spin_decimate = wx.SpinCtrl(self, -1, "", (30, 50))
         spin_decimate.SetRange(1,100)
@@ -412,7 +412,7 @@ class QualityAdjustment(wx.Panel):
         # LINE 3
         check_smooth = wx.CheckBox(self, -1, "")
 
-        text_smooth = wx.StaticText(self, -1, "Smooth iterations:")
+        text_smooth = wx.StaticText(self, -1, _("Smooth iterations:"))
 
         spin_smooth = wx.SpinCtrl(self, -1, "", (30, 50))
         spin_smooth.SetRange(1,100)

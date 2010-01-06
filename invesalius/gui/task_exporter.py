@@ -98,9 +98,9 @@ class InnerTaskPanel(wx.Panel):
         # Counter for projects loaded in current GUI
 
         # Fixed hyperlink items
-        tooltip = wx.ToolTip("Export InVesalius screen to a image file")
+        tooltip = wx.ToolTip(_("Export InVesalius screen to a image file"))
         link_export_picture = hl.HyperLinkCtrl(self, -1,
-                                            "Export picture...")
+                                            _("Export picture..."))
         link_export_picture.SetUnderlines(False, False, False)
         link_export_picture.SetColours("BLACK", "BLACK", "BLACK")
         link_export_picture.SetToolTip(tooltip)
@@ -109,8 +109,8 @@ class InnerTaskPanel(wx.Panel):
         link_export_picture.Bind(hl.EVT_HYPERLINK_LEFT,
                                  self.OnLinkExportPicture)
 
-        tooltip = wx.ToolTip("Export 3D surface")
-        link_export_surface = hl.HyperLinkCtrl(self, -1,"Export 3D surface...")
+        tooltip = wx.ToolTip(_("Export 3D surface"))
+        link_export_surface = hl.HyperLinkCtrl(self, -1,_("Export 3D surface..."))
         link_export_surface.SetUnderlines(False, False, False)
         link_export_surface.SetColours("BLACK", "BLACK", "BLACK")
         link_export_surface.SetToolTip(tooltip)
@@ -119,8 +119,8 @@ class InnerTaskPanel(wx.Panel):
         link_export_surface.Bind(hl.EVT_HYPERLINK_LEFT,
                               self.OnLinkExportSurface)
 
-        tooltip = wx.ToolTip("Export 3D mask (voxels)")
-        link_export_mask = hl.HyperLinkCtrl(self, -1,"Export mask...")
+        tooltip = wx.ToolTip(_("Export 3D mask (voxels)"))
+        link_export_mask = hl.HyperLinkCtrl(self, -1,_("Export mask..."))
         link_export_mask.SetUnderlines(False, False, False)
         link_export_mask.SetColours("BLACK", "BLACK", "BLACK")
         link_export_mask.SetToolTip(tooltip)
@@ -270,7 +270,7 @@ class InnerTaskPanel(wx.Panel):
 
 
             dlg = wx.FileDialog(None,
-                                "Save 3D surface as...", # title
+                                _("Save 3D surface as..."), # title
                                 "", # last used directory
                                 project_name, # filename
                                 WILDCARD_SAVE_3D,
@@ -289,9 +289,9 @@ class InnerTaskPanel(wx.Panel):
                                             (filename, filetype))
         else:
             dlg = wx.MessageDialog(None,
-                    "You need to create a surface and make it "+
-                    "visible before exporting it.",
-                    'InVesalius Information',
+                    _("You need to create a surface and make it ") +
+                    _("visible before exporting it."),
+                    _('InVesalius Information'),
                     wx.OK | wx.ICON_INFORMATION)
             try:
                 dlg.ShowModal()

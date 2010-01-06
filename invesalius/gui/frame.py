@@ -80,8 +80,8 @@ class Frame(wx.Frame):
 
     def __bind_events(self):
         ps.Publisher().subscribe(self.ShowContentPanel, 'Show content panel')
-        ps.Publisher().subscribe(self.ShowImportPanel, "Show import panel in frame")
-        ps.Publisher().subscribe(self.UpdateAui, "Update AUI")
+        ps.Publisher().subscribe(self.ShowImportPanel, 'Show import panel in frame')
+        ps.Publisher().subscribe(self.UpdateAui, 'Update AUI')
         ps.Publisher().subscribe(self.ShowTask, 'Show task panel')
         ps.Publisher().subscribe(self.HideTask, 'Hide task panel')
         ps.Publisher().subscribe(self.SetProjectName, 'Set project name')
@@ -135,7 +135,7 @@ class Frame(wx.Frame):
 
 
         aui_manager.AddPane(viewers.Panel(self), wx.aui.AuiPaneInfo().
-                          Caption("Data panel").CaptionVisible(False).
+                          Caption(_("Data panel")).CaptionVisible(False).
                           Centre().CloseButton(False).Floatable(False).
                           Hide().Layer(1).MaximizeButton(True).Name("Data").
                           Position(1))
@@ -144,7 +144,7 @@ class Frame(wx.Frame):
         aui_manager.AddPane(imp.Panel(self), wx.aui.AuiPaneInfo().
                           Name("Import").Centre().Hide().
                           MaximizeButton(True).Floatable(True).
-                          Caption("Preview medical data to be reconstructed").
+                          Caption(_("Preview medical data to be reconstructed")).
                           CaptionVisible(True))
 
 
@@ -303,11 +303,11 @@ class MenuBar(wx.MenuBar):
         # FILE
         file_menu = wx.Menu()
         #file_menu.Append(const.ID_DICOM_LOAD_NET, "Import DICOM from Internet...")
-        file_menu.Append(const.ID_DICOM_IMPORT, "Import DICOM...\tCtrl+I")
-        file_menu.Append(const.ID_PROJECT_OPEN, "Open Project...\tCtrl+O")
-        file_menu.Append(const.ID_PROJECT_SAVE, "Save Project\tCtrl+S")
-        file_menu.Append(const.ID_PROJECT_SAVE_AS, "Save Project As...")
-        file_menu.Append(const.ID_PROJECT_CLOSE, "Close Project")
+        file_menu.Append(const.ID_DICOM_IMPORT, _("Import DICOM...\tCtrl+I"))
+        file_menu.Append(const.ID_PROJECT_OPEN, _("Open Project...\tCtrl+O"))
+        file_menu.Append(const.ID_PROJECT_SAVE, _("Save Project\tCtrl+S"))
+        file_menu.Append(const.ID_PROJECT_SAVE_AS, _("Save Project As..."))
+        file_menu.Append(const.ID_PROJECT_CLOSE, _("Close Project"))
         file_menu.AppendSeparator()
         #file_menu.Append(const.ID_PROJECT_INFO, "Project Information...")
         #file_menu.AppendSeparator()
@@ -316,7 +316,7 @@ class MenuBar(wx.MenuBar):
         #file_menu.AppendSeparator()
         #file_menu.Append(1, "C:\InvData\sample.inv")
         #file_menu.AppendSeparator()
-        file_menu.Append(const.ID_EXIT, "Exit")
+        file_menu.Append(const.ID_EXIT, _("Exit"))
 
         # EDIT
         #file_edit = wx.Menu()
@@ -355,10 +355,10 @@ class MenuBar(wx.MenuBar):
 
         # HELP
         help_menu = wx.Menu()
-        help_menu.Append(105, "Getting Started...")
+        help_menu.Append(105, _("Getting Started..."))
         #help_menu.Append(108, "User Manual...")
         help_menu.AppendSeparator()
-        help_menu.Append(const.ID_ABOUT, "About...")
+        help_menu.Append(const.ID_ABOUT, _("About..."))
         #help_menu.Append(107, "Check For Updates Now...")
 
         # TODO: Check what is necessary under MacOS to show Groo and not Python
@@ -369,12 +369,12 @@ class MenuBar(wx.MenuBar):
         #test_item = test_menu.Append(-1, '&About Groo', 'Groo RULES!!!')
         #wx.App.SetMacAboutMenuItemId(test_item.GetId())
 
-        self.Append(file_menu, "File")
+        self.Append(file_menu, _("File"))
         #self.Append(file_edit, "Edit")
         #self.Append(view_menu, "View")
         #self.Append(tools_menu, "Tools")
         #self.Append(options_menu, "Options")
-        self.Append(help_menu, "Help")
+        self.Append(help_menu, _("Help"))
 
     def __bind_events(self):
         # TODO: in future, possibly when wxPython 2.9 is available,
@@ -417,7 +417,7 @@ class StatusBar(wx.StatusBar):
         wx.StatusBar.__init__(self, parent, -1)
         self.SetFieldsCount(3)
         self.SetStatusWidths([-2,-2,-1])
-        self.SetStatusText("Ready", 0)
+        self.SetStatusText(_("Ready"), 0)
         self.SetStatusText("", 1)
         self.SetStatusText("", 2)
 
@@ -525,13 +525,13 @@ class ProjectToolBar(wx.ToolBar):
         #                   "Load medical image...",
         #                   BMP_NET)
         self.AddLabelTool(const.ID_DICOM_IMPORT,
-                           "Import medical image...",
+                           _("Import medical image..."),
                            BMP_IMPORT)
         self.AddLabelTool(const.ID_PROJECT_OPEN,
-                           "Open InVesalius 3 project...",
+                           _("Open InVesalius 3 project..."),
                            BMP_OPEN)
         self.AddLabelTool(const.ID_PROJECT_SAVE,
-                           "Save InVesalius project",
+                           _("Save InVesalius project"),
                            BMP_SAVE)
         #self.AddLabelTool(const.ID_SAVE_SCREENSHOT,
         #                   "Take photo of screen",
@@ -626,25 +626,25 @@ class ObjectToolBar(wx.ToolBar):
                                      wx.BITMAP_TYPE_PNG)
 
         self.AddLabelTool(const.STATE_ZOOM,
-                           "Zoom",
+                           _("Zoom"),
                            BMP_ZOOM,
                            kind = wx.ITEM_CHECK)
 
         self.AddLabelTool(const.STATE_ZOOM_SL,
-                           "Zoom based on selection",
+                           _("Zoom based on selection"),
                            BMP_ZOOM_SELECT,
                            kind = wx.ITEM_CHECK)
 
         self.AddLabelTool(const.STATE_SPIN,
-                           "Rotate", BMP_ROTATE,
+                           _("Rotate"), BMP_ROTATE,
                            kind = wx.ITEM_CHECK)
 
         self.AddLabelTool(const.STATE_PAN,
-                           "Move", BMP_MOVE,
+                           _("Move"), BMP_MOVE,
                             kind = wx.ITEM_CHECK)
 
         self.AddLabelTool(const.STATE_WL,
-                           "Window and Level", BMP_CONTRAST,
+                           _("Window and Level"), BMP_CONTRAST,
                            kind = wx.ITEM_CHECK)
         self.Realize()
 

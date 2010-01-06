@@ -39,10 +39,10 @@ class NotebookPanel(wx.Panel):
         if sys.platform != 'win32':
             book.SetWindowVariant(wx.WINDOW_VARIANT_SMALL)
 
-        book.AddPage(MasksListCtrlPanel(book), "Masks")
-        book.AddPage(SurfacesListCtrlPanel(book), "Surfaces")
-        book.AddPage(MeasuresListCtrlPanel(book), "Measures")
-        book.AddPage(AnnotationsListCtrlPanel(book), "Annotations")
+        book.AddPage(MasksListCtrlPanel(book), _("Masks"))
+        book.AddPage(SurfacesListCtrlPanel(book), _("Surfaces"))
+        book.AddPage(MeasuresListCtrlPanel(book), _("Measures"))
+        book.AddPage(AnnotationsListCtrlPanel(book), _("Annotations"))
         
         book.SetSelection(0)
         
@@ -102,8 +102,8 @@ class MasksListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
     def __init_columns(self):
         
         self.InsertColumn(0, "", wx.LIST_FORMAT_CENTER)
-        self.InsertColumn(1, "Name")
-        self.InsertColumn(2, "Threshold", wx.LIST_FORMAT_RIGHT)
+        self.InsertColumn(1, _("Name"))
+        self.InsertColumn(2, _("Threshold"), wx.LIST_FORMAT_RIGHT)
         
         self.SetColumnWidth(0, 20)
         self.SetColumnWidth(1, 120)
@@ -161,7 +161,7 @@ class MasksListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
         wx_image.SetData(new_image.tostring())
         return wx.BitmapFromImage(wx_image.Scale(16, 16))
 
-    def InsertNewItem(self, index=0, label="Mask 1", threshold="(1000, 4500)",
+    def InsertNewItem(self, index=0, label=_("Mask 1"), threshold="(1000, 4500)",
                       colour=None):
         self.InsertStringItem(index, "")
         self.SetStringItem(index, 1, label, 
@@ -231,9 +231,9 @@ class SurfacesListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
     def __init_columns(self):
         
         self.InsertColumn(0, "", wx.LIST_FORMAT_CENTER)
-        self.InsertColumn(1, "Name")
-        self.InsertColumn(2, "Volume (mm3)")
-        self.InsertColumn(3, "Transparency", wx.LIST_FORMAT_RIGHT)
+        self.InsertColumn(1, _("Name"))
+        self.InsertColumn(2, _("Volume (mm3)"))
+        self.InsertColumn(3, _("Transparency"), wx.LIST_FORMAT_RIGHT)
         
         self.SetColumnWidth(0, 20)
         self.SetColumnWidth(1, 85)
@@ -435,9 +435,9 @@ class AnnotationsListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
     def __init_columns(self):
         
         self.InsertColumn(0, "", wx.LIST_FORMAT_CENTER)
-        self.InsertColumn(1, "Name")
-        self.InsertColumn(2, "Type", wx.LIST_FORMAT_CENTER)
-        self.InsertColumn(3, "Value")
+        self.InsertColumn(1, _("Name"))
+        self.InsertColumn(2, _("Type"), wx.LIST_FORMAT_CENTER)
+        self.InsertColumn(3, _("Value"))
         
         self.SetColumnWidth(0, 20)
         self.SetColumnWidth(1, 90)

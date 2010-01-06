@@ -61,8 +61,8 @@ class InnerTaskPanel(wx.Panel):
         self.float_hyper_list = []
 
         # Fixed hyperlink items
-        tooltip = wx.ToolTip("Select DICOM or Analyze files to be reconstructed")
-        link_import_local = hl.HyperLinkCtrl(self, -1, "Import medical images...")
+        tooltip = wx.ToolTip(_("Select DICOM or Analyze files to be reconstructed"))
+        link_import_local = hl.HyperLinkCtrl(self, -1, _("Import medical images..."))
         link_import_local.SetUnderlines(False, False, False)
         link_import_local.SetColours("BLACK", "BLACK", "BLACK")
         link_import_local.SetToolTip(tooltip)
@@ -79,8 +79,8 @@ class InnerTaskPanel(wx.Panel):
         #link_import_pacs.UpdateLink()
         #link_import_pacs.Bind(hl.EVT_HYPERLINK_LEFT, self.OnLinkImportPACS)
 
-        tooltip = wx.ToolTip("Open an existing InVesalius project...")
-        link_open_proj = hl.HyperLinkCtrl(self,-1,"Open an existing project...")
+        tooltip = wx.ToolTip(_("Open an existing InVesalius project..."))
+        link_open_proj = hl.HyperLinkCtrl(self,-1,_("Open an existing project..."))
         link_open_proj.SetUnderlines(False, False, False)
         link_open_proj.SetColours("BLACK", "BLACK", "BLACK")
         link_open_proj.SetToolTip(tooltip)

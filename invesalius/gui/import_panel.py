@@ -51,7 +51,7 @@ class InnerPanel(wx.Panel):
         self.splitter = splitter
         
         panel = wx.Panel(self)
-        button = wx.Button(panel, -1, "Import medical images", (20, 20))
+        button = wx.Button(panel, -1, _("Import medical images"), (20, 20))
 
         inner_sizer = wx.BoxSizer()
         inner_sizer.Add(button, 0, wx.ALIGN_CENTER_HORIZONTAL, 40)
@@ -106,18 +106,18 @@ class TextPanel(wx.Panel):
                                         )
                                    
                                    
-        tree.AddColumn("Patient name")
-        tree.AddColumn("Patient ID")
-        tree.AddColumn("Age")
-        tree.AddColumn("Gender")
-        tree.AddColumn("Study description")
-        tree.AddColumn("Modality")
-        tree.AddColumn("Date acquired")
-        tree.AddColumn("# Images")
-        tree.AddColumn("Institution")
-        tree.AddColumn("Date of birth")
-        tree.AddColumn("Accession Number")
-        tree.AddColumn("Referring physician")
+        tree.AddColumn(_("Patient name"))
+        tree.AddColumn(_("Patient ID"))
+        tree.AddColumn(_("Age"))
+        tree.AddColumn(_("Gender"))
+        tree.AddColumn(_("Study description"))
+        tree.AddColumn(_("Modality"))
+        tree.AddColumn(_("Date acquired"))
+        tree.AddColumn(_("# Images"))
+        tree.AddColumn(_("Institution"))
+        tree.AddColumn(_("Date of birth"))
+        tree.AddColumn(_("Accession Number"))
+        tree.AddColumn(_("Referring physician"))
 
         tree.SetMainColumn(0)        # the one with the tree in it...
         tree.SetColumnWidth(0, 280)  # Patient name
@@ -133,7 +133,7 @@ class TextPanel(wx.Panel):
         tree.SetColumnWidth(10, 140) # Accession Number
         tree.SetColumnWidth(11, 160) # Referring physician
 
-        self.root = tree.AddRoot("InVesalius Database")
+        self.root = tree.AddRoot(_("InVesalius Database"))
         self.tree = tree
 
     def SelectSeries(self, pubsub_evt):
@@ -293,8 +293,7 @@ class SeriesPanel(wx.Panel):
         
         self.dicom_preview.Show(0)
         self.serie_preview.Show(1)
-        
-        
+            
         self.serie_preview.SetPatientGroups(patient)
         self.dicom_preview.SetPatientGroups(patient)  
          
