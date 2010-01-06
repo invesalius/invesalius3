@@ -17,12 +17,12 @@
 #    detalhes.
 #--------------------------------------------------------------------------
 
+import ConfigParser
 import locale
-import sys
 import gettext
 import os
-import ConfigParser
 
+import constants as const
 
 def GetLocales():
     """Return a dictionary which defines supported languages"""
@@ -36,11 +36,10 @@ def GetLocaleOS():
         os_language = locale.getdefaultlocale()[0]
         return os_language
     
-def InstallLanguage(lang):
+def InstallLanguage(language):
     
-    lang = gettext.translation('invesalius', lang_dir,\
+    lang = gettext.translation('invesalius', const.LANGUAGE_DIR,\
                                    languages=[language])
     lang.install()
-    _ = lang.gettext
-    return _
+    return lang.gettext
     

@@ -31,6 +31,7 @@ from session import Session
 # ----------------------------------------------------------------------
 
 path = os.path.join(os.path.expanduser('~'), ".invesalius", "presets")
+
 try:
     os.makedirs(path)
 except OSError:
@@ -44,13 +45,32 @@ import wx.lib.pubsub as ps
 
 class SplashScreen(wx.SplashScreen):
     def __init__(self):
+
+        session = Session()
+        if not (session.ReadSession()):
+            session.CreateItens()
+        
+        lang = session.GetLanguage()
+        
+        if not(lang):
+            
+            ldlg = lang_dlg.create(parent=None)
+            ldlg.Show()
+            
+            if (ldlg.ShowModal() == wx.ID_OK):
+                lang = ldlg.GetSelectedLanguage()
+                session.SetLanguage(lang)
+                _ = i18n.InstallLanguage(lang)
+        else:
+            _ = i18n.InstallLanguage(lang)
+            
+        
         bmp = wx.Image("../icons/splash_en.png").ConvertToBitmap()
         wx.SplashScreen.__init__(self, bitmap=bmp,
                                  splashStyle=wx.SPLASH_CENTRE_ON_SCREEN | wx.SPLASH_TIMEOUT,
                                  milliseconds=1500, id=-1, parent=None)
         self.Bind(wx.EVT_CLOSE, self.OnClose)
-
-
+        
         from gui.frame import Frame
         from control import Controller
         from project import Project
@@ -77,8 +97,7 @@ class SplashScreen(wx.SplashScreen):
                 session.CreateItens()
             
             lang = session.GetLanguage()
-            #TODO: temporary
-            lang = "pt_BR"
+            
             if not(lang):
                 
                 ldlg = lang_dlg.create(parent=None)
@@ -88,12 +107,10 @@ class SplashScreen(wx.SplashScreen):
                     lang = ldlg.GetSelectedLanguage()
                     session.SetLanguage(lang)
                     i18n.InstallLanguage(lang)
+                    self.ShowMain()
             else:
-                #i18n.InstallLanguage(lang)
+                i18n.InstallLanguage(lang)
                 self.ShowMain()
-                
-            #print "not....."
-            #self.ShowMain()
 
 
     def ShowMain(self):
@@ -101,11 +118,9 @@ class SplashScreen(wx.SplashScreen):
 
         if self.fc.IsRunning():
             self.Raise()
-
+        
 class InVesalius(wx.App):
     def OnInit(self):
-        #self.main = Frame(None)
-        #self.control = Controller(self.main)
         self.SetAppName("InVesalius 3")
         splash = SplashScreen()
         self.control = splash.control
@@ -113,10 +128,6 @@ class InVesalius(wx.App):
         splash.Show()
 
         return True
-        
-    #def ShowFrame(self):
-    #    self.main.Show()
-    #    self.SetTopWindow(self.main)
 
 def parse_comand_line():
     """
