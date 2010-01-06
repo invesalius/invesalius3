@@ -21,6 +21,9 @@ import multiprocessing
 from optparse import OptionParser
 import os
 import sys
+
+import gui.language_dialog as lang_dlg
+import i18n
 from session import Session
 
 
@@ -68,7 +71,29 @@ class SplashScreen(wx.SplashScreen):
         # main frame now
         if self.fc.IsRunning():
             self.fc.Stop()
-            self.ShowMain()
+            
+            session = Session()
+            if not (session.ReadSession()):
+                session.CreateItens()
+            
+            lang = session.GetLanguage()
+            #TODO: temporary
+            lang = "pt_BR"
+            if not(lang):
+                
+                ldlg = lang_dlg.create(parent=None)
+                ldlg.Show()
+                
+                if (ldlg.ShowModal() == wx.ID_OK):
+                    lang = ldlg.GetSelectedLanguage()
+                    session.SetLanguage(lang)
+                    i18n.InstallLanguage(lang)
+            else:
+                #i18n.InstallLanguage(lang)
+                self.ShowMain()
+                
+            #print "not....."
+            #self.ShowMain()
 
 
     def ShowMain(self):
@@ -107,8 +132,6 @@ def parse_comand_line():
     options, args = parser.parse_args()
         
     session = Session()
-    if not (session.ReadSession()):
-        session.CreateItens()
         
     if options.debug:
         # The user passed the debug option?

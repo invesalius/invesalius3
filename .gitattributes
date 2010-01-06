@@ -127,6 +127,7 @@ invesalius/gui/dicom_preview_panel.py -text
 invesalius/gui/frame.py -text
 invesalius/gui/import_data_wizard.py -text
 invesalius/gui/import_panel.py -text
+invesalius/gui/language_dialog.py -text
 invesalius/gui/task_exporter.py -text
 invesalius/gui/task_generic.py -text
 invesalius/gui/task_importer.py -text
@@ -139,6 +140,7 @@ invesalius/gui/widgets/foldpanelbar.py -text
 invesalius/gui/widgets/gradient.py -text
 invesalius/gui/widgets/listctrl.py -text
 invesalius/gui/widgets/slice_menu.py -text
+invesalius/i18n.py -text
 invesalius/invesalius.py -text
 invesalius/presets.py -text
 invesalius/project.py -text

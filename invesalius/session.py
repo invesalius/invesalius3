@@ -126,7 +126,13 @@ class Session(object):
         dict = plistlib.readPlist(main_plist)
         for key in dict:
             setattr(self, key, dict[key])
-      
+    
+    def GetLanguage(self):
+        return self.language
+    
+    def SetLanguage(self, language):
+        self.language = language
+    
     def ReadSession(self):
         
         config = ConfigParser.ConfigParser()
