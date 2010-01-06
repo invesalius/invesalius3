@@ -34,7 +34,7 @@ class LanguageDialog(wx.Dialog):
 
     def __init__(self, parent, startApp = None):
 
-        #self.__TranslateMessage__()
+        self.__TranslateMessage__()
 
         self.pre = pre = wx.PreDialog()
         pre.SetExtraStyle(wx.DIALOG_MODAL)
@@ -51,7 +51,7 @@ class LanguageDialog(wx.Dialog):
               style=wx.TAB_TRAVERSAL)
 
         self.txtMsg = wx.StaticText(id=1,
-              label=('Choose user interface language'),
+              label=_('Choose user interface language'),
               name='txtMsg', parent=self.pnl, pos=wx.Point(15,
               10), size=wx.Size(200, 13), style=0)
 
@@ -115,14 +115,14 @@ class LanguageDialog(wx.Dialog):
 
     def __TranslateMessage__(self):
         """Translate Messages of the Window"""
-        os_language = ivI18n.GetLocaleOS()
+        os_language = i18n.GetLocaleOS()
 
         if(os_language[0:2] == 'pt'):
-            _ = ivI18n.ParseLang('pt_BR')
+            _ = i18n.InstallLanguage('pt_BR')
         elif(os_language[0:2] == 'es'):
-            _ = ivI18n.ParseLang('es')
+            _ = i18n.InstallLanguage('es')
         else:
-            _ = ivI18n.ParseLang('en_GB')
+            _ = i18n.InstallLanguage('en_GB')
 
     def Cancel(self, event):
         """Close Frm_Language"""
