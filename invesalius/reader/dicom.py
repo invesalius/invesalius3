@@ -17,7 +17,6 @@
 #    PARTICULAR. Consulte a Licenca Publica Geral GNU para obter mais
 #    detalhes.
 #---------------------------------------------------------------------
-import tempfile
 import time
 
 import gdcm
@@ -1875,16 +1874,11 @@ class Image(object):
         spacing[2] = round(spacing[2],2)
         self.spacing = spacing
 
-    def SetTempDir(self, directory):
-        self.directory = directory
-        
     @property
     def jpeg_file(self):
         if self._jpeg_file:
             return self._jpeg_file
         else:
-            self._jpeg_file = tempfile.mktemp(suffix='.jpeg', dir=self.directory)
-
             colorer = vtk.vtkImageMapToWindowLevelColors()
             colorer.SetInput(self.imagedata)
             colorer.SetWindow(float(self.window))
@@ -1894,18 +1888,10 @@ class Image(object):
 
             width, height, z = colorer.GetOutput().GetDimensions()
 
-            #jpeg_writer = vtk.vtkJPEGWriter()
-            #jpeg_writer.SetInput(colorer.GetOutput())
-            ##jpeg_writer.SetFileName(self._jpeg_file)
-            #jpeg_writer.WriteToMemoryOn()
-            #jpeg_writer.Write()
-            ##jpeg_writer.Write()
-
             r = colorer.GetOutput().GetPointData().GetScalars()
             ni = numpy_support.vtk_to_numpy(r)
             #ni = ni.reshape(width, height, 3)
-            print width, height, z,ni.shape
             img = wx.ImageFromBuffer(width, height, ni)
-            img.Rescale(70, 70)
+            img = img.Rescale(70, 70).Mirror(False)
             self._jpeg_file = wx.BitmapFromImage(img)
             return self._jpeg_file
