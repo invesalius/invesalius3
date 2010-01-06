@@ -229,6 +229,8 @@ REDUCE_IMAGEDATA_QUALITY = 1
 
 
 ICON_DIR = os.path.abspath(os.path.join('..', 'icons'))
+LANGUAGE_DIR = os.path.abspath(os.path.join('..','locale'))
+
 ID_TO_BMP = {VOL_FRONT: ["Front", os.path.join(ICON_DIR, "view_front.png")],
              VOL_BACK: ["Back", os.path.join(ICON_DIR, "view_back.png")],
              VOL_TOP: ["Top", os.path.join(ICON_DIR, "view_top.png")],
