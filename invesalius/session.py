@@ -37,10 +37,10 @@ class Session(object):
         
         # InVesalius default projects' directory
         homedir = self.homedir = os.path.expanduser('~')
-        invdir = os.path.join(homedir, ".invesalius", "temp")
-        if not os.path.isdir(invdir):
-            os.makedirs(invdir)
-        self.invdir = invdir
+        tempdir = os.path.join(homedir, ".invesalius", "temp")
+        if not os.path.isdir(tempdir):
+            os.makedirs(tempdir)
+        self.tempdir = tempdir
         
         # GUI language
         self.language = "" # "pt_BR", "es"
@@ -75,10 +75,10 @@ class Session(object):
     def CreateProject(self, filename):
         print "-- CreateProject"
         # Set session info
-        self.project_path = (self.invdir, filename)
+        self.project_path = (self.tempdir, filename)
         self.project_status = const.PROJ_NEW
         self.temp_item = True
-        return self.invdir
+        return self.tempdir
 
     def OpenProject(self, filepath):
         print "-- OpenProject"
@@ -116,12 +116,12 @@ class Session(object):
 
     def SavePlist(self):
         filename = 'session.conf'
-        filepath = os.join(self.invdir, filename)
+        filepath = os.join(self.tempdir, filename)
         plistlib.writePlist(self.__dict__, filepath)
 
     def OpenPlist(self):
         filename = 'session.conf'
-        filepath = os.join(self.invdir, filename)
+        filepath = os.join(self.tempdir, filename)
         # TODO: try/except
         dict = plistlib.readPlist(main_plist)
         for key in dict:
@@ -146,9 +146,9 @@ class Session(object):
             self.language = config.get('session','language')
             self.recent_projects = eval(config.get('project','recent_projects'))
             self.homedir = config.get('paths','homedir')
-            self.invdir = config.get('paths','invdir')
+            self.tempdir = config.get('paths','tempdir')
             return True
-        except(ConfigParser.NoSectionError):
+        except(ConfigParser.NoSectionError, ConfigParser.NoOptionError):
             return False
         
 class WriteSession(Thread):
@@ -181,7 +181,7 @@ class WriteSession(Thread):
         
         config.add_section('paths')
         config.set('paths','homedir',self.session.homedir)
-        config.set('paths','invdir',self.session.invdir)
+        config.set('paths','tempdir',self.session.tempdir)
         path = os.path.join(self.session.homedir ,
                             '.invesalius', 'config.cfg')
         configfile = open(path, 'wb')
