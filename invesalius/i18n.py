@@ -1,3 +1,6 @@
+#!/usr/bin/env python
+# -*- coding: UTF-8 -*-
+
 #--------------------------------------------------------------------------
 # Software:     InVesalius - Software de Reconstrucao 3D de Imagens Medicas
 # Copyright:    (C) 2001  Centro de Pesquisas Renato Archer
@@ -26,9 +29,9 @@ import constants as const
 
 def GetLocales():
     """Return a dictionary which defines supported languages"""
-    locale_descriptions = {'es':'Espa\xf1ol',\
+    locale_descriptions = {'es':'Español',\
                            'en_GB':'English',\
-                           'pt_BR':'Portugu\xeas (Brasil)'}
+                           'pt_BR':'Português (Brasil)'}
     return locale_descriptions
     
 def GetLocaleOS():
@@ -39,7 +42,6 @@ def GetLocaleOS():
 def InstallLanguage(language):
     
     lang = gettext.translation('invesalius', const.LANGUAGE_DIR,\
-                                   languages=[language])
+                                   languages=[language], codeset='utf8')
     lang.install()
     return lang.gettext
-    
