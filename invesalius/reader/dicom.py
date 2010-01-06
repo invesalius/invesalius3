@@ -17,7 +17,16 @@
 #    PARTICULAR. Consulte a Licenca Publica Geral GNU para obter mais
 #    detalhes.
 #---------------------------------------------------------------------
-from numpy.lib import type_check
+import tempfile
+import time
+
+import gdcm
+import Image
+import vtk
+import vtkgdcm
+import wx
+
+from vtk.util import  numpy_support
 
 # In DICOM file format, if multiple values are present for the
 # "Window Center" (Level) and "Window Width", both attributes
@@ -67,10 +76,6 @@ INFO_KEYS = \
  'StudyInstanceUID',
  'StudyAdmittingDiagnosis',
  ]
-
-import vtkgdcm
-import gdcm
-import time
 
 class Parser():
     """
@@ -1796,6 +1801,8 @@ class Dicom(object):
 
 
 
+
+
 class Patient(object):
     def __init__(self):
         pass
@@ -1833,7 +1840,7 @@ class Acquisition(object):
 class Image(object):
 
     def __init__(self):
-        pass
+        self._jpeg_file = None
 
     def SetParser(self, parser):
         self.level = parser.GetImageWindowLevel()
@@ -1867,5 +1874,38 @@ class Image(object):
         spacing[1] = round(spacing[1],2)
         spacing[2] = round(spacing[2],2)
         self.spacing = spacing
+
+    def SetTempDir(self, directory):
+        self.directory = directory
         
-            
+    @property
+    def jpeg_file(self):
+        if self._jpeg_file:
+            return self._jpeg_file
+        else:
+            self._jpeg_file = tempfile.mktemp(suffix='.jpeg', dir=self.directory)
+
+            colorer = vtk.vtkImageMapToWindowLevelColors()
+            colorer.SetInput(self.imagedata)
+            colorer.SetWindow(float(self.window))
+            colorer.SetLevel(float(self.level))
+            colorer.SetOutputFormatToRGB()
+            colorer.Update()
+
+            width, height, z = colorer.GetOutput().GetDimensions()
+
+            #jpeg_writer = vtk.vtkJPEGWriter()
+            #jpeg_writer.SetInput(colorer.GetOutput())
+            ##jpeg_writer.SetFileName(self._jpeg_file)
+            #jpeg_writer.WriteToMemoryOn()
+            #jpeg_writer.Write()
+            ##jpeg_writer.Write()
+
+            r = colorer.GetOutput().GetPointData().GetScalars()
+            ni = numpy_support.vtk_to_numpy(r)
+            #ni = ni.reshape(width, height, 3)
+            print width, height, z,ni.shape
+            img = wx.ImageFromBuffer(width, height, ni)
+            img.Rescale(70, 70)
+            self._jpeg_file = wx.BitmapFromImage(img)
+            return self._jpeg_file

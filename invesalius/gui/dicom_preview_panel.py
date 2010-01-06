@@ -274,8 +274,8 @@ class Preview(wx.Panel):
         # Will it be white?
         self.select_on = False
         self._init_ui()
-        self._init_vtk()
-        self._bind_events()
+        #self._init_vtk()
+        #self._bind_events()
 
     def _init_ui(self):
 
@@ -285,7 +285,9 @@ class Preview(wx.Panel):
         self.subtitle = wx.StaticText(self, -1, "Image",
                                          style=wx.ALIGN_CENTER)
 
-        self.panel = wx.Panel(self, -1)
+        self.image_viewer = wx.StaticBitmap(self, -1)
+
+        #self.panel = wx.Panel(self, -1)
 
         self.SetBackgroundColour((255,255,255))
 
@@ -295,7 +297,7 @@ class Preview(wx.Panel):
                         wx.GROW|wx.EXPAND|wx. ALIGN_CENTER_HORIZONTAL)
         self.sizer.Add(self.subtitle, 1,
                         wx.GROW|wx.EXPAND|wx.ALIGN_CENTER_HORIZONTAL)
-        self.sizer.Add(self.panel, 5, wx.GROW|wx.EXPAND|wx.ALL, 4)
+        self.sizer.Add(self.image_viewer, 5, wx.GROW|wx.EXPAND|wx.ALL, 4)
         self.sizer.Fit(self)
 
 
@@ -408,7 +410,7 @@ class Preview(wx.Panel):
     def SetSubtitle(self, subtitle):
         self.subtitle.SetLabel(subtitle)
 
-    def SetImage(self, image_file):
+    def SetDicomToPreview(self, image_file):
         """
         Set a Image to preview.
         """
@@ -424,31 +426,35 @@ class Preview(wx.Panel):
         #image_reader.SetFileName(image_file[0])
         #image = image_reader.GetOutput()
 
-        image = image_file[0]
+        image = image_file[-1].image.jpeg_file
+        #img = wx.Image(image, wx.BITMAP_TYPE_JPEG)
+        #img.Rescale(70, 70)
+        #bmp = wx.BitmapFromImage(img)
+        self.image_viewer.SetBitmap(image)
 
-        scale = image.GetScalarRange()
+        #scale = image.GetScalarRange()
 
-        cast = vtk.vtkImageMapToWindowLevelColors()
-        #cast.SetShift(abs(scale[0]))
-        #cast.SetScale(255.0/(scale[1] - scale[0]))
-        #cast.ClampOverflowOn()
-        cast.SetInput(image)
-        #cast.SetOutputScalarTypeToUnsignedChar()
-        try:
-            window = float(image_file[1])
-            level = float(image_file[2])
-        except TypeError:
-            #TODO: These values are good?
-            level = 230
-            window = 150
+        #cast = vtk.vtkImageMapToWindowLevelColors()
+        ##cast.SetShift(abs(scale[0]))
+        ##cast.SetScale(255.0/(scale[1] - scale[0]))
+        ##cast.ClampOverflowOn()
+        #cast.SetInput(image)
+        ##cast.SetOutputScalarTypeToUnsignedChar()
+        #try:
+        #    window = float(image_file[1])
+        #    level = float(image_file[2])
+        #except TypeError:
+        #    #TODO: These values are good?
+        #    level = 230
+        #    window = 150
 
-        self.data = image_file[-1]
+        #self.data = image_file[-1]
 
-        cast.SetWindow(window)
-        cast.SetLevel(level)
-        self.actor.SetInput(cast.GetOutput())
-        self.render.ResetCamera()
-        self.interactor.Render()
+        #cast.SetWindow(window)
+        #cast.SetLevel(level)
+        #self.actor.SetInput(cast.GetOutput())
+        #self.render.ResetCamera()
+        #self.interactor.Render()
 
     def ShowShadow(self):
         self._nImgSize = 16
@@ -605,13 +611,14 @@ class DicomPreviewSeries(wx.Panel):
         self.group_list = group_list
         n = 0
         for group in group_list:
-            info = (group.dicom.image.imagedata,
+            info = (group.dicom.image,
                     float(group.dicom.image.window),
                     float(group.dicom.image.level),
                     group.title,
                     "%d Images" %(group.nslices),
                     n,
-                    group_list)
+                    group_list,
+                    group.dicom)
             self.files.append(info)
             n+=1
 
@@ -647,7 +654,7 @@ class DicomPreviewSeries(wx.Panel):
 
         for f, p in zip(self.files[initial:final], self.previews):
             #print "f", f
-            p.SetImage(f)
+            p.SetDicomToPreview(f)
             #p.interactor.Render()
 
         for f, p in zip(self.files[initial:final], self.previews):
@@ -751,12 +758,13 @@ class DicomPreview(wx.Panel):
         dicom_files = group.GetHandSortedList()
         n = 0
         for dicom in dicom_files:
-            info = (dicom.image.imagedata,
+            info = (dicom.image,
                     dicom.image.window,
                     dicom.image.level,
                     "Image %d" % (dicom.image.number),
                     "%.2f" % (dicom.image.position[2]),
-                    n)
+                    n,
+                    dicom)
             self.files.append(info)
             n+=1
 
@@ -793,7 +801,7 @@ class DicomPreview(wx.Panel):
                 self.nhidden_last_display = 0
 
         for f, p in zip(self.files[initial:final], self.previews):
-            p.SetImage(f)
+            p.SetDicomToPreview(f)
             #p.interactor.Render()
 
         for f, p in zip(self.files[initial:final], self.previews):
