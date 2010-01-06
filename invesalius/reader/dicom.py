@@ -251,7 +251,7 @@ class Parser():
                     return value_list
                 else:
                     return value_list[preset]
-        return ""
+        return "300"
 
     def GetImageWindowWidth(self, preset=WL_PRESET, multiple=WL_MULT):
         """
@@ -286,7 +286,7 @@ class Parser():
                     return str(value_list)
                 else:
                     return str(value_list[preset])
-        return ""
+        return "2000"
 
     def GetImagePosition(self):
         """
