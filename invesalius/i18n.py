@@ -24,6 +24,7 @@ import ConfigParser
 import locale
 import gettext
 import os
+import sys
 
 import constants as const
 
@@ -36,8 +37,11 @@ def GetLocales():
     
 def GetLocaleOS():
         """Return language of the operating system."""
-        os_language = locale.getdefaultlocale()[0]
-        return os_language
+        if sys.platform == 'darwin':
+            locale.setlocale(locale.LC_ALL, "")
+            return locale.getlocale()[0]
+        
+        return locale.getdefaultlocale()[0]
     
 def InstallLanguage(language):
     
