@@ -16,17 +16,22 @@
 #    PARTICULAR. Consulte a Licenca Publica Geral GNU para obter mais
 #    detalhes.
 #--------------------------------------------------------------------------
-from vtk.util.colors import yellow
 import glob
-import os
 import math
+import os
+import Queue
+import tempfile
+import threading
+
+from multiprocessing import cpu_count
 
 import vtk
 import vtkgdcm
 import gdcm
-import thread
 import wx
 import wx.lib.pubsub as ps
+
+from vtk.util.colors import yellow
 
 import constants as const
 import dicom
@@ -73,12 +78,38 @@ def SortFiles(filelist, dicom):
 
     return filelist
 
+class LoadDicom(threading.Thread):
+    def __init__(self, grouper, tempdir, q, l):
+        threading.Thread.__init__(self)
+        self.grouper = grouper
+        self.tempdir = tempdir
+        self.q = q
+        self.l = l
+    def run(self):
+        grouper = self.grouper
+        q = self.q
+        tempdir = self.tempdir
+        while 1:
+            filepath = q.get()
+            print "thread %s consumed %s" % (self.getName(), filepath)
+            if not filepath:
+                break
+            parser = dicom.Parser()
+            if parser.SetFileName(filepath):
+                dcm = dicom.Dicom()
+                self.l.acquire()
+                dcm.SetParser(parser)
+                grouper.AddFile(dcm)
+                self.l.release()
+                dcm.image.SetTempDir(tempdir)
+
 
 def yGetDicomGroups(directory, recursive=True, gui=True):
     """
     Return all full paths to DICOM files inside given directory.
     """
     nfiles = 0
+    tempdir = tempfile.mkdtemp()
     # Find total number of files
     if recursive:
         for dirpath, dirnames, filenames in os.walk(directory):
@@ -89,31 +120,36 @@ def yGetDicomGroups(directory, recursive=True, gui=True):
     
     counter = 0
     grouper = dicom_grouper.DicomPatientGrouper()
+    q = Queue.Queue()
+    l = threading.Lock()
+    threads = []
+    for i in xrange(cpu_count()):
+        t = LoadDicom(grouper, tempdir, q, l)
+        t.start()
+        threads.append(t)
     # Retrieve only DICOM files, splited into groups
     if recursive:
         for dirpath, dirnames, filenames in os.walk(directory):
             for name in filenames:
                 filepath = str(os.path.join(dirpath, name))
-                parser = dicom.Parser()
                 counter += 1
                 if gui:
                     yield (counter,nfiles)
-                if parser.SetFileName(filepath):
-                    dcm = dicom.Dicom()
-                    dcm.SetParser(parser)
-                    grouper.AddFile(dcm)
+                q.put(filepath)
     else:
         dirpath, dirnames, filenames = os.walk(directory)
         for name in filenames:
             filepath = str(os.path.join(dirpath, name))
-            parser = dicom.Parser()
             counter += 1
             if gui:
                 yield (counter,nfiles)
-            if parser.SetFileName(filepath):
-                dcm = dicom.Dicom()
-                dcm.SetParser(parser)
-                grouper.AddFile(dcm)
+            q.put(filepath)
+
+    for t in threads:
+        q.put(0)
+
+    for t in threads:
+        t.join()
 
     yield grouper.GetPatientsGroups()
 
