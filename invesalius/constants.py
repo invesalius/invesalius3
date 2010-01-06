@@ -246,11 +246,13 @@ TYPE_RAYCASTING_MAPPER = 1
 folder=RAYCASTING_PRESETS_DIRECTORY= os.path.abspath(os.path.join("..",
                                                                   "presets",
                                                                   "raycasting"))
-
 RAYCASTING_TYPES = [filename.split(".")[0] for filename in
                     os.listdir(folder) if
                     os.path.isfile(os.path.join(folder,filename))]
+
 folder = os.path.join(os.path.expanduser('~'), '.invesalius', 'presets')
+if not os.path.isdir(folder):
+    os.makedirs(folder)
 USER_RAYCASTING_PRESETS_DIRECTORY = folder
 RAYCASTING_TYPES += [filename.split(".")[0] for filename in
                      os.listdir(folder) if
@@ -350,16 +352,11 @@ SLICE_STATE_SCROLL = 1007
 SLICE_STATE_EDITOR = 1008
 
 
-#STATE_DEFAULT = wx.NewId()
-
 TOOL_STATES = [ STATE_WL, STATE_SPIN, STATE_ZOOM,
-               STATE_ZOOM_SL, STATE_PAN] #=\
-#               [wx.NewId() for number in range(5)]
+               STATE_ZOOM_SL, STATE_PAN]
 
-TOOL_SLICE_STATES = [SLICE_STATE_CROSS, SLICE_STATE_SCROLL]# =\
-#                    [wx.NewId() for number in range(2)]
+TOOL_SLICE_STATES = [SLICE_STATE_CROSS, SLICE_STATE_SCROLL]
 
-#SLICE_STATE_EDITOR = wx.NewId()
 
 SLICE_STYLES = TOOL_STATES + TOOL_SLICE_STATES
 SLICE_STYLES.append(STATE_DEFAULT)
