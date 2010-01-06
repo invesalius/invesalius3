@@ -87,7 +87,6 @@ class InnerPanel(wx.Panel):
 class TextPanel(wx.Panel):
     def __init__(self, parent):
         wx.Panel.__init__(self, parent, -1)
-        self.SetBackgroundColour((255,0,0))
         self.Bind(wx.EVT_SIZE, self.OnSize)
         
         self.__init_gui()
