@@ -24,15 +24,13 @@ import wx.combo
 import i18n
 import constants as const
 
-def create(parent):
-    return LanguageDialog(parent)
 
 class LanguageDialog(wx.Dialog):
     """Class define the language to be used in the InVesalius,
     exist chcLanguage that list language EN and PT. The language
     selected is writing in the config.ini"""
 
-    def __init__(self, parent, startApp = None):
+    def __init__(self, parent = None, startApp = None):
 
         self.__TranslateMessage__()
 

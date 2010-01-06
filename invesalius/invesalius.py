@@ -54,8 +54,7 @@ class SplashScreen(wx.SplashScreen):
         
         if not(lang):
             
-            ldlg = lang_dlg.create(parent=None)
-            ldlg.Show()
+            ldlg = lang_dlg.LanguageDialog()
             
             if (ldlg.ShowModal() == wx.ID_OK):
                 lang = ldlg.GetSelectedLanguage()
@@ -100,9 +99,7 @@ class SplashScreen(wx.SplashScreen):
             
             if not(lang):
                 
-                ldlg = lang_dlg.create(parent=None)
-                ldlg.Show()
-                
+                ldlg = lang_dlg.LanguageDialog() 
                 if (ldlg.ShowModal() == wx.ID_OK):
                     lang = ldlg.GetSelectedLanguage()
                     session.SetLanguage(lang)
