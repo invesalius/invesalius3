@@ -16,27 +16,19 @@
 #    PARTICULAR. Consulte a Licenca Publica Geral GNU para obter mais
 #    detalhes.
 #--------------------------------------------------------------------------
-import glob
-import math
 import os
 import Queue
-import tempfile
 import threading
 
 from multiprocessing import cpu_count
 
 import vtk
-import vtkgdcm
 import gdcm
-import wx
 import wx.lib.pubsub as ps
-
-from vtk.util.colors import yellow
 
 import constants as const
 import dicom
 import dicom_grouper
-import data.imagedata_utils as iu
 import session
 
 def ReadDicomGroup(dir_):
@@ -79,16 +71,14 @@ def SortFiles(filelist, dicom):
     return filelist
 
 class LoadDicom(threading.Thread):
-    def __init__(self, grouper, tempdir, q, l):
+    def __init__(self, grouper, q, l):
         threading.Thread.__init__(self)
         self.grouper = grouper
-        self.tempdir = tempdir
         self.q = q
         self.l = l
     def run(self):
         grouper = self.grouper
         q = self.q
-        tempdir = self.tempdir
         while 1:
             filepath = q.get()
             print "thread %s consumed %s" % (self.getName(), filepath)
@@ -101,7 +91,6 @@ class LoadDicom(threading.Thread):
                 dcm.SetParser(parser)
                 grouper.AddFile(dcm)
                 self.l.release()
-                dcm.image.SetTempDir(tempdir)
 
 
 def yGetDicomGroups(directory, recursive=True, gui=True):
@@ -109,7 +98,6 @@ def yGetDicomGroups(directory, recursive=True, gui=True):
     Return all full paths to DICOM files inside given directory.
     """
     nfiles = 0
-    tempdir = tempfile.mkdtemp()
     # Find total number of files
     if recursive:
         for dirpath, dirnames, filenames in os.walk(directory):
@@ -124,7 +112,7 @@ def yGetDicomGroups(directory, recursive=True, gui=True):
     l = threading.Lock()
     threads = []
     for i in xrange(cpu_count()):
-        t = LoadDicom(grouper, tempdir, q, l)
+        t = LoadDicom(grouper, q, l)
         t.start()
         threads.append(t)
     # Retrieve only DICOM files, splited into groups
