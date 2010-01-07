@@ -48,11 +48,9 @@ class SplashScreen(wx.SplashScreen):
 
         session = Session()
         if not (session.ReadSession()):
-            session.CreateItens()
+            session.CreateItens()     
         
-        lang = session.GetLanguage()
-        
-        if not(lang):
+        if not(session.ReadLanguage()):
             
             ldlg = lang_dlg.LanguageDialog()
 
@@ -67,6 +65,7 @@ class SplashScreen(wx.SplashScreen):
                     _ = i18n.InstallLanguage(lang)
                 
         else:
+            lang = session.GetLanguage()
             _ = i18n.InstallLanguage(lang)
         
         if (lang.startswith('pt')): #Necessy, pt noted as pt_BR
@@ -105,22 +104,14 @@ class SplashScreen(wx.SplashScreen):
             self.fc.Stop()
             
             session = Session()
-            if not (session.ReadSession()):
-                session.CreateItens()
-            
+            #if not (session.ReadSession()):
+            #    session.CreateItens()
+        
             lang = session.GetLanguage()
+            print lang
             
-            if not(lang):
-                
-                ldlg = lang_dlg.LanguageDialog() 
-                if (ldlg.ShowModal() == wx.ID_OK):
-                    lang = ldlg.GetSelectedLanguage()
-                    session.SetLanguage(lang)
-                    i18n.InstallLanguage(lang)
-                    self.ShowMain()
-            else:
-                i18n.InstallLanguage(lang)
-                self.ShowMain()
+            i18n.InstallLanguage(lang)
+            self.ShowMain()
 
 
     def ShowMain(self):

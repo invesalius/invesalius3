@@ -17,7 +17,7 @@ class Session(object):
     def __init__(self):
         # ?
         self.temp_item = False
-        
+    
         ws = self.ws = WriteSession(self)
         ws.start()
         
@@ -48,6 +48,8 @@ class Session(object):
         # Recent projects list
         self.recent_projects = []
     
+        self.CreateSessionFile()
+            
     def StopRecording(self, pubsub_evt):
         self.ws.Stop()
 
@@ -96,6 +98,28 @@ class Session(object):
             path = os.path.join(dirpath, file)
             os.remove(path)
             self.temp_item = False
+            
+    def CreateSessionFile(self):
+        
+        config = ConfigParser.RawConfigParser()
+        
+        config.add_section('session')
+        config.set('session', 'mode', self.mode)
+        config.set('session', 'status', self.project_status)
+        config.set('session','debug', self.debug)
+        config.set('session', 'language', self.language)
+        
+        config.add_section('project')
+        config.set('project', 'recent_projects', self.recent_projects)
+        
+        config.add_section('paths')
+        config.set('paths','homedir',self.homedir)
+        config.set('paths','tempdir',self.tempdir)
+        path = os.path.join(self.homedir ,
+                            '.invesalius', 'config.cfg')
+        configfile = open(path, 'wb')
+        config.write(configfile)
+        configfile.close()
 
 
     def __add_to_list(self, item):
@@ -133,6 +157,17 @@ class Session(object):
     def SetLanguage(self, language):
         self.language = language
     
+    def ReadLanguage(self):
+        config = ConfigParser.ConfigParser()
+        home_path = os.path.expanduser('~')
+        path = os.path.join(home_path ,'.invesalius', 'config.cfg')
+        try:
+            config.read(path)
+            self.language = config.get('session','language')
+            return self.language
+        except(ConfigParser.NoSectionError, ConfigParser.NoOptionError):
+            return False
+    
     def ReadSession(self):
         
         config = ConfigParser.ConfigParser()
@@ -150,6 +185,7 @@ class Session(object):
             return True
         except(ConfigParser.NoSectionError, ConfigParser.NoOptionError):
             return False
+        
         
 class WriteSession(Thread):
     
