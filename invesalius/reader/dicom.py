@@ -20,12 +20,9 @@
 import time
 
 import gdcm
-import Image
-import vtk
 import vtkgdcm
 import wx
 
-from vtk.util import  numpy_support
 
 # In DICOM file format, if multiple values are present for the
 # "Window Center" (Level) and "Window Width", both attributes
@@ -1839,7 +1836,7 @@ class Acquisition(object):
 class Image(object):
 
     def __init__(self):
-        self._jpeg_file = None
+        pass
 
     def SetParser(self, parser):
         self.level = parser.GetImageWindowLevel()
@@ -1873,25 +1870,3 @@ class Image(object):
         spacing[1] = round(spacing[1],2)
         spacing[2] = round(spacing[2],2)
         self.spacing = spacing
-
-    @property
-    def jpeg_file(self):
-        if self._jpeg_file:
-            return self._jpeg_file
-        else:
-            colorer = vtk.vtkImageMapToWindowLevelColors()
-            colorer.SetInput(self.imagedata)
-            colorer.SetWindow(float(self.window))
-            colorer.SetLevel(float(self.level))
-            colorer.SetOutputFormatToRGB()
-            colorer.Update()
-
-            width, height, z = colorer.GetOutput().GetDimensions()
-
-            r = colorer.GetOutput().GetPointData().GetScalars()
-            ni = numpy_support.vtk_to_numpy(r)
-            #ni = ni.reshape(width, height, 3)
-            img = wx.ImageFromBuffer(width, height, ni)
-            img = img.Rescale(70, 70).Mirror(False)
-            self._jpeg_file = wx.BitmapFromImage(img)
-            return self._jpeg_file

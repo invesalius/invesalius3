@@ -21,29 +21,272 @@
 # -*- coding: UTF-8 -*-
 
 #TODO: To create a beautiful API
-import wx
-import wx.lib.agw.buttonpanel as bp
-import vtk
-from vtk.wx.wxVTKRenderWindowInteractor import wxVTKRenderWindowInteractor
-import vtkgdcm
+import time
 
+import wx
+import vtk
+
+from vtk.util import  numpy_support
+from vtk.wx.wxVTKRenderWindowInteractor import wxVTKRenderWindowInteractor
 
 import constants as const
 from reader import dicom_reader
 import data.vtk_utils as vtku
-import time
-
 
 NROWS = 3
 NCOLS = 6
-MAX_VALUE = NCOLS*NROWS
+NUM_PREVIEWS = NCOLS*NROWS
+PREVIEW_WIDTH = 70
+PREVIEW_HEIGTH = 70
 
+PREVIEW_BACKGROUND = (255, 255, 255) # White
 
 STR_SIZE = _("Image size: %d x %d")
 STR_SPC = _("Spacing: %.2f")
 STR_LOCAL = _("Location: %.2f")
 STR_PATIENT = "%s\n%s"
 STR_ACQ = _("%s %s\nMade in InVesalius")
+
+class DicomInfo(object):
+    """
+    Keep the informations and the image used by preview.
+    """
+    def __init__(self, id, dicom, title, subtitle):
+        self.id = id
+        self.dicom = dicom
+        self.title = title
+        self.subtitle = subtitle
+        self._preview = None
+    
+    @property
+    def preview(self):
+        if self._preview:
+            return self._preview
+        else:
+            colorer = vtk.vtkImageMapToWindowLevelColors()
+            colorer.SetInput(self.dicom.image.imagedata)
+            colorer.SetWindow(float(self.dicom.image.window))
+            colorer.SetLevel(float(self.dicom.image.level))
+            colorer.SetOutputFormatToRGB()
+            colorer.Update()
+
+            width, height, z = colorer.GetOutput().GetDimensions()
+
+            r = colorer.GetOutput().GetPointData().GetScalars()
+            ni = numpy_support.vtk_to_numpy(r)
+            img = wx.ImageFromBuffer(width, height, ni)
+            img = img.Rescale(PREVIEW_WIDTH, PREVIEW_HEIGTH).Mirror(False)
+            self._preview = wx.BitmapFromImage(img)
+            return self._preview
+
+
+class Preview(wx.Panel):
+    """
+    The little previews.
+    """
+    def __init__(self, parent):
+        super(Preview, self).__init__(parent, style= wx.BORDER)
+        # Will it be white?
+        self.select_on = False
+        self._init_ui()
+        self._bind_events()
+
+    def _init_ui(self):
+        self.title = wx.StaticText(self, -1, _("Image"),
+                                         style=wx.ALIGN_CENTER)
+        self.subtitle = wx.StaticText(self, -1, _("Image"),
+                                         style=wx.ALIGN_CENTER)
+        self.image_viewer = wx.StaticBitmap(self, -1, size=(70, 70))
+
+        #self.panel = wx.Panel(self, -1)
+
+        self.SetBackgroundColour(PREVIEW_BACKGROUND)
+        
+        sizer_image = wx.BoxSizer(wx.HORIZONTAL)
+        sizer_image.Add(self.image_viewer, 0, wx.EXPAND|wx.ALIGN_CENTER_HORIZONTAL)
+
+        self.sizer = wx.BoxSizer(wx.VERTICAL)
+        self.sizer.AddSpacer(2)
+        self.sizer.Add(self.title, 0,
+                        wx.GROW|wx.EXPAND|wx. ALIGN_CENTER_HORIZONTAL)
+        self.sizer.Add(self.subtitle, 0,
+                        wx.GROW|wx.EXPAND|wx.ALIGN_CENTER_HORIZONTAL)
+        self.sizer.Add(sizer_image, 5, wx.GROW|wx.EXPAND|wx.ALL, 4)
+        self.sizer.Fit(self)
+
+        self.SetSizer(self.sizer)
+
+        self.Layout()
+        self.Update()
+        self.Fit()
+        self.SetAutoLayout(1)
+
+    def _bind_events(self):
+        self.Bind( wx.EVT_LEFT_DCLICK, self.OnDClick)
+        #self.interactor.Bind( wx.EVT_LEFT_DCLICK, self.OnDClick)
+        #self.panel.Bind( wx.EVT_LEFT_DCLICK, self.OnDClick)
+        #self.title.Bind( wx.EVT_LEFT_DCLICK, self.OnDClick)
+        #self.subtitle.Bind( wx.EVT_LEFT_DCLICK, self.OnDClick)
+
+        self.Bind(wx.EVT_ENTER_WINDOW, self.OnEnter)
+        #self.interactor.Bind(wx.EVT_ENTER_WINDOW, self.OnEnter)
+        #self.panel.Bind(wx.EVT_ENTER_WINDOW, self.OnEnter)
+        #self.title.Bind(wx.EVT_ENTER_WINDOW, self.OnEnter)
+        #self.subtitle.Bind(wx.EVT_ENTER_WINDOW, self.OnEnter)
+
+        self.Bind(wx.EVT_LEAVE_WINDOW, self.OnLeave)
+        #self.interactor.Bind(wx.EVT_LEAVE_WINDOW, self.OnLeave)
+        #self.panel.Bind(wx.EVT_LEAVE_WINDOW, self.OnLeave)
+        #self.title.Bind(wx.EVT_LEAVE_WINDOW, self.OnLeave)
+        #self.subtitle.Bind(wx.EVT_LEAVE_WINDOW, self.OnLeave)
+
+        self.Bind(wx.EVT_LEFT_DOWN, self.OnSelect)
+        #self.interactor.Bind(wx.EVT_LEFT_DOWN, self.OnSelect)
+        #self.panel.Bind(wx.EVT_LEFT_DOWN, self.OnSelect)
+        #self.title.Bind(wx.EVT_LEFT_DOWN, self.OnSelect)
+        #self.subtitle.Bind(wx.EVT_LEFT_DOWN, self.OnSelect)
+
+    def SetDicomToPreview(self, dicom_info):
+        """
+        Set a dicom to preview.
+        """
+        self.SetTitle(dicom_info.title)
+        self.SetSubtitle(dicom_info.subtitle)
+        self.ID = dicom_info.id
+        image = dicom_info.preview
+        self.image_viewer.SetBitmap(image)
+        self.data = dicom_info.id
+        self.Update()
+
+    def SetTitle(self, title):
+        self.title.SetLabel(title)
+
+    def SetSubtitle(self, subtitle):
+        self.subtitle.SetLabel(subtitle)
+
+    def OnEnter(self, evt):
+        if not self.select_on:
+            #c = wx.SystemSettings_GetColour(wx.SYS_COLOUR_3DHILIGHT)
+            c = wx.SystemSettings_GetColour(wx.SYS_COLOUR_HIGHLIGHT)
+            self.SetBackgroundColour(c)
+
+    def OnLeave(self, evt):
+        if not self.select_on:
+            c = (255,255,255)
+            self.SetBackgroundColour(c)
+
+    def OnSelect(self, evt):
+        print "OnSelect"
+        self.select_on = True
+        ##c = wx.SystemSettings_GetColour(wx.SYS_COLOUR_BTNHIGHLIGHT)
+        ##c = wx.SystemSettings_GetColour(wx.SYS_COLOUR_HOTLIGHT)
+        #c = wx.SystemSettings_GetColour(wx.SYS_COLOUR_HIGHLIGHT)
+        ##c = wx.SystemSettings_GetColour(wx.SYS_COLOUR_GRADIENTACTIVECAPTION)
+        #c = wx.SystemSettings_GetColour(wx.SYS_COLOUR_BTNSHADOW)
+        #c = wx.SystemSettings_GetColour(wx.SYS_COLOUR_ACTIVEBORDER)
+        #*c = wx.SystemSettings_GetColour(wx.SYS_COLOUR_3DLIGHT)
+        #*c = wx.SystemSettings_GetColour(wx.SYS_COLOUR_3DHILIGHT)
+        #c = wx.SystemSettings_GetColour(wx.SYS_COLOUR_3DHIGHLIGHT)
+        #c = wx.SystemSettings_GetColour(wx.SYS_COLOUR_3DDKSHADOW)
+        #c = wx.SystemSettings_GetColour(wx.SYS_COLOUR_3DSHADOW)
+        #self.SetBackgroundColour(c)
+        self.Select()
+
+    def Select(self, on=True):
+        if self.select_on:
+            c = wx.SystemSettings_GetColour(wx.SYS_COLOUR_HIGHLIGHT)
+        else:
+            c = (255,255,255)
+        self.SetBackgroundColour(c)
+        self.Refresh()
+
+    def OnDClick(self, evt):
+        evt = PreviewEvent(myEVT_SELECT, self.GetId())
+        evt.SetSelectedID(self.ID)
+        evt.SetItemData(self.data)
+        self.GetEventHandler().ProcessEvent(evt)
+
+    def ShowShadow(self):
+        self._nImgSize = 16
+        nPadding = 4
+        print "ShowShadow"
+        dc = wx.BufferedPaintDC(self)
+        style = self.GetParent().GetWindowStyleFlag()
+
+        backBrush = wx.WHITE_BRUSH
+        if 1: #style & INB_BORDER:
+            borderPen = wx.Pen(wx.SystemSettings_GetColour(wx.SYS_COLOUR_3DSHADOW))
+        #else:
+        #    borderPen = wx.TRANSPARENT_PEN
+
+        size = self.GetSize()
+
+        # Background
+        dc.SetBrush(backBrush)
+
+        borderPen.SetWidth(1)
+        dc.SetPen(borderPen)
+        dc.DrawRectangle(0, 0, size.x, size.y)
+        #bUsePin = (style & INB_USE_PIN_BUTTON and [True] or [False])[0]
+
+        borderPen = wx.BLACK_PEN
+        borderPen.SetWidth(1)
+        dc.SetPen(borderPen)
+        dc.DrawLine(0, size.y, size.x, size.y)
+        dc.DrawPoint(0, size.y)
+
+        clientSize = 0
+        #bUseYcoord = (style & INB_RIGHT or style & INB_LEFT)
+        bUseYcoord = 1
+
+        if bUseYcoord:
+            clientSize = size.GetHeight()
+        else:
+            clientSize = size.GetWidth()
+
+        if 1:
+            # Default values for the surronounding rectangle
+            # around a button
+            rectWidth = self._nImgSize * 2  # To avoid the recangle to 'touch' the borders
+            rectHeight = self._nImgSize * 2
+
+            # Incase the style requires non-fixed button (fit to text)
+            # recalc the rectangle width
+            if 1:
+            #if style & INB_FIT_BUTTON and \
+            #   not ((style & INB_LEFT) or (style & INB_RIGHT)) and \
+            #   not self._pagesInfoVec[i].GetCaption() == "" and \
+            #   not (style & INB_SHOW_ONLY_IMAGES):
+
+
+                #rectWidth = ((textWidth + nPadding * 2) > rectWidth and [nPadding * 2 + textWidth] or [rectWidth])[0]
+
+                rectWidth = ((nPadding * 2) > rectWidth and [nPadding * 2] or [rectWidth])[0]
+                # Make the width an even number
+                if rectWidth % 2 != 0:
+                    rectWidth += 1
+
+            # If Pin button is used, consider its space as well (applicable for top/botton style)
+            # since in the left/right, its size is already considered in 'pos'
+            #pinBtnSize = (bUsePin and [20] or [0])[0]
+
+            #if pos + rectWidth + pinBtnSize > clientSize:
+            #    break
+
+            # Calculate the button rectangle
+            modRectWidth =  rectWidth - 2# or [rectWidth])[0]
+            modRectHeight = rectHeight# or [rectHeight - 2])[0]
+
+            pos = rectWidth
+
+            if bUseYcoord:
+                buttonRect = wx.Rect(1, pos, modRectWidth, modRectHeight)
+            else:
+                buttonRect = wx.Rect(pos , 1, modRectWidth, modRectHeight)
+
+    def ShowShadow2(self):
+        pass
+
 
 class SingleImagePreview(wx.Panel):
     def __init__(self, parent):
@@ -265,278 +508,6 @@ class SerieEvent(PreviewEvent):
     def __init__(self , evtType, id):
         super(SerieEvent, self).__init__(evtType, id)
 
-class Preview(wx.Panel):
-    """
-    Where the images will be showed.
-    """
-    def __init__(self, parent):
-        super(Preview, self).__init__(parent)
-        # Will it be white?
-        self.select_on = False
-        self._init_ui()
-        #self._init_vtk()
-        #self._bind_events()
-
-    def _init_ui(self):
-
-        self.title = wx.StaticText(self, -1, _("Image"),
-                                         style=wx.ALIGN_CENTER)
-
-        self.subtitle = wx.StaticText(self, -1, _("Image"),
-                                         style=wx.ALIGN_CENTER)
-
-        self.image_viewer = wx.StaticBitmap(self, -1)
-
-        #self.panel = wx.Panel(self, -1)
-
-        self.SetBackgroundColour((255,255,255))
-
-        self.sizer = wx.BoxSizer(wx.VERTICAL)
-        self.sizer.AddSpacer(2)
-        self.sizer.Add(self.title, 1,
-                        wx.GROW|wx.EXPAND|wx. ALIGN_CENTER_HORIZONTAL)
-        self.sizer.Add(self.subtitle, 1,
-                        wx.GROW|wx.EXPAND|wx.ALIGN_CENTER_HORIZONTAL)
-        self.sizer.Add(self.image_viewer, 5, wx.GROW|wx.EXPAND|wx.ALL, 4)
-        self.sizer.Fit(self)
-
-
-        self.SetSizer(self.sizer)
-
-
-        self.Layout()
-        self.Update()
-        self.Fit()
-        self.SetAutoLayout(1)
-
-
-    def _init_vtk(self):
-
-        self.interactor = wxVTKRenderWindowInteractor(self.panel, -1, size=(70, 70))
-
-        sizer = wx.BoxSizer(wx.HORIZONTAL)
-        sizer.Add(self.interactor, 1, wx.GROW|wx.EXPAND)
-        sizer.Fit(self.panel)
-
-        self.panel.SetSizer(sizer)
-
-        self.panel.Layout()
-        self.panel.Update()
-        self.panel.SetAutoLayout(1)
-
-        self.actor = vtk.vtkImageActor()
-
-        self.render = vtk.vtkRenderer()
-        self.render.AddActor(self.actor)
-
-        self.interactor.SetInteractorStyle(None)
-        self.interactor.GetRenderWindow().AddRenderer(self.render)
-
-
-    def _bind_events(self):
-        self.Bind( wx.EVT_LEFT_DCLICK, self.OnDClick)
-        self.interactor.Bind( wx.EVT_LEFT_DCLICK, self.OnDClick)
-        self.panel.Bind( wx.EVT_LEFT_DCLICK, self.OnDClick)
-        self.title.Bind( wx.EVT_LEFT_DCLICK, self.OnDClick)
-        self.subtitle.Bind( wx.EVT_LEFT_DCLICK, self.OnDClick)
-
-        self.Bind(wx.EVT_ENTER_WINDOW, self.OnEnter)
-        self.interactor.Bind(wx.EVT_ENTER_WINDOW, self.OnEnter)
-        self.panel.Bind(wx.EVT_ENTER_WINDOW, self.OnEnter)
-        self.title.Bind(wx.EVT_ENTER_WINDOW, self.OnEnter)
-        self.subtitle.Bind(wx.EVT_ENTER_WINDOW, self.OnEnter)
-
-        self.Bind(wx.EVT_LEAVE_WINDOW, self.OnLeave)
-        self.interactor.Bind(wx.EVT_LEAVE_WINDOW, self.OnLeave)
-        self.panel.Bind(wx.EVT_LEAVE_WINDOW, self.OnLeave)
-        self.title.Bind(wx.EVT_LEAVE_WINDOW, self.OnLeave)
-        self.subtitle.Bind(wx.EVT_LEAVE_WINDOW, self.OnLeave)
-
-        self.Bind(wx.EVT_LEFT_DOWN, self.OnSelect)
-        self.interactor.Bind(wx.EVT_LEFT_DOWN, self.OnSelect)
-        self.panel.Bind(wx.EVT_LEFT_DOWN, self.OnSelect)
-        self.title.Bind(wx.EVT_LEFT_DOWN, self.OnSelect)
-        self.subtitle.Bind(wx.EVT_LEFT_DOWN, self.OnSelect)
-
-
-
-
-    def OnEnter(self, evt):
-        if not self.select_on:
-            #c = wx.SystemSettings_GetColour(wx.SYS_COLOUR_3DHILIGHT)
-            c = wx.SystemSettings_GetColour(wx.SYS_COLOUR_HIGHLIGHT)
-            self.SetBackgroundColour(c)
-
-
-    def OnLeave(self, evt):
-        if not self.select_on:
-            c = (255,255,255)
-            self.SetBackgroundColour(c)
-
-    def OnSelect(self, evt):
-        self.select_on = True
-        ##c = wx.SystemSettings_GetColour(wx.SYS_COLOUR_BTNHIGHLIGHT)
-        ##c = wx.SystemSettings_GetColour(wx.SYS_COLOUR_HOTLIGHT)
-        #c = wx.SystemSettings_GetColour(wx.SYS_COLOUR_HIGHLIGHT)
-        ##c = wx.SystemSettings_GetColour(wx.SYS_COLOUR_GRADIENTACTIVECAPTION)
-        #c = wx.SystemSettings_GetColour(wx.SYS_COLOUR_BTNSHADOW)
-        #c = wx.SystemSettings_GetColour(wx.SYS_COLOUR_ACTIVEBORDER)
-        #*c = wx.SystemSettings_GetColour(wx.SYS_COLOUR_3DLIGHT)
-        #*c = wx.SystemSettings_GetColour(wx.SYS_COLOUR_3DHILIGHT)
-        #c = wx.SystemSettings_GetColour(wx.SYS_COLOUR_3DHIGHLIGHT)
-        #c = wx.SystemSettings_GetColour(wx.SYS_COLOUR_3DDKSHADOW)
-        #c = wx.SystemSettings_GetColour(wx.SYS_COLOUR_3DSHADOW)
-        #self.SetBackgroundColour(c)
-        self.Select()
-
-    def Select(self, on=True):
-        self.select_on = on
-        if on:
-            c = wx.SystemSettings_GetColour(wx.SYS_COLOUR_3DHIGHLIGHT)
-        else:
-            c = (255,255,255)
-        self.SetBackgroundColour(c)
-
-
-    def OnDClick(self, evt):
-        evt = PreviewEvent(myEVT_SELECT, self.GetId())
-        evt.SetSelectedID(self.ID)
-        evt.SetItemData(self.data)
-        self.GetEventHandler().ProcessEvent(evt)
-
-    def SetTitle(self, title):
-        self.title.SetLabel(title)
-
-    def SetSubtitle(self, subtitle):
-        self.subtitle.SetLabel(subtitle)
-
-    def SetDicomToPreview(self, image_file):
-        """
-        Set a Image to preview.
-        """
-        self.SetTitle(image_file[3])
-        self.SetSubtitle(image_file[4])
-
-        self.Layout()
-        self.Update()
-
-        self.ID = image_file[5]
-
-        #image_reader = vtkgdcm.vtkGDCMImageReader()
-        #image_reader.SetFileName(image_file[0])
-        #image = image_reader.GetOutput()
-
-        image = image_file[-1].image.jpeg_file
-        #img = wx.Image(image, wx.BITMAP_TYPE_JPEG)
-        #img.Rescale(70, 70)
-        #bmp = wx.BitmapFromImage(img)
-        self.image_viewer.SetBitmap(image)
-
-        #scale = image.GetScalarRange()
-
-        #cast = vtk.vtkImageMapToWindowLevelColors()
-        ##cast.SetShift(abs(scale[0]))
-        ##cast.SetScale(255.0/(scale[1] - scale[0]))
-        ##cast.ClampOverflowOn()
-        #cast.SetInput(image)
-        ##cast.SetOutputScalarTypeToUnsignedChar()
-        #try:
-        #    window = float(image_file[1])
-        #    level = float(image_file[2])
-        #except TypeError:
-        #    #TODO: These values are good?
-        #    level = 230
-        #    window = 150
-
-        #self.data = image_file[-1]
-
-        #cast.SetWindow(window)
-        #cast.SetLevel(level)
-        #self.actor.SetInput(cast.GetOutput())
-        #self.render.ResetCamera()
-        #self.interactor.Render()
-
-    def ShowShadow(self):
-        self._nImgSize = 16
-        nPadding = 4
-        print "ShowShadow"
-        dc = wx.BufferedPaintDC(self)
-        style = self.GetParent().GetWindowStyleFlag()
-
-        backBrush = wx.WHITE_BRUSH
-        if 1: #style & INB_BORDER:
-            borderPen = wx.Pen(wx.SystemSettings_GetColour(wx.SYS_COLOUR_3DSHADOW))
-        #else:
-        #    borderPen = wx.TRANSPARENT_PEN
-
-        size = self.GetSize()
-
-        # Background
-        dc.SetBrush(backBrush)
-
-        borderPen.SetWidth(1)
-        dc.SetPen(borderPen)
-        dc.DrawRectangle(0, 0, size.x, size.y)
-        #bUsePin = (style & INB_USE_PIN_BUTTON and [True] or [False])[0]
-
-        borderPen = wx.BLACK_PEN
-        borderPen.SetWidth(1)
-        dc.SetPen(borderPen)
-        dc.DrawLine(0, size.y, size.x, size.y)
-        dc.DrawPoint(0, size.y)
-
-        clientSize = 0
-        #bUseYcoord = (style & INB_RIGHT or style & INB_LEFT)
-        bUseYcoord = 1
-
-        if bUseYcoord:
-            clientSize = size.GetHeight()
-        else:
-            clientSize = size.GetWidth()
-
-
-        if 1:
-            # Default values for the surronounding rectangle
-            # around a button
-            rectWidth = self._nImgSize * 2  # To avoid the recangle to 'touch' the borders
-            rectHeight = self._nImgSize * 2
-
-            # Incase the style requires non-fixed button (fit to text)
-            # recalc the rectangle width
-            if 1:
-            #if style & INB_FIT_BUTTON and \
-            #   not ((style & INB_LEFT) or (style & INB_RIGHT)) and \
-            #   not self._pagesInfoVec[i].GetCaption() == "" and \
-            #   not (style & INB_SHOW_ONLY_IMAGES):
-
-
-                #rectWidth = ((textWidth + nPadding * 2) > rectWidth and [nPadding * 2 + textWidth] or [rectWidth])[0]
-
-                rectWidth = ((nPadding * 2) > rectWidth and [nPadding * 2] or [rectWidth])[0]
-                # Make the width an even number
-                if rectWidth % 2 != 0:
-                    rectWidth += 1
-
-            # If Pin button is used, consider its space as well (applicable for top/botton style)
-            # since in the left/right, its size is already considered in 'pos'
-            #pinBtnSize = (bUsePin and [20] or [0])[0]
-
-            #if pos + rectWidth + pinBtnSize > clientSize:
-            #    break
-
-            # Calculate the button rectangle
-            modRectWidth =  rectWidth - 2# or [rectWidth])[0]
-            modRectHeight = rectHeight# or [rectHeight - 2])[0]
-
-            pos = rectWidth
-
-            if bUseYcoord:
-                buttonRect = wx.Rect(1, pos, modRectWidth, modRectHeight)
-            else:
-                buttonRect = wx.Rect(pos , 1, modRectWidth, modRectHeight)
-
-    def ShowShadow2(self):
-        pass
 
 
 class DicomPreviewSeries(wx.Panel):
@@ -611,14 +582,18 @@ class DicomPreviewSeries(wx.Panel):
         self.group_list = group_list
         n = 0
         for group in group_list:
-            info = (group.dicom.image,
-                    float(group.dicom.image.window),
-                    float(group.dicom.image.level),
-                    group.title,
-                    _("%d Images") %(group.nslices),
-                    n,
-                    group_list,
-                    group.dicom)
+            #info = (group.dicom.image,
+            #        float(group.dicom.image.window),
+            #        float(group.dicom.image.level),
+            #        group.title,
+            #        _("%d Images") %(group.nslices),
+            #        n,
+            #        group_list,
+            #        group.dicom)
+            info = DicomInfo(n, group.dicom,
+                             group.title,
+                             _("%d Images") %(group.nslices),
+                            )
             self.files.append(info)
             n+=1
 
@@ -630,7 +605,7 @@ class DicomPreviewSeries(wx.Panel):
 
     def _display_previews(self):
         initial = self.displayed_position * NCOLS
-        final = initial + MAX_VALUE
+        final = initial + NUM_PREVIEWS
 
         if len(self.files) < final:
             for i in xrange(final-len(self.files)):
@@ -733,13 +708,9 @@ class DicomPreview(wx.Panel):
         dicom_files = group.GetHandSortedList()
         n = 0
         for dicom in dicom_files:
-            info = (dicom.image.imagedata,
-                    dicom.image.window,
-                    dicom.image.level,
-                    _("Image %d") % (dicom.image.number),
-                    "%.2f" % (dicom.image.position[2]),
-                    n,
-                    dicom)
+            info = DicomInfo(n, dicom, 
+                             _("Image %d") % (dicom.image.number),
+                             "%.2f" % (dicom.image.position[2]))
             self.files.append(info)
             n+=1
 
@@ -758,13 +729,10 @@ class DicomPreview(wx.Panel):
         dicom_files = group.GetHandSortedList()
         n = 0
         for dicom in dicom_files:
-            info = (dicom.image,
-                    dicom.image.window,
-                    dicom.image.level,
+            info = DicomInfo(n, dicom, 
                     _("Image %d") % (dicom.image.number),
                     "%.2f" % (dicom.image.position[2]),
-                    n,
-                    dicom)
+                            )
             self.files.append(info)
             n+=1
 
@@ -775,10 +743,9 @@ class DicomPreview(wx.Panel):
 
         self._display_previews()
 
-
     def _display_previews(self):
         initial = self.displayed_position * NCOLS
-        final = initial + MAX_VALUE
+        final = initial + NUM_PREVIEWS
         print "len:", len(self.files)
 
         if len(self.files) < final:
