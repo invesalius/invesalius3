@@ -30,56 +30,12 @@ class LanguageDialog(wx.Dialog):
     exist chcLanguage that list language EN and PT. The language
     selected is writing in the config.ini"""
 
-    def __init__(self, parent = None, startApp = None):
-        
+    def __init__(self, parent=None, startApp=None):
+        super(LanguageDialog, self).__init__(parent, title='Language selection')
         self.__TranslateMessage__()
-
-        self.pre = pre = wx.PreDialog()
-        pre.SetExtraStyle(wx.DIALOG_MODAL)
-
-        pre.Create(parent, -1, 'Language selection',  size = wx.Size(250, 150), 
-                   pos = wx.DefaultPosition, style=wx.DEFAULT_DIALOG_STYLE)
-        self.PostCreate(pre)
+        self.__init_gui()
         self.Centre()
-
-        icon_path = os.path.join(const.ICON_DIR, "invesalius.ico")        
-        pre.SetIcon(wx.Icon(icon_path, wx.BITMAP_TYPE_ICO))
-
-        self.pnl = wx.Panel(id=-1, name='pnl',
-              parent=pre, pos=wx.Point(0, 0), size=wx.Size(250, 160),
-              style=wx.TAB_TRAVERSAL)
-
-        self.txtMsg = wx.StaticText(id=1,
-              label=_('Choose user interface language'),
-              name='txtMsg', parent=self.pnl, pos=wx.Point(15,
-              10), size=wx.Size(200, 13), style=0)
-
-        self.bxSizer = wx.BoxSizer(orient=wx.VERTICAL)
-        self.bxSizer.AddWindow(self.pnl, 1, wx.GROW|wx.ALIGN_CENTRE)
-
-        btnsizer = wx.StdDialogButtonSizer()
-
-        if wx.Platform != "__WXMSW__":
-            btn = wx.ContextHelpButton(self)
-            btnsizer.AddButton(btn)
-
-        btnsizer.SetOrientation(wx.CENTER)
-
-        btn = wx.Button(self, wx.ID_OK)
-        btn.SetDefault()
-        btnsizer.AddButton(btn)
-
-        btn = wx.Button(self, wx.ID_CANCEL)
-        btnsizer.AddButton(btn)
-        btnsizer.Realize()
-
-        self.bxSizer.AddSizer(btnsizer, 1,  wx.GROW|wx.ALIGN_CENTRE)
-
-        self.__init_combobox_bitmap__()
-
-        self.SetSizer(self.bxSizer)
-
-
+        
     def __init_combobox_bitmap__(self):
         """Initialize combobox bitmap"""
         
@@ -88,9 +44,7 @@ class LanguageDialog(wx.Dialog):
         self.locales_key = i18n.GetLocales().keys()
         self.os_locale = i18n.GetLocaleOS()
         
-        
-        self.bitmapCmb = bitmapCmb = wx.combo.BitmapComboBox(self.pnl, pos=(32,34), 
-                                                             size=(180,22), style=wx.CB_READONLY)
+        self.bitmapCmb = bitmapCmb = wx.combo.BitmapComboBox(self, style=wx.CB_READONLY)
 
         bmp_brazilian_flag = wx.Bitmap(os.path.join(const.ICON_DIR, "pt_BR.bmp"), wx.BITMAP_TYPE_BMP)
         bmp_english_flag = wx.Bitmap(os.path.join(const.ICON_DIR, "en_GB.bmp"), wx.BITMAP_TYPE_BMP)
@@ -107,6 +61,33 @@ class LanguageDialog(wx.Dialog):
             bitmapCmb.SetSelection(2)
         else:
             bitmapCmb.SetSelection(0)
+
+    def __init_gui(self):
+        self.txtMsg = wx.StaticText(self, -1,
+              label=_('Choose user interface language'))
+
+        btnsizer = wx.StdDialogButtonSizer()
+
+        btn = wx.Button(self, wx.ID_OK)
+        btn.SetDefault()
+        btnsizer.AddButton(btn)
+
+        btn = wx.Button(self, wx.ID_CANCEL)
+        btnsizer.AddButton(btn)
+        btnsizer.Realize()
+
+        self.__init_combobox_bitmap__()
+
+        sizer = wx.BoxSizer(wx.VERTICAL)
+        sizer.Add(self.txtMsg, 0, wx.EXPAND | wx.ALL, 5)
+        sizer.Add(self.bitmapCmb, 0, wx.EXPAND | wx.ALL, 5)
+        sizer.Add(btnsizer, 0, wx.EXPAND | wx.ALL, 5)
+
+        sizer.Fit(self)
+        self.SetSizer(sizer)
+        self.Layout()
+        self.Update()
+        self.SetAutoLayout(1)
 
     def GetSelectedLanguage(self):
         """Return String with Selected Language"""
