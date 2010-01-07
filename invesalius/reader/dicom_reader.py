@@ -81,7 +81,6 @@ class LoadDicom(threading.Thread):
         q = self.q
         while 1:
             filepath = q.get()
-            print "thread %s consumed %s" % (self.getName(), filepath)
             if not filepath:
                 break
             parser = dicom.Parser()
