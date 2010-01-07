@@ -97,8 +97,12 @@ class Panel(wx.Panel):
                           size=wx.Size(280, 656))
         
         sizer = wx.BoxSizer(wx.VERTICAL)        
-        sizer.Add(UpperTaskPanel(self), 5, wx.EXPAND|wx.GROW)
-        sizer.Add(LowerTaskPanel(self), 3, wx.EXPAND|wx.GROW)
+        #sizer.Add(UpperTaskPanel(self), 5, wx.EXPAND|wx.GROW)
+        sizer.Add(UpperTaskPanel(self), 6, wx.EXPAND|wx.GROW)
+
+        #sizer.Add(LowerTaskPanel(self), 3, wx.EXPAND|wx.GROW)
+        sizer.Add(LowerTaskPanel(self), 2, wx.EXPAND|wx.GROW)
+
         
         self.SetSizer(sizer)
 
@@ -106,7 +110,8 @@ class Panel(wx.Panel):
 class LowerTaskPanel(wx.Panel):
     def __init__(self, parent):
         wx.Panel.__init__(self, parent, pos=wx.Point(5, 5),
-                          size=wx.Size(280, 700))
+        #                  size=wx.Size(280, 700))
+                           size=wx.Size(280, 400))
         
         fold_panel = fpb.FoldPanelBar(self, -1, wx.DefaultPosition,
                                       self.GetSize(),fpb.FPB_DEFAULT_STYLE,
@@ -133,14 +138,14 @@ class LowerTaskPanel(wx.Panel):
         # Fold 2 - Tools
         # Measures
         # Text Annotations
-        item = fold_panel.AddFoldPanel("Tools", collapsed=False,
-                                       foldIcons=image_list)
-        style = fold_panel.GetCaptionStyle(item)
-        col = style.GetFirstColour()
-        
-        fold_panel.AddFoldPanelWindow(item, tools.TaskPanel(item), Spacing= 0,
-                                      leftSpacing=0, rightSpacing=0)
-        fold_panel.Expand(fold_panel.GetFoldPanel(1))
+        #item = fold_panel.AddFoldPanel("Tools", collapsed=False,
+        #                               foldIcons=image_list)
+        #style = fold_panel.GetCaptionStyle(item)
+        #col = style.GetFirstColour()
+        # 
+        #fold_panel.AddFoldPanelWindow(item, tools.TaskPanel(item), Spacing= 0,
+        #                              leftSpacing=0, rightSpacing=0)
+        #fold_panel.Expand(fold_panel.GetFoldPanel(1))
 
 # Upper fold panel
 class UpperTaskPanel(wx.Panel):
