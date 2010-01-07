@@ -204,19 +204,23 @@ msgstr ""
 
 #: dicom_preview_panel.py:66
 msgid "image size"
-msgstr ""
+msgstr "tamanho da imagem"
 
 #: dicom_preview_panel.py:75
 msgid ""
 "id\n"
 "protocol"
 msgstr ""
+"id\n"
+"protocolo"
 
 #: dicom_preview_panel.py:82
 msgid ""
 "date time\n"
 " Made in InVesalius"
 msgstr ""
+"data hora\n"
+" Criado com InVesalius"
 
 #: dicom_preview_panel.py:128
 msgid "Auto-play"
