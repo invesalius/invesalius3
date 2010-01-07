@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: InVesalius 3\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2010-01-07 16:36-0200\n"
+"POT-Creation-Date: 2010-01-07 16:40-0200\n"
 "PO-Revision-Date: 2010-01-07 11:25-0300\n"
 "Last-Translator: Invesalius team <invesalius@cti.gov.br>\n"
 "Language-Team: InVesalius Team <invesalius@cti.gov.br>\n"
@@ -224,101 +224,101 @@ msgstr ""
 
 #: dicom_preview_panel.py:128
 msgid "Auto-play"
-msgstr ""
+msgstr "Reproduzir"
 
 #: dicom_preview_panel.py:282 dicom_preview_panel.py:285
 msgid "Image"
-msgstr ""
+msgstr "Imagem"
 
 #: dicom_preview_panel.py:618
 #, python-format
 msgid "%d Images"
-msgstr ""
+msgstr "%d Imagens"
 
 #: dicom_preview_panel.py:739 dicom_preview_panel.py:764
 #, python-format
 msgid "Image %d"
-msgstr ""
+msgstr "Imagem %d"
 
 #: frame.py:138
 msgid "Data panel"
-msgstr ""
+msgstr "Painel de dados"
 
 #: frame.py:147
 msgid "Preview medical data to be reconstructed"
-msgstr ""
+msgstr "Pré-visualize os dados que serão reconstruídos"
 
 #: frame.py:306
 msgid "Import DICOM...\tCtrl+I"
-msgstr ""
+msgstr "Importar DICOM...\tCtrl+I"
 
 #: frame.py:307
 msgid "Open Project...\tCtrl+O"
-msgstr ""
+msgstr "Abrir Projeto...\tCtrl+O"
 
 #: frame.py:308
 msgid "Save Project\tCtrl+S"
-msgstr ""
+msgstr "Salvar Projeto\tCtrl+S"
 
 #: frame.py:309
 msgid "Save Project As..."
-msgstr ""
+msgstr "Salvar Projeto Como..."
 
 #: frame.py:310
 msgid "Close Project"
-msgstr ""
+msgstr "Fechar Projeto"
 
 #: frame.py:319
 msgid "Exit"
-msgstr ""
+msgstr "Sair"
 
 #: frame.py:358
 msgid "Getting Started..."
-msgstr ""
+msgstr "Primeiros Passos..."
 
 #: frame.py:361
 msgid "About..."
-msgstr ""
+msgstr "Sobre..."
 
 #: frame.py:372
 msgid "File"
-msgstr ""
+msgstr "Arquivo"
 
 #: frame.py:377
 msgid "Help"
-msgstr ""
+msgstr "Ajuda"
 
 #: frame.py:420
 msgid "Ready"
-msgstr ""
+msgstr "Pronto"
 
 #: frame.py:528
 msgid "Import medical image..."
-msgstr ""
+msgstr "Importar imagens médicas..."
 
 #: frame.py:534
 msgid "Save InVesalius project"
-msgstr ""
+msgstr "Salvar projeto InVesalius"
 
 #: frame.py:629
 msgid "Zoom"
-msgstr ""
+msgstr "Zoom"
 
 #: frame.py:634
 msgid "Zoom based on selection"
-msgstr ""
+msgstr "Zoom baseado na seleção"
 
 #: frame.py:639
 msgid "Rotate"
-msgstr ""
+msgstr "Rotacionar"
 
 #: frame.py:643
 msgid "Move"
-msgstr ""
+msgstr "Mover"
 
 #: frame.py:647
 msgid "Window and Level"
-msgstr ""
+msgstr "Brilho e Contraste"
 
 #: import_panel.py:54
 msgid "Import medical images"
