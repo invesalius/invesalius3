@@ -14,6 +14,9 @@ docs/devel/example_singleton.py -text
 docs/devel/example_singleton_pubsub.py -text
 docs/devel/sendmessages.txt -text
 docs/devel/subscribes.txt -text
+i18n/invesalius_en.po -text
+i18n/invesalius_es.po -text
+i18n/invesalius_pt_BR.po -text
 icons/Floppy.png -text
 icons/annotation.png -text
 icons/brush_circle.jpg -text

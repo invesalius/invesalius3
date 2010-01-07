@@ -1,0 +1,641 @@
+# InVesalius 3.0 Beta - Brazilian Portuguese.
+# Copyright (C) 2009 Centro de Tecnologia da Informação Renato Archer
+# This file is distributed under the same license as the InVesalius package. (GNU General Public License v2)
+# Tatiana Al-Chueyr Pereira Martins <tati.alchueyr@gmail.com>
+# Paulo Henrique Junqueira Amorim <paulojamorim@gmail.com>
+# Thiago Franco de Morais <totonixsame@gmail.com>
+msgid ""
+msgstr ""
+"Project-Id-Version: InVesalius 3\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2010-01-07 11:28-0200\n"
+"PO-Revision-Date: 2010-01-07 11:25-0300\n"
+"Last-Translator: Invesalius team <invesalius@cti.gov.br>\n"
+"Language-Team: InVesalius Team <invesalius@cti.gov.br>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Poedit-Language: Portuguese\n"
+"X-Poedit-SourceCharset: utf-8\n"
+"X-Poedit-Country: BRAZIL\n"
+
+#: data_notebook.py:42
+msgid "Masks"
+msgstr ""
+
+#: data_notebook.py:43
+msgid "Surfaces"
+msgstr ""
+
+#: data_notebook.py:105 data_notebook.py:234 data_notebook.py:438
+msgid "Name"
+msgstr ""
+
+#: data_notebook.py:106 task_surface.py:41
+msgid "Threshold"
+msgstr ""
+
+#: data_notebook.py:164
+msgid "Mask 1"
+msgstr ""
+
+#: data_notebook.py:235
+msgid "Volume (mm3)"
+msgstr ""
+
+#: data_notebook.py:236
+msgid "Transparency"
+msgstr ""
+
+#: data_notebook.py:439
+msgid "Type"
+msgstr ""
+
+#: data_notebook.py:440
+msgid "Value"
+msgstr ""
+
+#: default_tasks.py:176
+msgid "1. InVesalius start"
+msgstr ""
+
+#: default_tasks.py:189
+msgid "2. Select region of interest"
+msgstr ""
+
+#: default_tasks.py:206
+msgid "3. Configure 3D surface"
+msgstr ""
+
+#: default_tasks.py:217
+msgid "4. Export data"
+msgstr ""
+
+#: default_viewers.py:79 default_viewers.py:168
+msgid "Axial slice"
+msgstr ""
+
+#: default_viewers.py:84 default_viewers.py:174
+msgid "Coronal slice"
+msgstr ""
+
+#: default_viewers.py:89
+msgid "Sagital slice"
+msgstr ""
+
+#: default_viewers.py:95 default_viewers.py:186
+msgid "Volume"
+msgstr ""
+
+#: default_viewers.py:180
+msgid "Sagittal slice"
+msgstr ""
+
+#: default_viewers.py:409
+msgid "Preset name"
+msgstr ""
+
+#: default_viewers.py:437
+msgid "Tools"
+msgstr ""
+
+#: dialogs.py:51
+msgid "Above value will be applied."
+msgstr ""
+
+#: dialogs.py:55
+msgid "Value will not be applied."
+msgstr ""
+
+#: dialogs.py:93
+msgid "Loading DICOM files"
+msgstr ""
+
+#: dialogs.py:141 frame.py:531
+msgid "Open InVesalius 3 project..."
+msgstr ""
+
+#: dialogs.py:164
+msgid "Choose a DICOM folder:"
+msgstr ""
+
+#: dialogs.py:189
+msgid "Save project as..."
+msgstr ""
+
+#: dialogs.py:192
+msgid "InVesalius project (*.inv3)|*.inv3"
+msgstr ""
+
+#: dialogs.py:255 dialogs.py:294 dialogs.py:316
+#, python-format
+msgid "Save changes to %s?"
+msgstr ""
+
+#: dialogs.py:282
+msgid "There are no DICOM files on the selected directory."
+msgstr ""
+
+#: dialogs.py:340
+msgid "(C) 2007 Renato Archer Research Centre"
+msgstr ""
+
+#: dialogs.py:342
+msgid "InVesalius is a software for medical imaging 3D reconstruction. "
+msgstr ""
+
+#: dialogs.py:343
+msgid ""
+"Its input is a sequency of DICOM 2D image files acquired with CT or MR.\n"
+"\n"
+msgstr ""
+
+#: dialogs.py:344
+msgid "The software also allows generating correspondent STL files,"
+msgstr ""
+
+#: dialogs.py:345
+msgid "so the user can print 3D physical models of the patient's anatomy "
+msgstr ""
+
+#: dialogs.py:346
+msgid "using Rapid Prototyping."
+msgstr ""
+
+#: dialogs.py:349
+msgid "GNU GPL (General Public License) version 2"
+msgstr ""
+
+#: dialogs.py:364
+msgid "Save raycasting preset as:"
+msgstr ""
+
+#: dicom_preview_panel.py:42
+#, python-format
+msgid "Image size: %d x %d"
+msgstr ""
+
+#: dicom_preview_panel.py:43
+#, python-format
+msgid "Spacing: %.2f"
+msgstr ""
+
+#: dicom_preview_panel.py:44
+#, python-format
+msgid "Location: %.2f"
+msgstr ""
+
+#: dicom_preview_panel.py:46
+#, python-format
+msgid ""
+"%s %s\n"
+"Made in InVesalius"
+msgstr ""
+
+#: dicom_preview_panel.py:66
+msgid "image size"
+msgstr ""
+
+#: dicom_preview_panel.py:75
+msgid ""
+"id\n"
+"protocol"
+msgstr ""
+
+#: dicom_preview_panel.py:82
+msgid ""
+"date time\n"
+" Made in InVesalius"
+msgstr ""
+
+#: dicom_preview_panel.py:128
+msgid "Auto-play"
+msgstr ""
+
+#: dicom_preview_panel.py:282 dicom_preview_panel.py:285
+msgid "Image"
+msgstr ""
+
+#: dicom_preview_panel.py:618
+#, python-format
+msgid "%d Images"
+msgstr ""
+
+#: dicom_preview_panel.py:739 dicom_preview_panel.py:764
+#, python-format
+msgid "Image %d"
+msgstr ""
+
+#: frame.py:138
+msgid "Data panel"
+msgstr ""
+
+#: frame.py:147
+msgid "Preview medical data to be reconstructed"
+msgstr ""
+
+#: frame.py:306
+msgid "Import DICOM...\tCtrl+I"
+msgstr ""
+
+#: frame.py:307
+msgid "Open Project...\tCtrl+O"
+msgstr ""
+
+#: frame.py:308
+msgid "Save Project\tCtrl+S"
+msgstr ""
+
+#: frame.py:309
+msgid "Save Project As..."
+msgstr ""
+
+#: frame.py:310
+msgid "Close Project"
+msgstr ""
+
+#: frame.py:319
+msgid "Exit"
+msgstr ""
+
+#: frame.py:358
+msgid "Getting Started..."
+msgstr ""
+
+#: frame.py:361
+msgid "About..."
+msgstr ""
+
+#: frame.py:372
+msgid "File"
+msgstr ""
+
+#: frame.py:377
+msgid "Help"
+msgstr ""
+
+#: frame.py:420
+msgid "Ready"
+msgstr ""
+
+#: frame.py:528
+msgid "Import medical image..."
+msgstr ""
+
+#: frame.py:534
+msgid "Save InVesalius project"
+msgstr ""
+
+#: frame.py:629
+msgid "Zoom"
+msgstr ""
+
+#: frame.py:634
+msgid "Zoom based on selection"
+msgstr ""
+
+#: frame.py:639
+msgid "Rotate"
+msgstr ""
+
+#: frame.py:643
+msgid "Move"
+msgstr ""
+
+#: frame.py:647
+msgid "Window and Level"
+msgstr ""
+
+#: import_data_wizard.py:187
+msgid "Select the directory which "
+msgstr ""
+
+#: import_data_wizard.py:188
+msgid "contains medical images of the study interest."
+msgstr ""
+
+#: import_data_wizard.py:232
+msgid "Advanced options"
+msgstr ""
+
+#: import_data_wizard.py:236
+msgid "Use selected folder(s) as default"
+msgstr ""
+
+#: import_data_wizard.py:239
+msgid "Enable recursion in folder(s)"
+msgstr ""
+
+#: import_data_wizard.py:255 import_data_wizard.py:266
+msgid "Choose a directory:"
+msgstr ""
+
+#: import_data_wizard.py:261 import_data_wizard.py:311
+msgid "Add another directory"
+msgstr ""
+
+#: import_data_wizard.py:285
+msgid "Remove this directory from list"
+msgstr ""
+
+#: import_data_wizard.py:286
+msgid "Remove"
+msgstr ""
+
+#: import_data_wizard.py:340 import_panel.py:54
+msgid "Import medical images"
+msgstr ""
+
+#: import_data_wizard.py:342
+msgid "Choose directory"
+msgstr ""
+
+#: import_data_wizard.py:343
+msgid "Define RAW data"
+msgstr ""
+
+#: import_data_wizard.py:344
+msgid "Select study"
+msgstr ""
+
+#: import_data_wizard.py:348
+msgid ""
+"\n"
+"This is the last page."
+msgstr ""
+
+#: import_panel.py:109
+msgid "Patient name"
+msgstr ""
+
+#: import_panel.py:110
+msgid "Patient ID"
+msgstr ""
+
+#: import_panel.py:111
+msgid "Age"
+msgstr ""
+
+#: import_panel.py:112
+msgid "Gender"
+msgstr ""
+
+#: import_panel.py:113
+msgid "Study description"
+msgstr ""
+
+#: import_panel.py:114
+msgid "Modality"
+msgstr ""
+
+#: import_panel.py:115
+msgid "Date acquired"
+msgstr ""
+
+#: import_panel.py:116
+msgid "# Images"
+msgstr ""
+
+#: import_panel.py:117
+msgid "Institution"
+msgstr ""
+
+#: import_panel.py:118
+msgid "Date of birth"
+msgstr ""
+
+#: import_panel.py:119
+msgid "Accession Number"
+msgstr ""
+
+#: import_panel.py:120
+msgid "Referring physician"
+msgstr ""
+
+#: import_panel.py:136
+msgid "InVesalius Database"
+msgstr ""
+
+#: language_dialog.py:53
+msgid "Choose user interface language"
+msgstr ""
+
+#: slice_menu.py:39 slice_menu.py:51
+msgid "Default"
+msgstr ""
+
+#: slice_menu.py:46 slice_menu.py:51
+msgid "Manual"
+msgstr ""
+
+#: slice_menu.py:61
+msgid "Save current values"
+msgstr ""
+
+#: slice_menu.py:62
+msgid "Save current values as..."
+msgstr ""
+
+#: slice_menu.py:62
+msgid "Load values"
+msgstr ""
+
+#: slice_menu.py:75 slice_menu.py:80
+msgid "Default "
+msgstr ""
+
+#: slice_menu.py:99
+msgid "Window Width and Level"
+msgstr ""
+
+#: slice_menu.py:100
+msgid "Pseudo Colour"
+msgstr ""
+
+#: slice_menu.py:101
+msgid "Image Tiling"
+msgstr ""
+
+#: task_exporter.py:101
+msgid "Export InVesalius screen to a image file"
+msgstr ""
+
+#: task_exporter.py:103
+msgid "Export picture..."
+msgstr ""
+
+#: task_exporter.py:112
+msgid "Export 3D surface"
+msgstr ""
+
+#: task_exporter.py:113
+msgid "Export 3D surface..."
+msgstr ""
+
+#: task_exporter.py:273
+msgid "Save 3D surface as..."
+msgstr ""
+
+#: task_exporter.py:292
+msgid "You need to create a surface and make it "
+msgstr ""
+
+#: task_exporter.py:293
+msgid "visible before exporting it."
+msgstr ""
+
+#: task_exporter.py:294
+msgid "InVesalius Information"
+msgstr ""
+
+#: task_importer.py:64
+msgid "Select DICOM or Analyze files to be reconstructed"
+msgstr ""
+
+#: task_importer.py:65
+msgid "Import medical images..."
+msgstr ""
+
+#: task_importer.py:82
+msgid "Open an existing InVesalius project..."
+msgstr ""
+
+#: task_importer.py:83
+msgid "Open an existing project..."
+msgstr ""
+
+#: task_slice.py:79
+msgid "Create mask for slice segmentation and edition"
+msgstr ""
+
+#: task_slice.py:108
+msgid "Create 3D surface"
+msgstr ""
+
+#: task_slice.py:137
+msgid "Name of new mask:"
+msgstr ""
+
+#: task_slice.py:138
+msgid "InVesalius 3.0 - New mask"
+msgstr ""
+
+#: task_slice.py:196
+msgid "Mask properties"
+msgstr ""
+
+#: task_slice.py:204
+msgid "Advanced edition tools"
+msgstr ""
+
+#: task_slice.py:288
+msgid "Set predefined or manual threshold:"
+msgstr ""
+
+#: task_slice.py:440
+msgid "Choose brush type, size or operation:"
+msgstr ""
+
+#: task_slice.py:446
+msgid "Circle"
+msgstr ""
+
+#: task_slice.py:450
+msgid "Square"
+msgstr ""
+
+#: task_slice.py:486
+msgid "Brush threshold range:"
+msgstr ""
+
+#: task_surface.py:30
+msgid "Low"
+msgstr ""
+
+#: task_surface.py:30
+msgid "Medium"
+msgstr ""
+
+#: task_surface.py:30
+msgid "High"
+msgstr ""
+
+#: task_surface.py:30
+msgid "Optimal *"
+msgstr ""
+
+#: task_surface.py:30
+msgid "Custom"
+msgstr ""
+
+#: task_surface.py:41
+msgid "Draw"
+msgstr ""
+
+#: task_surface.py:41
+msgid "Erase"
+msgstr ""
+
+#: task_surface.py:83
+msgid "Create 3D surface based on a mask"
+msgstr ""
+
+#: task_surface.py:102
+msgid "Next step"
+msgstr ""
+
+#: task_surface.py:131
+msgid "InVesalius 3.0 - New surface"
+msgstr ""
+
+#: task_surface.py:168
+msgid "Select mask to be used for creating 3D surface:"
+msgstr ""
+
+#: task_surface.py:179
+msgid "Set new surface name:"
+msgstr ""
+
+#: task_surface.py:182
+msgid "Name the new surface to be created"
+msgstr ""
+
+#: task_surface.py:183
+msgid "Default 3D"
+msgstr ""
+
+#: task_surface.py:212
+msgid "| mask: "
+msgstr ""
+
+#: task_surface.py:251
+msgid "Surface properties"
+msgstr ""
+
+#: task_surface.py:258
+msgid "Surface quality"
+msgstr ""
+
+#: task_surface.py:303
+msgid "Transparency:"
+msgstr ""
+
+#: task_surface.py:405
+msgid "Decimate resolution:"
+msgstr ""
+
+#: task_surface.py:415
+msgid "Smooth iterations:"
+msgstr ""
+
+#: task_tools.py:57
+msgid "Measure distances"
+msgstr ""
+
+#: task_tools.py:58
+msgid "Measure"
+msgstr ""
+
+#: task_tools.py:61 task_tools.py:62
+msgid "Add text annotations"
+msgstr ""
