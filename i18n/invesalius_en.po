@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: InVesalius 3\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2010-01-07 15:54-0200\n"
+"POT-Creation-Date: 2010-01-07 16:11-0200\n"
 "PO-Revision-Date: 2010-01-07 11:25-0300\n"
 "Last-Translator: Invesalius team <invesalius@cti.gov.br>\n"
 "Language-Team: InVesalius Team <invesalius@cti.gov.br>\n"
@@ -79,16 +79,12 @@ msgstr ""
 msgid "Coronal slice"
 msgstr ""
 
-#: default_viewers.py:89
-msgid "Sagital slice"
+#: default_viewers.py:89 default_viewers.py:180
+msgid "Sagittal slice"
 msgstr ""
 
 #: default_viewers.py:95 default_viewers.py:186
 msgid "Volume"
-msgstr ""
-
-#: default_viewers.py:180
-msgid "Sagittal slice"
 msgstr ""
 
 #: default_viewers.py:409
@@ -368,7 +364,7 @@ msgstr ""
 msgid "InVesalius Database"
 msgstr ""
 
-#: language_dialog.py:53
+#: language_dialog.py:67
 msgid "Choose user interface language"
 msgstr ""
 
