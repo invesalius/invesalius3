@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: InVesalius 3\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2010-01-07 16:32-0200\n"
+"POT-Creation-Date: 2010-01-07 16:33-0200\n"
 "PO-Revision-Date: 2010-01-07 11:25-0300\n"
 "Last-Translator: Invesalius team <invesalius@cti.gov.br>\n"
 "Language-Team: InVesalius Team <invesalius@cti.gov.br>\n"
@@ -158,19 +158,21 @@ msgstr ""
 
 #: dialogs.py:344
 msgid "The software also allows generating correspondent STL files,"
-msgstr ""
+msgstr "O software também permite a geração de arquivos STL correspondentes,"
 
 #: dialogs.py:345
 msgid "so the user can print 3D physical models of the patient's anatomy "
 msgstr ""
+"que podem ser utilizados para impressão física de modelos anatômicos do "
+"paciente"
 
 #: dialogs.py:346
 msgid "using Rapid Prototyping."
-msgstr ""
+msgstr "utilizando Prototipagem Rápida."
 
 #: dialogs.py:349
 msgid "GNU GPL (General Public License) version 2"
-msgstr ""
+msgstr "GNU GPL (Licença Pública Geral) versão 2"
 
 #: dialogs.py:364
 msgid "Save raycasting preset as:"
