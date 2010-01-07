@@ -121,7 +121,7 @@ class LanguageDialog(wx.Dialog):
         elif(os_language[0:2] == 'es'):
             _ = i18n.InstallLanguage('es')
         else:
-            _ = i18n.InstallLanguage('en_GB')
+            _ = i18n.InstallLanguage('en')
 
     def Cancel(self, event):
         """Close Frm_Language"""
