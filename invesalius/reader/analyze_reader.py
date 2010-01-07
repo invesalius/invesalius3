@@ -20,29 +20,32 @@
 import os
 
 import itk
-import ItkVtkGlue
+import multiprocessing
+import tempfile
 import vtk
 
 
 def ReadAnalyze(filename):
-    reader = itk.ImageFileReader.IUC3.New()
+    
+    pipe_in, pipe_out = multiprocessing.Pipe()
+    
+    sp = ItktoVtk(pipe_in, filename)
+    sp.start()
+    
+    while 1:
+        msg = pipe_out.recv()
+        if(msg is None):
+            break
+    
+    filename = pipe_out.recv()
+    
+    reader = vtk.vtkXMLImageDataReader()
     reader.SetFileName(filename)
     reader.Update()
-
-    x_spacing = reader.GetOutput().GetSpacing().GetElement(0)
-    y_spacing = reader.GetOutput().GetSpacing().GetElement(1)
-    z_spacing = reader.GetOutput().GetSpacing().GetElement(2) 
-    spacing = (x_spacing, y_spacing, z_spacing)
-
-    glue = ItkVtkGlue.ImageToVTKImageFilter.IUC3.New()
-    glue.SetInput(reader.GetOutput())
-    glue.Update()
     
-    imagedata = vtk.vtkImageData()
-    imagedata.DeepCopy(glue.GetOutput())
-    imagedata.SetSpacing(spacing)
-
-    return imagedata
+    os.remove(filename)
+    
+    return reader.GetOutput()
 
 def ReadDirectory(dir_):
     file_list = []
@@ -54,3 +57,45 @@ def ReadDirectory(dir_):
                 imagedata = ReadAnalyze(filename)
                 return imagedata
     return imagedata
+
+
+class ItktoVtk(multiprocessing.Process): 
+    
+    def __init__(self, pipe, filename):        
+        multiprocessing.Process.__init__(self)
+        self.filename = filename
+        self.pipe = pipe
+        
+    def run(self):
+        self.Convert()
+    
+    def Convert(self):
+        
+        import ItkVtkGlue
+
+        reader = itk.ImageFileReader.IUC3.New()
+        reader.SetFileName(self.filename)
+        reader.Update()
+    
+        x_spacing = reader.GetOutput().GetSpacing().GetElement(0)
+        y_spacing = reader.GetOutput().GetSpacing().GetElement(1)
+        z_spacing = reader.GetOutput().GetSpacing().GetElement(2) 
+        spacing = (x_spacing, y_spacing, z_spacing)
+    
+        glue = ItkVtkGlue.ImageToVTKImageFilter.IUC3.New()
+        glue.SetInput(reader.GetOutput())
+        glue.Update()
+        
+        imagedata = vtk.vtkImageData()
+        imagedata.DeepCopy(glue.GetOutput())
+        imagedata.SetSpacing(spacing)
+        
+        filename = tempfile.mktemp()
+        writer = vtk.vtkXMLImageDataWriter()
+        writer.SetInput(imagedata)
+        writer.SetFileName(filename)
+        writer.Write()
+        
+        self.pipe.send(None)
+        self.pipe.send(filename)
+        
