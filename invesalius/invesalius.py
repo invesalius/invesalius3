@@ -68,9 +68,16 @@ class SplashScreen(wx.SplashScreen):
                 
         else:
             _ = i18n.InstallLanguage(lang)
-            
         
-        bmp = wx.Image("../icons/splash_en.png").ConvertToBitmap()
+        if (lang.startswith('pt')): #Necessy, pt noted as pt_BR
+            icon_file = "splash_pt.png"
+        else:
+            icon_file = "splash_" + lang + ".png"
+        
+        path = os.path.join("..","icons", icon_file)
+        
+        bmp = wx.Image(path).ConvertToBitmap()
+        
         wx.SplashScreen.__init__(self, bitmap=bmp,
                                  splashStyle=wx.SPLASH_CENTRE_ON_SCREEN | wx.SPLASH_TIMEOUT,
                                  milliseconds=1500, id=-1, parent=None)
