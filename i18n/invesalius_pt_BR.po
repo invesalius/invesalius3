@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: InVesalius 3\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2010-01-07 16:40-0200\n"
+"POT-Creation-Date: 2010-01-07 16:43-0200\n"
 "PO-Revision-Date: 2010-01-07 11:25-0300\n"
 "Last-Translator: Invesalius team <invesalius@cti.gov.br>\n"
 "Language-Team: InVesalius Team <invesalius@cti.gov.br>\n"
@@ -246,7 +246,7 @@ msgstr "Painel de dados"
 
 #: frame.py:147
 msgid "Preview medical data to be reconstructed"
-msgstr "Pré-visualize os dados que serão reconstruídos"
+msgstr "Pré-visualização dos dados que serão reconstruídos"
 
 #: frame.py:306
 msgid "Import DICOM...\tCtrl+I"
@@ -322,79 +322,79 @@ msgstr "Brilho e Contraste"
 
 #: import_panel.py:54
 msgid "Import medical images"
-msgstr ""
+msgstr "Importar imagens médicas"
 
 #: import_panel.py:109
 msgid "Patient name"
-msgstr ""
+msgstr "Nome do paciente"
 
 #: import_panel.py:110
 msgid "Patient ID"
-msgstr ""
+msgstr "ID Paciente"
 
 #: import_panel.py:111
 msgid "Age"
-msgstr ""
+msgstr "Idade"
 
 #: import_panel.py:112
 msgid "Gender"
-msgstr ""
+msgstr "Sexo"
 
 #: import_panel.py:113
 msgid "Study description"
-msgstr ""
+msgstr "Descrição do estudo"
 
 #: import_panel.py:114
 msgid "Modality"
-msgstr ""
+msgstr "Modalidade"
 
 #: import_panel.py:115
 msgid "Date acquired"
-msgstr ""
+msgstr "Data de aquisição"
 
 #: import_panel.py:116
 msgid "# Images"
-msgstr ""
+msgstr "# Imagens"
 
 #: import_panel.py:117
 msgid "Institution"
-msgstr ""
+msgstr "Instituição"
 
 #: import_panel.py:118
 msgid "Date of birth"
-msgstr ""
+msgstr "Data de nascimento"
 
 #: import_panel.py:119
 msgid "Accession Number"
-msgstr ""
+msgstr "Número de acesso"
 
 #: import_panel.py:120
 msgid "Referring physician"
-msgstr ""
+msgstr "Médico"
 
 #: import_panel.py:136
 msgid "InVesalius Database"
-msgstr ""
+msgstr "Banco de Dados InVesalius"
 
 #: language_dialog.py:67
 msgid "Choose user interface language"
-msgstr ""
+msgstr "Selecione o idioma"
 
 #: slice_menu.py:39 slice_menu.py:51
 msgid "Default"
-msgstr ""
+msgstr "Padrão"
 
 #: slice_menu.py:46 slice_menu.py:51
 msgid "Manual"
-msgstr ""
+msgstr "Manual"
 
 #: slice_menu.py:61
 msgid "Save current values"
-msgstr ""
+msgstr "Salvar valores atuais"
 
 #: slice_menu.py:62
 msgid "Save current values as..."
-msgstr ""
+msgstr "Salvar valores atuais como..."
 
 #: slice_menu.py:62
 msgid "Load values"
