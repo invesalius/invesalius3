@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+# -*- coding: UTF-8 -*- 
 #--------------------------------------------------------------------------
 # Software:     InVesalius - Software de Reconstrucao 3D de Imagens Medicas
 # Copyright:    (C) 2001  Centro de Pesquisas Renato Archer
@@ -161,7 +163,7 @@ class MasksListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
         wx_image.SetData(new_image.tostring())
         return wx.BitmapFromImage(wx_image.Scale(16, 16))
 
-    def InsertNewItem(self, index=0, label=_("Mask 1"), threshold="(1000, 4500)",
+    def InsertNewItem(self, index=0, label=_("Mask"), threshold="(1000, 4500)",
                       colour=None):
         self.InsertStringItem(index, "")
         self.SetStringItem(index, 1, label, 
@@ -232,7 +234,7 @@ class SurfacesListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
         
         self.InsertColumn(0, "", wx.LIST_FORMAT_CENTER)
         self.InsertColumn(1, _("Name"))
-        self.InsertColumn(2, _("Volume (mm3)"))
+        self.InsertColumn(2, _(u"Volume (mm³)"))
         self.InsertColumn(3, _("Transparency"), wx.LIST_FORMAT_RIGHT)
         
         self.SetColumnWidth(0, 20)

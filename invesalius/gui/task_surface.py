@@ -128,7 +128,7 @@ class InnerTaskPanel(wx.Panel):
             evt.Skip()
 
     def OnLinkNewSurface(self, evt=None):
-        dlg = NewSurfaceDialog(self, -1, _('InVesalius 3.0 - New surface'))
+        dlg = NewSurfaceDialog(self, -1, _('InVesalius 3 - New surface'))
         if dlg.ShowModal() == wx.ID_OK:
             print "TODO: Send Signal - Create 3d surface %s \n" % dlg.GetValue()
             dlg.Destroy()
@@ -180,7 +180,7 @@ class NewSurfaceDialog(wx.Dialog):
 
         text = wx.TextCtrl(self, -1, "", size=(80,-1))
         text.SetHelpText(_("Name the new surface to be created"))
-        text.SetValue(_("Default 3D"))
+        text.SetValue(_("Surface"))
         self.text = text
 
         sizer = wx.BoxSizer(wx.VERTICAL)
@@ -208,8 +208,8 @@ class NewSurfaceDialog(wx.Dialog):
         self.SetSizer(sizer)
         sizer.Fit(self)
 
-    def GetValue(self):
-        return self.text.GetValue() + _("| mask: ") + MASK_LIST[self.combo_surface_name.GetSelection()]
+    #def GetValue(self):
+    #    return self.text.GetValue() + _("| mask: ") + MASK_LIST[self.combo_surface_name.GetSelection()]
 
 class FoldPanel(wx.Panel):
     def __init__(self, parent):

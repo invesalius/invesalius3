@@ -129,7 +129,6 @@ invesalius/gui/default_viewers.py -text
 invesalius/gui/dialogs.py -text
 invesalius/gui/dicom_preview_panel.py -text
 invesalius/gui/frame.py -text
-invesalius/gui/import_data_wizard.py -text
 invesalius/gui/import_panel.py -text
 invesalius/gui/language_dialog.py -text
 invesalius/gui/task_exporter.py -text

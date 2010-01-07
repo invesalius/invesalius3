@@ -291,7 +291,7 @@ class InnerTaskPanel(wx.Panel):
             dlg = wx.MessageDialog(None,
                     _("You need to create a surface and make it ") +
                     _("visible before exporting it."),
-                    _('InVesalius Information'),
+                    'InVesalius 3',
                     wx.OK | wx.ICON_INFORMATION)
             try:
                 dlg.ShowModal()

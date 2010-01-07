@@ -135,7 +135,7 @@ class InnerTaskPanel(wx.Panel):
 
     def OnLinkNewMask(self, evt=None):
         dlg = wx.TextEntryDialog(self, _('Name of new mask:'),
-                                 _('InVesalius 3.0 - New mask'))
+                                 _('InVesalius 3 - New mask'))
         dlg.CenterOnScreen()
         default_mask_name = const.MASK_NAME_PATTERN %(mask.Mask.general_index+2)
         dlg.SetValue(default_mask_name)

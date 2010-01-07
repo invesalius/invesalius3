@@ -49,4 +49,4 @@ def InstallLanguage(language):
                                    languages=[language], codeset='utf8')
     # Using unicode
     lang.install(unicode=1)
-    return lang.gettext
+    return lang.ugettext

@@ -86,7 +86,7 @@ class Panel(wx.Panel):
 
         p3 = slice_viewer.Viewer(self, "SAGITAL")
         s3 = wx.aui.AuiPaneInfo().Centre().Row(1).\
-             Name("Sagital Slice").Caption(_("Sagital slice")).\
+             Name("Sagittal Slice").Caption(_("Sagittal slice")).\
              MaximizeButton(True).CloseButton(False)
 
         p4 = VolumeViewerCover(self)
@@ -409,7 +409,7 @@ class VolumeToolPanel(wx.Panel):
         d = wx.TextEntryDialog(self, _("Preset name"))
         if d.ShowModal() == wx.ID_OK:
             preset_name = d.GetValue()
-            ps.Publisher().sendMessage('Save raycasting preset',
+            ps.Publisher().sendMessage(_("Save raycasting preset"),
                                        preset_name)
 
     def __init_menus(self, pubsub_evt=None):

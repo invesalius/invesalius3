@@ -48,7 +48,7 @@ class NumberDialog(wx.Dialog):
 
         # Buttons       
         btn_ok = wx.Button(self, wx.ID_OK)
-        btn_ok.SetHelpText(_("Above value will be applied."))
+        btn_ok.SetHelpText(_("Value will be applied."))
         btn_ok.SetDefault()
 
         btn_cancel = wx.Button(self, wx.ID_CANCEL)
@@ -252,7 +252,7 @@ class MessageDialog(wx.Dialog):
         self.Centre()
 
 def SaveChangesDialog__Old(filename):
-    message = _("Save changes to %s?")%filename
+    message = _("The project %s has been modified.\nSave changes?")%filename
     dlg = MessageDialog(message)
 
     answer = dlg.ShowModal()
@@ -291,7 +291,7 @@ def ImportInvalidFiles():
 
 def SaveChangesDialog(filename):
     current_dir = os.path.abspath(".")
-    msg = _("Save changes to %s?")%filename
+    msg = _("The project %s has been modified.\nSave changes?")%filename
     if sys.platform == 'darwin':
         dlg = wx.MessageDialog(None, "", msg,
                                wx.ICON_QUESTION | wx.YES_NO | wx.CANCEL)
@@ -313,7 +313,7 @@ def SaveChangesDialog(filename):
 
 def SaveChangesDialog2(filename):
     current_dir = os.path.abspath(".")
-    msg = _("Save changes to %s?")%filename
+    msg = _("The project %s has been modified.\nSave changes?")%filename
     if sys.platform == 'darwin':
         dlg = wx.MessageDialog(None, "", msg,
                                wx.ICON_QUESTION | wx.YES_NO)
@@ -337,7 +337,7 @@ def ShowAboutDialog(parent):
     info = wx.AboutDialogInfo()
     info.Name = "InVesalius"
     info.Version = "3.a.1 - RP"
-    info.Copyright = _("(C) 2007 Renato Archer Research Centre")
+    info.Copyright = _("(c) 2007 Center for Information Technology Renato Archer")
     info.Description = wordwrap(
        _("InVesalius is a software for medical imaging 3D reconstruction. ")+\
        _("Its input is a sequency of DICOM 2D image files acquired with CT or MR.\n\n")+\
