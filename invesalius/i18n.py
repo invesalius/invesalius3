@@ -47,5 +47,6 @@ def InstallLanguage(language):
     
     lang = gettext.translation('invesalius', const.LANGUAGE_DIR,\
                                    languages=[language], codeset='utf8')
-    lang.install()
+    # Using unicode
+    lang.install(unicode=1)
     return lang.gettext
