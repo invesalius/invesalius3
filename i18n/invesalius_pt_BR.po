@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: InVesalius 3\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2010-01-07 16:33-0200\n"
+"POT-Creation-Date: 2010-01-07 16:35-0200\n"
 "PO-Revision-Date: 2010-01-07 11:25-0300\n"
 "Last-Translator: Invesalius team <invesalius@cti.gov.br>\n"
 "Language-Team: InVesalius Team <invesalius@cti.gov.br>\n"
@@ -93,7 +93,7 @@ msgstr "Nome do padrão"
 
 #: default_viewers.py:412
 msgid "Save raycasting preset"
-msgstr "Salvar padrão raycasting"
+msgstr "Salvar modo raycasting"
 
 #: default_viewers.py:437
 msgid "Tools"
@@ -176,22 +176,22 @@ msgstr "GNU GPL (Licença Pública Geral) versão 2"
 
 #: dialogs.py:364
 msgid "Save raycasting preset as:"
-msgstr ""
+msgstr "Salvar modo de raycasting como:"
 
 #: dicom_preview_panel.py:42
 #, python-format
 msgid "Image size: %d x %d"
-msgstr ""
+msgstr "Tamanho da imagem: %d x %d"
 
 #: dicom_preview_panel.py:43
 #, python-format
 msgid "Spacing: %.2f"
-msgstr ""
+msgstr "Espaçamento: %.2f"
 
 #: dicom_preview_panel.py:44
 #, python-format
 msgid "Location: %.2f"
-msgstr ""
+msgstr "Localização: %.2f"
 
 #: dicom_preview_panel.py:46
 #, python-format
