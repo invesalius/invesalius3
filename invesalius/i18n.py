@@ -30,8 +30,8 @@ import constants as const
 
 def GetLocales():
     """Return a dictionary which defines supported languages"""
-    locale_descriptions = {'es': u'Español',
-                           'en': u'English',
+    locale_descriptions = {'en': u'English',
+                           'es': u'Español',
                            'pt_BR': u'Português (Brasil)'}
     return locale_descriptions
     

@@ -96,17 +96,17 @@ class LanguageDialog(wx.Dialog):
         bmp_english_flag = wx.Bitmap(os.path.join(const.ICON_DIR, "en_GB.bmp"), wx.BITMAP_TYPE_BMP)
         bmp_spanish_flag = wx.Bitmap(os.path.join(const.ICON_DIR, "es.bmp"), wx.BITMAP_TYPE_BMP)
 
-        bitmapCmb.Append(self.locales[0], bmp_brazilian_flag,"pt_BR")
-        bitmapCmb.Append(self.locales[1], bmp_english_flag,"en_GB")
+        bitmapCmb.Append(self.locales[0], bmp_english_flag,"en_GB")
+        bitmapCmb.Append(self.locales[1], bmp_brazilian_flag,"pt_BR")
         bitmapCmb.Append(self.locales[2], bmp_spanish_flag,"es")
 
-
+        
         if (self.os_locale[0:2] == 'pt'):
-            bitmapCmb.SetSelection(0)
+            bitmapCmb.SetSelection(1)
         elif (self.os_locale[0:2] == 'es'):
             bitmapCmb.SetSelection(2)
         else:
-            bitmapCmb.SetSelection(1)
+            bitmapCmb.SetSelection(0)
 
     def GetSelectedLanguage(self):
         """Return String with Selected Language"""
