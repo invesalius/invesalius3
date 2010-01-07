@@ -55,11 +55,17 @@ class SplashScreen(wx.SplashScreen):
         if not(lang):
             
             ldlg = lang_dlg.LanguageDialog()
-            
-            if (ldlg.ShowModal() == wx.ID_OK):
-                lang = ldlg.GetSelectedLanguage()
-                session.SetLanguage(lang)
-                _ = i18n.InstallLanguage(lang)
+
+            try:
+                if (ldlg.ShowModal() == wx.ID_OK):
+                    lang = ldlg.GetSelectedLanguage()
+                    session.SetLanguage(lang)
+                    _ = i18n.InstallLanguage(lang)
+            except(wx._core.PyAssertionError): #TODO: error win64
+                    lang = ldlg.GetSelectedLanguage()
+                    session.SetLanguage(lang)
+                    _ = i18n.InstallLanguage(lang)
+                
         else:
             _ = i18n.InstallLanguage(lang)
             

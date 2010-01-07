@@ -167,14 +167,17 @@ def ShowImportDirDialog():
                         | wx.DD_CHANGE_DIR)
 
     path = None
-    if dlg.ShowModal() == wx.ID_OK:
-        # GetPath returns in unicode, if a path has non-ascii characters a
-        # UnicodeEncodeError is raised. To avoid this, path is encoded in utf-8
-        if sys.platform == "win32":
-            path = dlg.GetPath()
-        else:
-            path = dlg.GetPath().encode('utf-8')
-        
+    try:
+        if dlg.ShowModal() == wx.ID_OK:
+            # GetPath returns in unicode, if a path has non-ascii characters a
+            # UnicodeEncodeError is raised. To avoid this, path is encoded in utf-8
+            if sys.platform == "win32":
+                path = dlg.GetPath()
+            else:
+                path = dlg.GetPath().encode('utf-8')
+    except(wx._core.PyAssertionError): #TODO: error win64
+        path = dlg.GetPath()
+
     # Only destroy a dialog after you're done with it.
     dlg.Destroy()
     os.chdir(current_dir)
