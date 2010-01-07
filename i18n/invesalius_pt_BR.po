@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: InVesalius 3\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2010-01-07 16:11-0200\n"
+"POT-Creation-Date: 2010-01-07 16:28-0200\n"
 "PO-Revision-Date: 2010-01-07 11:25-0300\n"
 "Last-Translator: Invesalius team <invesalius@cti.gov.br>\n"
 "Language-Team: InVesalius Team <invesalius@cti.gov.br>\n"
@@ -127,17 +127,18 @@ msgstr "Salvar projeto como..."
 msgid "InVesalius project (*.inv3)|*.inv3"
 msgstr "Projeto InVesalius (*.inv3)|*.inv3"
 
-
 #: dialogs.py:255 dialogs.py:294 dialogs.py:316
 #, python-format
 msgid ""
 "The project %s has been modified.\n"
 "Save changes?"
 msgstr ""
+"O projeto %s foi modificado.\n"
+" Deseja salvar as alterações?"
 
 #: dialogs.py:282
 msgid "There are no DICOM files on the selected directory."
-msgstr ""
+msgstr "Não há arquivos DICOM no diretório selecionado"
 
 #: dialogs.py:340
 msgid "(c) 2007 Center for Information Technology Renato Archer"
