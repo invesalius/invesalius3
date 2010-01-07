@@ -31,7 +31,7 @@ class LanguageDialog(wx.Dialog):
     selected is writing in the config.ini"""
 
     def __init__(self, parent = None, startApp = None):
-
+        
         self.__TranslateMessage__()
 
         self.pre = pre = wx.PreDialog()
@@ -40,6 +40,7 @@ class LanguageDialog(wx.Dialog):
         pre.Create(parent, -1, 'Language selection',  size = wx.Size(250, 150), 
                    pos = wx.DefaultPosition, style=wx.DEFAULT_DIALOG_STYLE)
         self.PostCreate(pre)
+        self.Centre()
 
         icon_path = os.path.join(const.ICON_DIR, "invesalius.ico")        
         pre.SetIcon(wx.Icon(icon_path, wx.BITMAP_TYPE_ICO))
