@@ -25,15 +25,15 @@ msgstr "Máscaras"
 
 #: data_notebook.py:43
 msgid "Surfaces"
-msgstr "Superficie"
+msgstr "Superficies"
 
 #: data_notebook.py:105 data_notebook.py:234 data_notebook.py:438
 msgid "Name"
-msgstr ""
+msgstr "Nome"
 
 #: data_notebook.py:106 task_surface.py:41
 msgid "Threshold"
-msgstr ""
+msgstr "Limiar"
 
 #: data_notebook.py:164
 #, fuzzy
