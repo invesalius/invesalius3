@@ -41,8 +41,8 @@ class NotebookPanel(wx.Panel):
 
         book.AddPage(MasksListCtrlPanel(book), _("Masks"))
         book.AddPage(SurfacesListCtrlPanel(book), _("Surfaces"))
-        book.AddPage(MeasuresListCtrlPanel(book), _("Measures"))
-        book.AddPage(AnnotationsListCtrlPanel(book), _("Annotations"))
+        #book.AddPage(MeasuresListCtrlPanel(book), _("Measures"))
+        #book.AddPage(AnnotationsListCtrlPanel(book), _("Annotations"))
         
         book.SetSelection(0)
         
