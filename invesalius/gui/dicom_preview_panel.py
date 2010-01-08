@@ -57,6 +57,7 @@ class DicomInfo(object):
         self.title = title
         self.subtitle = subtitle
         self._preview = None
+        self.selected = False
     
     @property
     def preview(self):
@@ -144,12 +145,15 @@ class Preview(wx.Panel):
         """
         Set a dicom to preview.
         """
+        self.dicom_info = dicom_info
         self.SetTitle(dicom_info.title)
         self.SetSubtitle(dicom_info.subtitle)
         self.ID = dicom_info.id
         image = dicom_info.preview
         self.image_viewer.SetBitmap(image)
         self.data = dicom_info.id
+        self.select_on = dicom_info.selected
+        self.Select()
         self.Update()
 
     def SetTitle(self, title):
@@ -166,12 +170,13 @@ class Preview(wx.Panel):
 
     def OnLeave(self, evt):
         if not self.select_on:
-            c = (255,255,255)
+            c = (PREVIEW_BACKGROUND)
             self.SetBackgroundColour(c)
 
     def OnSelect(self, evt):
         print "OnSelect"
         self.select_on = True
+        self.dicom_info.selected = True
         ##c = wx.SystemSettings_GetColour(wx.SYS_COLOUR_BTNHIGHLIGHT)
         ##c = wx.SystemSettings_GetColour(wx.SYS_COLOUR_HOTLIGHT)
         #c = wx.SystemSettings_GetColour(wx.SYS_COLOUR_HIGHLIGHT)
@@ -190,7 +195,7 @@ class Preview(wx.Panel):
         if self.select_on:
             c = wx.SystemSettings_GetColour(wx.SYS_COLOUR_HIGHLIGHT)
         else:
-            c = (255,255,255)
+            c = (PREVIEW_BACKGROUND)
         self.SetBackgroundColour(c)
         self.Refresh()
 
