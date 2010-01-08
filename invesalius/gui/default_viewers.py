@@ -278,6 +278,7 @@ class VolumeInteraction(wx.Panel):
 
     def OnSetRaycastPreset(self, evt_pubsub):
         preset = project.Project().raycasting_preset
+        print "Preset >>>", preset
         p = self.aui_manager.GetPane(self.clut_raycasting)
         self.clut_raycasting.SetRaycastPreset(preset)
         if self.clut_raycasting.to_draw_points and \
@@ -471,6 +472,13 @@ class VolumeToolPanel(wx.Panel):
         
         self.Fit()
         self.Update()
+
+    def BuildRaycastingMenu(self):
+        presets = []
+        for folder in const.RAYCASTING_PRESETS_FOLDERS:
+                presets += [filename.split(".")[0] for filename in
+                            os.listdir(folder) if
+                            os.path.isfile(os.path.join(folder,filename))]
         
     def OnMenuPlaneSlice(self, evt):
        

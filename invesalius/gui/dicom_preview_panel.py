@@ -85,7 +85,7 @@ class Preview(wx.Panel):
     The little previews.
     """
     def __init__(self, parent):
-        super(Preview, self).__init__(parent, style=wx.SUNKEN_BORDER)
+        super(Preview, self).__init__(parent)
         # Will it be white?
         self.select_on = False
         self._init_ui()

@@ -230,7 +230,7 @@ class CursorRectangle:
         self.y_length = 30
         
         self.dimension = (self.x_length, self.y_length)
-        #self.position = (0 ,0)
+        self.position = (0 ,0)
         self.orientation = "AXIAL"
         self.spacing = (1, 1, 1)
                 

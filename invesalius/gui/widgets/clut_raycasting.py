@@ -626,6 +626,7 @@ class CLUTRaycastingWidget(wx.Panel):
         self._draw_curves(ctx)
         self._draw_points(ctx)
         self._draw_selection_curve(ctx, height)
+        self._draw_tool_bar(ctx, height)
         if sys.platform != "darwin": 
             self._draw_tool_bar(ctx, height)
             if self.point_dragged:

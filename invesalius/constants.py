@@ -225,7 +225,7 @@ WINDOW_LEVEL = {"Abdomen":(350,50),
                  "Vasculature - Hard":(240,80),
                  "Vasculature - Soft":(650,160)}
 
-REDUCE_IMAGEDATA_QUALITY = 1
+REDUCE_IMAGEDATA_QUALITY = 0
 
 
 ICON_DIR = os.path.abspath(os.path.join('..', 'icons'))
@@ -264,6 +264,9 @@ RAYCASTING_TOOLS = ["Cut plane"]
 
 # If 0 dont't blur, 1 blur
 RAYCASTING_WWWL_BLUR = 0
+
+RAYCASTING_PRESETS_FOLDERS = (RAYCASTING_PRESETS_DIRECTORY,
+                              USER_RAYCASTING_PRESETS_DIRECTORY)
 
 
 ####

@@ -621,7 +621,6 @@ class Viewer(wx.Panel):
         # FIXME: This is idiot, but is the only way that brush operations are
         # working when cross is disabled
         ps.Publisher().sendMessage('Update slice viewer')
-        ps.Publisher().sendMessage('Update slice viewer')
 
     def OnBrushMove(self, evt, obj):
        
