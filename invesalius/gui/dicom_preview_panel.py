@@ -85,33 +85,27 @@ class Preview(wx.Panel):
     The little previews.
     """
     def __init__(self, parent):
-        super(Preview, self).__init__(parent, style= wx.BORDER)
+        super(Preview, self).__init__(parent, style=wx.SUNKEN_BORDER)
         # Will it be white?
         self.select_on = False
         self._init_ui()
         self._bind_events()
 
     def _init_ui(self):
-        self.title = wx.StaticText(self, -1, _("Image"),
-                                         style=wx.ALIGN_CENTER)
-        self.subtitle = wx.StaticText(self, -1, _("Image"),
-                                         style=wx.ALIGN_CENTER)
+        self.title = wx.StaticText(self, -1, _("Image"))
+        self.subtitle = wx.StaticText(self, -1, _("Image"))
         self.image_viewer = wx.StaticBitmap(self, -1, size=(70, 70))
 
         #self.panel = wx.Panel(self, -1)
 
         self.SetBackgroundColour(PREVIEW_BACKGROUND)
         
-        sizer_image = wx.BoxSizer(wx.HORIZONTAL)
-        sizer_image.Add(self.image_viewer, 0, wx.EXPAND|wx.ALIGN_CENTER_HORIZONTAL)
-
         self.sizer = wx.BoxSizer(wx.VERTICAL)
-        self.sizer.AddSpacer(2)
         self.sizer.Add(self.title, 0,
-                        wx.GROW|wx.EXPAND|wx. ALIGN_CENTER_HORIZONTAL)
+                        wx.ALIGN_CENTER_HORIZONTAL)
         self.sizer.Add(self.subtitle, 0,
-                        wx.GROW|wx.EXPAND|wx.ALIGN_CENTER_HORIZONTAL)
-        self.sizer.Add(sizer_image, 5, wx.GROW|wx.EXPAND|wx.ALL, 4)
+                        wx.ALIGN_CENTER_HORIZONTAL)
+        self.sizer.Add(self.image_viewer, 0, wx.ALIGN_CENTER_HORIZONTAL)
         self.sizer.Fit(self)
 
         self.SetSizer(self.sizer)
@@ -198,7 +192,6 @@ class Preview(wx.Panel):
         else:
             c = (255,255,255)
         self.SetBackgroundColour(c)
-        self.Refresh()
 
     def OnDClick(self, evt):
         evt = PreviewEvent(myEVT_SELECT, self.GetId())
