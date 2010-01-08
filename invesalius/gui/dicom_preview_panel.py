@@ -192,6 +192,7 @@ class Preview(wx.Panel):
         else:
             c = (255,255,255)
         self.SetBackgroundColour(c)
+        self.Refresh()
 
     def OnDClick(self, evt):
         evt = PreviewEvent(myEVT_SELECT, self.GetId())
