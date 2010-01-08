@@ -37,7 +37,10 @@ def ReadDicomGroup(dir_):
     if len(patient_group) > 0:
         filelist, dicom, zspacing = SelectLargerDicomGroup(patient_group)
         filelist = SortFiles(filelist, dicom)
-        imagedata = CreateImageData(filelist, zspacing)
+        size = dicom.image.size
+        bits = dicom.image.bits_allocad
+        
+        imagedata = CreateImageData(filelist, zspacing, size, bits)
         session.Session().project_status = const.NEW_PROJECT
         return imagedata, dicom
     else:

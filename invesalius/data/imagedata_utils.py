@@ -24,7 +24,7 @@ import wx.lib.pubsub as ps
 
 import constants as const
 from data import vtk_utils
-
+import utils
 
 # TODO: Test cases which are originally in sagittal/coronal orientation
 # and have gantry
@@ -217,7 +217,7 @@ def ExtractVOI(imagedata,xi,xf,yi,yf,zi,zf):
     voi.Update()  
     return voi.GetOutput()
 
-def CreateImageData(filelist, zspacing):
+def CreateImageData(filelist, zspacing, size, bits):
     message = "Generating multiplanar visualization..."
     
     if not const.VTK_WARNING:
@@ -245,12 +245,16 @@ def CreateImageData(filelist, zspacing):
         spacing = imagedata.GetSpacing()
         imagedata.SetSpacing(spacing[0], spacing[1], zspacing)
     else:
+    
         update_progress= vtk_utils.ShowProgress(2*len(filelist),
                                             dialog_type = "ProgressDialog")
 
         # Reformat each slice and future append them
         appender = vtk.vtkImageAppend()
         appender.SetAppendAxis(2) #Define Stack in Z
+        
+        x,y = size        
+        p = utils.PredictingMemory(len(filelist), x, y, bits)
 
         # Reformat each slice
         for x in xrange(len(filelist)):
@@ -262,10 +266,9 @@ def CreateImageData(filelist, zspacing):
             reader.AddObserver("ProgressEvent", lambda obj,evt:
                          update_progress(reader,message))
             reader.Update()
-
+           
             #Resample image in x,y dimension
-            slice_imagedata = ResampleImage2D(reader.GetOutput(), 256, update_progress)
-
+            slice_imagedata = ResampleImage2D(reader.GetOutput(), p, update_progress)
             #Stack images in Z axes
             appender.AddInput(slice_imagedata)
             #appender.AddObserver("ProgressEvent", lambda obj,evt:update_progress(appender))
@@ -285,6 +288,7 @@ def CreateImageData(filelist, zspacing):
     return imagedata
 
 
+"""
 class ImageCreator:
     def __init__(self):
         ps.Publisher().sendMessage("Cancel imagedata load", self.CancelImageDataLoad)
@@ -332,6 +336,7 @@ class ImageCreator:
                 reader.Update()
     
                 #Resample image in x,y dimension
+               
                 slice_imagedata = ResampleImage2D(reader.GetOutput(), 256, update_progress)
     
                 #Stack images in Z axes
@@ -351,5 +356,5 @@ class ImageCreator:
         imagedata.Update()
         
         return imagedata
-    
+"""
 

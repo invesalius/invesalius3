@@ -1854,6 +1854,7 @@ class Image(object):
         self.type = parser.GetImageType()
         self.size = (parser.GetDimensionX(), parser.GetDimensionY())
         self.imagedata = parser.GetImageData()
+        self.bits_allocad = parser._GetBitsAllocated()
         
         if (parser.GetImageThickness()):
             try:

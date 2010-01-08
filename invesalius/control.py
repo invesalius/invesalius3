@@ -367,7 +367,10 @@ class Controller():
             print ">Not used the IPPSorter"
             filelist = [i.image.file for i in dicom_group.GetHandSortedList()]
         zspacing = dicom_group.zspacing
-        imagedata = utils.CreateImageData(filelist, zspacing)
+        size = dicom.image.size
+        bits = dicom.image.bits_allocad
+        
+        imagedata = utils.CreateImageData(filelist, zspacing, size, bits)
 
         # 1(a): Fix gantry tilt, if any
         tilt_value = dicom.acquisition.tilt

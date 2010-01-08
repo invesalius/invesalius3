@@ -82,3 +82,30 @@ def frange(start, end=None, inc=None):
         L.append(next)
         
     return L
+
+def PredictingMemory(qtd, x, y, p):
+    m = qtd * (x * y * p)
+    
+    #314859200 = 350 MB
+    #house 25 MB increases the 
+    #factor 0.4
+    if (m >= 314859200):
+        porcent = 1.5 + (m - 314859200) / 26999999 * 0.04
+        x = x/porcent
+        y = y/porcent
+        return x
+    else:
+        return x  
+        
+    return x
+
+def BytesConvert(bytes):
+    if bytes >= 1073741824:
+        return str(bytes / 1024 / 1024 / 1024) + ' GB'
+    elif bytes >= 1048576:
+        return str(bytes / 1024 / 1024) + ' MB'
+    elif bytes >= 1024:
+        return str(bytes / 1024) + ' KB'
+    elif bytes < 1024:
+        return str(bytes) + ' bytes'
+
