@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: InVesalius 3\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2010-01-08 08:33-0200\n"
+"POT-Creation-Date: 2010-01-08 08:38-0200\n"
 "PO-Revision-Date: 2010-01-07 11:25-0300\n"
 "Last-Translator: Invesalius team <invesalius@cti.gov.br>\n"
 "Language-Team: InVesalius Team <invesalius@cti.gov.br>\n"
@@ -438,71 +438,71 @@ msgstr "Salvar superfície 3D como..."
 
 #: task_exporter.py:292
 msgid "You need to create a surface and make it "
-msgstr ""
+msgstr "É necessário criar uma superfície e torná-la "
 
 #: task_exporter.py:293
 msgid "visible before exporting it."
-msgstr ""
+msgstr "visível antes de exportá-la."
 
 #: task_importer.py:64
 msgid "Select DICOM or Analyze files to be reconstructed"
-msgstr ""
+msgstr "Selecione arquivos DICOM ou Analyze para serem reconstruídos"
 
 #: task_importer.py:65
 msgid "Import medical images..."
-msgstr ""
+msgstr "Importar imagens médicas..."
 
 #: task_importer.py:82
 msgid "Open an existing InVesalius project..."
-msgstr ""
+msgstr "Abrir um projeto InVesalius existente..."
 
 #: task_importer.py:83
 msgid "Open an existing project..."
-msgstr ""
+msgstr "Abrir um projeto existente..."
 
 #: task_slice.py:79
 msgid "Create mask for slice segmentation and edition"
-msgstr ""
+msgstr "Criar máscara para segmentação e edição de fatia"
 
 #: task_slice.py:108
 msgid "Create 3D surface"
-msgstr ""
+msgstr "Criar superfície 3D"
 
 #: task_slice.py:137
 msgid "Name of new mask:"
-msgstr ""
+msgstr "Nome da nova máscara:"
 
 #: task_slice.py:138
 msgid "InVesalius 3 - New mask"
-msgstr ""
+msgstr "InVesalius 3 - Nova máscara"
 
 #: task_slice.py:196
 msgid "Mask properties"
-msgstr ""
+msgstr "Propriedades da máscara"
 
 #: task_slice.py:204
 msgid "Advanced edition tools"
-msgstr ""
+msgstr "Ferramentas avançadas de edição"
 
 #: task_slice.py:288
 msgid "Set predefined or manual threshold:"
-msgstr ""
+msgstr "Defina um limiar pré-definido ou manual:"
 
 #: task_slice.py:440
 msgid "Choose brush type, size or operation:"
-msgstr ""
+msgstr "Selecione o tipo, tamanho e operação do pincel:"
 
 #: task_slice.py:446
 msgid "Circle"
-msgstr ""
+msgstr "Círculo"
 
 #: task_slice.py:450
 msgid "Square"
-msgstr ""
+msgstr "Quadrado"
 
 #: task_slice.py:486
 msgid "Brush threshold range:"
-msgstr ""
+msgstr "Limiar do pincel:"
 
 #: task_surface.py:30
 msgid "Low"
