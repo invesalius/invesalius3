@@ -77,7 +77,7 @@ class InnerTaskPanel(wx.Panel):
 
         # Fixed hyperlink items
         tooltip = wx.ToolTip(_("Create mask for slice segmentation and edition"))
-        link_new_mask = hl.HyperLinkCtrl(self, -1, "Create new mask")
+        link_new_mask = hl.HyperLinkCtrl(self, -1, _("Create new mask"))
         link_new_mask.SetUnderlines(False, False, False)
         link_new_mask.SetColours("BLACK", "BLACK", "BLACK")
         link_new_mask.SetToolTip(tooltip)
