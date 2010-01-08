@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: InVesalius 3\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2010-01-07 16:43-0200\n"
+"POT-Creation-Date: 2010-01-08 08:33-0200\n"
 "PO-Revision-Date: 2010-01-07 11:25-0300\n"
 "Last-Translator: Invesalius team <invesalius@cti.gov.br>\n"
 "Language-Team: InVesalius Team <invesalius@cti.gov.br>\n"
@@ -398,43 +398,43 @@ msgstr "Salvar valores atuais como..."
 
 #: slice_menu.py:62
 msgid "Load values"
-msgstr ""
+msgstr "Carregar valores"
 
 #: slice_menu.py:75 slice_menu.py:80
 msgid "Default "
-msgstr ""
+msgstr "Padrão"
 
 #: slice_menu.py:99
 msgid "Window Width and Level"
-msgstr ""
+msgstr "Brilho e Contraste"
 
 #: slice_menu.py:100
 msgid "Pseudo Colour"
-msgstr ""
+msgstr "Pseudo Cor"
 
 #: slice_menu.py:101
 msgid "Image Tiling"
-msgstr ""
+msgstr "Conjunto de Imagens"
 
 #: task_exporter.py:101
 msgid "Export InVesalius screen to a image file"
-msgstr ""
+msgstr "Exportar dado do InVesalius para um arquivo de imagem"
 
 #: task_exporter.py:103
 msgid "Export picture..."
-msgstr ""
+msgstr "Exportar imagem..."
 
 #: task_exporter.py:112
 msgid "Export 3D surface"
-msgstr ""
+msgstr "Exportar superfície 3D"
 
 #: task_exporter.py:113
 msgid "Export 3D surface..."
-msgstr ""
+msgstr "Exportar superfície 3D..."
 
 #: task_exporter.py:273
 msgid "Save 3D surface as..."
-msgstr ""
+msgstr "Salvar superfície 3D como..."
 
 #: task_exporter.py:292
 msgid "You need to create a surface and make it "
