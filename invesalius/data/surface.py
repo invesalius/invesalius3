@@ -360,10 +360,13 @@ class SurfaceManager():
         actor.GetProperty().SetColor(colour)
         actor.GetProperty().SetOpacity(1-surface.transparency)
         
-        #Remove all temp file
-        os.remove(filename_img)
-        os.remove(filename_polydata)
-        
+        try:
+            #Remove all temp file
+            os.remove(filename_img)
+            os.remove(filename_polydata)
+        except(WindowsError):
+            print "Error remove temp file"
+            
         # Append surface into Project.surface_dict
         proj = prj.Project()
         index = proj.AddSurface(surface)
