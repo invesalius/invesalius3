@@ -57,11 +57,27 @@ class DicomInfo(object):
         self.title = title
         self.subtitle = subtitle
         self._preview = None
+        self._size = (70, 70)
         self.selected = False
+        self.resized = False
+
+    @property
+    def size(self):
+        return self._size
+
+    @size.setter
+    def size(self, size):
+        if size != self._size:
+            self._size = size
+            self.resized = True
     
     @property
     def preview(self):
         if self._preview:
+            if self.resized:
+                self.resized = False
+                s_img = self.img.Scale(*self._size).Mirror(False)
+                self._preview = wx.BitmapFromImage(s_img)
             return self._preview
         else:
             colorer = vtk.vtkImageMapToWindowLevelColors()
@@ -75,9 +91,9 @@ class DicomInfo(object):
 
             r = colorer.GetOutput().GetPointData().GetScalars()
             ni = numpy_support.vtk_to_numpy(r)
-            img = wx.ImageFromBuffer(width, height, ni)
-            img = img.Rescale(PREVIEW_WIDTH, PREVIEW_HEIGTH).Mirror(False)
-            self._preview = wx.BitmapFromImage(img)
+            self.img = wx.ImageFromBuffer(width, height, ni)
+            s_img = self.img.Scale(*self._size).Mirror(False)
+            self._preview = wx.BitmapFromImage(s_img)
             return self._preview
 
 
@@ -89,24 +105,24 @@ class Preview(wx.Panel):
         super(Preview, self).__init__(parent)
         # Will it be white?
         self.select_on = False
+        self.dicom_info = None
         self._init_ui()
         self._bind_events()
 
     def _init_ui(self):
+        self.SetBackgroundColour(PREVIEW_BACKGROUND)
+
         self.title = wx.StaticText(self, -1, _("Image"))
         self.subtitle = wx.StaticText(self, -1, _("Image"))
-        self.image_viewer = wx.StaticBitmap(self, -1, size=(70, 70))
-
-        #self.panel = wx.Panel(self, -1)
-
-        self.SetBackgroundColour(PREVIEW_BACKGROUND)
+        self.image_viewer = wx.StaticBitmap(self, -1)
         
         self.sizer = wx.BoxSizer(wx.VERTICAL)
         self.sizer.Add(self.title, 0,
                         wx.ALIGN_CENTER_HORIZONTAL)
         self.sizer.Add(self.subtitle, 0,
                         wx.ALIGN_CENTER_HORIZONTAL)
-        self.sizer.Add(self.image_viewer, 0, wx.ALIGN_CENTER_HORIZONTAL)
+        self.sizer.Add(self.image_viewer, 1, wx.ALIGN_CENTRE_HORIZONTAL \
+                       | wx.SHAPED | wx.ALL, 5)
         self.sizer.Fit(self)
 
         self.SetSizer(self.sizer)
@@ -141,6 +157,8 @@ class Preview(wx.Panel):
         #self.title.Bind(wx.EVT_LEFT_DOWN, self.OnSelect)
         #self.subtitle.Bind(wx.EVT_LEFT_DOWN, self.OnSelect)
 
+        self.Bind(wx.EVT_SIZE, self.OnSize)
+
     def SetDicomToPreview(self, dicom_info):
         """
         Set a dicom to preview.
@@ -149,6 +167,7 @@ class Preview(wx.Panel):
         self.SetTitle(dicom_info.title)
         self.SetSubtitle(dicom_info.subtitle)
         self.ID = dicom_info.id
+        dicom_info.size = self.image_viewer.GetSize()
         image = dicom_info.preview
         self.image_viewer.SetBitmap(image)
         self.data = dicom_info.id
@@ -190,6 +209,11 @@ class Preview(wx.Panel):
         #c = wx.SystemSettings_GetColour(wx.SYS_COLOUR_3DSHADOW)
         #self.SetBackgroundColour(c)
         self.Select()
+
+    def OnSize(self, evt):
+        if self.dicom_info:
+            self.SetDicomToPreview(self.dicom_info)
+        evt.Skip()
 
     def Select(self, on=True):
         if self.select_on:
