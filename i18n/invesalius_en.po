@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: InVesalius 3\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2010-01-08 08:40-0200\n"
+"POT-Creation-Date: 2010-01-11 10:09-0200\n"
 "PO-Revision-Date: 2010-01-07 11:25-0300\n"
 "Last-Translator: Invesalius team <invesalius@cti.gov.br>\n"
 "Language-Team: InVesalius Team <invesalius@cti.gov.br>\n"
@@ -87,15 +87,15 @@ msgstr ""
 msgid "Volume"
 msgstr ""
 
-#: default_viewers.py:409
+#: default_viewers.py:410
 msgid "Preset name"
 msgstr ""
 
-#: default_viewers.py:412
+#: default_viewers.py:413
 msgid "Save raycasting preset"
 msgstr ""
 
-#: default_viewers.py:437
+#: default_viewers.py:438
 msgid "Tools"
 msgstr ""
 
@@ -172,58 +172,58 @@ msgstr ""
 msgid "Save raycasting preset as:"
 msgstr ""
 
-#: dicom_preview_panel.py:42
+#: dicom_preview_panel.py:44
 #, python-format
 msgid "Image size: %d x %d"
 msgstr ""
 
-#: dicom_preview_panel.py:43
+#: dicom_preview_panel.py:45
 #, python-format
 msgid "Spacing: %.2f"
 msgstr ""
 
-#: dicom_preview_panel.py:44
+#: dicom_preview_panel.py:46
 #, python-format
 msgid "Location: %.2f"
 msgstr ""
 
-#: dicom_preview_panel.py:46
+#: dicom_preview_panel.py:48
 #, python-format
 msgid ""
 "%s %s\n"
 "Made in InVesalius"
 msgstr ""
 
-#: dicom_preview_panel.py:66
+#: dicom_preview_panel.py:96 dicom_preview_panel.py:97
+msgid "Image"
+msgstr ""
+
+#: dicom_preview_panel.py:308
 msgid "image size"
 msgstr ""
 
-#: dicom_preview_panel.py:75
+#: dicom_preview_panel.py:317
 msgid ""
 "id\n"
 "protocol"
 msgstr ""
 
-#: dicom_preview_panel.py:82
+#: dicom_preview_panel.py:324
 msgid ""
 "date time\n"
 " Made in InVesalius"
 msgstr ""
 
-#: dicom_preview_panel.py:128
+#: dicom_preview_panel.py:370
 msgid "Auto-play"
 msgstr ""
 
-#: dicom_preview_panel.py:282 dicom_preview_panel.py:285
-msgid "Image"
-msgstr ""
-
-#: dicom_preview_panel.py:618
+#: dicom_preview_panel.py:594
 #, python-format
 msgid "%d Images"
 msgstr ""
 
-#: dicom_preview_panel.py:739 dicom_preview_panel.py:764
+#: dicom_preview_panel.py:711 dicom_preview_panel.py:732
 #, python-format
 msgid "Image %d"
 msgstr ""

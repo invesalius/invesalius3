@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: InVesalius 3\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2010-01-08 08:40-0200\n"
+"POT-Creation-Date: 2010-01-11 10:09-0200\n"
 "PO-Revision-Date: 2010-01-07 11:25-0300\n"
 "Last-Translator: Invesalius team <invesalius@cti.gov.br>\n"
 "Language-Team: InVesalius Team <invesalius@cti.gov.br>\n"
@@ -87,15 +87,15 @@ msgstr "Fatia Sagital"
 msgid "Volume"
 msgstr "Volume"
 
-#: default_viewers.py:409
+#: default_viewers.py:410
 msgid "Preset name"
 msgstr "Nome do padrão"
 
-#: default_viewers.py:412
+#: default_viewers.py:413
 msgid "Save raycasting preset"
 msgstr "Salvar modo raycasting"
 
-#: default_viewers.py:437
+#: default_viewers.py:438
 msgid "Tools"
 msgstr "Ferramentas"
 
@@ -178,22 +178,22 @@ msgstr "GNU GPL (Licença Pública Geral) versão 2"
 msgid "Save raycasting preset as:"
 msgstr "Salvar modo de raycasting como:"
 
-#: dicom_preview_panel.py:42
+#: dicom_preview_panel.py:44
 #, python-format
 msgid "Image size: %d x %d"
 msgstr "Tamanho da imagem: %d x %d"
 
-#: dicom_preview_panel.py:43
+#: dicom_preview_panel.py:45
 #, python-format
 msgid "Spacing: %.2f"
 msgstr "Espaçamento: %.2f"
 
-#: dicom_preview_panel.py:44
+#: dicom_preview_panel.py:46
 #, python-format
 msgid "Location: %.2f"
 msgstr "Localização: %.2f"
 
-#: dicom_preview_panel.py:46
+#: dicom_preview_panel.py:48
 #, python-format
 msgid ""
 "%s %s\n"
@@ -202,11 +202,15 @@ msgstr ""
 "%s %s\n"
 " Criado com InVesalius"
 
-#: dicom_preview_panel.py:66
+#: dicom_preview_panel.py:96 dicom_preview_panel.py:97
+msgid "Image"
+msgstr "Imagem"
+
+#: dicom_preview_panel.py:308
 msgid "image size"
 msgstr "tamanho da imagem"
 
-#: dicom_preview_panel.py:75
+#: dicom_preview_panel.py:317
 msgid ""
 "id\n"
 "protocol"
@@ -214,7 +218,7 @@ msgstr ""
 "id\n"
 "protocolo"
 
-#: dicom_preview_panel.py:82
+#: dicom_preview_panel.py:324
 msgid ""
 "date time\n"
 " Made in InVesalius"
@@ -222,20 +226,16 @@ msgstr ""
 "data hora\n"
 " Criado com InVesalius"
 
-#: dicom_preview_panel.py:128
+#: dicom_preview_panel.py:370
 msgid "Auto-play"
 msgstr "Reproduzir"
 
-#: dicom_preview_panel.py:282 dicom_preview_panel.py:285
-msgid "Image"
-msgstr "Imagem"
-
-#: dicom_preview_panel.py:618
+#: dicom_preview_panel.py:594
 #, python-format
 msgid "%d Images"
 msgstr "%d Imagens"
 
-#: dicom_preview_panel.py:739 dicom_preview_panel.py:764
+#: dicom_preview_panel.py:711 dicom_preview_panel.py:732
 #, python-format
 msgid "Image %d"
 msgstr "Imagem %d"
@@ -511,39 +511,39 @@ msgstr "Limiar do pincel:"
 
 #: task_surface.py:30
 msgid "Low"
-msgstr ""
+msgstr "Baixa"
 
 #: task_surface.py:30
 msgid "Medium"
-msgstr ""
+msgstr "Média"
 
 #: task_surface.py:30
 msgid "High"
-msgstr ""
+msgstr "Alta"
 
 #: task_surface.py:30
 msgid "Optimal *"
-msgstr ""
+msgstr "Ótima *"
 
 #: task_surface.py:30
 msgid "Custom"
-msgstr ""
+msgstr "Personalizada"
 
 #: task_surface.py:41
 msgid "Draw"
-msgstr ""
+msgstr "Desenhar"
 
 #: task_surface.py:41
 msgid "Erase"
-msgstr ""
+msgstr "Apagar"
 
 #: task_surface.py:83
 msgid "Create 3D surface based on a mask"
-msgstr ""
+msgstr "Criar superfície 3D baseada em máscara"
 
 #: task_surface.py:102
 msgid "Next step"
-msgstr ""
+msgstr "Próximo passo"
 
 #: task_surface.py:131
 msgid "InVesalius 3 - New surface"
