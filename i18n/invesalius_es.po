@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: InVesalius 3\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2010-01-11 10:13-0200\n"
+"POT-Creation-Date: 2010-01-11 13:33-0200\n"
 "PO-Revision-Date: 2010-01-07 11:25-0300\n"
 "Last-Translator: Invesalius team <invesalius@cti.gov.br>\n"
 "Language-Team: InVesalius Team <invesalius@cti.gov.br>\n"
@@ -18,6 +18,301 @@ msgstr ""
 "X-Poedit-Language: Portuguese\n"
 "X-Poedit-SourceCharset: utf-8\n"
 "X-Poedit-Country: BRAZIL\n"
+
+#: constants.py:105 slice_menu.py:75 slice_menu.py:80
+msgid "Default "
+msgstr ""
+
+#: constants.py:106
+msgid "Hue"
+msgstr ""
+
+#: constants.py:107
+msgid "Saturation"
+msgstr ""
+
+#: constants.py:108
+msgid "Desert"
+msgstr ""
+
+#: constants.py:109
+msgid "Rainbow"
+msgstr ""
+
+#: constants.py:110
+msgid "Ocen"
+msgstr ""
+
+#: constants.py:111
+msgid "Inverse Gray"
+msgstr ""
+
+#: constants.py:152 constants.py:212 dicom_preview_panel.py:299
+#: dicom_preview_panel.py:300 presets.py:30 presets.py:48 presets.py:119
+msgid "Bone"
+msgstr ""
+
+#: constants.py:159
+#, python-format
+msgid "Mask %d"
+msgstr ""
+
+#: constants.py:188 task_surface.py:41
+msgid "Draw"
+msgstr ""
+
+#: constants.py:188 task_surface.py:41
+msgid "Erase"
+msgstr ""
+
+#: constants.py:188 data_notebook.py:108 task_surface.py:41
+msgid "Threshold"
+msgstr ""
+
+#: constants.py:199 task_surface.py:30
+msgid "Low"
+msgstr ""
+
+#: constants.py:200 task_surface.py:30
+msgid "Medium"
+msgstr ""
+
+#: constants.py:201 task_surface.py:30
+msgid "High"
+msgstr ""
+
+#: constants.py:202 constants.py:204
+msgid "Optimal"
+msgstr ""
+
+#: constants.py:203 presets.py:44 presets.py:62 task_surface.py:30
+msgid "Custom"
+msgstr ""
+
+#: constants.py:208
+#, python-format
+msgid "Surface %d"
+msgstr ""
+
+#: constants.py:211
+msgid "Abdomen"
+msgstr ""
+
+#: constants.py:213
+msgid "Brain Posterior Fossa"
+msgstr ""
+
+#: constants.py:214
+msgid "Brain"
+msgstr ""
+
+#: constants.py:215 slice_menu.py:39 slice_menu.py:51
+msgid "Default"
+msgstr ""
+
+#: constants.py:216
+msgid "Emphysema"
+msgstr ""
+
+#: constants.py:217
+msgid "Ischemia - Hard Non Contrast"
+msgstr ""
+
+#: constants.py:218
+msgid "Ischemia - Soft Non Contrast"
+msgstr ""
+
+#: constants.py:219
+msgid "Larynx"
+msgstr ""
+
+#: constants.py:220
+msgid "Liver"
+msgstr ""
+
+#: constants.py:221
+msgid "Lung - Soft"
+msgstr ""
+
+#: constants.py:222
+msgid "Lung - Hard"
+msgstr ""
+
+#: constants.py:223
+msgid "Mediastinum"
+msgstr ""
+
+#: constants.py:224 slice_menu.py:46 slice_menu.py:51
+msgid "Manual"
+msgstr ""
+
+#: constants.py:225
+msgid "Pelvis"
+msgstr ""
+
+#: constants.py:226
+msgid "Sinus"
+msgstr ""
+
+#: constants.py:227
+msgid "Vasculature - Hard"
+msgstr ""
+
+#: constants.py:228
+msgid "Vasculature - Soft"
+msgstr ""
+
+#: constants.py:239
+msgid "Front"
+msgstr ""
+
+#: constants.py:240
+msgid "Back"
+msgstr ""
+
+#: constants.py:241
+msgid "Top"
+msgstr ""
+
+#: constants.py:242
+msgid "Bottom"
+msgstr ""
+
+#: constants.py:243
+msgid "Right"
+msgstr ""
+
+#: constants.py:244
+msgid "Left"
+msgstr ""
+
+#: constants.py:245
+msgid "Isometric"
+msgstr ""
+
+#: constants.py:254
+msgid "Airways"
+msgstr ""
+
+#: constants.py:255
+msgid "Airways II"
+msgstr ""
+
+#: constants.py:256
+msgid "Black & White"
+msgstr ""
+
+#: constants.py:257
+msgid "Bone + Skin"
+msgstr ""
+
+#: constants.py:258
+msgid "Bone + Skin II"
+msgstr ""
+
+#: constants.py:259
+msgid "Dark Bone"
+msgstr ""
+
+#: constants.py:260
+msgid "Glossy"
+msgstr ""
+
+#: constants.py:261
+msgid "Glossy II"
+msgstr ""
+
+#: constants.py:262
+msgid "Gold Bone"
+msgstr ""
+
+#: constants.py:263
+msgid "High Contrast"
+msgstr ""
+
+#: constants.py:264
+msgid "Low Contrast"
+msgstr ""
+
+#: constants.py:265 constants.py:272
+msgid "Soft on White"
+msgstr ""
+
+#: constants.py:266
+msgid "Mid Contrast"
+msgstr ""
+
+#: constants.py:267
+msgid "No Shading"
+msgstr ""
+
+#: constants.py:268
+msgid "Pencil"
+msgstr ""
+
+#: constants.py:269
+msgid "Red on White"
+msgstr ""
+
+#: constants.py:270
+msgid "Skin On Blue"
+msgstr ""
+
+#: constants.py:271
+msgid "Skin On Blue II"
+msgstr ""
+
+#: constants.py:273
+msgid "Soft + Skin"
+msgstr ""
+
+#: constants.py:274
+msgid "Soft + Skin II"
+msgstr ""
+
+#: constants.py:275
+msgid "Soft + Skin III"
+msgstr ""
+
+#: constants.py:276
+msgid "Soft On Blue"
+msgstr ""
+
+#: constants.py:277
+msgid "Soft"
+msgstr ""
+
+#: constants.py:278
+msgid "Standard"
+msgstr ""
+
+#: constants.py:279
+msgid "Vascular"
+msgstr ""
+
+#: constants.py:280
+msgid "Vascular II"
+msgstr ""
+
+#: constants.py:281
+msgid "Vascular III"
+msgstr ""
+
+#: constants.py:282
+msgid "Vascular IV"
+msgstr ""
+
+#: constants.py:283
+msgid "Yellow Bone"
+msgstr ""
+
+#: constants.py:296 constants.py:298
+msgid " Off"
+msgstr ""
+
+#: constants.py:299
+msgid "Cut plane"
+msgstr ""
 
 #: data_notebook.py:44
 msgid "Masks"
@@ -29,10 +324,6 @@ msgstr ""
 
 #: data_notebook.py:107 data_notebook.py:236 data_notebook.py:440
 msgid "Name"
-msgstr ""
-
-#: data_notebook.py:108 task_surface.py:41
-msgid "Threshold"
 msgstr ""
 
 #: data_notebook.py:166
@@ -368,12 +659,52 @@ msgstr ""
 msgid "Choose user interface language"
 msgstr ""
 
-#: slice_menu.py:39 slice_menu.py:51
-msgid "Default"
+#: presets.py:31 presets.py:49
+msgid "Soft Tissue"
 msgstr ""
 
-#: slice_menu.py:46 slice_menu.py:51
-msgid "Manual"
+#: presets.py:32 presets.py:50
+msgid "Enamel (Adult)"
+msgstr ""
+
+#: presets.py:33 presets.py:51
+msgid "Enamel (Child)"
+msgstr ""
+
+#: presets.py:34 presets.py:52
+msgid "Compact Bone (Adult)"
+msgstr ""
+
+#: presets.py:35 presets.py:53
+msgid "Compact Bone (Child)"
+msgstr ""
+
+#: presets.py:36 presets.py:54
+msgid "Spongial Bone (Adult)"
+msgstr ""
+
+#: presets.py:37 presets.py:55
+msgid "Spongial Bone (Child)"
+msgstr ""
+
+#: presets.py:38 presets.py:56
+msgid "Muscle Tissue (Adult)"
+msgstr ""
+
+#: presets.py:39 presets.py:57
+msgid "Muscle Tissue (Child)"
+msgstr ""
+
+#: presets.py:40 presets.py:41 presets.py:58 presets.py:59
+msgid "Fat Tissue (Adult)"
+msgstr ""
+
+#: presets.py:42 presets.py:60
+msgid "Skin Tissue (Adult)"
+msgstr ""
+
+#: presets.py:43 presets.py:61
+msgid "Skin Tissue (Child)"
 msgstr ""
 
 #: slice_menu.py:61
@@ -388,10 +719,6 @@ msgstr ""
 msgid "Load values"
 msgstr ""
 
-#: slice_menu.py:75 slice_menu.py:80
-msgid "Default "
-msgstr ""
-
 #: slice_menu.py:99
 msgid "Window Width and Level"
 msgstr ""
@@ -402,6 +729,10 @@ msgstr ""
 
 #: slice_menu.py:101
 msgid "Image Tiling"
+msgstr ""
+
+#: surface.py:275 task_surface.py:30
+msgid "Optimal *"
 msgstr ""
 
 #: task_exporter.py:101
@@ -494,34 +825,6 @@ msgstr ""
 
 #: task_slice.py:486
 msgid "Brush threshold range:"
-msgstr ""
-
-#: task_surface.py:30
-msgid "Low"
-msgstr ""
-
-#: task_surface.py:30
-msgid "Medium"
-msgstr ""
-
-#: task_surface.py:30
-msgid "High"
-msgstr ""
-
-#: task_surface.py:30
-msgid "Optimal *"
-msgstr ""
-
-#: task_surface.py:30
-msgid "Custom"
-msgstr ""
-
-#: task_surface.py:41
-msgid "Draw"
-msgstr ""
-
-#: task_surface.py:41
-msgid "Erase"
 msgstr ""
 
 #: task_surface.py:83
