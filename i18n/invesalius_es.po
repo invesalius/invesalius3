@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: InVesalius 3\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2010-01-11 13:33-0200\n"
+"POT-Creation-Date: 2010-01-11 13:59-0200\n"
 "PO-Revision-Date: 2010-01-07 11:25-0300\n"
 "Last-Translator: Invesalius team <invesalius@cti.gov.br>\n"
 "Language-Team: InVesalius Team <invesalius@cti.gov.br>\n"
@@ -47,8 +47,8 @@ msgstr ""
 msgid "Inverse Gray"
 msgstr ""
 
-#: constants.py:152 constants.py:212 dicom_preview_panel.py:299
-#: dicom_preview_panel.py:300 presets.py:30 presets.py:48 presets.py:119
+#: constants.py:152 constants.py:212 dicom_preview_panel.py:323
+#: dicom_preview_panel.py:324 presets.py:30 presets.py:48 presets.py:119
 msgid "Bone"
 msgstr ""
 
@@ -81,8 +81,8 @@ msgstr ""
 msgid "High"
 msgstr ""
 
-#: constants.py:202 constants.py:204
-msgid "Optimal"
+#: constants.py:202 constants.py:204 surface.py:275 task_surface.py:30
+msgid "Optimal *"
 msgstr ""
 
 #: constants.py:203 presets.py:44 presets.py:62 task_surface.py:30
@@ -485,36 +485,36 @@ msgid ""
 "Made in InVesalius"
 msgstr ""
 
-#: dicom_preview_panel.py:96 dicom_preview_panel.py:97
+#: dicom_preview_panel.py:115 dicom_preview_panel.py:116
 msgid "Image"
 msgstr ""
 
-#: dicom_preview_panel.py:308
+#: dicom_preview_panel.py:332
 msgid "image size"
 msgstr ""
 
-#: dicom_preview_panel.py:317
+#: dicom_preview_panel.py:341
 msgid ""
 "id\n"
 "protocol"
 msgstr ""
 
-#: dicom_preview_panel.py:324
+#: dicom_preview_panel.py:348
 msgid ""
 "date time\n"
 " Made in InVesalius"
 msgstr ""
 
-#: dicom_preview_panel.py:370
+#: dicom_preview_panel.py:394
 msgid "Auto-play"
 msgstr ""
 
-#: dicom_preview_panel.py:594
+#: dicom_preview_panel.py:618
 #, python-format
 msgid "%d Images"
 msgstr ""
 
-#: dicom_preview_panel.py:711 dicom_preview_panel.py:732
+#: dicom_preview_panel.py:735 dicom_preview_panel.py:756
 #, python-format
 msgid "Image %d"
 msgstr ""
@@ -695,8 +695,12 @@ msgstr ""
 msgid "Muscle Tissue (Child)"
 msgstr ""
 
-#: presets.py:40 presets.py:41 presets.py:58 presets.py:59
+#: presets.py:40 presets.py:58
 msgid "Fat Tissue (Adult)"
+msgstr ""
+
+#: presets.py:41 presets.py:59
+msgid "Fat Tissue (Child)"
 msgstr ""
 
 #: presets.py:42 presets.py:60
@@ -729,10 +733,6 @@ msgstr ""
 
 #: slice_menu.py:101
 msgid "Image Tiling"
-msgstr ""
-
-#: surface.py:275 task_surface.py:30
-msgid "Optimal *"
 msgstr ""
 
 #: task_exporter.py:101
