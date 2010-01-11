@@ -22,8 +22,8 @@ import wx
 import wx.combo
 
 import i18n
-import constants as const
 
+ICON_DIR = os.path.abspath(os.path.join('..', 'icons'))
 
 class LanguageDialog(wx.Dialog):
     """Class define the language to be used in the InVesalius,
@@ -46,9 +46,9 @@ class LanguageDialog(wx.Dialog):
         
         self.bitmapCmb = bitmapCmb = wx.combo.BitmapComboBox(self, style=wx.CB_READONLY)
 
-        bmp_brazilian_flag = wx.Bitmap(os.path.join(const.ICON_DIR, "pt_BR.bmp"), wx.BITMAP_TYPE_BMP)
-        bmp_english_flag = wx.Bitmap(os.path.join(const.ICON_DIR, "en_GB.bmp"), wx.BITMAP_TYPE_BMP)
-        bmp_spanish_flag = wx.Bitmap(os.path.join(const.ICON_DIR, "es.bmp"), wx.BITMAP_TYPE_BMP)
+        bmp_brazilian_flag = wx.Bitmap(os.path.join(ICON_DIR, "pt_BR.bmp"), wx.BITMAP_TYPE_BMP)
+        bmp_english_flag = wx.Bitmap(os.path.join(ICON_DIR, "en_GB.bmp"), wx.BITMAP_TYPE_BMP)
+        bmp_spanish_flag = wx.Bitmap(os.path.join(ICON_DIR, "es.bmp"), wx.BITMAP_TYPE_BMP)
 
         bitmapCmb.Append(self.locales[0], bmp_english_flag,"en_GB")
         bitmapCmb.Append(self.locales[1], bmp_brazilian_flag,"pt_BR")

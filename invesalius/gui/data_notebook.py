@@ -398,7 +398,7 @@ class MeasuresListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
         else:
             print "unchecked, ", index
 
-    def InsertNewItem(self, index=0, type_="Mask 1", value="(1000, 4500)",
+    def InsertNewItem(self, index=0, type_="", value="(1000, 4500)",
                       colour=None):
         self.InsertStringItem(index, "")
         self.SetStringItem(index, 1, type_, imageId = self.img_colour) 

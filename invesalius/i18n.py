@@ -26,7 +26,7 @@ import gettext
 import os
 import sys
 
-import constants as const
+LANGUAGE_DIR = os.path.abspath(os.path.join('..','locale'))
 
 def GetLocales():
     """Return a dictionary which defines supported languages"""
@@ -45,7 +45,7 @@ def GetLocaleOS():
     
 def InstallLanguage(language):
     
-    lang = gettext.translation('invesalius', const.LANGUAGE_DIR,\
+    lang = gettext.translation('invesalius', LANGUAGE_DIR,\
                                    languages=[language], codeset='utf8')
     # Using unicode
     lang.install(unicode=1)

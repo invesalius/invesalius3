@@ -29,7 +29,7 @@ import gui.widgets.foldpanelbar as fpb
 #INTERPOLATION_MODE_LIST = ["Cubic", "Linear", "NearestNeighbor"]
 QUALITY_LIST = [_("Low"), _("Medium"), _("High"), _("Optimal *"), _("Custom")]
 SURFACE_LIST = []
-MASK_LIST = ["Mask 1"]
+MASK_LIST = []
 MIN_TRANSPARENCY = 0
 MAX_TRANSPARENCY = 100
 

@@ -4,7 +4,6 @@ from threading import Thread
 import time
 import wx.lib.pubsub as ps
 
-import constants as const
 from utils import Singleton
 
 import wx.lib.pubsub as ps
@@ -24,6 +23,7 @@ class Session(object):
         ps.Publisher().subscribe(self.StopRecording, "Stop Config Recording")
     
     def CreateItens(self):
+        import constants as const
         self.project_path = ()
         self.debug = False
 
@@ -55,6 +55,7 @@ class Session(object):
 
 
     def CloseProject(self):
+        import constants as const
         print "-- CloseProject"
         self.project_path = ()
         self.project_status = const.PROJ_CLOSE
@@ -62,6 +63,7 @@ class Session(object):
         self.temp_item = False
 
     def SaveProject(self, path=()):
+        import constants as const
         print "-- SaveProject"
         self.project_status = const.PROJ_OPEN
         if path:
@@ -71,10 +73,12 @@ class Session(object):
             self.temp_item = False
 
     def ChangeProject(self):
+        import constants as const
         print "-- ChangeProject"
         self.project_status = const.PROJ_CHANGE
 
     def CreateProject(self, filename):
+        import constants as const
         print "-- CreateProject"
         # Set session info
         self.project_path = (self.tempdir, filename)
@@ -83,6 +87,7 @@ class Session(object):
         return self.tempdir
 
     def OpenProject(self, filepath):
+        import constants as const
         print "-- OpenProject"
         # Add item to recent projects list
         item = (path, file) = os.path.split(filepath)
@@ -123,6 +128,7 @@ class Session(object):
 
 
     def __add_to_list(self, item):
+        import constants as const
         # Last projects list
         l = self.recent_projects
 

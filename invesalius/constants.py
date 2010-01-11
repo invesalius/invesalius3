@@ -43,7 +43,7 @@ TEXT_POS_RIGHT_DOWN = (1-X, 1-Y) # SetVerticalJustificationToBottom &
                                  # SetJustificationToRight
 #------------------------------------------------------------------
 TEXT_POS_HCENTRE_DOWN = (0.5, 1-Y) # SetJustificationToCentered
-                                   # SetVerticalJustificationToBottom
+                                   # ChildrticalJustificationToBottom
 #------------------------------------------------------------------
 TEXT_POS_HCENTRE_UP = (0.5, Y)  # SetJustificationToCentered
 #------------------------------------------------------------------
@@ -102,13 +102,13 @@ MODE_ODONTOLOGY = 3
 
 #Color Table from Slice
 #NumberOfColors, SaturationRange, HueRange, ValueRange
-SLICE_COLOR_TABLE = {"Default ":(None,(0,0),(0,0),(0,1)),
-                     "Hue":(None,(1,1),(0,1),(1,1)),
-                     "Saturation":(None,(0,1),(0.6,0.6),(1,1)),
-                     "Desert":(256, (1,1), (0, 0.1), (1,1)),
-                     "Rainbow":(256,(1,1),(0,0.8),(1,1)),
-                     "Ocen":(256,(1,1),(0.667, 0.5),(1,1)),
-                     "Inverse Gray":(256, (0, 0), (0, 0), (1,0)),
+SLICE_COLOR_TABLE = {_("Default "):(None,(0,0),(0,0),(0,1)),
+                     _("Hue"):(None,(1,1),(0,1),(1,1)),
+                     _("Saturation"):(None,(0,1),(0.6,0.6),(1,1)),
+                     _("Desert"):(256, (1,1), (0, 0.1), (1,1)),
+                     _("Rainbow"):(256,(1,1),(0,0.8),(1,1)),
+                     _("Ocen"):(256,(1,1),(0.667, 0.5),(1,1)),
+                     _("Inverse Gray"):(256, (0, 0), (0, 0), (1,0)),
                      }
 
 # Volume view angle
@@ -149,14 +149,14 @@ VOLUME_POSITION = {AXIAL: [AXIAL_VOLUME_CAM_VIEW_UP, AXIAL_VOLUME_CAM_POSITION],
 
 # Mask threshold options
 proj = Project()
-THRESHOLD_RANGE = proj.threshold_modes["Bone"]
+THRESHOLD_RANGE = proj.threshold_modes[_("Bone")]
 THRESHOLD_PRESETS_INDEX = 0 #Bone
 THRESHOLD_HUE_RANGE = (0, 0.6667)
 THRESHOLD_INVALUE = 5000
 THRESHOLD_OUTVALUE = 0
 
 # Mask properties
-MASK_NAME_PATTERN = "Mask %d"
+MASK_NAME_PATTERN = _("Mask %d")
 MASK_OPACITY = 0.40
 #MASK_OPACITY = 0.35
 MASK_COLOUR =  [(0.33, 1, 0.33),
@@ -185,7 +185,7 @@ BRUSH_DRAW = 0
 BRUSH_ERASE = 1
 BRUSH_THRESH = 2
 DEFAULT_BRUSH_OP = BRUSH_THRESH
-BRUSH_OP_NAME = ["Draw", "Erase", "Threshold"]
+BRUSH_OP_NAME = [_("Draw"), _("Erase"), _("Threshold")]
 
 BRUSH_COLOUR = (0,0,1.0)
 BRUSH_SIZE = 30
@@ -196,36 +196,36 @@ BRUSH_SIZE = 30
 # 2: smooth_relaxation_factor
 # 3: decimate_reduction
 SURFACE_QUALITY = {
-    "Low": (3, 2, 0.3000, 0.4),
-    "Medium": (2, 2, 0.3000, 0.4),
-    "High": (0, 1, 0.3000, 0.1),
-    "Optimal": (0, 2, 0.3000, 0.4),
-    "Custom": (None, None, None, None)}
-DEFAULT_SURFACE_QUALITY = "Optimal"
+    _("Low"): (3, 2, 0.3000, 0.4),
+    _("Medium"): (2, 2, 0.3000, 0.4),
+    _("High"): (0, 1, 0.3000, 0.1),
+    _("Optimal *"): (0, 2, 0.3000, 0.4),
+    _("Custom"): (None, None, None, None)}
+DEFAULT_SURFACE_QUALITY = _("Optimal *")
 
 # Surface properties
 SURFACE_TRANSPARENCY = 0.0
-SURFACE_NAME_PATTERN = "Surface %d"
+SURFACE_NAME_PATTERN = _("Surface %d")
 
 # Imagedata - window and level presets
-WINDOW_LEVEL = {"Abdomen":(350,50),
-                 "Bone":(2000, 300),
-                 "Brain Posterior Fossa":(120,40),
-                 "Brain":(80,40),
-                 "Default":(None, None), #Control class set window and level from DICOM
-                 "Emphysema":(500,-850),
-                 "Ischemia - Hard Non Contrast":(15,32),
-                 "Ischemia - Soft Non Contrast":(80,20),
-                 "Larynx":(180, 80),
-                 "Liver":(2000, -500),
-                 "Lung - Soft":(1600,-600),
-                 "Lung - Hard":(1000,-600),
-                 "Mediastinum":(350,25),
-                 "Manual":(None, None), #Case the user change window and level
-                 "Pelvis": (450,50),
-                 "Sinus":(4000, 400),
-                 "Vasculature - Hard":(240,80),
-                 "Vasculature - Soft":(650,160)}
+WINDOW_LEVEL = {_("Abdomen"):(350,50),
+                _("Bone"):(2000, 300),
+                _("Brain Posterior Fossa"):(120,40),
+                _("Brain"):(80,40),
+                _("Default"):(None, None), #Control class set window and level from DICOM
+                _("Emphysema"):(500,-850),
+                _("Ischemia - Hard Non Contrast"):(15,32),
+                _("Ischemia - Soft Non Contrast"):(80,20),
+                _("Larynx"):(180, 80),
+                _("Liver"):(2000, -500),
+                _("Lung - Soft"):(1600,-600),
+                _("Lung - Hard"):(1000,-600),
+                _("Mediastinum"):(350,25),
+                _("Manual"):(None, None), #Case the user change window and level
+                _("Pelvis"): (450,50),
+                _("Sinus"):(4000, 400),
+                _("Vasculature - Hard"):(240,80),
+                _("Vasculature - Soft"):(650,160)}
 
 if (sys.platform == 'win32') and (platform.architecture()[0] == '32bit'):
     REDUCE_IMAGEDATA_QUALITY = 1
@@ -235,15 +235,14 @@ else:
     REDUCE_IMAGEDATA_QUALITY = 0
 
 ICON_DIR = os.path.abspath(os.path.join('..', 'icons'))
-LANGUAGE_DIR = os.path.abspath(os.path.join('..','locale'))
 
-ID_TO_BMP = {VOL_FRONT: ["Front", os.path.join(ICON_DIR, "view_front.png")],
-             VOL_BACK: ["Back", os.path.join(ICON_DIR, "view_back.png")],
-             VOL_TOP: ["Top", os.path.join(ICON_DIR, "view_top.png")],
-             VOL_BOTTOM: ["Bottom", os.path.join(ICON_DIR, "view_bottom.png")],
-             VOL_RIGHT: ["Right", os.path.join(ICON_DIR, "view_right.png")],
-             VOL_LEFT: ["Left", os.path.join(ICON_DIR, "view_left.png")],
-             VOL_ISO:["Isometric", os.path.join(ICON_DIR,"view_isometric.png")]
+ID_TO_BMP = {VOL_FRONT: [_("Front"), os.path.join(ICON_DIR, "view_front.png")],
+             VOL_BACK: [_("Back"), os.path.join(ICON_DIR, "view_back.png")],
+             VOL_TOP: [_("Top"), os.path.join(ICON_DIR, "view_top.png")],
+             VOL_BOTTOM: [_("Bottom"), os.path.join(ICON_DIR, "view_bottom.png")],
+             VOL_RIGHT: [_("Right"), os.path.join(ICON_DIR, "view_right.png")],
+             VOL_LEFT: [_("Left"), os.path.join(ICON_DIR, "view_left.png")],
+             VOL_ISO:[_("Isometric"), os.path.join(ICON_DIR,"view_isometric.png")]
              }
 
 # if 1, use vtkVolumeRaycastMapper, if 0, use vtkFixedPointVolumeRayCastMapper
@@ -252,7 +251,38 @@ TYPE_RAYCASTING_MAPPER = 1
 folder=RAYCASTING_PRESETS_DIRECTORY= os.path.abspath(os.path.join("..",
                                                                   "presets",
                                                                   "raycasting"))
-RAYCASTING_TYPES = [filename.split(".")[0] for filename in
+_("Airways")
+_("Airways II")
+_("Black & White")
+_("Bone + Skin")
+_("Bone + Skin II")
+_("Dark Bone")
+_("Glossy") 
+_("Glossy II") 
+_("Gold Bone")
+_("High Contrast")
+_("Low Contrast")
+_("Soft on White")
+_("Mid Contrast")
+_("No Shading")
+_("Pencil")
+_("Red on White")
+_("Skin On Blue")
+_("Skin On Blue II")
+_("Soft on White")
+_("Soft + Skin")
+_("Soft + Skin II")
+_("Soft + Skin III")
+_("Soft On Blue")
+_("Soft")
+_("Standard")
+_("Vascular")
+_("Vascular II")
+_("Vascular III")
+_("Vascular IV")
+_("Yellow Bone")
+
+RAYCASTING_TYPES = [_(filename.split(".")[0]) for filename in
                     os.listdir(folder) if
                     os.path.isfile(os.path.join(folder,filename))]
 
@@ -260,13 +290,13 @@ folder = os.path.join(os.path.expanduser('~'), '.invesalius', 'presets')
 if not os.path.isdir(folder):
     os.makedirs(folder)
 USER_RAYCASTING_PRESETS_DIRECTORY = folder
-RAYCASTING_TYPES += [filename.split(".")[0] for filename in
+RAYCASTING_TYPES += [_(filename.split(".")[0]) for filename in
                      os.listdir(folder) if
                      os.path.isfile(os.path.join(folder,filename))]
-RAYCASTING_TYPES.append(' Off')
+RAYCASTING_TYPES.append(_(' Off'))
 RAYCASTING_TYPES.sort()
-RAYCASTING_OFF_LABEL = ' Off'
-RAYCASTING_TOOLS = ["Cut plane"]
+RAYCASTING_OFF_LABEL = _(' Off')
+RAYCASTING_TOOLS = [_("Cut plane")]
 
 # If 0 dont't blur, 1 blur
 RAYCASTING_WWWL_BLUR = 0
