@@ -16,9 +16,11 @@
 #    PARTICULAR. Consulte a Licenca Publica Geral GNU para obter mais
 #    detalhes.
 #--------------------------------------------------------------------------
+import os
+import platform
 import subprocess
 import re
-import os
+import sys
 
 
 def debug(error_str):
@@ -91,19 +93,73 @@ def frange(start, end=None, inc=None):
 def PredictingMemory(qtd, x, y, p):
     m = qtd * (x * y * p)
 
-    #314859200 = 350 MB
-    #house 25 MB increases the
-    #factor 0.4
-    if (m >= 314859200):
-        porcent = 1.5 + (m - 314859200) / 26999999 * 0.04
-        x = x/porcent
-        y = y/porcent
-        return x
+    if (sys.platform == 'win32'):
 
-    else:
-        return x
+        physical_memory = GetWindowsInformation()[3]
 
-    return x
+        if (platform.architecture()[0] == '32bit'):
+            #(314859200 = 300 MB)
+            #(26999999 = 25 MB)
+
+            #case occupy more than 300 MB image is reduced to 1.5,
+            #and 25 MB each image is resized 0.04.
+            if (m >= 314859200):
+                porcent = 1.5 + (m - 314859200) / 26999999 * 0.04
+            else:
+                return (x, y)
+        else: #64 bits architecture
+
+            if (physical_memory <= 2.0) and (qtd <= 1200):
+                porcent = 1.5 + (m - 314859200) / 26999999 * 0.02
+
+            elif(physical_memory <= 2.0) and (qtd > 1200):
+                 porcent = 1.5 + (m - 314859200) / 26999999 * 0.03
+
+            elif(physical_memory > 2.0) and (physical_memory <= 4.0) and (qtd <= 1200):
+                porcent = 1.5 + (m - 314859200) / 26999999 * 0.01
+
+            else:
+                return (x,y)
+
+        return (x/porcent, y/porcent)
+
+    elif(sys.platform == 'linux2'):
+
+        physical_memory = GetLinuxInformation()[2]
+
+        if (platform.architecture()[0] == '32bit'):
+            # 839000000 = 800 MB
+            if (m <= 839000000) and (physical_memory <= 2.0):
+                return (x,y)
+            elif (m > 839000000) and (physical_memory <= 2.0) and (qtd <= 1200):
+                porcent = 1.5 + (m - 314859200) / 26999999 * 0.02
+            else:
+                return (x,y)
+
+        else:
+
+            if (m <= 839000000) and (physical_memory <= 2.0):
+                return (x, y)
+            elif (m > 839000000) and (physical_memory <= 2.0) and (qtd <= 1200):
+                porcent = 1.5 + (m - 314859200) / 26999999 * 0.02
+            else:
+                return (x,y)
+
+        return (x/porcent, y/porcent)
+
+    elif(sys.platform == 'darwin'):
+
+        physical_memory = GetDarwinInformation()
+
+        if (m <= 839000000) and (physical_memory <= 2.0):
+            return (x, y)
+        elif (m > 839000000) and (physical_memory <= 2.0) and (qtd <= 1200):
+            porcent = 1.5 + (m - 314859200) / 26999999 * 0.02
+        else:
+            return (x, y)
+
+        return (x/porcent,y/porcent)
+
 
 
 def BytesConvert(bytes):
@@ -155,6 +211,10 @@ def GetWindowsInformation():
             processor_clock, total_physical_memory,
             available_physical_memory)
 
+def GetDarwinInformation():
+    memory = 2.0
+    return (memory)
+
 
 def GetLinuxInformation():
 
@@ -169,8 +229,7 @@ def GetLinuxInformation():
 
 
     #processor_clock = float(re.findall('[0-9]+', processor_clock)[0])
-    print architecture
-    print processor_clock
+    return (architecture, processor_clock, 2.0)
 
 
 def LinuxCommand(command):

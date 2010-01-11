@@ -49,16 +49,14 @@ def ResampleImage3D(imagedata, value):
 
     return resample.GetOutput()
 
-def ResampleImage2D(imagedata, xy_dimension, 
+def ResampleImage2D(imagedata, px, py,
                         update_progress = None):
     """
     Resample vtkImageData matrix.
     """
     extent = imagedata.GetExtent()
-    print "-----------------------------"
-    print "extent:", extent
     spacing = imagedata.GetSpacing()
-    print "spacing:", spacing
+
 
     #if extent[1]==extent[3]:
     #    f = extent[1]
@@ -68,26 +66,24 @@ def ResampleImage2D(imagedata, xy_dimension,
     #    f = extent[3]
 
     if abs(extent[1]-extent[3]) < abs(extent[3]-extent[5]):
-        print 1
         f = extent[1]
     elif abs(extent[1]-extent[5]) < abs(extent[1] - extent[3]):
-        print 2
         f = extent[1]
     elif abs(extent[3]-extent[5]) < abs(extent[1] - extent[3]):
-        print 3
         f = extent[3]
     else:
-        print 4
         f = extent[1]
-        
 
-    factor = xy_dimension/float(f+1)
+
+    factor_x = px/float(f+1)
+    factor_y = py/float(f+1)
+
 
     resample = vtk.vtkImageResample()
     resample.SetInput(imagedata)
-    resample.SetAxisMagnificationFactor(0, factor)
-    resample.SetAxisMagnificationFactor(1, factor)
-    resample.SetOutputSpacing(spacing[0] * factor, spacing[1] * factor, spacing[2])
+    resample.SetAxisMagnificationFactor(0, factor_x)
+    resample.SetAxisMagnificationFactor(1, factor_y)
+    resample.SetOutputSpacing(spacing[0] * factor_x, spacing[1] * factor_y, spacing[2])
     if (update_progress):
         message = "Generating multiplanar visualization..."
         resample.AddObserver("ProgressEvent", lambda obj,
@@ -189,7 +185,7 @@ def View(imagedata):
     viewer.SetColorWindow(200)
     viewer.SetColorLevel(100)
     viewer.Render()
-    
+
     import time
     time.sleep(10)
 
@@ -199,40 +195,50 @@ def ViewGDCM(imagedata):
     viewer.SetColorWindow(500.)
     viewer.SetColorLevel(50.)
     viewer.Render()
-    
+
     import time
     time.sleep(5)
 
 
-    
+
 def ExtractVOI(imagedata,xi,xf,yi,yf,zi,zf):
     """
-    Cropping the vtkImagedata according 
+    Cropping the vtkImagedata according
     with values.
-    """ 
+    """
     voi = vtk.vtkExtractVOI()
     voi.SetVOI(xi,xf,yi,yf,zi,zf)
     voi.SetInput(imagedata)
     voi.SetSampleRate(1, 1, 1)
-    voi.Update()  
+    voi.Update()
     return voi.GetOutput()
 
 def CreateImageData(filelist, zspacing, size, bits):
     message = "Generating multiplanar visualization..."
-    
+
     if not const.VTK_WARNING:
         fow = vtk.vtkFileOutputWindow()
         fow.SetFileName('vtkoutput.txt')
         ow = vtk.vtkOutputWindow()
         ow.SetInstance(fow)
-    
+
+    x,y = size
+    px, py = utils.PredictingMemory(len(filelist), x, y, bits)
+
+    print "Image Resized to >>>", px, "x", py
+
+    if (x == px) and (y == py):
+        const.REDUCE_IMAGEDATA_QUALITY = 0
+    else:
+        const.REDUCE_IMAGEDATA_QUALITY = 1
+
     if not(const.REDUCE_IMAGEDATA_QUALITY):
         update_progress= vtk_utils.ShowProgress(1, dialog_type = "ProgressDialog")
 
         array = vtk.vtkStringArray()
         for x in xrange(len(filelist)):
             array.InsertValue(x,filelist[x])
-        
+
         reader = vtkgdcm.vtkGDCMImageReader()
         reader.SetFileNames(array)
         reader.AddObserver("ProgressEvent", lambda obj,evt:
@@ -245,16 +251,14 @@ def CreateImageData(filelist, zspacing, size, bits):
         spacing = imagedata.GetSpacing()
         imagedata.SetSpacing(spacing[0], spacing[1], zspacing)
     else:
-    
+
         update_progress= vtk_utils.ShowProgress(2*len(filelist),
                                             dialog_type = "ProgressDialog")
 
         # Reformat each slice and future append them
         appender = vtk.vtkImageAppend()
         appender.SetAppendAxis(2) #Define Stack in Z
-        
-        x,y = size        
-        p = utils.PredictingMemory(len(filelist), x, y, bits)
+
 
         # Reformat each slice
         for x in xrange(len(filelist)):
@@ -266,9 +270,9 @@ def CreateImageData(filelist, zspacing, size, bits):
             reader.AddObserver("ProgressEvent", lambda obj,evt:
                          update_progress(reader,message))
             reader.Update()
-           
+
             #Resample image in x,y dimension
-            slice_imagedata = ResampleImage2D(reader.GetOutput(), p, update_progress)
+            slice_imagedata = ResampleImage2D(reader.GetOutput(), px, py, update_progress)
             #Stack images in Z axes
             appender.AddInput(slice_imagedata)
             #appender.AddObserver("ProgressEvent", lambda obj,evt:update_progress(appender))
@@ -284,7 +288,7 @@ def CreateImageData(filelist, zspacing, size, bits):
     imagedata.AddObserver("ProgressEvent", lambda obj,evt:
                  update_progress(imagedata,message))
     imagedata.Update()
-    
+
     return imagedata
 
 
@@ -292,25 +296,25 @@ def CreateImageData(filelist, zspacing, size, bits):
 class ImageCreator:
     def __init__(self):
         ps.Publisher().sendMessage("Cancel imagedata load", self.CancelImageDataLoad)
-        
+
     def CancelImageDataLoad(self, evt_pusub):
         self.running = evt_pusub.data
-        
+
     def CreateImageData(filelist, zspacing):
         message = "Generating multiplanar visualization..."
         if not(const.REDUCE_IMAGEDATA_QUALITY):
             update_progress= vtk_utils.ShowProgress(1)
-    
+
             array = vtk.vtkStringArray()
             for x in xrange(len(filelist)):
                 array.InsertValue(x,filelist[x])
-            
+
             reader = vtkgdcm.vtkGDCMImageReader()
             reader.SetFileNames(array)
             reader.AddObserver("ProgressEvent", lambda obj,evt:
                          update_progress(reader,message))
             reader.Update()
-    
+
             # The zpacing is a DicomGroup property, so we need to set it
             imagedata = vtk.vtkImageData()
             imagedata.DeepCopy(reader.GetOutput())
@@ -319,11 +323,11 @@ class ImageCreator:
         else:
             update_progress= vtk_utils.ShowProgress(2*len(filelist),
                                                 dialog_type = "ProgressDialog")
-    
+
             # Reformat each slice and future append them
             appender = vtk.vtkImageAppend()
             appender.SetAppendAxis(2) #Define Stack in Z
-    
+
             # Reformat each slice
             for x in xrange(len(filelist)):
                 # TODO: We need to check this automatically according
@@ -334,27 +338,27 @@ class ImageCreator:
                 reader.AddObserver("ProgressEvent", lambda obj,evt:
                              update_progress(reader,message))
                 reader.Update()
-    
+
                 #Resample image in x,y dimension
-               
+
                 slice_imagedata = ResampleImage2D(reader.GetOutput(), 256, update_progress)
-    
+
                 #Stack images in Z axes
                 appender.AddInput(slice_imagedata)
                 #appender.AddObserver("ProgressEvent", lambda obj,evt:update_progress(appender))
                 appender.Update()
-    
+
             # The zpacing is a DicomGroup property, so we need to set it
             imagedata = vtk.vtkImageData()
             imagedata.DeepCopy(appender.GetOutput())
             spacing = imagedata.GetSpacing()
-    
+
             imagedata.SetSpacing(spacing[0], spacing[1], zspacing)
-    
+
         imagedata.AddObserver("ProgressEvent", lambda obj,evt:
                      update_progress(imagedata,message))
         imagedata.Update()
-        
+
         return imagedata
 """
 

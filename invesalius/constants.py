@@ -227,12 +227,7 @@ WINDOW_LEVEL = {_("Abdomen"):(350,50),
                 _("Vasculature - Hard"):(240,80),
                 _("Vasculature - Soft"):(650,160)}
 
-if (sys.platform == 'win32') and (platform.architecture()[0] == '32bit'):
-    REDUCE_IMAGEDATA_QUALITY = 1
-elif (sys.platform == 'darwin'):
-    REDUCE_IMAGEDATA_QUALITY = 1
-else:
-    REDUCE_IMAGEDATA_QUALITY = 0
+REDUCE_IMAGEDATA_QUALITY = 0
 
 ICON_DIR = os.path.abspath(os.path.join('..', 'icons'))
 
@@ -257,8 +252,8 @@ _("Black & White")
 _("Bone + Skin")
 _("Bone + Skin II")
 _("Dark Bone")
-_("Glossy") 
-_("Glossy II") 
+_("Glossy")
+_("Glossy II")
 _("Gold Bone")
 _("High Contrast")
 _("Low Contrast")
@@ -339,7 +334,7 @@ FILETYPE_VRML = wx.NewId()
 FILETYPE_OBJ = wx.NewId()
 FILETYPE_VTP = wx.NewId()
 FILETYPE_PLY = wx.NewId()
- 
+
 FILETYPE_IMAGEDATA = wx.NewId()
 
 FILETYPE_BMP = wx.NewId()
