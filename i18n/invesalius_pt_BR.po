@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: InVesalius 3\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2010-01-11 10:09-0200\n"
+"POT-Creation-Date: 2010-01-11 10:13-0200\n"
 "PO-Revision-Date: 2010-01-07 11:25-0300\n"
 "Last-Translator: Invesalius team <invesalius@cti.gov.br>\n"
 "Language-Team: InVesalius Team <invesalius@cti.gov.br>\n"
@@ -547,52 +547,52 @@ msgstr "Próximo passo"
 
 #: task_surface.py:131
 msgid "InVesalius 3 - New surface"
-msgstr ""
+msgstr "InVesalius 3 - Nova superfície"
 
 #: task_surface.py:168
 msgid "Select mask to be used for creating 3D surface:"
-msgstr ""
+msgstr "Selecione uma máscara a ser usada para criar a superfície 3D"
 
 #: task_surface.py:179
 msgid "Set new surface name:"
-msgstr ""
+msgstr "Defina o nome da nova superfície"
 
 #: task_surface.py:182
-msgid "Name the new surface to be created"
-msgstr ""
+msgid "Name of the new surface to be created"
+msgstr "Nome da superfície a ser criada"
 
 #: task_surface.py:183
 msgid "Surface"
-msgstr ""
+msgstr "Superfície"
 
 #: task_surface.py:251
 msgid "Surface properties"
-msgstr ""
+msgstr "Propriedades da superfície"
 
 #: task_surface.py:258
 msgid "Surface quality"
-msgstr ""
+msgstr "Qualidade da superfície"
 
 #: task_surface.py:303
 msgid "Transparency:"
-msgstr ""
+msgstr "Transparência:"
 
 #: task_surface.py:405
 msgid "Decimate resolution:"
-msgstr ""
+msgstr "Resolução de decimação:"
 
 #: task_surface.py:415
 msgid "Smooth iterations:"
-msgstr ""
+msgstr "Interações de suavização:"
 
 #: task_tools.py:57
 msgid "Measure distances"
-msgstr ""
+msgstr "Meça distâncias"
 
 #: task_tools.py:58
 msgid "Measure"
-msgstr ""
+msgstr "Medição"
 
 #: task_tools.py:61 task_tools.py:62
 msgid "Add text annotations"
-msgstr ""
+msgstr "Adicione anotações"

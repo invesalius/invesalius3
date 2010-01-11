@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: InVesalius 3\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2010-01-11 10:09-0200\n"
+"POT-Creation-Date: 2010-01-11 10:13-0200\n"
 "PO-Revision-Date: 2010-01-07 11:25-0300\n"
 "Last-Translator: Invesalius team <invesalius@cti.gov.br>\n"
 "Language-Team: InVesalius Team <invesalius@cti.gov.br>\n"
@@ -545,7 +545,7 @@ msgid "Set new surface name:"
 msgstr ""
 
 #: task_surface.py:182
-msgid "Name the new surface to be created"
+msgid "Name of the new surface to be created"
 msgstr ""
 
 #: task_surface.py:183
