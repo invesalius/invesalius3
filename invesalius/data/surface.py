@@ -272,7 +272,7 @@ class SurfaceManager():
         Create surface actor, save into project and send it to viewer.
         """
         imagedata, colour, [min_value, max_value], edited_points = pubsub_evt.data
-        quality='Optimal'
+        quality=_('Optimal *')
         mode = 'CONTOUR' # 'GRAYSCALE'
                         
         imagedata_tmp = None
@@ -359,13 +359,17 @@ class SurfaceManager():
         # Set actor colour and transparency
         actor.GetProperty().SetColor(colour)
         actor.GetProperty().SetOpacity(1-surface.transparency)
-        
-        try:
-            #Remove all temp file
+       
+        # Remove temporary files 
+        if sys.platform == "win32":
+            try:
+                os.remove(filename_img)
+                os.remove(filename_polydata)
+            except (WindowsError):
+                print "Error while removing surface temporary file"
+        else:
             os.remove(filename_img)
             os.remove(filename_polydata)
-        except(WindowsError):
-            print "Error remove temp file"
             
         # Append surface into Project.surface_dict
         proj = prj.Project()
