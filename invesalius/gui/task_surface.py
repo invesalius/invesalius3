@@ -179,7 +179,7 @@ class NewSurfaceDialog(wx.Dialog):
         label_surface = wx.StaticText(self, -1, _("Set new surface name:"))
 
         text = wx.TextCtrl(self, -1, "", size=(80,-1))
-        text.SetHelpText(_("Name the new surface to be created"))
+        text.SetHelpText(_("Name of the new surface to be created"))
         text.SetValue(_("Surface"))
         self.text = text
 

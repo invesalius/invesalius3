@@ -402,7 +402,7 @@ msgstr "Carregar valores"
 
 #: slice_menu.py:75 slice_menu.py:80
 msgid "Default "
-msgstr "Padrão"
+msgstr "Padrão "
 
 #: slice_menu.py:99
 msgid "Window Width and Level"
