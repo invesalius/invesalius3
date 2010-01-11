@@ -227,11 +227,12 @@ WINDOW_LEVEL = {"Abdomen":(350,50),
                  "Vasculature - Hard":(240,80),
                  "Vasculature - Soft":(650,160)}
 
-if (platform.architecture()[0] == '32bit'):
+if (sys.platform == 'win32') and (platform.architecture()[0] == '32bit'):
+    REDUCE_IMAGEDATA_QUALITY = 1
+elif (sys.platform == 'darwin'):
     REDUCE_IMAGEDATA_QUALITY = 1
 else:
     REDUCE_IMAGEDATA_QUALITY = 0
-
 
 ICON_DIR = os.path.abspath(os.path.join('..', 'icons'))
 LANGUAGE_DIR = os.path.abspath(os.path.join('..','locale'))
