@@ -195,9 +195,3 @@ def GetLinuxInformation():
                 mem = int(i.split()[1]) * 1024
 
     return (mem,)
-
-
-def LinuxCommand(command):
-    return subprocess.Popen(command, shell=True, stdout=subprocess.PIPE).communicate()
-
-
