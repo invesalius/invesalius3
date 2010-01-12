@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: InVesalius 3\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2010-01-11 13:59-0200\n"
+"POT-Creation-Date: 2010-01-11 14:18-0200\n"
 "PO-Revision-Date: 2010-01-07 11:25-0300\n"
 "Last-Translator: Invesalius team <invesalius@cti.gov.br>\n"
 "Language-Team: InVesalius Team <invesalius@cti.gov.br>\n"
@@ -190,129 +190,129 @@ msgstr "Esquerda"
 msgid "Isometric"
 msgstr "Isométrica"
 
-#: constants.py:254
-msgid "Airways"
-msgstr "Aéreas"
-
-#: constants.py:255
-msgid "Airways II"
-msgstr "Aéreas II"
-
 #: constants.py:256
+msgid "Airways"
+msgstr "Vias Aéreas"
+
+#: constants.py:257
+msgid "Airways II"
+msgstr "Vias Aéreas II"
+
+#: constants.py:258
 msgid "Black & White"
 msgstr "Preto & Branco"
 
-#: constants.py:257
+#: constants.py:259
 msgid "Bone + Skin"
 msgstr "Osso + Pele"
 
-#: constants.py:258
+#: constants.py:260
 msgid "Bone + Skin II"
 msgstr "Osso + Pele II"
 
-#: constants.py:259
+#: constants.py:261
 msgid "Dark Bone"
 msgstr "Osso Escuro"
 
-#: constants.py:260
+#: constants.py:262
 msgid "Glossy"
 msgstr "Brilhante"
 
-#: constants.py:261
+#: constants.py:263
 msgid "Glossy II"
 msgstr "Brilhante II"
 
-#: constants.py:262
+#: constants.py:264
 msgid "Gold Bone"
 msgstr "Osso Dourado"
 
-#: constants.py:263
+#: constants.py:265
 msgid "High Contrast"
 msgstr "Contraste Alto"
 
-#: constants.py:264
+#: constants.py:266
 msgid "Low Contrast"
 msgstr "Contraste Baixo"
 
-#: constants.py:265 constants.py:272
+#: constants.py:267 constants.py:274
 msgid "Soft on White"
 msgstr "Mole sobre Branco"
 
-#: constants.py:266
+#: constants.py:268
 msgid "Mid Contrast"
 msgstr "Contraste Médio"
 
-#: constants.py:267
+#: constants.py:269
 msgid "No Shading"
 msgstr "Sem Sombreamento"
 
-#: constants.py:268
+#: constants.py:270
 msgid "Pencil"
 msgstr "Lápis"
 
-#: constants.py:269
+#: constants.py:271
 msgid "Red on White"
 msgstr "Vermelho sobre Branco"
 
-#: constants.py:270
+#: constants.py:272
 msgid "Skin On Blue"
 msgstr "Pele Sobre Azul"
 
-#: constants.py:271
+#: constants.py:273
 msgid "Skin On Blue II"
 msgstr "Pele Sobre Azul II"
 
-#: constants.py:273
+#: constants.py:275
 msgid "Soft + Skin"
 msgstr "Mole + Pele"
 
-#: constants.py:274
+#: constants.py:276
 msgid "Soft + Skin II"
 msgstr "Mole + Pele II"
 
-#: constants.py:275
+#: constants.py:277
 msgid "Soft + Skin III"
 msgstr "Mole + Pele III"
 
-#: constants.py:276
+#: constants.py:278
 msgid "Soft On Blue"
 msgstr "Mole Sobre Azul"
 
-#: constants.py:277
+#: constants.py:279
 msgid "Soft"
 msgstr "Mole"
 
-#: constants.py:278
+#: constants.py:280
 msgid "Standard"
 msgstr "Padrão"
 
-#: constants.py:279
+#: constants.py:281
 msgid "Vascular"
 msgstr "Vascular - Duro"
 
-#: constants.py:280
+#: constants.py:282
 msgid "Vascular II"
 msgstr "Vascular - Duro"
 
-#: constants.py:281
+#: constants.py:283
 msgid "Vascular III"
 msgstr "Vascular - Duro"
 
-#: constants.py:282
+#: constants.py:284
 msgid "Vascular IV"
 msgstr "Vascular - Duro"
 
-#: constants.py:283
+#: constants.py:285
 msgid "Yellow Bone"
 msgstr "Osso Amarelo"
 
-#: constants.py:296 constants.py:298
+#: constants.py:300 constants.py:302
 msgid " Off"
 msgstr " Desabilitado"
 
-#: constants.py:299
+#: constants.py:303
 msgid "Cut plane"
-msgstr "Plano de cortes"
+msgstr "Plano para corte"
 
 #: data_notebook.py:44
 msgid "Masks"
