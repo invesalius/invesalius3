@@ -22,6 +22,9 @@ import subprocess
 import re
 import sys
 
+if sys.platform == 'win32':
+    import wmi
+
 
 def debug(error_str):
     from project import Project
@@ -95,7 +98,8 @@ def PredictingMemory(qtd, x, y, p):
 
     if (sys.platform == 'win32'):
 
-        physical_memory = GetWindowsInformation()[3]
+        #physical_memory in Byte
+        physical_memory = GetWindowsInformation()[0]
 
         if (platform.architecture()[0] == '32bit'):
             #(314859200 = 300 MB)
@@ -109,14 +113,18 @@ def PredictingMemory(qtd, x, y, p):
                 return (x, y)
         else: #64 bits architecture
 
-            if (physical_memory <= 2.0) and (qtd <= 1200):
+            #2147483648 byte = 2.0 GB
+            #4294967296 byte = 4.0 GB
+
+            if (physical_memory <= 2147483648) and (qtd <= 1200):
+                porcent = 1.5 + (m - 314859200) / 26999999 * 0.04
+
+            elif(physical_memory <= 2147483648) and (qtd > 1200):
+                 porcent = 1.5 + (m - 314859200) / 26999999 * 0.05
+
+            elif(physical_memory > 2147483648) and \
+                    (physical_memory <= 4294967296) and (qtd <= 1200):
                 porcent = 1.5 + (m - 314859200) / 26999999 * 0.02
-
-            elif(physical_memory <= 2.0) and (qtd > 1200):
-                 porcent = 1.5 + (m - 314859200) / 26999999 * 0.03
-
-            elif(physical_memory > 2.0) and (physical_memory <= 4.0) and (qtd <= 1200):
-                porcent = 1.5 + (m - 314859200) / 26999999 * 0.01
 
             else:
                 return (x,y)
@@ -125,22 +133,22 @@ def PredictingMemory(qtd, x, y, p):
 
     elif(sys.platform == 'linux2'):
 
-        physical_memory = GetLinuxInformation()[2]
+        physical_memory = GetLinuxInformation()[0]
 
         if (platform.architecture()[0] == '32bit'):
             # 839000000 = 800 MB
-            if (m <= 839000000) and (physical_memory <= 2.0):
+            if (m <= 839000000) and (physical_memory <= 2147483648):
                 return (x,y)
-            elif (m > 839000000) and (physical_memory <= 2.0) and (qtd <= 1200):
+            elif (m > 839000000) and (physical_memory <= 2147483648) and (qtd <= 1200):
                 porcent = 1.5 + (m - 314859200) / 26999999 * 0.02
             else:
                 return (x,y)
 
         else:
 
-            if (m <= 839000000) and (physical_memory <= 2.0):
+            if (m <= 839000000) and (physical_memory <= 2147483648):
                 return (x, y)
-            elif (m > 839000000) and (physical_memory <= 2.0) and (qtd <= 1200):
+            elif (m > 839000000) and (physical_memory <= 2147483648) and (qtd <= 1200):
                 porcent = 1.5 + (m - 314859200) / 26999999 * 0.02
             else:
                 return (x,y)
@@ -148,17 +156,7 @@ def PredictingMemory(qtd, x, y, p):
         return (x/porcent, y/porcent)
 
     elif(sys.platform == 'darwin'):
-
-        physical_memory = GetDarwinInformation()
-
-        if (m <= 839000000) and (physical_memory <= 2.0):
-            return (x, y)
-        elif (m > 839000000) and (physical_memory <= 2.0) and (qtd <= 1200):
-            porcent = 1.5 + (m - 314859200) / 26999999 * 0.02
-        else:
-            return (x, y)
-
-        return (x/porcent,y/porcent)
+        return (x/2,y/2)
 
 
 
@@ -174,42 +172,14 @@ def BytesConvert(bytes):
 
 
 def GetWindowsInformation():
+    computer = wmi.WMI()
+    for i in computer.Win32_ComputerSystem ():
+        memory = int(i.TotalPhysicalMemory)
 
-    command = "systeminfo"
+    information = (memory,)
 
-    startupinfo = subprocess.STARTUPINFO()
-    startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
-    info = subprocess.Popen([command], startupinfo=startupinfo,
-                            stdout=subprocess.PIPE).communicate()
+    return information
 
-    lines = info[0].splitlines()
-
-    #Architecture of the system, x86 or x64
-    architecture = lines[14]
-    architecture = re.findall('[0-9]+', architecture)[0]
-    architecture = "x" + architecture
-
-    #Number of processors or number of nucleus
-    number_processors = lines[15]
-    number_processors = re.findall('[0-9]+', number_processors)[0]
-
-    #Clock of the processor in Mhz
-    processor_clock = lines[16]
-    processor_clock = re.findall('~[0-9]+', processor_clock)[0]
-    processor_clock = float(re.findall('[0-9]+', processor_clock)[0])
-
-    #Total of Physical Memory in MB
-    total_physical_memory = lines[24 + (int(number_processors) - 1)]
-    total_physical_memory = float(re.findall('[0-9.]+', total_physical_memory)[0])
-
-    #Total of Physical Memory Avaliable in MB
-    available_physical_memory = lines[25 + (int(number_processors) - 1)]
-    available_physical_memory = float(re.findall('[0-9.]+',
-                                      available_physical_memory)[0])
-
-    return (architecture, number_processors,
-            processor_clock, total_physical_memory,
-            available_physical_memory)
 
 def GetDarwinInformation():
     memory = 2.0
@@ -217,19 +187,14 @@ def GetDarwinInformation():
 
 
 def GetLinuxInformation():
+    #Getting memory
+    with open('/proc/meminfo') as f:
+        for i in f:
+            if i.startswith('MemTotal'):
+                # To translate from KB to Bytes
+                mem = int(i.split()[1]) * 1024
 
-    #Architecture of the system, x86 or x64
-    architecture = LinuxCommand("uname -m")
-    architecture = architecture[0].splitlines()[0]
-
-    #Clock of the processor in Mhz
-    processor_clock = LinuxCommand("more /proc/cpuinfo")
-    processor_clock = processor_clock[0].splitlines()
-    processor_clock = float(re.findall('[0-9.]+', processor_clock[6])[0])
-
-
-    #processor_clock = float(re.findall('[0-9]+', processor_clock)[0])
-    return (architecture, processor_clock, 2.0)
+    return (mem,)
 
 
 def LinuxCommand(command):
