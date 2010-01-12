@@ -97,6 +97,26 @@ class DicomInfo(object):
             return self._preview
 
 
+class DicomPaintPanel(wx.Panel):
+    def __init__(self, parent):
+        super(DicomPaintPanel, self).__init__(parent)
+        self._bind_events()
+        self.image = None
+
+    def _bind_events(self):
+        self.Bind(wx.EVT_PAINT, self.OnPaint)
+
+    def SetImage(self, image):
+        self.image = image
+
+    def OnPaint(self, evt):
+        if self.image:
+            dc = wx.AutoBufferedPaintDC(self)
+            dc.Clear()
+            dc.DrawBitmap(self.image, 0, 0)
+            
+
+
 class Preview(wx.Panel):
     """
     The little previews.
@@ -114,7 +134,7 @@ class Preview(wx.Panel):
 
         self.title = wx.StaticText(self, -1, _("Image"))
         self.subtitle = wx.StaticText(self, -1, _("Image"))
-        self.image_viewer = wx.StaticBitmap(self, -1)
+        self.image_viewer = DicomPaintPanel(self)
         
         self.sizer = wx.BoxSizer(wx.VERTICAL)
         self.sizer.Add(self.title, 0,
@@ -169,7 +189,7 @@ class Preview(wx.Panel):
         self.ID = dicom_info.id
         dicom_info.size = self.image_viewer.GetSize()
         image = dicom_info.preview
-        self.image_viewer.SetBitmap(image)
+        self.image_viewer.SetImage(image)
         self.data = dicom_info.id
         self.select_on = dicom_info.selected
         self.Select()
@@ -184,7 +204,8 @@ class Preview(wx.Panel):
     def OnEnter(self, evt):
         if not self.select_on:
             #c = wx.SystemSettings_GetColour(wx.SYS_COLOUR_3DHILIGHT)
-            c = wx.SystemSettings_GetColour(wx.SYS_COLOUR_HIGHLIGHT)
+            c = wx.SystemSettings_GetColour(wx.SYS_COLOUR_BTNFACE)
+            print c
             self.SetBackgroundColour(c)
 
     def OnLeave(self, evt):
