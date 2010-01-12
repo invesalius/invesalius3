@@ -117,7 +117,7 @@ class DicomPaintPanel(wx.Panel):
 
     def OnPaint(self, evt):
         if self.image:
-            dc = wx.AutoBufferedPaintDC(self)
+            dc = wx.PaintDC(self)
             dc.Clear()
             dc.DrawBitmap(self.bmp, 0, 0)
 
