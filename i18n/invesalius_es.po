@@ -21,7 +21,7 @@ msgstr ""
 
 #: constants.py:105 slice_menu.py:75 slice_menu.py:80
 msgid "Default "
-msgstr ""
+msgstr "Estándar"
 
 #: constants.py:106
 msgid "Hue"
