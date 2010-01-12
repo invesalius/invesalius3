@@ -74,10 +74,6 @@ class DicomInfo(object):
     @property
     def preview(self):
         if self._preview:
-            if self.resized:
-                self.resized = False
-                s_img = self.img.Scale(*self._size).Mirror(False)
-                self._preview = wx.BitmapFromImage(s_img)
             return self._preview
         else:
             colorer = vtk.vtkImageMapToWindowLevelColors()
@@ -92,8 +88,7 @@ class DicomInfo(object):
             r = colorer.GetOutput().GetPointData().GetScalars()
             ni = numpy_support.vtk_to_numpy(r)
             self.img = wx.ImageFromBuffer(width, height, ni)
-            s_img = self.img.Scale(*self._size).Mirror(False)
-            self._preview = wx.BitmapFromImage(s_img)
+            self._preview = self.img.Mirror(False)
             return self._preview
 
 
@@ -105,16 +100,32 @@ class DicomPaintPanel(wx.Panel):
 
     def _bind_events(self):
         self.Bind(wx.EVT_PAINT, self.OnPaint)
+        self.Bind(wx.EVT_SIZE, self.OnSize)
+
+    def _build_bitmap(self, image):
+        bmp = wx.BitmapFromImage(image)
+        return bmp
+
+    def _image_resize(self, image):
+        return image.Scale(*self.GetSize())
 
     def SetImage(self, image):
         self.image = image
+        r_img = self._image_resize(image)
+        self.bmp = self._build_bitmap(r_img)
+        self.Refresh()
 
     def OnPaint(self, evt):
         if self.image:
             dc = wx.AutoBufferedPaintDC(self)
             dc.Clear()
-            dc.DrawBitmap(self.image, 0, 0)
-            
+            dc.DrawBitmap(self.bmp, 0, 0)
+
+    def OnSize(self, evt):
+        if self.image:
+            self.bmp = self._build_bitmap(self._image_resize(self.image))
+        self.Refresh()
+        evt.Skip()
 
 
 class Preview(wx.Panel):
@@ -177,7 +188,7 @@ class Preview(wx.Panel):
         #self.title.Bind(wx.EVT_LEFT_DOWN, self.OnSelect)
         #self.subtitle.Bind(wx.EVT_LEFT_DOWN, self.OnSelect)
 
-        self.Bind(wx.EVT_SIZE, self.OnSize)
+        #self.Bind(wx.EVT_SIZE, self.OnSize)
 
     def SetDicomToPreview(self, dicom_info):
         """
