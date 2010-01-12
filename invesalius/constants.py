@@ -246,36 +246,40 @@ TYPE_RAYCASTING_MAPPER = 1
 folder=RAYCASTING_PRESETS_DIRECTORY= os.path.abspath(os.path.join("..",
                                                                   "presets",
                                                                   "raycasting"))
-_("Airways")
-_("Airways II")
-_("Black & White")
-_("Bone + Skin")
-_("Bone + Skin II")
-_("Dark Bone")
-_("Glossy")
-_("Glossy II")
-_("Gold Bone")
-_("High Contrast")
-_("Low Contrast")
-_("Soft on White")
-_("Mid Contrast")
-_("No Shading")
-_("Pencil")
-_("Red on White")
-_("Skin On Blue")
-_("Skin On Blue II")
-_("Soft on White")
-_("Soft + Skin")
-_("Soft + Skin II")
-_("Soft + Skin III")
-_("Soft On Blue")
-_("Soft")
-_("Standard")
-_("Vascular")
-_("Vascular II")
-_("Vascular III")
-_("Vascular IV")
-_("Yellow Bone")
+
+
+RAYCASTING_FILES = {_("Airways"): "Airways.plist",
+                   _("Airways II"): "Airways II.plist",
+                   _("Black & White"): "Black & White.plist",
+                   _("Bone + Skin"): "Bone + Skin.plist",
+                   _("Bone + Skin II"): "Bone + Skin II.plist",
+                   _("Dark Bone"): "Dark Bone.plist",
+                   _("Glossy"): "Glossy.plist", 
+                   _("Glossy II"): "Glossy II.plist",
+                   _("Gold Bone"): "Gold Bone.plist",
+                   _("High Contrast"): "High Contrast.plist",
+                   _("Low Contrast"): "Low Contrast.plist",
+                   _("Soft on White"): "Soft on White.plist",
+                   _("Mid Contrast"): "Mid Contrast.plist",
+                   _("No Shading"): "No Shading.plist",
+                   _("Pencil"): "Pencil.plist",
+                   _("Red on White"): "Red on White.plist",
+                   _("Skin On Blue"): "Skin On Blue.plist",
+                   _("Skin On Blue II"): "Skin On Blue II.plist",
+                   _("Soft on White"): "Soft on White.plist",
+                   _("Soft + Skin"): "Soft + Skin.plist",
+                   _("Soft + Skin II"): "Soft + Skin II.plist",
+                   _("Soft + Skin III"): "Soft + Skin III.plist",
+                   _("Soft On Blue"): "Soft On Blue.plist",
+                   _("Soft"): "Soft.plist",
+                   _("Standard"): "Standard.plist",
+                   _("Vascular"): "Vascular.plist",
+                   _("Vascular II"): "Vascular II.plist",
+                   _("Vascular III"): "Vascular III.plist",
+                   _("Vascular IV"): "Vascular IV.plist",
+                   _("Yellow Bone"): "Yellow Bone.plist"}
+
+
 
 RAYCASTING_TYPES = [_(filename.split(".")[0]) for filename in
                     os.listdir(folder) if

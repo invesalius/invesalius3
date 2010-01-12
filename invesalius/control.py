@@ -402,14 +402,17 @@ class Controller():
     def LoadRaycastingPreset(self, pubsub_evt):
         label = pubsub_evt.data
         if label != const.RAYCASTING_OFF_LABEL:
-            try:
+            if label in const.RAYCASTING_FILES.keys():
                 path = os.path.join(const.RAYCASTING_PRESETS_DIRECTORY,
+                                    const.RAYCASTING_FILES[label])
+            else: 
+                try:
+                    path = os.path.join(const.RAYCASTING_PRESETS_DIRECTORY,
+                                        label+".plist")
+                except IOError:
+                    path = os.path.join(const.USER_RAYCASTING_PRESETS_DIRECTORY,
                                     label+".plist")
-                preset = plistlib.readPlist(path)
-            except IOError:
-                path = os.path.join(const.USER_RAYCASTING_PRESETS_DIRECTORY,
-                                    label+".plist")
-                preset = plistlib.readPlist(path)
+            preset = plistlib.readPlist(path)
             prj.Project().raycasting_preset = preset
             # Notify volume
             # TODO: Chamar grafico tb!

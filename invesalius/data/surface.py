@@ -17,20 +17,21 @@
 #    detalhes.
 #--------------------------------------------------------------------------
 
-from imagedata_utils import BuildEditedImage
-import constants as const
-import imagedata_utils as iu
 import multiprocessing
 import os
 import plistlib
+import sys
+import tempfile
+
+import vtk
+import wx.lib.pubsub as ps
+
+import constants as const
+import imagedata_utils as iu
 import polydata_utils as pu
 import project as prj
 import session as ses
-import tempfile
-import vtk
 import vtk_utils as vu
-import wx.lib.pubsub as ps
-
 
 #------------------------------------------------------------------
 class SurfaceProcess(multiprocessing.Process):
@@ -280,7 +281,7 @@ class SurfaceManager():
             imagedata_tmp = vtk.vtkImageData()
             imagedata_tmp.DeepCopy(imagedata)
             imagedata_tmp.Update()
-            imagedata = BuildEditedImage(imagedata_tmp, edited_points)
+            imagedata = iu.BuildEditedImage(imagedata_tmp, edited_points)
 
         if quality in const.SURFACE_QUALITY.keys():
             imagedata_resolution = const.SURFACE_QUALITY[quality][0]
