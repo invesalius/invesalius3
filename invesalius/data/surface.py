@@ -164,9 +164,6 @@ class SurfaceManager():
                                         surface.colour, surface.volume,
                                         surface.transparency))
 
-
-
-
     def AddNewActor(self, pubsub_evt):
         """
         Create surface actor, save into project and send it to viewer.

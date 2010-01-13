@@ -1,6 +1,27 @@
+# InVesalius 3.0 Beta - Brazilian Portuguese.
+# Copyright (C) 2009 Centro de Tecnologia da Informa??o Renato Archer
+# This file is distributed under the same license as the InVesalius package. (GNU General Public License v2)
+# Tatiana Al-Chueyr Pereira Martins <tati.alchueyr@gmail.com>
+# Paulo Henrique Junqueira Amorim <paulojamorim@gmail.com>
+# Thiago Franco de Morais <totonixsame@gmail.com>
+msgid ""
+msgstr ""
+"Project-Id-Version: InVesalius 3\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2010-01-13 11:37-0200\n"
+"PO-Revision-Date: 2010-01-07 11:25-0300\n"
+"Last-Translator: Invesalius team <invesalius@cti.gov.br>\n"
+"Language-Team: InVesalius Team <invesalius@cti.gov.br>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Poedit-Language: Portuguese\n"
+"X-Poedit-SourceCharset: utf-8\n"
+"X-Poedit-Country: BRAZIL\n"
+
 #: constants.py:105 slice_menu.py:75 slice_menu.py:80
 msgid "Default "
-msgstr ""
+msgstr "Est?ndar"
 
 #: constants.py:106
 msgid "Hue"
@@ -60,7 +81,7 @@ msgstr ""
 msgid "High"
 msgstr ""
 
-#: constants.py:202 constants.py:204 surface.py:175 task_surface.py:30
+#: constants.py:202 constants.py:204 surface.py:172 task_surface.py:30
 msgid "Optimal *"
 msgstr ""
 
@@ -310,7 +331,7 @@ msgid "Mask"
 msgstr ""
 
 #: data_notebook.py:237
-msgid "Volume (mm)"
+msgid "Volume (mm³)"
 msgstr ""
 
 #: data_notebook.py:238
@@ -546,7 +567,7 @@ msgstr ""
 msgid "Help"
 msgstr ""
 
-#: frame.py:420
+#: frame.py:420 surface.py:158
 msgid "Ready"
 msgstr ""
 

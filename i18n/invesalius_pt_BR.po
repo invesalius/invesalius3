@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: InVesalius 3\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2010-01-13 11:18-0200\n"
+"POT-Creation-Date: 2010-01-13 11:37-0200\n"
 "PO-Revision-Date: 2010-01-07 11:25-0300\n"
 "Last-Translator: Invesalius team <invesalius@cti.gov.br>\n"
 "Language-Team: InVesalius Team <invesalius@cti.gov.br>\n"
@@ -81,7 +81,7 @@ msgstr "Média"
 msgid "High"
 msgstr "Alta"
 
-#: constants.py:202 constants.py:204 surface.py:175 task_surface.py:30
+#: constants.py:202 constants.py:204 surface.py:172 task_surface.py:30
 msgid "Optimal *"
 msgstr "Ótima *"
 
@@ -579,7 +579,7 @@ msgstr "Arquivo"
 msgid "Help"
 msgstr "Ajuda"
 
-#: frame.py:420
+#: frame.py:420 surface.py:158
 msgid "Ready"
 msgstr "Pronto"
 
