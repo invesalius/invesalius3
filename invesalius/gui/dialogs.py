@@ -36,7 +36,6 @@ class NumberDialog(wx.Dialog):
         self.PostCreate(pre)
 
         # Static text which contains message to user
-        print "message: ", message
         label = wx.StaticText(self, -1, message)
 
         # Numeric value to be changed by user
@@ -100,9 +99,6 @@ class ProgressDialog(object):
                                      parent = None,
                                      style = wx.PD_CAN_ABORT
                                       | wx.PD_APP_MODAL,
-                                     #| wx.PD_ELAPSED_TIME
-                                     #| wx.PD_ESTIMATED_TIME
-                                     #| wx.PD_REMAINING_TIME
                                      )
 
         self.dlg.Bind(wx.EVT_BUTTON, self.Cancel)
@@ -266,7 +262,7 @@ def SaveChangesDialog__Old(filename):
 
 
 def ImportEmptyDirectory(dirpath):
-    msg = "%s is an empty directory." % dirpath
+    msg = _("%s is an empty directory.") % dirpath
     if sys.platform == 'darwin':
         dlg = wx.MessageDialog(None, "",
                                 msg,

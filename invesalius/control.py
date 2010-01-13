@@ -229,7 +229,7 @@ class Controller():
     def Progress(self, evt):
         data = evt.data
         if (data):
-            message = "Loading file %d of %d"%(data[0],data[1])
+            message = _("Loading file %d of %d")%(data[0],data[1])
 
         if (data):
             if not(self.progress_dialog):
@@ -311,7 +311,7 @@ class Controller():
 
     def CreateAnalyzeProject(self, imagedata):
         proj = prj.Project()
-        proj.name = "Untitled"
+        proj.name = _("Untitled")
         proj.SetAcquisitionModality("MRI")
         proj.imagedata = imagedata
         #TODO: Verify if all Analyse are in AXIAL orientation
@@ -376,7 +376,7 @@ class Controller():
         tilt_value = dicom.acquisition.tilt
         if (tilt_value) and (gui):
             # Tell user gantry tilt and fix, according to answer
-            message = "Fix gantry tilt applying the degrees bellow"
+            message = _("Fix gantry tilt applying the degrees bellow")
             value = -1*tilt_value
             tilt_value = dialog.ShowNumberDialog(message, value)
             imagedata = utils.FixGantryTilt(imagedata, tilt_value)
