@@ -116,6 +116,7 @@ invesalius/data/slice_.py -text
 invesalius/data/slice_data.py -text
 invesalius/data/styles.py -text
 invesalius/data/surface.py -text
+invesalius/data/surface_process.py -text
 invesalius/data/viewer.py -text
 invesalius/data/viewer_slice.py -text
 invesalius/data/viewer_volume.py -text
