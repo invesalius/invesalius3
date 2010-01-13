@@ -19,12 +19,12 @@
 import sys
 
 import wx
-import wx.lib.colourselect as csel
 import wx.lib.hyperlink as hl
 import wx.lib.platebtn as pbtn
 import wx.lib.pubsub as ps
 
 import gui.widgets.foldpanelbar as fpb
+import widgets.colourselect as csel
 
 #INTERPOLATION_MODE_LIST = ["Cubic", "Linear", "NearestNeighbor"]
 QUALITY_LIST = [_("Low"), _("Medium"), _("High"), _("Optimal *"), _("Custom")]

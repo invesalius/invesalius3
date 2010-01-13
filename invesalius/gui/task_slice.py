@@ -20,7 +20,6 @@
 import sys
 
 import wx
-import wx.lib.colourselect as csel
 import wx.lib.hyperlink as hl
 import wx.lib.platebtn as pbtn
 import wx.lib.pubsub as ps
@@ -29,6 +28,8 @@ import data.mask as mask
 import constants as const
 import gui.widgets.gradient as grad
 import gui.widgets.foldpanelbar as fpb
+import widgets.colourselect as csel
+
 from project import Project
 
 BTN_NEW = wx.NewId()
@@ -207,7 +208,7 @@ class InnerFoldPanel(wx.Panel):
                                       leftSpacing=0, rightSpacing=0)
         self.__id_editor = item.GetId()
         self.last_panel_opened = None
-        
+
         #fold_panel.Expand(fold_panel.GetFoldPanel(1))
 
         # Panel sizer to expand fold panel
@@ -226,15 +227,15 @@ class InnerFoldPanel(wx.Panel):
 
     def __bind_evt(self):
         self.fold_panel.Bind(fpb.EVT_CAPTIONBAR, self.OnFoldPressCaption)
-       
+
     def __bind_pubsub_evt(self):
         ps.Publisher().subscribe(self.OnRetrieveStyle, 'Retrieve task slice style')
         ps.Publisher().subscribe(self.OnDisableStyle, 'Disable task slice style')
-         
+
     def OnFoldPressCaption(self, evt):
         id = evt.GetTag().GetId()
         closed = evt.GetFoldStatus()
-         
+
         if self.__id_editor == id:
             if closed:
                 ps.Publisher().sendMessage('Disable style', const.SLICE_STATE_EDITOR)
@@ -245,7 +246,7 @@ class InnerFoldPanel(wx.Panel):
         else:
             ps.Publisher().sendMessage('Disable style', const.SLICE_STATE_EDITOR)
             self.last_style = None
-        
+
         evt.Skip()
 
     def OnRetrieveStyle(self, pubsub_evt):
@@ -344,7 +345,7 @@ class MaskProperties(wx.Panel):
         n = self.combo_thresh.GetCount()
         for i in xrange(n-1, -1, -1):
             self.combo_thresh.Delete(i)
-        
+
 
     def __bind_events_wx(self):
         self.Bind(grad.EVT_THRESHOLD_CHANGE, self.OnSlideChanged, self.gradient)
@@ -397,7 +398,7 @@ class MaskProperties(wx.Panel):
         else:
            self.combo_thresh.SetSelection(3)
            thresh_min, thresh_max = default_thresh
-        
+
         self.gradient.SetMinValue(thresh_min)
         self.gradient.SetMaxValue(thresh_max)
 

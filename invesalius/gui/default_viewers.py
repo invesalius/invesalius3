@@ -301,8 +301,9 @@ class VolumeInteraction(wx.Panel):
 import wx.lib.platebtn as pbtn
 import wx.lib.buttons as btn
 import wx.lib.pubsub as ps
-import wx.lib.colourselect as csel
+
 import constants as const
+import widgets.colourselect as csel
 
 [BUTTON_RAYCASTING, BUTTON_VIEW, BUTTON_SLICE_PLANE] = [wx.NewId() for num in xrange(3)]
 RAYCASTING_TOOLS = wx.NewId()
@@ -345,7 +346,7 @@ class VolumeToolPanel(wx.Panel):
         button_slice_plane = self.button_slice_plane = pbtn.PlateButton(self, BUTTON_SLICE_PLANE,"",
         BMP_SLICE_PLANE, style=pbtn.PB_STYLE_SQUARE,
         size=(24,24))
-        
+
         self.button_raycasting = button_raycasting
 
         # VOLUME VIEW ANGLE BUTTON
@@ -402,7 +403,7 @@ class VolumeToolPanel(wx.Panel):
 
     def OnButtonView(self, evt):
         self.button_view.PopupMenu(self.menu_view)
-        
+
     def OnButtonSlicePlane(self, evt):
         self.button_slice_plane.PopupMenu(self.slice_plane_menu)
 
@@ -455,21 +456,21 @@ class VolumeToolPanel(wx.Panel):
             menu.AppendItem(item)
         menu.Bind(wx.EVT_MENU, self.OnMenuView)
         self.menu_view = menu
-        
+
         #SLICE PLANES BUTTON
         self.slice_plane_menu = slice_plane_menu = wx.Menu()
         itens = ["Axial", "Coronal", "Sagital"]
-        
+
         for value in itens:
             new_id = wx.NewId()
-            
-            item = wx.MenuItem(slice_plane_menu, new_id, value, 
+
+            item = wx.MenuItem(slice_plane_menu, new_id, value,
                                             kind = wx.ITEM_CHECK)
             ID_TO_ITEMSLICEMENU[new_id] = item
             slice_plane_menu.AppendItem(item)
-        
+
         slice_plane_menu.Bind(wx.EVT_MENU, self.OnMenuPlaneSlice)
-        
+
         self.Fit()
         self.Update()
 
@@ -479,20 +480,20 @@ class VolumeToolPanel(wx.Panel):
                 presets += [filename.split(".")[0] for filename in
                             os.listdir(folder) if
                             os.path.isfile(os.path.join(folder,filename))]
-        
+
     def OnMenuPlaneSlice(self, evt):
-       
+
         id = evt.GetId()
         item = ID_TO_ITEMSLICEMENU[id]
         checked = item.IsChecked()
         label = item.GetLabel()
-        
+
         if not (checked):
             ps.Publisher().sendMessage('Disable plane', label)
         else:
             ps.Publisher().sendMessage('Enable plane', label)
 
-            
+
     def ChangeButtonColour(self, pubsub_evt):
         colour = [i*255 for i in pubsub_evt.data]
         self.button_colour.SetColour(colour)

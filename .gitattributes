@@ -140,6 +140,7 @@ invesalius/gui/task_surface.py -text
 invesalius/gui/task_tools.py -text
 invesalius/gui/widgets/__init__.py -text
 invesalius/gui/widgets/clut_raycasting.py -text
+invesalius/gui/widgets/colourselect.py -text
 invesalius/gui/widgets/foldpanelbar.py -text
 invesalius/gui/widgets/gradient.py -text
 invesalius/gui/widgets/listctrl.py -text
