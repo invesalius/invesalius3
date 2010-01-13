@@ -97,6 +97,7 @@ class DicomPaintPanel(wx.Panel):
         super(DicomPaintPanel, self).__init__(parent)
         self._bind_events()
         self.image = None
+        self.last_size = (10,10)
 
     def _bind_events(self):
         self.Bind(wx.EVT_PAINT, self.OnPaint)
@@ -107,7 +108,16 @@ class DicomPaintPanel(wx.Panel):
         return bmp
 
     def _image_resize(self, image):
-        return image.Scale(*self.GetSize())
+        self.Update()
+        self.Layout()
+        new_size = self.GetSize()
+        # This is necessary due to darwin problem #
+        if new_size != (0,0):
+            self.last_size = new_size
+            return image.Scale(*new_size)
+        else:
+            return image.Scale(*self.last_size)
+            
 
     def SetImage(self, image):
         self.image = image
