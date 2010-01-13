@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: InVesalius 3\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2010-01-13 16:09-0200\n"
+"POT-Creation-Date: 2010-01-13 17:08-0200\n"
 "PO-Revision-Date: 2010-01-07 11:25-0300\n"
 "Last-Translator: Invesalius team <invesalius@cti.gov.br>\n"
 "Language-Team: InVesalius Team <invesalius@cti.gov.br>\n"
@@ -615,6 +615,10 @@ msgstr ""
 
 #: frame.py:647
 msgid "Window and Level"
+msgstr ""
+
+#: imagedata_utils.py:88 imagedata_utils.py:217
+msgid "Generating multiplanar visualization..."
 msgstr ""
 
 #: import_panel.py:54

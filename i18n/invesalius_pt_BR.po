@@ -1,14 +1,14 @@
 # InVesalius 3.0 Beta - Brazilian Portuguese.
-# Copyright (C) 2009 Centro de Tecnologia da Informação Renato Archer
+# Copyright (C) 2007-2009 Centro de Tecnologia da Informação Renato Archer
 # This file is distributed under the same license as the InVesalius package. (GNU General Public License v2)
-# Tatiana Al-Chueyr Pereira Martins <tati.alchueyr@gmail.com>
+# Tatiana Al-Chueyr Pereira Martins <tatiana.alchueyr@gmail.com>
 # Paulo Henrique Junqueira Amorim <paulojamorim@gmail.com>
 # Thiago Franco de Morais <totonixsame@gmail.com>
 msgid ""
 msgstr ""
 "Project-Id-Version: InVesalius 3\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2010-01-13 16:09-0200\n"
+"POT-Creation-Date: 2010-01-13 17:08-0200\n"
 "PO-Revision-Date: 2010-01-07 11:25-0300\n"
 "Last-Translator: Invesalius team <invesalius@cti.gov.br>\n"
 "Language-Team: InVesalius Team <invesalius@cti.gov.br>\n"
@@ -315,13 +315,13 @@ msgid "Cut plane"
 msgstr "Plano para corte"
 
 #: control.py:232
-#,  python-format
+#, python-format
 msgid "Loading file %d of %d"
 msgstr "Carregando arquivo %d de %d"
 
 #: control.py:314
 msgid "Untitled"
-msgstr "Sem nome"
+msgstr "Sem Título"
 
 #: control.py:379
 msgid "Fix gantry tilt applying the degrees bellow"
@@ -629,6 +629,10 @@ msgstr "Mover"
 msgid "Window and Level"
 msgstr "Brilho e Contraste"
 
+#: imagedata_utils.py:88 imagedata_utils.py:217
+msgid "Generating multiplanar visualization..."
+msgstr "Gerando visualização multiplanar..."
+
 #: import_panel.py:54
 msgid "Import medical images"
 msgstr "Importar imagens médicas"
@@ -912,7 +916,7 @@ msgstr "Interações de suavização:"
 
 #: task_tools.py:57
 msgid "Measure distances"
-msgstr "Meça distâncias"
+msgstr "Realizar medidas"
 
 #: task_tools.py:58
 msgid "Measure"
@@ -920,7 +924,7 @@ msgstr "Medição"
 
 #: task_tools.py:61 task_tools.py:62
 msgid "Add text annotations"
-msgstr "Adicione anotações"
+msgstr "Adicionar anotações"
 
 #~ msgid "Optimal"
 #~ msgstr "Ótima"

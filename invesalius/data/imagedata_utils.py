@@ -85,7 +85,7 @@ def ResampleImage2D(imagedata, px, py,
     resample.SetAxisMagnificationFactor(1, factor_y)
     resample.SetOutputSpacing(spacing[0] * factor_x, spacing[1] * factor_y, spacing[2])
     if (update_progress):
-        message = "Generating multiplanar visualization..."
+        message = _("Generating multiplanar visualization...")
         resample.AddObserver("ProgressEvent", lambda obj,
                              evt:update_progress(resample,message))
     resample.Update()
@@ -214,7 +214,7 @@ def ExtractVOI(imagedata,xi,xf,yi,yf,zi,zf):
     return voi.GetOutput()
 
 def CreateImageData(filelist, zspacing, size, bits):
-    message = "Generating multiplanar visualization..."
+    message = _("Generating multiplanar visualization...")
 
     if not const.VTK_WARNING:
         fow = vtk.vtkFileOutputWindow()
