@@ -19,8 +19,7 @@ class SurfaceProcess(multiprocessing.Process):
         self.decimate_reduction = decimate_reduction
         self.smooth_relaxation_factor = smooth_relaxation_factor
         self.smooth_iterations = smooth_iterations
-        _ = i18n.InstallLanguage(language)
-
+        self.language = language
 
     def run(self):
         self.CreateSurface()
@@ -30,6 +29,7 @@ class SurfaceProcess(multiprocessing.Process):
         self.pipe.send([prog, msg])
 
     def CreateSurface(self):
+        _ = i18n.InstallLanguage(self.language)
 
         reader = vtk.vtkXMLImageDataReader()
         reader.SetFileName(self.filename)
