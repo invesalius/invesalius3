@@ -1,27 +1,6 @@
-# InVesalius 3.0 Beta - Brazilian Portuguese.
-# Copyright (C) 2009 Centro de Tecnologia da Informação Renato Archer
-# This file is distributed under the same license as the InVesalius package. (GNU General Public License v2)
-# Tatiana Al-Chueyr Pereira Martins <tati.alchueyr@gmail.com>
-# Paulo Henrique Junqueira Amorim <paulojamorim@gmail.com>
-# Thiago Franco de Morais <totonixsame@gmail.com>
-msgid ""
-msgstr ""
-"Project-Id-Version: InVesalius 3\n"
-"Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2010-01-11 14:18-0200\n"
-"PO-Revision-Date: 2010-01-07 11:25-0300\n"
-"Last-Translator: Invesalius team <invesalius@cti.gov.br>\n"
-"Language-Team: InVesalius Team <invesalius@cti.gov.br>\n"
-"MIME-Version: 1.0\n"
-"Content-Type: text/plain; charset=UTF-8\n"
-"Content-Transfer-Encoding: 8bit\n"
-"X-Poedit-Language: Portuguese\n"
-"X-Poedit-SourceCharset: utf-8\n"
-"X-Poedit-Country: BRAZIL\n"
-
 #: constants.py:105 slice_menu.py:75 slice_menu.py:80
 msgid "Default "
-msgstr "Estándar"
+msgstr ""
 
 #: constants.py:106
 msgid "Hue"
@@ -47,8 +26,8 @@ msgstr ""
 msgid "Inverse Gray"
 msgstr ""
 
-#: constants.py:152 constants.py:212 dicom_preview_panel.py:323
-#: dicom_preview_panel.py:324 presets.py:30 presets.py:48 presets.py:119
+#: constants.py:152 constants.py:212 dicom_preview_panel.py:355
+#: dicom_preview_panel.py:356 presets.py:30 presets.py:48 presets.py:119
 msgid "Bone"
 msgstr ""
 
@@ -81,7 +60,7 @@ msgstr ""
 msgid "High"
 msgstr ""
 
-#: constants.py:202 constants.py:204 surface.py:275 task_surface.py:30
+#: constants.py:202 constants.py:204 surface.py:175 task_surface.py:30
 msgid "Optimal *"
 msgstr ""
 
@@ -162,155 +141,155 @@ msgstr ""
 msgid "Vasculature - Soft"
 msgstr ""
 
-#: constants.py:239
+#: constants.py:234
 msgid "Front"
 msgstr ""
 
-#: constants.py:240
+#: constants.py:235
 msgid "Back"
 msgstr ""
 
-#: constants.py:241
+#: constants.py:236
 msgid "Top"
 msgstr ""
 
-#: constants.py:242
+#: constants.py:237
 msgid "Bottom"
 msgstr ""
 
-#: constants.py:243
+#: constants.py:238
 msgid "Right"
 msgstr ""
 
-#: constants.py:244
+#: constants.py:239
 msgid "Left"
 msgstr ""
 
-#: constants.py:245
+#: constants.py:240
 msgid "Isometric"
 msgstr ""
 
-#: constants.py:256
+#: constants.py:251
 msgid "Airways"
 msgstr ""
 
-#: constants.py:257
+#: constants.py:252
 msgid "Airways II"
 msgstr ""
 
-#: constants.py:258
+#: constants.py:253
 msgid "Black & White"
 msgstr ""
 
-#: constants.py:259
+#: constants.py:254
 msgid "Bone + Skin"
 msgstr ""
 
-#: constants.py:260
+#: constants.py:255
 msgid "Bone + Skin II"
 msgstr ""
 
-#: constants.py:261
+#: constants.py:256
 msgid "Dark Bone"
 msgstr ""
 
-#: constants.py:262
+#: constants.py:257
 msgid "Glossy"
 msgstr ""
 
-#: constants.py:263
+#: constants.py:258
 msgid "Glossy II"
 msgstr ""
 
-#: constants.py:264
+#: constants.py:259
 msgid "Gold Bone"
 msgstr ""
 
-#: constants.py:265
+#: constants.py:260
 msgid "High Contrast"
 msgstr ""
 
-#: constants.py:266
+#: constants.py:261
 msgid "Low Contrast"
 msgstr ""
 
-#: constants.py:267 constants.py:274
+#: constants.py:262 constants.py:269
 msgid "Soft on White"
 msgstr ""
 
-#: constants.py:268
+#: constants.py:263
 msgid "Mid Contrast"
 msgstr ""
 
-#: constants.py:269
+#: constants.py:264
 msgid "No Shading"
 msgstr ""
 
-#: constants.py:270
+#: constants.py:265
 msgid "Pencil"
 msgstr ""
 
-#: constants.py:271
+#: constants.py:266
 msgid "Red on White"
 msgstr ""
 
-#: constants.py:272
+#: constants.py:267
 msgid "Skin On Blue"
 msgstr ""
 
-#: constants.py:273
+#: constants.py:268
 msgid "Skin On Blue II"
 msgstr ""
 
-#: constants.py:275
+#: constants.py:270
 msgid "Soft + Skin"
 msgstr ""
 
-#: constants.py:276
+#: constants.py:271
 msgid "Soft + Skin II"
 msgstr ""
 
-#: constants.py:277
+#: constants.py:272
 msgid "Soft + Skin III"
 msgstr ""
 
-#: constants.py:278
+#: constants.py:273
 msgid "Soft On Blue"
 msgstr ""
 
-#: constants.py:279
+#: constants.py:274
 msgid "Soft"
 msgstr ""
 
-#: constants.py:280
+#: constants.py:275
 msgid "Standard"
 msgstr ""
 
-#: constants.py:281
+#: constants.py:276
 msgid "Vascular"
 msgstr ""
 
-#: constants.py:282
+#: constants.py:277
 msgid "Vascular II"
 msgstr ""
 
-#: constants.py:283
+#: constants.py:278
 msgid "Vascular III"
 msgstr ""
 
-#: constants.py:284
+#: constants.py:279
 msgid "Vascular IV"
 msgstr ""
 
-#: constants.py:285
+#: constants.py:280
 msgid "Yellow Bone"
 msgstr ""
 
-#: constants.py:300 constants.py:302
+#: constants.py:295 constants.py:297
 msgid " Off"
 msgstr ""
 
-#: constants.py:303
+#: constants.py:298
 msgid "Cut plane"
 msgstr ""
 
@@ -331,7 +310,7 @@ msgid "Mask"
 msgstr ""
 
 #: data_notebook.py:237
-msgid "Volume (mmÂ³)"
+msgid "Volume (mm)"
 msgstr ""
 
 #: data_notebook.py:238
@@ -485,36 +464,36 @@ msgid ""
 "Made in InVesalius"
 msgstr ""
 
-#: dicom_preview_panel.py:115 dicom_preview_panel.py:116
+#: dicom_preview_panel.py:146 dicom_preview_panel.py:147
 msgid "Image"
 msgstr ""
 
-#: dicom_preview_panel.py:332
+#: dicom_preview_panel.py:364
 msgid "image size"
 msgstr ""
 
-#: dicom_preview_panel.py:341
+#: dicom_preview_panel.py:373
 msgid ""
 "id\n"
 "protocol"
 msgstr ""
 
-#: dicom_preview_panel.py:348
+#: dicom_preview_panel.py:380
 msgid ""
 "date time\n"
 " Made in InVesalius"
 msgstr ""
 
-#: dicom_preview_panel.py:394
+#: dicom_preview_panel.py:426
 msgid "Auto-play"
 msgstr ""
 
-#: dicom_preview_panel.py:618
+#: dicom_preview_panel.py:650
 #, python-format
 msgid "%d Images"
 msgstr ""
 
-#: dicom_preview_panel.py:735 dicom_preview_panel.py:756
+#: dicom_preview_panel.py:767 dicom_preview_panel.py:788
 #, python-format
 msgid "Image %d"
 msgstr ""
@@ -733,6 +712,11 @@ msgstr ""
 
 #: slice_menu.py:101
 msgid "Image Tiling"
+msgstr ""
+
+#: surface_process.py:52 surface_process.py:64 surface_process.py:73
+#: surface_process.py:86 surface_process.py:96
+msgid "Generating 3D surface..."
 msgstr ""
 
 #: task_exporter.py:101

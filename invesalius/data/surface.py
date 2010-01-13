@@ -155,7 +155,7 @@ class SurfaceManager():
             ps.Publisher().sendMessage('Load surface actor into viewer', (actor))
 
             ps.Publisher().sendMessage('Update status text in GUI',
-                                        "Surface created.")
+                                        _("Ready"))
 
             # The following lines have to be here, otherwise all volumes disappear
 

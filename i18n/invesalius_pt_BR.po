@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: InVesalius 3\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2010-01-11 14:18-0200\n"
+"POT-Creation-Date: 2010-01-13 11:18-0200\n"
 "PO-Revision-Date: 2010-01-07 11:25-0300\n"
 "Last-Translator: Invesalius team <invesalius@cti.gov.br>\n"
 "Language-Team: InVesalius Team <invesalius@cti.gov.br>\n"
@@ -47,8 +47,8 @@ msgstr "Oceano"
 msgid "Inverse Gray"
 msgstr "Cinza invertido"
 
-#: constants.py:152 constants.py:212 dicom_preview_panel.py:323
-#: dicom_preview_panel.py:324 presets.py:30 presets.py:48 presets.py:119
+#: constants.py:152 constants.py:212 dicom_preview_panel.py:355
+#: dicom_preview_panel.py:356 presets.py:30 presets.py:48 presets.py:119
 msgid "Bone"
 msgstr "Osso"
 
@@ -81,13 +81,13 @@ msgstr "Média"
 msgid "High"
 msgstr "Alta"
 
-#: constants.py:202 constants.py:204 surface.py:275 task_surface.py:30
+#: constants.py:202 constants.py:204 surface.py:175 task_surface.py:30
 msgid "Optimal *"
 msgstr "Ótima *"
 
 #: constants.py:203 presets.py:44 presets.py:62 task_surface.py:30
 msgid "Custom"
-msgstr "Personalizada"
+msgstr "Personalizado"
 
 #: constants.py:208
 #, python-format
@@ -162,155 +162,155 @@ msgstr "Vascular - Duro"
 msgid "Vasculature - Soft"
 msgstr "Vascular - Mole"
 
-#: constants.py:239
+#: constants.py:234
 msgid "Front"
 msgstr "Frente"
 
-#: constants.py:240
+#: constants.py:235
 msgid "Back"
 msgstr "Atrás"
 
-#: constants.py:241
+#: constants.py:236
 msgid "Top"
 msgstr "Topo"
 
-#: constants.py:242
+#: constants.py:237
 msgid "Bottom"
 msgstr "Base"
 
-#: constants.py:243
+#: constants.py:238
 msgid "Right"
 msgstr "Direita"
 
-#: constants.py:244
+#: constants.py:239
 msgid "Left"
 msgstr "Esquerda"
 
-#: constants.py:245
+#: constants.py:240
 msgid "Isometric"
 msgstr "Isométrica"
 
-#: constants.py:256
+#: constants.py:251
 msgid "Airways"
 msgstr "Vias Aéreas"
 
-#: constants.py:257
+#: constants.py:252
 msgid "Airways II"
 msgstr "Vias Aéreas II"
 
-#: constants.py:258
+#: constants.py:253
 msgid "Black & White"
 msgstr "Preto & Branco"
 
-#: constants.py:259
+#: constants.py:254
 msgid "Bone + Skin"
 msgstr "Osso + Pele"
 
-#: constants.py:260
+#: constants.py:255
 msgid "Bone + Skin II"
 msgstr "Osso + Pele II"
 
-#: constants.py:261
+#: constants.py:256
 msgid "Dark Bone"
 msgstr "Osso Escuro"
 
-#: constants.py:262
+#: constants.py:257
 msgid "Glossy"
 msgstr "Brilhante"
 
-#: constants.py:263
+#: constants.py:258
 msgid "Glossy II"
 msgstr "Brilhante II"
 
-#: constants.py:264
+#: constants.py:259
 msgid "Gold Bone"
 msgstr "Osso Dourado"
 
-#: constants.py:265
+#: constants.py:260
 msgid "High Contrast"
 msgstr "Contraste Alto"
 
-#: constants.py:266
+#: constants.py:261
 msgid "Low Contrast"
 msgstr "Contraste Baixo"
 
-#: constants.py:267 constants.py:274
+#: constants.py:262 constants.py:269
 msgid "Soft on White"
 msgstr "Mole sobre Branco"
 
-#: constants.py:268
+#: constants.py:263
 msgid "Mid Contrast"
 msgstr "Contraste Médio"
 
-#: constants.py:269
+#: constants.py:264
 msgid "No Shading"
 msgstr "Sem Sombreamento"
 
-#: constants.py:270
+#: constants.py:265
 msgid "Pencil"
 msgstr "Lápis"
 
-#: constants.py:271
+#: constants.py:266
 msgid "Red on White"
 msgstr "Vermelho sobre Branco"
 
-#: constants.py:272
+#: constants.py:267
 msgid "Skin On Blue"
 msgstr "Pele Sobre Azul"
 
-#: constants.py:273
+#: constants.py:268
 msgid "Skin On Blue II"
 msgstr "Pele Sobre Azul II"
 
-#: constants.py:275
+#: constants.py:270
 msgid "Soft + Skin"
 msgstr "Mole + Pele"
 
-#: constants.py:276
+#: constants.py:271
 msgid "Soft + Skin II"
 msgstr "Mole + Pele II"
 
-#: constants.py:277
+#: constants.py:272
 msgid "Soft + Skin III"
 msgstr "Mole + Pele III"
 
-#: constants.py:278
+#: constants.py:273
 msgid "Soft On Blue"
 msgstr "Mole Sobre Azul"
 
-#: constants.py:279
+#: constants.py:274
 msgid "Soft"
 msgstr "Mole"
 
-#: constants.py:280
+#: constants.py:275
 msgid "Standard"
 msgstr "Padrão"
 
-#: constants.py:281
+#: constants.py:276
 msgid "Vascular"
-msgstr "Vascular - Duro"
+msgstr "Vascular"
 
-#: constants.py:282
+#: constants.py:277
 msgid "Vascular II"
-msgstr "Vascular - Duro"
+msgstr "Vascular II"
 
-#: constants.py:283
+#: constants.py:278
 msgid "Vascular III"
-msgstr "Vascular - Duro"
+msgstr "Vascular III"
 
-#: constants.py:284
+#: constants.py:279
 msgid "Vascular IV"
-msgstr "Vascular - Duro"
+msgstr "Vascular IV"
 
-#: constants.py:285
+#: constants.py:280
 msgid "Yellow Bone"
 msgstr "Osso Amarelo"
 
-#: constants.py:300 constants.py:302
+#: constants.py:295 constants.py:297
 msgid " Off"
 msgstr " Desabilitado"
 
-#: constants.py:303
+#: constants.py:298
 msgid "Cut plane"
 msgstr "Plano para corte"
 
@@ -493,15 +493,15 @@ msgstr ""
 "%s %s\n"
 " Criado com InVesalius"
 
-#: dicom_preview_panel.py:115 dicom_preview_panel.py:116
+#: dicom_preview_panel.py:146 dicom_preview_panel.py:147
 msgid "Image"
 msgstr "Imagem"
 
-#: dicom_preview_panel.py:332
+#: dicom_preview_panel.py:364
 msgid "image size"
 msgstr "tamanho da imagem"
 
-#: dicom_preview_panel.py:341
+#: dicom_preview_panel.py:373
 msgid ""
 "id\n"
 "protocol"
@@ -509,7 +509,7 @@ msgstr ""
 "id\n"
 "protocolo"
 
-#: dicom_preview_panel.py:348
+#: dicom_preview_panel.py:380
 msgid ""
 "date time\n"
 " Made in InVesalius"
@@ -517,16 +517,16 @@ msgstr ""
 "data hora\n"
 " Criado com InVesalius"
 
-#: dicom_preview_panel.py:394
+#: dicom_preview_panel.py:426
 msgid "Auto-play"
 msgstr "Reproduzir"
 
-#: dicom_preview_panel.py:618
+#: dicom_preview_panel.py:650
 #, python-format
 msgid "%d Images"
 msgstr "%d Imagens"
 
-#: dicom_preview_panel.py:735 dicom_preview_panel.py:756
+#: dicom_preview_panel.py:767 dicom_preview_panel.py:788
 #, python-format
 msgid "Image %d"
 msgstr "Imagem %d"
@@ -746,6 +746,11 @@ msgstr "Pseudo Cor"
 #: slice_menu.py:101
 msgid "Image Tiling"
 msgstr "Conjunto de Imagens"
+
+#: surface_process.py:52 surface_process.py:64 surface_process.py:73
+#: surface_process.py:86 surface_process.py:96
+msgid "Generating 3D surface..."
+msgstr "Exportando superfície 3D..."
 
 #: task_exporter.py:101
 msgid "Export InVesalius screen to a image file"
