@@ -368,7 +368,7 @@ def ShowSavePresetDialog(default_filename="raycasting"):
     try:
         if dlg.ShowModal() == wx.ID_OK:
             filename = dlg.GetValue()
-    except(wx._core.PyAssertionErro):
+    except(wx._core.PyAssertionError):
         filename = dlg.GetValue()
 
     return filename
