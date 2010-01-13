@@ -266,7 +266,7 @@ class SurfaceManager():
                 os.remove(filename_polydata)
             except (WindowsError):
                 print "Error while removing surface temporary file"
-        if sys.platform == 'linux2':
+        elif sys.platform == 'linux2':
             try:
                 os.remove(filename_img)
                 os.remove(filename_polydata)
