@@ -78,7 +78,7 @@ class Controller():
 
 ###########################
 ###########################
-    
+
     def OnShowDialogImportDirectory(self, pubsub_evt):
         self.ShowDialogImportDirectory()
 
@@ -96,8 +96,8 @@ class Controller():
 
     def ShowDialogImportDirectory(self):
         # Offer to save current project if necessary
-        session = ses.Session()        
-        st = session.project_status 
+        session = ses.Session()
+        st = session.project_status
         if (st == const.PROJ_NEW) or (st == const.PROJ_CHANGE):
             filename = session.project_path[1]
             answer = dialog.SaveChangesDialog2(filename)
@@ -113,11 +113,11 @@ class Controller():
         elif dirpath:
             self.StartImportPanel(dirpath)
             ps.Publisher().sendMessage("Load data to import panel", dirpath)
-            
+
     def ShowDialogOpenProject(self):
         # Offer to save current project if necessary
-        session = ses.Session()        
-        st = session.project_status 
+        session = ses.Session()
+        st = session.project_status
         if (st == const.PROJ_NEW) or (st == const.PROJ_CHANGE):
             filename = session.project_path[1]
             answer = dialog.SaveChangesDialog2(filename)
@@ -137,15 +137,15 @@ class Controller():
             filepath = dialog.ShowSaveAsProjectDialog(proj.name)
             if filepath:
                 #session.RemoveTemp()
-                session.OpenProject(filepath) 
+                session.OpenProject(filepath)
             else:
                 return
         else:
             dirpath, filename = session.project_path
             filepath = os.path.join(dirpath, filename)
-        
+
         self.SaveProject(filepath)
-        
+
 
     def ShowDialogCloseProject(self):
         print "ShowDialogCloseProject"
@@ -168,7 +168,7 @@ class Controller():
                 print "Cancel"
         else:
             self.CloseProject()
-       
+
 ###########################
     def OnOpenProject(self, pubsub_evt):
         path = pubsub_evt.data
@@ -210,7 +210,7 @@ class Controller():
         proj = prj.Project()
         proj.Close()
 
-        ps.Publisher().sendMessage('Hide content panel') 
+        ps.Publisher().sendMessage('Hide content panel')
         ps.Publisher().sendMessage('Close project data')
 
         session = ses.Session()
@@ -218,19 +218,19 @@ class Controller():
 
 ###########################
 
- 
+
     def StartImportPanel(self, path):
 
-        # retrieve DICOM files splited into groups    
+        # retrieve DICOM files splited into groups
         reader = dcm.ProgressDicomReader()
         reader.SetWindowEvent(self.frame)
         reader.SetDirectoryPath(path)
-    
+
     def Progress(self, evt):
         data = evt.data
         if (data):
             message = "Loading file %d of %d"%(data[0],data[1])
-        
+
         if (data):
             if not(self.progress_dialog):
                 self.progress_dialog = dialog.ProgressDialog(
@@ -238,12 +238,12 @@ class Controller():
             else:
                 if not(self.progress_dialog.Update(data[0],message)):
                     self.progress_dialog.Close()
-                    self.progress_dialog = None       
+                    self.progress_dialog = None
         else:
             #Is None if user canceled the load
             self.progress_dialog.Close()
             self.progress_dialog = None
-            
+
     def OnLoadImportPanel(self, evt):
         patient_series = evt.data
         ok = self.LoadImportPanel(patient_series)
@@ -251,7 +251,7 @@ class Controller():
             ps.Publisher().sendMessage('Show import panel')
             ps.Publisher().sendMessage("Show import panel in frame")
 
- 
+
     def LoadImportPanel(self, patient_series):
         if patient_series and isinstance(patient_series, list):
             ps.Publisher().sendMessage("Load import panel", patient_series)
@@ -261,15 +261,15 @@ class Controller():
         else:
             dialog.ImportInvalidFiles()
         return False
-              
+
     def OnImportMedicalImages(self, pubsub_evt):
         directory = pubsub_evt.data
         self.ImportMedicalImages(directory)
 
-    def ImportMedicalImages(self, directory): 
+    def ImportMedicalImages(self, directory):
         # OPTION 1: DICOM?
         patients_groups = dcm.GetDicomGroups(directory)
-        
+
         if len(patients_groups):
             group = dcm.SelectLargerDicomGroup(patients_groups)
             imagedata, dicom = self.OpenDicomGroup(group, gui=True)
@@ -290,8 +290,8 @@ class Controller():
 
         const.THRESHOLD_OUTVALUE = proj.threshold_range[0]
         const.THRESHOLD_INVALUE = proj.threshold_range[1]
-        const.WINDOW_LEVEL['Default'] = (proj.window, proj.level)
-        const.WINDOW_LEVEL['Manual'] = (proj.window, proj.level)
+        const.WINDOW_LEVEL[_('Default')] = (proj.window, proj.level)
+        const.WINDOW_LEVEL[_('Manual')] = (proj.window, proj.level)
 
 
         ps.Publisher().sendMessage('Set project name', proj.name)
@@ -342,12 +342,12 @@ class Controller():
         ######
         session = ses.Session()
         filename = proj.name+".inv3"
-        
+
         filename = filename.replace("/", "") #Fix problem case other/Skull_DICOM
-        
+
         dirpath = session.CreateProject(filename)
         proj.SavePlistProject(dirpath, filename)
-        
+
 
 
     def OnOpenDicomGroup(self, pubsub_evt):
@@ -355,7 +355,7 @@ class Controller():
         imagedata, dicom = self.OpenDicomGroup(group, gui=True)
         self.CreateDicomProject(imagedata, dicom)
         self.LoadProject()
-    
+
     def OpenDicomGroup(self, dicom_group, gui=True):
 
         # Retrieve general DICOM headers
@@ -369,7 +369,7 @@ class Controller():
         zspacing = dicom_group.zspacing
         size = dicom.image.size
         bits = dicom.image.bits_allocad
-        
+
         imagedata = utils.CreateImageData(filelist, zspacing, size, bits)
 
         # 1(a): Fix gantry tilt, if any
@@ -405,7 +405,7 @@ class Controller():
             if label in const.RAYCASTING_FILES.keys():
                 path = os.path.join(const.RAYCASTING_PRESETS_DIRECTORY,
                                     const.RAYCASTING_FILES[label])
-            else: 
+            else:
                 try:
                     path = os.path.join(const.RAYCASTING_PRESETS_DIRECTORY,
                                         label+".plist")
@@ -423,7 +423,7 @@ class Controller():
             ps.Publisher().sendMessage("Hide raycasting volume")
 
     def SaveRaycastingPreset(self, pubsub_evt):
-        preset_name = pubsub_evt.data 
+        preset_name = pubsub_evt.data
         preset = prj.Project().raycasting_preset
         preset['name'] = preset_name
         preset_dir = os.path.join(const.USER_RAYCASTING_PRESETS_DIRECTORY,
@@ -433,4 +433,4 @@ class Controller():
 
 
 
-            
+
