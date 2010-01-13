@@ -20,6 +20,7 @@ import os
 import platform
 import subprocess
 import re
+import sigar
 import sys
 
 if sys.platform == 'win32':
@@ -95,11 +96,10 @@ def frange(start, end=None, inc=None):
 
 def PredictingMemory(qtd, x, y, p):
     m = qtd * (x * y * p)
+    #physical_memory in Byte
+    physical_memory = GetPhysicalMemoryAmount()
 
     if (sys.platform == 'win32'):
-
-        #physical_memory in Byte
-        physical_memory = GetWindowsInformation()[0]
 
         if (platform.architecture()[0] == '32bit'):
             #(314859200 = 300 MB)
@@ -132,8 +132,6 @@ def PredictingMemory(qtd, x, y, p):
         return (x/porcent, y/porcent)
 
     elif(sys.platform == 'linux2'):
-
-        physical_memory = GetLinuxInformation()[0]
 
         if (platform.architecture()[0] == '32bit'):
             # 839000000 = 800 MB
@@ -171,27 +169,15 @@ def BytesConvert(bytes):
         return str(bytes) + ' bytes'
 
 
-def GetWindowsInformation():
-    computer = wmi.WMI()
-    for i in computer.Win32_ComputerSystem ():
-        memory = int(i.TotalPhysicalMemory)
-
-    information = (memory,)
-
-    return information
-
-
-def GetDarwinInformation():
-    memory = 2.0
-    return (memory)
+def GetPhysicalMemoryAmount():
+    """
+    Return physical memory amount in bytes
+    """
+    sg = sigar.open()
+    mem = sg.mem()
+    sg.close()
+    return int(mem.total())
 
 
-def GetLinuxInformation():
-    #Getting memory
-    with open('/proc/meminfo') as f:
-        for i in f:
-            if i.startswith('MemTotal'):
-                # To translate from KB to Bytes
-                mem = int(i.split()[1]) * 1024
 
-    return (mem,)
+
