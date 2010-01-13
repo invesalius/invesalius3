@@ -31,7 +31,7 @@ import project
 class NumberDialog(wx.Dialog):
     def __init__(self, message, value=0):
         pre = wx.PreDialog()
-        pre.Create(None, -1, "InVesalius 3", size=wx.DefaultSize, pos=wx.DefaultPosition, 
+        pre.Create(None, -1, "InVesalius 3", size=wx.DefaultSize, pos=wx.DefaultPosition,
                     style=wx.DEFAULT_DIALOG_STYLE)
         self.PostCreate(pre)
 
@@ -46,7 +46,7 @@ class NumberDialog(wx.Dialog):
                                     signedForegroundColour = "Black")
         self.num_ctrl = num_ctrl
 
-        # Buttons       
+        # Buttons
         btn_ok = wx.Button(self, wx.ID_OK)
         btn_ok.SetHelpText(_("Value will be applied."))
         btn_ok.SetDefault()
@@ -57,7 +57,7 @@ class NumberDialog(wx.Dialog):
         btnsizer = wx.StdDialogButtonSizer()
         btnsizer.AddButton(btn_ok)
         btnsizer.AddButton(btn_cancel)
-        btnsizer.Realize()        
+        btnsizer.Realize()
 
 
         sizer = wx.BoxSizer(wx.VERTICAL)
@@ -104,15 +104,15 @@ class ProgressDialog(object):
                                      #| wx.PD_ESTIMATED_TIME
                                      #| wx.PD_REMAINING_TIME
                                      )
-        
+
         self.dlg.Bind(wx.EVT_BUTTON, self.Cancel)
         self.dlg.SetSize(wx.Size(250,150))
-        
+
     def Cancel(self, evt):
         ps.Publisher().sendMessage("Cancel DICOM load")
-                
+
     def Update(self, value, message):
-        if(int(value) != self.maximum):  
+        if(int(value) != self.maximum):
             try:
                 self.dlg.Update(value,message)
             #TODO:
@@ -122,7 +122,7 @@ class ProgressDialog(object):
             return True
         else:
             return False
-                     
+
     def Close(self):
         self.dlg.Destroy()
 
@@ -184,7 +184,7 @@ def ShowImportDirDialog():
     return path
 
 def ShowSaveAsProjectDialog(default_filename=None):
-    current_dir = os.path.abspath(".")    
+    current_dir = os.path.abspath(".")
     dlg = wx.FileDialog(None,
                         _("Save project as..."), # title
                         "", # last used directory
@@ -193,14 +193,14 @@ def ShowSaveAsProjectDialog(default_filename=None):
                         wx.SAVE|wx.OVERWRITE_PROMPT)
     #dlg.SetFilterIndex(0) # default is VTI
 
-    filename = None                 
+    filename = None
     if dlg.ShowModal() == wx.ID_OK:
         filename = dlg.GetPath()
         extension = "inv3"
         if sys.platform != 'win32':
             if filename.split(".")[-1] != extension:
                 filename = filename + "." + extension
-    
+
     os.chdir(current_dir)
     return filename
 
@@ -217,14 +217,14 @@ def ShowSaveAsProjectDialog(default_filename=None):
 class MessageDialog(wx.Dialog):
     def __init__(self, message):
         pre = wx.PreDialog()
-        pre.Create(None, -1, "InVesalius 3",  size=(360, 370), pos=wx.DefaultPosition, 
+        pre.Create(None, -1, "InVesalius 3",  size=(360, 370), pos=wx.DefaultPosition,
                     style=wx.DEFAULT_DIALOG_STYLE|wx.ICON_INFORMATION)
         self.PostCreate(pre)
 
         # Static text which contains message to user
         label = wx.StaticText(self, -1, message)
 
-        # Buttons       
+        # Buttons
         btn_yes = wx.Button(self, wx.ID_YES)
         btn_yes.SetHelpText("")
         btn_yes.SetDefault()
@@ -239,7 +239,7 @@ class MessageDialog(wx.Dialog):
         btnsizer.AddButton(btn_yes)
         btnsizer.AddButton(btn_cancel)
         btnsizer.AddButton(btn_no)
-        btnsizer.Realize()        
+        btnsizer.Realize()
 
 
         sizer = wx.BoxSizer(wx.VERTICAL)
@@ -263,7 +263,7 @@ def SaveChangesDialog__Old(filename):
         return 0
     else:
         return -1
-    
+
 
 def ImportEmptyDirectory(dirpath):
     msg = "%s is an empty directory." % dirpath
@@ -274,7 +274,7 @@ def ImportEmptyDirectory(dirpath):
     else:
         dlg = wx.MessageDialog(None, msg,
                                "InVesalius 3",
-                                wx.ICON_INFORMATION | wx.OK) 
+                                wx.ICON_INFORMATION | wx.OK)
     dlg.ShowModal()
     dlg.Destroy()
 
@@ -285,9 +285,9 @@ def ImportInvalidFiles():
                                 wx.ICON_INFORMATION | wx.OK)
     else:
         dlg = wx.MessageDialog(None, msg, "InVesalius 3",
-                                wx.ICON_INFORMATION | wx.OK) 
+                                wx.ICON_INFORMATION | wx.OK)
     dlg.ShowModal()
-    dlg.Destroy()  
+    dlg.Destroy()
 
 def SaveChangesDialog(filename):
     current_dir = os.path.abspath(".")
@@ -303,7 +303,7 @@ def SaveChangesDialog(filename):
     answer = dlg.ShowModal()
     dlg.Destroy()
     os.chdir(current_dir)
-    
+
     if answer == wx.ID_YES:
         return 1
     elif answer == wx.ID_NO:
@@ -333,7 +333,7 @@ def SaveChangesDialog2(filename):
 
 
 def ShowAboutDialog(parent):
-    
+
     info = wx.AboutDialogInfo()
     info.Name = "InVesalius"
     info.Version = "3.a.1 - RP"
@@ -364,7 +364,11 @@ def ShowSavePresetDialog(default_filename="raycasting"):
                              _("Save raycasting preset as:"),
                              "InVesalius 3")
     #dlg.SetFilterIndex(0) # default is VTI
-    filename = None                 
-    if dlg.ShowModal() == wx.ID_OK:
+    filename = None
+    try:
+        if dlg.ShowModal() == wx.ID_OK:
+            filename = dlg.GetValue()
+    except(wx._core.PyAssertionErro):
         filename = dlg.GetValue()
+
     return filename
