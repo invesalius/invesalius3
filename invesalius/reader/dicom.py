@@ -1364,7 +1364,8 @@ class Parser():
         data = self.vtkgdcm_reader.GetMedicalImageProperties()\
                                         .GetStudyDescription()
         if (data):
-            return data
+            encoding = self.GetEncoding()
+            return data.decode(encoding)
         return ""
 
     def GetStudyAdmittingDiagnosis(self):
