@@ -46,12 +46,13 @@ import wx.lib.pubsub as ps
 class SplashScreen(wx.SplashScreen):
     def __init__(self):
 
+        save_session = False
         session = Session()
         if not (session.ReadSession()):
-            session.CreateItens()     
-        
+            save_session = True
+
         if not(session.ReadLanguage()):
-            
+
             ldlg = lang_dlg.LanguageDialog()
 
             try:
@@ -63,25 +64,29 @@ class SplashScreen(wx.SplashScreen):
                     lang = ldlg.GetSelectedLanguage()
                     session.SetLanguage(lang)
                     _ = i18n.InstallLanguage(lang)
-                
         else:
             lang = session.GetLanguage()
             _ = i18n.InstallLanguage(lang)
-        
+
+        if (save_session):
+            session.CreateItens()
+            session.SetLanguage(lang)
+            session.CreateSessionFile()
+
         if (lang.startswith('pt')): #Necessy, pt noted as pt_BR
             icon_file = "splash_pt.png"
         else:
             icon_file = "splash_" + lang + ".png"
-        
+
         path = os.path.join("..","icons", icon_file)
-        
+
         bmp = wx.Image(path).ConvertToBitmap()
-        
+
         wx.SplashScreen.__init__(self, bitmap=bmp,
                                  splashStyle=wx.SPLASH_CENTRE_ON_SCREEN | wx.SPLASH_TIMEOUT,
                                  milliseconds=1500, id=-1, parent=None)
         self.Bind(wx.EVT_CLOSE, self.OnClose)
-        
+
         from gui.frame import Frame
         from control import Controller
         from project import Project
@@ -97,20 +102,20 @@ class SplashScreen(wx.SplashScreen):
         # destroyed
         evt.Skip()
         self.Hide()
-        
+
         # if the timer is still running then go ahead and show the
         # main frame now
         if self.fc.IsRunning():
             self.fc.Stop()
-            
-            session = Session()
+
+            #session = Session()
             #if not (session.ReadSession()):
             #    session.CreateItens()
-        
-            lang = session.GetLanguage()
-            print lang
-            
-            i18n.InstallLanguage(lang)
+
+            #lang = session.GetLanguage()
+            #print lang
+
+            #i18n.InstallLanguage(lang)
             self.ShowMain()
 
 
@@ -119,7 +124,7 @@ class SplashScreen(wx.SplashScreen):
 
         if self.fc.IsRunning():
             self.Raise()
-        
+
 class InVesalius(wx.App):
     def OnInit(self):
         self.SetAppName("InVesalius 3")
@@ -142,26 +147,26 @@ def parse_comand_line():
     parser.add_option("-i", "--import", action="store", dest="dicom_dir")
 
     options, args = parser.parse_args()
-        
+
     session = Session()
-        
+
     if options.debug:
         # The user passed the debug option?
         # Yes!
         # Then all pubsub message must be printed.
         ps.Publisher().subscribe(print_events, ps.ALL_TOPICS)
-        
+
         session.debug = 1
-    
+
     if options.dicom_dir:
         # The user passed directory to me?
         import_dir = options.dicom_dir
         ps.Publisher().sendMessage('Import directory', import_dir)
         return True
-   
+
     # Check if there is a file path somewhere in what the user wrote
     else:
-        i = len(args) 
+        i = len(args)
         while i:
             i -= 1
             file = args[i]
@@ -171,7 +176,7 @@ def parse_comand_line():
                 i = 0
                 return True
     return False
- 
+
 
 def print_events(data):
     print data.topic
@@ -183,18 +188,18 @@ def main():
     application.MainLoop()
 
 if __name__ == '__main__':
-    
+
     # Needed in win 32 exe
     if hasattr(sys,"frozen") and sys.frozen == "windows_exe":
          multiprocessing.freeze_support()
-         
+
          # wxPython log
          #sys.stdout = open("stdout.log" ,"w")
          sys.stderr = open("stderr.log", "w")
-         
+
     # Add current directory to PYTHONPATH
     sys.path.append(".")
-    
+
     # Init application
     main()
-    
+
