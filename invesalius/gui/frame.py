@@ -112,11 +112,11 @@ class Frame(wx.Frame):
         self.Bind(wx.EVT_MENU, self.OnMenuClick)
         self.Bind(wx.EVT_CLOSE, self.CloseWindow)
         #self.Bind(wx.EVT_CLOSE, self.OnExit)
-    
+
     def CloseWindow(self, evt):
         ps.Publisher().sendMessage("Stop Config Recording")
         self.Destroy()
-        
+
     def __init_aui(self):
 
         # Tell aui_manager to manage this frame
@@ -211,6 +211,7 @@ class Frame(wx.Frame):
         aui_manager.GetPane("Data").Show(1)
         aui_manager.GetPane("Tasks").Show(1)
         aui_manager.Update()
+        ps.Publisher().sendMessage('End busy cursor')
 
     def HideContentPanel(self, pubsub_evt):
         aui_manager = self.aui_manager

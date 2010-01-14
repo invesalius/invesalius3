@@ -70,7 +70,7 @@ class DicomInfo(object):
         if size != self._size:
             self._size = size
             self.resized = True
-    
+
     @property
     def preview(self):
         if self._preview:
@@ -117,7 +117,7 @@ class DicomPaintPanel(wx.Panel):
             return image.Scale(*new_size)
         else:
             return image.Scale(*self.last_size)
-            
+
 
     def SetImage(self, image):
         self.image = image
@@ -156,7 +156,7 @@ class Preview(wx.Panel):
         self.title = wx.StaticText(self, -1, _("Image"))
         self.subtitle = wx.StaticText(self, -1, _("Image"))
         self.image_viewer = DicomPaintPanel(self)
-        
+
         self.sizer = wx.BoxSizer(wx.VERTICAL)
         self.sizer.Add(self.title, 0,
                         wx.ALIGN_CENTER_HORIZONTAL)
@@ -773,7 +773,7 @@ class DicomPreview(wx.Panel):
         dicom_files = group.GetHandSortedList()
         n = 0
         for dicom in dicom_files:
-            info = DicomInfo(n, dicom, 
+            info = DicomInfo(n, dicom,
                              _("Image %d") % (dicom.image.number),
                              "%.2f" % (dicom.image.position[2]))
             self.files.append(info)
@@ -794,7 +794,7 @@ class DicomPreview(wx.Panel):
         dicom_files = group.GetHandSortedList()
         n = 0
         for dicom in dicom_files:
-            info = DicomInfo(n, dicom, 
+            info = DicomInfo(n, dicom,
                     _("Image %d") % (dicom.image.number),
                     "%.2f" % (dicom.image.position[2]),
                             )
