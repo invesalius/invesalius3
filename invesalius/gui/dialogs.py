@@ -27,6 +27,7 @@ import wx.lib.pubsub as ps
 
 
 import project
+import session as ses
 
 class NumberDialog(wx.Dialog):
     def __init__(self, message, value=0):
@@ -157,7 +158,18 @@ def ShowOpenProjectDialog():
 
 def ShowImportDirDialog():
     current_dir = os.path.abspath(".")
-    dlg = wx.DirDialog(None, _("Choose a DICOM folder:"), "",
+
+    #defaultPath = sys.platform"
+
+    if (sys.platform == 'win32') or (sys.platform == 'linux2'):
+        session = ses.Session()
+
+        if (session.GetLastDicomFolder()):
+            folder = session.GetLastDicomFolder()
+        else:
+            folder = ''
+
+    dlg = wx.DirDialog(None, _("Choose a DICOM folder:"), folder,
                         style=wx.DD_DEFAULT_STYLE
                         | wx.DD_DIR_MUST_EXIST
                         | wx.DD_CHANGE_DIR)
@@ -169,8 +181,11 @@ def ShowImportDirDialog():
             # UnicodeEncodeError is raised. To avoid this, path is encoded in utf-8
             if sys.platform == "win32":
                 path = dlg.GetPath()
+                session.SetLastDicomFolder(path)
             else:
                 path = dlg.GetPath().encode('utf-8')
+                session.SetLastDicomFolder(path)
+
     except(wx._core.PyAssertionError): #TODO: error win64
         path = dlg.GetPath()
 

@@ -16,12 +16,12 @@ class Session(object):
     def __init__(self):
         # ?
         self.temp_item = False
-    
+
         ws = self.ws = WriteSession(self)
         ws.start()
-        
+
         ps.Publisher().subscribe(self.StopRecording, "Stop Config Recording")
-    
+
     def CreateItens(self):
         import constants as const
         self.project_path = ()
@@ -34,22 +34,24 @@ class Session(object):
         self.mode = const.MODE_RP
         # const.MODE_RP, const.MODE_NAVIGATOR, const.MODE_RADIOLOGY,
         # const.MODE_ODONTOLOGY
-        
+
         # InVesalius default projects' directory
         homedir = self.homedir = os.path.expanduser('~')
         tempdir = os.path.join(homedir, ".invesalius", "temp")
         if not os.path.isdir(tempdir):
             os.makedirs(tempdir)
         self.tempdir = tempdir
-        
+
         # GUI language
         self.language = "" # "pt_BR", "es"
-        
+
         # Recent projects list
         self.recent_projects = []
-    
+
+        self.last_dicom_folder = ''
+
         self.CreateSessionFile()
-            
+
     def StopRecording(self, pubsub_evt):
         self.ws.Stop()
 
@@ -103,23 +105,24 @@ class Session(object):
             path = os.path.join(dirpath, file)
             os.remove(path)
             self.temp_item = False
-            
+
     def CreateSessionFile(self):
-        
+
         config = ConfigParser.RawConfigParser()
-        
+
         config.add_section('session')
         config.set('session', 'mode', self.mode)
         config.set('session', 'status', self.project_status)
         config.set('session','debug', self.debug)
         config.set('session', 'language', self.language)
-        
+
         config.add_section('project')
         config.set('project', 'recent_projects', self.recent_projects)
-        
+
         config.add_section('paths')
         config.set('paths','homedir',self.homedir)
         config.set('paths','tempdir',self.tempdir)
+        config.set('paths','last_dicom_folder',self.last_dicom_folder)
         path = os.path.join(self.homedir ,
                             '.invesalius', 'config.cfg')
         configfile = open(path, 'wb')
@@ -138,7 +141,7 @@ class Session(object):
 
         # Add new item
         l.insert(0, item)
-         
+
         # Remove oldest projects from list
         if len(l)>const.PROJ_MAX:
             for i in xrange(len(l)-const.PROJ_MAX):
@@ -156,13 +159,20 @@ class Session(object):
         dict = plistlib.readPlist(main_plist)
         for key in dict:
             setattr(self, key, dict[key])
-    
+
     def GetLanguage(self):
         return self.language
-    
+
     def SetLanguage(self, language):
         self.language = language
-    
+
+    def GetLastDicomFolder(self):
+        return self.last_dicom_folder
+
+    def SetLastDicomFolder(self, folder):
+        self.last_dicom_folder = folder
+        self.CreateSessionFile()
+
     def ReadLanguage(self):
         config = ConfigParser.ConfigParser()
         home_path = os.path.expanduser('~')
@@ -173,9 +183,9 @@ class Session(object):
             return self.language
         except(ConfigParser.NoSectionError, ConfigParser.NoOptionError):
             return False
-    
+
     def ReadSession(self):
-        
+
         config = ConfigParser.ConfigParser()
         home_path = os.path.expanduser('~')
         path = os.path.join(home_path ,'.invesalius', 'config.cfg')
@@ -188,48 +198,51 @@ class Session(object):
             self.recent_projects = eval(config.get('project','recent_projects'))
             self.homedir = config.get('paths','homedir')
             self.tempdir = config.get('paths','tempdir')
+            self.last_dicom_folder = config.get('paths','last_dicom_folder')
             return True
         except(ConfigParser.NoSectionError, ConfigParser.NoOptionError):
             return False
-        
-        
+
+
 class WriteSession(Thread):
-    
+
     def __init__ (self, session):
       Thread.__init__(self)
       self.session = session
       self.runing = 1
-      
+
     def run(self):
       while self.runing:
         time.sleep(10)
         self.Write()
-      
-    def Stop(self):  
+
+    def Stop(self):
         self.runing = 0
-        
+
     def Write(self):
-        
+
         config = ConfigParser.RawConfigParser()
-        
+
         config.add_section('session')
         config.set('session', 'mode', self.session.mode)
         config.set('session', 'status', self.session.project_status)
         config.set('session','debug', self.session.debug)
         config.set('session', 'language', self.session.language)
-        
+
         config.add_section('project')
         config.set('project', 'recent_projects', self.session.recent_projects)
-        
+
         config.add_section('paths')
         config.set('paths','homedir',self.session.homedir)
         config.set('paths','tempdir',self.session.tempdir)
+        config.set('paths','last_dicom_folder', self.session.last_dicom_folder)
+
         path = os.path.join(self.session.homedir ,
                             '.invesalius', 'config.cfg')
         configfile = open(path, 'wb')
         config.write(configfile)
         configfile.close()
-       
 
 
-    
+
+
