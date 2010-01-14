@@ -54,19 +54,20 @@ class SliceMenu(wx.Menu):
                                     name, kind=wx.ITEM_RADIO)
                 submenu_wl.AppendItem(wl_item)
                 self.ID_TO_TOOL_ITEM[new_id] = wl_item
-                
-            
+
+
         #----------- Sub menu of the save and load options ---------
-        submenu_wl.AppendSeparator()
-        options = [_("Save current values"),
-                   _("Save current values as..."),_("Load values")]
-        
-        for name in options:  
-            new_id = wx.NewId()
-            wl_item = wx.MenuItem(submenu_wl, new_id,\
-                            name)
-            submenu_wl.AppendItem(wl_item)
-            self.ID_TO_TOOL_ITEM[new_id] = wl_item
+        #submenu_wl.AppendSeparator()
+        #options = [_("Save current values"),
+        #           _("Save current values as..."),_("Load values")]
+
+        #for name in options:
+        #    new_id = wx.NewId()
+        #    wl_item = wx.MenuItem(submenu_wl, new_id,\
+        #                    name)
+        #    submenu_wl.AppendItem(wl_item)
+        #    self.ID_TO_TOOL_ITEM[new_id] = wl_item
+
 
         #------------ Sub menu of the pseudo colors ----------------
         submenu_pseudo_colours = wx.Menu()
@@ -92,8 +93,8 @@ class SliceMenu(wx.Menu):
                                 name, kind=wx.ITEM_RADIO)
             submenu_image_tiling.AppendItem(image_tiling_item)
             self.ID_TO_TOOL_ITEM[new_id] = image_tiling_item
-        
-        
+
+
 
         # Add sub itens in the menu
         self.AppendMenu(-1, _("Window Width and Level"), submenu_wl)
@@ -133,10 +134,10 @@ class SliceMenu(wx.Menu):
             ps.Publisher().sendMessage('Update window and level text',\
                            "WL: %d  WW: %d"%(level, window))
             ps.Publisher().sendMessage('Update slice viewer')
-            
+
             #Necessary update the slice plane in the volume case exists
             ps.Publisher().sendMessage('Render volume viewer')
-            
+
         elif(key in const.SLICE_COLOR_TABLE.keys()):
             print "b"
             values = const.SLICE_COLOR_TABLE[key]
