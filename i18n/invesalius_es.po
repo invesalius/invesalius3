@@ -236,31 +236,31 @@ msgstr "Contraste Bajo"
 
 #: constants.py:262 constants.py:269
 msgid "Soft on White"
-msgstr ""
+msgstr "Blando en Blanco"
 
 #: constants.py:263
 msgid "Mid Contrast"
-msgstr ""
+msgstr "Contraste Medio"
 
 #: constants.py:264
 msgid "No Shading"
-msgstr ""
+msgstr "No sombreado"
 
 #: constants.py:265
 msgid "Pencil"
-msgstr ""
+msgstr "Lápiz"
 
 #: constants.py:266
 msgid "Red on White"
-msgstr ""
+msgstr "Rojo sobre blanco"
 
 #: constants.py:267
 msgid "Skin On Blue"
-msgstr ""
+msgstr "Piel en Azul"
 
 #: constants.py:268
 msgid "Skin On Blue II"
-msgstr ""
+msgstr "Piel en Azul II"
 
 #: constants.py:270
 msgid "Soft + Skin"
