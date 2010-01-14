@@ -264,60 +264,60 @@ msgstr "Piel en Azul II"
 
 #: constants.py:270
 msgid "Soft + Skin"
-msgstr ""
+msgstr "Blando + Piel"
 
 #: constants.py:271
 msgid "Soft + Skin II"
-msgstr ""
+msgstr "Blando + Piel II"
 
 #: constants.py:272
 msgid "Soft + Skin III"
-msgstr ""
+msgstr "Blando + Piel III"
 
 #: constants.py:273
 msgid "Soft On Blue"
-msgstr ""
+msgstr "Blando En Azul"
 
 #: constants.py:274
 msgid "Soft"
-msgstr ""
+msgstr "Blando"
 
 #: constants.py:275
 msgid "Standard"
-msgstr ""
+msgstr "Estandarte"
 
 #: constants.py:276
 msgid "Vascular"
-msgstr ""
+msgstr "Vascular"
 
 #: constants.py:277
 msgid "Vascular II"
-msgstr ""
+msgstr "Vascular II"
 
 #: constants.py:278
 msgid "Vascular III"
-msgstr ""
+msgstr "Vascular III"
 
 #: constants.py:279
 msgid "Vascular IV"
-msgstr ""
+msgstr "Vascular IV"
 
 #: constants.py:280
 msgid "Yellow Bone"
-msgstr ""
+msgstr "Hueso Amarillo"
 
 #: constants.py:295 constants.py:297
 msgid " Off"
-msgstr ""
+msgstr "Apagado"
 
 #: constants.py:298
 msgid "Cut plane"
-msgstr ""
+msgstr "Plano de corte"
 
 #: control.py:232
 #, python-format
 msgid "Loading file %d of %d"
-msgstr ""
+msgstr "Carga de archivo %d de %d"
 
 #: control.py:314
 msgid "Untitled"
