@@ -321,7 +321,7 @@ msgstr "Carga de archivo %d de %d"
 
 #: control.py:314
 msgid "Untitled"
-msgstr ""
+msgstr "Intitulado"
 
 #: control.py:379
 msgid "Fix gantry tilt applying the degrees bellow"
