@@ -168,6 +168,8 @@ def ShowImportDirDialog():
             folder = session.GetLastDicomFolder()
         else:
             folder = ''
+    else:
+        folder = ''
 
     dlg = wx.DirDialog(None, _("Choose a DICOM folder:"), folder,
                         style=wx.DD_DEFAULT_STYLE
