@@ -181,10 +181,11 @@ def ShowImportDirDialog():
             # UnicodeEncodeError is raised. To avoid this, path is encoded in utf-8
             if sys.platform == "win32":
                 path = dlg.GetPath()
-                session.SetLastDicomFolder(path)
             else:
                 path = dlg.GetPath().encode('utf-8')
-                session.SetLastDicomFolder(path)
+
+        if (sys.platform != 'darwin'):
+            session.SetLastDicomFolder(path)
 
     except(wx._core.PyAssertionError): #TODO: error win64
         path = dlg.GetPath()
