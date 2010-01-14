@@ -141,10 +141,17 @@ class InnerTaskPanel(wx.Panel):
         default_mask_name = const.MASK_NAME_PATTERN %(mask.Mask.general_index+2)
         dlg.SetValue(default_mask_name)
 
-        if dlg.ShowModal() == wx.ID_OK:
-            print "TODO: Send Signal - New mask"
+        try:
+            op = dlg.ShowModal() == wx.ID_OK
+        except(wx._core.PyAssertionError):
+            print "win64 - wx._core.PyAssertionError"
+            op = True
+
+        print "TODO: Send Signal - New mask"
+        if (op):
             mask_name = dlg.GetValue()
             ps.Publisher().sendMessage('Create new mask', mask_name)
+
         if evt:
             evt.Skip()
 
