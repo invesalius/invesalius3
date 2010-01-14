@@ -159,8 +159,6 @@ def ShowOpenProjectDialog():
 def ShowImportDirDialog():
     current_dir = os.path.abspath(".")
 
-    #defaultPath = sys.platform"
-
     if (sys.platform == 'win32') or (sys.platform == 'linux2'):
         session = ses.Session()
 
