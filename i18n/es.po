@@ -1,347 +1,348 @@
-# InVesalius 3.0 Beta - Brazilian Portuguese.
-# Copyright (C) 2009 Centro de Tecnologia da Informa��o Renato Archer
+# InVesalius 3.0 Beta - Spanish
+# Copyright (C) 2007-2009 Centro de Tecnologia da Informação Renato Archer
 # This file is distributed under the same license as the InVesalius package. (GNU General Public License v2)
-# Tatiana Al-Chueyr Pereira Martins <tati.alchueyr@gmail.com>
+# Tatiana Al-Chueyr Pereira Martins <tatiana.alchueyr@gmail.com>
 # Paulo Henrique Junqueira Amorim <paulojamorim@gmail.com>
 # Thiago Franco de Morais <totonixsame@gmail.com>
 msgid ""
 msgstr ""
 "Project-Id-Version: InVesalius 3\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2010-01-13 17:08-0200\n"
+"POT-Creation-Date: 2010-01-14 09:36-0200\n"
 "PO-Revision-Date: 2010-01-07 11:25-0300\n"
 "Last-Translator: Invesalius team <invesalius@cti.gov.br>\n"
 "Language-Team: InVesalius Team <invesalius@cti.gov.br>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"X-Poedit-Language: Portuguese\n"
+"X-Poedit-Language: Spanish\n"
 "X-Poedit-SourceCharset: utf-8\n"
-"X-Poedit-Country: BRAZIL\n"
+"X-Poedit-Country: GENERIC\n"
 
 #: constants.py:105 slice_menu.py:75 slice_menu.py:80
 msgid "Default "
-msgstr ""
+msgstr "Estándar"
 
 #: constants.py:106
 msgid "Hue"
-msgstr ""
+msgstr "Matiz"
 
 #: constants.py:107
 msgid "Saturation"
-msgstr ""
+msgstr "Saturación"
 
 #: constants.py:108
 msgid "Desert"
-msgstr ""
+msgstr "Desierto"
 
 #: constants.py:109
 msgid "Rainbow"
-msgstr ""
+msgstr "Arco Iris"
 
 #: constants.py:110
 msgid "Ocen"
-msgstr ""
+msgstr "Océano"
 
 #: constants.py:111
 msgid "Inverse Gray"
-msgstr ""
+msgstr "Gray Inverso"
 
 #: constants.py:152 constants.py:212 dicom_preview_panel.py:365
 #: dicom_preview_panel.py:366 presets.py:30 presets.py:48 presets.py:119
 msgid "Bone"
-msgstr ""
+msgstr "Hueso"
 
 #: constants.py:159
 #, python-format
 msgid "Mask %d"
-msgstr ""
+msgstr "Máscara %d"
 
 #: constants.py:188 task_surface.py:41
 msgid "Draw"
-msgstr ""
+msgstr "Dibujar"
 
 #: constants.py:188 task_surface.py:41
 msgid "Erase"
-msgstr ""
+msgstr "Borrar"
 
 #: constants.py:188 data_notebook.py:108 task_surface.py:41
 msgid "Threshold"
-msgstr ""
+msgstr "Umbral"
 
 #: constants.py:199 task_surface.py:30
 msgid "Low"
-msgstr ""
+msgstr "Baja"
 
 #: constants.py:200 task_surface.py:30
 msgid "Medium"
-msgstr ""
+msgstr "Media"
 
 #: constants.py:201 task_surface.py:30
 msgid "High"
-msgstr ""
+msgstr "Alta"
 
 #: constants.py:202 constants.py:204 surface.py:172 task_surface.py:30
 msgid "Optimal *"
-msgstr ""
+msgstr "Óptima *"
 
 #: constants.py:203 presets.py:44 presets.py:62 task_surface.py:30
 msgid "Custom"
-msgstr ""
+msgstr "Costumbre"
 
 #: constants.py:208
 #, python-format
 msgid "Surface %d"
-msgstr ""
+msgstr "Superficie %d"
 
 #: constants.py:211
 msgid "Abdomen"
-msgstr ""
+msgstr "Abdomen"
 
 #: constants.py:213
 msgid "Brain Posterior Fossa"
-msgstr ""
+msgstr "Fosa Posterior del Cerebro"
 
 #: constants.py:214
 msgid "Brain"
-msgstr ""
+msgstr "Cerebro"
 
 #: constants.py:215 control.py:293 slice_menu.py:39 slice_menu.py:51
 msgid "Default"
-msgstr ""
+msgstr "Predeterminado"
 
 #: constants.py:216
 msgid "Emphysema"
-msgstr ""
+msgstr "Enfisema"
 
 #: constants.py:217
 msgid "Ischemia - Hard Non Contrast"
-msgstr ""
+msgstr "Isquemia - Duro No Contraste"
 
 #: constants.py:218
 msgid "Ischemia - Soft Non Contrast"
-msgstr ""
+msgstr "Isquemia - Suave No Contraste"
 
 #: constants.py:219
 msgid "Larynx"
-msgstr ""
+msgstr "Laringe"
 
 #: constants.py:220
 msgid "Liver"
-msgstr ""
+msgstr "Hígado"
 
 #: constants.py:221
 msgid "Lung - Soft"
-msgstr ""
+msgstr "Pulmón - Suave"
 
 #: constants.py:222
 msgid "Lung - Hard"
-msgstr ""
+msgstr "Pulmón - Duro"
 
 #: constants.py:223
 msgid "Mediastinum"
-msgstr ""
+msgstr "Mediastino"
 
 #: constants.py:224 control.py:294 slice_menu.py:46 slice_menu.py:51
 msgid "Manual"
-msgstr ""
+msgstr "Manual"
 
 #: constants.py:225
 msgid "Pelvis"
-msgstr ""
+msgstr "Pelvis"
 
 #: constants.py:226
 msgid "Sinus"
-msgstr ""
+msgstr "Seno"
 
 #: constants.py:227
 msgid "Vasculature - Hard"
-msgstr ""
+msgstr "Vasos sanguíneos - Duro"
 
 #: constants.py:228
 msgid "Vasculature - Soft"
-msgstr ""
+msgstr "Vasos sanguíneos - Mole"
 
 #: constants.py:234
 msgid "Front"
-msgstr ""
+msgstr "Frente"
 
 #: constants.py:235
 msgid "Back"
-msgstr ""
+msgstr "Volver"
 
 #: constants.py:236
 msgid "Top"
-msgstr ""
+msgstr "Arriba"
 
 #: constants.py:237
 msgid "Bottom"
-msgstr ""
+msgstr "Abajo"
 
 #: constants.py:238
 msgid "Right"
-msgstr ""
+msgstr "Derecha"
 
 #: constants.py:239
 msgid "Left"
-msgstr ""
+msgstr "Izquierda"
 
 #: constants.py:240
 msgid "Isometric"
-msgstr ""
+msgstr "Isométrica"
 
 #: constants.py:251
 msgid "Airways"
-msgstr ""
+msgstr "Vías Respiratorias"
 
 #: constants.py:252
 msgid "Airways II"
-msgstr ""
+msgstr "Vías Respiratorias II"
 
 #: constants.py:253
 msgid "Black & White"
-msgstr ""
+msgstr "Blanco y Negro"
 
 #: constants.py:254
 msgid "Bone + Skin"
-msgstr ""
+msgstr "Hueso + Piel"
 
 #: constants.py:255
 msgid "Bone + Skin II"
-msgstr ""
+msgstr "Hueso + Piel II"
 
 #: constants.py:256
 msgid "Dark Bone"
-msgstr ""
+msgstr "Hueso Oscuro"
 
 #: constants.py:257
 msgid "Glossy"
-msgstr ""
+msgstr "Brillo"
 
 #: constants.py:258
 msgid "Glossy II"
-msgstr ""
+msgstr "Brillo II"
 
 #: constants.py:259
 msgid "Gold Bone"
-msgstr ""
+msgstr "Hueso de Oro"
 
 #: constants.py:260
 msgid "High Contrast"
-msgstr ""
+msgstr "Contraste Alto"
 
 #: constants.py:261
 msgid "Low Contrast"
-msgstr ""
+msgstr "Contraste Bajo"
 
 #: constants.py:262 constants.py:269
 msgid "Soft on White"
-msgstr ""
+msgstr "Blando en Blanco"
 
 #: constants.py:263
 msgid "Mid Contrast"
-msgstr ""
+msgstr "Contraste Medio"
 
 #: constants.py:264
 msgid "No Shading"
-msgstr ""
+msgstr "No sombreado"
 
 #: constants.py:265
 msgid "Pencil"
-msgstr ""
+msgstr "Lápiz"
 
 #: constants.py:266
 msgid "Red on White"
-msgstr ""
+msgstr "Rojo sobre blanco"
 
 #: constants.py:267
 msgid "Skin On Blue"
-msgstr ""
+msgstr "Piel en Azul"
 
 #: constants.py:268
 msgid "Skin On Blue II"
-msgstr ""
+msgstr "Piel en Azul II"
 
 #: constants.py:270
 msgid "Soft + Skin"
-msgstr ""
+msgstr "Blando + Piel"
 
 #: constants.py:271
 msgid "Soft + Skin II"
-msgstr ""
+msgstr "Blando + Piel II"
 
 #: constants.py:272
 msgid "Soft + Skin III"
-msgstr ""
+msgstr "Blando + Piel III"
 
 #: constants.py:273
 msgid "Soft On Blue"
-msgstr ""
+msgstr "Blando En Azul"
 
 #: constants.py:274
 msgid "Soft"
-msgstr ""
+msgstr "Blando"
 
 #: constants.py:275
 msgid "Standard"
-msgstr ""
+msgstr "Estandarte"
 
 #: constants.py:276
 msgid "Vascular"
-msgstr ""
+msgstr "Vascular"
 
 #: constants.py:277
 msgid "Vascular II"
-msgstr ""
+msgstr "Vascular II"
 
 #: constants.py:278
 msgid "Vascular III"
-msgstr ""
+msgstr "Vascular III"
 
 #: constants.py:279
 msgid "Vascular IV"
-msgstr ""
+msgstr "Vascular IV"
 
 #: constants.py:280
 msgid "Yellow Bone"
-msgstr ""
+msgstr "Hueso Amarillo"
 
 #: constants.py:295 constants.py:297
 msgid " Off"
-msgstr ""
+msgstr "Apagado"
 
 #: constants.py:298
 msgid "Cut plane"
-msgstr ""
+msgstr "Plano de corte"
 
 #: control.py:232
 #, python-format
 msgid "Loading file %d of %d"
-msgstr ""
+msgstr "Carga de archivo %d de %d"
 
 #: control.py:314
 msgid "Untitled"
-msgstr ""
+msgstr "Sin Título"
 
 #: control.py:379
 msgid "Fix gantry tilt applying the degrees bellow"
 msgstr ""
+"Arreglar la inclinación (gantry tilt) con la aplicación de los grados abajo"
 
 #: data_notebook.py:44
 msgid "Masks"
-msgstr ""
+msgstr "Máscaras"
 
 #: data_notebook.py:45
 msgid "Surfaces"
-msgstr ""
+msgstr "Volumen"
 
 #: data_notebook.py:107 data_notebook.py:236 data_notebook.py:440
 msgid "Name"
-msgstr ""
+msgstr "Nombre"
 
 #: data_notebook.py:166
 msgid "Mask"
-msgstr ""
+msgstr "Máscara"
 
 #: data_notebook.py:237
 msgid "Volume (mm³)"
