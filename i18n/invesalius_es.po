@@ -321,27 +321,27 @@ msgstr "Carga de archivo %d de %d"
 
 #: control.py:314
 msgid "Untitled"
-msgstr "Intitulado"
+msgstr "Sin Título"
 
 #: control.py:379
 msgid "Fix gantry tilt applying the degrees bellow"
-msgstr ""
+msgstr "Arreglar la inclinación (gantry tilt) con la aplicación de los grados abajo"
 
 #: data_notebook.py:44
 msgid "Masks"
-msgstr ""
+msgstr "Máscaras"
 
 #: data_notebook.py:45
 msgid "Surfaces"
-msgstr ""
+msgstr "Volumen"
 
 #: data_notebook.py:107 data_notebook.py:236 data_notebook.py:440
 msgid "Name"
-msgstr ""
+msgstr "Nombre"
 
 #: data_notebook.py:166
 msgid "Mask"
-msgstr ""
+msgstr "Máscara"
 
 #: data_notebook.py:237
 msgid "Volume (mm³)"
