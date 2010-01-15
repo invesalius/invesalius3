@@ -225,6 +225,7 @@ class Controller():
         reader = dcm.ProgressDicomReader()
         reader.SetWindowEvent(self.frame)
         reader.SetDirectoryPath(path)
+        ps.Publisher().sendMessage('End busy cursor')
 
     def Progress(self, evt):
         data = evt.data
@@ -239,6 +240,7 @@ class Controller():
                 if not(self.progress_dialog.Update(data[0],message)):
                     self.progress_dialog.Close()
                     self.progress_dialog = None
+                    ps.Publisher().sendMessage('Begin busy cursor')
         else:
             #Is None if user canceled the load
             self.progress_dialog.Close()
