@@ -325,8 +325,7 @@ msgstr "Sin Título"
 
 #: control.py:379
 msgid "Fix gantry tilt applying the degrees bellow"
-msgstr ""
-"Arreglar la inclinación (gantry tilt) con la aplicación de los grados abajo"
+msgstr "Arreglar la inclinación (gantry tilt) con la aplicación de los grados abajo"
 
 #: data_notebook.py:44
 msgid "Masks"
@@ -346,55 +345,55 @@ msgstr "Máscara"
 
 #: data_notebook.py:237
 msgid "Volume (mm³)"
-msgstr "Volumen (mm³)"
+msgstr "Volume (mm³)"
 
 #: data_notebook.py:238
 msgid "Transparency"
-msgstr "Transparencia"
+msgstr ""
 
 #: data_notebook.py:441
 msgid "Type"
-msgstr "Tipo"
+msgstr ""
 
 #: data_notebook.py:442
 msgid "Value"
-msgstr "Valor"
+msgstr ""
 
 #: default_tasks.py:174
 msgid "1. InVesalius start"
-msgstr "1. Iniciar InVesalius"
+msgstr ""
 
 #: default_tasks.py:187
 msgid "2. Select region of interest"
-msgstr "2. Eligir la región de interés"
+msgstr ""
 
 #: default_tasks.py:204
 msgid "3. Configure 3D surface"
-msgstr "3. Configurar la superficie 3D"
+msgstr ""
 
 #: default_tasks.py:215
 msgid "4. Export data"
-msgstr "4. Exportar datos"
+msgstr ""
 
 #: default_viewers.py:79 default_viewers.py:168
 msgid "Axial slice"
-msgstr "Rebanada Axial"
+msgstr ""
 
 #: default_viewers.py:84 default_viewers.py:174
 msgid "Coronal slice"
-msgstr "Rebanada Coronal"
+msgstr ""
 
 #: default_viewers.py:89 default_viewers.py:180
 msgid "Sagittal slice"
-msgstr "Rebanada Sagital"
+msgstr ""
 
 #: default_viewers.py:95 default_viewers.py:186
 msgid "Volume"
-msgstr "Volumen"
+msgstr ""
 
 #: default_viewers.py:411
 msgid "Preset name"
-msgstr "Nombre del preajuste"
+msgstr ""
 
 #: default_viewers.py:414
 msgid "Save raycasting preset"
