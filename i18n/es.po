@@ -834,84 +834,84 @@ msgstr "Propriedades de la máscara"
 
 #: task_slice.py:212
 msgid "Advanced edition tools"
-msgstr ""
+msgstr "Herramientas avanzadas para edición"
 
 #: task_slice.py:296
 msgid "Set predefined or manual threshold:"
-msgstr ""
+msgstr "Seleccione umbral:"
 
 #: task_slice.py:448
 msgid "Choose brush type, size or operation:"
-msgstr ""
+msgstr "Tipo, tamaño o funcionamiento del pincel:"
 
 #: task_slice.py:454
 msgid "Circle"
-msgstr ""
+msgstr "Círculo"
 
 #: task_slice.py:458
 msgid "Square"
-msgstr ""
+msgstr "Cuadrado"
 
 #: task_slice.py:494
 msgid "Brush threshold range:"
-msgstr ""
+msgstr "Serie de umbrales del pincel:"
 
 #: task_surface.py:83
 msgid "Create 3D surface based on a mask"
-msgstr ""
+msgstr "Crear superficies 3D basado en una máscara"
 
 #: task_surface.py:102
 msgid "Next step"
-msgstr ""
+msgstr "Paso siguiente"
 
 #: task_surface.py:131
 msgid "InVesalius 3 - New surface"
-msgstr ""
+msgstr "InVesalius 3 - Nueva superficie"
 
 #: task_surface.py:168
 msgid "Select mask to be used for creating 3D surface:"
-msgstr ""
+msgstr "Seleccione la máscara que se utilizará para la creación de la superficie 3D"
 
 #: task_surface.py:179
 msgid "Set new surface name:"
-msgstr ""
+msgstr "Nombre de la superifcie que se va crear:"
 
 #: task_surface.py:182
 msgid "Name of the new surface to be created"
-msgstr ""
+msgstr "Nombre de la superficie creada"
 
 #: task_surface.py:183
 msgid "Surface"
-msgstr ""
+msgstr "Superficie"
 
 #: task_surface.py:251
 msgid "Surface properties"
-msgstr ""
+msgstr "Propiedades de la superficie"
 
 #: task_surface.py:258
 msgid "Surface quality"
-msgstr ""
+msgstr "Calidad de la superficie"
 
 #: task_surface.py:303
 msgid "Transparency:"
-msgstr ""
+msgstr "Transparencia:"
 
 #: task_surface.py:405
 msgid "Decimate resolution:"
-msgstr ""
+msgstr "Resolución de decimación:"
 
 #: task_surface.py:415
 msgid "Smooth iterations:"
-msgstr ""
+msgstr "Interaciones de suavización"
 
 #: task_tools.py:57
 msgid "Measure distances"
-msgstr ""
+msgstr "Realizar mediciones"
 
 #: task_tools.py:58
 msgid "Measure"
-msgstr ""
+msgstr "Medir"
 
 #: task_tools.py:61 task_tools.py:62
 msgid "Add text annotations"
-msgstr ""
+msgstr "Añadir anotaciones de texto"
