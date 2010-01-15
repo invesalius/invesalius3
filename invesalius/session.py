@@ -81,6 +81,7 @@ class Session(object):
 
     def CreateProject(self, filename):
         import constants as const
+        ps.Publisher().sendMessage('Begin busy cursor')
         print "-- CreateProject"
         # Set session info
         self.project_path = (self.tempdir, filename)
