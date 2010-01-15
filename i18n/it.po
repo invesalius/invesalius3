@@ -401,7 +401,7 @@ msgstr ""
 
 #: default_viewers.py:439
 msgid "Tools"
-msgstr ""
+msgstr "Strumenti"
 
 #: dialogs.py:50
 msgid "Value will be applied."
@@ -484,7 +484,7 @@ msgstr ""
 #: dicom_preview_panel.py:44
 #, python-format
 msgid "Image size: %d x %d"
-msgstr ""
+msgstr "Dimensione immagine"
 
 #: dicom_preview_panel.py:45
 #, python-format
@@ -575,15 +575,15 @@ msgstr ""
 
 #: frame.py:361
 msgid "About..."
-msgstr ""
+msgstr "Informazioni"
 
 #: frame.py:372
 msgid "File"
-msgstr ""
+msgstr "File"
 
 #: frame.py:377
 msgid "Help"
-msgstr ""
+msgstr "Aiuto"
 
 #: frame.py:420 surface.py:158
 msgid "Ready"
@@ -844,11 +844,11 @@ msgstr ""
 
 #: task_slice.py:447
 msgid "Circle"
-msgstr ""
+msgstr "Cerchi"
 
 #: task_slice.py:451
 msgid "Square"
-msgstr ""
+msgstr "Quadrati"
 
 #: task_slice.py:487
 msgid "Brush threshold range:"
@@ -904,11 +904,11 @@ msgstr ""
 
 #: task_tools.py:57
 msgid "Measure distances"
-msgstr ""
+msgstr "Misura distanze"
 
 #: task_tools.py:58
 msgid "Measure"
-msgstr ""
+msgstr "Misura"
 
 #: task_tools.py:61 task_tools.py:62
 msgid "Add text annotations"
