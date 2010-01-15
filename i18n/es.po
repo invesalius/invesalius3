@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: InVesalius 3\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2010-01-14 09:37-0200\n"
+"POT-Creation-Date: 2010-01-15 09:49-0200\n"
 "PO-Revision-Date: 2010-01-07 11:25-0300\n"
 "Last-Translator: Invesalius team <invesalius@cti.gov.br>\n"
 "Language-Team: InVesalius Team <invesalius@cti.gov.br>\n"
@@ -19,7 +19,7 @@ msgstr ""
 "X-Poedit-SourceCharset: utf-8\n"
 "X-Poedit-Country: GENERIC\n"
 
-#: constants.py:105 slice_menu.py:75 slice_menu.py:80
+#: constants.py:105 slice_menu.py:76 slice_menu.py:81
 msgid "Default "
 msgstr "Estándar"
 
@@ -397,87 +397,87 @@ msgstr ""
 
 #: default_viewers.py:414
 msgid "Save raycasting preset"
-msgstr ""
+msgstr "Guardar el preajuste de raycasting"
 
 #: default_viewers.py:439
 msgid "Tools"
-msgstr ""
+msgstr "Herramientas"
 
-#: dialogs.py:50
+#: dialogs.py:51
 msgid "Value will be applied."
-msgstr ""
+msgstr "Valor se aplicará."
 
-#: dialogs.py:54
+#: dialogs.py:55
 msgid "Value will not be applied."
-msgstr ""
+msgstr "Valor no se aplicará."
 
-#: dialogs.py:92
+#: dialogs.py:93
 msgid "Loading DICOM files"
-msgstr ""
+msgstr "Cargando archivos DICOM"
 
-#: dialogs.py:137 frame.py:531
+#: dialogs.py:138 frame.py:531
 msgid "Open InVesalius 3 project..."
-msgstr ""
+msgstr "Abrir proyecto del InVesalius 3..."
 
-#: dialogs.py:160
+#: dialogs.py:172
 msgid "Choose a DICOM folder:"
-msgstr ""
+msgstr "Eligir un directorio DICOM"
 
-#: dialogs.py:185
+#: dialogs.py:201
 msgid "Save project as..."
-msgstr ""
+msgstr "Guardar proyecto como..."
 
-#: dialogs.py:188
+#: dialogs.py:204
 msgid "InVesalius project (*.inv3)|*.inv3"
-msgstr ""
+msgstr "Proyecto InVesalius (*.inv2)|*.inv3"
 
-#: dialogs.py:251 dialogs.py:290 dialogs.py:312
+#: dialogs.py:267 dialogs.py:306 dialogs.py:328
 #, python-format
 msgid ""
 "The project %s has been modified.\n"
 "Save changes?"
-msgstr ""
+msgstr "El proyecto %s ha sido cambiado.\nGuardar cambios?"
 
-#: dialogs.py:265
+#: dialogs.py:281
 #, python-format
 msgid "%s is an empty directory."
 msgstr ""
 
-#: dialogs.py:278
+#: dialogs.py:294
 msgid "There are no DICOM files on the selected directory."
 msgstr ""
 
-#: dialogs.py:336
+#: dialogs.py:352
 msgid "(c) 2007 Center for Information Technology Renato Archer"
 msgstr ""
 
-#: dialogs.py:338
+#: dialogs.py:354
 msgid "InVesalius is a software for medical imaging 3D reconstruction. "
 msgstr ""
 
-#: dialogs.py:339
+#: dialogs.py:355
 msgid ""
 "Its input is a sequency of DICOM 2D image files acquired with CT or MR.\n"
 "\n"
 msgstr ""
 
-#: dialogs.py:340
+#: dialogs.py:356
 msgid "The software also allows generating correspondent STL files,"
 msgstr ""
 
-#: dialogs.py:341
+#: dialogs.py:357
 msgid "so the user can print 3D physical models of the patient's anatomy "
 msgstr ""
 
-#: dialogs.py:342
+#: dialogs.py:358
 msgid "using Rapid Prototyping."
 msgstr ""
 
-#: dialogs.py:345
+#: dialogs.py:361
 msgid "GNU GPL (General Public License) version 2"
 msgstr ""
 
-#: dialogs.py:360
+#: dialogs.py:376
 msgid "Save raycasting preset as:"
 msgstr ""
 
@@ -733,27 +733,15 @@ msgstr ""
 msgid "Skin Tissue (Child)"
 msgstr ""
 
-#: slice_menu.py:61
-msgid "Save current values"
-msgstr ""
-
-#: slice_menu.py:62
-msgid "Save current values as..."
-msgstr ""
-
-#: slice_menu.py:62
-msgid "Load values"
-msgstr ""
-
-#: slice_menu.py:99
+#: slice_menu.py:100
 msgid "Window Width and Level"
 msgstr ""
 
-#: slice_menu.py:100
+#: slice_menu.py:101
 msgid "Pseudo Colour"
 msgstr ""
 
-#: slice_menu.py:101
+#: slice_menu.py:102
 msgid "Image Tiling"
 msgstr ""
 
@@ -826,31 +814,31 @@ msgstr ""
 msgid "InVesalius 3 - New mask"
 msgstr ""
 
-#: task_slice.py:197
+#: task_slice.py:204
 msgid "Mask properties"
 msgstr ""
 
-#: task_slice.py:205
+#: task_slice.py:212
 msgid "Advanced edition tools"
 msgstr ""
 
-#: task_slice.py:289
+#: task_slice.py:296
 msgid "Set predefined or manual threshold:"
 msgstr ""
 
-#: task_slice.py:441
+#: task_slice.py:448
 msgid "Choose brush type, size or operation:"
 msgstr ""
 
-#: task_slice.py:447
+#: task_slice.py:454
 msgid "Circle"
 msgstr ""
 
-#: task_slice.py:451
+#: task_slice.py:458
 msgid "Square"
 msgstr ""
 
-#: task_slice.py:487
+#: task_slice.py:494
 msgid "Brush threshold range:"
 msgstr ""
 
