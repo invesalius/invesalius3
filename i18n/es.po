@@ -346,55 +346,55 @@ msgstr "Máscara"
 
 #: data_notebook.py:237
 msgid "Volume (mm³)"
-msgstr ""
+msgstr "Volumen (mm³)"
 
 #: data_notebook.py:238
 msgid "Transparency"
-msgstr ""
+msgstr "Transparencia"
 
 #: data_notebook.py:441
 msgid "Type"
-msgstr ""
+msgstr "Tipo"
 
 #: data_notebook.py:442
 msgid "Value"
-msgstr ""
+msgstr "Valor"
 
 #: default_tasks.py:174
 msgid "1. InVesalius start"
-msgstr ""
+msgstr "1. Iniciar InVesalius"
 
 #: default_tasks.py:187
 msgid "2. Select region of interest"
-msgstr ""
+msgstr "2. Eligir la región de interés"
 
 #: default_tasks.py:204
 msgid "3. Configure 3D surface"
-msgstr ""
+msgstr "3. Configurar la superficie 3D"
 
 #: default_tasks.py:215
 msgid "4. Export data"
-msgstr ""
+msgstr "4. Exportar datos"
 
 #: default_viewers.py:79 default_viewers.py:168
 msgid "Axial slice"
-msgstr ""
+msgstr "Rebanada Axial"
 
 #: default_viewers.py:84 default_viewers.py:174
 msgid "Coronal slice"
-msgstr ""
+msgstr "Rebanada Coronal"
 
 #: default_viewers.py:89 default_viewers.py:180
 msgid "Sagittal slice"
-msgstr ""
+msgstr "Rebanada Sagital"
 
 #: default_viewers.py:95 default_viewers.py:186
 msgid "Volume"
-msgstr ""
+msgstr "Volumen"
 
 #: default_viewers.py:411
 msgid "Preset name"
-msgstr ""
+msgstr "Nombre del preajuste"
 
 #: default_viewers.py:414
 msgid "Save raycasting preset"
