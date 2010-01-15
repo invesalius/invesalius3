@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: InVesalius 3\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2010-01-14 09:37-0200\n"
+"POT-Creation-Date: 2010-01-15 16:29-0200\n"
 "PO-Revision-Date: 2010-01-07 11:25-0300\n"
 "Last-Translator: Invesalius team <invesalius@cti.gov.br>\n"
 "Language-Team: InVesalius Team <invesalius@cti.gov.br>\n"
@@ -19,7 +19,7 @@ msgstr ""
 "X-Poedit-SourceCharset: utf-8\n"
 "X-Poedit-Country: BRAZIL\n"
 
-#: constants.py:105 slice_menu.py:75 slice_menu.py:80
+#: constants.py:105 slice_menu.py:76 slice_menu.py:81
 msgid "Default "
 msgstr "Padrão "
 
@@ -106,7 +106,7 @@ msgstr "Fossa Posterior Cerebral"
 msgid "Brain"
 msgstr "Cérebro"
 
-#: constants.py:215 control.py:293 slice_menu.py:39 slice_menu.py:51
+#: constants.py:215 control.py:295 slice_menu.py:39 slice_menu.py:51
 msgid "Default"
 msgstr "Padrão"
 
@@ -142,7 +142,7 @@ msgstr "Pulmão - Duro"
 msgid "Mediastinum"
 msgstr "Mediastino"
 
-#: constants.py:224 control.py:294 slice_menu.py:46 slice_menu.py:51
+#: constants.py:224 control.py:296 slice_menu.py:46 slice_menu.py:51
 msgid "Manual"
 msgstr "Manual"
 
@@ -314,16 +314,16 @@ msgstr " Desabilitado"
 msgid "Cut plane"
 msgstr "Plano para corte"
 
-#: control.py:232
+#: control.py:233
 #, python-format
 msgid "Loading file %d of %d"
 msgstr "Carregando arquivo %d de %d"
 
-#: control.py:314
+#: control.py:316
 msgid "Untitled"
 msgstr "Sem Título"
 
-#: control.py:379
+#: control.py:381
 msgid "Fix gantry tilt applying the degrees bellow"
 msgstr "Corrigir inclinação (gantry-tilt), aplicando o seguinte valor"
 
@@ -403,35 +403,35 @@ msgstr "Salvar modo raycasting"
 msgid "Tools"
 msgstr "Ferramentas"
 
-#: dialogs.py:50
+#: dialogs.py:51
 msgid "Value will be applied."
 msgstr "Valor será aplicado."
 
-#: dialogs.py:54
+#: dialogs.py:55
 msgid "Value will not be applied."
 msgstr "Valor não será aplicado."
 
-#: dialogs.py:92
+#: dialogs.py:93
 msgid "Loading DICOM files"
 msgstr "Carregando arquivos DICOM"
 
-#: dialogs.py:137 frame.py:531
+#: dialogs.py:138 frame.py:532
 msgid "Open InVesalius 3 project..."
 msgstr "Abrir projeto do InVesalius 3"
 
-#: dialogs.py:160
+#: dialogs.py:172
 msgid "Choose a DICOM folder:"
 msgstr "Selecione uma pasta DICOM:"
 
-#: dialogs.py:185
+#: dialogs.py:201
 msgid "Save project as..."
 msgstr "Salvar projeto como..."
 
-#: dialogs.py:188
+#: dialogs.py:204
 msgid "InVesalius project (*.inv3)|*.inv3"
 msgstr "Projeto InVesalius (*.inv3)|*.inv3"
 
-#: dialogs.py:251 dialogs.py:290 dialogs.py:312
+#: dialogs.py:267 dialogs.py:306 dialogs.py:328
 #, python-format
 msgid ""
 "The project %s has been modified.\n"
@@ -440,24 +440,24 @@ msgstr ""
 "O projeto %s foi modificado.\n"
 " Deseja salvar as alterações?"
 
-#: dialogs.py:265
+#: dialogs.py:281
 #, python-format
 msgid "%s is an empty directory."
 msgstr "%s é um diretório vazio."
 
-#: dialogs.py:278
+#: dialogs.py:294
 msgid "There are no DICOM files on the selected directory."
 msgstr "Não há arquivos DICOM no diretório selecionado"
 
-#: dialogs.py:336
+#: dialogs.py:352
 msgid "(c) 2007 Center for Information Technology Renato Archer"
 msgstr "(r) 2007 Centro de Tecnologia da Informação Renato Archer"
 
-#: dialogs.py:338
+#: dialogs.py:354
 msgid "InVesalius is a software for medical imaging 3D reconstruction. "
 msgstr "InVesalius é um software para reconstrução de imagens médicas. "
 
-#: dialogs.py:339
+#: dialogs.py:355
 msgid ""
 "Its input is a sequency of DICOM 2D image files acquired with CT or MR.\n"
 "\n"
@@ -465,25 +465,25 @@ msgstr ""
 "Sua entrada é um conjunto de arquivos 2D DICOM obtidos através de TC ou RM.\n"
 "\n"
 
-#: dialogs.py:340
+#: dialogs.py:356
 msgid "The software also allows generating correspondent STL files,"
 msgstr "O software também permite a geração de arquivos STL correspondentes,"
 
-#: dialogs.py:341
+#: dialogs.py:357
 msgid "so the user can print 3D physical models of the patient's anatomy "
 msgstr ""
 "que podem ser utilizados para impressão física de modelos anatômicos do "
 "paciente"
 
-#: dialogs.py:342
+#: dialogs.py:358
 msgid "using Rapid Prototyping."
 msgstr "utilizando Prototipagem Rápida."
 
-#: dialogs.py:345
+#: dialogs.py:361
 msgid "GNU GPL (General Public License) version 2"
 msgstr "GNU GPL (Licença Pública Geral) versão 2"
 
-#: dialogs.py:360
+#: dialogs.py:376
 msgid "Save raycasting preset as:"
 msgstr "Salvar modo de raycasting como:"
 
@@ -557,75 +557,75 @@ msgstr "Painel de dados"
 msgid "Preview medical data to be reconstructed"
 msgstr "Pré-visualização dos dados que serão reconstruídos"
 
-#: frame.py:306
+#: frame.py:307
 msgid "Import DICOM...\tCtrl+I"
 msgstr "Importar DICOM...\tCtrl+I"
 
-#: frame.py:307
+#: frame.py:308
 msgid "Open Project...\tCtrl+O"
 msgstr "Abrir Projeto...\tCtrl+O"
 
-#: frame.py:308
+#: frame.py:309
 msgid "Save Project\tCtrl+S"
 msgstr "Salvar Projeto\tCtrl+S"
 
-#: frame.py:309
+#: frame.py:310
 msgid "Save Project As..."
 msgstr "Salvar Projeto Como..."
 
-#: frame.py:310
+#: frame.py:311
 msgid "Close Project"
 msgstr "Fechar Projeto"
 
-#: frame.py:319
+#: frame.py:320
 msgid "Exit"
 msgstr "Sair"
 
-#: frame.py:358
+#: frame.py:359
 msgid "Getting Started..."
 msgstr "Primeiros Passos..."
 
-#: frame.py:361
+#: frame.py:362
 msgid "About..."
 msgstr "Sobre..."
 
-#: frame.py:372
+#: frame.py:373
 msgid "File"
 msgstr "Arquivo"
 
-#: frame.py:377
+#: frame.py:378
 msgid "Help"
 msgstr "Ajuda"
 
-#: frame.py:420 surface.py:158
+#: frame.py:421 surface.py:158
 msgid "Ready"
 msgstr "Pronto"
 
-#: frame.py:528
+#: frame.py:529
 msgid "Import medical image..."
 msgstr "Importar imagens médicas..."
 
-#: frame.py:534
+#: frame.py:535
 msgid "Save InVesalius project"
 msgstr "Salvar projeto InVesalius"
 
-#: frame.py:629
+#: frame.py:630
 msgid "Zoom"
 msgstr "Zoom"
 
-#: frame.py:634
+#: frame.py:635
 msgid "Zoom based on selection"
 msgstr "Zoom baseado na seleção"
 
-#: frame.py:639
+#: frame.py:640
 msgid "Rotate"
 msgstr "Rotacionar"
 
-#: frame.py:643
+#: frame.py:644
 msgid "Move"
 msgstr "Mover"
 
-#: frame.py:647
+#: frame.py:648
 msgid "Window and Level"
 msgstr "Brilho e Contraste"
 
@@ -745,27 +745,15 @@ msgstr "Tecido Epitelial (Adulto)"
 msgid "Skin Tissue (Child)"
 msgstr "Tecido Epitelial (Criança)"
 
-#: slice_menu.py:61
-msgid "Save current values"
-msgstr "Salvar valores atuais"
-
-#: slice_menu.py:62
-msgid "Save current values as..."
-msgstr "Salvar valores atuais como..."
-
-#: slice_menu.py:62
-msgid "Load values"
-msgstr "Carregar valores"
-
-#: slice_menu.py:99
+#: slice_menu.py:100
 msgid "Window Width and Level"
 msgstr "Brilho e Contraste"
 
-#: slice_menu.py:100
+#: slice_menu.py:101
 msgid "Pseudo Colour"
 msgstr "Pseudo Cor"
 
-#: slice_menu.py:101
+#: slice_menu.py:102
 msgid "Image Tiling"
 msgstr "Conjunto de Imagens"
 
@@ -838,31 +826,31 @@ msgstr "Nome da nova máscara:"
 msgid "InVesalius 3 - New mask"
 msgstr "InVesalius 3 - Nova máscara"
 
-#: task_slice.py:197
+#: task_slice.py:204
 msgid "Mask properties"
 msgstr "Propriedades da máscara"
 
-#: task_slice.py:205
+#: task_slice.py:212
 msgid "Advanced edition tools"
 msgstr "Ferramentas avançadas de edição"
 
-#: task_slice.py:289
+#: task_slice.py:296
 msgid "Set predefined or manual threshold:"
 msgstr "Selecione ou edite valor de limiar:"
 
-#: task_slice.py:441
+#: task_slice.py:448
 msgid "Choose brush type, size or operation:"
 msgstr "Tipo, tamanho e operação do pincel:"
 
-#: task_slice.py:447
+#: task_slice.py:454
 msgid "Circle"
 msgstr "Círculo"
 
-#: task_slice.py:451
+#: task_slice.py:458
 msgid "Square"
 msgstr "Quadrado"
 
-#: task_slice.py:487
+#: task_slice.py:494
 msgid "Brush threshold range:"
 msgstr "Limiar do pincel:"
 
@@ -925,6 +913,15 @@ msgstr "Medição"
 #: task_tools.py:61 task_tools.py:62
 msgid "Add text annotations"
 msgstr "Adicionar anotações"
+
+#~ msgid "Save current values"
+#~ msgstr "Salvar valores atuais"
+
+#~ msgid "Save current values as..."
+#~ msgstr "Salvar valores atuais como..."
+
+#~ msgid "Load values"
+#~ msgstr "Carregar valores"
 
 #~ msgid "Optimal"
 #~ msgstr "Ótima"
