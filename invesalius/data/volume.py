@@ -125,6 +125,7 @@ class Volume():
 
     def OnUpdatePreset(self, pubsub_evt):
         self.__load_preset_config()
+
         if self.config:
             if self.exist:
                 self.__load_preset()
@@ -134,7 +135,11 @@ class Volume():
                 self.LoadVolume()
                 self.CalculateHistogram()
                 self.exist = 1
-
+                
+        colour = self.GetBackgroundColour()
+        ps.Publisher.sendMessage('Change volume viewer background colour', colour)
+        ps.Publisher.sendMessage('Change volume viewer gui colour', colour)
+        
     def __load_preset_config(self):
         self.config = prj.Project().raycasting_preset
 
@@ -159,10 +164,8 @@ class Volume():
         # Update other information
         self.SetShading()
         self.SetTypeRaycasting()
-        colour = self.GetBackgroundColour()
-        ps.Publisher.sendMessage('Change volume viewer background colour', colour)
-        ps.Publisher.sendMessage('Change volume viewer gui colour', colour)
 
+        
     def OnSetCurve(self, pubsub_evt):
         self.curve = pubsub_evt.data
         self.CalculateWWWL()
