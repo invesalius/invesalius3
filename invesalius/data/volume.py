@@ -528,7 +528,7 @@ class Volume():
     def OnEnableTool(self, pubsub_evt):
         print "OnEnableTool"
         tool_name, enable = pubsub_evt.data
-        if tool_name == "Cut plane":
+        if tool_name == _("Cut plane"):
             if self.plane:
                 if enable:
                     print "Enable"
