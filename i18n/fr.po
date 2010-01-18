@@ -20,8 +20,9 @@ msgstr ""
 "X-Poedit-Country: GENERIC\n"
 
 #: constants.py:105 slice_menu.py:75 slice_menu.py:80
+#, fuzzy
 msgid "Default "
-msgstr ""
+msgstr "Défaut"
 
 #: constants.py:106
 msgid "Hue"
@@ -50,7 +51,7 @@ msgstr ""
 #: constants.py:152 constants.py:212 dicom_preview_panel.py:365
 #: dicom_preview_panel.py:366 presets.py:30 presets.py:48 presets.py:119
 msgid "Bone"
-msgstr ""
+msgstr "Osso"
 
 #: constants.py:159
 #, python-format
@@ -58,32 +59,38 @@ msgid "Mask %d"
 msgstr ""
 
 #: constants.py:188 task_surface.py:41
+#, fuzzy
 msgid "Draw"
-msgstr ""
+msgstr "Dessiner"
 
 #: constants.py:188 task_surface.py:41
+#, fuzzy
 msgid "Erase"
-msgstr ""
+msgstr "Effacer"
 
 #: constants.py:188 data_notebook.py:108 task_surface.py:41
 msgid "Threshold"
 msgstr ""
 
 #: constants.py:199 task_surface.py:30
+#, fuzzy
 msgid "Low"
-msgstr ""
+msgstr "Bas"
 
 #: constants.py:200 task_surface.py:30
+#, fuzzy
 msgid "Medium"
-msgstr ""
+msgstr "Medium"
 
 #: constants.py:201 task_surface.py:30
+#, fuzzy
 msgid "High"
-msgstr ""
+msgstr "Haut"
 
 #: constants.py:202 constants.py:204 surface.py:172 task_surface.py:30
+#, fuzzy
 msgid "Optimal *"
-msgstr ""
+msgstr "Optimal *"
 
 #: constants.py:203 presets.py:44 presets.py:62 task_surface.py:30
 msgid "Custom"
