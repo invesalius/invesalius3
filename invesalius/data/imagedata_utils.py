@@ -18,6 +18,7 @@
 #--------------------------------------------------------------------------
 
 import math
+import os
 import vtk
 import vtkgdcm
 import wx.lib.pubsub as ps
@@ -215,10 +216,11 @@ def ExtractVOI(imagedata,xi,xf,yi,yf,zi,zf):
 
 def CreateImageData(filelist, zspacing, size, bits):
     message = _("Generating multiplanar visualization...")
-
+    
     if not const.VTK_WARNING:
+        log_path = os.path.join(const.LOG_FOLDER, 'vtkoutput.txt')
         fow = vtk.vtkFileOutputWindow()
-        fow.SetFileName('vtkoutput.txt')
+        fow.SetFileName(log_path)
         ow = vtk.vtkOutputWindow()
         ow.SetInstance(fow)
 

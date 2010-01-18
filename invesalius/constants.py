@@ -285,9 +285,16 @@ RAYCASTING_TYPES = [_(filename.split(".")[0]) for filename in
                     os.listdir(folder) if
                     os.path.isfile(os.path.join(folder,filename))]
 
+ 
+LOG_FOLDER = os.path.join(os.path.expanduser('~'), '.invesalius', 'logs')
+if not os.path.isdir(LOG_FOLDER):
+    os.makedirs(LOG_FOLDER)
+
 folder = os.path.join(os.path.expanduser('~'), '.invesalius', 'presets')
 if not os.path.isdir(folder):
     os.makedirs(folder)
+   
+
 USER_RAYCASTING_PRESETS_DIRECTORY = folder
 RAYCASTING_TYPES += [_(filename.split(".")[0]) for filename in
                      os.listdir(folder) if
