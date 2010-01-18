@@ -136,9 +136,9 @@ class Volume():
                 self.CalculateHistogram()
                 self.exist = 1
                 
-        colour = self.GetBackgroundColour()
-        ps.Publisher.sendMessage('Change volume viewer background colour', colour)
-        ps.Publisher.sendMessage('Change volume viewer gui colour', colour)
+            colour = self.GetBackgroundColour()
+            ps.Publisher.sendMessage('Change volume viewer background colour', colour)
+            ps.Publisher.sendMessage('Change volume viewer gui colour', colour)
         
     def __load_preset_config(self):
         self.config = prj.Project().raycasting_preset
