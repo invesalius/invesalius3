@@ -408,10 +408,9 @@ class Controller():
                 path = os.path.join(const.RAYCASTING_PRESETS_DIRECTORY,
                                     const.RAYCASTING_FILES[label])
             else:
-                try:
-                    path = os.path.join(const.RAYCASTING_PRESETS_DIRECTORY,
+                path = os.path.join(const.RAYCASTING_PRESETS_DIRECTORY,
                                         label+".plist")
-                except IOError:
+                if not os.path.isfile(path):
                     path = os.path.join(const.USER_RAYCASTING_PRESETS_DIRECTORY,
                                     label+".plist")
             preset = plistlib.readPlist(path)
