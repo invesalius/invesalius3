@@ -330,7 +330,8 @@ class Viewer(wx.Panel):
             const.WINDOW_LEVEL['Manual'] = (self.acum_achange_window,\
                                            self.acum_achange_level)
             ps.Publisher().sendMessage('Check window and level other')
-            
+            ps.Publisher().sendMessage('Update window level value',(self.acum_achange_window, 
+                                                                self.acum_achange_level))
             #Necessary update the slice plane in the volume case exists
             ps.Publisher().sendMessage('Render volume viewer')
         
@@ -343,6 +344,7 @@ class Viewer(wx.Panel):
     def UpdateWindowLevelValue(self, pubsub_evt):
         window, level = pubsub_evt.data
         self.acum_achange_window, self.acum_achange_level = (window, level)
+        self.SetWLText(window, level)
 
 
     def OnChangeSliceMove(self, evt, obj):
