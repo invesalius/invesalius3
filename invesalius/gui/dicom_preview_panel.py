@@ -47,6 +47,49 @@ STR_LOCAL = _("Location: %.2f")
 STR_PATIENT = "%s\n%s"
 STR_ACQ = _("%s %s\nMade in InVesalius")
 
+myEVT_PREVIEW_CLICK = wx.NewEventType()
+EVT_PREVIEW_CLICK = wx.PyEventBinder(myEVT_PREVIEW_CLICK, 1)
+
+myEVT_PREVIEW_DBLCLICK = wx.NewEventType()
+EVT_PREVIEW_DBLCLICK = wx.PyEventBinder(myEVT_PREVIEW_DBLCLICK, 1)
+
+myEVT_CLICK_SLICE = wx.NewEventType()
+# This event occurs when the user select a preview
+EVT_CLICK_SLICE = wx.PyEventBinder(myEVT_CLICK_SLICE, 1)
+
+myEVT_CLICK_SERIE = wx.NewEventType()
+# This event occurs when the user select a preview
+EVT_CLICK_SERIE = wx.PyEventBinder(myEVT_CLICK_SERIE, 1)
+
+myEVT_CLICK = wx.NewEventType()
+EVT_CLICK = wx.PyEventBinder(myEVT_CLICK, 1)
+
+class SelectionEvent(wx.PyCommandEvent):
+    pass
+
+
+class PreviewEvent(wx.PyCommandEvent):
+    def __init__(self , evtType, id):
+        super(PreviewEvent, self).__init__(evtType, id)
+
+    def GetSelectID(self):
+        return self.SelectedID
+
+    def SetSelectedID(self, id):
+        self.SelectedID = id
+
+    def GetItemData(self):
+        return self.data
+
+    def SetItemData(self, data):
+        self.data = data
+
+
+class SerieEvent(PreviewEvent):
+    def __init__(self , evtType, id):
+        super(SerieEvent, self).__init__(evtType, id)
+
+
 class DicomInfo(object):
     """
     Keep the informations and the image used by preview.
@@ -57,25 +100,14 @@ class DicomInfo(object):
         self.title = title
         self.subtitle = subtitle
         self._preview = None
-        self._size = (70, 70)
         self.selected = False
-        self.resized = False
-
-    @property
-    def size(self):
-        return self._size
-
-    @size.setter
-    def size(self, size):
-        if size != self._size:
-            self._size = size
-            self.resized = True
 
     @property
     def preview(self):
         if self._preview:
             return self._preview
         else:
+            print "First time!"
             colorer = vtk.vtkImageMapToWindowLevelColors()
             colorer.SetInput(self.dicom.image.imagedata)
             colorer.SetWindow(float(self.dicom.image.window))
@@ -117,7 +149,6 @@ class DicomPaintPanel(wx.Panel):
             return image.Scale(*new_size)
         else:
             return image.Scale(*self.last_size)
-
 
     def SetImage(self, image):
         self.image = image
@@ -193,10 +224,9 @@ class Preview(wx.Panel):
         #self.subtitle.Bind(wx.EVT_LEAVE_WINDOW, self.OnLeave)
 
         self.Bind(wx.EVT_LEFT_DOWN, self.OnSelect)
-        #self.interactor.Bind(wx.EVT_LEFT_DOWN, self.OnSelect)
-        #self.panel.Bind(wx.EVT_LEFT_DOWN, self.OnSelect)
-        #self.title.Bind(wx.EVT_LEFT_DOWN, self.OnSelect)
-        #self.subtitle.Bind(wx.EVT_LEFT_DOWN, self.OnSelect)
+        self.title.Bind(wx.EVT_LEFT_DOWN, self.OnSelect)
+        self.subtitle.Bind(wx.EVT_LEFT_DOWN, self.OnSelect)
+        self.image_viewer.Bind(wx.EVT_LEFT_DOWN, self.OnSelect)
 
         #self.Bind(wx.EVT_SIZE, self.OnSize)
 
@@ -252,6 +282,13 @@ class Preview(wx.Panel):
         #self.SetBackgroundColour(c)
         self.Select()
 
+        # Generating a EVT_PREVIEW_CLICK event
+        my_evt = SerieEvent(myEVT_PREVIEW_CLICK, self.GetId())
+        my_evt.SetSelectedID(self.dicom_info.id)
+        my_evt.SetItemData(self.dicom_info.dicom)
+        print "patient", self.dicom_info.dicom.patient
+        self.GetEventHandler().ProcessEvent(my_evt)
+
     def OnSize(self, evt):
         if self.dicom_info:
             self.SetDicomToPreview(self.dicom_info)
@@ -266,91 +303,274 @@ class Preview(wx.Panel):
         self.Refresh()
 
     def OnDClick(self, evt):
-        evt = PreviewEvent(myEVT_SELECT, self.GetId())
-        evt.SetSelectedID(self.ID)
-        evt.SetItemData(self.data)
-        self.GetEventHandler().ProcessEvent(evt)
+        my_evt = SerieEvent(myEVT_PREVIEW_DBLCLICK, self.GetId())
+        my_evt.SetSelectedID(self.dicom_info.id)
+        my_evt.SetItemData(self.dicom_info.dicom)
+        self.GetEventHandler().ProcessEvent(my_evt)
 
-    def ShowShadow(self):
-        self._nImgSize = 16
-        nPadding = 4
-        print "ShowShadow"
-        dc = wx.BufferedPaintDC(self)
-        style = self.GetParent().GetWindowStyleFlag()
 
-        backBrush = wx.WHITE_BRUSH
-        if 1: #style & INB_BORDER:
-            borderPen = wx.Pen(wx.SystemSettings_GetColour(wx.SYS_COLOUR_3DSHADOW))
-        #else:
-        #    borderPen = wx.TRANSPARENT_PEN
+class DicomPreviewSeries(wx.Panel):
+    """A dicom series preview panel"""
+    def __init__(self, parent):
+        super(DicomPreviewSeries, self).__init__(parent)
+        # TODO: 3 pixels between the previews is a good idea?
+        # I have to test.
+        #self.sizer = wx.BoxSizer(wx.HORIZONTAL)
+        #self.SetSizer(self.sizer)
+        self.displayed_position = 0
+        self.nhidden_last_display = 0
+        self._init_ui()
 
-        size = self.GetSize()
+    def _init_ui(self):
+        scroll = wx.ScrollBar(self, -1, style=wx.SB_VERTICAL)
+        self.scroll = scroll
 
-        # Background
-        dc.SetBrush(backBrush)
+        self.grid = wx.GridSizer(rows=NROWS, cols=NCOLS, vgap=3, hgap=3)
 
-        borderPen.SetWidth(1)
-        dc.SetPen(borderPen)
-        dc.DrawRectangle(0, 0, size.x, size.y)
-        #bUsePin = (style & INB_USE_PIN_BUTTON and [True] or [False])[0]
+        sizer = wx.BoxSizer(wx.HORIZONTAL)
+        sizer.AddSizer(self.grid, 1, wx.EXPAND|wx.GROW|wx.ALL, 2)
 
-        borderPen = wx.BLACK_PEN
-        borderPen.SetWidth(1)
-        dc.SetPen(borderPen)
-        dc.DrawLine(0, size.y, size.x, size.y)
-        dc.DrawPoint(0, size.y)
+        background_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        background_sizer.AddSizer(sizer, 1, wx.EXPAND|wx.GROW|wx.ALL, 2)
+        background_sizer.Add(scroll, 0, wx.EXPAND|wx.GROW)
+        self.SetSizer(background_sizer)
+        background_sizer.Fit(self)
 
-        clientSize = 0
-        #bUseYcoord = (style & INB_RIGHT or style & INB_LEFT)
-        bUseYcoord = 1
+        self.Layout()
+        self.Update()
+        self.SetAutoLayout(1)
 
-        if bUseYcoord:
-            clientSize = size.GetHeight()
+        self.sizer = background_sizer
+
+        self._Add_Panels_Preview()
+        self._bind_events()
+
+    def _Add_Panels_Preview(self):
+        self.previews = []
+        for i in xrange(NROWS):
+            for j in xrange(NCOLS):
+                p = Preview(self)
+                p.Bind(EVT_PREVIEW_CLICK, self.OnSelect)
+                #if (i == j == 0):
+                    #self._show_shadow(p)
+                #p.Hide()
+                self.previews.append(p)
+                self.grid.Add(p, 1, flag=wx.EXPAND)
+
+    #def _show_shadow(self, preview):
+    #    preview.ShowShadow()
+
+    def _bind_events(self):
+        # When the user scrolls the window
+        self.Bind(wx.EVT_SCROLL, self.OnScroll)
+
+    def OnSelect(self, evt):
+        print dir(evt)
+        my_evt = SerieEvent(myEVT_CLICK_SERIE, self.GetId())
+        my_evt.SetSelectedID(evt.GetSelectID())
+        my_evt.SetItemData(evt.GetItemData())
+        self.GetEventHandler().ProcessEvent(my_evt)
+
+    def SetPatientGroups(self, patient):
+        self.files = []
+        self.displayed_position = 0
+        self.nhidden_last_display = 0
+        group_list = patient.GetGroups()
+        self.group_list = group_list
+        n = 0
+        for group in group_list:
+            info = DicomInfo(n, group.dicom,
+                             group.title,
+                             _("%d Images") %(group.nslices),
+                            )
+            self.files.append(info)
+            n+=1
+
+        scroll_range = len(self.files)/NCOLS
+        if scroll_range * NCOLS < len(self.files):
+            scroll_range +=1
+        self.scroll.SetScrollbar(0, NROWS, scroll_range, NCOLS)
+        self._display_previews()
+
+    def _display_previews(self):
+        initial = self.displayed_position * NCOLS
+        final = initial + NUM_PREVIEWS
+
+        if len(self.files) < final:
+            for i in xrange(final-len(self.files)):
+                try:
+                    self.previews[-i-1].Hide()
+                except IndexError:
+                    #print "doesn't exist!"
+                    pass
+            self.nhidden_last_display = final-len(self.files)
         else:
-            clientSize = size.GetWidth()
+            if self.nhidden_last_display:
+                for i in xrange(self.nhidden_last_display):
+                    try:
+                        self.previews[-i-1].Show()
+                    except IndexError:
+                        #print "doesn't exist!"
+                        pass
+                self.nhidden_last_display = 0
 
-        if 1:
-            # Default values for the surronounding rectangle
-            # around a button
-            rectWidth = self._nImgSize * 2  # To avoid the recangle to 'touch' the borders
-            rectHeight = self._nImgSize * 2
+        for f, p in zip(self.files[initial:final], self.previews):
+            #print "f", f
+            p.SetDicomToPreview(f)
+            #p.interactor.Render()
 
-            # Incase the style requires non-fixed button (fit to text)
-            # recalc the rectangle width
-            if 1:
-            #if style & INB_FIT_BUTTON and \
-            #   not ((style & INB_LEFT) or (style & INB_RIGHT)) and \
-            #   not self._pagesInfoVec[i].GetCaption() == "" and \
-            #   not (style & INB_SHOW_ONLY_IMAGES):
+        for f, p in zip(self.files[initial:final], self.previews):
+            p.Show()
+
+    def OnScroll(self, evt):
+        if self.displayed_position != evt.GetPosition():
+            self.displayed_position = evt.GetPosition()
+            self._display_previews()
 
 
-                #rectWidth = ((textWidth + nPadding * 2) > rectWidth and [nPadding * 2 + textWidth] or [rectWidth])[0]
+class DicomPreviewSlice(wx.Panel):
+    """A dicom preview panel"""
+    def __init__(self, parent):
+        super(DicomPreviewSlice, self).__init__(parent)
+        # TODO: 3 pixels between the previews is a good idea?
+        # I have to test.
+        self.displayed_position = 0
+        self.nhidden_last_display = 0
+        self._init_ui()
 
-                rectWidth = ((nPadding * 2) > rectWidth and [nPadding * 2] or [rectWidth])[0]
-                # Make the width an even number
-                if rectWidth % 2 != 0:
-                    rectWidth += 1
+    def _init_ui(self):
+        scroll = wx.ScrollBar(self, -1, style=wx.SB_VERTICAL)
+        self.scroll = scroll
 
-            # If Pin button is used, consider its space as well (applicable for top/botton style)
-            # since in the left/right, its size is already considered in 'pos'
-            #pinBtnSize = (bUsePin and [20] or [0])[0]
+        self.grid = wx.GridSizer(rows=NROWS, cols=NCOLS, vgap=3, hgap=3)
 
-            #if pos + rectWidth + pinBtnSize > clientSize:
-            #    break
+        sizer = wx.BoxSizer(wx.HORIZONTAL)
+        sizer.AddSizer(self.grid, 1, wx.EXPAND|wx.GROW|wx.ALL, 2)
 
-            # Calculate the button rectangle
-            modRectWidth =  rectWidth - 2# or [rectWidth])[0]
-            modRectHeight = rectHeight# or [rectHeight - 2])[0]
+        background_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        background_sizer.AddSizer(sizer, 1, wx.EXPAND|wx.GROW|wx.ALL, 2)
+        background_sizer.Add(scroll, 0, wx.EXPAND|wx.GROW)
+        self.SetSizer(background_sizer)
+        background_sizer.Fit(self)
 
-            pos = rectWidth
+        self.Layout()
+        self.Update()
+        self.SetAutoLayout(1)
 
-            if bUseYcoord:
-                buttonRect = wx.Rect(1, pos, modRectWidth, modRectHeight)
-            else:
-                buttonRect = wx.Rect(pos , 1, modRectWidth, modRectHeight)
+        self.sizer = background_sizer
 
-    def ShowShadow2(self):
-        pass
+        self._Add_Panels_Preview()
+        self._bind_events()
+
+    def _Add_Panels_Preview(self):
+        self.previews = []
+        for i in xrange(NROWS):
+            for j in xrange(NCOLS):
+                p = Preview(self)
+                p.Bind(EVT_PREVIEW_CLICK, self.OnPreviewClick)
+                #p.Hide()
+                self.previews.append(p)
+                self.grid.Add(p, 1, flag=wx.EXPAND)
+
+    def _bind_events(self):
+        # When the user scrolls the window
+        self.Bind(wx.EVT_SCROLL, self.OnScroll)
+
+    def SetDicomDirectory(self, directory):
+        print "Setting Dicom Directory", directory
+        self.directory = directory
+        self.series = dicom_reader.GetSeries(directory)[0]
+
+    def SetPatientGroups(self, patient):
+        self.group_list = patient.GetGroups()
+
+    def SetDicomSerie(self, pos):
+        self.files = []
+        self.displayed_position = 0
+        self.nhidden_last_display = 0
+        group = self.group_list[pos]
+        self.group = group
+        #dicom_files = group.GetList()
+        dicom_files = group.GetHandSortedList()
+        n = 0
+        for dicom in dicom_files:
+            info = DicomInfo(n, dicom,
+                             _("Image %d") % (dicom.image.number),
+                             "%.2f" % (dicom.image.position[2]))
+            self.files.append(info)
+            n+=1
+
+        scroll_range = len(self.files)/NCOLS
+        if scroll_range * NCOLS < len(self.files):
+            scroll_range +=1
+        self.scroll.SetScrollbar(0, NROWS, scroll_range, NCOLS)
+
+        self._display_previews()
+
+    def SetDicomGroup(self, group):
+        self.files = []
+        self.displayed_position = 0
+        self.nhidden_last_display = 0
+        #dicom_files = group.GetList()
+        dicom_files = group.GetHandSortedList()
+        n = 0
+        for dicom in dicom_files:
+            info = DicomInfo(n, dicom,
+                    _("Image %d") % (dicom.image.number),
+                    "%.2f" % (dicom.image.position[2]),
+                            )
+            self.files.append(info)
+            n+=1
+
+        scroll_range = len(self.files)/NCOLS
+        if scroll_range * NCOLS < len(self.files):
+            scroll_range +=1
+        self.scroll.SetScrollbar(0, NROWS, scroll_range, NCOLS)
+
+        self._display_previews()
+
+    def _display_previews(self):
+        initial = self.displayed_position * NCOLS
+        final = initial + NUM_PREVIEWS
+        print "len:", len(self.files)
+
+        if len(self.files) < final:
+            for i in xrange(final-len(self.files)):
+                print "hide ", i
+                try:
+                    self.previews[-i-1].Hide()
+                except IndexError:
+                    #print "doesn't exist!"
+                    pass
+            self.nhidden_last_display = final-len(self.files)
+        else:
+            if self.nhidden_last_display:
+                for i in xrange(self.nhidden_last_display):
+                    try:
+                        self.previews[-i-1].Show()
+                    except IndexError:
+                        #print "doesn't exist!"
+                        pass
+                self.nhidden_last_display = 0
+
+        for f, p in zip(self.files[initial:final], self.previews):
+            p.SetDicomToPreview(f)
+            #p.interactor.Render()
+
+        for f, p in zip(self.files[initial:final], self.previews):
+            p.Show()
+
+    def OnScroll(self, evt):
+        if self.displayed_position != evt.GetPosition():
+            self.displayed_position = evt.GetPosition()
+            self._display_previews()
+
+    def OnPreviewClick(self, evt):
+        print "Hey man, you've clicked over me"
+        my_evt = SerieEvent(myEVT_CLICK_SLICE, self.GetId())
+        my_evt.SetSelectedID(evt.GetSelectID())
+        my_evt.SetItemData(evt.GetItemData())
+        self.GetEventHandler().ProcessEvent(my_evt)
 
 
 class SingleImagePreview(wx.Panel):
@@ -418,7 +638,6 @@ class SingleImagePreview(wx.Panel):
         self.panel.SetSizer(sizer)
         self.Layout()
         self.Update()
-
 
     def __init_gui(self):
         self.panel = wx.Panel(self, -1)
@@ -539,308 +758,3 @@ class SingleImagePreview(wx.Panel):
     def __del__(self):
         print "---------> morri"
 
-
-
-myEVT_SELECT = wx.NewEventType()
-# This event occurs when the user select a preview
-EVT_SELECT = wx.PyEventBinder(myEVT_SELECT, 1)
-
-myEVT_SELECT_SERIE = wx.NewEventType()
-# This event occurs when the user select a preview
-EVT_SELECT_SERIE = wx.PyEventBinder(myEVT_SELECT_SERIE, 1)
-
-myEVT_CLICK = wx.NewEventType()
-EVT_CLICK = wx.PyEventBinder(myEVT_CLICK, 1)
-
-class PreviewEvent(wx.PyCommandEvent):
-    def __init__(self , evtType, id):
-        wx.PyCommandEvent.__init__(self, evtType, id)
-
-    def GetSelectID(self):
-        return self.SelectedID
-
-    def SetSelectedID(self, id):
-        self.SelectedID = id
-
-    def GetItemData(self):
-        return self.data
-
-    def SetItemData(self, data):
-        self.data = data
-
-
-class SerieEvent(PreviewEvent):
-    def __init__(self , evtType, id):
-        super(SerieEvent, self).__init__(evtType, id)
-
-
-
-class DicomPreviewSeries(wx.Panel):
-    """A dicom series preview panel"""
-    def __init__(self, parent):
-        super(DicomPreviewSeries, self).__init__(parent)
-        # TODO: 3 pixels between the previews is a good idea?
-        # I have to test.
-        #self.sizer = wx.BoxSizer(wx.HORIZONTAL)
-        #self.SetSizer(self.sizer)
-        self.displayed_position = 0
-        self.nhidden_last_display = 0
-        self._init_ui()
-
-    def _init_ui(self):
-
-        scroll = wx.ScrollBar(self, -1, style=wx.SB_VERTICAL)
-        self.scroll = scroll
-
-        self.grid = wx.GridSizer(rows=NROWS, cols=NCOLS, vgap=3, hgap=3)
-
-        sizer = wx.BoxSizer(wx.HORIZONTAL)
-        sizer.AddSizer(self.grid, 1, wx.EXPAND|wx.GROW|wx.ALL, 2)
-
-        background_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        background_sizer.AddSizer(sizer, 1, wx.EXPAND|wx.GROW|wx.ALL, 2)
-        background_sizer.Add(scroll, 0, wx.EXPAND|wx.GROW)
-        self.SetSizer(background_sizer)
-        background_sizer.Fit(self)
-
-
-        self.Layout()
-        self.Update()
-        self.SetAutoLayout(1)
-
-        self.sizer = background_sizer
-
-        self._Add_Panels_Preview()
-        self._bind_events()
-
-    def _Add_Panels_Preview(self):
-        self.previews = []
-        for i in xrange(NROWS):
-            for j in xrange(NCOLS):
-                p = Preview(self)
-                #if (i == j == 0):
-                    #self._show_shadow(p)
-                #p.Hide()
-                self.previews.append(p)
-                self.grid.Add(p, 1, flag=wx.EXPAND)
-
-    #def _show_shadow(self, preview):
-    #    preview.ShowShadow()
-
-
-    def _bind_events(self):
-        # When the user scrolls the window
-        self.Bind(wx.EVT_SCROLL, self.OnScroll)
-        self.Bind(EVT_SELECT, self.OnSelect)
-
-    def OnSelect(self, evt):
-        my_evt = SerieEvent(myEVT_SELECT_SERIE, self.GetId())
-        my_evt.SetSelectedID(evt.GetSelectID())
-        my_evt.SetItemData(self.group_list)
-        self.GetEventHandler().ProcessEvent(my_evt)
-
-    def SetPatientGroups(self, patient):
-        self.files = []
-        self.displayed_position = 0
-        self.nhidden_last_display = 0
-        group_list = patient.GetGroups()
-        self.group_list = group_list
-        n = 0
-        for group in group_list:
-            #info = (group.dicom.image,
-            #        float(group.dicom.image.window),
-            #        float(group.dicom.image.level),
-            #        group.title,
-            #        _("%d Images") %(group.nslices),
-            #        n,
-            #        group_list,
-            #        group.dicom)
-            info = DicomInfo(n, group.dicom,
-                             group.title,
-                             _("%d Images") %(group.nslices),
-                            )
-            self.files.append(info)
-            n+=1
-
-        scroll_range = len(self.files)/NCOLS
-        if scroll_range * NCOLS < len(self.files):
-            scroll_range +=1
-        self.scroll.SetScrollbar(0, NROWS, scroll_range, NCOLS)
-        self._display_previews()
-
-    def _display_previews(self):
-        initial = self.displayed_position * NCOLS
-        final = initial + NUM_PREVIEWS
-
-        if len(self.files) < final:
-            for i in xrange(final-len(self.files)):
-                try:
-                    self.previews[-i-1].Hide()
-                except IndexError:
-                    #print "doesn't exist!"
-                    pass
-            self.nhidden_last_display = final-len(self.files)
-        else:
-            if self.nhidden_last_display:
-                for i in xrange(self.nhidden_last_display):
-                    try:
-                        self.previews[-i-1].Show()
-                    except IndexError:
-                        #print "doesn't exist!"
-                        pass
-                self.nhidden_last_display = 0
-
-
-
-        for f, p in zip(self.files[initial:final], self.previews):
-            #print "f", f
-            p.SetDicomToPreview(f)
-            #p.interactor.Render()
-
-        for f, p in zip(self.files[initial:final], self.previews):
-            p.Show()
-
-
-    def OnScroll(self, evt):
-        if self.displayed_position != evt.GetPosition():
-            self.displayed_position = evt.GetPosition()
-            self._display_previews()
-
-class DicomPreview(wx.Panel):
-    """A dicom preview panel"""
-    def __init__(self, parent):
-        super(DicomPreview, self).__init__(parent)
-        # TODO: 3 pixels between the previews is a good idea?
-        # I have to test.
-        self.displayed_position = 0
-        self.nhidden_last_display = 0
-        self._init_ui()
-
-
-    def _init_ui(self):
-        scroll = wx.ScrollBar(self, -1, style=wx.SB_VERTICAL)
-        self.scroll = scroll
-
-        self.grid = wx.GridSizer(rows=NROWS, cols=NCOLS, vgap=3, hgap=3)
-
-        sizer = wx.BoxSizer(wx.HORIZONTAL)
-        sizer.AddSizer(self.grid, 1, wx.EXPAND|wx.GROW|wx.ALL, 2)
-
-        background_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        background_sizer.AddSizer(sizer, 1, wx.EXPAND|wx.GROW|wx.ALL, 2)
-        background_sizer.Add(scroll, 0, wx.EXPAND|wx.GROW)
-        self.SetSizer(background_sizer)
-        background_sizer.Fit(self)
-
-
-        self.Layout()
-        self.Update()
-        self.SetAutoLayout(1)
-
-        self.sizer = background_sizer
-
-        self._Add_Panels_Preview()
-        self._bind_events()
-
-    def _Add_Panels_Preview(self):
-        self.previews = []
-        for i in xrange(NROWS):
-            for j in xrange(NCOLS):
-                p = Preview(self)
-                #p.Hide()
-                self.previews.append(p)
-                self.grid.Add(p, 1, flag=wx.EXPAND)
-
-    def _bind_events(self):
-        # When the user scrolls the window
-        self.Bind(wx.EVT_SCROLL, self.OnScroll)
-
-    def SetDicomDirectory(self, directory):
-        print "Setting Dicom Directory", directory
-        self.directory = directory
-        self.series = dicom_reader.GetSeries(directory)[0]
-
-    def SetPatientGroups(self, patient):
-        self.group_list = patient.GetGroups()
-
-    def SetDicomSerie(self, pos):
-        self.files = []
-        self.displayed_position = 0
-        self.nhidden_last_display = 0
-        group = self.group_list[pos]
-        self.group = group
-        #dicom_files = group.GetList()
-        dicom_files = group.GetHandSortedList()
-        n = 0
-        for dicom in dicom_files:
-            info = DicomInfo(n, dicom,
-                             _("Image %d") % (dicom.image.number),
-                             "%.2f" % (dicom.image.position[2]))
-            self.files.append(info)
-            n+=1
-
-        scroll_range = len(self.files)/NCOLS
-        if scroll_range * NCOLS < len(self.files):
-            scroll_range +=1
-        self.scroll.SetScrollbar(0, NROWS, scroll_range, NCOLS)
-
-        self._display_previews()
-
-    def SetDicomGroup(self, group):
-        self.files = []
-        self.displayed_position = 0
-        self.nhidden_last_display = 0
-        #dicom_files = group.GetList()
-        dicom_files = group.GetHandSortedList()
-        n = 0
-        for dicom in dicom_files:
-            info = DicomInfo(n, dicom,
-                    _("Image %d") % (dicom.image.number),
-                    "%.2f" % (dicom.image.position[2]),
-                            )
-            self.files.append(info)
-            n+=1
-
-        scroll_range = len(self.files)/NCOLS
-        if scroll_range * NCOLS < len(self.files):
-            scroll_range +=1
-        self.scroll.SetScrollbar(0, NROWS, scroll_range, NCOLS)
-
-        self._display_previews()
-
-    def _display_previews(self):
-        initial = self.displayed_position * NCOLS
-        final = initial + NUM_PREVIEWS
-        print "len:", len(self.files)
-
-        if len(self.files) < final:
-            for i in xrange(final-len(self.files)):
-                print "hide ", i
-                try:
-                    self.previews[-i-1].Hide()
-                except IndexError:
-                    #print "doesn't exist!"
-                    pass
-            self.nhidden_last_display = final-len(self.files)
-        else:
-            if self.nhidden_last_display:
-                for i in xrange(self.nhidden_last_display):
-                    try:
-                        self.previews[-i-1].Show()
-                    except IndexError:
-                        #print "doesn't exist!"
-                        pass
-                self.nhidden_last_display = 0
-
-        for f, p in zip(self.files[initial:final], self.previews):
-            p.SetDicomToPreview(f)
-            #p.interactor.Render()
-
-        for f, p in zip(self.files[initial:final], self.previews):
-            p.Show()
-
-
-    def OnScroll(self, evt):
-        if self.displayed_position != evt.GetPosition():
-            self.displayed_position = evt.GetPosition()
-            self._display_previews()
