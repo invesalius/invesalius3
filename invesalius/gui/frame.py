@@ -211,7 +211,6 @@ class Frame(wx.Frame):
         aui_manager.GetPane("Data").Show(1)
         aui_manager.GetPane("Tasks").Show(1)
         aui_manager.Update()
-        ps.Publisher().sendMessage('End busy cursor')
 
     def HideContentPanel(self, pubsub_evt):
         aui_manager = self.aui_manager

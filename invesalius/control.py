@@ -176,6 +176,7 @@ class Controller():
 
 
     def OpenProject(self, filepath):
+        ps.Publisher().sendMessage('Begin busy cursor')
         path = os.path.abspath(filepath)
 
         proj = prj.Project()
@@ -187,7 +188,7 @@ class Controller():
 
         surface = srf.Surface()
         surface._set_class_index(proj.last_surface_index)
-
+        
         self.LoadProject()
 
         session = ses.Session()
@@ -310,6 +311,7 @@ class Controller():
         ps.Publisher().sendMessage('Show content panel')
         ps.Publisher().sendMessage('Update AUI')
         ps.Publisher().sendMessage('Load slice plane')
+        ps.Publisher().sendMessage('End busy cursor')
 
     def CreateAnalyzeProject(self, imagedata):
         proj = prj.Project()
