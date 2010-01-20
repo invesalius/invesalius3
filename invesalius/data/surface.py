@@ -188,7 +188,7 @@ class SurfaceManager():
         if imagedata_resolution:
             imagedata = iu.ResampleImage3D(imagedata, imagedata_resolution)
 
-        pipeline_size = 5
+        pipeline_size = 4
         if decimate_reduction:
             pipeline_size += 1
         if (smooth_iterations and smooth_relaxation_factor):
@@ -245,8 +245,6 @@ class SurfaceManager():
 
         # Map polygonal data (vtkPolyData) to graphics primitives.
         mapper = vtk.vtkPolyDataMapper()
-        mapper.AddObserver("ProgressEvent", lambda obj,evt:
-                    UpdateProgress(obj, _("Generating 3D surface...")))
         mapper.SetInput(stripper.GetOutput())
         mapper.ScalarVisibilityOff()
 
