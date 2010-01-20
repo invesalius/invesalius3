@@ -195,16 +195,15 @@ class SurfaceManager():
             pipeline_size += 1
 
         # Update progress value in GUI
-
+        UpdateProgress = vu.ShowProgress(pipeline_size)
+        UpdateProgress(0, _("Generating 3D surface..."))
+        
         filename_img = tempfile.mktemp()
 
         writer = vtk.vtkXMLImageDataWriter()
         writer.SetFileName(filename_img)
         writer.SetInput(imagedata)
         writer.Write()
-
-        #pipeline_size = 4
-        UpdateProgress = vu.ShowProgress(pipeline_size)
 
         language = ses.Session().language
 
