@@ -23,9 +23,6 @@ import re
 import sigar
 import sys
 
-if sys.platform == 'win32':
-    import wmi
-
 
 def debug(error_str):
     from project import Project
