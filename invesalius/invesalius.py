@@ -192,16 +192,13 @@ if __name__ == '__main__':
     # Needed in win 32 exe
     if hasattr(sys,"frozen") and sys.frozen == "windows_exe":
          multiprocessing.freeze_support()
-
-         # wxPython log
-         #sys.stdout = open("stdout.log" ,"w")
-    
-    folder_log = os.path.join(os.path.expanduser('~'), '.invesalius', 'logs')
-    if not os.path.isdir(folder_log):
-        os.makedirs(folder_log)
-        
-    path = os.path.join(folder_log, "stderr.log")
-    sys.stderr = open(path, "w")
+         
+         folder_log = os.path.join(os.path.expanduser('~'), '.invesalius', 'logs')
+         
+         if not os.path.isdir(folder_log):
+             os.makedirs(folder_log)
+         path = os.path.join(folder_log, "stderr.log")
+         sys.stderr = open(path, "w")
 
     # Add current directory to PYTHONPATH
     sys.path.append(".")
