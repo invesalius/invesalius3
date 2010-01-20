@@ -195,6 +195,7 @@ class Controller():
         session.OpenProject(filepath)
 
     def SaveProject(self, path=None):
+        ps.Publisher().sendMessage('Begin busy cursor')
         session = ses.Session()
         if path:
             dirpath, filename = os.path.split(path)
@@ -206,7 +207,8 @@ class Controller():
         prj.Project().SavePlistProject(dirpath, filename)
 
         session.SaveProject()
-
+        ps.Publisher().sendMessage('End busy cursor')
+        
     def CloseProject(self):
         proj = prj.Project()
         proj.Close()
