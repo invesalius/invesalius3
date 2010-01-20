@@ -440,7 +440,8 @@ class StatusBar(wx.StatusBar):
             self.SetStatusText("",0)
         if sys.platform == 'win32':
             try:
-                wx.SafeYield()
+                #wx.SafeYield()
+                wx.Yield()
             #TODO: temporary fix necessary in the Windows XP 64 Bits
             #BUG in wxWidgets http://trac.wxwidgets.org/ticket/10896
             except(wx._core.PyAssertionError):

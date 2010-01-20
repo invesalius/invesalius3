@@ -171,7 +171,7 @@ class SurfaceManager():
         imagedata, colour, [min_value, max_value], edited_points = pubsub_evt.data
         quality=_('Optimal *')
         mode = 'CONTOUR' # 'GRAYSCALE'
-
+        ps.Publisher().sendMessage('Begin busy cursor')
         imagedata_tmp = None
         if (edited_points):
             imagedata_tmp = vtk.vtkImageData()
@@ -294,7 +294,7 @@ class SurfaceManager():
 
         ps.Publisher().sendMessage('Update status text in GUI',
                                     "Surface created.")
-
+        
         # The following lines have to be here, otherwise all volumes disappear
         measured_polydata = vtk.vtkMassProperties()
         measured_polydata.SetInput(polydata)
@@ -309,7 +309,9 @@ class SurfaceManager():
         #Destroy Copy original imagedata
         if(imagedata_tmp):
             del imagedata_tmp
-
+        
+        ps.Publisher().sendMessage('End busy cursor')
+        
     def RemoveActor(self, index):
         """
         Remove actor, according to given actor index.
