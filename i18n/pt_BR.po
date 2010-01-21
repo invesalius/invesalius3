@@ -821,11 +821,11 @@ msgstr "Nome da nova máscara:"
 
 #: task_slice.py:109
 msgid "Save surface"
-msgstr "Salvar superfície"
+msgstr "Gerar superfície"
 
 #: task_slice.py:110
 msgid "Overwrite last surface"
-msgstr "Sobrescrever última superfície"
+msgstr "Sobrescrever anterior"
 
 #: task_slice.py:149
 msgid "Name of new mask:"
