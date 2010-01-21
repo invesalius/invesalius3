@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: InVesalius 3\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2010-01-21 10:48-0200\n"
+"POT-Creation-Date: 2010-01-21 15:37-0200\n"
 "PO-Revision-Date: 2010-01-07 11:25-0300\n"
 "Last-Translator: Invesalius team <invesalius@cti.gov.br>\n"
 "Language-Team: InVesalius Team <invesalius@cti.gov.br>\n"
@@ -81,7 +81,7 @@ msgstr "Media"
 msgid "High"
 msgstr "Alta"
 
-#: constants.py:202 constants.py:204 surface.py:172 task_surface.py:30
+#: constants.py:202 constants.py:204 surface.py:180 task_surface.py:30
 msgid "Optimal *"
 msgstr "Óptima *"
 
@@ -336,7 +336,7 @@ msgstr "Máscaras"
 msgid "Surfaces"
 msgstr "Volumen"
 
-#: data_notebook.py:107 data_notebook.py:235 data_notebook.py:439
+#: data_notebook.py:107 data_notebook.py:235 data_notebook.py:460
 msgid "Name"
 msgstr "Nombre"
 
@@ -352,11 +352,11 @@ msgstr "Volume (mm³)"
 msgid "Transparency"
 msgstr "Transparencia"
 
-#: data_notebook.py:440
+#: data_notebook.py:461
 msgid "Type"
 msgstr "Tipo"
 
-#: data_notebook.py:441
+#: data_notebook.py:462
 msgid "Value"
 msgstr "Valor"
 
@@ -455,7 +455,6 @@ msgid "There are no DICOM files on the selected directory."
 msgstr "No hay archivos DICOM en el directorio seleccionado."
 
 #: dialogs.py:352
-#, fuzzy
 msgid "(c) 2007-2010 Center for Information Technology Renato Archer"
 msgstr "(c) 2007 Centro de Tecnología de la Información Renato Archer"
 
@@ -604,7 +603,7 @@ msgstr "Archivo"
 msgid "Help"
 msgstr "Ayuda"
 
-#: frame.py:420 surface.py:158
+#: frame.py:420 surface.py:162 surface.py:325
 msgid "Ready"
 msgstr "Preparado"
 
@@ -764,7 +763,7 @@ msgstr "Pseudo Color"
 msgid "Image Tiling"
 msgstr "Mosaico de Imágenes"
 
-#: surface.py:199 surface.py:233 surface.py:241 surface_process.py:52
+#: surface.py:207 surface.py:241 surface.py:249 surface_process.py:52
 #: surface_process.py:64 surface_process.py:73 surface_process.py:86
 #: surface_process.py:96
 msgid "Generating 3D surface..."
@@ -823,42 +822,46 @@ msgid "Create new mask"
 msgstr "Crear nueva máscara"
 
 #: task_slice.py:109
-msgid "Create 3D surface"
-msgstr "Crear superficie 3D"
+msgid "Save surface"
+msgstr "Guardar superficie"
 
-#: task_slice.py:138
+#: task_slice.py:110
+msgid "Overwrite last surface"
+msgstr "Sobrescribir última superficie"
+
+#: task_slice.py:149
 msgid "Name of new mask:"
 msgstr "Nombre de la nueva máscara"
 
-#: task_slice.py:139
+#: task_slice.py:150
 msgid "InVesalius 3 - New mask"
 msgstr "InVesalius 3 - Nueva máscara"
 
-#: task_slice.py:204
+#: task_slice.py:215
 msgid "Mask properties"
 msgstr "Propriedades de la máscara"
 
-#: task_slice.py:212
+#: task_slice.py:223
 msgid "Advanced edition tools"
 msgstr "Herramientas avanzadas para edición avanzada"
 
-#: task_slice.py:296
+#: task_slice.py:307
 msgid "Set predefined or manual threshold:"
 msgstr "Seleccione umbral:"
 
-#: task_slice.py:448
+#: task_slice.py:459
 msgid "Choose brush type, size or operation:"
 msgstr "Tipo, tamaño o funcionamiento del pincel:"
 
-#: task_slice.py:454
+#: task_slice.py:465
 msgid "Circle"
 msgstr "Círculo"
 
-#: task_slice.py:458
+#: task_slice.py:469
 msgid "Square"
 msgstr "Cuadrado"
 
-#: task_slice.py:494
+#: task_slice.py:505
 msgid "Brush threshold range:"
 msgstr "Serie de umbrales del pincel:"
 
