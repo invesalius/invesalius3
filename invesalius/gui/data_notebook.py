@@ -273,6 +273,8 @@ class SurfacesListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
         ps.Publisher().sendMessage('Show surface', (index, flag))
 
     def AddSurface(self, pubsub_evt):
+        
+        
         index = pubsub_evt.data[0]
         name = pubsub_evt.data[1]
         colour = pubsub_evt.data[2]
@@ -281,9 +283,19 @@ class SurfacesListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
 
         image = self.CreateColourBitmap(colour)
         image_index = self.imagelist.Add(image)
-        self.surface_list_index[index] = image_index
         
-        self.InsertNewItem(index, name, volume, transparency, colour)
+        
+
+        index_list = self.surface_list_index.keys()
+        self.surface_list_index[index] = image_index
+
+        if (index in index_list) and index_list:
+            self.UpdateItemInfo(index, name, volume, transparency, colour)
+        else:
+            self.InsertNewItem(index, name, volume, transparency, colour)
+
+        
+
 
     def InsertNewItem(self, index=0, label="Surface 1", volume="0 mm3",
                       transparency="0%%", colour=None):
@@ -293,6 +305,15 @@ class SurfacesListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
         self.SetStringItem(index, 2, volume)
         self.SetStringItem(index, 3, transparency)
         self.SetItemImage(index, 1)
+
+    def UpdateItemInfo(self, index=0, label="Surface 1", volume="0 mm3",
+                      transparency="0%%", colour=None):
+        self.SetStringItem(index, 1, label,
+                            imageId = self.surface_list_index[index]) 
+        self.SetStringItem(index, 2, volume)
+        self.SetStringItem(index, 3, transparency)
+        self.SetItemImage(index, 1)
+
         
     def CreateColourBitmap(self, colour):
         """

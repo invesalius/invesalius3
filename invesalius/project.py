@@ -130,6 +130,10 @@ class Project(object):
         self.surface_dict[index] = surface
         return index
 
+    def ChangeSurface(self, surface):
+        index = surface.index
+        self.surface_dict[index] = surface
+
     def RemoveSurface(self, index):
         new_dict = {}
         for i in self.surface_dict:

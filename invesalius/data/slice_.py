@@ -131,9 +131,9 @@ class Slice(object):
     #---------------------------------------------------------------------------
     # BEGIN PUBSUB_EVT METHODS
     #---------------------------------------------------------------------------
-    def __get_mask_data_for_surface_creation(self, pubsub_evt):
-        mask_index = pubsub_evt.data
-        CreateSurfaceFromIndex
+    #def __get_mask_data_for_surface_creation(self, pubsub_evt):
+    #    mask_index = pubsub_evt.data
+    #    CreateSurfaceFromIndex
 
     def __add_mask(self, pubsub_evt):
         mask_name = pubsub_evt.data
@@ -363,14 +363,9 @@ class Slice(object):
             ps.Publisher().sendMessage('Update slice viewer')
     #---------------------------------------------------------------------------
 
-
-
-
-
-
     def CreateSurfaceFromIndex(self, pubsub_evt):
-        mask_index = pubsub_evt.data
-
+        mask_index, overwrite_surface = pubsub_evt.data
+        
 
         proj = Project()
         mask = proj.mask_dict[mask_index]
@@ -384,7 +379,8 @@ class Slice(object):
         edited_points = mask.edited_points
 
         ps.Publisher().sendMessage('Create surface',
-                                   (imagedata,colour,threshold, edited_points))
+                                   (imagedata,colour,threshold,
+                                    edited_points, overwrite_surface))
 
     def GetOutput(self):
         return self.cross.GetOutput()

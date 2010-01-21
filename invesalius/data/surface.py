@@ -39,15 +39,18 @@ class Surface():
     Represent both vtkPolyData and associated properties.
     """
     general_index = -1
-    def __init__(self):
+    def __init__(self, index=None):
         Surface.general_index += 1
-        self.index = Surface.general_index
+        if index is None:
+            self.index = Surface.general_index
+        else:
+            self.index = index
         self.polydata = ''
         self.colour = ''
         self.transparency = const.SURFACE_TRANSPARENCY
         self.volume = 0
         self.is_shown = 1
-        self.name = const.SURFACE_NAME_PATTERN %(Surface.general_index+1)
+        self.name = const.SURFACE_NAME_PATTERN %(self.index+1)
 
     def SavePlist(self, filename):
         surface = {}
@@ -95,6 +98,7 @@ class SurfaceManager():
     """
     def __init__(self):
         self.actors_dict = {}
+        self.last_surface_index = 0
         self.__bind_events()
 
     def __bind_events(self):
@@ -168,7 +172,11 @@ class SurfaceManager():
         """
         Create surface actor, save into project and send it to viewer.
         """
-        imagedata, colour, [min_value, max_value], edited_points = pubsub_evt.data
+        imagedata, colour, [min_value, max_value], \
+                    edited_points, overwrite = pubsub_evt.data
+
+
+        print "---------------- OVERWRITE:",overwrite
         quality=_('Optimal *')
         mode = 'CONTOUR' # 'GRAYSCALE'
         ps.Publisher().sendMessage('Begin busy cursor')
@@ -253,7 +261,10 @@ class SurfaceManager():
         actor.SetMapper(mapper)
 
         # Create Surface instance
-        surface = Surface()
+        if overwrite:
+            surface = Surface(index = self.last_surface_index)
+        else:
+            surface = Surface()
         surface.colour = colour
         surface.polydata = polydata
 
@@ -281,29 +292,38 @@ class SurfaceManager():
 
         # Append surface into Project.surface_dict
         proj = prj.Project()
-        index = proj.AddSurface(surface)
-        surface.index = index
+        if overwrite:
+            proj.ChangeSurface(surface)
+        else:
+            index = proj.AddSurface(surface)
+            surface.index = index
 
 
         session = ses.Session()
         session.ChangeProject()
 
 
-        # Save actor for future management tasks
-        self.actors_dict[surface.index] = actor
-
-        # Send actor by pubsub to viewer's render
-        ps.Publisher().sendMessage('Load surface actor into viewer', (actor))
-
-        ps.Publisher().sendMessage('Update status text in GUI',
-                                    "Surface created.")
-        
         # The following lines have to be here, otherwise all volumes disappear
         measured_polydata = vtk.vtkMassProperties()
         measured_polydata.SetInput(polydata)
         volume =  measured_polydata.GetVolume()
         surface.volume = volume
+        self.last_surface_index = surface.index
 
+        ps.Publisher().sendMessage('Load surface actor into viewer', actor)
+
+        # Send actor by pubsub to viewer's render
+        if overwrite:
+            old_actor = self.actors_dict[self.last_surface_index]
+            ps.Publisher().sendMessage('Remove surface actor from viewer', old_actor)
+
+        # Save actor for future management tasks
+        self.actors_dict[surface.index] = actor
+
+
+        ps.Publisher().sendMessage('Update status text in GUI',
+                                    _("Ready"))
+        
         ps.Publisher().sendMessage('Update surface info in GUI',
                                     (surface.index, surface.name,
                                     surface.colour, surface.volume,

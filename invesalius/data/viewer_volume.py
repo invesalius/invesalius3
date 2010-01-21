@@ -83,6 +83,8 @@ class Viewer(wx.Panel):
     def __bind_events(self):
         ps.Publisher().subscribe(self.LoadActor,
                                  'Load surface actor into viewer')
+        ps.Publisher().subscribe(self.RemoveActor,
+                                'Remove surface actor from viewer')
         ps.Publisher().subscribe(self.UpdateRender,
                                  'Render volume viewer')
         ps.Publisher().subscribe(self.ChangeBackgroundColour,
@@ -349,6 +351,15 @@ class Viewer(wx.Panel):
             ren.ResetCameraClippingRange()
 
         #self.ShowOrientationCube()
+        self.interactor.Render()
+
+    def RemoveActor(self, pubsub_evt):
+        print "RemoveActor"
+        actor = pubsub_evt.data
+
+        ren = self.ren
+        ren.RemoveActor(actor)
+
         self.interactor.Render()
 
     def LoadSlicePlane(self, pubsub_evt):

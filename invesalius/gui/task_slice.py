@@ -106,17 +106,25 @@ class InnerTaskPanel(wx.Panel):
         self.fold_panel = fold_panel
 
         # Button to fold to select region task
-        button_next = wx.Button(self, -1, _("Create 3D surface"))
+        button_next = wx.Button(self, -1, _("Save surface"))
+        check_box = wx.CheckBox(self, -1, _("Overwrite last surface"))
+        self.check_box = check_box
         if sys.platform != 'win32':
             button_next.SetWindowVariant(wx.WINDOW_VARIANT_SMALL)
+            check_box.SetWindowVariant(wx.WINDOW_VARIANT_SMALL)
         button_next.Bind(wx.EVT_BUTTON, self.OnButtonNextTask)
+
+        line_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        line_sizer.Add(check_box, 1, wx.ALIGN_LEFT|wx.RIGHT|wx.LEFT|wx.BOTTOM, 5)
+        line_sizer.Add(button_next, 0,
+                       wx.ALIGN_RIGHT|wx.RIGHT|wx.LEFT|wx.BOTTOM, 5)
+        line_sizer.Fit(self)
 
         # Add line sizers into main sizer
         main_sizer = wx.BoxSizer(wx.VERTICAL)
         main_sizer.Add(line_new, 0,wx.GROW|wx.EXPAND|wx.LEFT|wx.RIGHT|wx.TOP, 5)
-        main_sizer.Add(fold_panel, 1, wx.GROW|wx.EXPAND|wx.ALL, 5)
-        main_sizer.Add(button_next, 0,
-                       wx.ALIGN_RIGHT|wx.RIGHT|wx.LEFT|wx.BOTTOM, 5)
+        main_sizer.Add(fold_panel, 6, wx.GROW|wx.EXPAND|wx.ALL, 5)
+        main_sizer.AddSizer(line_sizer, 1, wx.GROW|wx.EXPAND)
         main_sizer.Fit(self)
 
         self.SetSizer(main_sizer)
@@ -130,9 +138,12 @@ class InnerTaskPanel(wx.Panel):
         if id == BTN_NEW:
             self.OnLinkNewMask()
 
+
     def OnButtonNextTask(self, evt):
+        overwrite = self.check_box.IsChecked()
         ps.Publisher().sendMessage('Create surface from index',
-                                    self.GetMaskSelected())
+                                    (self.GetMaskSelected(),
+                                    overwrite))
 
     def OnLinkNewMask(self, evt=None):
         dlg = wx.TextEntryDialog(self, _('Name of new mask:'),
