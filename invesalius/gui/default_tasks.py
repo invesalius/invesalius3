@@ -126,7 +126,7 @@ class LowerTaskPanel(wx.Panel):
         image_list.Add(GetCollapsedIconBitmap())
 
         # Fold 1 - Data
-        item = fold_panel.AddFoldPanel("Data", collapsed=False,
+        item = fold_panel.AddFoldPanel(_("Data"), collapsed=False,
                                        foldIcons=image_list)
         style = fold_panel.GetCaptionStyle(item)
         col = style.GetFirstColour()
@@ -138,7 +138,7 @@ class LowerTaskPanel(wx.Panel):
         # Fold 2 - Tools
         # Measures
         # Text Annotations
-        #item = fold_panel.AddFoldPanel("Tools", collapsed=False,
+        #item = fold_panel.AddFoldPanel(_("Tools"), collapsed=False,
         #                               foldIcons=image_list)
         #style = fold_panel.GetCaptionStyle(item)
         #col = style.GetFirstColour()

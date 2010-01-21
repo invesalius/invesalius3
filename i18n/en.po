@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: InVesalius 3\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2010-01-15 16:29-0200\n"
+"POT-Creation-Date: 2010-01-21 10:48-0200\n"
 "PO-Revision-Date: 2010-01-07 11:25-0300\n"
 "Last-Translator: Invesalius team <invesalius@cti.gov.br>\n"
 "Language-Team: InVesalius Team <invesalius@cti.gov.br>\n"
@@ -40,15 +40,15 @@ msgid "Rainbow"
 msgstr ""
 
 #: constants.py:110
-msgid "Ocen"
+msgid "Ocean"
 msgstr ""
 
 #: constants.py:111
 msgid "Inverse Gray"
 msgstr ""
 
-#: constants.py:152 constants.py:212 dicom_preview_panel.py:365
-#: dicom_preview_panel.py:366 presets.py:30 presets.py:48 presets.py:119
+#: constants.py:152 constants.py:212 dicom_preview_panel.py:585
+#: dicom_preview_panel.py:586 presets.py:30 presets.py:48 presets.py:119
 msgid "Bone"
 msgstr ""
 
@@ -106,7 +106,7 @@ msgstr ""
 msgid "Brain"
 msgstr ""
 
-#: constants.py:215 control.py:295 slice_menu.py:39 slice_menu.py:51
+#: constants.py:215 control.py:298 slice_menu.py:39 slice_menu.py:51
 msgid "Default"
 msgstr ""
 
@@ -142,7 +142,7 @@ msgstr ""
 msgid "Mediastinum"
 msgstr ""
 
-#: constants.py:224 control.py:296 slice_menu.py:46 slice_menu.py:51
+#: constants.py:224 control.py:299 slice_menu.py:46 slice_menu.py:51
 msgid "Manual"
 msgstr ""
 
@@ -306,24 +306,24 @@ msgstr ""
 msgid "Yellow Bone"
 msgstr ""
 
-#: constants.py:295 constants.py:297
+#: constants.py:302 constants.py:304
 msgid " Off"
 msgstr ""
 
-#: constants.py:298
+#: constants.py:305 volume.py:531
 msgid "Cut plane"
 msgstr ""
 
-#: control.py:233
+#: control.py:236
 #, python-format
 msgid "Loading file %d of %d"
 msgstr ""
 
-#: control.py:316
+#: control.py:320
 msgid "Untitled"
 msgstr ""
 
-#: control.py:381
+#: control.py:385
 msgid "Fix gantry tilt applying the degrees bellow"
 msgstr ""
 
@@ -335,7 +335,7 @@ msgstr ""
 msgid "Surfaces"
 msgstr ""
 
-#: data_notebook.py:107 data_notebook.py:236 data_notebook.py:440
+#: data_notebook.py:107 data_notebook.py:235 data_notebook.py:439
 msgid "Name"
 msgstr ""
 
@@ -343,20 +343,24 @@ msgstr ""
 msgid "Mask"
 msgstr ""
 
-#: data_notebook.py:237
+#: data_notebook.py:236
 msgid "Volume (mm³)"
 msgstr ""
 
-#: data_notebook.py:238
+#: data_notebook.py:237
 msgid "Transparency"
 msgstr ""
 
-#: data_notebook.py:441
+#: data_notebook.py:440
 msgid "Type"
 msgstr ""
 
-#: data_notebook.py:442
+#: data_notebook.py:441
 msgid "Value"
+msgstr ""
+
+#: default_tasks.py:129
+msgid "Data"
 msgstr ""
 
 #: default_tasks.py:174
@@ -448,7 +452,7 @@ msgid "There are no DICOM files on the selected directory."
 msgstr ""
 
 #: dialogs.py:352
-msgid "(c) 2007 Center for Information Technology Renato Archer"
+msgid "(c) 2007-2010 Center for Information Technology Renato Archer"
 msgstr ""
 
 #: dialogs.py:354
@@ -503,38 +507,38 @@ msgid ""
 "Made in InVesalius"
 msgstr ""
 
-#: dicom_preview_panel.py:156 dicom_preview_panel.py:157
+#: dicom_preview_panel.py:187 dicom_preview_panel.py:188
 msgid "Image"
 msgstr ""
 
-#: dicom_preview_panel.py:374
+#: dicom_preview_panel.py:384
+#, python-format
+msgid "%d Images"
+msgstr ""
+
+#: dicom_preview_panel.py:498 dicom_preview_panel.py:519
+#, python-format
+msgid "Image %d"
+msgstr ""
+
+#: dicom_preview_panel.py:594
 msgid "image size"
 msgstr ""
 
-#: dicom_preview_panel.py:383
+#: dicom_preview_panel.py:603
 msgid ""
 "id\n"
 "protocol"
 msgstr ""
 
-#: dicom_preview_panel.py:390
+#: dicom_preview_panel.py:610
 msgid ""
 "date time\n"
 " Made in InVesalius"
 msgstr ""
 
-#: dicom_preview_panel.py:436
+#: dicom_preview_panel.py:655
 msgid "Auto-play"
-msgstr ""
-
-#: dicom_preview_panel.py:660
-#, python-format
-msgid "%d Images"
-msgstr ""
-
-#: dicom_preview_panel.py:777 dicom_preview_panel.py:798
-#, python-format
-msgid "Image %d"
 msgstr ""
 
 #: frame.py:138
@@ -545,47 +549,47 @@ msgstr ""
 msgid "Preview medical data to be reconstructed"
 msgstr ""
 
-#: frame.py:307
+#: frame.py:306
 msgid "Import DICOM...\tCtrl+I"
 msgstr ""
 
-#: frame.py:308
+#: frame.py:307
 msgid "Open Project...\tCtrl+O"
 msgstr ""
 
-#: frame.py:309
+#: frame.py:308
 msgid "Save Project\tCtrl+S"
 msgstr ""
 
-#: frame.py:310
+#: frame.py:309
 msgid "Save Project As..."
 msgstr ""
 
-#: frame.py:311
+#: frame.py:310
 msgid "Close Project"
 msgstr ""
 
-#: frame.py:320
+#: frame.py:319
 msgid "Exit"
 msgstr ""
 
-#: frame.py:359
+#: frame.py:358
 msgid "Getting Started..."
 msgstr ""
 
-#: frame.py:362
+#: frame.py:361
 msgid "About..."
 msgstr ""
 
-#: frame.py:373
+#: frame.py:372
 msgid "File"
 msgstr ""
 
-#: frame.py:378
+#: frame.py:377
 msgid "Help"
 msgstr ""
 
-#: frame.py:421 surface.py:158
+#: frame.py:420 surface.py:158
 msgid "Ready"
 msgstr ""
 
@@ -617,63 +621,63 @@ msgstr ""
 msgid "Window and Level"
 msgstr ""
 
-#: imagedata_utils.py:88 imagedata_utils.py:217
+#: imagedata_utils.py:89 imagedata_utils.py:218
 msgid "Generating multiplanar visualization..."
 msgstr ""
 
-#: import_panel.py:54
+#: import_panel.py:77
 msgid "Import medical images"
 msgstr ""
 
-#: import_panel.py:109
+#: import_panel.py:143
 msgid "Patient name"
 msgstr ""
 
-#: import_panel.py:110
+#: import_panel.py:144
 msgid "Patient ID"
 msgstr ""
 
-#: import_panel.py:111
+#: import_panel.py:145
 msgid "Age"
 msgstr ""
 
-#: import_panel.py:112
+#: import_panel.py:146
 msgid "Gender"
 msgstr ""
 
-#: import_panel.py:113
+#: import_panel.py:147
 msgid "Study description"
 msgstr ""
 
-#: import_panel.py:114
+#: import_panel.py:148
 msgid "Modality"
 msgstr ""
 
-#: import_panel.py:115
+#: import_panel.py:149
 msgid "Date acquired"
 msgstr ""
 
-#: import_panel.py:116
+#: import_panel.py:150
 msgid "# Images"
 msgstr ""
 
-#: import_panel.py:117
+#: import_panel.py:151
 msgid "Institution"
 msgstr ""
 
-#: import_panel.py:118
+#: import_panel.py:152
 msgid "Date of birth"
 msgstr ""
 
-#: import_panel.py:119
+#: import_panel.py:153
 msgid "Accession Number"
 msgstr ""
 
-#: import_panel.py:120
+#: import_panel.py:154
 msgid "Referring physician"
 msgstr ""
 
-#: import_panel.py:136
+#: import_panel.py:170
 msgid "InVesalius Database"
 msgstr ""
 
@@ -745,8 +749,9 @@ msgstr ""
 msgid "Image Tiling"
 msgstr ""
 
-#: surface_process.py:52 surface_process.py:64 surface_process.py:73
-#: surface_process.py:86 surface_process.py:96
+#: surface.py:199 surface.py:233 surface.py:241 surface_process.py:52
+#: surface_process.py:64 surface_process.py:73 surface_process.py:86
+#: surface_process.py:96
 msgid "Generating 3D surface..."
 msgstr ""
 

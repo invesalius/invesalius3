@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: InVesalius 3\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2010-01-13 17:08-0200\n"
+"POT-Creation-Date: 2010-01-21 10:48-0200\n"
 "PO-Revision-Date: 2010-01-14 00:37+0200\n"
 "Last-Translator: Korkakakis Nikos <korkakak@gmail.com>\n"
 "Language-Team: InVesalius Team <invesalius@cti.gov.br>\n"
@@ -19,9 +19,7 @@ msgstr ""
 "X-Poedit-SourceCharset: utf-8\n"
 "X-Poedit-Country: GENERIC\n"
 
-#: constants.py:105
-#: slice_menu.py:75
-#: slice_menu.py:80
+#: constants.py:105 slice_menu.py:76 slice_menu.py:81
 msgid "Default "
 msgstr ""
 
@@ -42,20 +40,15 @@ msgid "Rainbow"
 msgstr ""
 
 #: constants.py:110
-msgid "Ocen"
+msgid "Ocean"
 msgstr ""
 
 #: constants.py:111
 msgid "Inverse Gray"
 msgstr ""
 
-#: constants.py:152
-#: constants.py:212
-#: dicom_preview_panel.py:365
-#: dicom_preview_panel.py:366
-#: presets.py:30
-#: presets.py:48
-#: presets.py:119
+#: constants.py:152 constants.py:212 dicom_preview_panel.py:585
+#: dicom_preview_panel.py:586 presets.py:30 presets.py:48 presets.py:119
 msgid "Bone"
 msgstr ""
 
@@ -64,48 +57,35 @@ msgstr ""
 msgid "Mask %d"
 msgstr ""
 
-#: constants.py:188
-#: task_surface.py:41
+#: constants.py:188 task_surface.py:41
 msgid "Draw"
 msgstr ""
 
-#: constants.py:188
-#: task_surface.py:41
+#: constants.py:188 task_surface.py:41
 msgid "Erase"
 msgstr ""
 
-#: constants.py:188
-#: data_notebook.py:108
-#: task_surface.py:41
+#: constants.py:188 data_notebook.py:108 task_surface.py:41
 msgid "Threshold"
 msgstr ""
 
-#: constants.py:199
-#: task_surface.py:30
+#: constants.py:199 task_surface.py:30
 msgid "Low"
 msgstr ""
 
-#: constants.py:200
-#: task_surface.py:30
+#: constants.py:200 task_surface.py:30
 msgid "Medium"
 msgstr ""
 
-#: constants.py:201
-#: task_surface.py:30
+#: constants.py:201 task_surface.py:30
 msgid "High"
 msgstr ""
 
-#: constants.py:202
-#: constants.py:204
-#: surface.py:172
-#: task_surface.py:30
+#: constants.py:202 constants.py:204 surface.py:172 task_surface.py:30
 msgid "Optimal *"
 msgstr ""
 
-#: constants.py:203
-#: presets.py:44
-#: presets.py:62
-#: task_surface.py:30
+#: constants.py:203 presets.py:44 presets.py:62 task_surface.py:30
 msgid "Custom"
 msgstr ""
 
@@ -126,10 +106,7 @@ msgstr ""
 msgid "Brain"
 msgstr ""
 
-#: constants.py:215
-#: control.py:293
-#: slice_menu.py:39
-#: slice_menu.py:51
+#: constants.py:215 control.py:298 slice_menu.py:39 slice_menu.py:51
 msgid "Default"
 msgstr ""
 
@@ -165,10 +142,7 @@ msgstr ""
 msgid "Mediastinum"
 msgstr ""
 
-#: constants.py:224
-#: control.py:294
-#: slice_menu.py:46
-#: slice_menu.py:51
+#: constants.py:224 control.py:299 slice_menu.py:46 slice_menu.py:51
 msgid "Manual"
 msgstr ""
 
@@ -260,8 +234,7 @@ msgstr ""
 msgid "Low Contrast"
 msgstr ""
 
-#: constants.py:262
-#: constants.py:269
+#: constants.py:262 constants.py:269
 msgid "Soft on White"
 msgstr ""
 
@@ -333,25 +306,24 @@ msgstr ""
 msgid "Yellow Bone"
 msgstr ""
 
-#: constants.py:295
-#: constants.py:297
+#: constants.py:302 constants.py:304
 msgid " Off"
 msgstr ""
 
-#: constants.py:298
+#: constants.py:305 volume.py:531
 msgid "Cut plane"
 msgstr ""
 
-#: control.py:232
+#: control.py:236
 #, python-format
 msgid "Loading file %d of %d"
 msgstr ""
 
-#: control.py:314
+#: control.py:320
 msgid "Untitled"
 msgstr ""
 
-#: control.py:379
+#: control.py:385
 msgid "Fix gantry tilt applying the degrees bellow"
 msgstr ""
 
@@ -363,9 +335,7 @@ msgstr ""
 msgid "Surfaces"
 msgstr ""
 
-#: data_notebook.py:107
-#: data_notebook.py:236
-#: data_notebook.py:440
+#: data_notebook.py:107 data_notebook.py:235 data_notebook.py:439
 msgid "Name"
 msgstr ""
 
@@ -373,20 +343,24 @@ msgstr ""
 msgid "Mask"
 msgstr ""
 
-#: data_notebook.py:237
+#: data_notebook.py:236
 msgid "Volume (mm³)"
 msgstr ""
 
-#: data_notebook.py:238
+#: data_notebook.py:237
 msgid "Transparency"
 msgstr ""
 
-#: data_notebook.py:441
+#: data_notebook.py:440
 msgid "Type"
 msgstr ""
 
-#: data_notebook.py:442
+#: data_notebook.py:441
 msgid "Value"
+msgstr ""
+
+#: default_tasks.py:129
+msgid "Data"
 msgstr ""
 
 #: default_tasks.py:174
@@ -405,23 +379,19 @@ msgstr ""
 msgid "4. Export data"
 msgstr ""
 
-#: default_viewers.py:79
-#: default_viewers.py:168
+#: default_viewers.py:79 default_viewers.py:168
 msgid "Axial slice"
 msgstr ""
 
-#: default_viewers.py:84
-#: default_viewers.py:174
+#: default_viewers.py:84 default_viewers.py:174
 msgid "Coronal slice"
 msgstr ""
 
-#: default_viewers.py:89
-#: default_viewers.py:180
+#: default_viewers.py:89 default_viewers.py:180
 msgid "Sagittal slice"
 msgstr ""
 
-#: default_viewers.py:95
-#: default_viewers.py:186
+#: default_viewers.py:95 default_viewers.py:186
 msgid "Volume"
 msgstr ""
 
@@ -437,84 +407,81 @@ msgstr ""
 msgid "Tools"
 msgstr ""
 
-#: dialogs.py:50
+#: dialogs.py:51
 msgid "Value will be applied."
 msgstr ""
 
-#: dialogs.py:54
+#: dialogs.py:55
 msgid "Value will not be applied."
 msgstr ""
 
-#: dialogs.py:92
+#: dialogs.py:93
 msgid "Loading DICOM files"
 msgstr ""
 
-#: dialogs.py:137
-#: frame.py:531
+#: dialogs.py:138 frame.py:532
 msgid "Open InVesalius 3 project..."
 msgstr ""
 
-#: dialogs.py:160
+#: dialogs.py:172
 msgid "Choose a DICOM folder:"
 msgstr ""
 
-#: dialogs.py:185
+#: dialogs.py:201
 msgid "Save project as..."
 msgstr ""
 
-#: dialogs.py:188
+#: dialogs.py:204
 msgid "InVesalius project (*.inv3)|*.inv3"
 msgstr ""
 
-#: dialogs.py:251
-#: dialogs.py:290
-#: dialogs.py:312
+#: dialogs.py:267 dialogs.py:306 dialogs.py:328
 #, python-format
 msgid ""
 "The project %s has been modified.\n"
 "Save changes?"
 msgstr ""
 
-#: dialogs.py:265
+#: dialogs.py:281
 #, python-format
 msgid "%s is an empty directory."
 msgstr ""
 
-#: dialogs.py:278
+#: dialogs.py:294
 msgid "There are no DICOM files on the selected directory."
 msgstr ""
 
-#: dialogs.py:336
-msgid "(c) 2007 Center for Information Technology Renato Archer"
+#: dialogs.py:352
+msgid "(c) 2007-2010 Center for Information Technology Renato Archer"
 msgstr ""
 
-#: dialogs.py:338
+#: dialogs.py:354
 msgid "InVesalius is a software for medical imaging 3D reconstruction. "
 msgstr ""
 
-#: dialogs.py:339
+#: dialogs.py:355
 msgid ""
 "Its input is a sequency of DICOM 2D image files acquired with CT or MR.\n"
 "\n"
 msgstr ""
 
-#: dialogs.py:340
+#: dialogs.py:356
 msgid "The software also allows generating correspondent STL files,"
 msgstr ""
 
-#: dialogs.py:341
+#: dialogs.py:357
 msgid "so the user can print 3D physical models of the patient's anatomy "
 msgstr ""
 
-#: dialogs.py:342
+#: dialogs.py:358
 msgid "using Rapid Prototyping."
 msgstr ""
 
-#: dialogs.py:345
+#: dialogs.py:361
 msgid "GNU GPL (General Public License) version 2"
 msgstr ""
 
-#: dialogs.py:360
+#: dialogs.py:376
 msgid "Save raycasting preset as:"
 msgstr ""
 
@@ -540,40 +507,38 @@ msgid ""
 "Made in InVesalius"
 msgstr ""
 
-#: dicom_preview_panel.py:156
-#: dicom_preview_panel.py:157
+#: dicom_preview_panel.py:187 dicom_preview_panel.py:188
 msgid "Image"
 msgstr ""
 
-#: dicom_preview_panel.py:374
+#: dicom_preview_panel.py:384
+#, python-format
+msgid "%d Images"
+msgstr ""
+
+#: dicom_preview_panel.py:498 dicom_preview_panel.py:519
+#, python-format
+msgid "Image %d"
+msgstr ""
+
+#: dicom_preview_panel.py:594
 msgid "image size"
 msgstr ""
 
-#: dicom_preview_panel.py:383
+#: dicom_preview_panel.py:603
 msgid ""
 "id\n"
 "protocol"
 msgstr ""
 
-#: dicom_preview_panel.py:390
+#: dicom_preview_panel.py:610
 msgid ""
 "date time\n"
 " Made in InVesalius"
 msgstr ""
 
-#: dicom_preview_panel.py:436
+#: dicom_preview_panel.py:655
 msgid "Auto-play"
-msgstr ""
-
-#: dicom_preview_panel.py:660
-#, python-format
-msgid "%d Images"
-msgstr ""
-
-#: dicom_preview_panel.py:777
-#: dicom_preview_panel.py:798
-#, python-format
-msgid "Image %d"
 msgstr ""
 
 #: frame.py:138
@@ -624,97 +589,95 @@ msgstr ""
 msgid "Help"
 msgstr ""
 
-#: frame.py:420
-#: surface.py:158
+#: frame.py:420 surface.py:158
 msgid "Ready"
 msgstr ""
 
-#: frame.py:528
+#: frame.py:529
 msgid "Import medical image..."
 msgstr ""
 
-#: frame.py:534
+#: frame.py:535
 msgid "Save InVesalius project"
 msgstr ""
 
-#: frame.py:629
+#: frame.py:630
 msgid "Zoom"
 msgstr ""
 
-#: frame.py:634
+#: frame.py:635
 msgid "Zoom based on selection"
 msgstr ""
 
-#: frame.py:639
+#: frame.py:640
 msgid "Rotate"
 msgstr ""
 
-#: frame.py:643
+#: frame.py:644
 msgid "Move"
 msgstr ""
 
-#: frame.py:647
+#: frame.py:648
 msgid "Window and Level"
 msgstr ""
 
-#: imagedata_utils.py:88
-#: imagedata_utils.py:217
+#: imagedata_utils.py:89 imagedata_utils.py:218
 msgid "Generating multiplanar visualization..."
 msgstr ""
 
-#: import_panel.py:54
+#: import_panel.py:77
 msgid "Import medical images"
 msgstr ""
 
-#: import_panel.py:109
+#: import_panel.py:143
 msgid "Patient name"
 msgstr ""
 
-#: import_panel.py:110
+#: import_panel.py:144
 msgid "Patient ID"
 msgstr ""
 
-#: import_panel.py:111
+#: import_panel.py:145
 msgid "Age"
 msgstr ""
 
-#: import_panel.py:112
+#: import_panel.py:146
 msgid "Gender"
 msgstr ""
 
-#: import_panel.py:113
+#: import_panel.py:147
 msgid "Study description"
 msgstr ""
 
-#: import_panel.py:114
+#: import_panel.py:148
 msgid "Modality"
 msgstr ""
 
-#: import_panel.py:115
+#: import_panel.py:149
 msgid "Date acquired"
 msgstr ""
 
-#: import_panel.py:116
+#: import_panel.py:150
 msgid "# Images"
 msgstr ""
 
-#: import_panel.py:117
+#: import_panel.py:151
 msgid "Institution"
 msgstr ""
 
-#: import_panel.py:118
+#: import_panel.py:152
 msgid "Date of birth"
 msgstr ""
 
-#: import_panel.py:119
+#: import_panel.py:153
 msgid "Accession Number"
 msgstr ""
 
-#: import_panel.py:120
+#: import_panel.py:154
 msgid "Referring physician"
 msgstr ""
 
-#: import_panel.py:136
+#: import_panel.py:170
 msgid "InVesalius Database"
 msgstr ""
 
@@ -722,99 +685,72 @@ msgstr ""
 msgid "Choose user interface language"
 msgstr ""
 
-#: presets.py:31
-#: presets.py:49
+#: presets.py:31 presets.py:49
 msgid "Soft Tissue"
 msgstr ""
 
-#: presets.py:32
-#: presets.py:50
+#: presets.py:32 presets.py:50
 msgid "Enamel (Adult)"
 msgstr ""
 
-#: presets.py:33
-#: presets.py:51
+#: presets.py:33 presets.py:51
 msgid "Enamel (Child)"
 msgstr ""
 
-#: presets.py:34
-#: presets.py:52
+#: presets.py:34 presets.py:52
 msgid "Compact Bone (Adult)"
 msgstr ""
 
-#: presets.py:35
-#: presets.py:53
+#: presets.py:35 presets.py:53
 msgid "Compact Bone (Child)"
 msgstr ""
 
-#: presets.py:36
-#: presets.py:54
+#: presets.py:36 presets.py:54
 msgid "Spongial Bone (Adult)"
 msgstr ""
 
-#: presets.py:37
-#: presets.py:55
+#: presets.py:37 presets.py:55
 msgid "Spongial Bone (Child)"
 msgstr ""
 
-#: presets.py:38
-#: presets.py:56
+#: presets.py:38 presets.py:56
 msgid "Muscle Tissue (Adult)"
 msgstr ""
 
-#: presets.py:39
-#: presets.py:57
+#: presets.py:39 presets.py:57
 msgid "Muscle Tissue (Child)"
 msgstr ""
 
-#: presets.py:40
-#: presets.py:58
+#: presets.py:40 presets.py:58
 msgid "Fat Tissue (Adult)"
 msgstr ""
 
-#: presets.py:41
-#: presets.py:59
+#: presets.py:41 presets.py:59
 msgid "Fat Tissue (Child)"
 msgstr ""
 
-#: presets.py:42
-#: presets.py:60
+#: presets.py:42 presets.py:60
 msgid "Skin Tissue (Adult)"
 msgstr ""
 
-#: presets.py:43
-#: presets.py:61
+#: presets.py:43 presets.py:61
 msgid "Skin Tissue (Child)"
 msgstr ""
 
-#: slice_menu.py:61
-msgid "Save current values"
-msgstr ""
-
-#: slice_menu.py:62
-msgid "Save current values as..."
-msgstr ""
-
-#: slice_menu.py:62
-msgid "Load values"
-msgstr ""
-
-#: slice_menu.py:99
+#: slice_menu.py:100
 msgid "Window Width and Level"
 msgstr ""
 
-#: slice_menu.py:100
+#: slice_menu.py:101
 msgid "Pseudo Colour"
 msgstr ""
 
-#: slice_menu.py:101
+#: slice_menu.py:102
 msgid "Image Tiling"
 msgstr ""
 
-#: surface_process.py:52
-#: surface_process.py:64
-#: surface_process.py:73
-#: surface_process.py:86
+#: surface.py:199 surface.py:233 surface.py:241 surface_process.py:52
+#: surface_process.py:64 surface_process.py:73 surface_process.py:86
 #: surface_process.py:96
 msgid "Generating 3D surface..."
 msgstr ""
@@ -883,31 +819,31 @@ msgstr ""
 msgid "InVesalius 3 - New mask"
 msgstr ""
 
-#: task_slice.py:197
+#: task_slice.py:204
 msgid "Mask properties"
 msgstr ""
 
-#: task_slice.py:205
+#: task_slice.py:212
 msgid "Advanced edition tools"
 msgstr ""
 
-#: task_slice.py:289
+#: task_slice.py:296
 msgid "Set predefined or manual threshold:"
 msgstr ""
 
-#: task_slice.py:441
+#: task_slice.py:448
 msgid "Choose brush type, size or operation:"
 msgstr ""
 
-#: task_slice.py:447
+#: task_slice.py:454
 msgid "Circle"
 msgstr ""
 
-#: task_slice.py:451
+#: task_slice.py:458
 msgid "Square"
 msgstr ""
 
-#: task_slice.py:487
+#: task_slice.py:494
 msgid "Brush threshold range:"
 msgstr ""
 
@@ -967,8 +903,6 @@ msgstr ""
 msgid "Measure"
 msgstr ""
 
-#: task_tools.py:61
-#: task_tools.py:62
+#: task_tools.py:61 task_tools.py:62
 msgid "Add text annotations"
 msgstr ""
-

@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: InVesalius 3\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2010-01-15 16:29-0200\n"
+"POT-Creation-Date: 2010-01-21 10:48-0200\n"
 "PO-Revision-Date: 2010-01-07 11:25-0300\n"
 "Last-Translator: Invesalius team <invesalius@cti.gov.br>\n"
 "Language-Team: InVesalius Team <invesalius@cti.gov.br>\n"
@@ -40,15 +40,15 @@ msgid "Rainbow"
 msgstr "Arco Iris"
 
 #: constants.py:110
-msgid "Ocen"
+msgid "Ocean"
 msgstr "Océano"
 
 #: constants.py:111
 msgid "Inverse Gray"
 msgstr "Gray Inverso"
 
-#: constants.py:152 constants.py:212 dicom_preview_panel.py:365
-#: dicom_preview_panel.py:366 presets.py:30 presets.py:48 presets.py:119
+#: constants.py:152 constants.py:212 dicom_preview_panel.py:585
+#: dicom_preview_panel.py:586 presets.py:30 presets.py:48 presets.py:119
 msgid "Bone"
 msgstr "Hueso"
 
@@ -106,7 +106,7 @@ msgstr "Fosa Posterior del Cerebro"
 msgid "Brain"
 msgstr "Cerebro"
 
-#: constants.py:215 control.py:295 slice_menu.py:39 slice_menu.py:51
+#: constants.py:215 control.py:298 slice_menu.py:39 slice_menu.py:51
 msgid "Default"
 msgstr "Predeterminado"
 
@@ -142,7 +142,7 @@ msgstr "Pulmón - Duro"
 msgid "Mediastinum"
 msgstr "Mediastino"
 
-#: constants.py:224 control.py:296 slice_menu.py:46 slice_menu.py:51
+#: constants.py:224 control.py:299 slice_menu.py:46 slice_menu.py:51
 msgid "Manual"
 msgstr "Manual"
 
@@ -306,24 +306,24 @@ msgstr "Vascular IV"
 msgid "Yellow Bone"
 msgstr "Hueso Amarillo"
 
-#: constants.py:295 constants.py:297
+#: constants.py:302 constants.py:304
 msgid " Off"
 msgstr "Apagado"
 
-#: constants.py:298
+#: constants.py:305 volume.py:531
 msgid "Cut plane"
 msgstr "Plano de corte"
 
-#: control.py:233
+#: control.py:236
 #, python-format
 msgid "Loading file %d of %d"
 msgstr "Carga de archivo %d de %d"
 
-#: control.py:316
+#: control.py:320
 msgid "Untitled"
 msgstr "Sin Título"
 
-#: control.py:381
+#: control.py:385
 msgid "Fix gantry tilt applying the degrees bellow"
 msgstr ""
 "Arreglar la inclinación (gantry tilt) con la aplicación de los grados abajo"
@@ -336,7 +336,7 @@ msgstr "Máscaras"
 msgid "Surfaces"
 msgstr "Volumen"
 
-#: data_notebook.py:107 data_notebook.py:236 data_notebook.py:440
+#: data_notebook.py:107 data_notebook.py:235 data_notebook.py:439
 msgid "Name"
 msgstr "Nombre"
 
@@ -344,21 +344,25 @@ msgstr "Nombre"
 msgid "Mask"
 msgstr "Máscara"
 
-#: data_notebook.py:237
+#: data_notebook.py:236
 msgid "Volume (mm³)"
 msgstr "Volume (mm³)"
 
-#: data_notebook.py:238
+#: data_notebook.py:237
 msgid "Transparency"
 msgstr "Transparencia"
 
-#: data_notebook.py:441
+#: data_notebook.py:440
 msgid "Type"
 msgstr "Tipo"
 
-#: data_notebook.py:442
+#: data_notebook.py:441
 msgid "Value"
 msgstr "Valor"
+
+#: default_tasks.py:129
+msgid "Data"
+msgstr "Datos"
 
 #: default_tasks.py:174
 msgid "1. InVesalius start"
@@ -451,7 +455,8 @@ msgid "There are no DICOM files on the selected directory."
 msgstr "No hay archivos DICOM en el directorio seleccionado."
 
 #: dialogs.py:352
-msgid "(c) 2007 Center for Information Technology Renato Archer"
+#, fuzzy
+msgid "(c) 2007-2010 Center for Information Technology Renato Archer"
 msgstr "(c) 2007 Centro de Tecnología de la Información Renato Archer"
 
 #: dialogs.py:354
@@ -515,21 +520,31 @@ msgstr ""
 "%s %s\n"
 "Hecho en InVesalius"
 
-#: dicom_preview_panel.py:156 dicom_preview_panel.py:157
+#: dicom_preview_panel.py:187 dicom_preview_panel.py:188
 msgid "Image"
 msgstr "Imagen"
 
-#: dicom_preview_panel.py:374
+#: dicom_preview_panel.py:384
+#, python-format
+msgid "%d Images"
+msgstr "%d Imágenes"
+
+#: dicom_preview_panel.py:498 dicom_preview_panel.py:519
+#, python-format
+msgid "Image %d"
+msgstr "Imagen %d"
+
+#: dicom_preview_panel.py:594
 msgid "image size"
 msgstr "Tamaño de la imagen"
 
-#: dicom_preview_panel.py:383
+#: dicom_preview_panel.py:603
 msgid ""
 "id\n"
 "protocol"
 msgstr "prototcolo"
 
-#: dicom_preview_panel.py:390
+#: dicom_preview_panel.py:610
 msgid ""
 "date time\n"
 " Made in InVesalius"
@@ -537,19 +552,9 @@ msgstr ""
 "fecha tiempo\n"
 " Hecho en InVesalius"
 
-#: dicom_preview_panel.py:436
+#: dicom_preview_panel.py:655
 msgid "Auto-play"
 msgstr "Jugar"
-
-#: dicom_preview_panel.py:660
-#, python-format
-msgid "%d Images"
-msgstr "%d Imágenes"
-
-#: dicom_preview_panel.py:777 dicom_preview_panel.py:798
-#, python-format
-msgid "Image %d"
-msgstr "Imagen %d"
 
 #: frame.py:138
 msgid "Data panel"
@@ -559,47 +564,47 @@ msgstr "Panel de datos"
 msgid "Preview medical data to be reconstructed"
 msgstr "Vista previa de los datos médicos a seren reconstruidos"
 
-#: frame.py:307
+#: frame.py:306
 msgid "Import DICOM...\tCtrl+I"
 msgstr "Imporar DICOM...\tCtrl+I"
 
-#: frame.py:308
+#: frame.py:307
 msgid "Open Project...\tCtrl+O"
 msgstr "Abrir Proyecto...\tCtrl+O"
 
-#: frame.py:309
+#: frame.py:308
 msgid "Save Project\tCtrl+S"
 msgstr "Guardar Proyecto..."
 
-#: frame.py:310
+#: frame.py:309
 msgid "Save Project As..."
 msgstr "Guardar Proyecto Como..."
 
-#: frame.py:311
+#: frame.py:310
 msgid "Close Project"
 msgstr "Cerrar Proyecto"
 
-#: frame.py:320
+#: frame.py:319
 msgid "Exit"
 msgstr "Salir"
 
-#: frame.py:359
+#: frame.py:358
 msgid "Getting Started..."
 msgstr "Cómo empezar..."
 
-#: frame.py:362
+#: frame.py:361
 msgid "About..."
 msgstr "Acerca de..."
 
-#: frame.py:373
+#: frame.py:372
 msgid "File"
 msgstr "Archivo"
 
-#: frame.py:378
+#: frame.py:377
 msgid "Help"
 msgstr "Ayuda"
 
-#: frame.py:421 surface.py:158
+#: frame.py:420 surface.py:158
 msgid "Ready"
 msgstr "Preparado"
 
@@ -631,63 +636,63 @@ msgstr "Mover"
 msgid "Window and Level"
 msgstr "Brillo y Contraste"
 
-#: imagedata_utils.py:88 imagedata_utils.py:217
+#: imagedata_utils.py:89 imagedata_utils.py:218
 msgid "Generating multiplanar visualization..."
 msgstr "Generación de visualización multiplanar"
 
-#: import_panel.py:54
+#: import_panel.py:77
 msgid "Import medical images"
 msgstr "Importar imágenes médicas"
 
-#: import_panel.py:109
+#: import_panel.py:143
 msgid "Patient name"
 msgstr "Nombre del paciente"
 
-#: import_panel.py:110
+#: import_panel.py:144
 msgid "Patient ID"
 msgstr "ID del Paciente"
 
-#: import_panel.py:111
+#: import_panel.py:145
 msgid "Age"
 msgstr "Edad"
 
-#: import_panel.py:112
+#: import_panel.py:146
 msgid "Gender"
 msgstr "Género"
 
-#: import_panel.py:113
+#: import_panel.py:147
 msgid "Study description"
 msgstr "Descripción del estudio"
 
-#: import_panel.py:114
+#: import_panel.py:148
 msgid "Modality"
 msgstr "Modalidad"
 
-#: import_panel.py:115
+#: import_panel.py:149
 msgid "Date acquired"
 msgstr "Fecha de adquisición"
 
-#: import_panel.py:116
+#: import_panel.py:150
 msgid "# Images"
 msgstr "# Imágenes"
 
-#: import_panel.py:117
+#: import_panel.py:151
 msgid "Institution"
 msgstr "Institución"
 
-#: import_panel.py:118
+#: import_panel.py:152
 msgid "Date of birth"
 msgstr "Fecha de nacimiento"
 
-#: import_panel.py:119
+#: import_panel.py:153
 msgid "Accession Number"
 msgstr "Número de adhesión"
 
-#: import_panel.py:120
+#: import_panel.py:154
 msgid "Referring physician"
 msgstr "Médico"
 
-#: import_panel.py:136
+#: import_panel.py:170
 msgid "InVesalius Database"
 msgstr "Base de datos del InVesalius"
 
@@ -759,8 +764,9 @@ msgstr "Pseudo Color"
 msgid "Image Tiling"
 msgstr "Mosaico de Imágenes"
 
-#: surface_process.py:52 surface_process.py:64 surface_process.py:73
-#: surface_process.py:86 surface_process.py:96
+#: surface.py:199 surface.py:233 surface.py:241 surface_process.py:52
+#: surface_process.py:64 surface_process.py:73 surface_process.py:86
+#: surface_process.py:96
 msgid "Generating 3D surface..."
 msgstr "Generación de la superficie 3D..."
 
@@ -834,7 +840,7 @@ msgstr "Propriedades de la máscara"
 
 #: task_slice.py:212
 msgid "Advanced edition tools"
-msgstr "Herramientas avanzadas para edición"
+msgstr "Herramientas avanzadas para edición avanzada"
 
 #: task_slice.py:296
 msgid "Set predefined or manual threshold:"
@@ -870,7 +876,8 @@ msgstr "InVesalius 3 - Nueva superficie"
 
 #: task_surface.py:168
 msgid "Select mask to be used for creating 3D surface:"
-msgstr "Seleccione la máscara que se utilizará para la creación de la superficie 3D"
+msgstr ""
+"Seleccione la máscara que se utilizará para la creación de la superficie 3D"
 
 #: task_surface.py:179
 msgid "Set new surface name:"
