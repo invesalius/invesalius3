@@ -99,22 +99,68 @@ class Presets():
     def SavePlist(self, filename):
         filename = "%s$%s" % (filename, 'presets.plist')
         preset = {}
-        preset['thresh_mri'] = self.thresh_mri.copy()
-        preset['thresh_ct'] = self.thresh_ct.copy()
+        
+        translate_to_en = {_("Bone"):"Bone",
+                _("Soft Tissue"):"Soft Tissue",
+                _("Enamel (Adult)"):"Enamel (Adult)",
+                _("Enamel (Child)"): "Enamel (Child)",
+                _("Compact Bone (Adult)"):"Compact Bone (Adult)",
+                _("Compact Bone (Child)"):"Compact Bone (Child)",
+                _("Spongial Bone (Adult)"):"Spongial Bone (Adult)",
+                _("Spongial Bone (Child)"):"Spongial Bone (Child)",
+                _("Muscle Tissue (Adult)"):"Muscle Tissue (Adult)",
+                _("Muscle Tissue (Child)"):"Muscle Tissue (Child)",
+                _("Fat Tissue (Adult)"):"Fat Tissue (Adult)",
+                _("Fat Tissue (Child)"):"Fat Tissue (Child)",
+                _("Skin Tissue (Adult)"):"Skin Tissue (Adult)",
+                _("Skin Tissue (Child)"):"Skin Tissue (Child)", 
+                _("Custom"):"Custom"}
+
+        thresh_mri_new = {}
+        for name in self.thresh_mri.keys():
+            thresh_mri_new[translate_to_en[name]] = self.thresh_mri[name]
+
+        thresh_ct_new = {}
+        for name in self.thresh_ct.keys():
+            thresh_ct_new[translate_to_en[name]] = self.thresh_ct[name]
+        
+        preset['thresh_mri'] = thresh_mri_new
+        preset['thresh_ct'] = thresh_ct_new
         plistlib.writePlist(preset, filename)
         return os.path.split(filename)[1]
 
     def OpenPlist(self, filename):
+
+        translate_to_x = {"Bone":_("Bone"),
+                "Soft Tissue":_("Soft Tissue"),
+                "Enamel (Adult)":_("Enamel (Adult)"),
+                "Enamel (Child)": _("Enamel (Child)"),
+                "Compact Bone (Adult)": _("Compact Bone (Adult)"),
+                "Compact Bone (Child)":_("Compact Bone (Child)"),
+                "Spongial Bone (Adult)":_("Spongial Bone (Adult)"),
+                "Spongial Bone (Child)":_("Spongial Bone (Child)"),
+                "Muscle Tissue (Adult)":_("Muscle Tissue (Adult)"),
+                "Muscle Tissue (Child)":_("Muscle Tissue (Child)"),
+                "Fat Tissue (Adult)":_("Fat Tissue (Adult)"),
+                "Fat Tissue (Child)":_("Fat Tissue (Child)"),
+                "Skin Tissue (Adult)":_("Skin Tissue (Adult)"),
+                "Skin Tissue (Child)":_("Skin Tissue (Child)"), 
+                "Custom":_("Custom")}
+
+
         p = plistlib.readPlist(filename)
-        d1 = p['thresh_mri'].copy()
-        d2 = p['thresh_ct'].copy()
-        
-        self.thresh_mri = TwoWaysDictionary(d1)
-        self.thresh_ct = TwoWaysDictionary(d2)
+        thresh_mri = p['thresh_mri'].copy()
+        thresh_ct = p['thresh_ct'].copy()
+
+        thresh_ct_new = {}
+        for name in thresh_ct.keys(): 
+            thresh_ct_new[translate_to_x[name]] = thresh_ct[name]
+
+        thresh_mri_new = {}
+        for name in thresh_mri.keys(): 
+            thresh_mri_new[translate_to_x[name]] = thresh_mri[name]    
+
+        self.thresh_mri = TwoWaysDictionary(thresh_mri_new)
+        self.thresh_ct = TwoWaysDictionary(thresh_ct_new)
 
 
-
-    def Test(self):
-        print  "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
-        print self.thresh_ct.get_value(_("Bone"))
-        print  "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"

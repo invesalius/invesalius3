@@ -231,7 +231,6 @@ class Project(object):
                 path = os.path.join(dirpath, filepath)
                 p = Presets()
                 p.OpenPlist(path)
-                p.Test()
                 self.presets = p
             elif key == 'mask_dict':
                 self.mask_dict = {}
