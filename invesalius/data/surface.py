@@ -297,6 +297,7 @@ class SurfaceManager():
         else:
             index = proj.AddSurface(surface)
             surface.index = index
+            self.last_surface_index = index
 
 
         session = ses.Session()
@@ -313,7 +314,7 @@ class SurfaceManager():
         ps.Publisher().sendMessage('Load surface actor into viewer', actor)
 
         # Send actor by pubsub to viewer's render
-        if overwrite:
+        if overwrite and self.actors_dict.keys():
             old_actor = self.actors_dict[self.last_surface_index]
             ps.Publisher().sendMessage('Remove surface actor from viewer', old_actor)
 
