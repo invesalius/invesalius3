@@ -230,6 +230,8 @@ WINDOW_LEVEL = {_("Abdomen"):(350,50),
 REDUCE_IMAGEDATA_QUALITY = 0
 
 ICON_DIR = os.path.abspath(os.path.join('..', 'icons'))
+SAMPLE_DIR = os.path.abspath(os.path.join('..', 'samples'))
+
 
 ID_TO_BMP = {VOL_FRONT: [_("Front"), os.path.join(ICON_DIR, "view_front.png")],
              VOL_BACK: [_("Back"), os.path.join(ICON_DIR, "view_back.png")],

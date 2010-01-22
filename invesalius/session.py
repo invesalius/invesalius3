@@ -14,7 +14,6 @@ class Session(object):
     __metaclass__= Singleton
 
     def __init__(self):
-        # ?
         self.temp_item = False
 
         ws = self.ws = WriteSession(self)
@@ -46,8 +45,8 @@ class Session(object):
         self.language = "" # "pt_BR", "es"
 
         # Recent projects list
-        self.recent_projects = []
-
+        self.recent_projects = [(const.SAMPLE_DIR, "Cranium.inv3")]
+        print self.recent_projects
         self.last_dicom_folder = ''
 
         self.CreateSessionFile()

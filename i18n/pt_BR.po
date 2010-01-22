@@ -765,7 +765,7 @@ msgstr "Conjunto de Imagens"
 #: surface_process.py:64 surface_process.py:73 surface_process.py:86
 #: surface_process.py:96
 msgid "Generating 3D surface..."
-msgstr "Exportando superfície 3D..."
+msgstr "Gerando superfície 3D..."
 
 #: task_exporter.py:101
 msgid "Export InVesalius screen to a image file"
