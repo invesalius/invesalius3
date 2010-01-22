@@ -890,13 +890,11 @@ shortHelp= _("Hide task panel"))
 
     def SetStateProjectOpen(self):
         self.ontool_text = False
-        self.OnText()
         for tool in self.enable_items:
             self.EnableTool(tool, True)
 
     def SetStateProjectClose(self):
         self.ontool_text = True
-        self.OnText()
         for tool in self.enable_items:
             self.EnableTool(tool, False) 
 
