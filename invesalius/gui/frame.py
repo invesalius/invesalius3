@@ -890,11 +890,13 @@ shortHelp= _("Hide task panel"))
 
     def SetStateProjectOpen(self):
         self.ontool_text = False
+        self.OnText()
         for tool in self.enable_items:
             self.EnableTool(tool, True)
 
     def SetStateProjectClose(self):
         self.ontool_text = True
+        self.OnText()
         for tool in self.enable_items:
             self.EnableTool(tool, False) 
 
@@ -949,11 +951,13 @@ shortHelp= _("Hide task panel"))
             self.SetToolNormalBitmap(ID_TEXT,self.BMP_WITH_TEXT)
             ps.Publisher().sendMessage('Hide text actors on viewers')
             self.SetToolShortHelp(ID_TEXT,_("Show text"))
+            ps.Publisher().sendMessage('Update AUI')
             self.ontool_text = False
         else:
             self.SetToolNormalBitmap(ID_TEXT, self.BMP_WITHOUT_TEXT)
             ps.Publisher().sendMessage('Show text actors on viewers')
             self.SetToolShortHelp(ID_TEXT,_("Hide text"))
+            ps.Publisher().sendMessage('Update AUI')
             self.ontool_text = True
 
     def SetLayoutButtonOnlyData(self, pubsub_evt):
