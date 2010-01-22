@@ -99,10 +99,14 @@ class Frame(wx.Frame):
 
     def SetProjectName(self, pubsub_evt):
         proj_name = pubsub_evt.data
-        if sys.platform != 'darwin':
-            self.SetTitle("%s - InVesalius 3"%(proj_name))
+        
+        if not(proj_name):
+            self.SetTitle("InVesalius 3")
         else:
-            self.SetTitle("%s"%(proj_name))
+            if sys.platform != 'darwin':
+                self.SetTitle("%s - InVesalius 3"%(proj_name))
+            else:
+                self.SetTitle("%s"%(proj_name))
 
     def UpdateAui(self, pubsub_evt):
         self.aui_manager.Update()

@@ -162,17 +162,20 @@ class Controller():
                 print "Close without changes"
                 self.CloseProject()
                 ps.Publisher().sendMessage("Enable state project", False)
+                ps.Publisher().sendMessage('Set project name')
             elif answer == 1:
                 self.ShowDialogSaveProject()
                 print "Save changes and close"
                 self.CloseProject()
                 ps.Publisher().sendMessage("Enable state project", False)
+                ps.Publisher().sendMessage('Set project name')
             elif answer == -1:
                 print "Cancel"
         else:
             self.CloseProject()
             ps.Publisher().sendMessage("Enable state project", False)
-
+            ps.Publisher().sendMessage('Set project name')
+            
 ###########################
     def OnOpenProject(self, pubsub_evt):
         path = pubsub_evt.data
