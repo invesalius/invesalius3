@@ -170,10 +170,11 @@ class ProgressDicomReader:
         ps.Publisher().sendMessage("End dicom load", patient_list)
 
     def GetDicomGroups(self, path, recursive):
-        
+    
         if not const.VTK_WARNING:
+            log_path = os.path.join(const.LOG_FOLDER, 'vtkoutput.txt')
             fow = vtk.vtkFileOutputWindow()
-            fow.SetFileName('vtkoutput.txt')
+            fow.SetFileName(log_path)
             ow = vtk.vtkOutputWindow()
             ow.SetInstance(fow)
         

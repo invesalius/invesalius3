@@ -205,8 +205,9 @@ class Project(object):
     def OpenPlistProject(self, filename):
         
         if not const.VTK_WARNING:
+            log_path = os.path.join(const.LOG_FOLDER, 'vtkoutput.txt')
             fow = vtk.vtkFileOutputWindow()
-            fow.SetFileName('vtkoutput.txt')
+            fow.SetFileName(log_path)
             ow = vtk.vtkOutputWindow()
             ow.SetInstance(fow)
             
