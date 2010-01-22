@@ -844,7 +844,6 @@ class Viewer(wx.Panel):
 
     def CloseProject(self):
         for slice_data in self.slice_data_list:
-            self.interactor.GetRenderWindow().RemoveRenderer(slice_data.renderer)
             del slice_data
             
         self.modes = []#['DEFAULT']
