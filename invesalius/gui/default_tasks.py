@@ -184,7 +184,6 @@ class UpperTaskPanel(wx.Panel):
         fold_panel = fpb.FoldPanelBar(self, -1, wx.DefaultPosition,
                                       self.GetSize(),fpb.FPB_DEFAULT_STYLE,
                                       fpb.FPB_SINGLE_FOLD) 
-        
         print self.GetBackgroundColour()                              
         #self.SetBackgroundColour((0,255,0))
 
@@ -199,6 +198,7 @@ class UpperTaskPanel(wx.Panel):
 
 
         self.enable_items = []
+        self.overwrite = False
 
         # Fold 1 - Import
 
