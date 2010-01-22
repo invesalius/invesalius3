@@ -1244,7 +1244,6 @@ class Viewer(wx.Panel):
         self.set_slice_number(pos)
         #self.UpdateSlice3D(pos)
         self.pos = pos
-        self.cursor_.Show(1)
         self.interactor.Render()
         if evt:
             evt.Skip()
