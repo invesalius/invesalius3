@@ -276,10 +276,12 @@ class UpperTaskPanel(wx.Panel):
             self.SetStateProjectClose()
 
     def SetStateProjectClose(self):
+        self.fold_panel.Expand(self.fold_panel.GetFoldPanel(0))
         for item in self.enable_items:
             item.Disable()
 
     def SetStateProjectOpen(self):
+        self.fold_panel.Expand(self.fold_panel.GetFoldPanel(1))
         for item in self.enable_items:
             item.Enable()
 
