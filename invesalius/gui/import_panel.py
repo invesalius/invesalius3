@@ -30,6 +30,9 @@ EVT_SELECT_SERIE = wx.PyEventBinder(myEVT_SELECT_SERIE, 1)
 myEVT_SELECT_SLICE = wx.NewEventType()
 EVT_SELECT_SLICE = wx.PyEventBinder(myEVT_SELECT_SLICE, 1)
 
+myEVT_SELECT_PATIENT = wx.NewEventType()
+EVT_SELECT_PATIENT = wx.PyEventBinder(myEVT_SELECT_PATIENT, 1)
+
 class SelectEvent(wx.PyCommandEvent):
     def __init__(self , evtType, id):
         super(SelectEvent, self).__init__(evtType, id)
@@ -69,6 +72,8 @@ class InnerPanel(wx.Panel):
         wx.Panel.__init__(self, parent, pos=wx.Point(5, 5))#,
                           #size=wx.Size(680, 656))
         
+        self.patients = []
+
         splitter = spl.MultiSplitterWindow(self, style=wx.SP_LIVE_UPDATE)
         splitter.SetOrientation(wx.VERTICAL)
         self.splitter = splitter
@@ -106,38 +111,56 @@ class InnerPanel(wx.Panel):
     def _bind_events(self):
         self.Bind(EVT_SELECT_SERIE, self.OnSelectSerie)
         self.Bind(EVT_SELECT_SLICE, self.OnSelectSlice)
+        self.Bind(EVT_SELECT_PATIENT, self.OnSelectPatient)
     
     def ShowDicomPreview(self, pubsub_evt):
-        dicom_groups = pubsub_evt.data        
+        dicom_groups = pubsub_evt.data
+        self.patients.extend(dicom_groups)
         self.text_panel.Populate(dicom_groups)
 
     def OnSelectSerie(self, evt):
-        print "You've selected the serie", evt.GetSelectID()
+        patient_id, serie_number = evt.GetSelectID()
+        self.text_panel.SelectSerie(evt.GetSelectID())
+        for patient in self.patients:
+            if patient_id == patient.GetDicomSample().patient.id:
+                for group in patient.GetGroups():
+                    if serie_number == group.GetDicomSample().acquisition.serie_number:
+                        self.image_panel.SetSerie(group)
 
     def OnSelectSlice(self, evt):
         print "You've selected the slice", evt.GetSelectID()
+
+    def OnSelectPatient(self, evt):
+        print "You've selected the patient", evt.GetSelectID()
         
         
 class TextPanel(wx.Panel):
     def __init__(self, parent):
         wx.Panel.__init__(self, parent, -1)
-        self.Bind(wx.EVT_SIZE, self.OnSize)
+
+        self._selected_by_user = True
+        self.idserie_treeitem = {}
+        self.treeitem_idpatient = {}
         
         self.__init_gui()
-        self.__bind_evt()
+        self.__bind_events_wx()
+        self.__bind_pubsub_evt()
 
-    def __bind_evt(self):
+    def __bind_pubsub_evt(self):
         ps.Publisher().subscribe(self.SelectSeries, 'Select series in import panel')
+
+    def __bind_events_wx(self):
+        self.Bind(wx.EVT_SIZE, self.OnSize)
 
     def __init_gui(self):
         tree = gizmos.TreeListCtrl(self, -1, style =
-                                        wx.TR_DEFAULT_STYLE
-                                        | wx.TR_HIDE_ROOT
-                                        | wx.TR_ROW_LINES
-                                        | wx.TR_COLUMN_LINES
-                                        | wx.TR_FULL_ROW_HIGHLIGHT
-                                        | wx.TR_SINGLE
-                                        )
+                                   wx.TR_DEFAULT_STYLE
+                                   | wx.TR_HIDE_ROOT
+                                   | wx.TR_ROW_LINES
+                                   | wx.TR_COLUMN_LINES
+                                   | wx.TR_FULL_ROW_HIGHLIGHT
+                                   | wx.TR_SINGLE
+                                  )
                                    
                                    
         tree.AddColumn(_("Patient name"))
@@ -175,7 +198,6 @@ class TextPanel(wx.Panel):
 
     def Populate(self, patient_list):
         tree = self.tree
-        self.idserie_treeitem = {}
         
         first = 0
         for patient in patient_list:
@@ -219,7 +241,8 @@ class TextPanel(wx.Panel):
                 tree.SetItemText(child, "%s" % date_time, 6)
                 tree.SetItemText(child, "%s" % group.nslices, 7)
 
-                self.idserie_treeitem[n] = child
+                self.idserie_treeitem[(dicom.patient.id,
+                                       dicom.acquisition.serie_number)] = child
 
         tree.Expand(self.root)
         
@@ -231,13 +254,25 @@ class TextPanel(wx.Panel):
 
     def OnSelChanged(self, evt):
         item = self.tree.GetSelection()
-        group = self.tree.GetItemPyData(item)
-        if isinstance(group, dcm.DicomGroup):
-            ps.Publisher().sendMessage('Load group into import panel',
-                                        group)
-        elif isinstance(group, dcm.PatientGroup):
-            ps.Publisher().sendMessage('Load patient into import panel',
-                                        group)
+        if self._selected_by_user:
+            print "Yes, I'm here"
+            group = self.tree.GetItemPyData(item)
+            if isinstance(group, dcm.DicomGroup):
+                ps.Publisher().sendMessage('Load group into import panel',
+                                            group)
+
+            elif isinstance(group, dcm.PatientGroup):
+                id = group.GetDicomSample().patient.id
+                my_evt = SelectEvent(myEVT_SELECT_PATIENT, self.GetId())
+                my_evt.SetSelectedID(id)
+                self.GetEventHandler().ProcessEvent(my_evt)
+
+                ps.Publisher().sendMessage('Load patient into import panel',
+                                            group)
+        else:
+            parent_id = self.tree.GetItemParent(item)
+            self.tree.Expand(parent_id)
+        evt.Skip()
 
     def OnActivate(self, evt):
         item = evt.GetItem()
@@ -255,8 +290,10 @@ class TextPanel(wx.Panel):
         self.tree.SetSize(self.GetSize())
 
     def SelectSerie(self, serie):
+        self._selected_by_user = False
         item = self.idserie_treeitem[serie]
         self.tree.SelectItem(item)
+        self._selected_by_user = True
 
 
 class ImagePanel(wx.Panel):
@@ -302,6 +339,9 @@ class ImagePanel(wx.Panel):
         print "Selected ID", evt.GetSelectID()
         self.image_panel.dicom_preview.ShowSlice(evt.GetSelectID())
         evt.Skip()
+
+    def SetSerie(self, serie):
+        self.image_panel.dicom_preview.SetDicomGroup(serie)
 
         
 class SeriesPanel(wx.Panel):
@@ -365,9 +405,9 @@ class SeriesPanel(wx.Panel):
         my_evt.SetItemData(evt.GetItemData())
         self.GetEventHandler().ProcessEvent(my_evt)
 
-        self.dicom_preview.SetDicomSerie(serie)
-        self.dicom_preview.Show(1)
-        self.serie_preview.Show(0)
+        #self.dicom_preview.SetDicomGroup(serie)
+        #self.dicom_preview.Show(1)
+        #self.serie_preview.Show(0)
         self.sizer.Layout()
         #self.Show()
         self.Update()

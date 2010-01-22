@@ -286,6 +286,7 @@ class Preview(wx.Panel):
         my_evt = SerieEvent(myEVT_PREVIEW_CLICK, self.GetId())
         my_evt.SetSelectedID(self.dicom_info.id)
         my_evt.SetItemData(self.dicom_info.dicom)
+        my_evt.SetEventObject(self)
         print "patient", self.dicom_info.dicom.patient
         self.GetEventHandler().ProcessEvent(my_evt)
 
@@ -306,6 +307,7 @@ class Preview(wx.Panel):
         my_evt = SerieEvent(myEVT_PREVIEW_DBLCLICK, self.GetId())
         my_evt.SetSelectedID(self.dicom_info.id)
         my_evt.SetItemData(self.dicom_info.dicom)
+        my_evt.SetEventObject(self)
         self.GetEventHandler().ProcessEvent(my_evt)
 
 
@@ -319,6 +321,8 @@ class DicomPreviewSeries(wx.Panel):
         #self.SetSizer(self.sizer)
         self.displayed_position = 0
         self.nhidden_last_display = 0
+        self.selected_dicom = None
+        self.selected_panel = None
         self._init_ui()
 
     def _init_ui(self):
@@ -369,6 +373,15 @@ class DicomPreviewSeries(wx.Panel):
         my_evt = SerieEvent(myEVT_CLICK_SERIE, self.GetId())
         my_evt.SetSelectedID(evt.GetSelectID())
         my_evt.SetItemData(evt.GetItemData())
+
+        if self.selected_dicom:
+            self.selected_dicom.selected = self.selected_dicom is \
+                    evt.GetEventObject().dicom_info
+            self.selected_panel.select_on = self.selected_panel is evt.GetEventObject()
+            print "Unselecting a panel", self.selected_panel.select_on
+            self.selected_panel.Select()
+        self.selected_panel = evt.GetEventObject()
+        self.selected_dicom = self.selected_panel.dicom_info
         self.GetEventHandler().ProcessEvent(my_evt)
 
     def SetPatientGroups(self, patient):
@@ -379,10 +392,11 @@ class DicomPreviewSeries(wx.Panel):
         self.group_list = group_list
         n = 0
         for group in group_list:
-            info = DicomInfo(n, group.dicom,
+            info = DicomInfo((group.dicom.patient.id,
+                              group.dicom.acquisition.serie_number),
+                             group.dicom,
                              group.title,
-                             _("%d Images") %(group.nslices),
-                            )
+                             _("%d Images") %(group.nslices))
             self.files.append(info)
             n+=1
 
@@ -417,6 +431,8 @@ class DicomPreviewSeries(wx.Panel):
         for f, p in zip(self.files[initial:final], self.previews):
             #print "f", f
             p.SetDicomToPreview(f)
+            if f.selected:
+                self.selected_panel = p
             #p.interactor.Render()
 
         for f, p in zip(self.files[initial:final], self.previews):
@@ -436,6 +452,8 @@ class DicomPreviewSlice(wx.Panel):
         # I have to test.
         self.displayed_position = 0
         self.nhidden_last_display = 0
+        self.selected_dicom = None
+        self.selected_panel = None
         self._init_ui()
 
     def _init_ui(self):
@@ -516,8 +534,8 @@ class DicomPreviewSlice(wx.Panel):
         n = 0
         for dicom in dicom_files:
             info = DicomInfo(n, dicom,
-                    _("Image %d") % (dicom.image.number),
-                    "%.2f" % (dicom.image.position[2]),
+                             _("Image %d") % (dicom.image.number),
+                             "%.2f" % (dicom.image.position[2]),
                             )
             self.files.append(info)
             n+=1
@@ -555,6 +573,8 @@ class DicomPreviewSlice(wx.Panel):
 
         for f, p in zip(self.files[initial:final], self.previews):
             p.SetDicomToPreview(f)
+            if f.selected:
+                self.selected_panel = p
             #p.interactor.Render()
 
         for f, p in zip(self.files[initial:final], self.previews):
@@ -570,6 +590,15 @@ class DicomPreviewSlice(wx.Panel):
         my_evt = SerieEvent(myEVT_CLICK_SLICE, self.GetId())
         my_evt.SetSelectedID(evt.GetSelectID())
         my_evt.SetItemData(evt.GetItemData())
+
+        if self.selected_dicom:
+            self.selected_dicom.selected = self.selected_dicom is \
+                    evt.GetEventObject().dicom_info
+            self.selected_panel.select_on = self.selected_panel is evt.GetEventObject()
+            print "Unselecting a panel", self.selected_panel.select_on
+            self.selected_panel.Select()
+        self.selected_panel = evt.GetEventObject()
+        self.selected_dicom = self.selected_panel.dicom_info
         self.GetEventHandler().ProcessEvent(my_evt)
 
 
@@ -737,11 +766,6 @@ class SingleImagePreview(wx.Panel):
                             dicom.acquisition.time)
         self.text_acquisition.SetValue(value)
 
-        # READ FILE
-        #filename = dicom.image.file
-        #reader = vtkgdcm.vtkGDCMImageReader()
-        #reader.SetFileName(filename)
-
         # ADJUST CONTRAST
         window_level = dicom.image.level
         window_width = dicom.image.window
@@ -754,6 +778,9 @@ class SingleImagePreview(wx.Panel):
         self.actor.SetInput(colorer.GetOutput())
         self.renderer.ResetCamera()
         self.interactor.Render()
+
+        # Setting slider position
+        self.slider.SetValue(index)
 
     def __del__(self):
         print "---------> morri"
