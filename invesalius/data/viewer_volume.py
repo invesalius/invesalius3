@@ -124,6 +124,7 @@ class Viewer(wx.Panel):
         ps.Publisher().subscribe(self.OnShowText,
                                  'Show text actors on viewers')
 
+
     def OnHideText(self, pubsub_evt):
         self.text.Hide()
         self.interactor.Render()

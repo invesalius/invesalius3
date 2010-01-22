@@ -120,6 +120,8 @@ class SurfaceManager():
         self.CloseProject()
 
     def CloseProject(self):
+        for index in self.actors_dict:
+            ps.Publisher().sendMessage('Remove surface actor from viewer', self.actors_dict[index])
         del self.actors_dict
         self.actors_dict = {}
 
