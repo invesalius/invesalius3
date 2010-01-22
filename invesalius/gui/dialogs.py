@@ -29,6 +29,7 @@ import wx.lib.pubsub as ps
 import project
 import session as ses
 
+
 class NumberDialog(wx.Dialog):
     def __init__(self, message, value=0):
         pre = wx.PreDialog()
@@ -385,11 +386,13 @@ def ShowSavePresetDialog(default_filename="raycasting"):
 
     return filename
 
-
+MASK_LIST = []
 class NewSurfaceDialog(wx.Dialog):
     def __init__(self, parent, ID, title, size=wx.DefaultSize,
             pos=wx.DefaultPosition, style=wx.DEFAULT_DIALOG_STYLE,
             useMetal=False):
+        import data.surface as surface
+        import constants as const
 
         # Instead of calling wx.Dialog.__init__ we precreate the dialog
         # so we can set an extra style that must be set before
@@ -429,7 +432,9 @@ class NewSurfaceDialog(wx.Dialog):
 
         text = wx.TextCtrl(self, -1, "", size=(80,-1))
         text.SetHelpText(_("Name of the new surface to be created"))
-        text.SetValue(_("Surface"))
+
+        default_name =  const.SURFACE_NAME_PATTERN %(surface.Surface.general_index+2)
+        text.SetValue(default_name)
         self.text = text
 
         sizer = wx.BoxSizer(wx.VERTICAL)

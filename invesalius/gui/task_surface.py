@@ -26,10 +26,9 @@ import wx.lib.pubsub as ps
 import gui.dialogs as dlg
 import gui.widgets.foldpanelbar as fpb
 import gui.widgets.colourselect as csel
+import utils as utl
 
 #INTERPOLATION_MODE_LIST = ["Cubic", "Linear", "NearestNeighbor"]
-SURFACE_LIST = []
-MASK_LIST = []
 MIN_TRANSPARENCY = 0
 MAX_TRANSPARENCY = 100
 
@@ -128,10 +127,11 @@ class InnerTaskPanel(wx.Panel):
             evt.Skip()
 
     def OnLinkNewSurface(self, evt=None):
-        dlg = dlg.NewSurfaceDialog(self, -1, _('InVesalius 3 - New surface'))
-        if dlg.ShowModal() == wx.ID_OK:
-            print "TODO: Send Signal - Create 3d surface %s \n" % dlg.GetValue()
-            dlg.Destroy()
+        #import gui.dialogs as dlg
+        dialog = dlg.NewSurfaceDialog(self, -1, _('InVesalius 3 - New surface'))
+        if dialog.ShowModal() == wx.ID_OK:
+            print "TODO: Send Signal - Create 3d surface %s \n" % dialog.GetValue()
+            dialog.Destroy()
         if evt:
             evt.Skip()
 
@@ -211,10 +211,12 @@ class SurfaceProperties(wx.Panel):
         default_colour = wx.SystemSettings_GetColour(wx.SYS_COLOUR_MENUBAR)
         self.SetBackgroundColour(default_colour)
 
+        self.surface_dict = utl.TwoWaysDictionary()
+
         ## LINE 1
 
         # Combo related to mask naem
-        combo_surface_name = wx.ComboBox(self, -1, "", choices= SURFACE_LIST,
+        combo_surface_name = wx.ComboBox(self, -1, "", choices= self.surface_dict.keys(),
                                      style=wx.CB_DROPDOWN|wx.CB_READONLY)
         combo_surface_name.SetSelection(0)
         if sys.platform != 'win32':
@@ -288,20 +290,31 @@ class SurfaceProperties(wx.Panel):
 
     def ChangeSurfaceName(self, pubsub_evt):
         index, name = pubsub_evt.data
+        old_name = self.surface_dict.get_key(index)
+        self.surface_dict.pop(old_name, None)
+        self.surface_dict[name] = index
         self.combo_surface_name.SetString(index, name)
         self.combo_surface_name.Refresh()
 
     def InsertNewSurface(self, pubsub_evt):
+        #not_update = len(pubsub_evt.data) == 5
+        index = pubsub_evt.data[0]
         name = pubsub_evt.data[1]
         colour = [value*255 for value in pubsub_evt.data[2]]
+        overwrite = name in self.surface_dict.keys()
+        if not overwrite or not self.surface_dict:
+            self.surface_dict[name] = index
+            index = self.combo_surface_name.Append(name)
+            self.combo_surface_name.SetSelection(index)
+
         transparency = 100*pubsub_evt.data[4]
-        index = self.combo_surface_name.Append(name)
-        self.combo_surface_name.SetSelection(index)
         self.button_colour.SetColour(colour)
         self.slider_transparency.SetValue(transparency)
 
     def OnComboName(self, evt):
-        print "TODO: Send Signal - Change 3D surface selected: %s" % (evt.GetString())
+        surface_name = evt.GetString()
+        surface_index = evt.GetSelection()
+        ps.Publisher().sendMessage('Change surface selected', surface_index)
 
     def OnSelectColour(self, evt):
         colour = [value/255.0 for value in evt.GetValue()]
