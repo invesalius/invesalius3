@@ -384,3 +384,81 @@ def ShowSavePresetDialog(default_filename="raycasting"):
         filename = dlg.GetValue()
 
     return filename
+
+
+class NewSurfaceDialog(wx.Dialog):
+    def __init__(self, parent, ID, title, size=wx.DefaultSize,
+            pos=wx.DefaultPosition, style=wx.DEFAULT_DIALOG_STYLE,
+            useMetal=False):
+
+        # Instead of calling wx.Dialog.__init__ we precreate the dialog
+        # so we can set an extra style that must be set before
+        # creation, and then we create the GUI object using the Create
+        # method.
+        pre = wx.PreDialog()
+        pre.SetExtraStyle(wx.DIALOG_EX_CONTEXTHELP)
+        pre.Create(parent, ID, title, pos, (500,300), style)
+
+        # This next step is the most important, it turns this Python
+        # object into the real wrapper of the dialog (instead of pre)
+        # as far as the wxPython extension is concerned.
+        self.PostCreate(pre)
+
+        # This extra style can be set after the UI object has been created.
+        if 'wxMac' in wx.PlatformInfo and useMetal:
+            self.SetExtraStyle(wx.DIALOG_EX_METAL)
+
+        self.CenterOnScreen()
+
+        # Now continue with the normal construction of the dialog
+        # contents
+
+        # Label related to mask name
+        label_mask = wx.StaticText(self, -1, _("Select mask to be used for creating 3D surface:"))
+
+        # Combo related to mask name
+        combo_surface_name = wx.ComboBox(self, -1, "", choices= MASK_LIST,
+                                     style=wx.CB_DROPDOWN|wx.CB_READONLY)
+        combo_surface_name.SetSelection(0)
+        if sys.platform != 'win32':
+            combo_surface_name.SetWindowVariant(wx.WINDOW_VARIANT_SMALL)
+        self.combo_surface_name = combo_surface_name
+
+
+        label_surface = wx.StaticText(self, -1, _("Set new surface name:"))
+
+        text = wx.TextCtrl(self, -1, "", size=(80,-1))
+        text.SetHelpText(_("Name of the new surface to be created"))
+        text.SetValue(_("Surface"))
+        self.text = text
+
+        sizer = wx.BoxSizer(wx.VERTICAL)
+        sizer.Add(label_mask, 0, wx.ALL|wx.GROW|wx.EXPAND, 5)
+        sizer.Add(combo_surface_name, 1, wx.GROW|wx.EXPAND|wx.LEFT|wx.RIGHT, 10)
+        sizer.Add(label_surface, 0, wx.ALL|wx.GROW|wx.EXPAND, 5)
+        sizer.Add(text, 0, wx.GROW|wx.EXPAND|wx.RIGHT|wx.LEFT, 10)
+
+        btnsizer = wx.StdDialogButtonSizer()
+
+        #if wx.Platform != "__WXMSW__":
+        #    btn = wx.ContextHelpButton(self)
+        #    btnsizer.AddButton(btn)
+
+        btn = wx.Button(self, wx.ID_OK)
+        btn.SetDefault()
+        btnsizer.AddButton(btn)
+
+        btn = wx.Button(self, wx.ID_CANCEL)
+        btnsizer.AddButton(btn)
+        btnsizer.Realize()
+
+        sizer.Add(btnsizer, 0, wx.ALIGN_RIGHT|wx.ALL, 5)
+
+        self.SetSizer(sizer)
+        sizer.Fit(self)
+
+    #def GetValue(self):
+    #    return self.text.GetValue() + _("| mask: ") + MASK_LIST[self.combo_surface_name.GetSelection()]
+
+
+

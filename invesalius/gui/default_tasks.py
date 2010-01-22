@@ -118,6 +118,7 @@ class LowerTaskPanel(wx.Panel):
                                       fpb.FPB_COLLAPSE_TO_BOTTOM) 
 
         self.enable_items = []
+        self.overwrite = False
 
         sizer = wx.BoxSizer(wx.VERTICAL)
         sizer.Add(fold_panel, 1, wx.GROW|wx.EXPAND)        
@@ -267,6 +268,19 @@ class UpperTaskPanel(wx.Panel):
     def __bind_events(self):
         self.fold_panel.Bind(fpb.EVT_CAPTIONBAR, self.OnFoldPressCaption)
         ps.Publisher().subscribe(self.OnEnableState, "Enable state project")
+        ps.Publisher().subscribe(self.OnOverwrite, 'Create surface from index')
+        ps.Publisher().subscribe(self.OnFoldSurface, 'Update surface info in GUI')
+        ps.Publisher().subscribe(self.OnFoldExport, 'Fold export task')
+
+    def OnOverwrite(self, pubsub_evt):
+        self.overwrite = pubsub_evt.data[1]
+
+    def OnFoldSurface(self, pubsub_evt):
+        if not self.overwrite:
+            self.fold_panel.Expand(self.fold_panel.GetFoldPanel(2))
+
+    def OnFoldExport(self, pubsub_evt):
+        self.fold_panel.Expand(self.fold_panel.GetFoldPanel(3))
 
     def OnEnableState(self, pubsub_evt):
         state = pubsub_evt.data

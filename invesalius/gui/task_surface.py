@@ -23,11 +23,11 @@ import wx.lib.hyperlink as hl
 import wx.lib.platebtn as pbtn
 import wx.lib.pubsub as ps
 
+import gui.dialogs as dlg
 import gui.widgets.foldpanelbar as fpb
-import widgets.colourselect as csel
+import gui.widgets.colourselect as csel
 
 #INTERPOLATION_MODE_LIST = ["Cubic", "Linear", "NearestNeighbor"]
-QUALITY_LIST = [_("Low"), _("Medium"), _("High"), _("Optimal *"), _("Custom")]
 SURFACE_LIST = []
 MASK_LIST = []
 MIN_TRANSPARENCY = 0
@@ -102,7 +102,7 @@ class InnerTaskPanel(wx.Panel):
         button_next = wx.Button(self, -1, _("Next step"))
         if sys.platform != 'win32':
             button_next.SetWindowVariant(wx.WINDOW_VARIANT_SMALL)
-        #button_next.Bind(wx.EVT_BUTTON, self.OnButtonNextTask)
+        button_next.Bind(wx.EVT_BUTTON, self.OnButtonNextTask)
 
         # Add line sizers into main sizer
         main_sizer = wx.BoxSizer(wx.VERTICAL)
@@ -123,93 +123,18 @@ class InnerTaskPanel(wx.Panel):
             self.OnLinkNewSurface()
 
     def OnButtonNextTask(self, evt):
-        self.OnLinkNewSurface()
         if evt:
+            ps.Publisher().sendMessage('Fold export task')
             evt.Skip()
 
     def OnLinkNewSurface(self, evt=None):
-        dlg = NewSurfaceDialog(self, -1, _('InVesalius 3 - New surface'))
+        dlg = dlg.NewSurfaceDialog(self, -1, _('InVesalius 3 - New surface'))
         if dlg.ShowModal() == wx.ID_OK:
             print "TODO: Send Signal - Create 3d surface %s \n" % dlg.GetValue()
             dlg.Destroy()
         if evt:
             evt.Skip()
-        #default_colour = wx.SystemSettings_GetColour(wx.SYS_COLOUR_MENUBAR)
-        #self.SetBackgroundColour(default_colour)
 
-class NewSurfaceDialog(wx.Dialog):
-    def __init__(self, parent, ID, title, size=wx.DefaultSize,
-            pos=wx.DefaultPosition, style=wx.DEFAULT_DIALOG_STYLE,
-            useMetal=False):
-
-        # Instead of calling wx.Dialog.__init__ we precreate the dialog
-        # so we can set an extra style that must be set before
-        # creation, and then we create the GUI object using the Create
-        # method.
-        pre = wx.PreDialog()
-        pre.SetExtraStyle(wx.DIALOG_EX_CONTEXTHELP)
-        pre.Create(parent, ID, title, pos, (500,300), style)
-
-        # This next step is the most important, it turns this Python
-        # object into the real wrapper of the dialog (instead of pre)
-        # as far as the wxPython extension is concerned.
-        self.PostCreate(pre)
-
-        # This extra style can be set after the UI object has been created.
-        if 'wxMac' in wx.PlatformInfo and useMetal:
-            self.SetExtraStyle(wx.DIALOG_EX_METAL)
-
-        self.CenterOnScreen()
-
-        # Now continue with the normal construction of the dialog
-        # contents
-
-        # Label related to mask name
-        label_mask = wx.StaticText(self, -1, _("Select mask to be used for creating 3D surface:"))
-
-        # Combo related to mask name
-        combo_surface_name = wx.ComboBox(self, -1, "", choices= MASK_LIST,
-                                     style=wx.CB_DROPDOWN|wx.CB_READONLY)
-        combo_surface_name.SetSelection(0)
-        if sys.platform != 'win32':
-            combo_surface_name.SetWindowVariant(wx.WINDOW_VARIANT_SMALL)
-        self.combo_surface_name = combo_surface_name
-
-
-        label_surface = wx.StaticText(self, -1, _("Set new surface name:"))
-
-        text = wx.TextCtrl(self, -1, "", size=(80,-1))
-        text.SetHelpText(_("Name of the new surface to be created"))
-        text.SetValue(_("Surface"))
-        self.text = text
-
-        sizer = wx.BoxSizer(wx.VERTICAL)
-        sizer.Add(label_mask, 0, wx.ALL|wx.GROW|wx.EXPAND, 5)
-        sizer.Add(combo_surface_name, 1, wx.GROW|wx.EXPAND|wx.LEFT|wx.RIGHT, 10)
-        sizer.Add(label_surface, 0, wx.ALL|wx.GROW|wx.EXPAND, 5)
-        sizer.Add(text, 0, wx.GROW|wx.EXPAND|wx.RIGHT|wx.LEFT, 10)
-
-        btnsizer = wx.StdDialogButtonSizer()
-
-        #if wx.Platform != "__WXMSW__":
-        #    btn = wx.ContextHelpButton(self)
-        #    btnsizer.AddButton(btn)
-
-        btn = wx.Button(self, wx.ID_OK)
-        btn.SetDefault()
-        btnsizer.AddButton(btn)
-
-        btn = wx.Button(self, wx.ID_CANCEL)
-        btnsizer.AddButton(btn)
-        btnsizer.Realize()
-
-        sizer.Add(btnsizer, 0, wx.ALIGN_RIGHT|wx.ALL, 5)
-
-        self.SetSizer(sizer)
-        sizer.Fit(self)
-
-    #def GetValue(self):
-    #    return self.text.GetValue() + _("| mask: ") + MASK_LIST[self.combo_surface_name.GetSelection()]
 
 class FoldPanel(wx.Panel):
     def __init__(self, parent):
@@ -239,7 +164,7 @@ class InnerFoldPanel(wx.Panel):
         # parent panel. Perhaps we need to insert the item into the sizer also...
         # Study this.
         fold_panel = fpb.FoldPanelBar(self, -1, wx.DefaultPosition,
-                                      (10, 170), 0,fpb.FPB_SINGLE_FOLD)
+                                      (10, 100), 0,fpb.FPB_SINGLE_FOLD)
 
         # Fold panel style
         style = fpb.CaptionBarStyle()
@@ -254,11 +179,14 @@ class InnerFoldPanel(wx.Panel):
                                       leftSpacing=0, rightSpacing=0)
         fold_panel.Expand(fold_panel.GetFoldPanel(0))
 
-        # Fold 2 - Surface quality
-        item = fold_panel.AddFoldPanel(_("Surface quality"), collapsed=True)
+        # Fold 2 - Surface tools
+        item = fold_panel.AddFoldPanel(_("Advanced options"), collapsed=True)
         fold_panel.ApplyCaptionStyle(item, style)
-        fold_panel.AddFoldPanelWindow(item, QualityAdjustment(item), Spacing= 0,
+        fold_panel.AddFoldPanelWindow(item, SurfaceTools(item), Spacing= 0,
                                       leftSpacing=0, rightSpacing=0)
+
+        #fold_panel.AddFoldPanelWindow(item, QualityAdjustment(item), Spacing= 0,
+        #                              leftSpacing=0, rightSpacing=0)
         #fold_panel.Expand(fold_panel.GetFoldPanel(1))
 
         # Panel sizer to expand fold panel
@@ -269,6 +197,13 @@ class InnerFoldPanel(wx.Panel):
         self.SetSizer(sizer)
         self.Update()
         self.SetAutoLayout(1)
+
+
+class SurfaceTools(wx.Panel):
+    def __init__(self, parent):
+        wx.Panel.__init__(self, parent, size=(50,240))
+        default_colour = wx.SystemSettings_GetColour(wx.SYS_COLOUR_MENUBAR)
+        self.SetBackgroundColour(default_colour)
 
 class SurfaceProperties(wx.Panel):
     def __init__(self, parent):
@@ -386,14 +321,17 @@ class SurfaceProperties(wx.Panel):
                                   (self.combo_surface_name.GetSelection(),
                                   transparency))
 
+
 class QualityAdjustment(wx.Panel):
     def __init__(self, parent):
+        import constants as const
         wx.Panel.__init__(self, parent, size=(50,240))
         default_colour = wx.SystemSettings_GetColour(wx.SYS_COLOUR_MENUBAR)
         self.SetBackgroundColour(default_colour)
 
         # LINE 1
-        combo_quality = wx.ComboBox(self, -1, "", choices= QUALITY_LIST,
+
+        combo_quality = wx.ComboBox(self, -1, "", choices=const.SURFACE_QUALITY.keys(),
                                      style=wx.CB_DROPDOWN|wx.CB_READONLY)
         combo_quality.SetSelection(3)
         combo_quality.SetWindowVariant(wx.WINDOW_VARIANT_SMALL)
