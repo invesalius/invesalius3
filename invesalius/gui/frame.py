@@ -876,9 +876,8 @@ class LayoutToolBar(wx.ToolBar):
             self.BMP_WITH_MENU = wx.Bitmap(os.path.join(const.ICON_DIR,
                                                    "layout_full.gif"),
                                       wx.BITMAP_TYPE_GIF)
-            self.BMP_WITH_TEXT = wx.Bitmap(os.path.join(const.ICON_DIR,"text.png"))
-            self.BMP_WITHOUT_TEXT =\
-                    wx.Bitmap(os.path.join(const.ICON_DIR,"text_inverted.png"))
+            self.BMP_WITH_TEXT = wx.Bitmap(os.path.join(const.ICON_DIR,"text.gif"), wx.BITMAP_TYPE_GIF)
+            self.BMP_WITHOUT_TEXT = wx.Bitmap(os.path.join(const.ICON_DIR,"text_inverted.png"))
 
         self.AddLabelTool(ID_LAYOUT, "",bitmap=self.BMP_WITHOUT_MENU,
 shortHelp= _("Hide task panel"))
