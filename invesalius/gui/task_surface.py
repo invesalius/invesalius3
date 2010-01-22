@@ -291,7 +291,7 @@ class SurfaceProperties(wx.Panel):
     def ChangeSurfaceName(self, pubsub_evt):
         index, name = pubsub_evt.data
         old_name = self.surface_dict.get_key(index)
-        self.surface_dict.pop(old_name, None)
+        self.surface_dict.remove(old_name)
         self.surface_dict[name] = index
         self.combo_surface_name.SetString(index, name)
         self.combo_surface_name.Refresh()

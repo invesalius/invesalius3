@@ -63,6 +63,12 @@ class TwoWaysDictionary(dict):
         """
         return [item[0] for item in self.items() if item[1] == value]
 
+    def remove(self, key):
+        try:
+            self.pop(key)
+        except TypeError:
+            print "TwoWaysDictionary: no item"
+
     def get_value(self, key):
         """
         Find the value given a key.
