@@ -302,6 +302,17 @@ def ImportInvalidFiles():
     dlg.ShowModal()
     dlg.Destroy()
 
+def InexistentPath(path):
+    msg = _("%s does not exist.")%(path)
+    if sys.platform == 'darwin':
+        dlg = wx.MessageDialog(None, "", msg,
+                                wx.ICON_INFORMATION | wx.OK)
+    else:
+        dlg = wx.MessageDialog(None, msg, "InVesalius 3",
+                                wx.ICON_INFORMATION | wx.OK)
+    dlg.ShowModal()
+    dlg.Destroy()
+
 def SaveChangesDialog(filename):
     current_dir = os.path.abspath(".")
     msg = _("The project %s has been modified.\nSave changes?")%filename

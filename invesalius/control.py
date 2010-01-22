@@ -181,18 +181,18 @@ class Controller():
     def OnOpenRecentProject(self, pubsub_evt):
         filepath = pubsub_evt.data
 
-        session = ses.Session()
-        st = session.project_status
-        if (st == const.PROJ_NEW) or (st == const.PROJ_CHANGE):
-            filename = session.project_path[1]
-            answer = dialog.SaveChangesDialog2(filename)
-            if answer:
-                self.ShowDialogSaveProject()
-        print "1"
-        self.CloseProject()
-        print "2"
-        self.OpenProject(filepath)
-        print "3"
+        if os.path.exists(filepath):
+            session = ses.Session()
+            st = session.project_status
+            if (st == const.PROJ_NEW) or (st == const.PROJ_CHANGE):
+                filename = session.project_path[1]
+                answer = dialog.SaveChangesDialog2(filename)
+                if answer:
+                    self.ShowDialogSaveProject()
+            self.CloseProject()
+            self.OpenProject(filepath)
+        else:
+            dialog.InexistentPath(filepath)
 
 
 
