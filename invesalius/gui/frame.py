@@ -704,15 +704,14 @@ class ObjectToolBar(wx.ToolBar):
         else:
             self.SetStateProjectClose()
 
-
-
     def SetStateProjectOpen(self):
         for tool in self.enable_items:
             self.EnableTool(tool, True)
 
     def SetStateProjectClose(self):
         for tool in self.enable_items:
-            self.EnableTool(tool, False)  
+            self.EnableTool(tool, False)
+            self.UntoggleAllItems()  
 
 
     def __bind_events_wx(self):
@@ -797,7 +796,7 @@ class SliceToolBar(wx.ToolBar):
         self.Bind(wx.EVT_TOOL, self.OnClick)
 
     def __bind_events(self):
-        ps.Publisher().subscribe(self.UntoggleAllItem,
+        ps.Publisher().subscribe(self.UntoggleAllItems,
                                 'Untoggle slice toolbar items')
         ps.Publisher().subscribe(self.OnEnableState, "Enable state project")
 
@@ -807,6 +806,7 @@ class SliceToolBar(wx.ToolBar):
             self.SetStateProjectOpen()
         else:
             self.SetStateProjectClose()
+            self.UntoggleAllItems()
 
 
     def OnClick(self, evt):
@@ -827,7 +827,7 @@ class SliceToolBar(wx.ToolBar):
         evt.Skip()
 
 
-    def UntoggleAllItem(self, pubsub_evt):
+    def UntoggleAllItems(self, pubsub_evt=None):
         for id in const.TOOL_SLICE_STATES:
             state = self.GetToolState(id)
             if state:
@@ -850,7 +850,8 @@ class LayoutToolBar(wx.ToolBar):
         self.__init_items()
         self.__bind_events_wx()
         self.__bind_events()
-        self.ontool = False
+        self.ontool_layout = False
+        self.ontool_text = True
 
     def __init_items(self):
 
@@ -863,7 +864,10 @@ class LayoutToolBar(wx.ToolBar):
                                                    "layout_full_original.gif"),
                                   wx.BITMAP_TYPE_GIF)
 
-            BMP_TEXT = wx.Bitmap(os.path.join(const.ICON_DIR,"text_original.png"))
+            self.BMP_WITHOUT_TEXT =\
+                    wx.Bitmap(os.path.join(const.ICON_DIR,"text_inverted_original.png"))
+
+            self.BMP_WITH_TEXT = wx.Bitmap(os.path.join(const.ICON_DIR,"text_original.png"))
 
         else:
             self.BMP_WITHOUT_MENU = wx.Bitmap(os.path.join(const.ICON_DIR,
@@ -872,26 +876,29 @@ class LayoutToolBar(wx.ToolBar):
             self.BMP_WITH_MENU = wx.Bitmap(os.path.join(const.ICON_DIR,
                                                    "layout_full.gif"),
                                       wx.BITMAP_TYPE_GIF)
-            BMP_TEXT = wx.Bitmap(os.path.join(const.ICON_DIR,"text.png"))
+            self.BMP_WITH_TEXT = wx.Bitmap(os.path.join(const.ICON_DIR,"text.png"))
+            self.BMP_WITHOUT_TEXT =\
+                    wx.Bitmap(os.path.join(const.ICON_DIR,"text_inverted.png"))
 
-
-        self.AddLabelTool(ID_LAYOUT, "",bitmap=self.BMP_WITHOUT_MENU, shortHelp= "Hide task panel")
-        self.AddCheckTool(ID_TEXT, bitmap=BMP_TEXT, shortHelp= "Hide texts")
-        self.ToggleTool(ID_TEXT, True)
+        self.AddLabelTool(ID_LAYOUT, "",bitmap=self.BMP_WITHOUT_MENU,
+shortHelp= _("Hide task panel"))
+        self.AddLabelTool(ID_TEXT, "",bitmap=self.BMP_WITH_TEXT, shortHelp= _("Hide text"))
 
         self.enable_items = [ID_TEXT]
         self.Realize()
         self.SetStateProjectClose()
 
     def SetStateProjectOpen(self):
+        self.ontool_text = False
+        self.OnText()
         for tool in self.enable_items:
             self.EnableTool(tool, True)
 
     def SetStateProjectClose(self):
+        self.ontool_text = True
+        self.OnText()
         for tool in self.enable_items:
             self.EnableTool(tool, False) 
-
-
 
     def __bind_events(self):
         ps.Publisher().subscribe(self.SetLayoutButtonOnlyData,
@@ -916,9 +923,9 @@ class LayoutToolBar(wx.ToolBar):
     def OnClick(self, event):
         id = event.GetId()
         if id == ID_LAYOUT:
-            self.OnTask()
+            self.OnLayout()
         elif id== ID_TEXT:
-            self.OnText(event)
+            self.OnText()
 
 
         for item in VIEW_TOOLS:
@@ -926,24 +933,30 @@ class LayoutToolBar(wx.ToolBar):
             if state and (item != id):
                 self.ToggleTool(item, False)
 
-    def OnTask(self):
-        if self.ontool:
+    def OnLayout(self):
+        if self.ontool_layout:
             self.SetToolNormalBitmap(ID_LAYOUT,self.BMP_WITHOUT_MENU)
             ps.Publisher().sendMessage('Show task panel')
-            self.SetToolShortHelp(ID_LAYOUT,"Hide task panel")
-            self.ontool = False
+            self.SetToolShortHelp(ID_LAYOUT,_("Hide task panel"))
+            self.ontool_layout = False
         else:
             self.bitmap = self.BMP_WITH_MENU
             self.SetToolNormalBitmap(ID_LAYOUT,self.BMP_WITH_MENU)
             ps.Publisher().sendMessage('Hide task panel')
-            self.SetToolShortHelp(ID_LAYOUT, "Show task panel")
-            self.ontool = True
+            self.SetToolShortHelp(ID_LAYOUT, _("Show task panel"))
+            self.ontool_layout = True
 
-    def OnText(self, event):
-        if event.IsChecked():
-            ps.Publisher().sendMessage('Show text actors on viewers')
-        else:
+    def OnText(self):
+        if self.ontool_text:
+            self.SetToolNormalBitmap(ID_TEXT,self.BMP_WITH_TEXT)
             ps.Publisher().sendMessage('Hide text actors on viewers')
+            self.SetToolShortHelp(ID_TEXT,_("Show text"))
+            self.ontool_text = False
+        else:
+            self.SetToolNormalBitmap(ID_TEXT, self.BMP_WITHOUT_TEXT)
+            ps.Publisher().sendMessage('Show text actors on viewers')
+            self.SetToolShortHelp(ID_TEXT,_("Hide text"))
+            self.ontool_text = True
 
     def SetLayoutButtonOnlyData(self, pubsub_evt):
         self.SetToolNormalBitmap(ID_LAYOUT,self.BMP_WITH_MENU)
