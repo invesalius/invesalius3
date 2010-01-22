@@ -367,6 +367,7 @@ class DicomPreviewSeries(wx.Panel):
     def _bind_events(self):
         # When the user scrolls the window
         self.Bind(wx.EVT_SCROLL, self.OnScroll)
+        self.Bind(wx.EVT_MOUSEWHEEL, self.OnWheel)
 
     def OnSelect(self, evt):
         print dir(evt)
@@ -438,11 +439,20 @@ class DicomPreviewSeries(wx.Panel):
         for f, p in zip(self.files[initial:final], self.previews):
             p.Show()
 
-    def OnScroll(self, evt):
-        if self.displayed_position != evt.GetPosition():
-            self.displayed_position = evt.GetPosition()
-            self._display_previews()
+    def OnScroll(self, evt=None):
+        if evt:
+            if self.displayed_position != evt.GetPosition():
+                self.displayed_position = evt.GetPosition()
+        else:
+            if self.displayed_position != self.scroll.GetThumbPosition():
+                self.displayed_position = self.scroll.GetThumbPosition()
+        self._display_previews()
 
+    def OnWheel(self, evt):
+        print "OnWheel"
+        d = evt.GetWheelDelta() / evt.GetWheelRotation()
+        self.scroll.SetThumbPosition(self.scroll.GetThumbPosition() - d)
+        self.OnScroll()
 
 class DicomPreviewSlice(wx.Panel):
     """A dicom preview panel"""
@@ -493,6 +503,7 @@ class DicomPreviewSlice(wx.Panel):
     def _bind_events(self):
         # When the user scrolls the window
         self.Bind(wx.EVT_SCROLL, self.OnScroll)
+        self.Bind(wx.EVT_MOUSEWHEEL, self.OnWheel)
 
     def SetDicomDirectory(self, directory):
         print "Setting Dicom Directory", directory
@@ -580,11 +591,6 @@ class DicomPreviewSlice(wx.Panel):
         for f, p in zip(self.files[initial:final], self.previews):
             p.Show()
 
-    def OnScroll(self, evt):
-        if self.displayed_position != evt.GetPosition():
-            self.displayed_position = evt.GetPosition()
-            self._display_previews()
-
     def OnPreviewClick(self, evt):
         print "Hey man, you've clicked over me"
         my_evt = SerieEvent(myEVT_CLICK_SLICE, self.GetId())
@@ -601,6 +607,20 @@ class DicomPreviewSlice(wx.Panel):
         self.selected_dicom = self.selected_panel.dicom_info
         self.GetEventHandler().ProcessEvent(my_evt)
 
+    def OnScroll(self, evt=None):
+        if evt:
+            if self.displayed_position != evt.GetPosition():
+                self.displayed_position = evt.GetPosition()
+        else:
+            if self.displayed_position != self.scroll.GetThumbPosition():
+                self.displayed_position = self.scroll.GetThumbPosition()
+        self._display_previews()
+
+    def OnWheel(self, evt):
+        print "OnWheel"
+        d = evt.GetWheelDelta() / evt.GetWheelRotation()
+        self.scroll.SetThumbPosition(self.scroll.GetThumbPosition() - d)
+        self.OnScroll()
 
 class SingleImagePreview(wx.Panel):
     def __init__(self, parent):
@@ -753,6 +773,7 @@ class SingleImagePreview(wx.Panel):
         ## Text related to slice position
         value1 = STR_SPC %(dicom.image.spacing[2])
         value2 = STR_LOCAL %(dicom.image.position[2])
+        print "Este eh o meu tipo", type(value1)
         value = "%s\n%s" %(value1, value2)
         self.text_image_location.SetValue(value)
 
