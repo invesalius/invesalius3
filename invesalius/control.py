@@ -160,14 +160,17 @@ class Controller():
             if not answer:
                 print "Close without changes"
                 self.CloseProject()
+                ps.Publisher().sendMessage("Enable state project", False)
             elif answer == 1:
                 self.ShowDialogSaveProject()
                 print "Save changes and close"
                 self.CloseProject()
+                ps.Publisher().sendMessage("Enable state project", False)
             elif answer == -1:
                 print "Cancel"
         else:
             self.CloseProject()
+            ps.Publisher().sendMessage("Enable state project", False)
 
 ###########################
     def OnOpenProject(self, pubsub_evt):
@@ -193,6 +196,7 @@ class Controller():
 
         session = ses.Session()
         session.OpenProject(filepath)
+        ps.Publisher().sendMessage("Enable state project", True)
 
     def SaveProject(self, path=None):
         ps.Publisher().sendMessage('Begin busy cursor')
@@ -289,6 +293,7 @@ class Controller():
                 print "No medical images found on given directory"
                 return
         self.LoadProject()
+        ps.Publisher().sendMessage("Enable state project", True)
 
     def LoadProject(self):
         proj = prj.Project()
@@ -361,6 +366,7 @@ class Controller():
         imagedata, dicom = self.OpenDicomGroup(group, gui=True)
         self.CreateDicomProject(imagedata, dicom)
         self.LoadProject()
+        ps.Publisher().sendMessage("Enable state project", True)
 
     def OpenDicomGroup(self, dicom_group, gui=True):
 

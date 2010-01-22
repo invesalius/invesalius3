@@ -184,7 +184,6 @@ def print_events(data):
 def main():
     application = InVesalius(0)
     parse_comand_line()
-    #application.ShowFrame()
     application.MainLoop()
 
 if __name__ == '__main__':

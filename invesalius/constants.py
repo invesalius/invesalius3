@@ -199,9 +199,9 @@ SURFACE_QUALITY = {
     _("Low"): (3, 2, 0.3000, 0.4),
     _("Medium"): (2, 2, 0.3000, 0.4),
     _("High"): (0, 1, 0.3000, 0.1),
-    _("Optimal *"): (0, 2, 0.3000, 0.4),
-    _("Custom"): (None, None, None, None)}
+    _("Optimal *"): (0, 2, 0.3000, 0.4)}
 DEFAULT_SURFACE_QUALITY = _("Optimal *")
+
 
 # Surface properties
 SURFACE_TRANSPARENCY = 0.0

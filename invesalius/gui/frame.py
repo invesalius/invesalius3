@@ -376,12 +376,37 @@ class MenuBar(wx.MenuBar):
         #self.Append(options_menu, "Options")
         self.Append(help_menu, _("Help"))
 
+
+        self.enable_items = [const.ID_PROJECT_SAVE, const.ID_PROJECT_SAVE_AS,
+                            const.ID_PROJECT_CLOSE]
+
+        self.SetStateProjectClose()
+
+    def OnEnableState(self, pubsub_evt):
+        print "----- OnEnableState"
+        state = pubsub_evt.data
+        print "state", state
+        if state:
+            self.SetStateProjectOpen()
+        else:
+            self.SetStateProjectClose()
+
+
+    def SetStateProjectOpen(self):
+        for item in self.enable_items:
+            self.Enable(item, True)
+
+    def SetStateProjectClose(self):
+        for item in self.enable_items:
+            self.Enable(item, False)  
+
     def __bind_events(self):
         # TODO: in future, possibly when wxPython 2.9 is available,
         # events should be binded directly from wx.Menu / wx.MenuBar
         # message "Binding events of wx.MenuBar" on [wxpython-users]
         # mail list in Oct 20 2008
-        pass
+        ps.Publisher().subscribe(self.OnEnableState, "Enable state project")
+
 
 # ------------------------------------------------------------------
 class ProgressBar(wx.Gauge):
@@ -480,7 +505,6 @@ class ProjectToolBar(wx.ToolBar):
         self.SetToolBitmapSize(wx.Size(32,32))
 
         self.parent = parent
-
         self.__init_items()
         self.__bind_events()
 
@@ -540,11 +564,29 @@ class ProjectToolBar(wx.ToolBar):
         #self.AddLabelTool(const.ID_PRINT_SCREENSHOT,
         #                   "Print medical image...",
         #                   BMP_PRINT)
+        self.enable_items = [const.ID_PROJECT_SAVE]
 
         self.Realize()
+        self.SetStateProjectClose()
+
+    def SetStateProjectOpen(self):
+        for tool in self.enable_items:
+            self.EnableTool(tool, True)
+
+    def SetStateProjectClose(self):
+        for tool in self.enable_items:
+            self.EnableTool(tool, False)    
+
+    def OnEnableState(self, pubsub_evt):
+        state = pubsub_evt.data
+        if state:
+            self.SetStateProjectOpen()
+        else:
+            self.SetStateProjectClose()
 
     def __bind_events(self):
-        pass
+        ps.Publisher().subscribe(self.OnEnableState, "Enable state project")
+
         #self.Bind(wx.EVT_TOOL, self.OnToolSave, id=const.ID_PROJECT_SAVE)
         #self.Bind(wx.EVT_TOOL, self.OnToolOpen, id=const.ID_PROJECT_OPEN)
         #self.Bind(wx.EVT_TOOL, self.OnToolImport, id=const.ID_DICOM_IMPORT)
@@ -647,7 +689,30 @@ class ObjectToolBar(wx.ToolBar):
         self.AddLabelTool(const.STATE_WL,
                            _("Window and Level"), BMP_CONTRAST,
                            kind = wx.ITEM_CHECK)
+
+        self.enable_items = [const.STATE_WL, const.STATE_PAN, const.STATE_SPIN,
+                            const.STATE_ZOOM_SL, const.STATE_ZOOM,]
+
         self.Realize()
+        self.SetStateProjectClose()
+
+
+    def OnEnableState(self, pubsub_evt):
+        state = pubsub_evt.data
+        if state:
+            self.SetStateProjectOpen()
+        else:
+            self.SetStateProjectClose()
+
+
+
+    def SetStateProjectOpen(self):
+        for tool in self.enable_items:
+            self.EnableTool(tool, True)
+
+    def SetStateProjectClose(self):
+        for tool in self.enable_items:
+            self.EnableTool(tool, False)  
 
 
     def __bind_events_wx(self):
@@ -656,6 +721,8 @@ class ObjectToolBar(wx.ToolBar):
     def __bind_events(self):
         ps.Publisher().subscribe(self.UntoggleAllItems,
                                  'Untoggle object toolbar items')
+        ps.Publisher().subscribe(self.OnEnableState, "Enable state project")
+
 
     def OnToggle(self, evt):
         id = evt.GetId()
@@ -714,14 +781,33 @@ class SliceToolBar(wx.ToolBar):
         self.AddCheckTool(const.SLICE_STATE_SCROLL, BMP_SLICE)
         self.AddCheckTool(const.SLICE_STATE_CROSS, BMP_CROSS)
 
+        self.enable_items = [const.SLICE_STATE_SCROLL, const.SLICE_STATE_CROSS,]
         self.Realize()
+        self.SetStateProjectClose()
 
+    def SetStateProjectOpen(self):
+        for tool in self.enable_items:
+            self.EnableTool(tool, True)
+
+    def SetStateProjectClose(self):
+        for tool in self.enable_items:
+            self.EnableTool(tool, False) 
+ 
     def __bind_events_wx(self):
         self.Bind(wx.EVT_TOOL, self.OnClick)
 
     def __bind_events(self):
         ps.Publisher().subscribe(self.UntoggleAllItem,
                                 'Untoggle slice toolbar items')
+        ps.Publisher().subscribe(self.OnEnableState, "Enable state project")
+
+    def OnEnableState(self, pubsub_evt):
+        state = pubsub_evt.data
+        if state:
+            self.SetStateProjectOpen()
+        else:
+            self.SetStateProjectClose()
+
 
     def OnClick(self, evt):
         id = evt.GetId()
@@ -793,13 +879,36 @@ class LayoutToolBar(wx.ToolBar):
         self.AddCheckTool(ID_TEXT, bitmap=BMP_TEXT, shortHelp= "Hide texts")
         self.ToggleTool(ID_TEXT, True)
 
+        self.enable_items = [ID_TEXT]
         self.Realize()
+        self.SetStateProjectClose()
+
+    def SetStateProjectOpen(self):
+        for tool in self.enable_items:
+            self.EnableTool(tool, True)
+
+    def SetStateProjectClose(self):
+        for tool in self.enable_items:
+            self.EnableTool(tool, False) 
+
+
 
     def __bind_events(self):
         ps.Publisher().subscribe(self.SetLayoutButtonOnlyData,
                                  "Set layout button data only")
         ps.Publisher().subscribe(self.SetLayoutButtonFull,
                                  "Set layout button full")
+
+        ps.Publisher().subscribe(self.OnEnableState, "Enable state project")
+
+    def OnEnableState(self, pubsub_evt):
+        state = pubsub_evt.data
+        if state:
+            self.SetStateProjectOpen()
+        else:
+            self.SetStateProjectClose()
+
+
 
     def __bind_events_wx(self):
         self.Bind(wx.EVT_TOOL, self.OnClick)

@@ -117,6 +117,8 @@ class LowerTaskPanel(wx.Panel):
                                       self.GetSize(),fpb.FPB_DEFAULT_STYLE,
                                       fpb.FPB_COLLAPSE_TO_BOTTOM) 
 
+        self.enable_items = []
+
         sizer = wx.BoxSizer(wx.VERTICAL)
         sizer.Add(fold_panel, 1, wx.GROW|wx.EXPAND)        
         self.SetSizer(sizer)
@@ -130,6 +132,7 @@ class LowerTaskPanel(wx.Panel):
                                        foldIcons=image_list)
         style = fold_panel.GetCaptionStyle(item)
         col = style.GetFirstColour()
+        self.enable_items.append(item)
 
         fold_panel.AddFoldPanelWindow(item, nb.NotebookPanel(item), Spacing= 0,
                                       leftSpacing=0, rightSpacing=0)
@@ -142,10 +145,34 @@ class LowerTaskPanel(wx.Panel):
         #                               foldIcons=image_list)
         #style = fold_panel.GetCaptionStyle(item)
         #col = style.GetFirstColour()
+        #self.enable_items.append(item)
         # 
         #fold_panel.AddFoldPanelWindow(item, tools.TaskPanel(item), Spacing= 0,
         #                              leftSpacing=0, rightSpacing=0)
         #fold_panel.Expand(fold_panel.GetFoldPanel(1))
+
+        self.SetStateProjectClose()
+        self.__bind_events()
+
+
+    def __bind_events(self):
+        ps.Publisher().subscribe(self.OnEnableState, "Enable state project")
+
+    def OnEnableState(self, pubsub_evt):
+        state = pubsub_evt.data
+        if state:
+            self.SetStateProjectOpen()
+        else:
+            self.SetStateProjectClose()
+
+    def SetStateProjectClose(self):
+        for item in self.enable_items:
+            item.Disable()
+
+    def SetStateProjectOpen(self):
+        for item in self.enable_items:
+            item.Enable()
+
 
 # Upper fold panel
 class UpperTaskPanel(wx.Panel):
@@ -169,6 +196,9 @@ class UpperTaskPanel(wx.Panel):
         image_list.Add(GetExpandedIconBitmap())
         image_list.Add(GetCollapsedIconBitmap())
 
+
+        self.enable_items = []
+
         # Fold 1 - Import
 
         item = fold_panel.AddFoldPanel(_("1. InVesalius start"), collapsed=True,
@@ -186,6 +216,10 @@ class UpperTaskPanel(wx.Panel):
         
         item = fold_panel.AddFoldPanel(_("2. Select region of interest"),
                                        collapsed=True, foldIcons=image_list)
+
+
+        self.enable_items.append(item)
+
         style = fold_panel.GetCaptionStyle(item)
         col = style.GetFirstColour()
         slice_panel = slice_.TaskPanel(item) 
@@ -210,21 +244,44 @@ class UpperTaskPanel(wx.Panel):
                                       Spacing= 0, leftSpacing=0, rightSpacing=0)
         #fold_panel.Expand(fold_panel.GetFoldPanel(2))
 
+        self.enable_items.append(item)
+
+
         # Fold 4
         # Export volume
         item = fold_panel.AddFoldPanel(_("4. Export data"), collapsed=True,
                                        foldIcons=image_list)
         style = fold_panel.GetCaptionStyle(item)
         col = style.GetFirstColour()
-        
+        self.enable_items.append(item)
+ 
         fold_panel.AddFoldPanelWindow(item, exporter.TaskPanel(item), 
                                       Spacing= 0, leftSpacing=0, rightSpacing=0)
 
         self.fold_panel = fold_panel
-        self.__bind_evt()
 
-    def __bind_evt(self):
+        self.SetStateProjectClose()
+        self.__bind_events()
+
+
+    def __bind_events(self):
         self.fold_panel.Bind(fpb.EVT_CAPTIONBAR, self.OnFoldPressCaption)
+        ps.Publisher().subscribe(self.OnEnableState, "Enable state project")
+
+    def OnEnableState(self, pubsub_evt):
+        state = pubsub_evt.data
+        if state:
+            self.SetStateProjectOpen()
+        else:
+            self.SetStateProjectClose()
+
+    def SetStateProjectClose(self):
+        for item in self.enable_items:
+            item.Disable()
+
+    def SetStateProjectOpen(self):
+        for item in self.enable_items:
+            item.Enable()
 
     def OnFoldPressCaption(self, evt):
         id = evt.GetTag().GetId()
