@@ -240,7 +240,6 @@ class Controller():
 
         ps.Publisher().sendMessage('Hide content panel')
         ps.Publisher().sendMessage('Close project data')
-
         session = ses.Session()
         session.CloseProject()
 
@@ -432,8 +431,12 @@ class Controller():
         ps.Publisher().sendMessage('Set threshold modes',
                                 (thresh_modes,default_threshold))
 
-    def LoadRaycastingPreset(self, pubsub_evt):
-        label = pubsub_evt.data
+    def LoadRaycastingPreset(self, pubsub_evt=None):
+        if pubsub_evt:
+            label = pubsub_evt.data
+        else:
+            return
+
         if label != const.RAYCASTING_OFF_LABEL:
             if label in const.RAYCASTING_FILES.keys():
                 path = os.path.join(const.RAYCASTING_PRESETS_DIRECTORY,

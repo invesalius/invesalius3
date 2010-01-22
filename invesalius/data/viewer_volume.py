@@ -72,6 +72,9 @@ class Viewer(wx.Panel):
         self.text.SetValue("")
         self.ren.AddActor(self.text.actor)
 
+
+        self.slice_plane = None
+
         self.view_angle = None
 
         self.__bind_events()
@@ -123,7 +126,16 @@ class Viewer(wx.Panel):
 
         ps.Publisher().subscribe(self.OnShowText,
                                  'Show text actors on viewers')
+        ps.Publisher().subscribe(self.OnCloseProject, 'Close project data')
 
+    def OnCloseProject(self, pubsub_evt):
+        if self.raycasting_volume:
+            self.raycasting_volume = False
+        if  self.slice_plane:
+            self.Disable()
+        self.mouse_pressed = 0
+        self.on_wl = False
+        
 
     def OnHideText(self, pubsub_evt):
         self.text.Hide()

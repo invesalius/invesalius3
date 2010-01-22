@@ -81,7 +81,7 @@ class Volume():
         self.curve = 0
         self.plane = None
         self.plane_on = False
-
+        self.volume = None
         self.__bind_events()
 
     def __bind_events(self):
@@ -99,6 +99,21 @@ class Volume():
                                  'Set raycasting relative window and level')
         ps.Publisher().subscribe(self.OnEnableTool,
                                  'Enable raycasting tool')
+        ps.Publisher().subscribe(self.OnCloseProject, 'Close project data')
+
+    def OnCloseProject(self, pubsub_evt):
+        self.CloseProject()
+
+
+    def CloseProject(self):
+        
+        if self.plane:
+            self.plane = None
+            ps.Publisher().sendMessage('Remove surface actor from viewer', self.plane_actor)
+        if self.exist:
+            self.exist = None
+            ps.Publisher().sendMessage('Remove surface actor from viewer', self.volume)
+
 
     def OnLoadVolume(self, pubsub_evt):
         label = pubsub_evt.data
