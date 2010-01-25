@@ -266,8 +266,6 @@ class Project(object):
                     self.surface_dict[s.index] = s
             else: 
                 setattr(self, key, project[key])
-        #print "depois", self.__dict__
-
 
 
 def Compress(folder, filename):

@@ -202,6 +202,7 @@ SURFACE_QUALITY = {
     _("High"): (0, 1, 0.3000, 0.1),
     _("Optimal *"): (0, 2, 0.3000, 0.4)}
 DEFAULT_SURFACE_QUALITY = _("Optimal *")
+SURFACE_QUALITY_LIST = [_("Low"),_("Medium"),_("High"),_("Optimal *")]
 
 
 # Surface properties

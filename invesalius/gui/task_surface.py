@@ -26,6 +26,7 @@ import wx.lib.pubsub as ps
 import gui.dialogs as dlg
 import gui.widgets.foldpanelbar as fpb
 import gui.widgets.colourselect as csel
+import project as prj
 import utils as utl
 
 #INTERPOLATION_MODE_LIST = ["Cubic", "Linear", "NearestNeighbor"]
@@ -130,7 +131,27 @@ class InnerTaskPanel(wx.Panel):
         #import gui.dialogs as dlg
         dialog = dlg.NewSurfaceDialog(self, -1, _('InVesalius 3 - New surface'))
         if dialog.ShowModal() == wx.ID_OK:
-            print "TODO: Send Signal - Create 3d surface %s \n" % dialog.GetValue()
+            # Retrieve information from dialog
+            (mask_index, surface_name, surface_quality, fill_holes,\
+            keep_largest) = dialog.GetValue()
+
+            # Retrieve information from mask
+            proj = prj.Project()
+            mask = proj.mask_dict[mask_index]
+
+            # Send all information so surface can be created
+            surface_data = [proj.imagedata,
+                            mask.colour,
+                            mask.threshold_range,
+                            mask.edited_points,
+                            False, # overwrite
+                            surface_name,
+                            surface_quality,
+                            fill_holes,
+                            keep_largest]
+
+            ps.Publisher().sendMessage('Create surface', surface_data)
+            print "TODO: Send Signal - Create 3d surface %s \n" % surface_data
             dialog.Destroy()
         if evt:
             evt.Skip()
