@@ -127,8 +127,11 @@ class Viewer(wx.Panel):
         ps.Publisher().subscribe(self.OnShowText,
                                  'Show text actors on viewers')
         ps.Publisher().subscribe(self.OnCloseProject, 'Close project data')
-        ps.Publisher().subscribe(self.OnExportPicture,'Export picture to file')
+
+        ps.Publisher().subscribe(self.RemoveAllActor, 'Remove all volume actors')
         
+        ps.Publisher().subscribe(self.OnExportPicture,'Export picture to file')
+
 
 
     def OnExportPicture(self, pubsub_evt):
@@ -420,12 +423,16 @@ class Viewer(wx.Panel):
     def RemoveActor(self, pubsub_evt):
         print "RemoveActor"
         actor = pubsub_evt.data
-
         ren = self.ren
         ren.RemoveActor(actor)
-
         self.interactor.Render()
+        
+    def RemoveAllActor(self, pubsub_evt):
+        print "RemoveAllActor"
+        self.ren.RemoveAllProps()
+        ps.Publisher().sendMessage('Render volume viewer')
 
+        
     def LoadSlicePlane(self, pubsub_evt):
         self.slice_plane = SlicePlane()
 

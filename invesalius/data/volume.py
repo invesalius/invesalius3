@@ -107,12 +107,23 @@ class Volume():
         self.CloseProject()
 
     def CloseProject(self):
+        #if self.plane:
+        #    self.plane = None
+        #    ps.Publisher().sendMessage('Remove surface actor from viewer', self.plane_actor)
         if self.plane:
-            self.plane = None
-            ps.Publisher().sendMessage('Remove surface actor from viewer', self.plane_actor)
+            print "======================================================================================================"
+            #ps.Publisher().sendMessage('Remove surface actor from viewer', self.plane.plane_actor)
+            #self.plane.Disable()
+            self.plane.DestroyObjs()
+            del self.plane
+            #del self.final_imagedata
+            self.plane = 0
+
+            
         if self.exist:
             self.exist = None
             ps.Publisher().sendMessage('Remove surface actor from viewer', self.volume)
+            ps.Publisher().sendMessage('Disable volume cut menu')
 
     def OnLoadVolume(self, pubsub_evt):
         label = pubsub_evt.data
@@ -559,6 +570,7 @@ class Volume():
                     self.plane.Disable()
             else:
                 print "Enable"
+                self.final_imagedata.Update()
                 self.plane_on = True
                 self.plane = CutPlane(self.final_imagedata,
                                       self.volume_mapper)
@@ -618,7 +630,7 @@ class CutPlane:
         plane_source.SetPoint1(plane_widget.GetPoint1())
         plane_source.SetPoint2(plane_widget.GetPoint2())
         plane_source.SetNormal(plane_widget.GetNormal())
-        plane_mapper = vtk.vtkPolyDataMapper()
+        plane_mapper = self.plane_mapper = vtk.vtkPolyDataMapper()
         plane_mapper.SetInput(plane_source.GetOutput())
         self.plane_actor = plane_actor = vtk.vtkActor()
         plane_actor.SetMapper(plane_mapper)
@@ -673,5 +685,15 @@ class CutPlane:
         self.plane_actor.VisibilityOn() 
         self.plane.SetNormal(self.normal)
         self.plane.SetOrigin(self.origin)
-        ps.Publisher().sendMessage('Render volume viewer', None)     
-
+        ps.Publisher().sendMessage('Render volume viewer', None)  
+        
+    def DestroyObjs(self):
+        ps.Publisher().sendMessage('Remove surface actor from viewer', self.plane_actor)
+        
+        del self.plane_widget   
+        del self.plane_source
+        del self.plane_actor
+        del self.normal
+        del self.plane
+        ps.Publisher().sendMessage('Remove all volume actors')
+        

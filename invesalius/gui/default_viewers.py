@@ -392,6 +392,7 @@ class VolumeToolPanel(wx.Panel):
                                  'Change volume viewer gui colour')
         ps.Publisher().subscribe(self.DisablePreset, 'Close project data')
         ps.Publisher().subscribe(self.Uncheck, 'Uncheck image plane menu')
+        ps.Publisher().subscribe(self.DisableVolumeCutMenu, 'Disable volume cut menu')
         
     def DisablePreset(self, pubsub_evt):
         self.off_item.Check(1)
@@ -422,7 +423,7 @@ class VolumeToolPanel(wx.Panel):
 
     def __init_menus(self, pubsub_evt=None):
         # MENU RELATED TO RAYCASTING TYPES
-        menu = wx.Menu()
+        menu = self.menu = wx.Menu()
         for name in const.RAYCASTING_TYPES:
             id = wx.NewId()
             item = wx.MenuItem(menu, id, name, kind=wx.ITEM_RADIO)
@@ -434,9 +435,13 @@ class VolumeToolPanel(wx.Panel):
 
         menu.AppendSeparator()
         # MENU RELATED TO RAYCASTING TOOLS
+        self.id_cutplane = None
         submenu = wx.Menu()
         for name in const.RAYCASTING_TOOLS:
            id = wx.NewId()
+           if not(self.id_cutplane):
+               self.id_cutplane = id
+           
            item = wx.MenuItem(submenu, id, name, kind=wx.ITEM_CHECK)
            submenu.AppendItem(item)
            ID_TO_TOOL[id] = name
@@ -480,6 +485,11 @@ class VolumeToolPanel(wx.Panel):
 
         self.Fit()
         self.Update()
+        
+    def DisableVolumeCutMenu(self, pusub_evt):
+        self.menu.Enable(RAYCASTING_TOOLS, 0)
+        item = ID_TO_TOOL_ITEM[self.id_cutplane]
+        item.Check(0)
 
     def BuildRaycastingMenu(self):
         presets = []
