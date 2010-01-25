@@ -112,12 +112,11 @@ class ProgressDialog(object):
     def Update(self, value, message):
         if(int(value) != self.maximum):
             try:
-                self.dlg.Update(value,message)
+                return self.dlg.Update(value,message)
             #TODO:
             #Exception in the Windows XP 64 Bits with wxPython 2.8.10
             except(wx._core.PyAssertionError):
-                pass
-            return True
+                return True
         else:
             return False
 
