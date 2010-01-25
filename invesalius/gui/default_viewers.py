@@ -391,7 +391,8 @@ class VolumeToolPanel(wx.Panel):
         ps.Publisher().subscribe(self.ChangeButtonColour,
                                  'Change volume viewer gui colour')
         ps.Publisher().subscribe(self.DisablePreset, 'Close project data')
-
+        ps.Publisher().subscribe(self.Uncheck, 'Uncheck image plane menu')
+        
     def DisablePreset(self, pubsub_evt):
         self.off_item.Check(1)
 
@@ -499,7 +500,11 @@ class VolumeToolPanel(wx.Panel):
         else:
             ps.Publisher().sendMessage('Enable plane', label)
 
-
+    def Uncheck(self, pubsub_evt):        
+        for item in self.slice_plane_menu.GetMenuItems():
+            if (item.IsChecked()):
+                item.Check(0)
+    
     def ChangeButtonColour(self, pubsub_evt):
         colour = [i*255 for i in pubsub_evt.data]
         self.button_colour.SetColour(colour)

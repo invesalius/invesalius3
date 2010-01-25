@@ -127,13 +127,17 @@ class Viewer(wx.Panel):
         ps.Publisher().subscribe(self.OnShowText,
                                  'Show text actors on viewers')
         ps.Publisher().subscribe(self.OnCloseProject, 'Close project data')
-
+        
+    
     def OnCloseProject(self, pubsub_evt):
         if self.raycasting_volume:
             self.raycasting_volume = False
         if  self.slice_plane:
             self.slice_plane.Disable()
-            #slice_plane_...SetInteractor(self.interactor._Iren)
+            self.slice_plane.DeletePlanes()
+            del self.slice_plane
+            ps.Publisher().sendMessage('Uncheck image plane menu')
+            
         self.mouse_pressed = 0
         self.on_wl = False
         
@@ -715,6 +719,11 @@ class SlicePlane:
             self.plane_z.SetPlaneOrientationToZAxes()
             self.plane_z.SetSliceIndex(number)
 
+    def DeletePlanes(self):
+        del self.plane_x
+        del self.plane_y
+        del self.plane_z 
+    
     def PointId(self, evt, obj):
         #TODO: add in the code
         #   picker = vtk.vtkPointPicker()
@@ -723,4 +732,3 @@ class SlicePlane:
         x,y = evt.GetLastEventPosition()
         self.picker.Pick(x, y, 0, self.ren1)
         point_id = self.picker.GetPointId()
-
