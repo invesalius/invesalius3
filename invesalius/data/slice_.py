@@ -114,6 +114,7 @@ class Slice(object):
     def CloseProject(self):
         self.imagedata = None
         self.current_mask = None
+        ps.Publisher().sendMessage('Select first item from slice menu')
         #self.blend_filter = None
         #self.blend_filter = None
         #self.num_gradient = 0
