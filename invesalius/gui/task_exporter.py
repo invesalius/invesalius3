@@ -26,6 +26,7 @@ import wx.lib.platebtn as pbtn
 import wx.lib.pubsub as ps
 
 import constants as const
+import gui.dialogs as dlg
 import project as proj
 
 BTN_MASK = wx.NewId()
@@ -180,6 +181,8 @@ class InnerTaskPanel(wx.Panel):
         button_picture = pbtn.PlateButton(self, BTN_PICTURE, "",
                                                BMP_TAKE_PICTURE,
                                                style=button_style)
+        self.button_picture = button_picture
+
         button_surface = pbtn.PlateButton(self, BTN_SURFACE, "",
                                                 BMP_EXPORT_SURFACE,
                                               style=button_style)
@@ -220,9 +223,39 @@ class InnerTaskPanel(wx.Panel):
         self.SetSizer(main_sizer)
         self.Fit()
         self.sizer = main_sizer
+        self.__init_menu()
+
+    def __init_menu(self):
+        
+
+        menu = wx.Menu()
+        self.id_to_name = {const.AXIAL:_("Axial slice"),
+                           const.CORONAL:_("Coronal slice"),
+                           const.SAGITAL:_("Sagittal slice"),
+                           const.VOLUME:_("Volume")}
+
+        for id in self.id_to_name:
+            item = wx.MenuItem(menu, id, self.id_to_name[id])
+            menu.AppendItem(item)
+
+        self.menu_picture = menu 
+        menu.Bind(wx.EVT_MENU, self.OnMenuPicture)
+
+    def OnMenuPicture(self, evt):
+        print "OnMenuPicture" 
+        id = evt.GetId()
+        value = dlg.ExportPicture(self.id_to_name[id])
+        if value:
+            filename, filetype = value 
+            print filename, filetype
+            ps.Publisher().sendMessage('Export picture to file',
+                                       (id, filename, filetype))
+ 
+
 
     def OnLinkExportPicture(self, evt=None):
-        pass
+        self.button_picture.PopupMenu(self.menu_picture)
+        
 
     def OnLinkExportMask(self, evt=None):
         project = proj.Project()

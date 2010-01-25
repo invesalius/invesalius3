@@ -55,9 +55,10 @@ TEXT_POS_VCENTRE_LEFT = (X, 0.5) # SetVerticalJustificationToCentered
 
 
 # Slice orientation
-AXIAL = 0
-CORONAL = 1
-SAGITAL = 2
+AXIAL = 1
+CORONAL = 2
+SAGITAL = 3
+VOLUME = 4
 
 # Colour representing each orientation
 ORIENTATION_COLOUR = {'AXIAL': (1,0,0), # Red
@@ -355,7 +356,7 @@ FILETYPE_JPG = wx.NewId()
 FILETYPE_PNG = wx.NewId()
 FILETYPE_PS = wx.NewId()
 FILETYPE_POV = wx.NewId()
-FILETYPE_OBJ = wx.NewId()
+FILETYPE_TIF = wx.NewId()
 
 IMAGE_TILING = {"1 x 1":(1,1), "1 x 2":(1,2),
                 "1 x 3":(1,3), "1 x 4":(1,4),

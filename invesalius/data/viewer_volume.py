@@ -127,8 +127,53 @@ class Viewer(wx.Panel):
         ps.Publisher().subscribe(self.OnShowText,
                                  'Show text actors on viewers')
         ps.Publisher().subscribe(self.OnCloseProject, 'Close project data')
+        ps.Publisher().subscribe(self.OnExportPicture,'Export picture to file')
         
-    
+
+
+    def OnExportPicture(self, pubsub_evt):
+        ps.Publisher().sendMessage('Begin busy cursor')
+        id, filename, filetype = pubsub_evt.data
+        
+        if id == const.VOLUME:
+            if filetype == const.FILETYPE_POV:
+                renwin = self.interactor.GetRenderWindow()
+                image = vtk.vtkWindowToImageFilter()
+                image.SetInput(renwin)
+                writer = vtk.vtkPOVExporter()
+                writer.SetFilePrefix(filename.split(".")[0])
+                writer.SetRenderWindow(renwin)
+                writer.Write()
+                return
+            else:
+                #Use tiling to generate a large rendering.
+                image = vtk.vtkRenderLargeImage()
+                image.SetInput(self.ren)
+                image.SetMagnification(2)
+
+            image = image.GetOutput()
+
+
+            # write image file
+            if (filetype == const.FILETYPE_BMP):
+                writer = vtk.vtkBMPWriter()
+            elif (filetype == const.FILETYPE_JPG):
+                writer =  vtk.vtkJPEGWriter()
+            elif (filetype == const.FILETYPE_PNG):
+                writer = vtk.vtkPNGWriter()
+            elif (filetype == const.FILETYPE_PS):
+                writer = vtk.vtkPostScriptWriter()
+            elif (filetype == const.FILETYPE_TIF):
+                writer = vtk.vtkTIFFWriter()
+                filename = "%s.tif"%filename.strip(".tif")
+            
+            writer.SetInput(image)
+            writer.SetFileName(filename)
+            writer.Write()
+        ps.Publisher().sendMessage('End busy cursor')
+
+
+ 
     def OnCloseProject(self, pubsub_evt):
         if self.raycasting_volume:
             self.raycasting_volume = False

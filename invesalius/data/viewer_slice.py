@@ -829,6 +829,63 @@ class Viewer(wx.Panel):
                                  'Show text actors on viewers')
         ps.Publisher().subscribe(self.OnHideText,
                                  'Hide text actors on viewers')
+        ps.Publisher().subscribe(self.OnExportPicture,'Export picture to file')
+        
+
+
+    def OnExportPicture(self, pubsub_evt):
+        ps.Publisher().sendMessage('Begin busy cursor')
+
+        id, filename, filetype = pubsub_evt.data
+        dict = {"AXIAL": const.AXIAL,
+                "CORONAL": const.CORONAL,
+                "SAGITAL": const.SAGITAL}
+
+        if id == dict[self.orientation]:
+            print "ok"
+            if filetype == const.FILETYPE_POV:
+                print 1
+                renwin = self.interactor.GetRenderWindow()
+                image = vtk.vtkWindowToImageFilter()
+                image.SetInput(renwin)
+                writer = vtk.vtkPOVExporter()
+                writer.SetFilePrefix(filename.split(".")[0])
+                writer.SetRenderWindow(renwin)
+                writer.Write()
+                return
+            else:
+                print 2
+                #Use tiling to generate a large rendering.
+                image = vtk.vtkRenderLargeImage()
+                image.SetInput(self.ren)
+                image.SetMagnification(2)
+
+            image = image.GetOutput()
+
+
+            # write image file
+            if (filetype == const.FILETYPE_BMP):
+                print 3
+                writer = vtk.vtkBMPWriter()
+            elif (filetype == const.FILETYPE_JPG):
+                print 4
+                writer =  vtk.vtkJPEGWriter()
+            elif (filetype == const.FILETYPE_PNG):
+                print 5
+                writer = vtk.vtkPNGWriter()
+            elif (filetype == const.FILETYPE_PS):
+                print 6
+                writer = vtk.vtkPostScriptWriter()
+            elif (filetype == const.FILETYPE_TIF):
+                print 7
+                writer = vtk.vtkTIFFWriter()
+                filename = "%s.tif"%filename.strip(".tif")
+            
+            writer.SetInput(image)
+            writer.SetFileName(filename)
+            writer.Write()
+
+        ps.Publisher().sendMessage('End busy cursor')
 
     def OnShowText(self, pubsub_evt):
         print "OnShowText"

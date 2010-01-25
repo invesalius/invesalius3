@@ -25,8 +25,8 @@ from wx.lib.wordwrap import wordwrap
 import wx.lib.pubsub as ps
 
 
-
-import project
+import constants as const
+import project as proj
 import session as ses
 
 
@@ -123,9 +123,6 @@ class ProgressDialog(object):
 
     def Close(self):
         self.dlg.Destroy()
-
-
-
 
 
 
@@ -475,6 +472,55 @@ class NewSurfaceDialog(wx.Dialog):
 
     #def GetValue(self):
     #    return self.text.GetValue() + _("| mask: ") + MASK_LIST[self.combo_surface_name.GetSelection()]
+
+INDEX_TO_EXTENSION = {0: "bmp", 1: "jpg", 2: "png", 3: "ps", 4:"povray", 5:"tiff"}
+WILDCARD_SAVE_PICTURE = _("BMP image")+" (*.bmp)|*.bmp|"+\
+                            _("JPG image")+" (*.jpg)|*.jpg|"+\
+                            _("PNG image")+" (*.png)|*.png|"+\
+                            _("PostScript document")+" (*.ps)|*.ps|"+\
+                            _("POV-Ray file)")+" (*.pov)|*.pov|"+\
+                            _("TIFF image")+" (*.tif)|*.tif"
+
+
+def ExportPicture(type_=""):
+    import constants as const
+    
+    INDEX_TO_TYPE = {0: const.FILETYPE_BMP,
+                1: const.FILETYPE_JPG,
+                2: const.FILETYPE_PNG,
+                3: const.FILETYPE_PS,
+                4: const.FILETYPE_POV,
+                5: const.FILETYPE_TIF}
+
+    print "ExportPicture"
+    project = proj.Project()
+
+    if sys.platform == 'win32':
+        project_name = project.name
+    else:
+        project_name = project.name+".jpg"
+
+
+    dlg = wx.FileDialog(None,
+                        "Save %s picture as..." %type_,
+                        "", # last used directory
+                        "%s_%s"%(project_name, type_), # filename
+                        WILDCARD_SAVE_PICTURE,
+                        wx.SAVE|wx.OVERWRITE_PROMPT)
+    dlg.SetFilterIndex(1) # default is VTI
+                            
+    if dlg.ShowModal() == wx.ID_OK:
+        filetype_index = dlg.GetFilterIndex()
+        filetype = INDEX_TO_TYPE[filetype_index]
+        extension = INDEX_TO_EXTENSION[filetype_index]
+        filename = dlg.GetPath()
+        print "filename", filename
+        if sys.platform != 'win32':
+            if filename.split(".")[-1] != extension:
+                filename = filename + "."+ extension
+        return filename, filetype
+    else:
+        return ()
 
 
 
