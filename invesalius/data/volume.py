@@ -100,20 +100,19 @@ class Volume():
         ps.Publisher().subscribe(self.OnEnableTool,
                                  'Enable raycasting tool')
         ps.Publisher().subscribe(self.OnCloseProject, 'Close project data')
+        ps.Publisher().subscribe(self.ChangeBackgroundColour,
+                        'Change volume viewer background colour')
 
     def OnCloseProject(self, pubsub_evt):
         self.CloseProject()
 
-
     def CloseProject(self):
-        
         if self.plane:
             self.plane = None
             ps.Publisher().sendMessage('Remove surface actor from viewer', self.plane_actor)
         if self.exist:
             self.exist = None
             ps.Publisher().sendMessage('Remove surface actor from viewer', self.volume)
-
 
     def OnLoadVolume(self, pubsub_evt):
         label = pubsub_evt.data
@@ -368,6 +367,11 @@ class Volume():
                             self.config['backgroundColorGreenComponent'],
                             self.config['backgroundColorBlueComponent'])
         return colour
+
+    def ChangeBackgroundColour(self, pubsub_evt):
+        self.config['backgroundColorRedComponent'] = pubsub_evt.data[0] * 255
+        self.config['backgroundColorGreenComponent'] = pubsub_evt.data[1] * 255
+        self.config['backgroundColorBlueComponent'] = pubsub_evt.data[2] * 255
 
     def BuildTable():
         curve_table = p['16bitClutCurves']
