@@ -689,7 +689,7 @@ class CutPlane:
         
     def DestroyObjs(self):
         ps.Publisher().sendMessage('Remove surface actor from viewer', self.plane_actor)
-        
+        self.Disable()
         del self.plane_widget   
         del self.plane_source
         del self.plane_actor
