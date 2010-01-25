@@ -111,14 +111,9 @@ class Volume():
         #    self.plane = None
         #    ps.Publisher().sendMessage('Remove surface actor from viewer', self.plane_actor)
         if self.plane:
-            print "======================================================================================================"
-            #ps.Publisher().sendMessage('Remove surface actor from viewer', self.plane.plane_actor)
-            #self.plane.Disable()
             self.plane.DestroyObjs()
             del self.plane
-            #del self.final_imagedata
             self.plane = 0
-
             
         if self.exist:
             self.exist = None
@@ -695,5 +690,3 @@ class CutPlane:
         del self.plane_actor
         del self.normal
         del self.plane
-        ps.Publisher().sendMessage('Remove all volume actors')
-        

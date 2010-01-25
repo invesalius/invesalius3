@@ -180,15 +180,21 @@ class Viewer(wx.Panel):
     def OnCloseProject(self, pubsub_evt):
         if self.raycasting_volume:
             self.raycasting_volume = False
+            
         if  self.slice_plane:
             self.slice_plane.Disable()
             self.slice_plane.DeletePlanes()
             del self.slice_plane
             ps.Publisher().sendMessage('Uncheck image plane menu')
+            self.mouse_pressed = 0
+            self.on_wl = False
+            self.slice_plane = 0
+        
+        #if self.text:
+        #    del self.text
+        #    self.text = 0
             
-        self.mouse_pressed = 0
-        self.on_wl = False
-        self.slice_plane = 0
+        
         
 
     def OnHideText(self, pubsub_evt):
