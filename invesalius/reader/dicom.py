@@ -1415,10 +1415,10 @@ class Parser():
         if ds.FindDataElement(tag):
             data =  str(ds.GetDataElement(tag).GetValue())
             if data == "None":
-                return "unnamed"
+                return _("unnamed")
             if (data):
                 return data
-        return "unnamed"
+        return _("unnamed")
 
     def GetImageTime(self):
         """
