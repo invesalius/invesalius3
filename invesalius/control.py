@@ -362,7 +362,7 @@ class Controller():
         proj.modality = dicom.acquisition.modality
         proj.SetAcquisitionModality(dicom.acquisition.modality)
         proj.imagedata = imagedata
-        #proj.dicom = dicom
+        proj.dicom_sample = dicom
         proj.original_orientation =\
                     name_to_const[dicom.image.orientation_label]
         proj.window = float(dicom.image.window)

@@ -34,6 +34,7 @@ import data.mask as msk
 import data.polydata_utils as pu
 import data.surface as srf
 from presets import Presets
+from reader import dicom
 from utils import Singleton
 import version
 
@@ -45,7 +46,7 @@ class Project(object):
     def __init__(self):
         # Patient/ acquistion information
         self.name = ''
-        #self.dicom = ''
+        self.dicom_sample = ''
         self.modality = ''
         self.original_orientation = ''
         self.min_threshold = ''
@@ -175,6 +176,10 @@ class Project(object):
             if getattr(self.__dict__[key], 'SavePlist', None):
                 project[key] = {'#plist':
                                 self.__dict__[key].SavePlist(filename_tmp).decode('utf-8')}
+            elif key == 'dicom_sample':
+                shutil.copy(self.dicom_sample.parser.filename,
+                            os.path.join(dir_temp, 'sample.dcm'))
+                project[key] = 'sample.dcm'
             else:
                 project[key] = self.__dict__[key]
 
@@ -212,8 +217,10 @@ class Project(object):
             ow.SetInstance(fow)
             
         filelist = Extract(filename, tempfile.gettempdir())
-        main_plist = min(filelist, key=lambda x: len(x))
+        main_plist = min(filter(lambda x: x.endswith('.plist'), filelist),
+                         key=lambda x: len(x))
         #print main_plist
+        print main_plist
         project = plistlib.readPlist(main_plist)
 
         #print "antes", self.__dict__
@@ -233,6 +240,14 @@ class Project(object):
                 p = Presets()
                 p.OpenPlist(path)
                 self.presets = p
+            elif key == 'dicom_sample':
+                path = os.path.join(dirpath, project[key])
+                p = dicom.Parser()
+                p.SetFileName(path)
+                d = dicom.Dicom()
+                d.SetParser(p)
+                self.dicom_sample = d
+
             elif key == 'mask_dict':
                 self.mask_dict = {}
                 for mask in project[key]:
