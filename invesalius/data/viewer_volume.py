@@ -140,6 +140,7 @@ class Viewer(wx.Panel):
             
         self.mouse_pressed = 0
         self.on_wl = False
+        self.slice_plane = 0
         
 
     def OnHideText(self, pubsub_evt):
