@@ -390,6 +390,11 @@ class VolumeToolPanel(wx.Panel):
     def __bind_events(self):
         ps.Publisher().subscribe(self.ChangeButtonColour,
                                  'Change volume viewer gui colour')
+        ps.Publisher().subscribe(self.DisablePreset, 'Close project data')
+
+    def DisablePreset(self, pubsub_evt):
+        self.off_item.Check(1)
+
 
     def __bind_events_wx(self):
         self.button_slice_plane.Bind(wx.EVT_LEFT_DOWN, self.OnButtonSlicePlane)
@@ -422,6 +427,7 @@ class VolumeToolPanel(wx.Panel):
             item = wx.MenuItem(menu, id, name, kind=wx.ITEM_RADIO)
             menu.AppendItem(item)
             if name == const.RAYCASTING_OFF_LABEL:
+                self.off_item = item
                 item.Check(1)
             ID_TO_NAME[id] = name
 

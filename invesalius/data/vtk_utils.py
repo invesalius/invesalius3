@@ -132,7 +132,7 @@ class Text(object):
         # With some encoding in some dicom fields (like name) raises a
         # UnicodeEncodeError because they have non-ascii characters. To avoid
         # that we encode in utf-8.
-        self.mapper.SetInput(value.encode("utf-8"))
+        self.mapper.SetInput(value.encode("cp1252"))
 
     def SetPosition(self, position):
         self.actor.GetPositionCoordinate().SetValue(position[0],
