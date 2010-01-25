@@ -132,7 +132,7 @@ class Viewer(wx.Panel):
         if self.raycasting_volume:
             self.raycasting_volume = False
         if  self.slice_plane:
-            self.Disable()
+            self.slice_plane.Disable()
             #slice_plane_...SetInteractor(self.interactor._Iren)
         self.mouse_pressed = 0
         self.on_wl = False
