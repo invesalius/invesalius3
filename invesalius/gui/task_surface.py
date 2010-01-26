@@ -20,14 +20,15 @@ import sys
 
 import wx
 import wx.lib.hyperlink as hl
-import wx.lib.platebtn as pbtn
 import wx.lib.pubsub as ps
 
 import gui.dialogs as dlg
 import gui.widgets.foldpanelbar as fpb
 import gui.widgets.colourselect as csel
+import gui.widgets.platebtn as pbtn
 import project as prj
 import utils as utl
+
 
 #INTERPOLATION_MODE_LIST = ["Cubic", "Linear", "NearestNeighbor"]
 MIN_TRANSPARENCY = 0
@@ -159,7 +160,7 @@ class InnerTaskPanel(wx.Panel):
 
 class FoldPanel(wx.Panel):
     def __init__(self, parent):
-        wx.Panel.__init__(self, parent, size=(50,50))
+        wx.Panel.__init__(self, parent, size=(50,700))
         self.SetBackgroundColour(wx.Colour(0,255,0))
 
         inner_panel = InnerFoldPanel(self)
@@ -185,7 +186,7 @@ class InnerFoldPanel(wx.Panel):
         # parent panel. Perhaps we need to insert the item into the sizer also...
         # Study this.
         fold_panel = fpb.FoldPanelBar(self, -1, wx.DefaultPosition,
-                                      (10, 100), 0,fpb.FPB_SINGLE_FOLD)
+                                      (10, 140), 0,fpb.FPB_SINGLE_FOLD)
 
         # Fold panel style
         style = fpb.CaptionBarStyle()
@@ -195,15 +196,18 @@ class InnerFoldPanel(wx.Panel):
 
         # Fold 1 - Surface properties
         item = fold_panel.AddFoldPanel(_("Surface properties"), collapsed=True)
+        self.surface_properties = SurfaceProperties(item)
         fold_panel.ApplyCaptionStyle(item, style)
-        fold_panel.AddFoldPanelWindow(item, SurfaceProperties(item), Spacing= 0,
+        fold_panel.AddFoldPanelWindow(item, self.surface_properties, Spacing= 0,
                                       leftSpacing=0, rightSpacing=0)
         fold_panel.Expand(fold_panel.GetFoldPanel(0))
 
         # Fold 2 - Surface tools
         item = fold_panel.AddFoldPanel(_("Advanced options"), collapsed=True)
         fold_panel.ApplyCaptionStyle(item, style)
-        fold_panel.AddFoldPanelWindow(item, SurfaceTools(item), Spacing= 0,
+        self.surface_tools = SurfaceTools(item)
+        self.surface_tools.combo_surface_name = self.surface_properties.combo_surface_name
+        fold_panel.AddFoldPanelWindow(item, self.surface_tools,  Spacing= 0,
                                       leftSpacing=0, rightSpacing=0)
 
         #fold_panel.AddFoldPanelWindow(item, QualityAdjustment(item), Spacing= 0,
@@ -219,16 +223,142 @@ class InnerFoldPanel(wx.Panel):
         self.Update()
         self.SetAutoLayout(1)
 
-
+BTN_LARGEST = wx.NewId()
+BTN_SPLIT = wx.NewId()
+BTN_SEEDS = wx.NewId()
 class SurfaceTools(wx.Panel):
     def __init__(self, parent):
-        wx.Panel.__init__(self, parent, size=(50,240))
+        wx.Panel.__init__(self, parent, size=(50,400))
         default_colour = wx.SystemSettings_GetColour(wx.SYS_COLOUR_MENUBAR)
         self.SetBackgroundColour(default_colour)
 
+        #self.SetBackgroundColour(wx.Colour(255,255,255))
+        self.SetAutoLayout(1)
+
+        self.combo_surface_name = None
+
+        # Fixed hyperlink items
+        tooltip = wx.ToolTip(_("Automatically select largest disconnect surface"))
+        link_largest = hl.HyperLinkCtrl(self, -1, _("Split largest surface"))
+        link_largest.SetUnderlines(False, False, False)
+        link_largest.SetColours("BLACK", "BLACK", "BLACK")
+        link_largest.SetToolTip(tooltip)
+        link_largest.AutoBrowse(False)
+        link_largest.UpdateLink()
+        link_largest.Bind(hl.EVT_HYPERLINK_LEFT, self.OnLinkLargest)
+
+        tooltip = wx.ToolTip(_("Automatically split surfaces into new ones"))
+        link_split_all = hl.HyperLinkCtrl(self, -1,"Split all disconnect surfaces")
+        link_split_all.SetUnderlines(False, False, False)
+        link_split_all.SetColours("BLACK", "BLACK", "BLACK")
+        link_split_all.SetToolTip(tooltip)
+        link_split_all.AutoBrowse(False)
+        link_split_all.UpdateLink()
+        link_split_all.Bind(hl.EVT_HYPERLINK_LEFT, self.OnLinkSplit)
+
+        tooltip = wx.ToolTip(_("Manually insert seeds of surfaces of interest"))
+        link_seeds = hl.HyperLinkCtrl(self,-1,_("Select surfaces of interest"))
+        link_seeds.SetUnderlines(False, False, False)
+        link_seeds.SetColours("BLACK", "BLACK", "BLACK")
+        link_seeds.SetToolTip(tooltip)
+        link_seeds.AutoBrowse(False)
+        link_seeds.UpdateLink()
+        link_seeds.Bind(hl.EVT_HYPERLINK_LEFT, self.OnLinkSeed)
+
+        # Image(s) for buttons
+        BMP_LARGEST = wx.Bitmap("../icons/connectivity_largest.png", wx.BITMAP_TYPE_PNG)
+        BMP_SPLIT_ALL = wx.Bitmap("../icons/connectivity_split_all.png", wx.BITMAP_TYPE_PNG)
+        BMP_SEEDS = wx.Bitmap("../icons/connectivity_manual.png", wx.BITMAP_TYPE_PNG)
+
+        bmp_list = [BMP_LARGEST, BMP_SPLIT_ALL, BMP_SEEDS]
+        for bmp in bmp_list:
+            bmp.SetWidth(25)
+            bmp.SetHeight(25)
+
+        # Buttons related to hyperlinks
+        button_style = pbtn.PB_STYLE_SQUARE | pbtn.PB_STYLE_DEFAULT
+        button_style_plus = button_style|pbtn.PB_STYLE_TOGGLE
+
+        button_split = pbtn.PlateButton(self, BTN_SPLIT, "", BMP_SPLIT_ALL,
+                                              style=button_style)
+        button_largest = pbtn.PlateButton(self, BTN_LARGEST, "",
+                                               BMP_LARGEST, style=button_style)
+        button_seeds = pbtn.PlateButton(self, BTN_SEEDS, "",
+                                            BMP_SEEDS, style=button_style_plus)
+        self.button_seeds = button_seeds
+
+        # When using PlaneButton, it is necessary to bind events from parent win
+        self.Bind(wx.EVT_BUTTON, self.OnButton)
+
+        # Tags and grid sizer for fixed items
+        flag_link = wx.EXPAND|wx.GROW|wx.LEFT|wx.TOP
+        flag_button = wx.EXPAND | wx.GROW
+
+        #fixed_sizer = wx.FlexGridSizer(rows=3, cols=2, hgap=2, vgap=0)
+        fixed_sizer = wx.FlexGridSizer(rows=3, cols=2, hgap=2, vgap=0)
+        fixed_sizer.AddGrowableCol(0, 1)
+        fixed_sizer.AddMany([ (link_largest, 1, flag_link, 3),
+                              (button_largest, 0, flag_button),
+                              (link_seeds, 1, flag_link, 3),
+                              (button_seeds, 0, flag_button),
+                              (link_split_all, 1, flag_link, 3),
+                              (button_split, 0, flag_button) ])
+
+
+        # Add line sizers into main sizer
+        main_sizer = wx.BoxSizer(wx.VERTICAL)
+        main_sizer.Add(fixed_sizer, 0, wx.GROW|wx.EXPAND|wx.TOP, 5)
+
+        # Update main sizer and panel layout
+        self.SetSizer(main_sizer)
+        self.Update()
+        self.SetAutoLayout(1)
+        self.sizer = main_sizer
+
+    def OnLinkLargest(self, evt):
+        self.SelectLargest()
+
+    def OnLinkSplit(self, evt):
+        self.SplitSurface()
+    
+    def OnLinkSeed(self, evt):
+        self.button_seeds.Toggle()
+        self.SelectSeed()
+
+    def OnButton(self, evt):
+        if id == BTN_LARGEST:
+            self.SelectLargest()
+        elif id == BTN_SPLIT:
+            self.SplitSurface()
+        else:
+            self.SelectSeed()
+
+    def SelectLargest(self):
+        index = self.combo_surface_name.GetSelection()
+        ps.Publisher().sendMessage('Split surface by largest region', index) 
+
+    def SplitSurface(self):
+        index = self.combo_surface_name.GetSelection()
+        ps.Publisher().sendMessage('Create surface by largest region', index) 
+    
+    def SelectSeed(self):
+        if self.button_seeds.IsPressed():
+            self.StartSeeding()
+        else:
+            self.EndSeeding()
+
+    def StartSeeding(self):
+        index = self.combo_surface_name.GetSelection()
+        ps.Publisher().sendMessage('Create surface by seeding - start', index) 
+
+    def EndSeeding(self):
+        ps.Publisher().sendMessage('Create surface by seeding - end') 
+
+
+
 class SurfaceProperties(wx.Panel):
     def __init__(self, parent):
-        wx.Panel.__init__(self, parent, size=(50,240))
+        wx.Panel.__init__(self, parent, size=(50,400))
         default_colour = wx.SystemSettings_GetColour(wx.SYS_COLOUR_MENUBAR)
         self.SetBackgroundColour(default_colour)
 
@@ -252,8 +382,8 @@ class SurfaceProperties(wx.Panel):
 
         # Sizer which represents the first line
         line1 = wx.BoxSizer(wx.HORIZONTAL)
-        line1.Add(combo_surface_name, 1, wx.EXPAND|wx.GROW|wx.TOP|wx.RIGHT, 2)
-        line1.Add(button_colour, 0, wx.TOP|wx.LEFT|wx.RIGHT, 2)
+        line1.Add(combo_surface_name, 1, wx.LEFT|wx.EXPAND|wx.GROW|wx.TOP|wx.RIGHT, 7)
+        line1.Add(button_colour, 0, wx.TOP|wx.RIGHT, 7)
 
 
         ## LINE 2
@@ -283,8 +413,9 @@ class SurfaceProperties(wx.Panel):
 
         # Add all lines into main sizer
         sizer = wx.BoxSizer(wx.VERTICAL)
-        sizer.Add(line1, 1, wx.GROW|wx.EXPAND|wx.LEFT|wx.RIGHT|wx.TOP, 5)
-        sizer.Add(fixed_sizer, 0, wx.GROW|wx.EXPAND|wx.LEFT|wx.RIGHT|wx.TOP, 5)
+        sizer.Add(line1, 1, wx.GROW|wx.EXPAND|wx.TOP, 10)
+        sizer.Add(fixed_sizer, 0,
+wx.GROW|wx.EXPAND|wx.LEFT|wx.RIGHT|wx.TOP|wx.BOTTOM, 10)
         #sizer.Add(cb, 0, wx.GROW|wx.EXPAND|wx.RIGHT|wx.LEFT|wx.TOP|wx.BOTTOM, 5)
         sizer.Fit(self)
 

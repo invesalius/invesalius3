@@ -686,6 +686,13 @@ class PlateButton(wx.PyControl):
 
             self.PopupMenu(self._menu, (xpos, size[1] + adj))
 
+    def Toggle(self): 
+        self._pressed = not self._pressed
+        if self._pressed:
+            self.SetState(PLATE_PRESSED)
+        else:
+            self.SetState(PLATE_NORMAL)
+
     def ToggleState(self):
         """Toggle button state"""
         if self._state['cur'] != PLATE_PRESSED:
