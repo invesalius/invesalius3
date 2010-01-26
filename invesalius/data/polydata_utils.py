@@ -158,7 +158,8 @@ def SplitDisconectedParts(polydata):
     nregions = conn.GetNumberOfExtractedRegions()
     
     polydata_collection = []
-    
+   
+     
     for region in xrange(nregions):
         conn.InitializeSpecifiedRegionList()
         conn.AddSpecifiedRegion(region)

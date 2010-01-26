@@ -197,18 +197,15 @@ class InnerFoldPanel(wx.Panel):
 
         # Fold 1 - Surface properties
         item = fold_panel.AddFoldPanel(_("Surface properties"), collapsed=True)
-        self.surface_properties = SurfaceProperties(item)
         fold_panel.ApplyCaptionStyle(item, style)
-        fold_panel.AddFoldPanelWindow(item, self.surface_properties, Spacing= 0,
+        fold_panel.AddFoldPanelWindow(item, SurfaceProperties(item), Spacing= 0,
                                       leftSpacing=0, rightSpacing=0)
         fold_panel.Expand(fold_panel.GetFoldPanel(0))
 
         # Fold 2 - Surface tools
         item = fold_panel.AddFoldPanel(_("Advanced options"), collapsed=True)
         fold_panel.ApplyCaptionStyle(item, style)
-        self.surface_tools = SurfaceTools(item)
-        self.surface_tools.combo_surface_name = self.surface_properties.combo_surface_name
-        fold_panel.AddFoldPanelWindow(item, self.surface_tools,  Spacing= 0,
+        fold_panel.AddFoldPanelWindow(item, SurfaceTools(item), Spacing= 0,
                                       leftSpacing=0, rightSpacing=0)
 
         #fold_panel.AddFoldPanelWindow(item, QualityAdjustment(item), Spacing= 0,
@@ -236,7 +233,6 @@ class SurfaceTools(wx.Panel):
         #self.SetBackgroundColour(wx.Colour(255,255,255))
         self.SetAutoLayout(1)
 
-        self.combo_surface_name = None
 
         # Fixed hyperlink items
         tooltip = wx.ToolTip(_("Automatically select largest disconnect surface"))
@@ -336,15 +332,11 @@ class SurfaceTools(wx.Panel):
             self.SelectSeed()
 
     def SelectLargest(self):
-        index = self.combo_surface_name.GetSelection()
-        ps.Publisher().sendMessage('Create surface from largest region', index) 
+        ps.Publisher().sendMessage('Create surface from largest region') 
 
     def SplitSurface(self):
-        index = self.combo_surface_name.GetSelection()
-        ps.Publisher().sendMessage('Split surface', index) 
+        ps.Publisher().sendMessage('Split surface') 
 
-        # surface_manager
-    
     def SelectSeed(self):
         if self.button_seeds.IsPressed():
             self.StartSeeding()
@@ -352,14 +344,12 @@ class SurfaceTools(wx.Panel):
             self.EndSeeding()
 
     def StartSeeding(self):
-        index = self.combo_surface_name.GetSelection()
         ps.Publisher().sendMessage('Enable style', const.VOLUME_STATE_SEED)
-        ps.Publisher().sendMessage('Create surface by seeding - start', index)
+        ps.Publisher().sendMessage('Create surface by seeding - start')
 
     def EndSeeding(self):
         ps.Publisher().sendMessage('Disable style', const.VOLUME_STATE_SEED)
         ps.Publisher().sendMessage('Create surface by seeding - end')
-        # volume_viewer -> surface_manager
 
 
 

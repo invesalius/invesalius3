@@ -86,7 +86,6 @@ class Viewer(wx.Panel):
         self.picker = vtk.vtkPointPicker()
         interactor.SetPicker(self.picker)
         self.seed_points = []
-        self.current_surface_index = 0
         
 
     def __bind_events(self):
@@ -143,13 +142,11 @@ class Viewer(wx.Panel):
 
     def OnStartSeed(self, pubsub_evt):
         index = pubsub_evt.data
-        self.current_surface_index = index
         self.seed_points = []
     
     def OnEndSeed(self, pubsub_evt):
         ps.Publisher().sendMessage("Create surface from seeds",
-                                    (self.current_surface_index ,
-                                    self.seed_points)) 
+                                    self.seed_points) 
  
 
     def OnExportPicture(self, pubsub_evt):

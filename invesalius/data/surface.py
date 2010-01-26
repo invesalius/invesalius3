@@ -126,7 +126,7 @@ class SurfaceManager():
         ps.Publisher().subscribe(self.OnSeedSurface, "Create surface from seeds")
 
     def OnSeedSurface(self, pubsub_evt):
-        index, points_id_list = pubsub_evt.data
+        points_id_list = pubsub_evt.data
         index = self.last_surface_index
         proj = prj.Project()
         surface = proj.surface_dict[index]
@@ -134,9 +134,9 @@ class SurfaceManager():
         new_polydata = pu.JoinSeedsParts(surface.polydata,
                                           points_id_list)
         self.CreateSurfaceFromPolydata(new_polydata)
+        self.ShowActor(index, False)
 
     def OnSplitSurface(self, pubsub_evt):
-        index = pubsub_evt.data
         index = self.last_surface_index
         proj = prj.Project()
         surface = proj.surface_dict[index]
@@ -144,16 +144,16 @@ class SurfaceManager():
         new_polydata_list = pu.SplitDisconectedParts(surface.polydata)
         for polydata in new_polydata_list:
             self.CreateSurfaceFromPolydata(polydata)
+        self.ShowActor(index, False)
 
     def OnLargestSurface(self, pubsub_evt):
-        index = pubsub_evt.data
         index = self.last_surface_index
         proj = prj.Project()
         surface = proj.surface_dict[index]
 
         new_polydata = pu.SelectLargestPart(surface.polydata)
         self.CreateSurfaceFromPolydata(new_polydata)
-        #TODO: Hide previous
+        self.ShowActor(index, False)
 
     def CreateSurfaceFromPolydata(self, polydata, overwrite=False):
         mapper = vtk.vtkPolyDataMapper()
@@ -224,7 +224,7 @@ class SurfaceManager():
                                     surface.colour, surface.volume,
                                     surface.transparency))
         self.last_surface_index = index
-
+        self.ShowActor(index, True)
 
 
 
