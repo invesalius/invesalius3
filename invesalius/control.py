@@ -107,8 +107,6 @@ class Controller():
 
         # Import project
         dirpath = dialog.ShowImportDirDialog()
-        ###
-        print dirpath
         if dirpath and not os.listdir(dirpath):
             dialog.ImportEmptyDirectory(dirpath)
         elif dirpath:
@@ -149,28 +147,27 @@ class Controller():
 
 
     def ShowDialogCloseProject(self):
-        print "ShowDialogCloseProject"
+        utils.debug("ShowDialogCloseProject")
         session = ses.Session()
         st = session.project_status
-        print "* st", st
         if st == const.PROJ_CLOSE:
             return -1
         filename = session.project_path[1]
         if (st == const.PROJ_NEW) or (st == const.PROJ_CHANGE):
             answer = dialog.SaveChangesDialog(filename)
             if not answer:
-                print "Close without changes"
+                utils.debug("Close without changes")
                 self.CloseProject()
                 ps.Publisher().sendMessage("Enable state project", False)
                 ps.Publisher().sendMessage('Set project name')
             elif answer == 1:
                 self.ShowDialogSaveProject()
-                print "Save changes and close"
+                utils.debug("Save changes and close")
                 self.CloseProject()
                 ps.Publisher().sendMessage("Enable state project", False)
                 ps.Publisher().sendMessage('Set project name')
             elif answer == -1:
-                print "Cancel"
+                utils.debug("Cancel")
         else:
             self.CloseProject()
             ps.Publisher().sendMessage("Enable state project", False)
@@ -301,7 +298,7 @@ class Controller():
 
         if len(patients_groups):
             group = dcm.SelectLargerDicomGroup(patients_groups)
-            imagedata, dicom = self.OpenDicomGroup(group, gui=True)
+            imagedata, dicom = self.OpenDicomGroup(group, 0, gui=True)
             self.CreateDicomProject(imagedata, dicom)
         # OPTION 2: ANALYZE?
         else:
@@ -310,7 +307,7 @@ class Controller():
                 self.CreateAnalyzeProject(imagedata)
             # OPTION 3: Nothing...
             else:
-                print "No medical images found on given directory"
+                utils.debug("No medical images found on given directory")
                 return
         self.LoadProject()
         ps.Publisher().sendMessage("Enable state project", True)
@@ -395,7 +392,7 @@ class Controller():
         interval += 1
         filelist = dicom_group.GetFilenameList()[::interval]
         if not filelist:
-            print ">Not used the IPPSorter"
+            utils.debug("Not used the IPPSorter")
             filelist = [i.image.file for i in dicom_group.GetHandSortedList()[::interval]]
         
         
