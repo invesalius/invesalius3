@@ -933,6 +933,10 @@ class Viewer(wx.Panel):
         state = pubsub_evt.data
         self.SetInteractorStyle(state)
         
+        if (state != const.SLICE_STATE_EDITOR):
+            ps.Publisher().sendMessage('Set interactor default cursor')
+
+        
         
     def ChangeBrushOperation(self, pubsub_evt):
         #print pubsub_evt.data
