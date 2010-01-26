@@ -34,6 +34,9 @@ EVT_SELECT_SLICE = wx.PyEventBinder(myEVT_SELECT_SLICE, 1)
 myEVT_SELECT_PATIENT = wx.NewEventType()
 EVT_SELECT_PATIENT = wx.PyEventBinder(myEVT_SELECT_PATIENT, 1)
 
+myEVT_SELECT_SERIE_TEXT = wx.NewEventType()
+EVT_SELECT_SERIE_TEXT = wx.PyEventBinder(myEVT_SELECT_SERIE_TEXT, 1)
+
 class SelectEvent(wx.PyCommandEvent):
     def __init__(self , evtType, id):
         super(SelectEvent, self).__init__(evtType, id)
@@ -131,6 +134,7 @@ class InnerPanel(wx.Panel):
         self.Bind(EVT_SELECT_SLICE, self.OnSelectSlice)
         self.Bind(EVT_SELECT_PATIENT, self.OnSelectPatient)
         self.btn_ok.Bind(wx.EVT_BUTTON, self.OnLoadDicom)
+        self.text_panel.Bind(EVT_SELECT_SERIE_TEXT, self.OnLoadDicom)
     
     def ShowDicomPreview(self, pubsub_evt):
         dicom_groups = pubsub_evt.data
@@ -303,8 +307,9 @@ class TextPanel(wx.Panel):
         item = evt.GetItem()
         group = self.tree.GetItemPyData(item)
         if isinstance(group, dcm.DicomGroup):
-            ps.Publisher().sendMessage('Open DICOM group',
-                                        group)
+            my_evt = SelectEvent(myEVT_SELECT_SERIE_TEXT, self.GetId())
+            my_evt.SetItemData(group)
+            self.GetEventHandler().ProcessEvent(my_evt)
         else:
             if self.tree.IsExpanded(item):
                 self.tree.Collapse(item)
