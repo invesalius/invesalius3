@@ -625,28 +625,30 @@ class SingleImagePreview(wx.Panel):
 
         text_image_size = vtku.Text()
         text_image_size.SetPosition(const.TEXT_POS_LEFT_UP)
-        text_image_size.SetValue(_("image size"))
+        text_image_size.SetValue("")
+        text_image_size.SetSize(const.TEXT_SIZE_SMALL)
         self.text_image_size = text_image_size
 
         text_image_location = vtku.Text()
         text_image_location.SetVerticalJustificationToBottom()
         text_image_location.SetPosition(const.TEXT_POS_LEFT_DOWN)
-        text_image_location.SetValue("localization")
+        text_image_location.SetValue("")
+        text_image_location.SetSize(const.TEXT_SIZE_SMALL)
         self.text_image_location = text_image_location
 
-        value = _("id\nprotocol")
         text_patient = vtku.Text()
         text_patient.SetJustificationToRight()
         text_patient.SetPosition(const.TEXT_POS_RIGHT_UP)
-        text_patient.SetValue(value)
+        text_patient.SetValue("")
+        text_patient.SetSize(const.TEXT_SIZE_SMALL)
         self.text_patient = text_patient
 
-        value = _("date time\n Made in InVesalius")
         text_acquisition = vtku.Text()
         text_acquisition.SetJustificationToRight()
         text_acquisition.SetVerticalJustificationToBottom()
         text_acquisition.SetPosition(const.TEXT_POS_RIGHT_DOWN)
-        text_acquisition.SetValue(value)
+        text_acquisition.SetValue("")
+        text_acquisition.SetSize(const.TEXT_SIZE_SMALL)
         self.text_acquisition = text_acquisition
 
         renderer = vtk.vtkRenderer()
