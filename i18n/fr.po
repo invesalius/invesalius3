@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: InVesalius 3\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2010-01-26 17:33-0200\n"
+"POT-Creation-Date: 2010-01-26 20:09-0200\n"
 "PO-Revision-Date: 2010-01-07 11:25-0300\n"
 "Last-Translator: Frédéric Lopez <frederic.lopez@free.fr>\n"
 "Language-Team: InVesalius Team <invesalius@cti.gov.br>\n"
@@ -549,7 +549,7 @@ msgid "PostScript document"
 msgstr "Document PostScript"
 
 #: dialogs.py:522
-msgid "POV-Ray file)"
+msgid "POV-Ray file"
 msgstr "Fichier POV-Ray"
 
 #: dialogs.py:523
@@ -774,7 +774,11 @@ msgstr "Médecin traitant"
 msgid "InVesalius Database"
 msgstr "Base de données InVesalius"
 
-#: language_dialog.py:73
+#: language_dialog.py:36
+msgid "Language selection"
+msgstr "Sélection de la langue"
+
+#: language_dialog.py:72
 msgid "Choose user interface language"
 msgstr "Choisir la langue de l'interface utilisateur"
 
@@ -969,28 +973,30 @@ msgid "Advanced options"
 msgstr "Outils avancés"
 
 #: task_surface.py:238
-msgid "Automatically select largest disconnect surface"
-msgstr "électionner automatiquement plus grande déconnecter surface"
+msgid "Automatically select largest disconnect region and create new surface"
+msgstr "Électionner automatiquement plus grande déconnecter región et
+créer une nouvelle surface"
 
 #: task_surface.py:239
-msgid "Split largest surface"
-msgstr "Split plus grande surface"
+msgid "Select largest part"
+msgstr "Électionner plus grande surface"
 
 #: task_surface.py:247
-msgid "Automatically split surfaces into new ones"
-msgstr "Automatiquement divisés en nouvelles surfaces"
+msgid ""
+"Automatically select disconnect regions and create one new surface per region"
+msgstr "Électionner automatiquement déconnecter régions et créer une nouvelle surface par région"
 
 #: task_surface.py:248
 msgid "Split all disconnect surfaces"
 msgstr "Split toutes les surfaces déconnecter"
 
 #: task_surface.py:256
-msgid "Manually insert seeds of surfaces of interest"
-msgstr "Insérer manuellement de semences de surfaces d'intéret"
+msgid "Manually insert seeds of regions of interest and create one new surface"
+msgstr "Insérer manuellement de semences en les régions d'intéret"
 
 #: task_surface.py:257
-msgid "Select surfaces of interest"
-msgstr "Sélectionner surfaces d'intérêt"
+msgid "Select regions of interest..."
+msgstr "Sélectionner zones d'intérêt"
 
 #: task_surface.py:388
 msgid "Transparency:"
@@ -1015,6 +1021,36 @@ msgstr "Mesurer"
 #: task_tools.py:61 task_tools.py:62
 msgid "Add text annotations"
 msgstr "Ajouter des annotations"
+
+#: viewer_slice.py:435 viewer_slice.py:439
+msgid "R"
+msgstr "D"
+
+#: viewer_slice.py:435 viewer_slice.py:439
+msgid "L"
+msgstr "G"
+
+#: viewer_slice.py:435 viewer_slice.py:437
+msgid "A"
+msgstr "A"
+
+#: viewer_slice.py:435 viewer_slice.py:437
+msgid "P"
+msgstr "P"
+
+#: viewer_slice.py:437 viewer_slice.py:439
+msgid "T"
+msgstr "H"
+
+#: viewer_slice.py:437 viewer_slice.py:439
+msgid "B"
+msgstr "B"
+
+#~ msgid "Automatically split surfaces into new ones"
+#~ msgstr "Automatiquement divisés en nouvelles surfaces"
+
+#~ msgid "Select surfaces of interest"
+#~ msgstr "Sélectionner surfaces d'intérêt"
 
 #~ msgid "Import medical images"
 #~ msgstr "Importer des images médicales"
