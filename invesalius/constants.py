@@ -254,6 +254,7 @@ REDUCE_IMAGEDATA_QUALITY = 0
 
 ICON_DIR = os.path.abspath(os.path.join('..', 'icons'))
 SAMPLE_DIR = os.path.abspath(os.path.join('..', 'samples'))
+DOC_DIR = os.path.abspath(os.path.join('..', 'docs'))
 
 
 ID_TO_BMP = {VOL_FRONT: [_("Front"), os.path.join(ICON_DIR, "view_front.png")],
@@ -409,6 +410,7 @@ ID_PRINT_SCREENSHOT, ID_EXIT] = [wx.NewId() for number in range(10)]
     [wx.NewId() for number in range(3)]
 
 ID_ABOUT = wx.NewId()
+ID_START = wx.NewId()
 
 #---------------------------------------------------------
 STATE_DEFAULT = 1000

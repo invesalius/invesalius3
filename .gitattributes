@@ -14,6 +14,7 @@ docs/devel/example_singleton.py -text
 docs/devel/example_singleton_pubsub.py -text
 docs/devel/sendmessages.txt -text
 docs/devel/subscribes.txt -text
+docs/user_guide_invesalius3a.pdf -text
 i18n/de.po -text
 i18n/el.po -text
 i18n/en.po -text

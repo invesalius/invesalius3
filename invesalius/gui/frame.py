@@ -248,6 +248,20 @@ class Frame(wx.Frame):
         #    self.OnExit(evt)
         elif id == const.ID_ABOUT:
             self.ShowAbout()
+        elif id == const.ID_START:
+            self.GettingStarted()
+
+    def GettingStarted(self):
+        #if sys.platform == 'win32':
+        #    os.filestart()
+        #else:
+        #    os.system("/usr/bin/xdg-open %s" % nome_file)
+
+        import webbrowser
+        path = os.path.join(const.DOC_DIR, "user_guide_invesalius3a.pdf")
+        webbrowser.open(path)
+
+
 
     def ShowAbout(self):
         dlg.ShowAboutDialog(self)
@@ -358,7 +372,7 @@ class MenuBar(wx.MenuBar):
 
         # HELP
         help_menu = wx.Menu()
-        help_menu.Append(105, _("Getting Started..."))
+        help_menu.Append(const.ID_START, _("Getting Started..."))
         #help_menu.Append(108, "User Manual...")
         help_menu.AppendSeparator()
         help_menu.Append(const.ID_ABOUT, _("About..."))
