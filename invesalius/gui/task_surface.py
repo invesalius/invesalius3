@@ -245,7 +245,7 @@ class SurfaceTools(wx.Panel):
         link_largest.Bind(hl.EVT_HYPERLINK_LEFT, self.OnLinkLargest)
 
         tooltip = wx.ToolTip(_("Automatically split surfaces into new ones"))
-        link_split_all = hl.HyperLinkCtrl(self, -1,"Split all disconnect surfaces")
+        link_split_all = hl.HyperLinkCtrl(self, -1,_("Split all disconnect surfaces"))
         link_split_all.SetUnderlines(False, False, False)
         link_split_all.SetColours("BLACK", "BLACK", "BLACK")
         link_split_all.SetToolTip(tooltip)
