@@ -150,5 +150,25 @@ def SelectLargestPart(polydata):
 def SplitDisconectedParts(polydata):
     """
     """
-    return [polydata]
+    conn = vtk.vtkPolyDataConnectivityFilter()
+    conn.SetInput(polydata)
+    conn.SetExtractionModeToAllRegions()
+    conn.Update()
+    
+    nregions = conn.GetNumberOfExtractedRegions()
+    
+    polydata_collection = []
+    
+    for region in nregions:
+        conn.InitializeSpecifiedRegionList()
+        conn.AddSpecifiedRegion(region)
+        conn.Update()
+        
+        p = vtk.vtkPolyData()
+        p.DeepCopy(conn.GetOutput())
+        p.Update()
+        
+        polydata_collection.append(p)
+    
+    return polydata_collection
 
