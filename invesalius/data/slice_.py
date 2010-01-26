@@ -582,7 +582,7 @@ class Slice(object):
         
             # update gui related to mask
             utils.debug("__load_masks")
-            utils.debug('THRESHOLD_RANGE %s', mask.threshold_range)
+            utils.debug('THRESHOLD_RANGE %s'% mask.threshold_range)
             ps.Publisher().sendMessage('Add mask',
                                     (mask.index,
                                      mask.name,
