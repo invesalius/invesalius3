@@ -83,6 +83,12 @@ class Viewer(wx.Panel):
         self.mouse_pressed = 0
         self.on_wl = False
 
+        self.picker = vtk.vtkPointPicker()
+        interactor.SetPicker(self.picker)
+        self.seed_points = []
+        self.current_surface_index = 0
+        
+
     def __bind_events(self):
         ps.Publisher().subscribe(self.LoadActor,
                                  'Load surface actor into viewer')
@@ -132,7 +138,19 @@ class Viewer(wx.Panel):
         
         ps.Publisher().subscribe(self.OnExportPicture,'Export picture to file')
 
+        ps.Publisher().subscribe(self.OnStartSeed,'Create surface by seeding - start')
+        ps.Publisher().subscribe(self.OnEndSeed,'Create surface by seeding - end')
 
+    def OnStartSeed(self, pubsub_evt):
+        index = pubsub_evt.data
+        self.current_surface_index = index
+        self.seed_points = []
+    
+    def OnEndSeed(self, pubsub_evt):
+        ps.Publisher().sendMessage("Create surface from seeds",
+                                    (self.current_surface_index ,
+                                    self.seed_points)) 
+ 
 
     def OnExportPicture(self, pubsub_evt):
         ps.Publisher().sendMessage('Begin busy cursor')
@@ -189,13 +207,6 @@ class Viewer(wx.Panel):
             self.mouse_pressed = 0
             self.on_wl = False
             self.slice_plane = 0
-        
-        #if self.text:
-        #    del self.text
-        #    self.text = 0
-            
-        
-        
 
     def OnHideText(self, pubsub_evt):
         self.text.Hide()
@@ -238,6 +249,10 @@ class Viewer(wx.Panel):
                     },
               const.STATE_DEFAULT:
                     {
+                    },
+              const.VOLUME_STATE_SEED:
+                    {
+                    "LeftButtonPressEvent": self.OnInsertSeed
                     }
               }
 
@@ -535,6 +550,12 @@ class Viewer(wx.Panel):
     def AppendActor(self, evt_pubsub=None):
         self.ren.AddActor(evt_pubsub.data)
 
+    def OnInsertSeed(self, obj, evt):
+        x,y = self.interactor.GetEventPosition()
+        #x,y = obj.GetLastEventPosition()
+        self.picker.Pick(x, y, 0, self.ren)
+        point_id = self.picker.GetPointId()
+        self.seed_points.append(point_id)
 
 class SlicePlane:
     def __init__(self):
@@ -783,11 +804,4 @@ class SlicePlane:
         del self.plane_y
         del self.plane_z 
     
-    def PointId(self, evt, obj):
-        #TODO: add in the code
-        #   picker = vtk.vtkPointPicker()
-        #   interactor.SetPicker(picker)
-        #   interactor.AddObserver("left...", self.PointId)
-        x,y = evt.GetLastEventPosition()
-        self.picker.Pick(x, y, 0, self.ren1)
-        point_id = self.picker.GetPointId()
+

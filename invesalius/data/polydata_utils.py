@@ -57,23 +57,7 @@ def ApplySmoothFilter(polydata, iterations, relaxation_factor):
     
     return smoother.GetOutput()
     
-def SelectLargestSurface(polydata):
-    """
-    """
-    pass
-    return polydata
 
-def SplitDisconectedSurfaces(polydata):
-    """
-    """
-    return []
-    
-# TODO: style?    
-def SelectSurfaceByCell(polytada, list_index = []):
-    """
-    """
-    pass
-    return []
 
 def FillSurfaceHole(polydata):
     """
@@ -133,7 +117,7 @@ def Import(filename):
     reader.Update()
     return reader.GetOutput()
 
-def SelectPolyDataPart(polydata, point):
+def JoinSeedsParts(polydata, point_id_list):
     """
     The function require vtkPolyData and point id
     from vtkPolyData.
@@ -141,7 +125,30 @@ def SelectPolyDataPart(polydata, point):
     conn = vtk.vtkPolyDataConnectivityFilter()
     conn.SetInput(polydata)
     conn.SetExtractionModeToPointSeededRegions()
-    conn.AddSeed(point)
+    for seed in point_id_list:
+        conn.AddSeed(seed)
     conn.Update()
 
-    return conn.GetOutput()
+    result = vtk.vtkPolyData()
+    result.DeepCopy(conn.GetOutput())
+    result.Update()
+    return result
+
+def SelectLargestPart(polydata):
+    """
+    """
+    conn = vtk.vtkPolyDataConnectivityFilter()
+    conn.SetInput(polydata)
+    conn.SetExtractionModeToLargestRegion()
+    conn.Update()
+
+    result = vtk.vtkPolyData()
+    result.DeepCopy(conn.GetOutput())
+    result.Update()
+    return result
+
+def SplitDisconectedParts(polydata):
+    """
+    """
+    return [polydata]
+

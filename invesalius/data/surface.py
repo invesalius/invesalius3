@@ -20,6 +20,7 @@
 import multiprocessing
 import os
 import plistlib
+import random
 import sys
 import tempfile
 
@@ -118,6 +119,81 @@ class SurfaceManager():
         ps.Publisher().subscribe(self.OnLoadSurfaceDict, 'Load surface dict')
         ps.Publisher().subscribe(self.OnCloseProject, 'Close project data')
         ps.Publisher().subscribe(self.OnSelectSurface, 'Change surface selected')
+        #----
+        ps.Publisher().subscribe(self.OnSplitSurface, 'Split surface')
+        ps.Publisher().subscribe(self.OnLargestSurface,
+                                'Create surface from largest region')
+        ps.Publisher().subscribe(self.OnSeedSurface, "Create surface from seeds")
+
+    def OnSeedSurface(self, pubsub_evt):
+        index, points_id_list = pubsub_evt.data
+        proj = prj.Project()
+        surface = proj.surface_dict[index]
+ 
+        new_polydata = pu.JoinSeedsParts(surface.polydata,
+                                          points_id_list)
+        self.CreateSurfaceFromPolydata(new_polydata)
+
+    def OnSplitSurface(self, pubsub_evt):
+        index = pubsub_evt.data
+        proj = prj.Project()
+        surface = proj.surface_dict[index]
+
+        new_polydata_list = pu.SplitDisconectedParts(surface.polydata)
+        for polydata in new_polydata_list:
+            self.CreateSurfaceFromPolydata(polydata)
+
+    def OnLargestSurface(self, pubsub_evt):
+        index = pubsub_evt.data
+        proj = prj.Project()
+        surface = proj.surface_dict[index]
+
+        new_polydata = pu.SelectLargestPart(surface.polydata)
+        self.CreateSurfaceFromPolydata(new_polydata)
+
+    def CreateSurfaceFromPolydata(self, polydata, overwrite=False):
+        mapper = vtk.vtkPolyDataMapper()
+        mapper.SetInput(polydata)
+        mapper.ScalarVisibilityOff()
+
+        actor = vtk.vtkActor()
+        actor.SetMapper(mapper)
+
+        if overwrite:
+            surface = Surface(index = self.last_surface_index)
+        else:
+            surface = Surface()
+
+        surface.colour = random.choice(const.SURFACE_COLOUR)
+        surface.polydata = polydata
+
+        # Set actor colour and transparency
+        actor.GetProperty().SetColor(surface.colour)
+        actor.GetProperty().SetOpacity(1-surface.transparency)
+
+        # Append surface into Project.surface_dict
+        proj = prj.Project()
+        if overwrite:
+            proj.ChangeSurface(surface)
+        else:
+            index = proj.AddSurface(surface)
+            surface.index = index
+            self.last_surface_index = index
+
+        session = ses.Session()
+        session.ChangeProject()
+
+        # The following lines have to be here, otherwise all volumes disappear
+        measured_polydata = vtk.vtkMassProperties()
+        measured_polydata.AddObserver("ProgressEvent", lambda obj,evt:
+                            UpdateProgress(obj, _("Generating 3D surface...")))
+        measured_polydata.SetInput(polydata)
+        volume =  measured_polydata.GetVolume()
+        surface.volume = volume
+        self.last_surface_index = surface.index
+
+        ps.Publisher().sendMessage('Load surface actor into viewer', actor)
+
 
     def OnCloseProject(self, pubsub_evt):
         self.CloseProject()

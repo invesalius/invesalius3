@@ -22,6 +22,7 @@ import wx
 import wx.lib.hyperlink as hl
 import wx.lib.pubsub as ps
 
+import constants as const
 import gui.dialogs as dlg
 import gui.widgets.foldpanelbar as fpb
 import gui.widgets.colourselect as csel
@@ -335,11 +336,12 @@ class SurfaceTools(wx.Panel):
 
     def SelectLargest(self):
         index = self.combo_surface_name.GetSelection()
-        ps.Publisher().sendMessage('Split surface by largest region', index) 
+        ps.Publisher().sendMessage('Split surface', index) 
 
     def SplitSurface(self):
         index = self.combo_surface_name.GetSelection()
-        ps.Publisher().sendMessage('Create surface by largest region', index) 
+        ps.Publisher().sendMessage('Create surface from largest region', index) 
+        # surface_manager
     
     def SelectSeed(self):
         if self.button_seeds.IsPressed():
@@ -349,10 +351,13 @@ class SurfaceTools(wx.Panel):
 
     def StartSeeding(self):
         index = self.combo_surface_name.GetSelection()
-        ps.Publisher().sendMessage('Create surface by seeding - start', index) 
+        ps.Publisher().sendMessage('Enable style', const.VOLUME_STATE_SEED)
+        ps.Publisher().sendMessage('Create surface by seeding - start', index)
 
     def EndSeeding(self):
-        ps.Publisher().sendMessage('Create surface by seeding - end') 
+        ps.Publisher().sendMessage('Disable style', const.VOLUME_STATE_SEED)
+        ps.Publisher().sendMessage('Create surface by seeding - end')
+        # volume_viewer -> surface_manager
 
 
 
