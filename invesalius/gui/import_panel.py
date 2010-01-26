@@ -92,11 +92,11 @@ class InnerPanel(wx.Panel):
 
         self.btn_ok = wx.Button(panel, wx.ID_OK)
         self.btn_ok.SetDefault()
-        btn_cancel = wx.Button(panel, wx.ID_CANCEL)
+        self.btn_cancel = wx.Button(panel, wx.ID_CANCEL)
 
         btnsizer = wx.StdDialogButtonSizer()
         btnsizer.AddButton(self.btn_ok)
-        btnsizer.AddButton(btn_cancel)
+        btnsizer.AddButton(self.btn_cancel)
         btnsizer.Realize()
 
         self.combo_interval = wx.ComboBox(panel, -1, "", choices=const.IMPORT_INTERVAL,
@@ -133,8 +133,9 @@ class InnerPanel(wx.Panel):
         self.Bind(EVT_SELECT_SERIE, self.OnSelectSerie)
         self.Bind(EVT_SELECT_SLICE, self.OnSelectSlice)
         self.Bind(EVT_SELECT_PATIENT, self.OnSelectPatient)
-        self.btn_ok.Bind(wx.EVT_BUTTON, self.OnLoadDicom)
-        self.text_panel.Bind(EVT_SELECT_SERIE_TEXT, self.OnLoadDicom)
+        self.btn_ok.Bind(wx.EVT_BUTTON, self.OnClickOk)
+        self.btn_cancel.Bind(wx.EVT_BUTTON, self.OnClickCancel)
+        self.text_panel.Bind(EVT_SELECT_SERIE_TEXT, self.OnDblClickTextPanel)
     
     def ShowDicomPreview(self, pubsub_evt):
         dicom_groups = pubsub_evt.data
@@ -156,10 +157,21 @@ class InnerPanel(wx.Panel):
     def OnSelectPatient(self, evt):
         print "You've selected the patient", evt.GetSelectID()
 
-    def OnLoadDicom(self, evt):
-        group = self.text_panel.GetSelection()
-        interval = self.combo_interval.GetSelection()
+    def OnDblClickTextPanel(self, evt):
+        group = evt.GetItemData()
+        self.LoadDicom(group)
 
+    def OnClickOk(self, evt):
+        group = self.text_panel.GetSelection()
+        self.LoadDicom(group)
+
+    def OnClickCancel(self, evt): 
+        ps.Publisher().sendMessage("Cancel DICOM load")
+
+    def LoadDicom(self, group):
+        interval = self.combo_interval.GetSelection()
+        if not isinstance(group, dcm.DicomGroup):
+            group = max(group.GetGroups(), key=lambda g: g.nslices)
         ps.Publisher().sendMessage('Open DICOM group', (group, interval))
         
         
@@ -284,7 +296,6 @@ class TextPanel(wx.Panel):
     def OnSelChanged(self, evt):
         item = self.tree.GetSelection()
         if self._selected_by_user:
-            print "Yes, I'm here"
             group = self.tree.GetItemPyData(item)
             if isinstance(group, dcm.DicomGroup):
                 ps.Publisher().sendMessage('Load group into import panel',
@@ -306,15 +317,9 @@ class TextPanel(wx.Panel):
     def OnActivate(self, evt):
         item = evt.GetItem()
         group = self.tree.GetItemPyData(item)
-        if isinstance(group, dcm.DicomGroup):
-            my_evt = SelectEvent(myEVT_SELECT_SERIE_TEXT, self.GetId())
-            my_evt.SetItemData(group)
-            self.GetEventHandler().ProcessEvent(my_evt)
-        else:
-            if self.tree.IsExpanded(item):
-                self.tree.Collapse(item)
-            else:
-                self.tree.Expand(item)
+        my_evt = SelectEvent(myEVT_SELECT_SERIE_TEXT, self.GetId())
+        my_evt.SetItemData(group)
+        self.GetEventHandler().ProcessEvent(my_evt)
 
     def OnSize(self, evt):
         self.tree.SetSize(self.GetSize())
