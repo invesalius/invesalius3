@@ -141,6 +141,8 @@ def yGetDicomGroups(directory, recursive=True, gui=True):
     for t in threads:
         t.join()
 
+    #TODO: Is this commented update necessary?
+    #grouper.Update()
     yield grouper.GetPatientsGroups()
 
 def GetDicomGroups(directory, recursive=True):

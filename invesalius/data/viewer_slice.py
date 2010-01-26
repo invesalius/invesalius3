@@ -35,6 +35,7 @@ import data.slice_ as sl
 import data.vtk_utils as vtku
 import project
 import slice_data as sd
+import utils
 
 ID_TO_TOOL_ITEM = {}
 STR_WL = "WL: %d  WW: %d"
@@ -286,14 +287,12 @@ class Viewer(wx.Panel):
         style.AddObserver("RightButtonPressEvent", self.QuitRubberBandZoom)
 
     def OnRightClick(self, evt, obj):
-        print "OnRightClick"
         self.last_position_mouse_move = \
             self.interactor.GetLastEventPosition()
     
         self.right_pressed = 1
 
     def OnReleaseRightButton(self, evt, obj):
-        print "OnReleaseRightButton"
         self.right_pressed = 0
         ps.Publisher().sendMessage('Update slice viewer') 
  
@@ -301,7 +300,6 @@ class Viewer(wx.Panel):
         self.left_pressed = 1
 
     def OnZoomLeftClick(self, evt, obj):
-        print "OnZoomLeftClick"
         evt.StartDolly()
 
     def OnReleaseLeftButton(self, evt, obj):
@@ -383,12 +381,10 @@ class Viewer(wx.Panel):
 
     def OnZoomMoveLeft(self, evt, obj):
         if self.left_pressed:
-            print "OnZoomMoveLeft:"
             evt.Dolly()
             evt.OnRightButtonDown()
 
     def OnVtkRightRelease(self, evt, obj):
-        print "On VTK"
         evt.OnRightButtonUp()
 
 
@@ -688,12 +684,10 @@ class Viewer(wx.Panel):
         
         
         if (self.right_pressed):
-            print "OnZoomMoveRight"
             evt.Dolly()
             evt.OnRightButtonDown()
 
     def OnZoomRightClick(self, evt, obj):
-        print "OnZoomRightClick"
         evt.StartDolly()
 
             
@@ -752,8 +746,6 @@ class Viewer(wx.Panel):
                 coord[index] = extent_max[index]
             elif coord[index] < extent_min[index]:
                 coord[index] = extent_min[index]
-        #print "New coordinate: ", coord
-
         return coord
 
     def get_coordinate_cursor(self):
@@ -854,9 +846,7 @@ class Viewer(wx.Panel):
                 "SAGITAL": const.SAGITAL}
 
         if id == dict[self.orientation]:
-            print "ok"
             if filetype == const.FILETYPE_POV:
-                print 1
                 renwin = self.interactor.GetRenderWindow()
                 image = vtk.vtkWindowToImageFilter()
                 image.SetInput(renwin)
@@ -866,7 +856,6 @@ class Viewer(wx.Panel):
                 writer.Write()
                 return
             else:
-                print 2
                 #Use tiling to generate a large rendering.
                 image = vtk.vtkRenderLargeImage()
                 image.SetInput(self.ren)
@@ -877,19 +866,14 @@ class Viewer(wx.Panel):
 
             # write image file
             if (filetype == const.FILETYPE_BMP):
-                print 3
                 writer = vtk.vtkBMPWriter()
             elif (filetype == const.FILETYPE_JPG):
-                print 4
                 writer =  vtk.vtkJPEGWriter()
             elif (filetype == const.FILETYPE_PNG):
-                print 5
                 writer = vtk.vtkPNGWriter()
             elif (filetype == const.FILETYPE_PS):
-                print 6
                 writer = vtk.vtkPostScriptWriter()
             elif (filetype == const.FILETYPE_TIF):
-                print 7
                 writer = vtk.vtkTIFFWriter()
                 filename = "%s.tif"%filename.strip(".tif")
             
@@ -904,11 +888,9 @@ class Viewer(wx.Panel):
         ps.Publisher().sendMessage('End busy cursor')
 
     def OnShowText(self, pubsub_evt):
-        print "OnShowText"
         self.ShowTextActors()
 
     def OnHideText(self, pubsub_evt):
-        print "OnHideText"
         self.HideTextActors()
 
 
@@ -939,7 +921,6 @@ class Viewer(wx.Panel):
         
         
     def ChangeBrushOperation(self, pubsub_evt):
-        #print pubsub_evt.data
         self._brush_cursor_op = pubsub_evt.data
 
     def __bind_events_wx(self):
@@ -1004,8 +985,6 @@ class Viewer(wx.Panel):
                     style = style | sd.BORDER_LEFT
                 if i == self.layout[0] - 1:
                     style = style | sd.BORDER_RIGHT
-
-                print "->Style", style
 
                 slice_data.SetBorderStyle(style)
                 n += 1
@@ -1130,21 +1109,10 @@ class Viewer(wx.Panel):
         extent = slice_data.actor.GetDisplayExtent()
         cam = slice_data.renderer.GetActiveCamera()
 
-        #print
-        #print self.orientation
-        #print x, y, z
-        #print actor_bound
-        #print "ViewUp", cam.GetViewUp()
-        #print "Position", cam.GetPosition()
-        #print "Orientation", cam.GetOrientation()
-        #print "Focal Point", cam.GetFocalPoint()
-        
         vCamera = numpy.array(cam.GetPosition()) - numpy.array(cam.GetFocalPoint())
         n_vCamera = vCamera / numpy.linalg.norm(vCamera)
-        #print "Normalized", n_vCamera
 
         pos = [j + 0.01 * i for i,j in zip(n_vCamera, (x, y, z))]
-        #print "posicao", pos
 
         #yz = [x + abs(x * 0.001), y, z]
         #xz = [x, y - abs(y * 0.001), z]
@@ -1174,7 +1142,6 @@ class Viewer(wx.Panel):
         #    elif orientation == "CORONAL":
         #        pos[1] -= abs(pos[1] * 0.001)
 
-        #print ">POS", pos
 
         #pos = [x, y, z]
         #if orientation == "AXIAL":

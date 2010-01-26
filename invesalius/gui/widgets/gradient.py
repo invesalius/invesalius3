@@ -582,6 +582,7 @@ class GradientSlider(wx.Panel):
         self.GradientPanel.Refresh()
 
     def SetMaxRange(self, value):
+        print "Setting max range ", value
         self.SliderData.SetMaxRange(value)
         self.SpinMin.SetMax(value)
         self.SpinMax.SetMax(value)

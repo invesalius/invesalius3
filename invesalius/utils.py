@@ -25,10 +25,10 @@ import sys
 
 
 def debug(error_str):
-    from project import Project
-    proj = Project()
-    if proj.debug:
-        print >> stderr, str
+    from session import Session
+    session = Session()
+    if session.debug:
+        print >> sys.stderr, error_str
 
 
 #http://www.garyrobinson.net/2004/03/python_singleto.html
@@ -67,7 +67,7 @@ class TwoWaysDictionary(dict):
         try:
             self.pop(key)
         except TypeError:
-            print "TwoWaysDictionary: no item"
+            debug("TwoWaysDictionary: no item")
 
     def get_value(self, key):
         """

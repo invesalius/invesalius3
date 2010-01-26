@@ -152,10 +152,10 @@ class InnerPanel(wx.Panel):
                         self.image_panel.SetSerie(group)
 
     def OnSelectSlice(self, evt):
-        print "You've selected the slice", evt.GetSelectID()
+        pass
 
     def OnSelectPatient(self, evt):
-        print "You've selected the patient", evt.GetSelectID()
+        pass
 
     def OnDblClickTextPanel(self, evt):
         group = evt.GetItemData()
@@ -286,10 +286,7 @@ class TextPanel(wx.Panel):
                                        dicom.acquisition.serie_number)] = child
 
         tree.Expand(self.root)
-        
         tree.SelectItem(parent_select)
-        print "parent select", parent_select
-        
         tree.Bind(wx.EVT_TREE_ITEM_ACTIVATED, self.OnActivate)
         tree.Bind(wx.EVT_TREE_SEL_CHANGED, self.OnSelChanged)
 
@@ -372,12 +369,9 @@ class ImagePanel(wx.Panel):
         self.text_panel.Bind(EVT_SELECT_SLICE, self.OnSelectSlice)
 
     def OnSelectSerie(self, evt):
-        print "Hi, You selected Serie"
         evt.Skip()
 
     def OnSelectSlice(self, evt):
-        print "Hi, You selected slice"
-        print "Selected ID", evt.GetSelectID()
         self.image_panel.dicom_preview.ShowSlice(evt.GetSelectID())
         evt.Skip()
 
@@ -437,7 +431,6 @@ class SeriesPanel(wx.Panel):
         self.Update()
 
     def OnSelectSerie(self, evt):
-        print "Hey, You selected a serie"
         serie = evt.GetItemData()
         data = evt.GetItemData()
         
@@ -454,8 +447,6 @@ class SeriesPanel(wx.Panel):
         self.Update()
 
     def OnSelectSlice(self, evt):
-        print "Hey, Ho, Let's go", evt.GetSelectID()
-
         my_evt = SelectEvent(myEVT_SELECT_SLICE, self.GetId())
         my_evt.SetSelectedID(evt.GetSelectID())
         my_evt.SetItemData(evt.GetItemData())
@@ -481,7 +472,6 @@ class SlicePanel(wx.Panel):
 
     def __init_gui(self):
         self.SetBackgroundColour((255,255,255))
-        print "----------------------------"
         self.dicom_preview = dpp.SingleImagePreview(self)
 
         sizer = wx.BoxSizer(wx.VERTICAL)

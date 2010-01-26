@@ -36,6 +36,8 @@ import reader.dicom_reader as dcm
 import reader.analyze_reader as analyze
 import session as ses
 
+from utils import debug
+
 DEFAULT_THRESH_MODE = 0
 
 class Controller():
@@ -147,7 +149,7 @@ class Controller():
 
 
     def ShowDialogCloseProject(self):
-        utils.debug("ShowDialogCloseProject")
+        debug("ShowDialogCloseProject")
         session = ses.Session()
         st = session.project_status
         if st == const.PROJ_CLOSE:
@@ -156,18 +158,18 @@ class Controller():
         if (st == const.PROJ_NEW) or (st == const.PROJ_CHANGE):
             answer = dialog.SaveChangesDialog(filename)
             if not answer:
-                utils.debug("Close without changes")
+                debug("Close without changes")
                 self.CloseProject()
                 ps.Publisher().sendMessage("Enable state project", False)
                 ps.Publisher().sendMessage('Set project name')
             elif answer == 1:
                 self.ShowDialogSaveProject()
-                utils.debug("Save changes and close")
+                debug("Save changes and close")
                 self.CloseProject()
                 ps.Publisher().sendMessage("Enable state project", False)
                 ps.Publisher().sendMessage('Set project name')
             elif answer == -1:
-                utils.debug("Cancel")
+                debug("Cancel")
         else:
             self.CloseProject()
             ps.Publisher().sendMessage("Enable state project", False)
@@ -307,7 +309,7 @@ class Controller():
                 self.CreateAnalyzeProject(imagedata)
             # OPTION 3: Nothing...
             else:
-                utils.debug("No medical images found on given directory")
+                debug("No medical images found on given directory")
                 return
         self.LoadProject()
         ps.Publisher().sendMessage("Enable state project", True)
@@ -392,7 +394,7 @@ class Controller():
         interval += 1
         filelist = dicom_group.GetFilenameList()[::interval]
         if not filelist:
-            utils.debug("Not used the IPPSorter")
+            debug("Not used the IPPSorter")
             filelist = [i.image.file for i in dicom_group.GetHandSortedList()[::interval]]
         
         

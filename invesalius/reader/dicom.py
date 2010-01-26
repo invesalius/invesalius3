@@ -1821,7 +1821,6 @@ class Acquisition(object):
     def SetParser(self, parser):
         self.patient_orientation = parser.GetImagePatientOrientation()
         self.tilt = parser.GetAcquisitionGantryTilt()
-        self.serie_number = parser.GetImageSeriesNumber()
         self.id_study = parser.GetStudyID()
         self.modality = parser.GetAcquisitionModality()
         self.study_description = parser.GetStudyDescription()

@@ -418,17 +418,13 @@ class Volume():
     def SetTypeRaycasting(self):
         if self.volume_mapper.IsA("vtkFixedPointVolumeRayCastMapper"):
             if self.config.get('MIP', False):
-                print "MIP"
                 self.volume_mapper.SetBlendModeToMaximumIntensity()
             else:
-                print "Composite"
                 self.volume_mapper.SetBlendModeToComposite()
         else:
             if self.config.get('MIP', False):
-                print "MIP"
                 raycasting_function = vtk.vtkVolumeRayCastMIPFunction()
             else:
-                print "Composite"
                 raycasting_function = vtk.vtkVolumeRayCastCompositeFunction()
                 raycasting_function.SetCompositeMethodToInterpolateFirst()
             self.volume_mapper.SetVolumeRayCastFunction(raycasting_function)
@@ -551,20 +547,16 @@ class Volume():
                                     (volume, colour, (self.ww, self.wl)))
 
     def OnEnableTool(self, pubsub_evt):
-        print "OnEnableTool"
         tool_name, enable = pubsub_evt.data
         if tool_name == _("Cut plane"):
             if self.plane:
                 if enable:
-                    print "Enable"
                     self.plane_on = True
                     self.plane.Enable()
                 else:
-                    print "Disable"
                     self.plane_on = False
                     self.plane.Disable()
             else:
-                print "Enable"
                 self.final_imagedata.Update()
                 self.plane_on = True
                 self.plane = CutPlane(self.final_imagedata,

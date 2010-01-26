@@ -153,7 +153,7 @@ class Project(object):
         elif type_ == "CT":
             self.threshold_modes = self.presets.thresh_ct
         else:
-            print "Different Acquisition Modality!!!"
+            utils.debug("Different Acquisition Modality!!!")
         self.modality = type_
 
     def SetRaycastPreset(self, label):
@@ -187,13 +187,11 @@ class Project(object):
         for index in self.mask_dict:
             masks[str(index)] = {'#mask':\
                                  self.mask_dict[index].SavePlist(filename_tmp).decode('utf-8')}
-            print index
 
         surfaces = {}
         for index in self.surface_dict:
             surfaces[str(index)] = {'#surface':\
                                     self.surface_dict[index].SavePlist(filename_tmp)}
-            print index
 
         project['surface_dict'] = surfaces
         project['mask_dict'] = masks
@@ -219,15 +217,8 @@ class Project(object):
         filelist = Extract(filename, tempfile.gettempdir())
         main_plist = min(filter(lambda x: x.endswith('.plist'), filelist),
                          key=lambda x: len(x))
-        #print main_plist
-        print main_plist
         project = plistlib.readPlist(main_plist)
-
-        #print "antes", self.__dict__
-
-        # Path were extracted project is
         dirpath = os.path.abspath(os.path.split(filelist[0])[0])
-        #print "* dirpath", dirpath
 
         for key in project:
             if key == 'imagedata':

@@ -25,10 +25,10 @@ from vtk.wx.wxVTKRenderWindowInteractor import wxVTKRenderWindowInteractor
 import wx.lib.pubsub as ps
 
 import constants as const
-import project as prj
 import data.vtk_utils as vtku
-from gui.widgets.clut_raycasting import CLUTRaycastingWidget
+import project as prj
 import style as st
+import utils
 
 class Viewer(wx.Panel):
     def __init__(self, parent):
@@ -274,7 +274,6 @@ class Viewer(wx.Panel):
 
             # Check each event available for each mode
             for event in action[state]:
-                print event 
                 # Bind event
                 style.AddObserver(event,action[state][event])
 
@@ -439,14 +438,14 @@ class Viewer(wx.Panel):
         self.interactor.Render()
 
     def RemoveActor(self, pubsub_evt):
-        print "RemoveActor"
+        utils.debug("RemoveActor")
         actor = pubsub_evt.data
         ren = self.ren
         ren.RemoveActor(actor)
         self.interactor.Render()
         
     def RemoveAllActor(self, pubsub_evt):
-        print "RemoveAllActor"
+        utils.debug("RemoveAllActor")
         self.ren.RemoveAllProps()
         ps.Publisher().sendMessage('Render volume viewer')
 
@@ -503,7 +502,6 @@ class Viewer(wx.Panel):
         self.interactor.Render()
 
     def ShowOrientationCube(self):
-        print "ORIENTATION CUBE!"
         cube = vtk.vtkAnnotatedCubeActor()
         cube.GetXMinusFaceProperty().SetColor(1,0,0)
         cube.GetXPlusFaceProperty().SetColor(1,0,0)
@@ -696,7 +694,6 @@ class SlicePlane:
                     a.SetBackfaceCulling(0)
                     c = self.plane_x.GetTexture()
                     c.SetRestrictPowerOf2ImageSmaller(1)
-                    #print dir(a)
 
             elif(self.original_orientation == const.SAGITAL):
                 if(label == "Axial"):

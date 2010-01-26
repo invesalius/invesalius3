@@ -262,7 +262,6 @@ class VolumeInteraction(wx.Panel):
         self.aui_manager.Update()
 
     def OnPointChanged(self, evt):
-        print "Removed"
         ps.Publisher.sendMessage('Set raycasting refresh', None)
         ps.Publisher.sendMessage('Set raycasting curve', evt.GetCurve())
         ps.Publisher().sendMessage('Render volume viewer')
@@ -278,7 +277,6 @@ class VolumeInteraction(wx.Panel):
 
     def OnSetRaycastPreset(self, evt_pubsub):
         preset = project.Project().raycasting_preset
-        print "Preset >>>", preset
         p = self.aui_manager.GetPane(self.clut_raycasting)
         self.clut_raycasting.SetRaycastPreset(preset)
         if self.clut_raycasting.to_draw_points and \
@@ -542,13 +540,11 @@ class VolumeToolPanel(wx.Panel):
             #        if i is not item:
             #            i.Check(0)
             if not TOOL_STATE[id]:
-                print "item is checked"
                 ps.Publisher().sendMessage('Enable raycasting tool',
                                           [ID_TO_TOOL[id],1])
                 TOOL_STATE[id] = True
                 item.Check(1)
             else:
-                print "item is not checked"
                 ps.Publisher().sendMessage('Enable raycasting tool',
                                             [ID_TO_TOOL[id],0])
                 TOOL_STATE[id] = False

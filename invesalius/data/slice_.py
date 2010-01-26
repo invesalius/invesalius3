@@ -581,8 +581,8 @@ class Slice(object):
             mask = mask_dict[key]
         
             # update gui related to mask
-            print "__load_masks"
-            print 'THRESHOLD_RANGE', mask.threshold_range
+            utils.debug("__load_masks")
+            utils.debug('THRESHOLD_RANGE %s', mask.threshold_range)
             ps.Publisher().sendMessage('Add mask',
                                     (mask.index,
                                      mask.name,

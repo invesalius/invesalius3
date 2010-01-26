@@ -25,6 +25,7 @@ import sys
 import gui.language_dialog as lang_dlg
 import i18n
 from session import Session
+import utils
 
 
 # TODO: This should be called during installation
@@ -179,7 +180,7 @@ def parse_comand_line():
 
 
 def print_events(data):
-    print data.topic
+    utils.debug(data.topic)
 
 def main():
     application = InVesalius(0)

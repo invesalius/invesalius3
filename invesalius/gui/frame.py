@@ -32,6 +32,7 @@ import gui.dialogs as dlg
 import import_panel as imp
 import project as prj
 import session as ses
+import utils
 
 # Object toolbar
 #OBJ_TOOLS = [ID_ZOOM, ID_ZOOM_SELECT, ID_ROTATE, ID_MOVE,
@@ -200,7 +201,7 @@ class Frame(wx.Frame):
         aui_manager.Update()
 
     def HideImportPanel(self, evt_pubsub):
-        print "HideImportPanel"
+        utils.debug("HideImportPanel")
         aui_manager = self.aui_manager
         aui_manager.GetPane("Import").Show(0)
         aui_manager.GetPane("Data").Show(0)
@@ -208,7 +209,7 @@ class Frame(wx.Frame):
         aui_manager.Update()
 
     def ShowContentPanel(self, evt_pubsub):
-        print "ShowContentPanel"
+        utils.debug("ShowContentPanel")
         ps.Publisher().sendMessage("Set layout button full")
         aui_manager = self.aui_manager
         aui_manager.GetPane("Import").Show(0)
@@ -264,16 +265,15 @@ class Frame(wx.Frame):
         ps.Publisher().sendMessage('Show save dialog', False)
 
     def CloseProject(self):
-        print "CloseProject"
+        utils.debug("CloseProject")
         ps.Publisher().sendMessage('Close Project')
 
     def OnExit(self, event):
-        print "OnExit"
         self.Exit()
         event.Skip()
 
     def Exit(self):
-        print "Exit"
+        utils.debug("Exit")
         ps.Publisher().sendMessage('Close Project')
 
     def ShowTask(self, pubsub_evt):
@@ -283,7 +283,6 @@ class Frame(wx.Frame):
     def HideTask(self, pubsub_evt):
         self.aui_manager.GetPane("Tasks").Hide()
         self.aui_manager.Update()
-
 
     #def OnClose(self):
     #    # TODO: implement this, based on wx.Demo
@@ -387,9 +386,7 @@ class MenuBar(wx.MenuBar):
         self.SetStateProjectClose()
 
     def OnEnableState(self, pubsub_evt):
-        print "----- OnEnableState"
         state = pubsub_evt.data
-        print "state", state
         if state:
             self.SetStateProjectOpen()
         else:
@@ -473,7 +470,7 @@ class StatusBar(wx.StatusBar):
             #TODO: temporary fix necessary in the Windows XP 64 Bits
             #BUG in wxWidgets http://trac.wxwidgets.org/ticket/10896
             except(wx._core.PyAssertionError):
-                print "wx._core.PyAssertionError"
+                utils.debug("wx._core.PyAssertionError")
 
     def UpdateStatusLabel(self, pubsub_evt):
         label = pubsub_evt.data

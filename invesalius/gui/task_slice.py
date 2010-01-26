@@ -408,6 +408,7 @@ class MaskProperties(wx.Panel):
 
     def SetThresholdModes(self, pubsub_evt):
         (thresh_modes_names, default_thresh) = pubsub_evt.data
+        print pubsub_evt.data
         self.combo_thresh.SetItems(thresh_modes_names)
         if isinstance(default_thresh, int):
             self.combo_thresh.SetSelection(default_thresh)
@@ -417,10 +418,12 @@ class MaskProperties(wx.Panel):
            self.combo_thresh.SetSelection(3)
            thresh_min, thresh_max = default_thresh
 
+        print "Este e threshold", thresh_min, thresh_max
         self.gradient.SetMinValue(thresh_min)
         self.gradient.SetMaxValue(thresh_max)
 
     def SetThresholdBounds(self, pubsub_evt):
+        print ">>>Threshold Limits", pubsub_evt.data
         thresh_min = pubsub_evt.data[0]
         thresh_max  = pubsub_evt.data[1]
         self.gradient.SetMinRange(thresh_min)

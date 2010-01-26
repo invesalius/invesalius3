@@ -28,6 +28,7 @@ import wx.lib.pubsub as ps
 import constants as const
 import project as proj
 import session as ses
+import utils
 
 
 class NumberDialog(wx.Dialog):
@@ -275,7 +276,7 @@ def SaveChangesDialog__Old(filename):
 
 
 def ImportEmptyDirectory(dirpath):
-    msg = _("%s is an empty directory.") % dirpath
+    msg = _("%s is an empty directory.") % dirpath.decode("utf-8")
     if sys.platform == 'darwin':
         dlg = wx.MessageDialog(None, "",
                                 msg,
@@ -532,7 +533,7 @@ def ExportPicture(type_=""):
                 4: const.FILETYPE_POV,
                 5: const.FILETYPE_TIF}
 
-    print "ExportPicture"
+    utils.debug("ExportPicture")
     project = proj.Project()
 
     if sys.platform == 'win32':
@@ -554,7 +555,6 @@ def ExportPicture(type_=""):
         filetype = INDEX_TO_TYPE[filetype_index]
         extension = INDEX_TO_EXTENSION[filetype_index]
         filename = dlg.GetPath()
-        print "filename", filename
         if sys.platform != 'win32':
             if filename.split(".")[-1] != extension:
                 filename = filename + "."+ extension
