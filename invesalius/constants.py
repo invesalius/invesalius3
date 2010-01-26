@@ -66,7 +66,7 @@ ORIENTATION_COLOUR = {'AXIAL': (1,0,0), # Red
                       'SAGITAL': (0,0,1)} # Blue
 
 IMPORT_INTERVAL = [_("Keep all slices"), _("Skip 1 for each 2 slices"),
-                   _("Skip 1 for each 3 slices")]
+                   _("Skip 2 for each 3 slices")]
 
 # Camera according to slice's orientation
 #CAM_POSITION = {"AXIAL":(0, 0, 1), "CORONAL":(0, -1, 0), "SAGITAL":(1, 0, 0)}
