@@ -156,7 +156,12 @@ def SplitDisconectedParts(polydata):
     conn.Update()
     
     nregions = conn.GetNumberOfExtractedRegions()
-    
+
+    conn.SetExtractionModeToSpecifiedRegions()
+    conn.ScalarConnectivityOn()
+    conn.SetScalarRange(226, 3021)
+    conn.Update()
+
     polydata_collection = []
    
      
@@ -164,7 +169,7 @@ def SplitDisconectedParts(polydata):
         conn.InitializeSpecifiedRegionList()
         conn.AddSpecifiedRegion(region)
         conn.Update()
-        
+    
         p = vtk.vtkPolyData()
         p.DeepCopy(conn.GetOutput())
         p.Update()
@@ -172,4 +177,3 @@ def SplitDisconectedParts(polydata):
         polydata_collection.append(p)
     
     return polydata_collection
-
