@@ -381,22 +381,26 @@ class Controller():
 
     def OnOpenDicomGroup(self, pubsub_evt):
         group, interval = pubsub_evt.data
-        imagedata, dicom = self.OpenDicomGroup(group, gui=True)
+        imagedata, dicom = self.OpenDicomGroup(group, interval, gui=True)
         self.CreateDicomProject(imagedata, dicom)
         self.LoadProject()
         ps.Publisher().sendMessage("Enable state project", True)
 
-    def OpenDicomGroup(self, dicom_group, gui=True):
+    def OpenDicomGroup(self, dicom_group, interval, gui=True):
 
         # Retrieve general DICOM headers
         dicom = dicom_group.GetDicomSample()
 
         # Create imagedata
-        filelist = dicom_group.GetFilenameList()
+        interval += 1
+        filelist = dicom_group.GetFilenameList()[::interval]
         if not filelist:
             print ">Not used the IPPSorter"
-            filelist = [i.image.file for i in dicom_group.GetHandSortedList()]
-        zspacing = dicom_group.zspacing
+            filelist = [i.image.file for i in dicom_group.GetHandSortedList()[::interval]]
+        
+        
+            
+        zspacing = dicom_group.zspacing * interval
         size = dicom.image.size
         bits = dicom.image.bits_allocad
 
