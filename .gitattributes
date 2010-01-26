@@ -159,6 +159,7 @@ invesalius/gui/widgets/colourselect.py -text
 invesalius/gui/widgets/foldpanelbar.py -text
 invesalius/gui/widgets/gradient.py -text
 invesalius/gui/widgets/listctrl.py -text
+invesalius/gui/widgets/platebtn.py -text
 invesalius/gui/widgets/slice_menu.py -text
 invesalius/i18n.py -text
 invesalius/invesalius.py -text
