@@ -31,8 +31,9 @@ class LanguageDialog(wx.Dialog):
     selected is writing in the config.ini"""
 
     def __init__(self, parent=None, startApp=None):
-        super(LanguageDialog, self).__init__(parent, title='Language selection')
+        super(LanguageDialog, self).__init__(parent, title="")
         self.__TranslateMessage__()
+        self.SetTitle(_('Language selection'))
         self.__init_gui()
         self.Centre()
         
@@ -40,8 +41,6 @@ class LanguageDialog(wx.Dialog):
         """Initialize combobox bitmap"""
         
         self.locales = i18n.GetLocales().values()
-        print self.locales
-        
         self.locales_key = i18n.GetLocales().keys()
         self.os_locale = i18n.GetLocaleOS()
         

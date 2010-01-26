@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: InVesalius 3\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2010-01-26 17:33-0200\n"
+"POT-Creation-Date: 2010-01-26 20:16-0200\n"
 "PO-Revision-Date: 2010-01-07 11:25-0300\n"
 "Last-Translator: Invesalius team <invesalius@cti.gov.br>\n"
 "Language-Team: InVesalius Team <invesalius@cti.gov.br>\n"
@@ -546,7 +546,8 @@ msgid "PostScript document"
 msgstr "Documento PostScript"
 
 #: dialogs.py:522
-msgid "POV-Ray file)"
+#, fuzzy
+msgid "POV-Ray file"
 msgstr "Arquivo POV-Ray)"
 
 #: dialogs.py:523
@@ -771,7 +772,11 @@ msgstr "Médico"
 msgid "InVesalius Database"
 msgstr "Banco de Dados InVesalius"
 
-#: language_dialog.py:73
+#: language_dialog.py:36
+msgid "Language selection"
+msgstr ""
+
+#: language_dialog.py:72
 msgid "Choose user interface language"
 msgstr "Selecione o idioma"
 
@@ -966,28 +971,30 @@ msgid "Advanced options"
 msgstr "Ferramentas avançadas"
 
 #: task_surface.py:238
-msgid "Automatically select largest disconnect surface"
-msgstr "Seleção automática de maior superfície desconexa"
+msgid "Automatically select largest disconnect region and create new surface"
+msgstr ""
+"Seleção automática de maior região desconexa e criação de nova superfície"
 
 #: task_surface.py:239
-msgid "Split largest surface"
+msgid "Select largest part"
 msgstr "Separar maior superfície"
 
 #: task_surface.py:247
-msgid "Automatically split surfaces into new ones"
-msgstr "Separar automaticamente superfícies desconexas em novas"
+msgid ""
+"Automatically select disconnect regions and create one new surface per region"
+msgstr "Seleção automática de maior superfície desconexa"
 
 #: task_surface.py:248
 msgid "Split all disconnect surfaces"
 msgstr "Separar todas regiões desconexas"
 
 #: task_surface.py:256
-msgid "Manually insert seeds of surfaces of interest"
+msgid "Manually insert seeds of regions of interest and create one new surface"
 msgstr "Selecionar manualmente regiões de interesse através de sementes"
 
 #: task_surface.py:257
-msgid "Select surfaces of interest"
-msgstr "Separar através de sementes"
+msgid "Select regions of interest..."
+msgstr "Selecione as regiões de interesse..."
 
 #: task_surface.py:388
 msgid "Transparency:"
@@ -1012,6 +1019,36 @@ msgstr "Medição"
 #: task_tools.py:61 task_tools.py:62
 msgid "Add text annotations"
 msgstr "Adicionar anotações"
+
+#: viewer_slice.py:435 viewer_slice.py:439
+msgid "R"
+msgstr "D"
+
+#: viewer_slice.py:435 viewer_slice.py:439
+msgid "L"
+msgstr "E"
+
+#: viewer_slice.py:435 viewer_slice.py:437
+msgid "A"
+msgstr "A"
+
+#: viewer_slice.py:435 viewer_slice.py:437
+msgid "P"
+msgstr "P"
+
+#: viewer_slice.py:437 viewer_slice.py:439
+msgid "T"
+msgstr "T"
+
+#: viewer_slice.py:437 viewer_slice.py:439
+msgid "B"
+msgstr "B"
+
+#~ msgid "Automatically split surfaces into new ones"
+#~ msgstr "Separar automaticamente superfícies desconexas em novas"
+
+#~ msgid "Select surfaces of interest"
+#~ msgstr "Separar através de sementes"
 
 #~ msgid "Select mask to be used for creating 3D surface:"
 #~ msgstr "Selecione uma máscara a ser usada para criar a superfície 3D"

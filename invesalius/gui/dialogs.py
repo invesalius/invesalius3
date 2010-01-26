@@ -519,7 +519,7 @@ WILDCARD_SAVE_PICTURE = _("BMP image")+" (*.bmp)|*.bmp|"+\
                             _("JPG image")+" (*.jpg)|*.jpg|"+\
                             _("PNG image")+" (*.png)|*.png|"+\
                             _("PostScript document")+" (*.ps)|*.ps|"+\
-                            _("POV-Ray file)")+" (*.pov)|*.pov|"+\
+                            _("POV-Ray file")+" (*.pov)|*.pov|"+\
                             _("TIFF image")+" (*.tif)|*.tif"
 
 

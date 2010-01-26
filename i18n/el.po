@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: InVesalius 3\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2010-01-26 17:33-0200\n"
+"POT-Creation-Date: 2010-01-26 20:16-0200\n"
 "PO-Revision-Date: 2010-01-14 00:37+0200\n"
 "Last-Translator: Korkakakis Nikos <korkakak@gmail.com>\n"
 "Language-Team: InVesalius Team <invesalius@cti.gov.br>\n"
@@ -540,7 +540,7 @@ msgid "PostScript document"
 msgstr ""
 
 #: dialogs.py:522
-msgid "POV-Ray file)"
+msgid "POV-Ray file"
 msgstr ""
 
 #: dialogs.py:523
@@ -759,7 +759,11 @@ msgstr ""
 msgid "InVesalius Database"
 msgstr ""
 
-#: language_dialog.py:73
+#: language_dialog.py:36
+msgid "Language selection"
+msgstr ""
+
+#: language_dialog.py:72
 msgid "Choose user interface language"
 msgstr ""
 
@@ -954,15 +958,16 @@ msgid "Advanced options"
 msgstr ""
 
 #: task_surface.py:238
-msgid "Automatically select largest disconnect surface"
+msgid "Automatically select largest disconnect region and create new surface"
 msgstr ""
 
 #: task_surface.py:239
-msgid "Split largest surface"
+msgid "Select largest part"
 msgstr ""
 
 #: task_surface.py:247
-msgid "Automatically split surfaces into new ones"
+msgid ""
+"Automatically select disconnect regions and create one new surface per region"
 msgstr ""
 
 #: task_surface.py:248
@@ -970,11 +975,11 @@ msgid "Split all disconnect surfaces"
 msgstr ""
 
 #: task_surface.py:256
-msgid "Manually insert seeds of surfaces of interest"
+msgid "Manually insert seeds of regions of interest and create one new surface"
 msgstr ""
 
 #: task_surface.py:257
-msgid "Select surfaces of interest"
+msgid "Select regions of interest..."
 msgstr ""
 
 #: task_surface.py:388
@@ -999,4 +1004,28 @@ msgstr ""
 
 #: task_tools.py:61 task_tools.py:62
 msgid "Add text annotations"
+msgstr ""
+
+#: viewer_slice.py:435 viewer_slice.py:439
+msgid "R"
+msgstr ""
+
+#: viewer_slice.py:435 viewer_slice.py:439
+msgid "L"
+msgstr ""
+
+#: viewer_slice.py:435 viewer_slice.py:437
+msgid "A"
+msgstr ""
+
+#: viewer_slice.py:435 viewer_slice.py:437
+msgid "P"
+msgstr ""
+
+#: viewer_slice.py:437 viewer_slice.py:439
+msgid "T"
+msgstr ""
+
+#: viewer_slice.py:437 viewer_slice.py:439
+msgid "B"
 msgstr ""

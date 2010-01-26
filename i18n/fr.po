@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: InVesalius 3\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2010-01-26 20:09-0200\n"
+"POT-Creation-Date: 2010-01-26 20:16-0200\n"
 "PO-Revision-Date: 2010-01-07 11:25-0300\n"
 "Last-Translator: Frédéric Lopez <frederic.lopez@free.fr>\n"
 "Language-Team: InVesalius Team <invesalius@cti.gov.br>\n"
@@ -974,7 +974,9 @@ msgstr "Outils avancés"
 
 #: task_surface.py:238
 msgid "Automatically select largest disconnect region and create new surface"
-msgstr "Électionner automatiquement plus grande déconnecter región et créer une nouvelle surface"
+msgstr ""
+"Électionner automatiquement plus grande déconnecter región et créer une "
+"nouvelle surface"
 
 #: task_surface.py:239
 msgid "Select largest part"
@@ -983,7 +985,9 @@ msgstr "Électionner plus grande surface"
 #: task_surface.py:247
 msgid ""
 "Automatically select disconnect regions and create one new surface per region"
-msgstr "Électionner automatiquement déconnecter régions et créer une nouvelle surface par région"
+msgstr ""
+"Électionner automatiquement déconnecter régions et créer une nouvelle "
+"surface par région"
 
 #: task_surface.py:248
 msgid "Split all disconnect surfaces"

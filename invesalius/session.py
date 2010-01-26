@@ -213,7 +213,10 @@ class WriteSession(Thread):
     def run(self):
       while self.runing:
         time.sleep(10)
-        self.Write()
+        try:
+            self.Write()
+        except AttributeError:
+            pass
 
     def Stop(self):
         self.runing = 0

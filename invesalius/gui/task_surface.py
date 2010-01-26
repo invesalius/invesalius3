@@ -235,8 +235,8 @@ class SurfaceTools(wx.Panel):
 
 
         # Fixed hyperlink items
-        tooltip = wx.ToolTip(_("Automatically select largest disconnect surface"))
-        link_largest = hl.HyperLinkCtrl(self, -1, _("Split largest surface"))
+        tooltip = wx.ToolTip(_("Automatically select largest disconnect region and create new surface"))
+        link_largest = hl.HyperLinkCtrl(self, -1, _("Select largest part"))
         link_largest.SetUnderlines(False, False, False)
         link_largest.SetColours("BLACK", "BLACK", "BLACK")
         link_largest.SetToolTip(tooltip)
@@ -244,7 +244,7 @@ class SurfaceTools(wx.Panel):
         link_largest.UpdateLink()
         link_largest.Bind(hl.EVT_HYPERLINK_LEFT, self.OnLinkLargest)
 
-        tooltip = wx.ToolTip(_("Automatically split surfaces into new ones"))
+        tooltip = wx.ToolTip(_("Automatically select disconnect regions and create one new surface per region"))
         link_split_all = hl.HyperLinkCtrl(self, -1,_("Split all disconnect surfaces"))
         link_split_all.SetUnderlines(False, False, False)
         link_split_all.SetColours("BLACK", "BLACK", "BLACK")
@@ -253,8 +253,8 @@ class SurfaceTools(wx.Panel):
         link_split_all.UpdateLink()
         link_split_all.Bind(hl.EVT_HYPERLINK_LEFT, self.OnLinkSplit)
 
-        tooltip = wx.ToolTip(_("Manually insert seeds of surfaces of interest"))
-        link_seeds = hl.HyperLinkCtrl(self,-1,_("Select surfaces of interest"))
+        tooltip = wx.ToolTip(_("Manually insert seeds of regions of interest and create one new surface"))
+        link_seeds = hl.HyperLinkCtrl(self,-1,_("Select regions of interest..."))
         link_seeds.SetUnderlines(False, False, False)
         link_seeds.SetColours("BLACK", "BLACK", "BLACK")
         link_seeds.SetToolTip(tooltip)

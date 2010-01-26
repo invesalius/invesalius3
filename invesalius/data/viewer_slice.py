@@ -432,11 +432,11 @@ class Viewer(wx.Panel):
                         
             # Orientation text
             if self.orientation == 'AXIAL':
-                values = ['R', 'L', 'A', 'P']
+                values = [_('R'), _('L'), _('A'), _('P')]
             elif self.orientation == 'SAGITAL':
-                values = ['P', 'A', 'T', 'B']
+                values = [_('P'), _('A'), _('T'), _('B')]
             else:
-                values = ['R', 'L', 'T', 'B']
+                values = [_('R'), _('L'), _('T'), _('B')]
                 
             left_text = vtku.Text()
             left_text.ShadowOff()
