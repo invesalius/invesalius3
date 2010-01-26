@@ -75,6 +75,11 @@ class InnerPanel(wx.Panel):
         
         self.patients = []
 
+        self._init_ui()
+        self._bind_events()
+        self._bind_pubsubevt()
+
+    def _init_ui(self):
         splitter = spl.MultiSplitterWindow(self, style=wx.SP_LIVE_UPDATE)
         splitter.SetOrientation(wx.VERTICAL)
         self.splitter = splitter
@@ -82,46 +87,42 @@ class InnerPanel(wx.Panel):
         panel = wx.Panel(self)
         #button = wx.Button(panel, -1, _("Import medical images"), (20, 20))
 
-
-        btn_ok = wx.Button(panel, wx.ID_OK)
-        btn_ok.SetDefault()
+        self.btn_ok = wx.Button(panel, wx.ID_OK)
+        self.btn_ok.SetDefault()
         btn_cancel = wx.Button(panel, wx.ID_CANCEL)
-        
+
         btnsizer = wx.StdDialogButtonSizer()
-        btnsizer.AddButton(btn_ok)
+        btnsizer.AddButton(self.btn_ok)
         btnsizer.AddButton(btn_cancel)
         btnsizer.Realize()
 
-        combo_interval = wx.ComboBox(panel, -1, "", choices= const.IMPORT_INTERVAL,
+        self.combo_interval = wx.ComboBox(panel, -1, "", choices=const.IMPORT_INTERVAL,
                                      style=wx.CB_DROPDOWN|wx.CB_READONLY)
-        combo_interval.SetSelection(0)
+        self.combo_interval.SetSelection(0)
 
         inner_sizer = wx.BoxSizer(wx.HORIZONTAL)
         inner_sizer.AddSizer(btnsizer, 0, wx.LEFT|wx.TOP, 5)
-        inner_sizer.Add(combo_interval, 0, wx.LEFT|wx.RIGHT|wx.TOP, 8)
+        inner_sizer.Add(self.combo_interval, 0, wx.LEFT|wx.RIGHT|wx.TOP, 5)
         panel.SetSizer(inner_sizer)
         inner_sizer.Fit(panel)
-        
+
         sizer = wx.BoxSizer(wx.VERTICAL)
         sizer.Add(splitter, 20, wx.EXPAND)
         sizer.Add(panel, 1, wx.EXPAND|wx.LEFT, 90)
-       
+
         self.SetSizer(sizer)
         sizer.Fit(self)
+
+        self.text_panel = TextPanel(splitter)
+        splitter.AppendWindow(self.text_panel, 250)
+
+        self.image_panel = ImagePanel(splitter)
+        splitter.AppendWindow(self.image_panel, 250)
 
         self.Layout()
         self.Update()
         self.SetAutoLayout(1)
- 
-        self.text_panel = TextPanel(splitter)
-        splitter.AppendWindow(self.text_panel, 250)
-        
-        self.image_panel = ImagePanel(splitter)
-        splitter.AppendWindow(self.image_panel, 250)
-        
-        self._bind_events()
-        self._bind_pubsubevt()
-        
+
     def _bind_pubsubevt(self):
         ps.Publisher().subscribe(self.ShowDicomPreview, "Load import panel")
 
@@ -129,6 +130,7 @@ class InnerPanel(wx.Panel):
         self.Bind(EVT_SELECT_SERIE, self.OnSelectSerie)
         self.Bind(EVT_SELECT_SLICE, self.OnSelectSlice)
         self.Bind(EVT_SELECT_PATIENT, self.OnSelectPatient)
+        self.btn_ok.Bind(wx.EVT_BUTTON, self.OnLoadDicom)
     
     def ShowDicomPreview(self, pubsub_evt):
         dicom_groups = pubsub_evt.data
@@ -149,6 +151,12 @@ class InnerPanel(wx.Panel):
 
     def OnSelectPatient(self, evt):
         print "You've selected the patient", evt.GetSelectID()
+
+    def OnLoadDicom(self, evt):
+        group = self.text_panel.GetSelection()
+        interval = self.combo_interval.GetSelection()
+
+        ps.Publisher().sendMessage('Open DICOM group', (group, interval))
         
         
 class TextPanel(wx.Panel):
@@ -311,6 +319,12 @@ class TextPanel(wx.Panel):
         item = self.idserie_treeitem[serie]
         self.tree.SelectItem(item)
         self._selected_by_user = True
+
+    def GetSelection(self):
+        """Get selected item"""
+        item = self.tree.GetSelection()
+        group = self.tree.GetItemPyData(item)
+        return group
 
 
 class ImagePanel(wx.Panel):

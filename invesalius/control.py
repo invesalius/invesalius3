@@ -379,10 +379,8 @@ class Controller():
         dirpath = session.CreateProject(filename)
         proj.SavePlistProject(dirpath, filename)
 
-
-
     def OnOpenDicomGroup(self, pubsub_evt):
-        group = pubsub_evt.data
+        group, interval = pubsub_evt.data
         imagedata, dicom = self.OpenDicomGroup(group, gui=True)
         self.CreateDicomProject(imagedata, dicom)
         self.LoadProject()
