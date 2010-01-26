@@ -52,7 +52,7 @@ class LanguageDialog(wx.Dialog):
         bmp_brazilian_flag = wx.Bitmap(os.path.join(ICON_DIR, "pt_BR.bmp"), wx.BITMAP_TYPE_BMP)
         bmp_spanish_flag = wx.Bitmap(os.path.join(ICON_DIR, "es.bmp"), wx.BITMAP_TYPE_BMP)
 
-        bitmapCmb.Append(self.locales[0], bmp_french_flag,"fr_FR")
+        bitmapCmb.Append(self.locales[0], bmp_french_flag,"fr")
         bitmapCmb.Append(self.locales[1], bmp_english_flag,"en_GB")
         bitmapCmb.Append(self.locales[2], bmp_brazilian_flag,"pt_BR")
         bitmapCmb.Append(self.locales[3], bmp_spanish_flag,"es")
