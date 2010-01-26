@@ -40,27 +40,33 @@ class LanguageDialog(wx.Dialog):
         """Initialize combobox bitmap"""
         
         self.locales = i18n.GetLocales().values()
+        print self.locales
         
         self.locales_key = i18n.GetLocales().keys()
         self.os_locale = i18n.GetLocaleOS()
         
         self.bitmapCmb = bitmapCmb = wx.combo.BitmapComboBox(self, style=wx.CB_READONLY)
 
-        bmp_brazilian_flag = wx.Bitmap(os.path.join(ICON_DIR, "pt_BR.bmp"), wx.BITMAP_TYPE_BMP)
+        bmp_french_flag = wx.Bitmap(os.path.join(ICON_DIR, "fr_FR.bmp"), wx.BITMAP_TYPE_BMP)
         bmp_english_flag = wx.Bitmap(os.path.join(ICON_DIR, "en_GB.bmp"), wx.BITMAP_TYPE_BMP)
+        bmp_brazilian_flag = wx.Bitmap(os.path.join(ICON_DIR, "pt_BR.bmp"), wx.BITMAP_TYPE_BMP)
         bmp_spanish_flag = wx.Bitmap(os.path.join(ICON_DIR, "es.bmp"), wx.BITMAP_TYPE_BMP)
 
-        bitmapCmb.Append(self.locales[0], bmp_english_flag,"en_GB")
-        bitmapCmb.Append(self.locales[1], bmp_brazilian_flag,"pt_BR")
-        bitmapCmb.Append(self.locales[2], bmp_spanish_flag,"es")
+        bitmapCmb.Append(self.locales[0], bmp_french_flag,"fr_FR")
+        bitmapCmb.Append(self.locales[1], bmp_english_flag,"en_GB")
+        bitmapCmb.Append(self.locales[2], bmp_brazilian_flag,"pt_BR")
+        bitmapCmb.Append(self.locales[3], bmp_spanish_flag,"es")
 
         
+        
         if (self.os_locale[0:2] == 'pt'):
-            bitmapCmb.SetSelection(1)
-        elif (self.os_locale[0:2] == 'es'):
             bitmapCmb.SetSelection(2)
-        else:
+        elif (self.os_locale[0:2] == 'es'):
+            bitmapCmb.SetSelection(3)
+        elif (self.os_locale[0:2] == 'fr'):
             bitmapCmb.SetSelection(0)
+        else:
+            bitmapCmb.SetSelection(1)
 
     def __init_gui(self):
         self.txtMsg = wx.StaticText(self, -1,
