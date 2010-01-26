@@ -231,7 +231,7 @@ class SurfaceManager():
         if imagedata_resolution:
             imagedata = iu.ResampleImage3D(imagedata, imagedata_resolution)
 
-        pipeline_size = 3
+        pipeline_size = 4
         if decimate_reduction:
             pipeline_size += 1
         if (smooth_iterations and smooth_relaxation_factor):
@@ -341,6 +341,8 @@ class SurfaceManager():
 
         # The following lines have to be here, otherwise all volumes disappear
         measured_polydata = vtk.vtkMassProperties()
+        measured_polydata.AddObserver("ProgressEvent", lambda obj,evt:
+                            UpdateProgress(obj, _("Generating 3D surface...")))
         measured_polydata.SetInput(polydata)
         volume =  measured_polydata.GetVolume()
         surface.volume = volume
