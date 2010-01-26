@@ -638,6 +638,12 @@ class Viewer(wx.Panel):
         #slice_data.cursor.Show()
 
         self.pick.Pick(mouse_x, mouse_y, 0, render)
+        
+        if (self.pick.GetProp()):
+            self.interactor.SetCursor(wx.StockCursor(wx.CURSOR_BLANK))
+        else:
+            self.interactor.SetCursor(wx.StockCursor(wx.CURSOR_DEFAULT))
+            
         coord = self.get_coordinate_cursor()
         slice_data.cursor.SetPosition(coord)
         slice_data.cursor.SetEditionPosition(
@@ -830,7 +836,6 @@ class Viewer(wx.Panel):
         ps.Publisher().subscribe(self.OnHideText,
                                  'Hide text actors on viewers')
         ps.Publisher().subscribe(self.OnExportPicture,'Export picture to file')
-        
 
 
     def OnExportPicture(self, pubsub_evt):
