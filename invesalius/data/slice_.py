@@ -27,11 +27,11 @@ from mask import Mask
 import style as st
 from project import Project
 import session as ses
-from utils import Singleton
+import utils
 
 
 class Slice(object):
-    __metaclass__= Singleton
+    __metaclass__= utils.Singleton
     # Only one slice will be initialized per time (despite several viewers
     # show it from distinct perspectives).
     # Therefore, we use Singleton design pattern for implementing it.
