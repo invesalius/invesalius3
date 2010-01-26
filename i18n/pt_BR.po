@@ -546,9 +546,8 @@ msgid "PostScript document"
 msgstr "Documento PostScript"
 
 #: dialogs.py:522
-#, fuzzy
 msgid "POV-Ray file"
-msgstr "Arquivo POV-Ray)"
+msgstr "Arquivo POV-Ray"
 
 #: dialogs.py:523
 msgid "TIFF image"
@@ -774,7 +773,7 @@ msgstr "Banco de Dados InVesalius"
 
 #: language_dialog.py:36
 msgid "Language selection"
-msgstr ""
+msgstr "Seleção de idioma"
 
 #: language_dialog.py:72
 msgid "Choose user interface language"
