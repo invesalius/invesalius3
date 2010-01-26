@@ -10,7 +10,7 @@ msgstr ""
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2010-01-26 17:33-0200\n"
 "PO-Revision-Date: 2010-01-07 11:25-0300\n"
-"Last-Translator: Invesalius team <invesalius@cti.gov.br>\n"
+"Last-Translator: Frédéric Lopez <frederic.lopez@free.fr>\n"
 "Language-Team: InVesalius Team <invesalius@cti.gov.br>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
@@ -20,17 +20,16 @@ msgstr ""
 "X-Poedit-Country: GENERIC\n"
 
 #: constants.py:68
-#, fuzzy
 msgid "Keep all slices"
-msgstr "Coupe axiale"
+msgstr "Utilisez toutes les coupes"
 
 #: constants.py:68
 msgid "Skip 1 for each 2 slices"
-msgstr ""
+msgstr "Passer 1 pour chacune des 2 coupes"
 
 #: constants.py:69
 msgid "Skip 2 for each 3 slices"
-msgstr ""
+msgstr "Passer 2 pour chacune des 3 coupes"
 
 #: constants.py:109 slice_menu.py:76 slice_menu.py:81
 msgid "Default "
@@ -510,60 +509,56 @@ msgid "Save raycasting preset as:"
 msgstr "Enregistrer le préréglage du raycasting sous :"
 
 #: dialogs.py:426
-#, fuzzy
 msgid "New surface name:"
-msgstr "Définir le nom de la nouvelle surface :"
+msgstr "Nom de la nouvelle surface:"
 
 #: dialogs.py:430
-#, fuzzy
 msgid "Name the surface to be created"
 msgstr "Nom de la nouvelle surface à créer"
 
 #: dialogs.py:437
 msgid "Mask of reference:"
-msgstr ""
+msgstr "Masque de référence:"
 
 #: dialogs.py:455
-#, fuzzy
 msgid "Surface quality:"
-msgstr "Qualité de la surface"
+msgstr "Qualité de la surface:"
 
 #: dialogs.py:481
 msgid "Fill holes"
-msgstr ""
+msgstr "Replir les trous"
 
 #: dialogs.py:484
 msgid "Keep largest region"
-msgstr ""
+msgstr "Garder la plus grande région"
 
 #: dialogs.py:518
 msgid "BMP image"
-msgstr ""
+msgstr "Image BMP"
 
 #: dialogs.py:519
 msgid "JPG image"
-msgstr ""
+msgstr "Image JPG"
 
 #: dialogs.py:520
 msgid "PNG image"
-msgstr ""
+msgstr "Image PNG"
 
 #: dialogs.py:521
 msgid "PostScript document"
-msgstr ""
+msgstr "Document PostScript"
 
 #: dialogs.py:522
 msgid "POV-Ray file)"
-msgstr ""
+msgstr "Fichier POV-Ray"
 
 #: dialogs.py:523
-#, fuzzy
 msgid "TIFF image"
-msgstr "Image"
+msgstr "Image TIFF"
 
 #: dicom.py:1418 dicom.py:1421
 msgid "unnamed"
-msgstr ""
+msgstr "sans_nom"
 
 #: dicom_preview_panel.py:45
 #, python-format
@@ -708,22 +703,20 @@ msgid "Window and Level"
 msgstr "Luminosité et contraste"
 
 #: frame.py:898 frame.py:954
-#, fuzzy
 msgid "Hide task panel"
-msgstr "Panneau de données"
+msgstr "Masquer le panneau de données"
 
 #: frame.py:899 frame.py:973
 msgid "Hide text"
-msgstr ""
+msgstr "Cacher le texte"
 
 #: frame.py:960
-#, fuzzy
 msgid "Show task panel"
-msgstr "Panneau de données"
+msgstr "Montrer le panneau de données"
 
 #: frame.py:967
 msgid "Show text"
-msgstr ""
+msgstr "Montrer le texte"
 
 #: imagedata_utils.py:89 imagedata_utils.py:218 imagedata_utils.py:307
 msgid "Generating multiplanar visualization..."
@@ -972,35 +965,32 @@ msgid "Surface properties"
 msgstr "Propriétés de la surface"
 
 #: task_surface.py:206
-#, fuzzy
 msgid "Advanced options"
-msgstr "Outils d'édition avancés"
+msgstr "Outils avancés"
 
 #: task_surface.py:238
 msgid "Automatically select largest disconnect surface"
-msgstr ""
+msgstr "électionner automatiquement plus grande déconnecter surface"
 
 #: task_surface.py:239
-#, fuzzy
 msgid "Split largest surface"
-msgstr "Écraser la dernière surface"
+msgstr "Split plus grande surface"
 
 #: task_surface.py:247
 msgid "Automatically split surfaces into new ones"
-msgstr ""
+msgstr "Automatiquement divisés en nouvelles surfaces"
 
 #: task_surface.py:248
 msgid "Split all disconnect surfaces"
-msgstr ""
+msgstr "Split toutes les surfaces déconnecter"
 
 #: task_surface.py:256
 msgid "Manually insert seeds of surfaces of interest"
-msgstr ""
+msgstr "Insérer manuellement de semences de surfaces d'intéret"
 
 #: task_surface.py:257
-#, fuzzy
 msgid "Select surfaces of interest"
-msgstr "2. Sélectionner une zone d'intérêt"
+msgstr "Sélectionner surfaces d'intérêt"
 
 #: task_surface.py:388
 msgid "Transparency:"
@@ -1012,7 +1002,7 @@ msgstr "Résolution de la décimation:"
 
 #: task_surface.py:515
 msgid "Smooth iterations:"
-msgstr "Itérations de lissage :"
+msgstr "Itérations de lissage:"
 
 #: task_tools.py:57
 msgid "Measure distances"
