@@ -494,6 +494,7 @@ class Viewer(wx.Panel):
 
 
         #if (size[0] <= size[1] + 60):
+        # Code bellow doesn't work for Promed 0013
         if 0:
 
             bound = slice_data.actor.GetBounds()
