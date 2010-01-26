@@ -974,8 +974,7 @@ msgstr "Outils avancés"
 
 #: task_surface.py:238
 msgid "Automatically select largest disconnect region and create new surface"
-msgstr "Électionner automatiquement plus grande déconnecter región et
-créer une nouvelle surface"
+msgstr "Électionner automatiquement plus grande déconnecter región et créer une nouvelle surface"
 
 #: task_surface.py:239
 msgid "Select largest part"
