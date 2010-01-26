@@ -426,7 +426,7 @@ class Viewer(wx.Panel):
             colour = const.ORIENTATION_COLOUR[self.orientation]
 
             # Window & Level text
-            self.wl_text = vtku.Text()
+            self.wl_text = vtku.TextZero()
             self.SetWLText(proj.level, proj.window)
             
                         
@@ -438,32 +438,32 @@ class Viewer(wx.Panel):
             else:
                 values = [_('R'), _('L'), _('T'), _('B')]
                 
-            left_text = vtku.Text()
+            left_text = vtku.TextZero()
             left_text.ShadowOff()
             left_text.SetColour(colour)
             left_text.SetPosition(const.TEXT_POS_VCENTRE_LEFT)
             left_text.SetVerticalJustificationToCentered()
             left_text.SetValue(values[0])
 
-            right_text = vtku.Text()
+            right_text = vtku.TextZero()
             right_text.ShadowOff()
             right_text.SetColour(colour)
-            right_text.SetPosition(const.TEXT_POS_VCENTRE_RIGHT)
+            right_text.SetPosition(const.TEXT_POS_VCENTRE_RIGHT_ZERO)
             right_text.SetVerticalJustificationToCentered()
             right_text.SetJustificationToRight()
             right_text.SetValue(values[1])
 
-            up_text = vtku.Text()
+            up_text = vtku.TextZero()
             up_text.ShadowOff()
             up_text.SetColour(colour)
             up_text.SetPosition(const.TEXT_POS_HCENTRE_UP)
             up_text.SetJustificationToCentered()
             up_text.SetValue(values[2])
 
-            down_text = vtku.Text()
+            down_text = vtku.TextZero()
             down_text.ShadowOff()
             down_text.SetColour(colour)
-            down_text.SetPosition(const.TEXT_POS_HCENTRE_DOWN)
+            down_text.SetPosition(const.TEXT_POS_HCENTRE_DOWN_ZERO)
             down_text.SetJustificationToCentered()
             down_text.SetVerticalJustificationToBottom()
             down_text.SetValue(values[3])

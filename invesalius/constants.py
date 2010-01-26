@@ -34,9 +34,12 @@ TEXT_SIZE_LARGE = 16
 TEXT_COLOUR = (1,1,1)
 
 (X,Y) = (0.03, 0.97)
+(XZ, YZ) = (0.05, 0.93)
 TEXT_POS_LEFT_UP = (X, Y)
 #------------------------------------------------------------------
 TEXT_POS_LEFT_DOWN = (X, 1-Y) # SetVerticalJustificationToBottom
+
+TEXT_POS_LEFT_DOWN_ZERO = (X, 1-YZ)
 #------------------------------------------------------------------
 TEXT_POS_RIGHT_UP = (1-X, Y) # SetJustificationToRight
 #------------------------------------------------------------------
@@ -45,11 +48,14 @@ TEXT_POS_RIGHT_DOWN = (1-X, 1-Y) # SetVerticalJustificationToBottom &
 #------------------------------------------------------------------
 TEXT_POS_HCENTRE_DOWN = (0.5, 1-Y) # SetJustificationToCentered
                                    # ChildrticalJustificationToBottom
+
+TEXT_POS_HCENTRE_DOWN_ZERO = (0.5, 1-YZ)
 #------------------------------------------------------------------
 TEXT_POS_HCENTRE_UP = (0.5, Y)  # SetJustificationToCentered
 #------------------------------------------------------------------
 TEXT_POS_VCENTRE_RIGHT = (1-X, 0.5) # SetVerticalJustificationToCentered
                                     # SetJustificationToRight
+TEXT_POS_VCENTRE_RIGHT_ZERO = (1-XZ, 0.5)
 #------------------------------------------------------------------
 TEXT_POS_VCENTRE_LEFT = (X, 0.5) # SetVerticalJustificationToCentered
 #------------------------------------------------------------------

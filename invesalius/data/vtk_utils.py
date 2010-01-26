@@ -162,3 +162,71 @@ class Text(object):
 
     def Hide(self):
         self.actor.VisibilityOff()
+
+class TextZero(object):
+    def __init__(self):
+
+        property = vtk.vtkTextProperty()
+        property.SetFontSize(const.TEXT_SIZE_LARGE)
+        property.SetFontFamilyToArial()
+        property.BoldOn()
+        property.ItalicOff()
+        #property.ShadowOn()
+        property.SetJustificationToLeft()
+        property.SetVerticalJustificationToTop()
+        property.SetColor(const.TEXT_COLOUR)
+        self.property = property
+
+        actor = vtk.vtkTextActor() 
+        actor.GetTextProperty().ShallowCopy(property)
+        actor.GetPositionCoordinate().SetCoordinateSystemToNormalizedDisplay() 
+        self.actor = actor 
+
+    def SetColour(self, colour):
+        self.property.SetColor(colour)
+
+    def ShadowOff(self):
+        self.property.ShadowOff()
+
+    def SetSize(self, size):
+        self.property.SetFontSize(size)
+
+    def SetValue(self, value):
+        if isinstance(value, int) or isinstance(value, float):
+            value = str(value)
+            if sys.platform == 'win32':
+                value += "" # Otherwise 0 is not shown under win32
+        # With some encoding in some dicom fields (like name) raises a
+        # UnicodeEncodeError because they have non-ascii characters. To avoid
+        # that we encode in utf-8.
+        self.actor.SetInput(value.encode("cp1252"))
+
+    def SetPosition(self, position):
+        self.actor.GetPositionCoordinate().SetValue(position[0],
+                                                    position[1])
+
+    def GetPosition(self, position):
+        self.actor.GetPositionCoordinate().GetValue()
+
+    def SetJustificationToRight(self):
+        self.property.SetJustificationToRight()
+
+    def SetJustificationToCentered(self):
+        self.property.SetJustificationToCentered()
+
+
+    def SetVerticalJustificationToBottom(self):
+        self.property.SetVerticalJustificationToBottom()
+
+    def SetVerticalJustificationToCentered(self):
+        self.property.SetVerticalJustificationToCentered()
+
+    def Show(self, value=1):
+        if value:
+            self.actor.VisibilityOn()
+        else:
+            self.actor.VisibilityOff()
+
+    def Hide(self):
+        self.actor.VisibilityOff()
+
