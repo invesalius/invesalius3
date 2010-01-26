@@ -836,8 +836,11 @@ class Viewer(wx.Panel):
         ps.Publisher().subscribe(self.OnHideText,
                                  'Hide text actors on viewers')
         ps.Publisher().subscribe(self.OnExportPicture,'Export picture to file')
-
-
+        ps.Publisher().subscribe(self.SetDefaultCursor, 'Set interactor default cursor')
+    
+    def SetDefaultCursor(self, pusub_evt):
+        self.interactor.SetCursor(wx.StockCursor(wx.CURSOR_DEFAULT))
+    
     def OnExportPicture(self, pubsub_evt):
         ps.Publisher().sendMessage('Begin busy cursor')
         view_prop_list = []

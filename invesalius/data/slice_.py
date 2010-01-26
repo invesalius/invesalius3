@@ -107,6 +107,10 @@ class Slice(object):
         if (state in const.SLICE_STYLES):
             new_state = self.interaction_style.RemoveState(state)
             ps.Publisher().sendMessage('Set slice interaction style', new_state)
+            
+            if (state == const.SLICE_STATE_EDITOR):
+                ps.Publisher().sendMessage('Set interactor default cursor')
+
 
     def OnCloseProject(self, pubsub_evt):
         self.CloseProject()
