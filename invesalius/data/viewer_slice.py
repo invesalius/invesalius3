@@ -487,7 +487,14 @@ class Viewer(wx.Panel):
         ren = slice_data.renderer
         size = ren.GetSize()
 
-        if (size[0] <= size[1] + 60):
+
+        ren.ResetCamera()
+        ren.GetActiveCamera().Zoom(1.0)
+        self.interactor.GetRenderWindow().Render()
+
+
+        #if (size[0] <= size[1] + 60):
+        if 0:
 
             bound = slice_data.actor.GetBounds()
 
