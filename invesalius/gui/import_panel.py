@@ -21,6 +21,7 @@ import wx.gizmos as gizmos
 import wx.lib.pubsub as ps
 import wx.lib.splitter as spl
 
+import constants as const
 import dicom_preview_panel as dpp
 import reader.dicom_grouper as dcm
 
@@ -79,15 +80,31 @@ class InnerPanel(wx.Panel):
         self.splitter = splitter
         
         panel = wx.Panel(self)
-        button = wx.Button(panel, -1, _("Import medical images"), (20, 20))
+        #button = wx.Button(panel, -1, _("Import medical images"), (20, 20))
 
-        inner_sizer = wx.BoxSizer()
-        inner_sizer.Add(button, 0, wx.ALIGN_CENTER_HORIZONTAL, 40)
+
+        btn_ok = wx.Button(panel, wx.ID_OK)
+        btn_ok.SetDefault()
+        btn_cancel = wx.Button(panel, wx.ID_CANCEL)
+        
+        btnsizer = wx.StdDialogButtonSizer()
+        btnsizer.AddButton(btn_ok)
+        btnsizer.AddButton(btn_cancel)
+        btnsizer.Realize()
+
+        combo_interval = wx.ComboBox(panel, -1, "", choices= const.IMPORT_INTERVAL,
+                                     style=wx.CB_DROPDOWN|wx.CB_READONLY)
+        combo_interval.SetSelection(0)
+
+        inner_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        inner_sizer.AddSizer(btnsizer, 0, wx.LEFT|wx.TOP, 5)
+        inner_sizer.Add(combo_interval, 0, wx.LEFT|wx.RIGHT|wx.TOP, 8)
         panel.SetSizer(inner_sizer)
+        inner_sizer.Fit(panel)
         
         sizer = wx.BoxSizer(wx.VERTICAL)
         sizer.Add(splitter, 20, wx.EXPAND)
-        sizer.Add(panel, 1, wx.EXPAND)
+        sizer.Add(panel, 1, wx.EXPAND|wx.LEFT, 90)
        
         self.SetSizer(sizer)
         sizer.Fit(self)
