@@ -327,6 +327,7 @@ class SurfaceTools(wx.Panel):
         self.SelectSeed()
 
     def OnButton(self, evt):
+        id = evt.GetId()
         if id == BTN_LARGEST:
             self.SelectLargest()
         elif id == BTN_SPLIT:
@@ -336,11 +337,12 @@ class SurfaceTools(wx.Panel):
 
     def SelectLargest(self):
         index = self.combo_surface_name.GetSelection()
-        ps.Publisher().sendMessage('Split surface', index) 
+        ps.Publisher().sendMessage('Create surface from largest region', index) 
 
     def SplitSurface(self):
         index = self.combo_surface_name.GetSelection()
-        ps.Publisher().sendMessage('Create surface from largest region', index) 
+        ps.Publisher().sendMessage('Split surface', index) 
+
         # surface_manager
     
     def SelectSeed(self):

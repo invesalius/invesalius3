@@ -127,6 +127,7 @@ class SurfaceManager():
 
     def OnSeedSurface(self, pubsub_evt):
         index, points_id_list = pubsub_evt.data
+        index = self.last_surface_index
         proj = prj.Project()
         surface = proj.surface_dict[index]
  
@@ -136,6 +137,7 @@ class SurfaceManager():
 
     def OnSplitSurface(self, pubsub_evt):
         index = pubsub_evt.data
+        index = self.last_surface_index
         proj = prj.Project()
         surface = proj.surface_dict[index]
 
@@ -145,11 +147,13 @@ class SurfaceManager():
 
     def OnLargestSurface(self, pubsub_evt):
         index = pubsub_evt.data
+        index = self.last_surface_index
         proj = prj.Project()
         surface = proj.surface_dict[index]
 
         new_polydata = pu.SelectLargestPart(surface.polydata)
         self.CreateSurfaceFromPolydata(new_polydata)
+        #TODO: Hide previous
 
     def CreateSurfaceFromPolydata(self, polydata, overwrite=False):
         mapper = vtk.vtkPolyDataMapper()
@@ -170,6 +174,7 @@ class SurfaceManager():
         # Set actor colour and transparency
         actor.GetProperty().SetColor(surface.colour)
         actor.GetProperty().SetOpacity(1-surface.transparency)
+        self.actors_dict[surface.index] = actor
 
         # Append surface into Project.surface_dict
         proj = prj.Project()
@@ -185,8 +190,6 @@ class SurfaceManager():
 
         # The following lines have to be here, otherwise all volumes disappear
         measured_polydata = vtk.vtkMassProperties()
-        measured_polydata.AddObserver("ProgressEvent", lambda obj,evt:
-                            UpdateProgress(obj, _("Generating 3D surface...")))
         measured_polydata.SetInput(polydata)
         volume =  measured_polydata.GetVolume()
         surface.volume = volume
@@ -194,6 +197,11 @@ class SurfaceManager():
 
         ps.Publisher().sendMessage('Load surface actor into viewer', actor)
 
+        ps.Publisher().sendMessage('Update surface info in GUI',
+                                        (surface.index, surface.name,
+                                        surface.colour, surface.volume,
+                                        surface.transparency))
+        
 
     def OnCloseProject(self, pubsub_evt):
         self.CloseProject()
