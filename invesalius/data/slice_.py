@@ -335,16 +335,15 @@ class Slice(object):
     #---------------------------------------------------------------------------
     def SelectCurrentMask(self, index):
         "Insert mask data, based on given index, into pipeline."
-
         # This condition is not necessary in Linux, only under mac and windows
         # because combobox event is binded when the same item is selected again.
         #if index != self.current_mask.index:
         if self.current_mask and self.blend_filter:
             proj = Project()
             future_mask = proj.GetMask(index)
-
+            future_mask.is_shown = True
             self.current_mask = future_mask
-
+            
             colour = future_mask.colour
             index = future_mask.index
             self.SetMaskColour(index, colour, update=False)
@@ -353,9 +352,10 @@ class Slice(object):
             self.img_colours_mask.SetInput(imagedata)
 
             if self.current_mask.is_shown:
+                print 1
                 self.blend_filter.SetOpacity(1, self.current_mask.opacity)
             else:
-
+                print 2
                 self.blend_filter.SetOpacity(1, 0)
             self.blend_filter.Update()
 
