@@ -261,7 +261,7 @@ class Controller():
         if (data):
             if not(self.progress_dialog):
                 self.progress_dialog = dialog.ProgressDialog(
-                                    maximum = data[1])
+                                    maximum = data[1], abort=1)
             else:
                 if not(self.progress_dialog.Update(data[0],message)):
                     self.progress_dialog.Close()

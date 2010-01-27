@@ -93,7 +93,11 @@ class Frame(wx.Frame):
         ps.Publisher().subscribe(self.HideContentPanel, 'Hide content panel')
 
     def EndBusyCursor(self, pubsub_evt=None):
-        wx.EndBusyCursor()
+        try:        
+            wx.EndBusyCursor()
+        except wx._core.PyAssertionError:
+            #xEndBusyCursor(): no matching wxBeginBusyCursor() for wxEndBusyCursor()
+            pass
 
     def BeginBusyCursor(self, pubsub_evt=None):
         wx.BeginBusyCursor()
