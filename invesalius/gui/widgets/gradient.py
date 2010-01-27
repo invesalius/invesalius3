@@ -141,6 +141,16 @@ class SliderBorder(object):
         elif self.type == MAXBORDER and self.pos+self.width >= self.WindowWidth:
            self.pos = self.WindowWidth - self.width
 
+    def SetPosition(self, pos):
+        """
+        Move the border
+        """
+        self.pos = pos
+        if self.type == MINBORDER and self.pos < 0:
+            self.pos = 0
+        elif self.type == MAXBORDER and self.pos+self.width >= self.WindowWidth:
+           self.pos = self.WindowWidth - self.width
+
     def GetCursor(self):
         """
         This function returns the cursor related to the SliderBorder
@@ -432,7 +442,10 @@ class GradientPanel(wx.Panel):
             slide = x - self.MousePositionX
             self.MousePositionX += slide
             self.SetCursor(self.SelectedObject.GetCursor())
-            self.SelectedObject.DoSlide(slide)
+            if isinstance(self.SelectedObject, SliderControl):
+                self.SelectedObject.DoSlide(slide)
+            else:
+                self.SelectedObject.SetPosition(x)
             self.Slider.Calculate(self.SelectedObject)
             if self.GetMin() >= self.GetMax():
                 self.SetMinValue(self.GetMax()-1)
