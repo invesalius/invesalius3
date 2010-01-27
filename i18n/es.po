@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: InVesalius 3\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2010-01-27 00:42-0200\n"
+"POT-Creation-Date: 2010-01-27 01:03-0200\n"
 "PO-Revision-Date: 2010-01-07 11:25-0300\n"
 "Last-Translator: Invesalius team <invesalius@cti.gov.br>\n"
 "Language-Team: InVesalius Team <invesalius@cti.gov.br>\n"
@@ -695,7 +695,7 @@ msgstr "Ocultar el panel de tareas"
 
 #: frame.py:903 frame.py:977
 msgid "Hide text"
-msgstr "Ocultar texto" 
+msgstr "Ocultar texto"
 
 #: frame.py:964
 msgid "Show task panel"
@@ -957,7 +957,9 @@ msgstr "Herramientas avanzadas"
 
 #: task_surface.py:238
 msgid "Automatically select largest disconnect region and create new surface"
-msgstr "Seleccionar automáticamente la mayor región desconexa y crear una nueva superficie"
+msgstr ""
+"Seleccionar automáticamente la mayor región desconexa y crear una nueva "
+"superficie"
 
 #: task_surface.py:239
 msgid "Select largest part"
@@ -966,7 +968,9 @@ msgstr "Seleccione la parte más grande"
 #: task_surface.py:247
 msgid ""
 "Automatically select disconnect regions and create one new surface per region"
-msgstr "Seleccionar automáticamente las regiones desconectadas y crear una nueva superficie de cada región"
+msgstr ""
+"Seleccionar automáticamente las regiones desconectadas y crear una nueva "
+"superficie de cada región"
 
 #: task_surface.py:248
 msgid "Split all disconnect surfaces"
@@ -974,7 +978,9 @@ msgstr "Split todas las superficies de desconexión"
 
 #: task_surface.py:256
 msgid "Manually insert seeds of regions of interest and create one new surface"
-msgstr "Insertar manualmente las semillas en las regiones de interés y crear una nueva superficie"
+msgstr ""
+"Insertar manualmente las semillas en las regiones de interés y crear una "
+"nueva superficie"
 
 #: task_surface.py:257
 msgid "Select regions of interest..."
