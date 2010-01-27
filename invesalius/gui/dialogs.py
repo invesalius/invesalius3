@@ -537,16 +537,14 @@ def ExportPicture(type_=""):
     utils.debug("ExportPicture")
     project = proj.Project()
 
-    if sys.platform == 'win32':
-        project_name = project.name
-    else:
-        project_name = project.name+".jpg"
-
+    project_name = "%s_%s" % (project.name, type_)
+    if not sys.platform in ('win32', 'linux2'):
+        project_name += ".jpg"
 
     dlg = wx.FileDialog(None,
                         "Save %s picture as..." %type_,
                         "", # last used directory
-                        "%s_%s"%(project_name, type_), # filename
+                        project_name, # filename
                         WILDCARD_SAVE_PICTURE,
                         wx.SAVE|wx.OVERWRITE_PROMPT)
     dlg.SetFilterIndex(1) # default is VTI

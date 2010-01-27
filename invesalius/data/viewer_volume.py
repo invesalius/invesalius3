@@ -159,35 +159,34 @@ class Viewer(wx.Panel):
                 image = vtk.vtkWindowToImageFilter()
                 image.SetInput(renwin)
                 writer = vtk.vtkPOVExporter()
-                writer.SetFilePrefix(filename.split(".")[0])
+                writer.SetFileName(filename)
                 writer.SetRenderWindow(renwin)
                 writer.Write()
-                return
             else:
                 #Use tiling to generate a large rendering.
                 image = vtk.vtkRenderLargeImage()
                 image.SetInput(self.ren)
                 image.SetMagnification(2)
 
-            image = image.GetOutput()
+                image = image.GetOutput()
 
 
-            # write image file
-            if (filetype == const.FILETYPE_BMP):
-                writer = vtk.vtkBMPWriter()
-            elif (filetype == const.FILETYPE_JPG):
-                writer =  vtk.vtkJPEGWriter()
-            elif (filetype == const.FILETYPE_PNG):
-                writer = vtk.vtkPNGWriter()
-            elif (filetype == const.FILETYPE_PS):
-                writer = vtk.vtkPostScriptWriter()
-            elif (filetype == const.FILETYPE_TIF):
-                writer = vtk.vtkTIFFWriter()
-                filename = "%s.tif"%filename.strip(".tif")
-            
-            writer.SetInput(image)
-            writer.SetFileName(filename)
-            writer.Write()
+                # write image file
+                if (filetype == const.FILETYPE_BMP):
+                    writer = vtk.vtkBMPWriter()
+                elif (filetype == const.FILETYPE_JPG):
+                    writer =  vtk.vtkJPEGWriter()
+                elif (filetype == const.FILETYPE_PNG):
+                    writer = vtk.vtkPNGWriter()
+                elif (filetype == const.FILETYPE_PS):
+                    writer = vtk.vtkPostScriptWriter()
+                elif (filetype == const.FILETYPE_TIF):
+                    writer = vtk.vtkTIFFWriter()
+                    filename = "%s.tif"%filename.strip(".tif")
+                
+                writer.SetInput(image)
+                writer.SetFileName(filename)
+                writer.Write()
         ps.Publisher().sendMessage('End busy cursor')
 
 

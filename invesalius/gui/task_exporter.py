@@ -247,7 +247,6 @@ class InnerTaskPanel(wx.Panel):
         value = dlg.ExportPicture(self.id_to_name[id])
         if value:
             filename, filetype = value 
-            print filename, filetype
             ps.Publisher().sendMessage('Export picture to file',
                                        (id, filename, filetype))
  
