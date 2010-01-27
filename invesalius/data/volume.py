@@ -375,9 +375,10 @@ class Volume():
         return colour
 
     def ChangeBackgroundColour(self, pubsub_evt):
-        self.config['backgroundColorRedComponent'] = pubsub_evt.data[0] * 255
-        self.config['backgroundColorGreenComponent'] = pubsub_evt.data[1] * 255
-        self.config['backgroundColorBlueComponent'] = pubsub_evt.data[2] * 255
+        if (self.config):
+            self.config['backgroundColorRedComponent'] = pubsub_evt.data[0] * 255
+            self.config['backgroundColorGreenComponent'] = pubsub_evt.data[1] * 255
+            self.config['backgroundColorBlueComponent'] = pubsub_evt.data[2] * 255
 
     def BuildTable():
         curve_table = p['16bitClutCurves']
