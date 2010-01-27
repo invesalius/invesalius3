@@ -329,16 +329,17 @@ class Controller():
         ps.Publisher().sendMessage('Load surface dict',
                                     proj.surface_dict)
         self.LoadImagedataInfo() # TODO: where do we insert this <<<?
-        ps.Publisher().sendMessage('Bright and contrast adjustment image',\
-                                   (proj.window, proj.level))
-        ps.Publisher().sendMessage('Update window level value',\
-                                    (proj.window, proj.level))
         ps.Publisher().sendMessage('Show content panel')
         ps.Publisher().sendMessage('Update AUI')
         ps.Publisher().sendMessage('Load slice to viewer',
                         (proj.imagedata,
                         proj.mask_dict))
         ps.Publisher().sendMessage('Load slice plane')
+        ps.Publisher().sendMessage('Bright and contrast adjustment image',\
+                                   (proj.window, proj.level))
+        ps.Publisher().sendMessage('Update window level value',\
+                                    (proj.window, proj.level))
+
         if len(proj.mask_dict):
             mask_index = len(proj.mask_dict) -1
             ps.Publisher().sendMessage('Show mask', (mask_index, True))
