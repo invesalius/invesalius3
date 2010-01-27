@@ -319,6 +319,7 @@ class Controller():
 
         const.THRESHOLD_OUTVALUE = proj.threshold_range[0]
         const.THRESHOLD_INVALUE = proj.threshold_range[1]
+ 
         const.WINDOW_LEVEL[_('Default')] = (proj.window, proj.level)
         const.WINDOW_LEVEL[_('Manual')] = (proj.window, proj.level)
 
@@ -340,6 +341,8 @@ class Controller():
         if len(proj.mask_dict):
             mask_index = len(proj.mask_dict) -1
             ps.Publisher().sendMessage('Show mask', (mask_index, True))
+
+        proj.presets.thresh_ct[_('Custom')] = proj.threshold_range
         ps.Publisher().sendMessage('End busy cursor')
 
     def CreateAnalyzeProject(self, imagedata):

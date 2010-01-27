@@ -158,7 +158,6 @@ class InnerTaskPanel(wx.Panel):
             print "win64 - wx._core.PyAssertionError"
             op = True
 
-        print "TODO: Send Signal - New mask"
         if (op):
             mask_name = dlg.GetValue()
             ps.Publisher().sendMessage('Create new mask', mask_name)
@@ -389,6 +388,15 @@ class MaskProperties(wx.Panel):
         self.gradient.SetMinValue(thresh_min)
         self.gradient.SetMaxValue(thresh_max)
         self.bind_evt_gradient = True
+        thresh = (thresh_min, thresh_max)
+        if thresh in Project().presets.thresh_ct.values():
+            preset_name = Project().presets.thresh_ct.get_key(thresh)[0]
+            index = self.threshold_modes_names.index(preset_name) 
+            self.combo_thresh.SetSelection(index)
+        else:
+            index = self.threshold_modes_names.index(_("Custom"))
+            self.combo_thresh.SetSelection(index)
+            Project().presets.thresh_ct[_("Custom")] = (thresh_min, thresh_max)
 
     def SetThresholdValues2(self, pubsub_evt):
         thresh_min, thresh_max = pubsub_evt.data
@@ -402,6 +410,7 @@ class MaskProperties(wx.Panel):
         else:
             index = self.threshold_modes_names.index(_("Custom"))
             self.combo_thresh.SetSelection(index)
+            Project().presets.thresh_ct[_("Custom")] = (thresh_min, thresh_max)
 
     def SetItemsColour(self, evt_pubsub):
         colour = evt_pubsub.data
@@ -427,7 +436,6 @@ class MaskProperties(wx.Panel):
         self.combo_thresh.SetItems(thresh_modes_names)
         self.threshold_modes_names = thresh_modes_names
         proj = Project()
-        
         if isinstance(default_thresh, int):
             self.combo_thresh.SetSelection(default_thresh)
             (thresh_min, thresh_max) =\
@@ -441,12 +449,12 @@ class MaskProperties(wx.Panel):
             index = self.threshold_modes_names.index(_("Custom"))
             self.combo_thresh.SetSelection(index)
             thresh_min, thresh_max = default_thresh
+            proj.presets.thresh_ct[_("Custom")] = (thresh_min, thresh_max)
 
         self.gradient.SetMinValue(thresh_min)
         self.gradient.SetMaxValue(thresh_max)
 
     def SetThresholdBounds(self, pubsub_evt):
-        print ">>>Threshold Limits", pubsub_evt.data
         thresh_min = pubsub_evt.data[0]
         thresh_max  = pubsub_evt.data[1]
         self.gradient.SetMinRange(thresh_min)
@@ -458,14 +466,13 @@ class MaskProperties(wx.Panel):
         ps.Publisher().sendMessage('Change mask selected', mask_index)
 
     def OnComboThresh(self, evt):
-        (thresh_min, thresh_max) = self.threshold_modes[evt.GetString()]
+        (thresh_min, thresh_max) = Project().presets.thresh_ct[evt.GetString()]
         self.gradient.SetMinValue(thresh_min)
         self.gradient.SetMaxValue(thresh_max)
 
     def OnSlideChanged(self, evt):
         thresh_min = self.gradient.GetMinValue()
         thresh_max = self.gradient.GetMaxValue()
-        print "OnSlideChanged", thresh_min, thresh_max
         if self.bind_evt_gradient:
             ps.Publisher().sendMessage('Set threshold values',
                                         (thresh_min, thresh_max))
