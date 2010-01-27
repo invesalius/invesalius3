@@ -208,6 +208,7 @@ class Controller():
 
         mask = msk.Mask()
         mask._set_class_index(proj.last_mask_index)
+        self.mask_dict_copy = proj.mask_dict.copy()
 
         surface = srf.Surface()
         surface._set_class_index(proj.last_surface_index)
@@ -325,9 +326,6 @@ class Controller():
 
 
         ps.Publisher().sendMessage('Set project name', proj.name)
-        ps.Publisher().sendMessage('Load slice to viewer',
-                                (proj.imagedata,
-                                proj.mask_dict))
         ps.Publisher().sendMessage('Load surface dict',
                                     proj.surface_dict)
         self.LoadImagedataInfo() # TODO: where do we insert this <<<?
@@ -337,6 +335,9 @@ class Controller():
                                     (proj.window, proj.level))
         ps.Publisher().sendMessage('Show content panel')
         ps.Publisher().sendMessage('Update AUI')
+        ps.Publisher().sendMessage('Load slice to viewer',
+                        (proj.imagedata,
+                        proj.mask_dict))
         ps.Publisher().sendMessage('Load slice plane')
         if len(proj.mask_dict):
             mask_index = len(proj.mask_dict) -1
