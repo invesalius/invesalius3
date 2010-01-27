@@ -336,9 +336,11 @@ class MaskProperties(wx.Panel):
 
         proj = Project()
         self.threshold_modes = proj.threshold_modes
+        self.threshold_modes_names = []
         self.bind_evt_gradient = True
         self.__bind_events()
         self.__bind_events_wx()
+
 
     def __bind_events(self):
         ps.Publisher().subscribe(self.AddMask, 'Add mask')
@@ -352,6 +354,7 @@ class MaskProperties(wx.Panel):
         ps.Publisher().subscribe(self.SelectMaskName, 'Select mask name in combo')
         ps.Publisher().subscribe(self.ChangeMaskName, 'Change mask name')
         ps.Publisher().subscribe(self.OnCloseProject, 'Close project data')
+        ps.Publisher().subscribe(self.SetThresholdValues2, 'Set threshold values')
 
     def OnCloseProject(self, pubsub_evt):
         self.CloseProject()
@@ -387,6 +390,19 @@ class MaskProperties(wx.Panel):
         self.gradient.SetMaxValue(thresh_max)
         self.bind_evt_gradient = True
 
+    def SetThresholdValues2(self, pubsub_evt):
+        thresh_min, thresh_max = pubsub_evt.data
+        self.gradient.SetMinValue(thresh_min)
+        self.gradient.SetMaxValue(thresh_max)
+        thresh = (thresh_min, thresh_max)
+        if thresh in Project().presets.thresh_ct.values():
+            preset_name = Project().presets.thresh_ct.get_key(thresh)[0]
+            index = self.threshold_modes_names.index(preset_name) 
+            self.combo_thresh.SetSelection(index)
+        else:
+            index = self.threshold_modes_names.index(_("Custom"))
+            self.combo_thresh.SetSelection(index)
+
     def SetItemsColour(self, evt_pubsub):
         colour = evt_pubsub.data
         self.gradient.SetColour(colour)
@@ -408,17 +424,24 @@ class MaskProperties(wx.Panel):
 
     def SetThresholdModes(self, pubsub_evt):
         (thresh_modes_names, default_thresh) = pubsub_evt.data
-        print pubsub_evt.data
         self.combo_thresh.SetItems(thresh_modes_names)
+        self.threshold_modes_names = thresh_modes_names
+        proj = Project()
+        
         if isinstance(default_thresh, int):
             self.combo_thresh.SetSelection(default_thresh)
             (thresh_min, thresh_max) =\
                 self.threshold_modes[thresh_modes_names[default_thresh]]
+        elif default_thresh in proj.presets.thresh_ct.values():
+            preset_name = proj.presets.thresh_ct.get_key(default_thresh)[0]
+            index = self.threshold_modes_names.index(preset_name) 
+            self.combo_thresh.SetSelection(index)
+            thresh_min, thresh_max = default_thresh
         else:
-           self.combo_thresh.SetSelection(3)
-           thresh_min, thresh_max = default_thresh
+            index = self.threshold_modes_names.index(_("Custom"))
+            self.combo_thresh.SetSelection(index)
+            thresh_min, thresh_max = default_thresh
 
-        print "Este e threshold", thresh_min, thresh_max
         self.gradient.SetMinValue(thresh_min)
         self.gradient.SetMaxValue(thresh_max)
 

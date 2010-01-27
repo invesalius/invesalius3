@@ -427,11 +427,20 @@ class Controller():
 
         thresh_modes =  proj.threshold_modes.keys()
         thresh_modes.sort()
-
         default_threshold = const.THRESHOLD_PRESETS_INDEX
         if proj.mask_dict:
-            last = max(proj.mask_dict.keys())
-            default_threshold = proj.mask_dict[last].threshold_range
+            keys = proj.mask_dict.keys()
+            last = max(keys)
+            (a,b) = proj.mask_dict[last].threshold_range
+            default_threshold = [a,b]
+            min_ = proj.threshold_range[0]
+            max_ = proj.threshold_range[1]
+            if default_threshold[0] < min_:
+                default_threshold[0] = min_
+            if default_threshold[1] > max_:
+                default_threshold[1] = max_
+            [a,b] = default_threshold
+            default_threshold = (a,b)
         ps.Publisher().sendMessage('Set threshold modes',
                                 (thresh_modes,default_threshold))
 
