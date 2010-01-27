@@ -490,11 +490,13 @@ class Viewer(wx.Panel):
 
         ren.ResetCamera()
         ren.GetActiveCamera().Zoom(1.0)
-        self.interactor.GetRenderWindow().Render()
+        self.interactor.Render()
+        #self.interactor.GetRenderWindow().Render()
 
-
+        
         #if (size[0] <= size[1] + 60):
         # Code bellow doesn't work for Promed 0013
+        """
         if 0:
 
             bound = slice_data.actor.GetBounds()
@@ -551,7 +553,8 @@ class Viewer(wx.Panel):
                 cam.Zoom(size[0] / width)
             else:
                 cam.Zoom(size[1] / height)
-
+        """
+                
 
     def ChangeBrushSize(self, pubsub_evt):
         size = pubsub_evt.data
