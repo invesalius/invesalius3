@@ -166,7 +166,7 @@ class Viewer(wx.Panel):
                 #Use tiling to generate a large rendering.
                 image = vtk.vtkRenderLargeImage()
                 image.SetInput(self.ren)
-                image.SetMagnification(2)
+                image.SetMagnification(1)
 
                 image = image.GetOutput()
 
