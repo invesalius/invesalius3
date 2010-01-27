@@ -338,7 +338,7 @@ class Slice(object):
         # This condition is not necessary in Linux, only under mac and windows
         # because combobox event is binded when the same item is selected again.
         #if index != self.current_mask.index:
-        if self.current_mask and self.blend_filter:
+        if self.current_mask and self.blend_filter and index > -1:
             proj = Project()
             future_mask = proj.GetMask(index)
             future_mask.is_shown = True

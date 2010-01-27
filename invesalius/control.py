@@ -317,8 +317,6 @@ class Controller():
     def LoadProject(self):
         proj = prj.Project()
 
-        mask_index = len(proj.mask_dict) -1
-
         const.THRESHOLD_OUTVALUE = proj.threshold_range[0]
         const.THRESHOLD_INVALUE = proj.threshold_range[1]
         const.WINDOW_LEVEL[_('Default')] = (proj.window, proj.level)
@@ -339,7 +337,9 @@ class Controller():
         ps.Publisher().sendMessage('Show content panel')
         ps.Publisher().sendMessage('Update AUI')
         ps.Publisher().sendMessage('Load slice plane')
-        ps.Publisher().sendMessage('Change mask selected', mask_index)
+        if len(proj.mask_dict):
+            mask_index = len(proj.mask_dict) -1
+            ps.Publisher().sendMessage('Show mask', (mask_index, True))
         ps.Publisher().sendMessage('End busy cursor')
 
     def CreateAnalyzeProject(self, imagedata):

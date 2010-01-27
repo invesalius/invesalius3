@@ -96,7 +96,11 @@ class MasksListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
     def OnChangeCurrentMask(self, pubsub_evt):
 
         mask_index = pubsub_evt.data
-        self.SetItemImage(mask_index, 1)
+        try:
+            self.SetItemImage(mask_index, 1)
+        except wx._core.PyAssertionError:
+            #in SetItem(): invalid item index in SetItem
+            pass
         for key in self.mask_list_index.keys():
             if key != mask_index:
                 self.SetItemImage(key, 0)
