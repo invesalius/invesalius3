@@ -31,6 +31,7 @@ import gui.widgets.foldpanelbar as fpb
 import widgets.colourselect as csel
 
 from project import Project
+import session as ses
 
 BTN_NEW = wx.NewId()
 
@@ -476,6 +477,8 @@ class MaskProperties(wx.Panel):
         if self.bind_evt_gradient:
             ps.Publisher().sendMessage('Set threshold values',
                                         (thresh_min, thresh_max))
+            session = ses.Session()
+            session.ChangeProject()
 
     def OnSelectColour(self, evt):
         colour = evt.GetValue()

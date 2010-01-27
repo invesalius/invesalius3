@@ -157,6 +157,8 @@ class Slice(object):
 
     def __set_current_mask_threshold(self, evt_pubsub):
         session = ses.Session()
+        print session.project_status != const.PROJ_OPEN
+        print session.project_status
         #FIXME: find a better way to implement this
         if (self.num_gradient >= 2) or \
         (session.project_status != const.PROJ_OPEN):
@@ -275,11 +277,6 @@ class Slice(object):
        
         proj = Project()
         proj.mask_dict[self.current_mask.index].threshold_range = threshold_range
-   
-        session = ses.Session()
-        session.ChangeProject()
-
-
  
 
     def ShowMask(self, index, value):
