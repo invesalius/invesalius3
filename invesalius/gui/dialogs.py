@@ -358,7 +358,7 @@ def ShowAboutDialog(parent):
 
     info = wx.AboutDialogInfo()
     info.Name = "InVesalius"
-    info.Version = "3.0 - Alpha 2"
+    info.Version = "3.0 - Beta 1"
     info.Copyright = _("(c) 2007-2010 Center for Information Technology Renato Archer")
     info.Description = wordwrap(
        _("InVesalius is a software for medical imaging 3D reconstruction. ")+\
