@@ -21,6 +21,7 @@ import glob
 import os
 import plistlib
 import shutil
+import stat
 import tarfile
 import tempfile
 
@@ -177,8 +178,10 @@ class Project(object):
                 project[key] = {'#plist':
                                 self.__dict__[key].SavePlist(filename_tmp).decode('utf-8')}
             elif key == 'dicom_sample':
-                shutil.copy(self.dicom_sample.parser.filename,
-                            os.path.join(dir_temp, 'sample.dcm'))
+                sample_path = os.path.join(dir_temp, 'sample.dcm')
+                shutil.copy(self.dicom_sample.parser.filename,sample_path)
+                os.chmod(sample_path, stat.S_IREAD|stat.S_IWRITE)
+                
                 project[key] = 'sample.dcm'
             else:
                 project[key] = self.__dict__[key]
