@@ -577,20 +577,22 @@ class GradientSlider(wx.Panel):
         self.slided = 0
         self._GenerateEvent()
 
-    def SetMinValue(self, value):
+    def SetMinValue(self, value, do_event=False):
         try:
             value = value.data
         except AttributeError:
             pass
+        self.slided = 0 if do_event else 1
         self.GradientPanel.SetMinValue(value)
         self.SpinMin.SetValue(int(value))
         self.GradientPanel.Refresh()
 
-    def SetMaxValue(self, value):
+    def SetMaxValue(self, value, do_event=False):
         try:
             value = value.data
         except AttributeError:
             pass
+        self.slided = 0 if do_event else 1
         self.GradientPanel.SetMaxValue(value)
         self.SpinMax.SetValue(int(value))
         self.GradientPanel.Refresh()

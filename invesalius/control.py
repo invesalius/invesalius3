@@ -324,13 +324,6 @@ class Controller():
         const.WINDOW_LEVEL[_('Default')] = (proj.window, proj.level)
         const.WINDOW_LEVEL[_('Manual')] = (proj.window, proj.level)
 
-
-        ps.Publisher().sendMessage('Set project name', proj.name)
-        ps.Publisher().sendMessage('Load surface dict',
-                                    proj.surface_dict)
-        self.LoadImagedataInfo() # TODO: where do we insert this <<<?
-        ps.Publisher().sendMessage('Show content panel')
-        ps.Publisher().sendMessage('Update AUI')
         ps.Publisher().sendMessage('Load slice to viewer',
                         (proj.imagedata,
                         proj.mask_dict))
@@ -339,6 +332,13 @@ class Controller():
                                    (proj.window, proj.level))
         ps.Publisher().sendMessage('Update window level value',\
                                     (proj.window, proj.level))
+
+        ps.Publisher().sendMessage('Set project name', proj.name)
+        ps.Publisher().sendMessage('Load surface dict',
+                                    proj.surface_dict)
+        self.LoadImagedataInfo() # TODO: where do we insert this <<<?
+        ps.Publisher().sendMessage('Show content panel')
+        ps.Publisher().sendMessage('Update AUI')
 
         if len(proj.mask_dict):
             mask_index = len(proj.mask_dict) -1

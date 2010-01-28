@@ -35,7 +35,7 @@ import data.polydata_utils as pu
 import data.surface as srf
 from presets import Presets
 from reader import dicom
-from utils import Singleton
+from utils import Singleton, debug
 import version
 
 class Project(object):
@@ -153,7 +153,7 @@ class Project(object):
         elif type_ == "CT":
             self.threshold_modes = self.presets.thresh_ct
         else:
-            utils.debug("Different Acquisition Modality!!!")
+            debug("Different Acquisition Modality!!!")
         self.modality = type_
 
     def SetRaycastPreset(self, label):

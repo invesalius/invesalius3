@@ -468,8 +468,8 @@ class MaskProperties(wx.Panel):
 
     def OnComboThresh(self, evt):
         (thresh_min, thresh_max) = Project().presets.thresh_ct[evt.GetString()]
-        self.gradient.SetMinValue(thresh_min)
-        self.gradient.SetMaxValue(thresh_max)
+        self.gradient.SetMinValue(thresh_min, True)
+        self.gradient.SetMaxValue(thresh_max, True)
 
     def OnSlideChanged(self, evt):
         thresh_min = self.gradient.GetMinValue()
