@@ -515,7 +515,8 @@ class SurfaceManager():
         filename, filetype = pubsub_evt.data
         if (filetype == const.FILETYPE_STL) or\
            (filetype == const.FILETYPE_VTP) or\
-           (filetype == const.FILETYPE_PLY) :
+           (filetype == const.FILETYPE_PLY) or\
+           (filetype == const.FILETYPE_STL_ASCII):
 
             # First we identify all surfaces that are selected
             # (if any)
@@ -541,6 +542,9 @@ class SurfaceManager():
             if filetype == const.FILETYPE_STL:
                 writer = vtk.vtkSTLWriter()
                 writer.SetFileTypeToBinary()
+            elif filetype == const.FILETYPE_STL_ASCII:
+                writer = vtk.vtkSTLWriter()
+                writer.SetFileTypeToASCII()
             elif filetype == const.FILETYPE_VTP:
                 writer = vtk.vtkXMLPolyDataWriter()
             #elif filetype == const.FILETYPE_IV:
