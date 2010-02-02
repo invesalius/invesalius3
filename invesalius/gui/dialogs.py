@@ -98,7 +98,7 @@ class ProgressDialog(object):
         self.style = wx.PD_APP_MODAL
         if abort:
             self.style = wx.PD_APP_MODAL | wx.PD_CAN_ABORT
-            
+
         self.dlg = wx.ProgressDialog(self.title,
                                      self.msg,
                                      maximum = self.maximum,
@@ -183,11 +183,13 @@ def ShowImportDirDialog():
             else:
                 path = dlg.GetPath().encode('utf-8')
 
-        if (sys.platform != 'darwin'):
-            session.SetLastDicomFolder(path)
-
     except(wx._core.PyAssertionError): #TODO: error win64
-        path = dlg.GetPath()
+         if (dlg.GetPath()):
+             path = dlg.GetPath()
+
+    if (sys.platform != 'darwin'):
+        if (path):
+            session.SetLastDicomFolder(path)
 
     # Only destroy a dialog after you're done with it.
     dlg.Destroy()
@@ -423,7 +425,7 @@ class NewSurfaceDialog(wx.Dialog):
         self.CenterOnScreen()
 
         # LINE 1: Surface name
-        
+
         label_surface = wx.StaticText(self, -1, _("New surface name:"))
 
         default_name =  const.SURFACE_NAME_PATTERN %(surface.Surface.general_index+2)
@@ -442,7 +444,7 @@ class NewSurfaceDialog(wx.Dialog):
         index_list = project.mask_dict.keys()
         index_list.sort()
         self.mask_list = [project.mask_dict[index].name for index in index_list]
-        
+
 
         # Mask selection combo
         combo_mask = wx.ComboBox(self, -1, "", choices= self.mask_list,
@@ -490,7 +492,7 @@ class NewSurfaceDialog(wx.Dialog):
         btn_ok = wx.Button(self, wx.ID_OK)
         btn_ok.SetDefault()
         btn_cancel = wx.Button(self, wx.ID_CANCEL)
-        
+
         btnsizer = wx.StdDialogButtonSizer()
         btnsizer.AddButton(btn_ok)
         btnsizer.AddButton(btn_cancel)
@@ -509,10 +511,10 @@ class NewSurfaceDialog(wx.Dialog):
 
     def GetValue(self):
         mask_index = self.combo_mask.GetSelection()
-        surface_name = self.text.GetValue() 
+        surface_name = self.text.GetValue()
         quality = const.SURFACE_QUALITY_LIST[self.combo_quality.GetSelection()]
         fill_holes = self.check_box_holes.GetValue()
-        keep_largest = self.check_box_largest.GetValue() 
+        keep_largest = self.check_box_largest.GetValue()
         return (mask_index, surface_name, quality, fill_holes, keep_largest)
 
 INDEX_TO_EXTENSION = {0: "bmp", 1: "jpg", 2: "png", 3: "ps", 4:"povray", 5:"tiff"}
@@ -526,7 +528,7 @@ WILDCARD_SAVE_PICTURE = _("BMP image")+" (*.bmp)|*.bmp|"+\
 
 def ExportPicture(type_=""):
     import constants as const
-    
+
     INDEX_TO_TYPE = {0: const.FILETYPE_BMP,
                 1: const.FILETYPE_JPG,
                 2: const.FILETYPE_PNG,
@@ -548,7 +550,7 @@ def ExportPicture(type_=""):
                         WILDCARD_SAVE_PICTURE,
                         wx.SAVE|wx.OVERWRITE_PROMPT)
     dlg.SetFilterIndex(1) # default is VTI
-                            
+
     if dlg.ShowModal() == wx.ID_OK:
         filetype_index = dlg.GetFilterIndex()
         filetype = INDEX_TO_TYPE[filetype_index]
