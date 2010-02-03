@@ -40,6 +40,9 @@ icons/connectivity_manual.png -text
 icons/connectivity_split_all.png -text
 icons/cross.png -text
 icons/cross_original.png -text
+icons/data_duplicate.png -text
+icons/data_new.png -text
+icons/data_remove.png -text
 icons/en_GB.bmp -text
 icons/es.bmp -text
 icons/file_export.png -text
