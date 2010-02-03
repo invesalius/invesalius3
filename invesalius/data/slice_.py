@@ -16,8 +16,6 @@
 #    PARTICULAR. Consulte a Licenca Publica Geral GNU para obter mais
 #    detalhes.
 #--------------------------------------------------------------------------
-import random
-
 import vtk
 import wx.lib.pubsub as ps
 
@@ -47,12 +45,6 @@ class Slice(object):
         self.__bind_events()
 
     def __bind_events(self):
-        # Slice properties
-        ps.Publisher().subscribe(self.UpdateCursorPosition,
-                                 'Update cursor position in slice')
-        ps.Publisher().subscribe(self.UpdateCursorPositionSingleAxis,
-                                 'Update cursor single position in slice')
-
         # General slice control
         ps.Publisher().subscribe(self.CreateSurfaceFromIndex,
                                  'Create surface from index')
@@ -83,20 +75,17 @@ class Slice(object):
 
         ps.Publisher().subscribe(self.UpdateColourTableBackground,\
                                  'Change colour table from background image')
-        
+
         ps.Publisher().subscribe(self.InputImageWidget, 'Input Image in the widget')
         ps.Publisher().subscribe(self.OnExportMask,'Export mask to file')
 
         ps.Publisher().subscribe(self.OnCloseProject, 'Close project data')
-
-
 
         ps.Publisher().subscribe(self.OnEnableStyle, 'Enable style')
         ps.Publisher().subscribe(self.OnDisableStyle, 'Disable style')
 
         ps.Publisher().subscribe(self.OnRemoveMasks, 'Remove masks')
         ps.Publisher().subscribe(self.OnDuplicateMasks, 'Duplicate masks')
-
 
     def OnRemoveMasks(self, pubsub_evt):
         selected_items = pubsub_evt.data
@@ -420,9 +409,7 @@ class Slice(object):
                                     edited_points, overwrite_surface))
 
     def GetOutput(self):
-        return self.cross.GetOutput()
-
-
+        return self.blend_filter.GetOutput()
 
     def SetInput(self, imagedata, mask_dict):
         self.imagedata = imagedata
@@ -435,7 +422,6 @@ class Slice(object):
         else:
             self.__load_masks(imagedata, mask_dict)
             imagedata_mask = self.img_colours_mask.GetOutput()
-            
 
         mask_opacity = self.current_mask.opacity
 
@@ -453,46 +439,8 @@ class Slice(object):
         blend_filter.GetOutput().ReleaseDataFlagOn()
         self.blend_filter = blend_filter
 
-        # global values
-        CURSOR_X = -1 # SAGITAL
-        CURSOR_Y = -1 # CORONAL
-        CURSOR_Z = -1 # AXIAL
-
-        CURSOR_VALUE = 4095
-        CURSOR_RADIUS = 1000
-
-        cross = vtk.vtkImageCursor3D()
-        cross.GetOutput().ReleaseDataFlagOn()
-        cross.SetInput(blend_filter.GetOutput())
-        cross.SetCursorPosition(CURSOR_X, CURSOR_Y, CURSOR_Z)
-        cross.SetCursorValue(CURSOR_VALUE)
-        cross.SetCursorRadius(CURSOR_RADIUS)
-        cross.Modified()
-        self.cross = cross
-
         self.window_level = vtk.vtkImageMapToWindowLevelColors()
         self.window_level.SetInput(self.imagedata)
-
-
-    def UpdateCursorPosition(self, pubsub_evt):
-
-        new_pos = pubsub_evt.data
-        self.cross.SetCursorPosition(new_pos)
-        self.cross.Modified()
-        self.cross.Update()
-        ps.Publisher().sendMessage('Update slice viewer')
-
-    def UpdateCursorPositionSingleAxis(self, pubsub_evt):
-        axis_pos = pubsub_evt.data
-        x, y, z = self.cross.GetCursorPosition()
-        new_pos = [x,y,z]
-        for key in axis_pos:
-            new_pos[key] = axis_pos[key]
-        self.cross.SetCursorPosition(new_pos)
-        self.cross.Modified()
-        self.cross.Update()
-        ps.Publisher().sendMessage('Update slice viewer')
-
 
     def __create_background(self, imagedata):
         self.imagedata = imagedata
