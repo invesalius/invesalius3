@@ -136,6 +136,10 @@ class InVesalius(wx.App):
 
         return True
 
+    def MacOpenFile(self, filename):
+        path = os.path.abspath(file)
+        ps.Publisher().sendMessage('Open project', path)
+
 def parse_comand_line():
     """
     Handle command line arguments.
