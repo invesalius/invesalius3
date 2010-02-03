@@ -148,10 +148,17 @@ def frange(start, end=None, inc=None):
     return L
 
 
-def PredictingMemory(qtd, x, y, p):
-    m = qtd * (x * y * p)
+def predict_memory(nfiles, x, y, p):
+    """
+    Predict how much memory will be used, giving the following
+    information:
+        nfiles: number of dicom files
+        x, y: dicom image size
+        p: bits allocated for each pixel sample
+    """
+    m = nfiles * (x * y * p)
     #physical_memory in Byte
-    physical_memory = GetPhysicalMemoryAmount()
+    physical_memory = get_physical_memory()
 
     if (sys.platform == 'win32'):
 
@@ -170,14 +177,14 @@ def PredictingMemory(qtd, x, y, p):
             #2147483648 byte = 2.0 GB
             #4294967296 byte = 4.0 GB
 
-            if (physical_memory <= 2147483648) and (qtd <= 1200):
+            if (physical_memory <= 2147483648) and (nfiles <= 1200):
                 porcent = 1.5 + (m - 314859200) / 26999999 * 0.04
 
-            elif(physical_memory <= 2147483648) and (qtd > 1200):
+            elif(physical_memory <= 2147483648) and (nfiles > 1200):
                  porcent = 1.5 + (m - 314859200) / 26999999 * 0.05
 
             elif(physical_memory > 2147483648) and \
-                    (physical_memory <= 4294967296) and (qtd <= 1200):
+                    (physical_memory <= 4294967296) and (nfiles <= 1200):
                 porcent = 1.5 + (m - 314859200) / 26999999 * 0.02
 
             else:
@@ -191,7 +198,7 @@ def PredictingMemory(qtd, x, y, p):
             # 839000000 = 800 MB
             if (m <= 839000000) and (physical_memory <= 2147483648):
                 return (x,y)
-            elif (m > 839000000) and (physical_memory <= 2147483648) and (qtd <= 1200):
+            elif (m > 839000000) and (physical_memory <= 2147483648) and (nfiles <= 1200):
                 porcent = 1.5 + (m - 314859200) / 26999999 * 0.02
             else:
                 return (x,y)
@@ -200,7 +207,7 @@ def PredictingMemory(qtd, x, y, p):
 
             if (m <= 839000000) and (physical_memory <= 2147483648):
                 return (x, y)
-            elif (m > 839000000) and (physical_memory <= 2147483648) and (qtd <= 1200):
+            elif (m > 839000000) and (physical_memory <= 2147483648) and (nfiles <= 1200):
                 porcent = 1.5 + (m - 314859200) / 26999999 * 0.02
             else:
                 return (x,y)
@@ -212,20 +219,20 @@ def PredictingMemory(qtd, x, y, p):
 
 
 
-def BytesConvert(bytes):
-    if bytes >= 1073741824:
-        return str(bytes / 1024 / 1024 / 1024) + ' GB'
-    elif bytes >= 1048576:
-        return str(bytes / 1024 / 1024) + ' MB'
-    elif bytes >= 1024:
-        return str(bytes / 1024) + ' KB'
-    elif bytes < 1024:
-        return str(bytes) + ' bytes'
+#def convert_bytes(bytes):
+#    if bytes >= 1073741824:
+#        return str(bytes / 1024 / 1024 / 1024) + ' GB'
+#    elif bytes >= 1048576:
+#        return str(bytes / 1024 / 1024) + ' MB'
+#    elif bytes >= 1024:
+#        return str(bytes / 1024) + ' KB'
+#    elif bytes < 1024:
+#        return str(bytes) + ' bytes'
 
 
-def GetPhysicalMemoryAmount():
+def get_physical_memory():
     """
-    Return physical memory amount in bytes
+    Return physical memory in bytes
     """
     sg = sigar.open()
     mem = sg.mem()
