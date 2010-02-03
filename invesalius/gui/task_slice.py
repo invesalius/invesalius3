@@ -147,6 +147,7 @@ class InnerTaskPanel(wx.Panel):
             ps.Publisher().sendMessage('Create surface from index',
                                     (self.GetMaskSelected(),
                                     overwrite))
+            ps.Publisher().sendMessage('Fold surface task')
         else:
             dlg.InexistentMask()
 

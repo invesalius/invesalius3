@@ -269,7 +269,7 @@ class UpperTaskPanel(wx.Panel):
         self.fold_panel.Bind(fpb.EVT_CAPTIONBAR, self.OnFoldPressCaption)
         ps.Publisher().subscribe(self.OnEnableState, "Enable state project")
         ps.Publisher().subscribe(self.OnOverwrite, 'Create surface from index')
-        ps.Publisher().subscribe(self.OnFoldSurface, 'Update surface info in GUI')
+        ps.Publisher().subscribe(self.OnFoldSurface, 'Fold surface task')
         ps.Publisher().subscribe(self.OnFoldExport, 'Fold export task')
 
     def OnOverwrite(self, pubsub_evt):

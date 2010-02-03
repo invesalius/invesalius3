@@ -454,11 +454,11 @@ wx.GROW|wx.EXPAND|wx.LEFT|wx.RIGHT|wx.TOP|wx.BOTTOM, 10)
         if not overwrite or not self.surface_dict:
             self.surface_dict[name] = index
             index = self.combo_surface_name.Append(name)
-            self.combo_surface_name.SetSelection(index)
-
+            
         transparency = 100*pubsub_evt.data[4]
         self.button_colour.SetColour(colour)
         self.slider_transparency.SetValue(transparency)
+        self.combo_surface_name.SetSelection(index)
 
     def OnComboName(self, evt):
         surface_name = evt.GetString()

@@ -183,7 +183,7 @@ class MasksListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
     def __bind_events_wx(self):
         self.Bind(wx.EVT_LIST_ITEM_ACTIVATED, self.OnItemActivated)
         self.Bind(wx.EVT_LIST_END_LABEL_EDIT, self.OnEditLabel)
-
+    
     def __bind_events(self):
         ps.Publisher().subscribe(self.AddMask, 'Add mask')
         ps.Publisher().subscribe(self.EditMaskThreshold,
@@ -193,6 +193,7 @@ class MasksListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
 
         ps.Publisher().subscribe(self.OnChangeCurrentMask, 'Change mask selected')
         ps.Publisher().subscribe(self.OnCloseProject, 'Close project data')
+
 
     def OnCloseProject(self, pubsub_evt):
         self.DeleteAllItems()
@@ -245,6 +246,8 @@ class MasksListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
         
     def OnItemActivated(self, evt):
         self.ToggleItem(evt.m_itemIndex)
+
+
         
     def OnCheckItem(self, index, flag):
         if flag:
@@ -366,6 +369,12 @@ class SurfacesListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
     def __bind_events_wx(self):
         self.Bind(wx.EVT_LIST_ITEM_ACTIVATED, self.OnItemActivated)
         self.Bind(wx.EVT_LIST_END_LABEL_EDIT, self.OnEditLabel)
+        self.Bind(wx.EVT_LIST_ITEM_SELECTED, self.OnItemSelected)
+
+    def OnItemSelected(self, evt):
+        last_surface_index = evt.m_itemIndex
+        ps.Publisher().sendMessage('Change surface selected',
+                                    last_surface_index)
 
     def __init_columns(self):
         
