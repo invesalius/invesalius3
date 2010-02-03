@@ -225,7 +225,7 @@ def CreateImageData(filelist, zspacing, size, bits):
         ow.SetInstance(fow)
 
     x,y = size
-    px, py = utils.PredictingMemory(len(filelist), x, y, bits)
+    px, py = utils.predict_memory(len(filelist), x, y, bits)
 
     utils.debug("Image Resized to >>> %f x %f" % (px, py))
 
@@ -314,7 +314,7 @@ class ImageCreator:
             ow.SetInstance(fow)
 
         x,y = size
-        px, py = utils.PredictingMemory(len(filelist), x, y, bits)
+        px, py = utils.predict_memory(len(filelist), x, y, bits)
         utils.debug("Image Resized to >>> %f x %f" % (px, py))
 
         if (x == px) and (y == py):
