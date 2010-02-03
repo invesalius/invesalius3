@@ -80,7 +80,7 @@ class MaskPage(wx.Panel):
         self.buttonctrl = ButtonControlPanel(self)
 
         sizer = wx.BoxSizer(wx.VERTICAL)
-        sizer.Add(self.listctrl, 0, wx.EXPAND)
+        sizer.Add(self.listctrl, 0, wx.EXPAND|wx.TOP, 5)
         sizer.Add(self.buttonctrl, 0, wx.EXPAND)
         self.SetSizer(sizer)
         self.Fit()
@@ -99,7 +99,7 @@ class ButtonControlPanel(wx.Panel):
 
     def __init_gui(self):
         
-        # Bitmaps
+        # Bitmaps to be used in plate buttons
         BMP_NEW = wx.Bitmap("../icons/data_new.png",
                             wx.BITMAP_TYPE_PNG)
         BMP_REMOVE = wx.Bitmap("../icons/data_remove.png",
@@ -121,12 +121,13 @@ class ButtonControlPanel(wx.Panel):
 
         # Add all controls to gui
         sizer = wx.BoxSizer(wx.HORIZONTAL)
-        sizer.Add(button_new, 0, wx.GROW|wx.EXPAND|wx.LEFT, 10)
+        sizer.Add(button_new, 0, wx.GROW|wx.EXPAND|wx.LEFT)
         sizer.Add(button_remove, 0, wx.GROW|wx.EXPAND)
         sizer.Add(button_duplicate, 0, wx.GROW|wx.EXPAND)
         self.SetSizer(sizer)
         self.Fit()
 
+        # Bindings
         self.Bind(wx.EVT_BUTTON, self.OnButton)
 
     def OnButton(self, evt):
