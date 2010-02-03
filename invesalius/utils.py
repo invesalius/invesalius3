@@ -25,11 +25,62 @@ import sys
 
 
 def debug(error_str):
+    """
+    Redirects output to file, or to the terminal
+    This should be used in the place of "print"
+    """
     from session import Session
     session = Session()
     if session.debug:
         print >> sys.stderr, error_str
 
+def next_copy_name(original_name, names_list):
+    """
+    Given original_name of an item and a list of existing names,
+    builds up the name of a copy, keeping the pattern:
+        original_name
+        original_name copy
+        original_name copy#1
+    """
+    # is there only one copy, unnumbered?
+    if original_name.endswith(" copy"):
+        first_copy = original_name
+        last_index = -1
+    else:
+        parts = original_name.rpartition(" copy#")
+        # is there any copy, might be numbered?
+        if parts[0] and parts[-1]: 
+            # yes, lets check if it ends with a number
+            if isinstance(eval(parts[-1]), int):
+                last_index = int(parts[-1]) - 1 
+                first_copy="%s copy"%parts[0]
+            # no... well, so will build the copy name from zero
+            else:
+                last_index = -1
+                first_copy = "%s copy"%original_name
+                # apparently this isthe new copy name, check it
+                if not (first_copy in names_list):
+                    return first_copy
+  
+        else:
+            # no, apparently there are no copies, as
+            # separator was not found -- returned ("", " copy#", "")
+            last_index = -1 
+            first_copy = "%s copy"%original_name
+
+            # apparently this isthe new copy name, check it 
+            if not (first_copy in names_list):
+                return first_copy
+
+    # lets build up the new name based on last pattern value
+    got_new_name = False
+    while not got_new_name:
+        last_index += 1
+        next_copy = "%s#%d"%(first_copy, last_index+1)
+        if not (next_copy in names_list):
+            got_new_name = True
+            return next_copy
+                
 
 #http://www.garyrobinson.net/2004/03/python_singleto.html
 # Gary Robinson
