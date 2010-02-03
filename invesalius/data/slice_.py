@@ -93,7 +93,9 @@ class Slice(object):
 
         ps.Publisher().subscribe(self.OnEnableStyle, 'Enable style')
         ps.Publisher().subscribe(self.OnDisableStyle, 'Disable style')
+
         ps.Publisher().subscribe(self.OnRemoveMasks, 'Remove masks')
+        ps.Publisher().subscribe(self.OnDuplicateMasks, 'Duplicate masks')
 
 
     def OnRemoveMasks(self, pubsub_evt):
@@ -109,6 +111,25 @@ class Slice(object):
             self.blend_filter.SetOpacity(1, 0)
             self.blend_filter.Update()
             ps.Publisher().sendMessage('Update slice viewer')
+
+    def OnDuplicateMasks(self, pubsub_evt):
+        selected_items = pubsub_evt.data
+        proj = Project()
+        mask_dict = proj.mask_dict
+        for index in selected_items:
+            original_mask = mask_dict[index]
+            # compute copy name
+            name = original_mask.name
+            names_list = [mask_dict[i].name for i in mask_dict.keys()]
+            new_name = utils.next_copy_name(name, names_list) 
+            # create new mask
+            self.CreateMask(imagedata = original_mask.imagedata,
+                            name = new_name,
+                            colour = original_mask.colour,
+                            opacity = original_mask.opacity,
+                            threshold_range = original_mask.threshold_range,
+                            edition_threshold_range = original_mask.edition_threshold_range,
+                            edited_points = original_mask.edited_points)
 
 
     def OnEnableStyle(self, pubsub_evt):
@@ -538,18 +559,28 @@ class Slice(object):
         
         widget.SetInput(flip.GetOutput())
  
-    
-    def CreateMask(self, imagedata=None, name=None):
+
+    def CreateMask(self, imagedata=None, name=None, colour=None,
+                    opacity=None, threshold_range=None,
+                    edition_threshold_range = None,
+                    edited_points=None):
 
         future_mask = Mask()
+        if colour:
+            future_mask.colour = colour
+        if opacity:
+            future_mask.opacity = opacity
+        if threshold_range:
+            future_mask.threshold_range = threshold_range
+        if edition_threshold_range:
+            future_mask.edition_threshold_range = edition_threshold_range
+        if edited_points:
+            future_mask.edited_points = edited_points
 
         # this is not the first mask, so we will import data from old imagedata
         if imagedata is None:
-
             old_mask = self.current_mask
-
             imagedata = old_mask.imagedata
-
             future_mask.threshold_range = old_mask.threshold_range
 
         # if not defined in the method call, this will have been computed on

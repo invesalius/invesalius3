@@ -70,12 +70,12 @@ class MaskPage(wx.Panel):
     """
     def __init__(self, parent):
         wx.Panel.__init__(self, parent, pos=wx.Point(0, 50),
-                            size=wx.Size(256, 120))
+                            size=wx.Size(256, 140))
         self.__init_gui()
 
     def __init_gui(self):
         # listctrl were existing masks will be listed
-        self.listctrl = MasksListCtrlPanel(self, size=wx.Size(256, 80))
+        self.listctrl = MasksListCtrlPanel(self, size=wx.Size(256, 100))
         # button control with tools (eg. remove, add new, etc)
         self.buttonctrl = ButtonControlPanel(self)
 
@@ -93,7 +93,7 @@ class ButtonControlPanel(wx.Panel):
     """
     def __init__(self, parent):
         wx.Panel.__init__(self, parent, pos=wx.Point(0, 50),
-                            size=wx.Size(256, 20))
+                            size=wx.Size(256, 22))
         self.parent = parent
         self.__init_gui()
 
@@ -111,13 +111,16 @@ class ButtonControlPanel(wx.Panel):
         button_style = pbtn.PB_STYLE_SQUARE | pbtn.PB_STYLE_DEFAULT
         button_new = pbtn.PlateButton(self, BTN_NEW, "",
                                      BMP_NEW,
-                                     style=button_style)
+                                     style=button_style,
+                                     size = wx.Size(18, 18))
         button_remove = pbtn.PlateButton(self, BTN_REMOVE, "",
                                          BMP_REMOVE,
-                                         style=button_style)
+                                         style=button_style,
+                                         size = wx.Size(18, 18))
         button_duplicate = pbtn.PlateButton(self, BTN_DUPLICATE, "",
                                             BMP_DUPLICATE,
-                                            style=button_style)
+                                            style=button_style,
+                                            size = wx.Size(18, 18))
 
         # Add all controls to gui
         sizer = wx.BoxSizer(wx.HORIZONTAL)

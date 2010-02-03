@@ -111,7 +111,7 @@ class LowerTaskPanel(wx.Panel):
     def __init__(self, parent):
         wx.Panel.__init__(self, parent, pos=wx.Point(5, 5),
         #                  size=wx.Size(280, 700))
-                           size=wx.Size(280, 400))
+                           size=wx.Size(280, 420))
         
         fold_panel = fpb.FoldPanelBar(self, -1, wx.DefaultPosition,
                                       self.GetSize(),fpb.FPB_DEFAULT_STYLE,
