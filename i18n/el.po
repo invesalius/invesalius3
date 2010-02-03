@@ -33,27 +33,28 @@ msgstr ""
 
 #: constants.py:116 slice_menu.py:76 slice_menu.py:81
 msgid "Default "
-msgstr ""
+msgstr "Προεπιλογή"
 
 #: constants.py:117
 msgid "Hue"
-msgstr ""
+msgstr "Απόχρωση"
 
 #: constants.py:118
+#, fuzzy
 msgid "Saturation"
-msgstr ""
+msgstr "Κορεσμός"
 
 #: constants.py:119
 msgid "Desert"
-msgstr ""
+msgstr "Έρημος"
 
 #: constants.py:120
 msgid "Rainbow"
-msgstr ""
+msgstr "Ουράνιο τόξο"
 
 #: constants.py:121
 msgid "Ocean"
-msgstr ""
+msgstr "Ωκεανός"
 
 #: constants.py:122
 msgid "Inverse Gray"
@@ -63,12 +64,12 @@ msgstr ""
 #: dicom_preview_panel.py:620 presets.py:30 presets.py:48 presets.py:103
 #: presets.py:134
 msgid "Bone"
-msgstr ""
+msgstr "Οστό"
 
 #: constants.py:170
 #, python-format
 msgid "Mask %d"
-msgstr ""
+msgstr "Μάσκα %d"
 
 #: constants.py:217 task_surface.py:43
 msgid "Draw"
@@ -80,28 +81,28 @@ msgstr ""
 
 #: constants.py:217 data_notebook.py:112 task_surface.py:43
 msgid "Threshold"
-msgstr ""
+msgstr "Όριο"
 
 #: constants.py:228 constants.py:233
 msgid "Low"
-msgstr ""
+msgstr "Χαμηλό"
 
 #: constants.py:229 constants.py:233
 msgid "Medium"
-msgstr ""
+msgstr "Μεσαίο"
 
 #: constants.py:230 constants.py:233
 msgid "High"
-msgstr ""
+msgstr "Ψηλό"
 
 #: constants.py:231 constants.py:232 constants.py:233 surface.py:289
 msgid "Optimal *"
-msgstr ""
+msgstr "Βέλτιστο *"
 
 #: constants.py:238
 #, python-format
 msgid "Surface %d"
-msgstr ""
+msgstr "Επιφάνεια %d"
 
 #: constants.py:241
 msgid "Abdomen"
@@ -113,15 +114,15 @@ msgstr ""
 
 #: constants.py:244
 msgid "Brain"
-msgstr ""
+msgstr "Εγκέφαλος"
 
 #: constants.py:245 control.py:323 slice_menu.py:39 slice_menu.py:51
 msgid "Default"
-msgstr ""
+msgstr "Προεπιλογή"
 
 #: constants.py:246
 msgid "Emphysema"
-msgstr ""
+msgstr "Εμφύσημα"
 
 #: constants.py:247
 msgid "Ischemia - Hard Non Contrast"
@@ -153,11 +154,11 @@ msgstr ""
 
 #: constants.py:254 control.py:324 slice_menu.py:46 slice_menu.py:51
 msgid "Manual"
-msgstr ""
+msgstr "Εγχειρίδιο"
 
 #: constants.py:255
 msgid "Pelvis"
-msgstr ""
+msgstr "Πύελος"
 
 #: constants.py:256
 msgid "Sinus"
@@ -952,8 +953,7 @@ msgid "Select largest part"
 msgstr ""
 
 #: task_surface.py:247
-msgid ""
-"Automatically select disconnect regions and create one new surface per region"
+msgid "Automatically select disconnect regions and create one new surface per region"
 msgstr ""
 
 #: task_surface.py:248
