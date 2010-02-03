@@ -39,11 +39,11 @@ BTN_NEW, BTN_REMOVE, BTN_DUPLICATE = [wx.NewId() for i in xrange(3)]
 class NotebookPanel(wx.Panel):
     def __init__(self, parent):
         wx.Panel.__init__(self, parent, pos=wx.Point(0, 50),
-                            size=wx.Size(256, 160))
+                            size=wx.Size(256, 200))
                         
         book = wx.Notebook(self, -1,style= wx.BK_DEFAULT)
         # TODO: check under Windows and Linux
-        # this was necessary under MacOS:
+        # this was necessary under cOS:
         #if wx.Platform == "__WXMAC__":
         if sys.platform != 'win32':
             book.SetWindowVariant(wx.WINDOW_VARIANT_SMALL)
@@ -81,7 +81,7 @@ class MaskPage(wx.Panel):
 
         sizer = wx.BoxSizer(wx.VERTICAL)
         sizer.Add(self.listctrl, 0, wx.EXPAND)
-        sizer.Add(self.buttonctrl, 0, wx.EXPAND| wx.TOP, 3)
+        sizer.Add(self.buttonctrl, 0, wx.EXPAND| wx.TOP, 2)
         self.SetSizer(sizer)
         self.Fit()
 
