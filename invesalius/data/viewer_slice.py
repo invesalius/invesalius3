@@ -221,6 +221,7 @@ class Viewer(wx.Panel):
             self.on_wl = False
             self.wl_text.Hide()
 
+
         self.__set_editor_cursor_visibility(0)
 
         
@@ -426,7 +427,7 @@ class Viewer(wx.Panel):
             colour = const.ORIENTATION_COLOUR[self.orientation]
 
             # Window & Level text
-            self.wl_text = vtku.TextZero()
+            self.wl_text = vtku.Text()
             self.SetWLText(proj.level, proj.window)
             
                         
