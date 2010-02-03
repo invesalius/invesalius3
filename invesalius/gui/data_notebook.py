@@ -80,8 +80,8 @@ class MaskPage(wx.Panel):
         self.buttonctrl = ButtonControlPanel(self)
 
         sizer = wx.BoxSizer(wx.VERTICAL)
-        sizer.Add(self.listctrl, 0, wx.EXPAND|wx.TOP, 5)
-        sizer.Add(self.buttonctrl, 0, wx.EXPAND)
+        sizer.Add(self.listctrl, 0, wx.EXPAND)
+        sizer.Add(self.buttonctrl, 0, wx.EXPAND| wx.TOP, 3)
         self.SetSizer(sizer)
         self.Fit()
 
