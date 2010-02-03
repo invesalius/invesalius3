@@ -98,7 +98,7 @@ class Panel(wx.Panel):
         
         sizer = wx.BoxSizer(wx.VERTICAL)        
         #sizer.Add(UpperTaskPanel(self), 5, wx.EXPAND|wx.GROW)
-        sizer.Add(UpperTaskPanel(self), 17, wx.EXPAND|wx.GROW)
+        sizer.Add(UpperTaskPanel(self), 16, wx.EXPAND|wx.GROW)
 
         #sizer.Add(LowerTaskPanel(self), 3, wx.EXPAND|wx.GROW)
         sizer.Add(LowerTaskPanel(self), 6, wx.EXPAND|wx.GROW)

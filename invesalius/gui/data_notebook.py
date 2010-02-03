@@ -143,11 +143,11 @@ class ButtonControlPanel(wx.Panel):
             self.OnDuplicate()
 
     def OnNew(self):
-        print "New"
-        #print self.parent.listctrl.GetSelected()
+        mask_name = dlg.NewMask()
+        if mask_name:
+            ps.Publisher().sendMessage('Create new mask', mask_name)
 
     def OnRemove(self):
-        print "Remove"
         selected_items = self.parent.listctrl.GetSelected()
         if selected_items:
             for item in selected_items:
@@ -157,7 +157,6 @@ class ButtonControlPanel(wx.Panel):
            dlg.MaskSelectionRequiredForRemoval() 
 
     def OnDuplicate(self):
-        print "Duplicate"
         selected_items = self.parent.listctrl.GetSelected()
         if selected_items:
             ps.Publisher().sendMessage('Duplicate masks', selected_items)
