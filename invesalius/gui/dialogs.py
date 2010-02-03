@@ -377,8 +377,11 @@ def SaveChangesDialog(filename):
         dlg = wx.MessageDialog(None, msg,
                                "InVesalius 3",
                                wx.ICON_QUESTION | wx.YES_NO | wx.CANCEL)
+    try:
+        answer = dlg.ShowModal()
+    except(wx._core.PyAssertionError):
+        answer = dlg.GetReturnCode()
 
-    answer = dlg.ShowModal()
     dlg.Destroy()
     os.chdir(current_dir)
 
