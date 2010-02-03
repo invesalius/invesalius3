@@ -336,6 +336,26 @@ def MaskSelectionRequiredForDuplication():
     dlg.ShowModal()
     dlg.Destroy()
 
+
+def NewMask():
+    import data.mask as mask
+    dlg = wx.TextEntryDialog(None, _('Name of new mask:'),
+                                 _('InVesalius 3 - New mask'))
+    
+    dlg.CenterOnScreen()
+    default_mask_name = const.MASK_NAME_PATTERN %(mask.Mask.general_index+2)
+    dlg.SetValue(default_mask_name)
+
+    try:
+        op = dlg.ShowModal() == wx.ID_OK
+    except(wx._core.PyAssertionError):
+        print "win64 - wx._core.PyAssertionError"
+        op = True
+
+    if op:
+        return dlg.GetValue()
+    return None
+
 def InexistentPath(path):
     msg = _("%s does not exist.")%(path)
     if sys.platform == 'darwin':
