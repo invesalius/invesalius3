@@ -183,7 +183,9 @@ class MasksListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
     def __bind_events_wx(self):
         self.Bind(wx.EVT_LIST_ITEM_ACTIVATED, self.OnItemActivated)
         self.Bind(wx.EVT_LIST_END_LABEL_EDIT, self.OnEditLabel)
-    
+        self.Bind(wx.EVT_KEY_UP, self.OnKeyEvent)
+
+ 
     def __bind_events(self):
         ps.Publisher().subscribe(self.AddMask, 'Add mask')
         ps.Publisher().subscribe(self.EditMaskThreshold,
@@ -193,6 +195,17 @@ class MasksListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
 
         ps.Publisher().subscribe(self.OnChangeCurrentMask, 'Change mask selected')
         ps.Publisher().subscribe(self.OnCloseProject, 'Close project data')
+
+    def OnKeyEvent(self, event):
+        keycode = event.GetKeyCode()
+        if (sys.platform == 'darwin') and (keycode == wx.WXK_BACK):
+            selected = self.GetSelected()
+            for item in selected:
+                self.RemoveMask(item)
+        elif (keycode == wx.WXK_DELETE):
+            selected = self.GetSelected()
+            for item in selected:
+                self.RemoveMask(item)
 
 
     def OnCloseProject(self, pubsub_evt):
