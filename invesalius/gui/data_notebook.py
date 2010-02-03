@@ -25,14 +25,21 @@ import Image
 import wx
 import wx.grid
 import wx.lib.flatnotebook as fnb
+import wx.lib.platebtn as pbtn
 import wx.lib.pubsub as ps
 
+import gui.dialogs as dlg
 import gui.widgets.listctrl as listmix
+
+
+
+BTN_NEW, BTN_REMOVE, BTN_DUPLICATE = [wx.NewId() for i in xrange(3)]
 
 # Panel that initializes notebook and related tabs
 class NotebookPanel(wx.Panel):
     def __init__(self, parent):
-        wx.Panel.__init__(self, parent, pos=wx.Point(0, 50), size=wx.Size(256, 140))
+        wx.Panel.__init__(self, parent, pos=wx.Point(0, 50),
+                            size=wx.Size(256, 160))
                         
         book = wx.Notebook(self, -1,style= wx.BK_DEFAULT)
         # TODO: check under Windows and Linux
@@ -41,7 +48,7 @@ class NotebookPanel(wx.Panel):
         if sys.platform != 'win32':
             book.SetWindowVariant(wx.WINDOW_VARIANT_SMALL)
 
-        book.AddPage(MasksListCtrlPanel(book), _("Masks"))
+        book.AddPage(MaskPage(book), _("Masks"))
         book.AddPage(SurfacesListCtrlPanel(book), _("Surfaces"))
         #book.AddPage(MeasuresListCtrlPanel(book), _("Measures"))
         #book.AddPage(AnnotationsListCtrlPanel(book), _("Annotations"))
@@ -56,6 +63,103 @@ class NotebookPanel(wx.Panel):
         
         # TODO: insert icons bellow notebook
 
+
+class MaskPage(wx.Panel):
+    """
+    Page related to mask items.
+    """
+    def __init__(self, parent):
+        wx.Panel.__init__(self, parent, pos=wx.Point(0, 50),
+                            size=wx.Size(256, 120))
+        self.__init_gui()
+
+    def __init_gui(self):
+        # listctrl were existing masks will be listed
+        self.listctrl = MasksListCtrlPanel(self, size=wx.Size(256, 80))
+        # button control with tools (eg. remove, add new, etc)
+        self.buttonctrl = ButtonControlPanel(self)
+
+        sizer = wx.BoxSizer(wx.VERTICAL)
+        sizer.Add(self.listctrl, 0, wx.EXPAND)
+        sizer.Add(self.buttonctrl, 0, wx.EXPAND)
+        self.SetSizer(sizer)
+        self.Fit()
+
+
+class ButtonControlPanel(wx.Panel):
+    """
+    Button control panel that includes data notebook operations.
+    TODO: Enhace interface with parent class - it is really messed up
+    """
+    def __init__(self, parent):
+        wx.Panel.__init__(self, parent, pos=wx.Point(0, 50),
+                            size=wx.Size(256, 20))
+        self.parent = parent
+        self.__init_gui()
+
+    def __init_gui(self):
+        
+        # Bitmaps
+        BMP_NEW = wx.Bitmap("../icons/data_new.png",
+                            wx.BITMAP_TYPE_PNG)
+        BMP_REMOVE = wx.Bitmap("../icons/data_remove.png",
+                                wx.BITMAP_TYPE_PNG)
+        BMP_DUPLICATE = wx.Bitmap("../icons/data_duplicate.png",
+                                wx.BITMAP_TYPE_PNG)
+
+        # Plate buttons based on previous bitmaps
+        button_style = pbtn.PB_STYLE_SQUARE | pbtn.PB_STYLE_DEFAULT
+        button_new = pbtn.PlateButton(self, BTN_NEW, "",
+                                     BMP_NEW,
+                                     style=button_style)
+        button_remove = pbtn.PlateButton(self, BTN_REMOVE, "",
+                                         BMP_REMOVE,
+                                         style=button_style)
+        button_duplicate = pbtn.PlateButton(self, BTN_DUPLICATE, "",
+                                            BMP_DUPLICATE,
+                                            style=button_style)
+
+        # Add all controls to gui
+        sizer = wx.BoxSizer(wx.HORIZONTAL)
+        sizer.Add(button_new, 0, wx.GROW|wx.EXPAND|wx.LEFT, 10)
+        sizer.Add(button_remove, 0, wx.GROW|wx.EXPAND)
+        sizer.Add(button_duplicate, 0, wx.GROW|wx.EXPAND)
+        self.SetSizer(sizer)
+        self.Fit()
+
+        self.Bind(wx.EVT_BUTTON, self.OnButton)
+
+    def OnButton(self, evt):
+        id = evt.GetId()
+        if id == BTN_NEW:
+            self.OnNew()
+        elif id == BTN_REMOVE:
+            self.OnRemove()
+        elif id ==  BTN_DUPLICATE:
+            self.OnDuplicate()
+
+    def OnNew(self):
+        print "New"
+        #print self.parent.listctrl.GetSelected()
+
+    def OnRemove(self):
+        print "Remove"
+        selected_items = self.parent.listctrl.GetSelected()
+        if selected_items:
+            for item in selected_items:
+                self.parent.listctrl.RemoveMask(item)
+            ps.Publisher().sendMessage('Remove masks', selected_items)
+        else:
+           dlg.MaskSelectionRequiredForRemoval() 
+
+    def OnDuplicate(self):
+        print "Duplicate"
+        selected_items = self.parent.listctrl.GetSelected()
+        if selected_items:
+            ps.Publisher().sendMessage('Duplicate masks', selected_items)
+        else:
+           dlg.MaskSelectionRequiredForDuplication() 
+
 class MasksListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
 
     def __init__(self, parent, ID=-1, pos=wx.DefaultPosition,
@@ -68,7 +172,6 @@ class MasksListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
         wx.ListCtrl.__init__(self, parent, ID, pos, size, style=wx.LC_REPORT)
         listmix.TextEditMixin.__init__(self)
         self.mask_list_index = {}
-        self.mask_bmp_idx_to_name = {}
         self.__init_columns()
         self.__init_image_list()
         self.__bind_events_wx()
@@ -91,7 +194,6 @@ class MasksListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
     def OnCloseProject(self, pubsub_evt):
         self.DeleteAllItems()
         self.mask_list_index = {}
-        self.mask_bmp_idx_to_name = {}
  
     def OnChangeCurrentMask(self, pubsub_evt):
 
@@ -195,6 +297,35 @@ class MasksListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
         image_index = self.mask_list_index[index]
         self.imagelist.Replace(image_index, image)
         self.Refresh()
+
+    def GetSelected(self):
+        """
+        Return all items selected (highlighted).
+        """
+        selected = []
+        for index in self.mask_list_index:
+            if self.IsSelected(index):
+                selected.append(index)
+        # it is important to revert items order, so
+        # listctrl update is ok
+        selected.sort(reverse=True)
+        return selected
+
+    def RemoveMask(self, index):
+        """
+        Remove item given its index.
+        """
+        # it is necessary to update internal dictionary
+        # that maps bitmap given item index
+        old_dict = self.mask_list_index
+        new_dict = {}
+        for i in old_dict:
+            if i < index:
+                new_dict[i] = old_dict[i]
+            if i > index:
+                new_dict[i-1] = old_dict[i]
+        self.mask_list_index = new_dict
+        self.DeleteItem(index)
         
 class SurfacesListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
 

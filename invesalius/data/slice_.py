@@ -93,6 +93,22 @@ class Slice(object):
 
         ps.Publisher().subscribe(self.OnEnableStyle, 'Enable style')
         ps.Publisher().subscribe(self.OnDisableStyle, 'Disable style')
+        ps.Publisher().subscribe(self.OnRemoveMasks, 'Remove masks')
+
+
+    def OnRemoveMasks(self, pubsub_evt):
+        selected_items = pubsub_evt.data
+        proj = Project()
+        for item in selected_items:
+            proj.RemoveMask(item)
+
+        index = self.current_mask.index
+        if (proj.mask_dict) and (index in selected_items):
+            self.SelectCurrentMask(0)
+        elif not proj.mask_dict:
+            self.blend_filter.SetOpacity(1, 0)
+            self.blend_filter.Update()
+            ps.Publisher().sendMessage('Update slice viewer')
 
 
     def OnEnableStyle(self, pubsub_evt):
@@ -157,8 +173,6 @@ class Slice(object):
 
     def __set_current_mask_threshold(self, evt_pubsub):
         session = ses.Session()
-        print session.project_status != const.PROJ_OPEN
-        print session.project_status
         #FIXME: find a better way to implement this
         if (self.num_gradient >= 2) or \
         (session.project_status != const.PROJ_OPEN):

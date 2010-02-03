@@ -26,6 +26,7 @@ import wx.lib.pubsub as ps
 
 import data.mask as mask
 import constants as const
+import gui.dialogs as dlg
 import gui.widgets.gradient as grad
 import gui.widgets.foldpanelbar as fpb
 import widgets.colourselect as csel
@@ -142,25 +143,16 @@ class InnerTaskPanel(wx.Panel):
 
     def OnButtonNextTask(self, evt):
         overwrite = self.check_box.IsChecked()
-        ps.Publisher().sendMessage('Create surface from index',
+        if self.GetMaskSelected() != -1:
+            ps.Publisher().sendMessage('Create surface from index',
                                     (self.GetMaskSelected(),
                                     overwrite))
+        else:
+            dlg.InexistentMask()
 
     def OnLinkNewMask(self, evt=None):
-        dlg = wx.TextEntryDialog(self, _('Name of new mask:'),
-                                 _('InVesalius 3 - New mask'))
-        dlg.CenterOnScreen()
-        default_mask_name = const.MASK_NAME_PATTERN %(mask.Mask.general_index+2)
-        dlg.SetValue(default_mask_name)
-
-        try:
-            op = dlg.ShowModal() == wx.ID_OK
-        except(wx._core.PyAssertionError):
-            print "win64 - wx._core.PyAssertionError"
-            op = True
-
-        if (op):
-            mask_name = dlg.GetValue()
+        mask_name = dlg.NewMask()
+        if mask_name:
             ps.Publisher().sendMessage('Create new mask', mask_name)
 
         if evt:
@@ -353,6 +345,7 @@ class MaskProperties(wx.Panel):
                                  'Set threshold values in gradient')
         ps.Publisher().subscribe(self.SelectMaskName, 'Select mask name in combo')
         ps.Publisher().subscribe(self.ChangeMaskName, 'Change mask name')
+        ps.Publisher().subscribe(self.OnRemoveMasks, 'Remove masks')
         ps.Publisher().subscribe(self.OnCloseProject, 'Close project data')
         ps.Publisher().subscribe(self.SetThresholdValues2, 'Set threshold values')
 
@@ -366,7 +359,12 @@ class MaskProperties(wx.Panel):
         n = self.combo_thresh.GetCount()
         for i in xrange(n-1, -1, -1):
             self.combo_thresh.Delete(i)
-
+    
+    def OnRemoveMasks(self, pubsub_evt):
+        print "OnRemoveMasks"
+        list_index = pubsub_evt.data
+        for i in list_index:
+            self.combo_mask_name.Delete(i)
 
     def __bind_events_wx(self):
         self.Bind(grad.EVT_THRESHOLD_CHANGE, self.OnSlideChanged, self.gradient)
