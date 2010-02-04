@@ -120,13 +120,11 @@ class Frame(wx.Frame):
     def __bind_events_wx(self):
         self.Bind(wx.EVT_SIZE, self.OnSize)
         self.Bind(wx.EVT_MENU, self.OnMenuClick)
-        self.Bind(wx.EVT_CLOSE, self.CloseWindow)
+        self.Bind(wx.EVT_CLOSE, self.OnClose)
         #self.Bind(wx.EVT_CLOSE, self.OnExit)
 
-    def CloseWindow(self, evt):
+    def OnClose(self, evt):
         ps.Publisher().sendMessage('Close Project')
-        ps.Publisher().sendMessage("Stop Config Recording")
-        self.Destroy()
 
     def __init_aui(self):
 

@@ -376,13 +376,10 @@ def SaveChangesDialog(filename, parent):
         dlg = wx.MessageDialog(None, msg, "InVesalius 3",
                          wx.ICON_QUESTION | wx.YES_NO | wx.CANCEL)
 
-    dlg.Bind(wx.EVT_LEFT_UP, teste)
-
     try:
         answer = dlg.ShowModal()
     except(wx._core.PyAssertionError): #TODO: FIX win64
         answer =  wx.ID_YES
-
 
     dlg.Destroy()
     os.chdir(current_dir)
@@ -393,10 +390,6 @@ def SaveChangesDialog(filename, parent):
         return 0
     else:
         return -1
-
-def teste(evt):
-    print evt
-    print "ENTROUUUUUUUUUUUUUUUUUUUUUUUUUUU"
 
 def SaveChangesDialog2(filename):
     current_dir = os.path.abspath(".")

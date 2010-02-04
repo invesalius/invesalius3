@@ -163,12 +163,12 @@ class Controller():
         if (filename):
             if (st == const.PROJ_NEW) or (st == const.PROJ_CHANGE):
                 answer = dialog.SaveChangesDialog(filename, self.frame)
-
                 if not answer:
                     debug("Close without changes")
                     self.CloseProject()
                     ps.Publisher().sendMessage("Enable state project", False)
                     ps.Publisher().sendMessage('Set project name')
+                    ps.Publisher().sendMessage("Stop Config Recording")
                     ps.Publisher().sendMessage('Close Window')
                 elif answer == 1:
                     self.ShowDialogSaveProject()
@@ -176,13 +176,16 @@ class Controller():
                     self.CloseProject()
                     ps.Publisher().sendMessage("Enable state project", False)
                     ps.Publisher().sendMessage('Set project name')
+                    ps.Publisher().sendMessage("Stop Config Recording")
                     ps.Publisher().sendMessage('Close Window')
+
                 elif answer == -1:
                     debug("Cancel")
             else:
                 self.CloseProject()
                 ps.Publisher().sendMessage("Enable state project", False)
                 ps.Publisher().sendMessage('Set project name')
+                ps.Publisher().sendMessage("Stop Config Recording")
                 ps.Publisher().sendMessage('Close Window')
 
         else:
