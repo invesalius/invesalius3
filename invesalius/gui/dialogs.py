@@ -144,8 +144,11 @@ def ShowOpenProjectDialog():
     # Show the dialog and retrieve the user response. If it is the OK response,
     # process the data.
     filepath = None
-    if dlg.ShowModal() == wx.ID_OK:
-        # This returns a Python list of files that were selected.
+    try:
+        if dlg.ShowModal() == wx.ID_OK:
+            # This returns a Python list of files that were selected.
+            filepath = dlg.GetPath()
+    except(wx._core.PyAssertionError): #FIX: win64
         filepath = dlg.GetPath()
 
     # Destroy the dialog. Don't do this until you are done with it!
