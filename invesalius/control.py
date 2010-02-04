@@ -154,27 +154,42 @@ class Controller():
         st = session.project_status
         if st == const.PROJ_CLOSE:
             return -1
-        filename = session.project_path[1]
-        if (st == const.PROJ_NEW) or (st == const.PROJ_CHANGE):
-            answer = dialog.SaveChangesDialog(filename)
-            if not answer:
-                debug("Close without changes")
+        try:
+            filename = session.project_path[1]
+        except(AttributeError):
+            print "Not exist project"
+            filename = None
+
+        if (filename):
+            if (st == const.PROJ_NEW) or (st == const.PROJ_CHANGE):
+                answer = dialog.SaveChangesDialog(filename, self.frame)
+
+                if not answer:
+                    debug("Close without changes")
+                    self.CloseProject()
+                    ps.Publisher().sendMessage("Enable state project", False)
+                    ps.Publisher().sendMessage('Set project name')
+                    ps.Publisher().sendMessage('Close Window')
+                elif answer == 1:
+                    self.ShowDialogSaveProject()
+                    debug("Save changes and close")
+                    self.CloseProject()
+                    ps.Publisher().sendMessage("Enable state project", False)
+                    ps.Publisher().sendMessage('Set project name')
+                    ps.Publisher().sendMessage('Close Window')
+                elif answer == -1:
+                    debug("Cancel")
+            else:
                 self.CloseProject()
                 ps.Publisher().sendMessage("Enable state project", False)
                 ps.Publisher().sendMessage('Set project name')
-            elif answer == 1:
-                self.ShowDialogSaveProject()
-                debug("Save changes and close")
-                self.CloseProject()
-                ps.Publisher().sendMessage("Enable state project", False)
-                ps.Publisher().sendMessage('Set project name')
-            elif answer == -1:
-                debug("Cancel")
+                ps.Publisher().sendMessage('Close Window')
+
         else:
-            self.CloseProject()
-            ps.Publisher().sendMessage("Enable state project", False)
-            ps.Publisher().sendMessage('Set project name')
-            
+            ps.Publisher().sendMessage('Stop Config Recording')
+            ps.Publisher().sendMessage('Close Window')
+
+
 ###########################
     def OnOpenProject(self, pubsub_evt):
         path = pubsub_evt.data
@@ -212,7 +227,7 @@ class Controller():
 
         surface = srf.Surface()
         surface._set_class_index(proj.last_surface_index)
-        
+
         self.LoadProject()
 
         session = ses.Session()
@@ -233,7 +248,7 @@ class Controller():
 
         session.SaveProject()
         ps.Publisher().sendMessage('End busy cursor')
-        
+
     def CloseProject(self):
         proj = prj.Project()
         proj.Close()
@@ -320,7 +335,7 @@ class Controller():
 
         const.THRESHOLD_OUTVALUE = proj.threshold_range[0]
         const.THRESHOLD_INVALUE = proj.threshold_range[1]
- 
+
         const.WINDOW_LEVEL[_('Default')] = (proj.window, proj.level)
         const.WINDOW_LEVEL[_('Manual')] = (proj.window, proj.level)
 
@@ -404,9 +419,9 @@ class Controller():
         if not filelist:
             debug("Not used the IPPSorter")
             filelist = [i.image.file for i in dicom_group.GetHandSortedList()[::interval]]
-        
-        
-            
+
+
+
         zspacing = dicom_group.zspacing * interval
         size = dicom.image.size
         bits = dicom.image.bits_allocad

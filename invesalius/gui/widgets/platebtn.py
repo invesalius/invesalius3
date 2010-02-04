@@ -11,9 +11,9 @@
 Editra Control Library: PlateButton
 
 The PlateButton is a custom owner drawn flat button, that in many ways emulates
-the buttons found the bookmark bar of the Safari browser. It can be used as a 
-drop in replacement for wx.Button/wx.BitmapButton under most circumstances. It 
-also offers a wide range of options for customizing its appearance, a 
+the buttons found the bookmark bar of the Safari browser. It can be used as a
+drop in replacement for wx.Button/wx.BitmapButton under most circumstances. It
+also offers a wide range of options for customizing its appearance, a
 description of each of the main style settings is listed below.
 
 Main Button Styles:
@@ -77,7 +77,7 @@ __svnid__ = "$Id: platebtn.py 57713 2009-01-01 23:36:15Z CJP $"
 __revision__ = "$Revision: 57713 $"
 
 __all__ = ["PlateButton", "AdjustAlpha", "AdjustColor", "GetHighlightColor",
-           "PLATE_NORMAL", "PLATE_PRESSED", "PLATE_HIGHLIGHT", 
+           "PLATE_NORMAL", "PLATE_PRESSED", "PLATE_HIGHLIGHT",
            "PB_STYLE_DEFAULT", "PB_STYLE_GRADIENT", "PB_STYLE_SQUARE",
            "PB_STYLE_NOBG", "PB_STYLE_DROPARROW",
            "EVT_PLATEBTN_DROPARROW_PRESSED"]
@@ -120,7 +120,7 @@ class PlateButton(wx.PyControl):
     displaying bitmaps and having an attached dropdown menu.
 
     """
-    def __init__(self, parent, id_=wx.ID_ANY, label='', bmp=None, 
+    def __init__(self, parent, id_=wx.ID_ANY, label='', bmp=None,
                  pos=wx.DefaultPosition, size=wx.DefaultSize,
                  style=PB_STYLE_DEFAULT, name=wx.ButtonNameStr):
         """Create a PlateButton
@@ -314,14 +314,14 @@ class PlateButton(wx.PyControl):
         color = GetHighlightColour()
         pcolor = AdjustColour(color, -12)
         colors = dict(default=True,
-                      hlight=color, 
+                      hlight=color,
                       press=pcolor,
                       htxt=BestLabelColour(self.GetForegroundColour()))
         return colors
 
     def __LeaveWindow(self):
         if (self._style & PB_STYLE_TOGGLE) and self._pressed:
-            self.SetState(PLATE_PRESSED) 
+            self.SetState(PLATE_PRESSED)
         else:
             self.SetState(PLATE_NORMAL)
 
@@ -363,7 +363,7 @@ class PlateButton(wx.PyControl):
             lsize = self.GetTextExtent(self.GetLabel())
             width += lsize[0]
             height += lsize[1]
-            
+
         if self._bmp['enable'] is not None:
             bsize = self._bmp['enable'].GetSize()
             width += (bsize[0] + 10)
@@ -423,7 +423,7 @@ class PlateButton(wx.PyControl):
     # GetBitmap Aliases for BitmapButton api
     GetBitmapFocus = GetBitmapLabel
     GetBitmapHover = GetBitmapLabel
-    
+
     # Alias for GetLabel
     GetLabelText = wx.PyControl.GetLabel
 
@@ -504,9 +504,9 @@ class PlateButton(wx.PyControl):
 
         if (self._style & PB_STYLE_TOGGLE):
             self._pressed = not self._pressed
- 
+
         self.SetFocus()
-            
+
     def OnLeftUp(self, evt):
         """Post a button event if the control was previously in a
         pressed state.
@@ -586,7 +586,7 @@ class PlateButton(wx.PyControl):
         """Set the color of the label. The optimal label color is usually
         automatically selected depending on the button color. In some
         cases the colors that are choosen may not be optimal.
-        
+
         The normal state must be specified, if the other two params are left
         Null they will be automatically guessed based on the normal color. To
         prevent this automatic color choices from happening either specify
@@ -686,7 +686,7 @@ class PlateButton(wx.PyControl):
 
             self.PopupMenu(self._menu, (xpos, size[1] + adj))
 
-    def Toggle(self): 
+    def Toggle(self):
         self._pressed = not self._pressed
         if self._pressed:
             self.SetState(PLATE_PRESSED)

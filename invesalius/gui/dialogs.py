@@ -30,7 +30,6 @@ import project as proj
 import session as ses
 import utils
 
-
 class NumberDialog(wx.Dialog):
     def __init__(self, message, value=0):
         pre = wx.PreDialog()
@@ -341,7 +340,7 @@ def NewMask():
     import data.mask as mask
     dlg = wx.TextEntryDialog(None, _('Name of new mask:'),
                                  _('InVesalius 3 - New mask'))
-    
+
     dlg.CenterOnScreen()
     default_mask_name = const.MASK_NAME_PATTERN %(mask.Mask.general_index+2)
     dlg.SetValue(default_mask_name)
@@ -367,20 +366,19 @@ def InexistentPath(path):
     dlg.ShowModal()
     dlg.Destroy()
 
-def SaveChangesDialog(filename):
+def SaveChangesDialog(filename, parent):
     current_dir = os.path.abspath(".")
     msg = _("The project %s has been modified.\nSave changes?")%filename
     if sys.platform == 'darwin':
         dlg = wx.MessageDialog(None, "", msg,
                                wx.ICON_QUESTION | wx.YES_NO | wx.CANCEL)
     else:
-        dlg = wx.MessageDialog(None, msg,
-                               "InVesalius 3",
-                               wx.ICON_QUESTION | wx.YES_NO | wx.CANCEL)
+        dlg = wx.MessageDialog(None, "TESTETSTE", "InVesalius 3",
+                         wx.ICON_QUESTION | wx.YES_NO | wx.CANCEL)
     try:
         answer = dlg.ShowModal()
-    except(wx._core.PyAssertionError):
-        answer = dlg.GetReturnCode()
+    except(wx._core.PyAssertionError): #TODO: FIX win64
+        answer =  wx.ID_YES
 
     dlg.Destroy()
     os.chdir(current_dir)
@@ -619,6 +617,5 @@ def ExportPicture(type_=""):
         return filename, filetype
     else:
         return ()
-
 
 

@@ -91,9 +91,10 @@ class Frame(wx.Frame):
         ps.Publisher().subscribe(self.BeginBusyCursor, 'Begin busy cursor')
         ps.Publisher().subscribe(self.EndBusyCursor, 'End busy cursor')
         ps.Publisher().subscribe(self.HideContentPanel, 'Hide content panel')
+        ps.Publisher().subscribe(self.CloseProgram, 'Close Window')
 
     def EndBusyCursor(self, pubsub_evt=None):
-        try:        
+        try:
             wx.EndBusyCursor()
         except wx._core.PyAssertionError:
             #xEndBusyCursor(): no matching wxBeginBusyCursor() for wxEndBusyCursor()
@@ -104,7 +105,7 @@ class Frame(wx.Frame):
 
     def SetProjectName(self, pubsub_evt):
         proj_name = pubsub_evt.data
-        
+
         if not(proj_name):
             self.SetTitle("InVesalius 3")
         else:
@@ -123,6 +124,7 @@ class Frame(wx.Frame):
         #self.Bind(wx.EVT_CLOSE, self.OnExit)
 
     def CloseWindow(self, evt):
+        ps.Publisher().sendMessage('Close Project')
         ps.Publisher().sendMessage("Stop Config Recording")
         self.Destroy()
 
@@ -248,8 +250,8 @@ class Frame(wx.Frame):
             self.SaveAsProject()
         elif id == const.ID_PROJECT_CLOSE:
             self.CloseProject()
-        #elif id == const.ID_EXIT:
-        #    self.OnExit(evt)
+        elif id == const.ID_EXIT:
+            self.OnExit()
         elif id == const.ID_ABOUT:
             self.ShowAbout()
         elif id == const.ID_START:
@@ -286,9 +288,11 @@ class Frame(wx.Frame):
         utils.debug("CloseProject")
         ps.Publisher().sendMessage('Close Project')
 
-    def OnExit(self, event):
-        self.Exit()
-        event.Skip()
+    def OnExit(self):
+        ps.Publisher().sendMessage('Close Project')
+
+    def CloseProgram(self, pubsub_evt):
+        self.Destroy()
 
     def Exit(self):
         utils.debug("Exit")
@@ -303,8 +307,8 @@ class Frame(wx.Frame):
         self.aui_manager.Update()
 
     #def OnClose(self):
-    #    # TODO: implement this, based on wx.Demo
-    #    pass
+        # TODO: implement this, based on wx.Demo
+        #pass
 # ------------------------------------------------------------------------------
 # TODO: what will appear on ivMenuBar?
 # Menu items ID's, necessary to bind events on them
@@ -417,7 +421,7 @@ class MenuBar(wx.MenuBar):
 
     def SetStateProjectClose(self):
         for item in self.enable_items:
-            self.Enable(item, False)  
+            self.Enable(item, False)
 
     def __bind_events(self):
         # TODO: in future, possibly when wxPython 2.9 is available,
@@ -594,7 +598,7 @@ class ProjectToolBar(wx.ToolBar):
 
     def SetStateProjectClose(self):
         for tool in self.enable_items:
-            self.EnableTool(tool, False)    
+            self.EnableTool(tool, False)
 
     def OnEnableState(self, pubsub_evt):
         state = pubsub_evt.data
@@ -730,7 +734,7 @@ class ObjectToolBar(wx.ToolBar):
     def SetStateProjectClose(self):
         for tool in self.enable_items:
             self.EnableTool(tool, False)
-            self.UntoggleAllItems()  
+            self.UntoggleAllItems()
 
 
     def __bind_events_wx(self):
@@ -809,8 +813,8 @@ class SliceToolBar(wx.ToolBar):
 
     def SetStateProjectClose(self):
         for tool in self.enable_items:
-            self.EnableTool(tool, False) 
- 
+            self.EnableTool(tool, False)
+
     def __bind_events_wx(self):
         self.Bind(wx.EVT_TOOL, self.OnClick)
 
@@ -916,7 +920,7 @@ shortHelp= _("Hide task panel"))
         self.ontool_text = True
         self.OnText()
         for tool in self.enable_items:
-            self.EnableTool(tool, False) 
+            self.EnableTool(tool, False)
 
     def __bind_events(self):
         ps.Publisher().subscribe(self.SetLayoutButtonOnlyData,
