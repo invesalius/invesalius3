@@ -163,7 +163,8 @@ class InnerPanel(wx.Panel):
 
     def OnClickOk(self, evt):
         group = self.text_panel.GetSelection()
-        self.LoadDicom(group)
+        if group:
+            self.LoadDicom(group)
 
     def OnClickCancel(self, evt): 
         ps.Publisher().sendMessage("Cancel DICOM load")
