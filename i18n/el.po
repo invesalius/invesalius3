@@ -73,11 +73,11 @@ msgstr "Μάσκα %d"
 
 #: constants.py:217 task_surface.py:43
 msgid "Draw"
-msgstr ""
+msgstr "Σχεδίαση"
 
 #: constants.py:217 task_surface.py:43
 msgid "Erase"
-msgstr ""
+msgstr "Διαγραφή"
 
 #: constants.py:217 data_notebook.py:112 task_surface.py:43
 msgid "Threshold"
@@ -138,7 +138,7 @@ msgstr ""
 
 #: constants.py:250
 msgid "Liver"
-msgstr ""
+msgstr "Ήπαρ"
 
 #: constants.py:251
 msgid "Lung - Soft"
@@ -174,31 +174,31 @@ msgstr ""
 
 #: constants.py:267
 msgid "Front"
-msgstr ""
+msgstr "Μπροστά"
 
 #: constants.py:268
 msgid "Back"
-msgstr ""
+msgstr "Πίσω"
 
 #: constants.py:269
 msgid "Top"
-msgstr ""
+msgstr "Πάνω"
 
 #: constants.py:270
 msgid "Bottom"
-msgstr ""
+msgstr "Κάτω"
 
 #: constants.py:271
 msgid "Right"
-msgstr ""
+msgstr "Δεξιά"
 
 #: constants.py:272
 msgid "Left"
-msgstr ""
+msgstr "Αριστερά"
 
 #: constants.py:273
 msgid "Isometric"
-msgstr ""
+msgstr "Ισομετρικό"
 
 #: constants.py:284
 msgid "Airways"
