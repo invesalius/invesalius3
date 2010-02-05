@@ -209,12 +209,22 @@ def ShowSaveAsProjectDialog(default_filename=None):
     #dlg.SetFilterIndex(0) # default is VTI
 
     filename = None
-    if dlg.ShowModal() == wx.ID_OK:
+    try:
+        if dlg.ShowModal() == wx.ID_OK:
+            filename = dlg.GetPath()
+            ok = 1
+        else:
+            ok = 0
+    except(wx._core.PyAssertionError): #TODO: fix win64
         filename = dlg.GetPath()
+        ok = 1
+
+    if (ok):
         extension = "inv3"
         if sys.platform != 'win32':
             if filename.split(".")[-1] != extension:
                 filename = filename + "." + extension
+
 
     os.chdir(current_dir)
     return filename
