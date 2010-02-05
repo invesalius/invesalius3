@@ -44,7 +44,7 @@ icons/data_duplicate.png -text
 icons/data_new.png -text
 icons/data_remove.png -text
 icons/el_GR.bmp -text
-icons/en_GB.bmp -text
+icons/en.bmp -text
 icons/es.bmp -text
 icons/file_export.png -text
 icons/file_from_internet.png -text
@@ -55,7 +55,7 @@ icons/file_open.png -text
 icons/file_open_original.png -text
 icons/file_save.png -text
 icons/file_save_original.png -text
-icons/fr_FR.bmp -text
+icons/fr.bmp -text
 icons/invesalius.ico -text
 icons/layout_data_only.gif -text
 icons/layout_data_only.png -text
