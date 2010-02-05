@@ -26,16 +26,20 @@ import gettext
 import os
 import sys
 
+import utils as utl
+
 LANGUAGE_DIR = os.path.abspath(os.path.join('..','locale'))
 
 def GetLocales():
     """Return a dictionary which defines supported languages"""
-    locale_descriptions = {'en': u'English',
-                           'es': u'Español',
-                           'pt_BR': u'Português (Brasil)',
-                           'fr':u'Français',
-                            'el_GR':u'Ελληνική'}
-    return locale_descriptions
+    d = utl.TwoWaysDictionary ({'en': u'English',
+                                'es': u'Español',
+                                'pt_BR': u'Português (Brasil)',
+                                'fr':u'Français',
+                                'el_GR':u'Ελληνική',
+                                'it_IT':'Italiano',
+                                'de_DE': 'Deutsch'})
+    return d
     
 def GetLocaleOS():
         """Return language of the operating system."""
