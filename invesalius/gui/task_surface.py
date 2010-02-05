@@ -132,7 +132,16 @@ class InnerTaskPanel(wx.Panel):
     def OnLinkNewSurface(self, evt=None):
         #import gui.dialogs as dlg
         dialog = dlg.NewSurfaceDialog(self, -1, _('InVesalius 3 - New surface'))
-        if dialog.ShowModal() == wx.ID_OK:
+
+        try:
+            if dialog.ShowModal() == wx.ID_OK:
+                ok = 1
+            else:
+                ok = 0
+        except(wx._core.PyAssertionError): #TODO FIX: win64
+            ok = 1
+
+        if (ok):
             # Retrieve information from dialog
             (mask_index, surface_name, surface_quality, fill_holes,\
             keep_largest) = dialog.GetValue()
@@ -317,7 +326,7 @@ class SurfaceTools(wx.Panel):
 
     def OnLinkSplit(self, evt):
         self.SplitSurface()
-    
+
     def OnLinkSeed(self, evt):
         self.button_seeds.Toggle()
         self.SelectSeed()
@@ -332,10 +341,10 @@ class SurfaceTools(wx.Panel):
             self.SelectSeed()
 
     def SelectLargest(self):
-        ps.Publisher().sendMessage('Create surface from largest region') 
+        ps.Publisher().sendMessage('Create surface from largest region')
 
     def SplitSurface(self):
-        ps.Publisher().sendMessage('Split surface') 
+        ps.Publisher().sendMessage('Split surface')
 
     def SelectSeed(self):
         if self.button_seeds.IsPressed():
@@ -454,7 +463,7 @@ wx.GROW|wx.EXPAND|wx.LEFT|wx.RIGHT|wx.TOP|wx.BOTTOM, 10)
         if not overwrite or not self.surface_dict:
             self.surface_dict[name] = index
             index = self.combo_surface_name.Append(name)
-            
+
         transparency = 100*pubsub_evt.data[4]
         self.button_colour.SetColour(colour)
         self.slider_transparency.SetValue(transparency)
