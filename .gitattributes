@@ -43,6 +43,7 @@ icons/cross_original.png -text
 icons/data_duplicate.png -text
 icons/data_new.png -text
 icons/data_remove.png -text
+icons/el_GR.bmp -text
 icons/en_GB.bmp -text
 icons/es.bmp -text
 icons/file_export.png -text
@@ -88,6 +89,7 @@ icons/slice.png -text
 icons/slice_original.png -text
 icons/slice_plane.png -text
 icons/slice_plane_original.png -text
+icons/splash_el_GR.png -text
 icons/splash_en.png -text
 icons/splash_es.png -text
 icons/splash_fr.png -text
