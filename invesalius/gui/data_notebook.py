@@ -198,6 +198,7 @@ class MasksListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
 
     def OnKeyEvent(self, event):
         keycode = event.GetKeyCode()
+        # Delete key
         if (sys.platform == 'darwin') and (keycode == wx.WXK_BACK):
             selected = self.GetSelected()
             for item in selected:
@@ -207,13 +208,11 @@ class MasksListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
             for item in selected:
                 self.RemoveMask(item)
 
-
     def OnCloseProject(self, pubsub_evt):
         self.DeleteAllItems()
         self.mask_list_index = {}
  
     def OnChangeCurrentMask(self, pubsub_evt):
-
         mask_index = pubsub_evt.data
         try:
             self.SetItemImage(mask_index, 1)

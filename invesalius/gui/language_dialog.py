@@ -50,22 +50,27 @@ class LanguageDialog(wx.Dialog):
         bmp_english_flag = wx.Bitmap(os.path.join(ICON_DIR, "en_GB.bmp"), wx.BITMAP_TYPE_BMP)
         bmp_brazilian_flag = wx.Bitmap(os.path.join(ICON_DIR, "pt_BR.bmp"), wx.BITMAP_TYPE_BMP)
         bmp_spanish_flag = wx.Bitmap(os.path.join(ICON_DIR, "es.bmp"), wx.BITMAP_TYPE_BMP)
+        bmp_greek_flag = wx.Bitmap(os.path.join(ICON_DIR, "el_GR.bmp"), wx.BITMAP_TYPE_BMP)
 
-        bitmapCmb.Append(self.locales[0], bmp_french_flag,"fr")
-        bitmapCmb.Append(self.locales[1], bmp_english_flag,"en_GB")
-        bitmapCmb.Append(self.locales[2], bmp_brazilian_flag,"pt_BR")
-        bitmapCmb.Append(self.locales[3], bmp_spanish_flag,"es")
+        bitmapCmb.Append(self.locales[0], bmp_greek_flag, "el_GR")
+        bitmapCmb.Append(self.locales[1], bmp_french_flag,"fr")
+        bitmapCmb.Append(self.locales[2], bmp_english_flag,"en_GB")
+        bitmapCmb.Append(self.locales[3], bmp_brazilian_flag,"pt_BR")
+        bitmapCmb.Append(self.locales[4], bmp_spanish_flag,"es")
+
 
         
-        
-        if (self.os_locale[0:2] == 'pt'):
-            bitmapCmb.SetSelection(2)
-        elif (self.os_locale[0:2] == 'es'):
+        os_lang = self.os_locale[0:2] 
+        if (os_lang == 'pt'):
             bitmapCmb.SetSelection(3)
-        elif (self.os_locale[0:2] == 'fr'):
+        elif (os_lang == 'es'):
+            bitmapCmb.SetSelection(4)
+        elif (os_lang == 'fr'):
+            bitmapCmb.SetSelection(1)
+        elif (os_lang == 'el'):
             bitmapCmb.SetSelection(0)
         else:
-            bitmapCmb.SetSelection(1)
+            bitmapCmb.SetSelection(2)
 
     def __init_gui(self):
         self.txtMsg = wx.StaticText(self, -1,

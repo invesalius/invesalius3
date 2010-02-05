@@ -33,7 +33,8 @@ def GetLocales():
     locale_descriptions = {'en': u'English',
                            'es': u'Español',
                            'pt_BR': u'Português (Brasil)',
-                           'fr':u'Français'}
+                           'fr':u'Français',
+                            'el_GR':u'Ελληνική'}
     return locale_descriptions
     
 def GetLocaleOS():
