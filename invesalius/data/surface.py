@@ -130,7 +130,7 @@ class SurfaceManager():
         index = self.last_surface_index
         proj = prj.Project()
         surface = proj.surface_dict[index]
- 
+
         new_polydata = pu.JoinSeedsParts(surface.polydata,
                                           points_id_list)
         self.CreateSurfaceFromPolydata(new_polydata)
@@ -156,8 +156,14 @@ class SurfaceManager():
         self.ShowActor(index, False)
 
     def CreateSurfaceFromPolydata(self, polydata, overwrite=False):
+
+        normals = vtk.vtkPolyDataNormals()
+        normals.SetInput(polydata)
+        normals.SetFeatureAngle(80)
+        normals.AutoOrientNormalsOn()
+
         mapper = vtk.vtkPolyDataMapper()
-        mapper.SetInput(polydata)
+        mapper.SetInput(normals.GetOutput())
         mapper.ScalarVisibilityOff()
 
         actor = vtk.vtkActor()
@@ -201,7 +207,7 @@ class SurfaceManager():
                                         (surface.index, surface.name,
                                         surface.colour, surface.volume,
                                         surface.transparency))
-        
+
 
     def OnCloseProject(self, pubsub_evt):
         self.CloseProject()
@@ -218,7 +224,7 @@ class SurfaceManager():
         # self.actors_dict.
         proj = prj.Project()
         surface = proj.surface_dict[index]
-        
+
         ps.Publisher().sendMessage('Update surface info in GUI',
                                     (surface.index, surface.name,
                                     surface.colour, surface.volume,
@@ -328,7 +334,7 @@ class SurfaceManager():
         # Update progress value in GUI
         UpdateProgress = vu.ShowProgress(pipeline_size)
         UpdateProgress(0, _("Generating 3D surface..."))
-        
+
         filename_img = tempfile.mktemp()
 
         writer = vtk.vtkXMLImageDataWriter()
@@ -445,7 +451,7 @@ class SurfaceManager():
 
         ps.Publisher().sendMessage('Update status text in GUI',
                                     _("Ready"))
-        
+
         ps.Publisher().sendMessage('Update surface info in GUI',
                                     (surface.index, surface.name,
                                     surface.colour, surface.volume,
@@ -454,9 +460,9 @@ class SurfaceManager():
         #Destroy Copy original imagedata
         if(imagedata_tmp):
             del imagedata_tmp
-        
+
         ps.Publisher().sendMessage('End busy cursor')
-        
+
     def RemoveActor(self, index):
         """
         Remove actor, according to given actor index.
