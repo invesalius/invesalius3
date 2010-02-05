@@ -43,6 +43,7 @@ icons/cross_original.png -text
 icons/data_duplicate.png -text
 icons/data_new.png -text
 icons/data_remove.png -text
+icons/de_DE.bmp -text
 icons/el_GR.bmp -text
 icons/en.bmp -text
 icons/es.bmp -text
@@ -57,6 +58,7 @@ icons/file_save.png -text
 icons/file_save_original.png -text
 icons/fr.bmp -text
 icons/invesalius.ico -text
+icons/it_IT.bmp -text
 icons/layout_data_only.gif -text
 icons/layout_data_only.png -text
 icons/layout_data_only_original.gif -text
