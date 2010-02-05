@@ -27,7 +27,7 @@ UpdateProgress = vu.ShowProgress()
 
 def ApplyDecimationFilter(polydata, reduction_factor):
     """
-    Reduce number of triangles of the given vtkPolyData, based on 
+    Reduce number of triangles of the given vtkPolyData, based on
     reduction_factor.
     """
     # Important: vtkQuadricDecimation presented better results than
@@ -51,19 +51,19 @@ def ApplySmoothFilter(polydata, iterations, relaxation_factor):
     smoother.SetRelaxationFactor(relaxation_factor)
     smoother.FeatureEdgeSmoothingOn()
     smoother.BoundarySmoothingOn()
-    smoother.GetOutput().ReleaseDataFlagOn()    
+    smoother.GetOutput().ReleaseDataFlagOn()
     smoother.AddObserver("ProgressEvent", lambda obj, evt:
                          UpdateProgress(smoother, "Smoothing surface..."))
-    
+
     return smoother.GetOutput()
-    
+
 
 
 def FillSurfaceHole(polydata):
     """
     Fill holes in the given polydata.
     """
-    # Filter used to detect and fill holes. Only fill 
+    # Filter used to detect and fill holes. Only fill
     print "Filling polydata"
     filled_polydata = vtk.vtkFillHolesFilter()
     filled_polydata.SetInput(polydata)
@@ -125,8 +125,15 @@ def JoinSeedsParts(polydata, point_id_list):
     conn = vtk.vtkPolyDataConnectivityFilter()
     conn.SetInput(polydata)
     conn.SetExtractionModeToPointSeededRegions()
+    UpdateProgress = vu.ShowProgress(1 + len(point_id_list))
+    pos = 1
     for seed in point_id_list:
         conn.AddSeed(seed)
+        UpdateProgress(pos, _("Getting selected parts"))
+        pos += 1
+
+    conn.AddObserver("ProgressEvent", lambda obj, evt:
+                  UpdateProgress(conn, "Getting selected parts"))
     conn.Update()
 
     result = vtk.vtkPolyData()
@@ -137,9 +144,12 @@ def JoinSeedsParts(polydata, point_id_list):
 def SelectLargestPart(polydata):
     """
     """
+    UpdateProgress = vu.ShowProgress(1)
     conn = vtk.vtkPolyDataConnectivityFilter()
     conn.SetInput(polydata)
     conn.SetExtractionModeToLargestRegion()
+    conn.AddObserver("ProgressEvent", lambda obj, evt:
+                  UpdateProgress(conn, "Getting largest part..."))
     conn.Update()
 
     result = vtk.vtkPolyData()
@@ -154,24 +164,28 @@ def SplitDisconectedParts(polydata):
     conn.SetInput(polydata)
     conn.SetExtractionModeToAllRegions()
     conn.Update()
-    
+
     nregions = conn.GetNumberOfExtractedRegions()
 
     conn.SetExtractionModeToSpecifiedRegions()
     conn.Update()
 
     polydata_collection = []
-   
-     
+
+    # Update progress value in GUI
+    UpdateProgress = vu.ShowProgress(nregions)
+
+
     for region in xrange(nregions):
         conn.InitializeSpecifiedRegionList()
         conn.AddSpecifiedRegion(region)
         conn.Update()
-    
+
         p = vtk.vtkPolyData()
         p.DeepCopy(conn.GetOutput())
         p.Update()
-        
+
         polydata_collection.append(p)
-    
+        UpdateProgress(region, _("Splitting disconected parts"))
+
     return polydata_collection
