@@ -39,26 +39,36 @@ class LanguageDialog(wx.Dialog):
         
     def __init_combobox_bitmap__(self):
         """Initialize combobox bitmap"""
-       
+      
+        # Retrieve locales dictionary 
         dict_locales = i18n.GetLocales()
-         
+        
+        # Retrieve locales names and sort them
         self.locales = dict_locales.values()
         self.locales.sort()
        
-        print "-------------------"
-        print self.locales 
+        # Retrieve locales keys (eg: pt_BR for Portuguese(Brazilian))
         self.locales_key = [dict_locales.get_key(value)[0] for value in self.locales]
-        print self.locales_key 
+
+        # Find out OS locale
         self.os_locale = i18n.GetLocaleOS()
        
+        # FIXME: In future we shall be using all locales using 5
+        # characters... until then, we use only 2:
         os_lang = self.os_locale[0:2]
+
+        # Default selection will be English
         selection = self.locales_key.index('en')
- 
+
+        # Create bitmap combo
         self.bitmapCmb = bitmapCmb = wx.combo.BitmapComboBox(self, style=wx.CB_READONLY)
         for key in self.locales_key:
+            # Based on composed flag filename, get bitmap
             filepath =  os.path.join(ICON_DIR, "%s.bmp"%(key))
             bmp = wx.Bitmap(filepath, wx.BITMAP_TYPE_BMP)
+            # Add bitmap and info to Combo
             bitmapCmb.Append(dict_locales[key], bmp, key)
+            # Set default combo item if available on the list
             if key.startswith(os_lang):
                 selection = self.locales_key.index(key)
                 bitmapCmb.SetSelection(selection)
