@@ -22,9 +22,9 @@ from optparse import OptionParser
 import os
 import sys
 
+from session import Session
 import gui.language_dialog as lang_dlg
 import i18n
-from session import Session
 import utils
 
 

@@ -2,11 +2,10 @@ import ConfigParser
 import os
 from threading import Thread
 import time
+
 import wx.lib.pubsub as ps
 
 from utils import Singleton, debug
-
-import wx.lib.pubsub as ps
 
 class Session(object):
     # Only one session will be initialized per time. Therefore, we use
@@ -18,7 +17,6 @@ class Session(object):
 
         ws = self.ws = WriteSession(self)
         ws.start()
-
         ps.Publisher().subscribe(self.StopRecording, "Stop Config Recording")
 
     def CreateItens(self):
