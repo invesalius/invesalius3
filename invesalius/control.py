@@ -423,13 +423,19 @@ class Controller():
             debug("Not used the IPPSorter")
             filelist = [i.image.file for i in dicom_group.GetHandSortedList()[::interval]]
 
-
-
         zspacing = dicom_group.zspacing * interval
         size = dicom.image.size
         bits = dicom.image.bits_allocad
+        sop_class_uid = dicom.acquisition.sop_class_uid
+        xyspacing = dicom.image.spacing
 
-        imagedata = utils.CreateImageData(filelist, zspacing, size, bits)
+        if sop_class_uid == '1.2.840.10008.5.1.4.1.1.7': #Secondary Capture Image Storage
+            use_dcmspacing = 1
+        else:
+            use_dcmspacing = 0
+
+        imagedata = utils.CreateImageData(filelist, zspacing, xyspacing,size,
+                                          bits, use_dcmspacing)
 
         # 1(a): Fix gantry tilt, if any
         tilt_value = dicom.acquisition.tilt
