@@ -17,8 +17,12 @@
 #    detalhes.
 #--------------------------------------------------------------------------
 
+import os
+import sys
+
 import wx
-    
+import wx.lib.hyperlink as hl
+
 class TaskPanel(wx.Panel):
     """
     This panel works as a "frame", drawing a white margin arround 
@@ -28,9 +32,11 @@ class TaskPanel(wx.Panel):
         # note: don't change this class!!!
         wx.Panel.__init__(self, parent)
 
+        inner_panel = InnerTaskPanel(self)
+
         sizer = wx.BoxSizer(wx.HORIZONTAL)
-        sizer.Add(InnerTaskPanel(self), 1, wx.EXPAND | wx.GROW |
-                                 wx.BOTTOM | wx.RIGHT | wx.LEFT, 7)
+        sizer.Add(inner_panel, 1, wx.EXPAND | wx.GROW | wx.BOTTOM | wx.RIGHT |
+                  wx.LEFT, 7)
         sizer.Fit(self)
 
         self.SetSizer(sizer)
@@ -44,9 +50,30 @@ class InnerTaskPanel(wx.Panel):
         self.SetBackgroundColour(wx.Colour(255,255,255))
         self.SetAutoLayout(1)
         
+        # Build GUI
+        self.__init_gui()
+
         # Bind events
         self.__bind_events()
         self.__bind_wx_events()
+
+    def __init_gui(self):
+        """
+        Build widgets in current panel
+        """
+        # Create widgets to be inserted in this panel
+        link_test = hl.HyperLinkCtrl(self, -1, _("Testing..."))
+        link_test.SetUnderlines(False, False, False)
+        link_test.SetColours("BLACK", "BLACK", "BLACK")
+        link_test.AutoBrowse(False)
+        link_test.UpdateLink()
+        self.link_test = link_test
+
+        # Add line sizers into main sizer
+        sizer = wx.BoxSizer(wx.VERTICAL)
+        sizer.Add(link_test, 0, wx.GROW|wx.EXPAND)
+        self.SetSizer(sizer)
+        self.Fit()
 
     def __bind_events(self):
         """
@@ -60,4 +87,11 @@ class InnerTaskPanel(wx.Panel):
         Bind wx general events
         """
         # Example: self.Bind(wx.EVT_BUTTON, self.OnButton)
-        pass
+        self.link_test.Bind(hl.EVT_HYPERLINK_LEFT, self.OnTest)
+    
+    def OnTest(self, event):
+        """
+        Describe what this method does
+        """
+        event.Skip()
+
