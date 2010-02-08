@@ -57,7 +57,7 @@ class Session(object):
         debug("Session.CloseProject")
         self.project_path = ()
         self.project_status = const.PROJ_CLOSE
-        self.mode = const.MODE_RP
+        #self.mode = const.MODE_RP
         self.temp_item = False
 
     def SaveProject(self, path=()):
