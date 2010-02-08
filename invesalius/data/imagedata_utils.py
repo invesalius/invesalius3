@@ -159,7 +159,13 @@ def BuildEditedImage(imagedata, points):
         imagedata.SetScalarComponentFromDouble(x, y, z, 0, colour)
         imagedata.Update()
 
-    return imagedata
+    gauss = vtk.vtkImageGaussianSmooth()
+    gauss.SetInput(imagedata)
+    gauss.SetRadiusFactor(0.8)
+    gauss.Update()
+
+    return gauss.GetOutput()
+
 
 def Export(imagedata, filename, bin=False):
     writer = vtk.vtkXMLImageDataWriter()
@@ -214,9 +220,10 @@ def ExtractVOI(imagedata,xi,xf,yi,yf,zi,zf):
     voi.Update()
     return voi.GetOutput()
 
-def CreateImageData(filelist, zspacing, size, bits):
+def CreateImageData(filelist, zspacing, xyspacing,size,
+                                bits, use_dcmspacing):
     message = _("Generating multiplanar visualization...")
-    
+
     if not const.VTK_WARNING:
         log_path = os.path.join(const.LOG_FOLDER, 'vtkoutput.txt')
         fow = vtk.vtkFileOutputWindow()
@@ -250,7 +257,12 @@ def CreateImageData(filelist, zspacing, size, bits):
         # The zpacing is a DicomGroup property, so we need to set it
         imagedata = vtk.vtkImageData()
         imagedata.DeepCopy(reader.GetOutput())
-        spacing = imagedata.GetSpacing()
+        if (use_dcmspacing):
+            spacing = xyspacing
+            spacing[2] = zspacing
+        else:
+            spacing = imagedata.GetSpacing()
+
         imagedata.SetSpacing(spacing[0], spacing[1], zspacing)
     else:
 
@@ -283,7 +295,12 @@ def CreateImageData(filelist, zspacing, size, bits):
         # The zpacing is a DicomGroup property, so we need to set it
         imagedata = vtk.vtkImageData()
         imagedata.DeepCopy(appender.GetOutput())
-        spacing = imagedata.GetSpacing()
+
+        if (use_dcmspacing):
+            spacing = xyspacing
+            spacing[2] = zspacing
+        else:
+            spacing = imagedata.GetSpacing()
 
         imagedata.SetSpacing(spacing[0], spacing[1], zspacing)
 
@@ -305,7 +322,7 @@ class ImageCreator:
 
     def CreateImageData(self, filelist, zspacing, size, bits):
         message = _("Generating multiplanar visualization...")
-        
+
         if not const.VTK_WARNING:
             log_path = os.path.join(const.LOG_FOLDER, 'vtkoutput.txt')
             fow = vtk.vtkFileOutputWindow()

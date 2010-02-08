@@ -93,7 +93,7 @@ class Parser():
         self.filename = ""
         self.encoding = ""
         self.vtkgdcm_reader = vtkgdcm.vtkGDCMImageReader()
-        
+
     def GetAcquisitionDate(self):
         """
         Return string containing the acquisition date using the
@@ -141,7 +141,7 @@ class Parser():
                     value = 0
                 return value
         return ""
-    
+
     def GetAcquisitionTime(self):
         """
         Return string containing the acquisition time using the
@@ -194,18 +194,18 @@ class Parser():
 
             # used to parse DICOM files - similar to vtkDICOMParser
             gdcm_reader = gdcm.ImageReader()
-            
+
             gdcm_reader.SetFileName(filename)
-            
+
             # if DICOM file is null vtkGDCMImageReader raises vtk
             # exception
             if not gdcm_reader.Read():
                 return False
-            
+
             vtkgdcm_reader = self.vtkgdcm_reader
             vtkgdcm_reader.SetFileName(filename)
             vtkgdcm_reader.Update()
-           
+
             self.filename = filename
             self.gdcm_reader = gdcm_reader
             self.vtkgdcm_reader = vtkgdcm_reader
@@ -278,7 +278,7 @@ class Parser():
                 # we choose only one. As this should be paired to "Window
                 # Width", it is set based on WL_PRESET
                 value_list = [float(value) for value in data.split('\\')]
-                
+
                 if multiple:
                     return str(value_list)
                 else:
@@ -619,7 +619,7 @@ class Parser():
                 return data
         return ""
 
-    
+
     def GetPhysicianReferringAddress(self):
         """
         Return string containing physician's address.
@@ -730,7 +730,7 @@ class Parser():
             if (data):
                 return data
         return ""
-    
+
     def GetStudyInstanceUID(self):
         """
         Return string containing Unique Identifier of the
@@ -931,7 +931,7 @@ class Parser():
             data =  str(ds.GetDataElement(tag).GetValue())
             if (data):
                 return data
-        
+
         0x0008, 0x0081
 
     def GetInstitutionAddress(self):
@@ -1399,7 +1399,7 @@ class Parser():
         except TypeError:
             type = orientation.GetType(direc_cosines)
         label = orientation.GetLabel(type)
-        
+
         if (label):
             return label
         else:
@@ -1432,14 +1432,14 @@ class Parser():
             if (date) and (date != 'None'):
                 return  self.__format_time(date)
         return ""
-    
+
     def __format_time(self,value):
         sp1 = value.split(".")
         sp2 = value.split(":")
-        
+
         if (len(sp1) ==  2) and (len(sp2) == 3):
             new_value = str(sp2[0]+sp2[1]+
-                            str(int(float(sp2[2])))) 
+                            str(int(float(sp2[2]))))
             data = time.strptime(new_value, "%H%M%S")
         elif (len(sp1) ==  2):
             data = time.gmtime(float(value))
@@ -1448,14 +1448,14 @@ class Parser():
         elif(len(sp2) > 1):
             data = time.strptime(value, "%H:%M:%S")
         else:
-            data = time.strptime(value, "%H%M%S")         
+            data = time.strptime(value, "%H%M%S")
         return time.strftime("%H:%M:%S",data)
-   
+
     def __format_date(self, value):
-        
+
         sp1 = value.split(".")
         try:
-        
+
             if (len(sp1) >  1):
                 if (len(sp1[0]) <= 2):
                     data = time.strptime(value, "%D.%M.%Y")
@@ -1466,10 +1466,10 @@ class Parser():
             else:
                 data = time.strptime(value, "%Y%M%d")
             return time.strftime("%d/%M/%Y",data)
-        
+
         except(ValueError):
                 return ""
-        
+
     def GetAcquisitionTime(self):
         """
         Return the acquisition time.
@@ -1482,7 +1482,7 @@ class Parser():
             if (data):
                 return self.__format_time(data)
         return ""
-    
+
     def GetSerieNumber(self):
         """
         Return the serie number
@@ -1508,7 +1508,7 @@ class Parser():
             if encoding != None:
                 #Problem with 0051 anonymized
                 if (encoding.split(":"))[0] == "Loaded":
-                    return 'ISO_IR 100' 
+                    return 'ISO_IR 100'
                 else:
                     return encoding
         return 'ISO_IR 100'
@@ -1544,7 +1544,7 @@ class DicomWriter:
     """
 
     def __init__(self):
-    
+
         self.reader = ""
         self.anony = gdcm.Anonymizer()
         self.path = ""
@@ -1555,13 +1555,13 @@ class DicomWriter:
     def SetFileName(self, path):
         """
         Set Dicom File Name
-        """        
+        """
         self.path = path
 
         self.reader.SetFileName(path)
-             
+
         if (self.reader.Read()):
-            
+
             self.anony.SetFile(self.reader.GetFile())
 
 
@@ -1571,11 +1571,11 @@ class DicomWriter:
         Input vtkImageData
         """
         self.img_data = img_data
-    
-        
+
+
     def __CreateNewDicom(self, img_data):
         """
-        Create New Dicom File, input is 
+        Create New Dicom File, input is
         a vtkImageData
         """
         new_dicom = self.new_dicom
@@ -1583,13 +1583,13 @@ class DicomWriter:
         new_dicom.SetInput(img_data)
         new_dicom.Write()
 
-        
+
     def SaveIsNew(self, img_data):
         """
-        Write Changes in Dicom file or Create 
+        Write Changes in Dicom file or Create
         New Dicom File
         """
-        
+
         self.__CreateNewDicom(img_data)
 
         #Is necessary to create and add
@@ -1597,19 +1597,19 @@ class DicomWriter:
         self.SetFileName(self.path)
         self.anony.SetFile(self.reader.GetFile())
 
-        
+
     def Save(self):
 
         reader = self.reader
-        
+
         writer = gdcm.Writer()
         writer.SetFile(self.reader.GetFile())
         writer.SetFileName(self.path)
-        writer.Write()    
-            
+        writer.Write()
+
 
     def SetPatientName(self, patient):
-        """ 
+        """
         Set Patient Name requeries string type
         """
         self.anony.Replace(gdcm.Tag(0x0010,0x0010), \
@@ -1617,73 +1617,73 @@ class DicomWriter:
 
 
     def SetImageThickness(self, thickness):
-        """ 
+        """
         Set thickness value requeries float type
         """
         self.anony.Replace(gdcm.Tag(0x0018,0x0050), \
                            str(thickness))
-       
-        
+
+
     def SetImageSeriesNumber(self, number):
-        """ 
+        """
         Set Serie Number value requeries int type
         """
         self.anony.Replace(gdcm.Tag(0x0020,0x0011), \
                            str(number))
-       
-        
+
+
     def SetImageNumber(self, number):
-        """ 
+        """
         Set image Number value requeries int type
         """
         self.anony.Replace(gdcm.Tag(0x0020,0x0013),
                            str(number))
-        
-          
+
+
     def SetImageLocation(self, location):
-        """ 
+        """
         Set slice location value requeries float type
         """
         self.anony.Replace(gdcm.Tag(0x0020,0x1041),\
                            str(number))
-    
-    
+
+
     def SetImagePosition(self, position):
-        """ 
-        Set slice position value requeries list 
+        """
+        Set slice position value requeries list
         with three values x, y and z
         """
         self.anony.Replace(gdcm.Tag(0x0020,0x0032), \
                            str(position[0]) + \
                            "\\" + str(position[1]) + \
                            "\\" + str(position[2]))
-   
-    
+
+
     def SetAcquisitionModality(self, modality):
-        """ 
+        """
         Set modality study CT or RM
         """
         self.anony.Replace(gdcm.Tag(0x0008,0x0060), \
                            str(modality))
-        
-        
+
+
     def SetPixelSpacing(self, spacing):
         """
         Set pixel spacing x and y
         """
         self.anony.Replace(gdcm.Tag(0x0028,0x0030), \
                            str(spacing))
-        
-        
+
+
     def SetInstitutionName(self, institution):
         """
         Set institution name
         """
         self.anony.Replace(gdcm.Tag(0x0008, 0x0080), \
                            str(institution))
-        
 
-    
+
+
 
 
 
@@ -1808,11 +1808,11 @@ class Patient(object):
         self.name = parser.GetPatientName()
         self.id = parser.GetPatientID()
         self.age = parser.GetPatientAge()
-        self.birthdate = parser.GetPatientBirthDate() 
+        self.birthdate = parser.GetPatientBirthDate()
         self.gender = parser.GetPatientGender()
         self.physician = parser.GetPhysicianReferringName()
-        
-        
+
+
 class Acquisition(object):
 
     def __init__(self):
@@ -1832,7 +1832,8 @@ class Acquisition(object):
         self.time = parser.GetAcquisitionTime()
         self.protocol_name = parser.GetProtocolName()
         self.serie_number = parser.GetSerieNumber()
-        
+        self.sop_class_uid = parser.GetSOPClassUID()
+
 class Image(object):
 
     def __init__(self):
@@ -1841,11 +1842,11 @@ class Image(object):
     def SetParser(self, parser):
         self.level = parser.GetImageWindowLevel()
         self.window = parser.GetImageWindowWidth()
-        
+
         self.position = parser.GetImagePosition()
         if not (self.position):
             self.position = [1, 1, 1]
-            
+
         self.number = parser.GetImageNumber()
         self.spacing = spacing = parser.GetPixelSpacing()
         self.orientation_label = parser.GetImageOrientationLabel()
@@ -1855,18 +1856,18 @@ class Image(object):
         self.size = (parser.GetDimensionX(), parser.GetDimensionY())
         self.imagedata = parser.GetImageData()
         self.bits_allocad = parser._GetBitsAllocated()
-        
+
         if (parser.GetImageThickness()):
             try:
                 spacing.append(parser.GetImageThickness())
             except(AttributeError):
-                spacing = [1, 1, 1]                            
+                spacing = [1, 1, 1]
         else:
             try:
                 spacing.append(1.5)
             except(AttributeError):
                 spacing = [1, 1, 1]
-                
+
         spacing[0] = round(spacing[0],2)
         spacing[1] = round(spacing[1],2)
         spacing[2] = round(spacing[2],2)
