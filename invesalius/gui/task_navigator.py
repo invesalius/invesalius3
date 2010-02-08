@@ -21,11 +21,11 @@ import os
 import sys
 
 import wx
-#import wx.lib.hyperlink as hl
+import wx.lib.hyperlink as hl
 #import wx.lib.platebtn as pbtn
 #import wx.lib.pubsub as ps
 
-import constants as const
+#import constants as const
 #import gui.dialogs as dlg
 #import project as proj
 
@@ -58,9 +58,20 @@ class InnerTaskPanel(wx.Panel):
         self.__bind_events()
         self.__bind_wx_events()
 
+    def __init_gui(self):
+        link_export_picture = hl.HyperLinkCtrl(self, -1,
+                                            _("Testing..."))
+        link_export_picture.SetUnderlines(False, False, False)
+        link_export_picture.SetColours("BLACK", "BLACK", "BLACK")
+        link_export_picture.SetToolTip(tooltip)
+        link_export_picture.AutoBrowse(False)
+        link_export_picture.UpdateLink()
+        #link_export_picture.Bind(hl.EVT_HYPERLINK_LEFT,
+        #                         self.OnLinkExportPicture)
+
     def __bind_events(self):
         """
-        Bind pubsube events
+        Bind pubsub events
         """
         # Example: ps.Publisher().subscribe("Test")
         pass

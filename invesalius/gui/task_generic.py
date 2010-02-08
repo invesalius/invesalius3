@@ -50,7 +50,7 @@ class InnerTaskPanel(wx.Panel):
 
     def __bind_events(self):
         """
-        Bind pubsube events
+        Bind pubsub events
         """
         # Example: ps.Publisher().subscribe("Test")
         pass
