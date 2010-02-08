@@ -166,6 +166,7 @@ invesalius/gui/language_dialog.py -text
 invesalius/gui/task_exporter.py -text
 invesalius/gui/task_generic.py -text
 invesalius/gui/task_importer.py -text
+invesalius/gui/task_navigator.py -text
 invesalius/gui/task_slice.py -text
 invesalius/gui/task_surface.py -text
 invesalius/gui/task_tools.py -text
