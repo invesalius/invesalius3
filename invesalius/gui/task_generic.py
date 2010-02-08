@@ -20,7 +20,44 @@
 import wx
     
 class TaskPanel(wx.Panel):
+    """
+    This panel works as a "frame", drawing a white margin arround 
+    the panel that really matters (InnerTaskPanel).
+    """
     def __init__(self, parent):
-        wx.Panel.__init__(self, parent, pos=wx.Point(0, 50), size=wx.Size(256, 120))
-        self.SetBackgroundColour(wx.Colour(221, 221, 221, 255))
-    
+        # note: don't change this class!!!
+        wx.Panel.__init__(self, parent)
+
+        sizer = wx.BoxSizer(wx.HORIZONTAL)
+        sizer.Add(InnerTaskPanel(self), 1, wx.EXPAND | wx.GROW |
+                                 wx.BOTTOM | wx.RIGHT | wx.LEFT, 7)
+        sizer.Fit(self)
+
+        self.SetSizer(sizer)
+        self.Update()
+        self.SetAutoLayout(1)
+
+class InnerTaskPanel(wx.Panel):
+
+    def __init__(self, parent):
+        wx.Panel.__init__(self, parent)
+        self.SetBackgroundColour(wx.Colour(255,255,255))
+        self.SetAutoLayout(1)
+        
+        # Bind events
+        self.__bind_events()
+        self.__bind_wx_events()
+
+    def __bind_events(self):
+        """
+        Bind pubsube events
+        """
+        # Example: ps.Publisher().subscribe("Test")
+        pass
+
+    def __bind_wx_events(self):
+        """
+        Bind wx general events
+        """
+        # Example: self.Bind(wx.EVT_BUTTON, self.OnButton)
+        pass
