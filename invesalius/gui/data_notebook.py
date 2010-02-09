@@ -255,11 +255,9 @@ class MasksListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
     def OnEditLabel(self, evt):
         ps.Publisher().sendMessage('Change mask name', (evt.GetIndex(), evt.GetLabel()))
         evt.Skip()
-        
+
     def OnItemActivated(self, evt):
         self.ToggleItem(evt.m_itemIndex)
-
-
         
     def OnCheckItem(self, index, flag):
         if flag:
@@ -344,7 +342,8 @@ class MasksListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
                 new_dict[i-1] = old_dict[i]
         self.mask_list_index = new_dict
         self.DeleteItem(index)
-        
+
+#-------------------------------------------------
 class SurfacesListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
 
     def __init__(self, parent, ID=-1, pos=wx.DefaultPosition,
@@ -373,20 +372,24 @@ class SurfacesListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
                                  'Set surface colour')
         ps.Publisher().subscribe(self.OnCloseProject, 'Close project data')
 
+    def __bind_events_wx(self):
+        self.Bind(wx.EVT_LIST_ITEM_ACTIVATED, self.OnItemActivated)
+        self.Bind(wx.EVT_LIST_END_LABEL_EDIT, self.OnEditLabel)
+        self.Bind(wx.EVT_LIST_ITEM_SELECTED, self.OnItemSelected_)
+
     def OnCloseProject(self, pubsub_evt):
         self.DeleteAllItems()
         self.surface_list_index = {}
         self.surface_bmp_idx_to_name = {}
 
-    def __bind_events_wx(self):
-        self.Bind(wx.EVT_LIST_ITEM_ACTIVATED, self.OnItemActivated)
-        self.Bind(wx.EVT_LIST_END_LABEL_EDIT, self.OnEditLabel)
-        self.Bind(wx.EVT_LIST_ITEM_SELECTED, self.OnItemSelected)
-
-    def OnItemSelected(self, evt):
+    def OnItemSelected_(self, evt):
+        # Note: DON'T rename to OnItemSelected!!!
+        # Otherwise the parent's method will be overwritten and other
+        # things will stop working, e.g.: OnCheckItem
         last_surface_index = evt.m_itemIndex
         ps.Publisher().sendMessage('Change surface selected',
                                     last_surface_index)
+        evt.Skip()
 
     def __init_columns(self):
         
@@ -427,9 +430,11 @@ class SurfacesListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
     def OnItemActivated(self, evt):
         self.ToggleItem(evt.m_itemIndex)
         #ps.Publisher().sendMessage('Change surface selected',index)
+        evt.Skip()
+
         
     def OnCheckItem(self, index, flag):
-        ps.Publisher().sendMessage('Show surface', (index, flag))
+        ps.Publisher().sendMessage('Show surface', (index, flag)) 
 
     def AddSurface(self, pubsub_evt):
         
@@ -510,6 +515,7 @@ class SurfacesListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
         self.imagelist.Replace(image_index, image)
         self.Refresh()
 
+#-------------------------------------------------
 
 class MeasuresListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
     # TODO: Change edimixin to affect third column also
