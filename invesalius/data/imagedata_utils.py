@@ -75,10 +75,8 @@ def ResampleImage2D(imagedata, px, py,
     else:
         f = extent[1]
 
-
     factor_x = px/float(f+1)
     factor_y = py/float(f+1)
-
 
     resample = vtk.vtkImageResample()
     resample.SetInput(imagedata)
@@ -286,24 +284,29 @@ def CreateImageData(filelist, zspacing, xyspacing,size,
                          update_progress(reader,message))
             reader.Update()
 
+            if (use_dcmspacing):
+                spacing = xyspacing
+                spacing[2] = zspacing
+            else:
+                spacing = reader.GetOutput().GetSpacing()
+
+            tmp_image = vtk.vtkImageData()
+            tmp_image.DeepCopy(reader.GetOutput())
+            tmp_image.SetSpacing(spacing[0], spacing[1], zspacing)
+            tmp_image.Update()
+
             #Resample image in x,y dimension
-            slice_imagedata = ResampleImage2D(reader.GetOutput(), px, py, update_progress)
+            slice_imagedata = ResampleImage2D(tmp_image, px, py, update_progress)
             #Stack images in Z axes
             appender.AddInput(slice_imagedata)
             #appender.AddObserver("ProgressEvent", lambda obj,evt:update_progress(appender))
             appender.Update()
 
+        spacing = appender.GetOutput().GetSpacing()
+
         # The zpacing is a DicomGroup property, so we need to set it
         imagedata = vtk.vtkImageData()
         imagedata.DeepCopy(appender.GetOutput())
-        imagedata.Update()
-
-        if (use_dcmspacing):
-            spacing = xyspacing
-            spacing[2] = zspacing
-        else:
-            spacing = imagedata.GetSpacing()
-
         imagedata.SetSpacing(spacing[0], spacing[1], zspacing)
 
     imagedata.AddObserver("ProgressEvent", lambda obj,evt:
