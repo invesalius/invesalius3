@@ -161,10 +161,11 @@ def BuildEditedImage(imagedata, points):
 
     gauss = vtk.vtkImageGaussianSmooth()
     gauss.SetInput(imagedata)
-    gauss.SetRadiusFactor(0.8)
+    gauss.SetRadiusFactor(0.6)
     gauss.Update()
 
     return gauss.GetOutput()
+    #return imagedata
 
 
 def Export(imagedata, filename, bin=False):
@@ -295,6 +296,7 @@ def CreateImageData(filelist, zspacing, xyspacing,size,
         # The zpacing is a DicomGroup property, so we need to set it
         imagedata = vtk.vtkImageData()
         imagedata.DeepCopy(appender.GetOutput())
+        imagedata.Update()
 
         if (use_dcmspacing):
             spacing = xyspacing
