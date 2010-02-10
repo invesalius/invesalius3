@@ -447,11 +447,6 @@ class SurfacesListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
 
     def OnShowSingle(self, pubsub_evt):
         index, visibility = pubsub_evt.data
-        print "----------------------"
-        print "OnShowSingle"
-        print "index", index
-        print "visibility", visibility
-        print "----------------------"
         for key in self.surface_list_index.keys():
             if key != index:
                 self.SetItemImage(key, not visibility)
@@ -463,12 +458,6 @@ class SurfacesListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
 
     def OnShowMultiple(self, pubsub_evt):
         index_list, visibility = pubsub_evt.data
-        print "----------------------"
-        print "OnShowMultiple"
-        print "index", index_list
-        print "visibility", visibility
-        print "----------------------"
-
         for key in self.surface_list_index.keys():
             if key not in index_list:
                 self.SetItemImage(key, not visibility)
