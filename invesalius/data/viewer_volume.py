@@ -588,7 +588,6 @@ class Viewer(wx.Panel):
         self.picker.Pick(x, y, 0, self.ren)
         point_id = self.picker.GetPointId()
         self.seed_points.append(point_id)
-        self.AddPointReference(self.picker.GetPickPosition(), 5)
         self.interactor.Render()
 
 
