@@ -20,8 +20,24 @@
 import os
 import sys
 
+import serial
 import wx
 import wx.lib.hyperlink as hl
+import wx.lib.masked.numctrl
+import wx.lib.platebtn as pbtn
+import wx.lib.pubsub as ps
+
+import data.bases as db
+import data.co_registration as dcr
+
+IR1 = wx.NewId()
+IR2 = wx.NewId()
+IR3 = wx.NewId()
+PR1 = wx.NewId()
+PR2 = wx.NewId()
+PR3 = wx.NewId()
+Neuronavigate = wx.NewId()
+Corregistration = wx.NewId()
 
 class TaskPanel(wx.Panel):
     """
@@ -46,51 +62,341 @@ class TaskPanel(wx.Panel):
 class InnerTaskPanel(wx.Panel):
 
     def __init__(self, parent):
-        wx.Panel.__init__(self, parent)
-        self.SetBackgroundColour(wx.Colour(255,255,255))
+        wx.Panel.__init__(self, parent, size=wx.Size(320,300))
+        self.SetBackgroundColour(wx.Colour(221, 221, 221, 255))
         self.SetAutoLayout(1)
-        
-        # Build GUI
-        self.__init_gui()
-
-        # Bind events
         self.__bind_events()
-        self.__bind_wx_events()
 
-    def __init_gui(self):
-        """
-        Build widgets in current panel
-        """
-        # Create widgets to be inserted in this panel
-        link_test = hl.HyperLinkCtrl(self, -1, _("Testing..."))
-        link_test.SetUnderlines(False, False, False)
-        link_test.SetColours("BLACK", "BLACK", "BLACK")
-        link_test.AutoBrowse(False)
-        link_test.UpdateLink()
-        self.link_test = link_test
+        self.aux_img_ref1 = 0
+        self.aux_img_ref2 = 0
+        self.aux_img_ref3 = 0
+        self.aux_plh_ref1 = 1
+        self.aux_plh_ref2 = 1
+        self.aux_plh_ref3 = 1
+        self.Minv = None
+        self.q1 = None
+        self.N = None
+        self.q2 = None
+        self.a = 0, 0, 0
+        self.coord1a = (0, 0, 0)
+        self.coord2a = (0, 0, 0)
+        self.coord3a = (0, 0, 0)
+        self.coord1b = (0, 0, 0)
+        self.coord2b = (0, 0, 0)
+        self.coord3b = (0, 0, 0)
+        self.correg = None
+                
 
-        # Add line sizers into main sizer
-        sizer = wx.BoxSizer(wx.VERTICAL)
-        sizer.Add(link_test, 0, wx.GROW|wx.EXPAND)
-        self.SetSizer(sizer)
+        self.button_img_ref1 = wx.ToggleButton(self, IR1, label = 'IR', size = wx.Size(23,23))
+        self.button_img_ref1.Bind(wx.EVT_TOGGLEBUTTON, self.Img_Ref_ToggleButton1)
+        
+        self.button_img_ref2 = wx.ToggleButton(self, IR2, label = 'IR', size = wx.Size(23,23))
+        self.button_img_ref2.Bind(wx.EVT_TOGGLEBUTTON, self.Img_Ref_ToggleButton2)
+        
+        self.button_img_ref3 = wx.ToggleButton(self, IR3, label = 'IR', size = wx.Size(23,23))
+        self.button_img_ref3.Bind(wx.EVT_TOGGLEBUTTON, self.Img_Ref_ToggleButton3)
+
+        self.button_plh_ref1 = wx.Button(self, PR1, label = 'PR', size = wx.Size(23,23))
+        self.button_plh_ref2 = wx.Button(self, PR2, label = 'PR', size = wx.Size(23,23))
+        self.button_plh_ref3 = wx.Button(self, PR3, label = 'PR', size = wx.Size(23,23))
+        self.button_crg = wx.Button(self, Corregistration, label = 'Corregistrate')
+        self.Bind(wx.EVT_BUTTON, self.Buttons)
+                       
+        self.button_neuronavigate = wx.ToggleButton(self, Neuronavigate, "Neuronavigate")
+        self.button_neuronavigate.Bind(wx.EVT_TOGGLEBUTTON, self.Neuronavigate_ToggleButton)
+        
+        self.numCtrl1a = wx.lib.masked.numctrl.NumCtrl(
+            name='numCtrl1a', parent=self, integerWidth = 4, fractionWidth = 1)
+        self.numCtrl2a = wx.lib.masked.numctrl.NumCtrl(
+            name='numCtrl2a', parent=self, integerWidth = 4, fractionWidth = 1)
+        self.numCtrl3a = wx.lib.masked.numctrl.NumCtrl(
+            name='numCtrl3a', parent=self, integerWidth = 4, fractionWidth = 1)
+        self.numCtrl1b = wx.lib.masked.numctrl.NumCtrl(
+            name='numCtrl1b', parent=self, integerWidth = 4, fractionWidth = 1)
+        self.numCtrl2b = wx.lib.masked.numctrl.NumCtrl(
+            name='numCtrl2b', parent=self, integerWidth = 4, fractionWidth = 1)
+        self.numCtrl3b = wx.lib.masked.numctrl.NumCtrl(
+            name='numCtrl3b', parent=self, integerWidth = 4, fractionWidth = 1)
+        self.numCtrl1c = wx.lib.masked.numctrl.NumCtrl(
+            name='numCtrl1c', parent=self, integerWidth = 4, fractionWidth = 1)
+        self.numCtrl2c = wx.lib.masked.numctrl.NumCtrl(
+            name='numCtrl2c', parent=self, integerWidth = 4, fractionWidth = 1)
+        self.numCtrl3c = wx.lib.masked.numctrl.NumCtrl(
+            name='numCtrl3c', parent=self, integerWidth = 4, fractionWidth = 1)
+        self.numCtrl1d = wx.lib.masked.numctrl.NumCtrl(
+            name='numCtrl1d', parent=self, integerWidth = 4, fractionWidth = 1)
+        self.numCtrl2d = wx.lib.masked.numctrl.NumCtrl(
+            name='numCtrl2d', parent=self, integerWidth = 4, fractionWidth = 1)
+        self.numCtrl3d = wx.lib.masked.numctrl.NumCtrl(
+            name='numCtrl3d', parent=self, integerWidth = 4, fractionWidth = 1)
+        self.numCtrl1e = wx.lib.masked.numctrl.NumCtrl(
+            name='numCtrl1e', parent=self, integerWidth = 4, fractionWidth = 1)
+        self.numCtrl2e = wx.lib.masked.numctrl.NumCtrl(
+            name='numCtrl2e', parent=self, integerWidth = 4, fractionWidth = 1)
+        self.numCtrl3e = wx.lib.masked.numctrl.NumCtrl(
+            name='numCtrl3e', parent=self, integerWidth = 4, fractionWidth = 1)
+        self.numCtrl1f = wx.lib.masked.numctrl.NumCtrl(
+            name='numCtrl1f', parent=self, integerWidth = 4, fractionWidth = 1)
+        self.numCtrl2f = wx.lib.masked.numctrl.NumCtrl(
+            name='numCtrl2f', parent=self, integerWidth = 4, fractionWidth = 1)
+        self.numCtrl3f = wx.lib.masked.numctrl.NumCtrl(
+            name='numCtrl3f', parent=self, integerWidth = 4, fractionWidth = 1)
+
+        RefImg_sizer1 = wx.FlexGridSizer(rows=1, cols=4, hgap=5, vgap=5)
+        RefImg_sizer1.AddMany([ (self.button_img_ref1),
+                                (self.numCtrl1a),
+                                (self.numCtrl2a),
+                                (self.numCtrl3a)])
+        
+        RefImg_sizer2 = wx.FlexGridSizer(rows=1, cols=4, hgap=5, vgap=5)
+        RefImg_sizer2.AddMany([ (self.button_img_ref2),
+                                (self.numCtrl1b),
+                                (self.numCtrl2b),
+                                (self.numCtrl3b)])
+        
+        RefImg_sizer3 = wx.FlexGridSizer(rows=1, cols=4, hgap=5, vgap=5)
+        RefImg_sizer3.AddMany([ (self.button_img_ref3),
+                                (self.numCtrl1c),
+                                (self.numCtrl2c),
+                                (self.numCtrl3c)])
+        
+        RefPlh_sizer1 = wx.FlexGridSizer(rows=1, cols=4, hgap=5, vgap=5)
+        RefPlh_sizer1.AddMany([ (self.button_plh_ref1, 0, wx.GROW|wx.EXPAND),
+                                (self.numCtrl1d, wx.RIGHT),
+                                (self.numCtrl2d),
+                                (self.numCtrl3d, wx.LEFT)])
+        
+        RefPlh_sizer2 = wx.FlexGridSizer(rows=1, cols=4, hgap=5, vgap=5)
+        RefPlh_sizer2.AddMany([ (self.button_plh_ref2, 0, wx.GROW|wx.EXPAND),
+                                (self.numCtrl1e, 0, wx.RIGHT),
+                                (self.numCtrl2e),
+                                (self.numCtrl3e, 0, wx.LEFT)])
+        
+        RefPlh_sizer3 = wx.FlexGridSizer(rows=1, cols=4, hgap=5, vgap=5)
+        RefPlh_sizer3.AddMany([ (self.button_plh_ref3, 0, wx.GROW|wx.EXPAND),
+                                (self.numCtrl1f, wx.RIGHT),
+                                (self.numCtrl2f),
+                                (self.numCtrl3f, wx.LEFT)])
+        
+        RefPlh_sizer4 = wx.FlexGridSizer(rows=1, cols=2, hgap=5, vgap=5)
+        RefPlh_sizer4.AddMany([ (self.button_crg, wx.RIGHT),(self.button_neuronavigate, wx.LEFT) ])
+        
+        text = wx.StaticText(self, -1, 'Neuronavigator')
+        
+        Ref_sizer = wx.FlexGridSizer(rows=8, cols=1, hgap=5, vgap=5)
+        Ref_sizer.AddGrowableCol(0, 1)
+        Ref_sizer.AddGrowableRow(0, 1)
+        Ref_sizer.AddGrowableRow(1, 1)
+        Ref_sizer.AddGrowableRow(2, 1)
+        Ref_sizer.AddGrowableRow(3, 1)
+        Ref_sizer.AddGrowableRow(4, 1)
+        Ref_sizer.AddGrowableRow(5, 1)
+        Ref_sizer.AddGrowableRow(6, 1)
+        Ref_sizer.AddGrowableRow(7, 1)
+        Ref_sizer.SetFlexibleDirection(wx.BOTH)
+        Ref_sizer.AddMany([ (text, 0, wx.ALIGN_CENTER_HORIZONTAL),
+                            (RefImg_sizer1, 0, wx.ALIGN_CENTER_HORIZONTAL),
+                            (RefImg_sizer2, 0, wx.ALIGN_CENTER_HORIZONTAL),
+                            (RefImg_sizer3, 0, wx.ALIGN_CENTER_HORIZONTAL),
+                            (RefPlh_sizer1, 0, wx.ALIGN_CENTER_HORIZONTAL),
+                            (RefPlh_sizer2, 0, wx.ALIGN_CENTER_HORIZONTAL),
+                            (RefPlh_sizer3, 0, wx.ALIGN_CENTER_HORIZONTAL),
+                            (RefPlh_sizer4, 0, wx.ALIGN_CENTER_HORIZONTAL)])
+        
+        main_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        main_sizer.Add(Ref_sizer, 1, wx.ALIGN_CENTER_HORIZONTAL, 10)
+        self.sizer = main_sizer
+        self.SetSizer(main_sizer)
         self.Fit()
 
+        tooltip = wx.ToolTip("Pick the coordinates x, y, z in the image")
+        self.button_img_ref1.SetToolTip(tooltip)
+        tooltip = wx.ToolTip("Pick the coordinates x, y, z in the image")
+        self.button_img_ref2.SetToolTip(tooltip)
+        tooltip = wx.ToolTip("Pick the coordinates x, y, z in the image")
+        self.button_img_ref3.SetToolTip(tooltip)
+        tooltip = wx.ToolTip("Pick the coordinates x, y, z in the space")
+        self.button_plh_ref1.SetToolTip(tooltip)
+        tooltip = wx.ToolTip("Pick the coordinates x, y, z in the space")
+        self.button_plh_ref2.SetToolTip(tooltip)
+        tooltip = wx.ToolTip("Pick the coordinates x, y, z in the space")
+        self.button_plh_ref3.SetToolTip(tooltip)
+        tooltip = wx.ToolTip("X Coordinate")
+        self.numCtrl1a.SetToolTip(tooltip)
+        tooltip = wx.ToolTip("X Coordinate")
+        self.numCtrl1b.SetToolTip(tooltip)
+        tooltip = wx.ToolTip("X Coordinate")
+        self.numCtrl1c.SetToolTip(tooltip)
+        tooltip = wx.ToolTip("X Coordinate")
+        self.numCtrl1d.SetToolTip(tooltip)
+        tooltip = wx.ToolTip("X Coordinate")
+        self.numCtrl1e.SetToolTip(tooltip)
+        tooltip = wx.ToolTip("X Coordinate")
+        self.numCtrl1f.SetToolTip(tooltip)
+        tooltip = wx.ToolTip("Y Coordinate")
+        self.numCtrl2a.SetToolTip(tooltip)
+        tooltip = wx.ToolTip("Y Coordinate")
+        self.numCtrl2b.SetToolTip(tooltip)
+        tooltip = wx.ToolTip("Y Coordinate")
+        self.numCtrl2c.SetToolTip(tooltip)
+        tooltip = wx.ToolTip("Y Coordinate")
+        self.numCtrl2d.SetToolTip(tooltip)
+        tooltip = wx.ToolTip("Y Coordinate")
+        self.numCtrl2e.SetToolTip(tooltip)
+        tooltip = wx.ToolTip("Y Coordinate")
+        self.numCtrl2f.SetToolTip(tooltip)
+        tooltip = wx.ToolTip("Z Coordinate")
+        self.numCtrl3a.SetToolTip(tooltip)
+        tooltip = wx.ToolTip("Z Coordinate")
+        self.numCtrl3b.SetToolTip(tooltip)
+        tooltip = wx.ToolTip("Z Coordinate")
+        self.numCtrl3c.SetToolTip(tooltip)
+        tooltip = wx.ToolTip("Z Coordinate")
+        self.numCtrl3d.SetToolTip(tooltip)
+        tooltip = wx.ToolTip("Z Coordinate")
+        self.numCtrl3e.SetToolTip(tooltip)
+        tooltip = wx.ToolTip("Z Coordinate")
+        self.numCtrl3f.SetToolTip(tooltip)
+        tooltip = wx.ToolTip("Corregistration of the real position with the image position")
+        self.button_crg.SetToolTip(tooltip)
+        tooltip = wx.ToolTip("Neuronavigation")
+        self.button_neuronavigate.SetToolTip(tooltip)
+        
     def __bind_events(self):
-        """
-        Bind pubsub events
-        """
-        # Example: ps.Publisher().subscribe("Test")
-        pass
+        ps.Publisher().subscribe(self.__update_points_img, 'Update cross position')
+        ps.Publisher().subscribe(self.__update_points_plh, 'Update plh position')
+         
+    def __update_points_img(self, pubsub_evt):
+        x, y, z = pubsub_evt.data[1]
+        self.a = x, y, z
+        if self.aux_img_ref1 == 0: 
+            self.numCtrl1a.SetValue(x)
+            self.numCtrl2a.SetValue(y)
+            self.numCtrl3a.SetValue(z)
+        if self.aux_img_ref2 == 0:   
+            self.numCtrl1b.SetValue(x)
+            self.numCtrl2b.SetValue(y)
+            self.numCtrl3b.SetValue(z)
+        if self.aux_img_ref3 == 0:
+            self.numCtrl1c.SetValue(x)
+            self.numCtrl2c.SetValue(y)
+            self.numCtrl3c.SetValue(z)
 
-    def __bind_wx_events(self):
-        """
-        Bind wx general events
-        """
-        # Example: self.Bind(wx.EVT_BUTTON, self.OnButton)
-        self.link_test.Bind(hl.EVT_HYPERLINK_LEFT, self.OnTest)
+        
+    def __update_points_plh(self, pubsub_evt):
+        coord = pubsub_evt.data   
+        if self.aux_plh_ref1 == 0:    
+            self.numCtrl1d.SetValue(coord[0])
+            self.numCtrl2d.SetValue(coord[1])
+            self.numCtrl3d.SetValue(coord[2])
+            self.aux_plh_ref1 = 1
+        if self.aux_plh_ref2 == 0:    
+            self.numCtrl1e.SetValue(coord[0])
+            self.numCtrl2e.SetValue(coord[1])
+            self.numCtrl3e.SetValue(coord[2])
+            self.aux_plh_ref2 = 1
+        if self.aux_plh_ref3 == 0:
+            self.numCtrl1f.SetValue(coord[0])
+            self.numCtrl2f.SetValue(coord[1])
+            self.numCtrl3f.SetValue(coord[2])
+            self.aux_plh_ref3 = 1
+           
+    def Buttons(self, evt):
+        id = evt.GetId()
+        x, y, z = self.a
+        if id == PR1:
+            self.aux_plh_ref1 = 0
+            #self.coord1b = self.Coordinates()
+            self.coord1b = (18.0*20.83, 0.0*20.83, 2.0*6.67) 
+            coord = self.coord1b
+        elif id == PR2:
+            self.aux_plh_ref2 = 0
+            #self.coord2b = self.Coordinates()
+            self.coord2b = (24.0*20.83, 4.5*20.83, 0.0)
+            coord = self.coord2b
+        elif id == PR3:
+            self.aux_plh_ref3 = 0
+            #self.coord3b = self.Coordinates()
+            self.coord3b = (25.0*20.83, -4.5*20.83, 0.0)
+            coord = self.coord3b
+        elif id == Corregistration and self.aux_img_ref1 == 1 and self.aux_img_ref2 == 1 and self.aux_img_ref3 == 1:
+            print "Coordenadas Imagem: ", self.coord1a, self.coord2a, self.coord3a
+            print "Coordenadas Polhemus: ", self.coord1b, self.coord2b, self.coord3b
+            
+            M, self.q1, self.Minv = db.Bases(self.coord1a, self.coord2a, self.coord3a).Basecreation()
+            self.N, self.q2, Ninv = db.Bases(self.coord1b, self.coord2b, self.coord3b).Basecreation()
+                
+        if self.aux_plh_ref1 == 0 or self.aux_plh_ref2 == 0 or self.aux_plh_ref3 == 0:
+            ps.Publisher().sendMessage('Update plh position', coord)         
+   
+    def Coordinates(self):
+               
+        ser = serial.Serial(0)
+        ser.write("u")       
+        ser.write("P")
+        str = ser.readline()
+        str = str.replace("\r\n","")
+        str = str.replace("-"," -")
+        aostr = [s for s in str.split()]
+        #aoflt -> 0:letter 1:x 2:y 3:z
+        aoflt = [float(aostr[1]), float(aostr[2]), float(aostr[3]),
+                  float(aostr[4]), float(aostr[5]), float(aostr[6])]      
+        ser.close()
+        
+        #coord = (aoflt[0]*10.0, aoflt[1]*10.0, aoflt[2]*10.0)
+        #coord com conversao de cm para pixel (1 pixel = 0.487 mm para c:\dicom2)
+        #print "correcs: ", self.correcx, self.correcy, self.correcz
+        coord = (aoflt[0]*20.83, aoflt[1]*20.83, aoflt[2]*6.67)
+        return coord
     
-    def OnTest(self, event):
-        """
-        Describe what this method does
-        """
-        event.Skip()
+    def Img_Ref_ToggleButton1(self, evt):
+        id = evt.GetId()
+        flag1 = self.button_img_ref1.GetValue()
+        x, y, z = self.a
+        if flag1 == True:
+            self.coord1a = x, y, z
+            self.aux_img_ref1 = 1
+        elif flag1 == False:
+            self.aux_img_ref1 = 0
+            self.coord1a = (0, 0, 0)
+            self.numCtrl1a.SetValue(x)
+            self.numCtrl2a.SetValue(y)
+            self.numCtrl3a.SetValue(z)
+            
+    def Img_Ref_ToggleButton2(self, evt):
+        id = evt.GetId()
+        flag2 = self.button_img_ref2.GetValue()
+        x, y, z = self.a
+        if flag2 == True:
+            self.coord2a = x, y, z
+            self.aux_img_ref2 = 1
+        elif flag2 == False:
+            self.aux_img_ref2 = 0
+            self.coord2a = (0, 0, 0)
+            self.numCtrl1b.SetValue(x)
+            self.numCtrl2b.SetValue(y)
+            self.numCtrl3b.SetValue(z)
+            
+    def Img_Ref_ToggleButton3(self, evt):
+        id = evt.GetId()
+        flag3 = self.button_img_ref3.GetValue()
+        x, y, z = self.a
+        if flag3 == True:
+            self.coord3a = x, y, z
+            self.aux_img_ref3 = 1
+        elif flag3 == False:
+            self.aux_img_ref3 = 0
+            self.coord3a = (0, 0, 0)
+            self.numCtrl1c.SetValue(x)
+            self.numCtrl2c.SetValue(y)
+            self.numCtrl3c.SetValue(z)
+      
+    def Neuronavigate_ToggleButton(self, evt):
+        id = evt.GetId()
+        flag4 = self.button_neuronavigate.GetValue()
+        bases = self.Minv, self.N, self.q1, self.q2
+        if flag4 == True:
+            self.correg = dcr.Corregister(bases, flag4)
+        elif flag4 == False:
+            self.correg.stop()
+ 
