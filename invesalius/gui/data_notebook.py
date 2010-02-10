@@ -30,7 +30,7 @@ import wx.lib.pubsub as ps
 
 import gui.dialogs as dlg
 import gui.widgets.listctrl as listmix
-
+import utils as ul
 
 
 BTN_NEW, BTN_REMOVE, BTN_DUPLICATE = [wx.NewId() for i in xrange(3)]
@@ -201,12 +201,26 @@ class MasksListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
         # Delete key
         if (sys.platform == 'darwin') and (keycode == wx.WXK_BACK):
             selected = self.GetSelected()
+            self.__remove_items()
             for item in selected:
                 self.RemoveMask(item)
         elif (keycode == wx.WXK_DELETE):
             selected = self.GetSelected()
+            self.__remove_items()
             for item in selected:
                 self.RemoveMask(item)
+    
+
+    def __remove_items(self):
+        print "__remove_items - mask"
+        selected_items = self.GetSelected()
+        print selected_items
+        if selected_items:
+            for item in selected_items:
+                self.RemoveMask(item)
+            ps.Publisher().sendMessage('Remove masks', selected_items)
+
+
 
     def OnCloseProject(self, pubsub_evt):
         self.DeleteAllItems()
@@ -320,6 +334,7 @@ class MasksListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
         """
         selected = []
         for index in self.mask_list_index:
+            print 'index', index
             if self.IsSelected(index):
                 selected.append(index)
         # it is important to revert items order, so
@@ -348,7 +363,12 @@ class MasksListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
                     self.SetItemImage(key, 1)
                     ps.Publisher().sendMessage('Show mask', (key, 1))
 
-        self.DeleteItem(index)
+        # TODO: Understand why this is occuring and enhace code, so
+        # this excpet is not necessary
+        try:
+            self.DeleteItem(index)
+        except wx._core.PyAssertionError:
+            ul.debug("tried to remove inexistent index")
 
 #-------------------------------------------------
 class SurfacePage(wx.Panel):
@@ -522,13 +542,24 @@ class SurfacesListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
         # Delete key
         if (sys.platform == 'darwin') and (keycode == wx.WXK_BACK):
             selected = self.GetSelected()
-            for item in selected:
-                self.RemoveSurface(item)
-        elif (keycode == wx.WXK_DELETE):
-            selected = self.GetSelected()
+            self.__remove_items()
             for item in selected:
                 self.RemoveSurface(item)
 
+        elif (keycode == wx.WXK_DELETE):
+            selected = self.GetSelected()
+            self.__remove_items()
+            for item in selected:
+                self.RemoveSurface(item)
+
+    def __remove_items(self):
+        print "Remove items - surface"
+        selected_items = self.GetSelected()
+        print selected_items
+        if selected_items:
+            for item in selected_items:
+                self.RemoveSurface(item)
+            ps.Publisher().sendMessage('Remove surfaces', selected_items)
 
     def OnCloseProject(self, pubsub_evt):
         self.DeleteAllItems()
@@ -717,7 +748,11 @@ class SurfacesListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
             if i > index:
                 new_dict[i-1] = old_dict[i]
         self.surface_list_index = new_dict
-        self.DeleteItem(index)
+
+        try:
+            self.DeleteItem(index)
+        except wx._core.PyAssertionError:
+            ul.debug("tried to remove inexistent index")
 
 #-------------------------------------------------
 
