@@ -126,6 +126,10 @@ class SurfaceManager():
         ps.Publisher().subscribe(self.OnSeedSurface, "Create surface from seeds")
 
     def OnSeedSurface(self, pubsub_evt):
+        """
+        Create a new surface, based on the last selected surface,
+        using as reference seeds user add to surface of reference.
+        """
         points_id_list = pubsub_evt.data
         index = self.last_surface_index
         proj = prj.Project()
@@ -133,27 +137,42 @@ class SurfaceManager():
 
         new_polydata = pu.JoinSeedsParts(surface.polydata,
                                           points_id_list)
-        self.CreateSurfaceFromPolydata(new_polydata)
-        self.ShowActor(index, False)
+        index = self.CreateSurfaceFromPolydata(new_polydata)
+        ps.Publisher().sendMessage('Show single surface', (index, True))
+        #self.ShowActor(index, True)
+
 
     def OnSplitSurface(self, pubsub_evt):
+        """
+        Create n new surfaces, based on the last selected surface,
+        according to their connectivity.
+        """
         index = self.last_surface_index
         proj = prj.Project()
         surface = proj.surface_dict[index]
 
+        index_list = []
         new_polydata_list = pu.SplitDisconectedParts(surface.polydata)
         for polydata in new_polydata_list:
-            self.CreateSurfaceFromPolydata(polydata)
-        self.ShowActor(index, False)
+            index = self.CreateSurfaceFromPolydata(polydata)
+            index_list.append(index)
+            #self.ShowActor(index, True)
+
+        ps.Publisher().sendMessage('Show multiple surfaces', (index_list, True)) 
+        
 
     def OnLargestSurface(self, pubsub_evt):
+        """
+        Create a new surface, based on largest part of the last
+        selected surface.
+        """
         index = self.last_surface_index
         proj = prj.Project()
         surface = proj.surface_dict[index]
 
         new_polydata = pu.SelectLargestPart(surface.polydata)
-        self.CreateSurfaceFromPolydata(new_polydata)
-        self.ShowActor(index, False)
+        new_index = self.CreateSurfaceFromPolydata(new_polydata)
+        ps.Publisher().sendMessage('Show single surface', (new_index, True))
 
     def CreateSurfaceFromPolydata(self, polydata, overwrite=False):
 
@@ -207,6 +226,8 @@ class SurfaceManager():
                                         (surface.index, surface.name,
                                         surface.colour, surface.volume,
                                         surface.transparency))
+
+        return surface.index
 
 
     def OnCloseProject(self, pubsub_evt):
@@ -481,7 +502,6 @@ class SurfaceManager():
 
     def OnShowSurface(self, pubsub_evt):
         index, value = pubsub_evt.data
-        #print "OnShowSurface", index, value
         self.ShowActor(index, value)
 
     def ShowActor(self, index, value):

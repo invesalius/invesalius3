@@ -341,6 +341,11 @@ class MasksListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
             if i > index:
                 new_dict[i-1] = old_dict[i]
         self.mask_list_index = new_dict
+
+        if new_dict:
+            self.SetItemImage(0, 1)
+            ps.Publisher().sendMessage('Show mask', (0, 1))
+
         self.DeleteItem(index)
 
 #-------------------------------------------------
@@ -371,6 +376,10 @@ class SurfacesListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
         ps.Publisher().subscribe(self.EditSurfaceColour,
                                  'Set surface colour')
         ps.Publisher().subscribe(self.OnCloseProject, 'Close project data')
+
+
+        ps.Publisher().subscribe(self.OnShowSingle, 'Show single surface')
+        ps.Publisher().subscribe(self.OnShowMultiple, 'Show multiple surfaces') 
 
     def __bind_events_wx(self):
         self.Bind(wx.EVT_LIST_ITEM_ACTIVATED, self.OnItemActivated)
@@ -435,6 +444,40 @@ class SurfacesListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
         
     def OnCheckItem(self, index, flag):
         ps.Publisher().sendMessage('Show surface', (index, flag)) 
+
+    def OnShowSingle(self, pubsub_evt):
+        index, visibility = pubsub_evt.data
+        print "----------------------"
+        print "OnShowSingle"
+        print "index", index
+        print "visibility", visibility
+        print "----------------------"
+        for key in self.surface_list_index.keys():
+            if key != index:
+                self.SetItemImage(key, not visibility)
+                ps.Publisher().sendMessage('Show surface',
+                                            (key, not visibility)) 
+        self.SetItemImage(index, visibility)
+        ps.Publisher().sendMessage('Show surface',
+                                   (index, visibility))
+
+    def OnShowMultiple(self, pubsub_evt):
+        index_list, visibility = pubsub_evt.data
+        print "----------------------"
+        print "OnShowMultiple"
+        print "index", index_list
+        print "visibility", visibility
+        print "----------------------"
+
+        for key in self.surface_list_index.keys():
+            if key not in index_list:
+                self.SetItemImage(key, not visibility)
+                ps.Publisher().sendMessage('Show surface',
+                                            (key, not visibility)) 
+        for index in index_list:
+            self.SetItemImage(index, visibility)
+            ps.Publisher().sendMessage('Show surface',
+                                       (index, visibility))
 
     def AddSurface(self, pubsub_evt):
         

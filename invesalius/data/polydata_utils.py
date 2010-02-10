@@ -173,7 +173,9 @@ def SplitDisconectedParts(polydata):
     polydata_collection = []
 
     # Update progress value in GUI
-    UpdateProgress = vu.ShowProgress(nregions - 1)
+    progress = nregions -1
+    if progress:
+        UpdateProgress = vu.ShowProgress(progress)
 
     for region in xrange(nregions):
         conn.InitializeSpecifiedRegionList()
@@ -185,6 +187,7 @@ def SplitDisconectedParts(polydata):
         p.Update()
 
         polydata_collection.append(p)
-        UpdateProgress(region, _("Splitting disconected parts"))
+        if progress:
+            UpdateProgress(region, _("Splitting disconected parts"))
 
     return polydata_collection
