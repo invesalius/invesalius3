@@ -86,6 +86,8 @@ class Viewer(wx.Panel):
         self.picker = vtk.vtkPointPicker()
         interactor.SetPicker(self.picker)
         self.seed_points = []
+
+        self.points_reference = []
         
 
     def __bind_events(self):
@@ -147,7 +149,6 @@ class Viewer(wx.Panel):
     def OnEndSeed(self, pubsub_evt):
         ps.Publisher().sendMessage("Create surface from seeds",
                                     self.seed_points) 
- 
 
     def OnExportPicture(self, pubsub_evt):
         ps.Publisher().sendMessage('Begin busy cursor')
@@ -212,6 +213,43 @@ class Viewer(wx.Panel):
         if self.on_wl:
             self.text.Show()
             self.interactor.Render()
+
+    def AddPointReference(self, position, radius=1, colour=(1, 0, 0)):
+        """
+        Add a point representation in the given x,y,z position with a optional
+        radius and colour.
+        """
+        point = vtk.vtkSphereSource()
+        point.SetCenter(position)
+        point.SetRadius(radius)
+
+        mapper = vtk.vtkPolyDataMapper()
+        mapper.SetInput(point.GetOutput())
+
+        p = vtk.vtkProperty()
+        p.SetColor(colour)
+
+        actor = vtk.vtkActor()
+        actor.SetMapper(mapper)
+        actor.SetProperty(p)
+        actor.PickableOff()
+
+        self.ren.AddActor(actor)
+
+        self.points_reference.append(actor)
+
+    def RemoveAllPointsReference(self):
+        for actor in self.points_reference:
+            self.ren.RemoveActor(actor)
+        self.points_reference = []
+
+    def RemovePointReference(self, point):
+        """
+        Remove the point reference. The point argument is the position that is
+        added.
+        """
+        actor = self.points_reference.pop(point)
+        self.ren.RemoveActor(actor)
 
     def __bind_events_wx(self):
         #self.Bind(wx.EVT_SIZE, self.OnSize)
@@ -550,6 +588,9 @@ class Viewer(wx.Panel):
         self.picker.Pick(x, y, 0, self.ren)
         point_id = self.picker.GetPointId()
         self.seed_points.append(point_id)
+        self.AddPointReference(self.picker.GetPickPosition(), 5)
+        self.interactor.Render()
+
 
 class SlicePlane:
     def __init__(self):
