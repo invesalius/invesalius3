@@ -684,6 +684,53 @@ class Viewer(wx.Panel):
         self.ScrollSlice(coord)
         self.interactor.Render()
 
+    def coordinate_co_register(self, pubsub_evt):
+        # Find position from the base changes
+        x, y, z = pubsub_evt.data
+        coord_cross = x, y, z
+
+        # First we fix the position origin, based on vtkActor bounds
+        bounds = self.actor.GetBounds()
+        bound_xi, bound_xf, bound_yi, bound_yf, bound_zi, bound_zf = bounds
+        x = float(x - bound_xi)
+        y = float(y - bound_yi)
+        z = float(z - bound_zi)
+
+        # Then we fix the porpotion, based on vtkImageData spacing
+        spacing_x, spacing_y, spacing_z = self.imagedata.GetSpacing()
+        x = x/spacing_x
+        y = y/spacing_y
+        z = z/spacing_z
+
+        # Based on the current orientation, we define 3D position
+        coordinates = {"SAGITAL": [self.slice_number, y, z],
+                       "CORONAL": [x, self.slice_number, z],
+                       "AXIAL": [x, y, self.slice_number]}
+        correg = [int(correg) for correg in coordinates[self.orientation]]
+
+        # According to vtkImageData extent, we limit min and max value
+        # If this is not done, a VTK Error occurs when mouse is pressed outside
+        # vtkImageData extent
+        extent = self.imagedata.GetWholeExtent()
+        extent_min = extent[0], extent[2], extent[4]
+        extent_max = extent[1], extent[3], extent[5]
+        for index in xrange(3):
+            if correg[index] > extent_max[index]:
+                correg[index] = extent_max[index]
+            elif correg[index] < extent_min[index]:
+                correg[index] = extent_min[index]
+                
+        
+        ps.Publisher().sendMessage('Update cross position',
+                                   (self.orientation, coord_cross))
+        ps.Publisher().sendMessage(('Set scroll position', 'SAGITAL'),
+                                   correg[0])
+        ps.Publisher().sendMessage(('Set scroll position', 'CORONAL'),
+                                   correg[1])
+        ps.Publisher().sendMessage(('Set scroll position', 'AXIAL'),
+                                   correg[2])
+
+
     def ScrollSlice(self, coord):
         if self.orientation == "AXIAL":
             ps.Publisher().sendMessage(('Set scroll position', 'SAGITAL'),
@@ -815,6 +862,8 @@ class Viewer(wx.Panel):
                                   self.orientation))
         ps.Publisher().subscribe(self.__update_cross_position,
                                 'Update cross position')
+        ps.Publisher().subscribe(self.coordinate_co_register,
+                                 'Co-registered Points')
         ###
         ps.Publisher().subscribe(self.ChangeBrushSize,
                                  'Set edition brush size')
