@@ -137,6 +137,7 @@ invesalius/.svnignore -text
 invesalius/constants.py -text
 invesalius/control.py -text
 invesalius/data/__init__.py -text
+invesalius/data/bases.py -text
 invesalius/data/cursor_actors.py -text
 invesalius/data/editor.py -text
 invesalius/data/imagedata_utils.py -text
