@@ -34,7 +34,7 @@ class SliceMenu(wx.Menu):
         submenu_wl = wx.Menu()
 
         #Window and level from DICOM
-        new_id = wx.NewId()
+        new_id = self.id_wl_first = wx.NewId()
         wl_item = wx.MenuItem(submenu_wl, new_id,\
                             _('Default'), kind=wx.ITEM_RADIO)
         submenu_wl.AppendItem(wl_item)
@@ -71,7 +71,7 @@ class SliceMenu(wx.Menu):
 
         #------------ Sub menu of the pseudo colors ----------------
         submenu_pseudo_colours = wx.Menu()
-        new_id = wx.NewId()
+        new_id = self.id_pseudo_first = wx.NewId()
         color_item = wx.MenuItem(submenu_pseudo_colours, new_id,\
                             _("Default "), kind=wx.ITEM_RADIO)
         submenu_pseudo_colours.AppendItem(color_item)
@@ -84,7 +84,8 @@ class SliceMenu(wx.Menu):
                                     name, kind=wx.ITEM_RADIO)
                 submenu_pseudo_colours.AppendItem(color_item)
                 self.ID_TO_TOOL_ITEM[new_id] = color_item
-
+        
+        flag_tiling = False
         #------------ Sub menu of the image tiling ---------------
         submenu_image_tiling = wx.Menu()
         for name in sorted(const.IMAGE_TILING):
@@ -93,8 +94,11 @@ class SliceMenu(wx.Menu):
                                 name, kind=wx.ITEM_RADIO)
             submenu_image_tiling.AppendItem(image_tiling_item)
             self.ID_TO_TOOL_ITEM[new_id] = image_tiling_item
-
-
+            
+            #Save first id item
+            if not(flag_tiling):
+                self.id_tiling_first = new_id
+                flag_tiling = True
 
         # Add sub itens in the menu
         self.AppendMenu(-1, _("Window Width and Level"), submenu_wl)
@@ -113,7 +117,19 @@ class SliceMenu(wx.Menu):
 
     def __bind_events(self):
         ps.Publisher().subscribe(self.CheckWindowLevelOther, 'Check window and level other')
-
+        ps.Publisher().subscribe(self.FirstItemSelect, 'Select first item from slice menu')
+    
+    def FirstItemSelect(self, pusub_evt):
+        
+        item = self.ID_TO_TOOL_ITEM[self.id_wl_first]
+        item.Check(1)
+        
+        item = self.ID_TO_TOOL_ITEM[self.id_pseudo_first]
+        item.Check(1)
+    
+        item = self.ID_TO_TOOL_ITEM[self.id_tiling_first]
+        item.Check(1)    
+        
     def CheckWindowLevelOther(self, pubsub_evt):
         item = self.ID_TO_TOOL_ITEM[self.other_wl_id]
         item.Check()

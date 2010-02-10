@@ -2,11 +2,10 @@ import ConfigParser
 import os
 from threading import Thread
 import time
-import wx.lib.pubsub as ps
-
-from utils import Singleton
 
 import wx.lib.pubsub as ps
+
+from utils import Singleton, debug
 
 class Session(object):
     # Only one session will be initialized per time. Therefore, we use
@@ -14,12 +13,10 @@ class Session(object):
     __metaclass__= Singleton
 
     def __init__(self):
-        # ?
         self.temp_item = False
 
         ws = self.ws = WriteSession(self)
         ws.start()
-
         ps.Publisher().subscribe(self.StopRecording, "Stop Config Recording")
 
     def CreateItens(self):
@@ -46,8 +43,7 @@ class Session(object):
         self.language = "" # "pt_BR", "es"
 
         # Recent projects list
-        self.recent_projects = []
-
+        self.recent_projects = [(const.SAMPLE_DIR, "Cranium.inv3")]
         self.last_dicom_folder = ''
 
         self.CreateSessionFile()
@@ -58,15 +54,15 @@ class Session(object):
 
     def CloseProject(self):
         import constants as const
-        print "-- CloseProject"
+        debug("Session.CloseProject")
         self.project_path = ()
         self.project_status = const.PROJ_CLOSE
-        self.mode = const.MODE_RP
+        #self.mode = const.MODE_RP
         self.temp_item = False
 
     def SaveProject(self, path=()):
         import constants as const
-        print "-- SaveProject"
+        debug("Session.SaveProject")
         self.project_status = const.PROJ_OPEN
         if path:
             self.project_path = path
@@ -76,13 +72,13 @@ class Session(object):
 
     def ChangeProject(self):
         import constants as const
-        print "-- ChangeProject"
+        debug("Session.ChangeProject")
         self.project_status = const.PROJ_CHANGE
 
     def CreateProject(self, filename):
         import constants as const
+        debug("Session.CreateProject")
         ps.Publisher().sendMessage('Begin busy cursor')
-        print "-- CreateProject"
         # Set session info
         self.project_path = (self.tempdir, filename)
         self.project_status = const.PROJ_NEW
@@ -91,7 +87,7 @@ class Session(object):
 
     def OpenProject(self, filepath):
         import constants as const
-        print "-- OpenProject"
+        debug("Session.OpenProject")
         # Add item to recent projects list
         item = (path, file) = os.path.split(filepath)
         self.__add_to_list(item)
@@ -215,7 +211,10 @@ class WriteSession(Thread):
     def run(self):
       while self.runing:
         time.sleep(10)
-        self.Write()
+        try:
+            self.Write()
+        except AttributeError:
+            pass
 
     def Stop(self):
         self.runing = 0

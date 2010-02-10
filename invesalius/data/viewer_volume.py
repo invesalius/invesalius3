@@ -25,10 +25,10 @@ from vtk.wx.wxVTKRenderWindowInteractor import wxVTKRenderWindowInteractor
 import wx.lib.pubsub as ps
 
 import constants as const
-import project as prj
 import data.vtk_utils as vtku
-from gui.widgets.clut_raycasting import CLUTRaycastingWidget
+import project as prj
 import style as st
+import utils
 
 class Viewer(wx.Panel):
     def __init__(self, parent):
@@ -72,6 +72,9 @@ class Viewer(wx.Panel):
         self.text.SetValue("")
         self.ren.AddActor(self.text.actor)
 
+
+        self.slice_plane = None
+
         self.view_angle = None
 
         self.__bind_events()
@@ -79,6 +82,11 @@ class Viewer(wx.Panel):
 
         self.mouse_pressed = 0
         self.on_wl = False
+
+        self.picker = vtk.vtkPointPicker()
+        interactor.SetPicker(self.picker)
+        self.seed_points = []
+        
 
     def __bind_events(self):
         ps.Publisher().subscribe(self.LoadActor,
@@ -123,6 +131,78 @@ class Viewer(wx.Panel):
 
         ps.Publisher().subscribe(self.OnShowText,
                                  'Show text actors on viewers')
+        ps.Publisher().subscribe(self.OnCloseProject, 'Close project data')
+
+        ps.Publisher().subscribe(self.RemoveAllActor, 'Remove all volume actors')
+        
+        ps.Publisher().subscribe(self.OnExportPicture,'Export picture to file')
+
+        ps.Publisher().subscribe(self.OnStartSeed,'Create surface by seeding - start')
+        ps.Publisher().subscribe(self.OnEndSeed,'Create surface by seeding - end')
+
+    def OnStartSeed(self, pubsub_evt):
+        index = pubsub_evt.data
+        self.seed_points = []
+    
+    def OnEndSeed(self, pubsub_evt):
+        ps.Publisher().sendMessage("Create surface from seeds",
+                                    self.seed_points) 
+ 
+
+    def OnExportPicture(self, pubsub_evt):
+        ps.Publisher().sendMessage('Begin busy cursor')
+        id, filename, filetype = pubsub_evt.data
+        
+        if id == const.VOLUME:
+            if filetype == const.FILETYPE_POV:
+                renwin = self.interactor.GetRenderWindow()
+                image = vtk.vtkWindowToImageFilter()
+                image.SetInput(renwin)
+                writer = vtk.vtkPOVExporter()
+                writer.SetFileName(filename)
+                writer.SetRenderWindow(renwin)
+                writer.Write()
+            else:
+                #Use tiling to generate a large rendering.
+                image = vtk.vtkRenderLargeImage()
+                image.SetInput(self.ren)
+                image.SetMagnification(1)
+
+                image = image.GetOutput()
+
+
+                # write image file
+                if (filetype == const.FILETYPE_BMP):
+                    writer = vtk.vtkBMPWriter()
+                elif (filetype == const.FILETYPE_JPG):
+                    writer =  vtk.vtkJPEGWriter()
+                elif (filetype == const.FILETYPE_PNG):
+                    writer = vtk.vtkPNGWriter()
+                elif (filetype == const.FILETYPE_PS):
+                    writer = vtk.vtkPostScriptWriter()
+                elif (filetype == const.FILETYPE_TIF):
+                    writer = vtk.vtkTIFFWriter()
+                    filename = "%s.tif"%filename.strip(".tif")
+                
+                writer.SetInput(image)
+                writer.SetFileName(filename)
+                writer.Write()
+        ps.Publisher().sendMessage('End busy cursor')
+
+
+ 
+    def OnCloseProject(self, pubsub_evt):
+        if self.raycasting_volume:
+            self.raycasting_volume = False
+            
+        if  self.slice_plane:
+            self.slice_plane.Disable()
+            self.slice_plane.DeletePlanes()
+            del self.slice_plane
+            ps.Publisher().sendMessage('Uncheck image plane menu')
+            self.mouse_pressed = 0
+            self.on_wl = False
+            self.slice_plane = 0
 
     def OnHideText(self, pubsub_evt):
         self.text.Hide()
@@ -165,6 +245,10 @@ class Viewer(wx.Panel):
                     },
               const.STATE_DEFAULT:
                     {
+                    },
+              const.VOLUME_STATE_SEED:
+                    {
+                    "LeftButtonPressEvent": self.OnInsertSeed
                     }
               }
 
@@ -189,7 +273,6 @@ class Viewer(wx.Panel):
 
             # Check each event available for each mode
             for event in action[state]:
-                print event 
                 # Bind event
                 style.AddObserver(event,action[state][event])
 
@@ -354,14 +437,18 @@ class Viewer(wx.Panel):
         self.interactor.Render()
 
     def RemoveActor(self, pubsub_evt):
-        print "RemoveActor"
+        utils.debug("RemoveActor")
         actor = pubsub_evt.data
-
         ren = self.ren
         ren.RemoveActor(actor)
-
         self.interactor.Render()
+        
+    def RemoveAllActor(self, pubsub_evt):
+        utils.debug("RemoveAllActor")
+        self.ren.RemoveAllProps()
+        ps.Publisher().sendMessage('Render volume viewer')
 
+        
     def LoadSlicePlane(self, pubsub_evt):
         self.slice_plane = SlicePlane()
 
@@ -414,7 +501,6 @@ class Viewer(wx.Panel):
         self.interactor.Render()
 
     def ShowOrientationCube(self):
-        print "ORIENTATION CUBE!"
         cube = vtk.vtkAnnotatedCubeActor()
         cube.GetXMinusFaceProperty().SetColor(1,0,0)
         cube.GetXPlusFaceProperty().SetColor(1,0,0)
@@ -458,6 +544,12 @@ class Viewer(wx.Panel):
     def AppendActor(self, evt_pubsub=None):
         self.ren.AddActor(evt_pubsub.data)
 
+    def OnInsertSeed(self, obj, evt):
+        x,y = self.interactor.GetEventPosition()
+        #x,y = obj.GetLastEventPosition()
+        self.picker.Pick(x, y, 0, self.ren)
+        point_id = self.picker.GetPointId()
+        self.seed_points.append(point_id)
 
 class SlicePlane:
     def __init__(self):
@@ -601,7 +693,6 @@ class SlicePlane:
                     a.SetBackfaceCulling(0)
                     c = self.plane_x.GetTexture()
                     c.SetRestrictPowerOf2ImageSmaller(1)
-                    #print dir(a)
 
             elif(self.original_orientation == const.SAGITAL):
                 if(label == "Axial"):
@@ -701,12 +792,9 @@ class SlicePlane:
             self.plane_z.SetPlaneOrientationToZAxes()
             self.plane_z.SetSliceIndex(number)
 
-    def PointId(self, evt, obj):
-        #TODO: add in the code
-        #   picker = vtk.vtkPointPicker()
-        #   interactor.SetPicker(picker)
-        #   interactor.AddObserver("left...", self.PointId)
-        x,y = evt.GetLastEventPosition()
-        self.picker.Pick(x, y, 0, self.ren1)
-        point_id = self.picker.GetPointId()
+    def DeletePlanes(self):
+        del self.plane_x
+        del self.plane_y
+        del self.plane_z 
+    
 

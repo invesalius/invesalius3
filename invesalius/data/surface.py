@@ -20,6 +20,7 @@
 import multiprocessing
 import os
 import plistlib
+import random
 import sys
 import tempfile
 
@@ -39,18 +40,22 @@ class Surface():
     Represent both vtkPolyData and associated properties.
     """
     general_index = -1
-    def __init__(self, index=None):
+    def __init__(self, index=None, name=""):
         Surface.general_index += 1
         if index is None:
             self.index = Surface.general_index
         else:
             self.index = index
+            Surface.general_index -= 1
         self.polydata = ''
         self.colour = ''
         self.transparency = const.SURFACE_TRANSPARENCY
         self.volume = 0
         self.is_shown = 1
-        self.name = const.SURFACE_NAME_PATTERN %(self.index+1)
+        if not name:
+            self.name = const.SURFACE_NAME_PATTERN %(self.index+1)
+        else:
+            self.name = name
 
     def SavePlist(self, filename):
         surface = {}
@@ -113,13 +118,120 @@ class SurfaceManager():
         ps.Publisher().subscribe(self.OnExportSurface,'Export surface to file')
         ps.Publisher().subscribe(self.OnLoadSurfaceDict, 'Load surface dict')
         ps.Publisher().subscribe(self.OnCloseProject, 'Close project data')
+        ps.Publisher().subscribe(self.OnSelectSurface, 'Change surface selected')
+        #----
+        ps.Publisher().subscribe(self.OnSplitSurface, 'Split surface')
+        ps.Publisher().subscribe(self.OnLargestSurface,
+                                'Create surface from largest region')
+        ps.Publisher().subscribe(self.OnSeedSurface, "Create surface from seeds")
+
+    def OnSeedSurface(self, pubsub_evt):
+        points_id_list = pubsub_evt.data
+        index = self.last_surface_index
+        proj = prj.Project()
+        surface = proj.surface_dict[index]
+
+        new_polydata = pu.JoinSeedsParts(surface.polydata,
+                                          points_id_list)
+        self.CreateSurfaceFromPolydata(new_polydata)
+        self.ShowActor(index, False)
+
+    def OnSplitSurface(self, pubsub_evt):
+        index = self.last_surface_index
+        proj = prj.Project()
+        surface = proj.surface_dict[index]
+
+        new_polydata_list = pu.SplitDisconectedParts(surface.polydata)
+        for polydata in new_polydata_list:
+            self.CreateSurfaceFromPolydata(polydata)
+        self.ShowActor(index, False)
+
+    def OnLargestSurface(self, pubsub_evt):
+        index = self.last_surface_index
+        proj = prj.Project()
+        surface = proj.surface_dict[index]
+
+        new_polydata = pu.SelectLargestPart(surface.polydata)
+        self.CreateSurfaceFromPolydata(new_polydata)
+        self.ShowActor(index, False)
+
+    def CreateSurfaceFromPolydata(self, polydata, overwrite=False):
+
+        normals = vtk.vtkPolyDataNormals()
+        normals.SetInput(polydata)
+        normals.SetFeatureAngle(80)
+        normals.AutoOrientNormalsOn()
+
+        mapper = vtk.vtkPolyDataMapper()
+        mapper.SetInput(normals.GetOutput())
+        mapper.ScalarVisibilityOff()
+
+        actor = vtk.vtkActor()
+        actor.SetMapper(mapper)
+
+        if overwrite:
+            surface = Surface(index = self.last_surface_index)
+        else:
+            surface = Surface()
+
+        surface.colour = random.choice(const.SURFACE_COLOUR)
+        surface.polydata = polydata
+
+        # Set actor colour and transparency
+        actor.GetProperty().SetColor(surface.colour)
+        actor.GetProperty().SetOpacity(1-surface.transparency)
+        self.actors_dict[surface.index] = actor
+
+        # Append surface into Project.surface_dict
+        proj = prj.Project()
+        if overwrite:
+            proj.ChangeSurface(surface)
+        else:
+            index = proj.AddSurface(surface)
+            surface.index = index
+            self.last_surface_index = index
+
+        session = ses.Session()
+        session.ChangeProject()
+
+        # The following lines have to be here, otherwise all volumes disappear
+        measured_polydata = vtk.vtkMassProperties()
+        measured_polydata.SetInput(polydata)
+        volume =  measured_polydata.GetVolume()
+        surface.volume = volume
+        self.last_surface_index = surface.index
+
+        ps.Publisher().sendMessage('Load surface actor into viewer', actor)
+
+        ps.Publisher().sendMessage('Update surface info in GUI',
+                                        (surface.index, surface.name,
+                                        surface.colour, surface.volume,
+                                        surface.transparency))
+
 
     def OnCloseProject(self, pubsub_evt):
         self.CloseProject()
 
     def CloseProject(self):
+        for index in self.actors_dict:
+            ps.Publisher().sendMessage('Remove surface actor from viewer', self.actors_dict[index])
         del self.actors_dict
         self.actors_dict = {}
+
+    def OnSelectSurface(self, pubsub_evt):
+        index = pubsub_evt.data
+        #self.last_surface_index = index
+        # self.actors_dict.
+        proj = prj.Project()
+        surface = proj.surface_dict[index]
+
+        ps.Publisher().sendMessage('Update surface info in GUI',
+                                    (surface.index, surface.name,
+                                    surface.colour, surface.volume,
+                                    surface.transparency))
+        self.last_surface_index = index
+        self.ShowActor(index, True)
+
 
 
     def OnLoadSurfaceDict(self, pubsub_evt):
@@ -168,17 +280,30 @@ class SurfaceManager():
                                         surface.colour, surface.volume,
                                         surface.transparency))
 
+    ####
+    #(mask_index, surface_name, quality, fill_holes, keep_largest)
+
     def AddNewActor(self, pubsub_evt):
         """
         Create surface actor, save into project and send it to viewer.
         """
-        imagedata, colour, [min_value, max_value], \
-                    edited_points, overwrite = pubsub_evt.data
+        surface_data = pubsub_evt.data
 
+        if len(surface_data) == 5:
+            imagedata, colour, [min_value, max_value], \
+            edited_points, overwrite = pubsub_evt.data
+            quality=_('Optimal *')
+            surface_name = ""
+            fill_holes = True
+            keep_largest = False
+        else:
+            imagedata, colour, [min_value, max_value],\
+            edited_points, overwrite, surface_name,\
+            quality, fill_holes, keep_largest =\
+            pubsub_evt.data
 
-        print "---------------- OVERWRITE:",overwrite
-        quality=_('Optimal *')
         mode = 'CONTOUR' # 'GRAYSCALE'
+
         ps.Publisher().sendMessage('Begin busy cursor')
         imagedata_tmp = None
         if (edited_points):
@@ -201,11 +326,15 @@ class SurfaceManager():
             pipeline_size += 1
         if (smooth_iterations and smooth_relaxation_factor):
             pipeline_size += 1
+        if fill_holes:
+            pipeline_size += 1
+        if keep_largest:
+            pipeline_size += 1
 
         # Update progress value in GUI
         UpdateProgress = vu.ShowProgress(pipeline_size)
         UpdateProgress(0, _("Generating 3D surface..."))
-        
+
         filename_img = tempfile.mktemp()
 
         writer = vtk.vtkXMLImageDataWriter()
@@ -218,7 +347,7 @@ class SurfaceManager():
         pipe_in, pipe_out = multiprocessing.Pipe()
         sp = surface_process.SurfaceProcess(pipe_in, filename_img, mode, min_value, max_value,
                  decimate_reduction, smooth_relaxation_factor,
-                 smooth_iterations, language)
+                 smooth_iterations, language, fill_holes, keep_largest)
         sp.start()
 
         while 1:
@@ -264,31 +393,27 @@ class SurfaceManager():
         if overwrite:
             surface = Surface(index = self.last_surface_index)
         else:
-            surface = Surface()
+            surface = Surface(name=surface_name)
         surface.colour = colour
         surface.polydata = polydata
-
 
         # Set actor colour and transparency
         actor.GetProperty().SetColor(colour)
         actor.GetProperty().SetOpacity(1-surface.transparency)
 
         # Remove temporary files
-        if sys.platform == "win32":
-            try:
-                os.remove(filename_img)
-                os.remove(filename_polydata)
-            except (WindowsError):
-                print "Error while removing surface temporary file"
-        elif sys.platform == 'linux2':
-            try:
-                os.remove(filename_img)
-                os.remove(filename_polydata)
-            except (OSError):
-                print "Error while removing surface temporary file"
-        else:
-            os.remove(filename_img)
-            os.remove(filename_polydata)
+        #if sys.platform == "win32":
+        #    try:
+        #        os.remove(filename_img)
+        #        os.remove(filename_polydata)
+        #    except (WindowsError):
+        #        print "Error while removing surface temporary file"
+        #else: # sys.platform == "linux2" or sys.platform == "darwin"
+        #    try:
+        #        os.remove(filename_img)
+        #        os.remove(filename_polydata)
+        #    except (OSError):
+        #        print "Error while removing surface temporary file"
 
         # Append surface into Project.surface_dict
         proj = prj.Project()
@@ -306,6 +431,8 @@ class SurfaceManager():
 
         # The following lines have to be here, otherwise all volumes disappear
         measured_polydata = vtk.vtkMassProperties()
+        measured_polydata.AddObserver("ProgressEvent", lambda obj,evt:
+                            UpdateProgress(obj, _("Generating 3D surface...")))
         measured_polydata.SetInput(polydata)
         volume =  measured_polydata.GetVolume()
         surface.volume = volume
@@ -324,7 +451,7 @@ class SurfaceManager():
 
         ps.Publisher().sendMessage('Update status text in GUI',
                                     _("Ready"))
-        
+
         ps.Publisher().sendMessage('Update surface info in GUI',
                                     (surface.index, surface.name,
                                     surface.colour, surface.volume,
@@ -333,9 +460,9 @@ class SurfaceManager():
         #Destroy Copy original imagedata
         if(imagedata_tmp):
             del imagedata_tmp
-        
+
         ps.Publisher().sendMessage('End busy cursor')
-        
+
     def RemoveActor(self, index):
         """
         Remove actor, according to given actor index.
@@ -394,7 +521,8 @@ class SurfaceManager():
         filename, filetype = pubsub_evt.data
         if (filetype == const.FILETYPE_STL) or\
            (filetype == const.FILETYPE_VTP) or\
-           (filetype == const.FILETYPE_PLY) :
+           (filetype == const.FILETYPE_PLY) or\
+           (filetype == const.FILETYPE_STL_ASCII):
 
             # First we identify all surfaces that are selected
             # (if any)
@@ -420,6 +548,9 @@ class SurfaceManager():
             if filetype == const.FILETYPE_STL:
                 writer = vtk.vtkSTLWriter()
                 writer.SetFileTypeToBinary()
+            elif filetype == const.FILETYPE_STL_ASCII:
+                writer = vtk.vtkSTLWriter()
+                writer.SetFileTypeToASCII()
             elif filetype == const.FILETYPE_VTP:
                 writer = vtk.vtkXMLPolyDataWriter()
             #elif filetype == const.FILETYPE_IV:

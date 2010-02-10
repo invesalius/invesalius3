@@ -32,6 +32,7 @@ from vtk.wx.wxVTKRenderWindowInteractor import wxVTKRenderWindowInteractor
 import constants as const
 from reader import dicom_reader
 import data.vtk_utils as vtku
+import utils
 
 NROWS = 3
 NCOLS = 6
@@ -107,7 +108,6 @@ class DicomInfo(object):
         if self._preview:
             return self._preview
         else:
-            print "First time!"
             colorer = vtk.vtkImageMapToWindowLevelColors()
             colorer.SetInput(self.dicom.image.imagedata)
             colorer.SetWindow(float(self.dicom.image.window))
@@ -256,7 +256,6 @@ class Preview(wx.Panel):
         if not self.select_on:
             #c = wx.SystemSettings_GetColour(wx.SYS_COLOUR_3DHILIGHT)
             c = wx.SystemSettings_GetColour(wx.SYS_COLOUR_BTNFACE)
-            print c
             self.SetBackgroundColour(c)
 
     def OnLeave(self, evt):
@@ -265,7 +264,6 @@ class Preview(wx.Panel):
             self.SetBackgroundColour(c)
 
     def OnSelect(self, evt):
-        print "OnSelect"
         self.select_on = True
         self.dicom_info.selected = True
         ##c = wx.SystemSettings_GetColour(wx.SYS_COLOUR_BTNHIGHLIGHT)
@@ -286,7 +284,7 @@ class Preview(wx.Panel):
         my_evt = SerieEvent(myEVT_PREVIEW_CLICK, self.GetId())
         my_evt.SetSelectedID(self.dicom_info.id)
         my_evt.SetItemData(self.dicom_info.dicom)
-        print "patient", self.dicom_info.dicom.patient
+        my_evt.SetEventObject(self)
         self.GetEventHandler().ProcessEvent(my_evt)
 
     def OnSize(self, evt):
@@ -306,6 +304,7 @@ class Preview(wx.Panel):
         my_evt = SerieEvent(myEVT_PREVIEW_DBLCLICK, self.GetId())
         my_evt.SetSelectedID(self.dicom_info.id)
         my_evt.SetItemData(self.dicom_info.dicom)
+        my_evt.SetEventObject(self)
         self.GetEventHandler().ProcessEvent(my_evt)
 
 
@@ -319,6 +318,8 @@ class DicomPreviewSeries(wx.Panel):
         #self.SetSizer(self.sizer)
         self.displayed_position = 0
         self.nhidden_last_display = 0
+        self.selected_dicom = None
+        self.selected_panel = None
         self._init_ui()
 
     def _init_ui(self):
@@ -363,12 +364,20 @@ class DicomPreviewSeries(wx.Panel):
     def _bind_events(self):
         # When the user scrolls the window
         self.Bind(wx.EVT_SCROLL, self.OnScroll)
+        self.Bind(wx.EVT_MOUSEWHEEL, self.OnWheel)
 
     def OnSelect(self, evt):
-        print dir(evt)
         my_evt = SerieEvent(myEVT_CLICK_SERIE, self.GetId())
         my_evt.SetSelectedID(evt.GetSelectID())
         my_evt.SetItemData(evt.GetItemData())
+
+        if self.selected_dicom:
+            self.selected_dicom.selected = self.selected_dicom is \
+                    evt.GetEventObject().dicom_info
+            self.selected_panel.select_on = self.selected_panel is evt.GetEventObject()
+            self.selected_panel.Select()
+        self.selected_panel = evt.GetEventObject()
+        self.selected_dicom = self.selected_panel.dicom_info
         self.GetEventHandler().ProcessEvent(my_evt)
 
     def SetPatientGroups(self, patient):
@@ -379,10 +388,11 @@ class DicomPreviewSeries(wx.Panel):
         self.group_list = group_list
         n = 0
         for group in group_list:
-            info = DicomInfo(n, group.dicom,
+            info = DicomInfo((group.dicom.patient.id,
+                              group.dicom.acquisition.serie_number),
+                             group.dicom,
                              group.title,
-                             _("%d Images") %(group.nslices),
-                            )
+                             _("%d Images") %(group.nslices))
             self.files.append(info)
             n+=1
 
@@ -401,7 +411,7 @@ class DicomPreviewSeries(wx.Panel):
                 try:
                     self.previews[-i-1].Hide()
                 except IndexError:
-                    #print "doesn't exist!"
+                    utils.debug("doesn't exist!")
                     pass
             self.nhidden_last_display = final-len(self.files)
         else:
@@ -410,23 +420,31 @@ class DicomPreviewSeries(wx.Panel):
                     try:
                         self.previews[-i-1].Show()
                     except IndexError:
-                        #print "doesn't exist!"
+                        utils.debug("doesn't exist!")
                         pass
                 self.nhidden_last_display = 0
 
         for f, p in zip(self.files[initial:final], self.previews):
-            #print "f", f
             p.SetDicomToPreview(f)
-            #p.interactor.Render()
+            if f.selected:
+                self.selected_panel = p
 
         for f, p in zip(self.files[initial:final], self.previews):
             p.Show()
 
-    def OnScroll(self, evt):
-        if self.displayed_position != evt.GetPosition():
-            self.displayed_position = evt.GetPosition()
-            self._display_previews()
+    def OnScroll(self, evt=None):
+        if evt:
+            if self.displayed_position != evt.GetPosition():
+                self.displayed_position = evt.GetPosition()
+        else:
+            if self.displayed_position != self.scroll.GetThumbPosition():
+                self.displayed_position = self.scroll.GetThumbPosition()
+        self._display_previews()
 
+    def OnWheel(self, evt):
+        d = evt.GetWheelDelta() / evt.GetWheelRotation()
+        self.scroll.SetThumbPosition(self.scroll.GetThumbPosition() - d)
+        self.OnScroll()
 
 class DicomPreviewSlice(wx.Panel):
     """A dicom preview panel"""
@@ -436,6 +454,8 @@ class DicomPreviewSlice(wx.Panel):
         # I have to test.
         self.displayed_position = 0
         self.nhidden_last_display = 0
+        self.selected_dicom = None
+        self.selected_panel = None
         self._init_ui()
 
     def _init_ui(self):
@@ -475,9 +495,10 @@ class DicomPreviewSlice(wx.Panel):
     def _bind_events(self):
         # When the user scrolls the window
         self.Bind(wx.EVT_SCROLL, self.OnScroll)
+        self.Bind(wx.EVT_MOUSEWHEEL, self.OnWheel)
 
     def SetDicomDirectory(self, directory):
-        print "Setting Dicom Directory", directory
+        utils.debug("Setting Dicom Directory %s" % directory)
         self.directory = directory
         self.series = dicom_reader.GetSeries(directory)[0]
 
@@ -516,8 +537,8 @@ class DicomPreviewSlice(wx.Panel):
         n = 0
         for dicom in dicom_files:
             info = DicomInfo(n, dicom,
-                    _("Image %d") % (dicom.image.number),
-                    "%.2f" % (dicom.image.position[2]),
+                             _("Image %d") % (dicom.image.number),
+                             "%.2f" % (dicom.image.position[2]),
                             )
             self.files.append(info)
             n+=1
@@ -532,16 +553,13 @@ class DicomPreviewSlice(wx.Panel):
     def _display_previews(self):
         initial = self.displayed_position * NCOLS
         final = initial + NUM_PREVIEWS
-        print "len:", len(self.files)
 
         if len(self.files) < final:
             for i in xrange(final-len(self.files)):
-                print "hide ", i
                 try:
                     self.previews[-i-1].Hide()
                 except IndexError:
-                    #print "doesn't exist!"
-                    pass
+                    utils.debug("doesn't exist!")
             self.nhidden_last_display = final-len(self.files)
         else:
             if self.nhidden_last_display:
@@ -549,29 +567,45 @@ class DicomPreviewSlice(wx.Panel):
                     try:
                         self.previews[-i-1].Show()
                     except IndexError:
-                        #print "doesn't exist!"
-                        pass
+                        utils.debug("doesn't exist!")
                 self.nhidden_last_display = 0
 
         for f, p in zip(self.files[initial:final], self.previews):
             p.SetDicomToPreview(f)
+            if f.selected:
+                self.selected_panel = p
             #p.interactor.Render()
 
         for f, p in zip(self.files[initial:final], self.previews):
             p.Show()
 
-    def OnScroll(self, evt):
-        if self.displayed_position != evt.GetPosition():
-            self.displayed_position = evt.GetPosition()
-            self._display_previews()
-
     def OnPreviewClick(self, evt):
-        print "Hey man, you've clicked over me"
         my_evt = SerieEvent(myEVT_CLICK_SLICE, self.GetId())
         my_evt.SetSelectedID(evt.GetSelectID())
         my_evt.SetItemData(evt.GetItemData())
+
+        if self.selected_dicom:
+            self.selected_dicom.selected = self.selected_dicom is \
+                    evt.GetEventObject().dicom_info
+            self.selected_panel.select_on = self.selected_panel is evt.GetEventObject()
+            self.selected_panel.Select()
+        self.selected_panel = evt.GetEventObject()
+        self.selected_dicom = self.selected_panel.dicom_info
         self.GetEventHandler().ProcessEvent(my_evt)
 
+    def OnScroll(self, evt=None):
+        if evt:
+            if self.displayed_position != evt.GetPosition():
+                self.displayed_position = evt.GetPosition()
+        else:
+            if self.displayed_position != self.scroll.GetThumbPosition():
+                self.displayed_position = self.scroll.GetThumbPosition()
+        self._display_previews()
+
+    def OnWheel(self, evt):
+        d = evt.GetWheelDelta() / evt.GetWheelRotation()
+        self.scroll.SetThumbPosition(self.scroll.GetThumbPosition() - d)
+        self.OnScroll()
 
 class SingleImagePreview(wx.Panel):
     def __init__(self, parent):
@@ -591,28 +625,30 @@ class SingleImagePreview(wx.Panel):
 
         text_image_size = vtku.Text()
         text_image_size.SetPosition(const.TEXT_POS_LEFT_UP)
-        text_image_size.SetValue(_("image size"))
+        text_image_size.SetValue("")
+        text_image_size.SetSize(const.TEXT_SIZE_SMALL)
         self.text_image_size = text_image_size
 
         text_image_location = vtku.Text()
         text_image_location.SetVerticalJustificationToBottom()
         text_image_location.SetPosition(const.TEXT_POS_LEFT_DOWN)
-        text_image_location.SetValue("localization")
+        text_image_location.SetValue("")
+        text_image_location.SetSize(const.TEXT_SIZE_SMALL)
         self.text_image_location = text_image_location
 
-        value = _("id\nprotocol")
         text_patient = vtku.Text()
         text_patient.SetJustificationToRight()
         text_patient.SetPosition(const.TEXT_POS_RIGHT_UP)
-        text_patient.SetValue(value)
+        text_patient.SetValue("")
+        text_patient.SetSize(const.TEXT_SIZE_SMALL)
         self.text_patient = text_patient
 
-        value = _("date time\n Made in InVesalius")
         text_acquisition = vtku.Text()
         text_acquisition.SetJustificationToRight()
         text_acquisition.SetVerticalJustificationToBottom()
         text_acquisition.SetPosition(const.TEXT_POS_RIGHT_DOWN)
-        text_acquisition.SetValue(value)
+        text_acquisition.SetValue("")
+        text_acquisition.SetSize(const.TEXT_SIZE_SMALL)
         self.text_acquisition = text_acquisition
 
         renderer = vtk.vtkRenderer()
@@ -698,7 +734,7 @@ class SingleImagePreview(wx.Panel):
             #TODO: temporary fix necessary in the Windows XP 64 Bits
             #BUG in wxWidgets http://trac.wxwidgets.org/ticket/10896
             except(wx._core.PyAssertionError):
-                print "wx._core.PyAssertionError"
+                utils.debug("wx._core.PyAssertionError")
             finally:
                 wx.CallAfter(self.OnRun)
 
@@ -708,12 +744,10 @@ class SingleImagePreview(wx.Panel):
         self.nimages = len(self.dicom_list)
         # GUI
         self.slider.SetMax(self.nimages-1)
-        print self.nimages
         self.slider.SetValue(0)
         self.ShowSlice()
 
     def ShowSlice(self, index = 0):
-        print "ShowSlice"
         dicom = self.dicom_list[index]
 
         # UPDATE GUI
@@ -737,11 +771,6 @@ class SingleImagePreview(wx.Panel):
                             dicom.acquisition.time)
         self.text_acquisition.SetValue(value)
 
-        # READ FILE
-        #filename = dicom.image.file
-        #reader = vtkgdcm.vtkGDCMImageReader()
-        #reader.SetFileName(filename)
-
         # ADJUST CONTRAST
         window_level = dicom.image.level
         window_width = dicom.image.window
@@ -755,6 +784,5 @@ class SingleImagePreview(wx.Panel):
         self.renderer.ResetCamera()
         self.interactor.Render()
 
-    def __del__(self):
-        print "---------> morri"
-
+        # Setting slider position
+        self.slider.SetValue(index)

@@ -36,6 +36,8 @@ import reader.dicom_reader as dcm
 import reader.analyze_reader as analyze
 import session as ses
 
+from utils import debug
+
 DEFAULT_THRESH_MODE = 0
 
 class Controller():
@@ -70,6 +72,7 @@ class Controller():
         ps.Publisher().subscribe(self.OnCancelImport, 'Cancel DICOM load')
         ps.Publisher().subscribe(self.OnShowDialogCloseProject, 'Close Project')
         ps.Publisher().subscribe(self.OnOpenProject, 'Open project')
+        ps.Publisher().subscribe(self.OnOpenRecentProject, 'Open recent project')
 
     def OnCancelImport(self, pubsub_evt):
         #self.cancel_import = True
@@ -106,8 +109,6 @@ class Controller():
 
         # Import project
         dirpath = dialog.ShowImportDirDialog()
-        ###
-        print dirpath
         if dirpath and not os.listdir(dirpath):
             dialog.ImportEmptyDirectory(dirpath)
         elif dirpath:
@@ -148,31 +149,71 @@ class Controller():
 
 
     def ShowDialogCloseProject(self):
-        print "ShowDialogCloseProject"
+        debug("ShowDialogCloseProject")
         session = ses.Session()
         st = session.project_status
-        print "* st", st
         if st == const.PROJ_CLOSE:
             return -1
-        filename = session.project_path[1]
-        if (st == const.PROJ_NEW) or (st == const.PROJ_CHANGE):
-            answer = dialog.SaveChangesDialog(filename)
-            if not answer:
-                print "Close without changes"
+        try:
+            filename = session.project_path[1]
+        except(AttributeError):
+            print "Not exist project"
+            filename = None
+
+        if (filename):
+            if (st == const.PROJ_NEW) or (st == const.PROJ_CHANGE):
+                answer = dialog.SaveChangesDialog(filename, self.frame)
+                if not answer:
+                    debug("Close without changes")
+                    self.CloseProject()
+                    ps.Publisher().sendMessage("Enable state project", False)
+                    ps.Publisher().sendMessage('Set project name')
+                    ps.Publisher().sendMessage("Stop Config Recording")
+                    ps.Publisher().sendMessage('Close Window')
+                elif answer == 1:
+                    self.ShowDialogSaveProject()
+                    debug("Save changes and close")
+                    self.CloseProject()
+                    ps.Publisher().sendMessage("Enable state project", False)
+                    ps.Publisher().sendMessage('Set project name')
+                    ps.Publisher().sendMessage("Stop Config Recording")
+                    ps.Publisher().sendMessage('Close Window')
+
+                elif answer == -1:
+                    debug("Cancel")
+            else:
                 self.CloseProject()
-            elif answer == 1:
-                self.ShowDialogSaveProject()
-                print "Save changes and close"
-                self.CloseProject()
-            elif answer == -1:
-                print "Cancel"
+                ps.Publisher().sendMessage("Enable state project", False)
+                ps.Publisher().sendMessage('Set project name')
+                ps.Publisher().sendMessage("Stop Config Recording")
+                ps.Publisher().sendMessage('Close Window')
+
         else:
-            self.CloseProject()
+            ps.Publisher().sendMessage('Stop Config Recording')
+            ps.Publisher().sendMessage('Close Window')
+
 
 ###########################
     def OnOpenProject(self, pubsub_evt):
         path = pubsub_evt.data
         self.OpenProject(path)
+
+    def OnOpenRecentProject(self, pubsub_evt):
+        filepath = pubsub_evt.data
+
+        if os.path.exists(filepath):
+            session = ses.Session()
+            st = session.project_status
+            if (st == const.PROJ_NEW) or (st == const.PROJ_CHANGE):
+                filename = session.project_path[1]
+                answer = dialog.SaveChangesDialog2(filename)
+                if answer:
+                    self.ShowDialogSaveProject()
+            self.CloseProject()
+            self.OpenProject(filepath)
+        else:
+            dialog.InexistentPath(filepath)
+
 
 
     def OpenProject(self, filepath):
@@ -185,14 +226,16 @@ class Controller():
 
         mask = msk.Mask()
         mask._set_class_index(proj.last_mask_index)
+        self.mask_dict_copy = proj.mask_dict.copy()
 
         surface = srf.Surface()
         surface._set_class_index(proj.last_surface_index)
-        
+
         self.LoadProject()
 
         session = ses.Session()
         session.OpenProject(filepath)
+        ps.Publisher().sendMessage("Enable state project", True)
 
     def SaveProject(self, path=None):
         ps.Publisher().sendMessage('Begin busy cursor')
@@ -208,14 +251,13 @@ class Controller():
 
         session.SaveProject()
         ps.Publisher().sendMessage('End busy cursor')
-        
+
     def CloseProject(self):
         proj = prj.Project()
         proj.Close()
 
         ps.Publisher().sendMessage('Hide content panel')
         ps.Publisher().sendMessage('Close project data')
-
         session = ses.Session()
         session.CloseProject()
 
@@ -238,7 +280,7 @@ class Controller():
         if (data):
             if not(self.progress_dialog):
                 self.progress_dialog = dialog.ProgressDialog(
-                                    maximum = data[1])
+                                    maximum = data[1], abort=1)
             else:
                 if not(self.progress_dialog.Update(data[0],message)):
                     self.progress_dialog.Close()
@@ -277,7 +319,7 @@ class Controller():
 
         if len(patients_groups):
             group = dcm.SelectLargerDicomGroup(patients_groups)
-            imagedata, dicom = self.OpenDicomGroup(group, gui=True)
+            imagedata, dicom = self.OpenDicomGroup(group, 0, gui=True)
             self.CreateDicomProject(imagedata, dicom)
         # OPTION 2: ANALYZE?
         else:
@@ -286,33 +328,41 @@ class Controller():
                 self.CreateAnalyzeProject(imagedata)
             # OPTION 3: Nothing...
             else:
-                print "No medical images found on given directory"
+                debug("No medical images found on given directory")
                 return
         self.LoadProject()
+        ps.Publisher().sendMessage("Enable state project", True)
 
     def LoadProject(self):
         proj = prj.Project()
 
         const.THRESHOLD_OUTVALUE = proj.threshold_range[0]
         const.THRESHOLD_INVALUE = proj.threshold_range[1]
+
         const.WINDOW_LEVEL[_('Default')] = (proj.window, proj.level)
         const.WINDOW_LEVEL[_('Manual')] = (proj.window, proj.level)
 
-
-        ps.Publisher().sendMessage('Set project name', proj.name)
         ps.Publisher().sendMessage('Load slice to viewer',
-                                (proj.imagedata,
-                                proj.mask_dict))
-        ps.Publisher().sendMessage('Load surface dict',
-                                    proj.surface_dict)
-        self.LoadImagedataInfo() # TODO: where do we insert this <<<?
+                        (proj.imagedata,
+                        proj.mask_dict))
+        ps.Publisher().sendMessage('Load slice plane')
         ps.Publisher().sendMessage('Bright and contrast adjustment image',\
                                    (proj.window, proj.level))
         ps.Publisher().sendMessage('Update window level value',\
                                     (proj.window, proj.level))
+
+        ps.Publisher().sendMessage('Set project name', proj.name)
+        ps.Publisher().sendMessage('Load surface dict',
+                                    proj.surface_dict)
+        self.LoadImagedataInfo() # TODO: where do we insert this <<<?
         ps.Publisher().sendMessage('Show content panel')
         ps.Publisher().sendMessage('Update AUI')
-        ps.Publisher().sendMessage('Load slice plane')
+
+        if len(proj.mask_dict):
+            mask_index = len(proj.mask_dict) -1
+            ps.Publisher().sendMessage('Show mask', (mask_index, True))
+
+        proj.presets.thresh_ct[_('Custom')] = proj.threshold_range
         ps.Publisher().sendMessage('End busy cursor')
 
     def CreateAnalyzeProject(self, imagedata):
@@ -337,7 +387,7 @@ class Controller():
         proj.modality = dicom.acquisition.modality
         proj.SetAcquisitionModality(dicom.acquisition.modality)
         proj.imagedata = imagedata
-        #proj.dicom = dicom
+        proj.dicom_sample = dicom
         proj.original_orientation =\
                     name_to_const[dicom.image.orientation_label]
         proj.window = float(dicom.image.window)
@@ -354,29 +404,38 @@ class Controller():
         dirpath = session.CreateProject(filename)
         proj.SavePlistProject(dirpath, filename)
 
-
-
     def OnOpenDicomGroup(self, pubsub_evt):
-        group = pubsub_evt.data
-        imagedata, dicom = self.OpenDicomGroup(group, gui=True)
+        group, interval = pubsub_evt.data
+        imagedata, dicom = self.OpenDicomGroup(group, interval, gui=True)
         self.CreateDicomProject(imagedata, dicom)
         self.LoadProject()
+        ps.Publisher().sendMessage("Enable state project", True)
 
-    def OpenDicomGroup(self, dicom_group, gui=True):
+    def OpenDicomGroup(self, dicom_group, interval, gui=True):
 
         # Retrieve general DICOM headers
         dicom = dicom_group.GetDicomSample()
 
         # Create imagedata
-        filelist = dicom_group.GetFilenameList()
+        interval += 1
+        filelist = dicom_group.GetFilenameList()[::interval]
         if not filelist:
-            print ">Not used the IPPSorter"
-            filelist = [i.image.file for i in dicom_group.GetHandSortedList()]
-        zspacing = dicom_group.zspacing
+            debug("Not used the IPPSorter")
+            filelist = [i.image.file for i in dicom_group.GetHandSortedList()[::interval]]
+
+        zspacing = dicom_group.zspacing * interval
         size = dicom.image.size
         bits = dicom.image.bits_allocad
+        sop_class_uid = dicom.acquisition.sop_class_uid
+        xyspacing = dicom.image.spacing
 
-        imagedata = utils.CreateImageData(filelist, zspacing, size, bits)
+        if sop_class_uid == '1.2.840.10008.5.1.4.1.1.7': #Secondary Capture Image Storage
+            use_dcmspacing = 1
+        else:
+            use_dcmspacing = 0
+
+        imagedata = utils.CreateImageData(filelist, zspacing, xyspacing,size,
+                                          bits, use_dcmspacing)
 
         # 1(a): Fix gantry tilt, if any
         tilt_value = dicom.acquisition.tilt
@@ -397,16 +456,29 @@ class Controller():
 
         thresh_modes =  proj.threshold_modes.keys()
         thresh_modes.sort()
-
         default_threshold = const.THRESHOLD_PRESETS_INDEX
         if proj.mask_dict:
-            last = max(proj.mask_dict.keys())
-            default_threshold = proj.mask_dict[last].threshold_range
+            keys = proj.mask_dict.keys()
+            last = max(keys)
+            (a,b) = proj.mask_dict[last].threshold_range
+            default_threshold = [a,b]
+            min_ = proj.threshold_range[0]
+            max_ = proj.threshold_range[1]
+            if default_threshold[0] < min_:
+                default_threshold[0] = min_
+            if default_threshold[1] > max_:
+                default_threshold[1] = max_
+            [a,b] = default_threshold
+            default_threshold = (a,b)
         ps.Publisher().sendMessage('Set threshold modes',
                                 (thresh_modes,default_threshold))
 
-    def LoadRaycastingPreset(self, pubsub_evt):
-        label = pubsub_evt.data
+    def LoadRaycastingPreset(self, pubsub_evt=None):
+        if pubsub_evt:
+            label = pubsub_evt.data
+        else:
+            return
+
         if label != const.RAYCASTING_OFF_LABEL:
             if label in const.RAYCASTING_FILES.keys():
                 path = os.path.join(const.RAYCASTING_PRESETS_DIRECTORY,

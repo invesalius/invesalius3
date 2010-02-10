@@ -22,9 +22,10 @@ from optparse import OptionParser
 import os
 import sys
 
+from session import Session
 import gui.language_dialog as lang_dlg
 import i18n
-from session import Session
+import utils
 
 
 # TODO: This should be called during installation
@@ -45,7 +46,7 @@ import wx.lib.pubsub as ps
 
 class SplashScreen(wx.SplashScreen):
     def __init__(self):
-
+        lang = False
         save_session = False
         session = Session()
         if not (session.ReadSession()):
@@ -73,29 +74,30 @@ class SplashScreen(wx.SplashScreen):
             session.SetLanguage(lang)
             session.CreateSessionFile()
 
-        if (lang.startswith('pt')): #Necessy, pt noted as pt_BR
-            icon_file = "splash_pt.png"
-        else:
-            icon_file = "splash_" + lang + ".png"
+        if lang:
+            if (lang.startswith('pt')): #Necessy, pt noted as pt_BR
+                icon_file = "splash_pt.png"
+            else:
+                icon_file = "splash_" + lang + ".png"
 
-        path = os.path.join("..","icons", icon_file)
+            path = os.path.join("..","icons", icon_file)
 
-        bmp = wx.Image(path).ConvertToBitmap()
+            bmp = wx.Image(path).ConvertToBitmap()
 
-        wx.SplashScreen.__init__(self, bitmap=bmp,
+            wx.SplashScreen.__init__(self, bitmap=bmp,
                                  splashStyle=wx.SPLASH_CENTRE_ON_SCREEN | wx.SPLASH_TIMEOUT,
                                  milliseconds=1500, id=-1, parent=None)
-        self.Bind(wx.EVT_CLOSE, self.OnClose)
+            self.Bind(wx.EVT_CLOSE, self.OnClose)
 
-        from gui.frame import Frame
-        from control import Controller
-        from project import Project
+            from gui.frame import Frame
+            from control import Controller
+            from project import Project
 
 
-        self.main = Frame(None)
-        self.control = Controller(self.main)
+            self.main = Frame(None)
+            self.control = Controller(self.main)
 
-        self.fc = wx.FutureCall(1, self.ShowMain)
+            self.fc = wx.FutureCall(1, self.ShowMain)
 
     def OnClose(self, evt):
         # Make sure the default handler runs too so this window gets
@@ -134,6 +136,10 @@ class InVesalius(wx.App):
         splash.Show()
 
         return True
+
+    def MacOpenFile(self, filename):
+        path = os.path.abspath(file)
+        ps.Publisher().sendMessage('Open project', path)
 
 def parse_comand_line():
     """
@@ -179,12 +185,11 @@ def parse_comand_line():
 
 
 def print_events(data):
-    print data.topic
+    utils.debug(data.topic)
 
 def main():
     application = InVesalius(0)
     parse_comand_line()
-    #application.ShowFrame()
     application.MainLoop()
 
 if __name__ == '__main__':

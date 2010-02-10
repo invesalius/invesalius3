@@ -53,6 +53,8 @@
 
 import gdcm
 
+import utils
+
 ORIENT_MAP = {"SAGITTAL":0, "CORONAL":1, "AXIAL":2, "OBLIQUE":2}
 
 
@@ -209,12 +211,15 @@ class PatientGroup:
 
         # Check if Problem 1 occurs (n groups with 1 slice each)
         is_there_problem_1 = False
+        utils.debug("n slice %d" % self.nslices)
+        utils.debug("len %d" % len(self.groups_dict))
         if (self.nslices == len(self.groups_dict)) and\
                 (self.nslices > 1):
             is_there_problem_1 = True
 
         # Fix Problem 1
         if is_there_problem_1:
+            utils.debug("Problem1")
             self.groups_dict = self.FixProblem1(self.groups_dict)
         
     def GetGroups(self):

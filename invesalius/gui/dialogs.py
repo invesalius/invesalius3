@@ -25,9 +25,10 @@ from wx.lib.wordwrap import wordwrap
 import wx.lib.pubsub as ps
 
 
-
-import project
+import constants as const
+import project as proj
 import session as ses
+import utils
 
 class NumberDialog(wx.Dialog):
     def __init__(self, message, value=0):
@@ -88,19 +89,20 @@ def ShowNumberDialog(message, value=0):
 
 
 class ProgressDialog(object):
-    def __init__(self, maximum):
+    def __init__(self, maximum, abort=False):
         self.title = "InVesalius 3"
         self.msg = _("Loading DICOM files")
         self.maximum = maximum
         self.current = 0
-        self.style = wx.PD_CAN_ABORT | wx.PD_APP_MODAL
+        self.style = wx.PD_APP_MODAL
+        if abort:
+            self.style = wx.PD_APP_MODAL | wx.PD_CAN_ABORT
+
         self.dlg = wx.ProgressDialog(self.title,
                                      self.msg,
                                      maximum = self.maximum,
                                      parent = None,
-                                     style = wx.PD_CAN_ABORT
-                                      | wx.PD_APP_MODAL,
-                                     )
+                                     style  = self.style)
 
         self.dlg.Bind(wx.EVT_BUTTON, self.Cancel)
         self.dlg.SetSize(wx.Size(250,150))
@@ -111,20 +113,16 @@ class ProgressDialog(object):
     def Update(self, value, message):
         if(int(value) != self.maximum):
             try:
-                self.dlg.Update(value,message)
+                return self.dlg.Update(value,message)
             #TODO:
             #Exception in the Windows XP 64 Bits with wxPython 2.8.10
             except(wx._core.PyAssertionError):
-                pass
-            return True
+                return True
         else:
             return False
 
     def Close(self):
         self.dlg.Destroy()
-
-
-
 
 
 
@@ -146,8 +144,11 @@ def ShowOpenProjectDialog():
     # Show the dialog and retrieve the user response. If it is the OK response,
     # process the data.
     filepath = None
-    if dlg.ShowModal() == wx.ID_OK:
-        # This returns a Python list of files that were selected.
+    try:
+        if dlg.ShowModal() == wx.ID_OK:
+            # This returns a Python list of files that were selected.
+            filepath = dlg.GetPath()
+    except(wx._core.PyAssertionError): #FIX: win64
         filepath = dlg.GetPath()
 
     # Destroy the dialog. Don't do this until you are done with it!
@@ -184,11 +185,13 @@ def ShowImportDirDialog():
             else:
                 path = dlg.GetPath().encode('utf-8')
 
-        if (sys.platform != 'darwin'):
-            session.SetLastDicomFolder(path)
-
     except(wx._core.PyAssertionError): #TODO: error win64
-        path = dlg.GetPath()
+         if (dlg.GetPath()):
+             path = dlg.GetPath()
+
+    if (sys.platform != 'darwin'):
+        if (path):
+            session.SetLastDicomFolder(path)
 
     # Only destroy a dialog after you're done with it.
     dlg.Destroy()
@@ -206,12 +209,22 @@ def ShowSaveAsProjectDialog(default_filename=None):
     #dlg.SetFilterIndex(0) # default is VTI
 
     filename = None
-    if dlg.ShowModal() == wx.ID_OK:
+    try:
+        if dlg.ShowModal() == wx.ID_OK:
+            filename = dlg.GetPath()
+            ok = 1
+        else:
+            ok = 0
+    except(wx._core.PyAssertionError): #TODO: fix win64
         filename = dlg.GetPath()
+        ok = 1
+
+    if (ok):
         extension = "inv3"
         if sys.platform != 'win32':
             if filename.split(".")[-1] != extension:
                 filename = filename + "." + extension
+
 
     os.chdir(current_dir)
     return filename
@@ -278,7 +291,7 @@ def SaveChangesDialog__Old(filename):
 
 
 def ImportEmptyDirectory(dirpath):
-    msg = _("%s is an empty directory.") % dirpath
+    msg = _("%s is an empty directory.") % dirpath.decode("utf-8")
     if sys.platform == 'darwin':
         dlg = wx.MessageDialog(None, "",
                                 msg,
@@ -301,18 +314,86 @@ def ImportInvalidFiles():
     dlg.ShowModal()
     dlg.Destroy()
 
-def SaveChangesDialog(filename):
+def InexistentMask():
+    msg = _("There is no mask of reference to create a surface.")
+    if sys.platform == 'darwin':
+        dlg = wx.MessageDialog(None, "", msg,
+                                wx.ICON_INFORMATION | wx.OK)
+    else:
+        dlg = wx.MessageDialog(None, msg, "InVesalius 3",
+                                wx.ICON_INFORMATION | wx.OK)
+    dlg.ShowModal()
+    dlg.Destroy()
+
+def MaskSelectionRequiredForRemoval():
+    msg = _("No masks were selected for removal.")
+    if sys.platform == 'darwin':
+        dlg = wx.MessageDialog(None, "", msg,
+                                wx.ICON_INFORMATION | wx.OK)
+    else:
+        dlg = wx.MessageDialog(None, msg, "InVesalius 3",
+                                wx.ICON_INFORMATION | wx.OK)
+    dlg.ShowModal()
+    dlg.Destroy()
+
+
+def MaskSelectionRequiredForDuplication():
+    msg = _("No masks were selected for duplication.")
+    if sys.platform == 'darwin':
+        dlg = wx.MessageDialog(None, "", msg,
+                                wx.ICON_INFORMATION | wx.OK)
+    else:
+        dlg = wx.MessageDialog(None, msg, "InVesalius 3",
+                                wx.ICON_INFORMATION | wx.OK)
+    dlg.ShowModal()
+    dlg.Destroy()
+
+
+def NewMask():
+    import data.mask as mask
+    dlg = wx.TextEntryDialog(None, _('Name of new mask:'),
+                                 _('InVesalius 3 - New mask'))
+
+    dlg.CenterOnScreen()
+    default_mask_name = const.MASK_NAME_PATTERN %(mask.Mask.general_index+2)
+    dlg.SetValue(default_mask_name)
+
+    try:
+        op = dlg.ShowModal() == wx.ID_OK
+    except(wx._core.PyAssertionError):
+        print "win64 - wx._core.PyAssertionError"
+        op = True
+
+    if op:
+        return dlg.GetValue()
+    return None
+
+def InexistentPath(path):
+    msg = _("%s does not exist.")%(path)
+    if sys.platform == 'darwin':
+        dlg = wx.MessageDialog(None, "", msg,
+                                wx.ICON_INFORMATION | wx.OK)
+    else:
+        dlg = wx.MessageDialog(None, msg, "InVesalius 3",
+                                wx.ICON_INFORMATION | wx.OK)
+    dlg.ShowModal()
+    dlg.Destroy()
+
+def SaveChangesDialog(filename, parent):
     current_dir = os.path.abspath(".")
     msg = _("The project %s has been modified.\nSave changes?")%filename
     if sys.platform == 'darwin':
         dlg = wx.MessageDialog(None, "", msg,
                                wx.ICON_QUESTION | wx.YES_NO | wx.CANCEL)
     else:
-        dlg = wx.MessageDialog(None, msg,
-                               "InVesalius 3",
-                               wx.ICON_QUESTION | wx.YES_NO | wx.CANCEL)
+        dlg = wx.MessageDialog(None, msg, "InVesalius 3",
+                         wx.ICON_QUESTION | wx.YES_NO | wx.CANCEL)
 
-    answer = dlg.ShowModal()
+    try:
+        answer = dlg.ShowModal()
+    except(wx._core.PyAssertionError): #TODO: FIX win64
+        answer =  wx.ID_YES
+
     dlg.Destroy()
     os.chdir(current_dir)
 
@@ -348,7 +429,7 @@ def ShowAboutDialog(parent):
 
     info = wx.AboutDialogInfo()
     info.Name = "InVesalius"
-    info.Version = "3.0 - Alpha 2"
+    info.Version = "3.0 - Beta 1"
     info.Copyright = _("(c) 2007-2010 Center for Information Technology Renato Archer")
     info.Description = wordwrap(
        _("InVesalius is a software for medical imaging 3D reconstruction. ")+\
@@ -384,3 +465,171 @@ def ShowSavePresetDialog(default_filename="raycasting"):
         filename = dlg.GetValue()
 
     return filename
+
+class NewSurfaceDialog(wx.Dialog):
+    def __init__(self, parent, ID, title, size=wx.DefaultSize,
+            pos=wx.DefaultPosition, style=wx.DEFAULT_DIALOG_STYLE,
+            useMetal=False):
+        import constants as const
+        import data.surface as surface
+        import project as prj
+
+        # Instead of calling wx.Dialog.__init__ we precreate the dialog
+        # so we can set an extra style that must be set before
+        # creation, and then we create the GUI object using the Create
+        # method.
+        pre = wx.PreDialog()
+        pre.SetExtraStyle(wx.DIALOG_EX_CONTEXTHELP)
+        pre.Create(parent, ID, title, pos, (500,300), style)
+
+        # This next step is the most important, it turns this Python
+        # object into the real wrapper of the dialog (instead of pre)
+        # as far as the wxPython extension is concerned.
+        self.PostCreate(pre)
+
+        # This extra style can be set after the UI object has been created.
+        if 'wxMac' in wx.PlatformInfo and useMetal:
+            self.SetExtraStyle(wx.DIALOG_EX_METAL)
+
+        self.CenterOnScreen()
+
+        # LINE 1: Surface name
+
+        label_surface = wx.StaticText(self, -1, _("New surface name:"))
+
+        default_name =  const.SURFACE_NAME_PATTERN %(surface.Surface.general_index+2)
+        text = wx.TextCtrl(self, -1, "", size=(80,-1))
+        text.SetHelpText(_("Name the surface to be created"))
+        text.SetValue(default_name)
+        self.text = text
+
+        # LINE 2: Mask of reference
+
+        # Informative label
+        label_mask = wx.StaticText(self, -1, _("Mask of reference:"))
+
+        # Retrieve existing masks
+        project = prj.Project()
+        index_list = project.mask_dict.keys()
+        index_list.sort()
+        self.mask_list = [project.mask_dict[index].name for index in index_list]
+
+
+        # Mask selection combo
+        combo_mask = wx.ComboBox(self, -1, "", choices= self.mask_list,
+                                     style=wx.CB_DROPDOWN|wx.CB_READONLY)
+        combo_mask.SetSelection(len(self.mask_list)-1)
+        if sys.platform != 'win32':
+            combo_mask.SetWindowVariant(wx.WINDOW_VARIANT_SMALL)
+        self.combo_mask = combo_mask
+
+        # LINE 3: Surface quality
+        label_quality = wx.StaticText(self, -1, _("Surface quality:"))
+
+        combo_quality = wx.ComboBox(self, -1, "", choices= const.SURFACE_QUALITY_LIST,
+                                     style=wx.CB_DROPDOWN|wx.CB_READONLY)
+        combo_quality.SetSelection(3)
+        if sys.platform != 'win32':
+            combo_quality.SetWindowVariant(wx.WINDOW_VARIANT_SMALL)
+        self.combo_quality = combo_quality
+
+
+        # OVERVIEW
+        # Sizer that joins content above
+        flag_link = wx.EXPAND|wx.GROW|wx.ALL
+        flag_button = wx.ALL | wx.EXPAND| wx.GROW
+
+        fixed_sizer = wx.FlexGridSizer(rows=2, cols=2, hgap=10, vgap=0)
+        fixed_sizer.AddGrowableCol(0, 1)
+        fixed_sizer.AddMany([ (label_surface, 1, flag_link, 5),
+                              (text, 1, flag_button, 2),
+                              (label_mask, 1, flag_link, 5),
+                              (combo_mask, 0, flag_button, 1),
+                              (label_quality, 1, flag_link, 5),
+                              (combo_quality, 0, flag_button, 1)])
+
+
+        # LINES 4 and 5: Checkboxes
+        check_box_holes = wx.CheckBox(self, -1, _("Fill holes"))
+        check_box_holes.SetValue(True)
+        self.check_box_holes = check_box_holes
+        check_box_largest = wx.CheckBox(self, -1, _("Keep largest region"))
+        self.check_box_largest = check_box_largest
+
+        # LINE 6: Buttons
+
+        btn_ok = wx.Button(self, wx.ID_OK)
+        btn_ok.SetDefault()
+        btn_cancel = wx.Button(self, wx.ID_CANCEL)
+
+        btnsizer = wx.StdDialogButtonSizer()
+        btnsizer.AddButton(btn_ok)
+        btnsizer.AddButton(btn_cancel)
+        btnsizer.Realize()
+
+        # OVERVIEW
+        # Merge all sizers and checkboxes
+        sizer = wx.BoxSizer(wx.VERTICAL)
+        sizer.Add(fixed_sizer, 0, wx.TOP|wx.RIGHT|wx.LEFT|wx.GROW|wx.EXPAND, 20)
+        sizer.Add(check_box_holes, 0, wx.RIGHT|wx.LEFT, 30)
+        sizer.Add(check_box_largest, 0, wx.RIGHT|wx.LEFT, 30)
+        sizer.Add(btnsizer, 0, wx.ALIGN_RIGHT|wx.ALL, 10)
+
+        self.SetSizer(sizer)
+        sizer.Fit(self)
+
+    def GetValue(self):
+        mask_index = self.combo_mask.GetSelection()
+        surface_name = self.text.GetValue()
+        quality = const.SURFACE_QUALITY_LIST[self.combo_quality.GetSelection()]
+        fill_holes = self.check_box_holes.GetValue()
+        keep_largest = self.check_box_largest.GetValue()
+        return (mask_index, surface_name, quality, fill_holes, keep_largest)
+
+INDEX_TO_EXTENSION = {0: "bmp", 1: "jpg", 2: "png", 3: "ps", 4:"povray", 5:"tiff"}
+WILDCARD_SAVE_PICTURE = _("BMP image")+" (*.bmp)|*.bmp|"+\
+                            _("JPG image")+" (*.jpg)|*.jpg|"+\
+                            _("PNG image")+" (*.png)|*.png|"+\
+                            _("PostScript document")+" (*.ps)|*.ps|"+\
+                            _("POV-Ray file")+" (*.pov)|*.pov|"+\
+                            _("TIFF image")+" (*.tif)|*.tif"
+
+
+def ExportPicture(type_=""):
+    import constants as const
+
+    INDEX_TO_TYPE = {0: const.FILETYPE_BMP,
+                1: const.FILETYPE_JPG,
+                2: const.FILETYPE_PNG,
+                3: const.FILETYPE_PS,
+                4: const.FILETYPE_POV,
+                5: const.FILETYPE_TIF}
+
+    utils.debug("ExportPicture")
+    project = proj.Project()
+
+    project_name = "%s_%s" % (project.name, type_)
+    if not sys.platform in ('win32', 'linux2'):
+        project_name += ".jpg"
+
+    dlg = wx.FileDialog(None,
+                        "Save %s picture as..." %type_,
+                        "", # last used directory
+                        project_name, # filename
+                        WILDCARD_SAVE_PICTURE,
+                        wx.SAVE|wx.OVERWRITE_PROMPT)
+    dlg.SetFilterIndex(1) # default is VTI
+
+    if dlg.ShowModal() == wx.ID_OK:
+        filetype_index = dlg.GetFilterIndex()
+        filetype = INDEX_TO_TYPE[filetype_index]
+        extension = INDEX_TO_EXTENSION[filetype_index]
+        filename = dlg.GetPath()
+        if sys.platform != 'win32':
+            if filename.split(".")[-1] != extension:
+                filename = filename + "."+ extension
+        return filename, filetype
+    else:
+        return ()
+
+

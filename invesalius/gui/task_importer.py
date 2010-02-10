@@ -131,11 +131,72 @@ class InnerTaskPanel(wx.Panel):
 
         # Update main sizer and panel layout
         self.SetSizer(main_sizer)
-        self.Fit()
+        self.Update()
+        self.SetAutoLayout(1)
         self.sizer = main_sizer
 
         # Test load and unload specific projects' links
-        #self.TestLoadProjects()
+        self.TestLoadProjects2()
+        #self.__bind_events()
+
+    #def __bind_events(self):
+    #    ps.Publisher().subscribe(self.OnLoadRecentProjects, "Load recent projects")
+
+    #def OnLoadRecentProjects(self, pubsub_evt):
+    #    projects = pubsub_evt.data
+    #    for tuple in projects:
+    #        filename = tuple[1]
+    #        path = tuple[0]
+    #        self.LoadProject(filename, path)
+
+    def TestLoadProjects2(self):
+        import session as ses
+        session = ses.Session()
+        projects = session.recent_projects
+        for tuple in projects:
+            filename = tuple[1]
+            path = tuple[0]
+            self.LoadProject(filename, path)
+
+
+    def TestLoadProjects(self):
+        self.LoadProject("test1.inv3", "/Volumes/file/inv3")
+        self.LoadProject("test2.inv3", "/Volumes/file/inv3")
+        self.LoadProject("test3.inv3", "/Volumes/file/inv3")
+
+    def LoadProject(self, proj_name="Unnamed", proj_dir=""):
+        """
+        Load into user interface name of project into import task panel.
+        Can be called 3 times in sequence.
+        Call UnloadProjects to empty it.
+        """
+        # TODO: What todo when it is called more than 3 times?
+        # TODO: Load from config file last 3 recent projects
+
+        proj_path = os.path.join(proj_dir, proj_name)
+
+        if (self.proj_count < 3):
+            self.proj_count += 1
+
+            # Create name to be plot on GUI
+            label = "     "+str(self.proj_count)+". "+proj_name
+
+            # Create corresponding hyperlink
+            proj_link = hl.HyperLinkCtrl(self, -1, label)
+            proj_link.SetUnderlines(False, False, False)
+            proj_link.SetColours("BLACK", "BLACK", "BLACK")
+            proj_link.AutoBrowse(False)
+            proj_link.UpdateLink()
+            proj_link.Bind(hl.EVT_HYPERLINK_LEFT,
+                       lambda e: self.OpenProject(proj_path))
+
+            # Add to existing frame
+            self.sizer.Add(proj_link, 1, wx.GROW | wx.EXPAND | wx.ALL, 2)
+            self.Update()
+
+            # Add hyperlink to floating hyperlinks list
+            self.float_hyper_list.append(proj_link)
+
 
     def OnLinkImport(self, event):
         self.ImportDicom()
@@ -158,9 +219,9 @@ class InnerTaskPanel(wx.Panel):
     def ImportDicom(self):
         ps.Publisher().sendMessage('Show import directory dialog')
 
-    def OpenProject(self, filename=None):
-        if filename:
-            print "TODO: Send Signal - Open "+filename
+    def OpenProject(self, path=None):
+        if path:
+            ps.Publisher().sendMessage('Open recent project', path)
         else:
             ps.Publisher().sendMessage('Show open project dialog')
 
@@ -184,41 +245,7 @@ class InnerTaskPanel(wx.Panel):
         else: #elif id == BTN_OPEN_PROJECT:
             self.OpenProject()
 
-    def TestLoadProjects(self):
-        self.LoadProject("test1.inv3")
-        self.LoadProject("test2.inv3")
-        self.LoadProject("test3.inv3")
 
-    def LoadProject(self, proj_name="Unnamed"):
-        """
-        Load into user interface name of project into import task panel.
-        Can be called 3 times in sequence.
-        Call UnloadProjects to empty it.
-        """
-        # TODO: What todo when it is called more than 3 times?
-        # TODO: Load from config file last 3 recent projects
-
-        if (self.proj_count < 3):
-            self.proj_count += 1
-
-            # Create name to be plot on GUI
-            label = "     "+str(self.proj_count)+". "+proj_name
-
-            # Create corresponding hyperlink
-            proj_link = hl.HyperLinkCtrl(self, -1, label)
-            proj_link.SetUnderlines(False, False, False)
-            proj_link.SetColours("BLACK", "BLACK", "BLACK")
-            proj_link.AutoBrowse(False)
-            proj_link.UpdateLink()
-            proj_link.Bind(hl.EVT_HYPERLINK_LEFT,
-                       lambda e: self.LinkOpenProject(proj_name))
-
-            # Add to existing frame
-            self.sizer.Add(proj_link, 1, wx.GROW | wx.EXPAND | wx.ALL, 2)
-            self.Update()
-
-            # Add hyperlink to floating hyperlinks list
-            self.float_hyper_list.append(proj_link)
 
     def UnloadProjects(self):
         """

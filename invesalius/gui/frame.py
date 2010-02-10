@@ -32,6 +32,7 @@ import gui.dialogs as dlg
 import import_panel as imp
 import project as prj
 import session as ses
+import utils
 
 # Object toolbar
 #OBJ_TOOLS = [ID_ZOOM, ID_ZOOM_SELECT, ID_ROTATE, ID_MOVE,
@@ -90,19 +91,28 @@ class Frame(wx.Frame):
         ps.Publisher().subscribe(self.BeginBusyCursor, 'Begin busy cursor')
         ps.Publisher().subscribe(self.EndBusyCursor, 'End busy cursor')
         ps.Publisher().subscribe(self.HideContentPanel, 'Hide content panel')
+        ps.Publisher().subscribe(self.CloseProgram, 'Close Window')
 
     def EndBusyCursor(self, pubsub_evt=None):
-        wx.EndBusyCursor()
+        try:
+            wx.EndBusyCursor()
+        except wx._core.PyAssertionError:
+            #xEndBusyCursor(): no matching wxBeginBusyCursor() for wxEndBusyCursor()
+            pass
 
     def BeginBusyCursor(self, pubsub_evt=None):
         wx.BeginBusyCursor()
 
     def SetProjectName(self, pubsub_evt):
         proj_name = pubsub_evt.data
-        if sys.platform != 'darwin':
-            self.SetTitle("%s - InVesalius 3"%(proj_name))
+
+        if not(proj_name):
+            self.SetTitle("InVesalius 3")
         else:
-            self.SetTitle("%s"%(proj_name))
+            if sys.platform != 'darwin':
+                self.SetTitle("%s - InVesalius 3"%(proj_name))
+            else:
+                self.SetTitle("%s"%(proj_name))
 
     def UpdateAui(self, pubsub_evt):
         self.aui_manager.Update()
@@ -110,12 +120,11 @@ class Frame(wx.Frame):
     def __bind_events_wx(self):
         self.Bind(wx.EVT_SIZE, self.OnSize)
         self.Bind(wx.EVT_MENU, self.OnMenuClick)
-        self.Bind(wx.EVT_CLOSE, self.CloseWindow)
+        self.Bind(wx.EVT_CLOSE, self.OnClose)
         #self.Bind(wx.EVT_CLOSE, self.OnExit)
 
-    def CloseWindow(self, evt):
-        ps.Publisher().sendMessage("Stop Config Recording")
-        self.Destroy()
+    def OnClose(self, evt):
+        ps.Publisher().sendMessage('Close Project')
 
     def __init_aui(self):
 
@@ -196,7 +205,7 @@ class Frame(wx.Frame):
         aui_manager.Update()
 
     def HideImportPanel(self, evt_pubsub):
-        print "HideImportPanel"
+        utils.debug("HideImportPanel")
         aui_manager = self.aui_manager
         aui_manager.GetPane("Import").Show(0)
         aui_manager.GetPane("Data").Show(0)
@@ -204,7 +213,7 @@ class Frame(wx.Frame):
         aui_manager.Update()
 
     def ShowContentPanel(self, evt_pubsub):
-        print "ShowContentPanel"
+        utils.debug("ShowContentPanel")
         ps.Publisher().sendMessage("Set layout button full")
         aui_manager = self.aui_manager
         aui_manager.GetPane("Import").Show(0)
@@ -239,10 +248,24 @@ class Frame(wx.Frame):
             self.SaveAsProject()
         elif id == const.ID_PROJECT_CLOSE:
             self.CloseProject()
-        #elif id == const.ID_EXIT:
-        #    self.OnExit(evt)
+        elif id == const.ID_EXIT:
+            self.OnExit()
         elif id == const.ID_ABOUT:
             self.ShowAbout()
+        elif id == const.ID_START:
+            self.GettingStarted()
+
+    def GettingStarted(self):
+        #if sys.platform == 'win32':
+        #    os.filestart()
+        #else:
+        #    os.system("/usr/bin/xdg-open %s" % nome_file)
+
+        import webbrowser
+        path = os.path.join(const.DOC_DIR, "user_guide_invesalius3a.pdf")
+        webbrowser.open(path)
+
+
 
     def ShowAbout(self):
         dlg.ShowAboutDialog(self)
@@ -260,16 +283,17 @@ class Frame(wx.Frame):
         ps.Publisher().sendMessage('Show save dialog', False)
 
     def CloseProject(self):
-        print "CloseProject"
+        utils.debug("CloseProject")
         ps.Publisher().sendMessage('Close Project')
 
-    def OnExit(self, event):
-        print "OnExit"
-        self.Exit()
-        event.Skip()
+    def OnExit(self):
+        ps.Publisher().sendMessage('Close Project')
+
+    def CloseProgram(self, pubsub_evt):
+        self.Destroy()
 
     def Exit(self):
-        print "Exit"
+        utils.debug("Exit")
         ps.Publisher().sendMessage('Close Project')
 
     def ShowTask(self, pubsub_evt):
@@ -280,10 +304,9 @@ class Frame(wx.Frame):
         self.aui_manager.GetPane("Tasks").Hide()
         self.aui_manager.Update()
 
-
     #def OnClose(self):
-    #    # TODO: implement this, based on wx.Demo
-    #    pass
+        # TODO: implement this, based on wx.Demo
+        #pass
 # ------------------------------------------------------------------------------
 # TODO: what will appear on ivMenuBar?
 # Menu items ID's, necessary to bind events on them
@@ -355,7 +378,7 @@ class MenuBar(wx.MenuBar):
 
         # HELP
         help_menu = wx.Menu()
-        help_menu.Append(105, _("Getting Started..."))
+        help_menu.Append(const.ID_START, _("Getting Started..."))
         #help_menu.Append(108, "User Manual...")
         help_menu.AppendSeparator()
         help_menu.Append(const.ID_ABOUT, _("About..."))
@@ -376,12 +399,35 @@ class MenuBar(wx.MenuBar):
         #self.Append(options_menu, "Options")
         self.Append(help_menu, _("Help"))
 
+
+        self.enable_items = [const.ID_PROJECT_SAVE, const.ID_PROJECT_SAVE_AS,
+                            const.ID_PROJECT_CLOSE]
+
+        self.SetStateProjectClose()
+
+    def OnEnableState(self, pubsub_evt):
+        state = pubsub_evt.data
+        if state:
+            self.SetStateProjectOpen()
+        else:
+            self.SetStateProjectClose()
+
+
+    def SetStateProjectOpen(self):
+        for item in self.enable_items:
+            self.Enable(item, True)
+
+    def SetStateProjectClose(self):
+        for item in self.enable_items:
+            self.Enable(item, False)
+
     def __bind_events(self):
         # TODO: in future, possibly when wxPython 2.9 is available,
         # events should be binded directly from wx.Menu / wx.MenuBar
         # message "Binding events of wx.MenuBar" on [wxpython-users]
         # mail list in Oct 20 2008
-        pass
+        ps.Publisher().subscribe(self.OnEnableState, "Enable state project")
+
 
 # ------------------------------------------------------------------
 class ProgressBar(wx.Gauge):
@@ -444,7 +490,7 @@ class StatusBar(wx.StatusBar):
             #TODO: temporary fix necessary in the Windows XP 64 Bits
             #BUG in wxWidgets http://trac.wxwidgets.org/ticket/10896
             except(wx._core.PyAssertionError):
-                print "wx._core.PyAssertionError"
+                utils.debug("wx._core.PyAssertionError")
 
     def UpdateStatusLabel(self, pubsub_evt):
         label = pubsub_evt.data
@@ -480,7 +526,6 @@ class ProjectToolBar(wx.ToolBar):
         self.SetToolBitmapSize(wx.Size(32,32))
 
         self.parent = parent
-
         self.__init_items()
         self.__bind_events()
 
@@ -540,11 +585,29 @@ class ProjectToolBar(wx.ToolBar):
         #self.AddLabelTool(const.ID_PRINT_SCREENSHOT,
         #                   "Print medical image...",
         #                   BMP_PRINT)
+        self.enable_items = [const.ID_PROJECT_SAVE]
 
         self.Realize()
+        self.SetStateProjectClose()
+
+    def SetStateProjectOpen(self):
+        for tool in self.enable_items:
+            self.EnableTool(tool, True)
+
+    def SetStateProjectClose(self):
+        for tool in self.enable_items:
+            self.EnableTool(tool, False)
+
+    def OnEnableState(self, pubsub_evt):
+        state = pubsub_evt.data
+        if state:
+            self.SetStateProjectOpen()
+        else:
+            self.SetStateProjectClose()
 
     def __bind_events(self):
-        pass
+        ps.Publisher().subscribe(self.OnEnableState, "Enable state project")
+
         #self.Bind(wx.EVT_TOOL, self.OnToolSave, id=const.ID_PROJECT_SAVE)
         #self.Bind(wx.EVT_TOOL, self.OnToolOpen, id=const.ID_PROJECT_OPEN)
         #self.Bind(wx.EVT_TOOL, self.OnToolImport, id=const.ID_DICOM_IMPORT)
@@ -647,7 +710,29 @@ class ObjectToolBar(wx.ToolBar):
         self.AddLabelTool(const.STATE_WL,
                            _("Window and Level"), BMP_CONTRAST,
                            kind = wx.ITEM_CHECK)
+
+        self.enable_items = [const.STATE_WL, const.STATE_PAN, const.STATE_SPIN,
+                            const.STATE_ZOOM_SL, const.STATE_ZOOM,]
+
         self.Realize()
+        self.SetStateProjectClose()
+
+
+    def OnEnableState(self, pubsub_evt):
+        state = pubsub_evt.data
+        if state:
+            self.SetStateProjectOpen()
+        else:
+            self.SetStateProjectClose()
+
+    def SetStateProjectOpen(self):
+        for tool in self.enable_items:
+            self.EnableTool(tool, True)
+
+    def SetStateProjectClose(self):
+        for tool in self.enable_items:
+            self.EnableTool(tool, False)
+            self.UntoggleAllItems()
 
 
     def __bind_events_wx(self):
@@ -656,6 +741,8 @@ class ObjectToolBar(wx.ToolBar):
     def __bind_events(self):
         ps.Publisher().subscribe(self.UntoggleAllItems,
                                  'Untoggle object toolbar items')
+        ps.Publisher().subscribe(self.OnEnableState, "Enable state project")
+
 
     def OnToggle(self, evt):
         id = evt.GetId()
@@ -714,14 +801,34 @@ class SliceToolBar(wx.ToolBar):
         self.AddCheckTool(const.SLICE_STATE_SCROLL, BMP_SLICE)
         self.AddCheckTool(const.SLICE_STATE_CROSS, BMP_CROSS)
 
+        self.enable_items = [const.SLICE_STATE_SCROLL, const.SLICE_STATE_CROSS,]
         self.Realize()
+        self.SetStateProjectClose()
+
+    def SetStateProjectOpen(self):
+        for tool in self.enable_items:
+            self.EnableTool(tool, True)
+
+    def SetStateProjectClose(self):
+        for tool in self.enable_items:
+            self.EnableTool(tool, False)
 
     def __bind_events_wx(self):
         self.Bind(wx.EVT_TOOL, self.OnClick)
 
     def __bind_events(self):
-        ps.Publisher().subscribe(self.UntoggleAllItem,
+        ps.Publisher().subscribe(self.UntoggleAllItems,
                                 'Untoggle slice toolbar items')
+        ps.Publisher().subscribe(self.OnEnableState, "Enable state project")
+
+    def OnEnableState(self, pubsub_evt):
+        state = pubsub_evt.data
+        if state:
+            self.SetStateProjectOpen()
+        else:
+            self.SetStateProjectClose()
+            self.UntoggleAllItems()
+
 
     def OnClick(self, evt):
         id = evt.GetId()
@@ -741,7 +848,7 @@ class SliceToolBar(wx.ToolBar):
         evt.Skip()
 
 
-    def UntoggleAllItem(self, pubsub_evt):
+    def UntoggleAllItems(self, pubsub_evt=None):
         for id in const.TOOL_SLICE_STATES:
             state = self.GetToolState(id)
             if state:
@@ -764,7 +871,8 @@ class LayoutToolBar(wx.ToolBar):
         self.__init_items()
         self.__bind_events_wx()
         self.__bind_events()
-        self.ontool = False
+        self.ontool_layout = False
+        self.ontool_text = True
 
     def __init_items(self):
 
@@ -777,7 +885,10 @@ class LayoutToolBar(wx.ToolBar):
                                                    "layout_full_original.gif"),
                                   wx.BITMAP_TYPE_GIF)
 
-            BMP_TEXT = wx.Bitmap(os.path.join(const.ICON_DIR,"text_original.png"))
+            self.BMP_WITHOUT_TEXT =\
+                    wx.Bitmap(os.path.join(const.ICON_DIR,"text_inverted_original.png"))
+
+            self.BMP_WITH_TEXT = wx.Bitmap(os.path.join(const.ICON_DIR,"text_original.png"))
 
         else:
             self.BMP_WITHOUT_MENU = wx.Bitmap(os.path.join(const.ICON_DIR,
@@ -786,14 +897,28 @@ class LayoutToolBar(wx.ToolBar):
             self.BMP_WITH_MENU = wx.Bitmap(os.path.join(const.ICON_DIR,
                                                    "layout_full.gif"),
                                       wx.BITMAP_TYPE_GIF)
-            BMP_TEXT = wx.Bitmap(os.path.join(const.ICON_DIR,"text.png"))
+            self.BMP_WITH_TEXT = wx.Bitmap(os.path.join(const.ICON_DIR,"text.gif"), wx.BITMAP_TYPE_GIF)
+            self.BMP_WITHOUT_TEXT = wx.Bitmap(os.path.join(const.ICON_DIR,"text_inverted.png"))
 
+        self.AddLabelTool(ID_LAYOUT, "",bitmap=self.BMP_WITHOUT_MENU,
+shortHelp= _("Hide task panel"))
+        self.AddLabelTool(ID_TEXT, "",bitmap=self.BMP_WITH_TEXT, shortHelp= _("Hide text"))
 
-        self.AddLabelTool(ID_LAYOUT, "",bitmap=self.BMP_WITHOUT_MENU, shortHelp= "Hide task panel")
-        self.AddCheckTool(ID_TEXT, bitmap=BMP_TEXT, shortHelp= "Hide texts")
-        self.ToggleTool(ID_TEXT, True)
-
+        self.enable_items = [ID_TEXT]
         self.Realize()
+        self.SetStateProjectClose()
+
+    def SetStateProjectOpen(self):
+        self.ontool_text = False
+        self.OnText()
+        for tool in self.enable_items:
+            self.EnableTool(tool, True)
+
+    def SetStateProjectClose(self):
+        self.ontool_text = True
+        self.OnText()
+        for tool in self.enable_items:
+            self.EnableTool(tool, False)
 
     def __bind_events(self):
         ps.Publisher().subscribe(self.SetLayoutButtonOnlyData,
@@ -801,15 +926,26 @@ class LayoutToolBar(wx.ToolBar):
         ps.Publisher().subscribe(self.SetLayoutButtonFull,
                                  "Set layout button full")
 
+        ps.Publisher().subscribe(self.OnEnableState, "Enable state project")
+
+    def OnEnableState(self, pubsub_evt):
+        state = pubsub_evt.data
+        if state:
+            self.SetStateProjectOpen()
+        else:
+            self.SetStateProjectClose()
+
+
+
     def __bind_events_wx(self):
         self.Bind(wx.EVT_TOOL, self.OnClick)
 
     def OnClick(self, event):
         id = event.GetId()
         if id == ID_LAYOUT:
-            self.OnTask()
+            self.OnLayout()
         elif id== ID_TEXT:
-            self.OnText(event)
+            self.OnText()
 
 
         for item in VIEW_TOOLS:
@@ -817,24 +953,32 @@ class LayoutToolBar(wx.ToolBar):
             if state and (item != id):
                 self.ToggleTool(item, False)
 
-    def OnTask(self):
-        if self.ontool:
+    def OnLayout(self):
+        if self.ontool_layout:
             self.SetToolNormalBitmap(ID_LAYOUT,self.BMP_WITHOUT_MENU)
             ps.Publisher().sendMessage('Show task panel')
-            self.SetToolShortHelp(ID_LAYOUT,"Hide task panel")
-            self.ontool = False
+            self.SetToolShortHelp(ID_LAYOUT,_("Hide task panel"))
+            self.ontool_layout = False
         else:
             self.bitmap = self.BMP_WITH_MENU
             self.SetToolNormalBitmap(ID_LAYOUT,self.BMP_WITH_MENU)
             ps.Publisher().sendMessage('Hide task panel')
-            self.SetToolShortHelp(ID_LAYOUT, "Show task panel")
-            self.ontool = True
+            self.SetToolShortHelp(ID_LAYOUT, _("Show task panel"))
+            self.ontool_layout = True
 
-    def OnText(self, event):
-        if event.IsChecked():
-            ps.Publisher().sendMessage('Show text actors on viewers')
-        else:
+    def OnText(self):
+        if self.ontool_text:
+            self.SetToolNormalBitmap(ID_TEXT,self.BMP_WITH_TEXT)
             ps.Publisher().sendMessage('Hide text actors on viewers')
+            self.SetToolShortHelp(ID_TEXT,_("Show text"))
+            ps.Publisher().sendMessage('Update AUI')
+            self.ontool_text = False
+        else:
+            self.SetToolNormalBitmap(ID_TEXT, self.BMP_WITHOUT_TEXT)
+            ps.Publisher().sendMessage('Show text actors on viewers')
+            self.SetToolShortHelp(ID_TEXT,_("Hide text"))
+            ps.Publisher().sendMessage('Update AUI')
+            self.ontool_text = True
 
     def SetLayoutButtonOnlyData(self, pubsub_evt):
         self.SetToolNormalBitmap(ID_LAYOUT,self.BMP_WITH_MENU)

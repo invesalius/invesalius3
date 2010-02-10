@@ -18,7 +18,6 @@
 #--------------------------------------------------------------------------
 
 import itertools
-import os.path
 
 import numpy
 
@@ -35,6 +34,7 @@ import data.slice_ as sl
 import data.vtk_utils as vtku
 import project
 import slice_data as sd
+import utils
 
 ID_TO_TOOL_ITEM = {}
 STR_WL = "WL: %d  WW: %d"
@@ -83,7 +83,6 @@ class Viewer(wx.Panel):
         
 
     def __init_gui(self):
-
         interactor = wxVTKRenderWindowInteractor(self, -1, size=self.GetSize())
 
         scroll = wx.ScrollBar(self, -1, style=wx.SB_VERTICAL)
@@ -98,13 +97,11 @@ class Viewer(wx.Panel):
         self.SetSizer(background_sizer)
         background_sizer.Fit(self)
 
-
         self.Layout()
         self.Update()
         self.SetAutoLayout(1)
 
         self.interactor = interactor
-
 
     def OnContextMenu(self, evt):
         self.right_pressed = 0
@@ -220,6 +217,7 @@ class Viewer(wx.Panel):
             self.on_wl = False
             self.wl_text.Hide()
 
+
         self.__set_editor_cursor_visibility(0)
 
         
@@ -286,14 +284,12 @@ class Viewer(wx.Panel):
         style.AddObserver("RightButtonPressEvent", self.QuitRubberBandZoom)
 
     def OnRightClick(self, evt, obj):
-        print "OnRightClick"
         self.last_position_mouse_move = \
             self.interactor.GetLastEventPosition()
     
         self.right_pressed = 1
 
     def OnReleaseRightButton(self, evt, obj):
-        print "OnReleaseRightButton"
         self.right_pressed = 0
         ps.Publisher().sendMessage('Update slice viewer') 
  
@@ -301,15 +297,11 @@ class Viewer(wx.Panel):
         self.left_pressed = 1
 
     def OnZoomLeftClick(self, evt, obj):
-        print "OnZoomLeftClick"
         evt.StartDolly()
 
     def OnReleaseLeftButton(self, evt, obj):
         self.left_pressed = 0
         ps.Publisher().sendMessage('Update slice viewer')
-        
-
-
 
     def OnWindowLevelMove(self, evt, obj):
         if (self.left_pressed):
@@ -322,10 +314,8 @@ class Viewer(wx.Panel):
             ps.Publisher().sendMessage('Bright and contrast adjustment image',
                 (self.acum_achange_window, self.acum_achange_level))
 
-
-            self.SetWLText(self.acum_achange_level,
-                          self.acum_achange_window)
-
+            #self.SetWLText(self.acum_achange_level,
+            #              self.acum_achange_window)
 
             const.WINDOW_LEVEL['Manual'] = (self.acum_achange_window,\
                                            self.acum_achange_level)
@@ -333,9 +323,8 @@ class Viewer(wx.Panel):
             ps.Publisher().sendMessage('Update window level value',(self.acum_achange_window, 
                                                                 self.acum_achange_level))
             #Necessary update the slice plane in the volume case exists
+            ps.Publisher().sendMessage('Update slice viewer')
             ps.Publisher().sendMessage('Render volume viewer')
-        
-        self.interactor.Render()
 
 
     def OnWindowLevelClick(self, evt, obj):
@@ -383,12 +372,10 @@ class Viewer(wx.Panel):
 
     def OnZoomMoveLeft(self, evt, obj):
         if self.left_pressed:
-            print "OnZoomMoveLeft:"
             evt.Dolly()
             evt.OnRightButtonDown()
 
     def OnVtkRightRelease(self, evt, obj):
-        print "On VTK"
         evt.OnRightButtonUp()
 
 
@@ -422,7 +409,7 @@ class Viewer(wx.Panel):
         value = STR_WL%(window_width, window_level) 
         if (self.wl_text):
             self.wl_text.SetValue(value)
-            self.interactor.Render()
+            #self.interactor.Render()
 
     def EnableText(self):
         if not (self.wl_text):
@@ -436,38 +423,38 @@ class Viewer(wx.Panel):
                         
             # Orientation text
             if self.orientation == 'AXIAL':
-                values = ['R', 'L', 'A', 'P']
+                values = [_('R'), _('L'), _('A'), _('P')]
             elif self.orientation == 'SAGITAL':
-                values = ['P', 'A', 'T', 'B']
+                values = [_('P'), _('A'), _('T'), _('B')]
             else:
-                values = ['R', 'L', 'T', 'B']
+                values = [_('R'), _('L'), _('T'), _('B')]
                 
-            left_text = vtku.Text()
+            left_text = vtku.TextZero()
             left_text.ShadowOff()
             left_text.SetColour(colour)
             left_text.SetPosition(const.TEXT_POS_VCENTRE_LEFT)
             left_text.SetVerticalJustificationToCentered()
             left_text.SetValue(values[0])
 
-            right_text = vtku.Text()
+            right_text = vtku.TextZero()
             right_text.ShadowOff()
             right_text.SetColour(colour)
-            right_text.SetPosition(const.TEXT_POS_VCENTRE_RIGHT)
+            right_text.SetPosition(const.TEXT_POS_VCENTRE_RIGHT_ZERO)
             right_text.SetVerticalJustificationToCentered()
             right_text.SetJustificationToRight()
             right_text.SetValue(values[1])
 
-            up_text = vtku.Text()
+            up_text = vtku.TextZero()
             up_text.ShadowOff()
             up_text.SetColour(colour)
             up_text.SetPosition(const.TEXT_POS_HCENTRE_UP)
             up_text.SetJustificationToCentered()
             up_text.SetValue(values[2])
 
-            down_text = vtku.Text()
+            down_text = vtku.TextZero()
             down_text.ShadowOff()
             down_text.SetColour(colour)
-            down_text.SetPosition(const.TEXT_POS_HCENTRE_DOWN)
+            down_text.SetPosition(const.TEXT_POS_HCENTRE_DOWN_ZERO)
             down_text.SetJustificationToCentered()
             down_text.SetVerticalJustificationToBottom()
             down_text.SetValue(values[3])
@@ -491,7 +478,17 @@ class Viewer(wx.Panel):
         ren = slice_data.renderer
         size = ren.GetSize()
 
-        if (size[0] <= size[1] + 60):
+
+        ren.ResetCamera()
+        ren.GetActiveCamera().Zoom(1.0)
+        self.interactor.Render()
+        #self.interactor.GetRenderWindow().Render()
+
+        
+        #if (size[0] <= size[1] + 60):
+        # Code bellow doesn't work for Promed 0013
+        """
+        if 0:
 
             bound = slice_data.actor.GetBounds()
 
@@ -547,7 +544,8 @@ class Viewer(wx.Panel):
                 cam.Zoom(size[0] / width)
             else:
                 cam.Zoom(size[1] / height)
-
+        """
+                
 
     def ChangeBrushSize(self, pubsub_evt):
         size = pubsub_evt.data
@@ -638,6 +636,12 @@ class Viewer(wx.Panel):
         #slice_data.cursor.Show()
 
         self.pick.Pick(mouse_x, mouse_y, 0, render)
+        
+        if (self.pick.GetProp()):
+            self.interactor.SetCursor(wx.StockCursor(wx.CURSOR_BLANK))
+        else:
+            self.interactor.SetCursor(wx.StockCursor(wx.CURSOR_DEFAULT))
+            
         coord = self.get_coordinate_cursor()
         slice_data.cursor.SetPosition(coord)
         slice_data.cursor.SetEditionPosition(
@@ -659,62 +663,62 @@ class Viewer(wx.Panel):
 
         self.interactor.Render()
 
-
+    def OnCrossMouseClick(self, evt, obj):
+        self.ChangeCrossPosition()
 
     def OnCrossMove(self, evt, obj):
-        # Update position in other slices
+        # The user moved the mouse with left button pressed
         if (self.left_pressed):
-            mouse_x, mouse_y = self.interactor.GetEventPosition()
-            renderer = self.slice_data_list[0].renderer
-            self.pick.Pick(mouse_x, mouse_y, self.slice_data_list[0].number, renderer)
-            coord_cross = self.get_coordinate_cursor()
-            coord = self.get_coordinate()
-            ps.Publisher().sendMessage('Update cross position',
-                                       (self.orientation, coord_cross))
+            self.ChangeCrossPosition()
+
+    def ChangeCrossPosition(self):
+        mouse_x, mouse_y = self.interactor.GetEventPosition()
+        # Get in what slice data the click occurred
+        renderer = self.slice_data_list[0].renderer
+        # pick to get click position in the 3d world
+        self.pick.Pick(mouse_x, mouse_y, self.slice_data_list[0].number, renderer)
+        coord_cross = self.get_coordinate_cursor()
+        coord = self.CalcultateScrollPosition(coord_cross)
+        ps.Publisher().sendMessage('Update cross position',
+                (self.orientation, coord_cross))
+        self.ScrollSlice(coord)
+        self.interactor.Render()
+
+    def ScrollSlice(self, coord):
+        if self.orientation == "AXIAL":
             ps.Publisher().sendMessage(('Set scroll position', 'SAGITAL'),
                                        coord[0])
             ps.Publisher().sendMessage(('Set scroll position', 'CORONAL'),
                                        coord[1])
+        elif self.orientation == "SAGITAL":
             ps.Publisher().sendMessage(('Set scroll position', 'AXIAL'),
                                        coord[2])
+            ps.Publisher().sendMessage(('Set scroll position', 'CORONAL'),
+                                       coord[1])
+        elif self.orientation == "CORONAL":
+            ps.Publisher().sendMessage(('Set scroll position', 'AXIAL'),
+                                       coord[2])
+            ps.Publisher().sendMessage(('Set scroll position', 'SAGITAL'),
+                                       coord[0])
 
     def OnZoomMoveRight(self, evt, obj):
-        
-        
         if (self.right_pressed):
-            print "OnZoomMoveRight"
             evt.Dolly()
             evt.OnRightButtonDown()
 
     def OnZoomRightClick(self, evt, obj):
-        print "OnZoomRightClick"
         evt.StartDolly()
-
-            
-    def OnCrossMouseClick(self, evt, obj):
-        mouse_x, mouse_y = self.interactor.GetEventPosition()
-        renderer = self.slice_data_list[0].renderer
-        self.pick.Pick(mouse_x, mouse_y, self.slice_data_list[0].number, renderer)
-        coord_cross = self.get_coordinate_cursor()
-        coord = self.get_coordinate()
-        ps.Publisher().sendMessage('Update cross position',
-                                   (self.orientation, coord_cross))
-        ps.Publisher().sendMessage(('Set scroll position', 'SAGITAL'),
-                                   coord[0])
-        ps.Publisher().sendMessage(('Set scroll position', 'CORONAL'),
-                                   coord[1])
-        ps.Publisher().sendMessage(('Set scroll position', 'AXIAL'),
-                                   coord[2])
-
 
     def get_slice_data(self, render):
         for slice_data in self.slice_data_list:
             if slice_data.renderer is render:
                 return slice_data
 
-    def get_coordinate(self):
-        # Find position
-        x, y, z = self.pick.GetPickPosition()
+    def CalcultateScrollPosition(self, coord):
+        # Based in the given coord (x, y, z), returns a list with the scroll positions for each
+        # orientation, being the first position the sagital, second the coronal
+        # and the last, axial.
+        x, y, z = coord
 
         # First we fix the position origin, based on vtkActor bounds
         bounds = self.actor.GetBounds()
@@ -725,15 +729,20 @@ class Viewer(wx.Panel):
 
         # Then we fix the porpotion, based on vtkImageData spacing
         spacing_x, spacing_y, spacing_z = self.imagedata.GetSpacing()
+
         x = x/spacing_x
         y = y/spacing_y
         z = z/spacing_z
 
+        proj = project.Project()
+        orig_orien = proj.original_orientation
         # Based on the current orientation, we define 3D position
-        coordinates = {"SAGITAL": [self.slice_number, y, z],
-                       "CORONAL": [x, self.slice_number, z],
-                       "AXIAL": [x, y, self.slice_number]}
-        coord = [int(coord) for coord in coordinates[self.orientation]]
+        # Sagita, coronal, axial
+        coordinates = {const.AXIAL: [x, y, z],
+                const.SAGITAL: [z, x, y],
+                const.CORONAL: [x, z, y]}
+
+        coord = [int(i) for i in coordinates[orig_orien]]
 
         # According to vtkImageData extent, we limit min and max value
         # If this is not done, a VTK Error occurs when mouse is pressed outside
@@ -746,13 +755,18 @@ class Viewer(wx.Panel):
                 coord[index] = extent_max[index]
             elif coord[index] < extent_min[index]:
                 coord[index] = extent_min[index]
-        #print "New coordinate: ", coord
-
         return coord
 
     def get_coordinate_cursor(self):
         # Find position
         x, y, z = self.pick.GetPickPosition()
+        bounds = self.actor.GetBounds()
+        if bounds[0] == bounds[1]:
+            x = bounds[0]
+        elif bounds[2] == bounds[3]:
+            y = bounds[2]
+        elif bounds[4] == bounds[5]:
+            z = bounds[4]
         return x, y, z
 
     def get_coordinate_cursor_edition(self, slice_data):
@@ -829,13 +843,68 @@ class Viewer(wx.Panel):
                                  'Show text actors on viewers')
         ps.Publisher().subscribe(self.OnHideText,
                                  'Hide text actors on viewers')
+        ps.Publisher().subscribe(self.OnExportPicture,'Export picture to file')
+        ps.Publisher().subscribe(self.SetDefaultCursor, 'Set interactor default cursor')
+    
+    def SetDefaultCursor(self, pusub_evt):
+        self.interactor.SetCursor(wx.StockCursor(wx.CURSOR_DEFAULT))
+    
+    def OnExportPicture(self, pubsub_evt):
+        ps.Publisher().sendMessage('Begin busy cursor')
+        view_prop_list = []
+        for slice_data in self.slice_data_list:
+            view_prop_list.append(slice_data.box_actor) 
+            self.ren.RemoveViewProp(slice_data.box_actor)
+
+        id, filename, filetype = pubsub_evt.data
+        dict = {"AXIAL": const.AXIAL,
+                "CORONAL": const.CORONAL,
+                "SAGITAL": const.SAGITAL}
+
+        if id == dict[self.orientation]:
+            if filetype == const.FILETYPE_POV:
+                renwin = self.interactor.GetRenderWindow()
+                image = vtk.vtkWindowToImageFilter()
+                image.SetInput(renwin)
+                writer = vtk.vtkPOVExporter()
+                writer.SetFilePrefix(filename.split(".")[0])
+                writer.SetRenderWindow(renwin)
+                writer.Write()
+            else:
+                #Use tiling to generate a large rendering.
+                image = vtk.vtkRenderLargeImage()
+                image.SetInput(self.ren)
+                image.SetMagnification(2)
+
+                image = image.GetOutput()
+
+
+                # write image file
+                if (filetype == const.FILETYPE_BMP):
+                    writer = vtk.vtkBMPWriter()
+                elif (filetype == const.FILETYPE_JPG):
+                    writer =  vtk.vtkJPEGWriter()
+                elif (filetype == const.FILETYPE_PNG):
+                    writer = vtk.vtkPNGWriter()
+                elif (filetype == const.FILETYPE_PS):
+                    writer = vtk.vtkPostScriptWriter()
+                elif (filetype == const.FILETYPE_TIF):
+                    writer = vtk.vtkTIFFWriter()
+                    filename = "%s.tif"%filename.strip(".tif")
+                
+                writer.SetInput(image)
+                writer.SetFileName(filename)
+                writer.Write()
+
+            for actor in view_prop_list:
+                self.ren.AddViewProp(actor)
+
+        ps.Publisher().sendMessage('End busy cursor')
 
     def OnShowText(self, pubsub_evt):
-        print "OnShowText"
         self.ShowTextActors()
 
     def OnHideText(self, pubsub_evt):
-        print "OnHideText"
         self.HideTextActors()
 
 
@@ -844,7 +913,6 @@ class Viewer(wx.Panel):
 
     def CloseProject(self):
         for slice_data in self.slice_data_list:
-            self.interactor.GetRenderWindow().RemoveRenderer(slice_data.renderer)
             del slice_data
             
         self.modes = []#['DEFAULT']
@@ -861,9 +929,12 @@ class Viewer(wx.Panel):
         state = pubsub_evt.data
         self.SetInteractorStyle(state)
         
+        if (state != const.SLICE_STATE_EDITOR):
+            ps.Publisher().sendMessage('Set interactor default cursor')
+
+        
         
     def ChangeBrushOperation(self, pubsub_evt):
-        #print pubsub_evt.data
         self._brush_cursor_op = pubsub_evt.data
 
     def __bind_events_wx(self):
@@ -928,8 +999,6 @@ class Viewer(wx.Panel):
                     style = style | sd.BORDER_LEFT
                 if i == self.layout[0] - 1:
                     style = style | sd.BORDER_RIGHT
-
-                print "->Style", style
 
                 slice_data.SetBorderStyle(style)
                 n += 1
@@ -1054,28 +1123,17 @@ class Viewer(wx.Panel):
         extent = slice_data.actor.GetDisplayExtent()
         cam = slice_data.renderer.GetActiveCamera()
 
-        #print
-        #print self.orientation
-        #print x, y, z
-        #print actor_bound
-        #print "ViewUp", cam.GetViewUp()
-        #print "Position", cam.GetPosition()
-        #print "Orientation", cam.GetOrientation()
-        #print "Focal Point", cam.GetFocalPoint()
-        
         vCamera = numpy.array(cam.GetPosition()) - numpy.array(cam.GetFocalPoint())
         n_vCamera = vCamera / numpy.linalg.norm(vCamera)
-        #print "Normalized", n_vCamera
 
         pos = [j + 0.01 * i for i,j in zip(n_vCamera, (x, y, z))]
-        #print "posicao", pos
 
         #yz = [x + abs(x * 0.001), y, z]
         #xz = [x, y - abs(y * 0.001), z]
         #xy = [x, y, z + abs(z * 0.001)]
 
-        #proj = project.Project()
-        #orig_orien = proj.original_orientation
+        proj = project.Project()
+        orig_orien = proj.original_orientation
         #pos = [x, y, z]
 
         #if (orig_orien == const.SAGITAL):
@@ -1098,7 +1156,6 @@ class Viewer(wx.Panel):
         #    elif orientation == "CORONAL":
         #        pos[1] -= abs(pos[1] * 0.001)
 
-        #print ">POS", pos
 
         #pos = [x, y, z]
         #if orientation == "AXIAL":
@@ -1244,7 +1301,6 @@ class Viewer(wx.Panel):
         self.set_slice_number(pos)
         #self.UpdateSlice3D(pos)
         self.pos = pos
-        self.cursor_.Show(1)
         self.interactor.Render()
         if evt:
             evt.Skip()

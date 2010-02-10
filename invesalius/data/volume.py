@@ -81,7 +81,7 @@ class Volume():
         self.curve = 0
         self.plane = None
         self.plane_on = False
-
+        self.volume = None
         self.__bind_events()
 
     def __bind_events(self):
@@ -99,6 +99,26 @@ class Volume():
                                  'Set raycasting relative window and level')
         ps.Publisher().subscribe(self.OnEnableTool,
                                  'Enable raycasting tool')
+        ps.Publisher().subscribe(self.OnCloseProject, 'Close project data')
+        ps.Publisher().subscribe(self.ChangeBackgroundColour,
+                        'Change volume viewer background colour')
+
+    def OnCloseProject(self, pubsub_evt):
+        self.CloseProject()
+
+    def CloseProject(self):
+        #if self.plane:
+        #    self.plane = None
+        #    ps.Publisher().sendMessage('Remove surface actor from viewer', self.plane_actor)
+        if self.plane:
+            self.plane.DestroyObjs()
+            del self.plane
+            self.plane = 0
+            
+        if self.exist:
+            self.exist = None
+            ps.Publisher().sendMessage('Remove surface actor from viewer', self.volume)
+            ps.Publisher().sendMessage('Disable volume cut menu')
 
     def OnLoadVolume(self, pubsub_evt):
         label = pubsub_evt.data
@@ -175,7 +195,7 @@ class Volume():
                                    (ww, wl))
 
     def OnSetRelativeWindowLevel(self, pubsub_evt):
-        diff_ww, diff_wl = pubsub_evt.data
+        diff_wl, diff_ww = pubsub_evt.data
         ww = self.ww + diff_ww
         wl = self.wl + diff_wl
         ps.Publisher().sendMessage('Set volume window and level text',
@@ -354,6 +374,12 @@ class Volume():
                             self.config['backgroundColorBlueComponent'])
         return colour
 
+    def ChangeBackgroundColour(self, pubsub_evt):
+        if (self.config):
+            self.config['backgroundColorRedComponent'] = pubsub_evt.data[0] * 255
+            self.config['backgroundColorGreenComponent'] = pubsub_evt.data[1] * 255
+            self.config['backgroundColorBlueComponent'] = pubsub_evt.data[2] * 255
+
     def BuildTable():
         curve_table = p['16bitClutCurves']
         color_background = (p['backgroundColorRedComponent'],
@@ -393,17 +419,13 @@ class Volume():
     def SetTypeRaycasting(self):
         if self.volume_mapper.IsA("vtkFixedPointVolumeRayCastMapper"):
             if self.config.get('MIP', False):
-                print "MIP"
                 self.volume_mapper.SetBlendModeToMaximumIntensity()
             else:
-                print "Composite"
                 self.volume_mapper.SetBlendModeToComposite()
         else:
             if self.config.get('MIP', False):
-                print "MIP"
                 raycasting_function = vtk.vtkVolumeRayCastMIPFunction()
             else:
-                print "Composite"
                 raycasting_function = vtk.vtkVolumeRayCastCompositeFunction()
                 raycasting_function.SetCompositeMethodToInterpolateFirst()
             self.volume_mapper.SetVolumeRayCastFunction(raycasting_function)
@@ -526,20 +548,17 @@ class Volume():
                                     (volume, colour, (self.ww, self.wl)))
 
     def OnEnableTool(self, pubsub_evt):
-        print "OnEnableTool"
         tool_name, enable = pubsub_evt.data
         if tool_name == _("Cut plane"):
             if self.plane:
                 if enable:
-                    print "Enable"
                     self.plane_on = True
                     self.plane.Enable()
                 else:
-                    print "Disable"
                     self.plane_on = False
                     self.plane.Disable()
             else:
-                print "Enable"
+                self.final_imagedata.Update()
                 self.plane_on = True
                 self.plane = CutPlane(self.final_imagedata,
                                       self.volume_mapper)
@@ -599,7 +618,7 @@ class CutPlane:
         plane_source.SetPoint1(plane_widget.GetPoint1())
         plane_source.SetPoint2(plane_widget.GetPoint2())
         plane_source.SetNormal(plane_widget.GetNormal())
-        plane_mapper = vtk.vtkPolyDataMapper()
+        plane_mapper = self.plane_mapper = vtk.vtkPolyDataMapper()
         plane_mapper.SetInput(plane_source.GetOutput())
         self.plane_actor = plane_actor = vtk.vtkActor()
         plane_actor.SetMapper(plane_mapper)
@@ -654,5 +673,13 @@ class CutPlane:
         self.plane_actor.VisibilityOn() 
         self.plane.SetNormal(self.normal)
         self.plane.SetOrigin(self.origin)
-        ps.Publisher().sendMessage('Render volume viewer', None)     
-
+        ps.Publisher().sendMessage('Render volume viewer', None)  
+        
+    def DestroyObjs(self):
+        ps.Publisher().sendMessage('Remove surface actor from viewer', self.plane_actor)
+        self.Disable()
+        del self.plane_widget   
+        del self.plane_source
+        del self.plane_actor
+        del self.normal
+        del self.plane

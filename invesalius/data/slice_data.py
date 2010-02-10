@@ -44,13 +44,12 @@ class SliceData(object):
     def __create_text(self):
         colour = const.ORIENTATION_COLOUR[self.orientation]
 
-        text = vu.Text()
+        text = vu.TextZero()
         text.SetColour(colour)
         text.SetSize(const.TEXT_SIZE_LARGE)
-        text.SetPosition(const.TEXT_POS_LEFT_DOWN)
-        text.SetVerticalJustificationToBottom()
+        text.SetPosition(const.TEXT_POS_LEFT_DOWN_ZERO)
+        #text.SetVerticalJustificationToBottom()
         text.SetValue(self.number)
-        #text.ShadowOff()
         self.text = text
 
     def __create_line_actor(self, line):
@@ -139,6 +138,7 @@ class SliceData(object):
     def SetNumber(self, number):
         self.number = number
         self.text.SetValue("%d" % self.number)
+        self.text.SetPosition(const.TEXT_POS_LEFT_DOWN_ZERO)
 
     def SetOrientation(self, orientation):
         self.orientation = orientation

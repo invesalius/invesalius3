@@ -21,6 +21,7 @@ import glob
 import os
 import plistlib
 import shutil
+import stat
 import tarfile
 import tempfile
 
@@ -34,7 +35,8 @@ import data.mask as msk
 import data.polydata_utils as pu
 import data.surface as srf
 from presets import Presets
-from utils import Singleton
+from reader import dicom
+from utils import Singleton, debug
 import version
 
 class Project(object):
@@ -45,7 +47,7 @@ class Project(object):
     def __init__(self):
         # Patient/ acquistion information
         self.name = ''
-        #self.dicom = ''
+        self.dicom_sample = ''
         self.modality = ''
         self.original_orientation = ''
         self.min_threshold = ''
@@ -152,7 +154,7 @@ class Project(object):
         elif type_ == "CT":
             self.threshold_modes = self.presets.thresh_ct
         else:
-            print "Different Acquisition Modality!!!"
+            debug("Different Acquisition Modality!!!")
         self.modality = type_
 
     def SetRaycastPreset(self, label):
@@ -175,6 +177,12 @@ class Project(object):
             if getattr(self.__dict__[key], 'SavePlist', None):
                 project[key] = {'#plist':
                                 self.__dict__[key].SavePlist(filename_tmp).decode('utf-8')}
+            elif key == 'dicom_sample':
+                sample_path = os.path.join(dir_temp, 'sample.dcm')
+                shutil.copy(self.dicom_sample.parser.filename,sample_path)
+                os.chmod(sample_path, stat.S_IREAD|stat.S_IWRITE)
+                
+                project[key] = 'sample.dcm'
             else:
                 project[key] = self.__dict__[key]
 
@@ -182,13 +190,11 @@ class Project(object):
         for index in self.mask_dict:
             masks[str(index)] = {'#mask':\
                                  self.mask_dict[index].SavePlist(filename_tmp).decode('utf-8')}
-            print index
 
         surfaces = {}
         for index in self.surface_dict:
             surfaces[str(index)] = {'#surface':\
                                     self.surface_dict[index].SavePlist(filename_tmp)}
-            print index
 
         project['surface_dict'] = surfaces
         project['mask_dict'] = masks
@@ -205,21 +211,17 @@ class Project(object):
     def OpenPlistProject(self, filename):
         
         if not const.VTK_WARNING:
+            log_path = os.path.join(const.LOG_FOLDER, 'vtkoutput.txt')
             fow = vtk.vtkFileOutputWindow()
-            fow.SetFileName('vtkoutput.txt')
+            fow.SetFileName(log_path)
             ow = vtk.vtkOutputWindow()
             ow.SetInstance(fow)
             
         filelist = Extract(filename, tempfile.gettempdir())
-        main_plist = min(filelist, key=lambda x: len(x))
-        #print main_plist
+        main_plist = min(filter(lambda x: x.endswith('.plist'), filelist),
+                         key=lambda x: len(x))
         project = plistlib.readPlist(main_plist)
-
-        #print "antes", self.__dict__
-
-        # Path were extracted project is
         dirpath = os.path.abspath(os.path.split(filelist[0])[0])
-        #print "* dirpath", dirpath
 
         for key in project:
             if key == 'imagedata':
@@ -232,6 +234,14 @@ class Project(object):
                 p = Presets()
                 p.OpenPlist(path)
                 self.presets = p
+            elif key == 'dicom_sample':
+                path = os.path.join(dirpath, project[key])
+                p = dicom.Parser()
+                p.SetFileName(path)
+                d = dicom.Dicom()
+                d.SetParser(p)
+                self.dicom_sample = d
+
             elif key == 'mask_dict':
                 self.mask_dict = {}
                 for mask in project[key]:
@@ -250,8 +260,6 @@ class Project(object):
                     self.surface_dict[s.index] = s
             else: 
                 setattr(self, key, project[key])
-        #print "depois", self.__dict__
-
 
 
 def Compress(folder, filename):

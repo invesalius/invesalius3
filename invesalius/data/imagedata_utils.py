@@ -75,10 +75,8 @@ def ResampleImage2D(imagedata, px, py,
     else:
         f = extent[1]
 
-
     factor_x = px/float(f+1)
     factor_y = py/float(f+1)
-
 
     resample = vtk.vtkImageResample()
     resample.SetInput(imagedata)
@@ -159,7 +157,14 @@ def BuildEditedImage(imagedata, points):
         imagedata.SetScalarComponentFromDouble(x, y, z, 0, colour)
         imagedata.Update()
 
-    return imagedata
+    gauss = vtk.vtkImageGaussianSmooth()
+    gauss.SetInput(imagedata)
+    gauss.SetRadiusFactor(0.6)
+    gauss.Update()
+
+    return gauss.GetOutput()
+    #return imagedata
+
 
 def Export(imagedata, filename, bin=False):
     writer = vtk.vtkXMLImageDataWriter()
@@ -214,9 +219,10 @@ def ExtractVOI(imagedata,xi,xf,yi,yf,zi,zf):
     voi.Update()
     return voi.GetOutput()
 
-def CreateImageData(filelist, zspacing, size, bits):
+def CreateImageData(filelist, zspacing, xyspacing,size,
+                                bits, use_dcmspacing):
     message = _("Generating multiplanar visualization...")
-    
+
     if not const.VTK_WARNING:
         log_path = os.path.join(const.LOG_FOLDER, 'vtkoutput.txt')
         fow = vtk.vtkFileOutputWindow()
@@ -225,9 +231,9 @@ def CreateImageData(filelist, zspacing, size, bits):
         ow.SetInstance(fow)
 
     x,y = size
-    px, py = utils.PredictingMemory(len(filelist), x, y, bits)
+    px, py = utils.predict_memory(len(filelist), x, y, bits)
 
-    print "Image Resized to >>>", px, "x", py
+    utils.debug("Image Resized to >>> %f x %f" % (px, py))
 
     if (x == px) and (y == py):
         const.REDUCE_IMAGEDATA_QUALITY = 0
@@ -250,7 +256,12 @@ def CreateImageData(filelist, zspacing, size, bits):
         # The zpacing is a DicomGroup property, so we need to set it
         imagedata = vtk.vtkImageData()
         imagedata.DeepCopy(reader.GetOutput())
-        spacing = imagedata.GetSpacing()
+        if (use_dcmspacing):
+            spacing = xyspacing
+            spacing[2] = zspacing
+        else:
+            spacing = imagedata.GetSpacing()
+
         imagedata.SetSpacing(spacing[0], spacing[1], zspacing)
     else:
 
@@ -273,18 +284,29 @@ def CreateImageData(filelist, zspacing, size, bits):
                          update_progress(reader,message))
             reader.Update()
 
+            if (use_dcmspacing):
+                spacing = xyspacing
+                spacing[2] = zspacing
+            else:
+                spacing = reader.GetOutput().GetSpacing()
+
+            tmp_image = vtk.vtkImageData()
+            tmp_image.DeepCopy(reader.GetOutput())
+            tmp_image.SetSpacing(spacing[0], spacing[1], zspacing)
+            tmp_image.Update()
+
             #Resample image in x,y dimension
-            slice_imagedata = ResampleImage2D(reader.GetOutput(), px, py, update_progress)
+            slice_imagedata = ResampleImage2D(tmp_image, px, py, update_progress)
             #Stack images in Z axes
             appender.AddInput(slice_imagedata)
             #appender.AddObserver("ProgressEvent", lambda obj,evt:update_progress(appender))
             appender.Update()
 
+        spacing = appender.GetOutput().GetSpacing()
+
         # The zpacing is a DicomGroup property, so we need to set it
         imagedata = vtk.vtkImageData()
         imagedata.DeepCopy(appender.GetOutput())
-        spacing = imagedata.GetSpacing()
-
         imagedata.SetSpacing(spacing[0], spacing[1], zspacing)
 
     imagedata.AddObserver("ProgressEvent", lambda obj,evt:
@@ -294,35 +316,61 @@ def CreateImageData(filelist, zspacing, size, bits):
     return imagedata
 
 
-"""
 class ImageCreator:
     def __init__(self):
-        ps.Publisher().sendMessage("Cancel imagedata load", self.CancelImageDataLoad)
+        self.running = True
+        ps.Publisher().subscribe(self.CancelImageDataLoad, "Cancel DICOM load")
 
     def CancelImageDataLoad(self, evt_pusub):
-        self.running = evt_pusub.data
+        utils.debug("Canceling")
+        self.running = False
 
-    def CreateImageData(filelist, zspacing):
-        message = "Generating multiplanar visualization..."
+    def CreateImageData(self, filelist, zspacing, size, bits):
+        message = _("Generating multiplanar visualization...")
+
+        if not const.VTK_WARNING:
+            log_path = os.path.join(const.LOG_FOLDER, 'vtkoutput.txt')
+            fow = vtk.vtkFileOutputWindow()
+            fow.SetFileName(log_path)
+            ow = vtk.vtkOutputWindow()
+            ow.SetInstance(fow)
+
+        x,y = size
+        px, py = utils.predict_memory(len(filelist), x, y, bits)
+        utils.debug("Image Resized to >>> %f x %f" % (px, py))
+
+        if (x == px) and (y == py):
+            const.REDUCE_IMAGEDATA_QUALITY = 0
+        else:
+            const.REDUCE_IMAGEDATA_QUALITY = 1
+
         if not(const.REDUCE_IMAGEDATA_QUALITY):
-            update_progress= vtk_utils.ShowProgress(1)
+            update_progress= vtk_utils.ShowProgress(1, dialog_type = "ProgressDialog")
 
             array = vtk.vtkStringArray()
             for x in xrange(len(filelist)):
+                if not self.running:
+                    return False
                 array.InsertValue(x,filelist[x])
 
+            if not self.running:
+                return False
             reader = vtkgdcm.vtkGDCMImageReader()
             reader.SetFileNames(array)
             reader.AddObserver("ProgressEvent", lambda obj,evt:
                          update_progress(reader,message))
             reader.Update()
 
+            if not self.running:
+                reader.AbortExecuteOn()
+                return False
             # The zpacing is a DicomGroup property, so we need to set it
             imagedata = vtk.vtkImageData()
             imagedata.DeepCopy(reader.GetOutput())
             spacing = imagedata.GetSpacing()
             imagedata.SetSpacing(spacing[0], spacing[1], zspacing)
         else:
+
             update_progress= vtk_utils.ShowProgress(2*len(filelist),
                                                 dialog_type = "ProgressDialog")
 
@@ -330,11 +378,14 @@ class ImageCreator:
             appender = vtk.vtkImageAppend()
             appender.SetAppendAxis(2) #Define Stack in Z
 
+
             # Reformat each slice
             for x in xrange(len(filelist)):
                 # TODO: We need to check this automatically according
                 # to each computer's architecture
                 # If the resolution of the matrix is too large
+                if not self.running:
+                    return False
                 reader = vtkgdcm.vtkGDCMImageReader()
                 reader.SetFileName(filelist[x])
                 reader.AddObserver("ProgressEvent", lambda obj,evt:
@@ -342,15 +393,15 @@ class ImageCreator:
                 reader.Update()
 
                 #Resample image in x,y dimension
-
-                slice_imagedata = ResampleImage2D(reader.GetOutput(), 256, update_progress)
-
+                slice_imagedata = ResampleImage2D(reader.GetOutput(), px, py, update_progress)
                 #Stack images in Z axes
                 appender.AddInput(slice_imagedata)
                 #appender.AddObserver("ProgressEvent", lambda obj,evt:update_progress(appender))
                 appender.Update()
 
             # The zpacing is a DicomGroup property, so we need to set it
+            if not self.running:
+                return False
             imagedata = vtk.vtkImageData()
             imagedata.DeepCopy(appender.GetOutput())
             spacing = imagedata.GetSpacing()
@@ -362,5 +413,3 @@ class ImageCreator:
         imagedata.Update()
 
         return imagedata
-"""
-

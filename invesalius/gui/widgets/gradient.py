@@ -141,6 +141,16 @@ class SliderBorder(object):
         elif self.type == MAXBORDER and self.pos+self.width >= self.WindowWidth:
            self.pos = self.WindowWidth - self.width
 
+    def SetPosition(self, pos):
+        """
+        Move the border
+        """
+        self.pos = pos
+        if self.type == MINBORDER and self.pos < 0:
+            self.pos = 0
+        elif self.type == MAXBORDER and self.pos+self.width >= self.WindowWidth:
+           self.pos = self.WindowWidth - self.width
+
     def GetCursor(self):
         """
         This function returns the cursor related to the SliderBorder
@@ -432,7 +442,10 @@ class GradientPanel(wx.Panel):
             slide = x - self.MousePositionX
             self.MousePositionX += slide
             self.SetCursor(self.SelectedObject.GetCursor())
-            self.SelectedObject.DoSlide(slide)
+            if isinstance(self.SelectedObject, SliderControl):
+                self.SelectedObject.DoSlide(slide)
+            else:
+                self.SelectedObject.SetPosition(x)
             self.Slider.Calculate(self.SelectedObject)
             if self.GetMin() >= self.GetMax():
                 self.SetMinValue(self.GetMax()-1)
@@ -545,6 +558,7 @@ class GradientSlider(wx.Panel):
     def ChangeMinValue(self, e):
         # Why do I need to change slide min value if it has been changed for
         # the user?
+
         if not self.slided:
             self.GradientPanel.SetMinValue(int(self.SpinMin.GetValue()))
             self._GenerateEvent()
@@ -563,25 +577,28 @@ class GradientSlider(wx.Panel):
         self.slided = 0
         self._GenerateEvent()
 
-    def SetMinValue(self, value):
+    def SetMinValue(self, value, do_event=False):
         try:
             value = value.data
         except AttributeError:
             pass
+        self.slided = 0 if do_event else 1
         self.GradientPanel.SetMinValue(value)
         self.SpinMin.SetValue(int(value))
         self.GradientPanel.Refresh()
 
-    def SetMaxValue(self, value):
+    def SetMaxValue(self, value, do_event=False):
         try:
             value = value.data
         except AttributeError:
             pass
+        self.slided = 0 if do_event else 1
         self.GradientPanel.SetMaxValue(value)
         self.SpinMax.SetValue(int(value))
         self.GradientPanel.Refresh()
 
     def SetMaxRange(self, value):
+        print "Setting max range ", value
         self.SliderData.SetMaxRange(value)
         self.SpinMin.SetMax(value)
         self.SpinMax.SetMax(value)

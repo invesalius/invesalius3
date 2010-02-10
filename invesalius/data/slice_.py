@@ -16,8 +16,6 @@
 #    PARTICULAR. Consulte a Licenca Publica Geral GNU para obter mais
 #    detalhes.
 #--------------------------------------------------------------------------
-import random
-
 import vtk
 import wx.lib.pubsub as ps
 
@@ -27,11 +25,11 @@ from mask import Mask
 import style as st
 from project import Project
 import session as ses
-from utils import Singleton
+import utils
 
 
 class Slice(object):
-    __metaclass__= Singleton
+    __metaclass__= utils.Singleton
     # Only one slice will be initialized per time (despite several viewers
     # show it from distinct perspectives).
     # Therefore, we use Singleton design pattern for implementing it.
@@ -47,12 +45,6 @@ class Slice(object):
         self.__bind_events()
 
     def __bind_events(self):
-        # Slice properties
-        ps.Publisher().subscribe(self.UpdateCursorPosition,
-                                 'Update cursor position in slice')
-        ps.Publisher().subscribe(self.UpdateCursorPositionSingleAxis,
-                                 'Update cursor single position in slice')
-
         # General slice control
         ps.Publisher().subscribe(self.CreateSurfaceFromIndex,
                                  'Create surface from index')
@@ -83,16 +75,50 @@ class Slice(object):
 
         ps.Publisher().subscribe(self.UpdateColourTableBackground,\
                                  'Change colour table from background image')
-        
+
         ps.Publisher().subscribe(self.InputImageWidget, 'Input Image in the widget')
         ps.Publisher().subscribe(self.OnExportMask,'Export mask to file')
 
         ps.Publisher().subscribe(self.OnCloseProject, 'Close project data')
 
-
-
         ps.Publisher().subscribe(self.OnEnableStyle, 'Enable style')
         ps.Publisher().subscribe(self.OnDisableStyle, 'Disable style')
+
+        ps.Publisher().subscribe(self.OnRemoveMasks, 'Remove masks')
+        ps.Publisher().subscribe(self.OnDuplicateMasks, 'Duplicate masks')
+
+    def OnRemoveMasks(self, pubsub_evt):
+        selected_items = pubsub_evt.data
+        proj = Project()
+        for item in selected_items:
+            proj.RemoveMask(item)
+
+        index = self.current_mask.index
+        if (proj.mask_dict) and (index in selected_items):
+            self.SelectCurrentMask(0)
+        elif not proj.mask_dict:
+            self.blend_filter.SetOpacity(1, 0)
+            self.blend_filter.Update()
+            ps.Publisher().sendMessage('Update slice viewer')
+
+    def OnDuplicateMasks(self, pubsub_evt):
+        selected_items = pubsub_evt.data
+        proj = Project()
+        mask_dict = proj.mask_dict
+        for index in selected_items:
+            original_mask = mask_dict[index]
+            # compute copy name
+            name = original_mask.name
+            names_list = [mask_dict[i].name for i in mask_dict.keys()]
+            new_name = utils.next_copy_name(name, names_list) 
+            # create new mask
+            self.CreateMask(imagedata = original_mask.imagedata,
+                            name = new_name,
+                            colour = original_mask.colour,
+                            opacity = original_mask.opacity,
+                            threshold_range = original_mask.threshold_range,
+                            edition_threshold_range = original_mask.edition_threshold_range,
+                            edited_points = original_mask.edited_points)
 
 
     def OnEnableStyle(self, pubsub_evt):
@@ -107,6 +133,10 @@ class Slice(object):
         if (state in const.SLICE_STYLES):
             new_state = self.interaction_style.RemoveState(state)
             ps.Publisher().sendMessage('Set slice interaction style', new_state)
+            
+            if (state == const.SLICE_STATE_EDITOR):
+                ps.Publisher().sendMessage('Set interactor default cursor')
+
 
     def OnCloseProject(self, pubsub_evt):
         self.CloseProject()
@@ -114,6 +144,7 @@ class Slice(object):
     def CloseProject(self):
         self.imagedata = None
         self.current_mask = None
+        ps.Publisher().sendMessage('Select first item from slice menu')
         #self.blend_filter = None
         #self.blend_filter = None
         #self.num_gradient = 0
@@ -270,11 +301,6 @@ class Slice(object):
        
         proj = Project()
         proj.mask_dict[self.current_mask.index].threshold_range = threshold_range
-   
-        session = ses.Session()
-        session.ChangeProject()
-
-
  
 
     def ShowMask(self, index, value):
@@ -330,16 +356,15 @@ class Slice(object):
     #---------------------------------------------------------------------------
     def SelectCurrentMask(self, index):
         "Insert mask data, based on given index, into pipeline."
-
         # This condition is not necessary in Linux, only under mac and windows
         # because combobox event is binded when the same item is selected again.
         #if index != self.current_mask.index:
-        if self.current_mask and self.blend_filter:
+        if self.current_mask and self.blend_filter and index > -1:
             proj = Project()
             future_mask = proj.GetMask(index)
-
+            future_mask.is_shown = True
             self.current_mask = future_mask
-
+            
             colour = future_mask.colour
             index = future_mask.index
             self.SetMaskColour(index, colour, update=False)
@@ -348,9 +373,10 @@ class Slice(object):
             self.img_colours_mask.SetInput(imagedata)
 
             if self.current_mask.is_shown:
+                print 1
                 self.blend_filter.SetOpacity(1, self.current_mask.opacity)
             else:
-
+                print 2
                 self.blend_filter.SetOpacity(1, 0)
             self.blend_filter.Update()
 
@@ -383,9 +409,7 @@ class Slice(object):
                                     edited_points, overwrite_surface))
 
     def GetOutput(self):
-        return self.cross.GetOutput()
-
-
+        return self.blend_filter.GetOutput()
 
     def SetInput(self, imagedata, mask_dict):
         self.imagedata = imagedata
@@ -398,7 +422,6 @@ class Slice(object):
         else:
             self.__load_masks(imagedata, mask_dict)
             imagedata_mask = self.img_colours_mask.GetOutput()
-            
 
         mask_opacity = self.current_mask.opacity
 
@@ -416,46 +439,8 @@ class Slice(object):
         blend_filter.GetOutput().ReleaseDataFlagOn()
         self.blend_filter = blend_filter
 
-        # global values
-        CURSOR_X = -1 # SAGITAL
-        CURSOR_Y = -1 # CORONAL
-        CURSOR_Z = -1 # AXIAL
-
-        CURSOR_VALUE = 4095
-        CURSOR_RADIUS = 1000
-
-        cross = vtk.vtkImageCursor3D()
-        cross.GetOutput().ReleaseDataFlagOn()
-        cross.SetInput(blend_filter.GetOutput())
-        cross.SetCursorPosition(CURSOR_X, CURSOR_Y, CURSOR_Z)
-        cross.SetCursorValue(CURSOR_VALUE)
-        cross.SetCursorRadius(CURSOR_RADIUS)
-        cross.Modified()
-        self.cross = cross
-
         self.window_level = vtk.vtkImageMapToWindowLevelColors()
         self.window_level.SetInput(self.imagedata)
-
-
-    def UpdateCursorPosition(self, pubsub_evt):
-
-        new_pos = pubsub_evt.data
-        self.cross.SetCursorPosition(new_pos)
-        self.cross.Modified()
-        self.cross.Update()
-        ps.Publisher().sendMessage('Update slice viewer')
-
-    def UpdateCursorPositionSingleAxis(self, pubsub_evt):
-        axis_pos = pubsub_evt.data
-        x, y, z = self.cross.GetCursorPosition()
-        new_pos = [x,y,z]
-        for key in axis_pos:
-            new_pos[key] = axis_pos[key]
-        self.cross.SetCursorPosition(new_pos)
-        self.cross.Modified()
-        self.cross.Update()
-        ps.Publisher().sendMessage('Update slice viewer')
-
 
     def __create_background(self, imagedata):
         self.imagedata = imagedata
@@ -522,18 +507,28 @@ class Slice(object):
         
         widget.SetInput(flip.GetOutput())
  
-    
-    def CreateMask(self, imagedata=None, name=None):
+
+    def CreateMask(self, imagedata=None, name=None, colour=None,
+                    opacity=None, threshold_range=None,
+                    edition_threshold_range = None,
+                    edited_points=None):
 
         future_mask = Mask()
+        if colour:
+            future_mask.colour = colour
+        if opacity:
+            future_mask.opacity = opacity
+        if threshold_range:
+            future_mask.threshold_range = threshold_range
+        if edition_threshold_range:
+            future_mask.edition_threshold_range = edition_threshold_range
+        if edited_points:
+            future_mask.edited_points = edited_points
 
         # this is not the first mask, so we will import data from old imagedata
         if imagedata is None:
-
             old_mask = self.current_mask
-
             imagedata = old_mask.imagedata
-
             future_mask.threshold_range = old_mask.threshold_range
 
         # if not defined in the method call, this will have been computed on
@@ -576,8 +571,8 @@ class Slice(object):
             mask = mask_dict[key]
         
             # update gui related to mask
-            print "__load_masks"
-            print 'THRESHOLD_RANGE', mask.threshold_range
+            utils.debug("__load_masks")
+            utils.debug('THRESHOLD_RANGE %s'% mask.threshold_range)
             ps.Publisher().sendMessage('Add mask',
                                     (mask.index,
                                      mask.name,

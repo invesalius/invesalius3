@@ -8,7 +8,7 @@ class SurfaceProcess(multiprocessing.Process):
 
     def __init__(self, pipe, filename, mode, min_value, max_value,
                  decimate_reduction, smooth_relaxation_factor,
-                 smooth_iterations, language):
+                 smooth_iterations, language,  fill_holes, keep_largest):
 
         multiprocessing.Process.__init__(self)
         self.pipe = pipe
@@ -20,6 +20,9 @@ class SurfaceProcess(multiprocessing.Process):
         self.smooth_relaxation_factor = smooth_relaxation_factor
         self.smooth_iterations = smooth_iterations
         self.language = language
+        self.fill_holes = fill_holes
+        self.keep_largest = keep_largest
+
 
     def run(self):
         self.CreateSurface()
@@ -86,15 +89,26 @@ class SurfaceProcess(multiprocessing.Process):
                     self.SendProgress(obj, _("Generating 3D surface...")))
             polydata = smoother.GetOutput()
 
+
+        if self.keep_largest:
+            conn = vtk.vtkPolyDataConnectivityFilter()
+            conn.SetInput(polydata)
+            conn.SetExtractionModeToLargestRegion()
+            conn.AddObserver("ProgressEvent", lambda obj,evt:
+                    self.SendProgress(obj, _("Generating 3D surface...")))
+            polydata = conn.GetOutput()
+
         # Filter used to detect and fill holes. Only fill boundary edges holes.
         #TODO: Hey! This piece of code is the same from
         # polydata_utils.FillSurfaceHole, we need to review this.
-        filled_polydata = vtk.vtkFillHolesFilter()
-        filled_polydata.SetInput(polydata)
-        filled_polydata.SetHoleSize(500)
-        filled_polydata.AddObserver("ProgressEvent", lambda obj,evt:
-                self.SendProgress(obj, _("Generating 3D surface...")))
-        polydata = filled_polydata.GetOutput()
+        if self.fill_holes:
+            filled_polydata = vtk.vtkFillHolesFilter()
+            filled_polydata.SetInput(polydata)
+            filled_polydata.SetHoleSize(300)
+            filled_polydata.AddObserver("ProgressEvent", lambda obj,evt:
+                    self.SendProgress(obj, _("Generating 3D surface...")))
+            polydata = filled_polydata.GetOutput()
+
 
 
         filename = tempfile.mktemp()

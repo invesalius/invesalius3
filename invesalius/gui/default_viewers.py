@@ -262,7 +262,6 @@ class VolumeInteraction(wx.Panel):
         self.aui_manager.Update()
 
     def OnPointChanged(self, evt):
-        print "Removed"
         ps.Publisher.sendMessage('Set raycasting refresh', None)
         ps.Publisher.sendMessage('Set raycasting curve', evt.GetCurve())
         ps.Publisher().sendMessage('Render volume viewer')
@@ -278,7 +277,6 @@ class VolumeInteraction(wx.Panel):
 
     def OnSetRaycastPreset(self, evt_pubsub):
         preset = project.Project().raycasting_preset
-        print "Preset >>>", preset
         p = self.aui_manager.GetPane(self.clut_raycasting)
         self.clut_raycasting.SetRaycastPreset(preset)
         if self.clut_raycasting.to_draw_points and \
@@ -390,6 +388,13 @@ class VolumeToolPanel(wx.Panel):
     def __bind_events(self):
         ps.Publisher().subscribe(self.ChangeButtonColour,
                                  'Change volume viewer gui colour')
+        ps.Publisher().subscribe(self.DisablePreset, 'Close project data')
+        ps.Publisher().subscribe(self.Uncheck, 'Uncheck image plane menu')
+        ps.Publisher().subscribe(self.DisableVolumeCutMenu, 'Disable volume cut menu')
+        
+    def DisablePreset(self, pubsub_evt):
+        self.off_item.Check(1)
+
 
     def __bind_events_wx(self):
         self.button_slice_plane.Bind(wx.EVT_LEFT_DOWN, self.OnButtonSlicePlane)
@@ -416,20 +421,25 @@ class VolumeToolPanel(wx.Panel):
 
     def __init_menus(self, pubsub_evt=None):
         # MENU RELATED TO RAYCASTING TYPES
-        menu = wx.Menu()
+        menu = self.menu = wx.Menu()
         for name in const.RAYCASTING_TYPES:
             id = wx.NewId()
             item = wx.MenuItem(menu, id, name, kind=wx.ITEM_RADIO)
             menu.AppendItem(item)
             if name == const.RAYCASTING_OFF_LABEL:
+                self.off_item = item
                 item.Check(1)
             ID_TO_NAME[id] = name
 
         menu.AppendSeparator()
         # MENU RELATED TO RAYCASTING TOOLS
+        self.id_cutplane = None
         submenu = wx.Menu()
         for name in const.RAYCASTING_TOOLS:
            id = wx.NewId()
+           if not(self.id_cutplane):
+               self.id_cutplane = id
+           
            item = wx.MenuItem(submenu, id, name, kind=wx.ITEM_CHECK)
            submenu.AppendItem(item)
            ID_TO_TOOL[id] = name
@@ -473,6 +483,11 @@ class VolumeToolPanel(wx.Panel):
 
         self.Fit()
         self.Update()
+        
+    def DisableVolumeCutMenu(self, pusub_evt):
+        self.menu.Enable(RAYCASTING_TOOLS, 0)
+        item = ID_TO_TOOL_ITEM[self.id_cutplane]
+        item.Check(0)
 
     def BuildRaycastingMenu(self):
         presets = []
@@ -493,7 +508,11 @@ class VolumeToolPanel(wx.Panel):
         else:
             ps.Publisher().sendMessage('Enable plane', label)
 
-
+    def Uncheck(self, pubsub_evt):        
+        for item in self.slice_plane_menu.GetMenuItems():
+            if (item.IsChecked()):
+                item.Check(0)
+    
     def ChangeButtonColour(self, pubsub_evt):
         colour = [i*255 for i in pubsub_evt.data]
         self.button_colour.SetColour(colour)
@@ -521,13 +540,11 @@ class VolumeToolPanel(wx.Panel):
             #        if i is not item:
             #            i.Check(0)
             if not TOOL_STATE[id]:
-                print "item is checked"
                 ps.Publisher().sendMessage('Enable raycasting tool',
                                           [ID_TO_TOOL[id],1])
                 TOOL_STATE[id] = True
                 item.Check(1)
             else:
-                print "item is not checked"
                 ps.Publisher().sendMessage('Enable raycasting tool',
                                             [ID_TO_TOOL[id],0])
                 TOOL_STATE[id] = False

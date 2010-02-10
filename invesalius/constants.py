@@ -28,14 +28,18 @@ from project import Project
 #---------------
 
 # VTK text
-TEXT_SIZE = 14
+TEXT_SIZE_SMALL = 11
+TEXT_SIZE = 12
 TEXT_SIZE_LARGE = 16
 TEXT_COLOUR = (1,1,1)
 
 (X,Y) = (0.03, 0.97)
+(XZ, YZ) = (0.05, 0.93)
 TEXT_POS_LEFT_UP = (X, Y)
 #------------------------------------------------------------------
 TEXT_POS_LEFT_DOWN = (X, 1-Y) # SetVerticalJustificationToBottom
+
+TEXT_POS_LEFT_DOWN_ZERO = (X, 1-YZ)
 #------------------------------------------------------------------
 TEXT_POS_RIGHT_UP = (1-X, Y) # SetJustificationToRight
 #------------------------------------------------------------------
@@ -44,25 +48,32 @@ TEXT_POS_RIGHT_DOWN = (1-X, 1-Y) # SetVerticalJustificationToBottom &
 #------------------------------------------------------------------
 TEXT_POS_HCENTRE_DOWN = (0.5, 1-Y) # SetJustificationToCentered
                                    # ChildrticalJustificationToBottom
+
+TEXT_POS_HCENTRE_DOWN_ZERO = (0.5, 1-YZ)
 #------------------------------------------------------------------
 TEXT_POS_HCENTRE_UP = (0.5, Y)  # SetJustificationToCentered
 #------------------------------------------------------------------
 TEXT_POS_VCENTRE_RIGHT = (1-X, 0.5) # SetVerticalJustificationToCentered
                                     # SetJustificationToRight
+TEXT_POS_VCENTRE_RIGHT_ZERO = (1-XZ, 0.5)
 #------------------------------------------------------------------
 TEXT_POS_VCENTRE_LEFT = (X, 0.5) # SetVerticalJustificationToCentered
 #------------------------------------------------------------------
 
 
 # Slice orientation
-AXIAL = 0
-CORONAL = 1
-SAGITAL = 2
+AXIAL = 1
+CORONAL = 2
+SAGITAL = 3
+VOLUME = 4
 
 # Colour representing each orientation
 ORIENTATION_COLOUR = {'AXIAL': (1,0,0), # Red
                       'CORONAL': (0,1,0), # Green
                       'SAGITAL': (0,0,1)} # Blue
+
+IMPORT_INTERVAL = [_("Keep all slices"), _("Skip 1 for each 2 slices"),
+                   _("Skip 2 for each 3 slices")]
 
 # Camera according to slice's orientation
 #CAM_POSITION = {"AXIAL":(0, 0, 1), "CORONAL":(0, -1, 0), "SAGITAL":(1, 0, 0)}
@@ -70,10 +81,10 @@ ORIENTATION_COLOUR = {'AXIAL': (1,0,0), # Red
 AXIAL_SLICE_CAM_POSITION = {"AXIAL":(0, 0, 1), "CORONAL":(0, -1, 0), "SAGITAL":(1, 0, 0)}
 AXIAL_SLICE_CAM_VIEW_UP =  {"AXIAL":(0, 1, 0), "CORONAL":(0, 0, 1), "SAGITAL":(0, 0, 1)}
 
-SAGITAL_SLICE_CAM_POSITION = {"AXIAL":(0, -1, 0), "CORONAL":(1, 0, 0), "SAGITAL":(0, 0, 1)}
+SAGITAL_SLICE_CAM_POSITION = {"AXIAL":(0, 1, 0), "CORONAL":(1, 0, 0), "SAGITAL":(0, 0, -1)}
 SAGITAL_SLICE_CAM_VIEW_UP =  {"AXIAL":(-1, 0, 0), "CORONAL":(0, 1, 0), "SAGITAL":(0, 1, 0)}
 
-CORONAL_SLICE_CAM_POSITION = {"AXIAL":(0, -1, 0), "CORONAL":(0, 0, 1), "SAGITAL":(1, 0, 0)}
+CORONAL_SLICE_CAM_POSITION = {"AXIAL":(0, 1, 0), "CORONAL":(0, 0, 1), "SAGITAL":(1, 0, 0)}
 CORONAL_SLICE_CAM_VIEW_UP =  {"AXIAL":(0, 0, -1), "CORONAL":(0, 1, 0), "SAGITAL":(0, 1, 0)}
 
 SLICE_POSITION = {AXIAL:[AXIAL_SLICE_CAM_VIEW_UP, AXIAL_SLICE_CAM_POSITION],
@@ -176,6 +187,24 @@ MASK_COLOUR =  [(0.33, 1, 0.33),
                 #(0.792156862745098, 1.0, 0.66666666666666663), # too "light"
                 #(0.66666666666666663, 0.792156862745098, 1.0)]
 
+
+SURFACE_COLOUR =  [(0.33, 1, 0.33),
+                (1, 1, 0.33),
+                (0.33, 0.91, 1),
+                (1, 0.33, 1),
+                (1, 0.68, 0.33),
+                (1, 0.33, 0.33),
+                (0.33333333333333331, 0.33333333333333331, 1.0),
+                (1.0, 0.33333333333333331, 0.66666666666666663),
+                (0.74901960784313726, 1.0, 0.0),
+                (0.83529411764705885, 0.33333333333333331, 1.0),
+                (0.792156862745098, 0.66666666666666663, 1.0),
+                (1.0, 0.66666666666666663, 0.792156862745098),
+                (0.33333333333333331, 1.0, 0.83529411764705885),
+                (1.0, 0.792156862745098, 0.66666666666666663),
+                (0.792156862745098, 1.0, 0.66666666666666663),
+                (0.66666666666666663, 0.792156862745098, 1.0)]
+
 # Related to slice editor brush
 BRUSH_CIRCLE = 0 #
 BRUSH_SQUARE = 1
@@ -199,9 +228,10 @@ SURFACE_QUALITY = {
     _("Low"): (3, 2, 0.3000, 0.4),
     _("Medium"): (2, 2, 0.3000, 0.4),
     _("High"): (0, 1, 0.3000, 0.1),
-    _("Optimal *"): (0, 2, 0.3000, 0.4),
-    _("Custom"): (None, None, None, None)}
+    _("Optimal *"): (0, 2, 0.3000, 0.4)}
 DEFAULT_SURFACE_QUALITY = _("Optimal *")
+SURFACE_QUALITY_LIST = [_("Low"),_("Medium"),_("High"),_("Optimal *")]
+
 
 # Surface properties
 SURFACE_TRANSPARENCY = 0.0
@@ -230,6 +260,9 @@ WINDOW_LEVEL = {_("Abdomen"):(350,50),
 REDUCE_IMAGEDATA_QUALITY = 0
 
 ICON_DIR = os.path.abspath(os.path.join('..', 'icons'))
+SAMPLE_DIR = os.path.abspath(os.path.join('..', 'samples'))
+DOC_DIR = os.path.abspath(os.path.join('..', 'docs'))
+
 
 ID_TO_BMP = {VOL_FRONT: [_("Front"), os.path.join(ICON_DIR, "view_front.png")],
              VOL_BACK: [_("Back"), os.path.join(ICON_DIR, "view_back.png")],
@@ -341,6 +374,7 @@ MODE_SLICE_CROSS = -3
 FILETYPE_IV = wx.NewId()
 FILETYPE_RIB = wx.NewId()
 FILETYPE_STL = wx.NewId()
+FILETYPE_STL_ASCII = wx.NewId()
 FILETYPE_VRML = wx.NewId()
 FILETYPE_OBJ = wx.NewId()
 FILETYPE_VTP = wx.NewId()
@@ -353,7 +387,7 @@ FILETYPE_JPG = wx.NewId()
 FILETYPE_PNG = wx.NewId()
 FILETYPE_PS = wx.NewId()
 FILETYPE_POV = wx.NewId()
-FILETYPE_OBJ = wx.NewId()
+FILETYPE_TIF = wx.NewId()
 
 IMAGE_TILING = {"1 x 1":(1,1), "1 x 2":(1,2),
                 "1 x 3":(1,3), "1 x 4":(1,4),
@@ -384,6 +418,7 @@ ID_PRINT_SCREENSHOT, ID_EXIT] = [wx.NewId() for number in range(10)]
     [wx.NewId() for number in range(3)]
 
 ID_ABOUT = wx.NewId()
+ID_START = wx.NewId()
 
 #---------------------------------------------------------
 STATE_DEFAULT = 1000
@@ -395,6 +430,7 @@ STATE_PAN = 1005
 SLICE_STATE_CROSS = 1006
 SLICE_STATE_SCROLL = 1007
 SLICE_STATE_EDITOR = 1008
+VOLUME_STATE_SEED = 2001
 
 
 TOOL_STATES = [ STATE_WL, STATE_SPIN, STATE_ZOOM,
@@ -407,7 +443,7 @@ SLICE_STYLES = TOOL_STATES + TOOL_SLICE_STATES
 SLICE_STYLES.append(STATE_DEFAULT)
 SLICE_STYLES.append(SLICE_STATE_EDITOR)
 
-VOLUME_STYLES = TOOL_STATES + []
+VOLUME_STYLES = TOOL_STATES + [VOLUME_STATE_SEED]
 VOLUME_STYLES.append(STATE_DEFAULT)
 
 
@@ -419,4 +455,5 @@ STYLE_LEVEL = {SLICE_STATE_EDITOR: 1,
                STATE_SPIN: 2,
                STATE_ZOOM: 2,
                STATE_ZOOM_SL: 2,
-               STATE_PAN:2}
+               STATE_PAN:2,
+               VOLUME_STATE_SEED:1}
