@@ -336,6 +336,17 @@ def MaskSelectionRequiredForRemoval():
     dlg.ShowModal()
     dlg.Destroy()
 
+def SurfaceSelectionRequiredForRemoval():
+    msg = _("No surfaces were selected for removal.")
+    if sys.platform == 'darwin':
+        dlg = wx.MessageDialog(None, "", msg,
+                                wx.ICON_INFORMATION | wx.OK)
+    else:
+        dlg = wx.MessageDialog(None, msg, "InVesalius 3",
+                                wx.ICON_INFORMATION | wx.OK)
+    dlg.ShowModal()
+    dlg.Destroy()
+
 
 def MaskSelectionRequiredForDuplication():
     msg = _("No masks were selected for duplication.")
@@ -347,6 +358,20 @@ def MaskSelectionRequiredForDuplication():
                                 wx.ICON_INFORMATION | wx.OK)
     dlg.ShowModal()
     dlg.Destroy()
+
+
+
+def SurfaceSelectionRequiredForDuplication():
+    msg = _("No surfaces were selected for duplication.")
+    if sys.platform == 'darwin':
+        dlg = wx.MessageDialog(None, "", msg,
+                                wx.ICON_INFORMATION | wx.OK)
+    else:
+        dlg = wx.MessageDialog(None, msg, "InVesalius 3",
+                                wx.ICON_INFORMATION | wx.OK)
+    dlg.ShowModal()
+    dlg.Destroy()
+
 
 
 def NewMask():
@@ -467,7 +492,7 @@ def ShowSavePresetDialog(default_filename="raycasting"):
     return filename
 
 class NewSurfaceDialog(wx.Dialog):
-    def __init__(self, parent, ID, title, size=wx.DefaultSize,
+    def __init__(self, parent=None, ID=-1, title="InVesalius 3", size=wx.DefaultSize,
             pos=wx.DefaultPosition, style=wx.DEFAULT_DIALOG_STYLE,
             useMetal=False):
         import constants as const

@@ -162,7 +162,6 @@ class InnerTaskPanel(wx.Panel):
                             keep_largest]
 
             ps.Publisher().sendMessage('Create surface', surface_data)
-            print "TODO: Send Signal - Create 3d surface %s \n" % surface_data
             dialog.Destroy()
         if evt:
             evt.Skip()

@@ -125,6 +125,19 @@ class SurfaceManager():
                                 'Create surface from largest region')
         ps.Publisher().subscribe(self.OnSeedSurface, "Create surface from seeds")
 
+
+        ps.Publisher().subscribe(self.OnRemove,"Remove surfaces")
+
+
+    def OnRemove(self, pubsub_evt):
+        selected_items = pubsub_evt.data
+        proj = prj.Project()
+        for item in selected_items:
+            proj.RemoveSurface(item)
+            actor = self.actors_dict[item]
+            self.actors_dict.pop(item)
+        ps.Publisher().sendMessage('Remove surface actor from viewer', actor)
+
     def OnSeedSurface(self, pubsub_evt):
         """
         Create a new surface, based on the last selected surface,

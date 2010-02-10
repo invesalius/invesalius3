@@ -49,7 +49,7 @@ class NotebookPanel(wx.Panel):
             book.SetWindowVariant(wx.WINDOW_VARIANT_SMALL)
 
         book.AddPage(MaskPage(book), _("Masks"))
-        book.AddPage(SurfacesListCtrlPanel(book), _("Surfaces"))
+        book.AddPage(SurfacePage(book), _("Surfaces"))
         #book.AddPage(MeasuresListCtrlPanel(book), _("Measures"))
         #book.AddPage(AnnotationsListCtrlPanel(book), _("Annotations"))
         
@@ -343,12 +343,141 @@ class MasksListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
         self.mask_list_index = new_dict
 
         if new_dict:
-            self.SetItemImage(0, 1)
-            ps.Publisher().sendMessage('Show mask', (0, 1))
+            for key in new_dict:
+                if key == 0:
+                    self.SetItemImage(key, 1)
+                    ps.Publisher().sendMessage('Show mask', (key, 1))
 
         self.DeleteItem(index)
 
 #-------------------------------------------------
+class SurfacePage(wx.Panel):
+    """
+    Page related to mask items.
+    """
+    def __init__(self, parent):
+        wx.Panel.__init__(self, parent, pos=wx.Point(0, 50),
+                            size=wx.Size(256, 140))
+        self.__init_gui()
+
+    def __init_gui(self):
+        # listctrl were existing masks will be listed
+        self.listctrl = SurfacesListCtrlPanel(self, size=wx.Size(256, 100))
+        # button control with tools (eg. remove, add new, etc)
+        self.buttonctrl = SurfaceButtonControlPanel(self)
+
+        sizer = wx.BoxSizer(wx.VERTICAL)
+        sizer.Add(self.listctrl, 0, wx.EXPAND)
+        sizer.Add(self.buttonctrl, 0, wx.EXPAND| wx.TOP, 2)
+        self.SetSizer(sizer)
+        self.Fit()
+
+class SurfaceButtonControlPanel(wx.Panel):
+    """
+    Button control panel that includes data notebook operations.
+    TODO: Enhace interface with parent class - it is really messed up
+    """
+    def __init__(self, parent):
+        wx.Panel.__init__(self, parent, pos=wx.Point(0, 50),
+                            size=wx.Size(256, 22))
+        self.parent = parent
+        self.__init_gui()
+
+    def __init_gui(self):
+        
+        # Bitmaps to be used in plate buttons
+        BMP_NEW = wx.Bitmap("../icons/data_new.png",
+                            wx.BITMAP_TYPE_PNG)
+        BMP_REMOVE = wx.Bitmap("../icons/data_remove.png",
+                                wx.BITMAP_TYPE_PNG)
+        BMP_DUPLICATE = wx.Bitmap("../icons/data_duplicate.png",
+                                wx.BITMAP_TYPE_PNG)
+
+        # Plate buttons based on previous bitmaps
+        button_style = pbtn.PB_STYLE_SQUARE | pbtn.PB_STYLE_DEFAULT
+        button_new = pbtn.PlateButton(self, BTN_NEW, "",
+                                     BMP_NEW,
+                                     style=button_style,
+                                     size = wx.Size(18, 18))
+        button_remove = pbtn.PlateButton(self, BTN_REMOVE, "",
+                                         BMP_REMOVE,
+                                         style=button_style,
+                                         size = wx.Size(18, 18))
+        button_duplicate = pbtn.PlateButton(self, BTN_DUPLICATE, "",
+                                            BMP_DUPLICATE,
+                                            style=button_style,
+                                            size = wx.Size(18, 18))
+
+        # Add all controls to gui
+        sizer = wx.BoxSizer(wx.HORIZONTAL)
+        sizer.Add(button_new, 0, wx.GROW|wx.EXPAND|wx.LEFT)
+        sizer.Add(button_remove, 0, wx.GROW|wx.EXPAND)
+        sizer.Add(button_duplicate, 0, wx.GROW|wx.EXPAND)
+        self.SetSizer(sizer)
+        self.Fit()
+
+        # Bindings
+        self.Bind(wx.EVT_BUTTON, self.OnButton)
+
+    def OnButton(self, evt):
+        id = evt.GetId()
+        if id == BTN_NEW:
+            self.OnNew()
+        elif id == BTN_REMOVE:
+            self.OnRemove()
+        elif id ==  BTN_DUPLICATE:
+            self.OnDuplicate()
+
+    def OnNew(self):
+        import project as prj
+
+        dialog = dlg.NewSurfaceDialog()
+        try:
+            if dialog.ShowModal() == wx.ID_OK:
+                ok = 1
+            else:
+                ok = 0
+        except(wx._core.PyAssertionError): #TODO FIX: win64
+            ok = 1
+
+        if ok:
+            (mask_index, surface_name, surface_quality, fill_holes,\
+            keep_largest) = dialog.GetValue()
+
+            # Retrieve information from mask
+            proj = prj.Project()
+            mask = proj.mask_dict[mask_index]
+
+            # Send all information so surface can be created
+            surface_data = [proj.imagedata,
+                            mask.colour,
+                            mask.threshold_range,
+                            mask.edited_points,
+                            False, # overwrite
+                            surface_name,
+                            surface_quality,
+                            fill_holes,
+                            keep_largest]
+
+            ps.Publisher().sendMessage('Create surface', surface_data)
+
+    def OnRemove(self):
+        selected_items = self.parent.listctrl.GetSelected()
+        if selected_items:
+            for item in selected_items:
+                self.parent.listctrl.RemoveSurface(item)
+            ps.Publisher().sendMessage('Remove surfaces', selected_items)
+        else:
+           dlg.SurfaceSelectionRequiredForRemoval() 
+
+    def OnDuplicate(self):
+        selected_items = self.parent.listctrl.GetSelected()
+        if selected_items:
+            ps.Publisher().sendMessage('Duplicate surfaces', selected_items)
+        else:
+           dlg.SurfaceSelectionRequiredForDuplication() 
+
+
 class SurfacesListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
 
     def __init__(self, parent, ID=-1, pos=wx.DefaultPosition,
@@ -385,6 +514,21 @@ class SurfacesListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
         self.Bind(wx.EVT_LIST_ITEM_ACTIVATED, self.OnItemActivated)
         self.Bind(wx.EVT_LIST_END_LABEL_EDIT, self.OnEditLabel)
         self.Bind(wx.EVT_LIST_ITEM_SELECTED, self.OnItemSelected_)
+        self.Bind(wx.EVT_KEY_UP, self.OnKeyEvent)
+
+
+    def OnKeyEvent(self, event):
+        keycode = event.GetKeyCode()
+        # Delete key
+        if (sys.platform == 'darwin') and (keycode == wx.WXK_BACK):
+            selected = self.GetSelected()
+            for item in selected:
+                self.RemoveSurface(item)
+        elif (keycode == wx.WXK_DELETE):
+            selected = self.GetSelected()
+            for item in selected:
+                self.RemoveSurface(item)
+
 
     def OnCloseProject(self, pubsub_evt):
         self.DeleteAllItems()
@@ -399,6 +543,19 @@ class SurfacesListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
         ps.Publisher().sendMessage('Change surface selected',
                                     last_surface_index)
         evt.Skip()
+
+    def GetSelected(self):
+        """
+        Return all items selected (highlighted).
+        """
+        selected = []
+        for index in self.surface_list_index:
+            if self.IsSelected(index):
+                selected.append(index)
+        # it is important to revert items order, so
+        # listctrl update is ok
+        selected.sort(reverse=True)
+        return selected
 
     def __init_columns(self):
         
@@ -535,7 +692,6 @@ class SurfacesListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
         index and value.
         """
         index, value = pubsub_evt.data
-        print "EditSurfaceTransparency", index, value
         self.SetStringItem(index, 3, "%d%%"%(int(value*100)))
         
     def EditSurfaceColour(self, pubsub_evt):
@@ -546,6 +702,22 @@ class SurfacesListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
         image_index = self.surface_list_index[index]
         self.imagelist.Replace(image_index, image)
         self.Refresh()
+
+    def RemoveSurface(self, index):
+        """
+        Remove item given its index.
+        """
+        # it is necessary to update internal dictionary
+        # that maps bitmap given item index
+        old_dict = self.surface_list_index
+        new_dict = {}
+        for i in old_dict:
+            if i < index:
+                new_dict[i] = old_dict[i]
+            if i > index:
+                new_dict[i-1] = old_dict[i]
+        self.surface_list_index = new_dict
+        self.DeleteItem(index)
 
 #-------------------------------------------------
 
