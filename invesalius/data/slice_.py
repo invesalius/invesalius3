@@ -88,15 +88,22 @@ class Slice(object):
         ps.Publisher().subscribe(self.OnDuplicateMasks, 'Duplicate masks')
 
     def OnRemoveMasks(self, pubsub_evt):
+        print "slice_: OnRemoveMasks"
         selected_items = pubsub_evt.data
+        print "selected_items:", selected_items
         proj = Project()
+        print "1", proj.mask_dict
         for item in selected_items:
             proj.RemoveMask(item)
+        print "2", proj.mask_dict
         #index = self.current_mask.index
+        print "current_mask", self.current_mask.index 
         if (proj.mask_dict) and (self.current_mask.index in selected_items):
+            print "first mask exist"
             self.current_mask = proj.mask_dict[0]
             self.SelectCurrentMask(0)
         elif not proj.mask_dict:
+            print "no mask"
             self.blend_filter.SetOpacity(1, 0)
             self.blend_filter.Update()
             ps.Publisher().sendMessage('Update slice viewer')
@@ -208,6 +215,8 @@ class Slice(object):
     def __show_mask(self, pubsub_evt):
         # "if" is necessary because wx events are calling this before any mask
         # has been created
+        print "__show_mask"
+        print "self.current_mask", self.current_mask
         if self.current_mask:
             index, value = pubsub_evt.data
             self.ShowMask(index, value)
@@ -359,6 +368,8 @@ class Slice(object):
         # This condition is not necessary in Linux, only under mac and windows
         # because combobox event is binded when the same item is selected again.
         #if index != self.current_mask.index:
+        print "SelectCurrentMask"
+        print "index:", index
         if self.current_mask and self.blend_filter and index > -1:
             proj = Project()
             future_mask = proj.GetMask(index)
@@ -367,6 +378,7 @@ class Slice(object):
             
             colour = future_mask.colour
             #index = future_mask.index
+            print index
             self.SetMaskColour(index, colour, update=False)
 
             imagedata = future_mask.imagedata

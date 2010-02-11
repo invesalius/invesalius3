@@ -324,9 +324,11 @@ class MasksListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
         self.ToggleItem(evt.m_itemIndex)
         
     def OnCheckItem(self, index, flag):
+        print "OnCheckItem", index, flag
         if flag:
             for key in self.mask_list_index.keys():
                 if key != index:
+                    print "x"
                     self.SetItemImage(key, 0)
             ps.Publisher().sendMessage('Change mask selected',index)
             self.current_index = index

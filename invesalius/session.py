@@ -144,19 +144,6 @@ class Session(object):
             for i in xrange(len(l)-const.PROJ_MAX):
                 l.pop()
 
-    def SavePlist(self):
-        filename = 'session.conf'
-        filepath = os.join(self.tempdir, filename)
-        plistlib.writePlist(self.__dict__, filepath)
-
-    def OpenPlist(self):
-        filename = 'session.conf'
-        filepath = os.join(self.tempdir, filename)
-        # TODO: try/except
-        dict = plistlib.readPlist(main_plist)
-        for key in dict:
-            setattr(self, key, dict[key])
-
     def GetLanguage(self):
         return self.language
 
@@ -178,7 +165,9 @@ class Session(object):
             config.read(path)
             self.language = config.get('session','language')
             return self.language
-        except(ConfigParser.NoSectionError, ConfigParser.NoOptionError):
+        except (ConfigParser.NoSectionError,
+                  ConfigParser.NoOptionError,
+                  ConfigParser.MissingSectionHeaderError):
             return False
 
     def ReadSession(self):
@@ -197,7 +186,9 @@ class Session(object):
             self.tempdir = config.get('paths','tempdir')
             self.last_dicom_folder = config.get('paths','last_dicom_folder')
             return True
-        except(ConfigParser.NoSectionError, ConfigParser.NoOptionError):
+        except(ConfigParser.NoSectionError,
+                ConfigParser.NoOptionError,
+                ConfigParser.MissingSectionHeaderError):
             return False
 
 
