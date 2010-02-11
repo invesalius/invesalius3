@@ -33,6 +33,7 @@ import polydata_utils as pu
 import project as prj
 import session as ses
 import surface_process
+import utils as utl
 import vtk_utils as vu
 
 class Surface():
@@ -125,17 +126,47 @@ class SurfaceManager():
                                 'Create surface from largest region')
         ps.Publisher().subscribe(self.OnSeedSurface, "Create surface from seeds")
 
-
+        ps.Publisher().subscribe(self.OnDuplicate, "Duplicate surfaces")
         ps.Publisher().subscribe(self.OnRemove,"Remove surfaces")
+        ps.Publisher().subscribe(self.OnDuplicate, "Duplicate surfaces")
+
+
+    def OnDuplicate(self, pubsub_evt):
+        
+        selected_items = pubsub_evt.data
+        proj = prj.Project()
+        surface_dict = proj.surface_dict
+        for index in selected_items:
+            original_surface = surface_dict[index]
+            # compute copy name
+            name = original_surface.name
+            names_list = [surface_dict[i].name for i in surface_dict.keys()]
+            new_name = utl.next_copy_name(name, names_list) 
+            # create new mask
+            self.CreateSurfaceFromPolydata(polydata = original_surface.polydata,
+                                           overwrite = False,
+                                           name = new_name,
+                                           colour = original_surface.colour,
+                                           transparency = original_surface.transparency,
+                                           volume = original_surface.volume)
+
 
 
     def OnRemove(self, pubsub_evt):
+        print "OnRemove"
         selected_items = pubsub_evt.data
         proj = prj.Project()
         for item in selected_items:
+            print "before"
+            print "1:", proj.surface_dict
+            print "2:", self.actors_dict
             proj.RemoveSurface(item)
+            print "after"
+            print "1", proj.surface_dict
             actor = self.actors_dict[item]
             self.actors_dict.pop(item)
+            print "2", self.actors_dict
+            print "\n"
         ps.Publisher().sendMessage('Remove surface actor from viewer', actor)
 
     def OnSeedSurface(self, pubsub_evt):
@@ -187,7 +218,9 @@ class SurfaceManager():
         new_index = self.CreateSurfaceFromPolydata(new_polydata)
         ps.Publisher().sendMessage('Show single surface', (new_index, True))
 
-    def CreateSurfaceFromPolydata(self, polydata, overwrite=False):
+    def CreateSurfaceFromPolydata(self, polydata, overwrite=False,
+                                  name=None, colour=None,
+                                  transparency=None, volume=None):
 
         normals = vtk.vtkPolyDataNormals()
         normals.SetInput(polydata)
@@ -206,8 +239,17 @@ class SurfaceManager():
         else:
             surface = Surface()
 
-        surface.colour = random.choice(const.SURFACE_COLOUR)
+        if not colour:
+            surface.colour = random.choice(const.SURFACE_COLOUR)
+        else:
+            surface.colour = colour
         surface.polydata = polydata
+
+        if transparency:
+            surface.transparency = transparency
+
+        if name:
+            surface.name = name
 
         # Set actor colour and transparency
         actor.GetProperty().SetColor(surface.colour)
@@ -227,10 +269,13 @@ class SurfaceManager():
         session.ChangeProject()
 
         # The following lines have to be here, otherwise all volumes disappear
-        measured_polydata = vtk.vtkMassProperties()
-        measured_polydata.SetInput(polydata)
-        volume =  measured_polydata.GetVolume()
-        surface.volume = volume
+        if not volume:
+            measured_polydata = vtk.vtkMassProperties()
+            measured_polydata.SetInput(polydata)
+            volume =  measured_polydata.GetVolume()
+            surface.volume = volume
+        else:
+            surface.volume = volume
         self.last_surface_index = surface.index
 
         ps.Publisher().sendMessage('Load surface actor into viewer', actor)
@@ -568,7 +613,7 @@ class SurfaceManager():
                     polydata_list.append(surface.polydata)
 
             if len(polydata_list) == 0:
-                print "oops - no polydata"
+                utl.debug("oops - no polydata")
                 return
             elif len(polydata_list) == 1:
                 polydata = polydata_list[0]
