@@ -148,15 +148,16 @@ class ButtonControlPanel(wx.Panel):
             ps.Publisher().sendMessage('Create new mask', mask_name)
 
     def OnRemove(self):
-        print "button -- OnRemove"
-        selected_items = self.parent.listctrl.GetSelected()
-        if selected_items:
-            print selected_items
-            ps.Publisher().sendMessage('Remove masks', selected_items)
-            for item in selected_items:
-                self.parent.listctrl.RemoveMask(item)
-        else:
-           dlg.MaskSelectionRequiredForRemoval() 
+        #print "button -- OnRemove"
+        #selected_items = self.parent.listctrl.GetSelected()
+        #print "selected_items:",selected_items
+
+        #if selected_items:
+        #    ps.Publisher().sendMessage('Remove masks', selected_items)
+        #    for item in selected_items:
+        self.parent.listctrl.RemoveMasks()
+        #else:
+        #   dlg.MaskSelectionRequiredForRemoval() 
 
     def OnDuplicate(self):
         selected_items = self.parent.listctrl.GetSelected()
@@ -203,70 +204,60 @@ class MasksListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
         keycode = event.GetKeyCode()
         # Delete key
         if (sys.platform == 'darwin') and (keycode == wx.WXK_BACK):
-            selected = self.GetSelected()
-            #self.__remove_items()
-            ps.Publisher().sendMessage('Remove masks', selected)
-            for item in selected:
-                self.RemoveMask(item)
+            self.RemoveMasks()
         elif (keycode == wx.WXK_DELETE):
-            selected = self.GetSelected()
-            #self.__remove_items()
-            ps.Publisher().sendMessage('Remove masks', selected)
-            for item in selected:
-                self.RemoveMask(item)
+            self.RemoveMasks()
     
-
-    def __remove_items(self):
-        print "__remove_items - mask"
-        selected_items = self.GetSelected()
-        print selected_items
-        if selected_items:
-            for item in selected_items:
-                self.RemoveMask(item)
-            ps.Publisher().sendMessage('Remove masks', selected_items)
-
-    def RemoveMask(self, index):
+    def RemoveMasks(self):
         """
-        Remove item given its index.
+        Remove selected items.
         """
+        print "---------------------------------------------------"
         print "Remove item"
+        selected_items = self.GetSelected()
+        print "selected_items:",selected_items
+
+        if selected_items:
+            ps.Publisher().sendMessage('Remove masks', selected_items)
+        else:
+           dlg.MaskSelectionRequiredForRemoval() 
+
+
         # it is necessary to update internal dictionary
         # that maps bitmap given item index
         old_dict = self.mask_list_index
         print "current_index", self.current_index
         print "old_dict", old_dict
         new_dict = {}
-        for i in old_dict:
-            if i < index:
-                new_dict[i] = old_dict[i]
-            if i > index:
-                new_dict[i-1] = old_dict[i]
+        for index in selected_items:
+            self.DeleteItem(index)
+            for i in old_dict:
+                if i < index:
+                    new_dict[i] = old_dict[i]
+                if i > index:
+                    new_dict[i-1] = old_dict[i]
+            old_dict = new_dict
         self.mask_list_index = new_dict
         print "new_dict", new_dict
-        
-        if new_dict and not index:
-            print "gotta case"
-            for key in new_dict:
-                if key == 0:
-                    print ":)", key
-                    self.SetItemImage(key, 1)
-                    ps.Publisher().sendMessage('Show mask', (key, 1))
-                else:
-                    print ":("
-                    self.SetItemImage(key, 0)
-
-        self.DeleteItem(index)
-
+       
         if new_dict:
-            if self.current_index > index:
-                self.current_index -= 1
-            elif self.current_index  == index:
-                print "XXXXXXXXXXXXX"
-                self.current_index = 0
+            if index == self.current_index:
+                print "a) set to zero"
                 self.SetItemImage(0, 1)
                 ps.Publisher().sendMessage('Show mask', (0, 1))
+                ps.Publisher().sendMessage('Change mask selected', 0)
+                for key in new_dict:
+                    if key:
+                         self.SetItemImage(key, 0)
 
-
+            elif index < self.current_index:
+                print "b) minor, keep the same"
+                self.current_index -= 1
+                self.SetItemImage(self.current_index, 1)
+            else:
+                pass
+                # enchanged
+        print "---------------------------------------------------" 
 
 
     def OnCloseProject(self, pubsub_evt):

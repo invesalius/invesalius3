@@ -95,14 +95,14 @@ class Slice(object):
         print "1", proj.mask_dict
         for item in selected_items:
             proj.RemoveMask(item)
-        print "2", proj.mask_dict
-        #index = self.current_mask.index
-        print "current_mask", self.current_mask.index 
-        if (proj.mask_dict) and (self.current_mask.index in selected_items):
-            print "first mask exist"
-            self.current_mask = proj.mask_dict[0]
-            self.SelectCurrentMask(0)
-        elif not proj.mask_dict:
+        #print "2", proj.mask_dict
+        ##index = self.current_mask.index
+        #print "current_mask", self.current_mask.index 
+        #if (proj.mask_dict) and (self.current_mask.index in selected_items):
+        #    print "first mask exist"
+        #    self.current_mask = proj.mask_dict[0]
+        #    self.SelectCurrentMask(0)
+        if not proj.mask_dict:
             print "no mask"
             self.blend_filter.SetOpacity(1, 0)
             self.blend_filter.Update()
