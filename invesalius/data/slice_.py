@@ -88,7 +88,9 @@ class Slice(object):
         ps.Publisher().subscribe(self.OnDuplicateMasks, 'Duplicate masks')
 
     def OnRemoveMasks(self, pubsub_evt):
+        print "OnRemoveMasks"
         selected_items = pubsub_evt.data
+        print "selected_items"
         proj = Project()
         for item in selected_items:
             proj.RemoveMask(item)

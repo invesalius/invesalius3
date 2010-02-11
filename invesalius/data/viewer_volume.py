@@ -19,7 +19,6 @@
 
 import sys
 
-import numpy
 import wx
 import vtk
 from vtk.wx.wxVTKRenderWindowInteractor import wxVTKRenderWindowInteractor
@@ -37,8 +36,6 @@ class Viewer(wx.Panel):
         self.SetBackgroundColour(wx.Colour(0, 0, 0))
 
         self.interaction_style = st.StyleStateManager()
-
-        self.ball_reference = None
 
         style =  vtk.vtkInteractorStyleTrackballCamera()
         self.style = style
@@ -145,50 +142,6 @@ class Viewer(wx.Panel):
         ps.Publisher().subscribe(self.OnStartSeed,'Create surface by seeding - start')
         ps.Publisher().subscribe(self.OnEndSeed,'Create surface by seeding - end')
 
-        ps.Publisher().subscribe(self.ActivateBallReference,
-                'Activate ball reference')
-        ps.Publisher().subscribe(self.DeactivateBallReference,
-                'Deactivate ball reference')
-        ps.Publisher().subscribe(self.SetBallReferencePosition,
-                'Set ball reference position')
-        ps.Publisher().subscribe(self.SetBallReferencePositionBasedOnBound,
-                'Set ball reference position based on bound')
-
-    def CreateBallReference(self):
-        self.ball_reference = vtk.vtkSphereSource()
-        self.ball_reference.SetRadius(5)
-
-        mapper = vtk.vtkPolyDataMapper()
-        mapper.SetInput(self.ball_reference.GetOutput())
-
-        p = vtk.vtkProperty()
-        p.SetColor(1, 0, 0)
-
-        self.ball_actor = vtk.vtkActor()
-        self.ball_actor.SetMapper(mapper)
-        self.ball_actor.SetProperty(p)
-
-    def ActivateBallReference(self, pubsub_evt):
-        if not self.ball_reference:
-            self.CreateBallReference()
-        self.ren.AddActor(self.ball_actor)
-
-    def DeactivateBallReference(self, pubsub_evt):
-        if self.ball_reference:
-            self.ren.RemoveActor(self.ball_actor)
-
-    def SetBallReferencePosition(self, pubsub_evt):
-        x, y, z = pubsub_evt.data
-        self.ball_reference.SetCenter(x, y, z)
-
-    def SetBallReferencePositionBasedOnBound(self, pubsub_evt):
-        coord = pubsub_evt.data
-        print "Surface origin", self.actor.GetBounds()[::2]
-        position = numpy.array(self.actor.GetBounds()[::2]) + coord
-        x, y, z  = position.tolist()
-        y = self.actor.GetBounds()[2] - y + self.actor.GetBounds()[3]
-        self.ball_reference.SetCenter(x, y, z)
-        
     def OnStartSeed(self, pubsub_evt):
         index = pubsub_evt.data
         self.seed_points = []
@@ -520,8 +473,6 @@ class Viewer(wx.Panel):
 
         #self.ShowOrientationCube()
         self.interactor.Render()
-        print "surface actor bound box", actor.GetBounds()
-        self.actor = actor
 
     def RemoveActor(self, pubsub_evt):
         utils.debug("RemoveActor")
@@ -637,7 +588,6 @@ class Viewer(wx.Panel):
         self.picker.Pick(x, y, 0, self.ren)
         point_id = self.picker.GetPointId()
         self.seed_points.append(point_id)
-        self.AddPointReference(self.picker.GetPickPosition(), 5)
         self.interactor.Render()
 
 
