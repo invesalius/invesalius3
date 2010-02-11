@@ -148,11 +148,13 @@ class ButtonControlPanel(wx.Panel):
             ps.Publisher().sendMessage('Create new mask', mask_name)
 
     def OnRemove(self):
+        print "button -- OnRemove"
         selected_items = self.parent.listctrl.GetSelected()
         if selected_items:
+            print selected_items
+            ps.Publisher().sendMessage('Remove masks', selected_items)
             for item in selected_items:
                 self.parent.listctrl.RemoveMask(item)
-            ps.Publisher().sendMessage('Remove masks', selected_items)
         else:
            dlg.MaskSelectionRequiredForRemoval() 
 
@@ -175,6 +177,7 @@ class MasksListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
         wx.ListCtrl.__init__(self, parent, ID, pos, size, style=wx.LC_REPORT)
         listmix.TextEditMixin.__init__(self)
         self.mask_list_index = {}
+        self.current_index = 0
         self.__init_columns()
         self.__init_image_list()
         self.__bind_events_wx()
@@ -201,12 +204,14 @@ class MasksListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
         # Delete key
         if (sys.platform == 'darwin') and (keycode == wx.WXK_BACK):
             selected = self.GetSelected()
-            self.__remove_items()
+            #self.__remove_items()
+            ps.Publisher().sendMessage('Remove masks', selected)
             for item in selected:
                 self.RemoveMask(item)
         elif (keycode == wx.WXK_DELETE):
             selected = self.GetSelected()
-            self.__remove_items()
+            #self.__remove_items()
+            ps.Publisher().sendMessage('Remove masks', selected)
             for item in selected:
                 self.RemoveMask(item)
     
@@ -220,6 +225,48 @@ class MasksListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
                 self.RemoveMask(item)
             ps.Publisher().sendMessage('Remove masks', selected_items)
 
+    def RemoveMask(self, index):
+        """
+        Remove item given its index.
+        """
+        print "Remove item"
+        # it is necessary to update internal dictionary
+        # that maps bitmap given item index
+        old_dict = self.mask_list_index
+        print "current_index", self.current_index
+        print "old_dict", old_dict
+        new_dict = {}
+        for i in old_dict:
+            if i < index:
+                new_dict[i] = old_dict[i]
+            if i > index:
+                new_dict[i-1] = old_dict[i]
+        self.mask_list_index = new_dict
+        print "new_dict", new_dict
+        
+        if new_dict and not index:
+            print "gotta case"
+            for key in new_dict:
+                if key == 0:
+                    print ":)", key
+                    self.SetItemImage(key, 1)
+                    ps.Publisher().sendMessage('Show mask', (key, 1))
+                else:
+                    print ":("
+                    self.SetItemImage(key, 0)
+
+        self.DeleteItem(index)
+
+        if new_dict:
+            if self.current_index > index:
+                self.current_index -= 1
+            elif self.current_index  == index:
+                print "XXXXXXXXXXXXX"
+                self.current_index = 0
+                self.SetItemImage(0, 1)
+                ps.Publisher().sendMessage('Show mask', (0, 1))
+
+
 
 
     def OnCloseProject(self, pubsub_evt):
@@ -229,7 +276,10 @@ class MasksListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
     def OnChangeCurrentMask(self, pubsub_evt):
         mask_index = pubsub_evt.data
         try:
+            print "try"
             self.SetItemImage(mask_index, 1)
+            self.current_index = mask_index
+            print "except"
         except wx._core.PyAssertionError:
             #in SetItem(): invalid item index in SetItem
             pass
@@ -279,6 +329,7 @@ class MasksListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
                 if key != index:
                     self.SetItemImage(key, 0)
             ps.Publisher().sendMessage('Change mask selected',index)
+            self.current_index = index
         ps.Publisher().sendMessage('Show mask', (index, flag))
 
     def CreateColourBitmap(self, colour):
@@ -309,6 +360,8 @@ class MasksListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
         for key in self.mask_list_index.keys():
             if key != index:
                 self.SetItemImage(key, 0)
+        self.current_index = index
+
         
     def AddMask(self, pubsub_evt):
         index, mask_name, threshold_range, colour = pubsub_evt.data
@@ -316,9 +369,10 @@ class MasksListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
         image_index = self.imagelist.Add(image)
         self.mask_list_index[index] = image_index
         self.InsertNewItem(index, mask_name, str(threshold_range))
-        
+                
     def EditMaskThreshold(self, pubsub_evt):
         index, threshold_range = pubsub_evt.data
+        print "EditMaskThreshold: ", index
         self.SetStringItem(index, 2, str(threshold_range))
 
     def EditMaskColour(self, pubsub_evt):
@@ -342,33 +396,7 @@ class MasksListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
         selected.sort(reverse=True)
         return selected
 
-    def RemoveMask(self, index):
-        """
-        Remove item given its index.
-        """
-        # it is necessary to update internal dictionary
-        # that maps bitmap given item index
-        old_dict = self.mask_list_index
-        new_dict = {}
-        for i in old_dict:
-            if i < index:
-                new_dict[i] = old_dict[i]
-            if i > index:
-                new_dict[i-1] = old_dict[i]
-        self.mask_list_index = new_dict
 
-        if new_dict:
-            for key in new_dict:
-                if key == 0:
-                    self.SetItemImage(key, 1)
-                    ps.Publisher().sendMessage('Show mask', (key, 1))
-
-        # TODO: Understand why this is occuring and enhace code, so
-        # this excpet is not necessary
-        try:
-            self.DeleteItem(index)
-        except wx._core.PyAssertionError:
-            ul.debug("tried to remove inexistent index")
 
 #-------------------------------------------------
 class SurfacePage(wx.Panel):
@@ -738,9 +766,11 @@ class SurfacesListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
         """
         Remove item given its index.
         """
+        print "RemoveSurface"
         # it is necessary to update internal dictionary
         # that maps bitmap given item index
         old_dict = self.surface_list_index
+        print old_dict
         new_dict = {}
         for i in old_dict:
             if i < index:
@@ -748,11 +778,9 @@ class SurfacesListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
             if i > index:
                 new_dict[i-1] = old_dict[i]
         self.surface_list_index = new_dict
+        print new_dict
 
-        try:
-            self.DeleteItem(index)
-        except wx._core.PyAssertionError:
-            ul.debug("tried to remove inexistent index")
+        self.DeleteItem(index)
 
 #-------------------------------------------------
 

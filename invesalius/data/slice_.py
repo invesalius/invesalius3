@@ -88,15 +88,13 @@ class Slice(object):
         ps.Publisher().subscribe(self.OnDuplicateMasks, 'Duplicate masks')
 
     def OnRemoveMasks(self, pubsub_evt):
-        print "OnRemoveMasks"
         selected_items = pubsub_evt.data
-        print "selected_items"
         proj = Project()
         for item in selected_items:
             proj.RemoveMask(item)
-
-        index = self.current_mask.index
-        if (proj.mask_dict) and (index in selected_items):
+        #index = self.current_mask.index
+        if (proj.mask_dict) and (self.current_mask.index in selected_items):
+            self.current_mask = proj.mask_dict[0]
             self.SelectCurrentMask(0)
         elif not proj.mask_dict:
             self.blend_filter.SetOpacity(1, 0)
@@ -245,7 +243,7 @@ class Slice(object):
 
         colour_wx = [r*255, g*255, b*255]
         ps.Publisher().sendMessage('Change mask colour in notebook',
-                                    (self.current_mask.index, (r,g,b)))
+                                    (index, (r,g,b)))
         ps.Publisher().sendMessage('Set GUI items colour', colour_wx)
         if update:
             ps.Publisher().sendMessage('Update slice viewer')
@@ -368,22 +366,20 @@ class Slice(object):
             self.current_mask = future_mask
             
             colour = future_mask.colour
-            index = future_mask.index
+            #index = future_mask.index
             self.SetMaskColour(index, colour, update=False)
 
             imagedata = future_mask.imagedata
             self.img_colours_mask.SetInput(imagedata)
 
             if self.current_mask.is_shown:
-                print 1
                 self.blend_filter.SetOpacity(1, self.current_mask.opacity)
             else:
-                print 2
                 self.blend_filter.SetOpacity(1, 0)
             self.blend_filter.Update()
 
             ps.Publisher().sendMessage('Set mask threshold in notebook',
-                                        (self.current_mask.index,
+                                        (index,
                                             self.current_mask.threshold_range))
             ps.Publisher().sendMessage('Set threshold values in gradient',
                                         self.current_mask.threshold_range)
