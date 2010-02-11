@@ -93,8 +93,9 @@ class SplashScreen(wx.SplashScreen):
             from control import Controller
             from project import Project
 
-
+            print "antes primeiro import session"
             self.main = Frame(None)
+            print "depois primeiro import session"
             self.control = Controller(self.main)
 
             self.fc = wx.FutureCall(1, self.ShowMain)

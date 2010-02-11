@@ -104,7 +104,6 @@ class Session(object):
             self.temp_item = False
 
     def CreateSessionFile(self):
-
         config = ConfigParser.RawConfigParser()
 
         config.add_section('session')
@@ -122,6 +121,7 @@ class Session(object):
         config.set('paths','last_dicom_folder',self.last_dicom_folder)
         path = os.path.join(self.homedir ,
                             '.invesalius', 'config.cfg')
+        
         configfile = open(path, 'wb')
         config.write(configfile)
         configfile.close()
@@ -202,10 +202,10 @@ class WriteSession(Thread):
     def run(self):
       while self.runing:
         time.sleep(10)
-        try:
-            self.Write()
-        except AttributeError:
-            pass
+        #try:
+        self.Write()
+        #except AttributeError:
+        #    pass
 
     def Stop(self):
         self.runing = 0
@@ -231,13 +231,15 @@ class WriteSession(Thread):
 
         path = os.path.join(self.session.homedir ,
                             '.invesalius', 'config.cfg')
+
         try:
             configfile = open(path, 'wb')
         except IOError:
             return
             utl.debug("Session - IOError")
-        else:
-            config.write(configfile)
+        finally:
+            self.session.CreateSessionFile()
+
         configfile.close()
 
 
