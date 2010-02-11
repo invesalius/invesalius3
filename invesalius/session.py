@@ -211,6 +211,7 @@ class WriteSession(Thread):
         self.runing = 0
 
     def Write(self):
+        import utils as utl
 
         config = ConfigParser.RawConfigParser()
 
@@ -230,8 +231,13 @@ class WriteSession(Thread):
 
         path = os.path.join(self.session.homedir ,
                             '.invesalius', 'config.cfg')
-        configfile = open(path, 'wb')
-        config.write(configfile)
+        try:
+            configfile = open(path, 'wb')
+        except IOError:
+            return
+            utl.debug("Session - IOError")
+        else:
+            config.write(configfile)
         configfile.close()
 
 
