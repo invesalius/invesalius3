@@ -128,11 +128,9 @@ class SurfaceManager():
 
         ps.Publisher().subscribe(self.OnDuplicate, "Duplicate surfaces")
         ps.Publisher().subscribe(self.OnRemove,"Remove surfaces")
-        ps.Publisher().subscribe(self.OnDuplicate, "Duplicate surfaces")
 
 
     def OnDuplicate(self, pubsub_evt):
-        
         selected_items = pubsub_evt.data
         proj = prj.Project()
         surface_dict = proj.surface_dict
@@ -149,7 +147,6 @@ class SurfaceManager():
                                            colour = original_surface.colour,
                                            transparency = original_surface.transparency,
                                            volume = original_surface.volume)
-
 
 
     def OnRemove(self, pubsub_evt):
@@ -230,7 +227,6 @@ class SurfaceManager():
     def CreateSurfaceFromPolydata(self, polydata, overwrite=False,
                                   name=None, colour=None,
                                   transparency=None, volume=None):
-
         normals = vtk.vtkPolyDataNormals()
         normals.SetInput(polydata)
         normals.SetFeatureAngle(80)
@@ -260,10 +256,7 @@ class SurfaceManager():
         if name:
             surface.name = name
 
-        # Set actor colour and transparency
-        actor.GetProperty().SetColor(surface.colour)
-        actor.GetProperty().SetOpacity(1-surface.transparency)
-        self.actors_dict[surface.index] = actor
+
 
         # Append surface into Project.surface_dict
         proj = prj.Project()
@@ -273,6 +266,11 @@ class SurfaceManager():
             index = proj.AddSurface(surface)
             surface.index = index
             self.last_surface_index = index
+
+        # Set actor colour and transparency
+        actor.GetProperty().SetColor(surface.colour)
+        actor.GetProperty().SetOpacity(1-surface.transparency)
+        self.actors_dict[surface.index] = actor
 
         session = ses.Session()
         session.ChangeProject()
@@ -568,6 +566,7 @@ class SurfaceManager():
     def OnShowSurface(self, pubsub_evt):
         index, value = pubsub_evt.data
         self.ShowActor(index, value)
+
 
     def ShowActor(self, index, value):
         """
