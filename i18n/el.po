@@ -21,15 +21,15 @@ msgstr ""
 
 #: constants.py:75
 msgid "Keep all slices"
-msgstr ""
+msgstr "Διατήρησε όλες τις τομές"
 
 #: constants.py:75
 msgid "Skip 1 for each 2 slices"
-msgstr ""
+msgstr "Διατήρησε μια τομή ανα δύο"
 
 #: constants.py:76
 msgid "Skip 2 for each 3 slices"
-msgstr ""
+msgstr "Διατήρησε μια τομή ανα τρεις"
 
 #: constants.py:116 slice_menu.py:76 slice_menu.py:81
 msgid "Default "
