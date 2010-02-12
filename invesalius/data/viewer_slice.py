@@ -681,6 +681,7 @@ class Viewer(wx.Panel):
         coord = self.CalcultateScrollPosition(coord_cross)
         ps.Publisher().sendMessage('Update cross position',
                 (self.orientation, coord_cross))
+        print "Scroll to", coord
         self.ScrollSlice(coord)
         self.interactor.Render()
 
@@ -720,6 +721,9 @@ class Viewer(wx.Panel):
         # and the last, axial.
         x, y, z = coord
 
+        proj = project.Project()
+        orig_orien = proj.original_orientation
+
         # First we fix the position origin, based on vtkActor bounds
         bounds = self.actor.GetBounds()
         bound_xi, bound_xf, bound_yi, bound_yf, bound_zi, bound_zf = bounds
@@ -734,8 +738,8 @@ class Viewer(wx.Panel):
         y = y/spacing_y
         z = z/spacing_z
 
-        proj = project.Project()
-        orig_orien = proj.original_orientation
+        x, y, z = self._assert_coord_into_image([x, y, z])
+
         # Based on the current orientation, we define 3D position
         # Sagita, coronal, axial
         coordinates = {const.AXIAL: [x, y, z],
@@ -747,14 +751,6 @@ class Viewer(wx.Panel):
         # According to vtkImageData extent, we limit min and max value
         # If this is not done, a VTK Error occurs when mouse is pressed outside
         # vtkImageData extent
-        extent = self.imagedata.GetWholeExtent()
-        extent_min = extent[0], extent[2], extent[4]
-        extent_max = extent[1], extent[3], extent[5]
-        for index in xrange(3):
-            if coord[index] > extent_max[index]:
-                coord[index] = extent_max[index]
-            elif coord[index] < extent_min[index]:
-                coord[index] = extent_min[index]
         return coord
 
     def get_coordinate_cursor(self):
@@ -1400,3 +1396,14 @@ class Viewer(wx.Panel):
            and zi <= z <= zf:
             return True
         return False
+
+    def _assert_coord_into_image(self, coord):
+        extent = self.imagedata.GetWholeExtent()
+        extent_min = extent[0], extent[2], extent[4]
+        extent_max = extent[1], extent[3], extent[5]
+        for index in xrange(3):
+            if coord[index] > extent_max[index]:
+                coord[index] = extent_max[index]
+            elif coord[index] < extent_min[index]:
+                coord[index] = extent_min[index]
+        return coord
