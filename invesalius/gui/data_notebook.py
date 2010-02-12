@@ -363,7 +363,7 @@ class MasksListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
         return selected
 
 
-
+#-------------------------------------------------
 #-------------------------------------------------
 class SurfacePage(wx.Panel):
     """
@@ -476,13 +476,8 @@ class SurfaceButtonControlPanel(wx.Panel):
             ps.Publisher().sendMessage('Create surface', surface_data)
 
     def OnRemove(self):
-        selected_items = self.parent.listctrl.GetSelected()
-        if selected_items:
-            for item in selected_items:
-                self.parent.listctrl.RemoveSurface(item)
-            ps.Publisher().sendMessage('Remove surfaces', selected_items)
-        else:
-           dlg.SurfaceSelectionRequiredForRemoval() 
+        self.parent.listctrl.RemoveSurfaces()
+
 
     def OnDuplicate(self):
         selected_items = self.parent.listctrl.GetSelected()
@@ -535,23 +530,38 @@ class SurfacesListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
         keycode = event.GetKeyCode()
         # Delete key
         if (sys.platform == 'darwin') and (keycode == wx.WXK_BACK):
-            selected = self.GetSelected()
-            self.__remove_items()
-            for item in selected:
-                self.RemoveSurface(item)
-
+            self.RemoveSurfaces()
         elif (keycode == wx.WXK_DELETE):
-            selected = self.GetSelected()
-            self.__remove_items()
-            for item in selected:
-                self.RemoveSurface(item)
+            self.RemoveSurfaces()
 
-    def __remove_items(self):
+    def RemoveSurfaces(self):
+        """
+        Remove item given its index.
+        """
+        # it is necessary to update internal dictionary
+        # that maps bitmap given item index
         selected_items = self.GetSelected()
+        old_dict = self.surface_list_index
+        new_dict = {}
+        print "RemoveSurfaces"
+        print "selected_items"
+        print "before", self.surface_list_index
         if selected_items:
-            for item in selected_items:
-                self.RemoveSurface(item)
+            for index in selected_items:
+                self.DeleteItem(index)
+                for i in old_dict:
+                    if i < index:
+                        new_dict[i] = old_dict[i]
+                    if i > index:
+                        new_dict[i-1] = old_dict[i]
+                old_dict = new_dict
+            self.surface_list_index = new_dict
+
             ps.Publisher().sendMessage('Remove surfaces', selected_items)
+        else:
+           dlg.SurfaceSelectionRequiredForRemoval() 
+        print "after", self.surface_list_index
+
 
     def OnCloseProject(self, pubsub_evt):
         self.DeleteAllItems()
@@ -726,23 +736,8 @@ class SurfacesListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
         self.imagelist.Replace(image_index, image)
         self.Refresh()
 
-    def RemoveSurface(self, index):
-        """
-        Remove item given its index.
-        """
-        # it is necessary to update internal dictionary
-        # that maps bitmap given item index
-        old_dict = self.surface_list_index
-        new_dict = {}
-        for i in old_dict:
-            if i < index:
-                new_dict[i] = old_dict[i]
-            if i > index:
-                new_dict[i-1] = old_dict[i]
-        self.surface_list_index = new_dict
 
-        self.DeleteItem(index)
-
+#-------------------------------------------------
 #-------------------------------------------------
 
 class MeasuresListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):

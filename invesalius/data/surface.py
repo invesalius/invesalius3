@@ -156,18 +156,33 @@ class SurfaceManager():
         print "OnRemove"
         selected_items = pubsub_evt.data
         proj = prj.Project()
-        for item in selected_items:
-            print "before"
-            print "1:", proj.surface_dict
-            print "2:", self.actors_dict
-            proj.RemoveSurface(item)
-            print "after"
-            print "1", proj.surface_dict
-            actor = self.actors_dict[item]
-            self.actors_dict.pop(item)
-            print "2", self.actors_dict
-            print "\n"
-        ps.Publisher().sendMessage('Remove surface actor from viewer', actor)
+
+        print "before"
+        print "1:", proj.surface_dict
+        print "2:", self.actors_dict
+
+        old_dict = self.actors_dict
+        new_dict = {}
+        if selected_items:
+            for index in selected_items:
+                proj.RemoveSurface(index)
+                actor = old_dict[index]
+                for i in old_dict:
+                    if i < index:
+                        new_dict[i] = old_dict[i]
+                    if i > index:
+                        new_dict[i-1] = old_dict[i]
+                old_dict = new_dict
+                ps.Publisher().sendMessage('Remove surface actor from viewer', actor)
+            self.actors_dict = new_dict
+
+        print "after"
+        print "1", proj.surface_dict
+        print "2", self.actors_dict
+        print "\n"
+
+
+
 
     def OnSeedSurface(self, pubsub_evt):
         """
