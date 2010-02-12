@@ -349,51 +349,51 @@ msgstr ""
 
 #: data_notebook.py:45
 msgid "Surfaces"
-msgstr ""
+msgstr "Επιφάνειες"
 
 #: data_notebook.py:111 data_notebook.py:239 data_notebook.py:464
 msgid "Name"
-msgstr ""
+msgstr "Όνομα"
 
 #: data_notebook.py:170
 msgid "Mask"
-msgstr ""
+msgstr "Μάσκα"
 
 #: data_notebook.py:240
 msgid "Volume (mm³)"
-msgstr ""
+msgstr "Όγκος (mm³)"
 
 #: data_notebook.py:241
 msgid "Transparency"
-msgstr ""
+msgstr "Διαφάνεια"
 
 #: data_notebook.py:465
 msgid "Type"
-msgstr ""
+msgstr "Τύπος"
 
 #: data_notebook.py:466
 msgid "Value"
-msgstr ""
+msgstr "Τιμή"
 
 #: default_tasks.py:132
 msgid "Data"
-msgstr ""
+msgstr "Δεδομένα"
 
 #: default_tasks.py:205
 msgid "1. InVesalius start"
-msgstr ""
+msgstr "1. Έναρξη InVesalius"
 
 #: default_tasks.py:218
 msgid "2. Select region of interest"
-msgstr ""
+msgstr "2. Επιλέξτε την περιοχή ενδιαφέροντος"
 
 #: default_tasks.py:239
 msgid "3. Configure 3D surface"
-msgstr ""
+msgstr "3. Ρυθμιση της 3D επιφάνειας"
 
 #: default_tasks.py:253
 msgid "4. Export data"
-msgstr ""
+msgstr "4. Εξαγωγή δεδομένων"
 
 #: default_viewers.py:79 default_viewers.py:168 task_exporter.py:232
 msgid "Axial slice"
@@ -409,7 +409,7 @@ msgstr ""
 
 #: default_viewers.py:95 default_viewers.py:186 task_exporter.py:235
 msgid "Volume"
-msgstr ""
+msgstr "Όγκος"
 
 #: default_viewers.py:416
 msgid "Preset name"
@@ -421,11 +421,11 @@ msgstr ""
 
 #: default_viewers.py:449
 msgid "Tools"
-msgstr ""
+msgstr "Εργαλεία"
 
 #: dialogs.py:53
 msgid "Value will be applied."
-msgstr ""
+msgstr "Οι τιμές θα εφαρμοστούν."
 
 #: dialogs.py:57
 msgid "Value will not be applied."
@@ -433,19 +433,20 @@ msgstr ""
 
 #: dialogs.py:95
 msgid "Loading DICOM files"
-msgstr ""
+msgstr "Φόρτωση αρχείων DICOM"
 
 #: dialogs.py:137 frame.py:575
 msgid "Open InVesalius 3 project..."
 msgstr ""
 
 #: dialogs.py:171
+#, fuzzy
 msgid "Choose a DICOM folder:"
-msgstr ""
+msgstr "Επιλέξτε ένα φάκελο DICOM:"
 
 #: dialogs.py:200
 msgid "Save project as..."
-msgstr ""
+msgstr "Αποθήκευση project ως..."
 
 #: dialogs.py:203
 msgid "InVesalius project (*.inv3)|*.inv3"
@@ -461,16 +462,16 @@ msgstr ""
 #: dialogs.py:280
 #, python-format
 msgid "%s is an empty directory."
-msgstr ""
+msgstr "Το %s είναι ένα κενός κατάλογο."
 
 #: dialogs.py:293
 msgid "There are no DICOM files on the selected directory."
-msgstr ""
+msgstr "Δεν υπάρχουν αρχεία DICOM στον επιλεγμένο κατάλογο."
 
 #: dialogs.py:304
 #, python-format
 msgid "%s does not exist."
-msgstr ""
+msgstr "Το %s δεν υπάρχει."
 
 #: dialogs.py:362
 msgid "(c) 2007-2010 Center for Information Technology Renato Archer"
