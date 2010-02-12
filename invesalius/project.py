@@ -121,6 +121,7 @@ class Project(object):
                 new_dict[i] = self.mask_dict[i]
             if i > index:
                 new_dict[i-1] = self.mask_dict[i]
+                new_dict[i-1].index = i-1
         self.mask_dict = new_dict
 
     def GetMask(self, index):
@@ -143,6 +144,7 @@ class Project(object):
                 new_dict[i] = self.surface_dict[i]
             if i > index:
                 new_dict[i-1] = self.surface_dict[i]
+                new_dict[i-1].index = i-1
         self.surface_dict = new_dict
 
     def SetAcquisitionModality(self, type_=None):

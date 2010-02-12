@@ -436,6 +436,26 @@ wx.GROW|wx.EXPAND|wx.LEFT|wx.RIGHT|wx.TOP|wx.BOTTOM, 10)
         ps.Publisher().subscribe(self.ChangeSurfaceName,
                                 'Change surface name')
         ps.Publisher().subscribe(self.OnCloseProject, 'Close project data')
+        ps.Publisher().subscribe(self.OnRemoveSurfaces, 'Remove surfaces')
+
+
+    def OnRemoveSurfaces(self, pubsub_evt):
+        list_index = pubsub_evt.data
+
+        old_dict = self.surface_dict
+        new_dict = utl.TwoWaysDictionary()
+        for index in list_index:
+            self.combo_surface_name.Delete(index)
+
+            for name in old_dict:
+                if old_dict[name] < index:
+                    new_dict[name] = old_dict[name]
+                if old_dict[name] > index:
+                    new_dict[name] = old_dict[name] -1
+            old_dict = new_dict
+        self.surface_dict = new_dict
+
+
 
     def OnCloseProject(self, pubsub_evt):
         self.CloseProject()
@@ -459,14 +479,14 @@ wx.GROW|wx.EXPAND|wx.LEFT|wx.RIGHT|wx.TOP|wx.BOTTOM, 10)
         name = pubsub_evt.data[1]
         colour = [value*255 for value in pubsub_evt.data[2]]
         overwrite = name in self.surface_dict.keys()
-        if not overwrite or not self.surface_dict:
-            self.surface_dict[name] = index
-            index = self.combo_surface_name.Append(name)
-
-        transparency = 100*pubsub_evt.data[4]
-        self.button_colour.SetColour(colour)
-        self.slider_transparency.SetValue(transparency)
-        self.combo_surface_name.SetSelection(index)
+        if index not in self.surface_dict.values():
+            if not overwrite or not self.surface_dict:
+                self.surface_dict[name] = index
+                index = self.combo_surface_name.Append(name)
+            transparency = 100*pubsub_evt.data[4]
+            self.button_colour.SetColour(colour)
+            self.slider_transparency.SetValue(transparency)
+            self.combo_surface_name.SetSelection(index)
 
     def OnComboName(self, evt):
         surface_name = evt.GetString()
@@ -480,7 +500,6 @@ wx.GROW|wx.EXPAND|wx.LEFT|wx.RIGHT|wx.TOP|wx.BOTTOM, 10)
                                     colour))
 
     def OnTransparency(self, evt):
-        print evt.GetInt()
         transparency = evt.GetInt()/float(MAX_TRANSPARENCY)
         # FIXME: In Mac OS/X, wx.Slider (wx.Python 2.8.10) has problem on the
         # right-limit as reported on http://trac.wxwidgets.org/ticket/4555.

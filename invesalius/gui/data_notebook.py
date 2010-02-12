@@ -543,9 +543,6 @@ class SurfacesListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
         selected_items = self.GetSelected()
         old_dict = self.surface_list_index
         new_dict = {}
-        print "RemoveSurfaces"
-        print "selected_items"
-        print "before", self.surface_list_index
         if selected_items:
             for index in selected_items:
                 self.DeleteItem(index)
@@ -560,7 +557,6 @@ class SurfacesListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
             ps.Publisher().sendMessage('Remove surfaces', selected_items)
         else:
            dlg.SurfaceSelectionRequiredForRemoval() 
-        print "after", self.surface_list_index
 
 
     def OnCloseProject(self, pubsub_evt):
@@ -572,6 +568,7 @@ class SurfacesListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
         # Note: DON'T rename to OnItemSelected!!!
         # Otherwise the parent's method will be overwritten and other
         # things will stop working, e.g.: OnCheckItem
+
         last_surface_index = evt.m_itemIndex
         ps.Publisher().sendMessage('Change surface selected',
                                     last_surface_index)
@@ -588,6 +585,7 @@ class SurfacesListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
         # it is important to revert items order, so
         # listctrl update is ok
         selected.sort(reverse=True)
+
         return selected
 
     def __init_columns(self):
@@ -659,28 +657,26 @@ class SurfacesListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
                                        (index, visibility))
 
     def AddSurface(self, pubsub_evt):
-        
-        
         index = pubsub_evt.data[0]
         name = pubsub_evt.data[1]
         colour = pubsub_evt.data[2]
         volume = "%d"%(int(pubsub_evt.data[3]))
         transparency = "%d%%"%(int(100*pubsub_evt.data[4]))
-
-        image = self.CreateColourBitmap(colour)
-        image_index = self.imagelist.Add(image)
+       
+        if index not in self.surface_list_index:
+            image = self.CreateColourBitmap(colour)
+            image_index = self.imagelist.Add(image)
         
         
 
-        index_list = self.surface_list_index.keys()
-        self.surface_list_index[index] = image_index
+            index_list = self.surface_list_index.keys()
+            self.surface_list_index[index] = image_index
 
-        if (index in index_list) and index_list:
-            self.UpdateItemInfo(index, name, volume, transparency, colour)
-        else:
-            self.InsertNewItem(index, name, volume, transparency, colour)
+            if (index in index_list) and index_list:
+                self.UpdateItemInfo(index, name, volume, transparency, colour)
+            else:
+                self.InsertNewItem(index, name, volume, transparency, colour)
 
-        
 
 
     def InsertNewItem(self, index=0, label="Surface 1", volume="0 mm3",
@@ -880,7 +876,6 @@ class AnnotationsListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
         
     def OnItemActivated(self, evt):
         self.ToggleItem(evt.m_itemIndex)
-        print m_itemIndex
         
     def OnCheckItem(self, index, flag):
         # TODO: use pubsub to communicate to models

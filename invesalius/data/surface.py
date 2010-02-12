@@ -153,13 +153,8 @@ class SurfaceManager():
 
 
     def OnRemove(self, pubsub_evt):
-        print "OnRemove"
         selected_items = pubsub_evt.data
         proj = prj.Project()
-
-        print "before"
-        print "1:", proj.surface_dict
-        print "2:", self.actors_dict
 
         old_dict = self.actors_dict
         new_dict = {}
@@ -176,13 +171,12 @@ class SurfaceManager():
                 ps.Publisher().sendMessage('Remove surface actor from viewer', actor)
             self.actors_dict = new_dict
 
-        print "after"
-        print "1", proj.surface_dict
-        print "2", self.actors_dict
-        print "\n"
-
-
-
+        if self.last_surface_index in selected_items:
+            if self.actors_dict:
+                self.last_surface_index = 0
+            else:
+                self.last_surface_index = None
+                
 
     def OnSeedSurface(self, pubsub_evt):
         """
@@ -318,9 +312,8 @@ class SurfaceManager():
         # self.actors_dict.
         proj = prj.Project()
         surface = proj.surface_dict[index]
-
         ps.Publisher().sendMessage('Update surface info in GUI',
-                                    (surface.index, surface.name,
+                                    (index, surface.name,
                                     surface.colour, surface.volume,
                                     surface.transparency))
         self.last_surface_index = index
@@ -330,7 +323,6 @@ class SurfaceManager():
 
     def OnLoadSurfaceDict(self, pubsub_evt):
         surface_dict = pubsub_evt.data
-
         for key in surface_dict:
             surface = surface_dict[key]
             # Map polygonal data (vtkPolyData) to graphics primitives.
