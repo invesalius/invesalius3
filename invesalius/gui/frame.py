@@ -36,7 +36,8 @@ import session as ses
 import utils
 
 
-# Layout toolbar
+# Layout tools' IDs - this is used only locally, therefore doesn't need
+# to be defined in constants.py 
 VIEW_TOOLS = [ID_LAYOUT, ID_TEXT] = [wx.NewId() for number in range(2)]
 
 class Frame(wx.Frame):
@@ -60,9 +61,11 @@ class Frame(wx.Frame):
         self.SetMenuBar(MenuBar(self))
         self.SetStatusBar(StatusBar(self))
 
-        # win32:  Show icon on "Notification Area" at "Task Bar"
-        # darwin: Show icon on Dock
-        # linux2: ? - TODO: find what it does
+        # TaskBarIcon has different behaviours according to the
+        # platform:
+        #   - win32:  Show icon on "Notification Area" at "Task Bar"
+        #   - darwin: Show icon on Dock
+        #   - linux2: ? - TODO: find what it does
         TaskBarIcon(self)
 
         # Create aui manager and insert content in it
@@ -131,7 +134,6 @@ class Frame(wx.Frame):
                           Caption(_("Preview medical data to be reconstructed")).
                           CaptionVisible(True))
 
-
         # Add toolbars to manager
         # This is pretty tricky -- order on win32 is inverted when
         # compared to linux2 & darwin
@@ -167,11 +169,10 @@ class Frame(wx.Frame):
                           LeftDockable(False).RightDockable(False))
 
         aui_manager.Update()
+        self.aui_manager = aui_manager
 
         # TODO: Allow saving and restoring perspectives
         self.perspective_all = aui_manager.SavePerspective()
-
-        self.aui_manager = aui_manager
 
     def _BeginBusyCursor(self, pubsub_evt):
         """
@@ -215,7 +216,6 @@ class Frame(wx.Frame):
         aui_manager.GetPane("Data").Show(0)
         aui_manager.GetPane("Tasks").Show(1)
         aui_manager.Update()
-
 
     def _HideTask(self, pubsub_evt):
         """
@@ -264,13 +264,11 @@ class Frame(wx.Frame):
         self.aui_manager.GetPane("Tasks").Show()
         self.aui_manager.Update()
 
-
     def _UpdateAUI(self, pubsub_evt):
         """
         Refresh AUI panels/data.
         """
         self.aui_manager.Update()
-
 
     def CloseProject(self):
         ps.Publisher().sendMessage('Close Project')
@@ -353,38 +351,58 @@ class Frame(wx.Frame):
         """
         ps.Publisher().sendMessage('Show save dialog', True)
 
-
-
-# ------------------------------------------------------------------------------
-# ------------------------------------------------------------------------------
-# TODO: what will appear on ivMenuBar?
-# Menu items ID's, necessary to bind events on them
-
+# ------------------------------------------------------------------
+# ------------------------------------------------------------------
+# ------------------------------------------------------------------
 
 class MenuBar(wx.MenuBar):
-    def __init__(self, parent=None):
+    """
+    MenuBar which contains menus used to control project, tools and help.
+    """
+    def __init__(self, parent):
         wx.MenuBar.__init__(self)
 
         self.parent = parent
 
+        # Used to enable/disable menu items if project is opened or
+        # not. Eg. save should only be available if a project is open
+        self.enable_items = [const.ID_PROJECT_SAVE,
+                             const.ID_PROJECT_SAVE_AS,
+                             const.ID_PROJECT_CLOSE]
         self.__init_items()
         self.__bind_events()
 
+        self.SetStateProjectClose()
+
+    def __bind_events(self):
+        """
+        Bind events related to pubsub.
+        """
+        # TODO: in future, possibly when wxPython 2.9 is available,
+        # events should be binded directly from wx.Menu / wx.MenuBar
+        # message "Binding events of wx.MenuBar" on [wxpython-users]
+        # mail list in Oct 20 2008
+        ps.Publisher().subscribe(self.OnEnableState, "Enable state project")
+
     def __init_items(self):
+        """
+        Create all menu and submenus, and add them to self.
+        """
+        # TODO: This definetely needs improvements... ;)
 
         # FILE
         file_menu = wx.Menu()
-        #file_menu.Append(const.ID_DICOM_LOAD_NET, "Import DICOM from Internet...")
         file_menu.Append(const.ID_DICOM_IMPORT, _("Import DICOM...\tCtrl+I"))
+        #file_menu.Append(const.ID_DICOM_LOAD_NET, _("Import DICOM from PACS..."))
         file_menu.Append(const.ID_PROJECT_OPEN, _("Open Project...\tCtrl+O"))
         file_menu.Append(const.ID_PROJECT_SAVE, _("Save Project\tCtrl+S"))
         file_menu.Append(const.ID_PROJECT_SAVE_AS, _("Save Project As..."))
         file_menu.Append(const.ID_PROJECT_CLOSE, _("Close Project"))
         file_menu.AppendSeparator()
-        #file_menu.Append(const.ID_PROJECT_INFO, "Project Information...")
+        #file_menu.Append(const.ID_PROJECT_INFO, _("Project Information..."))
         #file_menu.AppendSeparator()
-        #file_menu.Append(const.ID_SAVE_SCREENSHOT, "Save Screenshot")
-        #file_menu.Append(const.ID_PRINT_SCREENSHOT, "Print Screenshot")
+        #file_menu.Append(const.ID_SAVE_SCREENSHOT, _("Save Screenshot"))
+        #file_menu.Append(const.ID_PRINT_SCREENSHOT, _("Print Screenshot"))
         #file_menu.AppendSeparator()
         #file_menu.Append(1, "C:\InvData\sample.inv")
         #file_menu.AppendSeparator()
@@ -406,7 +424,6 @@ class MenuBar(wx.MenuBar):
         #view_layout_menu = wx.Menu()
         #view_layout_menu.Append(const.ID_TASK_BAR, "Task Bar")
         #view_layout_menu.Append(const.ID_VIEW_FOUR, "Four View")
-
 
         #view_menu = wx.Menu()
         #view_menu.AppendMenu(-1, "Toolbars",view_tool_menu)
@@ -433,12 +450,13 @@ class MenuBar(wx.MenuBar):
         help_menu.Append(const.ID_ABOUT, _("About..."))
         #help_menu.Append(107, "Check For Updates Now...")
 
-        # TODO: Check what is necessary under MacOS to show Groo and not Python
+        # TODO: Check what is necessary under MacOS to show
+        # InVesalius and not Python
         # first menu item... Didn't manage to solve it up to now, the 3 lines
         # bellow are a frustated test, based on wxPython Demo
         # TODO: Google about this
         #test_menu = wx.Menu()
-        #test_item = test_menu.Append(-1, '&About Groo', 'Groo RULES!!!')
+        #test_item = test_menu.Append(-1, '&About InVesalius','InVesalius')
         #wx.App.SetMacAboutMenuItemId(test_item.GetId())
 
         self.Append(file_menu, _("File"))
@@ -449,103 +467,135 @@ class MenuBar(wx.MenuBar):
         self.Append(help_menu, _("Help"))
 
 
-        self.enable_items = [const.ID_PROJECT_SAVE, const.ID_PROJECT_SAVE_AS,
-                            const.ID_PROJECT_CLOSE]
-
-        self.SetStateProjectClose()
-
     def OnEnableState(self, pubsub_evt):
+        """
+        Based on given state, enables or disables menu items which
+        depend if project is open or not.
+        """
         state = pubsub_evt.data
         if state:
             self.SetStateProjectOpen()
         else:
             self.SetStateProjectClose()
 
-
-    def SetStateProjectOpen(self):
-        for item in self.enable_items:
-            self.Enable(item, True)
-
     def SetStateProjectClose(self):
+        """
+        Disable menu items (e.g. save) when project is closed.
+        """
         for item in self.enable_items:
             self.Enable(item, False)
 
-    def __bind_events(self):
-        # TODO: in future, possibly when wxPython 2.9 is available,
-        # events should be binded directly from wx.Menu / wx.MenuBar
-        # message "Binding events of wx.MenuBar" on [wxpython-users]
-        # mail list in Oct 20 2008
-        ps.Publisher().subscribe(self.OnEnableState, "Enable state project")
-
+    def SetStateProjectOpen(self):
+        """
+        Enable menu items (e.g. save) when project is opened.
+        """
+        for item in self.enable_items:
+            self.Enable(item, True)
 
 # ------------------------------------------------------------------
+# ------------------------------------------------------------------
+# ------------------------------------------------------------------
+
+
 class ProgressBar(wx.Gauge):
+    """
+    Progress bar / gauge.
+    """
 
-   def __init__(self, parent):
-      wx.Gauge.__init__(self, parent, -1, 100)
-      self.parent = parent
-      self.Reposition()
-      self.__bind_events()
+    def __init__(self, parent):
+        wx.Gauge.__init__(self, parent, -1, 100)
+        self.parent = parent
+        self._Layout()
 
-   def __bind_events(self):
-      ps.Publisher().subscribe(self.Reposition,
+        self.__bind_events()
+
+    def __bind_events(self):
+        """
+        Bind events related to pubsub.
+        """
+        ps.Publisher().subscribe(self._Layout,
                                 'ProgressBar Reposition')
 
-   def UpdateValue(self, value):
-      #value = int(math.ceil(evt_pubsub.data[0]))
-      self.SetValue(int(value))
+    def _Layout(self, evt_pubsub=None):
+        """
+        Compute new size and position, according to parent resize
+        """
+        rect = self.parent.GetFieldRect(2)
+        self.SetPosition((rect.x + 2, rect.y + 2))
+        self.SetSize((rect.width - 4, rect.height - 4))
 
-      if (value >= 99):
-         self.SetValue(0)
-
-      self.Refresh()
-      self.Update()
-
-   def Reposition(self, evt_pubsub = None):
-      rect = self.Parent.GetFieldRect(2)
-      self.SetPosition((rect.x + 2, rect.y + 2))
-      self.SetSize((rect.width - 4, rect.height - 4))
+    def SetPercentage(self, value):
+        """
+        Set value [0;100] into gauge, moving "status" percentage. 
+        """
+        self.SetValue(int(value))
+        if (value >= 99):
+            self.SetValue(0)
+        self.Refresh()
+        self.Update()
 
 # ------------------------------------------------------------------
+# ------------------------------------------------------------------
+# ------------------------------------------------------------------
+
+
 class StatusBar(wx.StatusBar):
+    """
+    Control general status (both text and gauge)
+    """
     def __init__(self, parent):
         wx.StatusBar.__init__(self, parent, -1)
+
+        # General status configurations
         self.SetFieldsCount(3)
         self.SetStatusWidths([-2,-2,-1])
         self.SetStatusText(_("Ready"), 0)
         self.SetStatusText("", 1)
         self.SetStatusText("", 2)
 
+        # Add gaugee
         self.progress_bar = ProgressBar(self)
 
         self.__bind_events()
 
     def __bind_events(self):
-        ps.Publisher().subscribe(self.UpdateStatus,
+        """
+        Bind events related to pubsub.
+        """
+        ps.Publisher().subscribe(self._SetProgressValue,
                                  'Update status in GUI')
-        ps.Publisher().subscribe(self.UpdateStatusLabel,
+        ps.Publisher().subscribe(self._SetProgressLabel,
                                  'Update status text in GUI')
 
-    def UpdateStatus(self, pubsub_evt):
+    def _SetProgressValue(self, pubsub_evt):
+        """
+        Set both percentage value in gauge and text progress label in
+        status.
+        """
         value, label = pubsub_evt.data
-        self.progress_bar.UpdateValue(value)
+        self.progress_bar.SetPercentage(value)
         self.SetStatusText(label, 0)
         if (int(value) >= 99):
             self.SetStatusText("",0)
         if sys.platform == 'win32':
+            #TODO: temporary fix necessary in the Windows XP 64 Bits
+            #BUG in wxWidgets http://trac.wxwidgets.org/ticket/10896
             try:
                 #wx.SafeYield()
                 wx.Yield()
-            #TODO: temporary fix necessary in the Windows XP 64 Bits
-            #BUG in wxWidgets http://trac.wxwidgets.org/ticket/10896
             except(wx._core.PyAssertionError):
                 utils.debug("wx._core.PyAssertionError")
 
-    def UpdateStatusLabel(self, pubsub_evt):
+    def _SetProgressLabel(self, pubsub_evt):
+        """
+        Set text progress label.
+        """
         label = pubsub_evt.data
         self.SetStatusText(label, 0)
 
 
+# ------------------------------------------------------------------
+# ------------------------------------------------------------------
 # ------------------------------------------------------------------
 
 class TaskBarIcon(wx.TaskBarIcon):
@@ -564,13 +614,16 @@ class TaskBarIcon(wx.TaskBarIcon):
     def OnTaskBarActivate(self):
         pass
 
+
+# ------------------------------------------------------------------
+# ------------------------------------------------------------------
 # ------------------------------------------------------------------
 
 class ProjectToolBar(wx.ToolBar):
     def __init__(self, parent):
         wx.ToolBar.__init__(self, parent, -1, wx.DefaultPosition,
                             wx.DefaultSize,
-                            wx.TB_FLAT|wx.TB_NODIVIDER | wx.TB_DOCKABLE)
+                            wx.TB_FLAT|wx.TB_NODIVIDER| wx.TB_DOCKABLE)
 
         self.SetToolBitmapSize(wx.Size(32,32))
 
@@ -686,9 +739,9 @@ class ProjectToolBar(wx.ToolBar):
         event.Skip()
 
 
-
-
-        # ------------------------------------------------------------------
+# ------------------------------------------------------------------
+# ------------------------------------------------------------------
+# ------------------------------------------------------------------
 
 class ObjectToolBar(wx.ToolBar):
     def __init__(self, parent):
@@ -816,7 +869,10 @@ class ObjectToolBar(wx.ToolBar):
             if state:
                 self.ToggleTool(id, False)
 
-# -------------------------------------------------------------------
+
+# ------------------------------------------------------------------
+# ------------------------------------------------------------------
+# ------------------------------------------------------------------
 
 class SliceToolBar(wx.ToolBar):
     def __init__(self, parent):
@@ -905,10 +961,12 @@ class SliceToolBar(wx.ToolBar):
                 if id == const.SLICE_STATE_CROSS:
                     ps.Publisher().sendMessage('Set cross visibility', 0)
 
-# ---------------------------------------------------------------------
+
+# ------------------------------------------------------------------
+# ------------------------------------------------------------------
+# ------------------------------------------------------------------
 
 class LayoutToolBar(wx.ToolBar):
-    # TODO: what will appear in menubar?
     def __init__(self, parent):
         wx.ToolBar.__init__(self, parent, -1, wx.DefaultPosition,
                             wx.DefaultSize,
