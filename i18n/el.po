@@ -209,7 +209,7 @@ msgstr ""
 
 #: constants.py:286
 msgid "Black & White"
-msgstr ""
+msgstr "Μαύρο & Άσπρο"
 
 #: constants.py:287
 msgid "Bone + Skin"
@@ -500,7 +500,7 @@ msgstr ""
 
 #: dialogs.py:371
 msgid "GNU GPL (General Public License) version 2"
-msgstr ""
+msgstr "GNU GPL (Γενική Άδεια Δημόσιας Χρήσης) έκδοση 2"
 
 #: dialogs.py:386
 msgid "Save raycasting preset as:"
