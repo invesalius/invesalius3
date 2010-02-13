@@ -40,7 +40,6 @@ msgid "Hue"
 msgstr "Απόχρωση"
 
 #: constants.py:118
-#, fuzzy
 msgid "Saturation"
 msgstr "Κορεσμός"
 
@@ -629,7 +628,7 @@ msgstr ""
 
 #: frame.py:340
 msgid "Exit"
-msgstr ""
+msgstr "Έξοδος"
 
 #: frame.py:379
 msgid "Getting Started..."
@@ -641,11 +640,11 @@ msgstr ""
 
 #: frame.py:393
 msgid "File"
-msgstr ""
+msgstr "Αρχείο"
 
 #: frame.py:398
 msgid "Help"
-msgstr ""
+msgstr "Βοήθεια"
 
 #: frame.py:464 surface.py:268 surface.py:447
 msgid "Ready"
@@ -661,15 +660,15 @@ msgstr ""
 
 #: frame.py:691
 msgid "Zoom"
-msgstr ""
+msgstr "Εστίαση"
 
 #: frame.py:696
 msgid "Zoom based on selection"
-msgstr ""
+msgstr "Εστίαση βασιζόμενη σε επιλογή"
 
 #: frame.py:701
 msgid "Rotate"
-msgstr ""
+msgstr "Περιστροφή"
 
 #: frame.py:705
 msgid "Move"
@@ -701,15 +700,16 @@ msgstr ""
 
 #: import_panel.py:207
 msgid "Patient name"
-msgstr ""
+msgstr "Όνομα ασθενούς "
 
 #: import_panel.py:208
+#, fuzzy
 msgid "Patient ID"
-msgstr ""
+msgstr "Αναγνωριστικό Ασθενούς"
 
 #: import_panel.py:209
 msgid "Age"
-msgstr ""
+msgstr "Ηλικία"
 
 #: import_panel.py:210
 msgid "Gender"
@@ -835,7 +835,7 @@ msgstr ""
 
 #: task_exporter.py:104
 msgid "Export picture..."
-msgstr ""
+msgstr "Εξαγωγή εικόνας..."
 
 #: task_exporter.py:113
 msgid "Export 3D surface"
@@ -922,8 +922,9 @@ msgid "Square"
 msgstr "Τετράγωνο"
 
 #: task_slice.py:538
+#, fuzzy
 msgid "Brush threshold range:"
-msgstr ""
+msgstr "όριο φάσματοϛ Βούρτσαϛ"
 
 #: task_surface.py:85
 msgid "Create 3D surface based on a mask"
