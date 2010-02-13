@@ -827,7 +827,7 @@ msgstr ""
 #: surface_process.py:55 surface_process.py:67 surface_process.py:76
 #: surface_process.py:89 surface_process.py:98 surface_process.py:109
 msgid "Generating 3D surface..."
-msgstr ""
+msgstr "Δημιουργία 3D επιφάνειας..."
 
 #: task_exporter.py:102
 msgid "Export InVesalius screen to a image file"
@@ -847,7 +847,7 @@ msgstr ""
 
 #: task_exporter.py:306
 msgid "Save 3D surface as..."
-msgstr ""
+msgstr "Αποθήκευση 3D επιφάνειας ως..."
 
 #: task_exporter.py:325
 msgid "You need to create a surface and make it "
@@ -859,19 +859,19 @@ msgstr ""
 
 #: task_importer.py:64
 msgid "Select DICOM or Analyze files to be reconstructed"
-msgstr ""
+msgstr "Επιλέξτε DICOM ή Αναλύστε τα αρχεία προς ανακατασκευή"
 
 #: task_importer.py:65
 msgid "Import medical images..."
-msgstr ""
+msgstr "Εισαγωγή ιατρικών εικόνων ..."
 
 #: task_importer.py:82
 msgid "Open an existing InVesalius project..."
-msgstr ""
+msgstr "Ανοίξτε ένα υπάρχον InVesalius project..."
 
 #: task_importer.py:83
 msgid "Open an existing project..."
-msgstr ""
+msgstr "Ανοίξτε ένα υπάρχον project ..."
 
 #: task_slice.py:80
 msgid "Create mask for slice segmentation and edition"
@@ -879,31 +879,31 @@ msgstr ""
 
 #: task_slice.py:81
 msgid "Create new mask"
-msgstr ""
+msgstr "Δημιουργία νέας μάσκας"
 
 #: task_slice.py:109
 msgid "Save surface"
-msgstr ""
+msgstr "Αποθήκευση επιφάνειας"
 
 #: task_slice.py:110
 msgid "Overwrite last surface"
-msgstr ""
+msgstr "Αντικατάσταση τελευταίας επιφάνειας"
 
 #: task_slice.py:149
 msgid "Name of new mask:"
-msgstr ""
+msgstr "Όνομα της νέας μάσκας:"
 
 #: task_slice.py:150
 msgid "InVesalius 3 - New mask"
-msgstr ""
+msgstr "InVesalius 3 - Νέα μάσκα"
 
 #: task_slice.py:214
 msgid "Mask properties"
-msgstr ""
+msgstr "Ιδιότητες μάσκας "
 
 #: task_slice.py:222
 msgid "Advanced edition tools"
-msgstr ""
+msgstr "Προηγμένα εργαλεία έκδοση"
 
 #: task_slice.py:306
 msgid "Set predefined or manual threshold:"
@@ -915,11 +915,11 @@ msgstr ""
 
 #: task_slice.py:498
 msgid "Circle"
-msgstr ""
+msgstr "Κύκλος"
 
 #: task_slice.py:502
 msgid "Square"
-msgstr ""
+msgstr "Τετράγωνο"
 
 #: task_slice.py:538
 msgid "Brush threshold range:"
@@ -927,92 +927,98 @@ msgstr ""
 
 #: task_surface.py:85
 msgid "Create 3D surface based on a mask"
-msgstr ""
+msgstr "Δημιουργία 3D επιφάνειας βασισμένη σε μια μάσκα"
 
 #: task_surface.py:104
 msgid "Next step"
-msgstr ""
+msgstr "Επόμενο βήμα"
 
 #: task_surface.py:134
 msgid "InVesalius 3 - New surface"
-msgstr ""
+msgstr "InVesalius 3 - Νέα επιφάνεια"
 
 #: task_surface.py:199
 msgid "Surface properties"
-msgstr ""
+msgstr "Ιδιότητες επιφάνειας"
 
 #: task_surface.py:206
 msgid "Advanced options"
-msgstr ""
+msgstr "Προχωρημένες επιλογές"
 
 #: task_surface.py:238
 msgid "Automatically select largest disconnect region and create new surface"
-msgstr ""
+msgstr "Αυτόματα επέλεξε μέγιστη ασύνδετη περιοχή και δημιουργησε νέα επιφάνεια"
 
 #: task_surface.py:239
 msgid "Select largest part"
-msgstr ""
+msgstr "Επέλεξε το μεγαλύτερο τμήμα"
 
 #: task_surface.py:247
 msgid "Automatically select disconnect regions and create one new surface per region"
-msgstr ""
+msgstr "Αυτόματα επέλεξε ασύνδετες περιοχές και δημιουργησε μία νέα επιφάνεια ανά περιοχή"
 
 #: task_surface.py:248
 msgid "Split all disconnect surfaces"
-msgstr ""
+msgstr "Διαχώρισε όλεςτις ασύνδετες επιφάνειες"
 
 #: task_surface.py:256
 msgid "Manually insert seeds of regions of interest and create one new surface"
-msgstr ""
+msgstr "Εισάγετε χειροκίνητα τις περιοχές ενδιαφέροντος και δημιουργήστε μία νέα επιφάνεια"
 
 #: task_surface.py:257
 msgid "Select regions of interest..."
-msgstr ""
+msgstr "Επιλέξτε περιοχές ενδιαφέροντος..."
 
 #: task_surface.py:388
 msgid "Transparency:"
-msgstr ""
+msgstr "Διαφάνεια:"
 
 #: task_surface.py:505
 msgid "Decimate resolution:"
-msgstr ""
+msgstr "Μείωση ανάλυσης:"
 
 #: task_surface.py:515
 msgid "Smooth iterations:"
-msgstr ""
+msgstr "Εξομάλυνση επαναλήψεων:"
 
 #: task_tools.py:57
 msgid "Measure distances"
-msgstr ""
+msgstr "Μέτρηση αποστάσεων"
 
 #: task_tools.py:58
 msgid "Measure"
-msgstr ""
+msgstr "Μέτρηση"
 
 #: task_tools.py:61 task_tools.py:62
 msgid "Add text annotations"
-msgstr ""
+msgstr "Προσθήκη σχολιασμού κειμένου"
 
 #: viewer_slice.py:435 viewer_slice.py:439
+#, fuzzy
 msgid "R"
-msgstr ""
+msgstr "R"
 
 #: viewer_slice.py:435 viewer_slice.py:439
+#, fuzzy
 msgid "L"
-msgstr ""
+msgstr "L"
 
 #: viewer_slice.py:435 viewer_slice.py:437
+#, fuzzy
 msgid "A"
-msgstr ""
+msgstr "A"
 
 #: viewer_slice.py:435 viewer_slice.py:437
+#, fuzzy
 msgid "P"
-msgstr ""
+msgstr "P"
 
 #: viewer_slice.py:437 viewer_slice.py:439
+#, fuzzy
 msgid "T"
-msgstr ""
+msgstr "T"
 
 #: viewer_slice.py:437 viewer_slice.py:439
+#, fuzzy
 msgid "B"
-msgstr ""
+msgstr "B"
