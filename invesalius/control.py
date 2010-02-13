@@ -157,7 +157,7 @@ class Controller():
         try:
             filename = session.project_path[1]
         except(AttributeError):
-            print "Not exist project"
+            print "Project doesn't exist"
             filename = None
 
         if (filename):
