@@ -20,6 +20,7 @@
 import math
 import os.path
 import sys
+import webbrowser
 
 import wx
 import wx.aui
@@ -34,25 +35,18 @@ import project as prj
 import session as ses
 import utils
 
-# Object toolbar
-#OBJ_TOOLS = [ID_ZOOM, ID_ZOOM_SELECT, ID_ROTATE, ID_MOVE,
-#ID_CONTRAST] = [wx.NewId() for number in range(5)]
-#MODE_BY_ID = {ID_ZOOM: const.STATE_ZOOM,
-#              ID_ZOOM_SELECT: const.STATE_ZOOM_SL,
-#              ID_ROTATE: const.STATE_SPIN,
-#              ID_MOVE: const.STATE_PAN,
-#              ID_CONTRAST: const.STATE_WL}
-
-# Slice toolbar
-#SLICE_TOOLS = [ID_SLICE_SCROLL, ID_CROSS] = [wx.NewId() for number in range(2)]
-#SLICE_MODE_BY_ID = {ID_SLICE_SCROLL: const.SLICE_STATE_SCROLL,
-#                    ID_CROSS: const.SLICE_STATE_CROSS}
 
 # Layout toolbar
 VIEW_TOOLS = [ID_LAYOUT, ID_TEXT] = [wx.NewId() for number in range(2)]
 
 class Frame(wx.Frame):
+    """
+    Main frame of the whole software.
+    """
     def __init__(self, prnt):
+        """
+        Initialize frame, given its parent.
+        """
         wx.Frame.__init__(self, id=-1, name='', parent=prnt,
               pos=wx.Point(0, 0),
               size=wx.Size(1024, 748), #size = wx.DisplaySize(),
@@ -60,18 +54,16 @@ class Frame(wx.Frame):
         self.Center(wx.BOTH)
         self.SetIcon(wx.Icon(os.path.join(const.ICON_DIR, "invesalius.ico"),
                              wx.BITMAP_TYPE_ICO))
-
         self.Maximize()
-        #self.MacSetMetalAppearance(True)
+
         # Set menus, status and task bar
         self.SetMenuBar(MenuBar(self))
         self.SetStatusBar(StatusBar(self))
 
-        # TEST: Check what happens in each OS when starting widget bellow
-        # win32:  Show icon at "Notification Area" on "Task Bar"
+        # win32:  Show icon on "Notification Area" at "Task Bar"
         # darwin: Show icon on Dock
         # linux2: ? - TODO: find what it does
-        #TaskBarIcon(self)
+        TaskBarIcon(self)
 
         # Create aui manager and insert content in it
         self.__init_aui()
@@ -80,78 +72,59 @@ class Frame(wx.Frame):
         self.__bind_events()
         self.__bind_events_wx()
 
-
     def __bind_events(self):
-        ps.Publisher().subscribe(self.ShowContentPanel, 'Show content panel')
-        ps.Publisher().subscribe(self.ShowImportPanel, 'Show import panel in frame')
-        ps.Publisher().subscribe(self.UpdateAui, 'Update AUI')
-        ps.Publisher().subscribe(self.ShowTask, 'Show task panel')
-        ps.Publisher().subscribe(self.HideTask, 'Hide task panel')
-        ps.Publisher().subscribe(self.SetProjectName, 'Set project name')
-        ps.Publisher().subscribe(self.ShowContentPanel, 'Cancel DICOM load')
-        ps.Publisher().subscribe(self.HideImportPanel, 'Hide import panel')
-        ps.Publisher().subscribe(self.BeginBusyCursor, 'Begin busy cursor')
-        ps.Publisher().subscribe(self.EndBusyCursor, 'End busy cursor')
-        ps.Publisher().subscribe(self.HideContentPanel, 'Hide content panel')
-        ps.Publisher().subscribe(self.CloseProgram, 'Close Window')
-
-    def EndBusyCursor(self, pubsub_evt=None):
-        try:
-            wx.EndBusyCursor()
-        except wx._core.PyAssertionError:
-            #xEndBusyCursor(): no matching wxBeginBusyCursor() for wxEndBusyCursor()
-            pass
-
-    def BeginBusyCursor(self, pubsub_evt=None):
-        wx.BeginBusyCursor()
-
-    def SetProjectName(self, pubsub_evt):
-        proj_name = pubsub_evt.data
-
-        if not(proj_name):
-            self.SetTitle("InVesalius 3")
-        else:
-            if sys.platform != 'darwin':
-                self.SetTitle("%s - InVesalius 3"%(proj_name))
-            else:
-                self.SetTitle("%s"%(proj_name))
-
-    def UpdateAui(self, pubsub_evt):
-        self.aui_manager.Update()
+        """
+        Bind events related to pubsub.
+        """
+        ps.Publisher().subscribe(self._BeginBusyCursor, 'Begin busy cursor')
+        ps.Publisher().subscribe(self._ShowContentPanel, 'Cancel DICOM load')
+        ps.Publisher().subscribe(self._Exit, 'Close Window')
+        ps.Publisher().subscribe(self._EndBusyCursor, 'End busy cursor')
+        ps.Publisher().subscribe(self._HideContentPanel, 'Hide content panel')
+        ps.Publisher().subscribe(self._HideImportPanel, 'Hide import panel')
+        ps.Publisher().subscribe(self._HideTask, 'Hide task panel')
+        ps.Publisher().subscribe(self._SetProjectName, 'Set project name')
+        ps.Publisher().subscribe(self._ShowContentPanel, 'Show content panel')
+        ps.Publisher().subscribe(self._ShowImportPanel, 'Show import panel in frame')
+        ps.Publisher().subscribe(self._ShowTask, 'Show task panel')
+        ps.Publisher().subscribe(self._UpdateAUI, 'Update AUI')
 
     def __bind_events_wx(self):
+        """
+        Bind normal events from wx (except pubsub related).
+        """
         self.Bind(wx.EVT_SIZE, self.OnSize)
         self.Bind(wx.EVT_MENU, self.OnMenuClick)
         self.Bind(wx.EVT_CLOSE, self.OnClose)
-        #self.Bind(wx.EVT_CLOSE, self.OnExit)
-
-    def OnClose(self, evt):
-        ps.Publisher().sendMessage('Close Project')
 
     def __init_aui(self):
+        """
+        Build AUI manager and all panels inside InVesalius frame.
+        """
 
         # Tell aui_manager to manage this frame
         aui_manager = self.aui_manager = wx.aui.AuiManager()
         aui_manager.SetManagedWindow(self)
 
         # Add panels to manager
+
+        # First, the task panel, to be on the left fo the frame
+        # This will be specific according to InVesalius application
         aui_manager.AddPane(tasks.Panel(self), wx.aui.AuiPaneInfo().
                           Name("Tasks").CaptionVisible(False))
-                          # TEST: Check if above works well in all supported OS
-                          # or if we nwwd to insert information bellow
-                          #Caption("Task panel").CaptionVisible(False)).
-                          #CloseButton(False).Floatable(False).
-                          #Layer(1).Left().MaximizeButton(False).Name("Task").
-                          #Position(0))
 
-
+        # Then, add the viewers panel, which will contain slices and
+        # volume panels. In future this might also be specific
+        # according to InVesalius application (e.g. panoramic
+        # visualization, in odontology)
         aui_manager.AddPane(viewers.Panel(self), wx.aui.AuiPaneInfo().
                           Caption(_("Data panel")).CaptionVisible(False).
                           Centre().CloseButton(False).Floatable(False).
                           Hide().Layer(1).MaximizeButton(True).Name("Data").
                           Position(1))
-
-
+        
+        # This is the DICOM import panel. When the two panels above
+        # are shown, this should be hiden
         aui_manager.AddPane(imp.Panel(self), wx.aui.AuiPaneInfo().
                           Name("Import").Centre().Hide().
                           MaximizeButton(True).Floatable(True).
@@ -160,7 +133,8 @@ class Frame(wx.Frame):
 
 
         # Add toolbars to manager
-
+        # This is pretty tricky -- order on win32 is inverted when
+        # compared to linux2 & darwin
         if sys.platform == 'win32':
             t1 = ProjectToolBar(self)
             t2 = LayoutToolBar(self)
@@ -194,28 +168,77 @@ class Frame(wx.Frame):
 
         aui_manager.Update()
 
+        # TODO: Allow saving and restoring perspectives
         self.perspective_all = aui_manager.SavePerspective()
 
         self.aui_manager = aui_manager
 
-    def ShowImportPanel(self, evt_pubsub):
-        ps.Publisher().sendMessage("Set layout button data only")
+    def _BeginBusyCursor(self, pubsub_evt):
+        """
+        Start busy cursor.
+        Note: _EndBusyCursor should be called after.
+        """
+        wx.BeginBusyCursor()
+
+    def _EndBusyCursor(self, pubsub_evt):
+        """
+        End busy cursor.
+        Note: _BeginBusyCursor should have been called previously.
+        """
+        try:
+            wx.EndBusyCursor()
+        except wx._core.PyAssertionError:
+            #xEndBusyCursor(): no matching wxBeginBusyCursor() for wxEndBusyCursor()
+            pass
+
+    def _Exit(self, pubsub_evt):
+        """
+        Exit InVesalius.
+        """
+        self.Destroy()
+
+    def _HideContentPanel(self, pubsub_evt):
+        """
+        Hide data and tasks panels.
+        """
         aui_manager = self.aui_manager
-        aui_manager.GetPane("Import").Show(1)
         aui_manager.GetPane("Data").Show(0)
-        aui_manager.GetPane("Tasks").Show(0)
+        aui_manager.GetPane("Tasks").Show(1)
         aui_manager.Update()
 
-    def HideImportPanel(self, evt_pubsub):
-        utils.debug("HideImportPanel")
+    def _HideImportPanel(self, evt_pubsub):
+        """
+        Hide import panel and show tasks.
+        """
         aui_manager = self.aui_manager
         aui_manager.GetPane("Import").Show(0)
         aui_manager.GetPane("Data").Show(0)
         aui_manager.GetPane("Tasks").Show(1)
         aui_manager.Update()
 
-    def ShowContentPanel(self, evt_pubsub):
-        utils.debug("ShowContentPanel")
+
+    def _HideTask(self, pubsub_evt):
+        """
+        Hide task panel.
+        """
+        self.aui_manager.GetPane("Tasks").Hide()
+        self.aui_manager.Update()
+
+    def _SetProjectName(self, pubsub_evt):
+        """
+        Set project name into frame's title.
+        """
+        proj_name = pubsub_evt.data
+
+        if not(proj_name):
+            self.SetTitle("InVesalius 3")
+        else:
+            self.SetTitle("%s - InVesalius 3"%(proj_name))
+
+    def _ShowContentPanel(self, evt_pubsub):
+        """
+        Show viewers and task, hide import panel.
+        """
         ps.Publisher().sendMessage("Set layout button full")
         aui_manager = self.aui_manager
         aui_manager.GetPane("Import").Show(0)
@@ -223,92 +246,116 @@ class Frame(wx.Frame):
         aui_manager.GetPane("Tasks").Show(1)
         aui_manager.Update()
 
-    def HideContentPanel(self, pubsub_evt):
+    def _ShowImportPanel(self, evt_pubsub):
+        """
+        Show only DICOM import panel.
+        """
+        ps.Publisher().sendMessage("Set layout button data only")
         aui_manager = self.aui_manager
+        aui_manager.GetPane("Import").Show(1)
         aui_manager.GetPane("Data").Show(0)
-        aui_manager.GetPane("Tasks").Show(1)
+        aui_manager.GetPane("Tasks").Show(0)
         aui_manager.Update()
 
-    def OnSize(self, evt):
-       ps.Publisher().sendMessage(('ProgressBar Reposition'))
-       evt.Skip()
-
-    def OnMenuClick(self, evt):
-        id = evt.GetId()
-        session = ses.Session()
-        if id == const.ID_DICOM_IMPORT:
-            self.ImportDicom()
-        elif id == const.ID_PROJECT_OPEN:
-            self.OpenProject()
-        elif id == const.ID_PROJECT_SAVE:
-            #if proj.save_as:
-            if session.temp_item:
-                self.SaveAsProject()
-            else:
-                self.SaveProject()
-        elif id == const.ID_PROJECT_SAVE_AS:
-            self.SaveAsProject()
-        elif id == const.ID_PROJECT_CLOSE:
-            self.CloseProject()
-        elif id == const.ID_EXIT:
-            self.OnExit()
-        elif id == const.ID_ABOUT:
-            self.ShowAbout()
-        elif id == const.ID_START:
-            self.GettingStarted()
-
-    def GettingStarted(self):
-        #if sys.platform == 'win32':
-        #    os.filestart()
-        #else:
-        #    os.system("/usr/bin/xdg-open %s" % nome_file)
-
-        import webbrowser
-        path = os.path.join(const.DOC_DIR, "user_guide_invesalius3a.pdf")
-        webbrowser.open(path)
-
-
-
-    def ShowAbout(self):
-        dlg.ShowAboutDialog(self)
-
-    def ImportDicom(self):
-        ps.Publisher().sendMessage('Show import directory dialog')
-
-    def OpenProject(self):
-        ps.Publisher().sendMessage('Show open project dialog')
-
-    def SaveAsProject(self):
-        ps.Publisher().sendMessage('Show save dialog', True)
-
-    def SaveProject(self):
-        ps.Publisher().sendMessage('Show save dialog', False)
-
-    def CloseProject(self):
-        utils.debug("CloseProject")
-        ps.Publisher().sendMessage('Close Project')
-
-    def OnExit(self):
-        ps.Publisher().sendMessage('Close Project')
-
-    def CloseProgram(self, pubsub_evt):
-        self.Destroy()
-
-    def Exit(self):
-        utils.debug("Exit")
-        ps.Publisher().sendMessage('Close Project')
-
-    def ShowTask(self, pubsub_evt):
+    def _ShowTask(self, pubsub_evt):
+        """
+        Show task panel.
+        """
         self.aui_manager.GetPane("Tasks").Show()
         self.aui_manager.Update()
 
-    def HideTask(self, pubsub_evt):
-        self.aui_manager.GetPane("Tasks").Hide()
+
+    def _UpdateAUI(self, pubsub_evt):
+        """
+        Refresh AUI panels/data.
+        """
         self.aui_manager.Update()
 
-    #def OnClose(self):
-        # TODO: implement this, based on wx.Demo
-        #pass
+
+    def CloseProject(self):
+        ps.Publisher().sendMessage('Close Project')
+
+    def OnClose(self, evt):
+        """
+        Close all project data.
+        """
+        ps.Publisher().sendMessage('Close Project')
+
+    def OnMenuClick(self, evt):
+        """
+        Capture event from mouse click on menu / toolbar (as both use
+        the same ID's)
+        """
+        id = evt.GetId()
+        
+        if id == const.ID_DICOM_IMPORT:
+            self.ShowImportDicomPanel()
+        elif id == const.ID_PROJECT_OPEN:
+            self.ShowOpenProject()
+        elif id == const.ID_PROJECT_SAVE:
+            session = ses.Session()
+            if session.temp_item:
+                self.ShowSaveAsProject()
+            else:
+                self.SaveProject()
+        elif id == const.ID_PROJECT_SAVE_AS:
+            self.ShowSaveAsProject()
+        elif id == const.ID_PROJECT_CLOSE:
+            self.CloseProject()
+        elif id == const.ID_EXIT:
+            self.CloseProject()
+        elif id == const.ID_ABOUT:
+            self.ShowAbout()
+        elif id == const.ID_START:
+            self.ShowGettingStarted()
+
+    def OnSize(self, evt):
+        """
+        Refresh GUI when frame is resized.
+        """
+        ps.Publisher().sendMessage(('ProgressBar Reposition'))
+        evt.Skip()
+
+    def ShowAbout(self):
+        """
+        Shows about dialog.
+        """
+        dlg.ShowAboutDialog(self)
+
+    def SaveProject(self):
+        """
+        Save project.
+        """
+        ps.Publisher().sendMessage('Show save dialog', False)
+
+    def ShowGettingStarted(self):
+        """
+        Show getting started window.
+        """
+        path = os.path.join(const.DOC_DIR, "user_guide_invesalius3a.pdf")
+        webbrowser.open(path)
+
+    def ShowImportDicomPanel(self):
+        """
+        Show import DICOM panel.
+        """
+        ps.Publisher().sendMessage('Show import directory dialog')
+
+    def ShowOpenProject(self):
+        """
+        Show open project dialog.
+        """
+        ps.Publisher().sendMessage('Show open project dialog')
+
+    def ShowSaveAsProject(self):
+        """
+        Show save as dialog.
+        """
+        ps.Publisher().sendMessage('Show save dialog', True)
+
+
+
+# ------------------------------------------------------------------------------
 # ------------------------------------------------------------------------------
 # TODO: what will appear on ivMenuBar?
 # Menu items ID's, necessary to bind events on them
@@ -512,7 +559,7 @@ class TaskBarIcon(wx.TaskBarIcon):
         self.imgidx = 1
 
         # bind some events
-        self.Bind(wx.EVT_TASKBAR_LEFT_DCLICK, self.OnTaskBarActive)
+        self.Bind(wx.EVT_TASKBAR_LEFT_DCLICK, self.OnTaskBarActivate)
 
     def OnTaskBarActivate(self):
         pass
