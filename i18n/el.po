@@ -532,15 +532,15 @@ msgstr ""
 
 #: dialogs.py:519
 msgid "BMP image"
-msgstr ""
+msgstr "Εικόνα BMP"
 
 #: dialogs.py:520
 msgid "JPG image"
-msgstr ""
+msgstr "Εικόνα JPG"
 
 #: dialogs.py:521
 msgid "PNG image"
-msgstr ""
+msgstr "Εικόνα PNG"
 
 #: dialogs.py:522
 msgid "PostScript document"
@@ -552,7 +552,7 @@ msgstr ""
 
 #: dialogs.py:524
 msgid "TIFF image"
-msgstr ""
+msgstr "Εικόνα TIFF"
 
 #: dicom.py:1418 dicom.py:1421
 msgid "unnamed"
@@ -582,17 +582,17 @@ msgstr ""
 
 #: dicom_preview_panel.py:187 dicom_preview_panel.py:188
 msgid "Image"
-msgstr ""
+msgstr "Εικόνα"
 
 #: dicom_preview_panel.py:395
 #, python-format
 msgid "%d Images"
-msgstr ""
+msgstr "%d Εικόνες"
 
 #: dicom_preview_panel.py:519 dicom_preview_panel.py:540
 #, python-format
 msgid "Image %d"
-msgstr ""
+msgstr "Εικόνα %d"
 
 #: dicom_preview_panel.py:691
 msgid "Auto-play"
