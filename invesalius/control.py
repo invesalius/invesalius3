@@ -149,7 +149,6 @@ class Controller():
 
 
     def ShowDialogCloseProject(self):
-        debug("ShowDialogCloseProject")
         session = ses.Session()
         st = session.project_status
         if st == const.PROJ_CLOSE:
@@ -157,7 +156,7 @@ class Controller():
         try:
             filename = session.project_path[1]
         except(AttributeError):
-            print "Project doesn't exist"
+            debug("Project doesn't exist")
             filename = None
 
         if (filename):
