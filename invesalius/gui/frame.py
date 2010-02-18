@@ -55,7 +55,8 @@ class Frame(wx.Frame):
         self.Center(wx.BOTH)
         icon_path = os.path.join(const.ICON_DIR, "invesalius.ico")
         self.SetIcon(wx.Icon(icon_path, wx.BITMAP_TYPE_ICO))
-        #self.Maximize()
+        if sys.platform != 'darwin':
+            self.Maximize()
 
         # Set menus, status and task bar
         self.SetMenuBar(MenuBar(self))
