@@ -57,6 +57,11 @@ class Frame(wx.Frame):
         self.SetIcon(wx.Icon(icon_path, wx.BITMAP_TYPE_ICO))
         if sys.platform != 'darwin':
             self.Maximize()
+            #Necessary update AUI (statusBar in special)
+            #when maximized in the Win 7 and XP
+            #self.SetSize(self.GetSize())
+            self.SetSize(wx.Size(1024, 748))
+
 
         # Set menus, status and task bar
         self.SetMenuBar(MenuBar(self))
@@ -1094,7 +1099,7 @@ class LayoutToolBar(wx.ToolBar):
         else:
             # Bitmaps for show/hide task panel item
             p = os.path.join(d, "layout_data_only.gif")
-            self.BMP_WITHOUT_MENU = wx.Bitmap(p, wx.BITMAP_TYPE_GIF)
+            self.BMP_WITH_MENU = wx.Bitmap(p, wx.BITMAP_TYPE_GIF)
 
             p = os.path.join(d, "layout_full.gif")
             self.BMP_WITHOUT_MENU = wx.Bitmap(p, wx.BITMAP_TYPE_GIF)
