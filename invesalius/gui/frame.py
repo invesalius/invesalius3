@@ -63,7 +63,7 @@ class Frame(wx.Frame):
         self.SetStatusBar(StatusBar(self))
 
         # Set TaskBarIcon 
-        TaskBarIcon(self)
+        #TaskBarIcon(self)
 
         # Create aui manager and insert content in it
         self.__init_aui()
@@ -608,9 +608,9 @@ class StatusBar(wx.StatusBar):
 class TaskBarIcon(wx.TaskBarIcon):
     """
     TaskBarIcon has different behaviours according to the platform:
-        - win32:  Show icon on "Notification Area" at "Task Bar"
+        - win32:  Show icon on "Notification Area" (near clock)
         - darwin: Show icon on Dock
-        - linux2: ? - TODO: find what it does
+        - linux2: Show icon on "Notification Area" (near clock)
     """
     def __init__(self, parent=None):
         wx.TaskBarIcon.__init__(self)
@@ -624,7 +624,7 @@ class TaskBarIcon(wx.TaskBarIcon):
         # bind some events
         self.Bind(wx.EVT_TASKBAR_LEFT_DCLICK, self.OnTaskBarActivate)
 
-    def OnTaskBarActivate(self):
+    def OnTaskBarActivate(self, evt):
         pass
 
 # ------------------------------------------------------------------
