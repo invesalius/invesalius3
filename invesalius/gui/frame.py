@@ -35,10 +35,10 @@ import project as prj
 import session as ses
 import utils
 
-
-# Layout tools' IDs - this is used only locally, therefore doesn't need
-# to be defined in constants.py 
-VIEW_TOOLS = [ID_LAYOUT, ID_TEXT] = [wx.NewId() for number in range(2)]
+# Layout tools' IDs - this is used only locally, therefore doesn't
+# need to be defined in constants.py 
+VIEW_TOOLS = [ID_LAYOUT, ID_TEXT] =\
+                                [wx.NewId() for number in range(2)]
 
 class Frame(wx.Frame):
     """
@@ -53,19 +53,15 @@ class Frame(wx.Frame):
               size=wx.Size(1024, 748), #size = wx.DisplaySize(),
               style=wx.DEFAULT_FRAME_STYLE, title='InVesalius 3')
         self.Center(wx.BOTH)
-        self.SetIcon(wx.Icon(os.path.join(const.ICON_DIR, "invesalius.ico"),
-                             wx.BITMAP_TYPE_ICO))
-        self.Maximize()
+        icon_path = os.path.join(const.ICON_DIR, "invesalius.ico")
+        self.SetIcon(wx.Icon(icon_path, wx.BITMAP_TYPE_ICO))
+        #self.Maximize()
 
         # Set menus, status and task bar
         self.SetMenuBar(MenuBar(self))
         self.SetStatusBar(StatusBar(self))
 
-        # TaskBarIcon has different behaviours according to the
-        # platform:
-        #   - win32:  Show icon on "Notification Area" at "Task Bar"
-        #   - darwin: Show icon on Dock
-        #   - linux2: ? - TODO: find what it does
+        # Set TaskBarIcon 
         TaskBarIcon(self)
 
         # Create aui manager and insert content in it
@@ -79,18 +75,19 @@ class Frame(wx.Frame):
         """
         Bind events related to pubsub.
         """
-        ps.Publisher().subscribe(self._BeginBusyCursor, 'Begin busy cursor')
-        ps.Publisher().subscribe(self._ShowContentPanel, 'Cancel DICOM load')
-        ps.Publisher().subscribe(self._Exit, 'Close Window')
-        ps.Publisher().subscribe(self._EndBusyCursor, 'End busy cursor')
-        ps.Publisher().subscribe(self._HideContentPanel, 'Hide content panel')
-        ps.Publisher().subscribe(self._HideImportPanel, 'Hide import panel')
-        ps.Publisher().subscribe(self._HideTask, 'Hide task panel')
-        ps.Publisher().subscribe(self._SetProjectName, 'Set project name')
-        ps.Publisher().subscribe(self._ShowContentPanel, 'Show content panel')
-        ps.Publisher().subscribe(self._ShowImportPanel, 'Show import panel in frame')
-        ps.Publisher().subscribe(self._ShowTask, 'Show task panel')
-        ps.Publisher().subscribe(self._UpdateAUI, 'Update AUI')
+        sub = ps.Publisher().subscribe 
+        sub(self._BeginBusyCursor, 'Begin busy cursor')
+        sub(self._ShowContentPanel, 'Cancel DICOM load')
+        sub(self._Exit, 'Close Window')
+        sub(self._EndBusyCursor, 'End busy cursor')
+        sub(self._HideContentPanel, 'Hide content panel')
+        sub(self._HideImportPanel, 'Hide import panel')
+        sub(self._HideTask, 'Hide task panel')
+        sub(self._SetProjectName, 'Set project name')
+        sub(self._ShowContentPanel, 'Show content panel')
+        sub(self._ShowImportPanel, 'Show import panel in frame')
+        sub(self._ShowTask, 'Show task panel')
+        sub(self._UpdateAUI, 'Update AUI')
 
     def __bind_events_wx(self):
         """
@@ -123,16 +120,16 @@ class Frame(wx.Frame):
         aui_manager.AddPane(viewers.Panel(self), wx.aui.AuiPaneInfo().
                           Caption(_("Data panel")).CaptionVisible(False).
                           Centre().CloseButton(False).Floatable(False).
-                          Hide().Layer(1).MaximizeButton(True).Name("Data").
-                          Position(1))
+                          Hide().Layer(1).MaximizeButton(True).
+                          Name("Data").Position(1))
         
         # This is the DICOM import panel. When the two panels above
         # are shown, this should be hiden
+        caption = _("Preview medical data to be reconstructed")
         aui_manager.AddPane(imp.Panel(self), wx.aui.AuiPaneInfo().
                           Name("Import").Centre().Hide().
                           MaximizeButton(True).Floatable(True).
-                          Caption(_("Preview medical data to be reconstructed")).
-                          CaptionVisible(True))
+                          Caption(caption).CaptionVisible(True))
 
         # Add toolbars to manager
         # This is pretty tricky -- order on win32 is inverted when
@@ -189,7 +186,7 @@ class Frame(wx.Frame):
         try:
             wx.EndBusyCursor()
         except wx._core.PyAssertionError:
-            #xEndBusyCursor(): no matching wxBeginBusyCursor() for wxEndBusyCursor()
+            #no matching wxBeginBusyCursor() for wxEndBusyCursor()
             pass
 
     def _Exit(self, pubsub_evt):
@@ -330,7 +327,8 @@ class Frame(wx.Frame):
         """
         Show getting started window.
         """
-        path = os.path.join(const.DOC_DIR, "user_guide_invesalius3a.pdf")
+        path = os.path.join(const.DOC_DIR,
+                            "user_guide_invesalius3a.pdf")
         webbrowser.open(path)
 
     def ShowImportDicomPanel(self):
@@ -357,7 +355,8 @@ class Frame(wx.Frame):
 
 class MenuBar(wx.MenuBar):
     """
-    MenuBar which contains menus used to control project, tools and help.
+    MenuBar which contains menus used to control project, tools and
+    help.
     """
     def __init__(self, parent):
         wx.MenuBar.__init__(self)
@@ -382,7 +381,8 @@ class MenuBar(wx.MenuBar):
         # events should be binded directly from wx.Menu / wx.MenuBar
         # message "Binding events of wx.MenuBar" on [wxpython-users]
         # mail list in Oct 20 2008
-        ps.Publisher().subscribe(self.OnEnableState, "Enable state project")
+        sub = ps.Publisher().subscribe
+        sub(self.OnEnableState, "Enable state project")
 
     def __init_items(self):
         """
@@ -392,48 +392,54 @@ class MenuBar(wx.MenuBar):
 
         # FILE
         file_menu = wx.Menu()
-        file_menu.Append(const.ID_DICOM_IMPORT, _("Import DICOM...\tCtrl+I"))
-        #file_menu.Append(const.ID_DICOM_LOAD_NET, _("Import DICOM from PACS..."))
-        file_menu.Append(const.ID_PROJECT_OPEN, _("Open Project...\tCtrl+O"))
-        file_menu.Append(const.ID_PROJECT_SAVE, _("Save Project\tCtrl+S"))
-        file_menu.Append(const.ID_PROJECT_SAVE_AS, _("Save Project As..."))
-        file_menu.Append(const.ID_PROJECT_CLOSE, _("Close Project"))
+        app = file_menu.Append
+        app(const.ID_DICOM_IMPORT, _("Import DICOM...\tCtrl+I"))
+        #app(const.ID_DICOM_LOAD_NET, _("Import DICOM from PACS..."))
+        app(const.ID_PROJECT_OPEN, _("Open Project...\tCtrl+O"))
+        app(const.ID_PROJECT_SAVE, _("Save Project\tCtrl+S"))
+        app(const.ID_PROJECT_SAVE_AS, _("Save Project As..."))
+        app(const.ID_PROJECT_CLOSE, _("Close Project"))
         file_menu.AppendSeparator()
-        #file_menu.Append(const.ID_PROJECT_INFO, _("Project Information..."))
+        #app(const.ID_PROJECT_INFO, _("Project Information..."))
         #file_menu.AppendSeparator()
-        #file_menu.Append(const.ID_SAVE_SCREENSHOT, _("Save Screenshot"))
-        #file_menu.Append(const.ID_PRINT_SCREENSHOT, _("Print Screenshot"))
+        #app(const.ID_SAVE_SCREENSHOT, _("Save Screenshot"))
+        #app(const.ID_PRINT_SCREENSHOT, _("Print Screenshot"))
         #file_menu.AppendSeparator()
-        #file_menu.Append(1, "C:\InvData\sample.inv")
+        #app(1, "C:\InvData\sample.inv")
         #file_menu.AppendSeparator()
-        file_menu.Append(const.ID_EXIT, _("Exit"))
+        app(const.ID_EXIT, _("Exit"))
 
         # EDIT
         #file_edit = wx.Menu()
-        #file_edit.Append(wx.ID_UNDO, "Undo\tCtrl+Z")
-        #file_edit.Append(wx.ID_REDO, "Redo\tCtrl+Y")
-        #file_edit.Append(const.ID_EDIT_LIST, "Show Undo List...")
+        #app = file_edit.Append
+        #app(wx.ID_UNDO, "Undo\tCtrl+Z")
+        #app(wx.ID_REDO, "Redo\tCtrl+Y")
+        #app(const.ID_EDIT_LIST, "Show Undo List...")
 
         # VIEW
         #view_tool_menu = wx.Menu()
-        #view_tool_menu.Append(const.ID_TOOL_PROJECT, "Project Toolbar")
-        #view_tool_menu.Append(const.ID_TOOL_LAYOUT, "Layout Toolbar")
-        #view_tool_menu.Append(const.ID_TOOL_OBJECT, "Object Toolbar")
-        #view_tool_menu.Append(const.ID_TOOL_SLICE, "Slice Toolbar")
+        #app = view_tool_menu.Append
+        #app(const.ID_TOOL_PROJECT, "Project Toolbar")
+        #app(const.ID_TOOL_LAYOUT, "Layout Toolbar")
+        #app(const.ID_TOOL_OBJECT, "Object Toolbar")
+        #app(const.ID_TOOL_SLICE, "Slice Toolbar")
 
         #view_layout_menu = wx.Menu()
-        #view_layout_menu.Append(const.ID_TASK_BAR, "Task Bar")
-        #view_layout_menu.Append(const.ID_VIEW_FOUR, "Four View")
+        #app = view_layout_menu.Append
+        #app(const.ID_TASK_BAR, "Task Bar")
+        #app(const.ID_VIEW_FOUR, "Four View")
 
         #view_menu = wx.Menu()
-        #view_menu.AppendMenu(-1, "Toolbars",view_tool_menu)
-        #view_menu.AppendMenu(-1, "Layout", view_layout_menu)
+        #app = view_menu.Append
+        #appm = view_menu.AppendMenu
+        #appm(-1, "Toolbars",view_tool_menu)
+        #appm(-1, "Layout", view_layout_menu)
         #view_menu.AppendSeparator()
-        #view_menu.Append(const.ID_VIEW_FULL, "Fullscreen\tCtrl+F")
+        #app(const.ID_VIEW_FULL, "Fullscreen\tCtrl+F")
         #view_menu.AppendSeparator()
-        #view_menu.Append(const.ID_VIEW_TEXT, "2D & 3D Text")
+        #app(const.ID_VIEW_TEXT, "2D & 3D Text")
         #view_menu.AppendSeparator()
-        #view_menu.Append(const.ID_VIEW_3D_BACKGROUND, "3D Background Colour")
+        #app(const.ID_VIEW_3D_BACKGROUND, "3D Background Colour")
 
         # TOOLS
         #tools_menu = wx.Menu()
@@ -452,20 +458,23 @@ class MenuBar(wx.MenuBar):
 
         # TODO: Check what is necessary under MacOS to show
         # InVesalius and not Python
-        # first menu item... Didn't manage to solve it up to now, the 3 lines
-        # bellow are a frustated test, based on wxPython Demo
+        # first menu item... Didn't manage to solve it up to now,
+        # the 3 lines bellow are a frustated test, based on wxPython
+        # Demo
+
         # TODO: Google about this
         #test_menu = wx.Menu()
-        #test_item = test_menu.Append(-1, '&About InVesalius','InVesalius')
-        #wx.App.SetMacAboutMenuItemId(test_item.GetId())
+        #item = test_menu.Append(-1,
+        #                        &About InVesalius','InVesalius')
+        #wx.App.SetMacAboutMenuItemId(item.GetId())
 
+        # Add all menus to menubar
         self.Append(file_menu, _("File"))
         #self.Append(file_edit, "Edit")
         #self.Append(view_menu, "View")
         #self.Append(tools_menu, "Tools")
         #self.Append(options_menu, "Options")
         self.Append(help_menu, _("Help"))
-
 
     def OnEnableState(self, pubsub_evt):
         """
@@ -496,7 +505,6 @@ class MenuBar(wx.MenuBar):
 # ------------------------------------------------------------------
 # ------------------------------------------------------------------
 
-
 class ProgressBar(wx.Gauge):
     """
     Progress bar / gauge.
@@ -513,8 +521,8 @@ class ProgressBar(wx.Gauge):
         """
         Bind events related to pubsub.
         """
-        ps.Publisher().subscribe(self._Layout,
-                                'ProgressBar Reposition')
+        sub = ps.Publisher().subscribe
+        sub(self._Layout, 'ProgressBar Reposition')
 
     def _Layout(self, evt_pubsub=None):
         """
@@ -537,7 +545,6 @@ class ProgressBar(wx.Gauge):
 # ------------------------------------------------------------------
 # ------------------------------------------------------------------
 # ------------------------------------------------------------------
-
 
 class StatusBar(wx.StatusBar):
     """
@@ -562,10 +569,9 @@ class StatusBar(wx.StatusBar):
         """
         Bind events related to pubsub.
         """
-        ps.Publisher().subscribe(self._SetProgressValue,
-                                 'Update status in GUI')
-        ps.Publisher().subscribe(self._SetProgressLabel,
-                                 'Update status text in GUI')
+        sub = ps.Publisher().subscribe
+        sub(self._SetProgressValue, 'Update status in GUI')
+        sub(self._SetProgressLabel, 'Update status text in GUI')
 
     def _SetProgressValue(self, pubsub_evt):
         """
@@ -593,12 +599,17 @@ class StatusBar(wx.StatusBar):
         label = pubsub_evt.data
         self.SetStatusText(label, 0)
 
-
 # ------------------------------------------------------------------
 # ------------------------------------------------------------------
 # ------------------------------------------------------------------
 
 class TaskBarIcon(wx.TaskBarIcon):
+    """
+    TaskBarIcon has different behaviours according to the platform:
+        - win32:  Show icon on "Notification Area" at "Task Bar"
+        - darwin: Show icon on Dock
+        - linux2: ? - TODO: find what it does
+    """
     def __init__(self, parent=None):
         wx.TaskBarIcon.__init__(self)
         self.frame = parent
@@ -614,67 +625,91 @@ class TaskBarIcon(wx.TaskBarIcon):
     def OnTaskBarActivate(self):
         pass
 
-
 # ------------------------------------------------------------------
 # ------------------------------------------------------------------
 # ------------------------------------------------------------------
 
 class ProjectToolBar(wx.ToolBar):
+    """
+    Toolbar related to general project operations, including: import,
+    open, save and saveas, among others.
+    """
     def __init__(self, parent):
+        style = wx.TB_FLAT|wx.TB_NODIVIDER| wx.TB_DOCKABLE
         wx.ToolBar.__init__(self, parent, -1, wx.DefaultPosition,
                             wx.DefaultSize,
-                            wx.TB_FLAT|wx.TB_NODIVIDER| wx.TB_DOCKABLE)
-
+                            style)
         self.SetToolBitmapSize(wx.Size(32,32))
 
         self.parent = parent
+
+        # Used to enable/disable menu items if project is opened or
+        # not. Eg. save should only be available if a project is open
+        self.enable_items = [const.ID_PROJECT_SAVE]
+
         self.__init_items()
         self.__bind_events()
 
-        #FIXME:
-        self.save_as = True
+        self.Realize()
+        self.SetStateProjectClose()
+
+    def __bind_events(self):
+        """
+        Bind events related to pubsub.
+        """
+        sub = ps.Publisher().subscribe
+        sub(self._EnableState, "Enable state project")
 
     def __init_items(self):
-
+        """
+        Add tools into toolbar.
+        """
+        # Load bitmaps
+        d = const.ICON_DIR
         if sys.platform == 'darwin':
-            BMP_NET = wx.Bitmap(os.path.join(const.ICON_DIR,
-                                             "file_from_internet_original.png"),
- 	                                wx.BITMAP_TYPE_PNG)
-            BMP_IMPORT = wx.Bitmap(os.path.join(const.ICON_DIR,
-                                                "file_import_original.png"),
-                                   wx.BITMAP_TYPE_PNG)
-            BMP_OPEN = wx.Bitmap(os.path.join(const.ICON_DIR,"file_open_original.png"),
-                                wx.BITMAP_TYPE_PNG)
-            BMP_SAVE = wx.Bitmap(os.path.join(const.ICON_DIR,
-                                              "file_save_original.png"),
- 	                                 wx.BITMAP_TYPE_PNG)
-            BMP_PRINT = wx.Bitmap(os.path.join(const.ICON_DIR,
-                                               "print_original.png"),
- 	                                    wx.BITMAP_TYPE_PNG)
-            BMP_PHOTO = wx.Bitmap(os.path.join(const.ICON_DIR,
-                                               "tool_photo_original.png"),
- 	                                    wx.BITMAP_TYPE_PNG)
+            path = os.path.join(d,"file_from_internet_original.png")
+            BMP_NET = wx.Bitmap(path, wx.BITMAP_TYPE_PNG)
+
+            path = os.path.join(d, "file_import_original.png")
+            BMP_IMPORT = wx.Bitmap(path, wx.BITMAP_TYPE_PNG)
+           
+            path = os.path.join(d, "file_open_original.png")
+            BMP_OPEN = wx.Bitmap(path, wx.BITMAP_TYPE_PNG)
+
+            path = os.path.join(d, "file_save_original.png")
+            BMP_SAVE = wx.Bitmap(path, wx.BITMAP_TYPE_PNG)
+
+            path = os.path.join(d, "print_original.png")
+            BMP_PRINT = wx.Bitmap(path, wx.BITMAP_TYPE_PNG)
+
+            path = os.path.join(d, "tool_photo_original.png")
+            BMP_PHOTO = wx.Bitmap(path, wx.BITMAP_TYPE_PNG)
         else:
-            BMP_NET = wx.Bitmap(os.path.join(const.ICON_DIR,"file_from_internet.png"),
-                                wx.BITMAP_TYPE_PNG)
-            BMP_IMPORT = wx.Bitmap(os.path.join(const.ICON_DIR, "file_import.png"),
-                                   wx.BITMAP_TYPE_PNG)
-            BMP_OPEN = wx.Bitmap(os.path.join(const.ICON_DIR,"file_open.png"),
-                                 wx.BITMAP_TYPE_PNG)
-            BMP_SAVE = wx.Bitmap(os.path.join(const.ICON_DIR, "file_save.png"),
-                                 wx.BITMAP_TYPE_PNG)
-            BMP_PRINT = wx.Bitmap(os.path.join(const.ICON_DIR, "print.png"),
-                                  wx.BITMAP_TYPE_PNG)
-            BMP_PHOTO = wx.Bitmap(os.path.join(const.ICON_DIR, "tool_photo.png"),
-                                  wx.BITMAP_TYPE_PNG)
+            path = os.path.join(d, "file_from_internet.png")
+            BMP_NET = wx.Bitmap(path, wx.BITMAP_TYPE_PNG)
 
+            path = os.path.join(d, "file_import.png")
+            BMP_IMPORT = wx.Bitmap(path, wx.BITMAP_TYPE_PNG)
+           
+            path = os.path.join(d, "file_open.png")
+            BMP_OPEN = wx.Bitmap(path, wx.BITMAP_TYPE_PNG)
 
-        #self.AddLabelTool(const.ID_DICOM_LOAD_NET,
-        #                   "Load medical image...",
-        #                   BMP_NET)
+            path = os.path.join(d, "file_save.png")
+            BMP_SAVE = wx.Bitmap(path, wx.BITMAP_TYPE_PNG)
+
+            path = os.path.join(d, "print.png"),
+            BMP_PRINT = wx.Bitmap(path, wx.BITMAP_TYPE_PNG)
+
+            path = os.path.join(d, "tool_photo.png"),
+            BMP_PHOTO = wx.Bitmap(path, wx.BITMAP_TYPE_PNG)
+
+        # Create tool items based on bitmaps
         self.AddLabelTool(const.ID_DICOM_IMPORT,
                            _("Import medical image..."),
                            BMP_IMPORT)
+        #self.AddLabelTool(const.ID_DICOM_LOAD_NET,
+        #                   "Load medical image...",
+        #                   BMP_NET)
         self.AddLabelTool(const.ID_PROJECT_OPEN,
                            _("Open InVesalius 3 project..."),
                            BMP_OPEN)
@@ -687,56 +722,32 @@ class ProjectToolBar(wx.ToolBar):
         #self.AddLabelTool(const.ID_PRINT_SCREENSHOT,
         #                   "Print medical image...",
         #                   BMP_PRINT)
-        self.enable_items = [const.ID_PROJECT_SAVE]
 
-        self.Realize()
-        self.SetStateProjectClose()
-
-    def SetStateProjectOpen(self):
-        for tool in self.enable_items:
-            self.EnableTool(tool, True)
-
-    def SetStateProjectClose(self):
-        for tool in self.enable_items:
-            self.EnableTool(tool, False)
-
-    def OnEnableState(self, pubsub_evt):
+    def _EnableState(self, pubsub_evt):
+        """
+        Based on given state, enable or disable menu items which
+        depend if project is open or not.
+        """
         state = pubsub_evt.data
         if state:
             self.SetStateProjectOpen()
         else:
             self.SetStateProjectClose()
 
-    def __bind_events(self):
-        ps.Publisher().subscribe(self.OnEnableState, "Enable state project")
+    def SetStateProjectClose(self):
+        """
+        Disable menu items (e.g. save) when project is closed.
+        """
+        for tool in self.enable_items:
+            self.EnableTool(tool, False)
 
-        #self.Bind(wx.EVT_TOOL, self.OnToolSave, id=const.ID_PROJECT_SAVE)
-        #self.Bind(wx.EVT_TOOL, self.OnToolOpen, id=const.ID_PROJECT_OPEN)
-        #self.Bind(wx.EVT_TOOL, self.OnToolImport, id=const.ID_DICOM_IMPORT)
+    def SetStateProjectOpen(self):
+        """
+        Enable menu items (e.g. save) when project is opened.
+        """
+        for tool in self.enable_items:
+            self.EnableTool(tool, True)
 
-    def OnToolImport(self, event):
-        dirpath = dlg.ShowImportDirDialog()
-        if dirpath:
-            ps.Publisher().sendMessage("Load data to import panel", dirpath)
-        event.Skip()
-
-    def OnToolOpen(self, event):
-        filepath = dlg.ShowOpenProjectDialog()
-        if filepath:
-            ps.Publisher().sendMessage('Open Project', filepath)
-        event.Skip()
-
-    def OnToolSave(self, event):
-        proj = prj.Project()
-        filename = (prj.name).replace(' ','_')
-        if prj.save_as:
-            filename = dlg.ShowSaveAsProjectDialog(filename)
-            if filename:
-                prj.save_as = False
-            else:
-                return
-        ps.Publisher().sendMessage('Save Project',filename)
-        event.Skip()
 
 
 # ------------------------------------------------------------------
@@ -744,109 +755,126 @@ class ProjectToolBar(wx.ToolBar):
 # ------------------------------------------------------------------
 
 class ObjectToolBar(wx.ToolBar):
+    """
+    Toolbar related to general object operations, including: zoom
+    move, rotate, brightness/contrast, etc.
+    """
     def __init__(self, parent):
+        style =  wx.TB_FLAT|wx.TB_NODIVIDER | wx.TB_DOCKABLE
         wx.ToolBar.__init__(self, parent, -1, wx.DefaultPosition,
-                            wx.DefaultSize,
-                            wx.TB_FLAT|wx.TB_NODIVIDER | wx.TB_DOCKABLE)
+                            wx.DefaultSize, style)
 
         self.SetToolBitmapSize(wx.Size(32,32))
+
         self.parent = parent
+        # Used to enable/disable menu items if project is opened or
+        # not. Eg. save should only be available if a project is open
+        self.enable_items = [const.STATE_WL, const.STATE_PAN,
+                             const.STATE_SPIN, const.STATE_ZOOM_SL,
+                             const.STATE_ZOOM]
 
         self.__init_items()
         self.__bind_events()
         self.__bind_events_wx()
 
+        self.Realize()
+        self.SetStateProjectClose()
+
+    def __bind_events(self):
+        """
+        Bind events related to pubsub.
+        """
+        sub = ps.Publisher().subscribe
+        sub(self._EnableState, "Enable state project")
+        sub(self._UntoggleAllItems, 'Untoggle object toolbar items')
+
+
+    def __bind_events_wx(self):
+        """
+        Bind normal events from wx (except pubsub related).
+        """
+        self.Bind(wx.EVT_TOOL, self.OnToggle)
+
     def __init_items(self):
-
+        """
+        Add tools into toolbar.
+        """
+        d = const.ICON_DIR
         if sys.platform == 'darwin':
-            BMP_ROTATE = wx.Bitmap(os.path.join(const.ICON_DIR,
-                                                "tool_rotate_original.gif"),
-                                   wx.BITMAP_TYPE_GIF)
-            BMP_MOVE =wx.Bitmap(os.path.join(const.ICON_DIR,
-                                             "tool_translate_original.png"),
-                                      wx.BITMAP_TYPE_PNG)
-            BMP_ZOOM = wx.Bitmap(os.path.join(const.ICON_DIR,
-                                              "tool_zoom_original.png"),
-                                 wx.BITMAP_TYPE_PNG)
-            BMP_ZOOM_SELECT = wx.Bitmap(os.path.join(const.ICON_DIR,
-                                                     "tool_zoom_select_original.png"),
-                                        wx.BITMAP_TYPE_PNG)
-            BMP_CONTRAST = wx.Bitmap(os.path.join(const.ICON_DIR,
-                                                  "tool_contrast_original.png"),
-                                     wx.BITMAP_TYPE_PNG)
+            path = os.path.join(d, "tool_rotate_original.gif")
+            BMP_ROTATE = wx.Bitmap(path, wx.BITMAP_TYPE_GIF)
+
+            path = os.path.join(d, "tool_translate_original.png")
+            BMP_MOVE =wx.Bitmap(path, wx.BITMAP_TYPE_PNG)
+
+            path = os.path.join(d, "tool_zoom_original.png")
+            BMP_ZOOM = wx.Bitmap(path, wx.BITMAP_TYPE_PNG)
+
+            path = os.path.join(d, "tool_zoom_select_original.png")
+            BMP_ZOOM_SELECT = wx.Bitmap(path, wx.BITMAP_TYPE_PNG)
+
+            path = os.path.join(d, "tool_contrast_original.png")
+            BMP_CONTRAST = wx.Bitmap(path, wx.BITMAP_TYPE_PNG)
         else:
+            path = os.path.join(d, "tool_rotate.gif")
+            BMP_ROTATE = wx.Bitmap(path, wx.BITMAP_TYPE_GIF)
 
-            BMP_ROTATE = wx.Bitmap(os.path.join(const.ICON_DIR,
-                                                "tool_rotate.gif"),
-                                   wx.BITMAP_TYPE_GIF)
-            BMP_MOVE = wx.Bitmap(os.path.join(const.ICON_DIR,
-                                              "tool_translate.gif"),
-                                   wx.BITMAP_TYPE_GIF)
-            BMP_ZOOM = wx.Bitmap(os.path.join(const.ICON_DIR, "tool_zoom.png"),
-                                 wx.BITMAP_TYPE_PNG)
-            BMP_ZOOM_SELECT = wx.Bitmap(os.path.join(const.ICON_DIR,
-                                                     "tool_zoom_select.png"),
-                                        wx.BITMAP_TYPE_PNG)
-            BMP_CONTRAST = wx.Bitmap(os.path.join(const.ICON_DIR,
-                                                  "tool_contrast.png"),
-                                     wx.BITMAP_TYPE_PNG)
+            path = os.path.join(d, "tool_translate.png")
+            BMP_MOVE =wx.Bitmap(path, wx.BITMAP_TYPE_PNG)
 
+            path = os.path.join(d, "tool_zoom.png")
+            BMP_ZOOM = wx.Bitmap(path, wx.BITMAP_TYPE_PNG)
+
+            path = os.path.join(d, "tool_zoom_select.png")
+            BMP_ZOOM_SELECT = wx.Bitmap(path, wx.BITMAP_TYPE_PNG)
+
+            path = os.path.join(d, "tool_contrast.png")
+            BMP_CONTRAST = wx.Bitmap(path, wx.BITMAP_TYPE_PNG)
+
+        # Create tool items based on bitmaps
         self.AddLabelTool(const.STATE_ZOOM,
                            _("Zoom"),
                            BMP_ZOOM,
                            kind = wx.ITEM_CHECK)
-
         self.AddLabelTool(const.STATE_ZOOM_SL,
                            _("Zoom based on selection"),
                            BMP_ZOOM_SELECT,
                            kind = wx.ITEM_CHECK)
-
         self.AddLabelTool(const.STATE_SPIN,
                            _("Rotate"), BMP_ROTATE,
                            kind = wx.ITEM_CHECK)
-
         self.AddLabelTool(const.STATE_PAN,
                            _("Move"), BMP_MOVE,
                             kind = wx.ITEM_CHECK)
-
         self.AddLabelTool(const.STATE_WL,
                            _("Window and Level"), BMP_CONTRAST,
                            kind = wx.ITEM_CHECK)
 
-        self.enable_items = [const.STATE_WL, const.STATE_PAN, const.STATE_SPIN,
-                            const.STATE_ZOOM_SL, const.STATE_ZOOM,]
-
-        self.Realize()
-        self.SetStateProjectClose()
-
-
-    def OnEnableState(self, pubsub_evt):
+    def _EnableState(self, pubsub_evt):
+        """
+        Based on given state, enable or disable menu items which
+        depend if project is open or not.
+        """
         state = pubsub_evt.data
         if state:
             self.SetStateProjectOpen()
         else:
             self.SetStateProjectClose()
 
-    def SetStateProjectOpen(self):
-        for tool in self.enable_items:
-            self.EnableTool(tool, True)
-
-    def SetStateProjectClose(self):
-        for tool in self.enable_items:
-            self.EnableTool(tool, False)
-            self.UntoggleAllItems()
-
-
-    def __bind_events_wx(self):
-        self.Bind(wx.EVT_TOOL, self.OnToggle)
-
-    def __bind_events(self):
-        ps.Publisher().subscribe(self.UntoggleAllItems,
-                                 'Untoggle object toolbar items')
-        ps.Publisher().subscribe(self.OnEnableState, "Enable state project")
-
+    def _UntoggleAllItems(self, pubsub_evt=None):
+        """
+        Untoggle all items on toolbar.
+        """
+        for id in const.TOOL_STATES:
+            state = self.GetToolState(id)
+            if state:
+                self.ToggleTool(id, False)
 
     def OnToggle(self, evt):
+        """
+        Update status of other items on toolbar (only one item
+        should be toggle each time).
+        """
         id = evt.GetId()
         state = self.GetToolState(id)
         if state:
@@ -859,83 +887,114 @@ class ObjectToolBar(wx.ToolBar):
             state = self.GetToolState(item)
             if state and (item != id):
                 self.ToggleTool(item, False)
-
         evt.Skip()
 
+    def SetStateProjectClose(self):
+        """
+        Disable menu items (e.g. zoom) when project is closed.
+        """
+        for tool in self.enable_items:
+            self.EnableTool(tool, False)
+            self._UntoggleAllItems()
 
-    def UntoggleAllItems(self, pubsub_evt=None):
-        for id in const.TOOL_STATES:
-            state = self.GetToolState(id)
-            if state:
-                self.ToggleTool(id, False)
-
+    def SetStateProjectOpen(self):
+        """
+        Enable menu items (e.g. zoom) when project is opened.
+        """
+        for tool in self.enable_items:
+            self.EnableTool(tool, True)
 
 # ------------------------------------------------------------------
 # ------------------------------------------------------------------
 # ------------------------------------------------------------------
 
 class SliceToolBar(wx.ToolBar):
+    """
+    Toolbar related to 2D slice specific operations, including: cross
+    intersection reference and scroll slices.
+    """
     def __init__(self, parent):
+        style = wx.TB_FLAT|wx.TB_NODIVIDER | wx.TB_DOCKABLE
         wx.ToolBar.__init__(self, parent, -1, wx.DefaultPosition,
                             wx.DefaultSize,
-                            wx.TB_FLAT|wx.TB_NODIVIDER | wx.TB_DOCKABLE)
+                            style)
 
         self.SetToolBitmapSize(wx.Size(32,32))
 
         self.parent = parent
+        self.enable_items = [const.SLICE_STATE_SCROLL,
+                             const.SLICE_STATE_CROSS]
         self.__init_items()
         self.__bind_events()
         self.__bind_events_wx()
 
+        self.Realize()
+        self.SetStateProjectClose()
+
     def __init_items(self):
+        """
+        Add tools into toolbar.
+        """
+        d = const.ICON_DIR
         if sys.platform == 'darwin':
-            BMP_SLICE = wx.Bitmap(os.path.join(const.ICON_DIR,
-                                               "slice_original.png"),
-                                  wx.BITMAP_TYPE_PNG)
+            path = os.path.join(d, "slice_original.png")
+            BMP_SLICE = wx.Bitmap(path, wx.BITMAP_TYPE_PNG)
 
-            BMP_CROSS = wx.Bitmap(os.path.join(const.ICON_DIR,"cross_original.png"),
-                              wx.BITMAP_TYPE_PNG)
+            path = os.path.join(d,"cross_original.png")
+            BMP_CROSS = wx.Bitmap(path, wx.BITMAP_TYPE_PNG)
         else:
-            BMP_SLICE = wx.Bitmap(os.path.join(const.ICON_DIR, "slice.png"),
-                                  wx.BITMAP_TYPE_PNG)
+            path = os.path.join(d, "slice.png")
+            BMP_SLICE = wx.Bitmap(path, wx.BITMAP_TYPE_PNG)
 
-            BMP_CROSS = wx.Bitmap(os.path.join(const.ICON_DIR, "cross.png"),
-                              wx.BITMAP_TYPE_PNG)
-
+            path = os.path.join(d,"cross.png")
+            BMP_CROSS = wx.Bitmap(path, wx.BITMAP_TYPE_PNG)
 
         self.AddCheckTool(const.SLICE_STATE_SCROLL, BMP_SLICE)
         self.AddCheckTool(const.SLICE_STATE_CROSS, BMP_CROSS)
 
-        self.enable_items = [const.SLICE_STATE_SCROLL, const.SLICE_STATE_CROSS,]
-        self.Realize()
-        self.SetStateProjectClose()
-
-    def SetStateProjectOpen(self):
-        for tool in self.enable_items:
-            self.EnableTool(tool, True)
-
-    def SetStateProjectClose(self):
-        for tool in self.enable_items:
-            self.EnableTool(tool, False)
+    def __bind_events(self):
+        """
+        Bind events related to pubsub.
+        """
+        sub = ps.Publisher().subscribe
+        sub(self._EnableState, "Enable state project")
+        sub(self._UntoggleAllItems, 'Untoggle slice toolbar items')
 
     def __bind_events_wx(self):
-        self.Bind(wx.EVT_TOOL, self.OnClick)
+        """
+        Bind normal events from wx (except pubsub related).
+        """
+        self.Bind(wx.EVT_TOOL, self.OnToggle)
 
-    def __bind_events(self):
-        ps.Publisher().subscribe(self.UntoggleAllItems,
-                                'Untoggle slice toolbar items')
-        ps.Publisher().subscribe(self.OnEnableState, "Enable state project")
-
-    def OnEnableState(self, pubsub_evt):
+    def _EnableState(self, pubsub_evt):
+        """
+        Based on given state, enable or disable menu items which
+        depend if project is open or not.
+        """
         state = pubsub_evt.data
         if state:
             self.SetStateProjectOpen()
         else:
             self.SetStateProjectClose()
-            self.UntoggleAllItems()
+            self._UntoggleAllItems()
 
+    def _UntoggleAllItems(self, pubsub_evt=None):
+        """
+        Untoggle all items on toolbar.
+        """
+        for id in const.TOOL_SLICE_STATES:
+            state = self.GetToolState(id)
+            if state:
+                self.ToggleTool(id, False)
+                if id == const.SLICE_STATE_CROSS:
+                    msg = 'Set cross visibility'
+                    ps.Publisher().sendMessage(msg, 0)
 
-    def OnClick(self, evt):
+    def OnToggle(self, evt):
+        """
+        Update status of other items on toolbar (only one item
+        should be toggle each time).
+        """
         id = evt.GetId()
         state = self.GetToolState(id)
 
@@ -952,115 +1011,168 @@ class SliceToolBar(wx.ToolBar):
 
         evt.Skip()
 
+    def SetStateProjectClose(self):
+        """
+        Disable menu items (e.g. cross) when project is closed.
+        """
+        for tool in self.enable_items:
+            self.EnableTool(tool, False)
 
-    def UntoggleAllItems(self, pubsub_evt=None):
-        for id in const.TOOL_SLICE_STATES:
-            state = self.GetToolState(id)
-            if state:
-                self.ToggleTool(id, False)
-                if id == const.SLICE_STATE_CROSS:
-                    ps.Publisher().sendMessage('Set cross visibility', 0)
-
+    def SetStateProjectOpen(self):
+        """
+        Enable menu items (e.g. cross) when project is opened.
+        """
+        for tool in self.enable_items:
+            self.EnableTool(tool, True)
 
 # ------------------------------------------------------------------
 # ------------------------------------------------------------------
 # ------------------------------------------------------------------
 
 class LayoutToolBar(wx.ToolBar):
+    """
+    Toolbar related to general layout/ visualization configuration
+    e.g: show/hide task panel and show/hide text on viewers.
+    """
     def __init__(self, parent):
+        style = wx.TB_FLAT|wx.TB_NODIVIDER | wx.TB_DOCKABLE
         wx.ToolBar.__init__(self, parent, -1, wx.DefaultPosition,
                             wx.DefaultSize,
-                            wx.TB_FLAT|wx.TB_NODIVIDER | wx.TB_DOCKABLE)
+                            style)
 
         self.SetToolBitmapSize(wx.Size(32,32))
 
         self.parent = parent
         self.__init_items()
-        self.__bind_events_wx()
         self.__bind_events()
+        self.__bind_events_wx()
+
         self.ontool_layout = False
         self.ontool_text = True
-
-    def __init_items(self):
-
-        if sys.platform == 'darwin':
-            self.BMP_WITHOUT_MENU =\
-            wx.Bitmap(os.path.join(const.ICON_DIR,
-                                   "layout_data_only_original.gif"),
-                               wx.BITMAP_TYPE_GIF)
-            self.BMP_WITH_MENU = wx.Bitmap(os.path.join(const.ICON_DIR,
-                                                   "layout_full_original.gif"),
-                                  wx.BITMAP_TYPE_GIF)
-
-            self.BMP_WITHOUT_TEXT =\
-                    wx.Bitmap(os.path.join(const.ICON_DIR,"text_inverted_original.png"))
-
-            self.BMP_WITH_TEXT = wx.Bitmap(os.path.join(const.ICON_DIR,"text_original.png"))
-
-        else:
-            self.BMP_WITHOUT_MENU = wx.Bitmap(os.path.join(const.ICON_DIR,
-                                                      "layout_data_only.gif"),
-                                   wx.BITMAP_TYPE_GIF)
-            self.BMP_WITH_MENU = wx.Bitmap(os.path.join(const.ICON_DIR,
-                                                   "layout_full.gif"),
-                                      wx.BITMAP_TYPE_GIF)
-            self.BMP_WITH_TEXT = wx.Bitmap(os.path.join(const.ICON_DIR,"text.gif"), wx.BITMAP_TYPE_GIF)
-            self.BMP_WITHOUT_TEXT = wx.Bitmap(os.path.join(const.ICON_DIR,"text_inverted.png"))
-
-        self.AddLabelTool(ID_LAYOUT, "",bitmap=self.BMP_WITHOUT_MENU,
-shortHelp= _("Hide task panel"))
-        self.AddLabelTool(ID_TEXT, "",bitmap=self.BMP_WITH_TEXT, shortHelp= _("Hide text"))
-
         self.enable_items = [ID_TEXT]
+
         self.Realize()
         self.SetStateProjectClose()
 
-    def SetStateProjectOpen(self):
-        self.ontool_text = False
-        self.OnText()
-        for tool in self.enable_items:
-            self.EnableTool(tool, True)
-
-    def SetStateProjectClose(self):
-        self.ontool_text = True
-        self.OnText()
-        for tool in self.enable_items:
-            self.EnableTool(tool, False)
-
     def __bind_events(self):
-        ps.Publisher().subscribe(self.SetLayoutButtonOnlyData,
-                                 "Set layout button data only")
-        ps.Publisher().subscribe(self.SetLayoutButtonFull,
-                                 "Set layout button full")
+        """
+        Bind events related to pubsub.
+        """
+        sub = ps.Publisher().subscribe
+        sub(self._EnableState, "Enable state project")
+        sub(self._SetLayoutWithTask, "Set layout button data only")
+        sub(self._SetLayoutWithoutTask, "Set layout button full")
 
-        ps.Publisher().subscribe(self.OnEnableState, "Enable state project")
+    def __bind_events_wx(self):
+        """
+        Bind normal events from wx (except pubsub related).
+        """
+        self.Bind(wx.EVT_TOOL, self.OnToggle)
 
-    def OnEnableState(self, pubsub_evt):
+    def __init_items(self):
+        """
+        Add tools into toolbar.
+        """
+        d = const.ICON_DIR
+        if sys.platform == 'darwin':
+            # Bitmaps for show/hide task panel item
+            p = os.path.join(d, "layout_data_only_original.gif")
+            self.BMP_WITHOUT_MENU = wx.Bitmap(p, wx.BITMAP_TYPE_GIF)
+
+            p = os.path.join(d, "layout_full_original.gif")
+            self.BMP_WITHOUT_MENU = wx.Bitmap(p, wx.BITMAP_TYPE_GIF)
+
+            # Bitmaps for show/hide task item
+            p = os.path.join(d, "text_inverted_original.png")
+            self.BMP_WITHOUT_TEXT = wx.Bitmap(p, wx.BITMAP_TYPE_PNG)
+
+            p = os.path.join(d, "text_original.png")
+            self.BMP_WITH_TEXT = wx.Bitmap(p, wx.BITMAP_TYPE_PNG)
+
+        else:
+            # Bitmaps for show/hide task panel item
+            p = os.path.join(d, "layout_data_only.gif")
+            self.BMP_WITHOUT_MENU = wx.Bitmap(p, wx.BITMAP_TYPE_GIF)
+
+            p = os.path.join(d, "layout_full.gif")
+            self.BMP_WITHOUT_MENU = wx.Bitmap(p, wx.BITMAP_TYPE_GIF)
+
+            # Bitmaps for show/hide task item
+            p = os.path.join(d, "text_inverted.png")
+            self.BMP_WITHOUT_TEXT = wx.Bitmap(p, wx.BITMAP_TYPE_PNG)
+
+            p = os.path.join(d, "text.png")
+            self.BMP_WITH_TEXT = wx.Bitmap(p, wx.BITMAP_TYPE_PNG)
+
+        self.AddLabelTool(ID_LAYOUT,
+                          "",
+                          bitmap=self.BMP_WITHOUT_MENU,
+                          shortHelp= _("Hide task panel"))
+        self.AddLabelTool(ID_TEXT,
+                          "",
+                          bitmap=self.BMP_WITH_TEXT,
+                          shortHelp= _("Hide text"))
+
+    def _EnableState(self, pubsub_evt):
+        """
+        Based on given state, enable or disable menu items which
+        depend if project is open or not.
+        """
         state = pubsub_evt.data
         if state:
             self.SetStateProjectOpen()
         else:
             self.SetStateProjectClose()
 
+    def _SetLayoutWithoutTask(self, pubsub_evt):
+        """
+        Set item bitmap to task panel hiden.
+        """
+        self.SetToolNormalBitmap(ID_LAYOUT,self.BMP_WITHOUT_MENU)
 
+    def _SetLayoutWithTask(self, pubsub_evt):
+        """
+        Set item bitmap to task panel shown.
+        """
+        self.SetToolNormalBitmap(ID_LAYOUT,self.BMP_WITH_MENU)
 
-    def __bind_events_wx(self):
-        self.Bind(wx.EVT_TOOL, self.OnClick)
-
-    def OnClick(self, event):
+    def OnToggle(self, event):
+        """
+        Update status of toolbar item (bitmap and help)
+        """
         id = event.GetId()
         if id == ID_LAYOUT:
-            self.OnLayout()
+            self.ToggleLayout()
         elif id== ID_TEXT:
-            self.OnText()
-
+            self.ToggleText()
 
         for item in VIEW_TOOLS:
             state = self.GetToolState(item)
             if state and (item != id):
                 self.ToggleTool(item, False)
 
-    def OnLayout(self):
+    def SetStateProjectClose(self):
+        """
+        Disable menu items (e.g. text) when project is closed.
+        """
+        self.ontool_text = True
+        self.ToggleText()
+        for tool in self.enable_items:
+            self.EnableTool(tool, False)
+
+    def SetStateProjectOpen(self):
+        """
+        Disable menu items (e.g. text) when project is closed.
+        """
+        self.ontool_text = False
+        self.ToggleText()
+        for tool in self.enable_items:
+            self.EnableTool(tool, True)
+
+    def ToggleLayout(self):
+        """
+        Based on previous layout item state, toggle it.
+        """
         if self.ontool_layout:
             self.SetToolNormalBitmap(ID_LAYOUT,self.BMP_WITHOUT_MENU)
             ps.Publisher().sendMessage('Show task panel')
@@ -1073,7 +1185,10 @@ shortHelp= _("Hide task panel"))
             self.SetToolShortHelp(ID_LAYOUT, _("Show task panel"))
             self.ontool_layout = True
 
-    def OnText(self):
+    def ToggleText(self):
+        """
+        Based on previous text item state, toggle it.
+        """
         if self.ontool_text:
             self.SetToolNormalBitmap(ID_TEXT,self.BMP_WITH_TEXT)
             ps.Publisher().sendMessage('Hide text actors on viewers')
@@ -1087,8 +1202,3 @@ shortHelp= _("Hide task panel"))
             ps.Publisher().sendMessage('Update AUI')
             self.ontool_text = True
 
-    def SetLayoutButtonOnlyData(self, pubsub_evt):
-        self.SetToolNormalBitmap(ID_LAYOUT,self.BMP_WITH_MENU)
-
-    def SetLayoutButtonFull(self, pubsub_evt):
-        self.SetToolNormalBitmap(ID_LAYOUT,self.BMP_WITHOUT_MENU)
