@@ -16,66 +16,97 @@
 #    COMERCIALIZACAO ou de ADEQUACAO A QUALQUER PROPOSITO EM
 #    PARTICULAR. Consulte a Licenca Publica Geral GNU para obter mais
 #    detalhes.
-#--------------------------------------------------------------------------
+#-------------------------------------------------------------------------
+
 import multiprocessing
-from optparse import OptionParser
+import optparse as op
 import os
 import sys
-
-from session import Session
-import gui.language_dialog as lang_dlg
-import i18n
-import utils
-
-
-# TODO: This should be called during installation
-# ----------------------------------------------------------------------
-
-path = os.path.join(os.path.expanduser('~'), ".invesalius", "presets")
-
-try:
-    os.makedirs(path)
-except OSError:
-    #print "Warning: Directory (probably) exists"
-    pass
-# ----------------------------------------------------------------------
 
 import wx
 import wx.lib.pubsub as ps
 
+import gui.language_dialog as lang_dlg
+import i18n
+import session as ses
+import utils
+
+# ------------------------------------------------------------------
+
+class InVesalius(wx.App):
+    """
+    InVesalius wxPython application class.
+    """
+    def OnInit(self):
+        """
+        Initialize splash screen and main frame.
+        """
+        self.SetAppName("InVesalius 3")
+        splash = SplashScreen()
+        self.control = splash.control
+        self.frame = splash.main
+        splash.Show()
+        return True
+
+    def MacOpenFile(self, filename):
+        """
+        Open drag & drop files under darwin
+        """
+        path = os.path.abspath(filename)
+        ps.Publisher().sendMessage('Open project', path)
+
+# ------------------------------------------------------------------
 
 class SplashScreen(wx.SplashScreen):
+    """
+    Splash screen to be shown in InVesalius initialization.
+    """
     def __init__(self):
+        # Splash screen image will depend on currently language
         lang = False
-        save_session = False
-        session = Session()
+
+        # Language information is available in session configuration
+        # file. First we need to check if this file exist, if now, it
+        # should be created
+        create_session = False
+        session = ses.Session()
         if not (session.ReadSession()):
-            save_session = True
+            create_session = True
 
-        if not(session.ReadLanguage()):
-
-            ldlg = lang_dlg.LanguageDialog()
-
-            try:
-                if (ldlg.ShowModal() == wx.ID_OK):
-                    lang = ldlg.GetSelectedLanguage()
-                    session.SetLanguage(lang)
-                    _ = i18n.InstallLanguage(lang)
-            except(wx._core.PyAssertionError): #TODO: error win64
-                    lang = ldlg.GetSelectedLanguage()
-                    session.SetLanguage(lang)
-                    _ = i18n.InstallLanguage(lang)
-        else:
+        # Check if there is a language set (if session file exists
+        if session.ReadLanguage():
             lang = session.GetLanguage()
             _ = i18n.InstallLanguage(lang)
 
-        if (save_session):
+        # If no language is set into session file, show dialog so
+        # user can select language 
+        else:
+            dialog = lang_dlg.LanguageDialog()
+
+            # FIXME: This works ok in linux2, darwin and win32,
+            # except on win64, due to wxWidgets bug
+            try:
+                ok = (dialog.ShowModal() == wx.ID_OK)
+            except wx._core.PyAssertionError:
+                ok = True
+            finally:
+                if ok:
+                    lang = dialog.GetSelectedLanguage()
+                    session.SetLanguage(lang)
+                    _ = i18n.InstallLanguage(lang)
+
+        # Session file should be created... So we set the recent
+        # choosen language
+        if (create_session):
             session.CreateItens()
             session.SetLanguage(lang)
             session.CreateSessionFile()
 
+        # Only after language was defined, splash screen will be
+        # shown
         if lang:
-            if (lang.startswith('pt')): #Necessy, pt noted as pt_BR
+            # For pt_BR, splash_pt.png should be used
+            if (lang.startswith('pt')):
                 icon_file = "splash_pt.png"
             else:
                 icon_file = "splash_" + lang + ".png"
@@ -84,18 +115,22 @@ class SplashScreen(wx.SplashScreen):
 
             bmp = wx.Image(path).ConvertToBitmap()
 
-            wx.SplashScreen.__init__(self, bitmap=bmp,
-                                 splashStyle=wx.SPLASH_CENTRE_ON_SCREEN | wx.SPLASH_TIMEOUT,
-                                 milliseconds=1500, id=-1, parent=None)
+            style = wx.SPLASH_TIMEOUT | wx.SPLASH_CENTRE_ON_SCREEN 
+            wx.SplashScreen.__init__(self,
+                                     bitmap=bmp,
+                                     splashStyle=style,
+                                     milliseconds=1500,
+                                     id=-1, 
+                                     parent=None)
             self.Bind(wx.EVT_CLOSE, self.OnClose)
 
+            # Importing takes sometime, therefore it will be done
+            # while splash is being shown
             from gui.frame import Frame
             from control import Controller
             from project import Project
 
-            print "antes primeiro import session"
             self.main = Frame(None)
-            print "depois primeiro import session"
             self.control = Controller(self.main)
 
             self.fc = wx.FutureCall(1, self.ShowMain)
@@ -106,72 +141,57 @@ class SplashScreen(wx.SplashScreen):
         evt.Skip()
         self.Hide()
 
-        # if the timer is still running then go ahead and show the
+        # If the timer is still running then go ahead and show the
         # main frame now
         if self.fc.IsRunning():
             self.fc.Stop()
-
-            #session = Session()
-            #if not (session.ReadSession()):
-            #    session.CreateItens()
-
-            #lang = session.GetLanguage()
-            #print lang
-
-            #i18n.InstallLanguage(lang)
             self.ShowMain()
 
-
     def ShowMain(self):
+        # Show main frame
         self.main.Show()
 
         if self.fc.IsRunning():
             self.Raise()
 
-class InVesalius(wx.App):
-    def OnInit(self):
-        self.SetAppName("InVesalius 3")
-        splash = SplashScreen()
-        self.control = splash.control
-        self.frame = splash.main
-        splash.Show()
+# ------------------------------------------------------------------
 
-        return True
 
-    def MacOpenFile(self, filename):
-        path = os.path.abspath(file)
-        ps.Publisher().sendMessage('Open project', path)
 
 def parse_comand_line():
     """
     Handle command line arguments.
     """
-    parser = OptionParser()
+    session = ses.Session()
 
-    # Add comand line option debug(-d or --debug) to print all pubsub message is
-    # being sent
-    parser.add_option("-d", "--debug", action="store_true", dest="debug")
-    parser.add_option("-i", "--import", action="store", dest="dicom_dir")
+    # Parse command line arguments
+    parser = op.OptionParser()
 
+    # -d or --debug: print all pubsub messagessent
+    parser.add_option("-d", "--debug",
+                      action="store_true",
+                      dest="debug")
+
+    # -i or --import: import DICOM directory
+    # chooses largest series
+    parser.add_option("-i", "--import",
+                      action="store",
+                      dest="dicom_dir")
     options, args = parser.parse_args()
 
-    session = Session()
-
+    # If debug argument...
     if options.debug:
-        # The user passed the debug option?
-        # Yes!
-        # Then all pubsub message must be printed.
         ps.Publisher().subscribe(print_events, ps.ALL_TOPICS)
-
         session.debug = 1
 
+    # If import DICOM argument...
     if options.dicom_dir:
-        # The user passed directory to me?
         import_dir = options.dicom_dir
         ps.Publisher().sendMessage('Import directory', import_dir)
         return True
 
     # Check if there is a file path somewhere in what the user wrote
+    # In case there is, try opening as it was a inv3
     else:
         i = len(args)
         while i:
@@ -186,27 +206,44 @@ def parse_comand_line():
 
 
 def print_events(data):
+    """
+    Print pubsub messages
+    """
     utils.debug(data.topic)
 
 def main():
+    """
+    Initialize InVesalius GUI
+    """
     application = InVesalius(0)
     parse_comand_line()
     application.MainLoop()
 
 if __name__ == '__main__':
-
     # Needed in win 32 exe
     if hasattr(sys,"frozen") and sys.frozen == "windows_exe":
-         multiprocessing.freeze_support()
-         
-         folder_log = os.path.join(os.path.expanduser('~'), '.invesalius', 'logs')
-         
-         if not os.path.isdir(folder_log):
-             os.makedirs(folder_log)
-         path = os.path.join(folder_log, "stderr.log")
-         sys.stderr = open(path, "w")
+        multiprocessing.freeze_support()
 
-    # Add current directory to PYTHONPATH
+    # Create raycasting presets' folder, if it doens't exist
+    dirpath = os.path.join(os.path.expanduser('~'),
+                           ".invesalius",
+                           "presets")
+    if not os.path.isdir(dirpath):
+        os.makedirs(dirpath)
+
+    # Create logs' folder, if it doesn't exist
+    dirpath = os.path.join(os.path.expanduser('~'),
+                           ".invesalius",
+                           "logs")
+    if not os.path.isdir(dirpath):
+        os.makedirs(dirpath)
+
+    # Set system standard error output to file
+    path = os.path.join(dirpath, "stderr.log")
+    sys.stderr = open(path, "w")
+
+    # Add current directory to PYTHONPATH, so other classes can
+    # import modules as they were on root invesalius folder
     sys.path.append(".")
 
     # Init application
