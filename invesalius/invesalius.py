@@ -238,7 +238,7 @@ if __name__ == '__main__':
     if not os.path.isdir(dirpath):
         os.makedirs(dirpath)
 
-    if  sys.frozen == "windows_exe":
+    if hasattr(sys,"frozen") and sys.frozen == "windows_exe":
         # Set system standard error output to file
         path = os.path.join(dirpath, "stderr.log")
         sys.stderr = open(path, "w")
