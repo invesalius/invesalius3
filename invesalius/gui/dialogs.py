@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+# -*- coding: UTF-8 -*-
 #--------------------------------------------------------------------------
 # Software:     InVesalius - Software de Reconstrucao 3D de Imagens Medicas
 # Copyright:    (C) 2001  Centro de Pesquisas Renato Archer
@@ -455,15 +457,14 @@ def ShowAboutDialog(parent):
     info = wx.AboutDialogInfo()
     info.Name = "InVesalius"
     info.Version = "3.0 - Beta 1"
-    info.Copyright = _("(c) 2007-2010 Center for Information Technology Renato Archer")
+    info.Copyright = _("(c) 2007-2010 Renato Archer Information Technology Centre")
     info.Description = wordwrap(
        _("InVesalius is a software for medical imaging 3D reconstruction. ")+\
        _("Its input is a sequency of DICOM 2D image files acquired with CT or MR.\n\n")+\
        _("The software also allows generating correspondent STL files,")+\
        _("so the user can print 3D physical models of the patient's anatomy ")+\
        _("using Rapid Prototyping."), 350, wx.ClientDC(parent))
-    info.WebSite = ("http://www.softwarepublico.gov.br/",
-                    "InVesalius Community")
+    info.WebSite = ("http://svn.softwarepublico.gov.br/trac/invesalius")
     info.License = _("GNU GPL (General Public License) version 2")
 
     #info.Translators = ""
@@ -472,6 +473,11 @@ def ShowAboutDialog(parent):
                       "Paulo Henrique Junqueira Amorim",
                       "Thiago Franco de Moraes"]
     #info.DocWriters =
+    info.Translators = ["Alex P. Natsios (GR)",
+                        "Andreas Loupasakis (GR)",
+                        "Dimitris Glezos (GR)",
+                        u"Frédéric Lopez (FR)",
+                        "Nikos Korkakakis (GR)"]
 
     # Then we call wx.AboutBox giving its info object
     wx.AboutBox(info)

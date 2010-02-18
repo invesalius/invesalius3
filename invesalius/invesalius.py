@@ -238,9 +238,10 @@ if __name__ == '__main__':
     if not os.path.isdir(dirpath):
         os.makedirs(dirpath)
 
-    # Set system standard error output to file
-    path = os.path.join(dirpath, "stderr.log")
-    sys.stderr = open(path, "w")
+    if  sys.frozen == "windows_exe":
+        # Set system standard error output to file
+        path = os.path.join(dirpath, "stderr.log")
+        sys.stderr = open(path, "w")
 
     # Add current directory to PYTHONPATH, so other classes can
     # import modules as they were on root invesalius folder
