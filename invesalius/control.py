@@ -169,7 +169,6 @@ class Controller():
                     ps.Publisher().sendMessage("Enable state project", False)
                     ps.Publisher().sendMessage('Set project name')
                     ps.Publisher().sendMessage("Stop Config Recording")
-                    ps.Publisher().sendMessage('Close Window')
                 elif answer == 1:
                     self.ShowDialogSaveProject()
                     debug("Save changes and close")
@@ -177,7 +176,6 @@ class Controller():
                     ps.Publisher().sendMessage("Enable state project", False)
                     ps.Publisher().sendMessage('Set project name')
                     ps.Publisher().sendMessage("Stop Config Recording")
-                    ps.Publisher().sendMessage('Close Window')
 
                 elif answer == -1:
                     debug("Cancel")
@@ -186,11 +184,9 @@ class Controller():
                 ps.Publisher().sendMessage("Enable state project", False)
                 ps.Publisher().sendMessage('Set project name')
                 ps.Publisher().sendMessage("Stop Config Recording")
-                ps.Publisher().sendMessage('Close Window')
 
         else:
             ps.Publisher().sendMessage('Stop Config Recording')
-            ps.Publisher().sendMessage('Close Window')
 
 
 ###########################

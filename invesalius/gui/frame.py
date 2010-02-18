@@ -78,7 +78,6 @@ class Frame(wx.Frame):
         sub = ps.Publisher().subscribe 
         sub(self._BeginBusyCursor, 'Begin busy cursor')
         sub(self._ShowContentPanel, 'Cancel DICOM load')
-        sub(self._Exit, 'Close Window')
         sub(self._EndBusyCursor, 'End busy cursor')
         sub(self._HideContentPanel, 'Hide content panel')
         sub(self._HideImportPanel, 'Hide import panel')
@@ -189,7 +188,7 @@ class Frame(wx.Frame):
             #no matching wxBeginBusyCursor() for wxEndBusyCursor()
             pass
 
-    def _Exit(self, pubsub_evt):
+    def _Exit(self):
         """
         Exit InVesalius.
         """
@@ -276,6 +275,7 @@ class Frame(wx.Frame):
         Close all project data.
         """
         ps.Publisher().sendMessage('Close Project')
+        self._Exit()
 
     def OnMenuClick(self, evt):
         """
