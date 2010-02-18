@@ -36,7 +36,7 @@ import session as ses
 import utils
 
 # Layout tools' IDs - this is used only locally, therefore doesn't
-# need to be defined in constants.py 
+# need to be defined in constants.py
 VIEW_TOOLS = [ID_LAYOUT, ID_TEXT] =\
                                 [wx.NewId() for number in range(2)]
 
@@ -62,7 +62,7 @@ class Frame(wx.Frame):
         self.SetMenuBar(MenuBar(self))
         self.SetStatusBar(StatusBar(self))
 
-        # Set TaskBarIcon 
+        # Set TaskBarIcon
         #TaskBarIcon(self)
 
         # Create aui manager and insert content in it
@@ -76,7 +76,7 @@ class Frame(wx.Frame):
         """
         Bind events related to pubsub.
         """
-        sub = ps.Publisher().subscribe 
+        sub = ps.Publisher().subscribe
         sub(self._BeginBusyCursor, 'Begin busy cursor')
         sub(self._ShowContentPanel, 'Cancel DICOM load')
         sub(self._EndBusyCursor, 'End busy cursor')
@@ -122,7 +122,7 @@ class Frame(wx.Frame):
                           Centre().CloseButton(False).Floatable(False).
                           Hide().Layer(1).MaximizeButton(True).
                           Name("Data").Position(1))
-        
+
         # This is the DICOM import panel. When the two panels above
         # are shown, this should be hiden
         caption = _("Preview medical data to be reconstructed")
@@ -284,7 +284,7 @@ class Frame(wx.Frame):
         the same ID's)
         """
         id = evt.GetId()
-        
+
         if id == const.ID_DICOM_IMPORT:
             self.ShowImportDicomPanel()
         elif id == const.ID_PROJECT_OPEN:
@@ -536,7 +536,7 @@ class ProgressBar(wx.Gauge):
 
     def SetPercentage(self, value):
         """
-        Set value [0;100] into gauge, moving "status" percentage. 
+        Set value [0;100] into gauge, moving "status" percentage.
         """
         self.SetValue(int(value))
         if (value >= 99):
@@ -674,7 +674,7 @@ class ProjectToolBar(wx.ToolBar):
 
             path = os.path.join(d, "file_import_original.png")
             BMP_IMPORT = wx.Bitmap(path, wx.BITMAP_TYPE_PNG)
-           
+
             path = os.path.join(d, "file_open_original.png")
             BMP_OPEN = wx.Bitmap(path, wx.BITMAP_TYPE_PNG)
 
@@ -692,7 +692,7 @@ class ProjectToolBar(wx.ToolBar):
 
             path = os.path.join(d, "file_import.png")
             BMP_IMPORT = wx.Bitmap(path, wx.BITMAP_TYPE_PNG)
-           
+
             path = os.path.join(d, "file_open.png")
             BMP_OPEN = wx.Bitmap(path, wx.BITMAP_TYPE_PNG)
 
@@ -821,8 +821,8 @@ class ObjectToolBar(wx.ToolBar):
             path = os.path.join(d, "tool_rotate.gif")
             BMP_ROTATE = wx.Bitmap(path, wx.BITMAP_TYPE_GIF)
 
-            path = os.path.join(d, "tool_translate.png")
-            BMP_MOVE =wx.Bitmap(path, wx.BITMAP_TYPE_PNG)
+            path = os.path.join(d, "tool_translate.gif")
+            BMP_MOVE =wx.Bitmap(path, wx.BITMAP_TYPE_GIF)
 
             path = os.path.join(d, "tool_zoom.png")
             BMP_ZOOM = wx.Bitmap(path, wx.BITMAP_TYPE_PNG)
