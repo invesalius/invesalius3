@@ -699,10 +699,10 @@ class ProjectToolBar(wx.ToolBar):
             path = os.path.join(d, "file_save.png")
             BMP_SAVE = wx.Bitmap(path, wx.BITMAP_TYPE_PNG)
 
-            path = os.path.join(d, "print.png"),
+            path = os.path.join(d, "print.png")
             BMP_PRINT = wx.Bitmap(path, wx.BITMAP_TYPE_PNG)
 
-            path = os.path.join(d, "tool_photo.png"),
+            path = os.path.join(d, "tool_photo.png")
             BMP_PHOTO = wx.Bitmap(path, wx.BITMAP_TYPE_PNG)
 
         # Create tool items based on bitmaps
