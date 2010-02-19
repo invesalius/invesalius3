@@ -712,17 +712,20 @@ class ProjectToolBar(wx.ToolBar):
 
         # Create tool items based on bitmaps
         self.AddLabelTool(const.ID_DICOM_IMPORT,
-                           _("Import medical image..."),
-                           BMP_IMPORT)
+                          "",
+                          shortHelp =_("Import DICOM files..."),
+                          bitmap=BMP_IMPORT)
         #self.AddLabelTool(const.ID_DICOM_LOAD_NET,
         #                   "Load medical image...",
         #                   BMP_NET)
         self.AddLabelTool(const.ID_PROJECT_OPEN,
-                           _("Open InVesalius 3 project..."),
-                           BMP_OPEN)
+                          "",
+                          shortHelp =_("Open a InVesalius project..."),
+                          bitmap=BMP_OPEN)
         self.AddLabelTool(const.ID_PROJECT_SAVE,
-                           _("Save InVesalius project"),
-                           BMP_SAVE)
+                          "",
+                          shortHelp = _("Save InVesalius project"),
+                          bitmap=BMP_SAVE)
         #self.AddLabelTool(const.ID_SAVE_SCREENSHOT,
         #                   "Take photo of screen",
         #                   BMP_PHOTO)
@@ -840,22 +843,30 @@ class ObjectToolBar(wx.ToolBar):
 
         # Create tool items based on bitmaps
         self.AddLabelTool(const.STATE_ZOOM,
-                           _("Zoom"),
-                           BMP_ZOOM,
-                           kind = wx.ITEM_CHECK)
+                          "",
+                          shortHelp =_("Zoom"),
+                          bitmap=BMP_ZOOM,
+                          kind = wx.ITEM_CHECK)
         self.AddLabelTool(const.STATE_ZOOM_SL,
-                           _("Zoom based on selection"),
-                           BMP_ZOOM_SELECT,
-                           kind = wx.ITEM_CHECK)
+                          "",
+                          shortHelp = _("Zoom based on selection"),
+                          bitmap = BMP_ZOOM_SELECT,
+                          kind = wx.ITEM_CHECK)
         self.AddLabelTool(const.STATE_SPIN,
-                           _("Rotate"), BMP_ROTATE,
-                           kind = wx.ITEM_CHECK)
+                          "",
+                          shortHelp = _("Rotate"),
+                          bitmap = BMP_ROTATE,
+                          kind = wx.ITEM_CHECK)
         self.AddLabelTool(const.STATE_PAN,
-                           _("Move"), BMP_MOVE,
-                            kind = wx.ITEM_CHECK)
+                          "",
+                          shortHelp = _("Move"),
+                          bitmap = BMP_MOVE,
+                          kind = wx.ITEM_CHECK)
         self.AddLabelTool(const.STATE_WL,
-                           _("Window and Level"), BMP_CONTRAST,
-                           kind = wx.ITEM_CHECK)
+                          "",
+                          shortHelp = _("Constrast"),
+                          bitmap = BMP_CONTRAST,
+                          kind = wx.ITEM_CHECK)
 
     def _EnableState(self, pubsub_evt):
         """
@@ -956,8 +967,13 @@ class SliceToolBar(wx.ToolBar):
             path = os.path.join(d,"cross.png")
             BMP_CROSS = wx.Bitmap(path, wx.BITMAP_TYPE_PNG)
 
-        self.AddCheckTool(const.SLICE_STATE_SCROLL, BMP_SLICE)
-        self.AddCheckTool(const.SLICE_STATE_CROSS, BMP_CROSS)
+        self.AddCheckTool(const.SLICE_STATE_SCROLL,
+                          BMP_SLICE,
+                          shortHelp = _("Scroll slices"))
+
+        self.AddCheckTool(const.SLICE_STATE_CROSS,
+                          BMP_CROSS,
+                          shortHelp = _("Cross intersection"))
 
     def __bind_events(self):
         """
@@ -1084,7 +1100,7 @@ class LayoutToolBar(wx.ToolBar):
         if sys.platform == 'darwin':
             # Bitmaps for show/hide task panel item
             p = os.path.join(d, "layout_data_only_original.gif")
-            self.BMP_WITHOUT_MENU = wx.Bitmap(p, wx.BITMAP_TYPE_GIF)
+            self.BMP_WITH_MENU = wx.Bitmap(p, wx.BITMAP_TYPE_GIF)
 
             p = os.path.join(d, "layout_full_original.gif")
             self.BMP_WITHOUT_MENU = wx.Bitmap(p, wx.BITMAP_TYPE_GIF)
