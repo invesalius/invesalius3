@@ -151,19 +151,55 @@ def BuildEditedImage(imagedata, points):
     points in the editor, it is necessary to generate the
     vtkPolyData via vtkContourFilter
     """
+    init_values = None
     for point in points:
         x, y, z = point
         colour = points[point]
         imagedata.SetScalarComponentFromDouble(x, y, z, 0, colour)
         imagedata.Update()
 
+        if not(init_values):
+                xi = x
+                xf = x
+                yi = y
+                yf = y
+                zi = z
+                zf = z
+                init_values = 1
+
+        if (xi > x):
+            xi = x
+        elif(xf < x):
+            xf = x
+
+        if (yi > y):
+            yi = y
+        elif(yf < y):
+            yf = y
+
+        if (zi > z):
+            zi = z
+        elif(zf < z):
+            zf = z
+
+    clip = vtk.vtkImageClip()
+    clip.SetInput(imagedata)
+    clip.SetOutputWholeExtent(xi, xf, yi, yf, zi, zf)
+    clip.Update()
+
     gauss = vtk.vtkImageGaussianSmooth()
-    gauss.SetInput(imagedata)
+    gauss.SetInput(clip.GetOutput())
     gauss.SetRadiusFactor(0.6)
     gauss.Update()
 
-    return gauss.GetOutput()
-    #return imagedata
+    app = vtk.vtkImageAppend()
+    app.PreserveExtentsOn()
+    app.SetAppendAxis(2)
+    app.SetInput(0, imagedata)
+    app.SetInput(1, gauss.GetOutput())
+    app.Update()
+
+    return app.GetOutput()
 
 
 def Export(imagedata, filename, bin=False):
