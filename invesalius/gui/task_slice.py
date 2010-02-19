@@ -213,7 +213,7 @@ class InnerFoldPanel(wx.Panel):
         fold_panel.Expand(fold_panel.GetFoldPanel(0))
 
         # Fold 2 - Advanced edition tools
-        item = fold_panel.AddFoldPanel(_("Advanced edition tools"), collapsed=True)
+        item = fold_panel.AddFoldPanel(_("Advanced editing tools"), collapsed=True)
         fold_panel.ApplyCaptionStyle(item, style)
         fold_panel.AddFoldPanelWindow(item, EditionTools(item), Spacing= 0,
                                       leftSpacing=0, rightSpacing=0)
@@ -389,28 +389,28 @@ class MaskProperties(wx.Panel):
         self.gradient.SetMaxValue(thresh_max)
         self.bind_evt_gradient = True
         thresh = (thresh_min, thresh_max)
-        if thresh in Project().presets.thresh_ct.values():
-            preset_name = Project().presets.thresh_ct.get_key(thresh)[0]
+        if thresh in Project().threshold_modes.values():
+            preset_name = Project().threshold_modes.get_key(thresh)[0]
             index = self.threshold_modes_names.index(preset_name) 
             self.combo_thresh.SetSelection(index)
         else:
             index = self.threshold_modes_names.index(_("Custom"))
             self.combo_thresh.SetSelection(index)
-            Project().presets.thresh_ct[_("Custom")] = (thresh_min, thresh_max)
+            Project().threshold_modes[_("Custom")] = (thresh_min, thresh_max)
 
     def SetThresholdValues2(self, pubsub_evt):
         thresh_min, thresh_max = pubsub_evt.data
         self.gradient.SetMinValue(thresh_min)
         self.gradient.SetMaxValue(thresh_max)
         thresh = (thresh_min, thresh_max)
-        if thresh in Project().presets.thresh_ct.values():
-            preset_name = Project().presets.thresh_ct.get_key(thresh)[0]
+        if thresh in Project().threshold_modes.values():
+            preset_name = Project().threshold_modes.get_key(thresh)[0]
             index = self.threshold_modes_names.index(preset_name) 
             self.combo_thresh.SetSelection(index)
         else:
             index = self.threshold_modes_names.index(_("Custom"))
             self.combo_thresh.SetSelection(index)
-            Project().presets.thresh_ct[_("Custom")] = (thresh_min, thresh_max)
+            Project().threshold_modes[_("Custom")] = (thresh_min, thresh_max)
 
     def SetItemsColour(self, evt_pubsub):
         colour = evt_pubsub.data
@@ -440,8 +440,8 @@ class MaskProperties(wx.Panel):
             self.combo_thresh.SetSelection(default_thresh)
             (thresh_min, thresh_max) =\
                 self.threshold_modes[thresh_modes_names[default_thresh]]
-        elif default_thresh in proj.presets.thresh_ct.values():
-            preset_name = proj.presets.thresh_ct.get_key(default_thresh)[0]
+        elif default_thresh in proj.threshold_modes.values():
+            preset_name = proj.threshold_modes.get_key(default_thresh)[0]
             index = self.threshold_modes_names.index(preset_name) 
             self.combo_thresh.SetSelection(index)
             thresh_min, thresh_max = default_thresh
@@ -449,7 +449,7 @@ class MaskProperties(wx.Panel):
             index = self.threshold_modes_names.index(_("Custom"))
             self.combo_thresh.SetSelection(index)
             thresh_min, thresh_max = default_thresh
-            proj.presets.thresh_ct[_("Custom")] = (thresh_min, thresh_max)
+            proj.threshold_modes[_("Custom")] = (thresh_min, thresh_max)
 
         self.gradient.SetMinValue(thresh_min)
         self.gradient.SetMaxValue(thresh_max)
@@ -466,7 +466,7 @@ class MaskProperties(wx.Panel):
         ps.Publisher().sendMessage('Change mask selected', mask_index)
 
     def OnComboThresh(self, evt):
-        (thresh_min, thresh_max) = Project().presets.thresh_ct[evt.GetString()]
+        (thresh_min, thresh_max) = Project().threshold_modes[evt.GetString()]
         self.gradient.SetMinValue(thresh_min, True)
         self.gradient.SetMaxValue(thresh_max, True)
 
