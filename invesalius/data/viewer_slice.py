@@ -681,13 +681,13 @@ class Viewer(wx.Panel):
         self.pick.Pick(mouse_x, mouse_y, self.slice_data_list[0].number, renderer)
         coord_cross = self.get_coordinate_cursor()
         coord = self.CalcultateScrollPosition(coord_cross)
+        
         ps.Publisher().sendMessage('Update cross position',
                 (self.orientation, coord_cross))
-        bounds = self.imagedata.GetBounds()[::2]
-        print "image bounds", bounds
-        ball_position = numpy.array(coord_cross) - numpy.array(bounds)
-        ps.Publisher().sendMessage('Set ball reference position based on bound', ball_position)
+        ps.Publisher().sendMessage('Set ball reference position', coord_cross)
+        ps.Publisher().sendMessage('Set camera in volume', coord_cross)
         ps.Publisher().sendMessage('Render volume viewer')
+        
         self.ScrollSlice(coord)
         self.interactor.Render()
 
