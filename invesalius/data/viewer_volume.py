@@ -440,6 +440,31 @@ class Viewer(wx.Panel):
         self.ren.ResetCamera()
         self.ren.ResetCameraClippingRange()
 
+    def SetVolumeCamera(self, pubsub_evt):
+        
+        coord_camera = pubsub_evt.data
+        coord_camera = numpy.array(bases.FlipY(coord_camera))
+        
+        cam = self.ren.GetActiveCamera()
+        
+        if self.initial_foco is None:
+            self.initial_foco = numpy.array(cam.GetFocalPoint())
+        
+        cam_initialposition = numpy.array(cam.GetPosition())
+        cam_initialfoco = numpy.array(cam.GetFocalPoint())
+        
+        cam_sub = cam_initialposition - cam_initialfoco
+        cam_sub_norm = numpy.linalg.norm(cam_sub)
+        vet1 = cam_sub/cam_sub_norm
+        
+        cam_sub_novo = coord_camera - self.initial_foco
+        cam_sub_novo_norm = numpy.linalg.norm(cam_sub_novo)
+        vet2 = cam_sub_novo/cam_sub_novo_norm
+        vet2 = vet2*cam_sub_norm + coord_camera
+        
+        cam.SetFocalPoint(coord_camera)
+        cam.SetPosition(vet2)
+    
     def OnExportSurface(self, pubsub_evt):
         filename, filetype = pubsub_evt.data
         fileprefix = filename.split(".")[-2]
