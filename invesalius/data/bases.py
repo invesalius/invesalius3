@@ -43,17 +43,39 @@ class Bases:
         g1 = g1/sqrt(lamb2)
         g2 = g2/sqrt(dot(g2, g2))
         g3 = g3/sqrt(dot(g3, g3))
-        
-        ##tentativa de corrigir o erro na fatia axial que esta invertida 
-        g2 = -g2
             
         M = matrix([[g1[0],g1[1],g1[2]], [g2[0],g2[1],g2[2]], [g3[0],g3[1],g3[2]]])
         q.shape = (3, 1)
         q = matrix(q.copy())
-        print"M: ", M
-        print
-        print"q: ", q
-        print
         Minv = M.I
         
         return M, q, Minv
+    
+def FlipY(point):
+        
+        point = matrix(point + (0,))
+               
+        #inverter o eixo z
+        ## possivel explicacaoo -- origem do eixo do imagedata esta no canto
+        ## superior esquerdo e origem da superfice eh no canto inferior esquerdo
+        ## ou a ordem de empilhamento das fatias
+        
+        point[0, 2] = -point[0, 2]
+        
+        #Flip em y
+        Mrot = matrix([[1.0, 0.0, 0.0, 0.0],
+                             [0.0, -1.0, 0.0, 0.0],
+                             [0.0, 0.0, -1.0, 0.0],
+                             [0.0, 0.0, 0.0, 1.0]])
+        Mtrans = matrix([[1.0, 0, 0, -point[0, 0]],
+                               [0.0, 1.0, 0, -point[0, 1]],
+                               [0.0, 0.0, 1.0, -point[0, 2]],
+                               [0.0, 0.0, 0.0, 1.0]])
+        Mtrans_return = matrix([[1.0, 0, 0, point[0, 0]],
+                               [0.0, 1.0, 0, point[0, 1]],
+                               [0.0, 0.0, 1.0, point[0, 2]],
+                               [0.0, 0.0, 0.0, 1.0]])
+        
+        point_rot = point*Mtrans*Mrot*Mtrans_return
+        x, y, z  = point_rot.tolist()[0][:3]
+        return x, y, z
