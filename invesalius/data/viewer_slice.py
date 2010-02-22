@@ -684,7 +684,7 @@ class Viewer(wx.Panel):
         
         ps.Publisher().sendMessage('Update cross position',
                 (self.orientation, coord_cross))
-        ps.Publisher().sendMessage('Set ball reference position', coord_cross)
+        ps.Publisher().sendMessage('Set ball reference position based on bound', coord_cross)
         ps.Publisher().sendMessage('Set camera in volume', coord_cross)
         ps.Publisher().sendMessage('Render volume viewer')
         
