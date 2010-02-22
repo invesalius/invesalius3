@@ -25,6 +25,7 @@ from vtk.wx.wxVTKRenderWindowInteractor import wxVTKRenderWindowInteractor
 import wx.lib.pubsub as ps
 
 import constants as const
+import data.bases as bases
 import data.vtk_utils as vtku
 import project as prj
 import style as st
@@ -36,6 +37,9 @@ class Viewer(wx.Panel):
         self.SetBackgroundColour(wx.Colour(0, 0, 0))
 
         self.interaction_style = st.StyleStateManager()
+        
+        self.ball_reference = None
+        self.initial_foco = None
 
         style =  vtk.vtkInteractorStyleTrackballCamera()
         self.style = style
@@ -124,6 +128,7 @@ class Viewer(wx.Panel):
         ps.Publisher().subscribe(self.LoadSlicePlane, 'Load slice plane')
 
         ps.Publisher().subscribe(self.ResetCamClippingRange, 'Reset cam clipping range')
+        ps.Publisher().subscribe(self.SetVolumeCamera, 'Set camera in volume')
 
         ps.Publisher().subscribe(self.OnEnableStyle, 'Enable style')
         ps.Publisher().subscribe(self.OnDisableStyle, 'Disable style')
@@ -141,7 +146,48 @@ class Viewer(wx.Panel):
 
         ps.Publisher().subscribe(self.OnStartSeed,'Create surface by seeding - start')
         ps.Publisher().subscribe(self.OnEndSeed,'Create surface by seeding - end')
+        
+        ps.Publisher().subscribe(self.ActivateBallReference,
+                'Activate ball reference')
+        ps.Publisher().subscribe(self.DeactivateBallReference,
+                'Deactivate ball reference')
+        ps.Publisher().subscribe(self.SetBallReferencePosition,
+                'Set ball reference position')
+        ps.Publisher().subscribe(self.SetBallReferencePositionBasedOnBound,
+                'Set ball reference position based on bound')
 
+    def CreateBallReference(self):
+        self.ball_reference = vtk.vtkSphereSource()
+        self.ball_reference.SetRadius(5)
+
+        mapper = vtk.vtkPolyDataMapper()
+        mapper.SetInput(self.ball_reference.GetOutput())
+
+        p = vtk.vtkProperty()
+        p.SetColor(1, 0, 0)
+
+        self.ball_actor = vtk.vtkActor()
+        self.ball_actor.SetMapper(mapper)
+        self.ball_actor.SetProperty(p)
+
+    def ActivateBallReference(self, pubsub_evt):
+        if not self.ball_reference:
+            self.CreateBallReference()
+        self.ren.AddActor(self.ball_actor)
+
+    def DeactivateBallReference(self, pubsub_evt):
+        if self.ball_reference:
+            self.ren.RemoveActor(self.ball_actor)
+
+    def SetBallReferencePosition(self, pubsub_evt):
+        x, y, z = pubsub_evt.data
+        self.ball_reference.SetCenter(x, y, z)
+
+    def SetBallReferencePositionBasedOnBound(self, pubsub_evt):
+        coord = pubsub_evt.data
+        x, y, z = bases.FlipY(coord)
+        self.ball_reference.SetCenter(x, y, z)
+        
     def OnStartSeed(self, pubsub_evt):
         index = pubsub_evt.data
         self.seed_points = []
