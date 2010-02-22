@@ -19,6 +19,7 @@
 
 import sys
 
+import numpy
 import wx
 import vtk
 from vtk.wx.wxVTKRenderWindowInteractor import wxVTKRenderWindowInteractor
