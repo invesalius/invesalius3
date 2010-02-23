@@ -22,12 +22,12 @@ class CirclePointRepresentation(object):
     """
     This class represents a circle that indicate a point in the surface
     """
-    def __init__(self, color=(1, 0, 0), radius=1.0):
+    def __init__(self, colour=(1, 0, 0), radius=1.0):
         """
-        color: the color of the representation
+        colour: the colour of the representation
         radius: the radius of circle representation
         """
-        self.color = color
+        self.colour = colour
         self.radius = radius
 
     def GetRepresentation(self, x, y, z):
@@ -47,7 +47,7 @@ class CirclePointRepresentation(object):
 
         a = vtk.vtkActor2D()
         a.SetMapper(m)
-        a.GetProperty().SetColor(self.color)
+        a.GetProperty().SetColor(self.colour)
 
         return a
 
@@ -55,14 +55,14 @@ class CrossPointRepresentation(object):
     """
     This class represents a cross that indicate a point in the surface
     """
-    def __init__(self, camera, color=(1, 0, 0), size=1.0):
+    def __init__(self, camera, colour=(1, 0, 0), size=1.0):
         """
-        color: the color of the representation
+        colour: the colour of the representation
         size: the size of the representation
         camera: the active camera, to get the orientation to draw the cross
         """
         self.camera = camera
-        self.color = color
+        self.colour = colour
         self.size = size
     
     def GetRepresentation(self, x, y, z):
@@ -114,12 +114,12 @@ class CrossPointRepresentation(object):
 
         a = vtk.vtkActor2D()
         a.SetMapper(m)
-        a.GetProperty().SetColor(self.color)
+        a.GetProperty().SetColor(self.colour)
         return a
 
 class LinearMeasure(object):
-    def __init__(self, render, color=(1, 0, 0), representation=None):
-        self.color = color
+    def __init__(self, render, colour=(1, 0, 0), representation=None):
+        self.colour = colour
         self.points = []
         self.point_actor1 = None
         self.point_actor2 = None
@@ -128,7 +128,7 @@ class LinearMeasure(object):
         if not representation:
             representation = CirclePointRepresentation()
         self.representation = representation
-        print color
+        print colour
 
     def SetPoint1(self, x, y, z):
         self.points.append((x, y, z))
@@ -159,7 +159,7 @@ class LinearMeasure(object):
 
         a = vtk.vtkActor2D()
         a.SetMapper(m)
-        a.GetProperty().SetColor(self.color)
+        a.GetProperty().SetColor(self.colour)
         self.line_actor = a
         self.render.AddActor(self.line_actor)
 
@@ -171,7 +171,7 @@ class LinearMeasure(object):
         textsource = vtk.vtkTextSource()
         textsource.SetText(text)
         textsource.SetBackgroundColor((250/255.0, 247/255.0, 218/255.0))
-        textsource.SetForegroundColor(self.color)
+        textsource.SetForegroundColor(self.colour)
 
         m = vtk.vtkPolyDataMapper2D()
         m.SetInputConnection(textsource.GetOutputPort())
@@ -199,8 +199,8 @@ class LinearMeasure(object):
 
 
 class AngularMeasure(object):
-    def __init__(self, render, color=(1, 0, 0), representation=None):
-        self.color = color
+    def __init__(self, render, colour=(1, 0, 0), representation=None):
+        self.colour = colour
         self.points = [0, 0, 0]
         self.number_of_points = 0
         self.point_actor1 = None
@@ -211,7 +211,7 @@ class AngularMeasure(object):
         if not representation:
             representation = CirclePointRepresentation()
         self.representation = representation
-        print color
+        print colour
 
     def SetPoint1(self, x, y, z):
         self.points[0] = (x, y, z)
@@ -256,7 +256,7 @@ class AngularMeasure(object):
 
         a = vtk.vtkActor2D()
         a.SetMapper(m)
-        a.GetProperty().SetColor(self.color)
+        a.GetProperty().SetColor(self.colour)
         self.line_actor = a
         return a
 
@@ -296,7 +296,7 @@ class AngularMeasure(object):
         textsource = vtk.vtkTextSource()
         textsource.SetText(text)
         textsource.SetBackgroundColor((250/255.0, 247/255.0, 218/255.0))
-        textsource.SetForegroundColor(self.color)
+        textsource.SetForegroundColor(self.colour)
 
         m = vtk.vtkPolyDataMapper2D()
         m.SetInputConnection(textsource.GetOutputPort())
