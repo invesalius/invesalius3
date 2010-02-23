@@ -30,6 +30,8 @@ import project as prj
 import style as st
 import utils
 
+from data import measures
+
 class Viewer(wx.Panel):
     def __init__(self, parent):
         wx.Panel.__init__(self, parent, size=wx.Size(320, 320))
@@ -88,6 +90,10 @@ class Viewer(wx.Panel):
         self.seed_points = []
 
         self.points_reference = []
+
+        self.measure_picker = vtk.vtkPointPicker()
+        self.measure_picker.SetTolerance(0.005)
+        self.measures = []
         
 
     def __bind_events(self):
@@ -287,7 +293,11 @@ class Viewer(wx.Panel):
               const.VOLUME_STATE_SEED:
                     {
                     "LeftButtonPressEvent": self.OnInsertSeed
-                    }
+                    },
+              const.STATE_LINEAR_MEASURE:
+                  {
+                  "LeftButtonPressEvent": self.OnInsertLinearMeasurePoint
+                  }
               }
 
         if state == const.STATE_WL:
@@ -308,6 +318,9 @@ class Viewer(wx.Panel):
             style = vtk.vtkInteractorStyleTrackballCamera()
             self.interactor.SetInteractorStyle(style)
             self.style = style  
+
+        if state == const.STATE_LINEAR_MEASURE:
+            self.interactor.SetPicker(self.measure_picker)
 
             # Check each event available for each mode
             for event in action[state]:
@@ -589,6 +602,21 @@ class Viewer(wx.Panel):
         point_id = self.picker.GetPointId()
         self.seed_points.append(point_id)
         self.interactor.Render()
+
+    def OnInsertLinearMeasurePoint(self, obj, evt):
+        print "Hey, you inserted measure point"
+        x,y = self.interactor.GetEventPosition()
+        self.measure_picker.Pick(x, y, 0, self.ren)
+        x, y, z = self.measure_picker.GetPickPosition()
+        if self.measure_picker.GetPointId() != -1: 
+            if not self.measures or self.measures[-1].point_actor2:
+                m = measures.LinearMeasure(self.ren)
+                m.SetPoint1(x, y, z)
+                self.measures.append(m)
+            else:
+                m = self.measures[-1]
+                m.SetPoint2(x, y, z)
+            self.interactor.Render()
 
 
 class SlicePlane:

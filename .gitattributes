@@ -141,6 +141,7 @@ invesalius/data/cursor_actors.py -text
 invesalius/data/editor.py -text
 invesalius/data/imagedata_utils.py -text
 invesalius/data/mask.py -text
+invesalius/data/measures.py -text
 invesalius/data/orientation.py -text
 invesalius/data/polydata_utils.py -text
 invesalius/data/slice_.py -text

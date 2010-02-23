@@ -18,9 +18,12 @@
 #--------------------------------------------------------------------------
 
 import wx
+import wx.lib.embeddedimage as emb
 import wx.lib.hyperlink as hl
 import wx.lib.platebtn as pbtn
-import wx.lib.embeddedimage as emb
+import wx.lib.pubsub as ps 
+
+import constants
 
 ID_BTN_MEASURE_LINEAR = wx.NewId()
 ID_BTN_MEASURE_ANGULAR = wx.NewId()
@@ -118,7 +121,9 @@ class InnerTaskPanel(wx.Panel):
         print "TODO: Send Signal - Add text annotation (both 2d and 3d)"
 
     def OnLinkLinearMeasure(self):
-        print "TODO: Send Signal - Add linear measure (both 2d and 3d)"
+        #print "TODO: Send Signal - Add linear measure (both 2d and 3d)"
+        ps.Publisher().sendMessage('Enable style',
+                constants.STATE_LINEAR_MEASURE)
 
     def OnLinkAngularMeasure(self):
         print "TODO: Send Signal - Add angular measure (both 2d and 3d)"
