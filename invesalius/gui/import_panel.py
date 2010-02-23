@@ -91,7 +91,7 @@ class InnerPanel(wx.Panel):
         #button = wx.Button(panel, -1, _("Import medical images"), (20, 20))
 
         self.btn_ok = wx.Button(panel, wx.ID_OK)
-        self.btn_ok.SetDefault()
+        #self.btn_ok.SetDefault()
         self.btn_cancel = wx.Button(panel, wx.ID_CANCEL)
 
         btnsizer = wx.StdDialogButtonSizer()
