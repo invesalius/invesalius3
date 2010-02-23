@@ -48,9 +48,11 @@ class NotebookPanel(wx.Panel):
         if sys.platform != 'win32':
             book.SetWindowVariant(wx.WINDOW_VARIANT_SMALL)
 
+        self.measures_list = MeasuresListCtrlPanel(book)
+
         book.AddPage(MaskPage(book), _("Masks"))
         book.AddPage(SurfacePage(book), _("Surfaces"))
-        book.AddPage(MeasuresListCtrlPanel(book), _("Measures"))
+        book.AddPage(self.measures_list, _("Measures"))
         book.AddPage(AnnotationsListCtrlPanel(book), _("Annotations"))
         
         book.SetSelection(0)
@@ -60,8 +62,21 @@ class NotebookPanel(wx.Panel):
         self.SetSizer(sizer)
         
         book.Refresh()
+
+        self.__bind_events()
         
         # TODO: insert icons bellow notebook
+
+    def __bind_events(self):
+        ps.Publisher().subscribe(self._add_measure,
+                "Add measure to list")
+
+    def _add_measure(self, pubsub_evt):
+        type = pubsub_evt.data[0]
+        value = pubsub_evt.data[1]
+
+        self.measures_list.AddMeasure(type, value)
+
 
 
 class MaskPage(wx.Panel):
@@ -751,9 +766,8 @@ class MeasuresListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
         self.__init_columns()
         self.__init_image_list()
         self.__init_evt()
-        
-        # just testing
-        self.Populate()
+
+        self._last_measure = 0
         
     def __init_evt(self):
         self.Bind(wx.EVT_LIST_ITEM_ACTIVATED, self.OnItemActivated)
@@ -807,13 +821,11 @@ class MeasuresListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
         self.InsertStringItem(index, "")
         self.SetStringItem(index, 1, type_, imageId = self.img_colour) 
         self.SetStringItem(index, 2, value)
-        
-    def Populate(self):
-        dict = ((0, "30000 mm", "/ 3D"),
-                (1, "20o", "o 2D"),
-                (2, "500 mm", "/ 2D"))
-        for data in dict:
-            self.InsertNewItem(data[0], data[1], data[2])
+
+    def AddMeasure(self, type_, value, colour=None):
+        self.InsertNewItem(self._last_measure, type_, value, colour)
+        self._last_measure += 1
+
 
     
 class AnnotationsListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):

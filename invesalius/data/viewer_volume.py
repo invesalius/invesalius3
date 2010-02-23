@@ -616,6 +616,8 @@ class Viewer(wx.Panel):
             else:
                 m = self.measures[-1]
                 m.SetPoint2(x, y, z)
+                ps.Publisher().sendMessage("Add measure to list", 
+                        ("3D", _("%.3f mm3" % m.GetValue())))
             self.interactor.Render()
 
 
