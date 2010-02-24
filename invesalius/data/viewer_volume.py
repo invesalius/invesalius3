@@ -262,6 +262,8 @@ class Viewer(wx.Panel):
         pass
 
     def SetInteractorStyle(self, state):
+        print "SetInteractorStyle"
+        print "state: ", state
         action = {
               const.STATE_PAN:
                     {
@@ -294,7 +296,7 @@ class Viewer(wx.Panel):
                     {
                     "LeftButtonPressEvent": self.OnInsertSeed
                     },
-              const.STATE_LINEAR_MEASURE:
+              const.STATE_MEASURE_DISTANCE:
                   {
                   "LeftButtonPressEvent": self.OnInsertLinearMeasurePoint
                   }
@@ -310,6 +312,9 @@ class Viewer(wx.Panel):
             self.text.Hide()
             self.interactor.Render()
 
+        if state == const.STATE_MEASURE_DISTANCE:
+            self.interactor.SetPicker(self.measure_picker)
+
         if (state == const.STATE_ZOOM_SL):
             style = vtk.vtkInteractorStyleRubberBandZoom()
             self.interactor.SetInteractorStyle(style)
@@ -318,9 +323,6 @@ class Viewer(wx.Panel):
             style = vtk.vtkInteractorStyleTrackballCamera()
             self.interactor.SetInteractorStyle(style)
             self.style = style  
-
-        if state == const.STATE_LINEAR_MEASURE:
-            self.interactor.SetPicker(self.measure_picker)
 
             # Check each event available for each mode
             for event in action[state]:
