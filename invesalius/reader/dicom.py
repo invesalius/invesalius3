@@ -184,15 +184,16 @@ class Parser():
         """
         import os.path as path
 
+
         filename = path.abspath(filename)
+
+        if (sys.platform == 'win32'):
+            filename = filename.encode('latin-1')
 
         var_file = open("c:\\arquivo.txt","w")
         var_file.write(filename)
         var_file.close()
-        #print type(filename)
-        #print filename
-        #print filename
-        #print "____________"
+
         if path.isfile(filename):
             # Several information can be acquired from DICOM using
             # vtkgdcm.vtkGDCMImageReader.GetMedicalImageProperties()

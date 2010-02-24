@@ -121,7 +121,7 @@ def yGetDicomGroups(directory, recursive=True, gui=True):
     if recursive:
         for dirpath, dirnames, filenames in os.walk(directory):
             for name in filenames:
-                filepath = os.path.join(dirpath, name).encode('latin-1')
+                filepath = os.path.join(dirpath, name)
                 counter += 1
                 if gui:
                     yield (counter,nfiles)
