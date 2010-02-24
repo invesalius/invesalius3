@@ -203,6 +203,9 @@ class Viewer(wx.Panel):
                             },
                   const.STATE_DEFAULT:
                             {
+                            },
+                  const.STATE_MEASURE_DISTANCE:
+                            {
                             }
                  }
         if state == const.SLICE_STATE_CROSS:

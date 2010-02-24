@@ -813,8 +813,8 @@ class ObjectToolBar(wx.ToolBar):
         """
         d = const.ICON_DIR
         if sys.platform == 'darwin':
-            path = os.path.join(d, "tool_rotate_original.gif")
-            BMP_ROTATE = wx.Bitmap(path, wx.BITMAP_TYPE_GIF)
+            path = os.path.join(d, "tool_rotate_original.png")
+            BMP_ROTATE = wx.Bitmap(path, wx.BITMAP_TYPE_PNG)
 
             path = os.path.join(d, "tool_translate_original.png")
             BMP_MOVE =wx.Bitmap(path, wx.BITMAP_TYPE_PNG)
