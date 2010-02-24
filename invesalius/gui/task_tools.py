@@ -121,12 +121,12 @@ class InnerTaskPanel(wx.Panel):
         print "TODO: Send Signal - Add text annotation (both 2d and 3d)"
 
     def OnLinkLinearMeasure(self):
-        #print "TODO: Send Signal - Add linear measure (both 2d and 3d)"
         ps.Publisher().sendMessage('Enable style',
-                constants.STATE_LINEAR_MEASURE)
+                constants.STATE_MEASURE_DISTANCE)
 
     def OnLinkAngularMeasure(self):
-        print "TODO: Send Signal - Add angular measure (both 2d and 3d)"
+        ps.Publisher().sendMessage('Enable style',
+                constants.STATE_MEASURE_ANGLE)
 
     def OnButton(self, evt):
         id = evt.GetId()

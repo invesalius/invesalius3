@@ -38,14 +38,14 @@ class CirclePointRepresentation(object):
         sphere.SetCenter(x, y, z)
         sphere.SetRadius(self.radius)
         
-        c = vtk.vtkCoordinate()
-        c.SetCoordinateSystemToWorld()
+#        c = vtk.vtkCoordinate()
+#        c.SetCoordinateSystemToWorld()
         
-        m = vtk.vtkPolyDataMapper2D()
+        m = vtk.vtkPolyDataMapper()
         m.SetInputConnection(sphere.GetOutputPort())
-        m.SetTransformCoordinate(c)
+#        m.SetTransformCoordinate(c)
 
-        a = vtk.vtkActor2D()
+        a = vtk.vtkActor()
         a.SetMapper(m)
         a.GetProperty().SetColor(self.colour)
 
