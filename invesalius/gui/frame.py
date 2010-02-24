@@ -781,8 +781,10 @@ class ObjectToolBar(wx.ToolBar):
         # not. Eg. save should only be available if a project is open
         self.enable_items = [const.STATE_WL, const.STATE_PAN,
                              const.STATE_SPIN, const.STATE_ZOOM_SL,
-                             const.STATE_ZOOM]
-
+                             const.STATE_ZOOM,
+                             const.STATE_MEASURE_DISTANCE,
+                             const.STATE_MEASURE_ANGLE,
+                             const.STATE_ANNOTATE]
         self.__init_items()
         self.__bind_events()
         self.__bind_events_wx()
@@ -825,6 +827,16 @@ class ObjectToolBar(wx.ToolBar):
 
             path = os.path.join(d, "tool_contrast_original.png")
             BMP_CONTRAST = wx.Bitmap(path, wx.BITMAP_TYPE_PNG)
+
+            path = os.path.join(d, "measure_line_original.png")
+            BMP_DISTANCE = wx.Bitmap(path, wx.BITMAP_TYPE_PNG)
+
+            path = os.path.join(d, "measure_angle_original.png")
+            BMP_ANGLE = wx.Bitmap(path, wx.BITMAP_TYPE_PNG)
+
+            path = os.path.join(d, "tool_annotation_original.png")
+            BMP_ANNOTATE = wx.Bitmap(path, wx.BITMAP_TYPE_PNG)
+
         else:
             path = os.path.join(d, "tool_rotate.gif")
             BMP_ROTATE = wx.Bitmap(path, wx.BITMAP_TYPE_GIF)
@@ -840,6 +852,15 @@ class ObjectToolBar(wx.ToolBar):
 
             path = os.path.join(d, "tool_contrast.png")
             BMP_CONTRAST = wx.Bitmap(path, wx.BITMAP_TYPE_PNG)
+
+            path = os.path.join(d, "measure_line.png")
+            BMP_DISTANCE = wx.Bitmap(path, wx.BITMAP_TYPE_PNG)
+
+            path = os.path.join(d, "measure_angle.jpg")
+            BMP_ANGLE = wx.Bitmap(path, wx.BITMAP_TYPE_JPEG)
+
+            path = os.path.join(d, "tool_annotation.png")
+            BMP_ANNOTATE = wx.Bitmap(path, wx.BITMAP_TYPE_PNG)
 
         # Create tool items based on bitmaps
         self.AddLabelTool(const.STATE_ZOOM,
@@ -867,6 +888,21 @@ class ObjectToolBar(wx.ToolBar):
                           shortHelp = _("Constrast"),
                           bitmap = BMP_CONTRAST,
                           kind = wx.ITEM_CHECK)
+        self.AddLabelTool(const.STATE_MEASURE_DISTANCE,
+                        "",
+                        shortHelp = _("Measure distance"),
+                        bitmap = BMP_DISTANCE,
+                        kind = wx.ITEM_CHECK)
+        self.AddLabelTool(const.STATE_MEASURE_ANGLE,
+                        "",
+                        shortHelp = _("Measure angle"),
+                        bitmap = BMP_ANGLE,
+                        kind = wx.ITEM_CHECK)
+        self.AddLabelTool(const.STATE_ANNOTATE,
+                        "",
+                        shortHelp = _("Add annotation"),
+                        bitmap = BMP_ANNOTATE,
+                        kind = wx.ITEM_CHECK)
 
     def _EnableState(self, pubsub_evt):
         """

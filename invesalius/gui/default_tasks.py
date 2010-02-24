@@ -144,15 +144,15 @@ class LowerTaskPanel(wx.Panel):
         # Fold 2 - Tools
         # Measures
         # Text Annotations
-        item = fold_panel.AddFoldPanel(_("Tools"), collapsed=False,
-                                       foldIcons=image_list)
-        style = fold_panel.GetCaptionStyle(item)
-        col = style.GetFirstColour()
-        self.enable_items.append(item)
-         
-        fold_panel.AddFoldPanelWindow(item, tools.TaskPanel(item), Spacing= 0,
-                                      leftSpacing=0, rightSpacing=0)
-        fold_panel.Expand(fold_panel.GetFoldPanel(1))
+        #item = fold_panel.AddFoldPanel(_("Tools"), collapsed=False,
+        #                               foldIcons=image_list)
+        #style = fold_panel.GetCaptionStyle(item)
+        #col = style.GetFirstColour()
+        #elf.enable_items.append(item)
+        # 
+        #fold_panel.AddFoldPanelWindow(item, tools.TaskPanel(item), Spacing= 0,
+        #                              leftSpacing=0, rightSpacing=0)
+        #fold_panel.Expand(fold_panel.GetFoldPanel(1))
 
         self.SetStateProjectClose()
         self.__bind_events()
