@@ -21,6 +21,7 @@ import time
 
 import gdcm
 import vtkgdcm
+import sys
 import wx
 
 
