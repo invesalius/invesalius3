@@ -186,14 +186,21 @@ class Parser():
 
         filename = path.abspath(filename)
 
+        var_file = open("c:\\arquivo.txt","w")
+        var_file.write(filename)
+        var_file.close()
+        #print type(filename)
+        #print filename
+        #print filename
+        #print "____________"
         if path.isfile(filename):
             # Several information can be acquired from DICOM using
             # vtkgdcm.vtkGDCMImageReader.GetMedicalImageProperties()
             # but some tags (such as spacing) can only be achieved
             # with gdcm.ImageReader()
-
             # used to parse DICOM files - similar to vtkDICOMParser
             gdcm_reader = gdcm.ImageReader()
+            #filename = filename.encode('utf-8')
 
             gdcm_reader.SetFileName(filename)
 

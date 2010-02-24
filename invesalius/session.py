@@ -118,10 +118,10 @@ class Session(object):
         config.add_section('paths')
         config.set('paths','homedir',self.homedir)
         config.set('paths','tempdir',self.tempdir)
-        config.set('paths','last_dicom_folder',self.last_dicom_folder)
+        config.set('paths','last_dicom_folder',self.last_dicom_folder.encode('utf-8'))
         path = os.path.join(self.homedir ,
                             '.invesalius', 'config.cfg')
-        
+
         configfile = open(path, 'wb')
         config.write(configfile)
         configfile.close()
@@ -185,6 +185,11 @@ class Session(object):
             self.homedir = config.get('paths','homedir')
             self.tempdir = config.get('paths','tempdir')
             self.last_dicom_folder = config.get('paths','last_dicom_folder')
+            self.last_dicom_folder = self.last_dicom_folder.decode('utf-8')
+            #print "_______________________________"
+            #print self.last_dicom_folder
+            #print type(self.last_dicom_folder)
+            #print "_______________________________"
             return True
         except(ConfigParser.NoSectionError,
                 ConfigParser.NoOptionError,

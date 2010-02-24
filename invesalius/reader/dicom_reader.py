@@ -32,14 +32,14 @@ import dicom_grouper
 import session
 
 def ReadDicomGroup(dir_):
-    
+
     patient_group = GetDicomGroups(dir_)
     if len(patient_group) > 0:
         filelist, dicom, zspacing = SelectLargerDicomGroup(patient_group)
         filelist = SortFiles(filelist, dicom)
         size = dicom.image.size
         bits = dicom.image.bits_allocad
-        
+
         imagedata = CreateImageData(filelist, zspacing, size, bits)
         session.Session().project_status = const.NEW_PROJECT
         return imagedata, dicom
@@ -55,7 +55,7 @@ def SelectLargerDicomGroup(patient_group):
             if group.nslices > maxslices:
                 maxslices = group.nslices
                 larger_group = group
-    
+
     return larger_group
 
 def SortFiles(filelist, dicom):
@@ -107,7 +107,7 @@ def yGetDicomGroups(directory, recursive=True, gui=True):
     else:
         dirpath, dirnames, filenames = os.walk(directory)
         nfiles = len(filenames)
-    
+
     counter = 0
     grouper = dicom_grouper.DicomPatientGrouper()
     q = Queue.Queue()
@@ -121,7 +121,7 @@ def yGetDicomGroups(directory, recursive=True, gui=True):
     if recursive:
         for dirpath, dirnames, filenames in os.walk(directory):
             for name in filenames:
-                filepath = str(os.path.join(dirpath, name))
+                filepath = os.path.join(dirpath, name).encode('latin-1')
                 counter += 1
                 if gui:
                     yield (counter,nfiles)
@@ -156,10 +156,10 @@ class ProgressDicomReader:
     def CancelLoad(self, evt_pubsub):
         self.running = False
         self.stoped = True
-        
+
     def SetWindowEvent(self, frame):
         self.frame = frame
-        
+
     def SetDirectoryPath(self, path,recursive=True):
         self.running = True
         self.stoped = False
@@ -172,14 +172,14 @@ class ProgressDicomReader:
         ps.Publisher().sendMessage("End dicom load", patient_list)
 
     def GetDicomGroups(self, path, recursive):
-    
+
         if not const.VTK_WARNING:
             log_path = os.path.join(const.LOG_FOLDER, 'vtkoutput.txt')
             fow = vtk.vtkFileOutputWindow()
             fow.SetFileName(log_path)
             ow = vtk.vtkOutputWindow()
             ow.SetInstance(fow)
-        
+
         y = yGetDicomGroups(path, recursive)
         for value_progress in y:
             if not self.running:
