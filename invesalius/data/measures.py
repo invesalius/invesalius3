@@ -230,6 +230,11 @@ class AngularMeasure(object):
         self.points[2] = (x, y, z)
         self.point_actor3 = self.representation.GetRepresentation(x, y, z)
         self.render.AddActor(self.point_actor3)
+        self.CreateMeasure()
+
+    def CreateMeasure(self):
+        self._draw_line()
+        self._draw_text()
 
     def _draw_line(self):
         line1 = vtk.vtkLineSource()
@@ -258,7 +263,7 @@ class AngularMeasure(object):
         a.SetMapper(m)
         a.GetProperty().SetColor(self.colour)
         self.line_actor = a
-        return a
+        self.render.AddActor(self.line_actor)
 
     def DrawArc(self):
 
@@ -307,7 +312,7 @@ class AngularMeasure(object):
         a.GetPositionCoordinate().SetCoordinateSystemToWorld()
         a.GetPositionCoordinate().SetValue(x,y,z)
         self.text_actor = a
-        return a
+        self.render.AddActor(self.text_actor)
 
     def GetNumberOfPoints(self):
         return self.number_of_points
