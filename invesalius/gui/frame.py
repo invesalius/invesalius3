@@ -856,8 +856,8 @@ class ObjectToolBar(wx.ToolBar):
             path = os.path.join(d, "measure_line.png")
             BMP_DISTANCE = wx.Bitmap(path, wx.BITMAP_TYPE_PNG)
 
-            path = os.path.join(d, "measure_angle.jpg")
-            BMP_ANGLE = wx.Bitmap(path, wx.BITMAP_TYPE_JPEG)
+            path = os.path.join(d, "measure_angle.png")
+            BMP_ANGLE = wx.Bitmap(path, wx.BITMAP_TYPE_PNG)
 
             path = os.path.join(d, "tool_annotation.png")
             BMP_ANNOTATE = wx.Bitmap(path, wx.BITMAP_TYPE_PNG)
