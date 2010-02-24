@@ -124,11 +124,24 @@ class LinearMeasure(object):
         self.point_actor1 = None
         self.point_actor2 = None
         self.line_actor = None
+        self.text_actor = None
         self.render = render
         if not representation:
             representation = CirclePointRepresentation()
         self.representation = representation
         print colour
+
+    def IsComplete(self):
+        """
+        Is this measure complete?
+        """
+        return not self.point_actor2 is None
+
+    def AddPoint(self, x, y, z):
+        if not self.point_actor1:
+            self.SetPoint1(x, y, z)
+        elif not self.point_actor2:
+            self.SetPoint2(x, y, z)
 
     def SetPoint1(self, x, y, z):
         self.points.append((x, y, z))
@@ -197,6 +210,26 @@ class LinearMeasure(object):
         self.line_actor.SetVisibility(v)
         self.text_actor.SetVisibility(v)
 
+    def Remove(self):
+        if self.point_actor1:
+            self.render.RemoveActor(self.point_actor1)
+            del self.point_actor1
+        
+        if self.point_actor2:
+            self.render.RemoveActor(self.point_actor2)
+            del self.point_actor2
+
+        if self.line_actor:
+            self.render.RemoveActor(self.line_actor)
+            del self.line_actor
+
+        if self.text_actor:
+            self.render.RemoveActor(self.text_actor)
+            del self.text_actor
+
+    def __del__(self):
+        self.Remove()
+
 
 class AngularMeasure(object):
     def __init__(self, render, colour=(1, 0, 0), representation=None):
@@ -207,11 +240,23 @@ class AngularMeasure(object):
         self.point_actor2 = None
         self.point_actor3 = None
         self.line_actor = None
+        self.text_actor = None
         self.render = render
         if not representation:
             representation = CirclePointRepresentation()
         self.representation = representation
         print colour
+
+    def IsComplete(self):
+        return not self.point_actor3 is None
+
+    def AddPoint(self, x, y, z):
+        if not self.point_actor1:
+            self.SetPoint1(x, y, z)
+        elif not self.point_actor2:
+            self.SetPoint2(x, y, z)
+        elif not self.point_actor3:
+            self.SetPoint3(x, y, z)
 
     def SetPoint1(self, x, y, z):
         self.points[0] = (x, y, z)
@@ -343,4 +388,26 @@ class AngularMeasure(object):
         angle = math.degrees(math.acos(cos))
         return angle
 
+    def Remove(self):
+        if self.point_actor1:
+            self.render.RemoveActor(self.point_actor1)
+            del self.point_actor1
+        
+        if self.point_actor2:
+            self.render.RemoveActor(self.point_actor2)
+            del self.point_actor2
 
+        if self.point_actor3:
+            self.render.RemoveActor(self.point_actor3)
+            del self.point_actor3
+
+        if self.line_actor:
+            self.render.RemoveActor(self.line_actor)
+            del self.line_actor
+
+        if self.text_actor:
+            self.render.RemoveActor(self.text_actor)
+            del self.text_actor
+
+    def __del__(self):
+        self.Remove()

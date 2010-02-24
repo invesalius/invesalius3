@@ -94,6 +94,8 @@ class Viewer(wx.Panel):
         self.measure_picker = vtk.vtkPropPicker()
         #self.measure_picker.SetTolerance(0.005)
         self.measures = []
+
+        self._last_state = 0
         
 
     def __bind_events(self):
@@ -306,6 +308,11 @@ class Viewer(wx.Panel):
                   }
               }
 
+        if self._last_state in (const.STATE_MEASURE_DISTANCE,
+                const.STATE_MEASURE_ANGLE):
+            if self.measures and not self.measures[-1].text_actor:
+                del self.measures[-1]
+
         if state == const.STATE_WL:
             self.on_wl = True
             if self.raycasting_volume:
@@ -333,6 +340,8 @@ class Viewer(wx.Panel):
             for event in action[state]:
                 # Bind event
                 style.AddObserver(event,action[state][event])
+
+        self._last_state = state
 
     def OnSpinMove(self, evt, obj):
         if (self.mouse_pressed):
@@ -615,37 +624,36 @@ class Viewer(wx.Panel):
         x,y = self.interactor.GetEventPosition()
         self.measure_picker.Pick(x, y, 0, self.ren)
         x, y, z = self.measure_picker.GetPickPosition()
-#        if self.measure_picker.GetPointId() != -1: 
-        if not self.measures or self.measures[-1].point_actor2:
-            m = measures.LinearMeasure(self.ren)
-            m.SetPoint1(x, y, z)
-            self.measures.append(m)
-        else:
-            m = self.measures[-1]
-            m.SetPoint2(x, y, z)
-            ps.Publisher().sendMessage("Add measure to list", 
-                    ("3D", _("%.3f mm3" % m.GetValue())))
-        self.interactor.Render()
+        if self.measure_picker.GetActor(): 
+            if not self.measures or self.measures[-1].IsComplete():
+                m = measures.LinearMeasure(self.ren)
+                m.AddPoint(x, y, z)
+                self.measures.append(m)
+            else:
+                m = self.measures[-1]
+                m.AddPoint(x, y, z)
+                if m.IsComplete():
+                    ps.Publisher().sendMessage("Add measure to list", 
+                            ("3D", _("%.3f mm3" % m.GetValue())))
+            self.interactor.Render()
 
     def OnInsertAngularMeasurePoint(self, obj, evt):
         print "Hey, you inserted a angular point"
         x,y = self.interactor.GetEventPosition()
         self.measure_picker.Pick(x, y, 0, self.ren)
         x, y, z = self.measure_picker.GetPickPosition()
-#        if self.measure_picker.GetPointId() != -1: 
-        if not self.measures or self.measures[-1].point_actor3:
-            m = measures.AngularMeasure(self.ren)
-            m.SetPoint1(x, y, z)
-            self.measures.append(m)
-        elif not self.measures[-1].point_actor2:
-            m = self.measures[-1]
-            m.SetPoint2(x, y, z)
-        else:
-            m = self.measures[-1]
-            m.SetPoint3(x, y, z)
-            ps.Publisher().sendMessage("Add measure to list", 
-                    ("3D", _("%.3f" % m.GetValue())))
-        self.interactor.Render()
+        if self.measure_picker.GetActor(): 
+            if not self.measures or self.measures[-1].IsComplete():
+                m = measures.AngularMeasure(self.ren)
+                m.AddPoint(x, y, z)
+                self.measures.append(m)
+            else:
+                m = self.measures[-1]
+                m.AddPoint(x, y, z)
+                if m.IsComplete():
+                    ps.Publisher().sendMessage("Add measure to list", 
+                            ("3D", _("%.3f" % m.GetValue())))
+            self.interactor.Render()
 
 
 class SlicePlane:
