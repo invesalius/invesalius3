@@ -185,15 +185,15 @@ msgstr ""
 
 #: constants.py:270
 msgid "Bottom"
-msgstr ""
+msgstr "底"
 
 #: constants.py:271
 msgid "Right"
-msgstr ""
+msgstr "右"
 
 #: constants.py:272
 msgid "Left"
-msgstr ""
+msgstr "左"
 
 #: constants.py:273
 msgid "Isometric"
@@ -209,19 +209,19 @@ msgstr ""
 
 #: constants.py:286
 msgid "Black & White"
-msgstr ""
+msgstr "黑與白"
 
 #: constants.py:287
 msgid "Bone + Skin"
-msgstr ""
+msgstr "骨骼 + 皮膚"
 
 #: constants.py:288
 msgid "Bone + Skin II"
-msgstr ""
+msgstr "骨骼 + 皮膚 II"
 
 #: constants.py:289
 msgid "Dark Bone"
-msgstr ""
+msgstr "深色骨骼"
 
 #: constants.py:290
 msgid "Glossy"
@@ -233,15 +233,15 @@ msgstr ""
 
 #: constants.py:292
 msgid "Gold Bone"
-msgstr ""
+msgstr "金色骨骼"
 
 #: constants.py:293
 msgid "High Contrast"
-msgstr ""
+msgstr "高對比"
 
 #: constants.py:294
 msgid "Low Contrast"
-msgstr ""
+msgstr "低對比"
 
 #: constants.py:295 constants.py:302
 msgid "Soft on White"
@@ -249,7 +249,7 @@ msgstr ""
 
 #: constants.py:296
 msgid "Mid Contrast"
-msgstr ""
+msgstr "中對比"
 
 #: constants.py:297
 msgid "No Shading"
@@ -257,7 +257,7 @@ msgstr "無陰影"
 
 #: constants.py:298
 msgid "Pencil"
-msgstr ""
+msgstr "鉛筆"
 
 #: constants.py:299
 msgid "Red on White"
