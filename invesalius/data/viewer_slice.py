@@ -36,6 +36,8 @@ import project
 import slice_data as sd
 import utils
 
+from data import measures
+
 ID_TO_TOOL_ITEM = {}
 STR_WL = "WL: %d  WW: %d"
 
@@ -77,6 +79,8 @@ class Viewer(wx.Panel):
         #self.__config_interactor()
         self.pick = vtk.vtkPropPicker()
         self.cross_actor = vtk.vtkActor()
+
+        self.measures = []
 
         self.__bind_events()
         self.__bind_events_wx()
@@ -206,7 +210,12 @@ class Viewer(wx.Panel):
                             },
                   const.STATE_MEASURE_DISTANCE:
                             {
-                            }
+                            "LeftButtonPressEvent": self.OnInsertLinearMeasurePoint
+                            },
+                  const.STATE_MEASURE_ANGLE:
+                            {
+                            "LeftButtonPressEvent": self.OnInsertAngularMeasurePoint
+                            },
                  }
         if state == const.SLICE_STATE_CROSS:
             self.__set_cross_visibility(1)
@@ -1360,6 +1369,8 @@ class Viewer(wx.Panel):
 
     def set_slice_number(self, index):
         self.slice_number = index
+        # Showing off all the measures
+        [m[1].SetVisibility(0) for m in self.measures]
         for n, slice_data in enumerate(self.slice_data_list):
             ren = slice_data.renderer
             actor = slice_data.actor
@@ -1367,6 +1378,8 @@ class Viewer(wx.Panel):
             max = actor.GetSliceNumberMax() + 1
             if pos < max:
                 slice_data.SetNumber(pos)
+                [m[1].SetRenderer(ren) for m in self.measures if m[0] == pos]
+                [m[1].SetVisibility(1) for m in self.measures if m[0] == pos]
                 self.__update_display_extent(slice_data)
                 slice_data.Show()
             else:
@@ -1410,3 +1423,45 @@ class Viewer(wx.Panel):
             elif coord[index] < extent_min[index]:
                 coord[index] = extent_min[index]
         return coord
+
+    def OnInsertLinearMeasurePoint(self, obj, evt):
+        x,y = self.interactor.GetEventPosition()
+        render = self.interactor.FindPokedRenderer(x, y)
+        slice_data = self.get_slice_data(render)
+        slice_number = slice_data.number
+        self.pick.Pick(x, y, 0, render)
+        x, y, z = self.pick.GetPickPosition()
+        if self.pick.GetViewProp(): 
+            print "Hey, you inserted measure point"
+            if not self.measures or self.measures[-1][1].IsComplete():
+                m = measures.LinearMeasure(render)
+                m.AddPoint(x, y, z)
+                self.measures.append((slice_number, m))
+            else:
+                m = self.measures[-1][1]
+                m.AddPoint(x, y, z)
+                if m.IsComplete():
+                    ps.Publisher().sendMessage("Add measure to list", 
+                            ("3D", _("%.3f mm3" % m.GetValue())))
+            self.interactor.Render()
+
+    def OnInsertAngularMeasurePoint(self, obj, evt):
+        print "Hey, you inserted a angular point"
+        x,y = self.interactor.GetEventPosition()
+        render = self.interactor.FindPokedRenderer(x, y)
+        slice_data = self.get_slice_data(render)
+        slice_number = slice_data.number
+        self.pick.Pick(x, y, 0, render)
+        x, y, z = self.pick.GetPickPosition()
+        if self.pick.GetViewProp(): 
+            if not self.measures or self.measures[-1][1].IsComplete():
+                m = measures.AngularMeasure(render)
+                m.AddPoint(x, y, z)
+                self.measures.append((slice_number, m))
+            else:
+                m = self.measures[-1][1]
+                m.AddPoint(x, y, z)
+                if m.IsComplete():
+                    ps.Publisher().sendMessage("Add measure to list", 
+                            ("3D", _("%.3f" % m.GetValue())))
+            self.interactor.Render()

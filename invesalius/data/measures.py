@@ -204,6 +204,25 @@ class LinearMeasure(object):
         p1, p2 = self.points
         return math.sqrt(vtk.vtkMath.Distance2BetweenPoints(p1, p2))
 
+    def SetRenderer(self, renderer):
+        if self.point_actor1:
+            self.render.RemoveActor(self.point_actor1)
+            renderer.AddActor(self.point_actor1)
+        
+        if self.point_actor2:
+            self.render.RemoveActor(self.point_actor2)
+            renderer.AddActor(self.point_actor2)
+
+        if self.line_actor:
+            self.render.RemoveActor(self.line_actor)
+            renderer.AddActor(self.line_actor)
+
+        if self.text_actor:
+            self.render.RemoveActor(self.text_actor)
+            renderer.AddActor(self.text_actor)
+
+        self.render = renderer
+
     def SetVisibility(self, v):
         self.point_actor1.SetVisibility(v)
         self.point_actor2.SetVisibility(v)
@@ -408,6 +427,29 @@ class AngularMeasure(object):
         if self.text_actor:
             self.render.RemoveActor(self.text_actor)
             del self.text_actor
+
+    def SetRenderer(self, renderer):
+        if self.point_actor1:
+            self.render.RemoveActor(self.point_actor1)
+            renderer.AddActor(self.point_actor1)
+        
+        if self.point_actor2:
+            self.render.RemoveActor(self.point_actor2)
+            renderer.AddActor(self.point_actor2)
+
+        if self.point_actor3:
+            self.render.RemoveActor(self.point_actor3)
+            renderer.AddActor(self.point_actor3)
+
+        if self.line_actor:
+            self.render.RemoveActor(self.line_actor)
+            renderer.AddActor(self.line_actor)
+
+        if self.text_actor:
+            self.render.RemoveActor(self.text_actor)
+            renderer.AddActor(self.text_actor)
+
+        self.render = renderer
 
     def __del__(self):
         self.Remove()

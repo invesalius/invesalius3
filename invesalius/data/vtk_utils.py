@@ -111,6 +111,7 @@ class Text(object):
         actor = vtk.vtkActor2D()
         actor.SetMapper(mapper)
         actor.GetPositionCoordinate().SetCoordinateSystemToNormalizedDisplay()
+        actor.PickableOff()
         self.actor = actor
 
         self.SetPosition(const.TEXT_POS_LEFT_UP)
@@ -180,6 +181,7 @@ class TextZero(object):
         actor = vtk.vtkTextActor() 
         actor.GetTextProperty().ShallowCopy(property)
         actor.GetPositionCoordinate().SetCoordinateSystemToNormalizedDisplay() 
+        actor.PickableOff()
         self.actor = actor 
 
     def SetColour(self, colour):
