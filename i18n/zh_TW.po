@@ -133,7 +133,7 @@ msgstr ""
 
 #: constants.py:249
 msgid "Larynx"
-msgstr ""
+msgstr "喉"
 
 #: constants.py:250
 msgid "Liver"
@@ -181,7 +181,7 @@ msgstr "後"
 
 #: constants.py:269
 msgid "Top"
-msgstr ""
+msgstr "頂"
 
 #: constants.py:270
 msgid "Bottom"
