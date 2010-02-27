@@ -63,7 +63,7 @@ msgstr ""
 #: dicom_preview_panel.py:620 presets.py:30 presets.py:48 presets.py:103
 #: presets.py:134
 msgid "Bone"
-msgstr ""
+msgstr "骨骼"
 
 #: constants.py:170
 #, python-format
@@ -72,11 +72,11 @@ msgstr "遮罩 %d"
 
 #: constants.py:217 task_surface.py:43
 msgid "Draw"
-msgstr ""
+msgstr "繪製"
 
 #: constants.py:217 task_surface.py:43
 msgid "Erase"
-msgstr ""
+msgstr "擦除"
 
 #: constants.py:217 data_notebook.py:112 task_surface.py:43
 msgid "Threshold"
@@ -101,7 +101,7 @@ msgstr ""
 #: constants.py:238
 #, python-format
 msgid "Surface %d"
-msgstr ""
+msgstr "表面 %d"
 
 #: constants.py:241
 msgid "Abdomen"
