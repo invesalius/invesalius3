@@ -96,7 +96,7 @@ msgstr "高"
 
 #: constants.py:231 constants.py:232 constants.py:233 surface.py:289
 msgid "Optimal *"
-msgstr ""
+msgstr "最佳 *"
 
 #: constants.py:238
 #, python-format
