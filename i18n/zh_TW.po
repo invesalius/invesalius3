@@ -821,11 +821,11 @@ msgstr "視窗寬度與層級"
 
 #: slice_menu.py:105
 msgid "Pseudo Colour"
-msgstr ""
+msgstr "偽色"
 
 #: slice_menu.py:106
 msgid "Image Tiling"
-msgstr ""
+msgstr "影像鋪排"
 
 #: surface.py:330 surface.py:364 surface.py:372 surface.py:429
 #: surface_process.py:55 surface_process.py:67 surface_process.py:76
@@ -878,8 +878,9 @@ msgid "Open an existing project..."
 msgstr "開啟存有的專案..."
 
 #: task_slice.py:80
+#, fuzzy
 msgid "Create mask for slice segmentation and edition"
-msgstr ""
+msgstr "建立供切片片段與編輯的遮罩"
 
 #: task_slice.py:81
 msgid "Create new mask"
@@ -891,7 +892,7 @@ msgstr "儲存表面"
 
 #: task_slice.py:110
 msgid "Overwrite last surface"
-msgstr ""
+msgstr "覆寫最後的表面"
 
 #: task_slice.py:149
 msgid "Name of new mask:"
@@ -911,11 +912,12 @@ msgstr "進階編輯工具"
 
 #: task_slice.py:306
 msgid "Set predefined or manual threshold:"
-msgstr ""
+msgstr "設置預先定義的或是自訂的閾值"
 
 #: task_slice.py:492
+#, fuzzy
 msgid "Choose brush type, size or operation:"
-msgstr ""
+msgstr "選擇比刷類型、大小或操作："
 
 #: task_slice.py:498
 msgid "Circle"
@@ -963,7 +965,7 @@ msgstr "自動選取不連續區域，並對每個區域建立新表面"
 
 #: task_surface.py:248
 msgid "Split all disconnect surfaces"
-msgstr ""
+msgstr "分開所有不連續的表面"
 
 #: task_surface.py:256
 msgid "Manually insert seeds of regions of interest and create one new surface"
