@@ -511,19 +511,19 @@ msgstr ""
 
 #: dialogs.py:427
 msgid "New surface name:"
-msgstr ""
+msgstr "新表面名稱："
 
 #: dialogs.py:431
 msgid "Name the surface to be created"
-msgstr ""
+msgstr "命名要被建立的表面"
 
 #: dialogs.py:438
 msgid "Mask of reference:"
-msgstr ""
+msgstr "參照的遮罩："
 
 #: dialogs.py:456
 msgid "Surface quality:"
-msgstr ""
+msgstr "表面品質："
 
 #: dialogs.py:482
 msgid "Fill holes"
@@ -681,7 +681,7 @@ msgstr "移動"
 
 #: frame.py:709
 msgid "Window and Level"
-msgstr ""
+msgstr "視窗與層級"
 
 #: frame.py:902 frame.py:958
 msgid "Hide task panel"
