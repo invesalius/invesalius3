@@ -297,23 +297,23 @@ msgstr "標準"
 
 #: constants.py:309
 msgid "Vascular"
-msgstr ""
+msgstr "血管"
 
 #: constants.py:310
 msgid "Vascular II"
-msgstr ""
+msgstr "血管 II"
 
 #: constants.py:311
 msgid "Vascular III"
-msgstr ""
+msgstr "血管 III"
 
 #: constants.py:312
 msgid "Vascular IV"
-msgstr ""
+msgstr "血管 IV"
 
 #: constants.py:313
 msgid "Yellow Bone"
-msgstr ""
+msgstr "黃色骨骼"
 
 #: constants.py:335 constants.py:337
 msgid " Off"
@@ -326,7 +326,7 @@ msgstr ""
 #: control.py:259
 #, python-format
 msgid "Loading file %d of %d"
-msgstr ""
+msgstr "正在載入檔案 %d / %d"
 
 #: control.py:345 presets.py:44 presets.py:62 presets.py:117 presets.py:148
 #: task_slice.py:397 task_slice.py:399 task_slice.py:411 task_slice.py:413
@@ -396,15 +396,15 @@ msgstr "4. 匯出資料"
 
 #: default_viewers.py:79 default_viewers.py:168 task_exporter.py:232
 msgid "Axial slice"
-msgstr ""
+msgstr "中軸切面"
 
 #: default_viewers.py:84 default_viewers.py:174 task_exporter.py:233
 msgid "Coronal slice"
-msgstr ""
+msgstr "冠狀切面"
 
 #: default_viewers.py:89 default_viewers.py:180 task_exporter.py:234
 msgid "Sagittal slice"
-msgstr ""
+msgstr "矢狀切面"
 
 #: default_viewers.py:95 default_viewers.py:186 task_exporter.py:235
 msgid "Volume"
