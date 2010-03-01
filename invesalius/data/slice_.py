@@ -108,7 +108,7 @@ class Slice(object):
             # compute copy name
             name = original_mask.name
             names_list = [mask_dict[i].name for i in mask_dict.keys()]
-            new_name = utils.next_copy_name(name, names_list) 
+            new_name = utils.next_copy_name(name, names_list)
             # create new mask
             self.CreateMask(imagedata = original_mask.imagedata,
                             name = new_name,
@@ -131,7 +131,7 @@ class Slice(object):
         if (state in const.SLICE_STYLES):
             new_state = self.interaction_style.RemoveState(state)
             ps.Publisher().sendMessage('Set slice interaction style', new_state)
-            
+
             if (state == const.SLICE_STATE_EDITOR):
                 ps.Publisher().sendMessage('Set interactor default cursor')
 
@@ -190,7 +190,7 @@ class Slice(object):
             #Clear edited points
             self.current_mask.edited_points = {}
         self.num_gradient += 1
-            
+
     def __set_current_mask_colour(self, pubsub_evt):
         # "if" is necessary because wx events are calling this before any mask
         # has been created
@@ -298,10 +298,10 @@ class Slice(object):
         else:
             proj = Project()
             proj.mask_dict[index].threshold_range = threshold_range
-       
+
         proj = Project()
         proj.mask_dict[self.current_mask.index].threshold_range = threshold_range
- 
+
 
     def ShowMask(self, index, value):
         "Show a mask given its index and 'show' value (0: hide, other: show)"
@@ -317,19 +317,19 @@ class Slice(object):
     #---------------------------------------------------------------------------
     def ErasePixel(self, position):
         "Delete pixel, based on x, y and z position coordinates."
-        x, y, z = position
+        x, y, z = round(position[0],0), round(position[1],0),position[2]
         colour = self.imagedata.GetScalarRange()[0]
         imagedata = self.current_mask.imagedata
         imagedata.SetScalarComponentFromDouble(x, y, z, 0, colour)
         self.current_mask.edited_points[(x, y, z)] = colour
-        
+
         session = ses.Session()
         session.ChangeProject()
 
 
     def DrawPixel(self, position, colour=None):
         "Draw pixel, based on x, y and z position coordinates."
-        x, y, z = position
+        x, y, z = round(position[0],0), round(position[1],0),position[2]
         colour = self.imagedata.GetScalarRange()[1]
         imagedata = self.current_mask.imagedata
         imagedata.SetScalarComponentFromDouble(x, y, z, 0, colour)
@@ -341,7 +341,7 @@ class Slice(object):
 
     def EditPixelBasedOnThreshold(self, position):
         "Erase or draw pixel based on edition threshold range."
-        x, y, z = position
+        x, y, z = round(position[0],0), round(position[1],0),position[2]
         colour = self.imagedata.GetScalarComponentAsDouble(x, y, z, 0)
         thresh_min, thresh_max = self.current_mask.edition_threshold_range
         if (colour >= thresh_min) and (colour <= thresh_max):
@@ -366,7 +366,7 @@ class Slice(object):
             future_mask = proj.GetMask(index)
             future_mask.is_shown = True
             self.current_mask = future_mask
-            
+
             colour = future_mask.colour
             #index = future_mask.index
             print index
@@ -392,7 +392,7 @@ class Slice(object):
 
     def CreateSurfaceFromIndex(self, pubsub_evt):
         mask_index, overwrite_surface = pubsub_evt.data
-        
+
 
         proj = Project()
         mask = proj.mask_dict[mask_index]
@@ -496,18 +496,18 @@ class Slice(object):
         thresh_min, thresh_max = self.window_level.GetOutput().GetScalarRange()
         self.lut_bg.SetTableRange(thresh_min, thresh_max)
 
-    
+
     def InputImageWidget(self, pubsub_evt):
         widget = pubsub_evt.data
-        
+
         flip = vtk.vtkImageFlip()
         flip.SetInput(self.window_level.GetOutput())
         flip.SetFilteredAxis(1)
         flip.FlipAboutOriginOn()
         flip.Update()
-        
+
         widget.SetInput(flip.GetOutput())
- 
+
 
     def CreateMask(self, imagedata=None, name=None, colour=None,
                     opacity=None, threshold_range=None,
@@ -570,7 +570,7 @@ class Slice(object):
         keys.sort()
         for key in keys:
             mask = mask_dict[key]
-        
+
             # update gui related to mask
             utils.debug("__load_masks")
             utils.debug('THRESHOLD_RANGE %s'% mask.threshold_range)
@@ -609,22 +609,22 @@ class Slice(object):
         lut_mask.SetRampToLinear()
         lut_mask.Build()
         self.lut_mask = lut_mask
-        
+
         mask_thresh_imagedata = self.__create_mask_threshold(imagedata)
-            
+
         if create:
             # threshold pipeline
             current_mask.imagedata.DeepCopy(mask_thresh_imagedata)
         else:
             mask_thresh_imagedata = self.current_mask.imagedata
-            
+
         # map the input image through a lookup table
         img_colours_mask = vtk.vtkImageMapToColors()
         img_colours_mask.SetOutputFormatToRGBA()
         img_colours_mask.SetLookupTable(lut_mask)
-        
+
         img_colours_mask.SetInput(mask_thresh_imagedata)
-        
+
         self.img_colours_mask = img_colours_mask
 
         return img_colours_mask.GetOutput()
