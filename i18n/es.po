@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: InVesalius 3\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2010-01-27 01:03-0200\n"
+"POT-Creation-Date: 2010-02-26 13:02-0300\n"
 "PO-Revision-Date: 2010-01-07 11:25-0300\n"
 "Last-Translator: Invesalius team <invesalius@cti.gov.br>\n"
 "Language-Team: InVesalius Team <invesalius@cti.gov.br>\n"
@@ -19,395 +19,415 @@ msgstr ""
 "X-Poedit-SourceCharset: utf-8\n"
 "X-Poedit-Country: GENERIC\n"
 
-#: constants.py:75
+#: constants.py:31
+#, fuzzy, python-format
+msgid "Measure %d"
+msgstr "Medir"
+
+#: constants.py:87
 msgid "Keep all slices"
 msgstr "Mantener todas las rebanadas"
 
-#: constants.py:75
+#: constants.py:87
 msgid "Skip 1 for each 2 slices"
 msgstr "Pasar 1 por cada 2 rebanadas"
 
-#: constants.py:76
+#: constants.py:88
 msgid "Skip 2 for each 3 slices"
 msgstr "Pasar 2 por cada 3 rebanadas"
 
-#: constants.py:116 slice_menu.py:76 slice_menu.py:81
+#: constants.py:128 slice_menu.py:76 slice_menu.py:81
 msgid "Default "
 msgstr "Estándar"
 
-#: constants.py:117
+#: constants.py:129
 msgid "Hue"
 msgstr "Matiz"
 
-#: constants.py:118
+#: constants.py:130
 msgid "Saturation"
 msgstr "Saturación"
 
-#: constants.py:119
+#: constants.py:131
 msgid "Desert"
 msgstr "Desierto"
 
-#: constants.py:120
+#: constants.py:132
 msgid "Rainbow"
 msgstr "Arco Iris"
 
-#: constants.py:121
+#: constants.py:133
 msgid "Ocean"
 msgstr "Océano"
 
-#: constants.py:122
+#: constants.py:134
 msgid "Inverse Gray"
 msgstr "Gray Inverso"
 
-#: constants.py:163 constants.py:242 dicom_preview_panel.py:619
+#: constants.py:175 constants.py:254 dicom_preview_panel.py:619
 #: dicom_preview_panel.py:620 presets.py:30 presets.py:48 presets.py:103
 #: presets.py:134
 msgid "Bone"
 msgstr "Hueso"
 
-#: constants.py:170
+#: constants.py:182
 #, python-format
 msgid "Mask %d"
 msgstr "Máscara %d"
 
-#: constants.py:217 task_surface.py:43
+#: constants.py:229 task_surface.py:43
 msgid "Draw"
 msgstr "Dibujar"
 
-#: constants.py:217 task_surface.py:43
+#: constants.py:229 task_surface.py:43
 msgid "Erase"
 msgstr "Borrar"
 
-#: constants.py:217 data_notebook.py:112 task_surface.py:43
+#: constants.py:229 data_notebook.py:277 task_surface.py:43
 msgid "Threshold"
 msgstr "Umbral"
 
-#: constants.py:228 constants.py:233
+#: constants.py:240 constants.py:245
 msgid "Low"
 msgstr "Baja"
 
-#: constants.py:229 constants.py:233
+#: constants.py:241 constants.py:245
 msgid "Medium"
 msgstr "Media"
 
-#: constants.py:230 constants.py:233
+#: constants.py:242 constants.py:245
 msgid "High"
 msgstr "Alta"
 
-#: constants.py:231 constants.py:232 constants.py:233 surface.py:289
+#: constants.py:243 constants.py:244 constants.py:245 surface.py:379
 msgid "Optimal *"
 msgstr "Óptima *"
 
-#: constants.py:238
+#: constants.py:250
 #, python-format
 msgid "Surface %d"
 msgstr "Superficie %d"
 
-#: constants.py:241
+#: constants.py:253
 msgid "Abdomen"
 msgstr "Abdomen"
 
-#: constants.py:243
+#: constants.py:255
 msgid "Brain Posterior Fossa"
 msgstr "Fosa Posterior del Cerebro"
 
-#: constants.py:244
+#: constants.py:256
 msgid "Brain"
 msgstr "Cerebro"
 
-#: constants.py:245 control.py:323 slice_menu.py:39 slice_menu.py:51
+#: constants.py:257 control.py:337 dialogs.py:441 slice_menu.py:39
+#: slice_menu.py:51
 msgid "Default"
 msgstr "Predeterminado"
 
-#: constants.py:246
+#: constants.py:258
 msgid "Emphysema"
 msgstr "Enfisema"
 
-#: constants.py:247
+#: constants.py:259
 msgid "Ischemia - Hard Non Contrast"
 msgstr "Isquemia - Duro No Contraste"
 
-#: constants.py:248
+#: constants.py:260
 msgid "Ischemia - Soft Non Contrast"
 msgstr "Isquemia - Suave No Contraste"
 
-#: constants.py:249
+#: constants.py:261
 msgid "Larynx"
 msgstr "Laringe"
 
-#: constants.py:250
+#: constants.py:262
 msgid "Liver"
 msgstr "Hígado"
 
-#: constants.py:251
+#: constants.py:263
 msgid "Lung - Soft"
 msgstr "Pulmón - Suave"
 
-#: constants.py:252
+#: constants.py:264
 msgid "Lung - Hard"
 msgstr "Pulmón - Duro"
 
-#: constants.py:253
+#: constants.py:265
 msgid "Mediastinum"
 msgstr "Mediastino"
 
-#: constants.py:254 control.py:324 slice_menu.py:46 slice_menu.py:51
+#: constants.py:266 control.py:338 slice_menu.py:46 slice_menu.py:51
 msgid "Manual"
 msgstr "Manual"
 
-#: constants.py:255
+#: constants.py:267
 msgid "Pelvis"
 msgstr "Pelvis"
 
-#: constants.py:256
+#: constants.py:268
 msgid "Sinus"
 msgstr "Seno"
 
-#: constants.py:257
+#: constants.py:269
 msgid "Vasculature - Hard"
 msgstr "Vasos sanguíneos - Duro"
 
-#: constants.py:258
+#: constants.py:270
 msgid "Vasculature - Soft"
 msgstr "Vasos sanguíneos - Mole"
 
-#: constants.py:267
+#: constants.py:279
 msgid "Front"
 msgstr "Frente"
 
-#: constants.py:268
+#: constants.py:280
 msgid "Back"
 msgstr "Volver"
 
-#: constants.py:269
+#: constants.py:281
 msgid "Top"
 msgstr "Arriba"
 
-#: constants.py:270
+#: constants.py:282
 msgid "Bottom"
 msgstr "Abajo"
 
-#: constants.py:271
+#: constants.py:283
 msgid "Right"
 msgstr "Derecha"
 
-#: constants.py:272
+#: constants.py:284
 msgid "Left"
 msgstr "Izquierda"
 
-#: constants.py:273
+#: constants.py:285
 msgid "Isometric"
 msgstr "Isométrica"
 
-#: constants.py:284
+#: constants.py:296
 msgid "Airways"
 msgstr "Vías Respiratorias"
 
-#: constants.py:285
+#: constants.py:297
 msgid "Airways II"
 msgstr "Vías Respiratorias II"
 
-#: constants.py:286
+#: constants.py:298
 msgid "Black & White"
 msgstr "Blanco y Negro"
 
-#: constants.py:287
+#: constants.py:299
 msgid "Bone + Skin"
 msgstr "Hueso + Piel"
 
-#: constants.py:288
+#: constants.py:300
 msgid "Bone + Skin II"
 msgstr "Hueso + Piel II"
 
-#: constants.py:289
+#: constants.py:301
 msgid "Dark Bone"
 msgstr "Hueso Oscuro"
 
-#: constants.py:290
+#: constants.py:302
 msgid "Glossy"
 msgstr "Brillo"
 
-#: constants.py:291
+#: constants.py:303
 msgid "Glossy II"
 msgstr "Brillo II"
 
-#: constants.py:292
+#: constants.py:304
 msgid "Gold Bone"
 msgstr "Hueso de Oro"
 
-#: constants.py:293
+#: constants.py:305
 msgid "High Contrast"
 msgstr "Contraste Alto"
 
-#: constants.py:294
+#: constants.py:306
 msgid "Low Contrast"
 msgstr "Contraste Bajo"
 
-#: constants.py:295 constants.py:302
+#: constants.py:307 constants.py:314
 msgid "Soft on White"
 msgstr "Blando en Blanco"
 
-#: constants.py:296
+#: constants.py:308
 msgid "Mid Contrast"
 msgstr "Contraste Medio"
 
-#: constants.py:297
+#: constants.py:309
 msgid "No Shading"
 msgstr "No sombreado"
 
-#: constants.py:298
+#: constants.py:310
 msgid "Pencil"
 msgstr "Lápiz"
 
-#: constants.py:299
+#: constants.py:311
 msgid "Red on White"
 msgstr "Rojo sobre blanco"
 
-#: constants.py:300
+#: constants.py:312
 msgid "Skin On Blue"
 msgstr "Piel en Azul"
 
-#: constants.py:301
+#: constants.py:313
 msgid "Skin On Blue II"
 msgstr "Piel en Azul II"
 
-#: constants.py:303
+#: constants.py:315
 msgid "Soft + Skin"
 msgstr "Blando + Piel"
 
-#: constants.py:304
+#: constants.py:316
 msgid "Soft + Skin II"
 msgstr "Blando + Piel II"
 
-#: constants.py:305
+#: constants.py:317
 msgid "Soft + Skin III"
 msgstr "Blando + Piel III"
 
-#: constants.py:306
+#: constants.py:318
 msgid "Soft On Blue"
 msgstr "Blando En Azul"
 
-#: constants.py:307
+#: constants.py:319
 msgid "Soft"
 msgstr "Blando"
 
-#: constants.py:308
+#: constants.py:320
 msgid "Standard"
 msgstr "Estandarte"
 
-#: constants.py:309
+#: constants.py:321
 msgid "Vascular"
 msgstr "Vascular"
 
-#: constants.py:310
+#: constants.py:322
 msgid "Vascular II"
 msgstr "Vascular II"
 
-#: constants.py:311
+#: constants.py:323
 msgid "Vascular III"
 msgstr "Vascular III"
 
-#: constants.py:312
+#: constants.py:324
 msgid "Vascular IV"
 msgstr "Vascular IV"
 
-#: constants.py:313
+#: constants.py:325
 msgid "Yellow Bone"
 msgstr "Hueso Amarillo"
 
-#: constants.py:335 constants.py:337
+#: constants.py:347 constants.py:349
 msgid " Off"
 msgstr "Apagado"
 
-#: constants.py:338 volume.py:551
+#: constants.py:350 volume.py:552
 msgid "Cut plane"
 msgstr "Plano de corte"
 
-#: control.py:259
+#: control.py:273
 #, python-format
 msgid "Loading file %d of %d"
 msgstr "Carga de archivo %d de %d"
 
-#: control.py:345 presets.py:44 presets.py:62 presets.py:117 presets.py:148
+#: control.py:360 presets.py:44 presets.py:62 presets.py:117 presets.py:148
 #: task_slice.py:397 task_slice.py:399 task_slice.py:411 task_slice.py:413
 #: task_slice.py:449 task_slice.py:452
 msgid "Custom"
 msgstr "Costumbre"
 
-#: control.py:350
+#: control.py:365
 msgid "Untitled"
 msgstr "Sin Título"
 
-#: control.py:418
+#: control.py:439
 msgid "Fix gantry tilt applying the degrees bellow"
 msgstr ""
 "Arreglar la inclinación (gantry tilt) con la aplicación de los grados abajo"
 
-#: data_notebook.py:44
+#: data_notebook.py:53
 msgid "Masks"
 msgstr "Máscaras"
 
-#: data_notebook.py:45
+#: data_notebook.py:54
 msgid "Surfaces"
 msgstr "Volumen"
 
-#: data_notebook.py:111 data_notebook.py:239 data_notebook.py:464
+#: data_notebook.py:55
+#, fuzzy
+msgid "Measures"
+msgstr "Medir"
+
+#: data_notebook.py:56
+#, fuzzy
+msgid "Annotations"
+msgstr "Añadir anotaciones de texto"
+
+#: data_notebook.py:276 data_notebook.py:609 data_notebook.py:856
 msgid "Name"
 msgstr "Nombre"
 
-#: data_notebook.py:170
+#: data_notebook.py:336
 msgid "Mask"
 msgstr "Máscara"
 
-#: data_notebook.py:240
+#: data_notebook.py:610
 msgid "Volume (mm³)"
 msgstr "Volume (mm³)"
 
-#: data_notebook.py:241
+#: data_notebook.py:611
 msgid "Transparency"
 msgstr "Transparencia"
 
-#: data_notebook.py:465
+#: data_notebook.py:857
 msgid "Type"
 msgstr "Tipo"
 
-#: data_notebook.py:466
+#: data_notebook.py:858
 msgid "Value"
 msgstr "Valor"
 
-#: default_tasks.py:132
+#: default_tasks.py:134
 msgid "Data"
 msgstr "Datos"
 
-#: default_tasks.py:205
-msgid "1. InVesalius start"
-msgstr "1. Iniciar InVesalius"
+#: default_tasks.py:208 default_tasks.py:213
+msgid "InVesalius start"
+msgstr "Iniciar InVesalius"
 
-#: default_tasks.py:218
-msgid "2. Select region of interest"
-msgstr "2. Elegir la región de interés"
+#: default_tasks.py:209 default_tasks.py:214 default_tasks.py:242
+msgid "Select region of interest"
+msgstr "Elegir la región de interés"
 
-#: default_tasks.py:239
-msgid "3. Configure 3D surface"
-msgstr "3. Configurar la superficie 3D"
+#: default_tasks.py:210 default_tasks.py:215
+msgid "Configure 3D surface"
+msgstr "Configurar la superficie 3D"
 
-#: default_tasks.py:253
-msgid "4. Export data"
-msgstr "4. Exportar los datos"
+#: default_tasks.py:211
+msgid "Export data"
+msgstr "Exportar los datos"
 
-#: default_viewers.py:79 default_viewers.py:168 task_exporter.py:232
+#: default_tasks.py:216
+msgid "Utilize navigation system"
+msgstr ""
+
+#: default_viewers.py:79 default_viewers.py:168 task_exporter.py:235
 msgid "Axial slice"
 msgstr "Rebanada Axial"
 
-#: default_viewers.py:84 default_viewers.py:174 task_exporter.py:233
+#: default_viewers.py:84 default_viewers.py:174 task_exporter.py:236
 msgid "Coronal slice"
 msgstr "Rebanada Coronal"
 
-#: default_viewers.py:89 default_viewers.py:180 task_exporter.py:234
+#: default_viewers.py:89 default_viewers.py:180 task_exporter.py:237
 msgid "Sagittal slice"
 msgstr "Rebanada Sagital"
 
-#: default_viewers.py:95 default_viewers.py:186 task_exporter.py:235
+#: default_viewers.py:95 default_viewers.py:186 task_exporter.py:238
 msgid "Volume"
 msgstr "Volumen"
 
@@ -423,35 +443,35 @@ msgstr "Guardar el preajuste de raycasting"
 msgid "Tools"
 msgstr "Herramientas"
 
-#: dialogs.py:53
+#: dialogs.py:54
 msgid "Value will be applied."
 msgstr "Valor se aplicará."
 
-#: dialogs.py:57
+#: dialogs.py:58
 msgid "Value will not be applied."
 msgstr "Valor no se aplicará."
 
-#: dialogs.py:95
+#: dialogs.py:96
 msgid "Loading DICOM files"
 msgstr "Cargando archivos DICOM"
 
-#: dialogs.py:137 frame.py:575
+#: dialogs.py:138
 msgid "Open InVesalius 3 project..."
 msgstr "Abrir proyecto del InVesalius 3..."
 
-#: dialogs.py:171
+#: dialogs.py:175
 msgid "Choose a DICOM folder:"
 msgstr "Elegir un directorio DICOM"
 
-#: dialogs.py:200
+#: dialogs.py:206
 msgid "Save project as..."
 msgstr "Guardar proyecto como..."
 
-#: dialogs.py:203
+#: dialogs.py:209
 msgid "InVesalius project (*.inv3)|*.inv3"
 msgstr "Proyecto InVesalius (*.inv2)|*.inv3"
 
-#: dialogs.py:266 dialogs.py:316 dialogs.py:338
+#: dialogs.py:272 dialogs.py:539 dialogs.py:564
 #, python-format
 msgid ""
 "The project %s has been modified.\n"
@@ -460,30 +480,86 @@ msgstr ""
 "El proyecto %s ha sido cambiado.\n"
 "Guardar cambios?"
 
-#: dialogs.py:280
+#: dialogs.py:286
 #, python-format
 msgid "%s is an empty directory."
 msgstr "%s es un directorio vacío."
 
-#: dialogs.py:293
+#: dialogs.py:299
 msgid "There are no DICOM files on the selected directory."
 msgstr "No hay archivos DICOM en el directorio seleccionado."
 
-#: dialogs.py:304
+#: dialogs.py:310
+msgid "There is no mask of reference to create a surface."
+msgstr ""
+
+#: dialogs.py:321
+msgid "No masks were selected for removal."
+msgstr ""
+
+#: dialogs.py:332
+msgid "No surfaces were selected for removal."
+msgstr ""
+
+#: dialogs.py:344
+msgid "No masks were selected for duplication."
+msgstr ""
+
+#: dialogs.py:357
+msgid "No surfaces were selected for duplication."
+msgstr ""
+
+#: dialogs.py:371
+msgid "Name of new mask:"
+msgstr "Nombre de la nueva máscara"
+
+#: dialogs.py:372
+msgid "InVesalius 3 - New mask"
+msgstr "InVesalius 3 - Nueva máscara"
+
+#: dialogs.py:424
+#, fuzzy
+msgid "New mask name:"
+msgstr "Nombre de la nueva superifcie:"
+
+#: dialogs.py:428
+#, fuzzy
+msgid "Name the mask to be created"
+msgstr "Nombre de la superficie creada"
+
+#: dialogs.py:435
+#, fuzzy
+msgid "Threshold preset:"
+msgstr "Umbral"
+
+#: dialogs.py:453 dialogs.py:688
+msgid "Surface quality:"
+msgstr "Calidad de la superficie:"
+
+#: dialogs.py:482 dialogs.py:717
+msgid "Fill holes"
+msgstr "Llenar los agujeros"
+
+#: dialogs.py:485 dialogs.py:720
+msgid "Keep largest region"
+msgstr "Mantener la mayor región"
+
+#: dialogs.py:527
 #, python-format
 msgid "%s does not exist."
 msgstr "%s no existe."
 
-#: dialogs.py:362
-msgid "(c) 2007-2010 Center for Information Technology Renato Archer"
+#: dialogs.py:588
+#, fuzzy
+msgid "(c) 2007-2010 Renato Archer Information Technology Centre"
 msgstr "(c) 2007 Centro de Tecnología de la Información Renato Archer"
 
-#: dialogs.py:364
+#: dialogs.py:590
 msgid "InVesalius is a software for medical imaging 3D reconstruction. "
 msgstr ""
 "InVesalius es un software para la reconstrucción 3D de imágenes médicas."
 
-#: dialogs.py:365
+#: dialogs.py:591
 msgid ""
 "Its input is a sequency of DICOM 2D image files acquired with CT or MR.\n"
 "\n"
@@ -492,78 +568,66 @@ msgstr ""
 "TC o RM.\n"
 "\n"
 
-#: dialogs.py:366
+#: dialogs.py:592
 msgid "The software also allows generating correspondent STL files,"
 msgstr ""
 "El software también permite la generación de archivos STL corresponsal,"
 
-#: dialogs.py:367
+#: dialogs.py:593
 msgid "so the user can print 3D physical models of the patient's anatomy "
 msgstr ""
 "para que el usuario puede imprimir los modelos físicos 3D de la anatomía del "
 "paciente"
 
-#: dialogs.py:368
+#: dialogs.py:594
 msgid "using Rapid Prototyping."
 msgstr "utilizando Rapid Prototyping"
 
-#: dialogs.py:371
+#: dialogs.py:596
 msgid "GNU GPL (General Public License) version 2"
 msgstr "GNU GPL (General Public License) versión 2"
 
-#: dialogs.py:386
+#: dialogs.py:616
 msgid "Save raycasting preset as:"
 msgstr "Guardar preajuste de raycasting como:"
 
-#: dialogs.py:427
+#: dialogs.py:659
 msgid "New surface name:"
 msgstr "Nombre de la nueva superifcie:"
 
-#: dialogs.py:431
+#: dialogs.py:663
 msgid "Name the surface to be created"
 msgstr "Nombre de la superficie creada"
 
-#: dialogs.py:438
+#: dialogs.py:670
 msgid "Mask of reference:"
 msgstr "Máscara de referencia:"
 
-#: dialogs.py:456
-msgid "Surface quality:"
-msgstr "Calidad de la superficie:"
-
-#: dialogs.py:482
-msgid "Fill holes"
-msgstr "Llenar los agujeros"
-
-#: dialogs.py:485
-msgid "Keep largest region"
-msgstr "Mantener la mayor región"
-
-#: dialogs.py:519
+#: dialogs.py:754
 msgid "BMP image"
 msgstr "Imagen BMP"
 
-#: dialogs.py:520
+#: dialogs.py:755
 msgid "JPG image"
 msgstr "Imagen JPG"
 
-#: dialogs.py:521
+#: dialogs.py:756
 msgid "PNG image"
 msgstr "Imagen PNG"
 
-#: dialogs.py:522
+#: dialogs.py:757
 msgid "PostScript document"
 msgstr "Documento PostScript"
 
-#: dialogs.py:523
+#: dialogs.py:758
 msgid "POV-Ray file"
 msgstr "Archivo POV-Ray"
 
-#: dialogs.py:524
+#: dialogs.py:759
 msgid "TIFF image"
 msgstr "Imagen TIFF"
 
-#: dicom.py:1418 dicom.py:1421
+#: dicom.py:1423 dicom.py:1426
 msgid "unnamed"
 msgstr "sin_nombre"
 
@@ -609,155 +673,186 @@ msgstr "Imagen %d"
 msgid "Auto-play"
 msgstr "Jugar"
 
-#: frame.py:147
+#: frame.py:126
 msgid "Data panel"
 msgstr "Panel de datos"
 
-#: frame.py:156
+#: frame.py:133
 msgid "Preview medical data to be reconstructed"
 msgstr "Vista previa de los datos médicos a seren reconstruidos"
 
-#: frame.py:327
+#: frame.py:403
 msgid "Import DICOM...\tCtrl+I"
 msgstr "Imporar DICOM...\tCtrl+I"
 
-#: frame.py:328
+#: frame.py:405
 msgid "Open Project...\tCtrl+O"
 msgstr "Abrir Proyecto...\tCtrl+O"
 
-#: frame.py:329
+#: frame.py:406
 msgid "Save Project\tCtrl+S"
 msgstr "Guardar Proyecto..."
 
-#: frame.py:330
+#: frame.py:407
 msgid "Save Project As..."
 msgstr "Guardar Proyecto Como..."
 
-#: frame.py:331
+#: frame.py:408
 msgid "Close Project"
 msgstr "Cerrar Proyecto"
 
-#: frame.py:340
+#: frame.py:417
 msgid "Exit"
 msgstr "Salir"
 
-#: frame.py:379
+#: frame.py:460
 msgid "Getting Started..."
 msgstr "Cómo empezar..."
 
-#: frame.py:382
+#: frame.py:463
 msgid "About..."
 msgstr "Acerca de..."
 
-#: frame.py:393
+#: frame.py:479
 msgid "File"
 msgstr "Archivo"
 
-#: frame.py:398
+#: frame.py:484
 msgid "Help"
 msgstr "Ayuda"
 
-#: frame.py:464 surface.py:268 surface.py:447
+#: frame.py:566 surface.py:358 surface.py:537
 msgid "Ready"
 msgstr "Preparado"
 
-#: frame.py:572
-msgid "Import medical image..."
-msgstr "Importar imágenes médicas..."
+#: frame.py:716
+#, fuzzy
+msgid "Import DICOM files..."
+msgstr "Imporar DICOM...\tCtrl+I"
 
-#: frame.py:578
+#: frame.py:723
+#, fuzzy
+msgid "Open a InVesalius project..."
+msgstr "Abrir proyecto del InVesalius 3..."
+
+#: frame.py:727
 msgid "Save InVesalius project"
 msgstr "Guardar proyecto InVesalius"
 
-#: frame.py:691
+#: frame.py:868
 msgid "Zoom"
 msgstr "Zoom"
 
-#: frame.py:696
+#: frame.py:873
 msgid "Zoom based on selection"
 msgstr "Zoom basado en la selección"
 
-#: frame.py:701
+#: frame.py:878
 msgid "Rotate"
 msgstr "Rotar"
 
-#: frame.py:705
+#: frame.py:883
 msgid "Move"
 msgstr "Mover"
 
-#: frame.py:709
-msgid "Window and Level"
-msgstr "Brillo y Contraste"
+#: frame.py:888
+#, fuzzy
+msgid "Constrast"
+msgstr "Contraste Bajo"
 
-#: frame.py:902 frame.py:958
+#: frame.py:893
+#, fuzzy
+msgid "Measure distance"
+msgstr "Realizar mediciones"
+
+#: frame.py:898
+#, fuzzy
+msgid "Measure angle"
+msgstr "Realizar mediciones"
+
+#: frame.py:903
+#, fuzzy
+msgid "Add annotation"
+msgstr "Añadir anotaciones de texto"
+
+#: frame.py:1008
+#, fuzzy
+msgid "Scroll slices"
+msgstr "Rebanada Coronal"
+
+#: frame.py:1012
+msgid "Cross intersection"
+msgstr ""
+
+#: frame.py:1169 frame.py:1238
 msgid "Hide task panel"
 msgstr "Ocultar el panel de tareas"
 
-#: frame.py:903 frame.py:977
+#: frame.py:1173 frame.py:1260
 msgid "Hide text"
 msgstr "Ocultar texto"
 
-#: frame.py:964
+#: frame.py:1244
 msgid "Show task panel"
 msgstr "Mostrar el panel de tareas"
 
-#: frame.py:971
+#: frame.py:1254
 msgid "Show text"
 msgstr "Mostrar texto"
 
-#: imagedata_utils.py:89 imagedata_utils.py:218 imagedata_utils.py:307
+#: imagedata_utils.py:87 imagedata_utils.py:260 imagedata_utils.py:365
 msgid "Generating multiplanar visualization..."
 msgstr "Generación de visualización multiplanar"
 
-#: import_panel.py:207
+#: import_panel.py:208
 msgid "Patient name"
 msgstr "Nombre del paciente"
 
-#: import_panel.py:208
+#: import_panel.py:209
 msgid "Patient ID"
 msgstr "ID del Paciente"
 
-#: import_panel.py:209
+#: import_panel.py:210
 msgid "Age"
 msgstr "Edad"
 
-#: import_panel.py:210
+#: import_panel.py:211
 msgid "Gender"
 msgstr "Género"
 
-#: import_panel.py:211
+#: import_panel.py:212
 msgid "Study description"
 msgstr "Descripción del estudio"
 
-#: import_panel.py:212
+#: import_panel.py:213
 msgid "Modality"
 msgstr "Modalidad"
 
-#: import_panel.py:213
+#: import_panel.py:214
 msgid "Date acquired"
 msgstr "Fecha de adquisición"
 
-#: import_panel.py:214
+#: import_panel.py:215
 msgid "# Images"
 msgstr "# Imágenes"
 
-#: import_panel.py:215
+#: import_panel.py:216
 msgid "Institution"
 msgstr "Institución"
 
-#: import_panel.py:216
+#: import_panel.py:217
 msgid "Date of birth"
 msgstr "Fecha de nacimiento"
 
-#: import_panel.py:217
+#: import_panel.py:218
 msgid "Accession Number"
 msgstr "Número de adhesión"
 
-#: import_panel.py:218
+#: import_panel.py:219
 msgid "Referring physician"
 msgstr "Médico"
 
-#: import_panel.py:234
+#: import_panel.py:235
 msgid "InVesalius Database"
 msgstr "Base de datos del InVesalius"
 
@@ -765,9 +860,19 @@ msgstr "Base de datos del InVesalius"
 msgid "Language selection"
 msgstr "Selección de idioma"
 
-#: language_dialog.py:72
+#: language_dialog.py:79
 msgid "Choose user interface language"
 msgstr "Elegir idioma de la interfaz del usuario"
+
+#: polydata_utils.py:132
+#, fuzzy
+msgid "Getting selected parts"
+msgstr "Cómo empezar..."
+
+#: polydata_utils.py:191
+#, fuzzy
+msgid "Splitting disconected parts"
+msgstr "Split todas las superficies de desconexión"
 
 #: presets.py:31 presets.py:49 presets.py:104 presets.py:135
 msgid "Soft Tissue"
@@ -833,39 +938,43 @@ msgstr "Pseudo Color"
 msgid "Image Tiling"
 msgstr "Mosaico de Imágenes"
 
-#: surface.py:330 surface.py:364 surface.py:372 surface.py:429
+#: surface.py:420 surface.py:454 surface.py:462 surface.py:519
 #: surface_process.py:55 surface_process.py:67 surface_process.py:76
 #: surface_process.py:89 surface_process.py:98 surface_process.py:109
 msgid "Generating 3D surface..."
 msgstr "Generación de la superficie 3D..."
 
-#: task_exporter.py:102
+#: task_exporter.py:105
 msgid "Export InVesalius screen to a image file"
 msgstr "Exportar la pantalla del InVesalius a un archivo de imagen"
 
-#: task_exporter.py:104
+#: task_exporter.py:107
 msgid "Export picture..."
 msgstr "Exportar foto..."
 
-#: task_exporter.py:113
+#: task_exporter.py:116
 msgid "Export 3D surface"
 msgstr "Exportar superficie 3D..."
 
-#: task_exporter.py:114
+#: task_exporter.py:117
 msgid "Export 3D surface..."
 msgstr "Exportar superficie 3D..."
 
-#: task_exporter.py:306
+#: task_exporter.py:308
 msgid "Save 3D surface as..."
 msgstr "Guardar superficie 3D como..."
 
-#: task_exporter.py:325
+#: task_exporter.py:327
 msgid "You need to create a surface and make it "
 msgstr "Es necesario crear una superficie y "
 
-#: task_exporter.py:326
+#: task_exporter.py:328
 msgid "visible before exporting it."
 msgstr "hacerla visible antes de exportarla."
+
+#: task_generic.py:65 task_navigator.py:65
+msgid "Testing..."
+msgstr ""
 
 #: task_importer.py:64
 msgid "Select DICOM or Analyze files to be reconstructed"
@@ -883,55 +992,48 @@ msgstr "Abrir un proyecto InVesalius existente..."
 msgid "Open an existing project..."
 msgstr "Abrir un proyecto existente..."
 
-#: task_slice.py:80
+#: task_slice.py:82
 msgid "Create mask for slice segmentation and edition"
 msgstr "Crear máscara para segmentación y edición de rebanada"
 
-#: task_slice.py:81
+#: task_slice.py:83
 msgid "Create new mask"
 msgstr "Crear nueva máscara"
 
-#: task_slice.py:109
+#: task_slice.py:111
 msgid "Save surface"
 msgstr "Guardar superficie"
 
-#: task_slice.py:110
+#: task_slice.py:112
 msgid "Overwrite last surface"
 msgstr "Sobrescribir última superficie"
 
-#: task_slice.py:149
-msgid "Name of new mask:"
-msgstr "Nombre de la nueva máscara"
-
-#: task_slice.py:150
-msgid "InVesalius 3 - New mask"
-msgstr "InVesalius 3 - Nueva máscara"
-
-#: task_slice.py:214
+#: task_slice.py:208
 msgid "Mask properties"
 msgstr "Propriedades de la máscara"
 
-#: task_slice.py:222
-msgid "Advanced edition tools"
+#: task_slice.py:216
+#, fuzzy
+msgid "Advanced editing tools"
 msgstr "Herramientas avanzadas para edición avanzada"
 
-#: task_slice.py:306
+#: task_slice.py:300
 msgid "Set predefined or manual threshold:"
 msgstr "Seleccione umbral:"
 
-#: task_slice.py:492
+#: task_slice.py:494
 msgid "Choose brush type, size or operation:"
 msgstr "Tipo, tamaño o funcionamiento del pincel:"
 
-#: task_slice.py:498
+#: task_slice.py:500
 msgid "Circle"
 msgstr "Círculo"
 
-#: task_slice.py:502
+#: task_slice.py:504
 msgid "Square"
 msgstr "Cuadrado"
 
-#: task_slice.py:538
+#: task_slice.py:540
 msgid "Brush threshold range:"
 msgstr "Serie de umbrales del pincel:"
 
@@ -947,92 +1049,108 @@ msgstr "Paso siguiente"
 msgid "InVesalius 3 - New surface"
 msgstr "InVesalius 3 - Nueva superficie"
 
-#: task_surface.py:199
+#: task_surface.py:207
 msgid "Surface properties"
 msgstr "Propiedades de la superficie"
 
-#: task_surface.py:206
+#: task_surface.py:214
 msgid "Advanced options"
 msgstr "Herramientas avanzadas"
 
-#: task_surface.py:238
+#: task_surface.py:246
 msgid "Automatically select largest disconnect region and create new surface"
 msgstr ""
 "Seleccionar automáticamente la mayor región desconexa y crear una nueva "
 "superficie"
 
-#: task_surface.py:239
+#: task_surface.py:247
 msgid "Select largest part"
 msgstr "Seleccione la parte más grande"
 
-#: task_surface.py:247
+#: task_surface.py:255
 msgid ""
 "Automatically select disconnect regions and create one new surface per region"
 msgstr ""
 "Seleccionar automáticamente las regiones desconectadas y crear una nueva "
 "superficie de cada región"
 
-#: task_surface.py:248
+#: task_surface.py:256
 msgid "Split all disconnect surfaces"
 msgstr "Split todas las superficies de desconexión"
 
-#: task_surface.py:256
+#: task_surface.py:264
 msgid "Manually insert seeds of regions of interest and create one new surface"
 msgstr ""
 "Insertar manualmente las semillas en las regiones de interés y crear una "
 "nueva superficie"
 
-#: task_surface.py:257
+#: task_surface.py:265
 msgid "Select regions of interest..."
 msgstr "Elegir las regiónes de interés"
 
-#: task_surface.py:388
+#: task_surface.py:396
 msgid "Transparency:"
 msgstr "Transparencia:"
 
-#: task_surface.py:505
+#: task_surface.py:532
 msgid "Decimate resolution:"
 msgstr "Resolución de decimación:"
 
-#: task_surface.py:515
+#: task_surface.py:542
 msgid "Smooth iterations:"
 msgstr "Interaciones de suavización"
 
-#: task_tools.py:57
+#: task_tools.py:60
 msgid "Measure distances"
 msgstr "Realizar mediciones"
 
-#: task_tools.py:58
+#: task_tools.py:61
 msgid "Measure"
 msgstr "Medir"
 
-#: task_tools.py:61 task_tools.py:62
+#: task_tools.py:64 task_tools.py:65
 msgid "Add text annotations"
 msgstr "Añadir anotaciones de texto"
 
-#: viewer_slice.py:435 viewer_slice.py:439
+#: viewer_slice.py:429 viewer_slice.py:433
 msgid "R"
 msgstr "D"
 
-#: viewer_slice.py:435 viewer_slice.py:439
+#: viewer_slice.py:429 viewer_slice.py:433
 msgid "L"
 msgstr "I"
 
-#: viewer_slice.py:435 viewer_slice.py:437
+#: viewer_slice.py:429 viewer_slice.py:431
 msgid "A"
 msgstr "A"
 
-#: viewer_slice.py:435 viewer_slice.py:437
+#: viewer_slice.py:429 viewer_slice.py:431
 msgid "P"
 msgstr "P"
 
-#: viewer_slice.py:437 viewer_slice.py:439
+#: viewer_slice.py:431 viewer_slice.py:433
 msgid "T"
 msgstr "S"
 
-#: viewer_slice.py:437 viewer_slice.py:439
+#: viewer_slice.py:431 viewer_slice.py:433
 msgid "B"
 msgstr "I"
+
+#: viewer_volume.py:637
+#, python-format
+msgid "%.3f mm3"
+msgstr ""
+
+#: viewer_volume.py:655
+#, python-format
+msgid "%.3f"
+msgstr ""
+
+#~ msgid "Import medical image..."
+#~ msgstr "Importar imágenes médicas..."
+
+#~ msgid "Window and Level"
+#~ msgstr "Brillo y Contraste"
 
 #~ msgid "image size"
 #~ msgstr "Tamaño de la imagen"
