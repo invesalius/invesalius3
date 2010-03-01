@@ -59,6 +59,7 @@ icons/file_save_original.png -text
 icons/fr.bmp -text
 icons/invesalius.ico -text
 icons/it_IT.bmp -text
+icons/it_IT.png -text
 icons/layout_data_only.gif -text
 icons/layout_data_only.png -text
 icons/layout_data_only_original.gif -text
@@ -93,6 +94,7 @@ icons/slice.png -text
 icons/slice_original.png -text
 icons/slice_plane.png -text
 icons/slice_plane_original.png -text
+icons/splash_de.png -text
 icons/splash_de_DE.png -text
 icons/splash_el_GR.png -text
 icons/splash_en.png -text
@@ -100,6 +102,7 @@ icons/splash_es.png -text
 icons/splash_fr.png -text
 icons/splash_it_IT.png -text
 icons/splash_pt.png -text
+icons/splash_zh_TW.png -text
 icons/surface_export.png -text
 icons/surface_export_original.png -text
 icons/text.gif -text
@@ -135,6 +138,7 @@ icons/view_right.png -text
 icons/view_top.png -text
 icons/volume_raycasting.png -text
 icons/volume_raycasting_original.png -text
+icons/zh_TW.bmp -text
 invesalius/.svnignore -text
 invesalius/constants.py -text
 invesalius/control.py -text
