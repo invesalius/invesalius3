@@ -408,7 +408,7 @@ class SurfaceProperties(wx.Panel):
         flag_slider = wx.EXPAND | wx.GROW| wx.LEFT|wx.TOP
         flag_combo = wx.EXPAND | wx.GROW| wx.LEFT
 
-        fixed_sizer = wx.FlexGridSizer(rows=2, cols=2, hgap=2, vgap=4)
+        fixed_sizer = wx.BoxSizer(wx.HORIZONTAL)
         fixed_sizer.AddMany([ (text_transparency, 0, flag_link, 0),
                               (slider_transparency, 1, flag_slider,4)])
 
@@ -420,7 +420,7 @@ class SurfaceProperties(wx.Panel):
         sizer = wx.BoxSizer(wx.VERTICAL)
         sizer.Add(line1, 1, wx.GROW|wx.EXPAND|wx.TOP, 10)
         sizer.Add(fixed_sizer, 0,
-wx.GROW|wx.EXPAND|wx.LEFT|wx.RIGHT|wx.TOP|wx.BOTTOM, 10)
+                wx.GROW|wx.EXPAND|wx.LEFT|wx.RIGHT|wx.TOP|wx.BOTTOM, 10)
         #sizer.Add(cb, 0, wx.GROW|wx.EXPAND|wx.RIGHT|wx.LEFT|wx.TOP|wx.BOTTOM, 5)
         sizer.Fit(self)
 
