@@ -32,7 +32,8 @@ LANGUAGE_DIR = os.path.abspath(os.path.join('..','locale'))
 
 def GetLocales():
     """Return a dictionary which defines supported languages"""
-    d = utl.TwoWaysDictionary ({'en': u'English',
+    d = utl.TwoWaysDictionary ({'zh_TW': u'中文',
+                                'en': u'English',
                                 'es': u'Español',
                                 'pt_BR': u'Português (Brasil)',
                                 'fr':u'Français',
