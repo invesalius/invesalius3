@@ -27,6 +27,17 @@ from project import Project
 
 #---------------
 
+# Measurements
+MEASURE_NAME_PATTERN = _("Measure %d") 
+MEASURE_LINEAR = 101
+MEASURE_ANGULAR = 102
+
+DEFAULT_MEASURE_COLOUR = (1,0,0)
+DEFAULT_MEASURE_BG_COLOUR = (250/255.0, 247/255.0, 218/255.0)
+DEFAULT_MEASURE_RADIUS = 1
+DEFAULT_MEASURE_TYPE = MEASURE_LINEAR
+ 
+
 # VTK text
 TEXT_SIZE_SMALL = 11
 TEXT_SIZE = 12
@@ -66,6 +77,7 @@ AXIAL = 1
 CORONAL = 2
 SAGITAL = 3
 VOLUME = 4
+SURFACE = 5
 
 # Colour representing each orientation
 ORIENTATION_COLOUR = {'AXIAL': (1,0,0), # Red
@@ -345,12 +357,12 @@ RAYCASTING_PRESETS_FOLDERS = (RAYCASTING_PRESETS_DIRECTORY,
 
 
 ####
-MODE_ZOOM = 0 #"Set Zoom Mode",
-MODE_ZOOM_SELECTION = 1 #:"Set Zoom Select Mode",
-MODE_ROTATE = 2#:"Set Spin Mode",
-MODE_MOVE = 3#:"Set Pan Mode",
-MODE_WW_WL = 4#:"Bright and contrast adjustment"}
-MODE_LINEAR_MEASURE = 5
+#MODE_ZOOM = 0 #"Set Zoom Mode",
+#MODE_ZOOM_SELECTION = 1 #:"Set Zoom Select Mode",
+#MODE_ROTATE = 2#:"Set Spin Mode",
+#MODE_MOVE = 3#:"Set Pan Mode",
+#MODE_WW_WL = 4#:"Bright and contrast adjustment"}
+#MODE_LINEAR_MEASURE = 5
 
 
 #        self.states = {0:"Set Zoom Mode", 1:"Set Zoom Select Mode",
@@ -438,8 +450,7 @@ SLICE_STATE_EDITOR = 3008
 
 VOLUME_STATE_SEED = 2001
 #STATE_LINEAR_MEASURE = 3001
-STATE_ANGULAR_MEASURE = 3002
-
+#STATE_ANGULAR_MEASURE = 3002
 
 TOOL_STATES = [STATE_WL, STATE_SPIN, STATE_ZOOM,
                STATE_ZOOM_SL, STATE_PAN, STATE_MEASURE_DISTANCE,
