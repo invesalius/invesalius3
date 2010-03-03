@@ -60,14 +60,14 @@ class Project(object):
 
         # Masks (vtkImageData)
         self.mask_dict = {}
-        self.last_mask_index = 0
+        #self.last_mask_index = 0
 
         # Surfaces are (vtkPolyData)
         self.surface_dict = {}
-        self.last_surface_index = -1
+        #self.last_surface_index = -1
 
-        # TODO: Future
-        self.measure_dict = {}
+        # Measurements
+        self.measurement_dict = {}
 
         # TODO: Future ++
         self.annotation_dict = {}
@@ -109,7 +109,7 @@ class Project(object):
         output
             @ index: index of item that was inserted
         """
-        self.last_mask_index = mask.index
+        #self.last_mask_index = mask.index
         index = len(self.mask_dict)
         self.mask_dict[index] = mask
         return index
@@ -128,7 +128,7 @@ class Project(object):
         return self.mask_dict[index]
 
     def AddSurface(self, surface):
-        self.last_surface_index = surface.index
+        #self.last_surface_index = surface.index
         index = len(self.surface_dict)
         self.surface_dict[index] = surface
         return index
@@ -146,6 +146,27 @@ class Project(object):
                 new_dict[i-1] = self.surface_dict[i]
                 new_dict[i-1].index = i-1
         self.surface_dict = new_dict
+
+
+    def AddMeasurement(self, measurement):
+        index = len(self.measurement_dict)
+        self.measurement_dict[index] = measurement
+        return index
+
+    def ChangeMeasurement(self, measurement):
+        index = measurement.index
+        self.measurement_dict[index] = measurement
+
+    def RemoveMeasurement(self, index):
+        new_dict = {}
+        for i in self.measurement_dict:
+            if i < index:
+                new_dict[i] = self.measurement_dict[i]
+            if i > index:
+                new_dict[i-1] = self.measurement_dict[i]
+                new_dict[i-1].index = i-1
+        self.measurement_dict = new_dict
+
 
     def SetAcquisitionModality(self, type_=None):
         if type_ is None:
