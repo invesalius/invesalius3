@@ -187,6 +187,7 @@ invesalius/gui/widgets/platebtn.py -text
 invesalius/gui/widgets/slice_menu.py -text
 invesalius/i18n.py -text
 invesalius/invesalius.py -text
+invesalius/math_utils.py -text
 invesalius/presets.py -text
 invesalius/project.py -text
 invesalius/reader/__init__.py -text
