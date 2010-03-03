@@ -22,7 +22,7 @@ class Measurement():
     general_index = -1
     def __init__(self):
         Measurement.general_index += 1
-        self.index = Surface.general_index
+        self.index = Measurement.general_index
         self.name = const.MEASURE_NAME_PATTERN %(self.index+1)
         self.colour = const.DEFAULT_MEASURE_COLOUR 
         self.value = None
