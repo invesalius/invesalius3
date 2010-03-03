@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
 #--------------------------------------------------------------------------
 # Software:     InVesalius - Software de Reconstrucao 3D de Imagens Medicas
 # Copyright:    (C) 2001  Centro de Pesquisas Renato Archer
@@ -41,6 +43,12 @@ from data import measures
 ID_TO_TOOL_ITEM = {}
 STR_WL = "WL: %d  WW: %d"
 
+ORIENTATIONS = {
+        "AXIAL": _("Axial"),
+        "CORONAL": _("Coronal"),
+        "SAGITAL": _("Sagital"),
+        }
+
 class Viewer(wx.Panel):
 
     def __init__(self, prnt, orientation='AXIAL'):
@@ -62,6 +70,8 @@ class Viewer(wx.Panel):
         self.layout = (1, 1)
         self.orientation_texts = []
 
+        self.measures = []
+
         self.__init_gui()
 
         self.orientation = orientation
@@ -80,7 +90,6 @@ class Viewer(wx.Panel):
         self.pick = vtk.vtkPropPicker()
         self.cross_actor = vtk.vtkActor()
 
-        self.measures = []
 
         self.__bind_events()
         self.__bind_events_wx()
@@ -1370,6 +1379,8 @@ class Viewer(wx.Panel):
     def set_slice_number(self, index):
         self.slice_number = index
         # Showing off all the measures
+        if self.measures and not self.measures[-1][1].IsComplete():
+            del self.measures[-1]
         [m[1].SetVisibility(0) for m in self.measures]
         for n, slice_data in enumerate(self.slice_data_list):
             ren = slice_data.renderer
@@ -1442,7 +1453,8 @@ class Viewer(wx.Panel):
                 m.AddPoint(x, y, z)
                 if m.IsComplete():
                     ps.Publisher().sendMessage("Add measure to list", 
-                            ("3D", _("%.3f mm3" % m.GetValue())))
+                            (ORIENTATIONS[self.orientation], 
+                                _(u"%.3f mm" % m.GetValue())))
             self.interactor.Render()
 
     def OnInsertAngularMeasurePoint(self, obj, evt):
@@ -1463,5 +1475,6 @@ class Viewer(wx.Panel):
                 m.AddPoint(x, y, z)
                 if m.IsComplete():
                     ps.Publisher().sendMessage("Add measure to list", 
-                            ("3D", _("%.3f" % m.GetValue())))
+                            (ORIENTATIONS[self.orientation], 
+                                _(u"%.3fº" % m.GetValue())))
             self.interactor.Render()

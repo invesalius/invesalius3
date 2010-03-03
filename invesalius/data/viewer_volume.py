@@ -1,3 +1,6 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
 #--------------------------------------------------------------------------
 # Software:     InVesalius - Software de Reconstrucao 3D de Imagens Medicas
 # Copyright:    (C) 2001  Centro de Pesquisas Renato Archer
@@ -634,7 +637,7 @@ class Viewer(wx.Panel):
                 m.AddPoint(x, y, z)
                 if m.IsComplete():
                     ps.Publisher().sendMessage("Add measure to list", 
-                            ("3D", _("%.3f mm3" % m.GetValue())))
+                            (u"3D", _(u"%.3f mm" % m.GetValue())))
             self.interactor.Render()
 
     def OnInsertAngularMeasurePoint(self, obj, evt):
@@ -652,7 +655,7 @@ class Viewer(wx.Panel):
                 m.AddPoint(x, y, z)
                 if m.IsComplete():
                     ps.Publisher().sendMessage("Add measure to list", 
-                            ("3D", _("%.3f" % m.GetValue())))
+                            (u"3D", _(u"%.3fº" % m.GetValue())))
             self.interactor.Render()
 
 
