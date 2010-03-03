@@ -6,17 +6,30 @@
 # its graphical representation of the data to maintain interactive
 # performance.
 
-import wx
-import sys
-import os
-import time
-import math
 
 from itertools import cycle
-from wx.grid import Grid, GridCellBoolRenderer, GridCellBoolEditor, EVT_GRID_CELL_CHANGE
+import math
+import os
+import sys
+import time
 
+import wx
 import vtk
-from vtk.wx.wxVTKRenderWindowInteractor import wxVTKRenderWindowInteractor
+
+import constants as const
+
+class Measurement():
+    general_index = -1
+    def __init__(self):
+        Measurement.general_index += 1
+        self.index = Surface.general_index
+        self.name = const.MEASURE_NAME_PATTERN %(self.index+1)
+        self.colour = const.DEFAULT_MEASURE_COLOUR 
+        self.value = None
+        self.location = const.SURFACE # AXIAL, CORONAL, SAGITTAL
+        self.type = const.LINEAR # ANGULAR
+        self.points = []
+        self.is_shown = False
 
 class CirclePointRepresentation(object):
     """
