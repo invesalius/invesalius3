@@ -636,8 +636,18 @@ class Viewer(wx.Panel):
                 m = self.measures[-1]
                 m.AddPoint(x, y, z)
                 if m.IsComplete():
-                    ps.Publisher().sendMessage("Add measure to list", 
-                            (u"3D", _(u"%.3f mm" % m.GetValue())))
+                    index = len(self.measures) - 1
+                    name = "M"
+                    colour = m.colour
+                    type_ = _("Linear")
+                    location = u"3D"
+                    value = u"%.2f mm"% m.GetValue()
+                   
+                    msg =  'Update measurement info in GUI',
+                    ps.Publisher().sendMessage(msg,
+                                               (index, name, colour,
+                                                type_, location,
+                                                value))
             self.interactor.Render()
 
     def OnInsertAngularMeasurePoint(self, obj, evt):
@@ -654,8 +664,17 @@ class Viewer(wx.Panel):
                 m = self.measures[-1]
                 m.AddPoint(x, y, z)
                 if m.IsComplete():
-                    ps.Publisher().sendMessage("Add measure to list", 
-                            (u"3D", _(u"%.3fº" % m.GetValue())))
+                    index = len(self.measures) - 1
+                    name = "M"
+                    colour = m.colour
+                    type_ = _("Angular")
+                    location = u"3D"
+                    value = u"%.2f˚"% m.GetValue()
+                    msg =  'Update measurement info in GUI',
+                    ps.Publisher().sendMessage(msg,
+                                               (index, name, colour,
+                                                type_, location,
+                                                value))
             self.interactor.Render()
 
 
