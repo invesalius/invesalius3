@@ -231,16 +231,6 @@ def ShowSaveAsProjectDialog(default_filename=None):
     os.chdir(current_dir)
     return filename
 
-
-
-
-
-
-
-
-
-
-
 class MessageDialog(wx.Dialog):
     def __init__(self, message):
         pre = wx.PreDialog()
@@ -395,6 +385,144 @@ def NewMask():
         return dlg.GetValue()
     return None
 
+class NewMaskDialog(wx.Dialog):
+    def __init__(self,
+                 parent=None,
+                 ID=-1,
+                 title="InVesalius 3",
+                 size=wx.DefaultSize,
+                 pos=wx.DefaultPosition,
+                 style=wx.DEFAULT_DIALOG_STYLE,
+                 useMetal=False):
+        import constants as const
+        import data.surface as surface
+        import project as prj
+
+        # Instead of calling wx.Dialog.__init__ we precreate the dialog
+        # so we can set an extra style that must be set before
+        # creation, and then we create the GUI object using the Create
+        # method.
+        pre = wx.PreDialog()
+        pre.SetExtraStyle(wx.DIALOG_EX_CONTEXTHELP)
+        pre.Create(parent, ID, title, pos, (500,300), style)
+
+        # This next step is the most important, it turns this Python
+        # object into the real wrapper of the dialog (instead of pre)
+        # as far as the wxPython extension is concerned.
+        self.PostCreate(pre)
+
+        self.CenterOnScreen()
+
+        # This extra style can be set after the UI object has been created.
+        if 'wxMac' in wx.PlatformInfo and useMetal:
+            self.SetExtraStyle(wx.DIALOG_EX_METAL)
+
+        self.CenterOnScreen()
+
+        # LINE 1: Surface name
+
+        label_surface = wx.StaticText(self, -1, _("New mask name:"))
+
+        default_name =  const.SURFACE_NAME_PATTERN %(surface.Surface.general_index+2)
+        text = wx.TextCtrl(self, -1, "", size=(80,-1))
+        text.SetHelpText(_("Name the mask to be created"))
+        text.SetValue(default_name)
+        self.text = text
+
+        # LINE 2: Mask of reference
+
+        # Informative label
+        label_mask = wx.StaticText(self, -1, _("Threshold preset:"))
+
+        # Retrieve existing masks
+        project = prj.Project()
+        thresh_list = project.threshold_modes.keys()
+        thresh_list.sort()
+        default_index = proj.threshold_modes.get_key(_("Default"))
+        self.thresh_list = thresh_list
+
+        # Mask selection combo
+        combo_mask = wx.ComboBox(self, -1, "", choices= self.thresh_list,
+                                 style=wx.CB_DROPDOWN|wx.CB_READONLY)
+        combo_mask.SetSelection(len(self.thresh_list)-1)
+        if sys.platform != 'win32':
+            combo_mask.SetWindowVariant(wx.WINDOW_VARIANT_SMALL)
+        self.combo_mask = combo_mask
+
+        # LINE 3: Surface quality
+        label_quality = wx.StaticText(self, -1, _("Surface quality:"))
+
+        choices =  const.SURFACE_QUALITY_LIST,
+        style = wx.CB_DROPDOWN|wx.CB_READONLY
+        combo_quality = wx.ComboBox(self, -1, "",
+                                    choices= choices,
+                                    style=style)
+        combo_quality.SetSelection(3)
+        if sys.platform != 'win32':
+            combo_quality.SetWindowVariant(wx.WINDOW_VARIANT_SMALL)
+        self.combo_quality = combo_quality
+
+
+        # OVERVIEW
+        # Sizer that joins content above
+        flag_link = wx.EXPAND|wx.GROW|wx.ALL
+        flag_button = wx.ALL | wx.EXPAND| wx.GROW
+
+        fixed_sizer = wx.FlexGridSizer(rows=2, cols=2, hgap=10, vgap=0)
+        fixed_sizer.AddGrowableCol(0, 1)
+        fixed_sizer.AddMany([ (label_surface, 1, flag_link, 5),
+                              (text, 1, flag_button, 2),
+                              (label_mask, 1, flag_link, 5),
+                              (combo_mask, 0, flag_button, 1),
+                              (label_quality, 1, flag_link, 5),
+                              (combo_quality, 0, flag_button, 1)])
+
+
+        # LINES 4 and 5: Checkboxes
+        check_box_holes = wx.CheckBox(self, -1, _("Fill holes"))
+        check_box_holes.SetValue(True)
+        self.check_box_holes = check_box_holes
+        check_box_largest = wx.CheckBox(self, -1, _("Keep largest region"))
+        self.check_box_largest = check_box_largest
+
+        # LINE 6: Buttons
+
+        btn_ok = wx.Button(self, wx.ID_OK)
+        btn_ok.SetDefault()
+        btn_cancel = wx.Button(self, wx.ID_CANCEL)
+
+        btnsizer = wx.StdDialogButtonSizer()
+        btnsizer.AddButton(btn_ok)
+        btnsizer.AddButton(btn_cancel)
+        btnsizer.Realize()
+
+        # OVERVIEW
+        # Merge all sizers and checkboxes
+        sizer = wx.BoxSizer(wx.VERTICAL)
+        sizer.Add(fixed_sizer, 0, wx.TOP|wx.RIGHT|wx.LEFT|wx.GROW|wx.EXPAND, 20)
+        sizer.Add(check_box_holes, 0, wx.RIGHT|wx.LEFT, 30)
+        sizer.Add(check_box_largest, 0, wx.RIGHT|wx.LEFT, 30)
+        sizer.Add(btnsizer, 0, wx.ALIGN_RIGHT|wx.ALL, 10)
+
+        self.SetSizer(sizer)
+        sizer.Fit(self)
+
+    def GetValue(self):
+        mask_index = self.combo_mask.GetSelection()
+        surface_name = self.text.GetValue()
+        quality = const.SURFACE_QUALITY_LIST[self.combo_quality.GetSelection()]
+        fill_holes = self.check_box_holes.GetValue()
+        keep_largest = self.check_box_largest.GetValue()
+        return (mask_index, surface_name, quality, fill_holes, keep_largest)
+
+
+
+
+
+
+
+
+
 def InexistentPath(path):
     msg = _("%s does not exist.")%(path)
     if sys.platform == 'darwin':
@@ -473,11 +601,16 @@ def ShowAboutDialog(parent):
                       "Paulo Henrique Junqueira Amorim",
                       "Thiago Franco de Moraes"]
     #info.DocWriters =
-    info.Translators = ["Alex P. Natsios (GR)",
-                        "Andreas Loupasakis (GR)",
-                        "Dimitris Glezos (GR)",
+    info.Translators = ["Alex P. Natsios (EL)",
+                        "Andreas Loupasakis (EL)",
+                        "Cheng-Chia Tseng (ZH)",
+                        "Dimitris Glezos (EL)",
                         u"Frédéric Lopez (FR)",
-                        "Nikos Korkakakis (GR)"]
+                        "J. Javier de Lima Moreno (ES)"
+                        "Nikos Korkakakis (EL)",
+                        "Sebastian Hilbert (FR)"]
+
+    info.Artists = ["Otavio Henrique Junqueira Amorim"]
 
     # Then we call wx.AboutBox giving its info object
     wx.AboutBox(info)
@@ -518,6 +651,8 @@ class NewSurfaceDialog(wx.Dialog):
         # as far as the wxPython extension is concerned.
         self.PostCreate(pre)
 
+        self.CenterOnScreen()
+
         # This extra style can be set after the UI object has been created.
         if 'wxMac' in wx.PlatformInfo and useMetal:
             self.SetExtraStyle(wx.DIALOG_EX_METAL)
@@ -557,8 +692,11 @@ class NewSurfaceDialog(wx.Dialog):
         # LINE 3: Surface quality
         label_quality = wx.StaticText(self, -1, _("Surface quality:"))
 
-        combo_quality = wx.ComboBox(self, -1, "", choices= const.SURFACE_QUALITY_LIST,
-                                     style=wx.CB_DROPDOWN|wx.CB_READONLY)
+        choices =  const.SURFACE_QUALITY_LIST
+        style = wx.CB_DROPDOWN|wx.CB_READONLY
+        combo_quality = wx.ComboBox(self, -1, "",
+                                    choices= choices,
+                                    style=style)
         combo_quality.SetSelection(3)
         if sys.platform != 'win32':
             combo_quality.SetWindowVariant(wx.WINDOW_VARIANT_SMALL)
