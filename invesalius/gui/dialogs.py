@@ -608,7 +608,7 @@ def ShowAboutDialog(parent):
                         u"Frédéric Lopez (FR)",
                         "J. Javier de Lima Moreno (ES)"
                         "Nikos Korkakakis (EL)",
-                        "Sebastian Hilbert (FR)"]
+                        "Sebastian Hilbert (DE)"]
 
     info.Artists = ["Otavio Henrique Junqueira Amorim"]
 
