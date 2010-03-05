@@ -31,6 +31,7 @@ class MeasurementManager(object):
 
     def _bind_events(self):
         ps.Publisher().subscribe(self._add_point, "Add measurement point")
+        ps.Publisher().subscribe(self._set_visibility, "Show measurement")
 
     def _add_point(self, pubsub_evt):
         position = pubsub_evt.data[0]
@@ -82,6 +83,11 @@ class MeasurementManager(object):
                         value))
             self.current = None
 
+    def _set_visibility(self, pubsub_evt):
+        index, visibility = pubsub_evt.data
+        m, mr = self.measures[index]
+        m.is_shown = visibility
+        mr.SetVisibility(visibility)
 
 
 class Measurement():
