@@ -1,22 +1,88 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 
-# This example demonstrates the use of vtkSTLReader to load data into
-# VTK from a file.  This example also uses vtkLODActor which changes
-# its graphical representation of the data to maintain interactive
-# performance.
-
-
-from itertools import cycle
 import math
-import os
-import sys
-import time
+import random
 
-import wx
+import wx.lib.pubsub as ps
 import vtk
 
 import constants as const
+
+TYPE = {const.LINEAR: _(u"Linear"),
+        const.ANGULAR: _(u"Angular"),
+        }
+
+LOCATION = {const.SURFACE: _(u"3D"),
+            const.AXIAL: _(u"Axial"),
+            const.CORONAL: _(u"Coronal"),
+            const.SAGITAL: _(u"Sagittal")
+        }
+
+class MeasurementManager(object):
+    """
+    A class to manage the use (Addition, remotion and visibility) from
+    measures.
+    """
+    def __init__(self):
+        self.current = None
+        self.measures = []
+        self._bind_events()
+
+    def _bind_events(self):
+        ps.Publisher().subscribe(self._add_point, "Add measurement point")
+
+    def _add_point(self, pubsub_evt):
+        position = pubsub_evt.data[0]
+        type = pubsub_evt.data[1] # Linear or Angular
+        location = pubsub_evt.data[2] # 3D, AXIAL, SAGITAL, CORONAL
+        try:
+            slice_number = pubsub_evt.data[3]
+        except IndexError:
+            slice_number = 0
+
+        if self.current is None:
+            to_create = True
+        elif self.current[0].slice_number != slice_number:
+            to_create = True
+        elif self.current[0].location != location:
+            to_create = True
+        else:
+            to_create = False
+
+        if to_create:
+            m = Measurement()
+            m.location = location
+            m.points.append(position)
+            m.slice_number = slice_number
+            if type == const.LINEAR:
+                mr = LinearMeasure(m.colour)
+            else:
+                mr = AngularMeasure(m.colour)
+            self.current = (m, mr)
+            
+        x, y, z = position
+        actors = self.current[1].AddPoint(x, y, z)
+        ps.Publisher().sendMessage(("Add Actors", location), actors)
+
+        if self.current[1].IsComplete():
+            self.measures.append(self.current)
+            index = self.current[0].index
+            name = self.current[0].name
+            colour = self.current[0].colour
+            self.current[0].value = self.current[1].GetValue()
+            type_ = TYPE[type]
+            location = LOCATION[location]
+            value = u"%.2f mm"% self.current[0].value
+
+            msg =  'Update measurement info in GUI',
+            ps.Publisher().sendMessage(msg,
+                    (index, name, colour,
+                        type_, location,
+                        value))
+            self.current = None
+
+
 
 class Measurement():
     general_index = -1
@@ -28,6 +94,7 @@ class Measurement():
         self.value = None
         self.location = const.SURFACE # AXIAL, CORONAL, SAGITTAL
         self.type = const.LINEAR # ANGULAR
+        self.slice_number = 0
         self.points = []
         self.is_shown = False
 
@@ -131,16 +198,15 @@ class CrossPointRepresentation(object):
         return a
 
 class LinearMeasure(object):
-    def __init__(self, render, colour=(1, 0, 0), representation=None):
+    def __init__(self, colour=(1, 0, 0), representation=None):
         self.colour = colour
         self.points = []
         self.point_actor1 = None
         self.point_actor2 = None
         self.line_actor = None
         self.text_actor = None
-        self.render = render
         if not representation:
-            representation = CirclePointRepresentation()
+            representation = CirclePointRepresentation(colour)
         self.representation = representation
         print colour
 
@@ -153,18 +219,18 @@ class LinearMeasure(object):
     def AddPoint(self, x, y, z):
         if not self.point_actor1:
             self.SetPoint1(x, y, z)
+            return (self.point_actor1, )
         elif not self.point_actor2:
             self.SetPoint2(x, y, z)
+            return (self.point_actor2, self.line_actor, self.text_actor)
 
     def SetPoint1(self, x, y, z):
         self.points.append((x, y, z))
         self.point_actor1 = self.representation.GetRepresentation(x, y, z)
-        self.render.AddActor(self.point_actor1)
 
     def SetPoint2(self, x, y, z):
         self.points.append((x, y, z))
         self.point_actor2 = self.representation.GetRepresentation(x, y, z)
-        self.render.AddActor(self.point_actor2)
         self.CreateMeasure()
 
     def CreateMeasure(self):
@@ -187,7 +253,6 @@ class LinearMeasure(object):
         a.SetMapper(m)
         a.GetProperty().SetColor(self.colour)
         self.line_actor = a
-        self.render.AddActor(self.line_actor)
 
     def _draw_text(self):
         p1, p2 = self.points
@@ -207,8 +272,8 @@ class LinearMeasure(object):
         a.DragableOn()
         a.GetPositionCoordinate().SetCoordinateSystemToWorld()
         a.GetPositionCoordinate().SetValue(x,y,z)
+        a.GetProperty().SetColor((0, 1, 0))
         self.text_actor = a
-        self.render.AddActor(self.text_actor)
 
     def GetNumberOfPoints(self):
         return len(self.points)
@@ -264,7 +329,7 @@ class LinearMeasure(object):
 
 
 class AngularMeasure(object):
-    def __init__(self, render, colour=(1, 0, 0), representation=None):
+    def __init__(self, colour=(1, 0, 0), representation=None):
         self.colour = colour
         self.points = [0, 0, 0]
         self.number_of_points = 0
@@ -273,9 +338,8 @@ class AngularMeasure(object):
         self.point_actor3 = None
         self.line_actor = None
         self.text_actor = None
-        self.render = render
         if not representation:
-            representation = CirclePointRepresentation()
+            representation = CirclePointRepresentation(colour)
         self.representation = representation
         print colour
 
@@ -285,28 +349,28 @@ class AngularMeasure(object):
     def AddPoint(self, x, y, z):
         if not self.point_actor1:
             self.SetPoint1(x, y, z)
+            return (self.point_actor1,)
         elif not self.point_actor2:
             self.SetPoint2(x, y, z)
+            return (self.point_actor2,)
         elif not self.point_actor3:
             self.SetPoint3(x, y, z)
+            return (self.point_actor3, self.line_actor, self.text_actor)
 
     def SetPoint1(self, x, y, z):
         self.points[0] = (x, y, z)
         self.number_of_points = 1
         self.point_actor1 = self.representation.GetRepresentation(x, y, z)
-        self.render.AddActor(self.point_actor1)
 
     def SetPoint2(self, x, y, z):
         self.number_of_points = 2
         self.points[1] = (x, y, z)
         self.point_actor2 = self.representation.GetRepresentation(x, y, z)
-        self.render.AddActor(self.point_actor2)
 
     def SetPoint3(self, x, y, z):
         self.number_of_points = 3
         self.points[2] = (x, y, z)
         self.point_actor3 = self.representation.GetRepresentation(x, y, z)
-        self.render.AddActor(self.point_actor3)
         self.CreateMeasure()
 
     def CreateMeasure(self):
@@ -340,7 +404,6 @@ class AngularMeasure(object):
         a.SetMapper(m)
         a.GetProperty().SetColor(self.colour)
         self.line_actor = a
-        self.render.AddActor(self.line_actor)
 
     def DrawArc(self):
 
@@ -389,7 +452,6 @@ class AngularMeasure(object):
         a.GetPositionCoordinate().SetCoordinateSystemToWorld()
         a.GetPositionCoordinate().SetValue(x,y,z)
         self.text_actor = a
-        self.render.AddActor(self.text_actor)
 
     def GetNumberOfPoints(self):
         return self.number_of_points

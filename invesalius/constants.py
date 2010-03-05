@@ -28,7 +28,7 @@ from project import Project
 #---------------
 
 # Measurements
-MEASURE_NAME_PATTERN = _("M %d")
+MEASURE_NAME_PATTERN = _("M %d") 
 MEASURE_LINEAR = 101
 MEASURE_ANGULAR = 102
 
@@ -78,6 +78,10 @@ CORONAL = 2
 SAGITAL = 3
 VOLUME = 4
 SURFACE = 5
+
+# Measure type
+LINEAR = 6
+ANGULAR = 7
 
 # Colour representing each orientation
 ORIENTATION_COLOUR = {'AXIAL': (1,0,0), # Red

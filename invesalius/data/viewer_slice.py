@@ -44,9 +44,9 @@ ID_TO_TOOL_ITEM = {}
 STR_WL = "WL: %d  WW: %d"
 
 ORIENTATIONS = {
-        "AXIAL": _("Axial"),
-        "CORONAL": _("Coronal"),
-        "SAGITAL": _("Sagital"),
+        "AXIAL": const.AXIAL,
+        "CORONAL": const.CORONAL,
+        "SAGITAL": const.SAGITAL,
         }
 
 class Viewer(wx.Panel):
@@ -863,6 +863,8 @@ class Viewer(wx.Panel):
         ps.Publisher().subscribe(self.OnExportPicture,'Export picture to file')
         ps.Publisher().subscribe(self.SetDefaultCursor, 'Set interactor default cursor')
     
+        ps.Publisher().subscribe(self.AddActors, ('Add Actors', ORIENTATIONS[self.orientation]))
+
     def SetDefaultCursor(self, pusub_evt):
         self.interactor.SetCursor(wx.StockCursor(wx.CURSOR_DEFAULT))
     
@@ -1444,17 +1446,21 @@ class Viewer(wx.Panel):
         x, y, z = self.pick.GetPickPosition()
         if self.pick.GetViewProp(): 
             print "Hey, you inserted measure point"
-            if not self.measures or self.measures[-1][1].IsComplete():
-                m = measures.LinearMeasure(render)
-                m.AddPoint(x, y, z)
-                self.measures.append((slice_number, m))
-            else:
-                m = self.measures[-1][1]
-                m.AddPoint(x, y, z)
-                if m.IsComplete():
-                    ps.Publisher().sendMessage("Add measure to list", 
-                            (ORIENTATIONS[self.orientation], 
-                                _(u"%.3f mm" % m.GetValue())))
+            # if not self.measures or self.measures[-1][1].IsComplete():
+                # m = measures.LinearMeasure(render)
+                # m.AddPoint(x, y, z)
+                # self.measures.append((slice_number, m))
+            # else:
+                # m = self.measures[-1][1]
+                # m.AddPoint(x, y, z)
+                # if m.IsComplete():
+                    # ps.Publisher().sendMessage("Add measure to list", 
+                            # (ORIENTATIONS[self.orientation], 
+                                # _(u"%.3f mm" % m.GetValue())))
+            self.render_to_add = slice_data.renderer
+            ps.Publisher().sendMessage("Add measurement point",
+                    ((x, y,z), const.LINEAR, ORIENTATIONS[self.orientation],
+                        slice_number))
             self.interactor.Render()
 
     def OnInsertAngularMeasurePoint(self, obj, evt):
@@ -1466,15 +1472,25 @@ class Viewer(wx.Panel):
         self.pick.Pick(x, y, 0, render)
         x, y, z = self.pick.GetPickPosition()
         if self.pick.GetViewProp(): 
-            if not self.measures or self.measures[-1][1].IsComplete():
-                m = measures.AngularMeasure(render)
-                m.AddPoint(x, y, z)
-                self.measures.append((slice_number, m))
-            else:
-                m = self.measures[-1][1]
-                m.AddPoint(x, y, z)
-                if m.IsComplete():
-                    ps.Publisher().sendMessage("Add measure to list", 
-                            (ORIENTATIONS[self.orientation], 
-                                _(u"%.3fº" % m.GetValue())))
+            # if not self.measures or self.measures[-1][1].IsComplete():
+                # m = measures.AngularMeasure(render)
+                # m.AddPoint(x, y, z)
+                # self.measures.append((slice_number, m))
+            # else:
+                # m = self.measures[-1][1]
+                # m.AddPoint(x, y, z)
+                # if m.IsComplete():
+                    # ps.Publisher().sendMessage("Add measure to list", 
+                            # (ORIENTATIONS[self.orientation], 
+                                # _(u"%.3fº" % m.GetValue())))
+            self.render_to_add = slice_data.renderer
+            ps.Publisher().sendMessage("Add measurement point",
+                    ((x, y,z), const.ANGULAR, ORIENTATIONS[self.orientation],
+                        slice_number))
             self.interactor.Render()
+
+    def AddActors(self, pubsub_evt):
+        "Inserting actors"
+        actors = pubsub_evt.data
+        for actor in actors:
+            self.render_to_add.AddActor(actor)

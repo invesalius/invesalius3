@@ -24,16 +24,16 @@ import tempfile
 import wx.lib.pubsub as ps
 
 import constants as const
-import project as prj
-
 import data.imagedata_utils as utils
 import data.mask as msk
+import data.measures
 import data.surface as srf
 import data.volume as volume
-import reader.dicom_grouper as dg
 import gui.dialogs as dialog
-import reader.dicom_reader as dcm
+import project as prj
 import reader.analyze_reader as analyze
+import reader.dicom_grouper as dg
+import reader.dicom_reader as dcm
 import session as ses
 
 from utils import debug
@@ -51,6 +51,8 @@ class Controller():
         self.cancel_import = False
         #Init session
         session = ses.Session()
+        self.measure_manager = data.measures.MeasurementManager()
+
 
     def __bind_events(self):
         ps.Publisher().subscribe(self.OnImportMedicalImages, 'Import directory')

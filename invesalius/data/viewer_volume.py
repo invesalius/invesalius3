@@ -142,6 +142,8 @@ class Viewer(wx.Panel):
         ps.Publisher().subscribe(self.OnHideText,
                                  'Hide text actors on viewers')
 
+        ps.Publisher().subscribe(self.AddActors, ('Add Actors', const.SURFACE))
+
         ps.Publisher().subscribe(self.OnShowText,
                                  'Show text actors on viewers')
         ps.Publisher().subscribe(self.OnCloseProject, 'Close project data')
@@ -224,6 +226,12 @@ class Viewer(wx.Panel):
         if self.on_wl:
             self.text.Show()
             self.interactor.Render()
+
+    def AddActors(self, pubsub_evt):
+        "Inserting actors"
+        actors = pubsub_evt.data
+        for actor in actors:
+            self.ren.AddActor(actor)
 
     def AddPointReference(self, position, radius=1, colour=(1, 0, 0)):
         """
@@ -628,26 +636,18 @@ class Viewer(wx.Panel):
         self.measure_picker.Pick(x, y, 0, self.ren)
         x, y, z = self.measure_picker.GetPickPosition()
         if self.measure_picker.GetActor(): 
-            if not self.measures or self.measures[-1].IsComplete():
-                m = measures.LinearMeasure(self.ren)
-                m.AddPoint(x, y, z)
-                self.measures.append(m)
-            else:
-                m = self.measures[-1]
-                m.AddPoint(x, y, z)
-                if m.IsComplete():
-                    index = len(self.measures) - 1
-                    name = "M"
-                    colour = m.colour
-                    type_ = _("Linear")
-                    location = u"3D"
-                    value = u"%.2f mm"% m.GetValue()
-                   
-                    msg =  'Update measurement info in GUI',
-                    ps.Publisher().sendMessage(msg,
-                                               (index, name, colour,
-                                                type_, location,
-                                                value))
+            # if not self.measures or self.measures[-1].IsComplete():
+                # m = measures.LinearMeasure(self.ren)
+                # m.AddPoint(x, y, z)
+                # self.measures.append(m)
+            # else:
+                # m = self.measures[-1]
+                # m.AddPoint(x, y, z)
+                # if m.IsComplete():
+                    # ps.Publisher().sendMessage("Add measure to list", 
+                            # (u"3D", _(u"%.3f mm" % m.GetValue())))
+            ps.Publisher().sendMessage("Add measurement point",
+                    ((x, y,z), const.LINEAR, const.SURFACE))
             self.interactor.Render()
 
     def OnInsertAngularMeasurePoint(self, obj, evt):
@@ -656,25 +656,27 @@ class Viewer(wx.Panel):
         self.measure_picker.Pick(x, y, 0, self.ren)
         x, y, z = self.measure_picker.GetPickPosition()
         if self.measure_picker.GetActor(): 
-            if not self.measures or self.measures[-1].IsComplete():
-                m = measures.AngularMeasure(self.ren)
-                m.AddPoint(x, y, z)
-                self.measures.append(m)
-            else:
-                m = self.measures[-1]
-                m.AddPoint(x, y, z)
-                if m.IsComplete():
-                    index = len(self.measures) - 1
-                    name = "M"
-                    colour = m.colour
-                    type_ = _("Angular")
-                    location = u"3D"
-                    value = u"%.2f˚"% m.GetValue()
-                    msg =  'Update measurement info in GUI',
-                    ps.Publisher().sendMessage(msg,
-                                               (index, name, colour,
-                                                type_, location,
-                                                value))
+            # if not self.measures or self.measures[-1].IsComplete():
+                # m = measures.AngularMeasure(self.ren)
+                # m.AddPoint(x, y, z)
+                # self.measures.append(m)
+            # else:
+                # m = self.measures[-1]
+                # m.AddPoint(x, y, z)
+                # if m.IsComplete():
+                    # index = len(self.measures) - 1
+                    # name = "M"
+                    # colour = m.colour
+                    # type_ = _("Angular")
+                    # location = u"3D"
+                    # value = u"%.2f˚"% m.GetValue()
+                    # msg =  'Update measurement info in GUI',
+                    # ps.Publisher().sendMessage(msg,
+                                               # (index, name, colour,
+                                                # type_, location,
+                                                # value))
+            ps.Publisher().sendMessage("Add measurement point",
+                    ((x, y,z), const.ANGULAR, const.SURFACE))
             self.interactor.Render()
 
 
