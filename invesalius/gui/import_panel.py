@@ -22,6 +22,7 @@ import wx.lib.pubsub as ps
 import wx.lib.splitter as spl
 
 import constants as const
+import gui.dialogs as dlg
 import dicom_preview_panel as dpp
 import reader.dicom_grouper as dcm
 
@@ -52,16 +53,16 @@ class SelectEvent(wx.PyCommandEvent):
 
     def SetItemData(self, data):
         self.data = data
-    
+
 
 class Panel(wx.Panel):
     def __init__(self, parent):
         wx.Panel.__init__(self, parent, pos=wx.Point(5, 5))#,
                           #size=wx.Size(280, 656))
-        
-        sizer = wx.BoxSizer(wx.VERTICAL)        
+
+        sizer = wx.BoxSizer(wx.VERTICAL)
         sizer.Add(InnerPanel(self), 1, wx.EXPAND|wx.GROW|wx.ALL, 5)
-        
+
         self.SetSizer(sizer)
         sizer.Fit(self)
 
@@ -75,7 +76,7 @@ class InnerPanel(wx.Panel):
     def __init__(self, parent):
         wx.Panel.__init__(self, parent, pos=wx.Point(5, 5))#,
                           #size=wx.Size(680, 656))
-        
+
         self.patients = []
 
         self._init_ui()
@@ -86,7 +87,7 @@ class InnerPanel(wx.Panel):
         splitter = spl.MultiSplitterWindow(self, style=wx.SP_LIVE_UPDATE)
         splitter.SetOrientation(wx.VERTICAL)
         self.splitter = splitter
-        
+
         panel = wx.Panel(self)
         #button = wx.Button(panel, -1, _("Import medical images"), (20, 20))
 
@@ -136,7 +137,7 @@ class InnerPanel(wx.Panel):
         self.btn_ok.Bind(wx.EVT_BUTTON, self.OnClickOk)
         self.btn_cancel.Bind(wx.EVT_BUTTON, self.OnClickCancel)
         self.text_panel.Bind(EVT_SELECT_SERIE_TEXT, self.OnDblClickTextPanel)
-    
+
     def ShowDicomPreview(self, pubsub_evt):
         dicom_groups = pubsub_evt.data
         self.patients.extend(dicom_groups)
@@ -166,16 +167,21 @@ class InnerPanel(wx.Panel):
         if group:
             self.LoadDicom(group)
 
-    def OnClickCancel(self, evt): 
+    def OnClickCancel(self, evt):
         ps.Publisher().sendMessage("Cancel DICOM load")
 
     def LoadDicom(self, group):
         interval = self.combo_interval.GetSelection()
         if not isinstance(group, dcm.DicomGroup):
             group = max(group.GetGroups(), key=lambda g: g.nslices)
-        ps.Publisher().sendMessage('Open DICOM group', (group, interval))
-        
-        
+
+        nslices_result = group.nslices / (interval + 1)
+
+        if (nslices_result > 1):
+            ps.Publisher().sendMessage('Open DICOM group', (group, interval))
+        else:
+            dlg.MissingFilesForReconstruction()
+
 class TextPanel(wx.Panel):
     def __init__(self, parent):
         wx.Panel.__init__(self, parent, -1)
@@ -183,7 +189,7 @@ class TextPanel(wx.Panel):
         self._selected_by_user = True
         self.idserie_treeitem = {}
         self.treeitem_idpatient = {}
-        
+
         self.__init_gui()
         self.__bind_events_wx()
         self.__bind_pubsub_evt()
@@ -203,8 +209,8 @@ class TextPanel(wx.Panel):
                                    | wx.TR_FULL_ROW_HIGHLIGHT
                                    | wx.TR_SINGLE
                                   )
-                                   
-                                   
+
+
         tree.AddColumn(_("Patient name"))
         tree.AddColumn(_("Patient ID"))
         tree.AddColumn(_("Age"))
@@ -240,7 +246,7 @@ class TextPanel(wx.Panel):
 
     def Populate(self, patient_list):
         tree = self.tree
-        
+
         first = 0
         for patient in patient_list:
             if not isinstance(patient, dcm.PatientGroup):
@@ -252,7 +258,7 @@ class TextPanel(wx.Panel):
                                  dicom.acquisition.time)
 
             parent = tree.AppendItem(self.root, title)
-            
+
             if not first:
                 parent_select = parent
                 first += 1
@@ -347,14 +353,14 @@ class ImagePanel(wx.Panel):
         self.splitter = splitter
 
         splitter.ContainingSizer = wx.BoxSizer(wx.HORIZONTAL)
-        
+
         sizer = wx.BoxSizer(wx.HORIZONTAL)
         sizer.Add(splitter, 1, wx.EXPAND)
         self.SetSizer(sizer)
-        
+
         self.text_panel = SeriesPanel(splitter)
         splitter.AppendWindow(self.text_panel, 600)
-        
+
         self.image_panel = SlicePanel(splitter)
         splitter.AppendWindow(self.image_panel, 250)
 
@@ -379,16 +385,16 @@ class ImagePanel(wx.Panel):
     def SetSerie(self, serie):
         self.image_panel.dicom_preview.SetDicomGroup(serie)
 
-        
+
 class SeriesPanel(wx.Panel):
     def __init__(self, parent):
         wx.Panel.__init__(self, parent, -1)
-        #self.SetBackgroundColour((0,0,0)) 
+        #self.SetBackgroundColour((0,0,0))
 
         self.serie_preview = dpp.DicomPreviewSeries(self)
         self.dicom_preview = dpp.DicomPreviewSlice(self)
         self.dicom_preview.Show(0)
-       
+
         self.sizer = wx.BoxSizer(wx.HORIZONTAL)
         self.sizer.Add(self.serie_preview, 1, wx.EXPAND | wx.ALL, 5)
         self.sizer.Add(self.dicom_preview, 1, wx.EXPAND | wx.ALL, 5)
@@ -422,19 +428,19 @@ class SeriesPanel(wx.Panel):
 
     def SetPatientSeries(self, pubsub_evt):
         patient = pubsub_evt.data
-        
+
         self.dicom_preview.Show(0)
         self.serie_preview.Show(1)
-            
+
         self.serie_preview.SetPatientGroups(patient)
-        self.dicom_preview.SetPatientGroups(patient)  
-         
+        self.dicom_preview.SetPatientGroups(patient)
+
         self.Update()
 
     def OnSelectSerie(self, evt):
         serie = evt.GetItemData()
         data = evt.GetItemData()
-        
+
         my_evt = SelectEvent(myEVT_SELECT_SERIE, self.GetId())
         my_evt.SetSelectedID(evt.GetSelectID())
         my_evt.SetItemData(evt.GetItemData())
@@ -455,7 +461,7 @@ class SeriesPanel(wx.Panel):
 
     def ShowDicomSeries(self, pubsub_evt):
         patient = pubsub_evt.data
-        if isinstance(patient, dcm.PatientGroup):        
+        if isinstance(patient, dcm.PatientGroup):
             self.serie_preview.SetPatientGroups(patient)
             self.dicom_preview.SetPatientGroups(patient)
 
@@ -502,6 +508,6 @@ class SlicePanel(wx.Panel):
         group = patient.GetGroups()[0]
         self.dicom_preview.SetDicomGroup(group)
         self.sizer.Layout()
-        self.Update() 
+        self.Update()
 
 
