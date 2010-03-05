@@ -143,6 +143,8 @@ class Viewer(wx.Panel):
                                  'Hide text actors on viewers')
 
         ps.Publisher().subscribe(self.AddActors, ('Add actors', const.SURFACE))
+        ps.Publisher().subscribe(self.RemoveActors, ('Remove actors',
+            const.SURFACE))
 
         ps.Publisher().subscribe(self.OnShowText,
                                  'Show text actors on viewers')
@@ -232,6 +234,12 @@ class Viewer(wx.Panel):
         actors = pubsub_evt.data
         for actor in actors:
             self.ren.AddActor(actor)
+
+    def RemoveActors(self, pubsub_evt):
+        "Remove a list of actors"
+        actors = pubsub_evt.data
+        for actor in actors:
+            self.ren.RemoveActor(actor)
 
     def AddPointReference(self, position, radius=1, colour=(1, 0, 0)):
         """
