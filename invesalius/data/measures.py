@@ -35,6 +35,30 @@ class MeasurementManager(object):
         ps.Publisher().subscribe(self._change_name, "Change measurement name")
         ps.Publisher().subscribe(self._remove_measurements, "Remove measurements")
         ps.Publisher().subscribe(self._set_visibility, "Show measurement")
+        ps.Publisher().subscribe(self._load_measurements, "Load measurement dict")
+
+
+    def _load_measurements(self, pubsub_evt):
+        print "_load_measurements"
+        dict = pubsub_evt.data
+        for i in dict:
+            m = dict[i]
+            if m.type == const.LINEAR:
+                mr = LinearMeasure(m.colour)
+            else:
+                mr = AngularMeasure(m.colour)
+            self.current = (m, mr)
+            self.measures.append(self.current)
+            print "m.index", m.index
+            print "m.points",  m.points
+            for point in m.points:
+                print "-- point", point
+                x, y, z = point
+                actors = mr.AddPoint(x, y, z)
+                ps.Publisher().sendMessage(("Add actors", m.location),
+                    (actors, m.slice_number))
+            print "----"
+
 
     def _add_point(self, pubsub_evt):
         position = pubsub_evt.data[0]
