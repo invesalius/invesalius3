@@ -71,6 +71,8 @@ class Viewer(wx.Panel):
         self.orientation_texts = []
 
         self.measures = []
+        self.actors_by_slice_number = {}
+        self.renderers_by_slice_number = {}
 
         self.__init_gui()
 
@@ -1381,19 +1383,28 @@ class Viewer(wx.Panel):
 
     def set_slice_number(self, index):
         self.slice_number = index
-        # Showing off all the measures
-        if self.measures and not self.measures[-1][1].IsComplete():
-            del self.measures[-1]
-        [m[1].SetVisibility(0) for m in self.measures]
+        # for m in self.actors_by_slice_number.values():
+            # for actor in m:
+                # actor.SetVisibility(0) 
+        # Removing actor from the previous renderers/slice.
+        for n in self.renderers_by_slice_number:
+            renderer = self.renderers_by_slice_number[n]
+            for actor in self.actors_by_slice_number.get(n, []):
+                renderer.RemoveActor(actor)
+            self.renderers_by_slice_number = None
+
         for n, slice_data in enumerate(self.slice_data_list):
             ren = slice_data.renderer
             actor = slice_data.actor
             pos = self.layout[0] * self.layout[1] * index + n
             max = actor.GetSliceNumberMax() + 1
             if pos < max:
+                self.renderers_by_slice_number[pos] = ren
+                for m_actor in self.actors_by_slice_number.get(pos, []):
+                    ren.AddActor(m_actor)
                 slice_data.SetNumber(pos)
-                [m[1].SetRenderer(ren) for m in self.measures if m[0] == pos]
-                [m[1].SetVisibility(1) for m in self.measures if m[0] == pos]
+                # for actor in self.actors_by_slice_number.get(pos, []):
+                    # actor.SetVisibility(1)
                 self.__update_display_extent(slice_data)
                 slice_data.Show()
             else:
@@ -1492,12 +1503,21 @@ class Viewer(wx.Panel):
 
     def AddActors(self, pubsub_evt):
         "Inserting actors"
-        actors = pubsub_evt.data
+        actors, n = pubsub_evt.data
+        renderer = self.renderers_by_slice_number[n]
         for actor in actors:
-            self.render_to_add.AddActor(actor)
+            renderer.AddActor(actor)
+        try:
+            self.actors_by_slice_number[n].extend(actors)
+        except KeyError:
+            self.actors_by_slice_number[n] = list(actors)
 
     def RemoveActors(self, pubsub_evt):
         "Remove a list of actors"
-        actors = pubsub_evt.data
+        actors, n = pubsub_evt.data[0]
+        renderer = self.renderers_by_slice_number[n]
         for actor in actors:
-            self.render_to_add.RemoveActor(actor)
+            # Remove the actor from the renderer
+            self.renderer.RemoveActor(actor)
+            # and remove the actor from the actor's list
+            self.actors_by_slice_number.remove(actor)

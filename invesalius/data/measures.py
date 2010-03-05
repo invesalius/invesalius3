@@ -46,12 +46,16 @@ class MeasurementManager(object):
             slice_number = 0
 
         if self.current is None:
+            print "To Create"
             to_create = True
         elif self.current[0].slice_number != slice_number:
+            print "To Create"
             to_create = True
         elif self.current[0].location != location:
+            print "To Create"
             to_create = True
         else:
+            print "To not Create"
             to_create = False
 
         if to_create:
@@ -68,7 +72,8 @@ class MeasurementManager(object):
 
         x, y, z = position
         actors = self.current[1].AddPoint(x, y, z)
-        ps.Publisher().sendMessage(("Add actors", location), actors)
+        ps.Publisher().sendMessage(("Add actors", location),
+                (actors, self.current[0].slice_number))
 
         if self.current[1].IsComplete():
             index = prj.Project().AddMeasurement(self.current[0])
@@ -99,8 +104,10 @@ class MeasurementManager(object):
             m, mr = self.measures.pop(index)
             actors = mr.GetActors()
             prj.Project().RemoveMeasurement(m)
-            ps.Publisher().sendMessage(('Remove actors', m.location), actors)
+            ps.Publisher().sendMessage(('Remove actors', m.location), 
+                    (actors, m.slice_number))
         ps.Publisher().sendMessage('Update slice viewer')
+        ps.Publisher().sendMessage('Render volume viewer')
 
     def _set_visibility(self, pubsub_evt):
         index, visibility = pubsub_evt.data

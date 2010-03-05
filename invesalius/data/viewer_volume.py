@@ -231,13 +231,13 @@ class Viewer(wx.Panel):
 
     def AddActors(self, pubsub_evt):
         "Inserting actors"
-        actors = pubsub_evt.data
+        actors = pubsub_evt.data[0]
         for actor in actors:
             self.ren.AddActor(actor)
 
     def RemoveActors(self, pubsub_evt):
         "Remove a list of actors"
-        actors = pubsub_evt.data
+        actors = pubsub_evt.data[0]
         for actor in actors:
             self.ren.RemoveActor(actor)
 
