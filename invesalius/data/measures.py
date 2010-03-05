@@ -39,18 +39,24 @@ class MeasurementManager(object):
 
 
     def _load_measurements(self, pubsub_evt):
+        print "_load_measurements"
         dict = pubsub_evt.data
         for i in dict:
             m = dict[i]
+            print "m:", m.name
             if m.type == const.LINEAR:
+                print "linear"
                 mr = LinearMeasure(m.colour)
             else:
+                print "angular"
                 mr = AngularMeasure(m.colour)
             self.current = (m, mr)
             self.measures.append(self.current)
             for point in m.points:
+                print "point:", point
                 x, y, z = point
                 actors = mr.AddPoint(x, y, z)
+                print "actors:", actors
                 ps.Publisher().sendMessage(("Add actors", m.location),
                     (actors, m.slice_number))
             self.current = None
@@ -87,6 +93,7 @@ class MeasurementManager(object):
                 mr = LinearMeasure(m.colour)
             else:
                 mr = AngularMeasure(m.colour)
+            m.type = type
             self.current = (m, mr)
 
         x, y, z = position
