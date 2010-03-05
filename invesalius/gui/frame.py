@@ -839,11 +839,11 @@ class ObjectToolBar(wx.ToolBar):
             #BMP_ANNOTATE = wx.Bitmap(path, wx.BITMAP_TYPE_PNG)
 
         else:
-            path = os.path.join(d, "tool_rotate.gif")
-            BMP_ROTATE = wx.Bitmap(path, wx.BITMAP_TYPE_GIF)
+            path = os.path.join(d, "tool_rotate.png")
+            BMP_ROTATE = wx.Bitmap(path, wx.BITMAP_TYPE_PNG)
 
-            path = os.path.join(d, "tool_translate.gif")
-            BMP_MOVE =wx.Bitmap(path, wx.BITMAP_TYPE_GIF)
+            path = os.path.join(d, "tool_translate.png")
+            BMP_MOVE =wx.Bitmap(path, wx.BITMAP_TYPE_PNG)
 
             path = os.path.join(d, "tool_zoom.png")
             BMP_ZOOM = wx.Bitmap(path, wx.BITMAP_TYPE_PNG)
