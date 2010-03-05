@@ -142,7 +142,7 @@ class Viewer(wx.Panel):
         ps.Publisher().subscribe(self.OnHideText,
                                  'Hide text actors on viewers')
 
-        ps.Publisher().subscribe(self.AddActors, ('Add Actors', const.SURFACE))
+        ps.Publisher().subscribe(self.AddActors, ('Add actors', const.SURFACE))
 
         ps.Publisher().subscribe(self.OnShowText,
                                  'Show text actors on viewers')

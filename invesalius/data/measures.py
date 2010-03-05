@@ -8,6 +8,7 @@ import wx.lib.pubsub as ps
 import vtk
 
 import constants as const
+import project as prj
 
 TYPE = {const.LINEAR: _(u"Linear"),
         const.ANGULAR: _(u"Angular"),
@@ -31,6 +32,8 @@ class MeasurementManager(object):
 
     def _bind_events(self):
         ps.Publisher().subscribe(self._add_point, "Add measurement point")
+        ps.Publisher().subscribe(self._change_name, "Change measurement name")
+        ps.Publisher().subscribe(self._remove_measurements, "Remove measurements")
         ps.Publisher().subscribe(self._set_visibility, "Show measurement")
 
     def _add_point(self, pubsub_evt):
@@ -53,6 +56,7 @@ class MeasurementManager(object):
 
         if to_create:
             m = Measurement()
+            m.index = len(self.measures)
             m.location = location
             m.points.append(position)
             m.slice_number = slice_number
@@ -64,11 +68,12 @@ class MeasurementManager(object):
             
         x, y, z = position
         actors = self.current[1].AddPoint(x, y, z)
-        ps.Publisher().sendMessage(("Add Actors", location), actors)
+        ps.Publisher().sendMessage(("Add actors", location), actors)
 
         if self.current[1].IsComplete():
+            index = prj.Project().AddMeasurement(self.current[0])
+            self.current[0].index = index
             self.measures.append(self.current)
-            index = self.current[0].index
             name = self.current[0].name
             colour = self.current[0].colour
             self.current[0].value = self.current[1].GetValue()
@@ -83,11 +88,26 @@ class MeasurementManager(object):
                         value))
             self.current = None
 
+    def _change_name(self, pubsub_evt):
+        index, new_name = pubsub_evt.data
+        self.measures[index][0].name = new_name
+
+    def _remove_measurements(self, pubsub_evt):
+        indexes = pubsub_evt.data
+        print indexes
+        for index in indexes:
+            m, mr = self.measures.pop(index)
+            actors = mr.GetActors()
+            prj.Project().RemoveMeasurement(m)
+            ps.Publisher().sendMessage(('Remove actors', m.location), actors)
+        ps.Publisher().sendMessage('Update slice viewer')
+
     def _set_visibility(self, pubsub_evt):
         index, visibility = pubsub_evt.data
         m, mr = self.measures[index]
         m.is_shown = visibility
         mr.SetVisibility(visibility)
+        ps.Publisher().sendMessage('Update slice viewer')
 
 
 class Measurement():
@@ -313,6 +333,21 @@ class LinearMeasure(object):
         self.line_actor.SetVisibility(v)
         self.text_actor.SetVisibility(v)
 
+    def GetActors(self):
+        """
+        Get the actors already created in this measure.
+        """
+        actors = []
+        if self.point_actor1:
+            actors.append(self.point_actor1)
+        if self.point_actor2:
+            actors.append(self.point_actor2)
+        if self.line_actor:
+            actors.append(self.line_actor)
+        if self.text_actor:
+            actors.append(self.text_actor)
+        return actors
+
     def Remove(self):
         if self.point_actor1:
             self.render.RemoveActor(self.point_actor1)
@@ -330,8 +365,8 @@ class LinearMeasure(object):
             self.render.RemoveActor(self.text_actor)
             del self.text_actor
 
-    def __del__(self):
-        self.Remove()
+    # def __del__(self):
+        # self.Remove()
 
 
 class AngularMeasure(object):
@@ -472,6 +507,23 @@ class AngularMeasure(object):
         self.line_actor.SetVisibility(v)
         self.text_actor.SetVisibility(v)
 
+    def GetActors(self):
+        """
+        Get the actors already created in this measure.
+        """
+        actors = []
+        if self.point_actor1:
+            actors.append(self.point_actor1)
+        if self.point_actor2:
+            actors.append(self.point_actor2)
+        if self.point_actor3:
+            actors.append(self.point_actor3)
+        if self.line_actor:
+            actors.append(self.line_actor)
+        if self.text_actor:
+            actors.append(self.text_actor)
+        return actors
+
     def CalculateAngle(self):
         """
         Calculate the angle between 2 vectors in 3D space. It is based on law of
@@ -532,5 +584,5 @@ class AngularMeasure(object):
 
         self.render = renderer
 
-    def __del__(self):
-        self.Remove()
+    # def __del__(self):
+        # self.Remove()

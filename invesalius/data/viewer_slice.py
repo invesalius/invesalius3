@@ -863,7 +863,8 @@ class Viewer(wx.Panel):
         ps.Publisher().subscribe(self.OnExportPicture,'Export picture to file')
         ps.Publisher().subscribe(self.SetDefaultCursor, 'Set interactor default cursor')
     
-        ps.Publisher().subscribe(self.AddActors, ('Add Actors', ORIENTATIONS[self.orientation]))
+        ps.Publisher().subscribe(self.AddActors, ('Add actors', ORIENTATIONS[self.orientation]))
+        ps.Publisher().subscribe(self.RemoveActors, ('Remove actors', ORIENTATIONS[self.orientation]))
 
     def SetDefaultCursor(self, pusub_evt):
         self.interactor.SetCursor(wx.StockCursor(wx.CURSOR_DEFAULT))
@@ -1494,3 +1495,9 @@ class Viewer(wx.Panel):
         actors = pubsub_evt.data
         for actor in actors:
             self.render_to_add.AddActor(actor)
+
+    def RemoveActors(self, pubsub_evt):
+        "Remove a list of actors"
+        actors = pubsub_evt.data
+        for actor in actors:
+            self.render_to_add.RemoveActor(actor)
