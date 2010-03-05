@@ -60,7 +60,7 @@ class Project(object):
 
         # Masks (vtkImageData)
         self.mask_dict = {}
-        #self.last_mask_index = 0
+        self.last_mask_index = 0
 
         # Surfaces are (vtkPolyData)
         self.surface_dict = {}
