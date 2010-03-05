@@ -86,7 +86,6 @@ class MeasurementManager(object):
             m = Measurement()
             m.index = len(self.measures)
             m.location = location
-            m.points.append(position)
             m.slice_number = slice_number
             if type == const.LINEAR:
                 mr = LinearMeasure(m.colour)
@@ -96,6 +95,7 @@ class MeasurementManager(object):
 
         x, y, z = position
         actors = self.current[1].AddPoint(x, y, z)
+        self.current[0].points.append(position)
         ps.Publisher().sendMessage(("Add actors", location),
                 (actors, self.current[0].slice_number))
 
