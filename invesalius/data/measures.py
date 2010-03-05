@@ -39,7 +39,6 @@ class MeasurementManager(object):
 
 
     def _load_measurements(self, pubsub_evt):
-        print "_load_measurements"
         dict = pubsub_evt.data
         for i in dict:
             m = dict[i]
@@ -49,15 +48,11 @@ class MeasurementManager(object):
                 mr = AngularMeasure(m.colour)
             self.current = (m, mr)
             self.measures.append(self.current)
-            print "m.index", m.index
-            print "m.points",  m.points
             for point in m.points:
-                print "-- point", point
                 x, y, z = point
                 actors = mr.AddPoint(x, y, z)
                 ps.Publisher().sendMessage(("Add actors", m.location),
                     (actors, m.slice_number))
-            print "----"
 
 
     def _add_point(self, pubsub_evt):
