@@ -142,11 +142,11 @@ msgstr "Enfisema"
 
 #: constants.py:264
 msgid "Ischemia - Hard Non Contrast"
-msgstr "Isquemia - Duro No Contraste"
+msgstr "Isquemia mas densa sin contraste"
 
 #: constants.py:265
 msgid "Ischemia - Soft Non Contrast"
-msgstr "Isquemia - Suave No Contraste"
+msgstr "Isquemia menos densa sin contraste"
 
 #: constants.py:266
 msgid "Larynx"
@@ -182,11 +182,11 @@ msgstr "Seno"
 
 #: constants.py:274
 msgid "Vasculature - Hard"
-msgstr "Vasos sanguíneos - Duro"
+msgstr "Vasos sanguíneos mas densos"
 
 #: constants.py:275
 msgid "Vasculature - Soft"
-msgstr "Vasos sanguíneos - Mole"
+msgstr "Vasos sanguíneos menos densos"
 
 #: constants.py:284
 msgid "Front"
@@ -250,7 +250,7 @@ msgstr "Brillo II"
 
 #: constants.py:309
 msgid "Gold Bone"
-msgstr "Hueso de Oro"
+msgstr "Hueso Dorado"
 
 #: constants.py:310
 msgid "High Contrast"
@@ -270,7 +270,7 @@ msgstr "Contraste Medio"
 
 #: constants.py:314
 msgid "No Shading"
-msgstr "No sombreado"
+msgstr "Sin Sombra"
 
 #: constants.py:315
 msgid "Pencil"
@@ -310,7 +310,7 @@ msgstr "Blando"
 
 #: constants.py:325
 msgid "Standard"
-msgstr "Estandarte"
+msgstr "Estándar"
 
 #: constants.py:326
 msgid "Vascular"
@@ -435,15 +435,15 @@ msgstr "Usar sistema de navegación"
 
 #: default_viewers.py:79 default_viewers.py:168 task_exporter.py:235
 msgid "Axial slice"
-msgstr "Rebanada Axial"
+msgstr "Corte Axial"
 
 #: default_viewers.py:84 default_viewers.py:174 task_exporter.py:236
 msgid "Coronal slice"
-msgstr "Rebanada Coronal"
+msgstr "Corte Coronal"
 
 #: default_viewers.py:89 default_viewers.py:180 task_exporter.py:237
 msgid "Sagittal slice"
-msgstr "Rebanada Sagital"
+msgstr "Corte Sagital"
 
 #: default_viewers.py:95 default_viewers.py:186 task_exporter.py:238
 msgid "Volume"
@@ -567,9 +567,9 @@ msgstr ""
 "InVesalius es un software para la reconstrucción 3D de imágenes médicas. Su "
 "entrada es una secuencia de DICOM de archivos de imagen 2D adquirida con TC "
 "o RM.\n"
-" El software también permite la generación de archivos STL corresponsal, "
+" El software también permite la generación de archivos STL correspondientes, "
 "para que el usuario puede imprimir los modelos físicos 3D de la anatomía del "
-"paciente utilizando Rapid Prototyping"
+"paciente utilizando prototipado rápido"
 
 #: dialogs.py:610
 msgid "GNU GPL (General Public License) version 2"
@@ -723,11 +723,11 @@ msgstr "Ayuda"
 
 #: frame.py:566 surface.py:358 surface.py:537
 msgid "Ready"
-msgstr "Preparado"
+msgstr "Listo"
 
 #: frame.py:716
 msgid "Import DICOM files..."
-msgstr "Imporar archivos DICOM..."
+msgstr "Importar archivos DICOM..."
 
 #: frame.py:723
 msgid "Open a InVesalius project..."
@@ -1007,7 +1007,7 @@ msgstr "Crear nueva máscara"
 
 #: task_slice.py:111
 msgid "Save surface"
-msgstr "Guardar superficie"
+msgstr "Crear Superficie"
 
 #: task_slice.py:112
 msgid "Overwrite last surface"
@@ -1019,7 +1019,7 @@ msgstr "Propriedades de la máscara"
 
 #: task_slice.py:225
 msgid "Advanced editing tools"
-msgstr "Herramientas avanzadas para edición"
+msgstr "Herramientas para edición avanzada"
 
 #: task_slice.py:309
 msgid "Set predefined or manual threshold:"
