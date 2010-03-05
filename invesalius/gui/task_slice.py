@@ -152,12 +152,21 @@ class InnerTaskPanel(wx.Panel):
             dlg.InexistentMask()
 
     def OnLinkNewMask(self, evt=None):
-        mask_name = dlg.NewMask()
-        if mask_name:
-            ps.Publisher().sendMessage('Create new mask', mask_name)
+        dialog = dlg.NewMask()
 
-        if evt:
-            evt.Skip()
+        try:
+            if dialog.ShowModal() == wx.ID_OK:
+                ok = 1
+            else:
+                ok = 0
+        except(wx._core.PyAssertionError): #TODO FIX: win64
+            ok = 1
+
+        if ok:
+            mask_name, thresh, colour = dialog.GetValue()
+            if mask_name:
+                ps.Publisher().sendMessage('Create new mask',
+                                            (mask_name, thresh, colour))
 
     def GetMaskSelected(self):
         return self.fold_panel.GetMaskSelected()

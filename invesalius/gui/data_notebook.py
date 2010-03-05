@@ -293,16 +293,20 @@ class ButtonControlPanel(wx.Panel):
 
     def OnNew(self):
         dialog = dlg.NewMask()
-        
-        try:
-            answer = dialog.ShowModal()
-        except(wx._core.PyAssertionError): #TODO: FIX win64
-            answer = wx.ID_YES
 
-        if wx.ID_YES:
-            mask_name = dialog.GetValue()
+        try:
+            if dialog.ShowModal() == wx.ID_OK:
+                ok = 1
+            else:
+                ok = 0
+        except(wx._core.PyAssertionError): #TODO FIX: win64
+            ok = 1
+
+        if ok:
+            mask_name, thresh, colour = dialog.GetValue()
             if mask_name:
-                ps.Publisher().sendMessage('Create new mask', mask_name)
+                ps.Publisher().sendMessage('Create new mask',
+                                            (mask_name, thresh, colour))
 
     def OnRemove(self):
         self.parent.listctrl.RemoveMasks()

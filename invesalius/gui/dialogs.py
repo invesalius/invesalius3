@@ -19,6 +19,7 @@
 #    detalhes.
 #--------------------------------------------------------------------------
 import os
+import random
 import sys
 
 import wx
@@ -26,8 +27,8 @@ from wx.lib import masked
 from wx.lib.wordwrap import wordwrap
 import wx.lib.pubsub as ps
 
-
 import constants as const
+import gui.widgets.gradient as grad
 import project as proj
 import session as ses
 import utils
@@ -340,6 +341,17 @@ def SurfaceSelectionRequiredForRemoval():
     dlg.Destroy()
 
 
+def MeasureSelectionRequiredForRemoval():
+    msg = _("No measures were selected for removal.")
+    if sys.platform == 'darwin':
+        dlg = wx.MessageDialog(None, "", msg,
+                                wx.ICON_INFORMATION | wx.OK)
+    else:
+        dlg = wx.MessageDialog(None, msg, "InVesalius 3",
+                                wx.ICON_INFORMATION | wx.OK)
+    dlg.ShowModal()
+    dlg.Destroy()
+
 def MaskSelectionRequiredForDuplication():
     msg = _("No masks were selected for duplication.")
     if sys.platform == 'darwin':
@@ -364,28 +376,7 @@ def SurfaceSelectionRequiredForDuplication():
     dlg.ShowModal()
     dlg.Destroy()
 
-
-
-def NewMask():
-    import data.mask as mask
-    dlg = wx.TextEntryDialog(None, _('Name of new mask:'),
-                                 _('InVesalius 3 - New mask'))
-
-    dlg.CenterOnScreen()
-    default_mask_name = const.MASK_NAME_PATTERN %(mask.Mask.general_index+2)
-    dlg.SetValue(default_mask_name)
-
-    try:
-        op = dlg.ShowModal() == wx.ID_OK
-    except(wx._core.PyAssertionError):
-        print "win64 - wx._core.PyAssertionError"
-        op = True
-
-    if op:
-        return dlg.GetValue()
-    return None
-
-class NewMaskDialog(wx.Dialog):
+class NewMask(wx.Dialog):
     def __init__(self,
                  parent=None,
                  ID=-1,
@@ -395,7 +386,7 @@ class NewMaskDialog(wx.Dialog):
                  style=wx.DEFAULT_DIALOG_STYLE,
                  useMetal=False):
         import constants as const
-        import data.surface as surface
+        import data.mask as mask
         import project as prj
 
         # Instead of calling wx.Dialog.__init__ we precreate the dialog
@@ -421,69 +412,60 @@ class NewMaskDialog(wx.Dialog):
 
         # LINE 1: Surface name
 
-        label_surface = wx.StaticText(self, -1, _("New mask name:"))
+        label_mask = wx.StaticText(self, -1, _("New mask name:"))
 
-        default_name =  const.SURFACE_NAME_PATTERN %(surface.Surface.general_index+2)
+        default_name =  const.MASK_NAME_PATTERN %(mask.Mask.general_index+2)
         text = wx.TextCtrl(self, -1, "", size=(80,-1))
         text.SetHelpText(_("Name the mask to be created"))
         text.SetValue(default_name)
         self.text = text
 
-        # LINE 2: Mask of reference
+        # LINE 2: Threshold of reference
 
         # Informative label
-        label_mask = wx.StaticText(self, -1, _("Threshold preset:"))
+        label_thresh = wx.StaticText(self, -1, _("Threshold preset:"))
 
         # Retrieve existing masks
         project = prj.Project()
         thresh_list = project.threshold_modes.keys()
         thresh_list.sort()
-        default_index = proj.threshold_modes.get_key(_("Default"))
+        default_index = thresh_list.index(_("Bone"))
         self.thresh_list = thresh_list
 
         # Mask selection combo
-        combo_mask = wx.ComboBox(self, -1, "", choices= self.thresh_list,
+        combo_thresh = wx.ComboBox(self, -1, "", choices= self.thresh_list,
                                  style=wx.CB_DROPDOWN|wx.CB_READONLY)
-        combo_mask.SetSelection(len(self.thresh_list)-1)
+        combo_thresh.SetSelection(default_index)
         if sys.platform != 'win32':
-            combo_mask.SetWindowVariant(wx.WINDOW_VARIANT_SMALL)
-        self.combo_mask = combo_mask
+            combo_thresh.SetWindowVariant(wx.WINDOW_VARIANT_SMALL)
+        self.combo_thresh = combo_thresh
 
-        # LINE 3: Surface quality
-        label_quality = wx.StaticText(self, -1, _("Surface quality:"))
-
-        choices =  const.SURFACE_QUALITY_LIST,
-        style = wx.CB_DROPDOWN|wx.CB_READONLY
-        combo_quality = wx.ComboBox(self, -1, "",
-                                    choices= choices,
-                                    style=style)
-        combo_quality.SetSelection(3)
-        if sys.platform != 'win32':
-            combo_quality.SetWindowVariant(wx.WINDOW_VARIANT_SMALL)
-        self.combo_quality = combo_quality
-
+        # LINE 3: Gradient
+        bound_min, bound_max = project.threshold_range
+        thresh_min, thresh_max = project.threshold_modes[_("Bone")]
+        original_colour = random.choice(const.MASK_COLOUR)
+        self.colour = original_colour
+        colour = [255*i for i in original_colour] 
+        colour.append(100)
+        gradient = grad.GradientSlider(self, -1, int(bound_min),
+                                        int(bound_max),
+                                        int(thresh_min), int(thresh_max),
+                                        colour)
+        self.gradient = gradient
 
         # OVERVIEW
         # Sizer that joins content above
         flag_link = wx.EXPAND|wx.GROW|wx.ALL
         flag_button = wx.ALL | wx.EXPAND| wx.GROW
 
-        fixed_sizer = wx.FlexGridSizer(rows=2, cols=2, hgap=10, vgap=0)
+        fixed_sizer = wx.FlexGridSizer(rows=2, cols=2, hgap=10, vgap=10)
         fixed_sizer.AddGrowableCol(0, 1)
-        fixed_sizer.AddMany([ (label_surface, 1, flag_link, 5),
+        fixed_sizer.AddMany([ (label_mask, 1, flag_link, 5),
                               (text, 1, flag_button, 2),
-                              (label_mask, 1, flag_link, 5),
-                              (combo_mask, 0, flag_button, 1),
-                              (label_quality, 1, flag_link, 5),
-                              (combo_quality, 0, flag_button, 1)])
-
-
-        # LINES 4 and 5: Checkboxes
-        check_box_holes = wx.CheckBox(self, -1, _("Fill holes"))
-        check_box_holes.SetValue(True)
-        self.check_box_holes = check_box_holes
-        check_box_largest = wx.CheckBox(self, -1, _("Keep largest region"))
-        self.check_box_largest = check_box_largest
+                              (label_thresh, 1, flag_link, 5),
+                              (combo_thresh, 0, flag_button, 1)])#,
+                              #(label_quality, 1, flag_link, 5),
+                              #(combo_quality, 0, flag_button, 1)])
 
         # LINE 6: Buttons
 
@@ -499,28 +481,47 @@ class NewMaskDialog(wx.Dialog):
         # OVERVIEW
         # Merge all sizers and checkboxes
         sizer = wx.BoxSizer(wx.VERTICAL)
-        sizer.Add(fixed_sizer, 0, wx.TOP|wx.RIGHT|wx.LEFT|wx.GROW|wx.EXPAND, 20)
-        sizer.Add(check_box_holes, 0, wx.RIGHT|wx.LEFT, 30)
-        sizer.Add(check_box_largest, 0, wx.RIGHT|wx.LEFT, 30)
-        sizer.Add(btnsizer, 0, wx.ALIGN_RIGHT|wx.ALL, 10)
+        sizer.Add(fixed_sizer, 0, wx.ALL|wx.GROW|wx.EXPAND, 15)
+        sizer.Add(gradient, 1, wx.BOTTOM|wx.RIGHT|wx.LEFT|wx.EXPAND|wx.GROW, 20)
+        sizer.Add(btnsizer, 0, wx.ALIGN_RIGHT|wx.BOTTOM, 10)
 
         self.SetSizer(sizer)
         sizer.Fit(self)
 
+        self.Bind(grad.EVT_THRESHOLD_CHANGE, self.OnSlideChanged, self.gradient)
+        self.combo_thresh.Bind(wx.EVT_COMBOBOX, self.OnComboThresh)
+
+
+    def OnComboThresh(self, evt):
+        import project as prj
+        proj = prj.Project()
+        (thresh_min, thresh_max) = proj.threshold_modes[evt.GetString()]
+        self.gradient.SetMinValue(thresh_min, True)
+        self.gradient.SetMaxValue(thresh_max, True)
+
+    def OnSlideChanged(self, evt):
+        import project as prj
+        thresh_min = self.gradient.GetMinValue()
+        thresh_max = self.gradient.GetMaxValue()
+        thresh = (thresh_min, thresh_max)
+        proj = prj.Project()
+        if thresh  in proj.threshold_modes.values():
+            preset_name = proj.threshold_modes.get_key(thresh)[0]
+            index = self.thresh_list.index(preset_name) 
+            self.combo_thresh.SetSelection(index)
+        else:
+            index = self.thresh_list.index(_("Custom"))
+            self.combo_thresh.SetSelection(index)
+
     def GetValue(self):
-        mask_index = self.combo_mask.GetSelection()
-        surface_name = self.text.GetValue()
-        quality = const.SURFACE_QUALITY_LIST[self.combo_quality.GetSelection()]
-        fill_holes = self.check_box_holes.GetValue()
-        keep_largest = self.check_box_largest.GetValue()
-        return (mask_index, surface_name, quality, fill_holes, keep_largest)
-
-
-
-
-
-
-
+        #mask_index = self.combo_mask.GetSelection()
+        mask_name = self.text.GetValue()
+        thresh_value = [self.gradient.GetMinValue(), self.gradient.GetMaxValue()]
+        #quality = const.SURFACE_QUALITY_LIST[self.combo_quality.GetSelection()]
+        #fill_holes = self.check_box_holes.GetValue()
+        #keep_largest = self.check_box_largest.GetValue()
+        #return (mask_index, surface_name, quality, fill_holes, keep_largest)
+        return mask_name, thresh_value, self.colour
 
 
 def InexistentPath(path):
@@ -595,24 +596,26 @@ def ShowAboutDialog(parent):
     info.WebSite = ("http://svn.softwarepublico.gov.br/trac/invesalius")
     info.License = _("GNU GPL (General Public License) version 2")
 
-    #info.Translators = ""
-    #info.Artists =
     info.Developers = ["Tatiana Al-Chueyr",
-                      "Paulo Henrique Junqueira Amorim",
-                      "Thiago Franco de Moraes"]
-    #info.DocWriters =
+                       "Paulo Henrique Junqueira Amorim",
+                       "Thiago Franco de Moraes"]
+
     info.Translators = ["Alex P. Natsios (EL)",
                         "Andreas Loupasakis (EL)",
                         "Cheng-Chia Tseng (ZH)",
                         "Dimitris Glezos (EL)",
+                        "Eugene Liscio (EN)",
                         u"Frédéric Lopez (FR)",
                         "J. Javier de Lima Moreno (ES)"
                         "Nikos Korkakakis (EL)",
                         "Sebastian Hilbert (DE)"]
 
+    info.DocWriters = ["Eugene Liscio (EN)",
+                       "Fabio Francisco da Silva (PT)"] 
+
     info.Artists = ["Otavio Henrique Junqueira Amorim"]
 
-    # Then we call wx.AboutBox giving its info object
+    # Then we call wx.AboutBox providing its info object
     wx.AboutBox(info)
 
 

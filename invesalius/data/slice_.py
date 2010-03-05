@@ -49,7 +49,7 @@ class Slice(object):
         ps.Publisher().subscribe(self.CreateSurfaceFromIndex,
                                  'Create surface from index')
         # Mask control
-        ps.Publisher().subscribe(self.__add_mask, 'Create new mask')
+        ps.Publisher().subscribe(self.__add_mask_thresh, 'Create new mask')
         ps.Publisher().subscribe(self.__select_current_mask,
                                  'Change mask selected')
         # Mask properties
@@ -168,6 +168,14 @@ class Slice(object):
         mask_name = pubsub_evt.data
         self.CreateMask(name=mask_name)
         self.SetMaskColour(self.current_mask.index, self.current_mask.colour)
+
+    def __add_mask_thresh(self, pubsub_evt):
+        mask_name = pubsub_evt.data[0]
+        thresh = pubsub_evt.data[1]
+        colour = pubsub_evt.data[2]
+        self.CreateMask(name=mask_name, threshold_range=thresh, colour =colour)
+        self.SetMaskColour(self.current_mask.index, self.current_mask.colour)
+        self.SelectCurrentMask(self.current_mask.index)
 
     def __select_current_mask(self, pubsub_evt):
         mask_index = pubsub_evt.data
@@ -519,8 +527,6 @@ class Slice(object):
             future_mask.colour = colour
         if opacity:
             future_mask.opacity = opacity
-        if threshold_range:
-            future_mask.threshold_range = threshold_range
         if edition_threshold_range:
             future_mask.edition_threshold_range = edition_threshold_range
         if edited_points:
@@ -532,11 +538,15 @@ class Slice(object):
             imagedata = old_mask.imagedata
             future_mask.threshold_range = old_mask.threshold_range
 
-        # if not defined in the method call, this will have been computed on
-        # previous if
-        future_mask.imagedata = vtk.vtkImageData()
-        future_mask.imagedata.DeepCopy(imagedata)
-        future_mask.imagedata.Update()
+        if threshold_range:
+            future_mask.threshold_range = threshold_range
+            future_mask.imagedata = self.__create_mask_threshold(self.imagedata, 
+                                                    threshold_range)
+        else:
+            future_mask.imagedata = vtk.vtkImageData()
+            future_mask.imagedata.DeepCopy(imagedata)
+            future_mask.imagedata.Update()
+
 
         # when this is not the first instance, user will have defined a name
         if name is not None:
@@ -551,6 +561,9 @@ class Slice(object):
         proj = Project()
         index = proj.AddMask(future_mask)
         future_mask.index = index
+        if threshold_range:
+            self.SetMaskThreshold(index, threshold_range)
+            future_mask.edited_points = {}
 
         # update gui related to mask
         ps.Publisher().sendMessage('Add mask',
@@ -630,8 +643,11 @@ class Slice(object):
         return img_colours_mask.GetOutput()
 
 
-    def __create_mask_threshold(self, imagedata):
-        thresh_min, thresh_max = self.current_mask.threshold_range
+    def __create_mask_threshold(self, imagedata, threshold_range=None):
+        if not threshold_range:
+            thresh_min, thresh_max = self.current_mask.threshold_range
+        else:
+            thresh_min, thresh_max = threshold_range
 
         # flexible threshold
         img_thresh_mask = vtk.vtkImageThreshold()
