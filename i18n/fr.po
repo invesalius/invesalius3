@@ -20,9 +20,9 @@ msgstr ""
 "X-Poedit-Country: GENERIC\n"
 
 #: constants.py:31
-#, fuzzy, python-format
+#, python-format
 msgid "M %d"
-msgstr "Masque %d"
+msgstr "M %d"
 
 #: constants.py:91
 msgid "Keep all slices"
@@ -37,19 +37,16 @@ msgid "Skip 2 for each 3 slices"
 msgstr "Passer 2 pour chacune des 3 coupes"
 
 #: constants.py:92
-#, fuzzy
 msgid "Skip 3 for each 4 slices"
-msgstr "Passer 1 pour chacune des 2 coupes"
+msgstr "Passer 3 pour chacune des 4 coupes"
 
 #: constants.py:93
-#, fuzzy
 msgid "Skip 4 for each 5 slices"
-msgstr "Passer 1 pour chacune des 2 coupes"
+msgstr "Passer 4 pour chacune des 5 coupes"
 
 #: constants.py:93
-#, fuzzy
 msgid "Skip 5 for each 6 slices"
-msgstr "Passer 1 pour chacune des 2 coupes"
+msgstr "Passer 5 pour chacune des 6 coupes"
 
 #: constants.py:133 slice_menu.py:76 slice_menu.py:81
 msgid "Default "
@@ -359,7 +356,6 @@ msgid "Untitled"
 msgstr "Sans titre"
 
 #: control.py:441
-#, fuzzy
 msgid "Fix gantry tilt applying the degrees below"
 msgstr "Corriger le « gantry tilt » en appliquant les degrés ci-dessous"
 
@@ -368,24 +364,20 @@ msgid "Masks"
 msgstr "Masques"
 
 #: data_notebook.py:53
-#, fuzzy
 msgid "3D Surfaces"
-msgstr "Surfaces"
+msgstr "Surfaces 3D"
 
 #: data_notebook.py:54
-#, fuzzy
 msgid "Measures"
-msgstr "Mesurer"
+msgstr "Mesures"
 
 #: data_notebook.py:172 frame.py:894
-#, fuzzy
 msgid "Measure distance"
 msgstr "Mesurer les distances"
 
 #: data_notebook.py:175 frame.py:899
-#, fuzzy
 msgid "Measure angle"
-msgstr "Mesurer les distances"
+msgstr "Mesurer les angles"
 
 #: data_notebook.py:422 data_notebook.py:756 data_notebook.py:1000
 #: data_notebook.py:1167
@@ -405,9 +397,8 @@ msgid "Transparency"
 msgstr "Transparence"
 
 #: data_notebook.py:1001
-#, fuzzy
 msgid "Location"
-msgstr "Localisation : %.2f"
+msgstr "Localisation"
 
 #: data_notebook.py:1002 data_notebook.py:1168
 msgid "Type"
@@ -439,7 +430,7 @@ msgstr "Exporter les données"
 
 #: default_tasks.py:216
 msgid "Utilize navigation system"
-msgstr ""
+msgstr "Utiliser système de navigation"
 
 #: default_viewers.py:79 default_viewers.py:168 task_exporter.py:235
 msgid "Axial slice"
@@ -512,48 +503,44 @@ msgid "%s is an empty directory."
 msgstr "%s est un dossier vide."
 
 #: dialogs.py:301
-#, fuzzy
 msgid "There are no DICOM files in the selected directory."
 msgstr "Il n'y a pas de fichiers DICOM dans le dossier sélectionné."
 
 #: dialogs.py:312
 msgid "There is no mask of reference to create a surface."
-msgstr ""
+msgstr "Il n'ya pas de masque de référence pour créer une surface"
 
 #: dialogs.py:323
 msgid "No masks were selected for removal."
-msgstr ""
+msgstr "No masques ont été sélectionnés pour la suppression."
 
 #: dialogs.py:334
 msgid "No surfaces were selected for removal."
-msgstr ""
+msgstr "No surfaces ont été sélectionnées pour la suppression."
 
 #: dialogs.py:346
 msgid "No measures were selected for removal."
-msgstr ""
+msgstr "No mesures ont été sélectionnées pour la suppression."
 
 #: dialogs.py:357
 msgid "No masks were selected for duplication."
-msgstr ""
+msgstr "No masques ont été sélectionnés pour la reproduction."
 
 #: dialogs.py:370
 msgid "No surfaces were selected for duplication."
-msgstr ""
+msgstr "No surfaces ont été sélectionnés pour la duplication."
 
 #: dialogs.py:416
-#, fuzzy
 msgid "New mask name:"
-msgstr "Nom de la nouvelle surface:"
+msgstr "Nom de la nouvelle masque:"
 
 #: dialogs.py:420
-#, fuzzy
 msgid "Name the mask to be created"
-msgstr "Nom de la nouvelle surface à créer"
+msgstr "Nom de la nouvelle masque à créer"
 
 #: dialogs.py:427
-#, fuzzy
 msgid "Threshold preset:"
-msgstr "Seuil"
+msgstr "Préréglage seuil"
 
 #: dialogs.py:529
 #, python-format
@@ -562,10 +549,9 @@ msgstr "%s n'existe pas."
 
 #: dialogs.py:540
 msgid "Please, provide more than one DICOM file for 3D reconstruction"
-msgstr ""
+msgstr "Fournir plus d'un fichier DICOM pour la reconstruction 3D"
 
 #: dialogs.py:601
-#, fuzzy
 msgid "(c) 2007-2010 Renato Archer Information Technology Centre"
 msgstr "(c) 2007-2010 Centre de Technologie de l'Information Renato Archer"
 
@@ -576,7 +562,8 @@ msgid ""
 "InVesalius allows for the export of 3D volumes or surfaces as STL files for "
 "creating physical models of a patient's anatomy using rapid prototyping "
 "technologies."
-msgstr ""
+msgstr "InVesalius est un logiciel de reconstruction 3D à partir d'images médicales. Il accepte en entrée des séquences d'images DICOM 2D capturées par scanner ou IRM.\n Le logiciel permet également la génération des fichiers STL correspondants, afin que l'utilisateur puisse imprimer des modèles physiques 3D de l'anatomie du patient en utilisant du prototypage rapide."
+
 
 #: dialogs.py:610
 msgid "GNU GPL (General Public License) version 2"
@@ -733,12 +720,10 @@ msgid "Ready"
 msgstr "Prêt"
 
 #: frame.py:716
-#, fuzzy
 msgid "Import DICOM files..."
-msgstr "Importer des fichiers DICOM...\tCtrl+I"
+msgstr "Importer des fichiers DICOM..."
 
 #: frame.py:723
-#, fuzzy
 msgid "Open a InVesalius project..."
 msgstr "Ouvrir un projet InVesalius 3..."
 
@@ -763,18 +748,16 @@ msgid "Move"
 msgstr "Déplacement"
 
 #: frame.py:889
-#, fuzzy
 msgid "Constrast"
-msgstr "Contraste Faible"
+msgstr "Contraste"
 
 #: frame.py:1042
-#, fuzzy
 msgid "Scroll slices"
-msgstr "Coupe coronale"
+msgstr "Changer couches"
 
 #: frame.py:1046
 msgid "Slices' cross intersection"
-msgstr ""
+msgstr "Croix pour traverser les couches"
 
 #: frame.py:1203 frame.py:1272
 msgid "Hide task panel"
@@ -857,27 +840,24 @@ msgid "Choose user interface language"
 msgstr "Choisir la langue de l'interface utilisateur"
 
 #: measures.py:12
-#, fuzzy
 msgid "Linear"
-msgstr "Foie"
+msgstr "Linéaire"
 
 #: measures.py:13
 msgid "Angular"
-msgstr ""
+msgstr "Angulaire"
 
 #: measures.py:16
 msgid "3D"
-msgstr ""
+msgstr "3D"
 
 #: measures.py:17
-#, fuzzy
 msgid "Axial"
-msgstr "Coupe axiale"
+msgstr "Axiale"
 
 #: measures.py:18
-#, fuzzy
 msgid "Coronal"
-msgstr "Coupe coronale"
+msgstr "Coronale"
 
 #: measures.py:19
 #, fuzzy
