@@ -36,8 +36,9 @@ import utils
 class NumberDialog(wx.Dialog):
     def __init__(self, message, value=0):
         pre = wx.PreDialog()
-        pre.Create(None, -1, "InVesalius 3", size=wx.DefaultSize, pos=wx.DefaultPosition,
-                    style=wx.DEFAULT_DIALOG_STYLE)
+        pre.Create(None, -1, "InVesalius 3", size=wx.DefaultSize,
+                   pos=wx.DefaultPosition,
+                   style=wx.DEFAULT_DIALOG_STYLE)
         self.PostCreate(pre)
 
         # Static text which contains message to user
@@ -596,14 +597,15 @@ def ShowAboutDialog(parent):
 
     info = wx.AboutDialogInfo()
     info.Name = "InVesalius"
-    info.Version = "3.0 - Beta 1"
+    info.Version = "3.0 - Beta 2"
     info.Copyright = _("(c) 2007-2010 Renato Archer Information Technology Centre")
-    info.Description = wordwrap(
-       _("InVesalius is a software for medical imaging 3D reconstruction. ")+\
-       _("Its input is a sequency of DICOM 2D image files acquired with CT or MR.\n\n")+\
-       _("The software also allows generating correspondent STL files,")+\
-       _("so the user can print 3D physical models of the patient's anatomy ")+\
-       _("using Rapid Prototyping."), 350, wx.ClientDC(parent))
+    info.Description = wordwrap(_("InVesalius is a medical imaging program for 3D reconstruction. It uses a sequence of 2D DICOM image files acquired with CT or MRI scanners. InVesalius allows for the export of 3D volumes or surfaces as STL files for creating physical models of a patient's anatomy using rapid prototyping technologies."), 350, wx.ClientDC(parent))
+
+#       _("InVesalius is a software for medical imaging 3D reconstruction. ")+\
+#       _("Its input is a sequency of DICOM 2D image files acquired with CT or MR.\n\n")+\
+#       _("The software also allows generating correspondent STL files,")+\
+#       _("so the user can print 3D physical models of the patient's anatomy ")+\
+#       _("using Rapid Prototyping."), 350, wx.ClientDC(parent))
     info.WebSite = ("http://svn.softwarepublico.gov.br/trac/invesalius")
     info.License = _("GNU GPL (General Public License) version 2")
 
@@ -621,8 +623,7 @@ def ShowAboutDialog(parent):
                         "Nikos Korkakakis (EL)",
                         "Sebastian Hilbert (DE)"]
 
-    info.DocWriters = ["Eugene Liscio (EN)",
-                       "Fabio Francisco da Silva (PT)"] 
+    info.DocWriters = ["Fabio Francisco da Silva (PT)"] 
 
     info.Artists = ["Otavio Henrique Junqueira Amorim"]
 
