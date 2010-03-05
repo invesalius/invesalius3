@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: InVesalius 3\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2010-03-05 12:44-0300\n"
+"POT-Creation-Date: 2010-03-05 13:32-0300\n"
 "PO-Revision-Date: 2010-01-07 11:25-0300\n"
 "Last-Translator: Frédéric Lopez <frederic.lopez@free.fr>\n"
 "Language-Team: InVesalius Team <invesalius@cti.gov.br>\n"
@@ -562,8 +562,13 @@ msgid ""
 "InVesalius allows for the export of 3D volumes or surfaces as STL files for "
 "creating physical models of a patient's anatomy using rapid prototyping "
 "technologies."
-msgstr "InVesalius est un logiciel de reconstruction 3D à partir d'images médicales. Il accepte en entrée des séquences d'images DICOM 2D capturées par scanner ou IRM.\n Le logiciel permet également la génération des fichiers STL correspondants, afin que l'utilisateur puisse imprimer des modèles physiques 3D de l'anatomie du patient en utilisant du prototypage rapide."
-
+msgstr ""
+"InVesalius est un logiciel de reconstruction 3D à partir d'images médicales. "
+"Il accepte en entrée des séquences d'images DICOM 2D capturées par scanner "
+"ou IRM.\n"
+" Le logiciel permet également la génération des fichiers STL correspondants, "
+"afin que l'utilisateur puisse imprimer des modèles physiques 3D de "
+"l'anatomie du patient en utilisant du prototypage rapide."
 
 #: dialogs.py:610
 msgid "GNU GPL (General Public License) version 2"
@@ -860,19 +865,16 @@ msgid "Coronal"
 msgstr "Coronale"
 
 #: measures.py:19
-#, fuzzy
 msgid "Sagittal"
-msgstr "Coupe sagittale"
+msgstr "Sagittale"
 
 #: polydata_utils.py:132
-#, fuzzy
 msgid "Getting selected parts"
-msgstr "Démarrage..."
+msgstr "Obtention de les paries selectionnéss"
 
 #: polydata_utils.py:191
-#, fuzzy
 msgid "Splitting disconected parts"
-msgstr "Split toutes les surfaces déconnecter"
+msgstr "Fractionnement des pièces débranchées"
 
 #: presets.py:31 presets.py:49 presets.py:104 presets.py:135
 msgid "Soft Tissue"
@@ -945,7 +947,6 @@ msgid "Generating 3D surface..."
 msgstr "Génération de la surface 3D..."
 
 #: task_exporter.py:105
-#, fuzzy
 msgid "Export InVesalius screen to an image file"
 msgstr "Exporter l'écran InVesalius vers un fichier image"
 
@@ -966,7 +967,6 @@ msgid "Save 3D surface as..."
 msgstr "Enregistrer la surface 3D sous..."
 
 #: task_exporter.py:327
-#, fuzzy
 msgid "You need to create a surface and make "
 msgstr "Vous devez créer une surface et la rendre "
 
@@ -995,7 +995,6 @@ msgid "Open an existing project..."
 msgstr "Ouvrir un projet existant..."
 
 #: task_slice.py:82
-#, fuzzy
 msgid "Create mask for slice segmentation and editing"
 msgstr "Créer un masque pour segmentation et édition de couche"
 
@@ -1016,7 +1015,6 @@ msgid "Mask properties"
 msgstr "Propriétés du masque"
 
 #: task_slice.py:225
-#, fuzzy
 msgid "Advanced editing tools"
 msgstr "Outils d'édition avancés"
 
@@ -1061,7 +1059,6 @@ msgid "Advanced options"
 msgstr "Outils avancés"
 
 #: task_surface.py:246
-#, fuzzy
 msgid "Automatically select largest disconnected region and create new surface"
 msgstr ""
 "Électionner automatiquement plus grande déconnecter región et créer une "
@@ -1072,7 +1069,6 @@ msgid "Select largest part"
 msgstr "Électionner plus grande surface"
 
 #: task_surface.py:255
-#, fuzzy
 msgid ""
 "Automatically select disconnected regions and create one new surface per "
 "region"
@@ -1081,7 +1077,6 @@ msgstr ""
 "surface par région"
 
 #: task_surface.py:256
-#, fuzzy
 msgid "Split all disconnected surfaces"
 msgstr "Split toutes les surfaces déconnecter"
 
