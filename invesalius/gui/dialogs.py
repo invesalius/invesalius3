@@ -298,7 +298,7 @@ def ImportEmptyDirectory(dirpath):
     dlg.Destroy()
 
 def ImportInvalidFiles():
-    msg = _("There are no DICOM files on the selected directory.")
+    msg = _("There are no DICOM files in the selected directory.")
     if sys.platform == 'darwin':
         dlg = wx.MessageDialog(None, "", msg,
                                 wx.ICON_INFORMATION | wx.OK)

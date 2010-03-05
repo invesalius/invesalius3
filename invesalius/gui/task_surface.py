@@ -243,7 +243,7 @@ class SurfaceTools(wx.Panel):
 
 
         # Fixed hyperlink items
-        tooltip = wx.ToolTip(_("Automatically select largest disconnect region and create new surface"))
+        tooltip = wx.ToolTip(_("Automatically select largest disconnected region and create new surface"))
         link_largest = hl.HyperLinkCtrl(self, -1, _("Select largest part"))
         link_largest.SetUnderlines(False, False, False)
         link_largest.SetColours("BLACK", "BLACK", "BLACK")
@@ -252,8 +252,8 @@ class SurfaceTools(wx.Panel):
         link_largest.UpdateLink()
         link_largest.Bind(hl.EVT_HYPERLINK_LEFT, self.OnLinkLargest)
 
-        tooltip = wx.ToolTip(_("Automatically select disconnect regions and create one new surface per region"))
-        link_split_all = hl.HyperLinkCtrl(self, -1,_("Split all disconnect surfaces"))
+        tooltip = wx.ToolTip(_("Automatically select disconnected regions and create one new surface per region"))
+        link_split_all = hl.HyperLinkCtrl(self, -1,_("Split all disconnected surfaces"))
         link_split_all.SetUnderlines(False, False, False)
         link_split_all.SetColours("BLACK", "BLACK", "BLACK")
         link_split_all.SetToolTip(tooltip)

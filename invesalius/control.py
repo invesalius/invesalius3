@@ -438,7 +438,7 @@ class Controller():
         tilt_value = dicom.acquisition.tilt
         if (tilt_value) and (gui):
             # Tell user gantry tilt and fix, according to answer
-            message = _("Fix gantry tilt applying the degrees bellow")
+            message = _("Fix gantry tilt applying the degrees below")
             value = -1*tilt_value
             tilt_value = dialog.ShowNumberDialog(message, value)
             imagedata = utils.FixGantryTilt(imagedata, tilt_value)

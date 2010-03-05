@@ -102,7 +102,7 @@ class InnerTaskPanel(wx.Panel):
         # Counter for projects loaded in current GUI
 
         # Fixed hyperlink items
-        tooltip = wx.ToolTip(_("Export InVesalius screen to a image file"))
+        tooltip = wx.ToolTip(_("Export InVesalius screen to an image file"))
         link_export_picture = hl.HyperLinkCtrl(self, -1,
                                             _("Export picture..."))
         link_export_picture.SetUnderlines(False, False, False)
@@ -324,7 +324,7 @@ class InnerTaskPanel(wx.Panel):
                                             (filename, filetype))
         else:
             dlg = wx.MessageDialog(None,
-                    _("You need to create a surface and make it ") +
+                    _("You need to create a surface and make ") +
                     _("visible before exporting it."),
                     'InVesalius 3',
                     wx.OK | wx.ICON_INFORMATION)
