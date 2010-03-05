@@ -535,6 +535,17 @@ def InexistentPath(path):
     dlg.ShowModal()
     dlg.Destroy()
 
+def MissingFilesForReconstruction():
+    msg = _("Please, provide more than one DICOM file for 3D reconstruction")
+    if sys.platform == 'darwin':
+        dlg = wx.MessageDialog(None, "", msg,
+                                wx.ICON_INFORMATION | wx.OK)
+    else:
+        dlg = wx.MessageDialog(None, msg, "InVesalius 3",
+                                wx.ICON_INFORMATION | wx.OK)
+    dlg.ShowModal()
+    dlg.Destroy()
+
 def SaveChangesDialog(filename, parent):
     current_dir = os.path.abspath(".")
     msg = _("The project %s has been modified.\nSave changes?")%filename
