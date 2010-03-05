@@ -28,6 +28,7 @@ import wx.lib.flatnotebook as fnb
 import wx.lib.platebtn as pbtn
 import wx.lib.pubsub as ps
 
+import constants as const
 import gui.dialogs as dlg
 import gui.widgets.listctrl as listmix
 import utils as ul
@@ -49,9 +50,9 @@ class NotebookPanel(wx.Panel):
             book.SetWindowVariant(wx.WINDOW_VARIANT_SMALL)
 
         book.AddPage(MaskPage(book), _("Masks"))
-        book.AddPage(SurfacePage(book), _("Surfaces"))
+        book.AddPage(SurfacePage(book), _("3D Surfaces"))
         book.AddPage(MeasurePage(book), _("Measures"))
-        #book.AddPage(AnnotationsListCtrlPanel(book), _("Annotations"))
+        #book.AddPage(AnnotationsListCtrlPanel(book), _("Notes"))
         
         book.SetSelection(0)
         
@@ -60,17 +61,41 @@ class NotebookPanel(wx.Panel):
         self.SetSizer(sizer)
         
         book.Refresh()
+        self.book = book
 
-    #def __bind_events(self):
-    #    ps.Publisher().subscribe(self._add_measure,
-    #            "Add measure to list")
+        self.__bind_events()
 
-    #def _add_measure(self, pubsub_evt):
-    #    type = pubsub_evt.data[0]
-    #    value = pubsub_evt.data[1]
-    #    self.measures_list.AddMeasure(type, value)
+    def __bind_events(self):
+        ps.Publisher().subscribe(self._FoldSurface,
+                                 'Fold surface task')
+        ps.Publisher().subscribe(self._FoldSurface,
+                                 'Fold surface page')
+        ps.Publisher().subscribe(self._FoldMeasure,
+                                 'Fold measure task')
+        ps.Publisher().subscribe(self._FoldMask,
+                                 'Fold mask task')
+        ps.Publisher().subscribe(self._FoldMask,
+                                 'Fold mask page')
 
 
+    def _FoldSurface(self, pubusb_evt):
+        """
+        Fold surface notebook page.
+        """
+        self.book.SetSelection(1)
+
+    def _FoldMeasure(self, pubsub_evt):
+        """
+        Fold measure notebook page.
+        """
+        self.book.SetSelection(2)
+
+
+    def _FoldMask(self, pubsub_evt):
+        """
+        Fold mask notebook page.
+        """
+        self.book.SetSelection(0)
 
 class MeasurePage(wx.Panel):
     """
@@ -123,6 +148,7 @@ class MeasureButtonControlPanel(wx.Panel):
                                      BMP_NEW,
                                      style=button_style,
                                      size = wx.Size(18, 18))
+        self.button_new = button_new
         button_remove = pbtn.PlateButton(self, BTN_REMOVE, "",
                                          BMP_REMOVE,
                                          style=button_style,
@@ -131,6 +157,7 @@ class MeasureButtonControlPanel(wx.Panel):
                                             BMP_DUPLICATE,
                                             style=button_style,
                                             size = wx.Size(18, 18))
+        button_duplicate.Disable()
 
         # Add all controls to gui
         sizer = wx.BoxSizer(wx.HORIZONTAL)
@@ -139,6 +166,16 @@ class MeasureButtonControlPanel(wx.Panel):
         sizer.Add(button_duplicate, 0, wx.GROW|wx.EXPAND)
         self.SetSizer(sizer)
         self.Fit()
+
+        menu = wx.Menu()
+        item = wx.MenuItem(menu, const.MEASURE_LINEAR,
+                            _("Measure distance"))
+        menu.AppendItem(item)
+        item = wx.MenuItem(menu, const.MEASURE_ANGULAR,
+                            _("Measure angle"))
+        menu.AppendItem(item)
+        menu.Bind(wx.EVT_MENU, self.OnMenu)
+        self.menu = menu
 
         # Bindings
         self.Bind(wx.EVT_BUTTON, self.OnButton)
@@ -153,12 +190,17 @@ class MeasureButtonControlPanel(wx.Panel):
             self.OnDuplicate()
 
     def OnNew(self):
-        mask_name = dlg.NewMask()
-        if mask_name:
-            ps.Publisher().sendMessage('Set measurement state', mask_name)
+        self.PopupMenu(self.menu)
+        
+    def OnMenu(self, evt):
+        id = evt.GetId()
+        if id == const.MEASURE_LINEAR:
+            ps.Publisher().sendMessage('Set tool linear measure')
+        else:
+            ps.Publisher().sendMessage('Set tool angular measure')
 
     def OnRemove(self):
-        self.parent.listctrl.RemoveMasks()
+        self.parent.listctrl.RemoveMeasurements()
 
     def OnDuplicate(self):
         selected_items = self.parent.listctrl.GetSelected()
@@ -166,6 +208,8 @@ class MeasureButtonControlPanel(wx.Panel):
             ps.Publisher().sendMessage('Duplicate measurement', selected_items)
         else:
            dlg.MaskSelectionRequiredForDuplication() 
+
+
 
 
 
@@ -248,9 +292,17 @@ class ButtonControlPanel(wx.Panel):
             self.OnDuplicate()
 
     def OnNew(self):
-        mask_name = dlg.NewMask()
-        if mask_name:
-            ps.Publisher().sendMessage('Create new mask', mask_name)
+        dialog = dlg.NewMask()
+        
+        try:
+            answer = dialog.ShowModal()
+        except(wx._core.PyAssertionError): #TODO: FIX win64
+            answer = wx.ID_YES
+
+        if wx.ID_YES:
+            mask_name = dialog.GetValue()
+            if mask_name:
+                ps.Publisher().sendMessage('Create new mask', mask_name)
 
     def OnRemove(self):
         self.parent.listctrl.RemoveMasks()
@@ -886,7 +938,7 @@ class MeasuresListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
 
     def RemoveMeasurements(self):
         """
-        Remove item given its index.
+        Remove items selected.
         """
         # it is necessary to update internal dictionary
         # that maps bitmap given item index
@@ -906,7 +958,7 @@ class MeasuresListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
 
             ps.Publisher().sendMessage('Remove measurements', selected_items)
         else:
-           dlg.SurfaceSelectionRequiredForRemoval() 
+           dlg.MeasureSelectionRequiredForRemoval() 
 
 
     def OnCloseProject(self, pubsub_evt):
@@ -1011,8 +1063,8 @@ class MeasuresListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
         index = pubsub_evt.data[0]
         name = pubsub_evt.data[1]
         colour = pubsub_evt.data[2]
-        type_ = pubsub_evt.data[3]
-        location = pubsub_evt.data[4]
+        location = pubsub_evt.data[3]
+        type_ = pubsub_evt.data[4]
         value = pubsub_evt.data[5]
 
 

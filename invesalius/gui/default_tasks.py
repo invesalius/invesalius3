@@ -241,7 +241,8 @@ class UpperTaskPanel(wx.Panel):
             # slice editor.
             if name == _("Select region of interest"):
                 self.__id_slice = item.GetId()
-
+            elif name == _("Configure 3D surface"):
+                self.__id_surface = item.GetId()
 
         fold_panel.Expand(fold_panel.GetFoldPanel(0))
         self.fold_panel = fold_panel
@@ -287,8 +288,11 @@ class UpperTaskPanel(wx.Panel):
         id = evt.GetTag().GetId()
         closed = evt.GetFoldStatus()
          
-        if self.__id_slice == id:
+        if id == self.__id_slice:
             ps.Publisher().sendMessage('Retrieve task slice style')
+            ps.Publisher().sendMessage('Fold mask page')
+        elif id == self.__id_surface:
+            ps.Publisher().sendMessage('Fold surface page')
         else:
             ps.Publisher().sendMessage('Disable task slice style')
 

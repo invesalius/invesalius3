@@ -783,8 +783,8 @@ class ObjectToolBar(wx.ToolBar):
                              const.STATE_SPIN, const.STATE_ZOOM_SL,
                              const.STATE_ZOOM,
                              const.STATE_MEASURE_DISTANCE,
-                             const.STATE_MEASURE_ANGLE,
-                             const.STATE_ANNOTATE]
+                             const.STATE_MEASURE_ANGLE,]
+                             #const.STATE_ANNOTATE]
         self.__init_items()
         self.__bind_events()
         self.__bind_events_wx()
@@ -799,7 +799,8 @@ class ObjectToolBar(wx.ToolBar):
         sub = ps.Publisher().subscribe
         sub(self._EnableState, "Enable state project")
         sub(self._UntoggleAllItems, 'Untoggle object toolbar items')
-
+        sub(self._ToggleLinearMeasure, "Set tool linear measure")
+        sub(self._ToggleAngularMeasure, "Set tool angular measure")
 
     def __bind_events_wx(self):
         """
@@ -834,8 +835,8 @@ class ObjectToolBar(wx.ToolBar):
             path = os.path.join(d, "measure_angle_original.png")
             BMP_ANGLE = wx.Bitmap(path, wx.BITMAP_TYPE_PNG)
 
-            path = os.path.join(d, "tool_annotation_original.png")
-            BMP_ANNOTATE = wx.Bitmap(path, wx.BITMAP_TYPE_PNG)
+            #path = os.path.join(d, "tool_annotation_original.png")
+            #BMP_ANNOTATE = wx.Bitmap(path, wx.BITMAP_TYPE_PNG)
 
         else:
             path = os.path.join(d, "tool_rotate.gif")
@@ -859,8 +860,8 @@ class ObjectToolBar(wx.ToolBar):
             path = os.path.join(d, "measure_angle.png")
             BMP_ANGLE = wx.Bitmap(path, wx.BITMAP_TYPE_PNG)
 
-            path = os.path.join(d, "tool_annotation.png")
-            BMP_ANNOTATE = wx.Bitmap(path, wx.BITMAP_TYPE_PNG)
+            #path = os.path.join(d, "tool_annotation.png")
+            #BMP_ANNOTATE = wx.Bitmap(path, wx.BITMAP_TYPE_PNG)
 
         # Create tool items based on bitmaps
         self.AddLabelTool(const.STATE_ZOOM,
@@ -898,11 +899,11 @@ class ObjectToolBar(wx.ToolBar):
                         shortHelp = _("Measure angle"),
                         bitmap = BMP_ANGLE,
                         kind = wx.ITEM_CHECK)
-        self.AddLabelTool(const.STATE_ANNOTATE,
-                        "",
-                        shortHelp = _("Add annotation"),
-                        bitmap = BMP_ANNOTATE,
-                        kind = wx.ITEM_CHECK)
+        #self.AddLabelTool(const.STATE_ANNOTATE,
+        #                "",
+        #                shortHelp = _("Add annotation"),
+        #                bitmap = BMP_ANNOTATE,
+        #                kind = wx.ITEM_CHECK)
 
     def _EnableState(self, pubsub_evt):
         """
@@ -924,6 +925,35 @@ class ObjectToolBar(wx.ToolBar):
             if state:
                 self.ToggleTool(id, False)
 
+    def _ToggleLinearMeasure(self, pubsub_evt):
+        """
+        Force measure distance tool to be toggled and bind pubsub
+        events to other classes whici are interested on this.
+        """
+        id = const.STATE_MEASURE_DISTANCE
+        self.ToggleTool(id, True)
+        ps.Publisher().sendMessage('Enable style', id)
+        ps.Publisher().sendMessage('Untoggle slice toolbar items')
+        for item in const.TOOL_STATES:
+            state = self.GetToolState(item)
+            if state and (item != id):
+                self.ToggleTool(item, False)
+
+
+    def _ToggleAngularMeasure(self, pubsub_evt):
+        """
+        Force measure angle tool to be toggled and bind pubsub
+        events to other classes which are interested on this.
+        """
+        id = const.STATE_MEASURE_ANGLE
+        self.ToggleTool(id, True)
+        ps.Publisher().sendMessage('Enable style', id)
+        ps.Publisher().sendMessage('Untoggle slice toolbar items')
+        for item in const.TOOL_STATES:
+            state = self.GetToolState(item)
+            if state and (item != id):
+                self.ToggleTool(item, False)
+
     def OnToggle(self, evt):
         """
         Update status of other items on toolbar (only one item
@@ -931,6 +961,10 @@ class ObjectToolBar(wx.ToolBar):
         """
         id = evt.GetId()
         state = self.GetToolState(id)
+        if state and ((id == const.STATE_MEASURE_DISTANCE) or\
+                (id == const.STATE_MEASURE_ANGLE)):
+            ps.Publisher().sendMessage('Fold measure task')
+
         if state:
             ps.Publisher().sendMessage('Enable style', id)
             ps.Publisher().sendMessage('Untoggle slice toolbar items')
@@ -1009,7 +1043,7 @@ class SliceToolBar(wx.ToolBar):
 
         self.AddCheckTool(const.SLICE_STATE_CROSS,
                           BMP_CROSS,
-                          shortHelp = _("Cross intersection"))
+                          shortHelp = _("Slices' cross intersection"))
 
     def __bind_events(self):
         """
