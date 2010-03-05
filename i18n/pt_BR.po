@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: InVesalius 3\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2010-03-05 12:44-0300\n"
+"POT-Creation-Date: 2010-03-05 13:32-0300\n"
 "PO-Revision-Date: 2010-01-07 11:25-0300\n"
 "Last-Translator: InVesalius team <invesalius@cti.gov.br>\n"
 "Language-Team: InVesalius Team <invesalius@cti.gov.br>\n"
@@ -975,7 +975,7 @@ msgstr "visível antes de exportá-la."
 
 #: task_generic.py:65 task_navigator.py:65
 msgid "Testing..."
-msgstr ""
+msgstr "Testando..."
 
 #: task_importer.py:64
 msgid "Select DICOM or Analyze files to be reconstructed"
@@ -1070,7 +1070,9 @@ msgstr "Separar maior superfície"
 msgid ""
 "Automatically select disconnected regions and create one new surface per "
 "region"
-msgstr "Seleção automática de superfícies desconexas e criação de superfícies correspondentes"
+msgstr ""
+"Seleção automática de superfícies desconexas e criação de superfícies "
+"correspondentes"
 
 #: task_surface.py:256
 msgid "Split all disconnected surfaces"
