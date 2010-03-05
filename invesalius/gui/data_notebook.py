@@ -36,6 +36,16 @@ import utils as ul
 
 BTN_NEW, BTN_REMOVE, BTN_DUPLICATE = [wx.NewId() for i in xrange(3)]
 
+TYPE = {const.LINEAR: _(u"Linear"),
+        const.ANGULAR: _(u"Angular"),
+        }
+
+LOCATION = {const.SURFACE: _(u"3D"),
+            const.AXIAL: _(u"Axial"),
+            const.CORONAL: _(u"Coronal"),
+            const.SAGITAL: _(u"Sagittal")
+        }
+
 # Panel that initializes notebook and related tabs
 class NotebookPanel(wx.Panel):
     def __init__(self, parent):
@@ -924,6 +934,7 @@ class MeasuresListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
         ps.Publisher().subscribe(self.OnCloseProject, 'Close project data')
         ps.Publisher().subscribe(self.OnShowSingle, 'Show single measurement')
         ps.Publisher().subscribe(self.OnShowMultiple, 'Show multiple measurements') 
+        ps.Publisher().subscribe(self.OnLoadData, 'Load measurement dict')
 
     def __bind_events_wx(self):
         self.Bind(wx.EVT_LIST_ITEM_ACTIVATED, self.OnItemActivated)
@@ -1063,6 +1074,27 @@ class MeasuresListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
             ps.Publisher().sendMessage('Show measurement',
                                        (index, visibility))
 
+    def OnLoadData(self, pubsub_evt):
+        items_dict = pubsub_evt.data
+        for i in items_dict:
+            m = items_dict[i]
+            image = self.CreateColourBitmap(m.colour)
+            image_index = self.imagelist.Add(image)
+        
+            index_list = self._list_index.keys()
+            self._list_index[m.index] = image_index
+
+            colour = [255*i for i in m.colour]
+            type = TYPE[m.type]
+            location = LOCATION[m.location]
+            if m.type == const.LINEAR:
+                value = "%.2f mm" % m.value
+            else:
+                value = "%.2f˚" % m.value
+            self.InsertNewItem(m.index, m.name, colour, type, location, value)
+
+
+
     def AddItem_(self, pubsub_evt):
         index = pubsub_evt.data[0]
         name = pubsub_evt.data[1]
@@ -1088,6 +1120,7 @@ class MeasuresListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
 
     def InsertNewItem(self, index=0, label="Measurement 1", colour=None,
                       type_="LINEAR", location="SURFACE", value="0 mm"):
+        print index, label, colour, type_, location, value
         self.InsertStringItem(index, "")
         self.SetStringItem(index, 1, label,
                             imageId = self._list_index[index]) 
