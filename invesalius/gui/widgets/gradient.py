@@ -522,14 +522,14 @@ class GradientSlider(wx.Panel):
         self.SpinMin.SetBounds(self.SliderData.minRange, self.SliderData.maxRange)
         if sys.platform != 'win32':
             self.SpinMin.SetWindowVariant(wx.WINDOW_VARIANT_SMALL)
-        self.SpinMin.SetValue(self.SliderData.minRange)
+        self.SpinMin.SetValue(self.SliderData.minValue)
 
         self.SpinMax = wx.lib.intctrl.IntCtrl(self, size=(40,20))
         #self.SpinMax.SetLimited(True)
         self.SpinMax.SetBounds(self.SliderData.minRange, self.SliderData.maxRange)
         if sys.platform != 'win32':
             self.SpinMax.SetWindowVariant(wx.WINDOW_VARIANT_SMALL)
-        self.SpinMax.SetValue(self.SliderData.maxRange)
+        self.SpinMax.SetValue(self.SliderData.maxValue)
 
         self.GradientPanel = GradientPanel(self, -1, self.SliderData)
         self.sizer.Add(self.SpinMin, 0, wx.CENTRE)#, wx.EXPAND)
@@ -598,7 +598,6 @@ class GradientSlider(wx.Panel):
         self.GradientPanel.Refresh()
 
     def SetMaxRange(self, value):
-        print "Setting max range ", value
         self.SliderData.SetMaxRange(value)
         self.SpinMin.SetMax(value)
         self.SpinMax.SetMax(value)
