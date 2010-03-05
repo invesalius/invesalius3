@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: InVesalius 3\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2010-03-05 13:32-0300\n"
+"POT-Creation-Date: 2010-03-05 13:52-0300\n"
 "PO-Revision-Date: 2010-01-07 11:25-0300\n"
 "Last-Translator: Sebastian Hilbert <sebastian.hilbert@gmx.net>\n"
 "Language-Team: InVesalius Team <invesalius@cti.gov.br>\n"
@@ -20,9 +20,9 @@ msgstr ""
 "X-Poedit-Country: GENERIC\n"
 
 #: constants.py:31
-#, fuzzy, python-format
+#, python-format
 msgid "M %d"
-msgstr "Maske %d"
+msgstr "M %d"
 
 #: constants.py:91
 msgid "Keep all slices"
@@ -37,19 +37,16 @@ msgid "Skip 2 for each 3 slices"
 msgstr "Überspringe 2 alle 3 Schnitte"
 
 #: constants.py:92
-#, fuzzy
 msgid "Skip 3 for each 4 slices"
-msgstr "Überspringe 1 alle 2 Schnitte"
+msgstr "Überspringe 3 alle 4 Schnitte"
 
 #: constants.py:93
-#, fuzzy
 msgid "Skip 4 for each 5 slices"
-msgstr "Überspringe 1 alle 2 Schnitte"
+msgstr "Überspringe 4 alle 5 Schnitte"
 
 #: constants.py:93
-#, fuzzy
 msgid "Skip 5 for each 6 slices"
-msgstr "Überspringe 1 alle 2 Schnitte"
+msgstr "Überspringe 5 alle 6 Schnitte"
 
 #: constants.py:133 slice_menu.py:76 slice_menu.py:81
 msgid "Default "
@@ -321,7 +318,7 @@ msgstr "Vasculär"
 
 #: constants.py:327
 msgid "Vascular II"
-msgstr ""
+msgstr "Vasculär II"
 
 #: constants.py:328
 msgid "Vascular III"
@@ -359,7 +356,6 @@ msgid "Untitled"
 msgstr "Ubenannt"
 
 #: control.py:441
-#, fuzzy
 msgid "Fix gantry tilt applying the degrees below"
 msgstr "Ändere die Gantry-Neigung um untenstehende Gradzahl"
 
@@ -368,24 +364,20 @@ msgid "Masks"
 msgstr "Masken"
 
 #: data_notebook.py:53
-#, fuzzy
 msgid "3D Surfaces"
-msgstr "Oberflächen"
+msgstr "Oberflächen 2D"
 
 #: data_notebook.py:54
-#, fuzzy
 msgid "Measures"
-msgstr "Messen"
+msgstr "Maßnahme"
 
 #: data_notebook.py:172 frame.py:894
-#, fuzzy
 msgid "Measure distance"
 msgstr "Messe Abstände"
 
 #: data_notebook.py:175 frame.py:899
-#, fuzzy
 msgid "Measure angle"
-msgstr "Messe Abstände"
+msgstr "Messe Winkel"
 
 #: data_notebook.py:422 data_notebook.py:756 data_notebook.py:1000
 #: data_notebook.py:1167
@@ -405,9 +397,8 @@ msgid "Transparency"
 msgstr "Transparenz"
 
 #: data_notebook.py:1001
-#, fuzzy
 msgid "Location"
-msgstr "Ort: %.2f"
+msgstr "Ort"
 
 #: data_notebook.py:1002 data_notebook.py:1168
 msgid "Type"
@@ -512,7 +503,6 @@ msgid "%s is an empty directory."
 msgstr "%s ist ein leeres Verzeichnis"
 
 #: dialogs.py:301
-#, fuzzy
 msgid "There are no DICOM files in the selected directory."
 msgstr "Es gibt keine DICOM-Dateien im ausgewählten Verzeichnis"
 
@@ -565,7 +555,6 @@ msgid "Please, provide more than one DICOM file for 3D reconstruction"
 msgstr ""
 
 #: dialogs.py:601
-#, fuzzy
 msgid "(c) 2007-2010 Renato Archer Information Technology Centre"
 msgstr "(c) 2007-2010 Center for Information Technology Renato Archer"
 
@@ -577,6 +566,13 @@ msgid ""
 "creating physical models of a patient's anatomy using rapid prototyping "
 "technologies."
 msgstr ""
+"InVesalius ist eine Software für die 3D-Rekonstruktion medizinischer Bilder "
+"Es wird eine Sequenz von 2D-DICOM CT- oder MR-Bildern verarbeitet.\n"
+" Es wird eine Sequenz von 2D-DICOM CT- oder MR-Bildern verarbeitet.\n"
+"\n"
+" Die Software kann auch die korrespondierenden STL-Dateien generieren, "
+"sodass der Nutzer physikalische 3D-Modelle der Patientenanatmie drucken kann "
+"durch die Nutzung von Rapid Prototyping."
 
 #: dialogs.py:610
 msgid "GNU GPL (General Public License) version 2"
@@ -733,12 +729,10 @@ msgid "Ready"
 msgstr "Fertig"
 
 #: frame.py:716
-#, fuzzy
 msgid "Import DICOM files..."
-msgstr "Import DICOM...\tStrg+I"
+msgstr "Import DICOM..."
 
 #: frame.py:723
-#, fuzzy
 msgid "Open a InVesalius project..."
 msgstr "Öffnen eines InVesalius 3 Projekts"
 
@@ -763,9 +757,8 @@ msgid "Move"
 msgstr "Bewegen"
 
 #: frame.py:889
-#, fuzzy
 msgid "Constrast"
-msgstr "Niedriger Kontrast"
+msgstr "Kontrast"
 
 #: frame.py:1042
 #, fuzzy
@@ -857,32 +850,28 @@ msgid "Choose user interface language"
 msgstr "Wähle die Sprache der Oberfläche"
 
 #: measures.py:12
-#, fuzzy
 msgid "Linear"
-msgstr "Leber"
+msgstr "Linearen"
 
 #: measures.py:13
 msgid "Angular"
-msgstr ""
+msgstr "Schrägkugellager"
 
 #: measures.py:16
 msgid "3D"
-msgstr ""
+msgstr "3D"
 
 #: measures.py:17
-#, fuzzy
 msgid "Axial"
-msgstr "Axialer Schnitt"
+msgstr "Axialer"
 
 #: measures.py:18
-#, fuzzy
 msgid "Coronal"
-msgstr "Coronarer Schnitt"
+msgstr "Coronarer"
 
 #: measures.py:19
-#, fuzzy
 msgid "Sagittal"
-msgstr "Saggitaler Schnitt"
+msgstr "Saggitaler"
 
 #: polydata_utils.py:132
 #, fuzzy
@@ -965,7 +954,6 @@ msgid "Generating 3D surface..."
 msgstr "Generiere 3D-Oberfläche"
 
 #: task_exporter.py:105
-#, fuzzy
 msgid "Export InVesalius screen to an image file"
 msgstr "Exportiere InVesalius-Bildschirm in eine Bilddatei"
 
@@ -986,7 +974,6 @@ msgid "Save 3D surface as..."
 msgstr "Speichern der 3D-Oberfläche"
 
 #: task_exporter.py:327
-#, fuzzy
 msgid "You need to create a surface and make "
 msgstr "Sie müssen eine Oberfläche erstellen diese"
 
@@ -1015,7 +1002,6 @@ msgid "Open an existing project..."
 msgstr "Öffne ein existierendes Projekt..."
 
 #: task_slice.py:82
-#, fuzzy
 msgid "Create mask for slice segmentation and editing"
 msgstr "Erstelle eine Maske für die Schnittsegmentierung und -bearbeitung"
 
@@ -1036,7 +1022,6 @@ msgid "Mask properties"
 msgstr "Maskeneigenschaften"
 
 #: task_slice.py:225
-#, fuzzy
 msgid "Advanced editing tools"
 msgstr "Erweiterte Bearbeitungswerkzeuge"
 
@@ -1081,7 +1066,6 @@ msgid "Advanced options"
 msgstr "Erweiterte Optionen"
 
 #: task_surface.py:246
-#, fuzzy
 msgid "Automatically select largest disconnected region and create new surface"
 msgstr ""
 "Wähle automatisch den größten nicht zusammenhängenden Bereich aus und "
@@ -1092,7 +1076,6 @@ msgid "Select largest part"
 msgstr "Wähle den größten Teil"
 
 #: task_surface.py:255
-#, fuzzy
 msgid ""
 "Automatically select disconnected regions and create one new surface per "
 "region"
@@ -1101,7 +1084,6 @@ msgstr ""
 "Oberfläche pro Region"
 
 #: task_surface.py:256
-#, fuzzy
 msgid "Split all disconnected surfaces"
 msgstr "Trenne alle nicht zusammenhängende Oberflächen"
 
