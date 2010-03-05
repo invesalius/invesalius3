@@ -20,9 +20,9 @@ msgstr ""
 "X-Poedit-Country: TAIWAN\n"
 
 #: constants.py:31
-#, fuzzy, python-format
+#, python-format
 msgid "M %d"
-msgstr "遮罩 %d"
+msgstr "M %d"
 
 #: constants.py:91
 msgid "Keep all slices"
@@ -364,9 +364,8 @@ msgid "Masks"
 msgstr "遮罩"
 
 #: data_notebook.py:53
-#, fuzzy
 msgid "3D Surfaces"
-msgstr "表面"
+msgstr "表面 3D"
 
 #: data_notebook.py:54
 #, fuzzy
@@ -508,7 +507,6 @@ msgid "%s is an empty directory."
 msgstr "%s 是空目錄。"
 
 #: dialogs.py:301
-#, fuzzy
 msgid "There are no DICOM files in the selected directory."
 msgstr "在所選取的目錄內，沒有 DICOM 檔。"
 
@@ -559,7 +557,6 @@ msgid "Please, provide more than one DICOM file for 3D reconstruction"
 msgstr ""
 
 #: dialogs.py:601
-#, fuzzy
 msgid "(c) 2007-2010 Renato Archer Information Technology Centre"
 msgstr "(c) 2007-2010 Center for Information Technology Renato Archer"
 
@@ -727,12 +724,10 @@ msgid "Ready"
 msgstr "準備就緒"
 
 #: frame.py:716
-#, fuzzy
 msgid "Import DICOM files..."
-msgstr "匯入 DICOM...\tCtrl+I"
+msgstr "匯入 DICOM..."
 
 #: frame.py:723
-#, fuzzy
 msgid "Open a InVesalius project..."
 msgstr "開啟 InVesalius 3 專案..."
 
@@ -859,7 +854,7 @@ msgstr ""
 
 #: measures.py:16
 msgid "3D"
-msgstr ""
+msgstr "3D"
 
 #: measures.py:17
 #, fuzzy
@@ -956,7 +951,6 @@ msgid "Generating 3D surface..."
 msgstr "正在產生 3D 表面..."
 
 #: task_exporter.py:105
-#, fuzzy
 msgid "Export InVesalius screen to an image file"
 msgstr "將 InVesalius 畫面匯出到影像檔"
 
@@ -1005,7 +999,6 @@ msgid "Open an existing project..."
 msgstr "開啟存有的專案..."
 
 #: task_slice.py:82
-#, fuzzy
 msgid "Create mask for slice segmentation and editing"
 msgstr "建立供切片片段與編輯的遮罩"
 
@@ -1026,7 +1019,6 @@ msgid "Mask properties"
 msgstr "遮罩屬性"
 
 #: task_slice.py:225
-#, fuzzy
 msgid "Advanced editing tools"
 msgstr "進階編輯工具"
 
@@ -1035,7 +1027,6 @@ msgid "Set predefined or manual threshold:"
 msgstr "設置預先定義的或是自訂的閾值"
 
 #: task_slice.py:503
-#, fuzzy
 msgid "Choose brush type, size or operation:"
 msgstr "選擇比刷類型、大小或操作："
 
@@ -1072,7 +1063,6 @@ msgid "Advanced options"
 msgstr "進階選項"
 
 #: task_surface.py:246
-#, fuzzy
 msgid "Automatically select largest disconnected region and create new surface"
 msgstr "自動選取最大不連續區域，並建立新表面"
 
@@ -1081,14 +1071,12 @@ msgid "Select largest part"
 msgstr "選取最大部份"
 
 #: task_surface.py:255
-#, fuzzy
 msgid ""
 "Automatically select disconnected regions and create one new surface per "
 "region"
 msgstr "自動選取不連續區域，並對每個區域建立新表面"
 
 #: task_surface.py:256
-#, fuzzy
 msgid "Split all disconnected surfaces"
 msgstr "分開所有不連續的表面"
 
