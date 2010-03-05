@@ -1013,8 +1013,8 @@ class MeasuresListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
         self.InsertColumn(3, _("Type"))
         self.InsertColumn(4, _("Value"), wx.LIST_FORMAT_RIGHT)
         
-        self.SetColumnWidth(0, 15)
-        self.SetColumnWidth(1, 70)
+        self.SetColumnWidth(0, 20)
+        self.SetColumnWidth(1, 65)
         self.SetColumnWidth(2, 55)
         self.SetColumnWidth(3, 50)
         self.SetColumnWidth(4, 75)
