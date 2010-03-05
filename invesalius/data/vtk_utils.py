@@ -22,7 +22,7 @@ import vtk
 import wx.lib.pubsub as ps
 
 import constants as const
-from gui.dialogs import ProgressDialog 
+from gui.dialogs import ProgressDialog
 
 # If you are frightened by the code bellow, or think it must have been result of
 # an identation error, lookup at:
@@ -45,36 +45,36 @@ def ShowProgress(number_of_filters = 1,
     last_obj_progress = [0]
     if (dialog_type == "ProgressDialog"):
         dlg = ProgressDialog(100)
-        
+
 
     # when the pipeline is larger than 1, we have to consider this object
     # percentage
     ratio = (100.0 / number_of_filters)
-    
+
     def UpdateProgress(obj, label=""):
         """
         Show progress on GUI according to pipeline execution.
         """
         # object progress is cummulative and is between 0.0 - 1.0
-        # is necessary verify in case is sending the progress 
+        # is necessary verify in case is sending the progress
         #represented by number in case multiprocess, not vtk object
         if isinstance(obj, float) or isinstance(obj, int):
             obj_progress = obj
         else:
             obj_progress = obj.GetProgress()
-        
+
         # as it is cummulative, we need to compute the diference, to be
         # appended on the interface
         if obj_progress < last_obj_progress[0]: # current obj != previous obj
             difference = obj_progress # 0
         else: # current obj == previous obj
             difference = obj_progress - last_obj_progress[0]
-        
+
         last_obj_progress[0] = obj_progress
 
         # final progress status value
         progress[0] = progress[0] + ratio*difference
-        
+
         # Tell GUI to update progress status value
         if (dialog_type == "GaugeProgress"):
             ps.Publisher().sendMessage('Update status in GUI',
@@ -82,12 +82,12 @@ def ShowProgress(number_of_filters = 1,
         else:
             if (int(progress[0]) == 99):
                 progress[0] = 100
-                
+
             if not(dlg.Update(progress[0],label)):
                 dlg.Close()
-            
+
         return progress[0]
-        
+
     return UpdateProgress
 
 class Text(object):
@@ -133,7 +133,10 @@ class Text(object):
         # With some encoding in some dicom fields (like name) raises a
         # UnicodeEncodeError because they have non-ascii characters. To avoid
         # that we encode in utf-8.
-        self.mapper.SetInput(value.encode("cp1252"))
+        try:
+            self.mapper.SetInput(value.encode("latin-1"))
+        except(UnicodeEncodeError):
+            self.mapper.SetInput(value.encode("utf-8"))
 
     def SetPosition(self, position):
         self.actor.GetPositionCoordinate().SetValue(position[0],
@@ -178,11 +181,11 @@ class TextZero(object):
         property.SetColor(const.TEXT_COLOUR)
         self.property = property
 
-        actor = vtk.vtkTextActor() 
+        actor = vtk.vtkTextActor()
         actor.GetTextProperty().ShallowCopy(property)
-        actor.GetPositionCoordinate().SetCoordinateSystemToNormalizedDisplay() 
+        actor.GetPositionCoordinate().SetCoordinateSystemToNormalizedDisplay()
         actor.PickableOff()
-        self.actor = actor 
+        self.actor = actor
 
     def SetColour(self, colour):
         self.property.SetColor(colour)
