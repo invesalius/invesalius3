@@ -118,9 +118,11 @@ icons/tool_contrast_original.png -text
 icons/tool_photo.png -text
 icons/tool_photo_original.png -text
 icons/tool_rotate.gif -text
+icons/tool_rotate.png -text
 icons/tool_rotate_original.gif -text
 icons/tool_rotate_original.png -text
 icons/tool_translate.gif -text
+icons/tool_translate.png -text
 icons/tool_translate_original.png -text
 icons/tool_zoom.png -text
 icons/tool_zoom_in.png -text
