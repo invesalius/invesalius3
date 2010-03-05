@@ -114,7 +114,10 @@ class MeasurementManager(object):
         m, mr = self.measures[index]
         m.is_shown = visibility
         mr.SetVisibility(visibility)
-        ps.Publisher().sendMessage('Update slice viewer')
+        if m.location == const.SURFACE:
+            ps.Publisher().sendMessage('Render volume viewer')
+        else:
+            ps.Publisher().sendMessage('Update slice viewer')
 
 
 class Measurement():
