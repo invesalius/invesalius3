@@ -976,7 +976,7 @@ msgstr "visible avant de l'exporter."
 
 #: task_generic.py:65 task_navigator.py:65
 msgid "Testing..."
-msgstr ""
+msgstr "Expérimentation..."
 
 #: task_importer.py:64
 msgid "Select DICOM or Analyze files to be reconstructed"
