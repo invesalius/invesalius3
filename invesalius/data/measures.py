@@ -65,15 +65,20 @@ class MeasurementManager(object):
         except IndexError:
             slice_number = 0
 
+        to_remove = False
         if self.current is None:
-            print "To Create"
-            to_create = True
-        elif self.current[0].slice_number != slice_number:
             print "To Create"
             to_create = True
         elif self.current[0].location != location:
             print "To Create"
+            print "To Remove"
             to_create = True
+            to_remove = True
+        elif self.current[0].slice_number != slice_number:
+            print "To Create"
+            print "To Remove"
+            to_create = True
+            to_remove = True
         else:
             print "To not Create"
             to_create = False
@@ -83,11 +88,22 @@ class MeasurementManager(object):
             m.index = len(self.measures)
             m.location = location
             m.slice_number = slice_number
+            m.type = type
             if type == const.LINEAR:
                 mr = LinearMeasure(m.colour)
             else:
                 mr = AngularMeasure(m.colour)
-            m.type = type
+            if to_remove:
+                print "---To REMOVE"
+                actors = self.current[1].GetActors()
+                slice_number = self.current[0].slice_number
+                ps.Publisher().sendMessage(('Remove actors',
+                    self.current[0].location), (actors, slice_number))
+                if self.current[0].location == const.SURFACE:
+                    ps.Publisher().sendMessage('Render volume viewer')
+                else:
+                    ps.Publisher().sendMessage('Update slice viewer')
+
             self.current = (m, mr)
 
         x, y, z = position
