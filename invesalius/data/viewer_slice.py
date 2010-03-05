@@ -1391,7 +1391,6 @@ class Viewer(wx.Panel):
             renderer = self.renderers_by_slice_number[n]
             for actor in self.actors_by_slice_number.get(n, []):
                 renderer.RemoveActor(actor)
-            self.renderers_by_slice_number = None
 
         for n, slice_data in enumerate(self.slice_data_list):
             ren = slice_data.renderer
