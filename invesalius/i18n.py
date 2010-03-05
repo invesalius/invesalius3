@@ -28,8 +28,6 @@ import sys
 
 import utils as utl
 
-LANGUAGE_DIR = os.path.abspath(os.path.join('..','locale'))
-
 def GetLocales():
     """Return a dictionary which defines supported languages"""
     d = utl.TwoWaysDictionary ({'zh_TW': u'中文',
@@ -41,18 +39,18 @@ def GetLocales():
                                 'it_IT':'Italiano',
                                 'de_DE': 'Deutsch'})
     return d
-    
+
 def GetLocaleOS():
         """Return language of the operating system."""
         if sys.platform == 'darwin':
             locale.setlocale(locale.LC_ALL, "")
             return locale.getlocale()[0]
-        
+
         return locale.getdefaultlocale()[0]
-    
+
 def InstallLanguage(language):
-    
-    lang = gettext.translation('invesalius', LANGUAGE_DIR,\
+    language_dir = os.path.abspath(os.path.join('..','locale'))
+    lang = gettext.translation('invesalius', language_dir,\
                                    languages=[language], codeset='utf8')
     # Using unicode
     lang.install(unicode=1)

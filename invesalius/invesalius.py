@@ -18,10 +18,14 @@
 #    detalhes.
 #-------------------------------------------------------------------------
 
+
 import multiprocessing
 import optparse as op
 import os
 import sys
+
+if sys.platform == 'win32':
+    import _winreg
 
 import wx
 import wx.lib.pubsub as ps
@@ -79,7 +83,7 @@ class SplashScreen(wx.SplashScreen):
             _ = i18n.InstallLanguage(lang)
 
         # If no language is set into session file, show dialog so
-        # user can select language 
+        # user can select language
         else:
             dialog = lang_dlg.LanguageDialog()
 
@@ -115,12 +119,12 @@ class SplashScreen(wx.SplashScreen):
 
             bmp = wx.Image(path).ConvertToBitmap()
 
-            style = wx.SPLASH_TIMEOUT | wx.SPLASH_CENTRE_ON_SCREEN 
+            style = wx.SPLASH_TIMEOUT | wx.SPLASH_CENTRE_ON_SCREEN
             wx.SplashScreen.__init__(self,
                                      bitmap=bmp,
                                      splashStyle=style,
                                      milliseconds=1500,
-                                     id=-1, 
+                                     id=-1,
                                      parent=None)
             self.Bind(wx.EVT_CLOSE, self.OnClose)
 
@@ -223,6 +227,15 @@ if __name__ == '__main__':
     # Needed in win 32 exe
     if hasattr(sys,"frozen") and sys.frozen == "windows_exe":
         multiprocessing.freeze_support()
+
+        #Click in the .inv3 file support
+        root = _winreg.HKEY_CLASSES_ROOT
+        key = "InVesalius 3.0\InstallationDir"
+        hKey = _winreg.OpenKey (root, key, 0, _winreg.KEY_READ)
+        value, type_ = _winreg.QueryValueEx (hKey, "")
+        path = os.path.join(value,'dist')
+
+        os.chdir(path)
 
     # Create raycasting presets' folder, if it doens't exist
     dirpath = os.path.join(os.path.expanduser('~'),
