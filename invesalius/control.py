@@ -359,6 +359,9 @@ class Controller():
             mask_index = len(proj.mask_dict) -1
             ps.Publisher().sendMessage('Show mask', (mask_index, True))
 
+        ps.Publisher().sendMessage('Load measurement dict',
+                                    proj.measurement_dict)
+
         proj.presets.thresh_ct[_('Custom')] = proj.threshold_range
         ps.Publisher().sendMessage('End busy cursor')
 

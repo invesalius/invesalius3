@@ -185,6 +185,24 @@ class Project(object):
         preset = plistlib.readPlist(path)
         ps.Publisher.sendMessage('Set raycasting preset', preset)
 
+    def GetMeasuresDict(self):
+        measures = {}
+        d = self.measurement_dict
+        for i in d:
+            m = d[i]
+            item = {}
+            item["index"] = m.index
+            item["name"] = m.name
+            item["colour"] = m.colour
+            item["value"] = m.value
+            item["location"] = m.location
+            item["type"] = m.type
+            item["slice_number"] = m.slice_number
+            item["points"] = m.points
+            item["is_shown"] = m.is_shown
+            measures[str(m.index)] = item
+        return measures
+            
     def SavePlistProject(self, dir_, filename):
 
         # Some filenames have non-ascii characters and encoded in a strange
@@ -218,9 +236,10 @@ class Project(object):
         for index in self.surface_dict:
             surfaces[str(index)] = {'#surface':\
                                     self.surface_dict[index].SavePlist(filename_tmp)}
-
+        
         project['surface_dict'] = surfaces
         project['mask_dict'] = masks
+        project['measurement_dict'] = self.GetMeasuresDict()
         img_file = '%s_%s.vti' % (filename_tmp, 'imagedata')
         iu.Export(self.imagedata, img_file, bin=True)
         project['imagedata'] = {'$vti':os.path.split(img_file)[1].decode('utf-8')}
@@ -232,7 +251,8 @@ class Project(object):
         shutil.rmtree(dir_temp)
 
     def OpenPlistProject(self, filename):
-        
+        import data.measures as ms
+ 
         if not const.VTK_WARNING:
             log_path = os.path.join(const.LOG_FOLDER, 'vtkoutput.txt')
             fow = vtk.vtkFileOutputWindow()
@@ -281,6 +301,13 @@ class Project(object):
                     s = srf.Surface()
                     s.OpenPList(path)
                     self.surface_dict[s.index] = s
+            elif key == 'measurement_dict':
+                self.measurement_dict = {}
+                d = project['measurement_dict']
+                for index in d:
+                    measure = ms.Measurement()
+                    measure.Load(d[index])
+                    self.measurement_dict[int(index)] = measure
             else: 
                 setattr(self, key, project[key])
 

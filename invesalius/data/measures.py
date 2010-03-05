@@ -117,12 +117,23 @@ class Measurement():
         self.index = Measurement.general_index
         self.name = const.MEASURE_NAME_PATTERN %(self.index+1)
         self.colour = random.choice(const.MASK_COLOUR) 
-        self.value = None
+        self.value = 0
         self.location = const.SURFACE # AXIAL, CORONAL, SAGITTAL
         self.type = const.LINEAR # ANGULAR
         self.slice_number = 0
         self.points = []
         self.is_shown = False
+
+    def Load(self, info):
+        self.index = info["index"]
+        self.name = info["name"]
+        self.colour = info["colour"]
+        self.value = info["value"]
+        self.location = info["location"]
+        self.type = info["type"]
+        self.slice_number = info["slice_number"]
+        self.points = info["points"]
+        self.is_shown = info["is_shown"]
 
 class CirclePointRepresentation(object):
     """
