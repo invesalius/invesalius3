@@ -53,6 +53,7 @@ class MeasurementManager(object):
                 actors = mr.AddPoint(x, y, z)
                 ps.Publisher().sendMessage(("Add actors", m.location),
                     (actors, m.slice_number))
+            self.current = None
 
 
     def _add_point(self, pubsub_evt):
@@ -91,6 +92,7 @@ class MeasurementManager(object):
         x, y, z = position
         actors = self.current[1].AddPoint(x, y, z)
         self.current[0].points.append(position)
+        print "--- actors", actors
         ps.Publisher().sendMessage(("Add actors", location),
                 (actors, self.current[0].slice_number))
 
@@ -103,8 +105,11 @@ class MeasurementManager(object):
             self.current[0].value = self.current[1].GetValue()
             type_ = TYPE[type]
             location = LOCATION[location]
-            value = u"%.2f mm"% self.current[0].value
-
+            if type == const.LINEAR:
+                value = u"%.2f mm"% self.current[0].value
+            else:
+                value = u"%.2f˚"% self.current[0].value
+        
             msg =  'Update measurement info in GUI',
             ps.Publisher().sendMessage(msg,
                     (index, name, colour,
