@@ -28,7 +28,7 @@ from project import Project
 #---------------
 
 # Measurements
-MEASURE_NAME_PATTERN = _("M %d") 
+MEASURE_NAME_PATTERN = _("M %d")
 MEASURE_LINEAR = 101
 MEASURE_ANGULAR = 102
 
@@ -36,7 +36,7 @@ DEFAULT_MEASURE_COLOUR = (1,0,0)
 DEFAULT_MEASURE_BG_COLOUR = (250/255.0, 247/255.0, 218/255.0)
 DEFAULT_MEASURE_RADIUS = 1
 DEFAULT_MEASURE_TYPE = MEASURE_LINEAR
- 
+
 
 # VTK text
 TEXT_SIZE_SMALL = 11
@@ -205,6 +205,12 @@ MASK_COLOUR =  [[0.33, 1, 0.33],
                 #(0.66666666666666663, 0.792156862745098, 1.0)]
 
 
+MEASURE_COLOUR =  [[1, 0, 0],
+                [1, 0.4, 0],
+                [0, 0, 1],
+                [1, 0, 1],
+                [0, 0.6, 0]]
+
 SURFACE_COLOUR =  [(0.33, 1, 0.33),
                 (1, 1, 0.33),
                 (0.33, 0.91, 1),
@@ -304,7 +310,7 @@ RAYCASTING_FILES = {_("Airways"): "Airways.plist",
                    _("Bone + Skin"): "Bone + Skin.plist",
                    _("Bone + Skin II"): "Bone + Skin II.plist",
                    _("Dark Bone"): "Dark Bone.plist",
-                   _("Glossy"): "Glossy.plist", 
+                   _("Glossy"): "Glossy.plist",
                    _("Glossy II"): "Glossy II.plist",
                    _("Gold Bone"): "Gold Bone.plist",
                    _("High Contrast"): "High Contrast.plist",
@@ -335,7 +341,7 @@ RAYCASTING_TYPES = [_(filename.split(".")[0]) for filename in
                     os.listdir(folder) if
                     os.path.isfile(os.path.join(folder,filename))]
 
- 
+
 LOG_FOLDER = os.path.join(os.path.expanduser('~'), '.invesalius', 'logs')
 if not os.path.isdir(LOG_FOLDER):
     os.makedirs(LOG_FOLDER)
@@ -343,7 +349,7 @@ if not os.path.isdir(LOG_FOLDER):
 folder = os.path.join(os.path.expanduser('~'), '.invesalius', 'presets')
 if not os.path.isdir(folder):
     os.makedirs(folder)
-   
+
 
 USER_RAYCASTING_PRESETS_DIRECTORY = folder
 RAYCASTING_TYPES += [_(filename.split(".")[0]) for filename in
@@ -469,7 +475,7 @@ SLICE_STYLES.append(STATE_DEFAULT)
 SLICE_STYLES.append(SLICE_STATE_EDITOR)
 
 VOLUME_STYLES = TOOL_STATES + [VOLUME_STATE_SEED, STATE_MEASURE_DISTANCE,
-        STATE_MEASURE_ANGLE] 
+        STATE_MEASURE_ANGLE]
 VOLUME_STYLES.append(STATE_DEFAULT)
 
 

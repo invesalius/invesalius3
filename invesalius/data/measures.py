@@ -65,7 +65,7 @@ class MeasurementManager(object):
             else:
                 mr = AngularMeasure(m.colour)
             self.current = (m, mr)
-            
+
         x, y, z = position
         actors = self.current[1].AddPoint(x, y, z)
         ps.Publisher().sendMessage(("Add actors", location), actors)
@@ -116,7 +116,7 @@ class Measurement():
         Measurement.general_index += 1
         self.index = Measurement.general_index
         self.name = const.MEASURE_NAME_PATTERN %(self.index+1)
-        self.colour = random.choice(const.MASK_COLOUR) 
+        self.colour = random.choice(const.MEASURE_COLOUR)
         self.value = 0
         self.location = const.SURFACE # AXIAL, CORONAL, SAGITTAL
         self.type = const.LINEAR # ANGULAR
@@ -154,10 +154,10 @@ class CirclePointRepresentation(object):
         sphere = vtk.vtkSphereSource()
         sphere.SetCenter(x, y, z)
         sphere.SetRadius(self.radius)
-        
+
 #        c = vtk.vtkCoordinate()
 #        c.SetCoordinateSystemToWorld()
-        
+
         m = vtk.vtkPolyDataMapper()
         m.SetInputConnection(sphere.GetOutputPort())
 #        m.SetTransformCoordinate(c)
@@ -181,7 +181,7 @@ class CrossPointRepresentation(object):
         self.camera = camera
         self.colour = colour
         self.size = size
-    
+
     def GetRepresentation(self, x, y, z):
         pc = self.camera.GetPosition() # camera position
         pf = self.camera.GetFocalPoint() # focal position
@@ -199,7 +199,7 @@ class CrossPointRepresentation(object):
         vtk.vtkMath.Cross(vcp, vcf, n)
         # then normalize n to only indicate the direction of this vector
         vtk.vtkMath.Normalize(n)
-        # then 
+        # then
         p1 = [i*self.size + j for i,j in zip(n, pp)]
         p2 = [i*-self.size + j for i,j in zip(n, pp)]
 
@@ -323,7 +323,7 @@ class LinearMeasure(object):
         if self.point_actor1:
             self.render.RemoveActor(self.point_actor1)
             renderer.AddActor(self.point_actor1)
-        
+
         if self.point_actor2:
             self.render.RemoveActor(self.point_actor2)
             renderer.AddActor(self.point_actor2)
@@ -363,7 +363,7 @@ class LinearMeasure(object):
         if self.point_actor1:
             self.render.RemoveActor(self.point_actor1)
             del self.point_actor1
-        
+
         if self.point_actor2:
             self.render.RemoveActor(self.point_actor2)
             del self.point_actor2
@@ -555,7 +555,7 @@ class AngularMeasure(object):
         if self.point_actor1:
             self.render.RemoveActor(self.point_actor1)
             del self.point_actor1
-        
+
         if self.point_actor2:
             self.render.RemoveActor(self.point_actor2)
             del self.point_actor2
@@ -576,7 +576,7 @@ class AngularMeasure(object):
         if self.point_actor1:
             self.render.RemoveActor(self.point_actor1)
             renderer.AddActor(self.point_actor1)
-        
+
         if self.point_actor2:
             self.render.RemoveActor(self.point_actor2)
             renderer.AddActor(self.point_actor2)
