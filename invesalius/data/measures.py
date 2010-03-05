@@ -24,7 +24,7 @@ class Measurement():
         Measurement.general_index += 1
         self.index = Measurement.general_index
         self.name = const.MEASURE_NAME_PATTERN %(self.index+1)
-        self.colour = const.DEFAULT_MEASURE_COLOUR 
+        self.colour = random.choice(const.MASK_COLOUR) 
         self.value = None
         self.location = const.SURFACE # AXIAL, CORONAL, SAGITTAL
         self.type = const.LINEAR # ANGULAR
