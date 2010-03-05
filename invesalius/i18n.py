@@ -36,7 +36,7 @@ def GetLocales():
                                 'pt_BR': u'Português (Brasil)',
                                 'fr':u'Français',
                                 'el_GR':u'Ελληνική',
-                                'it_IT':'Italiano',
+                                #'it_IT':'Italiano',
                                 'de_DE': 'Deutsch'})
     return d
 
