@@ -106,6 +106,8 @@ class SplashScreen(wx.SplashScreen):
             session.SetLanguage(lang)
             session.CreateSessionFile()
 
+        session.SaveConfigFileBackup()
+
         # Only after language was defined, splash screen will be
         # shown
         if lang:

@@ -1,5 +1,6 @@
 import ConfigParser
 import os
+import shutil
 from threading import Thread
 import time
 
@@ -50,6 +51,25 @@ class Session(object):
 
     def StopRecording(self, pubsub_evt):
         self.ws.Stop()
+
+    def SaveConfigFileBackup(self):
+        path = os.path.join(self.homedir ,
+                            '.invesalius', 'config.cfg')
+        path_dst = os.path.join(self.homedir ,
+                            '.invesalius', 'config.backup')
+        shutil.copy(path, path_dst)
+
+    def RecoveryConfigFile(self):
+        homedir = self.homedir = os.path.expanduser('~')
+        try:
+            path = os.path.join(self.homedir ,
+                                '.invesalius', 'config.backup')
+            path_dst = os.path.join(self.homedir ,
+                            '.invesalius', 'config.cfg')
+            shutil.copy(path, path_dst)
+            return True
+        except(IOError):
+            return False
 
 
     def CloseProject(self):
@@ -171,7 +191,6 @@ class Session(object):
             return False
 
     def ReadSession(self):
-
         config = ConfigParser.ConfigParser()
         home_path = os.path.expanduser('~')
         path = os.path.join(home_path ,'.invesalius', 'config.cfg')
@@ -186,15 +205,16 @@ class Session(object):
             self.tempdir = config.get('paths','tempdir')
             self.last_dicom_folder = config.get('paths','last_dicom_folder')
             self.last_dicom_folder = self.last_dicom_folder.decode('utf-8')
-            #print "_______________________________"
-            #print self.last_dicom_folder
-            #print type(self.last_dicom_folder)
-            #print "_______________________________"
             return True
-        except(ConfigParser.NoSectionError,
-                ConfigParser.NoOptionError,
-                ConfigParser.MissingSectionHeaderError):
-            return False
+
+        except(ConfigParser.NoSectionError, ConfigParser.NoOptionError,
+               ConfigParser.MissingSectionHeaderError, ConfigParser.ParsingError):
+
+            if (self.RecoveryConfigFile()):
+                self.ReadSession()
+                return True
+            else:
+                return False
 
 
 class WriteSession(Thread):
