@@ -1392,6 +1392,8 @@ class Viewer(wx.Panel):
             for actor in self.actors_by_slice_number.get(n, []):
                 renderer.RemoveActor(actor)
 
+        self.renderers_by_slice_number = {}
+
         for n, slice_data in enumerate(self.slice_data_list):
             ren = slice_data.renderer
             actor = slice_data.actor
@@ -1456,18 +1458,6 @@ class Viewer(wx.Panel):
         self.pick.Pick(x, y, 0, render)
         x, y, z = self.pick.GetPickPosition()
         if self.pick.GetViewProp(): 
-            print "Hey, you inserted measure point"
-            # if not self.measures or self.measures[-1][1].IsComplete():
-                # m = measures.LinearMeasure(render)
-                # m.AddPoint(x, y, z)
-                # self.measures.append((slice_number, m))
-            # else:
-                # m = self.measures[-1][1]
-                # m.AddPoint(x, y, z)
-                # if m.IsComplete():
-                    # ps.Publisher().sendMessage("Add measure to list", 
-                            # (ORIENTATIONS[self.orientation], 
-                                # _(u"%.3f mm" % m.GetValue())))
             self.render_to_add = slice_data.renderer
             ps.Publisher().sendMessage("Add measurement point",
                     ((x, y,z), const.LINEAR, ORIENTATIONS[self.orientation],
@@ -1475,7 +1465,6 @@ class Viewer(wx.Panel):
             self.interactor.Render()
 
     def OnInsertAngularMeasurePoint(self, obj, evt):
-        print "Hey, you inserted a angular point"
         x,y = self.interactor.GetEventPosition()
         render = self.interactor.FindPokedRenderer(x, y)
         slice_data = self.get_slice_data(render)
@@ -1483,17 +1472,6 @@ class Viewer(wx.Panel):
         self.pick.Pick(x, y, 0, render)
         x, y, z = self.pick.GetPickPosition()
         if self.pick.GetViewProp(): 
-            # if not self.measures or self.measures[-1][1].IsComplete():
-                # m = measures.AngularMeasure(render)
-                # m.AddPoint(x, y, z)
-                # self.measures.append((slice_number, m))
-            # else:
-                # m = self.measures[-1][1]
-                # m.AddPoint(x, y, z)
-                # if m.IsComplete():
-                    # ps.Publisher().sendMessage("Add measure to list", 
-                            # (ORIENTATIONS[self.orientation], 
-                                # _(u"%.3fº" % m.GetValue())))
             self.render_to_add = slice_data.renderer
             ps.Publisher().sendMessage("Add measurement point",
                     ((x, y,z), const.ANGULAR, ORIENTATIONS[self.orientation],
@@ -1503,9 +1481,12 @@ class Viewer(wx.Panel):
     def AddActors(self, pubsub_evt):
         "Inserting actors"
         actors, n = pubsub_evt.data
-        renderer = self.renderers_by_slice_number[n]
-        for actor in actors:
-            renderer.AddActor(actor)
+        try:
+            renderer = self.renderers_by_slice_number[n]
+            for actor in actors:
+                renderer.AddActor(actor)
+        except KeyError:
+            pass
         try:
             self.actors_by_slice_number[n].extend(actors)
         except KeyError:
@@ -1513,10 +1494,10 @@ class Viewer(wx.Panel):
 
     def RemoveActors(self, pubsub_evt):
         "Remove a list of actors"
-        actors, n = pubsub_evt.data[0]
+        actors, n = pubsub_evt.data
         renderer = self.renderers_by_slice_number[n]
         for actor in actors:
             # Remove the actor from the renderer
-            self.renderer.RemoveActor(actor)
+            renderer.RemoveActor(actor)
             # and remove the actor from the actor's list
-            self.actors_by_slice_number.remove(actor)
+            self.actors_by_slice_number[n].remove(actor)
