@@ -305,7 +305,7 @@ class Frame(wx.Frame):
         elif id == const.ID_PROJECT_CLOSE:
             self.CloseProject()
         elif id == const.ID_EXIT:
-            self.CloseProject()
+            self.OnClose(None)
         elif id == const.ID_ABOUT:
             self.ShowAbout()
         elif id == const.ID_START:
