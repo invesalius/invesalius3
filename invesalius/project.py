@@ -64,7 +64,7 @@ class Project(object):
 
         # Surfaces are (vtkPolyData)
         self.surface_dict = {}
-        #self.last_surface_index = -1
+        self.last_surface_index = -1
 
         # Measurements
         self.measurement_dict = {}
