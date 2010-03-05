@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: InVesalius 3\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2010-03-05 12:34-0300\n"
+"POT-Creation-Date: 2010-03-05 12:44-0300\n"
 "PO-Revision-Date: 2010-01-07 11:25-0300\n"
 "Last-Translator: InVesalius team <invesalius@cti.gov.br>\n"
 "Language-Team: InVesalius Team <invesalius@cti.gov.br>\n"
@@ -563,6 +563,11 @@ msgid ""
 "creating physical models of a patient's anatomy using rapid prototyping "
 "technologies."
 msgstr ""
+"InVesalius é um software para reconstrução 3D de imanges médicas a partir de "
+"uma seqüência de imagens DICOM 2D, obtidas com equipamentos de TC ou RM. O "
+"InVesalius permite que sejam exportados volumes ou superífices 3D no formato "
+"STL, para criação de réplicas físicas de estruturas anatômicas do paciente, "
+"através de tecnologias de prototipagem rápida."
 
 #: dialogs.py:610
 msgid "GNU GPL (General Public License) version 2"
@@ -719,14 +724,12 @@ msgid "Ready"
 msgstr "Pronto"
 
 #: frame.py:716
-#, fuzzy
 msgid "Import DICOM files..."
-msgstr "Importar DICOM...\tCtrl+I"
+msgstr "Importar arquivos DICOM...\tCtrl+I"
 
 #: frame.py:723
-#, fuzzy
 msgid "Open a InVesalius project..."
-msgstr "Abrir projeto do InVesalius 3"
+msgstr "Abrir projeto InVesalius..."
 
 #: frame.py:727
 msgid "Save InVesalius project"
@@ -749,18 +752,16 @@ msgid "Move"
 msgstr "Mover"
 
 #: frame.py:889
-#, fuzzy
 msgid "Constrast"
-msgstr "Contraste Baixo"
+msgstr "Contraste"
 
 #: frame.py:1042
-#, fuzzy
 msgid "Scroll slices"
-msgstr "Fatia Coronal"
+msgstr "Alterar fatias"
 
 #: frame.py:1046
 msgid "Slices' cross intersection"
-msgstr ""
+msgstr "Cruz de interseção de fatias"
 
 #: frame.py:1203 frame.py:1272
 msgid "Hide task panel"
@@ -843,42 +844,36 @@ msgid "Choose user interface language"
 msgstr "Selecione o idioma"
 
 #: measures.py:12
-#, fuzzy
 msgid "Linear"
-msgstr "Fígado"
+msgstr "Linear"
 
 #: measures.py:13
 msgid "Angular"
-msgstr ""
+msgstr "Angular"
 
 #: measures.py:16
 msgid "3D"
-msgstr ""
+msgstr "3D"
 
 #: measures.py:17
-#, fuzzy
 msgid "Axial"
-msgstr "Fatia Axial"
+msgstr "Axial"
 
 #: measures.py:18
-#, fuzzy
 msgid "Coronal"
-msgstr "Fatia Coronal"
+msgstr "Coronal"
 
 #: measures.py:19
-#, fuzzy
 msgid "Sagittal"
-msgstr "Fatia Sagital"
+msgstr "Sagital"
 
 #: polydata_utils.py:132
-#, fuzzy
 msgid "Getting selected parts"
-msgstr "Primeiros Passos..."
+msgstr "Analisando regiões selecionadas..."
 
 #: polydata_utils.py:191
-#, fuzzy
 msgid "Splitting disconected parts"
-msgstr "Separar todas regiões desconexas"
+msgstr "Separando regiões desconexas..."
 
 #: presets.py:31 presets.py:49 presets.py:104 presets.py:135
 msgid "Soft Tissue"
@@ -951,9 +946,8 @@ msgid "Generating 3D surface..."
 msgstr "Gerando superfície 3D..."
 
 #: task_exporter.py:105
-#, fuzzy
 msgid "Export InVesalius screen to an image file"
-msgstr "Exportar dado do InVesalius para um arquivo de imagem"
+msgstr "Exportar tela do InVesalius para um arquivo de imagem"
 
 #: task_exporter.py:107
 msgid "Export picture..."
@@ -972,7 +966,6 @@ msgid "Save 3D surface as..."
 msgstr "Salvar superfície 3D como..."
 
 #: task_exporter.py:327
-#, fuzzy
 msgid "You need to create a surface and make "
 msgstr "É necessário criar uma superfície e torná-la "
 
@@ -1001,7 +994,6 @@ msgid "Open an existing project..."
 msgstr "Abrir um projeto existente..."
 
 #: task_slice.py:82
-#, fuzzy
 msgid "Create mask for slice segmentation and editing"
 msgstr "Criar máscara para segmentação e edição de fatia"
 
@@ -1022,7 +1014,6 @@ msgid "Mask properties"
 msgstr "Propriedades da máscara"
 
 #: task_slice.py:225
-#, fuzzy
 msgid "Advanced editing tools"
 msgstr "Ferramentas avançadas de edição"
 
@@ -1067,7 +1058,6 @@ msgid "Advanced options"
 msgstr "Ferramentas avançadas"
 
 #: task_surface.py:246
-#, fuzzy
 msgid "Automatically select largest disconnected region and create new surface"
 msgstr ""
 "Seleção automática de maior região desconexa e criação de nova superfície"
@@ -1077,14 +1067,12 @@ msgid "Select largest part"
 msgstr "Separar maior superfície"
 
 #: task_surface.py:255
-#, fuzzy
 msgid ""
 "Automatically select disconnected regions and create one new surface per "
 "region"
-msgstr "Seleção automática de maior superfície desconexa"
+msgstr "Seleção automática de superfícies desconexas e criação de superfícies correspondentes"
 
 #: task_surface.py:256
-#, fuzzy
 msgid "Split all disconnected surfaces"
 msgstr "Separar todas regiões desconexas"
 
