@@ -1,6 +1,7 @@
 import ConfigParser
 import os
 import shutil
+import sys
 from threading import Thread
 import time
 
@@ -138,7 +139,10 @@ class Session(object):
         config.add_section('paths')
         config.set('paths','homedir',self.homedir)
         config.set('paths','tempdir',self.tempdir)
-        config.set('paths','last_dicom_folder',self.last_dicom_folder.encode('utf-8'))
+        try:
+            config.set('paths','last_dicom_folder',self.last_dicom_folder.encode('utf-8'))
+        except (UnicodeEncodeError, UnicodeDecodeError):
+            config.set('paths','last_dicom_folder',self.last_dicom_folder)
         path = os.path.join(self.homedir ,
                             '.invesalius', 'config.cfg')
 
