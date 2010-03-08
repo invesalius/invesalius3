@@ -955,7 +955,6 @@ class MeasuresListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
         """
         Remove items selected.
         """
-        print "data_notebook: RemoveMeasurements"
         # it is necessary to update internal dictionary
         # that maps bitmap given item index
         selected_items = self.GetSelected()
@@ -1098,10 +1097,7 @@ class MeasuresListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
 
 
     def AddItem_(self, pubsub_evt):
-        print "notebook: AddItem_"
-        print "self._list_index before:", self._list_index
         index = pubsub_evt.data[0]
-        print "index", index
         name = pubsub_evt.data[1]
         colour = pubsub_evt.data[2]
         location = pubsub_evt.data[3]
@@ -1124,7 +1120,6 @@ class MeasuresListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
 
     def InsertNewItem(self, index=0, label="Measurement 1", colour=None,
                       type_="LINEAR", location="SURFACE", value="0 mm"):
-        print "InsertNewItem"
         self.InsertStringItem(index, "")
         self.SetStringItem(index, 1, label,
                             imageId = self._list_index[index]) 
@@ -1136,7 +1131,6 @@ class MeasuresListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
 
     def UpdateItemInfo(self, index=0, label="Measurement 1", colour=None,
                       type_="LINEAR", location="SURFACE", value="0 mm"):
-        print "UpdateItemInfo"
         self.SetStringItem(index, 1, label,
                             imageId = self._list_index[index]) 
         self.SetStringItem(index, 2, type_)
