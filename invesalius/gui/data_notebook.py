@@ -1120,7 +1120,7 @@ class MeasuresListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
 
 
     def InsertNewItem(self, index=0, label="Measurement 1", colour=None,
-                      type_="LINEAR", location="SURFACE", value="0 mm"):
+                       location="SURFACE", type_="LINEAR", value="0 mm"):
         self.InsertStringItem(index, "")
         self.SetStringItem(index, 1, label,
                             imageId = self._list_index[index]) 
