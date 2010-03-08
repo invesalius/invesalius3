@@ -1092,7 +1092,7 @@ class MeasuresListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
                 value = (u"%.2f mm") % m.value
             else:
                 value = (u"%.2f°") % m.value
-            self.InsertNewItem(m.index, m.name, colour, type, location, value)
+            self.InsertNewItem(m.index, m.name, colour, location, type, value)
 
             if not m.is_shown:
                 self.SetItemImage(i, False)
@@ -1101,8 +1101,8 @@ class MeasuresListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
         index = pubsub_evt.data[0]
         name = pubsub_evt.data[1]
         colour = pubsub_evt.data[2]
-        location = pubsub_evt.data[4]
-        type_ = pubsub_evt.data[3]
+        location = pubsub_evt.data[3]
+        type_ = pubsub_evt.data[4]
         value = pubsub_evt.data[5]
 
         if index not in self._list_index:
@@ -1113,9 +1113,9 @@ class MeasuresListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
             self._list_index[index] = image_index
 
             if (index in index_list) and index_list:
-                self.UpdateItemInfo(index, name, colour, type_, location, value)
+                self.UpdateItemInfo(index, name, colour, location, type_, value)
             else:
-                self.InsertNewItem(index, name, colour, type_, location, value)
+                self.InsertNewItem(index, name, colour, location, type_, value)
 
 
 
@@ -1124,8 +1124,8 @@ class MeasuresListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
         self.InsertStringItem(index, "")
         self.SetStringItem(index, 1, label,
                             imageId = self._list_index[index]) 
-        self.SetStringItem(index, 2, type_)
-        self.SetStringItem(index, 3, location)
+        self.SetStringItem(index, 2, location)
+        self.SetStringItem(index, 3, type_)
         self.SetStringItem(index, 4, value)
         self.SetItemImage(index, 1)
         self.Refresh()
