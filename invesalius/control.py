@@ -351,6 +351,8 @@ class Controller():
         ps.Publisher().sendMessage('Set project name', proj.name)
         ps.Publisher().sendMessage('Load surface dict',
                                     proj.surface_dict)
+        ps.Publisher().sendMessage('Hide surface items',
+                                     proj.surface_dict)
         self.LoadImagedataInfo() # TODO: where do we insert this <<<?
         ps.Publisher().sendMessage('Show content panel')
         ps.Publisher().sendMessage('Update AUI')

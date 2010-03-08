@@ -363,6 +363,8 @@ class SurfaceManager():
                                         (surface.index, surface.name,
                                         surface.colour, surface.volume,
                                         surface.transparency))
+            if not surface.is_shown:
+                self.ShowActor(key, False)
 
     ####
     #(mask_index, surface_name, quality, fill_holes, keep_largest)

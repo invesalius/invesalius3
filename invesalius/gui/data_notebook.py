@@ -686,7 +686,7 @@ class SurfacesListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
         ps.Publisher().subscribe(self.EditSurfaceColour,
                                  'Set surface colour')
         ps.Publisher().subscribe(self.OnCloseProject, 'Close project data')
-
+        ps.Publisher().subscribe(self.OnHideSurface, 'Hide surface items')
 
         ps.Publisher().subscribe(self.OnShowSingle, 'Show single surface')
         ps.Publisher().subscribe(self.OnShowMultiple, 'Show multiple surfaces') 
@@ -705,6 +705,14 @@ class SurfacesListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
             self.RemoveSurfaces()
         elif (keycode == wx.WXK_DELETE):
             self.RemoveSurfaces()
+
+
+    def OnHideSurface(self, pubsub_evt):
+        surface_dict = pubsub_evt.data
+        for key in surface_dict:
+            if not surface_dict[key].is_shown:
+                self.SetItemImage(key, False)
+            
 
     def RemoveSurfaces(self):
         """
