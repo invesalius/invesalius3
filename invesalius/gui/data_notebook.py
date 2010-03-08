@@ -385,16 +385,17 @@ class MasksListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
         # it is necessary to update internal dictionary
         # that maps bitmap given item index
         old_dict = self.mask_list_index
-        new_dict = {}
-        for index in selected_items:
-            self.DeleteItem(index)
-            for i in old_dict:
-                if i < index:
-                    new_dict[i] = old_dict[i]
-                if i > index:
-                    new_dict[i-1] = old_dict[i]
-            old_dict = new_dict
-        self.mask_list_index = new_dict
+        if selected_items:
+            for index in selected_items:
+                new_dict = {}
+                self.DeleteItem(index)
+                for i in old_dict:
+                    if i < index:
+                        new_dict[i] = old_dict[i]
+                    if i > index:
+                        new_dict[i-1] = old_dict[i]
+                old_dict = new_dict
+            self.mask_list_index = new_dict
        
         if new_dict:
             if index == self.current_index:
@@ -713,9 +714,9 @@ class SurfacesListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
         # that maps bitmap given item index
         selected_items = self.GetSelected()
         old_dict = self.surface_list_index
-        new_dict = {}
         if selected_items:
             for index in selected_items:
+                new_dict = {}
                 self.DeleteItem(index)
                 for i in old_dict:
                     if i < index:
@@ -959,27 +960,22 @@ class MeasuresListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
         # that maps bitmap given item index
         selected_items = self.GetSelected()
         selected_items.sort(reverse=True)
-        print "selected_items", selected_items
+
         old_dict = self._list_index
-        new_dict = {}
-        print " self._list_index before",  self._list_index 
         if selected_items:
             for index in selected_items:
-                print "----- index", index
+                new_dict = {}
                 self.DeleteItem(index)
-                print "----- old_dict before", old_dict
                 for i in old_dict:
                     if i < index:
                         new_dict[i] = old_dict[i]
                     if i > index:
                         new_dict[i-1] = old_dict[i]
                 old_dict = new_dict
-                print "----- old_dict after", old_dict
             self._list_index = new_dict
             ps.Publisher().sendMessage('Remove measurements', selected_items)
         else:
            dlg.MeasureSelectionRequiredForRemoval()
-        print "  self._list_index after",  self._list_index 
 
 
     def OnCloseProject(self, pubsub_evt):

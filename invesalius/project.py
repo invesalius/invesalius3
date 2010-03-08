@@ -149,13 +149,9 @@ class Project(object):
 
 
     def AddMeasurement(self, measurement):
-        print "--- proj: AddMeasurement", measurement.index
         index = len(self.measurement_dict)
         measurement.index = index
-        print "    index:", index
-        print "    dict before:", self.measurement_dict
         self.measurement_dict[index] = measurement
-        print "    dict after:", self.measurement_dict
         return index
 
     def ChangeMeasurement(self, measurement):
@@ -163,7 +159,6 @@ class Project(object):
         self.measurement_dict[index] = measurement
 
     def RemoveMeasurement(self, index):
-        print "--- proj: RemoveMeasurement", index
         new_dict = {}
         for i in self.measurement_dict:
             if i < index:
