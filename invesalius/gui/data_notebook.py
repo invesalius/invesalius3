@@ -1085,7 +1085,7 @@ class MeasuresListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
             index_list = self._list_index.keys()
             self._list_index[m.index] = image_index
 
-            colour = [255*i for i in m.colour]
+            colour = [255*c for c in m.colour]
             type = TYPE[m.type]
             location = LOCATION[m.location]
             if m.type == const.LINEAR:
@@ -1094,7 +1094,8 @@ class MeasuresListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
                 value = (u"%.2f°") % m.value
             self.InsertNewItem(m.index, m.name, colour, type, location, value)
 
-
+            if not m.is_shown:
+                self.SetItemImage(i, False)
 
     def AddItem_(self, pubsub_evt):
         index = pubsub_evt.data[0]

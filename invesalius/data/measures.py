@@ -54,6 +54,13 @@ class MeasurementManager(object):
                     (actors, m.slice_number))
             self.current = None
 
+            if not m.is_shown:
+                mr.SetVisibility(False)
+                if m.location == const.SURFACE:
+                    ps.Publisher().sendMessage('Render volume viewer')
+                else:
+                    ps.Publisher().sendMessage('Update slice viewer')
+
     def _add_point(self, pubsub_evt):
         position = pubsub_evt.data[0]
         type = pubsub_evt.data[1] # Linear or Angular
@@ -174,7 +181,7 @@ class Measurement():
         self.type = const.LINEAR # ANGULAR
         self.slice_number = 0
         self.points = []
-        self.is_shown = False
+        self.is_shown = True
 
     def Load(self, info):
         self.index = info["index"]
