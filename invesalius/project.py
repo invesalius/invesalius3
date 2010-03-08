@@ -171,9 +171,7 @@ class Project(object):
             if i > index:
                 new_dict[i-1] = self.measurement_dict[i]
                 new_dict[i-1].index = i-1
-        print "    dict before:", self.measurement_dict
         self.measurement_dict = new_dict
-        print "    dict after:", self.measurement_dict
 
 
     def SetAcquisitionModality(self, type_=None):
