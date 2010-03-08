@@ -62,9 +62,6 @@ class MeasurementManager(object):
                 else:
                     ps.Publisher().sendMessage('Update slice viewer')
 
-        session = ses.Session()
-        session.SaveProject()
-
     def _add_point(self, pubsub_evt):
         position = pubsub_evt.data[0]
         type = pubsub_evt.data[1] # Linear or Angular
