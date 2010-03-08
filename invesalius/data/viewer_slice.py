@@ -1495,9 +1495,14 @@ class Viewer(wx.Panel):
     def RemoveActors(self, pubsub_evt):
         "Remove a list of actors"
         actors, n = pubsub_evt.data
-        renderer = self.renderers_by_slice_number[n]
-        for actor in actors:
-            # Remove the actor from the renderer
-            renderer.RemoveActor(actor)
-            # and remove the actor from the actor's list
-            self.actors_by_slice_number[n].remove(actor)
+        try:
+            renderer = self.renderers_by_slice_number[n]
+        except KeyError:
+            for actor in actors:
+                self.actors_by_slice_number[n].remove(actor)
+        else:
+            for actor in actors:
+                # Remove the actor from the renderer
+                renderer.RemoveActor(actor)
+                # and remove the actor from the actor's list
+                self.actors_by_slice_number[n].remove(actor)

@@ -104,13 +104,16 @@ class MeasurementManager(object):
 
             self.current = (m, mr)
 
+        mr = self.current[1]
+        m = self.current[0]
+
         x, y, z = position
         actors = mr.AddPoint(x, y, z)
         m.points.append(position)
         ps.Publisher().sendMessage(("Add actors", location),
                 (actors, m.slice_number))
 
-        if self.mr.IsComplete():
+        if mr.IsComplete():
             index = prj.Project().AddMeasurement(m)
             #m.index = index # already done in proj
             self.measures.append(self.current)

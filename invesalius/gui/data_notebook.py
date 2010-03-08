@@ -501,7 +501,6 @@ class MasksListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
             if key != index:
                 self.SetItemImage(key, 0)
         self.current_index = index
-
         
     def AddMask(self, pubsub_evt):
         index, mask_name, threshold_range, colour = pubsub_evt.data
@@ -1088,9 +1087,9 @@ class MeasuresListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
             type = TYPE[m.type]
             location = LOCATION[m.location]
             if m.type == const.LINEAR:
-                value = "%.2f mm" % m.value
+                value = (u"%.2f mm") % m.value
             else:
-                value = "%.2f˚" % m.value
+                value = (u"%.2f˚") % m.value
             self.InsertNewItem(m.index, m.name, colour, type, location, value)
 
 
@@ -1102,7 +1101,6 @@ class MeasuresListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
         location = pubsub_evt.data[3]
         type_ = pubsub_evt.data[4]
         value = pubsub_evt.data[5]
-
 
         if index not in self._list_index:
             image = self.CreateColourBitmap(colour)

@@ -613,15 +613,15 @@ def ShowAboutDialog(parent):
                        "Paulo Henrique Junqueira Amorim",
                        "Thiago Franco de Moraes"]
 
-    info.Translators = ["Alex P. Natsios (EL)",
-                        "Andreas Loupasakis (EL)",
-                        "Cheng-Chia Tseng (ZH)",
-                        "Dimitris Glezos (EL)",
-                        "Eugene Liscio (EN)",
-                        u"Frédéric Lopez (FR)",
-                        "J. Javier de Lima Moreno (ES)"
-                        "Nikos Korkakakis (EL)",
-                        "Sebastian Hilbert (DE)"]
+    info.Translators = ["Alex P. Natsios",
+                        "Andreas Loupasakis",
+                        "Cheng-Chia Tseng",
+                        "Dimitris Glezos",
+                        "Eugene Liscio",
+                        u"Frédéric Lopez",
+                        "Javier de Lima Moreno"
+                        "Nikos Korkakakis",
+                        "Sebastian Hilbert"]
 
     info.DocWriters = ["Fabio Francisco da Silva (PT)"] 
 
