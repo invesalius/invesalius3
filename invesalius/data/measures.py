@@ -9,6 +9,7 @@ import vtk
 
 import constants as const
 import project as prj
+import session as ses
 
 TYPE = {const.LINEAR: _(u"Linear"),
         const.ANGULAR: _(u"Angular"),
@@ -61,6 +62,9 @@ class MeasurementManager(object):
                 else:
                     ps.Publisher().sendMessage('Update slice viewer')
 
+        session = ses.Session()
+        session.SaveProject()
+
     def _add_point(self, pubsub_evt):
         position = pubsub_evt.data[0]
         type = pubsub_evt.data[1] # Linear or Angular
@@ -109,6 +113,9 @@ class MeasurementManager(object):
                 else:
                     ps.Publisher().sendMessage('Update slice viewer')
 
+            session = ses.Session()
+            session.ChangeProject()
+
             self.current = (m, mr)
 
         mr = self.current[1]
@@ -146,7 +153,6 @@ class MeasurementManager(object):
         self.measures[index][0].name = new_name
 
     def _remove_measurements(self, pubsub_evt):
-        print "---- measures: _remove_measurements"
         indexes = pubsub_evt.data
         print indexes
         for index in indexes:
@@ -157,6 +163,9 @@ class MeasurementManager(object):
                     (actors, m.slice_number))
         ps.Publisher().sendMessage('Update slice viewer')
         ps.Publisher().sendMessage('Render volume viewer')
+
+        session = ses.Session()
+        session.ChangeProject()
 
     def _set_visibility(self, pubsub_evt):
         index, visibility = pubsub_evt.data
