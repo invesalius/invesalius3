@@ -1101,8 +1101,8 @@ class MeasuresListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
         index = pubsub_evt.data[0]
         name = pubsub_evt.data[1]
         colour = pubsub_evt.data[2]
-        location = pubsub_evt.data[3]
-        type_ = pubsub_evt.data[4]
+        location = pubsub_evt.data[4]
+        type_ = pubsub_evt.data[3]
         value = pubsub_evt.data[5]
 
         if index not in self._list_index:
