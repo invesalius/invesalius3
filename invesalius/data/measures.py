@@ -37,7 +37,6 @@ class MeasurementManager(object):
         ps.Publisher().subscribe(self._set_visibility, "Show measurement")
         ps.Publisher().subscribe(self._load_measurements, "Load measurement dict")
 
-
     def _load_measurements(self, pubsub_evt):
         dict = pubsub_evt.data
         for i in dict:
@@ -54,7 +53,6 @@ class MeasurementManager(object):
                 ps.Publisher().sendMessage(("Add actors", m.location),
                     (actors, m.slice_number))
             self.current = None
-
 
     def _add_point(self, pubsub_evt):
         position = pubsub_evt.data[0]
@@ -107,24 +105,24 @@ class MeasurementManager(object):
             self.current = (m, mr)
 
         x, y, z = position
-        actors = self.current[1].AddPoint(x, y, z)
-        self.current[0].points.append(position)
+        actors = mr.AddPoint(x, y, z)
+        m.points.append(position)
         ps.Publisher().sendMessage(("Add actors", location),
-                (actors, self.current[0].slice_number))
+                (actors, m.slice_number))
 
-        if self.current[1].IsComplete():
-            index = prj.Project().AddMeasurement(self.current[0])
-            self.current[0].index = index
+        if self.mr.IsComplete():
+            index = prj.Project().AddMeasurement(m)
+            #m.index = index # already done in proj
             self.measures.append(self.current)
-            name = self.current[0].name
-            colour = self.current[0].colour
-            self.current[0].value = self.current[1].GetValue()
+            name = m.name
+            colour = m.colour
+            m.value = mr.GetValue()
             type_ = TYPE[type]
             location = LOCATION[location]
             if type == const.LINEAR:
-                value = u"%.2f mm"% self.current[0].value
+                value = u"%.2f mm"% m.value
             else:
-                value = u"%.2f˚"% self.current[0].value
+                value = u"%.2f˚"% m.value
         
             msg =  'Update measurement info in GUI',
             ps.Publisher().sendMessage(msg,
@@ -138,12 +136,13 @@ class MeasurementManager(object):
         self.measures[index][0].name = new_name
 
     def _remove_measurements(self, pubsub_evt):
+        print "---- measures: _remove_measurements"
         indexes = pubsub_evt.data
         print indexes
         for index in indexes:
             m, mr = self.measures.pop(index)
             actors = mr.GetActors()
-            prj.Project().RemoveMeasurement(m)
+            prj.Project().RemoveMeasurement(index)
             ps.Publisher().sendMessage(('Remove actors', m.location), 
                     (actors, m.slice_number))
         ps.Publisher().sendMessage('Update slice viewer')
