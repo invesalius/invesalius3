@@ -27,9 +27,10 @@ import sys
 if sys.platform == 'win32':
     import _winreg
 
-import wxversion
-wxversion.ensureMinimal('2.8-unicode', optionsRequired=True) 
-wxversion.select('2.8-unicode', optionsRequired=True)
+if sys.platform != 'win32':
+    import wxversion
+    wxversion.ensureMinimal('2.8-unicode', optionsRequired=True) 
+    wxversion.select('2.8-unicode', optionsRequired=True)
 
 import wx
 import wx.lib.pubsub as ps
