@@ -125,7 +125,7 @@ class MeasurementManager(object):
             if type == const.LINEAR:
                 value = u"%.2f mm"% m.value
             else:
-                value = u"%.2f˚"% m.value
+                value = u"%.2f°"% m.value
         
             msg =  'Update measurement info in GUI',
             ps.Publisher().sendMessage(msg,
