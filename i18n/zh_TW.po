@@ -2,7 +2,7 @@
 # Copyright (C) 2007-2009 Centro de Tecnologia da Informação Renato Archer
 # This file is distributed under the same license as the InVesalius package. (GNU General Public License v2)
 # Cheng-Chia Tseng <pswo10680@gmail.com>, 2010
-#
+# 
 msgid ""
 msgstr ""
 "Project-Id-Version: InVesalius 3\n"
@@ -126,7 +126,7 @@ msgstr ""
 
 #: constants.py:260
 msgid "Brain Posterior Fossa"
-msgstr ""
+msgstr "後顱窩"
 
 #: constants.py:261
 msgid "Brain"
@@ -174,7 +174,7 @@ msgstr ""
 
 #: constants.py:272
 msgid "Pelvis"
-msgstr ""
+msgstr "骨盆"
 
 #: constants.py:273
 msgid "Sinus"
@@ -561,12 +561,7 @@ msgid "(c) 2007-2010 Renato Archer Information Technology Centre"
 msgstr "(c) 2007-2010 Center for Information Technology Renato Archer"
 
 #: dialogs.py:602
-msgid ""
-"InVesalius is a medical imaging program for 3D reconstruction. It uses a "
-"sequence of 2D DICOM image files acquired with CT or MRI scanners. "
-"InVesalius allows for the export of 3D volumes or surfaces as STL files for "
-"creating physical models of a patient's anatomy using rapid prototyping "
-"technologies."
+msgid "InVesalius is a medical imaging program for 3D reconstruction. It uses a sequence of 2D DICOM image files acquired with CT or MRI scanners. InVesalius allows for the export of 3D volumes or surfaces as STL files for creating physical models of a patient's anatomy using rapid prototyping technologies."
 msgstr ""
 
 #: dialogs.py:610
@@ -1071,9 +1066,7 @@ msgid "Select largest part"
 msgstr "選取最大部份"
 
 #: task_surface.py:255
-msgid ""
-"Automatically select disconnected regions and create one new surface per "
-"region"
+msgid "Automatically select disconnected regions and create one new surface per region"
 msgstr "自動選取不連續區域，並對每個區域建立新表面"
 
 #: task_surface.py:256
@@ -1136,7 +1129,6 @@ msgstr "T"
 msgid "B"
 msgstr "B"
 
-#, fuzzy
 #~ msgid "Measure %d"
 #~ msgstr "測量"
 
@@ -1162,7 +1154,6 @@ msgstr "B"
 #~ msgid "using Rapid Prototyping."
 #~ msgstr "使用快速原型製作法。"
 
-#, fuzzy
 #~ msgid "Add annotation"
 #~ msgstr "加入文字註解"
 
