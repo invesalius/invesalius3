@@ -1513,7 +1513,7 @@ class Parser():
             encoding = str(ds.GetDataElement(tag).GetValue())
 
             if encoding != None and encoding != "None":
-                print 'ENTROU......'
+
                 #Problem with 0051 anonymized
                 if (encoding.split(":"))[0] == "Loaded":
                     return 'ISO_IR 100'
