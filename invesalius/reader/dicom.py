@@ -1512,9 +1512,6 @@ class Parser():
         if ds.FindDataElement(tag):
             encoding = str(ds.GetDataElement(tag).GetValue())
 
-            print '_'+encoding+'_'
-            print type(encoding)
-
             if encoding != None and encoding != "None":
                 print 'ENTROU......'
                 #Problem with 0051 anonymized
