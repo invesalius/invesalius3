@@ -597,7 +597,7 @@ def ShowAboutDialog(parent):
 
     info = wx.AboutDialogInfo()
     info.Name = "InVesalius"
-    info.Version = "3.0 - Beta 2"
+    info.Version = "3.0 - Beta 3"
     info.Copyright = _("(c) 2007-2010 Renato Archer Information Technology Centre")
     info.Description = wordwrap(_("InVesalius is a medical imaging program for 3D reconstruction. It uses a sequence of 2D DICOM image files acquired with CT or MRI scanners. InVesalius allows for the export of 3D volumes or surfaces as STL files for creating physical models of a patient's anatomy using rapid prototyping technologies."), 350, wx.ClientDC(parent))
 
@@ -621,6 +621,7 @@ def ShowAboutDialog(parent):
                         u"Frédéric Lopez",
                         "Javier de Lima Moreno"
                         "Nikos Korkakakis",
+                        "Massimo Crisantemo",
                         "Sebastian Hilbert"]
 
     info.DocWriters = ["Fabio Francisco da Silva (PT)"] 
