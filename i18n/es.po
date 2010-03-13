@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: InVesalius 3\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2010-03-05 14:23-0300\n"
+"POT-Creation-Date: 2010-03-13 10:17-0300\n"
 "PO-Revision-Date: 2010-01-07 11:25-0300\n"
 "Last-Translator: Invesalius team <invesalius@cti.gov.br>\n"
 "Language-Team: InVesalius Team <invesalius@cti.gov.br>\n"
@@ -76,7 +76,7 @@ msgstr "Océano"
 msgid "Inverse Gray"
 msgstr "Gray Inverso"
 
-#: constants.py:180 constants.py:259 dialogs.py:433 dialogs.py:446
+#: constants.py:180 constants.py:265 dialogs.py:433 dialogs.py:446
 #: dicom_preview_panel.py:619 dicom_preview_panel.py:620 presets.py:30
 #: presets.py:48 presets.py:103 presets.py:134
 msgid "Bone"
@@ -87,256 +87,256 @@ msgstr "Hueso"
 msgid "Mask %d"
 msgstr "Máscara %d"
 
-#: constants.py:234 task_surface.py:43
+#: constants.py:240 task_surface.py:43
 msgid "Draw"
 msgstr "Dibujar"
 
-#: constants.py:234 task_surface.py:43
+#: constants.py:240 task_surface.py:43
 msgid "Erase"
 msgstr "Borrar"
 
-#: constants.py:234 data_notebook.py:423 task_surface.py:43
+#: constants.py:240 data_notebook.py:434 task_surface.py:43
 msgid "Threshold"
 msgstr "Umbral"
 
-#: constants.py:245 constants.py:250
+#: constants.py:251 constants.py:256
 msgid "Low"
 msgstr "Baja"
 
-#: constants.py:246 constants.py:250
+#: constants.py:252 constants.py:256
 msgid "Medium"
 msgstr "Media"
 
-#: constants.py:247 constants.py:250
+#: constants.py:253 constants.py:256
 msgid "High"
 msgstr "Alta"
 
-#: constants.py:248 constants.py:249 constants.py:250 surface.py:379
+#: constants.py:254 constants.py:255 constants.py:256 surface.py:381
 msgid "Optimal *"
 msgstr "Óptima *"
 
-#: constants.py:255
+#: constants.py:261
 #, python-format
 msgid "Surface %d"
 msgstr "Superficie %d"
 
-#: constants.py:258
+#: constants.py:264
 msgid "Abdomen"
 msgstr "Abdomen"
 
-#: constants.py:260
+#: constants.py:266
 msgid "Brain Posterior Fossa"
 msgstr "Fosa Posterior del Cerebro"
 
-#: constants.py:261
+#: constants.py:267
 msgid "Brain"
 msgstr "Cerebro"
 
-#: constants.py:262 control.py:339 slice_menu.py:39 slice_menu.py:51
+#: constants.py:268 control.py:339 slice_menu.py:39 slice_menu.py:51
 msgid "Default"
 msgstr "Predeterminado"
 
-#: constants.py:263
+#: constants.py:269
 msgid "Emphysema"
 msgstr "Enfisema"
 
-#: constants.py:264
+#: constants.py:270
 msgid "Ischemia - Hard Non Contrast"
 msgstr "Isquemia mas densa sin contraste"
 
-#: constants.py:265
+#: constants.py:271
 msgid "Ischemia - Soft Non Contrast"
 msgstr "Isquemia menos densa sin contraste"
 
-#: constants.py:266
+#: constants.py:272
 msgid "Larynx"
 msgstr "Laringe"
 
-#: constants.py:267
+#: constants.py:273
 msgid "Liver"
 msgstr "Hígado"
 
-#: constants.py:268
+#: constants.py:274
 msgid "Lung - Soft"
 msgstr "Pulmón - Suave"
 
-#: constants.py:269
+#: constants.py:275
 msgid "Lung - Hard"
 msgstr "Pulmón - Duro"
 
-#: constants.py:270
+#: constants.py:276
 msgid "Mediastinum"
 msgstr "Mediastino"
 
-#: constants.py:271 control.py:340 slice_menu.py:46 slice_menu.py:51
+#: constants.py:277 control.py:340 slice_menu.py:46 slice_menu.py:51
 msgid "Manual"
 msgstr "Manual"
 
-#: constants.py:272
+#: constants.py:278
 msgid "Pelvis"
 msgstr "Pelvis"
 
-#: constants.py:273
+#: constants.py:279
 msgid "Sinus"
 msgstr "Seno"
 
-#: constants.py:274
+#: constants.py:280
 msgid "Vasculature - Hard"
 msgstr "Vasos sanguíneos mas densos"
 
-#: constants.py:275
+#: constants.py:281
 msgid "Vasculature - Soft"
 msgstr "Vasos sanguíneos menos densos"
 
-#: constants.py:284
+#: constants.py:290
 msgid "Front"
 msgstr "Frente"
 
-#: constants.py:285
+#: constants.py:291
 msgid "Back"
 msgstr "Volver"
 
-#: constants.py:286
+#: constants.py:292
 msgid "Top"
 msgstr "Arriba"
 
-#: constants.py:287
+#: constants.py:293
 msgid "Bottom"
 msgstr "Abajo"
 
-#: constants.py:288
+#: constants.py:294
 msgid "Right"
 msgstr "Derecha"
 
-#: constants.py:289
+#: constants.py:295
 msgid "Left"
 msgstr "Izquierda"
 
-#: constants.py:290
+#: constants.py:296
 msgid "Isometric"
 msgstr "Isométrica"
 
-#: constants.py:301
+#: constants.py:307
 msgid "Airways"
 msgstr "Vías Respiratorias"
 
-#: constants.py:302
+#: constants.py:308
 msgid "Airways II"
 msgstr "Vías Respiratorias II"
 
-#: constants.py:303
+#: constants.py:309
 msgid "Black & White"
 msgstr "Blanco y Negro"
 
-#: constants.py:304
+#: constants.py:310
 msgid "Bone + Skin"
 msgstr "Hueso + Piel"
 
-#: constants.py:305
+#: constants.py:311
 msgid "Bone + Skin II"
 msgstr "Hueso + Piel II"
 
-#: constants.py:306
+#: constants.py:312
 msgid "Dark Bone"
 msgstr "Hueso Oscuro"
 
-#: constants.py:307
+#: constants.py:313
 msgid "Glossy"
 msgstr "Brillo"
 
-#: constants.py:308
+#: constants.py:314
 msgid "Glossy II"
 msgstr "Brillo II"
 
-#: constants.py:309
+#: constants.py:315
 msgid "Gold Bone"
 msgstr "Hueso Dorado"
 
-#: constants.py:310
+#: constants.py:316
 msgid "High Contrast"
 msgstr "Contraste Alto"
 
-#: constants.py:311
+#: constants.py:317
 msgid "Low Contrast"
 msgstr "Contraste Bajo"
 
-#: constants.py:312 constants.py:319
+#: constants.py:318 constants.py:325
 msgid "Soft on White"
 msgstr "Blando en Blanco"
 
-#: constants.py:313
+#: constants.py:319
 msgid "Mid Contrast"
 msgstr "Contraste Medio"
 
-#: constants.py:314
+#: constants.py:320
 msgid "No Shading"
 msgstr "Sin Sombra"
 
-#: constants.py:315
+#: constants.py:321
 msgid "Pencil"
 msgstr "Lápiz"
 
-#: constants.py:316
+#: constants.py:322
 msgid "Red on White"
 msgstr "Rojo sobre blanco"
 
-#: constants.py:317
+#: constants.py:323
 msgid "Skin On Blue"
 msgstr "Piel en Azul"
 
-#: constants.py:318
+#: constants.py:324
 msgid "Skin On Blue II"
 msgstr "Piel en Azul II"
 
-#: constants.py:320
+#: constants.py:326
 msgid "Soft + Skin"
 msgstr "Blando + Piel"
 
-#: constants.py:321
+#: constants.py:327
 msgid "Soft + Skin II"
 msgstr "Blando + Piel II"
 
-#: constants.py:322
+#: constants.py:328
 msgid "Soft + Skin III"
 msgstr "Blando + Piel III"
 
-#: constants.py:323
+#: constants.py:329
 msgid "Soft On Blue"
 msgstr "Blando En Azul"
 
-#: constants.py:324
+#: constants.py:330
 msgid "Soft"
 msgstr "Blando"
 
-#: constants.py:325
+#: constants.py:331
 msgid "Standard"
 msgstr "Estándar"
 
-#: constants.py:326
+#: constants.py:332
 msgid "Vascular"
 msgstr "Vascular"
 
-#: constants.py:327
+#: constants.py:333
 msgid "Vascular II"
 msgstr "Vascular II"
 
-#: constants.py:328
+#: constants.py:334
 msgid "Vascular III"
 msgstr "Vascular III"
 
-#: constants.py:329
+#: constants.py:335
 msgid "Vascular IV"
 msgstr "Vascular IV"
 
-#: constants.py:330
+#: constants.py:336
 msgid "Yellow Bone"
 msgstr "Hueso Amarillo"
 
-#: constants.py:352 constants.py:354
+#: constants.py:358 constants.py:360
 msgid " Off"
 msgstr "Apagado"
 
-#: constants.py:355 volume.py:552
+#: constants.py:361 volume.py:552
 msgid "Cut plane"
 msgstr "Plano de corte"
 
@@ -345,67 +345,91 @@ msgstr "Plano de corte"
 msgid "Loading file %d of %d"
 msgstr "Carga de archivo %d de %d"
 
-#: control.py:362 dialogs.py:514 presets.py:44 presets.py:62 presets.py:117
+#: control.py:367 dialogs.py:514 presets.py:44 presets.py:62 presets.py:117
 #: presets.py:148 task_slice.py:406 task_slice.py:408 task_slice.py:420
 #: task_slice.py:422 task_slice.py:458 task_slice.py:461
 msgid "Custom"
 msgstr "Costumbre"
 
-#: control.py:367
+#: control.py:372
 msgid "Untitled"
 msgstr "Sin Título"
 
-#: control.py:441
+#: control.py:446
 msgid "Fix gantry tilt applying the degrees below"
 msgstr ""
 "Arreglar la inclinación (gantry tilt) con la aplicación de los grados abajo"
 
-#: data_notebook.py:52
+#: data_notebook.py:39 measures.py:14
+msgid "Linear"
+msgstr "Lienal"
+
+#: data_notebook.py:40 measures.py:15
+msgid "Angular"
+msgstr "Angular"
+
+#: data_notebook.py:43 measures.py:18
+msgid "3D"
+msgstr "3D"
+
+#: data_notebook.py:44 measures.py:19
+msgid "Axial"
+msgstr "Axial"
+
+#: data_notebook.py:45 measures.py:20
+msgid "Coronal"
+msgstr "Coronal"
+
+#: data_notebook.py:46 measures.py:21
+msgid "Sagittal"
+msgstr "Sagital"
+
+#: data_notebook.py:62
 msgid "Masks"
 msgstr "Máscaras"
 
-#: data_notebook.py:53
+#: data_notebook.py:63
 msgid "3D Surfaces"
 msgstr "Superficies 3D"
 
-#: data_notebook.py:54
+#: data_notebook.py:64
 msgid "Measures"
 msgstr "Medidas"
 
-#: data_notebook.py:172 frame.py:894
+#: data_notebook.py:182 frame.py:894
 msgid "Measure distance"
 msgstr "Medir distancia"
 
-#: data_notebook.py:175 frame.py:899
+#: data_notebook.py:185 frame.py:899
 msgid "Measure angle"
 msgstr "Medir ángulo"
 
-#: data_notebook.py:422 data_notebook.py:756 data_notebook.py:1000
-#: data_notebook.py:1167
+#: data_notebook.py:433 data_notebook.py:774 data_notebook.py:1020
+#: data_notebook.py:1209
 msgid "Name"
 msgstr "Nombre"
 
-#: data_notebook.py:483
+#: data_notebook.py:494
 msgid "Mask"
 msgstr "Máscara"
 
-#: data_notebook.py:757
+#: data_notebook.py:775
 msgid "Volume (mm³)"
 msgstr "Volume (mm³)"
 
-#: data_notebook.py:758
+#: data_notebook.py:776
 msgid "Transparency"
 msgstr "Transparencia"
 
-#: data_notebook.py:1001
+#: data_notebook.py:1021
 msgid "Location"
 msgstr "Ubicación"
 
-#: data_notebook.py:1002 data_notebook.py:1168
+#: data_notebook.py:1022 data_notebook.py:1210
 msgid "Type"
 msgstr "Tipo"
 
-#: data_notebook.py:1003 data_notebook.py:1169
+#: data_notebook.py:1023 data_notebook.py:1211
 msgid "Value"
 msgstr "Valor"
 
@@ -627,7 +651,7 @@ msgstr "Archivo POV-Ray"
 msgid "TIFF image"
 msgstr "Imagen TIFF"
 
-#: dicom.py:1423 dicom.py:1426
+#: dicom.py:1424 dicom.py:1427
 msgid "unnamed"
 msgstr "sin_nombre"
 
@@ -721,7 +745,7 @@ msgstr "Archivo"
 msgid "Help"
 msgstr "Ayuda"
 
-#: frame.py:566 surface.py:358 surface.py:537
+#: frame.py:566 surface.py:358 surface.py:539
 msgid "Ready"
 msgstr "Listo"
 
@@ -845,30 +869,6 @@ msgstr "Selección de idioma"
 msgid "Choose user interface language"
 msgstr "Elegir idioma de la interfaz del usuario"
 
-#: measures.py:12
-msgid "Linear"
-msgstr "Lienal"
-
-#: measures.py:13
-msgid "Angular"
-msgstr "Angular"
-
-#: measures.py:16
-msgid "3D"
-msgstr "3D"
-
-#: measures.py:17
-msgid "Axial"
-msgstr "Axial"
-
-#: measures.py:18
-msgid "Coronal"
-msgstr "Coronal"
-
-#: measures.py:19
-msgid "Sagittal"
-msgstr "Sagital"
-
 #: polydata_utils.py:132
 #, fuzzy
 msgid "Getting selected parts"
@@ -943,7 +943,7 @@ msgstr "Pseudo Color"
 msgid "Image Tiling"
 msgstr "Mosaico de Imágenes"
 
-#: surface.py:420 surface.py:454 surface.py:462 surface.py:519
+#: surface.py:422 surface.py:456 surface.py:464 surface.py:521
 #: surface_process.py:55 surface_process.py:67 surface_process.py:76
 #: surface_process.py:89 surface_process.py:98 surface_process.py:109
 msgid "Generating 3D surface..."
@@ -1117,27 +1117,27 @@ msgstr "Medir"
 msgid "Add text annotations"
 msgstr "Añadir anotaciones de texto"
 
-#: viewer_slice.py:447 viewer_slice.py:451
+#: viewer_slice.py:449 viewer_slice.py:453
 msgid "R"
 msgstr "D"
 
-#: viewer_slice.py:447 viewer_slice.py:451
+#: viewer_slice.py:449 viewer_slice.py:453
 msgid "L"
 msgstr "I"
 
-#: viewer_slice.py:447 viewer_slice.py:449
+#: viewer_slice.py:449 viewer_slice.py:451
 msgid "A"
 msgstr "A"
 
-#: viewer_slice.py:447 viewer_slice.py:449
+#: viewer_slice.py:449 viewer_slice.py:451
 msgid "P"
 msgstr "P"
 
-#: viewer_slice.py:449 viewer_slice.py:451
+#: viewer_slice.py:451 viewer_slice.py:453
 msgid "T"
 msgstr "S"
 
-#: viewer_slice.py:449 viewer_slice.py:451
+#: viewer_slice.py:451 viewer_slice.py:453
 msgid "B"
 msgstr "I"
 

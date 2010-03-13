@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: InVesalius 3\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2010-03-05 14:23-0300\n"
+"POT-Creation-Date: 2010-03-13 10:18-0300\n"
 "PO-Revision-Date: 2010-02-21 23:13+0800\n"
 "Last-Translator: Cheng-Chia Tseng <pswo10680@gmail.com>\n"
 "Language-Team: Traditional Chinese <chinese-l10n@googlegroups.com>\n"
@@ -76,7 +76,7 @@ msgstr "海洋"
 msgid "Inverse Gray"
 msgstr ""
 
-#: constants.py:180 constants.py:259 dialogs.py:433 dialogs.py:446
+#: constants.py:180 constants.py:265 dialogs.py:433 dialogs.py:446
 #: dicom_preview_panel.py:619 dicom_preview_panel.py:620 presets.py:30
 #: presets.py:48 presets.py:103 presets.py:134
 msgid "Bone"
@@ -87,256 +87,256 @@ msgstr "骨骼"
 msgid "Mask %d"
 msgstr "遮罩 %d"
 
-#: constants.py:234 task_surface.py:43
+#: constants.py:240 task_surface.py:43
 msgid "Draw"
 msgstr "繪製"
 
-#: constants.py:234 task_surface.py:43
+#: constants.py:240 task_surface.py:43
 msgid "Erase"
 msgstr "擦除"
 
-#: constants.py:234 data_notebook.py:423 task_surface.py:43
+#: constants.py:240 data_notebook.py:434 task_surface.py:43
 msgid "Threshold"
 msgstr "閾值"
 
-#: constants.py:245 constants.py:250
+#: constants.py:251 constants.py:256
 msgid "Low"
 msgstr "低"
 
-#: constants.py:246 constants.py:250
+#: constants.py:252 constants.py:256
 msgid "Medium"
 msgstr "中"
 
-#: constants.py:247 constants.py:250
+#: constants.py:253 constants.py:256
 msgid "High"
 msgstr "高"
 
-#: constants.py:248 constants.py:249 constants.py:250 surface.py:379
+#: constants.py:254 constants.py:255 constants.py:256 surface.py:381
 msgid "Optimal *"
 msgstr "最佳 *"
 
-#: constants.py:255
+#: constants.py:261
 #, python-format
 msgid "Surface %d"
 msgstr "表面 %d"
 
-#: constants.py:258
+#: constants.py:264
 msgid "Abdomen"
 msgstr ""
 
-#: constants.py:260
+#: constants.py:266
 msgid "Brain Posterior Fossa"
 msgstr "後顱窩"
 
-#: constants.py:261
+#: constants.py:267
 msgid "Brain"
 msgstr "腦"
 
-#: constants.py:262 control.py:339 slice_menu.py:39 slice_menu.py:51
+#: constants.py:268 control.py:339 slice_menu.py:39 slice_menu.py:51
 msgid "Default"
 msgstr "預設"
 
-#: constants.py:263
+#: constants.py:269
 msgid "Emphysema"
 msgstr ""
 
-#: constants.py:264
+#: constants.py:270
 msgid "Ischemia - Hard Non Contrast"
 msgstr ""
 
-#: constants.py:265
+#: constants.py:271
 msgid "Ischemia - Soft Non Contrast"
 msgstr ""
 
-#: constants.py:266
+#: constants.py:272
 msgid "Larynx"
 msgstr "喉"
 
-#: constants.py:267
+#: constants.py:273
 msgid "Liver"
 msgstr "肝"
 
-#: constants.py:268
+#: constants.py:274
 msgid "Lung - Soft"
 msgstr "肺 - 軟"
 
-#: constants.py:269
+#: constants.py:275
 msgid "Lung - Hard"
 msgstr "肺 - 硬"
 
-#: constants.py:270
+#: constants.py:276
 msgid "Mediastinum"
 msgstr "中隔"
 
-#: constants.py:271 control.py:340 slice_menu.py:46 slice_menu.py:51
+#: constants.py:277 control.py:340 slice_menu.py:46 slice_menu.py:51
 msgid "Manual"
 msgstr ""
 
-#: constants.py:272
+#: constants.py:278
 msgid "Pelvis"
 msgstr "骨盆"
 
-#: constants.py:273
+#: constants.py:279
 msgid "Sinus"
 msgstr "竇"
 
-#: constants.py:274
+#: constants.py:280
 msgid "Vasculature - Hard"
 msgstr ""
 
-#: constants.py:275
+#: constants.py:281
 msgid "Vasculature - Soft"
 msgstr ""
 
-#: constants.py:284
+#: constants.py:290
 msgid "Front"
 msgstr "前"
 
-#: constants.py:285
+#: constants.py:291
 msgid "Back"
 msgstr "後"
 
-#: constants.py:286
+#: constants.py:292
 msgid "Top"
 msgstr "頂"
 
-#: constants.py:287
+#: constants.py:293
 msgid "Bottom"
 msgstr "底"
 
-#: constants.py:288
+#: constants.py:294
 msgid "Right"
 msgstr "右"
 
-#: constants.py:289
+#: constants.py:295
 msgid "Left"
 msgstr "左"
 
-#: constants.py:290
+#: constants.py:296
 msgid "Isometric"
 msgstr ""
 
-#: constants.py:301
+#: constants.py:307
 msgid "Airways"
 msgstr ""
 
-#: constants.py:302
+#: constants.py:308
 msgid "Airways II"
 msgstr ""
 
-#: constants.py:303
+#: constants.py:309
 msgid "Black & White"
 msgstr "黑與白"
 
-#: constants.py:304
+#: constants.py:310
 msgid "Bone + Skin"
 msgstr "骨骼 + 皮膚"
 
-#: constants.py:305
+#: constants.py:311
 msgid "Bone + Skin II"
 msgstr "骨骼 + 皮膚 II"
 
-#: constants.py:306
+#: constants.py:312
 msgid "Dark Bone"
 msgstr "深色骨骼"
 
-#: constants.py:307
+#: constants.py:313
 msgid "Glossy"
 msgstr ""
 
-#: constants.py:308
+#: constants.py:314
 msgid "Glossy II"
 msgstr ""
 
-#: constants.py:309
+#: constants.py:315
 msgid "Gold Bone"
 msgstr "金色骨骼"
 
-#: constants.py:310
+#: constants.py:316
 msgid "High Contrast"
 msgstr "高對比"
 
-#: constants.py:311
+#: constants.py:317
 msgid "Low Contrast"
 msgstr "低對比"
 
-#: constants.py:312 constants.py:319
+#: constants.py:318 constants.py:325
 msgid "Soft on White"
 msgstr ""
 
-#: constants.py:313
+#: constants.py:319
 msgid "Mid Contrast"
 msgstr "中對比"
 
-#: constants.py:314
+#: constants.py:320
 msgid "No Shading"
 msgstr "無陰影"
 
-#: constants.py:315
+#: constants.py:321
 msgid "Pencil"
 msgstr "鉛筆"
 
-#: constants.py:316
+#: constants.py:322
 msgid "Red on White"
 msgstr ""
 
-#: constants.py:317
+#: constants.py:323
 msgid "Skin On Blue"
 msgstr ""
 
-#: constants.py:318
+#: constants.py:324
 msgid "Skin On Blue II"
 msgstr ""
 
-#: constants.py:320
+#: constants.py:326
 msgid "Soft + Skin"
 msgstr ""
 
-#: constants.py:321
+#: constants.py:327
 msgid "Soft + Skin II"
 msgstr ""
 
-#: constants.py:322
+#: constants.py:328
 msgid "Soft + Skin III"
 msgstr ""
 
-#: constants.py:323
+#: constants.py:329
 msgid "Soft On Blue"
 msgstr ""
 
-#: constants.py:324
+#: constants.py:330
 msgid "Soft"
 msgstr ""
 
-#: constants.py:325
+#: constants.py:331
 msgid "Standard"
 msgstr "標準"
 
-#: constants.py:326
+#: constants.py:332
 msgid "Vascular"
 msgstr "血管"
 
-#: constants.py:327
+#: constants.py:333
 msgid "Vascular II"
 msgstr "血管 II"
 
-#: constants.py:328
+#: constants.py:334
 msgid "Vascular III"
 msgstr "血管 III"
 
-#: constants.py:329
+#: constants.py:335
 msgid "Vascular IV"
 msgstr "血管 IV"
 
-#: constants.py:330
+#: constants.py:336
 msgid "Yellow Bone"
 msgstr "黃色骨骼"
 
-#: constants.py:352 constants.py:354
+#: constants.py:358 constants.py:360
 msgid " Off"
 msgstr "關閉"
 
-#: constants.py:355 volume.py:552
+#: constants.py:361 volume.py:552
 msgid "Cut plane"
 msgstr ""
 
@@ -345,70 +345,98 @@ msgstr ""
 msgid "Loading file %d of %d"
 msgstr "正在載入檔案 %d / %d"
 
-#: control.py:362 dialogs.py:514 presets.py:44 presets.py:62 presets.py:117
+#: control.py:367 dialogs.py:514 presets.py:44 presets.py:62 presets.py:117
 #: presets.py:148 task_slice.py:406 task_slice.py:408 task_slice.py:420
 #: task_slice.py:422 task_slice.py:458 task_slice.py:461
 msgid "Custom"
 msgstr "自訂"
 
-#: control.py:367
+#: control.py:372
 msgid "Untitled"
 msgstr "無標題"
 
-#: control.py:441
+#: control.py:446
 msgid "Fix gantry tilt applying the degrees below"
 msgstr ""
 
-#: data_notebook.py:52
+#: data_notebook.py:39 measures.py:14
+#, fuzzy
+msgid "Linear"
+msgstr "肝"
+
+#: data_notebook.py:40 measures.py:15
+msgid "Angular"
+msgstr ""
+
+#: data_notebook.py:43 measures.py:18
+msgid "3D"
+msgstr "3D"
+
+#: data_notebook.py:44 measures.py:19
+#, fuzzy
+msgid "Axial"
+msgstr "中軸切面"
+
+#: data_notebook.py:45 measures.py:20
+#, fuzzy
+msgid "Coronal"
+msgstr "冠狀切面"
+
+#: data_notebook.py:46 measures.py:21
+#, fuzzy
+msgid "Sagittal"
+msgstr "矢狀切面"
+
+#: data_notebook.py:62
 msgid "Masks"
 msgstr "遮罩"
 
-#: data_notebook.py:53
+#: data_notebook.py:63
 msgid "3D Surfaces"
 msgstr "表面 3D"
 
-#: data_notebook.py:54
+#: data_notebook.py:64
 #, fuzzy
 msgid "Measures"
 msgstr "測量"
 
-#: data_notebook.py:172 frame.py:894
+#: data_notebook.py:182 frame.py:894
 #, fuzzy
 msgid "Measure distance"
 msgstr "測量距離"
 
-#: data_notebook.py:175 frame.py:899
+#: data_notebook.py:185 frame.py:899
 #, fuzzy
 msgid "Measure angle"
 msgstr "測量距離"
 
-#: data_notebook.py:422 data_notebook.py:756 data_notebook.py:1000
-#: data_notebook.py:1167
+#: data_notebook.py:433 data_notebook.py:774 data_notebook.py:1020
+#: data_notebook.py:1209
 msgid "Name"
 msgstr "名稱"
 
-#: data_notebook.py:483
+#: data_notebook.py:494
 msgid "Mask"
 msgstr "遮罩"
 
-#: data_notebook.py:757
+#: data_notebook.py:775
 msgid "Volume (mm³)"
 msgstr "體積 (mm³)"
 
-#: data_notebook.py:758
+#: data_notebook.py:776
 msgid "Transparency"
 msgstr "透明度"
 
-#: data_notebook.py:1001
+#: data_notebook.py:1021
 #, fuzzy
 msgid "Location"
 msgstr "加入文字註解"
 
-#: data_notebook.py:1002 data_notebook.py:1168
+#: data_notebook.py:1022 data_notebook.py:1210
 msgid "Type"
 msgstr "類型"
 
-#: data_notebook.py:1003 data_notebook.py:1169
+#: data_notebook.py:1023 data_notebook.py:1211
 msgid "Value"
 msgstr "值"
 
@@ -620,7 +648,7 @@ msgstr "POV-Ray 檔"
 msgid "TIFF image"
 msgstr "TIFF 影像"
 
-#: dicom.py:1423 dicom.py:1426
+#: dicom.py:1424 dicom.py:1427
 msgid "unnamed"
 msgstr "未命名"
 
@@ -714,7 +742,7 @@ msgstr "檔案"
 msgid "Help"
 msgstr "幫助"
 
-#: frame.py:566 surface.py:358 surface.py:537
+#: frame.py:566 surface.py:358 surface.py:539
 msgid "Ready"
 msgstr "準備就緒"
 
@@ -838,34 +866,6 @@ msgstr "語言選取"
 msgid "Choose user interface language"
 msgstr "選擇使用者介面語言"
 
-#: measures.py:12
-#, fuzzy
-msgid "Linear"
-msgstr "肝"
-
-#: measures.py:13
-msgid "Angular"
-msgstr ""
-
-#: measures.py:16
-msgid "3D"
-msgstr "3D"
-
-#: measures.py:17
-#, fuzzy
-msgid "Axial"
-msgstr "中軸切面"
-
-#: measures.py:18
-#, fuzzy
-msgid "Coronal"
-msgstr "冠狀切面"
-
-#: measures.py:19
-#, fuzzy
-msgid "Sagittal"
-msgstr "矢狀切面"
-
 #: polydata_utils.py:132
 #, fuzzy
 msgid "Getting selected parts"
@@ -939,7 +939,7 @@ msgstr "偽色"
 msgid "Image Tiling"
 msgstr "影像鋪排"
 
-#: surface.py:420 surface.py:454 surface.py:462 surface.py:519
+#: surface.py:422 surface.py:456 surface.py:464 surface.py:521
 #: surface_process.py:55 surface_process.py:67 surface_process.py:76
 #: surface_process.py:89 surface_process.py:98 surface_process.py:109
 msgid "Generating 3D surface..."
@@ -1105,27 +1105,27 @@ msgstr "測量"
 msgid "Add text annotations"
 msgstr "加入文字註解"
 
-#: viewer_slice.py:447 viewer_slice.py:451
+#: viewer_slice.py:449 viewer_slice.py:453
 msgid "R"
 msgstr "R"
 
-#: viewer_slice.py:447 viewer_slice.py:451
+#: viewer_slice.py:449 viewer_slice.py:453
 msgid "L"
 msgstr "L"
 
-#: viewer_slice.py:447 viewer_slice.py:449
+#: viewer_slice.py:449 viewer_slice.py:451
 msgid "A"
 msgstr "A"
 
-#: viewer_slice.py:447 viewer_slice.py:449
+#: viewer_slice.py:449 viewer_slice.py:451
 msgid "P"
 msgstr "P"
 
-#: viewer_slice.py:449 viewer_slice.py:451
+#: viewer_slice.py:451 viewer_slice.py:453
 msgid "T"
 msgstr "T"
 
-#: viewer_slice.py:449 viewer_slice.py:451
+#: viewer_slice.py:451 viewer_slice.py:453
 msgid "B"
 msgstr "B"
 
