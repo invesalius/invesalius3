@@ -54,23 +54,23 @@ msgstr ""
 
 #: constants.py:134
 msgid "Hue"
-msgstr ""
+msgstr "Matiz"
 
 #: constants.py:135
 msgid "Saturation"
-msgstr ""
+msgstr "Saturação"
 
 #: constants.py:136
 msgid "Desert"
-msgstr ""
+msgstr "Deserto"
 
 #: constants.py:137
 msgid "Rainbow"
-msgstr ""
+msgstr "Arco-íris"
 
 #: constants.py:138
 msgid "Ocean"
-msgstr ""
+msgstr "Oceano"
 
 #: constants.py:139
 msgid "Inverse Gray"
@@ -80,7 +80,7 @@ msgstr ""
 #: dicom_preview_panel.py:619 dicom_preview_panel.py:620 presets.py:30
 #: presets.py:48 presets.py:103 presets.py:134
 msgid "Bone"
-msgstr ""
+msgstr "Osso"
 
 #: constants.py:187
 #, python-format
@@ -97,11 +97,11 @@ msgstr ""
 
 #: constants.py:240 data_notebook.py:434 task_surface.py:43
 msgid "Threshold"
-msgstr ""
+msgstr "Limiar"
 
 #: constants.py:251 constants.py:256
 msgid "Low"
-msgstr ""
+msgstr "Baixo"
 
 #: constants.py:252 constants.py:256
 msgid "Medium"
@@ -578,12 +578,7 @@ msgid "(c) 2007-2010 Renato Archer Information Technology Centre"
 msgstr ""
 
 #: dialogs.py:602
-msgid ""
-"InVesalius is a medical imaging program for 3D reconstruction. It uses a "
-"sequence of 2D DICOM image files acquired with CT or MRI scanners. "
-"InVesalius allows for the export of 3D volumes or surfaces as STL files for "
-"creating physical models of a patient's anatomy using rapid prototyping "
-"technologies."
+msgid "InVesalius is a medical imaging program for 3D reconstruction. It uses a sequence of 2D DICOM image files acquired with CT or MRI scanners. InVesalius allows for the export of 3D volumes or surfaces as STL files for creating physical models of a patient's anatomy using rapid prototyping technologies."
 msgstr ""
 
 #: dialogs.py:610
@@ -1057,9 +1052,7 @@ msgid "Select largest part"
 msgstr ""
 
 #: task_surface.py:255
-msgid ""
-"Automatically select disconnected regions and create one new surface per "
-"region"
+msgid "Automatically select disconnected regions and create one new surface per region"
 msgstr ""
 
 #: task_surface.py:256
