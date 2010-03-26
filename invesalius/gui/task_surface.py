@@ -271,25 +271,32 @@ class SurfaceTools(wx.Panel):
         link_seeds.Bind(hl.EVT_HYPERLINK_LEFT, self.OnLinkSeed)
 
         # Image(s) for buttons
-        BMP_LARGEST = wx.Bitmap("../icons/connectivity_largest.png", wx.BITMAP_TYPE_PNG)
-        BMP_SPLIT_ALL = wx.Bitmap("../icons/connectivity_split_all.png", wx.BITMAP_TYPE_PNG)
-        BMP_SEEDS = wx.Bitmap("../icons/connectivity_manual.png", wx.BITMAP_TYPE_PNG)
+        img_largest = wx.Image("../icons/connectivity_largest.png",
+                               wx.BITMAP_TYPE_PNG)
+        img_largest.Rescale(25, 25)
+        bmp_largest = img_largest.ConvertToBitmap()
 
-        bmp_list = [BMP_LARGEST, BMP_SPLIT_ALL, BMP_SEEDS]
-        for bmp in bmp_list:
-            bmp.SetWidth(25)
-            bmp.SetHeight(25)
+        img_split_all = wx.Image("../icons/connectivity_split_all.png",
+                                 wx.BITMAP_TYPE_PNG)
+        img_split_all.Rescale(25, 25)
+        bmp_split_all = img_split_all.ConvertToBitmap()
+
+        img_seeds = wx.Image("../icons/connectivity_manual.png",
+                             wx.BITMAP_TYPE_PNG)
+        img_seeds.Rescale(25, 25)
+        bmp_seeds = img_seeds.ConvertToBitmap()
 
         # Buttons related to hyperlinks
         button_style = pbtn.PB_STYLE_SQUARE | pbtn.PB_STYLE_DEFAULT
         button_style_plus = button_style|pbtn.PB_STYLE_TOGGLE
 
-        button_split = pbtn.PlateButton(self, BTN_SPLIT, "", BMP_SPLIT_ALL,
-                                              style=button_style)
-        button_largest = pbtn.PlateButton(self, BTN_LARGEST, "",
-                                               BMP_LARGEST, style=button_style)
-        button_seeds = pbtn.PlateButton(self, BTN_SEEDS, "",
-                                            BMP_SEEDS, style=button_style_plus)
+        button_split = pbtn.PlateButton(self, BTN_SPLIT, "", bmp_split_all,
+                                        style=button_style)
+        button_largest = pbtn.PlateButton(self, BTN_LARGEST, "", bmp_largest,
+                                          style=button_style)
+        button_seeds = pbtn.PlateButton(self, BTN_SEEDS, "", bmp_seeds,
+                                        style=button_style_plus)
+
         self.button_seeds = button_seeds
 
         # When using PlaneButton, it is necessary to bind events from parent win
@@ -302,13 +309,12 @@ class SurfaceTools(wx.Panel):
         #fixed_sizer = wx.FlexGridSizer(rows=3, cols=2, hgap=2, vgap=0)
         fixed_sizer = wx.FlexGridSizer(rows=3, cols=2, hgap=2, vgap=0)
         fixed_sizer.AddGrowableCol(0, 1)
-        fixed_sizer.AddMany([ (link_largest, 1, flag_link, 3),
-                              (button_largest, 0, flag_button),
-                              (link_seeds, 1, flag_link, 3),
-                              (button_seeds, 0, flag_button),
-                              (link_split_all, 1, flag_link, 3),
-                              (button_split, 0, flag_button) ])
-
+        fixed_sizer.AddMany([(link_largest, 1, flag_link, 3),
+                             (button_largest, 0, flag_button),
+                             (link_seeds, 1, flag_link, 3),
+                             (button_seeds, 0, flag_button),
+                             (link_split_all, 1, flag_link, 3),
+                             (button_split, 0, flag_button)])
 
         # Add line sizers into main sizer
         main_sizer = wx.BoxSizer(wx.VERTICAL)
