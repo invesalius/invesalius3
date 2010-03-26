@@ -765,7 +765,7 @@ msgstr ""
 
 #: frame.py:889
 msgid "Constrast"
-msgstr ""
+msgstr "Contraste"
 
 #: frame.py:1042
 msgid "Scroll slices"
@@ -781,7 +781,7 @@ msgstr ""
 
 #: frame.py:1207 frame.py:1294
 msgid "Hide text"
-msgstr ""
+msgstr "Esconder texto"
 
 #: frame.py:1278
 msgid "Show task panel"
@@ -789,51 +789,51 @@ msgstr ""
 
 #: frame.py:1288
 msgid "Show text"
-msgstr ""
+msgstr "Mostrar texto"
 
 #: imagedata_utils.py:87 imagedata_utils.py:260 imagedata_utils.py:365
 msgid "Generating multiplanar visualization..."
-msgstr ""
+msgstr "Gerar visão em planos múltiplos"
 
 #: import_panel.py:214
 msgid "Patient name"
-msgstr ""
+msgstr "Nome do paciente"
 
 #: import_panel.py:215
 msgid "Patient ID"
-msgstr ""
+msgstr "Registo de identificação do paciente"
 
 #: import_panel.py:216
 msgid "Age"
-msgstr ""
+msgstr "Idade"
 
 #: import_panel.py:217
 msgid "Gender"
-msgstr ""
+msgstr "Sexo"
 
 #: import_panel.py:218
 msgid "Study description"
-msgstr ""
+msgstr "Descrição do estudo"
 
 #: import_panel.py:219
 msgid "Modality"
-msgstr ""
+msgstr "Modalidade"
 
 #: import_panel.py:220
 msgid "Date acquired"
-msgstr ""
+msgstr "Data de aquisição"
 
 #: import_panel.py:221
 msgid "# Images"
-msgstr ""
+msgstr "Número de imagens"
 
 #: import_panel.py:222
 msgid "Institution"
-msgstr ""
+msgstr "Instituição"
 
 #: import_panel.py:223
 msgid "Date of birth"
-msgstr ""
+msgstr "Data de nascimento"
 
 #: import_panel.py:224
 msgid "Accession Number"
