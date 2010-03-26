@@ -105,20 +105,20 @@ msgstr "Baixo"
 
 #: constants.py:252 constants.py:256
 msgid "Medium"
-msgstr ""
+msgstr "Médio"
 
 #: constants.py:253 constants.py:256
 msgid "High"
-msgstr ""
+msgstr "Alto"
 
 #: constants.py:254 constants.py:255 constants.py:256 surface.py:381
 msgid "Optimal *"
-msgstr ""
+msgstr "Óptimo"
 
 #: constants.py:261
 #, python-format
 msgid "Surface %d"
-msgstr ""
+msgstr "Superfície %d"
 
 #: constants.py:264
 msgid "Abdomen"
@@ -138,7 +138,7 @@ msgstr ""
 
 #: constants.py:269
 msgid "Emphysema"
-msgstr ""
+msgstr "Enfisema"
 
 #: constants.py:270
 msgid "Ischemia - Hard Non Contrast"
@@ -150,11 +150,11 @@ msgstr ""
 
 #: constants.py:272
 msgid "Larynx"
-msgstr ""
+msgstr "Laringe"
 
 #: constants.py:273
 msgid "Liver"
-msgstr ""
+msgstr "Fígado"
 
 #: constants.py:274
 msgid "Lung - Soft"
@@ -166,11 +166,11 @@ msgstr ""
 
 #: constants.py:276
 msgid "Mediastinum"
-msgstr ""
+msgstr "Mediastino"
 
 #: constants.py:277 control.py:340 slice_menu.py:46 slice_menu.py:51
 msgid "Manual"
-msgstr ""
+msgstr "Manual"
 
 #: constants.py:278
 msgid "Pelvis"
