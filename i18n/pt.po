@@ -15,9 +15,9 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"X-Poedit-Country: GENERIC\n"
 "X-Poedit-Language: English\n"
 "X-Poedit-SourceCharset: utf-8\n"
+"X-Poedit-Country: GENERIC\n"
 
 #: constants.py:31
 #, python-format
@@ -385,7 +385,7 @@ msgstr "Sagital"
 
 #: data_notebook.py:62
 msgid "Masks"
-msgstr ""
+msgstr "Máscaras"
 
 #: data_notebook.py:63
 msgid "3D Surfaces"
@@ -410,7 +410,7 @@ msgstr "Nome"
 
 #: data_notebook.py:494
 msgid "Mask"
-msgstr ""
+msgstr "Máscara"
 
 #: data_notebook.py:775
 msgid "Volume (mm³)"
