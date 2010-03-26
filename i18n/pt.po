@@ -597,7 +597,7 @@ msgstr "Nome novo da superfície:"
 
 #: dialogs.py:683
 msgid "Name the surface to be created"
-msgstr ""
+msgstr "Nome da superfície a ser criada:"
 
 #: dialogs.py:690
 msgid "Mask of reference:"
@@ -605,7 +605,7 @@ msgstr ""
 
 #: dialogs.py:708
 msgid "Surface quality:"
-msgstr ""
+msgstr "Qualidade da superfície:"
 
 #: dialogs.py:737
 msgid "Fill holes"
@@ -613,19 +613,19 @@ msgstr ""
 
 #: dialogs.py:740
 msgid "Keep largest region"
-msgstr ""
+msgstr "Manter a região máxima"
 
 #: dialogs.py:774
 msgid "BMP image"
-msgstr ""
+msgstr "Imagem no formato BMP"
 
 #: dialogs.py:775
 msgid "JPG image"
-msgstr ""
+msgstr "Imagem no formato JPG"
 
 #: dialogs.py:776
 msgid "PNG image"
-msgstr ""
+msgstr "Imagem no formato PNG"
 
 #: dialogs.py:777
 msgid "PostScript document"
@@ -637,26 +637,26 @@ msgstr ""
 
 #: dialogs.py:779
 msgid "TIFF image"
-msgstr ""
+msgstr "Imagem no formato TIFF"
 
 #: dicom.py:1424 dicom.py:1427
 msgid "unnamed"
-msgstr ""
+msgstr "inominado"
 
 #: dicom_preview_panel.py:45
 #, python-format
 msgid "Image size: %d x %d"
-msgstr ""
+msgstr "Tamanho da imagem: %d x %d"
 
 #: dicom_preview_panel.py:46
 #, python-format
 msgid "Spacing: %.2f"
-msgstr ""
+msgstr "Espaçamento: %.2f"
 
 #: dicom_preview_panel.py:47
 #, python-format
 msgid "Location: %.2f"
-msgstr ""
+msgstr "Localização: %.2f"
 
 #: dicom_preview_panel.py:49
 #, python-format
@@ -667,17 +667,17 @@ msgstr ""
 
 #: dicom_preview_panel.py:187 dicom_preview_panel.py:188
 msgid "Image"
-msgstr ""
+msgstr "Imagem"
 
 #: dicom_preview_panel.py:395
 #, python-format
 msgid "%d Images"
-msgstr ""
+msgstr "%d imagens"
 
 #: dicom_preview_panel.py:519 dicom_preview_panel.py:540
 #, python-format
 msgid "Image %d"
-msgstr ""
+msgstr "Imagem %d"
 
 #: dicom_preview_panel.py:691
 msgid "Auto-play"
