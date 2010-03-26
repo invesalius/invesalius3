@@ -693,27 +693,27 @@ msgstr ""
 
 #: frame.py:403
 msgid "Import DICOM...\tCtrl+I"
-msgstr ""
+msgstr "Importar DICOM...\tCtrl+I"
 
 #: frame.py:405
 msgid "Open Project...\tCtrl+O"
-msgstr ""
+msgstr "Abrir Projecto...\tCtrl+O"
 
 #: frame.py:406
 msgid "Save Project\tCtrl+S"
-msgstr ""
+msgstr "Guardar Projecto\tCtrl+S"
 
 #: frame.py:407
 msgid "Save Project As..."
-msgstr ""
+msgstr "Guardar Projecto como..."
 
 #: frame.py:408
 msgid "Close Project"
-msgstr ""
+msgstr "Fechar Projecto"
 
 #: frame.py:417
 msgid "Exit"
-msgstr ""
+msgstr "Sair"
 
 #: frame.py:460
 msgid "Getting Started..."
@@ -725,11 +725,11 @@ msgstr ""
 
 #: frame.py:479
 msgid "File"
-msgstr ""
+msgstr "Ficheiro"
 
 #: frame.py:484
 msgid "Help"
-msgstr ""
+msgstr "Ajuda"
 
 #: frame.py:566 surface.py:358 surface.py:539
 msgid "Ready"
@@ -737,15 +737,15 @@ msgstr ""
 
 #: frame.py:716
 msgid "Import DICOM files..."
-msgstr ""
+msgstr "Importar ficheiros DICOM"
 
 #: frame.py:723
 msgid "Open a InVesalius project..."
-msgstr ""
+msgstr "Abrir um projecto do InVesalius"
 
 #: frame.py:727
 msgid "Save InVesalius project"
-msgstr ""
+msgstr "Guardar projecto do InVesalius"
 
 #: frame.py:869
 msgid "Zoom"
