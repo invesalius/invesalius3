@@ -15,9 +15,9 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
+"X-Poedit-Country: GENERIC\n"
 "X-Poedit-Language: English\n"
 "X-Poedit-SourceCharset: utf-8\n"
-"X-Poedit-Country: GENERIC\n"
 
 #: constants.py:31
 #, python-format
@@ -486,7 +486,7 @@ msgstr "Ferramentas"
 
 #: dialogs.py:56
 msgid "Value will be applied."
-msgstr "Aplicar-se-á o valor"
+msgstr "Aplicar-se-á o valor."
 
 #: dialogs.py:60
 msgid "Value will not be applied."
@@ -532,35 +532,35 @@ msgstr "Não há ficheiros DICOM no directório seleccionado."
 
 #: dialogs.py:312
 msgid "There is no mask of reference to create a surface."
-msgstr ""
+msgstr "Não há máscara ou referência para criar a superfície."
 
 #: dialogs.py:323
 msgid "No masks were selected for removal."
-msgstr ""
+msgstr "Nenhuma máscara foi seleccionada para remoção."
 
 #: dialogs.py:334
 msgid "No surfaces were selected for removal."
-msgstr ""
+msgstr "Nenhuma superfície foi seleccionada para remoção."
 
 #: dialogs.py:346
 msgid "No measures were selected for removal."
-msgstr ""
+msgstr "Nenhuma medida foi seleccionada para remoção."
 
 #: dialogs.py:357
 msgid "No masks were selected for duplication."
-msgstr ""
+msgstr "Nenhuma máscara foi seleccionada para duplicação."
 
 #: dialogs.py:370
 msgid "No surfaces were selected for duplication."
-msgstr ""
+msgstr "Nenhuma superfície foi seleccionada para duplicação."
 
 #: dialogs.py:416
 msgid "New mask name:"
-msgstr ""
+msgstr "Nome novo da máscara:"
 
 #: dialogs.py:420
 msgid "Name the mask to be created"
-msgstr ""
+msgstr "Nomear a máscara a se criar"
 
 #: dialogs.py:427
 msgid "Threshold preset:"
