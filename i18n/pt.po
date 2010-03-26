@@ -430,31 +430,31 @@ msgstr "Tipo"
 
 #: data_notebook.py:1023 data_notebook.py:1211
 msgid "Value"
-msgstr ""
+msgstr "Valor"
 
 #: default_tasks.py:134
 msgid "Data"
-msgstr ""
+msgstr "Dados"
 
 #: default_tasks.py:208 default_tasks.py:213
 msgid "InVesalius start"
-msgstr ""
+msgstr "Início do InVesalius"
 
 #: default_tasks.py:209 default_tasks.py:214 default_tasks.py:242
 msgid "Select region of interest"
-msgstr ""
+msgstr "Seleccionar região de interesse"
 
 #: default_tasks.py:210 default_tasks.py:215 default_tasks.py:244
 msgid "Configure 3D surface"
-msgstr ""
+msgstr "Configurar superfície em três dimensões"
 
 #: default_tasks.py:211
 msgid "Export data"
-msgstr ""
+msgstr "Exportar dados"
 
 #: default_tasks.py:216
 msgid "Utilize navigation system"
-msgstr ""
+msgstr "Utilizar sistema de navegação"
 
 #: default_viewers.py:79 default_viewers.py:168 task_exporter.py:235
 msgid "Axial slice"
@@ -470,7 +470,7 @@ msgstr ""
 
 #: default_viewers.py:95 default_viewers.py:186 task_exporter.py:238
 msgid "Volume"
-msgstr ""
+msgstr "Volume"
 
 #: default_viewers.py:416
 msgid "Preset name"
@@ -482,23 +482,23 @@ msgstr ""
 
 #: default_viewers.py:449
 msgid "Tools"
-msgstr ""
+msgstr "Ferramentas"
 
 #: dialogs.py:56
 msgid "Value will be applied."
-msgstr ""
+msgstr "Aplicar-se-á o valor"
 
 #: dialogs.py:60
 msgid "Value will not be applied."
-msgstr ""
+msgstr "Não se aplicará o valor."
 
 #: dialogs.py:98
 msgid "Loading DICOM files"
-msgstr ""
+msgstr "A carregar ficheiros DICOM"
 
 #: dialogs.py:140
 msgid "Open InVesalius 3 project..."
-msgstr ""
+msgstr "Abrir projecto do InVesalius 3"
 
 #: dialogs.py:177
 msgid "Choose a DICOM folder:"
@@ -506,7 +506,7 @@ msgstr ""
 
 #: dialogs.py:208
 msgid "Save project as..."
-msgstr ""
+msgstr "Guardar projecto como..."
 
 #: dialogs.py:211
 msgid "InVesalius project (*.inv3)|*.inv3"
