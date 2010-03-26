@@ -15,9 +15,9 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
+"X-Poedit-Country: GENERIC\n"
 "X-Poedit-Language: English\n"
 "X-Poedit-SourceCharset: utf-8\n"
-"X-Poedit-Country: GENERIC\n"
 
 #: constants.py:31
 #, python-format
@@ -821,7 +821,7 @@ msgstr "Modalidade"
 
 #: import_panel.py:220
 msgid "Date acquired"
-msgstr "Data de aquisição"
+msgstr "Data da aquisição"
 
 #: import_panel.py:221
 msgid "# Images"
@@ -833,7 +833,7 @@ msgstr "Instituição"
 
 #: import_panel.py:223
 msgid "Date of birth"
-msgstr "Data de nascimento"
+msgstr "Data do nascimento"
 
 #: import_panel.py:224
 msgid "Accession Number"
