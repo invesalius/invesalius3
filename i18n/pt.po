@@ -1015,11 +1015,11 @@ msgstr ""
 
 #: task_slice.py:509
 msgid "Circle"
-msgstr ""
+msgstr "Círculo"
 
 #: task_slice.py:513
 msgid "Square"
-msgstr ""
+msgstr "Quadrado"
 
 #: task_slice.py:549
 msgid "Brush threshold range:"
@@ -1031,7 +1031,7 @@ msgstr ""
 
 #: task_surface.py:104
 msgid "Next step"
-msgstr ""
+msgstr "Próximo passo"
 
 #: task_surface.py:134
 msgid "InVesalius 3 - New surface"
@@ -1039,11 +1039,11 @@ msgstr ""
 
 #: task_surface.py:207
 msgid "Surface properties"
-msgstr ""
+msgstr "Propriedades da superfície"
 
 #: task_surface.py:214
 msgid "Advanced options"
-msgstr ""
+msgstr "Opções avançadas"
 
 #: task_surface.py:246
 msgid "Automatically select largest disconnected region and create new surface"
@@ -1051,7 +1051,7 @@ msgstr ""
 
 #: task_surface.py:247
 msgid "Select largest part"
-msgstr ""
+msgstr "Seleccionar a parte máxima"
 
 #: task_surface.py:255
 msgid "Automatically select disconnected regions and create one new surface per region"
@@ -1067,11 +1067,11 @@ msgstr ""
 
 #: task_surface.py:265
 msgid "Select regions of interest..."
-msgstr ""
+msgstr "Seleccionar regiões de interesse..."
 
 #: task_surface.py:396
 msgid "Transparency:"
-msgstr ""
+msgstr "Transparência:"
 
 #: task_surface.py:532
 msgid "Decimate resolution:"
@@ -1083,7 +1083,7 @@ msgstr ""
 
 #: task_tools.py:60
 msgid "Measure distances"
-msgstr ""
+msgstr "Medir distâncias"
 
 #: task_tools.py:61
 msgid "Measure"
