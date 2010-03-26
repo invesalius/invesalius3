@@ -931,35 +931,35 @@ msgstr ""
 #: surface_process.py:55 surface_process.py:67 surface_process.py:76
 #: surface_process.py:89 surface_process.py:98 surface_process.py:109
 msgid "Generating 3D surface..."
-msgstr ""
+msgstr "A gerar superfície em três dimensões"
 
 #: task_exporter.py:105
 msgid "Export InVesalius screen to an image file"
-msgstr ""
+msgstr "Exportar o ecrã do InVesalius para um ficheiro de imagem"
 
 #: task_exporter.py:107
 msgid "Export picture..."
-msgstr ""
+msgstr "Exportar figura..."
 
 #: task_exporter.py:116
 msgid "Export 3D surface"
-msgstr ""
+msgstr "Exportar superfície em três dimensões"
 
 #: task_exporter.py:117
 msgid "Export 3D surface..."
-msgstr ""
+msgstr "Exportar superfície em três dimensões..."
 
 #: task_exporter.py:308
 msgid "Save 3D surface as..."
-msgstr ""
+msgstr "Guardar superfície em três dimensões como..."
 
 #: task_exporter.py:327
 msgid "You need to create a surface and make "
-msgstr ""
+msgstr "É necessário criar uma superfície e fazê-la"
 
 #: task_exporter.py:328
 msgid "visible before exporting it."
-msgstr ""
+msgstr "visível antes de exportá-la."
 
 #: task_generic.py:65 task_navigator.py:65
 msgid "Testing..."
@@ -971,15 +971,15 @@ msgstr ""
 
 #: task_importer.py:65
 msgid "Import medical images..."
-msgstr ""
+msgstr "Importar imagens médicas..."
 
 #: task_importer.py:82
 msgid "Open an existing InVesalius project..."
-msgstr ""
+msgstr "Abrir um projecto do InVesalius existente..."
 
 #: task_importer.py:83
 msgid "Open an existing project..."
-msgstr ""
+msgstr "Abrir um projecto existente..."
 
 #: task_slice.py:82
 msgid "Create mask for slice segmentation and editing"
@@ -991,7 +991,7 @@ msgstr ""
 
 #: task_slice.py:111
 msgid "Save surface"
-msgstr ""
+msgstr "Guardar superfície"
 
 #: task_slice.py:112
 msgid "Overwrite last surface"
@@ -1003,7 +1003,7 @@ msgstr ""
 
 #: task_slice.py:225
 msgid "Advanced editing tools"
-msgstr ""
+msgstr "Ferramentas avançadas de edição"
 
 #: task_slice.py:309
 msgid "Set predefined or manual threshold:"
