@@ -369,7 +369,7 @@ msgstr "Angular"
 
 #: data_notebook.py:43 measures.py:18
 msgid "3D"
-msgstr "Em trẽs dimensões"
+msgstr "Em três dimensões"
 
 #: data_notebook.py:44 measures.py:19
 msgid "Axial"
@@ -510,7 +510,7 @@ msgstr "Guardar projecto como..."
 
 #: dialogs.py:211
 msgid "InVesalius project (*.inv3)|*.inv3"
-msgstr ""
+msgstr "Projecto do InVesalius (*.inv3)|*.inv3"
 
 #: dialogs.py:274 dialogs.py:552 dialogs.py:577
 #, python-format
@@ -518,15 +518,17 @@ msgid ""
 "The project %s has been modified.\n"
 "Save changes?"
 msgstr ""
+"O projecto %s foi modificado.\n"
+"Guardar com as alterações?"
 
 #: dialogs.py:288
 #, python-format
 msgid "%s is an empty directory."
-msgstr ""
+msgstr "%s é um directório vazio."
 
 #: dialogs.py:301
 msgid "There are no DICOM files in the selected directory."
-msgstr ""
+msgstr "Não há ficheiros DICOM no directório seleccionado."
 
 #: dialogs.py:312
 msgid "There is no mask of reference to create a surface."
@@ -567,23 +569,23 @@ msgstr ""
 #: dialogs.py:529
 #, python-format
 msgid "%s does not exist."
-msgstr ""
+msgstr "%s não existe."
 
 #: dialogs.py:540
 msgid "Please, provide more than one DICOM file for 3D reconstruction"
-msgstr ""
+msgstr "Favor fornecer mais de um ficheiro DICOM para reconstrução em três dimensões"
 
 #: dialogs.py:601
 msgid "(c) 2007-2010 Renato Archer Information Technology Centre"
-msgstr ""
+msgstr "(c) 2007-2010 Centro de Tecnologia da Informação Renato Archer"
 
 #: dialogs.py:602
 msgid "InVesalius is a medical imaging program for 3D reconstruction. It uses a sequence of 2D DICOM image files acquired with CT or MRI scanners. InVesalius allows for the export of 3D volumes or surfaces as STL files for creating physical models of a patient's anatomy using rapid prototyping technologies."
-msgstr ""
+msgstr "InVesalius é um programa para reconstrução de imagens médicas em três dimensões. Ele utiliza uma sequência de ficheiros no formato DICOM com imagens em duas dimensões, obtidas por equipamentos de tomografia por computador ou de ressonância nuclear magnética. O programa InVesalius permite a exportação de volumes ou superfícies em três dimensões em ficheiros no formato STL para a criação de modelos físicos da anatomia do paciente, utilizando tecnologias de prototipagem rápida."
 
 #: dialogs.py:610
 msgid "GNU GPL (General Public License) version 2"
-msgstr ""
+msgstr "Licença GNU GPL (Licença Pública Geral) versão 2"
 
 #: dialogs.py:636
 msgid "Save raycasting preset as:"
@@ -591,7 +593,7 @@ msgstr ""
 
 #: dialogs.py:679
 msgid "New surface name:"
-msgstr ""
+msgstr "Nome novo da superfície:"
 
 #: dialogs.py:683
 msgid "Name the surface to be created"
