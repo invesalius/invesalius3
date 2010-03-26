@@ -15,9 +15,9 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"X-Poedit-Country: GENERIC\n"
 "X-Poedit-Language: English\n"
 "X-Poedit-SourceCharset: utf-8\n"
+"X-Poedit-Country: GENERIC\n"
 
 #: constants.py:31
 #, python-format
@@ -361,27 +361,27 @@ msgstr ""
 
 #: data_notebook.py:39 measures.py:14
 msgid "Linear"
-msgstr ""
+msgstr "Linear"
 
 #: data_notebook.py:40 measures.py:15
 msgid "Angular"
-msgstr ""
+msgstr "Angular"
 
 #: data_notebook.py:43 measures.py:18
 msgid "3D"
-msgstr ""
+msgstr "Em trẽs dimensões"
 
 #: data_notebook.py:44 measures.py:19
 msgid "Axial"
-msgstr ""
+msgstr "Axial"
 
 #: data_notebook.py:45 measures.py:20
 msgid "Coronal"
-msgstr ""
+msgstr "Coronal"
 
 #: data_notebook.py:46 measures.py:21
 msgid "Sagittal"
-msgstr ""
+msgstr "Sagital"
 
 #: data_notebook.py:62
 msgid "Masks"
@@ -389,24 +389,24 @@ msgstr ""
 
 #: data_notebook.py:63
 msgid "3D Surfaces"
-msgstr ""
+msgstr "Superfície em três dimensões"
 
 #: data_notebook.py:64
 msgid "Measures"
-msgstr ""
+msgstr "Medidas"
 
 #: data_notebook.py:182 frame.py:894
 msgid "Measure distance"
-msgstr ""
+msgstr "Medir distância"
 
 #: data_notebook.py:185 frame.py:899
 msgid "Measure angle"
-msgstr ""
+msgstr "Medir ângulo"
 
 #: data_notebook.py:433 data_notebook.py:774 data_notebook.py:1020
 #: data_notebook.py:1209
 msgid "Name"
-msgstr ""
+msgstr "Nome"
 
 #: data_notebook.py:494
 msgid "Mask"
@@ -414,19 +414,19 @@ msgstr ""
 
 #: data_notebook.py:775
 msgid "Volume (mm³)"
-msgstr ""
+msgstr "Volume (mm³)"
 
 #: data_notebook.py:776
 msgid "Transparency"
-msgstr ""
+msgstr "Transparência"
 
 #: data_notebook.py:1021
 msgid "Location"
-msgstr ""
+msgstr "Localização"
 
 #: data_notebook.py:1022 data_notebook.py:1210
 msgid "Type"
-msgstr ""
+msgstr "Tipo"
 
 #: data_notebook.py:1023 data_notebook.py:1211
 msgid "Value"
