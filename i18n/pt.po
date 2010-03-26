@@ -15,9 +15,9 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"X-Poedit-Country: GENERIC\n"
 "X-Poedit-Language: English\n"
 "X-Poedit-SourceCharset: utf-8\n"
+"X-Poedit-Country: GENERIC\n"
 
 #: constants.py:31
 #, python-format
@@ -849,7 +849,7 @@ msgstr ""
 
 #: language_dialog.py:36
 msgid "Language selection"
-msgstr ""
+msgstr "Selecção de idioma"
 
 #: language_dialog.py:79
 msgid "Choose user interface language"
@@ -865,47 +865,47 @@ msgstr ""
 
 #: presets.py:31 presets.py:49 presets.py:104 presets.py:135
 msgid "Soft Tissue"
-msgstr ""
+msgstr "Tecidos moles"
 
 #: presets.py:32 presets.py:50 presets.py:105 presets.py:136
 msgid "Enamel (Adult)"
-msgstr ""
+msgstr "Esmalte (adulto)"
 
 #: presets.py:33 presets.py:51 presets.py:106 presets.py:137
 msgid "Enamel (Child)"
-msgstr ""
+msgstr "Esmalte (criança)"
 
 #: presets.py:34 presets.py:52 presets.py:107 presets.py:138
 msgid "Compact Bone (Adult)"
-msgstr ""
+msgstr "Osso compacto (adulto)"
 
 #: presets.py:35 presets.py:53 presets.py:108 presets.py:139
 msgid "Compact Bone (Child)"
-msgstr ""
+msgstr "Osso compacto (criança)"
 
 #: presets.py:36 presets.py:54 presets.py:109 presets.py:140
 msgid "Spongial Bone (Adult)"
-msgstr ""
+msgstr "Osso esponjoso (adulto)"
 
 #: presets.py:37 presets.py:55 presets.py:110 presets.py:141
 msgid "Spongial Bone (Child)"
-msgstr ""
+msgstr "Osso esponjoso (criança)"
 
 #: presets.py:38 presets.py:56 presets.py:111 presets.py:142
 msgid "Muscle Tissue (Adult)"
-msgstr ""
+msgstr "Tecido muscular (adulto)"
 
 #: presets.py:39 presets.py:57 presets.py:112 presets.py:143
 msgid "Muscle Tissue (Child)"
-msgstr ""
+msgstr "Tecido muscular (criança)"
 
 #: presets.py:40 presets.py:58 presets.py:113 presets.py:144
 msgid "Fat Tissue (Adult)"
-msgstr ""
+msgstr "Tecido adiposo (adulto)"
 
 #: presets.py:41 presets.py:59 presets.py:114 presets.py:145
 msgid "Fat Tissue (Child)"
-msgstr ""
+msgstr "Tecido adiposo (criança)"
 
 #: presets.py:42 presets.py:60 presets.py:115 presets.py:146
 msgid "Skin Tissue (Adult)"
@@ -917,7 +917,7 @@ msgstr ""
 
 #: slice_menu.py:104
 msgid "Window Width and Level"
-msgstr ""
+msgstr "Largura e nível da janela"
 
 #: slice_menu.py:105
 msgid "Pseudo Colour"
