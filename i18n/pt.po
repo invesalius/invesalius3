@@ -15,9 +15,9 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"X-Poedit-Country: GENERIC\n"
 "X-Poedit-Language: English\n"
 "X-Poedit-SourceCharset: utf-8\n"
+"X-Poedit-Country: GENERIC\n"
 
 #: constants.py:31
 #, python-format
@@ -869,51 +869,51 @@ msgstr "Tecidos moles"
 
 #: presets.py:32 presets.py:50 presets.py:105 presets.py:136
 msgid "Enamel (Adult)"
-msgstr "Esmalte (adulto)"
+msgstr "Esmalte (Adulto)"
 
 #: presets.py:33 presets.py:51 presets.py:106 presets.py:137
 msgid "Enamel (Child)"
-msgstr "Esmalte (criança)"
+msgstr "Esmalte (Criança)"
 
 #: presets.py:34 presets.py:52 presets.py:107 presets.py:138
 msgid "Compact Bone (Adult)"
-msgstr "Osso compacto (adulto)"
+msgstr "Osso Compacto (Adulto)"
 
 #: presets.py:35 presets.py:53 presets.py:108 presets.py:139
 msgid "Compact Bone (Child)"
-msgstr "Osso compacto (criança)"
+msgstr "Osso Compacto (Criança)"
 
 #: presets.py:36 presets.py:54 presets.py:109 presets.py:140
 msgid "Spongial Bone (Adult)"
-msgstr "Osso esponjoso (adulto)"
+msgstr "Osso Esponjoso (Adulto)"
 
 #: presets.py:37 presets.py:55 presets.py:110 presets.py:141
 msgid "Spongial Bone (Child)"
-msgstr "Osso esponjoso (criança)"
+msgstr "Osso Esponjoso (Criança)"
 
 #: presets.py:38 presets.py:56 presets.py:111 presets.py:142
 msgid "Muscle Tissue (Adult)"
-msgstr "Tecido muscular (adulto)"
+msgstr "Tecido Muscular (Adulto)"
 
 #: presets.py:39 presets.py:57 presets.py:112 presets.py:143
 msgid "Muscle Tissue (Child)"
-msgstr "Tecido muscular (criança)"
+msgstr "Tecido Muscular (Criança)"
 
 #: presets.py:40 presets.py:58 presets.py:113 presets.py:144
 msgid "Fat Tissue (Adult)"
-msgstr "Tecido adiposo (adulto)"
+msgstr "Tecido Adiposo (Adulto)"
 
 #: presets.py:41 presets.py:59 presets.py:114 presets.py:145
 msgid "Fat Tissue (Child)"
-msgstr "Tecido adiposo (criança)"
+msgstr "Tecido Adiposo (Criança)"
 
 #: presets.py:42 presets.py:60 presets.py:115 presets.py:146
 msgid "Skin Tissue (Adult)"
-msgstr ""
+msgstr "Tecido Epitelial (Adulto)"
 
 #: presets.py:43 presets.py:61 presets.py:116 presets.py:147
 msgid "Skin Tissue (Child)"
-msgstr ""
+msgstr "Tecido Epitelial (Criança)"
 
 #: slice_menu.py:104
 msgid "Window Width and Level"
