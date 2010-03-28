@@ -987,7 +987,7 @@ msgstr ""
 
 #: task_slice.py:83
 msgid "Create new mask"
-msgstr ""
+msgstr "Criar máscara nova"
 
 #: task_slice.py:111
 msgid "Save surface"
@@ -999,7 +999,7 @@ msgstr ""
 
 #: task_slice.py:217
 msgid "Mask properties"
-msgstr ""
+msgstr "Propriedades da máscara"
 
 #: task_slice.py:225
 msgid "Advanced editing tools"
