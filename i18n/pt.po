@@ -593,7 +593,7 @@ msgstr ""
 
 #: dialogs.py:679
 msgid "New surface name:"
-msgstr "Nome novo da superfície:"
+msgstr ""
 
 #: dialogs.py:683
 msgid "Name the surface to be created"
