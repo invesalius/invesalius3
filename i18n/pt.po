@@ -1095,24 +1095,24 @@ msgstr ""
 
 #: viewer_slice.py:449 viewer_slice.py:453
 msgid "R"
-msgstr ""
+msgstr "D"
 
 #: viewer_slice.py:449 viewer_slice.py:453
 msgid "L"
-msgstr ""
+msgstr "L"
 
 #: viewer_slice.py:449 viewer_slice.py:451
 msgid "A"
-msgstr ""
+msgstr "A"
 
 #: viewer_slice.py:449 viewer_slice.py:451
 msgid "P"
-msgstr ""
+msgstr "P"
 
 #: viewer_slice.py:451 viewer_slice.py:453
 msgid "T"
-msgstr ""
+msgstr "S"
 
 #: viewer_slice.py:451 viewer_slice.py:453
 msgid "B"
-msgstr ""
+msgstr "I"
