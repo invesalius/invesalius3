@@ -130,7 +130,7 @@ msgstr ""
 
 #: constants.py:267
 msgid "Brain"
-msgstr ""
+msgstr "Cérebro"
 
 #: constants.py:268 control.py:339 slice_menu.py:39 slice_menu.py:51
 msgid "Default"
@@ -174,7 +174,7 @@ msgstr "Manual"
 
 #: constants.py:278
 msgid "Pelvis"
-msgstr ""
+msgstr "Pelve"
 
 #: constants.py:279
 msgid "Sinus"
@@ -266,15 +266,15 @@ msgstr ""
 
 #: constants.py:319
 msgid "Mid Contrast"
-msgstr ""
+msgstr "Contraste Médio"
 
 #: constants.py:320
 msgid "No Shading"
-msgstr ""
+msgstr "Sem Sombreamento"
 
 #: constants.py:321
 msgid "Pencil"
-msgstr ""
+msgstr "Lápis"
 
 #: constants.py:322
 msgid "Red on White"
@@ -458,15 +458,15 @@ msgstr "Utilizar sistema de navegação"
 
 #: default_viewers.py:79 default_viewers.py:168 task_exporter.py:235
 msgid "Axial slice"
-msgstr ""
+msgstr "Corte Axial"
 
 #: default_viewers.py:84 default_viewers.py:174 task_exporter.py:236
 msgid "Coronal slice"
-msgstr ""
+msgstr "Corte Coronal"
 
 #: default_viewers.py:89 default_viewers.py:180 task_exporter.py:237
 msgid "Sagittal slice"
-msgstr ""
+msgstr "Corte Sagital"
 
 #: default_viewers.py:95 default_viewers.py:186 task_exporter.py:238
 msgid "Volume"
@@ -593,7 +593,7 @@ msgstr ""
 
 #: dialogs.py:679
 msgid "New surface name:"
-msgstr ""
+msgstr "Nome da superfície nova"
 
 #: dialogs.py:683
 msgid "Name the surface to be created"
@@ -601,7 +601,7 @@ msgstr "Nome da superfície a ser criada:"
 
 #: dialogs.py:690
 msgid "Mask of reference:"
-msgstr ""
+msgstr "Máscara de referência"
 
 #: dialogs.py:708
 msgid "Surface quality:"
@@ -721,7 +721,7 @@ msgstr ""
 
 #: frame.py:463
 msgid "About..."
-msgstr ""
+msgstr "Acerca de..."
 
 #: frame.py:479
 msgid "File"
@@ -733,7 +733,7 @@ msgstr "Ajuda"
 
 #: frame.py:566 surface.py:358 surface.py:539
 msgid "Ready"
-msgstr ""
+msgstr "Pronto"
 
 #: frame.py:716
 msgid "Import DICOM files..."
@@ -749,19 +749,19 @@ msgstr "Guardar projecto do InVesalius"
 
 #: frame.py:869
 msgid "Zoom"
-msgstr ""
+msgstr "Zoom"
 
 #: frame.py:874
 msgid "Zoom based on selection"
-msgstr ""
+msgstr "Zoom baseado na selecção"
 
 #: frame.py:879
 msgid "Rotate"
-msgstr ""
+msgstr "Rodar"
 
 #: frame.py:884
 msgid "Move"
-msgstr ""
+msgstr "Mover"
 
 #: frame.py:889
 msgid "Constrast"
@@ -841,11 +841,11 @@ msgstr ""
 
 #: import_panel.py:225
 msgid "Referring physician"
-msgstr ""
+msgstr "Médico solicitante"
 
 #: import_panel.py:241
 msgid "InVesalius Database"
-msgstr ""
+msgstr "Base de dados do InVesalius"
 
 #: language_dialog.py:36
 msgid "Language selection"
@@ -967,7 +967,7 @@ msgstr ""
 
 #: task_importer.py:64
 msgid "Select DICOM or Analyze files to be reconstructed"
-msgstr ""
+msgstr "Seleccionar ficheiros DICOM ou Analyze para a reconstrução"
 
 #: task_importer.py:65
 msgid "Import medical images..."
@@ -983,7 +983,7 @@ msgstr "Abrir um projecto existente..."
 
 #: task_slice.py:82
 msgid "Create mask for slice segmentation and editing"
-msgstr ""
+msgstr "Criar máscara para segmentação e edição de cortes"
 
 #: task_slice.py:83
 msgid "Create new mask"
@@ -1027,7 +1027,7 @@ msgstr ""
 
 #: task_surface.py:85
 msgid "Create 3D surface based on a mask"
-msgstr ""
+msgstr "Criar superfície em três dimensões com base em uma máscara"
 
 #: task_surface.py:104
 msgid "Next step"
@@ -1087,11 +1087,11 @@ msgstr "Medir distâncias"
 
 #: task_tools.py:61
 msgid "Measure"
-msgstr ""
+msgstr "Medir"
 
 #: task_tools.py:64 task_tools.py:65
 msgid "Add text annotations"
-msgstr ""
+msgstr "Adicionar notas em texto"
 
 #: viewer_slice.py:449 viewer_slice.py:453
 msgid "R"
