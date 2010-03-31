@@ -26,27 +26,27 @@ msgstr "M %d"
 
 #: constants.py:91
 msgid "Keep all slices"
-msgstr ""
+msgstr "Manter todos os cortes"
 
 #: constants.py:91
 msgid "Skip 1 for each 2 slices"
-msgstr ""
+msgstr "Desprezar 1 de cada 2 cortes"
 
 #: constants.py:92
 msgid "Skip 2 for each 3 slices"
-msgstr ""
+msgstr "Desprezar 2 de cada 3 cortes"
 
 #: constants.py:92
 msgid "Skip 3 for each 4 slices"
-msgstr ""
+msgstr "Desprezar 3 de cada 4 cortes"
 
 #: constants.py:93
 msgid "Skip 4 for each 5 slices"
-msgstr ""
+msgstr "Desprezar 4 de cada 5 cortes"
 
 #: constants.py:93
 msgid "Skip 5 for each 6 slices"
-msgstr ""
+msgstr "Desprezar 5 de cada 6 cortes"
 
 #: constants.py:133 slice_menu.py:76 slice_menu.py:81
 msgid "Default "
@@ -74,7 +74,7 @@ msgstr "Oceano"
 
 #: constants.py:139
 msgid "Inverse Gray"
-msgstr ""
+msgstr "Cinzento invertido"
 
 #: constants.py:180 constants.py:265 dialogs.py:433 dialogs.py:446
 #: dicom_preview_panel.py:619 dicom_preview_panel.py:620 presets.py:30
@@ -89,11 +89,11 @@ msgstr "Máscara %d"
 
 #: constants.py:240 task_surface.py:43
 msgid "Draw"
-msgstr ""
+msgstr "Desenhar"
 
 #: constants.py:240 task_surface.py:43
 msgid "Erase"
-msgstr ""
+msgstr "Apagar"
 
 #: constants.py:240 data_notebook.py:434 task_surface.py:43
 msgid "Threshold"
