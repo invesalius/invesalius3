@@ -15,9 +15,9 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
+"X-Poedit-Country: GENERIC\n"
 "X-Poedit-Language: English\n"
 "X-Poedit-SourceCharset: utf-8\n"
-"X-Poedit-Country: GENERIC\n"
 
 #: constants.py:31
 #, python-format
@@ -339,83 +339,83 @@ msgstr "차단"
 
 #: constants.py:361 volume.py:552
 msgid "Cut plane"
-msgstr ""
+msgstr "자름면"
 
 #: control.py:275
 #, python-format
 msgid "Loading file %d of %d"
-msgstr ""
+msgstr "파일로딩 %d 중 %d"
 
 #: control.py:367 dialogs.py:514 presets.py:44 presets.py:62 presets.py:117
 #: presets.py:148 task_slice.py:406 task_slice.py:408 task_slice.py:420
 #: task_slice.py:422 task_slice.py:458 task_slice.py:461
 msgid "Custom"
-msgstr ""
+msgstr "관례"
 
 #: control.py:372
 msgid "Untitled"
-msgstr ""
+msgstr "제목없음"
 
 #: control.py:446
 msgid "Fix gantry tilt applying the degrees below"
-msgstr ""
+msgstr "아래 등급을 적용하여 뼈대경사를 고정"
 
 #: data_notebook.py:39 measures.py:14
 msgid "Linear"
-msgstr ""
+msgstr "선형"
 
 #: data_notebook.py:40 measures.py:15
 msgid "Angular"
-msgstr ""
+msgstr "안각의"
 
 #: data_notebook.py:43 measures.py:18
 msgid "3D"
-msgstr ""
+msgstr "3차원"
 
 #: data_notebook.py:44 measures.py:19
 msgid "Axial"
-msgstr ""
+msgstr "축성방향"
 
 #: data_notebook.py:45 measures.py:20
 msgid "Coronal"
-msgstr ""
+msgstr "두정방향"
 
 #: data_notebook.py:46 measures.py:21
 msgid "Sagittal"
-msgstr ""
+msgstr "시상방향"
 
 #: data_notebook.py:62
 msgid "Masks"
-msgstr ""
+msgstr "마스크"
 
 #: data_notebook.py:63
 msgid "3D Surfaces"
-msgstr ""
+msgstr "3차원 표면"
 
 #: data_notebook.py:64
 msgid "Measures"
-msgstr ""
+msgstr "측정"
 
 #: data_notebook.py:182 frame.py:894
 msgid "Measure distance"
-msgstr ""
+msgstr "측정거리"
 
 #: data_notebook.py:185 frame.py:899
 msgid "Measure angle"
-msgstr ""
+msgstr "측정각도"
 
 #: data_notebook.py:433 data_notebook.py:774 data_notebook.py:1020
 #: data_notebook.py:1209
 msgid "Name"
-msgstr ""
+msgstr "이름"
 
 #: data_notebook.py:494
 msgid "Mask"
-msgstr ""
+msgstr "마스크"
 
 #: data_notebook.py:775
 msgid "Volume (mm³)"
-msgstr ""
+msgstr "체적 (mm³)"
 
 #: data_notebook.py:776
 msgid "Transparency"
@@ -495,23 +495,23 @@ msgstr ""
 
 #: dialogs.py:98
 msgid "Loading DICOM files"
-msgstr ""
+msgstr "DICOM파일 로딩"
 
 #: dialogs.py:140
 msgid "Open InVesalius 3 project..."
-msgstr ""
+msgstr "인베쌀리우스3 프로젝트 열기 ..."
 
 #: dialogs.py:177
 msgid "Choose a DICOM folder:"
-msgstr ""
+msgstr "DICOM등록부 선택:"
 
 #: dialogs.py:208
 msgid "Save project as..."
-msgstr ""
+msgstr "새 이름으로 프로젝트 보관 ..."
 
 #: dialogs.py:211
 msgid "InVesalius project (*.inv3)|*.inv3"
-msgstr ""
+msgstr "인베쌀리우스 프로젝트 (*.inv3)|*.inv3"
 
 #: dialogs.py:274 dialogs.py:552 dialogs.py:577
 #, python-format
@@ -519,64 +519,66 @@ msgid ""
 "The project %s has been modified.\n"
 "Save changes?"
 msgstr ""
+"%s의 프로젝트 변경되였습니다. \n"
+"보관하시겠습니까?"
 
 #: dialogs.py:288
 #, python-format
 msgid "%s is an empty directory."
-msgstr ""
+msgstr "%s가 빈 등록부입니다."
 
 #: dialogs.py:301
 msgid "There are no DICOM files in the selected directory."
-msgstr ""
+msgstr "선택된 등록부에 DICOM파일들이 없습니다."
 
 #: dialogs.py:312
 msgid "There is no mask of reference to create a surface."
-msgstr ""
+msgstr "표면을 생성하는데 참고할 마스크가 없습니다."
 
 #: dialogs.py:323
 msgid "No masks were selected for removal."
-msgstr ""
+msgstr "제거할 마스크가 선택되지 않았습니다."
 
 #: dialogs.py:334
 msgid "No surfaces were selected for removal."
-msgstr ""
+msgstr "제거할 표면이 선택되지 않았습니다."
 
 #: dialogs.py:346
 msgid "No measures were selected for removal."
-msgstr ""
+msgstr "제거할 측정대상이 선택되지 않았습니다."
 
 #: dialogs.py:357
 msgid "No masks were selected for duplication."
-msgstr ""
+msgstr "복제할 마스크가 선택되지 않았습니다."
 
 #: dialogs.py:370
 msgid "No surfaces were selected for duplication."
-msgstr ""
+msgstr "복제할 표면이 선택되지 않았습니다."
 
 #: dialogs.py:416
 msgid "New mask name:"
-msgstr ""
+msgstr "새 마스크 이름:"
 
 #: dialogs.py:420
 msgid "Name the mask to be created"
-msgstr ""
+msgstr "생성하려는 마스크에 이름을 지정"
 
 #: dialogs.py:427
 msgid "Threshold preset:"
-msgstr ""
+msgstr "림계값 예상"
 
 #: dialogs.py:529
 #, python-format
 msgid "%s does not exist."
-msgstr ""
+msgstr "%s가 존재하지 않습니다."
 
 #: dialogs.py:540
 msgid "Please, provide more than one DICOM file for 3D reconstruction"
-msgstr ""
+msgstr "3차원재생성을 위해 한개이상의 DICOM파일들을 제공하십시요."
 
 #: dialogs.py:601
 msgid "(c) 2007-2010 Renato Archer Information Technology Centre"
-msgstr ""
+msgstr "(c) 2007 -2010 레나토 아쳐 정보기술쎈터"
 
 #: dialogs.py:602
 msgid "InVesalius is a medical imaging program for 3D reconstruction. It uses a sequence of 2D DICOM image files acquired with CT or MRI scanners. InVesalius allows for the export of 3D volumes or surfaces as STL files for creating physical models of a patient's anatomy using rapid prototyping technologies."
