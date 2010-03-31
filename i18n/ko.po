@@ -15,9 +15,9 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"X-Poedit-Country: GENERIC\n"
 "X-Poedit-Language: English\n"
 "X-Poedit-SourceCharset: utf-8\n"
+"X-Poedit-Country: GENERIC\n"
 
 #: constants.py:31
 #, python-format
@@ -187,79 +187,79 @@ msgstr "막관구조 - 강"
 
 #: constants.py:281
 msgid "Vasculature - Soft"
-msgstr ""
+msgstr "막관구조 - 약"
 
 #: constants.py:290
 msgid "Front"
-msgstr ""
+msgstr "앞"
 
 #: constants.py:291
 msgid "Back"
-msgstr ""
+msgstr "뒤"
 
 #: constants.py:292
 msgid "Top"
-msgstr ""
+msgstr "상"
 
 #: constants.py:293
 msgid "Bottom"
-msgstr ""
+msgstr "하"
 
 #: constants.py:294
 msgid "Right"
-msgstr ""
+msgstr "우"
 
 #: constants.py:295
 msgid "Left"
-msgstr ""
+msgstr "좌"
 
 #: constants.py:296
 msgid "Isometric"
-msgstr ""
+msgstr "등척성의"
 
 #: constants.py:307
 msgid "Airways"
-msgstr ""
+msgstr "숨길"
 
 #: constants.py:308
 msgid "Airways II"
-msgstr ""
+msgstr "숨길 II"
 
 #: constants.py:309
 msgid "Black & White"
-msgstr ""
+msgstr "흑백"
 
 #: constants.py:310
 msgid "Bone + Skin"
-msgstr ""
+msgstr "골격 + 피부"
 
 #: constants.py:311
 msgid "Bone + Skin II"
-msgstr ""
+msgstr "골격 + 피부 II"
 
 #: constants.py:312
 msgid "Dark Bone"
-msgstr ""
+msgstr "어두운 골격"
 
 #: constants.py:313
 msgid "Glossy"
-msgstr ""
+msgstr "광택"
 
 #: constants.py:314
 msgid "Glossy II"
-msgstr ""
+msgstr "광택 II"
 
 #: constants.py:315
 msgid "Gold Bone"
-msgstr ""
+msgstr "황금색 골격"
 
 #: constants.py:316
 msgid "High Contrast"
-msgstr ""
+msgstr "높은 명암대조"
 
 #: constants.py:317
 msgid "Low Contrast"
-msgstr ""
+msgstr "낮은 명암대조"
 
 #: constants.py:318 constants.py:325
 msgid "Soft on White"
