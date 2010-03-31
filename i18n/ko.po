@@ -15,9 +15,9 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"X-Poedit-Country: GENERIC\n"
 "X-Poedit-Language: English\n"
 "X-Poedit-SourceCharset: utf-8\n"
+"X-Poedit-Country: GENERIC\n"
 
 #: constants.py:31
 #, python-format
@@ -989,83 +989,83 @@ msgstr "슬라이스 토막화 및 편집을 위한 마스크창조"
 
 #: task_slice.py:83
 msgid "Create new mask"
-msgstr ""
+msgstr "새 마스크창조"
 
 #: task_slice.py:111
 msgid "Save surface"
-msgstr ""
+msgstr "표면보관"
 
 #: task_slice.py:112
 msgid "Overwrite last surface"
-msgstr ""
+msgstr "이전표면을 덧쓰기"
 
 #: task_slice.py:217
 msgid "Mask properties"
-msgstr ""
+msgstr "마스크 속성"
 
 #: task_slice.py:225
 msgid "Advanced editing tools"
-msgstr ""
+msgstr "개선된 편집도구"
 
 #: task_slice.py:309
 msgid "Set predefined or manual threshold:"
-msgstr ""
+msgstr "미리정의된 혹은 수동림계값 설정"
 
 #: task_slice.py:503
 msgid "Choose brush type, size or operation:"
-msgstr ""
+msgstr "붓형태, 크기, 동작을 선택:"
 
 #: task_slice.py:509
 msgid "Circle"
-msgstr ""
+msgstr "원"
 
 #: task_slice.py:513
 msgid "Square"
-msgstr ""
+msgstr "정방혁"
 
 #: task_slice.py:549
 msgid "Brush threshold range:"
-msgstr ""
+msgstr "붓림계범위"
 
 #: task_surface.py:85
 msgid "Create 3D surface based on a mask"
-msgstr ""
+msgstr "마스크에 기초한 3차원표면 창조"
 
 #: task_surface.py:104
 msgid "Next step"
-msgstr ""
+msgstr "다음 단계"
 
 #: task_surface.py:134
 msgid "InVesalius 3 - New surface"
-msgstr ""
+msgstr "인베쌀리우스 3 - 새 표면"
 
 #: task_surface.py:207
 msgid "Surface properties"
-msgstr ""
+msgstr "표면 속성"
 
 #: task_surface.py:214
 msgid "Advanced options"
-msgstr ""
+msgstr "개선된 옵션"
 
 #: task_surface.py:246
 msgid "Automatically select largest disconnected region and create new surface"
-msgstr ""
+msgstr "자동적으로 가장 큰 비련결령역을 선택하고 새 표면 창조"
 
 #: task_surface.py:247
 msgid "Select largest part"
-msgstr ""
+msgstr "가장 큰 부분선택"
 
 #: task_surface.py:255
 msgid "Automatically select disconnected regions and create one new surface per region"
-msgstr ""
+msgstr "자동적으로 비련결령역들을 선택하고 령역마다 새 표면을 한개씩 창조"
 
 #: task_surface.py:256
 msgid "Split all disconnected surfaces"
-msgstr ""
+msgstr "모든 비련결된 표면들을 가르기"
 
 #: task_surface.py:264
 msgid "Manually insert seeds of regions of interest and create one new surface"
-msgstr ""
+msgstr "수동적으로 관심령역의 근원들을 삼입하고 하나의 새 표면창조"
 
 #: task_surface.py:265
 msgid "Select regions of interest..."
