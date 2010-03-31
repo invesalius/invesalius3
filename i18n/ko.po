@@ -419,79 +419,79 @@ msgstr "체적 (mm³)"
 
 #: data_notebook.py:776
 msgid "Transparency"
-msgstr ""
+msgstr "투명도"
 
 #: data_notebook.py:1021
 msgid "Location"
-msgstr ""
+msgstr "위치"
 
 #: data_notebook.py:1022 data_notebook.py:1210
 msgid "Type"
-msgstr ""
+msgstr "형태"
 
 #: data_notebook.py:1023 data_notebook.py:1211
 msgid "Value"
-msgstr ""
+msgstr "값"
 
 #: default_tasks.py:134
 msgid "Data"
-msgstr ""
+msgstr "자료"
 
 #: default_tasks.py:208 default_tasks.py:213
 msgid "InVesalius start"
-msgstr ""
+msgstr "인베쌀리우스 기동"
 
 #: default_tasks.py:209 default_tasks.py:214 default_tasks.py:242
 msgid "Select region of interest"
-msgstr ""
+msgstr "관심령역 선택"
 
 #: default_tasks.py:210 default_tasks.py:215 default_tasks.py:244
 msgid "Configure 3D surface"
-msgstr ""
+msgstr "3차원 표면구성"
 
 #: default_tasks.py:211
 msgid "Export data"
-msgstr ""
+msgstr "자료 반출"
 
 #: default_tasks.py:216
 msgid "Utilize navigation system"
-msgstr ""
+msgstr "이동체계를 리용"
 
 #: default_viewers.py:79 default_viewers.py:168 task_exporter.py:235
 msgid "Axial slice"
-msgstr ""
+msgstr "축성슬라이스"
 
 #: default_viewers.py:84 default_viewers.py:174 task_exporter.py:236
 msgid "Coronal slice"
-msgstr ""
+msgstr "두정슬라이스"
 
 #: default_viewers.py:89 default_viewers.py:180 task_exporter.py:237
 msgid "Sagittal slice"
-msgstr ""
+msgstr "시상슬라이스"
 
 #: default_viewers.py:95 default_viewers.py:186 task_exporter.py:238
 msgid "Volume"
-msgstr ""
+msgstr "공간"
 
 #: default_viewers.py:416
 msgid "Preset name"
-msgstr ""
+msgstr "미리설정 이름"
 
 #: default_viewers.py:419
 msgid "Save raycasting preset"
-msgstr ""
+msgstr "광선주사 미리설정값 보관"
 
 #: default_viewers.py:449
 msgid "Tools"
-msgstr ""
+msgstr "도구"
 
 #: dialogs.py:56
 msgid "Value will be applied."
-msgstr ""
+msgstr "값이 적용됩니다."
 
 #: dialogs.py:60
 msgid "Value will not be applied."
-msgstr ""
+msgstr "값이 적용되지 않습니다."
 
 #: dialogs.py:98
 msgid "Loading DICOM files"
@@ -665,84 +665,86 @@ msgid ""
 "%s %s\n"
 "Made in InVesalius"
 msgstr ""
+"%s %s\n"
+"인베쌀리우스 제작"
 
 #: dicom_preview_panel.py:187 dicom_preview_panel.py:188
 msgid "Image"
-msgstr ""
+msgstr "이미지"
 
 #: dicom_preview_panel.py:395
 #, python-format
 msgid "%d Images"
-msgstr ""
+msgstr "%d 이미지들"
 
 #: dicom_preview_panel.py:519 dicom_preview_panel.py:540
 #, python-format
 msgid "Image %d"
-msgstr ""
+msgstr "이미지 %d"
 
 #: dicom_preview_panel.py:691
 msgid "Auto-play"
-msgstr ""
+msgstr "자동실행"
 
 #: frame.py:126
 msgid "Data panel"
-msgstr ""
+msgstr "자료패널"
 
 #: frame.py:133
 msgid "Preview medical data to be reconstructed"
-msgstr ""
+msgstr "재생성되는 의학자료 미리보기"
 
 #: frame.py:403
 msgid "Import DICOM...\tCtrl+I"
-msgstr ""
+msgstr "DICOM 입력 ...\tCtrl+I"
 
 #: frame.py:405
 msgid "Open Project...\tCtrl+O"
-msgstr ""
+msgstr "프로젝트 열기 ...\tCtrl+O"
 
 #: frame.py:406
 msgid "Save Project\tCtrl+S"
-msgstr ""
+msgstr "프로젝트 보관\tCtrl+S"
 
 #: frame.py:407
 msgid "Save Project As..."
-msgstr ""
+msgstr "새 이름으로 프로젝트 보관 ..."
 
 #: frame.py:408
 msgid "Close Project"
-msgstr ""
+msgstr "프로젝트 닫기"
 
 #: frame.py:417
 msgid "Exit"
-msgstr ""
+msgstr "나가기"
 
 #: frame.py:460
 msgid "Getting Started..."
-msgstr ""
+msgstr "처음으로 시작하기 ..."
 
 #: frame.py:463
 msgid "About..."
-msgstr ""
+msgstr "시스템에 대하여 ..."
 
 #: frame.py:479
 msgid "File"
-msgstr ""
+msgstr "파일"
 
 #: frame.py:484
 msgid "Help"
-msgstr ""
+msgstr "도움말"
 
 #: frame.py:566 surface.py:358 surface.py:539
 msgid "Ready"
-msgstr ""
+msgstr "대기"
 
 #: frame.py:716
 msgid "Import DICOM files..."
-msgstr ""
+msgstr "DICOM파일 입력 ..."
 
 #: frame.py:723
 msgid "Open a InVesalius project..."
-msgstr ""
+msgstr "인베쌀리우스 프로젝트 열기..."
 
 #: frame.py:727
 msgid "Save InVesalius project"
