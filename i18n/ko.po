@@ -747,83 +747,83 @@ msgstr "인베쌀리우스 프로젝트 열기..."
 
 #: frame.py:727
 msgid "Save InVesalius project"
-msgstr ""
+msgstr "인베쌀리우스 프로젝트보관"
 
 #: frame.py:869
 msgid "Zoom"
-msgstr ""
+msgstr "확대"
 
 #: frame.py:874
 msgid "Zoom based on selection"
-msgstr ""
+msgstr "선택된 부분확대"
 
 #: frame.py:879
 msgid "Rotate"
-msgstr ""
+msgstr "회전"
 
 #: frame.py:884
 msgid "Move"
-msgstr ""
+msgstr "이동"
 
 #: frame.py:889
 msgid "Constrast"
-msgstr ""
+msgstr "대조도"
 
 #: frame.py:1042
 msgid "Scroll slices"
-msgstr ""
+msgstr "슬라이스 스크롤"
 
 #: frame.py:1046
 msgid "Slices' cross intersection"
-msgstr ""
+msgstr "슬라이스 교차공통부분"
 
 #: frame.py:1203 frame.py:1272
 msgid "Hide task panel"
-msgstr ""
+msgstr "과제패널 숨기기"
 
 #: frame.py:1207 frame.py:1294
 msgid "Hide text"
-msgstr ""
+msgstr "본문 숨기기"
 
 #: frame.py:1278
 msgid "Show task panel"
-msgstr ""
+msgstr "과제패널 보이기"
 
 #: frame.py:1288
 msgid "Show text"
-msgstr ""
+msgstr "본문 보이기"
 
 #: imagedata_utils.py:87 imagedata_utils.py:260 imagedata_utils.py:365
 msgid "Generating multiplanar visualization..."
-msgstr ""
+msgstr "다중평면시각화 생성중 ..."
 
 #: import_panel.py:214
 msgid "Patient name"
-msgstr ""
+msgstr "환자이름"
 
 #: import_panel.py:215
 msgid "Patient ID"
-msgstr ""
+msgstr "환자ID"
 
 #: import_panel.py:216
 msgid "Age"
-msgstr ""
+msgstr "나이"
 
 #: import_panel.py:217
 msgid "Gender"
-msgstr ""
+msgstr "성별"
 
 #: import_panel.py:218
 msgid "Study description"
-msgstr ""
+msgstr "연구서술"
 
 #: import_panel.py:219
 msgid "Modality"
-msgstr ""
+msgstr "약제부작용조건"
 
 #: import_panel.py:220
 msgid "Date acquired"
-msgstr ""
+msgstr "입원날자"
 
 #: import_panel.py:221
 msgid "# Images"
@@ -1069,23 +1069,23 @@ msgstr ""
 
 #: task_surface.py:265
 msgid "Select regions of interest..."
-msgstr ""
+msgstr "관심령역선택 ..."
 
 #: task_surface.py:396
 msgid "Transparency:"
-msgstr ""
+msgstr "투명도"
 
 #: task_surface.py:532
 msgid "Decimate resolution:"
-msgstr ""
+msgstr "10분의1 해상도낮추기"
 
 #: task_surface.py:542
 msgid "Smooth iterations:"
-msgstr ""
+msgstr "부드럽게 반복:"
 
 #: task_tools.py:60
 msgid "Measure distances"
-msgstr ""
+msgstr "측정거리"
 
 #: task_tools.py:61
 msgid "Measure"
