@@ -263,79 +263,79 @@ msgstr "낮은 명암대조"
 
 #: constants.py:318 constants.py:325
 msgid "Soft on White"
-msgstr ""
+msgstr "흰색부분 연하게"
 
 #: constants.py:319
 msgid "Mid Contrast"
-msgstr ""
+msgstr "중간 명암대조"
 
 #: constants.py:320
 msgid "No Shading"
-msgstr ""
+msgstr "음영없음"
 
 #: constants.py:321
 msgid "Pencil"
-msgstr ""
+msgstr "연필"
 
 #: constants.py:322
 msgid "Red on White"
-msgstr ""
+msgstr "흰색부분 빨갛게"
 
 #: constants.py:323
 msgid "Skin On Blue"
-msgstr ""
+msgstr "청색우에 피부"
 
 #: constants.py:324
 msgid "Skin On Blue II"
-msgstr ""
+msgstr "청색 II우에 피부"
 
 #: constants.py:326
 msgid "Soft + Skin"
-msgstr ""
+msgstr "연함 + 피부"
 
 #: constants.py:327
 msgid "Soft + Skin II"
-msgstr ""
+msgstr "연함 + 피부 II"
 
 #: constants.py:328
 msgid "Soft + Skin III"
-msgstr ""
+msgstr "연함 + 피부 III"
 
 #: constants.py:329
 msgid "Soft On Blue"
-msgstr ""
+msgstr "청색부분 연하게"
 
 #: constants.py:330
 msgid "Soft"
-msgstr ""
+msgstr "부드러움"
 
 #: constants.py:331
 msgid "Standard"
-msgstr ""
+msgstr "포준"
 
 #: constants.py:332
 msgid "Vascular"
-msgstr ""
+msgstr "혈관"
 
 #: constants.py:333
 msgid "Vascular II"
-msgstr ""
+msgstr "혈관 II"
 
 #: constants.py:334
 msgid "Vascular III"
-msgstr ""
+msgstr "혈관 III"
 
 #: constants.py:335
 msgid "Vascular IV"
-msgstr ""
+msgstr "혈관 IV"
 
 #: constants.py:336
 msgid "Yellow Bone"
-msgstr ""
+msgstr "황색 골격"
 
 #: constants.py:358 constants.py:360
 msgid " Off"
-msgstr ""
+msgstr "차단"
 
 #: constants.py:361 volume.py:552
 msgid "Cut plane"
