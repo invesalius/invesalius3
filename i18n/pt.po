@@ -15,9 +15,9 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
+"X-Poedit-Country: GENERIC\n"
 "X-Poedit-Language: English\n"
 "X-Poedit-SourceCharset: utf-8\n"
-"X-Poedit-Country: GENERIC\n"
 
 #: constants.py:31
 #, python-format
@@ -50,7 +50,7 @@ msgstr "Desprezar 5 de cada 6 cortes"
 
 #: constants.py:133 slice_menu.py:76 slice_menu.py:81
 msgid "Default "
-msgstr ""
+msgstr "Predeterminado"
 
 #: constants.py:134
 msgid "Hue"
@@ -113,7 +113,7 @@ msgstr "Alto"
 
 #: constants.py:254 constants.py:255 constants.py:256 surface.py:381
 msgid "Optimal *"
-msgstr "Óptimo"
+msgstr "Óptimo *"
 
 #: constants.py:261
 #, python-format
@@ -122,11 +122,11 @@ msgstr "Superfície %d"
 
 #: constants.py:264
 msgid "Abdomen"
-msgstr ""
+msgstr "Abdómen"
 
 #: constants.py:266
 msgid "Brain Posterior Fossa"
-msgstr ""
+msgstr "Fossa Posterior do Cérebro"
 
 #: constants.py:267
 msgid "Brain"
@@ -134,7 +134,7 @@ msgstr "Cérebro"
 
 #: constants.py:268 control.py:339 slice_menu.py:39 slice_menu.py:51
 msgid "Default"
-msgstr ""
+msgstr "Predeterminado"
 
 #: constants.py:269
 msgid "Emphysema"
@@ -142,11 +142,11 @@ msgstr "Enfisema"
 
 #: constants.py:270
 msgid "Ischemia - Hard Non Contrast"
-msgstr ""
+msgstr "Isquemia - Densidade Alta, Sem Contraste"
 
 #: constants.py:271
 msgid "Ischemia - Soft Non Contrast"
-msgstr ""
+msgstr "Isquemia - Densidade Baixa, Sem Contraste"
 
 #: constants.py:272
 msgid "Larynx"
@@ -158,11 +158,11 @@ msgstr "Fígado"
 
 #: constants.py:274
 msgid "Lung - Soft"
-msgstr ""
+msgstr "Pulmão - Densidade Alta"
 
 #: constants.py:275
 msgid "Lung - Hard"
-msgstr ""
+msgstr "Pulmão - Densidade Baixa"
 
 #: constants.py:276
 msgid "Mediastinum"
@@ -178,15 +178,15 @@ msgstr "Pelve"
 
 #: constants.py:279
 msgid "Sinus"
-msgstr ""
+msgstr "Seio"
 
 #: constants.py:280
 msgid "Vasculature - Hard"
-msgstr ""
+msgstr "Vascular - Densidade Alta"
 
 #: constants.py:281
 msgid "Vasculature - Soft"
-msgstr ""
+msgstr "Vascular - Densidade Baixa"
 
 #: constants.py:290
 msgid "Front"
@@ -218,23 +218,23 @@ msgstr "Isométrico"
 
 #: constants.py:307
 msgid "Airways"
-msgstr ""
+msgstr "Vias Aéreas"
 
 #: constants.py:308
 msgid "Airways II"
-msgstr ""
+msgstr "Vias Aéreas II"
 
 #: constants.py:309
 msgid "Black & White"
-msgstr ""
+msgstr "Preto e Branco"
 
 #: constants.py:310
 msgid "Bone + Skin"
-msgstr ""
+msgstr "Osso + Pele"
 
 #: constants.py:311
 msgid "Bone + Skin II"
-msgstr ""
+msgstr "Osso + Pele II"
 
 #: constants.py:312
 msgid "Dark Bone"
@@ -242,11 +242,11 @@ msgstr "Osso Escuro"
 
 #: constants.py:313
 msgid "Glossy"
-msgstr ""
+msgstr "Brilhante"
 
 #: constants.py:314
 msgid "Glossy II"
-msgstr ""
+msgstr "Brilhante II"
 
 #: constants.py:315
 msgid "Gold Bone"
@@ -262,7 +262,7 @@ msgstr "Contraste Baixo"
 
 #: constants.py:318 constants.py:325
 msgid "Soft on White"
-msgstr ""
+msgstr "Densidade Baixa sobre Branco"
 
 #: constants.py:319
 msgid "Mid Contrast"
@@ -278,55 +278,55 @@ msgstr "Lápis"
 
 #: constants.py:322
 msgid "Red on White"
-msgstr ""
+msgstr "Vermelho sobre Branco"
 
 #: constants.py:323
 msgid "Skin On Blue"
-msgstr ""
+msgstr "Pele sobre Azul"
 
 #: constants.py:324
 msgid "Skin On Blue II"
-msgstr ""
+msgstr "Pele sobre Azul II"
 
 #: constants.py:326
 msgid "Soft + Skin"
-msgstr ""
+msgstr "Densidade Baixa + Pele"
 
 #: constants.py:327
 msgid "Soft + Skin II"
-msgstr ""
+msgstr "Densidade Baixa + Pele II"
 
 #: constants.py:328
 msgid "Soft + Skin III"
-msgstr ""
+msgstr "Densidade Baixa + Pele III"
 
 #: constants.py:329
 msgid "Soft On Blue"
-msgstr ""
+msgstr "Densidade Baixa sobre Azul"
 
 #: constants.py:330
 msgid "Soft"
-msgstr ""
+msgstr "Densidade Baixa"
 
 #: constants.py:331
 msgid "Standard"
-msgstr ""
+msgstr "Padrão"
 
 #: constants.py:332
 msgid "Vascular"
-msgstr ""
+msgstr "Vascular"
 
 #: constants.py:333
 msgid "Vascular II"
-msgstr ""
+msgstr "Vascular II"
 
 #: constants.py:334
 msgid "Vascular III"
-msgstr ""
+msgstr "Vascular III"
 
 #: constants.py:335
 msgid "Vascular IV"
-msgstr ""
+msgstr "Vascular IV"
 
 #: constants.py:336
 msgid "Yellow Bone"
@@ -334,11 +334,11 @@ msgstr "Osso Amarelo"
 
 #: constants.py:358 constants.py:360
 msgid " Off"
-msgstr ""
+msgstr "Desactivado"
 
 #: constants.py:361 volume.py:552
 msgid "Cut plane"
-msgstr ""
+msgstr "Plano de Corte"
 
 #: control.py:275
 #, python-format
