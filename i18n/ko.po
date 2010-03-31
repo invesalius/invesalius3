@@ -169,7 +169,6 @@ msgid "Mediastinum"
 msgstr "격막"
 
 #: constants.py:277 control.py:340 slice_menu.py:46 slice_menu.py:51
-#, fuzzy
 msgid "Manual"
 msgstr "수동"
 
@@ -582,82 +581,82 @@ msgstr "(c) 2007 -2010 레나토 아쳐 정보기술쎈터"
 
 #: dialogs.py:602
 msgid "InVesalius is a medical imaging program for 3D reconstruction. It uses a sequence of 2D DICOM image files acquired with CT or MRI scanners. InVesalius allows for the export of 3D volumes or surfaces as STL files for creating physical models of a patient's anatomy using rapid prototyping technologies."
-msgstr ""
+msgstr "인베쌀리우스는 3차원재생성을 위한 의학화상처리 프로그람입니다. 이 프로그람은 CT 혹은 MRI 스캐너에 의해 입구되는 2차원 DICOM화상파일들의 계렬을 리용합니다. 인베쌀리우스는 신속한 프로토타입핑 기술을 리용하여 임의의 환자의 해부학적구조의 물리적모형생성을 위한 STL파일과 같은 3차원 공간 및 표면출력을 가능하게 해줍니다."
 
 #: dialogs.py:610
 msgid "GNU GPL (General Public License) version 2"
-msgstr ""
+msgstr "GNU GPL (General Public License) 버젼 2"
 
 #: dialogs.py:636
 msgid "Save raycasting preset as:"
-msgstr ""
+msgstr "광선주사초기설정값을 보관:"
 
 #: dialogs.py:679
 msgid "New surface name:"
-msgstr ""
+msgstr "새 표면이름:"
 
 #: dialogs.py:683
 msgid "Name the surface to be created"
-msgstr ""
+msgstr "생성하려는 표면이름지정"
 
 #: dialogs.py:690
 msgid "Mask of reference:"
-msgstr ""
+msgstr "참조마스크"
 
 #: dialogs.py:708
 msgid "Surface quality:"
-msgstr ""
+msgstr "표면품질"
 
 #: dialogs.py:737
 msgid "Fill holes"
-msgstr ""
+msgstr "구멍 채우기"
 
 #: dialogs.py:740
 msgid "Keep largest region"
-msgstr ""
+msgstr "가장큰 령역 유지"
 
 #: dialogs.py:774
 msgid "BMP image"
-msgstr ""
+msgstr "BMP 화상"
 
 #: dialogs.py:775
 msgid "JPG image"
-msgstr ""
+msgstr "JPG 화상"
 
 #: dialogs.py:776
 msgid "PNG image"
-msgstr ""
+msgstr "PNG 화상"
 
 #: dialogs.py:777
 msgid "PostScript document"
-msgstr ""
+msgstr "PostScript 문서"
 
 #: dialogs.py:778
 msgid "POV-Ray file"
-msgstr ""
+msgstr "POV-RAY 파일"
 
 #: dialogs.py:779
 msgid "TIFF image"
-msgstr ""
+msgstr "TIFF 화상"
 
 #: dicom.py:1424 dicom.py:1427
 msgid "unnamed"
-msgstr ""
+msgstr "이름없는"
 
 #: dicom_preview_panel.py:45
 #, python-format
 msgid "Image size: %d x %d"
-msgstr ""
+msgstr "화상크기: %d x %d"
 
 #: dicom_preview_panel.py:46
 #, python-format
 msgid "Spacing: %.2f"
-msgstr ""
+msgstr "간격: %.2f"
 
 #: dicom_preview_panel.py:47
 #, python-format
 msgid "Location: %.2f"
-msgstr ""
+msgstr "위치: %.2f"
 
 #: dicom_preview_panel.py:49
 #, python-format
@@ -828,165 +827,165 @@ msgstr ""
 
 #: import_panel.py:221
 msgid "# Images"
-msgstr ""
+msgstr "#화상들"
 
 #: import_panel.py:222
 msgid "Institution"
-msgstr ""
+msgstr "학회"
 
 #: import_panel.py:223
 msgid "Date of birth"
-msgstr ""
+msgstr "생년월일"
 
 #: import_panel.py:224
 msgid "Accession Number"
-msgstr ""
+msgstr "가입번호"
 
 #: import_panel.py:225
 msgid "Referring physician"
-msgstr ""
+msgstr "련계내과의사"
 
 #: import_panel.py:241
 msgid "InVesalius Database"
-msgstr ""
+msgstr "인베쌀리우스 자료기지"
 
 #: language_dialog.py:36
 msgid "Language selection"
-msgstr ""
+msgstr "언어선택"
 
 #: language_dialog.py:79
 msgid "Choose user interface language"
-msgstr ""
+msgstr "사용자대면부언어를 선택"
 
 #: polydata_utils.py:132
 msgid "Getting selected parts"
-msgstr ""
+msgstr "선택된 부분들 얻기"
 
 #: polydata_utils.py:191
 msgid "Splitting disconected parts"
-msgstr ""
+msgstr "련결되지 않은부분 가르기"
 
 #: presets.py:31 presets.py:49 presets.py:104 presets.py:135
 msgid "Soft Tissue"
-msgstr ""
+msgstr "부드러운 조직"
 
 #: presets.py:32 presets.py:50 presets.py:105 presets.py:136
 msgid "Enamel (Adult)"
-msgstr ""
+msgstr "에나멜질 (어른)"
 
 #: presets.py:33 presets.py:51 presets.py:106 presets.py:137
 msgid "Enamel (Child)"
-msgstr ""
+msgstr "에나멜질 (미성년자)"
 
 #: presets.py:34 presets.py:52 presets.py:107 presets.py:138
 msgid "Compact Bone (Adult)"
-msgstr ""
+msgstr "치밀골격 (어른)"
 
 #: presets.py:35 presets.py:53 presets.py:108 presets.py:139
 msgid "Compact Bone (Child)"
-msgstr ""
+msgstr "치밀골격 (미성년자)"
 
 #: presets.py:36 presets.py:54 presets.py:109 presets.py:140
 msgid "Spongial Bone (Adult)"
-msgstr ""
+msgstr "성긴골격 (어른)"
 
 #: presets.py:37 presets.py:55 presets.py:110 presets.py:141
 msgid "Spongial Bone (Child)"
-msgstr ""
+msgstr "성긴 골격 (미성년자)"
 
 #: presets.py:38 presets.py:56 presets.py:111 presets.py:142
 msgid "Muscle Tissue (Adult)"
-msgstr ""
+msgstr "근육조직 (어른)"
 
 #: presets.py:39 presets.py:57 presets.py:112 presets.py:143
 msgid "Muscle Tissue (Child)"
-msgstr ""
+msgstr "근육조직 (미성년자)"
 
 #: presets.py:40 presets.py:58 presets.py:113 presets.py:144
 msgid "Fat Tissue (Adult)"
-msgstr ""
+msgstr "지방조직 (어른)"
 
 #: presets.py:41 presets.py:59 presets.py:114 presets.py:145
 msgid "Fat Tissue (Child)"
-msgstr ""
+msgstr "지방조직 (미성년자)"
 
 #: presets.py:42 presets.py:60 presets.py:115 presets.py:146
 msgid "Skin Tissue (Adult)"
-msgstr ""
+msgstr "피부조직 (어른)"
 
 #: presets.py:43 presets.py:61 presets.py:116 presets.py:147
 msgid "Skin Tissue (Child)"
-msgstr ""
+msgstr "피부조직 (미성년자)"
 
 #: slice_menu.py:104
 msgid "Window Width and Level"
-msgstr ""
+msgstr "윈도우너비 및 준위"
 
 #: slice_menu.py:105
 msgid "Pseudo Colour"
-msgstr ""
+msgstr "류사색갈"
 
 #: slice_menu.py:106
 msgid "Image Tiling"
-msgstr ""
+msgstr "화상 타일링"
 
 #: surface.py:422 surface.py:456 surface.py:464 surface.py:521
 #: surface_process.py:55 surface_process.py:67 surface_process.py:76
 #: surface_process.py:89 surface_process.py:98 surface_process.py:109
 msgid "Generating 3D surface..."
-msgstr ""
+msgstr "3차원표면을 생성하고 있는 중입니다 ..."
 
 #: task_exporter.py:105
 msgid "Export InVesalius screen to an image file"
-msgstr ""
+msgstr "인베쌀리우스화면을 화상파일로 반출"
 
 #: task_exporter.py:107
 msgid "Export picture..."
-msgstr ""
+msgstr "그림 반출 ..."
 
 #: task_exporter.py:116
 msgid "Export 3D surface"
-msgstr ""
+msgstr "3차원 표면 반출"
 
 #: task_exporter.py:117
 msgid "Export 3D surface..."
-msgstr ""
+msgstr "3차원 표면 반출 ..."
 
 #: task_exporter.py:308
 msgid "Save 3D surface as..."
-msgstr ""
+msgstr "3차원 표면으로 보관하기 ..."
 
 #: task_exporter.py:327
 msgid "You need to create a surface and make "
-msgstr ""
+msgstr "한개의 표면을 창조하고 제작하여야 합니다"
 
 #: task_exporter.py:328
 msgid "visible before exporting it."
-msgstr ""
+msgstr "그것을 반출하기전에 시각화하기"
 
 #: task_generic.py:65 task_navigator.py:65
 msgid "Testing..."
-msgstr ""
+msgstr "테스트중 ..."
 
 #: task_importer.py:64
 msgid "Select DICOM or Analyze files to be reconstructed"
-msgstr ""
+msgstr "재생성할 DICOM 혹은 분석파일들을 선택"
 
 #: task_importer.py:65
 msgid "Import medical images..."
-msgstr ""
+msgstr "의학화상들을 입력"
 
 #: task_importer.py:82
 msgid "Open an existing InVesalius project..."
-msgstr ""
+msgstr "존재하는 인베쌀리우스 프로젝트 열기 ..."
 
 #: task_importer.py:83
 msgid "Open an existing project..."
-msgstr ""
+msgstr "존재하는 프로젝트 열기 ..."
 
 #: task_slice.py:82
 msgid "Create mask for slice segmentation and editing"
-msgstr ""
+msgstr "슬라이스 토막화 및 편집을 위한 마스크창조"
 
 #: task_slice.py:83
 msgid "Create new mask"
