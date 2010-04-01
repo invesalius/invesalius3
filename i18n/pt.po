@@ -15,9 +15,9 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"X-Poedit-Country: GENERIC\n"
 "X-Poedit-Language: English\n"
 "X-Poedit-SourceCharset: utf-8\n"
+"X-Poedit-Country: GENERIC\n"
 
 #: constants.py:31
 #, python-format
@@ -1037,7 +1037,7 @@ msgstr "Próximo passo"
 
 #: task_surface.py:134
 msgid "InVesalius 3 - New surface"
-msgstr "InVesalius 3 - Nova superfície"
+msgstr "InVesalius 3 - Superfície nova"
 
 #: task_surface.py:207
 msgid "Surface properties"
