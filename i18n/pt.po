@@ -1077,11 +1077,11 @@ msgstr "Transparência:"
 
 #: task_surface.py:532
 msgid "Decimate resolution:"
-msgstr "Resolução de decimação"
+msgstr "Resolução de decimação:"
 
 #: task_surface.py:542
 msgid "Smooth iterations:"
-msgstr "Iterações de suavização"
+msgstr "Iterações de suavização:"
 
 #: task_tools.py:60
 msgid "Measure distances"
