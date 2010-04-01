@@ -214,7 +214,7 @@ msgstr "左"
 
 #: constants.py:296
 msgid "Isometric"
-msgstr ""
+msgstr "等"
 
 #: constants.py:307
 msgid "Airways"
