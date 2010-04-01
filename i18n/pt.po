@@ -206,15 +206,15 @@ msgstr "Inferior"
 
 #: constants.py:294
 msgid "Right"
-msgstr "Direito"
+msgstr "Direita"
 
 #: constants.py:295
 msgid "Left"
-msgstr "Esquerdo"
+msgstr "Esquerda"
 
 #: constants.py:296
 msgid "Isometric"
-msgstr "Isométrico"
+msgstr "Isométrica"
 
 #: constants.py:307
 msgid "Airways"
