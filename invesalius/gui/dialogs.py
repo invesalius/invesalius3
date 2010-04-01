@@ -622,7 +622,9 @@ def ShowAboutDialog(parent):
                         "Javier de Lima Moreno"
                         "Nikos Korkakakis",
                         "Massimo Crisantemo",
-                        "Sebastian Hilbert"]
+                        "Raul Bolliger Neto",
+                        "Sebastian Hilbert",
+                        "Semarang Pari"]
 
     info.DocWriters = ["Fabio Francisco da Silva (PT)"] 
 
