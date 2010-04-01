@@ -198,23 +198,23 @@ msgstr "Hinten"
 
 #: constants.py:292
 msgid "Top"
-msgstr "oben"
+msgstr "Oben"
 
 #: constants.py:293
 msgid "Bottom"
-msgstr "unten"
+msgstr "Unten"
 
 #: constants.py:294
 msgid "Right"
-msgstr "rechts"
+msgstr "Rechts"
 
 #: constants.py:295
 msgid "Left"
-msgstr "links"
+msgstr "Links"
 
 #: constants.py:296
 msgid "Isometric"
-msgstr "isometrisch"
+msgstr "Isometrisch"
 
 #: constants.py:307
 msgid "Airways"
