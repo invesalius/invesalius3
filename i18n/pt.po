@@ -474,11 +474,11 @@ msgstr "Volume"
 
 #: default_viewers.py:416
 msgid "Preset name"
-msgstr ""
+msgstr "Nome da pré-definição"
 
 #: default_viewers.py:419
 msgid "Save raycasting preset"
-msgstr ""
+msgstr "Guardar a pré-definição de \"raycasting\""
 
 #: default_viewers.py:449
 msgid "Tools"
@@ -564,7 +564,7 @@ msgstr "Nomear a máscara a se criar"
 
 #: dialogs.py:427
 msgid "Threshold preset:"
-msgstr ""
+msgstr "Pré-definição de limiar:"
 
 #: dialogs.py:529
 #, python-format
@@ -589,7 +589,7 @@ msgstr "Licença GNU GPL (Licença Pública Geral) versão 2"
 
 #: dialogs.py:636
 msgid "Save raycasting preset as:"
-msgstr ""
+msgstr "Guardar pré-definição de \"raycasting\" como:"
 
 #: dialogs.py:679
 msgid "New surface name:"
@@ -927,7 +927,7 @@ msgstr "Pseudo Cor"
 
 #: slice_menu.py:106
 msgid "Image Tiling"
-msgstr ""
+msgstr "Mosaico de imagens"
 
 #: surface.py:422 surface.py:456 surface.py:464 surface.py:521
 #: surface_process.py:55 surface_process.py:67 surface_process.py:76
