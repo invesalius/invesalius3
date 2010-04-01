@@ -182,11 +182,11 @@ msgstr "Seio"
 
 #: constants.py:280
 msgid "Vasculature - Hard"
-msgstr "Vascular - Densidade Alta"
+msgstr "Vasos - Densidade Alta"
 
 #: constants.py:281
 msgid "Vasculature - Soft"
-msgstr "Vascular - Densidade Baixa"
+msgstr "Vasos - Densidade Baixa"
 
 #: constants.py:290
 msgid "Front"
@@ -262,7 +262,7 @@ msgstr "Contraste Baixo"
 
 #: constants.py:318 constants.py:325
 msgid "Soft on White"
-msgstr "Densidade Baixa sobre Branco"
+msgstr "Densidade Baixa sobre Fundo Branco"
 
 #: constants.py:319
 msgid "Mid Contrast"
@@ -282,11 +282,11 @@ msgstr "Vermelho sobre Branco"
 
 #: constants.py:323
 msgid "Skin On Blue"
-msgstr "Pele sobre Azul"
+msgstr "Pele sobre Fundo Azul"
 
 #: constants.py:324
 msgid "Skin On Blue II"
-msgstr "Pele sobre Azul II"
+msgstr "Pele sobre Fundo Azul II"
 
 #: constants.py:326
 msgid "Soft + Skin"
@@ -302,7 +302,7 @@ msgstr "Densidade Baixa + Pele III"
 
 #: constants.py:329
 msgid "Soft On Blue"
-msgstr "Densidade Baixa sobre Azul"
+msgstr "Densidade Baixa sobre Fundo Azul"
 
 #: constants.py:330
 msgid "Soft"
