@@ -66,6 +66,7 @@ icons/inv3_icon.ico -text
 icons/invesalius.ico -text
 icons/it_IT.bmp -text
 icons/it_IT.png -text
+icons/ko.bmp -text
 icons/layout_data_only.gif -text
 icons/layout_data_only.png -text
 icons/layout_data_only_original.gif -text
@@ -93,6 +94,7 @@ icons/object_remove_original.png -text
 icons/object_visible.jpg -text
 icons/print.png -text
 icons/print_original.png -text
+icons/pt.bmp -text
 icons/pt_BR.bmp -text
 icons/show_task.png -text
 icons/show_task_min.png -text
