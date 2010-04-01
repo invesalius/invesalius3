@@ -597,7 +597,7 @@ msgstr "Nome da superfície nova:"
 
 #: dialogs.py:683
 msgid "Name the surface to be created"
-msgstr "Nome da superfície a ser criada:"
+msgstr "Nomear a superfície a se criar:"
 
 #: dialogs.py:690
 msgid "Mask of reference:"
