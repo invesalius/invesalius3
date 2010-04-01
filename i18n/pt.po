@@ -349,15 +349,15 @@ msgstr "A carregar ficheiro %d de %d"
 #: presets.py:148 task_slice.py:406 task_slice.py:408 task_slice.py:420
 #: task_slice.py:422 task_slice.py:458 task_slice.py:461
 msgid "Custom"
-msgstr ""
+msgstr "Personalizado"
 
 #: control.py:372
 msgid "Untitled"
-msgstr ""
+msgstr "Sem Título"
 
 #: control.py:446
 msgid "Fix gantry tilt applying the degrees below"
-msgstr ""
+msgstr "Corrigir inclinação (\"gantry tilt\") aplicando o valor angular abaixo"
 
 #: data_notebook.py:39 measures.py:14
 msgid "Linear"
@@ -438,7 +438,7 @@ msgstr "Dados"
 
 #: default_tasks.py:208 default_tasks.py:213
 msgid "InVesalius start"
-msgstr "Início do InVesalius"
+msgstr "Iniciar o InVesalius"
 
 #: default_tasks.py:209 default_tasks.py:214 default_tasks.py:242
 msgid "Select region of interest"
@@ -502,7 +502,7 @@ msgstr "Abrir projecto do InVesalius 3"
 
 #: dialogs.py:177
 msgid "Choose a DICOM folder:"
-msgstr ""
+msgstr "Escolher um directório DICOM:"
 
 #: dialogs.py:208
 msgid "Save project as..."
@@ -609,7 +609,7 @@ msgstr "Qualidade da superfície:"
 
 #: dialogs.py:737
 msgid "Fill holes"
-msgstr ""
+msgstr "Preencher lacunas"
 
 #: dialogs.py:740
 msgid "Keep largest region"
@@ -629,11 +629,11 @@ msgstr "Imagem no formato PNG"
 
 #: dialogs.py:777
 msgid "PostScript document"
-msgstr ""
+msgstr "Documento PostScript"
 
 #: dialogs.py:778
 msgid "POV-Ray file"
-msgstr ""
+msgstr "Ficheiro POV-Ray"
 
 #: dialogs.py:779
 msgid "TIFF image"
@@ -664,6 +664,8 @@ msgid ""
 "%s %s\n"
 "Made in InVesalius"
 msgstr ""
+"%s %s\n"
+"Criado com InVesalius"
 
 #: dicom_preview_panel.py:187 dicom_preview_panel.py:188
 msgid "Image"
@@ -681,15 +683,15 @@ msgstr "Imagem %d"
 
 #: dicom_preview_panel.py:691
 msgid "Auto-play"
-msgstr ""
+msgstr "Reproduzir"
 
 #: frame.py:126
 msgid "Data panel"
-msgstr ""
+msgstr "Painel de dados"
 
 #: frame.py:133
 msgid "Preview medical data to be reconstructed"
-msgstr ""
+msgstr "Pré-visualização dos dados médicos a serem reconstruídos"
 
 #: frame.py:403
 msgid "Import DICOM...\tCtrl+I"
@@ -717,7 +719,7 @@ msgstr "Sair"
 
 #: frame.py:460
 msgid "Getting Started..."
-msgstr ""
+msgstr "Primeiros Passos..."
 
 #: frame.py:463
 msgid "About..."
@@ -769,15 +771,15 @@ msgstr "Contraste"
 
 #: frame.py:1042
 msgid "Scroll slices"
-msgstr ""
+msgstr "Alterar cortes"
 
 #: frame.py:1046
 msgid "Slices' cross intersection"
-msgstr ""
+msgstr "Cruz para intersecção de cortes"
 
 #: frame.py:1203 frame.py:1272
 msgid "Hide task panel"
-msgstr ""
+msgstr "Esconder barra de tarefas"
 
 #: frame.py:1207 frame.py:1294
 msgid "Hide text"
@@ -785,7 +787,7 @@ msgstr "Esconder texto"
 
 #: frame.py:1278
 msgid "Show task panel"
-msgstr ""
+msgstr "Mostrar barra de tarefas"
 
 #: frame.py:1288
 msgid "Show text"
@@ -837,7 +839,7 @@ msgstr "Data do nascimento"
 
 #: import_panel.py:224
 msgid "Accession Number"
-msgstr ""
+msgstr "Número de acesso"
 
 #: import_panel.py:225
 msgid "Referring physician"
@@ -853,15 +855,15 @@ msgstr "Selecção de idioma"
 
 #: language_dialog.py:79
 msgid "Choose user interface language"
-msgstr ""
+msgstr "Seleccionar o idioma da interface do utilizador"
 
 #: polydata_utils.py:132
 msgid "Getting selected parts"
-msgstr ""
+msgstr "A obter regiões seleccionadas"
 
 #: polydata_utils.py:191
 msgid "Splitting disconected parts"
-msgstr ""
+msgstr "A separar regiões desconexas"
 
 #: presets.py:31 presets.py:49 presets.py:104 presets.py:135
 msgid "Soft Tissue"
@@ -921,7 +923,7 @@ msgstr "Largura e nível da janela"
 
 #: slice_menu.py:105
 msgid "Pseudo Colour"
-msgstr ""
+msgstr "Pseudo Cor"
 
 #: slice_menu.py:106
 msgid "Image Tiling"
@@ -963,7 +965,7 @@ msgstr "visível antes de exportá-la."
 
 #: task_generic.py:65 task_navigator.py:65
 msgid "Testing..."
-msgstr ""
+msgstr "A experimentar..."
 
 #: task_importer.py:64
 msgid "Select DICOM or Analyze files to be reconstructed"
@@ -995,7 +997,7 @@ msgstr "Guardar superfície"
 
 #: task_slice.py:112
 msgid "Overwrite last surface"
-msgstr ""
+msgstr "Sobrescrever a última superfície"
 
 #: task_slice.py:217
 msgid "Mask properties"
@@ -1007,11 +1009,11 @@ msgstr "Ferramentas avançadas de edição"
 
 #: task_slice.py:309
 msgid "Set predefined or manual threshold:"
-msgstr ""
+msgstr "Seleccionar ou editar um valor de limiar:"
 
 #: task_slice.py:503
 msgid "Choose brush type, size or operation:"
-msgstr ""
+msgstr "Escolher tipo, tamanho ou operação do pincel:"
 
 #: task_slice.py:509
 msgid "Circle"
@@ -1023,7 +1025,7 @@ msgstr "Quadrado"
 
 #: task_slice.py:549
 msgid "Brush threshold range:"
-msgstr ""
+msgstr "Limiar do pincel:"
 
 #: task_surface.py:85
 msgid "Create 3D surface based on a mask"
@@ -1035,7 +1037,7 @@ msgstr "Próximo passo"
 
 #: task_surface.py:134
 msgid "InVesalius 3 - New surface"
-msgstr ""
+msgstr "InVesalius 3 - Nova superfície"
 
 #: task_surface.py:207
 msgid "Surface properties"
@@ -1047,7 +1049,7 @@ msgstr "Opções avançadas"
 
 #: task_surface.py:246
 msgid "Automatically select largest disconnected region and create new surface"
-msgstr ""
+msgstr "Selecção automática da região desconexa máxima e criação de superfície nova"
 
 #: task_surface.py:247
 msgid "Select largest part"
@@ -1055,15 +1057,15 @@ msgstr "Seleccionar a parte máxima"
 
 #: task_surface.py:255
 msgid "Automatically select disconnected regions and create one new surface per region"
-msgstr ""
+msgstr "Selecção automática das regiões desconexas e criação de superfícies novas correspondentes"
 
 #: task_surface.py:256
 msgid "Split all disconnected surfaces"
-msgstr ""
+msgstr "Separar todas as superfícies desconexas"
 
 #: task_surface.py:264
 msgid "Manually insert seeds of regions of interest and create one new surface"
-msgstr ""
+msgstr "Inserir manualmente sementes nas regiões de interesse e criar uma superfície nova"
 
 #: task_surface.py:265
 msgid "Select regions of interest..."
@@ -1075,11 +1077,11 @@ msgstr "Transparência:"
 
 #: task_surface.py:532
 msgid "Decimate resolution:"
-msgstr ""
+msgstr "Resolução de decimação"
 
 #: task_surface.py:542
 msgid "Smooth iterations:"
-msgstr ""
+msgstr "Iterações de suavização"
 
 #: task_tools.py:60
 msgid "Measure distances"
