@@ -556,7 +556,7 @@ msgstr "Nenhuma superfície foi seleccionada para duplicação."
 
 #: dialogs.py:416
 msgid "New mask name:"
-msgstr "Nome novo da máscara:"
+msgstr "Nome da máscara nova:"
 
 #: dialogs.py:420
 msgid "Name the mask to be created"
@@ -593,7 +593,7 @@ msgstr "Guardar pré-definição de \"raycasting\" como:"
 
 #: dialogs.py:679
 msgid "New surface name:"
-msgstr "Nome da superfície nova"
+msgstr "Nome da superfície nova:"
 
 #: dialogs.py:683
 msgid "Name the surface to be created"
