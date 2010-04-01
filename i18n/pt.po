@@ -101,19 +101,19 @@ msgstr "Limiar"
 
 #: constants.py:251 constants.py:256
 msgid "Low"
-msgstr "Baixo"
+msgstr "Baixa"
 
 #: constants.py:252 constants.py:256
 msgid "Medium"
-msgstr "Médio"
+msgstr "Média"
 
 #: constants.py:253 constants.py:256
 msgid "High"
-msgstr "Alto"
+msgstr "Alta"
 
 #: constants.py:254 constants.py:255 constants.py:256 surface.py:381
 msgid "Optimal *"
-msgstr "Óptimo *"
+msgstr "Óptima *"
 
 #: constants.py:261
 #, python-format
