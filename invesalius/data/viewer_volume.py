@@ -168,7 +168,6 @@ class Viewer(wx.Panel):
     def OnExportPicture(self, pubsub_evt):
         ps.Publisher().sendMessage('Begin busy cursor')
         id, filename, filetype = pubsub_evt.data
-        
         if id == const.VOLUME:
             if filetype == const.FILETYPE_POV:
                 renwin = self.interactor.GetRenderWindow()
@@ -457,6 +456,12 @@ class Viewer(wx.Panel):
             writer = vtk.vtkVRMLExporter()
             writer.SetFileName(filename)
             writer.SetInput(renwin)
+            writer.Write()
+        elif filetype == const.FILETYPE_X3D:
+            writer = vtk.vtkX3DExporter()
+            writer.SetInput(renwin)
+            writer.SetFileName(filename)
+            writer.Update()
             writer.Write()
         elif filetype == const.FILETYPE_OBJ:
             writer = vtk.vtkOBJExporter()

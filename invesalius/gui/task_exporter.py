@@ -42,7 +42,8 @@ WILDCARD_SAVE_3D = "Inventor (*.iv)|*.iv|"\
                    "STL ASCII (*.stl)|*.stl|"\
                    "VRML (*.vrml)|*.vrml|"\
                    "VTK PolyData (*.vtp)|*.vtp|"\
-                   "Wavefront (*.obj)|*.obj"
+                   "Wavefront (*.obj)|*.obj|"\
+                   "X3D (*.x3d)|*.x3d"
                      
 INDEX_TO_TYPE_3D = {0: const.FILETYPE_IV,
                     1: const.FILETYPE_PLY,
@@ -51,7 +52,8 @@ INDEX_TO_TYPE_3D = {0: const.FILETYPE_IV,
                     4: const.FILETYPE_STL_ASCII,
                     5: const.FILETYPE_VRML,
                     6: const.FILETYPE_VTP,
-                    7: const.FILETYPE_OBJ}
+                    7: const.FILETYPE_OBJ,
+                    8: const.FILETYPE_X3D}
 INDEX_TO_EXTENSION = {0: "iv",
                       1: "ply",
                       2: "rib",
@@ -59,7 +61,8 @@ INDEX_TO_EXTENSION = {0: "iv",
                       4: "stl",
                       5: "vrml",
                       6: "vtp",
-                      7: "obj"}
+                      7: "obj",
+                      8: "x3d"}
 
 WILDCARD_SAVE_2D = "BMP (*.bmp)|*.bmp|"\
                    "JPEG (*.jpg)|*.jpg|"\

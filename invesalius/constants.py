@@ -403,6 +403,7 @@ FILETYPE_VRML = wx.NewId()
 FILETYPE_OBJ = wx.NewId()
 FILETYPE_VTP = wx.NewId()
 FILETYPE_PLY = wx.NewId()
+FILETYPE_X3D = wx.NewId()
 
 FILETYPE_IMAGEDATA = wx.NewId()
 
