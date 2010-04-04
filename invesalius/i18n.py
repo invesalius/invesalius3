@@ -33,7 +33,7 @@ def GetLocales():
     d = utl.TwoWaysDictionary ({'zh_TW': u'中文',
                                 'en': u'English',
                                 'es': u'Español',
-                                'ko': u'한국인',
+                                'ko': u'조선어',
                                 'pt_BR': u'Português (Brasil)',
                                 'pt': u'Português (Portugal)',
                                 'fr':u'Français',
