@@ -235,7 +235,7 @@ class SurfaceManager():
         mapper = vtk.vtkPolyDataMapper()
         mapper.SetInput(normals.GetOutput())
         mapper.ScalarVisibilityOff()
-	mapper.ImmediateModeRenderingOn()
+	mapper.ImmediateModeRenderingOn() # improve performance
 
         actor = vtk.vtkActor()
         actor.SetMapper(mapper)
@@ -325,13 +325,13 @@ class SurfaceManager():
         for key in surface_dict:
             surface = surface_dict[key]
             # Map polygonal data (vtkPolyData) to graphics primitives.
-
             normals = vtk.vtkPolyDataNormals()
             normals.SetInput(surface.polydata)
             normals.SetFeatureAngle(80)
             normals.AutoOrientNormalsOn()
             normals.GetOutput().ReleaseDataFlagOn()
 
+	    # Improve performance
             stripper = vtk.vtkStripper()
             stripper.SetInput(normals.GetOutput())
             stripper.PassThroughCellIdsOn()
@@ -340,7 +340,7 @@ class SurfaceManager():
             mapper = vtk.vtkPolyDataMapper()
             mapper.SetInput(stripper.GetOutput())
             mapper.ScalarVisibilityOff()
-	    mapper.ImmediateModeRenderingOn()
+	    mapper.ImmediateModeRenderingOn() # improve performance
 
             # Represent an object (geometry & properties) in the rendered scene
             actor = vtk.vtkActor()
@@ -461,6 +461,7 @@ class SurfaceManager():
         normals.AutoOrientNormalsOn()
         normals.GetOutput().ReleaseDataFlagOn()
 
+	# Improve performance
         stripper = vtk.vtkStripper()
         stripper.AddObserver("ProgressEvent", lambda obj,evt:
                             UpdateProgress(obj, _("Generating 3D surface...")))
@@ -472,7 +473,7 @@ class SurfaceManager():
         mapper = vtk.vtkPolyDataMapper()
         mapper.SetInput(stripper.GetOutput())
         mapper.ScalarVisibilityOff()
-	mapper.ImmediateModeRendering()
+	mapper.ImmediateModeRendering() # improve performance
 
         # Represent an object (geometry & properties) in the rendered scene
         actor = vtk.vtkActor()
