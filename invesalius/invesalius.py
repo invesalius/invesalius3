@@ -34,10 +34,10 @@ else:
 import wx
 import wx.lib.pubsub as ps
 import wx.lib.agw.advancedsplash as agw
-if sys.platform == 'win32':
-    _SplashScreen = wx.SpashScreen
-else:
+if sys.platform == 'linux2':
     _SplashScreen = agw.AdvancedSplash
+else:
+    _SplashScreen = wx.SplashScreen
 
 import gui.language_dialog as lang_dlg
 import i18n
@@ -132,12 +132,21 @@ class SplashScreen(_SplashScreen):
 
             style = wx.SPLASH_TIMEOUT | wx.SPLASH_CENTRE_ON_SCREEN |\
                     wx.FRAME_SHAPED
-            _SplashScreen.__init__(self,
+            if sys.platform == 'linux2':
+                _SplashScreen.__init__(self,
                                      bitmap=bmp,
                                      style=style,
                                      timeout=5000,
                                      id=-1,
                                      parent=None)
+            else:
+                _SplashScreen.__init__(self,
+                                     bitmap=bmp,
+                                     splashStyle=style,
+                                     milliseconds=5000,
+                                     id=-1,
+                                     parent=None)
+
 
             self.Bind(wx.EVT_CLOSE, self.OnClose)
 
