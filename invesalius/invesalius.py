@@ -26,8 +26,7 @@ import sys
 
 if sys.platform == 'win32':
     import _winreg
-
-if sys.platform != 'win32':
+else:
     import wxversion
     wxversion.ensureMinimal('2.8-unicode', optionsRequired=True) 
     wxversion.select('2.8-unicode', optionsRequired=True)
@@ -35,6 +34,10 @@ if sys.platform != 'win32':
 import wx
 import wx.lib.pubsub as ps
 import wx.lib.agw.advancedsplash as agw
+if sys.platform == 'win32':
+    _SplashScreen = wx.SpashScreen
+else:
+    _SplashScreen = agw.AdvancedSplash
 
 import gui.language_dialog as lang_dlg
 import i18n
@@ -67,7 +70,7 @@ class InVesalius(wx.App):
 
 # ------------------------------------------------------------------
 
-class SplashScreen(agw.AdvancedSplash):
+class SplashScreen(_SplashScreen):
     """
     Splash screen to be shown in InVesalius initialization.
     """
@@ -129,7 +132,7 @@ class SplashScreen(agw.AdvancedSplash):
 
             style = wx.SPLASH_TIMEOUT | wx.SPLASH_CENTRE_ON_SCREEN |\
                     wx.FRAME_SHAPED
-            agw.AdvancedSplash.__init__(self,
+            _SplashScreen.__init__(self,
                                      bitmap=bmp,
                                      style=style,
                                      timeout=5000,
