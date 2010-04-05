@@ -231,10 +231,10 @@ class WriteSession(Thread):
     def run(self):
       while self.runing:
         time.sleep(10)
-        #try:
-        self.Write()
-        #except AttributeError:
-        #    pass
+        try:
+            self.Write()
+        except AttributeError:
+            debug("Session: trying to write into inexistent file")
 
     def Stop(self):
         self.runing = 0

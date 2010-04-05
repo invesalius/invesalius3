@@ -34,7 +34,7 @@ if sys.platform != 'win32':
 
 import wx
 import wx.lib.pubsub as ps
-import wx.lib.agw.advancedsplash as AS
+import wx.lib.agw.advancedsplash as agw
 
 import gui.language_dialog as lang_dlg
 import i18n
@@ -67,7 +67,7 @@ class InVesalius(wx.App):
 
 # ------------------------------------------------------------------
 
-class SplashScreen(AS.AdvancedSplash):
+class SplashScreen(agw.AdvancedSplash):
     """
     Splash screen to be shown in InVesalius initialization.
     """
@@ -127,13 +127,15 @@ class SplashScreen(AS.AdvancedSplash):
 
             bmp = wx.Image(path).ConvertToBitmap()
 
-            style = wx.SPLASH_TIMEOUT | wx.SPLASH_CENTRE_ON_SCREEN
-            AS.AdvancedSplash.__init__(self,
+            style = wx.SPLASH_TIMEOUT | wx.SPLASH_CENTRE_ON_SCREEN |\
+                    wx.FRAME_SHAPED
+            agw.AdvancedSplash.__init__(self,
                                      bitmap=bmp,
                                      style=style,
                                      timeout=5000,
                                      id=-1,
                                      parent=None)
+
             self.Bind(wx.EVT_CLOSE, self.OnClose)
 
             # Importing takes sometime, therefore it will be done
