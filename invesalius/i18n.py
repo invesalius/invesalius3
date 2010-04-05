@@ -47,8 +47,10 @@ def GetLocaleOS():
         if sys.platform == 'darwin':
             locale.setlocale(locale.LC_ALL, "")
             return locale.getlocale()[0]
-
-        return locale.getdefaultlocale()[0]
+        lc = locale.getdefaultlocale()[0]
+        if lc:
+            return lc
+        return 'en'
 
 def InstallLanguage(language):
     language_dir = os.path.abspath(os.path.join('..','locale'))
