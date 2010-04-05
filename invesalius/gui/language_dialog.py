@@ -53,9 +53,7 @@ class LanguageDialog(wx.Dialog):
         # Find out OS locale
         self.os_locale = i18n.GetLocaleOS()
        
-        # FIXME: In future we shall be using all locales using 5
-        # characters... until then, we use only 2:
-        os_lang = self.os_locale[0:2]
+        os_lang = self.os_locale
 
         # Default selection will be English
         selection = self.locales_key.index('en')
