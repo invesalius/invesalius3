@@ -235,6 +235,7 @@ class SurfaceManager():
         mapper = vtk.vtkPolyDataMapper()
         mapper.SetInput(normals.GetOutput())
         mapper.ScalarVisibilityOff()
+	mapper.ImmediateModeRenderingOn()
 
         actor = vtk.vtkActor()
         actor.SetMapper(mapper)
@@ -339,6 +340,7 @@ class SurfaceManager():
             mapper = vtk.vtkPolyDataMapper()
             mapper.SetInput(stripper.GetOutput())
             mapper.ScalarVisibilityOff()
+	    mapper.ImmediateModeRenderingOn()
 
             # Represent an object (geometry & properties) in the rendered scene
             actor = vtk.vtkActor()
@@ -470,6 +472,7 @@ class SurfaceManager():
         mapper = vtk.vtkPolyDataMapper()
         mapper.SetInput(stripper.GetOutput())
         mapper.ScalarVisibilityOff()
+	mapper.ImmediateModeRendering()
 
         # Represent an object (geometry & properties) in the rendered scene
         actor = vtk.vtkActor()
