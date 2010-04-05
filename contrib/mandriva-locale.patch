@@ -1,0 +1,16 @@
+diff -p -up invesalius3/invesalius/i18n.py.orig invesalius3/invesalius/i18n.py
+--- invesalius3/invesalius/i18n.py.orig	2010-04-01 15:55:04.292973825 -0300
++++ invesalius3/invesalius/i18n.py	2010-04-01 15:56:13.863615536 -0300
+@@ -45,8 +45,10 @@ def GetLocaleOS():
+         if sys.platform == 'darwin':
+             locale.setlocale(locale.LC_ALL, "")
+             return locale.getlocale()[0]
+-
+-        return locale.getdefaultlocale()[0]
++        lc = locale.getdefaultlocale()[0]
++        if lc:
++            return lc
++        return 'en'
+ 
+ def InstallLanguage(language):
+     language_dir = os.path.abspath(os.path.join('..','locale'))

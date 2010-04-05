@@ -8,6 +8,8 @@
 /README.txt -text
 /TODO -text
 /TODO.txt -text
+contrib/ABOUT -text
+contrib/mandriva-locale.patch -text
 docs/devel/example_closure.py -text
 docs/devel/example_pubsub.py -text
 docs/devel/example_singleton.py -text
