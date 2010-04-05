@@ -34,6 +34,7 @@ if sys.platform != 'win32':
 
 import wx
 import wx.lib.pubsub as ps
+import wx.lib.agw.advancedsplash as AS
 
 import gui.language_dialog as lang_dlg
 import i18n
@@ -66,7 +67,7 @@ class InVesalius(wx.App):
 
 # ------------------------------------------------------------------
 
-class SplashScreen(wx.SplashScreen):
+class SplashScreen(AS.AdvancedSplash):
     """
     Splash screen to be shown in InVesalius initialization.
     """
@@ -127,10 +128,10 @@ class SplashScreen(wx.SplashScreen):
             bmp = wx.Image(path).ConvertToBitmap()
 
             style = wx.SPLASH_TIMEOUT | wx.SPLASH_CENTRE_ON_SCREEN
-            wx.SplashScreen.__init__(self,
+            AS.AdvancedSplash.__init__(self,
                                      bitmap=bmp,
-                                     splashStyle=style,
-                                     milliseconds=1500,
+                                     style=style,
+                                     timeout=5000,
                                      id=-1,
                                      parent=None)
             self.Bind(wx.EVT_CLOSE, self.OnClose)
@@ -144,7 +145,7 @@ class SplashScreen(wx.SplashScreen):
             self.main = Frame(None)
             self.control = Controller(self.main)
 
-            self.fc = wx.FutureCall(1, self.ShowMain)
+            self.fc = wx.FutureCall(2000, self.ShowMain)
 
     def OnClose(self, evt):
         # Make sure the default handler runs too so this window gets
