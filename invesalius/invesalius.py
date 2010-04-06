@@ -1,4 +1,7 @@
-#!/usr/local/bin/python
+#!/usr/bin/env python
+# NOTE: #!/usr/local/bin/python simply will *not* work if python is not
+# installed  in that exact location and, therefore, we're using the code
+# above
 #--------------------------------------------------------------------------
 # Software:     InVesalius - Software de Reconstrucao 3D de Imagens Medicas
 # Copyright:    (C) 2001  Centro de Pesquisas Renato Archer
