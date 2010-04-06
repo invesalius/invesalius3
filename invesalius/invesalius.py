@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2.6
 # NOTE: #!/usr/local/bin/python simply will *not* work if python is not
 # installed  in that exact location and, therefore, we're using the code
 # above
