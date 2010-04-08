@@ -64,8 +64,11 @@ def GetLocaleOS():
 
 def InstallLanguage(language):
     language_dir = os.path.abspath(os.path.join('..','locale'))
-    lang = gettext.translation('invesalius', language_dir,\
+    if os.path.isdir(language_dir):
+        lang = gettext.translation('invesalius', language_dir,\
                                    languages=[language], codeset='utf8')
-    # Using unicode
-    lang.install(unicode=1)
-    return lang.ugettext
+        # Using unicode
+        lang.install(unicode=1)
+        return lang.ugettext
+    else:
+        return False

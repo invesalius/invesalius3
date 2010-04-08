@@ -90,13 +90,19 @@ class SplashScreen(_SplashScreen):
             create_session = True
 
         # Check if there is a language set (if session file exists
-        if session.ReadLanguage():
+        language_exist = session.ReadLanguage()
+
+        if language_exist:
             lang = session.GetLanguage()
-            _ = i18n.InstallLanguage(lang)
+            install = i18n.InstallLanguage(lang)
+            if install:
+                _ = install
+            else:
+    		    language_exist = False
 
         # If no language is set into session file, show dialog so
         # user can select language
-        else:
+        if not language_exist:
             dialog = lang_dlg.LanguageDialog()
 
             # FIXME: This works ok in linux2, darwin and win32,
