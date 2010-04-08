@@ -16,10 +16,7 @@
 #    PARTICULAR. Consulte a Licenca Publica Geral GNU para obter mais
 #    detalhes.
 #--------------------------------------------------------------------------
-import os
 import platform
-import subprocess
-import re
 import sigar
 import sys
 
