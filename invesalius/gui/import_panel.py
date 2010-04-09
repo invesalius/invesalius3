@@ -89,11 +89,8 @@ class InnerPanel(wx.Panel):
         self.splitter = splitter
 
         panel = wx.Panel(self)
-        #button = wx.Button(panel, -1, _("Import medical images"), (20, 20))
-
-        self.btn_ok = wx.Button(panel, wx.ID_OK)
-        #self.btn_ok.SetDefault()
         self.btn_cancel = wx.Button(panel, wx.ID_CANCEL)
+        self.btn_ok = wx.Button(panel, wx.ID_OK, _("Import"))
 
         btnsizer = wx.StdDialogButtonSizer()
         btnsizer.AddButton(self.btn_ok)
