@@ -178,7 +178,7 @@ class Controller():
                     ps.Publisher().sendMessage("Enable state project", False)
                     ps.Publisher().sendMessage('Set project name')
                     ps.Publisher().sendMessage("Stop Config Recording")
-		    ps.Publisher().sendMessage("Exit")
+                    ps.Publisher().sendMessage("Exit")
                 elif answer == -1:
                     debug("Cancel")
             else:
@@ -186,10 +186,11 @@ class Controller():
                 ps.Publisher().sendMessage("Enable state project", False)
                 ps.Publisher().sendMessage('Set project name')
                 ps.Publisher().sendMessage("Stop Config Recording")
-		ps.Publisher().sendMessage("Exit")
+                ps.Publisher().sendMessage("Exit")
 
         else:
             ps.Publisher().sendMessage('Stop Config Recording')
+            ps.Publisher().sendMessage('Exit')
 
 
 ###########################

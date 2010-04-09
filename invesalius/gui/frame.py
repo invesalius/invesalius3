@@ -282,7 +282,6 @@ class Frame(wx.Frame):
         Close all project data.
         """
         ps.Publisher().sendMessage('Close Project')
-        #/self._Exit()
 
     def OnMenuClick(self, evt):
         """
