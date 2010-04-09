@@ -93,6 +93,7 @@ class Frame(wx.Frame):
         sub(self._ShowImportPanel, 'Show import panel in frame')
         sub(self._ShowTask, 'Show task panel')
         sub(self._UpdateAUI, 'Update AUI')
+        sub(self._Exit, 'Exit')
 
     def __bind_events_wx(self):
         """
@@ -194,7 +195,7 @@ class Frame(wx.Frame):
             #no matching wxBeginBusyCursor() for wxEndBusyCursor()
             pass
 
-    def _Exit(self):
+    def _Exit(self, pubsub_evt):
         """
         Exit InVesalius.
         """
@@ -281,7 +282,7 @@ class Frame(wx.Frame):
         Close all project data.
         """
         ps.Publisher().sendMessage('Close Project')
-        self._Exit()
+        #/self._Exit()
 
     def OnMenuClick(self, evt):
         """
