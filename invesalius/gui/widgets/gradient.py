@@ -20,11 +20,9 @@
 #    detalhes.
 #--------------------------------------------------------------------------
 
-import array
 import sys
 
 import numpy
-import vtk
 import wx
 import wx.lib.intctrl
 import wx.lib.pubsub as ps
@@ -248,13 +246,13 @@ class SliderControl(object):
                                              self.SliderData.minRange)))
 
     def SetMaxPointByMaxValue(self):
-        proportion = self.WindowWidth/float(self.SliderData.GetRange())
+        # proportion = self.WindowWidth/float(self.SliderData.GetRange())
         #self.SetMaxPoint(int((self.SliderData.GetMaxValue() \
         #                     -self.SliderData.minRange)*proportion))
         self.MaxBorder.pos = self.MaxPoint
 
     def SetMinPointByMinValue(self):
-        proportion = self.WindowWidth/float(self.SliderData.GetRange())
+        # proportion = self.WindowWidth/float(self.SliderData.GetRange())
         #self.SetMinPoint(int((self.SliderData.GetMinValue() \
         #                      -self.SliderData.minRange)*proportion))
         self.MinBorder.pos = self.MinPoint
@@ -450,7 +448,7 @@ class GradientPanel(wx.Panel):
             if self.GetMin() >= self.GetMax():
                 self.SetMinValue(self.GetMax()-1)
                 self.Slider.SetMinPointByMinValue()
-            dc = wx.ClientDC(self)
+            # dc = wx.ClientDC(self)
             evt = SliderEvent(myEVT_SLIDER_CHANGE, self.GetId())
             self.GetEventHandler().ProcessEvent(evt)
             self.Refresh()
@@ -517,14 +515,14 @@ class GradientSlider(wx.Panel):
                child.SetWindowVariant(wx.WINDOW_VARIANT_SMALL)"""
 
 
-        self.SpinMin = wx.lib.intctrl.IntCtrl(self, size=(40,20))
+        self.SpinMin = wx.lib.intctrl.IntCtrl(self, size=(40,20), style=wx.TE_PROCESS_ENTER)
         #self.SpinMin.SetLimited(True)
         self.SpinMin.SetBounds(self.SliderData.minRange, self.SliderData.maxRange)
         if sys.platform != 'win32':
             self.SpinMin.SetWindowVariant(wx.WINDOW_VARIANT_SMALL)
         self.SpinMin.SetValue(self.SliderData.minValue)
 
-        self.SpinMax = wx.lib.intctrl.IntCtrl(self, size=(40,20))
+        self.SpinMax = wx.lib.intctrl.IntCtrl(self, size=(40,20), style=wx.TE_PROCESS_ENTER)
         #self.SpinMax.SetLimited(True)
         self.SpinMax.SetBounds(self.SliderData.minRange, self.SliderData.maxRange)
         if sys.platform != 'win32':
@@ -541,11 +539,28 @@ class GradientSlider(wx.Panel):
 
     def _DoBinds(self):
         self.SpinMin.Bind(wx.lib.intctrl.EVT_INT, self.ChangeMinValue)
-        self.SpinMax.Bind(wx.lib.intctrl.EVT_INT, self.ChangeMaxValue)
-        # Scroll over the min and max field
-        self.SpinMax.Bind(wx.EVT_MOUSEWHEEL, self.OnMaxMouseWheel)
+        self.SpinMin.Bind(wx.EVT_KILL_FOCUS, self._FireSpinMinChange)
+        self.SpinMin.Bind(wx.EVT_TEXT_ENTER, self._FireSpinMinChange)
         self.SpinMin.Bind(wx.EVT_MOUSEWHEEL, self.OnMinMouseWheel)
+
+        self.SpinMax.Bind(wx.lib.intctrl.EVT_INT, self.ChangeMaxValue)
+        self.SpinMax.Bind(wx.EVT_KILL_FOCUS, self._FireSpinMaxChange)
+        self.SpinMax.Bind(wx.EVT_TEXT_ENTER, self._FireSpinMaxChange)
+        self.SpinMax.Bind(wx.EVT_MOUSEWHEEL, self.OnMaxMouseWheel)
+
         self.Bind(EVT_SLIDER_CHANGE, self.OnSlider, self.GradientPanel)
+
+    def _FireSpinMinChange(self, evt):
+        value = int(self.SpinMin.GetValue())
+        if value != self.GetMinValue():
+            self.GradientPanel.SetMinValue(value)
+            self._GenerateEvent()
+
+    def _FireSpinMaxChange(self, evt):
+        value = int(self.SpinMax.GetValue())
+        if value != self.GetMaxValue():
+            self.GradientPanel.SetMaxValue(value)
+            self._GenerateEvent()
 
     def OnMinMouseWheel(self, e):
         v = self.GetMinValue() + e.GetWheelRotation()/e.GetWheelDelta()
@@ -558,7 +573,7 @@ class GradientSlider(wx.Panel):
     def ChangeMinValue(self, e):
         # Why do I need to change slide min value if it has been changed for
         # the user?
-
+        print "ChangeMinValue", self.slided
         if not self.slided:
             self.GradientPanel.SetMinValue(int(self.SpinMin.GetValue()))
             self._GenerateEvent()
