@@ -104,10 +104,12 @@ class Parser():
         DICOM standard tag (0x0008,0x0022) was used.
         """
         # TODO: internationalize data
-        date = self.vtkgdcm_reader.GetMedicalImageProperties()\
-                                            .GetAcquisitionDate()
-        if (date) and (date != ''):
-            return self.__format_date(date)
+        tag = gdcm.Tag(0x0008, 0x0022)
+        ds = self.gdcm_reader.GetFile().GetDataSet()
+        if ds.FindDataElement(tag):
+            date =  ds.GetDataElement(tag).GetValue()
+            if (date) and (date != ''):
+                return self.__format_date(str(date))
         return ""
 
     def GetAcquisitionNumber(self):
@@ -151,10 +153,12 @@ class Parser():
 
         DICOM standard tag (0x0008,0x0032) was used.
         """
-        time = self.vtkgdcm_reader.GetMedicalImageProperties()\
-                                            .GetAcquisitionTime()
-        if (time) and (time != 'None'):
-            return self.__format_time(time)
+        tag = gdcm.Tag(0x0008, 0x0032)
+        ds = self.gdcm_reader.GetFile().GetDataSet()
+        if ds.FindDataElement(tag):
+            data =  ds.GetDataElement(tag).GetValue()
+            if (data) and (data != ''):
+                return self.__format_time(str(data))
         return ""
 
     def GetPatientAdmittingDiagnosis(self):
@@ -164,7 +168,6 @@ class Parser():
 
         DICOM standard tag (0x0008,0x1080) was used.
         """
-
         tag = gdcm.Tag(0x0008, 0x1080)
         sf = gdcm.StringFilter()
         sf.SetFile(self.gdcm_reader.GetFile())
@@ -1063,12 +1066,13 @@ class Parser():
         DICOM standard tag (0x0010,0x0030) was used.
         """
         # TODO: internationalize data
-        date = self.vtkgdcm_reader.GetMedicalImageProperties()\
-                                        .GetPatientBirthDate()
-        if (date) and (date!='None'):
-            self.__format_date(date)
+        tag = gdcm.Tag(0x0010, 0x0030)
+        ds = self.gdcm_reader.GetFile().GetDataSet()
+        if ds.FindDataElement(tag):
+            data =  ds.GetDataElement(tag).GetValue()
+            if (data) and (data != 'None'):
+                return self.__format_date(str(data))
         return ""
-
 
 
     def GetStudyID(self):
@@ -1078,13 +1082,14 @@ class Parser():
 
         DICOM standard tag (0x0020,0x0010) was used.
         """
-
-        data = self.vtkgdcm_reader.GetMedicalImageProperties()\
-                                                .GetStudyID()
-        if (data):
-            return data
+        tag = gdcm.Tag(0x0020, 0x0010)
+        ds = self.gdcm_reader.GetFile().GetDataSet()
+        if ds.FindDataElement(tag):
+            data =  ds.GetDataElement(tag).GetValue()
+            if (data):
+                return str(data)
         return ""
-
+        
     def GetAcquisitionGantryTilt(self):
         """
         Return floating point containing nominal angle of
@@ -1093,10 +1098,14 @@ class Parser():
 
         DICOM standard tag (0x0018,0x1120) was used.
         """
-        data = self.vtkgdcm_reader.GetMedicalImageProperties()\
-                                                .GetGantryTilt()
-        if (data):
-            return float(data)
+        tag = gdcm.Tag(0x0018, 0x1120)
+        ds = self.gdcm_reader.GetFile().GetDataSet()
+        if ds.FindDataElement(tag):
+            data = ds.GetDataElement(tag).GetValue()
+    
+            if (data):
+                return float(str(data))
+
         return 0.0
 
     def GetPatientGender(self):
@@ -1109,10 +1118,13 @@ class Parser():
 
         DICOM standard tag (0x0010,0x0040) was used.
         """
-        data = self.vtkgdcm_reader.GetMedicalImageProperties()\
-                                                .GetPatientSex()
-        if (data):
-            return data
+        tag = gdcm.Tag(0x0010, 0x0040)
+        ds = self.gdcm_reader.GetFile().GetDataSet()
+        if ds.FindDataElement(tag):
+            data = ds.GetDataElement(tag).GetValue()
+
+            if (data):
+                return str(data)
         return ""
 
     def GetPatientAge(self):
@@ -1123,14 +1135,17 @@ class Parser():
 
         DICOM standard tag (0x0010, 0x1010) was used.
         """
-        data = self.vtkgdcm_reader.GetMedicalImageProperties()\
-                                                .GetPatientAge()
-        if (data):
-            age = (data.split('Y')[0])
-            try:
-                return int(age)
-            except ValueError:
-                return age
+        tag = gdcm.Tag(0x0010, 0x1010)
+        ds = self.gdcm_reader.GetFile().GetDataSet()
+        if ds.FindDataElement(tag):
+            data = str(ds.GetDataElement(tag).GetValue())
+    
+            if (data):
+                age = (data.split('Y')[0])
+                try:
+                    return int(age)
+                except ValueError:
+                    return age
         return ""
 
     def GetPatientName(self):
@@ -1140,14 +1155,16 @@ class Parser():
 
         DICOM standard tag (0x0010,0x0010) was used.
         """
-        data = self.vtkgdcm_reader.GetMedicalImageProperties()\
-                                            .GetPatientName()
+        tag = gdcm.Tag(0x0010, 0x0010)
+        ds = self.gdcm_reader.GetFile().GetDataSet()
+        if ds.FindDataElement(tag):
+            data = str(ds.GetDataElement(tag).GetValue())
 
-        if (data):
-            name = data.strip()
-            encoding = self.GetEncoding()
-            # Returns a unicode decoded in the own dicom encoding
-            return name.decode(encoding)
+            if (data):
+                name = data.strip()
+                encoding = self.GetEncoding()
+                # Returns a unicode decoded in the own dicom encoding
+                return name.decode(encoding)
         return ""
 
     def GetPatientID(self):
@@ -1158,12 +1175,15 @@ class Parser():
 
         DICOM standard tag (0x0010,0x0020) was used.
         """
-        data = self.vtkgdcm_reader.GetMedicalImageProperties()\
-                                                .GetPatientID()
-        if (data):
-            encoding = self.GetEncoding()
-            # Returns a unicode decoded in the own dicom encoding
-            return data.decode(encoding)
+        tag = gdcm.Tag(0x0010, 0x0020)
+        ds = self.gdcm_reader.GetFile().GetDataSet()
+        if ds.FindDataElement(tag):
+            data = str(ds.GetDataElement(tag).GetValue())
+
+            if (data):
+                encoding = self.GetEncoding()
+                # Returns a unicode decoded in the own dicom encoding
+                return data.decode(encoding)
         return ""
 
 
@@ -1212,10 +1232,13 @@ class Parser():
 
         DICOM standard tag (0x0018,0x1151) was used.
         """
-        data = self.vtkgdcm_reader.GetMedicalImageProperties()\
-                                        .GetXRayTubeCurrent()
-        if (data):
-            return data
+        tag = gdcm.Tag(0x0018, 0x1151)
+        ds = self.gdcm_reader.GetFile().GetDataSet()
+        if ds.FindDataElement(tag):
+            data = str(ds.GetDataElement(tag).GetValue())
+            
+            if (data):
+                return data
         return ""
 
     def GetExposureTime(self):
@@ -1226,10 +1249,13 @@ class Parser():
 
         DICOM standard tag (0x0018, 0x1152) was used.
         """
-        data = self.vtkgdcm_reader.GetMedicalImageProperties()\
-                                            .GetExposureTime()
-        if (data):
-            return float(data)
+        tag = gdcm.Tag(0x0018, 0x1152)
+        ds = self.gdcm_reader.GetFile().GetDataSet()
+        if ds.FindDataElement(tag):
+            data = str(ds.GetDataElement(tag).GetValue())
+
+            if (data):
+                return float(data)
         return ""
 
     def GetEquipmentKVP(self):
@@ -1240,10 +1266,13 @@ class Parser():
 
         DICOM standard tag (0x0018,0x0060) was used.
         """
-        data = self.vtkgdcm_reader.GetMedicalImageProperties()\
-                                                    .GetKVP()
-        if (data):
-            return float(data)
+        tag = gdcm.Tag(0x0018, 0x0060)
+        ds = self.gdcm_reader.GetFile().GetDataSet()
+        if ds.FindDataElement(tag):
+            data = str(ds.GetDataElement(tag).GetValue())
+
+            if (data):
+                return float(data)
         return ""
 
     def GetImageThickness(self):
@@ -1254,10 +1283,13 @@ class Parser():
 
         DICOM standard tag (0x0018,0x0050) was used.
         """
-        data = self.vtkgdcm_reader.GetMedicalImageProperties()\
-                                            .GetSliceThickness()
-        if (data):
-            return float(data)
+        tag = gdcm.Tag(0x0018, 0x1050)
+        ds = self.gdcm_reader.GetFile().GetDataSet()
+        if ds.FindDataElement(tag):
+            data = str(ds.GetDataElement(tag).GetValue())
+
+            if (data):
+                return float(data)
         return 0
 
     def GetImageConvolutionKernel(self):
@@ -1270,10 +1302,13 @@ class Parser():
 
         DICOM standard tag (0x0018,0x1210) was used.
         """
-        data = self.vtkgdcm_reader.GetMedicalImageProperties()\
-                                        .GetConvolutionKernel()
-        if (data):
-            return data
+        tag = gdcm.Tag(0x0018, 0x1210)
+        ds = self.gdcm_reader.GetFile().GetDataSet()
+        if ds.FindDataElement(tag):
+            data = str(ds.GetDataElement(tag).GetValue())
+
+            if (data):
+                return data
         return ""
 
     def GetEquipmentInstitutionName(self):
@@ -1284,10 +1319,13 @@ class Parser():
 
         DICOM standard tag (0x0008,0x0080) was used.
         """
-        data = self.vtkgdcm_reader.GetMedicalImageProperties()\
-                                        .GetInstitutionName()
-        if (data):
-            return data
+        tag = gdcm.Tag(0x0008, 0x0080)
+        ds = self.gdcm_reader.GetFile().GetDataSet()
+        if ds.FindDataElement(tag):
+            data = str(ds.GetDataElement(tag).GetValue())
+
+            if (data):
+                return data
         return ""
 
     def GetStationName(self):
@@ -1298,10 +1336,13 @@ class Parser():
 
         DICOM standard tag (0x0008, 0x1010) was used.
         """
-        data = self.vtkgdcm_reader.GetMedicalImageProperties()\
-                                            .GetStationName()
-        if (data):
-            return data
+        tag = gdcm.Tag(0x0008, 0x1010)
+        ds = self.gdcm_reader.GetFile().GetDataSet()
+        if ds.FindDataElement(tag):
+            data = str(ds.GetDataElement(tag).GetValue())
+
+            if (data):
+                return data
         return ""
 
     def GetManufacturerModelName(self):
@@ -1312,10 +1353,13 @@ class Parser():
 
         DICOM standard tag (0x0008,0x1090) was used.
         """
-        data = self.vtkgdcm_reader.GetMedicalImageProperties()\
-                                    .GetManufacturerModelName()
-        if (data):
-            return data
+        tag = gdcm.Tag(0x0008, 0x1090)
+        ds = self.gdcm_reader.GetFile().GetDataSet()
+        if ds.FindDataElement(tag):
+            data = str(ds.GetDataElement(tag).GetValue())
+
+            if (data):
+                return data
         return ""
 
     def GetEquipmentManufacturer(self):
@@ -1325,10 +1369,13 @@ class Parser():
 
         DICOM standard tag (0x0008, 0x1010) was used.
         """
-        data = self.vtkgdcm_reader.GetMedicalImageProperties()\
-                                            .GetManufacturer()
-        if (data):
-            return data
+        tag = gdcm.Tag(0x0008, 0x1010)
+        ds = self.gdcm_reader.GetFile().GetDataSet()
+        if ds.FindDataElement(tag):
+            data = str(ds.GetDataElement(tag).GetValue())
+
+            if (data):
+                return data
         return ""
 
     def GetAcquisitionModality(self):
@@ -1340,10 +1387,13 @@ class Parser():
 
         DICOM standard tag (0x0008,0x0060) was used.
         """
-        data = self.vtkgdcm_reader.GetMedicalImageProperties()\
-                                                .GetModality()
-        if (data):
-            return data
+        tag = gdcm.Tag(0x0008, 0x0060)
+        ds = self.gdcm_reader.GetFile().GetDataSet()
+        if ds.FindDataElement(tag):
+            data = str(ds.GetDataElement(tag).GetValue())
+
+            if (data):
+                return data
         return ""
 
 
@@ -1354,10 +1404,13 @@ class Parser():
 
         DICOM standard tag (0x0020,0x0013) was used.
         """
-        data = self.vtkgdcm_reader.GetMedicalImageProperties()\
-                                            .GetImageNumber()
-        if (data):
-            return int(data)
+        tag = gdcm.Tag(0x0020, 0x0013)
+        ds = self.gdcm_reader.GetFile().GetDataSet()
+        if ds.FindDataElement(tag):
+            data = str(ds.GetDataElement(tag).GetValue())
+
+            if (data):
+                return int(data)
         return ""
 
     def GetStudyDescription(self):
@@ -1367,11 +1420,14 @@ class Parser():
 
         DICOM standard tag (0x0008,0x1030) was used.
         """
-        data = self.vtkgdcm_reader.GetMedicalImageProperties()\
-                                        .GetStudyDescription()
-        if (data):
-            encoding = self.GetEncoding()
-            return data.decode(encoding)
+        tag = gdcm.Tag(0x0008, 0x1030)
+        ds = self.gdcm_reader.GetFile().GetDataSet()
+        if ds.FindDataElement(tag):
+            data = str(ds.GetDataElement(tag).GetValue())
+
+            if (data):
+                encoding = self.GetEncoding()
+                return data.decode(encoding)
         return ""
 
     def GetStudyAdmittingDiagnosis(self):
