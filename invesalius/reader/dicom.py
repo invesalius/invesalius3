@@ -94,6 +94,213 @@ class Parser():
         self.encoding = ""
         self.vtkgdcm_reader = vtkgdcm.vtkGDCMImageReader()
 
+    def SetFileName(self, filename):
+        """
+        Set file name to be parsed given its filename (this should
+        include the full path of the file of interest).
+
+        Return True/False if file could be read.
+        """
+        import os.path as path
+
+
+        filename = path.abspath(filename)
+
+        if (sys.platform == 'win32'):
+            filename = filename.encode('latin-1')
+
+        if path.isfile(filename):
+            # Several information can be acquired from DICOM using
+            # vtkgdcm.vtkGDCMImageReader.GetMedicalImageProperties()
+            # but some tags (such as spacing) can only be achieved
+            # with gdcm.ImageReader()
+            # used to parse DICOM files - similar to vtkDICOMParser
+            gdcm_reader = gdcm.ImageReader()
+            #filename = filename.encode('utf-8')
+
+            gdcm_reader.SetFileName(filename)
+
+            # if DICOM file is null vtkGDCMImageReader raises vtk
+            # exception
+            if not gdcm_reader.Read():
+                return False
+
+            vtkgdcm_reader = self.vtkgdcm_reader
+            vtkgdcm_reader.SetFileName(filename)
+            vtkgdcm_reader.Update()
+
+            self.filename = filename
+            self.gdcm_reader = gdcm_reader
+            self.vtkgdcm_reader = vtkgdcm_reader
+            return True
+
+        return False
+
+    def GetImageData(self):
+        return self.vtkgdcm_reader.GetOutput()
+
+    def __format_time(self,value):
+        sp1 = value.split(".")
+        sp2 = value.split(":")
+
+        if (len(sp1) ==  2) and (len(sp2) == 3):
+            new_value = str(sp2[0]+sp2[1]+
+                            str(int(float(sp2[2]))))
+            data = time.strptime(new_value, "%H%M%S")
+        elif (len(sp1) ==  2):
+            data = time.gmtime(float(value))
+        elif (len(sp1) >  2):
+            data = time.strptime(value, "%H.%M.%S")
+        elif(len(sp2) > 1):
+            data = time.strptime(value, "%H:%M:%S")
+        else:
+            data = time.strptime(value, "%H%M%S")
+        return time.strftime("%H:%M:%S",data)
+
+    def __format_date(self, value):
+
+        sp1 = value.split(".")
+        try:
+
+            if (len(sp1) >  1):
+                if (len(sp1[0]) <= 2):
+                    data = time.strptime(value, "%D.%M.%Y")
+                else:
+                    data = time.strptime(value, "%Y.%M.%d")
+            elif(len(value.split("//")) > 1):
+                data = time.strptime(value, "%D/%M/%Y")
+            else:
+                data = time.strptime(value, "%Y%M%d")
+            return time.strftime("%d/%M/%Y",data)
+
+        except(ValueError):
+                return ""
+
+    def GetImageOrientationLabel(self):
+        """
+        Return Label regarding the orientation of
+        an image. (AXIAL, SAGITTAL, CORONAL,
+        OBLIQUE or UNKNOWN)
+        """
+        img = self.gdcm_reader.GetImage()
+        direc_cosines = img.GetDirectionCosines()
+        orientation = gdcm.Orientation()
+        try:
+            type = orientation.GetType(tuple(direc_cosines))
+        except TypeError:
+            type = orientation.GetType(direc_cosines)
+        label = orientation.GetLabel(type)
+
+        if (label):
+            return label
+        else:
+            return ""
+
+    def GetDimensionX(self):
+        """
+        Return integer associated to X dimension. This is related
+        to the number of columns on the image.
+        Return "" if not defined.
+        """
+        tag = gdcm.Tag(0x0028, 0x0011)
+        ds = self.gdcm_reader.GetFile().GetDataSet()
+        sf = gdcm.StringFilter()
+        sf.SetFile(self.gdcm_reader.GetFile())
+        data = sf.ToStringPair(tag)[1]
+    
+        if (data):
+            return int(str(data))
+        return ""
+
+
+    def GetDimensionY(self):
+        """
+        Return integer associated to Y dimension. This is related
+        to the number of rows on the image.
+        Return "" if not defined.
+        """
+        tag = gdcm.Tag(0x0028, 0x0010)
+        ds = self.gdcm_reader.GetFile().GetDataSet()
+        sf = gdcm.StringFilter()
+        sf.SetFile(self.gdcm_reader.GetFile())
+        data = sf.ToStringPair(tag)[1]
+    
+        if (data):
+            return int(str(data))
+        return ""
+
+
+    def GetDimensionZ(self):
+        """
+        Return float value associated to Z dimension.
+        Return "" if not defined.
+        """
+        data = self.vtkgdcm_reader.GetOutput()\
+                            .GetDimensions()[2]
+        if (data):
+            return float(data)
+        return ""
+
+    def GetImageDataType(self):
+        """
+        Return image's pixel representation data type (string). This
+        might be:
+          - Float64
+          - Int8
+          - Int16
+          - Int32
+          - UInt16
+        Return "" otherwise.
+        """
+        repres = self._GetPixelRepresentation()
+
+        bits = self._GetBitsAllocated()
+
+        if not bits:
+            answer = ""
+        else:
+            answer = "UInt16"
+
+        if bits == 8:
+            answer = "Int8"
+        elif bits == 16:
+            if repres:
+                answer = "Int16"
+        elif bits == 32:
+            answer = "Int32"
+        elif bits == 64:
+            answer = "Float64"
+
+        return answer
+
+    def GetImagePixelSpacingY(self):
+        """
+        Return spacing between adjacent pixels considerating y axis
+        (height). Values are usually floating point and represent mm.
+        Return "" if field is not defined.
+
+        DICOM standard tag (0x0028, 0x0030) was used.
+        """
+        spacing = self.GetPixelSpacing()
+        if spacing:
+            return spacing[1]
+        return ""
+
+    def GetImagePixelSpacingX(self):
+        """
+        Return spacing between adjacent pixels considerating x axis
+        (width). Values are usually floating point and represent mm.
+        Return "" if field is not defined.
+
+        DICOM standard tag (0x0028, 0x0030) was used.
+        """
+
+        spacing = self.GetPixelSpacing()
+        if spacing:
+            return spacing[0]
+        return ""
+
+
     def GetAcquisitionDate(self):
         """
         Return string containing the acquisition date using the
@@ -176,52 +383,6 @@ class Parser():
             return int(res[1])
         return ""
 
-
-
-    def SetFileName(self, filename):
-        """
-        Set file name to be parsed given its filename (this should
-        include the full path of the file of interest).
-
-        Return True/False if file could be read.
-        """
-        import os.path as path
-
-
-        filename = path.abspath(filename)
-
-        if (sys.platform == 'win32'):
-            filename = filename.encode('latin-1')
-
-        if path.isfile(filename):
-            # Several information can be acquired from DICOM using
-            # vtkgdcm.vtkGDCMImageReader.GetMedicalImageProperties()
-            # but some tags (such as spacing) can only be achieved
-            # with gdcm.ImageReader()
-            # used to parse DICOM files - similar to vtkDICOMParser
-            gdcm_reader = gdcm.ImageReader()
-            #filename = filename.encode('utf-8')
-
-            gdcm_reader.SetFileName(filename)
-
-            # if DICOM file is null vtkGDCMImageReader raises vtk
-            # exception
-            if not gdcm_reader.Read():
-                return False
-
-            vtkgdcm_reader = self.vtkgdcm_reader
-            vtkgdcm_reader.SetFileName(filename)
-            vtkgdcm_reader.Update()
-
-            self.filename = filename
-            self.gdcm_reader = gdcm_reader
-            self.vtkgdcm_reader = vtkgdcm_reader
-            return True
-
-        return False
-
-    def GetImageData(self):
-        return self.vtkgdcm_reader.GetOutput()
 
     def GetImageWindowLevel(self, preset=WL_PRESET, multiple=WL_MULT):
         """
@@ -375,33 +536,6 @@ class Parser():
             data = str(ds.GetDataElement(tag).GetValue())
             if (data):
                 return [eval(value) for value in data.split('\\')]
-        return ""
-
-    def GetImagePixelSpacingY(self):
-        """
-        Return spacing between adjacent pixels considerating y axis
-        (height). Values are usually floating point and represent mm.
-        Return "" if field is not defined.
-
-        DICOM standard tag (0x0028, 0x0030) was used.
-        """
-        spacing = self.GetPixelSpacing()
-        if spacing:
-            return spacing[1]
-        return ""
-
-    def GetImagePixelSpacingX(self):
-        """
-        Return spacing between adjacent pixels considerating x axis
-        (width). Values are usually floating point and represent mm.
-        Return "" if field is not defined.
-
-        DICOM standard tag (0x0028, 0x0030) was used.
-        """
-
-        spacing = self.GetPixelSpacing()
-        if spacing:
-            return spacing[0]
         return ""
 
     def GetPatientWeight(self):
@@ -1022,40 +1156,8 @@ class Parser():
         if (res[1]):
             return int(res[1])
         return ""
-
-    def GetImageDataType(self):
-        """
-        Return image's pixel representation data type (string). This
-        might be:
-          - Float64
-          - Int8
-          - Int16
-          - Int32
-          - UInt16
-        Return "" otherwise.
-        """
-        repres = self._GetPixelRepresentation()
-
-        bits = self._GetBitsAllocated()
-
-        if not bits:
-            answer = ""
-        else:
-            answer = "UInt16"
-
-        if bits == 8:
-            answer = "Int8"
-        elif bits == 16:
-            if repres:
-                answer = "Int16"
-        elif bits == 32:
-            answer = "Int32"
-        elif bits == 64:
-            answer = "Float64"
-
-        return answer
-
-
+    
+    
     def GetPatientBirthDate(self):
         """
         Return string containing the patient's birth date using the
@@ -1183,43 +1285,6 @@ class Parser():
                 encoding = self.GetEncoding()
                 # Returns a unicode decoded in the own dicom encoding
                 return data.decode(encoding)
-        return ""
-
-
-    def GetDimensionX(self):
-        """
-        Return integer associated to X dimension. This is related
-        to the number of columns on the image.
-        Return "" if not defined.
-        """
-
-        data = self.vtkgdcm_reader.GetOutput()\
-                            .GetDimensions()[0]
-        if (data):
-            return int(data)
-        return ""
-
-    def GetDimensionY(self):
-        """
-        Return integer associated to Y dimension. This is related
-        to the number of rows on the image.
-        Return "" if not defined.
-        """
-        data = self.vtkgdcm_reader.GetOutput()\
-                            .GetDimensions()[1]
-        if (data):
-            return int(data)
-        return ""
-
-    def GetDimensionZ(self):
-        """
-        Return float value associated to Z dimension.
-        Return "" if not defined.
-        """
-        data = self.vtkgdcm_reader.GetOutput()\
-                            .GetDimensions()[2]
-        if (data):
-            return float(data)
         return ""
 
 
@@ -1446,26 +1511,7 @@ class Parser():
             return str(res[1])
         return ""
 
-    def GetImageOrientationLabel(self):
-        """
-        Return Label regarding the orientation of
-        an image. (AXIAL, SAGITTAL, CORONAL,
-        OBLIQUE or UNKNOWN)
-        """
-        img = self.gdcm_reader.GetImage()
-        direc_cosines = img.GetDirectionCosines()
-        orientation = gdcm.Orientation()
-        try:
-            type = orientation.GetType(tuple(direc_cosines))
-        except TypeError:
-            type = orientation.GetType(direc_cosines)
-        label = orientation.GetLabel(type)
-
-        if (label):
-            return label
-        else:
-            return ""
-
+    
     def GetSeriesDescription(self):
         """
         Return a string with a description of the series.
@@ -1493,43 +1539,6 @@ class Parser():
             if (date) and (date != 'None'):
                 return  self.__format_time(date)
         return ""
-
-    def __format_time(self,value):
-        sp1 = value.split(".")
-        sp2 = value.split(":")
-
-        if (len(sp1) ==  2) and (len(sp2) == 3):
-            new_value = str(sp2[0]+sp2[1]+
-                            str(int(float(sp2[2]))))
-            data = time.strptime(new_value, "%H%M%S")
-        elif (len(sp1) ==  2):
-            data = time.gmtime(float(value))
-        elif (len(sp1) >  2):
-            data = time.strptime(value, "%H.%M.%S")
-        elif(len(sp2) > 1):
-            data = time.strptime(value, "%H:%M:%S")
-        else:
-            data = time.strptime(value, "%H%M%S")
-        return time.strftime("%H:%M:%S",data)
-
-    def __format_date(self, value):
-
-        sp1 = value.split(".")
-        try:
-
-            if (len(sp1) >  1):
-                if (len(sp1[0]) <= 2):
-                    data = time.strptime(value, "%D.%M.%Y")
-                else:
-                    data = time.strptime(value, "%Y.%M.%d")
-            elif(len(value.split("//")) > 1):
-                data = time.strptime(value, "%D/%M/%Y")
-            else:
-                data = time.strptime(value, "%Y%M%d")
-            return time.strftime("%d/%M/%Y",data)
-
-        except(ValueError):
-                return ""
 
     def GetAcquisitionTime(self):
         """
