@@ -22,7 +22,6 @@ import time
 import gdcm
 import vtkgdcm
 import sys
-import wx
 
 
 # In DICOM file format, if multiple values are present for the
