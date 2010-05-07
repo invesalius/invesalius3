@@ -1347,11 +1347,11 @@ class Parser():
 
         DICOM standard tag (0x0018,0x0050) was used.
         """
-        tag = gdcm.Tag(0x0018, 0x1050)
+        tag = gdcm.Tag(0x0018, 0x0050)
         ds = self.gdcm_reader.GetFile().GetDataSet()
         if ds.FindDataElement(tag):
             data = str(ds.GetDataElement(tag).GetValue())
-
+            print data
             if (data):
                 return float(data)
         return 0
