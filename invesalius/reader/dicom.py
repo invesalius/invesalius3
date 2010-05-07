@@ -1351,7 +1351,6 @@ class Parser():
         ds = self.gdcm_reader.GetFile().GetDataSet()
         if ds.FindDataElement(tag):
             data = str(ds.GetDataElement(tag).GetValue())
-            print data
             if (data):
                 return float(data)
         return 0
