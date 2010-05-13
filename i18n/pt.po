@@ -977,7 +977,7 @@ msgstr "Importar imagens médicas..."
 
 #: task_importer.py:82
 msgid "Open an existing InVesalius project..."
-msgstr "Abrir um projecto do InVesalius existente..."
+msgstr "Abrir um projecto existente do InVesalius..."
 
 #: task_importer.py:83
 msgid "Open an existing project..."
@@ -1049,7 +1049,7 @@ msgstr "Opções avançadas"
 
 #: task_surface.py:246
 msgid "Automatically select largest disconnected region and create new surface"
-msgstr "Selecção automática da região desconexa máxima e criação de superfície nova"
+msgstr "Seleccionar automaticamente a região desconexa máxima e criar superfície nova"
 
 #: task_surface.py:247
 msgid "Select largest part"
@@ -1057,7 +1057,7 @@ msgstr "Seleccionar a parte máxima"
 
 #: task_surface.py:255
 msgid "Automatically select disconnected regions and create one new surface per region"
-msgstr "Selecção automática das regiões desconexas e criação de superfícies novas correspondentes"
+msgstr "Seleccionar automaticamente regiões desconexas e criar superfícies novas correspondentes"
 
 #: task_surface.py:256
 msgid "Split all disconnected surfaces"
