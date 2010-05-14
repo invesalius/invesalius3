@@ -431,11 +431,16 @@ class SurfaceManager():
         writer.Write()
 
         language = ses.Session().language
-
+        
+        if (prj.Project().original_orientation == const.AXIAL):
+            flip_image = True
+        else:
+            flip_image = False
+            
         pipe_in, pipe_out = multiprocessing.Pipe()
         sp = surface_process.SurfaceProcess(pipe_in, filename_img, mode, min_value, max_value,
                  decimate_reduction, smooth_relaxation_factor,
-                 smooth_iterations, language, fill_holes, keep_largest)
+                 smooth_iterations, language, fill_holes, keep_largest, flip_image)
         sp.start()
 
         while 1:

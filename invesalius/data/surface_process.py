@@ -8,7 +8,8 @@ class SurfaceProcess(multiprocessing.Process):
 
     def __init__(self, pipe, filename, mode, min_value, max_value,
                  decimate_reduction, smooth_relaxation_factor,
-                 smooth_iterations, language,  fill_holes, keep_largest):
+                 smooth_iterations, language,  fill_holes, keep_largest, 
+                 flip_image):
 
         multiprocessing.Process.__init__(self)
         self.pipe = pipe
@@ -22,6 +23,7 @@ class SurfaceProcess(multiprocessing.Process):
         self.language = language
         self.fill_holes = fill_holes
         self.keep_largest = keep_largest
+        self.flip_image = flip_image
 
 
     def run(self):
@@ -37,17 +39,21 @@ class SurfaceProcess(multiprocessing.Process):
         reader = vtk.vtkXMLImageDataReader()
         reader.SetFileName(self.filename)
         reader.Update()
-
-        # Flip original vtkImageData
-        flip = vtk.vtkImageFlip()
-        flip.SetInput(reader.GetOutput())
-        flip.SetFilteredAxis(1)
-        flip.FlipAboutOriginOn()
-
+        
+        image = reader.GetOutput()
+        
+        if (self.flip_image):
+            # Flip original vtkImageData
+            flip = vtk.vtkImageFlip()
+            flip.SetInput(reader.GetOutput())
+            flip.SetFilteredAxis(1)
+            flip.FlipAboutOriginOn()
+            image = flip.GetOutput()
+            
         # Create vtkPolyData from vtkImageData
         if self.mode == "CONTOUR":
             contour = vtk.vtkContourFilter()
-            contour.SetInput(flip.GetOutput())
+            contour.SetInput(image)
             contour.SetValue(0, self.min_value) # initial threshold
             contour.SetValue(1, self.max_value) # final threshold
             contour.GetOutput().ReleaseDataFlagOn()
@@ -56,7 +62,7 @@ class SurfaceProcess(multiprocessing.Process):
             polydata = contour.GetOutput()
         else: #mode == "GRAYSCALE":
             mcubes = vtk.vtkMarchingCubes()
-            mcubes.SetInput(flip.GetOutput())
+            mcubes.SetInput(image)
             mcubes.SetValue(0, 255)
             mcubes.ComputeScalarsOn()
             mcubes.ComputeGradientsOn()

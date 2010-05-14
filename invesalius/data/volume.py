@@ -450,19 +450,26 @@ class Volume():
         image = proj.imagedata
 
         number_filters = len(self.config['convolutionFilters'])
-        update_progress= vtk_utils.ShowProgress(2 + number_filters)
-
-        # Flip original vtkImageData
-        flip = vtk.vtkImageFlip()
-        flip.SetInput(image)
-        flip.SetFilteredAxis(1)
-        flip.FlipAboutOriginOn()
-        flip.AddObserver("ProgressEvent", lambda obj,evt:
-                            update_progress(flip, "Rendering..."))
-        flip.Update()
-
-        image = flip.GetOutput()
-
+        
+        if (prj.Project().original_orientation == const.AXIAL):
+            flip_image = True
+        else:
+            flip_image = False
+        
+        if (flip_image):    
+            update_progress= vtk_utils.ShowProgress(2 + number_filters) 
+            # Flip original vtkImageData
+            flip = vtk.vtkImageFlip()
+            flip.SetInput(image)
+            flip.SetFilteredAxis(1)
+            flip.FlipAboutOriginOn()
+            flip.AddObserver("ProgressEvent", lambda obj,evt:
+                                update_progress(flip, "Rendering..."))
+            flip.Update()
+            image = flip.GetOutput()
+        else:
+            update_progress= vtk_utils.ShowProgress(1 + number_filters)
+        
         scale = image.GetScalarRange()
         self.scale = scale
 
