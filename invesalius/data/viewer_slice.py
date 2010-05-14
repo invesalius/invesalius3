@@ -1263,7 +1263,7 @@ class Viewer(wx.Panel):
         self.__update_display_extent(slice_data)
 
         slice_data.renderer.ResetCamera()
-        slice_data.renderer.Render()
+        #slice_data.renderer.Render()
 
     def __update_display_extent(self, slice_data):
         e = self.imagedata.GetWholeExtent()
