@@ -261,7 +261,7 @@ class Project(object):
             ow = vtk.vtkOutputWindow()
             ow.SetInstance(fow)
             
-        filelist = Extract(filename, tempfile.gettempdir())
+        filelist = Extract(filename, tempfile.mkdtemp())
         main_plist = min(filter(lambda x: x.endswith('.plist'), filelist),
                          key=lambda x: len(x))
         project = plistlib.readPlist(main_plist)
