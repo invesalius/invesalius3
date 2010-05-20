@@ -318,7 +318,7 @@ class MaskProperties(wx.Panel):
         self.combo_thresh = combo_thresh
 
         ## LINE 4
-        gradient = grad.GradientSlider(self, -1, -5000, 5000, 0, 5000,
+        gradient = grad.GradientCtrl(self, -1, -5000, 5000, 0, 5000,
                                            (0, 255, 0, 100))
         self.gradient = gradient
 
@@ -476,17 +476,17 @@ class MaskProperties(wx.Panel):
 
     def OnComboThresh(self, evt):
         (thresh_min, thresh_max) = Project().threshold_modes[evt.GetString()]
-        self.gradient.SetMinValue(thresh_min, True)
-        self.gradient.SetMaxValue(thresh_max, True)
+        self.gradient.SetMinValue(thresh_min)
+        self.gradient.SetMaxValue(thresh_max)
+        self.OnSlideChanged(None)
 
     def OnSlideChanged(self, evt):
         thresh_min = self.gradient.GetMinValue()
         thresh_max = self.gradient.GetMaxValue()
-        if self.bind_evt_gradient:
-            ps.Publisher().sendMessage('Set threshold values',
-                                        (thresh_min, thresh_max))
-            session = ses.Session()
-            session.ChangeProject()
+        ps.Publisher().sendMessage('Set threshold values',
+                                    (thresh_min, thresh_max))
+        session = ses.Session()
+        session.ChangeProject()
 
     def OnSelectColour(self, evt):
         colour = evt.GetValue()
@@ -549,7 +549,7 @@ class EditionTools(wx.Panel):
         text_thresh = wx.StaticText(self, -1, _("Brush threshold range:"))
 
         ## LINE 4
-        gradient_thresh = grad.GradientSlider(self, -1, 0, 5000, 0, 5000,
+        gradient_thresh = grad.GradientCtrl(self, -1, 0, 5000, 0, 5000,
                                        (0, 0, 255, 100))
         self.gradient_thresh = gradient_thresh
         self.bind_evt_gradient = True

@@ -188,15 +188,11 @@ class Slice(object):
             self.SetMaskEditionThreshold(index, threshold_range)
 
     def __set_current_mask_threshold(self, evt_pubsub):
-        session = ses.Session()
-        #FIXME: find a better way to implement this
-        if (self.num_gradient >= 2) or \
-        (session.project_status != const.PROJ_OPEN):
-            threshold_range = evt_pubsub.data
-            index = self.current_mask.index
-            self.SetMaskThreshold(index, threshold_range)
-            #Clear edited points
-            self.current_mask.edited_points = {}
+        threshold_range = evt_pubsub.data
+        index = self.current_mask.index
+        self.SetMaskThreshold(index, threshold_range)
+        #Clear edited points
+        self.current_mask.edited_points = {}
         self.num_gradient += 1
 
     def __set_current_mask_colour(self, pubsub_evt):
