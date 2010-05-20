@@ -43,7 +43,15 @@ class SliderEvent(wx.PyCommandEvent):
         self.maximun = maxValue
 
 class GradientSlider(wx.Panel):
+    # This widget is formed by a gradient background (black-white), two push
+    # buttons change the min and max values respectively and a slider which you can drag to
+    # change the both min and max values.
     def __init__(self, parent, id, minRange, maxRange, minValue, maxValue, colour):
+        # minRange: the minimal value
+        # maxrange: the maximum value
+        # minValue: the least value in the range
+        # maxValue: the most value in the range
+        # colour: colour used in this widget.
         super(GradientSlider, self).__init__(parent, id, size = (100, 25))
         self._bind_events_wx()
 
@@ -65,6 +73,7 @@ class GradientSlider(wx.Panel):
         self.Bind(wx.EVT_SIZE, self.OnSize)
 
     def OnPaint(self, evt):
+        # Where the magic happens. Here the controls are drawn.
         dc = wx.BufferedPaintDC(self)
         dc.Clear()
         
@@ -79,26 +88,32 @@ class GradientSlider(wx.Panel):
 
         width_transparency = self.max_position - self.min_position
 
+        # Drawing the left blank area.
         pen = wx.Pen((0, 0, 0))
         brush = wx.Brush((0, 0, 0))
         dc.SetPen(pen)
         dc.SetBrush(brush)
         dc.DrawRectangle(0, 0, PUSH_WIDTH, h)
 
+        # Drawing the right blank area.
         pen = wx.Pen((255, 255, 255))
         brush = wx.Brush((255, 255, 255))
         dc.SetPen(pen)
         dc.SetBrush(brush)
         dc.DrawRectangle(x_init_gradient + width_gradient, 0, PUSH_WIDTH, h)
 
+        # Drawing the gradient.
         dc.GradientFillLinear((x_init_gradient, y_init_gradient,
                                width_gradient, height_gradient),
                               (0, 0, 0), (255,255, 255))
         
         n = wx.RendererNative_Get()
+
+        # Drawing the push buttons
         n.DrawPushButton(self, dc, (x_init_push1, 0, PUSH_WIDTH, h))
         n.DrawPushButton(self, dc, (x_init_push2, 0, PUSH_WIDTH, h))
 
+        # Drawing the transparent slider.
         bytes = numpy.array(self.colour * width_transparency * h, 'B')
         try:
             slider = wx.BitmapFromBufferRGBA(width_transparency, h, bytes)
@@ -108,12 +123,23 @@ class GradientSlider(wx.Panel):
             dc.DrawBitmap(slider, self.min_position, 0, True)
 
     def OnEraseBackGround(self, evt):
+        # Only to avoid this widget to flick.
         pass
 
     def OnMotion(self, evt):
         x = evt.GetX()
         w, h = self.GetSize()
-        if self.selected == 1:
+
+        # user is only moving the mouse, not changing the max our min values
+        if not self.selected:
+            # The user is over a push button, change the cursor.
+            if self._is_over_what(x) in (1, 2):
+                self.SetCursor(wx.StockCursor(wx.CURSOR_SIZEWE))
+            else:
+                self.SetCursor(wx.NullCursor)
+
+        # The user is moving the first PUSH (Min)
+        elif self.selected == 1:
             x -= self._delta
             if x - PUSH_WIDTH < 0:
                 x = PUSH_WIDTH
@@ -126,6 +152,7 @@ class GradientSlider(wx.Panel):
             self.Refresh()
             self._generate_event()
         
+        # The user is moving the second push (Max)
         elif self.selected == 2:
             x -= self._delta
             if x + PUSH_WIDTH > w:
@@ -139,6 +166,7 @@ class GradientSlider(wx.Panel):
             self.Refresh()
             self._generate_event()
 
+        # The user is moving the slide.
         elif self.selected == 3:
             x -= self._delta
             slider_size = self.max_position - self.min_position
@@ -169,14 +197,12 @@ class GradientSlider(wx.Panel):
 
     def OnClick(self, evt):
         x = evt.GetX()
-        if self.min_position - PUSH_WIDTH <= x <= self.min_position:
-            self.selected = 1
+        self.selected = self._is_over_what(x)
+        if self.selected == 1:
             self._delta = x - self.min_position
-        elif self.max_position <= x <= self.max_position + PUSH_WIDTH:
-            self.selected = 2
+        elif self.selected == 2:
             self._delta = x - self.max_position
-        elif self.min_position <= x <= self.max_position:
-            self.selected = 3
+        elif self.selected == 3:
             self._delta = x - self.min_position
         evt.Skip()
 
@@ -226,6 +252,18 @@ class GradientSlider(wx.Panel):
                 self.min_range))
 
         return minimun
+
+    def _is_over_what(self, position_x):
+        # Test if the given position (x) is over some object. Return 1 to first
+        # pus, 2 to second push, 3 to slide and 0 to nothing.
+        if self.min_position - PUSH_WIDTH <= position_x <= self.min_position:
+            return 1
+        elif self.max_position <= position_x <= self.max_position + PUSH_WIDTH:
+            return 2
+        elif self.min_position <= position_x <= self.max_position:
+            return 3
+        else:
+            return 0
 
     def SetColour(self, colour):
         self.colour = colour
