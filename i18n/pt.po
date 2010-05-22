@@ -1101,7 +1101,7 @@ msgstr "D"
 
 #: viewer_slice.py:449 viewer_slice.py:453
 msgid "L"
-msgstr "L"
+msgstr "E"
 
 #: viewer_slice.py:449 viewer_slice.py:451
 msgid "A"
