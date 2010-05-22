@@ -957,7 +957,7 @@ msgstr "Guardar superfície em três dimensões como..."
 
 #: task_exporter.py:327
 msgid "You need to create a surface and make "
-msgstr "É necessário criar uma superfície e fazê-la"
+msgstr "É necessário criar uma superfície e fazê-la "
 
 #: task_exporter.py:328
 msgid "visible before exporting it."
