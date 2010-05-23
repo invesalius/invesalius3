@@ -15,9 +15,9 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
+"X-Poedit-Country: GENERIC\n"
 "X-Poedit-Language: English\n"
 "X-Poedit-SourceCharset: utf-8\n"
-"X-Poedit-Country: GENERIC\n"
 
 #: constants.py:31
 #, python-format
@@ -474,11 +474,11 @@ msgstr "Volume"
 
 #: default_viewers.py:416
 msgid "Preset name"
-msgstr "Nome da pré-definição"
+msgstr "Nome da definição prévia"
 
 #: default_viewers.py:419
 msgid "Save raycasting preset"
-msgstr "Guardar a pré-definição de \"raycasting\""
+msgstr "Guardar a definição prévia de \"raycasting\""
 
 #: default_viewers.py:449
 msgid "Tools"
@@ -564,7 +564,7 @@ msgstr "Nomear a máscara a se criar"
 
 #: dialogs.py:427
 msgid "Threshold preset:"
-msgstr "Pré-definição de limiar:"
+msgstr "Definição prévia de limiar:"
 
 #: dialogs.py:529
 #, python-format
@@ -589,7 +589,7 @@ msgstr "Licença GNU GPL (Licença Pública Geral) versão 2"
 
 #: dialogs.py:636
 msgid "Save raycasting preset as:"
-msgstr "Guardar pré-definição de \"raycasting\" como:"
+msgstr "Guardar definição prévia de \"raycasting\" como:"
 
 #: dialogs.py:679
 msgid "New surface name:"
@@ -691,7 +691,7 @@ msgstr "Painel de dados"
 
 #: frame.py:133
 msgid "Preview medical data to be reconstructed"
-msgstr "Pré-visualização dos dados médicos a serem reconstruídos"
+msgstr "Visão prévia dos dados médicos a serem reconstruídos"
 
 #: frame.py:403
 msgid "Import DICOM...\tCtrl+I"
