@@ -23,7 +23,7 @@ import tempfile
 
 import vtk
 
-from nipy.io.imageformats import AnalyzeHeader
+from nibabel import AnalyzeHeader
 
 def ReadAnalyze(filename):
     print "Reading analyze file:", filename
@@ -32,7 +32,7 @@ def ReadAnalyze(filename):
     header_file = open(filename)
     header = AnalyzeHeader.from_fileobj(header_file)
     xf, yf, zf = header.get_data_shape()[:3]
-    data_type = header.get_datatype()
+    data_type = header.get_data_dtype().name
     pixel_spacing = header.get_zooms()[:3]
 
     # Mapping from numpy type to vtk type.
