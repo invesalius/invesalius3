@@ -18,37 +18,55 @@
 #--------------------------------------------------------------------------
 
 import os
-
-import itk
 import multiprocessing
 import tempfile
+
 import vtk
 
+from nipy.io.imageformats import AnalyzeHeader
 
 def ReadAnalyze(filename):
-    
-    pipe_in, pipe_out = multiprocessing.Pipe()
-    
-    sp = ItktoVtk(pipe_in, filename)
-    sp.start()
-    
-    while 1:
-        msg = pipe_out.recv()
-        if(msg is None):
-            break
-    
-    filename = pipe_out.recv()
-    
-    reader = vtk.vtkXMLImageDataReader()
-    reader.SetFileName(filename)
+    print "Reading analyze file:", filename
+
+    # Reading info from analyze header
+    header_file = open(filename)
+    header = AnalyzeHeader.from_fileobj(header_file)
+    xf, yf, zf = header.get_data_shape()[:3]
+    data_type = header.get_datatype()
+    pixel_spacing = header.get_zooms()[:3]
+
+    # Mapping from numpy type to vtk type.
+    anlz_2_vtk_type = {
+                       'int16': 'SetDataScalarTypeToShort',
+                       'uint16': 'SetDataScalarTypeToUnsignedShort',
+                       'float32': 'SetDataScalarTypeToFloat'
+                      }
+
+    print header
+
+    reader = vtk.vtkImageReader()
+    reader.SetFileName(filename[:-3] + 'img')
+
+    # Setting the endiannes based on the analyze header.
+    if header.endianness == '<':
+        reader.SetDataByteOrderToLittleEndian()
+    elif header.endianness == '>':
+        reader.SetDataByteOrderToBigEndian()
+
+    reader.SetFileDimensionality(3)
+    reader.SetDataExtent(0, xf-1, 0, yf-1, 0, zf-1)
+    reader.SetDataSpacing(pixel_spacing)
+    reader.SetHeaderSize(0)
+    # reader.SetTransform(transform)
+    getattr(reader, anlz_2_vtk_type[data_type])()
     reader.Update()
-    
-    os.remove(filename)
-    
+
     return reader.GetOutput()
 
 def ReadDirectory(dir_):
-    file_list = []
+    """ 
+    Looking for analyze files in the given directory
+    """
     imagedata = None
     for root, sub_folders, files in os.walk(dir_):
         for file in files:
@@ -57,45 +75,3 @@ def ReadDirectory(dir_):
                 imagedata = ReadAnalyze(filename)
                 return imagedata
     return imagedata
-
-
-class ItktoVtk(multiprocessing.Process): 
-    
-    def __init__(self, pipe, filename):        
-        multiprocessing.Process.__init__(self)
-        self.filename = filename
-        self.pipe = pipe
-        
-    def run(self):
-        self.Convert()
-    
-    def Convert(self):
-        
-        import ItkVtkGlue
-
-        reader = itk.ImageFileReader.IUC3.New()
-        reader.SetFileName(self.filename)
-        reader.Update()
-    
-        x_spacing = reader.GetOutput().GetSpacing().GetElement(0)
-        y_spacing = reader.GetOutput().GetSpacing().GetElement(1)
-        z_spacing = reader.GetOutput().GetSpacing().GetElement(2) 
-        spacing = (x_spacing, y_spacing, z_spacing)
-    
-        glue = ItkVtkGlue.ImageToVTKImageFilter.IUC3.New()
-        glue.SetInput(reader.GetOutput())
-        glue.Update()
-        
-        imagedata = vtk.vtkImageData()
-        imagedata.DeepCopy(glue.GetOutput())
-        imagedata.SetSpacing(spacing)
-        
-        filename = tempfile.mktemp()
-        writer = vtk.vtkXMLImageDataWriter()
-        writer.SetInput(imagedata)
-        writer.SetFileName(filename)
-        writer.Write()
-        
-        self.pipe.send(None)
-        self.pipe.send(filename)
-        
