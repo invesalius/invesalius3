@@ -230,8 +230,10 @@ class Viewer(wx.Panel):
                  }
         if state == const.SLICE_STATE_CROSS:
             self.__set_cross_visibility(1)
+            ps.Publisher().sendMessage('Activate ball reference')
         else:
             self.__set_cross_visibility(0)
+            ps.Publisher().sendMessage('Deactivate ball reference')
 
         if state == const.STATE_WL:
             self.on_wl = True
@@ -704,7 +706,22 @@ class Viewer(wx.Panel):
         coord = self.CalcultateScrollPosition(coord_cross)
         ps.Publisher().sendMessage('Update cross position',
                 (self.orientation, coord_cross))
+        ps.Publisher().sendMessage('Set ball reference position based on bound', coord_cross)
+        ps.Publisher().sendMessage('Set camera in volume', coord_cross)
+        ps.Publisher().sendMessage('Render volume viewer')
+        
         print "Scroll to", coord
+        self.ScrollSlice(coord)
+        self.interactor.Render()
+
+    def Navigation(self, pubsub_evt):
+        # Get point from base change
+        x, y, z = pubsub_evt.data
+        coord_cross = x, y, z      
+        coord = self.CalcultateScrollPosition(coord_cross)   
+        ps.Publisher().sendMessage('Update cross position',
+                (self.orientation, coord_cross))
+        
         self.ScrollSlice(coord)
         self.interactor.Render()
 
@@ -834,6 +851,8 @@ class Viewer(wx.Panel):
                                   self.orientation))
         ps.Publisher().subscribe(self.__update_cross_position,
                                 'Update cross position')
+        ps.Publisher().subscribe(self.Navigation,
+                                 'Co-registered Points')
         ###
         ps.Publisher().subscribe(self.ChangeBrushSize,
                                  'Set edition brush size')
