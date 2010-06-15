@@ -151,6 +151,8 @@ icons/volume_raycasting.png -text
 icons/volume_raycasting_original.png -text
 icons/zh_TW.bmp -text
 invesalius/.svnignore -text
+invesalius/data/bases.py -text
+invesalius/data/co_registration.py -text
 locale/de/LC_MESSAGES/invesalius.mo -text
 locale/el/LC_MESSAGES/invesalius.mo -text
 locale/en/LC_MESSAGES/invesalius.mo -text
