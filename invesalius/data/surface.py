@@ -432,10 +432,10 @@ class SurfaceManager():
 
         language = ses.Session().language
         
-        if (prj.Project().original_orientation == const.AXIAL):
-            flip_image = True
-        else:
+        if (prj.Project().original_orientation == const.CORONAL):
             flip_image = False
+        else:
+            flip_image = True
             
         pipe_in, pipe_out = multiprocessing.Pipe()
         sp = surface_process.SurfaceProcess(pipe_in, filename_img, mode, min_value, max_value,
