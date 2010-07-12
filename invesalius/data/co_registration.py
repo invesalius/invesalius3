@@ -9,14 +9,11 @@ import project
 class Corregister(threading.Thread):
     
     def __init__(self, bases, flag):
-        
         threading.Thread.__init__(self)
-        self.M = bases[0]
-        self.Minv = bases[1]
-        self.N = bases[2]
-        self.Ninv = bases[3]
-        self.q1 = bases[4]
-        self.q2 = bases[5]
+        self.Minv = bases[0]
+        self.N = bases[1]
+        self.q1 = bases[2]
+        self.q2 = bases[3]
         self.flag = flag
         self._pause_ = 0
         self.start()
@@ -49,13 +46,6 @@ class Corregister(threading.Thread):
         return coord
        
     def run(self):
-        #Image limits to use in simulation
-        #bounds = array(project.Project().imagedata.GetBounds())
-        #im_simu = bounds
-        #im_simu[0] = bounds[0] - 10.0
-        #im_simu[2] = bounds[2] - 10.0
-        #im_simu[4] = bounds[4] - 10.0
-        
         while self.flag == True:
             #Neuronavigation with Polhemus
             trck = self.Coordinates()
@@ -63,21 +53,11 @@ class Corregister(threading.Thread):
             img = self.q1 + (self.Minv*self.N)*(tracker - self.q2)
             coord = [float(img[0]), float(img[1]), float(img[2])]
             ps.Publisher().sendMessage('Co-registered Points', coord)
-
+            coord_cam = float(img[0]), float(img[1]), float(img[2])
+            ps.Publisher().sendMessage('Set ball reference position based on bound', coord_cam)
+            ps.Publisher().sendMessage('Set camera in volume', coord_cam)
+            wx.CallAfter(ps.Publisher().sendMessage, 'Render volume viewer')
+            wx.CallAfter(ps.Publisher().sendMessage, 'Co-registered Points', coord)
+            sleep(0.05)
             if self._pause_:
                 return
-            
-            #Loop for simulate Polhemus movement and Neuronavigation
-            #for i in range(0, 5, 2):
-            #    while im_simu[i] < (bounds[i+1]+10.0):
-            #        im_init = matrix([[im_simu[0]], [im_simu[2]], [im_simu[4]]])          
-            #        #mudanca coordenada img2plh
-            #        tr_simu = self.q2 + (self.Ninv*self.M)*(im_init - self.q1)
-            #        #mudanca coordenada plh2img
-            #        img_final = self.q1 + (self.Minv*self.N)*(tr_simu - self.q2)
-            #        #publica as alteracoes que devem ser feitas nas fatias
-            #        coord = [float(img_final[0]), float(img_final[1]), float(img_final[2])]
-            #        ps.Publisher().sendMessage('Co-registered Points', coord)
-            #        im_simu[i] = im_simu[i] + 4.0
-            #        if self._pause_:
-            #            return
