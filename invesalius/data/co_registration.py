@@ -1,10 +1,12 @@
 import threading
+
 import serial
+import wx
 import wx.lib.pubsub as ps
+
 from numpy import *
 from math import sqrt
 from time import sleep
-import project
 
 class Corregister(threading.Thread):
     
@@ -52,12 +54,12 @@ class Corregister(threading.Thread):
             tracker = matrix([[trck[0]], [trck[1]], [trck[2]]])            
             img = self.q1 + (self.Minv*self.N)*(tracker - self.q2)
             coord = [float(img[0]), float(img[1]), float(img[2])]
-            ps.Publisher().sendMessage('Co-registered Points', coord)
             coord_cam = float(img[0]), float(img[1]), float(img[2])
             ps.Publisher().sendMessage('Set ball reference position based on bound', coord_cam)
             ps.Publisher().sendMessage('Set camera in volume', coord_cam)
             wx.CallAfter(ps.Publisher().sendMessage, 'Render volume viewer')
             wx.CallAfter(ps.Publisher().sendMessage, 'Co-registered Points', coord)
-            sleep(0.05)
+            sleep(0.005)
+
             if self._pause_:
                 return
