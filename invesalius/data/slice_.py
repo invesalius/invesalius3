@@ -242,7 +242,7 @@ class Slice(object):
 
         (r,g,b) = colour
         scalar_range = int(self.imagedata.GetScalarRange()[1])
-        self.lut_mask.SetTableValue(1, r, g, b, 1.0)
+        self.lut_mask.SetTableValue(0, 0, 0, 0, 0.0)
         self.lut_mask.SetTableValue(scalar_range - 1, r, g, b, 1.0)
 
         colour_wx = [r*255, g*255, b*255]
