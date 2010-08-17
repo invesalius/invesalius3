@@ -294,6 +294,8 @@ class Frame(wx.Frame):
             self.ShowImportDicomPanel()
         elif id == const.ID_PROJECT_OPEN:
             self.ShowOpenProject()
+        elif id == const.ID_ANALYZE_IMPORT:
+            self.ShowAnalyzeImporter()
         elif id == const.ID_PROJECT_SAVE:
             session = ses.Session()
             if session.temp_item:
@@ -355,6 +357,12 @@ class Frame(wx.Frame):
         Show save as dialog.
         """
         ps.Publisher().sendMessage('Show save dialog', True)
+        
+    def ShowAnalyzeImporter(self):
+        """
+        Show save as dialog.
+        """
+        ps.Publisher().sendMessage('Show analyze dialog', True)
 
 # ------------------------------------------------------------------
 # ------------------------------------------------------------------
@@ -396,12 +404,16 @@ class MenuBar(wx.MenuBar):
         Create all menu and submenus, and add them to self.
         """
         # TODO: This definetely needs improvements... ;)
+        
+        #Import Others Files
+        others_file_menu = wx.Menu()
+        others_file_menu.Append(const.ID_ANALYZE_IMPORT, "Analyze")
 
         # FILE
         file_menu = wx.Menu()
         app = file_menu.Append
         app(const.ID_DICOM_IMPORT, _("Import DICOM...\tCtrl+I"))
-        #app(const.ID_DICOM_LOAD_NET, _("Import DICOM from PACS..."))
+        file_menu.AppendMenu(const.ID_IMPORT_OTHERS_FILES, _("Import Others Files"), others_file_menu)
         app(const.ID_PROJECT_OPEN, _("Open Project...\tCtrl+O"))
         app(const.ID_PROJECT_SAVE, _("Save Project\tCtrl+S"))
         app(const.ID_PROJECT_SAVE_AS, _("Save Project As..."))
