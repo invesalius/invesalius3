@@ -75,6 +75,8 @@ class Controller():
         ps.Publisher().subscribe(self.OnShowDialogCloseProject, 'Close Project')
         ps.Publisher().subscribe(self.OnOpenProject, 'Open project')
         ps.Publisher().subscribe(self.OnOpenRecentProject, 'Open recent project')
+        ps.Publisher().subscribe(self.OnShowAnalyzeFile, 'Show analyze dialog')
+        
 
     def OnCancelImport(self, pubsub_evt):
         #self.cancel_import = True
@@ -96,6 +98,16 @@ class Controller():
 
     def OnShowDialogCloseProject(self, pubsub_evt):
         self.ShowDialogCloseProject()
+
+    def OnShowAnalyzeFile(self, pubsub_evt):
+        dirpath = dialog.ShowOpenAnalyzeDialog()
+        imagedata = analyze.ReadAnalyze(dirpath)
+        if imagedata:
+            self.CreateAnalyzeProject(imagedata)
+            
+        self.LoadProject()
+        ps.Publisher().sendMessage("Enable state project", True)
+
 
 ###########################
 
