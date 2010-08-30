@@ -377,7 +377,7 @@ class GradientCtrl(wx.Panel):
         self.SetMaxValue(v)
 
     def SetColour(self, colour):
-        colour = colour + [90,]
+        colour = list(colour) + [90,]
         self.colour = colour
         self.gradient_slider.SetColour(colour)
         self.gradient_slider.Refresh()
