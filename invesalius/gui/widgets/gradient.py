@@ -288,6 +288,12 @@ class GradientSlider(wx.Panel):
         self.CalculateControlPositions()
         self.Refresh()
 
+    def GetMaxValue(self):
+        return self.maximun
+
+    def GetMinValue(self):
+        return self.minimun
+
     def _generate_event(self):
         evt = SliderEvent(myEVT_SLIDER_CHANGE, self.GetId(), self.min_range,
                           self.max_range, self.minimun, self.maximun)
