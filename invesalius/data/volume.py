@@ -573,7 +573,7 @@ class Volume():
     def CalculateHistogram(self):
         proj = prj.Project()
         image = proj.imagedata
-        r = image.GetScalarRange()[1] - image.GetScalarRange()[0]
+        r = int(image.GetScalarRange()[1] - image.GetScalarRange()[0])
         accumulate = vtk.vtkImageAccumulate()
         accumulate.SetInput(image)
         accumulate.SetComponentExtent(0, r -1, 0, 0, 0, 0)
