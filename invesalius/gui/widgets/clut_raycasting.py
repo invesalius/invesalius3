@@ -42,6 +42,7 @@ RADIUS = 5
 SELECTION_SIZE = 10
 TOOLBAR_SIZE = 30
 TOOLBAR_COLOUR = (25 , 25, 25)
+RANGE = 10
 PADDING = 2
 
 class Node(object):
@@ -277,8 +278,8 @@ class CLUTRaycastingWidget(wx.Panel):
         doesn't change values in preset, only to visualization.
         """
         direction = evt.GetWheelRotation() / evt.GetWheelDelta()
-        init = self.init - 10 * direction
-        end = self.end + 10 * direction
+        init = self.init - RANGE * direction
+        end = self.end + RANGE * direction
         print direction, init, end
         self.SetRange((init, end))
         self.Refresh()
@@ -434,13 +435,14 @@ class CLUTRaycastingWidget(wx.Panel):
             node.x += (x - self.previous_wl)
             node.graylevel = self.PixelToHounsfield(node.x)
 
+        self.previous_wl = x
+        self.to_draw_points = True
+        self.Refresh()
+
         # The window level has been changed, raising a event!
         evt = CLUTEvent(myEVT_CLUT_CURVE_WL_CHANGE, self.GetId(),
                         self.curve_dragged)
         self.GetEventHandler().ProcessEvent(evt)
-
-        self.previous_wl = x
-        self.Refresh()
 
     def RemovePoint(self, i, j):
         """
@@ -530,8 +532,8 @@ class CLUTRaycastingWidget(wx.Panel):
         font = ctx.CreateFont(font, TEXT_COLOUR)
         ctx.SetFont(font)
 
-        text1 = "Value: %6d" % value
-        text2 = "Alpha: %.3f" % alpha
+        text1 = _("Value: %-6d" % value)
+        text2 = _("Alpha: %-.3f" % alpha)
 
         if ctx.GetTextExtent(text1)[0] > ctx.GetTextExtent(text2)[0]:
             wt, ht = ctx.GetTextExtent(text1)
