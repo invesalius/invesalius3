@@ -220,15 +220,14 @@ class CLUTRaycastingWidget(wx.Panel):
         point = self._has_clicked_in_a_point(evt.GetPositionTuple())
         if point:
             i, j = point
-            actual_colour = [i * 255 for i in self.curves[i].nodes[j].colour]
+            actual_colour = self.curves[i].nodes[j].colour
             colour_dialog = wx.GetColourFromUser(self, actual_colour)
             if colour_dialog.IsOk():
                 i,j = point
-                r, g, b = [x/255.0 for x in colour_dialog.Get()]
-                self.colours[i][j]['red'] = r
-                self.colours[i][j]['green'] = g
-                self.colours[i][j]['blue'] = b
-                print self.curves[i].nodes
+                r, g, b = colour_dialog.Get()
+                self.colours[i][j]['red'] = r / 255.0
+                self.colours[i][j]['green'] = g / 255.0
+                self.colours[i][j]['blue'] = b / 255.0
                 self.curves[i].nodes[j].colour = (r, g, b)
                 self.Refresh()
                 nevt = CLUTEvent(myEVT_CLUT_POINT_RELEASE, self.GetId(), i)
