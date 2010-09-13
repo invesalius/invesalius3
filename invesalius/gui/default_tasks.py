@@ -31,6 +31,8 @@ import task_surface as surface
 import task_tools as tools
 import task_navigator as navigator
 
+FPB_DEFAULT_STYLE = 2621440
+
 def GetCollapsedIconData():
     return \
 '\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x10\x00\x00\x00\x10\x08\x06\
@@ -116,7 +118,7 @@ class LowerTaskPanel(wx.Panel):
                            size=wx.Size(280, 420))
 
         fold_panel = fpb.FoldPanelBar(self, -1, wx.DefaultPosition,
-                                      self.GetSize(),fpb.FPB_DEFAULT_STYLE,
+                                      self.GetSize(),FPB_DEFAULT_STYLE,
                                       fpb.FPB_COLLAPSE_TO_BOTTOM)
 
         self.enable_items = []
@@ -184,7 +186,7 @@ class UpperTaskPanel(wx.Panel):
                           size=wx.Size(280, 656))
 
         fold_panel = fpb.FoldPanelBar(self, -1, wx.DefaultPosition,
-                                      self.GetSize(),fpb.FPB_DEFAULT_STYLE,
+                                      self.GetSize(),FPB_DEFAULT_STYLE,
                                       fpb.FPB_SINGLE_FOLD)
 
         #self.SetBackgroundColour((0,255,0))
