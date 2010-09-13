@@ -493,10 +493,11 @@ class CLUTRaycastingWidget(wx.Panel):
 
                 colouri = nodei.colour[0],nodei.colour[1],nodei.colour[2], GRADIENT_RGBA
                 colourj = nodej.colour[0],nodej.colour[1],nodej.colour[2], GRADIENT_RGBA
-                b = ctx.CreateLinearGradientBrush(nodei.x, height,
-                                                  nodej.x, height,
+                b = ctx.CreateLinearGradientBrush(int(nodei.x), height,
+                                                  int(nodej.x), height,
                                                   colouri, colourj)
                 ctx.SetBrush(b)
+                ctx.SetPen(wx.TRANSPARENT_PEN)
                 ctx.FillPath(path)
 
     def _draw_curves(self, ctx):
