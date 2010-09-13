@@ -22,27 +22,27 @@ import math
 import os
 import sys
 
-import cairo
 import numpy
 import wx
-import wx.lib.wxcairo
 import wx.lib.pubsub as ps
 
 import gui.dialogs as dialog
 import constants as const
 
 FONT_COLOUR = (1, 1, 1)
-LINE_COLOUR = (0.5, 0.5, 0.5)
+LINE_COLOUR = (128, 128, 128)
 LINE_WIDTH = 2
 HISTOGRAM_LINE_WIDTH = 1
-HISTOGRAM_LINE_COLOUR = (0.5, 0.5, 0.5)
-HISTOGRAM_FILL_COLOUR = (0.25, 0.25, 0.25)
-BACKGROUND_TEXT_COLOUR_RGBA = (1, 0, 0, 0.5)
-TEXT_COLOUR = (1, 1, 1)
-GRADIENT_RGBA = 0.75
+HISTOGRAM_LINE_COLOUR = (128, 128, 128)
+HISTOGRAM_FILL_COLOUR = (64, 64, 64)
+BACKGROUND_TEXT_COLOUR_RGBA = (255, 0, 0, 128)
+TEXT_COLOUR = (255, 255, 255)
+GRADIENT_RGBA = 0.75 * 255
 RADIUS = 5
 SELECTION_SIZE = 10
 TOOLBAR_SIZE = 30
+TOOLBAR_COLOUR = (25 , 25, 25)
+PADDING = 2
 
 class Node(object):
     """
@@ -483,154 +483,133 @@ class CLUTRaycastingWidget(wx.Panel):
         #The gradient
         height += self.padding
         for curve in self.curves:
-            first_node = curve.nodes[0]
-            last_node = curve.nodes[-1]
-            xini, yini = first_node.x, first_node.y
-            xend, yend = last_node.x, last_node.y
-            gradient = cairo.LinearGradient(xini, height, xend, height)
-            ctx.move_to(xini, yini)
-            for node in curve.nodes:
-                x, y = node.x, node.y
-                r, g, b = node.colour
-                ctx.line_to(x, y)
-                gradient.add_color_stop_rgba((x - xini) * 1.0 / (xend - xini),
-                                             r, g, b, GRADIENT_RGBA)
-            ctx.line_to(x, height)
-            ctx.line_to(xini, height)
-            ctx.close_path()
-            ctx.set_source(gradient)
-            ctx.fill()
+            for nodei, nodej in zip(curve.nodes[:-1], curve.nodes[1:]):
+                path = ctx.CreatePath()
+                path.MoveToPoint(int(nodei.x), height)
+                path.AddLineToPoint(int(nodei.x), height)
+                path.AddLineToPoint(int(nodei.x), nodei.y)
+                path.AddLineToPoint(int(nodej.x), nodej.y)
+                path.AddLineToPoint(int(nodej.x), height)
+
+                colouri = nodei.colour[0],nodei.colour[1],nodei.colour[2], GRADIENT_RGBA
+                colourj = nodej.colour[0],nodej.colour[1],nodej.colour[2], GRADIENT_RGBA
+                b = ctx.CreateLinearGradientBrush(nodei.x, height,
+                                                  nodej.x, height,
+                                                  colouri, colourj)
+                ctx.SetBrush(b)
+                ctx.FillPath(path)
 
     def _draw_curves(self, ctx):
+        path = ctx.CreatePath()
+        ctx.SetPen(wx.Pen(LINE_COLOUR, LINE_WIDTH))
         for curve in self.curves:
-            ctx.move_to(curve.nodes[0].x, curve.nodes[0].y)
+            path.MoveToPoint(curve.nodes[0].x, curve.nodes[0].y)
             for node in curve.nodes:
-                ctx.line_to(node.x, node.y)
-            ctx.set_source_rgb(*LINE_COLOUR)
-            ctx.stroke()
+                path.AddLineToPoint(node.x, node.y)
+            ctx.StrokePath(path)
 
     def _draw_points(self, ctx):
         for curve in self.curves:
             for node in curve.nodes:
-                ctx.arc(node.x, node.y, RADIUS, 0, math.pi * 2)
-                ctx.set_source_rgb(*node.colour)
-                ctx.fill_preserve()
-                ctx.set_source_rgb(*LINE_COLOUR)
-                ctx.stroke()
+                path = ctx.CreatePath()
+                ctx.SetPen(wx.Pen(LINE_COLOUR, LINE_WIDTH))
+                ctx.SetBrush(wx.Brush(node.colour))
+                path.AddCircle(node.x, node.y, RADIUS)
+                ctx.DrawPath(path)
 
     def _draw_selected_point_text(self, ctx):
-        ctx.select_font_face('Sans')
-        ctx.set_font_size(15)
         i,j = self.point_dragged
         node = self.curves[i].nodes[j]
         x,y = node.x, node.y
         value = node.graylevel
         alpha = node.opacity
-        widget_width = self.GetVirtualSizeTuple()[0]
+        widget_width, widget_height = self.GetVirtualSizeTuple()
 
-        # To better understand text in cairo, see:
-        # http://www.tortall.net/mu/wiki/CairoTutorial#understanding-text
-        if ctx.text_extents("Value %d" % value)[2] > \
-           ctx.text_extents("Alpha: %.3f" % alpha)[2]:
-            text = "Value: %6d" % value
+        font = wx.SystemSettings.GetFont(wx.SYS_DEFAULT_GUI_FONT)
+        font.SetWeight(wx.BOLD)
+        font = ctx.CreateFont(font, TEXT_COLOUR)
+        ctx.SetFont(font)
+
+        text1 = "Value: %6d" % value
+        text2 = "Alpha: %.3f" % alpha
+
+        if ctx.GetTextExtent(text1)[0] > ctx.GetTextExtent(text2)[0]:
+            wt, ht = ctx.GetTextExtent(text1)
         else:
-            text = "Alpha: %.3f" % alpha
+            wt, ht = ctx.GetTextExtent(text2)
 
-        x_bearing, y_bearing, width, height, x_advance, y_advance\
-                = ctx.text_extents(text)
-        fascent, fdescent, fheight, fxadvance, fyadvance = ctx.font_extents()
+        wr, hr = wt + 2 * PADDING, ht * 2 + 2 * PADDING
+        xr, yr = x + RADIUS, y - RADIUS - hr
         
-        # The text box height is the double of text height plus 2, that is text
-        # box border
-        box_height = fheight * 2 + 2
-        box_y = y - RADIUS - 1 - box_height
+        if xr + wr > widget_width:
+            xr = x - RADIUS - wr
+        if yr < 0:
+            yr = y + RADIUS
 
-        # The bottom position of the text box mustn't be upper than the top of
-        # the width to always appears in the widget
-        if box_y <= self.padding:
-            box_y = y + RADIUS + 1
+        xf, yf = xr + PADDING, yr + PADDING
 
-        y_text1 = box_y + fascent
-        y_text2 = y_text1 + fheight
-
-        x_left = x + RADIUS + 1
-        box_width = width + 2
-        # The right position of the text box mustn't be in the widget area to
-        # always appears in the widget
-        if x_left + box_width > widget_width:
-            x_left = x - box_width - 1 - RADIUS
-
-        x_text = x_left + 1
-
-        ctx.set_source_rgba(*BACKGROUND_TEXT_COLOUR_RGBA)
-        ctx.rectangle(x_left, box_y,
-                      box_width, box_height)
-        ctx.fill()
-
-        ctx.set_source_rgb(*TEXT_COLOUR)
-        ctx.move_to(x_text, y_text1)
-        ctx.show_text("Value: %d" % value) 
-        ctx.move_to(x_text, y_text2)
-        ctx.show_text("Alpha: %.3f" % alpha)
+        ctx.SetBrush(wx.Brush(BACKGROUND_TEXT_COLOUR_RGBA))
+        ctx.SetPen(wx.Pen(BACKGROUND_TEXT_COLOUR_RGBA))
+        ctx.DrawRectangle(xr, yr, wr, hr)
+        ctx.DrawText(text1, xf, yf)
+        ctx.DrawText(text2, xf, yf + ht)
 
     def _draw_histogram(self, ctx, height):
         # The histogram
         x,y = self.Histogram.points[0]
         print "=>", x,y
-        ctx.move_to(x,y)
-        ctx.set_line_width(HISTOGRAM_LINE_WIDTH)
+
+        ctx.SetPen(wx.Pen(HISTOGRAM_LINE_COLOUR, HISTOGRAM_LINE_WIDTH))
+        ctx.SetBrush(wx.Brush(HISTOGRAM_FILL_COLOUR))
+
+        path = ctx.CreatePath()
+        path.MoveToPoint(x,y)
         for x,y in self.Histogram.points:
-            ctx.line_to(x,y)
-        ctx.set_source_rgb(*HISTOGRAM_LINE_COLOUR)
-        ctx.stroke_preserve()
-        ctx.line_to(x, height + self.padding)
-        ctx.line_to(self.HounsfieldToPixel(self.Histogram.init), height + self.padding)
+            print x,y
+            path.AddLineToPoint(x, y)
+
+        ctx.PushState()
+        ctx.StrokePath(path)
+        ctx.PopState()
+        path.AddLineToPoint(x, height + self.padding)
+        path.AddLineToPoint(self.HounsfieldToPixel(self.Histogram.init), height + self.padding)
         x,y = self.Histogram.points[0]
-        ctx.line_to(x, y)
-        ctx.set_source_rgb(*HISTOGRAM_FILL_COLOUR)
-        ctx.fill()
+        path.AddLineToPoint(x, y)
+        ctx.FillPath(path)
 
     def _draw_selection_curve(self, ctx, height):
+        ctx.SetPen(wx.Pen(LINE_COLOUR, LINE_WIDTH))
+        ctx.SetBrush(wx.Brush((0, 0, 0)))
         for curve in self.curves:
             x_center, y_center = curve.wl_px
-            ctx.rectangle(x_center-SELECTION_SIZE/2.0, y_center, SELECTION_SIZE,
-                         SELECTION_SIZE)
-            ctx.set_source_rgb(0,0,0)
-            ctx.fill_preserve()
-            ctx.set_source_rgb(*LINE_COLOUR)
-            ctx.stroke()
+            ctx.DrawRectangle(x_center-SELECTION_SIZE/2.0, y_center, 
+                              SELECTION_SIZE, SELECTION_SIZE)
 
     def _draw_tool_bar(self, ctx, height):
-        ctx.rectangle(0, 0, TOOLBAR_SIZE, height + self.padding * 2)
-        ctx.set_source_rgb(0.1,0.1,0.1)
-        ctx.fill()
-        #ctx.set_source_rgb(1, 1, 1)
-        #ctx.stroke()
+        ctx.SetPen(wx.TRANSPARENT_PEN)
+        ctx.SetBrush(wx.Brush(TOOLBAR_COLOUR))
+        ctx.DrawRectangle(0, 0, TOOLBAR_SIZE, height + self.padding * 2)
         image = self.save_button.image
         w, h = self.save_button.size
         x = (TOOLBAR_SIZE - w) / 2.0
         y = self.padding
         self.save_button.position = (x, y)
-        ctx.set_source_surface(image, x, y)
-        ctx.paint()
+        ctx.DrawBitmap(image, x, y, w, h)
 
     def Render(self, dc):
-        ctx = wx.lib.wxcairo.ContextFromDC(dc)
+        ctx = wx.GraphicsContext.Create(dc)
         width, height= self.GetVirtualSizeTuple()
         height -= (self.padding * 2)
         width -= self.padding
 
         self._draw_histogram(ctx, height)
-        ctx.set_line_width(LINE_WIDTH)
         self._draw_gradient(ctx, height)
         self._draw_curves(ctx)
         self._draw_points(ctx)
         self._draw_selection_curve(ctx, height)
         self._draw_tool_bar(ctx, height)
-        if sys.platform != "darwin": 
-            self._draw_tool_bar(ctx, height)
-            if self.point_dragged:
-                self._draw_selected_point_text(ctx)
+        if self.point_dragged:
+            self._draw_selected_point_text(ctx)
 
     def _build_histogram(self):
         width, height = self.GetVirtualSizeTuple()
@@ -653,15 +632,12 @@ class CLUTRaycastingWidget(wx.Panel):
             self.Histogram.points.append((x, y))
 
     def _build_buttons(self):
-        if sys.platform == 'darwin':
-            self.save_button = Button()
-        else:
-            img = cairo.ImageSurface.create_from_png(os.path.join(const.ICON_DIR, 'Floppy.png'))
-            width = img.get_width()
-            height = img.get_height()
-            self.save_button = Button()
-            self.save_button.image = img
-            self.save_button.size = (width, height)
+        img = wx.Image(os.path.join(const.ICON_DIR, 'Floppy.png'))
+        width = img.GetWidth()
+        height = img.GetHeight()
+        self.save_button = Button()
+        self.save_button.image = wx.BitmapFromImage(img)
+        self.save_button.size = (width, height)
 
     def __sort_pixel_points(self):
         """
@@ -692,7 +668,9 @@ class CLUTRaycastingWidget(wx.Panel):
                 node.y = y
                 node.graylevel = point['x']
                 node.opacity = point['y']
-                node.colour = colour['red'], colour['green'], colour['blue']
+                node.colour = (int(colour['red'] * 255), 
+                               int(colour['green'] * 255),
+                               int(colour['blue'] * 255))
                 curve.nodes.append(node)
             curve.CalculateWWWl()
             curve.wl_px = (self.HounsfieldToPixel(curve.wl),
