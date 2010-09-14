@@ -1,5 +1,5 @@
 # InVesalius 3.0 Beta - English
-# Copyright (C) 2007-2009 Centro de Tecnologia da Informação Renato Archer
+# Copyright (C) 2007 - 2009 Centro de Tecnologia da Informação Renato Archer
 # This file is distributed under the same license as the InVesalius package. (GNU General Public License v2)
 # Tatiana Al-Chueyr Pereira Martins <tatiana.alchueyr@gmail.com>
 # Paulo Henrique Junqueira Amorim <paulojamorim@gmail.com>
