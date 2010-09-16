@@ -18,6 +18,7 @@ docs/devel/sendmessages.txt -text
 docs/devel/subscribes.txt -text
 docs/user_guide_invesalius3a.odt -text
 docs/user_guide_invesalius3a.pdf -text
+i18n/README.transifex -text
 i18n/ar.po -text
 i18n/de.po -text
 i18n/el.po -text

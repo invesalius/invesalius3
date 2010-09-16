@@ -22,7 +22,7 @@ msgstr ""
 #: constants.py:31
 #, python-format
 msgid "M %d"
-msgstr ""
+msgstr "M %d"
 
 #: constants.py:91
 msgid "Keep all slices"
