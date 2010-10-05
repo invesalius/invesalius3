@@ -19,9 +19,15 @@
 
 import math
 import os
+import tempfile
+
+import gdcm
+import numpy
 import vtk
 import vtkgdcm
 import wx.lib.pubsub as ps
+
+from vtk.util import numpy_support
 
 import constants as const
 from data import vtk_utils
@@ -449,3 +455,46 @@ class ImageCreator:
         imagedata.Update()
 
         return imagedata
+
+def get_gdcm_to_numpy_typemap():
+    """Returns the GDCM Pixel Format to numpy array type mapping."""
+    _gdcm_np = {gdcm.PixelFormat.UINT8  :numpy.int8,
+                gdcm.PixelFormat.INT8   :numpy.uint8,
+                #gdcm.PixelFormat.UINT12 :numpy.uint12,
+                #gdcm.PixelFormat.INT12  :numpy.int12,
+                gdcm.PixelFormat.UINT16 :numpy.uint16,
+                gdcm.PixelFormat.INT16  :numpy.int16,
+                gdcm.PixelFormat.UINT32 :numpy.uint32,
+                gdcm.PixelFormat.INT32  :numpy.int32,
+                #gdcm.PixelFormat.FLOAT16:numpy.float16,
+                gdcm.PixelFormat.FLOAT32:numpy.float32,
+                gdcm.PixelFormat.FLOAT64:numpy.float64 }
+    return _gdcm_np
+
+def get_numpy_array_type(gdcm_pixel_format):
+    """Returns a numpy array typecode given a GDCM Pixel Format."""
+    return get_gdcm_to_numpy_typemap()[gdcm_pixel_format]
+
+def dcm2memmap(files, slice_size):
+    """
+    From a list of dicom files it creates memmap file in the temp folder and
+    returns.
+    """
+    temp_file = tempfile.mktemp()
+    shape = len(files), slice_size[0], slice_size[1]
+
+    matrix = numpy.memmap(temp_file, mode='w+', dtype='uint16', shape=shape)
+
+    for n, f in enumerate(files):
+        dcm_image = gdcm.ImageReader()
+        dcm_image.SetFileName(f)
+        dcm_image.Read()
+
+        image = dcm_image.GetImage()
+        pf = image.GetPixelFormat().GetScalarType()
+        dtype = get_numpy_array_type(pf)
+
+        dcm_array = image.GetBuffer()
+        array = numpy.frombuffer(dcm_array, dtype)
+        array.shape = slice_size
+        matrix[n] = array
