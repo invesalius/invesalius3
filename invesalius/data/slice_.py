@@ -16,6 +16,7 @@
 #    PARTICULAR. Consulte a Licenca Publica Geral GNU para obter mais
 #    detalhes.
 #--------------------------------------------------------------------------
+import numpy
 import vtk
 import wx.lib.pubsub as ps
 
@@ -38,6 +39,7 @@ class Slice(object):
         self.imagedata = None
         self.current_mask = None
         self.blend_filter = None
+        self.matrix = None
 
         self.num_gradient = 0
         self.interaction_style = st.StyleStateManager()
@@ -234,6 +236,28 @@ class Slice(object):
     # END PUBSUB_EVT METHODS
     #---------------------------------------------------------------------------
 
+    def GetSlices(self, orientation, slice_number):
+        if orientation == 'AXIAL':
+            n_array = numpy.array(self.matrix[slice_number])
+            spacing = self.spacing
+        elif orientation == 'CORONAL':
+            n_array = numpy.array(self.matrix[..., slice_number, ...])
+            spacing = self.spacing[0], self.spacing[2], self.spacing[1]
+        elif orientation == 'SAGITAL':
+            n_array = numpy.array(self.matrix[..., ..., slice_number])
+            spacing = self.spacing[1], self.spacing[2], self.spacing[0]
+
+        image = iu.to_vtk(n_array, spacing)
+        image = self.do_ww_wl(image)
+        return image
+
+    def GetNumberOfSlices(self, orientation):
+        if orientation == 'AXIAL':
+            return self.matrix.shape[0]
+        elif orientation == 'CORONAL':
+            return self.matrix.shape[1]
+        elif orientation == 'SAGITAL':
+            return self.matrix.shape[2]
 
     def SetMaskColour(self, index, colour, update=True):
         "Set a mask colour given its index and colour (RGB 0-1 values)"
@@ -448,8 +472,6 @@ class Slice(object):
         self.window_level.SetInput(self.imagedata)
 
     def __create_background(self, imagedata):
-        self.imagedata = imagedata
-
         thresh_min, thresh_max = imagedata.GetScalarRange()
         ps.Publisher().sendMessage('Update threshold limits list', (thresh_min,
                                     thresh_max))
@@ -471,21 +493,21 @@ class Slice(object):
         return img_colours_bg.GetOutput()
 
     def UpdateWindowLevelBackground(self, pubsub_evt):
+        pass
+        #window, level = pubsub_evt.data
+        #window_level = self.window_level
 
-        window, level = pubsub_evt.data
-        window_level = self.window_level
+        #if not((window == window_level.GetWindow()) and\
+                #(level == window_level.GetLevel())):
 
-        if not((window == window_level.GetWindow()) and\
-                (level == window_level.GetLevel())):
+            #window_level.SetWindow(window)
+            #window_level.SetLevel(level)
+            #window_level.SetOutputFormatToLuminance()
+            #window_level.Update()
 
-            window_level.SetWindow(window)
-            window_level.SetLevel(level)
-            window_level.SetOutputFormatToLuminance()
-            window_level.Update()
-
-            thresh_min, thresh_max = window_level.GetOutput().GetScalarRange()
-            self.lut_bg.SetTableRange(thresh_min, thresh_max)
-            self.img_colours_bg.SetInput(window_level.GetOutput())
+            #thresh_min, thresh_max = window_level.GetOutput().GetScalarRange()
+            #self.lut_bg.SetTableRange(thresh_min, thresh_max)
+            #self.img_colours_bg.SetInput(window_level.GetOutput())
 
     def UpdateColourTableBackground(self, pubsub_evt):
         values = pubsub_evt.data
@@ -502,15 +524,16 @@ class Slice(object):
 
 
     def InputImageWidget(self, pubsub_evt):
-        widget = pubsub_evt.data
+        #widget = pubsub_evt.data
 
-        flip = vtk.vtkImageFlip()
-        flip.SetInput(self.window_level.GetOutput())
-        flip.SetFilteredAxis(1)
-        flip.FlipAboutOriginOn()
-        flip.Update()
+        #flip = vtk.vtkImageFlip()
+        #flip.SetInput(self.window_level.GetOutput())
+        #flip.SetFilteredAxis(1)
+        #flip.FlipAboutOriginOn()
+        #flip.Update()
 
-        widget.SetInput(flip.GetOutput())
+        #widget.SetInput(flip.GetOutput())
+        pass
 
 
     def CreateMask(self, imagedata=None, name=None, colour=None,
@@ -594,6 +617,16 @@ class Slice(object):
 
         ps.Publisher().sendMessage('Change mask selected', mask.index)
         ps.Publisher().sendMessage('Update slice viewer')
+
+    def do_ww_wl(self, image):
+        colorer = vtk.vtkImageMapToWindowLevelColors()
+        colorer.SetInput(image)
+        colorer.SetWindow(255)
+        colorer.SetLevel(127)
+        colorer.SetOutputFormatToRGBA()
+        colorer.Update()
+
+        return colorer.GetOutput()
 
     def __build_mask(self, imagedata, create=True):
         # create new mask instance and insert it into project

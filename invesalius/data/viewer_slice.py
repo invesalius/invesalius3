@@ -88,7 +88,7 @@ class Viewer(wx.Panel):
         self.on_wl = False
         self.on_text = False
         # VTK pipeline and actors
-        #self.__config_interactor()
+        self.__config_interactor()
         self.pick = vtk.vtkPropPicker()
         self.cross_actor = vtk.vtkActor()
 
@@ -102,7 +102,6 @@ class Viewer(wx.Panel):
 
         scroll = wx.ScrollBar(self, -1, style=wx.SB_VERTICAL)
         self.scroll = scroll
-
         sizer = wx.BoxSizer(wx.HORIZONTAL)
         sizer.Add(interactor, 1, wx.EXPAND|wx.GROW)
 
@@ -164,10 +163,11 @@ class Viewer(wx.Panel):
         self.SetLayout(layout)
 
     def __config_interactor(self):
-
         ren = vtk.vtkRenderer()
+        style = vtk.vtkInteractorStyleImage()
 
         interactor = self.interactor
+        interactor.SetInteractorStyle(style)
         interactor.GetRenderWindow().AddRenderer(ren)
 
         self.cam = ren.GetActiveCamera()
@@ -1056,48 +1056,50 @@ class Viewer(wx.Panel):
         return cursor
 
     def SetInput(self, imagedata, mask_dict):
-        self.imagedata = imagedata
+        pass
+        #self.imagedata = imagedata
 
-        #ren = self.ren
-        interactor = self.interactor
+        ##ren = self.ren
+        #interactor = self.interactor
 
-        # Slice pipeline, to be inserted into current viewer
-        slice_ = sl.Slice()
-        if slice_.imagedata is None:
-            slice_.SetInput(imagedata, mask_dict)
+        ## Slice pipeline, to be inserted into current viewer
+        #slice_ = sl.Slice()
+        #if slice_.imagedata is None:
+            #slice_.SetInput(imagedata, mask_dict)
             
-        #actor = vtk.vtkImageActor()
-        #actor.SetInput(slice_.GetOutput())
-        self.LoadRenderers(slice_.GetOutput())
-        self.__configure_renderers()
-        ren = self.slice_data_list[0].renderer
-        actor = self.slice_data_list[0].actor
-        actor_bound = actor.GetBounds()
+        actor = vtk.vtkImageActor()
+        ##actor.SetInput(slice_.GetOutput())
+        #self.LoadRenderers(slice_.GetOutput())
+        #self.__configure_renderers()
+        #ren = self.slice_data_list[0].renderer
+        #actor = self.slice_data_list[0].actor
+        #actor_bound = actor.GetBounds()
         self.actor = actor
-        self.ren = ren
-        self.cam = ren.GetActiveCamera()
+        self.ren.AddActor(self.actor)
+        #self.cam = ren.GetActiveCamera()
 
-        for slice_data in self.slice_data_list:
-            self.__update_camera(slice_data)
-            self.Reposition(slice_data)
+        #for slice_data in self.slice_data_list:
+            #self.__update_camera(slice_data)
+            #self.Reposition(slice_data)
 
-        number_of_slices = self.layout[0] * self.layout[1]
-        max_slice_number = actor.GetSliceNumberMax() + 1/ \
-                number_of_slices
+        #number_of_slices = self.layout[0] * self.layout[1]
+        #max_slice_number = actor.GetSliceNumberMax() + 1/ \
+                #number_of_slices
 
-        if actor.GetSliceNumberMax() % number_of_slices:
-            max_slice_number += 1
+        #if actor.GetSliceNumberMax() % number_of_slices:
+            #max_slice_number += 1
+        max_slice_number = sl.Slice().GetNumberOfSlices(self.orientation)
         self.scroll.SetScrollbar(wx.SB_VERTICAL, 1, max_slice_number,
                                                      max_slice_number)
-        self.set_scroll_position(0)
+        #self.set_scroll_position(0)
 
-        actor_bound = actor.GetBounds()
+        #actor_bound = actor.GetBounds()
 
-        self.EnableText()
-        # Insert cursor
-        self.SetInteractorStyle(const.STATE_DEFAULT)
+        #self.EnableText()
+        ## Insert cursor
+        #self.SetInteractorStyle(const.STATE_DEFAULT)
 
-        self.__build_cross_lines()
+        #self.__build_cross_lines()
 
     def __build_cross_lines(self):
         actor = self.slice_data_list[0].actor
@@ -1339,15 +1341,21 @@ class Viewer(wx.Panel):
                 
     def OnScrollBar(self, evt=None):
         pos = self.scroll.GetThumbPosition()
-        self.set_slice_number(pos)
-        #self.UpdateSlice3D(pos)
-        self.pos = pos
+        slice_ = sl.Slice()
+        image = slice_.GetSlices(self.orientation, pos)
+        self.actor.SetInput(image)
+        self.ren.ResetCamera()
         self.interactor.Render()
-        if evt:
-            evt.Skip()
+        print "slice", pos
+        #self.set_slice_number(pos)
+        ##self.UpdateSlice3D(pos)
+        #self.pos = pos
+        #self.interactor.Render()
+        #if evt:
+            #evt.Skip()
             
     def OnScrollBarRelease(self, evt):
-        self.UpdateSlice3D(self.pos)
+        #self.UpdateSlice3D(self.pos)
         evt.Skip()
 
     def OnKeyDown(self, evt=None, obj=None):

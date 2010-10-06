@@ -478,7 +478,7 @@ def get_numpy_array_type(gdcm_pixel_format):
 def dcm2memmap(files, slice_size):
     """
     From a list of dicom files it creates memmap file in the temp folder and
-    returns.
+    returns it and its related filename.
     """
     temp_file = tempfile.mktemp()
     shape = len(files), slice_size[0], slice_size[1]
@@ -498,3 +498,30 @@ def dcm2memmap(files, slice_size):
         array = numpy.frombuffer(dcm_array, dtype)
         array.shape = slice_size
         matrix[n] = array
+
+    matrix.flush()
+    return matrix, temp_file
+
+def to_vtk(n_array, spacing):
+    dy, dx = n_array.shape
+    n_array.shape = dx * dy
+
+    v_image = numpy_support.numpy_to_vtk(n_array)
+
+    # Generating the vtkImageData
+    image = vtk.vtkImageData()
+    image.SetDimensions(dx, dy, 1)
+    image.SetOrigin(0, 0, 0)
+    image.SetSpacing(spacing)
+    image.SetNumberOfScalarComponents(1)
+    image.SetExtent(0, dx -1, 0, dy -1, 0, 0)
+    image.SetScalarType(numpy_support.get_vtk_array_type(n_array.dtype))
+    image.AllocateScalars()
+    image.GetPointData().SetScalars(v_image)
+    image.Update()
+
+    image_copy = vtk.vtkImageData()
+    image_copy.DeepCopy(image)
+    image_copy.Update()
+
+    return image_copy

@@ -27,6 +27,7 @@ import constants as const
 import data.imagedata_utils as utils
 import data.mask as msk
 import data.measures
+import data.slice_ as sl
 import data.surface as srf
 import data.volume as volume
 import gui.dialogs as dialog
@@ -76,7 +77,6 @@ class Controller():
         ps.Publisher().subscribe(self.OnOpenProject, 'Open project')
         ps.Publisher().subscribe(self.OnOpenRecentProject, 'Open recent project')
         ps.Publisher().subscribe(self.OnShowAnalyzeFile, 'Show analyze dialog')
-        
 
     def OnCancelImport(self, pubsub_evt):
         #self.cancel_import = True
@@ -466,6 +466,10 @@ class Controller():
             tilt_value = -1*tilt_value
             imagedata = utils.FixGantryTilt(imagedata, tilt_value)
 
+        self.matrix, self.filename = utils.dcm2memmap(filelist, size)
+        self.Slice = sl.Slice()
+        self.Slice.matrix = self.matrix
+        self.Slice.spacing = xyspacing[0], xyspacing[1], zspacing
         return imagedata, dicom
 
     def LoadImagedataInfo(self):
@@ -523,8 +527,4 @@ class Controller():
         preset_dir = os.path.join(const.USER_RAYCASTING_PRESETS_DIRECTORY,
                                   preset_name + '.plist')
         plistlib.writePlist(preset, preset_dir)
-
-
-
-
 
