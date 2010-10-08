@@ -456,25 +456,6 @@ class ImageCreator:
 
         return imagedata
 
-def get_gdcm_to_numpy_typemap():
-    """Returns the GDCM Pixel Format to numpy array type mapping."""
-    _gdcm_np = {gdcm.PixelFormat.UINT8  :numpy.int8,
-                gdcm.PixelFormat.INT8   :numpy.uint8,
-                #gdcm.PixelFormat.UINT12 :numpy.uint12,
-                #gdcm.PixelFormat.INT12  :numpy.int12,
-                gdcm.PixelFormat.UINT16 :numpy.uint16,
-                gdcm.PixelFormat.INT16  :numpy.int16,
-                gdcm.PixelFormat.UINT32 :numpy.uint32,
-                gdcm.PixelFormat.INT32  :numpy.int32,
-                #gdcm.PixelFormat.FLOAT16:numpy.float16,
-                gdcm.PixelFormat.FLOAT32:numpy.float32,
-                gdcm.PixelFormat.FLOAT64:numpy.float64 }
-    return _gdcm_np
-
-def get_numpy_array_type(gdcm_pixel_format):
-    """Returns a numpy array typecode given a GDCM Pixel Format."""
-    return get_gdcm_to_numpy_typemap()[gdcm_pixel_format]
-
 def dcm2memmap(files, slice_size):
     """
     From a list of dicom files it creates memmap file in the temp folder and
@@ -483,20 +464,16 @@ def dcm2memmap(files, slice_size):
     temp_file = tempfile.mktemp()
     shape = len(files), slice_size[0], slice_size[1]
 
-    matrix = numpy.memmap(temp_file, mode='w+', dtype='uint16', shape=shape)
+    matrix = numpy.memmap(temp_file, mode='w+', dtype='int16', shape=shape)
 
     for n, f in enumerate(files):
-        dcm_image = gdcm.ImageReader()
-        dcm_image.SetFileName(f)
-        dcm_image.Read()
+        dcm_reader = vtkgdcm.vtkGDCMImageReader()
+        dcm_reader.SetFileName(f)
+        dcm_reader.Update()
 
-        image = dcm_image.GetImage()
-        pf = image.GetPixelFormat().GetScalarType()
-        dtype = get_numpy_array_type(pf)
-
-        dcm_array = image.GetBuffer()
-        array = numpy.frombuffer(dcm_array, dtype)
-        array.shape = slice_size
+        image = dcm_reader.GetOutput()
+        array = numpy_support.vtk_to_numpy(image.GetPointData().GetScalars())
+        array.shape = matrix.shape[1], matrix.shape[2]
         matrix[n] = array
 
     matrix.flush()
