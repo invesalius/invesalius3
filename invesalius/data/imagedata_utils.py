@@ -462,15 +462,13 @@ def dcm2memmap(files, slice_size):
     returns it and its related filename.
     """
     temp_file = tempfile.mktemp()
-    shape = len(files), slice_size[0], slice_size[1]
+    shape = len(files), slice_size[1], slice_size[0]
 
     matrix = numpy.memmap(temp_file, mode='w+', dtype='int16', shape=shape)
-
+    dcm_reader = vtkgdcm.vtkGDCMImageReader()
     for n, f in enumerate(files):
-        dcm_reader = vtkgdcm.vtkGDCMImageReader()
         dcm_reader.SetFileName(f)
         dcm_reader.Update()
-
         image = dcm_reader.GetOutput()
         array = numpy_support.vtk_to_numpy(image.GetPointData().GetScalars())
         array.shape = matrix.shape[1], matrix.shape[2]
