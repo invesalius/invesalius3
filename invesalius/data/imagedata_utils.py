@@ -456,13 +456,19 @@ class ImageCreator:
 
         return imagedata
 
-def dcm2memmap(files, slice_size):
+def dcm2memmap(files, slice_size, orientation):
     """
     From a list of dicom files it creates memmap file in the temp folder and
     returns it and its related filename.
     """
     temp_file = tempfile.mktemp()
-    shape = len(files), slice_size[1], slice_size[0]
+
+    if orientation == 'SAGITTAL':
+        shape = slice_size[0], slice_size[1], len(files)
+    elif orientation == 'CORONAL':
+        shape = slice_size[1], len(files), slice_size[0]
+    else:
+        shape = len(files), slice_size[1], slice_size[0]
 
     matrix = numpy.memmap(temp_file, mode='w+', dtype='int16', shape=shape)
     dcm_reader = vtkgdcm.vtkGDCMImageReader()
@@ -471,25 +477,43 @@ def dcm2memmap(files, slice_size):
         dcm_reader.Update()
         image = dcm_reader.GetOutput()
         array = numpy_support.vtk_to_numpy(image.GetPointData().GetScalars())
-        array.shape = matrix.shape[1], matrix.shape[2]
-        matrix[n] = array
+        if orientation == 'CORONAL':
+            array.shape = matrix.shape[0], matrix.shape[2]
+            matrix[:, n, :] = array
+        elif orientation == 'SAGITTAL':
+            array.shape = matrix.shape[0], matrix.shape[1]
+            matrix[:, :, n] = array
+        else:
+            array.shape = matrix.shape[1], matrix.shape[2]
+            matrix[n] = array
 
     matrix.flush()
     return matrix, temp_file
 
-def to_vtk(n_array, spacing):
+def to_vtk(n_array, spacing, slice_number, orientation):
     dy, dx = n_array.shape
     n_array.shape = dx * dy
 
     v_image = numpy_support.numpy_to_vtk(n_array)
 
+    print orientation
+    if orientation == 'AXIAL':
+        dz = 1
+        extent = (0, dx -1, 0, dy -1, slice_number, slice_number)
+    elif orientation == 'SAGITAL':
+        dx, dy, dz = 1, dx, dy
+        extent = (slice_number, slice_number, 0, dy - 1, 0, dz - 1)
+    elif orientation == 'CORONAL':
+        dx, dy, dz = dx, 1, dy
+        extent = (0, dx - 1, slice_number, slice_number, 0, dz - 1)
+
     # Generating the vtkImageData
     image = vtk.vtkImageData()
-    image.SetDimensions(dx, dy, 1)
     image.SetOrigin(0, 0, 0)
     image.SetSpacing(spacing)
     image.SetNumberOfScalarComponents(1)
-    image.SetExtent(0, dx -1, 0, dy -1, 0, 0)
+    image.SetDimensions(dx, dy, dz)
+    image.SetExtent(extent)
     image.SetScalarType(numpy_support.get_vtk_array_type(n_array.dtype))
     image.AllocateScalars()
     image.GetPointData().SetScalars(v_image)

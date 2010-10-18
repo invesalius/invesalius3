@@ -357,7 +357,7 @@ class Controller():
         ps.Publisher().sendMessage('Load slice to viewer',
                         (proj.imagedata,
                         proj.mask_dict))
-        ps.Publisher().sendMessage('Load slice plane')
+        #ps.Publisher().sendMessage('Load slice plane')
         ps.Publisher().sendMessage('Bright and contrast adjustment image',\
                                    (proj.window, proj.level))
         ps.Publisher().sendMessage('Update window level value',\
@@ -409,7 +409,7 @@ class Controller():
                     name_to_const[dicom.image.orientation_label]
         proj.window = float(dicom.image.window)
         proj.level = float(dicom.image.level)
-        proj.threshold_range = imagedata.GetScalarRange()
+        proj.threshold_range = (-1024, 3033)
 
 
         ######
@@ -445,14 +445,17 @@ class Controller():
         bits = dicom.image.bits_allocad
         sop_class_uid = dicom.acquisition.sop_class_uid
         xyspacing = dicom.image.spacing
+        orientation = dicom.image.orientation_label
 
         if sop_class_uid == '1.2.840.10008.5.1.4.1.1.7': #Secondary Capture Image Storage
             use_dcmspacing = 1
         else:
             use_dcmspacing = 0
 
-        imagedata = utils.CreateImageData(filelist, zspacing, xyspacing,size,
-                                          bits, use_dcmspacing)
+        #imagedata = utils.CreateImageData(filelist, zspacing, xyspacing,size,
+                                          #bits, use_dcmspacing)
+
+        imagedata = None
 
         # 1(a): Fix gantry tilt, if any
         tilt_value = dicom.acquisition.tilt
@@ -466,10 +469,23 @@ class Controller():
             tilt_value = -1*tilt_value
             imagedata = utils.FixGantryTilt(imagedata, tilt_value)
 
-        self.matrix, self.filename = utils.dcm2memmap(filelist, size)
+        wl = float(dicom.image.level)
+        ww = float(dicom.image.window)
+
+        self.matrix, self.filename = utils.dcm2memmap(filelist, size,
+                                                      orientation)
         self.Slice = sl.Slice()
         self.Slice.matrix = self.matrix
-        self.Slice.spacing = xyspacing[0], xyspacing[1], zspacing
+
+        if orientation == 'AXIAL':
+            self.Slice.spacing = xyspacing[0], xyspacing[1], zspacing
+        elif orientation == 'CORONAL':
+            self.Slice.spacing = xyspacing[0], zspacing, xyspacing[1]
+        elif orientation == 'SAGITTAL':
+            self.Slice.spacing = zspacing, xyspacing[1], xyspacing[0]
+
+        self.Slice.window_level = wl
+        self.Slice.window_width = ww
         return imagedata, dicom
 
     def LoadImagedataInfo(self):

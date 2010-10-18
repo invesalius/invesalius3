@@ -173,7 +173,6 @@ class Viewer(wx.Panel):
         self.cam = ren.GetActiveCamera()
         self.ren = ren
 
-
     def SetInteractorStyle(self, state):
         self.state = state
         action = {const.SLICE_STATE_CROSS: 
@@ -1056,26 +1055,26 @@ class Viewer(wx.Panel):
         return cursor
 
     def SetInput(self, imagedata, mask_dict):
-        pass
-        #self.imagedata = imagedata
+        self.slice_ = sl.Slice()
 
-        ##ren = self.ren
-        #interactor = self.interactor
+        max_slice_number = sl.Slice().GetNumberOfSlices(self.orientation)
+        self.scroll.SetScrollbar(wx.SB_VERTICAL, 1, max_slice_number,
+                                 max_slice_number)
 
-        ## Slice pipeline, to be inserted into current viewer
-        #slice_ = sl.Slice()
+        self.actor = vtk.vtkImageActor()
+        self.ren.AddActor(self.actor)
+        self.set_slice_number(0)
+        self.__update_camera()
+        self.ren.ResetCamera()
         #if slice_.imagedata is None:
             #slice_.SetInput(imagedata, mask_dict)
             
-        actor = vtk.vtkImageActor()
         ##actor.SetInput(slice_.GetOutput())
         #self.LoadRenderers(slice_.GetOutput())
         #self.__configure_renderers()
         #ren = self.slice_data_list[0].renderer
         #actor = self.slice_data_list[0].actor
         #actor_bound = actor.GetBounds()
-        self.actor = actor
-        self.ren.AddActor(self.actor)
         #self.cam = ren.GetActiveCamera()
 
         #for slice_data in self.slice_data_list:
@@ -1088,12 +1087,10 @@ class Viewer(wx.Panel):
 
         #if actor.GetSliceNumberMax() % number_of_slices:
             #max_slice_number += 1
-        max_slice_number = sl.Slice().GetNumberOfSlices(self.orientation)
-        self.scroll.SetScrollbar(wx.SB_VERTICAL, 1, max_slice_number,
-                                                     max_slice_number)
         #self.set_scroll_position(0)
 
         #actor_bound = actor.GetBounds()
+        self.interactor.Render()
 
         #self.EnableText()
         ## Insert cursor
@@ -1268,43 +1265,23 @@ class Viewer(wx.Panel):
         renderer.AddViewProp(slice_data.box_actor)
         return slice_data
 
-    def __update_camera(self, slice_data):
+    def __update_camera(self):
         orientation = self.orientation
         proj = project.Project()
-        orig_orien = proj.original_orientation
+        orig_orien = 1 #proj.original_orientation
 
-        cam = slice_data.renderer.GetActiveCamera()
-        cam.SetFocalPoint(0, 0, 0)
-        cam.SetViewUp(const.SLICE_POSITION[orig_orien][0][self.orientation])
-        cam.SetPosition(const.SLICE_POSITION[orig_orien][1][self.orientation])
-        cam.ComputeViewPlaneNormal()
-        cam.OrthogonalizeViewUp()
-        cam.ParallelProjectionOn()
+        self.cam.SetFocalPoint(0, 0, 0)
+        self.cam.SetViewUp(const.SLICE_POSITION[orig_orien][0][self.orientation])
+        self.cam.SetPosition(const.SLICE_POSITION[orig_orien][1][self.orientation])
+        self.cam.ComputeViewPlaneNormal()
+        self.cam.OrthogonalizeViewUp()
+        self.cam.ParallelProjectionOn()
 
-        self.__update_display_extent(slice_data)
-
-        slice_data.renderer.ResetCamera()
         #slice_data.renderer.Render()
 
-    def __update_display_extent(self, slice_data):
-        e = self.imagedata.GetWholeExtent()
-        proj = project.Project()
-
-        pos = slice_data.number
-
-        x = (pos, pos, e[2], e[3], e[4], e[5])
-        y = (e[0], e[1], pos, pos, e[4], e[5])
-        z = (e[0], e[1], e[2], e[3], pos, pos)
-
-        if (proj.original_orientation == const.AXIAL):
-            new_extent = {"SAGITAL": x, "CORONAL": y, "AXIAL": z}
-        elif(proj.original_orientation == const.SAGITAL):
-            new_extent = {"SAGITAL": z,"CORONAL": x,"AXIAL": y}
-        elif(proj.original_orientation == const.CORONAL):
-            new_extent = {"SAGITAL": x,"CORONAL": z,"AXIAL": y}
-
-        slice_data.actor.SetDisplayExtent(new_extent[self.orientation])
-        slice_data.renderer.ResetCameraClippingRange()
+    def __update_display_extent(self, image):
+        self.actor.SetDisplayExtent(image.GetExtent())
+        self.ren.ResetCameraClippingRange()
 
     def UpdateRender(self, evt):
         self.interactor.Render()
@@ -1341,18 +1318,10 @@ class Viewer(wx.Panel):
                 
     def OnScrollBar(self, evt=None):
         pos = self.scroll.GetThumbPosition()
-        slice_ = sl.Slice()
-        image = slice_.GetSlices(self.orientation, pos)
-        self.actor.SetInput(image)
-        self.ren.ResetCamera()
+        self.set_slice_number(pos)
         self.interactor.Render()
-        print "slice", pos
-        #self.set_slice_number(pos)
-        ##self.UpdateSlice3D(pos)
-        #self.pos = pos
-        #self.interactor.Render()
-        #if evt:
-            #evt.Skip()
+        if evt:
+            evt.Skip()
             
     def OnScrollBarRelease(self, evt):
         #self.UpdateSlice3D(self.pos)
@@ -1409,43 +1378,14 @@ class Viewer(wx.Panel):
         evt.Skip()
 
     def set_slice_number(self, index):
-        self.slice_number = index
-        # for m in self.actors_by_slice_number.values():
-            # for actor in m:
-                # actor.SetVisibility(0) 
-        # Removing actor from the previous renderers/slice.
-        for n in self.renderers_by_slice_number:
-            renderer = self.renderers_by_slice_number[n]
-            for actor in self.actors_by_slice_number.get(n, []):
-                renderer.RemoveActor(actor)
-
-        self.renderers_by_slice_number = {}
-
-        for n, slice_data in enumerate(self.slice_data_list):
-            ren = slice_data.renderer
-            actor = slice_data.actor
-            pos = self.layout[0] * self.layout[1] * index + n
-            max = actor.GetSliceNumberMax() + 1
-            if pos < max:
-                self.renderers_by_slice_number[pos] = ren
-                for m_actor in self.actors_by_slice_number.get(pos, []):
-                    ren.AddActor(m_actor)
-                slice_data.SetNumber(pos)
-                # for actor in self.actors_by_slice_number.get(pos, []):
-                    # actor.SetVisibility(1)
-                self.__update_display_extent(slice_data)
-                slice_data.Show()
-            else:
-                slice_data.Hide()
-
-            position = {"SAGITAL": {0: slice_data.number},
-                        "CORONAL": {1: slice_data.number},
-                        "AXIAL": {2: slice_data.number}}
-
-            #if 'DEFAULT' in self.modes:
-            #    ps.Publisher().sendMessage(
-            #        'Update cursor single position in slice',
-            #        position[self.orientation])
+        image = self.slice_.GetSlices(self.orientation, index)
+        self.actor.SetInput(image)
+        self.__update_display_extent(image)
+        print "slice", index
+        print "display extent", self.actor.GetDisplayExtent()
+        print "whole extent", image.GetWholeExtent()
+        print "boundsa", self.actor.GetBounds()
+        print "camera", self.cam.GetPosition(), self.cam.GetFocalPoint()
 
     def ChangeSliceNumber(self, pubsub_evt):
         index = pubsub_evt.data

@@ -239,15 +239,11 @@ class Slice(object):
     def GetSlices(self, orientation, slice_number):
         if orientation == 'AXIAL':
             n_array = numpy.array(self.matrix[slice_number])
-            spacing = self.spacing
         elif orientation == 'CORONAL':
             n_array = numpy.array(self.matrix[..., slice_number, ...])
-            spacing = self.spacing[0], self.spacing[2], self.spacing[1]
         elif orientation == 'SAGITAL':
             n_array = numpy.array(self.matrix[..., ..., slice_number])
-            spacing = self.spacing[1], self.spacing[2], self.spacing[0]
-
-        image = iu.to_vtk(n_array, spacing)
+        image = iu.to_vtk(n_array, self.spacing, slice_number, orientation)
         image = self.do_ww_wl(image)
         return image
 
@@ -619,11 +615,13 @@ class Slice(object):
         ps.Publisher().sendMessage('Update slice viewer')
 
     def do_ww_wl(self, image):
+        print self.window_width, self.window_level
+        print image.GetScalarRange()
         colorer = vtk.vtkImageMapToWindowLevelColors()
         colorer.SetInput(image)
-        colorer.SetWindow(255)
-        colorer.SetLevel(127)
-        colorer.SetOutputFormatToRGBA()
+        colorer.SetWindow(self.window_width)
+        colorer.SetLevel(self.window_level)
+        colorer.SetOutputFormatToRGB()
         colorer.Update()
 
         return colorer.GetOutput()
