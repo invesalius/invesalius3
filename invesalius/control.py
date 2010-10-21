@@ -383,15 +383,30 @@ class Controller():
         ps.Publisher().sendMessage('End busy cursor')
 
     def CreateAnalyzeProject(self, imagedata):
+        header = imagedata.get_header()
         proj = prj.Project()
         proj.name = _("Untitled")
         proj.SetAcquisitionModality("MRI")
-        proj.imagedata = imagedata
         #TODO: Verify if all Analyse are in AXIAL orientation
-        proj.original_orientation =  const.AXIAL
-        proj.threshold_range = imagedata.GetScalarRange()
+
+        if not header['orient']:
+            proj.original_orientation =  const.AXIAL
+        elif header['orient'] == 1:
+            proj.original_orientation = const.CORONAL
+        elif header['orient'] == 2:
+            proj.original_orientation = const.SAGITAL
+
+        proj.threshold_range = (header['glmin'],
+                                header['glmax'])
         proj.window = proj.threshold_range[1] - proj.threshold_range[0]
         proj.level =  (0.5 * (proj.threshold_range[1] + proj.threshold_range[0]))
+
+        self.Slice = sl.Slice()
+        self.Slice.matrix = imagedata.get_data().swapaxes(0, 2)
+
+        self.Slice.window_level = proj.level
+        self.Slice.window_width = proj.window
+        self.Slice.spacing = header.get_zooms()[:3]
 
 
     def CreateDicomProject(self, imagedata, dicom):

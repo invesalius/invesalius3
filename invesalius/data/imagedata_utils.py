@@ -492,9 +492,8 @@ def dcm2memmap(files, slice_size, orientation):
 
 def to_vtk(n_array, spacing, slice_number, orientation):
     dy, dx = n_array.shape
-    n_array.shape = dx * dy
 
-    v_image = numpy_support.numpy_to_vtk(n_array)
+    v_image = numpy_support.numpy_to_vtk(n_array.flat)
 
     print orientation
     if orientation == 'AXIAL':

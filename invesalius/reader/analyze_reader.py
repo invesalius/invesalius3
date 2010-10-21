@@ -23,43 +23,12 @@ import tempfile
 
 import vtk
 
-from nibabel import AnalyzeHeader
+from nibabel import AnalyzeImage, squeeze_image
 
 def ReadAnalyze(filename):
-    print "Reading analyze file:", filename
+    anlz = squeeze_image(AnalyzeImage.from_filename(filename))
+    return anlz
 
-    # Reading info from analyze header
-    header_file = open(filename)
-    header = AnalyzeHeader.from_fileobj(header_file)
-    xf, yf, zf = header.get_data_shape()[:3]
-    data_type = header.get_data_dtype().name
-    pixel_spacing = header.get_zooms()[:3]
-
-    # Mapping from numpy type to vtk type.
-    anlz_2_vtk_type = {
-                       'int16': 'SetDataScalarTypeToShort',
-                       'uint16': 'SetDataScalarTypeToUnsignedShort',
-                       'float32': 'SetDataScalarTypeToFloat'
-                      }
-
-    print header
-
-    reader = vtk.vtkImageReader()
-    reader.SetFileName(filename[:-3] + 'img')
-
-    # Setting the endiannes based on the analyze header.
-    if header.endianness == '<':
-        reader.SetDataByteOrderToLittleEndian()
-    elif header.endianness == '>':
-        reader.SetDataByteOrderToBigEndian()
-
-    reader.SetFileDimensionality(3)
-    reader.SetDataExtent(0, xf-1, 0, yf-1, 0, zf-1)
-    reader.SetDataSpacing(pixel_spacing)
-    reader.SetHeaderSize(0)
-    # reader.SetTransform(transform)
-    getattr(reader, anlz_2_vtk_type[data_type])()
-    reader.Update()
 
     return reader.GetOutput()
 
