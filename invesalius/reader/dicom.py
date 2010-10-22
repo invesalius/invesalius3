@@ -18,7 +18,6 @@
 #    detalhes.
 #---------------------------------------------------------------------
 import time
-
 import gdcm
 #import vtkgdcm
 import sys
