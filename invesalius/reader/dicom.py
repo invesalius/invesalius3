@@ -20,7 +20,7 @@
 import time
 
 import gdcm
-import vtkgdcm
+#import vtkgdcm
 import sys
 
 
@@ -92,7 +92,7 @@ class Parser():
     def __init__(self):
         self.filename = ""
         self.encoding = ""
-        self.vtkgdcm_reader = vtkgdcm.vtkGDCMImageReader()
+        #self.vtkgdcm_reader = vtkgdcm.vtkGDCMImageReader()
 
     def SetFileName(self, filename):
         """
@@ -125,19 +125,19 @@ class Parser():
             if not gdcm_reader.Read():
                 return False
 
-            vtkgdcm_reader = self.vtkgdcm_reader
-            vtkgdcm_reader.SetFileName(filename)
-            vtkgdcm_reader.Update()
+            #vtkgdcm_reader = self.vtkgdcm_reader
+            #vtkgdcm_reader.SetFileName(filename)
+            #vtkgdcm_reader.Update()
 
             self.filename = filename
             self.gdcm_reader = gdcm_reader
-            self.vtkgdcm_reader = vtkgdcm_reader
+            #self.vtkgdcm_reader = vtkgdcm_reader
             return True
 
         return False
 
     def GetImageData(self):
-        return self.vtkgdcm_reader.GetOutput()
+        return None#self.vtkgdcm_reader.GetOutput()
 
     def __format_time(self,value):
         sp1 = value.split(".")
@@ -230,16 +230,16 @@ class Parser():
         return ""
 
 
-    def GetDimensionZ(self):
-        """
-        Return float value associated to Z dimension.
-        Return "" if not defined.
-        """
-        data = self.vtkgdcm_reader.GetOutput()\
-                            .GetDimensions()[2]
-        if (data):
-            return float(data)
-        return ""
+    #def GetDimensionZ(self):
+    #    """
+    #    Return float value associated to Z dimension.
+    #    Return "" if not defined.
+    #    """
+    #    data = self.vtkgdcm_reader.GetOutput()\
+    #                        .GetDimensions()[2]
+    #    if (data):
+    #        return float(data)
+    #    return ""
 
     def GetImageDataType(self):
         """
