@@ -839,7 +839,7 @@ class SurfacesListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
         index = pubsub_evt.data[0]
         name = pubsub_evt.data[1]
         colour = pubsub_evt.data[2]
-        volume = "%d"%(int(pubsub_evt.data[3]))
+        volume = "%.3f"%pubsub_evt.data[3]
         transparency = "%d%%"%(int(100*pubsub_evt.data[4]))
        
         if index not in self.surface_list_index:

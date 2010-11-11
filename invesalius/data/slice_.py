@@ -261,9 +261,9 @@ class Slice(object):
         proj.mask_dict[index].colour = colour
 
         (r,g,b) = colour
-        scalar_range = int(self.imagedata.GetScalarRange()[1])
-        self.lut_mask.SetTableValue(0, 0, 0, 0, 0.0)
-        self.lut_mask.SetTableValue(scalar_range - 1, r, g, b, 1.0)
+        #scalar_range = int(self.imagedata.GetScalarRange()[1])
+        #self.lut_mask.SetTableValue(0, 0, 0, 0, 0.0)
+        #self.lut_mask.SetTableValue(scalar_range - 1, r, g, b, 1.0)
 
         colour_wx = [r*255, g*255, b*255]
         ps.Publisher().sendMessage('Change mask colour in notebook',
@@ -536,6 +536,11 @@ class Slice(object):
                     opacity=None, threshold_range=None,
                     edition_threshold_range = None,
                     edited_points=None):
+        
+        # TODO: mask system to new system.
+        future_mask = Mask()
+        future_mask.create_mask(self.matrix.shape)
+
 
         future_mask = Mask()
         if colour:
@@ -547,40 +552,40 @@ class Slice(object):
         if edited_points:
             future_mask.edited_points = edited_points
 
-        # this is not the first mask, so we will import data from old imagedata
-        if imagedata is None:
-            old_mask = self.current_mask
-            imagedata = old_mask.imagedata
-            future_mask.threshold_range = old_mask.threshold_range
+        ## this is not the first mask, so we will import data from old imagedata
+        #if imagedata is None:
+            #old_mask = self.current_mask
+            #imagedata = old_mask.imagedata
+            #future_mask.threshold_range = old_mask.threshold_range
 
-        if threshold_range:
-            future_mask.threshold_range = threshold_range
-            future_mask.imagedata = self.__create_mask_threshold(self.imagedata, 
-                                                    threshold_range)
-        else:
-            future_mask.imagedata = vtk.vtkImageData()
-            future_mask.imagedata.DeepCopy(imagedata)
-            future_mask.imagedata.Update()
+        #if threshold_range:
+            #future_mask.threshold_range = threshold_range
+            #future_mask.imagedata = self.__create_mask_threshold(self.imagedata, 
+                                                    #threshold_range)
+        #else:
+            #future_mask.imagedata = vtk.vtkImageData()
+            #future_mask.imagedata.DeepCopy(imagedata)
+            #future_mask.imagedata.Update()
 
 
-        # when this is not the first instance, user will have defined a name
-        if name is not None:
-            future_mask.name = name
-            if future_mask.is_shown:
-                self.blend_filter.SetOpacity(1, future_mask.opacity)
-            else:
-                self.blend_filter.SetOpacity(1, 0)
-            self.blend_filter.Update()
+        ## when this is not the first instance, user will have defined a name
+        #if name is not None:
+            #future_mask.name = name
+            #if future_mask.is_shown:
+                #self.blend_filter.SetOpacity(1, future_mask.opacity)
+            #else:
+                #self.blend_filter.SetOpacity(1, 0)
+            #self.blend_filter.Update()
 
         # insert new mask into project and retrieve its index
         proj = Project()
         index = proj.AddMask(future_mask)
         future_mask.index = index
-        if threshold_range:
-            self.SetMaskThreshold(index, threshold_range)
-            future_mask.edited_points = {}
+        #if threshold_range:
+            #self.SetMaskThreshold(index, threshold_range)
+            #future_mask.edited_points = {}
 
-        # update gui related to mask
+        ## update gui related to mask
         ps.Publisher().sendMessage('Add mask',
                                     (future_mask.index,
                                      future_mask.name,

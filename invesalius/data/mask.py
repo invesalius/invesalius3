@@ -20,7 +20,9 @@
 import os
 import plistlib
 import random
+import tempfile
 
+import numpy
 import vtk
 
 import constants as const
@@ -81,3 +83,7 @@ class Mask():
 
     def _set_class_index(self, index):
         Mask.general_index = index
+
+    def create_mask(self, shape):
+        self.temp_file = tempfile.mktemp()
+        self.matrix = numpy.memmap(self.temp_file, mode='w+', dtype='uint8', shape=shape)
