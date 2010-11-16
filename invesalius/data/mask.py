@@ -85,5 +85,6 @@ class Mask():
         Mask.general_index = index
 
     def create_mask(self, shape):
+        print "Creating a mask"
         self.temp_file = tempfile.mktemp()
         self.matrix = numpy.memmap(self.temp_file, mode='w+', dtype='uint8', shape=shape)

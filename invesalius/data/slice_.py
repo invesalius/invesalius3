@@ -244,8 +244,22 @@ class Slice(object):
         elif orientation == 'SAGITAL':
             n_array = numpy.array(self.matrix[..., ..., slice_number])
         image = iu.to_vtk(n_array, self.spacing, slice_number, orientation)
-        image = self.do_ww_wl(image)
+        if self.current_mask and self.current_mask.is_shown:
+            mask = self.GetSlicesMask(orientation, slice_number)
+            image = self.do_blend(self.do_ww_wl(image), mask)
+        else:
+            image = self.do_ww_wl(image)
         return image
+
+    def GetSlicesMask(self, orientation, slice_number):
+        if orientation == 'AXIAL':
+            n_mask = numpy.array(self.current_mask.matrix[slice_number])
+        elif orientation == 'CORONAL':
+            n_mask = numpy.array(self.current_mask.matrix[..., slice_number, ...])
+        elif orientation == 'SAGITAL':
+            n_mask = numpy.array(self.current_mask.matrix[..., ..., slice_number])
+        mask = iu.to_vtk(n_mask, self.spacing, slice_number, orientation)
+        return self.do_colour_mask(mask)
 
     def GetNumberOfSlices(self, orientation):
         if orientation == 'AXIAL':
@@ -298,22 +312,30 @@ class Slice(object):
         thresh_min, thresh_max = threshold_range
 
         if self.current_mask.index == index:
-            # Update pipeline (this must be here, so pipeline is not broken)
-            self.img_thresh_mask.SetInput(self.imagedata)
-            self.img_thresh_mask.ThresholdBetween(float(thresh_min),
-                                                  float(thresh_max))
-            self.img_thresh_mask.Update()
+            ## Update pipeline (this must be here, so pipeline is not broken)
+            #self.img_thresh_mask.SetInput(self.imagedata)
+            #self.img_thresh_mask.ThresholdBetween(float(thresh_min),
+                                                  #float(thresh_max))
+            #self.img_thresh_mask.Update()
 
-            # Create imagedata copy so the pipeline is not broken
-            imagedata = self.img_thresh_mask.GetOutput()
-            self.current_mask.imagedata.DeepCopy(imagedata)
-            self.current_mask.threshold_range = threshold_range
+            ## Create imagedata copy so the pipeline is not broken
+            #imagedata = self.img_thresh_mask.GetOutput()
+            #self.current_mask.imagedata.DeepCopy(imagedata)
+            #self.current_mask.threshold_range = threshold_range
 
-            # Update pipeline (this must be here, so pipeline is not broken)
-            self.img_colours_mask.SetInput(self.current_mask.imagedata)
+            ## Update pipeline (this must be here, so pipeline is not broken)
+            #self.img_colours_mask.SetInput(self.current_mask.imagedata)
+
+            # TODO: find out a better way to do threshold
+            for n, slice_ in enumerate(self.matrix):
+                m = numpy.ones(slice_.shape, self.current_mask.matrix.dtype)
+                m[slice_ < thresh_min] = 0
+                m[slice_ > thresh_max] = 0
+                m[m == 1] = 255
+                self.current_mask.matrix[n] = m
 
             # Update viewer
-            ps.Publisher().sendMessage('Update slice viewer')
+            #ps.Publisher().sendMessage('Update slice viewer')
 
             # Update data notebook (GUI)
             ps.Publisher().sendMessage('Set mask threshold in notebook',
@@ -541,8 +563,6 @@ class Slice(object):
         future_mask = Mask()
         future_mask.create_mask(self.matrix.shape)
 
-
-        future_mask = Mask()
         if colour:
             future_mask.colour = colour
         if opacity:
@@ -594,6 +614,8 @@ class Slice(object):
 
         self.current_mask = future_mask
 
+        print self.current_mask.matrix
+
         ps.Publisher().sendMessage('Change mask selected', future_mask.index)
         ps.Publisher().sendMessage('Update slice viewer')
 
@@ -630,6 +652,52 @@ class Slice(object):
         colorer.Update()
 
         return colorer.GetOutput()
+
+    def do_colour_mask(self, imagedata):
+        scalar_range = int(imagedata.GetScalarRange()[1])
+        r, g, b = self.current_mask.colour
+
+        # map scalar values into colors
+        lut_mask = vtk.vtkLookupTable()
+        lut_mask.SetNumberOfColors(255)
+        lut_mask.SetHueRange(const.THRESHOLD_HUE_RANGE)
+        lut_mask.SetSaturationRange(1, 1)
+        lut_mask.SetValueRange(0, 1)
+        lut_mask.SetNumberOfTableValues(256)
+        lut_mask.SetTableValue(0, 0, 0, 0, 0.0)
+        lut_mask.SetTableValue(1, 0, 0, 0, 0.0)
+        lut_mask.SetTableValue(2, 0, 0, 0, 0.0)
+        lut_mask.SetTableValue(255, r, g, b, 1.0)
+        lut_mask.SetRampToLinear()
+        lut_mask.Build()
+        # self.lut_mask = lut_mask
+
+        # map the input image through a lookup table
+        img_colours_mask = vtk.vtkImageMapToColors()
+        img_colours_mask.SetLookupTable(lut_mask)
+        img_colours_mask.SetOutputFormatToRGBA()
+        img_colours_mask.SetInput(imagedata)
+        img_colours_mask.Update()
+        # self.img_colours_mask = img_colours_mask
+
+        return img_colours_mask.GetOutput()
+
+    def do_blend(self, imagedata, mask):
+        # blend both imagedatas, so it can be inserted into viewer
+        print "Blending Spacing", imagedata.GetSpacing(), mask.GetSpacing()
+
+        blend_imagedata = vtk.vtkImageBlend()
+        blend_imagedata.SetBlendModeToNormal()
+        # blend_imagedata.SetOpacity(0, 1.0)
+        blend_imagedata.SetOpacity(1, 0.8)
+        blend_imagedata.SetInput(imagedata)
+        blend_imagedata.AddInput(mask)
+        blend_imagedata.Update()
+
+        # return colorer.GetOutput()
+
+        return blend_imagedata.GetOutput()
+
 
     def __build_mask(self, imagedata, create=True):
         # create new mask instance and insert it into project
