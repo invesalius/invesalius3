@@ -391,12 +391,20 @@ class GradientCtrl(wx.Panel):
             self._GenerateEvent(myEVT_THRESHOLD_CHANGE)
 
     def OnMinMouseWheel(self, e):
+        """ 
+        When the user wheel the mouse over min texbox
+        """
         v = self.GetMinValue() + e.GetWheelRotation()/e.GetWheelDelta()
         self.SetMinValue(v)
+        self._GenerateEvent(myEVT_THRESHOLD_CHANGING)
 
     def OnMaxMouseWheel(self, e):
+        """ 
+        When the user wheel the mouse over max texbox
+        """
         v = self.GetMaxValue() + e.GetWheelRotation()/e.GetWheelDelta()
         self.SetMaxValue(v)
+        self._GenerateEvent(myEVT_THRESHOLD_CHANGING)
 
     def SetColour(self, colour):
         colour = list(colour) + [90,]
