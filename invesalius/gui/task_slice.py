@@ -377,7 +377,8 @@ class MaskProperties(wx.Panel):
             self.combo_mask_name.Delete(i)
 
     def __bind_events_wx(self):
-        self.Bind(grad.EVT_THRESHOLD_CHANGE, self.OnSlideChanged, self.gradient)
+        self.Bind(grad.EVT_THRESHOLD_CHANGED, self.OnSlideChanged, self.gradient)
+        self.Bind(grad.EVT_THRESHOLD_CHANGING, self.OnSlideChanging, self.gradient)
         self.combo_thresh.Bind(wx.EVT_COMBOBOX, self.OnComboThresh)
         self.combo_mask_name.Bind(wx.EVT_COMBOBOX, self.OnComboName)
         self.button_colour.Bind(csel.EVT_COLOURSELECT, self.OnSelectColour)
@@ -488,6 +489,14 @@ class MaskProperties(wx.Panel):
         session = ses.Session()
         session.ChangeProject()
 
+    def OnSlideChanging(self, evt):
+        thresh_min = self.gradient.GetMinValue()
+        thresh_max = self.gradient.GetMaxValue()
+        ps.Publisher().sendMessage('Changing threshold values',
+                                    (thresh_min, thresh_max))
+        session = ses.Session()
+        session.ChangeProject()
+
     def OnSelectColour(self, evt):
         colour = evt.GetValue()
         self.gradient.SetColour(colour)
@@ -573,7 +582,7 @@ class EditionTools(wx.Panel):
 
     def __bind_events_wx(self):
         self.Bind(wx.EVT_MENU, self.OnMenu)
-        self.Bind(grad.EVT_THRESHOLD_CHANGE, self.OnGradientChanged,
+        self.Bind(grad.EVT_THRESHOLD_CHANGED, self.OnGradientChanged,
                   self.gradient_thresh)
         self.combo_brush_op.Bind(wx.EVT_COMBOBOX, self.OnComboBrushOp)
 
