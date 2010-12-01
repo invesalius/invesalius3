@@ -720,7 +720,11 @@ class Parser():
 
         Critical DICOM tag (0x0008, 0x0008). Cannot be editted.
         """
-        data = self.data_image['0008']['0008']
+        try:
+            data = self.data_image['0008']['0008']
+        except(IndexError):
+            return []
+
         if (data):
             try:
                 return data.split('\\')
