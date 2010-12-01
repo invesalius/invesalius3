@@ -886,6 +886,8 @@ class Viewer(wx.Panel):
         ps.Publisher().subscribe(self.AddActors, ('Add actors', ORIENTATIONS[self.orientation]))
         ps.Publisher().subscribe(self.RemoveActors, ('Remove actors', ORIENTATIONS[self.orientation]))
 
+        ps.Publisher().subscribe(self.ReloadActualSlice, 'Reload actual slice')
+
     def SetDefaultCursor(self, pusub_evt):
         self.interactor.SetCursor(wx.StockCursor(wx.CURSOR_DEFAULT))
     
@@ -1381,11 +1383,7 @@ class Viewer(wx.Panel):
         image = self.slice_.GetSlices(self.orientation, index)
         self.actor.SetInput(image)
         self.__update_display_extent(image)
-        print "slice", index
-        print "display extent", self.actor.GetDisplayExtent()
-        print "whole extent", image.GetWholeExtent()
-        print "boundsa", self.actor.GetBounds()
-        print "camera", self.cam.GetPosition(), self.cam.GetFocalPoint()
+        self.interactor.Render()
 
     def ChangeSliceNumber(self, pubsub_evt):
         index = pubsub_evt.data
@@ -1444,6 +1442,9 @@ class Viewer(wx.Panel):
                     ((x, y,z), const.ANGULAR, ORIENTATIONS[self.orientation],
                         slice_number))
             self.interactor.Render()
+
+    def ReloadActualSlice(self, pubsub_evt):
+        self.OnScrollBar()
 
     def AddActors(self, pubsub_evt):
         "Inserting actors"

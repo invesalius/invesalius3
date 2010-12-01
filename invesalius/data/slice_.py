@@ -41,6 +41,10 @@ class Slice(object):
         self.blend_filter = None
         self.matrix = None
 
+        self.buffer_slices = {"AXIAL": [-1, None, None],
+                              "CORONAL": [-1,None, None],
+                              "SAGITAL": [-1, None, None]}
+
         self.num_gradient = 0
         self.interaction_style = st.StyleStateManager()
 
@@ -59,6 +63,8 @@ class Slice(object):
                                  'Set edition threshold values')
         ps.Publisher().subscribe(self.__set_current_mask_threshold,
                                  'Set threshold values')
+        ps.Publisher().subscribe(self.__set_current_mask_threshold_actual_slice,
+                                 'Changing threshold values')
         ps.Publisher().subscribe(self.__set_current_mask_colour,
                                 'Change mask colour')
         ps.Publisher().subscribe(self.__set_mask_name, 'Change mask name')
@@ -192,10 +198,26 @@ class Slice(object):
     def __set_current_mask_threshold(self, evt_pubsub):
         threshold_range = evt_pubsub.data
         index = self.current_mask.index
-        self.SetMaskThreshold(index, threshold_range)
+        #self.SetMaskThreshold(index, threshold_range)
         #Clear edited points
         self.current_mask.edited_points = {}
         self.num_gradient += 1
+        self.current_mask.matrix[0, :, :] = 0
+        self.current_mask.matrix[:, 0, :] = 0
+        self.current_mask.matrix[:, :, 0] = 0
+
+    def __set_current_mask_threshold_actual_slice(self, evt_pubsub):
+        threshold_range = evt_pubsub.data
+        index = self.current_mask.index
+        for orientation in self.buffer_slices:
+            self.SetMaskThreshold(index, threshold_range,
+                                  self.buffer_slices[orientation][0],
+                                  orientation)
+        #Clear edited points
+        self.current_mask.edited_points = {}
+        self.num_gradient += 1
+
+        ps.Publisher().sendMessage('Reload actual slice')
 
     def __set_current_mask_colour(self, pubsub_evt):
         # "if" is necessary because wx events are calling this before any mask
@@ -237,29 +259,66 @@ class Slice(object):
     #---------------------------------------------------------------------------
 
     def GetSlices(self, orientation, slice_number):
-        if orientation == 'AXIAL':
-            n_array = numpy.array(self.matrix[slice_number])
-        elif orientation == 'CORONAL':
-            n_array = numpy.array(self.matrix[..., slice_number, ...])
-        elif orientation == 'SAGITAL':
-            n_array = numpy.array(self.matrix[..., ..., slice_number])
-        image = iu.to_vtk(n_array, self.spacing, slice_number, orientation)
-        if self.current_mask and self.current_mask.is_shown:
-            mask = self.GetSlicesMask(orientation, slice_number)
-            image = self.do_blend(self.do_ww_wl(image), mask)
+        if self.buffer_slices[orientation][0] == slice_number:
+            print "From buffer"
+            image = self.buffer_slices[orientation][1]
+            n_mask = self.buffer_slices[orientation][2]
+            mask = iu.to_vtk(n_mask, self.spacing, slice_number, orientation)
+            final_image = self.do_blend(image, self.do_colour_mask(mask))
         else:
+            n_image = self.GetImageSlice(orientation, slice_number)
+            image = iu.to_vtk(n_image, self.spacing, slice_number, orientation)
             image = self.do_ww_wl(image)
-        return image
 
-    def GetSlicesMask(self, orientation, slice_number):
+            if self.current_mask and self.current_mask.is_shown:
+                print "Mask"
+                n_mask = self.GetMaskSlice(orientation, slice_number)
+                mask = iu.to_vtk(n_mask, self.spacing, slice_number, orientation)
+                final_image = self.do_blend(image, self.do_colour_mask(mask))
+            else:
+                n_mask = None
+                final_image = image
+
+            self.buffer_slices[orientation] = [slice_number, image, n_mask,
+                                               n_image]
+        self.slice_number = slice_number
+        return final_image
+
+    def GetImageSlice(self, orientation, slice_number):
         if orientation == 'AXIAL':
-            n_mask = numpy.array(self.current_mask.matrix[slice_number])
+            n_image = numpy.array(self.matrix[slice_number])
         elif orientation == 'CORONAL':
-            n_mask = numpy.array(self.current_mask.matrix[..., slice_number, ...])
+            n_image = numpy.array(self.matrix[..., slice_number, ...])
         elif orientation == 'SAGITAL':
+            n_image = numpy.array(self.matrix[..., ..., slice_number])
+        return n_image
+
+    def GetMaskSlice(self, orientation, slice_number):
+        slice_number += 1
+        if orientation == 'AXIAL':
+            if self.current_mask.matrix[slice_number, 0, 0] == 0:
+                self.current_mask.matrix[slice_number, 1:, 1:] = \
+                        self.do_threshold_to_a_slice(self.GetImageSlice(orientation,
+                                                                        slice_number))
+                self.current_mask.matrix[slice_number, 0, 0] = 1
+            n_mask = numpy.array(self.current_mask.matrix[slice_number])
+
+        elif orientation == 'CORONAL':
+            if self.current_mask.matrix[0, slice_number, 0] == 0:
+                self.current_mask.matrix[1:, slice_number, 1:] = \
+                        self.do_threshold_to_a_slice(self.GetImageSlice(orientation,
+                                                                        slice_number))
+                self.current_mask.matrix[0, slice_number, 0] = 1
+            n_mask = numpy.array(self.current_mask.matrix[..., slice_number, ...])
+
+        elif orientation == 'SAGITAL':
+            if self.current_mask.matrix[0, 0, slice_number] == 0:
+                self.current_mask.matrix[1:, 1:, slice_number] = \
+                        self.do_threshold_to_a_slice(self.GetImageSlice(orientation,
+                                                                        slice_number))
+                self.current_mask.matrix[0, 0, slice_number] = 1
             n_mask = numpy.array(self.current_mask.matrix[..., ..., slice_number])
-        mask = iu.to_vtk(n_mask, self.spacing, slice_number, orientation)
-        return self.do_colour_mask(mask)
+        return n_mask
 
     def GetNumberOfSlices(self, orientation):
         if orientation == 'AXIAL':
@@ -304,10 +363,14 @@ class Slice(object):
         proj = Project()
         proj.mask_dict[index].edition_threshold_range = threshold_range
 
-    def SetMaskThreshold(self, index, threshold_range):
+    def SetMaskThreshold(self, index, threshold_range, slice_number=None,
+                         orientation=None):
         """
         Set a mask threshold range given its index and tuple of min and max
         threshold values.
+
+        If slice_number is None then all the threshold is calculated for all
+        slices, otherwise only to indicated slice.
         """
         thresh_min, thresh_max = threshold_range
 
@@ -327,12 +390,20 @@ class Slice(object):
             #self.img_colours_mask.SetInput(self.current_mask.imagedata)
 
             # TODO: find out a better way to do threshold
-            for n, slice_ in enumerate(self.matrix):
-                m = numpy.ones(slice_.shape, self.current_mask.matrix.dtype)
-                m[slice_ < thresh_min] = 0
-                m[slice_ > thresh_max] = 0
-                m[m == 1] = 255
-                self.current_mask.matrix[n] = m
+
+            if slice_number is None:
+                for n, slice_ in enumerate(self.matrix):
+                    m = numpy.ones(slice_.shape, self.current_mask.matrix.dtype)
+                    m[slice_ < thresh_min] = 0
+                    m[slice_ > thresh_max] = 0
+                    m[m == 1] = 255
+                    self.current_mask.matrix[n] = m
+            else:
+                print "Only one slice"
+                slice_ = self.buffer_slices[orientation][3]
+                m = numpy.zeros(slice_.shape, self.current_mask.matrix.dtype)
+                m[numpy.logical_and(slice_ >= thresh_min,slice_ <= thresh_max)] = 255
+                self.buffer_slices[orientation][2] = m
 
             # Update viewer
             #ps.Publisher().sendMessage('Update slice viewer')
@@ -653,6 +724,16 @@ class Slice(object):
 
         return colorer.GetOutput()
 
+    def do_threshold_to_a_slice(self, slice_matrix):
+        """ 
+        Based on the current threshold bounds generates a threshold mask to
+        given slice_matrix.
+        """
+        thresh_min, thresh_max = self.current_mask.threshold_range
+        m = numpy.zeros(slice_matrix.shape, self.current_mask.matrix.dtype)
+        m[numpy.logical_and(slice_matrix >= thresh_min, slice_matrix <= thresh_max)] = 255
+        return m
+
     def do_colour_mask(self, imagedata):
         scalar_range = int(imagedata.GetScalarRange()[1])
         r, g, b = self.current_mask.colour
@@ -772,7 +853,3 @@ class Slice(object):
         filename, filetype = pubsub_evt.data
         if (filetype == const.FILETYPE_IMAGEDATA):
             iu.Export(imagedata, filename)
-
-
-
-

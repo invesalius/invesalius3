@@ -521,7 +521,7 @@ class NewMask(wx.Dialog):
         self.SetSizer(sizer)
         sizer.Fit(self)
 
-        self.Bind(grad.EVT_THRESHOLD_CHANGE, self.OnSlideChanged, self.gradient)
+        self.Bind(grad.EVT_THRESHOLD_CHANGED, self.OnSlideChanged, self.gradient)
         self.combo_thresh.Bind(wx.EVT_COMBOBOX, self.OnComboThresh)
 
 
