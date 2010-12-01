@@ -158,11 +158,13 @@ def GetImageOrientationLabel(filename):
     else:
         return ""
 
+grouper = dicom_grouper.DicomPatientGrouper() 
 
 def GetDicomGroups(directory, recursive=True, gui=True):
     """
     Return all full paths to DICOM files inside given directory.
     """
+
     nfiles = 0
     # Find total number of files
     if recursive:
@@ -255,37 +257,29 @@ def GetDicomGroups(directory, recursive=True, gui=True):
                     data_dict['invesalius'] = {'orientation_label' : GetImageOrientationLabel(filename)}
 
                     # -------------------------------------------------------------
-    
-                    dict_file[os.path.abspath(filename)] = data_dict
+                    filepath = os.path.abspath(filename) 
+                    dict_file[filepath] = data_dict
+       
+                    if (data_dict['0002']['0002'] != "1.2.840.10008.1.3.10"): #DICOMDIR
+                        parser = dicom.Parser()
+                        parser.SetDataImage(dict_file[filepath], filepath)
+               
+                        dcm = dicom.Dicom()
+                        dcm.SetParser(parser)
+                        grouper.AddFile(dcm)
 
-        main_dict = dict(
-                        data  = dict_file,
-                        labels  = tag_labels)
+                    
+        #------- to test -------------------------------------
+        #main_dict = dict(
+        #                data  = dict_file,
+        #                labels  = tag_labels)
    
         #plistlib.writePlist(main_dict, ".//teste.plist")
- 
-        images = main_dict['data']
-        grouper = dicom_grouper.DicomPatientGrouper()       
-        
-        for x in images.keys():
-            data_image = images[x]
-            
-            if (data_image['0002']['0002'] != "1.2.840.10008.1.3.10"): #DICOMDIR
-                parser = dicom.Parser()
-                parser.SetDataImage(data_image, x)
-            
-                dcm = dicom.Dicom()
-                dcm.SetParser(parser)
-                grouper.AddFile(dcm)
 
         grouper.Update()
         
-
-
         return grouper.GetPatientsGroups()
-            #print "_____________________________________"
-            #print dirpath
-            #nfiles += len(filenames)
+    
     else:
         pass
         #dirpath, dirnames, filenames = os.walk(directory)
