@@ -469,7 +469,7 @@ def dcm2memmap(files, slice_size, orientation):
         shape = slice_size[1], len(files), slice_size[0]
     else:
         shape = len(files), slice_size[1], slice_size[0]
-
+    print shape
     matrix = numpy.memmap(temp_file, mode='w+', dtype='int16', shape=shape)
     dcm_reader = vtkgdcm.vtkGDCMImageReader()
     for n, f in enumerate(files):

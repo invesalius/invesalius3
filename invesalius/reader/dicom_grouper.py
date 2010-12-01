@@ -96,7 +96,7 @@ class DicomGroup:
                 return False
         else:
             self.slices_dict[dicom.image.number] = dicom
-            self.nslices += 1
+            self.nslices	 += 1
             return True
 
     def GetList(self):

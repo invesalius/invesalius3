@@ -19,7 +19,7 @@
 import platform
 import sigar
 import sys
-
+import re
 
 def debug(error_str):
     """
@@ -78,6 +78,21 @@ def next_copy_name(original_name, names_list):
             got_new_name = True
             return next_copy
                 
+
+def VerifyInvalidPListCharacter(text):
+    #print text
+    #text = unicode(text)
+    
+    _controlCharPat = re.compile(
+    r"[\x00\x01\x02\x03\x04\x05\x06\x07\x08\x0b\x0c\x0e\x0f"
+    r"\x10\x11\x12\x13\x14\x15\x16\x17\x18\x19\x1a\x1b\x1c\x1d\x1e\x1f]")
+    m = _controlCharPat.search(text)
+
+    if m is not None:
+        return True
+    else:
+        False
+
 
 #http://www.garyrobinson.net/2004/03/python_singleto.html
 # Gary Robinson

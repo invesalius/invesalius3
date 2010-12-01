@@ -328,7 +328,6 @@ class Controller():
     def ImportMedicalImages(self, directory):
         # OPTION 1: DICOM?
         patients_groups = dcm.GetDicomGroups(directory)
-
         if len(patients_groups):
             group = dcm.SelectLargerDicomGroup(patients_groups)
             imagedata, dicom = self.OpenDicomGroup(group, 0, gui=True)
@@ -486,7 +485,6 @@ class Controller():
 
         wl = float(dicom.image.level)
         ww = float(dicom.image.window)
-
         self.matrix, self.filename = utils.dcm2memmap(filelist, size,
                                                       orientation)
         self.Slice = sl.Slice()

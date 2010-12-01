@@ -18,7 +18,7 @@
 #    detalhes.
 #---------------------------------------------------------------------
 import time
-import gdcm
+#import gdcm
 #import vtkgdcm
 import sys
 
@@ -91,15 +91,14 @@ class Parser():
     def __init__(self):
         self.filename = ""
         self.encoding = ""
-        #self.vtkgdcm_reader = vtkgdcm.vtkGDCMImageReader()
 
-    def SetFileName(self, filename):
+    #def SetFileName(self, filename):
         """
         Set file name to be parsed given its filename (this should
         include the full path of the file of interest).
 
         Return True/False if file could be read.
-        """
+        
         import os.path as path
 
 
@@ -133,10 +132,15 @@ class Parser():
             #self.vtkgdcm_reader = vtkgdcm_reader
             return True
 
-        return False
+        return False"""
 
-    def GetImageData(self):
-        return None#self.vtkgdcm_reader.GetOutput()
+    #def GetImageData(self):
+    #    return None#self.vtkgdcm_reader.GetOutput()
+
+
+    def SetDataImage(self, data_image, filename):
+        self.data_image = data_image
+        self.filename = filename    
 
     def __format_time(self,value):
         sp1 = value.split(".")
@@ -181,14 +185,7 @@ class Parser():
         an image. (AXIAL, SAGITTAL, CORONAL,
         OBLIQUE or UNKNOWN)
         """
-        img = self.gdcm_reader.GetImage()
-        direc_cosines = img.GetDirectionCosines()
-        orientation = gdcm.Orientation()
-        try:
-            type = orientation.GetType(tuple(direc_cosines))
-        except TypeError:
-            type = orientation.GetType(direc_cosines)
-        label = orientation.GetLabel(type)
+        label = self.data_image['invesalius']['orientation_label']
 
         if (label):
             return label
@@ -201,12 +198,7 @@ class Parser():
         to the number of columns on the image.
         Return "" if not defined.
         """
-        tag = gdcm.Tag(0x0028, 0x0011)
-        ds = self.gdcm_reader.GetFile().GetDataSet()
-        sf = gdcm.StringFilter()
-        sf.SetFile(self.gdcm_reader.GetFile())
-        data = sf.ToStringPair(tag)[1]
-    
+        data = self.data_image['0028']['0011']
         if (data):
             return int(str(data))
         return ""
@@ -218,12 +210,7 @@ class Parser():
         to the number of rows on the image.
         Return "" if not defined.
         """
-        tag = gdcm.Tag(0x0028, 0x0010)
-        ds = self.gdcm_reader.GetFile().GetDataSet()
-        sf = gdcm.StringFilter()
-        sf.SetFile(self.gdcm_reader.GetFile())
-        data = sf.ToStringPair(tag)[1]
-    
+        data = self.data_image['0028']['0010']
         if (data):
             return int(str(data))
         return ""
@@ -309,12 +296,9 @@ class Parser():
         DICOM standard tag (0x0008,0x0022) was used.
         """
         # TODO: internationalize data
-        tag = gdcm.Tag(0x0008, 0x0022)
-        ds = self.gdcm_reader.GetFile().GetDataSet()
-        if ds.FindDataElement(tag):
-            date =  ds.GetDataElement(tag).GetValue()
-            if (date) and (date != ''):
-                return self.__format_date(str(date))
+        date = self.data_image['0008']['0022'] 
+        if (date) and (date != ''):
+            return self.__format_date(str(date))
         return ""
 
     def GetAcquisitionNumber(self):
@@ -324,12 +308,9 @@ class Parser():
 
         DICOM standard tag (0x0020, 0x0012) was used.
         """
-        tag = gdcm.Tag(0x0020, 0x0012)
-        ds = self.gdcm_reader.GetFile().GetDataSet()
-        if ds.FindDataElement(tag):
-            data =  ds.GetDataElement(tag).GetValue()
-            if (data):
-                return int(str(data))
+        data = self.data_image['0020']['0012'] 
+        if (data):
+            return int(str(data))
         return ""
 
     def GetAccessionNumber(self):
@@ -338,16 +319,13 @@ class Parser():
 
         DICOM standard tag (0x0008, 0x0050) was used.
         """
-        tag = gdcm.Tag(0x0008, 0x0050)
-        ds = self.gdcm_reader.GetFile().GetDataSet()
-        if ds.FindDataElement(tag):
-            data =  ds.GetDataElement(tag).GetValue()
-            if (data):
-                try:
-                    value = int(str(data))
-                except(ValueError): #Problem in the other\iCatDanielaProjeto
-                    value = 0
-                return value
+        data = self.data_image['0008']['0050']
+        if (data):
+            try:
+                value = int(str(data))
+            except(ValueError): #Problem in the other\iCatDanielaProjeto
+                value = 0
+            return value
         return ""
 
     def GetAcquisitionTime(self):
@@ -358,12 +336,9 @@ class Parser():
 
         DICOM standard tag (0x0008,0x0032) was used.
         """
-        tag = gdcm.Tag(0x0008, 0x0032)
-        ds = self.gdcm_reader.GetFile().GetDataSet()
-        if ds.FindDataElement(tag):
-            data =  ds.GetDataElement(tag).GetValue()
-            if (data) and (data != ''):
-                return self.__format_time(str(data))
+        data = self.data_image['0008']['0032']
+        if (data) and (data != ''):
+            return self.__format_time(str(data))
         return ""
 
     def GetPatientAdmittingDiagnosis(self):
@@ -388,33 +363,28 @@ class Parser():
         Return image window center / level (related to brightness).
         This is an integer or a floating point. If the value can't
         be read, return "".
-
         By default, only one level value is returned, according to
         "preset" parameter. If no value is passed, WL_PRESET constant
         is used. In case one wishes to acquire a list with all
         level values, one should set "multiple" parameter to True.
-
         Return "" if field is not defined.
-
         DICOM standard tag (0x0028,0x1050) was used.
         """
-
-        tag = gdcm.Tag(0x0028, 0x1050)
-        ds = self.gdcm_reader.GetFile().GetDataSet()
-
-        if ds.FindDataElement(tag):
-            data = str(ds.GetDataElement(tag).GetValue())
-            if (data):
-                # Usually 'data' is a number. However, in some DICOM
-                # files, there are several values separated by '\'.
-                # If multiple values are present for the "Window Center"
-                # we choose only one. As this should be paired to "Window
-                # Width", it is set based on WL_PRESET
-                value_list = [float(value) for value in data.split('\\')]
-                if multiple:
-                    return value_list
-                else:
-                    return value_list[preset]
+        try:
+            data = self.data_image['0028']['1050']
+        except(KeyError):
+            return "300"
+        if (data):
+            # Usually 'data' is a number. However, in some DICOM
+            # files, there are several values separated by '\'.
+            # If multiple values are present for the "Window Center"
+            # we choose only one. As this should be paired to "Window
+            # Width", it is set based on WL_PRESET
+            value_list = [float(value) for value in data.split('\\')]
+            if multiple:
+                return value_list
+            else:
+                return value_list[preset]
         return "300"
 
     def GetImageWindowWidth(self, preset=WL_PRESET, multiple=WL_MULT):
@@ -432,24 +402,23 @@ class Parser():
 
         DICOM standard tag (0x0028,0x1051) was used.
         """
+        try:
+            data = self.data_image['0028']['1051']
+        except(KeyError):
+            return "2000"
 
-        tag = gdcm.Tag(0x0028,0x1051)
-        ds = self.gdcm_reader.GetFile().GetDataSet()
+        if (data):
+            # Usually 'data' is a number. However, in some DICOM
+            # files, there are several values separated by '\'.
+            # If multiple values are present for the "Window Center"
+            # we choose only one. As this should be paired to "Window
+            # Width", it is set based on WL_PRESET
+            value_list = [float(value) for value in data.split('\\')]
 
-        if ds.FindDataElement(tag):
-            data = str(ds.GetDataElement(tag).GetValue())
-            if (data):
-                # Usually 'data' is a number. However, in some DICOM
-                # files, there are several values separated by '\'.
-                # If multiple values are present for the "Window Center"
-                # we choose only one. As this should be paired to "Window
-                # Width", it is set based on WL_PRESET
-                value_list = [float(value) for value in data.split('\\')]
-
-                if multiple:
-                    return str(value_list)
-                else:
-                    return str(value_list[preset])
+            if multiple:
+                return str(value_list)
+            else:
+                return str(value_list[preset])
         return "2000"
 
     def GetImagePosition(self):
@@ -462,12 +431,12 @@ class Parser():
 
         DICOM standard tag (0x0020, 0x0032) was used.
         """
-        tag = gdcm.Tag(0x0020, 0x0032)
-        ds = self.gdcm_reader.GetFile().GetDataSet()
-        if ds.FindDataElement(tag):
-            data =  str(ds.GetDataElement(tag).GetValue())
-            if (data):
-                return [eval(value) for value in data.split('\\')]
+        try:
+            data = self.data_image['0020']['0032']
+        except(KeyError):
+            return ""
+        if (data):
+            return [eval(value) for value in data.split('\\')]
         return ""
 
     def GetImageLocation(self):
@@ -478,12 +447,9 @@ class Parser():
 
         DICOM standard tag (0x0020, 0x0032) was used.
         """
-        tag = gdcm.Tag(0x0020, 0x1041)
-        ds = self.gdcm_reader.GetFile().GetDataSet()
-        if ds.FindDataElement(tag):
-            data =  str(ds.GetDataElement(tag).GetValue())
-            if (data):
-                return eval(data)
+        data = self.data_image['0020']['1041']
+        if (data):
+            return eval(data)
         return ""
 
     def GetImageOffset(self):
@@ -493,12 +459,9 @@ class Parser():
 
         DICOM standard tag (0x7fe0, 0x0010) was used.
         """
-        tag = gdcm.Tag(0x7fe0, 0x0010)
-        ds = self.gdcm_reader.GetFile().GetDataSet()
-        if ds.FindDataElement(tag):
-            data =  str(ds.GetDataElement(tag).GetValue())
-            if (data):
-                return int(data.split(':')[1])
+        data = self.data_image['7fe0']['0010']
+        if (data):
+            return int(data.split(':')[1])
         return ""
 
 
@@ -510,12 +473,9 @@ class Parser():
 
         DICOM standard tag (0x0020, 0x0011) was used.
         """
-        tag = gdcm.Tag(0x0020, 0x0011)
-        ds = self.gdcm_reader.GetFile().GetDataSet()
-        if ds.FindDataElement(tag):
-            data =  str(ds.GetDataElement(tag).GetValue())
-            if (data) and (data != '""') and (data != "None"):
-                return int(data)
+        data = self.data_image['0020']['0011']
+        if (data) and (data != '""') and (data != "None"):
+            return int(data)
         return ""
 
 
@@ -529,12 +489,9 @@ class Parser():
 
         DICOM standard tag (0x0028, 0x0030) was used.
         """
-        tag = gdcm.Tag(0x0028, 0x0030)
-        ds = self.gdcm_reader.GetFile().GetDataSet()
-        if ds.FindDataElement(tag):
-            data = str(ds.GetDataElement(tag).GetValue())
-            if (data):
-                return [eval(value) for value in data.split('\\')]
+        data = self.data_image['0028']['0030'] 
+        if (data):
+            return [eval(value) for value in data.split('\\')]
         return ""
 
     def GetPatientWeight(self):
@@ -544,12 +501,9 @@ class Parser():
 
         DICOM standard tag (0x0010, 0x1030) was used.
         """
-        tag = gdcm.Tag(0x0010, 0x1030)
-        ds = self.gdcm_reader.GetFile().GetDataSet()
-        if ds.FindDataElement(tag):
-            data = str(ds.GetDataElement(tag).GetValue())
-            if (data):
-                return float(data)
+        data = self.data_image['0010']['1030']
+        if (data):
+            return float(data)
         return ""
 
     def GetPatientHeight(self):
@@ -559,12 +513,9 @@ class Parser():
 
         DICOM standard tag (0x0010, 0x1030) was used.
         """
-        tag = gdcm.Tag(0x0010, 0x1020)
-        ds = self.gdcm_reader.GetFile().GetDataSet()
-        if ds.FindDataElement(tag):
-            data = str(ds.GetDataElement(tag).GetValue())
-            if (data):
-                return float(data)
+        data = self.data_image['0010']['1020']
+        if (data):
+            return float(data)
         return ""
 
     def GetPatientAddress(self):
@@ -573,12 +524,9 @@ class Parser():
 
         DICOM standard tag (0x0010, 0x1040) was used.
         """
-        tag = gdcm.Tag(0x0010, 0x1040)
-        ds = self.gdcm_reader.GetFile().GetDataSet()
-        if ds.FindDataElement(tag):
-            data = str(ds.GetDataElement(tag).GetValue())
-            if (data):
-                return data
+        data = self.data_image['0010']['1040']
+        if (data):
+            return data
         return ""
 
     def GetPatientMilitarRank(self):
@@ -588,12 +536,9 @@ class Parser():
 
         DICOM standard tag (0x0010, 0x1080) was used.
         """
-        tag = gdcm.Tag(0x0010,0x1080)
-        ds = self.gdcm_reader.GetFile().GetDataSet()
-        if ds.FindDataElement(tag):
-            data = str(ds.GetDataElement(tag).GetValue())
-            if (data):
-                return data
+        data = self.data_image['0010']['1080']
+        if (data):
+            return data
         return ""
 
     def GetPatientMilitarBranch(self):
@@ -605,12 +550,9 @@ class Parser():
 
         DICOM standard tag (0x0010, 0x1081) was used.
         """
-        tag = gdcm.Tag(0x0010,0x1081)
-        ds = self.gdcm_reader.GetFile().GetDataSet()
-        if ds.FindDataElement(tag):
-            data = str(ds.GetDataElement(tag).GetValue())
-            if (data):
-                return data
+        data = self.data_image['0010']['1081']
+        if (data):
+            return data
         return ""
 
     def GetPatientCountry(self):
@@ -621,12 +563,9 @@ class Parser():
 
         DICOM standard tag (0x0010, 0x2150) was used.
         """
-        tag = gdcm.Tag(0x0010,0x2150)
-        ds = self.gdcm_reader.GetFile().GetDataSet()
-        if ds.FindDataElement(tag):
-            data = str(ds.GetDataElement(tag).GetValue())
-            if (data):
-                return data
+        data = self.data_image['0010']['2150']
+        if (data):
+            return data
         return ""
 
     def GetPatientRegion(self):
@@ -637,12 +576,9 @@ class Parser():
 
         DICOM standard tag (0x0010, 0x2152) was used.
         """
-        tag = gdcm.Tag(0x0010,0x2152)
-        ds = self.gdcm_reader.GetFile().GetDataSet()
-        if ds.FindDataElement(tag):
-            data = str(ds.GetDataElement(tag).GetValue())
-            if (data):
-                return data
+        data = self.data_image['0010']['2152']
+        if (data):
+            return data
         return ""
 
     def GetPatientTelephone(self):
@@ -652,12 +588,9 @@ class Parser():
 
         DICOM standard tag (0x0010, 0x2154) was used.
         """
-        tag = gdcm.Tag(0x0010,0x2154)
-        ds = self.gdcm_reader.GetFile().GetDataSet()
-        if ds.FindDataElement(tag):
-            data = str(ds.GetDataElement(tag).GetValue())
-            if (data):
-                return data
+        data = self.data_image['0010']['2154']
+        if (data):
+            return data
         return ""
 
     def GetPatientResponsible(self):
@@ -668,12 +601,9 @@ class Parser():
 
         DICOM standard tag (0x0010, 0x2297) was used.
         """
-        tag = gdcm.Tag(0x0010,0x2297)
-        ds = self.gdcm_reader.GetFile().GetDataSet()
-        if ds.FindDataElement(tag):
-            data = str(ds.GetDataElement(tag).GetValue())
-            if (data):
-                return data
+        data = self.data_image['0010']['2297']
+        if (data):
+            return data
         return ""
 
     def GetPatientResponsibleRole(self):
@@ -684,12 +614,9 @@ class Parser():
 
         DICOM standard tag (0x0010, 0x2298) was used.
         """
-        tag = gdcm.Tag(0x0010,0x2298)
-        ds = self.gdcm_reader.GetFile().GetDataSet()
-        if ds.FindDataElement(tag):
-            data = str(ds.GetDataElement(tag).GetValue())
-            if (data):
-                return data
+        data = self.data_image['0010']['2298'] 
+        if (data):
+            return data
         return ""
 
     def GetPatientResponsibleOrganization(self):
@@ -700,12 +627,9 @@ class Parser():
 
         DICOM standard tag (0x0010, 0x2299) was used.
         """
-        tag = gdcm.Tag(0x0010,0x2299)
-        ds = self.gdcm_reader.GetFile().GetDataSet()
-        if ds.FindDataElement(tag):
-            data = str(ds.GetDataElement(tag).GetValue())
-            if (data):
-                return data
+        data = self.data_image['0010']['2299']
+        if (data):
+            return data
         return ""
 
     def GetPatientMedicalCondition(self):
@@ -716,12 +640,9 @@ class Parser():
 
         DICOM standard tag (0x0010, 0x2000) was used.
         """
-        tag = gdcm.Tag(0x0010,0x2000)
-        ds = self.gdcm_reader.GetFile().GetDataSet()
-        if ds.FindDataElement(tag):
-            data = str(ds.GetDataElement(tag).GetValue())
-            if (data):
-                return data
+        data = self.data_image['0010']['2000']
+        if (data):
+            return data
         return ""
 
     def GetPatientContrastAllergies(self):
@@ -732,12 +653,9 @@ class Parser():
 
         DICOM standard tag (0x0008, 0x2110) was used.
         """
-        tag = gdcm.Tag(0x0008, 0x2110)
-        ds = self.gdcm_reader.GetFile().GetDataSet()
-        if ds.FindDataElement(tag):
-            data = str(ds.GetDataElement(tag).GetValue())
-            if (data):
-                return data
+        data = self.data_image['0008']['2110'] 
+        if (data):
+            return data
         return ""
 
 
@@ -749,14 +667,11 @@ class Parser():
 
         DICOM standard tag (0x0008, 0x0090) was used.
         """
-        tag = gdcm.Tag(0x0008,0x0090)
-        ds = self.gdcm_reader.GetFile().GetDataSet()
-        if ds.FindDataElement(tag):
-            data = str(ds.GetDataElement(tag).GetValue())
-            if data == "None":
-                return ""
-            if (data):
-                return data
+        data = self.data_image['0008']['0090']
+        if data == "None":
+            return ""
+        if (data):
+            return data
         return ""
 
 
@@ -767,12 +682,9 @@ class Parser():
 
         DICOM standard tag (0x0008, 0x0092) was used.
         """
-        tag = gdcm.Tag(0x0008, 0x0092)
-        ds = self.gdcm_reader.GetFile().GetDataSet()
-        if ds.FindDataElement(tag):
-            data = str(ds.GetDataElement(tag).GetValue())
-            if (data):
-                return data
+        data = self.data_image['0008']['0092']
+        if (data):
+            return data
         return ""
 
     def GetPhysicianeReferringTelephone(self):
@@ -782,12 +694,9 @@ class Parser():
 
         DICOM standard tag (0x0008, 0x0094) was used.
         """
-        tag = gdcm.Tag(0x0008, 0x0094)
-        ds = self.gdcm_reader.GetFile().GetDataSet()
-        if ds.FindDataElement(tag):
-            data = str(ds.GetDataElement(tag).GetValue())
-            if (data):
-                return data
+        data = self.data_image['0008']['0094']
+        if (data):
+            return data
         return ""
 
     def GetProtocolName(self):
@@ -797,12 +706,9 @@ class Parser():
 
         DICOM standard tag (0x0018, 0x1030) was used.
         """
-        tag = gdcm.Tag(0x0018, 0x1030)
-        ds = self.gdcm_reader.GetFile().GetDataSet()
-        if ds.FindDataElement(tag):
-            data = str(ds.GetDataElement(tag).GetValue())
-            if (data):
-                return data
+        data = self.data_image['0018']['1030']
+        if (data):
+            return data
         return None
 
     def GetImageType(self):
@@ -814,15 +720,12 @@ class Parser():
 
         Critical DICOM tag (0x0008, 0x0008). Cannot be editted.
         """
-        tag = gdcm.Tag(0x0008, 0x0008)
-        ds = self.gdcm_reader.GetFile().GetDataSet()
-        if ds.FindDataElement(tag):
-            data = str(ds.GetDataElement(tag).GetValue())
-            if (data):
-                try:
-                    return data.split('\\')
-                except(IndexError):
-                    return []
+        data = self.data_image['0008']['0008']
+        if (data):
+            try:
+                return data.split('\\')
+            except(IndexError):
+                return []
         return []
 
     def GetSOPClassUID(self):
@@ -833,12 +736,9 @@ class Parser():
 
         Critical DICOM tag (0x0008, 0x0016). Cannot be edited.
         """
-        tag = gdcm.Tag(0x0008, 0x0016)
-        ds = self.gdcm_reader.GetFile().GetDataSet()
-        if ds.FindDataElement(tag):
-            data = str(ds.GetDataElement(tag).GetValue())
-            if (data):
-                return data
+        data = self.data_image['0008']['0016']
+        if (data):
+            return data
         return ""
 
     def GetSOPInstanceUID(self):
@@ -849,12 +749,9 @@ class Parser():
 
         Critical DICOM tag (0x0008, 0x0018). Cannot be edited.
         """
-        tag = gdcm.Tag(0x0008, 0x0018)
-        ds = self.gdcm_reader.GetFile().GetDataSet()
-        if ds.FindDataElement(tag):
-            data = str(ds.GetDataElement(tag).GetValue())
-            if (data):
-                return data
+        data = self.data_image['0008']['0018']
+        if (data):
+            return data
         return ""
 
     def GetSeriesDescription(self):
@@ -863,12 +760,9 @@ class Parser():
 
         DICOM tag (0x0008, 0x1030). Cannot be edited.
         """
-        tag = gdcm.Tag(0x0008, 0x1030)
-        ds = self.gdcm_reader.GetFile().GetDataSet()
-        if ds.FindDataElement(tag):
-            data = str(ds.GetDataElement(tag).GetValue())
-            if (data):
-                return data
+        data = self.data_image['0008']['1030']
+        if (data):
+            return data
         return ""
 
     def GetStudyInstanceUID(self):
@@ -879,12 +773,9 @@ class Parser():
 
         Critical DICOM Tag (0x0020,0x000D). Cannot be edited.
         """
-        tag = gdcm.Tag(0x0020,0x000D)
-        ds = self.gdcm_reader.GetFile().GetDataSet()
-        if ds.FindDataElement(tag):
-            data = str(ds.GetDataElement(tag).GetValue())
-            if (data):
-                return data
+        data = self.data_image['0020']['000D'] 
+        if (data):
+            return data
         return ""
 
     def GetImagePatientOrientation(self):
@@ -898,12 +789,9 @@ class Parser():
 
         Critical DICOM tag (0x0020,0x0037). Cannot be edited.
         """
-        tag = gdcm.Tag(0x0020,0x0037)
-        ds = self.gdcm_reader.GetFile().GetDataSet()
-        if ds.FindDataElement(tag):
-            data = str(ds.GetDataElement(tag).GetValue())
-            if (data):
-                return [float(value) for value in data.split('\\')]
+        data = self.data_image['0020']['0037']
+        if (data):
+            return [float(value) for value in data.split('\\')]
         return [1.0, 0.0, 0.0, 0.0, 1.0, 0.0]
 
     def GetImageColumnOrientation(self):
@@ -915,12 +803,9 @@ class Parser():
 
         Critical DICOM tag (0x0020,0x0037). Cannot be edited.
         """
-        tag = gdcm.Tag(0x0020,0x0037)
-        ds = self.gdcm_reader.GetFile().GetDataSet()
-        if ds.FindDataElement(tag):
-            data = str(ds.GetDataElement(tag).GetValue())
-            if (data):
-                return [float(value) for value in data.split('\\')[3:6]]
+        data = self.data_image['0020']['0037']
+        if (data):
+            return [float(value) for value in data.split('\\')[3:6]]
         return [0.0, 1.0, 0.0]
 
     def GetImageRowOrientation(self):
@@ -932,12 +817,9 @@ class Parser():
 
         Critical DICOM tag (0x0020,0x0037). Cannot be edited.
         """
-        tag = gdcm.Tag(0x0020,0x0037)
-        ds = self.gdcm_reader.GetFile().GetDataSet()
-        if ds.FindDataElement(tag):
-            data = str(ds.GetDataElement(tag).GetValue())
-            if (data):
-                return [float(value) for value in data.split('\\')[0:3]]
+        data = self.data_image['0020']['0037']
+        if (data):
+            return [float(value) for value in data.split('\\')[0:3]]
         return [1.0, 0.0, 0.0]
 
     def GetFrameReferenceUID(self):
@@ -947,12 +829,9 @@ class Parser():
 
         Critical DICOM tag (0x0020,0x0052). Cannot be edited.
         """
-        tag = gdcm.Tag(0x0020,0x0052)
-        ds = self.gdcm_reader.GetFile().GetDataSet()
-        if ds.FindDataElement(tag):
-            data = str(ds.GetDataElement(tag).GetValue())
-            if (data):
-                return data
+        data = self.data_image['0020']['0052']
+        if (data):
+            return data
         return ""
 
     def GetImageSamplesPerPixel(self):
@@ -1026,12 +905,12 @@ class Parser():
 
         DICOM standard tag (0x0018, 0x1030) was used.
         """
-        tag = gdcm.Tag(0x0018, 0x1030)
-        ds = self.gdcm_reader.GetFile().GetDataSet()
-        if ds.FindDataElement(tag):
-            data = str(ds.GetDataElement(tag).GetValue())
+        try:
+            data = self.data_image['0018']['1030']
             if (data):
                 return data
+        except(KeyError):
+            return ""
         return ""
 
     def GetAcquisionSequence(self):
@@ -1050,12 +929,9 @@ class Parser():
 
         Critical DICOM tag (0x0018, 0x0020). Cannot be edited.
         """
-        tag = gdcm.Tag(0x0018, 0x0020)
-        ds = self.gdcm_reader.GetFile().GetDataSet()
-        if ds.FindDataElement(tag):
-            data = str(ds.GetDataElement(tag).GetValue())
-            if (data):
-                return data
+        data = self.data_image['0018']['0020']
+        if (data):
+            return data
         return ""
 
     def GetInstitutionName(self):
@@ -1065,14 +941,10 @@ class Parser():
 
         DICOM standard tag (0x0008, 0x0080) was used.
         """
-        tag = gdcm.Tag(0x0008, 0x0080)
-        ds = self.gdcm_reader.GetFile().GetDataSet()
-        if ds.FindDataElement(tag):
-            data =  str(ds.GetDataElement(tag).GetValue())
-            if (data):
+        data = self.data_image['0008']['0080']    
+        if (data):
                 return data
-
-        0x0008, 0x0081
+        return ""
 
     def GetInstitutionAddress(self):
         """
@@ -1083,12 +955,9 @@ class Parser():
 
         DICOM standard tag (0x0008, 0x0081) was used.
         """
-        tag = gdcm.Tag(0x0008, 0x0081)
-        ds = self.gdcm_reader.GetFile().GetDataSet()
-        if ds.FindDataElement(tag):
-            data =  str(ds.GetDataElement(tag).GetValue())
-            if (data):
-                return data
+        data = self.data_image['0008']['0081']
+        if (data):
+            return data
         return ""
 
     def GetStudyInstanceUID(self):
@@ -1099,12 +968,9 @@ class Parser():
 
         Critical DICOM tag (0x0020, 0x000D). Cannot be edited.
         """
-        tag = gdcm.Tag(0x0020, 0x000D)
-        ds = self.gdcm_reader.GetFile().GetDataSet()
-        if ds.FindDataElement(tag):
-            data = str(ds.GetDataElement(tag).GetValue())
-            if (data):
-                return data
+        data = self.data_image['0020']['000D']
+        if (data):
+            return data
         return ""
 
     def GetPatientOccupation(self):
@@ -1114,12 +980,9 @@ class Parser():
 
         DICOM standard tag (0x0010,0x2180) was used.
         """
-        tag = gdcm.Tag(0x0010, 0x2180)
-        ds = self.gdcm_reader.GetFile().GetDataSet()
-        if ds.FindDataElement(tag):
-            data = str(ds.GetDataElement(tag).GetValue())
-            if (data):
-                return data
+        data = self.data_image['0010']['2180']
+        if (data):
+            return data
         return ""
 
     def _GetPixelRepresentation(self):
@@ -1147,13 +1010,13 @@ class Parser():
 
         DICOM standard tag (0x0028, 0x0100) was used.
         """
-        tag = gdcm.Tag(0x0028, 0x0100)
-        sf = gdcm.StringFilter()
-        sf.SetFile(self.gdcm_reader.GetFile())
-        res = sf.ToStringPair(tag)
-
-        if (res[1]):
-            return int(res[1])
+        #tag = gdcm.Tag(0x0028, 0x0100)
+        #sf = gdcm.StringFilter()
+        #sf.SetFile(self.gdcm_reader.GetFile())
+        #res = sf.ToStringPair(tag)
+        data = self.data_image['0028']['0100']
+        if (data):
+            return int(data)
         return ""
     
     
@@ -1166,12 +1029,9 @@ class Parser():
         DICOM standard tag (0x0010,0x0030) was used.
         """
         # TODO: internationalize data
-        tag = gdcm.Tag(0x0010, 0x0030)
-        ds = self.gdcm_reader.GetFile().GetDataSet()
-        if ds.FindDataElement(tag):
-            data =  ds.GetDataElement(tag).GetValue()
-            if (data) and (data != 'None'):
-                return self.__format_date(str(data))
+        data = self.data_image['0010']['0030']
+        if (data) and (data != 'None'):
+            return self.__format_date(str(data))
         return ""
 
 
@@ -1182,12 +1042,9 @@ class Parser():
 
         DICOM standard tag (0x0020,0x0010) was used.
         """
-        tag = gdcm.Tag(0x0020, 0x0010)
-        ds = self.gdcm_reader.GetFile().GetDataSet()
-        if ds.FindDataElement(tag):
-            data =  ds.GetDataElement(tag).GetValue()
-            if (data):
-                return str(data)
+        data = self.data_image['0020']['0010']
+        if (data):
+            return str(data)
         return ""
         
     def GetAcquisitionGantryTilt(self):
@@ -1198,14 +1055,9 @@ class Parser():
 
         DICOM standard tag (0x0018,0x1120) was used.
         """
-        tag = gdcm.Tag(0x0018, 0x1120)
-        ds = self.gdcm_reader.GetFile().GetDataSet()
-        if ds.FindDataElement(tag):
-            data = ds.GetDataElement(tag).GetValue()
-    
-            if (data):
-                return float(str(data))
-
+        data = self.data_image['0018']['1120']
+        if (data):
+            return float(str(data))
         return 0.0
 
     def GetPatientGender(self):
@@ -1218,13 +1070,9 @@ class Parser():
 
         DICOM standard tag (0x0010,0x0040) was used.
         """
-        tag = gdcm.Tag(0x0010, 0x0040)
-        ds = self.gdcm_reader.GetFile().GetDataSet()
-        if ds.FindDataElement(tag):
-            data = ds.GetDataElement(tag).GetValue()
-
-            if (data):
-                return str(data)
+        data = self.data_image['0010']['0040']
+        if (data):
+            return str(data)
         return ""
 
     def GetPatientAge(self):
@@ -1235,17 +1083,13 @@ class Parser():
 
         DICOM standard tag (0x0010, 0x1010) was used.
         """
-        tag = gdcm.Tag(0x0010, 0x1010)
-        ds = self.gdcm_reader.GetFile().GetDataSet()
-        if ds.FindDataElement(tag):
-            data = str(ds.GetDataElement(tag).GetValue())
-    
-            if (data):
-                age = (data.split('Y')[0])
-                try:
-                    return int(age)
-                except ValueError:
-                    return age
+        data = self.data_image['0010']['0010']
+        if (data):
+            age = (data.split('Y')[0])
+            try:
+                return int(age)
+            except ValueError:
+                return age
         return ""
 
     def GetPatientName(self):
@@ -1255,16 +1099,12 @@ class Parser():
 
         DICOM standard tag (0x0010,0x0010) was used.
         """
-        tag = gdcm.Tag(0x0010, 0x0010)
-        ds = self.gdcm_reader.GetFile().GetDataSet()
-        if ds.FindDataElement(tag):
-            data = str(ds.GetDataElement(tag).GetValue())
-
-            if (data):
-                name = data.strip()
-                encoding = self.GetEncoding()
-                # Returns a unicode decoded in the own dicom encoding
-                return name.decode(encoding)
+        data = self.data_image['0010']['0010']
+        if (data):
+            name = data.strip()
+            encoding = self.GetEncoding()
+            # Returns a unicode decoded in the own dicom encoding
+            return name.decode(encoding)
         return ""
 
     def GetPatientID(self):
@@ -1275,15 +1115,11 @@ class Parser():
 
         DICOM standard tag (0x0010,0x0020) was used.
         """
-        tag = gdcm.Tag(0x0010, 0x0020)
-        ds = self.gdcm_reader.GetFile().GetDataSet()
-        if ds.FindDataElement(tag):
-            data = str(ds.GetDataElement(tag).GetValue())
-
-            if (data):
-                encoding = self.GetEncoding()
-                # Returns a unicode decoded in the own dicom encoding
-                return data.decode(encoding)
+        data = self.data_image['0010']['0020']
+        if (data):
+            encoding = self.GetEncoding()
+            # Returns a unicode decoded in the own dicom encoding
+            return data.decode(encoding)
         return ""
 
 
@@ -1295,13 +1131,9 @@ class Parser():
 
         DICOM standard tag (0x0018,0x1151) was used.
         """
-        tag = gdcm.Tag(0x0018, 0x1151)
-        ds = self.gdcm_reader.GetFile().GetDataSet()
-        if ds.FindDataElement(tag):
-            data = str(ds.GetDataElement(tag).GetValue())
-            
-            if (data):
-                return data
+        data = self.data_image['0018']['1151']
+        if (data):
+            return data
         return ""
 
     def GetExposureTime(self):
@@ -1312,13 +1144,9 @@ class Parser():
 
         DICOM standard tag (0x0018, 0x1152) was used.
         """
-        tag = gdcm.Tag(0x0018, 0x1152)
-        ds = self.gdcm_reader.GetFile().GetDataSet()
-        if ds.FindDataElement(tag):
-            data = str(ds.GetDataElement(tag).GetValue())
-
-            if (data):
-                return float(data)
+        data = self.data_image['0018']['1152']
+        if (data):
+            return float(data)
         return ""
 
     def GetEquipmentKVP(self):
@@ -1329,13 +1157,9 @@ class Parser():
 
         DICOM standard tag (0x0018,0x0060) was used.
         """
-        tag = gdcm.Tag(0x0018, 0x0060)
-        ds = self.gdcm_reader.GetFile().GetDataSet()
-        if ds.FindDataElement(tag):
-            data = str(ds.GetDataElement(tag).GetValue())
-
-            if (data):
-                return float(data)
+        data = self.data_image['0018']['0060']
+        if (data):
+            return float(data)
         return ""
 
     def GetImageThickness(self):
@@ -1346,12 +1170,9 @@ class Parser():
 
         DICOM standard tag (0x0018,0x0050) was used.
         """
-        tag = gdcm.Tag(0x0018, 0x0050)
-        ds = self.gdcm_reader.GetFile().GetDataSet()
-        if ds.FindDataElement(tag):
-            data = str(ds.GetDataElement(tag).GetValue())
-            if (data):
-                return float(data)
+        data = self.data_image['0018']['0050']
+        if (data):
+            return float(data)
         return 0
 
     def GetImageConvolutionKernel(self):
@@ -1364,13 +1185,9 @@ class Parser():
 
         DICOM standard tag (0x0018,0x1210) was used.
         """
-        tag = gdcm.Tag(0x0018, 0x1210)
-        ds = self.gdcm_reader.GetFile().GetDataSet()
-        if ds.FindDataElement(tag):
-            data = str(ds.GetDataElement(tag).GetValue())
-
-            if (data):
-                return data
+        data = self.data_image['0018']['1210']
+        if (data):
+            return data
         return ""
 
     def GetEquipmentInstitutionName(self):
@@ -1381,13 +1198,9 @@ class Parser():
 
         DICOM standard tag (0x0008,0x0080) was used.
         """
-        tag = gdcm.Tag(0x0008, 0x0080)
-        ds = self.gdcm_reader.GetFile().GetDataSet()
-        if ds.FindDataElement(tag):
-            data = str(ds.GetDataElement(tag).GetValue())
-
-            if (data):
-                return data
+        data = self.data_image['0008']['0080']
+        if (data):
+            return data
         return ""
 
     def GetStationName(self):
@@ -1398,13 +1211,9 @@ class Parser():
 
         DICOM standard tag (0x0008, 0x1010) was used.
         """
-        tag = gdcm.Tag(0x0008, 0x1010)
-        ds = self.gdcm_reader.GetFile().GetDataSet()
-        if ds.FindDataElement(tag):
-            data = str(ds.GetDataElement(tag).GetValue())
-
-            if (data):
-                return data
+        data = self.data_image['0008']['1010']
+        if (data):
+            return data
         return ""
 
     def GetManufacturerModelName(self):
@@ -1415,13 +1224,9 @@ class Parser():
 
         DICOM standard tag (0x0008,0x1090) was used.
         """
-        tag = gdcm.Tag(0x0008, 0x1090)
-        ds = self.gdcm_reader.GetFile().GetDataSet()
-        if ds.FindDataElement(tag):
-            data = str(ds.GetDataElement(tag).GetValue())
-
-            if (data):
-                return data
+        data = self.data_image['0008']['1090']
+        if (data):
+            return data
         return ""
 
     def GetEquipmentManufacturer(self):
@@ -1431,13 +1236,9 @@ class Parser():
 
         DICOM standard tag (0x0008, 0x1010) was used.
         """
-        tag = gdcm.Tag(0x0008, 0x1010)
-        ds = self.gdcm_reader.GetFile().GetDataSet()
-        if ds.FindDataElement(tag):
-            data = str(ds.GetDataElement(tag).GetValue())
-
-            if (data):
-                return data
+        data = self.data_image['0008']['1010']
+        if (data):
+            return data
         return ""
 
     def GetAcquisitionModality(self):
@@ -1449,13 +1250,9 @@ class Parser():
 
         DICOM standard tag (0x0008,0x0060) was used.
         """
-        tag = gdcm.Tag(0x0008, 0x0060)
-        ds = self.gdcm_reader.GetFile().GetDataSet()
-        if ds.FindDataElement(tag):
-            data = str(ds.GetDataElement(tag).GetValue())
-
-            if (data):
-                return data
+        data = self.data_image['0008']['0060']
+        if (data):
+            return data
         return ""
 
 
@@ -1466,13 +1263,13 @@ class Parser():
 
         DICOM standard tag (0x0020,0x0013) was used.
         """
-        tag = gdcm.Tag(0x0020, 0x0013)
-        ds = self.gdcm_reader.GetFile().GetDataSet()
-        if ds.FindDataElement(tag):
-            data = str(ds.GetDataElement(tag).GetValue())
+        try:
+            data = self.data_image['0020']['0013']
+        except(KeyError):
+            return ""
 
-            if (data):
-                return int(data)
+        if (data):
+            return int(data)
         return ""
 
     def GetStudyDescription(self):
@@ -1482,15 +1279,13 @@ class Parser():
 
         DICOM standard tag (0x0008,0x1030) was used.
         """
-        tag = gdcm.Tag(0x0008, 0x1030)
-        ds = self.gdcm_reader.GetFile().GetDataSet()
-        if ds.FindDataElement(tag):
-            data = str(ds.GetDataElement(tag).GetValue())
-
+        try:
+            data = self.data_image['0008']['1030']
             if (data):
                 encoding = self.GetEncoding()
                 return data.decode(encoding)
-        return ""
+        except(KeyError):
+            return ""
 
     def GetStudyAdmittingDiagnosis(self):
         """
@@ -1515,27 +1310,27 @@ class Parser():
         Return a string with a description of the series.
         DICOM standard tag (0x0008, 0x103E) was used.
         """
-        tag = gdcm.Tag(0x0008, 0x103E)
-        ds = self.gdcm_reader.GetFile().GetDataSet()
-        if ds.FindDataElement(tag):
-            data =  str(ds.GetDataElement(tag).GetValue())
+        try:
+            data = self.data_image['0008']['103E']
             if data == "None":
                 return _("unnamed")
             if (data):
                 return data
-        return _("unnamed")
+        except(KeyError):
+            return _("unnamed")
 
     def GetImageTime(self):
         """
         Return the image time.
         DICOM standard tag (0x0008,0x0033) was used.
         """
-        tag = gdcm.Tag(0x0008, 0x0033)
-        ds = self.gdcm_reader.GetFile().GetDataSet()
-        if ds.FindDataElement(tag):
-            date = str(ds.GetDataElement(tag).GetValue())
-            if (date) and (date != 'None'):
-                return  self.__format_time(date)
+        try:
+            data = self.data_image['0008']['0033']
+        except(KeyError):
+            return ""
+
+        if (data) and (data != 'None'):
+            return  self.__format_time(data)
         return ""
 
     def GetAcquisitionTime(self):
@@ -1543,12 +1338,9 @@ class Parser():
         Return the acquisition time.
         DICOM standard tag (0x0008,0x032) was used.
         """
-        tag = gdcm.Tag(0x0008, 0x0032)
-        ds = self.gdcm_reader.GetFile().GetDataSet()
-        if ds.FindDataElement(tag):
-            data = str(ds.GetDataElement(tag).GetValue())
-            if (data):
-                return self.__format_time(data)
+        data = self.data_image['0008']['0032']
+        if (data):
+            return self.__format_time(data)
         return ""
 
     def GetSerieNumber(self):
@@ -1556,12 +1348,9 @@ class Parser():
         Return the serie number
         DICOM standard tag (0x0020, 0x0011) was used.
         """
-        tag = gdcm.Tag(0x0020, 0x0011)
-        ds = self.gdcm_reader.GetFile().GetDataSet()
-        if ds.FindDataElement(tag):
-            data = str(ds.GetDataElement(tag).GetValue())
-            if (data):
-                return data
+        data = self.data_image['0020']['0011']
+        if (data):
+            return data
         return ""
 
     def GetEncoding(self):
@@ -1569,18 +1358,18 @@ class Parser():
         Return the dicom encoding
         DICOM standard tag (0x0008, 0x0005) was used.
         """
-        tag = gdcm.Tag(0x0008, 0x0005)
-        ds = self.gdcm_reader.GetFile().GetDataSet()
-        if ds.FindDataElement(tag):
-            encoding = str(ds.GetDataElement(tag).GetValue())
+        try:
+            encoding = self.data_image['0008']['0005']
+        except(KeyError):
+            return 'ISO_IR_100'
 
-            if encoding != None and encoding != "None":
+        if encoding != None and encoding != "None":
 
-                #Problem with 0051 anonymized
-                if (encoding.split(":"))[0] == "Loaded":
-                    return 'ISO_IR 100'
-                else:
-                    return encoding
+            #Problem with 0051 anonymized
+            if (encoding.split(":"))[0] == "Loaded":
+                return 'ISO_IR 100'
+            else:
+                return encoding
         return 'ISO_IR 100'
 
 
@@ -1924,7 +1713,7 @@ class Image(object):
         self.time = parser.GetImageTime()
         self.type = parser.GetImageType()
         self.size = (parser.GetDimensionX(), parser.GetDimensionY())
-        self.imagedata = parser.GetImageData()
+        #self.imagedata = parser.GetImageData()
         self.bits_allocad = parser._GetBitsAllocated()
 
         if (parser.GetImageThickness()):

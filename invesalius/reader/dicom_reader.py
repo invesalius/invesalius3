@@ -31,6 +31,12 @@ import dicom
 import dicom_grouper
 import session
 
+import glob
+import utils
+
+
+import plistlib
+
 def ReadDicomGroup(dir_):
 
     patient_group = GetDicomGroups(dir_)
@@ -73,6 +79,7 @@ def SortFiles(filelist, dicom):
 
     return filelist
 
+"""
 class LoadDicom(threading.Thread):
     def __init__(self, grouper, q, l):
         threading.Thread.__init__(self)
@@ -87,66 +94,242 @@ class LoadDicom(threading.Thread):
             if not filepath:
                 break
             parser = dicom.Parser()
-            if parser.SetFileName(filepath):
+            #if parser.SetFileName(filepath):
                 dcm = dicom.Dicom()
                 self.l.acquire()
                 dcm.SetParser(parser)
                 grouper.AddFile(dcm)
                 self.l.release()
+"""
+
+"""
+class LoadDicom():
+    def __init__(self, grouper, dicom_dict):
+        self.grouper = grouper
+        self.dicom_dict = dicom_dict
+
+    def Start(self):
+        images = self.dicom_dict['data']
+                
+        grouper = self.grouper
+        
+        for x in images.keys():
+            data_image = images[x]
+            parser = dicom.Parser()
+            parser.SetDataImage(data_image)
+
+            dcm = dicom.Dicom()
+            dcm.SetParser(parser)
+            grouper.AddFile(dcm)
+                        
+
+        #while 1:
+            #filepath = path
+            #if not filepath:
+            #   break
+            #parser = dicom.Parser()
+            #if parser.SetFileName(filepath):
+            #    dcm = dicom.Dicom()
+            #    dcm.SetParser(parser)
+            #    grouper.AddFile(dcm)
+"""
 
 
-def yGetDicomGroups(directory, recursive=True, gui=True):
+def GetImageOrientationLabel(filename):
+    """
+    Return Label regarding the orientation of
+    an image. (AXIAL, SAGITTAL, CORONAL,
+    OBLIQUE or UNKNOWN)
+    """
+    gdcm_reader = gdcm.ImageReader()
+    gdcm_reader.SetFileName(filename)
+
+    img = gdcm_reader.GetImage()
+    direc_cosines = img.GetDirectionCosines()
+    orientation = gdcm.Orientation()
+    try:
+        type = orientation.GetType(tuple(direc_cosines))
+    except TypeError:
+        type = orientation.GetType(direc_cosines)
+    label = orientation.GetLabel(type)
+
+    if (label):
+        return label
+    else:
+        return ""
+
+
+def GetDicomGroups(directory, recursive=True, gui=True):
     """
     Return all full paths to DICOM files inside given directory.
     """
     nfiles = 0
     # Find total number of files
     if recursive:
-        for dirpath, dirnames, filenames in os.walk(directory):
-            nfiles += len(filenames)
+        
+        folders = [f[0] for f in os.walk(directory)]
+
+        tag_labels = {}
+        main_dict = {}
+        dict_file = {}
+        
+        for folder in folders:
+            files = glob.glob(os.path.join(folder, "*"))
+        
+            for filename in files:
+            
+                # Read file
+                reader = gdcm.Reader()
+                reader.SetFileName(filename)
+                
+                if (reader.Read()):
+                    
+                    file = reader.GetFile()
+                
+                    # Retrieve data set
+                    dataSet = file.GetDataSet()
+                
+                    # Retrieve header
+                    header = file.GetHeader()
+                    stf = gdcm.StringFilter()
+
+                    field_dict = {}
+                    data_dict = {}
+
+
+                    tag = gdcm.Tag(0x0008, 0x0005)
+                    ds = reader.GetFile().GetDataSet()
+                    if ds.FindDataElement(tag):
+                        encoding = str(ds.GetDataElement(tag).GetValue())
+                        if not(encoding != None and encoding != "None" and encoding != "Loaded"):
+                            encoding = "ISO_IR 100"
+                    else:
+                        encoding = "ISO_IR_100" 
+                    # Iterate through the Header
+                    iterator = header.GetDES().begin()
+                    while (not iterator.equal(header.GetDES().end())):
+                        dataElement = iterator.next()
+                        stf.SetFile(file)
+                        tag = dataElement.GetTag()
+                        data = stf.ToStringPair(tag)
+                        stag = tag.PrintAsPipeSeparatedString()
+                        
+                        group = stag.split("|")[0][1:]
+                        field = stag.split("|")[1][:-1]
+                        tag_labels[stag] = data[0]
+                        
+                        if not group in data_dict.keys():
+                            data_dict[group] = {}
+
+                        if not(utils.VerifyInvalidPListCharacter(data[1])):
+                            data_dict[group][field] = data[1].decode(encoding)
+                        else:
+                            data_dict[group][field] = "Invalid Character"
+
+                    
+                    # Iterate through the Data set
+                    iterator = dataSet.GetDES().begin()
+                    while (not iterator.equal(dataSet.GetDES().end())):
+                        dataElement = iterator.next()
+                        
+                        stf.SetFile(file)
+                        tag = dataElement.GetTag()
+                        data = stf.ToStringPair(tag)
+                        stag = tag.PrintAsPipeSeparatedString()
+
+                        group = stag.split("|")[0][1:]
+                        field = stag.split("|")[1][:-1]
+                        tag_labels[stag] = data[0]
+
+                        if not group in data_dict.keys():
+                            data_dict[group] = {}
+
+                        if not(utils.VerifyInvalidPListCharacter(data[1])):
+                            data_dict[group][field] = data[1].decode(encoding)
+                        else:
+                            data_dict[group][field] = "Invalid Character"
+                    
+
+                    
+                    # ----------   Refactory --------------------------------------
+                    data_dict['invesalius'] = {'orientation_label' : GetImageOrientationLabel(filename)}
+
+                    # -------------------------------------------------------------
+    
+                    dict_file[os.path.abspath(filename)] = data_dict
+
+        main_dict = dict(
+                        data  = dict_file,
+                        labels  = tag_labels)
+   
+        #plistlib.writePlist(main_dict, ".//teste.plist")
+ 
+        images = main_dict['data']
+        grouper = dicom_grouper.DicomPatientGrouper()       
+        
+        for x in images.keys():
+            data_image = images[x]
+            
+            if (data_image['0002']['0002'] != "1.2.840.10008.1.3.10"): #DICOMDIR
+                parser = dicom.Parser()
+                parser.SetDataImage(data_image, x)
+            
+                dcm = dicom.Dicom()
+                dcm.SetParser(parser)
+                grouper.AddFile(dcm)
+
+        grouper.Update()
+        
+
+
+        return grouper.GetPatientsGroups()
+            #print "_____________________________________"
+            #print dirpath
+            #nfiles += len(filenames)
     else:
-        dirpath, dirnames, filenames = os.walk(directory)
-        nfiles = len(filenames)
+        pass
+        #dirpath, dirnames, filenames = os.walk(directory)
+        #nfiles = len(filenames)
 
-    counter = 0
-    grouper = dicom_grouper.DicomPatientGrouper()
-    q = Queue.Queue()
-    l = threading.Lock()
-    threads = []
-    for i in xrange(cpu_count()):
-        t = LoadDicom(grouper, q, l)
-        t.start()
-        threads.append(t)
-    # Retrieve only DICOM files, splited into groups
-    if recursive:
-        for dirpath, dirnames, filenames in os.walk(directory):
-            for name in filenames:
-                filepath = os.path.join(dirpath, name)
-                counter += 1
-                if gui:
-                    yield (counter,nfiles)
-                q.put(filepath)
-    else:
-        dirpath, dirnames, filenames = os.walk(directory)
-        for name in filenames:
-            filepath = str(os.path.join(dirpath, name))
-            counter += 1
-            if gui:
-                yield (counter,nfiles)
-            q.put(filepath)
+    #counter = 0
+    #grouper = dicom_grouper.DicomPatientGrouper()
+    #q = Queue.Queue()
+    #l = threading.Lock()
+    #threads = []
+    #for i in xrange(cpu_count()):
+    #    t = LoadDicom(grouper, q, l)
+    #    t.start()
+    #    threads.append(t)
+    ## Retrieve only DICOM files, splited into groups
+    #if recursive:
+    #    for dirpath, dirnames, filenames in os.walk(directory):
+    #        for name in filenames:
+    #            filepath = os.path.join(dirpath, name)
+    #            counter += 1
+    #            if gui:
+    #                yield (counter,nfiles)
+    #            q.put(filepath)
+    #else:
+    #    dirpath, dirnames, filenames = os.walk(directory)
+    #    for name in filenames:
+    #        filepath = str(os.path.join(dirpath, name))
+    #        counter += 1
+    #        if gui:
+    #            yield (counter,nfiles)
+    #        q.put(filepath)
 
-    for t in threads:
-        q.put(0)
+    #for t in threads:
+    #    q.put(0)
 
-    for t in threads:
-        t.join()
+    #for t in threads:
+    #    t.join()
 
-    #TODO: Is this commented update necessary?
-    #grouper.Update()
-    yield grouper.GetPatientsGroups()
+    ##TODO: Is this commented update necessary?
+    ##grouper.Update()
+    #yield grouper.GetPatientsGroups()
 
-def GetDicomGroups(directory, recursive=True):
-    return yGetDicomGroups(directory, recursive, gui=False).next()
+#def GetDicomGroups(directory, recursive=True):
+#    return yGetDicomGroups(directory, recursive, gui=False).next()
 
 
 class ProgressDicomReader:
@@ -158,7 +341,7 @@ class ProgressDicomReader:
         self.stoped = True
 
     def SetWindowEvent(self, frame):
-        self.frame = frame
+        self.frame = frame          
 
     def SetDirectoryPath(self, path,recursive=True):
         self.running = True
@@ -193,4 +376,5 @@ class ProgressDicomReader:
         #the load, ensure that dicomdialog is closed
         if(self.stoped):
             self.UpdateLoadFileProgress(None)
-            self.stoped = False
+            self.stoped = False   
+
