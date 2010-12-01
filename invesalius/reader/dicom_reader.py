@@ -259,8 +259,16 @@ def GetDicomGroups(directory, recursive=True, gui=True):
                     # -------------------------------------------------------------
                     filepath = os.path.abspath(filename) 
                     dict_file[filepath] = data_dict
-       
-                    if (data_dict['0002']['0002'] != "1.2.840.10008.1.3.10"): #DICOMDIR
+                    
+                    #----------  Verify is DICOMDir -------------------------------
+                    is_dicom_dir = 1
+                    try: 
+                        if (data_dict['0002']['0002'] != "1.2.840.10008.1.3.10"): #DICOMDIR
+                            is_dicom_dir = 0
+                    except(KeyError):
+                            is_dicom_dir = 0
+                                                
+                    if not(is_dicom_dir):
                         parser = dicom.Parser()
                         parser.SetDataImage(dict_file[filepath], filepath)
                
