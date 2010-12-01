@@ -79,60 +79,132 @@ def SortFiles(filelist, dicom):
 
     return filelist
 
-"""
+tag_labels = {}
+main_dict = {}
+dict_file = {}
+
 class LoadDicom(threading.Thread):
+    
     def __init__(self, grouper, q, l):
         threading.Thread.__init__(self)
         self.grouper = grouper
         self.q = q
         self.l = l
+    
     def run(self):
+
         grouper = self.grouper
         q = self.q
+        
         while 1:
+            
             filepath = q.get()
             if not filepath:
                 break
-            parser = dicom.Parser()
-            #if parser.SetFileName(filepath):
-                dcm = dicom.Dicom()
-                self.l.acquire()
-                dcm.SetParser(parser)
-                grouper.AddFile(dcm)
-                self.l.release()
-"""
-
-"""
-class LoadDicom():
-    def __init__(self, grouper, dicom_dict):
-        self.grouper = grouper
-        self.dicom_dict = dicom_dict
-
-    def Start(self):
-        images = self.dicom_dict['data']
+            
+            reader = gdcm.Reader()
+            reader.SetFileName(filepath)
+            
+            if (reader.Read()):
                 
-        grouper = self.grouper
-        
-        for x in images.keys():
-            data_image = images[x]
-            parser = dicom.Parser()
-            parser.SetDataImage(data_image)
+                file = reader.GetFile()
+            
+                # Retrieve data set
+                dataSet = file.GetDataSet()
+            
+                # Retrieve header
+                header = file.GetHeader()
+                stf = gdcm.StringFilter()
 
-            dcm = dicom.Dicom()
-            dcm.SetParser(parser)
-            grouper.AddFile(dcm)
-                        
+                field_dict = {}
+                data_dict = {}
 
-        #while 1:
-            #filepath = path
-            #if not filepath:
-            #   break
-            #parser = dicom.Parser()
-            #if parser.SetFileName(filepath):
-            #    dcm = dicom.Dicom()
-            #    dcm.SetParser(parser)
-            #    grouper.AddFile(dcm)
-"""
+
+                tag = gdcm.Tag(0x0008, 0x0005)
+                ds = reader.GetFile().GetDataSet()
+                if ds.FindDataElement(tag):
+                    encoding = str(ds.GetDataElement(tag).GetValue())
+                    if not(encoding != None and encoding != "None" and encoding != "Loaded"):
+                        encoding = "ISO_IR 100"
+                else:
+                    encoding = "ISO_IR_100" 
+                # Iterate through the Header
+                iterator = header.GetDES().begin()
+                while (not iterator.equal(header.GetDES().end())):
+                    dataElement = iterator.next()
+                    stf.SetFile(file)
+                    tag = dataElement.GetTag()
+                    data = stf.ToStringPair(tag)
+                    stag = tag.PrintAsPipeSeparatedString()
+                    
+                    group = stag.split("|")[0][1:]
+                    field = stag.split("|")[1][:-1]
+                    tag_labels[stag] = data[0]
+                    
+                    if not group in data_dict.keys():
+                        data_dict[group] = {}
+
+                    if not(utils.VerifyInvalidPListCharacter(data[1])):
+                        data_dict[group][field] = data[1].decode(encoding)
+                    else:
+                        data_dict[group][field] = "Invalid Character"
+
+                
+                # Iterate through the Data set
+                iterator = dataSet.GetDES().begin()
+                while (not iterator.equal(dataSet.GetDES().end())):
+                    dataElement = iterator.next()
+                    
+                    stf.SetFile(file)
+                    tag = dataElement.GetTag()
+                    data = stf.ToStringPair(tag)
+                    stag = tag.PrintAsPipeSeparatedString()
+
+                    group = stag.split("|")[0][1:]
+                    field = stag.split("|")[1][:-1]
+                    tag_labels[stag] = data[0]
+
+                    if not group in data_dict.keys():
+                        data_dict[group] = {}
+
+                    if not(utils.VerifyInvalidPListCharacter(data[1])):
+                        data_dict[group][field] = data[1].decode(encoding)
+                    else:
+                        data_dict[group][field] = "Invalid Character"
+                
+
+                
+                # ----------   Refactory --------------------------------------
+                data_dict['invesalius'] = {'orientation_label' : GetImageOrientationLabel(filepath)}
+
+                # -------------------------------------------------------------
+                dict_file[filepath] = data_dict
+                
+                #----------  Verify is DICOMDir -------------------------------
+                is_dicom_dir = 1
+                try: 
+                    if (data_dict['0002']['0002'] != "1.2.840.10008.1.3.10"): #DICOMDIR
+                        is_dicom_dir = 0
+                except(KeyError):
+                        is_dicom_dir = 0
+                                            
+                if not(is_dicom_dir):
+                    parser = dicom.Parser()
+                    parser.SetDataImage(dict_file[filepath], filepath)
+                    
+                    dcm = dicom.Dicom()
+                    self.l.acquire()
+                    dcm.SetParser(parser)
+                    grouper.AddFile(dcm)
+
+                    self.l.release()
+                
+                #==========  used in test =======================================
+                #main_dict = dict(
+                #                data  = dict_file,
+                #                labels  = tag_labels)
+           
+                #plistlib.writePlist(main_dict, ".//teste.plist")"""
 
 
 def GetImageOrientationLabel(filename):
@@ -158,180 +230,60 @@ def GetImageOrientationLabel(filename):
     else:
         return ""
 
-grouper = dicom_grouper.DicomPatientGrouper() 
 
-def GetDicomGroups(directory, recursive=True, gui=True):
+def yGetDicomGroups(directory, recursive=True, gui=True):
     """
     Return all full paths to DICOM files inside given directory.
     """
-
     nfiles = 0
     # Find total number of files
     if recursive:
-        
-        folders = [f[0] for f in os.walk(directory)]
-
-        tag_labels = {}
-        main_dict = {}
-        dict_file = {}
-        
-        for folder in folders:
-            files = glob.glob(os.path.join(folder, "*"))
-        
-            for filename in files:
-            
-                # Read file
-                reader = gdcm.Reader()
-                reader.SetFileName(filename)
-                
-                if (reader.Read()):
-                    
-                    file = reader.GetFile()
-                
-                    # Retrieve data set
-                    dataSet = file.GetDataSet()
-                
-                    # Retrieve header
-                    header = file.GetHeader()
-                    stf = gdcm.StringFilter()
-
-                    field_dict = {}
-                    data_dict = {}
-
-
-                    tag = gdcm.Tag(0x0008, 0x0005)
-                    ds = reader.GetFile().GetDataSet()
-                    if ds.FindDataElement(tag):
-                        encoding = str(ds.GetDataElement(tag).GetValue())
-                        if not(encoding != None and encoding != "None" and encoding != "Loaded"):
-                            encoding = "ISO_IR 100"
-                    else:
-                        encoding = "ISO_IR_100" 
-                    # Iterate through the Header
-                    iterator = header.GetDES().begin()
-                    while (not iterator.equal(header.GetDES().end())):
-                        dataElement = iterator.next()
-                        stf.SetFile(file)
-                        tag = dataElement.GetTag()
-                        data = stf.ToStringPair(tag)
-                        stag = tag.PrintAsPipeSeparatedString()
-                        
-                        group = stag.split("|")[0][1:]
-                        field = stag.split("|")[1][:-1]
-                        tag_labels[stag] = data[0]
-                        
-                        if not group in data_dict.keys():
-                            data_dict[group] = {}
-
-                        if not(utils.VerifyInvalidPListCharacter(data[1])):
-                            data_dict[group][field] = data[1].decode(encoding)
-                        else:
-                            data_dict[group][field] = "Invalid Character"
-
-                    
-                    # Iterate through the Data set
-                    iterator = dataSet.GetDES().begin()
-                    while (not iterator.equal(dataSet.GetDES().end())):
-                        dataElement = iterator.next()
-                        
-                        stf.SetFile(file)
-                        tag = dataElement.GetTag()
-                        data = stf.ToStringPair(tag)
-                        stag = tag.PrintAsPipeSeparatedString()
-
-                        group = stag.split("|")[0][1:]
-                        field = stag.split("|")[1][:-1]
-                        tag_labels[stag] = data[0]
-
-                        if not group in data_dict.keys():
-                            data_dict[group] = {}
-
-                        if not(utils.VerifyInvalidPListCharacter(data[1])):
-                            data_dict[group][field] = data[1].decode(encoding)
-                        else:
-                            data_dict[group][field] = "Invalid Character"
-                    
-
-                    
-                    # ----------   Refactory --------------------------------------
-                    data_dict['invesalius'] = {'orientation_label' : GetImageOrientationLabel(filename)}
-
-                    # -------------------------------------------------------------
-                    filepath = os.path.abspath(filename) 
-                    dict_file[filepath] = data_dict
-                    
-                    #----------  Verify is DICOMDir -------------------------------
-                    is_dicom_dir = 1
-                    try: 
-                        if (data_dict['0002']['0002'] != "1.2.840.10008.1.3.10"): #DICOMDIR
-                            is_dicom_dir = 0
-                    except(KeyError):
-                            is_dicom_dir = 0
-                                                
-                    if not(is_dicom_dir):
-                        parser = dicom.Parser()
-                        parser.SetDataImage(dict_file[filepath], filepath)
-               
-                        dcm = dicom.Dicom()
-                        dcm.SetParser(parser)
-                        grouper.AddFile(dcm)
-
-                    
-        #------- to test -------------------------------------
-        #main_dict = dict(
-        #                data  = dict_file,
-        #                labels  = tag_labels)
-   
-        #plistlib.writePlist(main_dict, ".//teste.plist")
-
-        grouper.Update()
-        
-        return grouper.GetPatientsGroups()
-    
+        for dirpath, dirnames, filenames in os.walk(directory):
+            nfiles += len(filenames)
     else:
-        pass
-        #dirpath, dirnames, filenames = os.walk(directory)
-        #nfiles = len(filenames)
+        dirpath, dirnames, filenames = os.walk(directory)
+        nfiles = len(filenames)
 
-    #counter = 0
-    #grouper = dicom_grouper.DicomPatientGrouper()
-    #q = Queue.Queue()
-    #l = threading.Lock()
-    #threads = []
-    #for i in xrange(cpu_count()):
-    #    t = LoadDicom(grouper, q, l)
-    #    t.start()
-    #    threads.append(t)
-    ## Retrieve only DICOM files, splited into groups
-    #if recursive:
-    #    for dirpath, dirnames, filenames in os.walk(directory):
-    #        for name in filenames:
-    #            filepath = os.path.join(dirpath, name)
-    #            counter += 1
-    #            if gui:
-    #                yield (counter,nfiles)
-    #            q.put(filepath)
-    #else:
-    #    dirpath, dirnames, filenames = os.walk(directory)
-    #    for name in filenames:
-    #        filepath = str(os.path.join(dirpath, name))
-    #        counter += 1
-    #        if gui:
-    #            yield (counter,nfiles)
-    #        q.put(filepath)
+    counter = 0
+    grouper = dicom_grouper.DicomPatientGrouper() 
+    q = Queue.Queue()
+    l = threading.Lock()
+    threads = []
+    for i in xrange(cpu_count()):
+        t = LoadDicom(grouper, q, l)
+        t.start()
+        threads.append(t)
+    # Retrieve only DICOM files, splited into groups
+    if recursive:
+        for dirpath, dirnames, filenames in os.walk(directory):
+            for name in filenames:
+                filepath = os.path.join(dirpath, name)
+                counter += 1
+                if gui:
+                    yield (counter,nfiles)
+                q.put(filepath)
+    else:
+        dirpath, dirnames, filenames = os.walk(directory)
+        for name in filenames:
+            filepath = str(os.path.join(dirpath, name))
+            counter += 1
+            if gui:
+                yield (counter,nfiles)
+            q.put(filepath)
 
-    #for t in threads:
-    #    q.put(0)
+    for t in threads:
+        q.put(0)
 
-    #for t in threads:
-    #    t.join()
+    for t in threads:
+        t.join()
 
-    ##TODO: Is this commented update necessary?
-    ##grouper.Update()
-    #yield grouper.GetPatientsGroups()
+    #TODO: Is this commented update necessary?
+    #grouper.Update()
+    yield grouper.GetPatientsGroups()
 
-#def GetDicomGroups(directory, recursive=True):
-#    return yGetDicomGroups(directory, recursive, gui=False).next()
+
+def GetDicomGroups(directory, recursive=True):
+    return yGetDicomGroups(directory, recursive, gui=False).next()
 
 
 class ProgressDicomReader:
@@ -364,7 +316,9 @@ class ProgressDicomReader:
             fow.SetFileName(log_path)
             ow = vtk.vtkOutputWindow()
             ow.SetInstance(fow)
-
+        print "=====>>> Progress... dicom_reader.py 367"
+        
+ 
         y = yGetDicomGroups(path, recursive)
         for value_progress in y:
             if not self.running:

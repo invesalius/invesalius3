@@ -120,12 +120,13 @@ class Controller():
             answer = dialog.SaveChangesDialog2(filename)
             if answer:
                 self.ShowDialogSaveProject()
-
         # Import project
         dirpath = dialog.ShowImportDirDialog()
         if dirpath and not os.listdir(dirpath):
+            print "IFFFFFFFfff"
             dialog.ImportEmptyDirectory(dirpath)
         elif dirpath:
+            print "ELSE..........."
             self.StartImportPanel(dirpath)
             ps.Publisher().sendMessage("Load data to import panel", dirpath)
 
