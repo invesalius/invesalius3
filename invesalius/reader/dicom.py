@@ -139,9 +139,10 @@ class Parser():
     #    return None#self.vtkgdcm_reader.GetOutput()
 
 
-    def SetDataImage(self, data_image, filename):
+    def SetDataImage(self, data_image, filename, thumbnail_path):
         self.data_image = data_image
         self.filename = self.filepath = filename    
+        self.thumbnail_path = thumbnail_path
 
     def __format_time(self,value):
         sp1 = value.split(".")
@@ -1931,6 +1932,7 @@ class Image(object):
         self.size = (parser.GetDimensionX(), parser.GetDimensionY())
         #self.imagedata = parser.GetImageData()
         self.bits_allocad = parser._GetBitsAllocated()
+        self.thumbnail_path = parser.thumbnail_path
 
         if (parser.GetImageThickness()):
             try:

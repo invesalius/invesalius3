@@ -19,10 +19,12 @@
 import os
 import Queue
 import threading
+import tempfile
 
 from multiprocessing import cpu_count
 
 import vtk
+import vtkgdcm
 import gdcm
 import wx.lib.pubsub as ps
 
@@ -106,9 +108,8 @@ class LoadDicom(threading.Thread):
             reader.SetFileName(str(filepath))
             
             if (reader.Read()):
-                
                 file = reader.GetFile()
-            
+                 
                 # Retrieve data set
                 dataSet = file.GetDataSet()
             
@@ -173,6 +174,41 @@ class LoadDicom(threading.Thread):
                         data_dict[group][field] = "Invalid Character"
                 
 
+
+                # -------------- To Create DICOM Thumbnail -----------
+                rvtk = vtkgdcm.vtkGDCMImageReader()
+                rvtk.SetFileName(str(filepath))
+                rvtk.Update()
+                
+                try:
+                    data = data_dict['0028']['1050']
+                    level = [float(value) for value in data.split('\\')][0]
+                    data = data_dict['0028']['1051']
+                    window =  [float(value) for value in data.split('\\')][0]
+                except(KeyError):
+                    level = 300.0
+                    window = 2000.0 
+         
+                colorer = vtk.vtkImageMapToWindowLevelColors()
+                colorer.SetInput(rvtk.GetOutput())
+                colorer.SetWindow(float(window))
+                colorer.SetLevel(float(level))
+                colorer.SetOutputFormatToRGB()
+                colorer.Update()           
+                
+                resample = vtk.vtkImageResample()
+                resample.SetInput(colorer.GetOutput())
+                resample.SetAxisMagnificationFactor ( 0, 0.25 )
+                resample.SetAxisMagnificationFactor ( 1, 0.25 )
+                resample.SetAxisMagnificationFactor ( 2, 1 )    
+                resample.Update()
+ 
+                thumbnail_path = tempfile.mktemp()
+
+                write_png = vtk.vtkPNGWriter()
+                write_png.SetInput(resample.GetOutput())
+                write_png.SetFileName(thumbnail_path)
+                write_png.Write()
                 
                 # ----------   Refactory --------------------------------------
                 data_dict['invesalius'] = {'orientation_label' : GetImageOrientationLabel(str(filepath))}
@@ -190,7 +226,7 @@ class LoadDicom(threading.Thread):
                                             
                 if not(is_dicom_dir):
                     parser = dicom.Parser()
-                    parser.SetDataImage(dict_file[filepath], filepath)
+                    parser.SetDataImage(dict_file[filepath], filepath, thumbnail_path)
                     
                     dcm = dicom.Dicom()
                     self.l.acquire()

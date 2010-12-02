@@ -22,6 +22,7 @@
 
 #TODO: To create a beautiful API
 import time
+import tempfile
 
 import wx
 import vtk
@@ -34,6 +35,8 @@ from reader import dicom_reader
 import data.vtk_utils as vtku
 import utils
 import vtkgdcm
+
+
 NROWS = 3
 NCOLS = 6
 NUM_PREVIEWS = NCOLS*NROWS
@@ -102,31 +105,18 @@ class DicomInfo(object):
         self.subtitle = subtitle
         self._preview = None
         self.selected = False
+        self.filename = ""
 
     @property
     def preview(self):
-        rdicom = vtkgdcm.vtkGDCMImageReader()
-        if self._preview:
-            return self._preview
-        else:
-            rdicom.SetFileName(self.dicom.image.file)
-            rdicom.Update()
-
-            colorer = vtk.vtkImageMapToWindowLevelColors()
-            colorer.SetInput(rdicom.GetOutput())
-            colorer.SetWindow(float(self.dicom.image.window))
-            colorer.SetLevel(float(self.dicom.image.level))
-            colorer.SetOutputFormatToRGB()
-            colorer.Update()
-
-            width, height, z = colorer.GetOutput().GetDimensions()
-
-            r = colorer.GetOutput().GetPointData().GetScalars()
-            ni = numpy_support.vtk_to_numpy(r)
-            self.img = wx.ImageFromBuffer(width, height, ni)
-            self._preview = self.img.Mirror(False)
-            return self._preview
-
+        
+        if not self._preview:
+            bmp = wx.Bitmap(self.dicom.image.thumbnail_path, wx.BITMAP_TYPE_PNG)
+            self._preview = bmp.ConvertToImage()
+        return self._preview
+        
+    def release_thumbnail(self):
+        self._preview = None
 
 class DicomPaintPanel(wx.Panel):
     def __init__(self, parent):
@@ -238,6 +228,9 @@ class Preview(wx.Panel):
         """
         Set a dicom to preview.
         """
+        if self.dicom_info:
+            self.dicom_info.release_thumbnail()
+
         self.dicom_info = dicom_info
         self.SetTitle(dicom_info.title)
         self.SetSubtitle(dicom_info.subtitle)
@@ -409,7 +402,6 @@ class DicomPreviewSeries(wx.Panel):
     def _display_previews(self):
         initial = self.displayed_position * NCOLS
         final = initial + NUM_PREVIEWS
-
         if len(self.files) < final:
             for i in xrange(final-len(self.files)):
                 try:
@@ -557,7 +549,6 @@ class DicomPreviewSlice(wx.Panel):
     def _display_previews(self):
         initial = self.displayed_position * NCOLS
         final = initial + NUM_PREVIEWS
-
         if len(self.files) < final:
             for i in xrange(final-len(self.files)):
                 try:
