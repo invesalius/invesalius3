@@ -184,6 +184,7 @@ class Slice(object):
         self.CreateMask(name=mask_name, threshold_range=thresh, colour =colour)
         self.SetMaskColour(self.current_mask.index, self.current_mask.colour)
         self.SelectCurrentMask(self.current_mask.index)
+        ps.Publisher().sendMessage('Reload actual slice')
 
     def __select_current_mask(self, pubsub_evt):
         mask_index = pubsub_evt.data
@@ -259,12 +260,15 @@ class Slice(object):
     #---------------------------------------------------------------------------
 
     def GetSlices(self, orientation, slice_number):
+        print "Getting slice", self.buffer_slices[orientation][0], slice_number
         if self.buffer_slices[orientation][0] == slice_number:
-            print "From buffer"
             image = self.buffer_slices[orientation][1]
-            n_mask = self.buffer_slices[orientation][2]
-            mask = iu.to_vtk(n_mask, self.spacing, slice_number, orientation)
-            final_image = self.do_blend(image, self.do_colour_mask(mask))
+            if self.current_mask and self.current_mask.is_shown:
+                n_mask = self.buffer_slices[orientation][2]
+                mask = iu.to_vtk(n_mask, self.spacing, slice_number, orientation)
+                final_image = self.do_blend(image, self.do_colour_mask(mask))
+            else:
+                final_image = image
         else:
             n_image = self.GetImageSlice(orientation, slice_number)
             image = iu.to_vtk(n_image, self.spacing, slice_number, orientation)
@@ -285,39 +289,49 @@ class Slice(object):
         return final_image
 
     def GetImageSlice(self, orientation, slice_number):
-        if orientation == 'AXIAL':
-            n_image = numpy.array(self.matrix[slice_number])
-        elif orientation == 'CORONAL':
-            n_image = numpy.array(self.matrix[..., slice_number, ...])
-        elif orientation == 'SAGITAL':
-            n_image = numpy.array(self.matrix[..., ..., slice_number])
+        if self.buffer_slices[orientation] == slice_number:
+            n_image = self.buffer_slices[orientation][3]
+        else:
+            if orientation == 'AXIAL':
+                n_image = numpy.array(self.matrix[slice_number])
+            elif orientation == 'CORONAL':
+                n_image = numpy.array(self.matrix[..., slice_number, ...])
+            elif orientation == 'SAGITAL':
+                n_image = numpy.array(self.matrix[..., ..., slice_number])
         return n_image
 
     def GetMaskSlice(self, orientation, slice_number):
-        slice_number += 1
+        """ 
+        It gets the from actual mask the given slice from given orientation
+        """
+
+        # It's necessary because the first position for each dimension from
+        # mask matrix is used as flags to control if the mask in the
+        # slice_number position has been generated.
+        n = slice_number + 1
         if orientation == 'AXIAL':
-            if self.current_mask.matrix[slice_number, 0, 0] == 0:
-                self.current_mask.matrix[slice_number, 1:, 1:] = \
+            if self.current_mask.matrix[n, 0, 0] == 0:
+                self.current_mask.matrix[n, 1:, 1:] = \
                         self.do_threshold_to_a_slice(self.GetImageSlice(orientation,
                                                                         slice_number))
-                self.current_mask.matrix[slice_number, 0, 0] = 1
-            n_mask = numpy.array(self.current_mask.matrix[slice_number])
+                self.current_mask.matrix[n, 0, 0] = 1
+            n_mask = numpy.array(self.current_mask.matrix[n, 1:, 1:])
 
         elif orientation == 'CORONAL':
-            if self.current_mask.matrix[0, slice_number, 0] == 0:
-                self.current_mask.matrix[1:, slice_number, 1:] = \
+            if self.current_mask.matrix[0, n, 0] == 0:
+                self.current_mask.matrix[1:, n, 1:] = \
                         self.do_threshold_to_a_slice(self.GetImageSlice(orientation,
                                                                         slice_number))
-                self.current_mask.matrix[0, slice_number, 0] = 1
-            n_mask = numpy.array(self.current_mask.matrix[..., slice_number, ...])
+                self.current_mask.matrix[0, n, 0] = 1
+            n_mask = numpy.array(self.current_mask.matrix[1:, n, 1:])
 
         elif orientation == 'SAGITAL':
-            if self.current_mask.matrix[0, 0, slice_number] == 0:
-                self.current_mask.matrix[1:, 1:, slice_number] = \
+            if self.current_mask.matrix[0, 0, n] == 0:
+                self.current_mask.matrix[1:, 1:, n] = \
                         self.do_threshold_to_a_slice(self.GetImageSlice(orientation,
                                                                         slice_number))
-                self.current_mask.matrix[0, 0, slice_number] = 1
-            n_mask = numpy.array(self.current_mask.matrix[..., ..., slice_number])
+                self.current_mask.matrix[0, 0, n] = 1
+            n_mask = numpy.array(self.current_mask.matrix[1:, 1:, n])
         return n_mask
 
     def GetNumberOfSlices(self, orientation):
@@ -401,9 +415,8 @@ class Slice(object):
             else:
                 print "Only one slice"
                 slice_ = self.buffer_slices[orientation][3]
-                m = numpy.zeros(slice_.shape, self.current_mask.matrix.dtype)
-                m[numpy.logical_and(slice_ >= thresh_min,slice_ <= thresh_max)] = 255
-                self.buffer_slices[orientation][2] = m
+                self.buffer_slices[orientation][2][:] = 0
+                self.buffer_slices[orientation][2][numpy.logical_and(slice_ >= thresh_min,slice_ <= thresh_max)] = 255
 
             # Update viewer
             #ps.Publisher().sendMessage('Update slice viewer')
@@ -425,12 +438,10 @@ class Slice(object):
         proj = Project()
         proj.mask_dict[index].is_shown = value
         if (index == self.current_mask.index):
-            if value:
-                self.blend_filter.SetOpacity(1, self.current_mask.opacity)
-            else:
-                self.blend_filter.SetOpacity(1, 0)
-            self.blend_filter.Update()
-            ps.Publisher().sendMessage('Update slice viewer')
+            self.buffer_slices = {"AXIAL": [-1, None, None],
+                                  "CORONAL": [-1,None, None],
+                                  "SAGITAL": [-1, None, None]}
+            ps.Publisher().sendMessage('Reload actual slice')
     #---------------------------------------------------------------------------
     def ErasePixel(self, position):
         "Delete pixel, based on x, y and z position coordinates."
@@ -478,33 +489,27 @@ class Slice(object):
         #if index != self.current_mask.index:
         print "SelectCurrentMask"
         print "index:", index
-        if self.current_mask and self.blend_filter and index > -1:
-            proj = Project()
-            future_mask = proj.GetMask(index)
-            future_mask.is_shown = True
-            self.current_mask = future_mask
+        proj = Project()
+        future_mask = proj.GetMask(index)
+        future_mask.is_shown = True
+        self.current_mask = future_mask
 
-            colour = future_mask.colour
-            #index = future_mask.index
-            print index
-            self.SetMaskColour(index, colour, update=False)
+        colour = future_mask.colour
+        #index = future_mask.index
+        print index
+        self.SetMaskColour(index, colour, update=False)
 
-            imagedata = future_mask.imagedata
-            self.img_colours_mask.SetInput(imagedata)
+        self.buffer_slices = {"AXIAL": [-1, None, None],
+                              "CORONAL": [-1,None, None],
+                              "SAGITAL": [-1, None, None]}
 
-            if self.current_mask.is_shown:
-                self.blend_filter.SetOpacity(1, self.current_mask.opacity)
-            else:
-                self.blend_filter.SetOpacity(1, 0)
-            self.blend_filter.Update()
-
-            ps.Publisher().sendMessage('Set mask threshold in notebook',
-                                        (index,
-                                            self.current_mask.threshold_range))
-            ps.Publisher().sendMessage('Set threshold values in gradient',
-                                        self.current_mask.threshold_range)
-            ps.Publisher().sendMessage('Select mask name in combo', index)
-            ps.Publisher().sendMessage('Update slice viewer')
+        ps.Publisher().sendMessage('Set mask threshold in notebook',
+                                    (index,
+                                        self.current_mask.threshold_range))
+        ps.Publisher().sendMessage('Set threshold values in gradient',
+                                    self.current_mask.threshold_range)
+        ps.Publisher().sendMessage('Select mask name in combo', index)
+        ps.Publisher().sendMessage('Update slice viewer')
     #---------------------------------------------------------------------------
 
     def CreateSurfaceFromIndex(self, pubsub_evt):
