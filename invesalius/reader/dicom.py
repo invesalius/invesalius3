@@ -91,6 +91,7 @@ class Parser():
     def __init__(self):
         self.filename = ""
         self.encoding = ""
+        self.filepath = ""
 
     #def SetFileName(self, filename):
         """
@@ -140,7 +141,7 @@ class Parser():
 
     def SetDataImage(self, data_image, filename):
         self.data_image = data_image
-        self.filename = filename    
+        self.filename = self.filepath = filename    
 
     def __format_time(self,value):
         sp1 = value.split(".")
@@ -1240,7 +1241,7 @@ class Parser():
         DICOM standard tag (0x0010, 0x1010) was used.
         """
         try:
-            data = self.data_image['0010']['0010']
+            data = self.data_image['0010']['1010']
         except(KeyError):
             return ""
 

@@ -33,7 +33,7 @@ import constants as const
 from reader import dicom_reader
 import data.vtk_utils as vtku
 import utils
-
+import vtkgdcm
 NROWS = 3
 NCOLS = 6
 NUM_PREVIEWS = NCOLS*NROWS
@@ -105,11 +105,15 @@ class DicomInfo(object):
 
     @property
     def preview(self):
+        rdicom = vtkgdcm.vtkGDCMImageReader()
         if self._preview:
             return self._preview
         else:
+            rdicom.SetFileName(self.dicom.image.file)
+            rdicom.Update()
+
             colorer = vtk.vtkImageMapToWindowLevelColors()
-            colorer.SetInput(self.dicom.image.imagedata)
+            colorer.SetInput(rdicom.GetOutput())
             colorer.SetWindow(float(self.dicom.image.window))
             colorer.SetLevel(float(self.dicom.image.level))
             colorer.SetOutputFormatToRGB()
@@ -770,12 +774,17 @@ class SingleImagePreview(wx.Panel):
         value = STR_ACQ % (dicom.acquisition.date,
                             dicom.acquisition.time)
         self.text_acquisition.SetValue(value)
+        
+
+        rdicom = vtkgdcm.vtkGDCMImageReader()
+        rdicom.SetFileName(dicom.image.file)
+        rdicom.Update()
 
         # ADJUST CONTRAST
         window_level = dicom.image.level
         window_width = dicom.image.window
         colorer = vtk.vtkImageMapToWindowLevelColors()
-        colorer.SetInput(dicom.image.imagedata)
+        colorer.SetInput(rdicom.GetOutput())
         colorer.SetWindow(float(window_width))
         colorer.SetLevel(float(window_level))
 
