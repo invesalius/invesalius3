@@ -1925,7 +1925,7 @@ class Image(object):
         self.number = parser.GetImageNumber()
         self.spacing = spacing = parser.GetPixelSpacing()
         self.orientation_label = parser.GetImageOrientationLabel()
-        self.file = parser.filename
+        self.file = str(parser.filename) #Necessary original is unicode
         self.time = parser.GetImageTime()
         self.type = parser.GetImageType()
         self.size = (parser.GetDimensionX(), parser.GetDimensionY())
