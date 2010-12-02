@@ -216,7 +216,10 @@ def parse_comand_line():
 
     # If debug argument...
     if options.debug:
-        ps.Publisher().subscribe(print_events, ps.ALL_TOPICS)
+        try:
+            ps.Publisher().subscribe(print_events, ps.ALL_TOPICS)
+        except AttributeError:
+            ps.Publisher().subscribe(print_events, ps.pub.getStrAllTopics())
         session.debug = 1
 
     # If import DICOM argument...
