@@ -85,162 +85,161 @@ tag_labels = {}
 main_dict = {}
 dict_file = {}
 
-class LoadDicom(threading.Thread):
+class LoadDicom:#(threading.Thread):
     
-    def __init__(self, grouper, q, l):
-        threading.Thread.__init__(self)
+    def __init__(self, grouper, filepath):
+        #threading.Thread.__init__(self)
         self.grouper = grouper
-        self.q = q
-        self.l = l
+        self.filepath = filepath
+        self.run()
     
     def run(self):
 
         grouper = self.grouper
-        q = self.q
         
-        while 1:
+        #while 1:
             
-            filepath = q.get()
-            if not filepath:
-                break
-            
-            reader = gdcm.Reader()
-            reader.SetFileName(filepath.encode(utils.get_system_encoding()))
-            
-            if (reader.Read()):
-                file = reader.GetFile()
-                 
-                # Retrieve data set
-                dataSet = file.GetDataSet()
-            
-                # Retrieve header
-                header = file.GetHeader()
-                stf = gdcm.StringFilter()
+        #filepath = q.get()
+        #if not filepath:
+        #    break
+        
+        reader = gdcm.Reader()
+        reader.SetFileName(self.filepath.encode(utils.get_system_encoding()))
+        
+        if (reader.Read()):
+            file = reader.GetFile()
+             
+            # Retrieve data set
+            dataSet = file.GetDataSet()
+        
+            # Retrieve header
+            header = file.GetHeader()
+            stf = gdcm.StringFilter()
 
-                field_dict = {}
-                data_dict = {}
+            field_dict = {}
+            data_dict = {}
 
 
-                tag = gdcm.Tag(0x0008, 0x0005)
-                ds = reader.GetFile().GetDataSet()
-                if ds.FindDataElement(tag):
-                    encoding = str(ds.GetDataElement(tag).GetValue())
-                    if not(encoding != None and encoding != "None" and encoding != "Loaded"):
-                        encoding = "ISO_IR 100"
+            tag = gdcm.Tag(0x0008, 0x0005)
+            ds = reader.GetFile().GetDataSet()
+            if ds.FindDataElement(tag):
+                encoding = str(ds.GetDataElement(tag).GetValue())
+                if not(encoding != None and encoding != "None" and encoding != "Loaded"):
+                    encoding = "ISO_IR 100"
+            else:
+                encoding = "ISO_IR_100" 
+            # Iterate through the Header
+            iterator = header.GetDES().begin()
+            while (not iterator.equal(header.GetDES().end())):
+                dataElement = iterator.next()
+                stf.SetFile(file)
+                tag = dataElement.GetTag()
+                data = stf.ToStringPair(tag)
+                stag = tag.PrintAsPipeSeparatedString()
+                
+                group = stag.split("|")[0][1:]
+                field = stag.split("|")[1][:-1]
+                tag_labels[stag] = data[0]
+                
+                if not group in data_dict.keys():
+                    data_dict[group] = {}
+
+                if not(utils.VerifyInvalidPListCharacter(data[1])):
+                    data_dict[group][field] = data[1].decode(encoding)
                 else:
-                    encoding = "ISO_IR_100" 
-                # Iterate through the Header
-                iterator = header.GetDES().begin()
-                while (not iterator.equal(header.GetDES().end())):
-                    dataElement = iterator.next()
-                    stf.SetFile(file)
-                    tag = dataElement.GetTag()
-                    data = stf.ToStringPair(tag)
-                    stag = tag.PrintAsPipeSeparatedString()
-                    
-                    group = stag.split("|")[0][1:]
-                    field = stag.split("|")[1][:-1]
-                    tag_labels[stag] = data[0]
-                    
-                    if not group in data_dict.keys():
-                        data_dict[group] = {}
+                    data_dict[group][field] = "Invalid Character"
 
-                    if not(utils.VerifyInvalidPListCharacter(data[1])):
-                        data_dict[group][field] = data[1].decode(encoding)
-                    else:
-                        data_dict[group][field] = "Invalid Character"
-
+            
+            # Iterate through the Data set
+            iterator = dataSet.GetDES().begin()
+            while (not iterator.equal(dataSet.GetDES().end())):
+                dataElement = iterator.next()
                 
-                # Iterate through the Data set
-                iterator = dataSet.GetDES().begin()
-                while (not iterator.equal(dataSet.GetDES().end())):
-                    dataElement = iterator.next()
-                    
-                    stf.SetFile(file)
-                    tag = dataElement.GetTag()
-                    data = stf.ToStringPair(tag)
-                    stag = tag.PrintAsPipeSeparatedString()
+                stf.SetFile(file)
+                tag = dataElement.GetTag()
+                data = stf.ToStringPair(tag)
+                stag = tag.PrintAsPipeSeparatedString()
 
-                    group = stag.split("|")[0][1:]
-                    field = stag.split("|")[1][:-1]
-                    tag_labels[stag] = data[0]
+                group = stag.split("|")[0][1:]
+                field = stag.split("|")[1][:-1]
+                tag_labels[stag] = data[0]
 
-                    if not group in data_dict.keys():
-                        data_dict[group] = {}
+                if not group in data_dict.keys():
+                    data_dict[group] = {}
 
-                    if not(utils.VerifyInvalidPListCharacter(data[1])):
-                        data_dict[group][field] = data[1].decode(encoding)
-                    else:
-                        data_dict[group][field] = "Invalid Character"
+                if not(utils.VerifyInvalidPListCharacter(data[1])):
+                    data_dict[group][field] = data[1].decode(encoding)
+                else:
+                    data_dict[group][field] = "Invalid Character"
+            
+
+
+            # -------------- To Create DICOM Thumbnail -----------
+            rvtk = vtkgdcm.vtkGDCMImageReader()
+            rvtk.SetFileName(self.filepath.encode(utils.get_system_encoding()))
+            rvtk.Update()
+            
+            try:
+                data = data_dict['0028']['1050']
+                level = [float(value) for value in data.split('\\')][0]
+                data = data_dict['0028']['1051']
+                window =  [float(value) for value in data.split('\\')][0]
+            except(KeyError):
+                level = 300.0
+                window = 2000.0 
+     
+            colorer = vtk.vtkImageMapToWindowLevelColors()
+            colorer.SetInput(rvtk.GetOutput())
+            colorer.SetWindow(float(window))
+            colorer.SetLevel(float(level))
+            colorer.SetOutputFormatToRGB()
+            colorer.Update()           
+            
+            resample = vtk.vtkImageResample()
+            resample.SetInput(colorer.GetOutput())
+            resample.SetAxisMagnificationFactor ( 0, 0.25 )
+            resample.SetAxisMagnificationFactor ( 1, 0.25 )
+            resample.SetAxisMagnificationFactor ( 2, 1 )    
+            resample.Update()
+
+            thumbnail_path = tempfile.mktemp()
+
+            write_png = vtk.vtkPNGWriter()
+            write_png.SetInput(resample.GetOutput())
+            write_png.SetFileName(thumbnail_path)
+            write_png.Write()
+            
+            # ----------   Refactory --------------------------------------
+            data_dict['invesalius'] = {'orientation_label' : GetImageOrientationLabel(self.filepath.encode(utils.get_system_encoding()))}
+
+            # -------------------------------------------------------------
+            dict_file[self.filepath] = data_dict
+            
+            #----------  Verify is DICOMDir -------------------------------
+            is_dicom_dir = 1
+            try: 
+                if (data_dict['0002']['0002'] != "1.2.840.10008.1.3.10"): #DICOMDIR
+                    is_dicom_dir = 0
+            except(KeyError):
+                    is_dicom_dir = 0
+                                        
+            if not(is_dicom_dir):
+                parser = dicom.Parser()
+                parser.SetDataImage(dict_file[self.filepath], self.filepath, thumbnail_path)
                 
+                dcm = dicom.Dicom()
+                #self.l.acquire()
+                dcm.SetParser(parser)
+                grouper.AddFile(dcm)
 
-
-                # -------------- To Create DICOM Thumbnail -----------
-                rvtk = vtkgdcm.vtkGDCMImageReader()
-                rvtk.SetFileName(filepath.encode(utils.get_system_encoding()))
-                rvtk.Update()
-                
-                try:
-                    data = data_dict['0028']['1050']
-                    level = [float(value) for value in data.split('\\')][0]
-                    data = data_dict['0028']['1051']
-                    window =  [float(value) for value in data.split('\\')][0]
-                except(KeyError):
-                    level = 300.0
-                    window = 2000.0 
-         
-                colorer = vtk.vtkImageMapToWindowLevelColors()
-                colorer.SetInput(rvtk.GetOutput())
-                colorer.SetWindow(float(window))
-                colorer.SetLevel(float(level))
-                colorer.SetOutputFormatToRGB()
-                colorer.Update()           
-                
-                resample = vtk.vtkImageResample()
-                resample.SetInput(colorer.GetOutput())
-                resample.SetAxisMagnificationFactor ( 0, 0.25 )
-                resample.SetAxisMagnificationFactor ( 1, 0.25 )
-                resample.SetAxisMagnificationFactor ( 2, 1 )    
-                resample.Update()
- 
-                thumbnail_path = tempfile.mktemp()
-
-                write_png = vtk.vtkPNGWriter()
-                write_png.SetInput(resample.GetOutput())
-                write_png.SetFileName(thumbnail_path)
-                write_png.Write()
-                
-                # ----------   Refactory --------------------------------------
-                data_dict['invesalius'] = {'orientation_label' : GetImageOrientationLabel(filepath.encode(utils.get_system_encoding()))}
-
-                # -------------------------------------------------------------
-                dict_file[filepath] = data_dict
-                
-                #----------  Verify is DICOMDir -------------------------------
-                is_dicom_dir = 1
-                try: 
-                    if (data_dict['0002']['0002'] != "1.2.840.10008.1.3.10"): #DICOMDIR
-                        is_dicom_dir = 0
-                except(KeyError):
-                        is_dicom_dir = 0
-                                            
-                if not(is_dicom_dir):
-                    parser = dicom.Parser()
-                    parser.SetDataImage(dict_file[filepath], filepath, thumbnail_path)
-                    
-                    dcm = dicom.Dicom()
-                    self.l.acquire()
-                    dcm.SetParser(parser)
-                    grouper.AddFile(dcm)
-
-                    self.l.release()
-                
-                #==========  used in test =======================================
-                #main_dict = dict(
-                #                data  = dict_file,
-                #                labels  = tag_labels)
-           
-                #plistlib.writePlist(main_dict, ".//teste.plist")"""
+                #self.l.release()
+            
+            #==========  used in test =======================================
+            #main_dict = dict(
+            #                data  = dict_file,
+            #                labels  = tag_labels)
+       
+            #plistlib.writePlist(main_dict, ".//teste.plist")"""
 
 
 def GetImageOrientationLabel(filename):
@@ -282,13 +281,13 @@ def yGetDicomGroups(directory, recursive=True, gui=True):
 
     counter = 0
     grouper = dicom_grouper.DicomPatientGrouper() 
-    q = Queue.Queue()
-    l = threading.Lock()
-    threads = []
-    for i in xrange(cpu_count()):
-        t = LoadDicom(grouper, q, l)
-        t.start()
-        threads.append(t)
+    #q = Queue.Queue()
+    #l = threading.Lock()
+    #threads = []
+    #for i in xrange(cpu_count()):
+    #    t = LoadDicom(grouper, q, l)
+    #    t.start()
+    #    threads.append(t)
     # Retrieve only DICOM files, splited into groups
     if recursive:
         for dirpath, dirnames, filenames in os.walk(directory):
@@ -297,7 +296,7 @@ def yGetDicomGroups(directory, recursive=True, gui=True):
                 counter += 1
                 if gui:
                     yield (counter,nfiles)
-                q.put(filepath)
+                LoadDicom(grouper, filepath)
     else:
         dirpath, dirnames, filenames = os.walk(directory)
         for name in filenames:
@@ -305,13 +304,13 @@ def yGetDicomGroups(directory, recursive=True, gui=True):
             counter += 1
             if gui:
                 yield (counter,nfiles)
-            q.put(filepath)
+            #q.put(filepath)
 
-    for t in threads:
-        q.put(0)
+    #for t in threads:
+    #    q.put(0)
 
-    for t in threads:
-        t.join()
+    #for t in threads:
+    #    t.join()
 
     #TODO: Is this commented update necessary?
     #grouper.Update()
