@@ -461,6 +461,9 @@ def dcm2memmap(files, slice_size, orientation):
     From a list of dicom files it creates memmap file in the temp folder and
     returns it and its related filename.
     """
+    message = _("Generating multiplanar visualization...")
+    update_progress= vtk_utils.ShowProgress(len(files), dialog_type = "ProgressDialog")
+
     temp_file = tempfile.mktemp()
 
     if orientation == 'SAGITTAL':
@@ -472,6 +475,7 @@ def dcm2memmap(files, slice_size, orientation):
     print shape
     matrix = numpy.memmap(temp_file, mode='w+', dtype='int16', shape=shape)
     dcm_reader = vtkgdcm.vtkGDCMImageReader()
+    cont = 0
     for n, f in enumerate(files):
         dcm_reader.SetFileName(f)
         dcm_reader.Update()
@@ -486,6 +490,8 @@ def dcm2memmap(files, slice_size, orientation):
         else:
             array.shape = matrix.shape[1], matrix.shape[2]
             matrix[n] = array
+        update_progress(cont,message)
+        cont += 1
 
     matrix.flush()
     return matrix, temp_file

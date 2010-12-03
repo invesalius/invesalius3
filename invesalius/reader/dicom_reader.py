@@ -86,26 +86,20 @@ tag_labels = {}
 main_dict = {}
 dict_file = {}
 
-class LoadDicom:#(threading.Thread):
+class LoadDicom:
     
     def __init__(self, grouper, filepath):
-        #threading.Thread.__init__(self)
         self.grouper = grouper
         if sys.platform == 'win32':
             self.filepath = filepath.encode(utils.get_system_encoding())
         else:
             self.filepath = filepath
+        
         self.run()
     
     def run(self):
 
         grouper = self.grouper
-        
-        #while 1:
-            
-        #filepath = q.get()
-        #if not filepath:
-        #    break
         
         reader = gdcm.Reader()
         reader.SetFileName(self.filepath)
