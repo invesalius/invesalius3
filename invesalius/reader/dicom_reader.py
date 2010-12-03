@@ -177,7 +177,7 @@ class LoadDicom(threading.Thread):
 
                 # -------------- To Create DICOM Thumbnail -----------
                 rvtk = vtkgdcm.vtkGDCMImageReader()
-                rvtk.SetFileName(filepath.encoding(utils.get_encoding_operation()))
+                rvtk.SetFileName(filepath.encode(utils.get_encoding_operation()))
                 rvtk.Update()
                 
                 try:
