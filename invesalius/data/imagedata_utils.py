@@ -462,7 +462,7 @@ def dcm2memmap(files, slice_size, orientation):
     returns it and its related filename.
     """
     message = _("Generating multiplanar visualization...")
-    update_progress= vtk_utils.ShowProgress(len(files), dialog_type = "ProgressDialog")
+    update_progress= vtk_utils.ShowProgress(len(files) - 1, dialog_type = "ProgressDialog")
 
     temp_file = tempfile.mktemp()
 
