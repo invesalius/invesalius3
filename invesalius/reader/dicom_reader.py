@@ -105,7 +105,7 @@ class LoadDicom(threading.Thread):
                 break
             
             reader = gdcm.Reader()
-            reader.SetFileName(str(filepath))
+            reader.SetFileName(filepath.encode('utf-8'))
             
             if (reader.Read()):
                 file = reader.GetFile()
@@ -211,7 +211,7 @@ class LoadDicom(threading.Thread):
                 write_png.Write()
                 
                 # ----------   Refactory --------------------------------------
-                data_dict['invesalius'] = {'orientation_label' : GetImageOrientationLabel(str(filepath))}
+                data_dict['invesalius'] = {'orientation_label' : GetImageOrientationLabel(filepath.encode('utf-8'))}
 
                 # -------------------------------------------------------------
                 dict_file[filepath] = data_dict
