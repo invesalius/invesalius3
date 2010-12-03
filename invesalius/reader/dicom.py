@@ -21,7 +21,7 @@ import time
 #import gdcm
 #import vtkgdcm
 import sys
-
+import utils
 
 # In DICOM file format, if multiple values are present for the
 # "Window Center" (Level) and "Window Width", both attributes
@@ -1926,7 +1926,7 @@ class Image(object):
         self.number = parser.GetImageNumber()
         self.spacing = spacing = parser.GetPixelSpacing()
         self.orientation_label = parser.GetImageOrientationLabel()
-        self.file = parser.filename.encode('utf-8') #Necessary original is unicode
+        self.file = parser.filename.encode(utils.get_system_encoding()) 
         self.time = parser.GetImageTime()
         self.type = parser.GetImageType()
         self.size = (parser.GetDimensionX(), parser.GetDimensionY())

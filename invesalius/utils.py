@@ -20,6 +20,7 @@ import platform
 import sigar
 import sys
 import re
+import locale
 
 def debug(error_str):
     """
@@ -252,5 +253,5 @@ def get_physical_memory():
     return int(mem.total())
 
 
-
-
+def get_system_encoding():
+	return locale.getdefaultlocale()[1]
