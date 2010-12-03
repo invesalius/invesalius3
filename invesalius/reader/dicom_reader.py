@@ -20,6 +20,7 @@ import os
 import Queue
 import threading
 import tempfile
+import sys
 
 from multiprocessing import cpu_count
 
@@ -90,7 +91,10 @@ class LoadDicom:#(threading.Thread):
     def __init__(self, grouper, filepath):
         #threading.Thread.__init__(self)
         self.grouper = grouper
-        self.filepath = filepath
+        if sys.platform == 'win32':
+            self.filepath = filepath.encode(utils.get_system_encode())
+        else:
+            self.filepath = filepath
         self.run()
     
     def run(self):
