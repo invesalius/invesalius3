@@ -104,8 +104,8 @@ class LoadDicom:#(threading.Thread):
         #    break
         
         reader = gdcm.Reader()
-        reader.SetFileName(self.filepath.encode(utils.get_system_encoding()))
-        
+        reader.SetFileName(self.filepath)
+         
         if (reader.Read()):
             file = reader.GetFile()
              
@@ -176,7 +176,7 @@ class LoadDicom:#(threading.Thread):
 
             # -------------- To Create DICOM Thumbnail -----------
             rvtk = vtkgdcm.vtkGDCMImageReader()
-            rvtk.SetFileName(self.filepath.encode(utils.get_system_encoding()))
+            rvtk.SetFileName(self.filepath)
             rvtk.Update()
             
             try:
@@ -210,7 +210,7 @@ class LoadDicom:#(threading.Thread):
             write_png.Write()
             
             # ----------   Refactory --------------------------------------
-            data_dict['invesalius'] = {'orientation_label' : GetImageOrientationLabel(self.filepath.encode(utils.get_system_encoding()))}
+            data_dict['invesalius'] = {'orientation_label' : GetImageOrientationLabel(self.filepath)}
 
             # -------------------------------------------------------------
             dict_file[self.filepath] = data_dict
