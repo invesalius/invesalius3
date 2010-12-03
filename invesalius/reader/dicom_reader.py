@@ -92,7 +92,7 @@ class LoadDicom:#(threading.Thread):
         #threading.Thread.__init__(self)
         self.grouper = grouper
         if sys.platform == 'win32':
-            self.filepath = filepath.encode(utils.get_system_encode())
+            self.filepath = filepath.encode(utils.get_system_encoding())
         else:
             self.filepath = filepath
         self.run()
