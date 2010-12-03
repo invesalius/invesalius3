@@ -254,4 +254,7 @@ def get_physical_memory():
 
 
 def get_system_encoding():
-	return locale.getdefaultlocale()[1]
+    if (sys.platform == 'win32'):
+        return locale.getdefaultlocale()[1]
+    else:
+        return 'utf-8'

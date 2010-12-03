@@ -1926,12 +1926,7 @@ class Image(object):
         self.number = parser.GetImageNumber()
         self.spacing = spacing = parser.GetPixelSpacing()
         self.orientation_label = parser.GetImageOrientationLabel()
-        
-		if (sys.platform == 'win32'):
-			self.file = parser.filename.encode(utils.get_system_encoding())
-		else:
-			self.file = parser.filename.encode('utf-8')
-
+        self.file = parser.filename
         self.time = parser.GetImageTime()
         self.type = parser.GetImageType()
         self.size = (parser.GetDimensionX(), parser.GetDimensionY())
