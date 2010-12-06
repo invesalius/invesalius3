@@ -21,7 +21,6 @@
 #    detalhes.
 #-------------------------------------------------------------------------
 
-
 import multiprocessing
 import optparse as op
 import os
