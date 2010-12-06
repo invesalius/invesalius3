@@ -376,29 +376,36 @@ class SurfaceManager():
         Create surface actor, save into project and send it to viewer.
         """
         surface_data = pubsub_evt.data
+        mask, spacing = pubsub_evt.data
+        min_value, max_value = mask.threshold_range
+        fill_holes = True
 
-        if len(surface_data) == 5:
-            imagedata, colour, [min_value, max_value], \
-            edited_points, overwrite = pubsub_evt.data
-            quality=_('Optimal *')
-            surface_name = ""
-            fill_holes = True
-            keep_largest = False
-        else:
-            imagedata, colour, [min_value, max_value],\
-            edited_points, overwrite, surface_name,\
-            quality, fill_holes, keep_largest =\
-            pubsub_evt.data
+        #if len(surface_data) == 5:
+            #imagedata, colour, [min_value, max_value], \
+            #edited_points, overwrite = pubsub_evt.data
+            #quality=_('Optimal *')
+            #surface_name = ""
+            #fill_holes = True
+            #keep_largest = False
+        #else:
+            #imagedata, colour, [min_value, max_value],\
+            #edited_points, overwrite, surface_name,\
+            #quality, fill_holes, keep_largest =\
+            #pubsub_evt.data
 
         mode = 'CONTOUR' # 'GRAYSCALE'
+        quality=_('Optimal *')
+        keep_largest = True
+        surface_name = ""
+        colour = mask.colour
 
-        ps.Publisher().sendMessage('Begin busy cursor')
-        imagedata_tmp = None
-        if (edited_points):
-            imagedata_tmp = vtk.vtkImageData()
-            imagedata_tmp.DeepCopy(imagedata)
-            imagedata_tmp.Update()
-            imagedata = iu.BuildEditedImage(imagedata_tmp, edited_points)
+        #ps.Publisher().sendMessage('Begin busy cursor')
+        #imagedata_tmp = None
+        #if (edited_points):
+            #imagedata_tmp = vtk.vtkImageData()
+            #imagedata_tmp.DeepCopy(imagedata)
+            #imagedata_tmp.Update()
+            #imagedata = iu.BuildEditedImage(imagedata_tmp, edited_points)
 
         if quality in const.SURFACE_QUALITY.keys():
             imagedata_resolution = const.SURFACE_QUALITY[quality][0]
@@ -406,61 +413,89 @@ class SurfaceManager():
             smooth_relaxation_factor = const.SURFACE_QUALITY[quality][2]
             decimate_reduction = const.SURFACE_QUALITY[quality][3]
 
-        if imagedata_resolution:
-            imagedata = iu.ResampleImage3D(imagedata, imagedata_resolution)
+        #if imagedata_resolution:
+            #imagedata = iu.ResampleImage3D(imagedata, imagedata_resolution)
 
-        pipeline_size = 4
-        if decimate_reduction:
-            pipeline_size += 1
-        if (smooth_iterations and smooth_relaxation_factor):
-            pipeline_size += 1
-        if fill_holes:
-            pipeline_size += 1
-        if keep_largest:
-            pipeline_size += 1
+        #pipeline_size = 4
+        #if decimate_reduction:
+            #pipeline_size += 1
+        #if (smooth_iterations and smooth_relaxation_factor):
+            #pipeline_size += 1
+        #if fill_holes:
+            #pipeline_size += 1
+        #if keep_largest:
+            #pipeline_size += 1
 
-        # Update progress value in GUI
-        UpdateProgress = vu.ShowProgress(pipeline_size)
-        UpdateProgress(0, _("Generating 3D surface..."))
+        ## Update progress value in GUI
+        #UpdateProgress = vu.ShowProgress(pipeline_size)
+        #UpdateProgress(0, _("Generating 3D surface..."))
 
-        filename_img = tempfile.mktemp()
+        #filename_img = tempfile.mktemp()
 
-        writer = vtk.vtkXMLImageDataWriter()
-        writer.SetFileName(filename_img)
-        writer.SetInput(imagedata)
-        writer.Write()
+        #writer = vtk.vtkXMLImageDataWriter()
+        #writer.SetFileName(filename_img)
+        #writer.SetInput(imagedata)
+        #writer.Write()
 
         language = ses.Session().language
+
+        filename_img = mask.temp_file
+        overwrite = 0
         
         if (prj.Project().original_orientation == const.CORONAL):
             flip_image = False
         else:
             flip_image = True
+
+        n_processors = 1 # multiprocessing.cpu_count()
             
         pipe_in, pipe_out = multiprocessing.Pipe()
-        sp = surface_process.SurfaceProcess(pipe_in, filename_img, mode, min_value, max_value,
-                 decimate_reduction, smooth_relaxation_factor,
-                 smooth_iterations, language, fill_holes, keep_largest, flip_image)
-        sp.start()
+        o_piece = 2
+        piece_size = 40
 
-        while 1:
-            msg = pipe_out.recv()
-            if(msg is None):
-                break
-            UpdateProgress(msg[0],msg[1])
+        n_pieces = round(mask.matrix.shape[0] / piece_size + 0.5, 0)
+        print "n_pieces", n_pieces, mask.matrix.shape
 
-        filename_polydata = pipe_out.recv()
+        q_in = multiprocessing.Queue()
+        q_out = multiprocessing.Queue()
 
-        reader = vtk.vtkXMLPolyDataReader()
-        reader.SetFileName(filename_polydata)
-        reader.Update()
+        p = []
+        for i in xrange(n_processors):
+            sp = surface_process.SurfaceProcess(pipe_in, filename_img,
+                    mask.matrix.shape, mask.matrix.dtype, spacing, 
+                    mode, min_value, max_value,
+                    decimate_reduction, smooth_relaxation_factor,
+                    smooth_iterations, language, fill_holes, keep_largest,
+                                                flip_image, q_in, q_out)
+            p.append(sp)
+            sp.start()
 
-        polydata = reader.GetOutput()
+        for i in xrange(n_pieces):
+            init = i * piece_size
+            end = init + piece_size + o_piece
+            roi = slice(init, end)
+            q_in.put(roi)
+            print "new_piece", roi
+
+        for i in p:
+            q_in.put(None)
+
+        polydata_append = vtk.vtkAppendPolyData()
+        t = n_pieces
+        while t:
+            filename_polydata = q_out.get()
+
+            reader = vtk.vtkXMLPolyDataReader()
+            reader.SetFileName(filename_polydata)
+            reader.Update()
+            polydata_append.AddInput(reader.GetOutput())
+
+            t -= 1
+
+        polydata = polydata_append.GetOutput()
 
         # Orient normals from inside to outside
         normals = vtk.vtkPolyDataNormals()
-        normals.AddObserver("ProgressEvent", lambda obj,evt:
-                            UpdateProgress(obj, _("Generating 3D surface...")))
         normals.SetInput(polydata)
         normals.SetFeatureAngle(80)
         normals.AutoOrientNormalsOn()
@@ -468,8 +503,6 @@ class SurfaceManager():
 
 	# Improve performance
         stripper = vtk.vtkStripper()
-        stripper.AddObserver("ProgressEvent", lambda obj,evt:
-                            UpdateProgress(obj, _("Generating 3D surface...")))
         stripper.SetInput(normals.GetOutput())
         stripper.PassThroughCellIdsOn()
         stripper.PassThroughPointIdsOn()
@@ -526,8 +559,6 @@ class SurfaceManager():
 
         # The following lines have to be here, otherwise all volumes disappear
         measured_polydata = vtk.vtkMassProperties()
-        measured_polydata.AddObserver("ProgressEvent", lambda obj,evt:
-                            UpdateProgress(obj, _("Generating 3D surface...")))
         measured_polydata.SetInput(polydata)
         volume =  measured_polydata.GetVolume()
         surface.volume = volume
@@ -551,10 +582,6 @@ class SurfaceManager():
                                     (surface.index, surface.name,
                                     surface.colour, surface.volume,
                                     surface.transparency))
-
-        #Destroy Copy original imagedata
-        if(imagedata_tmp):
-            del imagedata_tmp
 
         ps.Publisher().sendMessage('End busy cursor')
 

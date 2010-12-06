@@ -497,20 +497,23 @@ def dcm2memmap(files, slice_size, orientation):
     return matrix, temp_file
 
 def to_vtk(n_array, spacing, slice_number, orientation):
-    dy, dx = n_array.shape
+    try:
+        dz, dy, dx = n_array.shape
+    except ValueError:
+        dy, dx = n_array.shape
+        dz = 1
 
     v_image = numpy_support.numpy_to_vtk(n_array.flat)
 
     print orientation
     if orientation == 'AXIAL':
-        dz = 1
-        extent = (0, dx -1, 0, dy -1, slice_number, slice_number)
+        extent = (0, dx -1, 0, dy -1, slice_number, slice_number + dz - 1)
     elif orientation == 'SAGITAL':
-        dx, dy, dz = 1, dx, dy
-        extent = (slice_number, slice_number, 0, dy - 1, 0, dz - 1)
+        dx, dy, dz = dz, dx, dy
+        extent = (slice_number, slice_number + dx - 1, 0, dy - 1, 0, dz - 1)
     elif orientation == 'CORONAL':
-        dx, dy, dz = dx, 1, dy
-        extent = (0, dx - 1, slice_number, slice_number, 0, dz - 1)
+        dx, dy, dz = dx, dz, dy
+        extent = (0, dx - 1, slice_number, slice_number + dy - 1, 0, dz - 1)
 
     # Generating the vtkImageData
     image = vtk.vtkImageData()

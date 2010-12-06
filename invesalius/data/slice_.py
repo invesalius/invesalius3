@@ -260,8 +260,8 @@ class Slice(object):
     #---------------------------------------------------------------------------
 
     def GetSlices(self, orientation, slice_number):
-        print "Getting slice", self.buffer_slices[orientation][0], slice_number
         if self.buffer_slices[orientation][0] == slice_number:
+            print "From buffer"
             image = self.buffer_slices[orientation][1]
             if self.current_mask and self.current_mask.is_shown:
                 n_mask = self.buffer_slices[orientation][2]
@@ -275,7 +275,6 @@ class Slice(object):
             image = self.do_ww_wl(image)
 
             if self.current_mask and self.current_mask.is_shown:
-                print "Mask"
                 n_mask = self.GetMaskSlice(orientation, slice_number)
                 mask = iu.to_vtk(n_mask, self.spacing, slice_number, orientation)
                 final_image = self.do_blend(image, self.do_colour_mask(mask))
@@ -411,12 +410,12 @@ class Slice(object):
                     m[slice_ < thresh_min] = 0
                     m[slice_ > thresh_max] = 0
                     m[m == 1] = 255
-                    self.current_mask.matrix[n] = m
+                    self.current_mask.matrix[n+1, 1:, 1:] = m
             else:
                 print "Only one slice"
                 slice_ = self.buffer_slices[orientation][3]
-                self.buffer_slices[orientation][2][:] = 0
-                self.buffer_slices[orientation][2][numpy.logical_and(slice_ >= thresh_min,slice_ <= thresh_max)] = 255
+                self.buffer_slices[orientation][2] = 255 * ((slice_ >= thresh_min) & (slice_ <= thresh_max))
+                print self.buffer_slices[orientation][2].dtype
 
             # Update viewer
             #ps.Publisher().sendMessage('Update slice viewer')
@@ -521,15 +520,15 @@ class Slice(object):
 
         # This is very important. Do not use masks' imagedata. It would mess up
         # surface quality event when using contour
-        imagedata = self.imagedata
-
         colour = mask.colour
         threshold = mask.threshold_range
         edited_points = mask.edited_points
 
-        ps.Publisher().sendMessage('Create surface',
-                                   (imagedata,colour,threshold,
-                                    edited_points, overwrite_surface))
+        self.SetMaskThreshold(mask.index, threshold)
+
+        mask.matrix.flush()
+
+        ps.Publisher().sendMessage('Create surface', (mask, self.spacing))
 
     def GetOutput(self):
         return self.blend_filter.GetOutput()
