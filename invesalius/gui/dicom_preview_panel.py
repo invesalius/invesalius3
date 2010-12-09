@@ -29,6 +29,7 @@ import vtk
 
 from vtk.util import  numpy_support
 from vtk.wx.wxVTKRenderWindowInteractor import wxVTKRenderWindowInteractor
+import wx.lib.pubsub as ps
 
 import constants as const
 from reader import dicom_reader
@@ -68,6 +69,7 @@ EVT_CLICK_SERIE = wx.PyEventBinder(myEVT_CLICK_SERIE, 1)
 myEVT_CLICK = wx.NewEventType()
 EVT_CLICK = wx.PyEventBinder(myEVT_CLICK, 1)
 
+
 class SelectionEvent(wx.PyCommandEvent):
     pass
 
@@ -85,9 +87,15 @@ class PreviewEvent(wx.PyCommandEvent):
     def GetItemData(self):
         return self.data
 
+    def GetPressedShift(self):
+        return self.pressed_shift
+    
     def SetItemData(self, data):
         self.data = data
 
+    def SetShiftStatus(self, status):
+        self.pressed_shift = status
+    
 
 class SerieEvent(PreviewEvent):
     def __init__(self , evtType, id):
@@ -168,16 +176,12 @@ class Preview(wx.Panel):
     The little previews.
     """
     def __init__(self, parent):
-        super(Preview, self).__init__(parent, style=wx.TAB_TRAVERSAL|wx.NO_BORDER)
+        super(Preview, self).__init__(parent)
         # Will it be white?
         self.select_on = False
         self.dicom_info = None
         self._init_ui()
-
-        self.selected_images = []
-        self.pressed_shift = 0
         self._bind_events()
-        self.parent = parent
 
     def _init_ui(self):
         self.SetBackgroundColour(PREVIEW_BACKGROUND)
@@ -222,23 +226,11 @@ class Preview(wx.Panel):
         #self.subtitle.Bind(wx.EVT_LEAVE_WINDOW, self.OnLeave)
 
         self.Bind(wx.EVT_LEFT_DOWN, self.OnSelect)
-
         self.title.Bind(wx.EVT_LEFT_DOWN, self.OnSelect)
         self.subtitle.Bind(wx.EVT_LEFT_DOWN, self.OnSelect)
         self.image_viewer.Bind(wx.EVT_LEFT_DOWN, self.OnSelect)
 
         #self.Bind(wx.EVT_SIZE, self.OnSize)
-    
-
-    def OnPressedShift(self, evt):
-        print "ddddddddddddddddddddddddd"
-        if evt.GetKeyCode() == wx.WXK_SHIFT:
-            self.pressed_shift = 1   
-
-
-    def OnReleasedShift(self, evt):
-        if evt.GetKeyCode() == wx.WXK_SHIFT:
-            self.pressed_shift = 0            
 
     def SetDicomToPreview(self, dicom_info):
         """
@@ -277,6 +269,12 @@ class Preview(wx.Panel):
             self.SetBackgroundColour(c)
 
     def OnSelect(self, evt):
+
+        shift_pressed = False
+        if evt.m_shiftDown:
+            shift_pressed = True
+
+        dicom_id = self.dicom_info.id
         self.select_on = True
         self.dicom_info.selected = True
         ##c = wx.SystemSettings_GetColour(wx.SYS_COLOUR_BTNHIGHLIGHT)
@@ -292,19 +290,16 @@ class Preview(wx.Panel):
         #c = wx.SystemSettings_GetColour(wx.SYS_COLOUR_3DSHADOW)
         #self.SetBackgroundColour(c)
         self.Select()
-        print evt.m_shiftDown
-        print "SHIFTHHHHHHHHHHHHHHH>>>>", self.pressed_shift 
-        if (self.pressed_shift):
-            dicom_id = self.dicom_info.id
-            print "=======>>>>>>>>>>>>>>>>>>>>>>>>>>>>", self.dicom_info.id
-        
+
         # Generating a EVT_PREVIEW_CLICK event
         my_evt = SerieEvent(myEVT_PREVIEW_CLICK, self.GetId())
         my_evt.SetSelectedID(self.dicom_info.id)
         my_evt.SetItemData(self.dicom_info.dicom)
+        my_evt.SetShiftStatus(shift_pressed)
         my_evt.SetEventObject(self)
         self.GetEventHandler().ProcessEvent(my_evt)
-
+        evt.Skip()
+        
 
     def OnSize(self, evt):
         if self.dicom_info:
@@ -318,7 +313,6 @@ class Preview(wx.Panel):
             c = (PREVIEW_BACKGROUND)
         self.SetBackgroundColour(c)
         self.Refresh()
-
 
     def OnDClick(self, evt):
         my_evt = SerieEvent(myEVT_PREVIEW_DBLCLICK, self.GetId())
@@ -475,6 +469,8 @@ class DicomPreviewSlice(wx.Panel):
         self.nhidden_last_display = 0
         self.selected_dicom = None
         self.selected_panel = None
+        self.first_selection = None
+        self.last_selection = None
         self._init_ui()
 
     def _init_ui(self):
@@ -598,17 +594,60 @@ class DicomPreviewSlice(wx.Panel):
             p.Show()
 
     def OnPreviewClick(self, evt):
+
+        dicom_id = evt.GetSelectID()
+        
+        if self.first_selection is None:
+            self.first_selection = dicom_id
+
+        if self.last_selection is None:
+            self.last_selection = dicom_id  
+
+        
+        if evt.GetPressedShift():
+ 
+            if dicom_id < self.first_selection and dicom_id < self.last_selection:
+                self.first_selection = dicom_id
+            else:
+                self.last_selection = dicom_id
+        else:
+            self.first_selection = dicom_id
+            self.last_selection = dicom_id
+
+            for i in xrange(len(self.files)):
+            
+                if i == dicom_id:
+                    self.files[i].selected = True
+                else:
+                    self.files[i].selected = False
+
+
         my_evt = SerieEvent(myEVT_CLICK_SLICE, self.GetId())
         my_evt.SetSelectedID(evt.GetSelectID())
         my_evt.SetItemData(evt.GetItemData())
+
         if self.selected_dicom:
             self.selected_dicom.selected = self.selected_dicom is \
                     evt.GetEventObject().dicom_info
             self.selected_panel.select_on = self.selected_panel is evt.GetEventObject()
-            self.selected_panel.Select()
+            
+            if self.first_selection != self.last_selection:
+                for i in xrange(len(self.files)):
+                    if i >= self.first_selection and i <= self.last_selection:
+                        self.files[i].selected = True
+                    else:
+                        self.files[i].selected = False
+
+            else:
+                self.selected_panel.Select()
+
+        self._display_previews()
         self.selected_panel = evt.GetEventObject()
         self.selected_dicom = self.selected_panel.dicom_info
         self.GetEventHandler().ProcessEvent(my_evt)
+
+        ps.Publisher().sendMessage("Selected Import Images", [self.first_selection, \
+                                                                 self.last_selection])  
 
     def OnScroll(self, evt=None):
         if evt:

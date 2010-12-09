@@ -437,14 +437,13 @@ class Controller():
         proj.SavePlistProject(dirpath, filename)
 
     def OnOpenDicomGroup(self, pubsub_evt):
-        group, interval = pubsub_evt.data
-        imagedata, dicom = self.OpenDicomGroup(group, interval, gui=True)
+        group, interval, file_range = pubsub_evt.data
+        imagedata, dicom = self.OpenDicomGroup(group, interval, file_range, gui=True)
         self.CreateDicomProject(imagedata, dicom)
         self.LoadProject()
         ps.Publisher().sendMessage("Enable state project", True)
 
-    def OpenDicomGroup(self, dicom_group, interval, gui=True):
-
+    def OpenDicomGroup(self, dicom_group, interval, file_range, gui=True):
         # Retrieve general DICOM headers
         dicom = dicom_group.GetDicomSample()
 
@@ -454,7 +453,10 @@ class Controller():
         if not filelist:
             debug("Not used the IPPSorter")
             filelist = [i.image.file for i in dicom_group.GetHandSortedList()[::interval]]
-
+        
+        if file_range != None and file_range[1] > file_range[0]:
+            filelist = filelist[file_range[0]:file_range[1] + 1]
+ 
         zspacing = dicom_group.zspacing * interval
         size = dicom.image.size
         bits = dicom.image.bits_allocad

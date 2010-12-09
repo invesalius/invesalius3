@@ -78,7 +78,8 @@ class InnerPanel(wx.Panel):
                           #size=wx.Size(680, 656))
 
         self.patients = []
-
+        self.first_image_selection = None
+        self.last_image_selection = None
         self._init_ui()
         self._bind_events()
         self._bind_pubsubevt()
@@ -126,7 +127,12 @@ class InnerPanel(wx.Panel):
 
     def _bind_pubsubevt(self):
         ps.Publisher().subscribe(self.ShowDicomPreview, "Load import panel")
+        ps.Publisher().subscribe(self.GetSelectedImages ,"Selected Import Images")  
 
+    def GetSelectedImages(self, pubsub_evt):
+        self.first_image_selection = pubsub_evt.data[0]
+        self.last_image_selection = pubsub_evt.data[1]
+        
     def _bind_events(self):
         self.Bind(EVT_SELECT_SERIE, self.OnSelectSerie)
         self.Bind(EVT_SELECT_SLICE, self.OnSelectSlice)
@@ -171,11 +177,18 @@ class InnerPanel(wx.Panel):
         interval = self.combo_interval.GetSelection()
         if not isinstance(group, dcm.DicomGroup):
             group = max(group.GetGroups(), key=lambda g: g.nslices)
+        
+        slice_amont = group.nslices
+        if (self.first_image_selection != None) and (self.first_image_selection != self.last_image_selection):
+            slice_amont = (self.last_image_selection) - self.first_image_selection
+            slice_amont += 1
+            if slice_amont == 0:
+                slice_amont = group.nslices
 
-        nslices_result = group.nslices / (interval + 1)
-
+        nslices_result = slice_amont / (interval + 1)
         if (nslices_result > 1):
-            ps.Publisher().sendMessage('Open DICOM group', (group, interval))
+            ps.Publisher().sendMessage('Open DICOM group', (group, interval, 
+                                    [self.first_image_selection, self.last_image_selection]))
         else:
             dlg.MissingFilesForReconstruction()
 
@@ -391,6 +404,7 @@ class SeriesPanel(wx.Panel):
         self.serie_preview = dpp.DicomPreviewSeries(self)
         self.dicom_preview = dpp.DicomPreviewSlice(self)
         self.dicom_preview.Show(0)
+        
 
         self.sizer = wx.BoxSizer(wx.HORIZONTAL)
         self.sizer.Add(self.serie_preview, 1, wx.EXPAND | wx.ALL, 5)
@@ -422,6 +436,9 @@ class SeriesPanel(wx.Panel):
         self.serie_preview.Show(0)
         self.sizer.Layout()
         self.Update()
+
+    def GetSelectedImagesRange(self):
+        return [self.dicom_preview.first_selected, self.dicom_preview_last_selection]
 
     def SetPatientSeries(self, pubsub_evt):
         patient = pubsub_evt.data
