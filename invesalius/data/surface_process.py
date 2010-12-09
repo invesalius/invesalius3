@@ -50,32 +50,32 @@ class SurfaceProcess(multiprocessing.Process):
         self.pipe.send([prog, msg])
 
     def CreateSurface(self, roi):
-        smoothed = ndimage.gaussian_filter(self.mask[roi], (1, 1, 1))
+        smoothed = numpy.array(self.mask[roi])
         image = imagedata_utils.to_vtk(smoothed, self.spacing, roi.start,
                                        "AXIAL")
 
         # Create vtkPolyData from vtkImageData
-        print "Generating Polydata"
-        if self.mode == "CONTOUR":
-            print "Contour"
-            contour = vtk.vtkContourFilter()
-            contour.SetInput(image)
-            contour.SetValue(0, 127.5) # initial threshold
-            contour.ComputeScalarsOn()
-            contour.ComputeGradientsOn()
-            contour.ComputeNormalsOn()
-            polydata = contour.GetOutput()
-        else: #mode == "GRAYSCALE":
-            mcubes = vtk.vtkMarchingCubes()
-            mcubes.SetInput(image)
-            mcubes.SetValue(0, 127.5)
-            mcubes.ComputeScalarsOn()
-            mcubes.ComputeGradientsOn()
-            mcubes.ComputeNormalsOn()
-            polydata = mcubes.GetOutput()
+        #print "Generating Polydata"
+        #if self.mode == "CONTOUR":
+            #print "Contour"
+            #contour = vtk.vtkContourFilter()
+            #contour.SetInput(image)
+            #contour.SetValue(0, 127.5) # initial threshold
+            #contour.ComputeScalarsOn()
+            #contour.ComputeGradientsOn()
+            #contour.ComputeNormalsOn()
+            #polydata = contour.GetOutput()
+        #else: #mode == "GRAYSCALE":
+        mcubes = vtk.vtkDiscreteMarchingCubes()
+        mcubes.SetInput(image)
+        mcubes.SetValue(0, 255)
+        mcubes.ComputeScalarsOn()
+        mcubes.ComputeGradientsOn()
+        mcubes.ComputeNormalsOn()
+        polydata = mcubes.GetOutput()
 
         print "Decimating"
-        if self.decimate_reduction:
+        if not self.decimate_reduction:
             decimation = vtk.vtkDecimatePro()
             decimation.SetInput(polydata)
             decimation.SetTargetReduction(self.decimate_reduction)
@@ -83,19 +83,23 @@ class SurfaceProcess(multiprocessing.Process):
             decimation.SplittingOff()
             polydata = decimation.GetOutput()
 
-        print "Smoothing"
         if self.smooth_iterations and self.smooth_relaxation_factor:
-            smoother = vtk.vtkSmoothPolyDataFilter()
+            print "Smoothing"
+            smoother = vtk.vtkWindowedSincPolyDataFilter()
             smoother.SetInput(polydata)
             smoother.SetNumberOfIterations(self.smooth_iterations)
-            smoother.SetFeatureAngle(80)
-            smoother.SetRelaxationFactor(self.smooth_relaxation_factor)
-            smoother.FeatureEdgeSmoothingOn()
+            smoother.SetFeatureAngle(120)
+            smoother.SetNumberOfIterations(30)
             smoother.BoundarySmoothingOn()
+            smoother.SetPassBand(0.1)
+            smoother.FeatureEdgeSmoothingOn()
+            smoother.NonManifoldSmoothingOn()
+            smoother.NormalizeCoordinatesOn()
+            smoother.Update()
             polydata = smoother.GetOutput()
 
         print "Saving"
-        filename = tempfile.mktemp()
+        filename = tempfile.mktemp(suffix='_%s.vtp' % (self.pid))
         writer = vtk.vtkXMLPolyDataWriter()
         writer.SetInput(polydata)
         writer.SetFileName(filename)
