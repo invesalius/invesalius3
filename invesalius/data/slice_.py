@@ -586,8 +586,12 @@ class Slice(object):
         return img_colours_bg.GetOutput()
 
     def UpdateWindowLevelBackground(self, pubsub_evt):
-        pass
-        #window, level = pubsub_evt.data
+        
+        window, level = pubsub_evt.data
+        self.window_width = window
+        self.window_level = level
+        ps.Publisher().sendMessage('Reload actual slice')
+        ps.Publisher().sendMessage('Update slice viewer')
         #window_level = self.window_level
 
         #if not((window == window_level.GetWindow()) and\

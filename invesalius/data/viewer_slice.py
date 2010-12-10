@@ -358,7 +358,7 @@ class Viewer(wx.Panel):
         window, level = pubsub_evt.data
         self.acum_achange_window, self.acum_achange_level = (window, level)
         self.SetWLText(window, level)
-
+        
 
     def OnChangeSliceMove(self, evt, obj):
         if (self.left_pressed):
@@ -443,9 +443,7 @@ class Viewer(wx.Panel):
             # Window & Level text
             self.wl_text = vtku.Text()
             self.SetWLText(proj.level, proj.window)
-            
-                        
-            # Orientation text
+            # Orientation texea
             if self.orientation == 'AXIAL':
                 values = [_('R'), _('L'), _('A'), _('P')]
             elif self.orientation == 'SAGITAL':
@@ -1094,9 +1092,9 @@ class Viewer(wx.Panel):
         #actor_bound = actor.GetBounds()
         self.interactor.Render()
 
-        #self.EnableText()
+        self.EnableText()
         ## Insert cursor
-        #self.SetInteractorStyle(const.STATE_DEFAULT)
+        self.SetInteractorStyle(const.STATE_DEFAULT)
 
         #self.__build_cross_lines()
 
