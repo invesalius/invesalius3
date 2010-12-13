@@ -358,7 +358,6 @@ class Viewer(wx.Panel):
         window, level = pubsub_evt.data
         self.acum_achange_window, self.acum_achange_level = (window, level)
         self.SetWLText(window, level)
-        
 
     def OnChangeSliceMove(self, evt, obj):
         if (self.left_pressed):
@@ -409,7 +408,7 @@ class Viewer(wx.Panel):
         slice_data = self.get_slice_data(ren)
         ren.ResetCamera()
         ren.ResetCameraClippingRange()
-        self.Reposition(slice_data)
+        #self.Reposition(slice_data)
         self.interactor.Render()
 
     def OnSpinMove(self, evt, obj):
