@@ -487,7 +487,7 @@ class Slice(object):
         proj = Project()
         proj.mask_dict[index].is_shown = value
         if (index == self.current_mask.index):
-            for buffer_ in self.buffer_slices:
+            for buffer_ in self.buffer_slices.values():
                 buffer_.discard_vtk_mask()
                 buffer_.discard_mask()
             ps.Publisher().sendMessage('Reload actual slice')
@@ -775,7 +775,7 @@ class Slice(object):
         ps.Publisher().sendMessage('Update slice viewer')
 
     def do_ww_wl(self, image):
-        print self.window_width, self.window_level
+        print "WW, WL", self.window_width, self.window_level
         print image.GetScalarRange()
         colorer = vtk.vtkImageMapToWindowLevelColors()
         colorer.SetInput(image)
@@ -792,8 +792,7 @@ class Slice(object):
         given slice_matrix.
         """
         thresh_min, thresh_max = self.current_mask.threshold_range
-        m = numpy.zeros(slice_matrix.shape, self.current_mask.matrix.dtype)
-        m[numpy.logical_and(slice_matrix >= thresh_min, slice_matrix <= thresh_max)] = 255
+        m= numpy.logical_and(slice_matrix >= thresh_min, slice_matrix <= thresh_max) * 255
         return m
 
     def do_colour_mask(self, imagedata):
