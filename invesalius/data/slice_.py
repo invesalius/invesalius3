@@ -128,15 +128,20 @@ class Slice(object):
 
     def OnRemoveMasks(self, pubsub_evt):
         selected_items = pubsub_evt.data
-
         proj = Project()
         for item in selected_items:
             proj.RemoveMask(item)
 
-        if not proj.mask_dict:
-            self.blend_filter.SetOpacity(1, 0)
-            self.blend_filter.Update()
-            ps.Publisher().sendMessage('Update slice viewer')
+            # if the deleted mask is the current mask, cleans the current mask
+            # and discard from buffer all datas related to mask.
+            if self.current_mask is not None and item == self.current_mask.index:
+                self.current_mask = None
+                
+                for buffer_ in self.buffer_slices.values():
+                    buffer_.discard_vtk_mask()
+                    buffer_.discard_mask()
+
+                ps.Publisher().sendMessage('Reload actual slice')
 
     def OnDuplicateMasks(self, pubsub_evt):
         selected_items = pubsub_evt.data
