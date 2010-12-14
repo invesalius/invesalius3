@@ -429,7 +429,7 @@ class Viewer(wx.Panel):
         self.interactor.Render()
 
     def SetWLText(self, window_width, window_level):
-        value = STR_WL%(window_width, window_level) 
+        value = STR_WL%(window_level, window_width) 
         if (self.wl_text):
             self.wl_text.SetValue(value)
             #self.interactor.Render()
@@ -1380,7 +1380,7 @@ class Viewer(wx.Panel):
         image = self.slice_.GetSlices(self.orientation, index)
         self.actor.SetInput(image)
         self.__update_display_extent(image)
-        self.interactor.Render()
+        #self.interactor.Render()
 
     def ChangeSliceNumber(self, pubsub_evt):
         index = pubsub_evt.data
