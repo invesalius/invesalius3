@@ -447,13 +447,13 @@ class SurfaceManager():
         else:
             flip_image = True
 
-        n_processors = 1 # multiprocessing.cpu_count()
+        n_processors = multiprocessing.cpu_count()
             
         pipe_in, pipe_out = multiprocessing.Pipe()
-        o_piece = 2
+        o_piece = 1
         piece_size = 40
 
-        n_pieces = round(mask.matrix.shape[0] / piece_size + 0.5, 0)
+        n_pieces = int(round(mask.matrix.shape[0] / piece_size + 0.5, 0))
         print "n_pieces", n_pieces, mask.matrix.shape
 
         q_in = multiprocessing.Queue()
@@ -494,16 +494,13 @@ class SurfaceManager():
 
         polydata = polydata_append.GetOutput()
 
-        # Orient normals from inside to outside
-        normals = vtk.vtkPolyDataNormals()
-        normals.SetInput(polydata)
-        normals.SetFeatureAngle(80)
-        normals.AutoOrientNormalsOn()
-        normals.GetOutput().ReleaseDataFlagOn()
+        clean = vtk.vtkCleanPolyData()
+        clean.SetInput(polydata)
+        clean.PointMergingOn()
 
-	# Improve performance
+        # Improve performance
         stripper = vtk.vtkStripper()
-        stripper.SetInput(normals.GetOutput())
+        stripper.SetInput(clean.GetOutput())
         stripper.PassThroughCellIdsOn()
         stripper.PassThroughPointIdsOn()
 
