@@ -28,6 +28,37 @@ from project import Project
 import session as ses
 import utils
 
+class SliceBuffer(object):
+    """ 
+    This class is used as buffer that mantains the vtkImageData and numpy array
+    from actual slices from each orientation.
+    """
+    def __init__(self):
+        self.index = -1
+        self.image = None
+        self.mask = None
+        self.vtk_image = None
+        self.vtk_mask = None
+
+    def discard_vtk_mask(self):
+        self.vtk_mask = None
+
+    def discard_vtk_image(self):
+        self.vtk_image = None
+
+    def discard_mask(self):
+        self.mask = None
+
+    def discard_image(self):
+        self.image = None
+
+    def discard_buffer(self):
+        self.index = -1
+        self.image = None
+        self.mask = None
+        self.vtk_image = None
+        self.vtk_mask = None
+
 
 class Slice(object):
     __metaclass__= utils.Singleton
@@ -41,9 +72,9 @@ class Slice(object):
         self.blend_filter = None
         self.matrix = None
 
-        self.buffer_slices = {"AXIAL": [-1, None, None],
-                              "CORONAL": [-1,None, None],
-                              "SAGITAL": [-1, None, None]}
+        self.buffer_slices = {"AXIAL": SliceBuffer(),
+                              "CORONAL": SliceBuffer(),
+                              "SAGITAL": SliceBuffer()}
 
         self.num_gradient = 0
         self.interaction_style = st.StyleStateManager()
@@ -211,8 +242,9 @@ class Slice(object):
         threshold_range = evt_pubsub.data
         index = self.current_mask.index
         for orientation in self.buffer_slices:
+            self.buffer_slices[orientation].discard_vtk_mask()
             self.SetMaskThreshold(index, threshold_range,
-                                  self.buffer_slices[orientation][0],
+                                  self.buffer_slices[orientation].index,
                                   orientation)
         #Clear edited points
         self.current_mask.edited_points = {}
@@ -260,13 +292,23 @@ class Slice(object):
     #---------------------------------------------------------------------------
 
     def GetSlices(self, orientation, slice_number):
-        if self.buffer_slices[orientation][0] == slice_number:
-            print "From buffer"
-            image = self.buffer_slices[orientation][1]
+        if self.buffer_slices[orientation].index == slice_number:
+            if self.buffer_slices[orientation].vtk_image:
+                image = self.buffer_slices[orientation].vtk_image
+            else:
+                n_image = self.GetImageSlice(orientation, slice_number)
+                image = iu.to_vtk(n_image, self.spacing, slice_number, orientation)
+                image = self.do_ww_wl(image)
             if self.current_mask and self.current_mask.is_shown:
-                n_mask = self.buffer_slices[orientation][2]
-                mask = iu.to_vtk(n_mask, self.spacing, slice_number, orientation)
-                final_image = self.do_blend(image, self.do_colour_mask(mask))
+                if self.buffer_slices[orientation].vtk_mask:
+                    print "Getting from buffer"
+                    mask = self.buffer_slices[orientation].vtk_mask
+                else:
+                    print "Do not getting from buffer"
+                    n_mask = self.GetMaskSlice(orientation, slice_number)
+                    mask = iu.to_vtk(n_mask, self.spacing, slice_number, orientation)
+                    mask = self.do_colour_mask(mask)
+                final_image = self.do_blend(image, mask)
             else:
                 final_image = image
         else:
@@ -277,19 +319,25 @@ class Slice(object):
             if self.current_mask and self.current_mask.is_shown:
                 n_mask = self.GetMaskSlice(orientation, slice_number)
                 mask = iu.to_vtk(n_mask, self.spacing, slice_number, orientation)
-                final_image = self.do_blend(image, self.do_colour_mask(mask))
+                mask = self.do_colour_mask(mask)
+                final_image = self.do_blend(image, mask)
             else:
                 n_mask = None
                 final_image = image
+                mask = None
 
-            self.buffer_slices[orientation] = [slice_number, image, n_mask,
-                                               n_image]
-        self.slice_number = slice_number
+            self.buffer_slices[orientation].index = slice_number
+            self.buffer_slices[orientation].image = n_image
+            self.buffer_slices[orientation].mask = n_mask
+            self.buffer_slices[orientation].vtk_image = image
+            self.buffer_slices[orientation].vtk_mask = mask
+
         return final_image
 
     def GetImageSlice(self, orientation, slice_number):
-        if self.buffer_slices[orientation] == slice_number:
-            n_image = self.buffer_slices[orientation][3]
+        if self.buffer_slices[orientation].index == slice_number \
+           and self.buffer_slices[orientation].image is not None:
+            n_image = self.buffer_slices[orientation].image
         else:
             if orientation == 'AXIAL':
                 n_image = numpy.array(self.matrix[slice_number])
@@ -307,6 +355,9 @@ class Slice(object):
         # It's necessary because the first position for each dimension from
         # mask matrix is used as flags to control if the mask in the
         # slice_number position has been generated.
+        if self.buffer_slices[orientation].index == slice_number \
+           and self.buffer_slices[orientation].mask is not None:
+            return self.buffer_slices[orientation].mask
         n = slice_number + 1
         if orientation == 'AXIAL':
             if self.current_mask.matrix[n, 0, 0] == 0:
@@ -413,9 +464,8 @@ class Slice(object):
                     self.current_mask.matrix[n+1, 1:, 1:] = m
             else:
                 print "Only one slice"
-                slice_ = self.buffer_slices[orientation][3]
-                self.buffer_slices[orientation][2] = 255 * ((slice_ >= thresh_min) & (slice_ <= thresh_max))
-                print self.buffer_slices[orientation][2].dtype
+                slice_ = self.buffer_slices[orientation].image
+                self.buffer_slices[orientation].mask = 255 * ((slice_ >= thresh_min) & (slice_ <= thresh_max))
 
             # Update viewer
             #ps.Publisher().sendMessage('Update slice viewer')
@@ -437,9 +487,9 @@ class Slice(object):
         proj = Project()
         proj.mask_dict[index].is_shown = value
         if (index == self.current_mask.index):
-            self.buffer_slices = {"AXIAL": [-1, None, None],
-                                  "CORONAL": [-1,None, None],
-                                  "SAGITAL": [-1, None, None]}
+            for buffer_ in self.buffer_slices:
+                buffer_.discard_vtk_mask()
+                buffer_.discard_mask()
             ps.Publisher().sendMessage('Reload actual slice')
     #---------------------------------------------------------------------------
     def ErasePixel(self, position):
@@ -498,9 +548,9 @@ class Slice(object):
         print index
         self.SetMaskColour(index, colour, update=False)
 
-        self.buffer_slices = {"AXIAL": [-1, None, None],
-                              "CORONAL": [-1,None, None],
-                              "SAGITAL": [-1, None, None]}
+        self.buffer_slices = {"AXIAL": SliceBuffer(),
+                              "CORONAL": SliceBuffer(),
+                              "SAGITAL": SliceBuffer()}
 
         ps.Publisher().sendMessage('Set mask threshold in notebook',
                                     (index,
@@ -590,8 +640,12 @@ class Slice(object):
         window, level = pubsub_evt.data
         self.window_width = window
         self.window_level = level
+
+        for buffer_ in self.buffer_slices.values():
+            buffer_.discard_vtk_image()
+
         ps.Publisher().sendMessage('Reload actual slice')
-        ps.Publisher().sendMessage('Update slice viewer')
+
         #window_level = self.window_level
 
         #if not((window == window_level.GetWindow()) and\
