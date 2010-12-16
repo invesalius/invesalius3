@@ -155,8 +155,8 @@ class GradientSlider(wx.Panel):
             value = self._min_position_to_minimun(x)
             self.minimun = value
             self.min_position = x
-            self.Refresh()
             self._generate_event(myEVT_SLIDER_CHANGING)
+            self.Refresh()
         
         # The user is moving the second push (Max)
         elif self.selected == 2:
@@ -169,8 +169,8 @@ class GradientSlider(wx.Panel):
             value = self._max_position_to_maximun(x)
             self.maximun = value
             self.max_position = x
-            self.Refresh()
             self._generate_event(myEVT_SLIDER_CHANGING)
+            self.Refresh()
 
         # The user is moving the slide.
         elif self.selected == 3:
@@ -196,8 +196,8 @@ class GradientSlider(wx.Panel):
                 self.maximun = self.minimun + diff_values
                 self.CalculateControlPositions()
 
-            self.Refresh()
             self._generate_event(myEVT_SLIDER_CHANGING)
+            self.Refresh()
         evt.Skip()
 
 
@@ -416,20 +416,30 @@ class GradientCtrl(wx.Panel):
         self.spin_min.SetMax(value)
         self.spin_max.SetMax(value)
         self.gradient_slider.SetMaxRange(value)
+        self.max_range = value
+        if value > self.max_range:
+            value = self.max_range
 
     def SetMinRange(self, value):
         self.spin_min.SetMin(value)
         self.spin_max.SetMin(value)
         self.gradient_slider.SetMinRange(value)
+        self.min_range = value
+        if value < self.min_range:
+            value = self.min_range
 
     def SetMaxValue(self, value):
         value = int(value)
+        if value > self.max_range:
+            value = int(self.max_range)
         self.spin_max.SetValue(value)
         self.gradient_slider.SetMaximun(value)
         self.maximun = value
 
     def SetMinValue(self, value):
         value = int(value)
+        if value < self.min_range:
+            value = int(self.min_range)
         self.spin_min.SetValue(value)
         self.gradient_slider.SetMinimun(value)
         self.minimun = value
