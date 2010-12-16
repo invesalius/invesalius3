@@ -476,10 +476,20 @@ def dcm2memmap(files, slice_size, orientation):
     matrix = numpy.memmap(temp_file, mode='w+', dtype='int16', shape=shape)
     dcm_reader = vtkgdcm.vtkGDCMImageReader()
     cont = 0
+    max_scalar = None
+    min_scalar = None
     for n, f in enumerate(files):
         dcm_reader.SetFileName(f)
         dcm_reader.Update()
         image = dcm_reader.GetOutput()
+
+        min_aux, max_aux = image.GetScalarRange()
+        if min_scalar is None or min_aux < min_scalar:
+            min_scalar = min_aux
+
+        if max_scalar is None or max_aux > max_scalar:
+            max_scalar = max_aux
+
         array = numpy_support.vtk_to_numpy(image.GetPointData().GetScalars())
         if orientation == 'CORONAL':
             array.shape = matrix.shape[0], matrix.shape[2]
@@ -494,7 +504,9 @@ def dcm2memmap(files, slice_size, orientation):
         cont += 1
 
     matrix.flush()
-    return matrix, temp_file
+    scalar_range = min_scalar, max_scalar
+
+    return matrix, scalar_range, temp_file
 
 def to_vtk(n_array, spacing, slice_number, orientation):
     try:
