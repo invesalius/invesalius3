@@ -408,6 +408,8 @@ class Controller():
         self.Slice.window_width = proj.window
         self.Slice.spacing = header.get_zooms()[:3]
 
+        ps.Publisher().sendMessage('Update threshold limits',
+                                   proj.threshold_range)
 
     def CreateDicomProject(self, imagedata, dicom):
         name_to_const = {"AXIAL":const.AXIAL,
@@ -488,10 +490,11 @@ class Controller():
 
         wl = float(dicom.image.level)
         ww = float(dicom.image.window)
-        self.matrix, self.filename = utils.dcm2memmap(filelist, size,
-                                                      orientation)
+        self.matrix, scalar_range, self.filename = utils.dcm2memmap(filelist, size,
+                                                                    orientation)
         self.Slice = sl.Slice()
         self.Slice.matrix = self.matrix
+        self.Slice.matrix_filename = self.filename
 
         if orientation == 'AXIAL':
             self.Slice.spacing = xyspacing[0], xyspacing[1], zspacing
@@ -502,6 +505,9 @@ class Controller():
 
         self.Slice.window_level = wl
         self.Slice.window_width = ww
+
+        ps.Publisher().sendMessage('Update threshold limits', scalar_range)
+
         return imagedata, dicom
 
     def LoadImagedataInfo(self):
