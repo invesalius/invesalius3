@@ -375,8 +375,7 @@ class SurfaceManager():
         """
         Create surface actor, save into project and send it to viewer.
         """
-        surface_data = pubsub_evt.data
-        mask, spacing = pubsub_evt.data
+        matrix, filename_img, mask, spacing = pubsub_evt.data
         min_value, max_value = mask.threshold_range
         fill_holes = True
 
@@ -439,7 +438,6 @@ class SurfaceManager():
 
         language = ses.Session().language
 
-        filename_img = mask.temp_file
         overwrite = 0
         
         if (prj.Project().original_orientation == const.CORONAL):
@@ -453,8 +451,8 @@ class SurfaceManager():
         o_piece = 1
         piece_size = 40
 
-        n_pieces = int(round(mask.matrix.shape[0] / piece_size + 0.5, 0))
-        print "n_pieces", n_pieces, mask.matrix.shape
+        n_pieces = int(round(matrix.shape[0] / piece_size + 0.5, 0))
+        print "n_pieces", n_pieces, matrix.shape
 
         q_in = multiprocessing.Queue()
         q_out = multiprocessing.Queue()
@@ -462,7 +460,7 @@ class SurfaceManager():
         p = []
         for i in xrange(n_processors):
             sp = surface_process.SurfaceProcess(pipe_in, filename_img,
-                    mask.matrix.shape, mask.matrix.dtype, spacing, 
+                    matrix.shape, matrix.dtype, spacing, 
                     mode, min_value, max_value,
                     decimate_reduction, smooth_relaxation_factor,
                     smooth_iterations, language, fill_holes, keep_largest,

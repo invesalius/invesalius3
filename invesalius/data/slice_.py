@@ -583,7 +583,7 @@ class Slice(object):
 
         mask.matrix.flush()
 
-        ps.Publisher().sendMessage('Create surface', (mask, self.spacing))
+        ps.Publisher().sendMessage('Create surface', (self.matrix, self.matrix_filename, mask, self.spacing))
 
     def GetOutput(self):
         return self.blend_filter.GetOutput()
