@@ -57,46 +57,48 @@ class SurfaceProcess(multiprocessing.Process):
         # Create vtkPolyData from vtkImageData
         #print "Generating Polydata"
         #if self.mode == "CONTOUR":
-            #print "Contour"
-            #contour = vtk.vtkContourFilter()
-            #contour.SetInput(image)
-            #contour.SetValue(0, 127.5) # initial threshold
-            #contour.ComputeScalarsOn()
-            #contour.ComputeGradientsOn()
-            #contour.ComputeNormalsOn()
-            #polydata = contour.GetOutput()
+        #print "Contour"
+        #contour = vtk.vtkContourFilter()
+        #contour.SetInput(image)
+        #contour.SetValue(0, self.min_value) # initial threshold
+        #contour.SetValue(1, self.max_value) # final threshold
+        #contour.ComputeScalarsOn()
+        #contour.ComputeGradientsOn()
+        #contour.ComputeNormalsOn()
+        #polydata = contour.GetOutput()
         #else: #mode == "GRAYSCALE":
-        mcubes = vtk.vtkDiscreteMarchingCubes()
+        mcubes = vtk.vtkMarchingCubes()
         mcubes.SetInput(image)
-        mcubes.SetValue(0, 255)
+        mcubes.SetValue(0, self.min_value)
+        mcubes.SetValue(1, self.max_value)
         mcubes.ComputeScalarsOn()
         mcubes.ComputeGradientsOn()
         mcubes.ComputeNormalsOn()
         polydata = mcubes.GetOutput()
 
-        print "Decimating"
-        if not self.decimate_reduction:
-            decimation = vtk.vtkDecimatePro()
-            decimation.SetInput(polydata)
-            decimation.SetTargetReduction(self.decimate_reduction)
-            decimation.PreserveTopologyOn()
-            decimation.SplittingOff()
-            polydata = decimation.GetOutput()
+        #print "Decimating"
+        #if self.decimate_reduction:
+            #decimation = vtk.vtkDecimatePro()
+            #decimation.SetInput(polydata)
+            #decimation.SetTargetReduction(0)
+            #decimation.PreserveTopologyOn()
+            #decimation.SplittingOff()
+            #polydata = decimation.GetOutput()
 
-        if self.smooth_iterations and self.smooth_relaxation_factor:
-            print "Smoothing"
-            smoother = vtk.vtkWindowedSincPolyDataFilter()
-            smoother.SetInput(polydata)
-            smoother.SetNumberOfIterations(self.smooth_iterations)
-            smoother.SetFeatureAngle(120)
-            smoother.SetNumberOfIterations(30)
-            smoother.BoundarySmoothingOn()
-            smoother.SetPassBand(0.1)
-            smoother.FeatureEdgeSmoothingOn()
-            smoother.NonManifoldSmoothingOn()
-            smoother.NormalizeCoordinatesOn()
-            smoother.Update()
-            polydata = smoother.GetOutput()
+        #if self.smooth_iterations and self.smooth_relaxation_factor:
+            #print "Smoothing"
+            #smoother = vtk.vtkWindowedSincPolyDataFilter()
+            #smoother.SetInput(polydata)
+            #smoother.SetNumberOfIterations(self.smooth_iterations)
+            #smoother.SetFeatureAngle(120)
+            #smoother.SetNumberOfIterations(30)
+            #smoother.BoundarySmoothingOn()
+            #smoother.SetPassBand(0.01)
+            #smoother.FeatureEdgeSmoothingOn()
+            #smoother.NonManifoldSmoothingOn()
+            #smoother.NormalizeCoordinatesOn()
+            #smoother.Update()
+            #polydata = smoother.GetOutput()
 
         print "Saving"
         filename = tempfile.mktemp(suffix='_%s.vtp' % (self.pid))
