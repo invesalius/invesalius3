@@ -26,7 +26,8 @@ import wx.lib.pubsub as ps
 
 import constants as const
 import project as prj
-
+import slice_
+import imagedata_utils
 from data import vtk_utils
 from vtk.util import numpy_support
 
@@ -447,7 +448,14 @@ class Volume():
 
     def LoadVolume(self):
         proj = prj.Project()
-        image = proj.imagedata
+        slice_data = slice_.Slice()
+        n_array = slice_data.matrix
+        spacing = slice_data.spacing
+        slice_number = 0
+        orientation = 'AXIAL'
+
+        image = imagedata_utils.to_vtk(n_array, spacing, slice_number, orientation) 
+        self.image = image
 
         number_filters = len(self.config['convolutionFilters'])
         
@@ -571,8 +579,7 @@ class Volume():
                                       self.volume_mapper)
 
     def CalculateHistogram(self):
-        proj = prj.Project()
-        image = proj.imagedata
+        image = self.image
         r = int(image.GetScalarRange()[1] - image.GetScalarRange()[0])
         accumulate = vtk.vtkImageAccumulate()
         accumulate.SetInput(image)
