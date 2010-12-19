@@ -101,9 +101,8 @@ class LoadDicom:
 
         grouper = self.grouper
         
-        reader = gdcm.Reader()
+        reader = gdcm.ImageReader()
         reader.SetFileName(self.filepath)
-         
         if (reader.Read()):
             file = reader.GetFile()
              
@@ -207,8 +206,20 @@ class LoadDicom:
             write_png.SetFileName(thumbnail_path)
             write_png.Write()
             
+            #------ Verify the orientation --------------------------------
+
+            img = reader.GetImage()
+            direc_cosines = img.GetDirectionCosines()
+            orientation = gdcm.Orientation()
+            try:
+                type = orientation.GetType(tuple(direc_cosines))
+            except TypeError:
+                type = orientation.GetType(direc_cosines)
+            label = orientation.GetLabel(type)
+
+ 
             # ----------   Refactory --------------------------------------
-            data_dict['invesalius'] = {'orientation_label' : GetImageOrientationLabel(self.filepath)}
+            data_dict['invesalius'] = {'orientation_label' : label}
 
             # -------------------------------------------------------------
             dict_file[self.filepath] = data_dict
@@ -238,30 +249,6 @@ class LoadDicom:
             #                labels  = tag_labels)
        
             #plistlib.writePlist(main_dict, ".//teste.plist")"""
-
-
-def GetImageOrientationLabel(filename):
-    """
-    Return Label regarding the orientation of
-    an image. (AXIAL, SAGITTAL, CORONAL,
-    OBLIQUE or UNKNOWN)
-    """
-    gdcm_reader = gdcm.ImageReader()
-    gdcm_reader.SetFileName(filename)
-
-    img = gdcm_reader.GetImage()
-    direc_cosines = img.GetDirectionCosines()
-    orientation = gdcm.Orientation()
-    try:
-        type = orientation.GetType(tuple(direc_cosines))
-    except TypeError:
-        type = orientation.GetType(direc_cosines)
-    label = orientation.GetLabel(type)
-
-    if (label):
-        return label
-    else:
-        return ""
 
 
 def yGetDicomGroups(directory, recursive=True, gui=True):
