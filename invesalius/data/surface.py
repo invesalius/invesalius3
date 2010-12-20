@@ -489,16 +489,16 @@ class SurfaceManager():
             polydata_append.AddInput(reader.GetOutput())
 
             t -= 1
-
         polydata = polydata_append.GetOutput()
 
         clean = vtk.vtkCleanPolyData()
         clean.SetInput(polydata)
         clean.PointMergingOn()
+        polydata = clean.GetOutput()
 
         # Improve performance
         stripper = vtk.vtkStripper()
-        stripper.SetInput(clean.GetOutput())
+        stripper.SetInput(polydata)
         stripper.PassThroughCellIdsOn()
         stripper.PassThroughPointIdsOn()
 
