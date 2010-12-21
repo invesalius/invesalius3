@@ -76,6 +76,19 @@ class SurfaceProcess(multiprocessing.Process):
         mcubes.ComputeNormalsOn()
         polydata = mcubes.GetOutput()
 
+
+        triangle = vtk.vtkTriangleFilter()
+        triangle.SetInput(polydata)
+        triangle.Update()
+        polydata = triangle.GetOutput()
+
+        bounds = polydata.GetBounds()
+        origin = ((bounds[1] + bounds[0]) / 2.0, (bounds[3] + bounds[2])/2.0,
+                  (bounds[5] + bounds[4]) / 2.0)
+
+        print "Bounds is", bounds
+        print "origin is", origin
+
         #print "Decimating"
         #if self.decimate_reduction:
             #decimation = vtk.vtkDecimatePro()
@@ -84,6 +97,20 @@ class SurfaceProcess(multiprocessing.Process):
             #decimation.PreserveTopologyOn()
             #decimation.SplittingOff()
             #polydata = decimation.GetOutput()
+
+        decimation = vtk.vtkQuadricClustering()
+        decimation.SetInput(polydata)
+        decimation.AutoAdjustNumberOfDivisionsOff()
+        decimation.SetDivisionOrigin(0, 0, 0)
+        decimation.SetDivisionSpacing(self.spacing)
+        decimation.SetFeaturePointsAngle(80)
+        decimation.UseFeaturePointsOn()
+        decimation.UseFeatureEdgesOn()
+        decimation.CopyCellDataOn()
+        
+        print "Division", decimation.GetNumberOfDivisions()
+        
+        polydata = decimation.GetOutput()
 
         #if self.smooth_iterations and self.smooth_relaxation_factor:
             #print "Smoothing"
