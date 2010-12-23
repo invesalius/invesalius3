@@ -218,8 +218,10 @@ class Controller():
     def Tools_Interpolation(self, pubsub_evt):
         print "Running histogram equalization..."
         scn = libscnvtk.VtkImageDataToScene(prj.Project().imagedata)
+        flag=libift.ShiftScene(scn)
         scn2 = libift.LinearInterp(scn,0,0,0)
         libift.NewDestroyScene(scn)
+        libift.UnShiftScene(scn2,flag)
         newimg = libscnvtk.SceneToVtkImageData(scn2)
         libift.NewDestroyScene(scn2)
         self.CloseProject()
