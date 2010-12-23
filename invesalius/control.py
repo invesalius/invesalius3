@@ -35,6 +35,9 @@ import reader.analyze_reader as analyze
 import reader.dicom_grouper as dg
 import reader.dicom_reader as dcm
 import session as ses
+import libc.libalign.libalign as libalign
+import libc.libift.libift as libift
+import libc.libscnvtk.libscnvtk as libscnvtk
 
 from utils import debug
 
@@ -63,6 +66,16 @@ class Controller():
 
         ps.Publisher().subscribe(self.OnShowDialogSaveProject, 'Show save dialog')
 
+        ps.Publisher().subscribe(self.OnAlignVolume, 'Align volume')
+        ps.Publisher().subscribe(self.Tools_Gaussian, 'Tools gaussian')
+        ps.Publisher().subscribe(self.Tools_Median, 'Tools median')
+        ps.Publisher().subscribe(self.Tools_Mode, 'Tools mode')
+        ps.Publisher().subscribe(self.Tools_Sobel, 'Tools sobel')
+        ps.Publisher().subscribe(self.Tools_EraseBackground, 'Tools erase background')
+        ps.Publisher().subscribe(self.Tools_EraseSupport, 'Tools erase support')
+        ps.Publisher().subscribe(self.Tools_HistogramEqualization, 'Tools histogram equalization')
+        ps.Publisher().subscribe(self.Tools_Interpolation, 'Tools interpolation')
+
         ps.Publisher().subscribe(self.LoadRaycastingPreset,
                                  'Load raycasting preset')
         ps.Publisher().subscribe(self.SaveRaycastingPreset,
@@ -75,7 +88,8 @@ class Controller():
         ps.Publisher().subscribe(self.OnShowDialogCloseProject, 'Close Project')
         ps.Publisher().subscribe(self.OnOpenProject, 'Open project')
         ps.Publisher().subscribe(self.OnOpenRecentProject, 'Open recent project')
-        ps.Publisher().subscribe(self.OnShowAnalyzeFile, 'Show analyze dialog')
+        ps.Publisher().subscribe(self.OnShowImportAnalyzeFile, 'Show analyze import dialog')
+        ps.Publisher().subscribe(self.OnShowExportAnalyzeFile, 'Show analyze export dialog')
         
 
     def OnCancelImport(self, pubsub_evt):
@@ -84,10 +98,145 @@ class Controller():
 
 
 ###########################
+
+    def OnAlignVolume(self, pubsub_evt):
+        #bi = wx.BusyInfo("Working, please wait...", self)
+        proj = prj.Project()
+        newimg = libalign.VolumeAlign(proj.imagedata)
+        #bi.Destroy()
+        self.CloseProject()
+        self.CreateAnalyzeProject(newimg)
+        self.LoadProject()
+        ps.Publisher().sendMessage("Enable state project", True)
+
+
+###########################
+
+    def Tools_Gaussian(self, pubsub_evt):
+        print "Running gaussian smoothing..."
+        adj=libift.Spheric(2)
+        kernel = libift.GaussianKernel3(adj,2)
+        kernel2 = libift.NormalizeKernel3(kernel)
+        scn = libscnvtk.VtkImageDataToScene(prj.Project().imagedata)
+        flag=libift.ShiftScene(scn)
+        scn2 = libift.LinearFilter3(scn,kernel2)
+        libift.NewDestroyScene(scn)
+        libift.UnShiftScene(scn2,flag)
+        newimg = libscnvtk.SceneToVtkImageData(scn2)
+        libift.NewDestroyScene(scn2)
+        self.CloseProject()
+        self.CreateAnalyzeProject(newimg)
+        self.LoadProject()
+        ps.Publisher().sendMessage("Enable state project", True)
+
+    def Tools_Median(self, pubsub_evt):
+        print "Running median filter..."
+        adj=libift.Spheric(2)
+        scn = libscnvtk.VtkImageDataToScene(prj.Project().imagedata)
+        flag=libift.ShiftScene(scn)
+        scn2 = libift.MedianFilter3(scn,adj)
+        libift.NewDestroyScene(scn)
+        libift.UnShiftScene(scn2,flag)
+        newimg = libscnvtk.SceneToVtkImageData(scn2)
+        libift.NewDestroyScene(scn2)
+        self.CloseProject()
+        self.CreateAnalyzeProject(newimg)
+        self.LoadProject()
+        ps.Publisher().sendMessage("Enable state project", True)
+
+    def Tools_Mode(self, pubsub_evt):
+        print "Running mode filter..."
+        adj=libift.Spheric(2)
+        scn = libscnvtk.VtkImageDataToScene(prj.Project().imagedata)
+        flag=libift.ShiftScene(scn)
+        scn2 = libift.ModeFilter3(scn,adj)
+        libift.NewDestroyScene(scn)
+        libift.UnShiftScene(scn2,flag)
+        newimg = libscnvtk.SceneToVtkImageData(scn2)
+        libift.NewDestroyScene(scn2)
+        self.CloseProject()
+        self.CreateAnalyzeProject(newimg)
+        self.LoadProject()
+        ps.Publisher().sendMessage("Enable state project", True)
+
+    def Tools_Sobel(self, pubsub_evt):
+        print "Running sobel filter..."
+        scn = libscnvtk.VtkImageDataToScene(prj.Project().imagedata)
+        flag=libift.ShiftScene(scn)
+        scn2 = libift.SobelFilter3(scn)
+        libift.NewDestroyScene(scn)
+        libift.UnShiftScene(scn2,flag)
+        newimg = libscnvtk.SceneToVtkImageData(scn2)
+        libift.NewDestroyScene(scn2)
+        self.CloseProject()
+        self.CreateAnalyzeProject(newimg)
+        self.LoadProject()
+        ps.Publisher().sendMessage("Enable state project", True)
+
+    def Tools_EraseBackground(self, pubsub_evt):
+        print "Running erase background..."
+        scn = libscnvtk.VtkImageDataToScene(prj.Project().imagedata)
+        flag=libift.ShiftScene(scn)
+        scn2 = libift.EraseBackground(scn)
+        libift.NewDestroyScene(scn)
+        libift.UnShiftScene(scn2,flag)
+        newimg = libscnvtk.SceneToVtkImageData(scn2)
+        libift.NewDestroyScene(scn2)
+        self.CloseProject()
+        self.CreateAnalyzeProject(newimg)
+        self.LoadProject()
+        ps.Publisher().sendMessage("Enable state project", True)
+
+    def Tools_EraseSupport(self, pubsub_evt):
+        print "Running erase support..."
+        scn = libscnvtk.VtkImageDataToScene(prj.Project().imagedata)
+        flag=libift.ShiftScene(scn)
+        scn2 = libift.EraseSupport(scn)
+        libift.NewDestroyScene(scn)
+        libift.UnShiftScene(scn2,flag)
+        newimg = libscnvtk.SceneToVtkImageData(scn2)
+        libift.NewDestroyScene(scn2)
+        self.CloseProject()
+        self.CreateAnalyzeProject(newimg)
+        self.LoadProject()
+        ps.Publisher().sendMessage("Enable state project", True)
+
+    def Tools_HistogramEqualization(self, pubsub_evt):
+        print "Running histogram equalization..."
+        scn = libscnvtk.VtkImageDataToScene(prj.Project().imagedata)
+        flag=libift.ShiftScene(scn)
+        scn2 = libift.Equalize3(scn,4095)
+        libift.NewDestroyScene(scn)
+        libift.UnShiftScene(scn2,flag)
+        newimg = libscnvtk.SceneToVtkImageData(scn2)
+        libift.NewDestroyScene(scn2)
+        self.CloseProject()
+        self.CreateAnalyzeProject(newimg)
+        self.LoadProject()
+        ps.Publisher().sendMessage("Enable state project", True)
+
+    def Tools_Interpolation(self, pubsub_evt):
+        print "Running histogram equalization..."
+        scn = libscnvtk.VtkImageDataToScene(prj.Project().imagedata)
+        scn2 = libift.LinearInterp(scn,0,0,0)
+        libift.NewDestroyScene(scn)
+        newimg = libscnvtk.SceneToVtkImageData(scn2)
+        libift.NewDestroyScene(scn2)
+        self.CloseProject()
+        self.CreateAnalyzeProject(newimg)
+        self.LoadProject()
+        ps.Publisher().sendMessage("Enable state project", True)
+
+
+
+###########################
 ###########################
 
     def OnShowDialogImportDirectory(self, pubsub_evt):
         self.ShowDialogImportDirectory()
+
+ #    def OnShowDialogImportAnalyze(self, pubsub_evt):
+ #       self.ShowDialogImportAnalyze()
 
     def OnShowDialogOpenProject(self, pubsub_evt):
         self.ShowDialogOpenProject()
@@ -99,14 +248,23 @@ class Controller():
     def OnShowDialogCloseProject(self, pubsub_evt):
         self.ShowDialogCloseProject()
 
-    def OnShowAnalyzeFile(self, pubsub_evt):
+    def OnShowImportAnalyzeFile(self, pubsub_evt):
         dirpath = dialog.ShowOpenAnalyzeDialog()
         imagedata = analyze.ReadAnalyze(dirpath)
         if imagedata:
             self.CreateAnalyzeProject(imagedata)
-            
         self.LoadProject()
         ps.Publisher().sendMessage("Enable state project", True)
+
+    def OnShowExportAnalyzeFile(self, pubsub_evt):
+        dirpath = dialog.ShowSaveAnalyzeDialog()
+        proj = prj.Project()
+        name=dirpath.encode('utf-8')
+        libalign.libscnvtk.WriteVtkImageData(proj.imagedata,name)
+        wx.MessageBox(_("Written successfully!"), 'Info')
+
+
+
 
 
 ###########################
@@ -127,7 +285,8 @@ class Controller():
             dialog.ImportEmptyDirectory(dirpath)
         elif dirpath:
             self.StartImportPanel(dirpath)
-            ps.Publisher().sendMessage("Load data to import panel", dirpath)
+            #ps.Publisher().sendMessage("Load data to import panel", dirpath)
+
 
     def ShowDialogOpenProject(self):
         # Offer to save current project if necessary

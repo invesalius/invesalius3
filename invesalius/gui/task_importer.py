@@ -28,6 +28,7 @@ import constants as const
 import gui.dialogs as dlg
 
 BTN_IMPORT_LOCAL = wx.NewId()
+#BTN_IMPORT_ANA = wx.NewId()
 BTN_IMPORT_PACS = wx.NewId()
 BTN_OPEN_PROJECT = wx.NewId()
 
@@ -61,14 +62,23 @@ class InnerTaskPanel(wx.Panel):
         self.float_hyper_list = []
 
         # Fixed hyperlink items
-        tooltip = wx.ToolTip(_("Select DICOM or Analyze files to be reconstructed"))
-        link_import_local = hl.HyperLinkCtrl(self, -1, _("Import medical images..."))
+        tooltip = wx.ToolTip(_("Select DICOM to be reconstructed"))
+        link_import_local = hl.HyperLinkCtrl(self, -1, _("Import DICOM image..."))
         link_import_local.SetUnderlines(False, False, False)
         link_import_local.SetColours("BLACK", "BLACK", "BLACK")
         link_import_local.SetToolTip(tooltip)
         link_import_local.AutoBrowse(False)
         link_import_local.UpdateLink()
         link_import_local.Bind(hl.EVT_HYPERLINK_LEFT, self.OnLinkImport)
+
+        #tooltip = wx.ToolTip(_("Select Analyze file to be reconstructed"))
+        #link_import_ana = hl.HyperLinkCtrl(self, -1, _("Import Analyze image..."))
+        #link_import_ana.SetUnderlines(False, False, False)
+        #link_import_ana.SetColours("BLACK", "BLACK", "BLACK")
+        #link_import_ana.SetToolTip(tooltip)
+        #link_import_ana.AutoBrowse(False)
+        #link_import_ana.UpdateLink()
+        #link_import_ana.Bind(hl.EVT_HYPERLINK_LEFT, self.OnLinkImportAnalyze)
 
         #tooltip = wx.ToolTip("Import DICOM files from PACS server")
         #link_import_pacs = hl.HyperLinkCtrl(self, -1,"Load from PACS server...")
@@ -105,6 +115,8 @@ class InnerTaskPanel(wx.Panel):
         #                                      style=button_style)
         button_import_local = pbtn.PlateButton(self, BTN_IMPORT_LOCAL, "",
                                                BMP_IMPORT, style=button_style)
+        #button_import_ana = pbtn.PlateButton(self, BTN_IMPORT_ANA, "",
+        #                                       BMP_IMPORT, style=button_style)
         button_open_proj = pbtn.PlateButton(self, BTN_OPEN_PROJECT, "",
                                             BMP_OPEN_PROJECT, style=button_style)
 
@@ -122,6 +134,8 @@ class InnerTaskPanel(wx.Panel):
                               #(button_import_pacs, 0, flag_button),
                               (link_import_local, 1, flag_link, 3),
                               (button_import_local, 0, flag_button),
+                              #(link_import_ana, 1, flag_link, 3),
+                              #(button_import_ana, 0, flag_button),
                               (link_open_proj, 1, flag_link, 3),
                               (button_open_proj, 0, flag_button) ])
 
@@ -202,6 +216,10 @@ class InnerTaskPanel(wx.Panel):
         self.ImportDicom()
         event.Skip()
     
+    def OnLinkImportAnalyze(self, event):
+        self.ImportAnalyze()
+        event.Skip()
+    
     def OnLinkImportPACS(self, event):
         self.ImportPACS()
         event.Skip()
@@ -218,6 +236,9 @@ class InnerTaskPanel(wx.Panel):
 #######
     def ImportDicom(self):
         ps.Publisher().sendMessage('Show import directory dialog')
+
+    def ImportAnalyze(self):
+        ps.Publisher().sendMessage('Show import analyze dialog')
 
     def OpenProject(self, path=None):
         if path:
@@ -240,6 +261,8 @@ class InnerTaskPanel(wx.Panel):
 
         if id == BTN_IMPORT_LOCAL:
             self.ImportDicom()
+        #elif id == BTN_IMPORT_ANA:
+        #    self.ImportAnalyze()
         elif id == BTN_IMPORT_PACS:
             self.ImportPACS()
         else: #elif id == BTN_OPEN_PROJECT:

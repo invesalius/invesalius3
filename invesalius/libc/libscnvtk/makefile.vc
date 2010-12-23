@@ -1,0 +1,36 @@
+
+#----------------------------------------------------------------------
+# This is the Makefile to compile lib-ift with MS Visual C++ (cl.exe)
+# using the GNU make or NMAKE.
+#
+# Instruction:  Open the "Visual Studio Command Prompt" and type 
+#               "C:\ift> make -f makefile.vc" or 
+#               "C:\ift> nmake -f makefile.vc"
+#
+#----------------------------------------------------------------------
+
+# Set these variables first
+IFT_DIR="C:\ift"
+PY_INC="C:\Python26\include"
+PY_LIB="C:\Python26\libs\python26.lib"
+VTK_INC="C:\Arquivos de programas\VTK\include\vtk-5.4"
+
+PROG=scnvtk
+
+all: _$(PROG).pyd
+
+_$(PROG).pyd: $(PROG).i $(PROG).cxx
+	@echo Generating wrappers...
+	@swig -c++ -python $(PROG).i
+	@echo Compiling...
+	@cl.exe /nologo /EHsc -c $(PROG).cxx $(PROG)_wrap.cxx -I $(PY_INC) -I $(VTK_INC) -I $(IFT_DIR)\include
+	@echo Linking...
+	@link.exe /nologo -dll $(PROG).obj $(PROG)_wrap.obj $(PY_LIB) $(IFT_DIR)\lib\libift.lib -out:_$(PROG).pyd  
+	@echo Done.
+
+clean: 
+	del $(PROG).o $(PROG).py $(PROG)_wrap.c $(PROG)_wrap.o $(PROG).py _$(PROG).so *.pyc *.obj *.pyd *.exp *.lib *~
+
+
+
+

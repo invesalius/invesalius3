@@ -145,11 +145,13 @@ class Frame(wx.Frame):
             t2 = LayoutToolBar(self)
             t3 = ObjectToolBar(self)
             t4 = SliceToolBar(self)
+            t5 = ImageProcessingToolBar(self)
         else:
-            t4 = ProjectToolBar(self)
-            t3 = LayoutToolBar(self)
-            t2 = ObjectToolBar(self)
-            t1 = SliceToolBar(self)
+            t5 = ProjectToolBar(self)
+            t4 = LayoutToolBar(self)
+            t3 = ObjectToolBar(self)
+            t2 = SliceToolBar(self)
+            t1 = ImageProcessingToolBar(self)
 
         aui_manager.AddPane(t1, wx.aui.AuiPaneInfo().
                           Name("General Features Toolbar").
@@ -168,6 +170,11 @@ class Frame(wx.Frame):
 
         aui_manager.AddPane(t4, wx.aui.AuiPaneInfo().
                           Name("Slice Toolbar").
+                          ToolbarPane().Top().Floatable(False).
+                          LeftDockable(False).RightDockable(False))
+
+        aui_manager.AddPane(t5, wx.aui.AuiPaneInfo().
+                          Name("Image Processing Toolbar").
                           ToolbarPane().Top().Floatable(False).
                           LeftDockable(False).RightDockable(False))
 
@@ -296,12 +303,32 @@ class Frame(wx.Frame):
             self.ShowOpenProject()
         elif id == const.ID_ANALYZE_IMPORT:
             self.ShowAnalyzeImporter()
+        elif id == const.ID_ANALYZE_EXPORT:
+            self.ShowAnalyzeExporter()
         elif id == const.ID_PROJECT_SAVE:
             session = ses.Session()
             if session.temp_item:
                 self.ShowSaveAsProject()
             else:
                 self.SaveProject()
+        elif id == const.ID_ALIGN:
+            self.AlignVolume()
+        elif id == const.ID_GAUSSIAN:
+            self.Tools_Gaussian()
+        elif id == const.ID_MEDIAN:
+            self.Tools_Median()
+        elif id == const.ID_MODE:
+            self.Tools_Mode()
+        elif id == const.ID_SOBEL:
+            self.Tools_Sobel()
+        elif id == const.ID_ERASEBG:
+            self.Tools_EraseBackground()
+        elif id == const.ID_ERASESUP:
+            self.Tools_EraseSupport()
+        elif id == const.ID_HISTEQ:
+            self.Tools_HistogramEqualization()
+        elif id == const.ID_INTERP:
+            self.Tools_Interpolation()
         elif id == const.ID_PROJECT_SAVE_AS:
             self.ShowSaveAsProject()
         elif id == const.ID_PROJECT_CLOSE:
@@ -325,6 +352,60 @@ class Frame(wx.Frame):
         Shows about dialog.
         """
         dlg.ShowAboutDialog(self)
+
+    def AlignVolume(self):
+        """
+        Align the image.
+        """
+        ps.Publisher().sendMessage('Align volume')
+
+    def Tools_Gaussian(self):
+        """
+        Gaussian Smoothing.
+        """
+        ps.Publisher().sendMessage('Tools gaussian')
+
+    def Tools_Median(self):
+        """
+        Median Filter
+        """
+        ps.Publisher().sendMessage('Tools median')
+
+    def Tools_Mode(self):
+        """
+        Mode Filter
+        """
+        ps.Publisher().sendMessage('Tools mode')
+
+    def Tools_Sobel(self):
+        """
+        Sobel Filter
+        """
+        ps.Publisher().sendMessage('Tools sobel')
+
+    def Tools_EraseBackground(self):
+        """
+        Erase background
+        """
+        ps.Publisher().sendMessage('Tools erase background')
+
+    def Tools_EraseSupport(self):
+        """
+        Erase support
+        """
+        ps.Publisher().sendMessage('Tools erase support')
+
+    def Tools_HistogramEqualization(self):
+        """
+        Histogram Equalization
+        """
+        ps.Publisher().sendMessage('Tools histogram equalization')
+
+    def Tools_Interpolation(self):
+        """
+        Interpolation
+        """
+        ps.Publisher().sendMessage('Tools interpolation')
 
     def SaveProject(self):
         """
@@ -362,7 +443,13 @@ class Frame(wx.Frame):
         """
         Show save as dialog.
         """
-        ps.Publisher().sendMessage('Show analyze dialog', True)
+        ps.Publisher().sendMessage('Show analyze import dialog', True)
+
+    def ShowAnalyzeExporter(self):
+        """
+        Show save as dialog.
+        """
+        ps.Publisher().sendMessage('Show analyze export dialog', True)
 
 # ------------------------------------------------------------------
 # ------------------------------------------------------------------
@@ -406,14 +493,19 @@ class MenuBar(wx.MenuBar):
         # TODO: This definetely needs improvements... ;)
         
         #Import Others Files
-        others_file_menu = wx.Menu()
-        others_file_menu.Append(const.ID_ANALYZE_IMPORT, "Analyze")
+        others_import_file_menu = wx.Menu()
+        others_import_file_menu.Append(const.ID_ANALYZE_IMPORT, "Analyze")
+
+        #Import Others Files
+        others_export_file_menu = wx.Menu()
+        others_export_file_menu.Append(const.ID_ANALYZE_EXPORT, "Analyze")
 
         # FILE
         file_menu = wx.Menu()
         app = file_menu.Append
         app(const.ID_DICOM_IMPORT, _("Import DICOM...\tCtrl+I"))
-        file_menu.AppendMenu(const.ID_IMPORT_OTHERS_FILES, _("Import Others Files"), others_file_menu)
+        file_menu.AppendMenu(const.ID_IMPORT_OTHERS_FILES, _("Import Other Files"), others_import_file_menu)
+        file_menu.AppendMenu(const.ID_EXPORT_OTHERS_FILES, _("Export Other Files"), others_export_file_menu)
         app(const.ID_PROJECT_OPEN, _("Open Project...\tCtrl+O"))
         app(const.ID_PROJECT_SAVE, _("Save Project\tCtrl+S"))
         app(const.ID_PROJECT_SAVE_AS, _("Save Project As..."))
@@ -461,7 +553,16 @@ class MenuBar(wx.MenuBar):
         #app(const.ID_VIEW_3D_BACKGROUND, "3D Background Colour")
 
         # TOOLS
-        #tools_menu = wx.Menu()
+        tools_menu = wx.Menu()
+        tools_menu.Append(const.ID_ALIGN, _("Symmetry Alignment"))
+        tools_menu.Append(const.ID_GAUSSIAN, _("Gaussian Smoothing"))
+        tools_menu.Append(const.ID_MEDIAN, _("Median Filter"))
+        tools_menu.Append(const.ID_MODE, _("Mode Filter"))
+        tools_menu.Append(const.ID_SOBEL, _("Sobel Filter"))
+        tools_menu.Append(const.ID_HISTEQ, _("Histogram Equalization"))
+        tools_menu.Append(const.ID_INTERP, _("Isotropic Interpolation"))
+        tools_menu.Append(const.ID_ERASEBG, _("Erase Background"))
+        tools_menu.Append(const.ID_ERASESUP, _("Erase Head Support"))
 
         # OPTIONS
         #options_menu = wx.Menu()
@@ -491,7 +592,7 @@ class MenuBar(wx.MenuBar):
         self.Append(file_menu, _("File"))
         #self.Append(file_edit, "Edit")
         #self.Append(view_menu, "View")
-        #self.Append(tools_menu, "Tools")
+        self.Append(tools_menu, "Tools")
         #self.Append(options_menu, "Options")
         self.Append(help_menu, _("Help"))
 
@@ -644,6 +745,8 @@ class TaskBarIcon(wx.TaskBarIcon):
     def OnTaskBarActivate(self, evt):
         pass
 
+
+
 # ------------------------------------------------------------------
 # ------------------------------------------------------------------
 # ------------------------------------------------------------------
@@ -771,10 +874,10 @@ class ProjectToolBar(wx.ToolBar):
             self.EnableTool(tool, True)
 
 
+# ------------------------------------------------------------------
+# ------------------------------------------------------------------
+# ------------------------------------------------------------------
 
-# ------------------------------------------------------------------
-# ------------------------------------------------------------------
-# ------------------------------------------------------------------
 
 class ObjectToolBar(wx.ToolBar):
     """
@@ -1307,3 +1410,87 @@ class LayoutToolBar(wx.ToolBar):
             ps.Publisher().sendMessage('Update AUI')
             self.ontool_text = True
 
+# ------------------------------------------------------------------
+# ------------------------------------------------------------------
+# ------------------------------------------------------------------
+
+class ImageProcessingToolBar(wx.ToolBar):
+    """
+    Toolbar related to general project operations, including: import,
+    open, save and saveas, among others.
+    """
+    def __init__(self, parent):
+        style = wx.TB_FLAT|wx.TB_NODIVIDER| wx.TB_DOCKABLE
+        wx.ToolBar.__init__(self, parent, -1, wx.DefaultPosition,
+                            wx.DefaultSize,
+                            style)
+        self.SetToolBitmapSize(wx.Size(32,32))
+
+        self.parent = parent
+
+        # Used to enable/disable menu items if project is opened or
+        # not. Eg. save should only be available if a project is open
+        self.enable_items = [const.ID_ALIGN]
+
+        self.__init_items()
+        self.__bind_events()
+
+        self.Realize()
+        self.SetStateProjectClose()
+
+    def __bind_events(self):
+        """
+        Bind events related to pubsub.
+        """
+        sub = ps.Publisher().subscribe
+        sub(self._EnableState, "Enable state project")
+
+    def __init_items(self):
+        """
+        Add tools into toolbar.
+        """
+        # Load bitmaps
+        d = const.ICON_DIR
+        if sys.platform == 'darwin':
+            path = os.path.join(d, "ip_align_original.png")
+            BMP_SAVE = wx.Bitmap(path, wx.BITMAP_TYPE_PNG)
+        else:
+            path = os.path.join(d, "ip_align.png")
+            BMP_SAVE = wx.Bitmap(path, wx.BITMAP_TYPE_PNG)
+
+        # Create tool items based on bitmaps
+        self.AddLabelTool(const.ID_ALIGN,
+                          "",
+                          shortHelp = _("Symmetry Alignment"),
+                          bitmap=BMP_SAVE)
+
+
+    def _EnableState(self, pubsub_evt):
+        """
+        Based on given state, enable or disable menu items which
+        depend if project is open or not.
+        """
+        state = pubsub_evt.data
+        if state:
+            self.SetStateProjectOpen()
+        else:
+            self.SetStateProjectClose()
+
+    def SetStateProjectClose(self):
+        """
+        Disable menu items (e.g. save) when project is closed.
+        """
+        for tool in self.enable_items:
+            self.EnableTool(tool, False)
+
+    def SetStateProjectOpen(self):
+        """
+        Enable menu items (e.g. save) when project is opened.
+        """
+        for tool in self.enable_items:
+            self.EnableTool(tool, True)
+
+
+# ------------------------------------------------------------------
+# ------------------------------------------------------------------
+# ------------------------------------------------------------------
