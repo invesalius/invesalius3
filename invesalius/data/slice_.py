@@ -412,7 +412,10 @@ class Slice(object):
                                     (index, (r,g,b)))
         ps.Publisher().sendMessage('Set GUI items colour', colour_wx)
         if update:
-            ps.Publisher().sendMessage('Update slice viewer')
+            # Updating mask colour on vtkimagedata.
+            for buffer_ in self.buffer_slices.values():
+                buffer_.discard_vtk_mask()
+            ps.Publisher().sendMessage('Reload actual slice')
 
         session = ses.Session()
         session.ChangeProject()
