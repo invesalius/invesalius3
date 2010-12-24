@@ -1330,7 +1330,7 @@ class Viewer(wx.Panel):
         pos = self.scroll.GetThumbPosition()
 
         min = 0
-        max = self.actor.GetSliceNumberMax()
+        max = self.slice_.GetMaxSliceNumber(self.orientation)
 
         if (evt.GetKeyCode() == wx.WXK_UP and pos > min):
             self.OnScrollForward()
@@ -1359,7 +1359,7 @@ class Viewer(wx.Panel):
     
     def OnScrollBackward(self, evt=None, obj=None):
         pos = self.scroll.GetThumbPosition()
-        max = self.actor.GetSliceNumberMax()
+        max = self.slice_.GetMaxSliceNumber(self.orientation)
         
         if(pos < max):
             pos = pos + 1

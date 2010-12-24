@@ -126,6 +126,16 @@ class Slice(object):
         ps.Publisher().subscribe(self.OnRemoveMasks, 'Remove masks')
         ps.Publisher().subscribe(self.OnDuplicateMasks, 'Duplicate masks')
 
+    def GetMaxSliceNumber(self, orientation):
+        shape = self.matrix.shape
+
+        if orientation == 'AXIAL':
+            return shape[0]
+        elif orientation == 'CORONAL':
+            return shape[1]
+        elif orientation == 'SAGITAL':
+            return shape[2]
+
     def OnRemoveMasks(self, pubsub_evt):
         selected_items = pubsub_evt.data
         proj = Project()
