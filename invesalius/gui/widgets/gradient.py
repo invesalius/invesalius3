@@ -379,16 +379,14 @@ class GradientCtrl(wx.Panel):
     def _FireSpinMinChange(self, evt):
         value = int(self.spin_min.GetValue())
         if value != self.GetMinValue():
-            self.gradient_slider.SetMinimun(value)
-            self.minimun = value
-            self._GenerateEvent(myEVT_THRESHOLD_CHANGE)
+            self.SetMinValue(value)
+            self._GenerateEvent(myEVT_THRESHOLD_CHANGING)
 
     def _FireSpinMaxChange(self, evt):
         value = int(self.spin_max.GetValue())
         if value != self.GetMaxValue():
-            self.gradient_slider.SetMaximun(value)
-            self.maximun = value
-            self._GenerateEvent(myEVT_THRESHOLD_CHANGE)
+            self.SetMaxValue(value)
+            self._GenerateEvent(myEVT_THRESHOLD_CHANGING)
 
     def OnMinMouseWheel(self, e):
         """ 
