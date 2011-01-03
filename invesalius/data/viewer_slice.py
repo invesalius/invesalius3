@@ -65,6 +65,7 @@ class Viewer(wx.Panel):
 
         # All renderers and image actors in this viewer
         self.slice_data_list = []
+        self.slice_data = None
         # The layout from slice_data, the first is number of cols, the second
         # is the number of rows
         self.layout = (1, 1)
@@ -163,15 +164,10 @@ class Viewer(wx.Panel):
         self.SetLayout(layout)
 
     def __config_interactor(self):
-        ren = vtk.vtkRenderer()
         style = vtk.vtkInteractorStyleImage()
 
         interactor = self.interactor
         interactor.SetInteractorStyle(style)
-        interactor.GetRenderWindow().AddRenderer(ren)
-
-        self.cam = ren.GetActiveCamera()
-        self.ren = ren
 
     def SetInteractorStyle(self, state):
         self.state = state
@@ -362,7 +358,7 @@ class Viewer(wx.Panel):
     def OnChangeSliceMove(self, evt, obj):
         if (self.left_pressed):
             min = 0
-            max = self.actor.GetSliceNumberMax()
+            max = self.slice_.GetMaxSliceNumber(self.orientation)
     
             if (self.left_pressed):
                 position = self.interactor.GetLastEventPosition()
@@ -484,11 +480,11 @@ class Viewer(wx.Panel):
                                       down_text]
 
 
-            self.ren.AddActor(self.wl_text.actor)
-            self.ren.AddActor(left_text.actor)
-            self.ren.AddActor(right_text.actor)
-            self.ren.AddActor(up_text.actor)
-            self.ren.AddActor(down_text.actor)
+            self.slice_data.renderer.AddActor(self.wl_text.actor)
+            self.slice_data.renderer.AddActor(left_text.actor)
+            self.slice_data.renderer.AddActor(right_text.actor)
+            self.slice_data.renderer.AddActor(up_text.actor)
+            self.slice_data.renderer.AddActor(down_text.actor)
 
     def Reposition(self, slice_data):
         """
@@ -747,9 +743,11 @@ class Viewer(wx.Panel):
         evt.StartDolly()
 
     def get_slice_data(self, render):
-        for slice_data in self.slice_data_list:
-            if slice_data.renderer is render:
-                return slice_data
+        #for slice_data in self.slice_data_list:
+            #if slice_data.renderer is render:
+                #return slice_data
+        # WARN: Return the only slice_data used in this slice_viewer. 
+        return self.slice_data
 
     def CalcultateScrollPosition(self, coord):
         # Based in the given coord (x, y, z), returns a list with the scroll positions for each
@@ -1060,11 +1058,13 @@ class Viewer(wx.Panel):
         self.scroll.SetScrollbar(wx.SB_VERTICAL, 1, max_slice_number,
                                  max_slice_number)
 
-        self.actor = vtk.vtkImageActor()
-        self.ren.AddActor(self.actor)
+        self.slice_data = self.create_slice_window()
+        self.slice_data.actor.SetInput(imagedata)
+        self.cam = self.slice_data.renderer.GetActiveCamera()
         self.set_slice_number(0)
         self.__update_camera()
-        self.ren.ResetCamera()
+        self.slice_data.renderer.ResetCamera()
+        self.interactor.GetRenderWindow().AddRenderer(self.slice_data.renderer)
         #if slice_.imagedata is None:
             #slice_.SetInput(imagedata, mask_dict)
             
@@ -1249,16 +1249,15 @@ class Viewer(wx.Panel):
         for slice_data in self.slice_data_list:
             self.__update_camera(slice_data)
 
-    def create_slice_window(self, imagedata):
+    def create_slice_window(self):
         renderer = vtk.vtkRenderer()
         self.interactor.GetRenderWindow().AddRenderer(renderer)
         actor = vtk.vtkImageActor()
-        actor.SetInput(imagedata)
         slice_data = sd.SliceData()
         slice_data.SetOrientation(self.orientation)
         slice_data.renderer = renderer
         slice_data.actor = actor
-        slice_data.SetBorderStyle(sd.BORDER_UP | sd.BORDER_DOWN)
+        slice_data.SetBorderStyle(sd.BORDER_ALL)
         renderer.AddActor(actor)
         renderer.AddActor(slice_data.text.actor)
         renderer.AddViewProp(slice_data.box_actor)
@@ -1279,10 +1278,11 @@ class Viewer(wx.Panel):
         #slice_data.renderer.Render()
 
     def __update_display_extent(self, image):
-        self.actor.SetDisplayExtent(image.GetExtent())
-        self.ren.ResetCameraClippingRange()
+        self.slice_data.actor.SetDisplayExtent(image.GetExtent())
+        self.slice_data.renderer.ResetCameraClippingRange()
 
     def UpdateRender(self, evt):
+        print "Updating viewer", self.orientation
         self.interactor.Render()
 
     def __configure_scroll(self):
@@ -1370,15 +1370,21 @@ class Viewer(wx.Panel):
 
     def OnSize(self, evt):
         w, h = evt.GetSize() 
-        w = float(w) / self.layout[0]
-        h = float(h) / self.layout[1]
-        for slice_data in self.slice_data_list:
-            slice_data.SetSize((w, h))
+        w = float(w)
+        h = float(h)
+        if self.slice_data:
+            self.slice_data.SetSize((w, h))
         evt.Skip()
 
     def set_slice_number(self, index):
         image = self.slice_.GetSlices(self.orientation, index)
-        self.actor.SetInput(image)
+        self.slice_data.actor.SetInput(image)
+        for actor in self.actors_by_slice_number.get(self.slice_data.number, []):
+            self.slice_data.renderer.RemoveActor(actor)
+        for actor in self.actors_by_slice_number.get(index, []):
+            self.slice_data.renderer.AddActor(actor)
+
+        self.slice_data.SetNumber(index)
         self.__update_display_extent(image)
         #self.interactor.Render()
 
@@ -1419,6 +1425,7 @@ class Viewer(wx.Panel):
         slice_number = slice_data.number
         self.pick.Pick(x, y, 0, render)
         x, y, z = self.pick.GetPickPosition()
+        print x, y, z
         if self.pick.GetViewProp(): 
             self.render_to_add = slice_data.renderer
             ps.Publisher().sendMessage("Add measurement point",
@@ -1446,12 +1453,16 @@ class Viewer(wx.Panel):
     def AddActors(self, pubsub_evt):
         "Inserting actors"
         actors, n = pubsub_evt.data
-        try:
-            renderer = self.renderers_by_slice_number[n]
-            for actor in actors:
-                renderer.AddActor(actor)
-        except KeyError:
-            pass
+        print actors
+        #try:
+            #renderer = self.renderers_by_slice_number[n]
+            #for actor in actors:
+                #renderer.AddActor(actor)
+        #except KeyError:
+            #pass
+        for actor in actors:
+            self.slice_data.renderer.AddActor(actor)
+
         try:
             self.actors_by_slice_number[n].extend(actors)
         except KeyError:
