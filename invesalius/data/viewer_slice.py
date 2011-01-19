@@ -90,7 +90,7 @@ class Viewer(wx.Panel):
         self.on_text = False
         # VTK pipeline and actors
         self.__config_interactor()
-        self.pick = vtk.vtkPropPicker()
+        self.pick = vtk.vtkWorldPointPicker()
         self.cross_actor = vtk.vtkActor()
 
 
@@ -180,6 +180,7 @@ class Viewer(wx.Panel):
                             {
                             "MouseMoveEvent": self.OnBrushMove,
                             "LeftButtonPressEvent": self.OnBrushClick,
+                            "LeftButtonReleaseEvent": self.OnBrushRelease,
                             "EnterEvent": self.OnEnterInteractor,
                             "LeaveEvent": self.OnLeaveInteractor
                             },
@@ -566,9 +567,9 @@ class Viewer(wx.Panel):
 
     def ChangeBrushSize(self, pubsub_evt):
         size = pubsub_evt.data
-        self._brush_cursor_size = size
-        for slice_data in self.slice_data_list:
-            slice_data.cursor.SetSize(size)
+        #self._brush_cursor_size = size
+        #for slice_data in self.slice_data_list:
+        self.slice_data.cursor.SetSize(size)
 
     def ChangeBrushColour(self, pubsub_evt):
         vtk_colour = pubsub_evt.data[3]
@@ -587,60 +588,27 @@ class Viewer(wx.Panel):
 
     def ChangeBrushActor(self, pubsub_evt):
         brush_type = pubsub_evt.data
-        for slice_data in self.slice_data_list:
-            self._brush_cursor_type = brush_type
-            #self.ren.RemoveActor(self.cursor.actor)
+        slice_data = self.slice_data
+        self._brush_cursor_type = brush_type
 
-            if brush_type == const.BRUSH_SQUARE:
-                cursor = ca.CursorRectangle()
-            elif brush_type == const.BRUSH_CIRCLE:
-                cursor = ca.CursorCircle()
-            #self.cursor = cursor
+        if brush_type == const.BRUSH_SQUARE:
+            cursor = ca.CursorRectangle()
+        elif brush_type == const.BRUSH_CIRCLE:
+            cursor = ca.CursorCircle()
 
-            cursor.SetOrientation(self.orientation)
-            coordinates = {"SAGITAL": [slice_data.number, 0, 0],
-                           "CORONAL": [0, slice_data.number, 0],
-                           "AXIAL": [0, 0, slice_data.number]}
-            cursor.SetPosition(coordinates[self.orientation])
-            cursor.SetSpacing(self.imagedata.GetSpacing())
-            cursor.SetColour(self._brush_cursor_colour)
-            cursor.SetSize(self._brush_cursor_size)
-            slice_data.SetCursor(cursor)
-        #self.ren.AddActor(cursor.actor)
-        #self.ren.Render()
+        cursor.SetOrientation(self.orientation)
+        coordinates = {"SAGITAL": [slice_data.number, 0, 0],
+                       "CORONAL": [0, slice_data.number, 0],
+                       "AXIAL": [0, 0, slice_data.number]}
+        cursor.SetPosition(coordinates[self.orientation])
+        cursor.SetSpacing(self.slice_.spacing)
+        cursor.SetColour(self._brush_cursor_colour)
+        cursor.SetSize(self._brush_cursor_size)
+        slice_data.SetCursor(cursor)
         self.interactor.Render()
-        #self.cursor = cursor
 
 
     def OnBrushClick(self, evt, obj):
-
-        mouse_x, mouse_y = self.interactor.GetEventPosition()
-        render = self.interactor.FindPokedRenderer(mouse_x, mouse_y)
-        slice_data = self.get_slice_data(render)
-        self.pick.Pick(mouse_x, mouse_y, 0, render)
-
-        coord = self.get_coordinate_cursor()
-        slice_data.cursor.SetPosition(coord)
-        slice_data.cursor.SetEditionPosition(
-            self.get_coordinate_cursor_edition(slice_data))
-        self.__update_cursor_position(slice_data, coord)
-        #render.Render()
-
-        evt_msg = {const.BRUSH_ERASE: 'Erase mask pixel',
-                   const.BRUSH_DRAW: 'Add mask pixel',
-                   const.BRUSH_THRESH: 'Edit mask pixel'}
-        msg = evt_msg[self._brush_cursor_op]
-
-        pixels = itertools.ifilter(self.test_operation_position,
-                                   slice_data.cursor.GetPixels())
-        ps.Publisher().sendMessage(msg, pixels)
-
-        # FIXME: This is idiot, but is the only way that brush operations are
-        # working when cross is disabled
-        ps.Publisher().sendMessage('Update slice viewer')
-
-    def OnBrushMove(self, evt, obj):
-       
         self.__set_editor_cursor_visibility(1)
  
         mouse_x, mouse_y = self.interactor.GetEventPosition()
@@ -650,35 +618,94 @@ class Viewer(wx.Panel):
         # TODO: Improve!
         #for i in self.slice_data_list:
             #i.cursor.Show(0)
-        #slice_data.cursor.Show()
+        self.slice_data.cursor.Show()
 
         self.pick.Pick(mouse_x, mouse_y, 0, render)
         
-        if (self.pick.GetProp()):
-            self.interactor.SetCursor(wx.StockCursor(wx.CURSOR_BLANK))
-        else:
-            self.interactor.SetCursor(wx.StockCursor(wx.CURSOR_DEFAULT))
-            
         coord = self.get_coordinate_cursor()
         slice_data.cursor.SetPosition(coord)
         slice_data.cursor.SetEditionPosition(
             self.get_coordinate_cursor_edition(slice_data))
         self.__update_cursor_position(slice_data, coord)
 
-        if self._brush_cursor_op == const.BRUSH_ERASE:
-            evt_msg = 'Erase mask pixel'
-        elif self._brush_cursor_op == const.BRUSH_DRAW:
-            evt_msg = 'Add mask pixel'
-        elif self._brush_cursor_op == const.BRUSH_THRESH:
-            evt_msg = 'Edit mask pixel'
-            
-        if (self.left_pressed):
-            pixels = itertools.ifilter(self.test_operation_position,
-                                       slice_data.cursor.GetPixels())
-            ps.Publisher().sendMessage(evt_msg, pixels)
-            ps.Publisher().sendMessage('Update slice viewer')
+        cursor = self.slice_data.cursor
+        position = self.slice_data.actor.GetInput().FindPoint(coord)
+        radius = cursor.radius
 
-        self.interactor.Render()
+        if position < 0:
+            position = self.calculate_matrix_position(coord)
+            
+
+        # TODO: Call slice_ functions instead of to use pubsub message,
+        # maybe we can get some performances improvements here.
+        if self._brush_cursor_op == const.BRUSH_ERASE:
+            self.slice_.erase_mask_pixel(cursor.GetPixels(), position, radius,
+                                        self.orientation)
+        elif self._brush_cursor_op == const.BRUSH_DRAW:
+            self.slice_.add_mask_pixel(cursor.GetPixels(), position, radius,
+                                        self.orientation)
+        elif self._brush_cursor_op == const.BRUSH_THRESH:
+            self.slice_.edit_mask_pixel(cursor.GetPixels(), position, radius,
+                                        self.orientation)
+
+        # TODO: To create a new function to reload images to viewer.
+        self.OnScrollBar()
+
+
+    def OnBrushMove(self, evt, obj):
+        self.__set_editor_cursor_visibility(1)
+ 
+        mouse_x, mouse_y = self.interactor.GetEventPosition()
+        render = self.interactor.FindPokedRenderer(mouse_x, mouse_y)
+        slice_data = self.get_slice_data(render)
+
+        # TODO: Improve!
+        #for i in self.slice_data_list:
+            #i.cursor.Show(0)
+        self.slice_data.cursor.Show()
+
+        self.pick.Pick(mouse_x, mouse_y, 0, render)
+        
+        #if (self.pick.GetViewProp()):
+            #self.interactor.SetCursor(wx.StockCursor(wx.CURSOR_BLANK))
+        #else:
+            #self.interactor.SetCursor(wx.StockCursor(wx.CURSOR_DEFAULT))
+            
+        coord = self.get_coordinate_cursor()
+        slice_data.cursor.SetPosition(coord)
+        slice_data.cursor.SetEditionPosition(
+            self.get_coordinate_cursor_edition(slice_data))
+        self.__update_cursor_position(slice_data, coord)
+        
+        if (self.left_pressed):
+            cursor = self.slice_data.cursor
+            position = self.slice_data.actor.GetInput().FindPoint(coord)
+            radius = cursor.radius
+
+            if position < 0:
+                position = self.calculate_matrix_position(coord)
+                
+
+            # TODO: Call slice_ functions instead of to use pubsub message,
+            # maybe we can get some performances improvements here.
+            if self._brush_cursor_op == const.BRUSH_ERASE:
+                self.slice_.erase_mask_pixel(cursor.GetPixels(), position, radius,
+                                            self.orientation)
+            elif self._brush_cursor_op == const.BRUSH_DRAW:
+                self.slice_.add_mask_pixel(cursor.GetPixels(), position, radius,
+                                            self.orientation)
+            elif self._brush_cursor_op == const.BRUSH_THRESH:
+                self.slice_.edit_mask_pixel(cursor.GetPixels(), position, radius,
+                                            self.orientation)
+
+            # TODO: To create a new function to reload images to viewer.
+            self.OnScrollBar()
+
+        else:
+            self.interactor.Render()
+
+    def OnBrushRelease(self, evt, obj):
+        self.slice_.apply_slice_buffer_to_mask(self.orientation)
 
     def OnCrossMouseClick(self, evt, obj):
         self.ChangeCrossPosition()
@@ -787,10 +814,24 @@ class Viewer(wx.Panel):
         # vtkImageData extent
         return coord
 
+    def calculate_matrix_position(self, coord):
+        x, y, z = coord
+        xi, xf, yi, yf, zi, zf = self.slice_data.actor.GetBounds()
+        if self.orientation == 'AXIAL':
+            mx = round((x - xi)/self.slice_.spacing[0], 0)
+            my = round((y - yi)/self.slice_.spacing[1], 0)
+        elif self.orientation == 'CORONAL':
+            mx = round((x - xi)/self.slice_.spacing[0], 0)
+            my = round((z - zi)/self.slice_.spacing[2], 0)
+        elif self.orientation == 'SAGITAL':
+            mx = round((y - yi)/self.slice_.spacing[1], 0)
+            my = round((z - zi)/self.slice_.spacing[2], 0)
+        return my, mx
+
     def get_coordinate_cursor(self):
         # Find position
         x, y, z = self.pick.GetPickPosition()
-        bounds = self.actor.GetBounds()
+        bounds = self.slice_data.actor.GetBounds()
         if bounds[0] == bounds[1]:
             x = bounds[0]
         elif bounds[2] == bounds[3]:
@@ -816,10 +857,10 @@ class Viewer(wx.Panel):
         dy = bound_yf - bound_yi
         dz = bound_zf - bound_zi
 
-        dimensions = self.imagedata.GetDimensions()
+        dimensions = self.slice_.matrix.shape
 
         try:
-            x = (x * dimensions[0]) / dx
+            x = (x * dimensions[2]) / dx
         except ZeroDivisionError:
             x = slice_number
         try:
@@ -827,7 +868,7 @@ class Viewer(wx.Panel):
         except ZeroDivisionError:
             y = slice_number
         try:
-            z = (z * dimensions[2]) / dz
+            z = (z * dimensions[0]) / dz
         except ZeroDivisionError:
             z = slice_number
 
@@ -959,7 +1000,7 @@ class Viewer(wx.Panel):
         self.slice_number = 0
         self.cursor = None
         self.wl_text = None
-        self.pick = vtk.vtkPropPicker()
+        self.pick = vtk.vtkWorldPointPicker()
 
 
     def OnSetInteractorStyle(self, pubsub_evt):
@@ -1046,7 +1087,7 @@ class Viewer(wx.Panel):
         cursor.SetOrientation(self.orientation)
         #self.__update_cursor_position([i for i in actor_bound[1::2]])
         cursor.SetColour(self._brush_cursor_colour)
-        cursor.SetSpacing(self.imagedata.GetSpacing())
+        cursor.SetSpacing(self.slice_.spacing)
         cursor.Show(0)
         self.cursor_ = cursor
         return cursor
@@ -1060,6 +1101,7 @@ class Viewer(wx.Panel):
 
         self.slice_data = self.create_slice_window()
         self.slice_data.actor.SetInput(imagedata)
+        self.slice_data.SetCursor(self.__create_cursor())
         self.cam = self.slice_data.renderer.GetActiveCamera()
         self.set_slice_number(0)
         self.__update_camera()

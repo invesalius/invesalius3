@@ -19,6 +19,7 @@
 
 from  math import *
 
+import numpy
 import vtk
 import wx.lib.pubsub as ps
 from project import Project
@@ -89,50 +90,24 @@ class CursorCircle:
     def __calculate_area_pixels(self):
         """
         Return the cursor's pixels.
-        This method scans the circle line by line.
-        Extracted equation. 
-        http://www.mathopenref.com/chord.html
         """
-        xc = 0.0
-        yc = 0.0
-        z = 0.0
-        xs, ys, zs = self.spacing 
-        
-        proj = Project()
-        orig_orien = proj.original_orientation
-        
-        xy = (xs, ys)
-        yz = (ys, zs)
-        xz = (xs, zs)
-        
-        if (orig_orien == const.SAGITAL):
-            orientation_based_spacing = {"SAGITAL" : xy,
-                                     "AXIAL" : yz,
-                                     "CORONAL" : xz}
-        elif(orig_orien == const.CORONAL):
-            orientation_based_spacing = {"CORONAL" : xy,
-                                         "AXIAL" : xz,
-                                         "SAGITAL" : yz}
-        else:
-            orientation_based_spacing = {"AXIAL" : xy,
-                                         "SAGITAL" : yz,
-                                         "CORONAL" : xz}
-        
-        xs, ys = orientation_based_spacing[self.orientation]
-        self.pixel_list = []
         radius = self.radius
-        for i in utils.frange(yc - radius, yc + radius, ys):
-            # distance from the line to the circle's center
-            d = yc - i
-            # line size
-            line = sqrt(radius**2 - d**2) * 2
-            # line initial x
-            xi = xc - line/2.0
-            # line final
-            xf = line/2.0 + xc
-            yi = i
-            for k in utils.frange(xi,xf,xs):
-                self.pixel_list.append((k, yi))
+        if self.orientation == 'AXIAL':
+            sx = self.spacing[0]
+            sy = self.spacing[1]
+        elif self.orientation == 'CORONAL':
+            sx = self.spacing[0]
+            sy = self.spacing[2]
+        elif self.orientation == 'SAGITAL':
+            sx = self.spacing[1]
+            sy = self.spacing[2]
+
+        y,x = numpy.ogrid[-radius/sy:+radius/sy,
+                          -radius/sx:+radius/sx]
+
+        index = (y*sy)**2 + (x*sx)**2 <= radius**2
+        self.points = index
+
 
     def SetSize(self, diameter):
         radius = self.radius = diameter/2.0
@@ -185,38 +160,7 @@ class CursorCircle:
             self.actor.VisibilityOff()
 
     def GetPixels(self):
-        px, py, pz = self.edition_position
-        orient = self.orientation
-        xs, ys, zs = self.spacing
-        proj = Project()
-        orig_orien = proj.original_orientation
-        xy1 = lambda x,y: (px + x / xs, py+(y/ys), pz)
-        xy2 = lambda x,y: (px+(x/xs), py, pz+(y/zs))
-        xy3 = lambda x,y: (px, py+(x/ys), pz+(y/zs))
-        
-        if (orig_orien == const.SAGITAL):
-            abs_pixel = {"SAGITAL": xy1,
-                         "AXIAL": xy2,
-                         "CORONAL": xy3}
-        elif(orig_orien == const.CORONAL):
-            abs_pixel = {"CORONAL": xy1,
-                         "SAGITAL": xy3,
-                         "AXIAL": xy2}
-        else:
-            abs_pixel = {"AXIAL": xy1,
-                        "CORONAL": xy2,
-                        "SAGITAL": xy3}
-            
-        function_orientation = abs_pixel[orient]
-        
-        for pixel_0,pixel_1 in self.pixel_list:
-            # The position of the pixels in this list is relative (based only on
-            # the area, and not the cursor position).
-            # Let's calculate the absolute position
-            # TODO: Optimize this!!!!
-            yield function_orientation(pixel_0, pixel_1)
-            
-
+        return self.points
 
 
 class CursorRectangle:
@@ -228,6 +172,7 @@ class CursorRectangle:
         
         self.x_length = 30
         self.y_length = 30
+        self.radius = 15
         
         self.dimension = (self.x_length, self.y_length)
         self.position = (0 ,0)
@@ -240,6 +185,7 @@ class CursorRectangle:
     def SetSize(self, size):
         self.x_length = size
         self.y_length = size
+        self.radius = size / 2
         retangle = self.retangle
         retangle.SetXLength(size)
         retangle.SetYLength(size)        
@@ -311,67 +257,21 @@ class CursorRectangle:
         actor.SetVisibility(0)
 
     def __calculate_area_pixels(self):
-        xc = 0
-        yc = 0
-        z = 0
-        xs, ys, zs = self.spacing 
-        
-        proj = Project()
-        orig_orien = proj.original_orientation
-        
-        xy = (xs, ys)
-        yz = (ys, zs)
-        xz = (xs, zs)
-        
-        if (orig_orien == const.SAGITAL):
-            orientation_based_spacing = {"SAGITAL" : xy,
-                                     "AXIAL" : yz,
-                                     "CORONAL" : xz}
-        elif(orig_orien == const.CORONAL):
-            orientation_based_spacing = {"CORONAL" : xy,
-                                         "AXIAL" : xz,
-                                         "SAGITAL" : yz}
-        else:
-            orientation_based_spacing = {"AXIAL" : xy,
-                                         "SAGITAL" : yz,
-                                         "CORONAL" : xz}
-        
-        xs, ys = orientation_based_spacing[self.orientation]
-        self.pixel_list = []
-        for i in utils.frange(yc - self.y_length/2, yc + self.y_length/2, ys):
-            for k in utils.frange(xc - self.x_length/2, xc + self.x_length/2, xs):
-                self.pixel_list.append((k, i))
-
+        if self.orientation == 'AXIAL':
+            sx = self.spacing[0]
+            sy = self.spacing[1]
+        elif self.orientation == 'CORONAL':
+            sx = self.spacing[0]
+            sy = self.spacing[2]
+        elif self.orientation == 'SAGITAL':
+            sx = self.spacing[1]
+            sy = self.spacing[2]
+        shape = (self.y_length/sy, self.x_length/sx)
+        self.points = numpy.empty(shape, dtype='bool')
+        self.points.fill(True)
 
     def GetPixels(self):
         """
         Return the points of the rectangle
         """
-        px, py, pz = self.edition_position
-        orient = self.orientation
-        xs, ys, zs = self.spacing
-        proj = Project()
-        orig_orien = proj.original_orientation
-        xy1 = lambda x,y: (px + x / xs, py+(y/ys), pz)
-        xy2 = lambda x,y: (px+(x/xs), py, pz+(y/zs))
-        xy3 = lambda x,y: (px, py+(x/ys), pz+(y/zs))
-        
-        if (orig_orien == const.SAGITAL):
-            abs_pixel = {"SAGITAL": xy1,
-                         "AXIAL": xy2,
-                         "CORONAL": xy3}
-        elif(orig_orien == const.CORONAL):
-            abs_pixel = {"CORONAL": xy1,
-                         "SAGITAL": xy3,
-                         "AXIAL": xy2}
-        else:
-            abs_pixel = {"AXIAL": xy1,
-                        "CORONAL": xy2,
-                        "SAGITAL": xy3}
-        function_orientation = abs_pixel[orient]
-        for pixel_0,pixel_1 in self.pixel_list:
-            # The position of the pixels in this list is relative (based only on
-            # the area, and not the cursor position).
-            # Let's calculate the absolute position
-            # TODO: Optimize this!!!!
-            yield function_orientation(pixel_0, pixel_1)
+        return self.points

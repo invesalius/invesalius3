@@ -16,6 +16,8 @@
 #    PARTICULAR. Consulte a Licenca Publica Geral GNU para obter mais
 #    detalhes.
 #--------------------------------------------------------------------------
+import math
+
 import numpy
 import vtk
 import wx.lib.pubsub as ps
@@ -100,11 +102,6 @@ class Slice(object):
                                 'Change mask colour')
         ps.Publisher().subscribe(self.__set_mask_name, 'Change mask name')
         ps.Publisher().subscribe(self.__show_mask, 'Show mask')
-
-        # Operations related to slice editor
-        ps.Publisher().subscribe(self.__erase_mask_pixel, 'Erase mask pixel')
-        ps.Publisher().subscribe(self.__edit_mask_pixel, 'Edit mask pixel')
-        ps.Publisher().subscribe(self.__add_mask_pixel, 'Add mask pixel')
 
         ps.Publisher().subscribe(self.__set_current_mask_threshold_limits,
                                         'Update threshold limits')
@@ -249,9 +246,7 @@ class Slice(object):
         #Clear edited points
         self.current_mask.edited_points = {}
         self.num_gradient += 1
-        self.current_mask.matrix[0, :, :] = 0
-        self.current_mask.matrix[:, 0, :] = 0
-        self.current_mask.matrix[:, :, 0] = 0
+        self.current_mask.matrix[:] = 0
 
     def __set_current_mask_threshold_actual_slice(self, evt_pubsub):
         threshold_range = evt_pubsub.data
@@ -288,20 +283,222 @@ class Slice(object):
             index, value = pubsub_evt.data
             self.ShowMask(index, value)
     #---------------------------------------------------------------------------
-    def __erase_mask_pixel(self, pubsub_evt):
-        positions = pubsub_evt.data
-        for position in positions:
-            self.ErasePixel(position)
+    def erase_mask_pixel(self, index, position, radius, orientation):
+        mask = self.buffer_slices[orientation].mask
+        image = self.buffer_slices[orientation].image
 
-    def __edit_mask_pixel(self, pubsub_evt):
-        positions = pubsub_evt.data
-        for position in positions:
-            self.EditPixelBasedOnThreshold(position)
+        if hasattr(position, '__iter__'):
+            py, px = position
+            if orientation == 'AXIAL':
+                sx = self.spacing[0]
+                sy = self.spacing[1]
+            elif orientation == 'CORONAL':
+                sx = self.spacing[0]
+                sy = self.spacing[2]
+            elif orientation == 'SAGITAL':
+                sx = self.spacing[1]
+                sy = self.spacing[2]
 
-    def __add_mask_pixel(self, pubsub_evt):
-        positions = pubsub_evt.data
-        for position in positions:
-            self.DrawPixel(position)
+        else:
+            if orientation == 'AXIAL':
+                sx = self.spacing[0]
+                sy = self.spacing[1]
+                py = position / mask.shape[1]
+                px = position % mask.shape[1]
+            elif orientation == 'CORONAL':
+                sx = self.spacing[0]
+                sy = self.spacing[2]
+                py = position / mask.shape[1]
+                px = position % mask.shape[1]
+            elif orientation == 'SAGITAL':
+                sx = self.spacing[1]
+                sy = self.spacing[2]
+                py = position / mask.shape[1]
+                px = position % mask.shape[1]
+
+        xi = px - math.ceil(radius/sx)
+        xf = px + math.ceil(radius/sx)
+        yi = py - math.ceil(radius/sy)
+        yf = py + math.ceil(radius/sy)
+
+        if yi < 0:
+            index = index[abs(yi):,:]
+            yi = 0
+        if yf > image.shape[0]:
+            index = index[:index.shape[0]-(yf-image.shape[0]), :]
+            yf = image.shape[0]
+
+        if xi < 0:
+            index = index[:,abs(xi):]
+            xi = 0
+        if xf > image.shape[1]:
+            index = index[:,:index.shape[1]-(xf-image.shape[1])]
+            xf = image.shape[1]
+
+        # Verifying if the points is over the image array.
+        if (not 0 < xi < image.shape[1] and not 0 < xf < image.shape[1]) or \
+           (not 0 < yi < image.shape[0] and not 0 < yf < image.shape[0]):
+            return
+
+        roi_m = mask[yi:yf,xi:xf]
+        roi_i = image[yi:yf, xi:xf]
+
+        roi_m[index] = 1
+        self.buffer_slices[orientation].discard_vtk_mask()
+
+    def edit_mask_pixel(self, index, position, radius, orientation):
+        mask = self.buffer_slices[orientation].mask
+        image = self.buffer_slices[orientation].image
+        thresh_min, thresh_max = self.current_mask.edition_threshold_range
+
+        if hasattr(position, '__iter__'):
+            py, px = position
+            if orientation == 'AXIAL':
+                sx = self.spacing[0]
+                sy = self.spacing[1]
+            elif orientation == 'CORONAL':
+                sx = self.spacing[0]
+                sy = self.spacing[2]
+            elif orientation == 'SAGITAL':
+                sx = self.spacing[1]
+                sy = self.spacing[2]
+
+        else:
+            if orientation == 'AXIAL':
+                sx = self.spacing[0]
+                sy = self.spacing[1]
+                py = position / mask.shape[1]
+                px = position % mask.shape[1]
+            elif orientation == 'CORONAL':
+                sx = self.spacing[0]
+                sy = self.spacing[2]
+                py = position / mask.shape[1]
+                px = position % mask.shape[1]
+            elif orientation == 'SAGITAL':
+                sx = self.spacing[1]
+                sy = self.spacing[2]
+                py = position / mask.shape[1]
+                px = position % mask.shape[1]
+
+        xi = px - math.ceil(radius/sx)
+        xf = px + math.ceil(radius/sx)
+        yi = py - math.ceil(radius/sy)
+        yf = py + math.ceil(radius/sy)
+
+        if yi < 0:
+            index = index[abs(yi):,:]
+            yi = 0
+        if yf > image.shape[0]:
+            index = index[:index.shape[0]-(yf-image.shape[0]), :]
+            yf = image.shape[0]
+
+        if xi < 0:
+            index = index[:,abs(xi):]
+            xi = 0
+        if xf > image.shape[1]:
+            index = index[:,:index.shape[1]-(xf-image.shape[1])]
+            xf = image.shape[1]
+
+        # Verifying if the points is over the image array.
+        if (not 0 < xi < image.shape[1] and not 0 < xf < image.shape[1]) or \
+           (not 0 < yi < image.shape[0] and not 0 < yf < image.shape[0]):
+            return
+
+        roi_m = mask[yi:yf,xi:xf]
+        roi_i = image[yi:yf, xi:xf]
+
+        # It's a trick to make points between threshold gets value 254
+        # (1 * 253 + 1) and out ones gets value 1 (0 * 253 + 1).
+        roi_m[index] = (((roi_i[index] >= thresh_min) 
+                         & (roi_i[index] <= thresh_max)) * 253) + 1
+        self.buffer_slices[orientation].discard_vtk_mask()
+
+    def add_mask_pixel(self, index, position, radius, orientation):
+        #mask = self.buffer_slices[orientation].mask
+        #if orientation == 'AXIAL':
+            #sx = self.spacing[0]
+            #sy = self.spacing[1]
+            #py = position / mask.shape[1]
+            #px = position % mask.shape[1]
+        #elif orientation == 'CORONAL':
+            #sx = self.spacing[0]
+            #sy = self.spacing[2]
+            #py = position / mask.shape[1]
+            #px = position % mask.shape[1]
+        #elif orientation == 'SAGITAL':
+            #sx = self.spacing[1]
+            #sy = self.spacing[2]
+            #py = position / mask.shape[1]
+            #px = position % mask.shape[1]
+
+        #print "->px, py", px, py
+        #print "->position", position
+        #print '->shape', mask.shape
+
+        #mask[py - radius / sy: py + radius / sy,
+             #px - radius / sx: px + radius / sx] = 255
+        #self.buffer_slices[orientation].discard_vtk_mask()
+        mask = self.buffer_slices[orientation].mask
+        image = self.buffer_slices[orientation].image
+
+        if hasattr(position, '__iter__'):
+            py, px = position
+            if orientation == 'AXIAL':
+                sx = self.spacing[0]
+                sy = self.spacing[1]
+            elif orientation == 'CORONAL':
+                sx = self.spacing[0]
+                sy = self.spacing[2]
+            elif orientation == 'SAGITAL':
+                sx = self.spacing[1]
+                sy = self.spacing[2]
+
+        else:
+            if orientation == 'AXIAL':
+                sx = self.spacing[0]
+                sy = self.spacing[1]
+                py = position / mask.shape[1]
+                px = position % mask.shape[1]
+            elif orientation == 'CORONAL':
+                sx = self.spacing[0]
+                sy = self.spacing[2]
+                py = position / mask.shape[1]
+                px = position % mask.shape[1]
+            elif orientation == 'SAGITAL':
+                sx = self.spacing[1]
+                sy = self.spacing[2]
+                py = position / mask.shape[1]
+                px = position % mask.shape[1]
+
+        xi = px - math.ceil(radius/sx)
+        xf = px + math.ceil(radius/sx)
+        yi = py - math.ceil(radius/sy)
+        yf = py + math.ceil(radius/sy)
+
+        if yi < 0:
+            index = index[abs(yi):,:]
+            yi = 0
+        if yf > image.shape[0]:
+            index = index[:index.shape[0]-(yf-image.shape[0]), :]
+            yf = image.shape[0]
+
+        if xi < 0:
+            index = index[:,abs(xi):]
+            xi = 0
+        if xf > image.shape[1]:
+            index = index[:,:index.shape[1]-(xf-image.shape[1])]
+            xf = image.shape[1]
+
+        # Verifying if the points is over the image array.
+        if (not 0 < xi < image.shape[1] and not 0 < xf < image.shape[1]) or \
+           (not 0 < yi < image.shape[0] and not 0 < yf < image.shape[0]):
+            return
+
+        roi_m = mask[yi:yf,xi:xf]
+        roi_i = image[yi:yf, xi:xf]
+
+        roi_m[index] = 254
+        self.buffer_slices[orientation].discard_vtk_mask()
     #---------------------------------------------------------------------------
     # END PUBSUB_EVT METHODS
     #---------------------------------------------------------------------------
@@ -311,7 +508,7 @@ class Slice(object):
             if self.buffer_slices[orientation].vtk_image:
                 image = self.buffer_slices[orientation].vtk_image
             else:
-                n_image = self.GetImageSlice(orientation, slice_number)
+                n_image = self.get_image_slice(orientation, slice_number)
                 image = iu.to_vtk(n_image, self.spacing, slice_number, orientation)
                 image = self.do_ww_wl(image)
             if self.current_mask and self.current_mask.is_shown:
@@ -320,19 +517,22 @@ class Slice(object):
                     mask = self.buffer_slices[orientation].vtk_mask
                 else:
                     print "Do not getting from buffer"
-                    n_mask = self.GetMaskSlice(orientation, slice_number)
+                    n_mask = self.get_mask_slice(orientation, slice_number)
                     mask = iu.to_vtk(n_mask, self.spacing, slice_number, orientation)
                     mask = self.do_colour_mask(mask)
+                    self.buffer_slices[orientation].mask = n_mask
                 final_image = self.do_blend(image, mask)
+                self.buffer_slices[orientation].vtk_mask = mask
             else:
                 final_image = image
+            self.buffer_slices[orientation].vtk_image = image
         else:
-            n_image = self.GetImageSlice(orientation, slice_number)
+            n_image = self.get_image_slice(orientation, slice_number)
             image = iu.to_vtk(n_image, self.spacing, slice_number, orientation)
             image = self.do_ww_wl(image)
 
             if self.current_mask and self.current_mask.is_shown:
-                n_mask = self.GetMaskSlice(orientation, slice_number)
+                n_mask = self.get_mask_slice(orientation, slice_number)
                 mask = iu.to_vtk(n_mask, self.spacing, slice_number, orientation)
                 mask = self.do_colour_mask(mask)
                 final_image = self.do_blend(image, mask)
@@ -349,7 +549,7 @@ class Slice(object):
 
         return final_image
 
-    def GetImageSlice(self, orientation, slice_number):
+    def get_image_slice(self, orientation, slice_number):
         if self.buffer_slices[orientation].index == slice_number \
            and self.buffer_slices[orientation].image is not None:
             n_image = self.buffer_slices[orientation].image
@@ -362,7 +562,7 @@ class Slice(object):
                 n_image = numpy.array(self.matrix[..., ..., slice_number])
         return n_image
 
-    def GetMaskSlice(self, orientation, slice_number):
+    def get_mask_slice(self, orientation, slice_number):
         """ 
         It gets the from actual mask the given slice from given orientation
         """
@@ -376,25 +576,28 @@ class Slice(object):
         n = slice_number + 1
         if orientation == 'AXIAL':
             if self.current_mask.matrix[n, 0, 0] == 0:
-                self.current_mask.matrix[n, 1:, 1:] = \
-                        self.do_threshold_to_a_slice(self.GetImageSlice(orientation,
-                                                                        slice_number))
+                mask = self.current_mask.matrix[n, 1:, 1:]
+                mask[:] = self.do_threshold_to_a_slice(self.get_image_slice(orientation,
+                                                                         slice_number),
+                                                                            mask)
                 self.current_mask.matrix[n, 0, 0] = 1
             n_mask = numpy.array(self.current_mask.matrix[n, 1:, 1:])
 
         elif orientation == 'CORONAL':
             if self.current_mask.matrix[0, n, 0] == 0:
-                self.current_mask.matrix[1:, n, 1:] = \
-                        self.do_threshold_to_a_slice(self.GetImageSlice(orientation,
-                                                                        slice_number))
+                mask = self.current_mask.matrix[1:, n, 1:]
+                mask[:] = self.do_threshold_to_a_slice(self.get_image_slice(orientation,
+                                                                         slice_number),
+                                                                            mask)
                 self.current_mask.matrix[0, n, 0] = 1
             n_mask = numpy.array(self.current_mask.matrix[1:, n, 1:])
 
         elif orientation == 'SAGITAL':
             if self.current_mask.matrix[0, 0, n] == 0:
-                self.current_mask.matrix[1:, 1:, n] = \
-                        self.do_threshold_to_a_slice(self.GetImageSlice(orientation,
-                                                                        slice_number))
+                mask = self.current_mask.matrix[1:, 1:, n]
+                mask[:] = self.do_threshold_to_a_slice(self.get_image_slice(orientation,
+                                                                         slice_number),
+                                                                            mask)
                 self.current_mask.matrix[0, 0, n] = 1
             n_mask = numpy.array(self.current_mask.matrix[1:, 1:, n])
         return n_mask
@@ -804,13 +1007,15 @@ class Slice(object):
 
         return colorer.GetOutput()
 
-    def do_threshold_to_a_slice(self, slice_matrix):
+    def do_threshold_to_a_slice(self, slice_matrix, mask):
         """ 
         Based on the current threshold bounds generates a threshold mask to
         given slice_matrix.
         """
         thresh_min, thresh_max = self.current_mask.threshold_range
-        m= numpy.logical_and(slice_matrix >= thresh_min, slice_matrix <= thresh_max) * 255
+        m = (((slice_matrix >= thresh_min) & (slice_matrix <= thresh_max)) * 255)
+        m[mask == 1] = 1
+        m[mask == 254] = 254
         return m
 
     def do_colour_mask(self, imagedata):
@@ -819,14 +1024,15 @@ class Slice(object):
 
         # map scalar values into colors
         lut_mask = vtk.vtkLookupTable()
-        lut_mask.SetNumberOfColors(255)
+        lut_mask.SetNumberOfColors(256)
         lut_mask.SetHueRange(const.THRESHOLD_HUE_RANGE)
         lut_mask.SetSaturationRange(1, 1)
-        lut_mask.SetValueRange(0, 1)
+        lut_mask.SetValueRange(0, 255)
+        lut_mask.SetRange(0, 255)
         lut_mask.SetNumberOfTableValues(256)
         lut_mask.SetTableValue(0, 0, 0, 0, 0.0)
         lut_mask.SetTableValue(1, 0, 0, 0, 0.0)
-        lut_mask.SetTableValue(2, 0, 0, 0, 0.0)
+        lut_mask.SetTableValue(254, r, g, b, 1.0)
         lut_mask.SetTableValue(255, r, g, b, 1.0)
         lut_mask.SetRampToLinear()
         lut_mask.Build()
@@ -858,6 +1064,25 @@ class Slice(object):
 
         return blend_imagedata.GetOutput()
 
+    def apply_slice_buffer_to_mask(self, orientation):
+        """
+        Apply the modifications (edition) in mask buffer to mask.
+        """
+        b_mask = self.buffer_slices[orientation].mask
+        index = self.buffer_slices[orientation].index
+        print "-> ORIENTATION", orientation, index, b_mask
+        if orientation == 'AXIAL':
+            self.current_mask.matrix[index+1,1:,1:] = b_mask
+        elif orientation == 'CORONAL':
+            self.current_mask.matrix[1:, index+1, 1:] = b_mask
+        elif orientation == 'SAGITAL':
+            self.current_mask.matrix[1:, 1:, index+1] = b_mask
+
+        for o in self.buffer_slices:
+            if o != orientation:
+                self.buffer_slices[o].discard_mask()
+                self.buffer_slices[o].discard_vtk_mask()
+        ps.Publisher().sendMessage('Reload actual slice')
 
     def __build_mask(self, imagedata, create=True):
         # create new mask instance and insert it into project
