@@ -121,7 +121,7 @@ class LoadDicom:
             ds = reader.GetFile().GetDataSet()
             if ds.FindDataElement(tag):
                 encoding = str(ds.GetDataElement(tag).GetValue())
-                if not(encoding != None and encoding != "None" and encoding != "Loaded"):
+                if encoding is None or encoding == "None" or encoding.startswith("Loaded"):
                     encoding = "ISO_IR 100"
             else:
                 encoding = "ISO_IR_100" 

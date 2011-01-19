@@ -1580,8 +1580,9 @@ class Parser():
         except(KeyError):
             return 'ISO_IR_100'
 
-        if encoding != None and encoding != "None":
-
+        if encoding is None or encoding == "None" or not encoding.strip():
+            return 'ISO_IR 100'
+        else:
             #Problem with 0051 anonymized
             if (encoding.split(":"))[0] == "Loaded":
                 return 'ISO_IR 100'
