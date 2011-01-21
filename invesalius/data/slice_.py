@@ -24,11 +24,12 @@ import wx.lib.pubsub as ps
 
 import constants as const
 import imagedata_utils as iu
-from mask import Mask
 import style as st
-from project import Project
 import session as ses
 import utils
+
+from mask import Mask
+from project import Project
 
 class SliceBuffer(object):
     """ 
@@ -169,13 +170,11 @@ class Slice(object):
                             edition_threshold_range = original_mask.edition_threshold_range,
                             edited_points = original_mask.edited_points)
 
-
     def OnEnableStyle(self, pubsub_evt):
         state = pubsub_evt.data
         if (state in const.SLICE_STYLES):
             new_state = self.interaction_style.AddState(state)
             ps.Publisher().sendMessage('Set slice interaction style', new_state)
-
 
     def OnDisableStyle(self, pubsub_evt):
         state = pubsub_evt.data
@@ -185,7 +184,6 @@ class Slice(object):
 
             if (state == const.SLICE_STATE_EDITOR):
                 ps.Publisher().sendMessage('Set interactor default cursor')
-
 
     def OnCloseProject(self, pubsub_evt):
         self.CloseProject()
@@ -198,7 +196,6 @@ class Slice(object):
         #self.blend_filter = None
         #self.num_gradient = 0
 
-
     def __set_current_mask_threshold_limits(self, pubsub_evt):
         thresh_min = pubsub_evt.data[0]
         thresh_max  = pubsub_evt.data[1]
@@ -206,14 +203,9 @@ class Slice(object):
             index = self.current_mask.index
             self.SetMaskEditionThreshold(index, (thresh_min, thresh_max))
 
-
-
     #---------------------------------------------------------------------------
     # BEGIN PUBSUB_EVT METHODS
     #---------------------------------------------------------------------------
-    #def __get_mask_data_for_surface_creation(self, pubsub_evt):
-    #    mask_index = pubsub_evt.data
-    #    CreateSurfaceFromIndex
 
     def __add_mask(self, pubsub_evt):
         mask_name = pubsub_evt.data
@@ -242,9 +234,6 @@ class Slice(object):
     def __set_current_mask_threshold(self, evt_pubsub):
         threshold_range = evt_pubsub.data
         index = self.current_mask.index
-        #self.SetMaskThreshold(index, threshold_range)
-        #Clear edited points
-        self.current_mask.edited_points = {}
         self.num_gradient += 1
         self.current_mask.matrix[:] = 0
 
@@ -256,8 +245,6 @@ class Slice(object):
             self.SetMaskThreshold(index, threshold_range,
                                   self.buffer_slices[orientation].index,
                                   orientation)
-        #Clear edited points
-        self.current_mask.edited_points = {}
         self.num_gradient += 1
 
         ps.Publisher().sendMessage('Reload actual slice')
@@ -282,71 +269,8 @@ class Slice(object):
         if self.current_mask:
             index, value = pubsub_evt.data
             self.ShowMask(index, value)
-    #---------------------------------------------------------------------------
-    def erase_mask_pixel(self, index, position, radius, orientation):
-        mask = self.buffer_slices[orientation].mask
-        image = self.buffer_slices[orientation].image
 
-        if hasattr(position, '__iter__'):
-            py, px = position
-            if orientation == 'AXIAL':
-                sx = self.spacing[0]
-                sy = self.spacing[1]
-            elif orientation == 'CORONAL':
-                sx = self.spacing[0]
-                sy = self.spacing[2]
-            elif orientation == 'SAGITAL':
-                sx = self.spacing[1]
-                sy = self.spacing[2]
-
-        else:
-            if orientation == 'AXIAL':
-                sx = self.spacing[0]
-                sy = self.spacing[1]
-                py = position / mask.shape[1]
-                px = position % mask.shape[1]
-            elif orientation == 'CORONAL':
-                sx = self.spacing[0]
-                sy = self.spacing[2]
-                py = position / mask.shape[1]
-                px = position % mask.shape[1]
-            elif orientation == 'SAGITAL':
-                sx = self.spacing[1]
-                sy = self.spacing[2]
-                py = position / mask.shape[1]
-                px = position % mask.shape[1]
-
-        xi = px - math.ceil(radius/sx)
-        xf = px + math.ceil(radius/sx)
-        yi = py - math.ceil(radius/sy)
-        yf = py + math.ceil(radius/sy)
-
-        if yi < 0:
-            index = index[abs(yi):,:]
-            yi = 0
-        if yf > image.shape[0]:
-            index = index[:index.shape[0]-(yf-image.shape[0]), :]
-            yf = image.shape[0]
-
-        if xi < 0:
-            index = index[:,abs(xi):]
-            xi = 0
-        if xf > image.shape[1]:
-            index = index[:,:index.shape[1]-(xf-image.shape[1])]
-            xf = image.shape[1]
-
-        # Verifying if the points is over the image array.
-        if (not 0 < xi < image.shape[1] and not 0 < xf < image.shape[1]) or \
-           (not 0 < yi < image.shape[0] and not 0 < yf < image.shape[0]):
-            return
-
-        roi_m = mask[yi:yf,xi:xf]
-        roi_i = image[yi:yf, xi:xf]
-
-        roi_m[index] = 1
-        self.buffer_slices[orientation].discard_vtk_mask()
-
-    def edit_mask_pixel(self, index, position, radius, orientation):
+    def edit_mask_pixel(self, operation, index, position, radius, orientation):
         mask = self.buffer_slices[orientation].mask
         image = self.buffer_slices[orientation].image
         thresh_min, thresh_max = self.current_mask.edition_threshold_range
@@ -407,101 +331,17 @@ class Slice(object):
         roi_m = mask[yi:yf,xi:xf]
         roi_i = image[yi:yf, xi:xf]
 
-        # It's a trick to make points between threshold gets value 254
-        # (1 * 253 + 1) and out ones gets value 1 (0 * 253 + 1).
-        roi_m[index] = (((roi_i[index] >= thresh_min) 
-                         & (roi_i[index] <= thresh_max)) * 253) + 1
+        if operation == const.BRUSH_THRESH:
+            # It's a trick to make points between threshold gets value 254
+            # (1 * 253 + 1) and out ones gets value 1 (0 * 253 + 1).
+            roi_m[index] = (((roi_i[index] >= thresh_min) 
+                             & (roi_i[index] <= thresh_max)) * 253) + 1
+        elif operation == const.BRUSH_DRAW:
+            roi_m[index] = 254
+        elif operation == const.BRUSH_ERASE:
+            roi_m[index] = 1
         self.buffer_slices[orientation].discard_vtk_mask()
 
-    def add_mask_pixel(self, index, position, radius, orientation):
-        #mask = self.buffer_slices[orientation].mask
-        #if orientation == 'AXIAL':
-            #sx = self.spacing[0]
-            #sy = self.spacing[1]
-            #py = position / mask.shape[1]
-            #px = position % mask.shape[1]
-        #elif orientation == 'CORONAL':
-            #sx = self.spacing[0]
-            #sy = self.spacing[2]
-            #py = position / mask.shape[1]
-            #px = position % mask.shape[1]
-        #elif orientation == 'SAGITAL':
-            #sx = self.spacing[1]
-            #sy = self.spacing[2]
-            #py = position / mask.shape[1]
-            #px = position % mask.shape[1]
-
-        #print "->px, py", px, py
-        #print "->position", position
-        #print '->shape', mask.shape
-
-        #mask[py - radius / sy: py + radius / sy,
-             #px - radius / sx: px + radius / sx] = 255
-        #self.buffer_slices[orientation].discard_vtk_mask()
-        mask = self.buffer_slices[orientation].mask
-        image = self.buffer_slices[orientation].image
-
-        if hasattr(position, '__iter__'):
-            py, px = position
-            if orientation == 'AXIAL':
-                sx = self.spacing[0]
-                sy = self.spacing[1]
-            elif orientation == 'CORONAL':
-                sx = self.spacing[0]
-                sy = self.spacing[2]
-            elif orientation == 'SAGITAL':
-                sx = self.spacing[1]
-                sy = self.spacing[2]
-
-        else:
-            if orientation == 'AXIAL':
-                sx = self.spacing[0]
-                sy = self.spacing[1]
-                py = position / mask.shape[1]
-                px = position % mask.shape[1]
-            elif orientation == 'CORONAL':
-                sx = self.spacing[0]
-                sy = self.spacing[2]
-                py = position / mask.shape[1]
-                px = position % mask.shape[1]
-            elif orientation == 'SAGITAL':
-                sx = self.spacing[1]
-                sy = self.spacing[2]
-                py = position / mask.shape[1]
-                px = position % mask.shape[1]
-
-        xi = px - math.ceil(radius/sx)
-        xf = px + math.ceil(radius/sx)
-        yi = py - math.ceil(radius/sy)
-        yf = py + math.ceil(radius/sy)
-
-        if yi < 0:
-            index = index[abs(yi):,:]
-            yi = 0
-        if yf > image.shape[0]:
-            index = index[:index.shape[0]-(yf-image.shape[0]), :]
-            yf = image.shape[0]
-
-        if xi < 0:
-            index = index[:,abs(xi):]
-            xi = 0
-        if xf > image.shape[1]:
-            index = index[:,:index.shape[1]-(xf-image.shape[1])]
-            xf = image.shape[1]
-
-        # Verifying if the points is over the image array.
-        if (not 0 < xi < image.shape[1] and not 0 < xf < image.shape[1]) or \
-           (not 0 < yi < image.shape[0] and not 0 < yf < image.shape[0]):
-            return
-
-        roi_m = mask[yi:yf,xi:xf]
-        roi_i = image[yi:yf, xi:xf]
-
-        roi_m[index] = 254
-        self.buffer_slices[orientation].discard_vtk_mask()
-    #---------------------------------------------------------------------------
-    # END PUBSUB_EVT METHODS
-    #---------------------------------------------------------------------------
 
     def GetSlices(self, orientation, slice_number):
         if self.buffer_slices[orientation].index == slice_number:
@@ -566,7 +406,6 @@ class Slice(object):
         """ 
         It gets the from actual mask the given slice from given orientation
         """
-
         # It's necessary because the first position for each dimension from
         # mask matrix is used as flags to control if the mask in the
         # slice_number position has been generated.
@@ -616,10 +455,6 @@ class Slice(object):
         proj.mask_dict[index].colour = colour
 
         (r,g,b) = colour
-        #scalar_range = int(self.imagedata.GetScalarRange()[1])
-        #self.lut_mask.SetTableValue(0, 0, 0, 0, 0.0)
-        #self.lut_mask.SetTableValue(scalar_range - 1, r, g, b, 1.0)
-
         colour_wx = [r*255, g*255, b*255]
         ps.Publisher().sendMessage('Change mask colour in notebook',
                                     (index, (r,g,b)))
@@ -633,7 +468,6 @@ class Slice(object):
         session = ses.Session()
         session.ChangeProject()
 
-
     def SetMaskName(self, index, name):
         "Rename a mask given its index and the new name"
         proj = Project()
@@ -641,7 +475,6 @@ class Slice(object):
 
         session = ses.Session()
         session.ChangeProject()
-
 
     def SetMaskEditionThreshold(self, index, threshold_range):
         "Set threshold bounds to be used while editing slice"
@@ -660,22 +493,7 @@ class Slice(object):
         thresh_min, thresh_max = threshold_range
 
         if self.current_mask.index == index:
-            ## Update pipeline (this must be here, so pipeline is not broken)
-            #self.img_thresh_mask.SetInput(self.imagedata)
-            #self.img_thresh_mask.ThresholdBetween(float(thresh_min),
-                                                  #float(thresh_max))
-            #self.img_thresh_mask.Update()
-
-            ## Create imagedata copy so the pipeline is not broken
-            #imagedata = self.img_thresh_mask.GetOutput()
-            #self.current_mask.imagedata.DeepCopy(imagedata)
-            #self.current_mask.threshold_range = threshold_range
-
-            ## Update pipeline (this must be here, so pipeline is not broken)
-            #self.img_colours_mask.SetInput(self.current_mask.imagedata)
-
             # TODO: find out a better way to do threshold
-
             if slice_number is None:
                 for n, slice_ in enumerate(self.matrix):
                     m = numpy.ones(slice_.shape, self.current_mask.matrix.dtype)
@@ -702,7 +520,6 @@ class Slice(object):
         proj = Project()
         proj.mask_dict[self.current_mask.index].threshold_range = threshold_range
 
-
     def ShowMask(self, index, value):
         "Show a mask given its index and 'show' value (0: hide, other: show)"
         proj = Project()
@@ -713,45 +530,7 @@ class Slice(object):
                 buffer_.discard_mask()
             ps.Publisher().sendMessage('Reload actual slice')
     #---------------------------------------------------------------------------
-    def ErasePixel(self, position):
-        "Delete pixel, based on x, y and z position coordinates."
-        x, y, z = round(position[0],0), round(position[1],0),position[2]
-        colour = self.imagedata.GetScalarRange()[0]
-        imagedata = self.current_mask.imagedata
-        imagedata.SetScalarComponentFromDouble(x, y, z, 0, colour)
-        self.current_mask.edited_points[(x, y, z)] = colour
 
-        session = ses.Session()
-        session.ChangeProject()
-
-
-    def DrawPixel(self, position, colour=None):
-        "Draw pixel, based on x, y and z position coordinates."
-        x, y, z = round(position[0],0), round(position[1],0),position[2]
-        colour = self.imagedata.GetScalarRange()[1]
-        imagedata = self.current_mask.imagedata
-        imagedata.SetScalarComponentFromDouble(x, y, z, 0, colour)
-        self.current_mask.edited_points[(x, y, z)] = colour
-
-        session = ses.Session()
-        session.ChangeProject()
-
-
-    def EditPixelBasedOnThreshold(self, position):
-        "Erase or draw pixel based on edition threshold range."
-        x, y, z = round(position[0],0), round(position[1],0),position[2]
-        colour = self.imagedata.GetScalarComponentAsDouble(x, y, z, 0)
-        thresh_min, thresh_max = self.current_mask.edition_threshold_range
-        if (colour >= thresh_min) and (colour <= thresh_max):
-            self.DrawPixel(position, colour)
-        else:
-            self.ErasePixel(position)
-
-        session = ses.Session()
-        session.ChangeProject()
-
-
-    #---------------------------------------------------------------------------
     def SelectCurrentMask(self, index):
         "Insert mask data, based on given index, into pipeline."
         # This condition is not necessary in Linux, only under mac and windows
@@ -805,6 +584,7 @@ class Slice(object):
         return self.blend_filter.GetOutput()
 
     def SetInput(self, imagedata, mask_dict):
+        print "SETINPUT!"
         self.imagedata = imagedata
         self.extent = imagedata.GetExtent()
 
@@ -857,7 +637,6 @@ class Slice(object):
         return img_colours_bg.GetOutput()
 
     def UpdateWindowLevelBackground(self, pubsub_evt):
-        
         window, level = pubsub_evt.data
         self.window_width = window
         self.window_level = level
@@ -866,20 +645,6 @@ class Slice(object):
             buffer_.discard_vtk_image()
 
         ps.Publisher().sendMessage('Reload actual slice')
-
-        #window_level = self.window_level
-
-        #if not((window == window_level.GetWindow()) and\
-                #(level == window_level.GetLevel())):
-
-            #window_level.SetWindow(window)
-            #window_level.SetLevel(level)
-            #window_level.SetOutputFormatToLuminance()
-            #window_level.Update()
-
-            #thresh_min, thresh_max = window_level.GetOutput().GetScalarRange()
-            #self.lut_bg.SetTableRange(thresh_min, thresh_max)
-            #self.img_colours_bg.SetInput(window_level.GetOutput())
 
     def UpdateColourTableBackground(self, pubsub_evt):
         values = pubsub_evt.data
@@ -925,39 +690,13 @@ class Slice(object):
             future_mask.edition_threshold_range = edition_threshold_range
         if edited_points:
             future_mask.edited_points = edited_points
-
-        ## this is not the first mask, so we will import data from old imagedata
-        #if imagedata is None:
-            #old_mask = self.current_mask
-            #imagedata = old_mask.imagedata
-            #future_mask.threshold_range = old_mask.threshold_range
-
-        #if threshold_range:
-            #future_mask.threshold_range = threshold_range
-            #future_mask.imagedata = self.__create_mask_threshold(self.imagedata, 
-                                                    #threshold_range)
-        #else:
-            #future_mask.imagedata = vtk.vtkImageData()
-            #future_mask.imagedata.DeepCopy(imagedata)
-            #future_mask.imagedata.Update()
-
-
-        ## when this is not the first instance, user will have defined a name
-        #if name is not None:
-            #future_mask.name = name
-            #if future_mask.is_shown:
-                #self.blend_filter.SetOpacity(1, future_mask.opacity)
-            #else:
-                #self.blend_filter.SetOpacity(1, 0)
-            #self.blend_filter.Update()
+        if threshold_range:
+            future_mask.threshold_range = threshold_range
 
         # insert new mask into project and retrieve its index
         proj = Project()
         index = proj.AddMask(future_mask)
         future_mask.index = index
-        #if threshold_range:
-            #self.SetMaskThreshold(index, threshold_range)
-            #future_mask.edited_points = {}
 
         ## update gui related to mask
         ps.Publisher().sendMessage('Add mask',
@@ -968,11 +707,8 @@ class Slice(object):
 
         self.current_mask = future_mask
 
-        print self.current_mask.matrix
-
         ps.Publisher().sendMessage('Change mask selected', future_mask.index)
         ps.Publisher().sendMessage('Update slice viewer')
-
 
     def __load_masks(self, imagedata, mask_dict):
         keys = mask_dict.keys()
@@ -996,8 +732,6 @@ class Slice(object):
         ps.Publisher().sendMessage('Update slice viewer')
 
     def do_ww_wl(self, image):
-        print "WW, WL", self.window_width, self.window_level
-        print image.GetScalarRange()
         colorer = vtk.vtkImageMapToWindowLevelColors()
         colorer.SetInput(image)
         colorer.SetWindow(self.window_width)
@@ -1049,9 +783,9 @@ class Slice(object):
         return img_colours_mask.GetOutput()
 
     def do_blend(self, imagedata, mask):
-        # blend both imagedatas, so it can be inserted into viewer
-        print "Blending Spacing", imagedata.GetSpacing(), mask.GetSpacing()
-
+        """
+        blend image with the mask.
+        """
         blend_imagedata = vtk.vtkImageBlend()
         blend_imagedata.SetBlendModeToNormal()
         # blend_imagedata.SetOpacity(0, 1.0)
@@ -1059,8 +793,6 @@ class Slice(object):
         blend_imagedata.SetInput(imagedata)
         blend_imagedata.AddInput(mask)
         blend_imagedata.Update()
-
-        # return colorer.GetOutput()
 
         return blend_imagedata.GetOutput()
 
@@ -1070,7 +802,6 @@ class Slice(object):
         """
         b_mask = self.buffer_slices[orientation].mask
         index = self.buffer_slices[orientation].index
-        print "-> ORIENTATION", orientation, index, b_mask
         if orientation == 'AXIAL':
             self.current_mask.matrix[index+1,1:,1:] = b_mask
         elif orientation == 'CORONAL':
@@ -1127,7 +858,6 @@ class Slice(object):
 
         return img_colours_mask.GetOutput()
 
-
     def __create_mask_threshold(self, imagedata, threshold_range=None):
         if not threshold_range:
             thresh_min, thresh_max = self.current_mask.threshold_range
@@ -1149,7 +879,6 @@ class Slice(object):
         imagedata_mask.Update()
 
         return imagedata_mask
-
 
     def OnExportMask(self, pubsub_evt):
         #imagedata = self.current_mask.imagedata

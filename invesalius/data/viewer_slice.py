@@ -634,19 +634,9 @@ class Viewer(wx.Panel):
 
         if position < 0:
             position = self.calculate_matrix_position(coord)
-            
 
-        # TODO: Call slice_ functions instead of to use pubsub message,
-        # maybe we can get some performances improvements here.
-        if self._brush_cursor_op == const.BRUSH_ERASE:
-            self.slice_.erase_mask_pixel(cursor.GetPixels(), position, radius,
-                                        self.orientation)
-        elif self._brush_cursor_op == const.BRUSH_DRAW:
-            self.slice_.add_mask_pixel(cursor.GetPixels(), position, radius,
-                                        self.orientation)
-        elif self._brush_cursor_op == const.BRUSH_THRESH:
-            self.slice_.edit_mask_pixel(cursor.GetPixels(), position, radius,
-                                        self.orientation)
+        self.slice_.edit_mask_pixel(self._brush_cursor_op, cursor.GetPixels(),
+                                    position, radius, self.orientation)
 
         # TODO: To create a new function to reload images to viewer.
         self.OnScrollBar()
@@ -685,18 +675,8 @@ class Viewer(wx.Panel):
             if position < 0:
                 position = self.calculate_matrix_position(coord)
                 
-
-            # TODO: Call slice_ functions instead of to use pubsub message,
-            # maybe we can get some performances improvements here.
-            if self._brush_cursor_op == const.BRUSH_ERASE:
-                self.slice_.erase_mask_pixel(cursor.GetPixels(), position, radius,
-                                            self.orientation)
-            elif self._brush_cursor_op == const.BRUSH_DRAW:
-                self.slice_.add_mask_pixel(cursor.GetPixels(), position, radius,
-                                            self.orientation)
-            elif self._brush_cursor_op == const.BRUSH_THRESH:
-                self.slice_.edit_mask_pixel(cursor.GetPixels(), position, radius,
-                                            self.orientation)
+            self.slice_.edit_mask_pixel(self._brush_cursor_op, cursor.GetPixels(),
+                                        position, radius, self.orientation)
 
             # TODO: To create a new function to reload images to viewer.
             self.OnScrollBar()
