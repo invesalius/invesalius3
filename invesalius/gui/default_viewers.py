@@ -303,7 +303,7 @@ import wx.lib.pubsub as ps
 import constants as const
 import widgets.colourselect as csel
 
-[BUTTON_RAYCASTING, BUTTON_VIEW, BUTTON_SLICE_PLANE] = [wx.NewId() for num in xrange(3)]
+[BUTTON_RAYCASTING, BUTTON_VIEW, BUTTON_SLICE_PLANE, BUTTON_3D_STEREO] = [wx.NewId() for num in xrange(4)]
 RAYCASTING_TOOLS = wx.NewId()
 
 ID_TO_NAME = {}
@@ -311,6 +311,9 @@ ID_TO_TOOL = {}
 ID_TO_TOOL_ITEM = {}
 TOOL_STATE = {}
 ID_TO_ITEMSLICEMENU = {}
+ID_TO_ITEM_3DSTEREO = {}
+ID_TO_STEREO_NAME = {}
+
 
 class VolumeViewerCover(wx.Panel):
     def __init__(self, parent):
@@ -337,15 +340,24 @@ class VolumeToolPanel(wx.Panel):
                                     wx.BITMAP_TYPE_PNG)
 
 
+        BMP_3D_STEREO = wx.Bitmap("../icons/3D_glasses.png",
+                                    wx.BITMAP_TYPE_PNG)
+
+
         button_raycasting = pbtn.PlateButton(self, BUTTON_RAYCASTING,"",
                 BMP_RAYCASTING, style=pbtn.PB_STYLE_SQUARE,
                 size=(24,24))
+
+        button_stereo = pbtn.PlateButton(self, BUTTON_3D_STEREO,"",
+                BMP_3D_STEREO, style=pbtn.PB_STYLE_SQUARE,
+                    size=(24,24))
 
         button_slice_plane = self.button_slice_plane = pbtn.PlateButton(self, BUTTON_SLICE_PLANE,"",
         BMP_SLICE_PLANE, style=pbtn.PB_STYLE_SQUARE,
         size=(24,24))
 
         self.button_raycasting = button_raycasting
+        self.button_stereo = button_stereo
 
         # VOLUME VIEW ANGLE BUTTON
         BMP_FRONT = wx.Bitmap(ID_TO_BMP[const.VOL_FRONT][1],
@@ -373,6 +385,8 @@ class VolumeToolPanel(wx.Panel):
         sizer.Add(button_raycasting, 0, wx.TOP|wx.BOTTOM, 1)
         sizer.Add(button_view, 0, wx.TOP|wx.BOTTOM, 1)
         sizer.Add(button_slice_plane, 0, wx.TOP|wx.BOTTOM, 1)
+        sizer.Add(button_stereo, 0, wx.TOP|wx.BOTTOM, 1)
+
 
         sizer.Fit(self)
 
@@ -401,10 +415,14 @@ class VolumeToolPanel(wx.Panel):
         self.button_raycasting.Bind(wx.EVT_LEFT_DOWN, self.OnButtonRaycasting)
         self.button_view.Bind(wx.EVT_LEFT_DOWN, self.OnButtonView)
         self.button_colour.Bind(csel.EVT_COLOURSELECT, self.OnSelectColour)
+        self.button_stereo.Bind(wx.EVT_LEFT_DOWN, self.OnButtonStereo)
 
     def OnButtonRaycasting(self, evt):
         # MENU RELATED TO RAYCASTING TYPES
         self.button_raycasting.PopupMenu(self.menu_raycasting)
+
+    def OnButtonStereo(self, evt):
+        self.button_stereo.PopupMenu(self.stereo_menu)
 
     def OnButtonView(self, evt):
         self.button_view.PopupMenu(self.menu_view)
@@ -481,6 +499,25 @@ class VolumeToolPanel(wx.Panel):
 
         slice_plane_menu.Bind(wx.EVT_MENU, self.OnMenuPlaneSlice)
 
+
+        #3D Stereo Buttons
+        self.stereo_menu = stereo_menu = wx.Menu()
+        itens = [const.STEREO_OFF, const.STEREO_RED_BLUE,const.STEREO_ANAGLYPH, const.STEREO_CRISTAL, 
+                 const.STEREO_INTERLACED, const.STEREO_LEFT, const.STEREO_RIGHT, const.STEREO_DRESDEN, 
+                 const.STEREO_CHECKBOARD]
+ 
+        for value in itens:
+            new_id = wx.NewId()
+
+            item = wx.MenuItem(stereo_menu, new_id, value, 
+                                                kind = wx.ITEM_RADIO)
+
+            ID_TO_ITEM_3DSTEREO[new_id] = item
+            ID_TO_STEREO_NAME[new_id] = value 
+            stereo_menu.AppendItem(item)
+
+        stereo_menu.Bind(wx.EVT_MENU, self.OnMenuStereo)
+
         self.Fit()
         self.Update()
         
@@ -507,6 +544,12 @@ class VolumeToolPanel(wx.Panel):
             ps.Publisher().sendMessage('Disable plane', label)
         else:
             ps.Publisher().sendMessage('Enable plane', label)
+
+    def OnMenuStereo(self, evt):
+        id = evt.GetId() 
+        mode = ID_TO_STEREO_NAME[id]
+        ps.Publisher().sendMessage('Set stereo mode', mode)
+
 
     def Uncheck(self, pubsub_evt):        
         for item in self.slice_plane_menu.GetMenuItems():

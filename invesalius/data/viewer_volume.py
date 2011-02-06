@@ -171,6 +171,36 @@ class Viewer(wx.Panel):
                 'Set ball reference position')
         ps.Publisher().subscribe(self.SetBallReferencePositionBasedOnBound,
                 'Set ball reference position based on bound')
+        ps.Publisher().subscribe(self.SetStereoMode, 'Set stereo mode')
+
+    def SetStereoMode(self, pubsub_evt):
+        mode = pubsub_evt.data
+        ren_win = self.interactor.GetRenderWindow()
+        
+        if mode == const.STEREO_OFF:
+            ren_win.StereoRenderOff()
+        else:
+            ren_win.StereoRenderOn()
+
+            if mode == const.STEREO_RED_BLUE:
+                ren_win.SetStereoTypeToRedBlue()
+            elif mode == const.STEREO_CRISTAL:
+                ren_win.SetStereoTypeToCrystalEyes()
+            elif mode == const.STEREO_INTERLACED:
+                ren_win.SetStereoTypeToInterlaced()
+            elif mode == const.STEREO_LEFT:
+                ren_win.SetStereoTypeToLeft()
+            elif mode == const.STEREO_RIGHT:
+                ren_win.SetStereoTypeToRight()
+            elif mode == const.STEREO_DRESDEN:
+                ren_win.SetStereoTypeToDresden()
+            elif mode == const.STEREO_CHECKBOARD:
+                ren_win.SetStereoTypeToCheckerboard()
+            elif mode == const.STEREO_ANAGLYPH:
+                ren_win.SetStereoTypeToAnaglyph()
+
+        self.interactor.Render()
+
 
     def CreateBallReference(self):
         self.ball_reference = vtk.vtkSphereSource()
