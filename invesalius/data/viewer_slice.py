@@ -29,7 +29,6 @@ from vtk.wx.wxVTKRenderWindowInteractor import wxVTKRenderWindowInteractor
 import wx
 import wx.lib.pubsub as ps
 
-
 import constants as const
 import cursor_actors as ca
 import data.slice_ as sl
@@ -62,6 +61,7 @@ class Viewer(wx.Panel):
         self.left_pressed = 0
         self.right_pressed = 0
         self.last_position_mouse_move = ()
+        self.state = const.STATE_DEFAULT
 
         # All renderers and image actors in this viewer
         self.slice_data_list = []
@@ -90,13 +90,12 @@ class Viewer(wx.Panel):
         self.on_text = False
         # VTK pipeline and actors
         self.__config_interactor()
-        self.pick = vtk.vtkWorldPointPicker()
         self.cross_actor = vtk.vtkActor()
-
 
         self.__bind_events()
         self.__bind_events_wx()
-        
+
+        self._warped = False
 
     def __init_gui(self):
         interactor = wxVTKRenderWindowInteractor(self, -1, size=self.GetSize())
@@ -117,15 +116,16 @@ class Viewer(wx.Panel):
         self.SetAutoLayout(1)
 
         self.interactor = interactor
+        self.pick = vtk.vtkWorldPointPicker()
+
+        self.interactor.SetPicker(self.pick)
 
     def OnContextMenu(self, evt):
         self.right_pressed = 0
         if (self.last_position_mouse_move ==\
               self.interactor.GetLastEventPosition()):
             self.PopupMenu(self.menu)
-            
         evt.Skip()
-           
             
     def SetPopupMenu(self, menu):
         self.menu = menu
@@ -158,7 +158,6 @@ class Viewer(wx.Panel):
         self.interactor.Render()
         self.on_text = True
 
-
     def __set_layout(self, pubsub_evt):
         layout = pubsub_evt.data
         self.SetLayout(layout)
@@ -173,8 +172,8 @@ class Viewer(wx.Panel):
         self.state = state
         action = {const.SLICE_STATE_CROSS: 
                              {
-                             "MouseMoveEvent": self.OnCrossMove,
-                             "LeftButtonPressEvent": self.OnCrossMouseClick,
+                              "MouseMoveEvent": self.OnCrossMove,
+                              "LeftButtonPressEvent": self.OnCrossMouseClick,
                              },
                   const.SLICE_STATE_EDITOR: 
                             {
@@ -238,9 +237,7 @@ class Viewer(wx.Panel):
             self.on_wl = False
             self.wl_text.Hide()
 
-
         self.__set_editor_cursor_visibility(0)
-
         
         # Bind method according to current mode
         if(state == const.STATE_ZOOM_SL):
@@ -347,7 +344,6 @@ class Viewer(wx.Panel):
             ps.Publisher().sendMessage('Update slice viewer')
             ps.Publisher().sendMessage('Render volume viewer')
 
-
     def OnWindowLevelClick(self, evt, obj):
         self.last_x, self.last_y = self.interactor.GetLastEventPosition()
 
@@ -375,7 +371,6 @@ class Viewer(wx.Panel):
     
                 self.scroll.SetThumbPosition(self.acum_achange_slice)
                 self.OnScrollBar()
-                
 
     def OnChangeSliceClick(self, evt, obj):
         position = list(self.interactor.GetLastEventPosition())
@@ -397,7 +392,6 @@ class Viewer(wx.Panel):
 
     def OnVtkRightRelease(self, evt, obj):
         evt.OnRightButtonUp()
-
 
     def OnUnZoom(self, evt, obj = None):
         mouse_x, mouse_y = self.interactor.GetLastEventPosition()
@@ -496,74 +490,9 @@ class Viewer(wx.Panel):
         ren = slice_data.renderer
         size = ren.GetSize()
 
-
         ren.ResetCamera()
         ren.GetActiveCamera().Zoom(1.0)
         self.interactor.Render()
-        #self.interactor.GetRenderWindow().Render()
-
-        
-        #if (size[0] <= size[1] + 60):
-        # Code bellow doesn't work for Promed 0013
-        """
-        if 0:
-
-            bound = slice_data.actor.GetBounds()
-
-            width = abs((bound[3] - bound[2]) * -1)
-            height = abs((bound[1] - bound[0]) * -1)
-
-            origin = ren.GetOrigin()
-            cam = ren.GetActiveCamera()
-
-            min = []
-            min.append(bound[0])
-            min.append(bound[2])
-
-            rbcenter = []
-            rbcenter.append(min[0] + 0.5 * width)
-            rbcenter.append(min[1] + 0.5 * height)
-            rbcenter.append(0)
-
-            self.ren.SetDisplayPoint(rbcenter)
-            self.ren.DisplayToView()
-            self.ren.ViewToWorld()
-
-            worldRBCenter = self.ren.GetWorldPoint()
-            worldRBCenter = list(worldRBCenter)
-
-            invw = 1.0/worldRBCenter[3]
-
-            worldRBCenter[0] *= invw
-            worldRBCenter[1] *= invw
-            worldRBCenter[2] *= invw
-
-            winCenter = []
-            winCenter.append(origin[0] + 0.5 * size[0])
-            winCenter.append(origin[1] + 0.5 * size[1])
-            winCenter.append(0)
-
-            ren.SetDisplayPoint(winCenter)
-            ren.DisplayToView()
-            ren.ViewToWorld()
-
-            worldWinCenter = list(ren.GetWorldPoint())
-            invw = 1.0/worldWinCenter[3]
-            worldWinCenter[0] *= invw
-            worldWinCenter[1] *= invw
-            worldWinCenter[2] *= invw
-
-            translation = []
-            translation.append(worldRBCenter[0] - worldWinCenter[0])
-            translation.append(worldRBCenter[1] - worldWinCenter[1])
-            translation.append(worldRBCenter[2] - worldWinCenter[2])
-
-            if (width > height):
-                cam.Zoom(size[0] / width)
-            else:
-                cam.Zoom(size[1] / height)
-        """
-                
 
     def ChangeBrushSize(self, pubsub_evt):
         size = pubsub_evt.data
@@ -607,7 +536,6 @@ class Viewer(wx.Panel):
         slice_data.SetCursor(cursor)
         self.interactor.Render()
 
-
     def OnBrushClick(self, evt, obj):
         self.__set_editor_cursor_visibility(1)
  
@@ -640,7 +568,6 @@ class Viewer(wx.Panel):
 
         # TODO: To create a new function to reload images to viewer.
         self.OnScrollBar()
-
 
     def OnBrushMove(self, evt, obj):
         self.__set_editor_cursor_visibility(1)
@@ -692,34 +619,40 @@ class Viewer(wx.Panel):
 
     def OnCrossMove(self, evt, obj):
         # The user moved the mouse with left button pressed
-        if (self.left_pressed):
+        if self.left_pressed:
             self.ChangeCrossPosition()
 
     def ChangeCrossPosition(self):
         mouse_x, mouse_y = self.interactor.GetEventPosition()
+        renderer = self.slice_data.renderer
+        self.pick.Pick(mouse_x, mouse_y, 0, renderer)
+
         # Get in what slice data the click occurred
-        renderer = self.slice_data_list[0].renderer
         # pick to get click position in the 3d world
-        self.pick.Pick(mouse_x, mouse_y, self.slice_data_list[0].number, renderer)
         coord_cross = self.get_coordinate_cursor()
-        coord = self.CalcultateScrollPosition(coord_cross)
-        ps.Publisher().sendMessage('Update cross position',
-                (self.orientation, coord_cross))
-        ps.Publisher().sendMessage('Set ball reference position based on bound', coord_cross)
+        position = self.slice_data.actor.GetInput().FindPoint(coord_cross)
+        # Forcing focal point to be setted in the center of the pixel.
+        coord_cross = self.slice_data.actor.GetInput().GetPoint(position)
+
+        coord = self.calcultate_scroll_position(position)   
+        self.ScrollSlice(coord)
+
+        ps.Publisher().sendMessage('Update cross position', coord_cross)
+        ps.Publisher().sendMessage('Set ball reference position based on bound',
+                                   coord_cross)
         ps.Publisher().sendMessage('Set camera in volume', coord_cross)
         ps.Publisher().sendMessage('Render volume viewer')
         
-        print "Scroll to", coord
-        self.ScrollSlice(coord)
         self.interactor.Render()
 
     def Navigation(self, pubsub_evt):
         # Get point from base change
         x, y, z = pubsub_evt.data
         coord_cross = x, y, z      
-        coord = self.CalcultateScrollPosition(coord_cross)   
-        ps.Publisher().sendMessage('Update cross position',
-                (self.orientation, coord_cross))
+        position = self.slice_data.actor.GetInput().FindPoint(x, y, z)
+        coord_cross = self.slice_data.actor.GetInput().GetPoint(position)
+        coord = self.calcultate_scroll_position(position)   
+        ps.Publisher().sendMessage('Update cross position', coord_cross)
         
         self.ScrollSlice(coord)
         self.interactor.Render()
@@ -756,43 +689,28 @@ class Viewer(wx.Panel):
         # WARN: Return the only slice_data used in this slice_viewer. 
         return self.slice_data
 
-    def CalcultateScrollPosition(self, coord):
+    def calcultate_scroll_position(self, position):
         # Based in the given coord (x, y, z), returns a list with the scroll positions for each
         # orientation, being the first position the sagital, second the coronal
         # and the last, axial.
-        x, y, z = coord
+        image_width = self.slice_.buffer_slices[self.orientation].image.shape[1]
 
-        proj = project.Project()
-        orig_orien = proj.original_orientation
+        if self.orientation == 'AXIAL':
+            axial = self.slice_data.number
+            coronal = position / image_width
+            sagital = position % image_width
 
-        # First we fix the position origin, based on vtkActor bounds
-        bounds = self.actor.GetBounds()
-        bound_xi, bound_xf, bound_yi, bound_yf, bound_zi, bound_zf = bounds
-        x = float(x - bound_xi)
-        y = float(y - bound_yi)
-        z = float(z - bound_zi)
+        elif self.orientation == 'CORONAL':
+            axial = position / image_width
+            coronal = self.slice_data.number
+            sagital = position % image_width
 
-        # Then we fix the porpotion, based on vtkImageData spacing
-        spacing_x, spacing_y, spacing_z = self.imagedata.GetSpacing()
+        elif self.orientation == 'SAGITAL':
+            axial = position / image_width
+            coronal = position % image_width
+            sagital = self.slice_data.number
 
-        x = x/spacing_x
-        y = y/spacing_y
-        z = z/spacing_z
-
-        x, y, z = self._assert_coord_into_image([x, y, z])
-
-        # Based on the current orientation, we define 3D position
-        # Sagita, coronal, axial
-        coordinates = {const.AXIAL: [x, y, z],
-                const.SAGITAL: [z, x, y],
-                const.CORONAL: [x, z, y]}
-
-        coord = [int(i) for i in coordinates[orig_orien]]
-
-        # According to vtkImageData extent, we limit min and max value
-        # If this is not done, a VTK Error occurs when mouse is pressed outside
-        # vtkImageData extent
-        return coord
+        return sagital, coronal, axial
 
     def calculate_matrix_position(self, coord):
         x, y, z = coord
@@ -965,7 +883,6 @@ class Viewer(wx.Panel):
     def OnHideText(self, pubsub_evt):
         self.HideTextActors()
 
-
     def OnCloseProject(self, pubsub_evt):
         self.CloseProject()
 
@@ -982,15 +899,12 @@ class Viewer(wx.Panel):
         self.wl_text = None
         self.pick = vtk.vtkWorldPointPicker()
 
-
     def OnSetInteractorStyle(self, pubsub_evt):
         state = pubsub_evt.data
         self.SetInteractorStyle(state)
         
         if (state != const.SLICE_STATE_EDITOR):
             ps.Publisher().sendMessage('Set interactor default cursor')
-
-        
         
     def ChangeBrushOperation(self, pubsub_evt):
         self._brush_cursor_op = pubsub_evt.data
@@ -1006,7 +920,6 @@ class Viewer(wx.Panel):
     def LoadImagedata(self, pubsub_evt):
         imagedata, mask_dict = pubsub_evt.data
         self.SetInput(imagedata, mask_dict)
-        
 
     def LoadRenderers(self, imagedata):
         number_renderers = self.layout[0] * self.layout[1]
@@ -1061,7 +974,6 @@ class Viewer(wx.Panel):
                 slice_data.SetBorderStyle(style)
                 n += 1
 
-
     def __create_cursor(self):
         cursor = ca.CursorCircle()
         cursor.SetOrientation(self.orientation)
@@ -1083,6 +995,7 @@ class Viewer(wx.Panel):
         self.slice_data.actor.SetInput(imagedata)
         self.slice_data.SetCursor(self.__create_cursor())
         self.cam = self.slice_data.renderer.GetActiveCamera()
+        self.__build_cross_lines(imagedata)
         self.set_slice_number(0)
         self.__update_camera()
         self.slice_data.renderer.ResetCamera()
@@ -1117,46 +1030,27 @@ class Viewer(wx.Panel):
         ## Insert cursor
         self.SetInteractorStyle(const.STATE_DEFAULT)
 
-        #self.__build_cross_lines()
+    def __build_cross_lines(self, imagedata):
+        renderer = self.slice_data.renderer
 
-    def __build_cross_lines(self):
-        actor = self.slice_data_list[0].actor
-        renderer = self.slice_data_list[0].renderer
-        xi, xf, yi, yf, zi, zf = actor.GetBounds()
-
-        #vline = vtk.vtkLineSource()
-        #vline.SetPoint1(xi, yi, zi)
-        #vline.SetPoint2(xi, yf, zi)
-        #self.vline = vline
-
-        #hline = vtk.vtkLineSource()
-        #hline.SetPoint1(xi, yi, zi)
-        #hline.SetPoint2(xf, yi, zi)
-        #self.hline = hline
-
-        #cross = vtk.vtkAppendPolyData()
-        #cross.AddInput(vline.GetOutput())
-        #cross.AddInput(hline.GetOutput())
         cross = vtk.vtkCursor3D()
         cross.AllOff()
         cross.AxesOn()
-        #cross.WrapOn()
-        #cross.OutlineOff()
-        #cross.ZShadowsOff()
-        #cross.YShadowsOff()
-        #cross.XShadowsOff()
-        cross.SetModelBounds(self.imagedata.GetBounds())
         self.cross = cross
+
+        c = vtk.vtkCoordinate()
+        c.SetCoordinateSystemToWorld()
 
         cross_mapper = vtk.vtkPolyDataMapper()
         cross_mapper.SetInput(cross.GetOutput())
+        #cross_mapper.SetTransformCoordinate(c)
 
-        property = vtk.vtkProperty()
-        property.SetColor(1, 0, 0)
+        p = vtk.vtkProperty()
+        p.SetColor(1, 0, 0)
 
         cross_actor = vtk.vtkActor()
         cross_actor.SetMapper(cross_mapper)
-        cross_actor.SetProperty(property)
+        cross_actor.SetProperty(p)
         cross_actor.VisibilityOff()
         # Only the slices are pickable
         cross_actor.PickableOff()
@@ -1165,77 +1059,8 @@ class Viewer(wx.Panel):
         renderer.AddActor(cross_actor)
 
     def __update_cross_position(self, pubsub_evt):
-        x, y, z = pubsub_evt.data[1]
-        orientation = pubsub_evt.data[0]
-        #xi, yi, zi = self.vline.GetPoint1()
-        #xf, yf, zf = self.vline.GetPoint2()
-        #self.vline.SetPoint1(x, yi, z)
-        #self.vline.SetPoint2(x, yf, z)
-        #self.vline.Update()
-
-        #xi, yi, zi = self.hline.GetPoint1()
-        #xf, yf, zf = self.hline.GetPoint2()
-        #self.hline.SetPoint1(xi, y, z)
-        #self.hline.SetPoint2(xf, y, z)
-        #self.hline.Update()
-        slice_data = self.slice_data_list[0]
-        slice_number = slice_data.number
-        actor_bound = slice_data.actor.GetBounds()
-        extent = slice_data.actor.GetDisplayExtent()
-        cam = slice_data.renderer.GetActiveCamera()
-
-        vCamera = numpy.array(cam.GetPosition()) - numpy.array(cam.GetFocalPoint())
-        n_vCamera = vCamera / numpy.linalg.norm(vCamera)
-
-        pos = [j + 0.01 * i for i,j in zip(n_vCamera, (x, y, z))]
-
-        #yz = [x + abs(x * 0.001), y, z]
-        #xz = [x, y - abs(y * 0.001), z]
-        #xy = [x, y, z + abs(z * 0.001)]
-
-        proj = project.Project()
-        orig_orien = proj.original_orientation
-        #pos = [x, y, z]
-
-        #if (orig_orien == const.SAGITAL):
-        #    coordinates = {"SAGITAL": xy, "CORONAL": yz, "AXIAL": xz}
-        #elif(orig_orien == const.CORONAL):
-        #    #coordinates = {"SAGITAL": yz, "CORONAL": xy, "AXIAL": xz}
-        #    if orientation == "AXIAL":
-        #        pos[2] += abs(pos[2] * 0.001)
-        #    elif orientation == "SAGITAL":
-        #        pos[0] += abs(pos[0] * 0.001)
-        #    elif orientation == "CORONAL":
-        #        pos[1] -= abs(pos[1] * 0.001)
-        #else:
-        #    #coordinates = {"SAGITAL": yz, "CORONAL": xz, "AXIAL": xy}
-        #    print "AXIAL"
-        #    if orientation == "AXIAL":
-        #        pos[2] += abs(pos[2] * 0.001)
-        #    elif orientation == "SAGITAL":
-        #        pos[0] += abs(pos[0] * 0.001)
-        #    elif orientation == "CORONAL":
-        #        pos[1] -= abs(pos[1] * 0.001)
-
-
-        #pos = [x, y, z]
-        #if orientation == "AXIAL":
-        #    pos[2] += abs(pos[2] * 0.001)
-        #elif orientation == "SAGITAL":
-        #    pos[0] += abs(pos[0] * 0.001)
-        #elif orientation == "CORONAL":
-        #    pos[1] -= abs(pos[1] * 0.001)
-        #print ">POS", pos
-        #print
+        pos = pubsub_evt.data
         self.cross.SetFocalPoint(pos)
-
-        #print
-        #print slice_number
-        #print x, y, z
-        #print "Focal", self.cross.GetFocalPoint()
-        #print "bounds", self.cross.GetModelBounds()
-        #print "actor bounds", slice_data.actor.GetBounds()
-        #print
 
     def __set_cross_visibility(self, visibility):
         self.cross_actor.SetVisibility(visibility)
@@ -1275,6 +1100,7 @@ class Viewer(wx.Panel):
         renderer = vtk.vtkRenderer()
         self.interactor.GetRenderWindow().AddRenderer(renderer)
         actor = vtk.vtkImageActor()
+        actor.InterpolateOff()
         slice_data = sd.SliceData()
         slice_data.SetOrientation(self.orientation)
         slice_data.renderer = renderer
@@ -1294,10 +1120,8 @@ class Viewer(wx.Panel):
         self.cam.SetViewUp(const.SLICE_POSITION[orig_orien][0][self.orientation])
         self.cam.SetPosition(const.SLICE_POSITION[orig_orien][1][self.orientation])
         self.cam.ComputeViewPlaneNormal()
-        self.cam.OrthogonalizeViewUp()
+        #self.cam.OrthogonalizeViewUp()
         self.cam.ParallelProjectionOn()
-
-        #slice_data.renderer.Render()
 
     def __update_display_extent(self, image):
         self.slice_data.actor.SetDisplayExtent(image.GetExtent())
@@ -1340,7 +1164,15 @@ class Viewer(wx.Panel):
     def OnScrollBar(self, evt=None):
         pos = self.scroll.GetThumbPosition()
         self.set_slice_number(pos)
-        self.interactor.Render()
+
+        if self.state == const.SLICE_STATE_CROSS:
+            # Update other slice's cross according to the new focal point from
+            # the actual orientation.
+            focal_point = self.cross.GetFocalPoint()
+            ps.Publisher().sendMessage('Update cross position', focal_point)
+            ps.Publisher().sendMessage('Update slice viewer') 
+        else:
+            self.interactor.Render()
         if evt:
             evt.Skip()
             
@@ -1376,8 +1208,6 @@ class Viewer(wx.Panel):
             pos = pos - 1
             self.scroll.SetThumbPosition(pos)
             self.OnScrollBar()
-
-    
     
     def OnScrollBackward(self, evt=None, obj=None):
         pos = self.scroll.GetThumbPosition()
@@ -1387,8 +1217,6 @@ class Viewer(wx.Panel):
             pos = pos + 1
             self.scroll.SetThumbPosition(pos)
             self.OnScrollBar()
-
-            
 
     def OnSize(self, evt):
         w, h = evt.GetSize() 
@@ -1408,12 +1236,14 @@ class Viewer(wx.Panel):
 
         self.slice_data.SetNumber(index)
         self.__update_display_extent(image)
-        #self.interactor.Render()
+        self.cross.SetModelBounds(self.slice_data.actor.GetBounds())
 
     def ChangeSliceNumber(self, pubsub_evt):
         index = pubsub_evt.data
-        self.set_slice_number(index)
+        #self.set_slice_number(index)
         self.scroll.SetThumbPosition(index)
+        pos = self.scroll.GetThumbPosition()
+        self.set_slice_number(pos)
         self.interactor.Render()
 
     def test_operation_position(self, coord):
@@ -1470,7 +1300,8 @@ class Viewer(wx.Panel):
             self.interactor.Render()
 
     def ReloadActualSlice(self, pubsub_evt):
-        self.OnScrollBar()
+        pos = self.scroll.GetThumbPosition()
+        self.set_slice_number(pos)
 
     def AddActors(self, pubsub_evt):
         "Inserting actors"
