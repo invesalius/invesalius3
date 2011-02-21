@@ -90,27 +90,26 @@ class SurfaceProcess(multiprocessing.Process):
         print "origin is", origin
 
         #print "Decimating"
-        #if self.decimate_reduction:
-            #decimation = vtk.vtkDecimatePro()
-            #decimation.SetInput(polydata)
-            #decimation.SetTargetReduction(0)
-            #decimation.PreserveTopologyOn()
-            #decimation.SplittingOff()
-            #polydata = decimation.GetOutput()
-
-        decimation = vtk.vtkQuadricClustering()
+        decimation = vtk.vtkDecimatePro()
         decimation.SetInput(polydata)
-        decimation.AutoAdjustNumberOfDivisionsOff()
-        decimation.SetDivisionOrigin(0, 0, 0)
-        decimation.SetDivisionSpacing(self.spacing)
-        decimation.SetFeaturePointsAngle(80)
-        decimation.UseFeaturePointsOn()
-        decimation.UseFeatureEdgesOn()
-        decimation.CopyCellDataOn()
-        
-        print "Division", decimation.GetNumberOfDivisions()
-        
+        decimation.SetTargetReduction(0.3)
+        decimation.PreserveTopologyOn()
+        #decimation.SplittingOff()
         polydata = decimation.GetOutput()
+
+        #decimation = vtk.vtkQuadricClustering()
+        #decimation.SetInput(polydata)
+        #decimation.AutoAdjustNumberOfDivisionsOff()
+        #decimation.SetDivisionOrigin(0, 0, 0)
+        #decimation.SetDivisionSpacing(self.spacing)
+        #decimation.SetFeaturePointsAngle(80)
+        #decimation.UseFeaturePointsOn()
+        #decimation.UseFeatureEdgesOn()
+        #ecimation.CopyCellDataOn()
+        
+        #print "Division", decimation.GetNumberOfDivisions()
+        
+        #polydata = decimation.GetOutput()
 
         #if self.smooth_iterations and self.smooth_relaxation_factor:
             #print "Smoothing"
