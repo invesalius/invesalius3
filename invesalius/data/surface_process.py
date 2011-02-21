@@ -94,7 +94,8 @@ class SurfaceProcess(multiprocessing.Process):
         decimation.SetInput(polydata)
         decimation.SetTargetReduction(0.3)
         decimation.PreserveTopologyOn()
-        #decimation.SplittingOff()
+        decimation.SplittingOff()
+        decimation.BoundaryVertexDeletionOff()
         polydata = decimation.GetOutput()
 
         #decimation = vtk.vtkQuadricClustering()
