@@ -1302,6 +1302,7 @@ class Viewer(wx.Panel):
     def ReloadActualSlice(self, pubsub_evt):
         pos = self.scroll.GetThumbPosition()
         self.set_slice_number(pos)
+        self.interactor.Render()
 
     def AddActors(self, pubsub_evt):
         "Inserting actors"
