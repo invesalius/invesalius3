@@ -25,8 +25,23 @@ import os
 import sys
 import shutil
 
+if sys.platform == 'win32':
+    import _winreg
+else:
+    if sys.platform != 'darwin':
+        import wxversion
+        wxversion.ensureMinimal('2.8-unicode', optionsRequired=True)
+        wxversion.select('2.8-unicode', optionsRequired=True)
+        
 import wx
 import wx.lib.pubsub as ps
+import wx.lib.agw.advancedsplash as agw
+
+if sys.platform == 'linux2':
+    _SplashScreen = agw.AdvancedSplash
+else:
+    if sys.platform != 'darwin':
+        _SplashScreen = wx.SplashScreen
 
 import gui.language_dialog as lang_dlg
 import i18n
