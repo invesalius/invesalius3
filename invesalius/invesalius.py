@@ -1,7 +1,4 @@
-#!/usr/bin/env python2.6
-# NOTE: #!/usr/local/bin/python simply will *not* work if python is not
-# installed  in that exact location and, therefore, we're using the code
-# above
+#!/usr/local/bin/python
 #--------------------------------------------------------------------------
 # Software:     InVesalius - Software de Reconstrucao 3D de Imagens Medicas
 # Copyright:    (C) 2001  Centro de Pesquisas Renato Archer
@@ -21,25 +18,15 @@
 #    detalhes.
 #-------------------------------------------------------------------------
 
+
 import multiprocessing
 import optparse as op
 import os
 import sys
-
-if sys.platform == 'win32':
-    import _winreg
-else:
-    import wxversion
-    wxversion.ensureMinimal('2.8-unicode', optionsRequired=True)
-    wxversion.select('2.8-unicode', optionsRequired=True)
+import shutil
 
 import wx
 import wx.lib.pubsub as ps
-import wx.lib.agw.advancedsplash as agw
-if sys.platform == 'linux2':
-    _SplashScreen = agw.AdvancedSplash
-else:
-    _SplashScreen = wx.SplashScreen
 
 import gui.language_dialog as lang_dlg
 import i18n
@@ -72,7 +59,7 @@ class InVesalius(wx.App):
 
 # ------------------------------------------------------------------
 
-class SplashScreen(_SplashScreen):
+class SplashScreen(wx.SplashScreen):
     """
     Splash screen to be shown in InVesalius initialization.
     """
@@ -88,20 +75,21 @@ class SplashScreen(_SplashScreen):
         if not (session.ReadSession()):
             create_session = True
 
+        install_lang = 0
         # Check if there is a language set (if session file exists
-        language_exist = session.ReadLanguage()
-
-        if language_exist:
+        if session.ReadLanguage():
             lang = session.GetLanguage()
-            install = i18n.InstallLanguage(lang)
-            if install:
-                _ = install
+            if (lang != "False"):
+                _ = i18n.InstallLanguage(lang)
+                install_lang = 1
             else:
-    		    language_exist = False
+                install_lang = 0
+        else:
+            install_lang = 0
 
         # If no language is set into session file, show dialog so
         # user can select language
-        if not language_exist:
+        if install_lang == 0:
             dialog = lang_dlg.LanguageDialog()
 
             # FIXME: This works ok in linux2, darwin and win32,
@@ -115,6 +103,13 @@ class SplashScreen(_SplashScreen):
                     lang = dialog.GetSelectedLanguage()
                     session.SetLanguage(lang)
                     _ = i18n.InstallLanguage(lang)
+                else:
+                    homedir = self.homedir = os.path.expanduser('~')
+                    invdir = os.path.join(homedir, ".invesalius")
+                    shutil.rmtree(invdir)
+                    sys.exit()
+                    
+                        
 
         # Session file should be created... So we set the recent
         # choosen language
@@ -138,24 +133,13 @@ class SplashScreen(_SplashScreen):
 
             bmp = wx.Image(path).ConvertToBitmap()
 
-            style = wx.SPLASH_TIMEOUT | wx.SPLASH_CENTRE_ON_SCREEN |\
-                    wx.FRAME_SHAPED
-            if sys.platform == 'linux2':
-                _SplashScreen.__init__(self,
-                                     bitmap=bmp,
-                                     style=style,
-                                     timeout=5000,
-                                     id=-1,
-                                     parent=None)
-            else:
-                _SplashScreen.__init__(self,
+            style = wx.SPLASH_TIMEOUT | wx.SPLASH_CENTRE_ON_SCREEN
+            wx.SplashScreen.__init__(self,
                                      bitmap=bmp,
                                      splashStyle=style,
-                                     milliseconds=5000,
+                                     milliseconds=1500,
                                      id=-1,
                                      parent=None)
-
-
             self.Bind(wx.EVT_CLOSE, self.OnClose)
 
             # Importing takes sometime, therefore it will be done
@@ -167,7 +151,7 @@ class SplashScreen(_SplashScreen):
             self.main = Frame(None)
             self.control = Controller(self.main)
 
-            self.fc = wx.FutureCall(2000, self.ShowMain)
+            self.fc = wx.FutureCall(1, self.ShowMain)
 
     def OnClose(self, evt):
         # Make sure the default handler runs too so this window gets
@@ -215,10 +199,7 @@ def parse_comand_line():
 
     # If debug argument...
     if options.debug:
-        try:
-            ps.Publisher().subscribe(print_events, ps.ALL_TOPICS)
-        except AttributeError:
-            ps.Publisher().subscribe(print_events, ps.pub.getStrAllTopics())
+        ps.Publisher().subscribe(print_events, ps.ALL_TOPICS)
         session.debug = 1
 
     # If import DICOM argument...
