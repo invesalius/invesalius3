@@ -496,6 +496,32 @@ class SurfaceManager():
         clean.PointMergingOn()
         polydata = clean.GetOutput()
 
+        smoother = vtk.vtkWindowedSincPolyDataFilter()
+        smoother.SetInput(polydata)
+        smoother.SetNumberOfIterations(smooth_iterations)
+        smoother.SetFeatureAngle(120)
+        smoother.BoundarySmoothingOn()
+        smoother.SetPassBand(0.1)
+        #smoother.FeatureEdgeSmoothingOn()
+        #smoother.NonManifoldSmoothingOn()
+        #smoother.NormalizeCoordinatesOn()
+        smoother.Update()
+        polydata = smoother.GetOutput()
+
+        print "Normals"
+        normals = vtk.vtkPolyDataNormals()
+        normals.SetInput(polydata)
+        normals.SetFeatureAngle(80)
+        normals.AutoOrientNormalsOn()
+        polydata = normals.GetOutput()
+        #decimation = vtk.vtkDecimatePro()
+        #decimation.SetInput(polydata)
+        #decimation.SetTargetReduction(0.3)
+        #decimation.PreserveTopologyOn()
+        #decimation.SplittingOff()
+        #decimation.BoundaryVertexDeletionOff()
+        #polydata = decimation.GetOutput()
+
         # Improve performance
         stripper = vtk.vtkStripper()
         stripper.SetInput(polydata)

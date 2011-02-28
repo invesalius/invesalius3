@@ -71,11 +71,10 @@ class SurfaceProcess(multiprocessing.Process):
         mcubes.SetInput(image)
         mcubes.SetValue(0, self.min_value)
         mcubes.SetValue(1, self.max_value)
-        mcubes.ComputeScalarsOn()
-        mcubes.ComputeGradientsOn()
-        mcubes.ComputeNormalsOn()
+        mcubes.ComputeScalarsOff()
+        mcubes.ComputeGradientsOff()
+        mcubes.ComputeNormalsOff()
         polydata = mcubes.GetOutput()
-
 
         triangle = vtk.vtkTriangleFilter()
         triangle.SetInput(polydata)
@@ -93,7 +92,7 @@ class SurfaceProcess(multiprocessing.Process):
         decimation = vtk.vtkDecimatePro()
         decimation.SetInput(polydata)
         decimation.SetTargetReduction(0.3)
-        decimation.PreserveTopologyOn()
+        #decimation.PreserveTopologyOn()
         decimation.SplittingOff()
         decimation.BoundaryVertexDeletionOff()
         polydata = decimation.GetOutput()
@@ -133,8 +132,5 @@ class SurfaceProcess(multiprocessing.Process):
         writer.SetInput(polydata)
         writer.SetFileName(filename)
         writer.Write()
-        print filename
-
-        time.sleep(1)
 
         self.q_out.put(filename)
