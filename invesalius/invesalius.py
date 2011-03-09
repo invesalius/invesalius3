@@ -214,7 +214,7 @@ def parse_comand_line():
 
     # If debug argument...
     if options.debug:
-        ps.Publisher().subscribe(print_events, ps.ALL_TOPICS)
+        ps.Publisher().subscribe(print_events, '')
         session.debug = 1
 
     # If import DICOM argument...
