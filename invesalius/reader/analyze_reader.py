@@ -29,9 +29,6 @@ def ReadAnalyze(filename):
     anlz = squeeze_image(AnalyzeImage.from_filename(filename))
     return anlz
 
-
-    return reader.GetOutput()
-
 def ReadDirectory(dir_):
     """ 
     Looking for analyze files in the given directory

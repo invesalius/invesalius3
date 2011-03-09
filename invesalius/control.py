@@ -385,6 +385,7 @@ class Controller():
     def CreateAnalyzeProject(self, imagedata):
         header = imagedata.get_header()
         proj = prj.Project()
+        proj.imagedata = None
         proj.name = _("Untitled")
         proj.SetAcquisitionModality("MRI")
         #TODO: Verify if all Analyse are in AXIAL orientation
