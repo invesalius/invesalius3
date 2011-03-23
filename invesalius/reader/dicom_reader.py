@@ -134,8 +134,9 @@ class LoadDicom:
                 data = stf.ToStringPair(tag)
                 stag = tag.PrintAsPipeSeparatedString()
                 
-                group = stag.split("|")[0][1:]
-                field = stag.split("|")[1][:-1]
+                group = tag.GetGroup()
+                field = tag.GetElement()
+
                 tag_labels[stag] = data[0]
                 
                 if not group in data_dict.keys():
@@ -157,8 +158,9 @@ class LoadDicom:
                 data = stf.ToStringPair(tag)
                 stag = tag.PrintAsPipeSeparatedString()
 
-                group = stag.split("|")[0][1:]
-                field = stag.split("|")[1][:-1]
+                group = tag.GetGroup()
+                field = tag.GetElement()
+
                 tag_labels[stag] = data[0]
 
                 if not group in data_dict.keys():
@@ -177,9 +179,9 @@ class LoadDicom:
             rvtk.Update()
             
             try:
-                data = data_dict['0028']['1050']
+                data = data_dict[0x028][0x1050]
                 level = [float(value) for value in data.split('\\')][0]
-                data = data_dict['0028']['1051']
+                data = data_dict[0x028][0x1051]
                 window =  [float(value) for value in data.split('\\')][0]
             except(KeyError):
                 level = 300.0
@@ -227,7 +229,7 @@ class LoadDicom:
             #----------  Verify is DICOMDir -------------------------------
             is_dicom_dir = 1
             try: 
-                if (data_dict['0002']['0002'] != "1.2.840.10008.1.3.10"): #DICOMDIR
+                if (data_dict[0x002][0x002] != "1.2.840.10008.1.3.10"): #DICOMDIR
                     is_dicom_dir = 0
             except(KeyError):
                     is_dicom_dir = 0
@@ -336,8 +338,6 @@ class ProgressDicomReader:
             fow.SetFileName(log_path)
             ow = vtk.vtkOutputWindow()
             ow.SetInstance(fow)
-        print "=====>>> Progress... dicom_reader.py 367"
-        
  
         y = yGetDicomGroups(path, recursive)
         for value_progress in y:

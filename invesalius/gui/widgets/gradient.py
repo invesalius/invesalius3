@@ -219,6 +219,7 @@ class GradientSlider(wx.Panel):
         evt.Skip()
 
     def OnSize(self, evt):
+        print "OnSize gradient"
         self.CalculateControlPositions()
         self.Refresh()
         evt.Skip()
@@ -236,7 +237,6 @@ class GradientSlider(wx.Panel):
                                       proportion)) + PUSH_WIDTH
         self.max_position = int(round((self.maximun - self.min_range) * \
                                       proportion)) + PUSH_WIDTH
-        print self.min_position, self.max_position
 
     def _max_position_to_maximun(self, max_position):
         """ 

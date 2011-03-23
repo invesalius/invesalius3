@@ -123,10 +123,8 @@ class Controller():
         # Import project
         dirpath = dialog.ShowImportDirDialog()
         if dirpath and not os.listdir(dirpath):
-            print "IFFFFFFFfff"
             dialog.ImportEmptyDirectory(dirpath)
         elif dirpath:
-            print "ELSE..........."
             self.StartImportPanel(dirpath)
             ps.Publisher().sendMessage("Load data to import panel", dirpath)
 
@@ -289,8 +287,6 @@ class Controller():
         data = evt.data
         if (data):
             message = _("Loading file %d of %d")%(data[0],data[1])
-
-        if (data):
             if not(self.progress_dialog):
                 self.progress_dialog = dialog.ProgressDialog(
                                     maximum = data[1], abort=1)
