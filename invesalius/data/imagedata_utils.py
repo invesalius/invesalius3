@@ -507,6 +507,45 @@ def dcm2memmap(files, slice_size, orientation):
 
     return matrix, scalar_range, temp_file
 
+def analyze2mmap(analyze):
+    data = analyze.get_data()
+    header = analyze.get_header()
+    temp_file = tempfile.mktemp()
+
+    # Sagital
+    if header['orient'] == 2:
+        print "Orientation Sagital"
+        shape = tuple([data.shape[i] for i in (1, 2, 0)])
+        matrix = numpy.memmap(temp_file, mode='w+', dtype=data.dtype, shape=shape)
+        for n, slice in enumerate(data):
+            matrix[:,:, n] = slice
+
+    # Coronal
+    elif header['orient'] == 1:
+        print "Orientation coronal"
+        shape = tuple([data.shape[i] for i in (1, 0, 2)])
+        matrix = numpy.memmap(temp_file, mode='w+', dtype=data.dtype, shape=shape)
+        for n, slice in enumerate(data):
+            matrix[:,n,:] = slice
+
+    # AXIAL
+    elif header['orient'] == 0:
+        print "no orientation"
+        shape = tuple([data.shape[i] for i in (0, 1, 2)])
+        matrix = numpy.memmap(temp_file, mode='w+', dtype=data.dtype, shape=shape)
+        for n, slice in enumerate(data):
+            matrix[n] = slice
+
+    else:
+        print "Orientation Sagital"
+        shape = tuple([data.shape[i] for i in (1, 2, 0)])
+        matrix = numpy.memmap(temp_file, mode='w+', dtype=data.dtype, shape=shape)
+        for n, slice in enumerate(data):
+            matrix[:,:, n] = slice
+
+    matrix.flush()
+    return matrix, temp_file
+
 def to_vtk(n_array, spacing, slice_number, orientation):
     try:
         dz, dy, dx = n_array.shape

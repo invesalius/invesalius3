@@ -19,8 +19,8 @@
 import math
 import os
 import plistlib
-import tempfile
 
+import numpy
 import wx.lib.pubsub as ps
 
 import constants as const
@@ -386,12 +386,16 @@ class Controller():
         proj.SetAcquisitionModality("MRI")
         #TODO: Verify if all Analyse are in AXIAL orientation
 
-        if not header['orient']:
+        # To get  Z, X, Y (used by InVesaliu), not X, Y, Z
+        matrix, matrix_filename = utils.analyze2mmap(imagedata)
+        if header['orient'] == 0:
             proj.original_orientation =  const.AXIAL
         elif header['orient'] == 1:
             proj.original_orientation = const.CORONAL
         elif header['orient'] == 2:
             proj.original_orientation = const.SAGITAL
+        else:
+            proj.original_orientation =  const.SAGITAL
 
         proj.threshold_range = (header['glmin'],
                                 header['glmax'])
@@ -399,7 +403,8 @@ class Controller():
         proj.level =  (0.5 * (proj.threshold_range[1] + proj.threshold_range[0]))
 
         self.Slice = sl.Slice()
-        self.Slice.matrix = imagedata.get_data().swapaxes(0, 2)
+        self.Slice.matrix = matrix
+        self.Slice.matrix_filename = matrix_filename
 
         self.Slice.window_level = proj.level
         self.Slice.window_width = proj.window
