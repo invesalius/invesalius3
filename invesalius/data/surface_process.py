@@ -53,7 +53,11 @@ class SurfaceProcess(multiprocessing.Process):
         smoothed = numpy.array(self.mask[roi])
         image = imagedata_utils.to_vtk(smoothed, self.spacing, roi.start,
                                        "AXIAL")
-
+        flip = vtk.vtkImageFlip()
+        flip.SetInput(image)
+        flip.SetFilteredAxis(1)
+        flip.FlipAboutOriginOn()
+        flip.Update()
         # Create vtkPolyData from vtkImageData
         #print "Generating Polydata"
         #if self.mode == "CONTOUR":
@@ -68,7 +72,7 @@ class SurfaceProcess(multiprocessing.Process):
         #polydata = contour.GetOutput()
         #else: #mode == "GRAYSCALE":
         mcubes = vtk.vtkMarchingCubes()
-        mcubes.SetInput(image)
+        mcubes.SetInput(flip.GetOutput())
         mcubes.SetValue(0, self.min_value)
         mcubes.SetValue(1, self.max_value)
         mcubes.ComputeScalarsOff()
