@@ -683,8 +683,8 @@ class Viewer(wx.Panel):
         proj = prj.Project()
         orig_orien = proj.original_orientation
 
-        xv,yv,zv = const.VOLUME_POSITION[orig_orien][0][view]
-        xp,yp,zp = const.VOLUME_POSITION[orig_orien][1][view]
+        xv,yv,zv = const.VOLUME_POSITION[const.AXIAL][0][view]
+        xp,yp,zp = const.VOLUME_POSITION[const.AXIAL][1][view]
 
         cam.SetViewUp(xv,yv,zv)
         cam.SetPosition(xp,yp,zp)
