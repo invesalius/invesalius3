@@ -159,7 +159,11 @@ class Parser():
         elif(len(sp2) > 1):
             data = time.strptime(value, "%H:%M:%S")
         else:
-            data = time.strptime(value, "%H%M%S")
+            try:
+                data = time.strptime(value, "%H%M%S")
+            # If the time is not in a bad format only return it.
+            except ValueError:
+                return value
         return time.strftime("%H:%M:%S",data)
 
     def __format_date(self, value):
