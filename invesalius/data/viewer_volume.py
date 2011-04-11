@@ -801,120 +801,69 @@ class SlicePlane:
         self.original_orientation = project.original_orientation
         self.Create()
         self.__bind_evt()
-        self.__bind_vtk_evt()
 
     def __bind_evt(self):
         ps.Publisher().subscribe(self.Enable, 'Enable plane')
         ps.Publisher().subscribe(self.Disable, 'Disable plane')
         ps.Publisher().subscribe(self.ChangeSlice, 'Change slice from slice plane')
 
-    def __bind_vtk_evt(self):
-        self.plane_x.AddObserver("InteractionEvent", self.PlaneEvent)
-        self.plane_y.AddObserver("InteractionEvent", self.PlaneEvent)
-        self.plane_z.AddObserver("InteractionEvent", self.PlaneEvent)
-
-    def PlaneEvent(self, obj, evt):
-        number = obj.GetSliceIndex()
-        plane_axis = obj.GetPlaneOrientation()
-        if (self.original_orientation == const.AXIAL):
-            if (plane_axis == 0):
-                orientation = "SAGITAL"
-            elif(plane_axis == 1):
-                orientation = "CORONAL"
-                dimen = obj.GetInput().GetDimensions()
-                number = abs(dimen[0] - (number + 1))
-            else:
-                orientation = "AXIAL"
-
-        elif(self.original_orientation == const.SAGITAL):
-            if (plane_axis == 0):
-                orientation = "CORONAL"
-            elif(plane_axis == 1):
-                orientation = "AXIAL"
-                dimen = obj.GetInput().GetDimensions()
-                number = abs(dimen[0] - (number + 1))
-            else:
-                orientation = "SAGITAL"
-        else:
-            if (plane_axis == 0):
-                orientation = "SAGITAL"
-            elif(plane_axis == 1):
-                orientation = "AXIAL"
-                dimen = obj.GetInput().GetDimensions()
-                number = abs(dimen[0] - (number + 1))
-            else:
-                orientation = "CORONAL"
-
-        if (obj.GetSlicePosition() != 0.0):
-            ps.Publisher().sendMessage(('Set scroll position', \
-                                        orientation), number)
-
     def Create(self):
         plane_x = self.plane_x = vtk.vtkImagePlaneWidget()
-        plane_x.DisplayTextOff()
-        ps.Publisher().sendMessage('Input Image in the widget', plane_x)
+        plane_x.InteractionOff()
+        ps.Publisher().sendMessage('Input Image in the widget', 
+                                                (plane_x, 'SAGITAL'))
         plane_x.SetPlaneOrientationToXAxes()
         plane_x.TextureVisibilityOn()
-        plane_x.SetLeftButtonAction(1)
+        plane_x.SetLeftButtonAction(0)
         plane_x.SetRightButtonAction(0)
-        prop1 = plane_x.GetPlaneProperty()
-        prop1.SetColor(0, 0, 1)
+        plane_x.SetMiddleButtonAction(0)
         cursor_property = plane_x.GetCursorProperty()
         cursor_property.SetOpacity(0) 
 
         plane_y = self.plane_y = vtk.vtkImagePlaneWidget()
         plane_y.DisplayTextOff()
-        ps.Publisher().sendMessage('Input Image in the widget', plane_y)
+        ps.Publisher().sendMessage('Input Image in the widget', 
+                                                (plane_y, 'CORONAL'))
         plane_y.SetPlaneOrientationToYAxes()
         plane_y.TextureVisibilityOn()
-        plane_y.SetLeftButtonAction(1)
+        plane_y.SetLeftButtonAction(0)
         plane_y.SetRightButtonAction(0)
+        plane_y.SetMiddleButtonAction(0)
         prop1 = plane_y.GetPlaneProperty()
-        prop1.SetColor(0, 1, 0)
         cursor_property = plane_y.GetCursorProperty()
         cursor_property.SetOpacity(0) 
 
         plane_z = self.plane_z = vtk.vtkImagePlaneWidget()
-        plane_z.DisplayTextOff()
-        ps.Publisher().sendMessage('Input Image in the widget', plane_z)
+        plane_z.InteractionOff()
+        ps.Publisher().sendMessage('Input Image in the widget', 
+                                                (plane_z, 'AXIAL'))
         plane_z.SetPlaneOrientationToZAxes()
         plane_z.TextureVisibilityOn()
-        plane_z.SetLeftButtonAction(1)
+        plane_z.SetLeftButtonAction(0)
         plane_z.SetRightButtonAction(0)
-        prop1 = plane_z.GetPlaneProperty()
-        prop1.SetColor(1, 0, 0)
+        plane_z.SetMiddleButtonAction(0)
+       
         cursor_property = plane_z.GetCursorProperty()
         cursor_property.SetOpacity(0) 
 
-        if(self.original_orientation == const.AXIAL):
-            prop3 = plane_z.GetPlaneProperty()
-            prop3.SetColor(1, 0, 0)
 
-            prop1 = plane_x.GetPlaneProperty()
-            prop1.SetColor(0, 0, 1)
+        prop3 = plane_z.GetPlaneProperty()
+        prop3.SetColor(1, 0, 0)
+        
+        selected_prop3 = plane_z.GetSelectedPlaneProperty() 
+        selected_prop3.SetColor(1,0,0)
+    
+        prop1 = plane_x.GetPlaneProperty()
+        prop1.SetColor(0, 0, 1)
 
-            prop2 = plane_y.GetPlaneProperty()
-            prop2.SetColor(0, 1, 0)
+        selected_prop1 = plane_x.GetSelectedPlaneProperty()           
+        selected_prop1.SetColor(0, 0, 1)
+        
+        prop2 = plane_y.GetPlaneProperty()
+        prop2.SetColor(0, 1, 0)
 
-        elif(self.original_orientation == const.SAGITAL):
-            prop3 = plane_y.GetPlaneProperty()
-            prop3.SetColor(1, 0, 0)
-
-            prop1 = plane_z.GetPlaneProperty()
-            prop1.SetColor(0, 0, 1)
-
-            prop2 = plane_x.GetPlaneProperty()
-            prop2.SetColor(0, 1, 0)
-
-        else:
-            prop3 = plane_y.GetPlaneProperty()
-            prop3.SetColor(1, 0, 0)
-
-            prop1 = plane_x.GetPlaneProperty()
-            prop1.SetColor(0, 0, 1)
-
-            prop2 = plane_z.GetPlaneProperty()
-            prop2.SetColor(0, 1, 0)
+        selected_prop2 = plane_y.GetSelectedPlaneProperty()           
+        selected_prop2.SetColor(0, 1, 0)
 
         ps.Publisher().sendMessage('Set Widget Interactor', plane_x)
         ps.Publisher().sendMessage('Set Widget Interactor', plane_y)
@@ -999,42 +948,12 @@ class SlicePlane:
     def ChangeSlice(self, pubsub_evt = None):
         orientation, number = pubsub_evt.data
 
-        if (self.original_orientation == const.AXIAL):
-            if (orientation == "CORONAL"):
-                self.SetSliceNumber(number, "Y")
-            elif(orientation == "SAGITAL"):
-                self.SetSliceNumber(number, "X")
-            else:
-                self.SetSliceNumber(number, "Z")
-
-        elif(self.original_orientation == const.SAGITAL):
-            if (orientation == "CORONAL"):
-                self.SetSliceNumber(number, "X")
-            elif(orientation == "SAGITAL"):
-                self.SetSliceNumber(number, "Z")
-            else:
-                self.SetSliceNumber(number, "Y")
-
+        if (orientation == "CORONAL"):
+            ps.Publisher().sendMessage('Update slice 3D', (self.plane_y,orientation))
+        elif(orientation == "SAGITAL"):
+            ps.Publisher().sendMessage('Update slice 3D', (self.plane_x,orientation))
         else:
-            if (orientation == "CORONAL"):
-                self.SetSliceNumber(number, "Z")
-            elif(orientation == "SAGITAL"):
-                self.SetSliceNumber(number, "X")
-            else:
-                self.SetSliceNumber(number, "Y")
-
-        self.Render()
-
-    def SetSliceNumber(self, number, axis):
-        if (axis == "X"):
-            self.plane_x.SetPlaneOrientationToXAxes()
-            self.plane_x.SetSliceIndex(number)
-        elif(axis == "Y"):
-            self.plane_y.SetPlaneOrientationToYAxes()
-            self.plane_y.SetSliceIndex(number)
-        else:
-            self.plane_z.SetPlaneOrientationToZAxes()
-            self.plane_z.SetSliceIndex(number)
+            ps.Publisher().sendMessage('Update slice 3D', (self.plane_z,orientation))
 
     def DeletePlanes(self):
         del self.plane_x

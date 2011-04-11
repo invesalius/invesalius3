@@ -821,6 +821,7 @@ class Viewer(wx.Panel):
         ps.Publisher().subscribe(self.RemoveActors, ('Remove actors', ORIENTATIONS[self.orientation]))
 
         ps.Publisher().subscribe(self.ReloadActualSlice, 'Reload actual slice')
+            
 
     def SetDefaultCursor(self, pusub_evt):
         self.interactor.SetCursor(wx.StockCursor(wx.CURSOR_DEFAULT))
@@ -1149,22 +1150,22 @@ class Viewer(wx.Panel):
     def UpdateSlice3D(self, pos):
         original_orientation = project.Project().original_orientation
         pos = self.scroll.GetThumbPosition()
-        if (self.orientation == "CORONAL") and \
-            (original_orientation == const.AXIAL):
-            pos = abs(self.scroll.GetRange() - pos)
-        elif(self.orientation == "AXIAL") and \
-            (original_orientation == const.CORONAL):
-                pos = abs(self.scroll.GetRange() - pos)
-        elif(self.orientation == "AXIAL") and \
-            (original_orientation == const.SAGITAL):            
-                pos = abs(self.scroll.GetRange() - pos)
+        #if (self.orientation == "CORONAL") and \
+        #    (original_orientation == const.AXIAL):
+        #    pos = abs(self.scroll.GetRange() - pos)
+        #elif(self.orientation == "AXIAL") and \
+        #    (original_orientation == const.CORONAL):
+        #        pos = abs(self.scroll.GetRange() - pos)
+        #elif(self.orientation == "AXIAL") and \
+        #    (original_orientation == const.SAGITAL):            
+        #        pos = abs(self.scroll.GetRange() - pos)
         ps.Publisher().sendMessage('Change slice from slice plane',\
                                    (self.orientation, pos))
                 
     def OnScrollBar(self, evt=None):
-        pos = self.scroll.GetThumbPosition()
+        pos = self.scroll.GetThumbPosition() 
         self.set_slice_number(pos)
-
+        self.UpdateSlice3D(pos)
         if self.state == const.SLICE_STATE_CROSS:
             # Update other slice's cross according to the new focal point from
             # the actual orientation.
@@ -1172,12 +1173,13 @@ class Viewer(wx.Panel):
             ps.Publisher().sendMessage('Update cross position', focal_point)
             ps.Publisher().sendMessage('Update slice viewer') 
         else:
-            self.interactor.Render()
+            self.interactor.Render() 
         if evt:
             evt.Skip()
             
     def OnScrollBarRelease(self, evt):
-        #self.UpdateSlice3D(self.pos)
+        pos = self.scroll.GetThumbPosition()
+        #self.UpdateSlice3D(pos)
         evt.Skip()
 
     def OnKeyDown(self, evt=None, obj=None):

@@ -114,6 +114,7 @@ class Slice(object):
                                  'Change colour table from background image')
 
         ps.Publisher().subscribe(self.InputImageWidget, 'Input Image in the widget')
+
         ps.Publisher().subscribe(self.OnExportMask,'Export mask to file')
 
         ps.Publisher().subscribe(self.OnCloseProject, 'Close project data')
@@ -123,7 +124,8 @@ class Slice(object):
 
         ps.Publisher().subscribe(self.OnRemoveMasks, 'Remove masks')
         ps.Publisher().subscribe(self.OnDuplicateMasks, 'Duplicate masks')
-
+        ps.Publisher().subscribe(self.UpdateSlice3D,'Update slice 3D')
+ 
     def GetMaxSliceNumber(self, orientation):
         shape = self.matrix.shape
 
@@ -661,17 +663,41 @@ class Slice(object):
 
 
     def InputImageWidget(self, pubsub_evt):
-        #widget = pubsub_evt.data
+        widget, orientation = pubsub_evt.data
 
-        #flip = vtk.vtkImageFlip()
-        #flip.SetInput(self.window_level.GetOutput())
-        #flip.SetFilteredAxis(1)
-        #flip.FlipAboutOriginOn()
-        #flip.Update()
+        original_orientation = Project().original_orientation
+        
+        img = self.buffer_slices[orientation].vtk_image
+        
+        cast = vtk.vtkImageCast()
+        cast.SetInput(img)
+        cast.SetOutputScalarTypeToDouble() 
+        cast.ClampOverflowOn()
+        cast.Update()
 
-        #widget.SetInput(flip.GetOutput())
-        pass
+        flip = vtk.vtkImageFlip()
+        flip.SetInput(cast.GetOutput())
+        flip.SetFilteredAxis(1)
+        flip.FlipAboutOriginOn()
+        flip.Update()
+        widget.SetInput(flip.GetOutput())
 
+    def UpdateSlice3D(self, pubsub_evt):
+        widget, orientation = pubsub_evt.data
+        img = self.buffer_slices[orientation].vtk_image
+
+        cast = vtk.vtkImageCast()
+        cast.SetInput(img)
+        cast.SetOutputScalarTypeToDouble() 
+        cast.ClampOverflowOn()
+        cast.Update()
+
+        flip = vtk.vtkImageFlip()
+        flip.SetInput(cast.GetOutput())
+        flip.SetFilteredAxis(1)
+        flip.FlipAboutOriginOn()
+        flip.Update()
+        widget.SetInput(flip.GetOutput())
 
     def CreateMask(self, imagedata=None, name=None, colour=None,
                     opacity=None, threshold_range=None,
