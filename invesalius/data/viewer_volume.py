@@ -874,34 +874,12 @@ class SlicePlane:
     def Enable(self, evt_pubsub=None):
         if (evt_pubsub):
             label = evt_pubsub.data
-
-            if(self.original_orientation == const.AXIAL):
-                if(label == "Axial"):
-                    self.plane_z.On()
-                elif(label == "Coronal"):
-                    self.plane_y.On()
-                elif(label == "Sagital"):
-                    self.plane_x.On()
-                    a = self.plane_x.GetTexturePlaneProperty()
-                    a.SetBackfaceCulling(0)
-                    c = self.plane_x.GetTexture()
-                    c.SetRestrictPowerOf2ImageSmaller(1)
-
-            elif(self.original_orientation == const.SAGITAL):
-                if(label == "Axial"):
-                    self.plane_y.On()
-                elif(label == "Coronal"):
-                    self.plane_x.On()
-                elif(label == "Sagital"):
-                    self.plane_z.On()
-            else:
-                if(label == "Axial"):
-                    self.plane_y.On()
-                elif(label == "Coronal"):
-                    self.plane_z.On()
-                elif(label == "Sagital"):
-                    self.plane_x.On()
-
+            if(label == "Axial"):
+                self.plane_z.On()
+            elif(label == "Coronal"):
+                self.plane_y.On()
+            elif(label == "Sagital"):
+                self.plane_x.On()
         else:
             self.plane_z.On()
             self.plane_x.On()
@@ -912,29 +890,12 @@ class SlicePlane:
     def Disable(self, evt_pubsub=None):
         if (evt_pubsub):
             label = evt_pubsub.data
-
-            if(self.original_orientation == const.AXIAL):
-                if(label == "Axial"):
-                    self.plane_z.Off()
-                elif(label == "Coronal"):
-                    self.plane_y.Off()
-                elif(label == "Sagital"):
-                    self.plane_x.Off()
-
-            elif(self.original_orientation == const.SAGITAL):
-                if(label == "Axial"):
-                    self.plane_y.Off()
-                elif(label == "Coronal"):
-                    self.plane_x.Off()
-                elif(label == "Sagital"):
-                    self.plane_z.Off()
-            else:
-                if(label == "Axial"):
-                    self.plane_y.Off()
-                elif(label == "Coronal"):
-                    self.plane_z.Off()
-                elif(label == "Sagital"):
-                    self.plane_x.Off()
+            if(label == "Axial"):
+                self.plane_z.Off()
+            elif(label == "Coronal"):
+                self.plane_y.Off()
+            elif(label == "Sagital"):
+                self.plane_x.Off()
         else:
             self.plane_z.Off()
             self.plane_x.Off()
@@ -954,6 +915,8 @@ class SlicePlane:
             ps.Publisher().sendMessage('Update slice 3D', (self.plane_x,orientation))
         else:
             ps.Publisher().sendMessage('Update slice 3D', (self.plane_z,orientation))
+        
+        self.Render()
 
     def DeletePlanes(self):
         del self.plane_x
