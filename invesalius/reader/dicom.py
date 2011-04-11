@@ -852,21 +852,6 @@ class Parser():
             return data
         return ""
 
-    def GetSeriesDescription(self):
-        """
-        Return string containing Series description.
-
-        DICOM tag (0x0008, 0x1030). Cannot be edited.
-        """
-        try:
-            data = self.data_image[0x0008][0x1030]
-        except(KeyError):
-            return ""
-
-        if (data):
-            return data
-        return ""
-
     def GetStudyInstanceUID(self):
         """
         Return string containing Unique Identifier of the
@@ -1529,6 +1514,8 @@ class Parser():
                 return _("unnamed")
             if (data):
                 return data
+            else:
+                return _("unnamed")
         except(KeyError):
             return _("unnamed")
 
