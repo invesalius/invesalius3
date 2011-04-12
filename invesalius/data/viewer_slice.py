@@ -351,6 +351,8 @@ class Viewer(wx.Panel):
         window, level = pubsub_evt.data
         self.acum_achange_window, self.acum_achange_level = (window, level)
         self.SetWLText(window, level)
+        ps.Publisher().sendMessage('Update all slice')
+
 
     def OnChangeSliceMove(self, evt, obj):
         if (self.left_pressed):
@@ -821,7 +823,7 @@ class Viewer(wx.Panel):
         ps.Publisher().subscribe(self.RemoveActors, ('Remove actors', ORIENTATIONS[self.orientation]))
 
         ps.Publisher().subscribe(self.ReloadActualSlice, 'Reload actual slice')
-            
+
 
     def SetDefaultCursor(self, pusub_evt):
         self.interactor.SetCursor(wx.StockCursor(wx.CURSOR_DEFAULT))
@@ -1150,15 +1152,6 @@ class Viewer(wx.Panel):
     def UpdateSlice3D(self, pos):
         original_orientation = project.Project().original_orientation
         pos = self.scroll.GetThumbPosition()
-        #if (self.orientation == "CORONAL") and \
-        #    (original_orientation == const.AXIAL):
-        #    pos = abs(self.scroll.GetRange() - pos)
-        #elif(self.orientation == "AXIAL") and \
-        #    (original_orientation == const.CORONAL):
-        #        pos = abs(self.scroll.GetRange() - pos)
-        #elif(self.orientation == "AXIAL") and \
-        #    (original_orientation == const.SAGITAL):            
-        #        pos = abs(self.scroll.GetRange() - pos)
         ps.Publisher().sendMessage('Change slice from slice plane',\
                                    (self.orientation, pos))
                 
@@ -1179,7 +1172,6 @@ class Viewer(wx.Panel):
             
     def OnScrollBarRelease(self, evt):
         pos = self.scroll.GetThumbPosition()
-        #self.UpdateSlice3D(pos)
         evt.Skip()
 
     def OnKeyDown(self, evt=None, obj=None):

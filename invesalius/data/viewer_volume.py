@@ -806,6 +806,7 @@ class SlicePlane:
         ps.Publisher().subscribe(self.Enable, 'Enable plane')
         ps.Publisher().subscribe(self.Disable, 'Disable plane')
         ps.Publisher().subscribe(self.ChangeSlice, 'Change slice from slice plane')
+        ps.Publisher().subscribe(self.UpdateAllSlice, 'Update all slice')
 
     def Create(self):
         plane_x = self.plane_x = vtk.vtkImagePlaneWidget()
@@ -917,6 +918,12 @@ class SlicePlane:
             ps.Publisher().sendMessage('Update slice 3D', (self.plane_z,orientation))
         
         self.Render()
+
+    def UpdateAllSlice(self, pubsub_evt):
+        ps.Publisher().sendMessage('Update slice 3D', (self.plane_y,"CORONAL"))
+        ps.Publisher().sendMessage('Update slice 3D', (self.plane_x,"SAGITAL"))
+        ps.Publisher().sendMessage('Update slice 3D', (self.plane_z,"AXIAL"))
+               
 
     def DeletePlanes(self):
         del self.plane_x

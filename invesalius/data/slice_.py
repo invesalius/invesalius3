@@ -675,29 +675,37 @@ class Slice(object):
         cast.ClampOverflowOn()
         cast.Update()
 
-        flip = vtk.vtkImageFlip()
-        flip.SetInput(cast.GetOutput())
-        flip.SetFilteredAxis(1)
-        flip.FlipAboutOriginOn()
-        flip.Update()
-        widget.SetInput(flip.GetOutput())
+        if (original_orientation == const.AXIAL):
+            flip = vtk.vtkImageFlip()
+            flip.SetInput(cast.GetOutput())
+            flip.SetFilteredAxis(1)
+            flip.FlipAboutOriginOn()
+            flip.Update()
+            widget.SetInput(flip.GetOutput())
+        else:
+            widget.SetInput(cast.GetOutput())
 
     def UpdateSlice3D(self, pubsub_evt):
         widget, orientation = pubsub_evt.data
         img = self.buffer_slices[orientation].vtk_image
-
+        original_orientation = Project().original_orientation
         cast = vtk.vtkImageCast()
         cast.SetInput(img)
         cast.SetOutputScalarTypeToDouble() 
         cast.ClampOverflowOn()
         cast.Update()
 
-        flip = vtk.vtkImageFlip()
-        flip.SetInput(cast.GetOutput())
-        flip.SetFilteredAxis(1)
-        flip.FlipAboutOriginOn()
-        flip.Update()
-        widget.SetInput(flip.GetOutput())
+        if (original_orientation == const.AXIAL):
+            flip = vtk.vtkImageFlip()
+            flip.SetInput(cast.GetOutput())
+            flip.SetFilteredAxis(1)
+            flip.FlipAboutOriginOn()
+            flip.Update()
+            widget.SetInput(flip.GetOutput())
+        else:
+            widget.SetInput(cast.GetOutput())
+
+
 
     def CreateMask(self, imagedata=None, name=None, colour=None,
                     opacity=None, threshold_range=None,
