@@ -98,12 +98,12 @@ class Viewer(wx.Panel):
         self._warped = False
 
     def __init_gui(self):
-        interactor = wxVTKRenderWindowInteractor(self, -1, size=self.GetSize())
+        self.interactor = wxVTKRenderWindowInteractor(self, -1, size=self.GetSize())
 
         scroll = wx.ScrollBar(self, -1, style=wx.SB_VERTICAL)
         self.scroll = scroll
         sizer = wx.BoxSizer(wx.HORIZONTAL)
-        sizer.Add(interactor, 1, wx.EXPAND|wx.GROW)
+        sizer.Add(self.interactor, 1, wx.EXPAND|wx.GROW)
 
         background_sizer = wx.BoxSizer(wx.HORIZONTAL)
         background_sizer.AddSizer(sizer, 1, wx.EXPAND|wx.GROW|wx.ALL, 2)
@@ -115,9 +115,7 @@ class Viewer(wx.Panel):
         self.Update()
         self.SetAutoLayout(1)
 
-        self.interactor = interactor
         self.pick = vtk.vtkWorldPointPicker()
-
         self.interactor.SetPicker(self.pick)
 
     def OnContextMenu(self, evt):
@@ -223,6 +221,8 @@ class Viewer(wx.Panel):
                             "LeftButtonPressEvent": self.OnInsertAngularMeasurePoint
                             },
                  }
+
+
         if state == const.SLICE_STATE_CROSS:
             self.__set_cross_visibility(1)
             ps.Publisher().sendMessage('Activate ball reference')
@@ -275,6 +275,15 @@ class Viewer(wx.Panel):
             self.interactor.Bind(wx.EVT_LEFT_DCLICK, self.OnUnZoom)
         else:
             self.interactor.Bind(wx.EVT_LEFT_DCLICK, None)
+
+        # Measures are using vtkPropPicker because they need to get which actor
+        # was picked.
+        if state in (const.STATE_MEASURE_DISTANCE, const.STATE_MEASURE_ANGLE):
+            self.pick = vtk.vtkPropPicker()
+            self.interactor.SetPicker(self.pick)
+        else:
+            self.pick = vtk.vtkWorldPointPicker()
+            self.interactor.SetPicker(self.pick)
 
         self.style = style
         self.interactor.SetInteractorStyle(style)
