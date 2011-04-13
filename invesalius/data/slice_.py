@@ -128,13 +128,15 @@ class Slice(object):
  
     def GetMaxSliceNumber(self, orientation):
         shape = self.matrix.shape
-
+        
+        # Because matrix indexing starts with 0 so the last slice is the shape
+        # minu 1.
         if orientation == 'AXIAL':
-            return shape[0]
+            return shape[0] - 1
         elif orientation == 'CORONAL':
-            return shape[1]
+            return shape[1] - 1
         elif orientation == 'SAGITAL':
-            return shape[2]
+            return shape[2] - 1
 
     def OnRemoveMasks(self, pubsub_evt):
         selected_items = pubsub_evt.data
