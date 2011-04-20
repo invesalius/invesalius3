@@ -1333,6 +1333,7 @@ class Viewer(wx.Panel):
         except KeyError:
             for actor in actors:
                 self.actors_by_slice_number[n].remove(actor)
+                self.slice_data.renderer.RemoveActor(actor)
         else:
             for actor in actors:
                 # Remove the actor from the renderer
