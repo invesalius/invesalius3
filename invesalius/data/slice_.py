@@ -75,6 +75,11 @@ class Slice(object):
         self.blend_filter = None
         self.matrix = None
 
+        self.number_of_colours = 256
+        self.saturation_range = (0, 0)
+        self.hue_range = (0, 0)
+        self.value_range = (0, 1)
+
         self.buffer_slices = {"AXIAL": SliceBuffer(),
                               "CORONAL": SliceBuffer(),
                               "SAGITAL": SliceBuffer()}
@@ -354,7 +359,8 @@ class Slice(object):
             else:
                 n_image = self.get_image_slice(orientation, slice_number)
                 image = iu.to_vtk(n_image, self.spacing, slice_number, orientation)
-                image = self.do_ww_wl(image)
+                ww_wl_image = self.do_ww_wl(image)
+                image = self.do_colour_image(ww_wl_image)
             if self.current_mask and self.current_mask.is_shown:
                 if self.buffer_slices[orientation].vtk_mask:
                     print "Getting from buffer"
@@ -373,7 +379,8 @@ class Slice(object):
         else:
             n_image = self.get_image_slice(orientation, slice_number)
             image = iu.to_vtk(n_image, self.spacing, slice_number, orientation)
-            image = self.do_ww_wl(image)
+            ww_wl_image = self.do_ww_wl(image)
+            image = self.do_colour_image(ww_wl_image)
 
             if self.current_mask and self.current_mask.is_shown:
                 n_mask = self.get_mask_slice(orientation, slice_number)
@@ -652,17 +659,13 @@ class Slice(object):
 
     def UpdateColourTableBackground(self, pubsub_evt):
         values = pubsub_evt.data
-
-        if (values[0]):
-            self.lut_bg.SetNumberOfColors(values[0])
-
-        self.lut_bg.SetSaturationRange(values[1])
-        self.lut_bg.SetHueRange(values[2])
-        self.lut_bg.SetValueRange(values[3])
-
-        thresh_min, thresh_max = self.window_level.GetOutput().GetScalarRange()
-        self.lut_bg.SetTableRange(thresh_min, thresh_max)
-
+        self.number_of_colours= values[0]
+        self.saturation_range = values[1]
+        self.hue_range = values[2]
+        self.value_range = values[3]
+        for buffer_ in self.buffer_slices.values():
+            buffer_.discard_vtk_image()
+        ps.Publisher().sendMessage('Reload actual slice')
 
     def InputImageWidget(self, pubsub_evt):
         widget, orientation = pubsub_evt.data
@@ -787,6 +790,24 @@ class Slice(object):
         m[mask == 1] = 1
         m[mask == 254] = 254
         return m
+
+    def do_colour_image(self, imagedata):
+        # map scalar values into colors
+        lut_bg = vtk.vtkLookupTable()
+        lut_bg.SetTableRange(imagedata.GetScalarRange())
+        lut_bg.SetSaturationRange(self.saturation_range)
+        lut_bg.SetHueRange(self.hue_range)
+        lut_bg.SetValueRange(self.value_range)
+        lut_bg.Build()
+
+        # map the input image through a lookup table
+        img_colours_bg = vtk.vtkImageMapToColors()
+        img_colours_bg.SetOutputFormatToRGB()
+        img_colours_bg.SetLookupTable(lut_bg)
+        img_colours_bg.SetInput(imagedata)
+        img_colours_bg.Update()
+
+        return img_colours_bg.GetOutput()
 
     def do_colour_mask(self, imagedata):
         scalar_range = int(imagedata.GetScalarRange()[1])
