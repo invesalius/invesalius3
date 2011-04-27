@@ -104,7 +104,11 @@ class Viewer(wx.Panel):
         self.measures = []
 
         self._last_state = 0
-        
+
+        self.repositioned_axial_plan = 0
+        self.repositioned_sagital_plan = 0
+        self.repositioned_coronal_plan = 0
+        self.added_actor = 0
 
     def __bind_events(self):
         ps.Publisher().subscribe(self.LoadActor,
@@ -172,6 +176,9 @@ class Viewer(wx.Panel):
         ps.Publisher().subscribe(self.SetBallReferencePositionBasedOnBound,
                 'Set ball reference position based on bound')
         ps.Publisher().subscribe(self.SetStereoMode, 'Set stereo mode')
+    
+        ps.Publisher().subscribe(self.Reposition3DPlane, 'Reposition 3D Plane')
+
 
     def SetStereoMode(self, pubsub_evt):
         mode = pubsub_evt.data
@@ -615,7 +622,7 @@ class Viewer(wx.Panel):
 
     def LoadActor(self, pubsub_evt):
         actor = pubsub_evt.data
-
+        self.added_actor = 1
         ren = self.ren
         ren.AddActor(actor)
 
@@ -794,6 +801,23 @@ class Viewer(wx.Panel):
                     ((x, y,z), const.ANGULAR, const.SURFACE))
             self.interactor.Render()
 
+    def Reposition3DPlane(self, evt_pubsub):
+        position = evt_pubsub.data
+        if not(self.added_actor) and not(self.raycasting_volume):
+            if not(self.repositioned_axial_plan) and (position == 'Axial'):
+                self.SetViewAngle(const.VOL_ISO)
+                self.repositioned_axial_plan = 1
+
+            elif not(self.repositioned_sagital_plan) and (position == 'Sagital'):
+                self.SetViewAngle(const.VOL_ISO)
+                self.repositioned_sagital_plan = 1
+
+            elif not(self.repositioned_coronal_plan) and (position == 'Coronal'):
+                self.SetViewAngle(const.VOL_ISO)
+                self.repositioned_coronal_plan = 1
+
+
+            
 
 class SlicePlane:
     def __init__(self):
@@ -881,6 +905,9 @@ class SlicePlane:
                 self.plane_y.On()
             elif(label == "Sagital"):
                 self.plane_x.On()
+        
+            ps.Publisher().sendMessage('Reposition 3D Plane', label)
+
         else:
             self.plane_z.On()
             self.plane_x.On()
