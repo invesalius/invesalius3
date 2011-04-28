@@ -29,9 +29,7 @@ import utils
 class CursorCircle:
    # TODO: Think and try to change this class to an actor
    # CursorCircleActor(vtk.vtkActor)
-    
     def __init__(self):
-        
         self.colour = (0.0, 0.0, 1.0)
         self.opacity = 1
         self.radius = 15.0
@@ -51,7 +49,6 @@ class CursorCircle:
         """
         Function to plot the circle
         """
-
         r = self.radius
         t = 0
         
@@ -108,15 +105,12 @@ class CursorCircle:
         index = (y*sy)**2 + (x*sx)**2 <= radius**2
         self.points = index
 
-
     def SetSize(self, diameter):
         radius = self.radius = diameter/2.0
         #self.disk.SetInnerRadius(radius-1) # filled = self.radius
         #self.disk.SetOuterRadius(radius) # filled = 0
         self.__build_actor()
         self.__calculate_area_pixels()
-        
-        
         
     def SetColour(self, colour):
         self.colour = colour
@@ -126,21 +120,10 @@ class CursorCircle:
         self.orientation = orientation
         proj = Project() 
         orig_orien = proj.original_orientation
-        if (orig_orien == const.SAGITAL):
-            if orientation == "CORONAL":
-                self.actor.RotateY(90)
-            if orientation == "AXIAL":
-                self.actor.RotateX(90)
-        elif(orig_orien == const.CORONAL):
-            if orientation == "AXIAL":
-                self.actor.RotateX(270)
-            if orientation == "SAGITAL":
-                self.actor.RotateY(90)
-        else:
-            if orientation == "CORONAL":
-                self.actor.RotateX(90)
-            if orientation == "SAGITAL":
-                self.actor.RotateY(90)
+        if orientation == "CORONAL":
+            self.actor.RotateX(90)
+        if orientation == "SAGITAL":
+            self.actor.RotateY(90)
 
     def SetPosition(self, position):
         self.position = position
@@ -164,7 +147,6 @@ class CursorCircle:
 
 
 class CursorRectangle:
-    
     def __init__(self):
         
         self.colour = (0.0, 0.0, 1.0) 
