@@ -184,21 +184,10 @@ class CursorRectangle:
         self.orientation = orientation
         proj = Project() 
         orig_orien = proj.original_orientation
-        if (orig_orien == const.SAGITAL):
-            if orientation == "CORONAL":
-                self.actor.RotateY(90)
-            if orientation == "AXIAL":
-                self.actor.RotateX(90)
-        elif(orig_orien == const.CORONAL):
-            if orientation == "AXIAL":
-                self.actor.RotateX(270)
-            if orientation == "SAGITAL":
-                self.actor.RotateY(90)
-        else:
-            if orientation == "CORONAL":
-                self.actor.RotateX(90)
-            if orientation == "SAGITAL":
-                self.actor.RotateY(90)
+        if orientation == "CORONAL":
+            self.actor.RotateX(90)
+        if orientation == "SAGITAL":
+            self.actor.RotateY(90)
 
     def SetPosition(self, position):
         x,y,z = position
