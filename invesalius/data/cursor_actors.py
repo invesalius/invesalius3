@@ -49,6 +49,7 @@ class CursorCircle:
         """
         Function to plot the circle
         """
+        print "Building circle cursor", self.orientation
         r = self.radius
         t = 0
         
@@ -68,6 +69,8 @@ class CursorCircle:
         
         self.mapper.SetInputConnection(self.segment.GetOutputPort())
         self.actor.SetMapper(self.mapper)
+        self.actor.GetProperty().SetOpacity(self.opacity)
+        self.actor.GetProperty().SetColor(self.colour) 
         self.actor.PickableOff()
         
     def GenerateCicleSegment(self, t):
@@ -210,6 +213,7 @@ class CursorRectangle:
         """
         Function to plot the Retangle
         """
+        print "Building rectangle cursor", self.orientation
         mapper = vtk.vtkPolyDataMapper()
         self.retangle = vtk.vtkCubeSource()
         self.actor = actor = vtk.vtkActor()
