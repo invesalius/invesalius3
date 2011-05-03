@@ -426,8 +426,7 @@ class Viewer(wx.Panel):
         pass
         
     def OnLeaveInteractor(self, evt, obj):
-        for slice_data in self.slice_data_list:
-            slice_data.cursor.Show(0)
+        self.slice_data.cursor.Show(0)
         self.interactor.Render()
 
     def SetWLText(self, window_width, window_level):
