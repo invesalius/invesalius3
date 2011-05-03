@@ -600,6 +600,10 @@ class Viewer(wx.Panel):
             
         coord = self.get_coordinate_cursor()
         position = self.slice_data.actor.GetInput().FindPoint(coord)
+
+        # when position == -1 the cursos is not over the image, so is not
+        # necessary to set the cursor position to world coordinate center of
+        # pixel from slice image.
         if position != -1:
             coord = self.slice_data.actor.GetInput().GetPoint(position)
         slice_data.cursor.SetPosition(coord)
