@@ -34,6 +34,7 @@ import import_panel as imp
 import project as prj
 import session as ses
 import utils
+import preferences
 
 # Layout tools' IDs - this is used only locally, therefore doesn't
 # need to be defined in constants.py
@@ -312,6 +313,8 @@ class Frame(wx.Frame):
             self.ShowAbout()
         elif id == const.ID_START:
             self.ShowGettingStarted()
+        elif id == const.ID_PREFERENCES:
+            self.ShowPreferences()            
 
     def OnSize(self, evt):
         """
@@ -319,6 +322,11 @@ class Frame(wx.Frame):
         """
         ps.Publisher().sendMessage(('ProgressBar Reposition'))
         evt.Skip()
+
+    def ShowPreferences(self):
+        prf = preferences.Preferences(self)
+        prf.ShowModal()
+        #print "Show Preferences"
 
     def ShowAbout(self):
         """
@@ -464,8 +472,8 @@ class MenuBar(wx.MenuBar):
         #tools_menu = wx.Menu()
 
         # OPTIONS
-        #options_menu = wx.Menu()
-        #options_menu.Append(104, "Preferences...")
+        options_menu = wx.Menu()
+        options_menu.Append(const.ID_PREFERENCES, _("Preferences..."))
 
         # HELP
         help_menu = wx.Menu()
@@ -492,7 +500,7 @@ class MenuBar(wx.MenuBar):
         #self.Append(file_edit, "Edit")
         #self.Append(view_menu, "View")
         #self.Append(tools_menu, "Tools")
-        #self.Append(options_menu, "Options")
+        self.Append(options_menu, _("Options"))
         self.Append(help_menu, _("Help"))
 
     def OnEnableState(self, pubsub_evt):
