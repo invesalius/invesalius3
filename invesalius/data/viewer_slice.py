@@ -600,7 +600,8 @@ class Viewer(wx.Panel):
             
         coord = self.get_coordinate_cursor()
         position = self.slice_data.actor.GetInput().FindPoint(coord)
-        coord = self.slice_data.actor.GetInput().GetPoint(position)
+        if position != -1:
+            coord = self.slice_data.actor.GetInput().GetPoint(position)
         slice_data.cursor.SetPosition(coord)
         slice_data.cursor.SetEditionPosition(
             self.get_coordinate_cursor_edition(slice_data))
