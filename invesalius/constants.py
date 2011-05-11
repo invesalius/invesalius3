@@ -504,3 +504,7 @@ STYLE_LEVEL = {SLICE_STATE_EDITOR: 1,
                STATE_ZOOM_SL: 2,
                STATE_PAN:2,
                VOLUME_STATE_SEED:1}
+
+#------------ Prefereces options key ------------
+RENDERING = 0
+SURFACE_INTERPOLATION = 1

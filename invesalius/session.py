@@ -25,7 +25,6 @@ class Session(object):
         import constants as const
         self.project_path = ()
         self.debug = False
-
         self.project_status = const.PROJ_CLOSE
         # const.PROJ_NEW*, const.PROJ_OPEN, const.PROJ_CHANGE*,
         # const.PROJ_CLOSE
@@ -47,7 +46,8 @@ class Session(object):
         # Recent projects list
         self.recent_projects = [(const.SAMPLE_DIR, "Cranium.inv3")]
         self.last_dicom_folder = ''
-
+        self.surface_interpolation = 0
+        self.rendering = 0
         self.CreateSessionFile()
 
     def StopRecording(self, pubsub_evt):
@@ -64,13 +64,13 @@ class Session(object):
         homedir = self.homedir = os.path.expanduser('~')
         try:
             path = os.path.join(self.homedir ,
-                                '.invesalius', 'config.backup')
+                            '.invesalius', 'config.backup')
             path_dst = os.path.join(self.homedir ,
-                            '.invesalius', 'config.cfg')
+                        '.invesalius', 'config.cfg')
             shutil.copy(path, path_dst)
             return True
         except(IOError):
-            return False
+           return False
 
 
     def CloseProject(self):
@@ -132,6 +132,8 @@ class Session(object):
         config.set('session', 'status', self.project_status)
         config.set('session','debug', self.debug)
         config.set('session', 'language', self.language)
+        config.set('session', 'surface_interpolation', self.surface_interpolation)
+        config.set('session', 'rendering', self.rendering)
 
         config.add_section('project')
         config.set('project', 'recent_projects', self.recent_projects)
@@ -204,21 +206,33 @@ class Session(object):
             self.project_status = config.get('session', 'status')
             self.debug = config.get('session','debug')
             self.language = config.get('session','language')
+
             self.recent_projects = eval(config.get('project','recent_projects'))
             self.homedir = config.get('paths','homedir')
             self.tempdir = config.get('paths','tempdir')
             self.last_dicom_folder = config.get('paths','last_dicom_folder')
             self.last_dicom_folder = self.last_dicom_folder.decode('utf-8')
-            return True
 
-        except(ConfigParser.NoSectionError, ConfigParser.NoOptionError,
-               ConfigParser.MissingSectionHeaderError, ConfigParser.ParsingError):
+            self.surface_interpolation = config.get('session', 'surface_interpolation')
+            self.rendering = config.get('session', 'rendering')
+            #return True
+
+        except(ConfigParser.NoSectionError, ConfigParser.MissingSectionHeaderError, 
+                                                        ConfigParser.ParsingError):
 
             if (self.RecoveryConfigFile()):
                 self.ReadSession()
                 return True
             else:
                 return False
+
+        except(ConfigParser.NoOptionError):
+            #Added to fix new version compatibility
+            self.surface_interpolation = 0
+            self.rendering = 0
+            
+            self.CreateSessionFile()
+            return True
 
 
 class WriteSession(Thread):
@@ -249,6 +263,8 @@ class WriteSession(Thread):
         config.set('session', 'status', self.session.project_status)
         config.set('session','debug', self.session.debug)
         config.set('session', 'language', self.session.language)
+        config.set('session', 'surface_interpolation', self.session.surface_interpolation)
+        config.set('session', 'rendering', self.session.rendering)
 
         config.add_section('project')
         config.set('project', 'recent_projects', self.session.recent_projects)

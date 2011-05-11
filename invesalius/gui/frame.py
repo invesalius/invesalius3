@@ -74,6 +74,7 @@ class Frame(wx.Frame):
         # Create aui manager and insert content in it
         self.__init_aui()
 
+        self.preferences = preferences.Preferences(self)
         # Initialize bind to pubsub events
         self.__bind_events()
         self.__bind_events_wx()
@@ -324,9 +325,9 @@ class Frame(wx.Frame):
         evt.Skip()
 
     def ShowPreferences(self):
-        prf = preferences.Preferences(self)
-        prf.ShowModal()
-        #print "Show Preferences"
+        if self.preferences.ShowModal():
+            self.preferences.GetPreferences()
+            self.preferences.Close()
 
     def ShowAbout(self):
         """
