@@ -215,7 +215,7 @@ class Session(object):
 
             self.surface_interpolation = config.get('session', 'surface_interpolation')
             self.rendering = config.get('session', 'rendering')
-            #return True
+            return True
 
         except(ConfigParser.NoSectionError, ConfigParser.MissingSectionHeaderError, 
                                                         ConfigParser.ParsingError):
@@ -230,7 +230,7 @@ class Session(object):
             #Added to fix new version compatibility
             self.surface_interpolation = 0
             self.rendering = 0
-            
+             
             self.CreateSessionFile()
             return True
 
