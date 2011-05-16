@@ -326,8 +326,11 @@ class Frame(wx.Frame):
 
     def ShowPreferences(self):
         if self.preferences.ShowModal():
-            self.preferences.GetPreferences()
+            values = self.preferences.GetPreferences()
             self.preferences.Close()
+        
+        ses.Session().rendering = values[const.RENDERING]
+        ses.Session().surface_interpolation = values[const.SURFACE_INTERPOLATION]
 
     def ShowAbout(self):
         """

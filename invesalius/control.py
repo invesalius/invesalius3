@@ -54,6 +54,8 @@ class Controller():
         session = ses.Session()
         self.measure_manager = data.measures.MeasurementManager()
 
+        ps.Publisher().sendMessage('Load Preferences')
+
 
     def __bind_events(self):
         ps.Publisher().subscribe(self.OnImportMedicalImages, 'Import directory')
@@ -343,7 +345,7 @@ class Controller():
 
     def LoadProject(self):
         proj = prj.Project()
-
+        
         const.THRESHOLD_OUTVALUE = proj.threshold_range[0]
         const.THRESHOLD_INVALUE = proj.threshold_range[1]
 
@@ -353,7 +355,8 @@ class Controller():
         ps.Publisher().sendMessage('Load slice to viewer',
                         (proj.imagedata,
                         proj.mask_dict))
-        ps.Publisher().sendMessage('Load slice plane')
+
+
         ps.Publisher().sendMessage('Bright and contrast adjustment image',\
                                    (proj.window, proj.level))
         ps.Publisher().sendMessage('Update window level value',\
@@ -365,6 +368,7 @@ class Controller():
         ps.Publisher().sendMessage('Hide surface items',
                                      proj.surface_dict)
         self.LoadImagedataInfo() # TODO: where do we insert this <<<?
+        
         ps.Publisher().sendMessage('Show content panel')
         ps.Publisher().sendMessage('Update AUI')
 
@@ -376,6 +380,7 @@ class Controller():
                                     proj.measurement_dict)
 
         proj.presets.thresh_ct[_('Custom')] = proj.threshold_range
+        
         ps.Publisher().sendMessage('End busy cursor')
 
     def CreateAnalyzeProject(self, imagedata):

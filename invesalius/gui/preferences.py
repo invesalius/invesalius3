@@ -1,5 +1,7 @@
 import wx
 import constants as const
+import wx.lib.pubsub as ps
+import session as ses
 
 ID = wx.NewId()
 
@@ -50,9 +52,22 @@ class Preferences(wx.Dialog):
         self.SetSizer(sizer)
         sizer.Fit(self)
 
+        self.__bind_events()
+
+    def __bind_events(self):
+        ps.Publisher().subscribe(self.LoadPreferences, 'Load Preferences')
+
+
     def GetPreferences(self):
 
-        print ">>>>>>>>>", self.pnl_viewer3d.GetSelection()
+        return self.pnl_viewer3d.GetSelection()
+
+    def LoadPreferences(self, pub_evt):
+        
+        values = {const.RENDERING:ses.Session().rendering,
+                const.SURFACE_INTERPOLATION:ses.Session().surface_interpolation}
+
+        self.pnl_viewer3d.LoadSelection(values)
     
 
 
@@ -98,6 +113,13 @@ class Viewer3D(wx.Panel):
                     const.SURFACE_INTERPOLATION:self.rb_inter.GetSelection()}
 
         return options
+
+    def LoadSelection(self, values):
+        rendering = values[const.RENDERING]
+        surface_interpolation = values[const.SURFACE_INTERPOLATION]
+
+        self.rb_rendering.SetSelection(int(rendering))
+        self.rb_inter.SetSelection(int(surface_interpolation))
 
 class Language(wx.Panel):
 
