@@ -75,7 +75,7 @@ class Viewer3D(wx.Panel):
 
     def __init__(self, parent):
 
-        wx.Panel.__init__(self, parent, size = wx.Size(800,600))
+        wx.Panel.__init__(self, parent)
 
         
         box_visualization = wx.StaticBox(self, -1, _("Surface"))
@@ -96,7 +96,7 @@ class Viewer3D(wx.Panel):
         bsizer_ren.Add(lbl_rendering, 0, wx.TOP | wx.LEFT, 10)
         
         rb_rendering = self.rb_rendering = wx.RadioBox(self, -1, "", wx.DefaultPosition, wx.DefaultSize,
-                    ['CPU', 'GPU (Only NVidia video card)'], 3, wx.RA_SPECIFY_COLS | wx.NO_BORDER)
+                    ['CPU', 'GPU (Only NVidia video card)'], 2, wx.RA_SPECIFY_COLS | wx.NO_BORDER)
 
         bsizer_ren.Add(rb_rendering, 0, wx.TOP | wx.LEFT, 0)
         border = wx.BoxSizer(wx.VERTICAL)
@@ -125,7 +125,7 @@ class Language(wx.Panel):
 
     def __init__(self, parent):
 
-        wx.Panel.__init__(self, parent, size = wx.Size(800,600))
+        wx.Panel.__init__(self, parent)
 
         
         box = wx.StaticBox(self, -1, "Language")
