@@ -30,6 +30,8 @@ import slice_
 import imagedata_utils
 from data import vtk_utils
 from vtk.util import numpy_support
+import session as ses
+
 
 Kernels = { 
     "Basic Smooth 5x5" : [1.0, 1.0, 1.0, 1.0, 1.0,
@@ -429,7 +431,9 @@ class Volume():
             else:
                 raycasting_function = vtk.vtkVolumeRayCastCompositeFunction()
                 raycasting_function.SetCompositeMethodToInterpolateFirst()
-            self.volume_mapper.SetVolumeRayCastFunction(raycasting_function)
+
+            if ses.Session().rendering == 0:
+                self.volume_mapper.SetVolumeRayCastFunction(raycasting_function)
 
     def ApplyConvolution(self, imagedata, update_progress = None):
         number_filters = len(self.config['convolutionFilters'])
@@ -512,10 +516,16 @@ class Volume():
             volume_mapper.IntermixIntersectingGeometryOn()
             self.volume_mapper = volume_mapper
         else:
-            volume_mapper = vtk.vtkFixedPointVolumeRayCastMapper()
-            #volume_mapper.AutoAdjustSampleDistancesOff()
-            self.volume_mapper = volume_mapper
-            volume_mapper.IntermixIntersectingGeometryOn()
+
+            if ses.Session().rendering == 0:
+                volume_mapper = vtk.vtkFixedPointVolumeRayCastMapper()
+                #volume_mapper.AutoAdjustSampleDistancesOff()
+                self.volume_mapper = volume_mapper
+                volume_mapper.IntermixIntersectingGeometryOn()
+
+            else:
+                volume_mapper = vtk.vtkGPUVolumeRayCastMapper()
+                self.volume_mapper = volume_mapper
 
         self.SetTypeRaycasting()
         volume_mapper.SetInput(image2)

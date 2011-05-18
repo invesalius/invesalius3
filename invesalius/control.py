@@ -355,7 +355,8 @@ class Controller():
         ps.Publisher().sendMessage('Load slice to viewer',
                         (proj.imagedata,
                         proj.mask_dict))
-
+        
+        ps.Publisher().sendMessage('Load slice plane') 
 
         ps.Publisher().sendMessage('Bright and contrast adjustment image',\
                                    (proj.window, proj.level))
