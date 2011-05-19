@@ -420,7 +420,8 @@ class Volume():
         self.volume_properties.SetSpecularPower(shading['specularPower'])
 
     def SetTypeRaycasting(self):
-        if self.volume_mapper.IsA("vtkFixedPointVolumeRayCastMapper"):
+        if self.volume_mapper.IsA("vtkFixedPointVolumeRayCastMapper") or self.volume_mapper.IsA("vtkGPUVolumeRayCastMapper"):
+
             if self.config.get('MIP', False):
                 self.volume_mapper.SetBlendModeToMaximumIntensity()
             else:
