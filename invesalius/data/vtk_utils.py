@@ -80,7 +80,7 @@ def ShowProgress(number_of_filters = 1,
             ps.Publisher().sendMessage('Update status in GUI',
                                         (progress[0], label))
         else:
-            if (int(progress[0]) == 99):
+            if (progress[0] >= 99.999):
                 progress[0] = 100
 
             if not(dlg.Update(progress[0],label)):
