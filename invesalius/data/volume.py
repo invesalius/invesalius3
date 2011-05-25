@@ -85,6 +85,7 @@ class Volume():
         self.plane = None
         self.plane_on = False
         self.volume = None
+        self.loaded_image = 0
         self.__bind_events()
 
     def __bind_events(self):
@@ -105,6 +106,14 @@ class Volume():
         ps.Publisher().subscribe(self.OnCloseProject, 'Close project data')
         ps.Publisher().subscribe(self.ChangeBackgroundColour,
                         'Change volume viewer background colour')
+
+        ps.Publisher().subscribe(self.ResetRayCasting, 'Reset Reaycasting')
+
+    def ResetRayCasting(self, pub_evt):
+        if self.exist:
+            self.exist = None
+            self.LoadVolume()
+
 
     def OnCloseProject(self, pubsub_evt):
         self.CloseProject()
@@ -134,7 +143,7 @@ class Volume():
             self.plane.Disable()
         ps.Publisher().sendMessage('Render volume viewer')
 
-    def OnShowVolume(self, pubsub_evt):
+    def OnShowVolume(self, pubsub_evt = None):
         if self.exist:
             self.volume.SetVisibility(1)
             if (self.plane and self.plane_on):
@@ -451,16 +460,29 @@ class Volume():
                 #convolve.GetOutput().ReleaseDataFlagOn()
         return imagedata
 
-    def LoadVolume(self):
-        proj = prj.Project()
+    def LoadImage(self):
+        
+
         slice_data = slice_.Slice()
         n_array = slice_data.matrix
         spacing = slice_data.spacing
         slice_number = 0
         orientation = 'AXIAL'
 
+
         image = imagedata_utils.to_vtk(n_array, spacing, slice_number, orientation) 
         self.image = image
+
+
+    def LoadVolume(self):
+        proj = prj.Project()
+        #image = imagedata_utils.to_vtk(n_array, spacing, slice_number, orientation) 
+
+        if not self.loaded_image:
+            self.LoadImage()
+            self.loaded_image = 1
+
+        image = self.image
 
         number_filters = len(self.config['convolutionFilters'])
         
@@ -517,7 +539,8 @@ class Volume():
             volume_mapper.IntermixIntersectingGeometryOn()
             self.volume_mapper = volume_mapper
         else:
-            if ses.Session().rendering == '0':
+
+            if int(ses.Session().rendering) == 0:
                 volume_mapper = vtk.vtkFixedPointVolumeRayCastMapper()
                 #volume_mapper.AutoAdjustSampleDistancesOff()
                 self.volume_mapper = volume_mapper
@@ -567,6 +590,8 @@ class Volume():
         self.volume = volume
 
         colour = self.GetBackgroundColour()
+
+        self.exist = 1
 
         ps.Publisher().sendMessage('Load volume into viewer',
                                     (volume, colour, (self.ww, self.wl)))

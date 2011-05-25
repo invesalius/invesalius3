@@ -178,7 +178,8 @@ class Viewer(wx.Panel):
         ps.Publisher().subscribe(self.SetStereoMode, 'Set stereo mode')
     
         ps.Publisher().subscribe(self.Reposition3DPlane, 'Reposition 3D Plane')
-
+        
+        ps.Publisher().subscribe(self.RemoveVolume, 'Remove Volume')
 
     def SetStereoMode(self, pubsub_evt):
         mode = pubsub_evt.data
@@ -317,6 +318,12 @@ class Viewer(wx.Panel):
         actors = pubsub_evt.data[0]
         for actor in actors:
             self.ren.AddActor(actor)
+
+    def RemoveVolume(self, pub_evt):
+        volumes = self.ren.GetVolumes()
+        if (volumes.GetNumberOfItems()):
+            self.ren.RemoveVolume(volumes.GetLastProp())
+            self.interactor.Render()
 
     def RemoveActors(self, pubsub_evt):
         "Remove a list of actors"
