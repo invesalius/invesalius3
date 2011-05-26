@@ -46,7 +46,7 @@ class Session(object):
         # Recent projects list
         self.recent_projects = [(const.SAMPLE_DIR, "Cranium.inv3")]
         self.last_dicom_folder = ''
-        self.surface_interpolation = 0
+        self.surface_interpolation = 1
         self.rendering = 0
         self.CreateSessionFile()
 
