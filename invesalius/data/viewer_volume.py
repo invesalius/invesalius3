@@ -181,6 +181,8 @@ class Viewer(wx.Panel):
         
         ps.Publisher().subscribe(self.RemoveVolume, 'Remove Volume')
 
+
+
     def SetStereoMode(self, pubsub_evt):
         mode = pubsub_evt.data
         ren_win = self.interactor.GetRenderWindow()

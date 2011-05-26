@@ -332,11 +332,10 @@ class Frame(wx.Frame):
 
             ses.Session().rendering = values[const.RENDERING]
             ses.Session().surface_interpolation = values[const.SURFACE_INTERPOLATION]
-
+            
             ps.Publisher().sendMessage('Remove Volume')
             ps.Publisher().sendMessage('Reset Reaycasting')
-
-
+            ps.Publisher().sendMessage('Update Surface Interpolation')
 
     def ShowAbout(self):
         """

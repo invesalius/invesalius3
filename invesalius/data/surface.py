@@ -128,8 +128,8 @@ class SurfaceManager():
 
         ps.Publisher().subscribe(self.OnDuplicate, "Duplicate surfaces")
         ps.Publisher().subscribe(self.OnRemove,"Remove surfaces")
-
-
+        ps.Publisher().subscribe(self.UpdateSurfaceInterpolation, 'Update Surface Interpolation')
+    
     def OnDuplicate(self, pubsub_evt):
         selected_items = pubsub_evt.data
         proj = prj.Project()
@@ -508,7 +508,7 @@ class SurfaceManager():
         smoother.Update()
         polydata = smoother.GetOutput()
 
-        print "Normals"
+        
         normals = vtk.vtkPolyDataNormals()
         normals.SetInput(polydata)
         normals.SetFeatureAngle(80)
@@ -537,7 +537,6 @@ class SurfaceManager():
         # Represent an object (geometry & properties) in the rendered scene
         actor = vtk.vtkActor()
         actor.SetMapper(mapper)
-
         # Create Surface instance
         if overwrite:
             surface = Surface(index = self.last_surface_index)
@@ -549,6 +548,13 @@ class SurfaceManager():
         # Set actor colour and transparency
         actor.GetProperty().SetColor(colour)
         actor.GetProperty().SetOpacity(1-surface.transparency)
+
+        prop = actor.GetProperty()
+
+        interpolation = int(ses.Session().surface_interpolation)
+
+        prop.SetInterpolation(interpolation)
+        #prop.SetInterpolationToPhong()       
 
         # Remove temporary files
         #if sys.platform == "win32":
@@ -606,6 +612,16 @@ class SurfaceManager():
 
         ps.Publisher().sendMessage('End busy cursor')
 
+
+    def UpdateSurfaceInterpolation(self, pub_evt):
+        interpolation = int(ses.Session().surface_interpolation)
+        key_actors = self.actors_dict.keys()
+        
+        for key in self.actors_dict:
+            self.actors_dict[key].GetProperty().SetInterpolation(interpolation)
+        ps.Publisher().sendMessage('Render volume viewer')
+
+
     def RemoveActor(self, index):
         """
         Remove actor, according to given actor index.
@@ -625,7 +641,6 @@ class SurfaceManager():
     def OnShowSurface(self, pubsub_evt):
         index, value = pubsub_evt.data
         self.ShowActor(index, value)
-
 
     def ShowActor(self, index, value):
         """
