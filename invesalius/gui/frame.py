@@ -19,6 +19,7 @@
 
 import math
 import os.path
+import platform
 import sys
 import webbrowser
 
