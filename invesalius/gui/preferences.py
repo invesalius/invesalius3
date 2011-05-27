@@ -2,6 +2,7 @@ import wx
 import constants as const
 import wx.lib.pubsub as ps
 import session as ses
+from language_dialog import ComboBoxLanguage
 
 ID = wx.NewId()
 
@@ -59,15 +60,22 @@ class Preferences(wx.Dialog):
 
 
     def GetPreferences(self):
-
-        return self.pnl_viewer3d.GetSelection()
+        values = {}
+        lang = self.pnl_language.GetSelection()
+        viewer = self.pnl_viewer3d.GetSelection()
+        values.update(lang)
+        values.update(viewer)
+        return values
 
     def LoadPreferences(self, pub_evt):
-        
-        values = {const.RENDERING:ses.Session().rendering,
-                const.SURFACE_INTERPOLATION:ses.Session().surface_interpolation}
+        se = ses.Session()
+        values = {const.RENDERING:se.rendering,
+                  const.SURFACE_INTERPOLATION:se.surface_interpolation,
+                  const.LANGUAGE:se.language
+                }
 
         self.pnl_viewer3d.LoadSelection(values)
+        self.pnl_language.LoadSelection(values)
     
 
 
@@ -126,17 +134,31 @@ class Language(wx.Panel):
     def __init__(self, parent):
 
         wx.Panel.__init__(self, parent)
-
         
+        self.lg = lg = ComboBoxLanguage(self)
+        self.cmb_lang = cmb_lang = lg.GetComboBox()
+
         box = wx.StaticBox(self, -1, "Language")
         bsizer = wx.StaticBoxSizer(box, wx.VERTICAL)
-
-        t = wx.StaticText(self, -1, "Control Test....")
-        bsizer.Add(t, 0, wx.TOP|wx.LEFT, 10)
-
+        
+        text = wx.StaticText(self, -1, "Takes effect the next time you \n open the InVesalius.")
+        bsizer.Add(cmb_lang, 0, wx.TOP|wx.CENTER, 20)
+        bsizer.Add(text, 0, wx.TOP|wx.CENTER, 10) 
 
         border = wx.BoxSizer()
         border.Add(bsizer, 1, wx.EXPAND|wx.ALL, 20)
         self.SetSizer(border)
 
         border.Fit(self)
+
+    def GetSelection(self):
+        selection = self.cmb_lang.GetSelection()
+        locales = self.lg.GetLocalesKey()
+        options = {const.LANGUAGE:locales[selection]}
+        return options
+
+    def LoadSelection(self, values):
+        language = values[const.LANGUAGE]
+        locales = self.lg.GetLocalesKey()
+        selection = locales.index(language)
+        self.cmb_lang.SetSelection(int(selection))

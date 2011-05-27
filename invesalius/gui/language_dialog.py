@@ -25,19 +25,9 @@ import i18n
 
 ICON_DIR = os.path.abspath(os.path.join('..', 'icons'))
 
-class LanguageDialog(wx.Dialog):
-    """Class define the language to be used in the InVesalius,
-    exist chcLanguage that list language EN and PT. The language
-    selected is writing in the config.ini"""
+class ComboBoxLanguage:
 
-    def __init__(self, parent=None, startApp=None):
-        super(LanguageDialog, self).__init__(parent, title="")
-        self.__TranslateMessage__()
-        self.SetTitle(_('Language selection'))
-        self.__init_gui()
-        self.Centre()
-        
-    def __init_combobox_bitmap__(self):
+    def __init__(self, parent):
         """Initialize combobox bitmap"""
       
         # Retrieve locales dictionary 
@@ -59,7 +49,7 @@ class LanguageDialog(wx.Dialog):
         selection = self.locales_key.index('en')
 
         # Create bitmap combo
-        self.bitmapCmb = bitmapCmb = wx.combo.BitmapComboBox(self, style=wx.CB_READONLY)
+        self.bitmapCmb = bitmapCmb = wx.combo.BitmapComboBox(parent, style=wx.CB_READONLY)
         for key in self.locales_key:
             # Based on composed flag filename, get bitmap
             filepath =  os.path.join(ICON_DIR, "%s.bmp"%(key))
@@ -70,6 +60,61 @@ class LanguageDialog(wx.Dialog):
             if key.startswith(os_lang):
                 selection = self.locales_key.index(key)
                 bitmapCmb.SetSelection(selection)
+
+    def GetComboBox(self):
+        return self.bitmapCmb
+
+    def GetLocalesKey(self):
+        return self.locales_key
+
+class LanguageDialog(wx.Dialog):
+    """Class define the language to be used in the InVesalius,
+    exist chcLanguage that list language EN and PT. The language
+    selected is writing in the config.ini"""
+
+    def __init__(self, parent=None, startApp=None):
+        super(LanguageDialog, self).__init__(parent, title="")
+        self.__TranslateMessage__()
+        self.SetTitle(_('Language selection'))
+        self.__init_gui()
+        self.Centre()
+        
+    #def __init_combobox_bitmap__(self):
+    #    """Initialize combobox bitmap"""
+      
+    #    # Retrieve locales dictionary 
+    #    dict_locales = i18n.GetLocales()
+        
+    #    # Retrieve locales names and sort them
+    #    self.locales = dict_locales.values()
+    #    self.locales.sort()
+       
+    #    # Retrieve locales keys (eg: pt_BR for Portuguese(Brazilian))
+    #    self.locales_key = [dict_locales.get_key(value)[0] for value in self.locales]
+
+    #    # Find out OS locale
+    #    self.os_locale = i18n.GetLocaleOS()
+       
+    #    os_lang = self.os_locale[0:2]
+
+    #    # Default selection will be English
+    #    selection = self.locales_key.index('en')
+
+    #    # Create bitmap combo
+    #    self.bitmapCmb = bitmapCmb = wx.combo.BitmapComboBox(self, style=wx.CB_READONLY)
+    #    for key in self.locales_key:
+    #        # Based on composed flag filename, get bitmap
+    #        filepath =  os.path.join(ICON_DIR, "%s.bmp"%(key))
+    #        bmp = wx.Bitmap(filepath, wx.BITMAP_TYPE_BMP)
+    #        # Add bitmap and info to Combo
+    #        bitmapCmb.Append(dict_locales[key], bmp, key)
+    #        # Set default combo item if available on the list
+    #        if key.startswith(os_lang):
+    #            selection = self.locales_key.index(key)
+    #            bitmapCmb.SetSelection(selection)
+
+    def GetComboBox(self):
+        return self.bitmapCmb
 
 
     def __init_gui(self):
@@ -86,7 +131,9 @@ class LanguageDialog(wx.Dialog):
         btnsizer.AddButton(btn)
         btnsizer.Realize()
 
-        self.__init_combobox_bitmap__()
+        #self.__init_combobox_bitmap__()
+        self.cmb = ComboBoxLanguage(self)
+        self.bitmapCmb = self.cmb.GetComboBox()
 
         sizer = wx.BoxSizer(wx.VERTICAL)
         sizer.Add(self.txtMsg, 0, wx.EXPAND | wx.ALL, 5)
@@ -101,6 +148,7 @@ class LanguageDialog(wx.Dialog):
 
     def GetSelectedLanguage(self):
         """Return String with Selected Language"""
+        self.locales_key = self.cmb.GetLocalesKey()
         return self.locales_key[self.bitmapCmb.GetSelection()]
 
     def __TranslateMessage__(self):

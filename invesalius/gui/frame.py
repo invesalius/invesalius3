@@ -330,10 +330,11 @@ class Frame(wx.Frame):
         if self.preferences.ShowModal() == wx.ID_OK:
             values = self.preferences.GetPreferences()
             self.preferences.Close()
-
+            
             ses.Session().rendering = values[const.RENDERING]
             ses.Session().surface_interpolation = values[const.SURFACE_INTERPOLATION]
-            
+            ses.Session().language = values[const.LANGUAGE]         
+
             ps.Publisher().sendMessage('Remove Volume')
             ps.Publisher().sendMessage('Reset Reaycasting')
             ps.Publisher().sendMessage('Update Surface Interpolation')

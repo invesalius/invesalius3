@@ -508,3 +508,4 @@ STYLE_LEVEL = {SLICE_STATE_EDITOR: 1,
 #------------ Prefereces options key ------------
 RENDERING = 0
 SURFACE_INTERPOLATION = 1
+LANGUAGE = 2
