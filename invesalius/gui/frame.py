@@ -492,17 +492,9 @@ class MenuBar(wx.MenuBar):
         help_menu.Append(const.ID_ABOUT, _("About..."))
         #help_menu.Append(107, "Check For Updates Now...")
 
-        # TODO: Check what is necessary under MacOS to show
-        # InVesalius and not Python
-        # first menu item... Didn't manage to solve it up to now,
-        # the 3 lines bellow are a frustated test, based on wxPython
-        # Demo
-
-        # TODO: Google about this
-        #test_menu = wx.Menu()
-        #item = test_menu.Append(-1,
-        #                        &About InVesalius','InVesalius')
-        #wx.App.SetMacAboutMenuItemId(item.GetId())
+        if platform.system() == 'Darwin':
+           wx.App.SetMacAboutMenuItemId(const.ID_ABOUT)
+           wx.App.SetMacExitMenuItemId(const.ID_EXIT)
 
         # Add all menus to menubar
         self.Append(file_menu, _("File"))
