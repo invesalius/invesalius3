@@ -6,7 +6,7 @@ import numpy
 import vtk
 
 import i18n
-import data.converters
+import converters
 from scipy import ndimage
 
 class SurfaceProcess(multiprocessing.Process):
