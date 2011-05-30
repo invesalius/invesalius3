@@ -23,6 +23,7 @@ import vtk
 import wx.lib.pubsub as ps
 
 import constants as const
+import converters
 import imagedata_utils as iu
 import style as st
 import session as ses
@@ -358,7 +359,7 @@ class Slice(object):
                 image = self.buffer_slices[orientation].vtk_image
             else:
                 n_image = self.get_image_slice(orientation, slice_number)
-                image = iu.to_vtk(n_image, self.spacing, slice_number, orientation)
+                image = converters.to_vtk(n_image, self.spacing, slice_number, orientation)
                 ww_wl_image = self.do_ww_wl(image)
                 image = self.do_colour_image(ww_wl_image)
             if self.current_mask and self.current_mask.is_shown:
@@ -368,7 +369,7 @@ class Slice(object):
                 else:
                     print "Do not getting from buffer"
                     n_mask = self.get_mask_slice(orientation, slice_number)
-                    mask = iu.to_vtk(n_mask, self.spacing, slice_number, orientation)
+                    mask = converters.to_vtk(n_mask, self.spacing, slice_number, orientation)
                     mask = self.do_colour_mask(mask)
                     self.buffer_slices[orientation].mask = n_mask
                 final_image = self.do_blend(image, mask)
@@ -378,13 +379,13 @@ class Slice(object):
             self.buffer_slices[orientation].vtk_image = image
         else:
             n_image = self.get_image_slice(orientation, slice_number)
-            image = iu.to_vtk(n_image, self.spacing, slice_number, orientation)
+            image = converters.to_vtk(n_image, self.spacing, slice_number, orientation)
             ww_wl_image = self.do_ww_wl(image)
             image = self.do_colour_image(ww_wl_image)
 
             if self.current_mask and self.current_mask.is_shown:
                 n_mask = self.get_mask_slice(orientation, slice_number)
-                mask = iu.to_vtk(n_mask, self.spacing, slice_number, orientation)
+                mask = converters.to_vtk(n_mask, self.spacing, slice_number, orientation)
                 mask = self.do_colour_mask(mask)
                 final_image = self.do_blend(image, mask)
             else:

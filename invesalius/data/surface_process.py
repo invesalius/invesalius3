@@ -6,8 +6,7 @@ import numpy
 import vtk
 
 import i18n
-import imagedata_utils
-
+import converters
 from scipy import ndimage
 
 class SurfaceProcess(multiprocessing.Process):
@@ -33,11 +32,12 @@ class SurfaceProcess(multiprocessing.Process):
         self.flip_image = flip_image
         self.q_in = q_in
         self.q_out = q_out
-
-        self.mask = numpy.memmap(filename, mode='r', dtype=dtype,
-                                 shape=shape)
+        self.dtype = dtype
+        self.shape = shape
 
     def run(self):
+        self.mask = numpy.memmap(self.filename, mode='r', dtype=self.dtype,
+                                 shape=self.shape)
         while 1:
             roi = self.q_in.get()
             print roi
@@ -51,7 +51,7 @@ class SurfaceProcess(multiprocessing.Process):
 
     def CreateSurface(self, roi):
         smoothed = numpy.array(self.mask[roi])
-        image = imagedata_utils.to_vtk(smoothed, self.spacing, roi.start,
+        image =  converters.to_vtk(smoothed, self.spacing, roi.start,
                                        "AXIAL")
         flip = vtk.vtkImageFlip()
         flip.SetInput(image)

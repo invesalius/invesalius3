@@ -546,39 +546,4 @@ def analyze2mmap(analyze):
     matrix.flush()
     return matrix, temp_file
 
-def to_vtk(n_array, spacing, slice_number, orientation):
-    try:
-        dz, dy, dx = n_array.shape
-    except ValueError:
-        dy, dx = n_array.shape
-        dz = 1
 
-    v_image = numpy_support.numpy_to_vtk(n_array.flat)
-
-    print orientation
-    if orientation == 'AXIAL':
-        extent = (0, dx -1, 0, dy -1, slice_number, slice_number + dz - 1)
-    elif orientation == 'SAGITAL':
-        dx, dy, dz = dz, dx, dy
-        extent = (slice_number, slice_number + dx - 1, 0, dy - 1, 0, dz - 1)
-    elif orientation == 'CORONAL':
-        dx, dy, dz = dx, dz, dy
-        extent = (0, dx - 1, slice_number, slice_number + dy - 1, 0, dz - 1)
-
-    # Generating the vtkImageData
-    image = vtk.vtkImageData()
-    image.SetOrigin(0, 0, 0)
-    image.SetSpacing(spacing)
-    image.SetNumberOfScalarComponents(1)
-    image.SetDimensions(dx, dy, dz)
-    image.SetExtent(extent)
-    image.SetScalarType(numpy_support.get_vtk_array_type(n_array.dtype))
-    image.AllocateScalars()
-    image.GetPointData().SetScalars(v_image)
-    image.Update()
-
-    image_copy = vtk.vtkImageData()
-    image_copy.DeepCopy(image)
-    image_copy.Update()
-
-    return image_copy
