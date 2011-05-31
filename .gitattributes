@@ -16,8 +16,6 @@ docs/devel/example_singleton.py -text
 docs/devel/example_singleton_pubsub.py -text
 docs/devel/sendmessages.txt -text
 docs/devel/subscribes.txt -text
-docs/user_guide_invesalius3a.odt -text
-docs/user_guide_invesalius3a.pdf -text
 icons/3D_glasses.png -text
 icons/3D_glasses_original.png -text
 icons/Floppy.png -text
