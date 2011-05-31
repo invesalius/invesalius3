@@ -356,7 +356,7 @@ class Frame(wx.Frame):
         Show getting started window.
         """
         path = os.path.join(const.DOC_DIR,
-                            "user_guide_invesalius3a.pdf")
+                            "user_guide_pt_BR.pdf")
         webbrowser.open(path)
 
     def ShowImportDicomPanel(self):
