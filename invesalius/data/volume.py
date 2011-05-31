@@ -27,7 +27,7 @@ import wx.lib.pubsub as ps
 import constants as const
 import project as prj
 import slice_
-import imagedata_utils
+import converters
 from data import vtk_utils
 from vtk.util import numpy_support
 import session as ses
@@ -470,7 +470,7 @@ class Volume():
         orientation = 'AXIAL'
 
 
-        image = imagedata_utils.to_vtk(n_array, spacing, slice_number, orientation) 
+        image = converters.to_vtk(n_array, spacing, slice_number, orientation) 
         self.image = image
 
 
