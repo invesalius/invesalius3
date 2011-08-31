@@ -377,7 +377,7 @@ class SurfaceManager():
         """
         matrix, filename_img, mask, spacing = pubsub_evt.data
         min_value, max_value = mask.threshold_range
-        fill_holes = False
+        fill_holes = True
 
         #if len(surface_data) == 5:
             #imagedata, colour, [min_value, max_value], \
@@ -394,7 +394,7 @@ class SurfaceManager():
 
         mode = 'CONTOUR' # 'GRAYSCALE'
         quality=_('Optimal *')
-        keep_largest = False
+        keep_largest = True
         surface_name = ""
         colour = mask.colour
 
@@ -420,10 +420,10 @@ class SurfaceManager():
             pipeline_size += 1
         if (smooth_iterations and smooth_relaxation_factor):
             pipeline_size += 1
-        #if fill_holes:
-        #    pipeline_size += 1
-        #if keep_largest:
-        #    pipeline_size += 1
+        if fill_holes:
+            pipeline_size += 1
+        if keep_largest:
+            pipeline_size += 1
     
         ## Update progress value in GUI
         UpdateProgress = vu.ShowProgress(pipeline_size)
@@ -539,8 +539,8 @@ class SurfaceManager():
             filled_polydata = vtk.vtkFillHolesFilter()
             filled_polydata.SetInput(polydata)
             filled_polydata.SetHoleSize(300)
-            #filled_polydata.AddObserver("ProgressEvent", lambda obj,evt:
-            #        UpdateProgress(obj, _("Generating 3D surface...")))
+            filled_polydata.AddObserver("ProgressEvent", lambda obj,evt:
+                    UpdateProgress(obj, _("Generating 3D surface...")))
             polydata = filled_polydata.GetOutput()
         
         normals = vtk.vtkPolyDataNormals()
@@ -640,11 +640,13 @@ class SurfaceManager():
                                     surface.colour, surface.volume,
                                     surface.transparency))
 
-        UpdateProgress(0, _("Ready"))
+        
+        #When you finalize the progress. The bar is cleaned.
+        UpdateProgress = vu.ShowProgress(1)
         UpdateProgress(0, _("Ready"))
         ps.Publisher().sendMessage('Update status text in GUI',
                                     _("Ready"))
-
+        
         ps.Publisher().sendMessage('End busy cursor')
 
 
