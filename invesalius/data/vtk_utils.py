@@ -74,7 +74,6 @@ def ShowProgress(number_of_filters = 1,
 
         # final progress status value
         progress[0] = progress[0] + ratio*difference
-
         # Tell GUI to update progress status value
         if (dialog_type == "GaugeProgress"):
             ps.Publisher().sendMessage('Update status in GUI',

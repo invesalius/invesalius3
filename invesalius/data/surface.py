@@ -377,7 +377,7 @@ class SurfaceManager():
         """
         matrix, filename_img, mask, spacing = pubsub_evt.data
         min_value, max_value = mask.threshold_range
-        fill_holes = True
+        fill_holes = False
 
         #if len(surface_data) == 5:
             #imagedata, colour, [min_value, max_value], \
@@ -394,7 +394,7 @@ class SurfaceManager():
 
         mode = 'CONTOUR' # 'GRAYSCALE'
         quality=_('Optimal *')
-        keep_largest = True
+        keep_largest = False
         surface_name = ""
         colour = mask.colour
 
@@ -415,19 +415,19 @@ class SurfaceManager():
         #if imagedata_resolution:
             #imagedata = iu.ResampleImage3D(imagedata, imagedata_resolution)
 
-        #pipeline_size = 4
-        #if decimate_reduction:
-            #pipeline_size += 1
-        #if (smooth_iterations and smooth_relaxation_factor):
-            #pipeline_size += 1
+        pipeline_size = 4
+        if decimate_reduction:
+            pipeline_size += 1
+        if (smooth_iterations and smooth_relaxation_factor):
+            pipeline_size += 1
         #if fill_holes:
-            #pipeline_size += 1
+        #    pipeline_size += 1
         #if keep_largest:
-            #pipeline_size += 1
-
+        #    pipeline_size += 1
+    
         ## Update progress value in GUI
-        #UpdateProgress = vu.ShowProgress(pipeline_size)
-        #UpdateProgress(0, _("Generating 3D surface..."))
+        UpdateProgress = vu.ShowProgress(pipeline_size)
+        UpdateProgress(0, _("Generating 3D surface..."))
 
         #filename_img = tempfile.mktemp()
 
@@ -452,7 +452,6 @@ class SurfaceManager():
         piece_size = 20
 
         n_pieces = int(round(matrix.shape[0] / piece_size + 0.5, 0))
-        print "n_pieces", n_pieces, matrix.shape
 
         q_in = multiprocessing.Queue()
         q_out = multiprocessing.Queue()
@@ -463,8 +462,7 @@ class SurfaceManager():
                     matrix.shape, matrix.dtype, spacing, 
                     mode, min_value, max_value,
                     decimate_reduction, smooth_relaxation_factor,
-                    smooth_iterations, language, fill_holes, keep_largest,
-                                                flip_image, q_in, q_out)
+                    smooth_iterations, language, flip_image, q_in, q_out)
             p.append(sp)
             sp.start()
 
@@ -478,6 +476,18 @@ class SurfaceManager():
         for i in p:
             q_in.put(None)
 
+        none_count = 1
+        while 1:
+            msg = pipe_out.recv()
+            if(msg is None):
+                none_count += 1
+            else:
+                UpdateProgress(msg[0]/(n_pieces * pipeline_size), msg[1])
+
+            if none_count > n_pieces:
+                break
+
+
         polydata_append = vtk.vtkAppendPolyData()
         t = n_pieces
         while t:
@@ -490,13 +500,18 @@ class SurfaceManager():
 
             t -= 1
         polydata = polydata_append.GetOutput()
-
         clean = vtk.vtkCleanPolyData()
+        clean.AddObserver("ProgressEvent", lambda obj,evt:
+	                    UpdateProgress(obj, _("Generating 3D surface...")))
         clean.SetInput(polydata)
         clean.PointMergingOn()
+        clean.Update()
         polydata = clean.GetOutput()
 
+
         smoother = vtk.vtkWindowedSincPolyDataFilter()
+        smoother.AddObserver("ProgressEvent", lambda obj,evt:
+	                    UpdateProgress(obj, _("Generating 3D surface...")))
         smoother.SetInput(polydata)
         smoother.SetNumberOfIterations(smooth_iterations)
         smoother.SetFeatureAngle(120)
@@ -508,29 +523,48 @@ class SurfaceManager():
         smoother.Update()
         polydata = smoother.GetOutput()
 
+        if keep_largest:
+            conn = vtk.vtkPolyDataConnectivityFilter()
+            conn.SetInput(polydata)
+            conn.SetExtractionModeToLargestRegion()
+            conn.AddObserver("ProgressEvent", lambda obj,evt:
+                    UpdateProgress(obj, _("Generating 3D surface...")))
+            polydata = conn.GetOutput()
+
+
+        # Filter used to detect and fill holes. Only fill boundary edges holes.
+        #TODO: Hey! This piece of code is the same from
+        # polydata_utils.FillSurfaceHole, we need to review this.
+        if fill_holes:
+            filled_polydata = vtk.vtkFillHolesFilter()
+            filled_polydata.SetInput(polydata)
+            filled_polydata.SetHoleSize(300)
+            #filled_polydata.AddObserver("ProgressEvent", lambda obj,evt:
+            #        UpdateProgress(obj, _("Generating 3D surface...")))
+            polydata = filled_polydata.GetOutput()
         
         normals = vtk.vtkPolyDataNormals()
+        normals.AddObserver("ProgressEvent", lambda obj,evt:
+	                    UpdateProgress(obj, _("Generating 3D surface...")))
         normals.SetInput(polydata)
         normals.SetFeatureAngle(80)
         normals.AutoOrientNormalsOn()
+        normals.Update()
         polydata = normals.GetOutput()
-        #decimation = vtk.vtkDecimatePro()
-        #decimation.SetInput(polydata)
-        #decimation.SetTargetReduction(0.3)
-        #decimation.PreserveTopologyOn()
-        #decimation.SplittingOff()
-        #decimation.BoundaryVertexDeletionOff()
-        #polydata = decimation.GetOutput()
 
         # Improve performance
         stripper = vtk.vtkStripper()
+        stripper.AddObserver("ProgressEvent", lambda obj,evt:
+	                    UpdateProgress(obj, _("Generating 3D surface...")))
         stripper.SetInput(polydata)
         stripper.PassThroughCellIdsOn()
         stripper.PassThroughPointIdsOn()
+        stripper.Update()
+        polydata = stripper.GetOutput()
 
         # Map polygonal data (vtkPolyData) to graphics primitives.
         mapper = vtk.vtkPolyDataMapper()
-        mapper.SetInput(stripper.GetOutput())
+        mapper.SetInput(polydata)
         mapper.ScalarVisibilityOff()
         mapper.ImmediateModeRenderingOn() # improve performance
 
@@ -601,14 +635,15 @@ class SurfaceManager():
         # Save actor for future management tasks
         self.actors_dict[surface.index] = actor
 
-
-        ps.Publisher().sendMessage('Update status text in GUI',
-                                    _("Ready"))
-
         ps.Publisher().sendMessage('Update surface info in GUI',
                                     (surface.index, surface.name,
                                     surface.colour, surface.volume,
                                     surface.transparency))
+
+        UpdateProgress(0, _("Ready"))
+        UpdateProgress(0, _("Ready"))
+        ps.Publisher().sendMessage('Update status text in GUI',
+                                    _("Ready"))
 
         ps.Publisher().sendMessage('End busy cursor')
 
