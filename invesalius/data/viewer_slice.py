@@ -60,6 +60,10 @@ class Viewer(wx.Panel):
         #self.modes = []#['DEFAULT']
         self.left_pressed = 0
         self.right_pressed = 0
+        
+        self.spined_image = False #Use to control to spin
+        self.paned_image = False
+        
         self.last_position_mouse_move = ()
         self.state = const.STATE_DEFAULT
 
@@ -274,7 +278,7 @@ class Viewer(wx.Panel):
         if ((state == const.STATE_ZOOM) or (state == const.STATE_ZOOM_SL)):
             self.interactor.Bind(wx.EVT_LEFT_DCLICK, self.OnUnZoom)
         else:
-            self.interactor.Bind(wx.EVT_LEFT_DCLICK, None)
+            self.interactor.Bind(wx.EVT_LEFT_DCLICK, self.OnUnSpinPan)
 
         # Measures are using vtkPropPicker because they need to get which actor
         # was picked.
@@ -389,9 +393,18 @@ class Viewer(wx.Panel):
         self.last_position = position[1]
 
     def OnPanMove(self, evt, obj):
+        mouse_x, mouse_y = self.interactor.GetLastEventPosition()
+        ren = self.interactor.FindPokedRenderer(mouse_x, mouse_y)
+        cam = ren.GetActiveCamera()
+
         if (self.left_pressed):
             evt.Pan()
             evt.OnRightButtonDown()
+            print dir(cam)
+            print "CamPosition >>", cam.GetPosition()
+            print "CamViewUp>>", cam.GetViewUp()
+            print "CamOrientation", cam.GetOrientation()
+            self.paned_image = True
 
     def OnPanClick(self, evt, obj):
         evt.StartPan()
@@ -413,8 +426,28 @@ class Viewer(wx.Panel):
         #self.Reposition(slice_data)
         self.interactor.Render()
 
+    def OnUnSpinPan(self, evt):        
+        orientation = self.orientation
+        proj = project.Project()
+        orig_orien = 1
+        mouse_x, mouse_y = self.interactor.GetLastEventPosition()
+        ren = self.interactor.FindPokedRenderer(mouse_x, mouse_y)
+        if((self.state == const.STATE_SPIN) and (self.spined_image)):
+            self.cam.SetViewUp(const.SLICE_POSITION[orig_orien][0][self.orientation])
+            self.interactor.Render()
+            self.spined_image = False
+        elif((self.state == const.STATE_PAN) and (self.paned_image)):
+            #self.cam.SetPosition(const.SLICE_POSITION[orig_orien][1][self.orientation])
+            ren.ResetCamera()
+            self.interactor.Render()
+            self.paned_image = False
+
     def OnSpinMove(self, evt, obj):
+        mouse_x, mouse_y = self.interactor.GetLastEventPosition()
+        ren = self.interactor.FindPokedRenderer(mouse_x, mouse_y)
+        cam = ren.GetActiveCamera()
         if (self.left_pressed):
+            self.spined_image = True
             evt.Spin()
             evt.OnRightButtonDown()
 
