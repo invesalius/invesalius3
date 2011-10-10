@@ -400,10 +400,6 @@ class Viewer(wx.Panel):
         if (self.left_pressed):
             evt.Pan()
             evt.OnRightButtonDown()
-            print dir(cam)
-            print "CamPosition >>", cam.GetPosition()
-            print "CamViewUp>>", cam.GetViewUp()
-            print "CamOrientation", cam.GetOrientation()
             self.paned_image = True
 
     def OnPanClick(self, evt, obj):
@@ -432,12 +428,12 @@ class Viewer(wx.Panel):
         orig_orien = 1
         mouse_x, mouse_y = self.interactor.GetLastEventPosition()
         ren = self.interactor.FindPokedRenderer(mouse_x, mouse_y)
+        
         if((self.state == const.STATE_SPIN) and (self.spined_image)):
             self.cam.SetViewUp(const.SLICE_POSITION[orig_orien][0][self.orientation])
             self.interactor.Render()
             self.spined_image = False
         elif((self.state == const.STATE_PAN) and (self.paned_image)):
-            #self.cam.SetPosition(const.SLICE_POSITION[orig_orien][1][self.orientation])
             ren.ResetCamera()
             self.interactor.Render()
             self.paned_image = False
