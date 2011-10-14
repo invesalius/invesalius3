@@ -428,7 +428,7 @@ class Viewer(wx.Panel):
         orig_orien = 1
         mouse_x, mouse_y = self.interactor.GetLastEventPosition()
         ren = self.interactor.FindPokedRenderer(mouse_x, mouse_y)
-        
+         
         if((self.state == const.STATE_SPIN) and (self.spined_image)):
             self.cam.SetViewUp(const.SLICE_POSITION[orig_orien][0][self.orientation])
             self.interactor.Render()
@@ -443,9 +443,52 @@ class Viewer(wx.Panel):
         ren = self.interactor.FindPokedRenderer(mouse_x, mouse_y)
         cam = ren.GetActiveCamera()
         if (self.left_pressed):
+            self.UpdateTextDirection(cam)    
             self.spined_image = True
             evt.Spin()
             evt.OnRightButtonDown()
+
+
+    def SetLabelImageOrientation(self, cam):
+        croll = cam.GetRoll()
+        if (self.orientation == 'AXIAL'):
+            if (croll >= -2 and croll <= 1):
+                print "A, R, P, L"
+
+            elif(croll > 1 and croll <= 44):
+                print "AL, RA, PR, LP"
+
+            elif(croll > 44 and croll <= 88):
+                print "LA, AR, RP, PL"
+
+            elif(croll > 89 and croll <= 91):
+                print "L, A, R, P"
+     
+            elif(croll > 91 and croll <= 135):
+                print "LP, AL, RA, PR"
+
+            elif(croll > 135 and croll <= 177):
+                print "PL, LA, AR, RP"
+
+            elif(croll >= -180 and croll <= -178) or (croll < 180 and croll > 177):
+                print "P, L, A, R"
+            
+            elif(croll >= -177 and croll <= -133):
+                print "PR, LP, AL, RA"
+
+            elif(croll >= -132 and croll <= -101):
+                print "RP, PL, LA, AR"
+            
+            elif(croll >= -101 and croll <= -87):
+                print "R, P, L, A"
+
+            elif(croll >= -86 and croll <= -42):
+                print "RA, PR, LP, AL"
+
+            elif(croll >= -41 and croll <= -2):
+                print "AR, RP, PL, LA"
+
+
 
     def OnSpinClick(self, evt, obj):
         evt.StartSpin()
@@ -480,14 +523,14 @@ class Viewer(wx.Panel):
             else:
                 values = [_('R'), _('L'), _('T'), _('B')]
                 
-            left_text = vtku.TextZero()
+            left_text = self.left_text = vtku.TextZero()
             left_text.ShadowOff()
             left_text.SetColour(colour)
             left_text.SetPosition(const.TEXT_POS_VCENTRE_LEFT)
             left_text.SetVerticalJustificationToCentered()
             left_text.SetValue(values[0])
 
-            right_text = vtku.TextZero()
+            right_text = self.right_text = vtku.TextZero()
             right_text.ShadowOff()
             right_text.SetColour(colour)
             right_text.SetPosition(const.TEXT_POS_VCENTRE_RIGHT_ZERO)
@@ -495,14 +538,14 @@ class Viewer(wx.Panel):
             right_text.SetJustificationToRight()
             right_text.SetValue(values[1])
 
-            up_text = vtku.TextZero()
+            up_text = self.up_text = vtku.TextZero()
             up_text.ShadowOff()
             up_text.SetColour(colour)
             up_text.SetPosition(const.TEXT_POS_HCENTRE_UP)
             up_text.SetJustificationToCentered()
             up_text.SetValue(values[2])
 
-            down_text = vtku.TextZero()
+            down_text = self.down_text = vtku.TextZero()
             down_text.ShadowOff()
             down_text.SetColour(colour)
             down_text.SetPosition(const.TEXT_POS_HCENTRE_DOWN_ZERO)
@@ -519,6 +562,131 @@ class Viewer(wx.Panel):
             self.slice_data.renderer.AddActor(right_text.actor)
             self.slice_data.renderer.AddActor(up_text.actor)
             self.slice_data.renderer.AddActor(down_text.actor)
+
+    def RenderTextDirection(self, directions):
+        self.up_text.SetValue(directions[0])
+        self.right_text.SetValue(directions[3])
+        self.down_text.SetValue(directions[2])
+        self.left_text.SetValue(directions[1])
+        self.interactor.Render()
+
+
+    def UpdateTextDirection(self, cam):
+        croll = cam.GetRoll()
+        if (self.orientation == 'AXIAL'):
+
+            if (croll >= -2 and croll <= 1):
+                self.RenderTextDirection(["A", "R", "P", "L"])
+
+            elif(croll > 1 and croll <= 44):
+                self.RenderTextDirection(["AL", "RA", "PR", "LP"])
+
+            elif(croll > 44 and croll <= 88):
+               self.RenderTextDirection(["LA", "AR", "RP", "PL"])
+
+            elif(croll > 89 and croll <= 91):
+               self.RenderTextDirection(["L", "A", "R", "P"])
+
+            elif(croll > 91 and croll <= 135):
+               self.RenderTextDirection(["LP", "AL", "RA", "PR"])
+     
+            elif(croll > 135 and croll <= 177):
+                self.RenderTextDirection(["PL", "LA", "AR", "RP"])
+     
+            elif(croll >= -180 and croll <= -178) or (croll < 180 and croll > 177):
+                self.RenderTextDirection(["P", "L", "A", "R"])
+            
+            elif(croll >= -177 and croll <= -133):
+                self.RenderTextDirection(["PR", "LP", "AL", "RA"])
+    
+            elif(croll >= -132 and croll <= -101):
+                self.RenderTextDirection(["RP", "PL", "LA", "AR"])
+
+            elif(croll >= -101 and croll <= -87):
+                self.RenderTextDirection(["R", "P", "L", "A"])
+    
+            elif(croll >= -86 and croll <= -42):
+                self.RenderTextDirection(["RA", "PR", "LP", "AL"])
+     
+            elif(croll >= -41 and croll <= -2):
+                self.RenderTextDirection(["AR", "RP", "PL", "LA"])
+
+        elif(self.orientation == "CORONAL"):
+           
+            if (croll >= -2 and croll <= 1):
+                self.RenderTextDirection(["S", "R", "I", "L"])
+
+            elif(croll > 1 and croll <= 44):
+                self.RenderTextDirection(["SL", "RS", "IR", "LI"])
+
+            elif(croll > 44 and croll <= 88):
+               self.RenderTextDirection(["LS", "SR", "RI", "L"])
+
+            elif(croll > 89 and croll <= 91):
+               self.RenderTextDirection(["L", "S", "R", "I"])
+
+            elif(croll > 91 and croll <= 135):
+               self.RenderTextDirection(["LI", "SL", "RS", "IR"])
+     
+            elif(croll > 135 and croll <= 177):
+                self.RenderTextDirection(["IL", "LS", "SR", "RI"])
+     
+            elif(croll >= -180 and croll <= -178) or (croll < 180 and croll > 177):
+                self.RenderTextDirection(["I", "L", "S", "R"])
+            
+            elif(croll >= -177 and croll <= -133):
+                self.RenderTextDirection(["IR", "LI", "SL", "RS"])
+    
+            elif(croll >= -132 and croll <= -101):
+                self.RenderTextDirection(["RI", "IL", "LS", "SR"])
+
+            elif(croll >= -101 and croll <= -87):
+                self.RenderTextDirection(["R", "I", "L", "S"])
+    
+            elif(croll >= -86 and croll <= -42):
+                self.RenderTextDirection(["RS", "IR", "LI", "SL"])
+     
+            elif(croll >= -41 and croll <= -2):
+                self.RenderTextDirection(["SR", "RI", "IL", "LS"])
+
+        elif(self.orientation == "SAGITAL"):
+           
+            if (croll >= -2 and croll <= 1):
+                self.RenderTextDirection(["A", "S", "P", "I"])
+
+            elif(croll > 1 and croll <= 44):
+                self.RenderTextDirection(["AI", "SA", "PS", "IP"])
+
+            elif(croll > 44 and croll <= 88):
+               self.RenderTextDirection(["IA", "AS", "SP", "PI"])
+
+            elif(croll > 89 and croll <= 91):
+               self.RenderTextDirection(["I", "A", "S", "P"])
+
+            elif(croll > 91 and croll <= 135):
+               self.RenderTextDirection(["IP", "AI", "SA", "PS"])
+     
+            elif(croll > 135 and croll <= 177):
+                self.RenderTextDirection(["PI", "IA", "AS", "SP"])
+     
+            elif(croll >= -180 and croll <= -178) or (croll < 180 and croll > 177):
+                self.RenderTextDirection(["P", "I", "A", "S"])
+            
+            elif(croll >= -177 and croll <= -133):
+                self.RenderTextDirection(["PS", "IP", "AI", "SA"])
+    
+            elif(croll >= -132 and croll <= -101):
+                self.RenderTextDirection(["SP", "PI", "IA", "AS"])
+
+            elif(croll >= -101 and croll <= -87):
+                self.RenderTextDirection(["S", "P", "I", "A"])
+    
+            elif(croll >= -86 and croll <= -42):
+                self.RenderTextDirection(["SA", "PS", "IP", "AI"])
+     
+            elif(croll >= -41 and croll <= -2):
+                self.RenderTextDirection(["AS", "SP", "PI", "IA"])
+
 
     def Reposition(self, slice_data):
         """
