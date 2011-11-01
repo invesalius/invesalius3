@@ -294,8 +294,8 @@ class Slice(object):
                 sx = self.spacing[0]
                 sy = self.spacing[2]
             elif orientation == 'SAGITAL':
-                sx = self.spacing[1]
-                sy = self.spacing[2]
+                sx = self.spacing[2]
+                sy = self.spacing[1]
 
         else:
             if orientation == 'AXIAL':
@@ -309,15 +309,17 @@ class Slice(object):
                 py = position / mask.shape[1]
                 px = position % mask.shape[1]
             elif orientation == 'SAGITAL':
-                sx = self.spacing[1]
-                sy = self.spacing[2]
+                sx = self.spacing[2]
+                sy = self.spacing[1]
                 py = position / mask.shape[1]
                 px = position % mask.shape[1]
 
-        xi = px - math.ceil(radius/sx)
-        xf = px + math.ceil(radius/sx)
-        yi = py - math.ceil(radius/sy)
-        yf = py + math.ceil(radius/sy)
+        cx = index.shape[1] / 2 + 1
+        cy = index.shape[0] / 2 + 1
+        xi = px - index.shape[1] + cx
+        xf = xi + index.shape[1]
+        yi = py - index.shape[0] + cy
+        yf = yi + index.shape[0]
 
         if yi < 0:
             index = index[abs(yi):,:]
@@ -340,6 +342,12 @@ class Slice(object):
 
         roi_m = mask[yi:yf,xi:xf]
         roi_i = image[yi:yf, xi:xf]
+
+        print 
+        print"IMAGE", roi_m.shape
+        print "BRUSH", index.shape
+        print "IMAGE[BRUSH]", roi_m[index].shape
+        print
 
         if operation == const.BRUSH_THRESH:
             # It's a trick to make points between threshold gets value 254

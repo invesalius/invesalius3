@@ -545,5 +545,3 @@ def analyze2mmap(analyze):
 
     matrix.flush()
     return matrix, temp_file
-
-

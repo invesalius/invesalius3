@@ -38,6 +38,7 @@ class SliceData(object):
         self.number = 0
         self.orientation = 'AXIAL'
         self.renderer = None
+        self.overlay_renderer = None
         self.__create_text()
         self.__create_box()
 
@@ -131,8 +132,8 @@ class SliceData(object):
 
     def SetCursor(self, cursor):
         if self.cursor:
-            self.renderer.RemoveActor(self.cursor.actor)
-        self.renderer.AddActor(cursor.actor)
+            self.overlay_renderer.RemoveActor(self.cursor.actor)
+        self.overlay_renderer.AddActor(cursor.actor)
         self.cursor = cursor
 
     def SetNumber(self, number):
@@ -166,7 +167,7 @@ class SliceData(object):
         self.line_r.SetPoint2((xf, yf, 0))
 
     def Hide(self):
-        self.renderer.RemoveActor(self.actor)
+        self.overlay_renderer.RemoveActor(self.actor)
         self.renderer.RemoveActor(self.text.actor)
 
     def Show(self):

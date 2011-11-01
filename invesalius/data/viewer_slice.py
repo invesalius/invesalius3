@@ -725,13 +725,13 @@ class Viewer(wx.Panel):
         self.pick.Pick(mouse_x, mouse_y, 0, render)
         
         coord = self.get_coordinate_cursor()
-        slice_data.cursor.SetPosition(coord)
-        slice_data.cursor.SetEditionPosition(
-            self.get_coordinate_cursor_edition(slice_data))
-        self.__update_cursor_position(slice_data, coord)
-
-        cursor = self.slice_data.cursor
         position = self.slice_data.actor.GetInput().FindPoint(coord)
+        
+        if position != -1:
+            coord = self.slice_data.actor.GetInput().GetPoint(position)
+
+        slice_data.cursor.SetPosition(coord)
+        cursor = self.slice_data.cursor
         radius = cursor.radius
 
         if position < 0:
@@ -771,9 +771,7 @@ class Viewer(wx.Panel):
         if position != -1:
             coord = self.slice_data.actor.GetInput().GetPoint(position)
         slice_data.cursor.SetPosition(coord)
-        slice_data.cursor.SetEditionPosition(
-            self.get_coordinate_cursor_edition(slice_data))
-        self.__update_cursor_position(slice_data, coord)
+        #self.__update_cursor_position(slice_data, coord)
         
         if (self.left_pressed):
             cursor = self.slice_data.cursor
@@ -1280,12 +1278,25 @@ class Viewer(wx.Panel):
 
     def create_slice_window(self):
         renderer = vtk.vtkRenderer()
+        renderer.SetLayer(0)
+        cam = renderer.GetActiveCamera()
+
+        overlay_renderer = vtk.vtkRenderer()
+        overlay_renderer.SetLayer(1)
+        overlay_renderer.SetActiveCamera(cam)
+        overlay_renderer.SetInteractive(0)
+        
+
+        self.interactor.GetRenderWindow().SetNumberOfLayers(2)
+        self.interactor.GetRenderWindow().AddRenderer(overlay_renderer)
         self.interactor.GetRenderWindow().AddRenderer(renderer)
+
         actor = vtk.vtkImageActor()
         actor.InterpolateOff()
         slice_data = sd.SliceData()
         slice_data.SetOrientation(self.orientation)
         slice_data.renderer = renderer
+        slice_data.overlay_renderer = overlay_renderer
         slice_data.actor = actor
         slice_data.SetBorderStyle(sd.BORDER_ALL)
         renderer.AddActor(actor)
@@ -1301,7 +1312,7 @@ class Viewer(wx.Panel):
         self.cam.SetFocalPoint(0, 0, 0)
         self.cam.SetViewUp(const.SLICE_POSITION[orig_orien][0][self.orientation])
         self.cam.SetPosition(const.SLICE_POSITION[orig_orien][1][self.orientation])
-        self.cam.ComputeViewPlaneNormal()
+        #self.cam.ComputeViewPlaneNormal()
         #self.cam.OrthogonalizeViewUp()
         self.cam.ParallelProjectionOn()
 
