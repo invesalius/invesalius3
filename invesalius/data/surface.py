@@ -148,7 +148,6 @@ class SurfaceManager():
                                            transparency = original_surface.transparency,
                                            volume = original_surface.volume)
 
-
     def OnRemove(self, pubsub_evt):
         selected_items = pubsub_evt.data
         proj = prj.Project()
@@ -173,7 +172,6 @@ class SurfaceManager():
                 self.last_surface_index = 0
             else:
                 self.last_surface_index = None
-                
 
     def OnSeedSurface(self, pubsub_evt):
         """
@@ -190,7 +188,6 @@ class SurfaceManager():
         index = self.CreateSurfaceFromPolydata(new_polydata)
         ps.Publisher().sendMessage('Show single surface', (index, True))
         #self.ShowActor(index, True)
-
 
     def OnSplitSurface(self, pubsub_evt):
         """
@@ -209,7 +206,6 @@ class SurfaceManager():
             #self.ShowActor(index, True)
 
         ps.Publisher().sendMessage('Show multiple surfaces', (index_list, True)) 
-        
 
     def OnLargestSurface(self, pubsub_evt):
         """
@@ -257,8 +253,6 @@ class SurfaceManager():
         if name:
             surface.name = name
 
-
-
         # Append surface into Project.surface_dict
         proj = prj.Project()
         if overwrite:
@@ -292,9 +286,7 @@ class SurfaceManager():
                                         (surface.index, surface.name,
                                         surface.colour, surface.volume,
                                         surface.transparency))
-
         return surface.index
-
 
     def OnCloseProject(self, pubsub_evt):
         self.CloseProject()
@@ -318,8 +310,6 @@ class SurfaceManager():
         self.last_surface_index = index
         self.ShowActor(index, True)
 
-
-
     def OnLoadSurfaceDict(self, pubsub_evt):
         surface_dict = pubsub_evt.data
         for key in surface_dict:
@@ -340,7 +330,7 @@ class SurfaceManager():
             mapper = vtk.vtkPolyDataMapper()
             mapper.SetInput(stripper.GetOutput())
             mapper.ScalarVisibilityOff()
-	    mapper.ImmediateModeRenderingOn() # improve performance
+            mapper.ImmediateModeRenderingOn() # improve performance
 
             # Represent an object (geometry & properties) in the rendered scene
             actor = vtk.vtkActor()
@@ -352,7 +342,6 @@ class SurfaceManager():
 
             self.actors_dict[surface.index] = actor
 
-
             # Send actor by pubsub to viewer's render
             ps.Publisher().sendMessage('Load surface actor into viewer', (actor))
 
@@ -360,7 +349,6 @@ class SurfaceManager():
                                         _("Ready"))
 
             # The following lines have to be here, otherwise all volumes disappear
-
             ps.Publisher().sendMessage('Update surface info in GUI',
                                         (surface.index, surface.name,
                                         surface.colour, surface.volume,
@@ -398,14 +386,6 @@ class SurfaceManager():
         surface_name = ""
         colour = mask.colour
 
-        #ps.Publisher().sendMessage('Begin busy cursor')
-        #imagedata_tmp = None
-        #if (edited_points):
-            #imagedata_tmp = vtk.vtkImageData()
-            #imagedata_tmp.DeepCopy(imagedata)
-            #imagedata_tmp.Update()
-            #imagedata = iu.BuildEditedImage(imagedata_tmp, edited_points)
-
         if quality in const.SURFACE_QUALITY.keys():
             imagedata_resolution = const.SURFACE_QUALITY[quality][0]
             smooth_iterations = const.SURFACE_QUALITY[quality][1]
@@ -428,13 +408,6 @@ class SurfaceManager():
         ## Update progress value in GUI
         UpdateProgress = vu.ShowProgress(pipeline_size)
         UpdateProgress(0, _("Generating 3D surface..."))
-
-        #filename_img = tempfile.mktemp()
-
-        #writer = vtk.vtkXMLImageDataWriter()
-        #writer.SetFileName(filename_img)
-        #writer.SetInput(imagedata)
-        #writer.Write()
 
         language = ses.Session().language
 
@@ -487,7 +460,6 @@ class SurfaceManager():
             if none_count > n_pieces:
                 break
 
-
         polydata_append = vtk.vtkAppendPolyData()
         t = n_pieces
         while t:
@@ -497,8 +469,8 @@ class SurfaceManager():
             reader.SetFileName(filename_polydata)
             reader.Update()
             polydata_append.AddInput(reader.GetOutput())
-
             t -= 1
+
         polydata = polydata_append.GetOutput()
         clean = vtk.vtkCleanPolyData()
         clean.AddObserver("ProgressEvent", lambda obj,evt:
@@ -507,7 +479,6 @@ class SurfaceManager():
         clean.PointMergingOn()
         clean.Update()
         polydata = clean.GetOutput()
-
 
         smoother = vtk.vtkWindowedSincPolyDataFilter()
         smoother.AddObserver("ProgressEvent", lambda obj,evt:
@@ -530,7 +501,6 @@ class SurfaceManager():
             conn.AddObserver("ProgressEvent", lambda obj,evt:
                     UpdateProgress(obj, _("Generating 3D surface...")))
             polydata = conn.GetOutput()
-
 
         # Filter used to detect and fill holes. Only fill boundary edges holes.
         #TODO: Hey! This piece of code is the same from
@@ -588,23 +558,7 @@ class SurfaceManager():
         interpolation = int(ses.Session().surface_interpolation)
 
         prop.SetInterpolation(interpolation)
-        #prop.SetInterpolationToPhong()       
 
-        # Remove temporary files
-        #if sys.platform == "win32":
-        #    try:
-        #        os.remove(filename_img)
-        #        os.remove(filename_polydata)
-        #    except (WindowsError):
-        #        print "Error while removing surface temporary file"
-        #else: # sys.platform == "linux2" or sys.platform == "darwin"
-        #    try:
-        #        os.remove(filename_img)
-        #        os.remove(filename_polydata)
-        #    except (OSError):
-        #        print "Error while removing surface temporary file"
-
-        # Append surface into Project.surface_dict
         proj = prj.Project()
         if overwrite:
             proj.ChangeSurface(surface)
@@ -613,14 +567,12 @@ class SurfaceManager():
             surface.index = index
             self.last_surface_index = index
 
-
         session = ses.Session()
         session.ChangeProject()
 
-
         # The following lines have to be here, otherwise all volumes disappear
         measured_polydata = vtk.vtkMassProperties()
-        measured_polydata.SetInput(polydata)
+        measured_polydata.SetInput(smoother.GetOutput())
         volume =  measured_polydata.GetVolume()
         surface.volume = volume
         self.last_surface_index = surface.index
@@ -639,7 +591,6 @@ class SurfaceManager():
                                     (surface.index, surface.name,
                                     surface.colour, surface.volume,
                                     surface.transparency))
-
         
         #When you finalize the progress. The bar is cleaned.
         UpdateProgress = vu.ShowProgress(1)
@@ -649,7 +600,6 @@ class SurfaceManager():
         
         ps.Publisher().sendMessage('End busy cursor')
 
-
     def UpdateSurfaceInterpolation(self, pub_evt):
         interpolation = int(ses.Session().surface_interpolation)
         key_actors = self.actors_dict.keys()
@@ -657,7 +607,6 @@ class SurfaceManager():
         for key in self.actors_dict:
             self.actors_dict[key].GetProperty().SetInterpolation(interpolation)
         ps.Publisher().sendMessage('Render volume viewer')
-
 
     def RemoveActor(self, index):
         """
@@ -668,7 +617,6 @@ class SurfaceManager():
         # Remove surface from project's surface_dict
         proj = prj.Project()
         proj.surface_dict.pop(index)
-
 
     def OnChangeSurfaceName(self, pubsub_evt):
         index, name = pubsub_evt.data
@@ -711,7 +659,6 @@ class SurfaceManager():
         proj.surface_dict[index].colour = colour
         ps.Publisher().sendMessage('Render volume viewer')
 
-
     def OnExportSurface(self, pubsub_evt):
         filename, filetype = pubsub_evt.data
         if (filetype == const.FILETYPE_STL) or\
@@ -736,7 +683,6 @@ class SurfaceManager():
                 polydata = polydata_list[0]
             else:
                 polydata = pu.Merge(polydata_list)
-
 
             # Having a polydata that represents all surfaces
             # selected, we write it, according to filetype
