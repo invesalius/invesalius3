@@ -479,6 +479,7 @@ class MaskProperties(wx.Panel):
         (thresh_min, thresh_max) = Project().threshold_modes[evt.GetString()]
         self.gradient.SetMinValue(thresh_min)
         self.gradient.SetMaxValue(thresh_max)
+        self.OnSlideChanging(None)
         self.OnSlideChanged(None)
 
     def OnSlideChanged(self, evt):

@@ -211,7 +211,7 @@ class Project(object):
         # that we encode in utf-8.
         filename = filename.encode('utf-8')
         dir_temp = tempfile.mkdtemp(filename)
-        filename_tmp = os.path.join(dir_temp, filename)
+        filename_tmp = os.path.join(dir_temp, 'matrix.dat')
 
         project = {}
 
@@ -220,18 +220,21 @@ class Project(object):
                 project[key] = {'#plist':
                                 self.__dict__[key].SavePlist(filename_tmp).decode('utf-8')}
             elif key == 'dicom_sample':
-                sample_path = os.path.join(dir_temp, 'sample.dcm')
-                shutil.copy(self.dicom_sample.parser.filename,sample_path)
-                os.chmod(sample_path, stat.S_IREAD|stat.S_IWRITE)
+                #sample_path = os.path.join(dir_temp, 'sample.dcm')
+                #shutil.copy(self.dicom_sample.parser.filename,sample_path)
+                #os.chmod(sample_path, stat.S_IREAD|stat.S_IWRITE)
                 
-                project[key] = 'sample.dcm'
+                #project[key] = 'sample.dcm'
+                pass
+            elif key.startswith('matrix'):
+                continue
             else:
                 project[key] = self.__dict__[key]
 
         masks = {}
         for index in self.mask_dict:
             masks[str(index)] = {'#mask':\
-                                 self.mask_dict[index].SavePlist(filename_tmp).decode('utf-8')}
+                                 self.mask_dict[index].SavePlist(filename_tmp)}
 
         surfaces = {}
         for index in self.surface_dict:
@@ -241,9 +244,10 @@ class Project(object):
         project['surface_dict'] = surfaces
         project['mask_dict'] = masks
         project['measurement_dict'] = self.GetMeasuresDict()
-        img_file = '%s_%s.vti' % (filename_tmp, 'imagedata')
-        iu.Export(self.imagedata, img_file, bin=True)
-        project['imagedata'] = {'$vti':os.path.split(img_file)[1].decode('utf-8')}
+        shutil.copyfile(self.matrix_filename, filename_tmp)
+        project['matrix'] = {'filename':os.path.split(filename_tmp)[1].decode('utf-8'),
+                             'shape': self.matrix_shape,
+                             'dtype': self.matrix_dtype}
 
         plistlib.writePlist(project, filename_tmp + '.plist')
 
@@ -268,23 +272,25 @@ class Project(object):
         dirpath = os.path.abspath(os.path.split(filelist[0])[0])
 
         for key in project:
-            if key == 'imagedata':
-                filepath = os.path.split(project[key]["$vti"])[-1]
+            if key == 'matrix':
+                filepath = os.path.split(project[key]["filename"])[-1]
                 path = os.path.join(dirpath, filepath)
-                self.imagedata = iu.Import(path)
+                self.matrix_filename = path
+                self.matrix_shape = project[key]['shape']
+                self.matrix_dtype = project[key]['dtype']
             elif key == 'presets':
                 filepath = os.path.split(project[key]["#plist"])[-1]
                 path = os.path.join(dirpath, filepath)
                 p = Presets()
                 p.OpenPlist(path)
                 self.presets = p
-            elif key == 'dicom_sample':
-                path = os.path.join(dirpath, project[key])
-                p = dicom.Parser()
-                p.SetFileName(path)
-                d = dicom.Dicom()
-                d.SetParser(p)
-                self.dicom_sample = d
+            #elif key == 'dicom_sample':
+                #path = os.path.join(dirpath, project[key])
+                #p = dicom.Parser()
+                #p.SetFileName(path)
+                #d = dicom.Dicom()
+                #d.SetParser(p)
+                #self.dicom_sample = d
 
             elif key == 'mask_dict':
                 self.mask_dict = {}

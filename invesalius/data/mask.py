@@ -20,6 +20,7 @@
 import os
 import plistlib
 import random
+import shutil
 import tempfile
 
 import numpy
@@ -44,42 +45,46 @@ class Mask():
 
     def SavePlist(self, filename):
         mask = {}
-        filename = '%s$%s$%d' % (filename, 'mask', self.index)
-        
-        d = self.__dict__
-        for key in d:
-            if isinstance(d[key], vtk.vtkImageData):
-                img_name = '%s_%s.vti' % (filename, key)
-                iu.Export(d[key], img_name, bin=True)
-                mask[key] = {'$vti': os.path.split(img_name)[1]}
-            elif key == 'edited_points':
-                edited_points = {}
-                for p in self.edited_points:
-                    edited_points[str(p)] = self.edited_points[p]
-                mask[key] = edited_points
-            else:
-                mask[key] = d[key]
+        filename = u'%s_%s_%d_%s' % (filename, 'mask', self.index, self.name)
+        img_name = u'%s.dat' % filename
+        self._save_mask(img_name)
+
+        mask['index'] = self.index
+        mask['colour'] = self.colour
+        mask['opacity'] = self.opacity
+        mask['threshold range'] = self.threshold_range
+        mask['name'] = self.name
+        mask['edition threshold range'] = self.edition_threshold_range
+        mask['show'] = self.is_shown
+        mask['mask file'] = os.path.split(img_name)[1]
+        mask['mask shape'] = self.matrix.shape
+
         plistlib.writePlist(mask, filename + '.plist')
         return os.path.split(filename)[1] + '.plist'
 
     def OpenPList(self, filename):
         mask = plistlib.readPlist(filename)
+
+        self.index = mask['index']
+        self.colour = mask['colour']
+        self.opacity = mask['opacity']
+        self.threshold_range = mask['threshold range']
+        self.name = mask['name']
+        self.edition_threshold_range = mask['edition threshold range']
+        self.is_shown = mask['show']
+        mask_file = mask['mask file']
+        shape = mask['mask shape']
         dirpath = os.path.abspath(os.path.split(filename)[0])
-        for key in mask:
-            print "Key", key
-            if key == 'imagedata':
-                filepath = os.path.split(mask[key]["$vti"])[-1]
-                path = os.path.join(dirpath, filepath)
-                self.imagedata = iu.Import(path)
-            elif key == 'edited_points':
-                edited_points = {}
-                for p in mask[key]:
-                    k = [float(i) for i in p.replace('(', '').replace(')', '').split(',')]
-                    edited_points[tuple(k)] = mask[key][p]
-                    
-                setattr(self, key, edited_points)
-            else:
-                setattr(self, key, mask[key])
+        path = os.path.join(dirpath, mask_file)
+        self._open_mask(path, tuple(shape))
+
+    def _save_mask(self, filename):
+        shutil.copyfile(self.temp_file, filename)
+
+    def _open_mask(self, filename, shape, dtype='uint8'):
+        print ">>", filename, shape
+        self.temp_file = filename
+        self.matrix = numpy.memmap(filename, shape=shape, dtype=dtype, mode="r+")
 
     def _set_class_index(self, index):
         Mask.general_index = index

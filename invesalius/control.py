@@ -236,6 +236,13 @@ class Controller():
         proj = prj.Project()
         proj.OpenPlistProject(path)
         proj.SetAcquisitionModality(proj.modality)
+        self.Slice = sl.Slice()
+        self.Slice._open_image_matrix(proj.matrix_filename,
+                                      tuple(proj.matrix_shape),
+                                      proj.matrix_dtype)
+
+        self.Slice.window_level = proj.level
+        self.Slice.window_width = proj.window
 
         mask = msk.Mask()
         mask._set_class_index(proj.last_mask_index)
@@ -246,6 +253,8 @@ class Controller():
 
         self.LoadProject()
 
+        ps.Publisher().sendMessage('Update threshold limits',
+                                   proj.threshold_range)
         session = ses.Session()
         session.OpenProject(filepath)
         ps.Publisher().sendMessage("Enable state project", True)
@@ -329,8 +338,8 @@ class Controller():
         patients_groups = dcm.GetDicomGroups(directory)
         if len(patients_groups):
             group = dcm.SelectLargerDicomGroup(patients_groups)
-            imagedata, dicom = self.OpenDicomGroup(group, 0, [0,0],gui=True)
-            self.CreateDicomProject(imagedata, dicom)
+            matrix, matrix_filename, dicom = self.OpenDicomGroup(group, 0, [0,0],gui=True)
+            self.CreateDicomProject(dicom, matrix, matrix_filename)
         # OPTION 2: ANALYZE?
         else:
             imagedata = analyze.ReadDirectory(directory)
@@ -351,6 +360,9 @@ class Controller():
 
         const.WINDOW_LEVEL[_('Default')] = (proj.window, proj.level)
         const.WINDOW_LEVEL[_('Manual')] = (proj.window, proj.level)
+
+        self.Slice = sl.Slice()
+        self.Slice.spacing = proj.spacing
 
         ps.Publisher().sendMessage('Load slice to viewer',
                         (proj.imagedata,
@@ -375,6 +387,11 @@ class Controller():
 
         if len(proj.mask_dict):
             mask_index = len(proj.mask_dict) -1
+            for m in proj.mask_dict.values():
+                ps.Publisher().sendMessage('Add mask',
+                                           (m.index, m.name,
+                                            m.threshold_range, m.colour))
+            self.Slice.current_mask = proj.mask_dict[mask_index]
             ps.Publisher().sendMessage('Show mask', (mask_index, True))
 
         ps.Publisher().sendMessage('Load measurement dict',
@@ -419,7 +436,7 @@ class Controller():
         ps.Publisher().sendMessage('Update threshold limits',
                                    proj.threshold_range)
 
-    def CreateDicomProject(self, imagedata, dicom):
+    def CreateDicomProject(self, dicom, matrix, matrix_filename):
         name_to_const = {"AXIAL":const.AXIAL,
                          "CORONAL":const.CORONAL,
                          "SAGITTAL":const.SAGITAL}
@@ -428,14 +445,17 @@ class Controller():
         proj.name = dicom.patient.name
         proj.modality = dicom.acquisition.modality
         proj.SetAcquisitionModality(dicom.acquisition.modality)
-        proj.imagedata = imagedata
+        proj.matrix_shape = matrix.shape
+        proj.matrix_dtype = matrix.dtype.name
+        proj.matrix_filename = matrix_filename
+        #proj.imagedata = imagedata
         proj.dicom_sample = dicom
         proj.original_orientation =\
                     name_to_const[dicom.image.orientation_label]
         proj.window = float(dicom.image.window)
         proj.level = float(dicom.image.level)
         proj.threshold_range = (-1024, 3033)
-
+        proj.spacing = self.Slice.spacing
 
         ######
         session = ses.Session()
@@ -448,8 +468,8 @@ class Controller():
 
     def OnOpenDicomGroup(self, pubsub_evt):
         group, interval, file_range = pubsub_evt.data
-        imagedata, dicom = self.OpenDicomGroup(group, interval, file_range, gui=True)
-        self.CreateDicomProject(imagedata, dicom)
+        matrix, matrix_filename, dicom = self.OpenDicomGroup(group, interval, file_range, gui=True)
+        self.CreateDicomProject(dicom, matrix, matrix_filename)
         self.LoadProject()
         ps.Publisher().sendMessage("Enable state project", True)
 
@@ -511,12 +531,13 @@ class Controller():
         elif orientation == 'SAGITTAL':
             self.Slice.spacing = zspacing, xyspacing[1], xyspacing[0]
 
+
         self.Slice.window_level = wl
         self.Slice.window_width = ww
 
         ps.Publisher().sendMessage('Update threshold limits', scalar_range)
 
-        return imagedata, dicom
+        return self.matrix, self.filename, dicom
 
     def LoadImagedataInfo(self):
         proj = prj.Project()

@@ -75,6 +75,7 @@ class Slice(object):
         self.current_mask = None
         self.blend_filter = None
         self.matrix = None
+        self.spacing = (1.0, 1.0, 1.0)
 
         self.number_of_colours = 256
         self.saturation_range = (0, 0)
@@ -542,6 +543,7 @@ class Slice(object):
 
     def ShowMask(self, index, value):
         "Show a mask given its index and 'show' value (0: hide, other: show)"
+        print "Showing Mask"
         proj = Project()
         proj.mask_dict[index].is_shown = value
         if (index == self.current_mask.index):
@@ -945,6 +947,12 @@ class Slice(object):
         imagedata_mask.Update()
 
         return imagedata_mask
+
+    def _open_image_matrix(self, filename, shape, dtype):
+        self.matrix_filename = filename
+        print ">>>", filename
+        self.matrix = numpy.memmap(filename, shape=shape, dtype=dtype,
+                                   mode='r+')
 
     def OnExportMask(self, pubsub_evt):
         #imagedata = self.current_mask.imagedata

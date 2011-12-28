@@ -1172,7 +1172,7 @@ class Viewer(wx.Panel):
                                  max_slice_number)
 
         self.slice_data = self.create_slice_window()
-        self.slice_data.actor.SetInput(imagedata)
+        #self.slice_data.actor.SetInput(imagedata)
         self.slice_data.SetCursor(self.__create_cursor())
         self.cam = self.slice_data.renderer.GetActiveCamera()
         self.__build_cross_lines(imagedata)

@@ -215,8 +215,8 @@ def Export(imagedata, filename, bin=False):
         writer.SetDataModeToBinary()
     else:
         writer.SetDataModeToAscii()
-    writer.SetInput(imagedata)
-    writer.Write()
+    #writer.SetInput(imagedata)
+    #writer.Write()
 
 def Import(filename):
     reader = vtk.vtkXMLImageDataReader()
@@ -497,6 +497,7 @@ def dcm2memmap(files, slice_size, orientation):
             array.shape = matrix.shape[0], matrix.shape[1]
             matrix[:, :, n] = array
         else:
+            print array.shape, matrix.shape
             array.shape = matrix.shape[1], matrix.shape[2]
             matrix[n] = array
         update_progress(cont,message)
