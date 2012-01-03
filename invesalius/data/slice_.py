@@ -441,7 +441,8 @@ class Slice(object):
                                                                          slice_number),
                                                                             mask)
                 self.current_mask.matrix[n, 0, 0] = 1
-            n_mask = numpy.array(self.current_mask.matrix[n, 1:, 1:])
+            n_mask = numpy.array(self.current_mask.matrix[n, 1:, 1:],
+                                dtype=self.current_mask.matrix.dtype)
 
         elif orientation == 'CORONAL':
             if self.current_mask.matrix[0, n, 0] == 0:
@@ -450,7 +451,8 @@ class Slice(object):
                                                                          slice_number),
                                                                             mask)
                 self.current_mask.matrix[0, n, 0] = 1
-            n_mask = numpy.array(self.current_mask.matrix[1:, n, 1:])
+            n_mask = numpy.array(self.current_mask.matrix[1:, n, 1:],
+                                dtype=self.current_mask.matrix.dtype)
 
         elif orientation == 'SAGITAL':
             if self.current_mask.matrix[0, 0, n] == 0:
@@ -459,7 +461,9 @@ class Slice(object):
                                                                          slice_number),
                                                                             mask)
                 self.current_mask.matrix[0, 0, n] = 1
-            n_mask = numpy.array(self.current_mask.matrix[1:, 1:, n])
+            n_mask = numpy.array(self.current_mask.matrix[1:, 1:, n],
+                                dtype=self.current_mask.matrix.dtype)
+
         return n_mask
 
     def GetNumberOfSlices(self, orientation):
@@ -525,7 +529,7 @@ class Slice(object):
             else:
                 print "Only one slice"
                 slice_ = self.buffer_slices[orientation].image
-                self.buffer_slices[orientation].mask = 255 * ((slice_ >= thresh_min) & (slice_ <= thresh_max))
+                self.buffer_slices[orientation].mask = (255 * ((slice_ >= thresh_min) & (slice_ <= thresh_max))).astype('uint8')
 
             # Update viewer
             #ps.Publisher().sendMessage('Update slice viewer')
@@ -800,7 +804,7 @@ class Slice(object):
         m = (((slice_matrix >= thresh_min) & (slice_matrix <= thresh_max)) * 255)
         m[mask == 1] = 1
         m[mask == 254] = 254
-        return m
+        return m.astype('uint8')
 
     def do_colour_image(self, imagedata):
         # map scalar values into colors
