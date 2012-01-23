@@ -100,7 +100,6 @@ class LoadDicom:
     def run(self):
 
         grouper = self.grouper
-        
         reader = gdcm.ImageReader()
         reader.SetFileName(self.filepath)
         if (reader.Read()):
@@ -120,11 +119,13 @@ class LoadDicom:
             tag = gdcm.Tag(0x0008, 0x0005)
             ds = reader.GetFile().GetDataSet()
             if ds.FindDataElement(tag):
-                encoding = str(ds.GetDataElement(tag).GetValue())
-                if encoding is None or encoding == "None" or encoding.startswith("Loaded"):
+                encoding_value = str(ds.GetDataElement(tag).GetValue())
+                
+                if encoding_value.startswith("Loaded"):
                     encoding = "ISO_IR 100"
-            else:
-                encoding = "ISO_IR_100" 
+                else:
+                    encoding = const.DICOM_ENCODING_TO_PYTHON[encoding_value]
+            
             # Iterate through the Header
             iterator = header.GetDES().begin()
             while (not iterator.equal(header.GetDES().end())):
@@ -134,8 +135,8 @@ class LoadDicom:
                 data = stf.ToStringPair(tag)
                 stag = tag.PrintAsPipeSeparatedString()
                 
-                group = tag.GetGroup()
-                field = tag.GetElement()
+                group = str(tag.GetGroup())
+                field = str(tag.GetElement())
 
                 tag_labels[stag] = data[0]
                 
@@ -158,8 +159,8 @@ class LoadDicom:
                 data = stf.ToStringPair(tag)
                 stag = tag.PrintAsPipeSeparatedString()
 
-                group = tag.GetGroup()
-                field = tag.GetElement()
+                group = str(tag.GetGroup())
+                field = str(tag.GetElement())
 
                 tag_labels[stag] = data[0]
 
@@ -179,9 +180,9 @@ class LoadDicom:
             rvtk.Update()
             
             try:
-                data = data_dict[0x028][0x1050]
+                data = data_dict[str(0x028)][str(0x1050)]
                 level = [float(value) for value in data.split('\\')][0]
-                data = data_dict[0x028][0x1051]
+                data = data_dict[str(0x028)][str(0x1051)]
                 window =  [float(value) for value in data.split('\\')][0]
             except(KeyError):
                 level = 300.0
@@ -229,7 +230,7 @@ class LoadDicom:
             #----------  Verify is DICOMDir -------------------------------
             is_dicom_dir = 1
             try: 
-                if (data_dict[0x002][0x002] != "1.2.840.10008.1.3.10"): #DICOMDIR
+                if (data_dict[str(0x002)][str(0x002)] != "1.2.840.10008.1.3.10"): #DICOMDIR
                     is_dicom_dir = 0
             except(KeyError):
                     is_dicom_dir = 0
@@ -244,13 +245,16 @@ class LoadDicom:
                 grouper.AddFile(dcm)
 
                 #self.l.release()
-            
-            #==========  used in test =======================================
-            #main_dict = dict(
-            #                data  = dict_file,
-            #                labels  = tag_labels)
-       
-            #plistlib.writePlist(main_dict, ".//teste.plist")"""
+        
+
+        #==========  used in test =======================================
+        #print dict_file
+        #main_dict = dict(
+        #                data  = dict_file,
+        #                labels  = tag_labels)
+        #print main_dict
+        #print "\n" 
+        #plistlib.writePlist(main_dict, ".//teste.plist")
 
 
 def yGetDicomGroups(directory, recursive=True, gui=True):
@@ -338,7 +342,7 @@ class ProgressDicomReader:
             fow.SetFileName(log_path)
             ow = vtk.vtkOutputWindow()
             ow.SetInstance(fow)
- 
+
         y = yGetDicomGroups(path, recursive)
         for value_progress in y:
             if not self.running:
@@ -353,4 +357,5 @@ class ProgressDicomReader:
         if(self.stoped):
             self.UpdateLoadFileProgress(None)
             self.stoped = False   
+
 

@@ -441,7 +441,8 @@ VTK_WARNING = 0
 
 [ID_DICOM_IMPORT, ID_PROJECT_OPEN, ID_PROJECT_SAVE_AS, ID_PROJECT_SAVE,
 ID_PROJECT_CLOSE, ID_PROJECT_INFO, ID_SAVE_SCREENSHOT, ID_DICOM_LOAD_NET,
-ID_PRINT_SCREENSHOT, ID_EXIT, ID_IMPORT_OTHERS_FILES, ID_ANALYZE_IMPORT, ID_PREFERENCES] = [wx.NewId() for number in range(13)]
+ID_PRINT_SCREENSHOT, ID_EXIT, ID_IMPORT_OTHERS_FILES, ID_ANALYZE_IMPORT, ID_PREFERENCES, 
+ID_DICOM_NETWORK] = [wx.NewId() for number in range(14)]
 
 
 [ID_EDIT_UNDO, ID_EDIT_REDO, ID_EDIT_LIST] =\
@@ -509,3 +510,22 @@ STYLE_LEVEL = {SLICE_STATE_EDITOR: 1,
 RENDERING = 0
 SURFACE_INTERPOLATION = 1
 LANGUAGE = 2
+
+
+#Correlaction extracted from pyDicom
+DICOM_ENCODING_TO_PYTHON = {
+                            'None':'iso8859',
+                            None:'iso8859',
+                            '': 'iso8859',
+                            'ISO_IR 6': 'iso8859',
+                            'ISO_IR 100': 'latin_1',
+                            'ISO 2022 IR 87': 'iso2022_jp',
+                            'ISO 2022 IR 13': 'iso2022_jp',
+                            'ISO 2022 IR 149': 'euc_kr',
+                            'ISO_IR 192': 'UTF8',
+                            'GB18030': 'GB18030',
+                            'ISO_IR 126': 'iso_ir_126',
+                            'ISO_IR 127': 'iso_ir_127',
+                            'ISO_IR 138': 'iso_ir_138',
+                            'ISO_IR 144': 'iso_ir_144',
+                            }
