@@ -839,7 +839,10 @@ invesalius/.svnignore -text
 invesalius/data/bases.py -text
 invesalius/data/co_registration.py -text
 invesalius/data/converters.py -text
+invesalius/gui/import_network_panel.py -text
 invesalius/gui/preferences.py -text
+invesalius/net/__init__.py -text
+invesalius/net/dicom.py -text
 locale/de/LC_MESSAGES/invesalius.mo -text
 locale/el/LC_MESSAGES/invesalius.mo -text
 locale/en/LC_MESSAGES/invesalius.mo -text

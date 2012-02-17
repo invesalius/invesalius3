@@ -32,6 +32,7 @@ import default_tasks as tasks
 import default_viewers as viewers
 import gui.dialogs as dlg
 import import_panel as imp
+import import_network_panel as imp_net
 import project as prj
 import session as ses
 import utils
@@ -58,7 +59,7 @@ class Frame(wx.Frame):
         icon_path = os.path.join(const.ICON_DIR, "invesalius.ico")
         self.SetIcon(wx.Icon(icon_path, wx.BITMAP_TYPE_ICO))
         if sys.platform != 'darwin':
-            self.Maximize()
+            ####self.Maximize() ##DESCOMENTAR PAULO
             #Necessary update AUI (statusBar in special)
             #when maximized in the Win 7 and XP
             #self.SetSize(self.GetSize())
@@ -94,6 +95,7 @@ class Frame(wx.Frame):
         sub(self._SetProjectName, 'Set project name')
         sub(self._ShowContentPanel, 'Show content panel')
         sub(self._ShowImportPanel, 'Show import panel in frame')
+        sub(self._ShowImportNetwork, 'Show retrieve dicom panel')
         sub(self._ShowTask, 'Show task panel')
         sub(self._UpdateAUI, 'Update AUI')
         sub(self._Exit, 'Exit')
@@ -139,6 +141,12 @@ class Frame(wx.Frame):
                           Name("Import").Centre().Hide().
                           MaximizeButton(True).Floatable(True).
                           Caption(caption).CaptionVisible(True))
+
+        ncaption = _("Retrieve DICOM from PACS")
+        aui_manager.AddPane(imp_net.Panel(self), wx.aui.AuiPaneInfo().
+                          Name("Retrieve").Centre().Hide().
+                          MaximizeButton(True).Floatable(True).
+                          Caption(ncaption).CaptionVisible(True))
 
         # Add toolbars to manager
         # This is pretty tricky -- order on win32 is inverted when
@@ -253,6 +261,18 @@ class Frame(wx.Frame):
         aui_manager.GetPane("Tasks").Show(1)
         aui_manager.Update()
 
+    def _ShowImportNetwork(self, evt_pubsub):
+        """
+        Show viewers and task, hide import panel.
+        """
+        ps.Publisher().sendMessage("Set layout button full")
+        aui_manager = self.aui_manager
+        aui_manager.GetPane("Retrieve").Show(1)
+        aui_manager.GetPane("Data").Show(0)
+        aui_manager.GetPane("Tasks").Show(0)
+        aui_manager.GetPane("Import").Show(0)
+        aui_manager.Update()
+
     def _ShowImportPanel(self, evt_pubsub):
         """
         Show only DICOM import panel.
@@ -316,7 +336,9 @@ class Frame(wx.Frame):
         elif id == const.ID_START:
             self.ShowGettingStarted()
         elif id == const.ID_PREFERENCES:
-            self.ShowPreferences()            
+            self.ShowPreferences()      
+        elif id == const.ID_DICOM_NETWORK:
+            self.ShowRetrieveDicomPanel() 
 
     def OnSize(self, evt):
         """
@@ -364,6 +386,10 @@ class Frame(wx.Frame):
         Show import DICOM panel.
         """
         ps.Publisher().sendMessage('Show import directory dialog')
+
+    def ShowRetrieveDicomPanel(self):
+        print "teste.............."
+        ps.Publisher().sendMessage('Show retrieve dicom panel')
 
     def ShowOpenProject(self):
         """
@@ -432,6 +458,7 @@ class MenuBar(wx.MenuBar):
         file_menu = wx.Menu()
         app = file_menu.Append
         app(const.ID_DICOM_IMPORT, _("Import DICOM...\tCtrl+I"))
+        app(const.ID_DICOM_NETWORK, _("Retrieve DICOM from PACS"))
         file_menu.AppendMenu(const.ID_IMPORT_OTHERS_FILES, _("Import Others Files"), others_file_menu)
         app(const.ID_PROJECT_OPEN, _("Open Project...\tCtrl+O"))
         app(const.ID_PROJECT_SAVE, _("Save Project\tCtrl+S"))
