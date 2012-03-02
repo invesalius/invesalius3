@@ -115,3 +115,4 @@ class DicomNet:
             else:
                 patients[patient_id][serie_id]['n_images'] += 1 
 
+        return patients 
