@@ -91,7 +91,6 @@ class Session(object):
         except(IOError):
            return False
 
-
     def CloseProject(self):
         import constants as const
         debug("Session.CloseProject")
@@ -170,7 +169,6 @@ class Session(object):
         configfile = open(path, 'wb')
         config.write(configfile)
         configfile.close()
-
 
     def __add_to_list(self, item):
         import constants as const
@@ -305,7 +303,3 @@ class WriteSession(Thread):
             self.session.CreateSessionFile()
 
         configfile.close()
-
-
-
-
