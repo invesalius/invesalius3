@@ -389,12 +389,11 @@ class FindPanel(wx.Panel):
         
         sizer_txt_find = wx.BoxSizer(wx.HORIZONTAL) 
         sizer_txt_find.Add((5, 0), 0, wx.EXPAND|wx.HORIZONTAL)
-        find_txt = wx.TextCtrl(self, -1,size=(225, -1))
+        self.find_txt = wx.TextCtrl(self, -1,size=(225, -1))
 
         self.btn_find = wx.Button(self, -1, _("Search"))
-
         
-        sizer_txt_find.Add(find_txt) 
+        sizer_txt_find.Add(self.find_txt) 
         sizer_txt_find.Add(self.btn_find)
 
         self.sizer.Add((0, 5), 0, wx.EXPAND|wx.HORIZONTAL)
@@ -415,6 +414,7 @@ class FindPanel(wx.Panel):
         self._bind_gui_evt()
 
     def __bind_evt(self):
+        ps.Publisher().subscribe(self.SetHostsList, 'Set FindPanel hosts list')
         #ps.Publisher().subscribe(self.ShowDicomSeries, 'Load dicom preview')
         #ps.Publisher().subscribe(self.SetDicomSeries, 'Load group into import panel')
         #ps.Publisher().subscribe(self.SetPatientSeries, 'Load patient into import panel')
@@ -426,8 +426,25 @@ class FindPanel(wx.Panel):
         self.Bind(wx.EVT_BUTTON, self.OnButtonFind, self.btn_find)
 
     def OnButtonFind(self, evt):
-        print "clicked...."
+        hosts = self.GetHostList()
 
+        for key in hosts.keys():
+            if key != 0:
+                dn = dcm_net.DicomNet()
+                dn.SetHost(self.hosts[key][1])
+                dn.SetPort(self.hosts[key][2])
+                dn.SetAETitleCall(self.hosts[key][3])
+                dn.SetAETitle(self.hosts[0][3])
+                dn.SetSearchWord(self.find_txt.GetValue())
+                print dn.RunCFind()
+
+
+    def SetHostsList(self, evt_pub):
+        self.hosts = evt_pub.data
+
+    def GetHostList(self):
+        ps.Publisher().sendMessage('Get NodesPanel host list') 
+        return self.hosts 
 
 class HostFindPanel(wx.Panel):
     def __init__(self, parent):
@@ -525,6 +542,7 @@ class NodesPanel(wx.Panel):
         self.Bind(wx.EVT_LIST_END_LABEL_EDIT, self.EndEdition, self.tree_node)
 
         ps.Publisher().subscribe(self.CheckItemDict, "Check item dict")
+        ps.Publisher().subscribe(self.GetHostsList, "Get NodesPanel host list")
         #ps.Publisher().subscribe(self.UnCheckItemDict, "Uncheck item dict")
 
 
@@ -583,6 +601,10 @@ class NodesPanel(wx.Panel):
         self.SetAutoLayout(1)
         self.sizer = sizer
 
+    def GetHostsList(self, pub_evt):
+        ps.Publisher().sendMessage('Set FindPanel hosts list', self.hosts)
+
+
     def EndEdition(self, evt):
         index = evt.m_itemIndex
         item = evt.m_item
@@ -637,9 +659,6 @@ class NodesPanel(wx.Panel):
                 else:
                     self.tree_node.SetStringItem(key, 4, _("error"))
 
-
-
-
     def RightButton(self,evt):
         event.Skip()
 
@@ -650,7 +669,6 @@ class NodesPanel(wx.Panel):
     def OnItemDeselected(self, evt):
         if evt.m_itemIndex != 0:
             self.tree_node.SetDeselected(evt.m_itemIndex)
-
 
     def CheckItemDict(self, evt_pub):
         index, flag = evt_pub.data

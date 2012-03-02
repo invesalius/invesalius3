@@ -125,7 +125,10 @@ class LoadDicom:
                     encoding = "ISO_IR 100"
                 else:
                     encoding = const.DICOM_ENCODING_TO_PYTHON[encoding_value]
-            
+            else:
+                encoding = "ISO_IR 100"
+
+
             # Iterate through the Header
             iterator = header.GetDES().begin()
             while (not iterator.equal(header.GetDES().end())):
