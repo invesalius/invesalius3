@@ -17,10 +17,52 @@
 #    detalhes.
 #--------------------------------------------------------------------------
 import platform
+import time
 import sigar
 import sys
 import re
 import locale
+
+def format_time(value):
+    sp1 = value.split(".")
+    sp2 = value.split(":")
+
+    if (len(sp1) ==  2) and (len(sp2) == 3):
+        new_value = str(sp2[0]+sp2[1]+
+                        str(int(float(sp2[2]))))
+        data = time.strptime(new_value, "%H%M%S")
+    elif (len(sp1) ==  2):
+        data = time.gmtime(float(value))
+    elif (len(sp1) >  2):
+        data = time.strptime(value, "%H.%M.%S")
+    elif(len(sp2) > 1):
+        data = time.strptime(value, "%H:%M:%S")
+    else:
+        try:
+            data = time.strptime(value, "%H%M%S")
+        # If the time is not in a bad format only return it.
+        except ValueError:
+            return value
+    return time.strftime("%H:%M:%S",data)
+
+def format_date(value):
+
+    sp1 = value.split(".")
+    try:
+
+        if (len(sp1) >  1):
+            if (len(sp1[0]) <= 2):
+                data = time.strptime(value, "%D.%M.%Y")
+            else:
+                data = time.strptime(value, "%Y.%M.%d")
+        elif(len(value.split("//")) > 1):
+            data = time.strptime(value, "%D/%M/%Y")
+        else:
+            data = time.strptime(value, "%Y%M%d")
+        return time.strftime("%d/%M/%Y",data)
+
+    except(ValueError):
+            return ""
 
 def debug(error_str):
     """
