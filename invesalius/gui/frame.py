@@ -59,11 +59,11 @@ class Frame(wx.Frame):
         icon_path = os.path.join(const.ICON_DIR, "invesalius.ico")
         self.SetIcon(wx.Icon(icon_path, wx.BITMAP_TYPE_ICO))
         if sys.platform != 'darwin':
-            ####self.Maximize() ##DESCOMENTAR PAULO
+            self.Maximize()
             #Necessary update AUI (statusBar in special)
             #when maximized in the Win 7 and XP
             #self.SetSize(self.GetSize())
-            self.SetSize(wx.Size(1024, 748))
+            #self.SetSize(wx.Size(1024, 748))
 
 
         # Set menus, status and task bar
