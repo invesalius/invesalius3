@@ -464,7 +464,7 @@ class Controller():
         filename = filename.replace("/", "") #Fix problem case other/Skull_DICOM
 
         dirpath = session.CreateProject(filename)
-        proj.SavePlistProject(dirpath, filename)
+        #proj.SavePlistProject(dirpath, filename)
 
     def OnOpenDicomGroup(self, pubsub_evt):
         group, interval, file_range = pubsub_evt.data

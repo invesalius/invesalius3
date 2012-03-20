@@ -25,6 +25,7 @@ import wx.lib.platebtn as pbtn
 import wx.lib.pubsub as ps
 
 import data.mask as mask
+import data.slice_ as slice_
 import constants as const
 import gui.dialogs as dlg
 import gui.widgets.gradient as grad
@@ -143,10 +144,20 @@ class InnerTaskPanel(wx.Panel):
 
     def OnButtonNextTask(self, evt):
         overwrite = self.check_box.IsChecked()
+        algorithm = ''
+        options = {}
         if self.GetMaskSelected() != -1:
+            sl = slice_.Slice()
+            if sl.current_mask.was_edited:
+                dlgs = dlg.SurfaceDialog()
+                if dlgs.ShowModal() == wx.ID_OK:
+                    algorithm = dlgs.GetAlgorithmSelected()
+                    options = dlgs.GetOptions()
+                else:
+                    return
             ps.Publisher().sendMessage('Create surface from index',
                                     (self.GetMaskSelected(),
-                                    overwrite))
+                                    overwrite, algorithm, options))
             ps.Publisher().sendMessage('Fold surface task')
         else:
             dlg.InexistentMask()

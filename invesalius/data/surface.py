@@ -21,8 +21,6 @@ import multiprocessing
 import os
 import plistlib
 import random
-import sys
-import tempfile
 
 import vtk
 import wx.lib.pubsub as ps
@@ -35,6 +33,7 @@ import session as ses
 import surface_process
 import utils as utl
 import vtk_utils as vu
+import data.ca_smoothing as ca_smoothing
 
 class Surface():
     """
@@ -363,9 +362,11 @@ class SurfaceManager():
         """
         Create surface actor, save into project and send it to viewer.
         """
-        matrix, filename_img, mask, spacing = pubsub_evt.data
+        algorithm, options, matrix, filename_img, mask, spacing, overwrite = pubsub_evt.data
         min_value, max_value = mask.threshold_range
-        fill_holes = True
+        fill_holes = False
+
+        mask.matrix.flush()
 
         #if len(surface_data) == 5:
             #imagedata, colour, [min_value, max_value], \
@@ -382,7 +383,7 @@ class SurfaceManager():
 
         mode = 'CONTOUR' # 'GRAYSCALE'
         quality=_('Optimal *')
-        keep_largest = True
+        keep_largest = False
         surface_name = ""
         colour = mask.colour
 
@@ -411,8 +412,6 @@ class SurfaceManager():
 
         language = ses.Session().language
 
-        overwrite = 0
-        
         if (prj.Project().original_orientation == const.CORONAL):
             flip_image = False
         else:
@@ -422,7 +421,7 @@ class SurfaceManager():
             
         pipe_in, pipe_out = multiprocessing.Pipe()
         o_piece = 1
-        piece_size = 20
+        piece_size = 2000
 
         n_pieces = int(round(matrix.shape[0] / piece_size + 0.5, 0))
 
@@ -432,10 +431,18 @@ class SurfaceManager():
         p = []
         for i in xrange(n_processors):
             sp = surface_process.SurfaceProcess(pipe_in, filename_img,
-                    matrix.shape, matrix.dtype, spacing, 
-                    mode, min_value, max_value,
-                    decimate_reduction, smooth_relaxation_factor,
-                    smooth_iterations, language, flip_image, q_in, q_out)
+                                                matrix.shape, matrix.dtype,
+                                                mask.temp_file,
+                                                mask.matrix.shape,
+                                                mask.matrix.dtype,
+                                                spacing, 
+                                                mode, min_value, max_value,
+                                                decimate_reduction,
+                                                smooth_relaxation_factor,
+                                                smooth_iterations, language,
+                                                flip_image, q_in, q_out,
+                                                mask.was_edited and algorithm != u'InVesalius 3.b2',
+                                                algorithm)
             p.append(sp)
             sp.start()
 
@@ -471,28 +478,65 @@ class SurfaceManager():
             polydata_append.AddInput(reader.GetOutput())
             t -= 1
 
+        polydata_append.Update()
         polydata = polydata_append.GetOutput()
-        clean = vtk.vtkCleanPolyData()
-        clean.AddObserver("ProgressEvent", lambda obj,evt:
-	                    UpdateProgress(obj, _("Generating 3D surface...")))
-        clean.SetInput(polydata)
-        clean.PointMergingOn()
-        clean.Update()
-        polydata = clean.GetOutput()
 
-        smoother = vtk.vtkWindowedSincPolyDataFilter()
-        smoother.AddObserver("ProgressEvent", lambda obj,evt:
-	                    UpdateProgress(obj, _("Generating 3D surface...")))
-        smoother.SetInput(polydata)
-        smoother.SetNumberOfIterations(smooth_iterations)
-        smoother.SetFeatureAngle(120)
-        smoother.BoundarySmoothingOn()
-        smoother.SetPassBand(0.1)
-        #smoother.FeatureEdgeSmoothingOn()
-        #smoother.NonManifoldSmoothingOn()
-        #smoother.NormalizeCoordinatesOn()
-        smoother.Update()
-        polydata = smoother.GetOutput()
+        if algorithm == u'Context aware smoothing':
+            normals = vtk.vtkPolyDataNormals()
+            normals.AddObserver("ProgressEvent", lambda obj,evt:
+                            UpdateProgress(obj, _("Generating 3D surface...")))
+            normals.SetInput(polydata)
+            #normals.SetFeatureAngle(80)
+            #normals.AutoOrientNormalsOn()
+            normals.ComputeCellNormalsOn()
+            normals.Update()
+            polydata = normals.GetOutput()
+
+            clean = vtk.vtkCleanPolyData()
+            clean.AddObserver("ProgressEvent", lambda obj,evt:
+                            UpdateProgress(obj, _("Generating 3D surface...")))
+            clean.SetInput(polydata)
+            clean.PointMergingOn()
+            clean.Update()
+            polydata = clean.GetOutput()
+
+            polydata.BuildLinks()
+            polydata = ca_smoothing.ca_smoothing(polydata, options['angle'],
+                                                 options['max distance'],
+                                                 options['min weight'],
+                                                 options['steps'])
+
+        else:
+            smoother = vtk.vtkWindowedSincPolyDataFilter()
+            smoother.AddObserver("ProgressEvent", lambda obj,evt:
+                            UpdateProgress(obj, _("Generating 3D surface...")))
+            smoother.SetInput(polydata)
+            smoother.SetNumberOfIterations(smooth_iterations)
+            smoother.SetFeatureAngle(120)
+            smoother.SetEdgeAngle(90.0)
+            smoother.BoundarySmoothingOn()
+            smoother.SetPassBand(0.1)
+            #smoother.FeatureEdgeSmoothingOn()
+            #smoother.NonManifoldSmoothingOn()
+            #smoother.NormalizeCoordinatesOn()
+            smoother.Update()
+            polydata = smoother.GetOutput()
+
+
+        if decimate_reduction:
+            print "Decimating", decimate_reduction
+            decimation = vtk.vtkQuadricDecimation()
+            decimation.SetInput(polydata)
+            decimation.SetTargetReduction(decimate_reduction)
+            decimation.AddObserver("ProgressEvent", lambda obj,evt:
+                            UpdateProgress(obj, _("Generating 3D surface...")))
+            #decimation.PreserveTopologyOn()
+            #decimation.SplittingOff()
+            #decimation.BoundaryVertexDeletionOff()
+            decimation.Update()
+            polydata = decimation.GetOutput()
+
+        to_measure = polydata
 
         if keep_largest:
             conn = vtk.vtkPolyDataConnectivityFilter()
@@ -500,17 +544,19 @@ class SurfaceManager():
             conn.SetExtractionModeToLargestRegion()
             conn.AddObserver("ProgressEvent", lambda obj,evt:
                     UpdateProgress(obj, _("Generating 3D surface...")))
+            conn.Update()
             polydata = conn.GetOutput()
 
-        # Filter used to detect and fill holes. Only fill boundary edges holes.
+        #Filter used to detect and fill holes. Only fill boundary edges holes.
         #TODO: Hey! This piece of code is the same from
-        # polydata_utils.FillSurfaceHole, we need to review this.
+        #polydata_utils.FillSurfaceHole, we need to review this.
         if fill_holes:
             filled_polydata = vtk.vtkFillHolesFilter()
             filled_polydata.SetInput(polydata)
             filled_polydata.SetHoleSize(300)
             filled_polydata.AddObserver("ProgressEvent", lambda obj,evt:
                     UpdateProgress(obj, _("Generating 3D surface...")))
+            filled_polydata.Update()
             polydata = filled_polydata.GetOutput()
         
         normals = vtk.vtkPolyDataNormals()
@@ -572,7 +618,7 @@ class SurfaceManager():
 
         # The following lines have to be here, otherwise all volumes disappear
         measured_polydata = vtk.vtkMassProperties()
-        measured_polydata.SetInput(smoother.GetOutput())
+        measured_polydata.SetInput(to_measure)
         volume =  measured_polydata.GetVolume()
         surface.volume = volume
         self.last_surface_index = surface.index

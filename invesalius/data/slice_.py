@@ -285,6 +285,7 @@ class Slice(object):
         mask = self.buffer_slices[orientation].mask
         image = self.buffer_slices[orientation].image
         thresh_min, thresh_max = self.current_mask.edition_threshold_range
+        self.current_mask.was_edited = True
 
         if hasattr(position, '__iter__'):
             py, px = position
@@ -515,7 +516,9 @@ class Slice(object):
         If slice_number is None then all the threshold is calculated for all
         slices, otherwise only to indicated slice.
         """
+        self.current_mask.was_edited = False
         thresh_min, thresh_max = threshold_range
+        print "Threshold"
 
         if self.current_mask.index == index:
             # TODO: find out a better way to do threshold
@@ -588,23 +591,26 @@ class Slice(object):
     #---------------------------------------------------------------------------
 
     def CreateSurfaceFromIndex(self, pubsub_evt):
-        mask_index, overwrite_surface = pubsub_evt.data
-
+        mask_index, overwrite_surface, algorithm, options = pubsub_evt.data
 
         proj = Project()
         mask = proj.mask_dict[mask_index]
 
         # This is very important. Do not use masks' imagedata. It would mess up
         # surface quality event when using contour
-        colour = mask.colour
-        threshold = mask.threshold_range
-        edited_points = mask.edited_points
-
-        self.SetMaskThreshold(mask.index, threshold)
+        #self.SetMaskThreshold(mask.index, threshold)
+        for n in xrange(1, mask.matrix.shape[0]):
+            if mask.matrix[n, 0, 0] == 0:
+                m = mask.matrix[n, 1:, 1:]
+                mask.matrix[n, 1:, 1:] = self.do_threshold_to_a_slice(self.matrix[n-1], m)
 
         mask.matrix.flush()
 
-        ps.Publisher().sendMessage('Create surface', (self.matrix, self.matrix_filename, mask, self.spacing))
+        ps.Publisher().sendMessage('Create surface', (algorithm, options,
+                                                      self.matrix,
+                                                      self.matrix_filename,
+                                                      mask, self.spacing,
+                                                      overwrite_surface))
 
     def GetOutput(self):
         return self.blend_filter.GetOutput()

@@ -24,6 +24,7 @@ import sys
 
 import wx
 from wx.lib import masked
+from wx.lib.agw import floatspin
 from wx.lib.wordwrap import wordwrap
 import wx.lib.pubsub as ps
 
@@ -850,5 +851,116 @@ def ExportPicture(type_=""):
         return filename, filetype
     else:
         return ()
+
+
+class CAOptions(wx.Panel):
+    '''
+    Options related to Context aware algorithm:
+    Angle: The min angle to a vertex to be considered a staircase vertex;
+    Max distance: The max distance a normal vertex must be to calculate its
+        weighting;
+    Min Weighting: The min weight a vertex must have;
+    Steps: The number of iterations the smoothing algorithm have to do.
+    '''
+    def __init__(self, parent):
+        wx.Panel.__init__(self, parent, -1)
+        self._build_widgets()
+    
+    def _build_widgets(self):
+        self.angle = floatspin.FloatSpin(self, -1, value=0.7, min_val=0.0,
+                                         max_val=1.0, increment=0.1,
+                                         digits=1)
+
+        self.max_distance = floatspin.FloatSpin(self, -1, value=3.0, min_val=0.0,
+                                         max_val=100.0, increment=0.1,
+                                         digits=2)
+
+        self.min_weight = floatspin.FloatSpin(self, -1, value=0.2, min_val=0.0,
+                                         max_val=1.0, increment=0.1,
+                                         digits=1)
+        
+        self.steps = wx.SpinCtrl(self, -1, value='10', min=1, max=100)
+
+        layout_sizer = wx.FlexGridSizer(rows=4, cols=2, hgap=5, vgap=5)
+        layout_sizer.Add(wx.StaticText(self, -1, u'Angle:'),  0, wx.EXPAND)
+        layout_sizer.Add(self.angle, 0, wx.EXPAND)
+        layout_sizer.Add(wx.StaticText(self, -1, u'Max. distance:'),  0, wx.EXPAND)
+        layout_sizer.Add(self.max_distance, 0, wx.EXPAND)
+        layout_sizer.Add(wx.StaticText(self, -1, u'Min. weight:'), 0, wx.EXPAND)
+        layout_sizer.Add(self.min_weight, 0, wx.EXPAND)
+        layout_sizer.Add(wx.StaticText(self, -1, u'N. steps:'),  0, wx.EXPAND)
+        layout_sizer.Add(self.steps, 0, wx.EXPAND)
+
+        self.main_sizer = wx.StaticBoxSizer(wx.StaticBox(self, -1, 'Context aware options'), wx.VERTICAL)
+        self.main_sizer.Add(layout_sizer, 0, wx.EXPAND | wx.ALL, 5)
+        self.SetSizer(self.main_sizer)
+
+class SurfaceDialog(wx.Dialog):
+    '''
+    This dialog is only shown when the mask whose surface will be generate was
+    edited. So far, the only options available are the choice of method to
+    generate the surface, Binary or `Context aware smoothing', and options from
+    `Context aware smoothing'
+    '''
+    def __init__(self):
+        wx.Dialog.__init__(self, None, -1, u'Surface generation options')
+        self._build_widgets()
+        self._bind_wx()
+
+    def _build_widgets(self):
+        btn_ok = wx.Button(self, wx.ID_OK)
+        btn_cancel = wx.Button(self, wx.ID_CANCEL)
+        btn_sizer = wx.StdDialogButtonSizer()
+        btn_sizer.AddButton(btn_ok)
+        btn_sizer.AddButton(btn_cancel)
+        btn_sizer.Realize()
+
+        self.alg_types = {0: u'Context aware smoothing', 1: u'Binary',
+                          2: u'InVesalius 3.b2'}
+        self.cb_types = wx.ComboBox(self, -1, self.alg_types[0],
+                                    choices=[self.alg_types[i] for i in sorted(self.alg_types)],
+                                   style=wx.CB_READONLY)
+
+        self.ca_options = CAOptions(self)
+
+        method_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        method_sizer.Add(wx.StaticText(self, -1, u'Method:'), 0,
+                            wx.EXPAND | wx.ALL, 5)
+        method_sizer.Add(self.cb_types, 0, wx.EXPAND)
+
+        self.main_sizer = wx.BoxSizer(wx.VERTICAL)
+        self.main_sizer.Add(method_sizer, 0, wx.EXPAND | wx.ALL, 5)
+        self.main_sizer.Add(self.ca_options, 0, wx.EXPAND | wx.ALL, 5)
+        self.main_sizer.Add(btn_sizer, 0, wx.EXPAND | wx.ALL, 5)
+
+        self.SetSizer(self.main_sizer)
+        self.Fit()
+
+    def _bind_wx(self):
+        self.cb_types.Bind(wx.EVT_COMBOBOX, self._set_cb_types)
+
+    def _set_cb_types(self, evt):
+        print evt.GetString()
+        if self.alg_types[evt.GetSelection()] == self.alg_types[0]:
+            self.ca_options.Enable()
+        else:
+            self.ca_options.Disable()
+        evt.Skip()
+
+    def GetAlgorithmSelected(self):
+        try:
+            return self.alg_types[self.cb_types.GetSelection()]
+        except KeyError:
+            return self.alg_types[0]
+
+    def GetOptions(self):
+        if self.GetAlgorithmSelected() == self.alg_types[0]:
+            options = {'angle': self.ca_options.angle.GetValue(),
+                       'max distance': self.ca_options.max_distance.GetValue(),
+                       'min weight': self.ca_options.min_weight.GetValue(),
+                       'steps': self.ca_options.steps.GetValue()}
+        else:
+            options = {}
+        return options
 
 

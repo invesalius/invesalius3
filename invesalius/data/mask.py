@@ -42,6 +42,7 @@ class Mask():
         self.edition_threshold_range = [const.THRESHOLD_OUTVALUE, const.THRESHOLD_INVALUE]
         self.is_shown = 1
         self.edited_points = {}
+        self.was_edited = False
 
     def SavePlist(self, filename):
         mask = {}
