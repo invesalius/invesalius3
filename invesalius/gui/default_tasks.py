@@ -139,7 +139,7 @@ class LowerTaskPanel(wx.Panel):
         col = style.GetFirstColour()
         self.enable_items.append(item)
 
-        fold_panel.AddFoldPanelWindow(item, nb.NotebookPanel(item), #Spacing= 0,
+        fold_panel.AddFoldPanelWindow(item, nb.NotebookPanel(item), Spacing= 0,
                                       leftSpacing=0, rightSpacing=0)
         fold_panel.Expand(fold_panel.GetFoldPanel(0))
 
@@ -229,7 +229,7 @@ class UpperTaskPanel(wx.Panel):
             # Add panel to FoldPanel
             fold_panel.AddFoldPanelWindow(item,
                                           panel(item),
-                                          #Spacing= 0,
+                                          Spacing= 0,
                                           leftSpacing=0,
                                           rightSpacing=0)
 
