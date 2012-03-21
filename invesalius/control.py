@@ -486,7 +486,8 @@ class Controller():
         
         if file_range != None and file_range[1] > file_range[0]:
             filelist = filelist[file_range[0]:file_range[1] + 1]
- 
+
+        print ">>>>>>>>>>>>>>>>>>",filelist 
         zspacing = dicom_group.zspacing * interval
         size = dicom.image.size
         bits = dicom.image.bits_allocad

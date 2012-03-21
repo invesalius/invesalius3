@@ -34,6 +34,7 @@ else:
         wxversion.select('2.8-unicode', optionsRequired=True)
         
 import wx
+from wx.lib.pubsub import setupv1 
 import wx.lib.pubsub as ps
 import wx.lib.agw.advancedsplash as agw
 

@@ -51,7 +51,7 @@ class DicomNet:
         tags = [(0x0010, 0x0010), (0x0010, 0x1010), (0x0010,0x0040), (0x0008,0x1030),\
                 (0x0008,0x0060), (0x0008,0x0022), (0x0008,0x0080), (0x0010,0x0030),\
                 (0x0008,0x0050), (0x0008,0x0090), (0x0008,0x103E), (0x0008,0x0033),\
-                (0x0008,0x0032)]
+                (0x0008,0x0032), (0x0020,0x000d)]
 
 
         ds = gdcm.DataSet()
@@ -109,6 +109,9 @@ class DicomNet:
                 acquisition_time = utils.format_time(self.GetValueFromDICOM(rt, (0x0008,0x0032)))
                 acquisition_date = utils.format_date(self.GetValueFromDICOM(rt, (0x0008,0x0022)))
 
+                teste = self.GetValueFromDICOM(rt, (0x0020,0x000d))
+                print ">>>>>>>>>>>>>>>>>>>>", teste
+
                 patients[patient_id][serie_id] = {'name':name, 'age':age, 'gender':gender,\
                                                   'study_description':study_description,\
                                                   'modality':modality, \
@@ -125,3 +128,66 @@ class DicomNet:
                 patients[patient_id][serie_id]['n_images'] += 1 
 
         return patients 
+
+
+    def RunCMove(self, values):
+
+        ds = gdcm.DataSet()
+
+        #for v in values:
+
+
+        tg_patient = gdcm.Tag(0x0010, 0x0020)
+        tg_serie = gdcm.Tag(0x0020, 0x000e)
+
+        de_patient = gdcm.DataElement(tg_patient)
+        de_serie = gdcm.DataElement(tg_serie)
+
+        patient_id = str(values[0])        
+        serie_id = str(values[1])
+
+        print "(0x0010, 0x0020)",patient_id
+        
+        print "(0x0020, 0x000e)",serie_id
+        print "\n\n"
+
+        de_patient.SetByteValue(patient_id,  gdcm.VL(len(patient_id)))
+        de_serie.SetByteValue(serie_id, gdcm.VL(len(serie_id)))
+
+        ds.Insert(de_patient)
+        ds.Insert(de_serie)
+
+
+        cnf = gdcm.CompositeNetworkFunctions()
+        theQuery = cnf.ConstructQuery(gdcm.ePatientRootType, gdcm.eImageOrFrame, ds)
+        #ret = gdcm.DataSetArrayType()
+
+        """
+        CMove (const char *remote, 
+        uint16_t portno, 
+        const BaseRootQuery *query, 
+
+        uint16_t portscp, 
+        const char *aetitle=NULL, 
+        const char *call=NULL, 
+        const char *outputdir=NULL)"""
+
+
+
+        cnf.CMove(self.address, int(self.port), theQuery, 11113, self.aetitle,\
+                  self.aetitle_call, "/home/phamorim/Desktop/output/")
+
+
+        ret = gdcm.DataSetArrayType()
+
+        cnf.CFind(self.address, int(self.port), theQuery, ret, self.aetitle,\
+                  self.aetitle_call)
+
+        print "aetitle",self.aetitle
+        print "call",self.aetitle_call
+        print "Baixados..........."
+
+
+        for r in ret:
+            print r
+            print "\n"
