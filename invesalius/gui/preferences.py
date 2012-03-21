@@ -8,9 +8,10 @@ ID = wx.NewId()
 
 try:
     from agw import flatnotebook as fnb
+    AGW = 1
 except ImportError: # if it's not there locally, try the wxPython lib.
     import wx.lib.agw.flatnotebook as fnb
-
+    AGW = 0
 
 class Preferences(wx.Dialog):
 
@@ -26,7 +27,12 @@ class Preferences(wx.Dialog):
         sizer = wx.BoxSizer(wx.VERTICAL)
     
         bookStyle = fnb.FNB_NODRAG | fnb.FNB_NO_NAV_BUTTONS | fnb.FNB_NO_X_BUTTON
-        self.book = fnb.FlatNotebook(self, wx.ID_ANY, agwStyle=bookStyle)
+
+        if AGW:
+            self.book = fnb.FlatNotebook(self, wx.ID_ANY, agwStyle=bookStyle)
+        else:
+            self.book = fnb.FlatNotebook(self, wx.ID_ANY, style=bookStyle)
+            
         sizer.Add(self.book, 80, wx.EXPAND|wx.ALL)
         
         self.pnl_viewer3d = Viewer3D(self)
