@@ -367,6 +367,7 @@ class Controller():
         ps.Publisher().sendMessage('Load slice to viewer',
                         (proj.imagedata,
                         proj.mask_dict))
+
         
         ps.Publisher().sendMessage('Load slice plane') 
 
@@ -393,6 +394,13 @@ class Controller():
                                             m.threshold_range, m.colour))
             self.Slice.current_mask = proj.mask_dict[mask_index]
             ps.Publisher().sendMessage('Show mask', (mask_index, True))
+        else:
+            mask_name = const.MASK_NAME_PATTERN % (1,)
+            thresh = const.THRESHOLD_RANGE
+            colour = const.MASK_COLOUR[0]
+
+            ps.Publisher().sendMessage('Create new mask',
+                                       (mask_name, thresh, colour))
 
         ps.Publisher().sendMessage('Load measurement dict',
                                     proj.measurement_dict)
