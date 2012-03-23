@@ -833,6 +833,7 @@ class SlicePlane:
         project = prj.Project()
         self.original_orientation = project.original_orientation
         self.Create()
+        self.enabled = False
         self.__bind_evt()
 
     def __bind_evt(self):
@@ -946,14 +947,15 @@ class SlicePlane:
     def ChangeSlice(self, pubsub_evt = None):
         orientation, number = pubsub_evt.data
 
-        if (orientation == "CORONAL"):
+        if  orientation == "CORONAL" and self.plane_y.GetEnabled():
             ps.Publisher().sendMessage('Update slice 3D', (self.plane_y,orientation))
-        elif(orientation == "SAGITAL"):
+            self.Render()
+        elif orientation == "SAGITAL" and self.plane_x.GetEnabled():
             ps.Publisher().sendMessage('Update slice 3D', (self.plane_x,orientation))
-        else:
+            self.Render()
+        elif orientation == 'AXIAL' and self.plane_z.GetEnabled() :
             ps.Publisher().sendMessage('Update slice 3D', (self.plane_z,orientation))
-        
-        self.Render()
+            self.Render()
 
     def UpdateAllSlice(self, pubsub_evt):
         ps.Publisher().sendMessage('Update slice 3D', (self.plane_y,"CORONAL"))
