@@ -462,11 +462,12 @@ class Viewer(wx.Panel):
         evt.StartSpin()
 
     def OnEnterInteractor(self, evt, obj):
-        #self.interactor.SetCursor(wx.StockCursor(wx.CURSOR_BLANK))
-        pass
+        self.slice_data.cursor.Show()
+        self.interactor.SetCursor(wx.StockCursor(wx.CURSOR_BLANK))
         
     def OnLeaveInteractor(self, evt, obj):
         self.slice_data.cursor.Show(0)
+        self.interactor.SetCursor(wx.StockCursor(wx.CURSOR_DEFAULT))
         self.interactor.Render()
 
     def SetWLText(self, window_width, window_level):
@@ -753,7 +754,6 @@ class Viewer(wx.Panel):
         # TODO: Improve!
         #for i in self.slice_data_list:
             #i.cursor.Show(0)
-        self.slice_data.cursor.Show()
 
         self.pick.Pick(mouse_x, mouse_y, 0, render)
         
