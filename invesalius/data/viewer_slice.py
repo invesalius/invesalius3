@@ -785,7 +785,7 @@ class Viewer(wx.Panel):
                                         position, radius, self.orientation)
 
             # TODO: To create a new function to reload images to viewer.
-            self.OnScrollBar()
+            self.OnScrollBar(update3D=False)
 
         else:
             self.interactor.Render()
@@ -1345,10 +1345,11 @@ class Viewer(wx.Panel):
         ps.Publisher().sendMessage('Change slice from slice plane',\
                                    (self.orientation, pos))
                 
-    def OnScrollBar(self, evt=None):
+    def OnScrollBar(self, evt=None, update3D=True):
         pos = self.scroll.GetThumbPosition() 
         self.set_slice_number(pos)
-        self.UpdateSlice3D(pos)
+        if update3D:
+            self.UpdateSlice3D(pos)
         if self.state == const.SLICE_STATE_CROSS:
             # Update other slice's cross according to the new focal point from
             # the actual orientation.
