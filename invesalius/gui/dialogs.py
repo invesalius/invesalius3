@@ -906,6 +906,7 @@ class SurfaceDialog(wx.Dialog):
         wx.Dialog.__init__(self, None, -1, u'Surface generation options')
         self._build_widgets()
         self._bind_wx()
+        self.CenterOnScreen()
 
     def _build_widgets(self):
         btn_ok = wx.Button(self, wx.ID_OK)
