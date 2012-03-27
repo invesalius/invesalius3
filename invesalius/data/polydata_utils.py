@@ -18,7 +18,7 @@
 #--------------------------------------------------------------------------
 
 import vtk
-import wx.lib.pubsub as ps
+from wx.lib.pubsub import pub as Publisher
 
 import vtk_utils as vu
 

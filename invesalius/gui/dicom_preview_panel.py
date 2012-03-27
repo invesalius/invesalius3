@@ -29,7 +29,7 @@ import vtk
 
 from vtk.util import  numpy_support
 from vtk.wx.wxVTKRenderWindowInteractor import wxVTKRenderWindowInteractor
-import wx.lib.pubsub as ps
+from wx.lib.pubsub import pub as Publisher
 
 import constants as const
 from reader import dicom_reader
@@ -646,7 +646,7 @@ class DicomPreviewSlice(wx.Panel):
         self.selected_dicom = self.selected_panel.dicom_info
         self.GetEventHandler().ProcessEvent(my_evt)
 
-        ps.Publisher().sendMessage("Selected Import Images", [self.first_selection, \
+        Publisher.sendMessage("Selected Import Images", [self.first_selection, \
                                                                  self.last_selection])  
 
     def OnScroll(self, evt=None):

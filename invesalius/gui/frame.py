@@ -25,7 +25,7 @@ import webbrowser
 
 import wx
 import wx.aui
-import wx.lib.pubsub as ps
+from wx.lib.pubsub import pub as Publisher
 
 import constants as const
 import default_tasks as tasks
@@ -85,7 +85,7 @@ class Frame(wx.Frame):
         """
         Bind events related to pubsub.
         """
-        sub = ps.Publisher().subscribe
+        sub = Publisher.subscribe
         sub(self._BeginBusyCursor, 'Begin busy cursor')
         sub(self._ShowContentPanel, 'Cancel DICOM load')
         sub(self._EndBusyCursor, 'End busy cursor')
@@ -254,7 +254,7 @@ class Frame(wx.Frame):
         """
         Show viewers and task, hide import panel.
         """
-        ps.Publisher().sendMessage("Set layout button full")
+        Publisher.sendMessage("Set layout button full")
         aui_manager = self.aui_manager
         aui_manager.GetPane("Import").Show(0)
         aui_manager.GetPane("Data").Show(1)
@@ -265,7 +265,7 @@ class Frame(wx.Frame):
         """
         Show viewers and task, hide import panel.
         """
-        ps.Publisher().sendMessage("Set layout button full")
+        Publisher.sendMessage("Set layout button full")
         aui_manager = self.aui_manager
         aui_manager.GetPane("Retrieve").Show(1)
         aui_manager.GetPane("Data").Show(0)
@@ -277,7 +277,7 @@ class Frame(wx.Frame):
         """
         Show only DICOM import panel.
         """
-        ps.Publisher().sendMessage("Set layout button data only")
+        Publisher.sendMessage("Set layout button data only")
         aui_manager = self.aui_manager
         aui_manager.GetPane("Import").Show(1)
         aui_manager.GetPane("Data").Show(0)
@@ -298,13 +298,13 @@ class Frame(wx.Frame):
         self.aui_manager.Update()
 
     def CloseProject(self):
-        ps.Publisher().sendMessage('Close Project')
+        Publisher.sendMessage('Close Project')
 
     def OnClose(self, evt):
         """
         Close all project data.
         """
-        ps.Publisher().sendMessage('Close Project')
+        Publisher.sendMessage('Close Project')
 
     def OnMenuClick(self, evt):
         """
@@ -344,7 +344,7 @@ class Frame(wx.Frame):
         """
         Refresh GUI when frame is resized.
         """
-        ps.Publisher().sendMessage(('ProgressBar Reposition'))
+        Publisher.sendMessage(('ProgressBar Reposition'))
         evt.Skip()
 
     def ShowPreferences(self):
@@ -357,9 +357,9 @@ class Frame(wx.Frame):
             ses.Session().surface_interpolation = values[const.SURFACE_INTERPOLATION]
             ses.Session().language = values[const.LANGUAGE]         
 
-            ps.Publisher().sendMessage('Remove Volume')
-            ps.Publisher().sendMessage('Reset Reaycasting')
-            ps.Publisher().sendMessage('Update Surface Interpolation')
+            Publisher.sendMessage('Remove Volume')
+            Publisher.sendMessage('Reset Reaycasting')
+            Publisher.sendMessage('Update Surface Interpolation')
 
     def ShowAbout(self):
         """
@@ -371,7 +371,7 @@ class Frame(wx.Frame):
         """
         Save project.
         """
-        ps.Publisher().sendMessage('Show save dialog', False)
+        Publisher.sendMessage('Show save dialog', False)
 
     def ShowGettingStarted(self):
         """
@@ -385,29 +385,29 @@ class Frame(wx.Frame):
         """
         Show import DICOM panel.
         """
-        ps.Publisher().sendMessage('Show import directory dialog')
+        Publisher.sendMessage('Show import directory dialog')
 
     def ShowRetrieveDicomPanel(self):
         print "teste.............."
-        ps.Publisher().sendMessage('Show retrieve dicom panel')
+        Publisher.sendMessage('Show retrieve dicom panel')
 
     def ShowOpenProject(self):
         """
         Show open project dialog.
         """
-        ps.Publisher().sendMessage('Show open project dialog')
+        Publisher.sendMessage('Show open project dialog')
 
     def ShowSaveAsProject(self):
         """
         Show save as dialog.
         """
-        ps.Publisher().sendMessage('Show save dialog', True)
+        Publisher.sendMessage('Show save dialog', True)
         
     def ShowAnalyzeImporter(self):
         """
         Show save as dialog.
         """
-        ps.Publisher().sendMessage('Show analyze dialog', True)
+        Publisher.sendMessage('Show analyze dialog', True)
 
 # ------------------------------------------------------------------
 # ------------------------------------------------------------------
@@ -441,7 +441,7 @@ class MenuBar(wx.MenuBar):
         # events should be binded directly from wx.Menu / wx.MenuBar
         # message "Binding events of wx.MenuBar" on [wxpython-users]
         # mail list in Oct 20 2008
-        sub = ps.Publisher().subscribe
+        sub = Publisher.subscribe
         sub(self.OnEnableState, "Enable state project")
 
     def __init_items(self):
@@ -578,7 +578,7 @@ class ProgressBar(wx.Gauge):
         """
         Bind events related to pubsub.
         """
-        sub = ps.Publisher().subscribe
+        sub = Publisher.subscribe
         sub(self._Layout, 'ProgressBar Reposition')
 
     def _Layout(self, evt_pubsub=None):
@@ -626,7 +626,7 @@ class StatusBar(wx.StatusBar):
         """
         Bind events related to pubsub.
         """
-        sub = ps.Publisher().subscribe
+        sub = Publisher.subscribe
         sub(self._SetProgressValue, 'Update status in GUI')
         sub(self._SetProgressLabel, 'Update status text in GUI')
 
@@ -714,7 +714,7 @@ class ProjectToolBar(wx.ToolBar):
         """
         Bind events related to pubsub.
         """
-        sub = ps.Publisher().subscribe
+        sub = Publisher.subscribe
         sub(self._EnableState, "Enable state project")
 
     def __init_items(self):
@@ -846,7 +846,7 @@ class ObjectToolBar(wx.ToolBar):
         """
         Bind events related to pubsub.
         """
-        sub = ps.Publisher().subscribe
+        sub = Publisher.subscribe
         sub(self._EnableState, "Enable state project")
         sub(self._UntoggleAllItems, 'Untoggle object toolbar items')
         sub(self._ToggleLinearMeasure, "Set tool linear measure")
@@ -982,8 +982,8 @@ class ObjectToolBar(wx.ToolBar):
         """
         id = const.STATE_MEASURE_DISTANCE
         self.ToggleTool(id, True)
-        ps.Publisher().sendMessage('Enable style', id)
-        ps.Publisher().sendMessage('Untoggle slice toolbar items')
+        Publisher.sendMessage('Enable style', id)
+        Publisher.sendMessage('Untoggle slice toolbar items')
         for item in const.TOOL_STATES:
             state = self.GetToolState(item)
             if state and (item != id):
@@ -997,8 +997,8 @@ class ObjectToolBar(wx.ToolBar):
         """
         id = const.STATE_MEASURE_ANGLE
         self.ToggleTool(id, True)
-        ps.Publisher().sendMessage('Enable style', id)
-        ps.Publisher().sendMessage('Untoggle slice toolbar items')
+        Publisher.sendMessage('Enable style', id)
+        Publisher.sendMessage('Untoggle slice toolbar items')
         for item in const.TOOL_STATES:
             state = self.GetToolState(item)
             if state and (item != id):
@@ -1013,13 +1013,13 @@ class ObjectToolBar(wx.ToolBar):
         state = self.GetToolState(id)
         if state and ((id == const.STATE_MEASURE_DISTANCE) or\
                 (id == const.STATE_MEASURE_ANGLE)):
-            ps.Publisher().sendMessage('Fold measure task')
+            Publisher.sendMessage('Fold measure task')
 
         if state:
-            ps.Publisher().sendMessage('Enable style', id)
-            ps.Publisher().sendMessage('Untoggle slice toolbar items')
+            Publisher.sendMessage('Enable style', id)
+            Publisher.sendMessage('Untoggle slice toolbar items')
         else:
-            ps.Publisher().sendMessage('Disable style', id)
+            Publisher.sendMessage('Disable style', id)
 
         for item in const.TOOL_STATES:
             state = self.GetToolState(item)
@@ -1099,7 +1099,7 @@ class SliceToolBar(wx.ToolBar):
         """
         Bind events related to pubsub.
         """
-        sub = ps.Publisher().subscribe
+        sub = Publisher.subscribe
         sub(self._EnableState, "Enable state project")
         sub(self._UntoggleAllItems, 'Untoggle slice toolbar items')
 
@@ -1131,7 +1131,7 @@ class SliceToolBar(wx.ToolBar):
                 self.ToggleTool(id, False)
                 if id == const.SLICE_STATE_CROSS:
                     msg = 'Set cross visibility'
-                    ps.Publisher().sendMessage(msg, 0)
+                    Publisher.sendMessage(msg, 0)
 
     def OnToggle(self, evt):
         """
@@ -1142,10 +1142,10 @@ class SliceToolBar(wx.ToolBar):
         state = self.GetToolState(id)
 
         if state:
-            ps.Publisher().sendMessage('Enable style', id)
-            ps.Publisher().sendMessage('Untoggle object toolbar items')
+            Publisher.sendMessage('Enable style', id)
+            Publisher.sendMessage('Untoggle object toolbar items')
         else:
-            ps.Publisher().sendMessage('Disable style', id)
+            Publisher.sendMessage('Disable style', id)
 
         for item in const.TOOL_SLICE_STATES:
             state = self.GetToolState(item)
@@ -1201,7 +1201,7 @@ class LayoutToolBar(wx.ToolBar):
         """
         Bind events related to pubsub.
         """
-        sub = ps.Publisher().subscribe
+        sub = Publisher.subscribe
         sub(self._EnableState, "Enable state project")
         sub(self._SetLayoutWithTask, "Set layout button data only")
         sub(self._SetLayoutWithoutTask, "Set layout button full")
@@ -1318,13 +1318,13 @@ class LayoutToolBar(wx.ToolBar):
         """
         if self.ontool_layout:
             self.SetToolNormalBitmap(ID_LAYOUT,self.BMP_WITHOUT_MENU)
-            ps.Publisher().sendMessage('Show task panel')
+            Publisher.sendMessage('Show task panel')
             self.SetToolShortHelp(ID_LAYOUT,_("Hide task panel"))
             self.ontool_layout = False
         else:
             self.bitmap = self.BMP_WITH_MENU
             self.SetToolNormalBitmap(ID_LAYOUT,self.BMP_WITH_MENU)
-            ps.Publisher().sendMessage('Hide task panel')
+            Publisher.sendMessage('Hide task panel')
             self.SetToolShortHelp(ID_LAYOUT, _("Show task panel"))
             self.ontool_layout = True
 
@@ -1334,14 +1334,14 @@ class LayoutToolBar(wx.ToolBar):
         """
         if self.ontool_text:
             self.SetToolNormalBitmap(ID_TEXT,self.BMP_WITH_TEXT)
-            ps.Publisher().sendMessage('Hide text actors on viewers')
+            Publisher.sendMessage('Hide text actors on viewers')
             self.SetToolShortHelp(ID_TEXT,_("Show text"))
-            ps.Publisher().sendMessage('Update AUI')
+            Publisher.sendMessage('Update AUI')
             self.ontool_text = False
         else:
             self.SetToolNormalBitmap(ID_TEXT, self.BMP_WITHOUT_TEXT)
-            ps.Publisher().sendMessage('Show text actors on viewers')
+            Publisher.sendMessage('Show text actors on viewers')
             self.SetToolShortHelp(ID_TEXT,_("Hide text"))
-            ps.Publisher().sendMessage('Update AUI')
+            Publisher.sendMessage('Update AUI')
             self.ontool_text = True
 

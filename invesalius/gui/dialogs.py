@@ -26,7 +26,7 @@ import wx
 from wx.lib import masked
 from wx.lib.agw import floatspin
 from wx.lib.wordwrap import wordwrap
-import wx.lib.pubsub as ps
+from wx.lib.pubsub import pub as Publisher
 
 import constants as const
 import gui.widgets.gradient as grad
@@ -113,7 +113,7 @@ class ProgressDialog(object):
         self.dlg.SetSize(wx.Size(250,150))
 
     def Cancel(self, evt):
-        ps.Publisher().sendMessage("Cancel DICOM load")
+        Publisher.sendMessage("Cancel DICOM load")
 
     def Update(self, value, message):
         if(int(value) != self.maximum):

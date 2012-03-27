@@ -26,7 +26,7 @@ import wx
 import wx.grid
 import wx.lib.flatnotebook as fnb
 import wx.lib.platebtn as pbtn
-import wx.lib.pubsub as ps
+from wx.lib.pubsub import pub as Publisher
 
 import constants as const
 import gui.dialogs as dlg
@@ -76,15 +76,15 @@ class NotebookPanel(wx.Panel):
         self.__bind_events()
 
     def __bind_events(self):
-        ps.Publisher().subscribe(self._FoldSurface,
+        Publisher.subscribe(self._FoldSurface,
                                  'Fold surface task')
-        ps.Publisher().subscribe(self._FoldSurface,
+        Publisher.subscribe(self._FoldSurface,
                                  'Fold surface page')
-        ps.Publisher().subscribe(self._FoldMeasure,
+        Publisher.subscribe(self._FoldMeasure,
                                  'Fold measure task')
-        ps.Publisher().subscribe(self._FoldMask,
+        Publisher.subscribe(self._FoldMask,
                                  'Fold mask task')
-        ps.Publisher().subscribe(self._FoldMask,
+        Publisher.subscribe(self._FoldMask,
                                  'Fold mask page')
 
 
@@ -205,9 +205,9 @@ class MeasureButtonControlPanel(wx.Panel):
     def OnMenu(self, evt):
         id = evt.GetId()
         if id == const.MEASURE_LINEAR:
-            ps.Publisher().sendMessage('Set tool linear measure')
+            Publisher.sendMessage('Set tool linear measure')
         else:
-            ps.Publisher().sendMessage('Set tool angular measure')
+            Publisher.sendMessage('Set tool angular measure')
 
     def OnRemove(self):
         self.parent.listctrl.RemoveMeasurements()
@@ -215,7 +215,7 @@ class MeasureButtonControlPanel(wx.Panel):
     def OnDuplicate(self):
         selected_items = self.parent.listctrl.GetSelected()
         if selected_items:
-            ps.Publisher().sendMessage('Duplicate measurement', selected_items)
+            Publisher.sendMessage('Duplicate measurement', selected_items)
         else:
            dlg.MaskSelectionRequiredForDuplication() 
 
@@ -315,7 +315,7 @@ class ButtonControlPanel(wx.Panel):
         if ok:
             mask_name, thresh, colour = dialog.GetValue()
             if mask_name:
-                ps.Publisher().sendMessage('Create new mask',
+                Publisher.sendMessage('Create new mask',
                                             (mask_name, thresh, colour))
 
     def OnRemove(self):
@@ -324,7 +324,7 @@ class ButtonControlPanel(wx.Panel):
     def OnDuplicate(self):
         selected_items = self.parent.listctrl.GetSelected()
         if selected_items:
-            ps.Publisher().sendMessage('Duplicate masks', selected_items)
+            Publisher.sendMessage('Duplicate masks', selected_items)
         else:
            dlg.MaskSelectionRequiredForDuplication() 
 
@@ -353,14 +353,14 @@ class MasksListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
 
  
     def __bind_events(self):
-        ps.Publisher().subscribe(self.AddMask, 'Add mask')
-        ps.Publisher().subscribe(self.EditMaskThreshold,
+        Publisher.subscribe(self.AddMask, 'Add mask')
+        Publisher.subscribe(self.EditMaskThreshold,
                                  'Set mask threshold in notebook')
-        ps.Publisher().subscribe(self.EditMaskColour,
+        Publisher.subscribe(self.EditMaskColour,
                                  'Change mask colour in notebook')
 
-        ps.Publisher().subscribe(self.OnChangeCurrentMask, 'Change mask selected')
-        ps.Publisher().subscribe(self.OnCloseProject, 'Close project data')
+        Publisher.subscribe(self.OnChangeCurrentMask, 'Change mask selected')
+        Publisher.subscribe(self.OnCloseProject, 'Close project data')
 
     def OnKeyEvent(self, event):
         keycode = event.GetKeyCode()
@@ -377,7 +377,7 @@ class MasksListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
         selected_items = self.GetSelected()
 
         if selected_items:
-            ps.Publisher().sendMessage('Remove masks', selected_items)
+            Publisher.sendMessage('Remove masks', selected_items)
         else:
             dlg.MaskSelectionRequiredForRemoval()
             return
@@ -400,8 +400,8 @@ class MasksListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
         if new_dict:
             if index == self.current_index:
                 self.SetItemImage(0, 1)
-                ps.Publisher().sendMessage('Show mask', (0, 1))
-                ps.Publisher().sendMessage('Change mask selected', 0)
+                Publisher.sendMessage('Show mask', (0, 1))
+                Publisher.sendMessage('Change mask selected', 0)
                 for key in new_dict:
                     if key:
                          self.SetItemImage(key, 0)
@@ -457,7 +457,7 @@ class MasksListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
         self.image_gray = Image.open("../icons/object_colour.jpg")
         
     def OnEditLabel(self, evt):
-        ps.Publisher().sendMessage('Change mask name',
+        Publisher.sendMessage('Change mask name',
                                    (evt.GetIndex(), evt.GetLabel()))
         evt.Skip()
 
@@ -469,9 +469,9 @@ class MasksListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
             for key in self.mask_list_index.keys():
                 if key != index:
                     self.SetItemImage(key, 0)
-            ps.Publisher().sendMessage('Change mask selected',index)
+            Publisher.sendMessage('Change mask selected',index)
             self.current_index = index
-        ps.Publisher().sendMessage('Show mask', (index, flag))
+        Publisher.sendMessage('Show mask', (index, flag))
 
     def CreateColourBitmap(self, colour):
         """
@@ -645,7 +645,7 @@ class SurfaceButtonControlPanel(wx.Panel):
                             fill_holes,
                             keep_largest]
 
-            ps.Publisher().sendMessage('Create surface', surface_data)
+            Publisher.sendMessage('Create surface', surface_data)
 
     def OnRemove(self):
         self.parent.listctrl.RemoveSurfaces()
@@ -654,7 +654,7 @@ class SurfaceButtonControlPanel(wx.Panel):
     def OnDuplicate(self):
         selected_items = self.parent.listctrl.GetSelected()
         if selected_items:
-            ps.Publisher().sendMessage('Duplicate surfaces', selected_items)
+            Publisher.sendMessage('Duplicate surfaces', selected_items)
         else:
            dlg.SurfaceSelectionRequiredForDuplication() 
 
@@ -679,17 +679,17 @@ class SurfacesListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
         self.surface_bmp_idx_to_name = {}
 
     def __init_evt(self):
-        ps.Publisher().subscribe(self.AddSurface,
+        Publisher.subscribe(self.AddSurface,
                                 'Update surface info in GUI')
-        ps.Publisher().subscribe(self.EditSurfaceTransparency,
+        Publisher.subscribe(self.EditSurfaceTransparency,
                                  'Set surface transparency')
-        ps.Publisher().subscribe(self.EditSurfaceColour,
+        Publisher.subscribe(self.EditSurfaceColour,
                                  'Set surface colour')
-        ps.Publisher().subscribe(self.OnCloseProject, 'Close project data')
-        ps.Publisher().subscribe(self.OnHideSurface, 'Hide surface items')
+        Publisher.subscribe(self.OnCloseProject, 'Close project data')
+        Publisher.subscribe(self.OnHideSurface, 'Hide surface items')
 
-        ps.Publisher().subscribe(self.OnShowSingle, 'Show single surface')
-        ps.Publisher().subscribe(self.OnShowMultiple, 'Show multiple surfaces') 
+        Publisher.subscribe(self.OnShowSingle, 'Show single surface')
+        Publisher.subscribe(self.OnShowMultiple, 'Show multiple surfaces') 
 
     def __bind_events_wx(self):
         self.Bind(wx.EVT_LIST_ITEM_ACTIVATED, self.OnItemActivated)
@@ -734,7 +734,7 @@ class SurfacesListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
                 old_dict = new_dict
             self.surface_list_index = new_dict
 
-            ps.Publisher().sendMessage('Remove surfaces', selected_items)
+            Publisher.sendMessage('Remove surfaces', selected_items)
         else:
            dlg.SurfaceSelectionRequiredForRemoval() 
 
@@ -750,7 +750,7 @@ class SurfacesListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
         # things will stop working, e.g.: OnCheckItem
 
         last_surface_index = evt.m_itemIndex
-        ps.Publisher().sendMessage('Change surface selected',
+        Publisher.sendMessage('Change surface selected',
                                     last_surface_index)
         evt.Skip()
 
@@ -801,7 +801,7 @@ class SurfacesListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
 
 
     def OnEditLabel(self, evt):
-        ps.Publisher().sendMessage('Change surface name', (evt.GetIndex(), evt.GetLabel()))
+        Publisher.sendMessage('Change surface name', (evt.GetIndex(), evt.GetLabel()))
         evt.Skip()
         
     def OnItemActivated(self, evt):
@@ -810,17 +810,17 @@ class SurfacesListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
 
         
     def OnCheckItem(self, index, flag):
-        ps.Publisher().sendMessage('Show surface', (index, flag)) 
+        Publisher.sendMessage('Show surface', (index, flag)) 
 
     def OnShowSingle(self, pubsub_evt):
         index, visibility = pubsub_evt.data
         for key in self.surface_list_index.keys():
             if key != index:
                 self.SetItemImage(key, not visibility)
-                ps.Publisher().sendMessage('Show surface',
+                Publisher.sendMessage('Show surface',
                                             (key, not visibility)) 
         self.SetItemImage(index, visibility)
-        ps.Publisher().sendMessage('Show surface',
+        Publisher.sendMessage('Show surface',
                                    (index, visibility))
 
     def OnShowMultiple(self, pubsub_evt):
@@ -828,11 +828,11 @@ class SurfacesListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
         for key in self.surface_list_index.keys():
             if key not in index_list:
                 self.SetItemImage(key, not visibility)
-                ps.Publisher().sendMessage('Show surface',
+                Publisher.sendMessage('Show surface',
                                             (key, not visibility)) 
         for index in index_list:
             self.SetItemImage(index, visibility)
-            ps.Publisher().sendMessage('Show surface',
+            Publisher.sendMessage('Show surface',
                                        (index, visibility))
 
     def AddSurface(self, pubsub_evt):
@@ -935,14 +935,14 @@ class MeasuresListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
         self._bmp_idx_to_name = {}
 
     def __init_evt(self):
-        ps.Publisher().subscribe(self.AddItem_,
+        Publisher.subscribe(self.AddItem_,
                                 'Update measurement info in GUI')
-        ps.Publisher().subscribe(self.EditItemColour,
+        Publisher.subscribe(self.EditItemColour,
                                  'Set measurement colour')
-        ps.Publisher().subscribe(self.OnCloseProject, 'Close project data')
-        ps.Publisher().subscribe(self.OnShowSingle, 'Show single measurement')
-        ps.Publisher().subscribe(self.OnShowMultiple, 'Show multiple measurements') 
-        ps.Publisher().subscribe(self.OnLoadData, 'Load measurement dict')
+        Publisher.subscribe(self.OnCloseProject, 'Close project data')
+        Publisher.subscribe(self.OnShowSingle, 'Show single measurement')
+        Publisher.subscribe(self.OnShowMultiple, 'Show multiple measurements') 
+        Publisher.subscribe(self.OnLoadData, 'Load measurement dict')
 
     def __bind_events_wx(self):
         self.Bind(wx.EVT_LIST_ITEM_ACTIVATED, self.OnItemActivated)
@@ -980,7 +980,7 @@ class MeasuresListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
                         new_dict[i-1] = old_dict[i]
                 old_dict = new_dict
             self._list_index = new_dict
-            ps.Publisher().sendMessage('Remove measurements', selected_items)
+            Publisher.sendMessage('Remove measurements', selected_items)
         else:
            dlg.MeasureSelectionRequiredForRemoval()
 
@@ -996,7 +996,7 @@ class MeasuresListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
         # things will stop working, e.g.: OnCheckItem
 
         last_index = evt.m_itemIndex
-        ps.Publisher().sendMessage('Change measurement selected',
+        Publisher.sendMessage('Change measurement selected',
                                     last_index)
         evt.Skip()
 
@@ -1049,7 +1049,7 @@ class MeasuresListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
 
 
     def OnEditLabel(self, evt):
-        ps.Publisher().sendMessage('Change measurement name', (evt.GetIndex(), evt.GetLabel()))
+        Publisher.sendMessage('Change measurement name', (evt.GetIndex(), evt.GetLabel()))
         evt.Skip()
         
     def OnItemActivated(self, evt):
@@ -1058,17 +1058,17 @@ class MeasuresListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
 
         
     def OnCheckItem(self, index, flag):
-        ps.Publisher().sendMessage('Show measurement', (index, flag)) 
+        Publisher.sendMessage('Show measurement', (index, flag)) 
 
     def OnShowSingle(self, pubsub_evt):
         index, visibility = pubsub_evt.data
         for key in self._list_index.keys():
             if key != index:
                 self.SetItemImage(key, not visibility)
-                ps.Publisher().sendMessage('Show measurement',
+                Publisher.sendMessage('Show measurement',
                                             (key, not visibility)) 
         self.SetItemImage(index, visibility)
-        ps.Publisher().sendMessage('Show measurement',
+        Publisher.sendMessage('Show measurement',
                                    (index, visibility))
 
     def OnShowMultiple(self, pubsub_evt):
@@ -1076,11 +1076,11 @@ class MeasuresListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
         for key in self._list_index.keys():
             if key not in index_list:
                 self.SetItemImage(key, not visibility)
-                ps.Publisher().sendMessage('Show measurement',
+                Publisher.sendMessage('Show measurement',
                                             (key, not visibility)) 
         for index in index_list:
             self.SetItemImage(index, visibility)
-            ps.Publisher().sendMessage('Show measurement',
+            Publisher.sendMessage('Show measurement',
                                        (index, visibility))
 
     def OnLoadData(self, pubsub_evt):

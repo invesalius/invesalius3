@@ -22,7 +22,7 @@ import sys
 import wx
 import wx.lib.hyperlink as hl
 import wx.lib.platebtn as pbtn
-import wx.lib.pubsub as ps
+from wx.lib.pubsub import pub as Publisher
 
 import constants as const
 import gui.dialogs as dlg
@@ -140,7 +140,7 @@ class InnerTaskPanel(wx.Panel):
         #self.__bind_events()
 
     #def __bind_events(self):
-    #    ps.Publisher().subscribe(self.OnLoadRecentProjects, "Load recent projects")
+    #    Publisher.subscribe(self.OnLoadRecentProjects, "Load recent projects")
 
     #def OnLoadRecentProjects(self, pubsub_evt):
     #    projects = pubsub_evt.data
@@ -217,22 +217,22 @@ class InnerTaskPanel(wx.Panel):
 
 #######
     def ImportDicom(self):
-        ps.Publisher().sendMessage('Show import directory dialog')
+        Publisher.sendMessage('Show import directory dialog')
 
     def OpenProject(self, path=None):
         if path:
-            ps.Publisher().sendMessage('Open recent project', path)
+            Publisher.sendMessage('Open recent project', path)
         else:
-            ps.Publisher().sendMessage('Show open project dialog')
+            Publisher.sendMessage('Show open project dialog')
 
     def SaveAsProject(self):
-        ps.Publisher().sendMessage('Show save dialog', True)
+        Publisher.sendMessage('Show save dialog', True)
 
     def SaveProject(self):
-        ps.Publisher().sendMessage('Show save dialog', False)
+        Publisher.sendMessage('Show save dialog', False)
 
     def CloseProject(self):
-        ps.Publisher().sendMessage('Close Project')
+        Publisher.sendMessage('Close Project')
 #######
 
     def OnButton(self, evt):

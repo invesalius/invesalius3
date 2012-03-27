@@ -19,7 +19,7 @@
 import os
 import plistlib
 
-import wx.lib.pubsub as ps
+from wx.lib.pubsub import pub as Publisher
 
 from utils import TwoWaysDictionary
 
@@ -64,7 +64,7 @@ class Presets():
         self.__bind_events()
         
     def __bind_events(self):
-        ps.Publisher.subscribe(self.UpdateThresholdModes,
+        Publisher.subscribe(self.UpdateThresholdModes,
                                 'Update threshold limits list')
         
     def UpdateThresholdModes(self, evt):
@@ -93,7 +93,7 @@ class Presets():
                     
                 presets[key] = (t_min, t_max)
                     
-        ps.Publisher().sendMessage('Update threshold limits', (thresh_min,     
+        Publisher.sendMessage('Update threshold limits', (thresh_min,     
                                     thresh_max))
 
     def SavePlist(self, filename):

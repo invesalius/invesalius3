@@ -34,8 +34,11 @@ else:
         wxversion.select('2.8-unicode', optionsRequired=True)
         
 import wx
-from wx.lib.pubsub import setupv1 
-import wx.lib.pubsub as ps
+#from wx.lib.pubsub import setupv1 #new wx
+from wx.lib.pubsub import setuparg1# as psv1
+#from wx.lib.pubsub import Publisher 
+#import wx.lib.pubsub as ps
+from wx.lib.pubsub import pub as Publisher
 import wx.lib.agw.advancedsplash as agw
 
 if sys.platform == 'linux2':
@@ -71,7 +74,7 @@ class InVesalius(wx.App):
         Open drag & drop files under darwin
         """
         path = os.path.abspath(filename)
-        ps.Publisher().sendMessage('Open project', path)
+        Publisher.sendMessage('Open project', path)
 
 # ------------------------------------------------------------------
 
@@ -215,13 +218,13 @@ def parse_comand_line():
 
     # If debug argument...
     if options.debug:
-        ps.Publisher().subscribe(print_events, '')
+        Publisher.subscribe(print_events, '')
         session.debug = 1
 
     # If import DICOM argument...
     if options.dicom_dir:
         import_dir = options.dicom_dir
-        ps.Publisher().sendMessage('Import directory', import_dir)
+        Publisher().sendMessage('Import directory', import_dir)
         return True
 
     # Check if there is a file path somewhere in what the user wrote
@@ -233,7 +236,7 @@ def parse_comand_line():
             file = args[i]
             if os.path.isfile(file):
                 path = os.path.abspath(file)
-                ps.Publisher().sendMessage('Open project', path)
+                Publisher.sendMessage('Open project', path)
                 i = 0
                 return True
     return False
@@ -255,7 +258,8 @@ def main():
 
 if __name__ == '__main__':
     # Needed in win 32 exe
-    if hasattr(sys,"frozen") and sys.frozen == "windows_exe":
+    if hasattr(sys,"frozen") and (sys.frozen == "windows_exe"\
+                               or sys.frozen == "console_exe"):
         multiprocessing.freeze_support()
 
         #Click in the .inv3 file support

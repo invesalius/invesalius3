@@ -20,7 +20,7 @@ import math
 
 import numpy
 import vtk
-import wx.lib.pubsub as ps
+from wx.lib.pubsub import pub as Publisher
 
 import constants as const
 import converters
@@ -93,45 +93,45 @@ class Slice(object):
 
     def __bind_events(self):
         # General slice control
-        ps.Publisher().subscribe(self.CreateSurfaceFromIndex,
+        Publisher.subscribe(self.CreateSurfaceFromIndex,
                                  'Create surface from index')
         # Mask control
-        ps.Publisher().subscribe(self.__add_mask_thresh, 'Create new mask')
-        ps.Publisher().subscribe(self.__select_current_mask,
+        Publisher.subscribe(self.__add_mask_thresh, 'Create new mask')
+        Publisher.subscribe(self.__select_current_mask,
                                  'Change mask selected')
         # Mask properties
-        ps.Publisher().subscribe(self.__set_current_mask_edition_threshold,
+        Publisher.subscribe(self.__set_current_mask_edition_threshold,
                                  'Set edition threshold values')
-        ps.Publisher().subscribe(self.__set_current_mask_threshold,
+        Publisher.subscribe(self.__set_current_mask_threshold,
                                  'Set threshold values')
-        ps.Publisher().subscribe(self.__set_current_mask_threshold_actual_slice,
+        Publisher.subscribe(self.__set_current_mask_threshold_actual_slice,
                                  'Changing threshold values')
-        ps.Publisher().subscribe(self.__set_current_mask_colour,
+        Publisher.subscribe(self.__set_current_mask_colour,
                                 'Change mask colour')
-        ps.Publisher().subscribe(self.__set_mask_name, 'Change mask name')
-        ps.Publisher().subscribe(self.__show_mask, 'Show mask')
+        Publisher.subscribe(self.__set_mask_name, 'Change mask name')
+        Publisher.subscribe(self.__show_mask, 'Show mask')
 
-        ps.Publisher().subscribe(self.__set_current_mask_threshold_limits,
+        Publisher.subscribe(self.__set_current_mask_threshold_limits,
                                         'Update threshold limits')
 
-        ps.Publisher().subscribe(self.UpdateWindowLevelBackground,\
+        Publisher.subscribe(self.UpdateWindowLevelBackground,\
                                  'Bright and contrast adjustment image')
 
-        ps.Publisher().subscribe(self.UpdateColourTableBackground,\
+        Publisher.subscribe(self.UpdateColourTableBackground,\
                                  'Change colour table from background image')
 
-        ps.Publisher().subscribe(self.InputImageWidget, 'Input Image in the widget')
+        Publisher.subscribe(self.InputImageWidget, 'Input Image in the widget')
 
-        ps.Publisher().subscribe(self.OnExportMask,'Export mask to file')
+        Publisher.subscribe(self.OnExportMask,'Export mask to file')
 
-        ps.Publisher().subscribe(self.OnCloseProject, 'Close project data')
+        Publisher.subscribe(self.OnCloseProject, 'Close project data')
 
-        ps.Publisher().subscribe(self.OnEnableStyle, 'Enable style')
-        ps.Publisher().subscribe(self.OnDisableStyle, 'Disable style')
+        Publisher.subscribe(self.OnEnableStyle, 'Enable style')
+        Publisher.subscribe(self.OnDisableStyle, 'Disable style')
 
-        ps.Publisher().subscribe(self.OnRemoveMasks, 'Remove masks')
-        ps.Publisher().subscribe(self.OnDuplicateMasks, 'Duplicate masks')
-        ps.Publisher().subscribe(self.UpdateSlice3D,'Update slice 3D')
+        Publisher.subscribe(self.OnRemoveMasks, 'Remove masks')
+        Publisher.subscribe(self.OnDuplicateMasks, 'Duplicate masks')
+        Publisher.subscribe(self.UpdateSlice3D,'Update slice 3D')
  
     def GetMaxSliceNumber(self, orientation):
         shape = self.matrix.shape
@@ -160,7 +160,7 @@ class Slice(object):
                     buffer_.discard_vtk_mask()
                     buffer_.discard_mask()
 
-                ps.Publisher().sendMessage('Reload actual slice')
+                Publisher.sendMessage('Reload actual slice')
 
     def OnDuplicateMasks(self, pubsub_evt):
         selected_items = pubsub_evt.data
@@ -185,16 +185,16 @@ class Slice(object):
         state = pubsub_evt.data
         if (state in const.SLICE_STYLES):
             new_state = self.interaction_style.AddState(state)
-            ps.Publisher().sendMessage('Set slice interaction style', new_state)
+            Publisher.sendMessage('Set slice interaction style', new_state)
 
     def OnDisableStyle(self, pubsub_evt):
         state = pubsub_evt.data
         if (state in const.SLICE_STYLES):
             new_state = self.interaction_style.RemoveState(state)
-            ps.Publisher().sendMessage('Set slice interaction style', new_state)
+            Publisher.sendMessage('Set slice interaction style', new_state)
 
             if (state == const.SLICE_STATE_EDITOR):
-                ps.Publisher().sendMessage('Set interactor default cursor')
+                Publisher.sendMessage('Set interactor default cursor')
 
     def OnCloseProject(self, pubsub_evt):
         self.CloseProject()
@@ -202,7 +202,7 @@ class Slice(object):
     def CloseProject(self):
         self.imagedata = None
         self.current_mask = None
-        ps.Publisher().sendMessage('Select first item from slice menu')
+        Publisher.sendMessage('Select first item from slice menu')
         #self.blend_filter = None
         #self.blend_filter = None
         #self.num_gradient = 0
@@ -230,7 +230,7 @@ class Slice(object):
         self.CreateMask(name=mask_name, threshold_range=thresh, colour =colour)
         self.SetMaskColour(self.current_mask.index, self.current_mask.colour)
         self.SelectCurrentMask(self.current_mask.index)
-        ps.Publisher().sendMessage('Reload actual slice')
+        Publisher.sendMessage('Reload actual slice')
 
     def __select_current_mask(self, pubsub_evt):
         mask_index = pubsub_evt.data
@@ -258,7 +258,7 @@ class Slice(object):
                                   orientation)
         self.num_gradient += 1
 
-        ps.Publisher().sendMessage('Reload actual slice')
+        Publisher.sendMessage('Reload actual slice')
 
     def __set_current_mask_colour(self, pubsub_evt):
         # "if" is necessary because wx events are calling this before any mask
@@ -482,14 +482,14 @@ class Slice(object):
 
         (r,g,b) = colour
         colour_wx = [r*255, g*255, b*255]
-        ps.Publisher().sendMessage('Change mask colour in notebook',
+        Publisher.sendMessage('Change mask colour in notebook',
                                     (index, (r,g,b)))
-        ps.Publisher().sendMessage('Set GUI items colour', colour_wx)
+        Publisher.sendMessage('Set GUI items colour', colour_wx)
         if update:
             # Updating mask colour on vtkimagedata.
             for buffer_ in self.buffer_slices.values():
                 buffer_.discard_vtk_mask()
-            ps.Publisher().sendMessage('Reload actual slice')
+            Publisher.sendMessage('Reload actual slice')
 
         session = ses.Session()
         session.ChangeProject()
@@ -535,10 +535,10 @@ class Slice(object):
                 self.buffer_slices[orientation].mask = (255 * ((slice_ >= thresh_min) & (slice_ <= thresh_max))).astype('uint8')
 
             # Update viewer
-            #ps.Publisher().sendMessage('Update slice viewer')
+            #Publisher.sendMessage('Update slice viewer')
 
             # Update data notebook (GUI)
-            ps.Publisher().sendMessage('Set mask threshold in notebook',
+            Publisher.sendMessage('Set mask threshold in notebook',
                                 (self.current_mask.index,
                                 self.current_mask.threshold_range))
         else:
@@ -557,7 +557,7 @@ class Slice(object):
             for buffer_ in self.buffer_slices.values():
                 buffer_.discard_vtk_mask()
                 buffer_.discard_mask()
-            ps.Publisher().sendMessage('Reload actual slice')
+            Publisher.sendMessage('Reload actual slice')
     #---------------------------------------------------------------------------
 
     def SelectCurrentMask(self, index):
@@ -581,13 +581,13 @@ class Slice(object):
                               "CORONAL": SliceBuffer(),
                               "SAGITAL": SliceBuffer()}
 
-        ps.Publisher().sendMessage('Set mask threshold in notebook',
+        Publisher.sendMessage('Set mask threshold in notebook',
                                     (index,
                                         self.current_mask.threshold_range))
-        ps.Publisher().sendMessage('Set threshold values in gradient',
+        Publisher.sendMessage('Set threshold values in gradient',
                                     self.current_mask.threshold_range)
-        ps.Publisher().sendMessage('Select mask name in combo', index)
-        ps.Publisher().sendMessage('Update slice viewer')
+        Publisher.sendMessage('Select mask name in combo', index)
+        Publisher.sendMessage('Update slice viewer')
     #---------------------------------------------------------------------------
 
     def CreateSurfaceFromIndex(self, pubsub_evt):
@@ -606,7 +606,7 @@ class Slice(object):
 
         mask.matrix.flush()
 
-        ps.Publisher().sendMessage('Create surface', (algorithm, options,
+        Publisher.sendMessage('Create surface', (algorithm, options,
                                                       self.matrix,
                                                       self.matrix_filename,
                                                       mask, self.spacing,
@@ -649,7 +649,7 @@ class Slice(object):
 
     def __create_background(self, imagedata):
         thresh_min, thresh_max = imagedata.GetScalarRange()
-        ps.Publisher().sendMessage('Update threshold limits list', (thresh_min,
+        Publisher.sendMessage('Update threshold limits list', (thresh_min,
                                     thresh_max))
 
         # map scalar values into colors
@@ -676,7 +676,7 @@ class Slice(object):
         for buffer_ in self.buffer_slices.values():
             buffer_.discard_vtk_image()
 
-        ps.Publisher().sendMessage('Reload actual slice')
+        Publisher.sendMessage('Reload actual slice')
 
     def UpdateColourTableBackground(self, pubsub_evt):
         values = pubsub_evt.data
@@ -686,7 +686,7 @@ class Slice(object):
         self.value_range = values[3]
         for buffer_ in self.buffer_slices.values():
             buffer_.discard_vtk_image()
-        ps.Publisher().sendMessage('Reload actual slice')
+        Publisher.sendMessage('Reload actual slice')
 
     def InputImageWidget(self, pubsub_evt):
         widget, orientation = pubsub_evt.data
@@ -759,7 +759,7 @@ class Slice(object):
         future_mask.index = index
 
         ## update gui related to mask
-        ps.Publisher().sendMessage('Add mask',
+        Publisher.sendMessage('Add mask',
                                     (future_mask.index,
                                      future_mask.name,
                                      future_mask.threshold_range,
@@ -767,8 +767,8 @@ class Slice(object):
 
         self.current_mask = future_mask
 
-        ps.Publisher().sendMessage('Change mask selected', future_mask.index)
-        ps.Publisher().sendMessage('Update slice viewer')
+        Publisher.sendMessage('Change mask selected', future_mask.index)
+        Publisher.sendMessage('Update slice viewer')
 
     def __load_masks(self, imagedata, mask_dict):
         keys = mask_dict.keys()
@@ -779,7 +779,7 @@ class Slice(object):
             # update gui related to mask
             utils.debug("__load_masks")
             utils.debug('THRESHOLD_RANGE %s'% mask.threshold_range)
-            ps.Publisher().sendMessage('Add mask',
+            Publisher.sendMessage('Add mask',
                                     (mask.index,
                                      mask.name,
                                      mask.threshold_range,
@@ -788,8 +788,8 @@ class Slice(object):
         self.current_mask = mask
         self.__build_mask(imagedata, False)
 
-        ps.Publisher().sendMessage('Change mask selected', mask.index)
-        ps.Publisher().sendMessage('Update slice viewer')
+        Publisher.sendMessage('Change mask selected', mask.index)
+        Publisher.sendMessage('Update slice viewer')
 
     def do_ww_wl(self, image):
         colorer = vtk.vtkImageMapToWindowLevelColors()
@@ -891,7 +891,7 @@ class Slice(object):
             if o != orientation:
                 self.buffer_slices[o].discard_mask()
                 self.buffer_slices[o].discard_vtk_mask()
-        ps.Publisher().sendMessage('Reload actual slice')
+        Publisher.sendMessage('Reload actual slice')
 
     def __build_mask(self, imagedata, create=True):
         # create new mask instance and insert it into project

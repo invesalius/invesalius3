@@ -18,7 +18,7 @@
 #--------------------------------------------------------------------------
 
 import math
-import wx.lib.pubsub as ps
+from wx.lib.pubsub import pub as Publisher
 import vtk
 
 AXIAL = 2
@@ -120,8 +120,8 @@ class Editor:
             print "Comecei"
             self.DoOperation(wx, wy, wz)
             print "Terminei"
-            ps.Publisher().sendMessage('Update images', self.image)
-            ps.Publisher().sendMessage('Update viewer', None)
+            Publisher.sendMessage('Update images', self.image)
+            Publisher.sendMessage('Update viewer', None)
 
         #self.cursor.Update()
         obj.OnMouseMove()

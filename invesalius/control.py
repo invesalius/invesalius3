@@ -21,7 +21,7 @@ import os
 import plistlib
 
 import numpy
-import wx.lib.pubsub as ps
+from wx.lib.pubsub import pub as Publisher
 
 import constants as const
 import data.imagedata_utils as utils
@@ -54,35 +54,35 @@ class Controller():
         session = ses.Session()
         self.measure_manager = data.measures.MeasurementManager()
 
-        ps.Publisher().sendMessage('Load Preferences')
+        Publisher.sendMessage('Load Preferences')
 
 
     def __bind_events(self):
-        ps.Publisher().subscribe(self.OnImportMedicalImages, 'Import directory')
-        ps.Publisher().subscribe(self.OnShowDialogImportDirectory,
+        Publisher.subscribe(self.OnImportMedicalImages, 'Import directory')
+        Publisher.subscribe(self.OnShowDialogImportDirectory,
                                  'Show import directory dialog')
-        ps.Publisher().subscribe(self.OnShowDialogOpenProject,
+        Publisher.subscribe(self.OnShowDialogOpenProject,
                                  'Show open project dialog')
 
-        ps.Publisher().subscribe(self.OnShowDialogSaveProject, 'Show save dialog')
+        Publisher.subscribe(self.OnShowDialogSaveProject, 'Show save dialog')
 
-        ps.Publisher().subscribe(self.LoadRaycastingPreset,
+        Publisher.subscribe(self.LoadRaycastingPreset,
                                  'Load raycasting preset')
-        ps.Publisher().subscribe(self.SaveRaycastingPreset,
+        Publisher.subscribe(self.SaveRaycastingPreset,
                                  'Save raycasting preset')
-        ps.Publisher().subscribe(self.OnOpenDicomGroup,
+        Publisher.subscribe(self.OnOpenDicomGroup,
                                  'Open DICOM group')
-        ps.Publisher().subscribe(self.Progress, "Update dicom load")
-        ps.Publisher().subscribe(self.OnLoadImportPanel, "End dicom load")
-        ps.Publisher().subscribe(self.OnCancelImport, 'Cancel DICOM load')
-        ps.Publisher().subscribe(self.OnShowDialogCloseProject, 'Close Project')
-        ps.Publisher().subscribe(self.OnOpenProject, 'Open project')
-        ps.Publisher().subscribe(self.OnOpenRecentProject, 'Open recent project')
-        ps.Publisher().subscribe(self.OnShowAnalyzeFile, 'Show analyze dialog')
+        Publisher.subscribe(self.Progress, "Update dicom load")
+        Publisher.subscribe(self.OnLoadImportPanel, "End dicom load")
+        Publisher.subscribe(self.OnCancelImport, 'Cancel DICOM load')
+        Publisher.subscribe(self.OnShowDialogCloseProject, 'Close Project')
+        Publisher.subscribe(self.OnOpenProject, 'Open project')
+        Publisher.subscribe(self.OnOpenRecentProject, 'Open recent project')
+        Publisher.subscribe(self.OnShowAnalyzeFile, 'Show analyze dialog')
 
     def OnCancelImport(self, pubsub_evt):
         #self.cancel_import = True
-        ps.Publisher().sendMessage('Hide import panel')
+        Publisher.sendMessage('Hide import panel')
 
 
 ###########################
@@ -108,7 +108,7 @@ class Controller():
             self.CreateAnalyzeProject(imagedata)
             
         self.LoadProject()
-        ps.Publisher().sendMessage("Enable state project", True)
+        Publisher.sendMessage("Enable state project", True)
 
 
 ###########################
@@ -128,7 +128,7 @@ class Controller():
             dialog.ImportEmptyDirectory(dirpath)
         elif dirpath:
             self.StartImportPanel(dirpath)
-            ps.Publisher().sendMessage("Load data to import panel", dirpath)
+            Publisher.sendMessage("Load data to import panel", dirpath)
 
     def ShowDialogOpenProject(self):
         # Offer to save current project if necessary
@@ -180,30 +180,30 @@ class Controller():
                 if not answer:
                     debug("Close without changes")
                     self.CloseProject()
-                    ps.Publisher().sendMessage("Enable state project", False)
-                    ps.Publisher().sendMessage('Set project name')
-                    ps.Publisher().sendMessage("Stop Config Recording")
-                    ps.Publisher().sendMessage("Exit")
+                    Publisher.sendMessage("Enable state project", False)
+                    Publisher.sendMessage('Set project name')
+                    Publisher.sendMessage("Stop Config Recording")
+                    Publisher.sendMessage("Exit")
                 elif answer == 1:
                     self.ShowDialogSaveProject()
                     debug("Save changes and close")
                     self.CloseProject()
-                    ps.Publisher().sendMessage("Enable state project", False)
-                    ps.Publisher().sendMessage('Set project name')
-                    ps.Publisher().sendMessage("Stop Config Recording")
-                    ps.Publisher().sendMessage("Exit")
+                    Publisher.sendMessage("Enable state project", False)
+                    Publisher.sendMessage('Set project name')
+                    Publisher.sendMessage("Stop Config Recording")
+                    Publisher.sendMessage("Exit")
                 elif answer == -1:
                     debug("Cancel")
             else:
                 self.CloseProject()
-                ps.Publisher().sendMessage("Enable state project", False)
-                ps.Publisher().sendMessage('Set project name')
-                ps.Publisher().sendMessage("Stop Config Recording")
-                ps.Publisher().sendMessage("Exit")
+                Publisher.sendMessage("Enable state project", False)
+                Publisher.sendMessage('Set project name')
+                Publisher.sendMessage("Stop Config Recording")
+                Publisher.sendMessage("Exit")
 
         else:
-            ps.Publisher().sendMessage('Stop Config Recording')
-            ps.Publisher().sendMessage('Exit')
+            Publisher.sendMessage('Stop Config Recording')
+            Publisher.sendMessage('Exit')
 
 
 ###########################
@@ -230,7 +230,7 @@ class Controller():
 
 
     def OpenProject(self, filepath):
-        ps.Publisher().sendMessage('Begin busy cursor')
+        Publisher.sendMessage('Begin busy cursor')
         path = os.path.abspath(filepath)
 
         proj = prj.Project()
@@ -253,14 +253,14 @@ class Controller():
 
         self.LoadProject()
 
-        ps.Publisher().sendMessage('Update threshold limits',
+        Publisher.sendMessage('Update threshold limits',
                                    proj.threshold_range)
         session = ses.Session()
         session.OpenProject(filepath)
-        ps.Publisher().sendMessage("Enable state project", True)
+        Publisher.sendMessage("Enable state project", True)
 
     def SaveProject(self, path=None):
-        ps.Publisher().sendMessage('Begin busy cursor')
+        Publisher.sendMessage('Begin busy cursor')
         session = ses.Session()
         if path:
             dirpath, filename = os.path.split(path)
@@ -272,14 +272,14 @@ class Controller():
         prj.Project().SavePlistProject(dirpath, filename)
 
         session.SaveProject()
-        ps.Publisher().sendMessage('End busy cursor')
+        Publisher.sendMessage('End busy cursor')
 
     def CloseProject(self):
         proj = prj.Project()
         proj.Close()
 
-        ps.Publisher().sendMessage('Hide content panel')
-        ps.Publisher().sendMessage('Close project data')
+        Publisher.sendMessage('Hide content panel')
+        Publisher.sendMessage('Close project data')
         session = ses.Session()
         session.CloseProject()
 
@@ -292,7 +292,7 @@ class Controller():
         reader = dcm.ProgressDicomReader()
         reader.SetWindowEvent(self.frame)
         reader.SetDirectoryPath(path)
-        ps.Publisher().sendMessage('End busy cursor')
+        Publisher.sendMessage('End busy cursor')
 
     def Progress(self, evt):
         data = evt.data
@@ -305,7 +305,7 @@ class Controller():
                 if not(self.progress_dialog.Update(data[0],message)):
                     self.progress_dialog.Close()
                     self.progress_dialog = None
-                    ps.Publisher().sendMessage('Begin busy cursor')
+                    Publisher.sendMessage('Begin busy cursor')
         else:
             #Is None if user canceled the load
             self.progress_dialog.Close()
@@ -315,15 +315,15 @@ class Controller():
         patient_series = evt.data
         ok = self.LoadImportPanel(patient_series)
         if ok:
-            ps.Publisher().sendMessage('Show import panel')
-            ps.Publisher().sendMessage("Show import panel in frame")
+            Publisher.sendMessage('Show import panel')
+            Publisher.sendMessage("Show import panel in frame")
 
 
     def LoadImportPanel(self, patient_series):
         if patient_series and isinstance(patient_series, list):
-            ps.Publisher().sendMessage("Load import panel", patient_series)
+            Publisher.sendMessage("Load import panel", patient_series)
             first_patient = patient_series[0]
-            ps.Publisher().sendMessage("Load dicom preview", first_patient)
+            Publisher.sendMessage("Load dicom preview", first_patient)
             return True
         else:
             dialog.ImportInvalidFiles()
@@ -350,7 +350,7 @@ class Controller():
                 debug("No medical images found on given directory")
                 return
         self.LoadProject()
-        ps.Publisher().sendMessage("Enable state project", True)
+        Publisher.sendMessage("Enable state project", True)
 
     def LoadProject(self):
         proj = prj.Project()
@@ -364,50 +364,50 @@ class Controller():
         self.Slice = sl.Slice()
         self.Slice.spacing = proj.spacing
 
-        ps.Publisher().sendMessage('Load slice to viewer',
+        Publisher.sendMessage('Load slice to viewer',
                         (proj.imagedata,
                         proj.mask_dict))
 
         
-        ps.Publisher().sendMessage('Load slice plane') 
+        Publisher.sendMessage('Load slice plane') 
 
-        ps.Publisher().sendMessage('Bright and contrast adjustment image',\
+        Publisher.sendMessage('Bright and contrast adjustment image',\
                                    (proj.window, proj.level))
-        ps.Publisher().sendMessage('Update window level value',\
+        Publisher.sendMessage('Update window level value',\
                                     (proj.window, proj.level))
 
-        ps.Publisher().sendMessage('Set project name', proj.name)
-        ps.Publisher().sendMessage('Load surface dict',
+        Publisher.sendMessage('Set project name', proj.name)
+        Publisher.sendMessage('Load surface dict',
                                     proj.surface_dict)
-        ps.Publisher().sendMessage('Hide surface items',
+        Publisher.sendMessage('Hide surface items',
                                      proj.surface_dict)
         self.LoadImagedataInfo() # TODO: where do we insert this <<<?
         
-        ps.Publisher().sendMessage('Show content panel')
-        ps.Publisher().sendMessage('Update AUI')
+        Publisher.sendMessage('Show content panel')
+        Publisher.sendMessage('Update AUI')
 
         if len(proj.mask_dict):
             mask_index = len(proj.mask_dict) -1
             for m in proj.mask_dict.values():
-                ps.Publisher().sendMessage('Add mask',
+                Publisher.sendMessage('Add mask',
                                            (m.index, m.name,
                                             m.threshold_range, m.colour))
             self.Slice.current_mask = proj.mask_dict[mask_index]
-            ps.Publisher().sendMessage('Show mask', (mask_index, True))
+            Publisher.sendMessage('Show mask', (mask_index, True))
         else:
             mask_name = const.MASK_NAME_PATTERN % (1,)
             thresh = const.THRESHOLD_RANGE
             colour = const.MASK_COLOUR[0]
 
-            ps.Publisher().sendMessage('Create new mask',
+            Publisher.sendMessage('Create new mask',
                                        (mask_name, thresh, colour))
 
-        ps.Publisher().sendMessage('Load measurement dict',
+        Publisher.sendMessage('Load measurement dict',
                                     proj.measurement_dict)
 
         proj.presets.thresh_ct[_('Custom')] = proj.threshold_range
         
-        ps.Publisher().sendMessage('End busy cursor')
+        Publisher.sendMessage('End busy cursor')
 
     def CreateAnalyzeProject(self, imagedata):
         header = imagedata.get_header()
@@ -441,7 +441,7 @@ class Controller():
         self.Slice.window_width = proj.window
         self.Slice.spacing = header.get_zooms()[:3]
 
-        ps.Publisher().sendMessage('Update threshold limits',
+        Publisher.sendMessage('Update threshold limits',
                                    proj.threshold_range)
 
     def CreateDicomProject(self, dicom, matrix, matrix_filename):
@@ -479,7 +479,7 @@ class Controller():
         matrix, matrix_filename, dicom = self.OpenDicomGroup(group, interval, file_range, gui=True)
         self.CreateDicomProject(dicom, matrix, matrix_filename)
         self.LoadProject()
-        ps.Publisher().sendMessage("Enable state project", True)
+        Publisher.sendMessage("Enable state project", True)
 
     def OpenDicomGroup(self, dicom_group, interval, file_range, gui=True):
         # Retrieve general DICOM headers
@@ -544,7 +544,7 @@ class Controller():
         self.Slice.window_level = wl
         self.Slice.window_width = ww
 
-        ps.Publisher().sendMessage('Update threshold limits', scalar_range)
+        Publisher.sendMessage('Update threshold limits', scalar_range)
 
         return self.matrix, self.filename, dicom
 
@@ -567,7 +567,7 @@ class Controller():
                 default_threshold[1] = max_
             [a,b] = default_threshold
             default_threshold = (a,b)
-        ps.Publisher().sendMessage('Set threshold modes',
+        Publisher.sendMessage('Set threshold modes',
                                 (thresh_modes,default_threshold))
 
     def LoadRaycastingPreset(self, pubsub_evt=None):
@@ -590,11 +590,11 @@ class Controller():
             prj.Project().raycasting_preset = preset
             # Notify volume
             # TODO: Chamar grafico tb!
-            ps.Publisher().sendMessage('Update raycasting preset')
+            Publisher.sendMessage('Update raycasting preset')
         else:
             prj.Project().raycasting_preset = 0
-            ps.Publisher().sendMessage('Update raycasting preset')
-            ps.Publisher().sendMessage("Hide raycasting volume")
+            Publisher.sendMessage('Update raycasting preset')
+            Publisher.sendMessage("Hide raycasting volume")
 
     def SaveRaycastingPreset(self, pubsub_evt):
         preset_name = pubsub_evt.data

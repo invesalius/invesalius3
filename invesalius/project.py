@@ -26,7 +26,7 @@ import tarfile
 import tempfile
 
 import wx
-import wx.lib.pubsub as ps
+from wx.lib.pubsub import pub as Publisher
 import vtk
 
 import constants as const
@@ -184,7 +184,7 @@ class Project(object):
     def SetRaycastPreset(self, label):
         path = os.path.join(RAYCASTING_PRESETS_DIRECTORY, label + '.plist')
         preset = plistlib.readPlist(path)
-        ps.Publisher.sendMessage('Set raycasting preset', preset)
+        Publisher.sendMessage('Set raycasting preset', preset)
 
     def GetMeasuresDict(self):
         measures = {}

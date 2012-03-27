@@ -19,7 +19,7 @@
 import wx
 import sys
 import wx.gizmos as gizmos
-import wx.lib.pubsub as ps
+from wx.lib.pubsub import pub as Publisher
 import wx.lib.splitter as spl
 
 import constants as const
@@ -134,8 +134,8 @@ class InnerPanel(wx.Panel):
         self.SetAutoLayout(1)
 
     def _bind_pubsubevt(self):
-        #ps.Publisher().subscribe(self.ShowDicomPreview, "Load import panel")
-        #ps.Publisher().subscribe(self.GetSelectedImages ,"Selected Import Images")     
+        #Publisher.subscribe(self.ShowDicomPreview, "Load import panel")
+        #Publisher.subscribe(self.GetSelectedImages ,"Selected Import Images")     
         pass
     
     def GetSelectedImages(self, pubsub_evt):
@@ -181,7 +181,7 @@ class InnerPanel(wx.Panel):
             self.LoadDicom(group)
 
     def OnClickCancel(self, evt):
-        #ps.Publisher().sendMessage("Cancel DICOM load")
+        #Publisher.sendMessage("Cancel DICOM load")
         pass
 
     def LoadDicom(self, group):
@@ -199,7 +199,7 @@ class InnerPanel(wx.Panel):
 
         nslices_result = slice_amont / (interval + 1)
         if (nslices_result > 1):
-            #ps.Publisher().sendMessage('Open DICOM group', (group, interval, 
+            #Publisher.sendMessage('Open DICOM group', (group, interval, 
             #                        [self.first_image_selection, self.last_image_selection]))
             pass
         else:
@@ -218,9 +218,9 @@ class TextPanel(wx.Panel):
         self.__bind_pubsub_evt()
 
     def __bind_pubsub_evt(self):
-        #ps.Publisher().subscribe(self.SelectSeries, 'Select series in import panel')
-        ps.Publisher().subscribe(self.Populate, 'Populate tree')
-        ps.Publisher().subscribe(self.SetHostsList, 'Set FindPanel hosts list')
+        #Publisher.subscribe(self.SelectSeries, 'Select series in import panel')
+        Publisher.subscribe(self.Populate, 'Populate tree')
+        Publisher.subscribe(self.SetHostsList, 'Set FindPanel hosts list')
 
     def __bind_events_wx(self):
         self.Bind(wx.EVT_SIZE, self.OnSize)
@@ -405,7 +405,7 @@ class TextPanel(wx.Panel):
         self.hosts = evt_pub.data
 
     def GetHostList(self):
-        ps.Publisher().sendMessage('Get NodesPanel host list')
+        Publisher.sendMessage('Get NodesPanel host list')
         return self.hosts 
 
     def OnSelChanged(self, evt):
@@ -413,7 +413,7 @@ class TextPanel(wx.Panel):
         if self._selected_by_user:
             group = self.tree.GetItemPyData(item)
             if isinstance(group, dcm.DicomGroup):
-                #ps.Publisher().sendMessage('Load group into import panel',
+                #Publisher.sendMessage('Load group into import panel',
                 #                            group)
                 pass
 
@@ -423,7 +423,7 @@ class TextPanel(wx.Panel):
                 my_evt.SetSelectedID(id)
                 self.GetEventHandler().ProcessEvent(my_evt)
 
-                #ps.Publisher().sendMessage('Load patient into import panel',
+                #Publisher.sendMessage('Load patient into import panel',
                 #                            group)
         else:
             parent_id = self.tree.GetItemParent(item)
@@ -449,7 +449,7 @@ class TextPanel(wx.Panel):
                 dn.RunCMove((patient_id, serie_id))
                 #dn.SetSearchWord(self.find_txt.GetValue())
 
-                #ps.Publisher().sendMessage('Populate tree', dn.RunCFind())
+                #Publisher.sendMessage('Populate tree', dn.RunCFind())
 
 
 
@@ -522,10 +522,10 @@ class FindPanel(wx.Panel):
         self._bind_gui_evt()
 
     def __bind_evt(self):
-        ps.Publisher().subscribe(self.SetHostsList, 'Set FindPanel hosts list')
-        #ps.Publisher().subscribe(self.ShowDicomSeries, 'Load dicom preview')
-        #ps.Publisher().subscribe(self.SetDicomSeries, 'Load group into import panel')
-        #ps.Publisher().subscribe(self.SetPatientSeries, 'Load patient into import panel')
+        Publisher.subscribe(self.SetHostsList, 'Set FindPanel hosts list')
+        #Publisher.subscribe(self.ShowDicomSeries, 'Load dicom preview')
+        #Publisher.subscribe(self.SetDicomSeries, 'Load group into import panel')
+        #Publisher.subscribe(self.SetPatientSeries, 'Load patient into import panel')
         pass
 
     def _bind_gui_evt(self):
@@ -545,14 +545,14 @@ class FindPanel(wx.Panel):
                 dn.SetAETitle(self.hosts[0][3])
                 dn.SetSearchWord(self.find_txt.GetValue())
 
-                ps.Publisher().sendMessage('Populate tree', dn.RunCFind())
+                Publisher.sendMessage('Populate tree', dn.RunCFind())
 
 
     def SetHostsList(self, evt_pub):
         self.hosts = evt_pub.data
 
     def GetHostList(self):
-        ps.Publisher().sendMessage('Get NodesPanel host list') 
+        Publisher.sendMessage('Get NodesPanel host list') 
         return self.hosts 
 
 class HostFindPanel(wx.Panel):
@@ -612,7 +612,7 @@ class NodesTree(wx.ListCtrl, CheckListCtrlMixin,listmix.ListCtrlAutoWidthMixin,
         listmix.TextEditMixin.__init__(self)
     
     def OnCheckItem(self, index, flag):
-        ps.Publisher().sendMessage("Check item dict", [index, flag])
+        Publisher.sendMessage("Check item dict", [index, flag])
 
     def OpenEditor(self, col, row):
 
@@ -650,9 +650,9 @@ class NodesPanel(wx.Panel):
 
         self.Bind(wx.EVT_LIST_END_LABEL_EDIT, self.EndEdition, self.tree_node)
 
-        ps.Publisher().subscribe(self.CheckItemDict, "Check item dict")
-        ps.Publisher().subscribe(self.GetHostsList, "Get NodesPanel host list")
-        #ps.Publisher().subscribe(self.UnCheckItemDict, "Uncheck item dict")
+        Publisher.subscribe(self.CheckItemDict, "Check item dict")
+        Publisher.subscribe(self.GetHostsList, "Get NodesPanel host list")
+        #Publisher.subscribe(self.UnCheckItemDict, "Uncheck item dict")
 
 
     def __init_gui(self):
@@ -711,7 +711,7 @@ class NodesPanel(wx.Panel):
         self.sizer = sizer
 
     def GetHostsList(self, pub_evt):
-        ps.Publisher().sendMessage('Set FindPanel hosts list', self.hosts)
+        Publisher.sendMessage('Set FindPanel hosts list', self.hosts)
 
 
     def EndEdition(self, evt):

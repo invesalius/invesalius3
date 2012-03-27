@@ -27,7 +27,7 @@ import vtk
 from vtk.wx.wxVTKRenderWindowInteractor import wxVTKRenderWindowInteractor
 
 import wx
-import wx.lib.pubsub as ps
+from wx.lib.pubsub import pub as Publisher
 
 import constants as const
 import cursor_actors as ca
@@ -229,10 +229,10 @@ class Viewer(wx.Panel):
 
         if state == const.SLICE_STATE_CROSS:
             self.__set_cross_visibility(1)
-            ps.Publisher().sendMessage('Activate ball reference')
+            Publisher.sendMessage('Activate ball reference')
         else:
             self.__set_cross_visibility(0)
-            ps.Publisher().sendMessage('Deactivate ball reference')
+            Publisher.sendMessage('Deactivate ball reference')
 
         if state == const.STATE_WL:
             self.on_wl = True
@@ -322,7 +322,7 @@ class Viewer(wx.Panel):
 
     def OnReleaseRightButton(self, evt, obj):
         self.right_pressed = 0
-        ps.Publisher().sendMessage('Update slice viewer') 
+        Publisher.sendMessage('Update slice viewer') 
  
     def OnLeftClick(self, evt, obj):
         self.left_pressed = 1
@@ -332,7 +332,7 @@ class Viewer(wx.Panel):
 
     def OnReleaseLeftButton(self, evt, obj):
         self.left_pressed = 0
-        ps.Publisher().sendMessage('Update slice viewer')
+        Publisher.sendMessage('Update slice viewer')
 
     def OnWindowLevelMove(self, evt, obj):
         if (self.left_pressed):
@@ -342,7 +342,7 @@ class Viewer(wx.Panel):
             self.acum_achange_level += mouse_y - self.last_y
             self.last_x, self.last_y = mouse_x, mouse_y
 
-            ps.Publisher().sendMessage('Bright and contrast adjustment image',
+            Publisher.sendMessage('Bright and contrast adjustment image',
                 (self.acum_achange_window, self.acum_achange_level))
 
             #self.SetWLText(self.acum_achange_level,
@@ -350,12 +350,12 @@ class Viewer(wx.Panel):
 
             const.WINDOW_LEVEL['Manual'] = (self.acum_achange_window,\
                                            self.acum_achange_level)
-            ps.Publisher().sendMessage('Check window and level other')
-            ps.Publisher().sendMessage('Update window level value',(self.acum_achange_window, 
+            Publisher.sendMessage('Check window and level other')
+            Publisher.sendMessage('Update window level value',(self.acum_achange_window, 
                                                                 self.acum_achange_level))
             #Necessary update the slice plane in the volume case exists
-            ps.Publisher().sendMessage('Update slice viewer')
-            ps.Publisher().sendMessage('Render volume viewer')
+            Publisher.sendMessage('Update slice viewer')
+            Publisher.sendMessage('Render volume viewer')
 
     def OnWindowLevelClick(self, evt, obj):
         self.last_x, self.last_y = self.interactor.GetLastEventPosition()
@@ -364,7 +364,7 @@ class Viewer(wx.Panel):
         window, level = pubsub_evt.data
         self.acum_achange_window, self.acum_achange_level = (window, level)
         self.SetWLText(window, level)
-        ps.Publisher().sendMessage('Update all slice')
+        Publisher.sendMessage('Update all slice')
 
 
     def OnChangeSliceMove(self, evt, obj):
@@ -816,11 +816,11 @@ class Viewer(wx.Panel):
         coord = self.calcultate_scroll_position(position)   
         self.ScrollSlice(coord)
 
-        ps.Publisher().sendMessage('Update cross position', coord_cross)
-        ps.Publisher().sendMessage('Set ball reference position based on bound',
+        Publisher.sendMessage('Update cross position', coord_cross)
+        Publisher.sendMessage('Set ball reference position based on bound',
                                    coord_cross)
-        ps.Publisher().sendMessage('Set camera in volume', coord_cross)
-        ps.Publisher().sendMessage('Render volume viewer')
+        Publisher.sendMessage('Set camera in volume', coord_cross)
+        Publisher.sendMessage('Render volume viewer')
         
         self.interactor.Render()
 
@@ -831,26 +831,26 @@ class Viewer(wx.Panel):
         position = self.slice_data.actor.GetInput().FindPoint(x, y, z)
         coord_cross = self.slice_data.actor.GetInput().GetPoint(position)
         coord = self.calcultate_scroll_position(position)   
-        ps.Publisher().sendMessage('Update cross position', coord_cross)
+        Publisher.sendMessage('Update cross position', coord_cross)
         
         self.ScrollSlice(coord)
         self.interactor.Render()
 
     def ScrollSlice(self, coord):
         if self.orientation == "AXIAL":
-            ps.Publisher().sendMessage(('Set scroll position', 'SAGITAL'),
+            Publisher.sendMessage(('Set scroll position', 'SAGITAL'),
                                        coord[0])
-            ps.Publisher().sendMessage(('Set scroll position', 'CORONAL'),
+            Publisher.sendMessage(('Set scroll position', 'CORONAL'),
                                        coord[1])
         elif self.orientation == "SAGITAL":
-            ps.Publisher().sendMessage(('Set scroll position', 'AXIAL'),
+            Publisher.sendMessage(('Set scroll position', 'AXIAL'),
                                        coord[2])
-            ps.Publisher().sendMessage(('Set scroll position', 'CORONAL'),
+            Publisher.sendMessage(('Set scroll position', 'CORONAL'),
                                        coord[1])
         elif self.orientation == "CORONAL":
-            ps.Publisher().sendMessage(('Set scroll position', 'AXIAL'),
+            Publisher.sendMessage(('Set scroll position', 'AXIAL'),
                                        coord[2])
-            ps.Publisher().sendMessage(('Set scroll position', 'SAGITAL'),
+            Publisher.sendMessage(('Set scroll position', 'SAGITAL'),
                                        coord[0])
 
     def OnZoomMoveRight(self, evt, obj):
@@ -952,61 +952,61 @@ class Viewer(wx.Panel):
         return x, y, z
 
     def __bind_events(self):
-        ps.Publisher().subscribe(self.LoadImagedata,
+        Publisher.subscribe(self.LoadImagedata,
                                  'Load slice to viewer')
-        ps.Publisher().subscribe(self.SetBrushColour,
+        Publisher.subscribe(self.SetBrushColour,
                                  'Change mask colour')
-        ps.Publisher().subscribe(self.UpdateRender,
+        Publisher.subscribe(self.UpdateRender,
                                  'Update slice viewer')
-        ps.Publisher().subscribe(self.ChangeSliceNumber,
+        Publisher.subscribe(self.ChangeSliceNumber,
                                  ('Set scroll position',
                                   self.orientation))
-        ps.Publisher().subscribe(self.__update_cross_position,
+        Publisher.subscribe(self.__update_cross_position,
                                 'Update cross position')
-        ps.Publisher().subscribe(self.Navigation,
+        Publisher.subscribe(self.Navigation,
                                  'Co-registered Points')
         ###
-        ps.Publisher().subscribe(self.ChangeBrushSize,
+        Publisher.subscribe(self.ChangeBrushSize,
                                  'Set edition brush size')
-        ps.Publisher().subscribe(self.ChangeBrushColour,
+        Publisher.subscribe(self.ChangeBrushColour,
                                  'Add mask')
-        ps.Publisher().subscribe(self.ChangeBrushActor,
+        Publisher.subscribe(self.ChangeBrushActor,
                                  'Set brush format')
-        ps.Publisher().subscribe(self.ChangeBrushOperation,
+        Publisher.subscribe(self.ChangeBrushOperation,
                                  'Set edition operation')
 
-        ps.Publisher().subscribe(self.UpdateWindowLevelValue,\
+        Publisher.subscribe(self.UpdateWindowLevelValue,\
                                  'Update window level value')
 
-        #ps.Publisher().subscribe(self.__set_cross_visibility,\
+        #Publisher.subscribe(self.__set_cross_visibility,\
         #                         'Set cross visibility')
         ###
-        ps.Publisher().subscribe(self.__set_layout,
+        Publisher.subscribe(self.__set_layout,
                                 'Set slice viewer layout')
 
-        ps.Publisher().subscribe(self.OnSetInteractorStyle,
+        Publisher.subscribe(self.OnSetInteractorStyle,
                                 'Set slice interaction style')
-        ps.Publisher().subscribe(self.OnCloseProject, 'Close project data')
+        Publisher.subscribe(self.OnCloseProject, 'Close project data')
 
         #####
-        ps.Publisher().subscribe(self.OnShowText,
+        Publisher.subscribe(self.OnShowText,
                                  'Show text actors on viewers')
-        ps.Publisher().subscribe(self.OnHideText,
+        Publisher.subscribe(self.OnHideText,
                                  'Hide text actors on viewers')
-        ps.Publisher().subscribe(self.OnExportPicture,'Export picture to file')
-        ps.Publisher().subscribe(self.SetDefaultCursor, 'Set interactor default cursor')
+        Publisher.subscribe(self.OnExportPicture,'Export picture to file')
+        Publisher.subscribe(self.SetDefaultCursor, 'Set interactor default cursor')
     
-        ps.Publisher().subscribe(self.AddActors, ('Add actors', ORIENTATIONS[self.orientation]))
-        ps.Publisher().subscribe(self.RemoveActors, ('Remove actors', ORIENTATIONS[self.orientation]))
+        Publisher.subscribe(self.AddActors, 'Add actors ' + str(ORIENTATIONS[self.orientation]))
+        Publisher.subscribe(self.RemoveActors, 'Remove actors ' + str(ORIENTATIONS[self.orientation]))
 
-        ps.Publisher().subscribe(self.ReloadActualSlice, 'Reload actual slice')
+        Publisher.subscribe(self.ReloadActualSlice, 'Reload actual slice')
 
 
     def SetDefaultCursor(self, pusub_evt):
         self.interactor.SetCursor(wx.StockCursor(wx.CURSOR_DEFAULT))
     
     def OnExportPicture(self, pubsub_evt):
-        ps.Publisher().sendMessage('Begin busy cursor')
+        Publisher.sendMessage('Begin busy cursor')
         view_prop_list = []
         for slice_data in self.slice_data_list:
             view_prop_list.append(slice_data.box_actor) 
@@ -1055,7 +1055,7 @@ class Viewer(wx.Panel):
             for actor in view_prop_list:
                 self.ren.AddViewProp(actor)
 
-        ps.Publisher().sendMessage('End busy cursor')
+        Publisher.sendMessage('End busy cursor')
 
     def OnShowText(self, pubsub_evt):
         self.ShowTextActors()
@@ -1084,7 +1084,7 @@ class Viewer(wx.Panel):
         self.SetInteractorStyle(state)
         
         if (state != const.SLICE_STATE_EDITOR):
-            ps.Publisher().sendMessage('Set interactor default cursor')
+            Publisher.sendMessage('Set interactor default cursor')
         
     def ChangeBrushOperation(self, pubsub_evt):
         self._brush_cursor_op = pubsub_evt.data
@@ -1342,7 +1342,7 @@ class Viewer(wx.Panel):
     def UpdateSlice3D(self, pos):
         original_orientation = project.Project().original_orientation
         pos = self.scroll.GetThumbPosition()
-        ps.Publisher().sendMessage('Change slice from slice plane',\
+        Publisher.sendMessage('Change slice from slice plane',\
                                    (self.orientation, pos))
                 
     def OnScrollBar(self, evt=None, update3D=True):
@@ -1354,8 +1354,8 @@ class Viewer(wx.Panel):
             # Update other slice's cross according to the new focal point from
             # the actual orientation.
             focal_point = self.cross.GetFocalPoint()
-            ps.Publisher().sendMessage('Update cross position', focal_point)
-            ps.Publisher().sendMessage('Update slice viewer') 
+            Publisher.sendMessage('Update cross position', focal_point)
+            Publisher.sendMessage('Update slice viewer') 
         else:
             self.interactor.Render() 
         if evt:
@@ -1465,7 +1465,7 @@ class Viewer(wx.Panel):
         print x, y, z
         if self.pick.GetViewProp(): 
             self.render_to_add = slice_data.renderer
-            ps.Publisher().sendMessage("Add measurement point",
+            Publisher.sendMessage("Add measurement point",
                     ((x, y,z), const.LINEAR, ORIENTATIONS[self.orientation],
                         slice_number))
             self.interactor.Render()
@@ -1479,7 +1479,7 @@ class Viewer(wx.Panel):
         x, y, z = self.pick.GetPickPosition()
         if self.pick.GetViewProp(): 
             self.render_to_add = slice_data.renderer
-            ps.Publisher().sendMessage("Add measurement point",
+            Publisher.sendMessage("Add measurement point",
                     ((x, y,z), const.ANGULAR, ORIENTATIONS[self.orientation],
                         slice_number))
             self.interactor.Render()

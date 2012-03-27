@@ -20,7 +20,7 @@ import sys
 
 import wx
 import wx.lib.hyperlink as hl
-import wx.lib.pubsub as ps
+from wx.lib.pubsub import pub as Publisher
 
 import constants as const
 import gui.dialogs as dlg
@@ -126,7 +126,7 @@ class InnerTaskPanel(wx.Panel):
 
     def OnButtonNextTask(self, evt):
         if evt:
-            ps.Publisher().sendMessage('Fold export task')
+            Publisher.sendMessage('Fold export task')
             evt.Skip()
 
     def OnLinkNewSurface(self, evt=None):
@@ -161,7 +161,7 @@ class InnerTaskPanel(wx.Panel):
                             fill_holes,
                             keep_largest]
 
-            ps.Publisher().sendMessage('Create surface', surface_data)
+            Publisher.sendMessage('Create surface', surface_data)
             dialog.Destroy()
         if evt:
             evt.Skip()
@@ -346,10 +346,10 @@ class SurfaceTools(wx.Panel):
             self.SelectSeed()
 
     def SelectLargest(self):
-        ps.Publisher().sendMessage('Create surface from largest region')
+        Publisher.sendMessage('Create surface from largest region')
 
     def SplitSurface(self):
-        ps.Publisher().sendMessage('Split surface')
+        Publisher.sendMessage('Split surface')
 
     def SelectSeed(self):
         if self.button_seeds.IsPressed():
@@ -358,12 +358,12 @@ class SurfaceTools(wx.Panel):
             self.EndSeeding()
 
     def StartSeeding(self):
-        ps.Publisher().sendMessage('Enable style', const.VOLUME_STATE_SEED)
-        ps.Publisher().sendMessage('Create surface by seeding - start')
+        Publisher.sendMessage('Enable style', const.VOLUME_STATE_SEED)
+        Publisher.sendMessage('Create surface by seeding - start')
 
     def EndSeeding(self):
-        ps.Publisher().sendMessage('Disable style', const.VOLUME_STATE_SEED)
-        ps.Publisher().sendMessage('Create surface by seeding - end')
+        Publisher.sendMessage('Disable style', const.VOLUME_STATE_SEED)
+        Publisher.sendMessage('Create surface by seeding - end')
 
 
 
@@ -437,12 +437,12 @@ class SurfaceProperties(wx.Panel):
         self.__bind_events()
 
     def __bind_events(self):
-        ps.Publisher().subscribe(self.InsertNewSurface,
+        Publisher.subscribe(self.InsertNewSurface,
                                 'Update surface info in GUI')
-        ps.Publisher().subscribe(self.ChangeSurfaceName,
+        Publisher.subscribe(self.ChangeSurfaceName,
                                 'Change surface name')
-        ps.Publisher().subscribe(self.OnCloseProject, 'Close project data')
-        ps.Publisher().subscribe(self.OnRemoveSurfaces, 'Remove surfaces')
+        Publisher.subscribe(self.OnCloseProject, 'Close project data')
+        Publisher.subscribe(self.OnRemoveSurfaces, 'Remove surfaces')
 
 
     def OnRemoveSurfaces(self, pubsub_evt):
@@ -497,11 +497,11 @@ class SurfaceProperties(wx.Panel):
     def OnComboName(self, evt):
         surface_name = evt.GetString()
         surface_index = evt.GetSelection()
-        ps.Publisher().sendMessage('Change surface selected', surface_index)
+        Publisher.sendMessage('Change surface selected', surface_index)
 
     def OnSelectColour(self, evt):
         colour = [value/255.0 for value in evt.GetValue()]
-        ps.Publisher().sendMessage('Set surface colour',
+        Publisher.sendMessage('Set surface colour',
                                     (self.combo_surface_name.GetSelection(),
                                     colour))
 
@@ -512,7 +512,7 @@ class SurfaceProperties(wx.Panel):
         # This problem is in wx.Widgets and therefore we'll simply overcome it:
         if (wx.Platform == "__WXMAC__"):
             transparency = evt.GetInt()/(0.96*float(MAX_TRANSPARENCY))
-        ps.Publisher().sendMessage('Set surface transparency',
+        Publisher.sendMessage('Set surface transparency',
                                   (self.combo_surface_name.GetSelection(),
                                   transparency))
 

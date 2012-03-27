@@ -4,7 +4,7 @@
 import math
 import random
 
-import wx.lib.pubsub as ps
+from wx.lib.pubsub import pub as Publisher
 import vtk
 
 import constants as const
@@ -32,11 +32,11 @@ class MeasurementManager(object):
         self._bind_events()
 
     def _bind_events(self):
-        ps.Publisher().subscribe(self._add_point, "Add measurement point")
-        ps.Publisher().subscribe(self._change_name, "Change measurement name")
-        ps.Publisher().subscribe(self._remove_measurements, "Remove measurements")
-        ps.Publisher().subscribe(self._set_visibility, "Show measurement")
-        ps.Publisher().subscribe(self._load_measurements, "Load measurement dict")
+        Publisher.subscribe(self._add_point, "Add measurement point")
+        Publisher.subscribe(self._change_name, "Change measurement name")
+        Publisher.subscribe(self._remove_measurements, "Remove measurements")
+        Publisher.subscribe(self._set_visibility, "Show measurement")
+        Publisher.subscribe(self._load_measurements, "Load measurement dict")
 
     def _load_measurements(self, pubsub_evt):
         dict = pubsub_evt.data
@@ -51,16 +51,16 @@ class MeasurementManager(object):
             for point in m.points:
                 x, y, z = point
                 actors = mr.AddPoint(x, y, z)
-                ps.Publisher().sendMessage(("Add actors", m.location),
+                Publisher.sendMessage(("Add actors", m.location),
                     (actors, m.slice_number))
             self.current = None
 
             if not m.is_shown:
                 mr.SetVisibility(False)
                 if m.location == const.SURFACE:
-                    ps.Publisher().sendMessage('Render volume viewer')
+                    Publisher.sendMessage('Render volume viewer')
                 else:
-                    ps.Publisher().sendMessage('Update slice viewer')
+                    Publisher.sendMessage('Update slice viewer')
 
     def _add_point(self, pubsub_evt):
         position = pubsub_evt.data[0]
@@ -103,12 +103,12 @@ class MeasurementManager(object):
                 print "---To REMOVE"
                 actors = self.current[1].GetActors()
                 slice_number = self.current[0].slice_number
-                ps.Publisher().sendMessage(('Remove actors',
+                Publisher.sendMessage(('Remove actors',
                     self.current[0].location), (actors, slice_number))
                 if self.current[0].location == const.SURFACE:
-                    ps.Publisher().sendMessage('Render volume viewer')
+                    Publisher.sendMessage('Render volume viewer')
                 else:
-                    ps.Publisher().sendMessage('Update slice viewer')
+                    Publisher.sendMessage('Update slice viewer')
 
             session = ses.Session()
             session.ChangeProject()
@@ -121,7 +121,7 @@ class MeasurementManager(object):
         x, y, z = position
         actors = mr.AddPoint(x, y, z)
         m.points.append(position)
-        ps.Publisher().sendMessage(("Add actors", location),
+        Publisher.sendMessage(("Add actors", location),
                 (actors, m.slice_number))
 
         if mr.IsComplete():
@@ -139,7 +139,7 @@ class MeasurementManager(object):
                 value = u"%.2f°"% m.value
         
             msg =  'Update measurement info in GUI',
-            ps.Publisher().sendMessage(msg,
+            Publisher.sendMessage(msg,
                     (index, name, colour,
                         type_, location,
                         value))
@@ -156,10 +156,10 @@ class MeasurementManager(object):
             m, mr = self.measures.pop(index)
             actors = mr.GetActors()
             prj.Project().RemoveMeasurement(index)
-            ps.Publisher().sendMessage(('Remove actors', m.location), 
+            Publisher.sendMessage(('Remove actors', m.location), 
                     (actors, m.slice_number))
-        ps.Publisher().sendMessage('Update slice viewer')
-        ps.Publisher().sendMessage('Render volume viewer')
+        Publisher.sendMessage('Update slice viewer')
+        Publisher.sendMessage('Render volume viewer')
 
         session = ses.Session()
         session.ChangeProject()
@@ -170,9 +170,9 @@ class MeasurementManager(object):
         m.is_shown = visibility
         mr.SetVisibility(visibility)
         if m.location == const.SURFACE:
-            ps.Publisher().sendMessage('Render volume viewer')
+            Publisher.sendMessage('Render volume viewer')
         else:
-            ps.Publisher().sendMessage('Update slice viewer')
+            Publisher.sendMessage('Update slice viewer')
 
 
 class Measurement():

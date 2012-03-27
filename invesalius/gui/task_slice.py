@@ -22,7 +22,7 @@ import sys
 import wx
 import wx.lib.hyperlink as hl
 import wx.lib.platebtn as pbtn
-import wx.lib.pubsub as ps
+from wx.lib.pubsub import pub as Publisher
 
 import data.mask as mask
 import data.slice_ as slice_
@@ -155,10 +155,10 @@ class InnerTaskPanel(wx.Panel):
                     options = dlgs.GetOptions()
                 else:
                     return
-            ps.Publisher().sendMessage('Create surface from index',
+            Publisher.sendMessage('Create surface from index',
                                     (self.GetMaskSelected(),
                                     overwrite, algorithm, options))
-            ps.Publisher().sendMessage('Fold surface task')
+            Publisher.sendMessage('Fold surface task')
         else:
             dlg.InexistentMask()
 
@@ -176,7 +176,7 @@ class InnerTaskPanel(wx.Panel):
         if ok:
             mask_name, thresh, colour = dialog.GetValue()
             if mask_name:
-                ps.Publisher().sendMessage('Create new mask',
+                Publisher.sendMessage('Create new mask',
                                             (mask_name, thresh, colour))
 
     def GetMaskSelected(self):
@@ -260,8 +260,8 @@ class InnerFoldPanel(wx.Panel):
         self.fold_panel.Bind(fpb.EVT_CAPTIONBAR, self.OnFoldPressCaption)
 
     def __bind_pubsub_evt(self):
-        ps.Publisher().subscribe(self.OnRetrieveStyle, 'Retrieve task slice style')
-        ps.Publisher().subscribe(self.OnDisableStyle, 'Disable task slice style')
+        Publisher.subscribe(self.OnRetrieveStyle, 'Retrieve task slice style')
+        Publisher.subscribe(self.OnDisableStyle, 'Disable task slice style')
 
     def OnFoldPressCaption(self, evt):
         id = evt.GetTag().GetId()
@@ -269,24 +269,24 @@ class InnerFoldPanel(wx.Panel):
 
         if self.__id_editor == id:
             if closed:
-                ps.Publisher().sendMessage('Disable style', const.SLICE_STATE_EDITOR)
+                Publisher.sendMessage('Disable style', const.SLICE_STATE_EDITOR)
                 self.last_style = None
             else:
-                ps.Publisher().sendMessage('Enable style', const.SLICE_STATE_EDITOR)
+                Publisher.sendMessage('Enable style', const.SLICE_STATE_EDITOR)
                 self.last_style = const.SLICE_STATE_EDITOR
         else:
-            ps.Publisher().sendMessage('Disable style', const.SLICE_STATE_EDITOR)
+            Publisher.sendMessage('Disable style', const.SLICE_STATE_EDITOR)
             self.last_style = None
 
         evt.Skip()
 
     def OnRetrieveStyle(self, pubsub_evt):
         if (self.last_style == const.SLICE_STATE_EDITOR):
-            ps.Publisher().sendMessage('Enable style', const.SLICE_STATE_EDITOR)
+            Publisher.sendMessage('Enable style', const.SLICE_STATE_EDITOR)
 
     def OnDisableStyle(self, pubsub_evt):
         if (self.last_style == const.SLICE_STATE_EDITOR):
-            ps.Publisher().sendMessage('Disable style', const.SLICE_STATE_EDITOR)
+            Publisher.sendMessage('Disable style', const.SLICE_STATE_EDITOR)
 
     def GetMaskSelected(self):
         x= self.mask_prop_panel.GetMaskSelected()
@@ -356,19 +356,19 @@ class MaskProperties(wx.Panel):
 
 
     def __bind_events(self):
-        ps.Publisher().subscribe(self.AddMask, 'Add mask')
+        Publisher.subscribe(self.AddMask, 'Add mask')
         # TODO: Uncomment
-        ps.Publisher().subscribe(self.SetThresholdBounds,
+        Publisher.subscribe(self.SetThresholdBounds,
                                     'Update threshold limits')
-        ps.Publisher().subscribe(self.SetThresholdModes, 'Set threshold modes')
-        ps.Publisher().subscribe(self.SetItemsColour, 'Set GUI items colour')
-        ps.Publisher().subscribe(self.SetThresholdValues,
+        Publisher.subscribe(self.SetThresholdModes, 'Set threshold modes')
+        Publisher.subscribe(self.SetItemsColour, 'Set GUI items colour')
+        Publisher.subscribe(self.SetThresholdValues,
                                  'Set threshold values in gradient')
-        ps.Publisher().subscribe(self.SelectMaskName, 'Select mask name in combo')
-        ps.Publisher().subscribe(self.ChangeMaskName, 'Change mask name')
-        ps.Publisher().subscribe(self.OnRemoveMasks, 'Remove masks')
-        ps.Publisher().subscribe(self.OnCloseProject, 'Close project data')
-        ps.Publisher().subscribe(self.SetThresholdValues2, 'Set threshold values')
+        Publisher.subscribe(self.SelectMaskName, 'Select mask name in combo')
+        Publisher.subscribe(self.ChangeMaskName, 'Change mask name')
+        Publisher.subscribe(self.OnRemoveMasks, 'Remove masks')
+        Publisher.subscribe(self.OnCloseProject, 'Close project data')
+        Publisher.subscribe(self.SetThresholdValues2, 'Set threshold values')
 
     def OnCloseProject(self, pubsub_evt):
         self.CloseProject()
@@ -484,7 +484,7 @@ class MaskProperties(wx.Panel):
     def OnComboName(self, evt):
         mask_name = evt.GetString()
         mask_index = evt.GetSelection()
-        ps.Publisher().sendMessage('Change mask selected', mask_index)
+        Publisher.sendMessage('Change mask selected', mask_index)
 
     def OnComboThresh(self, evt):
         (thresh_min, thresh_max) = Project().threshold_modes[evt.GetString()]
@@ -496,7 +496,7 @@ class MaskProperties(wx.Panel):
     def OnSlideChanged(self, evt):
         thresh_min = self.gradient.GetMinValue()
         thresh_max = self.gradient.GetMaxValue()
-        ps.Publisher().sendMessage('Set threshold values',
+        Publisher.sendMessage('Set threshold values',
                                     (thresh_min, thresh_max))
         session = ses.Session()
         session.ChangeProject()
@@ -504,7 +504,7 @@ class MaskProperties(wx.Panel):
     def OnSlideChanging(self, evt):
         thresh_min = self.gradient.GetMinValue()
         thresh_max = self.gradient.GetMaxValue()
-        ps.Publisher().sendMessage('Changing threshold values',
+        Publisher.sendMessage('Changing threshold values',
                                     (thresh_min, thresh_max))
         session = ses.Session()
         session.ChangeProject()
@@ -512,7 +512,7 @@ class MaskProperties(wx.Panel):
     def OnSelectColour(self, evt):
         colour = evt.GetValue()
         self.gradient.SetColour(colour)
-        ps.Publisher().sendMessage('Change mask colour', colour)
+        Publisher.sendMessage('Change mask colour', colour)
 
 class EditionTools(wx.Panel):
     def __init__(self, parent):
@@ -599,10 +599,10 @@ class EditionTools(wx.Panel):
         self.combo_brush_op.Bind(wx.EVT_COMBOBOX, self.OnComboBrushOp)
 
     def __bind_events(self):
-        ps.Publisher().subscribe(self.SetThresholdBounds,
+        Publisher.subscribe(self.SetThresholdBounds,
                                         'Update threshold limits')
-        ps.Publisher().subscribe(self.ChangeMaskColour, 'Change mask colour')
-        ps.Publisher().subscribe(self.SetGradientColour, 'Add mask')
+        Publisher.subscribe(self.ChangeMaskColour, 'Change mask colour')
+        Publisher.subscribe(self.SetGradientColour, 'Add mask')
 
     def ChangeMaskColour(self, pubsub_evt):
         colour = pubsub_evt.data
@@ -632,7 +632,7 @@ class EditionTools(wx.Panel):
         thresh_min = self.gradient_thresh.GetMinValue()
         thresh_max = self.gradient_thresh.GetMaxValue()
         if self.bind_evt_gradient:
-            ps.Publisher().sendMessage('Set edition threshold values',
+            Publisher.sendMessage('Set edition threshold values',
                                      (thresh_min, thresh_max))
 
     def OnMenu(self, evt):
@@ -646,17 +646,17 @@ class EditionTools(wx.Panel):
 
         self.btn_brush_format.SetBitmap(bitmap[evt.GetId()])
 
-        ps.Publisher().sendMessage('Set brush format', brush[evt.GetId()])
+        Publisher.sendMessage('Set brush format', brush[evt.GetId()])
 
     def OnBrushSize(self, evt):
         """ """
         # FIXME: Using wx.EVT_SPINCTRL in MacOS it doesnt capture changes only
         # in the text ctrl - so we are capturing only changes on text
         # Strangelly this is being called twice
-        ps.Publisher().sendMessage('Set edition brush size',self.spin.GetValue())
+        Publisher.sendMessage('Set edition brush size',self.spin.GetValue())
 
     def OnComboBrushOp(self, evt):
         brush_op_id = evt.GetSelection()
-        ps.Publisher().sendMessage('Set edition operation', brush_op_id)
+        Publisher.sendMessage('Set edition operation', brush_op_id)
 
 

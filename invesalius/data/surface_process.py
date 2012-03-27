@@ -119,8 +119,8 @@ class SurfaceProcess(multiprocessing.Process):
         contour.ComputeScalarsOn()
         contour.ComputeGradientsOn()
         contour.ComputeNormalsOn()
-        contour.AddObserver("ProgressEvent", lambda obj,evt:
-                            self.SendProgress(obj, _("Generating 3D surface...")))
+        #contour.AddObserver("ProgressEvent", lambda obj,evt:
+        #                    self.SendProgress(obj, _("Generating 3D surface...")))
         polydata = contour.GetOutput()
         #else: #mode == "GRAYSCALE":
             #mcubes = vtk.vtkMarchingCubes()

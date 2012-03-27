@@ -22,7 +22,7 @@ import os
 import numpy
 import vtk
 import wx
-import wx.lib.pubsub as ps
+from wx.lib.pubsub import pub as Publisher
 
 import constants as const
 import project as prj
@@ -89,25 +89,25 @@ class Volume():
         self.__bind_events()
 
     def __bind_events(self):
-        ps.Publisher().subscribe(self.OnHideVolume,
+        Publisher.subscribe(self.OnHideVolume,
                                 'Hide raycasting volume')
-        ps.Publisher().subscribe(self.OnUpdatePreset,
+        Publisher.subscribe(self.OnUpdatePreset,
                                 'Update raycasting preset')
-        ps.Publisher().subscribe(self.OnSetCurve,
+        Publisher.subscribe(self.OnSetCurve,
                                 'Set raycasting curve')
-        ps.Publisher().subscribe(self.OnSetWindowLevel,
+        Publisher.subscribe(self.OnSetWindowLevel,
                                 'Set raycasting wwwl')
-        ps.Publisher().subscribe(self.Refresh,
+        Publisher.subscribe(self.Refresh,
                                 'Set raycasting refresh')
-        ps.Publisher().subscribe(self.OnSetRelativeWindowLevel,
+        Publisher.subscribe(self.OnSetRelativeWindowLevel,
                                  'Set raycasting relative window and level')
-        ps.Publisher().subscribe(self.OnEnableTool,
+        Publisher.subscribe(self.OnEnableTool,
                                  'Enable raycasting tool')
-        ps.Publisher().subscribe(self.OnCloseProject, 'Close project data')
-        ps.Publisher().subscribe(self.ChangeBackgroundColour,
+        Publisher.subscribe(self.OnCloseProject, 'Close project data')
+        Publisher.subscribe(self.ChangeBackgroundColour,
                         'Change volume viewer background colour')
 
-        ps.Publisher().subscribe(self.ResetRayCasting, 'Reset Reaycasting')
+        Publisher.subscribe(self.ResetRayCasting, 'Reset Reaycasting')
 
     def ResetRayCasting(self, pub_evt):
         if self.exist:
@@ -121,7 +121,7 @@ class Volume():
     def CloseProject(self):
         #if self.plane:
         #    self.plane = None
-        #    ps.Publisher().sendMessage('Remove surface actor from viewer', self.plane_actor)
+        #    Publisher.sendMessage('Remove surface actor from viewer', self.plane_actor)
         if self.plane:
             self.plane.DestroyObjs()
             del self.plane
@@ -129,8 +129,8 @@ class Volume():
             
         if self.exist:
             self.exist = None
-            ps.Publisher().sendMessage('Remove surface actor from viewer', self.volume)
-            ps.Publisher().sendMessage('Disable volume cut menu')
+            Publisher.sendMessage('Remove surface actor from viewer', self.volume)
+            Publisher.sendMessage('Disable volume cut menu')
 
     def OnLoadVolume(self, pubsub_evt):
         label = pubsub_evt.data
@@ -141,16 +141,16 @@ class Volume():
         self.volume.SetVisibility(0)
         if (self.plane and self.plane_on):
             self.plane.Disable()
-        ps.Publisher().sendMessage('Render volume viewer')
+        Publisher.sendMessage('Render volume viewer')
 
     def OnShowVolume(self, pubsub_evt = None):
         if self.exist:
             self.volume.SetVisibility(1)
             if (self.plane and self.plane_on):
                 self.plane.Enable()
-            ps.Publisher().sendMessage('Render volume viewer')
+            Publisher.sendMessage('Render volume viewer')
         else:
-            ps.Publisher.sendMessage('Load raycasting preset', const.RAYCASTING_LABEL)
+            Publisher.sendMessage('Load raycasting preset', const.RAYCASTING_LABEL)
             self.LoadConfig()
             self.LoadVolume()
             self.exist = 1
@@ -162,15 +162,15 @@ class Volume():
             if self.exist:
                 self.__load_preset()
                 self.volume.SetVisibility(1)
-                #ps.Publisher().sendMessage('Render volume viewer')
+                #Publisher.sendMessage('Render volume viewer')
             else:
                 self.LoadVolume()
                 self.CalculateHistogram()
                 self.exist = 1
                 
             colour = self.GetBackgroundColour()
-            ps.Publisher.sendMessage('Change volume viewer background colour', colour)
-            ps.Publisher.sendMessage('Change volume viewer gui colour', colour)
+            Publisher.sendMessage('Change volume viewer background colour', colour)
+            Publisher.sendMessage('Change volume viewer gui colour', colour)
         
     def __load_preset_config(self):
         self.config = prj.Project().raycasting_preset
@@ -203,14 +203,14 @@ class Volume():
         self.CalculateWWWL()
         ww = self.ww
         wl = self.wl
-        ps.Publisher().sendMessage('Set volume window and level text',
+        Publisher.sendMessage('Set volume window and level text',
                                    (ww, wl))
 
     def OnSetRelativeWindowLevel(self, pubsub_evt):
         diff_wl, diff_ww = pubsub_evt.data
         ww = self.ww + diff_ww
         wl = self.wl + diff_wl
-        ps.Publisher().sendMessage('Set volume window and level text',
+        Publisher.sendMessage('Set volume window and level text',
                                    (ww, wl))
         self.SetWWWL(ww, wl)
         self.ww = ww
@@ -593,7 +593,7 @@ class Volume():
 
         self.exist = 1
 
-        ps.Publisher().sendMessage('Load volume into viewer',
+        Publisher.sendMessage('Load volume into viewer',
                                     (volume, colour, (self.ww, self.wl)))
 
     def OnEnableTool(self, pubsub_evt):
@@ -621,7 +621,7 @@ class Volume():
         accumulate.SetComponentOrigin(image.GetScalarRange()[0], 0, 0)
         accumulate.Update()
         n_image = numpy_support.vtk_to_numpy(accumulate.GetOutput().GetPointData().GetScalars())
-        ps.Publisher().sendMessage('Load histogram', (n_image,
+        Publisher.sendMessage('Load histogram', (n_image,
                                                      image.GetScalarRange()))
 
     def TranslateScale(self, scale, value):
@@ -640,11 +640,11 @@ class CutPlane:
         self.__bind_events()
     
     def __bind_events(self):
-        ps.Publisher().subscribe(self.Reset,
+        Publisher.subscribe(self.Reset,
                                 'Reset Cut Plane')
-        ps.Publisher().subscribe(self.Enable,
+        Publisher.subscribe(self.Enable,
                                 'Enable Cut Plane')
-        ps.Publisher().subscribe(self.Disable,
+        Publisher.subscribe(self.Disable,
                                 'Disable Cut Plane')
             
     def Create(self):
@@ -673,8 +673,8 @@ class CutPlane:
         plane_actor.GetProperty().BackfaceCullingOn()
         plane_actor.GetProperty().SetOpacity(0)
         plane_widget.AddObserver("InteractionEvent", self.Update)
-        ps.Publisher().sendMessage('AppendActor', self.plane_actor)
-        ps.Publisher().sendMessage('Set Widget Interactor', self.plane_widget)
+        Publisher.sendMessage('AppendActor', self.plane_actor)
+        Publisher.sendMessage('Set Widget Interactor', self.plane_widget)
         plane_actor.SetVisibility(1)
         plane_widget.On() 
         self.plane = plane = vtk.vtkPlane()
@@ -697,19 +697,19 @@ class CutPlane:
         self.plane_actor.VisibilityOn()
         self.plane.SetNormal(plane_source.GetNormal())
         self.plane.SetOrigin(plane_source.GetOrigin())
-        ps.Publisher().sendMessage('Render volume viewer', None)
+        Publisher.sendMessage('Render volume viewer', None)
         
     def Enable(self, evt_pubsub=None):
         self.plane_widget.On()
         self.plane_actor.VisibilityOn()
         self.volume_mapper.AddClippingPlane(self.plane)
-        ps.Publisher().sendMessage('Render volume viewer', None)
+        Publisher.sendMessage('Render volume viewer', None)
         
     def Disable(self,evt_pubsub=None):
         self.plane_widget.Off() 
         self.plane_actor.VisibilityOff()
         self.volume_mapper.RemoveClippingPlane(self.plane)
-        ps.Publisher().sendMessage('Render volume viewer', None)
+        Publisher.sendMessage('Render volume viewer', None)
         
     def Reset(self, evt_pubsub=None):
         plane_source = self.plane_source
@@ -721,10 +721,10 @@ class CutPlane:
         self.plane_actor.VisibilityOn() 
         self.plane.SetNormal(self.normal)
         self.plane.SetOrigin(self.origin)
-        ps.Publisher().sendMessage('Render volume viewer', None)  
+        Publisher.sendMessage('Render volume viewer', None)  
         
     def DestroyObjs(self):
-        ps.Publisher().sendMessage('Remove surface actor from viewer', self.plane_actor)
+        Publisher.sendMessage('Remove surface actor from viewer', self.plane_actor)
         self.Disable()
         del self.plane_widget   
         del self.plane_source

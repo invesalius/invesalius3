@@ -25,7 +25,7 @@ import wx
 import wx.lib.hyperlink as hl
 import wx.lib.masked.numctrl
 import wx.lib.platebtn as pbtn
-import wx.lib.pubsub as ps
+from wx.lib.pubsub import pub as Publisher
 
 import data.bases as db
 import data.co_registration as dcr
@@ -286,8 +286,8 @@ class InnerTaskPanel(wx.Panel):
         self.button_getpoint.SetToolTip(tooltip)
         
     def __bind_events(self):
-        ps.Publisher().subscribe(self.__update_points_img, 'Update cross position')
-        ps.Publisher().subscribe(self.__update_points_plh, 'Update plh position')
+        Publisher.subscribe(self.__update_points_img, 'Update cross position')
+        Publisher.subscribe(self.__update_points_plh, 'Update plh position')
          
     def __update_points_img(self, pubsub_evt):
         x, y, z = pubsub_evt.data[1]
@@ -355,7 +355,7 @@ class InnerTaskPanel(wx.Panel):
             self.N, self.q2, self.Ninv = db.Bases(self.coord1b, self.coord2b, self.coord3b).Basecreation()
                 
         if self.aux_plh_ref1 == 0 or self.aux_plh_ref2 == 0 or self.aux_plh_ref3 == 0:
-            ps.Publisher().sendMessage('Update plh position', coord)         
+            Publisher.sendMessage('Update plh position', coord)         
    
     def Coordinates(self):
         #Get Polhemus points for base creation       

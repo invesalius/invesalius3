@@ -18,7 +18,7 @@
 #--------------------------------------------------------------------------
 import wx
 import wx.gizmos as gizmos
-import wx.lib.pubsub as ps
+from wx.lib.pubsub import pub as Publisher
 import wx.lib.splitter as spl
 
 import constants as const
@@ -126,8 +126,8 @@ class InnerPanel(wx.Panel):
         self.SetAutoLayout(1)
 
     def _bind_pubsubevt(self):
-        ps.Publisher().subscribe(self.ShowDicomPreview, "Load import panel")
-        ps.Publisher().subscribe(self.GetSelectedImages ,"Selected Import Images")  
+        Publisher.subscribe(self.ShowDicomPreview, "Load import panel")
+        Publisher.subscribe(self.GetSelectedImages ,"Selected Import Images")  
 
     def GetSelectedImages(self, pubsub_evt):
         self.first_image_selection = pubsub_evt.data[0]
@@ -171,7 +171,7 @@ class InnerPanel(wx.Panel):
             self.LoadDicom(group)
 
     def OnClickCancel(self, evt):
-        ps.Publisher().sendMessage("Cancel DICOM load")
+        Publisher.sendMessage("Cancel DICOM load")
 
     def LoadDicom(self, group):
         interval = self.combo_interval.GetSelection()
@@ -187,7 +187,7 @@ class InnerPanel(wx.Panel):
 
         nslices_result = slice_amont / (interval + 1)
         if (nslices_result > 1):
-            ps.Publisher().sendMessage('Open DICOM group', (group, interval, 
+            Publisher.sendMessage('Open DICOM group', (group, interval, 
                                     [self.first_image_selection, self.last_image_selection]))
         else:
             dlg.MissingFilesForReconstruction()
@@ -205,7 +205,7 @@ class TextPanel(wx.Panel):
         self.__bind_pubsub_evt()
 
     def __bind_pubsub_evt(self):
-        ps.Publisher().subscribe(self.SelectSeries, 'Select series in import panel')
+        Publisher.subscribe(self.SelectSeries, 'Select series in import panel')
 
     def __bind_events_wx(self):
         self.Bind(wx.EVT_SIZE, self.OnSize)
@@ -312,7 +312,7 @@ class TextPanel(wx.Panel):
         if self._selected_by_user:
             group = self.tree.GetItemPyData(item)
             if isinstance(group, dcm.DicomGroup):
-                ps.Publisher().sendMessage('Load group into import panel',
+                Publisher.sendMessage('Load group into import panel',
                                             group)
 
             elif isinstance(group, dcm.PatientGroup):
@@ -321,7 +321,7 @@ class TextPanel(wx.Panel):
                 my_evt.SetSelectedID(id)
                 self.GetEventHandler().ProcessEvent(my_evt)
 
-                ps.Publisher().sendMessage('Load patient into import panel',
+                Publisher.sendMessage('Load patient into import panel',
                                             group)
         else:
             parent_id = self.tree.GetItemParent(item)
@@ -421,9 +421,9 @@ class SeriesPanel(wx.Panel):
         self._bind_gui_evt()
 
     def __bind_evt(self):
-        ps.Publisher().subscribe(self.ShowDicomSeries, 'Load dicom preview')
-        ps.Publisher().subscribe(self.SetDicomSeries, 'Load group into import panel')
-        ps.Publisher().subscribe(self.SetPatientSeries, 'Load patient into import panel')
+        Publisher.subscribe(self.ShowDicomSeries, 'Load dicom preview')
+        Publisher.subscribe(self.SetDicomSeries, 'Load group into import panel')
+        Publisher.subscribe(self.SetPatientSeries, 'Load patient into import panel')
 
     def _bind_gui_evt(self):
         self.serie_preview.Bind(dpp.EVT_CLICK_SERIE, self.OnSelectSerie)
@@ -487,9 +487,9 @@ class SlicePanel(wx.Panel):
         self.__bind_evt()
 
     def __bind_evt(self):
-        ps.Publisher().subscribe(self.ShowDicomSeries, 'Load dicom preview')
-        ps.Publisher().subscribe(self.SetDicomSeries, 'Load group into import panel')
-        ps.Publisher().subscribe(self.SetPatientSeries, 'Load patient into import panel')
+        Publisher.subscribe(self.ShowDicomSeries, 'Load dicom preview')
+        Publisher.subscribe(self.SetDicomSeries, 'Load group into import panel')
+        Publisher.subscribe(self.SetPatientSeries, 'Load patient into import panel')
 
     def __init_gui(self):
         self.SetBackgroundColour((255,255,255))

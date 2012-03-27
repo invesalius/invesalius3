@@ -26,7 +26,7 @@ import numpy
 import wx
 import vtk
 from vtk.wx.wxVTKRenderWindowInteractor import wxVTKRenderWindowInteractor
-import wx.lib.pubsub as ps
+from wx.lib.pubsub import pub as Publisher
 
 import constants as const
 import data.bases as bases
@@ -111,75 +111,74 @@ class Viewer(wx.Panel):
         self.added_actor = 0
 
     def __bind_events(self):
-        ps.Publisher().subscribe(self.LoadActor,
+        Publisher.subscribe(self.LoadActor,
                                  'Load surface actor into viewer')
-        ps.Publisher().subscribe(self.RemoveActor,
+        Publisher.subscribe(self.RemoveActor,
                                 'Remove surface actor from viewer')
-        ps.Publisher().subscribe(self.UpdateRender,
+        Publisher.subscribe(self.UpdateRender,
                                  'Render volume viewer')
-        ps.Publisher().subscribe(self.ChangeBackgroundColour,
+        Publisher.subscribe(self.ChangeBackgroundColour,
                         'Change volume viewer background colour')
         # Raycating - related
-        ps.Publisher().subscribe(self.LoadVolume,
+        Publisher.subscribe(self.LoadVolume,
                                  'Load volume into viewer')
-        ps.Publisher().subscribe(self.OnSetWindowLevelText,
+        Publisher.subscribe(self.OnSetWindowLevelText,
                             'Set volume window and level text')
-        ps.Publisher().subscribe(self.OnHideRaycasting,
+        Publisher.subscribe(self.OnHideRaycasting,
                                 'Hide raycasting volume')
-        ps.Publisher().subscribe(self.OnShowRaycasting,
+        Publisher.subscribe(self.OnShowRaycasting,
                                 'Update raycasting preset')
         ###
-        ps.Publisher().subscribe(self.AppendActor,'AppendActor')
-        ps.Publisher().subscribe(self.SetWidgetInteractor, 
+        Publisher.subscribe(self.AppendActor,'AppendActor')
+        Publisher.subscribe(self.SetWidgetInteractor, 
                                 'Set Widget Interactor')
-        ps.Publisher().subscribe(self.OnSetViewAngle,
+        Publisher.subscribe(self.OnSetViewAngle,
                                 'Set volume view angle')
 
-        ps.Publisher().subscribe(self.OnDisableBrightContrast,
-                                 ('Set interaction mode',
-                                  const.MODE_SLICE_EDITOR))
+        Publisher.subscribe(self.OnDisableBrightContrast,
+                                 'Set interaction mode '+
+                                  str(const.MODE_SLICE_EDITOR))
 
-        ps.Publisher().subscribe(self.OnExportSurface, 'Export surface to file')
+        Publisher.subscribe(self.OnExportSurface, 'Export surface to file')
 
-        ps.Publisher().subscribe(self.LoadSlicePlane, 'Load slice plane')
+        Publisher.subscribe(self.LoadSlicePlane, 'Load slice plane')
 
-        ps.Publisher().subscribe(self.ResetCamClippingRange, 'Reset cam clipping range')
-        ps.Publisher().subscribe(self.SetVolumeCamera, 'Set camera in volume')
+        Publisher.subscribe(self.ResetCamClippingRange, 'Reset cam clipping range')
+        Publisher.subscribe(self.SetVolumeCamera, 'Set camera in volume')
 
-        ps.Publisher().subscribe(self.OnEnableStyle, 'Enable style')
-        ps.Publisher().subscribe(self.OnDisableStyle, 'Disable style')
+        Publisher.subscribe(self.OnEnableStyle, 'Enable style')
+        Publisher.subscribe(self.OnDisableStyle, 'Disable style')
 
-        ps.Publisher().subscribe(self.OnHideText,
+        Publisher.subscribe(self.OnHideText,
                                  'Hide text actors on viewers')
 
-        ps.Publisher().subscribe(self.AddActors, ('Add actors', const.SURFACE))
-        ps.Publisher().subscribe(self.RemoveActors, ('Remove actors',
-            const.SURFACE))
+        Publisher.subscribe(self.AddActors, 'Add actors ' + str(const.SURFACE))
+        Publisher.subscribe(self.RemoveActors, 'Remove actors ' + str(const.SURFACE))
 
-        ps.Publisher().subscribe(self.OnShowText,
+        Publisher.subscribe(self.OnShowText,
                                  'Show text actors on viewers')
-        ps.Publisher().subscribe(self.OnCloseProject, 'Close project data')
+        Publisher.subscribe(self.OnCloseProject, 'Close project data')
 
-        ps.Publisher().subscribe(self.RemoveAllActor, 'Remove all volume actors')
+        Publisher.subscribe(self.RemoveAllActor, 'Remove all volume actors')
         
-        ps.Publisher().subscribe(self.OnExportPicture,'Export picture to file')
+        Publisher.subscribe(self.OnExportPicture,'Export picture to file')
 
-        ps.Publisher().subscribe(self.OnStartSeed,'Create surface by seeding - start')
-        ps.Publisher().subscribe(self.OnEndSeed,'Create surface by seeding - end')
+        Publisher.subscribe(self.OnStartSeed,'Create surface by seeding - start')
+        Publisher.subscribe(self.OnEndSeed,'Create surface by seeding - end')
 
-        ps.Publisher().subscribe(self.ActivateBallReference,
+        Publisher.subscribe(self.ActivateBallReference,
                 'Activate ball reference')
-        ps.Publisher().subscribe(self.DeactivateBallReference,
+        Publisher.subscribe(self.DeactivateBallReference,
                 'Deactivate ball reference')
-        ps.Publisher().subscribe(self.SetBallReferencePosition,
+        Publisher.subscribe(self.SetBallReferencePosition,
                 'Set ball reference position')
-        ps.Publisher().subscribe(self.SetBallReferencePositionBasedOnBound,
+        Publisher.subscribe(self.SetBallReferencePositionBasedOnBound,
                 'Set ball reference position based on bound')
-        ps.Publisher().subscribe(self.SetStereoMode, 'Set stereo mode')
+        Publisher.subscribe(self.SetStereoMode, 'Set stereo mode')
     
-        ps.Publisher().subscribe(self.Reposition3DPlane, 'Reposition 3D Plane')
+        Publisher.subscribe(self.Reposition3DPlane, 'Reposition 3D Plane')
         
-        ps.Publisher().subscribe(self.RemoveVolume, 'Remove Volume')
+        Publisher.subscribe(self.RemoveVolume, 'Remove Volume')
 
 
 
@@ -249,11 +248,11 @@ class Viewer(wx.Panel):
         self.seed_points = []
     
     def OnEndSeed(self, pubsub_evt):
-        ps.Publisher().sendMessage("Create surface from seeds",
+        Publisher.sendMessage("Create surface from seeds",
                                     self.seed_points) 
 
     def OnExportPicture(self, pubsub_evt):
-        ps.Publisher().sendMessage('Begin busy cursor')
+        Publisher.sendMessage('Begin busy cursor')
         id, filename, filetype = pubsub_evt.data
         if id == const.VOLUME:
             if filetype == const.FILETYPE_POV:
@@ -289,7 +288,7 @@ class Viewer(wx.Panel):
                 writer.SetInput(image)
                 writer.SetFileName(filename)
                 writer.Write()
-        ps.Publisher().sendMessage('End busy cursor')
+        Publisher.sendMessage('End busy cursor')
 
 
  
@@ -301,7 +300,7 @@ class Viewer(wx.Panel):
             self.slice_plane.Disable()
             self.slice_plane.DeletePlanes()
             del self.slice_plane
-            ps.Publisher().sendMessage('Uncheck image plane menu')
+            Publisher.sendMessage('Uncheck image plane menu')
             self.mouse_pressed = 0
             self.on_wl = False
             self.slice_plane = 0
@@ -499,9 +498,9 @@ class Viewer(wx.Panel):
             diff_x = mouse_x - self.last_x
             diff_y = mouse_y - self.last_y
             self.last_x, self.last_y = mouse_x, mouse_y
-            ps.Publisher().sendMessage('Set raycasting relative window and level',
+            Publisher.sendMessage('Set raycasting relative window and level',
                 (diff_x, diff_y))
-            ps.Publisher().sendMessage('Refresh raycasting widget points', None)
+            Publisher.sendMessage('Refresh raycasting widget points', None)
             self.interactor.Render()
 
     def OnWindowLevelClick(self, obj, evt):
@@ -655,7 +654,7 @@ class Viewer(wx.Panel):
     def RemoveAllActor(self, pubsub_evt):
         utils.debug("RemoveAllActor")
         self.ren.RemoveAllProps()
-        ps.Publisher().sendMessage('Render volume viewer')
+        Publisher.sendMessage('Render volume viewer')
 
         
     def LoadSlicePlane(self, pubsub_evt):
@@ -775,9 +774,9 @@ class Viewer(wx.Panel):
                 # m = self.measures[-1]
                 # m.AddPoint(x, y, z)
                 # if m.IsComplete():
-                    # ps.Publisher().sendMessage("Add measure to list", 
+                    # Publisher.sendMessage("Add measure to list", 
                             # (u"3D", _(u"%.3f mm" % m.GetValue())))
-            ps.Publisher().sendMessage("Add measurement point",
+            Publisher.sendMessage("Add measurement point",
                     ((x, y,z), const.LINEAR, const.SURFACE))
             self.interactor.Render()
 
@@ -802,11 +801,11 @@ class Viewer(wx.Panel):
                     # location = u"3D"
                     # value = u"%.2f˚"% m.GetValue()
                     # msg =  'Update measurement info in GUI',
-                    # ps.Publisher().sendMessage(msg,
+                    # Publisher.sendMessage(msg,
                                                # (index, name, colour,
                                                 # type_, location,
                                                 # value))
-            ps.Publisher().sendMessage("Add measurement point",
+            Publisher.sendMessage("Add measurement point",
                     ((x, y,z), const.ANGULAR, const.SURFACE))
             self.interactor.Render()
 
@@ -837,15 +836,15 @@ class SlicePlane:
         self.__bind_evt()
 
     def __bind_evt(self):
-        ps.Publisher().subscribe(self.Enable, 'Enable plane')
-        ps.Publisher().subscribe(self.Disable, 'Disable plane')
-        ps.Publisher().subscribe(self.ChangeSlice, 'Change slice from slice plane')
-        ps.Publisher().subscribe(self.UpdateAllSlice, 'Update all slice')
+        Publisher.subscribe(self.Enable, 'Enable plane')
+        Publisher.subscribe(self.Disable, 'Disable plane')
+        Publisher.subscribe(self.ChangeSlice, 'Change slice from slice plane')
+        Publisher.subscribe(self.UpdateAllSlice, 'Update all slice')
 
     def Create(self):
         plane_x = self.plane_x = vtk.vtkImagePlaneWidget()
         plane_x.InteractionOff()
-        ps.Publisher().sendMessage('Input Image in the widget', 
+        Publisher.sendMessage('Input Image in the widget', 
                                                 (plane_x, 'SAGITAL'))
         plane_x.SetPlaneOrientationToXAxes()
         plane_x.TextureVisibilityOn()
@@ -857,7 +856,7 @@ class SlicePlane:
 
         plane_y = self.plane_y = vtk.vtkImagePlaneWidget()
         plane_y.DisplayTextOff()
-        ps.Publisher().sendMessage('Input Image in the widget', 
+        Publisher.sendMessage('Input Image in the widget', 
                                                 (plane_y, 'CORONAL'))
         plane_y.SetPlaneOrientationToYAxes()
         plane_y.TextureVisibilityOn()
@@ -870,7 +869,7 @@ class SlicePlane:
 
         plane_z = self.plane_z = vtk.vtkImagePlaneWidget()
         plane_z.InteractionOff()
-        ps.Publisher().sendMessage('Input Image in the widget', 
+        Publisher.sendMessage('Input Image in the widget', 
                                                 (plane_z, 'AXIAL'))
         plane_z.SetPlaneOrientationToZAxes()
         plane_z.TextureVisibilityOn()
@@ -900,9 +899,9 @@ class SlicePlane:
         selected_prop2 = plane_y.GetSelectedPlaneProperty()           
         selected_prop2.SetColor(0, 1, 0)
 
-        ps.Publisher().sendMessage('Set Widget Interactor', plane_x)
-        ps.Publisher().sendMessage('Set Widget Interactor', plane_y)
-        ps.Publisher().sendMessage('Set Widget Interactor', plane_z)
+        Publisher.sendMessage('Set Widget Interactor', plane_x)
+        Publisher.sendMessage('Set Widget Interactor', plane_y)
+        Publisher.sendMessage('Set Widget Interactor', plane_z)
 
         self.Render()
 
@@ -916,13 +915,13 @@ class SlicePlane:
             elif(label == "Sagital"):
                 self.plane_x.On()
         
-            ps.Publisher().sendMessage('Reposition 3D Plane', label)
+            Publisher.sendMessage('Reposition 3D Plane', label)
 
         else:
             self.plane_z.On()
             self.plane_x.On()
             self.plane_y.On()
-            ps.Publisher().sendMessage('Set volume view angle', const.VOL_ISO)
+            Publisher.sendMessage('Set volume view angle', const.VOL_ISO)
         self.Render()
 
     def Disable(self, evt_pubsub=None):
@@ -942,25 +941,25 @@ class SlicePlane:
         self.Render()
 
     def Render(self):
-        ps.Publisher().sendMessage('Render volume viewer')    
+        Publisher.sendMessage('Render volume viewer')    
 
     def ChangeSlice(self, pubsub_evt = None):
         orientation, number = pubsub_evt.data
 
         if  orientation == "CORONAL" and self.plane_y.GetEnabled():
-            ps.Publisher().sendMessage('Update slice 3D', (self.plane_y,orientation))
+            Publisher.sendMessage('Update slice 3D', (self.plane_y,orientation))
             self.Render()
         elif orientation == "SAGITAL" and self.plane_x.GetEnabled():
-            ps.Publisher().sendMessage('Update slice 3D', (self.plane_x,orientation))
+            Publisher.sendMessage('Update slice 3D', (self.plane_x,orientation))
             self.Render()
         elif orientation == 'AXIAL' and self.plane_z.GetEnabled() :
-            ps.Publisher().sendMessage('Update slice 3D', (self.plane_z,orientation))
+            Publisher.sendMessage('Update slice 3D', (self.plane_z,orientation))
             self.Render()
 
     def UpdateAllSlice(self, pubsub_evt):
-        ps.Publisher().sendMessage('Update slice 3D', (self.plane_y,"CORONAL"))
-        ps.Publisher().sendMessage('Update slice 3D', (self.plane_x,"SAGITAL"))
-        ps.Publisher().sendMessage('Update slice 3D', (self.plane_z,"AXIAL"))
+        Publisher.sendMessage('Update slice 3D', (self.plane_y,"CORONAL"))
+        Publisher.sendMessage('Update slice 3D', (self.plane_x,"SAGITAL"))
+        Publisher.sendMessage('Update slice 3D', (self.plane_z,"AXIAL"))
                
 
     def DeletePlanes(self):

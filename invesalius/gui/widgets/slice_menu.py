@@ -22,7 +22,7 @@
 import sys
 
 import wx
-import wx.lib.pubsub as ps
+from wx.lib.pubsub import pub as Publisher
 import constants as const
 
 class SliceMenu(wx.Menu):
@@ -116,8 +116,8 @@ class SliceMenu(wx.Menu):
         self.__bind_events()
 
     def __bind_events(self):
-        ps.Publisher().subscribe(self.CheckWindowLevelOther, 'Check window and level other')
-        ps.Publisher().subscribe(self.FirstItemSelect, 'Select first item from slice menu')
+        Publisher.subscribe(self.CheckWindowLevelOther, 'Check window and level other')
+        Publisher.subscribe(self.FirstItemSelect, 'Select first item from slice menu')
     
     def FirstItemSelect(self, pusub_evt):
         
@@ -143,28 +143,28 @@ class SliceMenu(wx.Menu):
         if(key in const.WINDOW_LEVEL.keys()):
             print "a"
             window, level = const.WINDOW_LEVEL[key]
-            ps.Publisher().sendMessage('Bright and contrast adjustment image',
+            Publisher.sendMessage('Bright and contrast adjustment image',
                     (window, level))
-            ps.Publisher().sendMessage('Update window level value',\
+            Publisher.sendMessage('Update window level value',\
                (window, level))
-            ps.Publisher().sendMessage('Update window and level text',\
+            Publisher.sendMessage('Update window and level text',\
                            "WL: %d  WW: %d"%(level, window))
-            ps.Publisher().sendMessage('Update slice viewer')
+            Publisher.sendMessage('Update slice viewer')
 
             #Necessary update the slice plane in the volume case exists
-            ps.Publisher().sendMessage('Render volume viewer')
+            Publisher.sendMessage('Render volume viewer')
 
         elif(key in const.SLICE_COLOR_TABLE.keys()):
             print "b"
             values = const.SLICE_COLOR_TABLE[key]
-            ps.Publisher().sendMessage('Change colour table from background image', values)
-            ps.Publisher().sendMessage('Update slice viewer')
+            Publisher.sendMessage('Change colour table from background image', values)
+            Publisher.sendMessage('Update slice viewer')
 
         elif(key in const.IMAGE_TILING.keys()):
             print "c"
             values = const.IMAGE_TILING[key]
-            ps.Publisher().sendMessage('Set slice viewer layout', values)
-            ps.Publisher().sendMessage('Update slice viewer')
+            Publisher.sendMessage('Set slice viewer layout', values)
+            Publisher.sendMessage('Update slice viewer')
 
         evt.Skip()
 

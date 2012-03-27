@@ -24,7 +24,8 @@ import sys
 from threading import Thread
 import time
 
-import wx.lib.pubsub as ps
+#import wx.lib.pubsub as ps
+from wx.lib.pubsub import pub as Publisher
 
 from utils import Singleton, debug
 
@@ -38,7 +39,7 @@ class Session(object):
 
         ws = self.ws = WriteSession(self)
         ws.start()
-        ps.Publisher().subscribe(self.StopRecording, "Stop Config Recording")
+        Publisher.subscribe(self.StopRecording, "Stop Config Recording")
 
     def CreateItens(self):
         import constants as const
@@ -117,7 +118,7 @@ class Session(object):
     def CreateProject(self, filename):
         import constants as const
         debug("Session.CreateProject")
-        ps.Publisher().sendMessage('Begin busy cursor')
+        Publisher.sendMessage('Begin busy cursor')
         # Set session info
         self.project_path = (self.tempdir, filename)
         self.project_status = const.PROJ_NEW

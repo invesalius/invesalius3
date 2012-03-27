@@ -19,7 +19,7 @@
 
 import wx
 import wx.lib.foldpanelbar as fpb
-import wx.lib.pubsub as ps
+from wx.lib.pubsub import pub as Publisher
 
 import constants as const
 import data_notebook as nb
@@ -139,7 +139,7 @@ class LowerTaskPanel(wx.Panel):
         col = style.GetFirstColour()
         self.enable_items.append(item)
 
-        fold_panel.AddFoldPanelWindow(item, nb.NotebookPanel(item), Spacing= 0,
+        fold_panel.AddFoldPanelWindow(item, nb.NotebookPanel(item), #Spacing= 0,
                                       leftSpacing=0, rightSpacing=0)
         fold_panel.Expand(fold_panel.GetFoldPanel(0))
 
@@ -161,7 +161,7 @@ class LowerTaskPanel(wx.Panel):
 
 
     def __bind_events(self):
-        ps.Publisher().subscribe(self.OnEnableState, "Enable state project")
+        Publisher.subscribe(self.OnEnableState, "Enable state project")
 
     def OnEnableState(self, pubsub_evt):
         state = pubsub_evt.data
@@ -229,7 +229,7 @@ class UpperTaskPanel(wx.Panel):
             # Add panel to FoldPanel
             fold_panel.AddFoldPanelWindow(item,
                                           panel(item),
-                                          Spacing= 0,
+                                          #Spacing= 0,
                                           leftSpacing=0,
                                           rightSpacing=0)
 
@@ -254,10 +254,10 @@ class UpperTaskPanel(wx.Panel):
 
     def __bind_events(self):
         self.fold_panel.Bind(fpb.EVT_CAPTIONBAR, self.OnFoldPressCaption)
-        ps.Publisher().subscribe(self.OnEnableState, "Enable state project")
-        ps.Publisher().subscribe(self.OnOverwrite, 'Create surface from index')
-        ps.Publisher().subscribe(self.OnFoldSurface, 'Fold surface task')
-        ps.Publisher().subscribe(self.OnFoldExport, 'Fold export task')
+        Publisher.subscribe(self.OnEnableState, "Enable state project")
+        Publisher.subscribe(self.OnOverwrite, 'Create surface from index')
+        Publisher.subscribe(self.OnFoldSurface, 'Fold surface task')
+        Publisher.subscribe(self.OnFoldExport, 'Fold export task')
 
     def OnOverwrite(self, pubsub_evt):
         self.overwrite = pubsub_evt.data[1]
@@ -291,12 +291,12 @@ class UpperTaskPanel(wx.Panel):
         closed = evt.GetFoldStatus()
 
         if id == self.__id_slice:
-            ps.Publisher().sendMessage('Retrieve task slice style')
-            ps.Publisher().sendMessage('Fold mask page')
+            Publisher.sendMessage('Retrieve task slice style')
+            Publisher.sendMessage('Fold mask page')
         elif id == self.__id_surface:
-            ps.Publisher().sendMessage('Fold surface page')
+            Publisher.sendMessage('Fold surface page')
         else:
-            ps.Publisher().sendMessage('Disable task slice style')
+            Publisher.sendMessage('Disable task slice style')
 
 
         evt.Skip()

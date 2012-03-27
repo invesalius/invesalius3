@@ -21,7 +21,7 @@ import wx
 import wx.lib.embeddedimage as emb
 import wx.lib.hyperlink as hl
 import wx.lib.platebtn as pbtn
-import wx.lib.pubsub as ps 
+from wx.lib.pubsub import pub as Publisher
 
 import constants
 
@@ -121,11 +121,11 @@ class InnerTaskPanel(wx.Panel):
         print "TODO: Send Signal - Add text annotation (both 2d and 3d)"
 
     def OnLinkLinearMeasure(self):
-        ps.Publisher().sendMessage('Enable style',
+        Publisher.sendMessage('Enable style',
                 constants.STATE_MEASURE_DISTANCE)
 
     def OnLinkAngularMeasure(self):
-        ps.Publisher().sendMessage('Enable style',
+        Publisher.sendMessage('Enable style',
                 constants.STATE_MEASURE_ANGLE)
 
     def OnButton(self, evt):

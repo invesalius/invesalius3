@@ -23,7 +23,7 @@ import plistlib
 import random
 
 import vtk
-import wx.lib.pubsub as ps
+from wx.lib.pubsub import pub as Publisher
 
 import constants as const
 import imagedata_utils as iu
@@ -107,27 +107,27 @@ class SurfaceManager():
         self.__bind_events()
 
     def __bind_events(self):
-        ps.Publisher().subscribe(self.AddNewActor, 'Create surface')
-        ps.Publisher().subscribe(self.SetActorTransparency,
+        Publisher.subscribe(self.AddNewActor, 'Create surface')
+        Publisher.subscribe(self.SetActorTransparency,
                                  'Set surface transparency')
-        ps.Publisher().subscribe(self.SetActorColour,
+        Publisher.subscribe(self.SetActorColour,
                                  'Set surface colour')
 
-        ps.Publisher().subscribe(self.OnChangeSurfaceName, 'Change surface name')
-        ps.Publisher().subscribe(self.OnShowSurface, 'Show surface')
-        ps.Publisher().subscribe(self.OnExportSurface,'Export surface to file')
-        ps.Publisher().subscribe(self.OnLoadSurfaceDict, 'Load surface dict')
-        ps.Publisher().subscribe(self.OnCloseProject, 'Close project data')
-        ps.Publisher().subscribe(self.OnSelectSurface, 'Change surface selected')
+        Publisher.subscribe(self.OnChangeSurfaceName, 'Change surface name')
+        Publisher.subscribe(self.OnShowSurface, 'Show surface')
+        Publisher.subscribe(self.OnExportSurface,'Export surface to file')
+        Publisher.subscribe(self.OnLoadSurfaceDict, 'Load surface dict')
+        Publisher.subscribe(self.OnCloseProject, 'Close project data')
+        Publisher.subscribe(self.OnSelectSurface, 'Change surface selected')
         #----
-        ps.Publisher().subscribe(self.OnSplitSurface, 'Split surface')
-        ps.Publisher().subscribe(self.OnLargestSurface,
+        Publisher.subscribe(self.OnSplitSurface, 'Split surface')
+        Publisher.subscribe(self.OnLargestSurface,
                                 'Create surface from largest region')
-        ps.Publisher().subscribe(self.OnSeedSurface, "Create surface from seeds")
+        Publisher.subscribe(self.OnSeedSurface, "Create surface from seeds")
 
-        ps.Publisher().subscribe(self.OnDuplicate, "Duplicate surfaces")
-        ps.Publisher().subscribe(self.OnRemove,"Remove surfaces")
-        ps.Publisher().subscribe(self.UpdateSurfaceInterpolation, 'Update Surface Interpolation')
+        Publisher.subscribe(self.OnDuplicate, "Duplicate surfaces")
+        Publisher.subscribe(self.OnRemove,"Remove surfaces")
+        Publisher.subscribe(self.UpdateSurfaceInterpolation, 'Update Surface Interpolation')
     
     def OnDuplicate(self, pubsub_evt):
         selected_items = pubsub_evt.data
@@ -163,7 +163,7 @@ class SurfaceManager():
                     if i > index:
                         new_dict[i-1] = old_dict[i]
                 old_dict = new_dict
-                ps.Publisher().sendMessage('Remove surface actor from viewer', actor)
+                Publisher.sendMessage('Remove surface actor from viewer', actor)
             self.actors_dict = new_dict
 
         if self.last_surface_index in selected_items:
@@ -185,7 +185,7 @@ class SurfaceManager():
         new_polydata = pu.JoinSeedsParts(surface.polydata,
                                           points_id_list)
         index = self.CreateSurfaceFromPolydata(new_polydata)
-        ps.Publisher().sendMessage('Show single surface', (index, True))
+        Publisher.sendMessage('Show single surface', (index, True))
         #self.ShowActor(index, True)
 
     def OnSplitSurface(self, pubsub_evt):
@@ -204,7 +204,7 @@ class SurfaceManager():
             index_list.append(index)
             #self.ShowActor(index, True)
 
-        ps.Publisher().sendMessage('Show multiple surfaces', (index_list, True)) 
+        Publisher.sendMessage('Show multiple surfaces', (index_list, True)) 
 
     def OnLargestSurface(self, pubsub_evt):
         """
@@ -217,7 +217,7 @@ class SurfaceManager():
 
         new_polydata = pu.SelectLargestPart(surface.polydata)
         new_index = self.CreateSurfaceFromPolydata(new_polydata)
-        ps.Publisher().sendMessage('Show single surface', (new_index, True))
+        Publisher.sendMessage('Show single surface', (new_index, True))
 
     def CreateSurfaceFromPolydata(self, polydata, overwrite=False,
                                   name=None, colour=None,
@@ -279,9 +279,9 @@ class SurfaceManager():
             surface.volume = volume
         self.last_surface_index = surface.index
 
-        ps.Publisher().sendMessage('Load surface actor into viewer', actor)
+        Publisher.sendMessage('Load surface actor into viewer', actor)
 
-        ps.Publisher().sendMessage('Update surface info in GUI',
+        Publisher.sendMessage('Update surface info in GUI',
                                         (surface.index, surface.name,
                                         surface.colour, surface.volume,
                                         surface.transparency))
@@ -292,7 +292,7 @@ class SurfaceManager():
 
     def CloseProject(self):
         for index in self.actors_dict:
-            ps.Publisher().sendMessage('Remove surface actor from viewer', self.actors_dict[index])
+            Publisher.sendMessage('Remove surface actor from viewer', self.actors_dict[index])
         del self.actors_dict
         self.actors_dict = {}
 
@@ -302,7 +302,7 @@ class SurfaceManager():
         # self.actors_dict.
         proj = prj.Project()
         surface = proj.surface_dict[index]
-        ps.Publisher().sendMessage('Update surface info in GUI',
+        Publisher.sendMessage('Update surface info in GUI',
                                     (index, surface.name,
                                     surface.colour, surface.volume,
                                     surface.transparency))
@@ -342,13 +342,13 @@ class SurfaceManager():
             self.actors_dict[surface.index] = actor
 
             # Send actor by pubsub to viewer's render
-            ps.Publisher().sendMessage('Load surface actor into viewer', (actor))
+            Publisher.sendMessage('Load surface actor into viewer', (actor))
 
-            ps.Publisher().sendMessage('Update status text in GUI',
+            Publisher.sendMessage('Update status text in GUI',
                                         _("Ready"))
 
             # The following lines have to be here, otherwise all volumes disappear
-            ps.Publisher().sendMessage('Update surface info in GUI',
+            Publisher.sendMessage('Update surface info in GUI',
                                         (surface.index, surface.name,
                                         surface.colour, surface.volume,
                                         surface.transparency))
@@ -623,17 +623,17 @@ class SurfaceManager():
         surface.volume = volume
         self.last_surface_index = surface.index
 
-        ps.Publisher().sendMessage('Load surface actor into viewer', actor)
+        Publisher.sendMessage('Load surface actor into viewer', actor)
 
         # Send actor by pubsub to viewer's render
         if overwrite and self.actors_dict.keys():
             old_actor = self.actors_dict[self.last_surface_index]
-            ps.Publisher().sendMessage('Remove surface actor from viewer', old_actor)
+            Publisher.sendMessage('Remove surface actor from viewer', old_actor)
 
         # Save actor for future management tasks
         self.actors_dict[surface.index] = actor
 
-        ps.Publisher().sendMessage('Update surface info in GUI',
+        Publisher.sendMessage('Update surface info in GUI',
                                     (surface.index, surface.name,
                                     surface.colour, surface.volume,
                                     surface.transparency))
@@ -641,10 +641,10 @@ class SurfaceManager():
         #When you finalize the progress. The bar is cleaned.
         UpdateProgress = vu.ShowProgress(1)
         UpdateProgress(0, _("Ready"))
-        ps.Publisher().sendMessage('Update status text in GUI',
+        Publisher.sendMessage('Update status text in GUI',
                                     _("Ready"))
         
-        ps.Publisher().sendMessage('End busy cursor')
+        Publisher.sendMessage('End busy cursor')
 
     def UpdateSurfaceInterpolation(self, pub_evt):
         interpolation = int(ses.Session().surface_interpolation)
@@ -652,13 +652,13 @@ class SurfaceManager():
         
         for key in self.actors_dict:
             self.actors_dict[key].GetProperty().SetInterpolation(interpolation)
-        ps.Publisher().sendMessage('Render volume viewer')
+        Publisher.sendMessage('Render volume viewer')
 
     def RemoveActor(self, index):
         """
         Remove actor, according to given actor index.
         """
-        ps.Publisher().sendMessage('Remove surface actor from viewer', (index))
+        Publisher.sendMessage('Remove surface actor from viewer', (index))
         self.actors_dict.pop(index)
         # Remove surface from project's surface_dict
         proj = prj.Project()
@@ -681,7 +681,7 @@ class SurfaceManager():
         # Update value in project's surface_dict
         proj = prj.Project()
         proj.surface_dict[index].is_shown = value
-        ps.Publisher().sendMessage('Render volume viewer')
+        Publisher.sendMessage('Render volume viewer')
 
     def SetActorTransparency(self, pubsub_evt):
         """
@@ -693,7 +693,7 @@ class SurfaceManager():
         # Update value in project's surface_dict
         proj = prj.Project()
         proj.surface_dict[index].transparency = value
-        ps.Publisher().sendMessage('Render volume viewer')
+        Publisher.sendMessage('Render volume viewer')
 
     def SetActorColour(self, pubsub_evt):
         """
@@ -703,7 +703,7 @@ class SurfaceManager():
         # Update value in project's surface_dict
         proj = prj.Project()
         proj.surface_dict[index].colour = colour
-        ps.Publisher().sendMessage('Render volume viewer')
+        Publisher.sendMessage('Render volume viewer')
 
     def OnExportSurface(self, pubsub_evt):
         filename, filetype = pubsub_evt.data

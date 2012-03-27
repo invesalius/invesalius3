@@ -23,7 +23,7 @@ import sys
 import wx
 import wx.lib.hyperlink as hl
 import wx.lib.platebtn as pbtn
-import wx.lib.pubsub as ps
+from wx.lib.pubsub import pub as Publisher
 
 import constants as const
 import gui.dialogs as dlg
@@ -253,7 +253,7 @@ class InnerTaskPanel(wx.Panel):
         value = dlg.ExportPicture(self.id_to_name[id])
         if value:
             filename, filetype = value 
-            ps.Publisher().sendMessage('Export picture to file',
+            Publisher.sendMessage('Export picture to file',
                                        (id, filename, filetype))
  
 
@@ -287,7 +287,7 @@ class InnerTaskPanel(wx.Panel):
                 if filename.split(".")[-1] != extension:
                     filename = filename + "."+ extension
             filetype = const.FILETYPE_IMAGEDATA
-            ps.Publisher().sendMessage('Export mask to file',
+            Publisher.sendMessage('Export mask to file',
                                             (filename, filetype))
 
 
@@ -323,7 +323,7 @@ class InnerTaskPanel(wx.Panel):
                 if sys.platform != 'win32':
                     if filename.split(".")[-1] != extension:
                         filename = filename + "."+ extension
-                ps.Publisher().sendMessage('Export surface to file',
+                Publisher.sendMessage('Export surface to file',
                                             (filename, filetype))
         else:
             dlg = wx.MessageDialog(None,

@@ -25,7 +25,7 @@ import gdcm
 import numpy
 import vtk
 import vtkgdcm
-import wx.lib.pubsub as ps
+from wx.lib.pubsub import pub as Publisher
 
 from vtk.util import numpy_support
 
@@ -361,7 +361,7 @@ def CreateImageData(filelist, zspacing, xyspacing,size,
 class ImageCreator:
     def __init__(self):
         self.running = True
-        ps.Publisher().subscribe(self.CancelImageDataLoad, "Cancel DICOM load")
+        Publisher.subscribe(self.CancelImageDataLoad, "Cancel DICOM load")
 
     def CancelImageDataLoad(self, evt_pusub):
         utils.debug("Canceling")

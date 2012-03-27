@@ -19,7 +19,7 @@
 import sys
 
 import vtk
-import wx.lib.pubsub as ps
+from wx.lib.pubsub import pub as Publisher
 
 import constants as const
 from gui.dialogs import ProgressDialog
@@ -76,7 +76,7 @@ def ShowProgress(number_of_filters = 1,
         progress[0] = progress[0] + ratio*difference
         # Tell GUI to update progress status value
         if (dialog_type == "GaugeProgress"):
-            ps.Publisher().sendMessage('Update status in GUI',
+            Publisher.sendMessage('Update status in GUI',
                                         (progress[0], label))
         else:
             if (progress[0] >= 99.999):

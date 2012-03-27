@@ -1,6 +1,6 @@
 import wx
 import constants as const
-import wx.lib.pubsub as ps
+from wx.lib.pubsub import pub as Publisher
 import session as ses
 from language_dialog import ComboBoxLanguage
 
@@ -62,7 +62,7 @@ class Preferences(wx.Dialog):
         self.__bind_events()
 
     def __bind_events(self):
-        ps.Publisher().subscribe(self.LoadPreferences, 'Load Preferences')
+        Publisher.subscribe(self.LoadPreferences, 'Load Preferences')
 
 
     def GetPreferences(self):

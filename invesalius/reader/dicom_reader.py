@@ -27,7 +27,7 @@ from multiprocessing import cpu_count
 import vtk
 import vtkgdcm
 import gdcm
-import wx.lib.pubsub as ps
+from wx.lib.pubsub import pub as Publisher
 
 import constants as const
 import dicom
@@ -317,7 +317,7 @@ def GetDicomGroups(directory, recursive=True):
 
 class ProgressDicomReader:
     def __init__(self):
-        ps.Publisher().subscribe(self.CancelLoad, "Cancel DICOM load")
+        Publisher.subscribe(self.CancelLoad, "Cancel DICOM load")
 
     def CancelLoad(self, evt_pubsub):
         self.running = False
@@ -332,10 +332,10 @@ class ProgressDicomReader:
         self.GetDicomGroups(path,recursive)
 
     def UpdateLoadFileProgress(self,cont_progress):
-        ps.Publisher().sendMessage("Update dicom load", cont_progress)
+        Publisher.sendMessage("Update dicom load", cont_progress)
 
     def EndLoadFile(self, patient_list):
-        ps.Publisher().sendMessage("End dicom load", patient_list)
+        Publisher.sendMessage("End dicom load", patient_list)
 
     def GetDicomGroups(self, path, recursive):
 
