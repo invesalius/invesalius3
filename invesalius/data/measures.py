@@ -121,7 +121,7 @@ class MeasurementManager(object):
         x, y, z = position
         actors = mr.AddPoint(x, y, z)
         m.points.append(position)
-        Publisher.sendMessage(("Add actors", location),
+        Publisher.sendMessage("Add actors " + str(location),
                 (actors, m.slice_number))
 
         if mr.IsComplete():
