@@ -224,7 +224,7 @@ def parse_comand_line():
     # If import DICOM argument...
     if options.dicom_dir:
         import_dir = options.dicom_dir
-        Publisher().sendMessage('Import directory', import_dir)
+        Publisher.sendMessage('Import directory', import_dir)
         return True
 
     # Check if there is a file path somewhere in what the user wrote
