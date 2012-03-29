@@ -100,6 +100,7 @@ class Viewer(wx.Panel):
         self.__bind_events_wx()
 
         self._warped = False
+        self._flush_buffer = False
 
     def __init_gui(self):
         self.interactor = wxVTKRenderWindowInteractor(self, -1, size=self.GetSize())
@@ -740,6 +741,7 @@ class Viewer(wx.Panel):
 
         self.slice_.edit_mask_pixel(self._brush_cursor_op, cursor.GetPixels(),
                                     position, radius, self.orientation)
+        self._flush_buffer = True
 
         # TODO: To create a new function to reload images to viewer.
         self.OnScrollBar()
@@ -783,7 +785,6 @@ class Viewer(wx.Panel):
                 
             self.slice_.edit_mask_pixel(self._brush_cursor_op, cursor.GetPixels(),
                                         position, radius, self.orientation)
-
             # TODO: To create a new function to reload images to viewer.
             self.OnScrollBar(update3D=False)
 
@@ -792,6 +793,7 @@ class Viewer(wx.Panel):
 
     def OnBrushRelease(self, evt, obj):
         self.slice_.apply_slice_buffer_to_mask(self.orientation)
+        self._flush_buffer = False
 
     def OnCrossMouseClick(self, evt, obj):
         self.ChangeCrossPosition()
@@ -1361,6 +1363,8 @@ class Viewer(wx.Panel):
         else:
             self.interactor.Render() 
         if evt:
+            if self._flush_buffer:
+                self.slice_.apply_slice_buffer_to_mask(self.orientation)
             evt.Skip()
             
     def OnScrollBarRelease(self, evt):
@@ -1372,6 +1376,9 @@ class Viewer(wx.Panel):
 
         min = 0
         max = self.slice_.GetMaxSliceNumber(self.orientation)
+
+        if self._flush_buffer:
+            self.slice_.apply_slice_buffer_to_mask(self.orientation)
 
         if (evt.GetKeyCode() == wx.WXK_UP and pos > min):
             self.OnScrollForward()
@@ -1392,6 +1399,8 @@ class Viewer(wx.Panel):
         min = 0
         
         if(pos > min):
+            if self._flush_buffer:
+                self.slice_.apply_slice_buffer_to_mask(self.orientation)
             pos = pos - 1
             self.scroll.SetThumbPosition(pos)
             self.OnScrollBar()
@@ -1401,6 +1410,8 @@ class Viewer(wx.Panel):
         max = self.slice_.GetMaxSliceNumber(self.orientation)
         
         if(pos < max):
+            if self._flush_buffer:
+                self.slice_.apply_slice_buffer_to_mask(self.orientation)
             pos = pos + 1
             self.scroll.SetThumbPosition(pos)
             self.OnScrollBar()
