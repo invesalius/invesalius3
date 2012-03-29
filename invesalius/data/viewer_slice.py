@@ -673,7 +673,7 @@ class Viewer(wx.Panel):
 
     def ChangeBrushSize(self, pubsub_evt):
         size = pubsub_evt.data
-        #self._brush_cursor_size = size
+        self._brush_cursor_size = size
         #for slice_data in self.slice_data_list:
         self.slice_data.cursor.SetSize(size)
 
