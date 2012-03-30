@@ -1259,8 +1259,13 @@ class Parser():
         if (data):
             name = data.strip()
             encoding = self.GetEncoding()
-            # Returns a unicode decoded in the own dicom encoding
-            return name.decode(encoding)
+            
+            try:
+                # Returns a unicode decoded in the own dicom encoding
+                return name.decode(encoding)
+            except(UnicodeEncodeError):
+                return name
+
         return ""
 
     def GetPatientID(self):
