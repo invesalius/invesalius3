@@ -485,6 +485,7 @@ class MaskProperties(wx.Panel):
         mask_name = evt.GetString()
         mask_index = evt.GetSelection()
         Publisher.sendMessage('Change mask selected', mask_index)
+        Publisher.sendMessage('Show mask', (mask_index, True))
 
     def OnComboThresh(self, evt):
         (thresh_min, thresh_max) = Project().threshold_modes[evt.GetString()]
