@@ -280,6 +280,8 @@ class Slice(object):
         if self.current_mask:
             index, value = pubsub_evt.data
             self.ShowMask(index, value)
+            if not value:
+                Publisher.sendMessage('Select mask name in combo', -1)
 
     def edit_mask_pixel(self, operation, index, position, radius, orientation):
         mask = self.buffer_slices[orientation].mask

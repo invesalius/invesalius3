@@ -396,7 +396,10 @@ class MaskProperties(wx.Panel):
 
     def SelectMaskName(self, pubsub_evt):
         index = pubsub_evt.data
-        self.combo_mask_name.SetSelection(index)
+        if index >= 0:
+            self.combo_mask_name.SetSelection(index)
+        else:
+            self.combo_mask_name.SetValue('')
 
     def ChangeMaskName(self, pubsub_evt):
         index, name = pubsub_evt.data
