@@ -271,10 +271,15 @@ class SurfaceManager():
 
         # The following lines have to be here, otherwise all volumes disappear
         if not volume:
+            triangle_filter = vtk.vtkTriangleFilter()
+            triangle_filter.SetInput(polydata)
+            triangle_filter.Update()
+
             measured_polydata = vtk.vtkMassProperties()
-            measured_polydata.SetInput(polydata)
+            measured_polydata.SetInput(triangle_filter.GetOutput())
             volume =  measured_polydata.GetVolume()
             surface.volume = volume
+            print ">>>>", surface.volume
         else:
             surface.volume = volume
         self.last_surface_index = surface.index
