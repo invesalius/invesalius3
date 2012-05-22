@@ -23,6 +23,7 @@ import plistlib
 import random
 
 import vtk
+import wx
 from wx.lib.pubsub import pub as Publisher
 
 import constants as const
@@ -764,7 +765,7 @@ class SurfaceManager():
                 normals.UpdateInformation()
                 polydata = normals.GetOutput()
 
+            filename = filename.encode(wx.GetDefaultPyEncoding())
             writer.SetFileName(filename)
             writer.SetInput(polydata)
             writer.Write()
-
