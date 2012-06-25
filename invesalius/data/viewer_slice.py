@@ -1505,6 +1505,7 @@ class Viewer(wx.Panel):
     def AddActors(self, pubsub_evt):
         "Inserting actors"
         actors, n = pubsub_evt.data
+        pos = self.scroll.GetThumbPosition()
         print actors
         #try:
             #renderer = self.renderers_by_slice_number[n]
@@ -1512,8 +1513,9 @@ class Viewer(wx.Panel):
                 #renderer.AddActor(actor)
         #except KeyError:
             #pass
-        for actor in actors:
-            self.slice_data.renderer.AddActor(actor)
+        if pos == n:
+            for actor in actors:
+                self.slice_data.renderer.AddActor(actor)
 
         try:
             self.actors_by_slice_number[n].extend(actors)

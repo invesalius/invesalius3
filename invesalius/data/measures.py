@@ -51,7 +51,7 @@ class MeasurementManager(object):
             for point in m.points:
                 x, y, z = point
                 actors = mr.AddPoint(x, y, z)
-                Publisher.sendMessage(("Add actors", m.location),
+                Publisher.sendMessage(("Add actors " + str(m.location)),
                     (actors, m.slice_number))
             self.current = None
 
@@ -103,8 +103,8 @@ class MeasurementManager(object):
                 print "---To REMOVE"
                 actors = self.current[1].GetActors()
                 slice_number = self.current[0].slice_number
-                Publisher.sendMessage(('Remove actors',
-                    self.current[0].location), (actors, slice_number))
+                Publisher.sendMessage(('Remove actors ' + str(self.current[0].location)),
+                                      (actors, slice_number))
                 if self.current[0].location == const.SURFACE:
                     Publisher.sendMessage('Render volume viewer')
                 else:
@@ -156,7 +156,7 @@ class MeasurementManager(object):
             m, mr = self.measures.pop(index)
             actors = mr.GetActors()
             prj.Project().RemoveMeasurement(index)
-            Publisher.sendMessage(('Remove actors', m.location), 
+            Publisher.sendMessage(('Remove actors ' + str(m.location)), 
                     (actors, m.slice_number))
         Publisher.sendMessage('Update slice viewer')
         Publisher.sendMessage('Render volume viewer')
