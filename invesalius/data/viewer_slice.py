@@ -1213,7 +1213,7 @@ class Viewer(wx.Panel):
         self.SetInteractorStyle(const.STATE_DEFAULT)
 
     def __build_cross_lines(self, imagedata):
-        renderer = self.slice_data.renderer
+        renderer = self.slice_data.overlay_renderer
 
         cross = vtk.vtkCursor3D()
         cross.AllOff()
