@@ -27,6 +27,7 @@ import vtk
 import vtkgdcm
 from wx.lib.pubsub import pub as Publisher
 
+from scipy.ndimage import shift
 from vtk.util import numpy_support
 
 import constants as const
@@ -98,57 +99,18 @@ def ResampleImage2D(imagedata, px, py,
 
     return resample.GetOutput()
 
-def FixGantryTilt(imagedata, tilt):
+def FixGantryTilt(matrix, spacing, tilt):
     """
     Fix gantry tilt given a vtkImageData and the tilt value. Return new
     vtkImageData.
     """
+    angle = numpy.radians(tilt)
+    spacing = spacing[0], spacing[1], spacing[2]
+    gntan = math.tan(angle)
 
-    # Retrieve data from original imagedata
-    extent = [int(value) for value in imagedata.GetExtent()]
-    origin = imagedata.GetOrigin()
-    spacing = [float(value) for value in imagedata.GetSpacing()]
-
-    n_slices = int(extent[5])
-    new_zspacing = math.cos(tilt*(math.acos(-1.0)/180.0)) * spacing[2] #zspacing
-    translate_coef = math.tan(tilt*math.pi/180.0)*new_zspacing*(n_slices-1)
-
-    # Class responsible for translating data
-    reslice = vtk.vtkImageReslice()
-    reslice.SetInput(imagedata)
-    reslice.SetInterpolationModeToLinear()
-    # Translation will create new pixels. Let's set new pixels' colour to black.
-    reslice.SetBackgroundLevel(imagedata.GetScalarRange()[0])
-
-    # Class responsible for append translated data
-    append = vtk.vtkImageAppend()
-    append.SetAppendAxis(2)
-
-    # Translate and append each slice
-    for i in xrange(n_slices+1):
-        slice_imagedata = vtk.vtkImageData()
-        value = math.tan(tilt*math.pi/180.0) * new_zspacing * i
-        new_origin1 = origin[1] + value - translate_coef
-        # Translate data
-        reslice.SetOutputOrigin(origin[0], new_origin1, origin[2])
-        reslice.SetOutputExtent(extent[0], extent[1], extent[2], extent[3], i,i)
-        reslice.Update()
-        # Append data
-        slice_imagedata.DeepCopy(reslice.GetOutput())
-        slice_imagedata.UpdateInformation()
-
-        append.AddInput(slice_imagedata)
-
-    append.Update()
-
-    # Final imagedata
-    imagedata = vtk.vtkImageData()
-    imagedata.DeepCopy(append.GetOutput())
-    imagedata.SetSpacing(spacing[0], spacing[1], new_zspacing)
-    imagedata.SetExtent(extent)
-    imagedata.UpdateInformation()
-
-    return imagedata
+    for n, slice_ in enumerate(matrix):
+        offset = gntan * n * spacing[2]
+        matrix[n] = shift(slice_, (-offset/spacing[1], 0), cval=matrix.min())
 
 
 def BuildEditedImage(imagedata, points):

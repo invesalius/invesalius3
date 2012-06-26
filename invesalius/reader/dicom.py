@@ -1933,8 +1933,3 @@ class Image(object):
                 spacing.append(1.5)
             except(AttributeError):
                 spacing = [1, 1, 1]
-
-        spacing[0] = round(spacing[0],2)
-        spacing[1] = round(spacing[1],2)
-        spacing[2] = round(spacing[2],2)
-        self.spacing = spacing

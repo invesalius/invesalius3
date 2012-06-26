@@ -513,22 +513,12 @@ class Controller():
 
         imagedata = None
 
-        # 1(a): Fix gantry tilt, if any
-        tilt_value = dicom.acquisition.tilt
-        if (tilt_value) and (gui):
-            # Tell user gantry tilt and fix, according to answer
-            message = _("Fix gantry tilt applying the degrees below")
-            value = -1*tilt_value
-            tilt_value = dialog.ShowNumberDialog(message, value)
-            imagedata = utils.FixGantryTilt(imagedata, tilt_value)
-        elif (tilt_value) and not (gui):
-            tilt_value = -1*tilt_value
-            imagedata = utils.FixGantryTilt(imagedata, tilt_value)
 
         wl = float(dicom.image.level)
         ww = float(dicom.image.window)
         self.matrix, scalar_range, self.filename = utils.dcm2memmap(filelist, size,
                                                                     orientation)
+
         self.Slice = sl.Slice()
         self.Slice.matrix = self.matrix
         self.Slice.matrix_filename = self.filename
@@ -540,6 +530,17 @@ class Controller():
         elif orientation == 'SAGITTAL':
             self.Slice.spacing = zspacing, xyspacing[1], xyspacing[0]
 
+        # 1(a): Fix gantry tilt, if any
+        tilt_value = dicom.acquisition.tilt
+        if (tilt_value) and (gui):
+            # Tell user gantry tilt and fix, according to answer
+            message = _("Fix gantry tilt applying the degrees below")
+            value = -1*tilt_value
+            tilt_value = dialog.ShowNumberDialog(message, value)
+            utils.FixGantryTilt(self.matrix, self.Slice.spacing, tilt_value)
+        elif (tilt_value) and not (gui):
+            tilt_value = -1*tilt_value
+            utils.FixGantryTilt(self.matrix, self.Slice.spacing, tilt_value)
 
         self.Slice.window_level = wl
         self.Slice.window_width = ww
