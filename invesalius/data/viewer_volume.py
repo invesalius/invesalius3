@@ -122,6 +122,8 @@ class Viewer(wx.Panel):
         # Raycating - related
         Publisher.subscribe(self.LoadVolume,
                                  'Load volume into viewer')
+        Publisher.subscribe(self.UnloadVolume,
+                                 'Unload volume')
         Publisher.subscribe(self.OnSetWindowLevelText,
                             'Set volume window and level text')
         Publisher.subscribe(self.OnHideRaycasting,
@@ -680,6 +682,10 @@ class Viewer(wx.Panel):
             self.ren.ResetCameraClippingRange()
 
         self.UpdateRender()
+
+    def UnloadVolume(self, pubsub_evt):
+        volume = pubsub_evt.data
+        self.ren.RemoveVolume(volume)
 
     def OnSetViewAngle(self, evt_pubsub):
         view = evt_pubsub.data

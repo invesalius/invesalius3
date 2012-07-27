@@ -87,6 +87,7 @@ class Volume():
         self.volume = None
         self.image = None
         self.loaded_image = 0
+        self.to_reload = False
         self.__bind_events()
 
     def __bind_events(self):
@@ -162,6 +163,10 @@ class Volume():
         self.__load_preset_config()
 
         if self.config:
+            if self.to_reload:
+                self.exist = False
+                Publisher.sendMessage('Unload volume', self.volume)
+                
             if self.exist:
                 self.__load_preset()
                 self.volume.SetVisibility(1)
@@ -180,7 +185,7 @@ class Volume():
         self.loaded_image = False
         del self.image
         self.image = None
-        self.exist = None
+        self.to_reload = True
         
     def __load_preset_config(self):
         self.config = prj.Project().raycasting_preset
