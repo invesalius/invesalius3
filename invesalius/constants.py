@@ -109,11 +109,11 @@ IMPORT_INTERVAL = [_("Keep all slices"), _("Skip 1 for each 2 slices"),
 AXIAL_SLICE_CAM_POSITION = {"AXIAL":(0, 0, 1), "CORONAL":(0, -1, 0), "SAGITAL":(1, 0, 0)}
 AXIAL_SLICE_CAM_VIEW_UP =  {"AXIAL":(0, 1, 0), "CORONAL":(0, 0, 1), "SAGITAL":(0, 0, 1)}
 
-SAGITAL_SLICE_CAM_POSITION = {"AXIAL":(0, 1, 0), "CORONAL":(1, 0, 0), "SAGITAL":(0, 0, -1)}
-SAGITAL_SLICE_CAM_VIEW_UP =  {"AXIAL":(-1, 0, 0), "CORONAL":(0, 1, 0), "SAGITAL":(0, 1, 0)}
+SAGITAL_SLICE_CAM_POSITION = {"AXIAL":(0, 0, 1), "CORONAL":(0, 1, 0), "SAGITAL":(-1, 0, 0)}
+SAGITAL_SLICE_CAM_VIEW_UP =  {"AXIAL":(0, -1, 0), "CORONAL":(0, 0, 1), "SAGITAL":(0, 0, 1)}
 
-CORONAL_SLICE_CAM_POSITION = {"AXIAL":(0, 1, 0), "CORONAL":(0, 0, 1), "SAGITAL":(1, 0, 0)}
-CORONAL_SLICE_CAM_VIEW_UP =  {"AXIAL":(0, 0, -1), "CORONAL":(0, 1, 0), "SAGITAL":(0, 1, 0)}
+CORONAL_SLICE_CAM_POSITION = {"AXIAL":(0, 0, 1), "CORONAL":(0, 1, 0), "SAGITAL":(-1, 0, 0)}
+CORONAL_SLICE_CAM_VIEW_UP =  {"AXIAL":(0, -1, 0), "CORONAL":(0, 0, 1), "SAGITAL":(0, 0, 1)}
 
 SLICE_POSITION = {AXIAL:[AXIAL_SLICE_CAM_VIEW_UP, AXIAL_SLICE_CAM_POSITION],
                   SAGITAL:[SAGITAL_SLICE_CAM_VIEW_UP, SAGITAL_SLICE_CAM_POSITION],
@@ -457,6 +457,9 @@ ID_DICOM_NETWORK] = [wx.NewId() for number in range(14)]
 ID_ABOUT = wx.NewId()
 ID_START = wx.NewId()
 
+ID_FLIP_X = wx.NewId()
+ID_FLIP_Y = wx.NewId()
+ID_FLIP_Z = wx.NewId()
 #---------------------------------------------------------
 STATE_DEFAULT = 1000
 STATE_WL = 1001

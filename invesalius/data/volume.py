@@ -85,6 +85,7 @@ class Volume():
         self.plane = None
         self.plane_on = False
         self.volume = None
+        self.image = None
         self.loaded_image = 0
         self.__bind_events()
 
@@ -108,6 +109,8 @@ class Volume():
                         'Change volume viewer background colour')
 
         Publisher.subscribe(self.ResetRayCasting, 'Reset Reaycasting')
+
+        Publisher.subscribe(self.OnFlipVolume, 'Flip volume')
 
     def ResetRayCasting(self, pub_evt):
         if self.exist:
@@ -171,6 +174,13 @@ class Volume():
             colour = self.GetBackgroundColour()
             Publisher.sendMessage('Change volume viewer background colour', colour)
             Publisher.sendMessage('Change volume viewer gui colour', colour)
+
+    def OnFlipVolume(self, pubsub_evt):
+        print "Flipping Volume"
+        self.loaded_image = False
+        del self.image
+        self.image = None
+        self.exist = None
         
     def __load_preset_config(self):
         self.config = prj.Project().raycasting_preset
@@ -461,18 +471,14 @@ class Volume():
         return imagedata
 
     def LoadImage(self):
-        
-
         slice_data = slice_.Slice()
         n_array = slice_data.matrix
         spacing = slice_data.spacing
         slice_number = 0
         orientation = 'AXIAL'
 
-
         image = converters.to_vtk(n_array, spacing, slice_number, orientation) 
         self.image = image
-
 
     def LoadVolume(self):
         proj = prj.Project()
@@ -491,19 +497,19 @@ class Volume():
         else:
             flip_image = False
         
-        if (flip_image):    
-            update_progress= vtk_utils.ShowProgress(2 + number_filters) 
-            # Flip original vtkImageData
-            flip = vtk.vtkImageFlip()
-            flip.SetInput(image)
-            flip.SetFilteredAxis(1)
-            flip.FlipAboutOriginOn()
-            flip.AddObserver("ProgressEvent", lambda obj,evt:
-                                update_progress(flip, "Rendering..."))
-            flip.Update()
-            image = flip.GetOutput()
-        else:
-            update_progress= vtk_utils.ShowProgress(1 + number_filters)
+        #if (flip_image):    
+        update_progress= vtk_utils.ShowProgress(2 + number_filters) 
+        # Flip original vtkImageData
+        flip = vtk.vtkImageFlip()
+        flip.SetInput(image)
+        flip.SetFilteredAxis(1)
+        flip.FlipAboutOriginOn()
+        flip.AddObserver("ProgressEvent", lambda obj,evt:
+                            update_progress(flip, "Rendering..."))
+        flip.Update()
+        image = flip.GetOutput()
+        #else:
+            #update_progress= vtk_utils.ShowProgress(1 + number_filters)
         
         scale = image.GetScalarRange()
         self.scale = scale

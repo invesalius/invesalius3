@@ -29,6 +29,8 @@ import vtk
 import constants as const
 import imagedata_utils as iu
 
+from wx.lib.pubsub import pub as Publisher
+
 class Mask():
     general_index = -1
     def __init__(self):
@@ -43,6 +45,10 @@ class Mask():
         self.is_shown = 1
         self.edited_points = {}
         self.was_edited = False
+        self.__bind_events()
+
+    def __bind_events(self):
+        Publisher.subscribe(self.OnFlipVolume, 'Flip volume')
 
     def SavePlist(self, filename):
         mask = {}
@@ -78,6 +84,19 @@ class Mask():
         dirpath = os.path.abspath(os.path.split(filename)[0])
         path = os.path.join(dirpath, mask_file)
         self._open_mask(path, tuple(shape))
+
+    def OnFlipVolume(self, pubsub_evt):
+        axis = pubsub_evt.data
+        submatrix = self.matrix[1:, 1:, 1:]
+        if axis == 0:
+            submatrix[:] = submatrix[::-1]
+            self.matrix[1::, 0, 0] = self.matrix[:0:-1, 0, 0]
+        elif axis == 1:
+            submatrix[:] = submatrix[:, ::-1]
+            self.matrix[0, 1::, 0] = self.matrix[0, :0:-1, 0]
+        elif axis == 2:
+            submatrix[:] = submatrix[:, :, ::-1]
+            self.matrix[0, 0, 1::] = self.matrix[0, 0, :0:-1]
 
     def _save_mask(self, filename):
         shutil.copyfile(self.temp_file, filename)

@@ -339,6 +339,11 @@ class Frame(wx.Frame):
             self.ShowPreferences()      
         elif id == const.ID_DICOM_NETWORK:
             self.ShowRetrieveDicomPanel() 
+        elif id in (const.ID_FLIP_X, const.ID_FLIP_Y, const.ID_FLIP_Z):
+            axis = {const.ID_FLIP_X: 2, 
+                    const.ID_FLIP_Y: 1, 
+                    const.ID_FLIP_Z: 0}[id]
+            self.FlipVolume(axis)
 
     def OnSize(self, evt):
         """
@@ -409,6 +414,10 @@ class Frame(wx.Frame):
         """
         Publisher.sendMessage('Show analyze dialog', True)
 
+    def FlipVolume(self, axis):
+        Publisher.sendMessage('Flip volume', axis)
+        Publisher.sendMessage('Reload actual slice') 
+
 # ------------------------------------------------------------------
 # ------------------------------------------------------------------
 # ------------------------------------------------------------------
@@ -474,12 +483,23 @@ class MenuBar(wx.MenuBar):
         #file_menu.AppendSeparator()
         app(const.ID_EXIT, _("Exit"))
 
-        # EDIT
-        #file_edit = wx.Menu()
-        #app = file_edit.Append
+
+        ############################### EDIT###############################
+        # Flip
+        flip_menu = wx.Menu()
+        app = flip_menu.Append
+        app(const.ID_FLIP_X, _("R <-> L"))
+        app(const.ID_FLIP_Y, _("A <-> P"))
+        app(const.ID_FLIP_Z, _("T <-> B"))
+
+        file_edit = wx.Menu()
+        app = file_edit.Append
+        file_edit.AppendMenu(wx.NewId(), _('Flip'), flip_menu)
         #app(wx.ID_UNDO, "Undo\tCtrl+Z")
         #app(wx.ID_REDO, "Redo\tCtrl+Y")
         #app(const.ID_EDIT_LIST, "Show Undo List...")
+        #################################################################
+
 
         # VIEW
         #view_tool_menu = wx.Menu()
@@ -527,7 +547,7 @@ class MenuBar(wx.MenuBar):
 
         # Add all menus to menubar
         self.Append(file_menu, _("File"))
-        #self.Append(file_edit, "Edit")
+        self.Append(file_edit, "Edit")
         #self.Append(view_menu, "View")
         #self.Append(tools_menu, "Tools")
         self.Append(options_menu, _("Options"))

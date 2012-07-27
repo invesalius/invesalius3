@@ -1311,7 +1311,7 @@ class Viewer(wx.Panel):
     def __update_camera(self):
         orientation = self.orientation
         proj = project.Project()
-        orig_orien = 1 #proj.original_orientation
+        orig_orien = proj.original_orientation
 
         self.cam.SetFocalPoint(0, 0, 0)
         self.cam.SetViewUp(const.SLICE_POSITION[orig_orien][0][self.orientation])

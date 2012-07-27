@@ -180,8 +180,6 @@ class Viewer(wx.Panel):
         
         Publisher.subscribe(self.RemoveVolume, 'Remove Volume')
 
-
-
     def SetStereoMode(self, pubsub_evt):
         mode = pubsub_evt.data
         ren_win = self.interactor.GetRenderWindow()
@@ -209,7 +207,6 @@ class Viewer(wx.Panel):
                 ren_win.SetStereoTypeToAnaglyph()
 
         self.interactor.Render()
-
 
     def CreateBallReference(self):
         self.ball_reference = vtk.vtkSphereSource()
@@ -271,7 +268,6 @@ class Viewer(wx.Panel):
 
                 image = image.GetOutput()
 
-
                 # write image file
                 if (filetype == const.FILETYPE_BMP):
                     writer = vtk.vtkBMPWriter()
@@ -289,8 +285,6 @@ class Viewer(wx.Panel):
                 writer.SetFileName(filename)
                 writer.Write()
         Publisher.sendMessage('End busy cursor')
-
-
  
     def OnCloseProject(self, pubsub_evt):
         if self.raycasting_volume:
@@ -844,8 +838,8 @@ class SlicePlane:
     def Create(self):
         plane_x = self.plane_x = vtk.vtkImagePlaneWidget()
         plane_x.InteractionOff()
-        Publisher.sendMessage('Input Image in the widget', 
-                                                (plane_x, 'SAGITAL'))
+        #Publisher.sendMessage('Input Image in the widget', 
+                                                #(plane_x, 'SAGITAL'))
         plane_x.SetPlaneOrientationToXAxes()
         plane_x.TextureVisibilityOn()
         plane_x.SetLeftButtonAction(0)
@@ -856,8 +850,8 @@ class SlicePlane:
 
         plane_y = self.plane_y = vtk.vtkImagePlaneWidget()
         plane_y.DisplayTextOff()
-        Publisher.sendMessage('Input Image in the widget', 
-                                                (plane_y, 'CORONAL'))
+        #Publisher.sendMessage('Input Image in the widget', 
+                                                #(plane_y, 'CORONAL'))
         plane_y.SetPlaneOrientationToYAxes()
         plane_y.TextureVisibilityOn()
         plane_y.SetLeftButtonAction(0)
@@ -869,8 +863,8 @@ class SlicePlane:
 
         plane_z = self.plane_z = vtk.vtkImagePlaneWidget()
         plane_z.InteractionOff()
-        Publisher.sendMessage('Input Image in the widget', 
-                                                (plane_z, 'AXIAL'))
+        #Publisher.sendMessage('Input Image in the widget', 
+                                                #(plane_z, 'AXIAL'))
         plane_z.SetPlaneOrientationToZAxes()
         plane_z.TextureVisibilityOn()
         plane_z.SetLeftButtonAction(0)

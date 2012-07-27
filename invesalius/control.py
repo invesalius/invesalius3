@@ -432,6 +432,7 @@ class Controller():
                                 header['glmax'])
         proj.window = proj.threshold_range[1] - proj.threshold_range[0]
         proj.level =  (0.5 * (proj.threshold_range[1] + proj.threshold_range[0]))
+        proj.spacing = header['pixdim'][1:4]
 
         self.Slice = sl.Slice()
         self.Slice.matrix = matrix
@@ -495,8 +496,11 @@ class Controller():
         if file_range != None and file_range[1] > file_range[0]:
             filelist = filelist[file_range[0]:file_range[1] + 1]
 
-        print ">>>>>>>>>>>>>>>>>>",filelist 
         zspacing = dicom_group.zspacing * interval
+
+        print "\n======================================="
+        print ">>>>>>>>>>>>>>>>>> zspacing", zspacing, interval
+        print "\n======================================="
         size = dicom.image.size
         bits = dicom.image.bits_allocad
         sop_class_uid = dicom.acquisition.sop_class_uid

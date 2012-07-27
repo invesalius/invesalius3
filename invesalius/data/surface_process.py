@@ -97,6 +97,8 @@ class SurfaceProcess(multiprocessing.Process):
         flip.FlipAboutOriginOn()
         flip.Update()
 
+        image = flip.GetOutput()
+
         #filename = tempfile.mktemp(suffix='_%s.vti' % (self.pid))
         #writer = vtk.vtkXMLImageDataWriter()
         #writer.SetInput(mask_vtk)
@@ -110,7 +112,8 @@ class SurfaceProcess(multiprocessing.Process):
         #if self.mode == "CONTOUR":
         #print "Contour"
         contour = vtk.vtkContourFilter()
-        contour.SetInput(flip.GetOutput())
+        contour.SetInput(image)
+        #contour.SetInput(flip.GetOutput())
         if self.from_binary:
             contour.SetValue(0, 127) # initial threshold
         else:

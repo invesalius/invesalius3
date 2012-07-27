@@ -132,6 +132,8 @@ class Slice(object):
         Publisher.subscribe(self.OnRemoveMasks, 'Remove masks')
         Publisher.subscribe(self.OnDuplicateMasks, 'Duplicate masks')
         Publisher.subscribe(self.UpdateSlice3D,'Update slice 3D')
+
+        Publisher.subscribe(self.OnFlipVolume, 'Flip volume')
  
     def GetMaxSliceNumber(self, orientation):
         shape = self.matrix.shape
@@ -703,15 +705,15 @@ class Slice(object):
         cast.ClampOverflowOn()
         cast.Update()
 
-        if (original_orientation == const.AXIAL):
-            flip = vtk.vtkImageFlip()
-            flip.SetInput(cast.GetOutput())
-            flip.SetFilteredAxis(1)
-            flip.FlipAboutOriginOn()
-            flip.Update()
-            widget.SetInput(flip.GetOutput())
-        else:
-            widget.SetInput(cast.GetOutput())
+        #if (original_orientation == const.AXIAL):
+        flip = vtk.vtkImageFlip()
+        flip.SetInput(cast.GetOutput())
+        flip.SetFilteredAxis(1)
+        flip.FlipAboutOriginOn()
+        flip.Update()
+        widget.SetInput(flip.GetOutput())
+        #else:
+            #widget.SetInput(cast.GetOutput())
 
     def UpdateSlice3D(self, pubsub_evt):
         widget, orientation = pubsub_evt.data
@@ -723,15 +725,15 @@ class Slice(object):
         cast.ClampOverflowOn()
         cast.Update()
 
-        if (original_orientation == const.AXIAL):
-            flip = vtk.vtkImageFlip()
-            flip.SetInput(cast.GetOutput())
-            flip.SetFilteredAxis(1)
-            flip.FlipAboutOriginOn()
-            flip.Update()
-            widget.SetInput(flip.GetOutput())
-        else:
-            widget.SetInput(cast.GetOutput())
+        #if (original_orientation == const.AXIAL):
+        flip = vtk.vtkImageFlip()
+        flip.SetInput(cast.GetOutput())
+        flip.SetFilteredAxis(1)
+        flip.FlipAboutOriginOn()
+        flip.Update()
+        widget.SetInput(flip.GetOutput())
+        #else:
+            #widget.SetInput(cast.GetOutput())
 
 
 
@@ -965,6 +967,18 @@ class Slice(object):
         print ">>>", filename
         self.matrix = numpy.memmap(filename, shape=shape, dtype=dtype,
                                    mode='r+')
+
+    def OnFlipVolume(self, pubsub_evt):
+        axis = pubsub_evt.data
+        if axis == 0:
+            self.matrix[:] = self.matrix[::-1]
+        elif axis == 1:
+            self.matrix[:] = self.matrix[:, ::-1]
+        elif axis == 2:
+            self.matrix[:] = self.matrix[:, :, ::-1]
+
+        for buffer_ in self.buffer_slices.values():
+            buffer_.discard_buffer()
 
     def OnExportMask(self, pubsub_evt):
         #imagedata = self.current_mask.imagedata
