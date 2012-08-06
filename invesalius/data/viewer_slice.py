@@ -1000,6 +1000,7 @@ class Viewer(wx.Panel):
     
         Publisher.subscribe(self.AddActors, 'Add actors ' + str(ORIENTATIONS[self.orientation]))
         Publisher.subscribe(self.RemoveActors, 'Remove actors ' + str(ORIENTATIONS[self.orientation]))
+        Publisher.subscribe(self.OnSwapVolumeAxes, 'Swap volume axes')
 
         Publisher.subscribe(self.ReloadActualSlice, 'Reload actual slice')
         Publisher.subscribe(self.OnUpdateScroll, 'Update scroll')
@@ -1506,6 +1507,21 @@ class Viewer(wx.Panel):
         max_slice_number = sl.Slice().GetNumberOfSlices(self.orientation)
         self.scroll.SetScrollbar(wx.SB_VERTICAL, 1, max_slice_number,
                                  max_slice_number)
+
+    def OnSwapVolumeAxes(self, pubsub_evt):
+        # Adjusting cursor spacing to match the spacing from the actual slice
+        # orientation
+        axis0, axis1 = pubsub_evt.data
+        cursor = self.slice_data.cursor
+        spacing = cursor.spacing       
+        if (axis0, axis1) == (2, 1):
+            cursor.SetSpacing((spacing[1], spacing[0], spacing[2]))
+        elif (axis0, axis1) == (2, 0):
+            cursor.SetSpacing((spacing[2], spacing[1], spacing[0]))
+        elif (axis0, axis1) == (1, 0):
+            cursor.SetSpacing((spacing[0], spacing[2], spacing[1]))
+
+        self.slice_data.renderer.ResetCamera()
 
     def AddActors(self, pubsub_evt):
         "Inserting actors"
