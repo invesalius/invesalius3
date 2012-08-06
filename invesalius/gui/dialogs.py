@@ -631,8 +631,8 @@ def ShowAboutDialog(parent):
     info = wx.AboutDialogInfo()
     info.Name = "InVesalius"
     info.Version = "3.0 - Beta 3"
-    info.Copyright = _("(c) 2007-2010 Renato Archer Information Technology Centre")
-    info.Description = wordwrap(_("InVesalius is a medical imaging program for 3D reconstruction. It uses a sequence of 2D DICOM image files acquired with CT or MRI scanners. InVesalius allows for the export of 3D volumes or surfaces as STL files for creating physical models of a patient's anatomy using rapid prototyping technologies."), 350, wx.ClientDC(parent))
+    info.Copyright = _("(c) 2007-2012 Renato Archer Information Technology Centre - CTI")
+    info.Description = wordwrap(_("InVesalius is a medical imaging program for 3D reconstruction. It uses a sequence of 2D DICOM image files acquired with CT or MRI scanners. InVesalius allows for the export of 3D volumes or surfaces as STL files for creating physical models of a patient's anatomy using rapid prototyping technologies. The software has the support of the CTI, CNPq and Ministry of Health"), 350, wx.ClientDC(parent))
 
 #       _("InVesalius is a software for medical imaging 3D reconstruction. ")+\
 #       _("Its input is a sequency of DICOM 2D image files acquired with CT or MR.\n\n")+\
@@ -644,7 +644,8 @@ def ShowAboutDialog(parent):
 
     info.Developers = ["Tatiana Al-Chueyr",
                        "Paulo Henrique Junqueira Amorim",
-                       "Thiago Franco de Moraes"]
+                       "Thiago Franco de Moraes",
+                       "Jorge Vicente Lopes da Silva"]
 
     info.Translators = ["Alex P. Natsios",
                         "Andreas Loupasakis",
@@ -659,7 +660,7 @@ def ShowAboutDialog(parent):
                         "Sebastian Hilbert",
                         "Semarang Pari"]
 
-    info.DocWriters = ["Fabio Francisco da Silva (PT)"] 
+    #info.DocWriters = ["Fabio Francisco da Silva (PT)"] 
 
     info.Artists = ["Otavio Henrique Junqueira Amorim"]
 

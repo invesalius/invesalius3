@@ -467,7 +467,7 @@ class MenuBar(wx.MenuBar):
         file_menu = wx.Menu()
         app = file_menu.Append
         app(const.ID_DICOM_IMPORT, _("Import DICOM...\tCtrl+I"))
-        #####app(const.ID_DICOM_NETWORK, _("Retrieve DICOM from PACS"))
+        #app(const.ID_DICOM_NETWORK, _("Retrieve DICOM from PACS"))
         file_menu.AppendMenu(const.ID_IMPORT_OTHERS_FILES, _("Import Others Files"), others_file_menu)
         app(const.ID_PROJECT_OPEN, _("Open Project...\tCtrl+O"))
         app(const.ID_PROJECT_SAVE, _("Save Project\tCtrl+S"))

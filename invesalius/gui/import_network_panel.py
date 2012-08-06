@@ -431,6 +431,8 @@ class TextPanel(wx.Panel):
         evt.Skip()
 
     def OnActivate(self, evt):
+        
+
         item = evt.GetItem()
         item_parent = self.tree.GetItemParent(item)
         
