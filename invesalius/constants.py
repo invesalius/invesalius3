@@ -460,6 +460,11 @@ ID_START = wx.NewId()
 ID_FLIP_X = wx.NewId()
 ID_FLIP_Y = wx.NewId()
 ID_FLIP_Z = wx.NewId()
+
+ID_SWAP_XY = wx.NewId()
+ID_SWAP_XZ = wx.NewId()
+ID_SWAP_YZ = wx.NewId()
+
 #---------------------------------------------------------
 STATE_DEFAULT = 1000
 STATE_WL = 1001

@@ -134,6 +134,7 @@ class Slice(object):
         Publisher.subscribe(self.UpdateSlice3D,'Update slice 3D')
 
         Publisher.subscribe(self.OnFlipVolume, 'Flip volume')
+        Publisher.subscribe(self.OnSwapVolumeAxes, 'Swap volume axes')
  
     def GetMaxSliceNumber(self, orientation):
         shape = self.matrix.shape
@@ -979,6 +980,21 @@ class Slice(object):
 
         for buffer_ in self.buffer_slices.values():
             buffer_.discard_buffer()
+
+    def OnSwapVolumeAxes(self, pubsub_evt):
+        axis0, axis1 = pubsub_evt.data
+        self.matrix = self.matrix.swapaxes(axis0, axis1)
+        if (axis0, axis1) == (2, 1):
+            self.spacing = self.spacing[1], self.spacing[0], self.spacing[2]
+        elif (axis0, axis1) == (2, 0):
+            self.spacing = self.spacing[2], self.spacing[1], self.spacing[0]
+        elif (axis0, axis1) == (1, 0):
+            self.spacing = self.spacing[0], self.spacing[2], self.spacing[1]
+
+        for buffer_ in self.buffer_slices.values():
+            buffer_.discard_buffer()
+
+        print type(self.matrix)
 
     def OnExportMask(self, pubsub_evt):
         #imagedata = self.current_mask.imagedata

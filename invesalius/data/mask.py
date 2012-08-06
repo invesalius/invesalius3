@@ -49,6 +49,7 @@ class Mask():
 
     def __bind_events(self):
         Publisher.subscribe(self.OnFlipVolume, 'Flip volume')
+        Publisher.subscribe(self.OnSwapVolumeAxes, 'Swap volume axes')
 
     def SavePlist(self, filename):
         mask = {}
@@ -97,6 +98,11 @@ class Mask():
         elif axis == 2:
             submatrix[:] = submatrix[:, :, ::-1]
             self.matrix[0, 0, 1::] = self.matrix[0, 0, :0:-1]
+
+    def OnSwapVolumeAxes(self, pubsub_evt):
+        axis0, axis1 = pubsub_evt.data
+        self.matrix = self.matrix.swapaxes(axis0, axis1)
+        print type(self.matrix)
 
     def _save_mask(self, filename):
         shutil.copyfile(self.temp_file, filename)

@@ -1002,7 +1002,7 @@ class Viewer(wx.Panel):
         Publisher.subscribe(self.RemoveActors, 'Remove actors ' + str(ORIENTATIONS[self.orientation]))
 
         Publisher.subscribe(self.ReloadActualSlice, 'Reload actual slice')
-
+        Publisher.subscribe(self.OnUpdateScroll, 'Update scroll')
 
     def SetDefaultCursor(self, pusub_evt):
         self.interactor.SetCursor(wx.StockCursor(wx.CURSOR_DEFAULT))
@@ -1501,6 +1501,11 @@ class Viewer(wx.Panel):
         pos = self.scroll.GetThumbPosition()
         self.set_slice_number(pos)
         self.interactor.Render()
+
+    def OnUpdateScroll(self, pubsub_evt):
+        max_slice_number = sl.Slice().GetNumberOfSlices(self.orientation)
+        self.scroll.SetScrollbar(wx.SB_VERTICAL, 1, max_slice_number,
+                                 max_slice_number)
 
     def AddActors(self, pubsub_evt):
         "Inserting actors"

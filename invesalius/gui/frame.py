@@ -344,7 +344,11 @@ class Frame(wx.Frame):
                     const.ID_FLIP_Y: 1, 
                     const.ID_FLIP_Z: 0}[id]
             self.FlipVolume(axis)
-
+        elif id in (const.ID_SWAP_XY, const.ID_SWAP_XZ, const.ID_SWAP_YZ):
+            axes = {const.ID_SWAP_XY: (2, 1),
+                    const.ID_SWAP_XZ: (2, 0),
+                    const.ID_SWAP_YZ: (1, 0)}[id]
+            self.SwapAxes(axes)
     def OnSize(self, evt):
         """
         Refresh GUI when frame is resized.
@@ -416,6 +420,11 @@ class Frame(wx.Frame):
 
     def FlipVolume(self, axis):
         Publisher.sendMessage('Flip volume', axis)
+        Publisher.sendMessage('Reload actual slice') 
+
+    def SwapAxes(self, axes):
+        Publisher.sendMessage('Swap volume axes', axes)
+        Publisher.sendMessage('Update scroll')
         Publisher.sendMessage('Reload actual slice') 
 
 # ------------------------------------------------------------------
@@ -492,9 +501,16 @@ class MenuBar(wx.MenuBar):
         app(const.ID_FLIP_Y, _("A <-> P"))
         app(const.ID_FLIP_Z, _("T <-> B"))
 
+        swap_axes_menu = wx.Menu()
+        app = swap_axes_menu.Append
+        app(const.ID_SWAP_XY, _("R-L <-> A-P"))
+        app(const.ID_SWAP_XZ, _("R-L <-> T-B"))
+        app(const.ID_SWAP_YZ, _("A-P <-> T-B"))
+
         file_edit = wx.Menu()
         app = file_edit.Append
         file_edit.AppendMenu(wx.NewId(), _('Flip'), flip_menu)
+        file_edit.AppendMenu(wx.NewId(), _('Swap axes'), swap_axes_menu)
         #app(wx.ID_UNDO, "Undo\tCtrl+Z")
         #app(wx.ID_REDO, "Redo\tCtrl+Y")
         #app(const.ID_EDIT_LIST, "Show Undo List...")
