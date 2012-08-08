@@ -20,7 +20,7 @@
 #--------------------------------------------------------------------------
 import sys
 
-from PIL import Image
+import Image
 
 import wx
 import wx.grid
