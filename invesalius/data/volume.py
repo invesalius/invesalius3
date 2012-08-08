@@ -174,7 +174,7 @@ class Volume():
                 #Publisher.sendMessage('Render volume viewer')
             else:
                 self.LoadVolume()
-                #self.CalculateHistogram()
+                self.CalculateHistogram()
                 self.exist = 1
                 
             colour = self.GetBackgroundColour()
@@ -663,6 +663,7 @@ class Volume():
         accumulate.ReleaseDataFlagOn()
         accumulate.Update()
         n_image = numpy_support.vtk_to_numpy(accumulate.GetOutput().GetPointData().GetScalars())
+        del accumulate
         Publisher.sendMessage('Load histogram', (n_image,
                                                      image.GetScalarRange()))
 
