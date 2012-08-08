@@ -917,8 +917,7 @@ class SurfaceDialog(wx.Dialog):
         btn_sizer.AddButton(btn_cancel)
         btn_sizer.Realize()
 
-        self.alg_types = {0: u'Context aware smoothing', 1: u'Binary',
-                          2: u'InVesalius 3.b2'}
+        self.alg_types = {0: u'Context aware smoothing', 1: u'Binary'}#,2: u'InVesalius 3.b2'}
         self.cb_types = wx.ComboBox(self, -1, self.alg_types[0],
                                     choices=[self.alg_types[i] for i in sorted(self.alg_types)],
                                    style=wx.CB_READONLY)

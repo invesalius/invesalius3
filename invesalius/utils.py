@@ -220,7 +220,6 @@ def predict_memory(nfiles, x, y, p):
         if (platform.architecture()[0] == '32bit'):
             #(314859200 = 300 MB)
             #(26999999 = 25 MB)
-
             #case occupy more than 300 MB image is reduced to 1.5,
             #and 25 MB each image is resized 0.04.
             if (m >= 314859200):

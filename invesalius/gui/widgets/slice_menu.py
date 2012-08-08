@@ -103,7 +103,7 @@ class SliceMenu(wx.Menu):
         # Add sub itens in the menu
         self.AppendMenu(-1, _("Window Width and Level"), submenu_wl)
         self.AppendMenu(-1, _("Pseudo Colour"), submenu_pseudo_colours)
-        self.AppendMenu(-1, _("Image Tiling"), submenu_image_tiling)
+        ###self.AppendMenu(-1, _("Image Tiling"), submenu_image_tiling)
 
         # It doesn't work in Linux
         self.Bind(wx.EVT_MENU, self.OnPopup)
