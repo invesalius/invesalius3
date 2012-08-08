@@ -110,11 +110,14 @@ class Viewer(wx.Panel):
         self.repositioned_coronal_plan = 0
         self.added_actor = 0
 
+        self._to_show_ball = 0
+
     def __bind_events(self):
         Publisher.subscribe(self.LoadActor,
                                  'Load surface actor into viewer')
         Publisher.subscribe(self.RemoveActor,
                                 'Remove surface actor from viewer')
+        Publisher.subscribe(self.OnShowSurface, 'Show surface')
         Publisher.subscribe(self.UpdateRender,
                                  'Render volume viewer')
         Publisher.subscribe(self.ChangeBackgroundColour,
@@ -225,22 +228,35 @@ class Viewer(wx.Panel):
         self.ball_actor.SetProperty(p)
 
     def ActivateBallReference(self, pubsub_evt):
-        if not self.ball_reference:
-            self.CreateBallReference()
-        self.ren.AddActor(self.ball_actor)
+        if self._to_show_ball:
+            if not self.ball_reference:
+                self.CreateBallReference()
+            self.ren.AddActor(self.ball_actor)
 
     def DeactivateBallReference(self, pubsub_evt):
         if self.ball_reference:
             self.ren.RemoveActor(self.ball_actor)
+
+    def OnShowSurface(self, pubsub_evt):
+        index, value = pubsub_evt.data
+        if value:
+            self._to_show_ball += 1
+        else:
+            self._to_show_ball -= 1
+        print "to show ball", self._to_show_ball
 
     def SetBallReferencePosition(self, pubsub_evt):
         x, y, z = pubsub_evt.data
         self.ball_reference.SetCenter(x, y, z)
 
     def SetBallReferencePositionBasedOnBound(self, pubsub_evt):
-        coord = pubsub_evt.data
-        x, y, z = bases.FlipX(coord)
-        self.ball_reference.SetCenter(x, y, z)
+        if self._to_show_ball:
+            self.ActivateBallReference(None)
+            coord = pubsub_evt.data
+            x, y, z = bases.FlipX(coord)
+            self.ball_reference.SetCenter(x, y, z)
+        else:
+            self.DeactivateBallReference(None)
 
     def OnStartSeed(self, pubsub_evt):
         index = pubsub_evt.data
@@ -321,6 +337,7 @@ class Viewer(wx.Panel):
         if (volumes.GetNumberOfItems()):
             self.ren.RemoveVolume(volumes.GetLastProp())
             self.interactor.Render()
+            self._to_show_ball -= 1
 
     def RemoveActors(self, pubsub_evt):
         "Remove a list of actors"
@@ -605,12 +622,16 @@ class Viewer(wx.Panel):
 
     def OnShowRaycasting(self, pubsub_evt):
         self.raycasting_volume = True
+        self._to_show_ball += 1
+        print "to show ball", self._to_show_ball
         if self.on_wl:
             self.text.Show()
 
     def OnHideRaycasting(self, pubsub_evt):
         self.raycasting_volume = False
         self.text.Hide()
+        self._to_show_ball -= 1
+        print "to show ball", self._to_show_ball
 
     def OnSize(self, evt):
         self.UpdateRender()
@@ -639,6 +660,8 @@ class Viewer(wx.Panel):
 
         #self.ShowOrientationCube()
         self.interactor.Render()
+        self._to_show_ball += 1
+        print "to show ball", self._to_show_ball
 
     def RemoveActor(self, pubsub_evt):
         utils.debug("RemoveActor")
@@ -646,6 +669,8 @@ class Viewer(wx.Panel):
         ren = self.ren
         ren.RemoveActor(actor)
         self.interactor.Render()
+        #self._to_show_ball -= 1
+        #print "to show ball", self._to_show_ball
         
     def RemoveAllActor(self, pubsub_evt):
         utils.debug("RemoveAllActor")
@@ -658,6 +683,8 @@ class Viewer(wx.Panel):
 
     def LoadVolume(self, pubsub_evt):
         self.raycasting_volume = True
+        #self._to_show_ball += 1
+        #print "to show ball", self._to_show_ball
 
         volume = pubsub_evt.data[0]
         colour = pubsub_evt.data[1]
@@ -685,7 +712,10 @@ class Viewer(wx.Panel):
 
     def UnloadVolume(self, pubsub_evt):
         volume = pubsub_evt.data
+        self._to_show_ball -= 1
         self.ren.RemoveVolume(volume)
+        del volume
+        print "to show ball", self._to_show_ball
 
     def OnSetViewAngle(self, evt_pubsub):
         view = evt_pubsub.data
@@ -823,6 +853,9 @@ class Viewer(wx.Panel):
             elif not(self.repositioned_coronal_plan) and (position == 'Coronal'):
                 self.SetViewAngle(const.VOL_ISO)
                 self.repositioned_coronal_plan = 1
+
+    def _verify_necessity_ball_ref(self):
+        pass
 
 
             

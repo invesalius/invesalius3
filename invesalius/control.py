@@ -599,7 +599,6 @@ class Controller():
         else:
             prj.Project().raycasting_preset = 0
             Publisher.sendMessage('Update raycasting preset')
-            Publisher.sendMessage("Hide raycasting volume")
 
     def SaveRaycastingPreset(self, pubsub_evt):
         preset_name = pubsub_evt.data

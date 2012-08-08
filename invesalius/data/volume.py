@@ -18,6 +18,7 @@
 #--------------------------------------------------------------------------
 import plistlib
 import os
+import weakref
 
 import numpy
 import vtk
@@ -173,12 +174,30 @@ class Volume():
                 #Publisher.sendMessage('Render volume viewer')
             else:
                 self.LoadVolume()
-                self.CalculateHistogram()
+                #self.CalculateHistogram()
                 self.exist = 1
                 
             colour = self.GetBackgroundColour()
             Publisher.sendMessage('Change volume viewer background colour', colour)
             Publisher.sendMessage('Change volume viewer gui colour', colour)
+        else:
+            Publisher.sendMessage('Unload volume', self.volume)
+            del self.image
+            del self.imagedata
+            del self.final_imagedata
+            del self.volume
+            del self.color_transfer
+            del self.opacity_transfer_func
+            del self.volume_properties
+            del self.volume_mapper
+            self.volume = None
+            self.exist = False
+            self.loaded_image = False
+            self.image = None
+            self.final_imagedata = None
+            self.opacity_transfer_func = None
+            self.color_transfer = None
+            Publisher.sendMessage('Render volume viewer')
 
     def OnFlipVolume(self, pubsub_evt):
         print "Flipping Volume"
@@ -198,7 +217,6 @@ class Volume():
             self.Create8bColorTable(self.scale)
             self.Create8bOpacityTable(self.scale)
 
-
     def __load_preset(self):   
         # Update colour table
         self.__update_colour_table()
@@ -212,7 +230,6 @@ class Volume():
         self.SetShading()
         self.SetTypeRaycasting()
 
-        
     def OnSetCurve(self, pubsub_evt):
         self.curve = pubsub_evt.data
         self.CalculateWWWL()
@@ -469,9 +486,16 @@ class Volume():
                 convolve = vtk.vtkImageConvolve()
                 convolve.SetInput(imagedata)
                 convolve.SetKernel5x5([i/60.0 for i in Kernels[filter]])
-                convolve.AddObserver("ProgressEvent", lambda obj,evt:
-                                     update_progress(convolve, "Rendering..."))
+                convolve.ReleaseDataFlagOn()
+
+                convolve_ref = weakref.ref(convolve)
+                
+                convolve_ref().AddObserver("ProgressEvent", lambda obj,evt:
+                                     update_progress(convolve_ref(), "Rendering..."))
+                convolve.Update()
+                del imagedata
                 imagedata = convolve.GetOutput()
+                del convolve
                 #convolve.GetOutput().ReleaseDataFlagOn()
         return imagedata
 
@@ -509,12 +533,13 @@ class Volume():
         flip.SetInput(image)
         flip.SetFilteredAxis(1)
         flip.FlipAboutOriginOn()
-        flip.AddObserver("ProgressEvent", lambda obj,evt:
-                            update_progress(flip, "Rendering..."))
+        flip.ReleaseDataFlagOn()
+
+        flip_ref = weakref.ref(flip)
+        flip_ref().AddObserver("ProgressEvent", lambda obj,evt:
+                            update_progress(flip_ref(), "Rendering..."))
         flip.Update()
         image = flip.GetOutput()
-        #else:
-            #update_progress= vtk_utils.ShowProgress(1 + number_filters)
         
         scale = image.GetScalarRange()
         self.scale = scale
@@ -523,10 +548,13 @@ class Volume():
         cast.SetInput(image)
         cast.SetShift(abs(scale[0]))
         cast.SetOutputScalarTypeToUnsignedShort()
-        cast.AddObserver("ProgressEvent", lambda obj,evt:
-                            update_progress(cast, "Rendering..."))
+        cast.ReleaseDataFlagOn()
+        cast_ref = weakref.ref(cast)
+        cast_ref().AddObserver("ProgressEvent", lambda obj,evt:
+                            update_progress(cast_ref(), "Rendering..."))
         cast.Update()
         image2 = cast
+
         self.imagedata = image2
         if self.config['advancedCLUT']:
             self.Create16bColorTable(scale)
@@ -606,6 +634,8 @@ class Volume():
 
         Publisher.sendMessage('Load volume into viewer',
                                     (volume, colour, (self.ww, self.wl)))
+        del flip
+        del cast
 
     def OnEnableTool(self, pubsub_evt):
         tool_name, enable = pubsub_evt.data
@@ -630,6 +660,7 @@ class Volume():
         accumulate.SetInput(image)
         accumulate.SetComponentExtent(0, r -1, 0, 0, 0, 0)
         accumulate.SetComponentOrigin(image.GetScalarRange()[0], 0, 0)
+        accumulate.ReleaseDataFlagOn()
         accumulate.Update()
         n_image = numpy_support.vtk_to_numpy(accumulate.GetOutput().GetPointData().GetScalars())
         Publisher.sendMessage('Load histogram', (n_image,
