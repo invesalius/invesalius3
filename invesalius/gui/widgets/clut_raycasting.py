@@ -24,7 +24,7 @@ import sys
 
 import numpy
 import wx
-import wx.lib.pubsub as ps
+from wx.lib.pubsub import pub as Publisher
 
 import gui.dialogs as dialog
 import constants as const
@@ -174,7 +174,7 @@ class CLUTRaycastingWidget(wx.Panel):
             print "Salvando"
             filename = dialog.ShowSavePresetDialog()
             if filename:
-                ps.Publisher().sendMessage('Save raycasting preset', filename)
+                Publisher.sendMessage('Save raycasting preset', filename)
         point = self._has_clicked_in_a_point((x, y))
         # A point has been selected. It can be dragged.
         if point:
