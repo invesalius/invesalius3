@@ -405,7 +405,9 @@ class Controller():
         Publisher.sendMessage('Load measurement dict',
                                     proj.measurement_dict)
 
-        proj.presets.thresh_ct[_('Custom')] = proj.threshold_range
+        Publisher.sendMessage(('Set scroll position', 'AXIAL'),proj.matrix_shape[0]/2)
+        Publisher.sendMessage(('Set scroll position', 'SAGITAL'),proj.matrix_shape[1]/2)
+        Publisher.sendMessage(('Set scroll position', 'CORONAL'),proj.matrix_shape[2]/2)
         
         Publisher.sendMessage('End busy cursor')
 
