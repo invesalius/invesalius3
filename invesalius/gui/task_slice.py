@@ -109,7 +109,7 @@ class InnerTaskPanel(wx.Panel):
         self.fold_panel = fold_panel
 
         # Button to fold to select region task
-        button_next = wx.Button(self, -1, _("Save surface"))
+        button_next = wx.Button(self, -1, _("Create surface"))
         check_box = wx.CheckBox(self, -1, _("Overwrite last surface"))
         self.check_box = check_box
         if sys.platform != 'win32':
