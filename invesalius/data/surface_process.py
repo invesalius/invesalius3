@@ -52,7 +52,6 @@ class SurfaceProcess(multiprocessing.Process):
                                      dtype=self.mask_dtype,
                                      shape=self.mask_shape)
 
-
         while 1:
             roi = self.q_in.get()
             if roi is None:
@@ -69,6 +68,7 @@ class SurfaceProcess(multiprocessing.Process):
                                            1:, 1:])
             image =  converters.to_vtk(a_mask, self.spacing, roi.start,
                                        "AXIAL")
+            del a_mask
         else:
             a_image = numpy.array(self.image[roi])
 
@@ -84,20 +84,28 @@ class SurfaceProcess(multiprocessing.Process):
                 gauss = vtk.vtkImageGaussianSmooth()
                 gauss.SetInput(image)
                 gauss.SetRadiusFactor(0.3)
+                gauss.ReleaseDataFlagOn()
                 gauss.Update()
 
+                del image
                 image = gauss.GetOutput()
+                del gauss
+                del a_mask
             else:
                 image =  converters.to_vtk(a_image, self.spacing, roi.start,
                                            "AXIAL")
+            del a_image
 
         flip = vtk.vtkImageFlip()
         flip.SetInput(image)
         flip.SetFilteredAxis(1)
         flip.FlipAboutOriginOn()
+        flip.ReleaseDataFlagOn()
         flip.Update()
 
+        del image
         image = flip.GetOutput()
+        del flip
 
         #filename = tempfile.mktemp(suffix='_%s.vti' % (self.pid))
         #writer = vtk.vtkXMLImageDataWriter()
@@ -122,9 +130,14 @@ class SurfaceProcess(multiprocessing.Process):
         contour.ComputeScalarsOn()
         contour.ComputeGradientsOn()
         contour.ComputeNormalsOn()
+        contour.ReleaseDataFlagOn()
+        contour.Update()
         #contour.AddObserver("ProgressEvent", lambda obj,evt:
         #                    self.SendProgress(obj, _("Generating 3D surface...")))
         polydata = contour.GetOutput()
+        del image
+        del contour
+
         #else: #mode == "GRAYSCALE":
             #mcubes = vtk.vtkMarchingCubes()
             #mcubes.SetInput(flip.GetOutput())
@@ -166,5 +179,7 @@ class SurfaceProcess(multiprocessing.Process):
         writer.Write()
 
         print "Writing piece", roi, "to", filename
+        del polydata
+        del writer
 
         self.q_out.put(filename)

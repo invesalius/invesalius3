@@ -21,6 +21,7 @@ import multiprocessing
 import os
 import plistlib
 import random
+import weakref
 
 import vtk
 import wx
@@ -474,132 +475,207 @@ class SurfaceManager():
                 break
 
         polydata_append = vtk.vtkAppendPolyData()
+        polydata_append.ReleaseDataFlagOn()
         t = n_pieces
         while t:
             filename_polydata = q_out.get()
 
             reader = vtk.vtkXMLPolyDataReader()
             reader.SetFileName(filename_polydata)
+            reader.ReleaseDataFlagOn()
             reader.Update()
-            polydata_append.AddInput(reader.GetOutput())
+            reader.GetOutput().ReleaseDataFlagOn()
+
+            polydata = reader.GetOutput()
+            polydata.SetSource(None)
+
+            polydata_append.AddInput(polydata)
+            del reader
+            del polydata
             t -= 1
 
         polydata_append.Update()
+        polydata_append.GetOutput().ReleaseDataFlagOn()
         polydata = polydata_append.GetOutput()
+        #polydata.Register(None)
+        polydata.SetSource(None)
+        del polydata_append
 
         if algorithm == u'Context aware smoothing':
             normals = vtk.vtkPolyDataNormals()
-            normals.AddObserver("ProgressEvent", lambda obj,evt:
-                            UpdateProgress(obj, _("Generating 3D surface...")))
+            normals_ref = weakref.ref(normals)
+            normals_ref().AddObserver("ProgressEvent", lambda obj,evt:
+                                      UpdateProgress(normals_ref(), _("Generating 3D surface...")))
             normals.SetInput(polydata)
+            normals.ReleaseDataFlagOn()
             #normals.SetFeatureAngle(80)
             #normals.AutoOrientNormalsOn()
             normals.ComputeCellNormalsOn()
+            normals.GetOutput().ReleaseDataFlagOn()
             normals.Update()
+            del polydata
             polydata = normals.GetOutput()
+            polydata.SetSource(None)
+            del normals
 
             clean = vtk.vtkCleanPolyData()
-            clean.AddObserver("ProgressEvent", lambda obj,evt:
-                            UpdateProgress(obj, _("Generating 3D surface...")))
+            clean.ReleaseDataFlagOn()
+            clean.GetOutput().ReleaseDataFlagOn()
+            clean_ref = weakref.ref(clean)
+            clean_ref().AddObserver("ProgressEvent", lambda obj,evt:
+                            UpdateProgress(clean_ref(), _("Generating 3D surface...")))
             clean.SetInput(polydata)
             clean.PointMergingOn()
             clean.Update()
+
+            del polydata
             polydata = clean.GetOutput()
+            polydata.SetSource(None)
+            del clean
 
             polydata.BuildLinks()
             polydata = ca_smoothing.ca_smoothing(polydata, options['angle'],
                                                  options['max distance'],
                                                  options['min weight'],
                                                  options['steps'])
+            polydata.SetSource(None)
+            polydata.DebugOn()
 
         else:
             smoother = vtk.vtkWindowedSincPolyDataFilter()
-            smoother.AddObserver("ProgressEvent", lambda obj,evt:
-                            UpdateProgress(obj, _("Generating 3D surface...")))
+            smoother_ref = weakref.ref(smoother)
+            smoother_ref().AddObserver("ProgressEvent", lambda obj,evt:
+                            UpdateProgress(smoother_ref(), _("Generating 3D surface...")))
             smoother.SetInput(polydata)
             smoother.SetNumberOfIterations(smooth_iterations)
             smoother.SetFeatureAngle(120)
             smoother.SetEdgeAngle(90.0)
             smoother.BoundarySmoothingOn()
             smoother.SetPassBand(0.1)
+            smoother.ReleaseDataFlagOn()
+            smoother.GetOutput().ReleaseDataFlagOn()
             #smoother.FeatureEdgeSmoothingOn()
             #smoother.NonManifoldSmoothingOn()
             #smoother.NormalizeCoordinatesOn()
             smoother.Update()
+            del polydata
             polydata = smoother.GetOutput()
+            #polydata.Register(None)
+            polydata.SetSource(None)
+            del smoother
 
 
         if decimate_reduction:
             print "Decimating", decimate_reduction
             decimation = vtk.vtkQuadricDecimation()
+            decimation.ReleaseDataFlagOn()
             decimation.SetInput(polydata)
             decimation.SetTargetReduction(decimate_reduction)
-            decimation.AddObserver("ProgressEvent", lambda obj,evt:
-                            UpdateProgress(obj, _("Generating 3D surface...")))
+            decimation_ref = weakref.ref(decimation)
+            decimation_ref().AddObserver("ProgressEvent", lambda obj,evt:
+                            UpdateProgress(decimation_ref(), _("Generating 3D surface...")))
             #decimation.PreserveTopologyOn()
             #decimation.SplittingOff()
             #decimation.BoundaryVertexDeletionOff()
+            decimation.GetOutput().ReleaseDataFlagOn()
             decimation.Update()
+            del polydata
             polydata = decimation.GetOutput()
+            #polydata.Register(None)
+            polydata.SetSource(None)
+            del decimation
 
         to_measure = polydata
+        #to_measure.Register(None)
+        to_measure.SetSource(None)
 
         if keep_largest:
             conn = vtk.vtkPolyDataConnectivityFilter()
             conn.SetInput(polydata)
             conn.SetExtractionModeToLargestRegion()
-            conn.AddObserver("ProgressEvent", lambda obj,evt:
-                    UpdateProgress(obj, _("Generating 3D surface...")))
+            conn_ref = weakref.ref(conn)
+            conn_ref().AddObserver("ProgressEvent", lambda obj,evt:
+                    UpdateProgress(conn_ref(), _("Generating 3D surface...")))
             conn.Update()
+            conn.GetOutput().ReleaseDataFlagOn()
+            del polydata
             polydata = conn.GetOutput()
+            #polydata.Register(None)
+            polydata.SetSource(None)
+            del conn
 
         #Filter used to detect and fill holes. Only fill boundary edges holes.
         #TODO: Hey! This piece of code is the same from
         #polydata_utils.FillSurfaceHole, we need to review this.
         if fill_holes:
             filled_polydata = vtk.vtkFillHolesFilter()
+            filled_polydata.ReleaseDataFlagOn()
             filled_polydata.SetInput(polydata)
             filled_polydata.SetHoleSize(300)
-            filled_polydata.AddObserver("ProgressEvent", lambda obj,evt:
-                    UpdateProgress(obj, _("Generating 3D surface...")))
+            filled_polydata_ref = weakref.ref(filled_polydata)
+            filled_polydata_ref().AddObserver("ProgressEvent", lambda obj,evt:
+                    UpdateProgress(filled_polydata_ref(), _("Generating 3D surface...")))
             filled_polydata.Update()
+            filled_polydata.GetOutput().ReleaseDataFlagOn()
+            del polydata
             polydata = filled_polydata.GetOutput()
+            #polydata.Register(None)
+            polydata.SetSource(None)
+            polydata.DebugOn()
+            del filled_polydata
         
         normals = vtk.vtkPolyDataNormals()
-        normals.AddObserver("ProgressEvent", lambda obj,evt:
-	                    UpdateProgress(obj, _("Generating 3D surface...")))
+        normals.ReleaseDataFlagOn()
+        normals_ref = weakref.ref(normals)
+        normals_ref().AddObserver("ProgressEvent", lambda obj,evt:
+                        UpdateProgress(normals_ref(), _("Generating 3D surface...")))
         normals.SetInput(polydata)
         normals.SetFeatureAngle(80)
         normals.AutoOrientNormalsOn()
+        normals.GetOutput().ReleaseDataFlagOn()
         normals.Update()
+        del polydata
         polydata = normals.GetOutput()
+        #polydata.Register(None)
+        polydata.SetSource(None)
+        del normals
 
         # Improve performance
         stripper = vtk.vtkStripper()
-        stripper.AddObserver("ProgressEvent", lambda obj,evt:
-	                    UpdateProgress(obj, _("Generating 3D surface...")))
+        stripper.ReleaseDataFlagOn()
+        stripper_ref = weakref.ref(stripper)
+        stripper_ref().AddObserver("ProgressEvent", lambda obj,evt:
+                        UpdateProgress(stripper_ref(), _("Generating 3D surface...")))
         stripper.SetInput(polydata)
         stripper.PassThroughCellIdsOn()
         stripper.PassThroughPointIdsOn()
+        stripper.GetOutput().ReleaseDataFlagOn()
         stripper.Update()
+        del polydata
         polydata = stripper.GetOutput()
+        #polydata.Register(None)
+        polydata.SetSource(None)
+        del stripper
 
         # Map polygonal data (vtkPolyData) to graphics primitives.
         mapper = vtk.vtkPolyDataMapper()
         mapper.SetInput(polydata)
         mapper.ScalarVisibilityOff()
+        mapper.ReleaseDataFlagOn()
         mapper.ImmediateModeRenderingOn() # improve performance
 
         # Represent an object (geometry & properties) in the rendered scene
         actor = vtk.vtkActor()
         actor.SetMapper(mapper)
-        # Create Surface instance
+        del mapper
+        #Create Surface instance
         if overwrite:
             surface = Surface(index = self.last_surface_index)
         else:
             surface = Surface(name=surface_name)
         surface.colour = colour
         surface.polydata = polydata
+        del polydata
 
         # Set actor colour and transparency
         actor.GetProperty().SetColor(colour)
@@ -624,10 +700,13 @@ class SurfaceManager():
 
         # The following lines have to be here, otherwise all volumes disappear
         measured_polydata = vtk.vtkMassProperties()
+        measured_polydata.ReleaseDataFlagOn()
         measured_polydata.SetInput(to_measure)
-        volume =  measured_polydata.GetVolume()
+        volume =  float(measured_polydata.GetVolume())
         surface.volume = volume
         self.last_surface_index = surface.index
+        del measured_polydata
+        del to_measure
 
         Publisher.sendMessage('Load surface actor into viewer', actor)
 
@@ -647,10 +726,10 @@ class SurfaceManager():
         #When you finalize the progress. The bar is cleaned.
         UpdateProgress = vu.ShowProgress(1)
         UpdateProgress(0, _("Ready"))
-        Publisher.sendMessage('Update status text in GUI',
-                                    _("Ready"))
+        Publisher.sendMessage('Update status text in GUI', _("Ready"))
         
         Publisher.sendMessage('End busy cursor')
+        del actor
 
     def UpdateSurfaceInterpolation(self, pub_evt):
         interpolation = int(ses.Session().surface_interpolation)
