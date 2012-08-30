@@ -22,6 +22,7 @@ import sigar
 import sys
 import re
 import locale
+import math
 
 def format_time(value):
     sp1 = value.split(".")
@@ -203,6 +204,49 @@ def frange(start, end=None, inc=None):
     return L
 
 
+
+def calculate_resizing_tofitmemory(x_size,y_size,n_slices,byte):
+    """
+    Predicts the percentage (between 0 and 1) to resize the image to fit the memory, 
+    giving the following information:
+        x_size, y_size: image size
+        n_slices: number of slices
+        byte: bytes allocated for each pixel sample
+    """
+    imagesize = x_size * y_size * n_slices * byte  
+    
+    sg = sigar.open()
+    ram_free = sg.mem().actual_free()
+    ram_total = sg.mem().actual_free()
+    swap_free = sg.swap().free()
+    sg.close()
+
+    if (sys.platform == 'win32'):
+        if (platform.architecture()[0] == '32bit'):
+            if ram_free>1400000000:
+                ram_free=1400000000
+            if ram_total>1400000000:
+                ram_total=1400000000
+
+    if (sys.platform == 'linux2'):
+        if (platform.architecture()[0] == '32bit'):
+            if ram_free>3500000000:
+                ram_free=3500000000
+            if ram_total>3500000000:
+                ram_total=3500000000
+
+    if (swap_free>ram_total):
+        swap_free=ram_total
+    resize = (float((ram_free+0.5*swap_free)/imagesize))       
+    resize=math.sqrt(resize)  # this gives the "resize" for each axis x and y
+    if (resize>1): 
+        resize=1
+    return (100*resize)
+
+
+
+
+
 def predict_memory(nfiles, x, y, p):
     """
     Predict how much memory will be used, giving the following
@@ -292,6 +336,7 @@ def get_physical_memory():
     mem = sg.mem()
     sg.close()
     return int(mem.total())
+
 
 
 def get_system_encoding():
