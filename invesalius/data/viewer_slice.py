@@ -463,6 +463,8 @@ class Viewer(wx.Panel):
         evt.StartSpin()
 
     def OnEnterInteractor(self, evt, obj):
+        if (self.slice_.buffer_slices[self.orientation].mask is None):
+            return
         self.slice_data.cursor.Show()
         self.interactor.SetCursor(wx.StockCursor(wx.CURSOR_BLANK))
         
@@ -713,6 +715,9 @@ class Viewer(wx.Panel):
         self.interactor.Render()
 
     def OnBrushClick(self, evt, obj):
+        if (self.slice_.buffer_slices[self.orientation].mask is None):
+            return
+
         self.__set_editor_cursor_visibility(1)
  
         mouse_x, mouse_y = self.interactor.GetEventPosition()
@@ -747,6 +752,9 @@ class Viewer(wx.Panel):
         self.OnScrollBar()
 
     def OnBrushMove(self, evt, obj):
+        if (self.slice_.buffer_slices[self.orientation].mask is None):
+            return
+
         self.__set_editor_cursor_visibility(1)
  
         mouse_x, mouse_y = self.interactor.GetEventPosition()
@@ -792,6 +800,8 @@ class Viewer(wx.Panel):
             self.interactor.Render()
 
     def OnBrushRelease(self, evt, obj):
+        if (self.slice_.buffer_slices[self.orientation].mask is None):
+            return
         self.slice_.apply_slice_buffer_to_mask(self.orientation)
         self._flush_buffer = False
 
@@ -1179,6 +1189,7 @@ class Viewer(wx.Panel):
         self.slice_data.SetCursor(self.__create_cursor())
         self.cam = self.slice_data.renderer.GetActiveCamera()
         self.__build_cross_lines(imagedata)
+        #self.set_slice_number(0)
         self.set_slice_number(0)
         self.__update_camera()
         self.slice_data.renderer.ResetCamera()
