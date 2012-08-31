@@ -432,12 +432,12 @@ class Viewer(wx.Panel):
          
         if((self.state == const.STATE_SPIN) and (self.spined_image)):
             self.cam.SetViewUp(const.SLICE_POSITION[orig_orien][0][self.orientation])
-
+            # Values are on ccw order, starting from the top:
             if self.orientation == 'AXIAL':
                 values = [_("A"), _("R"), _("P"), _("L")]
-            elif self.orientation == 'SAGITAL':
+            elif self.orientation == 'CORONAL':
                 values = [_("T"), _("R"), _("B"), _("L")]
-            else:
+            else: # 'SAGITAL':
                 values = [_("T"), _("P"), _("B"), _("A")]
 
             self.RenderTextDirection(values)
@@ -487,7 +487,7 @@ class Viewer(wx.Panel):
             # Window & Level text
             self.wl_text = vtku.Text()
             self.SetWLText(proj.level, proj.window)
-            # Orientation texea
+            # Orientation text
             if self.orientation == 'AXIAL':
                 values = [_('R'), _('L'), _('A'), _('P')]
             elif self.orientation == 'SAGITAL':
@@ -536,10 +536,11 @@ class Viewer(wx.Panel):
             self.slice_data.renderer.AddActor(down_text.actor)
 
     def RenderTextDirection(self, directions):
+        # Values are on ccw order, starting from the top:
         self.up_text.SetValue(directions[0])
-        self.right_text.SetValue(directions[3])
-        self.down_text.SetValue(directions[2])
         self.left_text.SetValue(directions[1])
+        self.down_text.SetValue(directions[2])
+        self.right_text.SetValue(directions[3])
         self.interactor.Render()
 
 
@@ -589,16 +590,16 @@ class Viewer(wx.Panel):
                 self.RenderTextDirection([_("T"), _("R"), _("B"), _("L")])
 
             elif(croll > 1 and croll <= 44):
-                self.RenderTextDirection([_("TL"), _("RT"), _("BR"), _("LI")])
+                self.RenderTextDirection([_("TL"), _("RT"), _("BR"), _("LB")])
 
             elif(croll > 44 and croll <= 88):
-               self.RenderTextDirection([_("LS"), _("TR"), _("RB"), _("L")])
+               self.RenderTextDirection([_("LT"), _("TR"), _("RB"), _("BL")])
 
             elif(croll > 89 and croll <= 91):
                self.RenderTextDirection([_("L"), _("T"), _("R"), _("B")])
 
             elif(croll > 91 and croll <= 135):
-               self.RenderTextDirection([_("BI"), _("TL"), _("RT"), _("BR")])
+               self.RenderTextDirection([_("LB"), _("TL"), _("RT"), _("BR")])
      
             elif(croll > 135 and croll <= 177):
                 self.RenderTextDirection([_("BL"), _("LT"), _("TR"), _("RB")])
@@ -622,21 +623,30 @@ class Viewer(wx.Panel):
                 self.RenderTextDirection([_("TR"), _("RB"), _("BL"), _("LT")])
 
         elif(self.orientation == "SAGITAL"):
-           
-            if (croll >= -2 and croll <= 1):
+
+            if(croll >= -101 and croll <= -87):
+                self.RenderTextDirection([_("T"), _("P"), _("B"), _("A")])
+    
+            elif(croll >= -86 and croll <= -42):
+                self.RenderTextDirection([_("TA"), _("PT"), _("BP"), _("AB")])
+     
+            elif(croll >= -41 and croll <= -2):
+                self.RenderTextDirection([_("AT"), _("TP"), _("PB"), _("BA")])
+        
+            elif (croll >= -2 and croll <= 1):
                 self.RenderTextDirection([_("A"), _("T"), _("P"), _("B")])
 
             elif(croll > 1 and croll <= 44):
                 self.RenderTextDirection([_("AB"), _("TA"), _("PT"), _("BP")])
 
             elif(croll > 44 and croll <= 88):
-               self.RenderTextDirection([_("BA"), _("AS"), _("TP"), _("PB")])
+               self.RenderTextDirection([_("BA"), _("AT"), _("TP"), _("PB")])
 
             elif(croll > 89 and croll <= 91):
                self.RenderTextDirection([_("B"), _("A"), _("T"), _("P")])
 
             elif(croll > 91 and croll <= 135):
-               self.RenderTextDirection([_("BP"), _("AB"), _("SA"), _("PT")])
+               self.RenderTextDirection([_("BP"), _("AB"), _("TA"), _("PT")])
      
             elif(croll > 135 and croll <= 177):
                 self.RenderTextDirection([_("PB"), _("BA"), _("AT"), _("TP")])
@@ -649,15 +659,6 @@ class Viewer(wx.Panel):
     
             elif(croll >= -132 and croll <= -101):
                 self.RenderTextDirection([_("TP"), _("PB"), _("BA"), _("AT")])
-
-            elif(croll >= -101 and croll <= -87):
-                self.RenderTextDirection([_("T"), _("P"), _("B"), _("A")])
-    
-            elif(croll >= -86 and croll <= -42):
-                self.RenderTextDirection([_("TA"), _("PT"), _("BP"), _("AB")])
-     
-            elif(croll >= -41 and croll <= -2):
-                self.RenderTextDirection([_("AT"), _("TP"), _("PB"), _("BA")])
 
 
     def Reposition(self, slice_data):
