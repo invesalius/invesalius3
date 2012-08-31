@@ -19,12 +19,12 @@
 import math
 import os
 import plistlib
-
+import wx
 import numpy
 from wx.lib.pubsub import pub as Publisher
 
 import constants as const
-import data.imagedata_utils as utils
+import data.imagedata_utils as image_utils
 import data.mask as msk
 import data.measures
 import data.slice_ as sl
@@ -37,7 +37,7 @@ import reader.dicom_grouper as dg
 import reader.dicom_reader as dcm
 import session as ses
 
-from utils import debug
+import utils 
 
 DEFAULT_THRESH_MODE = 0
 
@@ -171,14 +171,14 @@ class Controller():
         try:
             filename = session.project_path[1]
         except(AttributeError):
-            debug("Project doesn't exist")
+            utils.debug("Project doesn't exist")
             filename = None
 
         if (filename):
             if (st == const.PROJ_NEW) or (st == const.PROJ_CHANGE):
                 answer = dialog.SaveChangesDialog(filename, self.frame)
                 if not answer:
-                    debug("Close without changes")
+                    utils.debug("Close without changes")
                     self.CloseProject()
                     Publisher.sendMessage("Enable state project", False)
                     Publisher.sendMessage('Set project name')
@@ -186,14 +186,14 @@ class Controller():
                     Publisher.sendMessage("Exit")
                 elif answer == 1:
                     self.ShowDialogSaveProject()
-                    debug("Save changes and close")
+                    utils.debug("Save changes and close")
                     self.CloseProject()
                     Publisher.sendMessage("Enable state project", False)
                     Publisher.sendMessage('Set project name')
                     Publisher.sendMessage("Stop Config Recording")
                     Publisher.sendMessage("Exit")
                 elif answer == -1:
-                    debug("Cancel")
+                    utils.debug("Cancel")
             else:
                 self.CloseProject()
                 Publisher.sendMessage("Enable state project", False)
@@ -347,7 +347,7 @@ class Controller():
                 self.CreateAnalyzeProject(imagedata)
             # OPTION 3: Nothing...
             else:
-                debug("No medical images found on given directory")
+                utils.debug("No medical images found on given directory")
                 return
         self.LoadProject()
         Publisher.sendMessage("Enable state project", True)
@@ -420,7 +420,7 @@ class Controller():
         #TODO: Verify if all Analyse are in AXIAL orientation
 
         # To get  Z, X, Y (used by InVesaliu), not X, Y, Z
-        matrix, matrix_filename = utils.analyze2mmap(imagedata)
+        matrix, matrix_filename = image_utils.analyze2mmap(imagedata)
         if header['orient'] == 0:
             proj.original_orientation =  const.AXIAL
         elif header['orient'] == 1:
@@ -492,7 +492,7 @@ class Controller():
         interval += 1
         filelist = dicom_group.GetFilenameList()[::interval]
         if not filelist:
-            debug("Not used the IPPSorter")
+            utils.debug("Not used the IPPSorter")
             filelist = [i.image.file for i in dicom_group.GetHandSortedList()[::interval]]
         
         if file_range != None and file_range[1] > file_range[0]:
@@ -500,9 +500,6 @@ class Controller():
 
         zspacing = dicom_group.zspacing * interval
 
-        print "\n======================================="
-        print ">>>>>>>>>>>>>>>>>> zspacing", zspacing, interval
-        print "\n======================================="
         size = dicom.image.size
         bits = dicom.image.bits_allocad
         sop_class_uid = dicom.acquisition.sop_class_uid
@@ -514,16 +511,30 @@ class Controller():
         else:
             use_dcmspacing = 0
 
-        #imagedata = utils.CreateImageData(filelist, zspacing, xyspacing,size,
-                                          #bits, use_dcmspacing)
-
         imagedata = None
+        
+        sx, sy = size
+        n_slices = len(filelist)
+        resolution_percentage = utils.calculate_resizing_tofitmemory(int(sx), int(sy), n_slices, bits/8)
+        
+        if resolution_percentage < 1.0:
+            re_dialog = dialog.ResizeImageDialog()
+            re_dialog.SetValue(int(resolution_percentage*100))
+            re_dialog_value = re_dialog.ShowModal()  
+            
+            if re_dialog_value == wx.ID_OK:
+                percentage = re_dialog.GetValue()
+                resolution_percentage = percentage / 100.0
+            else:
+                return
 
-
+            xyspacing = xyspacing[0] / resolution_percentage, xyspacing[1] / resolution_percentage
+       
+ 
         wl = float(dicom.image.level)
         ww = float(dicom.image.window)
-        self.matrix, scalar_range, self.filename = utils.dcm2memmap(filelist, size,
-                                                                    orientation)
+        self.matrix, scalar_range, self.filename = image_utils.dcm2memmap(filelist, size,
+                                                                    orientation, resolution_percentage)
 
         self.Slice = sl.Slice()
         self.Slice.matrix = self.matrix
@@ -543,10 +554,10 @@ class Controller():
             message = _("Fix gantry tilt applying the degrees below")
             value = -1*tilt_value
             tilt_value = dialog.ShowNumberDialog(message, value)
-            utils.FixGantryTilt(self.matrix, self.Slice.spacing, tilt_value)
+            image_utils.FixGantryTilt(self.matrix, self.Slice.spacing, tilt_value)
         elif (tilt_value) and not (gui):
             tilt_value = -1*tilt_value
-            utils.FixGantryTilt(self.matrix, self.Slice.spacing, tilt_value)
+            image_utils.FixGantryTilt(self.matrix, self.Slice.spacing, tilt_value)
 
         self.Slice.window_level = wl
         self.Slice.window_width = ww
