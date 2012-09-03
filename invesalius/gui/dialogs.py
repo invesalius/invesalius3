@@ -92,46 +92,43 @@ class ResizeImageDialog(wx.Dialog):
                    style=wx.DEFAULT_DIALOG_STYLE)
         self.PostCreate(pre)
         
-        lbl_message = wx.StaticText(self, -1, _("Your operational system is 32bits or have \nlow memory. It's recommended to reduce the image resolution."))
-
+        lbl_message = wx.StaticText(self, -1, _("Your operational system is 32bits or have low memory. \nIf you manipulate 3D surface or volume rendering \nit's recommended to reduce the image resolution."))
         icon = wx.ArtProvider.GetBitmap(wx.ART_WARNING, wx.ART_MESSAGE_BOX, (32,32))
         bmp = wx.StaticBitmap(self, -1, icon)
 
         btn_ok = wx.Button(self, wx.ID_OK)
-        btn_ok.SetHelpText("Value will be applied.")
         btn_ok.SetDefault()
 
         btn_cancel = wx.Button(self, wx.ID_CANCEL)
-        btn_cancel.SetHelpText("Value will not be applied.")
 
         btn_sizer = wx.StdDialogButtonSizer()
         btn_sizer.AddButton(btn_ok)
         btn_sizer.AddButton(btn_cancel)
         btn_sizer.Realize()
 
-        lbl_message_percent = wx.StaticText(self, -1, _("Resolution percentage"))
+        lbl_message_percent = wx.StaticText(self, -1,_("Resolution percentage of image"))
 
-        num_ctrl_percent = wx.SpinCtrl(self, -1, "", (30, 50))
-        num_ctrl_percent.SetRange(20,100) 
+        num_ctrl_percent = wx.SpinCtrl(self, -1)
+        num_ctrl_percent.SetRange(20,100)
         self.num_ctrl_porcent = num_ctrl_percent
 
         sizer_percent = wx.BoxSizer(wx.HORIZONTAL)
-        sizer_percent.Add(lbl_message_percent, 0, wx.ALIGN_CENTRE|wx.ALL, 5)
-        sizer_percent.Add(num_ctrl_percent, 0, wx.ALIGN_CENTRE|wx.ALL, 5)
+        sizer_percent.Add(lbl_message_percent, 0, wx.EXPAND|wx.ALL, 5)
+        sizer_percent.Add(num_ctrl_percent, 0, wx.ALL, 5)
 
         sizer_itens = wx.BoxSizer(wx.VERTICAL)
-        sizer_itens.Add(lbl_message, 0, wx.ALIGN_CENTRE_VERTICAL|wx.ALL|wx.EXPAND, 5)
-        sizer_itens.AddSizer(sizer_percent, 0, wx.ALIGN_CENTRE|wx.ALL, 5)
-        sizer_itens.Add(btn_sizer, 0, wx.ALIGN_CENTER_VERTICAL|wx.ALL, 25)
+        sizer_itens.Add(lbl_message, 0, wx.EXPAND|wx.ALL, 5)
+        sizer_itens.AddSizer(sizer_percent, 0, wx.EXPAND|wx.ALL, 5)
+        sizer_itens.Add(btn_sizer, 0, wx.EXPAND|wx.ALL, 5)
 
         sizer_general = wx.BoxSizer(wx.HORIZONTAL)
-        sizer_general.Add(bmp, 0, wx.ALIGN_CENTRE|wx.ALL, 15)
-        sizer_general.AddSizer(sizer_itens, 90, wx.ALIGN_CENTRE|wx.ALL, 10)
+        sizer_general.Add(bmp, 0, wx.ALIGN_CENTRE|wx.ALL, 10)
+        sizer_general.AddSizer(sizer_itens, 0, wx.ALL , 5)
 
+        #self.SetAutoLayout(True)
         self.SetSizer(sizer_general)
-        sizer_itens.Fit(self)
+        sizer_general.Fit(self)
         self.Layout()
-        self.SetAutoLayout(True)
         self.Centre()
     
     def SetValue(self, value):
