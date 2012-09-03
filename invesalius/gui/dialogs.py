@@ -106,7 +106,7 @@ class ResizeImageDialog(wx.Dialog):
         btn_sizer.AddButton(btn_cancel)
         btn_sizer.Realize()
 
-        lbl_message_percent = wx.StaticText(self, -1,_("Resolution percentage of image"))
+        lbl_message_percent = wx.StaticText(self, -1,_("Percentage of image resolution"))
 
         num_ctrl_percent = wx.SpinCtrl(self, -1)
         num_ctrl_percent.SetRange(20,100)
