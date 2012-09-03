@@ -39,13 +39,14 @@ from wx.lib.pubsub import setuparg1# as psv1
 #from wx.lib.pubsub import Publisher 
 #import wx.lib.pubsub as ps
 from wx.lib.pubsub import pub as Publisher
-import wx.lib.agw.advancedsplash as agw
 
-if sys.platform == 'linux2':
-    _SplashScreen = agw.AdvancedSplash
-else:
-    if sys.platform != 'darwin':
-        _SplashScreen = wx.SplashScreen
+#import wx.lib.agw.advancedsplash as agw
+#if sys.platform == 'linux2':
+#    _SplashScreen = agw.AdvancedSplash
+#else:
+#    if sys.platform != 'darwin':
+#        _SplashScreen = wx.SplashScreen
+
 
 import gui.language_dialog as lang_dlg
 import i18n
@@ -63,10 +64,9 @@ class InVesalius(wx.App):
         Initialize splash screen and main frame.
         """
         self.SetAppName("InVesalius 3")
-        splash = SplashScreen()
-        self.control = splash.control
-        self.frame = splash.main
-        splash.Show()
+        self.splash = SplashScreen()
+        self.splash.Show()
+        wx.CallLater(1000,self.Startup2)
         return True
 
     def MacOpenFile(self, filename):
@@ -75,6 +75,10 @@ class InVesalius(wx.App):
         """
         path = os.path.abspath(filename)
         Publisher.sendMessage('Open project', path)
+
+    def Startup2(self):
+        self.control = self.splash.control
+        self.frame = self.splash.main
 
 # ------------------------------------------------------------------
 
@@ -128,8 +132,6 @@ class SplashScreen(wx.SplashScreen):
                     shutil.rmtree(invdir)
                     sys.exit()
                     
-                        
-
         # Session file should be created... So we set the recent
         # choosen language
         if (create_session):
@@ -139,6 +141,7 @@ class SplashScreen(wx.SplashScreen):
 
         session.SaveConfigFileBackup()
 
+           
         # Only after language was defined, splash screen will be
         # shown
         if lang:
@@ -160,17 +163,23 @@ class SplashScreen(wx.SplashScreen):
                                      id=-1,
                                      parent=None)
             self.Bind(wx.EVT_CLOSE, self.OnClose)
+            wx.Yield()
+            wx.CallLater(200,self.Startup)
 
-            # Importing takes sometime, therefore it will be done
-            # while splash is being shown
-            from gui.frame import Frame
-            from control import Controller
-            from project import Project
 
-            self.main = Frame(None)
-            self.control = Controller(self.main)
+    def Startup(self):
+        # Importing takes sometime, therefore it will be done
+        # while splash is being shown
+        from gui.frame import Frame
+        from control import Controller
+        from project import Project
+        
+        self.main = Frame(None)
+        self.control = Controller(self.main)
+        
+        self.fc = wx.FutureCall(1, self.ShowMain)
 
-            self.fc = wx.FutureCall(1, self.ShowMain)
+
 
     def OnClose(self, evt):
         # Make sure the default handler runs too so this window gets
