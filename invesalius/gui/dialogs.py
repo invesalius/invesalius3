@@ -701,6 +701,8 @@ def ShowAboutDialog(parent):
     info.Developers = ["Tatiana Al-Chueyr",
                        "Paulo Henrique Junqueira Amorim",
                        "Thiago Franco de Moraes",
+                       "Guilherme Soares Cesar Soares Ruppert",
+                       "Fábio de Souza Azevedo",
                        "Jorge Vicente Lopes da Silva"]
 
     info.Translators = ["Alex P. Natsios",
