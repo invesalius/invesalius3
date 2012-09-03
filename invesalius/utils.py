@@ -213,7 +213,7 @@ def calculate_resizing_tofitmemory(x_size,y_size,n_slices,byte):
         n_slices: number of slices
         byte: bytes allocated for each pixel sample
     """
-    imagesize = x_size * y_size * n_slices * byte * 17 
+    imagesize = x_size * y_size * n_slices * byte * 28 
     
     sg = sigar.open()
     ram_free = sg.mem().actual_free()
