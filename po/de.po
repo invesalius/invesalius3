@@ -4,20 +4,23 @@
 # Tatiana Al-Chueyr Pereira Martins <tatiana.alchueyr@gmail.com>
 # Paulo Henrique Junqueira Amorim <paulojamorim@gmail.com>
 # Thiago Franco de Morais <totonixsame@gmail.com>
+# Translators:
 msgid ""
 msgstr ""
-"Project-Id-Version: InVesalius 3\n"
-"Report-Msgid-Bugs-To: \n"
+"Project-Id-Version: InVesalius\n"
+"Report-Msgid-Bugs-To: http://svn.softwarepublico.gov.br/trac/invesalius\n"
 "POT-Creation-Date: 2010-03-13 10:17-0300\n"
-"PO-Revision-Date: 2010-01-07 11:25-0300\n"
-"Last-Translator: Sebastian Hilbert <sebastian.hilbert@gmx.net>\n"
-"Language-Team: InVesalius Team <invesalius@cti.gov.br>\n"
+"PO-Revision-Date: 2010-11-30 02:42+0000\n"
+"Last-Translator: Invesalius team <invesalius@cti.gov.br>\n"
+"Language-Team: German (http://www.transifex.com/projects/p/invesalius/language/de/)\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
+"Language: de\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"X-Poedit-Country: GENERIC\n"
 "X-Poedit-Language: English\n"
 "X-Poedit-SourceCharset: utf-8\n"
-"X-Poedit-Country: GENERIC\n"
 
 #: constants.py:31
 #, python-format
@@ -517,9 +520,7 @@ msgstr "InVesalius Projekt (*.inv3)|*.inv3"
 msgid ""
 "The project %s has been modified.\n"
 "Save changes?"
-msgstr ""
-"Das Projekt %s wurde geändert.\n"
-"Änderungen speichern ?"
+msgstr "Das Projekt %s wurde geändert.\nÄnderungen speichern ?"
 
 #: dialogs.py:288
 #, python-format
@@ -555,19 +556,16 @@ msgid "No surfaces were selected for duplication."
 msgstr ""
 
 #: dialogs.py:416
-#, fuzzy
 msgid "New mask name:"
-msgstr "Neuer Oberflächename"
+msgstr ""
 
 #: dialogs.py:420
-#, fuzzy
 msgid "Name the mask to be created"
-msgstr "Name der zu erstellenden Oberfläche"
+msgstr ""
 
 #: dialogs.py:427
-#, fuzzy
 msgid "Threshold preset:"
-msgstr "Grenzwert"
+msgstr ""
 
 #: dialogs.py:529
 #, python-format
@@ -589,14 +587,7 @@ msgid ""
 "InVesalius allows for the export of 3D volumes or surfaces as STL files for "
 "creating physical models of a patient's anatomy using rapid prototyping "
 "technologies."
-msgstr ""
-"InVesalius ist eine Software für die 3D-Rekonstruktion medizinischer Bilder "
-"Es wird eine Sequenz von 2D-DICOM CT- oder MR-Bildern verarbeitet.\n"
-" Es wird eine Sequenz von 2D-DICOM CT- oder MR-Bildern verarbeitet.\n"
-"\n"
-" Die Software kann auch die korrespondierenden STL-Dateien generieren, "
-"sodass der Nutzer physikalische 3D-Modelle der Patientenanatmie drucken kann "
-"durch die Nutzung von Rapid Prototyping."
+msgstr "InVesalius ist eine Software für die 3D-Rekonstruktion medizinischer Bilder Es wird eine Sequenz von 2D-DICOM CT- oder MR-Bildern verarbeitet.\n Es wird eine Sequenz von 2D-DICOM CT- oder MR-Bildern verarbeitet.\n\n Die Software kann auch die korrespondierenden STL-Dateien generieren, sodass der Nutzer physikalische 3D-Modelle der Patientenanatmie drucken kann durch die Nutzung von Rapid Prototyping."
 
 #: dialogs.py:610
 msgid "GNU GPL (General Public License) version 2"
@@ -678,9 +669,7 @@ msgstr "Ort: %.2f"
 msgid ""
 "%s %s\n"
 "Made in InVesalius"
-msgstr ""
-"%s %s\n"
-"Erstellt mit InVesalius"
+msgstr "%s %s\nErstellt mit InVesalius"
 
 #: dicom_preview_panel.py:187 dicom_preview_panel.py:188
 msgid "Image"
@@ -785,9 +774,8 @@ msgid "Constrast"
 msgstr "Kontrast"
 
 #: frame.py:1042
-#, fuzzy
 msgid "Scroll slices"
-msgstr "Coronarer Schnitt"
+msgstr ""
 
 #: frame.py:1046
 msgid "Slices' cross intersection"
@@ -874,14 +862,12 @@ msgid "Choose user interface language"
 msgstr "Wähle die Sprache der Oberfläche"
 
 #: polydata_utils.py:132
-#, fuzzy
 msgid "Getting selected parts"
-msgstr "Erste Schritte"
+msgstr ""
 
 #: polydata_utils.py:191
-#, fuzzy
 msgid "Splitting disconected parts"
-msgstr "Trenne alle nicht zusammenhängende Oberflächen"
+msgstr ""
 
 #: presets.py:31 presets.py:49 presets.py:104 presets.py:135
 msgid "Soft Tissue"
@@ -1066,10 +1052,9 @@ msgid "Advanced options"
 msgstr "Erweiterte Optionen"
 
 #: task_surface.py:246
-msgid "Automatically select largest disconnected region and create new surface"
-msgstr ""
-"Wähle automatisch den größten nicht zusammenhängenden Bereich aus und "
-"erstelle eine neue Oberfläche"
+msgid ""
+"Automatically select largest disconnected region and create new surface"
+msgstr "Wähle automatisch den größten nicht zusammenhängenden Bereich aus und erstelle eine neue Oberfläche"
 
 #: task_surface.py:247
 msgid "Select largest part"
@@ -1079,19 +1064,16 @@ msgstr "Wähle den größten Teil"
 msgid ""
 "Automatically select disconnected regions and create one new surface per "
 "region"
-msgstr ""
-"Wähle automatisch nicht zusammenhängende Bereiche und erstelle eine neue "
-"Oberfläche pro Region"
+msgstr "Wähle automatisch nicht zusammenhängende Bereiche und erstelle eine neue Oberfläche pro Region"
 
 #: task_surface.py:256
 msgid "Split all disconnected surfaces"
 msgstr "Trenne alle nicht zusammenhängende Oberflächen"
 
 #: task_surface.py:264
-msgid "Manually insert seeds of regions of interest and create one new surface"
-msgstr ""
-"Füge manuell Kondensationskerne in interessanten Bereiche (ROI) ein und "
-"erstelle eine neue Oberfläche"
+msgid ""
+"Manually insert seeds of regions of interest and create one new surface"
+msgstr "Füge manuell Kondensationskerne in interessanten Bereiche (ROI) ein und erstelle eine neue Oberfläche"
 
 #: task_surface.py:265
 msgid "Select regions of interest..."
@@ -1144,51 +1126,3 @@ msgstr "T"
 #: viewer_slice.py:451 viewer_slice.py:453
 msgid "B"
 msgstr "B"
-
-#, fuzzy
-#~ msgid "Measure %d"
-#~ msgstr "Messen"
-
-#, fuzzy
-#~ msgid "Annotations"
-#~ msgstr "Füge Textkommentare hinzu"
-
-#~ msgid "Name of new mask:"
-#~ msgstr "Name der neuen Maske:"
-
-#~ msgid "InVesalius 3 - New mask"
-#~ msgstr "InVesalius 3 - Neue Maske"
-
-#~ msgid "InVesalius is a software for medical imaging 3D reconstruction. "
-#~ msgstr ""
-#~ "InVesalius ist eine Software für die 3D-Rekonstruktion medizinischer "
-#~ "Bilder"
-
-#~ msgid ""
-#~ "Its input is a sequency of DICOM 2D image files acquired with CT or MR.\n"
-#~ "\n"
-#~ msgstr ""
-#~ "Es wird eine Sequenz von 2D-DICOM CT- oder MR-Bildern verarbeitet.\n"
-#~ "\n"
-
-#~ msgid "The software also allows generating correspondent STL files,"
-#~ msgstr ""
-#~ "Die Software kann auch die korrespondierenden STL-Dateien generieren,"
-
-#~ msgid "so the user can print 3D physical models of the patient's anatomy "
-#~ msgstr ""
-#~ "sodass der Nutzer physikalische 3D-Modelle der Patientenanatmie drucken "
-#~ "kann "
-
-#~ msgid "using Rapid Prototyping."
-#~ msgstr "durch die Nutzung von Rapid Prototyping."
-
-#, fuzzy
-#~ msgid "Add annotation"
-#~ msgstr "Füge Textkommentare hinzu"
-
-#~ msgid "Import medical image..."
-#~ msgstr "Medizinisches Bild importieren"
-
-#~ msgid "Window and Level"
-#~ msgstr "Fenster und Level"

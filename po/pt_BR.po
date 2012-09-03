@@ -1,23 +1,26 @@
-# InVesalius 3.0 Beta - Brazilian Portuguese.
+# InVesalius 3.0 Beta - English
 # Copyright (C) 2007-2009 Centro de Tecnologia da Informação Renato Archer
 # This file is distributed under the same license as the InVesalius package. (GNU General Public License v2)
 # Tatiana Al-Chueyr Pereira Martins <tatiana.alchueyr@gmail.com>
 # Paulo Henrique Junqueira Amorim <paulojamorim@gmail.com>
 # Thiago Franco de Morais <totonixsame@gmail.com>
+# Translators:
 msgid ""
 msgstr ""
-"Project-Id-Version: InVesalius 3\n"
-"Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2010-03-13 10:18-0300\n"
-"PO-Revision-Date: 2010-01-07 11:25-0300\n"
-"Last-Translator: InVesalius team <invesalius@cti.gov.br>\n"
-"Language-Team: InVesalius Team <invesalius@cti.gov.br>\n"
+"Project-Id-Version: InVesalius\n"
+"Report-Msgid-Bugs-To: http://svn.softwarepublico.gov.br/trac/invesalius\n"
+"POT-Creation-Date: 2010-03-13 10:17-0300\n"
+"PO-Revision-Date: 2010-11-30 02:42+0000\n"
+"Last-Translator: Invesalius team <invesalius@cti.gov.br>\n"
+"Language-Team: Portuguese (Brazil) (http://www.transifex.com/projects/p/invesalius/language/pt_BR/)\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"X-Poedit-Language: Portuguese\n"
+"Language: pt_BR\n"
+"Plural-Forms: nplurals=2; plural=(n > 1);\n"
+"X-Poedit-Country: GENERIC\n"
+"X-Poedit-Language: English\n"
 "X-Poedit-SourceCharset: utf-8\n"
-"X-Poedit-Country: BRAZIL\n"
 
 #: constants.py:31
 #, python-format
@@ -517,9 +520,7 @@ msgstr "Projeto InVesalius (*.inv3)|*.inv3"
 msgid ""
 "The project %s has been modified.\n"
 "Save changes?"
-msgstr ""
-"O projeto %s foi modificado.\n"
-" Deseja salvar as alterações?"
+msgstr "O projeto %s foi modificado.\n Deseja salvar as alterações?"
 
 #: dialogs.py:288
 #, python-format
@@ -586,12 +587,7 @@ msgid ""
 "InVesalius allows for the export of 3D volumes or surfaces as STL files for "
 "creating physical models of a patient's anatomy using rapid prototyping "
 "technologies."
-msgstr ""
-"InVesalius é um software para reconstrução 3D de imanges médicas a partir de "
-"uma seqüência de imagens DICOM 2D, obtidas com equipamentos de TC ou RM. O "
-"InVesalius permite que sejam exportados volumes ou superífices 3D no formato "
-"STL, para criação de réplicas físicas de estruturas anatômicas do paciente, "
-"através de tecnologias de prototipagem rápida."
+msgstr "InVesalius é um software para reconstrução 3D de imanges médicas a partir de uma seqüência de imagens DICOM 2D, obtidas com equipamentos de TC ou RM. O InVesalius permite que sejam exportados volumes ou superífices 3D no formato STL, para criação de réplicas físicas de estruturas anatômicas do paciente, através de tecnologias de prototipagem rápida."
 
 #: dialogs.py:610
 msgid "GNU GPL (General Public License) version 2"
@@ -673,9 +669,7 @@ msgstr "Localização: %.2f"
 msgid ""
 "%s %s\n"
 "Made in InVesalius"
-msgstr ""
-"%s %s\n"
-" Criado com InVesalius"
+msgstr "%s %s\n Criado com InVesalius"
 
 #: dicom_preview_panel.py:187 dicom_preview_panel.py:188
 msgid "Image"
@@ -1058,9 +1052,9 @@ msgid "Advanced options"
 msgstr "Ferramentas avançadas"
 
 #: task_surface.py:246
-msgid "Automatically select largest disconnected region and create new surface"
-msgstr ""
-"Seleção automática de maior região desconexa e criação de nova superfície"
+msgid ""
+"Automatically select largest disconnected region and create new surface"
+msgstr "Seleção automática de maior região desconexa e criação de nova superfície"
 
 #: task_surface.py:247
 msgid "Select largest part"
@@ -1070,16 +1064,15 @@ msgstr "Separar maior superfície"
 msgid ""
 "Automatically select disconnected regions and create one new surface per "
 "region"
-msgstr ""
-"Seleção automática de superfícies desconexas e criação de superfícies "
-"correspondentes"
+msgstr "Seleção automática de superfícies desconexas e criação de superfícies correspondentes"
 
 #: task_surface.py:256
 msgid "Split all disconnected surfaces"
 msgstr "Separar todas regiões desconexas"
 
 #: task_surface.py:264
-msgid "Manually insert seeds of regions of interest and create one new surface"
+msgid ""
+"Manually insert seeds of regions of interest and create one new surface"
 msgstr "Selecionar manualmente regiões de interesse através de sementes"
 
 #: task_surface.py:265
@@ -1133,97 +1126,3 @@ msgstr "S"
 #: viewer_slice.py:451 viewer_slice.py:453
 msgid "B"
 msgstr "I"
-
-#, fuzzy
-#~ msgid "Measure %d"
-#~ msgstr "Medição"
-
-#, fuzzy
-#~ msgid "Annotations"
-#~ msgstr "Adicionar anotações"
-
-#~ msgid "Name of new mask:"
-#~ msgstr "Nome da nova máscara:"
-
-#~ msgid "InVesalius 3 - New mask"
-#~ msgstr "InVesalius 3 - Nova máscara"
-
-#~ msgid "InVesalius is a software for medical imaging 3D reconstruction. "
-#~ msgstr "InVesalius é um software para reconstrução de imagens médicas. "
-
-#~ msgid ""
-#~ "Its input is a sequency of DICOM 2D image files acquired with CT or MR.\n"
-#~ "\n"
-#~ msgstr ""
-#~ "Sua entrada é um conjunto de arquivos 2D DICOM obtidos através de TC ou "
-#~ "RM.\n"
-#~ "\n"
-
-#~ msgid "The software also allows generating correspondent STL files,"
-#~ msgstr ""
-#~ "O software também permite a geração de arquivos STL correspondentes,"
-
-#~ msgid "so the user can print 3D physical models of the patient's anatomy "
-#~ msgstr ""
-#~ "que podem ser utilizados para impressão física de modelos anatômicos do "
-#~ "paciente"
-
-#~ msgid "using Rapid Prototyping."
-#~ msgstr "utilizando Prototipagem Rápida."
-
-#, fuzzy
-#~ msgid "Add annotation"
-#~ msgstr "Adicionar anotações"
-
-#~ msgid "Import medical image..."
-#~ msgstr "Importar imagens médicas..."
-
-#~ msgid "Window and Level"
-#~ msgstr "Brilho e Contraste"
-
-#~ msgid "image size"
-#~ msgstr "tamanho da imagem"
-
-#~ msgid ""
-#~ "id\n"
-#~ "protocol"
-#~ msgstr ""
-#~ "id\n"
-#~ "protocolo"
-
-#~ msgid ""
-#~ "date time\n"
-#~ " Made in InVesalius"
-#~ msgstr ""
-#~ "data hora\n"
-#~ " Criado com InVesalius"
-
-#~ msgid "Automatically split surfaces into new ones"
-#~ msgstr "Separar automaticamente superfícies desconexas em novas"
-
-#~ msgid "Select surfaces of interest"
-#~ msgstr "Separar através de sementes"
-
-#~ msgid "Select mask to be used for creating 3D surface:"
-#~ msgstr "Selecione uma máscara a ser usada para criar a superfície 3D"
-
-#~ msgid "Import medical images"
-#~ msgstr "Importar imagens médicas"
-
-#~ msgid "Surface"
-#~ msgstr "Superfície"
-
-#~ msgid "Save current values"
-#~ msgstr "Salvar valores atuais"
-
-#~ msgid "Save current values as..."
-#~ msgstr "Salvar valores atuais como..."
-
-#~ msgid "Load values"
-#~ msgstr "Carregar valores"
-
-#~ msgid "Optimal"
-#~ msgstr "Ótima"
-
-#~ msgid "MaskX %d"
-#~ msgstr "MáscaraX %d"

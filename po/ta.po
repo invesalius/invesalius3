@@ -1,28 +1,31 @@
-# InVesalius 3.0 Beta - Tamil
+# InVesalius 3.0 Beta - English
 # Copyright (C) 2007-2009 Centro de Tecnologia da Informação Renato Archer
 # This file is distributed under the same license as the InVesalius package. (GNU General Public License v2)
 # Tatiana Al-Chueyr Pereira Martins <tatiana.alchueyr@gmail.com>
 # Paulo Henrique Junqueira Amorim <paulojamorim@gmail.com>
 # Thiago Franco de Morais <totonixsame@gmail.com>
+# Translators:
 msgid ""
 msgstr ""
-"Project-Id-Version: InVesalius 3\n"
-"Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2010-03-13 10:18-0300\n"
-"PO-Revision-Date: 2010-01-07 11:25-0300\n"
+"Project-Id-Version: InVesalius\n"
+"Report-Msgid-Bugs-To: http://svn.softwarepublico.gov.br/trac/invesalius\n"
+"POT-Creation-Date: 2010-03-13 10:17-0300\n"
+"PO-Revision-Date: 2010-11-30 02:42+0000\n"
 "Last-Translator: Invesalius team <invesalius@cti.gov.br>\n"
-"Language-Team: InVesalius Team <invesalius@cti.gov.br>\n"
+"Language-Team: Tamil (http://www.transifex.com/projects/p/invesalius/language/ta/)\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"X-Poedit-Language: Tamil\n"
-"X-Poedit-SourceCharset: utf-8\n"
+"Language: ta\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
 "X-Poedit-Country: GENERIC\n"
+"X-Poedit-Language: English\n"
+"X-Poedit-SourceCharset: utf-8\n"
 
 #: constants.py:31
 #, python-format
 msgid "M %d"
-msgstr "M %d"
+msgstr ""
 
 #: constants.py:91
 msgid "Keep all slices"
@@ -1049,7 +1052,8 @@ msgid "Advanced options"
 msgstr ""
 
 #: task_surface.py:246
-msgid "Automatically select largest disconnected region and create new surface"
+msgid ""
+"Automatically select largest disconnected region and create new surface"
 msgstr ""
 
 #: task_surface.py:247
@@ -1067,7 +1071,8 @@ msgid "Split all disconnected surfaces"
 msgstr ""
 
 #: task_surface.py:264
-msgid "Manually insert seeds of regions of interest and create one new surface"
+msgid ""
+"Manually insert seeds of regions of interest and create one new surface"
 msgstr ""
 
 #: task_surface.py:265

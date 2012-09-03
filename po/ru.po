@@ -4,404 +4,409 @@
 # Tatiana Al-Chueyr Pereira Martins <tatiana.alchueyr@gmail.com>
 # Paulo Henrique Junqueira Amorim <paulojamorim@gmail.com>
 # Thiago Franco de Morais <totonixsame@gmail.com>
+# Translators:
+# DCamer <dcamer@mail.ru>, 2011.
+#   <dcamer@mail.ru>, 2011.
 msgid ""
 msgstr ""
-"Project-Id-Version: InVesalius 3\n"
-"Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2010-03-13 10:18-0300\n"
-"PO-Revision-Date: 2010-01-07 11:25-0300\n"
-"Last-Translator: Invesalius team <invesalius@cti.gov.br>\n"
-"Language-Team: InVesalius Team <invesalius@cti.gov.br>\n"
+"Project-Id-Version: InVesalius\n"
+"Report-Msgid-Bugs-To: http://svn.softwarepublico.gov.br/trac/invesalius\n"
+"POT-Creation-Date: 2010-03-13 10:17-0300\n"
+"PO-Revision-Date: 2011-12-10 16:45+0000\n"
+"Last-Translator: DCamer <dcamer@mail.ru>\n"
+"Language-Team: Russian (http://www.transifex.com/projects/p/invesalius/language/ru/)\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
+"Language: ru\n"
+"Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
+"X-Poedit-Country: GENERIC\n"
 "X-Poedit-Language: English\n"
 "X-Poedit-SourceCharset: utf-8\n"
-"X-Poedit-Country: GENERIC\n"
 
 #: constants.py:31
 #, python-format
 msgid "M %d"
-msgstr ""
+msgstr "М %d"
 
 #: constants.py:91
 msgid "Keep all slices"
-msgstr ""
+msgstr "Сохранить все части"
 
 #: constants.py:91
 msgid "Skip 1 for each 2 slices"
-msgstr ""
+msgstr "Пропустить 1 для каждых 2 частей"
 
 #: constants.py:92
 msgid "Skip 2 for each 3 slices"
-msgstr ""
+msgstr "Пропустить 2 для каждых 3 частей"
 
 #: constants.py:92
 msgid "Skip 3 for each 4 slices"
-msgstr ""
+msgstr "Пропустить 3 для каждых 4 частей"
 
 #: constants.py:93
 msgid "Skip 4 for each 5 slices"
-msgstr ""
+msgstr "Пропустить 4 для каждых 5 частей"
 
 #: constants.py:93
 msgid "Skip 5 for each 6 slices"
-msgstr ""
+msgstr "Пропустить 5 для каждых 6 частей"
 
 #: constants.py:133 slice_menu.py:76 slice_menu.py:81
 msgid "Default "
-msgstr ""
+msgstr "По умолчанию "
 
 #: constants.py:134
 msgid "Hue"
-msgstr ""
+msgstr "Оттенок"
 
 #: constants.py:135
 msgid "Saturation"
-msgstr ""
+msgstr "Насыщенность"
 
 #: constants.py:136
 msgid "Desert"
-msgstr ""
+msgstr "Пустыня"
 
 #: constants.py:137
 msgid "Rainbow"
-msgstr ""
+msgstr "Радуга"
 
 #: constants.py:138
 msgid "Ocean"
-msgstr ""
+msgstr "Океан"
 
 #: constants.py:139
 msgid "Inverse Gray"
-msgstr ""
+msgstr "Инверсия серого"
 
 #: constants.py:180 constants.py:265 dialogs.py:433 dialogs.py:446
 #: dicom_preview_panel.py:619 dicom_preview_panel.py:620 presets.py:30
 #: presets.py:48 presets.py:103 presets.py:134
 msgid "Bone"
-msgstr ""
+msgstr "Кость"
 
 #: constants.py:187
 #, python-format
 msgid "Mask %d"
-msgstr ""
+msgstr "Маска %d"
 
 #: constants.py:240 task_surface.py:43
 msgid "Draw"
-msgstr ""
+msgstr "Нарисовать"
 
 #: constants.py:240 task_surface.py:43
 msgid "Erase"
-msgstr ""
+msgstr "Стереть"
 
 #: constants.py:240 data_notebook.py:434 task_surface.py:43
 msgid "Threshold"
-msgstr ""
+msgstr "Порог"
 
 #: constants.py:251 constants.py:256
 msgid "Low"
-msgstr ""
+msgstr "Низкий"
 
 #: constants.py:252 constants.py:256
 msgid "Medium"
-msgstr ""
+msgstr "Средний"
 
 #: constants.py:253 constants.py:256
 msgid "High"
-msgstr ""
+msgstr "Высокий"
 
 #: constants.py:254 constants.py:255 constants.py:256 surface.py:381
 msgid "Optimal *"
-msgstr ""
+msgstr "Оптимальный *"
 
 #: constants.py:261
 #, python-format
 msgid "Surface %d"
-msgstr ""
+msgstr "Поверхность %d"
 
 #: constants.py:264
 msgid "Abdomen"
-msgstr ""
+msgstr "Живот"
 
 #: constants.py:266
 msgid "Brain Posterior Fossa"
-msgstr ""
+msgstr "Задняя черепная ямка мозга"
 
 #: constants.py:267
 msgid "Brain"
-msgstr ""
+msgstr "Мозг"
 
 #: constants.py:268 control.py:339 slice_menu.py:39 slice_menu.py:51
 msgid "Default"
-msgstr ""
+msgstr "По умолчанию"
 
 #: constants.py:269
 msgid "Emphysema"
-msgstr ""
+msgstr "Эмфизема"
 
 #: constants.py:270
 msgid "Ischemia - Hard Non Contrast"
-msgstr ""
+msgstr "Ишемия - Жесткая, не выражанная"
 
 #: constants.py:271
 msgid "Ischemia - Soft Non Contrast"
-msgstr ""
+msgstr "Ишемия - Мягкая, не выражанная"
 
 #: constants.py:272
 msgid "Larynx"
-msgstr ""
+msgstr "Гортань"
 
 #: constants.py:273
 msgid "Liver"
-msgstr ""
+msgstr "Печень"
 
 #: constants.py:274
 msgid "Lung - Soft"
-msgstr ""
+msgstr "Легкие - Мягкие"
 
 #: constants.py:275
 msgid "Lung - Hard"
-msgstr ""
+msgstr "Легкие - Твердые"
 
 #: constants.py:276
 msgid "Mediastinum"
-msgstr ""
+msgstr "Средостение"
 
 #: constants.py:277 control.py:340 slice_menu.py:46 slice_menu.py:51
 msgid "Manual"
-msgstr ""
+msgstr "Вручную"
 
 #: constants.py:278
 msgid "Pelvis"
-msgstr ""
+msgstr "Таз"
 
 #: constants.py:279
 msgid "Sinus"
-msgstr ""
+msgstr "Синус"
 
 #: constants.py:280
 msgid "Vasculature - Hard"
-msgstr ""
+msgstr "Сосудистая - Жесткая"
 
 #: constants.py:281
 msgid "Vasculature - Soft"
-msgstr ""
+msgstr "Сосудистая - Мягкая"
 
 #: constants.py:290
 msgid "Front"
-msgstr ""
+msgstr "Спереди"
 
 #: constants.py:291
 msgid "Back"
-msgstr ""
+msgstr "Сзади"
 
 #: constants.py:292
 msgid "Top"
-msgstr ""
+msgstr "Сверху"
 
 #: constants.py:293
 msgid "Bottom"
-msgstr ""
+msgstr "Снизу"
 
 #: constants.py:294
 msgid "Right"
-msgstr ""
+msgstr "Справа"
 
 #: constants.py:295
 msgid "Left"
-msgstr ""
+msgstr "Слева"
 
 #: constants.py:296
 msgid "Isometric"
-msgstr ""
+msgstr "Изометрия"
 
 #: constants.py:307
 msgid "Airways"
-msgstr ""
+msgstr "Дыхательные пути"
 
 #: constants.py:308
 msgid "Airways II"
-msgstr ""
+msgstr "Дыхательные пути II"
 
 #: constants.py:309
 msgid "Black & White"
-msgstr ""
+msgstr "Черно-белый"
 
 #: constants.py:310
 msgid "Bone + Skin"
-msgstr ""
+msgstr "Кости + Кожа"
 
 #: constants.py:311
 msgid "Bone + Skin II"
-msgstr ""
+msgstr "Кости + Кожа II"
 
 #: constants.py:312
 msgid "Dark Bone"
-msgstr ""
+msgstr "Темная кость"
 
 #: constants.py:313
 msgid "Glossy"
-msgstr ""
+msgstr "Глянец"
 
 #: constants.py:314
 msgid "Glossy II"
-msgstr ""
+msgstr "Глянец II"
 
 #: constants.py:315
 msgid "Gold Bone"
-msgstr ""
+msgstr "Золотая кость"
 
 #: constants.py:316
 msgid "High Contrast"
-msgstr ""
+msgstr "Высокий контраст"
 
 #: constants.py:317
 msgid "Low Contrast"
-msgstr ""
+msgstr "Низкий контраст"
 
 #: constants.py:318 constants.py:325
 msgid "Soft on White"
-msgstr ""
+msgstr "Мягкая на белом"
 
 #: constants.py:319
 msgid "Mid Contrast"
-msgstr ""
+msgstr "Средний контраст"
 
 #: constants.py:320
 msgid "No Shading"
-msgstr ""
+msgstr "Без заливки"
 
 #: constants.py:321
 msgid "Pencil"
-msgstr ""
+msgstr "Карандаш"
 
 #: constants.py:322
 msgid "Red on White"
-msgstr ""
+msgstr "Красное на белом"
 
 #: constants.py:323
 msgid "Skin On Blue"
-msgstr ""
+msgstr "Кожа на синим"
 
 #: constants.py:324
 msgid "Skin On Blue II"
-msgstr ""
+msgstr "Кожа на синим II"
 
 #: constants.py:326
 msgid "Soft + Skin"
-msgstr ""
+msgstr "Мягкая + Кожа"
 
 #: constants.py:327
 msgid "Soft + Skin II"
-msgstr ""
+msgstr "Мягкая + Кожа II"
 
 #: constants.py:328
 msgid "Soft + Skin III"
-msgstr ""
+msgstr "Мягкая + Кожа III"
 
 #: constants.py:329
 msgid "Soft On Blue"
-msgstr ""
+msgstr "Мягкая на синим"
 
 #: constants.py:330
 msgid "Soft"
-msgstr ""
+msgstr "Мягкая"
 
 #: constants.py:331
 msgid "Standard"
-msgstr ""
+msgstr "Стандартный"
 
 #: constants.py:332
 msgid "Vascular"
-msgstr ""
+msgstr "Сосудистая"
 
 #: constants.py:333
 msgid "Vascular II"
-msgstr ""
+msgstr "Сосудистая II"
 
 #: constants.py:334
 msgid "Vascular III"
-msgstr ""
+msgstr "Сосудистая III"
 
 #: constants.py:335
 msgid "Vascular IV"
-msgstr ""
+msgstr "Сосудистая IV"
 
 #: constants.py:336
 msgid "Yellow Bone"
-msgstr ""
+msgstr "Желтая кость"
 
 #: constants.py:358 constants.py:360
 msgid " Off"
-msgstr ""
+msgstr " Выключить"
 
 #: constants.py:361 volume.py:552
 msgid "Cut plane"
-msgstr ""
+msgstr "Вырезать плоскость"
 
 #: control.py:275
 #, python-format
 msgid "Loading file %d of %d"
-msgstr ""
+msgstr "Загрузка файла %d из %d"
 
 #: control.py:367 dialogs.py:514 presets.py:44 presets.py:62 presets.py:117
 #: presets.py:148 task_slice.py:406 task_slice.py:408 task_slice.py:420
 #: task_slice.py:422 task_slice.py:458 task_slice.py:461
 msgid "Custom"
-msgstr ""
+msgstr "Пользовательские"
 
 #: control.py:372
 msgid "Untitled"
-msgstr ""
+msgstr "Безымянный"
 
 #: control.py:446
 msgid "Fix gantry tilt applying the degrees below"
-msgstr ""
+msgstr "Исправить наклона Гентри для градусов"
 
 #: data_notebook.py:39 measures.py:14
 msgid "Linear"
-msgstr ""
+msgstr "Линейно"
 
 #: data_notebook.py:40 measures.py:15
 msgid "Angular"
-msgstr ""
+msgstr "На угол"
 
 #: data_notebook.py:43 measures.py:18
 msgid "3D"
-msgstr ""
+msgstr "3D"
 
 #: data_notebook.py:44 measures.py:19
 msgid "Axial"
-msgstr ""
+msgstr "На ось"
 
 #: data_notebook.py:45 measures.py:20
 msgid "Coronal"
-msgstr ""
+msgstr "Коронально"
 
 #: data_notebook.py:46 measures.py:21
 msgid "Sagittal"
-msgstr ""
+msgstr "Сагиттально"
 
 #: data_notebook.py:62
 msgid "Masks"
-msgstr ""
+msgstr "Маски"
 
 #: data_notebook.py:63
 msgid "3D Surfaces"
-msgstr ""
+msgstr "3D-поверхности"
 
 #: data_notebook.py:64
 msgid "Measures"
-msgstr ""
+msgstr "Меры"
 
 #: data_notebook.py:182 frame.py:894
 msgid "Measure distance"
-msgstr ""
+msgstr "Измерение расстояния"
 
 #: data_notebook.py:185 frame.py:899
 msgid "Measure angle"
-msgstr ""
+msgstr "Измерение угла"
 
 #: data_notebook.py:433 data_notebook.py:774 data_notebook.py:1020
 #: data_notebook.py:1209
@@ -1049,7 +1054,8 @@ msgid "Advanced options"
 msgstr ""
 
 #: task_surface.py:246
-msgid "Automatically select largest disconnected region and create new surface"
+msgid ""
+"Automatically select largest disconnected region and create new surface"
 msgstr ""
 
 #: task_surface.py:247
@@ -1067,7 +1073,8 @@ msgid "Split all disconnected surfaces"
 msgstr ""
 
 #: task_surface.py:264
-msgid "Manually insert seeds of regions of interest and create one new surface"
+msgid ""
+"Manually insert seeds of regions of interest and create one new surface"
 msgstr ""
 
 #: task_surface.py:265

@@ -1,23 +1,27 @@
 # InVesalius 3.0 Beta - English
-# Copyright (C) 2007 - 2009 Centro de Tecnologia da Informação Renato Archer
+# Copyright (C) 2007-2009 Centro de Tecnologia da Informação Renato Archer
 # This file is distributed under the same license as the InVesalius package. (GNU General Public License v2)
 # Tatiana Al-Chueyr Pereira Martins <tatiana.alchueyr@gmail.com>
 # Paulo Henrique Junqueira Amorim <paulojamorim@gmail.com>
 # Thiago Franco de Morais <totonixsame@gmail.com>
+# Translators:
+# Bruno Bottazzini <bottazzinibruno@gmail.com>, 2011.
 msgid ""
 msgstr ""
-"Project-Id-Version: InVesalius 3\n"
-"Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2010-03-13 10:18-0300\n"
-"PO-Revision-Date: 2010-01-07 11:25-0300\n"
-"Last-Translator: Invesalius team <invesalius@cti.gov.br>\n"
-"Language-Team: InVesalius Team <invesalius@cti.gov.br>\n"
+"Project-Id-Version: InVesalius\n"
+"Report-Msgid-Bugs-To: http://svn.softwarepublico.gov.br/trac/invesalius\n"
+"POT-Creation-Date: 2010-03-13 10:17-0300\n"
+"PO-Revision-Date: 2011-05-30 18:45+0000\n"
+"Last-Translator: Bruno Bottazzini <bottazzinibruno@gmail.com>\n"
+"Language-Team: Italian (http://www.transifex.com/projects/p/invesalius/language/it/)\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
+"Language: it\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"X-Poedit-Country: GENERIC\n"
 "X-Poedit-Language: English\n"
 "X-Poedit-SourceCharset: utf-8\n"
-"X-Poedit-Country: GENERIC\n"
 
 #: constants.py:31
 #, python-format
@@ -392,17 +396,14 @@ msgid "3D Surfaces"
 msgstr "Superfici 3D"
 
 #: data_notebook.py:64
-#, fuzzy
 msgid "Measures"
-msgstr "Misura"
+msgstr "Misure"
 
 #: data_notebook.py:182 frame.py:894
-#, fuzzy
 msgid "Measure distance"
-msgstr "Misura distanze"
+msgstr "Misura distanza"
 
 #: data_notebook.py:185 frame.py:899
-#, fuzzy
 msgid "Measure angle"
 msgstr "Misura angolo"
 
@@ -520,9 +521,7 @@ msgstr "Progetto InVesalius (*.inv3)|*.inv3"
 msgid ""
 "The project %s has been modified.\n"
 "Save changes?"
-msgstr ""
-"Il progetto %s è stato modificato. \n"
-"Salvarei cambiamenti?"
+msgstr "Il progetto %s è stato modificato. \nSalvarei cambiamenti?"
 
 #: dialogs.py:288
 #, python-format
@@ -589,12 +588,7 @@ msgid ""
 "InVesalius allows for the export of 3D volumes or surfaces as STL files for "
 "creating physical models of a patient's anatomy using rapid prototyping "
 "technologies."
-msgstr ""
-"InVesalius è un programma per la ricostruzione 3D di immagini mediche. Usa "
-"una sequenza di file DICOM di immagini 2D aquisite con scanner CT o MRT."
-"InVesalius permette la esportazione di volumi 3D o superfici in file formato "
-"SILcreando modelli fisici dell'anatomia del paziente usando tecnologieveloci "
-"di prototipazione."
+msgstr "InVesalius è un programma per la ricostruzione 3D di immagini mediche. Usa una sequenza di file DICOM di immagini 2D aquisite con scanner CT o MRT.InVesalius permette la esportazione di volumi 3D o superfici in file formato SILcreando modelli fisici dell'anatomia del paziente usando tecnologieveloci di prototipazione."
 
 #: dialogs.py:610
 msgid "GNU GPL (General Public License) version 2"
@@ -676,9 +670,7 @@ msgstr "Ubicazione: %.2f"
 msgid ""
 "%s %s\n"
 "Made in InVesalius"
-msgstr ""
-"%s %s\n"
-"Fatto con InVesalius"
+msgstr "%s %s\nFatto con InVesalius"
 
 #: dicom_preview_panel.py:187 dicom_preview_panel.py:188
 msgid "Image"
@@ -1061,10 +1053,9 @@ msgid "Advanced options"
 msgstr "Opzioni avanzate"
 
 #: task_surface.py:246
-msgid "Automatically select largest disconnected region and create new surface"
-msgstr ""
-"Selezione automatica dell'area disconnessa più grande e creare nuova "
-"superfice"
+msgid ""
+"Automatically select largest disconnected region and create new surface"
+msgstr "Selezione automatica dell'area disconnessa più grande e creare nuova superfice"
 
 #: task_surface.py:247
 msgid "Select largest part"
@@ -1074,19 +1065,16 @@ msgstr "Selezionare la parte più grande"
 msgid ""
 "Automatically select disconnected regions and create one new surface per "
 "region"
-msgstr ""
-"Selezione automatica dell'area disconnessa più grande e creare una nuova "
-"superficeper area"
+msgstr "Selezione automatica dell'area disconnessa più grande e creare una nuova superficeper area"
 
 #: task_surface.py:256
 msgid "Split all disconnected surfaces"
 msgstr "Dividere tutte le superfici disconnesse"
 
 #: task_surface.py:264
-msgid "Manually insert seeds of regions of interest and create one new surface"
-msgstr ""
-"Inserire manualmente i punti delle regioni di interesse e creare una nuova "
-"superfice"
+msgid ""
+"Manually insert seeds of regions of interest and create one new surface"
+msgstr "Inserire manualmente i punti delle regioni di interesse e creare una nuova superfice"
 
 #: task_surface.py:265
 msgid "Select regions of interest..."
@@ -1139,7 +1127,3 @@ msgstr "T"
 #: viewer_slice.py:451 viewer_slice.py:453
 msgid "B"
 msgstr "B"
-
-#, fuzzy
-#~ msgid "Measure %d"
-#~ msgstr "Misura"

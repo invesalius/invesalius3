@@ -862,14 +862,18 @@ locale/zh_CN/LC_MESSAGES/invesalius.mo -text
 locale/zh_TW/LC_MESSAGES/invesalius.mo -text
 po/README.transifex -text
 po/ar.po -text
+po/ca.po -text
+po/cs.po -text
 po/de.po -text
 po/el.po -text
 po/en.po -text
 po/es.po -text
+po/fa.po -text
 po/fr.po -text
 po/it.po -text
 po/ja.po -text
 po/ko.po -text
+po/ms.po -text
 po/nl.po -text
 po/pl.po -text
 po/pt.po -text
@@ -877,6 +881,7 @@ po/pt_BR.po -text
 po/ro.po -text
 po/ru.po -text
 po/sd_IN.po -text
+po/sr.po -text
 po/sv_SE.po -text
 po/ta.po -text
 po/tr.po -text

@@ -4,20 +4,23 @@
 # Tatiana Al-Chueyr Pereira Martins <tatiana.alchueyr@gmail.com>
 # Paulo Henrique Junqueira Amorim <paulojamorim@gmail.com>
 # Thiago Franco de Morais <totonixsame@gmail.com>
+# Translators:
 msgid ""
 msgstr ""
-"Project-Id-Version: InVesalius 3\n"
-"Report-Msgid-Bugs-To: \n"
+"Project-Id-Version: InVesalius\n"
+"Report-Msgid-Bugs-To: http://svn.softwarepublico.gov.br/trac/invesalius\n"
 "POT-Creation-Date: 2010-03-13 10:17-0300\n"
-"PO-Revision-Date: 2010-01-07 11:25-0300\n"
+"PO-Revision-Date: 2010-11-30 02:42+0000\n"
 "Last-Translator: Invesalius team <invesalius@cti.gov.br>\n"
-"Language-Team: InVesalius Team <invesalius@cti.gov.br>\n"
+"Language-Team: Korean (http://www.transifex.com/projects/p/invesalius/language/ko/)\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
+"Language: ko\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"X-Poedit-Country: GENERIC\n"
 "X-Poedit-Language: English\n"
 "X-Poedit-SourceCharset: utf-8\n"
-"X-Poedit-Country: GENERIC\n"
 
 #: constants.py:31
 #, python-format
@@ -517,9 +520,7 @@ msgstr "인베쌀리우스 프로젝트 (*.inv3)|*.inv3"
 msgid ""
 "The project %s has been modified.\n"
 "Save changes?"
-msgstr ""
-"%s의 프로젝트 변경되였습니다. \n"
-"보관하시겠습니까?"
+msgstr "%s의 프로젝트 변경되였습니다. \n보관하시겠습니까?"
 
 #: dialogs.py:288
 #, python-format
@@ -580,7 +581,12 @@ msgid "(c) 2007-2010 Renato Archer Information Technology Centre"
 msgstr "(c) 2007 -2010 레나토 아쳐 정보기술쎈터"
 
 #: dialogs.py:602
-msgid "InVesalius is a medical imaging program for 3D reconstruction. It uses a sequence of 2D DICOM image files acquired with CT or MRI scanners. InVesalius allows for the export of 3D volumes or surfaces as STL files for creating physical models of a patient's anatomy using rapid prototyping technologies."
+msgid ""
+"InVesalius is a medical imaging program for 3D reconstruction. It uses a "
+"sequence of 2D DICOM image files acquired with CT or MRI scanners. "
+"InVesalius allows for the export of 3D volumes or surfaces as STL files for "
+"creating physical models of a patient's anatomy using rapid prototyping "
+"technologies."
 msgstr "인베쌀리우스는 3차원재생성을 위한 의학화상처리 프로그람입니다. 이 프로그람은 CT 혹은 MRI 스캐너에 의해 입구되는 2차원 DICOM화상파일들의 계렬을 리용합니다. 인베쌀리우스는 신속한 프로토타입핑 기술을 리용하여 임의의 환자의 해부학적구조의 물리적모형생성을 위한 STL파일과 같은 3차원 공간 및 표면출력을 가능하게 해줍니다."
 
 #: dialogs.py:610
@@ -663,9 +669,7 @@ msgstr "위치: %.2f"
 msgid ""
 "%s %s\n"
 "Made in InVesalius"
-msgstr ""
-"%s %s\n"
-"인베쌀리우스 제작"
+msgstr "%s %s\n인베쌀리우스 제작"
 
 #: dicom_preview_panel.py:187 dicom_preview_panel.py:188
 msgid "Image"
@@ -1048,7 +1052,8 @@ msgid "Advanced options"
 msgstr "개선된 옵션"
 
 #: task_surface.py:246
-msgid "Automatically select largest disconnected region and create new surface"
+msgid ""
+"Automatically select largest disconnected region and create new surface"
 msgstr "자동적으로 가장 큰 비련결령역을 선택하고 새 표면 창조"
 
 #: task_surface.py:247
@@ -1056,7 +1061,9 @@ msgid "Select largest part"
 msgstr "가장 큰 부분선택"
 
 #: task_surface.py:255
-msgid "Automatically select disconnected regions and create one new surface per region"
+msgid ""
+"Automatically select disconnected regions and create one new surface per "
+"region"
 msgstr "자동적으로 비련결령역들을 선택하고 령역마다 새 표면을 한개씩 창조"
 
 #: task_surface.py:256
@@ -1064,7 +1071,8 @@ msgid "Split all disconnected surfaces"
 msgstr "모든 비련결된 표면들을 가르기"
 
 #: task_surface.py:264
-msgid "Manually insert seeds of regions of interest and create one new surface"
+msgid ""
+"Manually insert seeds of regions of interest and create one new surface"
 msgstr "수동적으로 관심령역의 근원들을 삼입하고 하나의 새 표면창조"
 
 #: task_surface.py:265

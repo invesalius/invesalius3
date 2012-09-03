@@ -1,23 +1,26 @@
-# InVesalius 3.0 Beta - Traditional Chinese
+# InVesalius 3.0 Beta - English
 # Copyright (C) 2007-2009 Centro de Tecnologia da Informação Renato Archer
 # This file is distributed under the same license as the InVesalius package. (GNU General Public License v2)
-# Cheng-Chia Tseng <pswo10680@gmail.com>, 2010
-# 
+# Tatiana Al-Chueyr Pereira Martins <tatiana.alchueyr@gmail.com>
+# Paulo Henrique Junqueira Amorim <paulojamorim@gmail.com>
+# Thiago Franco de Morais <totonixsame@gmail.com>
+# Translators:
 msgid ""
 msgstr ""
-"Project-Id-Version: InVesalius 3\n"
-"Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2010-03-13 10:18-0300\n"
-"PO-Revision-Date: 2010-02-21 23:13+0800\n"
-"Last-Translator: Cheng-Chia Tseng <pswo10680@gmail.com>\n"
-"Language-Team: Traditional Chinese <chinese-l10n@googlegroups.com>\n"
+"Project-Id-Version: InVesalius\n"
+"Report-Msgid-Bugs-To: http://svn.softwarepublico.gov.br/trac/invesalius\n"
+"POT-Creation-Date: 2010-03-13 10:17-0300\n"
+"PO-Revision-Date: 2010-11-30 02:42+0000\n"
+"Last-Translator: Invesalius team <invesalius@cti.gov.br>\n"
+"Language-Team: Chinese (Taiwan) (http://www.transifex.com/projects/p/invesalius/language/zh_TW/)\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Plural-Forms: nplurals=2; plural=n!=1;\n"
-"X-Poedit-Language: Chinese\n"
+"Language: zh_TW\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"X-Poedit-Country: GENERIC\n"
+"X-Poedit-Language: English\n"
 "X-Poedit-SourceCharset: utf-8\n"
-"X-Poedit-Country: TAIWAN\n"
 
 #: constants.py:31
 #, python-format
@@ -360,9 +363,8 @@ msgid "Fix gantry tilt applying the degrees below"
 msgstr ""
 
 #: data_notebook.py:39 measures.py:14
-#, fuzzy
 msgid "Linear"
-msgstr "肝"
+msgstr ""
 
 #: data_notebook.py:40 measures.py:15
 msgid "Angular"
@@ -373,19 +375,16 @@ msgid "3D"
 msgstr "3D"
 
 #: data_notebook.py:44 measures.py:19
-#, fuzzy
 msgid "Axial"
-msgstr "中軸切面"
+msgstr ""
 
 #: data_notebook.py:45 measures.py:20
-#, fuzzy
 msgid "Coronal"
-msgstr "冠狀切面"
+msgstr ""
 
 #: data_notebook.py:46 measures.py:21
-#, fuzzy
 msgid "Sagittal"
-msgstr "矢狀切面"
+msgstr ""
 
 #: data_notebook.py:62
 msgid "Masks"
@@ -396,19 +395,16 @@ msgid "3D Surfaces"
 msgstr "表面 3D"
 
 #: data_notebook.py:64
-#, fuzzy
 msgid "Measures"
-msgstr "測量"
+msgstr ""
 
 #: data_notebook.py:182 frame.py:894
-#, fuzzy
 msgid "Measure distance"
-msgstr "測量距離"
+msgstr ""
 
 #: data_notebook.py:185 frame.py:899
-#, fuzzy
 msgid "Measure angle"
-msgstr "測量距離"
+msgstr ""
 
 #: data_notebook.py:433 data_notebook.py:774 data_notebook.py:1020
 #: data_notebook.py:1209
@@ -428,9 +424,8 @@ msgid "Transparency"
 msgstr "透明度"
 
 #: data_notebook.py:1021
-#, fuzzy
 msgid "Location"
-msgstr "加入文字註解"
+msgstr ""
 
 #: data_notebook.py:1022 data_notebook.py:1210
 msgid "Type"
@@ -525,9 +520,7 @@ msgstr "InVesalius 專案 (*.inv3)|*.inv3"
 msgid ""
 "The project %s has been modified.\n"
 "Save changes?"
-msgstr ""
-"專案 %s 已經被修改過。\n"
-"要儲存變更嗎？"
+msgstr "專案 %s 已經被修改過。\n要儲存變更嗎？"
 
 #: dialogs.py:288
 #, python-format
@@ -571,9 +564,8 @@ msgid "Name the mask to be created"
 msgstr ""
 
 #: dialogs.py:427
-#, fuzzy
 msgid "Threshold preset:"
-msgstr "閾值"
+msgstr ""
 
 #: dialogs.py:529
 #, python-format
@@ -589,7 +581,12 @@ msgid "(c) 2007-2010 Renato Archer Information Technology Centre"
 msgstr "(c) 2007-2010 Center for Information Technology Renato Archer"
 
 #: dialogs.py:602
-msgid "InVesalius is a medical imaging program for 3D reconstruction. It uses a sequence of 2D DICOM image files acquired with CT or MRI scanners. InVesalius allows for the export of 3D volumes or surfaces as STL files for creating physical models of a patient's anatomy using rapid prototyping technologies."
+msgid ""
+"InVesalius is a medical imaging program for 3D reconstruction. It uses a "
+"sequence of 2D DICOM image files acquired with CT or MRI scanners. "
+"InVesalius allows for the export of 3D volumes or surfaces as STL files for "
+"creating physical models of a patient's anatomy using rapid prototyping "
+"technologies."
 msgstr ""
 
 #: dialogs.py:610
@@ -672,9 +669,7 @@ msgstr ""
 msgid ""
 "%s %s\n"
 "Made in InVesalius"
-msgstr ""
-"%s %s\n"
-"Made in InVesalius"
+msgstr "%s %s\nMade in InVesalius"
 
 #: dicom_preview_panel.py:187 dicom_preview_panel.py:188
 msgid "Image"
@@ -867,9 +862,8 @@ msgid "Choose user interface language"
 msgstr "選擇使用者介面語言"
 
 #: polydata_utils.py:132
-#, fuzzy
 msgid "Getting selected parts"
-msgstr "開始上手..."
+msgstr ""
 
 #: polydata_utils.py:191
 msgid "Splitting disconected parts"
@@ -1058,7 +1052,8 @@ msgid "Advanced options"
 msgstr "進階選項"
 
 #: task_surface.py:246
-msgid "Automatically select largest disconnected region and create new surface"
+msgid ""
+"Automatically select largest disconnected region and create new surface"
 msgstr "自動選取最大不連續區域，並建立新表面"
 
 #: task_surface.py:247
@@ -1066,7 +1061,9 @@ msgid "Select largest part"
 msgstr "選取最大部份"
 
 #: task_surface.py:255
-msgid "Automatically select disconnected regions and create one new surface per region"
+msgid ""
+"Automatically select disconnected regions and create one new surface per "
+"region"
 msgstr "自動選取不連續區域，並對每個區域建立新表面"
 
 #: task_surface.py:256
@@ -1074,7 +1071,8 @@ msgid "Split all disconnected surfaces"
 msgstr "分開所有不連續的表面"
 
 #: task_surface.py:264
-msgid "Manually insert seeds of regions of interest and create one new surface"
+msgid ""
+"Manually insert seeds of regions of interest and create one new surface"
 msgstr ""
 
 #: task_surface.py:265
@@ -1128,34 +1126,3 @@ msgstr "T"
 #: viewer_slice.py:451 viewer_slice.py:453
 msgid "B"
 msgstr "B"
-
-#~ msgid "Measure %d"
-#~ msgstr "測量"
-
-#~ msgid "Name of new mask:"
-#~ msgstr "新遮罩的名稱："
-
-#~ msgid "InVesalius 3 - New mask"
-#~ msgstr "InVesalius 3 - 新遮罩"
-
-#~ msgid "InVesalius is a software for medical imaging 3D reconstruction. "
-#~ msgstr "InVesalius 是一套醫學影像 3D 重建軟體。"
-
-#~ msgid ""
-#~ "Its input is a sequency of DICOM 2D image files acquired with CT or MR.\n"
-#~ "\n"
-#~ msgstr ""
-#~ "其輸入為一連串的 DICOM 2D 影像檔，可由 CT 或 MR 獲得。\n"
-#~ "\n"
-
-#~ msgid "so the user can print 3D physical models of the patient's anatomy "
-#~ msgstr "所以使用者可以列印病患的解剖 3D 實體模型"
-
-#~ msgid "using Rapid Prototyping."
-#~ msgstr "使用快速原型製作法。"
-
-#~ msgid "Add annotation"
-#~ msgstr "加入文字註解"
-
-#~ msgid "Import medical image..."
-#~ msgstr "匯入醫學影像..."
