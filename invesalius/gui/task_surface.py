@@ -23,13 +23,13 @@ import wx.lib.hyperlink as hl
 from wx.lib.pubsub import pub as Publisher
 
 import constants as const
+import data.slice_ as slice_
 import gui.dialogs as dlg
 import gui.widgets.foldpanelbar as fpb
 import gui.widgets.colourselect as csel
 import gui.widgets.platebtn as pbtn
 import project as prj
 import utils as utl
-
 
 #INTERPOLATION_MODE_LIST = ["Cubic", "Linear", "NearestNeighbor"]
 MIN_TRANSPARENCY = 0
@@ -131,7 +131,10 @@ class InnerTaskPanel(wx.Panel):
 
     def OnLinkNewSurface(self, evt=None):
         #import gui.dialogs as dlg
-        dialog = dlg.NewSurfaceDialog(self, -1, _('InVesalius 3 - New surface'))
+        sl = slice_.Slice()
+        dialog = dlg.SurfaceCreationDialog(self, -1, 
+                            _('InVesalius 3 - New surface'),
+                            mask_edited=sl.current_mask.was_edited)
 
         try:
             if dialog.ShowModal() == wx.ID_OK:
@@ -142,26 +145,29 @@ class InnerTaskPanel(wx.Panel):
             ok = 1
 
         if (ok):
-            # Retrieve information from dialog
-            (mask_index, surface_name, surface_quality, fill_holes,\
-            keep_largest) = dialog.GetValue()
+            ## Retrieve information from dialog
+            #(mask_index, surface_name, surface_quality, fill_holes,\
+            #keep_largest) = dialog.GetValue()
 
-            # Retrieve information from mask
-            proj = prj.Project()
-            mask = proj.mask_dict[mask_index]
+            ## Retrieve information from mask
+            #proj = prj.Project()
+            #mask = proj.mask_dict[mask_index]
 
-            # Send all information so surface can be created
-            surface_data = [proj.imagedata,
-                            mask.colour,
-                            mask.threshold_range,
-                            mask.edited_points,
-                            False, # overwrite
-                            surface_name,
-                            surface_quality,
-                            fill_holes,
-                            keep_largest]
+            ## Send all information so surface can be created
+            #surface_data = [proj.imagedata,
+                            #mask.colour,
+                            #mask.threshold_range,
+                            #mask.edited_points,
+                            #False, # overwrite
+                            #surface_name,
+                            #surface_quality,
+                            #fill_holes,
+                            #keep_largest]
 
-            Publisher.sendMessage('Create surface', surface_data)
+
+            surface_options = dialog.GetValue()
+
+            Publisher.sendMessage('Create surface from index', surface_options)
             dialog.Destroy()
         if evt:
             evt.Skip()

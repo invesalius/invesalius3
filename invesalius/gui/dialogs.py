@@ -34,6 +34,14 @@ import project as proj
 import session as ses
 import utils
 
+class MaskEvent(wx.PyCommandEvent):
+    def __init__(self , evtType, id, mask_index):
+        wx.PyCommandEvent.__init__(self, evtType, id,)
+        self.mask_index = mask_index
+
+myEVT_MASK_SET = wx.NewEventType()
+EVT_MASK_SET = wx.PyEventBinder(myEVT_MASK_SET, 1)
+
 class NumberDialog(wx.Dialog):
     def __init__(self, message, value=0):
         pre = wx.PreDialog()
@@ -964,7 +972,6 @@ class SurfaceDialog(wx.Dialog):
     def __init__(self):
         wx.Dialog.__init__(self, None, -1, u'Surface generation options')
         self._build_widgets()
-        self._bind_wx()
         self.CenterOnScreen()
 
     def _build_widgets(self):
@@ -975,12 +982,266 @@ class SurfaceDialog(wx.Dialog):
         btn_sizer.AddButton(btn_cancel)
         btn_sizer.Realize()
 
-        self.alg_types = {0: u'Context aware smoothing', 1: u'Binary'}#,2: u'InVesalius 3.b2'}
-        self.cb_types = wx.ComboBox(self, -1, self.alg_types[0],
-                                    choices=[self.alg_types[i] for i in sorted(self.alg_types)],
-                                   style=wx.CB_READONLY)
+        self.ca = SurfaceMethodPanel(self, -1, True)
 
+        self.main_sizer = wx.BoxSizer(wx.VERTICAL)
+        self.main_sizer.Add(self.ca, 0, wx.EXPAND|wx.ALL, 5)
+        self.main_sizer.Add(btn_sizer, 0, wx.EXPAND | wx.ALL, 5)
+
+        self.SetSizer(self.main_sizer)
+        self.Fit()
+
+    def GetOptions(self):
+        return self.ca.GetOptions()
+
+    def GetAlgorithmSelected(self):
+        return self.ca.GetAlgorithmSelected()
+
+
+####################### New surface creation dialog ###########################
+class SurfaceCreationDialog(wx.Dialog):
+    def __init__(self, parent=None, ID=-1, title=_(u"Surface creation"),
+                 size=wx.DefaultSize, pos=wx.DefaultPosition,
+                 style=wx.DEFAULT_DIALOG_STYLE, useMetal=False,
+                 mask_edited=False):
+
+        # Instead of calling wx.Dialog.__init__ we precreate the dialog
+        # so we can set an extra style that must be set before
+        # creation, and then we create the GUI object using the Create
+        # method.
+        pre = wx.PreDialog()
+        pre.SetExtraStyle(wx.DIALOG_EX_CONTEXTHELP)
+        pre.Create(parent, ID, title, pos, (50,30), style)
+
+        # This extra style can be set after the UI object has been created.
+        if 'wxMac' in wx.PlatformInfo and useMetal:
+            self.SetExtraStyle(wx.DIALOG_EX_METAL)
+
+        # This next step is the most important, it turns this Python
+        # object into the real wrapper of the dialog (instead of pre)
+        # as far as the wxPython extension is concerned.
+        self.PostCreate(pre)
+
+        self.CenterOnScreen()
+
+        self.nsd = SurfaceCreationOptionsPanel(self, -1)
+        self.nsd.Bind(EVT_MASK_SET, self.OnSetMask)
+        surface_options_sizer = wx.StaticBoxSizer(wx.StaticBox(self, -1,
+                                      _('Surface creation options')), wx.VERTICAL)
+        surface_options_sizer.Add(self.nsd, 0, wx.EXPAND|wx.ALL, 5)
+
+        self.ca = SurfaceMethodPanel(self, -1, mask_edited)
+        surface_method_sizer = wx.StaticBoxSizer(wx.StaticBox(self, -1,
+                                      _('Surface creation method')), wx.VERTICAL)
+        surface_method_sizer.Add(self.ca, 0, wx.EXPAND|wx.ALL, 5)
+
+        btn_ok = wx.Button(self, wx.ID_OK)
+        btn_ok.SetDefault()
+        btn_cancel = wx.Button(self, wx.ID_CANCEL)
+
+        btnsizer = wx.StdDialogButtonSizer()
+        btnsizer.AddButton(btn_ok)
+        btnsizer.AddButton(btn_cancel)
+        btnsizer.Realize()
+
+        sizer_panels = wx.BoxSizer(wx.HORIZONTAL)
+        sizer_panels.Add(surface_method_sizer, 0, wx.EXPAND|wx.ALL, 5)
+        sizer_panels.Add(surface_options_sizer, 0, wx.EXPAND|wx.ALL, 5)
+
+        sizer = wx.BoxSizer(wx.VERTICAL)
+        sizer.Add(sizer_panels, 0, wx.ALIGN_RIGHT|wx.ALL, 5)
+        sizer.Add(btnsizer, 0, wx.ALIGN_RIGHT|wx.ALL, 5)
+
+        self.SetSizer(sizer)
+        sizer.Fit(self)
+
+        self.Show()
+
+    def OnSetMask(self, evt):
+        mask = proj.Project().mask_dict[evt.mask_index]
+        self.ca.mask_edited = mask.was_edited
+        self.ca.ReloadMethodsOptions()
+
+
+
+    def GetValue(self):
+        return {"method": self.ca.GetValue(),
+                "options": self.nsd.GetValue()}
+
+
+class SurfaceCreationOptionsPanel(wx.Panel):
+    def __init__(self, parent, ID=-1):
+        import constants as const
+        import data.surface as surface
+        import project as prj
+        
+        wx.Panel.__init__(self, parent, ID)
+
+        # LINE 1: Surface name
+        label_surface = wx.StaticText(self, -1, _("New surface name:"))
+
+        default_name =  const.SURFACE_NAME_PATTERN %(surface.Surface.general_index+2)
+        text = wx.TextCtrl(self, -1, "", size=(80,-1))
+        text.SetHelpText(_("Name the surface to be created"))
+        text.SetValue(default_name)
+        self.text = text
+
+        # LINE 2: Mask of reference
+
+        # Informative label
+        label_mask = wx.StaticText(self, -1, _("Mask of reference:"))
+
+        #Retrieve existing masks
+        project = prj.Project()
+        index_list = project.mask_dict.keys()
+        index_list.sort()
+        self.mask_list = [project.mask_dict[index].name for index in index_list]
+
+        # Mask selection combo
+        combo_mask = wx.ComboBox(self, -1, "", choices= self.mask_list,
+                                     style=wx.CB_DROPDOWN|wx.CB_READONLY)
+        combo_mask.SetSelection(len(self.mask_list)-1)
+        combo_mask.Bind(wx.EVT_COMBOBOX, self.OnSetMask)
+        if sys.platform != 'win32':
+            combo_mask.SetWindowVariant(wx.WINDOW_VARIANT_SMALL)
+        self.combo_mask = combo_mask
+
+        # LINE 3: Surface quality
+        label_quality = wx.StaticText(self, -1, _("Surface quality:"))
+
+        choices =  const.SURFACE_QUALITY_LIST
+        style = wx.CB_DROPDOWN|wx.CB_READONLY
+        combo_quality = wx.ComboBox(self, -1, "",
+                                    choices= choices,
+                                    style=style)
+        combo_quality.SetSelection(3)
+        if sys.platform != 'win32':
+            combo_quality.SetWindowVariant(wx.WINDOW_VARIANT_SMALL)
+        self.combo_quality = combo_quality
+
+        # OVERVIEW
+        # Sizer that joins content above
+        flag_link = wx.EXPAND|wx.GROW|wx.ALL
+        flag_button = wx.ALL | wx.EXPAND| wx.GROW
+
+        fixed_sizer = wx.FlexGridSizer(rows=2, cols=2, hgap=10, vgap=5)
+        fixed_sizer.AddGrowableCol(0, 1)
+        fixed_sizer.AddMany([ (label_surface, 1, flag_link, 0),
+                              (text, 1, flag_button, 0),
+                              (label_mask, 1, flag_link, 0),
+                              (combo_mask, 0, flag_button, 0),
+                              (label_quality, 1, flag_link, 0),
+                              (combo_quality, 0, flag_button, 0)])
+
+
+        # LINES 4 and 5: Checkboxes
+        check_box_holes = wx.CheckBox(self, -1, _("Fill holes"))
+        check_box_holes.SetValue(True)
+        self.check_box_holes = check_box_holes
+        check_box_largest = wx.CheckBox(self, -1, _("Keep largest region"))
+        self.check_box_largest = check_box_largest
+
+        # OVERVIEW
+        # Merge all sizers and checkboxes
+        sizer = wx.BoxSizer(wx.VERTICAL)
+        sizer.Add(fixed_sizer, 0, wx.TOP|wx.RIGHT|wx.LEFT|wx.GROW|wx.EXPAND, 5)
+        sizer.Add(check_box_holes, 0, wx.RIGHT|wx.LEFT, 5)
+        sizer.Add(check_box_largest, 0, wx.RIGHT|wx.LEFT, 5)
+
+        self.SetSizer(sizer)
+        sizer.Fit(self)
+
+    def OnSetMask(self, evt):
+        new_evt = MaskEvent(myEVT_MASK_SET, -1, self.combo_mask.GetSelection())
+        self.GetEventHandler().ProcessEvent(new_evt)
+
+    def GetValue(self):
+        mask_index = self.combo_mask.GetSelection()
+        surface_name = self.text.GetValue()
+        quality = const.SURFACE_QUALITY_LIST[self.combo_quality.GetSelection()]
+        fill_holes = self.check_box_holes.GetValue()
+        keep_largest = self.check_box_largest.GetValue()
+        return {"index": mask_index,
+                "name": surface_name,
+                "quality": quality,
+                "fill": fill_holes,
+                "keep_largest": keep_largest,
+                "overwrite": False}
+
+
+class CAOptions(wx.Panel):
+    '''
+    Options related to Context aware algorithm:
+    Angle: The min angle to a vertex to be considered a staircase vertex;
+    Max distance: The max distance a normal vertex must be to calculate its
+        weighting;
+    Min Weighting: The min weight a vertex must have;
+    Steps: The number of iterations the smoothing algorithm have to do.
+    '''
+    def __init__(self, parent):
+        wx.Panel.__init__(self, parent, -1)
+        self._build_widgets()
+    
+    def _build_widgets(self):
+        self.angle = floatspin.FloatSpin(self, -1, value=0.7, min_val=0.0,
+                                         max_val=1.0, increment=0.1,
+                                         digits=1)
+
+        self.max_distance = floatspin.FloatSpin(self, -1, value=3.0, min_val=0.0,
+                                         max_val=100.0, increment=0.1,
+                                         digits=2)
+
+        self.min_weight = floatspin.FloatSpin(self, -1, value=0.2, min_val=0.0,
+                                         max_val=1.0, increment=0.1,
+                                         digits=1)
+        
+        self.steps = wx.SpinCtrl(self, -1, value='10', min=1, max=100)
+
+        layout_sizer = wx.FlexGridSizer(rows=4, cols=2, hgap=5, vgap=5)
+        layout_sizer.Add(wx.StaticText(self, -1, _(u'Angle:')),  0, wx.EXPAND)
+        layout_sizer.Add(self.angle, 0, wx.EXPAND)
+        layout_sizer.Add(wx.StaticText(self, -1, _(u'Max. distance:')),  0, wx.EXPAND)
+        layout_sizer.Add(self.max_distance, 0, wx.EXPAND)
+        layout_sizer.Add(wx.StaticText(self, -1, _(u'Min. weight:')), 0, wx.EXPAND)
+        layout_sizer.Add(self.min_weight, 0, wx.EXPAND)
+        layout_sizer.Add(wx.StaticText(self, -1, _(u'N. steps:')),  0, wx.EXPAND)
+        layout_sizer.Add(self.steps, 0, wx.EXPAND)
+
+        self.main_sizer = wx.StaticBoxSizer(wx.StaticBox(self, -1, _('Context aware options')), wx.VERTICAL)
+        self.main_sizer.Add(layout_sizer, 0, wx.EXPAND | wx.ALL, 5)
+        self.SetSizer(self.main_sizer)
+
+class SurfaceMethodPanel(wx.Panel):
+    '''
+    This dialog is only shown when the mask whose surface will be generate was
+    edited. So far, the only options available are the choice of method to
+    generate the surface, Binary or `Context aware smoothing', and options from
+    `Context aware smoothing'
+    '''
+    def __init__(self, parent, id, mask_edited=False):
+        wx.Panel.__init__(self, parent, id)
+
+        self.mask_edited = mask_edited
+        self.alg_types = {_(u'Default'): 'Default',
+                          _(u'Context aware smoothing'): 'ca_smoothing',
+                          _(u'Binary'): 'Binary'}
+        self.edited_imp = [_(u'Default'), ]
+
+        self._build_widgets()
+        self._bind_wx()
+
+    def _build_widgets(self):
         self.ca_options = CAOptions(self)
+        self.cb_types = wx.ComboBox(self, -1, _(u'Default'),
+                                    choices=[i for i in sorted(self.alg_types)
+                                            if not (self.mask_edited and i in self.edited_imp)],
+                                    style=wx.CB_READONLY)
+        if self.mask_edited:
+            self.cb_types.SetValue(_(u'Context aware smoothing'))
+            self.ca_options.Enable()
+        else:
+            self.ca_options.Disable()
+
 
         method_sizer = wx.BoxSizer(wx.HORIZONTAL)
         method_sizer.Add(wx.StaticText(self, -1, u'Method:'), 0,
@@ -990,7 +1251,6 @@ class SurfaceDialog(wx.Dialog):
         self.main_sizer = wx.BoxSizer(wx.VERTICAL)
         self.main_sizer.Add(method_sizer, 0, wx.EXPAND | wx.ALL, 5)
         self.main_sizer.Add(self.ca_options, 0, wx.EXPAND | wx.ALL, 5)
-        self.main_sizer.Add(btn_sizer, 0, wx.EXPAND | wx.ALL, 5)
 
         self.SetSizer(self.main_sizer)
         self.Fit()
@@ -1000,7 +1260,7 @@ class SurfaceDialog(wx.Dialog):
 
     def _set_cb_types(self, evt):
         print evt.GetString()
-        if self.alg_types[evt.GetSelection()] == self.alg_types[0]:
+        if self.alg_types[evt.GetString()] == 'ca_smoothing':
             self.ca_options.Enable()
         else:
             self.ca_options.Disable()
@@ -1008,12 +1268,12 @@ class SurfaceDialog(wx.Dialog):
 
     def GetAlgorithmSelected(self):
         try:
-            return self.alg_types[self.cb_types.GetSelection()]
+            return self.alg_types[self.cb_types.GetValue()]
         except KeyError:
             return self.alg_types[0]
 
     def GetOptions(self):
-        if self.GetAlgorithmSelected() == self.alg_types[0]:
+        if self.GetAlgorithmSelected() == 'ca_smoothing':
             options = {'angle': self.ca_options.angle.GetValue(),
                        'max distance': self.ca_options.max_distance.GetValue(),
                        'min weight': self.ca_options.min_weight.GetValue(),
@@ -1022,4 +1282,20 @@ class SurfaceDialog(wx.Dialog):
             options = {}
         return options
 
+    def GetValue(self):
+        algorithm = self.GetAlgorithmSelected()
+        options = self.GetOptions()
 
+        return {"algorithm": algorithm, 
+                "options": options}
+        
+    def ReloadMethodsOptions(self):
+        self.cb_types.Clear()
+        self.cb_types.AppendItems([i for i in sorted(self.alg_types)
+                                   if not (self.mask_edited and i in self.edited_imp)])
+        if self.mask_edited:
+            self.cb_types.SetValue(_(u'Context aware smoothing'))
+            self.ca_options.Enable()
+        else:
+            self.cb_types.SetValue(_(u'Default'))
+            self.ca_options.Disable()

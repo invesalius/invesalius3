@@ -369,30 +369,28 @@ class SurfaceManager():
         """
         Create surface actor, save into project and send it to viewer.
         """
-        algorithm, options, matrix, filename_img, mask, spacing, overwrite = pubsub_evt.data
-        min_value, max_value = mask.threshold_range
-        fill_holes = False
-
-        mask.matrix.flush()
-
-        #if len(surface_data) == 5:
-            #imagedata, colour, [min_value, max_value], \
-            #edited_points, overwrite = pubsub_evt.data
-            #quality=_('Optimal *')
-            #surface_name = ""
-            #fill_holes = True
-            #keep_largest = False
-        #else:
-            #imagedata, colour, [min_value, max_value],\
-            #edited_points, overwrite, surface_name,\
-            #quality, fill_holes, keep_largest =\
-            #pubsub_evt.data
+        slice_, mask, surface_parameters = pubsub_evt.data
+        matrix = slice_.matrix
+        filename_img = slice_.matrix_filename
+        spacing = slice_.spacing
+        
+        algorithm = surface_parameters['method']['algorithm']
+        options = surface_parameters['method']['options']
+        
+        surface_name = surface_parameters['options']['name']
+        quality = surface_parameters['options']['quality']
+        fill_holes = surface_parameters['options']['fill']
+        keep_largest = surface_parameters['options']['keep_largest']
 
         mode = 'CONTOUR' # 'GRAYSCALE'
-        quality=_('Optimal *')
-        keep_largest = False
-        surface_name = ""
+        min_value, max_value = mask.threshold_range
         colour = mask.colour
+
+        try:
+            overwrite = surface_parameters['options']['overwrite']
+        except KeyError:
+            overwrite = False
+        mask.matrix.flush()
 
         if quality in const.SURFACE_QUALITY.keys():
             imagedata_resolution = const.SURFACE_QUALITY[quality][0]
@@ -448,8 +446,9 @@ class SurfaceManager():
                                                 smooth_relaxation_factor,
                                                 smooth_iterations, language,
                                                 flip_image, q_in, q_out,
-                                                mask.was_edited and algorithm != u'InVesalius 3.b2',
-                                                algorithm)
+                                                algorithm != 'Default',
+                                                algorithm,
+                                                imagedata_resolution)
             p.append(sp)
             sp.start()
 
@@ -501,7 +500,7 @@ class SurfaceManager():
         polydata.SetSource(None)
         del polydata_append
 
-        if algorithm == u'Context aware smoothing':
+        if algorithm == 'ca_smoothing':
             normals = vtk.vtkPolyDataNormals()
             normals_ref = weakref.ref(normals)
             normals_ref().AddObserver("ProgressEvent", lambda obj,evt:
@@ -542,21 +541,23 @@ class SurfaceManager():
             polydata.DebugOn()
 
         else:
-            smoother = vtk.vtkWindowedSincPolyDataFilter()
+            #smoother = vtk.vtkWindowedSincPolyDataFilter()
+            smoother = vtk.vtkSmoothPolyDataFilter()
             smoother_ref = weakref.ref(smoother)
             smoother_ref().AddObserver("ProgressEvent", lambda obj,evt:
                             UpdateProgress(smoother_ref(), _("Generating 3D surface...")))
             smoother.SetInput(polydata)
             smoother.SetNumberOfIterations(smooth_iterations)
-            smoother.SetFeatureAngle(120)
-            smoother.SetEdgeAngle(90.0)
+            smoother.SetRelaxationFactor(smooth_relaxation_factor)
+            smoother.SetFeatureAngle(80)
+            #smoother.SetEdgeAngle(90.0)
+            #smoother.SetPassBand(0.1)
             smoother.BoundarySmoothingOn()
-            smoother.SetPassBand(0.1)
+            smoother.FeatureEdgeSmoothingOn()
+            #smoother.NormalizeCoordinatesOn()
+            #smoother.NonManifoldSmoothingOn()
             smoother.ReleaseDataFlagOn()
             smoother.GetOutput().ReleaseDataFlagOn()
-            #smoother.FeatureEdgeSmoothingOn()
-            #smoother.NonManifoldSmoothingOn()
-            #smoother.NormalizeCoordinatesOn()
             smoother.Update()
             del polydata
             polydata = smoother.GetOutput()

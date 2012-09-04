@@ -29,6 +29,7 @@ import wx.lib.platebtn as pbtn
 from wx.lib.pubsub import pub as Publisher
 
 import constants as const
+import data.slice_ as slice_
 import gui.dialogs as dlg
 import gui.widgets.listctrl as listmix
 import utils as ul
@@ -615,9 +616,10 @@ class SurfaceButtonControlPanel(wx.Panel):
             self.OnDuplicate()
 
     def OnNew(self):
-        import project as prj
-
-        dialog = dlg.NewSurfaceDialog()
+        sl = slice_.Slice()
+        dialog = dlg.SurfaceCreationDialog(self, -1, 
+                            _('InVesalius 3 - New surface'),
+                            mask_edited=sl.current_mask.was_edited)
         try:
             if dialog.ShowModal() == wx.ID_OK:
                 ok = 1
@@ -627,25 +629,10 @@ class SurfaceButtonControlPanel(wx.Panel):
             ok = 1
 
         if ok:
-            (mask_index, surface_name, surface_quality, fill_holes,\
-            keep_largest) = dialog.GetValue()
+            surface_options = dialog.GetValue()
 
-            # Retrieve information from mask
-            proj = prj.Project()
-            mask = proj.mask_dict[mask_index]
-
-            # Send all information so surface can be created
-            surface_data = [proj.imagedata,
-                            mask.colour,
-                            mask.threshold_range,
-                            mask.edited_points,
-                            False, # overwrite
-                            surface_name,
-                            surface_quality,
-                            fill_holes,
-                            keep_largest]
-
-            Publisher.sendMessage('Create surface', surface_data)
+            Publisher.sendMessage('Create surface from index', surface_options)
+            dialog.Destroy()
 
     def OnRemove(self):
         self.parent.listctrl.RemoveSurfaces()

@@ -596,10 +596,11 @@ class Slice(object):
     #---------------------------------------------------------------------------
 
     def CreateSurfaceFromIndex(self, pubsub_evt):
-        mask_index, overwrite_surface, algorithm, options = pubsub_evt.data
+        print pubsub_evt.data
+        surface_parameters = pubsub_evt.data
 
         proj = Project()
-        mask = proj.mask_dict[mask_index]
+        mask = proj.mask_dict[surface_parameters['options']['index']]
 
         # This is very important. Do not use masks' imagedata. It would mess up
         # surface quality event when using contour
@@ -611,12 +612,8 @@ class Slice(object):
 
         mask.matrix.flush()
 
-        Publisher.sendMessage('Create surface', (algorithm, options,
-                                                      self.matrix,
-                                                      self.matrix_filename,
-                                                      mask, self.spacing,
-                                                      overwrite_surface))
-
+        Publisher.sendMessage('Create surface', (self, mask,
+                                                 surface_parameters))
     def GetOutput(self):
         return self.blend_filter.GetOutput()
 

@@ -7,6 +7,8 @@ import vtk
 
 import i18n
 import converters
+import imagedata_utils as iu
+
 from scipy import ndimage
 
 class SurfaceProcess(multiprocessing.Process):
@@ -15,7 +17,7 @@ class SurfaceProcess(multiprocessing.Process):
                  mask_shape, mask_dtype, spacing, mode, min_value, max_value,
                  decimate_reduction, smooth_relaxation_factor,
                  smooth_iterations, language, flip_image, q_in, q_out,
-                 from_binary, algorithm):
+                 from_binary, algorithm, imagedata_resolution):
 
         multiprocessing.Process.__init__(self)
         self.pipe = pipe
@@ -35,6 +37,7 @@ class SurfaceProcess(multiprocessing.Process):
         self.shape = shape
         self.from_binary = from_binary
         self.algorithm = algorithm
+        self.imagedata_resolution = imagedata_resolution
 
         self.mask_filename = mask_filename
         self.mask_shape = mask_shape
@@ -95,6 +98,9 @@ class SurfaceProcess(multiprocessing.Process):
                 image =  converters.to_vtk(a_image, self.spacing, roi.start,
                                            "AXIAL")
             del a_image
+
+        if self.imagedata_resolution:
+            image = iu.ResampleImage3D(image, self.imagedata_resolution)
 
         flip = vtk.vtkImageFlip()
         flip.SetInput(image)
