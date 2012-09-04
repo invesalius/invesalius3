@@ -7,9 +7,30 @@ import vtk
 
 import i18n
 import converters
-import imagedata_utils as iu
+# import imagedata_utils as iu
 
 from scipy import ndimage
+
+# TODO: Code duplicated from file {imagedata_utils.py}.
+def ResampleImage3D(imagedata, value):
+    """
+    Resample vtkImageData matrix.
+    """
+    spacing = imagedata.GetSpacing()
+    extent = imagedata.GetExtent()
+    size = imagedata.GetDimensions()
+
+    width = float(size[0])
+    height = float(size[1]/value)
+
+    resolution = (height/(extent[1]-extent[0])+1)*spacing[1]
+
+    resample = vtk.vtkImageResample()
+    resample.SetInput(imagedata)
+    resample.SetAxisMagnificationFactor(0, resolution)
+    resample.SetAxisMagnificationFactor(1, resolution)
+
+    return resample.GetOutput()
 
 class SurfaceProcess(multiprocessing.Process):
 
@@ -100,7 +121,8 @@ class SurfaceProcess(multiprocessing.Process):
             del a_image
 
         if self.imagedata_resolution:
-            image = iu.ResampleImage3D(image, self.imagedata_resolution)
+            # image = iu.ResampleImage3D(image, self.imagedata_resolution)
+            image = ResampleImage3D(image, self.imagedata_resolution)
 
         flip = vtk.vtkImageFlip()
         flip.SetInput(image)
