@@ -873,17 +873,17 @@ class NewSurfaceDialog(wx.Dialog):
         keep_largest = self.check_box_largest.GetValue()
         return (mask_index, surface_name, quality, fill_holes, keep_largest)
 
-INDEX_TO_EXTENSION = {0: "bmp", 1: "jpg", 2: "png", 3: "ps", 4:"povray", 5:"tiff"}
-WILDCARD_SAVE_PICTURE = _("BMP image")+" (*.bmp)|*.bmp|"+\
-                            _("JPG image")+" (*.jpg)|*.jpg|"+\
-                            _("PNG image")+" (*.png)|*.png|"+\
-                            _("PostScript document")+" (*.ps)|*.ps|"+\
-                            _("POV-Ray file")+" (*.pov)|*.pov|"+\
-                            _("TIFF image")+" (*.tif)|*.tif"
 
 
 def ExportPicture(type_=""):
     import constants as const
+    INDEX_TO_EXTENSION = {0: "bmp", 1: "jpg", 2: "png", 3: "ps", 4:"povray", 5:"tiff"}
+    WILDCARD_SAVE_PICTURE = _("BMP image")+" (*.bmp)|*.bmp|"+\
+                                _("JPG image")+" (*.jpg)|*.jpg|"+\
+                                _("PNG image")+" (*.png)|*.png|"+\
+                                _("PostScript document")+" (*.ps)|*.ps|"+\
+                                _("POV-Ray file")+" (*.pov)|*.pov|"+\
+                                _("TIFF image")+" (*.tif)|*.tif"
 
     INDEX_TO_TYPE = {0: const.FILETYPE_BMP,
                 1: const.FILETYPE_JPG,

@@ -95,7 +95,7 @@ class SurfaceProcess(multiprocessing.Process):
                 del gauss
                 del a_mask
             else:
-                image =  converters.to_vtk(a_image, self.spacing, roi.start,
+                image = converters.to_vtk(a_image, self.spacing, roi.start,
                                            "AXIAL")
             del a_image
 

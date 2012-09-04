@@ -30,7 +30,6 @@ from wx.lib.pubsub import pub as Publisher
 import vtk
 
 import constants as const
-import data.imagedata_utils as iu
 import data.mask as msk
 import data.polydata_utils as pu
 import data.surface as srf
