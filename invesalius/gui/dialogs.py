@@ -1011,7 +1011,7 @@ class SurfaceCreationDialog(wx.Dialog):
         # method.
         pre = wx.PreDialog()
         pre.SetExtraStyle(wx.DIALOG_EX_CONTEXTHELP)
-        pre.Create(parent, ID, title, pos, (50,30), style)
+        pre.Create(parent, ID, title, pos, (500,300), style)
 
         # This extra style can be set after the UI object has been created.
         if 'wxMac' in wx.PlatformInfo and useMetal:
@@ -1028,12 +1028,12 @@ class SurfaceCreationDialog(wx.Dialog):
         self.nsd.Bind(EVT_MASK_SET, self.OnSetMask)
         surface_options_sizer = wx.StaticBoxSizer(wx.StaticBox(self, -1,
                                       _('Surface creation options')), wx.VERTICAL)
-        surface_options_sizer.Add(self.nsd, 0, wx.EXPAND|wx.ALL, 5)
+        surface_options_sizer.Add(self.nsd, 1, wx.EXPAND|wx.ALL, 5)
 
         self.ca = SurfaceMethodPanel(self, -1, mask_edited)
         surface_method_sizer = wx.StaticBoxSizer(wx.StaticBox(self, -1,
                                       _('Surface creation method')), wx.VERTICAL)
-        surface_method_sizer.Add(self.ca, 0, wx.EXPAND|wx.ALL, 5)
+        surface_method_sizer.Add(self.ca, 1, wx.EXPAND|wx.ALL, 5)
 
         btn_ok = wx.Button(self, wx.ID_OK)
         btn_ok.SetDefault()
@@ -1054,8 +1054,6 @@ class SurfaceCreationDialog(wx.Dialog):
 
         self.SetSizer(sizer)
         sizer.Fit(self)
-
-        self.Show()
 
     def OnSetMask(self, evt):
         mask = proj.Project().mask_dict[evt.mask_index]

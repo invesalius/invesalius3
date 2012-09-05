@@ -617,7 +617,7 @@ class SurfaceButtonControlPanel(wx.Panel):
 
     def OnNew(self):
         sl = slice_.Slice()
-        dialog = dlg.SurfaceCreationDialog(self, -1, 
+        dialog = dlg.SurfaceCreationDialog(None, -1, 
                             _('InVesalius 3 - New surface'),
                             mask_edited=sl.current_mask.was_edited)
         try:
