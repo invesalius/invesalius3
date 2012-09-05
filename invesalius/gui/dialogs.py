@@ -1045,8 +1045,8 @@ class SurfaceCreationDialog(wx.Dialog):
         btnsizer.Realize()
 
         sizer_panels = wx.BoxSizer(wx.HORIZONTAL)
-        sizer_panels.Add(surface_method_sizer, 0, wx.EXPAND|wx.ALL, 5)
         sizer_panels.Add(surface_options_sizer, 0, wx.EXPAND|wx.ALL, 5)
+        sizer_panels.Add(surface_method_sizer, 0, wx.EXPAND|wx.ALL, 5)
 
         sizer = wx.BoxSizer(wx.VERTICAL)
         sizer.Add(sizer_panels, 0, wx.ALIGN_RIGHT|wx.ALL, 5)
@@ -1062,12 +1062,9 @@ class SurfaceCreationDialog(wx.Dialog):
         self.ca.mask_edited = mask.was_edited
         self.ca.ReloadMethodsOptions()
 
-
-
     def GetValue(self):
         return {"method": self.ca.GetValue(),
                 "options": self.nsd.GetValue()}
-
 
 class SurfaceCreationOptionsPanel(wx.Panel):
     def __init__(self, parent, ID=-1):
@@ -1232,28 +1229,39 @@ class SurfaceMethodPanel(wx.Panel):
 
     def _build_widgets(self):
         self.ca_options = CAOptions(self)
+
         self.cb_types = wx.ComboBox(self, -1, _(u'Default'),
                                     choices=[i for i in sorted(self.alg_types)
                                             if not (self.mask_edited and i in self.edited_imp)],
                                     style=wx.CB_READONLY)
-        if self.mask_edited:
-            self.cb_types.SetValue(_(u'Context aware smoothing'))
-            self.ca_options.Enable()
-        else:
-            self.ca_options.Disable()
+        w, h = self.cb_types.GetSizeTuple()
 
+        icon = wx.ArtProvider.GetBitmap(wx.ART_INFORMATION, wx.ART_MESSAGE_BOX,
+                                        (h * 0.8, h * 0.8))
+        self.bmp = wx.StaticBitmap(self, -1, icon)
+        self.bmp.SetToolTipString(_("It's not possible to use the Default method because the mask was edited"))
 
-        method_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        method_sizer.Add(wx.StaticText(self, -1, u'Method:'), 0,
-                            wx.EXPAND | wx.ALL, 5)
-        method_sizer.Add(self.cb_types, 0, wx.EXPAND)
+        self.method_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        self.method_sizer.Add(wx.StaticText(self, -1, u'Method:'), 0,
+                              wx.EXPAND | wx.ALL, 5)
+        self.method_sizer.Add(self.cb_types, 1, wx.EXPAND)
+        self.method_sizer.Add(self.bmp, 0, wx.EXPAND|wx.ALL, 5)
 
         self.main_sizer = wx.BoxSizer(wx.VERTICAL)
-        self.main_sizer.Add(method_sizer, 0, wx.EXPAND | wx.ALL, 5)
+        self.main_sizer.Add(self.method_sizer, 0, wx.EXPAND | wx.ALL, 5)
         self.main_sizer.Add(self.ca_options, 0, wx.EXPAND | wx.ALL, 5)
 
         self.SetSizer(self.main_sizer)
+        self.Layout()
         self.Fit()
+        
+        if self.mask_edited:
+            self.cb_types.SetValue(_(u'Context aware smoothing'))
+            self.ca_options.Enable()
+            self.method_sizer.Show(self.bmp)
+        else:
+            self.ca_options.Disable()
+            self.method_sizer.Hide(self.bmp)
 
     def _bind_wx(self):
         self.cb_types.Bind(wx.EVT_COMBOBOX, self._set_cb_types)
@@ -1296,6 +1304,10 @@ class SurfaceMethodPanel(wx.Panel):
         if self.mask_edited:
             self.cb_types.SetValue(_(u'Context aware smoothing'))
             self.ca_options.Enable()
+            self.method_sizer.Show(self.bmp)
         else:
             self.cb_types.SetValue(_(u'Default'))
             self.ca_options.Disable()
+            self.method_sizer.Hide(self.bmp)
+
+        self.method_sizer.Layout()
