@@ -214,7 +214,7 @@ class CursorBase(object):
         lut_mask.SetRange(0, 255)
         lut_mask.SetNumberOfTableValues(256)
         lut_mask.SetTableValue(0, 0, 0, 0, 0.0)
-        lut_mask.SetTableValue(1.0, 1-r, 1-g, 1-b, 0.50)
+        lut_mask.SetTableValue(1, 1-r, 1-g, 1-b, 0.50)
         lut_mask.SetRampToLinear()
         lut_mask.Build()
 
