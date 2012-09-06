@@ -35,7 +35,10 @@ import session as ses
 import surface_process
 import utils as utl
 import vtk_utils as vu
-import data.ca_smoothing as ca_smoothing
+try:
+    import data.ca_smoothing as ca_smoothing
+except:
+    pass
 
 class Surface():
     """
@@ -532,7 +535,10 @@ class SurfaceManager():
             polydata.SetSource(None)
             del clean
 
-            polydata.BuildLinks()
+            try:
+                polydata.BuildLinks()
+            except TypeError:
+                polydata.BuildLinks(0)
             polydata = ca_smoothing.ca_smoothing(polydata, options['angle'],
                                                  options['max distance'],
                                                  options['min weight'],
