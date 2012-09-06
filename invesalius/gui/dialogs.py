@@ -1024,15 +1024,18 @@ class SurfaceCreationDialog(wx.Dialog):
 
         self.CenterOnScreen()
 
+        # It's necessary to create a staticbox before is children widgets
+        # because otherwise in MacOSX it'll not be possible to use the mouse in
+        # static's children widgets.
+        sb_nsd = wx.StaticBox(self, -1, _('Surface creation options'))
         self.nsd = SurfaceCreationOptionsPanel(self, -1)
         self.nsd.Bind(EVT_MASK_SET, self.OnSetMask)
-        surface_options_sizer = wx.StaticBoxSizer(wx.StaticBox(self, -1,
-                                      _('Surface creation options')), wx.VERTICAL)
+        surface_options_sizer = wx.StaticBoxSizer(sb_nsd, wx.VERTICAL)
         surface_options_sizer.Add(self.nsd, 1, wx.EXPAND|wx.ALL, 5)
 
+        sb_ca = wx.StaticBox(self, -1, _('Surface creation method'))
         self.ca = SurfaceMethodPanel(self, -1, mask_edited)
-        surface_method_sizer = wx.StaticBoxSizer(wx.StaticBox(self, -1,
-                                      _('Surface creation method')), wx.VERTICAL)
+        surface_method_sizer = wx.StaticBoxSizer(sb_ca, wx.VERTICAL)
         surface_method_sizer.Add(self.ca, 1, wx.EXPAND|wx.ALL, 5)
 
         btn_ok = wx.Button(self, wx.ID_OK)
@@ -1178,6 +1181,7 @@ class CAOptions(wx.Panel):
         self._build_widgets()
     
     def _build_widgets(self):
+        sb = wx.StaticBox(self, -1, _('Context aware options'))
         self.angle = floatspin.FloatSpin(self, -1, value=0.7, min_val=0.0,
                                          max_val=1.0, increment=0.1,
                                          digits=1)
@@ -1202,7 +1206,7 @@ class CAOptions(wx.Panel):
         layout_sizer.Add(wx.StaticText(self, -1, _(u'N. steps:')),  0, wx.EXPAND)
         layout_sizer.Add(self.steps, 0, wx.EXPAND)
 
-        self.main_sizer = wx.StaticBoxSizer(wx.StaticBox(self, -1, _('Context aware options')), wx.VERTICAL)
+        self.main_sizer = wx.StaticBoxSizer(sb, wx.VERTICAL)
         self.main_sizer.Add(layout_sizer, 0, wx.EXPAND | wx.ALL, 5)
         self.SetSizer(self.main_sizer)
 
