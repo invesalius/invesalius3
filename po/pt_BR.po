@@ -1346,145 +1346,121 @@ msgstr "I"
 
 #: viewer_slice.py:555 viewer_slice.py:564 viewer_slice.py:573
 #: viewer_slice.py:582
-#, fuzzy
 msgid "AL"
 msgstr "AE"
 
 #: viewer_slice.py:555 viewer_slice.py:564 viewer_slice.py:573
 #: viewer_slice.py:582
-#, fuzzy
 msgid "RA"
 msgstr "DA"
 
 #: viewer_slice.py:555 viewer_slice.py:564 viewer_slice.py:573
 #: viewer_slice.py:582
-#, fuzzy
 msgid "PR"
 msgstr "PD"
 
 #: viewer_slice.py:555 viewer_slice.py:564 viewer_slice.py:573
 #: viewer_slice.py:582
-#, fuzzy
 msgid "LP"
 msgstr "EP"
 
 #: viewer_slice.py:558 viewer_slice.py:567 viewer_slice.py:576
 #: viewer_slice.py:585
-#, fuzzy
 msgid "LA"
 msgstr "EA"
 
 #: viewer_slice.py:558 viewer_slice.py:567 viewer_slice.py:576
 #: viewer_slice.py:585
-#, fuzzy
 msgid "AR"
 msgstr "AD"
 
 #: viewer_slice.py:558 viewer_slice.py:567 viewer_slice.py:576
 #: viewer_slice.py:585
-#, fuzzy
 msgid "RP"
 msgstr "DP"
 
 #: viewer_slice.py:558 viewer_slice.py:567 viewer_slice.py:576
 #: viewer_slice.py:585
-#, fuzzy
 msgid "PL"
 msgstr "PE"
 
 #: viewer_slice.py:593 viewer_slice.py:602 viewer_slice.py:611
 #: viewer_slice.py:620
-#, fuzzy
 msgid "TL"
 msgstr "SE"
 
 #: viewer_slice.py:593 viewer_slice.py:602 viewer_slice.py:611
 #: viewer_slice.py:620
-#, fuzzy
 msgid "RT"
 msgstr "DS"
 
 #: viewer_slice.py:593 viewer_slice.py:602 viewer_slice.py:611
 #: viewer_slice.py:620
-#, fuzzy
 msgid "BR"
 msgstr "ID"
 
 #: viewer_slice.py:593 viewer_slice.py:602 viewer_slice.py:611
 #: viewer_slice.py:620
-#, fuzzy
 msgid "LB"
 msgstr "EI"
 
 #: viewer_slice.py:596 viewer_slice.py:605 viewer_slice.py:614
 #: viewer_slice.py:623
-#, fuzzy
 msgid "LT"
 msgstr "ES"
 
 #: viewer_slice.py:596 viewer_slice.py:605 viewer_slice.py:614
 #: viewer_slice.py:623
-#, fuzzy
 msgid "TR"
 msgstr "SD"
 
 #: viewer_slice.py:596 viewer_slice.py:605 viewer_slice.py:614
 #: viewer_slice.py:623
-#, fuzzy
 msgid "RB"
 msgstr "DI"
 
 #: viewer_slice.py:596 viewer_slice.py:605 viewer_slice.py:614
 #: viewer_slice.py:623
-#, fuzzy
 msgid "BL"
 msgstr "IE"
 
 #: viewer_slice.py:631 viewer_slice.py:640 viewer_slice.py:649
 #: viewer_slice.py:658
-#, fuzzy
 msgid "TA"
 msgstr "SA"
 
 #: viewer_slice.py:631 viewer_slice.py:640 viewer_slice.py:649
 #: viewer_slice.py:658
-#, fuzzy
 msgid "PT"
 msgstr "PS"
 
 #: viewer_slice.py:631 viewer_slice.py:640 viewer_slice.py:649
 #: viewer_slice.py:658
-#, fuzzy
 msgid "BP"
 msgstr "IP"
 
 #: viewer_slice.py:631 viewer_slice.py:640 viewer_slice.py:649
 #: viewer_slice.py:658
-#, fuzzy
 msgid "AB"
 msgstr "AI"
 
 #: viewer_slice.py:634 viewer_slice.py:643 viewer_slice.py:652
 #: viewer_slice.py:661
-#, fuzzy
 msgid "AT"
 msgstr "AS"
 
 #: viewer_slice.py:634 viewer_slice.py:643 viewer_slice.py:652
 #: viewer_slice.py:661
-#, fuzzy
 msgid "TP"
 msgstr "SP"
 
 #: viewer_slice.py:634 viewer_slice.py:643 viewer_slice.py:652
 #: viewer_slice.py:661
-#, fuzzy
 msgid "PB"
 msgstr "PI"
 
 #: viewer_slice.py:634 viewer_slice.py:643 viewer_slice.py:652
 #: viewer_slice.py:661
-#, fuzzy
 msgid "BA"
 msgstr "IA"
 

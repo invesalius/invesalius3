@@ -10,7 +10,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: InVesalius\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2012-09-04 09:21-0300\n"
+"POT-Creation-Date: 2012-09-06 10:54-0300\n"
 "PO-Revision-Date: 2011-10-30 20:58+0000\n"
 "Last-Translator: Florin Putura <puturaflorin@yahoo.com>\n"
 "Language-Team: Romanian (http://www.transifex.com/projects/p/invesalius/"
@@ -129,7 +129,7 @@ msgstr "Ocean"
 msgid "Inverse Gray"
 msgstr "Inverseaza gri"
 
-#: constants.py:191 constants.py:276 dialogs.py:522 dialogs.py:535
+#: constants.py:191 constants.py:276 dialogs.py:530 dialogs.py:543
 #: dicom_preview_panel.py:675 dicom_preview_panel.py:676 presets.py:30
 #: presets.py:48 presets.py:103 presets.py:134
 msgid "Bone"
@@ -148,7 +148,7 @@ msgstr "Desenează"
 msgid "Erase"
 msgstr "Șterge"
 
-#: constants.py:251 data_notebook.py:434 task_surface.py:43
+#: constants.py:251 data_notebook.py:435 task_surface.py:43
 msgid "Threshold"
 msgstr "Prag"
 
@@ -164,7 +164,7 @@ msgstr "Mediu"
 msgid "High"
 msgstr "Mare"
 
-#: constants.py:265 constants.py:266 constants.py:267 surface.py:392
+#: constants.py:265 constants.py:266 constants.py:267 task_slice.py:164
 msgid "Optimal *"
 msgstr "Optimă *"
 
@@ -185,7 +185,8 @@ msgstr "Cavitatea Craniană Posterioară"
 msgid "Brain"
 msgstr "Craniu"
 
-#: constants.py:279 control.py:361 slice_menu.py:39 slice_menu.py:51
+#: constants.py:279 control.py:361 dialogs.py:1224 dialogs.py:1227
+#: dialogs.py:1235 dialogs.py:1311 slice_menu.py:39 slice_menu.py:51
 msgid "Default"
 msgstr "Implicit"
 
@@ -398,76 +399,80 @@ msgstr "Nedenumit"
 msgid "Fix gantry tilt applying the degrees below"
 msgstr "Fixează scheletul înclinării aplicând gradele specificate mai jos"
 
-#: data_notebook.py:39 measures.py:14
+#: data_notebook.py:40 measures.py:14
 msgid "Linear"
 msgstr "Linear"
 
-#: data_notebook.py:40 measures.py:15
+#: data_notebook.py:41 measures.py:15
 msgid "Angular"
 msgstr "Unghiular"
 
-#: data_notebook.py:43 measures.py:18
+#: data_notebook.py:44 measures.py:18
 msgid "3D"
 msgstr "3D"
 
-#: data_notebook.py:44 measures.py:19
+#: data_notebook.py:45 measures.py:19
 msgid "Axial"
 msgstr "Axial"
 
-#: data_notebook.py:45 measures.py:20
+#: data_notebook.py:46 measures.py:20
 msgid "Coronal"
 msgstr "Coronal"
 
-#: data_notebook.py:46 measures.py:21
+#: data_notebook.py:47 measures.py:21
 msgid "Sagittal"
 msgstr "Sagital"
 
-#: data_notebook.py:62
+#: data_notebook.py:63
 msgid "Masks"
 msgstr "Măști"
 
-#: data_notebook.py:63
+#: data_notebook.py:64
 msgid "3D Surfaces"
 msgstr "Suprafață 3D"
 
-#: data_notebook.py:64
+#: data_notebook.py:65
 msgid "Measures"
 msgstr "Măsuri"
 
-#: data_notebook.py:182 frame.py:982
+#: data_notebook.py:183 frame.py:982
 msgid "Measure distance"
 msgstr "Măsurare distanță"
 
-#: data_notebook.py:185 frame.py:987
+#: data_notebook.py:186 frame.py:987
 msgid "Measure angle"
 msgstr "Masurare unghi"
 
-#: data_notebook.py:433 data_notebook.py:774 data_notebook.py:1020
-#: data_notebook.py:1209
+#: data_notebook.py:434 data_notebook.py:761 data_notebook.py:1007
+#: data_notebook.py:1196
 msgid "Name"
 msgstr "Nume"
 
-#: data_notebook.py:494
+#: data_notebook.py:495
 msgid "Mask"
 msgstr "Mască"
 
-#: data_notebook.py:775
+#: data_notebook.py:621 task_surface.py:136
+msgid "InVesalius 3 - New surface"
+msgstr "InVesalius 3 - Suprafață nouă"
+
+#: data_notebook.py:762
 msgid "Volume (mm³)"
 msgstr "Volum (mm³)"
 
-#: data_notebook.py:776
+#: data_notebook.py:763
 msgid "Transparency"
 msgstr "Transparență"
 
-#: data_notebook.py:1021
+#: data_notebook.py:1008
 msgid "Location"
 msgstr "Locație"
 
-#: data_notebook.py:1022 data_notebook.py:1210
+#: data_notebook.py:1009 data_notebook.py:1197
 msgid "Type"
 msgstr "Tip"
 
-#: data_notebook.py:1023 data_notebook.py:1211
+#: data_notebook.py:1010 data_notebook.py:1198
 msgid "Value"
 msgstr "Valoare"
 
@@ -523,51 +528,51 @@ msgstr "Salvează presetare pentru distribuția razei"
 msgid "Tools"
 msgstr "Unelte"
 
-#: dialogs.py:57
+#: dialogs.py:65
 msgid "Value will be applied."
 msgstr "Valoare va fi aplicată"
 
-#: dialogs.py:61
+#: dialogs.py:69
 msgid "Value will not be applied."
 msgstr "Valoare nu va fi aplicată"
 
-#: dialogs.py:95
+#: dialogs.py:103
 msgid ""
 "Your operational system is 32bits or have low memory. \n"
 "If you manipulate 3D surface or volume rendering \n"
 "it's recommended to reduce the image resolution."
 msgstr ""
 
-#: dialogs.py:109
+#: dialogs.py:117
 #, fuzzy
 msgid "Percentage of image resolution"
 msgstr "Reducere rezoluție:"
 
-#: dialogs.py:155
+#: dialogs.py:163
 msgid "Loading DICOM files"
 msgstr "Încarcă fișierele DICOM"
 
-#: dialogs.py:200
+#: dialogs.py:208
 msgid "Open InVesalius 3 project..."
 msgstr "Deschide proiectul InVesalius 3:"
 
-#: dialogs.py:228
+#: dialogs.py:236
 msgid "Open Analyze File..."
 msgstr ""
 
-#: dialogs.py:266
+#: dialogs.py:274
 msgid "Choose a DICOM folder:"
 msgstr "Alege un fișier DICOM:"
 
-#: dialogs.py:297
+#: dialogs.py:305
 msgid "Save project as..."
 msgstr "Salvează proiectul ca..."
 
-#: dialogs.py:300
+#: dialogs.py:308
 msgid "InVesalius project (*.inv3)|*.inv3"
 msgstr "Proiect InVesalius (*.inv3)|*.inv3"
 
-#: dialogs.py:363 dialogs.py:641 dialogs.py:666
+#: dialogs.py:371 dialogs.py:649 dialogs.py:674
 #, python-format
 msgid ""
 "The project %s has been modified.\n"
@@ -576,73 +581,73 @@ msgstr ""
 "Proiectul %s a fost modificat.⏎\n"
 "Salvezi schimbările?"
 
-#: dialogs.py:377
+#: dialogs.py:385
 #, python-format
 msgid "%s is an empty directory."
 msgstr "%s este un director gol."
 
-#: dialogs.py:390
+#: dialogs.py:398
 msgid "There are no DICOM files in the selected directory."
 msgstr "Nu există fișiere DICOM în directorul selectat."
 
-#: dialogs.py:401
+#: dialogs.py:409
 msgid "There is no mask of reference to create a surface."
 msgstr "Nu există mască sau referință pentru a creea o suprafață."
 
-#: dialogs.py:412
+#: dialogs.py:420
 msgid "No masks were selected for removal."
 msgstr "Nu a fost selectată nici o mască pentru a fi îndepărtată."
 
-#: dialogs.py:423
+#: dialogs.py:431
 msgid "No surfaces were selected for removal."
 msgstr "Nu a fost selectată nici o suprafață pentru a fi îndepărtată."
 
-#: dialogs.py:435
+#: dialogs.py:443
 msgid "No measures were selected for removal."
 msgstr "Nu a fost selectată nici o măsură pentru a fi îndepărtată."
 
-#: dialogs.py:446
+#: dialogs.py:454
 msgid "No masks were selected for duplication."
 msgstr "Nu a fost selectată nici o mască pentru a fi duplicată."
 
-#: dialogs.py:459
+#: dialogs.py:467
 msgid "No surfaces were selected for duplication."
 msgstr "Nu a fost selectată nici o suprafață pentru a fi duplicată."
 
-#: dialogs.py:505
+#: dialogs.py:513
 msgid "New mask name:"
 msgstr "Nume pentru masca nouă:"
 
-#: dialogs.py:509
+#: dialogs.py:517
 msgid "Name the mask to be created"
 msgstr "Denumiți masca care va fi creată"
 
-#: dialogs.py:516
+#: dialogs.py:524
 msgid "Threshold preset:"
 msgstr "Prag prestabilit:"
 
-#: dialogs.py:603 presets.py:44 presets.py:62 presets.py:117 presets.py:148
-#: task_slice.py:421 task_slice.py:423 task_slice.py:435 task_slice.py:437
-#: task_slice.py:473 task_slice.py:476
+#: dialogs.py:611 presets.py:44 presets.py:62 presets.py:117 presets.py:148
+#: task_slice.py:431 task_slice.py:433 task_slice.py:445 task_slice.py:447
+#: task_slice.py:483 task_slice.py:486
 msgid "Custom"
 msgstr "Obișnuit"
 
-#: dialogs.py:618
+#: dialogs.py:626
 #, python-format
 msgid "%s does not exist."
 msgstr "%s nu există."
 
-#: dialogs.py:629
+#: dialogs.py:637
 msgid "Please, provide more than one DICOM file for 3D reconstruction"
 msgstr ""
 "Vă rugăam să ne furnizați mai mult de un fișier DICOM pentru reconstrucția 3D"
 
-#: dialogs.py:690
+#: dialogs.py:698
 #, fuzzy
 msgid "(c) 2007-2012 Renato Archer Information Technology Centre - CTI"
 msgstr "(c) 2007-2010 Centru Tehnologic Informațional Renato Archer"
 
-#: dialogs.py:691
+#: dialogs.py:699
 #, fuzzy
 msgid ""
 "InVesalius is a medical imaging program for 3D reconstruction. It uses a "
@@ -658,62 +663,111 @@ msgstr ""
 "3D  ca fişiere STL pentru crearea de modele fizice cu anatomia unui pacient, "
 "folosind tehnologii de creere prototipuri în cel mai scurt timp posibil."
 
-#: dialogs.py:699
+#: dialogs.py:707
 msgid "GNU GPL (General Public License) version 2"
 msgstr ""
 "GNU GPL (General Public License - Licență Publică Generală) versiunea 2"
 
-#: dialogs.py:731
+#: dialogs.py:739
 msgid "Save raycasting preset as:"
 msgstr "Salvează presetare pentru distribuția razei ca:"
 
-#: dialogs.py:774
+#: dialogs.py:782 dialogs.py:1079
 msgid "New surface name:"
 msgstr "Nume pentru suprafața nouă:"
 
-#: dialogs.py:778
+#: dialogs.py:786 dialogs.py:1083
 msgid "Name the surface to be created"
 msgstr "Denumiți suprafața care va fi creată"
 
-#: dialogs.py:785
+#: dialogs.py:793 dialogs.py:1090
 msgid "Mask of reference:"
 msgstr "Masca de referinţă:"
 
-#: dialogs.py:803
+#: dialogs.py:811 dialogs.py:1108
 msgid "Surface quality:"
 msgstr "Calitatea suprafeței:"
 
-#: dialogs.py:832
+#: dialogs.py:840 dialogs.py:1136
 msgid "Fill holes"
 msgstr "Umple spațiile goale"
 
-#: dialogs.py:835
+#: dialogs.py:843 dialogs.py:1139
 msgid "Keep largest region"
 msgstr "Pastrează ceam mai mare regiune"
 
-#: dialogs.py:869
+#: dialogs.py:881
 msgid "BMP image"
 msgstr "Imagine BPM"
 
-#: dialogs.py:870
+#: dialogs.py:882
 msgid "JPG image"
 msgstr "Imagine JPG"
 
-#: dialogs.py:871
+#: dialogs.py:883
 msgid "PNG image"
 msgstr "Imagine PNG"
 
-#: dialogs.py:872
+#: dialogs.py:884
 msgid "PostScript document"
 msgstr "Document PostScript"
 
-#: dialogs.py:873
+#: dialogs.py:885
 msgid "POV-Ray file"
 msgstr "Fișier POV-Ray"
 
-#: dialogs.py:874
+#: dialogs.py:886
 msgid "TIFF image"
 msgstr "Imagine TIFF"
+
+#: dialogs.py:1003
+#, fuzzy
+msgid "Surface creation"
+msgstr "Proprietăți suprafață"
+
+#: dialogs.py:1030
+#, fuzzy
+msgid "Surface creation options"
+msgstr "Proprietăți suprafață"
+
+#: dialogs.py:1036
+#, fuzzy
+msgid "Surface creation method"
+msgstr "Proprietăți suprafață"
+
+#: dialogs.py:1184
+msgid "Context aware options"
+msgstr ""
+
+#: dialogs.py:1200
+msgid "Angle:"
+msgstr ""
+
+#: dialogs.py:1202
+#, fuzzy
+msgid "Max. distance:"
+msgstr "Măsurare distanță"
+
+#: dialogs.py:1204
+msgid "Min. weight:"
+msgstr ""
+
+#: dialogs.py:1206
+#, fuzzy
+msgid "N. steps:"
+msgstr "Următorul pas"
+
+#: dialogs.py:1225 dialogs.py:1261 dialogs.py:1307
+msgid "Context aware smoothing"
+msgstr ""
+
+#: dialogs.py:1226
+msgid "Binary"
+msgstr ""
+
+#: dialogs.py:1244
+msgid "It's not possible to use the Default method because the mask was edited"
+msgstr ""
 
 #: dicom.py:1520 dicom.py:1524 dicom.py:1526
 msgid "unnamed"
@@ -858,7 +912,7 @@ msgstr ""
 msgid "Help"
 msgstr "Ajutor"
 
-#: frame.py:654 surface.py:355 surface.py:728 surface.py:729
+#: frame.py:654 surface.py:358 surface.py:735 surface.py:736
 msgid "Ready"
 msgstr "Gata"
 
@@ -1135,8 +1189,8 @@ msgstr "Lățime Fereastră și Nivel"
 msgid "Pseudo Colour"
 msgstr "Culoare asemănătoare"
 
-#: surface.py:418 surface.py:508 surface.py:526 surface.py:548 surface.py:576
-#: surface.py:598 surface.py:617 surface.py:631 surface.py:648
+#: surface.py:419 surface.py:510 surface.py:528 surface.py:554 surface.py:583
+#: surface.py:605 surface.py:624 surface.py:638 surface.py:655
 msgid "Generating 3D surface..."
 msgstr "Generare suprafață 3D..."
 
@@ -1205,31 +1259,31 @@ msgstr "Salvează suprafața"
 msgid "Overwrite last surface"
 msgstr "Suprascrie ultima suprafață"
 
-#: task_slice.py:228
+#: task_slice.py:238
 msgid "Mask properties"
 msgstr "Proprietațile măștii"
 
-#: task_slice.py:236
+#: task_slice.py:246
 msgid "Advanced editing tools"
 msgstr "Unelte de editare avansate"
 
-#: task_slice.py:320
+#: task_slice.py:330
 msgid "Set predefined or manual threshold:"
 msgstr "Selectare prag predefinit sau manual:"
 
-#: task_slice.py:528
+#: task_slice.py:538
 msgid "Choose brush type, size or operation:"
 msgstr "Alege tipul pensulei, mărime sau operație:"
 
-#: task_slice.py:534
+#: task_slice.py:544
 msgid "Circle"
 msgstr "Cerc"
 
-#: task_slice.py:538
+#: task_slice.py:548
 msgid "Square"
 msgstr "Pătrat"
 
-#: task_slice.py:574
+#: task_slice.py:584
 msgid "Brush threshold range:"
 msgstr "Intervalul pragurilor pensulei:"
 
@@ -1241,57 +1295,53 @@ msgstr "Creeare suprafață 3D pe baza măștii"
 msgid "Next step"
 msgstr "Următorul pas"
 
-#: task_surface.py:134
-msgid "InVesalius 3 - New surface"
-msgstr "InVesalius 3 - Suprafață nouă"
-
-#: task_surface.py:207
+#: task_surface.py:213
 msgid "Surface properties"
 msgstr "Proprietăți suprafață"
 
-#: task_surface.py:214
+#: task_surface.py:220
 msgid "Advanced options"
 msgstr "Opțiuni avansate"
 
-#: task_surface.py:246
+#: task_surface.py:252
 msgid "Automatically select largest disconnected region and create new surface"
 msgstr ""
 "Alege automat cea mai mare regiune întreruptă și creează o suprafață nouă "
 
-#: task_surface.py:247
+#: task_surface.py:253
 msgid "Select largest part"
 msgstr "Selectează partea cea mai întinsă"
 
-#: task_surface.py:255
+#: task_surface.py:261
 msgid ""
 "Automatically select disconnected regions and create one new surface per "
 "region"
 msgstr ""
 "Alege automat regiunile întrerupte și creează o suprafață nouă per regiune"
 
-#: task_surface.py:256
+#: task_surface.py:262
 msgid "Split all disconnected surfaces"
 msgstr "Desparte toate suprafețele întrerupte"
 
-#: task_surface.py:264
+#: task_surface.py:270
 msgid "Manually insert seeds of regions of interest and create one new surface"
 msgstr ""
 "Inserează manual semințe ale regiunilor de interes și creează o suprafață "
 "nouă"
 
-#: task_surface.py:265
+#: task_surface.py:271
 msgid "Select regions of interest..."
 msgstr "Selectează regiunile de interes..."
 
-#: task_surface.py:402
+#: task_surface.py:408
 msgid "Transparency:"
 msgstr "Transparență:"
 
-#: task_surface.py:538
+#: task_surface.py:544
 msgid "Decimate resolution:"
 msgstr "Reducere rezoluție:"
 
-#: task_surface.py:548
+#: task_surface.py:554
 msgid "Smooth iterations:"
 msgstr "Repetări omogene:"
 
