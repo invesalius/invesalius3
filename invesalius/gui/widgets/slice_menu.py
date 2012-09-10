@@ -101,8 +101,8 @@ class SliceMenu(wx.Menu):
                 flag_tiling = True
 
         # Add sub itens in the menu
-        self.AppendMenu(-1, _("Window Width and Level"), submenu_wl)
-        self.AppendMenu(-1, _("Pseudo Colour"), submenu_pseudo_colours)
+        self.AppendMenu(-1, _("Window width and level"), submenu_wl)
+        self.AppendMenu(-1, _("Pseudo color"), submenu_pseudo_colours)
         ###self.AppendMenu(-1, _("Image Tiling"), submenu_image_tiling)
 
         # It doesn't work in Linux
