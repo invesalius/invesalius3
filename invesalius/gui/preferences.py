@@ -103,7 +103,7 @@ class Viewer3D(wx.Panel):
 
         bsizer.Add(rb_inter, 0, wx.TOP|wx.LEFT, 0)
 
-        box_rendering = wx.StaticBox(self, -1, _("Volume Rendering"))
+        box_rendering = wx.StaticBox(self, -1, _("Volume rendering"))
         bsizer_ren = wx.StaticBoxSizer(box_rendering, wx.VERTICAL)
 
         lbl_rendering = wx.StaticText(self, -1, _("Rendering"))
