@@ -416,7 +416,7 @@ class SurfaceManager():
     
         ## Update progress value in GUI
         UpdateProgress = vu.ShowProgress(pipeline_size)
-        UpdateProgress(0, _("Generating 3D surface..."))
+        UpdateProgress(0, _("Creating 3D surface..."))
 
         language = ses.Session().language
 
@@ -507,7 +507,7 @@ class SurfaceManager():
             normals = vtk.vtkPolyDataNormals()
             normals_ref = weakref.ref(normals)
             normals_ref().AddObserver("ProgressEvent", lambda obj,evt:
-                                      UpdateProgress(normals_ref(), _("Generating 3D surface...")))
+                                      UpdateProgress(normals_ref(), _("Creating 3D surface...")))
             normals.SetInput(polydata)
             normals.ReleaseDataFlagOn()
             #normals.SetFeatureAngle(80)
@@ -525,7 +525,7 @@ class SurfaceManager():
             clean.GetOutput().ReleaseDataFlagOn()
             clean_ref = weakref.ref(clean)
             clean_ref().AddObserver("ProgressEvent", lambda obj,evt:
-                            UpdateProgress(clean_ref(), _("Generating 3D surface...")))
+                            UpdateProgress(clean_ref(), _("Creating 3D surface...")))
             clean.SetInput(polydata)
             clean.PointMergingOn()
             clean.Update()
@@ -551,7 +551,7 @@ class SurfaceManager():
             smoother = vtk.vtkSmoothPolyDataFilter()
             smoother_ref = weakref.ref(smoother)
             smoother_ref().AddObserver("ProgressEvent", lambda obj,evt:
-                            UpdateProgress(smoother_ref(), _("Generating 3D surface...")))
+                            UpdateProgress(smoother_ref(), _("Creating 3D surface...")))
             smoother.SetInput(polydata)
             smoother.SetNumberOfIterations(smooth_iterations)
             smoother.SetRelaxationFactor(smooth_relaxation_factor)
@@ -580,7 +580,7 @@ class SurfaceManager():
             decimation.SetTargetReduction(decimate_reduction)
             decimation_ref = weakref.ref(decimation)
             decimation_ref().AddObserver("ProgressEvent", lambda obj,evt:
-                            UpdateProgress(decimation_ref(), _("Generating 3D surface...")))
+                            UpdateProgress(decimation_ref(), _("Creating 3D surface...")))
             #decimation.PreserveTopologyOn()
             #decimation.SplittingOff()
             #decimation.BoundaryVertexDeletionOff()
@@ -602,7 +602,7 @@ class SurfaceManager():
             conn.SetExtractionModeToLargestRegion()
             conn_ref = weakref.ref(conn)
             conn_ref().AddObserver("ProgressEvent", lambda obj,evt:
-                    UpdateProgress(conn_ref(), _("Generating 3D surface...")))
+                    UpdateProgress(conn_ref(), _("Creating 3D surface...")))
             conn.Update()
             conn.GetOutput().ReleaseDataFlagOn()
             del polydata
@@ -621,7 +621,7 @@ class SurfaceManager():
             filled_polydata.SetHoleSize(300)
             filled_polydata_ref = weakref.ref(filled_polydata)
             filled_polydata_ref().AddObserver("ProgressEvent", lambda obj,evt:
-                    UpdateProgress(filled_polydata_ref(), _("Generating 3D surface...")))
+                    UpdateProgress(filled_polydata_ref(), _("Creating 3D surface...")))
             filled_polydata.Update()
             filled_polydata.GetOutput().ReleaseDataFlagOn()
             del polydata
@@ -635,7 +635,7 @@ class SurfaceManager():
         normals.ReleaseDataFlagOn()
         normals_ref = weakref.ref(normals)
         normals_ref().AddObserver("ProgressEvent", lambda obj,evt:
-                        UpdateProgress(normals_ref(), _("Generating 3D surface...")))
+                        UpdateProgress(normals_ref(), _("Creating 3D surface...")))
         normals.SetInput(polydata)
         normals.SetFeatureAngle(80)
         normals.AutoOrientNormalsOn()
@@ -652,7 +652,7 @@ class SurfaceManager():
         stripper.ReleaseDataFlagOn()
         stripper_ref = weakref.ref(stripper)
         stripper_ref().AddObserver("ProgressEvent", lambda obj,evt:
-                        UpdateProgress(stripper_ref(), _("Generating 3D surface...")))
+                        UpdateProgress(stripper_ref(), _("Creating 3D surface...")))
         stripper.SetInput(polydata)
         stripper.PassThroughCellIdsOn()
         stripper.PassThroughPointIdsOn()
