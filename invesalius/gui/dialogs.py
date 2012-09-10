@@ -100,7 +100,7 @@ class ResizeImageDialog(wx.Dialog):
                    style=wx.DEFAULT_DIALOG_STYLE)
         self.PostCreate(pre)
         
-        lbl_message = wx.StaticText(self, -1, _("Your operational system is 32bits or have low memory. \nIf you manipulate 3D surface or volume rendering \nit's recommended to reduce the image resolution."))
+        lbl_message = wx.StaticText(self, -1, _("InVesalius is running on a 32-bit operating system or has insufficient memory. \nIf you want to work with 3D surfaces or volume rendering, \nit is recommended to reduce the medical images resolution."))
         icon = wx.ArtProvider.GetBitmap(wx.ART_WARNING, wx.ART_MESSAGE_BOX, (32,32))
         bmp = wx.StaticBitmap(self, -1, icon)
 
@@ -114,7 +114,7 @@ class ResizeImageDialog(wx.Dialog):
         btn_sizer.AddButton(btn_cancel)
         btn_sizer.Realize()
 
-        lbl_message_percent = wx.StaticText(self, -1,_("Percentage of image resolution"))
+        lbl_message_percent = wx.StaticText(self, -1,_("Percentage of original resolution"))
 
         num_ctrl_percent = wx.SpinCtrl(self, -1)
         num_ctrl_percent.SetRange(20,100)
@@ -233,7 +233,7 @@ def ShowOpenProjectDialog():
 def ShowOpenAnalyzeDialog():
     # Default system path
     current_dir = os.path.abspath(".")
-    dlg = wx.FileDialog(None, message=_("Open Analyze File..."),
+    dlg = wx.FileDialog(None, message=_("Open Analyze file..."),
                         defaultDir="",
                         defaultFile="", wildcard=WILDCARD_ANALYZE,
                         style=wx.OPEN|wx.CHANGE_DIR)
@@ -382,7 +382,7 @@ def SaveChangesDialog__Old(filename):
 
 
 def ImportEmptyDirectory(dirpath):
-    msg = _("%s is an empty directory.") % dirpath.decode("utf-8")
+    msg = _("%s is an empty folder.") % dirpath.decode("utf-8")
     if sys.platform == 'darwin':
         dlg = wx.MessageDialog(None, "",
                                 msg,
@@ -395,7 +395,7 @@ def ImportEmptyDirectory(dirpath):
     dlg.Destroy()
 
 def ImportInvalidFiles():
-    msg = _("There are no DICOM files in the selected directory.")
+    msg = _("There are no DICOM files in the selected folder.")
     if sys.platform == 'darwin':
         dlg = wx.MessageDialog(None, "", msg,
                                 wx.ICON_INFORMATION | wx.OK)
@@ -406,7 +406,7 @@ def ImportInvalidFiles():
     dlg.Destroy()
 
 def InexistentMask():
-    msg = _("There is no mask of reference to create a surface.")
+    msg = _("A mask is needed to create a surface.")
     if sys.platform == 'darwin':
         dlg = wx.MessageDialog(None, "", msg,
                                 wx.ICON_INFORMATION | wx.OK)
@@ -417,7 +417,7 @@ def InexistentMask():
     dlg.Destroy()
 
 def MaskSelectionRequiredForRemoval():
-    msg = _("No masks were selected for removal.")
+    msg = _("No mask was selected for removal.")
     if sys.platform == 'darwin':
         dlg = wx.MessageDialog(None, "", msg,
                                 wx.ICON_INFORMATION | wx.OK)
@@ -428,7 +428,7 @@ def MaskSelectionRequiredForRemoval():
     dlg.Destroy()
 
 def SurfaceSelectionRequiredForRemoval():
-    msg = _("No surfaces were selected for removal.")
+    msg = _("No surface was selected for removal.")
     if sys.platform == 'darwin':
         dlg = wx.MessageDialog(None, "", msg,
                                 wx.ICON_INFORMATION | wx.OK)
@@ -440,7 +440,7 @@ def SurfaceSelectionRequiredForRemoval():
 
 
 def MeasureSelectionRequiredForRemoval():
-    msg = _("No measures were selected for removal.")
+    msg = _("No measure was selected for removal.")
     if sys.platform == 'darwin':
         dlg = wx.MessageDialog(None, "", msg,
                                 wx.ICON_INFORMATION | wx.OK)
@@ -451,7 +451,7 @@ def MeasureSelectionRequiredForRemoval():
     dlg.Destroy()
 
 def MaskSelectionRequiredForDuplication():
-    msg = _("No masks were selected for duplication.")
+    msg = _("No mask was selected for duplication.")
     if sys.platform == 'darwin':
         dlg = wx.MessageDialog(None, "", msg,
                                 wx.ICON_INFORMATION | wx.OK)
@@ -464,7 +464,7 @@ def MaskSelectionRequiredForDuplication():
 
 
 def SurfaceSelectionRequiredForDuplication():
-    msg = _("No surfaces were selected for duplication.")
+    msg = _("No surface was selected for duplication.")
     if sys.platform == 'darwin':
         dlg = wx.MessageDialog(None, "", msg,
                                 wx.ICON_INFORMATION | wx.OK)
@@ -695,8 +695,8 @@ def ShowAboutDialog(parent):
     info = wx.AboutDialogInfo()
     info.Name = "InVesalius"
     info.Version = "3.0 - Beta 3"
-    info.Copyright = _("(c) 2007-2012 Renato Archer Information Technology Centre - CTI")
-    info.Description = wordwrap(_("InVesalius is a medical imaging program for 3D reconstruction. It uses a sequence of 2D DICOM image files acquired with CT or MRI scanners. InVesalius allows for the export of 3D volumes or surfaces as STL files for creating physical models of a patient's anatomy using rapid prototyping technologies. The software has the support of the CTI, CNPq and Ministry of Health"), 350, wx.ClientDC(parent))
+    info.Copyright = _("(c) 2007-2012 Renato Archer Information Technology Center - CTI")
+    info.Description = wordwrap(_("InVesalius is a medical imaging program for 3D reconstruction. It uses a sequence of 2D DICOM image files acquired with CT or MRI scanners. InVesalius allows exporting 3D volumes or surfaces as STL files for creating physical models of a patient's anatomy using rapid prototyping technologies. The software is supported by CTI, CNPq and the Brazilian Ministry of Health"), 350, wx.ClientDC(parent))
 
 #       _("InVesalius is a software for medical imaging 3D reconstruction. ")+\
 #       _("Its input is a sequency of DICOM 2D image files acquired with CT or MR.\n\n")+\
