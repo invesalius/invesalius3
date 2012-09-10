@@ -479,11 +479,11 @@ class MenuBar(wx.MenuBar):
         app = file_menu.Append
         app(const.ID_DICOM_IMPORT, _("Import DICOM...\tCtrl+I"))
         #app(const.ID_DICOM_NETWORK, _("Retrieve DICOM from PACS"))
-        file_menu.AppendMenu(const.ID_IMPORT_OTHERS_FILES, _("Import Others Files"), others_file_menu)
-        app(const.ID_PROJECT_OPEN, _("Open Project...\tCtrl+O"))
-        app(const.ID_PROJECT_SAVE, _("Save Project\tCtrl+S"))
-        app(const.ID_PROJECT_SAVE_AS, _("Save Project As..."))
-        app(const.ID_PROJECT_CLOSE, _("Close Project"))
+        file_menu.AppendMenu(const.ID_IMPORT_OTHERS_FILES, _("Import other files..."), others_file_menu)
+        app(const.ID_PROJECT_OPEN, _("Open project...\tCtrl+O"))
+        app(const.ID_PROJECT_SAVE, _("Save project\tCtrl+S"))
+        app(const.ID_PROJECT_SAVE_AS, _("Save project as..."))
+        app(const.ID_PROJECT_CLOSE, _("Close project"))
         file_menu.AppendSeparator()
         #app(const.ID_PROJECT_INFO, _("Project Information..."))
         #file_menu.AppendSeparator()
@@ -553,7 +553,7 @@ class MenuBar(wx.MenuBar):
 
         # HELP
         help_menu = wx.Menu()
-        help_menu.Append(const.ID_START, _("Getting Started..."))
+        help_menu.Append(const.ID_START, _("Getting started..."))
         #help_menu.Append(108, "User Manual...")
         help_menu.AppendSeparator()
         help_menu.Append(const.ID_ABOUT, _("About..."))
@@ -801,14 +801,14 @@ class ProjectToolBar(wx.ToolBar):
         # Create tool items based on bitmaps
         self.AddLabelTool(const.ID_DICOM_IMPORT,
                           "",
-                          shortHelp =_("Import DICOM files..."),
+                          shortHelp =_("Import DICOM files...\tCtrl+I"),
                           bitmap=BMP_IMPORT)
         #self.AddLabelTool(const.ID_DICOM_LOAD_NET,
         #                   "Load medical image...",
         #                   BMP_NET)
         self.AddLabelTool(const.ID_PROJECT_OPEN,
                           "",
-                          shortHelp =_("Open a InVesalius project..."),
+                          shortHelp =_("Open InVesalius project..."),
                           bitmap=BMP_OPEN)
         self.AddLabelTool(const.ID_PROJECT_SAVE,
                           "",
