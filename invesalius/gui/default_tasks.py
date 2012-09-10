@@ -207,12 +207,12 @@ class UpperTaskPanel(wx.Panel):
         session = ses.Session()
         print "session mode: ", session.mode
         if int(session.mode) == const.MODE_RP:
-            tasks = [(_("InVesalius start"), importer.TaskPanel),
+            tasks = [(_("Load data"), importer.TaskPanel),
                      (_("Select region of interest"), slice_.TaskPanel),
                      (_("Configure 3D surface"), surface.TaskPanel),
                      (_("Export data"), exporter.TaskPanel)]
         elif int(session.mode) == const.MODE_NAVIGATOR:
-            tasks = [(_("InVesalius start"), importer.TaskPanel),
+            tasks = [(_("Load data"), importer.TaskPanel),
                      (_("Select region of interest"), slice_.TaskPanel),
                      (_("Configure 3D surface"), surface.TaskPanel),
                      (_("Utilize navigation system"), navigator.TaskPanel)]
