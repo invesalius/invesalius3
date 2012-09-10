@@ -61,7 +61,7 @@ class NotebookPanel(wx.Panel):
             book.SetWindowVariant(wx.WINDOW_VARIANT_SMALL)
 
         book.AddPage(MaskPage(book), _("Masks"))
-        book.AddPage(SurfacePage(book), _("3D Surfaces"))
+        book.AddPage(SurfacePage(book), _("3D surfaces"))
         book.AddPage(MeasurePage(book), _("Measures"))
         #book.AddPage(AnnotationsListCtrlPanel(book), _("Notes"))
         
