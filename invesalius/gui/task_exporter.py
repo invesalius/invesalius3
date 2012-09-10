@@ -327,7 +327,7 @@ class InnerTaskPanel(wx.Panel):
                                             (filename, filetype))
         else:
             dlg = wx.MessageDialog(None,
-                    _("You need to create a surface and make ") +
+                    _("You need to create a surface and make it ") +
                     _("visible before exporting it."),
                     'InVesalius 3',
                     wx.OK | wx.ICON_INFORMATION)
