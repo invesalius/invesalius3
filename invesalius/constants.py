@@ -38,8 +38,8 @@ DEFAULT_MEASURE_RADIUS = 1
 DEFAULT_MEASURE_TYPE = MEASURE_LINEAR
 
 
-STEREO_OFF = _("Off") 
-STEREO_RED_BLUE = _("RedBlue") 
+STEREO_OFF = _(" Off")
+STEREO_RED_BLUE = _("Red-blue")
 STEREO_CRISTAL = _("CristalEyes")
 STEREO_INTERLACED = _("Interlaced")
 STEREO_LEFT = _("Left")
@@ -274,12 +274,12 @@ SURFACE_NAME_PATTERN = _("Surface %d")
 # Imagedata - window and level presets
 WINDOW_LEVEL = {_("Abdomen"):(350,50),
                 _("Bone"):(2000, 300),
-                _("Brain Posterior Fossa"):(120,40),
+                _("Brain posterior fossa"):(120,40),
                 _("Brain"):(80,40),
                 _("Default"):(None, None), #Control class set window and level from DICOM
                 _("Emphysema"):(500,-850),
-                _("Ischemia - Hard Non Contrast"):(15,32),
-                _("Ischemia - Soft Non Contrast"):(80,20),
+                _("Ischemia - Hard, non contrast"):(15,32),
+                _("Ischemia - Soft, non contrast"):(80,20),
                 _("Larynx"):(180, 80),
                 _("Liver"):(2000, -500),
                 _("Lung - Soft"):(1600,-600),
@@ -320,31 +320,31 @@ RAYCASTING_FILES = {_("Airways"): "Airways.plist",
                    _("Black & White"): "Black & White.plist",
                    _("Bone + Skin"): "Bone + Skin.plist",
                    _("Bone + Skin II"): "Bone + Skin II.plist",
-                   _("Dark Bone"): "Dark Bone.plist",
+                   _("Dark bone"): "Dark Bone.plist",
                    _("Glossy"): "Glossy.plist",
                    _("Glossy II"): "Glossy II.plist",
-                   _("Gold Bone"): "Gold Bone.plist",
-                   _("High Contrast"): "High Contrast.plist",
-                   _("Low Contrast"): "Low Contrast.plist",
-                   _("Soft on White"): "Soft on White.plist",
-                   _("Mid Contrast"): "Mid Contrast.plist",
-                   _("No Shading"): "No Shading.plist",
+                   _("Gold bone"): "Gold Bone.plist",
+                   _("High contrast"): "High Contrast.plist",
+                   _("Low contrast"): "Low Contrast.plist",
+                   _("Soft on white"): "Soft on White.plist",
+                   _("Mid contrast"): "Mid Contrast.plist",
+                   _("No shading"): "No Shading.plist",
                    _("Pencil"): "Pencil.plist",
-                   _("Red on White"): "Red on White.plist",
-                   _("Skin On Blue"): "Skin On Blue.plist",
-                   _("Skin On Blue II"): "Skin On Blue II.plist",
-                   _("Soft on White"): "Soft on White.plist",
+                   _("Red on white"): "Red on White.plist",
+                   _("Skin on blue"): "Skin On Blue.plist",
+                   _("Skin on blue II"): "Skin On Blue II.plist",
+                   _("Soft on white"): "Soft on White.plist",
                    _("Soft + Skin"): "Soft + Skin.plist",
                    _("Soft + Skin II"): "Soft + Skin II.plist",
                    _("Soft + Skin III"): "Soft + Skin III.plist",
-                   _("Soft On Blue"): "Soft On Blue.plist",
+                   _("Soft on blue"): "Soft On Blue.plist",
                    _("Soft"): "Soft.plist",
                    _("Standard"): "Standard.plist",
                    _("Vascular"): "Vascular.plist",
                    _("Vascular II"): "Vascular II.plist",
                    _("Vascular III"): "Vascular III.plist",
                    _("Vascular IV"): "Vascular IV.plist",
-                   _("Yellow Bone"): "Yellow Bone.plist"}
+                   _("Yellow bone"): "Yellow Bone.plist"}
 
 
 
