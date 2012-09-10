@@ -129,7 +129,7 @@ def JoinSeedsParts(polydata, point_id_list):
     pos = 1
     for seed in point_id_list:
         conn.AddSeed(seed)
-        UpdateProgress(pos, _("Getting selected parts"))
+        UpdateProgress(pos, _("Analysing selected regions..."))
         pos += 1
 
     conn.AddObserver("ProgressEvent", lambda obj, evt:
@@ -188,6 +188,6 @@ def SplitDisconectedParts(polydata):
 
         polydata_collection.append(p)
         if progress:
-            UpdateProgress(region, _("Splitting disconected parts"))
+            UpdateProgress(region, _("Splitting disconnected regions..."))
 
     return polydata_collection
