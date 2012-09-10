@@ -406,7 +406,7 @@ class DicomPreviewSeries(wx.Panel):
                               group.dicom.acquisition.serie_number),
                              group.dicom,
                              group.title,
-                             _("%d Images") %(group.nslices))
+                             _("%d images") %(group.nslices))
             self.files.append(info)
             n+=1
 
