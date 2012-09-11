@@ -24,7 +24,7 @@ msgstr ""
 "X-Poedit-SourceCharset: utf-8\n"
 
 #: clut_raycasting.py:535
-#, fuzzy, python-format
+#, python-format
 msgid "Value: %-6d"
 msgstr "Valor: %-6d"
 
@@ -37,11 +37,6 @@ msgstr "Alfa: %-.3f"
 #, python-format
 msgid "M %d"
 msgstr "M %d"
-
-#: constants.py:41
-#, fuzzy
-msgid " Off"
-msgstr " Desabilitado"
 
 #: constants.py:42
 msgid "Red-blue"
@@ -788,10 +783,6 @@ msgstr "Abrir projeto...\tCtrl+O"
 msgid "Save project\tCtrl+S"
 msgstr "Salvar projeto\tCtrl+S"
 
-#: frame.py:485
-msgid "Save project as..."
-msgstr "Salvar projeto como..."
-
 #: frame.py:486
 msgid "Close project"
 msgstr "Fechar projeto"
@@ -1042,7 +1033,6 @@ msgid "Splitting disconnected regions..."
 msgstr "Separando regiões desconexas..."
 
 #: preferences.py:18
-#, fuzzy
 msgid "Preferences"
 msgstr "Preferências"
 
@@ -1051,12 +1041,10 @@ msgid "Visualization"
 msgstr "Visualização"
 
 #: preferences.py:42
-#, fuzzy
 msgid "Language"
 msgstr "Idioma"
 
 #: preferences.py:95
-#, fuzzy
 msgid "Surface"
 msgstr "Superfície"
 
@@ -1069,7 +1057,6 @@ msgid "Volume rendering"
 msgstr "Renderização volumétrica"
 
 #: preferences.py:109
-#, fuzzy
 msgid "Rendering"
 msgstr "Renderização"
 
