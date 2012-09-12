@@ -17,7 +17,10 @@
 #    detalhes.
 #--------------------------------------------------------------------------
 
+import sys
+
 import vtk
+import wx
 from wx.lib.pubsub import pub as Publisher
 
 import vtk_utils as vu
@@ -103,7 +106,8 @@ def Merge(polydata_list):
 
 def Export(polydata, filename, bin=False):
     writer = vtk.vtkXMLPolyDataWriter()
-    writer.SetFileName(filename)
+    print filename, type(filename)
+    writer.SetFileName(filename.encode('utf-8'))
     if bin:
         writer.SetDataModeToBinary()
     else:
@@ -113,7 +117,7 @@ def Export(polydata, filename, bin=False):
 
 def Import(filename):
     reader = vtk.vtkXMLPolyDataReader()
-    reader.SetFileName(filename)
+    reader.SetFileName(filename.encode('utf-8'))
     reader.Update()
     return reader.GetOutput()
 

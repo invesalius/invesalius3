@@ -51,37 +51,40 @@ class Mask():
         Publisher.subscribe(self.OnFlipVolume, 'Flip volume')
         Publisher.subscribe(self.OnSwapVolumeAxes, 'Swap volume axes')
 
-    def SavePlist(self, filename):
+    def SavePlist(self, dir_temp):
         mask = {}
-        filename = u'%s_%s_%d_%s' % (filename, 'mask', self.index, self.name)
-        img_name = u'%s.dat' % filename
-        self._save_mask(img_name)
+        filename = u'mask%d_%s' % (self.index, self.name) 
+        mask_filename = u'%s.dat' % filename
+        mask_filepath = os.path.join(dir_temp, mask_filename)
+        self._save_mask(mask_filepath)
 
         mask['index'] = self.index
+        mask['name'] = self.name
         mask['colour'] = self.colour
         mask['opacity'] = self.opacity
-        mask['threshold range'] = self.threshold_range
-        mask['name'] = self.name
-        mask['edition threshold range'] = self.edition_threshold_range
-        mask['show'] = self.is_shown
-        mask['mask file'] = os.path.split(img_name)[1]
-        mask['mask shape'] = self.matrix.shape
+        mask['threshold_range'] = self.threshold_range
+        mask['edition_threshold_range'] = self.edition_threshold_range
+        mask['visible'] = self.is_shown
+        mask['mask_file'] = mask_filename
+        mask['mask_shape'] = self.matrix.shape
 
-        plistlib.writePlist(mask, filename + '.plist')
-        return os.path.split(filename)[1] + '.plist'
+        plist_filename = filename + '.plist'
+        plist_filepath = os.path.join(dir_temp, plist_filename)
+        plistlib.writePlist(mask, plist_filepath)
+        return plist_filename
 
     def OpenPList(self, filename):
         mask = plistlib.readPlist(filename)
 
         self.index = mask['index']
+        self.name = mask['name']
         self.colour = mask['colour']
         self.opacity = mask['opacity']
-        self.threshold_range = mask['threshold range']
-        self.name = mask['name']
-        self.edition_threshold_range = mask['edition threshold range']
-        self.is_shown = mask['show']
-        mask_file = mask['mask file']
-        shape = mask['mask shape']
+        self.threshold_range = mask['threshold_range']
+        self.edition_threshold_range = mask['edition_threshold_range']
+        self.is_shown = mask['visible']
+        mask_file = mask['mask_file']
+        shape = mask['mask_shape']
         dirpath = os.path.abspath(os.path.split(filename)[0])
         path = os.path.join(dirpath, mask_file)
         self._open_mask(path, tuple(shape))

@@ -198,7 +198,7 @@ class Measurement():
         self.type = info["type"]
         self.slice_number = info["slice_number"]
         self.points = info["points"]
-        self.is_shown = info["is_shown"]
+        self.is_shown = info["visible"]
 
 class CirclePointRepresentation(object):
     """

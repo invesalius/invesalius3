@@ -62,32 +62,35 @@ class Surface():
         else:
             self.name = name
 
-    def SavePlist(self, filename):
-        surface = {}
-        filename = '%s$%s$%d' % (filename, 'surface', self.index)
-        d = self.__dict__
-        for key in d:
-            if isinstance(d[key], vtk.vtkPolyData):
-                img_name = '%s_%s.vtp' % (filename, key)
-                pu.Export(d[key], img_name, bin=True)
-                surface[key] = {'$vtp': os.path.split(img_name)[1]}
-            else:
-                surface[key] = d[key]
-
-
-        plistlib.writePlist(surface, filename + '.plist')
-        return os.path.split(filename)[1] + '.plist'
+    def SavePlist(self, dir_temp):
+        filename = 'surface_%d_%s' % (self.index, self.name)
+        vtp_filename = filename + '.vtp'
+        vtp_filepath = os.path.join(dir_temp, vtp_filename)
+        pu.Export(self.polydata, vtp_filepath, bin=True)
+        surface = {'colour': self.colour,
+                   'index': self.index,
+                   'name': self.name,
+                   'polydata': vtp_filename,
+                   'transparency': self.transparency,
+                   'visible': bool(self.is_shown),
+                   'volume': self.volume,
+                  }
+        plist_filename = filename + '.plist'
+        plist_filepath = os.path.join(dir_temp, filename + '.plist')
+        plistlib.writePlist(surface, plist_filepath)
+        return plist_filename
 
     def OpenPList(self, filename):
-        surface = plistlib.readPlist(filename)
+        sp = plistlib.readPlist(filename)
         dirpath = os.path.abspath(os.path.split(filename)[0])
-        for key in surface:
-            if key == 'polydata':
-                filepath = os.path.split(surface[key]["$vtp"])[-1]
-                path = os.path.join(dirpath, filepath)
-                self.polydata = pu.Import(path)
-            else:
-                setattr(self, key, surface[key])
+        self.index = sp['index']
+        self.name = sp['name']
+        self.colour = sp['colour']
+        self.transparency = sp['transparency']
+        self.is_shown = sp['visible']
+        self.volume = sp['volume']
+        self.polydata = pu.Import(os.path.join(dirpath, sp['polydata']))
+        Surface.general_index = max(Surface.general_index, self.index)
 
     def _set_class_index(self, index):
         Surface.general_index = index
@@ -318,6 +321,7 @@ class SurfaceManager():
                                     surface.transparency))
         self.last_surface_index = index
         self.ShowActor(index, True)
+
 
     def OnLoadSurfaceDict(self, pubsub_evt):
         surface_dict = pubsub_evt.data
