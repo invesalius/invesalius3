@@ -381,8 +381,8 @@ msgstr "Plano de corte"
 
 #: control.py:300
 #, python-format
-msgid "Loading file %d of %d"
-msgstr "Carregando arquivo %d de %d"
+msgid "Loading file %d of %d ..."
+msgstr "Carregando arquivo %d de %d ..."
 
 #: control.py:418
 msgid "Untitled"
@@ -446,8 +446,12 @@ msgid "Mask"
 msgstr "Máscara"
 
 #: data_notebook.py:621 task_surface.py:136
-msgid "InVesalius 3 - New surface"
-msgstr "InVesalius 3 - Nova superfície"
+msgid "New surface"
+msgstr "Nova superfície"
+
+#: dialogs.py:1207
+msgid "Method:"
+msgstr "Método"
 
 #: data_notebook.py:762
 msgid "Volume (mm³)"
@@ -554,8 +558,8 @@ msgid "Open InVesalius 3 project..."
 msgstr "Abrir projeto do InVesalius 3"
 
 #: dialogs.py:236
-msgid "Open Analyze file..."
-msgstr "Abrir arquivo Analyze..."
+msgid "Open Analyze file"
+msgstr "Abrir arquivo Analyze"
 
 #: dialogs.py:274
 msgid "Choose a DICOM folder:"
@@ -639,12 +643,10 @@ msgid "Please, provide more than one DICOM file for 3D reconstruction"
 msgstr "São necessários mais arquivos DICOM para a reconstrução 3D."
 
 #: dialogs.py:698
-#, fuzzy
 msgid "(c) 2007-2012 Renato Archer Information Technology Center - CTI"
 msgstr "(r) 2007-2012 Centro de Tecnologia da Informação Renato Archer - CTI"
 
 #: dialogs.py:699
-#, fuzzy
 msgid ""
 "InVesalius is a medical imaging program for 3D reconstruction. It uses a "
 "sequence of 2D DICOM image files acquired with CT or MRI scanners. "
@@ -655,11 +657,13 @@ msgid ""
 "\n"
 " Contact: invesalius@cti.gov.br"
 msgstr ""
-"InVesalius é um programa para reconstrução 3D de imagens médicas a partir de "
+"O InVesalius é um programa para reconstrução 3D de imagens médicas a partir de "
 "uma sequência de imagens DICOM 2D, obtidas com equipamentos de TC ou RM. O "
-"InVesalius permite que sejam exportados volumes ou superífices 3D no formato "
-"STL, para criação de réplicas físicas de estruturas anatômicas do paciente, "
-"por meio de tecnologias de prototipagem rápida."
+"InVesalius permite que sejam exportados volumes ou superfícies 3D no formato "
+"STL, para criação de réplicas físicas de estruturas anatômicas do paciente "
+"por meio de tecnologias de prototipagem rápida.\n"
+"\n"
+"Contato: invesalius@cti.gov.br"
 
 #: dialogs.py:707
 msgid "GNU GPL (General Public License) version 2"
@@ -734,8 +738,8 @@ msgid "Surface creation method"
 msgstr "Método de criação de superfície"
 
 #: dialogs.py:1144
-msgid "Context aware options"
-msgstr "Opções"
+# msgid "Options"
+# msgstr "Opções"
 
 #: dialogs.py:1160
 msgid "Angle:"
@@ -755,15 +759,15 @@ msgstr "Número de passos"
 
 #: dialogs.py:1185 dialogs.py:1221 dialogs.py:1266
 msgid "Context aware smoothing"
-msgstr ""
+msgstr "Suavização sensível ao contexto"
 
 #: dialogs.py:1186
 msgid "Binary"
 msgstr "Binário"
 
 #: dialogs.py:1204
-msgid "It's not possible to use the Default method because the mask was edited"
-msgstr "Não é possível usar o método Padrão pois a máscara foi editada"
+msgid "It is not possible to use the Default method because the mask was edited."
+msgstr "Não é possível usar o método Padrão porque a máscara foi editada."
 
 #: dicom.py:1520 dicom.py:1524 dicom.py:1526
 msgid "unnamed"
@@ -899,7 +903,7 @@ msgstr "Arquivo"
 msgid "Edit"
 msgstr "Editar"
 
-#: frame.py:571
+#: frame.py:571 dialogs.py:1144
 msgid "Options"
 msgstr "Opções"
 
@@ -1259,7 +1263,7 @@ msgstr "Criar superfície"
 
 #: task_slice.py:113
 msgid "Overwrite last surface"
-msgstr "Sobrescrever anterior"
+msgstr "Sobrescrever a anterior"
 
 #: task_slice.py:238
 msgid "Mask properties"
@@ -1271,7 +1275,7 @@ msgstr "Ferramentas avançadas de edição"
 
 #: task_slice.py:330
 msgid "Set predefined or manual threshold:"
-msgstr "Selecione ou edite valor de limiar:"
+msgstr "Selecione ou edite o valor do limiar:"
 
 #: task_slice.py:538
 msgid "Choose brush type, size or operation:"
@@ -1288,6 +1292,10 @@ msgstr "Quadrado"
 #: task_slice.py:584
 msgid "Brush threshold range:"
 msgstr "Limiar do pincel:"
+
+#: task_surface.py:86
+msgid "Create new 3D surface"
+msgstr "Criar nova superfície 3D"
 
 #: task_surface.py:85
 msgid "Create 3D surface based on a mask"
