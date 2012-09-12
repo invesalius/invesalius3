@@ -435,6 +435,7 @@ class Controller():
         proj.window = proj.threshold_range[1] - proj.threshold_range[0]
         proj.level =  (0.5 * (proj.threshold_range[1] + proj.threshold_range[0]))
         proj.spacing = header['pixdim'][1:4]
+        proj.matrix_shape = matrix.shape 
 
         self.Slice = sl.Slice()
         self.Slice.matrix = matrix
