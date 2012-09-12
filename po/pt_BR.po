@@ -1119,7 +1119,7 @@ msgstr "Renderização"
 
 #: preferences.py:113
 msgid "GPU (Only NVidia video card)"
-msgstr ""
+msgstr "GPU (Somente em placas de vídeo NVidia"
 
 #: preferences.py:150
 msgid ""
