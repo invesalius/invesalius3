@@ -147,7 +147,7 @@ class Language(wx.Panel):
         box = wx.StaticBox(self, -1, _("Language"))
         bsizer = wx.StaticBoxSizer(box, wx.VERTICAL)
         
-        text = wx.StaticText(self, -1, _("Language settings will take effect \n the next time you open InVesalius."))
+        text = wx.StaticText(self, -1, _("Language settings will be applied \n the next time InVesalius starts."))
         bsizer.Add(cmb_lang, 0, wx.TOP|wx.CENTER, 20)
         bsizer.Add(text, 0, wx.TOP|wx.CENTER, 10) 
 
