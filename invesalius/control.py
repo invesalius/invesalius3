@@ -297,7 +297,7 @@ class Controller():
     def Progress(self, evt):
         data = evt.data
         if (data):
-            message = _("Loading file %d of %d")%(data[0],data[1])
+            message = _("Loading file %d of %d ...")%(data[0],data[1])
             if not(self.progress_dialog):
                 self.progress_dialog = dialog.ProgressDialog(
                                     maximum = data[1], abort=1)
