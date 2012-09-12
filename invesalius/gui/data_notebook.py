@@ -618,7 +618,7 @@ class SurfaceButtonControlPanel(wx.Panel):
     def OnNew(self):
         sl = slice_.Slice()
         dialog = dlg.SurfaceCreationDialog(None, -1, 
-                            _('InVesalius 3 - New surface'),
+                            _('New surface'),
                             mask_edited=sl.current_mask.was_edited)
         try:
             if dialog.ShowModal() == wx.ID_OK:
