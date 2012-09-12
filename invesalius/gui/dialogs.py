@@ -709,7 +709,7 @@ def ShowAboutDialog(parent):
     info.Developers = ["Paulo Henrique Junqueira Amorim",
                        "Thiago Franco de Moraes",
                        "Guilherme Cesar Soares Ruppert",
-                       "Fábio de Souza Azevedo",
+                       "Fabio de Souza Azevedo",
                        "Jorge Vicente Lopes da Silva",
                        "",
                        "Former developers:",
