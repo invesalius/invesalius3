@@ -542,7 +542,6 @@ msgstr ""
 "recomenda-se diminuir a resolução das imagens médicas."
 
 #: dialogs.py:117
-#, fuzzy
 msgid "Percentage of original resolution"
 msgstr "Porcentagem da resolução original"
 
