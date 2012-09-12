@@ -440,6 +440,9 @@ class VolumeToolPanel(wx.Panel):
     def __init_menus(self, pubsub_evt=None):
         # MENU RELATED TO RAYCASTING TYPES
         menu = self.menu = wx.Menu()
+        #print "\n\n"
+        #print ">>>>", const.RAYCASTING_TYPES.sort()
+        #print "\n\n"
         for name in const.RAYCASTING_TYPES:
             id = wx.NewId()
             item = wx.MenuItem(menu, id, name, kind=wx.ITEM_RADIO)
@@ -454,6 +457,7 @@ class VolumeToolPanel(wx.Panel):
         self.id_cutplane = None
         submenu = wx.Menu()
         for name in const.RAYCASTING_TOOLS:
+           print name
            id = wx.NewId()
            if not(self.id_cutplane):
                self.id_cutplane = id

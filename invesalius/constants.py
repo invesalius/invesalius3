@@ -348,9 +348,9 @@ RAYCASTING_FILES = {_("Airways"): "Airways.plist",
 
 
 
-RAYCASTING_TYPES = [_(filename.split(".")[0]) for filename in
-                    os.listdir(folder) if
-                    os.path.isfile(os.path.join(folder,filename))]
+#RAYCASTING_TYPES = [_(filename.split(".")[0]) for filename in
+#                    os.listdir(folder) if
+#                    os.path.isfile(os.path.join(folder,filename))]
 
 
 LOG_FOLDER = os.path.join(os.path.expanduser('~'), '.invesalius', 'logs')
@@ -363,9 +363,10 @@ if not os.path.isdir(folder):
 
 
 USER_RAYCASTING_PRESETS_DIRECTORY = folder
-RAYCASTING_TYPES += [_(filename.split(".")[0]) for filename in
+RAYCASTING_TYPES = [_(filename.split(".")[0]) for filename in
                      os.listdir(folder) if
                      os.path.isfile(os.path.join(folder,filename))]
+RAYCASTING_TYPES += RAYCASTING_FILES.keys()
 RAYCASTING_TYPES.append(_(' Off'))
 RAYCASTING_TYPES.sort()
 RAYCASTING_OFF_LABEL = _(' Off')

@@ -144,7 +144,7 @@ class InnerTaskPanel(wx.Panel):
 
     def OnButtonNextTask(self, evt):
         overwrite = self.check_box.IsChecked()
-        algorithm = ''
+        algorithm = 'Default'
         options = {}
         if self.GetMaskSelected() != -1:
             sl = slice_.Slice()
@@ -157,7 +157,7 @@ class InnerTaskPanel(wx.Panel):
                     return
 
             mask_index = sl.current_mask.index
-            method = {'algorithm': 'Default', 
+            method = {'algorithm': algorithm, 
                       'options': options}
             srf_options = {"index": mask_index,
                            "name": '',

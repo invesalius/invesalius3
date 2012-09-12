@@ -593,7 +593,7 @@ class Controller():
             label = pubsub_evt.data
         else:
             return
-
+        
         if label != const.RAYCASTING_OFF_LABEL:
             if label in const.RAYCASTING_FILES.keys():
                 path = os.path.join(const.RAYCASTING_PRESETS_DIRECTORY,

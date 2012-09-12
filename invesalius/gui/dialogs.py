@@ -920,48 +920,6 @@ def ExportPicture(type_=""):
         return ()
 
 
-class CAOptions(wx.Panel):
-    '''
-    Options related to Context aware algorithm:
-    Angle: The min angle to a vertex to be considered a staircase vertex;
-    Max distance: The max distance a normal vertex must be to calculate its
-        weighting;
-    Min Weighting: The min weight a vertex must have;
-    Steps: The number of iterations the smoothing algorithm have to do.
-    '''
-    def __init__(self, parent):
-        wx.Panel.__init__(self, parent, -1)
-        self._build_widgets()
-    
-    def _build_widgets(self):
-        self.angle = floatspin.FloatSpin(self, -1, value=0.7, min_val=0.0,
-                                         max_val=1.0, increment=0.1,
-                                         digits=1)
-
-        self.max_distance = floatspin.FloatSpin(self, -1, value=3.0, min_val=0.0,
-                                         max_val=100.0, increment=0.1,
-                                         digits=2)
-
-        self.min_weight = floatspin.FloatSpin(self, -1, value=0.2, min_val=0.0,
-                                         max_val=1.0, increment=0.1,
-                                         digits=1)
-        
-        self.steps = wx.SpinCtrl(self, -1, value='10', min=1, max=100)
-
-        layout_sizer = wx.FlexGridSizer(rows=4, cols=2, hgap=5, vgap=5)
-        layout_sizer.Add(wx.StaticText(self, -1, u'Angle:'),  0, wx.EXPAND)
-        layout_sizer.Add(self.angle, 0, wx.EXPAND)
-        layout_sizer.Add(wx.StaticText(self, -1, u'Max. distance:'),  0, wx.EXPAND)
-        layout_sizer.Add(self.max_distance, 0, wx.EXPAND)
-        layout_sizer.Add(wx.StaticText(self, -1, u'Min. weight:'), 0, wx.EXPAND)
-        layout_sizer.Add(self.min_weight, 0, wx.EXPAND)
-        layout_sizer.Add(wx.StaticText(self, -1, u'N. steps:'),  0, wx.EXPAND)
-        layout_sizer.Add(self.steps, 0, wx.EXPAND)
-
-        self.main_sizer = wx.StaticBoxSizer(wx.StaticBox(self, -1, 'Context aware options'), wx.VERTICAL)
-        self.main_sizer.Add(layout_sizer, 0, wx.EXPAND | wx.ALL, 5)
-        self.SetSizer(self.main_sizer)
-
 class SurfaceDialog(wx.Dialog):
     '''
     This dialog is only shown when the mask whose surface will be generate was
@@ -970,7 +928,7 @@ class SurfaceDialog(wx.Dialog):
     `Context aware smoothing'
     '''
     def __init__(self):
-        wx.Dialog.__init__(self, None, -1, u'Surface generation options')
+        wx.Dialog.__init__(self, None, -1, _('Surface generation options'))
         self._build_widgets()
         self.CenterOnScreen()
 
@@ -1269,7 +1227,6 @@ class SurfaceMethodPanel(wx.Panel):
         self.cb_types.Bind(wx.EVT_COMBOBOX, self._set_cb_types)
 
     def _set_cb_types(self, evt):
-        print evt.GetString()
         if self.alg_types[evt.GetString()] == 'ca_smoothing':
             self.ca_options.Enable()
         else:

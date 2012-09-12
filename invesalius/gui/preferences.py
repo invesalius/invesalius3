@@ -144,10 +144,10 @@ class Language(wx.Panel):
         self.lg = lg = ComboBoxLanguage(self)
         self.cmb_lang = cmb_lang = lg.GetComboBox()
 
-        box = wx.StaticBox(self, -1, "Language")
+        box = wx.StaticBox(self, -1, _("Language"))
         bsizer = wx.StaticBoxSizer(box, wx.VERTICAL)
         
-        text = wx.StaticText(self, -1, "Takes effect the next time you \n open the InVesalius.")
+        text = wx.StaticText(self, -1, _("Language settings will take effect \n the next time you open InVesalius."))
         bsizer.Add(cmb_lang, 0, wx.TOP|wx.CENTER, 20)
         bsizer.Add(text, 0, wx.TOP|wx.CENTER, 10) 
 

@@ -565,7 +565,7 @@ class MenuBar(wx.MenuBar):
 
         # Add all menus to menubar
         self.Append(file_menu, _("File"))
-        self.Append(file_edit, "Edit")
+        self.Append(file_edit, _("Edit"))
         #self.Append(view_menu, "View")
         #self.Append(tools_menu, "Tools")
         self.Append(options_menu, _("Options"))
