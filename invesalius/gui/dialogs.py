@@ -711,12 +711,8 @@ def ShowAboutDialog(parent):
                        "Guilherme Cesar Soares Ruppert",
                        "Fabio de Souza Azevedo",
                        "Jorge Vicente Lopes da Silva",
-                       "",
-                       "Former developers:",
-                       "Tatiana Al-Chueyr",
-                       "",
-                       "Contributors: ",
-                       "Bruno Lara Bottazzini",
+                       "Tatiana Al-Chueyr (former)",
+                       "Bruno Lara Bottazzini (contributor)",
                        ""]
 
     info.Translators = ["Alex P. Natsios",
