@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: InVesalius\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2012-09-11 15:24-0300\n"
+"POT-Creation-Date: 2012-09-12 09:09-0300\n"
 "PO-Revision-Date: 2010-11-30 02:42+0000\n"
 "Last-Translator: Invesalius team <invesalius@cti.gov.br>\n"
 "Language-Team: Portuguese (Brazil) (http://www.transifex.com/projects/p/"
@@ -183,7 +183,7 @@ msgid "Brain"
 msgstr "Cérebro"
 
 #: constants.py:279 control.py:361 dialogs.py:1182 dialogs.py:1185
-#: dialogs.py:1193 dialogs.py:1269 slice_menu.py:39 slice_menu.py:51
+#: dialogs.py:1193 dialogs.py:1268 slice_menu.py:39 slice_menu.py:51
 msgid "Default"
 msgstr "Padrão"
 
@@ -750,7 +750,7 @@ msgstr "Peso mínimo"
 msgid "N. steps:"
 msgstr "Número de passos"
 
-#: dialogs.py:1183 dialogs.py:1219 dialogs.py:1265
+#: dialogs.py:1183 dialogs.py:1219 dialogs.py:1264
 msgid "Context aware smoothing"
 msgstr ""
 
@@ -1116,6 +1116,10 @@ msgstr "Renderização volumétrica"
 #: preferences.py:109
 msgid "Rendering"
 msgstr "Renderização"
+
+#: preferences.py:113
+msgid "GPU (Only NVidia video card)"
+msgstr ""
 
 #: preferences.py:150
 msgid ""
