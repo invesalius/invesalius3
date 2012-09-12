@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: InVesalius\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2012-09-12 09:09-0300\n"
+"POT-Creation-Date: 2012-09-12 13:02-0300\n"
 "PO-Revision-Date: 2010-11-30 02:42+0000\n"
 "Last-Translator: Invesalius team <invesalius@cti.gov.br>\n"
 "Language-Team: Portuguese (Brazil) (http://www.transifex.com/projects/p/"
@@ -182,8 +182,8 @@ msgstr "Fossa cerebral posterior"
 msgid "Brain"
 msgstr "Cérebro"
 
-#: constants.py:279 control.py:361 dialogs.py:1182 dialogs.py:1185
-#: dialogs.py:1193 dialogs.py:1268 slice_menu.py:39 slice_menu.py:51
+#: constants.py:279 control.py:361 dialogs.py:1184 dialogs.py:1187
+#: dialogs.py:1195 dialogs.py:1270 slice_menu.py:39 slice_menu.py:51
 msgid "Default"
 msgstr "Padrão"
 
@@ -388,7 +388,7 @@ msgstr "Carregando arquivo %d de %d"
 msgid "Untitled"
 msgstr "Sem título"
 
-#: control.py:554
+#: control.py:555
 msgid "Fix gantry tilt applying the degrees below"
 msgstr "Corrigir inclinação (gantry tilt) aplicando o seguinte valor"
 
@@ -650,7 +650,10 @@ msgid ""
 "sequence of 2D DICOM image files acquired with CT or MRI scanners. "
 "InVesalius allows exporting 3D volumes or surfaces as STL files for creating "
 "physical models of a patient's anatomy using rapid prototyping technologies. "
-"The software is supported by CTI, CNPq and the Brazilian Ministry of Health"
+"The software is supported by CTI, CNPq and the Brazilian Ministry of "
+"Health.\n"
+"\n"
+" Contact: invesalius@cti.gov.br"
 msgstr ""
 "InVesalius é um programa para reconstrução 3D de imagens médicas a partir de "
 "uma sequência de imagens DICOM 2D, obtidas com equipamentos de TC ou RM. O "
@@ -662,103 +665,103 @@ msgstr ""
 msgid "GNU GPL (General Public License) version 2"
 msgstr "GNU GPL (Licença Pública Geral) versão 2"
 
-#: dialogs.py:739
+#: dialogs.py:741
 msgid "Save raycasting preset as:"
 msgstr "Salvar pré-ajuste de raycasting como:"
 
-#: dialogs.py:782 dialogs.py:1037
+#: dialogs.py:784 dialogs.py:1039
 msgid "New surface name:"
 msgstr "Nome da nova superfície:"
 
-#: dialogs.py:786 dialogs.py:1041
+#: dialogs.py:788 dialogs.py:1043
 msgid "Name the surface to be created"
 msgstr "Nome da superfície a ser criada"
 
-#: dialogs.py:793 dialogs.py:1048
+#: dialogs.py:795 dialogs.py:1050
 msgid "Mask of reference:"
 msgstr "Máscara de referência:"
 
-#: dialogs.py:811 dialogs.py:1066
+#: dialogs.py:813 dialogs.py:1068
 msgid "Surface quality:"
 msgstr "Qualidade da superfície:"
 
-#: dialogs.py:840 dialogs.py:1094
+#: dialogs.py:842 dialogs.py:1096
 msgid "Fill holes"
 msgstr "Preencher buracos"
 
-#: dialogs.py:843 dialogs.py:1097
+#: dialogs.py:845 dialogs.py:1099
 msgid "Keep largest region"
 msgstr "Manter maior região"
 
-#: dialogs.py:881
+#: dialogs.py:883
 msgid "BMP image"
 msgstr "Imagem BMP"
 
-#: dialogs.py:882
+#: dialogs.py:884
 msgid "JPG image"
 msgstr "Imagem JPG"
 
-#: dialogs.py:883
+#: dialogs.py:885
 msgid "PNG image"
 msgstr "Imagem PNG"
 
-#: dialogs.py:884
+#: dialogs.py:886
 msgid "PostScript document"
 msgstr "Documento PostScript"
 
-#: dialogs.py:885
+#: dialogs.py:887
 msgid "POV-Ray file"
 msgstr "Arquivo POV-Ray"
 
-#: dialogs.py:886
+#: dialogs.py:888
 msgid "TIFF image"
 msgstr "Imagem TIFF"
 
-#: dialogs.py:931
+#: dialogs.py:933
 msgid "Surface generation options"
 msgstr "Opções de geração de superfície"
 
-#: dialogs.py:961
+#: dialogs.py:963
 msgid "Surface creation"
 msgstr "Criação de superfície"
 
-#: dialogs.py:988
+#: dialogs.py:990
 msgid "Surface creation options"
 msgstr "Opções de criação de superfície"
 
-#: dialogs.py:994
+#: dialogs.py:996
 msgid "Surface creation method"
 msgstr "Método de criação de superfície"
 
-#: dialogs.py:1142
+#: dialogs.py:1144
 msgid "Context aware options"
 msgstr "Opções"
 
-#: dialogs.py:1158
+#: dialogs.py:1160
 msgid "Angle:"
 msgstr "Ângulo"
 
-#: dialogs.py:1160
+#: dialogs.py:1162
 msgid "Max. distance:"
 msgstr "Distância máxima"
 
-#: dialogs.py:1162
+#: dialogs.py:1164
 msgid "Min. weight:"
 msgstr "Peso mínimo"
 
-#: dialogs.py:1164
+#: dialogs.py:1166
 msgid "N. steps:"
 msgstr "Número de passos"
 
-#: dialogs.py:1183 dialogs.py:1219 dialogs.py:1264
+#: dialogs.py:1185 dialogs.py:1221 dialogs.py:1266
 msgid "Context aware smoothing"
 msgstr ""
 
-#: dialogs.py:1184
+#: dialogs.py:1186
 msgid "Binary"
 msgstr "Binário"
 
-#: dialogs.py:1202
+#: dialogs.py:1204
 msgid "It's not possible to use the Default method because the mask was edited"
 msgstr "Não é possível usar o método Padrão pois a máscara foi editada"
 

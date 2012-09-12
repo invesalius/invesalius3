@@ -88,7 +88,20 @@ quantas imagens serão puladas (figura \ref{fig:skip_image}). Clique em \textbf{
 
 %\hspace{.2cm}
 
-Em ambos os procedimentos, será apresentada uma janela (figura \ref{fig:prog_recons}) com o progresso
+Caso seja detectado quantidade insuficiente de memória disponível na hora de carregar as imagens é recomentado 
+reduzir a resolução das fatias para trabalhar com visualização volumétrica e de superfície, como mostra a janela \ref{fig:resize_image}. 
+As fatias serão redimensionadas de acordo com a porcentagem em relação a resolução original. Por exemplo, 
+se cada fatia do exame contém a dimensão de 512 x 512 pixeis e for sugerido a "Porcentagem da resolução original" em 60\%, 
+cada imagem resultante terá 307 x 307 pixeis. Caso deseje abrir com a resolução original selecione o valor 100.
+
+\begin{figure}[!htb]
+\centering
+\includegraphics[scale=0.5]{file_import_resize.png}
+\caption{Redução de dimensão da imagem}
+\label{fig:resize_image}
+\end{figure}
+
+Após os procedimentos anteriores, será apresentada uma janela (figura \ref{fig:prog_recons}) com o progresso
 da reconstrução (quando as imagens são empilhadas e interpoladas).
 
 \begin{figure}[!htb]
@@ -101,4 +114,21 @@ da reconstrução (quando as imagens são empilhadas e interpoladas).
 \newpage
 
 \section{Analyze}
-Para importar arquivos no formato Analyze, basta ...
+
+Para importar arquivos no formato Analyze, no menu \textbf{Arquivo}, clique na opção \textbf{Importar outros arquivos...} em seguida a opção \textbf{Analyze} como mostra a figura \ref{fig:analyze_menu}.
+
+\begin{figure}[!htb]
+\centering
+\includegraphics[scale=0.4]{analyze_menu.png}
+\caption{Menu para importar imagens no formato analyze}
+\label{fig:analyze_menu}
+\end{figure}
+
+Selecione o arquivo do tipo Analyze, na extensão \textbf{.hdr} e clique em \textbf{Abrir}. (figura \ref{fig:analyze_import}).
+
+\begin{figure}[!htb]
+\centering
+\includegraphics[scale=0.4]{analyze_import.png}
+\caption{Importar imagens no formato analyze}
+\label{fig:analyze_import}
+\end{figure}
