@@ -18,7 +18,6 @@
 #--------------------------------------------------------------------------
 import platform
 import time
-import sigar
 import sys
 import re
 import locale
@@ -215,14 +214,21 @@ def calculate_resizing_tofitmemory(x_size,y_size,n_slices,byte):
     """
     imagesize = x_size * y_size * n_slices * byte * 28 
     
-    sg = sigar.open()
-    ram_free = sg.mem().actual_free()
-    ram_total = sg.mem().actual_free()
-    swap_free = sg.swap().free()
-    sg.close()
+    #  USING LIBSIGAR
+    #import sigar
+    #sg = sigar.open()
+    #ram_free = sg.mem().actual_free()
+    #ram_total = sg.mem().actual_free()
+    #swap_free = sg.swap().free()
+    #sg.close()
 
-    print "RAM FREE", ram_free
-    print "RAM_TOTAL", ram_total
+    # USING PSUTIL  
+    import psutil
+    ram_free = psutil.phymem_usage().free + psutil.cached_phymem() + psutil.phymem_buffers()
+    ram_total = psutil.phymem_usage().total
+    swap_free = psutil.virtmem_usage().free
+    print "RAM_FREE=", ram_free
+    print "RAM_TOTAL=", ram_total
 
     if (sys.platform == 'win32'):
         if (platform.architecture()[0] == '32bit'):
