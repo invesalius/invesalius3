@@ -110,7 +110,7 @@ class Viewer3D(wx.Panel):
         bsizer_ren.Add(lbl_rendering, 0, wx.TOP | wx.LEFT, 10)
         
         rb_rendering = self.rb_rendering = wx.RadioBox(self, -1, "", wx.DefaultPosition, wx.DefaultSize,
-                    ['CPU', _(u'GPU (Only NVidia video card)')], 2, wx.RA_SPECIFY_COLS | wx.NO_BORDER)
+                    ['CPU', _(u'GPU (NVidia video cards only)')], 2, wx.RA_SPECIFY_COLS | wx.NO_BORDER)
 
         bsizer_ren.Add(rb_rendering, 0, wx.TOP | wx.LEFT, 0)
         border = wx.BoxSizer(wx.VERTICAL)
