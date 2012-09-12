@@ -696,7 +696,7 @@ def ShowAboutDialog(parent):
     info.Name = "InVesalius"
     info.Version = "3.0 - Beta 3"
     info.Copyright = _("(c) 2007-2012 Renato Archer Information Technology Center - CTI")
-    info.Description = wordwrap(_("InVesalius is a medical imaging program for 3D reconstruction. It uses a sequence of 2D DICOM image files acquired with CT or MRI scanners. InVesalius allows exporting 3D volumes or surfaces as STL files for creating physical models of a patient's anatomy using rapid prototyping technologies. The software is supported by CTI, CNPq and the Brazilian Ministry of Health"), 350, wx.ClientDC(parent))
+    info.Description = wordwrap(_("InVesalius is a medical imaging program for 3D reconstruction. It uses a sequence of 2D DICOM image files acquired with CT or MRI scanners. InVesalius allows exporting 3D volumes or surfaces as STL files for creating physical models of a patient's anatomy using rapid prototyping technologies. The software is supported by CTI, CNPq and the Brazilian Ministry of Health.\n\n Contact: invesalius@cti.gov.br"), 350, wx.ClientDC(parent))
 
 #       _("InVesalius is a software for medical imaging 3D reconstruction. ")+\
 #       _("Its input is a sequency of DICOM 2D image files acquired with CT or MR.\n\n")+\
@@ -706,12 +706,18 @@ def ShowAboutDialog(parent):
     info.WebSite = ("http://svn.softwarepublico.gov.br/trac/invesalius")
     info.License = _("GNU GPL (General Public License) version 2")
 
-    info.Developers = ["Tatiana Al-Chueyr",
-                       "Paulo Henrique Junqueira Amorim",
+    info.Developers = ["Paulo Henrique Junqueira Amorim",
                        "Thiago Franco de Moraes",
-                       "Guilherme Soares Cesar Soares Ruppert",
+                       "Guilherme Cesar Soares Ruppert",
                        "Fábio de Souza Azevedo",
-                       "Jorge Vicente Lopes da Silva"]
+                       "Jorge Vicente Lopes da Silva",
+                       "",
+                       "Former developers:",
+                       "Tatiana Al-Chueyr",
+                       "",
+                       "Contributors: ",
+                       "Bruno Lara Bottazzini",
+                       ""]
 
     info.Translators = ["Alex P. Natsios",
                         "Andreas Loupasakis",
