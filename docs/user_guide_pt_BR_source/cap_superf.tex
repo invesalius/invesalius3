@@ -1,4 +1,5 @@
 \chapter{Superfície (Malha de Triângulos)}
+\label{cap_surface}
 
 No InVesalius, a superfície 3D é gerada com base em um modelo segmentado (obtido a partir
 da segmentação das imagens). O método utilizado para gerar a superfície é o algoritmo 
@@ -38,7 +39,7 @@ seleção da maior região da superfície.
 
 \begin{figure}[!htb]
 \centering
-\includegraphics[scale=0.5]{screen_hunter1}
+\includegraphics[scale=0.5]{new_surface.png}
 \caption{Janela para criação de superfície}
 \label{fig:create_surface_1}
 \end{figure}
@@ -73,7 +74,28 @@ suporte do tomógrafo e a superfície aberta.
   \label{fig:surface_ex2}
 \end{figure}
 
-\newpage 
+O item \textbf{Método de criação de superfície} tem as seguintes opções, \textbf{"Binário"}, \textbf{"Context aware smoothing"} e \textbf{"Padrão}, podemos visualizar um exemplo de superfície a partir dos 3 métodos na figura \ref{fig:surf_method}. 
+
+O método \textbf{binário}, tem como partida a máscara que foi segmentada, sendo a região selecionada como 1 e o restante 0. Como existem somente 2 valores, as curvas na superfície que o algoritmo gera são abruptas ou popularmente conhecida como "degraus".
+
+No método \textbf{Context aware smoothing}, inicialmente a superfície é gerada a partir do método binário, mas em seguida é executado o algoritmo "Context aware smoothing" para suavizar a superfície resultante e evitar os "degraus" na mesma. Neste passo é requerido 4 valores, que serão apresentados a seguir.
+
+O \textbf{ângulo}, nesse caso será formado entre 2 normais de triângulos adjacentes, que \textbf{caso esteja acima do valor} definido no campo ângulo, o triângulo é elegido para ser o ponto de partida da suavização, a faixa de valor é de 0 até 1, sendo $0^\circ$ e $90^\circ$ respectivamente. A \textbf{distância máxima} é o raio a partir dos triângulos elegidos no passo anterior, que será utilizada como limite de suavização. O \textbf{peso mínimo} é o quanto de suavização será aplicado nas áreas que estão fora do raio determinado anteriormente. O \textbf{número de passos} é quantas vezes o algoritmo vai executar. 
+
+O método \textbf{padrão} é ativo \textbf{somente quando não existir edição manual na máscara}, os pixeis da imagem original que estão sob a máscara é utilizado para a geração de superfície, como normalmente imagens de tomografia ou ressonância possui vários níveis de cinza, é gerada uma superfície com curvas mais suaves.
+
+\begin{figure}[!htb]
+  \centering
+  \subfloat[Binário]{\label{fig:surf_binary}\includegraphics[width=0.33\textwidth]{binary.png}}                
+  \hfill
+  \subfloat[Context aware]{\label{fig:surf_context}\includegraphics[width=0.32\textwidth]{context.png}}	
+  \hfill  
+  \subfloat[Padrão]{\label{fig:surfa_default}\includegraphics[width=0.332\textwidth]{default.png}}
+  \caption{Superfícies geradas por diferentes métodos }
+  \label{fig:surf_method}
+\end{figure}
+
+
 
 \section{Transparência}
 

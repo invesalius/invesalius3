@@ -576,12 +576,15 @@ docs/user_guide_pt_BR_source/img/invesalius_screen/ScreenHunter_84Dec311201.bb -
 docs/user_guide_pt_BR_source/img/invesalius_screen/ScreenHunter_84Dec311201.jpg -text
 docs/user_guide_pt_BR_source/img/invesalius_screen/activate_cut_plane.bb -text
 docs/user_guide_pt_BR_source/img/invesalius_screen/activate_cut_plane.png -text
+docs/user_guide_pt_BR_source/img/invesalius_screen/analyze_import.png -text
+docs/user_guide_pt_BR_source/img/invesalius_screen/analyze_menu.png -text
 docs/user_guide_pt_BR_source/img/invesalius_screen/angular_superficie.bb -text
 docs/user_guide_pt_BR_source/img/invesalius_screen/angular_superficie.jpg -text
 docs/user_guide_pt_BR_source/img/invesalius_screen/axial_angular.bb -text
 docs/user_guide_pt_BR_source/img/invesalius_screen/axial_angular.jpg -text
 docs/user_guide_pt_BR_source/img/invesalius_screen/axial_linear.bb -text
 docs/user_guide_pt_BR_source/img/invesalius_screen/axial_linear.jpg -text
+docs/user_guide_pt_BR_source/img/invesalius_screen/binary.png -text
 docs/user_guide_pt_BR_source/img/invesalius_screen/brilhante_I.bb -text
 docs/user_guide_pt_BR_source/img/invesalius_screen/brilhante_I.jpg -text
 docs/user_guide_pt_BR_source/img/invesalius_screen/button_select_color.bb -text
@@ -594,12 +597,14 @@ docs/user_guide_pt_BR_source/img/invesalius_screen/closed_tool_menu.bb -text
 docs/user_guide_pt_BR_source/img/invesalius_screen/closed_tool_menu.png -text
 docs/user_guide_pt_BR_source/img/invesalius_screen/color_button.bb -text
 docs/user_guide_pt_BR_source/img/invesalius_screen/color_button.png -text
+docs/user_guide_pt_BR_source/img/invesalius_screen/context.png -text
 docs/user_guide_pt_BR_source/img/invesalius_screen/contraste_medio.bb -text
 docs/user_guide_pt_BR_source/img/invesalius_screen/contraste_medio.jpg -text
 docs/user_guide_pt_BR_source/img/invesalius_screen/contraste_osso.bb -text
 docs/user_guide_pt_BR_source/img/invesalius_screen/contraste_osso.png -text
 docs/user_guide_pt_BR_source/img/invesalius_screen/contraste_pulmao.bb -text
 docs/user_guide_pt_BR_source/img/invesalius_screen/contraste_pulmao.png -text
+docs/user_guide_pt_BR_source/img/invesalius_screen/create_surface_edited.png -text
 docs/user_guide_pt_BR_source/img/invesalius_screen/customize_1.bb -text
 docs/user_guide_pt_BR_source/img/invesalius_screen/customize_1.png -text
 docs/user_guide_pt_BR_source/img/invesalius_screen/customize_2.bb -text
@@ -610,6 +615,7 @@ docs/user_guide_pt_BR_source/img/invesalius_screen/data_export.PNG -text
 docs/user_guide_pt_BR_source/img/invesalius_screen/data_export.bb -text
 docs/user_guide_pt_BR_source/img/invesalius_screen/data_export_selection.PNG -text
 docs/user_guide_pt_BR_source/img/invesalius_screen/data_export_selection.bb -text
+docs/user_guide_pt_BR_source/img/invesalius_screen/default.png -text
 docs/user_guide_pt_BR_source/img/invesalius_screen/delete_data.bb -text
 docs/user_guide_pt_BR_source/img/invesalius_screen/delete_data.jpg -text
 docs/user_guide_pt_BR_source/img/invesalius_screen/diametro_pincel.bb -text
@@ -640,6 +646,7 @@ docs/user_guide_pt_BR_source/img/invesalius_screen/eye.bb -text
 docs/user_guide_pt_BR_source/img/invesalius_screen/eye.jpg -text
 docs/user_guide_pt_BR_source/img/invesalius_screen/ferramentas_avancadas.bb -text
 docs/user_guide_pt_BR_source/img/invesalius_screen/ferramentas_avancadas.jpg -text
+docs/user_guide_pt_BR_source/img/invesalius_screen/file_import_resize.png -text
 docs/user_guide_pt_BR_source/img/invesalius_screen/generate_surface.bb -text
 docs/user_guide_pt_BR_source/img/invesalius_screen/generate_surface.png -text
 docs/user_guide_pt_BR_source/img/invesalius_screen/limiar_barra.bb -text
@@ -664,6 +671,7 @@ docs/user_guide_pt_BR_source/img/invesalius_screen/menu_save_image_window.PNG -t
 docs/user_guide_pt_BR_source/img/invesalius_screen/menu_save_image_window.bb -text
 docs/user_guide_pt_BR_source/img/invesalius_screen/new_data.bb -text
 docs/user_guide_pt_BR_source/img/invesalius_screen/new_data.jpg -text
+docs/user_guide_pt_BR_source/img/invesalius_screen/new_surface.png -text
 docs/user_guide_pt_BR_source/img/invesalius_screen/noise_amalgam.bb -text
 docs/user_guide_pt_BR_source/img/invesalius_screen/noise_amalgam.jpg -text
 docs/user_guide_pt_BR_source/img/invesalius_screen/only_2d_planes.bb -text
@@ -682,8 +690,6 @@ docs/user_guide_pt_BR_source/img/invesalius_screen/save_preset.bb -text
 docs/user_guide_pt_BR_source/img/invesalius_screen/save_preset.png -text
 docs/user_guide_pt_BR_source/img/invesalius_screen/save_window_preset.bb -text
 docs/user_guide_pt_BR_source/img/invesalius_screen/save_window_preset.jpg -text
-docs/user_guide_pt_BR_source/img/invesalius_screen/screen_hunter1.bb -text
-docs/user_guide_pt_BR_source/img/invesalius_screen/screen_hunter1.jpg -text
 docs/user_guide_pt_BR_source/img/invesalius_screen/selec_operacao.bb -text
 docs/user_guide_pt_BR_source/img/invesalius_screen/selec_operacao.png -text
 docs/user_guide_pt_BR_source/img/invesalius_screen/select_brush_operation.bb -text
