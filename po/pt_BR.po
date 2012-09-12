@@ -1125,16 +1125,16 @@ msgid "Rendering"
 msgstr "Renderização"
 
 #: preferences.py:113
-msgid "GPU (Only NVidia video card)"
-msgstr "GPU (Somente em placas de vídeo NVidia"
+msgid "GPU (NVidia video cards only)"
+msgstr "GPU (Somente em placas de vídeo NVidia)"
 
 #: preferences.py:150
 msgid ""
-"Language settings will take effect \n"
-" the next time you open InVesalius."
+"Language settings will be applied \n"
+" the next time InVesalius starts."
 msgstr ""
 "Configurações de idioma terão efeito \n"
-"na próxima vez em que você abrir o InVesalius."
+"na próxima vez em que o InVesalius iniciar."
 
 #: presets.py:31 presets.py:49 presets.py:104 presets.py:135
 msgid "Soft Tissue"
