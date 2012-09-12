@@ -233,7 +233,7 @@ def ShowOpenProjectDialog():
 def ShowOpenAnalyzeDialog():
     # Default system path
     current_dir = os.path.abspath(".")
-    dlg = wx.FileDialog(None, message=_("Open Analyze file..."),
+    dlg = wx.FileDialog(None, message=_("Open Analyze file"),
                         defaultDir="",
                         defaultFile="", wildcard=WILDCARD_ANALYZE,
                         style=wx.OPEN|wx.CHANGE_DIR)
@@ -712,8 +712,7 @@ def ShowAboutDialog(parent):
                        "Fabio de Souza Azevedo",
                        "Jorge Vicente Lopes da Silva",
                        "Tatiana Al-Chueyr (former)",
-                       "Bruno Lara Bottazzini (contributor)",
-                       ""]
+                       "Bruno Lara Bottazzini (contributor)"]
 
     info.Translators = ["Alex P. Natsios",
                         "Andreas Loupasakis",
@@ -1141,7 +1140,7 @@ class CAOptions(wx.Panel):
         self._build_widgets()
     
     def _build_widgets(self):
-        sb = wx.StaticBox(self, -1, _('Context aware options'))
+        sb = wx.StaticBox(self, -1, _('Options'))
         self.angle = floatspin.FloatSpin(self, -1, value=0.7, min_val=0.0,
                                          max_val=1.0, increment=0.1,
                                          digits=1)
@@ -1201,10 +1200,10 @@ class SurfaceMethodPanel(wx.Panel):
         icon = wx.ArtProvider.GetBitmap(wx.ART_INFORMATION, wx.ART_MESSAGE_BOX,
                                         (h * 0.8, h * 0.8))
         self.bmp = wx.StaticBitmap(self, -1, icon)
-        self.bmp.SetToolTipString(_("It's not possible to use the Default method because the mask was edited"))
+        self.bmp.SetToolTipString(_("It is not possible to use the Default method because the mask was edited."))
 
         self.method_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        self.method_sizer.Add(wx.StaticText(self, -1, u'Method:'), 0,
+        self.method_sizer.Add(wx.StaticText(self, -1, _(u'Method:')), 0,
                               wx.EXPAND | wx.ALL, 5)
         self.method_sizer.Add(self.cb_types, 1, wx.EXPAND)
         self.method_sizer.Add(self.bmp, 0, wx.EXPAND|wx.ALL, 5)
