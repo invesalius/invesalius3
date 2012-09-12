@@ -224,9 +224,15 @@ def calculate_resizing_tofitmemory(x_size,y_size,n_slices,byte):
 
     # USING PSUTIL  
     import psutil
-    ram_free = psutil.phymem_usage().free + psutil.cached_phymem() + psutil.phymem_buffers()
-    ram_total = psutil.phymem_usage().total
-    swap_free = psutil.virtmem_usage().free
+    if (psutil.version_info<(0,6,0)):
+        ram_free = psutil.phymem_usage().free + psutil.cached_phymem() + psutil.phymem_buffers()
+        ram_total = psutil.phymem_usage().total
+        swap_free = psutil.virtmem_usage().free
+    else:
+        ram_free = psutil.virtual_memory().available
+        ram_total = psutil.virtual_memory().total
+        swap_free = psutil.swap_memory().free
+        
     print "RAM_FREE=", ram_free
     print "RAM_TOTAL=", ram_total
 
