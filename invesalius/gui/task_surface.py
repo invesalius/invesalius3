@@ -83,7 +83,7 @@ class InnerTaskPanel(wx.Panel):
 
         # Fixed hyperlink items
         tooltip = wx.ToolTip(_("Create 3D surface based on a mask"))
-        link_new_surface = hl.HyperLinkCtrl(self, -1, "Create new 3D surface")
+        link_new_surface = hl.HyperLinkCtrl(self, -1, _("Create new 3D surface"))
         link_new_surface.SetUnderlines(False, False, False)
         link_new_surface.SetColours("BLACK", "BLACK", "BLACK")
         link_new_surface.SetToolTip(tooltip)
@@ -133,7 +133,7 @@ class InnerTaskPanel(wx.Panel):
         #import gui.dialogs as dlg
         sl = slice_.Slice()
         dialog = dlg.SurfaceCreationDialog(None, -1, 
-                            _('InVesalius 3 - New surface'),
+                            _('New surface'),
                             mask_edited=sl.current_mask.was_edited)
 
         try:
