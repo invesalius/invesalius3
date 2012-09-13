@@ -864,10 +864,8 @@ locale/pt/LC_MESSAGES/invesalius.mo -text
 locale/pt_BR/LC_MESSAGES/invesalius.mo -text
 locale/pt_PT/LC_MESSAGES/invesalius.mo -text
 locale/ro/LC_MESSAGES/invesalius.mo -text
-locale/ro_RO/LC_MESSAGES/invesalius.mo -text
 locale/ru/LC_MESSAGES/invesalius.mo -text
 locale/sr/LC_MESSAGES/invesalius.mo -text
-locale/tr_TR/LC_MESSAGES/invesalius.mo -text
 locale/zh_TW/LC_MESSAGES/invesalius.mo -text
 po/README.transifex -text
 po/ca.po -text
