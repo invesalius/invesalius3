@@ -878,7 +878,6 @@ locale/tr_TR/LC_MESSAGES/invesalius.mo -text
 locale/zh_CN/LC_MESSAGES/invesalius.mo -text
 locale/zh_TW/LC_MESSAGES/invesalius.mo -text
 po/README.transifex -text
-po/ar.po -text
 po/ca.po -text
 po/cs.po -text
 po/de.po -text

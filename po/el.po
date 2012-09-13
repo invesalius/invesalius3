@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: InVesalius\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2012-09-03 16:29-0300\n"
+"POT-Creation-Date: 2012-09-13 16:01-0300\n"
 "PO-Revision-Date: 2010-11-30 02:42+0000\n"
 "Last-Translator: Invesalius team <invesalius@cti.gov.br>\n"
 "Language-Team: Greek (http://www.transifex.com/projects/p/invesalius/"
@@ -38,12 +38,12 @@ msgstr ""
 msgid "M %d"
 msgstr "Μ %d"
 
-#: constants.py:41
-msgid "Off"
+#: constants.py:41 constants.py:370 constants.py:372
+msgid " Off"
 msgstr ""
 
 #: constants.py:42
-msgid "RedBlue"
+msgid "Red-blue"
 msgstr ""
 
 #: constants.py:43
@@ -126,7 +126,7 @@ msgstr "Ωκεανός"
 msgid "Inverse Gray"
 msgstr ""
 
-#: constants.py:191 constants.py:276 dialogs.py:522 dialogs.py:535
+#: constants.py:191 constants.py:276 dialogs.py:530 dialogs.py:543
 #: dicom_preview_panel.py:675 dicom_preview_panel.py:676 presets.py:30
 #: presets.py:48 presets.py:103 presets.py:134
 msgid "Bone"
@@ -145,7 +145,7 @@ msgstr "Σχεδίαση"
 msgid "Erase"
 msgstr "Διαγραφή"
 
-#: constants.py:251 data_notebook.py:434 task_surface.py:43
+#: constants.py:251 data_notebook.py:435 task_surface.py:43
 msgid "Threshold"
 msgstr "Όριο"
 
@@ -161,7 +161,7 @@ msgstr "Μεσαίο"
 msgid "High"
 msgstr "Ψηλό"
 
-#: constants.py:265 constants.py:266 constants.py:267 surface.py:392
+#: constants.py:265 constants.py:266 constants.py:267 task_slice.py:164
 msgid "Optimal *"
 msgstr "Βέλτιστο *"
 
@@ -175,14 +175,15 @@ msgid "Abdomen"
 msgstr ""
 
 #: constants.py:277
-msgid "Brain Posterior Fossa"
+msgid "Brain posterior fossa"
 msgstr ""
 
 #: constants.py:278
 msgid "Brain"
 msgstr "Εγκέφαλος"
 
-#: constants.py:279 control.py:361 slice_menu.py:39 slice_menu.py:51
+#: constants.py:279 control.py:361 dialogs.py:1183 dialogs.py:1186
+#: dialogs.py:1194 dialogs.py:1269 slice_menu.py:39 slice_menu.py:51
 msgid "Default"
 msgstr "Προεπιλογή"
 
@@ -191,11 +192,11 @@ msgid "Emphysema"
 msgstr "Εμφύσημα"
 
 #: constants.py:281
-msgid "Ischemia - Hard Non Contrast"
+msgid "Ischemia - Hard, non contrast"
 msgstr ""
 
 #: constants.py:282
-msgid "Ischemia - Soft Non Contrast"
+msgid "Ischemia - Soft, non contrast"
 msgstr ""
 
 #: constants.py:283
@@ -279,7 +280,7 @@ msgid "Bone + Skin II"
 msgstr ""
 
 #: constants.py:323
-msgid "Dark Bone"
+msgid "Dark bone"
 msgstr ""
 
 #: constants.py:324
@@ -291,27 +292,27 @@ msgid "Glossy II"
 msgstr ""
 
 #: constants.py:326
-msgid "Gold Bone"
+msgid "Gold bone"
 msgstr ""
 
 #: constants.py:327
-msgid "High Contrast"
+msgid "High contrast"
 msgstr ""
 
 #: constants.py:328
-msgid "Low Contrast"
+msgid "Low contrast"
 msgstr ""
 
 #: constants.py:329 constants.py:336
-msgid "Soft on White"
+msgid "Soft on white"
 msgstr ""
 
 #: constants.py:330
-msgid "Mid Contrast"
+msgid "Mid contrast"
 msgstr ""
 
 #: constants.py:331
-msgid "No Shading"
+msgid "No shading"
 msgstr ""
 
 #: constants.py:332
@@ -319,15 +320,15 @@ msgid "Pencil"
 msgstr ""
 
 #: constants.py:333
-msgid "Red on White"
+msgid "Red on white"
 msgstr ""
 
 #: constants.py:334
-msgid "Skin On Blue"
+msgid "Skin on blue"
 msgstr ""
 
 #: constants.py:335
-msgid "Skin On Blue II"
+msgid "Skin on blue II"
 msgstr ""
 
 #: constants.py:337
@@ -343,8 +344,9 @@ msgid "Soft + Skin III"
 msgstr ""
 
 #: constants.py:340
-msgid "Soft On Blue"
-msgstr ""
+#, fuzzy
+msgid "Soft on blue"
+msgstr "Μαλακός ιστός"
 
 #: constants.py:341
 msgid "Soft"
@@ -371,100 +373,102 @@ msgid "Vascular IV"
 msgstr ""
 
 #: constants.py:347
-msgid "Yellow Bone"
+msgid "Yellow bone"
 msgstr ""
 
-#: constants.py:369 constants.py:371
-msgid " Off"
-msgstr ""
-
-#: constants.py:372 volume.py:642
+#: constants.py:373 volume.py:642
 msgid "Cut plane"
 msgstr ""
 
 #: control.py:300
 #, python-format
-msgid "Loading file %d of %d"
+msgid "Loading file %d of %d ..."
 msgstr ""
 
 #: control.py:418
 msgid "Untitled"
 msgstr ""
 
-#: control.py:554
+#: control.py:555
 msgid "Fix gantry tilt applying the degrees below"
 msgstr ""
 
-#: data_notebook.py:39 measures.py:14
+#: data_notebook.py:40 measures.py:14
 msgid "Linear"
 msgstr ""
 
-#: data_notebook.py:40 measures.py:15
+#: data_notebook.py:41 measures.py:15
 msgid "Angular"
 msgstr ""
 
-#: data_notebook.py:43 measures.py:18
+#: data_notebook.py:44 measures.py:18
 msgid "3D"
 msgstr ""
 
-#: data_notebook.py:44 measures.py:19
+#: data_notebook.py:45 measures.py:19
 msgid "Axial"
 msgstr "Αξονική"
 
-#: data_notebook.py:45 measures.py:20
+#: data_notebook.py:46 measures.py:20
 msgid "Coronal"
 msgstr "Οριζόντια"
 
-#: data_notebook.py:46 measures.py:21
+#: data_notebook.py:47 measures.py:21
 msgid "Sagittal"
 msgstr "Τοξοειδής"
 
-#: data_notebook.py:62
+#: data_notebook.py:63
 msgid "Masks"
 msgstr ""
 
-#: data_notebook.py:63
-msgid "3D Surfaces"
+#: data_notebook.py:64
+#, fuzzy
+msgid "3D surfaces"
 msgstr "Επιφάνειες 3D"
 
-#: data_notebook.py:64
+#: data_notebook.py:65
 msgid "Measures"
 msgstr "Μέτρηση"
 
-#: data_notebook.py:182 frame.py:982
+#: data_notebook.py:183 frame.py:982
 msgid "Measure distance"
 msgstr ""
 
-#: data_notebook.py:185 frame.py:987
+#: data_notebook.py:186 frame.py:987
 msgid "Measure angle"
 msgstr ""
 
-#: data_notebook.py:433 data_notebook.py:774 data_notebook.py:1020
-#: data_notebook.py:1209
+#: data_notebook.py:434 data_notebook.py:761 data_notebook.py:1007
+#: data_notebook.py:1196
 msgid "Name"
 msgstr "Όνομα"
 
-#: data_notebook.py:494
+#: data_notebook.py:495
 msgid "Mask"
 msgstr "Μάσκα"
 
-#: data_notebook.py:775
+#: data_notebook.py:621 task_surface.py:136
+#, fuzzy
+msgid "New surface"
+msgstr "Νέο όνομα επιφάνειας:"
+
+#: data_notebook.py:762
 msgid "Volume (mm³)"
 msgstr "Όγκος (mm³)"
 
-#: data_notebook.py:776
+#: data_notebook.py:763
 msgid "Transparency"
 msgstr "Διαφάνεια"
 
-#: data_notebook.py:1021
+#: data_notebook.py:1008
 msgid "Location"
 msgstr ""
 
-#: data_notebook.py:1022 data_notebook.py:1210
+#: data_notebook.py:1009 data_notebook.py:1197
 msgid "Type"
 msgstr "Τύπος"
 
-#: data_notebook.py:1023 data_notebook.py:1211
+#: data_notebook.py:1010 data_notebook.py:1198
 msgid "Value"
 msgstr "Τιμή"
 
@@ -473,8 +477,9 @@ msgid "Data"
 msgstr "Δεδομένα"
 
 #: default_tasks.py:210 default_tasks.py:215
-msgid "InVesalius start"
-msgstr "Έναρξη InVesalius"
+#, fuzzy
+msgid "Load data"
+msgstr "Εξαγωγή δεδομένων"
 
 #: default_tasks.py:211 default_tasks.py:216 default_tasks.py:244
 msgid "Select region of interest"
@@ -516,55 +521,56 @@ msgstr "Προκαθορισμένο όνομα"
 msgid "Save raycasting preset"
 msgstr ""
 
-#: default_viewers.py:467
+#: default_viewers.py:471
 msgid "Tools"
 msgstr "Εργαλεία"
 
-#: dialogs.py:57
+#: dialogs.py:65
 msgid "Value will be applied."
 msgstr "Η τιμή θα εφαρμοστεί."
 
-#: dialogs.py:61
+#: dialogs.py:69
 msgid "Value will not be applied."
 msgstr ""
 
-#: dialogs.py:95
+#: dialogs.py:103
 msgid ""
-"Your operational system is 32bits or have low memory. \n"
-"If you manipulate 3D surface or volume rendering \n"
-"it's recommended to reduce the image resolution."
+"InVesalius is running on a 32-bit operating system or has insufficient "
+"memory. \n"
+"If you want to work with 3D surfaces or volume rendering, \n"
+"it is recommended to reduce the medical images resolution."
 msgstr ""
 
-#: dialogs.py:109
+#: dialogs.py:117
 #, fuzzy
-msgid "Percentage of image resolution"
+msgid "Percentage of original resolution"
 msgstr "Μείωση ανάλυσης:"
 
-#: dialogs.py:155
+#: dialogs.py:163
 msgid "Loading DICOM files"
 msgstr "Φόρτωση αρχείων DICOM"
 
-#: dialogs.py:200
+#: dialogs.py:208
 msgid "Open InVesalius 3 project..."
 msgstr ""
 
-#: dialogs.py:228
-msgid "Open Analyze File..."
+#: dialogs.py:236
+msgid "Open Analyze file"
 msgstr ""
 
-#: dialogs.py:266
+#: dialogs.py:274
 msgid "Choose a DICOM folder:"
 msgstr "Επιλέξτε ένα φάκελο DICOM:"
 
-#: dialogs.py:297
+#: dialogs.py:305 frame.py:485
 msgid "Save project as..."
 msgstr "Αποθήκευση project ως..."
 
-#: dialogs.py:300
+#: dialogs.py:308
 msgid "InVesalius project (*.inv3)|*.inv3"
 msgstr ""
 
-#: dialogs.py:363 dialogs.py:641 dialogs.py:666
+#: dialogs.py:371 dialogs.py:649 dialogs.py:674
 #, python-format
 msgid ""
 "The project %s has been modified.\n"
@@ -573,136 +579,198 @@ msgstr ""
 "Το project %s έχει τροποποιηθεί.\n"
 " Αποθήκευση αλλαγών;"
 
-#: dialogs.py:377
-#, python-format
-msgid "%s is an empty directory."
+#: dialogs.py:385
+#, fuzzy, python-format
+msgid "%s is an empty folder."
 msgstr "Το %s είναι ένα κενός κατάλογο."
 
-#: dialogs.py:390
-msgid "There are no DICOM files in the selected directory."
+#: dialogs.py:398
+#, fuzzy
+msgid "There are no DICOM files in the selected folder."
 msgstr "Δεν υπάρχουν αρχεία DICOM στον επιλεγμένο κατάλογο."
 
-#: dialogs.py:401
-msgid "There is no mask of reference to create a surface."
+#: dialogs.py:409
+msgid "A mask is needed to create a surface."
 msgstr ""
 
-#: dialogs.py:412
-msgid "No masks were selected for removal."
+#: dialogs.py:420
+msgid "No mask was selected for removal."
 msgstr ""
 
-#: dialogs.py:423
-msgid "No surfaces were selected for removal."
+#: dialogs.py:431
+msgid "No surface was selected for removal."
 msgstr ""
 
-#: dialogs.py:435
-msgid "No measures were selected for removal."
+#: dialogs.py:443
+msgid "No measure was selected for removal."
 msgstr ""
 
-#: dialogs.py:446
-msgid "No masks were selected for duplication."
+#: dialogs.py:454
+msgid "No mask was selected for duplication."
 msgstr ""
 
-#: dialogs.py:459
-msgid "No surfaces were selected for duplication."
+#: dialogs.py:467
+msgid "No surface was selected for duplication."
 msgstr ""
 
-#: dialogs.py:505
+#: dialogs.py:513
 msgid "New mask name:"
 msgstr ""
 
-#: dialogs.py:509
+#: dialogs.py:517
 msgid "Name the mask to be created"
 msgstr ""
 
-#: dialogs.py:516
+#: dialogs.py:524
 msgid "Threshold preset:"
 msgstr ""
 
-#: dialogs.py:603 presets.py:44 presets.py:62 presets.py:117 presets.py:148
-#: task_slice.py:421 task_slice.py:423 task_slice.py:435 task_slice.py:437
-#: task_slice.py:473 task_slice.py:476
+#: dialogs.py:611 presets.py:44 presets.py:62 presets.py:117 presets.py:148
+#: task_slice.py:431 task_slice.py:433 task_slice.py:445 task_slice.py:447
+#: task_slice.py:483 task_slice.py:486
 msgid "Custom"
 msgstr ""
 
-#: dialogs.py:618
+#: dialogs.py:626
 #, python-format
 msgid "%s does not exist."
 msgstr "Το %s δεν υπάρχει."
 
-#: dialogs.py:629
+#: dialogs.py:637
 msgid "Please, provide more than one DICOM file for 3D reconstruction"
 msgstr ""
 
-#: dialogs.py:690
+#: dialogs.py:698
 #, fuzzy
-msgid "(c) 2007-2012 Renato Archer Information Technology Centre - CTI"
+msgid "(c) 2007-2012 Renato Archer Information Technology Center - CTI"
 msgstr "(c) 2007-2010 Center for Information Technology Renato Archer"
 
-#: dialogs.py:691
+#: dialogs.py:699
 msgid ""
 "InVesalius is a medical imaging program for 3D reconstruction. It uses a "
 "sequence of 2D DICOM image files acquired with CT or MRI scanners. "
-"InVesalius allows for the export of 3D volumes or surfaces as STL files for "
-"creating physical models of a patient's anatomy using rapid prototyping "
-"technologies. The software has the support of the CTI, CNPq and Ministry of "
-"Health"
+"InVesalius allows exporting 3D volumes or surfaces as STL files for creating "
+"physical models of a patient's anatomy using rapid prototyping technologies. "
+"The software is supported by CTI, CNPq and the Brazilian Ministry of "
+"Health.\n"
+"\n"
+" Contact: invesalius@cti.gov.br"
 msgstr ""
 
-#: dialogs.py:699
+#: dialogs.py:707
 msgid "GNU GPL (General Public License) version 2"
 msgstr "GNU GPL (Γενική Άδεια Δημόσιας Χρήσης) έκδοση 2"
 
-#: dialogs.py:731
+#: dialogs.py:740
 msgid "Save raycasting preset as:"
 msgstr ""
 
-#: dialogs.py:774
+#: dialogs.py:783 dialogs.py:1038
 msgid "New surface name:"
 msgstr "Νέο όνομα επιφάνειας:"
 
-#: dialogs.py:778
+#: dialogs.py:787 dialogs.py:1042
 msgid "Name the surface to be created"
 msgstr "Ονόμασε την επιφάνεια που θα δημιουργηθεί"
 
-#: dialogs.py:785
+#: dialogs.py:794 dialogs.py:1049
 msgid "Mask of reference:"
 msgstr ""
 
-#: dialogs.py:803
+#: dialogs.py:812 dialogs.py:1067
 msgid "Surface quality:"
 msgstr "Ποιότητα αναγλύφου:"
 
-#: dialogs.py:832
+#: dialogs.py:841 dialogs.py:1095
 msgid "Fill holes"
 msgstr "Γέμισμα οπών"
 
-#: dialogs.py:835
+#: dialogs.py:844 dialogs.py:1098
 msgid "Keep largest region"
 msgstr "Διατήρηση μέγιστης περιοχής"
 
-#: dialogs.py:869
+#: dialogs.py:882
 msgid "BMP image"
 msgstr "Εικόνα BMP"
 
-#: dialogs.py:870
+#: dialogs.py:883
 msgid "JPG image"
 msgstr "Εικόνα JPG"
 
-#: dialogs.py:871
+#: dialogs.py:884
 msgid "PNG image"
 msgstr "Εικόνα PNG"
 
-#: dialogs.py:872
+#: dialogs.py:885
 msgid "PostScript document"
 msgstr "Έγγραφο PostScript"
 
-#: dialogs.py:873
+#: dialogs.py:886
 msgid "POV-Ray file"
 msgstr "Αρχείο POV-Ray"
 
-#: dialogs.py:874
+#: dialogs.py:887
 msgid "TIFF image"
 msgstr "Εικόνα TIFF"
+
+#: dialogs.py:932
+#, fuzzy
+msgid "Surface generation options"
+msgstr "Ιδιότητες ανάγλυφου"
+
+#: dialogs.py:962
+#, fuzzy
+msgid "Surface creation"
+msgstr "Ιδιότητες ανάγλυφου"
+
+#: dialogs.py:989
+#, fuzzy
+msgid "Surface creation options"
+msgstr "Ιδιότητες ανάγλυφου"
+
+#: dialogs.py:995
+#, fuzzy
+msgid "Surface creation method"
+msgstr "Ιδιότητες ανάγλυφου"
+
+#: dialogs.py:1143 frame.py:571
+msgid "Options"
+msgstr ""
+
+#: dialogs.py:1159
+msgid "Angle:"
+msgstr ""
+
+#: dialogs.py:1161
+#, fuzzy
+msgid "Max. distance:"
+msgstr "Μέτρηση αποστάσεων"
+
+#: dialogs.py:1163
+msgid "Min. weight:"
+msgstr ""
+
+#: dialogs.py:1165
+#, fuzzy
+msgid "N. steps:"
+msgstr "Επόμενο βήμα"
+
+#: dialogs.py:1184 dialogs.py:1220 dialogs.py:1265
+msgid "Context aware smoothing"
+msgstr ""
+
+#: dialogs.py:1185
+msgid "Binary"
+msgstr ""
+
+#: dialogs.py:1203
+msgid ""
+"It is not possible to use the Default method because the mask was edited."
+msgstr ""
+
+#: dialogs.py:1206
+msgid "Method:"
+msgstr ""
 
 #: dicom.py:1520 dicom.py:1524 dicom.py:1526
 msgid "unnamed"
@@ -735,8 +803,8 @@ msgid "Image"
 msgstr "Εικόνα"
 
 #: dicom_preview_panel.py:409
-#, python-format
-msgid "%d Images"
+#, fuzzy, python-format
+msgid "%d images"
 msgstr "%d Εικόνες"
 
 #: dicom_preview_panel.py:534 dicom_preview_panel.py:555
@@ -766,23 +834,22 @@ msgstr ""
 
 #: frame.py:482
 #, fuzzy
-msgid "Import Others Files"
+msgid "Import other files..."
 msgstr "Φόρτωση αρχείων DICOM"
 
 #: frame.py:483
-msgid "Open Project...\tCtrl+O"
-msgstr ""
+#, fuzzy
+msgid "Open project...\tCtrl+O"
+msgstr "Ανοίξτε ένα υπάρχον project ..."
 
 #: frame.py:484
-msgid "Save Project\tCtrl+S"
-msgstr ""
-
-#: frame.py:485
-msgid "Save Project As..."
-msgstr "Αποθήκευση Project ως..."
+#, fuzzy
+msgid "Save project\tCtrl+S"
+msgstr "Αποθήκευση project ως..."
 
 #: frame.py:486
-msgid "Close Project"
+#, fuzzy
+msgid "Close project"
 msgstr "Κλείσιμο Project"
 
 #: frame.py:495
@@ -826,7 +893,8 @@ msgid "Preferences..."
 msgstr ""
 
 #: frame.py:556
-msgid "Getting Started..."
+#, fuzzy
+msgid "Getting started..."
 msgstr "Ξεκινώντας..."
 
 #: frame.py:559
@@ -837,24 +905,26 @@ msgstr "Σχετικά ..."
 msgid "File"
 msgstr "Αρχείο"
 
-#: frame.py:571
-msgid "Options"
+#: frame.py:568
+msgid "Edit"
 msgstr ""
 
 #: frame.py:572
 msgid "Help"
 msgstr "Βοήθεια"
 
-#: frame.py:654 surface.py:355 surface.py:728 surface.py:729
+#: frame.py:654 surface.py:362 surface.py:739 surface.py:740
 msgid "Ready"
 msgstr "Έτοιμο"
 
 #: frame.py:804
-msgid "Import DICOM files..."
+#, fuzzy
+msgid "Import DICOM files...\tCtrl+I"
 msgstr "Φόρτωση αρχείων DICOM"
 
 #: frame.py:811
-msgid "Open a InVesalius project..."
+#, fuzzy
+msgid "Open InVesalius project..."
 msgstr "Ανοίξτε ένα υπάρχον InVesalius project..."
 
 #: frame.py:815
@@ -1022,13 +1092,14 @@ msgstr "Επιλογή γλώσσας"
 msgid "Choose user interface language"
 msgstr "Επιλέξτε γλώσσα εφαρμογής"
 
-#: polydata_utils.py:132
-msgid "Getting selected parts"
+#: polydata_utils.py:139
+msgid "Analysing selected regions..."
 msgstr ""
 
-#: polydata_utils.py:191
-msgid "Splitting disconected parts"
-msgstr ""
+#: polydata_utils.py:198
+#, fuzzy
+msgid "Splitting disconnected regions..."
+msgstr "Διαχώρισε όλεςτις ασύνδετες επιφάνειες"
 
 #: preferences.py:18
 msgid "Preferences"
@@ -1038,7 +1109,7 @@ msgstr ""
 msgid "Visualization"
 msgstr ""
 
-#: preferences.py:42
+#: preferences.py:42 preferences.py:147
 #, fuzzy
 msgid "Language"
 msgstr "Επιλογή γλώσσας"
@@ -1053,13 +1124,24 @@ msgid "Interpolation "
 msgstr ""
 
 #: preferences.py:106
-msgid "Volume Rendering"
-msgstr ""
+#, fuzzy
+msgid "Volume rendering"
+msgstr "Φύλο"
 
 #: preferences.py:109
 #, fuzzy
 msgid "Rendering"
 msgstr "Φύλο"
+
+#: preferences.py:113
+msgid "GPU (NVidia video cards only)"
+msgstr ""
+
+#: preferences.py:150
+msgid ""
+"Language settings will be applied \n"
+" the next time InVesalius starts."
+msgstr ""
 
 #: presets.py:31 presets.py:49 presets.py:104 presets.py:135
 msgid "Soft Tissue"
@@ -1114,16 +1196,17 @@ msgid "Skin Tissue (Child)"
 msgstr ""
 
 #: slice_menu.py:104
-msgid "Window Width and Level"
+msgid "Window width and level"
 msgstr ""
 
 #: slice_menu.py:105
-msgid "Pseudo Colour"
+msgid "Pseudo color"
 msgstr ""
 
-#: surface.py:418 surface.py:508 surface.py:526 surface.py:548 surface.py:576
-#: surface.py:598 surface.py:617 surface.py:631 surface.py:648
-msgid "Generating 3D surface..."
+#: surface.py:423 surface.py:514 surface.py:532 surface.py:558 surface.py:587
+#: surface.py:609 surface.py:628 surface.py:642 surface.py:659
+#, fuzzy
+msgid "Creating 3D surface..."
 msgstr "Δημιουργία 3D ανάγλυφου..."
 
 #: task_exporter.py:108
@@ -1147,7 +1230,7 @@ msgid "Save 3D surface as..."
 msgstr "Αποθήκευση 3D ανάγλυφου ως..."
 
 #: task_exporter.py:330
-msgid "You need to create a surface and make "
+msgid "You need to create a surface and make it "
 msgstr ""
 
 #: task_exporter.py:331
@@ -1191,31 +1274,31 @@ msgstr "Αποθήκευση επιφάνειας"
 msgid "Overwrite last surface"
 msgstr "Αντικατάσταση τελευταίου ανάγλυφου"
 
-#: task_slice.py:228
+#: task_slice.py:238
 msgid "Mask properties"
 msgstr "Ιδιότητες μάσκας "
 
-#: task_slice.py:236
+#: task_slice.py:246
 msgid "Advanced editing tools"
 msgstr "Προηγμένα εργαλεία έκδοση"
 
-#: task_slice.py:320
+#: task_slice.py:330
 msgid "Set predefined or manual threshold:"
 msgstr ""
 
-#: task_slice.py:528
+#: task_slice.py:538
 msgid "Choose brush type, size or operation:"
 msgstr ""
 
-#: task_slice.py:534
+#: task_slice.py:544
 msgid "Circle"
 msgstr "Κύκλος"
 
-#: task_slice.py:538
+#: task_slice.py:548
 msgid "Square"
 msgstr "Τετράγωνο"
 
-#: task_slice.py:574
+#: task_slice.py:584
 msgid "Brush threshold range:"
 msgstr "Οριο φάσματοϛ βούρτσαϛ"
 
@@ -1223,62 +1306,65 @@ msgstr "Οριο φάσματοϛ βούρτσαϛ"
 msgid "Create 3D surface based on a mask"
 msgstr "Δημιουργία 3D αναγλύφου βασισμένο σε μια μάσκα"
 
+#: task_surface.py:86
+#, fuzzy
+msgid "Create new 3D surface"
+msgstr "Αποθήκευση επιφάνειας"
+
 #: task_surface.py:104
 msgid "Next step"
 msgstr "Επόμενο βήμα"
 
-#: task_surface.py:134
-msgid "InVesalius 3 - New surface"
-msgstr "InVesalius 3 - Νέο ανάγλυφο"
-
-#: task_surface.py:207
+#: task_surface.py:213
 msgid "Surface properties"
 msgstr "Ιδιότητες ανάγλυφου"
 
-#: task_surface.py:214
+#: task_surface.py:220
 msgid "Advanced options"
 msgstr "Προχωρημένες επιλογές"
 
-#: task_surface.py:246
+#: task_surface.py:252
 msgid "Automatically select largest disconnected region and create new surface"
 msgstr ""
 "Αυτόματα επέλεξε μέγιστη ασύνδετη περιοχή και δημιουργησε νέα επιφάνεια"
 
-#: task_surface.py:247
-msgid "Select largest part"
+#: task_surface.py:253
+#, fuzzy
+msgid "Select largest surface"
 msgstr "Επέλεξε το μεγαλύτερο τμήμα"
 
-#: task_surface.py:255
+#: task_surface.py:261
+#, fuzzy
 msgid ""
-"Automatically select disconnected regions and create one new surface per "
-"region"
+"Automatically select disconnected regions and create a new surface per region"
 msgstr ""
 "Αυτόματα επέλεξε ασύνδετες περιοχές και δημιουργησε μία νέα επιφάνεια ανά "
 "περιοχή"
 
-#: task_surface.py:256
+#: task_surface.py:262
 msgid "Split all disconnected surfaces"
 msgstr "Διαχώρισε όλεςτις ασύνδετες επιφάνειες"
 
-#: task_surface.py:264
-msgid "Manually insert seeds of regions of interest and create one new surface"
+#: task_surface.py:270
+#, fuzzy
+msgid "Manually insert seeds of regions of interest and create a new surface"
 msgstr ""
 "Εισάγετε χειροκίνητα τις περιοχές ενδιαφέροντος και δημιουργήστε μία νέα "
 "επιφάνεια"
 
-#: task_surface.py:265
+#: task_surface.py:271
 msgid "Select regions of interest..."
 msgstr "Επιλέξτε περιοχές ενδιαφέροντος..."
 
-#: task_surface.py:402
+#: task_surface.py:408
 msgid "Transparency:"
 msgstr "Διαφάνεια:"
 
-#: task_surface.py:538
+#: task_surface.py:544
 msgid "Decimate resolution:"
 msgstr "Μείωση ανάλυσης:"
 
-#: task_surface.py:548
+#: task_surface.py:554
 msgid "Smooth iterations:"
 msgstr "Εξομάλυνση επαναλήψεων:"
 
@@ -1455,3 +1541,12 @@ msgstr ""
 #: viewer_slice.py:661
 msgid "BA"
 msgstr ""
+
+#~ msgid "InVesalius start"
+#~ msgstr "Έναρξη InVesalius"
+
+#~ msgid "Save Project As..."
+#~ msgstr "Αποθήκευση Project ως..."
+
+#~ msgid "InVesalius 3 - New surface"
+#~ msgstr "InVesalius 3 - Νέο ανάγλυφο"
