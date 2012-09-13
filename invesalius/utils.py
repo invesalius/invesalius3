@@ -218,7 +218,7 @@ def calculate_resizing_tofitmemory(x_size,y_size,n_slices,byte):
     #import sigar
     #sg = sigar.open()
     #ram_free = sg.mem().actual_free()
-    #ram_total = sg.mem().actual_free()
+    #ram_total = sg.mem().total()
     #swap_free = sg.swap().free()
     #sg.close()
 

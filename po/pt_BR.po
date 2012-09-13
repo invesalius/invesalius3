@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: InVesalius\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2012-09-12 13:02-0300\n"
+"POT-Creation-Date: 2012-09-13 15:38-0300\n"
 "PO-Revision-Date: 2010-11-30 02:42+0000\n"
 "Last-Translator: Invesalius team <invesalius@cti.gov.br>\n"
 "Language-Team: Portuguese (Brazil) (http://www.transifex.com/projects/p/"
@@ -182,8 +182,8 @@ msgstr "Fossa cerebral posterior"
 msgid "Brain"
 msgstr "Cérebro"
 
-#: constants.py:279 control.py:361 dialogs.py:1184 dialogs.py:1187
-#: dialogs.py:1195 dialogs.py:1270 slice_menu.py:39 slice_menu.py:51
+#: constants.py:279 control.py:361 dialogs.py:1183 dialogs.py:1186
+#: dialogs.py:1194 dialogs.py:1269 slice_menu.py:39 slice_menu.py:51
 msgid "Default"
 msgstr "Padrão"
 
@@ -449,10 +449,6 @@ msgstr "Máscara"
 msgid "New surface"
 msgstr "Nova superfície"
 
-#: dialogs.py:1207
-msgid "Method:"
-msgstr "Método"
-
 #: data_notebook.py:762
 msgid "Volume (mm³)"
 msgstr "Volume (mm³)"
@@ -657,11 +653,11 @@ msgid ""
 "\n"
 " Contact: invesalius@cti.gov.br"
 msgstr ""
-"O InVesalius é um programa para reconstrução 3D de imagens médicas a partir de "
-"uma sequência de imagens DICOM 2D, obtidas com equipamentos de TC ou RM. O "
-"InVesalius permite que sejam exportados volumes ou superfícies 3D no formato "
-"STL, para criação de réplicas físicas de estruturas anatômicas do paciente "
-"por meio de tecnologias de prototipagem rápida.\n"
+"O InVesalius é um programa para reconstrução 3D de imagens médicas a partir "
+"de uma sequência de imagens DICOM 2D, obtidas com equipamentos de TC ou RM. "
+"O InVesalius permite que sejam exportados volumes ou superfícies 3D no "
+"formato STL, para criação de réplicas físicas de estruturas anatômicas do "
+"paciente por meio de tecnologias de prototipagem rápida.\n"
 "\n"
 "Contato: invesalius@cti.gov.br"
 
@@ -669,105 +665,112 @@ msgstr ""
 msgid "GNU GPL (General Public License) version 2"
 msgstr "GNU GPL (Licença Pública Geral) versão 2"
 
-#: dialogs.py:741
+#: dialogs.py:740
 msgid "Save raycasting preset as:"
 msgstr "Salvar pré-ajuste de raycasting como:"
 
-#: dialogs.py:784 dialogs.py:1039
+#: dialogs.py:783 dialogs.py:1038
 msgid "New surface name:"
 msgstr "Nome da nova superfície:"
 
-#: dialogs.py:788 dialogs.py:1043
+#: dialogs.py:787 dialogs.py:1042
 msgid "Name the surface to be created"
 msgstr "Nome da superfície a ser criada"
 
-#: dialogs.py:795 dialogs.py:1050
+#: dialogs.py:794 dialogs.py:1049
 msgid "Mask of reference:"
 msgstr "Máscara de referência:"
 
-#: dialogs.py:813 dialogs.py:1068
+#: dialogs.py:812 dialogs.py:1067
 msgid "Surface quality:"
 msgstr "Qualidade da superfície:"
 
-#: dialogs.py:842 dialogs.py:1096
+#: dialogs.py:841 dialogs.py:1095
 msgid "Fill holes"
 msgstr "Preencher buracos"
 
-#: dialogs.py:845 dialogs.py:1099
+#: dialogs.py:844 dialogs.py:1098
 msgid "Keep largest region"
 msgstr "Manter maior região"
 
-#: dialogs.py:883
+#: dialogs.py:882
 msgid "BMP image"
 msgstr "Imagem BMP"
 
-#: dialogs.py:884
+#: dialogs.py:883
 msgid "JPG image"
 msgstr "Imagem JPG"
 
-#: dialogs.py:885
+#: dialogs.py:884
 msgid "PNG image"
 msgstr "Imagem PNG"
 
-#: dialogs.py:886
+#: dialogs.py:885
 msgid "PostScript document"
 msgstr "Documento PostScript"
 
-#: dialogs.py:887
+#: dialogs.py:886
 msgid "POV-Ray file"
 msgstr "Arquivo POV-Ray"
 
-#: dialogs.py:888
+#: dialogs.py:887
 msgid "TIFF image"
 msgstr "Imagem TIFF"
 
-#: dialogs.py:933
+#: dialogs.py:932
 msgid "Surface generation options"
 msgstr "Opções de geração de superfície"
 
-#: dialogs.py:963
+#: dialogs.py:962
 msgid "Surface creation"
 msgstr "Criação de superfície"
 
-#: dialogs.py:990
+#: dialogs.py:989
 msgid "Surface creation options"
 msgstr "Opções de criação de superfície"
 
-#: dialogs.py:996
+#: dialogs.py:995
 msgid "Surface creation method"
 msgstr "Método de criação de superfície"
 
-#: dialogs.py:1144
+#: dialogs.py:1143 frame.py:571
+msgid "Options"
+msgstr "Opções"
+
 # msgid "Options"
 # msgstr "Opções"
-
-#: dialogs.py:1160
+#: dialogs.py:1159
 msgid "Angle:"
 msgstr "Ângulo"
 
-#: dialogs.py:1162
+#: dialogs.py:1161
 msgid "Max. distance:"
 msgstr "Distância máxima"
 
-#: dialogs.py:1164
+#: dialogs.py:1163
 msgid "Min. weight:"
 msgstr "Peso mínimo"
 
-#: dialogs.py:1166
+#: dialogs.py:1165
 msgid "N. steps:"
 msgstr "Número de passos"
 
-#: dialogs.py:1185 dialogs.py:1221 dialogs.py:1266
+#: dialogs.py:1184 dialogs.py:1220 dialogs.py:1265
 msgid "Context aware smoothing"
 msgstr "Suavização sensível ao contexto"
 
-#: dialogs.py:1186
+#: dialogs.py:1185
 msgid "Binary"
 msgstr "Binário"
 
-#: dialogs.py:1204
-msgid "It is not possible to use the Default method because the mask was edited."
+#: dialogs.py:1203
+msgid ""
+"It is not possible to use the Default method because the mask was edited."
 msgstr "Não é possível usar o método Padrão porque a máscara foi editada."
+
+#: dialogs.py:1206
+msgid "Method:"
+msgstr "Método"
 
 #: dicom.py:1520 dicom.py:1524 dicom.py:1526
 msgid "unnamed"
@@ -903,15 +906,11 @@ msgstr "Arquivo"
 msgid "Edit"
 msgstr "Editar"
 
-#: frame.py:571 dialogs.py:1144
-msgid "Options"
-msgstr "Opções"
-
 #: frame.py:572
 msgid "Help"
 msgstr "Ajuda"
 
-#: frame.py:654 surface.py:358 surface.py:735 surface.py:736
+#: frame.py:654 surface.py:362 surface.py:739 surface.py:740
 msgid "Ready"
 msgstr "Pronto"
 
@@ -1088,11 +1087,11 @@ msgstr "Seleção de idioma"
 msgid "Choose user interface language"
 msgstr "Selecione o idioma"
 
-#: polydata_utils.py:132
+#: polydata_utils.py:139
 msgid "Analysing selected regions..."
 msgstr "Analisando regiões selecionadas..."
 
-#: polydata_utils.py:191
+#: polydata_utils.py:198
 msgid "Splitting disconnected regions..."
 msgstr "Separando regiões desconexas..."
 
@@ -1196,8 +1195,8 @@ msgstr "Brilho e contraste"
 msgid "Pseudo color"
 msgstr "Pseudo cor"
 
-#: surface.py:419 surface.py:510 surface.py:528 surface.py:554 surface.py:583
-#: surface.py:605 surface.py:624 surface.py:638 surface.py:655
+#: surface.py:423 surface.py:514 surface.py:532 surface.py:558 surface.py:587
+#: surface.py:609 surface.py:628 surface.py:642 surface.py:659
 msgid "Creating 3D surface..."
 msgstr "Criando superfície 3D..."
 
@@ -1293,13 +1292,13 @@ msgstr "Quadrado"
 msgid "Brush threshold range:"
 msgstr "Limiar do pincel:"
 
-#: task_surface.py:86
-msgid "Create new 3D surface"
-msgstr "Criar nova superfície 3D"
-
 #: task_surface.py:85
 msgid "Create 3D surface based on a mask"
 msgstr "Criar superfície 3D baseada em máscara"
+
+#: task_surface.py:86
+msgid "Create new 3D surface"
+msgstr "Criar nova superfície 3D"
 
 #: task_surface.py:104
 msgid "Next step"
