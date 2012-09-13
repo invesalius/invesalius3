@@ -274,7 +274,7 @@ class Project(object):
             ow.SetInstance(fow)
             
         filelist = Extract(filename, tempfile.mkdtemp())
-        dirpath = os.path.abspath(os.path.split(filelist[0])[0]).decode(wx.GetDefaultPyEncoding())
+        dirpath = os.path.abspath(os.path.split(filelist[0])[0])
 
         # Opening the main file from invesalius 3 project
         main_plist =  os.path.join(dirpath ,'main.plist')
@@ -335,8 +335,31 @@ def Compress(folder, filename):
     tar.close()
     shutil.move(tmpdir_+ ".inv3", filename)
     os.chdir(current_dir)
-    
+
 def Extract(filename, folder):
+    tar = tarfile.open(filename, "r:gz")
+    idir = os.path.split(tar.getnames()[0])[0]
+    os.mkdir(os.path.join(folder, idir.decode('utf8')))
+    filelist = []
+    for t in tar.getmembers():
+        fsrc = tar.extractfile(t)
+
+        fname = os.path.join(folder, t.name.decode('utf-8'))
+        fdst = file(fname, 'wb')
+
+        shutil.copyfileobj(fsrc, fdst)
+
+        filelist.append(fname)
+        fsrc.close()
+        fdst.close()
+        del fsrc
+        del fdst
+    tar.close()
+    print filelist
+    return filelist
+
+    
+def Extract_(filename, folder):
     tar = tarfile.open(filename, "r:gz")
     #tar.list(verbose=True)
     tar.extractall(folder)

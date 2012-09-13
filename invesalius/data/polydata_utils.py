@@ -117,7 +117,10 @@ def Export(polydata, filename, bin=False):
 
 def Import(filename):
     reader = vtk.vtkXMLPolyDataReader()
-    reader.SetFileName(filename.encode('utf-8'))
+    if isinstance(filename, unicode):
+        reader.SetFileName(filename.encode(wx.GetDefaultPyEncoding()))
+    else:
+        reader.SetFileName(filename)
     reader.Update()
     return reader.GetOutput()
 

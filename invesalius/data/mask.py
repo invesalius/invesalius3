@@ -53,7 +53,7 @@ class Mask():
 
     def SavePlist(self, dir_temp):
         mask = {}
-        filename = u'mask%d_%s' % (self.index, self.name) 
+        filename = u'mask_%d' % self.index 
         mask_filename = u'%s.dat' % filename
         mask_filepath = os.path.join(dir_temp, mask_filename)
         self._save_mask(mask_filepath)
