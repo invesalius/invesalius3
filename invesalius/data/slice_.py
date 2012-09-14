@@ -744,6 +744,8 @@ class Slice(object):
         future_mask = Mask()
         future_mask.create_mask(self.matrix.shape)
 
+        if name:
+            future_mask.name = name
         if colour:
             future_mask.colour = colour
         if opacity:
