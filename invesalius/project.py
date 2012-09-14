@@ -205,6 +205,7 @@ class Project(object):
     def SavePlistProject(self, dir_, filename):
         dir_temp = tempfile.mkdtemp()
         filename_tmp = os.path.join(dir_temp, 'matrix.dat')
+        filelist = {}
 
         project = {
                    # Format info
@@ -228,40 +229,51 @@ class Project(object):
                   'dtype': self.matrix_dtype,
                  }
         project['matrix'] = matrix
-        shutil.copyfile(self.matrix_filename, filename_tmp)
+        filelist[self.matrix_filename] = 'matrix.dat'
+        #shutil.copyfile(self.matrix_filename, filename_tmp)
 
         # Saving the masks
         masks = {}
         for index in self.mask_dict:
-            masks[str(index)] = self.mask_dict[index].SavePlist(dir_temp)
+            masks[str(index)] = self.mask_dict[index].SavePlist(dir_temp,
+                                                                filelist)
         project['masks'] = masks
 
         # Saving the surfaces
         surfaces = {}
         for index in self.surface_dict:
-            surfaces[str(index)] = self.surface_dict[index].SavePlist(dir_temp)
+            surfaces[str(index)] = self.surface_dict[index].SavePlist(dir_temp,
+                                                                     filelist)
         project['surfaces'] = surfaces
 
         # Saving the measurements
         measurements = self.GetMeasuresDict()
         measurements_filename = 'measurements.plist'
+        temp_mplist = tempfile.mktemp() 
         plistlib.writePlist(measurements, 
-                            os.path.join(dir_temp, measurements_filename))
+                            temp_mplist)
+        filelist[temp_mplist] = measurements_filename
         project['measurements'] = measurements_filename
 
         # Saving the annotations (empty in this version)
         project['annotations'] = {}
 
         # Saving the main plist
-        plistlib.writePlist(project, os.path.join(dir_temp, 'main.plist'))
+        temp_plist = tempfile.mktemp()
+        plistlib.writePlist(project, temp_plist)
+        filelist[temp_plist] = 'main.plist'
 
         # Compressing and generating the .inv3 file
         path = os.path.join(dir_,filename)
-        Compress(dir_temp, path)
+        Compress(dir_temp, path, filelist)
 
         # Removing the temp folder.
         shutil.rmtree(dir_temp)
 
+        for f in filelist:
+            if filelist[f].endswith('.plist'):
+                print f
+                os.remove(f)
 
     def OpenPlistProject(self, filename):
         import data.measures as ms
@@ -322,18 +334,18 @@ class Project(object):
             measure.Load(measurements[index])
             self.measurement_dict[int(index)] = measure
 
-def Compress(folder, filename):
+def Compress(folder, filename, filelist):
     tmpdir, tmpdir_ = os.path.split(folder)
     current_dir = os.path.abspath(".")
-    os.chdir(tmpdir)
-    file_list = glob.glob(os.path.join(tmpdir_,"*"))
+    #os.chdir(tmpdir)
+    #file_list = glob.glob(os.path.join(tmpdir_,"*"))
     tar_filename = tmpdir_ + ".inv3"
-    tar = tarfile.open(tar_filename.encode(wx.GetDefaultPyEncoding()), "w:gz")
-    for name in file_list:
-        tar.add(name)
+    tar = tarfile.open(filename.encode(wx.GetDefaultPyEncoding()), "w:gz")
+    for name in filelist:
+        tar.add(name, arcname=os.path.join(tmpdir_, filelist[name]))
     tar.close()
-    shutil.move(tmpdir_+ ".inv3", filename)
-    os.chdir(current_dir)
+    #shutil.move(tmpdir_+ ".inv3", filename)
+    #os.chdir(current_dir)
 
 def Extract(filename, folder):
     tar = tarfile.open(filename, "r:gz")
