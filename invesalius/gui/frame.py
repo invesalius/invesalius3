@@ -88,8 +88,7 @@ class Frame(wx.Frame):
         # Initialize bind to pubsub events
         self.__bind_events()
         self.__bind_events_wx()
-        
-        utils.CheckForUpdate()
+
 
     def __bind_events(self):
         """

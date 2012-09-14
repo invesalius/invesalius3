@@ -379,14 +379,13 @@ def UpdateChecker():
     last = response.readline().rstrip()
     url = response.readline().rstrip()
     print last, url
-    if (last!="3.0 beta 32"):
+    if (last!="3.0 beta 3"):
         print "New update found!!! -> version:", last, ", url=",url
         from time import sleep
         sleep(5)
-        from gui.dialogs import UpdateDialog
-        #UpdateDialog(last,url)
+        from wx.lib.pubsub import pub as Publisher
+        Publisher.sendMessage("Show update dialog", (last,url))
     #except:
-     #   return
-
+	#return
 
 

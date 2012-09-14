@@ -1278,7 +1278,6 @@ class SurfaceMethodPanel(wx.Panel):
 
 
 
-#def _UpdateDialog(self, pubsub_evt):
 def UpdateDialog(last,url):
     """
     Show update dialog

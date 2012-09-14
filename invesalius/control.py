@@ -38,6 +38,7 @@ import reader.dicom_reader as dcm
 import session as ses
 
 import utils 
+import gui.dialogs as dialogs
 
 DEFAULT_THRESH_MODE = 0
 
@@ -55,6 +56,8 @@ class Controller():
         self.measure_manager = data.measures.MeasurementManager()
 
         Publisher.sendMessage('Load Preferences')
+
+        utils.CheckForUpdate()
 
 
     def __bind_events(self):
@@ -79,10 +82,14 @@ class Controller():
         Publisher.subscribe(self.OnOpenProject, 'Open project')
         Publisher.subscribe(self.OnOpenRecentProject, 'Open recent project')
         Publisher.subscribe(self.OnShowAnalyzeFile, 'Show analyze dialog')
+        Publisher.subscribe(self.OnShowUpdateDialog, 'Show update dialog')
+
 
     def OnCancelImport(self, pubsub_evt):
         #self.cancel_import = True
         Publisher.sendMessage('Hide import panel')
+
+
 
 
 ###########################
@@ -618,4 +625,9 @@ class Controller():
         preset_dir = os.path.join(const.USER_RAYCASTING_PRESETS_DIRECTORY,
                                   preset_name + '.plist')
         plistlib.writePlist(preset, preset_dir)
+
+
+
+    def OnShowUpdateDialog(self, pubsub_evt):
+        dialogs.UpdateDialog(pubsub_evt.data[0], pubsub_evt.data[1])
 
