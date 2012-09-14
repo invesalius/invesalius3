@@ -21,6 +21,7 @@ import multiprocessing
 import os
 import plistlib
 import random
+import tempfile
 import weakref
 
 import vtk
@@ -62,11 +63,14 @@ class Surface():
         else:
             self.name = name
 
-    def SavePlist(self, dir_temp):
+    def SavePlist(self, dir_temp, filelist):
         filename = 'surface_%d' % self.index
         vtp_filename = filename + '.vtp'
         vtp_filepath = os.path.join(dir_temp, vtp_filename)
         pu.Export(self.polydata, vtp_filepath, bin=True)
+
+        filelist[vtp_filepath] = vtp_filename
+
         surface = {'colour': self.colour,
                    'index': self.index,
                    'name': self.name,
@@ -76,8 +80,12 @@ class Surface():
                    'volume': self.volume,
                   }
         plist_filename = filename + '.plist'
-        plist_filepath = os.path.join(dir_temp, filename + '.plist')
-        plistlib.writePlist(surface, plist_filepath)
+        #plist_filepath = os.path.join(dir_temp, filename + '.plist')
+        temp_plist = tempfile.mktemp()
+        plistlib.writePlist(surface, temp_plist)
+        
+        filelist[temp_plist] = plist_filename
+
         return plist_filename
 
     def OpenPList(self, filename):

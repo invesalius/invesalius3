@@ -51,12 +51,13 @@ class Mask():
         Publisher.subscribe(self.OnFlipVolume, 'Flip volume')
         Publisher.subscribe(self.OnSwapVolumeAxes, 'Swap volume axes')
 
-    def SavePlist(self, dir_temp):
+    def SavePlist(self, dir_temp, filelist):
         mask = {}
         filename = u'mask_%d' % self.index 
         mask_filename = u'%s.dat' % filename
         mask_filepath = os.path.join(dir_temp, mask_filename)
-        self._save_mask(mask_filepath)
+        filelist[self.temp_file] = mask_filename
+        #self._save_mask(mask_filepath)
 
         mask['index'] = self.index
         mask['name'] = self.name
@@ -69,8 +70,13 @@ class Mask():
         mask['mask_shape'] = self.matrix.shape
 
         plist_filename = filename + '.plist'
-        plist_filepath = os.path.join(dir_temp, plist_filename)
-        plistlib.writePlist(mask, plist_filepath)
+        #plist_filepath = os.path.join(dir_temp, plist_filename)
+
+        temp_plist = tempfile.mktemp()
+        plistlib.writePlist(mask, temp_plist)
+
+        filelist[temp_plist] = plist_filename
+
         return plist_filename
 
     def OpenPList(self, filename):
