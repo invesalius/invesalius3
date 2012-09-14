@@ -31,7 +31,7 @@ class Preferences(wx.Dialog):
         if AGW:
             self.book = fnb.FlatNotebook(self, wx.ID_ANY, agwStyle=bookStyle)
         else:
-            self.book = fnb.FlatNotebook(self, wx.ID_ANY, style=bookStyle)
+            self.book = fnb.FlatNotebook(self, wx.ID_ANY, agwStyle=bookStyle)
             
         sizer.Add(self.book, 80, wx.EXPAND|wx.ALL)
         
