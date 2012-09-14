@@ -315,12 +315,13 @@ class SurfaceManager():
         # self.actors_dict.
         proj = prj.Project()
         surface = proj.surface_dict[index]
-        Publisher.sendMessage('Update surface info in GUI',
-                                    (index, surface.name,
-                                    surface.colour, surface.volume,
-                                    surface.transparency))
+        if surface.is_shown:
+            Publisher.sendMessage('Update surface info in GUI',
+                                        (index, surface.name,
+                                        surface.colour, surface.volume,
+                                        surface.transparency))
         self.last_surface_index = index
-        self.ShowActor(index, True)
+        #self.ShowActor(index, True)
 
 
     def OnLoadSurfaceDict(self, pubsub_evt):

@@ -486,6 +486,7 @@ class SurfaceProperties(wx.Panel):
         self.combo_surface_name.Refresh()
 
     def InsertNewSurface(self, pubsub_evt):
+        print "HERE"
         #not_update = len(pubsub_evt.data) == 5
         index = pubsub_evt.data[0]
         name = pubsub_evt.data[1]
