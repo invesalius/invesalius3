@@ -363,3 +363,30 @@ def get_system_encoding():
         return locale.getdefaultlocale()[1]
     else:
         return 'utf-8'
+
+
+def CheckForUpdate():
+    from threading import Thread
+    thr=Thread(target=UpdateChecker, args=())
+    thr.start()
+
+
+def UpdateChecker():
+    import urllib2
+    #try:
+    URL = "http://www.cti.gov.br/dt3d/invesalius/update/checkupdate_"+sys.platform+"_"+platform.architecture()[0]+".php"
+    response = urllib2.urlopen(URL,timeout=5)
+    last = response.readline().rstrip()
+    url = response.readline().rstrip()
+    print last, url
+    if (last!="3.0 beta 31"):
+        print "New update found!!! -> version:", last, ", url=",url
+        from time import sleep
+        sleep(5)
+        from gui.dialogs import UpdateDialog
+        UpdateDialog(last,url)
+    #except:
+     #   return
+
+
+
