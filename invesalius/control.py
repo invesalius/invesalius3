@@ -57,7 +57,7 @@ class Controller():
 
         Publisher.sendMessage('Load Preferences')
 
-        utils.CheckForUpdate()
+        #utils.CheckForUpdate()
 
 
     def __bind_events(self):
@@ -82,7 +82,7 @@ class Controller():
         Publisher.subscribe(self.OnOpenProject, 'Open project')
         Publisher.subscribe(self.OnOpenRecentProject, 'Open recent project')
         Publisher.subscribe(self.OnShowAnalyzeFile, 'Show analyze dialog')
-        Publisher.subscribe(self.OnShowUpdateDialog, 'Show update dialog')
+        #Publisher.subscribe(self.OnShowUpdateDialog, 'Show update dialog')
 
 
     def OnCancelImport(self, pubsub_evt):
