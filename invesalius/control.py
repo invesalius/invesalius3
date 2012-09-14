@@ -248,9 +248,6 @@ class Controller():
         mask._set_class_index(proj.last_mask_index)
         self.mask_dict_copy = proj.mask_dict.copy()
 
-        surface = srf.Surface()
-        surface._set_class_index(proj.last_surface_index)
-
         self.LoadProject()
 
         Publisher.sendMessage('Update threshold limits',

@@ -685,9 +685,8 @@ class SurfacesListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
     def __bind_events_wx(self):
         self.Bind(wx.EVT_LIST_ITEM_ACTIVATED, self.OnItemActivated)
         self.Bind(wx.EVT_LIST_END_LABEL_EDIT, self.OnEditLabel)
-        self.Bind(wx.EVT_LIST_ITEM_SELECTED, self.OnItemSelected_)
+        #self.Bind(wx.EVT_LIST_ITEM_SELECTED, self.OnItemSelected_)
         self.Bind(wx.EVT_KEY_UP, self.OnKeyEvent)
-
 
     def OnKeyEvent(self, event):
         keycode = event.GetKeyCode()
@@ -697,13 +696,11 @@ class SurfacesListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
         elif (keycode == wx.WXK_DELETE):
             self.RemoveSurfaces()
 
-
     def OnHideSurface(self, pubsub_evt):
         surface_dict = pubsub_evt.data
         for key in surface_dict:
             if not surface_dict[key].is_shown:
                 self.SetItemImage(key, False)
-            
 
     def RemoveSurfaces(self):
         """
@@ -728,7 +725,6 @@ class SurfacesListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
             Publisher.sendMessage('Remove surfaces', selected_items)
         else:
            dlg.SurfaceSelectionRequiredForRemoval() 
-
 
     def OnCloseProject(self, pubsub_evt):
         self.DeleteAllItems()
@@ -790,7 +786,6 @@ class SurfacesListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
 
         self.image_gray = Image.open("../icons/object_colour.jpg")
 
-
     def OnEditLabel(self, evt):
         Publisher.sendMessage('Change surface name', (evt.GetIndex(), evt.GetLabel()))
         evt.Skip()
@@ -798,7 +793,6 @@ class SurfacesListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
     def OnItemActivated(self, evt):
         self.ToggleItem(evt.m_itemIndex)
         evt.Skip()
-
         
     def OnCheckItem(self, index, flag):
         Publisher.sendMessage('Show surface', (index, flag)) 
@@ -836,8 +830,6 @@ class SurfacesListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
         if index not in self.surface_list_index:
             image = self.CreateColourBitmap(colour)
             image_index = self.imagelist.Add(image)
-        
-        
 
             index_list = self.surface_list_index.keys()
             self.surface_list_index[index] = image_index
@@ -846,8 +838,6 @@ class SurfacesListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
                 self.UpdateItemInfo(index, name, volume, transparency, colour)
             else:
                 self.InsertNewItem(index, name, volume, transparency, colour)
-
-
 
     def InsertNewItem(self, index=0, label="Surface 1", volume="0 mm3",
                       transparency="0%%", colour=None):
@@ -865,7 +855,6 @@ class SurfacesListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
         self.SetStringItem(index, 2, volume)
         self.SetStringItem(index, 3, transparency)
         self.SetItemImage(index, 1)
-
         
     def CreateColourBitmap(self, colour):
         """

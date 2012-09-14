@@ -303,13 +303,13 @@ class Project(object):
             m = msk.Mask()
             m.OpenPList(filepath)
             self.mask_dict[m.index] = m
-            self.surface_dict = {}
 
         # Opening the surfaces
+        self.surface_dict = {}
         for index in project["surfaces"]:
             filename = project["surfaces"][index]
             filepath = os.path.join(dirpath, filename)
-            s = srf.Surface()
+            s = srf.Surface(int(index))
             s.OpenPList(filepath)
             self.surface_dict[s.index] = s
 
@@ -321,7 +321,6 @@ class Project(object):
             measure = ms.Measurement()
             measure.Load(measurements[index])
             self.measurement_dict[int(index)] = measure
-
 
 def Compress(folder, filename):
     tmpdir, tmpdir_ = os.path.split(folder)
