@@ -486,20 +486,20 @@ class SurfaceProperties(wx.Panel):
         self.combo_surface_name.Refresh()
 
     def InsertNewSurface(self, pubsub_evt):
-        print "HERE"
         #not_update = len(pubsub_evt.data) == 5
         index = pubsub_evt.data[0]
         name = pubsub_evt.data[1]
         colour = [value*255 for value in pubsub_evt.data[2]]
         overwrite = name in self.surface_dict.keys()
-        if index not in self.surface_dict.values():
-            if not overwrite or not self.surface_dict:
-                self.surface_dict[name] = index
-                index = self.combo_surface_name.Append(name)
-            transparency = 100*pubsub_evt.data[4]
-            self.button_colour.SetColour(colour)
-            self.slider_transparency.SetValue(transparency)
-            self.combo_surface_name.SetSelection(index)
+        #if index not in self.surface_dict.values():
+        if not overwrite or not self.surface_dict:
+            self.surface_dict[name] = index
+            index = self.combo_surface_name.Append(name)
+        transparency = 100*pubsub_evt.data[4]
+        self.button_colour.SetColour(colour)
+        self.slider_transparency.SetValue(transparency)
+        self.combo_surface_name.SetSelection(index)
+        
 
     def OnComboName(self, evt):
         surface_name = evt.GetString()
