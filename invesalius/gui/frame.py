@@ -43,6 +43,12 @@ import preferences
 VIEW_TOOLS = [ID_LAYOUT, ID_TEXT] =\
                                 [wx.NewId() for number in range(2)]
 
+
+
+
+
+
+
 class Frame(wx.Frame):
     """
     Main frame of the whole software.
@@ -82,6 +88,8 @@ class Frame(wx.Frame):
         # Initialize bind to pubsub events
         self.__bind_events()
         self.__bind_events_wx()
+        
+        utils.CheckForUpdate()
 
     def __bind_events(self):
         """
@@ -428,6 +436,12 @@ class Frame(wx.Frame):
         Publisher.sendMessage('Swap volume axes', axes)
         Publisher.sendMessage('Update scroll')
         Publisher.sendMessage('Reload actual slice') 
+
+
+
+      
+
+
 
 # ------------------------------------------------------------------
 # ------------------------------------------------------------------
@@ -1382,4 +1396,14 @@ class LayoutToolBar(wx.ToolBar):
             self.SetToolShortHelp(ID_TEXT,_("Hide text"))
             Publisher.sendMessage('Update AUI')
             self.ontool_text = True
+
+
+
+
+
+
+
+
+
+
 
