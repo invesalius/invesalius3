@@ -203,7 +203,7 @@ class Project(object):
         return measures
 
     def SavePlistProject(self, dir_, filename):
-        dir_temp = tempfile.mkdtemp(filename)
+        dir_temp = tempfile.mkdtemp()
         filename_tmp = os.path.join(dir_temp, 'matrix.dat')
 
         project = {
