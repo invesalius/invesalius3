@@ -379,7 +379,7 @@ def UpdateChecker():
     last = response.readline().rstrip()
     url = response.readline().rstrip()
     print last, url
-    if (last!="3.0 beta 31"):
+    if (last!="3.0 beta 3"):
         print "New update found!!! -> version:", last, ", url=",url
         from time import sleep
         sleep(5)
