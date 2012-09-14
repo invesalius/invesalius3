@@ -322,7 +322,6 @@ class SurfaceManager():
         self.last_surface_index = index
         self.ShowActor(index, True)
 
-
     def OnLoadSurfaceDict(self, pubsub_evt):
         surface_dict = pubsub_evt.data
         for key in surface_dict:

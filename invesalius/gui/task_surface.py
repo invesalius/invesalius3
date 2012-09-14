@@ -499,7 +499,7 @@ class SurfaceProperties(wx.Panel):
         self.button_colour.SetColour(colour)
         self.slider_transparency.SetValue(transparency)
         self.combo_surface_name.SetSelection(index)
-        
+        Publisher.sendMessage('Update surface data', (index))        
 
     def OnComboName(self, evt):
         surface_name = evt.GetString()
