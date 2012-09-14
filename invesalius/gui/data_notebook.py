@@ -19,9 +19,12 @@
 #    detalhes.
 #--------------------------------------------------------------------------
 import sys
+import platform
 
-#import Image
-from PIL import Image
+if float(platform.python_version()[0:3]) > 2.6:
+    import Image
+else:
+    from PIL import Image
 
 import wx
 import wx.grid
