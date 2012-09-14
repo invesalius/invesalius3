@@ -379,12 +379,12 @@ def UpdateChecker():
     last = response.readline().rstrip()
     url = response.readline().rstrip()
     print last, url
-    if (last!="3.0 beta 3"):
+    if (last!="3.0 beta 32"):
         print "New update found!!! -> version:", last, ", url=",url
         from time import sleep
         sleep(5)
         from gui.dialogs import UpdateDialog
-        UpdateDialog(last,url)
+        #UpdateDialog(last,url)
     #except:
      #   return
 
