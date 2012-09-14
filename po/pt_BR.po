@@ -1269,7 +1269,7 @@ msgstr "Criar superfície"
 
 #: task_slice.py:113
 msgid "Overwrite last surface"
-msgstr "Sobrescrever a anterior"
+msgstr "Sobrescrever anterior"
 
 #: task_slice.py:238
 msgid "Mask properties"
