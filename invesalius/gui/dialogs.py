@@ -1276,21 +1276,6 @@ class SurfaceMethodPanel(wx.Panel):
 
 
 
-
-
-def UpdateDialog(last,url):
-    """
-    Show update dialog
-    """
-    #try:
-    msg=_("A new version of InVesalius is available. Do you want to open the download website now?")
-    title=_("Invesalius Update")
-    msgdlg = wx.MessageDialog(None,msg,title, wx.YES_NO | wx.ICON_INFORMATION)
-    if (msgdlg.ShowModal()==wx.ID_YES):
-        wx.LaunchDefaultBrowser(url)
-    msgdlg.Destroy()
-    #except:
-    #    return
     
 
 
