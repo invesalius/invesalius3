@@ -365,27 +365,5 @@ def get_system_encoding():
         return 'utf-8'
 
 
-def CheckForUpdate():
-    from threading import Thread
-    thr=Thread(target=UpdateChecker, args=())
-    thr.start()
-
-
-def UpdateChecker():
-    import urllib2
-    #try:
-    URL = "http://www.cti.gov.br/dt3d/invesalius/update/checkupdate_"+sys.platform+"_"+platform.architecture()[0]+".php"
-    response = urllib2.urlopen(URL,timeout=5)
-    last = response.readline().rstrip()
-    url = response.readline().rstrip()
-    print last, url
-    if (last!="3.0 beta 32"):
-        print "New update found!!! -> version:", last, ", url=",url
-        from time import sleep
-        sleep(5)
-        from wx.lib.pubsub import pub as Publisher
-        Publisher.sendMessage("Show update dialog", (last,url))
-    #except:
-	#return
 
 

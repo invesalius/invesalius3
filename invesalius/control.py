@@ -39,6 +39,8 @@ import session as ses
 
 import utils 
 import gui.dialogs as dialogs
+import subprocess
+import sys
 
 DEFAULT_THRESH_MODE = 0
 
@@ -57,8 +59,8 @@ class Controller():
 
         Publisher.sendMessage('Load Preferences')
 
-        #utils.CheckForUpdate()
-
+        # Check for updates
+        #subprocess.Popen([sys.executable, 'update.py' ,ses.Session().language])
 
     def __bind_events(self):
         Publisher.subscribe(self.OnImportMedicalImages, 'Import directory')
@@ -82,7 +84,6 @@ class Controller():
         Publisher.subscribe(self.OnOpenProject, 'Open project')
         Publisher.subscribe(self.OnOpenRecentProject, 'Open recent project')
         Publisher.subscribe(self.OnShowAnalyzeFile, 'Show analyze dialog')
-        #Publisher.subscribe(self.OnShowUpdateDialog, 'Show update dialog')
 
 
     def OnCancelImport(self, pubsub_evt):
@@ -628,6 +629,4 @@ class Controller():
 
 
 
-    def OnShowUpdateDialog(self, pubsub_evt):
-        dialogs.UpdateDialog(pubsub_evt.data[0], pubsub_evt.data[1])
 
