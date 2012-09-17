@@ -850,6 +850,7 @@ invesalius/gui/import_network_panel.py -text
 invesalius/gui/preferences.py -text
 invesalius/net/__init__.py -text
 invesalius/net/dicom.py -text
+invesalius/update.py -text
 locale/cs/LC_MESSAGES/invesalius.mo -text
 locale/de/LC_MESSAGES/invesalius.mo -text
 locale/el/LC_MESSAGES/invesalius.mo -text
