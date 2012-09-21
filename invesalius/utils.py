@@ -401,7 +401,7 @@ def UpdateCheck():
     response = urllib2.urlopen(req)
     last = response.readline().rstrip()
     url = response.readline().rstrip()
-    if (last!=const.INVESALIUS_VERSION+"1"):
+    if (last!=const.INVESALIUS_VERSION):
         print "  ...New update found!!! -> version:", last #, ", url=",url
         from time import sleep
         sleep(2)
