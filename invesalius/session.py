@@ -28,6 +28,7 @@ import time
 from wx.lib.pubsub import pub as Publisher
 
 from utils import Singleton, debug
+from random import randint
 
 class Session(object):
     # Only one session will be initialized per time. Therefore, we use
@@ -62,6 +63,9 @@ class Session(object):
 
         # GUI language
         self.language = "" # "pt_BR", "es"
+
+        self.random_id = randint(0,pow(10,16))
+        print self.random_id
 
         # Recent projects list
         self.recent_projects = [(const.SAMPLE_DIR, "Cranium.inv3")]
@@ -151,6 +155,7 @@ class Session(object):
         config.set('session', 'status', self.project_status)
         config.set('session','debug', self.debug)
         config.set('session', 'language', self.language)
+        config.set('session', 'random_id', self.random_id)
         config.set('session', 'surface_interpolation', self.surface_interpolation)
         config.set('session', 'rendering', self.rendering)
 
@@ -194,6 +199,12 @@ class Session(object):
     def SetLanguage(self, language):
         self.language = language
 
+    def GetRandomId(self):
+        return self.random_id
+
+    def SetRandomId(self, random_id):
+        self.random_id = random_id
+
     def GetLastDicomFolder(self):
         return self.last_dicom_folder
 
@@ -214,6 +225,19 @@ class Session(object):
                   ConfigParser.MissingSectionHeaderError):
             return False
 
+    def ReadRandomId(self):
+        config = ConfigParser.ConfigParser()
+        home_path = os.path.expanduser('~')
+        path = os.path.join(home_path ,'.invesalius', 'config.cfg')
+        try:
+            config.read(path)
+            self.random_id = config.get('session','random_id')
+            return self.random_id
+        except (ConfigParser.NoSectionError,
+                  ConfigParser.NoOptionError,
+                  ConfigParser.MissingSectionHeaderError):
+            return False
+
     def ReadSession(self):
         config = ConfigParser.ConfigParser()
         home_path = os.path.expanduser('~')
@@ -224,6 +248,7 @@ class Session(object):
             self.project_status = config.get('session', 'status')
             self.debug = config.get('session','debug')
             self.language = config.get('session','language')
+            self.random_id = config.get('session','random_id')
 
             self.recent_projects = eval(config.get('project','recent_projects'))
             self.homedir = config.get('paths','homedir')
@@ -248,7 +273,8 @@ class Session(object):
             #Added to fix new version compatibility
             self.surface_interpolation = 0
             self.rendering = 0
-             
+            self.random_id = randint(0,pow(10,16))
+      
             self.CreateSessionFile()
             return True
 
@@ -281,6 +307,7 @@ class WriteSession(Thread):
         config.set('session', 'status', self.session.project_status)
         config.set('session','debug', self.session.debug)
         config.set('session', 'language', self.session.language)
+        config.set('session', 'random_id', self.session.random_id)
         config.set('session', 'surface_interpolation', self.session.surface_interpolation)
         config.set('session', 'rendering', self.session.rendering)
 

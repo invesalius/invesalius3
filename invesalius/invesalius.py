@@ -55,6 +55,7 @@ import utils
 
 # ------------------------------------------------------------------
 
+
 class InVesalius(wx.App):
     """
     InVesalius wxPython application class.
@@ -298,6 +299,12 @@ if __name__ == '__main__':
     # Add current directory to PYTHONPATH, so other classes can
     # import modules as they were on root invesalius folder
     sys.path.append(".")
+
+    # Check for updates
+    from multiprocessing import Process
+    p = Process(target=utils.UpdateCheck, args=())
+    p.daemon=True
+    p.start()
 
     # Init application
     main()
