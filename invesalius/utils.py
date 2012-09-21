@@ -398,7 +398,10 @@ def UpdateCheck():
             'random_id' : random_id }
     data = urllib.urlencode(data)
     req = urllib2.Request(url, data, headers)
-    response = urllib2.urlopen(req)
+    try:
+        response = urllib2.urlopen(req)
+    except:
+        return
     last = response.readline().rstrip()
     url = response.readline().rstrip()
     if (last!=const.INVESALIUS_VERSION):
