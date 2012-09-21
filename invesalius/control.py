@@ -59,9 +59,6 @@ class Controller():
 
         Publisher.sendMessage('Load Preferences')
 
-        # Check for updates
-        #subprocess.Popen([sys.executable, 'update.py' ,ses.Session().language])
-
     def __bind_events(self):
         Publisher.subscribe(self.OnImportMedicalImages, 'Import directory')
         Publisher.subscribe(self.OnShowDialogImportDirectory,

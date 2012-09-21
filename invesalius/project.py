@@ -210,7 +210,7 @@ class Project(object):
         project = {
                    # Format info
                    "format_version": 1,
-                   "invesalius_version": "invesalius3b3",
+                   "invesalius_version": const.INVESALIUS_VERSION,
                    "date": datetime.datetime.now().isoformat(),
 
                    # case info
