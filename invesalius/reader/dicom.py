@@ -1486,6 +1486,8 @@ class Parser():
         try:
             data = self.data_image[str(0x0008)][str(0x1030)]
             if (data):
+                if isinstance(data, unicode):
+                    return data
                 encoding = self.GetEncoding()
                 return data.decode(encoding)
         except(KeyError):
