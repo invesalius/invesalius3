@@ -1899,6 +1899,7 @@ class Acquisition(object):
         self.serie_number = parser.GetSerieNumber()
         self.sop_class_uid = parser.GetSOPClassUID()
 
+
 class Image(object):
 
     def __init__(self):
