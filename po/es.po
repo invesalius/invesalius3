@@ -4,7 +4,7 @@
 # Tatiana Al-Chueyr Pereira Martins <tatiana.alchueyr@gmail.com>
 # Paulo Henrique Junqueira Amorim <paulojamorim@gmail.com>
 # Thiago Franco de Morais <totonixsame@gmail.com>
-# Translators:
+# Translators: 
 # Alicia Perez <artema91@hotmail.com>, 2011.
 msgid ""
 msgstr ""
