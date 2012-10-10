@@ -165,11 +165,13 @@ class Frame(wx.Frame):
             t2 = LayoutToolBar(self)
             t3 = ObjectToolBar(self)
             t4 = SliceToolBar(self)
+            t5 = HistoryToolBar(self)
         else:
-            t4 = ProjectToolBar(self)
-            t3 = LayoutToolBar(self)
-            t2 = ObjectToolBar(self)
-            t1 = SliceToolBar(self)
+            t5 = ProjectToolBar(self)
+            t4 = LayoutToolBar(self)
+            t3 = ObjectToolBar(self)
+            t2 = SliceToolBar(self)
+            t1 = HistoryToolBar(self)
 
         aui_manager.AddPane(t1, wx.aui.AuiPaneInfo().
                           Name("General Features Toolbar").
@@ -187,6 +189,11 @@ class Frame(wx.Frame):
                           LeftDockable(False).RightDockable(False))
 
         aui_manager.AddPane(t4, wx.aui.AuiPaneInfo().
+                          Name("Slice Toolbar").
+                          ToolbarPane().Top().Floatable(False).
+                          LeftDockable(False).RightDockable(False))
+
+        aui_manager.AddPane(t5, wx.aui.AuiPaneInfo().
                           Name("Slice Toolbar").
                           ToolbarPane().Top().Floatable(False).
                           LeftDockable(False).RightDockable(False))
@@ -358,6 +365,11 @@ class Frame(wx.Frame):
                     const.ID_SWAP_XZ: (2, 0),
                     const.ID_SWAP_YZ: (1, 0)}[id]
             self.SwapAxes(axes)
+        elif id == wx.ID_UNDO:
+            self.OnUndo()
+        elif id == wx.ID_REDO:
+            self.OnRedo()
+
     def OnSize(self, evt):
         """
         Refresh GUI when frame is resized.
@@ -436,6 +448,13 @@ class Frame(wx.Frame):
         Publisher.sendMessage('Update scroll')
         Publisher.sendMessage('Reload actual slice') 
 
+    def OnUndo(self):
+        print "Undo"
+        Publisher.sendMessage('Undo edition')
+
+    def OnRedo(self):
+        print "Redo"
+        Publisher.sendMessage('Redo edition')
 
 
       
@@ -476,6 +495,8 @@ class MenuBar(wx.MenuBar):
         # mail list in Oct 20 2008
         sub = Publisher.subscribe
         sub(self.OnEnableState, "Enable state project")
+        sub(self.OnEnableUndo, "Enable undo")
+        sub(self.OnEnableRedo, "Enable redo")
 
     def __init_items(self):
         """
@@ -523,11 +544,10 @@ class MenuBar(wx.MenuBar):
         app(const.ID_SWAP_YZ, _("A-P <-> T-B"))
 
         file_edit = wx.Menu()
-        app = file_edit.Append
         file_edit.AppendMenu(wx.NewId(), _('Flip'), flip_menu)
         file_edit.AppendMenu(wx.NewId(), _('Swap axes'), swap_axes_menu)
-        #app(wx.ID_UNDO, "Undo\tCtrl+Z")
-        #app(wx.ID_REDO, "Redo\tCtrl+Y")
+        file_edit.Append(wx.ID_UNDO, "Undo\tCtrl+Z").Enable(False)
+        file_edit.Append(wx.ID_REDO, "Redo\tCtrl+Y").Enable(False)
         #app(const.ID_EDIT_LIST, "Show Undo List...")
         #################################################################
 
@@ -578,7 +598,7 @@ class MenuBar(wx.MenuBar):
 
         # Add all menus to menubar
         self.Append(file_menu, _("File"))
-        #self.Append(file_edit, _("Edit"))
+        self.Append(file_edit, _("Edit"))
         #self.Append(view_menu, "View")
         #self.Append(tools_menu, "Tools")
         self.Append(options_menu, _("Options"))
@@ -609,6 +629,19 @@ class MenuBar(wx.MenuBar):
         for item in self.enable_items:
             self.Enable(item, True)
 
+    def OnEnableUndo(self, pubsub_evt):
+        value = pubsub_evt.data
+        if value:
+            self.FindItemById(wx.ID_UNDO).Enable(True)
+        else:
+            self.FindItemById(wx.ID_UNDO).Enable(False)
+
+    def OnEnableRedo(self, pubsub_evt):
+        value = pubsub_evt.data
+        if value:
+            self.FindItemById(wx.ID_REDO).Enable(True)
+        else:
+            self.FindItemById(wx.ID_REDO).Enable(False)
 # ------------------------------------------------------------------
 # ------------------------------------------------------------------
 # ------------------------------------------------------------------
@@ -1397,12 +1430,166 @@ class LayoutToolBar(wx.ToolBar):
             self.ontool_text = True
 
 
+class HistoryToolBar(wx.ToolBar):
+    """
+    Toolbar related to general layout/ visualization configuration
+    e.g: show/hide task panel and show/hide text on viewers.
+    """
+    def __init__(self, parent):
+        style = wx.TB_FLAT|wx.TB_NODIVIDER | wx.TB_DOCKABLE
+        wx.ToolBar.__init__(self, parent, -1, wx.DefaultPosition,
+                            wx.DefaultSize,
+                            style)
 
+        self.SetToolBitmapSize(wx.Size(32,32))
 
+        self.parent = parent
+        self.__init_items()
+        self.__bind_events()
+        self.__bind_events_wx()
 
+        self.ontool_layout = False
+        self.ontool_text = True
+        #self.enable_items = [ID_TEXT]
 
+        self.Realize()
+        #self.SetStateProjectClose()
 
+    def __bind_events(self):
+        """
+        Bind events related to pubsub.
+        """
+        sub = Publisher.subscribe
+        #sub(self._EnableState, "Enable state project")
+        #sub(self._SetLayoutWithTask, "Set layout button data only")
+        #sub(self._SetLayoutWithoutTask, "Set layout button full")
+        sub(self.OnEnableUndo, "Enable undo")
+        sub(self.OnEnableRedo, "Enable redo")
 
+    def __bind_events_wx(self):
+        """
+        Bind normal events from wx (except pubsub related).
+        """
+        #self.Bind(wx.EVT_TOOL, self.OnToggle)
+        wx.EVT_TOOL( self, wx.ID_UNDO, self.OnUndo )
+        wx.EVT_TOOL( self, wx.ID_REDO, self.OnRedo )
 
+    def __init_items(self):
+        """
+        Add tools into toolbar.
+        """
+        self.AddSimpleTool(wx.ID_UNDO, wx.ArtProvider_GetBitmap(wx.ART_UNDO, wx.ART_OTHER, wx.Size( 16, 16)), 'Undo', '')
+        self.AddSimpleTool(wx.ID_REDO, wx.ArtProvider_GetBitmap(wx.ART_REDO, wx.ART_OTHER, wx.Size( 16, 16)), 'Redo', '')
+        self.EnableTool(wx.ID_UNDO, False)
+        self.EnableTool(wx.ID_REDO, False)
 
+    def _EnableState(self, pubsub_evt):
+        """
+        Based on given state, enable or disable menu items which
+        depend if project is open or not.
+        """
+        state = pubsub_evt.data
+        if state:
+            self.SetStateProjectOpen()
+        else:
+            self.SetStateProjectClose()
 
+    def _SetLayoutWithoutTask(self, pubsub_evt):
+        """
+        Set item bitmap to task panel hiden.
+        """
+        self.SetToolNormalBitmap(ID_LAYOUT,self.BMP_WITHOUT_MENU)
+
+    def _SetLayoutWithTask(self, pubsub_evt):
+        """
+        Set item bitmap to task panel shown.
+        """
+        self.SetToolNormalBitmap(ID_LAYOUT,self.BMP_WITH_MENU)
+
+    def OnUndo(self, event):
+        print "Undo"
+        Publisher.sendMessage('Undo edition')
+
+    def OnRedo(self, event):
+        print "Redo"
+        Publisher.sendMessage('Redo edition')
+
+    def OnToggle(self, event):
+        """
+        Update status of toolbar item (bitmap and help)
+        """
+        id = event.GetId()
+        if id == ID_LAYOUT:
+            self.ToggleLayout()
+        elif id== ID_TEXT:
+            self.ToggleText()
+
+        for item in VIEW_TOOLS:
+            state = self.GetToolState(item)
+            if state and (item != id):
+                self.ToggleTool(item, False)
+
+    def SetStateProjectClose(self):
+        """
+        Disable menu items (e.g. text) when project is closed.
+        """
+        self.ontool_text = True
+        self.ToggleText()
+        for tool in self.enable_items:
+            self.EnableTool(tool, False)
+
+    def SetStateProjectOpen(self):
+        """
+        Disable menu items (e.g. text) when project is closed.
+        """
+        self.ontool_text = False
+        self.ToggleText()
+        for tool in self.enable_items:
+            self.EnableTool(tool, True)
+
+    def ToggleLayout(self):
+        """
+        Based on previous layout item state, toggle it.
+        """
+        if self.ontool_layout:
+            self.SetToolNormalBitmap(ID_LAYOUT,self.BMP_WITHOUT_MENU)
+            Publisher.sendMessage('Show task panel')
+            self.SetToolShortHelp(ID_LAYOUT,_("Hide task panel"))
+            self.ontool_layout = False
+        else:
+            self.bitmap = self.BMP_WITH_MENU
+            self.SetToolNormalBitmap(ID_LAYOUT,self.BMP_WITH_MENU)
+            Publisher.sendMessage('Hide task panel')
+            self.SetToolShortHelp(ID_LAYOUT, _("Show task panel"))
+            self.ontool_layout = True
+
+    def ToggleText(self):
+        """
+        Based on previous text item state, toggle it.
+        """
+        if self.ontool_text:
+            self.SetToolNormalBitmap(ID_TEXT,self.BMP_WITH_TEXT)
+            Publisher.sendMessage('Hide text actors on viewers')
+            self.SetToolShortHelp(ID_TEXT,_("Show text"))
+            Publisher.sendMessage('Update AUI')
+            self.ontool_text = False
+        else:
+            self.SetToolNormalBitmap(ID_TEXT, self.BMP_WITHOUT_TEXT)
+            Publisher.sendMessage('Show text actors on viewers')
+            self.SetToolShortHelp(ID_TEXT,_("Hide text"))
+            Publisher.sendMessage('Update AUI')
+            self.ontool_text = True
+
+    def OnEnableUndo(self, pubsub_evt):
+        value = pubsub_evt.data
+        if value:
+            self.EnableTool(wx.ID_UNDO, True)
+        else:
+            self.EnableTool(wx.ID_UNDO, False)
+
+    def OnEnableRedo(self, pubsub_evt):
+        value = pubsub_evt.data
+        if value:
+            self.EnableTool(wx.ID_REDO, True)
+        else:
+            self.EnableTool(wx.ID_REDO, False)

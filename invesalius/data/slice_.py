@@ -17,6 +17,8 @@
 #    detalhes.
 #--------------------------------------------------------------------------
 import math
+import os
+import tempfile
 
 import numpy
 import vtk
@@ -62,6 +64,9 @@ class SliceBuffer(object):
         self.mask = None
         self.vtk_image = None
         self.vtk_mask = None
+
+
+
 
 
 class Slice(object):
@@ -135,6 +140,9 @@ class Slice(object):
 
         Publisher.subscribe(self.OnFlipVolume, 'Flip volume')
         Publisher.subscribe(self.OnSwapVolumeAxes, 'Swap volume axes')
+
+        Publisher.subscribe(self.__undo_edition, 'Undo edition')
+        Publisher.subscribe(self.__redo_edition, 'Redo edition')
  
     def GetMaxSliceNumber(self, orientation):
         shape = self.matrix.shape
@@ -290,7 +298,6 @@ class Slice(object):
         mask = self.buffer_slices[orientation].mask
         image = self.buffer_slices[orientation].image
         thresh_min, thresh_max = self.current_mask.edition_threshold_range
-        self.current_mask.was_edited = True
 
         if hasattr(position, '__iter__'):
             py, px = position
@@ -349,12 +356,6 @@ class Slice(object):
 
         roi_m = mask[yi:yf,xi:xf]
         roi_i = image[yi:yf, xi:xf]
-
-        print 
-        print"IMAGE", roi_m.shape
-        print "BRUSH", index.shape
-        print "IMAGE[BRUSH]", roi_m[index].shape
-        print
 
         if operation == const.BRUSH_THRESH:
             # It's a trick to make points between threshold gets value 254
@@ -558,6 +559,8 @@ class Slice(object):
         print "Showing Mask"
         proj = Project()
         proj.mask_dict[index].is_shown = value
+        proj.mask_dict[index].on_show()
+
         if (index == self.current_mask.index):
             for buffer_ in self.buffer_slices.values():
                 buffer_.discard_vtk_mask()
@@ -884,17 +887,64 @@ class Slice(object):
         """
         b_mask = self.buffer_slices[orientation].mask
         index = self.buffer_slices[orientation].index
+
+        # TODO: Voltar a usar marcacao na mascara
         if orientation == 'AXIAL':
+            #if self.current_mask.matrix[index+1, 0, 0] != 2:
+            #self.current_mask.save_history(index, orientation,
+                                           #self.current_mask.matrix[index+1,1:,1:],
+                                               #clean=True)
+            p_mask = self.current_mask.matrix[index+1,1:,1:].copy()
             self.current_mask.matrix[index+1,1:,1:] = b_mask
+            self.current_mask.matrix[index+1, 0, 0] = 2
+
         elif orientation == 'CORONAL':
+            #if self.current_mask.matrix[0, index+1, 0] != 2:
+            #self.current_mask.save_history(index, orientation,
+                                           #self.current_mask.matrix[1:, index+1, 1:],
+                                           #clean=True)
+            p_mask = self.current_mask.matrix[1:, index+1, 1:].copy()
             self.current_mask.matrix[1:, index+1, 1:] = b_mask
+            self.current_mask.matrix[0, index+1, 0] = 2
+
         elif orientation == 'SAGITAL':
+            #if self.current_mask.matrix[0, 0, index+1] != 2:
+            #self.current_mask.save_history(index, orientation,
+                                           #self.current_mask.matrix[1:, 1:, index+1],
+                                           #clean=True)
+            p_mask = self.current_mask.matrix[1:, 1:, index+1].copy()
             self.current_mask.matrix[1:, 1:, index+1] = b_mask
+            self.current_mask.matrix[0, 0, index+1] = 2
+
+        self.current_mask.save_history(index, orientation, b_mask, p_mask)
+        self.current_mask.was_edited = True
 
         for o in self.buffer_slices:
             if o != orientation:
                 self.buffer_slices[o].discard_mask()
                 self.buffer_slices[o].discard_vtk_mask()
+        Publisher.sendMessage('Reload actual slice')
+
+    def __undo_edition(self, pub_evt):
+        buffer_slices = self.buffer_slices
+        actual_slices = {"AXIAL": buffer_slices["AXIAL"].index,
+                         "CORONAL": buffer_slices["CORONAL"].index,
+                         "SAGITAL": buffer_slices["SAGITAL"].index,}
+        self.current_mask.undo_history(actual_slices)
+        for o in self.buffer_slices:
+            self.buffer_slices[o].discard_mask()
+            self.buffer_slices[o].discard_vtk_mask()
+        Publisher.sendMessage('Reload actual slice')
+
+    def __redo_edition(self, pub_evt):
+        buffer_slices = self.buffer_slices
+        actual_slices = {"AXIAL": buffer_slices["AXIAL"].index,
+                         "CORONAL": buffer_slices["CORONAL"].index,
+                         "SAGITAL": buffer_slices["SAGITAL"].index,}
+        self.current_mask.redo_history(actual_slices)
+        for o in self.buffer_slices:
+            self.buffer_slices[o].discard_mask()
+            self.buffer_slices[o].discard_vtk_mask()
         Publisher.sendMessage('Reload actual slice')
 
     def __build_mask(self, imagedata, create=True):

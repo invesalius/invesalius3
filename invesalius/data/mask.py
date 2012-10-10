@@ -22,6 +22,7 @@ import plistlib
 import random
 import shutil
 import tempfile
+import weakref
 
 import numpy
 import vtk
@@ -31,12 +32,155 @@ import imagedata_utils as iu
 
 from wx.lib.pubsub import pub as Publisher
 
+
+class EditionHistoryNode(object):
+    def __init__(self, index, orientation, array, clean=False):
+        self.index = index
+        self.orientation = orientation
+        self.filename = tempfile.mktemp(suffix='.npy')
+        self.clean = clean
+
+        self._save_array(array)
+
+    def _save_array(self, array):
+        numpy.save(self.filename, array)
+        print "Saving history", self.index, self.orientation, self.filename, self.clean
+
+    def commit_history(self, mvolume):
+        array = numpy.load(self.filename)
+        if self.orientation == 'AXIAL':
+            mvolume[self.index+1,1:,1:] = array
+            if self.clean:
+                mvolume[self.index+1, 0, 0] = 1
+        elif self.orientation == 'CORONAL':
+            mvolume[1:, self.index+1, 1:] = array
+            if self.clean:
+                mvolume[0, self.index+1, 0] = 1
+        elif self.orientation == 'SAGITAL':
+            mvolume[1:, 1:, self.index+1] = array
+            if self.clean:
+                mvolume[0, 0, self.index+1] = 1
+
+        print "applying to", self.orientation, "at slice", self.index
+
+    def __del__(self):
+        print "Removing", self.filename
+        os.remove(self.filename)
+
+
+class EditionHistory(object):
+    def __init__(self, size=50):
+        self.history = []
+        self._copies = weakref.WeakValueDictionary()
+        self.index = -1
+        self.size = size
+
+        Publisher.sendMessage("Enable undo", False)
+        Publisher.sendMessage("Enable redo", False)
+
+    def new_node(self, index, orientation, array, p_array, clean):
+        try:
+            p_node = self.history[self.index]
+        except IndexError:
+            p_node = None
+
+        if self.index == -1 or (orientation != p_node.orientation or p_node.index != index): 
+            try:
+                node = self._copies[(orientation, index)]
+            except KeyError:
+                node = EditionHistoryNode(index, orientation, p_array, clean)
+                self._copies[(orientation, index)] = node
+            self.add(node)
+
+        node = EditionHistoryNode(index, orientation, array, clean)
+        self._copies[(orientation, index)] = node
+        self.add(node)
+
+    def add(self, node):
+        if self.index == self.size:
+            self.history.pop(0)
+            self.index -= 1
+
+        if self.index < len(self.history):
+            self.history = self.history[:self.index + 1]
+        self.history.append(node)
+        self.index += 1
+
+        print "INDEX", self.index, len(self.history), self.history
+        Publisher.sendMessage("Enable undo", True)
+        Publisher.sendMessage("Enable redo", False)
+
+    def undo(self, mvolume, actual_slices=None):
+        h = self.history
+        if self.index > 0:
+            #if self.index > 0 and h[self.index].clean:
+                ##self.index -= 1
+                ##h[self.index].commit_history(mvolume)
+                #self._reload_slice(self.index - 1)
+            if actual_slices and actual_slices[h[self.index - 1].orientation] != h[self.index - 1].index:
+                self._reload_slice(self.index - 1)
+            else:
+                self.index -= 1
+                h[self.index].commit_history(mvolume)
+                if actual_slices and self.index and actual_slices[h[self.index - 1].orientation] == h[self.index - 1].index:
+                    self.index -= 1
+                    h[self.index].commit_history(mvolume)
+                self._reload_slice(self.index)
+                Publisher.sendMessage("Enable redo", True)
+        
+        if self.index == 0:
+            Publisher.sendMessage("Enable undo", False)
+        print "AT", self.index, len(self.history), self.history[self.index].filename
+
+    def redo(self, mvolume, actual_slices=None):
+        h = self.history
+        if self.index < len(h) - 1:
+            #if self.index < len(h) - 1 and h[self.index].clean:
+                ##self.index += 1
+                ##h[self.index].commit_history(mvolume)
+                #self._reload_slice(self.index + 1)
+
+            if actual_slices and actual_slices[h[self.index + 1].orientation] != h[self.index + 1].index:
+                self._reload_slice(self.index + 1)
+            else:
+                self.index += 1
+                h[self.index].commit_history(mvolume)
+                if actual_slices and self.index < len(h) - 1 and actual_slices[h[self.index + 1].orientation] == h[self.index + 1].index:
+                    self.index += 1
+                    h[self.index].commit_history(mvolume)
+                self._reload_slice(self.index)
+                Publisher.sendMessage("Enable undo", True)
+        
+        if self.index == len(h) - 1:
+            Publisher.sendMessage("Enable redo", False)
+        print "AT", self.index, len(h), h[self.index].filename
+
+    def _reload_slice(self, index):
+        Publisher.sendMessage(('Set scroll position', self.history[index].orientation),
+                              self.history[index].index)
+
+    def _config_undo_redo(self, visible):
+        v_undo = False
+        v_redo = False
+
+        if self.history and visible:
+            v_undo = True
+            v_redo = True
+            if self.index == 0:
+                v_undo = False
+            elif self.index == len(self.history) - 1:
+                v_redo = False
+            
+        Publisher.sendMessage("Enable undo", v_undo)
+        Publisher.sendMessage("Enable redo", v_redo)
+
+
 class Mask():
     general_index = -1
     def __init__(self):
         Mask.general_index += 1
         self.index = Mask.general_index
-        self.imagedata = '' # vtkImageData
+        self.imagedata = ''
         self.colour = random.choice(const.MASK_COLOUR)
         self.opacity = const.MASK_OPACITY
         self.threshold_range = const.THRESHOLD_RANGE
@@ -47,9 +191,23 @@ class Mask():
         self.was_edited = False
         self.__bind_events()
 
+        self.history = EditionHistory()
+
     def __bind_events(self):
         Publisher.subscribe(self.OnFlipVolume, 'Flip volume')
         Publisher.subscribe(self.OnSwapVolumeAxes, 'Swap volume axes')
+
+    def save_history(self, index, orientation, array, p_array, clean=False):
+        self.history.new_node(index, orientation, array, p_array, clean)
+
+    def undo_history(self, actual_slices):
+        self.history.undo(self.matrix, actual_slices)
+
+    def redo_history(self, actual_slices):
+        self.history.redo(self.matrix, actual_slices)
+
+    def on_show(self):
+        self.history._config_undo_redo(self.is_shown)
 
     def SavePlist(self, dir_temp, filelist):
         mask = {}
@@ -129,3 +287,6 @@ class Mask():
         self.temp_file = tempfile.mktemp()
         shape = shape[0] + 1, shape[1] + 1, shape[2] + 1
         self.matrix = numpy.memmap(self.temp_file, mode='w+', dtype='uint8', shape=shape)
+
+    def __del__(self):
+        self.history._config_undo_redo(False)

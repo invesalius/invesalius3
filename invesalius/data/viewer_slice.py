@@ -20,6 +20,7 @@
 #--------------------------------------------------------------------------
 
 import itertools
+import tempfile
 
 import numpy
 
@@ -803,6 +804,7 @@ class Viewer(wx.Panel):
     def OnBrushRelease(self, evt, obj):
         if (self.slice_.buffer_slices[self.orientation].mask is None):
             return
+
         self.slice_.apply_slice_buffer_to_mask(self.orientation)
         self._flush_buffer = False
 
