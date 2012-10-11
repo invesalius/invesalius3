@@ -194,7 +194,7 @@ class Frame(wx.Frame):
                           LeftDockable(False).RightDockable(False))
 
         aui_manager.AddPane(t5, wx.aui.AuiPaneInfo().
-                          Name("Slice Toolbar").
+                          Name("History Toolbar").
                           ToolbarPane().Top().Floatable(False).
                           LeftDockable(False).RightDockable(False))
 
