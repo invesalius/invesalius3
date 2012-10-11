@@ -258,6 +258,23 @@ class Slice(object):
         index = self.current_mask.index
         self.num_gradient += 1
         self.current_mask.matrix[:] = 0
+        self.current_mask.clear_history()
+
+        # TODO: merge this code with apply_slice_buffer_to_mask
+        b_mask = self.buffer_slices["AXIAL"].mask
+        n = self.buffer_slices["AXIAL"].index + 1
+        self.current_mask.matrix[n, 1:, 1:] = b_mask
+        self.current_mask.matrix[n, 0, 0] = 1
+
+        b_mask = self.buffer_slices["CORONAL"].mask
+        n = self.buffer_slices["CORONAL"].index + 1
+        self.current_mask.matrix[1:, n, 1:] = b_mask
+        self.current_mask.matrix[0, n, 0] = 1
+
+        b_mask = self.buffer_slices["SAGITAL"].mask
+        n = self.buffer_slices["SAGITAL"].index + 1
+        self.current_mask.matrix[1:, 1:, n] = b_mask
+        self.current_mask.matrix[0, 0, n] = 1
 
     def __set_current_mask_threshold_actual_slice(self, evt_pubsub):
         threshold_range = evt_pubsub.data

@@ -174,6 +174,12 @@ class EditionHistory(object):
         Publisher.sendMessage("Enable undo", v_undo)
         Publisher.sendMessage("Enable redo", v_redo)
 
+    def clear_history(self):
+        self.history = []
+        self.index = -1
+        Publisher.sendMessage("Enable undo", False)
+        Publisher.sendMessage("Enable redo", False)
+
 
 class Mask():
     general_index = -1
@@ -288,5 +294,9 @@ class Mask():
         shape = shape[0] + 1, shape[1] + 1, shape[2] + 1
         self.matrix = numpy.memmap(self.temp_file, mode='w+', dtype='uint8', shape=shape)
 
+    def clear_history(self):
+        self.history.clear_history()
+
     def __del__(self):
-        self.history._config_undo_redo(False)
+        if self.is_shown:
+            self.history._config_undo_redo(False)
