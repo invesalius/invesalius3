@@ -65,7 +65,7 @@ class Session(object):
         self.language = "" # "pt_BR", "es"
 
         self.random_id = randint(0,pow(10,16))
-        print self.random_id
+        #print self.random_id
 
         # Recent projects list
         self.recent_projects = [(const.SAMPLE_DIR, "Cranium.inv3")]
@@ -248,8 +248,6 @@ class Session(object):
             self.project_status = config.get('session', 'status')
             self.debug = config.get('session','debug')
             self.language = config.get('session','language')
-            self.random_id = config.get('session','random_id')
-
             self.recent_projects = eval(config.get('project','recent_projects'))
             self.homedir = config.get('paths','homedir')
             self.tempdir = config.get('paths','tempdir')
@@ -258,6 +256,7 @@ class Session(object):
 
             self.surface_interpolation = config.get('session', 'surface_interpolation')
             self.rendering = config.get('session', 'rendering')
+            self.random_id = config.get('session','random_id')
             return True
 
         except(ConfigParser.NoSectionError, ConfigParser.MissingSectionHeaderError, 
@@ -273,8 +272,7 @@ class Session(object):
             #Added to fix new version compatibility
             self.surface_interpolation = 0
             self.rendering = 0
-            self.random_id = randint(0,pow(10,16))
-      
+            self.random_id = randint(0,pow(10,16))  
             self.CreateSessionFile()
             return True
 
