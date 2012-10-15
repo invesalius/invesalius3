@@ -22,7 +22,6 @@ import plistlib
 import random
 import shutil
 import tempfile
-import weakref
 
 import numpy
 import vtk
@@ -71,29 +70,18 @@ class EditionHistoryNode(object):
 class EditionHistory(object):
     def __init__(self, size=50):
         self.history = []
-        self._copies = weakref.WeakValueDictionary()
         self.index = -1
-        self.size = size
+        self.size = size * 2
 
         Publisher.sendMessage("Enable undo", False)
         Publisher.sendMessage("Enable redo", False)
 
     def new_node(self, index, orientation, array, p_array, clean):
-        try:
-            p_node = self.history[self.index]
-        except IndexError:
-            p_node = None
-
-        if self.index == -1 or (orientation != p_node.orientation or p_node.index != index): 
-            try:
-                node = self._copies[(orientation, index)]
-            except KeyError:
-                node = EditionHistoryNode(index, orientation, p_array, clean)
-                self._copies[(orientation, index)] = node
-            self.add(node)
+        # Saving the previous state, used to undo/redo correctly.
+        p_node = EditionHistoryNode(index, orientation, p_array, clean)
+        self.add(p_node)
 
         node = EditionHistoryNode(index, orientation, array, clean)
-        self._copies[(orientation, index)] = node
         self.add(node)
 
     def add(self, node):
