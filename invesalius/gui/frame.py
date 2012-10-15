@@ -162,16 +162,16 @@ class Frame(wx.Frame):
         # compared to linux2 & darwin
         if sys.platform == 'win32':
             t1 = ProjectToolBar(self)
-            t2 = LayoutToolBar(self)
-            t3 = ObjectToolBar(self)
-            t4 = SliceToolBar(self)
-            t5 = HistoryToolBar(self)
+            t2 = HistoryToolBar(self)
+            t3 = LayoutToolBar(self)
+            t4 = ObjectToolBar(self)
+            t5 = SliceToolBar(self)
         else:
             t5 = ProjectToolBar(self)
-            t4 = LayoutToolBar(self)
-            t3 = ObjectToolBar(self)
-            t2 = SliceToolBar(self)
-            t1 = HistoryToolBar(self)
+            t4 = HistoryToolBar(self)
+            t3 = LayoutToolBar(self)
+            t2 = ObjectToolBar(self)
+            t1 = SliceToolBar(self)
 
         aui_manager.AddPane(t1, wx.aui.AuiPaneInfo().
                           Name("General Features Toolbar").
