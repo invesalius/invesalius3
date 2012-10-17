@@ -812,7 +812,11 @@ class SingleImagePreview(wx.Panel):
         self.text_image_size.SetValue(value)
 
         ## Text related to slice position
-        value1 = STR_SPC %(dicom.image.spacing[2])
+        if not(dicom.image.spacing):
+            value1 = '' 
+        else: 
+            value1 = STR_SPC %(dicom.image.spacing[2])
+        
         if dicom.image.orientation_label == 'AXIAL':
             value2 = STR_LOCAL %(dicom.image.position[2])
         elif dicom.image.orientation_label == 'CORONAL':
