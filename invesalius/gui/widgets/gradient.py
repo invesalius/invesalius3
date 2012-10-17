@@ -440,20 +440,22 @@ class GradientCtrl(wx.Panel):
             value = self.min_range
 
     def SetMaxValue(self, value):
-        value = int(value)
-        if value > self.max_range:
-            value = int(self.max_range)
-        self.spin_max.SetValue(value)
-        self.gradient_slider.SetMaximun(value)
-        self.maximun = value
+        if value:
+            value = int(value)
+            if value > self.max_range:
+                value = int(self.max_range)
+            self.spin_max.SetValue(value)
+            self.gradient_slider.SetMaximun(value)
+            self.maximun = value
 
     def SetMinValue(self, value):
-        value = int(value)
-        if value < self.min_range:
-            value = int(self.min_range)
-        self.spin_min.SetValue(value)
-        self.gradient_slider.SetMinimun(value)
-        self.minimun = value
+        if value:
+            value = int(value)
+            if value < self.min_range:
+                value = int(self.min_range)
+            self.spin_min.SetValue(value)
+            self.gradient_slider.SetMinimun(value)
+            self.minimun = value
 
     def ChangeMinValue(self, e):
         # Why do I need to change slide min value if it has been changed for
