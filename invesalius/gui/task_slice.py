@@ -474,6 +474,11 @@ class MaskProperties(wx.Panel):
             self.combo_thresh.SetSelection(default_thresh)
             (thresh_min, thresh_max) =\
                 self.threshold_modes[thresh_modes_names[default_thresh]]
+        elif default_thresh in proj.threshold_modes.keys():
+            index = self.threshold_modes_names.index(default_thresh)
+            self.combo_thresh.SetSelection(index)
+            thresh_min, thresh_max = self.threshold_modes[default_thresh]
+
         elif default_thresh in proj.threshold_modes.values():
             preset_name = proj.threshold_modes.get_key(default_thresh)[0]
             index = self.threshold_modes_names.index(preset_name) 
