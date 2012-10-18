@@ -823,6 +823,9 @@ class SingleImagePreview(wx.Panel):
             value2 = STR_LOCAL %(dicom.image.position[1])
         elif dicom.image.orientation_label == 'SAGITTAL':
             value2 = STR_LOCAL %(dicom.image.position[0])
+        else:
+            value2 = ''
+
         value = "%s\n%s" %(value1, value2)
         self.text_image_location.SetValue(value)
 
