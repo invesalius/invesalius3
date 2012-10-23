@@ -1,3 +1,7 @@
+InVesalius
+==========
+
+>>>>>>> b4cac0927567ad46e673abd75cf4d62c483e96cb
 InVesalius generates 3D medical imaging reconstructions based on a sequence of 2D DICOM files acquired with CT or MRI equipments.  InVesalius is internationalized (currently available in English, Portuguese, French and Spanish), multi-platform (GNU Linux, Windows and MacOS) and provides several tools:
   * DICOM-support including: (a) ACR-NEMA version 1 and 2; (b) DICOM version 3.0 (including various encodings of JPEG -lossless and lossy-, RLE)
   * Image manipulation facilities (zoom, pan, rotation, brightness/contrast, etc)
