@@ -9,7 +9,7 @@ InVesalius generates 3D medical imaging reconstructions based on a sequence of 2
   * Edition tools (similar to Paint Brush) based on 2D slices
   * 3D surface creation
   * 3D surface connectivity tools 
-  * 3D surface exportation (including: binary STL, OBJ, VRML, Inventor)
+  * 3D surface exportation (including: binary and ASCII STL, OBJ, VRML, Inventor)
   * High-quality volume rendering projection
   * Pre-defined volume rendering presets
   * Volume rendering crop plane
