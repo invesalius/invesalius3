@@ -14,3 +14,5 @@ InVesalius generates 3D medical imaging reconstructions based on a sequence of 2
   * Pre-defined volume rendering presets
   * Volume rendering crop plane
   * Picture exportation (including: BMP, TIFF, JPG, PostScript, POV-Ray)
+
+Access http://svn.softwarepublico.gov.br/trac/invesalius/ to more informations.
