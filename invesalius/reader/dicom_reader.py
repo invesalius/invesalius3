@@ -124,7 +124,10 @@ class LoadDicom:
                 if encoding_value.startswith("Loaded"):
                     encoding = "ISO_IR 100"
                 else:
-                    encoding = const.DICOM_ENCODING_TO_PYTHON[encoding_value]
+                    try:
+                        encoding = const.DICOM_ENCODING_TO_PYTHON[encoding_value]
+                    except KeyError:
+                        encoding = 'ISO_IR 100'
             else:
                 encoding = "ISO_IR 100"
 
@@ -171,7 +174,7 @@ class LoadDicom:
                     data_dict[group] = {}
 
                 if not(utils.VerifyInvalidPListCharacter(data[1])):
-                    data_dict[group][field] = data[1].decode(encoding)
+                    data_dict[group][field] = data[1].decode(encoding, 'replace')
                 else:
                     data_dict[group][field] = "Invalid Character"
             

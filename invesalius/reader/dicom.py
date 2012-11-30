@@ -1262,7 +1262,7 @@ class Parser():
             
             try:
                 # Returns a unicode decoded in the own dicom encoding
-                return name.decode(encoding)
+                return name.decode(encoding, 'replace')
             except(UnicodeEncodeError):
                 return name
 
@@ -1284,7 +1284,7 @@ class Parser():
         if (data):
             encoding = self.GetEncoding()
             # Returns a unicode decoded in the own dicom encoding
-            return data.decode(encoding)
+            return data.decode(encoding, 'replace')
         return ""
 
 
@@ -1489,7 +1489,7 @@ class Parser():
                 if isinstance(data, unicode):
                     return data
                 encoding = self.GetEncoding()
-                return data.decode(encoding)
+                return data.decode(encoding, 'replace')
         except(KeyError):
             return ""
 
