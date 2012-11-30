@@ -174,7 +174,7 @@ class LoadDicom:
                     data_dict[group] = {}
 
                 if not(utils.VerifyInvalidPListCharacter(data[1])):
-                    data_dict[group][field] = data[1].decode(encoding)
+                    data_dict[group][field] = data[1].decode(encoding, 'replace')
                 else:
                     data_dict[group][field] = "Invalid Character"
             
