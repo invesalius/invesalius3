@@ -1043,10 +1043,11 @@ class Viewer(wx.Panel):
                 writer.SetRenderWindow(renwin)
                 writer.Write()
             else:
+                ren = self.slice_data.renderer
                 #Use tiling to generate a large rendering.
                 image = vtk.vtkRenderLargeImage()
-                image.SetInput(self.ren)
-                image.SetMagnification(2)
+                image.SetInput(ren)
+                image.SetMagnification(1)
 
                 image = image.GetOutput()
 
