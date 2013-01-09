@@ -811,6 +811,10 @@ class Parser():
             data = self.data_image[str(0x008)][str(0x008)]
         except(IndexError):
             return []
+        # TODO: Check if set image type to empty is the right way of handling
+        # the cases where there is not this tag.
+        except KeyError:
+            return []
 
         if (data):
             try:
