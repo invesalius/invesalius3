@@ -1,5 +1,5 @@
-LICEN«A P⁄BLICA GERAL GNU
-Vers„o 2, junho de 1991
+LICEN√áA P√öBLICA GERAL GNU
+Vers√£o 2, junho de 1991
 
  This is an unofficial translation of the GNU General Public License into
  Portuguese. It was not published by the Free Software Foundation, and does not
@@ -7,293 +7,293 @@ Vers„o 2, junho de 1991
  the original English text of the GNU GPL does that. However, we hope that this
  translation will help Portuguese speakers understand the GNU GPL better.
 
- Esta È uma traduÁ„o n„o-oficial da LicenÁa P˙blica Geral GNU ("GPL GNU") para
- PortuguÍs. N„o foi publicada pela Free Software Foundation, e legalmente n„o
- afirma os termos de distribuiÁ„o de software que utilize a GPL GNU -- apenas o
- texto original da GPL GNU, em inglÍs, faz isso. Contudo, esperamos que esta
- traduÁ„o ajude aos que falam portuguÍs a entender melhor a GPL GNU.
+ Esta √© uma tradu√ß√£o n√£o-oficial da Licen√ßa P√∫blica Geral GNU ("GPL GNU") para
+ Portugu√™s. N√£o foi publicada pela Free Software Foundation, e legalmente n√£o
+ afirma os termos de distribui√ß√£o de software que utilize a GPL GNU -- apenas o
+ texto original da GPL GNU, em ingl√™s, faz isso. Contudo, esperamos que esta
+ tradu√ß√£o ajude aos que falam portugu√™s a entender melhor a GPL GNU.
 
-Para sugestıes ou correcÁıes a esta traduÁ„o, contacte:
+Para sugest√µes ou correc√ß√µes a esta tradu√ß√£o, contacte:
 
 miguel.andrade@neoscopio.com
 
 
---- TraduÁ„o do documento original a partir desta linha ---
+--- Tradu√ß√£o do documento original a partir desta linha ---
 
 
-LICEN«A P⁄BLICA GERAL GNU
-Vers„o 2, junho de 1991
+LICEN√áA P√öBLICA GERAL GNU
+Vers√£o 2, junho de 1991
 
 
  Copyright (C) 1989, 1991 Free Software Foundation, Inc. 675 Mass Ave,
  Cambridge, MA 02139, USA
 
- A qualquer pessoa È permitido copiar e distribuir cÛpias deste documento de
- licenÁa, desde que sem qualquer alteraÁ„o.
+ A qualquer pessoa √© permitido copiar e distribuir c√≥pias deste documento de
+ licen√ßa, desde que sem qualquer altera√ß√£o.
 
-IntroduÁ„o
+Introdu√ß√£o
 
- As licenÁas de software s„o normalmente desenvolvidas para restringir a
- liberdade de compartilh·-lo e modifica-lo. Pelo contr·rio, a LicenÁa P˙blica
+ As licen√ßas de software s√£o normalmente desenvolvidas para restringir a
+ liberdade de compartilh√°-lo e modifica-lo. Pelo contr√°rio, a Licen√ßa P√∫blica
  Geral GNU pretende garantir a sua liberdade de compartilhar e modificar o
- software livre -- garantindo que o software ser· livre para os seus
- utilizadores. Esta LicenÁa P˙blica Geral aplica-se ‡ maioria do software da
+ software livre -- garantindo que o software ser√° livre para os seus
+ utilizadores. Esta Licen√ßa P√∫blica Geral aplica-se √† maioria do software da
  Free Software Foundation e a qualquer outro programa ao qual o seu autor decida
- aplic·-la. (Algum software da FSF È cobertos pela LicenÁa P˙blica Geral de
- Bibliotecas.) TambÈm poder· aplic·-la aos seus programas.
+ aplic√°-la. (Algum software da FSF √© cobertos pela Licen√ßa P√∫blica Geral de
+ Bibliotecas.) Tamb√©m poder√° aplic√°-la aos seus programas.
 
- Quando nos referimos a software livre, estamo-nos a referir ‡ liberdade e n„o
- ao preÁo. A LicenÁa P˙blica Geral (GPL - General Public Licence - em InglÍs.)
- foi desenvolvida para garantir a sua liberdade de distribuir cÛpias de software
- livre (e cobrar por isso, se quiser); receber o cÛdigo-fonte ou ter acesso a
+ Quando nos referimos a software livre, estamo-nos a referir √† liberdade e n√£o
+ ao pre√ßo. A Licen√ßa P√∫blica Geral (GPL - General Public Licence - em Ingl√™s.)
+ foi desenvolvida para garantir a sua liberdade de distribuir c√≥pias de software
+ livre (e cobrar por isso, se quiser); receber o c√≥digo-fonte ou ter acesso a
  ele, se quiser; poder modificar o software ou utilizar partes dele em novos
- programas livres; e que saiba que est· no seu direito de o fazer.
+ programas livres; e que saiba que est√° no seu direito de o fazer.
 
- Para proteger seus direitos, precisamos fazer restriÁıes que impeÁam a qualquer
- um negar estes direitos ou solicitar que vocÍ abdique deles. Estas restriÁıes
- traduzem-se em certas responsabilidades para si, caso venha a distribuir cÛpias
- do software, ou modific·-lo.
+ Para proteger seus direitos, precisamos fazer restri√ß√µes que impe√ßam a qualquer
+ um negar estes direitos ou solicitar que voc√™ abdique deles. Estas restri√ß√µes
+ traduzem-se em certas responsabilidades para si, caso venha a distribuir c√≥pias
+ do software, ou modific√°-lo.
 
- Por exemplo, se vocÍ distribuir cÛpias de um programa sobre este tipo de
+ Por exemplo, se voc√™ distribuir c√≥pias de um programa sobre este tipo de
  licenciamento, gratuitamente ou por alguma quantia, tem que fornecer igualmente
  todos os direitos que possui sobre ele. Tem igualmente que garantir que os
- destinat·rios recebam ou possam obter o cÛdigo-fonte. AlÈm disto, tem que
+ destinat√°rios recebam ou possam obter o c√≥digo-fonte. Al√©m disto, tem que
  fornecer-lhes estes termos para que possam conhecer seus direitos.
 
- NÛs protegemos seus direitos por duas formas que se completam: (1) com
- copyright do software e (2) com a oferta desta licenÁa, que lhe d· permiss„o
+ N√≥s protegemos seus direitos por duas formas que se completam: (1) com
+ copyright do software e (2) com a oferta desta licen√ßa, que lhe d√° permiss√£o
  legal para copiar, distribuir e/ou modificar o software.
 
- AlÈm disso, tanto para a protecÁ„o do autor quanto a nossa, gostarÌamos de
- certificar-nos de que todos entendam que n„o h· qualquer garantia sobre o
- software livre. Se o software È modificado por alguÈm e redistribuÌdo, queremos
- que seus destinat·rios saibam que o que eles obtiveram n„o È original, de forma
- que qualquer problema introduzido por terceiros n„o interfira na reputaÁ„o do
+ Al√©m disso, tanto para a protec√ß√£o do autor quanto a nossa, gostar√≠amos de
+ certificar-nos de que todos entendam que n√£o h√° qualquer garantia sobre o
+ software livre. Se o software √© modificado por algu√©m e redistribu√≠do, queremos
+ que seus destinat√°rios saibam que o que eles obtiveram n√£o √© original, de forma
+ que qualquer problema introduzido por terceiros n√£o interfira na reputa√ß√£o do
  autor original.
 
- Finalmente, qualquer programa È ameaÁado constantemente por patentes de
+ Finalmente, qualquer programa √© amea√ßado constantemente por patentes de
  software. Queremos evitar o perigo de que distribuidores de software livre
  obtenham patentes individuais sobre o software, o que teria o efeito de tornar
- o software propriet·rio. Para prevenir isso, deixamos claro que qualquer
+ o software propriet√°rio. Para prevenir isso, deixamos claro que qualquer
  patente tem que ser licenciada para uso livre e gratuito por qualquer pessoa,
- ou ent„o que nem necessite ser licenciada.
+ ou ent√£o que nem necessite ser licenciada.
 
- Os termos e condiÁıes precisas para cÛpia, distribuiÁ„o e modificaÁ„o
+ Os termos e condi√ß√µes precisas para c√≥pia, distribui√ß√£o e modifica√ß√£o
  encontram-se abaixo:
 
-LICEN«A P⁄BLICA GERAL GNU TERMOS E CONDI«’ES PARA C”PIA, DISTRIBUI«√O E
-MODIFICA«√O
+LICEN√áA P√öBLICA GERAL GNU TERMOS E CONDI√á√ïES PARA C√ìPIA, DISTRIBUI√á√ÉO E
+MODIFICA√á√ÉO
 
- 0. Esta licenÁa aplica-se a qualquer programa ou outro trabalho que contenha um
+ 0. Esta licen√ßa aplica-se a qualquer programa ou outro trabalho que contenha um
  aviso colocado pelo detentor dos direitos autorais informando que aquele pode
- ser distribuÌdo sob as condiÁıes desta LicenÁa P˙blica Geral. O "Programa"
+ ser distribu√≠do sob as condi√ß√µes desta Licen√ßa P√∫blica Geral. O "Programa"
  abaixo refere-se a qualquer programa ou trabalho e "trabalho baseado no
  Programa" significa tanto o Programa em si, como quaisquer trabalhos derivados,
  de acordo com a lei de direitos de autor: isto quer dizer um trabalho que
  contenha o Programa ou parte dele, tanto na forma original ou modificado, e/ou
- traduÁ„o para outros idiomas. ***(Doravante o termo "modificaÁ„o" ou sinÛnimos
- ser„o usados livremente.) *** Cada licenciado È mencionado como "vocÍ".
+ tradu√ß√£o para outros idiomas. ***(Doravante o termo "modifica√ß√£o" ou sin√≥nimos
+ ser√£o usados livremente.) *** Cada licenciado √© mencionado como "voc√™".
 
- Actividades outras que a cÛpia, a distribuiÁ„o e modificaÁ„o n„o est„o cobertas
- por esta LicenÁa; elas est„o fora do seu ‚mbito. O acto de executar o Programa
- n„o È restringido e o resultado do Programa È coberto pela licenÁa apenas se o
- seu conte˙do contenha trabalhos baseados no Programa (independentemente de
- terem sido gerados pela execuÁ„o do Programa). Este ˙ltimo ponto depende das
- funcionalidades especÌficas de cada programa.
+ Actividades outras que a c√≥pia, a distribui√ß√£o e modifica√ß√£o n√£o est√£o cobertas
+ por esta Licen√ßa; elas est√£o fora do seu √¢mbito. O acto de executar o Programa
+ n√£o √© restringido e o resultado do Programa √© coberto pela licen√ßa apenas se o
+ seu conte√∫do contenha trabalhos baseados no Programa (independentemente de
+ terem sido gerados pela execu√ß√£o do Programa). Este √∫ltimo ponto depende das
+ funcionalidades espec√≠ficas de cada programa.
 
- 1. VocÍ pode copiar e distribuir cÛpias fiÈis do cÛdigo-fonte do Programa da
- mesma forma que vocÍ o recebeu, usando qualquer meio, deste que inclua em cada
- cÛpia um aviso de direitos de autor e uma declaraÁ„o de inexistÍncia de
- garantias; mantenha intactos todos os avisos que se referem a esta LicenÁa e ‡
- ausÍncia total de garantias; e forneÁa aos destinat·rios do Programa uma cÛpia
- desta LicenÁa, em conjunto com o Programa.
+ 1. Voc√™ pode copiar e distribuir c√≥pias fi√©is do c√≥digo-fonte do Programa da
+ mesma forma que voc√™ o recebeu, usando qualquer meio, deste que inclua em cada
+ c√≥pia um aviso de direitos de autor e uma declara√ß√£o de inexist√™ncia de
+ garantias; mantenha intactos todos os avisos que se referem a esta Licen√ßa e √†
+ aus√™ncia total de garantias; e forne√ßa aos destinat√°rios do Programa uma c√≥pia
+ desta Licen√ßa, em conjunto com o Programa.
 
- VocÍ pode cobrar pelo acto fÌsico de transferir uma cÛpia e pode,
+ Voc√™ pode cobrar pelo acto f√≠sico de transferir uma c√≥pia e pode,
  opcionalmente, oferecer garantias em troca de pagamento.
 
- 2. VocÍ pode modificar sua cÛpia ou cÛpias do Programa, ou qualquer parte dele,
- gerando assim um trabalho derivado, copiar e distribuir essas modificaÁıes ou
- trabalhos sob os termos da secÁ„o 1 acima, desde que se enquadre nas seguintes
- condiÁıes:
+ 2. Voc√™ pode modificar sua c√≥pia ou c√≥pias do Programa, ou qualquer parte dele,
+ gerando assim um trabalho derivado, copiar e distribuir essas modifica√ß√µes ou
+ trabalhos sob os termos da sec√ß√£o 1 acima, desde que se enquadre nas seguintes
+ condi√ß√µes:
 
- a) Os arquivos modificados devem conter avisos proeminentes afirmando que vocÍ
- alterou os arquivos, incluindo a data de qualquer alteraÁ„o.
+ a) Os arquivos modificados devem conter avisos proeminentes afirmando que voc√™
+ alterou os arquivos, incluindo a data de qualquer altera√ß√£o.
 
- b) Deve ser licenciado, sob os termos desta LicenÁa, integralmente e sem custo
+ b) Deve ser licenciado, sob os termos desta Licen√ßa, integralmente e sem custo
  algum para terceiros, qualquer trabalho seu que contenha ou seja derivado do
  Programa ou de parte dele.
 
- c) Se qualquer programa modificado, quando executado, lÍ normalmente comandos
+ c) Se qualquer programa modificado, quando executado, l√™ normalmente comandos
  interactivamente, tem que fazer com que, quando iniciado o uso interactivo,
- seja impresso ou mostrado um an˙ncio de que n„o h· qualquer garantia (ou ent„o
- que vocÍ fornece a garantia) e que os utilizadores podem redistribuir o
- programa sob estas condiÁıes, ainda informando os utilizadores como consultar
- uma cÛpia desta LicenÁa. (ExcepÁ„o: se o Programa em si È interactivo mas
- normalmente n„o imprime estes tipos de an˙ncios, ent„o o seu trabalho derivado
- n„o precisa imprimir um an˙ncio.)
+ seja impresso ou mostrado um an√∫ncio de que n√£o h√° qualquer garantia (ou ent√£o
+ que voc√™ fornece a garantia) e que os utilizadores podem redistribuir o
+ programa sob estas condi√ß√µes, ainda informando os utilizadores como consultar
+ uma c√≥pia desta Licen√ßa. (Excep√ß√£o: se o Programa em si √© interactivo mas
+ normalmente n√£o imprime estes tipos de an√∫ncios, ent√£o o seu trabalho derivado
+ n√£o precisa imprimir um an√∫ncio.)
 
- Estas exigÍncias aplicam-se ao trabalho derivado como um todo. Se secÁıes
- identific·veis de tal trabalho n„o s„o derivadas do Programa, e podem ser
- razoavelmente consideradas trabalhos independentes e separados por si sÛ, ent„o
- esta LicenÁa, e seus termos, n„o se aplicam a estas secÁıes caso as distribua
- como um trabalho separado. Mas se distribuir as mesmas secÁıes como parte de um
- todo que constitui trabalho derivado, a distribuiÁ„o como um todo tem que
- enquadrar-se nos termos desta LicenÁa, cujos direitos para outros licenciados
- se estendem ao todo, portanto tambÈm para toda e qualquer parte do programa,
+ Estas exig√™ncias aplicam-se ao trabalho derivado como um todo. Se sec√ß√µes
+ identific√°veis de tal trabalho n√£o s√£o derivadas do Programa, e podem ser
+ razoavelmente consideradas trabalhos independentes e separados por si s√≥, ent√£o
+ esta Licen√ßa, e seus termos, n√£o se aplicam a estas sec√ß√µes caso as distribua
+ como um trabalho separado. Mas se distribuir as mesmas sec√ß√µes como parte de um
+ todo que constitui trabalho derivado, a distribui√ß√£o como um todo tem que
+ enquadrar-se nos termos desta Licen√ßa, cujos direitos para outros licenciados
+ se estendem ao todo, portanto tamb√©m para toda e qualquer parte do programa,
  independente de quem a escreveu.
 
- Desta forma, esta secÁ„o n„o tem a intenÁ„o de reclamar direitos ou contestar
- seus direitos sobre o trabalho escrito completamente por si; ao invÈs disso, a
- intenÁ„o È a de exercitar o direito de controlar a distribuiÁ„o de trabalhos,
+ Desta forma, esta sec√ß√£o n√£o tem a inten√ß√£o de reclamar direitos ou contestar
+ seus direitos sobre o trabalho escrito completamente por si; ao inv√©s disso, a
+ inten√ß√£o √© a de exercitar o direito de controlar a distribui√ß√£o de trabalhos,
  derivados ou colectivos, baseados no Programa.
 
- Adicionalmente, a mera adiÁ„o ao Programa (ou a um trabalho derivado deste) de
- um outro trabalho num volume de armazenamento ou meio de distribuiÁ„o n„o faz
- esse outro trabalho seja incluÌdo no ‚mbito desta LicenÁa.
+ Adicionalmente, a mera adi√ß√£o ao Programa (ou a um trabalho derivado deste) de
+ um outro trabalho num volume de armazenamento ou meio de distribui√ß√£o n√£o faz
+ esse outro trabalho seja inclu√≠do no √¢mbito desta Licen√ßa.
 
- 3. VocÍ pode copiar e distribuir o Programa (ou trabalho derivado, conforme
- descrito na SecÁ„o 2) em cÛdigo-objecto ou em forma execut·vel sob os termos
- das SecÁıes 1 e 2 acima, desde que cumpra uma das seguintes alienas:
+ 3. Voc√™ pode copiar e distribuir o Programa (ou trabalho derivado, conforme
+ descrito na Sec√ß√£o 2) em c√≥digo-objecto ou em forma execut√°vel sob os termos
+ das Sec√ß√µes 1 e 2 acima, desde que cumpra uma das seguintes alienas:
 
- a) O faÁa acompanhar com o cÛdigo-fonte completo e em forma acessÌvel por
- m·quinas, cÛdigo esse que tem que ser distribuÌdo sob os termos das SecÁıes 1 e
- 2 acima e em meio normalmente utilizado para o interc‚mbio de software; ou,
+ a) O fa√ßa acompanhar com o c√≥digo-fonte completo e em forma acess√≠vel por
+ m√°quinas, c√≥digo esse que tem que ser distribu√≠do sob os termos das Sec√ß√µes 1 e
+ 2 acima e em meio normalmente utilizado para o interc√¢mbio de software; ou,
 
- b) O acompanhe com uma oferta escrita, v·lida por pelo menos trÍs anos, de
- fornecer a qualquer um, com um custo n„o superior ao custo de distribuiÁ„o
- fÌsica do material, uma cÛpia do cÛdigo-fonte completo e em forma acessÌvel por
- m·quinas,  cÛdigo esse que tem que ser distribuÌdo sob os termos das SecÁıes 1
- e 2 acima e em meio normalmente utilizado para o interc‚mbio de software; ou,
+ b) O acompanhe com uma oferta escrita, v√°lida por pelo menos tr√™s anos, de
+ fornecer a qualquer um, com um custo n√£o superior ao custo de distribui√ß√£o
+ f√≠sica do material, uma c√≥pia do c√≥digo-fonte completo e em forma acess√≠vel por
+ m√°quinas,  c√≥digo esse que tem que ser distribu√≠do sob os termos das Sec√ß√µes 1
+ e 2 acima e em meio normalmente utilizado para o interc√¢mbio de software; ou,
 
- c) O acompanhe com a informaÁ„o que vocÍ recebeu em relaÁ„o ‡ oferta de
- distribuiÁ„o do cÛdigo-fonte correspondente. (Esta alternativa È permitida
- somente em distribuiÁ„o n„o comerciais, e apenas se vocÍ recebeu o programa em
- forma de cÛdigo-objecto ou execut·vel, com uma oferta de acordo com a SubsecÁ„o
+ c) O acompanhe com a informa√ß√£o que voc√™ recebeu em rela√ß√£o √† oferta de
+ distribui√ß√£o do c√≥digo-fonte correspondente. (Esta alternativa √© permitida
+ somente em distribui√ß√£o n√£o comerciais, e apenas se voc√™ recebeu o programa em
+ forma de c√≥digo-objecto ou execut√°vel, com uma oferta de acordo com a Subsec√ß√£o
  b) acima.)
 
- O cÛdigo-fonte de um trabalho corresponde ‡ forma de trabalho preferida para se
- fazer modificaÁıes. Para um trabalho em forma execut·vel, o cÛdigo-fonte
- completo significa todo o cÛdigo-fonte de todos os mÛdulos que ele contÈm, mais
- quaisquer arquivos de definiÁ„o de "interface", mais os "scripts" utilizados
- para se controlar a compilaÁ„o e a instalaÁ„o do execut·vel. Contudo, como
- excepÁ„o especial, o cÛdigo-fonte distribuÌdo n„o precisa incluir qualquer
- componente normalmente distribuÌdo (tanto em forma original quanto bin·ria) com
+ O c√≥digo-fonte de um trabalho corresponde √† forma de trabalho preferida para se
+ fazer modifica√ß√µes. Para um trabalho em forma execut√°vel, o c√≥digo-fonte
+ completo significa todo o c√≥digo-fonte de todos os m√≥dulos que ele cont√©m, mais
+ quaisquer arquivos de defini√ß√£o de "interface", mais os "scripts" utilizados
+ para se controlar a compila√ß√£o e a instala√ß√£o do execut√°vel. Contudo, como
+ excep√ß√£o especial, o c√≥digo-fonte distribu√≠do n√£o precisa incluir qualquer
+ componente normalmente distribu√≠do (tanto em forma original quanto bin√°ria) com
  os maiores componentes (o compilador, o "kernel" etc.) do sistema operativo sob
- o qual o execut·vel funciona, a menos que o componente em si acompanhe o
- execut·vel.
+ o qual o execut√°vel funciona, a menos que o componente em si acompanhe o
+ execut√°vel.
 
- Se a distribuiÁ„o do execut·vel ou cÛdigo-objecto È feita atravÈs da oferta de
- acesso a cÛpias em algum lugar, ent„o oferecer o acesso equivalente a cÛpia, no
- mesmo lugar, do cÛdigo-fonte, equivale ‡ distribuiÁ„o do cÛdigo-fonte, mesmo
- que terceiros n„o sejam compelidos a copiar o cÛdigo-fonte em conjunto com o
- cÛdigo-objecto.
+ Se a distribui√ß√£o do execut√°vel ou c√≥digo-objecto √© feita atrav√©s da oferta de
+ acesso a c√≥pias em algum lugar, ent√£o oferecer o acesso equivalente a c√≥pia, no
+ mesmo lugar, do c√≥digo-fonte, equivale √† distribui√ß√£o do c√≥digo-fonte, mesmo
+ que terceiros n√£o sejam compelidos a copiar o c√≥digo-fonte em conjunto com o
+ c√≥digo-objecto.
 
- 4. VocÍ n„o pode copiar, modificar, sublicenciar ou distribuir o Programa,
- excepto de acordo com as condiÁıes expressas nesta LicenÁa. Qualquer outra
- tentativa de cÛpia, modificaÁ„o, sublicenciamento ou distribuiÁ„o do Programa
- n„o È valida, e cancelar· automaticamente os direitos que lhe foram fornecidos
- por esta LicenÁa. No entanto, terceiros que receberam de si cÛpias ou direitos,
- fornecidos sob os termos desta LicenÁa, n„o ter„o a sua licenÁa terminada,
- desde que permaneÁam em total concord‚ncia com ela.
+ 4. Voc√™ n√£o pode copiar, modificar, sublicenciar ou distribuir o Programa,
+ excepto de acordo com as condi√ß√µes expressas nesta Licen√ßa. Qualquer outra
+ tentativa de c√≥pia, modifica√ß√£o, sublicenciamento ou distribui√ß√£o do Programa
+ n√£o √© valida, e cancelar√° automaticamente os direitos que lhe foram fornecidos
+ por esta Licen√ßa. No entanto, terceiros que receberam de si c√≥pias ou direitos,
+ fornecidos sob os termos desta Licen√ßa, n√£o ter√£o a sua licen√ßa terminada,
+ desde que permane√ßam em total concord√¢ncia com ela.
 
- 5. VocÍ n„o È obrigado a aceitar esta LicenÁa j· que n„o a assinou. No entanto,
- nada mais lhe dar· permiss„o para modificar ou distribuir o Programa ou
- trabalhos derivados deste. Estas acÁıes s„o proibidas por lei, caso vocÍ n„o
- aceite esta LicenÁa. Desta forma, ao modificar ou distribuir o Programa (ou
- qualquer trabalho derivado do Programa), vocÍ estar· a indicar a sua total
- concord‚ncia com os termos desta LicenÁa, nomeadamente os termos e condiÁıes
+ 5. Voc√™ n√£o √© obrigado a aceitar esta Licen√ßa j√° que n√£o a assinou. No entanto,
+ nada mais lhe dar√° permiss√£o para modificar ou distribuir o Programa ou
+ trabalhos derivados deste. Estas ac√ß√µes s√£o proibidas por lei, caso voc√™ n√£o
+ aceite esta Licen√ßa. Desta forma, ao modificar ou distribuir o Programa (ou
+ qualquer trabalho derivado do Programa), voc√™ estar√° a indicar a sua total
+ concord√¢ncia com os termos desta Licen√ßa, nomeadamente os termos e condi√ß√µes
  para copiar, distribuir ou modificar o Programa, ou trabalhos baseados nele.
 
  6. Cada vez que redistribuir o Programa (ou qualquer trabalho derivado), os
- destinat·rios adquirir„o automaticamente do autor original uma licenÁa para
+ destinat√°rios adquirir√£o automaticamente do autor original uma licen√ßa para
  copiar, distribuir ou modificar o Programa, sujeitos a estes termos e
- condiÁıes. VocÍ n„o poder· impor aos destinat·rios qualquer outra restriÁ„o ao
- exercÌcio dos direitos ent„o adquiridos. VocÍ n„o È respons·vel em garantir a
- concord‚ncia de terceiros a esta LicenÁa.
+ condi√ß√µes. Voc√™ n√£o poder√° impor aos destinat√°rios qualquer outra restri√ß√£o ao
+ exerc√≠cio dos direitos ent√£o adquiridos. Voc√™ n√£o √© respons√°vel em garantir a
+ concord√¢ncia de terceiros a esta Licen√ßa.
 
- 7. Se, em consequÍncia de decisıes judiciais ou alegaÁıes de violaÁ„o de
- patentes ou quaisquer outras razıes (n„o limitadas a assuntos relacionados a
- patentes), lhe forem impostas condiÁıes (por ordem judicial, acordos ou outras
- formas) e que contradigam as condiÁıes desta LicenÁa, elas n„o o livram das
- condiÁıes desta LicenÁa. Se n„o puder distribuir de forma a satisfazer
- simultaneamente suas obrigaÁıes para com esta LicenÁa e para com as outras
- obrigaÁıes pertinentes, ent„o como consequÍncia vocÍ n„o poder· distribuir o
- Programa. Por exemplo, se uma licenÁa de patente n„o permitir a redistribuiÁ„o,
- sem obrigaÁ„o ao pagamento de "royalties", por todos aqueles que receberem
- cÛpias directa ou indirectamente de si, ent„o a ˙nica forma de vocÍ satisfazer
- a licenÁa de patente e a esta LicenÁa seria a de desistir completamente de
+ 7. Se, em consequ√™ncia de decis√µes judiciais ou alega√ß√µes de viola√ß√£o de
+ patentes ou quaisquer outras raz√µes (n√£o limitadas a assuntos relacionados a
+ patentes), lhe forem impostas condi√ß√µes (por ordem judicial, acordos ou outras
+ formas) e que contradigam as condi√ß√µes desta Licen√ßa, elas n√£o o livram das
+ condi√ß√µes desta Licen√ßa. Se n√£o puder distribuir de forma a satisfazer
+ simultaneamente suas obriga√ß√µes para com esta Licen√ßa e para com as outras
+ obriga√ß√µes pertinentes, ent√£o como consequ√™ncia voc√™ n√£o poder√° distribuir o
+ Programa. Por exemplo, se uma licen√ßa de patente n√£o permitir a redistribui√ß√£o,
+ sem obriga√ß√£o ao pagamento de "royalties", por todos aqueles que receberem
+ c√≥pias directa ou indirectamente de si, ent√£o a √∫nica forma de voc√™ satisfazer
+ a licen√ßa de patente e a esta Licen√ßa seria a de desistir completamente de
  distribuir o Programa.
 
- Se qualquer parte desta secÁ„o for considerada inv·lida ou n„o aplic·vel em
- qualquer circunst‚ncia particular, o restante da secÁ„o aplica-se, e a secÁ„o
- como um todo aplicar-se-· em outras circunst‚ncias.
+ Se qualquer parte desta sec√ß√£o for considerada inv√°lida ou n√£o aplic√°vel em
+ qualquer circunst√¢ncia particular, o restante da sec√ß√£o aplica-se, e a sec√ß√£o
+ como um todo aplicar-se-√° em outras circunst√¢ncias.
 
- O propÛsito desta secÁ„o n„o È o de induzi-lo a infringir quaisquer patentes ou
- reivindicaÁ„o de direitos de propriedade de outros, ou a contestar a validade
- de quaisquer dessas reivindicaÁıes; esta secÁ„o tem como ˙nico propÛsito
- proteger a integridade dos sistemas de distribuiÁ„o de software livre, que È
- implementado pela pr·tica de licenÁas p˙blicas. V·rias pessoas tÍm contribuÌdo
- generosamente e em grande escala para software distribuÌdo usando este sistema,
- na certeza de que sua aplicaÁ„o È feita de forma consistente; fica a critÈrio
- do autor/doador decidir se ele ou ela est· disposto(a) a distribuir software
- utilizando outro sistema, e um outro detentor de uma licenÁa n„o pode impor
+ O prop√≥sito desta sec√ß√£o n√£o √© o de induzi-lo a infringir quaisquer patentes ou
+ reivindica√ß√£o de direitos de propriedade de outros, ou a contestar a validade
+ de quaisquer dessas reivindica√ß√µes; esta sec√ß√£o tem como √∫nico prop√≥sito
+ proteger a integridade dos sistemas de distribui√ß√£o de software livre, que √©
+ implementado pela pr√°tica de licen√ßas p√∫blicas. V√°rias pessoas t√™m contribu√≠do
+ generosamente e em grande escala para software distribu√≠do usando este sistema,
+ na certeza de que sua aplica√ß√£o √© feita de forma consistente; fica a crit√©rio
+ do autor/doador decidir se ele ou ela est√° disposto(a) a distribuir software
+ utilizando outro sistema, e um outro detentor de uma licen√ßa n√£o pode impor
  esta ou qualquer outra escolha.
 
- Esta secÁ„o destina-se a tornar bastante claro o que se acredita ser
- consequÍncia do restante desta LicenÁa.
+ Esta sec√ß√£o destina-se a tornar bastante claro o que se acredita ser
+ consequ√™ncia do restante desta Licen√ßa.
 
- 8. Se a distribuiÁ„o e/ou uso do Programa s„o restringidos em certos paÌses por
+ 8. Se a distribui√ß√£o e/ou uso do Programa s√£o restringidos em certos pa√≠ses por
  patentes ou direitos de autor, o detentor dos direitos de autor original, que
- colocou o Programa sob esta LicenÁa, pode incluir uma limitaÁ„o geogr·fica de
- distribuiÁ„o, excluindo aqueles paÌses, de forma a apenas permitir a
- distribuiÁ„o nos paÌses n„o excluÌdos. Nestes casos, esta LicenÁa incorpora a
- limitaÁ„o como se a mesma constasse escrita nesta LicenÁa.
+ colocou o Programa sob esta Licen√ßa, pode incluir uma limita√ß√£o geogr√°fica de
+ distribui√ß√£o, excluindo aqueles pa√≠ses, de forma a apenas permitir a
+ distribui√ß√£o nos pa√≠ses n√£o exclu√≠dos. Nestes casos, esta Licen√ßa incorpora a
+ limita√ß√£o como se a mesma constasse escrita nesta Licen√ßa.
 
- 9. A Free Software Foundation pode publicar versıes revistas e/ou novas da
- LicenÁa P˙blica Geral de tempos em tempos. Estas novas versıes ser„o similares
- em espÌrito ‡ vers„o actual, mas podem diferir em detalhes que resolvam novos
- problemas ou situaÁıes.
+ 9. A Free Software Foundation pode publicar vers√µes revistas e/ou novas da
+ Licen√ßa P√∫blica Geral de tempos em tempos. Estas novas vers√µes ser√£o similares
+ em esp√≠rito √† vers√£o actual, mas podem diferir em detalhes que resolvam novos
+ problemas ou situa√ß√µes.
 
- A cada vers„o È dada um n˙mero distinto. Se o Programa especifica um n˙mero de
- vers„o especÌfico desta LicenÁa que se aplica a ele e a "qualquer nova vers„o",
- vocÍ tem a opÁ„o de aceitar os termos e condiÁıes daquela vers„o ou de qualquer
- outra vers„o posterior publicada pela Free Software Foundation. Se o programa
- n„o especificar um n˙mero de vers„o desta LicenÁa, poder· escolher qualquer
- vers„o publicada pela Free Software Foundation.
+ A cada vers√£o √© dada um n√∫mero distinto. Se o Programa especifica um n√∫mero de
+ vers√£o espec√≠fico desta Licen√ßa que se aplica a ele e a "qualquer nova vers√£o",
+ voc√™ tem a op√ß√£o de aceitar os termos e condi√ß√µes daquela vers√£o ou de qualquer
+ outra vers√£o posterior publicada pela Free Software Foundation. Se o programa
+ n√£o especificar um n√∫mero de vers√£o desta Licen√ßa, poder√° escolher qualquer
+ vers√£o publicada pela Free Software Foundation.
 
- 10. Se vocÍ pretende incorporar partes do Programa em outros programas livres
- cujas condiÁıes de distribuiÁ„o sejam diferentes, escreva ao autor e solicite
- permiss„o para tal. Para o software que a Free Software Foundation detÈm
- direitos de autor, escreva ‡ Free Software Foundation; ‡s vezes nÛs permitimos
- excepÁıes para estes casos. A nossa decis„o ser· guiada por dois objectivos: o
- de preservar a condiÁ„o de liberdade de todas os trabalhos derivados do nosso
- software livre, e o de promover a partilha e reutilizaÁ„o de software de um
+ 10. Se voc√™ pretende incorporar partes do Programa em outros programas livres
+ cujas condi√ß√µes de distribui√ß√£o sejam diferentes, escreva ao autor e solicite
+ permiss√£o para tal. Para o software que a Free Software Foundation det√©m
+ direitos de autor, escreva √† Free Software Foundation; √†s vezes n√≥s permitimos
+ excep√ß√µes para estes casos. A nossa decis√£o ser√° guiada por dois objectivos: o
+ de preservar a condi√ß√£o de liberdade de todas os trabalhos derivados do nosso
+ software livre, e o de promover a partilha e reutiliza√ß√£o de software de um
  modo geral.
 
 
-AUS NCIA DE GARANTIAS
+AUS√äNCIA DE GARANTIAS
 
- 11. UMA VEZ QUE O PROGRAMA … LICENCIADO SEM ”NUS, N√O H¡ QUALQUER GARANTIA PARA
- O PROGRAMA, NA EXTENS√O PERMITIDA PELAS LEIS APLIC¡VEIS. EXCEPTO QUANDO
+ 11. UMA VEZ QUE O PROGRAMA √â LICENCIADO SEM √ìNUS, N√ÉO H√Å QUALQUER GARANTIA PARA
+ O PROGRAMA, NA EXTENS√ÉO PERMITIDA PELAS LEIS APLIC√ÅVEIS. EXCEPTO QUANDO
  EXPRESSO DE FORMA ESCRITA, OS DETENTORES DOS DIREITOS AUTORAIS E/OU TERCEIROS
  DISPONIBILIZAM O PROGRAMA "COMO ESTA", SEM QUALQUER TIPO DE GARANTIAS,
- EXPRESSAS OU IMPLÕCITAS, INCLUINDO, MAS N√O LIMITADO A, ¿S GARANTIAS IMPLÕCITAS
- DE COMERCIALIZA«√O E ¿S DE ADEQUA«√O A QUALQUER PROP”SITO. O RISCO COM A
- QUALIDADE E DESEMPENHO DO PROGRAMA … TOTALMENTE SEU. CASO O PROGRAMA SE REVELE
- DEFEITUOSO, VOC  ASSUME OS CUSTOS DE TODAS AS MANUTEN«’ES, REPAROS E CORREC«’ES
- QUE JULGUE NECESS¡RIAS.
+ EXPRESSAS OU IMPL√çCITAS, INCLUINDO, MAS N√ÉO LIMITADO A, √ÄS GARANTIAS IMPL√çCITAS
+ DE COMERCIALIZA√á√ÉO E √ÄS DE ADEQUA√á√ÉO A QUALQUER PROP√ìSITO. O RISCO COM A
+ QUALIDADE E DESEMPENHO DO PROGRAMA √â TOTALMENTE SEU. CASO O PROGRAMA SE REVELE
+ DEFEITUOSO, VOC√ä ASSUME OS CUSTOS DE TODAS AS MANUTEN√á√ïES, REPAROS E CORREC√á√ïES
+ QUE JULGUE NECESS√ÅRIAS.
 
- 12. EM NENHUMA CIRCUNST¬NCIA, A MENOS QUE EXIGIDO PELAS LEIS APLIC¡VEIS OU
+ 12. EM NENHUMA CIRCUNST√ÇNCIA, A MENOS QUE EXIGIDO PELAS LEIS APLIC√ÅVEIS OU
  ACORDO ESCRITO, OS DETENTORES DOS DIREITOS DE AUTOR, OU QUALQUER OUTRA PARTE
  QUE POSSA MODIFICAR E/OU REDISTRIBUIR O PROGRAMA CONFORME PERMITIDO ACIMA,
- SER√O RESPONSABILIZADOS POR SI OU POR SEU INTERM…DIO, POR DANOS, INCLUINDO
+ SER√ÉO RESPONSABILIZADOS POR SI OU POR SEU INTERM√âDIO, POR DANOS, INCLUINDO
  QUALQUER DANO EM GERAL, ESPECIAL, ACIDENTAL OU CONSEQUENTE, RESULTANTES DO USO
- OU INCAPACIDADE DE USO DO PROGRAMA (INCLUINDO, MAS N√O LIMITADO A, A PERDA DE
+ OU INCAPACIDADE DE USO DO PROGRAMA (INCLUINDO, MAS N√ÉO LIMITADO A, A PERDA DE
  DADOS OU DADOS TORNADOS INCORRECTOS, OU PERDAS SOFRIDAS POR SI OU POR OUTRAS
  PARTES, OU FALHAS DO PROGRAMA AO OPERAR COM QUALQUER OUTRO PROGRAMA), MESMO QUE
  TAIS DETENTORES OU PARTES TENHAM SIDO AVISADOS DA POSSIBILIDADE DE TAIS DANOS.
 
-FIM DOS TERMOS E CONDI«’ES
+FIM DOS TERMOS E CONDI√á√ïES
 
 ---------------------
 
@@ -301,61 +301,61 @@ FIM DOS TERMOS E CONDI«’ES
 
 Como Aplicar Estes Termos aos Seus Novos Programas
 
- Se vocÍ desenvolver um novo programa, e quer que ele seja utilizado amplamente
- pelo p˙blico, a melhor forma de alcanÁar este objectivo È torn·-lo software
+ Se voc√™ desenvolver um novo programa, e quer que ele seja utilizado amplamente
+ pelo p√∫blico, a melhor forma de alcan√ßar este objectivo √© torn√°-lo software
  livre, software que qualquer um pode redistribuir e alterar, sob estes termos.
 
- Para tal, inclua os seguintes avisos no programa. … mais seguro inclui-los logo
- no inÌcio de cada arquivo-fonte para reforÁar mais efectivamente a inexistÍncia
+ Para tal, inclua os seguintes avisos no programa. √â mais seguro inclui-los logo
+ no in√≠cio de cada arquivo-fonte para refor√ßar mais efectivamente a inexist√™ncia
  de garantias; e cada arquivo deve conter pelo menos a linha de "copyright" e
- uma indicaÁ„o sobre onde encontrar o texto completo da licenÁa.
+ uma indica√ß√£o sobre onde encontrar o texto completo da licen√ßa.
 
 Exemplo:
 
 
- <uma linha que forneÁa o nome do programa e uma ideia do que ele faz.>
+ <uma linha que forne√ßa o nome do programa e uma ideia do que ele faz.>
  Copyright (C) <ano> <nome do autor>
 
- Este programa È software livre; vocÍ pode redistribuÌ-lo e/ou modific·-lo sob
- os termos da LicenÁa P˙blica Geral GNU, conforme publicada pela Free Software
- Foundation; tanto a vers„o 2 da LicenÁa como (a seu critÈrio) qualquer vers„o
+ Este programa √© software livre; voc√™ pode redistribu√≠-lo e/ou modific√°-lo sob
+ os termos da Licen√ßa P√∫blica Geral GNU, conforme publicada pela Free Software
+ Foundation; tanto a vers√£o 2 da Licen√ßa como (a seu crit√©rio) qualquer vers√£o
  mais actual.
 
- Este programa È distribuÌdo na expectativa de ser ˙til, mas SEM QUALQUER
- GARANTIA; incluindo as garantias implÌcitas de COMERCIALIZA«√O ou de ADEQUA«√O
- A QUALQUER PROP”SITO EM PARTICULAR. Consulte a LicenÁa P˙blica Geral GNU para
+ Este programa √© distribu√≠do na expectativa de ser √∫til, mas SEM QUALQUER
+ GARANTIA; incluindo as garantias impl√≠citas de COMERCIALIZA√á√ÉO ou de ADEQUA√á√ÉO
+ A QUALQUER PROP√ìSITO EM PARTICULAR. Consulte a Licen√ßa P√∫blica Geral GNU para
  obter mais detalhes.
 
- VocÍ deve ter recebido uma cÛpia da LicenÁa P˙blica Geral GNU em conjunto com
- este programa; caso contr·rio, escreva para a Free Software Foundation, Inc.,
+ Voc√™ deve ter recebido uma c√≥pia da Licen√ßa P√∫blica Geral GNU em conjunto com
+ este programa; caso contr√°rio, escreva para a Free Software Foundation, Inc.,
  59 Temple Place, Suite 330, Boston, MA 02111-1307, USA.
 
 
 
- Inclua tambÈm informaÁıes sobre como contact·-lo electronicamente e por carta.
+ Inclua tamb√©m informa√ß√µes sobre como contact√°-lo electronicamente e por carta.
 
- Se o programa È interactivo, faÁa-o mostrar um aviso breve como este, ao
+ Se o programa √© interactivo, fa√ßa-o mostrar um aviso breve como este, ao
  iniciar um modo interactivo:
 
 Exemplo:
 
 
- Gnomovision vers„o 69, Copyright (C) <ano> <nome do autor> O Gnomovision n„o
- possui QUALQUER GARANTIA; para obter mais detalhes escreva `mostrar g'. …
- software livre e vocÍ est· convidado a redistribui-lo sob certas condiÁıes;
+ Gnomovision vers√£o 69, Copyright (C) <ano> <nome do autor> O Gnomovision n√£o
+ possui QUALQUER GARANTIA; para obter mais detalhes escreva `mostrar g'. √â
+ software livre e voc√™ est√° convidado a redistribui-lo sob certas condi√ß√µes;
  digite `mostrar c' para obter detalhes.
 
- Os comandos hipotÈticos `mostrar g e `mostrar c' devem mostrar as partes
- apropriadas da LicenÁa P˙blica Geral. … claro que os comandos que escolher usar
+ Os comandos hipot√©ticos `mostrar g e `mostrar c' devem mostrar as partes
+ apropriadas da Licen√ßa P√∫blica Geral. √â claro que os comandos que escolher usar
  podem ser activados de outra forma que `mostrar g' e `mostrar c'; podem ser
  cliques do rato ou itens de um menu -- o que melhor se adequar ao seu programa.
 
- VocÍ tambÈm deve obter da sua entidade patronal (se  trabalhar como
- programador) ou escola, conforme o caso, uma "declaraÁ„o de ausÍncia de
- direitos autorais" sobre o programa, se necess·rio. Aqui est· um exemplo:
+ Voc√™ tamb√©m deve obter da sua entidade patronal (se  trabalhar como
+ programador) ou escola, conforme o caso, uma "declara√ß√£o de aus√™ncia de
+ direitos autorais" sobre o programa, se necess√°rio. Aqui est√° um exemplo:
 
 
- Neoscopio Lda., declara a ausÍncia de quaisquer direitos autorais sobre o
+ Neoscopio Lda., declara a aus√™ncia de quaisquer direitos autorais sobre o
  programa `Gnomovision' escrito por Jorge Andrade.
 
 10 de Junho de 2004
@@ -365,11 +365,11 @@ Miguel Nunes, Gerente de Neoscopio Lda.
 
 
 
- Esta LicenÁa P˙blica Geral n„o permite incorporar o seu programa em programas
- propriet·rios. Se o seu programa È uma biblioteca de sub-rotinas, poder·
- considerar mais ˙til permitir ligar aplicaÁıes propriet·rias com a biblioteca.
- Se È isto que pretende, use a LicenÁa P˙blica Geral de Bibliotecas GNU, em vez
- desta LicenÁa.
+ Esta Licen√ßa P√∫blica Geral n√£o permite incorporar o seu programa em programas
+ propriet√°rios. Se o seu programa √© uma biblioteca de sub-rotinas, poder√°
+ considerar mais √∫til permitir ligar aplica√ß√µes propriet√°rias com a biblioteca.
+ Se √© isto que pretende, use a Licen√ßa P√∫blica Geral de Bibliotecas GNU, em vez
+ desta Licen√ßa.
 
 
 
