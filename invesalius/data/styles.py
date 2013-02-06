@@ -124,6 +124,7 @@ class ViewerStyleSliceEditor(ViewerStyleSlice):
         print "calling son"
         
     def SetOrientation(self, orient):
+        pass
         
     def OnLeftButtonDown(self, evt, str_evt):
         self.mouse_pressed = 1
