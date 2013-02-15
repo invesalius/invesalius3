@@ -85,6 +85,7 @@ class Frame(wx.Frame):
         if sys.platform != 'darwin':
             self.Maximize()
         
+        self.sizeChanged = True
         #Necessary update AUI (statusBar in special)
         #when maximized in the Win 7 and XP
         self.SetSize(self.GetSize())
@@ -132,6 +133,7 @@ class Frame(wx.Frame):
         Bind normal events from wx (except pubsub related).
         """
         self.Bind(wx.EVT_SIZE, self.OnSize)
+        self.Bind(wx.EVT_IDLE, self.OnIdle)
         self.Bind(wx.EVT_MENU, self.OnMenuClick)
         self.Bind(wx.EVT_CLOSE, self.OnClose)
         #self.Bind(wx.EVT_MOVE, self.OnMove)
@@ -404,8 +406,17 @@ class Frame(wx.Frame):
         """
         Refresh GUI when frame is resized.
         """
-        Publisher.sendMessage(('ProgressBar Reposition'))
         evt.Skip()
+        self.Reposition()
+        self.sizeChanged = True
+
+    def OnIdle(self, evt):
+        if self.sizeChanged:
+            self.Reposition()
+
+    def Reposition(self):
+        Publisher.sendMessage(('ProgressBar Reposition'))
+        self.sizeChanged = False
 
 
     def OnMove(self, evt):
@@ -596,13 +607,13 @@ class MenuBar(wx.MenuBar):
 
             file_edit_item_undo = wx.MenuItem(file_edit, wx.ID_UNDO,  _("Undo\tCtrl+Z"))
             file_edit_item_undo.SetBitmap(self.BMP_UNDO)
-            file_edit_item_undo.Enable(False)
             file_edit.AppendItem(file_edit_item_undo)
+            file_edit_item_undo.Enable(False)
 
             file_edit_item_redo = wx.MenuItem(file_edit, wx.ID_REDO,  _("Redo\tCtrl+Y"))
             file_edit_item_redo.SetBitmap(self.BMP_REDO)
-            file_edit_item_redo.Enable(False)
             file_edit.AppendItem(file_edit_item_redo)
+            file_edit_item_redo.Enable(False)
         else:
             file_edit.Append(wx.ID_UNDO, _("Undo\tCtrl+Z")).Enable(False)
             file_edit.Append(wx.ID_REDO, _("Redo\tCtrl+Y")).Enable(False)
@@ -732,9 +743,10 @@ class ProgressBar(wx.Gauge):
         """
         Compute new size and position, according to parent resize
         """
-        rect = self.parent.GetFieldRect(2)
+        rect = self.Parent.GetFieldRect(2)
         self.SetPosition((rect.x + 2, rect.y + 2))
         self.SetSize((rect.width - 4, rect.height - 4))
+        self.Show()
 
     def SetPercentage(self, value):
         """

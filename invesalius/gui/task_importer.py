@@ -51,7 +51,10 @@ class TaskPanel(wx.Panel):
 class InnerTaskPanel(wx.Panel):
     def __init__(self, parent):
         wx.Panel.__init__(self, parent)
-        self.SetBackgroundColour(wx.Colour(255,255,255))
+
+        backgroud_colour = wx.Colour(255,255,255)
+
+        self.SetBackgroundColour(backgroud_colour)
         self.SetAutoLayout(1)
 
         # Counter for projects loaded in current GUI
@@ -64,7 +67,9 @@ class InnerTaskPanel(wx.Panel):
         tooltip = wx.ToolTip(_("Select DICOM or Analyze files to be reconstructed"))
         link_import_local = hl.HyperLinkCtrl(self, -1, _("Import medical images..."))
         link_import_local.SetUnderlines(False, False, False)
+        link_import_local.SetBold(True)
         link_import_local.SetColours("BLACK", "BLACK", "BLACK")
+        link_import_local.SetBackgroundColour(backgroud_colour)
         link_import_local.SetToolTip(tooltip)
         link_import_local.AutoBrowse(False)
         link_import_local.UpdateLink()
@@ -82,7 +87,9 @@ class InnerTaskPanel(wx.Panel):
         tooltip = wx.ToolTip(_("Open an existing InVesalius project..."))
         link_open_proj = hl.HyperLinkCtrl(self,-1,_("Open an existing project..."))
         link_open_proj.SetUnderlines(False, False, False)
+        link_open_proj.SetBold(True)
         link_open_proj.SetColours("BLACK", "BLACK", "BLACK")
+        link_open_proj.SetBackgroundColour(backgroud_colour)
         link_open_proj.SetToolTip(tooltip)
         link_open_proj.AutoBrowse(False)
         link_open_proj.UpdateLink()
@@ -94,9 +101,9 @@ class InnerTaskPanel(wx.Panel):
         BMP_OPEN_PROJECT = wx.Bitmap("../icons/file_open.png", wx.BITMAP_TYPE_PNG)
 
         bmp_list = [BMP_IMPORT, BMP_NET, BMP_OPEN_PROJECT]
-        for bmp in bmp_list:
-            bmp.SetWidth(25)
-            bmp.SetHeight(25)
+        #for bmp in bmp_list:
+            #bmp.SetWidth(25)
+            #bmp.SetHeight(25)
 
         # Buttons related to hyperlinks
         button_style = pbtn.PB_STYLE_SQUARE | pbtn.PB_STYLE_DEFAULT
@@ -105,8 +112,10 @@ class InnerTaskPanel(wx.Panel):
         #                                      style=button_style)
         button_import_local = pbtn.PlateButton(self, BTN_IMPORT_LOCAL, "",
                                                BMP_IMPORT, style=button_style)
+        button_import_local.SetBackgroundColour(self.GetBackgroundColour())
         button_open_proj = pbtn.PlateButton(self, BTN_OPEN_PROJECT, "",
                                             BMP_OPEN_PROJECT, style=button_style)
+        button_open_proj.SetBackgroundColour(self.GetBackgroundColour())
 
         # When using PlaneButton, it is necessary to bind events from parent win
         self.Bind(wx.EVT_BUTTON, self.OnButton)
@@ -185,6 +194,7 @@ class InnerTaskPanel(wx.Panel):
             proj_link = hl.HyperLinkCtrl(self, -1, label)
             proj_link.SetUnderlines(False, False, False)
             proj_link.SetColours("BLACK", "BLACK", "BLACK")
+            proj_link.SetBackgroundColour(self.GetBackgroundColour())
             proj_link.AutoBrowse(False)
             proj_link.UpdateLink()
             proj_link.Bind(hl.EVT_HYPERLINK_LEFT,
@@ -201,7 +211,7 @@ class InnerTaskPanel(wx.Panel):
     def OnLinkImport(self, event):
         self.ImportDicom()
         event.Skip()
-    
+
     def OnLinkImportPACS(self, event):
         self.ImportPACS()
         event.Skip()
@@ -210,7 +220,7 @@ class InnerTaskPanel(wx.Panel):
         self.OpenProject()
         event.Skip()
 
- 
+
     def ImportPACS(self):
         print "TODO: Send Signal - Import DICOM files from PACS"
 
