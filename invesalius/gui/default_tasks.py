@@ -102,7 +102,7 @@ class Panel(wx.Panel):
 
         sizer = wx.BoxSizer(wx.VERTICAL)
         #sizer.Add(UpperTaskPanel(self), 5, wx.EXPAND|wx.GROW)
-        #sizer.Add(UpperTaskPanel(self), 16, wx.EXPAND|wx.GROW)
+        sizer.Add(UpperTaskPanel(self), 16, wx.EXPAND|wx.GROW)
 
         #sizer.Add(LowerTaskPanel(self), 3, wx.EXPAND|wx.GROW)
         sizer.Add(LowerTaskPanel(self), 6, wx.EXPAND|wx.GROW)
@@ -209,8 +209,9 @@ class UpperTaskPanel(wx.Panel):
         if int(session.mode) == const.MODE_RP:
             tasks = [(_("Load data"), importer.TaskPanel),
                      (_("Select region of interest"), slice_.TaskPanel),
-                     (_("Configure 3D surface"), surface.TaskPanel),
-                     (_("Export data"), exporter.TaskPanel)]
+                     #(_("Configure 3D surface"), surface.TaskPanel),
+                     (_("Export data"), exporter.TaskPanel)
+                    ]
         elif int(session.mode) == const.MODE_NAVIGATOR:
             tasks = [(_("Load data"), importer.TaskPanel),
                      (_("Select region of interest"), slice_.TaskPanel),

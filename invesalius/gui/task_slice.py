@@ -311,34 +311,34 @@ class MaskProperties(wx.Panel):
         ## LINE 1
 
         # Combo related to mask naem
-        combo_mask_name = wx.ComboBox(self, -1, "", choices= MASK_LIST,
-                                     style=wx.CB_DROPDOWN|wx.CB_READONLY)
-        combo_mask_name.SetSelection(0) # wx.CB_SORT
-        if sys.platform != 'win32':
-            combo_mask_name.SetWindowVariant(wx.WINDOW_VARIANT_SMALL)
-        self.combo_mask_name = combo_mask_name
+        #combo_mask_name = wx.ComboBox(self, -1, "", choices= MASK_LIST,
+                                     #style=wx.CB_DROPDOWN|wx.CB_READONLY)
+        #combo_mask_name.SetSelection(0) # wx.CB_SORT
+        #if sys.platform != 'win32':
+            #combo_mask_name.SetWindowVariant(wx.WINDOW_VARIANT_SMALL)
+        #self.combo_mask_name = combo_mask_name
 
         # Mask colour
-        button_colour= csel.ColourSelect(self, 111,colour=(0,255,0),size=(-1,22))
-        self.button_colour = button_colour
+        #button_colour= csel.ColourSelect(self, 111,colour=(0,255,0),size=(-1,22))
+        #self.button_colour = button_colour
 
         # Sizer which represents the first line
-        line1 = wx.BoxSizer(wx.HORIZONTAL)
-        line1.Add(combo_mask_name, 1, wx.EXPAND|wx.GROW|wx.TOP|wx.RIGHT, 2)
-        line1.Add(button_colour, 0, wx.TOP|wx.LEFT|wx.RIGHT, 2)
+        #line1 = wx.BoxSizer(wx.HORIZONTAL)
+        #line1.Add(combo_mask_name, 1, wx.EXPAND|wx.GROW|wx.TOP|wx.RIGHT, 2)
+        #line1.Add(button_colour, 0, wx.TOP|wx.LEFT|wx.RIGHT, 2)
 
-        ## LINE 2
-        text_thresh = wx.StaticText(self, -1,
-                                    _("Set predefined or manual threshold:"))
+        ### LINE 2
+        #text_thresh = wx.StaticText(self, -1,
+                                    #_("Set predefined or manual threshold:"))
 
-        ## LINE 3
-        combo_thresh = wx.ComboBox(self, -1, "", size=(15,-1),
-                                   choices=[],#THRESHOLD_LIST
-                                   style=wx.CB_DROPDOWN|wx.CB_READONLY)
-        combo_thresh.SetSelection(0)
-        if sys.platform != 'win32':
-            combo_thresh.SetWindowVariant(wx.WINDOW_VARIANT_SMALL)
-        self.combo_thresh = combo_thresh
+        ### LINE 3
+        #combo_thresh = wx.ComboBox(self, -1, "", size=(15,-1),
+                                   #choices=[],#THRESHOLD_LIST
+                                   #style=wx.CB_DROPDOWN|wx.CB_READONLY)
+        #combo_thresh.SetSelection(0)
+        #if sys.platform != 'win32':
+            #combo_thresh.SetWindowVariant(wx.WINDOW_VARIANT_SMALL)
+        #self.combo_thresh = combo_thresh
 
         ## LINE 4
         gradient = grad.GradientCtrl(self, -1, -5000, 5000, 0, 5000,
@@ -347,9 +347,9 @@ class MaskProperties(wx.Panel):
 
         # Add all lines into main sizer
         sizer = wx.BoxSizer(wx.VERTICAL)
-        sizer.Add(line1, 1, wx.GROW|wx.EXPAND|wx.LEFT|wx.RIGHT|wx.TOP, 5)
-        sizer.Add(text_thresh, 1, wx.GROW|wx.EXPAND|wx.ALL, 5)
-        sizer.Add(combo_thresh, 1, wx.GROW|wx.EXPAND|wx.LEFT|wx.RIGHT, 5)
+        #sizer.Add(line1, 1, wx.GROW|wx.EXPAND|wx.LEFT|wx.RIGHT|wx.TOP, 5)
+        #sizer.Add(text_thresh, 1, wx.GROW|wx.EXPAND|wx.ALL, 5)
+        #sizer.Add(combo_thresh, 1, wx.GROW|wx.EXPAND|wx.LEFT|wx.RIGHT, 5)
         sizer.Add(gradient, 1, wx.EXPAND|wx.TOP|wx.LEFT|wx.RIGHT|wx.BOTTOM, 6)
         sizer.Fit(self)
 
@@ -363,7 +363,7 @@ class MaskProperties(wx.Panel):
         self.threshold_modes = proj.threshold_modes
         self.threshold_modes_names = []
         self.bind_evt_gradient = True
-        self.__bind_events()
+        #self.__bind_events()
         self.__bind_events_wx()
 
 
@@ -407,9 +407,9 @@ class MaskProperties(wx.Panel):
     def __bind_events_wx(self):
         self.Bind(grad.EVT_THRESHOLD_CHANGED, self.OnSlideChanged, self.gradient)
         self.Bind(grad.EVT_THRESHOLD_CHANGING, self.OnSlideChanging, self.gradient)
-        self.combo_thresh.Bind(wx.EVT_COMBOBOX, self.OnComboThresh)
-        self.combo_mask_name.Bind(wx.EVT_COMBOBOX, self.OnComboName)
-        self.button_colour.Bind(csel.EVT_COLOURSELECT, self.OnSelectColour)
+        #self.combo_thresh.Bind(wx.EVT_COMBOBOX, self.OnComboThresh)
+        #self.combo_mask_name.Bind(wx.EVT_COMBOBOX, self.OnComboName)
+        #self.button_colour.Bind(csel.EVT_COLOURSELECT, self.OnSelectColour)
 
     def SelectMaskName(self, pubsub_evt):
         index = pubsub_evt.data
