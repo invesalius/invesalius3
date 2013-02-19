@@ -220,7 +220,7 @@ class Frame(wx.Frame):
         Exit InVesalius.
         """
         self.Destroy()
-        sys.exit()
+        sys.exit(0)
 
     def _HideContentPanel(self, pubsub_evt):
         """
@@ -314,6 +314,7 @@ class Frame(wx.Frame):
         Close all project data.
         """
         Publisher.sendMessage('Close Project')
+        Publisher.sendMessage('Exit')
 
     def OnMenuClick(self, evt):
         """
