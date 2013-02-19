@@ -505,7 +505,7 @@ class MenuBar(wx.MenuBar):
         #file_menu.AppendSeparator()
         #app(1, "C:\InvData\sample.inv")
         #file_menu.AppendSeparator()
-        app(const.ID_EXIT, _("Exit"))
+        app(const.ID_EXIT, _("Exit\tCtrl+Q"))
 
 
         ############################### EDIT###############################
