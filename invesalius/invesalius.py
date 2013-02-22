@@ -138,7 +138,7 @@ class SplashScreen(wx.SplashScreen):
         if (create_session):
             session.CreateItens()
             session.SetLanguage(lang)
-            session.CreateSessionFile()
+            session.WriteSessionFile()
 
         session.SaveConfigFileBackup()
 

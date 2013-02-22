@@ -38,10 +38,6 @@ class Session(object):
     def __init__(self):
         self.temp_item = False
 
-        ws = self.ws = WriteSession(self)
-        ws.start()
-        Publisher.subscribe(self.StopRecording, "Stop Config Recording")
-
     def CreateItens(self):
         import constants as const
         self.project_path = ()
@@ -72,10 +68,7 @@ class Session(object):
         self.last_dicom_folder = ''
         self.surface_interpolation = 1
         self.rendering = 0
-        self.CreateSessionFile()
-
-    def StopRecording(self, pubsub_evt):
-        self.ws.Stop()
+        self.WriteSessionFile()
 
     def SaveConfigFileBackup(self):
         path = os.path.join(self.homedir ,
@@ -103,6 +96,7 @@ class Session(object):
         self.project_status = const.PROJ_CLOSE
         #self.mode = const.MODE_RP
         self.temp_item = False
+        self.WriteSessionFile()
 
     def SaveProject(self, path=()):
         import constants as const
@@ -113,6 +107,7 @@ class Session(object):
             self.__add_to_list(path)
         if self.temp_item:
             self.temp_item = False
+        self.WriteSessionFile()
 
     def ChangeProject(self):
         import constants as const
@@ -127,6 +122,7 @@ class Session(object):
         self.project_path = (self.tempdir, filename)
         self.project_status = const.PROJ_NEW
         self.temp_item = True
+        self.WriteSessionFile()
         return self.tempdir
 
     def OpenProject(self, filepath):
@@ -139,6 +135,7 @@ class Session(object):
         # Set session info
         self.project_path = item
         self.project_status = const.PROJ_OPEN
+        self.WriteSessionFile()
 
     def RemoveTemp(self):
         if self.temp_item:
@@ -147,7 +144,7 @@ class Session(object):
             os.remove(path)
             self.temp_item = False
 
-    def CreateSessionFile(self):
+    def WriteSessionFile(self):
         config = ConfigParser.RawConfigParser()
 
         config.add_section('session')
@@ -210,7 +207,7 @@ class Session(object):
 
     def SetLastDicomFolder(self, folder):
         self.last_dicom_folder = folder
-        self.CreateSessionFile()
+        self.WriteSessionFile()
 
     def ReadLanguage(self):
         config = ConfigParser.ConfigParser()
@@ -273,59 +270,5 @@ class Session(object):
             self.surface_interpolation = 0
             self.rendering = 0
             self.random_id = randint(0,pow(10,16))  
-            self.CreateSessionFile()
+            self.WriteSessionFile()
             return True
-
-
-class WriteSession(Thread):
-
-    def __init__ (self, session):
-      Thread.__init__(self)
-      self.session = session
-      self.runing = 1
-
-    def run(self):
-      while self.runing:
-        time.sleep(10)
-        try:
-            self.Write()
-        except AttributeError:
-            debug("Session: trying to write into inexistent file")
-
-    def Stop(self):
-        self.runing = 0
-
-    def Write(self):
-        import utils as utl
-
-        config = ConfigParser.RawConfigParser()
-
-        config.add_section('session')
-        config.set('session', 'mode', self.session.mode)
-        config.set('session', 'status', self.session.project_status)
-        config.set('session','debug', self.session.debug)
-        config.set('session', 'language', self.session.language)
-        config.set('session', 'random_id', self.session.random_id)
-        config.set('session', 'surface_interpolation', self.session.surface_interpolation)
-        config.set('session', 'rendering', self.session.rendering)
-
-        config.add_section('project')
-        config.set('project', 'recent_projects', self.session.recent_projects)
-
-        config.add_section('paths')
-        config.set('paths','homedir',self.session.homedir)
-        config.set('paths','tempdir',self.session.tempdir)
-        config.set('paths','last_dicom_folder', self.session.last_dicom_folder)
-
-        path = os.path.join(self.session.homedir ,
-                            '.invesalius', 'config.cfg')
-
-        try:
-            configfile = open(path, 'wb')
-        except IOError:
-            return
-            utl.debug("Session - IOError")
-        finally:
-            self.session.CreateSessionFile()
-
-        configfile.close()
