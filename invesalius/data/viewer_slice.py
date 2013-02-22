@@ -840,12 +840,27 @@ class Viewer(wx.Panel):
         self.interactor.Render()
 
     def Navigation(self, pubsub_evt):
-        # Get point from base change
-        x, y, z = pubsub_evt.data
-        coord_cross = x, y, z      
-        position = self.slice_data.actor.GetInput().FindPoint(x, y, z)
-        coord_cross = self.slice_data.actor.GetInput().GetPoint(position)
-        coord = self.calcultate_scroll_position(position)   
+       # Get point from base change
+        coord_cross = pubsub_evt.data
+        mx, my = self.calculate_matrix_position(coord_cross)
+        
+        if self.orientation == 'AXIAL':
+            x = my
+            y = mx
+            z = self.slice_data.number
+        
+        elif self.orientation == 'CORONAL':
+            x = my
+            y = self.slice_data.number
+            z = mx
+        
+        elif self.orientation == 'SAGITAL':
+            x = self.slice_data.number
+            y = my
+            z = mx
+        
+        coord = x, y, z      
+        
         Publisher.sendMessage('Update cross position', coord_cross)
         
         self.ScrollSlice(coord)
