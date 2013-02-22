@@ -8,10 +8,6 @@ class Bases:
         self.p1 = array([p1[0], p1[1], p1[2]])
         self.p2 = array([p2[0], p2[1], p2[2]])
         self.p3 = array([p3[0], p3[1], p3[2]])
-        
-        print "p1: ", self.p1
-        print "p2: ", self.p2
-        print "p3: ", self.p3
 
         self.sub1 = self.p2 - self.p1
         self.sub2 = self.p3 - self.p1
@@ -56,7 +52,10 @@ class Bases:
         return M, q, Minv
     
 def FlipX(point):
-        
+    
+        #Coronal Images dont require this transformation - 1 tested
+        #and for this case, at navigation, the z axis is inverted
+
         point = matrix(point + (0,))
                
         #inverter o eixo z
@@ -66,7 +65,7 @@ def FlipX(point):
         
         point[0, 2] = -point[0, 2]
         
-        #Flip em y
+        #Flip em x
         Mrot = matrix([[1.0, 0.0, 0.0, 0.0],
                              [0.0, -1.0, 0.0, 0.0],
                              [0.0, 0.0, -1.0, 0.0],
