@@ -71,8 +71,8 @@ def debug(error_str):
     """
     from session import Session
     session = Session()
-    if session.debug:
-        print >> sys.stderr, error_str
+    #if session.debug:
+    print >> sys.stderr, error_str
 
 def next_copy_name(original_name, names_list):
     """
@@ -386,38 +386,38 @@ def UpdateCheck():
     if session.ReadRandomId():
         random_id = session.GetRandomId()
 
-    # Fetch update data from server
-    import constants as const
-    url = "http://www.cti.gov.br/dt3d/invesalius/update/checkupdate.php"
-    headers = { 'User-Agent' : 'Mozilla/5.0 (compatible; MSIE 5.5; Windows NT)' }
-    data = {'update_protocol_version' : '1', 
-            'invesalius_version' : const.INVESALIUS_VERSION,
-            'platform' : sys.platform,
-            'architecture' : platform.architecture()[0],
-            'language' : lang,
-            'random_id' : random_id }
-    data = urllib.urlencode(data)
-    req = urllib2.Request(url, data, headers)
-    try:
-        response = urllib2.urlopen(req)
-    except:
-        return
-    last = response.readline().rstrip()
-    url = response.readline().rstrip()
-    if (last!=const.INVESALIUS_VERSION):
-        print "  ...New update found!!! -> version:", last #, ", url=",url
-        from time import sleep
-        sleep(2)
-        import wx
-        app=wx.App()
-        import i18n
-        _ = i18n.InstallLanguage(lang)
-        msg=_("A new version of InVesalius is available. Do you want to open the download website now?")
-        title=_("Invesalius Update")
-        msgdlg = wx.MessageDialog(None,msg,title, wx.YES_NO | wx.ICON_INFORMATION)
-        if (msgdlg.ShowModal()==wx.ID_YES):
-            wx.LaunchDefaultBrowser(url)
-        msgdlg.Destroy()
-        app.MainLoop()
+        # Fetch update data from server
+        import constants as const
+        url = "http://www.cti.gov.br/dt3d/invesalius/update/checkupdate.php"
+        headers = { 'User-Agent' : 'Mozilla/5.0 (compatible; MSIE 5.5; Windows NT)' }
+        data = {'update_protocol_version' : '1', 
+                'invesalius_version' : const.INVESALIUS_VERSION,
+                'platform' : sys.platform,
+                'architecture' : platform.architecture()[0],
+                'language' : lang,
+                'random_id' : random_id }
+        data = urllib.urlencode(data)
+        req = urllib2.Request(url, data, headers)
+        try:
+            response = urllib2.urlopen(req)
+        except:
+            return
+        last = response.readline().rstrip()
+        url = response.readline().rstrip()
+        if (last!=const.INVESALIUS_VERSION):
+            print "  ...New update found!!! -> version:", last #, ", url=",url
+            from time import sleep
+            sleep(2)
+            import wx
+            app=wx.App()
+            import i18n
+            _ = i18n.InstallLanguage(lang)
+            msg=_("A new version of InVesalius is available. Do you want to open the download website now?")
+            title=_("Invesalius Update")
+            msgdlg = wx.MessageDialog(None,msg,title, wx.YES_NO | wx.ICON_INFORMATION)
+            if (msgdlg.ShowModal()==wx.ID_YES):
+                wx.LaunchDefaultBrowser(url)
+            msgdlg.Destroy()
+            app.MainLoop()
 
 
