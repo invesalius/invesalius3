@@ -540,3 +540,21 @@ DICOM_ENCODING_TO_PYTHON = {
                             'ISO_IR 138': 'iso_ir_138',
                             'ISO_IR 144': 'iso_ir_144',
                             }
+#------------ Navigation Constants ------------
+#This constantes were created by Victor Hugo for the Neuronavigator task
+MARKER_SIZE = 4
+
+ISOTRAKII = 0
+PATRIOT = 1
+MTC = 2
+ZEBRIS = 3
+#PATRIOT = 4
+DEFAULT_TRACKER = ISOTRAKII
+#TRACKER = [_("Polhemus PATRIOT"), _("Polhemus PATRIOT"), _("Polhemus ISOTRAK II"), _("Claron MicronTracker"), _("Zebris CMS20")]
+TRACKER = [_("Polhemus ISOTRAK II"), _("Polhemus PATRIOT"), _("Claron MicronTracker"), _("Zebris CMS20")]
+
+
+SINGLE_REF = 0
+DOUBLE_REF = 1
+DEFAULT_REF_MODE = SINGLE_REF
+REF_MODE = [_("Single Ref Mode"), _("Double Ref Mode")]
