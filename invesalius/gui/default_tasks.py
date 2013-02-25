@@ -209,7 +209,7 @@ class UpperTaskPanel(wx.Panel):
         if int(session.mode) == const.MODE_RP:
             tasks = [(_("Load data"), importer.TaskPanel),
                      (_("Select region of interest"), slice_.TaskPanel),
-                     #(_("Configure 3D surface"), surface.TaskPanel),
+                     (_("Configure 3D surface"), surface.TaskPanel),
                      (_("Export data"), exporter.TaskPanel)
                     ]
         elif int(session.mode) == const.MODE_NAVIGATOR:
