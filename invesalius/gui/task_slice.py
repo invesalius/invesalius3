@@ -341,9 +341,6 @@ class MaskProperties(wx.Panel):
             combo_thresh.SetWindowVariant(wx.WINDOW_VARIANT_SMALL)
         self.combo_thresh = combo_thresh
 
-        line2 = wx.BoxSizer(wx.HORIZONTAL)
-        line2.Add(text_thresh, 0, wx.GROW|wx.EXPAND|wx.ALL, 5)
-        line2.Add(combo_thresh, 0, wx.EXPAND|wx.GROW|wx.TOP|wx.RIGHT, 2)
 
         ## LINE 4
         gradient = grad.GradientCtrl(self, -1, -5000, 5000, 0, 5000,
@@ -353,7 +350,8 @@ class MaskProperties(wx.Panel):
         # Add all lines into main sizer
         sizer = wx.BoxSizer(wx.VERTICAL)
         sizer.Add(line1, 0, wx.GROW|wx.EXPAND|wx.LEFT|wx.RIGHT|wx.TOP, 5)
-        sizer.Add(line2, 0, wx.GROW|wx.EXPAND|wx.LEFT|wx.RIGHT, 5)
+        sizer.Add(text_thresh, 0, wx.GROW|wx.EXPAND|wx.ALL, 5)
+        sizer.Add(combo_thresh, 0, wx.EXPAND|wx.GROW|wx.TOP|wx.RIGHT, 2)
         sizer.Add(gradient, 1, wx.EXPAND|wx.TOP|wx.LEFT|wx.RIGHT|wx.BOTTOM, 6)
         sizer.Fit(self)
 
