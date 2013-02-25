@@ -255,7 +255,7 @@ class Controller():
 
         self.LoadProject()
 
-        Publisher.sendMessage('Update threshold limits',
+        Publisher.sendMessage('Update threshold limits list',
                                    proj.threshold_range)
         session = ses.Session()
         session.OpenProject(filepath)
@@ -447,7 +447,7 @@ class Controller():
         self.Slice.window_width = proj.window
         self.Slice.spacing = header.get_zooms()[:3]
 
-        Publisher.sendMessage('Update threshold limits',
+        Publisher.sendMessage('Update threshold limits list',
                                    proj.threshold_range)
 
     def CreateDicomProject(self, dicom, matrix, matrix_filename):
@@ -565,7 +565,7 @@ class Controller():
         self.Slice.window_level = wl
         self.Slice.window_width = ww
 
-        Publisher.sendMessage('Update threshold limits', scalar_range)
+        Publisher.sendMessage('Update threshold limits list', scalar_range)
 
         return self.matrix, self.filename, dicom
 
