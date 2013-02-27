@@ -219,7 +219,6 @@ class GradientSlider(wx.Panel):
         evt.Skip()
 
     def OnSize(self, evt):
-        print "OnSize gradient"
         self.CalculateControlPositions()
         self.Refresh()
         evt.Skip()
