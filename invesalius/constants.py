@@ -24,7 +24,7 @@ import wx
 
 from project import Project
 
-INVESALIUS_VERSION = "3.0 beta 3"
+INVESALIUS_VERSION = "3.0 beta 4"
 
 #---------------
 
