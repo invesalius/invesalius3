@@ -194,7 +194,6 @@ class Viewer(wx.Panel):
         if mode == const.STEREO_OFF:
             ren_win.StereoRenderOff()
         else:
-            ren_win.StereoRenderOn()
 
             if mode == const.STEREO_RED_BLUE:
                 ren_win.SetStereoTypeToRedBlue()
@@ -213,6 +212,8 @@ class Viewer(wx.Panel):
             elif mode == const.STEREO_ANAGLYPH:
                 ren_win.SetStereoTypeToAnaglyph()
 
+            ren_win.StereoRenderOn()
+        
         self.interactor.Render()
 
     def CreateBallReference(self):
