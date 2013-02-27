@@ -220,7 +220,7 @@ class Frame(wx.Frame):
         Exit InVesalius.
         """
         self.Destroy()
-        sys.exit(0)
+        #sys.exit(0)
 
     def _HideContentPanel(self, pubsub_evt):
         """
