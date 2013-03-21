@@ -27,6 +27,8 @@ import numpy
 import vtk
 from vtk.wx.wxVTKRenderWindowInteractor import wxVTKRenderWindowInteractor
 
+import styles
+
 import wx
 from wx.lib.pubsub import pub as Publisher
 
@@ -173,127 +175,142 @@ class Viewer(wx.Panel):
         interactor.SetInteractorStyle(style)
 
     def SetInteractorStyle(self, state):
-        self.state = state
-        action = {const.SLICE_STATE_CROSS: 
-                             {
-                              "MouseMoveEvent": self.OnCrossMove,
-                              "LeftButtonPressEvent": self.OnCrossMouseClick,
-                             },
-                  const.SLICE_STATE_EDITOR: 
-                            {
-                            "MouseMoveEvent": self.OnBrushMove,
-                            "LeftButtonPressEvent": self.OnBrushClick,
-                            "LeftButtonReleaseEvent": self.OnBrushRelease,
-                            "EnterEvent": self.OnEnterInteractor,
-                            "LeaveEvent": self.OnLeaveInteractor
-                            },
-                  const.STATE_PAN:
-                            {
-                            "MouseMoveEvent": self.OnPanMove,
-                            "LeftButtonPressEvent": self.OnPanClick,
-                            "LeftButtonReleaseEvent": self.OnVtkRightRelease
-                            },
-                  const.STATE_SPIN:
-                            {
-                            "MouseMoveEvent": self.OnSpinMove,
-                            "LeftButtonPressEvent": self.OnSpinClick,
-                            "LeftButtonReleaseEvent": self.OnVtkRightRelease
-                            },
-                  const.STATE_ZOOM:
-                            {
-                            "MouseMoveEvent": self.OnZoomMoveLeft,
-                            "LeftButtonPressEvent": self.OnZoomLeftClick,
-                            "LeftButtonReleaseEvent": self.OnVtkRightRelease
-                            },
-                  const.SLICE_STATE_SCROLL:
-                            {
-                            "MouseMoveEvent": self.OnChangeSliceMove,
-                            "LeftButtonPressEvent": self.OnChangeSliceClick,
-                            },
-                  const.STATE_WL:
-                            {
-                            "MouseMoveEvent": self.OnWindowLevelMove,
-                            "LeftButtonPressEvent": self.OnWindowLevelClick,
-                            },
-                  const.STATE_DEFAULT:
-                            {
-                            },
-                  const.STATE_MEASURE_DISTANCE:
-                            {
-                            "LeftButtonPressEvent": self.OnInsertLinearMeasurePoint
-                            },
-                  const.STATE_MEASURE_ANGLE:
-                            {
-                            "LeftButtonPressEvent": self.OnInsertAngularMeasurePoint
-                            },
-                 }
-
-
         if state == const.SLICE_STATE_CROSS:
+            style = styles.CrossInteractorStyle(self.orientation,
+                                                self.slice_data)
+            self.style = style
+            self.interactor.SetInteractorStyle(style)
+            self.interactor.Render()
+
+            ## Zoom using right button
+            #style.AddObserver("RightButtonPressEvent",self.OnZoomRightClick)
+            #style.AddObserver("MouseMoveEvent", self.OnZoomMoveRight)
+            #style.AddObserver("RightButtonReleaseEvent", self.OnVtkRightRelease)
+                
+            #Scroll change slice
+            style.AddObserver("MouseWheelForwardEvent",self.OnScrollForward)
+            style.AddObserver("MouseWheelBackwardEvent", self.OnScrollBackward)
+
             self.__set_cross_visibility(1)
             Publisher.sendMessage('Activate ball reference')
         else:
-            self.__set_cross_visibility(0)
-            Publisher.sendMessage('Deactivate ball reference')
+            self.state = state
+            action = {
+                      const.SLICE_STATE_EDITOR: 
+                                {
+                                "MouseMoveEvent": self.OnBrushMove,
+                                "LeftButtonPressEvent": self.OnBrushClick,
+                                "LeftButtonReleaseEvent": self.OnBrushRelease,
+                                "EnterEvent": self.OnEnterInteractor,
+                                "LeaveEvent": self.OnLeaveInteractor
+                                },
+                      const.STATE_PAN:
+                                {
+                                "MouseMoveEvent": self.OnPanMove,
+                                "LeftButtonPressEvent": self.OnPanClick,
+                                "LeftButtonReleaseEvent": self.OnVtkRightRelease
+                                },
+                      const.STATE_SPIN:
+                                {
+                                "MouseMoveEvent": self.OnSpinMove,
+                                "LeftButtonPressEvent": self.OnSpinClick,
+                                "LeftButtonReleaseEvent": self.OnVtkRightRelease
+                                },
+                      const.STATE_ZOOM:
+                                {
+                                "MouseMoveEvent": self.OnZoomMoveLeft,
+                                "LeftButtonPressEvent": self.OnZoomLeftClick,
+                                "LeftButtonReleaseEvent": self.OnVtkRightRelease
+                                },
+                      const.SLICE_STATE_SCROLL:
+                                {
+                                "MouseMoveEvent": self.OnChangeSliceMove,
+                                "LeftButtonPressEvent": self.OnChangeSliceClick,
+                                },
+                      const.STATE_WL:
+                                {
+                                "MouseMoveEvent": self.OnWindowLevelMove,
+                                "LeftButtonPressEvent": self.OnWindowLevelClick,
+                                },
+                      const.STATE_DEFAULT:
+                                {
+                                },
+                      const.STATE_MEASURE_DISTANCE:
+                                {
+                                "LeftButtonPressEvent": self.OnInsertLinearMeasurePoint
+                                },
+                      const.STATE_MEASURE_ANGLE:
+                                {
+                                "LeftButtonPressEvent": self.OnInsertAngularMeasurePoint
+                                },
+                     }
 
-        if state == const.STATE_WL:
-            self.on_wl = True
-            self.wl_text.Show()
-        else:
-            self.on_wl = False
-            self.wl_text.Hide()
 
-        self.__set_editor_cursor_visibility(0)
-        
-        # Bind method according to current mode
-        if(state == const.STATE_ZOOM_SL):
-            style = vtk.vtkInteractorStyleRubberBandZoom()
+            if state == const.SLICE_STATE_CROSS:
+                self.__set_cross_visibility(1)
+                Publisher.sendMessage('Activate ball reference')
+            else:
+                self.__set_cross_visibility(0)
+                Publisher.sendMessage('Deactivate ball reference')
 
-            style.AddObserver("RightButtonPressEvent", self.QuitRubberBandZoom)
-            #style.AddObserver("RightButtonPressEvent", self.EnterRubberBandZoom)
+            if state == const.STATE_WL:
+                self.on_wl = True
+                self.wl_text.Show()
+            else:
+                self.on_wl = False
+                self.wl_text.Hide()
 
-        else:
-            style = vtk.vtkInteractorStyleImage()
-
-            # Check each event available for each state
-            for event in action[state]:
-                # Bind event
-                style.AddObserver(event,
-                                  action[state][event])
-
-            # Common to all styles
-            # Mouse Buttons' presses / releases
-            style.AddObserver("LeftButtonPressEvent", self.OnLeftClick)
-            style.AddObserver("LeftButtonReleaseEvent", self.OnReleaseLeftButton)
-            style.AddObserver("RightButtonPressEvent", self.OnRightClick)
-            style.AddObserver("RightButtonReleaseEvent", self.OnReleaseRightButton)            
-
-            # Zoom using right button
-            style.AddObserver("RightButtonPressEvent",self.OnZoomRightClick)
-            style.AddObserver("MouseMoveEvent", self.OnZoomMoveRight)
-            style.AddObserver("RightButtonReleaseEvent", self.OnVtkRightRelease)
+            self.__set_editor_cursor_visibility(0)
             
-        #Scroll change slice
-        style.AddObserver("MouseWheelForwardEvent",self.OnScrollForward)
-        style.AddObserver("MouseWheelBackwardEvent", self.OnScrollBackward)
-            
-        if ((state == const.STATE_ZOOM) or (state == const.STATE_ZOOM_SL)):
-            self.interactor.Bind(wx.EVT_LEFT_DCLICK, self.OnUnZoom)
-        else:
-            self.interactor.Bind(wx.EVT_LEFT_DCLICK, self.OnUnSpinPan)
+            # Bind method according to current mode
+            if(state == const.STATE_ZOOM_SL):
+                style = vtk.vtkInteractorStyleRubberBandZoom()
 
-        # Measures are using vtkPropPicker because they need to get which actor
-        # was picked.
-        if state in (const.STATE_MEASURE_DISTANCE, const.STATE_MEASURE_ANGLE):
-            self.pick = vtk.vtkPropPicker()
-            self.interactor.SetPicker(self.pick)
-        else:
-            self.pick = vtk.vtkWorldPointPicker()
-            self.interactor.SetPicker(self.pick)
+                style.AddObserver("RightButtonPressEvent", self.QuitRubberBandZoom)
+                #style.AddObserver("RightButtonPressEvent", self.EnterRubberBandZoom)
 
-        self.style = style
-        self.interactor.SetInteractorStyle(style)
-        self.interactor.Render()
+            else:
+                style = vtk.vtkInteractorStyleImage()
+
+                # Check each event available for each state
+                for event in action[state]:
+                    # Bind event
+                    style.AddObserver(event,
+                                      action[state][event])
+
+                # Common to all styles
+                # Mouse Buttons' presses / releases
+                style.AddObserver("LeftButtonPressEvent", self.OnLeftClick)
+                style.AddObserver("LeftButtonReleaseEvent", self.OnReleaseLeftButton)
+                style.AddObserver("RightButtonPressEvent", self.OnRightClick)
+                style.AddObserver("RightButtonReleaseEvent", self.OnReleaseRightButton)            
+
+                # Zoom using right button
+                style.AddObserver("RightButtonPressEvent",self.OnZoomRightClick)
+                style.AddObserver("MouseMoveEvent", self.OnZoomMoveRight)
+                style.AddObserver("RightButtonReleaseEvent", self.OnVtkRightRelease)
+                
+            #Scroll change slice
+            style.AddObserver("MouseWheelForwardEvent",self.OnScrollForward)
+            style.AddObserver("MouseWheelBackwardEvent", self.OnScrollBackward)
+                
+            if ((state == const.STATE_ZOOM) or (state == const.STATE_ZOOM_SL)):
+                self.interactor.Bind(wx.EVT_LEFT_DCLICK, self.OnUnZoom)
+            else:
+                self.interactor.Bind(wx.EVT_LEFT_DCLICK, self.OnUnSpinPan)
+
+            # Measures are using vtkPropPicker because they need to get which actor
+            # was picked.
+            if state in (const.STATE_MEASURE_DISTANCE, const.STATE_MEASURE_ANGLE):
+                self.pick = vtk.vtkPropPicker()
+                self.interactor.SetPicker(self.pick)
+            else:
+                self.pick = vtk.vtkWorldPointPicker()
+                self.interactor.SetPicker(self.pick)
+
+            self.style = style
+            self.interactor.SetInteractorStyle(style)
+            self.interactor.Render()
    
     def QuitRubberBandZoom(self, evt, obj):
         style =  vtk.vtkInteractorStyleImage()
@@ -807,37 +824,6 @@ class Viewer(wx.Panel):
 
         self.slice_.apply_slice_buffer_to_mask(self.orientation)
         self._flush_buffer = False
-
-    def OnCrossMouseClick(self, evt, obj):
-        self.ChangeCrossPosition()
-
-    def OnCrossMove(self, evt, obj):
-        # The user moved the mouse with left button pressed
-        if self.left_pressed:
-            self.ChangeCrossPosition()
-
-    def ChangeCrossPosition(self):
-        mouse_x, mouse_y = self.interactor.GetEventPosition()
-        renderer = self.slice_data.renderer
-        self.pick.Pick(mouse_x, mouse_y, 0, renderer)
-
-        # Get in what slice data the click occurred
-        # pick to get click position in the 3d world
-        coord_cross = self.get_coordinate_cursor()
-        position = self.slice_data.actor.GetInput().FindPoint(coord_cross)
-        # Forcing focal point to be setted in the center of the pixel.
-        coord_cross = self.slice_data.actor.GetInput().GetPoint(position)
-
-        coord = self.calcultate_scroll_position(position)   
-        self.ScrollSlice(coord)
-
-        Publisher.sendMessage('Update cross position', coord_cross)
-        Publisher.sendMessage('Set ball reference position based on bound',
-                                   coord_cross)
-        Publisher.sendMessage('Set camera in volume', coord_cross)
-        Publisher.sendMessage('Render volume viewer')
-        
-        self.interactor.Render()
 
     def Navigation(self, pubsub_evt):
         # Get point from base change

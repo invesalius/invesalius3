@@ -19,7 +19,144 @@
 
 import vtk
 
+from wx.lib.pubsub import pub as Publisher
+
 import constants as const
+
+class ZoomInteractorStyle(vtk.vtkInteractorStyleImage):
+    """
+    Interactor style responsible for zoom the camera.
+    """
+    def __init__(self):
+        self.right_pressed = False
+
+        # Zoom using right button
+        self.AddObserver("RightButtonPressEvent",self.OnZoomRightClick)
+        self.AddObserver("MouseMoveEvent", self.OnZoomRightMove)
+        self.AddObserver("RightButtonReleaseEvent", self.OnZoomRightRelease)
+
+    def OnZoomRightMove(self, evt, obj):
+        if (self.right_pressed):
+            evt.Dolly()
+            evt.OnRightButtonDown()
+
+    def OnZoomRightClick(self, evt, obj):
+        self.right_pressed = 1
+        evt.StartDolly()
+
+    def OnZoomRightRelease(self, evt, obj):
+        self.right_pressed = False
+
+class CrossInteractorStyle(ZoomInteractorStyle):
+    """
+    Interactor style responsible for the Cross.
+    """
+    def __init__(self, orientation, slice_data):
+        ZoomInteractorStyle.__init__(self)
+
+        self.orientation = orientation
+        self.slice_actor = slice_data.actor
+        self.slice_data = slice_data
+
+        self.left_pressed = False
+        self.picker = vtk.vtkWorldPointPicker()
+
+        self.AddObserver("MouseMoveEvent", self.OnCrossMove)
+        self.AddObserver("LeftButtonPressEvent", self.OnCrossMouseClick)
+        self.AddObserver("LeftButtonReleaseEvent", self.OnReleaseLeftButton)
+
+    def OnCrossMouseClick(self, obj, evt):
+        self.left_pressed = True
+        iren = obj.GetInteractor()
+        self.ChangeCrossPosition(iren)
+
+    def OnCrossMove(self, obj, evt):
+        # The user moved the mouse with left button pressed
+        if self.left_pressed:
+            print "OnCrossMove interactor style"
+            iren = obj.GetInteractor()
+            self.ChangeCrossPosition(iren)
+
+    def OnReleaseLeftButton(self, obj, evt):
+        self.left_pressed = False
+
+    def ChangeCrossPosition(self, iren):
+        mouse_x, mouse_y = iren.GetEventPosition()
+        ren = iren.GetRenderWindow().GetRenderers().GetFirstRenderer()
+        self.picker.Pick(mouse_x, mouse_y, 0, ren)
+
+        # Get in what slice data the click occurred
+        # pick to get click position in the 3d world
+        coord_cross = self.get_coordinate_cursor()
+        position = self.slice_actor.GetInput().FindPoint(coord_cross)
+        # Forcing focal point to be setted in the center of the pixel.
+        coord_cross = self.slice_actor.GetInput().GetPoint(position)
+
+        coord = self.calcultate_scroll_position(position)   
+        self.ScrollSlice(coord)
+
+        Publisher.sendMessage('Update cross position', coord_cross)
+        Publisher.sendMessage('Set ball reference position based on bound',
+                                   coord_cross)
+        Publisher.sendMessage('Set camera in volume', coord_cross)
+        Publisher.sendMessage('Render volume viewer')
+        
+        iren.Render()
+
+    def get_coordinate_cursor(self):
+        # Find position
+        x, y, z = self.picker.GetPickPosition()
+        bounds = self.slice_actor.GetBounds()
+        if bounds[0] == bounds[1]:
+            x = bounds[0]
+        elif bounds[2] == bounds[3]:
+            y = bounds[2]
+        elif bounds[4] == bounds[5]:
+            z = bounds[4]
+        return x, y, z
+
+    def calcultate_scroll_position(self, position):
+        # Based in the given coord (x, y, z), returns a list with the scroll positions for each
+        # orientation, being the first position the sagital, second the coronal
+        # and the last, axial.
+
+        if self.orientation == 'AXIAL':
+            image_width = self.slice_actor.GetInput().GetDimensions()[0]
+            axial = self.slice_data.number
+            coronal = position / image_width
+            sagital = position % image_width
+
+        elif self.orientation == 'CORONAL':
+            image_width = self.slice_actor.GetInput().GetDimensions()[0]
+            axial = position / image_width
+            coronal = self.slice_data.number
+            sagital = position % image_width
+
+        elif self.orientation == 'SAGITAL':
+            image_width = self.slice_actor.GetInput().GetDimensions()[1]
+            axial = position / image_width
+            coronal = position % image_width
+            sagital = self.slice_data.number
+
+        return sagital, coronal, axial
+
+    def ScrollSlice(self, coord):
+        if self.orientation == "AXIAL":
+            Publisher.sendMessage(('Set scroll position', 'SAGITAL'),
+                                       coord[0])
+            Publisher.sendMessage(('Set scroll position', 'CORONAL'),
+                                       coord[1])
+        elif self.orientation == "SAGITAL":
+            Publisher.sendMessage(('Set scroll position', 'AXIAL'),
+                                       coord[2])
+            Publisher.sendMessage(('Set scroll position', 'CORONAL'),
+                                       coord[1])
+        elif self.orientation == "CORONAL":
+            Publisher.sendMessage(('Set scroll position', 'AXIAL'),
+                                       coord[2])
+            Publisher.sendMessage(('Set scroll position', 'SAGITAL'),
+                                       coord[0])
+
 
 class ViewerStyle:
     def __init__(self):
