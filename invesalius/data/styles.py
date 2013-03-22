@@ -23,6 +23,12 @@ from wx.lib.pubsub import pub as Publisher
 
 import constants as const
 
+ORIENTATIONS = {
+        "AXIAL": const.AXIAL,
+        "CORONAL": const.CORONAL,
+        "SAGITAL": const.SAGITAL,
+        }
+
 class BaseImageInteractorStyle(vtk.vtkInteractorStyleImage):
     def __init__(self):
         self.right_pressed = False
@@ -215,6 +221,33 @@ class WWWLInteractorStyle(ZoomInteractorStyle):
         iren = obj.GetInteractor()
         self.last_x, self.last_y = iren.GetLastEventPosition()
 
+
+class LinearMeasure(ZoomInteractorStyle):
+    def __init__(self, orientation, slice_data):
+        ZoomInteractorStyle.__init__(self)
+
+        self.orientation = orientation
+        self.slice_data = slice_data
+
+        self.picker = vtk.vtkCellPicker()
+
+        self.AddObserver("LeftButtonPressEvent", self.OnInsertLinearMeasurePoint)
+
+    def OnInsertLinearMeasurePoint(self, obj, evt):
+        iren = obj.GetInteractor()
+        x,y = iren.GetEventPosition()
+        render = iren.FindPokedRenderer(x, y)
+        slice_number = self.slice_data.number
+        self.picker.Pick(x, y, 0, render)
+        x, y, z = self.picker.GetPickPosition()
+        print x, y, z
+        if self.picker.GetViewProp(): 
+            self.render_to_add = self.slice_data.renderer
+            Publisher.sendMessage("Add measurement point",
+                                  ((x, y,z), const.LINEAR,
+                                   ORIENTATIONS[self.orientation],
+                                   slice_number))
+            Publisher.sendMessage('Update slice viewer')
 
 class ViewerStyle:
     def __init__(self):

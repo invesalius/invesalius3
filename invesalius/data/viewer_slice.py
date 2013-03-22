@@ -205,6 +205,12 @@ class Viewer(wx.Panel):
             self.interactor.SetInteractorStyle(style)
             self.interactor.Render()
 
+        elif state == const.STATE_MEASURE_DISTANCE:
+            style = styles.LinearMeasure(self.orientation, self.slice_data)
+            self.style = style
+            self.interactor.SetInteractorStyle(style)
+            self.interactor.Render()
+
         else:
             self.state = state
             action = {
@@ -241,10 +247,6 @@ class Viewer(wx.Panel):
                                 },
                       const.STATE_DEFAULT:
                                 {
-                                },
-                      const.STATE_MEASURE_DISTANCE:
-                                {
-                                "LeftButtonPressEvent": self.OnInsertLinearMeasurePoint
                                 },
                       const.STATE_MEASURE_ANGLE:
                                 {
@@ -1450,21 +1452,6 @@ class Viewer(wx.Panel):
             elif coord[index] < extent_min[index]:
                 coord[index] = extent_min[index]
         return coord
-
-    def OnInsertLinearMeasurePoint(self, obj, evt):
-        x,y = self.interactor.GetEventPosition()
-        render = self.interactor.FindPokedRenderer(x, y)
-        slice_data = self.get_slice_data(render)
-        slice_number = slice_data.number
-        self.pick.Pick(x, y, 0, render)
-        x, y, z = self.pick.GetPickPosition()
-        print x, y, z
-        if self.pick.GetViewProp(): 
-            self.render_to_add = slice_data.renderer
-            Publisher.sendMessage("Add measurement point",
-                    ((x, y,z), const.LINEAR, ORIENTATIONS[self.orientation],
-                        slice_number))
-            self.interactor.Render()
 
     def OnInsertAngularMeasurePoint(self, obj, evt):
         x,y = self.interactor.GetEventPosition()
