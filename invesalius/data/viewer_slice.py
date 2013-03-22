@@ -193,6 +193,18 @@ class Viewer(wx.Panel):
 
             self.__set_cross_visibility(1)
             Publisher.sendMessage('Activate ball reference')
+        elif state == const.STATE_WL:
+            self.on_wl = True
+            self.wl_text.Show()
+
+            ww = sl.Slice().window_width
+            wl = sl.Slice().window_level
+
+            style = styles.WWWLInteractorStyle(ww, wl)
+            self.style = style
+            self.interactor.SetInteractorStyle(style)
+            self.interactor.Render()
+
         else:
             self.state = state
             action = {
@@ -226,11 +238,6 @@ class Viewer(wx.Panel):
                                 {
                                 "MouseMoveEvent": self.OnChangeSliceMove,
                                 "LeftButtonPressEvent": self.OnChangeSliceClick,
-                                },
-                      const.STATE_WL:
-                                {
-                                "MouseMoveEvent": self.OnWindowLevelMove,
-                                "LeftButtonPressEvent": self.OnWindowLevelClick,
                                 },
                       const.STATE_DEFAULT:
                                 {
@@ -352,32 +359,6 @@ class Viewer(wx.Panel):
     def OnReleaseLeftButton(self, evt, obj):
         self.left_pressed = 0
         Publisher.sendMessage('Update slice viewer')
-
-    def OnWindowLevelMove(self, evt, obj):
-        if (self.left_pressed):
-            position = self.interactor.GetLastEventPosition()
-            mouse_x, mouse_y = self.interactor.GetEventPosition()
-            self.acum_achange_window += mouse_x - self.last_x
-            self.acum_achange_level += mouse_y - self.last_y
-            self.last_x, self.last_y = mouse_x, mouse_y
-
-            Publisher.sendMessage('Bright and contrast adjustment image',
-                (self.acum_achange_window, self.acum_achange_level))
-
-            #self.SetWLText(self.acum_achange_level,
-            #              self.acum_achange_window)
-
-            const.WINDOW_LEVEL['Manual'] = (self.acum_achange_window,\
-                                           self.acum_achange_level)
-            Publisher.sendMessage('Check window and level other')
-            Publisher.sendMessage('Update window level value',(self.acum_achange_window, 
-                                                                self.acum_achange_level))
-            #Necessary update the slice plane in the volume case exists
-            Publisher.sendMessage('Update slice viewer')
-            Publisher.sendMessage('Render volume viewer')
-
-    def OnWindowLevelClick(self, evt, obj):
-        self.last_x, self.last_y = self.interactor.GetLastEventPosition()
 
     def UpdateWindowLevelValue(self, pubsub_evt):
         window, level = pubsub_evt.data

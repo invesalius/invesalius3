@@ -23,17 +23,39 @@ from wx.lib.pubsub import pub as Publisher
 
 import constants as const
 
-class ZoomInteractorStyle(vtk.vtkInteractorStyleImage):
+class BaseImageInteractorStyle(vtk.vtkInteractorStyleImage):
+    def __init__(self):
+        self.right_pressed = False
+        self.left_pressed = False
+
+        self.AddObserver("LeftButtonPressEvent", self.OnPressLeftButton)
+        self.AddObserver("LeftButtonReleaseEvent", self.OnReleaseLeftButton)
+
+        self.AddObserver("RightButtonPressEvent",self.OnPressRightButton)
+        self.AddObserver("RightButtonReleaseEvent", self.OnReleaseRightButton)
+
+    def OnPressLeftButton(self, evt, obj):
+        self.left_pressed = True
+
+    def OnReleaseLeftButton(self, evt, obj):
+        self.left_pressed = False
+
+    def OnPressRightButton(self, evt, obj):
+        self.right_pressed = True
+
+    def OnReleaseRightButton(self, evt, obj):
+        self.right_pressed = False
+
+
+class ZoomInteractorStyle(BaseImageInteractorStyle):
     """
     Interactor style responsible for zoom the camera.
     """
     def __init__(self):
-        self.right_pressed = False
-
+        BaseImageInteractorStyle.__init__(self)
         # Zoom using right button
         self.AddObserver("RightButtonPressEvent",self.OnZoomRightClick)
         self.AddObserver("MouseMoveEvent", self.OnZoomRightMove)
-        self.AddObserver("RightButtonReleaseEvent", self.OnZoomRightRelease)
 
     def OnZoomRightMove(self, evt, obj):
         if (self.right_pressed):
@@ -41,11 +63,8 @@ class ZoomInteractorStyle(vtk.vtkInteractorStyleImage):
             evt.OnRightButtonDown()
 
     def OnZoomRightClick(self, evt, obj):
-        self.right_pressed = 1
         evt.StartDolly()
 
-    def OnZoomRightRelease(self, evt, obj):
-        self.right_pressed = False
 
 class CrossInteractorStyle(ZoomInteractorStyle):
     """
@@ -58,7 +77,6 @@ class CrossInteractorStyle(ZoomInteractorStyle):
         self.slice_actor = slice_data.actor
         self.slice_data = slice_data
 
-        self.left_pressed = False
         self.picker = vtk.vtkWorldPointPicker()
 
         self.AddObserver("MouseMoveEvent", self.OnCrossMove)
@@ -66,7 +84,6 @@ class CrossInteractorStyle(ZoomInteractorStyle):
         self.AddObserver("LeftButtonReleaseEvent", self.OnReleaseLeftButton)
 
     def OnCrossMouseClick(self, obj, evt):
-        self.left_pressed = True
         iren = obj.GetInteractor()
         self.ChangeCrossPosition(iren)
 
@@ -76,9 +93,6 @@ class CrossInteractorStyle(ZoomInteractorStyle):
             print "OnCrossMove interactor style"
             iren = obj.GetInteractor()
             self.ChangeCrossPosition(iren)
-
-    def OnReleaseLeftButton(self, obj, evt):
-        self.left_pressed = False
 
     def ChangeCrossPosition(self, iren):
         mouse_x, mouse_y = iren.GetEventPosition()
@@ -156,6 +170,50 @@ class CrossInteractorStyle(ZoomInteractorStyle):
                                        coord[2])
             Publisher.sendMessage(('Set scroll position', 'SAGITAL'),
                                        coord[0])
+
+
+class WWWLInteractorStyle(ZoomInteractorStyle):
+    """
+    Interactor style responsible for Window Level & Width functionality.
+    """
+    def __init__(self, ww, wl):
+        ZoomInteractorStyle.__init__(self)
+
+        self.last_x = 0
+        self.last_y = 0
+
+        self.acum_achange_window = ww
+        self.acum_achange_level = wl
+
+        self.AddObserver("MouseMoveEvent", self.OnWindowLevelMove)
+        self.AddObserver("LeftButtonPressEvent", self.OnWindowLevelClick)
+
+    def OnWindowLevelMove(self, obj, evt):
+        if (self.left_pressed):
+            iren = obj.GetInteractor()
+            mouse_x, mouse_y = iren.GetEventPosition()
+            self.acum_achange_window += mouse_x - self.last_x
+            self.acum_achange_level += mouse_y - self.last_y
+            self.last_x, self.last_y = mouse_x, mouse_y
+
+            Publisher.sendMessage('Bright and contrast adjustment image',
+                (self.acum_achange_window, self.acum_achange_level))
+
+            #self.SetWLText(self.acum_achange_level,
+            #              self.acum_achange_window)
+
+            const.WINDOW_LEVEL['Manual'] = (self.acum_achange_window,\
+                                           self.acum_achange_level)
+            Publisher.sendMessage('Check window and level other')
+            Publisher.sendMessage('Update window level value',(self.acum_achange_window, 
+                                                                self.acum_achange_level))
+            #Necessary update the slice plane in the volume case exists
+            Publisher.sendMessage('Update slice viewer')
+            Publisher.sendMessage('Render volume viewer')
+
+    def OnWindowLevelClick(self, obj, evt):
+        iren = obj.GetInteractor()
+        self.last_x, self.last_y = iren.GetLastEventPosition()
 
 
 class ViewerStyle:
