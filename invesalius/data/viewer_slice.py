@@ -211,6 +211,12 @@ class Viewer(wx.Panel):
             self.interactor.SetInteractorStyle(style)
             self.interactor.Render()
 
+        elif state == const.STATE_MEASURE_ANGLE:
+            style = styles.AngularMeasure(self.orientation, self.slice_data)
+            self.style = style
+            self.interactor.SetInteractorStyle(style)
+            self.interactor.Render()
+
         else:
             self.state = state
             action = {

@@ -223,6 +223,9 @@ class WWWLInteractorStyle(ZoomInteractorStyle):
 
 
 class LinearMeasure(ZoomInteractorStyle):
+    """
+    Interactor style responsible for insert linear measures.
+    """
     def __init__(self, orientation, slice_data):
         ZoomInteractorStyle.__init__(self)
 
@@ -240,14 +243,42 @@ class LinearMeasure(ZoomInteractorStyle):
         slice_number = self.slice_data.number
         self.picker.Pick(x, y, 0, render)
         x, y, z = self.picker.GetPickPosition()
-        print x, y, z
         if self.picker.GetViewProp(): 
-            self.render_to_add = self.slice_data.renderer
             Publisher.sendMessage("Add measurement point",
                                   ((x, y,z), const.LINEAR,
                                    ORIENTATIONS[self.orientation],
                                    slice_number))
             Publisher.sendMessage('Update slice viewer')
+
+
+class AngularMeasure(ZoomInteractorStyle):
+    """
+    Interactor style responsible for insert angular measurements.
+    """
+    def __init__(self, orientation, slice_data):
+        ZoomInteractorStyle.__init__(self)
+
+        self.orientation = orientation
+        self.slice_data = slice_data
+
+        self.picker = vtk.vtkCellPicker()
+
+        self.AddObserver("LeftButtonPressEvent", self.OnInsertAngularMeasurePoint)
+
+    def OnInsertAngularMeasurePoint(self, obj, evt):
+        iren = obj.GetInteractor()
+        x,y = iren.GetEventPosition()
+        render = iren.FindPokedRenderer(x, y)
+        slice_number = self.slice_data.number
+        self.picker.Pick(x, y, 0, render)
+        x, y, z = self.picker.GetPickPosition()
+        if self.picker.GetViewProp(): 
+            Publisher.sendMessage("Add measurement point",
+                                  ((x, y,z), const.ANGULAR,
+                                   ORIENTATIONS[self.orientation],
+                                   slice_number))
+            Publisher.sendMessage('Update slice viewer')
+
 
 class ViewerStyle:
     def __init__(self):
