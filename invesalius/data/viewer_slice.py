@@ -254,10 +254,6 @@ class Viewer(wx.Panel):
                       const.STATE_DEFAULT:
                                 {
                                 },
-                      const.STATE_MEASURE_ANGLE:
-                                {
-                                "LeftButtonPressEvent": self.OnInsertAngularMeasurePoint
-                                },
                      }
 
 
@@ -1458,20 +1454,6 @@ class Viewer(wx.Panel):
             elif coord[index] < extent_min[index]:
                 coord[index] = extent_min[index]
         return coord
-
-    def OnInsertAngularMeasurePoint(self, obj, evt):
-        x,y = self.interactor.GetEventPosition()
-        render = self.interactor.FindPokedRenderer(x, y)
-        slice_data = self.get_slice_data(render)
-        slice_number = slice_data.number
-        self.pick.Pick(x, y, 0, render)
-        x, y, z = self.pick.GetPickPosition()
-        if self.pick.GetViewProp(): 
-            self.render_to_add = slice_data.renderer
-            Publisher.sendMessage("Add measurement point",
-                    ((x, y,z), const.ANGULAR, ORIENTATIONS[self.orientation],
-                        slice_number))
-            self.interactor.Render()
 
     def ReloadActualSlice(self, pubsub_evt):
         pos = self.scroll.GetThumbPosition()
