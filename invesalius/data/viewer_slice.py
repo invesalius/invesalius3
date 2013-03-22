@@ -217,6 +217,13 @@ class Viewer(wx.Panel):
             self.interactor.SetInteractorStyle(style)
             self.interactor.Render()
 
+        elif state == const.STATE_PAN:
+            style = styles.PanMoveInteractorStyle()
+
+            self.style = style
+            self.interactor.SetInteractorStyle(style)
+            self.interactor.Render()
+
         else:
             self.state = state
             action = {
@@ -227,12 +234,6 @@ class Viewer(wx.Panel):
                                 "LeftButtonReleaseEvent": self.OnBrushRelease,
                                 "EnterEvent": self.OnEnterInteractor,
                                 "LeaveEvent": self.OnLeaveInteractor
-                                },
-                      const.STATE_PAN:
-                                {
-                                "MouseMoveEvent": self.OnPanMove,
-                                "LeftButtonPressEvent": self.OnPanClick,
-                                "LeftButtonReleaseEvent": self.OnVtkRightRelease
                                 },
                       const.STATE_SPIN:
                                 {

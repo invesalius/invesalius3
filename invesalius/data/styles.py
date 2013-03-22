@@ -251,6 +251,21 @@ class LinearMeasure(ZoomInteractorStyle):
             Publisher.sendMessage('Update slice viewer')
 
 
+class PanMoveInteractorStyle(ZoomInteractorStyle):
+    """
+    Interactor style responsible for translate the camera.
+    """
+    def __init__(self):
+        ZoomInteractorStyle.__init__(self)
+        self.AddObserver("MouseMoveEvent", self.OnPanMove)
+
+    def OnPanMove(self, obj, evt):
+        print "PAN"
+        if self.left_pressed:
+            obj.Pan()
+            obj.OnRightButtonDown()
+
+
 class AngularMeasure(ZoomInteractorStyle):
     """
     Interactor style responsible for insert angular measurements.
