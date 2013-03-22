@@ -224,7 +224,7 @@ class WWWLInteractorStyle(ZoomInteractorStyle):
 
 class LinearMeasure(ZoomInteractorStyle):
     """
-    Interactor style responsible for insert linear measures.
+    Interactor style responsible for insert linear measurements.
     """
     def __init__(self, orientation, slice_data):
         ZoomInteractorStyle.__init__(self)
