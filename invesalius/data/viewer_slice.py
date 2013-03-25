@@ -224,6 +224,13 @@ class Viewer(wx.Panel):
             self.interactor.SetInteractorStyle(style)
             self.interactor.Render()
 
+        elif state == const.STATE_SPIN:
+            style = styles.SpinInteractorStyle(self)
+
+            self.style = style
+            self.interactor.SetInteractorStyle(style)
+            self.interactor.Render()
+
         else:
             self.state = state
             action = {
@@ -234,12 +241,6 @@ class Viewer(wx.Panel):
                                 "LeftButtonReleaseEvent": self.OnBrushRelease,
                                 "EnterEvent": self.OnEnterInteractor,
                                 "LeaveEvent": self.OnLeaveInteractor
-                                },
-                      const.STATE_SPIN:
-                                {
-                                "MouseMoveEvent": self.OnSpinMove,
-                                "LeftButtonPressEvent": self.OnSpinClick,
-                                "LeftButtonReleaseEvent": self.OnVtkRightRelease
                                 },
                       const.STATE_ZOOM:
                                 {
@@ -308,8 +309,8 @@ class Viewer(wx.Panel):
                 
             if ((state == const.STATE_ZOOM) or (state == const.STATE_ZOOM_SL)):
                 self.interactor.Bind(wx.EVT_LEFT_DCLICK, self.OnUnZoom)
-            else:
-                self.interactor.Bind(wx.EVT_LEFT_DCLICK, self.OnUnSpinPan)
+            #else:
+                #self.interactor.Bind(wx.EVT_LEFT_DCLICK, self.OnUnspinPan)
 
             # Measures are using vtkPropPicker because they need to get which actor
             # was picked.
@@ -427,7 +428,7 @@ class Viewer(wx.Panel):
         #self.Reposition(slice_data)
         self.interactor.Render()
 
-    def OnUnSpinPan(self, evt):        
+    def UnspinPan(self):        
         orientation = self.orientation
         proj = project.Project()
         orig_orien = 1
@@ -451,20 +452,6 @@ class Viewer(wx.Panel):
             ren.ResetCamera()
             self.interactor.Render()
             self.paned_image = False
-
-    def OnSpinMove(self, evt, obj):
-        mouse_x, mouse_y = self.interactor.GetLastEventPosition()
-        ren = self.interactor.FindPokedRenderer(mouse_x, mouse_y)
-        cam = ren.GetActiveCamera()
-        if (self.left_pressed):
-            self.UpdateTextDirection(cam)    
-            self.spined_image = True
-            evt.Spin()
-            evt.OnRightButtonDown()
-
-
-    def OnSpinClick(self, evt, obj):
-        evt.StartSpin()
 
     def OnEnterInteractor(self, evt, obj):
         if (self.slice_.buffer_slices[self.orientation].mask is None):
@@ -547,6 +534,17 @@ class Viewer(wx.Panel):
         self.right_text.SetValue(directions[3])
         self.interactor.Render()
 
+    def ResetTextDirection(self, cam):
+        # Values are on ccw order, starting from the top:
+        if self.orientation == 'AXIAL':
+            values = [_("A"), _("R"), _("P"), _("L")]
+        elif self.orientation == 'CORONAL':
+            values = [_("T"), _("R"), _("B"), _("L")]
+        else: # 'SAGITAL':
+            values = [_("T"), _("P"), _("B"), _("A")]
+
+        self.RenderTextDirection(values)
+        self.interactor.Render()
 
     def UpdateTextDirection(self, cam):
         croll = cam.GetRoll()

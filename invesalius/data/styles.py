@@ -18,6 +18,7 @@
 #--------------------------------------------------------------------------
 
 import vtk
+import wx
 
 from wx.lib.pubsub import pub as Publisher
 
@@ -289,10 +290,43 @@ class PanMoveInteractorStyle(ZoomInteractorStyle):
         self.AddObserver("MouseMoveEvent", self.OnPanMove)
 
     def OnPanMove(self, obj, evt):
-        print "PAN"
         if self.left_pressed:
             obj.Pan()
             obj.OnRightButtonDown()
+
+
+class SpinInteractorStyle(ZoomInteractorStyle):
+    """
+    Interactor style responsible for spin the camera.
+    """
+    def __init__(self, viewer):
+        ZoomInteractorStyle.__init__(self)
+
+        self.viewer = viewer
+
+        self.AddObserver("MouseMoveEvent", self.OnSpinMove)
+        self.viewer.interactor.Bind(wx.EVT_LEFT_DCLICK, self.OnUnspinPan)
+
+    def OnSpinMove(self, obj, evt):
+        iren = obj.GetInteractor()
+        mouse_x, mouse_y = iren.GetLastEventPosition()
+        ren = iren.FindPokedRenderer(mouse_x, mouse_y)
+        cam = ren.GetActiveCamera()
+        if (self.left_pressed):
+            self.viewer.UpdateTextDirection(cam)    
+            self.spined_image = True
+            obj.Spin()
+            obj.OnRightButtonDown()
+
+    def OnUnspinPan(self, evt):
+        orig_orien = 1
+        iren = self.viewer.interactor
+        mouse_x, mouse_y = iren.GetLastEventPosition()
+        ren = iren.FindPokedRenderer(mouse_x, mouse_y)
+        cam = ren.GetActiveCamera()
+        cam.SetViewUp(const.SLICE_POSITION[orig_orien][0][self.viewer.orientation])
+        self.viewer.ResetTextDirection(cam)
+        iren.Render()
 
 
 class ViewerStyle:
