@@ -222,7 +222,7 @@ class WWWLInteractorStyle(ZoomInteractorStyle):
         self.last_x, self.last_y = iren.GetLastEventPosition()
 
 
-class LinearMeasure(ZoomInteractorStyle):
+class LinearMeasureInteractorStyle(ZoomInteractorStyle):
     """
     Interactor style responsible for insert linear measurements.
     """
@@ -251,22 +251,7 @@ class LinearMeasure(ZoomInteractorStyle):
             Publisher.sendMessage('Update slice viewer')
 
 
-class PanMoveInteractorStyle(ZoomInteractorStyle):
-    """
-    Interactor style responsible for translate the camera.
-    """
-    def __init__(self):
-        ZoomInteractorStyle.__init__(self)
-        self.AddObserver("MouseMoveEvent", self.OnPanMove)
-
-    def OnPanMove(self, obj, evt):
-        print "PAN"
-        if self.left_pressed:
-            obj.Pan()
-            obj.OnRightButtonDown()
-
-
-class AngularMeasure(ZoomInteractorStyle):
+class AngularMeasureInteractorStyle(ZoomInteractorStyle):
     """
     Interactor style responsible for insert angular measurements.
     """
@@ -293,6 +278,21 @@ class AngularMeasure(ZoomInteractorStyle):
                                    ORIENTATIONS[self.orientation],
                                    slice_number))
             Publisher.sendMessage('Update slice viewer')
+
+
+class PanMoveInteractorStyle(ZoomInteractorStyle):
+    """
+    Interactor style responsible for translate the camera.
+    """
+    def __init__(self):
+        ZoomInteractorStyle.__init__(self)
+        self.AddObserver("MouseMoveEvent", self.OnPanMove)
+
+    def OnPanMove(self, obj, evt):
+        print "PAN"
+        if self.left_pressed:
+            obj.Pan()
+            obj.OnRightButtonDown()
 
 
 class ViewerStyle:

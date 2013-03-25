@@ -206,13 +206,13 @@ class Viewer(wx.Panel):
             self.interactor.Render()
 
         elif state == const.STATE_MEASURE_DISTANCE:
-            style = styles.LinearMeasure(self.orientation, self.slice_data)
+            style = styles.LinearMeasureInteractorStyle(self.orientation, self.slice_data)
             self.style = style
             self.interactor.SetInteractorStyle(style)
             self.interactor.Render()
 
         elif state == const.STATE_MEASURE_ANGLE:
-            style = styles.AngularMeasure(self.orientation, self.slice_data)
+            style = styles.AngularMeasureInteractorStyle(self.orientation, self.slice_data)
             self.style = style
             self.interactor.SetInteractorStyle(style)
             self.interactor.Render()
