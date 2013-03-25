@@ -285,14 +285,25 @@ class PanMoveInteractorStyle(ZoomInteractorStyle):
     """
     Interactor style responsible for translate the camera.
     """
-    def __init__(self):
+    def __init__(self, viewer):
         ZoomInteractorStyle.__init__(self)
+
+        self.viewer = viewer
+
         self.AddObserver("MouseMoveEvent", self.OnPanMove)
+        self.viewer.interactor.Bind(wx.EVT_LEFT_DCLICK, self.OnUnspan)
 
     def OnPanMove(self, obj, evt):
         if self.left_pressed:
             obj.Pan()
             obj.OnRightButtonDown()
+
+    def OnUnspan(self, evt):
+        iren = self.viewer.interactor
+        mouse_x, mouse_y = iren.GetLastEventPosition()
+        ren = iren.FindPokedRenderer(mouse_x, mouse_y)
+        ren.ResetCamera()
+        iren.Render()
 
 
 class SpinInteractorStyle(ZoomInteractorStyle):
@@ -305,7 +316,7 @@ class SpinInteractorStyle(ZoomInteractorStyle):
         self.viewer = viewer
 
         self.AddObserver("MouseMoveEvent", self.OnSpinMove)
-        self.viewer.interactor.Bind(wx.EVT_LEFT_DCLICK, self.OnUnspinPan)
+        self.viewer.interactor.Bind(wx.EVT_LEFT_DCLICK, self.OnUnspin)
 
     def OnSpinMove(self, obj, evt):
         iren = obj.GetInteractor()
@@ -318,7 +329,7 @@ class SpinInteractorStyle(ZoomInteractorStyle):
             obj.Spin()
             obj.OnRightButtonDown()
 
-    def OnUnspinPan(self, evt):
+    def OnUnspin(self, evt):
         orig_orien = 1
         iren = self.viewer.interactor
         mouse_x, mouse_y = iren.GetLastEventPosition()

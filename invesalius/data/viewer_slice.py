@@ -218,7 +218,7 @@ class Viewer(wx.Panel):
             self.interactor.Render()
 
         elif state == const.STATE_PAN:
-            style = styles.PanMoveInteractorStyle()
+            style = styles.PanMoveInteractorStyle(self)
 
             self.style = style
             self.interactor.SetInteractorStyle(style)
@@ -427,31 +427,6 @@ class Viewer(wx.Panel):
         ren.ResetCameraClippingRange()
         #self.Reposition(slice_data)
         self.interactor.Render()
-
-    def UnspinPan(self):        
-        orientation = self.orientation
-        proj = project.Project()
-        orig_orien = 1
-        mouse_x, mouse_y = self.interactor.GetLastEventPosition()
-        ren = self.interactor.FindPokedRenderer(mouse_x, mouse_y)
-         
-        if((self.state == const.STATE_SPIN) and (self.spined_image)):
-            self.cam.SetViewUp(const.SLICE_POSITION[orig_orien][0][self.orientation])
-            # Values are on ccw order, starting from the top:
-            if self.orientation == 'AXIAL':
-                values = [_("A"), _("R"), _("P"), _("L")]
-            elif self.orientation == 'CORONAL':
-                values = [_("T"), _("R"), _("B"), _("L")]
-            else: # 'SAGITAL':
-                values = [_("T"), _("P"), _("B"), _("A")]
-
-            self.RenderTextDirection(values)
-            self.interactor.Render()
-            self.spined_image = False
-        elif((self.state == const.STATE_PAN) and (self.paned_image)):
-            ren.ResetCamera()
-            self.interactor.Render()
-            self.paned_image = False
 
     def OnEnterInteractor(self, evt, obj):
         if (self.slice_.buffer_slices[self.orientation].mask is None):
