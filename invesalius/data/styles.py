@@ -54,7 +54,7 @@ class BaseImageInteractorStyle(vtk.vtkInteractorStyleImage):
         self.right_pressed = False
 
 
-class ZoomInteractorStyle(BaseImageInteractorStyle):
+class RightZoomInteractorStyle(BaseImageInteractorStyle):
     """
     Interactor style responsible for zoom the camera.
     """
@@ -73,12 +73,12 @@ class ZoomInteractorStyle(BaseImageInteractorStyle):
         evt.StartDolly()
 
 
-class CrossInteractorStyle(ZoomInteractorStyle):
+class CrossInteractorStyle(RightZoomInteractorStyle):
     """
     Interactor style responsible for the Cross.
     """
     def __init__(self, orientation, slice_data):
-        ZoomInteractorStyle.__init__(self)
+        RightZoomInteractorStyle.__init__(self)
 
         self.orientation = orientation
         self.slice_actor = slice_data.actor
@@ -179,12 +179,12 @@ class CrossInteractorStyle(ZoomInteractorStyle):
                                        coord[0])
 
 
-class WWWLInteractorStyle(ZoomInteractorStyle):
+class WWWLInteractorStyle(RightZoomInteractorStyle):
     """
     Interactor style responsible for Window Level & Width functionality.
     """
     def __init__(self, ww, wl):
-        ZoomInteractorStyle.__init__(self)
+        RightZoomInteractorStyle.__init__(self)
 
         self.last_x = 0
         self.last_y = 0
@@ -223,12 +223,12 @@ class WWWLInteractorStyle(ZoomInteractorStyle):
         self.last_x, self.last_y = iren.GetLastEventPosition()
 
 
-class LinearMeasureInteractorStyle(ZoomInteractorStyle):
+class LinearMeasureInteractorStyle(RightZoomInteractorStyle):
     """
     Interactor style responsible for insert linear measurements.
     """
     def __init__(self, orientation, slice_data):
-        ZoomInteractorStyle.__init__(self)
+        RightZoomInteractorStyle.__init__(self)
 
         self.orientation = orientation
         self.slice_data = slice_data
@@ -252,12 +252,12 @@ class LinearMeasureInteractorStyle(ZoomInteractorStyle):
             Publisher.sendMessage('Update slice viewer')
 
 
-class AngularMeasureInteractorStyle(ZoomInteractorStyle):
+class AngularMeasureInteractorStyle(RightZoomInteractorStyle):
     """
     Interactor style responsible for insert angular measurements.
     """
     def __init__(self, orientation, slice_data):
-        ZoomInteractorStyle.__init__(self)
+        RightZoomInteractorStyle.__init__(self)
 
         self.orientation = orientation
         self.slice_data = slice_data
@@ -281,12 +281,12 @@ class AngularMeasureInteractorStyle(ZoomInteractorStyle):
             Publisher.sendMessage('Update slice viewer')
 
 
-class PanMoveInteractorStyle(ZoomInteractorStyle):
+class PanMoveInteractorStyle(RightZoomInteractorStyle):
     """
     Interactor style responsible for translate the camera.
     """
     def __init__(self, viewer):
-        ZoomInteractorStyle.__init__(self)
+        RightZoomInteractorStyle.__init__(self)
 
         self.viewer = viewer
 
@@ -306,12 +306,12 @@ class PanMoveInteractorStyle(ZoomInteractorStyle):
         iren.Render()
 
 
-class SpinInteractorStyle(ZoomInteractorStyle):
+class SpinInteractorStyle(RightZoomInteractorStyle):
     """
     Interactor style responsible for spin the camera.
     """
     def __init__(self, viewer):
-        ZoomInteractorStyle.__init__(self)
+        RightZoomInteractorStyle.__init__(self)
 
         self.viewer = viewer
 
@@ -338,6 +338,8 @@ class SpinInteractorStyle(ZoomInteractorStyle):
         cam.SetViewUp(const.SLICE_POSITION[orig_orien][0][self.viewer.orientation])
         self.viewer.ResetTextDirection(cam)
         iren.Render()
+
+
 
 
 class ViewerStyle:
