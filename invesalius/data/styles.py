@@ -77,12 +77,12 @@ class CrossInteractorStyle(RightZoomInteractorStyle):
     """
     Interactor style responsible for the Cross.
     """
-    def __init__(self, orientation, slice_data):
+    def __init__(self, viewer):
         RightZoomInteractorStyle.__init__(self)
 
-        self.orientation = orientation
-        self.slice_actor = slice_data.actor
-        self.slice_data = slice_data
+        self.orientation = viewer.orientation
+        self.slice_actor = viewer.slice_data.actor
+        self.slice_data = viewer.slice_data
 
         self.picker = vtk.vtkWorldPointPicker()
 
@@ -183,14 +183,16 @@ class WWWLInteractorStyle(RightZoomInteractorStyle):
     """
     Interactor style responsible for Window Level & Width functionality.
     """
-    def __init__(self, ww, wl):
+    def __init__(self, viewer):
         RightZoomInteractorStyle.__init__(self)
+
+        self.viewer =  viewer
 
         self.last_x = 0
         self.last_y = 0
 
-        self.acum_achange_window = ww
-        self.acum_achange_level = wl
+        self.acum_achange_window = viewer.slice_.window_width
+        self.acum_achange_level = viewer.slice_.window_level
 
         self.AddObserver("MouseMoveEvent", self.OnWindowLevelMove)
         self.AddObserver("LeftButtonPressEvent", self.OnWindowLevelClick)
@@ -222,16 +224,20 @@ class WWWLInteractorStyle(RightZoomInteractorStyle):
         iren = obj.GetInteractor()
         self.last_x, self.last_y = iren.GetLastEventPosition()
 
+        self.acum_achange_window = viewer.slice_.window_width
+        self.acum_achange_level = viewer.slice_.window_level
+
 
 class LinearMeasureInteractorStyle(RightZoomInteractorStyle):
     """
     Interactor style responsible for insert linear measurements.
     """
-    def __init__(self, orientation, slice_data):
+    def __init__(self, viewer):
         RightZoomInteractorStyle.__init__(self)
 
-        self.orientation = orientation
-        self.slice_data = slice_data
+        self.viewer = viewer
+        self.orientation = viewer.orientation
+        self.slice_data = viewer.slice_data
 
         self.picker = vtk.vtkCellPicker()
 
@@ -249,18 +255,19 @@ class LinearMeasureInteractorStyle(RightZoomInteractorStyle):
                                   ((x, y,z), const.LINEAR,
                                    ORIENTATIONS[self.orientation],
                                    slice_number))
-            Publisher.sendMessage('Update slice viewer')
+            self.viewer.interactor.Render()
 
 
 class AngularMeasureInteractorStyle(RightZoomInteractorStyle):
     """
     Interactor style responsible for insert angular measurements.
     """
-    def __init__(self, orientation, slice_data):
+    def __init__(self, viewer):
         RightZoomInteractorStyle.__init__(self)
 
-        self.orientation = orientation
-        self.slice_data = slice_data
+        self.viewer = viewer
+        self.orientation = viewer.orientation
+        self.slice_data = viewer.slice_data
 
         self.picker = vtk.vtkCellPicker()
 
@@ -278,7 +285,7 @@ class AngularMeasureInteractorStyle(RightZoomInteractorStyle):
                                   ((x, y,z), const.ANGULAR,
                                    ORIENTATIONS[self.orientation],
                                    slice_number))
-            Publisher.sendMessage('Update slice viewer')
+            self.viewer.interactor.Render()
 
 
 class PanMoveInteractorStyle(RightZoomInteractorStyle):

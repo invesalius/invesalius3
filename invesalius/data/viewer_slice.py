@@ -176,8 +176,7 @@ class Viewer(wx.Panel):
 
     def SetInteractorStyle(self, state):
         if state == const.SLICE_STATE_CROSS:
-            style = styles.CrossInteractorStyle(self.orientation,
-                                                self.slice_data)
+            style = styles.CrossInteractorStyle(self)
             self.style = style
             self.interactor.SetInteractorStyle(style)
             self.interactor.Render()
@@ -197,22 +196,19 @@ class Viewer(wx.Panel):
             self.on_wl = True
             self.wl_text.Show()
 
-            ww = sl.Slice().window_width
-            wl = sl.Slice().window_level
-
-            style = styles.WWWLInteractorStyle(ww, wl)
+            style = styles.WWWLInteractorStyle(self)
             self.style = style
             self.interactor.SetInteractorStyle(style)
             self.interactor.Render()
 
         elif state == const.STATE_MEASURE_DISTANCE:
-            style = styles.LinearMeasureInteractorStyle(self.orientation, self.slice_data)
+            style = styles.LinearMeasureInteractorStyle(self)
             self.style = style
             self.interactor.SetInteractorStyle(style)
             self.interactor.Render()
 
         elif state == const.STATE_MEASURE_ANGLE:
-            style = styles.AngularMeasureInteractorStyle(self.orientation, self.slice_data)
+            style = styles.AngularMeasureInteractorStyle(self)
             self.style = style
             self.interactor.SetInteractorStyle(style)
             self.interactor.Render()
@@ -262,11 +258,6 @@ class Viewer(wx.Panel):
                                 "LeftButtonReleaseEvent": self.OnBrushRelease,
                                 "EnterEvent": self.OnEnterInteractor,
                                 "LeaveEvent": self.OnLeaveInteractor
-                                },
-                      const.SLICE_STATE_SCROLL:
-                                {
-                                "MouseMoveEvent": self.OnChangeSliceMove,
-                                "LeftButtonPressEvent": self.OnChangeSliceClick,
                                 },
                       const.STATE_DEFAULT:
                                 {
@@ -379,32 +370,6 @@ class Viewer(wx.Panel):
         self.acum_achange_window, self.acum_achange_level = (window, level)
         self.SetWLText(window, level)
         Publisher.sendMessage('Update all slice')
-
-
-    def OnChangeSliceMove(self, evt, obj):
-        if (self.left_pressed):
-            min = 0
-            max = self.slice_.GetMaxSliceNumber(self.orientation)
-    
-            if (self.left_pressed):
-                position = self.interactor.GetLastEventPosition()
-                scroll_position = self.scroll.GetThumbPosition()
-    
-                if (position[1] > self.last_position) and\
-                                (self.acum_achange_slice > min):
-                    self.acum_achange_slice -= 1
-                elif(position[1] < self.last_position) and\
-                                (self.acum_achange_slice < max):
-                     self.acum_achange_slice += 1
-                self.last_position = position[1]
-    
-                self.scroll.SetThumbPosition(self.acum_achange_slice)
-                self.OnScrollBar()
-
-    def OnChangeSliceClick(self, evt, obj):
-        position = list(self.interactor.GetLastEventPosition())
-        self.acum_achange_slice = self.scroll.GetThumbPosition()
-        self.last_position = position[1]
 
     def OnPanMove(self, evt, obj):
         mouse_x, mouse_y = self.interactor.GetLastEventPosition()
