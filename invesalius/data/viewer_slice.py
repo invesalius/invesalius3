@@ -256,12 +256,6 @@ class Viewer(wx.Panel):
                                 "EnterEvent": self.OnEnterInteractor,
                                 "LeaveEvent": self.OnLeaveInteractor
                                 },
-                      const.STATE_ZOOM:
-                                {
-                                "MouseMoveEvent": self.OnZoomMoveLeft,
-                                "LeftButtonPressEvent": self.OnZoomLeftClick,
-                                "LeftButtonReleaseEvent": self.OnVtkRightRelease
-                                },
                       const.SLICE_STATE_SCROLL:
                                 {
                                 "MouseMoveEvent": self.OnChangeSliceMove,
@@ -321,10 +315,6 @@ class Viewer(wx.Panel):
             style.AddObserver("MouseWheelForwardEvent",self.OnScrollForward)
             style.AddObserver("MouseWheelBackwardEvent", self.OnScrollBackward)
                 
-            if ((state == const.STATE_ZOOM) or (state == const.STATE_ZOOM_SL)):
-                self.interactor.Bind(wx.EVT_LEFT_DCLICK, self.OnUnZoom)
-            #else:
-                #self.interactor.Bind(wx.EVT_LEFT_DCLICK, self.OnUnspinPan)
 
             # Measures are using vtkPropPicker because they need to get which actor
             # was picked.
@@ -372,9 +362,6 @@ class Viewer(wx.Panel):
  
     def OnLeftClick(self, evt, obj):
         self.left_pressed = 1
-
-    def OnZoomLeftClick(self, evt, obj):
-        evt.StartDolly()
 
     def OnReleaseLeftButton(self, evt, obj):
         self.left_pressed = 0
@@ -425,22 +412,8 @@ class Viewer(wx.Panel):
     def OnPanClick(self, evt, obj):
         evt.StartPan()
 
-    def OnZoomMoveLeft(self, evt, obj):
-        if self.left_pressed:
-            evt.Dolly()
-            evt.OnRightButtonDown()
-
     def OnVtkRightRelease(self, evt, obj):
         evt.OnRightButtonUp()
-
-    def OnUnZoom(self, evt, obj = None):
-        mouse_x, mouse_y = self.interactor.GetLastEventPosition()
-        ren = self.interactor.FindPokedRenderer(mouse_x, mouse_y)
-        slice_data = self.get_slice_data(ren)
-        ren.ResetCamera()
-        ren.ResetCameraClippingRange()
-        #self.Reposition(slice_data)
-        self.interactor.Render()
 
     def OnEnterInteractor(self, evt, obj):
         if (self.slice_.buffer_slices[self.orientation].mask is None):
