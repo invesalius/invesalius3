@@ -175,6 +175,9 @@ class Viewer(wx.Panel):
         interactor.SetInteractorStyle(style)
 
     def SetInteractorStyle(self, state):
+        self.__set_cross_visibility(0)
+        self.on_wl = False
+        self.wl_text.Hide()
         if state == const.STATE_DEFAULT:
             style = styles.DefaultInteractorStyle(self)
             self.style = style
@@ -247,6 +250,13 @@ class Viewer(wx.Panel):
             self.interactor.SetInteractorStyle(style)
             self.interactor.Render()
 
+        elif state == const.SLICE_STATE_EDITOR:
+            style = styles.EditorInteractorStyle(self)
+
+            self.style = style
+            self.interactor.SetInteractorStyle(style)
+            self.interactor.Render()
+
         else:
             self.state = state
             action = {
@@ -278,7 +288,7 @@ class Viewer(wx.Panel):
                 self.on_wl = False
                 self.wl_text.Hide()
 
-            self.__set_editor_cursor_visibility(0)
+            self._set_editor_cursor_visibility(0)
             
             # Bind method according to current mode
             if(state == const.STATE_ZOOM_SL):
@@ -654,7 +664,7 @@ class Viewer(wx.Panel):
         if (self.slice_.buffer_slices[self.orientation].mask is None):
             return
 
-        self.__set_editor_cursor_visibility(1)
+        self._set_editor_cursor_visibility(1)
  
         mouse_x, mouse_y = self.interactor.GetEventPosition()
         render = self.interactor.FindPokedRenderer(mouse_x, mouse_y)
@@ -691,7 +701,7 @@ class Viewer(wx.Panel):
         if (self.slice_.buffer_slices[self.orientation].mask is None):
             return
 
-        self.__set_editor_cursor_visibility(1)
+        self._set_editor_cursor_visibility(1)
  
         mouse_x, mouse_y = self.interactor.GetEventPosition()
         render = self.interactor.FindPokedRenderer(mouse_x, mouse_y)
@@ -1166,7 +1176,7 @@ class Viewer(wx.Panel):
     def __set_cross_visibility(self, visibility):
         self.cross_actor.SetVisibility(visibility)
 
-    def __set_editor_cursor_visibility(self, visibility):
+    def _set_editor_cursor_visibility(self, visibility):
         for slice_data in self.slice_data_list:
             slice_data.cursor.actor.SetVisibility(visibility)
 

@@ -138,17 +138,6 @@ class CrossInteractorStyle(DefaultInteractorStyle):
         
         iren.Render()
 
-    def get_coordinate_cursor(self):
-        # Find position
-        x, y, z = self.picker.GetPickPosition()
-        bounds = self.slice_actor.GetBounds()
-        if bounds[0] == bounds[1]:
-            x = bounds[0]
-        elif bounds[2] == bounds[3]:
-            y = bounds[2]
-        elif bounds[4] == bounds[5]:
-            z = bounds[4]
-        return x, y, z
 
     def calcultate_scroll_position(self, position):
         # Based in the given coord (x, y, z), returns a list with the scroll positions for each
@@ -442,6 +431,145 @@ class ChangeSliceInteractorStyle(DefaultInteractorStyle):
         position = self.viewer.interactor.GetLastEventPosition()
         self.acum_achange_slice = self.viewer.scroll.GetThumbPosition()
         self.last_position = position[1]
+
+
+class EditorInteractorStyle(DefaultInteractorStyle):
+    def __init__(self, viewer):
+        DefaultInteractorStyle.__init__(self, viewer)
+
+        self.viewer = viewer
+        self.orientation = self.viewer.orientation
+
+        self.picker = vtk.vtkWorldPointPicker()
+
+        self.AddObserver("EnterEvent", self.OnEnterInteractor)
+        self.AddObserver("LeaveEvent", self.OnLeaveInteractor)
+
+        self.AddObserver("LeftButtonPressEvent", self.OnBrushClick)
+        self.AddObserver("LeftButtonReleaseEvent", self.OnBrushClick)
+        self.AddObserver("MouseMoveEvent", self.OnBrushMove)
+
+    def OnEnterInteractor(self, obj, evt):
+        if (self.viewer.slice_.buffer_slices[self.orientation].mask is None):
+            return
+        self.viewer.slice_data.cursor.Show()
+        self.viewer.interactor.SetCursor(wx.StockCursor(wx.CURSOR_BLANK))
+        self.viewer.interactor.Render()
+        
+    def OnLeaveInteractor(self, obj, evt):
+        self.viewer.slice_data.cursor.Show(0)
+        self.viewer.interactor.SetCursor(wx.StockCursor(wx.CURSOR_DEFAULT))
+        self.viewer.interactor.Render()
+
+    def OnBrushClick(self, obj, evt):
+        if (self.viewer.slice_.buffer_slices[self.orientation].mask is None):
+            return
+
+        viewer = self.viewer
+        iren = viewer.interactor
+
+        viewer._set_editor_cursor_visibility(1)
+ 
+        mouse_x, mouse_y = iren.GetEventPosition()
+        render = iren.FindPokedRenderer(mouse_x, mouse_y)
+        slice_data = viewer.get_slice_data(render)
+
+        # TODO: Improve!
+        #for i in self.slice_data_list:
+            #i.cursor.Show(0)
+        slice_data.cursor.Show()
+
+        self.picker.Pick(mouse_x, mouse_y, 0, render)
+        
+        coord = self.get_coordinate_cursor()
+        position = slice_data.actor.GetInput().FindPoint(coord)
+        
+        if position != -1:
+            coord = slice_data.actor.GetInput().GetPoint(position)
+
+        slice_data.cursor.SetPosition(coord)
+        cursor = slice_data.cursor
+        radius = cursor.radius
+
+        if position < 0:
+            position = viewer.calculate_matrix_position(coord)
+
+        viewer.slice_.edit_mask_pixel(viewer._brush_cursor_op, cursor.GetPixels(),
+                                    position, radius, viewer.orientation)
+        viewer._flush_buffer = True
+
+        # TODO: To create a new function to reload images to viewer.
+        viewer.OnScrollBar()
+
+    def OnBrushMove(self, obj, evt):
+        if (self.viewer.slice_.buffer_slices[self.orientation].mask is None):
+            return
+
+        viewer = self.viewer
+        iren = viewer.interactor
+
+        viewer._set_editor_cursor_visibility(1)
+ 
+        mouse_x, mouse_y = iren.GetEventPosition()
+        render = iren.FindPokedRenderer(mouse_x, mouse_y)
+        slice_data = viewer.get_slice_data(render)
+
+        # TODO: Improve!
+        #for i in self.slice_data_list:
+            #i.cursor.Show(0)
+
+        self.picker.Pick(mouse_x, mouse_y, 0, render)
+        
+        #if (self.pick.GetViewProp()):
+            #self.interactor.SetCursor(wx.StockCursor(wx.CURSOR_BLANK))
+        #else:
+            #self.interactor.SetCursor(wx.StockCursor(wx.CURSOR_DEFAULT))
+            
+        coord = self.get_coordinate_cursor()
+        position = viewer.slice_data.actor.GetInput().FindPoint(coord)
+
+        # when position == -1 the cursos is not over the image, so is not
+        # necessary to set the cursor position to world coordinate center of
+        # pixel from slice image.
+        if position != -1:
+            coord = slice_data.actor.GetInput().GetPoint(position)
+        slice_data.cursor.SetPosition(coord)
+        #self.__update_cursor_position(slice_data, coord)
+        
+        if (self.left_pressed):
+            cursor = slice_data.cursor
+            position = slice_data.actor.GetInput().FindPoint(coord)
+            radius = cursor.radius
+
+            if position < 0:
+                position = viewer.calculate_matrix_position(coord)
+                
+            viewer.slice_.edit_mask_pixel(viewer._brush_cursor_op, cursor.GetPixels(),
+                                        position, radius, self.orientation)
+            # TODO: To create a new function to reload images to viewer.
+            viewer.OnScrollBar(update3D=False)
+
+        else:
+            viewer.interactor.Render()
+
+    def OnBrushRelease(self, evt, obj):
+        if (self.viewer.slice_.buffer_slices[self.orientation].mask is None):
+            return
+
+        self.viewer.slice_.apply_slice_buffer_to_mask(self.orientation)
+        self.viewer_flush_buffer = False
+
+    def get_coordinate_cursor(self):
+        # Find position
+        x, y, z = self.picker.GetPickPosition()
+        bounds = self.viewer.slice_data.actor.GetBounds()
+        if bounds[0] == bounds[1]:
+            x = bounds[0]
+        elif bounds[2] == bounds[3]:
+            y = bounds[2]
+        elif bounds[4] == bounds[5]:
+            z = bounds[4]
+        return x, y, z
 
 
 class ViewerStyle:
