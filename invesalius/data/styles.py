@@ -385,6 +385,44 @@ class ZoomSLInteractorStyle(vtk.vtkInteractorStyleRubberBandZoom):
         #self.Reposition(slice_data)
         self.viewer.interactor.Render()
 
+
+class ChangeSliceInteractorStyle(RightZoomInteractorStyle):
+    """
+    Interactor style responsible for change slice moving the mouse.
+    """
+    def __init__(self, viewer):
+        RightZoomInteractorStyle.__init__(self)
+
+        self.viewer = viewer
+
+        self.AddObserver("MouseMoveEvent", self.OnChangeSliceMove)
+        self.AddObserver("LeftButtonPressEvent", self.OnChangeSliceClick)
+
+    def OnChangeSliceMove(self, evt, obj):
+        if self.left_pressed:
+            min = 0
+            max = self.viewer.slice_.GetMaxSliceNumber(self.viewer.orientation)
+
+            position = self.viewer.interactor.GetLastEventPosition()
+            scroll_position = self.viewer.scroll.GetThumbPosition()
+
+            if (position[1] > self.last_position) and\
+                            (self.acum_achange_slice > min):
+                self.acum_achange_slice -= 1
+            elif(position[1] < self.last_position) and\
+                            (self.acum_achange_slice < max):
+                 self.acum_achange_slice += 1
+            self.last_position = position[1]
+
+            self.viewer.scroll.SetThumbPosition(self.acum_achange_slice)
+            self.viewer.OnScrollBar()
+
+    def OnChangeSliceClick(self, evt, obj):
+        position = self.viewer.interactor.GetLastEventPosition()
+        self.acum_achange_slice = self.viewer.scroll.GetThumbPosition()
+        self.last_position = position[1]
+
+
 class ViewerStyle:
     def __init__(self):
         self.interactor = None

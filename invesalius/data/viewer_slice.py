@@ -245,6 +245,13 @@ class Viewer(wx.Panel):
             self.interactor.SetInteractorStyle(style)
             self.interactor.Render()
 
+        elif state == const.SLICE_STATE_SCROLL:
+            style = styles.ChangeSliceInteractorStyle(self)
+
+            self.style = style
+            self.interactor.SetInteractorStyle(style)
+            self.interactor.Render()
+
         else:
             self.state = state
             action = {
