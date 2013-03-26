@@ -340,6 +340,32 @@ class SpinInteractorStyle(RightZoomInteractorStyle):
         iren.Render()
 
 
+class ZoomInteractorStyle(RightZoomInteractorStyle):
+    """
+    Interactor style responsible for zoom with movement of the mouse and the
+    left mouse button clicked.
+    """
+    def __init__(self, viewer):
+        RightZoomInteractorStyle.__init__(self)
+        
+        self.viewer = viewer
+
+        self.AddObserver("MouseMoveEvent", self.OnZoomMoveLeft)
+        self.viewer.interactor.Bind(wx.EVT_LEFT_DCLICK, self.OnUnZoom)
+
+    def OnZoomMoveLeft(self, obj, evt):
+        if self.left_pressed:
+            obj.Dolly()
+            obj.OnRightButtonDown()
+
+    def OnUnZoom(self, evt):
+        mouse_x, mouse_y = self.viewer.interactor.GetLastEventPosition()
+        ren = self.viewer.interactor.FindPokedRenderer(mouse_x, mouse_y)
+        #slice_data = self.get_slice_data(ren)
+        ren.ResetCamera()
+        ren.ResetCameraClippingRange()
+        #self.Reposition(slice_data)
+        self.viewer.interactor.Render()
 
 
 class ViewerStyle:
