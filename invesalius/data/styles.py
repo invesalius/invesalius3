@@ -368,6 +368,23 @@ class ZoomInteractorStyle(RightZoomInteractorStyle):
         self.viewer.interactor.Render()
 
 
+class ZoomSLInteractorStyle(vtk.vtkInteractorStyleRubberBandZoom):
+    """
+    Interactor style responsible for zoom by selecting a region.
+    """
+    def __init__(self, viewer):
+        self.viewer = viewer
+        self.viewer.interactor.Bind(wx.EVT_LEFT_DCLICK, self.OnUnZoom)
+
+    def OnUnZoom(self, evt):
+        mouse_x, mouse_y = self.viewer.interactor.GetLastEventPosition()
+        ren = self.viewer.interactor.FindPokedRenderer(mouse_x, mouse_y)
+        #slice_data = self.get_slice_data(ren)
+        ren.ResetCamera()
+        ren.ResetCameraClippingRange()
+        #self.Reposition(slice_data)
+        self.viewer.interactor.Render()
+
 class ViewerStyle:
     def __init__(self):
         self.interactor = None
