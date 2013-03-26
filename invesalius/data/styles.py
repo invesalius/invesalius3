@@ -58,11 +58,17 @@ class RightZoomInteractorStyle(BaseImageInteractorStyle):
     """
     Interactor style responsible for zoom the camera.
     """
-    def __init__(self):
+    def __init__(self, viewer):
         BaseImageInteractorStyle.__init__(self)
+
+        self.viewer = viewer
+
         # Zoom using right button
         self.AddObserver("RightButtonPressEvent",self.OnZoomRightClick)
         self.AddObserver("MouseMoveEvent", self.OnZoomRightMove)
+
+        self.AddObserver("MouseWheelForwardEvent",self.OnScrollForward)
+        self.AddObserver("MouseWheelBackwardEvent", self.OnScrollBackward)
 
     def OnZoomRightMove(self, evt, obj):
         if (self.right_pressed):
@@ -72,13 +78,19 @@ class RightZoomInteractorStyle(BaseImageInteractorStyle):
     def OnZoomRightClick(self, evt, obj):
         evt.StartDolly()
 
+    def OnScrollForward(self, evt, obj):
+        self.viewer.OnScrollForward()
+
+    def OnScrollBackward(self, evt, obj):
+        self.viewer.OnScrollBackward()
+
 
 class CrossInteractorStyle(RightZoomInteractorStyle):
     """
     Interactor style responsible for the Cross.
     """
     def __init__(self, viewer):
-        RightZoomInteractorStyle.__init__(self)
+        RightZoomInteractorStyle.__init__(self, viewer)
 
         self.orientation = viewer.orientation
         self.slice_actor = viewer.slice_data.actor
@@ -184,7 +196,7 @@ class WWWLInteractorStyle(RightZoomInteractorStyle):
     Interactor style responsible for Window Level & Width functionality.
     """
     def __init__(self, viewer):
-        RightZoomInteractorStyle.__init__(self)
+        RightZoomInteractorStyle.__init__(self, viewer)
 
         self.viewer =  viewer
 
@@ -233,7 +245,7 @@ class LinearMeasureInteractorStyle(RightZoomInteractorStyle):
     Interactor style responsible for insert linear measurements.
     """
     def __init__(self, viewer):
-        RightZoomInteractorStyle.__init__(self)
+        RightZoomInteractorStyle.__init__(self, viewer)
 
         self.viewer = viewer
         self.orientation = viewer.orientation
@@ -263,7 +275,7 @@ class AngularMeasureInteractorStyle(RightZoomInteractorStyle):
     Interactor style responsible for insert angular measurements.
     """
     def __init__(self, viewer):
-        RightZoomInteractorStyle.__init__(self)
+        RightZoomInteractorStyle.__init__(self, viewer)
 
         self.viewer = viewer
         self.orientation = viewer.orientation
@@ -293,7 +305,7 @@ class PanMoveInteractorStyle(RightZoomInteractorStyle):
     Interactor style responsible for translate the camera.
     """
     def __init__(self, viewer):
-        RightZoomInteractorStyle.__init__(self)
+        RightZoomInteractorStyle.__init__(self, viewer)
 
         self.viewer = viewer
 
@@ -318,7 +330,7 @@ class SpinInteractorStyle(RightZoomInteractorStyle):
     Interactor style responsible for spin the camera.
     """
     def __init__(self, viewer):
-        RightZoomInteractorStyle.__init__(self)
+        RightZoomInteractorStyle.__init__(self, viewer)
 
         self.viewer = viewer
 
@@ -353,7 +365,7 @@ class ZoomInteractorStyle(RightZoomInteractorStyle):
     left mouse button clicked.
     """
     def __init__(self, viewer):
-        RightZoomInteractorStyle.__init__(self)
+        RightZoomInteractorStyle.__init__(self, viewer)
         
         self.viewer = viewer
 
@@ -398,7 +410,7 @@ class ChangeSliceInteractorStyle(RightZoomInteractorStyle):
     Interactor style responsible for change slice moving the mouse.
     """
     def __init__(self, viewer):
-        RightZoomInteractorStyle.__init__(self)
+        RightZoomInteractorStyle.__init__(self, viewer)
 
         self.viewer = viewer
 
