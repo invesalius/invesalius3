@@ -54,7 +54,7 @@ class BaseImageInteractorStyle(vtk.vtkInteractorStyleImage):
         self.right_pressed = False
 
 
-class RightZoomInteractorStyle(BaseImageInteractorStyle):
+class DefaultInteractorStyle(BaseImageInteractorStyle):
     """
     Interactor style responsible for zoom the camera.
     """
@@ -85,12 +85,12 @@ class RightZoomInteractorStyle(BaseImageInteractorStyle):
         self.viewer.OnScrollBackward()
 
 
-class CrossInteractorStyle(RightZoomInteractorStyle):
+class CrossInteractorStyle(DefaultInteractorStyle):
     """
     Interactor style responsible for the Cross.
     """
     def __init__(self, viewer):
-        RightZoomInteractorStyle.__init__(self, viewer)
+        DefaultInteractorStyle.__init__(self, viewer)
 
         self.orientation = viewer.orientation
         self.slice_actor = viewer.slice_data.actor
@@ -191,12 +191,12 @@ class CrossInteractorStyle(RightZoomInteractorStyle):
                                        coord[0])
 
 
-class WWWLInteractorStyle(RightZoomInteractorStyle):
+class WWWLInteractorStyle(DefaultInteractorStyle):
     """
     Interactor style responsible for Window Level & Width functionality.
     """
     def __init__(self, viewer):
-        RightZoomInteractorStyle.__init__(self, viewer)
+        DefaultInteractorStyle.__init__(self, viewer)
 
         self.viewer =  viewer
 
@@ -240,12 +240,12 @@ class WWWLInteractorStyle(RightZoomInteractorStyle):
         self.acum_achange_level = viewer.slice_.window_level
 
 
-class LinearMeasureInteractorStyle(RightZoomInteractorStyle):
+class LinearMeasureInteractorStyle(DefaultInteractorStyle):
     """
     Interactor style responsible for insert linear measurements.
     """
     def __init__(self, viewer):
-        RightZoomInteractorStyle.__init__(self, viewer)
+        DefaultInteractorStyle.__init__(self, viewer)
 
         self.viewer = viewer
         self.orientation = viewer.orientation
@@ -270,12 +270,12 @@ class LinearMeasureInteractorStyle(RightZoomInteractorStyle):
             self.viewer.interactor.Render()
 
 
-class AngularMeasureInteractorStyle(RightZoomInteractorStyle):
+class AngularMeasureInteractorStyle(DefaultInteractorStyle):
     """
     Interactor style responsible for insert angular measurements.
     """
     def __init__(self, viewer):
-        RightZoomInteractorStyle.__init__(self, viewer)
+        DefaultInteractorStyle.__init__(self, viewer)
 
         self.viewer = viewer
         self.orientation = viewer.orientation
@@ -300,12 +300,12 @@ class AngularMeasureInteractorStyle(RightZoomInteractorStyle):
             self.viewer.interactor.Render()
 
 
-class PanMoveInteractorStyle(RightZoomInteractorStyle):
+class PanMoveInteractorStyle(DefaultInteractorStyle):
     """
     Interactor style responsible for translate the camera.
     """
     def __init__(self, viewer):
-        RightZoomInteractorStyle.__init__(self, viewer)
+        DefaultInteractorStyle.__init__(self, viewer)
 
         self.viewer = viewer
 
@@ -325,12 +325,12 @@ class PanMoveInteractorStyle(RightZoomInteractorStyle):
         iren.Render()
 
 
-class SpinInteractorStyle(RightZoomInteractorStyle):
+class SpinInteractorStyle(DefaultInteractorStyle):
     """
     Interactor style responsible for spin the camera.
     """
     def __init__(self, viewer):
-        RightZoomInteractorStyle.__init__(self, viewer)
+        DefaultInteractorStyle.__init__(self, viewer)
 
         self.viewer = viewer
 
@@ -359,13 +359,13 @@ class SpinInteractorStyle(RightZoomInteractorStyle):
         iren.Render()
 
 
-class ZoomInteractorStyle(RightZoomInteractorStyle):
+class ZoomInteractorStyle(DefaultInteractorStyle):
     """
     Interactor style responsible for zoom with movement of the mouse and the
     left mouse button clicked.
     """
     def __init__(self, viewer):
-        RightZoomInteractorStyle.__init__(self, viewer)
+        DefaultInteractorStyle.__init__(self, viewer)
         
         self.viewer = viewer
 
@@ -405,12 +405,12 @@ class ZoomSLInteractorStyle(vtk.vtkInteractorStyleRubberBandZoom):
         self.viewer.interactor.Render()
 
 
-class ChangeSliceInteractorStyle(RightZoomInteractorStyle):
+class ChangeSliceInteractorStyle(DefaultInteractorStyle):
     """
     Interactor style responsible for change slice moving the mouse.
     """
     def __init__(self, viewer):
-        RightZoomInteractorStyle.__init__(self, viewer)
+        DefaultInteractorStyle.__init__(self, viewer)
 
         self.viewer = viewer
 
