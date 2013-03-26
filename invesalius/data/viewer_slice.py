@@ -175,23 +175,22 @@ class Viewer(wx.Panel):
         interactor.SetInteractorStyle(style)
 
     def SetInteractorStyle(self, state):
-        if state == const.SLICE_STATE_CROSS:
-            style = styles.CrossInteractorStyle(self)
+        if state == const.STATE_DEFAULT:
+            style = styles.DefaultInteractorStyle(self)
             self.style = style
             self.interactor.SetInteractorStyle(style)
             self.interactor.Render()
 
-            ## Zoom using right button
-            #style.AddObserver("RightButtonPressEvent",self.OnZoomRightClick)
-            #style.AddObserver("MouseMoveEvent", self.OnZoomMoveRight)
-            #style.AddObserver("RightButtonReleaseEvent", self.OnVtkRightRelease)
-                
-            #Scroll change slice
-            style.AddObserver("MouseWheelForwardEvent",self.OnScrollForward)
-            style.AddObserver("MouseWheelBackwardEvent", self.OnScrollBackward)
+        elif state == const.SLICE_STATE_CROSS:
+            style = styles.CrossInteractorStyle(self)
+            self.style = style
+            self.interactor.SetInteractorStyle(style)
 
             self.__set_cross_visibility(1)
             Publisher.sendMessage('Activate ball reference')
+
+            self.interactor.Render()
+
         elif state == const.STATE_WL:
             self.on_wl = True
             self.wl_text.Show()
