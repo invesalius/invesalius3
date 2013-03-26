@@ -56,7 +56,9 @@ class BaseImageInteractorStyle(vtk.vtkInteractorStyleImage):
 
 class DefaultInteractorStyle(BaseImageInteractorStyle):
     """
-    Interactor style responsible for zoom the camera.
+    Interactor style responsible for Default functionalities: 
+    * Zoom moving mouse with right button pressed; 
+    * Change the slices with the scroll.
     """
     def __init__(self, viewer):
         BaseImageInteractorStyle.__init__(self)
