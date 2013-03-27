@@ -181,6 +181,18 @@ class CrossInteractorStyle(DefaultInteractorStyle):
             Publisher.sendMessage(('Set scroll position', 'SAGITAL'),
                                        coord[0])
 
+    def get_coordinate_cursor(self):
+        # Find position
+        x, y, z = self.picker.GetPickPosition()
+        bounds = self.viewer.slice_data.actor.GetBounds()
+        if bounds[0] == bounds[1]:
+            x = bounds[0]
+        elif bounds[2] == bounds[3]:
+            y = bounds[2]
+        elif bounds[4] == bounds[5]:
+            z = bounds[4]
+        return x, y, z
+
 
 class WWWLInteractorStyle(DefaultInteractorStyle):
     """
