@@ -67,6 +67,7 @@ class Viewer(wx.Panel):
         self.spined_image = False #Use to control to spin
         self.paned_image = False
         
+        self.style = None
         self.last_position_mouse_move = ()
         self.state = const.STATE_DEFAULT
 
@@ -175,89 +176,21 @@ class Viewer(wx.Panel):
         interactor.SetInteractorStyle(style)
 
     def SetInteractorStyle(self, state):
-        self.__set_cross_visibility(0)
-        self.on_wl = False
-        self.wl_text.Hide()
+        cleanup = getattr(self.style, 'CleanUp', None)
+        if cleanup:
+            self.style.CleanUp()
+
+        style = styles.get_style(state)(self)
+
+        setup = getattr(style, 'SetUp', None)
+        if setup:
+            style.SetUp()
+
+        self.style = style
+        self.interactor.SetInteractorStyle(style)
+        self.interactor.Render()
+
         self.state = state
-
-        if state == const.STATE_DEFAULT:
-            style = styles.DefaultInteractorStyle(self)
-            self.style = style
-            self.interactor.SetInteractorStyle(style)
-            self.interactor.Render()
-
-        elif state == const.SLICE_STATE_CROSS:
-            style = styles.CrossInteractorStyle(self)
-            self.style = style
-            self.interactor.SetInteractorStyle(style)
-
-            self.__set_cross_visibility(1)
-            Publisher.sendMessage('Activate ball reference')
-
-            self.interactor.Render()
-
-        elif state == const.STATE_WL:
-            self.on_wl = True
-            self.wl_text.Show()
-
-            style = styles.WWWLInteractorStyle(self)
-            self.style = style
-            self.interactor.SetInteractorStyle(style)
-            self.interactor.Render()
-
-        elif state == const.STATE_MEASURE_DISTANCE:
-            style = styles.LinearMeasureInteractorStyle(self)
-            self.style = style
-            self.interactor.SetInteractorStyle(style)
-            self.interactor.Render()
-
-        elif state == const.STATE_MEASURE_ANGLE:
-            style = styles.AngularMeasureInteractorStyle(self)
-            self.style = style
-            self.interactor.SetInteractorStyle(style)
-            self.interactor.Render()
-
-        elif state == const.STATE_PAN:
-            style = styles.PanMoveInteractorStyle(self)
-
-            self.style = style
-            self.interactor.SetInteractorStyle(style)
-            self.interactor.Render()
-
-        elif state == const.STATE_SPIN:
-            style = styles.SpinInteractorStyle(self)
-
-            self.style = style
-            self.interactor.SetInteractorStyle(style)
-            self.interactor.Render()
-
-        elif state == const.STATE_ZOOM:
-            style = styles.ZoomInteractorStyle(self)
-
-            self.style = style
-            self.interactor.SetInteractorStyle(style)
-            self.interactor.Render()
-
-        elif state == const.STATE_ZOOM_SL:
-            style = styles.ZoomSLInteractorStyle(self)
-
-            self.style = style
-            self.interactor.SetInteractorStyle(style)
-            self.interactor.Render()
-
-        elif state == const.SLICE_STATE_SCROLL:
-            style = styles.ChangeSliceInteractorStyle(self)
-
-            self.style = style
-            self.interactor.SetInteractorStyle(style)
-            self.interactor.Render()
-
-        elif state == const.SLICE_STATE_EDITOR:
-            style = styles.EditorInteractorStyle(self)
-
-            self.style = style
-            self.interactor.SetInteractorStyle(style)
-            self.interactor.Render()
 
     def UpdateWindowLevelValue(self, pubsub_evt):
         window, level = pubsub_evt.data
@@ -664,7 +597,7 @@ class Viewer(wx.Panel):
         Publisher.subscribe(self.UpdateWindowLevelValue,\
                                  'Update window level value')
 
-        #Publisher.subscribe(self.__set_cross_visibility,\
+        #Publisher.subscribe(self._set_cross_visibility,\
         #                         'Set cross visibility')
         ###
         Publisher.subscribe(self.__set_layout,
@@ -931,7 +864,7 @@ class Viewer(wx.Panel):
         pos = pubsub_evt.data
         self.cross.SetFocalPoint(pos)
 
-    def __set_cross_visibility(self, visibility):
+    def _set_cross_visibility(self, visibility):
         self.cross_actor.SetVisibility(visibility)
 
     def _set_editor_cursor_visibility(self, visibility):

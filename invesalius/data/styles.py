@@ -96,6 +96,7 @@ class CrossInteractorStyle(DefaultInteractorStyle):
     def __init__(self, viewer):
         DefaultInteractorStyle.__init__(self, viewer)
 
+        self.viewer = viewer
         self.orientation = viewer.orientation
         self.slice_actor = viewer.slice_data.actor
         self.slice_data = viewer.slice_data
@@ -105,6 +106,12 @@ class CrossInteractorStyle(DefaultInteractorStyle):
         self.AddObserver("MouseMoveEvent", self.OnCrossMove)
         self.AddObserver("LeftButtonPressEvent", self.OnCrossMouseClick)
         self.AddObserver("LeftButtonReleaseEvent", self.OnReleaseLeftButton)
+
+    def SetUp(self):
+        self.viewer._set_cross_visibility(1)
+
+    def CleanUp(self):
+        self.viewer._set_cross_visibility(0)
 
     def OnCrossMouseClick(self, obj, evt):
         iren = obj.GetInteractor()
@@ -213,6 +220,14 @@ class WWWLInteractorStyle(DefaultInteractorStyle):
 
         self.AddObserver("MouseMoveEvent", self.OnWindowLevelMove)
         self.AddObserver("LeftButtonPressEvent", self.OnWindowLevelClick)
+
+    def SetUp(self):
+        self.viewer.on_wl = True
+        self.viewer.wl_text.Show()
+
+    def CleanUp(self):
+        self.viewer.on_wl = False
+        self.viewer.wl_text.Hide()
 
     def OnWindowLevelMove(self, obj, evt):
         if (self.left_pressed):
@@ -584,3 +599,20 @@ class EditorInteractorStyle(DefaultInteractorStyle):
         elif bounds[4] == bounds[5]:
             z = bounds[4]
         return x, y, z
+
+
+def get_style(style):
+    STYLES = {
+              const.STATE_DEFAULT: DefaultInteractorStyle,
+              const.SLICE_STATE_CROSS: CrossInteractorStyle,
+              const.STATE_WL: WWWLInteractorStyle,
+              const.STATE_MEASURE_DISTANCE: LinearMeasureInteractorStyle,
+              const.STATE_MEASURE_ANGLE: AngularMeasureInteractorStyle,
+              const.STATE_PAN: PanMoveInteractorStyle,
+              const.STATE_SPIN: SpinInteractorStyle,
+              const.STATE_ZOOM: ZoomInteractorStyle,
+              const.STATE_ZOOM_SL: ZoomSLInteractorStyle,
+              const.SLICE_STATE_SCROLL: ChangeSliceInteractorStyle,
+              const.SLICE_STATE_EDITOR: EditorInteractorStyle,
+             }
+    return STYLES[style]
