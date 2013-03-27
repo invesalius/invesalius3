@@ -31,7 +31,7 @@ ORIENTATIONS = {
         }
 
 class BaseImageInteractorStyle(vtk.vtkInteractorStyleImage):
-    def __init__(self):
+    def __init__(self, viewer):
         self.right_pressed = False
         self.left_pressed = False
 
@@ -49,6 +49,8 @@ class BaseImageInteractorStyle(vtk.vtkInteractorStyleImage):
 
     def OnPressRightButton(self, evt, obj):
         self.right_pressed = True
+        self.viewer.last_position_mouse_move = \
+            self.viewer.interactor.GetLastEventPosition()
 
     def OnReleaseRightButton(self, evt, obj):
         self.right_pressed = False
@@ -61,7 +63,7 @@ class DefaultInteractorStyle(BaseImageInteractorStyle):
     * Change the slices with the scroll.
     """
     def __init__(self, viewer):
-        BaseImageInteractorStyle.__init__(self)
+        BaseImageInteractorStyle.__init__(self, viewer)
 
         self.viewer = viewer
 
