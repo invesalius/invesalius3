@@ -458,7 +458,7 @@ class EditorInteractorStyle(DefaultInteractorStyle):
         self.AddObserver("LeaveEvent", self.OnLeaveInteractor)
 
         self.AddObserver("LeftButtonPressEvent", self.OnBrushClick)
-        self.AddObserver("LeftButtonReleaseEvent", self.OnBrushClick)
+        self.AddObserver("LeftButtonReleaseEvent", self.OnBrushRelease)
         self.AddObserver("MouseMoveEvent", self.OnBrushMove)
 
     def OnEnterInteractor(self, obj, evt):
@@ -569,7 +569,7 @@ class EditorInteractorStyle(DefaultInteractorStyle):
             return
 
         self.viewer.slice_.apply_slice_buffer_to_mask(self.orientation)
-        self.viewer_flush_buffer = False
+        self.viewer._flush_buffer = False
 
     def get_coordinate_cursor(self):
         # Find position
