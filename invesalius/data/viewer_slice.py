@@ -829,6 +829,7 @@ class Viewer(wx.Panel):
         self.interactor.Render()
 
         self.EnableText()
+        self.wl_text.Hide()
         ## Insert cursor
         self.SetInteractorStyle(const.STATE_DEFAULT)
 
