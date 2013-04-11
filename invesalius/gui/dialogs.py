@@ -34,6 +34,9 @@ import project as proj
 import session as ses
 import utils
 
+from gui.widgets.clut_imagedata import CLUTImageDataWidget, EVT_CLUT_NODE_CHANGED
+
+import numpy as np
 
 class MaskEvent(wx.PyCommandEvent):
     def __init__(self , evtType, id, mask_index):
@@ -1274,9 +1277,47 @@ class SurfaceMethodPanel(wx.Panel):
         self.method_sizer.Layout()
 
 
+class ClutImagedataDialog(wx.Dialog):
+    def __init__(self, histogram, init, end, nodes=None):
+        pre = wx.PreDialog()
+        pre.Create(wx.GetApp().GetTopWindow(), -1, style=wx.DEFAULT_DIALOG_STYLE|wx.FRAME_FLOAT_ON_PARENT)
+        self.PostCreate(pre)
 
+        self.histogram = histogram
+        self.init = init
+        self.end = end
+        self.nodes = nodes
 
-    
+        self._init_gui()
+        self.bind_events()
+        self.bind_events_wx()
 
+    def _init_gui(self):
+        self.clut_widget = CLUTImageDataWidget(self, -1, self.histogram,
+                                               self.init, self.end, self.nodes)
+        sizer = wx.BoxSizer(wx.VERTICAL)
+        sizer.Add(self.clut_widget, 1, wx.EXPAND)
 
+        self.SetSizer(sizer)
+        self.Fit()
 
+    def bind_events_wx(self):
+        self.clut_widget.Bind(EVT_CLUT_NODE_CHANGED, self.OnClutChange)
+
+    def bind_events(self):
+        Publisher.subscribe(self._refresh_widget, 'Update clut imagedata widget')
+
+    def OnClutChange(self, evt):
+        Publisher.sendMessage('Change colour table from background image from widget',
+                              evt.GetNodes())
+        Publisher.sendMessage('Update window level text',
+                              (self.clut_widget.window_width,
+                               self.clut_widget.window_level))
+
+    def _refresh_widget(self, pubsub_evt):
+        self.clut_widget.Refresh()
+
+    def Show(self, gen_evt=True, show=True):
+        super(wx.Dialog, self).Show(show)
+        if gen_evt:
+            self.clut_widget._generate_event()

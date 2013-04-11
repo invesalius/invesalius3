@@ -131,6 +131,7 @@ class Viewer(wx.Panel):
         self.right_pressed = 0
         if (self.last_position_mouse_move ==\
               self.interactor.GetLastEventPosition()):
+            self.menu.caller = self
             self.PopupMenu(self.menu)
         evt.Skip()
             
@@ -196,7 +197,25 @@ class Viewer(wx.Panel):
         window, level = pubsub_evt.data
         self.acum_achange_window, self.acum_achange_level = (window, level)
         self.SetWLText(window, level)
+
+        slc = sl.Slice()
+        slc._update_wwwl_widget_nodes(window, level)
+
         Publisher.sendMessage('Update all slice')
+        Publisher.sendMessage('Update clut imagedata widget')
+
+    def UpdateWindowLevelText(self, pubsub_evt):
+        window, level = pubsub_evt.data
+        self.acum_achange_window, self.acum_achange_level = (window, level)
+        self.SetWLText(window, level)
+        self.interactor.Render()
+
+    def OnClutChange(self, evt):
+        Publisher.sendMessage('Change colour table from background image from widget',
+                              evt.GetNodes())
+        slc = sl.Slice()
+        Publisher.sendMessage('Update window level value',
+                              (slc.window_width, slc.window_level))
 
     def SetWLText(self, window_width, window_level):
         value = STR_WL%(window_level, window_width) 
@@ -594,8 +613,11 @@ class Viewer(wx.Panel):
         Publisher.subscribe(self.ChangeBrushOperation,
                                  'Set edition operation')
 
-        Publisher.subscribe(self.UpdateWindowLevelValue,\
-                                 'Update window level value')
+        Publisher.subscribe(self.UpdateWindowLevelValue,
+                            'Update window level value')
+
+        Publisher.subscribe(self.UpdateWindowLevelText,
+                            'Update window level text')
 
         #Publisher.subscribe(self._set_cross_visibility,\
         #                         'Set cross visibility')
