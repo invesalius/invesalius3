@@ -271,6 +271,17 @@ class LinearMeasureInteractorStyle(DefaultInteractorStyle):
         self.orientation = viewer.orientation
         self.slice_data = viewer.slice_data
 
+        spacing = self.slice_data.actor.GetInput().GetSpacing()
+
+        if self.orientation == "AXIAL":
+            self.radius = min(spacing[1], spacing[2]) * 0.8
+
+        elif self.orientation == 'CORONAL':
+            self.radius = min(spacing[0], spacing[1]) * 0.8
+
+        elif self.orientation == 'SAGITAL':
+            self.radius = min(spacing[1], spacing[2]) * 0.8
+
         self.picker = vtk.vtkCellPicker()
 
         self.AddObserver("LeftButtonPressEvent", self.OnInsertLinearMeasurePoint)
@@ -286,7 +297,7 @@ class LinearMeasureInteractorStyle(DefaultInteractorStyle):
             Publisher.sendMessage("Add measurement point",
                                   ((x, y,z), const.LINEAR,
                                    ORIENTATIONS[self.orientation],
-                                   slice_number))
+                                   slice_number, self.radius))
             self.viewer.interactor.Render()
 
 
@@ -300,6 +311,17 @@ class AngularMeasureInteractorStyle(DefaultInteractorStyle):
         self.viewer = viewer
         self.orientation = viewer.orientation
         self.slice_data = viewer.slice_data
+
+        spacing = self.slice_data.actor.GetInput().GetSpacing()
+
+        if self.orientation == "AXIAL":
+            self.radius = min(spacing[1], spacing[2]) * 0.8
+
+        elif self.orientation == 'CORONAL':
+            self.radius = min(spacing[0], spacing[1]) * 0.8
+
+        elif self.orientation == 'SAGITAL':
+            self.radius = min(spacing[1], spacing[2]) * 0.8
 
         self.picker = vtk.vtkCellPicker()
 
@@ -316,7 +338,7 @@ class AngularMeasureInteractorStyle(DefaultInteractorStyle):
             Publisher.sendMessage("Add measurement point",
                                   ((x, y,z), const.ANGULAR,
                                    ORIENTATIONS[self.orientation],
-                                   slice_number))
+                                   slice_number, self.radius))
             self.viewer.interactor.Render()
 
 

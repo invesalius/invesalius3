@@ -1064,7 +1064,10 @@ class MeasuresListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
                                        (index, visibility))
 
     def OnLoadData(self, pubsub_evt):
-        items_dict = pubsub_evt.data
+        try:
+            items_dict, spacing = pubsub_evt.data
+        except ValueError:
+            items_dict = pubsub_evt.data
         for i in items_dict:
             m = items_dict[i]
             image = self.CreateColourBitmap(m.colour)
