@@ -37,6 +37,8 @@ import utils
 
 from data import measures
 
+PROP_MEASURE = 0.8
+
 class Viewer(wx.Panel):
     def __init__(self, parent):
         wx.Panel.__init__(self, parent, size=wx.Size(320, 320))
@@ -815,6 +817,9 @@ class Viewer(wx.Panel):
         x,y = self.interactor.GetEventPosition()
         self.measure_picker.Pick(x, y, 0, self.ren)
         x, y, z = self.measure_picker.GetPickPosition()
+        
+        proj = prj.Project()
+        radius = min(proj.spacing) * PROP_MEASURE
         if self.measure_picker.GetActor(): 
             # if not self.measures or self.measures[-1].IsComplete():
                 # m = measures.LinearMeasure(self.ren)
@@ -827,7 +832,7 @@ class Viewer(wx.Panel):
                     # Publisher.sendMessage("Add measure to list", 
                             # (u"3D", _(u"%.3f mm" % m.GetValue())))
             Publisher.sendMessage("Add measurement point",
-                    ((x, y,z), const.LINEAR, const.SURFACE))
+                    ((x, y,z), const.LINEAR, const.SURFACE, radius))
             self.interactor.Render()
 
     def OnInsertAngularMeasurePoint(self, obj, evt):
@@ -835,6 +840,9 @@ class Viewer(wx.Panel):
         x,y = self.interactor.GetEventPosition()
         self.measure_picker.Pick(x, y, 0, self.ren)
         x, y, z = self.measure_picker.GetPickPosition()
+
+        proj = prj.Project()
+        radius = min(proj.spacing) * PROP_MEASURE
         if self.measure_picker.GetActor(): 
             # if not self.measures or self.measures[-1].IsComplete():
                 # m = measures.AngularMeasure(self.ren)
@@ -856,7 +864,7 @@ class Viewer(wx.Panel):
                                                 # type_, location,
                                                 # value))
             Publisher.sendMessage("Add measurement point",
-                    ((x, y,z), const.ANGULAR, const.SURFACE))
+                    ((x, y,z), const.ANGULAR, const.SURFACE, radius))
             self.interactor.Render()
 
     def Reposition3DPlane(self, evt_pubsub):
