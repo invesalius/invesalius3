@@ -405,7 +405,7 @@ class Controller():
                                        (mask_name, thresh, colour))
 
         Publisher.sendMessage('Load measurement dict',
-                                    proj.measurement_dict)
+                                    (proj.measurement_dict, self.Slice.spacing))
 
         Publisher.sendMessage(('Set scroll position', 'AXIAL'),proj.matrix_shape[0]/2)
         Publisher.sendMessage(('Set scroll position', 'SAGITAL'),proj.matrix_shape[1]/2)

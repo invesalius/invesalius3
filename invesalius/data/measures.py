@@ -21,6 +21,7 @@ LOCATION = {const.SURFACE: _(u"3D"),
             const.SAGITAL: _(u"Sagittal")
         }
 
+
 class MeasurementManager(object):
     """
     A class to manage the use (Addition, remotion and visibility) from
@@ -39,13 +40,31 @@ class MeasurementManager(object):
         Publisher.subscribe(self._load_measurements, "Load measurement dict")
 
     def _load_measurements(self, pubsub_evt):
-        dict = pubsub_evt.data
+        try:
+            dict, spacing = pubsub_evt.data
+        except ValueError:
+            dict = pubsub_evt.data
+            spacing = 1.0, 1.0, 1.0
         for i in dict:
             m = dict[i]
-            if m.type == const.LINEAR:
-                mr = LinearMeasure(m.colour)
+            
+            if m.location == const.AXIAL:
+                radius = min(spacing[1], spacing[2]) * const.PROP_MEASURE
+
+            elif m.location == const.CORONAL:
+                radius = min(spacing[0], spacing[1]) * const.PROP_MEASURE
+
+            elif m.location == const.SAGITAL:
+                radius = min(spacing[1], spacing[2]) * const.PROP_MEASURE
+
             else:
-                mr = AngularMeasure(m.colour)
+                radius = min(spacing) * const.PROP_MEASURE
+
+            representation = CirclePointRepresentation(m.colour, radius)
+            if m.type == const.LINEAR:
+                mr = LinearMeasure(m.colour, representation)
+            else:
+                mr = AngularMeasure(m.colour, representation)
             self.current = (m, mr)
             self.measures.append(self.current)
             for point in m.points:
@@ -66,10 +85,23 @@ class MeasurementManager(object):
         position = pubsub_evt.data[0]
         type = pubsub_evt.data[1] # Linear or Angular
         location = pubsub_evt.data[2] # 3D, AXIAL, SAGITAL, CORONAL
-        try:
-            slice_number = pubsub_evt.data[3]
-        except IndexError:
+
+        if location == const.SURFACE:
             slice_number = 0
+            try:
+                radius = pubsub_evt.data[3]
+            except IndexError:
+                radius = const.PROP_MEASURE
+        else:
+            try:
+                slice_number = pubsub_evt.data[3]
+            except IndexError:
+                slice_number = 0
+
+            try:
+                radius = pubsub_evt.data[4]
+            except IndexError:
+                radius = const.PROP_MEASURE
 
         to_remove = False
         if self.current is None:
@@ -95,10 +127,11 @@ class MeasurementManager(object):
             m.location = location
             m.slice_number = slice_number
             m.type = type
+            representation = CirclePointRepresentation(m.colour, radius)
             if type == const.LINEAR:
-                mr = LinearMeasure(m.colour)
+                mr = LinearMeasure(m.colour, representation)
             else:
-                mr = AngularMeasure(m.colour)
+                mr = AngularMeasure(m.colour, representation)
             if to_remove:
                 print "---To REMOVE"
                 actors = self.current[1].GetActors()
