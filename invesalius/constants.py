@@ -297,7 +297,7 @@ WINDOW_LEVEL = {_("Abdomen"):(350,50),
 REDUCE_IMAGEDATA_QUALITY = 0
 
 ICON_DIR = os.path.abspath(os.path.join('..', 'icons'))
-SAMPLE_DIR = "/usr/share/doc/invesalius-examples/examples/"
+SAMPLE_DIR = os.path.abspath(os.path.join('..', 'samples'))
 DOC_DIR = os.path.abspath(os.path.join('..', 'docs'))
 
 
