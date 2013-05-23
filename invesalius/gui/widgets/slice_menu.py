@@ -23,15 +23,23 @@ import sys
 
 import wx
 from wx.lib.pubsub import pub as Publisher
+
 import constants as const
+import data.slice_ as sl
+import presets
+
+from gui.dialogs import ClutImagedataDialog
 
 class SliceMenu(wx.Menu):
     def __init__(self):
         wx.Menu.__init__(self)
         self.ID_TO_TOOL_ITEM = {}
+        self.cdialog = None
 
         #------------ Sub menu of the window and level ----------
         submenu_wl = wx.Menu()
+
+        self._gen_event = True
 
         #Window and level from DICOM
         new_id = self.id_wl_first = wx.NewId()
@@ -56,6 +64,7 @@ class SliceMenu(wx.Menu):
                 self.ID_TO_TOOL_ITEM[new_id] = wl_item
 
 
+
         #----------- Sub menu of the save and load options ---------
         #submenu_wl.AppendSeparator()
         #options = [_("Save current values"),
@@ -70,20 +79,38 @@ class SliceMenu(wx.Menu):
 
 
         #------------ Sub menu of the pseudo colors ----------------
+        self.pseudo_color_items = {}
         submenu_pseudo_colours = wx.Menu()
+        self.pseudo_color_items = {}
         new_id = self.id_pseudo_first = wx.NewId()
         color_item = wx.MenuItem(submenu_pseudo_colours, new_id,\
-                            _("Default "), kind=wx.ITEM_RADIO)
+                            _("Default "), kind=wx.ITEM_CHECK)
         submenu_pseudo_colours.AppendItem(color_item)
         self.ID_TO_TOOL_ITEM[new_id] = color_item
+        self.pseudo_color_items[new_id] = color_item
 
         for name in sorted(const.SLICE_COLOR_TABLE):
             if not(name == _("Default ")):
                 new_id = wx.NewId()
                 color_item = wx.MenuItem(submenu_wl, new_id,\
-                                    name, kind=wx.ITEM_RADIO)
+                                    name, kind=wx.ITEM_CHECK)
                 submenu_pseudo_colours.AppendItem(color_item)
                 self.ID_TO_TOOL_ITEM[new_id] = color_item
+                self.pseudo_color_items[new_id] = color_item
+
+        self.plist_presets = presets.get_wwwl_presets()
+        for name in sorted(self.plist_presets):
+            new_id = wx.NewId()
+            color_item = wx.MenuItem(submenu_wl, new_id, name, kind=wx.ITEM_CHECK)
+            submenu_pseudo_colours.AppendItem(color_item)
+            self.ID_TO_TOOL_ITEM[new_id] = color_item
+            self.pseudo_color_items[new_id] = color_item
+
+        new_id = wx.NewId()
+        color_item = wx.MenuItem(submenu_wl, new_id, _('Custom'))
+        submenu_pseudo_colours.AppendItem(color_item)
+        self.ID_TO_TOOL_ITEM[new_id] = color_item
+        self.pseudo_color_items[new_id] = color_item
         
         flag_tiling = False
         #------------ Sub menu of the image tiling ---------------
@@ -118,12 +145,16 @@ class SliceMenu(wx.Menu):
     def __bind_events(self):
         Publisher.subscribe(self.CheckWindowLevelOther, 'Check window and level other')
         Publisher.subscribe(self.FirstItemSelect, 'Select first item from slice menu')
+        Publisher.subscribe(self._close, 'Close project data')
     
     def FirstItemSelect(self, pusub_evt):
-        
         item = self.ID_TO_TOOL_ITEM[self.id_wl_first]
         item.Check(1)
         
+        for i in self.pseudo_color_items:
+            it = self.pseudo_color_items[i]
+            if it.IsChecked():
+                it.Toggle()
         item = self.ID_TO_TOOL_ITEM[self.id_pseudo_first]
         item.Check(1)
     
@@ -135,13 +166,10 @@ class SliceMenu(wx.Menu):
         item.Check()
 
     def OnPopup(self, evt):
-
         id = evt.GetId()
         item = self.ID_TO_TOOL_ITEM[evt.GetId()]
         key = item.GetLabel()
-        print "OnPopup menu"
         if(key in const.WINDOW_LEVEL.keys()):
-            print "a"
             window, level = const.WINDOW_LEVEL[key]
             Publisher.sendMessage('Bright and contrast adjustment image',
                     (window, level))
@@ -155,16 +183,66 @@ class SliceMenu(wx.Menu):
             Publisher.sendMessage('Render volume viewer')
 
         elif(key in const.SLICE_COLOR_TABLE.keys()):
-            print "b"
             values = const.SLICE_COLOR_TABLE[key]
             Publisher.sendMessage('Change colour table from background image', values)
             Publisher.sendMessage('Update slice viewer')
 
+            for i in self.pseudo_color_items:
+                it = self.pseudo_color_items[i]
+                if it.IsChecked():
+                    it.Toggle()
+
+            item.Toggle()
+            self.HideClutDialog()
+            self._gen_event = True
+
+
+        elif key in self.plist_presets:
+            values = presets.get_wwwl_preset_colours(self.plist_presets[key])
+            Publisher.sendMessage('Change colour table from background image from plist', values)
+            Publisher.sendMessage('Update slice viewer')
+
+            for i in self.pseudo_color_items:
+                it = self.pseudo_color_items[i]
+                if it.IsChecked():
+                    it.Toggle()
+
+            item.Toggle()
+            self.HideClutDialog()
+            self._gen_event = True
+
         elif(key in const.IMAGE_TILING.keys()):
-            print "c"
             values = const.IMAGE_TILING[key]
             Publisher.sendMessage('Set slice viewer layout', values)
             Publisher.sendMessage('Update slice viewer')
 
+        elif key == _('Custom'):
+            if self.cdialog is None:
+                slc = sl.Slice()
+                histogram = slc.histogram
+                init = slc.matrix.min()
+                end = slc.matrix.max()
+                nodes = slc.nodes
+                self.cdialog = ClutImagedataDialog(histogram, init, end, nodes)
+                self.cdialog.Show()
+            else:
+                self.cdialog.Show(self._gen_event)
+
+            for i in self.pseudo_color_items:
+                it = self.pseudo_color_items[i]
+                if it.IsChecked():
+                    it.Toggle()
+
+            item.Toggle()
+            self._gen_event = False
+
         evt.Skip()
 
+    def HideClutDialog(self):
+        if self.cdialog:
+            self.cdialog.Hide()
+
+    def _close(self, pubsub_evt):
+        if self.cdialog:
+            self.cdialog.Destroy()
+            self.cdialog = None
