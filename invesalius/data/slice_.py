@@ -34,6 +34,11 @@ import utils
 from mask import Mask
 from project import Project
 
+OTHER=0
+PLIST=1
+WIDGET=2
+
+
 class SliceBuffer(object):
     """ 
     This class is used as buffer that mantains the vtkImageData and numpy array
@@ -66,9 +71,6 @@ class SliceBuffer(object):
         self.vtk_mask = None
 
 
-
-
-
 class Slice(object):
     __metaclass__= utils.Singleton
     # Only one slice will be initialized per time (despite several viewers
@@ -79,7 +81,8 @@ class Slice(object):
         self.imagedata = None
         self.current_mask = None
         self.blend_filter = None
-        self.matrix = None
+        self.histogram = None
+        self._matrix = None
         self.spacing = (1.0, 1.0, 1.0)
 
         self.number_of_colours = 256
@@ -94,7 +97,22 @@ class Slice(object):
         self.num_gradient = 0
         self.interaction_style = st.StyleStateManager()
 
+        self.values = None
+        self.nodes = None
+
+        self.from_ = OTHER
         self.__bind_events()
+
+    @property
+    def matrix(self):
+        return self._matrix
+
+    @matrix.setter
+    def matrix(self, value):
+        self._matrix = value
+        i, e = value.min(), value.max()
+        r = e - i
+        self.histogram = numpy.histogram(self._matrix, r, (i, e))[0]
 
     def __bind_events(self):
         # General slice control
@@ -124,6 +142,12 @@ class Slice(object):
 
         Publisher.subscribe(self.UpdateColourTableBackground,\
                                  'Change colour table from background image')
+
+        Publisher.subscribe(self.UpdateColourTableBackgroundPlist,\
+                                 'Change colour table from background image from plist')
+
+        Publisher.subscribe(self.UpdateColourTableBackgroundWidget,\
+                                 'Change colour table from background image from widget')
 
         Publisher.subscribe(self.InputImageWidget, 'Input Image in the widget')
 
@@ -213,7 +237,18 @@ class Slice(object):
     def CloseProject(self):
         self.imagedata = None
         self.current_mask = None
+
+        self.values = None
+        self.nodes = None
+        self.from_= OTHER
+
+        self.number_of_colours = 256
+        self.saturation_range = (0, 0)
+        self.hue_range = (0, 0)
+        self.value_range = (0, 1)
+
         Publisher.sendMessage('Select first item from slice menu')
+
         #self.blend_filter = None
         #self.blend_filter = None
         #self.num_gradient = 0
@@ -702,12 +737,36 @@ class Slice(object):
 
     def UpdateColourTableBackground(self, pubsub_evt):
         values = pubsub_evt.data
+        self.from_= OTHER
         self.number_of_colours= values[0]
         self.saturation_range = values[1]
         self.hue_range = values[2]
         self.value_range = values[3]
         for buffer_ in self.buffer_slices.values():
             buffer_.discard_vtk_image()
+        Publisher.sendMessage('Reload actual slice')
+
+    def UpdateColourTableBackgroundPlist(self, pubsub_evt):
+        self.values = pubsub_evt.data
+        self.from_= PLIST
+        for buffer_ in self.buffer_slices.values():
+            buffer_.discard_vtk_image()
+
+        Publisher.sendMessage('Reload actual slice')
+
+    def UpdateColourTableBackgroundWidget(self, pubsub_evt):
+        self.nodes = pubsub_evt.data
+        self.from_= WIDGET
+        for buffer_ in self.buffer_slices.values():
+            buffer_.discard_vtk_image()
+
+        knodes = sorted(self.nodes)
+        p0 = knodes[0].value
+        pn = knodes[-1].value
+
+        self.window_width = pn - p0
+        self.window_level = (pn + p0) / 2
+
         Publisher.sendMessage('Reload actual slice')
 
     def InputImageWidget(self, pubsub_evt):
@@ -816,14 +875,71 @@ class Slice(object):
         Publisher.sendMessage('Update slice viewer')
 
     def do_ww_wl(self, image):
-        colorer = vtk.vtkImageMapToWindowLevelColors()
-        colorer.SetInput(image)
-        colorer.SetWindow(self.window_width)
-        colorer.SetLevel(self.window_level)
-        colorer.SetOutputFormatToRGB()
-        colorer.Update()
+        if self.from_ == PLIST:
+            lut = vtk.vtkWindowLevelLookupTable()
+            lut.SetWindow(self.window_width)
+            lut.SetLevel(self.window_level)
+            lut.Build()
+
+            i = 0
+            for r, g, b in self.values:
+                lut.SetTableValue(i, r/255.0, g/255.0, b/255.0, 1.0)
+                i += 1
+
+            colorer = vtk.vtkImageMapToColors()
+            colorer.SetInput(image)
+            colorer.SetLookupTable(lut)
+            colorer.SetOutputFormatToRGB()
+            colorer.Update()
+        elif self.from_ == WIDGET:
+            lut  = vtk.vtkColorTransferFunction()
+
+            for n in self.nodes:
+                r, g, b = n.colour
+                lut.AddRGBPoint(n.value, r/255.0, g/255.0, b/255.0)
+
+            lut.Build()
+
+            colorer = vtk.vtkImageMapToColors()
+            colorer.SetLookupTable(lut)
+            colorer.SetInput(image)
+            colorer.SetOutputFormatToRGB()
+            colorer.Update()
+        else:
+            colorer = vtk.vtkImageMapToWindowLevelColors()
+            colorer.SetInput(image)
+            colorer.SetWindow(self.window_width)
+            colorer.SetLevel(self.window_level)
+            colorer.SetOutputFormatToRGB()
+            colorer.Update()
 
         return colorer.GetOutput()
+
+    def _update_wwwl_widget_nodes(self, ww, wl):
+        if self.from_ == WIDGET: 
+            knodes = sorted(self.nodes)
+
+            p1 = knodes[0]
+            p2 = knodes[-1]
+            half = (p2.value - p1.value) / 2.0
+            middle = p1.value + half
+
+            shiftWL = wl - middle
+            shiftWW = p1.value + shiftWL - (wl - 0.5 * ww)
+
+            factor = 1.0
+
+            for n, node in enumerate(knodes):
+                factor = abs(node.value - middle) / half
+                if factor < 0:
+                    factor = 0
+
+                node.value += shiftWL
+
+                if n < len(self.nodes) / 2.0:
+                    node.value -= shiftWW * factor
+                else:
+                    node.value += shiftWW * factor
 
     def do_threshold_to_a_slice(self, slice_matrix, mask):
         """ 
@@ -837,22 +953,25 @@ class Slice(object):
         return m.astype('uint8')
 
     def do_colour_image(self, imagedata):
-        # map scalar values into colors
-        lut_bg = vtk.vtkLookupTable()
-        lut_bg.SetTableRange(imagedata.GetScalarRange())
-        lut_bg.SetSaturationRange(self.saturation_range)
-        lut_bg.SetHueRange(self.hue_range)
-        lut_bg.SetValueRange(self.value_range)
-        lut_bg.Build()
+        if self.from_ in (PLIST, WIDGET):
+            return imagedata
+        else:
+            # map scalar values into colors
+            lut_bg = vtk.vtkLookupTable()
+            lut_bg.SetTableRange(imagedata.GetScalarRange())
+            lut_bg.SetSaturationRange(self.saturation_range)
+            lut_bg.SetHueRange(self.hue_range)
+            lut_bg.SetValueRange(self.value_range)
+            lut_bg.Build()
 
-        # map the input image through a lookup table
-        img_colours_bg = vtk.vtkImageMapToColors()
-        img_colours_bg.SetOutputFormatToRGB()
-        img_colours_bg.SetLookupTable(lut_bg)
-        img_colours_bg.SetInput(imagedata)
-        img_colours_bg.Update()
+            # map the input image through a lookup table
+            img_colours_bg = vtk.vtkImageMapToColors()
+            img_colours_bg.SetOutputFormatToRGB()
+            img_colours_bg.SetLookupTable(lut_bg)
+            img_colours_bg.SetInput(imagedata)
+            img_colours_bg.Update()
 
-        return img_colours_bg.GetOutput()
+            return img_colours_bg.GetOutput()
 
     def do_colour_mask(self, imagedata):
         scalar_range = int(imagedata.GetScalarRange()[1])

@@ -14,3 +14,9 @@ invesalius/gui/widgets/*.log
 invesalius/gui/widgets/*.pyc
 invesalius/reader/*.log
 invesalius/reader/*.pyc
+
+*.pyc
+*.swp
+*.so
+tags
+*.c
