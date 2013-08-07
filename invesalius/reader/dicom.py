@@ -443,7 +443,7 @@ class Parser():
         DICOM standard tag (0x0020, 0x0032) was used.
         """
         try:
-            data = self.data_image[str(0x020)][str(0x032)]
+            data = self.data_image[str(0x020)][str(0x032)].replace(",", ".")
         except(KeyError):
             return ""
         if (data):
@@ -509,7 +509,7 @@ class Parser():
         DICOM standard tag (0x0028, 0x0030) was used.
         """
         try:
-            data = self.data_image[str(0x0028)][str(0x0030)] 
+            data = self.data_image[str(0x0028)][str(0x0030)].replace(",", ".")
         except(KeyError):
             return ""
         if (data):
@@ -886,7 +886,7 @@ class Parser():
         Critical DICOM tag (0x0020,0x0037). Cannot be edited.
         """
         try:
-            data = self.data_image[str(0x0020)][str(0x0037)]
+            data = self.data_image[str(0x0020)][str(0x0037)].replace(",", ".")
         except(KeyError):
             return [1.0, 0.0, 0.0, 0.0, 1.0, 0.0]
 
@@ -1352,7 +1352,7 @@ class Parser():
         DICOM standard tag (0x0018,0x0050) was used.
         """
         try:
-            data = self.data_image[str(0x0018)][str(0x0050)]
+            data = self.data_image[str(0x0018)][str(0x0050)].replace(",", ".")
         except(KeyError):
             return 0
         if (data):
