@@ -292,7 +292,8 @@ WINDOW_LEVEL = {_("Abdomen"):(350,50),
                 _("Pelvis"): (450,50),
                 _("Sinus"):(4000, 400),
                 _("Vasculature - Hard"):(240,80),
-                _("Vasculature - Soft"):(650,160)}
+                _("Vasculature - Soft"):(650,160),
+                _("Contour"): (255, 127)}
 
 REDUCE_IMAGEDATA_QUALITY = 0
 
