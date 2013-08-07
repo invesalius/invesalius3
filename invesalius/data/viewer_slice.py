@@ -63,6 +63,8 @@ class Viewer(wx.Panel):
         #self.modes = []#['DEFAULT']
         self.left_pressed = 0
         self.right_pressed = 0
+
+        self.number_slices = 10
         
         self.spined_image = False #Use to control to spin
         self.paned_image = False
@@ -1030,6 +1032,17 @@ class Viewer(wx.Panel):
         elif (evt.GetKeyCode() == wx.WXK_DOWN and pos < max):
             self.OnScrollBackward()
             self.OnScrollBar()
+
+        elif (evt.GetKeyCode() == wx.WXK_NUMPAD_ADD):
+            self.number_slices += 1
+            print "ADDing", self.number_slices
+            self.OnScrollBar()
+
+        elif (evt.GetKeyCode() == wx.WXK_NUMPAD_SUBTRACT):
+            if self.number_slices > 1:
+                self.number_slices -= 1
+                print "Subtracting", self.number_slices
+                self.OnScrollBar()
         
         self.UpdateSlice3D(pos)
         self.interactor.Render()
@@ -1068,7 +1081,8 @@ class Viewer(wx.Panel):
         evt.Skip()
 
     def set_slice_number(self, index):
-        image = self.slice_.GetSlices(self.orientation, index)
+        image = self.slice_.GetSlices(self.orientation, index,
+                                      self.number_slices)
         self.slice_data.actor.SetInput(image)
         for actor in self.actors_by_slice_number.get(self.slice_data.number, []):
             self.slice_data.renderer.RemoveActor(actor)

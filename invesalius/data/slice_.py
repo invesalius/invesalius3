@@ -33,6 +33,7 @@ import utils
 
 from mask import Mask
 from project import Project
+from data import mips
 
 OTHER=0
 PLIST=1
@@ -83,6 +84,9 @@ class Slice(object):
         self.blend_filter = None
         self.histogram = None
         self._matrix = None
+
+        self._type_projection = 'MIDA CONTOUR'
+
         self.spacing = (1.0, 1.0, 1.0)
 
         self.number_of_colours = 256
@@ -421,12 +425,14 @@ class Slice(object):
         self.buffer_slices[orientation].discard_vtk_mask()
 
 
-    def GetSlices(self, orientation, slice_number):
-        if self.buffer_slices[orientation].index == slice_number:
+    def GetSlices(self, orientation, slice_number, number_slices):
+        if self.buffer_slices[orientation].index == slice_number and \
+           self._type_projection == 'NORMAL':
             if self.buffer_slices[orientation].vtk_image:
                 image = self.buffer_slices[orientation].vtk_image
             else:
-                n_image = self.get_image_slice(orientation, slice_number)
+                n_image = self.get_image_slice(orientation, slice_number,
+                                               number_slices)
                 image = converters.to_vtk(n_image, self.spacing, slice_number, orientation)
                 ww_wl_image = self.do_ww_wl(image)
                 image = self.do_colour_image(ww_wl_image)
@@ -446,7 +452,8 @@ class Slice(object):
                 final_image = image
             self.buffer_slices[orientation].vtk_image = image
         else:
-            n_image = self.get_image_slice(orientation, slice_number)
+            n_image = self.get_image_slice(orientation, slice_number,
+                                           number_slices)
             image = converters.to_vtk(n_image, self.spacing, slice_number, orientation)
             ww_wl_image = self.do_ww_wl(image)
             image = self.do_colour_image(ww_wl_image)
@@ -469,17 +476,44 @@ class Slice(object):
 
         return final_image
 
-    def get_image_slice(self, orientation, slice_number):
+    def get_image_slice(self, orientation, slice_number, number_slices=1):
         if self.buffer_slices[orientation].index == slice_number \
            and self.buffer_slices[orientation].image is not None:
             n_image = self.buffer_slices[orientation].image
         else:
             if orientation == 'AXIAL':
-                n_image = numpy.array(self.matrix[slice_number])
+                if self._type_projection == 'MIDA CONTOUR':
+                    tmp_array = numpy.array(self.matrix[slice_number:
+                                                        slice_number + number_slices])
+                    n_image = numpy.empty(shape=(tmp_array.shape[1],
+                                                 tmp_array.shape[2]),
+                                          dtype=tmp_array.dtype)
+                    mips.fast_countour_mip(tmp_array, 0.2, 0, self.window_level,
+                                           self.window_level, 2, n_image)
+                else:
+                    n_image = numpy.array(self.matrix[slice_number])
             elif orientation == 'CORONAL':
-                n_image = numpy.array(self.matrix[..., slice_number, ...])
+                if self._type_projection == 'MIDA CONTOUR':
+                    tmp_array = numpy.array(self.matrix[..., slice_number:
+                                                        slice_number + number_slices, ...])
+                    n_image = numpy.empty(shape=(tmp_array.shape[0],
+                                                 tmp_array.shape[2]),
+                                          dtype=tmp_array.dtype)
+                    mips.fast_countour_mip(tmp_array, 0.2, 1, self.window_level,
+                                           self.window_level, 2, n_image)
+                else:
+                    n_image = numpy.array(self.matrix[..., slice_number, ...])
             elif orientation == 'SAGITAL':
-                n_image = numpy.array(self.matrix[..., ..., slice_number])
+                if self._type_projection == 'MIDA CONTOUR':
+                    tmp_array = numpy.array(self.matrix[..., ..., 
+                                                        slice_number: slice_number + number_slices])
+                    n_image = numpy.empty(shape=(tmp_array.shape[0],
+                                                 tmp_array.shape[1]),
+                                          dtype=tmp_array.dtype)
+                    mips.fast_countour_mip(tmp_array, 0.2, 2, self.window_level,
+                                           self.window_level, 2, n_image)
+                else:
+                    n_image = numpy.array(self.matrix[..., ..., slice_number])
         return n_image
 
     def get_mask_slice(self, orientation, slice_number):
