@@ -468,7 +468,7 @@ class Controller():
                     name_to_const[dicom.image.orientation_label]
         proj.window = float(dicom.image.window)
         proj.level = float(dicom.image.level)
-        proj.threshold_range = (-1024, 3033)
+        proj.threshold_range = int(matrix.min()), int(matrix.max())
         proj.spacing = self.Slice.spacing
 
         ######
