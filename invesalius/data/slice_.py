@@ -488,6 +488,19 @@ class Slice(object):
                 elif self._type_projection == const.PROJECTION_MaxIP:
                     n_image = numpy.array(self.matrix[slice_number:
                                                       slice_number+number_slices]).max(0)
+                elif self._type_projection == const.PROJECTION_MinIP:
+                    n_image = numpy.array(self.matrix[slice_number:
+                                                      slice_number+number_slices]).min(0)
+                elif self._type_projection == const.PROJECTION_MeanIP:
+                    n_image = numpy.array(self.matrix[slice_number:
+                                                      slice_number+number_slices]).mean(0)
+                elif self._type_projection == const.PROJECTION_LMIP:
+                    tmp_array = numpy.array(self.matrix[slice_number:
+                                                        slice_number + number_slices])
+                    n_image = numpy.empty(shape=(tmp_array.shape[1],
+                                                 tmp_array.shape[2]),
+                                          dtype=tmp_array.dtype)
+                    mips.lmip(tmp_array, 0, self.window_level, self.window_level, n_image)
                 elif self._type_projection == const.PROJECTION_MIDA:
                     tmp_array = numpy.array(self.matrix[slice_number:
                                                         slice_number + number_slices])
@@ -495,6 +508,22 @@ class Slice(object):
                                                  tmp_array.shape[2]),
                                           dtype=tmp_array.dtype)
                     mips.mida(tmp_array, 0, self.window_level, self.window_level, n_image)
+                elif self._type_projection == const.PROJECTION_CONTOUR_MIP:
+                    tmp_array = numpy.array(self.matrix[slice_number:
+                                                        slice_number + number_slices])
+                    n_image = numpy.empty(shape=(tmp_array.shape[1],
+                                                 tmp_array.shape[2]),
+                                          dtype=tmp_array.dtype)
+                    mips.fast_countour_mip(tmp_array, 0.2, 0, self.window_level,
+                                           self.window_level, 0, n_image)
+                elif self._type_projection == const.PROJECTION_CONTOUR_LMIP:
+                    tmp_array = numpy.array(self.matrix[slice_number:
+                                                        slice_number + number_slices])
+                    n_image = numpy.empty(shape=(tmp_array.shape[1],
+                                                 tmp_array.shape[2]),
+                                          dtype=tmp_array.dtype)
+                    mips.fast_countour_mip(tmp_array, 0.2, 0, self.window_level,
+                                           self.window_level, 1, n_image)
                 elif self._type_projection == const.PROJECTION_CONTOUR_MIDA:
                     tmp_array = numpy.array(self.matrix[slice_number:
                                                         slice_number + number_slices])
@@ -512,6 +541,19 @@ class Slice(object):
                 elif self._type_projection == const.PROJECTION_MaxIP:
                     n_image = numpy.array(self.matrix[..., slice_number:
                                                       slice_number+number_slices, ...]).max(1)
+                elif self._type_projection == const.PROJECTION_MinIP:
+                    n_image = numpy.array(self.matrix[..., slice_number:
+                                                      slice_number+number_slices, ...]).min(1)
+                elif self._type_projection == const.PROJECTION_MeanIP:
+                    n_image = numpy.array(self.matrix[..., slice_number:
+                                                      slice_number+number_slices, ...]).mean(1)
+                elif self._type_projection == const.PROJECTION_LMIP:
+                    tmp_array = numpy.array(self.matrix[..., slice_number:
+                                                        slice_number + number_slices, ...])
+                    n_image = numpy.empty(shape=(tmp_array.shape[0],
+                                                 tmp_array.shape[2]),
+                                          dtype=tmp_array.dtype)
+                    mips.lmip(tmp_array, 1, self.window_level, self.window_level, n_image)
                 elif self._type_projection == const.PROJECTION_MIDA:
                     tmp_array = numpy.array(self.matrix[..., slice_number:
                                                         slice_number + number_slices, ...])
@@ -519,6 +561,22 @@ class Slice(object):
                                                  tmp_array.shape[2]),
                                           dtype=tmp_array.dtype)
                     mips.mida(tmp_array, 1, self.window_level, self.window_level, n_image)
+                elif self._type_projection == const.PROJECTION_CONTOUR_MIP:
+                    tmp_array = numpy.array(self.matrix[..., slice_number:
+                                                        slice_number + number_slices, ...])
+                    n_image = numpy.empty(shape=(tmp_array.shape[0],
+                                                 tmp_array.shape[2]),
+                                          dtype=tmp_array.dtype)
+                    mips.fast_countour_mip(tmp_array, 0.2, 1, self.window_level,
+                                           self.window_level, 0, n_image)
+                elif self._type_projection == const.PROJECTION_CONTOUR_LMIP:
+                    tmp_array = numpy.array(self.matrix[..., slice_number:
+                                                        slice_number + number_slices, ...])
+                    n_image = numpy.empty(shape=(tmp_array.shape[0],
+                                                 tmp_array.shape[2]),
+                                          dtype=tmp_array.dtype)
+                    mips.fast_countour_mip(tmp_array, 0.2, 1, self.window_level,
+                                           self.window_level, 1, n_image)
                 elif self._type_projection == const.PROJECTION_CONTOUR_MIDA:
                     tmp_array = numpy.array(self.matrix[..., slice_number:
                                                         slice_number + number_slices, ...])
@@ -535,6 +593,19 @@ class Slice(object):
                 elif self._type_projection == const.PROJECTION_MaxIP:
                     n_image = numpy.array(self.matrix[..., ..., slice_number:
                                                       slice_number+number_slices]).max(2)
+                elif self._type_projection == const.PROJECTION_MinIP:
+                    n_image = numpy.array(self.matrix[..., ..., slice_number:
+                                                      slice_number+number_slices]).min(2)
+                elif self._type_projection == const.PROJECTION_MeanIP:
+                    n_image = numpy.array(self.matrix[..., ..., slice_number:
+                                                      slice_number+number_slices]).mean(2)
+                elif self._type_projection == const.PROJECTION_LMIP:
+                    tmp_array = numpy.array(self.matrix[..., ..., 
+                                                        slice_number: slice_number + number_slices])
+                    n_image = numpy.empty(shape=(tmp_array.shape[0],
+                                                 tmp_array.shape[1]),
+                                          dtype=tmp_array.dtype)
+                    mips.lmip(tmp_array, 2, self.window_level, self.window_level, n_image)
                 elif self._type_projection == const.PROJECTION_MIDA:
                     tmp_array = numpy.array(self.matrix[..., ..., 
                                                         slice_number: slice_number + number_slices])
@@ -543,6 +614,22 @@ class Slice(object):
                                           dtype=tmp_array.dtype)
                     mips.mida(tmp_array, 2, self.window_level, self.window_level, n_image)
 
+                elif self._type_projection == const.PROJECTION_CONTOUR_MIP:
+                    tmp_array = numpy.array(self.matrix[..., ..., 
+                                                        slice_number: slice_number + number_slices])
+                    n_image = numpy.empty(shape=(tmp_array.shape[0],
+                                                 tmp_array.shape[1]),
+                                          dtype=tmp_array.dtype)
+                    mips.fast_countour_mip(tmp_array, 0.2, 2, self.window_level,
+                                           self.window_level, 0, n_image)
+                elif self._type_projection == const.PROJECTION_CONTOUR_LMIP:
+                    tmp_array = numpy.array(self.matrix[..., ..., 
+                                                        slice_number: slice_number + number_slices])
+                    n_image = numpy.empty(shape=(tmp_array.shape[0],
+                                                 tmp_array.shape[1]),
+                                          dtype=tmp_array.dtype)
+                    mips.fast_countour_mip(tmp_array, 0.2, 2, self.window_level,
+                                           self.window_level, 1, n_image)
                 elif self._type_projection == const.PROJECTION_CONTOUR_MIDA:
                     tmp_array = numpy.array(self.matrix[..., ..., 
                                                         slice_number: slice_number + number_slices])

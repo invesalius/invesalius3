@@ -1022,6 +1022,16 @@ class Viewer(wx.Panel):
         min = 0
         max = self.slice_.GetMaxSliceNumber(self.orientation)
 
+        projections = {wx.WXK_NUMPAD0 : const.PROJECTION_NORMAL,
+                       wx.WXK_NUMPAD1 : const.PROJECTION_MaxIP,
+                       wx.WXK_NUMPAD2 : const.PROJECTION_MinIP,
+                       wx.WXK_NUMPAD3 : const.PROJECTION_MeanIP,
+                       wx.WXK_NUMPAD4 : const.PROJECTION_LMIP,
+                       wx.WXK_NUMPAD5 : const.PROJECTION_MIDA,
+                       wx.WXK_NUMPAD6 : const.PROJECTION_CONTOUR_MIP,
+                       wx.WXK_NUMPAD7 : const.PROJECTION_CONTOUR_LMIP,
+                       wx.WXK_NUMPAD8 : const.PROJECTION_CONTOUR_MIDA,}
+
         if self._flush_buffer:
             self.slice_.apply_slice_buffer_to_mask(self.orientation)
 
@@ -1044,17 +1054,9 @@ class Viewer(wx.Panel):
                 print "Subtracting", self.number_slices
                 self.OnScrollBar()
 
-        elif (evt.GetKeyCode() == wx.WXK_NUMPAD0):
-            self.slice_._type_projection = const.PRJECTION_NORMAL
-
-        elif (evt.GetKeyCode() == wx.WXK_NUMPAD1):
-            self.slice_._type_projection = const.PROJECTION_MaxIP
-
-        elif (evt.GetKeyCode() == wx.WXK_NUMPAD5):
-            self.slice_._type_projection = const.PROJECTION_MIDA
-
-        elif (evt.GetKeyCode() == wx.WXK_NUMPAD8):
-            self.slice_._type_projection = const.PROJECTION_CONTOUR_MIDA
+        elif evt.GetKeyCode() in projections:
+            print "PROJECTION MANOLO!"
+            self.slice_._type_projection = projections[evt.GetKeyCode()]
         
         self.UpdateSlice3D(pos)
         self.interactor.Render()
