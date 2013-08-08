@@ -543,3 +543,14 @@ DICOM_ENCODING_TO_PYTHON = {
                             'ISO_IR 138': 'iso_ir_138',
                             'ISO_IR 144': 'iso_ir_144',
                             }
+
+#-------------------- Projections type ----------------
+PROJECTION_NORMAL=0
+PROJECTION_MaxIP=1
+PROJECTION_MinIP=2
+PROJECTION_MeanIP=3
+PROJECTION_LMIP=4
+PROJECTION_MIDA=5
+PROJECTION_CONTOUR_MIP=6
+PROJECTION_CONTOUR_LMIP=7
+PROJECTION_CONTOUR_MIDA=8

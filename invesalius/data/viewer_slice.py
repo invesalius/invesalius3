@@ -1043,6 +1043,18 @@ class Viewer(wx.Panel):
                 self.number_slices -= 1
                 print "Subtracting", self.number_slices
                 self.OnScrollBar()
+
+        elif (evt.GetKeyCode() == wx.WXK_NUMPAD0):
+            self.slice_._type_projection = const.PRJECTION_NORMAL
+
+        elif (evt.GetKeyCode() == wx.WXK_NUMPAD1):
+            self.slice_._type_projection = const.PROJECTION_MaxIP
+
+        elif (evt.GetKeyCode() == wx.WXK_NUMPAD5):
+            self.slice_._type_projection = const.PROJECTION_MIDA
+
+        elif (evt.GetKeyCode() == wx.WXK_NUMPAD8):
+            self.slice_._type_projection = const.PROJECTION_CONTOUR_MIDA
         
         self.UpdateSlice3D(pos)
         self.interactor.Render()
