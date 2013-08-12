@@ -86,6 +86,7 @@ class Slice(object):
         self._matrix = None
 
         self._type_projection = const.PROJECTION_MIDA
+        self.n_border = 3.0
 
         self.spacing = (1.0, 1.0, 1.0)
 
@@ -514,7 +515,7 @@ class Slice(object):
                     n_image = numpy.empty(shape=(tmp_array.shape[1],
                                                  tmp_array.shape[2]),
                                           dtype=tmp_array.dtype)
-                    mips.fast_countour_mip(tmp_array, 0.2, 0, self.window_level,
+                    mips.fast_countour_mip(tmp_array, self.n_border, 0, self.window_level,
                                            self.window_level, 0, n_image)
                 elif self._type_projection == const.PROJECTION_CONTOUR_LMIP:
                     tmp_array = numpy.array(self.matrix[slice_number:
@@ -522,7 +523,7 @@ class Slice(object):
                     n_image = numpy.empty(shape=(tmp_array.shape[1],
                                                  tmp_array.shape[2]),
                                           dtype=tmp_array.dtype)
-                    mips.fast_countour_mip(tmp_array, 0.2, 0, self.window_level,
+                    mips.fast_countour_mip(tmp_array, self.n_border, 0, self.window_level,
                                            self.window_level, 1, n_image)
                 elif self._type_projection == const.PROJECTION_CONTOUR_MIDA:
                     tmp_array = numpy.array(self.matrix[slice_number:
@@ -530,7 +531,7 @@ class Slice(object):
                     n_image = numpy.empty(shape=(tmp_array.shape[1],
                                                  tmp_array.shape[2]),
                                           dtype=tmp_array.dtype)
-                    mips.fast_countour_mip(tmp_array, 0.2, 0, self.window_level,
+                    mips.fast_countour_mip(tmp_array, self.n_border, 0, self.window_level,
                                            self.window_level, 2, n_image)
                 else:
                     n_image = numpy.array(self.matrix[slice_number])
@@ -567,7 +568,7 @@ class Slice(object):
                     n_image = numpy.empty(shape=(tmp_array.shape[0],
                                                  tmp_array.shape[2]),
                                           dtype=tmp_array.dtype)
-                    mips.fast_countour_mip(tmp_array, 0.2, 1, self.window_level,
+                    mips.fast_countour_mip(tmp_array, self.n_border, 1, self.window_level,
                                            self.window_level, 0, n_image)
                 elif self._type_projection == const.PROJECTION_CONTOUR_LMIP:
                     tmp_array = numpy.array(self.matrix[..., slice_number:
@@ -575,7 +576,7 @@ class Slice(object):
                     n_image = numpy.empty(shape=(tmp_array.shape[0],
                                                  tmp_array.shape[2]),
                                           dtype=tmp_array.dtype)
-                    mips.fast_countour_mip(tmp_array, 0.2, 1, self.window_level,
+                    mips.fast_countour_mip(tmp_array, self.n_border, 1, self.window_level,
                                            self.window_level, 1, n_image)
                 elif self._type_projection == const.PROJECTION_CONTOUR_MIDA:
                     tmp_array = numpy.array(self.matrix[..., slice_number:
@@ -583,7 +584,7 @@ class Slice(object):
                     n_image = numpy.empty(shape=(tmp_array.shape[0],
                                                  tmp_array.shape[2]),
                                           dtype=tmp_array.dtype)
-                    mips.fast_countour_mip(tmp_array, 0.2, 1, self.window_level,
+                    mips.fast_countour_mip(tmp_array, self.n_border, 1, self.window_level,
                                            self.window_level, 2, n_image)
                 else:
                     n_image = numpy.array(self.matrix[..., slice_number, ...])
@@ -620,7 +621,7 @@ class Slice(object):
                     n_image = numpy.empty(shape=(tmp_array.shape[0],
                                                  tmp_array.shape[1]),
                                           dtype=tmp_array.dtype)
-                    mips.fast_countour_mip(tmp_array, 0.2, 2, self.window_level,
+                    mips.fast_countour_mip(tmp_array, self.n_border, 2, self.window_level,
                                            self.window_level, 0, n_image)
                 elif self._type_projection == const.PROJECTION_CONTOUR_LMIP:
                     tmp_array = numpy.array(self.matrix[..., ..., 
@@ -628,7 +629,7 @@ class Slice(object):
                     n_image = numpy.empty(shape=(tmp_array.shape[0],
                                                  tmp_array.shape[1]),
                                           dtype=tmp_array.dtype)
-                    mips.fast_countour_mip(tmp_array, 0.2, 2, self.window_level,
+                    mips.fast_countour_mip(tmp_array, self.n_border, 2, self.window_level,
                                            self.window_level, 1, n_image)
                 elif self._type_projection == const.PROJECTION_CONTOUR_MIDA:
                     tmp_array = numpy.array(self.matrix[..., ..., 
@@ -636,7 +637,7 @@ class Slice(object):
                     n_image = numpy.empty(shape=(tmp_array.shape[0],
                                                  tmp_array.shape[1]),
                                           dtype=tmp_array.dtype)
-                    mips.fast_countour_mip(tmp_array, 0.2, 2, self.window_level,
+                    mips.fast_countour_mip(tmp_array, self.n_border, 2, self.window_level,
                                            self.window_level, 2, n_image)
                 else:
                     n_image = numpy.array(self.matrix[..., ..., slice_number])
@@ -832,6 +833,12 @@ class Slice(object):
     def GetOutput(self):
         return self.blend_filter.GetOutput()
 
+    def SetTypeProjection(self, tprojection):
+        if self._type_projection != tprojection:
+            self._type_projection = tprojection
+            for buffer_ in self.buffer_slices.values():
+                buffer_.discard_buffer()
+
     def SetInput(self, imagedata, mask_dict):
         print "SETINPUT!"
         self.imagedata = imagedata
@@ -891,7 +898,14 @@ class Slice(object):
         self.window_level = level
 
         for buffer_ in self.buffer_slices.values():
-            buffer_.discard_vtk_image()
+            if self._type_projection in (const.PROJECTION_NORMAL,
+                                         const.PROJECTION_MaxIP,
+                                         const.PROJECTION_MinIP,
+                                         const.PROJECTION_MeanIP,
+                                         const.PROJECTION_LMIP):
+                buffer_.discard_vtk_image()
+            else:
+                buffer_.discard_buffer()
 
         Publisher.sendMessage('Reload actual slice')
 
