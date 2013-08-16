@@ -64,7 +64,7 @@ class Viewer(wx.Panel):
         self.left_pressed = 0
         self.right_pressed = 0
 
-        self.number_slices = 10
+        self._number_slices = 10
         
         self.spined_image = False #Use to control to spin
         self.paned_image = False
@@ -984,6 +984,16 @@ class Viewer(wx.Panel):
                                                      max_slice_number)
         self.set_scroll_position(0)
 
+    @property
+    def number_slices(self):
+        return self._number_slices
+
+    @number_slices.setter
+    def number_slices(self, val):
+        self._number_slices = val
+        buffer_ = self.slice_.buffer_slices[self.orientation]
+        buffer_.discard_buffer()
+
     def set_scroll_position(self, position):
         self.scroll.SetThumbPosition(position)
         self.OnScrollBar()
@@ -1046,17 +1056,18 @@ class Viewer(wx.Panel):
         elif (evt.GetKeyCode() == wx.WXK_NUMPAD_ADD):
             self.number_slices += 1
             print "ADDing", self.number_slices
-            self.OnScrollBar()
+            self.ReloadActualSlice()
 
         elif (evt.GetKeyCode() == wx.WXK_NUMPAD_SUBTRACT):
             if self.number_slices > 1:
                 self.number_slices -= 1
                 print "Subtracting", self.number_slices
-                self.OnScrollBar()
+                self.ReloadActualSlice()
 
         elif evt.GetKeyCode() in projections:
             print "PROJECTION MANOLO!"
-            self.slice_._type_projection = projections[evt.GetKeyCode()]
+            self.slice_.SetTypeProjection(projections[evt.GetKeyCode()])
+            self.ReloadActualSlice()
         
         self.UpdateSlice3D(pos)
         self.interactor.Render()
@@ -1139,7 +1150,7 @@ class Viewer(wx.Panel):
                 coord[index] = extent_min[index]
         return coord
 
-    def ReloadActualSlice(self, pubsub_evt):
+    def ReloadActualSlice(self, pubsub_evt=None):
         pos = self.scroll.GetThumbPosition()
         self.set_slice_number(pos)
         self.interactor.Render()
