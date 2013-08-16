@@ -32,6 +32,11 @@ import styles
 import wx
 from wx.lib.pubsub import pub as Publisher
 
+try:
+    from agw import floatspin as FS
+except ImportError: # if it's not there locally, try the wxPython lib.
+    import wx.lib.agw.floatspin as FS
+
 import constants as const
 import cursor_actors as ca
 import data.slice_ as sl
@@ -50,6 +55,26 @@ ORIENTATIONS = {
         "CORONAL": const.CORONAL,
         "SAGITAL": const.SAGITAL,
         }
+
+
+class ContourMIPConfig(wx.Panel):
+    def __init__(self, prnt):
+        wx.Panel.__init__(self, prnt)
+        self.mip_size_spin = wx.SpinCtrl(self, -1, min=1, max=120, initial=1)
+        self.border_spin = FS.FloatSpin(self, -1, min_val=0, max_val=10,
+                                        increment=0.01, value=0.1,
+                                        agwStyle=FS.FS_LEFT)
+
+        sizer = wx.BoxSizer(wx.HORIZONTAL)
+        sizer.Add(self.mip_size_spin, 1, wx.EXPAND)
+        sizer.Add(self.border_spin, 1, wx.EXPAND)
+        self.SetSizer(sizer)
+        sizer.Fit(self)
+
+        self.Layout()
+        self.Update()
+        self.SetAutoLayout(1)
+        
 
 class Viewer(wx.Panel):
 
@@ -113,12 +138,16 @@ class Viewer(wx.Panel):
 
         scroll = wx.ScrollBar(self, -1, style=wx.SB_VERTICAL)
         self.scroll = scroll
+
+        self.mip_ctrls = ContourMIPConfig(self)
+
         sizer = wx.BoxSizer(wx.HORIZONTAL)
         sizer.Add(self.interactor, 1, wx.EXPAND|wx.GROW)
+        sizer.Add(scroll, 0, wx.EXPAND|wx.GROW)
 
-        background_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        background_sizer = wx.BoxSizer(wx.VERTICAL)
         background_sizer.AddSizer(sizer, 1, wx.EXPAND|wx.GROW|wx.ALL, 2)
-        background_sizer.Add(scroll, 0, wx.EXPAND|wx.GROW)
+        background_sizer.Add(self.mip_ctrls, 0, wx.EXPAND|wx.GROW|wx.ALL, 2)
         self.SetSizer(background_sizer)
         background_sizer.Fit(self)
 
@@ -742,6 +771,9 @@ class Viewer(wx.Panel):
         self.interactor.Bind(wx.EVT_RIGHT_UP, self.OnContextMenu)
         self.interactor.Bind(wx.EVT_SIZE, self.OnSize)
 
+        self.mip_ctrls.mip_size_spin.Bind(wx.EVT_SPINCTRL, self.OnSetMIPSize)
+        self.mip_ctrls.border_spin.Bind(wx.EVT_SPINCTRL, self.OnSetMIPBorder)
+
     def LoadImagedata(self, pubsub_evt):
         imagedata, mask_dict = pubsub_evt.data
         self.SetInput(imagedata, mask_dict)
@@ -1104,6 +1136,18 @@ class Viewer(wx.Panel):
         if self.slice_data:
             self.slice_data.SetSize((w, h))
         evt.Skip()
+
+    def OnSetMIPSize(self, evt):
+        val = self.mip_ctrls.mip_size_spin.GetValue()
+        self.number_slices = val
+        self.ReloadActualSlice()
+
+    def OnSetMIPBorder(self, evt):
+        val = self.mip_ctrls.border_spin.GetValue()
+        self.slice_.n_border = val
+        buffer_ = self.slice_.buffer_slices[self.orientation]
+        buffer_.discard_buffer()
+        self.ReloadActualSlice()
 
     def set_slice_number(self, index):
         image = self.slice_.GetSlices(self.orientation, index,
