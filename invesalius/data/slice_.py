@@ -932,7 +932,14 @@ class Slice(object):
         self.nodes = pubsub_evt.data
         self.from_= WIDGET
         for buffer_ in self.buffer_slices.values():
-            buffer_.discard_vtk_image()
+            if self._type_projection in (const.PROJECTION_NORMAL,
+                                         const.PROJECTION_MaxIP,
+                                         const.PROJECTION_MinIP,
+                                         const.PROJECTION_MeanIP,
+                                         const.PROJECTION_LMIP):
+                buffer_.discard_vtk_image()
+            else:
+                buffer_.discard_buffer()
 
         knodes = sorted(self.nodes)
         p0 = knodes[0].value
