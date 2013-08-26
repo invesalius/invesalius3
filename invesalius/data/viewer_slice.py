@@ -58,23 +58,48 @@ ORIENTATIONS = {
 
 
 class ContourMIPConfig(wx.Panel):
-    def __init__(self, prnt):
+    def __init__(self, prnt, orientation):
         wx.Panel.__init__(self, prnt)
-        self.mip_size_spin = wx.SpinCtrl(self, -1, min=1, max=120, initial=1)
+        self.mip_size_spin = wx.SpinCtrl(self, -1, min=1, max=240, initial=1)
         self.border_spin = FS.FloatSpin(self, -1, min_val=0, max_val=10,
                                         increment=0.01, value=0.1,
                                         agwStyle=FS.FS_LEFT)
+        self.inverted = wx.CheckBox(self, -1, "inverted")
+        
+        txt_mip_size = wx.StaticText(self, -1, "MIP size", style=wx.ALIGN_CENTER_HORIZONTAL)
+        txt_mip_border = wx.StaticText(self, -1, "Border") 
 
         sizer = wx.BoxSizer(wx.HORIZONTAL)
-        sizer.Add(self.mip_size_spin, 1, wx.EXPAND)
-        sizer.Add(self.border_spin, 1, wx.EXPAND)
+        sizer.Add(txt_mip_size, 0, wx.EXPAND | wx.ALL, 2)
+        sizer.Add(self.mip_size_spin, 0, wx.EXPAND)
+        sizer.Add(txt_mip_border, 0, wx.EXPAND)
+        sizer.Add(self.border_spin, 0, wx.EXPAND)
+        sizer.Add(self.inverted, 1, wx.EXPAND)
         self.SetSizer(sizer)
         sizer.Fit(self)
 
         self.Layout()
         self.Update()
         self.SetAutoLayout(1)
+
+        self.orientation = orientation
+
+        self.mip_size_spin.Bind(wx.EVT_SPINCTRL, self.OnSetMIPSize)
+        self.border_spin.Bind(wx.EVT_SPINCTRL, self.OnSetMIPBorder)
+        self.inverted.Bind(wx.EVT_CHECKBOX, self.OnCheckInverted)
         
+    def OnSetMIPSize(self, evt):
+        val = self.mip_size_spin.GetValue()
+        Publisher.sendMessage('Set MIP size %s' % self.orientation, val)
+
+    def OnSetMIPBorder(self, evt):
+        val = self.border_spin.GetValue()
+        Publisher.sendMessage('Set MIP border %s' % self.orientation, val)
+
+    def OnCheckInverted(self, evt):
+        val = self.inverted.GetValue()
+        Publisher.sendMessage('Set MIP Invert %s' % self.orientation, val)
+
 
 class Viewer(wx.Panel):
 
@@ -90,6 +115,7 @@ class Viewer(wx.Panel):
         self.right_pressed = 0
 
         self._number_slices = 10
+        self._mip_inverted = False
         
         self.spined_image = False #Use to control to spin
         self.paned_image = False
@@ -110,10 +136,10 @@ class Viewer(wx.Panel):
         self.actors_by_slice_number = {}
         self.renderers_by_slice_number = {}
 
-        self.__init_gui()
-
         self.orientation = orientation
         self.slice_number = 0
+
+        self.__init_gui()
 
         self._brush_cursor_op = const.DEFAULT_BRUSH_OP
         self._brush_cursor_size = const.BRUSH_SIZE
@@ -139,7 +165,7 @@ class Viewer(wx.Panel):
         scroll = wx.ScrollBar(self, -1, style=wx.SB_VERTICAL)
         self.scroll = scroll
 
-        self.mip_ctrls = ContourMIPConfig(self)
+        self.mip_ctrls = ContourMIPConfig(self, self.orientation)
 
         sizer = wx.BoxSizer(wx.HORIZONTAL)
         sizer.Add(self.interactor, 1, wx.EXPAND|wx.GROW)
@@ -675,6 +701,12 @@ class Viewer(wx.Panel):
         Publisher.subscribe(self.ReloadActualSlice, 'Reload actual slice')
         Publisher.subscribe(self.OnUpdateScroll, 'Update scroll')
 
+
+        # MIP
+        Publisher.subscribe(self.OnSetMIPSize, 'Set MIP size %s' % self.orientation)
+        Publisher.subscribe(self.OnSetMIPBorder, 'Set MIP border %s' % self.orientation)
+        Publisher.subscribe(self.OnSetMIPInvert, 'Set MIP Invert %s' % self.orientation)
+
     def SetDefaultCursor(self, pusub_evt):
         self.interactor.SetCursor(wx.StockCursor(wx.CURSOR_DEFAULT))
     
@@ -770,9 +802,6 @@ class Viewer(wx.Panel):
         self.interactor.Bind(wx.EVT_KEY_DOWN, self.OnKeyDown)
         self.interactor.Bind(wx.EVT_RIGHT_UP, self.OnContextMenu)
         self.interactor.Bind(wx.EVT_SIZE, self.OnSize)
-
-        self.mip_ctrls.mip_size_spin.Bind(wx.EVT_SPINCTRL, self.OnSetMIPSize)
-        self.mip_ctrls.border_spin.Bind(wx.EVT_SPINCTRL, self.OnSetMIPBorder)
 
     def LoadImagedata(self, pubsub_evt):
         imagedata, mask_dict = pubsub_evt.data
@@ -1098,6 +1127,15 @@ class Viewer(wx.Panel):
 
         elif evt.GetKeyCode() in projections:
             print "PROJECTION MANOLO!"
+            if evt.GetKeyCode() != wx.WXK_NUMPAD0 and self.slice_._type_projection == const.PROJECTION_NORMAL:
+                self.mip_ctrls.Show()
+                self.GetSizer().Add(self.mip_ctrls, 0, wx.EXPAND|wx.GROW|wx.ALL, 2)
+                self.Layout()
+            elif evt.GetKeyCode() == wx.WXK_NUMPAD0 and self.slice_._type_projection != const.PROJECTION_NORMAL:
+                self.mip_ctrls.Hide()
+                self.GetSizer().Remove(self.mip_ctrls)
+                self.Layout()
+
             self.slice_.SetTypeProjection(projections[evt.GetKeyCode()])
             self.ReloadActualSlice()
         
@@ -1137,21 +1175,29 @@ class Viewer(wx.Panel):
             self.slice_data.SetSize((w, h))
         evt.Skip()
 
-    def OnSetMIPSize(self, evt):
-        val = self.mip_ctrls.mip_size_spin.GetValue()
+    def OnSetMIPSize(self, pubsub_evt):
+        val = pubsub_evt.data
         self.number_slices = val
         self.ReloadActualSlice()
 
-    def OnSetMIPBorder(self, evt):
-        val = self.mip_ctrls.border_spin.GetValue()
+    def OnSetMIPBorder(self, pubsub_evt):
+        val = pubsub_evt.data
         self.slice_.n_border = val
         buffer_ = self.slice_.buffer_slices[self.orientation]
         buffer_.discard_buffer()
         self.ReloadActualSlice()
 
+    def OnSetMIPInvert(self, pubsub_evt):
+        val = pubsub_evt.data
+        self._mip_inverted = val
+        buffer_ = self.slice_.buffer_slices[self.orientation]
+        buffer_.discard_buffer()
+        self.ReloadActualSlice()
+
     def set_slice_number(self, index):
+        inverted = self.mip_ctrls.inverted.GetValue()
         image = self.slice_.GetSlices(self.orientation, index,
-                                      self.number_slices)
+                                      self.number_slices, inverted)
         self.slice_data.actor.SetInput(image)
         for actor in self.actors_by_slice_number.get(self.slice_data.number, []):
             self.slice_data.renderer.RemoveActor(actor)
