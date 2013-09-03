@@ -61,9 +61,15 @@ class ContourMIPConfig(wx.Panel):
     def __init__(self, prnt, orientation):
         wx.Panel.__init__(self, prnt)
         self.mip_size_spin = wx.SpinCtrl(self, -1, min=1, max=240, initial=1)
+        w, h = self.mip_size_spin.GetTextExtent('M')
+        self.mip_size_spin.SetMinSize((4 * w + 10, -1))
+        self.mip_size_spin.SetMaxSize((4 * w + 10, -1))
         self.border_spin = FS.FloatSpin(self, -1, min_val=0, max_val=10,
-                                        increment=0.01, value=0.1,
+                                        increment=0.1, value=0.1, digits=1,
                                         agwStyle=FS.FS_LEFT)
+        w, h = self.border_spin.GetTextExtent('M')
+        self.border_spin.SetMinSize((4 * w + 10, -1))
+        self.border_spin.SetMaxSize((4 * w + 10, -1))
         self.inverted = wx.CheckBox(self, -1, "inverted")
         
         txt_mip_size = wx.StaticText(self, -1, "MIP size", style=wx.ALIGN_CENTER_HORIZONTAL)
@@ -72,8 +78,10 @@ class ContourMIPConfig(wx.Panel):
         sizer = wx.BoxSizer(wx.HORIZONTAL)
         sizer.Add(txt_mip_size, 0, wx.EXPAND | wx.ALL, 2)
         sizer.Add(self.mip_size_spin, 0, wx.EXPAND)
-        sizer.Add(txt_mip_border, 0, wx.EXPAND)
+        sizer.AddSpacer((10, 0))
+        sizer.Add(txt_mip_border, 0, wx.EXPAND | wx.ALL, 2)
         sizer.Add(self.border_spin, 0, wx.EXPAND)
+        sizer.AddSpacer((10, 0))
         sizer.Add(self.inverted, 1, wx.EXPAND)
         self.SetSizer(sizer)
         sizer.Fit(self)
