@@ -68,8 +68,8 @@ class ContourMIPConfig(wx.Panel):
                                         increment=0.1, value=0.1, digits=1,
                                         agwStyle=FS.FS_LEFT)
         w, h = self.border_spin.GetTextExtent('M')
-        self.border_spin.SetMinSize((4 * w + 10, -1))
-        self.border_spin.SetMaxSize((4 * w + 10, -1))
+        self.border_spin.SetMinSize((5 * w + 10, -1))
+        self.border_spin.SetMaxSize((5 * w + 10, -1))
         self.inverted = wx.CheckBox(self, -1, "inverted")
         
         txt_mip_size = wx.StaticText(self, -1, "MIP size", style=wx.ALIGN_CENTER_HORIZONTAL)
@@ -82,7 +82,7 @@ class ContourMIPConfig(wx.Panel):
         sizer.Add(txt_mip_border, 0, wx.EXPAND | wx.ALL, 2)
         sizer.Add(self.border_spin, 0, wx.EXPAND)
         sizer.AddSpacer((10, 0))
-        sizer.Add(self.inverted, 1, wx.EXPAND)
+        sizer.Add(self.inverted, 0, wx.EXPAND)
         self.SetSizer(sizer)
         sizer.Fit(self)
 
@@ -174,6 +174,7 @@ class Viewer(wx.Panel):
         self.scroll = scroll
 
         self.mip_ctrls = ContourMIPConfig(self, self.orientation)
+        self.mip_ctrls.Hide()
 
         sizer = wx.BoxSizer(wx.HORIZONTAL)
         sizer.Add(self.interactor, 1, wx.EXPAND|wx.GROW)
@@ -181,7 +182,7 @@ class Viewer(wx.Panel):
 
         background_sizer = wx.BoxSizer(wx.VERTICAL)
         background_sizer.AddSizer(sizer, 1, wx.EXPAND|wx.GROW|wx.ALL, 2)
-        background_sizer.Add(self.mip_ctrls, 0, wx.EXPAND|wx.GROW|wx.ALL, 2)
+        #background_sizer.Add(self.mip_ctrls, 0, wx.EXPAND|wx.GROW|wx.ALL, 2)
         self.SetSizer(background_sizer)
         background_sizer.Fit(self)
 
