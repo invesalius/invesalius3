@@ -85,7 +85,7 @@ class Slice(object):
         self.histogram = None
         self._matrix = None
 
-        self._type_projection = const.PROJECTION_MIDA
+        self._type_projection = const.PROJECTION_NORMAL
         self.n_border = 3.0
 
         self.spacing = (1.0, 1.0, 1.0)
@@ -138,6 +138,7 @@ class Slice(object):
                                 'Change mask colour')
         Publisher.subscribe(self.__set_mask_name, 'Change mask name')
         Publisher.subscribe(self.__show_mask, 'Show mask')
+        Publisher.subscribe(self.__hide_current_mask, 'Hide current mask')
 
         Publisher.subscribe(self.__set_current_mask_threshold_limits,
                                         'Update threshold limits')
@@ -350,6 +351,12 @@ class Slice(object):
             self.ShowMask(index, value)
             if not value:
                 Publisher.sendMessage('Select mask name in combo', -1)
+
+    def __hide_current_mask(self, pubsub_evt):
+        if self.current_mask:
+            index = self.current_mask.index
+            value = False
+            self.ShowMask(index, value)
 
     def edit_mask_pixel(self, operation, index, position, radius, orientation):
         mask = self.buffer_slices[orientation].mask
@@ -815,6 +822,9 @@ class Slice(object):
 
     def SetTypeProjection(self, tprojection):
         if self._type_projection != tprojection:
+            if self._type_projection == const.PROJECTION_NORMAL:
+                self.__hide_current_mask(None)
+
             self._type_projection = tprojection
             for buffer_ in self.buffer_slices.values():
                 buffer_.discard_buffer()
