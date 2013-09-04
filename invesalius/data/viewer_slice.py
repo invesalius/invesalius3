@@ -1138,6 +1138,7 @@ class Viewer(wx.Panel):
         elif evt.GetKeyCode() in projections:
             print "PROJECTION MANOLO!"
             self.slice_.SetTypeProjection(projections[evt.GetKeyCode()])
+            Publisher.sendMessage('Set projection type', projections[evt.GetKeyCode()])
             self.ReloadActualSlice()
         
         self.UpdateSlice3D(pos)

@@ -154,6 +154,7 @@ class Slice(object):
 
         Publisher.subscribe(self.UpdateColourTableBackgroundWidget,\
                                  'Change colour table from background image from widget')
+        Publisher.subscribe(self._set_projection_type, 'Set projection type')
 
         Publisher.subscribe(self.InputImageWidget, 'Input Image in the widget')
 
@@ -823,6 +824,10 @@ class Slice(object):
                                                  surface_parameters))
     def GetOutput(self):
         return self.blend_filter.GetOutput()
+
+    def _set_projection_type(self, pubsub_evt):
+        tprojection = pubsub_evt.data
+        self.SetTypeProjection(tprojection)
 
     def SetTypeProjection(self, tprojection):
         if self._type_projection != tprojection:
