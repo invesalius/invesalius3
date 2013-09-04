@@ -352,11 +352,15 @@ class Slice(object):
             if not value:
                 Publisher.sendMessage('Select mask name in combo', -1)
 
+            if self._type_projection != const.PROJECTION_NORMAL:
+                self.SetTypeProjection(const.PROJECTION_NORMAL)
+                Publisher.sendMessage('Reload actual slice')
+
     def __hide_current_mask(self, pubsub_evt):
         if self.current_mask:
             index = self.current_mask.index
             value = False
-            self.ShowMask(index, value)
+            Publisher.sendMessage('Show mask', (index, value))
 
     def edit_mask_pixel(self, operation, index, position, radius, orientation):
         mask = self.buffer_slices[orientation].mask
@@ -823,7 +827,12 @@ class Slice(object):
     def SetTypeProjection(self, tprojection):
         if self._type_projection != tprojection:
             if self._type_projection == const.PROJECTION_NORMAL:
-                self.__hide_current_mask(None)
+                Publisher.sendMessage('Hide current mask')
+
+            if tprojection == const.PROJECTION_NORMAL:
+                Publisher.sendMessage('Show MIP interface', False)
+            else:
+                Publisher.sendMessage('Show MIP interface', True)
 
             self._type_projection = tprojection
             for buffer_ in self.buffer_slices.values():

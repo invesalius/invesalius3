@@ -715,6 +715,7 @@ class Viewer(wx.Panel):
         Publisher.subscribe(self.OnSetMIPSize, 'Set MIP size %s' % self.orientation)
         Publisher.subscribe(self.OnSetMIPBorder, 'Set MIP border %s' % self.orientation)
         Publisher.subscribe(self.OnSetMIPInvert, 'Set MIP Invert %s' % self.orientation)
+        Publisher.subscribe(self.OnShowMIPInterface, 'Show MIP interface')
 
     def SetDefaultCursor(self, pusub_evt):
         self.interactor.SetCursor(wx.StockCursor(wx.CURSOR_DEFAULT))
@@ -1136,15 +1137,6 @@ class Viewer(wx.Panel):
 
         elif evt.GetKeyCode() in projections:
             print "PROJECTION MANOLO!"
-            if evt.GetKeyCode() != wx.WXK_NUMPAD0 and self.slice_._type_projection == const.PROJECTION_NORMAL:
-                self.mip_ctrls.Show()
-                self.GetSizer().Add(self.mip_ctrls, 0, wx.EXPAND|wx.GROW|wx.ALL, 2)
-                self.Layout()
-            elif evt.GetKeyCode() == wx.WXK_NUMPAD0 and self.slice_._type_projection != const.PROJECTION_NORMAL:
-                self.mip_ctrls.Hide()
-                self.GetSizer().Remove(self.mip_ctrls)
-                self.Layout()
-
             self.slice_.SetTypeProjection(projections[evt.GetKeyCode()])
             self.ReloadActualSlice()
         
@@ -1202,6 +1194,18 @@ class Viewer(wx.Panel):
         buffer_ = self.slice_.buffer_slices[self.orientation]
         buffer_.discard_buffer()
         self.ReloadActualSlice()
+
+    def OnShowMIPInterface(self, pubsub_evt):
+        value = pubsub_evt.data
+        if value:
+            self.mip_ctrls.Show()
+            self.GetSizer().Add(self.mip_ctrls, 0, wx.EXPAND|wx.GROW|wx.ALL, 2)
+            self.Layout()
+        else:
+            self.mip_ctrls.Hide()
+            self.GetSizer().Remove(self.mip_ctrls)
+            self.Layout()
+
 
     def set_slice_number(self, index):
         inverted = self.mip_ctrls.inverted.GetValue()
