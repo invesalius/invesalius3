@@ -20,6 +20,7 @@
 #    detalhes.
 #--------------------------------------------------------------------------
 import sys
+from collections import OrderedDict
 
 import wx
 from wx.lib.pubsub import pub as Publisher
@@ -29,6 +30,15 @@ import data.slice_ as sl
 import presets
 
 from gui.dialogs import ClutImagedataDialog
+
+PROJECTIONS_ID = OrderedDict(((_('Normal'), const.PROJECTION_NORMAL),
+                              (_('MaxIP'), const.PROJECTION_MaxIP),
+                              (_('MinIP'), const.PROJECTION_MinIP),
+                              (_('MeanIP'), const.PROJECTION_MeanIP),
+                              (_('MIDA'), const.PROJECTION_MIDA),
+                              (_('Contour MaxIP'), const.PROJECTION_CONTOUR_MIP),
+                              (_('Contour MIDA'), const.PROJECTION_CONTOUR_MIDA),) ) 
+                
 
 class SliceMenu(wx.Menu):
     def __init__(self):
@@ -111,6 +121,15 @@ class SliceMenu(wx.Menu):
         submenu_pseudo_colours.AppendItem(color_item)
         self.ID_TO_TOOL_ITEM[new_id] = color_item
         self.pseudo_color_items[new_id] = color_item
+
+        # --------------- Sub menu of the projection type ---------------------
+        submenu_projection = wx.Menu()
+        for name in PROJECTIONS_ID:
+            new_id = wx.NewId()
+            projection_item = wx.MenuItem(submenu_projection, new_id, name,
+                                          kind=wx.ITEM_RADIO)
+            submenu_projection.AppendItem(projection_item)
+            self.ID_TO_TOOL_ITEM[new_id] = projection_item
         
         flag_tiling = False
         #------------ Sub menu of the image tiling ---------------
@@ -130,6 +149,7 @@ class SliceMenu(wx.Menu):
         # Add sub itens in the menu
         self.AppendMenu(-1, _("Window width and level"), submenu_wl)
         self.AppendMenu(-1, _("Pseudo color"), submenu_pseudo_colours)
+        self.AppendMenu(-1, _("Projection type"), submenu_projection)
         ###self.AppendMenu(-1, _("Image Tiling"), submenu_image_tiling)
 
         # It doesn't work in Linux
@@ -139,6 +159,7 @@ class SliceMenu(wx.Menu):
             submenu_wl.Bind(wx.EVT_MENU, self.OnPopup)
             submenu_pseudo_colours.Bind(wx.EVT_MENU, self.OnPopup)
             submenu_image_tiling.Bind(wx.EVT_MENU, self.OnPopup)
+            submenu_projection.Bind(wx.EVT_MENU, self.OnPopup)
 
         self.__bind_events()
 
@@ -169,6 +190,7 @@ class SliceMenu(wx.Menu):
         id = evt.GetId()
         item = self.ID_TO_TOOL_ITEM[evt.GetId()]
         key = item.GetLabel()
+        print 'Key', key
         if(key in const.WINDOW_LEVEL.keys()):
             window, level = const.WINDOW_LEVEL[key]
             Publisher.sendMessage('Bright and contrast adjustment image',
@@ -215,6 +237,12 @@ class SliceMenu(wx.Menu):
             values = const.IMAGE_TILING[key]
             Publisher.sendMessage('Set slice viewer layout', values)
             Publisher.sendMessage('Update slice viewer')
+
+        elif key in PROJECTIONS_ID:
+            print 'Key', key
+            pid = PROJECTIONS_ID[key]
+            Publisher.sendMessage('Set projection type', pid)
+            Publisher.sendMessage('Reload actual slice')
 
         elif key == _('Custom'):
             if self.cdialog is None:
