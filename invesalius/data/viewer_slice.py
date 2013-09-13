@@ -73,13 +73,13 @@ class ContourMIPConfig(wx.Panel):
         self.inverted = wx.CheckBox(self, -1, "inverted")
         
         txt_mip_size = wx.StaticText(self, -1, "MIP size", style=wx.ALIGN_CENTER_HORIZONTAL)
-        txt_mip_border = wx.StaticText(self, -1, "Border") 
+        self.txt_mip_border = wx.StaticText(self, -1, "Border") 
 
         sizer = wx.BoxSizer(wx.HORIZONTAL)
         sizer.Add(txt_mip_size, 0, wx.EXPAND | wx.ALL, 2)
         sizer.Add(self.mip_size_spin, 0, wx.EXPAND)
         sizer.AddSpacer((10, 0))
-        sizer.Add(txt_mip_border, 0, wx.EXPAND | wx.ALL, 2)
+        sizer.Add(self.txt_mip_border, 0, wx.EXPAND | wx.ALL, 2)
         sizer.Add(self.border_spin, 0, wx.EXPAND)
         sizer.AddSpacer((10, 0))
         sizer.Add(self.inverted, 0, wx.EXPAND)
@@ -96,6 +96,8 @@ class ContourMIPConfig(wx.Panel):
         self.border_spin.Bind(wx.EVT_SPINCTRL, self.OnSetMIPBorder)
         self.inverted.Bind(wx.EVT_CHECKBOX, self.OnCheckInverted)
         
+        Publisher.subscribe(self._set_projection_type, 'Set projection type')
+
     def OnSetMIPSize(self, evt):
         val = self.mip_size_spin.GetValue()
         Publisher.sendMessage('Set MIP size %s' % self.orientation, val)
@@ -107,6 +109,24 @@ class ContourMIPConfig(wx.Panel):
     def OnCheckInverted(self, evt):
         val = self.inverted.GetValue()
         Publisher.sendMessage('Set MIP Invert %s' % self.orientation, val)
+
+    def _set_projection_type(self, pubsub_evt):
+        tprojection = pubsub_evt.data
+
+        if tprojection in (const.PROJECTION_MIDA,
+                           const.PROJECTION_CONTOUR_MIDA):
+            self.inverted.Enable()
+        else:
+            self.inverted.Disable()
+        
+        if tprojection in (const.PROJECTION_CONTOUR_MIP,
+                           const.PROJECTION_CONTOUR_MIDA):
+            self.border_spin.Enable()
+            self.txt_mip_border.Enable()
+        else:
+            self.border_spin.Disable()
+            self.txt_mip_border.Disable()
+
 
 
 class Viewer(wx.Panel):
@@ -1199,9 +1219,10 @@ class Viewer(wx.Panel):
     def OnShowMIPInterface(self, pubsub_evt):
         value = pubsub_evt.data
         if value:
-            self.mip_ctrls.Show()
-            self.GetSizer().Add(self.mip_ctrls, 0, wx.EXPAND|wx.GROW|wx.ALL, 2)
-            self.Layout()
+            if not self.mip_ctrls.Shown:
+                self.mip_ctrls.Show()
+                self.GetSizer().Add(self.mip_ctrls, 0, wx.EXPAND|wx.GROW|wx.ALL, 2)
+                self.Layout()
         else:
             self.mip_ctrls.Hide()
             self.GetSizer().Remove(self.mip_ctrls)
