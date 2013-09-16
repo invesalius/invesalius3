@@ -1233,8 +1233,9 @@ class Viewer(wx.Panel):
 
     def set_slice_number(self, index):
         inverted = self.mip_ctrls.inverted.GetValue()
+        border_size = self.mip_ctrls.border_spin.GetValue()
         image = self.slice_.GetSlices(self.orientation, index,
-                                      self.number_slices, inverted)
+                                      self.number_slices, inverted, border_size)
         self.slice_data.actor.SetInput(image)
         for actor in self.actors_by_slice_number.get(self.slice_data.number, []):
             self.slice_data.renderer.RemoveActor(actor)
