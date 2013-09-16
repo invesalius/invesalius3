@@ -60,13 +60,15 @@ ORIENTATIONS = {
 class ContourMIPConfig(wx.Panel):
     def __init__(self, prnt, orientation):
         wx.Panel.__init__(self, prnt)
-        self.mip_size_spin = wx.SpinCtrl(self, -1, min=1, max=240, initial=1)
+        self.mip_size_spin = wx.SpinCtrl(self, -1, min=1, max=240,
+                                         initial=const.PROJECTION_MIP_SIZE)
         w, h = self.mip_size_spin.GetTextExtent('M')
         self.mip_size_spin.SetMinSize((4 * w + 10, -1))
         self.mip_size_spin.SetMaxSize((4 * w + 10, -1))
         self.border_spin = FS.FloatSpin(self, -1, min_val=0, max_val=10,
-                                        increment=0.1, value=0.1, digits=1,
-                                        agwStyle=FS.FS_LEFT)
+                                        increment=0.1,
+                                        value=const.PROJECTION_BORDER_SIZE,
+                                        digits=1, agwStyle=FS.FS_LEFT)
         w, h = self.border_spin.GetTextExtent('M')
         self.border_spin.SetMinSize((5 * w + 10, -1))
         self.border_spin.SetMaxSize((5 * w + 10, -1))
@@ -142,7 +144,7 @@ class Viewer(wx.Panel):
         self.left_pressed = 0
         self.right_pressed = 0
 
-        self._number_slices = 10
+        self._number_slices = const.PROJECTION_MIP_SIZE
         self._mip_inverted = False
         
         self.spined_image = False #Use to control to spin

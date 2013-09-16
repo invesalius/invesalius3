@@ -86,7 +86,7 @@ class Slice(object):
         self._matrix = None
 
         self._type_projection = const.PROJECTION_NORMAL
-        self.n_border = 3.0
+        self.n_border = const.PROJECTION_BORDER_SIZE
 
         self.spacing = (1.0, 1.0, 1.0)
 
