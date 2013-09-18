@@ -116,7 +116,7 @@ class Slice(object):
     def matrix(self, value):
         self._matrix = value
         i, e = value.min(), value.max()
-        r = e - i
+        r = int(e) - int(i)
         self.histogram = numpy.histogram(self._matrix, r, (i, e))[0]
 
     def __bind_events(self):
