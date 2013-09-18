@@ -846,6 +846,8 @@ class Slice(object):
             for buffer_ in self.buffer_slices.values():
                 buffer_.discard_buffer()
 
+            Publisher.sendMessage('Check projection menu', tprojection)
+
     def SetInput(self, imagedata, mask_dict):
         print "SETINPUT!"
         self.imagedata = imagedata

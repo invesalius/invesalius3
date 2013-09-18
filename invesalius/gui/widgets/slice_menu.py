@@ -123,6 +123,7 @@ class SliceMenu(wx.Menu):
         self.pseudo_color_items[new_id] = color_item
 
         # --------------- Sub menu of the projection type ---------------------
+        self.projection_items = {}
         submenu_projection = wx.Menu()
         for name in PROJECTIONS_ID:
             new_id = wx.NewId()
@@ -130,6 +131,7 @@ class SliceMenu(wx.Menu):
                                           kind=wx.ITEM_RADIO)
             submenu_projection.AppendItem(projection_item)
             self.ID_TO_TOOL_ITEM[new_id] = projection_item
+            self.projection_items[PROJECTIONS_ID[name]] = projection_item
         
         flag_tiling = False
         #------------ Sub menu of the image tiling ---------------
@@ -167,6 +169,8 @@ class SliceMenu(wx.Menu):
         Publisher.subscribe(self.CheckWindowLevelOther, 'Check window and level other')
         Publisher.subscribe(self.FirstItemSelect, 'Select first item from slice menu')
         Publisher.subscribe(self._close, 'Close project data')
+
+        Publisher.subscribe(self._check_projection_menu, 'Check projection menu')
     
     def FirstItemSelect(self, pusub_evt):
         item = self.ID_TO_TOOL_ITEM[self.id_wl_first]
@@ -184,6 +188,11 @@ class SliceMenu(wx.Menu):
         
     def CheckWindowLevelOther(self, pubsub_evt):
         item = self.ID_TO_TOOL_ITEM[self.other_wl_id]
+        item.Check()
+
+    def _check_projection_menu(self, pubsub_evt):
+        p_id = pubsub_evt.data
+        item = self.projection_items[p_id]
         item.Check()
 
     def OnPopup(self, evt):
