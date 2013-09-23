@@ -1133,6 +1133,7 @@ class Viewer(wx.Panel):
 
     def OnKeyDown(self, evt=None, obj=None):
         pos = self.scroll.GetThumbPosition()
+        skip = True
 
         min = 0
         max = self.slice_.GetMaxSliceNumber(self.orientation)
@@ -1141,11 +1142,9 @@ class Viewer(wx.Panel):
                        wx.WXK_NUMPAD1 : const.PROJECTION_MaxIP,
                        wx.WXK_NUMPAD2 : const.PROJECTION_MinIP,
                        wx.WXK_NUMPAD3 : const.PROJECTION_MeanIP,
-                       wx.WXK_NUMPAD4 : const.PROJECTION_LMIP,
-                       wx.WXK_NUMPAD5 : const.PROJECTION_MIDA,
-                       wx.WXK_NUMPAD6 : const.PROJECTION_CONTOUR_MIP,
-                       wx.WXK_NUMPAD7 : const.PROJECTION_CONTOUR_LMIP,
-                       wx.WXK_NUMPAD8 : const.PROJECTION_CONTOUR_MIDA,}
+                       wx.WXK_NUMPAD4 : const.PROJECTION_MIDA,
+                       wx.WXK_NUMPAD5 : const.PROJECTION_CONTOUR_MIP,
+                       wx.WXK_NUMPAD6 : const.PROJECTION_CONTOUR_MIDA,}
 
         if self._flush_buffer:
             self.slice_.apply_slice_buffer_to_mask(self.orientation)
@@ -1173,12 +1172,13 @@ class Viewer(wx.Panel):
             print "PROJECTION MANOLO!"
             self.slice_.SetTypeProjection(projections[evt.GetKeyCode()])
             Publisher.sendMessage('Set projection type', projections[evt.GetKeyCode()])
-            self.ReloadActualSlice()
+            Publisher.sendMessage('Reload actual slice')
+            skip = False
         
         self.UpdateSlice3D(pos)
         self.interactor.Render()
 
-        if evt:
+        if evt and skip:
             evt.Skip()
 
     def OnScrollForward(self, evt=None, obj=None):
