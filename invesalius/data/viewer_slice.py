@@ -1254,7 +1254,12 @@ class Viewer(wx.Panel):
         for actor in self.actors_by_slice_number.get(index, []):
             self.slice_data.renderer.AddActor(actor)
 
-        self.slice_data.SetNumber(index)
+        if self.slice_._type_projection == const.PROJECTION_NORMAL:
+            self.slice_data.SetNumber(index)
+        else:
+            max_slices = self.slice_.GetMaxSliceNumber(self.orientation)
+            end = min(max_slices, index + self.number_slices - 1)
+            self.slice_data.SetNumber(index, end)
         self.__update_display_extent(image)
         self.cross.SetModelBounds(self.slice_data.actor.GetBounds())
 

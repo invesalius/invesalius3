@@ -136,9 +136,13 @@ class SliceData(object):
         self.overlay_renderer.AddActor(cursor.actor)
         self.cursor = cursor
 
-    def SetNumber(self, number):
-        self.number = number
-        self.text.SetValue("%d" % self.number)
+    def SetNumber(self, init, end=None):
+        if end is None:
+            self.number = init
+            self.text.SetValue("%d" % self.number)
+        else:
+            self.number = init
+            self.text.SetValue("%d - %d" % (init, end))
         self.text.SetPosition(const.TEXT_POS_LEFT_DOWN_ZERO)
 
     def SetOrientation(self, orientation):
