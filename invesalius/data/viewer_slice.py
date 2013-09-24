@@ -1095,9 +1095,10 @@ class Viewer(wx.Panel):
 
     @number_slices.setter
     def number_slices(self, val):
-        self._number_slices = val
-        buffer_ = self.slice_.buffer_slices[self.orientation]
-        buffer_.discard_buffer()
+        if val != self._number_slices:
+            self._number_slices = val
+            buffer_ = self.slice_.buffer_slices[self.orientation]
+            buffer_.discard_buffer()
 
     def set_scroll_position(self, position):
         self.scroll.SetThumbPosition(position)
