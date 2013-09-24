@@ -1158,14 +1158,17 @@ class Viewer(wx.Panel):
             self.OnScrollBar()
 
         elif (evt.GetKeyCode() == wx.WXK_NUMPAD_ADD):
-            self.number_slices += 1
-            print "ADDing", self.number_slices
-            self.ReloadActualSlice()
+            actual_value = self.mip_ctrls.mip_size_spin.GetValue()
+            self.mip_ctrls.mip_size_spin.SetValue(actual_value + 1)
+            if self.mip_ctrls.mip_size_spin.GetValue() != actual_value:
+                self.number_slices = self.mip_ctrls.mip_size_spin.GetValue()
+                self.ReloadActualSlice()
 
         elif (evt.GetKeyCode() == wx.WXK_NUMPAD_SUBTRACT):
-            if self.number_slices > 1:
-                self.number_slices -= 1
-                print "Subtracting", self.number_slices
+            actual_value = self.mip_ctrls.mip_size_spin.GetValue()
+            self.mip_ctrls.mip_size_spin.SetValue(actual_value - 1)
+            if self.mip_ctrls.mip_size_spin.GetValue() != actual_value:
+                self.number_slices = self.mip_ctrls.mip_size_spin.GetValue()
                 self.ReloadActualSlice()
 
         elif evt.GetKeyCode() in projections:
