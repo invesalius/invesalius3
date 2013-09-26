@@ -64,8 +64,8 @@ class ContourMIPConfig(wx.Panel):
                                          initial=const.PROJECTION_MIP_SIZE)
         self.mip_size_spin.SetToolTip(wx.ToolTip(_("Number of slices used to compound the visualization")))
         w, h = self.mip_size_spin.GetTextExtent('M')
-        self.mip_size_spin.SetMinSize((4 * w + 10, -1))
-        self.mip_size_spin.SetMaxSize((4 * w + 10, -1))
+        self.mip_size_spin.SetMinSize((5 * w + 10, -1))
+        self.mip_size_spin.SetMaxSize((5 * w + 10, -1))
 
         self.border_spin = FS.FloatSpin(self, -1, min_val=0, max_val=10,
                                         increment=0.1,
