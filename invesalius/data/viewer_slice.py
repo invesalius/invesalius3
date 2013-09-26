@@ -79,15 +79,15 @@ class ContourMIPConfig(wx.Panel):
         self.border_spin.SetMinSize((5 * w + 10, -1))
         self.border_spin.SetMaxSize((5 * w + 10, -1))
 
-        self.inverted = wx.CheckBox(self, -1, "inverted")
+        self.inverted = wx.CheckBox(self, -1, _("inverted"))
         self.inverted.SetToolTip(wx.ToolTip(_("If checked, the slices are"
                                               " traversed in descending"
                                               " order to compound the"
                                               " visualization instead of"
                                               " ascending order")))
         
-        txt_mip_size = wx.StaticText(self, -1, "Number of slices", style=wx.ALIGN_CENTER_HORIZONTAL)
-        self.txt_mip_border = wx.StaticText(self, -1, "Sharpness") 
+        txt_mip_size = wx.StaticText(self, -1, _("Number of slices"), style=wx.ALIGN_CENTER_HORIZONTAL)
+        self.txt_mip_border = wx.StaticText(self, -1, _("Sharpness"))
 
         sizer = wx.BoxSizer(wx.HORIZONTAL)
         sizer.Add(txt_mip_size, 0, wx.EXPAND | wx.ALL, 2)
