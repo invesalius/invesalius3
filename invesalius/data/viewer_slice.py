@@ -32,6 +32,11 @@ import styles
 import wx
 from wx.lib.pubsub import pub as Publisher
 
+try:
+    from agw import floatspin as FS
+except ImportError: # if it's not there locally, try the wxPython lib.
+    import wx.lib.agw.floatspin as FS
+
 import constants as const
 import cursor_actors as ca
 import data.slice_ as sl
@@ -51,6 +56,93 @@ ORIENTATIONS = {
         "SAGITAL": const.SAGITAL,
         }
 
+
+class ContourMIPConfig(wx.Panel):
+    def __init__(self, prnt, orientation):
+        wx.Panel.__init__(self, prnt)
+        self.mip_size_spin = wx.SpinCtrl(self, -1, min=1, max=240,
+                                         initial=const.PROJECTION_MIP_SIZE)
+        self.mip_size_spin.SetToolTip(wx.ToolTip(_("Number of slices used to compound the visualization")))
+        w, h = self.mip_size_spin.GetTextExtent('M')
+        self.mip_size_spin.SetMinSize((5 * w + 10, -1))
+        self.mip_size_spin.SetMaxSize((5 * w + 10, -1))
+
+        self.border_spin = FS.FloatSpin(self, -1, min_val=0, max_val=10,
+                                        increment=0.1,
+                                        value=const.PROJECTION_BORDER_SIZE,
+                                        digits=1, agwStyle=FS.FS_LEFT)
+        self.border_spin.SetToolTip(wx.ToolTip(_("Controls the sharpness of the"
+                                                 " contour. The greater the"
+                                                 " value, the sharper the"
+                                                 " contour")))
+        w, h = self.border_spin.GetTextExtent('M')
+        self.border_spin.SetMinSize((5 * w + 10, -1))
+        self.border_spin.SetMaxSize((5 * w + 10, -1))
+
+        self.inverted = wx.CheckBox(self, -1, _("inverted"))
+        self.inverted.SetToolTip(wx.ToolTip(_("If checked, the slices are"
+                                              " traversed in descending"
+                                              " order to compound the"
+                                              " visualization instead of"
+                                              " ascending order")))
+        
+        txt_mip_size = wx.StaticText(self, -1, _("Number of slices"), style=wx.ALIGN_CENTER_HORIZONTAL)
+        self.txt_mip_border = wx.StaticText(self, -1, _("Sharpness"))
+
+        sizer = wx.BoxSizer(wx.HORIZONTAL)
+        sizer.Add(txt_mip_size, 0, wx.EXPAND | wx.ALL, 2)
+        sizer.Add(self.mip_size_spin, 0, wx.EXPAND)
+        sizer.AddSpacer((10, 0))
+        sizer.Add(self.txt_mip_border, 0, wx.EXPAND | wx.ALL, 2)
+        sizer.Add(self.border_spin, 0, wx.EXPAND)
+        sizer.AddSpacer((10, 0))
+        sizer.Add(self.inverted, 0, wx.EXPAND)
+        self.SetSizer(sizer)
+        sizer.Fit(self)
+
+        self.Layout()
+        self.Update()
+        self.SetAutoLayout(1)
+
+        self.orientation = orientation
+
+        self.mip_size_spin.Bind(wx.EVT_SPINCTRL, self.OnSetMIPSize)
+        self.border_spin.Bind(wx.EVT_SPINCTRL, self.OnSetMIPBorder)
+        self.inverted.Bind(wx.EVT_CHECKBOX, self.OnCheckInverted)
+        
+        Publisher.subscribe(self._set_projection_type, 'Set projection type')
+
+    def OnSetMIPSize(self, evt):
+        val = self.mip_size_spin.GetValue()
+        Publisher.sendMessage('Set MIP size %s' % self.orientation, val)
+
+    def OnSetMIPBorder(self, evt):
+        val = self.border_spin.GetValue()
+        Publisher.sendMessage('Set MIP border %s' % self.orientation, val)
+
+    def OnCheckInverted(self, evt):
+        val = self.inverted.GetValue()
+        Publisher.sendMessage('Set MIP Invert %s' % self.orientation, val)
+
+    def _set_projection_type(self, pubsub_evt):
+        tprojection = pubsub_evt.data
+
+        if tprojection in (const.PROJECTION_MIDA,
+                           const.PROJECTION_CONTOUR_MIDA):
+            self.inverted.Enable()
+        else:
+            self.inverted.Disable()
+        
+        if tprojection in (const.PROJECTION_CONTOUR_MIP,
+                           const.PROJECTION_CONTOUR_MIDA):
+            self.border_spin.Enable()
+            self.txt_mip_border.Enable()
+        else:
+            self.border_spin.Disable()
+            self.txt_mip_border.Disable()
+
+
+
 class Viewer(wx.Panel):
 
     def __init__(self, prnt, orientation='AXIAL'):
@@ -63,6 +155,9 @@ class Viewer(wx.Panel):
         #self.modes = []#['DEFAULT']
         self.left_pressed = 0
         self.right_pressed = 0
+
+        self._number_slices = const.PROJECTION_MIP_SIZE
+        self._mip_inverted = False
         
         self.spined_image = False #Use to control to spin
         self.paned_image = False
@@ -83,10 +178,10 @@ class Viewer(wx.Panel):
         self.actors_by_slice_number = {}
         self.renderers_by_slice_number = {}
 
-        self.__init_gui()
-
         self.orientation = orientation
         self.slice_number = 0
+
+        self.__init_gui()
 
         self._brush_cursor_op = const.DEFAULT_BRUSH_OP
         self._brush_cursor_size = const.BRUSH_SIZE
@@ -111,12 +206,17 @@ class Viewer(wx.Panel):
 
         scroll = wx.ScrollBar(self, -1, style=wx.SB_VERTICAL)
         self.scroll = scroll
+
+        self.mip_ctrls = ContourMIPConfig(self, self.orientation)
+        self.mip_ctrls.Hide()
+
         sizer = wx.BoxSizer(wx.HORIZONTAL)
         sizer.Add(self.interactor, 1, wx.EXPAND|wx.GROW)
+        sizer.Add(scroll, 0, wx.EXPAND|wx.GROW)
 
-        background_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        background_sizer = wx.BoxSizer(wx.VERTICAL)
         background_sizer.AddSizer(sizer, 1, wx.EXPAND|wx.GROW|wx.ALL, 2)
-        background_sizer.Add(scroll, 0, wx.EXPAND|wx.GROW)
+        #background_sizer.Add(self.mip_ctrls, 0, wx.EXPAND|wx.GROW|wx.ALL, 2)
         self.SetSizer(background_sizer)
         background_sizer.Fit(self)
 
@@ -644,6 +744,13 @@ class Viewer(wx.Panel):
         Publisher.subscribe(self.ReloadActualSlice, 'Reload actual slice')
         Publisher.subscribe(self.OnUpdateScroll, 'Update scroll')
 
+
+        # MIP
+        Publisher.subscribe(self.OnSetMIPSize, 'Set MIP size %s' % self.orientation)
+        Publisher.subscribe(self.OnSetMIPBorder, 'Set MIP border %s' % self.orientation)
+        Publisher.subscribe(self.OnSetMIPInvert, 'Set MIP Invert %s' % self.orientation)
+        Publisher.subscribe(self.OnShowMIPInterface, 'Show MIP interface')
+
     def SetDefaultCursor(self, pusub_evt):
         self.interactor.SetCursor(wx.StockCursor(wx.CURSOR_DEFAULT))
     
@@ -982,6 +1089,17 @@ class Viewer(wx.Panel):
                                                      max_slice_number)
         self.set_scroll_position(0)
 
+    @property
+    def number_slices(self):
+        return self._number_slices
+
+    @number_slices.setter
+    def number_slices(self, val):
+        if val != self._number_slices:
+            self._number_slices = val
+            buffer_ = self.slice_.buffer_slices[self.orientation]
+            buffer_.discard_buffer()
+
     def set_scroll_position(self, position):
         self.scroll.SetThumbPosition(position)
         self.OnScrollBar()
@@ -1016,9 +1134,18 @@ class Viewer(wx.Panel):
 
     def OnKeyDown(self, evt=None, obj=None):
         pos = self.scroll.GetThumbPosition()
+        skip = True
 
         min = 0
         max = self.slice_.GetMaxSliceNumber(self.orientation)
+
+        projections = {wx.WXK_NUMPAD0 : const.PROJECTION_NORMAL,
+                       wx.WXK_NUMPAD1 : const.PROJECTION_MaxIP,
+                       wx.WXK_NUMPAD2 : const.PROJECTION_MinIP,
+                       wx.WXK_NUMPAD3 : const.PROJECTION_MeanIP,
+                       wx.WXK_NUMPAD4 : const.PROJECTION_MIDA,
+                       wx.WXK_NUMPAD5 : const.PROJECTION_CONTOUR_MIP,
+                       wx.WXK_NUMPAD6 : const.PROJECTION_CONTOUR_MIDA,}
 
         if self._flush_buffer:
             self.slice_.apply_slice_buffer_to_mask(self.orientation)
@@ -1030,11 +1157,31 @@ class Viewer(wx.Panel):
         elif (evt.GetKeyCode() == wx.WXK_DOWN and pos < max):
             self.OnScrollBackward()
             self.OnScrollBar()
+
+        elif (evt.GetKeyCode() == wx.WXK_NUMPAD_ADD):
+            actual_value = self.mip_ctrls.mip_size_spin.GetValue()
+            self.mip_ctrls.mip_size_spin.SetValue(actual_value + 1)
+            if self.mip_ctrls.mip_size_spin.GetValue() != actual_value:
+                self.number_slices = self.mip_ctrls.mip_size_spin.GetValue()
+                self.ReloadActualSlice()
+
+        elif (evt.GetKeyCode() == wx.WXK_NUMPAD_SUBTRACT):
+            actual_value = self.mip_ctrls.mip_size_spin.GetValue()
+            self.mip_ctrls.mip_size_spin.SetValue(actual_value - 1)
+            if self.mip_ctrls.mip_size_spin.GetValue() != actual_value:
+                self.number_slices = self.mip_ctrls.mip_size_spin.GetValue()
+                self.ReloadActualSlice()
+
+        elif evt.GetKeyCode() in projections:
+            self.slice_.SetTypeProjection(projections[evt.GetKeyCode()])
+            Publisher.sendMessage('Set projection type', projections[evt.GetKeyCode()])
+            Publisher.sendMessage('Reload actual slice')
+            skip = False
         
         self.UpdateSlice3D(pos)
         self.interactor.Render()
 
-        if evt:
+        if evt and skip:
             evt.Skip()
 
     def OnScrollForward(self, evt=None, obj=None):
@@ -1067,15 +1214,55 @@ class Viewer(wx.Panel):
             self.slice_data.SetSize((w, h))
         evt.Skip()
 
+    def OnSetMIPSize(self, pubsub_evt):
+        val = pubsub_evt.data
+        self.number_slices = val
+        self.ReloadActualSlice()
+
+    def OnSetMIPBorder(self, pubsub_evt):
+        val = pubsub_evt.data
+        self.slice_.n_border = val
+        buffer_ = self.slice_.buffer_slices[self.orientation]
+        buffer_.discard_buffer()
+        self.ReloadActualSlice()
+
+    def OnSetMIPInvert(self, pubsub_evt):
+        val = pubsub_evt.data
+        self._mip_inverted = val
+        buffer_ = self.slice_.buffer_slices[self.orientation]
+        buffer_.discard_buffer()
+        self.ReloadActualSlice()
+
+    def OnShowMIPInterface(self, pubsub_evt):
+        value = pubsub_evt.data
+        if value:
+            if not self.mip_ctrls.Shown:
+                self.mip_ctrls.Show()
+                self.GetSizer().Add(self.mip_ctrls, 0, wx.EXPAND|wx.GROW|wx.ALL, 2)
+                self.Layout()
+        else:
+            self.mip_ctrls.Hide()
+            self.GetSizer().Remove(self.mip_ctrls)
+            self.Layout()
+
+
     def set_slice_number(self, index):
-        image = self.slice_.GetSlices(self.orientation, index)
+        inverted = self.mip_ctrls.inverted.GetValue()
+        border_size = self.mip_ctrls.border_spin.GetValue()
+        image = self.slice_.GetSlices(self.orientation, index,
+                                      self.number_slices, inverted, border_size)
         self.slice_data.actor.SetInput(image)
         for actor in self.actors_by_slice_number.get(self.slice_data.number, []):
             self.slice_data.renderer.RemoveActor(actor)
         for actor in self.actors_by_slice_number.get(index, []):
             self.slice_data.renderer.AddActor(actor)
 
-        self.slice_data.SetNumber(index)
+        if self.slice_._type_projection == const.PROJECTION_NORMAL:
+            self.slice_data.SetNumber(index)
+        else:
+            max_slices = self.slice_.GetMaxSliceNumber(self.orientation)
+            end = min(max_slices, index + self.number_slices - 1)
+            self.slice_data.SetNumber(index, end)
         self.__update_display_extent(image)
         self.cross.SetModelBounds(self.slice_data.actor.GetBounds())
 
@@ -1111,7 +1298,7 @@ class Viewer(wx.Panel):
                 coord[index] = extent_min[index]
         return coord
 
-    def ReloadActualSlice(self, pubsub_evt):
+    def ReloadActualSlice(self, pubsub_evt=None):
         pos = self.scroll.GetThumbPosition()
         self.set_slice_number(pos)
         self.interactor.Render()
