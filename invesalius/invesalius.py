@@ -178,7 +178,7 @@ class SplashScreen(wx.SplashScreen):
         self.control = Controller(self.main)
         
         self.fc = wx.FutureCall(1, self.ShowMain)
-        parse_comand_line()
+        wx.FutureCall(1, parse_comand_line)
 
     def OnClose(self, evt):
         # Make sure the default handler runs too so this window gets
