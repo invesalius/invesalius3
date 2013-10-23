@@ -353,15 +353,15 @@ class GradientCtrl(wx.Panel):
         self.gradient_slider.Bind(EVT_SLIDER_CHANGED, self.OnSlider)
 
         # self.spin_min.Bind(wx.lib.intctrl.EVT_INT, self.ChangeMinValue)
-        self.spin_min.Bind(wx.EVT_LEAVE_WINDOW, self._FireSpinMinChanged)
-        self.spin_min.Bind(wx.EVT_KILL_FOCUS, self._FireSpinMinChanged)
-        self.spin_min.Bind(wx.EVT_KEY_DOWN, self._FireSpinMinChange)
+        self.spin_min.Bind(wx.EVT_LEAVE_WINDOW, self._FireSpinMinChange)
+        self.spin_min.Bind(wx.EVT_KILL_FOCUS, self._FireSpinMinChange)
+        #self.spin_min.Bind(wx.EVT_KEY_DOWN, self._FireSpinMinChange)
         self.spin_min.Bind(wx.EVT_MOUSEWHEEL, self.OnMinMouseWheel)
 
         # self.spin_max.Bind(wx.lib.intctrl.EVT_INT, self.ChangeMaxValue)
-        self.spin_max.Bind(wx.EVT_LEAVE_WINDOW, self._FireSpinMaxChanged)
-        self.spin_max.Bind(wx.EVT_KILL_FOCUS, self._FireSpinMaxChanged)
-        self.spin_max.Bind(wx.EVT_KEY_DOWN, self._FireSpinMaxChange)
+        self.spin_max.Bind(wx.EVT_LEAVE_WINDOW, self._FireSpinMaxChange)
+        self.spin_max.Bind(wx.EVT_KILL_FOCUS, self._FireSpinMaxChange)
+        #self.spin_max.Bind(wx.EVT_KEY_DOWN, self._FireSpinMaxChange)
         self.spin_max.Bind(wx.EVT_MOUSEWHEEL, self.OnMaxMouseWheel)
 
     def OnSlider(self, evt):
@@ -384,6 +384,7 @@ class GradientCtrl(wx.Panel):
         if value != self.GetMinValue():
             self.SetMinValue(value)
             self._GenerateEvent(myEVT_THRESHOLD_CHANGING)
+            print "VALLUUUEE", value
 
     def _FireSpinMinChanged(self, evt):
         if self.changed:
@@ -439,7 +440,7 @@ class GradientCtrl(wx.Panel):
             value = self.min_range
 
     def SetMaxValue(self, value):
-        if value:
+        if value is not None:
             value = int(value)
             if value > self.max_range:
                 value = int(self.max_range)
@@ -448,7 +449,7 @@ class GradientCtrl(wx.Panel):
             self.maximun = value
 
     def SetMinValue(self, value):
-        if value:
+        if value is not None:
             value = int(value)
             if value < self.min_range:
                 value = int(self.min_range)
