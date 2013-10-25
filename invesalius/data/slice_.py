@@ -428,7 +428,7 @@ class Slice(object):
         roi_i = image[yi:yf, xi:xf]
 
         # Checking if roi_i has at least one element.
-        if numpy.product(roi_i.shape):
+        if roi_i.size:
             if operation == const.BRUSH_THRESH:
                 # It's a trick to make points between threshold gets value 254
                 # (1 * 253 + 1) and out ones gets value 1 (0 * 253 + 1).
