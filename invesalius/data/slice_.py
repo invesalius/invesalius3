@@ -419,9 +419,10 @@ class Slice(object):
             xf = image.shape[1]
 
         # Verifying if the points is over the image array.
-        if (not 0 < xi < image.shape[1] and not 0 < xf < image.shape[1]) or \
-           (not 0 < yi < image.shape[0] and not 0 < yf < image.shape[0]):
+        if (not 0 <= xi <= image.shape[1] and not 0 <= xf <= image.shape[1]) or \
+           (not 0 <= yi <= image.shape[0] and not 0 <= yf <= image.shape[0]):
             return
+
 
         roi_m = mask[yi:yf,xi:xf]
         roi_i = image[yi:yf, xi:xf]
@@ -429,8 +430,12 @@ class Slice(object):
         if operation == const.BRUSH_THRESH:
             # It's a trick to make points between threshold gets value 254
             # (1 * 253 + 1) and out ones gets value 1 (0 * 253 + 1).
-            roi_m[index] = (((roi_i[index] >= thresh_min) 
-                             & (roi_i[index] <= thresh_max)) * 253) + 1
+            try:
+                roi_m[index] = (((roi_i[index] >= thresh_min)
+                                 & (roi_i[index] <= thresh_max)) * 253) + 1
+            except IndexError:
+                # Resolving the problem when roi_i has 0 elements.
+                pass
         elif operation == const.BRUSH_DRAW:
             roi_m[index] = 254
         elif operation == const.BRUSH_ERASE:
