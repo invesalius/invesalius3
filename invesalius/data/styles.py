@@ -42,8 +42,8 @@ class BaseImageInteractorStyle(vtk.vtkInteractorStyleImage):
         self.AddObserver("RightButtonPressEvent",self.OnPressRightButton)
         self.AddObserver("RightButtonReleaseEvent", self.OnReleaseRightButton)
 
-        self.AddObserver("MiddleButtonPressEvent", self._OnMiddleButtonPressEvent)
-        self.AddObserver("MiddleButtonReleaseEvent", self._OnMiddleButtonReleaseEvent)
+        self.AddObserver("MiddleButtonPressEvent", self.OnMiddleButtonPressEvent)
+        self.AddObserver("MiddleButtonReleaseEvent", self.OnMiddleButtonReleaseEvent)
 
     def OnPressLeftButton(self, evt, obj):
         self.left_pressed = True
@@ -59,10 +59,10 @@ class BaseImageInteractorStyle(vtk.vtkInteractorStyleImage):
     def OnReleaseRightButton(self, evt, obj):
         self.right_pressed = False
 
-    def _OnMiddleButtonPressEvent(self, evt, obj):
+    def OnMiddleButtonPressEvent(self, evt, obj):
         self.middle_pressed = True
 
-    def _OnMiddleButtonReleaseEvent(self, evt, obj):
+    def OnMiddleButtonReleaseEvent(self, evt, obj):
         self.middle_pressed = False
 
 
