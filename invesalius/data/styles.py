@@ -34,12 +34,16 @@ class BaseImageInteractorStyle(vtk.vtkInteractorStyleImage):
     def __init__(self, viewer):
         self.right_pressed = False
         self.left_pressed = False
+        self.middle_pressed = False
 
         self.AddObserver("LeftButtonPressEvent", self.OnPressLeftButton)
         self.AddObserver("LeftButtonReleaseEvent", self.OnReleaseLeftButton)
 
         self.AddObserver("RightButtonPressEvent",self.OnPressRightButton)
         self.AddObserver("RightButtonReleaseEvent", self.OnReleaseRightButton)
+
+        self.AddObserver("MiddleButtonPressEvent", self._OnMiddleButtonPressEvent)
+        self.AddObserver("MiddleButtonReleaseEvent", self._OnMiddleButtonReleaseEvent)
 
     def OnPressLeftButton(self, evt, obj):
         self.left_pressed = True
@@ -54,6 +58,12 @@ class BaseImageInteractorStyle(vtk.vtkInteractorStyleImage):
 
     def OnReleaseRightButton(self, evt, obj):
         self.right_pressed = False
+
+    def _OnMiddleButtonPressEvent(self, evt, obj):
+        self.middle_pressed = True
+
+    def _OnMiddleButtonReleaseEvent(self, evt, obj):
+        self.middle_pressed = False
 
 
 class DefaultInteractorStyle(BaseImageInteractorStyle):
@@ -78,6 +88,10 @@ class DefaultInteractorStyle(BaseImageInteractorStyle):
         if (self.right_pressed):
             evt.Dolly()
             evt.OnRightButtonDown()
+
+        elif self.middle_pressed:
+            evt.Pan()
+            evt.OnMiddleButtonDown()
 
     def OnZoomRightClick(self, evt, obj):
         evt.StartDolly()
