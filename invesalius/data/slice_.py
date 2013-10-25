@@ -427,20 +427,18 @@ class Slice(object):
         roi_m = mask[yi:yf,xi:xf]
         roi_i = image[yi:yf, xi:xf]
 
-        if operation == const.BRUSH_THRESH:
-            # It's a trick to make points between threshold gets value 254
-            # (1 * 253 + 1) and out ones gets value 1 (0 * 253 + 1).
-            try:
+        # Checking if roi_i has at least one element.
+        if numpy.product(roi_i.shape):
+            if operation == const.BRUSH_THRESH:
+                # It's a trick to make points between threshold gets value 254
+                # (1 * 253 + 1) and out ones gets value 1 (0 * 253 + 1).
                 roi_m[index] = (((roi_i[index] >= thresh_min)
                                  & (roi_i[index] <= thresh_max)) * 253) + 1
-            except IndexError:
-                # Resolving the problem when roi_i has 0 elements.
-                pass
-        elif operation == const.BRUSH_DRAW:
-            roi_m[index] = 254
-        elif operation == const.BRUSH_ERASE:
-            roi_m[index] = 1
-        self.buffer_slices[orientation].discard_vtk_mask()
+            elif operation == const.BRUSH_DRAW:
+                roi_m[index] = 254
+            elif operation == const.BRUSH_ERASE:
+                roi_m[index] = 1
+            self.buffer_slices[orientation].discard_vtk_mask()
 
 
     def GetSlices(self, orientation, slice_number, number_slices,
