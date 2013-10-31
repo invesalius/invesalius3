@@ -927,7 +927,10 @@ class Viewer(wx.Panel):
         self.cam = self.slice_data.renderer.GetActiveCamera()
         self.__build_cross_lines(imagedata)
         #self.set_slice_number(0)
-        self.set_slice_number(0)
+
+        # Set the slice number to the last slice to ensure the camera if far
+        # enough to show all slices.
+        self.set_slice_number(max_slice_number - 1)
         self.__update_camera()
         self.slice_data.renderer.ResetCamera()
         self.interactor.GetRenderWindow().AddRenderer(self.slice_data.renderer)
