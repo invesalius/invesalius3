@@ -429,7 +429,7 @@ msgstr "Coronarer"
 
 #: data_notebook.py:47 measures.py:21
 msgid "Sagittal"
-msgstr "Saggitaler"
+msgstr "Sagittaler"
 
 #: data_notebook.py:63
 msgid "Masks"
@@ -521,7 +521,7 @@ msgstr "Coronarer Schnitt"
 
 #: default_viewers.py:89 default_viewers.py:180 task_exporter.py:240
 msgid "Sagittal slice"
-msgstr "Saggitaler Schnitt"
+msgstr "Sagittaler Schnitt"
 
 #: default_viewers.py:95 default_viewers.py:186 task_exporter.py:241
 msgid "Volume"
