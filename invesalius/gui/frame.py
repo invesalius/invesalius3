@@ -547,8 +547,8 @@ class MenuBar(wx.MenuBar):
         file_edit = wx.Menu()
         file_edit.AppendMenu(wx.NewId(), _('Flip'), flip_menu)
         file_edit.AppendMenu(wx.NewId(), _('Swap axes'), swap_axes_menu)
-        file_edit.Append(wx.ID_UNDO, "Undo\tCtrl+Z").Enable(False)
-        file_edit.Append(wx.ID_REDO, "Redo\tCtrl+Y").Enable(False)
+        file_edit.Append(wx.ID_UNDO, _("Undo\tCtrl+Z")).Enable(False)
+        file_edit.Append(wx.ID_REDO, _("Redo\tCtrl+Y")).Enable(False)
         #app(const.ID_EDIT_LIST, "Show Undo List...")
         #################################################################
 
@@ -1479,8 +1479,8 @@ class HistoryToolBar(wx.ToolBar):
         """
         Add tools into toolbar.
         """
-        self.AddSimpleTool(wx.ID_UNDO, wx.ArtProvider_GetBitmap(wx.ART_UNDO, wx.ART_OTHER, wx.Size( 16, 16)), 'Undo', '')
-        self.AddSimpleTool(wx.ID_REDO, wx.ArtProvider_GetBitmap(wx.ART_REDO, wx.ART_OTHER, wx.Size( 16, 16)), 'Redo', '')
+        self.AddSimpleTool(wx.ID_UNDO, wx.ArtProvider_GetBitmap(wx.ART_UNDO, wx.ART_OTHER, wx.Size( 16, 16)), _('Undo'), '')
+        self.AddSimpleTool(wx.ID_REDO, wx.ArtProvider_GetBitmap(wx.ART_REDO, wx.ART_OTHER, wx.Size( 16, 16)), _('Redo'), '')
         self.EnableTool(wx.ID_UNDO, False)
         self.EnableTool(wx.ID_REDO, False)
 
