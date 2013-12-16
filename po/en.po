@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: InVesalius\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2012-09-13 16:01-0300\n"
+"POT-Creation-Date: 2013-12-16 14:59-0200\n"
 "PO-Revision-Date: 2010-11-30 02:42+0000\n"
 "Last-Translator: Invesalius team <invesalius@cti.gov.br>\n"
 "Language-Team: InVesalius Team <invesalius@cti.gov.br>\n"
@@ -32,456 +32,464 @@ msgstr "Value"
 msgid "Alpha: %-.3f"
 msgstr ""
 
-#: constants.py:31
+#: constants.py:32
 #, python-format
 msgid "M %d"
 msgstr "M %d"
 
-#: constants.py:41 constants.py:370 constants.py:372
+#: constants.py:44 constants.py:375 constants.py:377
 msgid " Off"
 msgstr " Off"
 
-#: constants.py:42
+#: constants.py:45
 msgid "Red-blue"
 msgstr ""
 
-#: constants.py:43
+#: constants.py:46
 msgid "CristalEyes"
 msgstr ""
 
-#: constants.py:44
+#: constants.py:47
 msgid "Interlaced"
 msgstr ""
 
-#: constants.py:45 constants.py:306
+#: constants.py:48 constants.py:310
 msgid "Left"
 msgstr "Left"
 
-#: constants.py:46 constants.py:305
+#: constants.py:49 constants.py:309
 msgid "Right"
 msgstr "Right"
 
-#: constants.py:47
+#: constants.py:50
 msgid "Dresden"
 msgstr ""
 
-#: constants.py:48
+#: constants.py:51
 msgid "Checkboard"
 msgstr ""
 
-#: constants.py:49
+#: constants.py:52
 msgid "Anaglyph"
 msgstr ""
 
-#: constants.py:102
+#: constants.py:105
 msgid "Keep all slices"
 msgstr "Keep all slices"
 
-#: constants.py:102
+#: constants.py:105
 msgid "Skip 1 for each 2 slices"
 msgstr "Skip 1 for each 2 slices"
 
-#: constants.py:103
+#: constants.py:106
 msgid "Skip 2 for each 3 slices"
 msgstr "Skip 2 for each 3 slices"
 
-#: constants.py:103
+#: constants.py:106
 msgid "Skip 3 for each 4 slices"
 msgstr "Skip 3 for each 4 slices"
 
-#: constants.py:104
+#: constants.py:107
 msgid "Skip 4 for each 5 slices"
 msgstr "Skip 4 for each 5 slices"
 
-#: constants.py:104
+#: constants.py:107
 msgid "Skip 5 for each 6 slices"
 msgstr "Skip 5 for each 6 slices"
 
-#: constants.py:144 slice_menu.py:76 slice_menu.py:81
+#: constants.py:147 slice_menu.py:97 slice_menu.py:103
 msgid "Default "
 msgstr "Default "
 
-#: constants.py:145
+#: constants.py:148
 msgid "Hue"
 msgstr "Hue"
 
-#: constants.py:146
+#: constants.py:149
 msgid "Saturation"
 msgstr "Saturation"
 
-#: constants.py:147
+#: constants.py:150
 msgid "Desert"
 msgstr "Desert"
 
-#: constants.py:148
+#: constants.py:151
 msgid "Rainbow"
 msgstr "Rainbow"
 
-#: constants.py:149
+#: constants.py:152
 msgid "Ocean"
 msgstr "Ocean"
 
-#: constants.py:150
+#: constants.py:153
 msgid "Inverse Gray"
 msgstr "Inverse Gray"
 
-#: constants.py:191 constants.py:276 dialogs.py:530 dialogs.py:543
-#: dicom_preview_panel.py:675 dicom_preview_panel.py:676 presets.py:30
-#: presets.py:48 presets.py:103 presets.py:134
+#: constants.py:194 constants.py:195 constants.py:279 dialogs.py:534
+#: dialogs.py:547 dicom_preview_panel.py:675 dicom_preview_panel.py:676
+#: presets.py:33 presets.py:51 presets.py:106 presets.py:137
 msgid "Bone"
 msgstr "Bone"
 
-#: constants.py:198
+#: constants.py:201
 #, python-format
 msgid "Mask %d"
 msgstr "Mask %d"
 
-#: constants.py:251 task_surface.py:43
+#: constants.py:254 task_surface.py:43
 msgid "Draw"
 msgstr "Draw"
 
-#: constants.py:251 task_surface.py:43
+#: constants.py:254 task_surface.py:43
 msgid "Erase"
 msgstr "Erase"
 
-#: constants.py:251 data_notebook.py:435 task_surface.py:43
+#: constants.py:254 data_notebook.py:444 task_surface.py:43
 msgid "Threshold"
 msgstr "Threshold"
 
-#: constants.py:262 constants.py:267
+#: constants.py:265 constants.py:270
 msgid "Low"
 msgstr "Low"
 
-#: constants.py:263 constants.py:267
+#: constants.py:266 constants.py:270
 msgid "Medium"
 msgstr "Medium"
 
-#: constants.py:264 constants.py:267
+#: constants.py:267 constants.py:270
 msgid "High"
 msgstr "High"
 
-#: constants.py:265 constants.py:266 constants.py:267 task_slice.py:164
+#: constants.py:268 constants.py:269 constants.py:270 task_slice.py:164
 msgid "Optimal *"
 msgstr "Optimal *"
 
-#: constants.py:272
+#: constants.py:275
 #, python-format
 msgid "Surface %d"
 msgstr "Surface %d"
 
-#: constants.py:275
+#: constants.py:278
 msgid "Abdomen"
 msgstr "Abdomen"
 
-#: constants.py:277
+#: constants.py:280
 #, fuzzy
 msgid "Brain posterior fossa"
 msgstr "Brain Posterior Fossa"
 
-#: constants.py:278
+#: constants.py:281
 msgid "Brain"
 msgstr "Brain"
 
-#: constants.py:279 control.py:361 dialogs.py:1183 dialogs.py:1186
-#: dialogs.py:1194 dialogs.py:1269 slice_menu.py:39 slice_menu.py:51
+#: constants.py:282 control.py:363 dialogs.py:1187 dialogs.py:1190
+#: dialogs.py:1198 dialogs.py:1273 slice_menu.py:57 slice_menu.py:69
 msgid "Default"
 msgstr "Default"
 
-#: constants.py:280
+#: constants.py:283
 msgid "Emphysema"
 msgstr "Emphysema"
 
-#: constants.py:281
+#: constants.py:284
 #, fuzzy
 msgid "Ischemia - Hard, non contrast"
 msgstr "Ischemia - Hard Non Contrast"
 
-#: constants.py:282
+#: constants.py:285
 #, fuzzy
 msgid "Ischemia - Soft, non contrast"
 msgstr "Ischemia - Soft Non Contrast"
 
-#: constants.py:283
+#: constants.py:286
 msgid "Larynx"
 msgstr "Larynx"
 
-#: constants.py:284
+#: constants.py:287
 msgid "Liver"
 msgstr "Liver"
 
-#: constants.py:285
+#: constants.py:288
 msgid "Lung - Soft"
 msgstr "Lung - Soft"
 
-#: constants.py:286
+#: constants.py:289
 msgid "Lung - Hard"
 msgstr "Lung - Hard"
 
-#: constants.py:287
+#: constants.py:290
 msgid "Mediastinum"
 msgstr "Mediastinum"
 
-#: constants.py:288 control.py:362 slice_menu.py:46 slice_menu.py:51
+#: constants.py:291 control.py:364 slice_menu.py:64 slice_menu.py:69
 msgid "Manual"
 msgstr "Manual"
 
-#: constants.py:289
+#: constants.py:292
 msgid "Pelvis"
 msgstr "Pelvis"
 
-#: constants.py:290
+#: constants.py:293
 msgid "Sinus"
 msgstr "Sinus"
 
-#: constants.py:291
+#: constants.py:294
 msgid "Vasculature - Hard"
 msgstr "Vasculature - Hard"
 
-#: constants.py:292
+#: constants.py:295
 msgid "Vasculature - Soft"
 msgstr "Vasculature - Soft"
 
-#: constants.py:301
+#: constants.py:296
+msgid "Contour"
+msgstr ""
+
+#: constants.py:305
 msgid "Front"
 msgstr "Front"
 
-#: constants.py:302
+#: constants.py:306
 msgid "Back"
 msgstr "Back"
 
-#: constants.py:303
+#: constants.py:307
 msgid "Top"
 msgstr "Top"
 
-#: constants.py:304
+#: constants.py:308
 msgid "Bottom"
 msgstr "Bottom"
 
-#: constants.py:307
+#: constants.py:311
 msgid "Isometric"
 msgstr "Isometric"
 
-#: constants.py:318
+#: constants.py:322
 msgid "Airways"
 msgstr "Airways"
 
-#: constants.py:319
+#: constants.py:323
 msgid "Airways II"
 msgstr "Airways II"
 
-#: constants.py:320
+#: constants.py:324
 msgid "Black & White"
 msgstr "Black & White"
 
-#: constants.py:321
+#: constants.py:325
 msgid "Bone + Skin"
 msgstr "Bone + Skin"
 
-#: constants.py:322
+#: constants.py:326
 msgid "Bone + Skin II"
 msgstr "Bone + Skin II"
 
-#: constants.py:323
+#: constants.py:327
 #, fuzzy
 msgid "Dark bone"
 msgstr "Dark Bone"
 
-#: constants.py:324
+#: constants.py:328
 msgid "Glossy"
 msgstr "Glossy"
 
-#: constants.py:325
+#: constants.py:329
 msgid "Glossy II"
 msgstr "Glossy II"
 
-#: constants.py:326
+#: constants.py:330
 #, fuzzy
 msgid "Gold bone"
 msgstr "Gold Bone"
 
-#: constants.py:327
+#: constants.py:331
 #, fuzzy
 msgid "High contrast"
 msgstr "High Contrast"
 
-#: constants.py:328
+#: constants.py:332
 #, fuzzy
 msgid "Low contrast"
 msgstr "Low Contrast"
 
-#: constants.py:329 constants.py:336
+#: constants.py:333 constants.py:341
 #, fuzzy
 msgid "Soft on white"
 msgstr "Soft on White"
 
-#: constants.py:330
+#: constants.py:334
 #, fuzzy
 msgid "Mid contrast"
 msgstr "Mid Contrast"
 
-#: constants.py:331
+#: constants.py:335
+msgid "MIP"
+msgstr ""
+
+#: constants.py:336
 #, fuzzy
 msgid "No shading"
 msgstr "No Shading"
 
-#: constants.py:332
+#: constants.py:337
 msgid "Pencil"
 msgstr "Pencil"
 
-#: constants.py:333
+#: constants.py:338
 #, fuzzy
 msgid "Red on white"
 msgstr "Red on White"
 
-#: constants.py:334
+#: constants.py:339
 #, fuzzy
 msgid "Skin on blue"
 msgstr "Skin On Blue"
 
-#: constants.py:335
+#: constants.py:340
 #, fuzzy
 msgid "Skin on blue II"
 msgstr "Skin On Blue II"
 
-#: constants.py:337
+#: constants.py:342
 msgid "Soft + Skin"
 msgstr "Soft + Skin"
 
-#: constants.py:338
+#: constants.py:343
 msgid "Soft + Skin II"
 msgstr "Soft + Skin II"
 
-#: constants.py:339
+#: constants.py:344
 msgid "Soft + Skin III"
 msgstr "Soft + Skin III"
 
-#: constants.py:340
+#: constants.py:345
 #, fuzzy
 msgid "Soft on blue"
 msgstr "Soft On Blue"
 
-#: constants.py:341
+#: constants.py:346
 msgid "Soft"
 msgstr "Soft"
 
-#: constants.py:342
+#: constants.py:347
 msgid "Standard"
 msgstr "Standard"
 
-#: constants.py:343
+#: constants.py:348
 msgid "Vascular"
 msgstr "Vascular"
 
-#: constants.py:344
+#: constants.py:349
 msgid "Vascular II"
 msgstr "Vascular II"
 
-#: constants.py:345
+#: constants.py:350
 msgid "Vascular III"
 msgstr "Vascular III"
 
-#: constants.py:346
+#: constants.py:351
 msgid "Vascular IV"
 msgstr "Vascular IV"
 
-#: constants.py:347
+#: constants.py:352
 #, fuzzy
 msgid "Yellow bone"
 msgstr "Yellow Bone"
 
-#: constants.py:373 volume.py:642
+#: constants.py:378 volume.py:642
 msgid "Cut plane"
 msgstr "Cut plane"
 
-#: control.py:300
+#: control.py:302
 #, fuzzy, python-format
 msgid "Loading file %d of %d ..."
 msgstr "Loading file %d of %d"
 
-#: control.py:418
+#: control.py:420
 msgid "Untitled"
 msgstr "Untitled"
 
-#: control.py:555
+#: control.py:557
 msgid "Fix gantry tilt applying the degrees below"
 msgstr "Fix gantry tilt applying the degrees below"
 
-#: data_notebook.py:40 measures.py:14
+#: data_notebook.py:44 measures.py:14
 msgid "Linear"
 msgstr "Linear"
 
-#: data_notebook.py:41 measures.py:15
+#: data_notebook.py:45 measures.py:15
 msgid "Angular"
 msgstr "Angular"
 
-#: data_notebook.py:44 measures.py:18
+#: data_notebook.py:48 measures.py:18
 msgid "3D"
 msgstr "3D"
 
-#: data_notebook.py:45 measures.py:19
+#: data_notebook.py:49 measures.py:19
 msgid "Axial"
 msgstr "Axial"
 
-#: data_notebook.py:46 measures.py:20
+#: data_notebook.py:50 measures.py:20
 msgid "Coronal"
 msgstr "Coronal"
 
-#: data_notebook.py:47 measures.py:21
+#: data_notebook.py:51 measures.py:21
 msgid "Sagittal"
 msgstr "Sagittal"
 
-#: data_notebook.py:63
+#: data_notebook.py:67
 msgid "Masks"
 msgstr "Masks"
 
-#: data_notebook.py:64
+#: data_notebook.py:68
 #, fuzzy
 msgid "3D surfaces"
 msgstr "3D Surfaces"
 
-#: data_notebook.py:65
+#: data_notebook.py:69
 msgid "Measures"
 msgstr "Measures"
 
-#: data_notebook.py:183 frame.py:982
+#: data_notebook.py:187 frame.py:1029
 msgid "Measure distance"
 msgstr "Measure distance"
 
-#: data_notebook.py:186 frame.py:987
+#: data_notebook.py:190 frame.py:1034
 msgid "Measure angle"
 msgstr "Measure angle"
 
-#: data_notebook.py:434 data_notebook.py:761 data_notebook.py:1007
-#: data_notebook.py:1196
+#: data_notebook.py:443 data_notebook.py:766 data_notebook.py:1005
+#: data_notebook.py:1197
 msgid "Name"
 msgstr "Name"
 
-#: data_notebook.py:495
+#: data_notebook.py:504
 msgid "Mask"
 msgstr "Mask"
 
-#: data_notebook.py:621 task_surface.py:136
+#: data_notebook.py:630 task_surface.py:136
 #, fuzzy
 msgid "New surface"
 msgstr "New surface name:"
 
-#: data_notebook.py:762
+#: data_notebook.py:767
 msgid "Volume (mm³)"
 msgstr "Volume (mm³)"
 
-#: data_notebook.py:763
+#: data_notebook.py:768
 msgid "Transparency"
 msgstr "Transparency"
 
-#: data_notebook.py:1008
+#: data_notebook.py:1006
 msgid "Location"
 msgstr "Location"
 
-#: data_notebook.py:1009 data_notebook.py:1197
+#: data_notebook.py:1007 data_notebook.py:1198
 msgid "Type"
 msgstr "Type"
 
-#: data_notebook.py:1010 data_notebook.py:1198
+#: data_notebook.py:1008 data_notebook.py:1199
 msgid "Value"
 msgstr "Value"
 
@@ -538,15 +546,15 @@ msgstr "Save raycasting preset"
 msgid "Tools"
 msgstr "Tools"
 
-#: dialogs.py:65
+#: dialogs.py:69
 msgid "Value will be applied."
 msgstr "Value will be applied."
 
-#: dialogs.py:69
+#: dialogs.py:73
 msgid "Value will not be applied."
 msgstr "Value will not be applied."
 
-#: dialogs.py:103
+#: dialogs.py:107
 msgid ""
 "InVesalius is running on a 32-bit operating system or has insufficient "
 "memory. \n"
@@ -554,36 +562,36 @@ msgid ""
 "it is recommended to reduce the medical images resolution."
 msgstr ""
 
-#: dialogs.py:117
+#: dialogs.py:121
 #, fuzzy
 msgid "Percentage of original resolution"
 msgstr "Decimate resolution:"
 
-#: dialogs.py:163
+#: dialogs.py:167
 msgid "Loading DICOM files"
 msgstr "Loading DICOM files"
 
-#: dialogs.py:208
+#: dialogs.py:212
 msgid "Open InVesalius 3 project..."
 msgstr "Open InVesalius 3 project..."
 
-#: dialogs.py:236
+#: dialogs.py:240
 msgid "Open Analyze file"
 msgstr ""
 
-#: dialogs.py:274
+#: dialogs.py:278
 msgid "Choose a DICOM folder:"
 msgstr "Choose a DICOM folder:"
 
-#: dialogs.py:305 frame.py:485
+#: dialogs.py:309 frame.py:520
 msgid "Save project as..."
 msgstr "Save project as..."
 
-#: dialogs.py:308
+#: dialogs.py:312
 msgid "InVesalius project (*.inv3)|*.inv3"
 msgstr "InVesalius project (*.inv3)|*.inv3"
 
-#: dialogs.py:371 dialogs.py:649 dialogs.py:674
+#: dialogs.py:375 dialogs.py:653 dialogs.py:678
 #, python-format
 msgid ""
 "The project %s has been modified.\n"
@@ -592,79 +600,79 @@ msgstr ""
 "The project %s has been modified.\n"
 "Save changes?"
 
-#: dialogs.py:385
+#: dialogs.py:389
 #, fuzzy, python-format
 msgid "%s is an empty folder."
 msgstr "%s is an empty directory."
 
-#: dialogs.py:398
+#: dialogs.py:402
 #, fuzzy
 msgid "There are no DICOM files in the selected folder."
 msgstr "There are no DICOM files in the selected directory."
 
-#: dialogs.py:409
+#: dialogs.py:413
 #, fuzzy
 msgid "A mask is needed to create a surface."
 msgstr "There is no mask of reference to create a surface."
 
-#: dialogs.py:420
+#: dialogs.py:424
 #, fuzzy
 msgid "No mask was selected for removal."
 msgstr "No masks were selected for removal."
 
-#: dialogs.py:431
+#: dialogs.py:435
 #, fuzzy
 msgid "No surface was selected for removal."
 msgstr "No surfaces were selected for removal."
 
-#: dialogs.py:443
+#: dialogs.py:447
 #, fuzzy
 msgid "No measure was selected for removal."
 msgstr "No measures were selected for removal."
 
-#: dialogs.py:454
+#: dialogs.py:458
 #, fuzzy
 msgid "No mask was selected for duplication."
 msgstr "No masks were selected for duplication."
 
-#: dialogs.py:467
+#: dialogs.py:471
 #, fuzzy
 msgid "No surface was selected for duplication."
 msgstr "No surfaces were selected for duplication."
 
-#: dialogs.py:513
+#: dialogs.py:517
 msgid "New mask name:"
 msgstr "New mask name:"
 
-#: dialogs.py:517
+#: dialogs.py:521
 msgid "Name the mask to be created"
 msgstr "Name the mask to be created"
 
-#: dialogs.py:524
+#: dialogs.py:528
 msgid "Threshold preset:"
 msgstr "Threshold preset:"
 
-#: dialogs.py:611 presets.py:44 presets.py:62 presets.py:117 presets.py:148
-#: task_slice.py:431 task_slice.py:433 task_slice.py:445 task_slice.py:447
-#: task_slice.py:483 task_slice.py:486
+#: dialogs.py:615 presets.py:47 presets.py:65 presets.py:120 presets.py:151
+#: slice_menu.py:120 slice_menu.py:256 task_slice.py:431 task_slice.py:433
+#: task_slice.py:445 task_slice.py:447 task_slice.py:488 task_slice.py:491
 msgid "Custom"
 msgstr "Custom"
 
-#: dialogs.py:626
+#: dialogs.py:630
 #, python-format
 msgid "%s does not exist."
 msgstr "%s does not exist."
 
-#: dialogs.py:637
+#: dialogs.py:641
 msgid "Please, provide more than one DICOM file for 3D reconstruction"
 msgstr "Please, provide more than one DICOM file for 3D reconstruction"
 
-#: dialogs.py:698
+#: dialogs.py:702
 #, fuzzy
 msgid "(c) 2007-2012 Renato Archer Information Technology Center - CTI"
 msgstr "(c) 2007-2010 Renato Archer Information Technology Centre"
 
-#: dialogs.py:699
+#: dialogs.py:703
 #, fuzzy
 msgid ""
 "InVesalius is a medical imaging program for 3D reconstruction. It uses a "
@@ -682,122 +690,122 @@ msgstr ""
 "creating physical models of a patient's anatomy using rapid prototyping "
 "technologies."
 
-#: dialogs.py:707
+#: dialogs.py:711
 msgid "GNU GPL (General Public License) version 2"
 msgstr "GNU GPL (General Public License) version 2"
 
-#: dialogs.py:740
+#: dialogs.py:744
 msgid "Save raycasting preset as:"
 msgstr "Save raycasting preset as:"
 
-#: dialogs.py:783 dialogs.py:1038
+#: dialogs.py:787 dialogs.py:1042
 msgid "New surface name:"
 msgstr "New surface name:"
 
-#: dialogs.py:787 dialogs.py:1042
+#: dialogs.py:791 dialogs.py:1046
 msgid "Name the surface to be created"
 msgstr "Name the surface to be created"
 
-#: dialogs.py:794 dialogs.py:1049
+#: dialogs.py:798 dialogs.py:1053
 msgid "Mask of reference:"
 msgstr "Mask of reference:"
 
-#: dialogs.py:812 dialogs.py:1067
+#: dialogs.py:816 dialogs.py:1071
 msgid "Surface quality:"
 msgstr "Surface quality:"
 
-#: dialogs.py:841 dialogs.py:1095
+#: dialogs.py:845 dialogs.py:1099
 msgid "Fill holes"
 msgstr "Fill holes"
 
-#: dialogs.py:844 dialogs.py:1098
+#: dialogs.py:848 dialogs.py:1102
 msgid "Keep largest region"
 msgstr "Keep largest region"
 
-#: dialogs.py:882
+#: dialogs.py:886
 msgid "BMP image"
 msgstr "BMP image"
 
-#: dialogs.py:883
+#: dialogs.py:887
 msgid "JPG image"
 msgstr "JPG image"
 
-#: dialogs.py:884
+#: dialogs.py:888
 msgid "PNG image"
 msgstr "PNG image"
 
-#: dialogs.py:885
+#: dialogs.py:889
 msgid "PostScript document"
 msgstr "PostScript document"
 
-#: dialogs.py:886
+#: dialogs.py:890
 msgid "POV-Ray file"
 msgstr "POV-Ray file"
 
-#: dialogs.py:887
+#: dialogs.py:891
 msgid "TIFF image"
 msgstr "TIFF image"
 
-#: dialogs.py:932
+#: dialogs.py:936
 #, fuzzy
 msgid "Surface generation options"
 msgstr "Surface properties"
 
-#: dialogs.py:962
+#: dialogs.py:966
 #, fuzzy
 msgid "Surface creation"
 msgstr "Surface properties"
 
-#: dialogs.py:989
+#: dialogs.py:993
 #, fuzzy
 msgid "Surface creation options"
 msgstr "Surface properties"
 
-#: dialogs.py:995
+#: dialogs.py:999
 #, fuzzy
 msgid "Surface creation method"
 msgstr "Surface properties"
 
-#: dialogs.py:1143 frame.py:571
+#: dialogs.py:1147 frame.py:605
 msgid "Options"
 msgstr ""
 
-#: dialogs.py:1159
-msgid "Angle:"
-msgstr ""
-
-#: dialogs.py:1161
-#, fuzzy
-msgid "Max. distance:"
-msgstr "Measure distance"
-
 #: dialogs.py:1163
-msgid "Min. weight:"
+msgid "Angle:"
 msgstr ""
 
 #: dialogs.py:1165
 #, fuzzy
+msgid "Max. distance:"
+msgstr "Measure distance"
+
+#: dialogs.py:1167
+msgid "Min. weight:"
+msgstr ""
+
+#: dialogs.py:1169
+#, fuzzy
 msgid "N. steps:"
 msgstr "Next step"
 
-#: dialogs.py:1184 dialogs.py:1220 dialogs.py:1265
+#: dialogs.py:1188 dialogs.py:1224 dialogs.py:1269
 msgid "Context aware smoothing"
 msgstr ""
 
-#: dialogs.py:1185
+#: dialogs.py:1189
 msgid "Binary"
 msgstr ""
 
-#: dialogs.py:1203
+#: dialogs.py:1207
 msgid ""
 "It is not possible to use the Default method because the mask was edited."
 msgstr ""
 
-#: dialogs.py:1206
+#: dialogs.py:1210
 msgid "Method:"
 msgstr ""
 
-#: dicom.py:1520 dicom.py:1524 dicom.py:1526
+#: dicom.py:1526 dicom.py:1530 dicom.py:1532
 msgid "unnamed"
 msgstr "unnamed"
 
@@ -843,164 +851,180 @@ msgstr "Image %d"
 msgid "Auto-play"
 msgstr "Auto-play"
 
-#: frame.py:134
+#: frame.py:141
 msgid "Data panel"
 msgstr "Data panel"
 
-#: frame.py:141
+#: frame.py:148
 msgid "Preview medical data to be reconstructed"
 msgstr "Preview medical data to be reconstructed"
 
-#: frame.py:147
+#: frame.py:154
 msgid "Retrieve DICOM from PACS"
 msgstr ""
 
-#: frame.py:480
+#: frame.py:515
 msgid "Import DICOM...\tCtrl+I"
 msgstr "Import DICOM...\tCtrl+I"
 
-#: frame.py:482
+#: frame.py:517
 #, fuzzy
 msgid "Import other files..."
 msgstr "Import DICOM files..."
 
-#: frame.py:483
+#: frame.py:518
 #, fuzzy
 msgid "Open project...\tCtrl+O"
 msgstr "Open Project...\tCtrl+O"
 
-#: frame.py:484
+#: frame.py:519
 #, fuzzy
 msgid "Save project\tCtrl+S"
 msgstr "Save Project\tCtrl+S"
 
-#: frame.py:486
+#: frame.py:521
 #, fuzzy
 msgid "Close project"
 msgstr "Close Project"
 
-#: frame.py:495
-msgid "Exit"
-msgstr "Exit"
+#: frame.py:530
+msgid "Exit\tCtrl+Q"
+msgstr ""
 
-#: frame.py:502
+#: frame.py:537
 msgid "R <-> L"
 msgstr ""
 
-#: frame.py:503
+#: frame.py:538
 msgid "A <-> P"
 msgstr ""
 
-#: frame.py:504
+#: frame.py:539
 msgid "T <-> B"
 msgstr ""
 
-#: frame.py:508
+#: frame.py:543
 msgid "R-L <-> A-P"
 msgstr ""
 
-#: frame.py:509
+#: frame.py:544
 msgid "R-L <-> T-B"
 msgstr ""
 
-#: frame.py:510
+#: frame.py:545
 msgid "A-P <-> T-B"
 msgstr ""
 
-#: frame.py:514
+#: frame.py:548
 msgid "Flip"
 msgstr ""
 
-#: frame.py:515
+#: frame.py:549
 msgid "Swap axes"
 msgstr ""
 
-#: frame.py:552
+#: frame.py:550
+msgid "Undo\tCtrl+Z"
+msgstr ""
+
+#: frame.py:551
+msgid "Redo\tCtrl+Y"
+msgstr ""
+
+#: frame.py:586
 msgid "Preferences..."
 msgstr ""
 
-#: frame.py:556
+#: frame.py:590
 #, fuzzy
 msgid "Getting started..."
 msgstr "Getting Started..."
 
-#: frame.py:559
+#: frame.py:593
 msgid "About..."
 msgstr "About..."
 
-#: frame.py:567
+#: frame.py:601
 msgid "File"
 msgstr "File"
 
-#: frame.py:568
+#: frame.py:602
 msgid "Edit"
 msgstr ""
 
-#: frame.py:572
+#: frame.py:606
 msgid "Help"
 msgstr "Help"
 
-#: frame.py:654 surface.py:362 surface.py:739 surface.py:740
+#: frame.py:701 surface.py:369 surface.py:746 surface.py:747
 msgid "Ready"
 msgstr "Ready"
 
-#: frame.py:804
+#: frame.py:851
 #, fuzzy
 msgid "Import DICOM files...\tCtrl+I"
 msgstr "Import DICOM...\tCtrl+I"
 
-#: frame.py:811
+#: frame.py:858
 #, fuzzy
 msgid "Open InVesalius project..."
 msgstr "Open InVesalius 3 project..."
 
-#: frame.py:815
+#: frame.py:862
 msgid "Save InVesalius project"
 msgstr "Save InVesalius project"
 
-#: frame.py:957
+#: frame.py:1004
 msgid "Zoom"
 msgstr "Zoom"
 
-#: frame.py:962
+#: frame.py:1009
 msgid "Zoom based on selection"
 msgstr "Zoom based on selection"
 
-#: frame.py:967
+#: frame.py:1014
 msgid "Rotate"
 msgstr "Rotate"
 
-#: frame.py:972
+#: frame.py:1019
 msgid "Move"
 msgstr "Move"
 
-#: frame.py:977
+#: frame.py:1024
 msgid "Constrast"
 msgstr "Constrast"
 
-#: frame.py:1130
+#: frame.py:1177
 msgid "Scroll slices"
 msgstr "Scroll slices"
 
-#: frame.py:1134
+#: frame.py:1181
 msgid "Slices' cross intersection"
 msgstr "Slices' cross intersection"
 
-#: frame.py:1291 frame.py:1360
+#: frame.py:1338 frame.py:1407 frame.py:1558
 msgid "Hide task panel"
 msgstr "Hide task panel"
 
-#: frame.py:1295 frame.py:1382
+#: frame.py:1342 frame.py:1429 frame.py:1580
 msgid "Hide text"
 msgstr "Hide text"
 
-#: frame.py:1366
+#: frame.py:1413 frame.py:1564
 msgid "Show task panel"
 msgstr "Show task panel"
 
-#: frame.py:1376
+#: frame.py:1423 frame.py:1574
 msgid "Show text"
 msgstr "Show text"
+
+#: frame.py:1482
+msgid "Undo"
+msgstr ""
+
+#: frame.py:1483
+msgid "Redo"
+msgstr ""
 
 #: imagedata_utils.py:92 imagedata_utils.py:226 imagedata_utils.py:331
 #: imagedata_utils.py:424
@@ -1171,70 +1195,102 @@ msgid ""
 " the next time InVesalius starts."
 msgstr ""
 
-#: presets.py:31 presets.py:49 presets.py:104 presets.py:135
+#: presets.py:34 presets.py:52 presets.py:107 presets.py:138
 msgid "Soft Tissue"
 msgstr "Soft Tissue"
 
-#: presets.py:32 presets.py:50 presets.py:105 presets.py:136
+#: presets.py:35 presets.py:53 presets.py:108 presets.py:139
 msgid "Enamel (Adult)"
 msgstr "Enamel (Adult)"
 
-#: presets.py:33 presets.py:51 presets.py:106 presets.py:137
+#: presets.py:36 presets.py:54 presets.py:109 presets.py:140
 msgid "Enamel (Child)"
 msgstr "Enamel (Child)"
 
-#: presets.py:34 presets.py:52 presets.py:107 presets.py:138
+#: presets.py:37 presets.py:55 presets.py:110 presets.py:141
 msgid "Compact Bone (Adult)"
 msgstr "Compact Bone (Adult)"
 
-#: presets.py:35 presets.py:53 presets.py:108 presets.py:139
+#: presets.py:38 presets.py:56 presets.py:111 presets.py:142
 msgid "Compact Bone (Child)"
 msgstr "Compact Bone (Child)"
 
-#: presets.py:36 presets.py:54 presets.py:109 presets.py:140
+#: presets.py:39 presets.py:57 presets.py:112 presets.py:143
 msgid "Spongial Bone (Adult)"
 msgstr "Spongial Bone (Adult)"
 
-#: presets.py:37 presets.py:55 presets.py:110 presets.py:141
+#: presets.py:40 presets.py:58 presets.py:113 presets.py:144
 msgid "Spongial Bone (Child)"
 msgstr "Spongial Bone (Child)"
 
-#: presets.py:38 presets.py:56 presets.py:111 presets.py:142
+#: presets.py:41 presets.py:59 presets.py:114 presets.py:145
 msgid "Muscle Tissue (Adult)"
 msgstr "Muscle Tissue (Adult)"
 
-#: presets.py:39 presets.py:57 presets.py:112 presets.py:143
+#: presets.py:42 presets.py:60 presets.py:115 presets.py:146
 msgid "Muscle Tissue (Child)"
 msgstr "Muscle Tissue (Child)"
 
-#: presets.py:40 presets.py:58 presets.py:113 presets.py:144
+#: presets.py:43 presets.py:61 presets.py:116 presets.py:147
 msgid "Fat Tissue (Adult)"
 msgstr "Fat Tissue (Adult)"
 
-#: presets.py:41 presets.py:59 presets.py:114 presets.py:145
+#: presets.py:44 presets.py:62 presets.py:117 presets.py:148
 msgid "Fat Tissue (Child)"
 msgstr "Fat Tissue (Child)"
 
-#: presets.py:42 presets.py:60 presets.py:115 presets.py:146
+#: presets.py:45 presets.py:63 presets.py:118 presets.py:149
 msgid "Skin Tissue (Adult)"
 msgstr "Skin Tissue (Adult)"
 
-#: presets.py:43 presets.py:61 presets.py:116 presets.py:147
+#: presets.py:46 presets.py:64 presets.py:119 presets.py:150
 msgid "Skin Tissue (Child)"
 msgstr "Skin Tissue (Child)"
 
-#: slice_menu.py:104
+#: slice_menu.py:34
+msgid "Normal"
+msgstr ""
+
+#: slice_menu.py:35
+msgid "MaxIP"
+msgstr ""
+
+#: slice_menu.py:36
+msgid "MinIP"
+msgstr ""
+
+#: slice_menu.py:37
+msgid "MeanIP"
+msgstr ""
+
+#: slice_menu.py:38
+msgid "MIDA"
+msgstr ""
+
+#: slice_menu.py:39
+msgid "Contour MaxIP"
+msgstr ""
+
+#: slice_menu.py:40
+msgid "Contour MIDA"
+msgstr ""
+
+#: slice_menu.py:152
 #, fuzzy
 msgid "Window width and level"
 msgstr "Window Width and Level"
 
-#: slice_menu.py:105
+#: slice_menu.py:153
 #, fuzzy
 msgid "Pseudo color"
 msgstr "Pseudo Colour"
 
-#: surface.py:423 surface.py:514 surface.py:532 surface.py:558 surface.py:587
-#: surface.py:609 surface.py:628 surface.py:642 surface.py:659
+#: slice_menu.py:154
+msgid "Projection type"
+msgstr ""
+
+#: surface.py:430 surface.py:521 surface.py:539 surface.py:565 surface.py:594
+#: surface.py:616 surface.py:635 surface.py:649 surface.py:666
 #, fuzzy
 msgid "Creating 3D surface..."
 msgstr "Generating 3D surface..."
@@ -1317,19 +1373,19 @@ msgstr "Advanced editing tools"
 msgid "Set predefined or manual threshold:"
 msgstr "Set predefined or manual threshold:"
 
-#: task_slice.py:538
+#: task_slice.py:543
 msgid "Choose brush type, size or operation:"
 msgstr "Choose brush type, size or operation:"
 
-#: task_slice.py:544
+#: task_slice.py:549
 msgid "Circle"
 msgstr "Circle"
 
-#: task_slice.py:548
+#: task_slice.py:553
 msgid "Square"
 msgstr "Square"
 
-#: task_slice.py:584
+#: task_slice.py:589
 msgid "Brush threshold range:"
 msgstr "Brush threshold range:"
 
@@ -1390,11 +1446,11 @@ msgstr "Select regions of interest..."
 msgid "Transparency:"
 msgstr "Transparency:"
 
-#: task_surface.py:544
+#: task_surface.py:545
 msgid "Decimate resolution:"
 msgstr "Decimate resolution:"
 
-#: task_surface.py:554
+#: task_surface.py:555
 msgid "Smooth iterations:"
 msgstr "Smooth iterations:"
 
@@ -1410,198 +1466,239 @@ msgstr "Measure"
 msgid "Add text annotations"
 msgstr "Add text annotations"
 
-#: viewer_slice.py:437 viewer_slice.py:441 viewer_slice.py:492
-#: viewer_slice.py:494 viewer_slice.py:552 viewer_slice.py:561
-#: viewer_slice.py:570 viewer_slice.py:579 viewer_slice.py:628
-#: viewer_slice.py:637 viewer_slice.py:646 viewer_slice.py:655
-msgid "A"
-msgstr "A"
+#: update.py:54 utils.py:415
+msgid ""
+"A new version of InVesalius is available. Do you want to open the download "
+"website now?"
+msgstr ""
 
-#: viewer_slice.py:437 viewer_slice.py:439 viewer_slice.py:492
-#: viewer_slice.py:496 viewer_slice.py:552 viewer_slice.py:561
-#: viewer_slice.py:570 viewer_slice.py:579 viewer_slice.py:590
-#: viewer_slice.py:599 viewer_slice.py:608 viewer_slice.py:617
+#: update.py:55 utils.py:416
+#, fuzzy
+msgid "Invesalius Update"
+msgstr "InVesalius start"
+
+#: viewer_slice.py:65
+msgid "Number of slices used to compound the visualization."
+msgstr ""
+
+#: viewer_slice.py:74
+msgid ""
+"Controls the sharpness of the contour. The greater the value, the sharper "
+"the contour."
+msgstr ""
+
+#: viewer_slice.py:82
+#, fuzzy
+msgid "Inverted order"
+msgstr "Inverse Gray"
+
+#: viewer_slice.py:83
+msgid ""
+"If checked, the slices are traversed in descending order to compound the "
+"visualization instead of ascending order."
+msgstr ""
+
+#: viewer_slice.py:89
+#, fuzzy
+msgid "Number of slices"
+msgstr "Scroll slices"
+
+#: viewer_slice.py:90
+msgid "Sharpness"
+msgstr ""
+
+#: viewer_slice.py:336 viewer_slice.py:340 viewer_slice.py:393
+#: viewer_slice.py:395 viewer_slice.py:407 viewer_slice.py:416
+#: viewer_slice.py:425 viewer_slice.py:434 viewer_slice.py:445
+#: viewer_slice.py:454 viewer_slice.py:463 viewer_slice.py:472
 msgid "R"
 msgstr "R"
 
-#: viewer_slice.py:437 viewer_slice.py:441 viewer_slice.py:492
-#: viewer_slice.py:494 viewer_slice.py:552 viewer_slice.py:561
-#: viewer_slice.py:570 viewer_slice.py:579 viewer_slice.py:628
-#: viewer_slice.py:637 viewer_slice.py:646 viewer_slice.py:655
-msgid "P"
-msgstr "P"
-
-#: viewer_slice.py:437 viewer_slice.py:439 viewer_slice.py:492
-#: viewer_slice.py:496 viewer_slice.py:552 viewer_slice.py:561
-#: viewer_slice.py:570 viewer_slice.py:579 viewer_slice.py:590
-#: viewer_slice.py:599 viewer_slice.py:608 viewer_slice.py:617
+#: viewer_slice.py:336 viewer_slice.py:340 viewer_slice.py:393
+#: viewer_slice.py:395 viewer_slice.py:407 viewer_slice.py:416
+#: viewer_slice.py:425 viewer_slice.py:434 viewer_slice.py:445
+#: viewer_slice.py:454 viewer_slice.py:463 viewer_slice.py:472
 msgid "L"
 msgstr "L"
 
-#: viewer_slice.py:439 viewer_slice.py:441 viewer_slice.py:494
-#: viewer_slice.py:496 viewer_slice.py:590 viewer_slice.py:599
-#: viewer_slice.py:608 viewer_slice.py:617 viewer_slice.py:628
-#: viewer_slice.py:637 viewer_slice.py:646 viewer_slice.py:655
+#: viewer_slice.py:336 viewer_slice.py:338 viewer_slice.py:393
+#: viewer_slice.py:397 viewer_slice.py:407 viewer_slice.py:416
+#: viewer_slice.py:425 viewer_slice.py:434 viewer_slice.py:483
+#: viewer_slice.py:492 viewer_slice.py:501 viewer_slice.py:510
+msgid "A"
+msgstr "A"
+
+#: viewer_slice.py:336 viewer_slice.py:338 viewer_slice.py:393
+#: viewer_slice.py:397 viewer_slice.py:407 viewer_slice.py:416
+#: viewer_slice.py:425 viewer_slice.py:434 viewer_slice.py:483
+#: viewer_slice.py:492 viewer_slice.py:501 viewer_slice.py:510
+msgid "P"
+msgstr "P"
+
+#: viewer_slice.py:338 viewer_slice.py:340 viewer_slice.py:395
+#: viewer_slice.py:397 viewer_slice.py:445 viewer_slice.py:454
+#: viewer_slice.py:463 viewer_slice.py:472 viewer_slice.py:483
+#: viewer_slice.py:492 viewer_slice.py:501 viewer_slice.py:510
 msgid "T"
 msgstr "T"
 
-#: viewer_slice.py:439 viewer_slice.py:441 viewer_slice.py:494
-#: viewer_slice.py:496 viewer_slice.py:590 viewer_slice.py:599
-#: viewer_slice.py:608 viewer_slice.py:617 viewer_slice.py:628
-#: viewer_slice.py:637 viewer_slice.py:646 viewer_slice.py:655
+#: viewer_slice.py:338 viewer_slice.py:340 viewer_slice.py:395
+#: viewer_slice.py:397 viewer_slice.py:445 viewer_slice.py:454
+#: viewer_slice.py:463 viewer_slice.py:472 viewer_slice.py:483
+#: viewer_slice.py:492 viewer_slice.py:501 viewer_slice.py:510
 msgid "B"
 msgstr "B"
 
-#: viewer_slice.py:555 viewer_slice.py:564 viewer_slice.py:573
-#: viewer_slice.py:582
+#: viewer_slice.py:410 viewer_slice.py:419 viewer_slice.py:428
+#: viewer_slice.py:437
 #, fuzzy
 msgid "AL"
 msgstr "L"
 
-#: viewer_slice.py:555 viewer_slice.py:564 viewer_slice.py:573
-#: viewer_slice.py:582
+#: viewer_slice.py:410 viewer_slice.py:419 viewer_slice.py:428
+#: viewer_slice.py:437
 #, fuzzy
 msgid "RA"
 msgstr "R"
 
-#: viewer_slice.py:555 viewer_slice.py:564 viewer_slice.py:573
-#: viewer_slice.py:582
+#: viewer_slice.py:410 viewer_slice.py:419 viewer_slice.py:428
+#: viewer_slice.py:437
 #, fuzzy
 msgid "PR"
 msgstr "R"
 
-#: viewer_slice.py:555 viewer_slice.py:564 viewer_slice.py:573
-#: viewer_slice.py:582
+#: viewer_slice.py:410 viewer_slice.py:419 viewer_slice.py:428
+#: viewer_slice.py:437
 #, fuzzy
 msgid "LP"
 msgstr "L"
 
-#: viewer_slice.py:558 viewer_slice.py:567 viewer_slice.py:576
-#: viewer_slice.py:585
+#: viewer_slice.py:413 viewer_slice.py:422 viewer_slice.py:431
+#: viewer_slice.py:440
 #, fuzzy
 msgid "LA"
 msgstr "L"
 
-#: viewer_slice.py:558 viewer_slice.py:567 viewer_slice.py:576
-#: viewer_slice.py:585
+#: viewer_slice.py:413 viewer_slice.py:422 viewer_slice.py:431
+#: viewer_slice.py:440
 #, fuzzy
 msgid "AR"
 msgstr "R"
 
-#: viewer_slice.py:558 viewer_slice.py:567 viewer_slice.py:576
-#: viewer_slice.py:585
+#: viewer_slice.py:413 viewer_slice.py:422 viewer_slice.py:431
+#: viewer_slice.py:440
 #, fuzzy
 msgid "RP"
 msgstr "R"
 
-#: viewer_slice.py:558 viewer_slice.py:567 viewer_slice.py:576
-#: viewer_slice.py:585
+#: viewer_slice.py:413 viewer_slice.py:422 viewer_slice.py:431
+#: viewer_slice.py:440
 #, fuzzy
 msgid "PL"
 msgstr "L"
 
-#: viewer_slice.py:593 viewer_slice.py:602 viewer_slice.py:611
-#: viewer_slice.py:620
+#: viewer_slice.py:448 viewer_slice.py:457 viewer_slice.py:466
+#: viewer_slice.py:475
 #, fuzzy
 msgid "TL"
 msgstr "L"
 
-#: viewer_slice.py:593 viewer_slice.py:602 viewer_slice.py:611
-#: viewer_slice.py:620
+#: viewer_slice.py:448 viewer_slice.py:457 viewer_slice.py:466
+#: viewer_slice.py:475
 #, fuzzy
 msgid "RT"
 msgstr "R"
 
-#: viewer_slice.py:593 viewer_slice.py:602 viewer_slice.py:611
-#: viewer_slice.py:620
+#: viewer_slice.py:448 viewer_slice.py:457 viewer_slice.py:466
+#: viewer_slice.py:475
 #, fuzzy
 msgid "BR"
 msgstr "R"
 
-#: viewer_slice.py:593 viewer_slice.py:602 viewer_slice.py:611
-#: viewer_slice.py:620
+#: viewer_slice.py:448 viewer_slice.py:457 viewer_slice.py:466
+#: viewer_slice.py:475
 #, fuzzy
 msgid "LB"
 msgstr "L"
 
-#: viewer_slice.py:596 viewer_slice.py:605 viewer_slice.py:614
-#: viewer_slice.py:623
+#: viewer_slice.py:451 viewer_slice.py:460 viewer_slice.py:469
+#: viewer_slice.py:478
 #, fuzzy
 msgid "LT"
 msgstr "L"
 
-#: viewer_slice.py:596 viewer_slice.py:605 viewer_slice.py:614
-#: viewer_slice.py:623
+#: viewer_slice.py:451 viewer_slice.py:460 viewer_slice.py:469
+#: viewer_slice.py:478
 #, fuzzy
 msgid "TR"
 msgstr "R"
 
-#: viewer_slice.py:596 viewer_slice.py:605 viewer_slice.py:614
-#: viewer_slice.py:623
+#: viewer_slice.py:451 viewer_slice.py:460 viewer_slice.py:469
+#: viewer_slice.py:478
 #, fuzzy
 msgid "RB"
 msgstr "R"
 
-#: viewer_slice.py:596 viewer_slice.py:605 viewer_slice.py:614
-#: viewer_slice.py:623
+#: viewer_slice.py:451 viewer_slice.py:460 viewer_slice.py:469
+#: viewer_slice.py:478
 #, fuzzy
 msgid "BL"
 msgstr "L"
 
-#: viewer_slice.py:631 viewer_slice.py:640 viewer_slice.py:649
-#: viewer_slice.py:658
+#: viewer_slice.py:486 viewer_slice.py:495 viewer_slice.py:504
+#: viewer_slice.py:513
 #, fuzzy
 msgid "TA"
 msgstr "A"
 
-#: viewer_slice.py:631 viewer_slice.py:640 viewer_slice.py:649
-#: viewer_slice.py:658
+#: viewer_slice.py:486 viewer_slice.py:495 viewer_slice.py:504
+#: viewer_slice.py:513
 #, fuzzy
 msgid "PT"
 msgstr "P"
 
-#: viewer_slice.py:631 viewer_slice.py:640 viewer_slice.py:649
-#: viewer_slice.py:658
+#: viewer_slice.py:486 viewer_slice.py:495 viewer_slice.py:504
+#: viewer_slice.py:513
 #, fuzzy
 msgid "BP"
 msgstr "P"
 
-#: viewer_slice.py:631 viewer_slice.py:640 viewer_slice.py:649
-#: viewer_slice.py:658
+#: viewer_slice.py:486 viewer_slice.py:495 viewer_slice.py:504
+#: viewer_slice.py:513
 #, fuzzy
 msgid "AB"
 msgstr "A"
 
-#: viewer_slice.py:634 viewer_slice.py:643 viewer_slice.py:652
-#: viewer_slice.py:661
+#: viewer_slice.py:489 viewer_slice.py:498 viewer_slice.py:507
+#: viewer_slice.py:516
 #, fuzzy
 msgid "AT"
 msgstr "A"
 
-#: viewer_slice.py:634 viewer_slice.py:643 viewer_slice.py:652
-#: viewer_slice.py:661
+#: viewer_slice.py:489 viewer_slice.py:498 viewer_slice.py:507
+#: viewer_slice.py:516
 #, fuzzy
 msgid "TP"
 msgstr "P"
 
-#: viewer_slice.py:634 viewer_slice.py:643 viewer_slice.py:652
-#: viewer_slice.py:661
+#: viewer_slice.py:489 viewer_slice.py:498 viewer_slice.py:507
+#: viewer_slice.py:516
 #, fuzzy
 msgid "PB"
 msgstr "P"
 
-#: viewer_slice.py:634 viewer_slice.py:643 viewer_slice.py:652
-#: viewer_slice.py:661
+#: viewer_slice.py:489 viewer_slice.py:498 viewer_slice.py:507
+#: viewer_slice.py:516
 #, fuzzy
 msgid "BA"
 msgstr "A"
 
+#~ msgid "Exit"
+#~ msgstr "Exit"
+
 #, fuzzy
 #~ msgid "Off"
 #~ msgstr " Off"
-
-#~ msgid "InVesalius start"
-#~ msgstr "InVesalius start"
 
 #~ msgid "Save Project As..."
 #~ msgstr "Save Project As..."
