@@ -53,7 +53,7 @@ class CLUTImageDataWidget(wx.Panel):
         super(CLUTImageDataWidget, self).__init__(parent, id)
 
         self.SetFocusIgnoringChildren()
-        self.SetMinSize((300, 200))
+        self.SetMinSize((400, 200))
 
         self.histogram = histogram
 
@@ -81,14 +81,6 @@ class CLUTImageDataWidget(wx.Panel):
 
             self.ww = nn.value - n0.value
             self.wl = (nn.value + n0.value) / 2.0
-
-
-        w, h = self.GetVirtualSize()
-        init = self.pixel_to_hounsfield(-1)
-        end = self.pixel_to_hounsfield(w + 1)
-        self._init = init
-        self._end = end
-        self._range = 0.05 * (end - init)
 
         self._s_init = init
         self._s_end = end
@@ -179,6 +171,19 @@ class CLUTImageDataWidget(wx.Panel):
         pass
 
     def OnSize(self, evt):
+        if self.first_show:
+            w, h = self.GetVirtualSize()
+            init = self.pixel_to_hounsfield(-RADIUS)
+            end = self.pixel_to_hounsfield(w + RADIUS)
+            self._init = init
+            self._end = end
+            self._range = 0.05 * (end - init)
+
+            self._s_init = init
+            self._s_end = end
+
+            self.first_show = False
+
         self._build_drawn_hist()
         self.Refresh()
         evt.Skip()
