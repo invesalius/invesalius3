@@ -547,8 +547,29 @@ class MenuBar(wx.MenuBar):
         file_edit = wx.Menu()
         file_edit.AppendMenu(wx.NewId(), _('Flip'), flip_menu)
         file_edit.AppendMenu(wx.NewId(), _('Swap axes'), swap_axes_menu)
-        file_edit.Append(wx.ID_UNDO, _("Undo\tCtrl+Z")).Enable(False)
-        file_edit.Append(wx.ID_REDO, _("Redo\tCtrl+Y")).Enable(False)
+        
+
+        d = const.ICON_DIR
+        if not(sys.platform == 'darwin'):
+            # Bitmaps for show/hide task panel item
+            p = os.path.join(d, "undo_menu.png")
+            self.BMP_UNDO = wx.Bitmap(p, wx.BITMAP_TYPE_PNG)
+
+            p = os.path.join(d, "redo_menu.png")
+            self.BMP_REDO = wx.Bitmap(p, wx.BITMAP_TYPE_PNG)
+
+            file_edit_item_undo = wx.MenuItem(file_edit, wx.ID_UNDO,  _("Undo\tCtrl+Z"))
+            file_edit_item_undo.SetBitmap(self.BMP_UNDO)
+            file_edit_item_undo.Enable(False)
+            file_edit.AppendItem(file_edit_item_undo)
+
+            file_edit_item_redo = wx.MenuItem(file_edit, wx.ID_REDO,  _("Redo\tCtrl+Y"))
+            file_edit_item_redo.SetBitmap(self.BMP_REDO)
+            file_edit_item_redo.Enable(False)
+            file_edit.AppendItem(file_edit_item_redo)
+        else:
+            file_edit.Append(wx.ID_UNDO, _("Undo\tCtrl+Z")).Enable(False)
+            file_edit.Append(wx.ID_REDO, _("Redo\tCtrl+Y")).Enable(False)
         #app(const.ID_EDIT_LIST, "Show Undo List...")
         #################################################################
 
@@ -1479,8 +1500,33 @@ class HistoryToolBar(wx.ToolBar):
         """
         Add tools into toolbar.
         """
-        self.AddSimpleTool(wx.ID_UNDO, wx.ArtProvider_GetBitmap(wx.ART_UNDO, wx.ART_OTHER, wx.Size( 16, 16)), _('Undo'), '')
-        self.AddSimpleTool(wx.ID_REDO, wx.ArtProvider_GetBitmap(wx.ART_REDO, wx.ART_OTHER, wx.Size( 16, 16)), _('Redo'), '')
+        d = const.ICON_DIR
+        if sys.platform == 'darwin':
+            # Bitmaps for show/hide task panel item
+            p = os.path.join(d, "undo_original.png")
+            self.BMP_UNDO = wx.Bitmap(p, wx.BITMAP_TYPE_PNG)
+
+            p = os.path.join(d, "redo_original.png")
+            self.BMP_REDO = wx.Bitmap(p, wx.BITMAP_TYPE_PNG)
+
+        else:
+            # Bitmaps for show/hide task panel item
+            p = os.path.join(d, "undo_small.png")
+            self.BMP_UNDO = wx.Bitmap(p, wx.BITMAP_TYPE_PNG)
+
+            p = os.path.join(d, "redo_small.png")
+            self.BMP_REDO = wx.Bitmap(p, wx.BITMAP_TYPE_PNG)
+
+        self.AddLabelTool(wx.ID_UNDO,
+                          "",
+                          bitmap=self.BMP_UNDO,
+                          shortHelp= _("Undo"))
+
+        self.AddLabelTool(wx.ID_REDO,
+                          "",
+                          bitmap=self.BMP_REDO,
+                          shortHelp= _("Redo"))
+
         self.EnableTool(wx.ID_UNDO, False)
         self.EnableTool(wx.ID_REDO, False)
 
