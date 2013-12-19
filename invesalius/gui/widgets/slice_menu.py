@@ -77,8 +77,6 @@ class SliceMenu(wx.Menu):
                 submenu_wl.AppendItem(wl_item)
                 self.ID_TO_TOOL_ITEM[new_id] = wl_item
 
-
-
         #----------- Sub menu of the save and load options ---------
         #submenu_wl.AppendSeparator()
         #options = [_("Save current values"),
@@ -93,13 +91,19 @@ class SliceMenu(wx.Menu):
 
 
         #------------ Sub menu of the pseudo colors ----------------
+        if sys.platform == 'linux2':
+            mkind = wx.ITEM_CHECK
+        else:
+            mkind = wx.ITEM_RADIO
+
         self.pseudo_color_items = {}
         submenu_pseudo_colours = wx.Menu()
         self.pseudo_color_items = {}
         new_id = self.id_pseudo_first = wx.NewId()
         color_item = wx.MenuItem(submenu_pseudo_colours, new_id,\
-                            _("Default "), kind=wx.ITEM_CHECK)
+                            _("Default "), kind=mkind)
         submenu_pseudo_colours.AppendItem(color_item)
+        color_item.Check(1)
         self.ID_TO_TOOL_ITEM[new_id] = color_item
         self.pseudo_color_items[new_id] = color_item
 
@@ -107,7 +111,7 @@ class SliceMenu(wx.Menu):
             if not(name == _("Default ")):
                 new_id = wx.NewId()
                 color_item = wx.MenuItem(submenu_wl, new_id,\
-                                    name, kind=wx.ITEM_CHECK)
+                                    name, kind=mkind)
                 submenu_pseudo_colours.AppendItem(color_item)
                 self.ID_TO_TOOL_ITEM[new_id] = color_item
                 self.pseudo_color_items[new_id] = color_item
@@ -115,13 +119,15 @@ class SliceMenu(wx.Menu):
         self.plist_presets = presets.get_wwwl_presets()
         for name in sorted(self.plist_presets):
             new_id = wx.NewId()
-            color_item = wx.MenuItem(submenu_wl, new_id, name, kind=wx.ITEM_CHECK)
+            color_item = wx.MenuItem(submenu_wl, new_id, name,
+                                     kind=mkind)
             submenu_pseudo_colours.AppendItem(color_item)
             self.ID_TO_TOOL_ITEM[new_id] = color_item
             self.pseudo_color_items[new_id] = color_item
 
         new_id = wx.NewId()
-        color_item = wx.MenuItem(submenu_wl, new_id, _('Custom'))
+        color_item = wx.MenuItem(submenu_wl, new_id, _('Custom'),
+                                 kind=mkind)
         submenu_pseudo_colours.AppendItem(color_item)
         self.ID_TO_TOOL_ITEM[new_id] = color_item
         self.pseudo_color_items[new_id] = color_item
@@ -222,27 +228,28 @@ class SliceMenu(wx.Menu):
             Publisher.sendMessage('Change colour table from background image', values)
             Publisher.sendMessage('Update slice viewer')
 
-            for i in self.pseudo_color_items:
-                it = self.pseudo_color_items[i]
-                if it.IsChecked():
-                    it.Toggle()
+            if sys.platform == 'linux2':
+                for i in self.pseudo_color_items:
+                    it = self.pseudo_color_items[i]
+                    if it.IsChecked():
+                        it.Toggle()
 
-            item.Toggle()
+                item.Toggle()
             self.HideClutDialog()
             self._gen_event = True
-
 
         elif key in self.plist_presets:
             values = presets.get_wwwl_preset_colours(self.plist_presets[key])
             Publisher.sendMessage('Change colour table from background image from plist', values)
             Publisher.sendMessage('Update slice viewer')
 
-            for i in self.pseudo_color_items:
-                it = self.pseudo_color_items[i]
-                if it.IsChecked():
-                    it.Toggle()
+            if sys.platform == 'linux2':
+                for i in self.pseudo_color_items:
+                    it = self.pseudo_color_items[i]
+                    if it.IsChecked():
+                        it.Toggle()
 
-            item.Toggle()
+                item.Toggle()
             self.HideClutDialog()
             self._gen_event = True
 
@@ -269,12 +276,15 @@ class SliceMenu(wx.Menu):
             else:
                 self.cdialog.Show(self._gen_event)
 
-            for i in self.pseudo_color_items:
-                it = self.pseudo_color_items[i]
-                if it.IsChecked():
-                    it.Toggle()
+            if sys.platform == 'linux2':
+                for i in self.pseudo_color_items:
+                    it = self.pseudo_color_items[i]
+                    if it.IsChecked():
+                        it.Toggle()
 
-            item.Toggle()
+                item.Toggle()
+            item = self.ID_TO_TOOL_ITEM[evt.GetId()]
+            item.Check(True)
             self._gen_event = False
 
         evt.Skip()
