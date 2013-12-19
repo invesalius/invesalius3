@@ -523,7 +523,8 @@ class Controller():
         if resolution_percentage < 1.0:
             re_dialog = dialog.ResizeImageDialog()
             re_dialog.SetValue(int(resolution_percentage*100))
-            re_dialog_value = re_dialog.ShowModal()  
+            re_dialog_value = re_dialog.ShowModal()
+            re_dialog.Close() 
             
             if re_dialog_value == wx.ID_OK:
                 percentage = re_dialog.GetValue()
