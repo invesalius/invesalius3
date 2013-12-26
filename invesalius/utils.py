@@ -369,20 +369,31 @@ def get_system_encoding():
 def UpdateCheck():
     import urllib
     import urllib2
+    import wx
+    def _show_update_info():
+        from gui import dialogs
+        msg=_("A new version of InVesalius is available. Do you want to open the download website now?")
+        title=_("Invesalius Update")
+        msgdlg = dialogs.UpdateMessageDialog(url)
+        #if (msgdlg.Show()==wx.ID_YES):
+            #wx.LaunchDefaultBrowser(url)
+        msgdlg.Show()
+        #msgdlg.Destroy()
+
     print "Checking updates..."
     
     # Check if there is a language set
-    import i18n
+    #import i18n
     import session as ses
     session = ses.Session()
     install_lang = 0
     if session.ReadLanguage():
         lang = session.GetLanguage()
-        if (lang != "False"):
-            _ = i18n.InstallLanguage(lang)
-            install_lang = 1
-    if (install_lang==0):
-        return
+        #if (lang != "False"):
+            #_ = i18n.InstallLanguage(lang)
+            #install_lang = 1
+    #if (install_lang==0):
+        #return
     if session.ReadRandomId():
         random_id = session.GetRandomId()
 
@@ -406,18 +417,4 @@ def UpdateCheck():
         url = response.readline().rstrip()
         if (last!=const.INVESALIUS_VERSION):
             print "  ...New update found!!! -> version:", last #, ", url=",url
-            from time import sleep
-            sleep(2)
-            import wx
-            app=wx.App()
-            import i18n
-            _ = i18n.InstallLanguage(lang)
-            msg=_("A new version of InVesalius is available. Do you want to open the download website now?")
-            title=_("Invesalius Update")
-            msgdlg = wx.MessageDialog(None,msg,title, wx.YES_NO | wx.ICON_INFORMATION)
-            if (msgdlg.ShowModal()==wx.ID_YES):
-                wx.LaunchDefaultBrowser(url)
-            msgdlg.Destroy()
-            app.MainLoop()
-
-
+            wx.CallAfter(wx.CallLater, 1000, _show_update_info)

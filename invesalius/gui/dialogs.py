@@ -373,6 +373,67 @@ class MessageDialog(wx.Dialog):
 
         self.Centre()
 
+
+class UpdateMessageDialog(wx.Dialog):
+    def __init__(self, url):
+        msg=_("A new version of InVesalius is available. Do you want to open the download website now?")
+        title=_("Invesalius Update")
+        self.url = url
+
+        pre = wx.PreDialog()
+        pre.Create(None, -1, title,  size=(360, 370), pos=wx.DefaultPosition,
+                    style=wx.DEFAULT_DIALOG_STYLE|wx.ICON_INFORMATION)
+        self.PostCreate(pre)
+
+        # Static text which contains message to user
+        label = wx.StaticText(self, -1, msg)
+
+        # Buttons
+        btn_yes = wx.Button(self, wx.ID_YES)
+        btn_yes.SetHelpText("")
+        btn_yes.SetDefault()
+
+        btn_no = wx.Button(self, wx.ID_NO)
+        btn_no.SetHelpText("")
+
+        btnsizer = wx.StdDialogButtonSizer()
+        btnsizer.AddButton(btn_yes)
+        btnsizer.AddButton(btn_no)
+        btnsizer.Realize()
+
+        sizer = wx.BoxSizer(wx.VERTICAL)
+        sizer.Add(label, 0, wx.ALIGN_CENTRE|wx.ALL, 5)
+        sizer.Add(btnsizer, 0, wx.ALIGN_CENTER_VERTICAL|
+                  wx.ALIGN_CENTER_HORIZONTAL|wx.ALL, 5)
+        self.SetSizer(sizer)
+        sizer.Fit(self)
+        self.Centre()
+
+        btn_yes.Bind(wx.EVT_BUTTON, self._OnYes)
+        btn_no.Bind(wx.EVT_BUTTON, self._OnNo)
+
+        # Subscribing to the pubsub event which happens when InVesalius is
+        # closed.
+        Publisher.subscribe(self._OnCloseInV, 'Exit')
+
+    def _OnYes(self, evt):
+        # Launches the default browser with the url to download the new
+        # InVesalius version.
+        wx.LaunchDefaultBrowser(self.url)
+        self.Close()
+        self.Destroy()
+
+    def _OnNo(self, evt):
+        # Closes and destroy this dialog.
+        self.Close()
+        self.Destroy()
+
+    def _OnCloseInV(self, pubsub_evt):
+        # Closes and destroy this dialog.
+        self.Close()
+        self.Destroy()
+
+
 def SaveChangesDialog__Old(filename):
     message = _("The project %s has been modified.\nSave changes?")%filename
     dlg = MessageDialog(message)

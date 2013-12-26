@@ -68,6 +68,7 @@ class InVesalius(wx.App):
         self.splash = SplashScreen()
         self.splash.Show()
         wx.CallLater(1000,self.Startup2)
+
         return True
 
     def MacOpenFile(self, filename):
@@ -179,6 +180,11 @@ class SplashScreen(wx.SplashScreen):
         
         self.fc = wx.FutureCall(1, self.ShowMain)
         wx.FutureCall(1, parse_comand_line)
+
+        # Check for updates
+        from threading import Thread
+        p = Thread(target=utils.UpdateCheck, args=())
+        p.start()
 
     def OnClose(self, evt):
         # Make sure the default handler runs too so this window gets
@@ -300,11 +306,6 @@ if __name__ == '__main__':
     # import modules as they were on root invesalius folder
     sys.path.append(".")
 
-    # Check for updates
-    from multiprocessing import Process
-    p = Process(target=utils.UpdateCheck, args=())
-    p.daemon=True
-    p.start()
 
     # Init application
     main()
