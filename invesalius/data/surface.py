@@ -36,10 +36,11 @@ import session as ses
 import surface_process
 import utils as utl
 import vtk_utils as vu
+
 try:
+    import ca_smoothing
+except ImportError:
     import data.ca_smoothing as ca_smoothing
-except:
-    pass
 
 class Surface():
     """
