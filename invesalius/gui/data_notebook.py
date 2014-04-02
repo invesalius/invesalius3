@@ -21,10 +21,10 @@
 import sys
 import platform
 
-if float(platform.python_version()[0:3]) > 2.6:
-    import Image
-else:
+try:
     from PIL import Image
+except(ImportError):
+    import Image
 
 import wx
 import wx.grid
