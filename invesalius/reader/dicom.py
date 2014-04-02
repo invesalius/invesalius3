@@ -1224,7 +1224,14 @@ class Parser():
             return ""
 
         if (data):
-            return str(data)
+            name = data.strip()
+            encoding = self.GetEncoding()
+            try:
+                # Returns a unicode decoded in the own dicom encoding
+                return name.decode(encoding, 'replace')
+            except(UnicodeEncodeError):
+                return name
+
         return ""
 
     def GetPatientAge(self):
