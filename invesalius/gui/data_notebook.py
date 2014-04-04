@@ -322,6 +322,7 @@ class ButtonControlPanel(wx.Panel):
             if mask_name:
                 Publisher.sendMessage('Create new mask',
                                             (mask_name, thresh, colour))
+        dialog.Destroy()
 
     def OnRemove(self):
         self.parent.listctrl.RemoveMasks()
@@ -641,7 +642,7 @@ class SurfaceButtonControlPanel(wx.Panel):
             surface_options = dialog.GetValue()
 
             Publisher.sendMessage('Create surface from index', surface_options)
-            dialog.Destroy()
+        dialog.Destroy()
 
     def OnRemove(self):
         self.parent.listctrl.RemoveSurfaces()

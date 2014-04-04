@@ -153,22 +153,22 @@ class InnerTaskPanel(wx.Panel):
                 if dlgs.ShowModal() == wx.ID_OK:
                     algorithm = dlgs.GetAlgorithmSelected()
                     options = dlgs.GetOptions()
-                else:
-                    return
 
-            mask_index = sl.current_mask.index
-            method = {'algorithm': algorithm, 
-                      'options': options}
-            srf_options = {"index": mask_index,
-                           "name": '',
-                           "quality": _('Optimal *'),
-                           "fill": False,
-                           "keep_largest": False,
-                           "overwrite": overwrite}
+                    mask_index = sl.current_mask.index
+                    method = {'algorithm': algorithm, 
+                              'options': options}
+                    srf_options = {"index": mask_index,
+                                   "name": '',
+                                   "quality": _('Optimal *'),
+                                   "fill": False,
+                                   "keep_largest": False,
+                                   "overwrite": overwrite}
 
-            Publisher.sendMessage('Create surface from index', 
-                                  {'method': method, 'options': srf_options})
-            Publisher.sendMessage('Fold surface task')
+                    Publisher.sendMessage('Create surface from index', 
+                                          {'method': method, 'options': srf_options})
+                    Publisher.sendMessage('Fold surface task')
+                dlgs.Destroy()
+
         else:
             dlg.InexistentMask()
 
@@ -188,6 +188,7 @@ class InnerTaskPanel(wx.Panel):
             if mask_name:
                 Publisher.sendMessage('Create new mask',
                                             (mask_name, thresh, colour))
+        dialog.Destroy()
 
     def GetMaskSelected(self):
         return self.fold_panel.GetMaskSelected()
