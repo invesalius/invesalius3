@@ -243,6 +243,9 @@ class Slice(object):
 
     def CloseProject(self):
         self.imagedata = None
+        f = self._matrix.filename
+        self._matrix  = None
+        os.remove(f)
         self.current_mask = None
 
         self.values = None
