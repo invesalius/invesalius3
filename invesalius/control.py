@@ -253,10 +253,11 @@ class Controller():
         mask._set_class_index(proj.last_mask_index)
         self.mask_dict_copy = proj.mask_dict.copy()
 
-        self.LoadProject()
-
         Publisher.sendMessage('Update threshold limits list',
                                    proj.threshold_range)
+
+        self.LoadProject()
+
         session = ses.Session()
         session.OpenProject(filepath)
         Publisher.sendMessage("Enable state project", True)
