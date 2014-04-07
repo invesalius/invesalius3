@@ -154,20 +154,21 @@ class InnerTaskPanel(wx.Panel):
                     algorithm = dlgs.GetAlgorithmSelected()
                     options = dlgs.GetOptions()
 
-                    mask_index = sl.current_mask.index
-                    method = {'algorithm': algorithm, 
-                              'options': options}
-                    srf_options = {"index": mask_index,
-                                   "name": '',
-                                   "quality": _('Optimal *'),
-                                   "fill": False,
-                                   "keep_largest": False,
-                                   "overwrite": overwrite}
-
-                    Publisher.sendMessage('Create surface from index', 
-                                          {'method': method, 'options': srf_options})
-                    Publisher.sendMessage('Fold surface task')
                 dlgs.Destroy()
+
+            mask_index = sl.current_mask.index
+            method = {'algorithm': algorithm, 
+                      'options': options}
+            srf_options = {"index": mask_index,
+                           "name": '',
+                           "quality": _('Optimal *'),
+                           "fill": False,
+                           "keep_largest": False,
+                           "overwrite": overwrite}
+
+            Publisher.sendMessage('Create surface from index', 
+                                  {'method': method, 'options': srf_options})
+            Publisher.sendMessage('Fold surface task')
 
         else:
             dlg.InexistentMask()
