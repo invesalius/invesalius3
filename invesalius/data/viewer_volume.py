@@ -219,8 +219,14 @@ class Viewer(wx.Panel):
         self.interactor.Render()
 
     def CreateBallReference(self):
+        MRAD = 3.0
+        proj = prj.Project()
+        s = proj.spacing
+        # The sphere's radius will be MRAD times bigger than the media of the
+        # spacing values.
+        r = (s[0] + s[1] + s[2]) / 3.0 * MRAD
         self.ball_reference = vtk.vtkSphereSource()
-        self.ball_reference.SetRadius(5)
+        self.ball_reference.SetRadius(r)
 
         mapper = vtk.vtkPolyDataMapper()
         mapper.SetInput(self.ball_reference.GetOutput())
