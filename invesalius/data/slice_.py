@@ -306,6 +306,16 @@ class Slice(object):
         self.current_mask.matrix[:] = 0
         self.current_mask.clear_history()
 
+        to_reload = False
+        if threshold_range != self.current_mask.threshold_range:
+            print "<<<<<<<<<<<<<<<< DIFERENT >>>>>>>>>>>>>>>>>>>>>>>"
+            to_reload = True
+            for orientation in self.buffer_slices:
+                self.buffer_slices[orientation].discard_vtk_mask()
+                self.SetMaskThreshold(index, threshold_range,
+                                      self.buffer_slices[orientation].index,
+                                      orientation)
+
         # TODO: merge this code with apply_slice_buffer_to_mask
         b_mask = self.buffer_slices["AXIAL"].mask
         n = self.buffer_slices["AXIAL"].index + 1
@@ -321,6 +331,9 @@ class Slice(object):
         n = self.buffer_slices["SAGITAL"].index + 1
         self.current_mask.matrix[1:, 1:, n] = b_mask
         self.current_mask.matrix[0, 0, n] = 1
+
+        if to_reload:
+            Publisher.sendMessage('Reload actual slice')
 
     def __set_current_mask_threshold_actual_slice(self, evt_pubsub):
         threshold_range = evt_pubsub.data
