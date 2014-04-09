@@ -532,21 +532,21 @@ class MenuBar(wx.MenuBar):
 
         ############################### EDIT###############################
         # Flip
-        flip_menu = wx.Menu()
-        app = flip_menu.Append
-        app(const.ID_FLIP_X, _("R <-> L"))
-        app(const.ID_FLIP_Y, _("A <-> P"))
-        app(const.ID_FLIP_Z, _("T <-> B"))
+        #flip_menu = wx.Menu()
+        #app = flip_menu.Append
+        #app(const.ID_FLIP_X, _("R <-> L"))
+        #app(const.ID_FLIP_Y, _("A <-> P"))
+        #app(const.ID_FLIP_Z, _("T <-> B"))
 
-        swap_axes_menu = wx.Menu()
-        app = swap_axes_menu.Append
-        app(const.ID_SWAP_XY, _("R-L <-> A-P"))
-        app(const.ID_SWAP_XZ, _("R-L <-> T-B"))
-        app(const.ID_SWAP_YZ, _("A-P <-> T-B"))
+        #swap_axes_menu = wx.Menu()
+        #app = swap_axes_menu.Append
+        #app(const.ID_SWAP_XY, _("R-L <-> A-P"))
+        #app(const.ID_SWAP_XZ, _("R-L <-> T-B"))
+        #app(const.ID_SWAP_YZ, _("A-P <-> T-B"))
 
         file_edit = wx.Menu()
-        file_edit.AppendMenu(wx.NewId(), _('Flip'), flip_menu)
-        file_edit.AppendMenu(wx.NewId(), _('Swap axes'), swap_axes_menu)
+        #file_edit.AppendMenu(wx.NewId(), _('Flip'), flip_menu)
+        #file_edit.AppendMenu(wx.NewId(), _('Swap axes'), swap_axes_menu)
         
 
         d = const.ICON_DIR
