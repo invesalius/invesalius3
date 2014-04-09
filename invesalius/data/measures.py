@@ -38,6 +38,8 @@ class MeasurementManager(object):
         Publisher.subscribe(self._remove_measurements, "Remove measurements")
         Publisher.subscribe(self._set_visibility, "Show measurement")
         Publisher.subscribe(self._load_measurements, "Load measurement dict")
+        Publisher.subscribe(self._rm_incomplete_measurements,
+                            "Remove incomplete measurements")
 
     def _load_measurements(self, pubsub_evt):
         try:
@@ -206,6 +208,27 @@ class MeasurementManager(object):
             Publisher.sendMessage('Render volume viewer')
         else:
             Publisher.sendMessage('Update slice viewer')
+
+    def _rm_incomplete_measurements(self, pubsub_evt):
+        if self.current is None:
+            return 
+
+        mr = self.current[1]
+        print "RM INC M", self.current, mr.IsComplete()
+        if not mr.IsComplete():
+            print "---To REMOVE"
+            actors = mr.GetActors()
+            slice_number = self.current[0].slice_number
+            Publisher.sendMessage(('Remove actors ' + str(self.current[0].location)),
+                                  (actors, slice_number))
+            if self.current[0].location == const.SURFACE:
+                Publisher.sendMessage('Render volume viewer')
+            else:
+                Publisher.sendMessage('Update slice viewer')
+
+            if self.measures:
+                self.measures.pop()
+            self.current = None
 
 
 class Measurement():

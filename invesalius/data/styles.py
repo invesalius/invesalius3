@@ -314,6 +314,9 @@ class LinearMeasureInteractorStyle(DefaultInteractorStyle):
                                    slice_number, self.radius))
             self.viewer.interactor.Render()
 
+    def CleanUp(self):
+        Publisher.sendMessage("Remove incomplete measurements")
+
 
 class AngularMeasureInteractorStyle(DefaultInteractorStyle):
     """
