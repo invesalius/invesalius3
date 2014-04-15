@@ -399,6 +399,11 @@ class MaskProperties(wx.Panel):
         for i in list_index:
             self.combo_mask_name.Delete(i)
 
+        if self.combo_mask_name.IsEmpty():
+            self.combo_mask_name.SetValue('')
+            self.Disable()
+
+
     def __bind_events_wx(self):
         self.Bind(grad.EVT_THRESHOLD_CHANGED, self.OnSlideChanged, self.gradient)
         self.Bind(grad.EVT_THRESHOLD_CHANGING, self.OnSlideChanging, self.gradient)
@@ -454,6 +459,8 @@ class MaskProperties(wx.Panel):
         self.button_colour.SetColour(colour)
 
     def AddMask(self, evt_pubsub):
+        if self.combo_mask_name.IsEmpty():
+            self.Enable()
         mask_name = evt_pubsub.data[1]
         mask_thresh = evt_pubsub.data[2]
         mask_colour = [int(c*255) for c in evt_pubsub.data[3]]
