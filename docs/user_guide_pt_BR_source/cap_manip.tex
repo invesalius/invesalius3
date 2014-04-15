@@ -411,8 +411,8 @@ O modo normal é a visualização padrão, ou seja, sem nenhum tipo de projeçã
 \end{figure}
 
 \subsection{MaxIP}
-
-MaxIP também é conhecido como MIP (\textit{Maximum Intensity Projection}), o método seleciona somente os pixels que possuem intensidade máxima entre os visitados como mostra a figura~\ref{fig:proj_maxip}. De acordo com a quantidade ou "profundidade" do MaxIP cada pixel é visitado em ordem de sobreposição, por exemplo, para selecionar MaxIP do pixel $(0,0)$ composto por 3 fatias é necessário visitar o pixel $(0,0)$ das fatias $(1,2,3)$ e selecionar o maior valor.
+\label{sec:max_ip}
+MaxIP também é conhecido como MIP (\textit{Maximum Intensity Projection}), o método seleciona somente os voxels que possuem intensidade máxima entre os visitados como mostra a figura~\ref{fig:proj_maxip}. De acordo com a quantidade ou "profundidade" do MaxIP cada voxel é visitado em ordem de sobreposição, por exemplo, para selecionar MaxIP do pixel $(0,0)$ composto por 3 fatias é necessário visitar o pixel $(0,0)$ das fatias $(1,2,3)$ e selecionar o maior valor.
 
 \begin{figure}[H]
 \centering
@@ -432,7 +432,7 @@ Como mostra a figura~\ref{fig:proj_maxip_qtd}, a quantidade de imagens que irá 
 
 \subsection{MinIP}
 
-Ao contrário do MaxIP, o MinIP (\textit{Minimun Intensity Projection}) seleciona somente os pixels que possuem internsidade minima entre os visitados, apresentamos na figura~\ref{fig:proj_minIP} um exemplo. A seleção da quantidade de imagens que irá compor a projeção é feita no inferior da imagem de cada orientação como mostra a figura~\ref{fig:proj_maxip_qtd}.
+Ao contrário do MaxIP, o MinIP (\textit{Minimun Intensity Projection}) seleciona somente os voxels que possuem internsidade minima entre os visitados, apresentamos na figura~\ref{fig:proj_minIP} um exemplo. A seleção da quantidade de imagens que irá compor a projeção é feita no inferior da imagem de cada orientação como mostra a figura~\ref{fig:proj_maxip_qtd}.
 
 \begin{figure}[H]
 \centering
@@ -442,7 +442,7 @@ Ao contrário do MaxIP, o MinIP (\textit{Minimun Intensity Projection}) selecion
 \end{figure}
 
 \subsection{MeanIP}
-A técnica MeanIP (\textit{Mean Intensity Projection}) que é mostrada na figura~\ref{fig:proj_meanIP} compõe a projeção realizando a média dos pixels visitados. Os pixels são visitados da mesma forma dos métodos MaxIP e MinIP. Também é possível definir quantas imagens irão compor a projeção no inferior da imagem de cada orientação como é mostrada na figura~\ref{fig:proj_maxip_qtd}.
+A técnica MeanIP (\textit{Mean Intensity Projection}) que é mostrada na figura~\ref{fig:proj_meanIP} compõe a projeção realizando a média dos voxels visitados. Os voxels são visitados da mesma forma dos métodos MaxIP e MinIP. Também é possível definir quantas imagens irão compor a projeção no inferior da imagem de cada orientação como é mostrada na figura~\ref{fig:proj_maxip_qtd}.
 
 \begin{figure}[H]
 \centering
@@ -452,5 +452,43 @@ A técnica MeanIP (\textit{Mean Intensity Projection}) que é mostrada na figura
 \end{figure}
 
 \subsection{MIDA}
+\label{sub:mida}
+A técnica MIDA (\textit{Maximum Intensity Difference Accumulation}) projeta uma imagem levando em consideração somente os voxels que possuem valores máximos locais. A partir de cada pixel da tela é simulado um raio em direção ao volume, cada voxel é interceptado por cada um destes raios chegando até o final do volume, cada um desses voxels visitados tem o seu valor acumulado, mas são levados em consideração somente se o valor for maior que os valores já visitados anteriormente. A exemplo do MaxIP, é possível selecionar quantas imagens serão utilizadas para acumular os valores. Apresentamos na figura~\ref{fig:proj_MIDA} um exemplo de projeção MIDA.  
 
-A técnica MIDA
+\begin{figure}[H]
+\centering
+\includegraphics[scale=0.18]{proj_MIDA}
+\caption{Projeção MIDA}
+\label{fig:proj_MIDA}
+\end{figure}
+
+Como mostra a figura~\ref{fig:proj_MIDA_inv}, é possível inverter a ordem que os voxels são visitados, bastando selecionar a opção \textbf{Ordem invertida} no canto inferior da tela.
+
+\begin{figure}[H]
+\centering
+\includegraphics[scale=0.18]{proj_MIDA_inv}
+\caption{Projeção MIDA em ordem invertida}
+\label{fig:proj_MIDA_inv}
+\end{figure}
+
+\subsection{Contorno MaxIP}
+
+Compõe a projeção 2D do conjunto de imagens que contém o volume usando a técnica \textit{Contour MaxIP}. A técnica consiste em visualizar contornos presentes na projeção gerada com a técnica MaxIP(\ref{sec:max_ip}). Um exemplo é apresentado na figura~\ref{fig:proj_contorno_maxip}.
+
+\begin{figure}[H]
+\centering
+\includegraphics[scale=0.20]{proj_contornoMaxIP}
+\caption{Projeção de Contorno MaxIP}
+\label{fig:proj_contorno_maxip}
+\end{figure}
+
+\subsection{Contorno MIDA}
+
+Compõe a projeção 2D do conjunto de imagens que contém o volume usando a técnica \textit{Contour MIDA}. A técnica consiste em visualizar contornos presentes na projeção gerada com a técnica MIDA(\ref{sub:mida}). A exemplo do MIDA é possível inverter a ordem que o volume é visitado. Exemplificamos na figura~\ref{fig:proj_contorno_mida}.
+
+\begin{figure}[H]
+\centering
+\includegraphics[scale=0.20]{proj_contornoMIDA}
+\caption{Projeção de Contorno MIDA}
+\label{fig:proj_contorno_mida}
+\end{figure}
