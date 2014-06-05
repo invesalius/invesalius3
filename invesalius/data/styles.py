@@ -17,18 +17,42 @@
 #    detalhes.
 #--------------------------------------------------------------------------
 
+import os
+import tempfile
+
 import vtk
 import wx
 
 from wx.lib.pubsub import pub as Publisher
 
 import constants as const
+import converters
+import numpy as np
+
+from scipy import ndimage
+from scipy.misc import imsave
+from skimage.morphology import watershed
+from skimage import filter
 
 ORIENTATIONS = {
         "AXIAL": const.AXIAL,
         "CORONAL": const.CORONAL,
         "SAGITAL": const.SAGITAL,
         }
+
+BRUSH_FOREGROUND=1
+BRUSH_BACKGROUND=2
+BRUSH_ERASE=0
+
+WATERSHED_OPERATIONS = {_("Erase"): BRUSH_ERASE,
+                        _("Foreground"): BRUSH_FOREGROUND,
+                        _("Background"): BRUSH_BACKGROUND,}
+
+def get_LUT_value(data, window, level):
+    return np.piecewise(data, 
+                        [data <= (level - 0.5 - (window-1)/2),
+                         data > (level - 0.5 + (window-1)/2)],
+                        [0, 255, lambda data: ((data - (level - 0.5))/(window-1) + 0.5)*(255-0)])
 
 class BaseImageInteractorStyle(vtk.vtkInteractorStyleImage):
     def __init__(self, viewer):
@@ -640,6 +664,394 @@ class EditorInteractorStyle(DefaultInteractorStyle):
         return x, y, z
 
 
+class WaterShedInteractorStyle(DefaultInteractorStyle):
+    matrix = None
+    def __init__(self, viewer):
+        DefaultInteractorStyle.__init__(self, viewer)
+
+        self.viewer = viewer
+        self.orientation = self.viewer.orientation
+        self.matrix = None
+
+        self.operation = BRUSH_FOREGROUND
+
+        self.mg_size = 3
+
+        self.picker = vtk.vtkWorldPointPicker()
+
+        self.AddObserver("EnterEvent", self.OnEnterInteractor)
+        self.AddObserver("LeaveEvent", self.OnLeaveInteractor)
+
+        self.RemoveObservers("MouseWheelForwardEvent")
+        self.RemoveObservers("MouseWheelBackwardEvent")
+        self.AddObserver("MouseWheelForwardEvent",self.WOnScrollForward)
+        self.AddObserver("MouseWheelBackwardEvent", self.WOnScrollBackward)
+
+        self.AddObserver("LeftButtonPressEvent", self.OnBrushClick)
+        self.AddObserver("LeftButtonReleaseEvent", self.OnBrushRelease)
+        self.AddObserver("MouseMoveEvent", self.OnBrushMove)
+
+        Publisher.subscribe(self.expand_watershed, 'Expand watershed to 3D ' + self.orientation)
+        Publisher.subscribe(self.set_operation, 'Set watershed operation')
+
+    def SetUp(self):
+        self.viewer.slice_.do_threshold_to_all_slices()
+        mask = self.viewer.slice_.current_mask.matrix
+        mask[0] = 1
+        mask[:, 0, :] = 1
+        mask[:, :, 0] = 1
+        self._create_mask()
+        self.viewer.slice_.to_show_aux = 'watershed'
+        self.viewer.OnScrollBar()
+
+    def CleanUp(self):
+        #self._remove_mask()
+        Publisher.unsubscribe(self.expand_watershed, 'Expand watershed to 3D ' + self.orientation)
+        Publisher.unsubscribe(self.set_operation, 'Set watershed operation')
+        self.RemoveAllObservers()
+        self.viewer.slice_.to_show_aux = ''
+        self.viewer.OnScrollBar()
+
+    def _create_mask(self):
+        if self.matrix is None:
+            try:
+                self.matrix = self.viewer.slice_.aux_matrices['watershed']
+            except KeyError:
+                self.temp_file, self.matrix = self.viewer.slice_.create_temp_mask()
+                self.viewer.slice_.aux_matrices['watershed'] = self.matrix
+
+    def _remove_mask(self):
+        if self.matrix is not None:
+            self.matrix = None
+            os.remove(self.temp_file)
+            print "deleting", self.temp_file
+
+    def set_operation(self, pubsub_evt):
+        self.operation = WATERSHED_OPERATIONS[pubsub_evt.data]
+
+    def OnEnterInteractor(self, obj, evt):
+        if (self.viewer.slice_.buffer_slices[self.orientation].mask is None):
+            return
+        self.viewer.slice_data.cursor.Show()
+        #self.viewer.interactor.SetCursor(wx.StockCursor(wx.CURSOR_BLANK))
+        self.viewer.interactor.Render()
+        
+    def OnLeaveInteractor(self, obj, evt):
+        self.viewer.slice_data.cursor.Show(0)
+        #self.viewer.interactor.SetCursor(wx.StockCursor(wx.CURSOR_DEFAULT))
+        self.viewer.interactor.Render()
+
+    def WOnScrollBackward(self, obj, evt):
+        viewer = self.viewer
+        iren = viewer.interactor
+        if iren.GetControlKey():
+            if viewer.slice_.opacity > 0:
+                viewer.slice_.opacity -= 0.1
+                self.viewer.slice_.buffer_slices['AXIAL'].discard_vtk_mask()
+                self.viewer.slice_.buffer_slices['CORONAL'].discard_vtk_mask()
+                self.viewer.slice_.buffer_slices['SAGITAL'].discard_vtk_mask()
+                viewer.OnScrollBar()
+        else:
+            self.OnScrollBackward(obj, evt)
+
+
+    def WOnScrollForward(self, obj, evt):
+        viewer = self.viewer
+        iren = viewer.interactor
+        if iren.GetControlKey():
+            if viewer.slice_.opacity < 1:
+                viewer.slice_.opacity += 0.1
+                self.viewer.slice_.buffer_slices['AXIAL'].discard_vtk_mask()
+                self.viewer.slice_.buffer_slices['CORONAL'].discard_vtk_mask()
+                self.viewer.slice_.buffer_slices['SAGITAL'].discard_vtk_mask()
+                viewer.OnScrollBar()
+        else:
+            self.OnScrollForward(obj, evt)
+
+
+    def OnBrushClick(self, obj, evt):
+        if (self.viewer.slice_.buffer_slices[self.orientation].mask is None):
+            return
+
+        viewer = self.viewer
+        iren = viewer.interactor
+
+        viewer._set_editor_cursor_visibility(1)
+ 
+        mouse_x, mouse_y = iren.GetEventPosition()
+        render = iren.FindPokedRenderer(mouse_x, mouse_y)
+        slice_data = viewer.get_slice_data(render)
+
+        # TODO: Improve!
+        #for i in self.slice_data_list:
+            #i.cursor.Show(0)
+        slice_data.cursor.Show()
+
+        self.picker.Pick(mouse_x, mouse_y, 0, render)
+        
+        coord = self.get_coordinate_cursor()
+        position = slice_data.actor.GetInput().FindPoint(coord)
+        
+        if position != -1:
+            coord = slice_data.actor.GetInput().GetPoint(position)
+
+        slice_data.cursor.SetPosition(coord)
+
+        cursor = slice_data.cursor
+        position = slice_data.actor.GetInput().FindPoint(coord)
+        radius = cursor.radius
+
+        if position < 0:
+            position = viewer.calculate_matrix_position(coord)
+
+        operation = self.operation
+
+        if operation == BRUSH_FOREGROUND:
+            if iren.GetControlKey():
+                operation = BRUSH_BACKGROUND
+            elif iren.GetShiftKey():
+                operation = BRUSH_ERASE
+        elif operation == BRUSH_BACKGROUND:
+            if iren.GetControlKey():
+                operation = BRUSH_FOREGROUND
+            elif iren.GetShiftKey():
+                operation = BRUSH_ERASE
+
+        n = self.viewer.slice_data.number
+        self.edit_mask_pixel(operation, n, cursor.GetPixels(),
+                                    position, radius, self.orientation)
+        if self.orientation == 'AXIAL':
+            mask = self.matrix[n, :, :]
+        elif self.orientation == 'CORONAL':
+            mask = self.matrix[:, n, :]
+        elif self.orientation == 'SAGITAL':
+            mask = self.matrix[:, :, n]
+        # TODO: To create a new function to reload images to viewer.
+        viewer.OnScrollBar()
+
+    def OnBrushMove(self, obj, evt):
+        if (self.viewer.slice_.buffer_slices[self.orientation].mask is None):
+            return
+
+        viewer = self.viewer
+        iren = viewer.interactor
+
+        viewer._set_editor_cursor_visibility(1)
+ 
+        mouse_x, mouse_y = iren.GetEventPosition()
+        render = iren.FindPokedRenderer(mouse_x, mouse_y)
+        slice_data = viewer.get_slice_data(render)
+
+        # TODO: Improve!
+        #for i in self.slice_data_list:
+            #i.cursor.Show(0)
+
+        self.picker.Pick(mouse_x, mouse_y, 0, render)
+        
+        #if (self.pick.GetViewProp()):
+            #self.interactor.SetCursor(wx.StockCursor(wx.CURSOR_BLANK))
+        #else:
+            #self.interactor.SetCursor(wx.StockCursor(wx.CURSOR_DEFAULT))
+            
+        coord = self.get_coordinate_cursor()
+        position = viewer.slice_data.actor.GetInput().FindPoint(coord)
+
+        # when position == -1 the cursos is not over the image, so is not
+        # necessary to set the cursor position to world coordinate center of
+        # pixel from slice image.
+        if position != -1:
+            coord = slice_data.actor.GetInput().GetPoint(position)
+        slice_data.cursor.SetPosition(coord)
+        #self.__update_cursor_position(slice_data, coord)
+        
+        if (self.left_pressed):
+            cursor = slice_data.cursor
+            position = slice_data.actor.GetInput().FindPoint(coord)
+            radius = cursor.radius
+
+            if position < 0:
+                position = viewer.calculate_matrix_position(coord)
+
+            operation = self.operation
+
+            if operation == BRUSH_FOREGROUND:
+                if iren.GetControlKey():
+                    operation = BRUSH_BACKGROUND
+                elif iren.GetShiftKey():
+                    operation = BRUSH_ERASE
+            elif operation == BRUSH_BACKGROUND:
+                if iren.GetControlKey():
+                    operation = BRUSH_FOREGROUND
+                elif iren.GetShiftKey():
+                    operation = BRUSH_ERASE
+
+            n = self.viewer.slice_data.number
+            self.edit_mask_pixel(operation, n, cursor.GetPixels(),
+                                        position, radius, self.orientation)
+            if self.orientation == 'AXIAL':
+                mask = self.matrix[n, :, :]
+            elif self.orientation == 'CORONAL':
+                mask = self.matrix[:, n, :]
+            elif self.orientation == 'SAGITAL':
+                mask = self.matrix[:, :, n]
+            # TODO: To create a new function to reload images to viewer.
+            viewer.OnScrollBar(update3D=False)
+
+        else:
+            viewer.interactor.Render()
+
+    def OnBrushRelease(self, evt, obj):
+        n = self.viewer.slice_data.number
+        self.viewer.slice_.discard_all_buffers()
+        if self.orientation == 'AXIAL':
+            image = self.viewer.slice_.matrix[n]
+            mask = self.viewer.slice_.current_mask.matrix[n+1, 1:, 1:]
+            self.viewer.slice_.current_mask.matrix[n+1, 0, 0] = 1
+            markers = self.matrix[n]
+
+        elif self.orientation == 'CORONAL':
+            image = self.viewer.slice_.matrix[:, n, :]
+            mask = self.viewer.slice_.current_mask.matrix[1:, n+1, 1:]
+            self.viewer.slice_.current_mask.matrix[0, n+1, 0]
+            markers = self.matrix[:, n, :]
+
+        elif self.orientation == 'SAGITAL':
+            image = self.viewer.slice_.matrix[:, :, n]
+            mask = self.viewer.slice_.current_mask.matrix[1: , 1:, n+1]
+            self.viewer.slice_.current_mask.matrix[0 , 0, n+1]
+            markers = self.matrix[:, :, n]
+
+
+        ww = self.viewer.slice_.window_width
+        wl = self.viewer.slice_.window_level
+        
+        if BRUSH_BACKGROUND in markers and BRUSH_FOREGROUND in markers:
+            tmp_image = ndimage.morphological_gradient(get_LUT_value(image, ww, wl).astype('uint16'), self.mg_size)
+            tmp_mask = watershed(tmp_image, markers)
+
+            if self.viewer.overwrite_mask:
+                mask[:] = 0
+                mask[tmp_mask == 1] = 253
+            else:
+                mask[(tmp_mask==2) & ((mask == 0) | (mask == 2) | (mask == 253))] = 2
+                mask[(tmp_mask==1) & ((mask == 0) | (mask == 2) | (mask == 253))] = 253
+
+
+            self.viewer.slice_.current_mask.was_edited = True
+            self.viewer.slice_.current_mask.clear_history()
+            Publisher.sendMessage('Reload actual slice')
+        else:
+            self.viewer.OnScrollBar(update3D=False)
+
+    def get_coordinate_cursor(self):
+        # Find position
+        x, y, z = self.picker.GetPickPosition()
+        bounds = self.viewer.slice_data.actor.GetBounds()
+        if bounds[0] == bounds[1]:
+            x = bounds[0]
+        elif bounds[2] == bounds[3]:
+            y = bounds[2]
+        elif bounds[4] == bounds[5]:
+            z = bounds[4]
+        return x, y, z
+
+    def edit_mask_pixel(self, operation, n, index, position, radius, orientation):
+        if orientation == 'AXIAL':
+            mask = self.matrix[n, :, :]
+        elif orientation == 'CORONAL':
+            mask = self.matrix[:, n, :]
+        elif orientation == 'SAGITAL':
+            mask = self.matrix[:, :, n]
+
+        spacing = self.viewer.slice_.spacing
+        if hasattr(position, '__iter__'):
+            py, px = position
+            if orientation == 'AXIAL':
+                sx = spacing[0]
+                sy = spacing[1]
+            elif orientation == 'CORONAL':
+                sx = spacing[0]
+                sy = spacing[2]
+            elif orientation == 'SAGITAL':
+                sx = spacing[2]
+                sy = spacing[1]
+
+        else:
+            if orientation == 'AXIAL':
+                sx = spacing[0]
+                sy = spacing[1]
+                py = position / mask.shape[1]
+                px = position % mask.shape[1]
+            elif orientation == 'CORONAL':
+                sx = spacing[0]
+                sy = spacing[2]
+                py = position / mask.shape[1]
+                px = position % mask.shape[1]
+            elif orientation == 'SAGITAL':
+                sx = spacing[2]
+                sy = spacing[1]
+                py = position / mask.shape[1]
+                px = position % mask.shape[1]
+
+        cx = index.shape[1] / 2 + 1
+        cy = index.shape[0] / 2 + 1
+        xi = px - index.shape[1] + cx
+        xf = xi + index.shape[1]
+        yi = py - index.shape[0] + cy
+        yf = yi + index.shape[0]
+
+        if yi < 0:
+            index = index[abs(yi):,:]
+            yi = 0
+        if yf > mask.shape[0]:
+            index = index[:index.shape[0]-(yf-mask.shape[0]), :]
+            yf = mask.shape[0]
+
+        if xi < 0:
+            index = index[:,abs(xi):]
+            xi = 0
+        if xf > mask.shape[1]:
+            index = index[:,:index.shape[1]-(xf-mask.shape[1])]
+            xf = mask.shape[1]
+
+        # Verifying if the points is over the image array.
+        if (not 0 <= xi <= mask.shape[1] and not 0 <= xf <= mask.shape[1]) or \
+           (not 0 <= yi <= mask.shape[0] and not 0 <= yf <= mask.shape[0]):
+            return
+
+        roi_m = mask[yi:yf,xi:xf]
+
+        # Checking if roi_i has at least one element.
+        if roi_m.size:
+            roi_m[index] = operation
+
+    def expand_watershed(self, pubsub_evt):
+        markers = self.matrix
+        image = self.viewer.slice_.matrix
+        mask = self.viewer.slice_.current_mask.matrix[1:, 1:, 1:]
+        ww = self.viewer.slice_.window_width
+        wl = self.viewer.slice_.window_level
+        if BRUSH_BACKGROUND in markers and BRUSH_FOREGROUND in markers:
+            tmp_image = ndimage.morphological_gradient(get_LUT_value(image, ww, wl).astype('uint16'), self.mg_size)
+            tmp_mask = watershed(tmp_image, markers)
+
+            if self.viewer.overwrite_mask:
+                mask[:] = 0
+                mask[tmp_mask == 1] = 253
+            else:
+                mask[(tmp_mask==2) & ((mask == 0) | (mask == 2) | (mask == 253))] = 2
+                mask[(tmp_mask==1) & ((mask == 0) | (mask == 2) | (mask == 253))] = 253
+
+            #mask[:] = tmp_mask
+            self.viewer.slice_.current_mask.matrix[0] = 1
+            self.viewer.slice_.current_mask.matrix[:, 0, :] = 1
+            self.viewer.slice_.current_mask.matrix[:, :, 0] = 1
+
+            self.viewer.slice_.discard_all_buffers()
+            self.viewer.slice_.current_mask.clear_history()
+            Publisher.sendMessage('Reload actual slice')
+
+
 def get_style(style):
     STYLES = {
               const.STATE_DEFAULT: DefaultInteractorStyle,
@@ -653,5 +1065,6 @@ def get_style(style):
               const.STATE_ZOOM_SL: ZoomSLInteractorStyle,
               const.SLICE_STATE_SCROLL: ChangeSliceInteractorStyle,
               const.SLICE_STATE_EDITOR: EditorInteractorStyle,
+              const.SLICE_STATE_WATERSHED: WaterShedInteractorStyle,
              }
     return STYLES[style]
