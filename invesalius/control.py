@@ -127,6 +127,11 @@ class Controller():
             answer = dialog.SaveChangesDialog2(filename)
             if answer:
                 self.ShowDialogSaveProject()
+            self.CloseProject()
+            #Publisher.sendMessage("Enable state project", False)
+            Publisher.sendMessage('Set project name')
+            Publisher.sendMessage("Stop Config Recording")
+            Publisher.sendMessage("Set slice interaction style", const.STATE_DEFAULT)
         # Import project
         dirpath = dialog.ShowImportDirDialog()
         if dirpath and not os.listdir(dirpath):

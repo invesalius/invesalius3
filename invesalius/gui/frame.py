@@ -26,6 +26,8 @@ import webbrowser
 import wx
 import wx.aui
 from wx.lib.pubsub import pub as Publisher
+import wx.lib.agw.toasterbox as TB
+import wx.lib.popupctl as pc
 
 import constants as const
 import default_tasks as tasks
@@ -45,6 +47,19 @@ VIEW_TOOLS = [ID_LAYOUT, ID_TEXT] =\
 
 
 
+class MessageWatershed(wx.PopupWindow):
+    def __init__(self, prnt, msg):
+        wx.PopupWindow.__init__(self, prnt, -1)
+        self.txt = wx.StaticText(self, -1, msg)
+        
+        self.sizer = wx.BoxSizer(wx.HORIZONTAL)
+        self.sizer.Add(self.txt, 1, wx.EXPAND)
+        self.SetSizer(self.sizer)
+
+        self.sizer.Fit(self)
+        self.Layout()
+        self.Update()
+        self.SetAutoLayout(1)
 
 
 
@@ -64,6 +79,8 @@ class Frame(wx.Frame):
         self.Center(wx.BOTH)
         icon_path = os.path.join(const.ICON_DIR, "invesalius.ico")
         self.SetIcon(wx.Icon(icon_path, wx.BITMAP_TYPE_ICO))
+
+        self.mw = None
         
         if sys.platform != 'darwin':
             self.Maximize()
@@ -104,6 +121,7 @@ class Frame(wx.Frame):
         sub(self._SetProjectName, 'Set project name')
         sub(self._ShowContentPanel, 'Show content panel')
         sub(self._ShowImportPanel, 'Show import panel in frame')
+        #sub(self._ShowHelpMessage, 'Show help message')
         sub(self._ShowImportNetwork, 'Show retrieve dicom panel')
         sub(self._ShowTask, 'Show task panel')
         sub(self._UpdateAUI, 'Update AUI')
@@ -116,6 +134,7 @@ class Frame(wx.Frame):
         self.Bind(wx.EVT_SIZE, self.OnSize)
         self.Bind(wx.EVT_MENU, self.OnMenuClick)
         self.Bind(wx.EVT_CLOSE, self.OnClose)
+        #self.Bind(wx.EVT_MOVE, self.OnMove)
 
     def __init_aui(self):
         """
@@ -289,6 +308,14 @@ class Frame(wx.Frame):
         aui_manager.GetPane("Import").Show(0)
         aui_manager.Update()
 
+    def _ShowHelpMessage(self, evt_pubsub):
+        aui_manager = self.aui_manager
+        pos = aui_manager.GetPane("Data").window.GetScreenPosition()
+        msg =  evt_pubsub.data
+        self.mw = MessageWatershed(self, msg)
+        self.mw.SetPosition(pos)
+        self.mw.Show()
+
     def _ShowImportPanel(self, evt_pubsub):
         """
         Show only DICOM import panel.
@@ -377,6 +404,12 @@ class Frame(wx.Frame):
         """
         Publisher.sendMessage(('ProgressBar Reposition'))
         evt.Skip()
+
+
+    def OnMove(self, evt):
+        aui_manager = self.aui_manager
+        pos = aui_manager.GetPane("Data").window.GetScreenPosition()
+        self.mw.SetPosition(pos)
 
     def ShowPreferences(self):
 
