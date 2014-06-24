@@ -665,7 +665,6 @@ class EditorInteractorStyle(DefaultInteractorStyle):
 
 
 class WaterShedInteractorStyle(DefaultInteractorStyle):
-    matrix = None
     def __init__(self, viewer):
         DefaultInteractorStyle.__init__(self, viewer)
 
@@ -695,11 +694,7 @@ class WaterShedInteractorStyle(DefaultInteractorStyle):
         Publisher.subscribe(self.set_operation, 'Set watershed operation')
 
     def SetUp(self):
-        self.viewer.slice_.do_threshold_to_all_slices()
         mask = self.viewer.slice_.current_mask.matrix
-        mask[0] = 1
-        mask[:, 0, :] = 1
-        mask[:, :, 0] = 1
         self._create_mask()
         self.viewer.slice_.to_show_aux = 'watershed'
         self.viewer.OnScrollBar()
@@ -1028,6 +1023,7 @@ class WaterShedInteractorStyle(DefaultInteractorStyle):
     def expand_watershed(self, pubsub_evt):
         markers = self.matrix
         image = self.viewer.slice_.matrix
+        self.viewer.slice_.do_threshold_to_all_slices()
         mask = self.viewer.slice_.current_mask.matrix[1:, 1:, 1:]
         ww = self.viewer.slice_.window_width
         wl = self.viewer.slice_.window_level
