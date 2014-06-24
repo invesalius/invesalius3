@@ -1202,6 +1202,8 @@ class Slice(object):
         thresh_min, thresh_max = self.current_mask.threshold_range
         m = (((slice_matrix >= thresh_min) & (slice_matrix <= thresh_max)) * 255)
         m[mask == 1] = 1
+        m[mask == 2] = 2
+        m[mask == 253] = 253
         m[mask == 254] = 254
         return m.astype('uint8')
 
