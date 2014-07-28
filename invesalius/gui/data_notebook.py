@@ -22,9 +22,9 @@ import sys
 import platform
 
 try:
-    from PIL import Image
-except(ImportError):
     import Image
+except ImportError:
+    from PIL import Image
 
 import wx
 import wx.grid
