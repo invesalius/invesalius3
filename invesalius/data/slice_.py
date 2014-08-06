@@ -487,6 +487,7 @@ class Slice(object):
 
     def GetSlices(self, orientation, slice_number, number_slices,
                   inverted=False, border_size=1.0):
+        print "min max ->", self.matrix.min(), self.matrix.max()
         if self.buffer_slices[orientation].index == slice_number and \
            self._type_projection == const.PROJECTION_NORMAL:
             if self.buffer_slices[orientation].vtk_image:
