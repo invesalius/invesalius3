@@ -214,7 +214,7 @@ def ShowOpenProjectDialog():
     dlg = wx.FileDialog(None, message=_("Open InVesalius 3 project..."),
                         defaultDir="",
                         defaultFile="", wildcard=WILDCARD_OPEN,
-                        style=wx.OPEN|wx.CHANGE_DIR)
+                        style=wx.FD_OPEN|wx.FD_CHANGE_DIR)
 
     # inv3 filter is default
     dlg.SetFilterIndex(0)
@@ -242,7 +242,7 @@ def ShowOpenAnalyzeDialog():
     dlg = wx.FileDialog(None, message=_("Open Analyze file"),
                         defaultDir="",
                         defaultFile="", wildcard=WILDCARD_ANALYZE,
-                        style=wx.OPEN|wx.CHANGE_DIR)
+                        style=wx.FD_OPEN|wx.FD_CHANGE_DIR)
 
     # inv3 filter is default
     dlg.SetFilterIndex(0)
@@ -312,7 +312,7 @@ def ShowSaveAsProjectDialog(default_filename=None):
                         "", # last used directory
                         default_filename,
                         _("InVesalius project (*.inv3)|*.inv3"),
-                        wx.SAVE|wx.OVERWRITE_PROMPT)
+                        wx.FD_SAVE|wx.FD_OVERWRITE_PROMPT)
     #dlg.SetFilterIndex(0) # default is VTI
 
     filename = None
@@ -972,7 +972,7 @@ def ExportPicture(type_=""):
                         "", # last used directory
                         project_name, # filename
                         WILDCARD_SAVE_PICTURE,
-                        wx.SAVE|wx.OVERWRITE_PROMPT)
+                        wx.FD_SAVE|wx.FD_OVERWRITE_PROMPT)
     dlg.SetFilterIndex(1) # default is VTI
 
     if dlg.ShowModal() == wx.ID_OK:

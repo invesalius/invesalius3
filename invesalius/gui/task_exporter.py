@@ -276,7 +276,7 @@ class InnerTaskPanel(wx.Panel):
                             "", # last used directory
                             project_name, # filename
                             WILDCARD_SAVE_MASK,
-                            wx.SAVE|wx.OVERWRITE_PROMPT)
+                            wx.FD_SAVE|wx.FD_OVERWRITE_PROMPT)
         dlg.SetFilterIndex(0) # default is VTI
                                 
         if dlg.ShowModal() == wx.ID_OK:
@@ -312,7 +312,7 @@ class InnerTaskPanel(wx.Panel):
                                 "", # last used directory
                                 project_name, # filename
                                 WILDCARD_SAVE_3D,
-                                wx.SAVE|wx.OVERWRITE_PROMPT)
+                                wx.FD_SAVE|wx.FD_OVERWRITE_PROMPT)
             dlg.SetFilterIndex(3) # default is STL
                                 
             if dlg.ShowModal() == wx.ID_OK:
