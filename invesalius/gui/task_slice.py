@@ -324,7 +324,7 @@ class MaskProperties(wx.Panel):
 
         # Sizer which represents the first line
         line1 = wx.BoxSizer(wx.HORIZONTAL)
-        line1.Add(combo_mask_name, 0, wx.EXPAND|wx.GROW|wx.TOP|wx.RIGHT, 2)
+        line1.Add(combo_mask_name, 1, wx.EXPAND|wx.GROW|wx.TOP|wx.RIGHT, 2)
         line1.Add(button_colour, 0, wx.TOP|wx.LEFT|wx.RIGHT, 2)
 
         ### LINE 2
