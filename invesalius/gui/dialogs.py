@@ -779,7 +779,8 @@ def ShowAboutDialog(parent):
                        "Tatiana Al-Chueyr (former)",
                        "Guilherme Cesar Soares Ruppert (former)",
                        "Fabio de Souza Azevedo (former)",
-                       "Bruno Lara Bottazzini (contributor)"]
+                       "Bruno Lara Bottazzini (contributor)",
+                       "Olly Betts (patches to wxPython3)"]
 
     info.Translators = ["Alex P. Natsios",
                         "Andreas Loupasakis",
