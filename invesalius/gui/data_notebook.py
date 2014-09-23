@@ -162,16 +162,16 @@ class MeasureButtonControlPanel(wx.Panel):
         button_new = pbtn.PlateButton(self, BTN_NEW, "",
                                      BMP_NEW,
                                      style=button_style,
-                                     size = wx.Size(18, 18))
+                                     size = wx.Size(24, 20))
         self.button_new = button_new
         button_remove = pbtn.PlateButton(self, BTN_REMOVE, "",
                                          BMP_REMOVE,
                                          style=button_style,
-                                         size = wx.Size(18, 18))
+                                         size = wx.Size(24, 20))
         button_duplicate = pbtn.PlateButton(self, BTN_DUPLICATE, "",
                                             BMP_DUPLICATE,
                                             style=button_style,
-                                            size = wx.Size(18, 18))
+                                            size = wx.Size(24, 20))
         button_duplicate.Disable()
 
         # Add all controls to gui
@@ -276,15 +276,15 @@ class ButtonControlPanel(wx.Panel):
         button_new = pbtn.PlateButton(self, BTN_NEW, "",
                                      BMP_NEW,
                                      style=button_style,
-                                     size = wx.Size(18, 18))
+                                     size = wx.Size(24, 20))
         button_remove = pbtn.PlateButton(self, BTN_REMOVE, "",
                                          BMP_REMOVE,
                                          style=button_style,
-                                         size = wx.Size(18, 18))
+                                         size = wx.Size(24, 20))
         button_duplicate = pbtn.PlateButton(self, BTN_DUPLICATE, "",
                                             BMP_DUPLICATE,
                                             style=button_style,
-                                            size = wx.Size(18, 18))
+                                            size = wx.Size(24, 20))
 
         # Add all controls to gui
         sizer = wx.BoxSizer(wx.HORIZONTAL)
@@ -444,7 +444,7 @@ class MasksListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
         self.InsertColumn(1, _("Name"))
         self.InsertColumn(2, _("Threshold"), wx.LIST_FORMAT_RIGHT)
         
-        self.SetColumnWidth(0, 20)
+        self.SetColumnWidth(0, 25)
         self.SetColumnWidth(1, 120)
         self.SetColumnWidth(2, 90)
         
@@ -595,15 +595,15 @@ class SurfaceButtonControlPanel(wx.Panel):
         button_new = pbtn.PlateButton(self, BTN_NEW, "",
                                      BMP_NEW,
                                      style=button_style,
-                                     size = wx.Size(18, 18))
+                                     size = wx.Size(24, 20))
         button_remove = pbtn.PlateButton(self, BTN_REMOVE, "",
                                          BMP_REMOVE,
                                          style=button_style,
-                                         size = wx.Size(18, 18))
+                                         size = wx.Size(24, 20))
         button_duplicate = pbtn.PlateButton(self, BTN_DUPLICATE, "",
                                             BMP_DUPLICATE,
                                             style=button_style,
-                                            size = wx.Size(18, 18))
+                                            size = wx.Size(24, 20))
 
         # Add all controls to gui
         sizer = wx.BoxSizer(wx.HORIZONTAL)
@@ -768,7 +768,7 @@ class SurfacesListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
         self.InsertColumn(2, _(u"Volume (mm³)"))
         self.InsertColumn(3, _("Transparency"), wx.LIST_FORMAT_RIGHT)
         
-        self.SetColumnWidth(0, 20)
+        self.SetColumnWidth(0, 25)
         self.SetColumnWidth(1, 85)
         self.SetColumnWidth(2, 85)
         self.SetColumnWidth(3, 80)
@@ -1008,7 +1008,7 @@ class MeasuresListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
         self.InsertColumn(3, _("Type"))
         self.InsertColumn(4, _("Value"), wx.LIST_FORMAT_RIGHT)
         
-        self.SetColumnWidth(0, 20)
+        self.SetColumnWidth(0, 25)
         self.SetColumnWidth(1, 65)
         self.SetColumnWidth(2, 55)
         self.SetColumnWidth(3, 50)
@@ -1199,7 +1199,7 @@ class AnnotationsListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
         self.InsertColumn(2, _("Type"), wx.LIST_FORMAT_CENTER)
         self.InsertColumn(3, _("Value"))
         
-        self.SetColumnWidth(0, 20)
+        self.SetColumnWidth(0, 25)
         self.SetColumnWidth(1, 90)
         self.SetColumnWidth(2, 50)
         self.SetColumnWidth(3, 120)
