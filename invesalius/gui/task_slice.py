@@ -126,7 +126,7 @@ class InnerTaskPanel(wx.Panel):
         # Add line sizers into main sizer
         main_sizer = wx.BoxSizer(wx.VERTICAL)
         main_sizer.Add(line_new, 0,wx.GROW|wx.EXPAND|wx.LEFT|wx.RIGHT|wx.TOP, 5)
-        main_sizer.Add(fold_panel, 6, wx.GROW|wx.EXPAND|wx.ALL, 5)
+        main_sizer.Add(fold_panel, 5, wx.GROW|wx.EXPAND|wx.ALL, 5)
         main_sizer.AddSizer(line_sizer, 1, wx.GROW|wx.EXPAND)
         main_sizer.Fit(self)
 
