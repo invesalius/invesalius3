@@ -94,9 +94,9 @@ class InnerTaskPanel(wx.Panel):
         BMP_OPEN_PROJECT = wx.Bitmap("../icons/file_open.png", wx.BITMAP_TYPE_PNG)
 
         bmp_list = [BMP_IMPORT, BMP_NET, BMP_OPEN_PROJECT]
-        for bmp in bmp_list:
-            bmp.SetWidth(25)
-            bmp.SetHeight(25)
+        #for bmp in bmp_list:
+            #bmp.SetWidth(25)
+            #bmp.SetHeight(25)
 
         # Buttons related to hyperlinks
         button_style = pbtn.PB_STYLE_SQUARE | pbtn.PB_STYLE_DEFAULT

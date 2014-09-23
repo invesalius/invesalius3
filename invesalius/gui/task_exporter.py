@@ -160,26 +160,28 @@ class InnerTaskPanel(wx.Panel):
         if sys.platform == 'darwin':
             BMP_EXPORT_SURFACE = wx.Bitmap(\
                                   "../icons/surface_export_original.png",
-                                  wx.BITMAP_TYPE_PNG)
+                                  wx.BITMAP_TYPE_PNG).ConvertToImage()\
+                                          .Rescale(25, 25).ConvertToBitmap()
             BMP_TAKE_PICTURE = wx.Bitmap(\
                                  "../icons/tool_photo_original.png",
-                                 wx.BITMAP_TYPE_PNG)
+                                 wx.BITMAP_TYPE_PNG).ConvertToImage()\
+                                          .Rescale(25, 25).ConvertToBitmap()
+
             #BMP_EXPORT_MASK = wx.Bitmap("../icons/mask.png",
             #                            wx.BITMAP_TYPE_PNG)
         else:
             BMP_EXPORT_SURFACE = wx.Bitmap("../icons/surface_export.png",
-                                        wx.BITMAP_TYPE_PNG)
+                                        wx.BITMAP_TYPE_PNG).ConvertToImage()\
+                                          .Rescale(25, 25).ConvertToBitmap()
+
             BMP_TAKE_PICTURE = wx.Bitmap("../icons/tool_photo.png",
-                                     wx.BITMAP_TYPE_PNG)
+                                     wx.BITMAP_TYPE_PNG).ConvertToImage()\
+                                          .Rescale(25, 25).ConvertToBitmap()
+
             #BMP_EXPORT_MASK = wx.Bitmap("../icons/mask_small.png",
             #                            wx.BITMAP_TYPE_PNG)
 
 
-        bmp_list = [BMP_TAKE_PICTURE, BMP_EXPORT_SURFACE]#,
-        #            BMP_EXPORT_MASK]
-        for bmp in bmp_list:
-            bmp.SetWidth(25)
-            bmp.SetHeight(25)
 
         # Buttons related to hyperlinks
         button_style = pbtn.PB_STYLE_SQUARE | pbtn.PB_STYLE_DEFAULT

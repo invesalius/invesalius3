@@ -70,8 +70,8 @@ class InnerTaskPanel(wx.Panel):
 
         # Image(s) for buttons
         BMP_ADD = wx.Bitmap("../icons/object_add.png", wx.BITMAP_TYPE_PNG)
-        BMP_ADD.SetWidth(25)
-        BMP_ADD.SetHeight(25)
+        #BMP_ADD.SetWidth(25)
+        #BMP_ADD.SetHeight(25)
 
         # Button for creating new surface
         button_new_mask = pbtn.PlateButton(self, BTN_NEW, "", BMP_ADD, style=\
