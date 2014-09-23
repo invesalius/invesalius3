@@ -113,10 +113,7 @@ class Panel(wx.Panel):
 # Lower fold panel
 class LowerTaskPanel(wx.Panel):
     def __init__(self, parent):
-        wx.Panel.__init__(self, parent, pos=wx.Point(5, 5),
-        #                  size=wx.Size(280, 700))
-                           size=wx.Size(280, 420))
-
+        wx.Panel.__init__(self, parent)
         fold_panel = fpb.FoldPanelBar(self, -1, wx.DefaultPosition,
                                       self.GetSize(),FPB_DEFAULT_STYLE,
                                       fpb.FPB_COLLAPSE_TO_BOTTOM)
@@ -182,9 +179,7 @@ class LowerTaskPanel(wx.Panel):
 # Upper fold panel
 class UpperTaskPanel(wx.Panel):
     def __init__(self, parent):
-        wx.Panel.__init__(self, parent, pos=wx.Point(5, 5),
-                          size=wx.Size(280, 656))
-
+        wx.Panel.__init__(self, parent)
         fold_panel = fpb.FoldPanelBar(self, -1, wx.DefaultPosition,
                                       self.GetSize(),FPB_DEFAULT_STYLE,
                                       fpb.FPB_SINGLE_FOLD)
