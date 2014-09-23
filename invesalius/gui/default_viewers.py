@@ -330,7 +330,7 @@ class VolumeViewerCover(wx.Panel):
 
 class VolumeToolPanel(wx.Panel):
     def __init__(self, parent):
-        wx.Panel.__init__(self, parent, size = (10,100))
+        wx.Panel.__init__(self, parent)
 
         # VOLUME RAYCASTING BUTTON
         BMP_RAYCASTING = wx.Bitmap("../icons/volume_raycasting.png",
@@ -346,15 +346,15 @@ class VolumeToolPanel(wx.Panel):
 
         button_raycasting = pbtn.PlateButton(self, BUTTON_RAYCASTING,"",
                 BMP_RAYCASTING, style=pbtn.PB_STYLE_SQUARE,
-                size=(24,24))
+                size=(32,32))
 
         button_stereo = pbtn.PlateButton(self, BUTTON_3D_STEREO,"",
                 BMP_3D_STEREO, style=pbtn.PB_STYLE_SQUARE,
-                    size=(24,24))
+                    size=(32,32))
 
         button_slice_plane = self.button_slice_plane = pbtn.PlateButton(self, BUTTON_SLICE_PLANE,"",
         BMP_SLICE_PLANE, style=pbtn.PB_STYLE_SQUARE,
-        size=(24,24))
+        size=(32,32))
 
         self.button_raycasting = button_raycasting
         self.button_stereo = button_stereo
@@ -363,13 +363,13 @@ class VolumeToolPanel(wx.Panel):
         BMP_FRONT = wx.Bitmap(ID_TO_BMP[const.VOL_FRONT][1],
                               wx.BITMAP_TYPE_PNG)
         button_view = pbtn.PlateButton(self, BUTTON_VIEW, "",
-                                        BMP_FRONT, size=(24,24),
+                                        BMP_FRONT, size=(32,32),
                                         style=pbtn.PB_STYLE_SQUARE)
         self.button_view = button_view
 
         # VOLUME COLOUR BUTTON
         if sys.platform == 'linux2':
-            size = (28,28)
+            size = (32,32)
             sp = 2
         else:
             size = (24,24)
