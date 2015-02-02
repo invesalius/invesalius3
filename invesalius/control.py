@@ -127,6 +127,11 @@ class Controller():
             answer = dialog.SaveChangesDialog2(filename)
             if answer:
                 self.ShowDialogSaveProject()
+            self.CloseProject()
+            #Publisher.sendMessage("Enable state project", False)
+            Publisher.sendMessage('Set project name')
+            Publisher.sendMessage("Stop Config Recording")
+            Publisher.sendMessage("Set slice interaction style", const.STATE_DEFAULT)
         # Import project
         dirpath = dialog.ShowImportDirDialog()
         if dirpath and not os.listdir(dirpath):
@@ -188,7 +193,7 @@ class Controller():
                     Publisher.sendMessage("Enable state project", False)
                     Publisher.sendMessage('Set project name')
                     Publisher.sendMessage("Stop Config Recording")
-                    Publisher.sendMessage("Exit")
+                    #Publisher.sendMessage("Exit")
                 elif answer == 1:
                     self.ShowDialogSaveProject()
                     utils.debug("Save changes and close")
@@ -196,7 +201,7 @@ class Controller():
                     Publisher.sendMessage("Enable state project", False)
                     Publisher.sendMessage('Set project name')
                     Publisher.sendMessage("Stop Config Recording")
-                    Publisher.sendMessage("Exit")
+                    #Publisher.sendMessage("Exit")
                 elif answer == -1:
                     utils.debug("Cancel")
             else:
@@ -204,11 +209,11 @@ class Controller():
                 Publisher.sendMessage("Enable state project", False)
                 Publisher.sendMessage('Set project name')
                 Publisher.sendMessage("Stop Config Recording")
-                Publisher.sendMessage("Exit")
+                #Publisher.sendMessage("Exit")
 
         else:
             Publisher.sendMessage('Stop Config Recording')
-            Publisher.sendMessage('Exit')
+            #Publisher.sendMessage('Exit')
 
 
 ###########################
@@ -253,10 +258,11 @@ class Controller():
         mask._set_class_index(proj.last_mask_index)
         self.mask_dict_copy = proj.mask_dict.copy()
 
+        Publisher.sendMessage('Update threshold limits list',
+                                   proj.threshold_range)
+
         self.LoadProject()
 
-        Publisher.sendMessage('Update threshold limits',
-                                   proj.threshold_range)
         session = ses.Session()
         session.OpenProject(filepath)
         Publisher.sendMessage("Enable state project", True)
@@ -405,7 +411,7 @@ class Controller():
                                        (mask_name, thresh, colour))
 
         Publisher.sendMessage('Load measurement dict',
-                                    proj.measurement_dict)
+                                    (proj.measurement_dict, self.Slice.spacing))
 
         Publisher.sendMessage(('Set scroll position', 'AXIAL'),proj.matrix_shape[0]/2)
         Publisher.sendMessage(('Set scroll position', 'SAGITAL'),proj.matrix_shape[1]/2)
@@ -447,7 +453,7 @@ class Controller():
         self.Slice.window_width = proj.window
         self.Slice.spacing = header.get_zooms()[:3]
 
-        Publisher.sendMessage('Update threshold limits',
+        Publisher.sendMessage('Update threshold limits list',
                                    proj.threshold_range)
 
     def CreateDicomProject(self, dicom, matrix, matrix_filename):
@@ -468,7 +474,7 @@ class Controller():
                     name_to_const[dicom.image.orientation_label]
         proj.window = float(dicom.image.window)
         proj.level = float(dicom.image.level)
-        proj.threshold_range = (-1024, 3033)
+        proj.threshold_range = int(matrix.min()), int(matrix.max())
         proj.spacing = self.Slice.spacing
 
         ######
@@ -523,7 +529,8 @@ class Controller():
         if resolution_percentage < 1.0:
             re_dialog = dialog.ResizeImageDialog()
             re_dialog.SetValue(int(resolution_percentage*100))
-            re_dialog_value = re_dialog.ShowModal()  
+            re_dialog_value = re_dialog.ShowModal()
+            re_dialog.Close() 
             
             if re_dialog_value == wx.ID_OK:
                 percentage = re_dialog.GetValue()
@@ -565,7 +572,7 @@ class Controller():
         self.Slice.window_level = wl
         self.Slice.window_width = ww
 
-        Publisher.sendMessage('Update threshold limits', scalar_range)
+        Publisher.sendMessage('Update threshold limits list', scalar_range)
 
         return self.matrix, self.filename, dicom
 

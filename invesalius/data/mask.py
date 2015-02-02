@@ -220,6 +220,7 @@ class Mask():
         mask['visible'] = self.is_shown
         mask['mask_file'] = mask_filename
         mask['mask_shape'] = self.matrix.shape
+        mask['edited'] = self.was_edited
 
         plist_filename = filename + '.plist'
         #plist_filepath = os.path.join(dir_temp, plist_filename)
@@ -243,6 +244,8 @@ class Mask():
         self.is_shown = mask['visible']
         mask_file = mask['mask_file']
         shape = mask['mask_shape']
+        self.was_edited = mask.get('edited', False)
+
         dirpath = os.path.abspath(os.path.split(filename)[0])
         path = os.path.join(dirpath, mask_file)
         self._open_mask(path, tuple(shape))
@@ -288,3 +291,4 @@ class Mask():
     def __del__(self):
         if self.is_shown:
             self.history._config_undo_redo(False)
+        os.remove(self.temp_file)

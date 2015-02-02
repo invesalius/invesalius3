@@ -168,7 +168,7 @@ class InnerTaskPanel(wx.Panel):
             surface_options = dialog.GetValue()
 
             Publisher.sendMessage('Create surface from index', surface_options)
-            dialog.Destroy()
+        dialog.Destroy()
         if evt:
             evt.Skip()
 

@@ -21,10 +21,10 @@
 import sys
 import platform
 
-if float(platform.python_version()[0:3]) > 2.6:
-    import Image
-else:
+try:
     from PIL import Image
+except(ImportError):
+    import Image
 
 import wx
 import wx.grid
@@ -322,6 +322,7 @@ class ButtonControlPanel(wx.Panel):
             if mask_name:
                 Publisher.sendMessage('Create new mask',
                                             (mask_name, thresh, colour))
+        dialog.Destroy()
 
     def OnRemove(self):
         self.parent.listctrl.RemoveMasks()
@@ -365,6 +366,7 @@ class MasksListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
                                  'Change mask colour in notebook')
 
         Publisher.subscribe(self.OnChangeCurrentMask, 'Change mask selected')
+        Publisher.subscribe(self.__hide_current_mask, 'Hide current mask')
         Publisher.subscribe(self.OnCloseProject, 'Close project data')
 
     def OnKeyEvent(self, event):
@@ -431,6 +433,10 @@ class MasksListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
         for key in self.mask_list_index.keys():
             if key != mask_index:
                 self.SetItemImage(key, 0)
+
+    def __hide_current_mask(self, pubsub_evt):
+        print self.mask_list_index.keys()
+        self.SetItemImage(self.current_index, 0)
 
     def __init_columns(self):
         
@@ -636,7 +642,7 @@ class SurfaceButtonControlPanel(wx.Panel):
             surface_options = dialog.GetValue()
 
             Publisher.sendMessage('Create surface from index', surface_options)
-            dialog.Destroy()
+        dialog.Destroy()
 
     def OnRemove(self):
         self.parent.listctrl.RemoveSurfaces()
@@ -1064,7 +1070,10 @@ class MeasuresListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
                                        (index, visibility))
 
     def OnLoadData(self, pubsub_evt):
-        items_dict = pubsub_evt.data
+        try:
+            items_dict, spacing = pubsub_evt.data
+        except ValueError:
+            items_dict = pubsub_evt.data
         for i in items_dict:
             m = items_dict[i]
             image = self.CreateColourBitmap(m.colour)

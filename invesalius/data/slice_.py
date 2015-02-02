@@ -33,6 +33,12 @@ import utils
 
 from mask import Mask
 from project import Project
+from data import mips
+
+OTHER=0
+PLIST=1
+WIDGET=2
+
 
 class SliceBuffer(object):
     """ 
@@ -66,9 +72,6 @@ class SliceBuffer(object):
         self.vtk_mask = None
 
 
-
-
-
 class Slice(object):
     __metaclass__= utils.Singleton
     # Only one slice will be initialized per time (despite several viewers
@@ -79,7 +82,16 @@ class Slice(object):
         self.imagedata = None
         self.current_mask = None
         self.blend_filter = None
-        self.matrix = None
+        self.histogram = None
+        self._matrix = None
+        self.aux_matrices = {}
+        self.state = const.STATE_DEFAULT
+
+        self.to_show_aux = ''
+
+        self._type_projection = const.PROJECTION_NORMAL
+        self.n_border = const.PROJECTION_BORDER_SIZE
+
         self.spacing = (1.0, 1.0, 1.0)
 
         self.number_of_colours = 256
@@ -94,7 +106,23 @@ class Slice(object):
         self.num_gradient = 0
         self.interaction_style = st.StyleStateManager()
 
+        self.values = None
+        self.nodes = None
+
+        self.from_ = OTHER
         self.__bind_events()
+        self.opacity = 0.8
+
+    @property
+    def matrix(self):
+        return self._matrix
+
+    @matrix.setter
+    def matrix(self, value):
+        self._matrix = value
+        i, e = value.min(), value.max()
+        r = int(e) - int(i)
+        self.histogram = numpy.histogram(self._matrix, r, (i, e))[0]
 
     def __bind_events(self):
         # General slice control
@@ -115,6 +143,7 @@ class Slice(object):
                                 'Change mask colour')
         Publisher.subscribe(self.__set_mask_name, 'Change mask name')
         Publisher.subscribe(self.__show_mask, 'Show mask')
+        Publisher.subscribe(self.__hide_current_mask, 'Hide current mask')
 
         Publisher.subscribe(self.__set_current_mask_threshold_limits,
                                         'Update threshold limits')
@@ -124,6 +153,13 @@ class Slice(object):
 
         Publisher.subscribe(self.UpdateColourTableBackground,\
                                  'Change colour table from background image')
+
+        Publisher.subscribe(self.UpdateColourTableBackgroundPlist,\
+                                 'Change colour table from background image from plist')
+
+        Publisher.subscribe(self.UpdateColourTableBackgroundWidget,\
+                                 'Change colour table from background image from widget')
+        Publisher.subscribe(self._set_projection_type, 'Set projection type')
 
         Publisher.subscribe(self.InputImageWidget, 'Input Image in the widget')
 
@@ -155,6 +191,11 @@ class Slice(object):
             return shape[1] - 1
         elif orientation == 'SAGITAL':
             return shape[2] - 1
+
+    def discard_all_buffers(self):
+        for buffer_ in self.buffer_slices.values():
+            buffer_.discard_vtk_mask()
+            buffer_.discard_mask()
 
     def OnRemoveMasks(self, pubsub_evt):
         selected_items = pubsub_evt.data
@@ -197,6 +238,7 @@ class Slice(object):
         if (state in const.SLICE_STYLES):
             new_state = self.interaction_style.AddState(state)
             Publisher.sendMessage('Set slice interaction style', new_state)
+        self.state = state
 
     def OnDisableStyle(self, pubsub_evt):
         state = pubsub_evt.data
@@ -206,14 +248,39 @@ class Slice(object):
 
             if (state == const.SLICE_STATE_EDITOR):
                 Publisher.sendMessage('Set interactor default cursor')
+            self.state = new_state
 
     def OnCloseProject(self, pubsub_evt):
         self.CloseProject()
 
     def CloseProject(self):
         self.imagedata = None
+        f = self._matrix.filename
+        self._matrix._mmap.close()
+        self._matrix  = None
+        os.remove(f)
         self.current_mask = None
+
+        for name in self.aux_matrices:
+            m = self.aux_matrices[name]
+            f = m.filename
+            m._mmap.close()
+            m = None
+            os.remove(f)
+        self.aux_matrices = {}
+
+        self.values = None
+        self.nodes = None
+        self.from_= OTHER
+        self.state = const.STATE_DEFAULT
+
+        self.number_of_colours = 256
+        self.saturation_range = (0, 0)
+        self.hue_range = (0, 0)
+        self.value_range = (0, 1)
+
         Publisher.sendMessage('Select first item from slice menu')
+
         #self.blend_filter = None
         #self.blend_filter = None
         #self.num_gradient = 0
@@ -260,6 +327,16 @@ class Slice(object):
         self.current_mask.matrix[:] = 0
         self.current_mask.clear_history()
 
+        to_reload = False
+        if threshold_range != self.current_mask.threshold_range:
+            print "<<<<<<<<<<<<<<<< DIFERENT >>>>>>>>>>>>>>>>>>>>>>>"
+            to_reload = True
+            for orientation in self.buffer_slices:
+                self.buffer_slices[orientation].discard_vtk_mask()
+                self.SetMaskThreshold(index, threshold_range,
+                                      self.buffer_slices[orientation].index,
+                                      orientation)
+
         # TODO: merge this code with apply_slice_buffer_to_mask
         b_mask = self.buffer_slices["AXIAL"].mask
         n = self.buffer_slices["AXIAL"].index + 1
@@ -275,6 +352,9 @@ class Slice(object):
         n = self.buffer_slices["SAGITAL"].index + 1
         self.current_mask.matrix[1:, 1:, n] = b_mask
         self.current_mask.matrix[0, 0, n] = 1
+
+        if to_reload:
+            Publisher.sendMessage('Reload actual slice')
 
     def __set_current_mask_threshold_actual_slice(self, evt_pubsub):
         threshold_range = evt_pubsub.data
@@ -310,6 +390,22 @@ class Slice(object):
             self.ShowMask(index, value)
             if not value:
                 Publisher.sendMessage('Select mask name in combo', -1)
+
+            if self._type_projection != const.PROJECTION_NORMAL:
+                self.SetTypeProjection(const.PROJECTION_NORMAL)
+                Publisher.sendMessage('Reload actual slice')
+
+    def __hide_current_mask(self, pubsub_evt):
+        if self.current_mask:
+            index = self.current_mask.index
+            value = False
+            Publisher.sendMessage('Show mask', (index, value))
+
+    def create_temp_mask(self):
+        temp_file = tempfile.mktemp()
+        shape = self.matrix.shape
+        matrix = numpy.memmap(temp_file, mode='w+', dtype='uint8', shape=shape)
+        return temp_file, matrix
 
     def edit_mask_pixel(self, operation, index, position, radius, orientation):
         mask = self.buffer_slices[orientation].mask
@@ -367,31 +463,39 @@ class Slice(object):
             xf = image.shape[1]
 
         # Verifying if the points is over the image array.
-        if (not 0 < xi < image.shape[1] and not 0 < xf < image.shape[1]) or \
-           (not 0 < yi < image.shape[0] and not 0 < yf < image.shape[0]):
+        if (not 0 <= xi <= image.shape[1] and not 0 <= xf <= image.shape[1]) or \
+           (not 0 <= yi <= image.shape[0] and not 0 <= yf <= image.shape[0]):
             return
+
 
         roi_m = mask[yi:yf,xi:xf]
         roi_i = image[yi:yf, xi:xf]
 
-        if operation == const.BRUSH_THRESH:
-            # It's a trick to make points between threshold gets value 254
-            # (1 * 253 + 1) and out ones gets value 1 (0 * 253 + 1).
-            roi_m[index] = (((roi_i[index] >= thresh_min) 
-                             & (roi_i[index] <= thresh_max)) * 253) + 1
-        elif operation == const.BRUSH_DRAW:
-            roi_m[index] = 254
-        elif operation == const.BRUSH_ERASE:
-            roi_m[index] = 1
-        self.buffer_slices[orientation].discard_vtk_mask()
+        # Checking if roi_i has at least one element.
+        if roi_i.size:
+            if operation == const.BRUSH_THRESH:
+                # It's a trick to make points between threshold gets value 254
+                # (1 * 253 + 1) and out ones gets value 1 (0 * 253 + 1).
+                roi_m[index] = (((roi_i[index] >= thresh_min)
+                                 & (roi_i[index] <= thresh_max)) * 253) + 1
+            elif operation == const.BRUSH_DRAW:
+                roi_m[index] = 254
+            elif operation == const.BRUSH_ERASE:
+                roi_m[index] = 1
+            self.buffer_slices[orientation].discard_vtk_mask()
 
 
-    def GetSlices(self, orientation, slice_number):
-        if self.buffer_slices[orientation].index == slice_number:
+    def GetSlices(self, orientation, slice_number, number_slices,
+                  inverted=False, border_size=1.0):
+        print "min max ->", self.matrix.min(), self.matrix.max()
+        if self.buffer_slices[orientation].index == slice_number and \
+           self._type_projection == const.PROJECTION_NORMAL:
             if self.buffer_slices[orientation].vtk_image:
                 image = self.buffer_slices[orientation].vtk_image
             else:
-                n_image = self.get_image_slice(orientation, slice_number)
+                n_image = self.get_image_slice(orientation, slice_number,
+                                               number_slices, inverted,
+                                               border_size)
                 image = converters.to_vtk(n_image, self.spacing, slice_number, orientation)
                 ww_wl_image = self.do_ww_wl(image)
                 image = self.do_colour_image(ww_wl_image)
@@ -403,7 +507,7 @@ class Slice(object):
                     print "Do not getting from buffer"
                     n_mask = self.get_mask_slice(orientation, slice_number)
                     mask = converters.to_vtk(n_mask, self.spacing, slice_number, orientation)
-                    mask = self.do_colour_mask(mask)
+                    mask = self.do_colour_mask(mask, self.opacity)
                     self.buffer_slices[orientation].mask = n_mask
                 final_image = self.do_blend(image, mask)
                 self.buffer_slices[orientation].vtk_mask = mask
@@ -411,7 +515,8 @@ class Slice(object):
                 final_image = image
             self.buffer_slices[orientation].vtk_image = image
         else:
-            n_image = self.get_image_slice(orientation, slice_number)
+            n_image = self.get_image_slice(orientation, slice_number,
+                                           number_slices, inverted, border_size)
             image = converters.to_vtk(n_image, self.spacing, slice_number, orientation)
             ww_wl_image = self.do_ww_wl(image)
             image = self.do_colour_image(ww_wl_image)
@@ -419,7 +524,7 @@ class Slice(object):
             if self.current_mask and self.current_mask.is_shown:
                 n_mask = self.get_mask_slice(orientation, slice_number)
                 mask = converters.to_vtk(n_mask, self.spacing, slice_number, orientation)
-                mask = self.do_colour_mask(mask)
+                mask = self.do_colour_mask(mask, self.opacity)
                 final_image = self.do_blend(image, mask)
             else:
                 n_mask = None
@@ -432,19 +537,160 @@ class Slice(object):
             self.buffer_slices[orientation].vtk_image = image
             self.buffer_slices[orientation].vtk_mask = mask
 
+        if self.to_show_aux == 'watershed' and self.current_mask.is_shown:
+            m = self.get_aux_slice('watershed', orientation, slice_number)
+            tmp_vimage = converters.to_vtk(m, self.spacing, slice_number, orientation)
+            cimage = self.do_custom_colour(tmp_vimage, {0: (0.0, 0.0, 0.0, 0.0),
+                                                        1: (0.0, 1.0, 0.0, 1.0),
+                                                        2: (1.0, 0.0, 0.0, 1.0)})
+            final_image = self.do_blend(final_image, cimage)
         return final_image
 
-    def get_image_slice(self, orientation, slice_number):
+    def get_image_slice(self, orientation, slice_number, number_slices=1,
+                        inverted=False, border_size=1.0):
         if self.buffer_slices[orientation].index == slice_number \
            and self.buffer_slices[orientation].image is not None:
             n_image = self.buffer_slices[orientation].image
         else:
+
             if orientation == 'AXIAL':
-                n_image = numpy.array(self.matrix[slice_number])
+                if self._type_projection == const.PROJECTION_NORMAL:
+                    n_image = numpy.array(self.matrix[slice_number])
+                else:
+                    tmp_array = numpy.array(self.matrix[slice_number:
+                                                        slice_number + number_slices])
+                    if inverted:
+                        tmp_array = tmp_array[::-1]
+
+                    if self._type_projection == const.PROJECTION_MaxIP:
+                        n_image = numpy.array(tmp_array).max(0)
+                    elif self._type_projection == const.PROJECTION_MinIP:
+                        n_image = numpy.array(tmp_array).min(0)
+                    elif self._type_projection == const.PROJECTION_MeanIP:
+                        n_image = numpy.array(tmp_array).mean(0)
+                    elif self._type_projection == const.PROJECTION_LMIP:
+                        n_image = numpy.empty(shape=(tmp_array.shape[1],
+                                                     tmp_array.shape[2]),
+                                              dtype=tmp_array.dtype)
+                        mips.lmip(tmp_array, 0, self.window_level, self.window_level, n_image)
+                    elif self._type_projection == const.PROJECTION_MIDA:
+                        n_image = numpy.empty(shape=(tmp_array.shape[1],
+                                                     tmp_array.shape[2]),
+                                              dtype=tmp_array.dtype)
+                        mips.mida(tmp_array, 0, self.window_level, self.window_level, n_image)
+                    elif self._type_projection == const.PROJECTION_CONTOUR_MIP:
+                        n_image = numpy.empty(shape=(tmp_array.shape[1],
+                                                     tmp_array.shape[2]),
+                                              dtype=tmp_array.dtype)
+                        mips.fast_countour_mip(tmp_array, border_size, 0, self.window_level,
+                                               self.window_level, 0, n_image)
+                    elif self._type_projection == const.PROJECTION_CONTOUR_LMIP:
+                        n_image = numpy.empty(shape=(tmp_array.shape[1],
+                                                     tmp_array.shape[2]),
+                                              dtype=tmp_array.dtype)
+                        mips.fast_countour_mip(tmp_array, border_size, 0, self.window_level,
+                                               self.window_level, 1, n_image)
+                    elif self._type_projection == const.PROJECTION_CONTOUR_MIDA:
+                        n_image = numpy.empty(shape=(tmp_array.shape[1],
+                                                     tmp_array.shape[2]),
+                                              dtype=tmp_array.dtype)
+                        mips.fast_countour_mip(tmp_array, border_size, 0, self.window_level,
+                                               self.window_level, 2, n_image)
+                    else:
+                        n_image = numpy.array(self.matrix[slice_number])
+
             elif orientation == 'CORONAL':
-                n_image = numpy.array(self.matrix[..., slice_number, ...])
+                if self._type_projection == const.PROJECTION_NORMAL:
+                    n_image = numpy.array(self.matrix[..., slice_number, ...])
+                else:
+                    #if slice_number == 0:
+                        #slice_number = 1
+                    #if slice_number - number_slices < 0:
+                        #number_slices = slice_number
+                    tmp_array = numpy.array(self.matrix[..., slice_number: slice_number + number_slices, ...])
+                    if inverted:
+                        tmp_array = tmp_array[..., ::-1, ...]
+                    if self._type_projection == const.PROJECTION_MaxIP:
+                        n_image = numpy.array(tmp_array).max(1)
+                    elif self._type_projection == const.PROJECTION_MinIP:
+                        n_image = numpy.array(tmp_array).min(1)
+                    elif self._type_projection == const.PROJECTION_MeanIP:
+                        n_image = numpy.array(tmp_array).mean(1)
+                    elif self._type_projection == const.PROJECTION_LMIP:
+                        n_image = numpy.empty(shape=(tmp_array.shape[0],
+                                                     tmp_array.shape[2]),
+                                              dtype=tmp_array.dtype)
+                        mips.lmip(tmp_array, 1, self.window_level, self.window_level, n_image)
+                    elif self._type_projection == const.PROJECTION_MIDA:
+                        n_image = numpy.empty(shape=(tmp_array.shape[0],
+                                                     tmp_array.shape[2]),
+                                              dtype=tmp_array.dtype)
+                        mips.mida(tmp_array, 1, self.window_level, self.window_level, n_image)
+                    elif self._type_projection == const.PROJECTION_CONTOUR_MIP:
+                        n_image = numpy.empty(shape=(tmp_array.shape[0],
+                                                     tmp_array.shape[2]),
+                                              dtype=tmp_array.dtype)
+                        mips.fast_countour_mip(tmp_array, border_size, 1, self.window_level,
+                                               self.window_level, 0, n_image)
+                    elif self._type_projection == const.PROJECTION_CONTOUR_LMIP:
+                        n_image = numpy.empty(shape=(tmp_array.shape[0],
+                                                     tmp_array.shape[2]),
+                                              dtype=tmp_array.dtype)
+                        mips.fast_countour_mip(tmp_array, border_size, 1, self.window_level,
+                                               self.window_level, 1, n_image)
+                    elif self._type_projection == const.PROJECTION_CONTOUR_MIDA:
+                        n_image = numpy.empty(shape=(tmp_array.shape[0],
+                                                     tmp_array.shape[2]),
+                                              dtype=tmp_array.dtype)
+                        mips.fast_countour_mip(tmp_array, border_size, 1, self.window_level,
+                                               self.window_level, 2, n_image)
+                    else:
+                        n_image = numpy.array(self.matrix[..., slice_number, ...])
             elif orientation == 'SAGITAL':
-                n_image = numpy.array(self.matrix[..., ..., slice_number])
+                if self._type_projection == const.PROJECTION_NORMAL:
+                    n_image = numpy.array(self.matrix[..., ..., slice_number])
+                else:
+                    tmp_array = numpy.array(self.matrix[..., ..., 
+                                                        slice_number: slice_number + number_slices])
+                    if inverted:
+                        tmp_array = tmp_array[..., ..., ::-1]
+                    if self._type_projection == const.PROJECTION_MaxIP:
+                        n_image = numpy.array(tmp_array).max(2)
+                    elif self._type_projection == const.PROJECTION_MinIP:
+                        n_image = numpy.array(tmp_array).min(2)
+                    elif self._type_projection == const.PROJECTION_MeanIP:
+                        n_image = numpy.array(tmp_array).mean(2)
+                    elif self._type_projection == const.PROJECTION_LMIP:
+                        n_image = numpy.empty(shape=(tmp_array.shape[0],
+                                                     tmp_array.shape[1]),
+                                              dtype=tmp_array.dtype)
+                        mips.lmip(tmp_array, 2, self.window_level, self.window_level, n_image)
+                    elif self._type_projection == const.PROJECTION_MIDA:
+                        n_image = numpy.empty(shape=(tmp_array.shape[0],
+                                                     tmp_array.shape[1]),
+                                              dtype=tmp_array.dtype)
+                        mips.mida(tmp_array, 2, self.window_level, self.window_level, n_image)
+
+                    elif self._type_projection == const.PROJECTION_CONTOUR_MIP:
+                        n_image = numpy.empty(shape=(tmp_array.shape[0],
+                                                     tmp_array.shape[1]),
+                                              dtype=tmp_array.dtype)
+                        mips.fast_countour_mip(tmp_array, border_size, 2, self.window_level,
+                                               self.window_level, 0, n_image)
+                    elif self._type_projection == const.PROJECTION_CONTOUR_LMIP:
+                        n_image = numpy.empty(shape=(tmp_array.shape[0],
+                                                     tmp_array.shape[1]),
+                                              dtype=tmp_array.dtype)
+                        mips.fast_countour_mip(tmp_array, border_size, 2, self.window_level,
+                                               self.window_level, 1, n_image)
+                    elif self._type_projection == const.PROJECTION_CONTOUR_MIDA:
+                        n_image = numpy.empty(shape=(tmp_array.shape[0],
+                                                     tmp_array.shape[1]),
+                                              dtype=tmp_array.dtype)
+                        mips.fast_countour_mip(tmp_array, border_size, 2, self.window_level,
+                                               self.window_level, 2, n_image)
+                    else:
+                        n_image = numpy.array(self.matrix[..., ..., slice_number])
         return n_image
 
     def get_mask_slice(self, orientation, slice_number):
@@ -489,6 +735,15 @@ class Slice(object):
                                 dtype=self.current_mask.matrix.dtype)
 
         return n_mask
+
+    def get_aux_slice(self, name, orientation, n):
+        m = self.aux_matrices[name]
+        if orientation == 'AXIAL':
+            return numpy.array(m[n])
+        elif orientation == 'CORONAL':
+            return numpy.array(m[:, n, :])
+        elif orientation == 'SAGITAL':
+            return numpy.array(m[:, :, n])
 
     def GetNumberOfSlices(self, orientation):
         if orientation == 'AXIAL':
@@ -637,6 +892,26 @@ class Slice(object):
     def GetOutput(self):
         return self.blend_filter.GetOutput()
 
+    def _set_projection_type(self, pubsub_evt):
+        tprojection = pubsub_evt.data
+        self.SetTypeProjection(tprojection)
+
+    def SetTypeProjection(self, tprojection):
+        if self._type_projection != tprojection:
+            if self._type_projection == const.PROJECTION_NORMAL:
+                Publisher.sendMessage('Hide current mask')
+
+            if tprojection == const.PROJECTION_NORMAL:
+                Publisher.sendMessage('Show MIP interface', False)
+            else:
+                Publisher.sendMessage('Show MIP interface', True)
+
+            self._type_projection = tprojection
+            for buffer_ in self.buffer_slices.values():
+                buffer_.discard_buffer()
+
+            Publisher.sendMessage('Check projection menu', tprojection)
+
     def SetInput(self, imagedata, mask_dict):
         print "SETINPUT!"
         self.imagedata = imagedata
@@ -696,18 +971,56 @@ class Slice(object):
         self.window_level = level
 
         for buffer_ in self.buffer_slices.values():
-            buffer_.discard_vtk_image()
+            if self._type_projection in (const.PROJECTION_NORMAL,
+                                         const.PROJECTION_MaxIP,
+                                         const.PROJECTION_MinIP,
+                                         const.PROJECTION_MeanIP,
+                                         const.PROJECTION_LMIP):
+                buffer_.discard_vtk_image()
+            else:
+                buffer_.discard_buffer()
 
         Publisher.sendMessage('Reload actual slice')
 
     def UpdateColourTableBackground(self, pubsub_evt):
         values = pubsub_evt.data
+        self.from_= OTHER
         self.number_of_colours= values[0]
         self.saturation_range = values[1]
         self.hue_range = values[2]
         self.value_range = values[3]
         for buffer_ in self.buffer_slices.values():
             buffer_.discard_vtk_image()
+        Publisher.sendMessage('Reload actual slice')
+
+    def UpdateColourTableBackgroundPlist(self, pubsub_evt):
+        self.values = pubsub_evt.data
+        self.from_= PLIST
+        for buffer_ in self.buffer_slices.values():
+            buffer_.discard_vtk_image()
+
+        Publisher.sendMessage('Reload actual slice')
+
+    def UpdateColourTableBackgroundWidget(self, pubsub_evt):
+        self.nodes = pubsub_evt.data
+        self.from_= WIDGET
+        for buffer_ in self.buffer_slices.values():
+            if self._type_projection in (const.PROJECTION_NORMAL,
+                                         const.PROJECTION_MaxIP,
+                                         const.PROJECTION_MinIP,
+                                         const.PROJECTION_MeanIP,
+                                         const.PROJECTION_LMIP):
+                buffer_.discard_vtk_image()
+            else:
+                buffer_.discard_buffer()
+
+        knodes = sorted(self.nodes)
+        p0 = knodes[0].value
+        pn = knodes[-1].value
+
+        self.window_width = pn - p0
+        self.window_level = (pn + p0) / 2
+
         Publisher.sendMessage('Reload actual slice')
 
     def InputImageWidget(self, pubsub_evt):
@@ -816,14 +1129,71 @@ class Slice(object):
         Publisher.sendMessage('Update slice viewer')
 
     def do_ww_wl(self, image):
-        colorer = vtk.vtkImageMapToWindowLevelColors()
-        colorer.SetInput(image)
-        colorer.SetWindow(self.window_width)
-        colorer.SetLevel(self.window_level)
-        colorer.SetOutputFormatToRGB()
-        colorer.Update()
+        if self.from_ == PLIST:
+            lut = vtk.vtkWindowLevelLookupTable()
+            lut.SetWindow(self.window_width)
+            lut.SetLevel(self.window_level)
+            lut.Build()
+
+            i = 0
+            for r, g, b in self.values:
+                lut.SetTableValue(i, r/255.0, g/255.0, b/255.0, 1.0)
+                i += 1
+
+            colorer = vtk.vtkImageMapToColors()
+            colorer.SetInput(image)
+            colorer.SetLookupTable(lut)
+            colorer.SetOutputFormatToRGB()
+            colorer.Update()
+        elif self.from_ == WIDGET:
+            lut  = vtk.vtkColorTransferFunction()
+
+            for n in self.nodes:
+                r, g, b = n.colour
+                lut.AddRGBPoint(n.value, r/255.0, g/255.0, b/255.0)
+
+            lut.Build()
+
+            colorer = vtk.vtkImageMapToColors()
+            colorer.SetLookupTable(lut)
+            colorer.SetInput(image)
+            colorer.SetOutputFormatToRGB()
+            colorer.Update()
+        else:
+            colorer = vtk.vtkImageMapToWindowLevelColors()
+            colorer.SetInput(image)
+            colorer.SetWindow(self.window_width)
+            colorer.SetLevel(self.window_level)
+            colorer.SetOutputFormatToRGB()
+            colorer.Update()
 
         return colorer.GetOutput()
+
+    def _update_wwwl_widget_nodes(self, ww, wl):
+        if self.from_ == WIDGET: 
+            knodes = sorted(self.nodes)
+
+            p1 = knodes[0]
+            p2 = knodes[-1]
+            half = (p2.value - p1.value) / 2.0
+            middle = p1.value + half
+
+            shiftWL = wl - middle
+            shiftWW = p1.value + shiftWL - (wl - 0.5 * ww)
+
+            factor = 1.0
+
+            for n, node in enumerate(knodes):
+                factor = abs(node.value - middle) / half
+                if factor < 0:
+                    factor = 0
+
+                node.value += shiftWL
+
+                if n < len(self.nodes) / 2.0:
+                    node.value -= shiftWW * factor
+                else:
+                    node.value += shiftWW * factor
 
     def do_threshold_to_a_slice(self, slice_matrix, mask):
         """ 
@@ -833,28 +1203,46 @@ class Slice(object):
         thresh_min, thresh_max = self.current_mask.threshold_range
         m = (((slice_matrix >= thresh_min) & (slice_matrix <= thresh_max)) * 255)
         m[mask == 1] = 1
+        m[mask == 2] = 2
+        m[mask == 253] = 253
         m[mask == 254] = 254
         return m.astype('uint8')
 
+    def do_threshold_to_all_slices(self):
+        mask = self.current_mask
+
+        # This is very important. Do not use masks' imagedata. It would mess up
+        # surface quality event when using contour
+        #self.SetMaskThreshold(mask.index, threshold)
+        for n in xrange(1, mask.matrix.shape[0]):
+            if mask.matrix[n, 0, 0] == 0:
+                m = mask.matrix[n, 1:, 1:]
+                mask.matrix[n, 1:, 1:] = self.do_threshold_to_a_slice(self.matrix[n-1], m)
+
+        mask.matrix.flush()
+
     def do_colour_image(self, imagedata):
-        # map scalar values into colors
-        lut_bg = vtk.vtkLookupTable()
-        lut_bg.SetTableRange(imagedata.GetScalarRange())
-        lut_bg.SetSaturationRange(self.saturation_range)
-        lut_bg.SetHueRange(self.hue_range)
-        lut_bg.SetValueRange(self.value_range)
-        lut_bg.Build()
+        if self.from_ in (PLIST, WIDGET):
+            return imagedata
+        else:
+            # map scalar values into colors
+            lut_bg = vtk.vtkLookupTable()
+            lut_bg.SetTableRange(imagedata.GetScalarRange())
+            lut_bg.SetSaturationRange(self.saturation_range)
+            lut_bg.SetHueRange(self.hue_range)
+            lut_bg.SetValueRange(self.value_range)
+            lut_bg.Build()
 
-        # map the input image through a lookup table
-        img_colours_bg = vtk.vtkImageMapToColors()
-        img_colours_bg.SetOutputFormatToRGB()
-        img_colours_bg.SetLookupTable(lut_bg)
-        img_colours_bg.SetInput(imagedata)
-        img_colours_bg.Update()
+            # map the input image through a lookup table
+            img_colours_bg = vtk.vtkImageMapToColors()
+            img_colours_bg.SetOutputFormatToRGB()
+            img_colours_bg.SetLookupTable(lut_bg)
+            img_colours_bg.SetInput(imagedata)
+            img_colours_bg.Update()
 
-        return img_colours_bg.GetOutput()
+            return img_colours_bg.GetOutput()
 
-    def do_colour_mask(self, imagedata):
+    def do_colour_mask(self, imagedata, opacity):
         scalar_range = int(imagedata.GetScalarRange()[1])
         r, g, b = self.current_mask.colour
 
@@ -868,8 +1256,42 @@ class Slice(object):
         lut_mask.SetNumberOfTableValues(256)
         lut_mask.SetTableValue(0, 0, 0, 0, 0.0)
         lut_mask.SetTableValue(1, 0, 0, 0, 0.0)
-        lut_mask.SetTableValue(254, r, g, b, 1.0)
-        lut_mask.SetTableValue(255, r, g, b, 1.0)
+        lut_mask.SetTableValue(2, 0, 0, 0, 0.0)
+        lut_mask.SetTableValue(253, r, g, b, opacity)
+        lut_mask.SetTableValue(254, r, g, b, opacity)
+        lut_mask.SetTableValue(255, r, g, b, opacity)
+        lut_mask.SetRampToLinear()
+        lut_mask.Build()
+        # self.lut_mask = lut_mask
+
+        # map the input image through a lookup table
+        img_colours_mask = vtk.vtkImageMapToColors()
+        img_colours_mask.SetLookupTable(lut_mask)
+        img_colours_mask.SetOutputFormatToRGBA()
+        img_colours_mask.SetInput(imagedata)
+        img_colours_mask.Update()
+        # self.img_colours_mask = img_colours_mask
+
+        return img_colours_mask.GetOutput()
+
+    def do_custom_colour(self, imagedata, map_colours):
+        # map scalar values into colors
+        minv = min(map_colours)
+        maxv = max(map_colours)
+        ncolours = maxv - minv + 1
+
+        lut_mask = vtk.vtkLookupTable()
+        lut_mask.SetNumberOfColors(ncolours)
+        lut_mask.SetHueRange(const.THRESHOLD_HUE_RANGE)
+        lut_mask.SetSaturationRange(1, 1)
+        lut_mask.SetValueRange(minv, maxv)
+        lut_mask.SetRange(minv, maxv)
+        lut_mask.SetNumberOfTableValues(ncolours)
+
+        for v in map_colours:
+            r,g, b,a = map_colours[v]
+            lut_mask.SetTableValue(v, r, g, b, a)
+
         lut_mask.SetRampToLinear()
         lut_mask.Build()
         # self.lut_mask = lut_mask

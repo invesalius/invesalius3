@@ -219,7 +219,6 @@ class GradientSlider(wx.Panel):
         evt.Skip()
 
     def OnSize(self, evt):
-        print "OnSize gradient"
         self.CalculateControlPositions()
         self.Refresh()
         evt.Skip()
@@ -354,15 +353,15 @@ class GradientCtrl(wx.Panel):
         self.gradient_slider.Bind(EVT_SLIDER_CHANGED, self.OnSlider)
 
         # self.spin_min.Bind(wx.lib.intctrl.EVT_INT, self.ChangeMinValue)
-        self.spin_min.Bind(wx.EVT_LEAVE_WINDOW, self._FireSpinMinChanged)
-        self.spin_min.Bind(wx.EVT_KILL_FOCUS, self._FireSpinMinChanged)
-        self.spin_min.Bind(wx.EVT_KEY_DOWN, self._FireSpinMinChange)
+        self.spin_min.Bind(wx.EVT_LEAVE_WINDOW, self._FireSpinMinChange)
+        self.spin_min.Bind(wx.EVT_KILL_FOCUS, self._FireSpinMinChange)
+        #self.spin_min.Bind(wx.EVT_KEY_DOWN, self._FireSpinMinChange)
         self.spin_min.Bind(wx.EVT_MOUSEWHEEL, self.OnMinMouseWheel)
 
         # self.spin_max.Bind(wx.lib.intctrl.EVT_INT, self.ChangeMaxValue)
-        self.spin_max.Bind(wx.EVT_LEAVE_WINDOW, self._FireSpinMaxChanged)
-        self.spin_max.Bind(wx.EVT_KILL_FOCUS, self._FireSpinMaxChanged)
-        self.spin_max.Bind(wx.EVT_KEY_DOWN, self._FireSpinMaxChange)
+        self.spin_max.Bind(wx.EVT_LEAVE_WINDOW, self._FireSpinMaxChange)
+        self.spin_max.Bind(wx.EVT_KILL_FOCUS, self._FireSpinMaxChange)
+        #self.spin_max.Bind(wx.EVT_KEY_DOWN, self._FireSpinMaxChange)
         self.spin_max.Bind(wx.EVT_MOUSEWHEEL, self.OnMaxMouseWheel)
 
     def OnSlider(self, evt):
@@ -382,9 +381,13 @@ class GradientCtrl(wx.Panel):
     def _FireSpinMinChange(self, evt):
         evt.Skip()
         value = int(self.spin_min.GetValue())
-        if value != self.GetMinValue():
+        if value < self.min_range or value > self.max_range:
+            self.spin_min.SetValue(self.minimun)
+            return
+
+        if value != self.GetMinValue() or self.changed:
             self.SetMinValue(value)
-            self._GenerateEvent(myEVT_THRESHOLD_CHANGING)
+            self._GenerateEvent(myEVT_THRESHOLD_CHANGED)
 
     def _FireSpinMinChanged(self, evt):
         if self.changed:
@@ -393,9 +396,13 @@ class GradientCtrl(wx.Panel):
     def _FireSpinMaxChange(self, evt):
         evt.Skip()
         value = int(self.spin_max.GetValue())
-        if value != self.GetMaxValue():
+        if value < self.min_range or value > self.max_range:
+            self.spin_max.SetValue(self.maximun)
+            return
+
+        if value != self.GetMaxValue() or self.changed:
             self.SetMaxValue(value)
-            self._GenerateEvent(myEVT_THRESHOLD_CHANGING)
+            self._GenerateEvent(myEVT_THRESHOLD_CHANGED)
 
     def _FireSpinMaxChanged(self, evt):
         if self.changed:
@@ -440,7 +447,7 @@ class GradientCtrl(wx.Panel):
             value = self.min_range
 
     def SetMaxValue(self, value):
-        if value:
+        if value is not None:
             value = int(value)
             if value > self.max_range:
                 value = int(self.max_range)
@@ -449,7 +456,7 @@ class GradientCtrl(wx.Panel):
             self.maximun = value
 
     def SetMinValue(self, value):
-        if value:
+        if value is not None:
             value = int(value)
             if value < self.min_range:
                 value = int(self.min_range)

@@ -34,6 +34,9 @@ import project as proj
 import session as ses
 import utils
 
+from gui.widgets.clut_imagedata import CLUTImageDataWidget, EVT_CLUT_NODE_CHANGED
+
+import numpy as np
 
 class MaskEvent(wx.PyCommandEvent):
     def __init__(self , evtType, id, mask_index):
@@ -95,7 +98,7 @@ class NumberDialog(wx.Dialog):
 class ResizeImageDialog(wx.Dialog):
 
     def __init__(self):#, message, value=0):
-        pre = wx.PreDialog()
+        pre = self.pre = wx.PreDialog()
         pre.Create(None, -1, "InVesalius 3", size=wx.DefaultSize,
                    pos=wx.DefaultPosition,
                    style=wx.DEFAULT_DIALOG_STYLE)
@@ -146,6 +149,8 @@ class ResizeImageDialog(wx.Dialog):
     def GetValue(self):
         return self.num_ctrl_porcent.GetValue()
 
+    def Close(self):
+        self.pre.Destroy()
 
 def ShowNumberDialog(message, value=0):
     dlg = NumberDialog(message, value)
@@ -367,6 +372,67 @@ class MessageDialog(wx.Dialog):
         sizer.Fit(self)
 
         self.Centre()
+
+
+class UpdateMessageDialog(wx.Dialog):
+    def __init__(self, url):
+        msg=_("A new version of InVesalius is available. Do you want to open the download website now?")
+        title=_("Invesalius Update")
+        self.url = url
+
+        pre = wx.PreDialog()
+        pre.Create(None, -1, title,  size=(360, 370), pos=wx.DefaultPosition,
+                    style=wx.DEFAULT_DIALOG_STYLE|wx.ICON_INFORMATION)
+        self.PostCreate(pre)
+
+        # Static text which contains message to user
+        label = wx.StaticText(self, -1, msg)
+
+        # Buttons
+        btn_yes = wx.Button(self, wx.ID_YES)
+        btn_yes.SetHelpText("")
+        btn_yes.SetDefault()
+
+        btn_no = wx.Button(self, wx.ID_NO)
+        btn_no.SetHelpText("")
+
+        btnsizer = wx.StdDialogButtonSizer()
+        btnsizer.AddButton(btn_yes)
+        btnsizer.AddButton(btn_no)
+        btnsizer.Realize()
+
+        sizer = wx.BoxSizer(wx.VERTICAL)
+        sizer.Add(label, 0, wx.ALIGN_CENTRE|wx.ALL, 5)
+        sizer.Add(btnsizer, 0, wx.ALIGN_CENTER_VERTICAL|
+                  wx.ALIGN_CENTER_HORIZONTAL|wx.ALL, 5)
+        self.SetSizer(sizer)
+        sizer.Fit(self)
+        self.Centre()
+
+        btn_yes.Bind(wx.EVT_BUTTON, self._OnYes)
+        btn_no.Bind(wx.EVT_BUTTON, self._OnNo)
+
+        # Subscribing to the pubsub event which happens when InVesalius is
+        # closed.
+        Publisher.subscribe(self._OnCloseInV, 'Exit')
+
+    def _OnYes(self, evt):
+        # Launches the default browser with the url to download the new
+        # InVesalius version.
+        wx.LaunchDefaultBrowser(self.url)
+        self.Close()
+        self.Destroy()
+
+    def _OnNo(self, evt):
+        # Closes and destroy this dialog.
+        self.Close()
+        self.Destroy()
+
+    def _OnCloseInV(self, pubsub_evt):
+        # Closes and destroy this dialog.
+        self.Close()
+        self.Destroy()
+
 
 def SaveChangesDialog__Old(filename):
     message = _("The project %s has been modified.\nSave changes?")%filename
@@ -695,8 +761,8 @@ def ShowAboutDialog(parent):
 
     info = wx.AboutDialogInfo()
     info.Name = "InVesalius"
-    info.Version = "3.0 - Beta 3"
-    info.Copyright = _("(c) 2007-2012 Renato Archer Information Technology Center - CTI")
+    info.Version = "3.0 - Beta 5"
+    info.Copyright = _("(c) 2007-2013 Renato Archer Information Technology Center - CTI")
     info.Description = wordwrap(_("InVesalius is a medical imaging program for 3D reconstruction. It uses a sequence of 2D DICOM image files acquired with CT or MRI scanners. InVesalius allows exporting 3D volumes or surfaces as STL files for creating physical models of a patient's anatomy using rapid prototyping technologies. The software is supported by CTI, CNPq and the Brazilian Ministry of Health.\n\n Contact: invesalius@cti.gov.br"), 350, wx.ClientDC(parent))
 
 #       _("InVesalius is a software for medical imaging 3D reconstruction. ")+\
@@ -704,15 +770,15 @@ def ShowAboutDialog(parent):
 #       _("The software also allows generating correspondent STL files,")+\
 #       _("so the user can print 3D physical models of the patient's anatomy ")+\
 #       _("using Rapid Prototyping."), 350, wx.ClientDC(parent))
-    info.WebSite = ("http://svn.softwarepublico.gov.br/trac/invesalius")
+    info.WebSite = ("http://www.cti.gov.br/invesalius")
     info.License = _("GNU GPL (General Public License) version 2")
 
     info.Developers = ["Paulo Henrique Junqueira Amorim",
                        "Thiago Franco de Moraes",
-                       "Guilherme Cesar Soares Ruppert",
-                       "Fabio de Souza Azevedo",
                        "Jorge Vicente Lopes da Silva",
                        "Tatiana Al-Chueyr (former)",
+                       "Guilherme Cesar Soares Ruppert (former)",
+                       "Fabio de Souza Azevedo (former)",
                        "Bruno Lara Bottazzini (contributor)"]
 
     info.Translators = ["Alex P. Natsios",
@@ -1274,9 +1340,47 @@ class SurfaceMethodPanel(wx.Panel):
         self.method_sizer.Layout()
 
 
+class ClutImagedataDialog(wx.Dialog):
+    def __init__(self, histogram, init, end, nodes=None):
+        pre = wx.PreDialog()
+        pre.Create(wx.GetApp().GetTopWindow(), -1, style=wx.DEFAULT_DIALOG_STYLE|wx.FRAME_FLOAT_ON_PARENT)
+        self.PostCreate(pre)
 
+        self.histogram = histogram
+        self.init = init
+        self.end = end
+        self.nodes = nodes
 
-    
+        self._init_gui()
+        self.bind_events()
+        self.bind_events_wx()
 
+    def _init_gui(self):
+        self.clut_widget = CLUTImageDataWidget(self, -1, self.histogram,
+                                               self.init, self.end, self.nodes)
+        sizer = wx.BoxSizer(wx.VERTICAL)
+        sizer.Add(self.clut_widget, 1, wx.EXPAND)
 
+        self.SetSizer(sizer)
+        self.Fit()
 
+    def bind_events_wx(self):
+        self.clut_widget.Bind(EVT_CLUT_NODE_CHANGED, self.OnClutChange)
+
+    def bind_events(self):
+        Publisher.subscribe(self._refresh_widget, 'Update clut imagedata widget')
+
+    def OnClutChange(self, evt):
+        Publisher.sendMessage('Change colour table from background image from widget',
+                              evt.GetNodes())
+        Publisher.sendMessage('Update window level text',
+                              (self.clut_widget.window_width,
+                               self.clut_widget.window_level))
+
+    def _refresh_widget(self, pubsub_evt):
+        self.clut_widget.Refresh()
+
+    def Show(self, gen_evt=True, show=True):
+        super(wx.Dialog, self).Show(show)
+        if gen_evt:
+            self.clut_widget._generate_event()

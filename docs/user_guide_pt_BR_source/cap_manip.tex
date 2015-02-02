@@ -327,7 +327,7 @@ com o botão \textbf{direito} para abrir um menu de contexto sobre ela. Quando o
 selecione a entrada \textbf{Pseudocor} e, em seguida, clique sobre a opção de pseudocor desejada, como
 mostra a figura \ref{fig:pseudo_color}.
 
-\begin{figure}[!htb]
+\begin{figure}[H]
 \centering
 \includegraphics[scale=0.40]{pseudo_menu.png}
 \caption{Pseudo Cor}
@@ -337,52 +337,158 @@ mostra a figura \ref{fig:pseudo_color}.
 As figuras de \ref{fig:image_default} a \ref{fig:image_saturation} exemplificam as diversas opções de
 pseudocor disponíveis.\\
 
-\begin{figure}[!htb]
+\begin{figure}[H]
 \centering
 \includegraphics[scale=0.30]{ScreenHunter_24Dec310029.jpg}
 \caption{Padrão}
 \label{fig:image_default}
 \end{figure}
 
-\begin{figure}[!htb]
+\begin{figure}[H]
 \centering
 \includegraphics[scale=0.30]{ScreenHunter_21Jan021944.jpg}
 \caption{Imagem Cinza Invertido}
 \label{fig:image_inverted}
 \end{figure}
 
-\begin{figure}[!htb]
+\begin{figure}[H]
 \centering
 \includegraphics[scale=0.30]{ScreenHunter_20Jan021944}
 \caption{Arco-íris}
 \label{fig:image_arc}
 \end{figure}
 
-\begin{figure}[!htb]
+\begin{figure}[H]
 \centering
 \includegraphics[scale=0.30]{ScreenHunter_22Jan021944}
 \caption{Deserto}
 \label{fig:image_desert}
 \end{figure}
 
-\begin{figure}[!htb]
+\begin{figure}[H]
 \centering
 \includegraphics[scale=0.30]{ScreenHunter_23Jan021944}
 \caption{Matiz}
 \label{fig:image_matiz}
 \end{figure}
 
-\begin{figure}[!htb]
+\begin{figure}[H]
 \centering
 \includegraphics[scale=0.30]{ScreenHunter_24Jan021944}
 \caption{Oceano}
 \label{fig:image_ocean}
 \end{figure}
 
-\begin{figure}[!htb]
+\begin{figure}[H]
 \centering
 \includegraphics[scale=0.30]{ScreenHunter_25Jan021944}
 \caption{Saturação}
 \label{fig:image_saturation}
 \end{figure}
 
+\newpage
+
+\section{Tipo de projeção}
+
+É possível alterar o tipo de projeção das imagens 2D a serem visualizadas, além do modo normal, o InVesalius dispõe de seis tipos de projeções que podem serem acessadas da seguinte forma: Possicione o cursor do mouse sobre a imagem e clique com o botão \textbf{direito} para abrir um menu de contexto sobre ela. Quando o menu se abrir, selecione a entrada tipo de projeção e, em seguida, clique sobre a opção de pseudocor desejada, como mostra a figura~\ref{fig:menu_proj}.
+
+\begin{figure}[H]
+\centering
+\includegraphics[scale=0.60]{menu_projection}
+\caption{Menu de Tipo de projeção}
+\label{fig:menu_proj}
+\end{figure}
+
+\subsection{Normal}
+
+O modo normal é a visualização padrão, ou seja, sem nenhum tipo de projeção, da maneira em que a imagem foi adquirida ou customizada previamente seja com brilho e contraste ou pseudocor. Exemplificamos na figura~\ref{fig:proj_normal}.
+
+\begin{figure}[H]
+\centering
+\includegraphics[scale=0.20]{proj_normal}
+\caption{Projeção normal}
+\label{fig:proj_normal}
+\end{figure}
+
+\subsection{MaxIP}
+\label{sec:max_ip}
+MaxIP também é conhecido como MIP (\textit{Maximum Intensity Projection}), o método seleciona somente os voxels que possuem intensidade máxima entre os visitados como mostra a figura~\ref{fig:proj_maxip}. De acordo com a quantidade ou "profundidade" do MaxIP cada voxel é visitado em ordem de sobreposição, por exemplo, para selecionar MaxIP do pixel $(0,0)$ composto por 3 fatias é necessário visitar o pixel $(0,0)$ das fatias $(1,2,3)$ e selecionar o maior valor.
+
+\begin{figure}[H]
+\centering
+\includegraphics[scale=0.20]{proj_maxIP}
+\caption{Projeção MaxIP ou MIP}
+\label{fig:proj_maxip}
+\end{figure}
+
+Como mostra a figura~\ref{fig:proj_maxip_qtd}, a quantidade de imagens que irá compor o MaxIP é setada no inferior da imagem de cada orientação.
+
+\begin{figure}[H]
+\centering
+\includegraphics[scale=0.50]{proj_maxIP_qtd}
+\caption{Seleção da quantidade de imagens que compõe o MaxIP ou MIP}
+\label{fig:proj_maxip_qtd}
+\end{figure}
+
+\subsection{MinIP}
+
+Ao contrário do MaxIP, o MinIP (\textit{Minimun Intensity Projection}) seleciona somente os voxels que possuem internsidade minima entre os visitados, apresentamos na figura~\ref{fig:proj_minIP} um exemplo. A seleção da quantidade de imagens que irá compor a projeção é feita no inferior da imagem de cada orientação como mostra a figura~\ref{fig:proj_maxip_qtd}.
+
+\begin{figure}[H]
+\centering
+\includegraphics[scale=0.20]{proj_minIP}
+\caption{Projeção MinIP}
+\label{fig:proj_minIP}
+\end{figure}
+
+\subsection{MeanIP}
+A técnica MeanIP (\textit{Mean Intensity Projection}) que é mostrada na figura~\ref{fig:proj_meanIP} compõe a projeção realizando a média dos voxels visitados. Os voxels são visitados da mesma forma dos métodos MaxIP e MinIP. Também é possível definir quantas imagens irão compor a projeção no inferior da imagem de cada orientação como é mostrada na figura~\ref{fig:proj_maxip_qtd}.
+
+\begin{figure}[H]
+\centering
+\includegraphics[scale=0.20]{proj_meanIP}
+\caption{Projeção MeanIP}
+\label{fig:proj_meanIP}
+\end{figure}
+
+\subsection{MIDA}
+\label{sub:mida}
+A técnica MIDA (\textit{Maximum Intensity Difference Accumulation}) projeta uma imagem levando em consideração somente os voxels que possuem valores máximos locais. A partir de cada pixel da tela é simulado um raio em direção ao volume, cada voxel é interceptado por cada um destes raios chegando até o final do volume, cada um desses voxels visitados tem o seu valor acumulado, mas são levados em consideração somente se o valor for maior que os valores já visitados anteriormente. A exemplo do MaxIP, é possível selecionar quantas imagens serão utilizadas para acumular os valores. Apresentamos na figura~\ref{fig:proj_MIDA} um exemplo de projeção MIDA.  
+
+\begin{figure}[H]
+\centering
+\includegraphics[scale=0.18]{proj_MIDA}
+\caption{Projeção MIDA}
+\label{fig:proj_MIDA}
+\end{figure}
+
+Como mostra a figura~\ref{fig:proj_MIDA_inv}, é possível inverter a ordem que os voxels são visitados, bastando selecionar a opção \textbf{Ordem invertida} no canto inferior da tela.
+
+\begin{figure}[H]
+\centering
+\includegraphics[scale=0.18]{proj_MIDA_inv}
+\caption{Projeção MIDA em ordem invertida}
+\label{fig:proj_MIDA_inv}
+\end{figure}
+
+\subsection{Contorno MaxIP}
+
+Compõe a projeção 2D do conjunto de imagens que contém o volume usando a técnica \textit{Contour MaxIP}. A técnica consiste em visualizar contornos presentes na projeção gerada com a técnica MaxIP(\ref{sec:max_ip}). Um exemplo é apresentado na figura~\ref{fig:proj_contorno_maxip}.
+
+\begin{figure}[H]
+\centering
+\includegraphics[scale=0.20]{proj_contornoMaxIP}
+\caption{Projeção de Contorno MaxIP}
+\label{fig:proj_contorno_maxip}
+\end{figure}
+
+\subsection{Contorno MIDA}
+
+Compõe a projeção 2D do conjunto de imagens que contém o volume usando a técnica \textit{Contour MIDA}. A técnica consiste em visualizar contornos presentes na projeção gerada com a técnica MIDA(\ref{sub:mida}). A exemplo do MIDA é possível inverter a ordem que o volume é visitado. Exemplificamos na figura~\ref{fig:proj_contorno_mida}.
+
+\begin{figure}[H]
+\centering
+\includegraphics[scale=0.20]{proj_contornoMIDA}
+\caption{Projeção de Contorno MIDA}
+\label{fig:proj_contorno_mida}
+\end{figure}

@@ -27,8 +27,15 @@ import numpy
 import vtk
 from vtk.wx.wxVTKRenderWindowInteractor import wxVTKRenderWindowInteractor
 
+import styles
+
 import wx
 from wx.lib.pubsub import pub as Publisher
+
+try:
+    from agw import floatspin as FS
+except ImportError: # if it's not there locally, try the wxPython lib.
+    import wx.lib.agw.floatspin as FS
 
 import constants as const
 import cursor_actors as ca
@@ -49,6 +56,93 @@ ORIENTATIONS = {
         "SAGITAL": const.SAGITAL,
         }
 
+
+class ContourMIPConfig(wx.Panel):
+    def __init__(self, prnt, orientation):
+        wx.Panel.__init__(self, prnt)
+        self.mip_size_spin = wx.SpinCtrl(self, -1, min=1, max=240,
+                                         initial=const.PROJECTION_MIP_SIZE)
+        self.mip_size_spin.SetToolTip(wx.ToolTip(_("Number of slices used to compound the visualization.")))
+        w, h = self.mip_size_spin.GetTextExtent('M')
+        self.mip_size_spin.SetMinSize((5 * w + 10, -1))
+        self.mip_size_spin.SetMaxSize((5 * w + 10, -1))
+
+        self.border_spin = FS.FloatSpin(self, -1, min_val=0, max_val=10,
+                                        increment=0.1,
+                                        value=const.PROJECTION_BORDER_SIZE,
+                                        digits=1, agwStyle=FS.FS_LEFT)
+        self.border_spin.SetToolTip(wx.ToolTip(_("Controls the sharpness of the"
+                                                 " contour. The greater the"
+                                                 " value, the sharper the"
+                                                 " contour.")))
+        w, h = self.border_spin.GetTextExtent('M')
+        self.border_spin.SetMinSize((5 * w + 10, -1))
+        self.border_spin.SetMaxSize((5 * w + 10, -1))
+
+        self.inverted = wx.CheckBox(self, -1, _("Inverted order"))
+        self.inverted.SetToolTip(wx.ToolTip(_("If checked, the slices are"
+                                              " traversed in descending"
+                                              " order to compound the"
+                                              " visualization instead of"
+                                              " ascending order.")))
+        
+        txt_mip_size = wx.StaticText(self, -1, _("Number of slices"), style=wx.ALIGN_CENTER_HORIZONTAL)
+        self.txt_mip_border = wx.StaticText(self, -1, _("Sharpness"))
+
+        sizer = wx.BoxSizer(wx.HORIZONTAL)
+        sizer.Add(txt_mip_size, 0, wx.EXPAND | wx.ALL, 2)
+        sizer.Add(self.mip_size_spin, 0, wx.EXPAND)
+        sizer.AddSpacer((10, 0))
+        sizer.Add(self.txt_mip_border, 0, wx.EXPAND | wx.ALL, 2)
+        sizer.Add(self.border_spin, 0, wx.EXPAND)
+        sizer.AddSpacer((10, 0))
+        sizer.Add(self.inverted, 0, wx.EXPAND)
+        self.SetSizer(sizer)
+        sizer.Fit(self)
+
+        self.Layout()
+        self.Update()
+        self.SetAutoLayout(1)
+
+        self.orientation = orientation
+
+        self.mip_size_spin.Bind(wx.EVT_SPINCTRL, self.OnSetMIPSize)
+        self.border_spin.Bind(wx.EVT_SPINCTRL, self.OnSetMIPBorder)
+        self.inverted.Bind(wx.EVT_CHECKBOX, self.OnCheckInverted)
+        
+        Publisher.subscribe(self._set_projection_type, 'Set projection type')
+
+    def OnSetMIPSize(self, evt):
+        val = self.mip_size_spin.GetValue()
+        Publisher.sendMessage('Set MIP size %s' % self.orientation, val)
+
+    def OnSetMIPBorder(self, evt):
+        val = self.border_spin.GetValue()
+        Publisher.sendMessage('Set MIP border %s' % self.orientation, val)
+
+    def OnCheckInverted(self, evt):
+        val = self.inverted.GetValue()
+        Publisher.sendMessage('Set MIP Invert %s' % self.orientation, val)
+
+    def _set_projection_type(self, pubsub_evt):
+        tprojection = pubsub_evt.data
+
+        if tprojection in (const.PROJECTION_MIDA,
+                           const.PROJECTION_CONTOUR_MIDA):
+            self.inverted.Enable()
+        else:
+            self.inverted.Disable()
+        
+        if tprojection in (const.PROJECTION_CONTOUR_MIP,
+                           const.PROJECTION_CONTOUR_MIDA):
+            self.border_spin.Enable()
+            self.txt_mip_border.Enable()
+        else:
+            self.border_spin.Disable()
+            self.txt_mip_border.Disable()
+
+
+
 class Viewer(wx.Panel):
 
     def __init__(self, prnt, orientation='AXIAL'):
@@ -61,12 +155,18 @@ class Viewer(wx.Panel):
         #self.modes = []#['DEFAULT']
         self.left_pressed = 0
         self.right_pressed = 0
+
+        self._number_slices = const.PROJECTION_MIP_SIZE
+        self._mip_inverted = False
         
         self.spined_image = False #Use to control to spin
         self.paned_image = False
         
+        self.style = None
         self.last_position_mouse_move = ()
         self.state = const.STATE_DEFAULT
+
+        self.overwrite_mask = False
 
         # All renderers and image actors in this viewer
         self.slice_data_list = []
@@ -80,10 +180,10 @@ class Viewer(wx.Panel):
         self.actors_by_slice_number = {}
         self.renderers_by_slice_number = {}
 
-        self.__init_gui()
-
         self.orientation = orientation
         self.slice_number = 0
+
+        self.__init_gui()
 
         self._brush_cursor_op = const.DEFAULT_BRUSH_OP
         self._brush_cursor_size = const.BRUSH_SIZE
@@ -108,12 +208,17 @@ class Viewer(wx.Panel):
 
         scroll = wx.ScrollBar(self, -1, style=wx.SB_VERTICAL)
         self.scroll = scroll
+
+        self.mip_ctrls = ContourMIPConfig(self, self.orientation)
+        self.mip_ctrls.Hide()
+
         sizer = wx.BoxSizer(wx.HORIZONTAL)
         sizer.Add(self.interactor, 1, wx.EXPAND|wx.GROW)
+        sizer.Add(scroll, 0, wx.EXPAND|wx.GROW)
 
-        background_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        background_sizer = wx.BoxSizer(wx.VERTICAL)
         background_sizer.AddSizer(sizer, 1, wx.EXPAND|wx.GROW|wx.ALL, 2)
-        background_sizer.Add(scroll, 0, wx.EXPAND|wx.GROW)
+        #background_sizer.Add(self.mip_ctrls, 0, wx.EXPAND|wx.GROW|wx.ALL, 2)
         self.SetSizer(background_sizer)
         background_sizer.Fit(self)
 
@@ -128,6 +233,7 @@ class Viewer(wx.Panel):
         self.right_pressed = 0
         if (self.last_position_mouse_move ==\
               self.interactor.GetLastEventPosition()):
+            self.menu.caller = self
             self.PopupMenu(self.menu)
         evt.Skip()
             
@@ -173,306 +279,47 @@ class Viewer(wx.Panel):
         interactor.SetInteractorStyle(style)
 
     def SetInteractorStyle(self, state):
-        self.state = state
-        action = {const.SLICE_STATE_CROSS: 
-                             {
-                              "MouseMoveEvent": self.OnCrossMove,
-                              "LeftButtonPressEvent": self.OnCrossMouseClick,
-                             },
-                  const.SLICE_STATE_EDITOR: 
-                            {
-                            "MouseMoveEvent": self.OnBrushMove,
-                            "LeftButtonPressEvent": self.OnBrushClick,
-                            "LeftButtonReleaseEvent": self.OnBrushRelease,
-                            "EnterEvent": self.OnEnterInteractor,
-                            "LeaveEvent": self.OnLeaveInteractor
-                            },
-                  const.STATE_PAN:
-                            {
-                            "MouseMoveEvent": self.OnPanMove,
-                            "LeftButtonPressEvent": self.OnPanClick,
-                            "LeftButtonReleaseEvent": self.OnVtkRightRelease
-                            },
-                  const.STATE_SPIN:
-                            {
-                            "MouseMoveEvent": self.OnSpinMove,
-                            "LeftButtonPressEvent": self.OnSpinClick,
-                            "LeftButtonReleaseEvent": self.OnVtkRightRelease
-                            },
-                  const.STATE_ZOOM:
-                            {
-                            "MouseMoveEvent": self.OnZoomMoveLeft,
-                            "LeftButtonPressEvent": self.OnZoomLeftClick,
-                            "LeftButtonReleaseEvent": self.OnVtkRightRelease
-                            },
-                  const.SLICE_STATE_SCROLL:
-                            {
-                            "MouseMoveEvent": self.OnChangeSliceMove,
-                            "LeftButtonPressEvent": self.OnChangeSliceClick,
-                            },
-                  const.STATE_WL:
-                            {
-                            "MouseMoveEvent": self.OnWindowLevelMove,
-                            "LeftButtonPressEvent": self.OnWindowLevelClick,
-                            },
-                  const.STATE_DEFAULT:
-                            {
-                            },
-                  const.STATE_MEASURE_DISTANCE:
-                            {
-                            "LeftButtonPressEvent": self.OnInsertLinearMeasurePoint
-                            },
-                  const.STATE_MEASURE_ANGLE:
-                            {
-                            "LeftButtonPressEvent": self.OnInsertAngularMeasurePoint
-                            },
-                 }
+        cleanup = getattr(self.style, 'CleanUp', None)
+        if cleanup:
+            self.style.CleanUp()
 
+        del self.style
 
-        if state == const.SLICE_STATE_CROSS:
-            self.__set_cross_visibility(1)
-            Publisher.sendMessage('Activate ball reference')
-        else:
-            self.__set_cross_visibility(0)
-            Publisher.sendMessage('Deactivate ball reference')
+        style = styles.get_style(state)(self)
 
-        if state == const.STATE_WL:
-            self.on_wl = True
-            self.wl_text.Show()
-        else:
-            self.on_wl = False
-            self.wl_text.Hide()
-
-        self.__set_editor_cursor_visibility(0)
-        
-        # Bind method according to current mode
-        if(state == const.STATE_ZOOM_SL):
-            style = vtk.vtkInteractorStyleRubberBandZoom()
-
-            style.AddObserver("RightButtonPressEvent", self.QuitRubberBandZoom)
-            #style.AddObserver("RightButtonPressEvent", self.EnterRubberBandZoom)
-
-        else:
-            style = vtk.vtkInteractorStyleImage()
-
-            # Check each event available for each state
-            for event in action[state]:
-                # Bind event
-                style.AddObserver(event,
-                                  action[state][event])
-
-            # Common to all styles
-            # Mouse Buttons' presses / releases
-            style.AddObserver("LeftButtonPressEvent", self.OnLeftClick)
-            style.AddObserver("LeftButtonReleaseEvent", self.OnReleaseLeftButton)
-            style.AddObserver("RightButtonPressEvent", self.OnRightClick)
-            style.AddObserver("RightButtonReleaseEvent", self.OnReleaseRightButton)            
-
-            # Zoom using right button
-            style.AddObserver("RightButtonPressEvent",self.OnZoomRightClick)
-            style.AddObserver("MouseMoveEvent", self.OnZoomMoveRight)
-            style.AddObserver("RightButtonReleaseEvent", self.OnVtkRightRelease)
-            
-        #Scroll change slice
-        style.AddObserver("MouseWheelForwardEvent",self.OnScrollForward)
-        style.AddObserver("MouseWheelBackwardEvent", self.OnScrollBackward)
-            
-        if ((state == const.STATE_ZOOM) or (state == const.STATE_ZOOM_SL)):
-            self.interactor.Bind(wx.EVT_LEFT_DCLICK, self.OnUnZoom)
-        else:
-            self.interactor.Bind(wx.EVT_LEFT_DCLICK, self.OnUnSpinPan)
-
-        # Measures are using vtkPropPicker because they need to get which actor
-        # was picked.
-        if state in (const.STATE_MEASURE_DISTANCE, const.STATE_MEASURE_ANGLE):
-            self.pick = vtk.vtkPropPicker()
-            self.interactor.SetPicker(self.pick)
-        else:
-            self.pick = vtk.vtkWorldPointPicker()
-            self.interactor.SetPicker(self.pick)
+        setup = getattr(style, 'SetUp', None)
+        if setup:
+            style.SetUp()
 
         self.style = style
         self.interactor.SetInteractorStyle(style)
         self.interactor.Render()
-   
-    def QuitRubberBandZoom(self, evt, obj):
-        style =  vtk.vtkInteractorStyleImage()
-        self.interactor.SetInteractorStyle(style)
-        self.style = style
 
-        style.AddObserver("LeftButtonPressEvent", self.EnterRubberBandZoom)
-
-        # Zoom using right button
-        style.AddObserver("RightButtonPressEvent", self.OnRightClick)
-        style.AddObserver("RightButtonReleaseEvent", self.OnReleaseRightButton)            
-        style.AddObserver("RightButtonPressEvent",self.OnZoomRightClick)
-        style.AddObserver("MouseMoveEvent", self.OnZoomMoveRight)
-        style.AddObserver("RightButtonReleaseEvent", self.OnReleaseRightButton)
-
-    def EnterRubberBandZoom(self, evt, obj):
-        style = vtk.vtkInteractorStyleRubberBandZoom()
-        self.interactor.SetInteractorStyle(style)
-        self.style = style
-
-        style.AddObserver("RightButtonPressEvent", self.QuitRubberBandZoom)
-
-    def OnRightClick(self, evt, obj):
-        self.last_position_mouse_move = \
-            self.interactor.GetLastEventPosition()
-    
-        self.right_pressed = 1
-
-    def OnReleaseRightButton(self, evt, obj):
-        self.right_pressed = 0
-        Publisher.sendMessage('Update slice viewer') 
- 
-    def OnLeftClick(self, evt, obj):
-        self.left_pressed = 1
-
-    def OnZoomLeftClick(self, evt, obj):
-        evt.StartDolly()
-
-    def OnReleaseLeftButton(self, evt, obj):
-        self.left_pressed = 0
-        Publisher.sendMessage('Update slice viewer')
-
-    def OnWindowLevelMove(self, evt, obj):
-        if (self.left_pressed):
-            position = self.interactor.GetLastEventPosition()
-            mouse_x, mouse_y = self.interactor.GetEventPosition()
-            self.acum_achange_window += mouse_x - self.last_x
-            self.acum_achange_level += mouse_y - self.last_y
-            self.last_x, self.last_y = mouse_x, mouse_y
-
-            Publisher.sendMessage('Bright and contrast adjustment image',
-                (self.acum_achange_window, self.acum_achange_level))
-
-            #self.SetWLText(self.acum_achange_level,
-            #              self.acum_achange_window)
-
-            const.WINDOW_LEVEL['Manual'] = (self.acum_achange_window,\
-                                           self.acum_achange_level)
-            Publisher.sendMessage('Check window and level other')
-            Publisher.sendMessage('Update window level value',(self.acum_achange_window, 
-                                                                self.acum_achange_level))
-            #Necessary update the slice plane in the volume case exists
-            Publisher.sendMessage('Update slice viewer')
-            Publisher.sendMessage('Render volume viewer')
-
-    def OnWindowLevelClick(self, evt, obj):
-        self.last_x, self.last_y = self.interactor.GetLastEventPosition()
+        self.state = state
 
     def UpdateWindowLevelValue(self, pubsub_evt):
         window, level = pubsub_evt.data
         self.acum_achange_window, self.acum_achange_level = (window, level)
         self.SetWLText(window, level)
+
+        slc = sl.Slice()
+        slc._update_wwwl_widget_nodes(window, level)
+
         Publisher.sendMessage('Update all slice')
+        Publisher.sendMessage('Update clut imagedata widget')
 
-
-    def OnChangeSliceMove(self, evt, obj):
-        if (self.left_pressed):
-            min = 0
-            max = self.slice_.GetMaxSliceNumber(self.orientation)
-    
-            if (self.left_pressed):
-                position = self.interactor.GetLastEventPosition()
-                scroll_position = self.scroll.GetThumbPosition()
-    
-                if (position[1] > self.last_position) and\
-                                (self.acum_achange_slice > min):
-                    self.acum_achange_slice -= 1
-                elif(position[1] < self.last_position) and\
-                                (self.acum_achange_slice < max):
-                     self.acum_achange_slice += 1
-                self.last_position = position[1]
-    
-                self.scroll.SetThumbPosition(self.acum_achange_slice)
-                self.OnScrollBar()
-
-    def OnChangeSliceClick(self, evt, obj):
-        position = list(self.interactor.GetLastEventPosition())
-        self.acum_achange_slice = self.scroll.GetThumbPosition()
-        self.last_position = position[1]
-
-    def OnPanMove(self, evt, obj):
-        mouse_x, mouse_y = self.interactor.GetLastEventPosition()
-        ren = self.interactor.FindPokedRenderer(mouse_x, mouse_y)
-        cam = ren.GetActiveCamera()
-
-        if (self.left_pressed):
-            evt.Pan()
-            evt.OnRightButtonDown()
-            self.paned_image = True
-
-    def OnPanClick(self, evt, obj):
-        evt.StartPan()
-
-    def OnZoomMoveLeft(self, evt, obj):
-        if self.left_pressed:
-            evt.Dolly()
-            evt.OnRightButtonDown()
-
-    def OnVtkRightRelease(self, evt, obj):
-        evt.OnRightButtonUp()
-
-    def OnUnZoom(self, evt, obj = None):
-        mouse_x, mouse_y = self.interactor.GetLastEventPosition()
-        ren = self.interactor.FindPokedRenderer(mouse_x, mouse_y)
-        slice_data = self.get_slice_data(ren)
-        ren.ResetCamera()
-        ren.ResetCameraClippingRange()
-        #self.Reposition(slice_data)
+    def UpdateWindowLevelText(self, pubsub_evt):
+        window, level = pubsub_evt.data
+        self.acum_achange_window, self.acum_achange_level = (window, level)
+        self.SetWLText(window, level)
         self.interactor.Render()
 
-    def OnUnSpinPan(self, evt):        
-        orientation = self.orientation
-        proj = project.Project()
-        orig_orien = 1
-        mouse_x, mouse_y = self.interactor.GetLastEventPosition()
-        ren = self.interactor.FindPokedRenderer(mouse_x, mouse_y)
-         
-        if((self.state == const.STATE_SPIN) and (self.spined_image)):
-            self.cam.SetViewUp(const.SLICE_POSITION[orig_orien][0][self.orientation])
-            # Values are on ccw order, starting from the top:
-            if self.orientation == 'AXIAL':
-                values = [_("A"), _("R"), _("P"), _("L")]
-            elif self.orientation == 'CORONAL':
-                values = [_("T"), _("R"), _("B"), _("L")]
-            else: # 'SAGITAL':
-                values = [_("T"), _("P"), _("B"), _("A")]
-
-            self.RenderTextDirection(values)
-            self.interactor.Render()
-            self.spined_image = False
-        elif((self.state == const.STATE_PAN) and (self.paned_image)):
-            ren.ResetCamera()
-            self.interactor.Render()
-            self.paned_image = False
-
-    def OnSpinMove(self, evt, obj):
-        mouse_x, mouse_y = self.interactor.GetLastEventPosition()
-        ren = self.interactor.FindPokedRenderer(mouse_x, mouse_y)
-        cam = ren.GetActiveCamera()
-        if (self.left_pressed):
-            self.UpdateTextDirection(cam)    
-            self.spined_image = True
-            evt.Spin()
-            evt.OnRightButtonDown()
-
-
-    def OnSpinClick(self, evt, obj):
-        evt.StartSpin()
-
-    def OnEnterInteractor(self, evt, obj):
-        if (self.slice_.buffer_slices[self.orientation].mask is None):
-            return
-        self.slice_data.cursor.Show()
-        self.interactor.SetCursor(wx.StockCursor(wx.CURSOR_BLANK))
-        
-    def OnLeaveInteractor(self, evt, obj):
-        self.slice_data.cursor.Show(0)
-        self.interactor.SetCursor(wx.StockCursor(wx.CURSOR_DEFAULT))
-        self.interactor.Render()
+    def OnClutChange(self, evt):
+        Publisher.sendMessage('Change colour table from background image from widget',
+                              evt.GetNodes())
+        slc = sl.Slice()
+        Publisher.sendMessage('Update window level value',
+                              (slc.window_width, slc.window_level))
 
     def SetWLText(self, window_width, window_level):
         value = STR_WL%(window_level, window_width) 
@@ -544,6 +391,17 @@ class Viewer(wx.Panel):
         self.right_text.SetValue(directions[3])
         self.interactor.Render()
 
+    def ResetTextDirection(self, cam):
+        # Values are on ccw order, starting from the top:
+        if self.orientation == 'AXIAL':
+            values = [_("A"), _("R"), _("P"), _("L")]
+        elif self.orientation == 'CORONAL':
+            values = [_("T"), _("R"), _("B"), _("L")]
+        else: # 'SAGITAL':
+            values = [_("T"), _("P"), _("B"), _("A")]
+
+        self.RenderTextDirection(values)
+        self.interactor.Render()
 
     def UpdateTextDirection(self, cam):
         croll = cam.GetRoll()
@@ -716,129 +574,6 @@ class Viewer(wx.Panel):
         slice_data.SetCursor(cursor)
         self.interactor.Render()
 
-    def OnBrushClick(self, evt, obj):
-        if (self.slice_.buffer_slices[self.orientation].mask is None):
-            return
-
-        self.__set_editor_cursor_visibility(1)
- 
-        mouse_x, mouse_y = self.interactor.GetEventPosition()
-        render = self.interactor.FindPokedRenderer(mouse_x, mouse_y)
-        slice_data = self.get_slice_data(render)
-
-        # TODO: Improve!
-        #for i in self.slice_data_list:
-            #i.cursor.Show(0)
-        self.slice_data.cursor.Show()
-
-        self.pick.Pick(mouse_x, mouse_y, 0, render)
-        
-        coord = self.get_coordinate_cursor()
-        position = self.slice_data.actor.GetInput().FindPoint(coord)
-        
-        if position != -1:
-            coord = self.slice_data.actor.GetInput().GetPoint(position)
-
-        slice_data.cursor.SetPosition(coord)
-        cursor = self.slice_data.cursor
-        radius = cursor.radius
-
-        if position < 0:
-            position = self.calculate_matrix_position(coord)
-
-        self.slice_.edit_mask_pixel(self._brush_cursor_op, cursor.GetPixels(),
-                                    position, radius, self.orientation)
-        self._flush_buffer = True
-
-        # TODO: To create a new function to reload images to viewer.
-        self.OnScrollBar()
-
-    def OnBrushMove(self, evt, obj):
-        if (self.slice_.buffer_slices[self.orientation].mask is None):
-            return
-
-        self.__set_editor_cursor_visibility(1)
- 
-        mouse_x, mouse_y = self.interactor.GetEventPosition()
-        render = self.interactor.FindPokedRenderer(mouse_x, mouse_y)
-        slice_data = self.get_slice_data(render)
-
-        # TODO: Improve!
-        #for i in self.slice_data_list:
-            #i.cursor.Show(0)
-
-        self.pick.Pick(mouse_x, mouse_y, 0, render)
-        
-        #if (self.pick.GetViewProp()):
-            #self.interactor.SetCursor(wx.StockCursor(wx.CURSOR_BLANK))
-        #else:
-            #self.interactor.SetCursor(wx.StockCursor(wx.CURSOR_DEFAULT))
-            
-        coord = self.get_coordinate_cursor()
-        position = self.slice_data.actor.GetInput().FindPoint(coord)
-
-        # when position == -1 the cursos is not over the image, so is not
-        # necessary to set the cursor position to world coordinate center of
-        # pixel from slice image.
-        if position != -1:
-            coord = self.slice_data.actor.GetInput().GetPoint(position)
-        slice_data.cursor.SetPosition(coord)
-        #self.__update_cursor_position(slice_data, coord)
-        
-        if (self.left_pressed):
-            cursor = self.slice_data.cursor
-            position = self.slice_data.actor.GetInput().FindPoint(coord)
-            radius = cursor.radius
-
-            if position < 0:
-                position = self.calculate_matrix_position(coord)
-                
-            self.slice_.edit_mask_pixel(self._brush_cursor_op, cursor.GetPixels(),
-                                        position, radius, self.orientation)
-            # TODO: To create a new function to reload images to viewer.
-            self.OnScrollBar(update3D=False)
-
-        else:
-            self.interactor.Render()
-
-    def OnBrushRelease(self, evt, obj):
-        if (self.slice_.buffer_slices[self.orientation].mask is None):
-            return
-
-        self.slice_.apply_slice_buffer_to_mask(self.orientation)
-        self._flush_buffer = False
-
-    def OnCrossMouseClick(self, evt, obj):
-        self.ChangeCrossPosition()
-
-    def OnCrossMove(self, evt, obj):
-        # The user moved the mouse with left button pressed
-        if self.left_pressed:
-            self.ChangeCrossPosition()
-
-    def ChangeCrossPosition(self):
-        mouse_x, mouse_y = self.interactor.GetEventPosition()
-        renderer = self.slice_data.renderer
-        self.pick.Pick(mouse_x, mouse_y, 0, renderer)
-
-        # Get in what slice data the click occurred
-        # pick to get click position in the 3d world
-        coord_cross = self.get_coordinate_cursor()
-        position = self.slice_data.actor.GetInput().FindPoint(coord_cross)
-        # Forcing focal point to be setted in the center of the pixel.
-        coord_cross = self.slice_data.actor.GetInput().GetPoint(position)
-
-        coord = self.calcultate_scroll_position(position)   
-        self.ScrollSlice(coord)
-
-        Publisher.sendMessage('Update cross position', coord_cross)
-        Publisher.sendMessage('Set ball reference position based on bound',
-                                   coord_cross)
-        Publisher.sendMessage('Set camera in volume', coord_cross)
-        Publisher.sendMessage('Render volume viewer')
-        
-        self.interactor.Render()
-
     def Navigation(self, pubsub_evt):
         # Get point from base change
         x, y, z = pubsub_evt.data
@@ -867,14 +602,6 @@ class Viewer(wx.Panel):
                                        coord[2])
             Publisher.sendMessage(('Set scroll position', 'SAGITAL'),
                                        coord[0])
-
-    def OnZoomMoveRight(self, evt, obj):
-        if (self.right_pressed):
-            evt.Dolly()
-            evt.OnRightButtonDown()
-
-    def OnZoomRightClick(self, evt, obj):
-        evt.StartDolly()
 
     def get_slice_data(self, render):
         #for slice_data in self.slice_data_list:
@@ -990,10 +717,13 @@ class Viewer(wx.Panel):
         Publisher.subscribe(self.ChangeBrushOperation,
                                  'Set edition operation')
 
-        Publisher.subscribe(self.UpdateWindowLevelValue,\
-                                 'Update window level value')
+        Publisher.subscribe(self.UpdateWindowLevelValue,
+                            'Update window level value')
 
-        #Publisher.subscribe(self.__set_cross_visibility,\
+        Publisher.subscribe(self.UpdateWindowLevelText,
+                            'Update window level text')
+
+        #Publisher.subscribe(self._set_cross_visibility,\
         #                         'Set cross visibility')
         ###
         Publisher.subscribe(self.__set_layout,
@@ -1017,6 +747,15 @@ class Viewer(wx.Panel):
 
         Publisher.subscribe(self.ReloadActualSlice, 'Reload actual slice')
         Publisher.subscribe(self.OnUpdateScroll, 'Update scroll')
+
+
+        # MIP
+        Publisher.subscribe(self.OnSetMIPSize, 'Set MIP size %s' % self.orientation)
+        Publisher.subscribe(self.OnSetMIPBorder, 'Set MIP border %s' % self.orientation)
+        Publisher.subscribe(self.OnSetMIPInvert, 'Set MIP Invert %s' % self.orientation)
+        Publisher.subscribe(self.OnShowMIPInterface, 'Show MIP interface')
+
+        Publisher.subscribe(self.OnSetOverwriteMask, "Set overwrite mask")
 
     def SetDefaultCursor(self, pusub_evt):
         self.interactor.SetCursor(wx.StockCursor(wx.CURSOR_DEFAULT))
@@ -1194,7 +933,10 @@ class Viewer(wx.Panel):
         self.cam = self.slice_data.renderer.GetActiveCamera()
         self.__build_cross_lines(imagedata)
         #self.set_slice_number(0)
-        self.set_slice_number(0)
+
+        # Set the slice number to the last slice to ensure the camera if far
+        # enough to show all slices.
+        self.set_slice_number(max_slice_number - 1)
         self.__update_camera()
         self.slice_data.renderer.ResetCamera()
         self.interactor.GetRenderWindow().AddRenderer(self.slice_data.renderer)
@@ -1225,6 +967,7 @@ class Viewer(wx.Panel):
         self.interactor.Render()
 
         self.EnableText()
+        self.wl_text.Hide()
         ## Insert cursor
         self.SetInteractorStyle(const.STATE_DEFAULT)
 
@@ -1260,10 +1003,10 @@ class Viewer(wx.Panel):
         pos = pubsub_evt.data
         self.cross.SetFocalPoint(pos)
 
-    def __set_cross_visibility(self, visibility):
+    def _set_cross_visibility(self, visibility):
         self.cross_actor.SetVisibility(visibility)
 
-    def __set_editor_cursor_visibility(self, visibility):
+    def _set_editor_cursor_visibility(self, visibility):
         for slice_data in self.slice_data_list:
             slice_data.cursor.actor.SetVisibility(visibility)
 
@@ -1355,6 +1098,17 @@ class Viewer(wx.Panel):
                                                      max_slice_number)
         self.set_scroll_position(0)
 
+    @property
+    def number_slices(self):
+        return self._number_slices
+
+    @number_slices.setter
+    def number_slices(self, val):
+        if val != self._number_slices:
+            self._number_slices = val
+            buffer_ = self.slice_.buffer_slices[self.orientation]
+            buffer_.discard_buffer()
+
     def set_scroll_position(self, position):
         self.scroll.SetThumbPosition(position)
         self.OnScrollBar()
@@ -1389,9 +1143,18 @@ class Viewer(wx.Panel):
 
     def OnKeyDown(self, evt=None, obj=None):
         pos = self.scroll.GetThumbPosition()
+        skip = True
 
         min = 0
         max = self.slice_.GetMaxSliceNumber(self.orientation)
+
+        projections = {wx.WXK_NUMPAD0 : const.PROJECTION_NORMAL,
+                       wx.WXK_NUMPAD1 : const.PROJECTION_MaxIP,
+                       wx.WXK_NUMPAD2 : const.PROJECTION_MinIP,
+                       wx.WXK_NUMPAD3 : const.PROJECTION_MeanIP,
+                       wx.WXK_NUMPAD4 : const.PROJECTION_MIDA,
+                       wx.WXK_NUMPAD5 : const.PROJECTION_CONTOUR_MIP,
+                       wx.WXK_NUMPAD6 : const.PROJECTION_CONTOUR_MIDA,}
 
         if self._flush_buffer:
             self.slice_.apply_slice_buffer_to_mask(self.orientation)
@@ -1403,11 +1166,31 @@ class Viewer(wx.Panel):
         elif (evt.GetKeyCode() == wx.WXK_DOWN and pos < max):
             self.OnScrollBackward()
             self.OnScrollBar()
+
+        elif (evt.GetKeyCode() == wx.WXK_NUMPAD_ADD):
+            actual_value = self.mip_ctrls.mip_size_spin.GetValue()
+            self.mip_ctrls.mip_size_spin.SetValue(actual_value + 1)
+            if self.mip_ctrls.mip_size_spin.GetValue() != actual_value:
+                self.number_slices = self.mip_ctrls.mip_size_spin.GetValue()
+                self.ReloadActualSlice()
+
+        elif (evt.GetKeyCode() == wx.WXK_NUMPAD_SUBTRACT):
+            actual_value = self.mip_ctrls.mip_size_spin.GetValue()
+            self.mip_ctrls.mip_size_spin.SetValue(actual_value - 1)
+            if self.mip_ctrls.mip_size_spin.GetValue() != actual_value:
+                self.number_slices = self.mip_ctrls.mip_size_spin.GetValue()
+                self.ReloadActualSlice()
+
+        elif evt.GetKeyCode() in projections:
+            self.slice_.SetTypeProjection(projections[evt.GetKeyCode()])
+            Publisher.sendMessage('Set projection type', projections[evt.GetKeyCode()])
+            Publisher.sendMessage('Reload actual slice')
+            skip = False
         
         self.UpdateSlice3D(pos)
         self.interactor.Render()
 
-        if evt:
+        if evt and skip:
             evt.Skip()
 
     def OnScrollForward(self, evt=None, obj=None):
@@ -1440,15 +1223,58 @@ class Viewer(wx.Panel):
             self.slice_data.SetSize((w, h))
         evt.Skip()
 
+    def OnSetMIPSize(self, pubsub_evt):
+        val = pubsub_evt.data
+        self.number_slices = val
+        self.ReloadActualSlice()
+
+    def OnSetMIPBorder(self, pubsub_evt):
+        val = pubsub_evt.data
+        self.slice_.n_border = val
+        buffer_ = self.slice_.buffer_slices[self.orientation]
+        buffer_.discard_buffer()
+        self.ReloadActualSlice()
+
+    def OnSetMIPInvert(self, pubsub_evt):
+        val = pubsub_evt.data
+        self._mip_inverted = val
+        buffer_ = self.slice_.buffer_slices[self.orientation]
+        buffer_.discard_buffer()
+        self.ReloadActualSlice()
+
+    def OnShowMIPInterface(self, pubsub_evt):
+        value = pubsub_evt.data
+        if value:
+            if not self.mip_ctrls.Shown:
+                self.mip_ctrls.Show()
+                self.GetSizer().Add(self.mip_ctrls, 0, wx.EXPAND|wx.GROW|wx.ALL, 2)
+                self.Layout()
+        else:
+            self.mip_ctrls.Hide()
+            self.GetSizer().Remove(self.mip_ctrls)
+            self.Layout()
+    
+    def OnSetOverwriteMask(self, pubsub_evt):
+        value = pubsub_evt.data
+        self.overwrite_mask = value
+
     def set_slice_number(self, index):
-        image = self.slice_.GetSlices(self.orientation, index)
+        inverted = self.mip_ctrls.inverted.GetValue()
+        border_size = self.mip_ctrls.border_spin.GetValue()
+        image = self.slice_.GetSlices(self.orientation, index,
+                                      self.number_slices, inverted, border_size)
         self.slice_data.actor.SetInput(image)
         for actor in self.actors_by_slice_number.get(self.slice_data.number, []):
             self.slice_data.renderer.RemoveActor(actor)
         for actor in self.actors_by_slice_number.get(index, []):
             self.slice_data.renderer.AddActor(actor)
 
-        self.slice_data.SetNumber(index)
+        if self.slice_._type_projection == const.PROJECTION_NORMAL:
+            self.slice_data.SetNumber(index)
+        else:
+            max_slices = self.slice_.GetMaxSliceNumber(self.orientation)
+            end = min(max_slices, index + self.number_slices - 1)
+            self.slice_data.SetNumber(index, end)
         self.__update_display_extent(image)
         self.cross.SetModelBounds(self.slice_data.actor.GetBounds())
 
@@ -1484,36 +1310,7 @@ class Viewer(wx.Panel):
                 coord[index] = extent_min[index]
         return coord
 
-    def OnInsertLinearMeasurePoint(self, obj, evt):
-        x,y = self.interactor.GetEventPosition()
-        render = self.interactor.FindPokedRenderer(x, y)
-        slice_data = self.get_slice_data(render)
-        slice_number = slice_data.number
-        self.pick.Pick(x, y, 0, render)
-        x, y, z = self.pick.GetPickPosition()
-        print x, y, z
-        if self.pick.GetViewProp(): 
-            self.render_to_add = slice_data.renderer
-            Publisher.sendMessage("Add measurement point",
-                    ((x, y,z), const.LINEAR, ORIENTATIONS[self.orientation],
-                        slice_number))
-            self.interactor.Render()
-
-    def OnInsertAngularMeasurePoint(self, obj, evt):
-        x,y = self.interactor.GetEventPosition()
-        render = self.interactor.FindPokedRenderer(x, y)
-        slice_data = self.get_slice_data(render)
-        slice_number = slice_data.number
-        self.pick.Pick(x, y, 0, render)
-        x, y, z = self.pick.GetPickPosition()
-        if self.pick.GetViewProp(): 
-            self.render_to_add = slice_data.renderer
-            Publisher.sendMessage("Add measurement point",
-                    ((x, y,z), const.ANGULAR, ORIENTATIONS[self.orientation],
-                        slice_number))
-            self.interactor.Render()
-
-    def ReloadActualSlice(self, pubsub_evt):
+    def ReloadActualSlice(self, pubsub_evt=None):
         pos = self.scroll.GetThumbPosition()
         self.set_slice_number(pos)
         self.interactor.Render()

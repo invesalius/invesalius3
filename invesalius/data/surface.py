@@ -36,10 +36,11 @@ import session as ses
 import surface_process
 import utils as utl
 import vtk_utils as vu
+
 try:
+    import ca_smoothing
+except ImportError:
     import data.ca_smoothing as ca_smoothing
-except:
-    pass
 
 class Surface():
     """
@@ -847,12 +848,13 @@ class SurfaceManager():
             #    writer = vtk.vtkIVWriter()
             elif filetype == const.FILETYPE_PLY:
                 writer = vtk.vtkPLYWriter()
-                writer.SetFileTypeToBinary()
-                writer.SetDataByteOrderToLittleEndian()
+                writer.SetFileTypeToASCII()
+                writer.SetColorModeToOff()
+                #writer.SetDataByteOrderToLittleEndian()
                 #writer.SetColorModeToUniformCellColor()
                 #writer.SetColor(255, 0, 0)
 
-            if filetype == const.FILETYPE_STL:
+            if filetype in (const.FILETYPE_STL, const.FILETYPE_PLY):
                 # Invert normals
                 normals = vtk.vtkPolyDataNormals()
                 normals.SetInput(polydata)

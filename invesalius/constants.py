@@ -24,7 +24,7 @@ import wx
 
 from project import Project
 
-INVESALIUS_VERSION = "3.0 beta 3"
+INVESALIUS_VERSION = "3.0 beta 5"
 
 #---------------
 
@@ -37,6 +37,8 @@ DEFAULT_MEASURE_COLOUR = (1,0,0)
 DEFAULT_MEASURE_BG_COLOUR = (250/255.0, 247/255.0, 218/255.0)
 DEFAULT_MEASURE_RADIUS = 1
 DEFAULT_MEASURE_TYPE = MEASURE_LINEAR
+
+PROP_MEASURE = 0.8
 
 
 STEREO_OFF = _(" Off")
@@ -290,7 +292,8 @@ WINDOW_LEVEL = {_("Abdomen"):(350,50),
                 _("Pelvis"): (450,50),
                 _("Sinus"):(4000, 400),
                 _("Vasculature - Hard"):(240,80),
-                _("Vasculature - Soft"):(650,160)}
+                _("Vasculature - Soft"):(650,160),
+                _("Contour"): (255, 127)}
 
 REDUCE_IMAGEDATA_QUALITY = 0
 
@@ -482,6 +485,7 @@ STATE_MEASURE_ANGLE = 1008
 SLICE_STATE_CROSS = 3006
 SLICE_STATE_SCROLL = 3007
 SLICE_STATE_EDITOR = 3008
+SLICE_STATE_WATERSHED = 3009
 
 VOLUME_STATE_SEED = 2001
 #STATE_LINEAR_MEASURE = 3001
@@ -497,6 +501,7 @@ TOOL_SLICE_STATES = [SLICE_STATE_CROSS, SLICE_STATE_SCROLL]
 SLICE_STYLES = TOOL_STATES + TOOL_SLICE_STATES
 SLICE_STYLES.append(STATE_DEFAULT)
 SLICE_STYLES.append(SLICE_STATE_EDITOR)
+SLICE_STYLES.append(SLICE_STATE_WATERSHED)
 
 VOLUME_STYLES = TOOL_STATES + [VOLUME_STATE_SEED, STATE_MEASURE_DISTANCE,
         STATE_MEASURE_ANGLE]
@@ -504,6 +509,7 @@ VOLUME_STYLES.append(STATE_DEFAULT)
 
 
 STYLE_LEVEL = {SLICE_STATE_EDITOR: 1,
+               SLICE_STATE_WATERSHED: 1,
                SLICE_STATE_CROSS: 2,
                SLICE_STATE_SCROLL: 2,
                STATE_ANNOTATE: 2,
@@ -540,3 +546,18 @@ DICOM_ENCODING_TO_PYTHON = {
                             'ISO_IR 138': 'iso_ir_138',
                             'ISO_IR 144': 'iso_ir_144',
                             }
+
+#-------------------- Projections type ----------------
+PROJECTION_NORMAL=0
+PROJECTION_MaxIP=1
+PROJECTION_MinIP=2
+PROJECTION_MeanIP=3
+PROJECTION_LMIP=4
+PROJECTION_MIDA=5
+PROJECTION_CONTOUR_MIP=6
+PROJECTION_CONTOUR_LMIP=7
+PROJECTION_CONTOUR_MIDA=8
+
+#------------ Projections defaults ------------------
+PROJECTION_BORDER_SIZE=1.0
+PROJECTION_MIP_SIZE=2

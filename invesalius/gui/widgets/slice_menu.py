@@ -21,17 +21,39 @@
 #--------------------------------------------------------------------------
 import sys
 
+try:
+    from collections import OrderedDict
+except(ImportError):
+    from ordereddict import OrderedDict
+
 import wx
 from wx.lib.pubsub import pub as Publisher
+
 import constants as const
+import data.slice_ as sl
+import presets
+
+from gui.dialogs import ClutImagedataDialog
+
+PROJECTIONS_ID = OrderedDict(((_('Normal'), const.PROJECTION_NORMAL),
+                              (_('MaxIP'), const.PROJECTION_MaxIP),
+                              (_('MinIP'), const.PROJECTION_MinIP),
+                              (_('MeanIP'), const.PROJECTION_MeanIP),
+                              (_('MIDA'), const.PROJECTION_MIDA),
+                              (_('Contour MaxIP'), const.PROJECTION_CONTOUR_MIP),
+                              (_('Contour MIDA'), const.PROJECTION_CONTOUR_MIDA),) ) 
+                
 
 class SliceMenu(wx.Menu):
     def __init__(self):
         wx.Menu.__init__(self)
         self.ID_TO_TOOL_ITEM = {}
+        self.cdialog = None
 
         #------------ Sub menu of the window and level ----------
         submenu_wl = wx.Menu()
+
+        self._gen_event = True
 
         #Window and level from DICOM
         new_id = self.id_wl_first = wx.NewId()
@@ -55,7 +77,6 @@ class SliceMenu(wx.Menu):
                 submenu_wl.AppendItem(wl_item)
                 self.ID_TO_TOOL_ITEM[new_id] = wl_item
 
-
         #----------- Sub menu of the save and load options ---------
         #submenu_wl.AppendSeparator()
         #options = [_("Save current values"),
@@ -70,20 +91,57 @@ class SliceMenu(wx.Menu):
 
 
         #------------ Sub menu of the pseudo colors ----------------
+        if sys.platform == 'linux2':
+            mkind = wx.ITEM_CHECK
+        else:
+            mkind = wx.ITEM_RADIO
+
+        self.pseudo_color_items = {}
         submenu_pseudo_colours = wx.Menu()
+        self.pseudo_color_items = {}
         new_id = self.id_pseudo_first = wx.NewId()
         color_item = wx.MenuItem(submenu_pseudo_colours, new_id,\
-                            _("Default "), kind=wx.ITEM_RADIO)
+                            _("Default "), kind=mkind)
         submenu_pseudo_colours.AppendItem(color_item)
+        color_item.Check(1)
         self.ID_TO_TOOL_ITEM[new_id] = color_item
+        self.pseudo_color_items[new_id] = color_item
 
         for name in sorted(const.SLICE_COLOR_TABLE):
             if not(name == _("Default ")):
                 new_id = wx.NewId()
                 color_item = wx.MenuItem(submenu_wl, new_id,\
-                                    name, kind=wx.ITEM_RADIO)
+                                    name, kind=mkind)
                 submenu_pseudo_colours.AppendItem(color_item)
                 self.ID_TO_TOOL_ITEM[new_id] = color_item
+                self.pseudo_color_items[new_id] = color_item
+
+        self.plist_presets = presets.get_wwwl_presets()
+        for name in sorted(self.plist_presets):
+            new_id = wx.NewId()
+            color_item = wx.MenuItem(submenu_wl, new_id, name,
+                                     kind=mkind)
+            submenu_pseudo_colours.AppendItem(color_item)
+            self.ID_TO_TOOL_ITEM[new_id] = color_item
+            self.pseudo_color_items[new_id] = color_item
+
+        new_id = wx.NewId()
+        color_item = wx.MenuItem(submenu_wl, new_id, _('Custom'),
+                                 kind=mkind)
+        submenu_pseudo_colours.AppendItem(color_item)
+        self.ID_TO_TOOL_ITEM[new_id] = color_item
+        self.pseudo_color_items[new_id] = color_item
+
+        # --------------- Sub menu of the projection type ---------------------
+        self.projection_items = {}
+        submenu_projection = wx.Menu()
+        for name in PROJECTIONS_ID:
+            new_id = wx.NewId()
+            projection_item = wx.MenuItem(submenu_projection, new_id, name,
+                                          kind=wx.ITEM_RADIO)
+            submenu_projection.AppendItem(projection_item)
+            self.ID_TO_TOOL_ITEM[new_id] = projection_item
+            self.projection_items[PROJECTIONS_ID[name]] = projection_item
         
         flag_tiling = False
         #------------ Sub menu of the image tiling ---------------
@@ -103,6 +161,7 @@ class SliceMenu(wx.Menu):
         # Add sub itens in the menu
         self.AppendMenu(-1, _("Window width and level"), submenu_wl)
         self.AppendMenu(-1, _("Pseudo color"), submenu_pseudo_colours)
+        self.AppendMenu(-1, _("Projection type"), submenu_projection)
         ###self.AppendMenu(-1, _("Image Tiling"), submenu_image_tiling)
 
         # It doesn't work in Linux
@@ -112,18 +171,25 @@ class SliceMenu(wx.Menu):
             submenu_wl.Bind(wx.EVT_MENU, self.OnPopup)
             submenu_pseudo_colours.Bind(wx.EVT_MENU, self.OnPopup)
             submenu_image_tiling.Bind(wx.EVT_MENU, self.OnPopup)
+            submenu_projection.Bind(wx.EVT_MENU, self.OnPopup)
 
         self.__bind_events()
 
     def __bind_events(self):
         Publisher.subscribe(self.CheckWindowLevelOther, 'Check window and level other')
         Publisher.subscribe(self.FirstItemSelect, 'Select first item from slice menu')
+        Publisher.subscribe(self._close, 'Close project data')
+
+        Publisher.subscribe(self._check_projection_menu, 'Check projection menu')
     
     def FirstItemSelect(self, pusub_evt):
-        
         item = self.ID_TO_TOOL_ITEM[self.id_wl_first]
         item.Check(1)
         
+        for i in self.pseudo_color_items:
+            it = self.pseudo_color_items[i]
+            if it.IsChecked():
+                it.Toggle()
         item = self.ID_TO_TOOL_ITEM[self.id_pseudo_first]
         item.Check(1)
     
@@ -134,14 +200,16 @@ class SliceMenu(wx.Menu):
         item = self.ID_TO_TOOL_ITEM[self.other_wl_id]
         item.Check()
 
-    def OnPopup(self, evt):
+    def _check_projection_menu(self, pubsub_evt):
+        p_id = pubsub_evt.data
+        item = self.projection_items[p_id]
+        item.Check()
 
+    def OnPopup(self, evt):
         id = evt.GetId()
         item = self.ID_TO_TOOL_ITEM[evt.GetId()]
         key = item.GetLabel()
-        print "OnPopup menu"
         if(key in const.WINDOW_LEVEL.keys()):
-            print "a"
             window, level = const.WINDOW_LEVEL[key]
             Publisher.sendMessage('Bright and contrast adjustment image',
                     (window, level))
@@ -155,16 +223,76 @@ class SliceMenu(wx.Menu):
             Publisher.sendMessage('Render volume viewer')
 
         elif(key in const.SLICE_COLOR_TABLE.keys()):
-            print "b"
             values = const.SLICE_COLOR_TABLE[key]
             Publisher.sendMessage('Change colour table from background image', values)
             Publisher.sendMessage('Update slice viewer')
 
+            if sys.platform == 'linux2':
+                for i in self.pseudo_color_items:
+                    it = self.pseudo_color_items[i]
+                    if it.IsChecked():
+                        it.Toggle()
+
+                item.Toggle()
+            self.HideClutDialog()
+            self._gen_event = True
+
+        elif key in self.plist_presets:
+            values = presets.get_wwwl_preset_colours(self.plist_presets[key])
+            Publisher.sendMessage('Change colour table from background image from plist', values)
+            Publisher.sendMessage('Update slice viewer')
+
+            if sys.platform == 'linux2':
+                for i in self.pseudo_color_items:
+                    it = self.pseudo_color_items[i]
+                    if it.IsChecked():
+                        it.Toggle()
+
+                item.Toggle()
+            self.HideClutDialog()
+            self._gen_event = True
+
         elif(key in const.IMAGE_TILING.keys()):
-            print "c"
             values = const.IMAGE_TILING[key]
             Publisher.sendMessage('Set slice viewer layout', values)
             Publisher.sendMessage('Update slice viewer')
 
+        elif key in PROJECTIONS_ID:
+            print 'Key', key
+            pid = PROJECTIONS_ID[key]
+            Publisher.sendMessage('Set projection type', pid)
+            Publisher.sendMessage('Reload actual slice')
+
+        elif key == _('Custom'):
+            if self.cdialog is None:
+                slc = sl.Slice()
+                histogram = slc.histogram
+                init = slc.matrix.min()
+                end = slc.matrix.max()
+                nodes = slc.nodes
+                self.cdialog = ClutImagedataDialog(histogram, init, end, nodes)
+                self.cdialog.Show()
+            else:
+                self.cdialog.Show(self._gen_event)
+
+            if sys.platform == 'linux2':
+                for i in self.pseudo_color_items:
+                    it = self.pseudo_color_items[i]
+                    if it.IsChecked():
+                        it.Toggle()
+
+                item.Toggle()
+            item = self.ID_TO_TOOL_ITEM[evt.GetId()]
+            item.Check(True)
+            self._gen_event = False
+
         evt.Skip()
 
+    def HideClutDialog(self):
+        if self.cdialog:
+            self.cdialog.Hide()
+
+    def _close(self, pubsub_evt):
+        if self.cdialog:
+            self.cdialog.Destroy()
+            self.cdialog = None
