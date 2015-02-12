@@ -507,7 +507,7 @@ class SurfaceProperties(wx.Panel):
         Publisher.sendMessage('Change surface selected', surface_index)
 
     def OnSelectColour(self, evt):
-        colour = [value/255.0 for value in evt.GetValue()]
+        colour = [value/255.0 for value in evt.GetValue]
         Publisher.sendMessage('Set surface colour',
                                     (self.combo_surface_name.GetSelection(),
                                     colour))
@@ -585,4 +585,4 @@ class QualityAdjustment(wx.Panel):
         print "TODO: Send Signal - Change surface quality: %s" % (evt.GetString())
 
     def OnDecimate(self, evt):
-        print "TODO: Send Signal - Decimate: %s" % float(self.spin.GetValue())/100
+        print "TODO: Send Signal - Decimate: %s" % float(self.spin.GetValue)/100
