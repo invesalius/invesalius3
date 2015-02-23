@@ -610,6 +610,6 @@ class VolumeToolPanel(wx.Panel):
         self.Refresh()
 
     def OnSelectColour(self, evt):
-        colour = c = [i/255.0 for i in evt.GetValue()]
+        colour = c = [i/255.0 for i in evt.GetValue]
         Publisher.sendMessage('Change volume viewer background colour', colour)
 

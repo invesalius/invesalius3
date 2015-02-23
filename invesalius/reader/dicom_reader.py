@@ -117,7 +117,7 @@ class LoadDicom:
             tag = gdcm.Tag(0x0008, 0x0005)
             ds = reader.GetFile().GetDataSet()
             if ds.FindDataElement(tag):
-                encoding_value = str(ds.GetDataElement(tag).GetValue()).split('\\')[0]
+                encoding_value = str(ds.GetDataElement(tag).GetValue).split('\\')[0]
                 
                 if encoding_value.startswith("Loaded"):
                     encoding = "ISO_IR 100"

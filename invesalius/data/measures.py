@@ -235,7 +235,7 @@ class MeasurementManager(object):
             #m.index = index # already done in proj
             name = m.name
             colour = m.colour
-            m.value = mr.GetValue()
+            m.value = mr.GetValue
             type_ = TYPE[type]
             location = LOCATION[location]
             if type == const.LINEAR:

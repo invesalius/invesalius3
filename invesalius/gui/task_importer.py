@@ -64,8 +64,8 @@ class InnerTaskPanel(wx.Panel):
         self.float_hyper_list = []
 
         # Fixed hyperlink items
-        tooltip = wx.ToolTip(_("Select DICOM files to be reconstructed"))
-        link_import_local = hl.HyperLinkCtrl(self, -1, _("Import DICOM images..."))
+        tooltip = wx.ToolTip(_("Select DICOM, Analyze or NIfTI files to be reconstructed"))
+        link_import_local = hl.HyperLinkCtrl(self, -1, _("Import medical images..."))
         link_import_local.SetUnderlines(False, False, False)
         link_import_local.SetBold(True)
         link_import_local.SetColours("BLACK", "BLACK", "BLACK")

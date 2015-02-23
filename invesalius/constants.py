@@ -487,10 +487,15 @@ VTK_WARNING = 0
 
 [ID_DICOM_IMPORT, ID_PROJECT_OPEN, ID_PROJECT_SAVE_AS, ID_PROJECT_SAVE,
 ID_PROJECT_CLOSE, ID_PROJECT_INFO, ID_SAVE_SCREENSHOT, ID_DICOM_LOAD_NET,
+<<<<<<< c06ff6da71d81a8848bc9a436d1ecd46c22e2841
 ID_PRINT_SCREENSHOT, ID_IMPORT_OTHERS_FILES, ID_ANALYZE_IMPORT, ID_PREFERENCES,
 ID_DICOM_NETWORK, ID_TIFF_JPG_PNG, ID_VIEW_INTERPOLATED] = [wx.NewId() for number in range(15)]
 ID_EXIT = wx.ID_EXIT
 ID_ABOUT = wx.ID_ABOUT
+=======
+ID_PRINT_SCREENSHOT, ID_EXIT, ID_IMPORT_OTHERS_FILES, ID_ANALYZE_IMPORT, ID_NIFTI_IMPORT,
+ID_PREFERENCES, ID_DICOM_NETWORK] = [wx.NewId() for number in range(15)]
+>>>>>>> Revert "Revert "ENH: Update neuronavigator modules""
 
 
 [ID_EDIT_UNDO, ID_EDIT_REDO, ID_EDIT_LIST] =\
@@ -637,3 +642,24 @@ BOOLEAN_UNION = 1
 BOOLEAN_DIFF = 2
 BOOLEAN_AND = 3
 BOOLEAN_XOR = 4
+
+#------------ Navigation Constants ------------
+#This constantes were created by Victor Hugo for the Neuronavigator task
+MARKER_SIZE = 4
+
+ISOTRAKII = 0
+PATRIOT = 1
+MTC = 2
+ZEBRIS = 3
+#PATRIOT = 4
+DEFAULT_TRACKER = ISOTRAKII
+#TRACKER = [_("Polhemus PATRIOT"), _("Polhemus PATRIOT"), _("Polhemus ISOTRAK II"), _("Claron MicronTracker"), _("Zebris CMS20")]
+TRACKER = [_("Polhemus ISOTRAK II"), _("Polhemus PATRIOT"), _("Claron MicronTracker"), _("Zebris CMS20")]
+
+
+SINGLE_REF = 0
+DOUBLE_REF = 1
+DEFAULT_REF_MODE = SINGLE_REF
+REF_MODE = [_("Single Ref Mode"), _("Double Ref Mode")]
+
+OBJECTS = [_("Eigth Coil"),_("Simple Coil")]
