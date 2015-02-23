@@ -45,7 +45,6 @@ import sys
 
 DEFAULT_THRESH_MODE = 0
 
-
 class Controller():
 
     def __init__(self, frame):
@@ -84,6 +83,7 @@ class Controller():
         Publisher.subscribe(self.OnOpenRecentProject, 'Open recent project')
         Publisher.subscribe(self.OnShowAnalyzeFile, 'Show analyze dialog')
         Publisher.subscribe(self.OnShowNiftiFile, 'Show nifti dialog')
+
 
     def OnCancelImport(self, pubsub_evt):
         #self.cancel_import = True
@@ -370,8 +370,8 @@ class Controller():
 #                 return
         # OPTION 2: NIfTI
         else:
-            # imagedata = analyze.ReadDirectory(directory)
-            imagedata = nifti.ReadDirectory(directory)
+            #imagedata = analyze.ReadDirectory(directory)
+			imagedata = nifti.ReadDirectory(directory)
             if imagedata:
                 #self.CreateAnalyzeProject(imagedata)
 				self.CreateNiftiProject(imagedata)
@@ -462,45 +462,6 @@ class Controller():
 
         proj.threshold_range = (header['glmin'],
                                 header['glmax'])
-        # Window level and wide are normalized to best visualization experience in NIFTI
-        proj.window = proj.threshold_range[1] - proj.threshold_range[0]
-        proj.level =  (0.5 * (proj.threshold_range[1] + proj.threshold_range[0]))
-        proj.spacing = header['pixdim'][1:4]
-        proj.matrix_shape = matrix.shape 
-
-        self.Slice = sl.Slice()
-        self.Slice.matrix = matrix
-        self.Slice.matrix_filename = matrix_filename
-
-        self.Slice.window_level = proj.level
-        self.Slice.window_width = proj.window
-        self.Slice.spacing = header.get_zooms()[:3]
-
-        Publisher.sendMessage('Update threshold limits',
-                                   proj.threshold_range)
-        
-    def CreateNiftiProject(self, imagedata):
-        header = imagedata.get_header()
-        proj = prj.Project()
-        proj.imagedata = None
-        proj.name = _("Untitled")
-        proj.SetAcquisitionModality("MRI")
-        #TODO: Verify if all Nifti are in AXIAL orientation
-
-        # To get  Z, X, Y (used by InVesaliu), not X, Y, Z
-        matrix, matrix_filename = image_utils.nifti2mmap(imagedata)
-#         if header['orient'] == 0:
-#             proj.original_orientation =  const.AXIAL
-#         elif header['orient'] == 1:
-#             proj.original_orientation = const.CORONAL
-#         elif header['orient'] == 2:
-#             proj.original_orientation = const.SAGITAL
-#         else:
-#             proj.original_orientation =  const.SAGITAL
-        # Project orientation set CORONAL as default    
-        proj.original_orientation =  const.CORONAL
-
-        proj.threshold_range = (numpy.amin(matrix), numpy.amax(matrix))
         proj.window = proj.threshold_range[1] - proj.threshold_range[0]
         proj.level =  (0.5 * (proj.threshold_range[1] + proj.threshold_range[0]))
         proj.spacing = header['pixdim'][1:4]
@@ -632,8 +593,6 @@ class Controller():
 
         self.Slice.window_level = wl
         self.Slice.window_width = ww
-
-        scalar_range = self.matrix.min(), self.matrix.max()
 
         Publisher.sendMessage('Update threshold limits list', scalar_range)
 
