@@ -285,6 +285,26 @@ class Mask():
         shape = shape[0] + 1, shape[1] + 1, shape[2] + 1
         self.matrix = numpy.memmap(self.temp_file, mode='w+', dtype='uint8', shape=shape)
 
+    def copy(self, copy_name):
+        """
+        creates and return a copy from the mask instance.
+
+        params:
+            copy_name: the name from the copy
+        """
+        new_mask = Mask()
+        new_mask.name = copy_name
+        new_mask.colour = self.colour
+        new_mask.opacity = self.opacity
+        new_mask.threshold_range = self.threshold_range
+        new_mask.edition_threshold_range = self.edition_threshold_range
+        new_mask.is_shown = self.is_shown
+        
+        new_mask.create_mask(shape=[i-1 for i in self.matrix.shape])
+        new_mask.matrix[:] = self.matrix[:]
+
+        return new_mask
+
     def clear_history(self):
         self.history.clear_history()
 

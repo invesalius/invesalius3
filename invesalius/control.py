@@ -633,6 +633,8 @@ class Controller():
         self.Slice.window_level = wl
         self.Slice.window_width = ww
 
+        scalar_range = self.matrix.min(), self.matrix.max()
+
         Publisher.sendMessage('Update threshold limits list', scalar_range)
 
         return self.matrix, self.filename, dicom
