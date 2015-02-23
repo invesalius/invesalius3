@@ -224,14 +224,9 @@ class Slice(object):
             name = original_mask.name
             names_list = [mask_dict[i].name for i in mask_dict.keys()]
             new_name = utils.next_copy_name(name, names_list)
-            # create new mask
-            self.CreateMask(imagedata = original_mask.imagedata,
-                            name = new_name,
-                            colour = original_mask.colour,
-                            opacity = original_mask.opacity,
-                            threshold_range = original_mask.threshold_range,
-                            edition_threshold_range = original_mask.edition_threshold_range,
-                            edited_points = original_mask.edited_points)
+
+            copy_mask = original_mask.copy(new_name)
+            self._add_mask_into_proj(copy_mask)
 
     def OnEnableStyle(self, pubsub_evt):
         state = pubsub_evt.data
@@ -1090,22 +1085,32 @@ class Slice(object):
         if threshold_range:
             future_mask.threshold_range = threshold_range
 
-        # insert new mask into project and retrieve its index
+        self._add_mask_into_proj(future_mask)
+
+
+    def _add_mask_into_proj(self, mask, show=True):
+        """
+        Insert a new mask into project and retrieve its index.
+
+        Params:
+            mask: A mask object.
+            show: indicate if the mask will be shown.
+        """
         proj = Project()
-        index = proj.AddMask(future_mask)
-        future_mask.index = index
+        index = proj.AddMask(mask)
+        mask.index = index
 
         ## update gui related to mask
         Publisher.sendMessage('Add mask',
-                                    (future_mask.index,
-                                     future_mask.name,
-                                     future_mask.threshold_range,
-                                     future_mask.colour))
+                                    (mask.index,
+                                     mask.name,
+                                     mask.threshold_range,
+                                     mask.colour))
 
-        self.current_mask = future_mask
-
-        Publisher.sendMessage('Change mask selected', future_mask.index)
-        Publisher.sendMessage('Update slice viewer')
+        if show:
+            self.current_mask = mask
+            Publisher.sendMessage('Change mask selected', mask.index)
+            Publisher.sendMessage('Update slice viewer')
 
     def __load_masks(self, imagedata, mask_dict):
         keys = mask_dict.keys()
