@@ -563,7 +563,7 @@ class MaskProperties(wx.Panel):
         session.ChangeProject()
 
     def OnSelectColour(self, evt):
-        colour = evt.GetValue
+        colour = evt.GetValue()
         self.gradient.SetColour(colour)
         Publisher.sendMessage('Change mask colour', colour)
 

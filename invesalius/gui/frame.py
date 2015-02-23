@@ -363,8 +363,6 @@ class Frame(wx.Frame):
             self.ShowOpenProject()
         elif id == const.ID_ANALYZE_IMPORT:
             self.ShowAnalyzeImporter()
-        elif id == const.ID_NIFTI_IMPORT:
-            self.ShowNiftiImporter()
         elif id == const.ID_PROJECT_SAVE:
             session = ses.Session()
             if session.temp_item:
@@ -474,12 +472,6 @@ class Frame(wx.Frame):
         Show save as dialog.
         """
         Publisher.sendMessage('Show analyze dialog', True)
-        
-    def ShowNiftiImporter(self):
-        """
-        Show save as dialog.
-        """
-        Publisher.sendMessage('Show nifti dialog', True)
 
     def FlipVolume(self, axis):
         Publisher.sendMessage('Flip volume', axis)
@@ -549,7 +541,6 @@ class MenuBar(wx.MenuBar):
         #Import Others Files
         others_file_menu = wx.Menu()
         others_file_menu.Append(const.ID_ANALYZE_IMPORT, "Analyze")
-        others_file_menu.Append(const.ID_NIFTI_IMPORT, "NIfTI")
 
         # FILE
         file_menu = wx.Menu()

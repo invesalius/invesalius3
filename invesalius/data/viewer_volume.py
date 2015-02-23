@@ -116,21 +116,6 @@ class Viewer(wx.Panel):
         self._to_show_ball = 0
         self._ball_ref_visibility = False
 
-		# initialization of navigation variables
-		#======aji=================================================================
-        self.ShowAngles()
-        #=======================================================================
-
-        ##---------------------------------------------
-        ##AXES TO GUIDE VISUALIZATION - CREATED BY VH       
-#         axes = vtk.vtkAxesActor()
-#         axes.SetXAxisLabelText('x')
-#         axes.SetYAxisLabelText('y')
-#         axes.SetZAxisLabelText('z')
-#         axes.SetTotalLength(50, 50, 50)
-#         self.ren.AddActor(axes)
-        ##---------------------------------------------
-		# ---
     def __bind_events(self):
         Publisher.subscribe(self.LoadActor,
                                  'Load surface actor into viewer')
@@ -194,8 +179,6 @@ class Viewer(wx.Panel):
                 'Activate ball reference')
         Publisher.subscribe(self.DeactivateBallReference,
                 'Deactivate ball reference')
-		# see if these subscribes are here just for navigation and if
-		# they are being used
         Publisher.subscribe(self.SetBallReferencePosition,
                 'Set ball reference position')
         Publisher.subscribe(self.SetBallReferencePositionBasedOnBound,
@@ -208,21 +191,6 @@ class Viewer(wx.Panel):
 
         Publisher.subscribe(self._check_ball_reference, 'Enable style')
         Publisher.subscribe(self._uncheck_ball_reference, 'Disable style')
-
-        # subscribes for navigation functions
-
-        Publisher.subscribe(self.CreateSphereMarkers, 'Create ball')
-        Publisher.subscribe(self.HideSphereMarkers, 'Hide balls')
-        Publisher.subscribe(self.ShowSphereMarkers, 'Show balls')
-        Publisher.subscribe(self.ChangeInitCoilAngle, 'Change Init Coil Angle')
-        # =========aji=========================================================
-        Publisher.subscribe(self.RemoveMarkers, 'Remove Markers')
-        Publisher.subscribe(self.CoilAngleTracking, 'Track Coil Angle')
-        Publisher.subscribe(self.HideShowObject, 'Hide Show Object')
-        Publisher.subscribe(self.ShowObject, 'Show Object status')
-        Publisher.subscribe(self.UpAngles, 'Update Angles')
-        Publisher.subscribe(self.HideAnglesActor, 'Hide Angles')        
-        # =====================================================================
 
     def SetStereoMode(self, pubsub_evt):
         mode = pubsub_evt.data
@@ -252,267 +220,6 @@ class Viewer(wx.Panel):
             ren_win.StereoRenderOn()
         
         self.interactor.Render()
-
-    # --- functions for navigation
-    def CreateSphereMarkers(self, pubsub_evt):
-        ball_id = pubsub_evt.data[0]
-        ballsize = pubsub_evt.data[1]
-        ballcolour = pubsub_evt.data[2]
-        coord = pubsub_evt.data[3]
-        x, y, z = bases.flip_x(coord)
-        
-        ball_ref = vtk.vtkSphereSource()
-        ball_ref.SetRadius(ballsize)
-        ball_ref.SetCenter(x, y, z)
-
-        mapper = vtk.vtkPolyDataMapper()
-        mapper.SetInput(ball_ref.GetOutput())
-
-        prop = vtk.vtkProperty()
-        prop.SetColor(ballcolour)
-        
-        #adding a new actor for the present ball
-        self.staticballs.append(vtk.vtkActor())
-        
-        self.staticballs[ball_id].SetMapper(mapper)
-        self.staticballs[ball_id].SetProperty(prop)
-        
-        self.ren.AddActor(self.staticballs[ball_id]) 
-        ball_id = ball_id + 1
-        self.UpdateRender()
-    
-    def HideSphereMarkers(self, pubsub_evt):
-        ballid = pubsub_evt.data
-        for i in range(0, ballid + 1):
-            self.staticballs[i].SetVisibility(0)
-        self.UpdateRender()
-    
-    def ShowSphereMarkers(self, pubsub_evt):
-        ballid = pubsub_evt.data
-        for i in range(0, ballid + 1):
-            self.staticballs[i].SetVisibility(1)
-        self.UpdateRender()
-  
-    def CreateCoilReference(self):
-        #SILVER COIL
-        self.coil_reference = vtk.vtkOBJReader()
-
-        #self.coil_reference.SetFileName(os.path.realpath(os.path.join('..',
-        #                                                         'models',
-        #                                                         'coil_cti_2_scale10.obj')))
-        
-        self.coil_reference.SetFileName('C:\Users\Biomag\Desktop\invesalius_navigator\icons\coil_cti_2_scale10.obj')
-        
-        ##self.coil_reference.Update()
-        coilMapper = vtk.vtkPolyDataMapper()
-        coilMapper.SetInputConnection(self.coil_reference.GetOutputPort())
-
-        self.coilActor = vtk.vtkActor()
-        self.coilActor.SetMapper(coilMapper)
-        
-        ##Creating axes to follow the coil
-        #axisXArrow = vtk.vtkArrowSource()
-        #axisYArrow = vtk.vtkArrowSource()
-        #axisZArrow = vtk.vtkArrowSource()
-        
-        #axisXMapper = vtk.vtkPolyDataMapper()
-        #axisXMapper.SetInput(axisXArrow.GetOutput())
-        #axisXMapper.ScalarVisibilityOff()
-        #axisYMapper = vtk.vtkPolyDataMapper()
-        #axisYMapper.SetInput(axisYArrow.GetOutput())
-        #axisYMapper.ScalarVisibilityOff()
-        #axisZMapper = vtk.vtkPolyDataMapper()
-        #axisZMapper.SetInput(axisZArrow.GetOutput())
-        #axisZMapper.ScalarVisibilityOff()
-
-        #axisXArrowActor = vtk.vtkActor()
-        #axisXArrowActor.SetMapper(axisXMapper)
-        #axisXArrowActor.SetScale(40)
-        #axisXArrowActor.GetProperty().SetColor(1, 0, 0) # x-axis >> red
-        #axisYArrowActor = vtk.vtkActor()
-        #axisYArrowActor.SetScale(40)
-        #axisYArrowActor.RotateZ(90)
-        #axisYArrowActor.GetProperty().SetColor(0, 1, 0) # y-axis >> green
-        #axisYArrowActor.SetMapper(axisYMapper)
-        #axisZArrowActor = vtk.vtkActor()
-        #axisZArrowActor.RotateY(-90)
-        #axisZArrowActor.SetScale(40)
-        #axisZArrowActor.GetProperty().SetColor(0, 0, 1) # z-axis >> blue
-        #axisZArrowActor.SetMapper(axisZMapper)
-
-        #self.axisAssembly.AddPart(axisXArrowActor)
-        #self.axisAssembly.AddPart(axisYArrowActor)
-        #self.axisAssembly.AddPart(axisZArrowActor)
-        #self.axisAssembly.PickableOff()
-    
-    def ChangeInitCoilAngle(self, pubsub_evt):
-        self.CreateCoilReference()
-        self.ren.AddActor(self.coilActor)
-        self.coilActor.SetOrientation(0, 0, 0)
-        inits_data = pubsub_evt.data
-        print "inits data", inits_data
-        init_orient = inits_data[0]
-        self.init_plh_angles = inits_data[1]
-        self.vectors = ((inits_data[2][0, 0], inits_data[2][0, 1], inits_data[2][0, 2]),
-                        (inits_data[2][1, 0], inits_data[2][1, 1], inits_data[2][1, 2]),
-                        (inits_data[2][2, 0], inits_data[2][2, 1], inits_data[2][2, 2]))
-        self.coilActor.SetOrientation(init_orient)
-        self.axisAssembly.SetOrientation(init_orient)
-        
-        self.UpdateRender()
-
-    def SetBallReferencePosition(self, coord, angles):
-        coord = coord
-        angles = angles
-        #Coronal Images dont require this transformation - 1 tested
-        #and for this case, at navigation, the z axis is inverted
-        
-        #E se ao inves de fazer o flipx, da pra soh multiplicar o y por -1
-        
-        x, y, z = bases.flip_x(coord)
-        
-        #center = self.coilActor.GetCenter()
-        
-        ##azimutal - psi - rotz
-        ##elevation - teta - rotx
-        ##roll - phi - roty
-        
-##        print "center: ", center
-        #print "orig: ", orig
-        #print "bounds: ", bounds
-##        print "coord: ", coord       
-        
-        transf = vtk.vtkTransform()
-        
-        if angles and self.init_plh_angles:
-            #plh angles variation
-            delta_angles = (angles[0] - self.init_plh_angles[0],
-                           angles[1] - self.init_plh_angles[1],
-                           angles[2] - self.init_plh_angles[2])
-            
-            transf.Translate(x, y, z) #center
-            ##transf.Translate(0, 0, 0) #origin
-            
-            transf.RotateWXYZ(delta_angles[0], self.vectors[2])
-            transf.RotateWXYZ(delta_angles[1], self.vectors[0])
-            transf.RotateWXYZ(delta_angles[2], self.vectors[1])
-            #transf.Scale(1, 1, 1)
-            #transf.Translate(-center[0], -center[1], -center[2]) #- origin
-            #transf.Translate(-orig[0], -orig[1], -orig[2])
-        else:
-            #transf.Translate(-center[0], -center[1], -center[2])
-            transf.Translate(x, y, z) #center
-            #transf.RotateWXYZ(90, 3.0, 1.0, 0.5)
-        try:    
-            self.coilActor.SetUserMatrix(transf.GetMatrix())
-        except:
-            None
-        self.ball_reference.SetCenter(x, y, z)
-        self.axisAssembly.SetPosition(x, y, z)
-        
-##        print "center 2: ", self.coilActor.GetCenter()
-##        print "orig 2: ", self.coilActor.GetOrigin()
-        #print "bounds 2: ", self.coilActor.GetBounds()
-##        print "angles 2: ", self.coilActor.GetOrientation()
-##        print "ball center: ", self.ball_reference.GetCenter()
-        
-        #a = self.coilActor.GetOrientation()
-        #b = self.coilActor.GetOrientationWXYZ()
-        #print "soh o orientation: ", a
-##        print "orient com wxyz", b
-        ##self.coilActor.SetPosition(x, y, z)
-        ##self.ball_reference.SetCenter(x, y, z)
-
-    def SetVolumeCamera(self, pubsub_evt):
-        
-        coord = pubsub_evt.data
-         
-        if len(coord) == 6:
-            coord_camera = coord[0:3]
-            angles = coord[3:6]
-        else:
-            coord_camera = coord[0:3]
-            angles = None
-
-        self.SetBallReferencePosition(coord_camera, angles)
-        
-        #Coronal Images dont require this transformation - 1 tested
-        #and for this case, at navigation, the z axis is inverted
-        coord_camera = np.array(bases.flip_x(coord_camera))
-
-        cam = self.ren.GetActiveCamera()
-         
-        if self.initial_foco is None:
-            self.initial_foco = np.array(cam.GetFocalPoint())
-
-        cam_initialposition = np.array(cam.GetPosition())
-        cam_initialfoco = np.array(cam.GetFocalPoint())
-         
-        cam_sub = cam_initialposition - cam_initialfoco
-        cam_sub_norm = np.linalg.norm(cam_sub)
-        #vet1 = cam_sub/cam_sub_norm
-         
-        cam_sub_novo = coord_camera - self.initial_foco
-        cam_sub_novo_norm = np.linalg.norm(cam_sub_novo)
-        vet2 = cam_sub_novo/cam_sub_novo_norm
-        vet2 = vet2*cam_sub_norm + coord_camera
-
-        cam.SetFocalPoint(coord_camera)
-        cam.SetPosition(vet2)
-        
-        self.UpdateRender()
-
-    # ======aji ==============================================================
-    def RemoveMarkers(self, pubsub_evt):
-        ballid=pubsub_evt.data
-        for i in range(0, ballid + 1):
-            self.ren.RemoveActor(self.staticballs[i]) 
-        self.UpdateRender()      
-            
-    def HideShowObject(self, pubsub_evt):
-         objectbin = pubsub_evt.data
-         if objectbin == True:
-             self.coilActor.SetVisibility(1)
-             self.UpdateRender()
-         if objectbin == False:
-             self.coilActor.SetVisibility(0)
-             self.UpdateRender()        
-
-    def CoilAngleTracking(self, pubsub_evt):
-         self.coil_axis = pubsub_evt.data[0]
-         self.ap_axis = pubsub_evt.data[1]
-             
-    def ShowAngles(self):        
-         angles_text = self.angles_text = vtku.TextZero()
-         self.angles_text.ShadowOff()
-         self.angles_text.SetColour((0,0,0))
-         self.angles_text.SetPosition(const.TEXT_POS_LEFT_UP)
-         self.angles_text.SetVerticalJustificationToCentered()
-         self.ren.AddActor(self.angles_text.actor) 
-             
-    def UpAngles(self, pubsub_evt):
-         self.angles_text.Show()
-         mat3D = np.matrix([[self.ct.GetElement(0,0), self.ct.GetElement(0, 1),
-                             self.ct.GetElement(0,2)],
-                            [self.ct.GetElement(1,0), self.ct.GetElement(1, 1),
-                             self.ct.GetElement(1,2)],
-                            [self.ct.GetElement(2,0), self.ct.GetElement(2, 1),
-                             self.ct.GetElement(2,2)]])
-         p1 = mat3D*(self.coil_axis[0])
-         p2 = mat3D*(self.coil_axis[1])
-         print "ap and coil axis: ", self.ap_axis, p2-p1
-         ang = bases.angle_calculation(self.ap_axis, p2-p1)
-         ang = abs(ang-180.0)
-         self.angles_text.SetValue('Coil Angle: %.2f'%(ang))     
-             
-    def HideAnglesActor(self, pubsub_evt):
-         self.angles_text.Hide() 
-         self.UpdateRender()
-         
-    def ShowObject(self, pubsub_evt):
-        self.ShowObj = pubsub_evt.data
-        self.ChangeInitCoilAngle(self.ShowObj)
-        # ========================================================================
 
     def CreateBallReference(self):
         MRAD = 3.0
@@ -572,7 +279,7 @@ class Viewer(wx.Panel):
         else:
             self._to_show_ball -= 1
         self._check_and_set_ball_visibility()
-	# see if these two next functions are being used
+
     def SetBallReferencePosition(self, pubsub_evt):
         x, y, z = pubsub_evt.data
         self.ball_reference.SetCenter(x, y, z)
@@ -581,7 +288,7 @@ class Viewer(wx.Panel):
         if self._to_show_ball:
             self.ActivateBallReference(None)
             coord = pubsub_evt.data
-            x, y, z = bases.flip_x(coord)
+            x, y, z = bases.FlipX(coord)
             self.ball_reference.SetCenter(x, y, z)
         else:
             self.DeactivateBallReference(None)
@@ -876,7 +583,7 @@ class Viewer(wx.Panel):
     def SetVolumeCamera(self, pubsub_evt):
         
         coord_camera = pubsub_evt.data
-        coord_camera = numpy.array(bases.flip_x(coord_camera))
+        coord_camera = numpy.array(bases.FlipX(coord_camera))
         
         cam = self.ren.GetActiveCamera()
         
@@ -999,13 +706,6 @@ class Viewer(wx.Panel):
         self.interactor.Render()
         self._to_show_ball -= 1
         self._check_and_set_ball_visibility()
-	
-        #=====aji==================================================================
-        try:
-            Publisher.sendMessage('Del actor volume')
-        except:
-            None
-        #=======================================================================
         
     def RemoveAllActor(self, pubsub_evt):
         utils.debug("RemoveAllActor")

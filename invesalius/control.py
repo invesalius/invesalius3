@@ -33,7 +33,6 @@ import data.volume as volume
 import gui.dialogs as dialog
 import project as prj
 import reader.analyze_reader as analyze
-import reader.nifti_reader as nifti
 import reader.dicom_grouper as dg
 import reader.dicom_reader as dcm
 import session as ses
@@ -44,7 +43,6 @@ import subprocess
 import sys
 
 DEFAULT_THRESH_MODE = 0
-
 
 class Controller():
 
@@ -83,7 +81,7 @@ class Controller():
         Publisher.subscribe(self.OnOpenProject, 'Open project')
         Publisher.subscribe(self.OnOpenRecentProject, 'Open recent project')
         Publisher.subscribe(self.OnShowAnalyzeFile, 'Show analyze dialog')
-        Publisher.subscribe(self.OnShowNiftiFile, 'Show nifti dialog')
+
 
     def OnCancelImport(self, pubsub_evt):
         #self.cancel_import = True
@@ -113,15 +111,6 @@ class Controller():
         imagedata = analyze.ReadAnalyze(dirpath)
         if imagedata:
             self.CreateAnalyzeProject(imagedata)
-            
-        self.LoadProject()
-        Publisher.sendMessage("Enable state project", True)
-        
-    def OnShowNiftiFile(self, pubsub_evt):
-        dirpath = dialog.ShowOpenNiftiDialog()
-        imagedata = nifti.ReadNifti(dirpath)
-        if imagedata:
-            self.CreateNiftiProject(imagedata)
             
         self.LoadProject()
         Publisher.sendMessage("Enable state project", True)
@@ -359,22 +348,11 @@ class Controller():
             group = dcm.SelectLargerDicomGroup(patients_groups)
             matrix, matrix_filename, dicom = self.OpenDicomGroup(group, 0, [0,0],gui=True)
             self.CreateDicomProject(dicom, matrix, matrix_filename)
-#         # OPTION 2: ANALYZE?
-#         else:
-#             imagedata = analyze.ReadDirectory(directory)
-#             if imagedata:
-#                 self.CreateAnalyzeProject(imagedata)
-#             # OPTION 4: Nothing...
-#             else:
-#                 utils.debug("No medical images found on given directory")
-#                 return
-        # OPTION 2: NIfTI
+        # OPTION 2: ANALYZE?
         else:
-            # imagedata = analyze.ReadDirectory(directory)
-            imagedata = nifti.ReadDirectory(directory)
+            imagedata = analyze.ReadDirectory(directory)
             if imagedata:
-                #self.CreateAnalyzeProject(imagedata)
-				self.CreateNiftiProject(imagedata)
+                self.CreateAnalyzeProject(imagedata)
             # OPTION 3: Nothing...
             else:
                 utils.debug("No medical images found on given directory")
@@ -462,45 +440,6 @@ class Controller():
 
         proj.threshold_range = (header['glmin'],
                                 header['glmax'])
-        # Window level and wide are normalized to best visualization experience in NIFTI
-        proj.window = proj.threshold_range[1] - proj.threshold_range[0]
-        proj.level =  (0.5 * (proj.threshold_range[1] + proj.threshold_range[0]))
-        proj.spacing = header['pixdim'][1:4]
-        proj.matrix_shape = matrix.shape 
-
-        self.Slice = sl.Slice()
-        self.Slice.matrix = matrix
-        self.Slice.matrix_filename = matrix_filename
-
-        self.Slice.window_level = proj.level
-        self.Slice.window_width = proj.window
-        self.Slice.spacing = header.get_zooms()[:3]
-
-        Publisher.sendMessage('Update threshold limits',
-                                   proj.threshold_range)
-        
-    def CreateNiftiProject(self, imagedata):
-        header = imagedata.get_header()
-        proj = prj.Project()
-        proj.imagedata = None
-        proj.name = _("Untitled")
-        proj.SetAcquisitionModality("MRI")
-        #TODO: Verify if all Nifti are in AXIAL orientation
-
-        # To get  Z, X, Y (used by InVesaliu), not X, Y, Z
-        matrix, matrix_filename = image_utils.nifti2mmap(imagedata)
-#         if header['orient'] == 0:
-#             proj.original_orientation =  const.AXIAL
-#         elif header['orient'] == 1:
-#             proj.original_orientation = const.CORONAL
-#         elif header['orient'] == 2:
-#             proj.original_orientation = const.SAGITAL
-#         else:
-#             proj.original_orientation =  const.SAGITAL
-        # Project orientation set CORONAL as default    
-        proj.original_orientation =  const.CORONAL
-
-        proj.threshold_range = (numpy.amin(matrix), numpy.amax(matrix))
         proj.window = proj.threshold_range[1] - proj.threshold_range[0]
         proj.level =  (0.5 * (proj.threshold_range[1] + proj.threshold_range[0]))
         proj.spacing = header['pixdim'][1:4]
