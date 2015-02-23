@@ -24,7 +24,7 @@ import wx
 
 from project import Project
 
-INVESALIUS_VERSION = "3.0"
+INVESALIUS_VERSION = "3.0 beta 5"
 
 #---------------
 
@@ -250,15 +250,11 @@ DEFAULT_BRUSH_FORMAT = BRUSH_CIRCLE
 BRUSH_DRAW = 0
 BRUSH_ERASE = 1
 BRUSH_THRESH = 2
-BRUSH_THRESH_ERASE = 3
-BRUSH_THRESH_ADD_ONLY = 4
-BRUSH_THRESH_ERASE_ONLY = 5
 DEFAULT_BRUSH_OP = BRUSH_THRESH
 BRUSH_OP_NAME = [_("Draw"), _("Erase"), _("Threshold")]
 
 BRUSH_COLOUR = (0,0,1.0)
 BRUSH_SIZE = 30
-BRUSH_MAX_SIZE = 100
 
 # Surface creation values. Each element's list contains:
 # 0: imagedata reformat ratio
@@ -451,15 +447,8 @@ VTK_WARNING = 0
 
 [ID_DICOM_IMPORT, ID_PROJECT_OPEN, ID_PROJECT_SAVE_AS, ID_PROJECT_SAVE,
 ID_PROJECT_CLOSE, ID_PROJECT_INFO, ID_SAVE_SCREENSHOT, ID_DICOM_LOAD_NET,
-<<<<<<< c06ff6da71d81a8848bc9a436d1ecd46c22e2841
-ID_PRINT_SCREENSHOT, ID_IMPORT_OTHERS_FILES, ID_ANALYZE_IMPORT, ID_PREFERENCES,
-ID_DICOM_NETWORK] = [wx.NewId() for number in range(13)]
-ID_EXIT = wx.ID_EXIT
-ID_ABOUT = wx.ID_ABOUT
-=======
 ID_PRINT_SCREENSHOT, ID_EXIT, ID_IMPORT_OTHERS_FILES, ID_ANALYZE_IMPORT, ID_NIFTI_IMPORT,
 ID_PREFERENCES, ID_DICOM_NETWORK] = [wx.NewId() for number in range(15)]
->>>>>>> Revert "Revert "ENH: Update neuronavigator modules""
 
 
 [ID_EDIT_UNDO, ID_EDIT_REDO, ID_EDIT_LIST] =\
@@ -471,6 +460,7 @@ ID_PREFERENCES, ID_DICOM_NETWORK] = [wx.NewId() for number in range(15)]
 [ID_VIEW_FULL, ID_VIEW_TEXT, ID_VIEW_3D_BACKGROUND] =\
     [wx.NewId() for number in range(3)]
 
+ID_ABOUT = wx.NewId()
 ID_START = wx.NewId()
 
 ID_FLIP_X = wx.NewId()
@@ -480,9 +470,6 @@ ID_FLIP_Z = wx.NewId()
 ID_SWAP_XY = wx.NewId()
 ID_SWAP_XZ = wx.NewId()
 ID_SWAP_YZ = wx.NewId()
-
-ID_BOOLEAN_MASK = wx.NewId()
-ID_CLEAN_MASK = wx.NewId()
 
 #---------------------------------------------------------
 STATE_DEFAULT = 1000
@@ -574,30 +561,3 @@ PROJECTION_CONTOUR_MIDA=8
 #------------ Projections defaults ------------------
 PROJECTION_BORDER_SIZE=1.0
 PROJECTION_MIP_SIZE=2
-
-# ------------- Boolean operations ------------------
-BOOLEAN_UNION = 1
-BOOLEAN_DIFF = 2
-BOOLEAN_AND = 3
-BOOLEAN_XOR = 4
-
-#------------ Navigation Constants ------------
-#This constantes were created by Victor Hugo for the Neuronavigator task
-MARKER_SIZE = 4
-
-ISOTRAKII = 0
-PATRIOT = 1
-MTC = 2
-ZEBRIS = 3
-#PATRIOT = 4
-DEFAULT_TRACKER = ISOTRAKII
-#TRACKER = [_("Polhemus PATRIOT"), _("Polhemus PATRIOT"), _("Polhemus ISOTRAK II"), _("Claron MicronTracker"), _("Zebris CMS20")]
-TRACKER = [_("Polhemus ISOTRAK II"), _("Polhemus PATRIOT"), _("Claron MicronTracker"), _("Zebris CMS20")]
-
-
-SINGLE_REF = 0
-DOUBLE_REF = 1
-DEFAULT_REF_MODE = SINGLE_REF
-REF_MODE = [_("Single Ref Mode"), _("Double Ref Mode")]
-
-OBJECTS = [_("Eigth Coil"),_("Simple Coil")]
