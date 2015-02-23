@@ -35,7 +35,7 @@ class DicomNet:
 
     def GetValueFromDICOM(self, ret, tag):
         value = str(ret.GetDataElement(gdcm.Tag(tag[0],\
-                                        tag[1])).GetValue)
+                                        tag[1])).GetValue())
         if value == 'None' and tag != (0x0008,0x103E):
             value = ''
         return value
@@ -85,8 +85,8 @@ class DicomNet:
         exist_images = False
         c = 0
         for i in range(0,ret.size()):
-            patient_id = str(ret[i].GetDataElement(gdcm.Tag(0x0010, 0x0020)).GetValue)
-            serie_id = str(ret[i].GetDataElement(gdcm.Tag(0x0020, 0x000e)).GetValue)
+            patient_id = str(ret[i].GetDataElement(gdcm.Tag(0x0010, 0x0020)).GetValue())
+            serie_id = str(ret[i].GetDataElement(gdcm.Tag(0x0020, 0x000e)).GetValue())
 
             if not(patient_id in patients.keys()):
                 patients[patient_id] = {}
