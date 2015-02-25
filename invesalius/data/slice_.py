@@ -157,6 +157,7 @@ class Slice(object):
 
         Publisher.subscribe(self.UpdateColourTableBackgroundWidget,\
                                  'Change colour table from background image from widget')
+
         Publisher.subscribe(self._set_projection_type, 'Set projection type')
 
         Publisher.subscribe(self.InputImageWidget, 'Input Image in the widget')
@@ -273,20 +274,12 @@ class Slice(object):
 
         Publisher.sendMessage('Select first item from slice menu')
 
-        #self.blend_filter = None
-        #self.blend_filter = None
-        #self.num_gradient = 0
-
     def __set_current_mask_threshold_limits(self, pubsub_evt):
         thresh_min = pubsub_evt.data[0]
         thresh_max  = pubsub_evt.data[1]
         if self.current_mask:
             index = self.current_mask.index
             self.SetMaskEditionThreshold(index, (thresh_min, thresh_max))
-
-    #---------------------------------------------------------------------------
-    # BEGIN PUBSUB_EVT METHODS
-    #---------------------------------------------------------------------------
 
     def __add_mask(self, pubsub_evt):
         mask_name = pubsub_evt.data
@@ -305,7 +298,7 @@ class Slice(object):
     def __select_current_mask(self, pubsub_evt):
         mask_index = pubsub_evt.data
         self.SelectCurrentMask(mask_index)
-    #---------------------------------------------------------------------------
+    
     def __set_current_mask_edition_threshold(self, evt_pubsub):
         if self.current_mask:
             threshold_range = evt_pubsub.data
