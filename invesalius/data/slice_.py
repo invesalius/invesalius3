@@ -16,7 +16,6 @@
 #    PARTICULAR. Consulte a Licenca Publica Geral GNU para obter mais
 #    detalhes.
 #--------------------------------------------------------------------------
-import math
 import os
 import tempfile
 
@@ -79,7 +78,6 @@ class Slice(object):
     # Therefore, we use Singleton design pattern for implementing it.
 
     def __init__(self):
-        self.imagedata = None
         self.current_mask = None
         self.blend_filter = None
         self.histogram = None
@@ -249,7 +247,6 @@ class Slice(object):
         self.CloseProject()
 
     def CloseProject(self):
-        self.imagedata = None
         f = self._matrix.filename
         self._matrix._mmap.close()
         self._matrix  = None
@@ -836,19 +833,12 @@ class Slice(object):
 
     def SelectCurrentMask(self, index):
         "Insert mask data, based on given index, into pipeline."
-        # This condition is not necessary in Linux, only under mac and windows
-        # because combobox event is binded when the same item is selected again.
-        #if index != self.current_mask.index:
-        print "SelectCurrentMask"
-        print "index:", index
         proj = Project()
         future_mask = proj.GetMask(index)
         future_mask.is_shown = True
         self.current_mask = future_mask
 
         colour = future_mask.colour
-        #index = future_mask.index
-        print index
         self.SetMaskColour(index, colour, update=False)
 
         self.buffer_slices = {"AXIAL": SliceBuffer(),
@@ -871,18 +861,9 @@ class Slice(object):
         proj = Project()
         mask = proj.mask_dict[surface_parameters['options']['index']]
 
-        # This is very important. Do not use masks' imagedata. It would mess up
-        # surface quality event when using contour
-        #self.SetMaskThreshold(mask.index, threshold)
-        for n in xrange(1, mask.matrix.shape[0]):
-            if mask.matrix[n, 0, 0] == 0:
-                m = mask.matrix[n, 1:, 1:]
-                mask.matrix[n, 1:, 1:] = self.do_threshold_to_a_slice(self.matrix[n-1], m)
+        self.do_threshold_to_all_slices(mask)
+        Publisher.sendMessage('Create surface', (self, mask, surface_parameters))
 
-        mask.matrix.flush()
-
-        Publisher.sendMessage('Create surface', (self, mask,
-                                                 surface_parameters))
     def GetOutput(self):
         return self.blend_filter.GetOutput()
 
@@ -905,59 +886,6 @@ class Slice(object):
                 buffer_.discard_buffer()
 
             Publisher.sendMessage('Check projection menu', tprojection)
-
-    def SetInput(self, imagedata, mask_dict):
-        print "SETINPUT!"
-        self.imagedata = imagedata
-        self.extent = imagedata.GetExtent()
-
-        imagedata_bg = self.__create_background(imagedata)
-
-        if not mask_dict:
-            imagedata_mask = self.__build_mask(imagedata, create=True)
-        else:
-            self.__load_masks(imagedata, mask_dict)
-            imagedata_mask = self.img_colours_mask.GetOutput()
-
-        mask_opacity = self.current_mask.opacity
-
-        # blend both imagedatas, so it can be inserted into viewer
-        blend_filter = vtk.vtkImageBlend()
-        blend_filter.SetBlendModeToNormal()
-        blend_filter.SetOpacity(0, 1)
-        if self.current_mask.is_shown:
-            blend_filter.SetOpacity(1, mask_opacity)
-        else:
-            blend_filter.SetOpacity(1, 0)
-        blend_filter.SetInput(0, imagedata_bg)
-        blend_filter.SetInput(1, imagedata_mask)
-        blend_filter.SetBlendModeToNormal()
-        blend_filter.GetOutput().ReleaseDataFlagOn()
-        self.blend_filter = blend_filter
-
-        self.window_level = vtk.vtkImageMapToWindowLevelColors()
-        self.window_level.SetInput(self.imagedata)
-
-    def __create_background(self, imagedata):
-        thresh_min, thresh_max = imagedata.GetScalarRange()
-        Publisher.sendMessage('Update threshold limits list', (thresh_min,
-                                    thresh_max))
-
-        # map scalar values into colors
-        lut_bg = self.lut_bg = vtk.vtkLookupTable()
-        lut_bg.SetTableRange(thresh_min, thresh_max)
-        lut_bg.SetSaturationRange(0, 0)
-        lut_bg.SetHueRange(0, 0)
-        lut_bg.SetValueRange(0, 1)
-        lut_bg.Build()
-
-        # map the input image through a lookup table
-        img_colours_bg = self.img_colours_bg = vtk.vtkImageMapToColors()
-        img_colours_bg.SetOutputFormatToRGBA()
-        img_colours_bg.SetLookupTable(lut_bg)
-        img_colours_bg.SetInput(imagedata)
-
-        return img_colours_bg.GetOutput()
 
     def UpdateWindowLevelBackground(self, pubsub_evt):
         window, level = pubsub_evt.data
@@ -1030,15 +958,12 @@ class Slice(object):
         cast.ClampOverflowOn()
         cast.Update()
 
-        #if (original_orientation == const.AXIAL):
         flip = vtk.vtkImageFlip()
         flip.SetInput(cast.GetOutput())
         flip.SetFilteredAxis(1)
         flip.FlipAboutOriginOn()
         flip.Update()
         widget.SetInput(flip.GetOutput())
-        #else:
-            #widget.SetInput(cast.GetOutput())
 
     def UpdateSlice3D(self, pubsub_evt):
         widget, orientation = pubsub_evt.data
@@ -1110,27 +1035,6 @@ class Slice(object):
             self.current_mask = mask
             Publisher.sendMessage('Change mask selected', mask.index)
             Publisher.sendMessage('Update slice viewer')
-
-    def __load_masks(self, imagedata, mask_dict):
-        keys = mask_dict.keys()
-        keys.sort()
-        for key in keys:
-            mask = mask_dict[key]
-
-            # update gui related to mask
-            utils.debug("__load_masks")
-            utils.debug('THRESHOLD_RANGE %s'% mask.threshold_range)
-            Publisher.sendMessage('Add mask',
-                                    (mask.index,
-                                     mask.name,
-                                     mask.threshold_range,
-                                     mask.colour))
-
-        self.current_mask = mask
-        self.__build_mask(imagedata, False)
-
-        Publisher.sendMessage('Change mask selected', mask.index)
-        Publisher.sendMessage('Update slice viewer')
 
     def do_ww_wl(self, image):
         if self.from_ == PLIST:
@@ -1212,12 +1116,16 @@ class Slice(object):
         m[mask == 254] = 254
         return m.astype('uint8')
 
-    def do_threshold_to_all_slices(self):
-        mask = self.current_mask
+    def do_threshold_to_all_slices(self, mask=None):
+        """
+        Apply threshold to all slices.
 
-        # This is very important. Do not use masks' imagedata. It would mess up
-        # surface quality event when using contour
-        #self.SetMaskThreshold(mask.index, threshold)
+        Params:
+            - mask: the mask where result of the threshold will be stored.If
+              None, it'll be the current mask.
+        """
+        if mask is None:
+            mask = self.current_mask
         for n in xrange(1, mask.matrix.shape[0]):
             if mask.matrix[n, 0, 0] == 0:
                 m = mask.matrix[n, 1:, 1:]
@@ -1390,76 +1298,9 @@ class Slice(object):
             self.buffer_slices[o].discard_vtk_mask()
         Publisher.sendMessage('Reload actual slice')
 
-    def __build_mask(self, imagedata, create=True):
-        # create new mask instance and insert it into project
-        if create:
-            self.CreateMask(imagedata=imagedata)
-        current_mask = self.current_mask
-
-        # properties to be inserted into pipeline
-        scalar_range = int(imagedata.GetScalarRange()[1])
-        r,g,b = current_mask.colour
-
-        # map scalar values into colors
-        lut_mask = vtk.vtkLookupTable()
-        lut_mask.SetNumberOfTableValues(1)
-        lut_mask.SetNumberOfColors(1)
-        lut_mask.SetHueRange(const.THRESHOLD_HUE_RANGE)
-        lut_mask.SetSaturationRange(1, 1)
-        lut_mask.SetValueRange(1, 1)
-        lut_mask.SetNumberOfTableValues(scalar_range)
-        lut_mask.SetTableValue(1, r, g, b, 1.0)
-        lut_mask.SetTableValue(scalar_range - 1, r, g, b, 1.0)
-        lut_mask.SetRampToLinear()
-        lut_mask.Build()
-        self.lut_mask = lut_mask
-
-        mask_thresh_imagedata = self.__create_mask_threshold(imagedata)
-
-        if create:
-            # threshold pipeline
-            current_mask.imagedata.DeepCopy(mask_thresh_imagedata)
-        else:
-            mask_thresh_imagedata = self.current_mask.imagedata
-
-        # map the input image through a lookup table
-        img_colours_mask = vtk.vtkImageMapToColors()
-        img_colours_mask.SetOutputFormatToRGBA()
-        img_colours_mask.SetLookupTable(lut_mask)
-
-        img_colours_mask.SetInput(mask_thresh_imagedata)
-
-        self.img_colours_mask = img_colours_mask
-
-        return img_colours_mask.GetOutput()
-
-    def __create_mask_threshold(self, imagedata, threshold_range=None):
-        if not threshold_range:
-            thresh_min, thresh_max = self.current_mask.threshold_range
-        else:
-            thresh_min, thresh_max = threshold_range
-
-        # flexible threshold
-        img_thresh_mask = vtk.vtkImageThreshold()
-        img_thresh_mask.SetInValue(const.THRESHOLD_INVALUE)
-        img_thresh_mask.SetInput(imagedata)
-        img_thresh_mask.SetOutValue(const.THRESHOLD_OUTVALUE)
-        img_thresh_mask.ThresholdBetween(float(thresh_min), float(thresh_max))
-        img_thresh_mask.Update()
-        self.img_thresh_mask = img_thresh_mask
-
-        # copy of threshold output
-        imagedata_mask = vtk.vtkImageData()
-        imagedata_mask.DeepCopy(img_thresh_mask.GetOutput())
-        imagedata_mask.Update()
-
-        return imagedata_mask
-
     def _open_image_matrix(self, filename, shape, dtype):
         self.matrix_filename = filename
-        print ">>>", filename
-        self.matrix = numpy.memmap(filename, shape=shape, dtype=dtype,
-                                   mode='r+')
+        self.matrix = numpy.memmap(filename, shape=shape, dtype=dtype, mode='r+')
 
     def OnFlipVolume(self, pubsub_evt):
         axis = pubsub_evt.data
@@ -1489,8 +1330,9 @@ class Slice(object):
         print type(self.matrix)
 
     def OnExportMask(self, pubsub_evt):
-        #imagedata = self.current_mask.imagedata
-        imagedata = self.imagedata
-        filename, filetype = pubsub_evt.data
-        if (filetype == const.FILETYPE_IMAGEDATA):
-            iu.Export(imagedata, filename)
+        pass
+        ##imagedata = self.current_mask.imagedata
+        #imagedata = self.imagedata
+        #filename, filetype = pubsub_evt.data
+        #if (filetype == const.FILETYPE_IMAGEDATA):
+            #iu.Export(imagedata, filename)
