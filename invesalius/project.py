@@ -22,7 +22,6 @@ import glob
 import os
 import plistlib
 import shutil
-import stat
 import tarfile
 import tempfile
 
@@ -35,7 +34,6 @@ import data.mask as msk
 import data.polydata_utils as pu
 import data.surface as srf
 from presets import Presets
-from reader import dicom
 from utils import Singleton, debug
 import version
 
@@ -47,18 +45,13 @@ class Project(object):
     def __init__(self):
         # Patient/ acquistion information
         self.name = ''
-        self.dicom_sample = ''
         self.modality = ''
         self.original_orientation = ''
         self.window = ''
         self.level = ''
 
-        # Original imagedata (shouldn't be changed)
-        self.imagedata = ''
-
         # Masks (vtkImageData)
         self.mask_dict = {}
-        self.last_mask_index = 0
 
         # Surfaces are (vtkPolyData)
         self.surface_dict = {}
@@ -107,7 +100,6 @@ class Project(object):
         output
             @ index: index of item that was inserted
         """
-        #self.last_mask_index = mask.index
         index = len(self.mask_dict)
         self.mask_dict[index] = mask
         return index

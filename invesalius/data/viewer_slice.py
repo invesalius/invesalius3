@@ -845,8 +845,8 @@ class Viewer(wx.Panel):
         self.interactor.Bind(wx.EVT_SIZE, self.OnSize)
 
     def LoadImagedata(self, pubsub_evt):
-        imagedata, mask_dict = pubsub_evt.data
-        self.SetInput(imagedata, mask_dict)
+        mask_dict = pubsub_evt.data
+        self.SetInput(mask_dict)
 
     def LoadRenderers(self, imagedata):
         number_renderers = self.layout[0] * self.layout[1]
@@ -911,7 +911,7 @@ class Viewer(wx.Panel):
         self.cursor_ = cursor
         return cursor
 
-    def SetInput(self, imagedata, mask_dict):
+    def SetInput(self, mask_dict):
         self.slice_ = sl.Slice()
 
         max_slice_number = sl.Slice().GetNumberOfSlices(self.orientation)
@@ -921,7 +921,7 @@ class Viewer(wx.Panel):
         self.slice_data = self.create_slice_window()
         self.slice_data.SetCursor(self.__create_cursor())
         self.cam = self.slice_data.renderer.GetActiveCamera()
-        self.__build_cross_lines(imagedata)
+        self.__build_cross_lines()
 
         # Set the slice number to the last slice to ensure the camera if far
         # enough to show all slices.
@@ -936,7 +936,7 @@ class Viewer(wx.Panel):
         ## Insert cursor
         self.SetInteractorStyle(const.STATE_DEFAULT)
 
-    def __build_cross_lines(self, imagedata):
+    def __build_cross_lines(self):
         renderer = self.slice_data.overlay_renderer
 
         cross = vtk.vtkCursor3D()
