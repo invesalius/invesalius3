@@ -160,8 +160,6 @@ class Slice(object):
 
         Publisher.subscribe(self._set_projection_type, 'Set projection type')
 
-        Publisher.subscribe(self.InputImageWidget, 'Input Image in the widget')
-
         Publisher.subscribe(self.OnExportMask,'Export mask to file')
 
         Publisher.subscribe(self.OnCloseProject, 'Close project data')
@@ -314,7 +312,6 @@ class Slice(object):
 
         to_reload = False
         if threshold_range != self.current_mask.threshold_range:
-            print "<<<<<<<<<<<<<<<< DIFERENT >>>>>>>>>>>>>>>>>>>>>>>"
             to_reload = True
             for orientation in self.buffer_slices:
                 self.buffer_slices[orientation].discard_vtk_mask()
@@ -937,26 +934,6 @@ class Slice(object):
         self.window_level = (pn + p0) / 2
 
         Publisher.sendMessage('Reload actual slice')
-
-    def InputImageWidget(self, pubsub_evt):
-        widget, orientation = pubsub_evt.data
-
-        original_orientation = Project().original_orientation
-        
-        img = self.buffer_slices[orientation].vtk_image
-        
-        cast = vtk.vtkImageCast()
-        cast.SetInput(img)
-        cast.SetOutputScalarTypeToDouble() 
-        cast.ClampOverflowOn()
-        cast.Update()
-
-        flip = vtk.vtkImageFlip()
-        flip.SetInput(cast.GetOutput())
-        flip.SetFilteredAxis(1)
-        flip.FlipAboutOriginOn()
-        flip.Update()
-        widget.SetInput(flip.GetOutput())
 
     def UpdateSlice3D(self, pubsub_evt):
         widget, orientation = pubsub_evt.data
