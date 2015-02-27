@@ -556,8 +556,15 @@ class EditorInteractorStyle(DefaultInteractorStyle):
         if (self.viewer.slice_.buffer_slices[self.orientation].mask is None):
             return
 
+
         viewer = self.viewer
         iren = viewer.interactor
+
+        operation = viewer._brush_cursor_op 
+        if operation == const.BRUSH_THRESH:
+            if iren.GetControlKey():
+                operation = const.BRUSH_THRESH_ERASE
+
 
         viewer._set_editor_cursor_visibility(1)
  
@@ -585,7 +592,7 @@ class EditorInteractorStyle(DefaultInteractorStyle):
         if position < 0:
             position = viewer.calculate_matrix_position(coord)
 
-        viewer.slice_.edit_mask_pixel(viewer._brush_cursor_op, cursor.GetPixels(),
+        viewer.slice_.edit_mask_pixel(operation, cursor.GetPixels(),
                                     position, radius, viewer.orientation)
         viewer._flush_buffer = True
 
@@ -604,6 +611,11 @@ class EditorInteractorStyle(DefaultInteractorStyle):
         mouse_x, mouse_y = iren.GetEventPosition()
         render = iren.FindPokedRenderer(mouse_x, mouse_y)
         slice_data = viewer.get_slice_data(render)
+
+        operation = viewer._brush_cursor_op 
+        if operation == const.BRUSH_THRESH:
+            if iren.GetControlKey():
+                operation = const.BRUSH_THRESH_ERASE
 
         # TODO: Improve!
         #for i in self.slice_data_list:
@@ -635,7 +647,7 @@ class EditorInteractorStyle(DefaultInteractorStyle):
             if position < 0:
                 position = viewer.calculate_matrix_position(coord)
                 
-            viewer.slice_.edit_mask_pixel(viewer._brush_cursor_op, cursor.GetPixels(),
+            viewer.slice_.edit_mask_pixel(operation, cursor.GetPixels(),
                                         position, radius, self.orientation)
             # TODO: To create a new function to reload images to viewer.
             viewer.OnScrollBar(update3D=False)
