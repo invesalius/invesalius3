@@ -563,8 +563,12 @@ class EditorInteractorStyle(DefaultInteractorStyle):
         operation = viewer._brush_cursor_op 
         if operation == const.BRUSH_THRESH:
             if iren.GetControlKey():
-                operation = const.BRUSH_THRESH_ERASE
-
+                if iren.GetShiftKey():
+                    operation = const.BRUSH_THRESH_ERASE_ONLY
+                else:
+                    operation = const.BRUSH_THRESH_ERASE
+            elif iren.GetShiftKey():
+                operation = const.BRUSH_THRESH_ADD_ONLY
 
         viewer._set_editor_cursor_visibility(1)
  
@@ -615,7 +619,12 @@ class EditorInteractorStyle(DefaultInteractorStyle):
         operation = viewer._brush_cursor_op 
         if operation == const.BRUSH_THRESH:
             if iren.GetControlKey():
-                operation = const.BRUSH_THRESH_ERASE
+                if iren.GetShiftKey():
+                    operation = const.BRUSH_THRESH_ERASE_ONLY
+                else:
+                    operation = const.BRUSH_THRESH_ERASE
+            elif iren.GetShiftKey():
+                operation = const.BRUSH_THRESH_ADD_ONLY
 
         # TODO: Improve!
         #for i in self.slice_data_list:

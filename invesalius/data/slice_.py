@@ -461,8 +461,12 @@ class Slice(object):
                 roi_m[index] = (((roi_i[index] >= thresh_min)
                                  & (roi_i[index] <= thresh_max)) * 253) + 1
             elif operation == const.BRUSH_THRESH_ERASE:
-                roi_m[index] = (((roi_i[index] >= thresh_min)
-                                 & (roi_i[index] <= thresh_max)) * 1) -1
+                roi_m[index] = (((roi_i[index] < thresh_min)
+                                 | (roi_i[index] > thresh_max)) * 253) + 1
+            elif operation == const.BRUSH_THRESH_ADD_ONLY:
+                roi_m[((index) & (roi_i >= thresh_min) & (roi_i <= thresh_max))] = 254
+            elif operation == const.BRUSH_THRESH_ERASE_ONLY:
+                roi_m[((index) & ((roi_i < thresh_min) | (roi_i > thresh_max)))] = 1
             elif operation == const.BRUSH_DRAW:
                 roi_m[index] = 254
             elif operation == const.BRUSH_ERASE:
