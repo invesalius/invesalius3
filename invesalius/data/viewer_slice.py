@@ -152,15 +152,9 @@ class Viewer(wx.Panel):
         #self.SetBackgroundColour(colour)
 
         # Interactor additional style
-        #self.modes = []#['DEFAULT']
-        self.left_pressed = 0
-        self.right_pressed = 0
 
         self._number_slices = const.PROJECTION_MIP_SIZE
         self._mip_inverted = False
-        
-        self.spined_image = False #Use to control to spin
-        self.paned_image = False
         
         self.style = None
         self.last_position_mouse_move = ()
@@ -200,7 +194,6 @@ class Viewer(wx.Panel):
         self.__bind_events()
         self.__bind_events_wx()
 
-        self._warped = False
         self._flush_buffer = False
 
     def __init_gui(self):
@@ -230,7 +223,6 @@ class Viewer(wx.Panel):
         self.interactor.SetPicker(self.pick)
 
     def OnContextMenu(self, evt):
-        self.right_pressed = 0
         if (self.last_position_mouse_move ==\
               self.interactor.GetLastEventPosition()):
             self.menu.caller = self
@@ -826,7 +818,6 @@ class Viewer(wx.Panel):
         for slice_data in self.slice_data_list:
             del slice_data
             
-        self.modes = []#['DEFAULT']
         self.slice_data_list = []
         self.layout = (1, 1)
         self.orientation_texts = []
@@ -854,8 +845,8 @@ class Viewer(wx.Panel):
         self.interactor.Bind(wx.EVT_SIZE, self.OnSize)
 
     def LoadImagedata(self, pubsub_evt):
-        imagedata, mask_dict = pubsub_evt.data
-        self.SetInput(imagedata, mask_dict)
+        mask_dict = pubsub_evt.data
+        self.SetInput(mask_dict)
 
     def LoadRenderers(self, imagedata):
         number_renderers = self.layout[0] * self.layout[1]
@@ -920,7 +911,7 @@ class Viewer(wx.Panel):
         self.cursor_ = cursor
         return cursor
 
-    def SetInput(self, imagedata, mask_dict):
+    def SetInput(self, mask_dict):
         self.slice_ = sl.Slice()
 
         max_slice_number = sl.Slice().GetNumberOfSlices(self.orientation)
@@ -928,11 +919,9 @@ class Viewer(wx.Panel):
                                  max_slice_number)
 
         self.slice_data = self.create_slice_window()
-        #self.slice_data.actor.SetInput(imagedata)
         self.slice_data.SetCursor(self.__create_cursor())
         self.cam = self.slice_data.renderer.GetActiveCamera()
-        self.__build_cross_lines(imagedata)
-        #self.set_slice_number(0)
+        self.__build_cross_lines()
 
         # Set the slice number to the last slice to ensure the camera if far
         # enough to show all slices.
@@ -940,30 +929,6 @@ class Viewer(wx.Panel):
         self.__update_camera()
         self.slice_data.renderer.ResetCamera()
         self.interactor.GetRenderWindow().AddRenderer(self.slice_data.renderer)
-        #if slice_.imagedata is None:
-            #slice_.SetInput(imagedata, mask_dict)
-            
-        ##actor.SetInput(slice_.GetOutput())
-        #self.LoadRenderers(slice_.GetOutput())
-        #self.__configure_renderers()
-        #ren = self.slice_data_list[0].renderer
-        #actor = self.slice_data_list[0].actor
-        #actor_bound = actor.GetBounds()
-        #self.cam = ren.GetActiveCamera()
-
-        #for slice_data in self.slice_data_list:
-            #self.__update_camera(slice_data)
-            #self.Reposition(slice_data)
-
-        #number_of_slices = self.layout[0] * self.layout[1]
-        #max_slice_number = actor.GetSliceNumberMax() + 1/ \
-                #number_of_slices
-
-        #if actor.GetSliceNumberMax() % number_of_slices:
-            #max_slice_number += 1
-        #self.set_scroll_position(0)
-
-        #actor_bound = actor.GetBounds()
         self.interactor.Render()
 
         self.EnableText()
@@ -971,7 +936,7 @@ class Viewer(wx.Panel):
         ## Insert cursor
         self.SetInteractorStyle(const.STATE_DEFAULT)
 
-    def __build_cross_lines(self, imagedata):
+    def __build_cross_lines(self):
         renderer = self.slice_data.overlay_renderer
 
         cross = vtk.vtkCursor3D()
@@ -1010,28 +975,6 @@ class Viewer(wx.Panel):
         for slice_data in self.slice_data_list:
             slice_data.cursor.actor.SetVisibility(visibility)
 
-    def __update_cursor_position(self, slice_data, position):
-        x, y, z = position
-        if (slice_data.cursor):
-            slice_number = slice_data.number
-            actor_bound = slice_data.actor.GetBounds()
-
-            yz = [x + abs(x * 0.001), y, z]
-            xz = [x, y - abs(y * 0.001), z]
-            xy = [x, y, z + abs(z * 0.001)]
-
-            proj = project.Project()
-            orig_orien = proj.original_orientation
-
-            if (orig_orien == const.SAGITAL):
-                coordinates = {"SAGITAL": xy, "CORONAL": yz, "AXIAL": xz}
-            elif(orig_orien == const.CORONAL):
-                coordinates = {"SAGITAL": yz, "CORONAL": xy, "AXIAL": xz}
-            else:
-                coordinates = {"SAGITAL": yz, "CORONAL": xz, "AXIAL": xy}
-
-            slice_data.cursor.SetPosition(coordinates[self.orientation])
-
     def SetOrientation(self, orientation):
         self.orientation = orientation
         for slice_data in self.slice_data_list:
@@ -1047,7 +990,6 @@ class Viewer(wx.Panel):
         overlay_renderer.SetActiveCamera(cam)
         overlay_renderer.SetInteractive(0)
         
-
         self.interactor.GetRenderWindow().SetNumberOfLayers(2)
         self.interactor.GetRenderWindow().AddRenderer(overlay_renderer)
         self.interactor.GetRenderWindow().AddRenderer(renderer)
@@ -1285,30 +1227,6 @@ class Viewer(wx.Panel):
         pos = self.scroll.GetThumbPosition()
         self.set_slice_number(pos)
         self.interactor.Render()
-
-    def test_operation_position(self, coord):
-        """
-        Test if coord is into the imagedata limits.
-        """
-        x, y, z = coord
-        xi, yi, zi = 0, 0, 0
-        xf, yf, zf = self.imagedata.GetDimensions()
-        if xi <= x <= xf \
-           and yi <= y <= yf\
-           and zi <= z <= zf:
-            return True
-        return False
-
-    def _assert_coord_into_image(self, coord):
-        extent = self.imagedata.GetWholeExtent()
-        extent_min = extent[0], extent[2], extent[4]
-        extent_max = extent[1], extent[3], extent[5]
-        for index in xrange(3):
-            if coord[index] > extent_max[index]:
-                coord[index] = extent_max[index]
-            elif coord[index] < extent_min[index]:
-                coord[index] = extent_min[index]
-        return coord
 
     def ReloadActualSlice(self, pubsub_evt=None):
         pos = self.scroll.GetThumbPosition()

@@ -427,7 +427,6 @@ class SpinInteractorStyle(DefaultInteractorStyle):
         cam = ren.GetActiveCamera()
         if (self.left_pressed):
             self.viewer.UpdateTextDirection(cam)    
-            self.spined_image = True
             obj.Spin()
             obj.OnRightButtonDown()
 

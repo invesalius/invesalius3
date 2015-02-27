@@ -373,8 +373,7 @@ class Controller():
         self.Slice.spacing = proj.spacing
 
         Publisher.sendMessage('Load slice to viewer',
-                        (proj.imagedata,
-                        proj.mask_dict))
+                        (proj.mask_dict))
 
         
         Publisher.sendMessage('Load slice plane') 
