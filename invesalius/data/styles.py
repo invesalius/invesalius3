@@ -570,6 +570,12 @@ class EditorInteractorStyle(DefaultInteractorStyle):
             elif iren.GetShiftKey():
                 operation = const.BRUSH_THRESH_ADD_ONLY
 
+        elif operation == const.BRUSH_ERASE and iren.GetControlKey():
+            operation = const.BRUSH_DRAW
+
+        elif operation == const.BRUSH_DRAW and iren.GetControlKey():
+            operation = const.BRUSH_ERASE
+
         viewer._set_editor_cursor_visibility(1)
  
         mouse_x, mouse_y = iren.GetEventPosition()
@@ -625,6 +631,12 @@ class EditorInteractorStyle(DefaultInteractorStyle):
                     operation = const.BRUSH_THRESH_ERASE
             elif iren.GetShiftKey():
                 operation = const.BRUSH_THRESH_ADD_ONLY
+
+        elif operation == const.BRUSH_ERASE and iren.GetControlKey():
+            operation = const.BRUSH_DRAW
+
+        elif operation == const.BRUSH_DRAW and iren.GetControlKey():
+            operation = const.BRUSH_ERASE
 
         # TODO: Improve!
         #for i in self.slice_data_list:
