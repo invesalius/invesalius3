@@ -193,7 +193,7 @@ class Controller():
                     Publisher.sendMessage("Enable state project", False)
                     Publisher.sendMessage('Set project name')
                     Publisher.sendMessage("Stop Config Recording")
-                    #Publisher.sendMessage("Exit")
+                    Publisher.sendMessage("Exit")
                 elif answer == 1:
                     self.ShowDialogSaveProject()
                     utils.debug("Save changes and close")
@@ -201,7 +201,7 @@ class Controller():
                     Publisher.sendMessage("Enable state project", False)
                     Publisher.sendMessage('Set project name')
                     Publisher.sendMessage("Stop Config Recording")
-                    #Publisher.sendMessage("Exit")
+                    Publisher.sendMessage("Exit")
                 elif answer == -1:
                     utils.debug("Cancel")
             else:
@@ -209,11 +209,11 @@ class Controller():
                 Publisher.sendMessage("Enable state project", False)
                 Publisher.sendMessage('Set project name')
                 Publisher.sendMessage("Stop Config Recording")
-                #Publisher.sendMessage("Exit")
+                Publisher.sendMessage("Exit")
 
         else:
             Publisher.sendMessage('Stop Config Recording')
-            #Publisher.sendMessage('Exit')
+            Publisher.sendMessage('Exit')
 
 
 ###########################
@@ -253,10 +253,6 @@ class Controller():
 
         self.Slice.window_level = proj.level
         self.Slice.window_width = proj.window
-
-        mask = msk.Mask()
-        mask._set_class_index(proj.last_mask_index)
-        self.mask_dict_copy = proj.mask_dict.copy()
 
         Publisher.sendMessage('Update threshold limits list',
                                    proj.threshold_range)
