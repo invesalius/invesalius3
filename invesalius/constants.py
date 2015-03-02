@@ -258,6 +258,7 @@ BRUSH_OP_NAME = [_("Draw"), _("Erase"), _("Threshold")]
 
 BRUSH_COLOUR = (0,0,1.0)
 BRUSH_SIZE = 30
+BRUSH_MAX_SIZE = 100
 
 # Surface creation values. Each element's list contains:
 # 0: imagedata reformat ratio

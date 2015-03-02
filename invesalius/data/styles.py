@@ -540,6 +540,11 @@ class EditorInteractorStyle(DefaultInteractorStyle):
         self.AddObserver("LeftButtonReleaseEvent", self.OnBrushRelease)
         self.AddObserver("MouseMoveEvent", self.OnBrushMove)
 
+        self.RemoveObservers("MouseWheelForwardEvent")
+        self.RemoveObservers("MouseWheelBackwardEvent")
+        self.AddObserver("MouseWheelForwardEvent",self.EOnScrollForward)
+        self.AddObserver("MouseWheelBackwardEvent", self.EOnScrollBackward)
+
     def OnEnterInteractor(self, obj, evt):
         if (self.viewer.slice_.buffer_slices[self.orientation].mask is None):
             return
@@ -682,6 +687,39 @@ class EditorInteractorStyle(DefaultInteractorStyle):
 
         self.viewer.slice_.apply_slice_buffer_to_mask(self.orientation)
         self.viewer._flush_buffer = False
+
+    def EOnScrollForward(self, evt, obj):
+        iren = self.viewer.interactor
+        if iren.GetControlKey():
+            mouse_x, mouse_y = iren.GetEventPosition()
+            render = iren.FindPokedRenderer(mouse_x, mouse_y)
+            slice_data = self.viewer.get_slice_data(render)
+            cursor = slice_data.cursor
+            size = cursor.radius * 2
+
+            if size < 100:
+                Publisher.sendMessage('Set edition brush size', size + 1)
+                cursor.SetPosition(cursor.position)
+                self.viewer.interactor.Render()
+            
+        else:
+            self.OnScrollForward(obj, evt)
+
+    def EOnScrollBackward(self, evt, obj):
+        iren = self.viewer.interactor
+        if iren.GetControlKey():
+            mouse_x, mouse_y = iren.GetEventPosition()
+            render = iren.FindPokedRenderer(mouse_x, mouse_y)
+            slice_data = self.viewer.get_slice_data(render)
+            cursor = slice_data.cursor
+            size = cursor.radius * 2
+
+            if size > 0:
+                Publisher.sendMessage('Set edition brush size', size - 1)
+                cursor.SetPosition(cursor.position)
+                self.viewer.interactor.Render()
+        else:
+            self.OnScrollBackward(obj, evt)
 
     def get_coordinate_cursor(self):
         # Find position
