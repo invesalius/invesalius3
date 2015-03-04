@@ -250,11 +250,15 @@ DEFAULT_BRUSH_FORMAT = BRUSH_CIRCLE
 BRUSH_DRAW = 0
 BRUSH_ERASE = 1
 BRUSH_THRESH = 2
+BRUSH_THRESH_ERASE = 3
+BRUSH_THRESH_ADD_ONLY = 4
+BRUSH_THRESH_ERASE_ONLY = 5
 DEFAULT_BRUSH_OP = BRUSH_THRESH
 BRUSH_OP_NAME = [_("Draw"), _("Erase"), _("Threshold")]
 
 BRUSH_COLOUR = (0,0,1.0)
 BRUSH_SIZE = 30
+BRUSH_MAX_SIZE = 100
 
 # Surface creation values. Each element's list contains:
 # 0: imagedata reformat ratio
