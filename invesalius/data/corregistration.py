@@ -11,7 +11,7 @@ import data.coordinates as co
 class Corregistration(threading.Thread):
     # Thread created to update the coordinates with the fiducial points
     # corregistration method while the Navigation Button is pressed.
-    # sleep function in run method is used for better real-time navigation
+    # Sleep function in run method is used for better real-time navigation
 
     def __init__(self, bases, nav_id, trck_info):
         threading.Thread.__init__(self)
