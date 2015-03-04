@@ -78,6 +78,7 @@ class CursorBase(object):
         self.size = 15.0
         self.orientation = "AXIAL"
         self.spacing = (1, 1, 1)
+        self.position = (0, 0, 0)
         if vtk.vtkVersion().GetVTKVersion() > '5.8.0':
             self.mapper = vtk.vtkImageSliceMapper()
             cursor_property = vtk.vtkImageProperty()
@@ -108,6 +109,7 @@ class CursorBase(object):
     def SetPosition(self, position):
         # Overriding SetPosition method because in rectangles with odd
         # dimensions there is no half position.
+        self.position = position
         px, py, pz = position
         sx, sy, sz = self.spacing
         tx = self.actor.GetXRange()[1] - self.actor.GetXRange()[0]

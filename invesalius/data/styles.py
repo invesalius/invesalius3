@@ -540,6 +540,11 @@ class EditorInteractorStyle(DefaultInteractorStyle):
         self.AddObserver("LeftButtonReleaseEvent", self.OnBrushRelease)
         self.AddObserver("MouseMoveEvent", self.OnBrushMove)
 
+        self.RemoveObservers("MouseWheelForwardEvent")
+        self.RemoveObservers("MouseWheelBackwardEvent")
+        self.AddObserver("MouseWheelForwardEvent",self.EOnScrollForward)
+        self.AddObserver("MouseWheelBackwardEvent", self.EOnScrollBackward)
+
     def OnEnterInteractor(self, obj, evt):
         if (self.viewer.slice_.buffer_slices[self.orientation].mask is None):
             return
@@ -556,8 +561,25 @@ class EditorInteractorStyle(DefaultInteractorStyle):
         if (self.viewer.slice_.buffer_slices[self.orientation].mask is None):
             return
 
+
         viewer = self.viewer
         iren = viewer.interactor
+
+        operation = viewer._brush_cursor_op 
+        if operation == const.BRUSH_THRESH:
+            if iren.GetControlKey():
+                if iren.GetShiftKey():
+                    operation = const.BRUSH_THRESH_ERASE_ONLY
+                else:
+                    operation = const.BRUSH_THRESH_ERASE
+            elif iren.GetShiftKey():
+                operation = const.BRUSH_THRESH_ADD_ONLY
+
+        elif operation == const.BRUSH_ERASE and iren.GetControlKey():
+            operation = const.BRUSH_DRAW
+
+        elif operation == const.BRUSH_DRAW and iren.GetControlKey():
+            operation = const.BRUSH_ERASE
 
         viewer._set_editor_cursor_visibility(1)
  
@@ -585,7 +607,7 @@ class EditorInteractorStyle(DefaultInteractorStyle):
         if position < 0:
             position = viewer.calculate_matrix_position(coord)
 
-        viewer.slice_.edit_mask_pixel(viewer._brush_cursor_op, cursor.GetPixels(),
+        viewer.slice_.edit_mask_pixel(operation, cursor.GetPixels(),
                                     position, radius, viewer.orientation)
         viewer._flush_buffer = True
 
@@ -604,6 +626,22 @@ class EditorInteractorStyle(DefaultInteractorStyle):
         mouse_x, mouse_y = iren.GetEventPosition()
         render = iren.FindPokedRenderer(mouse_x, mouse_y)
         slice_data = viewer.get_slice_data(render)
+
+        operation = viewer._brush_cursor_op 
+        if operation == const.BRUSH_THRESH:
+            if iren.GetControlKey():
+                if iren.GetShiftKey():
+                    operation = const.BRUSH_THRESH_ERASE_ONLY
+                else:
+                    operation = const.BRUSH_THRESH_ERASE
+            elif iren.GetShiftKey():
+                operation = const.BRUSH_THRESH_ADD_ONLY
+
+        elif operation == const.BRUSH_ERASE and iren.GetControlKey():
+            operation = const.BRUSH_DRAW
+
+        elif operation == const.BRUSH_DRAW and iren.GetControlKey():
+            operation = const.BRUSH_ERASE
 
         # TODO: Improve!
         #for i in self.slice_data_list:
@@ -635,7 +673,7 @@ class EditorInteractorStyle(DefaultInteractorStyle):
             if position < 0:
                 position = viewer.calculate_matrix_position(coord)
                 
-            viewer.slice_.edit_mask_pixel(viewer._brush_cursor_op, cursor.GetPixels(),
+            viewer.slice_.edit_mask_pixel(operation, cursor.GetPixels(),
                                         position, radius, self.orientation)
             # TODO: To create a new function to reload images to viewer.
             viewer.OnScrollBar(update3D=False)
@@ -649,6 +687,39 @@ class EditorInteractorStyle(DefaultInteractorStyle):
 
         self.viewer.slice_.apply_slice_buffer_to_mask(self.orientation)
         self.viewer._flush_buffer = False
+
+    def EOnScrollForward(self, evt, obj):
+        iren = self.viewer.interactor
+        if iren.GetControlKey():
+            mouse_x, mouse_y = iren.GetEventPosition()
+            render = iren.FindPokedRenderer(mouse_x, mouse_y)
+            slice_data = self.viewer.get_slice_data(render)
+            cursor = slice_data.cursor
+            size = cursor.radius * 2
+
+            if size < 100:
+                Publisher.sendMessage('Set edition brush size', size + 1)
+                cursor.SetPosition(cursor.position)
+                self.viewer.interactor.Render()
+            
+        else:
+            self.OnScrollForward(obj, evt)
+
+    def EOnScrollBackward(self, evt, obj):
+        iren = self.viewer.interactor
+        if iren.GetControlKey():
+            mouse_x, mouse_y = iren.GetEventPosition()
+            render = iren.FindPokedRenderer(mouse_x, mouse_y)
+            slice_data = self.viewer.get_slice_data(render)
+            cursor = slice_data.cursor
+            size = cursor.radius * 2
+
+            if size > 0:
+                Publisher.sendMessage('Set edition brush size', size - 1)
+                cursor.SetPosition(cursor.position)
+                self.viewer.interactor.Render()
+        else:
+            self.OnScrollBackward(obj, evt)
 
     def get_coordinate_cursor(self):
         # Find position
