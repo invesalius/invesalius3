@@ -82,6 +82,8 @@ class Controller():
         Publisher.subscribe(self.OnOpenRecentProject, 'Open recent project')
         Publisher.subscribe(self.OnShowAnalyzeFile, 'Show analyze dialog')
 
+        Publisher.subscribe(self.ShowBooleanOpDialog, 'Show boolean dialog')
+
 
     def OnCancelImport(self, pubsub_evt):
         #self.cancel_import = True
@@ -628,6 +630,6 @@ class Controller():
                                   preset_name + '.plist')
         plistlib.writePlist(preset, preset_dir)
 
-
-
-
+    def ShowBooleanOpDialog(self, pubsub_evt):
+        dlg = dialogs.MaskBooleanDialog(prj.Project().mask_dict)
+        dlg.ShowModal()

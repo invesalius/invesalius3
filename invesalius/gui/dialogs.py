@@ -23,6 +23,7 @@ import random
 import sys
 
 import wx
+import wx.combo
 from wx.lib import masked
 from wx.lib.agw import floatspin
 from wx.lib.wordwrap import wordwrap
@@ -1469,3 +1470,82 @@ class WatershedOptionsDialog(wx.Dialog):
         self.SetSizer(sizer)
         sizer.Fit(self)
         self.Layout()
+
+
+class MaskBooleanDialog(wx.Dialog):
+    def __init__(self, masks):
+        pre = wx.PreDialog()
+        pre.Create(wx.GetApp().GetTopWindow(), -1, _(u"Booleans operations"),  style=wx.DEFAULT_DIALOG_STYLE|wx.FRAME_FLOAT_ON_PARENT)
+        self.PostCreate(pre)
+
+        self._init_gui(masks)
+
+    def _init_gui(self, masks):
+        mask_choices = [(masks[i].name, masks[i]) for i in sorted(masks)]
+        self.mask1 = wx.ComboBox(self, -1, mask_choices[0][0], choices=[])
+        self.mask2 = wx.ComboBox(self, -1, mask_choices[0][0], choices=[])
+
+        for n, m in mask_choices:
+            self.mask1.Append(n, m)
+            self.mask2.Append(n, m)
+
+        self.mask1.SetSelection(0)
+
+        if len(mask_choices) > 1:
+            self.mask2.SetSelection(1)
+        else:
+            self.mask2.SetSelection(0)
+
+        icon_folder = '../icons/'
+        op_choices = ((_(u"Union"), const.BOOLEAN_UNION, 'bool_union.png'),
+                      (_(u"Difference"), const.BOOLEAN_DIFF, 'bool_difference.png'), 
+                      (_(u"Intersection"), const.BOOLEAN_AND, 'bool_intersection.png'),
+                      (_(u"Exclusive disjunction"), const.BOOLEAN_XOR, 'bool_disjunction.png'))
+        self.op_boolean = wx.combo.BitmapComboBox(self, -1, op_choices[0][0], choices=[])
+
+        for n, i, f in op_choices:
+            bmp = wx.Bitmap(os.path.join(icon_folder, f), wx.BITMAP_TYPE_PNG)
+            self.op_boolean.Append(n, bmp, i)
+
+        self.op_boolean.SetSelection(0)
+
+        btn_ok = wx.Button(self, wx.ID_OK)
+        btn_ok.SetDefault()
+
+        btn_cancel = wx.Button(self, wx.ID_CANCEL)
+
+        btnsizer = wx.StdDialogButtonSizer()
+        btnsizer.AddButton(btn_ok)
+        btnsizer.AddButton(btn_cancel)
+        btnsizer.Realize()
+
+        gsizer = wx.FlexGridSizer(rows=3, cols=2, hgap=5, vgap=5)
+
+        gsizer.Add(wx.StaticText(self, -1, _(u"Mask 1")))
+        gsizer.Add(self.mask1, 1, wx.EXPAND)
+        gsizer.Add(wx.StaticText(self, -1, _(u"Operation")))
+        gsizer.Add(self.op_boolean, 1, wx.EXPAND)
+        gsizer.Add(wx.StaticText(self, -1, _(u"Mask 2")))
+        gsizer.Add(self.mask2, 1, wx.EXPAND)
+
+        sizer = wx.BoxSizer(wx.VERTICAL)
+        sizer.Add(gsizer, 0, wx.EXPAND | wx.ALIGN_CENTER | wx.ALL, border=5)
+        sizer.Add(btnsizer, 0, wx.EXPAND | wx.ALIGN_CENTER | wx.ALL, border=5)
+
+        self.SetSizer(sizer)
+        sizer.Fit(self)
+
+        self.Centre()
+
+        btn_ok.Bind(wx.EVT_BUTTON, self.OnOk)
+
+    def OnOk(self, evt):
+        op = self.op_boolean.GetClientData(self.op_boolean.GetSelection())
+        m1 = self.mask1.GetClientData(self.mask1.GetSelection())
+        m2 = self.mask2.GetClientData(self.mask2.GetSelection())
+
+        Publisher.sendMessage('Do boolean operation', (op, m1, m2))
+        Publisher.sendMessage('Reload actual slice')
+
+        self.Close()
+        self.Destroy()
