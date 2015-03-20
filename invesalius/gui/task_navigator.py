@@ -492,25 +492,27 @@ class NeuronavigationTools(wx.Panel):
     def OnChoiceTracker(self, evt):
         trck_id = evt.GetSelection()
 
-        dco.Tracker(trck_id)
-        if self.tracker_id == 0:
-            self.trk_init = dtrk.Tracker_Init().PolhemusISO_init()
-            print self.trk_init
-            
-        elif self.tracker_id == 1:
-            self.trk_init = dtrk.Tracker_Init().Polhemus_init()
-            print self.trk_init
-            
-        elif self.tracker_id == 2:
-            #review this close command: when for example
-            #you jump from MTC to Zebris, it will try
-            #to close the MTC, but it doesnt have a close attribute
-            #self.trk_init.close()
-            self.trk_init = dtrk.Tracker_Init().Claron_init()
-            print self.trk_init
-        elif self.tracker_id == 3:
-            self.trk_init = dtrk.Tracker_Init().Zebris_init()
-            print self.trk_init
+        # self.trk_init = dco.Tracker().ReturnTracker(trck_id)
+        self.trk_init = dco.Tracker(trck_id)
+
+        # if self.tracker_id == 0:
+        #     self.trk_init = dtrk.Tracker_Init().PolhemusISO_init()
+        #     print self.trk_init
+        #
+        # elif self.tracker_id == 1:
+        #     self.trk_init = dtrk.Tracker_Init().Polhemus_init()
+        #     print self.trk_init
+        #
+        # elif self.tracker_id == 2:
+        #     #review this close command: when for example
+        #     #you jump from MTC to Zebris, it will try
+        #     #to close the MTC, but it doesnt have a close attribute
+        #     #self.trk_init.close()
+        #     self.trk_init = dtrk.Tracker_Init().Claron_init()
+        #     print self.trk_init
+        # elif self.tracker_id == 3:
+        #     self.trk_init = dtrk.Tracker_Init().Zebris_init()
+        #     print self.trk_init
             
         print "Tracker changed!"
     

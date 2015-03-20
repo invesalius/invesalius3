@@ -1,58 +1,59 @@
-import sys
 
-import serial
-import usb.core
-import usb.util
-import wx
+
 import numpy as np
 from wx.lib.pubsub import pub as Publisher
 
 import gui.dialogs as dlg
 
-try:
-    import ClaronTracker as mct
-except ImportError:
-    print 'The ClaronTracker library is not installed'
-
 
 class Tracker:
     def __init__(self, trck_id):
 
-        self.trck_init = None
-        print "This is the tracker selected!"
+        trck = {0 : self.ClaronTracker,
+                1 : self.PlhFastrak,
+                2 : self.PlhIsotrakII,
+                3 : self.PlhPatriot,
+                4 : self.ZebrisCMS20}
 
-        if trck_id == 0:
-            trck_init = self.ClaronTracker()
-        elif trck_id == 1:
-            trck_init = self.PlhFastrak()
-        elif trck_id == 2:
-            trck_init = self.PlhIsotrakII()
-        elif trck_id == 3:
-            trck_init = self.PlhPatriot()
-        elif trck_id == 4:
-            trck_init = self.ZebrisCMS20()
-
-        self.trck_init = trck_init
+        self.ReturnTracker(trck, trck_id)
 
     def ClaronTracker(self):
-        print "CLARON"
+        try:
+            import ClaronTracker as mct
+        except ImportError:
+            print 'The ClaronTracker library is not installed'
+
+        print "CLARON func"
         return 0
 
     def PlhFastrak(self):
-        print "FASTRAK"
+        import serial
+        print "FASTRAK func"
         return 1
 
     def PlhIsotrakII(self):
-        print "ISOTRAKII"
+        import serial
+        print "ISOTRAKII func"
         return 2
 
     def PlhPatriot(self):
-        print "PATRIOT"
+        import sys
+
+        import serial
+        import usb.core
+        import usb.util
+
+        print "PATRIOT func"
         return 3
 
     def ZebrisCMS20(self):
-        print "ZEBRIS"
+        print "ZEBRIS func"
         return 4
+
+    def ReturnTracker(self, trck, trck_id):
+        print "Returning"
+        print "This is the tracker selected!", trck_id
+        return trck[trck_id]()
 
 
 class Coordinates:
@@ -83,7 +84,7 @@ class Coordinates:
         
         
     def __update_status_MTC(self, pubsub_evt):  
-        self.MTC_status =  pubsub_evt.data
+        self.MTC_status = pubsub_evt.data
 
     def __update_points_MTC(self, pubsub_evt): 
         self.coordTT = pubsub_evt.data
