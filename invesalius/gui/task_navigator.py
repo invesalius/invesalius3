@@ -16,29 +16,26 @@
 #    PARTICULAR. Consulte a Licenca Publica Geral GNU para obter mais
 #    detalhes.
 #--------------------------------------------------------------------------
-
-import os
 import sys
 
 from numpy import *
 import serial
 import wx
-import wx.lib.hyperlink as hl
 import wx.lib.masked.numctrl
 import wx.lib.platebtn as pbtn
 from wx.lib.pubsub import pub as Publisher
 
-import invesalius.constants as const
-import invesalius.data.bases as db
-import invesalius.data.corregistration as dcr
-import invesalius.data.trackers as dtrk
-import invesalius.data.coordinates as dco
-import invesalius.gui.dialogs as dlg
-import invesalius.gui.widgets.foldpanelbar as fpb
-import invesalius.gui.widgets.colourselect as csel
-import invesalius.gui.widgets.platebtn as pbtn
-import invesalius.project as prj
-import invesalius.utils as utl
+import constants as const
+import data.bases as db
+import data.corregistration as dcr
+import data.trackers as dtrk
+import data.coordinates as dco
+import gui.dialogs as dlg
+import gui.widgets.foldpanelbar as fpb
+import gui.widgets.colourselect as csel
+import gui.widgets.platebtn as pbtn
+import project as prj
+import utils as utl
 
 
 class TaskPanel(wx.Panel):
@@ -493,8 +490,9 @@ class NeuronavigationTools(wx.Panel):
             self.correg.stop()
             
     def OnChoiceTracker(self, evt):
-        self.tracker_id = evt.GetSelection()
-        
+        trck_id = evt.GetSelection()
+
+        dco.Tracker(trck_id)
         if self.tracker_id == 0:
             self.trk_init = dtrk.Tracker_Init().PolhemusISO_init()
             print self.trk_init
@@ -874,4 +872,3 @@ class Markers(wx.Panel):
     def OnSelectColour(self, evt):
         self.colour = [value/255.0 for value in self.marker_colour.GetValue()]
         
-
