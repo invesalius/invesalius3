@@ -2,10 +2,10 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="1c49d80e-bb12-444a-b5f1-49d733261d55" name="Default" comment="">
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/constants.py" afterPath="$PROJECT_DIR$/constants.py" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/data/coordinates.py" afterPath="$PROJECT_DIR$/data/coordinates.py" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/gui/dialogs.py" afterPath="$PROJECT_DIR$/gui/dialogs.py" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/gui/task_navigator.py" afterPath="$PROJECT_DIR$/gui/task_navigator.py" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/data/trackers.py" afterPath="$PROJECT_DIR$/data/trackers.py" />
     </list>
     <ignored path="invesalius.iws" />
     <ignored path=".idea/workspace.xml" />
@@ -30,13 +30,38 @@
   </component>
   <component name="FileEditorManager">
     <leaf>
-      <file leaf-file-name="coordinates.py" pinned="false" current-in-tab="true">
+      <file leaf-file-name="coordinates.py" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/data/coordinates.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state vertical-scroll-proportion="0.0" vertical-offset="612" max-vertical-offset="5423">
-              <caret line="36" column="28" selection-start-line="36" selection-start-column="28" selection-end-line="36" selection-end-column="28" />
+            <state vertical-scroll-proportion="0.0" vertical-offset="102" max-vertical-offset="4964">
+              <caret line="24" column="0" selection-start-line="24" selection-start-column="0" selection-end-line="24" selection-end-column="0" />
               <folding>
-                <element signature="e#0#10#0" expanded="true" />
+                <element signature="e#2#20#0" expanded="true" />
+                <element signature="e#7877#9444#0" expanded="false" />
+              </folding>
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="trackers.py" pinned="false" current-in-tab="true">
+        <entry file="file://$PROJECT_DIR$/data/trackers.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state vertical-scroll-proportion="0.18106312" vertical-offset="894" max-vertical-offset="3128">
+              <caret line="59" column="24" selection-start-line="59" selection-start-column="24" selection-end-line="59" selection-end-column="24" />
+              <folding>
+                <element signature="e#0#20#0" expanded="true" />
+              </folding>
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="dialogs.py" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/gui/dialogs.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state vertical-scroll-proportion="0.0" vertical-offset="10846" max-vertical-offset="45050">
+              <caret line="663" column="54" selection-start-line="663" selection-start-column="54" selection-end-line="663" selection-end-column="54" />
+              <folding>
+                <element signature="e#1053#1062#0" expanded="true" />
               </folding>
             </state>
           </provider>
@@ -45,8 +70,8 @@
       <file leaf-file-name="task_navigator.py" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/gui/task_navigator.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state vertical-scroll-proportion="0.0" vertical-offset="7890" max-vertical-offset="14637">
-              <caret line="494" column="28" selection-start-line="494" selection-start-column="28" selection-end-line="494" selection-end-column="28" />
+            <state vertical-scroll-proportion="0.0" vertical-offset="6768" max-vertical-offset="14671">
+              <caret line="495" column="43" selection-start-line="495" selection-start-column="43" selection-end-line="495" selection-end-column="43" />
               <folding />
             </state>
           </provider>
@@ -55,7 +80,7 @@
       <file leaf-file-name="constants.py" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/constants.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state vertical-scroll-proportion="0.0" vertical-offset="9462" max-vertical-offset="10064">
+            <state vertical-scroll-proportion="0.0" vertical-offset="9309" max-vertical-offset="10064">
               <caret line="576" column="10" selection-start-line="576" selection-start-column="10" selection-end-line="576" selection-end-column="10" />
               <folding />
             </state>
@@ -117,29 +142,6 @@
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="corregistration.py" pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/data/corregistration.py">
-          <provider selected="true" editor-type-id="text-editor">
-            <state vertical-scroll-proportion="0.0" vertical-offset="68" max-vertical-offset="1071">
-              <caret line="4" column="0" selection-start-line="4" selection-start-column="0" selection-end-line="4" selection-end-column="9" />
-              <folding />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="viewer_slice.py" pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/data/viewer_slice.py">
-          <provider selected="true" editor-type-id="text-editor">
-            <state vertical-scroll-proportion="0.0" vertical-offset="11012" max-vertical-offset="22423">
-              <caret line="676" column="27" selection-start-line="676" selection-start-column="27" selection-end-line="676" selection-end-column="27" />
-              <folding>
-                <element signature="e#1054#1070#0" expanded="true" />
-                <marker date="1425490600613" expanded="true" signature="46428:46559" placeholder="&quot;&quot;&quot;...&quot;&quot;&quot;" />
-              </folding>
-            </state>
-          </provider>
-        </entry>
-      </file>
     </leaf>
   </component>
   <component name="Git.Settings">
@@ -150,9 +152,11 @@
       <list>
         <option value="$PROJECT_DIR$/data/bases.py" />
         <option value="$PROJECT_DIR$/data/co_registration.py" />
-        <option value="$PROJECT_DIR$/gui/task_navigator.py" />
         <option value="$PROJECT_DIR$/constants.py" />
+        <option value="$PROJECT_DIR$/gui/task_navigator.py" />
         <option value="$PROJECT_DIR$/data/coordinates.py" />
+        <option value="$PROJECT_DIR$/gui/dialogs.py" />
+        <option value="$PROJECT_DIR$/data/trackers.py" />
       </list>
     </option>
   </component>
@@ -160,10 +164,8 @@
     <detection-done>true</detection-done>
   </component>
   <component name="ProjectFrameBounds">
-    <option name="x" value="-8" />
-    <option name="y" value="-8" />
-    <option name="width" value="1936" />
-    <option name="height" value="1056" />
+    <option name="width" value="960" />
+    <option name="height" value="1040" />
   </component>
   <component name="ProjectLevelVcsManager" settingsEditedManually="true">
     <OptionsSetting value="true" id="Add" />
@@ -207,13 +209,27 @@
               <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
             </PATH_ELEMENT>
           </PATH>
+          <PATH>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="invesalius" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ProjectViewProjectNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="invesalius" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="gui" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+          </PATH>
         </subPane>
       </pane>
     </panes>
   </component>
   <component name="PropertiesComponent">
     <property name="WebServerToolWindowFactoryState" value="false" />
-    <property name="options.lastSelected" value="com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable" />
+    <property name="options.lastSelected" value="preferences.keymap" />
     <property name="options.splitter.main.proportions" value="0.3" />
     <property name="options.splitter.details.proportions" value="0.2" />
     <property name="FullScreen" value="false" />
@@ -449,19 +465,19 @@
     </todo-panel>
   </component>
   <component name="ToolWindowManager">
-    <frame x="-8" y="-8" width="1936" height="1056" extended-state="7" />
+    <frame x="0" y="0" width="960" height="1040" extended-state="0" />
     <editor active="false" />
     <layout>
       <window_info id="Changes" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33553356" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
-      <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" weight="0.1359275" sideWeight="0.49945945" order="0" side_tool="false" content_ui="combo" />
+      <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" weight="0.2822222" sideWeight="0.49945945" order="0" side_tool="false" content_ui="combo" />
       <window_info id="TODO" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.20352036" sideWeight="0.5" order="6" side_tool="false" content_ui="tabs" />
       <window_info id="Event Log" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="7" side_tool="true" content_ui="tabs" />
       <window_info id="Application Servers" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
       <window_info id="Database" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
-      <window_info id="Python Console" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.2882288" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
+      <window_info id="Python Console" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" weight="0.29262927" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
       <window_info id="Version Control" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
       <window_info id="Structure" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.25" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
-      <window_info id="Terminal" active="true" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" weight="0.32864866" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
+      <window_info id="Terminal" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.3278328" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
       <window_info id="Favorites" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.25586355" sideWeight="0.50054055" order="2" side_tool="true" content_ui="tabs" />
       <window_info id="Cvs" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.25" sideWeight="0.5" order="4" side_tool="false" content_ui="tabs" />
       <window_info id="Message" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="0" side_tool="false" content_ui="tabs" />
@@ -498,8 +514,18 @@
           <line>19</line>
           <option name="timeStamp" value="1" />
         </line-breakpoint>
+        <line-breakpoint enabled="true" type="python-line">
+          <url>file://$PROJECT_DIR$/data/coordinates.py</url>
+          <line>253</line>
+          <option name="timeStamp" value="2" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="python-line">
+          <url>file://$PROJECT_DIR$/data/coordinates.py</url>
+          <line>85</line>
+          <option name="timeStamp" value="3" />
+        </line-breakpoint>
       </breakpoints>
-      <option name="time" value="2" />
+      <option name="time" value="4" />
     </breakpoint-manager>
     <watches-manager />
   </component>
@@ -509,7 +535,8 @@
         <state vertical-scroll-proportion="0.0" vertical-offset="0" max-vertical-offset="5423">
           <caret line="0" column="0" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
           <folding>
-            <element signature="e#0#10#0" expanded="true" />
+            <element signature="e#2#20#0" expanded="true" />
+            <element signature="e#7877#9444#0" expanded="false" />
           </folding>
         </state>
       </provider>
@@ -588,8 +615,8 @@
         <state vertical-scroll-proportion="0.0" vertical-offset="11012" max-vertical-offset="22423">
           <caret line="676" column="27" selection-start-line="676" selection-start-column="27" selection-end-line="676" selection-end-column="27" />
           <folding>
-            <element signature="e#1054#1070#0" expanded="true" />
-            <marker date="1425490600613" expanded="true" signature="46428:46559" placeholder="&quot;&quot;&quot;...&quot;&quot;&quot;" />
+            <element signature="e#1054#1070#0" expanded="false" />
+            <marker date="1425490600613" expanded="true" signature="-1:-1" placeholder="&quot;&quot;&quot;...&quot;&quot;&quot;" />
           </folding>
         </state>
       </provider>
@@ -599,7 +626,8 @@
         <state vertical-scroll-proportion="0.0" vertical-offset="289" max-vertical-offset="4743">
           <caret line="17" column="12" selection-start-line="17" selection-start-column="12" selection-end-line="17" selection-end-column="12" />
           <folding>
-            <element signature="e#0#10#0" expanded="true" />
+            <element signature="e#2#20#0" expanded="true" />
+            <element signature="e#7877#9444#0" expanded="false" />
           </folding>
         </state>
       </provider>
@@ -644,8 +672,8 @@
         <state vertical-scroll-proportion="0.0" vertical-offset="11012" max-vertical-offset="22423">
           <caret line="676" column="27" selection-start-line="676" selection-start-column="27" selection-end-line="676" selection-end-column="27" />
           <folding>
-            <element signature="e#1054#1070#0" expanded="true" />
-            <marker date="1425490600613" expanded="true" signature="46428:46559" placeholder="&quot;&quot;&quot;...&quot;&quot;&quot;" />
+            <element signature="e#1054#1070#0" expanded="false" />
+            <marker date="1425490600613" expanded="true" signature="-1:-1" placeholder="&quot;&quot;&quot;...&quot;&quot;&quot;" />
           </folding>
         </state>
       </provider>
@@ -655,7 +683,8 @@
         <state vertical-scroll-proportion="0.0" vertical-offset="289" max-vertical-offset="4743">
           <caret line="17" column="12" selection-start-line="17" selection-start-column="12" selection-end-line="17" selection-end-column="12" />
           <folding>
-            <element signature="e#0#10#0" expanded="true" />
+            <element signature="e#2#20#0" expanded="true" />
+            <element signature="e#7877#9444#0" expanded="false" />
           </folding>
         </state>
       </provider>
@@ -689,8 +718,8 @@
         <state vertical-scroll-proportion="0.0" vertical-offset="11012" max-vertical-offset="22423">
           <caret line="676" column="27" selection-start-line="676" selection-start-column="27" selection-end-line="676" selection-end-column="27" />
           <folding>
-            <element signature="e#1054#1070#0" expanded="true" />
-            <marker date="1425490600613" expanded="true" signature="46428:46559" placeholder="&quot;&quot;&quot;...&quot;&quot;&quot;" />
+            <element signature="e#1054#1070#0" expanded="false" />
+            <marker date="1425490600613" expanded="true" signature="-1:-1" placeholder="&quot;&quot;&quot;...&quot;&quot;&quot;" />
           </folding>
         </state>
       </provider>
@@ -700,7 +729,8 @@
         <state vertical-scroll-proportion="0.0" vertical-offset="0" max-vertical-offset="4743">
           <caret line="0" column="0" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
           <folding>
-            <element signature="e#0#10#0" expanded="true" />
+            <element signature="e#2#20#0" expanded="true" />
+            <element signature="e#7877#9444#0" expanded="false" />
           </folding>
         </state>
       </provider>
@@ -718,8 +748,8 @@
         <state vertical-scroll-proportion="0.0" vertical-offset="149" max-vertical-offset="22423">
           <caret line="31" column="9" selection-start-line="34" selection-start-column="0" selection-end-line="37" selection-end-column="37" />
           <folding>
-            <element signature="e#1054#1070#0" expanded="true" />
-            <marker date="1425490600613" expanded="true" signature="46428:46559" placeholder="&quot;&quot;&quot;...&quot;&quot;&quot;" />
+            <element signature="e#1054#1070#0" expanded="false" />
+            <marker date="1425490600613" expanded="true" signature="-1:-1" placeholder="&quot;&quot;&quot;...&quot;&quot;&quot;" />
           </folding>
         </state>
       </provider>
@@ -729,7 +759,8 @@
         <state vertical-scroll-proportion="0.0" vertical-offset="0" max-vertical-offset="4743">
           <caret line="0" column="0" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
           <folding>
-            <element signature="e#0#10#0" expanded="true" />
+            <element signature="e#2#20#0" expanded="true" />
+            <element signature="e#7877#9444#0" expanded="false" />
           </folding>
         </state>
       </provider>
@@ -747,8 +778,8 @@
         <state vertical-scroll-proportion="0.0" vertical-offset="251" max-vertical-offset="23817">
           <caret line="37" column="37" selection-start-line="34" selection-start-column="0" selection-end-line="37" selection-end-column="37" />
           <folding>
-            <element signature="e#1054#1070#0" expanded="true" />
-            <marker date="1425490600613" expanded="true" signature="46428:46559" placeholder="&quot;&quot;&quot;...&quot;&quot;&quot;" />
+            <element signature="e#1054#1070#0" expanded="false" />
+            <marker date="1425490600613" expanded="true" signature="-1:-1" placeholder="&quot;&quot;&quot;...&quot;&quot;&quot;" />
           </folding>
         </state>
       </provider>
@@ -794,8 +825,8 @@
         <state vertical-scroll-proportion="0.0" vertical-offset="11012" max-vertical-offset="22423">
           <caret line="676" column="27" selection-start-line="676" selection-start-column="27" selection-end-line="676" selection-end-column="27" />
           <folding>
-            <element signature="e#1054#1070#0" expanded="true" />
-            <marker date="1425490600613" expanded="true" signature="46428:46559" placeholder="&quot;&quot;&quot;...&quot;&quot;&quot;" />
+            <element signature="e#1054#1070#0" expanded="false" />
+            <marker date="1425490600613" expanded="true" signature="-1:-1" placeholder="&quot;&quot;&quot;...&quot;&quot;&quot;" />
           </folding>
         </state>
       </provider>
@@ -854,8 +885,8 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/gui/task_navigator.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="0.0" vertical-offset="7890" max-vertical-offset="14637">
-          <caret line="494" column="28" selection-start-line="494" selection-start-column="28" selection-end-line="494" selection-end-column="28" />
+        <state vertical-scroll-proportion="0.0" vertical-offset="7839" max-vertical-offset="14671">
+          <caret line="495" column="43" selection-start-line="495" selection-start-column="43" selection-end-line="495" selection-end-column="43" />
           <folding />
         </state>
       </provider>
@@ -870,10 +901,31 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/data/coordinates.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="0.0" vertical-offset="612" max-vertical-offset="5423">
-          <caret line="36" column="28" selection-start-line="36" selection-start-column="28" selection-end-line="36" selection-end-column="28" />
+        <state vertical-scroll-proportion="0.0" vertical-offset="102" max-vertical-offset="4964">
+          <caret line="24" column="0" selection-start-line="24" selection-start-column="0" selection-end-line="24" selection-end-column="0" />
           <folding>
-            <element signature="e#0#10#0" expanded="true" />
+            <element signature="e#2#20#0" expanded="true" />
+            <element signature="e#7877#9444#0" expanded="false" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/gui/dialogs.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state vertical-scroll-proportion="0.0" vertical-offset="10846" max-vertical-offset="45050">
+          <caret line="663" column="54" selection-start-line="663" selection-start-column="54" selection-end-line="663" selection-end-column="54" />
+          <folding>
+            <element signature="e#1053#1062#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/data/trackers.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state vertical-scroll-proportion="0.18106312" vertical-offset="894" max-vertical-offset="3128">
+          <caret line="59" column="24" selection-start-line="59" selection-start-column="24" selection-end-line="59" selection-end-column="24" />
+          <folding>
+            <element signature="e#0#20#0" expanded="true" />
           </folding>
         </state>
       </provider>
