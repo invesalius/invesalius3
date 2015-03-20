@@ -490,8 +490,9 @@ class NeuronavigationTools(wx.Panel):
             self.correg.stop()
             
     def OnChoiceTracker(self, evt):
-        self.tracker_id = evt.GetSelection()
-        
+        trck_id = evt.GetSelection()
+
+        dco.Tracker(trck_id)
         if self.tracker_id == 0:
             self.trk_init = dtrk.Tracker_Init().PolhemusISO_init()
             print self.trk_init

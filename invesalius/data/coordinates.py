@@ -14,7 +14,47 @@ try:
 except ImportError:
     print 'The ClaronTracker library is not installed'
 
-        
+
+class Tracker:
+    def __init__(self, trck_id):
+
+        self.trck_init = None
+        print "This is the tracker selected!"
+
+        if trck_id == 0:
+            trck_init = self.ClaronTracker()
+        elif trck_id == 1:
+            trck_init = self.PlhFastrak()
+        elif trck_id == 2:
+            trck_init = self.PlhIsotrakII()
+        elif trck_id == 3:
+            trck_init = self.PlhPatriot()
+        elif trck_id == 4:
+            trck_init = self.ZebrisCMS20()
+
+        self.trck_init = trck_init
+
+    def ClaronTracker(self):
+        print "CLARON"
+        return 0
+
+    def PlhFastrak(self):
+        print "FASTRAK"
+        return 1
+
+    def PlhIsotrakII(self):
+        print "ISOTRAKII"
+        return 2
+
+    def PlhPatriot(self):
+        print "PATRIOT"
+        return 3
+
+    def ZebrisCMS20(self):
+        print "ZEBRIS"
+        return 4
+
+
 class Coordinates:
     def __init__(self, trck_init, trck, ref_mode):
         # Module to get coordinates from spatial trackers
