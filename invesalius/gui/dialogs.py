@@ -446,7 +446,7 @@ def ShowLoadMarkersDialog():
     dlg = wx.FileDialog(None, message=_("Load markers"),
                         defaultDir="",
                         defaultFile="",
-                        style=wx.OPEN | wx.CHANGE_DIR)
+                        style=wx.OPEN|wx.CHANGE_DIR)
 
     # inv3 filter is default
     dlg.SetFilterIndex(0)
@@ -708,20 +708,18 @@ def TrackerNotConnected(trck_id):
     """Spatial Tracker connection error
 
     """
-    trck = {0: _('No Tracker Selected'),
-            1: 'Claron MicronTracker',
-            2: 'Polhemus FASTRAK',
-            3: 'Polhemus ISOTRAK II',
-            4: 'Polhemus PATRIOT',
-            5: 'Zebris CMS20'}
-    if trck_id == 0:
-        msg = trck[trck_id]
-    elif ((trck_id < 6) and (trck_id > 0)):
-        msg = trck[trck_id] + _(' is not connected.')
+    trck = {0 : 'Claron MicronTracker',
+            1 : 'Polhemus FASTRAK',
+            2 : 'Polhemus ISOTRAK II',
+            3 : 'Polhemus PATRIOT',
+            4 : 'Zebris CMS20'}
+
+    if trck_id < 5:
+        msg = trck[trck_id] + ' is not connected.'
+    elif trck_id == 5:
+        msg = 'The library for specified tracker is not installed.'
     elif trck_id == 6:
-        msg = _('The library for specified tracker is not installed.')
-    elif trck_id == 7:
-        msg = _('The tracker connection is already set.')
+        msg = 'The tracker connection is already set.'
 
     if sys.platform == 'darwin':
         dlg = wx.MessageDialog(None, "", msg,
@@ -746,7 +744,7 @@ def TrackerAlreadyConnected():
     dlg.ShowModal()
     dlg.Destroy()
 
-
+	
 def InvalidTxt():
     msg = _("The TXT file is invalid.")
     if sys.platform == 'darwin':
@@ -758,7 +756,7 @@ def InvalidTxt():
     dlg.ShowModal()
     dlg.Destroy()
 
-
+	
 def error_correg_fine():
     msg = _("There aren't any created surface.")
     if sys.platform == 'darwin':
@@ -769,7 +767,6 @@ def error_correg_fine():
                                 wx.ICON_INFORMATION | wx.OK)
     dlg.ShowModal()
     dlg.Destroy()
-
 
 # ===============================================================================
 
@@ -1265,7 +1262,7 @@ class FineCalibration(wx.Window):
         self.pre.CenterOnScreen()
         self.pre.Show()
 
-        # pre.Create(parent, ID, title, pos, (500,300))
+        #self.pre.Create(parent, ID, title, pos, (500,300))
 
         # This next step is the most important, it turns this Python
         # object into the real wrapper of the dialog (instead of pre)
@@ -1280,23 +1277,23 @@ class FineCalibration(wx.Window):
         self.__bind_events()
         self.draw_gui()
 
-        #         try:
+#         try:
         Publisher.sendMessage('Load surface into DLG')
+#         except:
+#             try:
+#                 Publisher.sendMessage('Load volume DLG')
+#             except:
+#                 error_correg_fine()
 
-    #         except:
-    #             try:
-    #                 Publisher.sendMessage('Load volume DLG')
-    #             except:
-    #                 error_correg_fine()
+        #self.LoadData()
 
-    # self.LoadData()
     def ShowLoadSurfaceDialog(self):
         current_dir = os.path.abspath(".")
 
         dlg = wx.FileDialog(None, message=_("Load surface"),
                             defaultDir="",
                             defaultFile="",
-                            style=wx.OPEN | wx.CHANGE_DIR)
+                            style=wx.OPEN|wx.CHANGE_DIR)
 
         # inv3 filter is default
         dlg.SetFilterIndex(0)
@@ -1325,8 +1322,8 @@ class FineCalibration(wx.Window):
         # LINE 1: Janela
 
     def draw_gui(self):
-        # style = vtk.vtkInteractorStyleTrackballActor()
-        self.panel = wx.Panel(self)
+        #style = vtk.vtkInteractorStyleTrackballActor()
+        self.panel=wx.Panel(self)
         self.interactor = wxVTKRenderWindowInteractor(self, -1, size=self.GetSize())
         # self.interactor.SetInteractorStyle(style)
         self.interactor.Enable(1)
@@ -1335,13 +1332,13 @@ class FineCalibration(wx.Window):
 
         # LINE 2: Botoes
 
-        marker = wx.Button(self.panel, -1, "Create Marker", size=wx.Size(85, 23))
+        marker = wx.Button(self.panel, -1, "Create Marker",size = wx.Size(85,23))
         marker.Bind(wx.EVT_BUTTON, self.OnCalibrationMarkers)
 
-        marker_load = wx.Button(self.panel, -1, "Load Marker", size=wx.Size(85, 23))
+        marker_load = wx.Button(self.panel, -1, "Load Marker",size = wx.Size(85,23))
         marker_load.Bind(wx.EVT_BUTTON, self.OnLoadMarkers)
 
-        apply_ICP = wx.Button(self.panel, -1, "Apply ICP", size=wx.Size(85, 23))
+        apply_ICP = wx.Button(self.panel, -1, "Apply ICP",size = wx.Size(85,23))
         apply_ICP.Bind(wx.EVT_BUTTON, self.OnApplyICP)
 
         self.showObjICP = wx.CheckBox(self.panel, -1, 'Show ICP Surface', (100, 10))
@@ -1357,11 +1354,11 @@ class FineCalibration(wx.Window):
         wx.EVT_CHECKBOX(self, self.showObjHead.GetId(), self.ShowObjectHead)
 
         text_X = wx.StaticText(self.panel, -1, _("X:"))
-        spin_X = wx.SpinCtrl(self.panel, -1, "X", size=wx.Size(67, 23))
-        spin_X.SetValue(0)
+        spin_X = wx.SpinCtrl(self.panel, -1, "X", size = wx.Size(67,23))
+        spin_X .SetValue(0)
         spin_X.Bind(wx.EVT_SPINCTRL, self.translate_rotate)
         spin_X.Bind(wx.EVT_TEXT, self.translate_rotate)
-        spin_X.SetRange(-500, 500)
+        spin_X .SetRange(-500,500)
 
         self.spin_X = spin_X
 
@@ -1375,77 +1372,74 @@ class FineCalibration(wx.Window):
         self.spin_Y = spin_Y
 
         text_Z = wx.StaticText(self.panel, -1, _("Z:"))
-        spin_Z = wx.SpinCtrl(self.panel, -1, "Z", size=wx.Size(67, 23))
-        spin_Z.SetValue(0)
+        spin_Z = wx.SpinCtrl(self.panel, -1, "Z", size = wx.Size(67,23))
+        spin_Z .SetValue(0)
         spin_Z.Bind(wx.EVT_SPINCTRL, self.translate_rotate)
         spin_Z.Bind(wx.EVT_TEXT, self.translate_rotate)
-        spin_Z.SetRange(-500, 500)
+        spin_Z .SetRange(-500,500)
 
         self.spin_Z = spin_Z
 
-        text_A = wx.StaticText(self.panel, -1, _("Alfa:"))
-        spin_A = wx.SpinCtrl(self.panel, -1, "Alfa", size=wx.Size(67, 23))
-        spin_A.SetValue(0)
-        spin_A.SetRange(-500, 500)
+        text_A = wx.StaticText(self.panel,-1, _("Alfa:"))
+        spin_A = wx.SpinCtrl(self.panel, -1, "Alfa", size = wx.Size(67,23))
+        spin_A .SetValue(0)
+        spin_A .SetRange(-500,500)
         spin_A.Bind(wx.EVT_SPINCTRL, self.translate_rotate)
         spin_A.Bind(wx.EVT_TEXT, self.translate_rotate)
 
         self.spin_A = spin_A
 
         text_B = wx.StaticText(self.panel, -1, _("Beta:"))
-        spin_B = wx.SpinCtrl(self.panel, -1, "Beta", size=wx.Size(67, 23))
-        spin_B.SetValue(0)
-        spin_B.SetRange(-500, 500)
+        spin_B = wx.SpinCtrl(self.panel, -1, "Beta", size = wx.Size(67,23))
+        spin_B .SetValue(0)
+        spin_B .SetRange(-500,500)
         spin_B.Bind(wx.EVT_SPINCTRL, self.translate_rotate)
         spin_B.Bind(wx.EVT_TEXT, self.translate_rotate)
 
         self.spin_B = spin_B
 
         text_G = wx.StaticText(self.panel, -1, _("Gama:"))
-        spin_G = wx.SpinCtrl(self.panel, -1, "Gama", size=wx.Size(67, 23))
-        spin_G.SetValue(0)
-        spin_G.SetRange(-500, 500)
+        spin_G = wx.SpinCtrl(self.panel, -1, "Gama", size = wx.Size(67,23))
+        spin_G .SetValue(0)
+        spin_G .SetRange(-500,500)
         spin_G.Bind(wx.EVT_SPINCTRL, self.translate_rotate)
         spin_G.Bind(wx.EVT_TEXT, self.translate_rotate)
 
         self.spin_G = spin_G
 
         text_inter = wx.StaticText(self.panel, -1, _("Number of Iterations:"))
-        spin_inter = wx.SpinCtrl(self.panel, -1, "Numb Inter", size=wx.Size(95, 23))
+        spin_inter = wx.SpinCtrl(self.panel, -1, "Numb Inter", size = wx.Size(95,23))
         spin_inter.SetValue(1000)
         spin_inter.SetRange(0, 5000)
         #        spin_X .SetValue()
         self.spin_inter = spin_inter
 
         text_land = wx.StaticText(self.panel, -1, _("Number of Landmarks:"))
-        spin_land = wx.SpinCtrl(self.panel, -1, "Landmarks", size=wx.Size(95, 23))
+        spin_land = wx.SpinCtrl(self.panel, -1, "Landmarks", size = wx.Size(95,23))
         spin_land.SetValue(1000)
-        spin_land.SetRange(0, 5000)
+        spin_land .SetRange(0,5000)
 
-        #        spin_Y .SetValue()
+#        spin_Y .SetValue()
         self.spin_land = spin_land
 
         text_mean = wx.StaticText(self.panel, -1, _("Max Mean Distance:"))
-        # spin_mean= wx.SpinCtrl(self.panel, 1, "mean", size = wx.Size(107,23))
-        spin_mean = floatspin.FloatSpin(self.panel, -1, value=0.01, min_val=0.0, max_val=10.0, increment=0.01, digits=2)
+        #spin_mean= wx.SpinCtrl(self.panel, 1, "mean", size = wx.Size(107,23))
+        spin_mean = floatspin.FloatSpin(self.panel,-1,value=0.01, min_val=0.0,max_val=10.0, increment=0.01, digits=2)
 
-        # spin_mean.SetValue(0.01)
-        # spin_mean .SetRange(0,10)
-        #       spin_Z .SetValue()
+        #spin_mean.SetValue(0.01)                                  
+        #spin_mean .SetRange(0,10)
+#       spin_Z .SetValue()
         self.spin_mean = spin_mean
 
         spinicp = wx.FlexGridSizer(rows=3, cols=2, hgap=1, vgap=1)
-        spinicp.AddMany([(text_inter, 0, wx.ALIGN_TOP | wx.EXPAND | wx.TOP | wx.BOTTOM, 5), (spin_inter, 1),
-                         (text_land, 0, wx.ALIGN_CENTER_VERTICAL | wx.EXPAND | wx.TOP | wx.BOTTOM, 5), (spin_land, 1),
-                         (text_mean, 0, wx.ALIGN_BOTTOM | wx.EXPAND | wx.TOP | wx.BOTTOM, 5), (spin_mean, 1)])
+        spinicp.AddMany([(text_inter,0,wx.ALIGN_TOP|wx.EXPAND | wx.TOP|wx.BOTTOM,5),(spin_inter, 1),
+                      (text_land,0,wx.ALIGN_CENTER_VERTICAL|wx.EXPAND | wx.TOP|wx.BOTTOM,5),(spin_land, 1),
+                      (text_mean,0, wx.ALIGN_BOTTOM|wx.EXPAND | wx.TOP|wx.BOTTOM,5),(spin_mean, 1)])
 
         spin = wx.FlexGridSizer(rows=3, cols=4, hgap=1, vgap=1)
-        spin.AddMany([(text_X, 0, wx.ALIGN_TOP | wx.EXPAND | wx.TOP | wx.BOTTOM, 5), (spin_X, 1),
-                      (text_A, 0, wx.ALIGN_TOP | wx.EXPAND | wx.LEFT | wx.TOP | wx.BOTTOM, 5), (spin_A, 1),
-                      (text_Y, 0, wx.ALIGN_CENTER_VERTICAL | wx.EXPAND | wx.TOP | wx.BOTTOM, 5), (spin_Y, 1),
-                      (text_B, 0, wx.ALIGN_CENTER_VERTICAL | wx.EXPAND | wx.LEFT | wx.TOP | wx.BOTTOM, 5), (spin_B, 1),
-                      (text_Z, 0, wx.ALIGN_BOTTOM | wx.EXPAND | wx.TOP | wx.BOTTOM, 5), (spin_Z, 1),
-                      (text_G, 0, wx.ALIGN_BOTTOM | wx.EXPAND | wx.LEFT | wx.TOP | wx.BOTTOM, 5), (spin_G, 1)])
+        spin.AddMany([(text_X, 0,wx.ALIGN_TOP|wx.EXPAND | wx.TOP|wx.BOTTOM,5),(spin_X, 1),(text_A, 0,wx.ALIGN_TOP|wx.EXPAND|wx.LEFT| wx.TOP|wx.BOTTOM,5),(spin_A, 1),
+                      (text_Y,  0,wx.ALIGN_CENTER_VERTICAL|wx.EXPAND | wx.TOP|wx.BOTTOM,5),(spin_Y, 1),(text_B, 0,wx.ALIGN_CENTER_VERTICAL|wx.EXPAND|wx.LEFT| wx.TOP|wx.BOTTOM,5),(spin_B, 1),
+                      (text_Z,  0,wx.ALIGN_BOTTOM|wx.EXPAND | wx.TOP|wx.BOTTOM,5),(spin_Z, 1),(text_G, 0,wx.ALIGN_BOTTOM|wx.EXPAND|wx.LEFT| wx.TOP|wx.BOTTOM,5),(spin_G, 1)])
 
         ok = wx.Button(self.panel, wx.ID_OK)
         ok.Bind(wx.EVT_BUTTON, self.OK)
@@ -1453,18 +1447,18 @@ class FineCalibration(wx.Window):
         cancel.Bind(wx.EVT_BUTTON, self.CANCEL)
 
         checkb = wx.FlexGridSizer(rows=3, cols=1, hgap=1, vgap=1)
-        checkb.AddMany([(self.showObjICP, 0, wx.ALIGN_TOP | wx.EXPAND | wx.TOP | wx.BOTTOM, 5),
-                        (self.showObjHead, 0, wx.ALIGN_CENTER_VERTICAL | wx.EXPAND | wx.TOP | wx.BOTTOM, 5),
-                        (self.showObjCloud, 0, wx.ALIGN_BOTTOM | wx.EXPAND | wx.TOP | wx.BOTTOM, 5)])
+        checkb.AddMany([(self.showObjICP , 0,wx.ALIGN_TOP|wx.EXPAND | wx.TOP|wx.BOTTOM,5),
+                      (self.showObjHead , 0,wx.ALIGN_CENTER_VERTICAL|wx.EXPAND | wx.TOP|wx.BOTTOM,5),
+                      (self.showObjCloud , 0,wx.ALIGN_BOTTOM|wx.EXPAND | wx.TOP|wx.BOTTOM,5)])
 
         col1 = wx.FlexGridSizer(rows=3, cols=1, hgap=1, vgap=1)
         col1.AddMany([(marker, 1),
                       (marker_load, 1),
                       (apply_ICP, 1)])
 
-        #         col2 = wx.FlexGridSizer(rows=1, cols=1, hgap=1, vgap=1)
-        #         col2.AddMany([(param_ICP, 1)])
-        #
+#         col2 = wx.FlexGridSizer(rows=1, cols=1, hgap=1, vgap=1)
+#         col2.AddMany([(param_ICP, 1)])
+#
         col4 = wx.FlexGridSizer(rows=2, cols=1, hgap=1, vgap=1)
         col4.AddMany([(ok, 1),
                       (cancel, 1)])
@@ -1479,22 +1473,19 @@ class FineCalibration(wx.Window):
         # OVERVIEW
         # Merge all sizers and checkboxes
         sizer = wx.BoxSizer(wx.VERTICAL)
-        sizer.Add(self.interactor, 5, wx.EXPAND, 10)
-        sizer.Add(self.panel, 1, wx.ALIGN_CENTER, 1)
+        sizer.Add(self.interactor, 5, wx.EXPAND,10)
+        sizer.Add(self.panel, 1,wx.ALIGN_CENTER,1)
 
         self.SetSizerAndFit(sizer)
         self.Show()
         sizer.Fit(self)
 
     def GetValue(self):
-        return self.actor_icp, self.icp_matrix
-
-    def OK(self, evt):
+        return self.actor_icp,self.icp_matrix
+    def OK(self,evt):
         self.Close()
-
-    def CANCEL(self, evt):
+    def CANCEL(self,evt):
         self.Destroy()
-
     def ShowObjectICP(self, evt):
         objectbin = self.showObjICP.GetValue()
         if objectbin == True:
@@ -1522,62 +1513,62 @@ class FineCalibration(wx.Window):
             self.actor.SetVisibility(0)
             self.interactor.Render()
 
-    def translate_rotate(self, evt):
-        self.transform = vtk.vtkTransform()
-        self.transform.Identity()
-        self.transform.PostMultiply()
+    def translate_rotate(self,evt):
+             self.transform = vtk.vtkTransform()
+             self.transform.Identity()
+             self.transform.PostMultiply()
 
-        #             try2=vtk.vtkImageChangeInformation.SetInput(self.cloud)
-        #             self.cloud.vtk.vtkImageData.SetOrigin(self.actor_cloud.GetCenter())
-        #              try1=vtk.vtkImageData(self.reader_cloud)
-        #              try1.SetOrigin(self.actor_cloud.GetCenter())
+#             try2=vtk.vtkImageChangeInformation.SetInput(self.cloud)
+#             self.cloud.vtk.vtkImageData.SetOrigin(self.actor_cloud.GetCenter())
+#              try1=vtk.vtkImageData(self.reader_cloud)
+#              try1.SetOrigin(self.actor_cloud.GetCenter())
 
-        self.transform.Translate(self.spin_X.GetValue(), 0, 0)
-        self.transform.Translate(0, self.spin_Y.GetValue(), 0)
-        self.transform.Translate(0, 0, self.spin_Z.GetValue())
+             self.transform.Translate(self.spin_X.GetValue(), 0, 0)
+             self.transform.Translate(0,self.spin_Y.GetValue(), 0)
+             self.transform.Translate(0, 0, self.spin_Z.GetValue())
 
-        # self.actor_cloud.SetOrientation(self.spin_A.GetValue(),xyz[1],xyz[2])
-        # transform.RotateWXYZ(self.spin_A.GetValue(),1,0,0)
+             #self.actor_cloud.SetOrientation(self.spin_A.GetValue(),xyz[1],xyz[2])
+             #transform.RotateWXYZ(self.spin_A.GetValue(),1,0,0)
 
-        #              transform.RotateX(self.spin_A.GetValue())
-        #              transform.RotateY(self.spin_B.GetValue())
-        #              transform.RotateZ(self.spin_G.GetValue())
-        #             transform.RotateWXYZ(self.spin_B.GetValue(),xyz[0],1,xyz[2])
-        #             transform.RotateWXYZ(self.spin_G.GetValue(),xyz[0],xyz[1],1)
-        self.actor_cloud.SetOrigin(self.actor_cloud.GetCenter())
-        self.actor_cloud.SetOrientation(0, 0, 0)
-        # self.transform.SetInput(self.actor_cloud)
-        self.transform.RotateX(self.spin_A.GetValue())
-        self.transform.RotateY(self.spin_B.GetValue())
-        self.transform.RotateZ(self.spin_G.GetValue())
+#              transform.RotateX(self.spin_A.GetValue())
+#              transform.RotateY(self.spin_B.GetValue())
+#              transform.RotateZ(self.spin_G.GetValue())
+#             transform.RotateWXYZ(self.spin_B.GetValue(),xyz[0],1,xyz[2])
+#             transform.RotateWXYZ(self.spin_G.GetValue(),xyz[0],xyz[1],1)
+             self.actor_cloud.SetOrigin(self.actor_cloud.GetCenter())
+             self.actor_cloud.SetOrientation(0,0,0)
+             #self.transform.SetInput(self.actor_cloud)
+             self.transform.RotateX(self.spin_A.GetValue())
+             self.transform.RotateY(self.spin_B.GetValue())
+             self.transform.RotateZ(self.spin_G.GetValue())
 
-        #              self.transform.RotateX(self.spin_A.GetValue())
-        #              self.transform.RotateY(self.spin_B.GetValue())
-        #              self.transform.RotateZ(self.spin_G.GetValue())
-        self.transform.Update()
+#              self.transform.RotateX(self.spin_A.GetValue())
+#              self.transform.RotateY(self.spin_B.GetValue())
+#              self.transform.RotateZ(self.spin_G.GetValue())
+             self.transform.Update()
 
-        self.transf = vtk.vtkTransformPolyDataFilter()
+             self.transf = vtk.vtkTransformPolyDataFilter()
 
-        self.transf.SetInput(self.cloud)
-        self.transf.SetTransform(self.transform)
-        self.transf.Update()
-        self.ren.RemoveActor(self.actor_cloud)
-        self.mapper_cloud = vtk.vtkPolyDataMapper()
-        self.mapper_cloud.SetInput(self.transf.GetOutput())
-        self.mapper_cloud.ScalarVisibilityOff()
-        self.mapper_cloud.ImmediateModeRenderingOn()
-        self.actor_cloud = vtk.vtkActor()
-        self.actor_cloud.SetMapper(self.mapper_cloud)
-        self.actor_cloud.GetProperty().SetColor(self.color_cloud)
-        self.actor_cloud.GetProperty().SetOpacity(self.opacity_cloud)
-        self.ren.AddActor(self.actor_cloud)
+             self.transf.SetInput(self.cloud)
+             self.transf.SetTransform(self.transform)
+             self.transf.Update()
+             self.ren.RemoveActor(self.actor_cloud)
+             self.mapper_cloud = vtk.vtkPolyDataMapper()
+             self.mapper_cloud.SetInput(self.transf.GetOutput())
+             self.mapper_cloud.ScalarVisibilityOff()
+             self.mapper_cloud.ImmediateModeRenderingOn()
+             self.actor_cloud = vtk.vtkActor()
+             self.actor_cloud.SetMapper(self.mapper_cloud)
+             self.actor_cloud.GetProperty().SetColor(self.color_cloud)
+             self.actor_cloud.GetProperty().SetOpacity(self.opacity_cloud)
+             self.ren.AddActor(self.actor_cloud)
 
-        # self.actor_cloud.SetOrigin(self.actor_cloud.GetCenter())
-        # self.actor_cloud.SetOrientation(0,0,0)
-        # self.actor_cloud.RotateX(self.spin_A.GetValue())
-        # self.actor_cloud.RotateY(self.spin_B.GetValue())
-        # self.actor_cloud.RotateZ(self.spin_G.GetValue())
-        self.interactor.Render()
+             #self.actor_cloud.SetOrigin(self.actor_cloud.GetCenter())
+             #self.actor_cloud.SetOrientation(0,0,0)
+             #self.actor_cloud.RotateX(self.spin_A.GetValue())
+             #self.actor_cloud.RotateY(self.spin_B.GetValue())
+             #self.actor_cloud.RotateZ(self.spin_G.GetValue())
+             self.interactor.Render()
 
     def OnLoadMarkers(self, evt):
         print "Reading the points!"
@@ -1595,12 +1586,12 @@ class FineCalibration(wx.Window):
                 colour = line1[3], line1[4], line1[5]
                 size = line1[6]
 
-                CreateSphereMarkers(self, size, colour, coord)
+                CreateSphereMarkers(self,size,colour,coord)
 
-                # sum 1 for each coordinate to matlab comprehension
-                # coord = coord[0] + 1.0, coord[1] + 1.0, coord[2] + 1.0
-                # line with coordinates and properties of a marker
-                line = coord[0], coord[1], coord[2], colour[0], colour[1], colour[2], size
+                    #sum 1 for each coordinate to matlab comprehension
+                    #coord = coord[0] + 1.0, coord[1] + 1.0, coord[2] + 1.0
+                    #line with coordinates and properties of a marker
+                line = coord[0] , coord[1] , coord[2] , colour[0], colour[1], colour[2], size
                 if self.flagpoint1 == 0:
                     self.list_coord = [line]
                     self.flagpoint1 = 1
@@ -1619,100 +1610,100 @@ class FineCalibration(wx.Window):
 
     def OnApplyICP(self, evt):
         self.showObjICP.SetValue(True)
-        self.icp_number_iterations = self.spin_inter.GetValue()
-        self.icp_number_landmarks = self.spin_land.GetValue()
+        self.icp_number_iterations= self.spin_inter.GetValue()
+        self.icp_number_landmarks= self.spin_land.GetValue()
         self.icp_max_mean_distance = self.spin_mean.GetValue()
         self.Transformation()
         self.interactor.Render()
         self.Show()
 
     def CreateCloudPointsSurface(self, filename_cloud):
-        # Reconstruct the surface from the cloud of points
-        self.reader_cloud = vtk.vtkPLYReader()
+            # Reconstruct the surface from the cloud of points
+            self.reader_cloud = vtk.vtkPLYReader()
 
-        self.reader_cloud.SetFileName(filename_cloud)
-        self.reader_cloud.Update()
+            self.reader_cloud.SetFileName(filename_cloud)
+            self.reader_cloud.Update()
 
-        print "Creating cloud surface..."
+            print "Creating cloud surface..."
 
-        self.mapper_cloud = vtk.vtkPolyDataMapper()
-        self.mapper_cloud.SetInput(self.reader_cloud.GetOutput())
-        self.mapper_cloud.ScalarVisibilityOff()
-        self.mapper_cloud.ImmediateModeRenderingOn()
+            self.mapper_cloud = vtk.vtkPolyDataMapper()
+            self.mapper_cloud.SetInput(self.reader_cloud.GetOutput())
+            self.mapper_cloud.ScalarVisibilityOff()
+            self.mapper_cloud.ImmediateModeRenderingOn()
 
-        self.actor_cloud = vtk.vtkActor()
-        self.actor_cloud.SetMapper(self.mapper_cloud)
-        self.actor_cloud.GetProperty().SetColor(self.color_cloud)
-        self.actor_cloud.GetProperty().SetOpacity(self.opacity_cloud)
+            self.actor_cloud = vtk.vtkActor()
+            self.actor_cloud.SetMapper(self.mapper_cloud)
+            self.actor_cloud.GetProperty().SetColor(self.color_cloud)
+            self.actor_cloud.GetProperty().SetOpacity(self.opacity_cloud)
 
-        return self.reader_cloud.GetOutput()
+            return self.reader_cloud.GetOutput()
 
     def Transformation(self):
-        # Apply IterativeClosestPoint Method
+                # Apply IterativeClosestPoint Method
 
-        # self.filename_cloud=self.ShowLoadSurfaceDialog()
-        try:
-            self.ren.RemoveActor(self.actor_icp)
-            self.interactor.Render()
-        except:
-            None
-        filename_head = self.head
-        # filename_cloud = sys.argv[2]
-        # head_init = self.CreateHeadSurface(filename_head)
-        # cloud = self.CreateCloudPointsSurface(self.filename_cloud)
+                #self.filename_cloud=self.ShowLoadSurfaceDialog()
+                try:
+                    self.ren.RemoveActor(self.actor_icp)
+                    self.interactor.Render()
+                except:
+                    None
+                filename_head = self.head
+                #filename_cloud = sys.argv[2]
+                #head_init = self.CreateHeadSurface(filename_head)
+                #cloud = self.CreateCloudPointsSurface(self.filename_cloud)
 
-        print "Applying ICP method..."
-        icp = vtk.vtkIterativeClosestPointTransform()
-        icp.SetSource(filename_head)
-        try:
-            icp.SetTarget(self.transf.GetOutput())
-        except:
-            icp.SetTarget(self.cloud)
+                print "Applying ICP method..."
+                icp = vtk.vtkIterativeClosestPointTransform()
+                icp.SetSource(filename_head)
+                try:
+                    icp.SetTarget(self.transf.GetOutput())
+                except:
+                    icp.SetTarget(self.cloud)
 
-        icp.StartByMatchingCentroidsOn()
-        icp.SetMaximumNumberOfIterations(self.icp_number_iterations)
-        icp.SetMaximumNumberOfLandmarks(self.icp_number_landmarks)
-        icp.SetMaximumMeanDistance(self.icp_max_mean_distance)
-        icp.GetLandmarkTransform().SetModeToRigidBody()
-        icp.SetMeanDistanceModeToRMS()
-        icp.Update()
+                icp.StartByMatchingCentroidsOn()
+                icp.SetMaximumNumberOfIterations(self.icp_number_iterations)
+                icp.SetMaximumNumberOfLandmarks(self.icp_number_landmarks)
+                icp.SetMaximumMeanDistance(self.icp_max_mean_distance)
+                icp.GetLandmarkTransform().SetModeToRigidBody()
+                icp.SetMeanDistanceModeToRMS()
+                icp.Update()
 
-        icp_transf = vtk.vtkTransformPolyDataFilter()
-        icp_transf.SetInput(filename_head)
-        icp_transf.SetTransform(icp)
-        icp_transf.Update()
+                icp_transf = vtk.vtkTransformPolyDataFilter()
+                icp_transf.SetInput(filename_head)
+                icp_transf.SetTransform(icp)
+                icp_transf.Update()
 
-        mapper_head_icp = vtk.vtkPolyDataMapper()
-        mapper_head_icp.SetInput(icp_transf.GetOutput())
-        mapper_head_icp.ScalarVisibilityOff()
-        mapper_head_icp.ImmediateModeRenderingOn()
+                mapper_head_icp = vtk.vtkPolyDataMapper()
+                mapper_head_icp.SetInput(icp_transf.GetOutput())
+                mapper_head_icp.ScalarVisibilityOff()
+                mapper_head_icp.ImmediateModeRenderingOn()
 
-        self.actor_icp = vtk.vtkActor()
-        self.actor_icp.SetMapper(mapper_head_icp)
-        self.actor_icp.GetProperty().SetColor(self.color_head_icp)
-        self.actor_icp.GetProperty().SetOpacity(self.opacity_head_icp)
+                self.actor_icp = vtk.vtkActor()
+                self.actor_icp.SetMapper(mapper_head_icp)
+                self.actor_icp.GetProperty().SetColor(self.color_head_icp)
+                self.actor_icp.GetProperty().SetOpacity(self.opacity_head_icp)
 
-        self.icp_matrix = vtk.vtkMatrix4x4()
-        self.icp_matrix = icp.GetMatrix()
-        print self.icp_matrix
+                self.icp_matrix = vtk.vtkMatrix4x4()
+                self.icp_matrix = icp.GetMatrix()
+                print self.icp_matrix
 
-        # Eixos para facilitar visualizacao -----------------
-        #                 axes = vtk.vtkAxesActor()
-        #                 axes.SetShaftTypeToCylinder()
-        #                 axes.SetXAxisLabelText("x")
-        #                 axes.SetYAxisLabelText("y")
-        #                 axes.SetZAxisLabelText("z")
-        #                 axes.SetTotalLength(25, 25, 25)
-        # ---------------------------------------------------
+                #Eixos para facilitar visualizacao -----------------
+#                 axes = vtk.vtkAxesActor()
+#                 axes.SetShaftTypeToCylinder()
+#                 axes.SetXAxisLabelText("x")
+#                 axes.SetYAxisLabelText("y")
+#                 axes.SetZAxisLabelText("z")
+#                 axes.SetTotalLength(25, 25, 25)
+                #---------------------------------------------------
 
 
-        # renderer.AddActor(axes)
+                #renderer.AddActor(axes)
 
-        self.ren.AddActor(self.actor_icp)
-        # self.outlineF(icp_transf.GetOutput())
-        # self.ren.AddActor(self.outline)
-        self.ren.SetBackground(0, 0, 0)
-        self.ren.ResetCamera()
+                self.ren.AddActor(self.actor_icp)
+                #self.outlineF(icp_transf.GetOutput())
+                #self.ren.AddActor(self.outline)
+                self.ren.SetBackground(0, 0, 0)
+                self.ren.ResetCamera()
 
     def LoadData(self):
         coil_reference = vtk.vtkOBJReader()
@@ -1739,13 +1730,13 @@ class FineCalibration(wx.Window):
 
     def LoadActorDLG(self, pubsub_evt):
         self.actor = pubsub_evt.data[0]
-        # self.head=actor
-        self.head = pubsub_evt.data[1]
+        #self.head=actor
+        self.head=pubsub_evt.data[1]
 
         self.outlineF(self.head)
         self.ren.AddActor(self.outline)
 
-        self.filename_cloud = self.ShowLoadSurfaceDialog()
+        self.filename_cloud=self.ShowLoadSurfaceDialog()
         self.cloud = self.CreateCloudPointsSurface(self.filename_cloud)
         print self.cloud
 
@@ -1764,15 +1755,16 @@ class FineCalibration(wx.Window):
         self.ren.AddActor(axes)
 
         self.ren.ResetCamera()
-        # self.ren.ResetCameraClippingRange()
+        #self.ren.ResetCameraClippingRange()
 
-        # self.ShowOrientationCube()
+        #self.ShowOrientationCube()
         self.interactor.Render()
 
     def LoadVolumeDLG(self, pubsub_evt):
         self.raycasting_volume = True
-        # self._to_show_ball += 1
-        # print "to show ball", self._to_show_ball
+
+        #self._to_show_ball += 1
+        #print "to show ball", self._to_show_ball
 
         volume = pubsub_evt.data[0]
         colour = pubsub_evt.data[1]
@@ -1784,8 +1776,8 @@ class FineCalibration(wx.Window):
 
         self.interactor.Render()
 
-    def outlineF(self, Actor):
-        # filtro outline
+    def outlineF(self,Actor):
+        #filtro outline
         self.outline = vtk.vtkActor()
         outlineData = vtk.vtkOutlineFilter()
         outlineData.SetInput(Actor)
@@ -1797,33 +1789,33 @@ class FineCalibration(wx.Window):
         self.outline.SetMapper(mapoutline)
         self.outline.GetProperty().SetColor(0.0, 0.0, 1.0)
 
+def CreateSphereMarkers(self,ballsize,ballcolour,coord):
 
-def CreateSphereMarkers(self, ballsize, ballcolour, coord):
-    x, y, z = bases.flip_x(coord)
+        x, y, z = bases.flip_x(coord)
 
-    ball_ref = vtk.vtkSphereSource()
-    ball_ref.SetRadius(ballsize)
-    ball_ref.SetCenter(x, y, z)
+        ball_ref = vtk.vtkSphereSource()
+        ball_ref.SetRadius(ballsize)
+        ball_ref.SetCenter(x, y, z)
 
-    mapper = vtk.vtkPolyDataMapper()
-    mapper.SetInput(ball_ref.GetOutput())
+        mapper = vtk.vtkPolyDataMapper()
+        mapper.SetInput(ball_ref.GetOutput())
 
-    prop = vtk.vtkProperty()
-    prop.SetColor(ballcolour)
+        prop = vtk.vtkProperty()
+        prop.SetColor(ballcolour)
 
-    # adding a new actor for the present ball
-    self.staticballs.append(vtk.vtkActor())
+        #adding a new actor for the present ball
+        self.staticballs.append(vtk.vtkActor())
 
-    self.staticballs[self.ball_id].SetMapper(mapper)
-    self.staticballs[self.ball_id].SetProperty(prop)
+        self.staticballs[self.ball_id].SetMapper(mapper)
+        self.staticballs[self.ball_id].SetProperty(prop)
 
-    self.ren.AddActor(self.staticballs[self.ball_id])
-    self.ball_id = self.ball_id + 1
-    self.interactor.Render()
-
-    self.PostCreate(self.pre)
+        self.ren.AddActor(self.staticballs[self.ball_id])
+        self.ball_id = self.ball_id + 1
+        self.interactor.Render()
 
 
+
+        self.PostCreate(self.pre)
 # # # class ObjectCalibration(wx.Window):
 # # #     def __init__(self, parent=None, ID=-1, title="Object Calibration", size=wx.DefaultSize,
 # # #             pos=wx.DefaultPosition,style=wx.DEFAULT_DIALOG_STYLE,
@@ -2059,8 +2051,8 @@ def CreateSphereMarkers(self, ballsize, ballcolour, coord):
 # # #         self.ren.AddActor(axes)
 class ObjectCalibration(wx.Dialog):
     def __init__(self, parent=None, ID=-1, title="Calibration Dialog", size=wx.DefaultSize,
-                 pos=wx.DefaultPosition, style=wx.DEFAULT_DIALOG_STYLE,
-                 useMetal=False, nav_prop=None):
+            pos=wx.DefaultPosition, style=wx.DEFAULT_DIALOG_STYLE,
+            useMetal=False, nav_prop=None):
 
         self.nav_prop = nav_prop
         self.correg = None
@@ -2096,7 +2088,7 @@ class ObjectCalibration(wx.Dialog):
         # LINE 1: Janela
 
     def draw_gui(self):
-        # style = vtk.vtkInteractorStyleTrackballActor()
+        #style = vtk.vtkInteractorStyleTrackballActor()
 
         self.interactor = wxVTKRenderWindowInteractor(self, -1, size=self.GetSize())
         # self.interactor.SetInteractorStyle(style)
@@ -2190,7 +2182,7 @@ class ObjectCalibration(wx.Dialog):
         trck = co.Coordinates(tracker_init, tracker, tracker_mode).Returns()
         tracker = matrix([[trck[0]], [trck[1]], [trck[2]]])
         self.init_angle_plh = trck[3], trck[4], trck[5]
-        img = q1 + (Minv * N) * (tracker - q2)
+        img = q1 + (Minv*N)*(tracker - q2)
         coord = float(img[0]), float(img[1]), float(img[2])
         x, y, z = bases.flip_x(coord)
 
@@ -2211,9 +2203,9 @@ class ObjectCalibration(wx.Dialog):
         mapper.SetInput(ball_ref.GetOutput())
 
         prop = vtk.vtkProperty()
-        prop.SetColor(0, 1, 1)
+        prop.SetColor(0,1, 1)
 
-        # adding a new actor for the present ball
+        #adding a new actor for the present ball
         self.staticballs.append(vtk.vtkActor())
 
         self.staticballs[self.ball_id].SetMapper(mapper)
@@ -2232,12 +2224,13 @@ class ObjectCalibration(wx.Dialog):
         mat4x4.DeepCopy(dcm[0][0], dcm[0][1], dcm[0][2], 0.0,
                         dcm[1][0], dcm[1][1], dcm[1][2], 0.0,
                         dcm[2][0], dcm[2][1], dcm[2][2], 0.0,
-                        0.0, 0.0, 0.0, 1.0)
+                              0.0,       0.0,       0.0, 1.0)
 
         self.coilActor.SetUserMatrix(mat4x4)
         print "\n===================================="
         print "orientation: ", self.coilActor.GetOrientation()
         print "====================================\n"
+
 
     def DirectionCosinesTest_eulerangles(self, evt):
         # p1, p2, p3 = self.ball_centers[:3]
@@ -2259,6 +2252,7 @@ class ObjectCalibration(wx.Dialog):
         print "orientation: ", self.coilActor.GetOrientation()
         print "====================================\n"
 
+
     def Reset(self, evt):
         self.ball_centers = []
         self.ball_id = 0
@@ -2277,28 +2271,28 @@ class ObjectCalibration(wx.Dialog):
         print "Pontos bobina", p0, p1, p2
         print "====================================\n"
 
-        # vm = vtk.vtkMatrix4x4()
-        # vm.SetElement(0, 0, m[0, 0])
-        # vm.SetElement(0, 1, m[0, 1])
-        # vm.SetElement(0, 2, m[0, 2])
-        # vm.SetElement(0, 3, 0      )
+        #vm = vtk.vtkMatrix4x4()
+        #vm.SetElement(0, 0, m[0, 0])
+        #vm.SetElement(0, 1, m[0, 1])
+        #vm.SetElement(0, 2, m[0, 2])
+        #vm.SetElement(0, 3, 0      )
 
-        # vm.SetElement(1, 0, m[1, 0])
-        # vm.SetElement(1, 1, m[1, 1])
-        # vm.SetElement(1, 2, m[1, 2])
-        # vm.SetElement(1, 3, 0      )
+        #vm.SetElement(1, 0, m[1, 0])
+        #vm.SetElement(1, 1, m[1, 1])
+        #vm.SetElement(1, 2, m[1, 2])
+        #vm.SetElement(1, 3, 0      )
 
-        # vm.SetElement(2, 0, m[2, 0])
-        # vm.SetElement(2, 1, m[2, 1])
-        # vm.SetElement(2, 2, m[2, 2])
-        # vm.SetElement(2, 3, 0      )
+        #vm.SetElement(2, 0, m[2, 0])
+        #vm.SetElement(2, 1, m[2, 1])
+        #vm.SetElement(2, 2, m[2, 2])
+        #vm.SetElement(2, 3, 0      )
 
-        # vm.SetElement(3, 0, 0      )
-        # vm.SetElement(3, 1, 0      )
-        # vm.SetElement(3, 2, 0      )
-        # vm.SetElement(3, 3, 1      )
+        #vm.SetElement(3, 0, 0      )
+        #vm.SetElement(3, 1, 0      )
+        #vm.SetElement(3, 2, 0      )
+        #vm.SetElement(3, 3, 1      )
 
-        # self.coilActor.SetUserMatrix(vm)
+        #self.coilActor.SetUserMatrix(vm)
         # theta == beta
         # psi == alpha
         # phi == gama
@@ -2321,15 +2315,13 @@ class ObjectCalibration(wx.Dialog):
         M, q1, Minv = db.base_creation(p1, p2, p3)
         inits_angles = self.coilActor.GetOrientation(), self.init_angle_plh, M
 
-        coil_top = self.ball_centers[len(self.ball_centers) - 1]
-        coil_bottom = self.ball_centers[len(self.ball_centers) - 2]
-        coil_axis = np.matrix(coil_bottom[0:3]).reshape(3, 1), np.matrix(coil_top[0:3]).reshape(3, 1)
+        coil_top = self.ball_centers[len(self.ball_centers)-1]
+        coil_bottom = self.ball_centers[len(self.ball_centers)-2]
+        coil_axis = np.matrix(coil_bottom[0:3]).reshape(3, 1),np.matrix(coil_top[0:3]).reshape(3, 1)
 
         return inits_angles, coil_axis
-
-
-# ===============================================================================
-# ===============================================================================
+#===============================================================================
+#===============================================================================
 
 class SurfaceDialog(wx.Dialog):
     '''
