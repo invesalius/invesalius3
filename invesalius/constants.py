@@ -578,14 +578,17 @@ ZEBRIS = 4
 DEFAULT_TRACKER = PATRIOT
 #TRACKER = [_("Polhemus PATRIOT"), _("Polhemus PATRIOT"),
 #  _("Polhemus ISOTRAK II"), _("Claron MicronTracker"), _("Zebris CMS20")]
-TRACKER = [_("Claron MicronTracker S40"), _("Polhemus FASTRAK"),
+TRACKER = [_("Claron MicronTracker"), _("Polhemus FASTRAK"),
            _("Polhemus ISOTRAK II"),  _("Polhemus PATRIOT"), _("Zebris CMS20")]
 
 
-SINGLE_REF = 0
-DOUBLE_REF = 1
-DEFAULT_REF_MODE = SINGLE_REF
-REF_MODE = [_("Single Ref Mode"), _("Double Ref Mode")]
+STATIC_REF = 0
+DYNAMIC_REF = 1
+DEFAULT_REF_MODE = DYNAMIC_REF
+REF_MODE = [_("Static Reference"), _("Dynamic Reference")]
 
-OBJECTS = [_("Eigth Coil"),_("Simple Coil")]
+BUTTERFLY_COIL = 0
+CIRCULAR_COIL = 1
+DEFAULT_COIL = BUTTERFLY_COIL
+COILS = [_("Butterfly Coil"),_("Circular Coil")]
 # ------

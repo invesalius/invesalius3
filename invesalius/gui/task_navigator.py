@@ -18,24 +18,19 @@
 #--------------------------------------------------------------------------
 import sys
 
-from numpy import *
-import serial
+import numpy as np
 import wx
 import wx.lib.masked.numctrl
-import wx.lib.platebtn as pbtn
 from wx.lib.pubsub import pub as Publisher
 
 import constants as const
 import data.bases as db
 import data.corregistration as dcr
-import data.trackers as dtrk
+import data.trackers as dt
 import data.coordinates as dco
 import gui.dialogs as dlg
 import gui.widgets.foldpanelbar as fpb
 import gui.widgets.colourselect as csel
-import gui.widgets.platebtn as pbtn
-import project as prj
-import utils as utl
 
 
 class TaskPanel(wx.Panel):
@@ -45,7 +40,7 @@ class TaskPanel(wx.Panel):
         inner_panel = InnerTaskPanel(self)
 
         sizer = wx.BoxSizer(wx.HORIZONTAL)
-        sizer.Add(inner_panel, 1, wx.EXPAND | wx.GROW | wx.BOTTOM | wx.RIGHT |
+        sizer.Add(inner_panel, 1, wx.EXPAND|wx.GROW|wx.BOTTOM|wx.RIGHT |
                   wx.LEFT, 7)
         sizer.Fit(self)
 
@@ -53,35 +48,31 @@ class TaskPanel(wx.Panel):
         self.Update()
         self.SetAutoLayout(1)
 
+
 class InnerTaskPanel(wx.Panel):
     def __init__(self, parent):
         wx.Panel.__init__(self, parent)
-        default_colour = self.GetBackgroundColour()
-        self.SetBackgroundColour(wx.Colour(255,255,255))
+        default_color = self.GetBackgroundColour()
+        self.SetBackgroundColour(wx.Colour(255, 255, 255))
         self.SetAutoLayout(1)
 
-        # Neuronavigator Title
-        text = wx.StaticText(self, -1, 'Choose the tracker, ref mode, select the reference points, coregistrate and neuronavigate',
-                              size = wx.Size(90, 30))
+        text_nav = wx.StaticText(self, -1, 'Configure spatial tracker and '
+                                           'coregistrate for neuronavigation.',
+                                 size=wx.Size(90, 30))
 
-        # Create horizontal sizers to represent lines in the panel
+        # Create horizontal sizer to represent lines in the panel
         line_new = wx.BoxSizer(wx.HORIZONTAL)
-        line_new.Add(text, 1, wx.EXPAND|wx.GROW| wx.TOP|wx.CENTER, 0)
-        #line_new.SetDimension(1, 1, width = 25, height = 25)
-        #line_new.Add(button_new_surface, 0, wx.ALL|wx.EXPAND|wx.GROW, 0)
+        line_new.Add(text_nav, 1, wx.EXPAND|wx.GROW|wx.TOP|wx.RIGHT, 4)
 
-        # Folde panel which contains surface properties and quality
+        # Fold panel which contains navigation configurations
         fold_panel = FoldPanel(self)
-        fold_panel.SetBackgroundColour(default_colour)
+        fold_panel.SetBackgroundColour(default_color)
 
-        # Button to fold to select region task
-        line_inutil = wx.StaticText(self, -1, 'Linha sem sentido')
-
-        # Add line sizers into main sizer
+        # Add line sizer into main sizer
         main_sizer = wx.BoxSizer(wx.VERTICAL)
-        main_sizer.Add(line_new, 0,wx.GROW|wx.EXPAND|wx.ALIGN_CENTER|wx.TOP, 5)
+        main_sizer.Add(line_new, 0,
+                       wx.GROW|wx.EXPAND|wx.LEFT|wx.RIGHT|wx.TOP, 5)
         main_sizer.Add(fold_panel, 1, wx.GROW|wx.EXPAND|wx.ALL, 5)
-        main_sizer.Add(line_inutil, 0, wx.ALIGN_RIGHT|wx.RIGHT|wx.BOTTOM, 5)
         main_sizer.Fit(self)
 
         self.SetSizer(main_sizer)
@@ -106,6 +97,7 @@ class FoldPanel(wx.Panel):
         self.Update()
         self.SetAutoLayout(1)
 
+
 class InnerFoldPanel(wx.Panel):
     def __init__(self, parent):
         wx.Panel.__init__(self, parent)
@@ -119,7 +111,7 @@ class InnerFoldPanel(wx.Panel):
         # parent panel. Perhaps we need to insert the item into the sizer also...
         # Study this.
         fold_panel = fpb.FoldPanelBar(self, -1, wx.DefaultPosition,
-                                      (10, 300), 0,fpb.FPB_SINGLE_FOLD)
+                                      (10, 320), 0,fpb.FPB_SINGLE_FOLD)
 
         # Fold panel style
         style = fpb.CaptionBarStyle()
@@ -493,7 +485,7 @@ class NeuronavigationTools(wx.Panel):
         trck_id = evt.GetSelection()
 
         # self.trk_init = dco.Tracker().ReturnTracker(trck_id)
-        self.trk_init = dco.Tracker(trck_id)
+        self.trk_init = dt.Tracker(trck_id)
 
         # if self.tracker_id == 0:
         #     self.trk_init = dtrk.Tracker_Init().PolhemusISO_init()
@@ -549,7 +541,7 @@ class ObjectWNeuronavigation(wx.Panel):
         self.SetBackgroundColour(default_colour)
          
         self.SetAutoLayout(1)
-        self.object_id = const.OBJECTS
+        self.object_id = const.COILS
 #         self.aux_img__INO_ref=0
         self.showObj = None
          
@@ -558,10 +550,12 @@ class ObjectWNeuronavigation(wx.Panel):
         #Line 1      
         text_choice = wx.StaticText(self, -1, _("Select the Object:"))  
         #Line 2      
-        self.choice_object = wx.ComboBox(self, -1, "Select the Object:", size=(97, 23),
-                                     choices = const.OBJECTS, style = wx.CB_DROPDOWN|wx.CB_READONLY|wx.CB_SORT)
-#        choice_object.SetSelection(0)
-        self.choice_object.Bind(wx.EVT_COMBOBOX,self.OnChoiseObject)  
+        choice_object = wx.ComboBox(self, -1, "Select the Object:",
+                                         size=(97, 23),
+                                         choices = const.COILS,
+                                         style = wx.CB_DROPDOWN|wx.CB_READONLY|wx.CB_SORT)
+        choice_object.SetSelection(const.DEFAULT_COIL)
+        choice_object.Bind(wx.EVT_COMBOBOX, self.OnChoiceObject)
              
         #Line 3        
         correg_object= wx.Button(self, -1, label='Corregistrate object', size = wx.Size(125,23))
@@ -582,7 +576,7 @@ class ObjectWNeuronavigation(wx.Panel):
 #             name='numCtrl3I', parent=self, integerWidth = 4, fractionWidth = 1)
          
         line2 = wx.FlexGridSizer(rows=1, cols=2, hgap=5, vgap=5)
-        line2.AddMany([(self.choice_object, 1,wx.EXPAND|wx.LEFT|wx.TOP),
+        line2.AddMany([(choice_object, 1,wx.EXPAND|wx.LEFT|wx.TOP),
                        (correg_object, 1, wx.GROW|wx.EXPAND|wx.RIGHT|wx.TOP)])
          
 #         line3 = wx.FlexGridSizer(rows=1, cols=4, hgap=5, vgap=5)
@@ -626,7 +620,7 @@ class ObjectWNeuronavigation(wx.Panel):
         self.coord3a=pubsub_evt.data[8]   
         self.img_inio=pubsub_evt.data[9]       
          
-    def OnChoiseObject(self, evt):
+    def OnChoiceObject(self, evt):
         self.object_id = evt.GetSelection()  
         self.object_name = self.choice_object.GetValue()
 ##        if self.object_name == " Add new object...":

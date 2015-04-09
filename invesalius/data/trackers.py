@@ -8,19 +8,14 @@ import gui.dialogs as dlg
 
 class Tracker:
     def __init__(self, trck_id):
-        """Initialize spatial trackers for neuronavigation
+        """
+        Initialize spatial trackers for neuronavigation
 
         :param trck_id: identifier of spatial tracker
-        :return: initialization variable
+        :return: spatial tracker initialization variable
         """
 
-        trck = {0 : self.ClaronTracker,
-                1 : self.PlhFastrak,
-                2 : self.PlhIsotrakII,
-                3 : self.PlhPatriot,
-                4 : self.ZebrisCMS20}
-
-        self.ReturnTracker(trck, trck_id)
+        self.ReturnTracker(trck_id)
 
     def ClaronTracker(self):
         trck_init = None
@@ -29,8 +24,8 @@ class Tracker:
             import ClaronTracker
 
             trck_init = ClaronTracker.ClaronTracker()
-            trck_init.CalibrationDir = "C:\CalibrationFiles"
-            trck_init.MarkerDir = "C:\Markers"
+            trck_init.CalibrationDir = "../objects/mtc_files/CalibrationFiles"
+            trck_init.MarkerDir = "../objects/mtc_files/Markers"
             trck_init.NumberFramesProcessed = 10
             trck_init.FramesExtrapolated = 0
             trck_init.Initialize()
@@ -93,11 +88,24 @@ class Tracker:
         return trck_init
 
     def ZebrisCMS20(self):
+        trck_init = None
 
         dlg.TrackerNotConnected(4)
         print 'Zebris device not found.'
 
-        return None
+        return trck_init
+
+    def DefaultTracker(self):
+        trck_init = None
+
+        try:
+            # import spatial tracker library
+            print 'Trying to connect with spatial tracker.'
+
+        except ImportError:
+            dlg.TrackerNotConnected(5)
+
+        return trck_init  # spatial tracker initialization variable
 
     def polhemus_serial(self, plh_id):
         trck_init = None
@@ -121,59 +129,66 @@ class Tracker:
 
         return trck_init
 
-    def ReturnTracker(self, trck, trck_id):
+    def ReturnTracker(self, trck_id):
 
         print "Returning"
         print "This is the tracker selected!", trck_id
 
+        trck = {0 : self.ClaronTracker,
+                1 : self.PlhFastrak,
+                2 : self.PlhIsotrakII,
+                3 : self.PlhPatriot,
+                4 : self.ZebrisCMS20}
+
         return trck[trck_id]()
 
-class Tracker_Init: 
-    def PolhemusISO_init(self):
-        try:
-            plh = serial.Serial(0, baudrate = 115200, timeout=0.2)
-            return plh
-            
-        except:
-            dlg.TrackerNotConnected(1)
-            raise ValueError('Device not found')
-    
-    def Polhemus_init(self):
-        dev = usb.core.find(idVendor=0x0F44, idProduct=0xEF12)
-        if dev is None:
-            dlg.TrackerNotConnected(1)
-            raise ValueError('Device not found')  
-        try:
-            cfg = dev.get_active_configuration()
-            for i in cfg:
-                for x in i:
-                    x = x        
-            dev.set_configuration()
-        except usb.core.USBError as e:
-            sys.exit("Could not set configuration: %s" % str(e))
-        return dev
-    
-    def Claron_init(self):
-        try:
-            mtc = ClaronTracker.ClaronTracker()
-            mtc.CalibrationDir = "C:\CalibrationFiles"
-            mtc.MarkerDir = "C:\Markers"
-            mtc.NumberFramesProcessed = 10
-            mtc.FramesExtrapolated = 0
-            mtc.Initialize()
-            if mtc.GetIdentifyingCamera():
-                print "Camera Identified."
-                mtc.Run()
-            else:
-                dlg.TrackerNotConnected(2)
-                print "The Claron MicronTracker is not connected!"
-            return mtc
-        
-        except:
-            dlg.TrackerNotConnected(2)
-            raise ValueError('Device not found') 
-         
-        
-    def Zebris_init(self):
-        dlg.TrackerNotConnected(3)
-        return
+
+# class Tracker_Init:
+#     def PolhemusISO_init(self):
+#         try:
+#             plh = serial.Serial(0, baudrate = 115200, timeout=0.2)
+#             return plh
+#
+#         except:
+#             dlg.TrackerNotConnected(1)
+#             raise ValueError('Device not found')
+#
+#     def Polhemus_init(self):
+#         dev = usb.core.find(idVendor=0x0F44, idProduct=0xEF12)
+#         if dev is None:
+#             dlg.TrackerNotConnected(1)
+#             raise ValueError('Device not found')
+#         try:
+#             cfg = dev.get_active_configuration()
+#             for i in cfg:
+#                 for x in i:
+#                     x = x
+#             dev.set_configuration()
+#         except usb.core.USBError as e:
+#             sys.exit("Could not set configuration: %s" % str(e))
+#         return dev
+#
+#     def Claron_init(self):
+#         try:
+#             mtc = ClaronTracker.ClaronTracker()
+#             mtc.CalibrationDir = "C:\CalibrationFiles"
+#             mtc.MarkerDir = "C:\Markers"
+#             mtc.NumberFramesProcessed = 10
+#             mtc.FramesExtrapolated = 0
+#             mtc.Initialize()
+#             if mtc.GetIdentifyingCamera():
+#                 print "Camera Identified."
+#                 mtc.Run()
+#             else:
+#                 dlg.TrackerNotConnected(2)
+#                 print "The Claron MicronTracker is not connected!"
+#             return mtc
+#
+#         except:
+#             dlg.TrackerNotConnected(2)
+#             raise ValueError('Device not found')
+#
+#
+#     def Zebris_init(self):
+#         dlg.TrackerNotConnected(3)
+#         return
