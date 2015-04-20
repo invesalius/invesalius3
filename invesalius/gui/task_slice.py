@@ -720,7 +720,7 @@ class WatershedTool(EditionTools):
         self.SetBackgroundColour(default_colour)
 
         ## LINE 1
-        text1 = wx.StaticText(self, -1, _("Choose brush type and size:"))
+        text1 = wx.StaticText(self, -1, _("Choose brush type, size or operation:"))
 
         ## LINE 2
         menu = wx.Menu()
@@ -773,17 +773,28 @@ class WatershedTool(EditionTools):
 
         # LINE 5
         check_box = wx.CheckBox(self, -1, _("Overwrite mask"))
+        ww_wl_cbox = wx.CheckBox(self, -1, _("Use WW&WL"))
+        ww_wl_cbox.SetValue(True)
         self.check_box = check_box
+        self.ww_wl_cbox = ww_wl_cbox
 
         # Line 6
+        bmp = wx.Bitmap("../icons/configuration.png", wx.BITMAP_TYPE_PNG)
+        self.btn_wconfig = wx.BitmapButton(self, -1, bitmap=bmp,
+                                           size=(bmp.GetWidth()+10, bmp.GetHeight()+10))
         self.btn_exp_watershed = wx.Button(self, -1, _('Expand watershed to 3D'))
+
+        sizer_btns = wx.BoxSizer(wx.HORIZONTAL)
+        sizer_btns.Add(self.btn_wconfig, 0, wx.ALIGN_LEFT | wx.LEFT | wx.TOP | wx.DOWN, 5)
+        sizer_btns.Add(self.btn_exp_watershed, 0, wx.GROW|wx.EXPAND| wx.ALL, 5)
 
         # Add lines into main sizer
         sizer = wx.BoxSizer(wx.VERTICAL)
         sizer.Add(text1, 0, wx.GROW|wx.EXPAND|wx.LEFT|wx.RIGHT|wx.TOP, 5)
         sizer.Add(line2, 0, wx.GROW|wx.EXPAND|wx.LEFT|wx.RIGHT|wx.TOP, 5)
         sizer.Add(check_box, 0, wx.GROW|wx.EXPAND|wx.LEFT|wx.RIGHT|wx.TOP, 5)
-        sizer.Add(self.btn_exp_watershed, 0, wx.GROW|wx.EXPAND|wx.LEFT|wx.RIGHT|wx.TOP, 5)
+        sizer.Add(ww_wl_cbox, 0, wx.GROW|wx.EXPAND|wx.LEFT|wx.RIGHT|wx.TOP, 5)
+        sizer.Add(sizer_btns, 0, wx.EXPAND)
         sizer.Fit(self)
 
         self.SetSizer(sizer)
@@ -797,7 +808,9 @@ class WatershedTool(EditionTools):
         self.Bind(wx.EVT_MENU, self.OnMenu)
         self.combo_brush_op.Bind(wx.EVT_COMBOBOX, self.OnComboBrushOp)
         self.check_box.Bind(wx.EVT_CHECKBOX, self.OnCheckOverwriteMask)
+        self.ww_wl_cbox.Bind(wx.EVT_CHECKBOX, self.OnCheckWWWL)
         self.btn_exp_watershed.Bind(wx.EVT_BUTTON, self.OnExpandWatershed)
+        self.btn_wconfig.Bind(wx.EVT_BUTTON, self.OnConfig)
 
     def ChangeMaskColour(self, pubsub_evt):
         colour = pubsub_evt.data
@@ -834,14 +847,14 @@ class WatershedTool(EditionTools):
 
         self.btn_brush_format.SetBitmap(bitmap[evt.GetId()])
 
-        Publisher.sendMessage('Set brush format', brush[evt.GetId()])
+        Publisher.sendMessage('Set watershed brush format', brush[evt.GetId()])
 
     def OnBrushSize(self, evt):
         """ """
         # FIXME: Using wx.EVT_SPINCTRL in MacOS it doesnt capture changes only
         # in the text ctrl - so we are capturing only changes on text
         # Strangelly this is being called twice
-        Publisher.sendMessage('Set edition brush size',self.spin.GetValue())
+        Publisher.sendMessage('Set watershed brush size',self.spin.GetValue())
 
     def OnComboBrushOp(self, evt):
         brush_op = self.combo_brush_op.GetValue()
@@ -850,6 +863,13 @@ class WatershedTool(EditionTools):
     def OnCheckOverwriteMask(self, evt):
         value = self.check_box.GetValue()
         Publisher.sendMessage('Set overwrite mask', value)
+
+    def OnCheckWWWL(self, evt):
+        value = self.ww_wl_cbox.GetValue()
+        Publisher.sendMessage('Set use ww wl', value)
+
+    def OnConfig(self, evt):
+        dlg.WatershedOptionsDialog().Show()
 
     def OnExpandWatershed(self, evt):
         Publisher.sendMessage('Expand watershed to 3D AXIAL')

@@ -1384,3 +1384,88 @@ class ClutImagedataDialog(wx.Dialog):
         super(wx.Dialog, self).Show(show)
         if gen_evt:
             self.clut_widget._generate_event()
+
+ 
+class WatershedOptions(wx.Panel):
+    def __init__(self, parent):
+        wx.Panel.__init__(self, parent)
+        
+        self.algorithms = ("Watershed", "Watershed IFT")
+        self.con2d_choices = (4, 8)
+        self.con3d_choices = (6, 18, 26)
+
+        self._init_gui()
+        self._bind_events()
+
+    def _init_gui(self):
+        self.choice_algorithm = wx.RadioBox(self, -1, "Algorithm",
+                                           choices=("Watershed", "Watershed IFT"),
+                                           style=wx.NO_BORDER | wx.HORIZONTAL)
+
+        self.choice_2dcon = wx.RadioBox(self, -1, "2D",
+                                        choices=[str(i) for i in self.con2d_choices],
+                                        style=wx.NO_BORDER | wx.HORIZONTAL)
+
+        self.choice_3dcon = wx.RadioBox(self, -1, "3D",
+                                        choices=[str(i) for i in self.con3d_choices],
+                                        style=wx.NO_BORDER | wx.HORIZONTAL)
+
+        self.gaussian_size = wx.SpinCtrl(self, -1, "", min=1, max=10)
+
+        box_sizer = wx.StaticBoxSizer(wx.StaticBox(self, -1, "Conectivity"), wx.VERTICAL)
+        box_sizer.Add(self.choice_2dcon, 0, wx.ALIGN_CENTER_VERTICAL,2)
+        box_sizer.Add(self.choice_3dcon, 0, wx.ALIGN_CENTER_VERTICAL,2)
+
+        g_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        g_sizer.Add(wx.StaticText(self, -1, "Gaussian size"), 0, wx.ALIGN_RIGHT | wx.ALL, 5)
+        g_sizer.Add(self.gaussian_size, 0, wx.ALIGN_LEFT | wx.ALL, 5)
+
+        sizer = wx.BoxSizer(wx.VERTICAL)
+        sizer.Add(self.choice_algorithm, 0, wx.ALIGN_CENTER_VERTICAL,2)
+        sizer.Add(box_sizer, 1, wx.EXPAND,2)
+        sizer.Add(g_sizer, 0, wx.ALIGN_LEFT, 2)
+
+        self.SetSizer(sizer)
+        sizer.Fit(self)
+        self.Layout()
+
+    def _bind_events(self):
+        self.choice_algorithm.Bind(wx.EVT_RADIOBOX, self.OnSetAlgorithm)
+        self.gaussian_size.Bind(wx.EVT_SPINCTRL, self.OnSetGaussianSize)
+        self.choice_2dcon.Bind(wx.EVT_RADIOBOX, self.OnSetCon2D)
+        self.choice_3dcon.Bind(wx.EVT_RADIOBOX, self.OnSetCon3D)
+
+    def OnSetAlgorithm(self, evt):
+        v = self.algorithms[evt.GetInt()]
+        Publisher.sendMessage("Set watershed algorithm", v)
+
+    def OnSetGaussianSize(self, evt):
+        v = self.gaussian_size.GetValue()
+        Publisher.sendMessage("Set watershed gaussian size", v)
+
+    def OnSetCon2D(self, evt):
+        v = self.con2d_choices[evt.GetInt()]
+        Publisher.sendMessage("Set watershed 2d con", v)
+
+    def OnSetCon3D(self, evt):
+        v = self.con3d_choices[evt.GetInt()]
+        Publisher.sendMessage("Set watershed 3d con", v)
+
+
+class WatershedOptionsDialog(wx.Dialog):
+    def __init__(self):
+        pre = wx.PreDialog()
+        pre.Create(wx.GetApp().GetTopWindow(), -1, style=wx.DEFAULT_DIALOG_STYLE|wx.FRAME_FLOAT_ON_PARENT)
+        self.PostCreate(pre)
+
+        self._init_gui()
+
+    def _init_gui(self):
+        wop = WatershedOptions(self)
+
+        sizer = wx.BoxSizer(wx.VERTICAL) 
+        sizer.Add(wop, 0, wx.EXPAND)
+
+        self.SetSizer(sizer)
+        sizer.Fit(self)
+        self.Layout()
