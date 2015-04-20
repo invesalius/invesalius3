@@ -397,6 +397,9 @@ class Frame(wx.Frame):
         elif id == wx.ID_REDO:
             self.OnRedo()
 
+        elif id == const.ID_BOOLEAN_MASK:
+            self.OnMaskBoolean()
+
     def OnSize(self, evt):
         """
         Refresh GUI when frame is resized.
@@ -490,9 +493,10 @@ class Frame(wx.Frame):
         Publisher.sendMessage('Redo edition')
 
 
+    def OnMaskBoolean(self):
+        print "Mask boolean"
+        Publisher.sendMessage('Show boolean dialog')
       
-
-
 
 # ------------------------------------------------------------------
 # ------------------------------------------------------------------
@@ -604,6 +608,11 @@ class MenuBar(wx.MenuBar):
             file_edit.Append(wx.ID_REDO, _("Redo\tCtrl+Y")).Enable(False)
         #app(const.ID_EDIT_LIST, "Show Undo List...")
         #################################################################
+
+        # Mask Menu
+        mask_menu = wx.Menu()
+        mask_menu.Append(const.ID_BOOLEAN_MASK, _(u"Boolean operations"))
+        file_edit.AppendMenu(-1,  _(u"Mask"), mask_menu)
 
 
         # VIEW

@@ -475,6 +475,8 @@ ID_SWAP_XY = wx.NewId()
 ID_SWAP_XZ = wx.NewId()
 ID_SWAP_YZ = wx.NewId()
 
+ID_BOOLEAN_MASK = wx.NewId()
+
 #---------------------------------------------------------
 STATE_DEFAULT = 1000
 STATE_WL = 1001
@@ -565,3 +567,9 @@ PROJECTION_CONTOUR_MIDA=8
 #------------ Projections defaults ------------------
 PROJECTION_BORDER_SIZE=1.0
 PROJECTION_MIP_SIZE=2
+
+# ------------- Boolean operations ------------------
+BOOLEAN_UNION = 1
+BOOLEAN_DIFF = 2
+BOOLEAN_AND = 3
+BOOLEAN_XOR = 4

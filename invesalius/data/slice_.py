@@ -160,6 +160,8 @@ class Slice(object):
 
         Publisher.subscribe(self._set_projection_type, 'Set projection type')
 
+        Publisher.subscribe(self._do_boolean_op, 'Do boolean operation')
+
         Publisher.subscribe(self.OnExportMask,'Export mask to file')
 
         Publisher.subscribe(self.OnCloseProject, 'Close project data')
@@ -1080,12 +1082,17 @@ class Slice(object):
                 else:
                     node.value += shiftWW * factor
 
-    def do_threshold_to_a_slice(self, slice_matrix, mask):
+    def do_threshold_to_a_slice(self, slice_matrix, mask, threshold=None):
         """ 
         Based on the current threshold bounds generates a threshold mask to
         given slice_matrix.
         """
-        thresh_min, thresh_max = self.current_mask.threshold_range
+        if threshold:
+            thresh_min, thresh_max = threshold
+        else:
+            thresh_min, thresh_max = self.current_mask.threshold_range
+
+        print ">>>> THreshold", thresh_min, thresh_max
         m = (((slice_matrix >= thresh_min) & (slice_matrix <= thresh_max)) * 255)
         m[mask == 1] = 1
         m[mask == 2] = 2
@@ -1106,7 +1113,7 @@ class Slice(object):
         for n in xrange(1, mask.matrix.shape[0]):
             if mask.matrix[n, 0, 0] == 0:
                 m = mask.matrix[n, 1:, 1:]
-                mask.matrix[n, 1:, 1:] = self.do_threshold_to_a_slice(self.matrix[n-1], m)
+                mask.matrix[n, 1:, 1:] = self.do_threshold_to_a_slice(self.matrix[n-1], m, mask.threshold_range)
 
         mask.matrix.flush()
 
@@ -1208,6 +1215,51 @@ class Slice(object):
         blend_imagedata.Update()
 
         return blend_imagedata.GetOutput()
+
+    def _do_boolean_op(self, pubsub_evt):
+        op, m1, m2 = pubsub_evt.data
+        self.do_boolean_op(op, m1, m2)
+
+    def do_boolean_op(self, op, m1, m2):
+        name_ops = {const.BOOLEAN_UNION: _(u"Union"), 
+                    const.BOOLEAN_DIFF: _(u"Diff"),
+                    const.BOOLEAN_AND: _(u"Intersection"),
+                    const.BOOLEAN_XOR: _(u"XOR")}
+
+
+        name = u"%s_%s_%s" % (name_ops[op], m1.name, m2.name)
+        proj = Project()
+        mask_dict = proj.mask_dict
+        names_list = [mask_dict[i].name for i in mask_dict.keys()]
+        new_name = utils.next_copy_name(name, names_list)
+
+        future_mask = Mask()
+        future_mask.create_mask(self.matrix.shape)
+        future_mask.name = new_name
+
+        future_mask.matrix[:] = 1
+        m = future_mask.matrix[1:, 1:, 1:]
+
+        self.do_threshold_to_all_slices(m1)
+        m1 = m1.matrix[1:, 1:, 1:]
+
+        self.do_threshold_to_all_slices(m2)
+        m2 = m2.matrix[1:, 1:, 1:]
+
+        if op == const.BOOLEAN_UNION:
+            m[:] = ((m1 > 2) + (m2 > 2)) * 255
+
+        elif op == const.BOOLEAN_DIFF:
+            m[:] = ((m1 > 2) - ((m1 > 2) & (m2 > 2))) * 255
+
+        elif op == const.BOOLEAN_AND:
+            m[:] = ((m1 > 2) & (m2 > 2)) * 255
+
+        elif op == const.BOOLEAN_XOR:
+            m[:] = numpy.logical_xor((m1 > 2), (m2 > 2)) * 255
+
+        future_mask.was_edited = True
+        self._add_mask_into_proj(future_mask)
 
     def apply_slice_buffer_to_mask(self, orientation):
         """
