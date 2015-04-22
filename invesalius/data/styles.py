@@ -698,6 +698,7 @@ class EditorInteractorStyle(DefaultInteractorStyle):
 
     def EOnScrollForward(self, evt, obj):
         iren = self.viewer.interactor
+        viewer = self.viewer
         if iren.GetControlKey():
             mouse_x, mouse_y = iren.GetEventPosition()
             render = iren.FindPokedRenderer(mouse_x, mouse_y)
@@ -711,11 +712,20 @@ class EditorInteractorStyle(DefaultInteractorStyle):
                 cursor.SetPosition(cursor.position)
                 self.viewer.interactor.Render()
             
+        elif iren.GetShiftKey():
+            opacity = viewer.slice_.opacity + 0.1
+            if opacity <= 1:
+                viewer.slice_.opacity = opacity
+                self.viewer.slice_.buffer_slices['AXIAL'].discard_vtk_mask()
+                self.viewer.slice_.buffer_slices['CORONAL'].discard_vtk_mask()
+                self.viewer.slice_.buffer_slices['SAGITAL'].discard_vtk_mask()
+                Publisher.sendMessage('Reload actual slice')
         else:
             self.OnScrollForward(obj, evt)
 
     def EOnScrollBackward(self, evt, obj):
         iren = self.viewer.interactor
+        viewer = self.viewer
         if iren.GetControlKey():
             mouse_x, mouse_y = iren.GetEventPosition()
             render = iren.FindPokedRenderer(mouse_x, mouse_y)
@@ -728,6 +738,15 @@ class EditorInteractorStyle(DefaultInteractorStyle):
                 Publisher.sendMessage('Set edition brush size', size)
                 cursor.SetPosition(cursor.position)
                 self.viewer.interactor.Render()
+
+        elif iren.GetShiftKey():
+            opacity = viewer.slice_.opacity - 0.1
+            if opacity >= 0.1:
+                viewer.slice_.opacity = opacity
+                self.viewer.slice_.buffer_slices['AXIAL'].discard_vtk_mask()
+                self.viewer.slice_.buffer_slices['CORONAL'].discard_vtk_mask()
+                self.viewer.slice_.buffer_slices['SAGITAL'].discard_vtk_mask()
+                Publisher.sendMessage('Reload actual slice')
         else:
             self.OnScrollBackward(obj, evt)
 
