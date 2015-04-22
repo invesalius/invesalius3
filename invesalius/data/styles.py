@@ -704,9 +704,10 @@ class EditorInteractorStyle(DefaultInteractorStyle):
             slice_data = self.viewer.get_slice_data(render)
             cursor = slice_data.cursor
             size = cursor.radius * 2
+            size += 1
 
             if size < 100:
-                Publisher.sendMessage('Set edition brush size', size + 1)
+                Publisher.sendMessage('Set edition brush size', size)
                 cursor.SetPosition(cursor.position)
                 self.viewer.interactor.Render()
             
@@ -721,9 +722,10 @@ class EditorInteractorStyle(DefaultInteractorStyle):
             slice_data = self.viewer.get_slice_data(render)
             cursor = slice_data.cursor
             size = cursor.radius * 2
+            size -= 1
 
             if size > 0:
-                Publisher.sendMessage('Set edition brush size', size - 1)
+                Publisher.sendMessage('Set edition brush size', size)
                 cursor.SetPosition(cursor.position)
                 self.viewer.interactor.Render()
         else:
