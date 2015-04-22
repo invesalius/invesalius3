@@ -38,6 +38,8 @@ from scipy.ndimage import watershed_ift, generate_binary_structure
 from skimage.morphology import watershed
 from skimage import filter
 
+import watershed_process
+
 import utils
 
 ORIENTATIONS = {
@@ -1244,8 +1246,8 @@ class WaterShedInteractorStyle(DefaultInteractorStyle):
             tmp_mask = np.memmap(tfile, shape=mask.shape, dtype=mask.dtype,
                                  mode='w+')
             q = multiprocessing.Queue()
-            p = multiprocessing.Process(target=do_watershed, args=(image,
-                                        markers, tmp_mask, bstruct,
+            p = multiprocessing.Process(target=watershed_process.do_watershed, args=(image,
+                                        markers, tfile, tmp_mask.shape, bstruct,
                                         self.config.algorithm,
                                         self.config.mg_size,
                                         self.config.use_ww_wl, wl, ww, q))
@@ -1292,6 +1294,9 @@ class WaterShedInteractorStyle(DefaultInteractorStyle):
                     ##tmp_image = ndimage.morphological_gradient((image - image.min()).astype('uint16'), self.config.mg_size)
                     #tmp_mask = watershed_ift(tmp_image, markers.astype('int8'), bstruct)
 
+            print "mask.max >>>", tmp_mask.max()
+            print "mask.min >>>", tmp_mask.min()
+
             if self.viewer.overwrite_mask:
                 mask[:] = 0
                 mask[tmp_mask == 1] = 253
@@ -1309,31 +1314,7 @@ class WaterShedInteractorStyle(DefaultInteractorStyle):
             Publisher.sendMessage('Reload actual slice')
 
 
-def do_watershed(image, markers, mask, bstruct, algorithm, mg_size, use_ww_wl, wl, ww, q):
-    if use_ww_wl:
-        if algorithm == 'Watershed':
-            tmp_image = ndimage.morphological_gradient(
-                           get_LUT_value(image, ww, wl).astype('uint16'),
-                           mg_size)
-            tmp_mask = watershed(tmp_image, markers.astype('int16'), bstruct)
-        else:
-            tmp_image = get_LUT_value(image, ww, wl).astype('uint16')
-            #tmp_image = ndimage.gaussian_filter(tmp_image, self.config.mg_size)
-            #tmp_image = ndimage.morphological_gradient(
-                           #get_LUT_value(image, ww, wl).astype('uint16'),
-                           #self.config.mg_size)
-            tmp_mask = watershed_ift(tmp_image, markers.astype('int16'), bstruct)
-    else:
-        if algorithm == 'Watershed':
-            tmp_image = ndimage.morphological_gradient((image - image.min()).astype('uint16'), mg_size)
-            tmp_mask = watershed(tmp_image, markers.astype('int16'), bstruct)
-        else:
-            tmp_image = (image - image.min()).astype('uint16')
-            #tmp_image = ndimage.gaussian_filter(tmp_image, self.config.mg_size)
-            #tmp_image = ndimage.morphological_gradient((image - image.min()).astype('uint16'), self.config.mg_size)
-            tmp_mask = watershed_ift(tmp_image, markers.astype('int8'), bstruct)
-    mask[:] = tmp_mask
-    q.put(1)
+
 
 
 
