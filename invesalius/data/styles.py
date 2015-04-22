@@ -706,7 +706,7 @@ class EditorInteractorStyle(DefaultInteractorStyle):
             size = cursor.radius * 2
             size += 1
 
-            if size < 100:
+            if size <= 100:
                 Publisher.sendMessage('Set edition brush size', size)
                 cursor.SetPosition(cursor.position)
                 self.viewer.interactor.Render()

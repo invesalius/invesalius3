@@ -740,6 +740,7 @@ class EditionTools(wx.Panel):
                                         'Update threshold limits')
         Publisher.subscribe(self.ChangeMaskColour, 'Change mask colour')
         Publisher.subscribe(self.SetGradientColour, 'Add mask')
+        Publisher.subscribe(self._set_brush_size, 'Set edition brush size')
 
     def ChangeMaskColour(self, pubsub_evt):
         colour = pubsub_evt.data
@@ -791,6 +792,10 @@ class EditionTools(wx.Panel):
         # in the text ctrl - so we are capturing only changes on text
         # Strangelly this is being called twice
         Publisher.sendMessage('Set edition brush size',self.spin.GetValue())
+
+    def _set_brush_size(self, pubsub_evt):
+        size = pubsub_evt.data
+        self.spin.SetValue(size)
 
     def OnComboBrushOp(self, evt):
         brush_op_id = evt.GetSelection()
