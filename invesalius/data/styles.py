@@ -129,10 +129,33 @@ class DefaultInteractorStyle(BaseImageInteractorStyle):
         evt.StartDolly()
 
     def OnScrollForward(self, evt, obj):
-        self.viewer.OnScrollForward()
+        iren = self.viewer.interactor
+        viewer = self.viewer
+        if  iren.GetShiftKey():
+            opacity = viewer.slice_.opacity + 0.1
+            if opacity <= 1:
+                viewer.slice_.opacity = opacity
+                self.viewer.slice_.buffer_slices['AXIAL'].discard_vtk_mask()
+                self.viewer.slice_.buffer_slices['CORONAL'].discard_vtk_mask()
+                self.viewer.slice_.buffer_slices['SAGITAL'].discard_vtk_mask()
+                Publisher.sendMessage('Reload actual slice')
+        else:
+            self.viewer.OnScrollForward()
 
     def OnScrollBackward(self, evt, obj):
-        self.viewer.OnScrollBackward()
+        iren = self.viewer.interactor
+        viewer = self.viewer
+
+        if iren.GetShiftKey():
+            opacity = viewer.slice_.opacity - 0.1
+            if opacity >= 0.1:
+                viewer.slice_.opacity = opacity
+                self.viewer.slice_.buffer_slices['AXIAL'].discard_vtk_mask()
+                self.viewer.slice_.buffer_slices['CORONAL'].discard_vtk_mask()
+                self.viewer.slice_.buffer_slices['SAGITAL'].discard_vtk_mask()
+                Publisher.sendMessage('Reload actual slice')
+        else:
+            self.viewer.OnScrollBackward()
 
 
 class CrossInteractorStyle(DefaultInteractorStyle):
@@ -711,15 +734,6 @@ class EditorInteractorStyle(DefaultInteractorStyle):
                 Publisher.sendMessage('Set edition brush size', size)
                 cursor.SetPosition(cursor.position)
                 self.viewer.interactor.Render()
-            
-        elif iren.GetShiftKey():
-            opacity = viewer.slice_.opacity + 0.1
-            if opacity <= 1:
-                viewer.slice_.opacity = opacity
-                self.viewer.slice_.buffer_slices['AXIAL'].discard_vtk_mask()
-                self.viewer.slice_.buffer_slices['CORONAL'].discard_vtk_mask()
-                self.viewer.slice_.buffer_slices['SAGITAL'].discard_vtk_mask()
-                Publisher.sendMessage('Reload actual slice')
         else:
             self.OnScrollForward(obj, evt)
 
@@ -738,15 +752,6 @@ class EditorInteractorStyle(DefaultInteractorStyle):
                 Publisher.sendMessage('Set edition brush size', size)
                 cursor.SetPosition(cursor.position)
                 self.viewer.interactor.Render()
-
-        elif iren.GetShiftKey():
-            opacity = viewer.slice_.opacity - 0.1
-            if opacity >= 0.1:
-                viewer.slice_.opacity = opacity
-                self.viewer.slice_.buffer_slices['AXIAL'].discard_vtk_mask()
-                self.viewer.slice_.buffer_slices['CORONAL'].discard_vtk_mask()
-                self.viewer.slice_.buffer_slices['SAGITAL'].discard_vtk_mask()
-                Publisher.sendMessage('Reload actual slice')
         else:
             self.OnScrollBackward(obj, evt)
 
