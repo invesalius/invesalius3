@@ -394,6 +394,7 @@ class Slice(object):
                 buffer_.discard_vtk_mask()
                 buffer_.discard_mask()
             self.current_mask.clear_history()
+            self.current_mask.was_edited = True
 
     def create_temp_mask(self):
         temp_file = tempfile.mktemp()
