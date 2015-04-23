@@ -819,41 +819,29 @@ class EditorInteractorStyle(DefaultInteractorStyle):
         return x, y, z
 
 
-class WatershedProgressWindow(wx.Frame):
-    def __init__(self, process, parent=None):
-        wx.Frame.__init__(self, parent, -1)
+class WatershedProgressWindow(object):
+    def __init__(self, process):
         self.process = process
-        self._build_gui()
-        self._bind_wx_events()
-        self.timer = wx.Timer(self)
-        self.timer.Start(1000)
+        self.title = "InVesalius 3"
+        self.msg = _("Applying watershed ...")
+        self.style = wx.PD_APP_MODAL | wx.PD_APP_MODAL | wx.PD_CAN_ABORT
 
-    def _build_gui(self):
-        self.gauge = wx.Gauge(self, -1, 100)
-        self.btn_cancel = wx.Button(self, wx.ID_CANCEL)
-        
-        sizer = wx.BoxSizer(wx.VERTICAL)
-        sizer.Add(wx.StaticText(self, -1, _("Applying watershed")))
-        sizer.Add(self.gauge, 0, wx.EXPAND)
-        sizer.Add(self.btn_cancel, 0, wx.ALIGN_LEFT)
+        self.dlg = wx.ProgressDialog(self.title,
+                                     self.msg,
+                                     parent = None,
+                                     style  = self.style)
 
-        self.SetSizer(sizer)
-        sizer.Fit(self)
-        self.Layout()
+        self.dlg.Bind(wx.EVT_BUTTON, self.Cancel)
+        self.dlg.Show()
 
-    def __del__(self):
-        self.timer.Stop()
-
-    def _bind_wx_events(self):
-        self.Bind(wx.EVT_TIMER, self.TimeHandler)
-        self.btn_cancel.Bind(wx.EVT_BUTTON, self.on_cancel)
-
-    def on_cancel(self, evt):
-        self.timer.Stop()    
+    def Cancel(self, evt):
         self.process.terminate()
 
-    def TimeHandler(self, evt):
-        self.gauge.Pulse()
+    def Update(self):
+        self.dlg.Pulse()
+
+    def Close(self):
+        self.dlg.Destroy()
 
 
 class WatershedConfig(object):
@@ -1338,18 +1326,14 @@ class WaterShedInteractorStyle(DefaultInteractorStyle):
                                         self.config.use_ww_wl, wl, ww, q))
 
             wp = WatershedProgressWindow(p)
-            wp.Center(wx.BOTH)
-            wp.Show()
-            wp.MakeModal()
-
             p.start()
 
             while q.empty() and p.is_alive():
                 time.sleep(0.5)
+                wp.Update()
                 wx.Yield()
 
-            wp.MakeModal(False)
-            wp.Destroy()
+            wp.Close()
             del wp
 
             if q.empty():
