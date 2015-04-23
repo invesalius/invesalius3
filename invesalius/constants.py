@@ -476,6 +476,7 @@ ID_SWAP_XZ = wx.NewId()
 ID_SWAP_YZ = wx.NewId()
 
 ID_BOOLEAN_MASK = wx.NewId()
+ID_CLEAN_MASK = wx.NewId()
 
 #---------------------------------------------------------
 STATE_DEFAULT = 1000

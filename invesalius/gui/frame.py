@@ -401,6 +401,8 @@ class Frame(wx.Frame):
 
         elif id == const.ID_BOOLEAN_MASK:
             self.OnMaskBoolean()
+        elif id == const.ID_CLEAN_MASK:
+            self.OnCleanMask()
 
     def OnSize(self, evt):
         """
@@ -503,11 +505,13 @@ class Frame(wx.Frame):
         print "Redo"
         Publisher.sendMessage('Redo edition')
 
-
     def OnMaskBoolean(self):
         print "Mask boolean"
         Publisher.sendMessage('Show boolean dialog')
-      
+
+    def OnCleanMask(self):
+        Publisher.sendMessage('Clean current mask')
+        Publisher.sendMessage('Reload actual slice')
 
 # ------------------------------------------------------------------
 # ------------------------------------------------------------------
@@ -548,6 +552,7 @@ class MenuBar(wx.MenuBar):
 
         sub(self.OnAddMask, "Add mask")
         sub(self.OnRemoveMasks, "Remove masks")
+        sub(self.OnShowMask, "Show mask")
 
         self.num_masks = 0
 
@@ -629,6 +634,10 @@ class MenuBar(wx.MenuBar):
         mask_menu = wx.Menu()
         self.bool_op_menu = mask_menu.Append(const.ID_BOOLEAN_MASK, _(u"Boolean operations"))
         self.bool_op_menu.Enable(False)
+
+        self.clean_mask_menu = mask_menu.Append(const.ID_CLEAN_MASK, _(u"Clean Mask\tCtrl+Shift+A"))
+        self.clean_mask_menu.Enable(False)
+
         file_edit.AppendMenu(-1,  _(u"Mask"), mask_menu)
 
 
@@ -725,19 +734,17 @@ class MenuBar(wx.MenuBar):
 
     def OnAddMask(self, pubsub_evt):
         self.num_masks += 1
-
-        if self.num_masks >= 2:
-            self.bool_op_menu.Enable(True)
-        else:
-            self.bool_op_menu.Enable(False)
+        self.bool_op_menu.Enable(self.num_masks >= 2)
 
     def OnRemoveMasks(self, pubsub_evt):
         self.num_masks -= len(pubsub_evt.data)
+        self.bool_op_menu.Enable(self.num_masks >= 2)
 
-        if self.num_masks >= 2:
-            self.bool_op_menu.Enable(True)
-        else:
-            self.bool_op_menu.Enable(False)
+    def OnShowMask(self, pubsub_evt):
+        index, value = pubsub_evt.data
+        self.clean_mask_menu.Enable(value)
+
+
 # ------------------------------------------------------------------
 # ------------------------------------------------------------------
 # ------------------------------------------------------------------
