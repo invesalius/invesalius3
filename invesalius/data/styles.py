@@ -555,12 +555,22 @@ class ChangeSliceInteractorStyle(DefaultInteractorStyle):
         self.last_position = position[1]
 
 
+class EditorConfig(object):
+    __metaclass__= utils.Singleton
+    def __init__(self):
+        self.operation = const.BRUSH_THRESH
+        self.cursor_type = const.BRUSH_CIRCLE
+        self.cursor_size = const.BRUSH_SIZE
+
+
 class EditorInteractorStyle(DefaultInteractorStyle):
     def __init__(self, viewer):
         DefaultInteractorStyle.__init__(self, viewer)
 
         self.viewer = viewer
         self.orientation = self.viewer.orientation
+
+        self.config = EditorConfig()
 
         self.picker = vtk.vtkWorldPointPicker()
 
@@ -575,6 +585,48 @@ class EditorInteractorStyle(DefaultInteractorStyle):
         self.RemoveObservers("MouseWheelBackwardEvent")
         self.AddObserver("MouseWheelForwardEvent",self.EOnScrollForward)
         self.AddObserver("MouseWheelBackwardEvent", self.EOnScrollBackward)
+
+        Publisher.subscribe(self.set_bsize, 'Set edition brush size')
+        Publisher.subscribe(self.set_bformat, 'Set brush format')
+        Publisher.subscribe(self.set_boperation, 'Set edition operation')
+
+        self._set_cursor()
+
+    def CleanUp(self):
+        Publisher.unsubscribe(self.set_bsize, 'Set edition brush size')
+        Publisher.unsubscribe(self.set_bformat, 'Set brush format')
+        Publisher.unsubscribe(self.set_boperation, 'Set edition operation')
+
+    def set_bsize(self, pubsub_evt):
+        size = pubsub_evt.data
+        self.config.cursor_size = size
+        self.viewer.slice_data.cursor.SetSize(size)
+
+    def set_bformat(self, pubsub_evt):
+        self.config.cursor_type = pubsub_evt.data
+        self._set_cursor()
+
+    def set_boperation(self, pubsub_evt):
+        self.config.operation = pubsub_evt.data
+
+    def _set_cursor(self):
+        if self.config.cursor_type == const.BRUSH_SQUARE:
+            cursor = ca.CursorRectangle()
+        elif self.config.cursor_type == const.BRUSH_CIRCLE:
+            cursor = ca.CursorCircle()
+
+        cursor.SetOrientation(self.orientation)
+        n = self.viewer.slice_data.number
+        coordinates = {"SAGITAL": [n, 0, 0],
+                       "CORONAL": [0, n, 0],
+                       "AXIAL": [0, 0, n]}
+        cursor.SetPosition(coordinates[self.orientation])
+        spacing = self.viewer.slice_.spacing
+        cursor.SetSpacing(spacing)
+        cursor.SetColour(self.viewer._brush_cursor_colour)
+        cursor.SetSize(self.config.cursor_size)
+        self.viewer.slice_data.SetCursor(cursor)
+        self.viewer.interactor.Render()
 
     def OnEnterInteractor(self, obj, evt):
         if (self.viewer.slice_.buffer_slices[self.orientation].mask is None):
@@ -592,11 +644,10 @@ class EditorInteractorStyle(DefaultInteractorStyle):
         if (self.viewer.slice_.buffer_slices[self.orientation].mask is None):
             return
 
-
         viewer = self.viewer
         iren = viewer.interactor
 
-        operation = viewer._brush_cursor_op 
+        operation = self.config.operation 
         if operation == const.BRUSH_THRESH:
             if iren.GetControlKey():
                 if iren.GetShiftKey():
@@ -658,7 +709,7 @@ class EditorInteractorStyle(DefaultInteractorStyle):
         render = iren.FindPokedRenderer(mouse_x, mouse_y)
         slice_data = viewer.get_slice_data(render)
 
-        operation = viewer._brush_cursor_op 
+        operation = self.config.operation 
         if operation == const.BRUSH_THRESH:
             if iren.GetControlKey():
                 if iren.GetShiftKey():
