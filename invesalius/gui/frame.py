@@ -546,6 +546,11 @@ class MenuBar(wx.MenuBar):
         sub(self.OnEnableUndo, "Enable undo")
         sub(self.OnEnableRedo, "Enable redo")
 
+        sub(self.OnAddMask, "Add mask")
+        sub(self.OnRemoveMasks, "Remove masks")
+
+        self.num_masks = 0
+
     def __init_items(self):
         """
         Create all menu and submenus, and add them to self.
@@ -622,7 +627,8 @@ class MenuBar(wx.MenuBar):
 
         # Mask Menu
         mask_menu = wx.Menu()
-        mask_menu.Append(const.ID_BOOLEAN_MASK, _(u"Boolean operations"))
+        self.bool_op_menu = mask_menu.Append(const.ID_BOOLEAN_MASK, _(u"Boolean operations"))
+        self.bool_op_menu.Enable(False)
         file_edit.AppendMenu(-1,  _(u"Mask"), mask_menu)
 
 
@@ -716,6 +722,22 @@ class MenuBar(wx.MenuBar):
             self.FindItemById(wx.ID_REDO).Enable(True)
         else:
             self.FindItemById(wx.ID_REDO).Enable(False)
+
+    def OnAddMask(self, pubsub_evt):
+        self.num_masks += 1
+
+        if self.num_masks >= 2:
+            self.bool_op_menu.Enable(True)
+        else:
+            self.bool_op_menu.Enable(False)
+
+    def OnRemoveMasks(self, pubsub_evt):
+        self.num_masks -= len(pubsub_evt.data)
+
+        if self.num_masks >= 2:
+            self.bool_op_menu.Enable(True)
+        else:
+            self.bool_op_menu.Enable(False)
 # ------------------------------------------------------------------
 # ------------------------------------------------------------------
 # ------------------------------------------------------------------
