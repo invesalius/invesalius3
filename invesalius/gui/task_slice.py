@@ -902,6 +902,7 @@ class WatershedTool(EditionTools):
         self.SetAutoLayout(1)
 
         self.__bind_events_wx()
+        self.__bind_pubsub_evt()
 
 
     def __bind_events_wx(self):
@@ -911,6 +912,9 @@ class WatershedTool(EditionTools):
         self.ww_wl_cbox.Bind(wx.EVT_CHECKBOX, self.OnCheckWWWL)
         self.btn_exp_watershed.Bind(wx.EVT_BUTTON, self.OnExpandWatershed)
         self.btn_wconfig.Bind(wx.EVT_BUTTON, self.OnConfig)
+
+    def __bind_pubsub_evt(self):
+        Publisher.subscribe(self._set_brush_size, 'Set watershed brush size')
 
     def ChangeMaskColour(self, pubsub_evt):
         colour = pubsub_evt.data
@@ -955,6 +959,10 @@ class WatershedTool(EditionTools):
         # in the text ctrl - so we are capturing only changes on text
         # Strangelly this is being called twice
         Publisher.sendMessage('Set watershed brush size',self.spin.GetValue())
+
+    def _set_brush_size(self, pubsub_evt):
+        size = pubsub_evt.data
+        self.spin.SetValue(size)
 
     def OnComboBrushOp(self, evt):
         brush_op = self.combo_brush_op.GetValue()

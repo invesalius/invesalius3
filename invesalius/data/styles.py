@@ -948,32 +948,40 @@ class WaterShedInteractorStyle(DefaultInteractorStyle):
         self.viewer.interactor.Render()
 
     def WOnScrollBackward(self, obj, evt):
+        iren = self.viewer.interactor
         viewer = self.viewer
-        iren = viewer.interactor
         if iren.GetControlKey():
-            if viewer.slice_.opacity > 0:
-                viewer.slice_.opacity -= 0.1
-                self.viewer.slice_.buffer_slices['AXIAL'].discard_vtk_mask()
-                self.viewer.slice_.buffer_slices['CORONAL'].discard_vtk_mask()
-                self.viewer.slice_.buffer_slices['SAGITAL'].discard_vtk_mask()
-                viewer.OnScrollBar()
+            mouse_x, mouse_y = iren.GetEventPosition()
+            render = iren.FindPokedRenderer(mouse_x, mouse_y)
+            slice_data = self.viewer.get_slice_data(render)
+            cursor = slice_data.cursor
+            size = cursor.radius * 2
+            size -= 1
+
+            if size > 0:
+                Publisher.sendMessage('Set watershed brush size', size)
+                cursor.SetPosition(cursor.position)
+                self.viewer.interactor.Render()
         else:
             self.OnScrollBackward(obj, evt)
 
-
     def WOnScrollForward(self, obj, evt):
+        iren = self.viewer.interactor
         viewer = self.viewer
-        iren = viewer.interactor
         if iren.GetControlKey():
-            if viewer.slice_.opacity < 1:
-                viewer.slice_.opacity += 0.1
-                self.viewer.slice_.buffer_slices['AXIAL'].discard_vtk_mask()
-                self.viewer.slice_.buffer_slices['CORONAL'].discard_vtk_mask()
-                self.viewer.slice_.buffer_slices['SAGITAL'].discard_vtk_mask()
-                viewer.OnScrollBar()
+            mouse_x, mouse_y = iren.GetEventPosition()
+            render = iren.FindPokedRenderer(mouse_x, mouse_y)
+            slice_data = self.viewer.get_slice_data(render)
+            cursor = slice_data.cursor
+            size = cursor.radius * 2
+            size += 1
+
+            if size <= 100:
+                Publisher.sendMessage('Set watershed brush size', size)
+                cursor.SetPosition(cursor.position)
+                self.viewer.interactor.Render()
         else:
             self.OnScrollForward(obj, evt)
-
 
     def OnBrushClick(self, obj, evt):
         if (self.viewer.slice_.buffer_slices[self.orientation].mask is None):
