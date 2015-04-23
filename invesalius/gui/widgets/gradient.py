@@ -75,9 +75,18 @@ class GradientSlider(wx.Panel):
         self.Bind(wx.EVT_LEFT_UP, self.OnRelease)
         self.Bind(wx.EVT_PAINT, self.OnPaint)
         self.Bind(wx.EVT_ERASE_BACKGROUND, self.OnEraseBackGround)
+
+        if sys.platform == 'win32':
+            self.Bind(wx.EVT_LEAVE_WINDOW, self.OnLeaveWindow)
+
         self.Bind(wx.EVT_MOTION, self.OnMotion)
         self.Bind(wx.EVT_SIZE, self.OnSize)
 
+    def OnLeaveWindow(self, evt):
+        self.selected = 0
+        evt.Skip()
+
+        
     def OnPaint(self, evt):
         # Where the magic happens. Here the controls are drawn.
         dc = wx.BufferedPaintDC(self)
