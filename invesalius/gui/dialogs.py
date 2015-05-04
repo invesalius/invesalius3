@@ -784,6 +784,7 @@ def ShowAboutDialog(parent):
 
     info.Translators = ["Alex P. Natsios",
                         "Andreas Loupasakis",
+                        "Annalisa Manenti",
                         "Cheng-Chia Tseng",
                         "Dimitris Glezos",
                         "Eugene Liscio",
