@@ -51,7 +51,7 @@ class MessageWatershed(wx.PopupWindow):
     def __init__(self, prnt, msg):
         wx.PopupWindow.__init__(self, prnt, -1)
         self.txt = wx.StaticText(self, -1, msg)
-        
+
         self.sizer = wx.BoxSizer(wx.HORIZONTAL)
         self.sizer.Add(self.txt, 1, wx.EXPAND)
         self.SetSizer(self.sizer)
@@ -81,10 +81,10 @@ class Frame(wx.Frame):
         self.SetIcon(wx.Icon(icon_path, wx.BITMAP_TYPE_ICO))
 
         self.mw = None
-        
+
         if sys.platform != 'darwin':
             self.Maximize()
-        
+
         self.sizeChanged = True
         #Necessary update AUI (statusBar in special)
         #when maximized in the Win 7 and XP
@@ -381,12 +381,12 @@ class Frame(wx.Frame):
         elif id == const.ID_START:
             self.ShowGettingStarted()
         elif id == const.ID_PREFERENCES:
-            self.ShowPreferences()      
+            self.ShowPreferences()
         elif id == const.ID_DICOM_NETWORK:
-            self.ShowRetrieveDicomPanel() 
+            self.ShowRetrieveDicomPanel()
         elif id in (const.ID_FLIP_X, const.ID_FLIP_Y, const.ID_FLIP_Z):
-            axis = {const.ID_FLIP_X: 2, 
-                    const.ID_FLIP_Y: 1, 
+            axis = {const.ID_FLIP_X: 2,
+                    const.ID_FLIP_Y: 1,
                     const.ID_FLIP_Z: 0}[id]
             self.FlipVolume(axis)
         elif id in (const.ID_SWAP_XY, const.ID_SWAP_XZ, const.ID_SWAP_YZ):
@@ -431,10 +431,10 @@ class Frame(wx.Frame):
         if self.preferences.ShowModal() == wx.ID_OK:
             values = self.preferences.GetPreferences()
             self.preferences.Close()
-            
+
             ses.Session().rendering = values[const.RENDERING]
             ses.Session().surface_interpolation = values[const.SURFACE_INTERPOLATION]
-            ses.Session().language = values[const.LANGUAGE]         
+            ses.Session().language = values[const.LANGUAGE]
 
             Publisher.sendMessage('Remove Volume')
             Publisher.sendMessage('Reset Reaycasting')
@@ -481,7 +481,7 @@ class Frame(wx.Frame):
         Show save as dialog.
         """
         Publisher.sendMessage('Show save dialog', True)
-        
+
     def ShowAnalyzeImporter(self):
         """
         Show save as dialog.
@@ -490,12 +490,12 @@ class Frame(wx.Frame):
 
     def FlipVolume(self, axis):
         Publisher.sendMessage('Flip volume', axis)
-        Publisher.sendMessage('Reload actual slice') 
+        Publisher.sendMessage('Reload actual slice')
 
     def SwapAxes(self, axes):
         Publisher.sendMessage('Swap volume axes', axes)
         Publisher.sendMessage('Update scroll')
-        Publisher.sendMessage('Reload actual slice') 
+        Publisher.sendMessage('Reload actual slice')
 
     def OnUndo(self):
         print "Undo"
@@ -561,7 +561,7 @@ class MenuBar(wx.MenuBar):
         Create all menu and submenus, and add them to self.
         """
         # TODO: This definetely needs improvements... ;)
-        
+
         #Import Others Files
         others_file_menu = wx.Menu()
         others_file_menu.Append(const.ID_ANALYZE_IMPORT, "Analyze")
@@ -604,7 +604,7 @@ class MenuBar(wx.MenuBar):
         file_edit = wx.Menu()
         #file_edit.AppendMenu(wx.NewId(), _('Flip'), flip_menu)
         #file_edit.AppendMenu(wx.NewId(), _('Swap axes'), swap_axes_menu)
-        
+
 
         d = const.ICON_DIR
         if not(sys.platform == 'darwin'):
@@ -630,6 +630,9 @@ class MenuBar(wx.MenuBar):
         #app(const.ID_EDIT_LIST, "Show Undo List...")
         #################################################################
 
+        # Tool menu
+        tools_menu = wx.Menu()
+
         # Mask Menu
         mask_menu = wx.Menu()
         self.bool_op_menu = mask_menu.Append(const.ID_BOOLEAN_MASK, _(u"Boolean operations"))
@@ -638,7 +641,7 @@ class MenuBar(wx.MenuBar):
         self.clean_mask_menu = mask_menu.Append(const.ID_CLEAN_MASK, _(u"Clean Mask\tCtrl+Shift+A"))
         self.clean_mask_menu.Enable(False)
 
-        file_edit.AppendMenu(-1,  _(u"Mask"), mask_menu)
+        tools_menu.AppendMenu(-1,  _(u"Mask"), mask_menu)
 
 
         # VIEW
@@ -688,6 +691,7 @@ class MenuBar(wx.MenuBar):
         # Add all menus to menubar
         self.Append(file_menu, _("File"))
         self.Append(file_edit, _("Edit"))
+        self.Append(tools_menu, _(u"Tools"))
         #self.Append(view_menu, "View")
         #self.Append(tools_menu, "Tools")
         self.Append(options_menu, _("Options"))
