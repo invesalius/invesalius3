@@ -57,7 +57,7 @@ WATERSHED_OPERATIONS = {_("Erase"): BRUSH_ERASE,
                         _("Background"): BRUSH_BACKGROUND,}
 
 def get_LUT_value(data, window, level):
-    return np.piecewise(data, 
+    return np.piecewise(data,
                         [data <= (level - 0.5 - (window-1)/2),
                          data > (level - 0.5 + (window-1)/2)],
                         [0, 255, lambda data: ((data - (level - 0.5))/(window-1) + 0.5)*(255-0)])
@@ -100,8 +100,8 @@ class BaseImageInteractorStyle(vtk.vtkInteractorStyleImage):
 
 class DefaultInteractorStyle(BaseImageInteractorStyle):
     """
-    Interactor style responsible for Default functionalities: 
-    * Zoom moving mouse with right button pressed; 
+    Interactor style responsible for Default functionalities:
+    * Zoom moving mouse with right button pressed;
     * Change the slices with the scroll.
     """
     def __init__(self, viewer):
@@ -205,7 +205,7 @@ class CrossInteractorStyle(DefaultInteractorStyle):
         # Forcing focal point to be setted in the center of the pixel.
         coord_cross = self.slice_actor.GetInput().GetPoint(position)
 
-        coord = self.calcultate_scroll_position(position)   
+        coord = self.calcultate_scroll_position(position)
         self.ScrollSlice(coord)
 
         Publisher.sendMessage('Update cross position', coord_cross)
@@ -213,7 +213,7 @@ class CrossInteractorStyle(DefaultInteractorStyle):
                                    coord_cross)
         Publisher.sendMessage('Set camera in volume', coord_cross)
         Publisher.sendMessage('Render volume viewer')
-        
+
         iren.Render()
 
 
@@ -315,7 +315,7 @@ class WWWLInteractorStyle(DefaultInteractorStyle):
             const.WINDOW_LEVEL['Manual'] = (self.acum_achange_window,\
                                            self.acum_achange_level)
             Publisher.sendMessage('Check window and level other')
-            Publisher.sendMessage('Update window level value',(self.acum_achange_window, 
+            Publisher.sendMessage('Update window level value',(self.acum_achange_window,
                                                                 self.acum_achange_level))
             #Necessary update the slice plane in the volume case exists
             Publisher.sendMessage('Update slice viewer')
@@ -362,7 +362,7 @@ class LinearMeasureInteractorStyle(DefaultInteractorStyle):
         slice_number = self.slice_data.number
         self.picker.Pick(x, y, 0, render)
         x, y, z = self.picker.GetPickPosition()
-        if self.picker.GetViewProp(): 
+        if self.picker.GetViewProp():
             Publisher.sendMessage("Add measurement point",
                                   ((x, y,z), const.LINEAR,
                                    ORIENTATIONS[self.orientation],
@@ -406,7 +406,7 @@ class AngularMeasureInteractorStyle(DefaultInteractorStyle):
         slice_number = self.slice_data.number
         self.picker.Pick(x, y, 0, render)
         x, y, z = self.picker.GetPickPosition()
-        if self.picker.GetViewProp(): 
+        if self.picker.GetViewProp():
             Publisher.sendMessage("Add measurement point",
                                   ((x, y,z), const.ANGULAR,
                                    ORIENTATIONS[self.orientation],
@@ -457,7 +457,7 @@ class SpinInteractorStyle(DefaultInteractorStyle):
         ren = iren.FindPokedRenderer(mouse_x, mouse_y)
         cam = ren.GetActiveCamera()
         if (self.left_pressed):
-            self.viewer.UpdateTextDirection(cam)    
+            self.viewer.UpdateTextDirection(cam)
             obj.Spin()
             obj.OnRightButtonDown()
 
@@ -479,7 +479,7 @@ class ZoomInteractorStyle(DefaultInteractorStyle):
     """
     def __init__(self, viewer):
         DefaultInteractorStyle.__init__(self, viewer)
-        
+
         self.viewer = viewer
 
         self.AddObserver("MouseMoveEvent", self.OnZoomMoveLeft)
@@ -634,7 +634,7 @@ class EditorInteractorStyle(DefaultInteractorStyle):
         self.viewer.slice_data.cursor.Show()
         self.viewer.interactor.SetCursor(wx.StockCursor(wx.CURSOR_BLANK))
         self.viewer.interactor.Render()
-        
+
     def OnLeaveInteractor(self, obj, evt):
         self.viewer.slice_data.cursor.Show(0)
         self.viewer.interactor.SetCursor(wx.StockCursor(wx.CURSOR_DEFAULT))
@@ -647,7 +647,7 @@ class EditorInteractorStyle(DefaultInteractorStyle):
         viewer = self.viewer
         iren = viewer.interactor
 
-        operation = self.config.operation 
+        operation = self.config.operation
         if operation == const.BRUSH_THRESH:
             if iren.GetControlKey():
                 if iren.GetShiftKey():
@@ -664,7 +664,7 @@ class EditorInteractorStyle(DefaultInteractorStyle):
             operation = const.BRUSH_ERASE
 
         viewer._set_editor_cursor_visibility(1)
- 
+
         mouse_x, mouse_y = iren.GetEventPosition()
         render = iren.FindPokedRenderer(mouse_x, mouse_y)
         slice_data = viewer.get_slice_data(render)
@@ -675,10 +675,10 @@ class EditorInteractorStyle(DefaultInteractorStyle):
         slice_data.cursor.Show()
 
         self.picker.Pick(mouse_x, mouse_y, 0, render)
-        
+
         coord = self.get_coordinate_cursor()
         position = slice_data.actor.GetInput().FindPoint(coord)
-        
+
         if position != -1:
             coord = slice_data.actor.GetInput().GetPoint(position)
 
@@ -704,12 +704,12 @@ class EditorInteractorStyle(DefaultInteractorStyle):
         iren = viewer.interactor
 
         viewer._set_editor_cursor_visibility(1)
- 
+
         mouse_x, mouse_y = iren.GetEventPosition()
         render = iren.FindPokedRenderer(mouse_x, mouse_y)
         slice_data = viewer.get_slice_data(render)
 
-        operation = self.config.operation 
+        operation = self.config.operation
         if operation == const.BRUSH_THRESH:
             if iren.GetControlKey():
                 if iren.GetShiftKey():
@@ -730,12 +730,12 @@ class EditorInteractorStyle(DefaultInteractorStyle):
             #i.cursor.Show(0)
 
         self.picker.Pick(mouse_x, mouse_y, 0, render)
-        
+
         #if (self.pick.GetViewProp()):
             #self.interactor.SetCursor(wx.StockCursor(wx.CURSOR_BLANK))
         #else:
             #self.interactor.SetCursor(wx.StockCursor(wx.CURSOR_DEFAULT))
-            
+
         coord = self.get_coordinate_cursor()
         position = viewer.slice_data.actor.GetInput().FindPoint(coord)
 
@@ -746,7 +746,7 @@ class EditorInteractorStyle(DefaultInteractorStyle):
             coord = slice_data.actor.GetInput().GetPoint(position)
         slice_data.cursor.SetPosition(coord)
         #self.__update_cursor_position(slice_data, coord)
-        
+
         if (self.left_pressed):
             cursor = slice_data.cursor
             position = slice_data.actor.GetInput().FindPoint(coord)
@@ -754,7 +754,7 @@ class EditorInteractorStyle(DefaultInteractorStyle):
 
             if position < 0:
                 position = viewer.calculate_matrix_position(coord)
-                
+
             viewer.slice_.edit_mask_pixel(operation, cursor.GetPixels(),
                                         position, radius, self.orientation)
             # TODO: To create a new function to reload images to viewer.
@@ -978,12 +978,12 @@ class WaterShedInteractorStyle(DefaultInteractorStyle):
         if (self.viewer.slice_.buffer_slices[self.orientation].mask is None):
             return
         self.viewer.slice_data.cursor.Show()
-        #self.viewer.interactor.SetCursor(wx.StockCursor(wx.CURSOR_BLANK))
+        self.viewer.interactor.SetCursor(wx.StockCursor(wx.CURSOR_BLANK))
         self.viewer.interactor.Render()
-        
+
     def OnLeaveInteractor(self, obj, evt):
         self.viewer.slice_data.cursor.Show(0)
-        #self.viewer.interactor.SetCursor(wx.StockCursor(wx.CURSOR_DEFAULT))
+        self.viewer.interactor.SetCursor(wx.StockCursor(wx.CURSOR_DEFAULT))
         self.viewer.interactor.Render()
 
     def WOnScrollBackward(self, obj, evt):
@@ -1030,7 +1030,7 @@ class WaterShedInteractorStyle(DefaultInteractorStyle):
         iren = viewer.interactor
 
         viewer._set_editor_cursor_visibility(1)
- 
+
         mouse_x, mouse_y = iren.GetEventPosition()
         render = iren.FindPokedRenderer(mouse_x, mouse_y)
         slice_data = viewer.get_slice_data(render)
@@ -1041,10 +1041,10 @@ class WaterShedInteractorStyle(DefaultInteractorStyle):
         slice_data.cursor.Show()
 
         self.picker.Pick(mouse_x, mouse_y, 0, render)
-        
+
         coord = self.get_coordinate_cursor()
         position = slice_data.actor.GetInput().FindPoint(coord)
-        
+
         if position != -1:
             coord = slice_data.actor.GetInput().GetPoint(position)
 
@@ -1090,7 +1090,7 @@ class WaterShedInteractorStyle(DefaultInteractorStyle):
         iren = viewer.interactor
 
         viewer._set_editor_cursor_visibility(1)
- 
+
         mouse_x, mouse_y = iren.GetEventPosition()
         render = iren.FindPokedRenderer(mouse_x, mouse_y)
         slice_data = viewer.get_slice_data(render)
@@ -1100,12 +1100,12 @@ class WaterShedInteractorStyle(DefaultInteractorStyle):
             #i.cursor.Show(0)
 
         self.picker.Pick(mouse_x, mouse_y, 0, render)
-        
+
         #if (self.pick.GetViewProp()):
             #self.interactor.SetCursor(wx.StockCursor(wx.CURSOR_BLANK))
         #else:
             #self.interactor.SetCursor(wx.StockCursor(wx.CURSOR_DEFAULT))
-            
+
         coord = self.get_coordinate_cursor()
         position = viewer.slice_data.actor.GetInput().FindPoint(coord)
 
@@ -1116,7 +1116,7 @@ class WaterShedInteractorStyle(DefaultInteractorStyle):
             coord = slice_data.actor.GetInput().GetPoint(position)
         slice_data.cursor.SetPosition(coord)
         #self.__update_cursor_position(slice_data, coord)
-        
+
         if (self.left_pressed):
             cursor = slice_data.cursor
             position = slice_data.actor.GetInput().FindPoint(coord)
@@ -1177,7 +1177,7 @@ class WaterShedInteractorStyle(DefaultInteractorStyle):
 
         ww = self.viewer.slice_.window_width
         wl = self.viewer.slice_.window_level
-        
+
         if BRUSH_BACKGROUND in markers and BRUSH_FOREGROUND in markers:
             #w_algorithm = WALGORITHM[self.config.algorithm]
             bstruct = generate_binary_structure(2, CON2D[self.config.con_2d])
