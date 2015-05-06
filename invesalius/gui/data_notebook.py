@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*- 
+# -*- coding: UTF-8 -*-
 #--------------------------------------------------------------------------
 # Software:     InVesalius - Software de Reconstrucao 3D de Imagens Medicas
 # Copyright:    (C) 2001  Centro de Pesquisas Renato Archer
@@ -22,9 +22,9 @@ import sys
 import platform
 
 try:
-    from PIL import Image
-except(ImportError):
     import Image
+except ImportError:
+    from PIL import Image
 
 import wx
 import wx.grid
@@ -54,9 +54,8 @@ LOCATION = {const.SURFACE: _(u"3D"),
 # Panel that initializes notebook and related tabs
 class NotebookPanel(wx.Panel):
     def __init__(self, parent):
-        wx.Panel.__init__(self, parent, pos=wx.Point(0, 50),
-                            size=wx.Size(256, 200))
-                        
+        wx.Panel.__init__(self, parent)
+
         book = wx.Notebook(self, -1,style= wx.BK_DEFAULT)
         # TODO: check under Windows and Linux
         # this was necessary under cOS:
@@ -68,13 +67,13 @@ class NotebookPanel(wx.Panel):
         book.AddPage(SurfacePage(book), _("3D surfaces"))
         book.AddPage(MeasurePage(book), _("Measures"))
         #book.AddPage(AnnotationsListCtrlPanel(book), _("Notes"))
-        
+
         book.SetSelection(0)
-        
+
         sizer = wx.BoxSizer(wx.VERTICAL)
-        sizer.Add(book, 1, wx.EXPAND)
+        sizer.Add(book, 0, wx.EXPAND)
         self.SetSizer(sizer)
-        
+
         book.Refresh()
         self.book = book
 
@@ -117,8 +116,7 @@ class MeasurePage(wx.Panel):
     Page related to mask items.
     """
     def __init__(self, parent):
-        wx.Panel.__init__(self, parent, pos=wx.Point(0, 50),
-                            size=wx.Size(256, 140))
+        wx.Panel.__init__(self, parent)
         self.__init_gui()
 
     def __init_gui(self):
@@ -148,7 +146,7 @@ class MeasureButtonControlPanel(wx.Panel):
         self.__init_gui()
 
     def __init_gui(self):
-        
+
         # Bitmaps to be used in plate buttons
         BMP_NEW = wx.Bitmap("../icons/data_new.png",
                             wx.BITMAP_TYPE_PNG)
@@ -162,16 +160,16 @@ class MeasureButtonControlPanel(wx.Panel):
         button_new = pbtn.PlateButton(self, BTN_NEW, "",
                                      BMP_NEW,
                                      style=button_style,
-                                     size = wx.Size(18, 18))
+                                     size = wx.Size(24, 20))
         self.button_new = button_new
         button_remove = pbtn.PlateButton(self, BTN_REMOVE, "",
                                          BMP_REMOVE,
                                          style=button_style,
-                                         size = wx.Size(18, 18))
+                                         size = wx.Size(24, 20))
         button_duplicate = pbtn.PlateButton(self, BTN_DUPLICATE, "",
                                             BMP_DUPLICATE,
                                             style=button_style,
-                                            size = wx.Size(18, 18))
+                                            size = wx.Size(24, 20))
         button_duplicate.Disable()
 
         # Add all controls to gui
@@ -206,7 +204,7 @@ class MeasureButtonControlPanel(wx.Panel):
 
     def OnNew(self):
         self.PopupMenu(self.menu)
-        
+
     def OnMenu(self, evt):
         id = evt.GetId()
         if id == const.MEASURE_LINEAR:
@@ -222,7 +220,7 @@ class MeasureButtonControlPanel(wx.Panel):
         if selected_items:
             Publisher.sendMessage('Duplicate measurement', selected_items)
         else:
-           dlg.MaskSelectionRequiredForDuplication() 
+           dlg.MaskSelectionRequiredForDuplication()
 
 
 
@@ -233,8 +231,7 @@ class MaskPage(wx.Panel):
     Page related to mask items.
     """
     def __init__(self, parent):
-        wx.Panel.__init__(self, parent, pos=wx.Point(0, 50),
-                            size=wx.Size(256, 140))
+        wx.Panel.__init__(self, parent)
         self.__init_gui()
 
     def __init_gui(self):
@@ -262,7 +259,7 @@ class ButtonControlPanel(wx.Panel):
         self.__init_gui()
 
     def __init_gui(self):
-        
+
         # Bitmaps to be used in plate buttons
         BMP_NEW = wx.Bitmap("../icons/data_new.png",
                             wx.BITMAP_TYPE_PNG)
@@ -276,15 +273,15 @@ class ButtonControlPanel(wx.Panel):
         button_new = pbtn.PlateButton(self, BTN_NEW, "",
                                      BMP_NEW,
                                      style=button_style,
-                                     size = wx.Size(18, 18))
+                                     size = wx.Size(24, 20))
         button_remove = pbtn.PlateButton(self, BTN_REMOVE, "",
                                          BMP_REMOVE,
                                          style=button_style,
-                                         size = wx.Size(18, 18))
+                                         size = wx.Size(24, 20))
         button_duplicate = pbtn.PlateButton(self, BTN_DUPLICATE, "",
                                             BMP_DUPLICATE,
                                             style=button_style,
-                                            size = wx.Size(18, 18))
+                                            size = wx.Size(24, 20))
 
         # Add all controls to gui
         sizer = wx.BoxSizer(wx.HORIZONTAL)
@@ -332,17 +329,17 @@ class ButtonControlPanel(wx.Panel):
         if selected_items:
             Publisher.sendMessage('Duplicate masks', selected_items)
         else:
-           dlg.MaskSelectionRequiredForDuplication() 
+           dlg.MaskSelectionRequiredForDuplication()
 
 class MasksListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
 
     def __init__(self, parent, ID=-1, pos=wx.DefaultPosition,
                  size=wx.DefaultSize, style=wx.LC_REPORT):
-        
+
         # native look and feel for MacOS
         #if wx.Platform == "__WXMAC__":
         #    wx.SystemOptions.SetOptionInt("mac.listctrl.always_use_generic", 0)
-        
+
         wx.ListCtrl.__init__(self, parent, ID, pos, size, style=wx.LC_REPORT)
         listmix.TextEditMixin.__init__(self)
         self.mask_list_index = {}
@@ -351,13 +348,13 @@ class MasksListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
         self.__init_image_list()
         self.__bind_events_wx()
         self.__bind_events()
-        
+
     def __bind_events_wx(self):
         self.Bind(wx.EVT_LIST_ITEM_ACTIVATED, self.OnItemActivated)
         self.Bind(wx.EVT_LIST_END_LABEL_EDIT, self.OnEditLabel)
         self.Bind(wx.EVT_KEY_UP, self.OnKeyEvent)
 
- 
+
     def __bind_events(self):
         Publisher.subscribe(self.AddMask, 'Add mask')
         Publisher.subscribe(self.EditMaskThreshold,
@@ -376,7 +373,7 @@ class MasksListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
             self.RemoveMasks()
         elif (keycode == wx.WXK_DELETE):
             self.RemoveMasks()
-    
+
     def RemoveMasks(self):
         """
         Remove selected items.
@@ -403,7 +400,7 @@ class MasksListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
                         new_dict[i-1] = old_dict[i]
                 old_dict = new_dict
             self.mask_list_index = new_dict
-       
+
         if new_dict:
             if index == self.current_index:
                 self.SetItemImage(0, 1)
@@ -421,7 +418,7 @@ class MasksListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
     def OnCloseProject(self, pubsub_evt):
         self.DeleteAllItems()
         self.mask_list_index = {}
- 
+
     def OnChangeCurrentMask(self, pubsub_evt):
         mask_index = pubsub_evt.data
         try:
@@ -439,15 +436,15 @@ class MasksListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
         self.SetItemImage(self.current_index, 0)
 
     def __init_columns(self):
-        
+
         self.InsertColumn(0, "", wx.LIST_FORMAT_CENTER)
         self.InsertColumn(1, _("Name"))
         self.InsertColumn(2, _("Threshold"), wx.LIST_FORMAT_RIGHT)
-        
-        self.SetColumnWidth(0, 20)
+
+        self.SetColumnWidth(0, 25)
         self.SetColumnWidth(1, 120)
         self.SetColumnWidth(2, 90)
-        
+
     def __init_image_list(self):
         self.imagelist = wx.ImageList(16, 16)
 
@@ -466,7 +463,7 @@ class MasksListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
         self.SetImageList(self.imagelist,wx.IMAGE_LIST_SMALL)
 
         self.image_gray = Image.open("../icons/object_colour.jpg")
-        
+
     def OnEditLabel(self, evt):
         Publisher.sendMessage('Change mask name',
                                    (evt.GetIndex(), evt.GetLabel()))
@@ -474,7 +471,7 @@ class MasksListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
 
     def OnItemActivated(self, evt):
         self.ToggleItem(evt.m_itemIndex)
-        
+
     def OnCheckItem(self, index, flag):
         if flag:
             for key in self.mask_list_index.keys():
@@ -505,22 +502,22 @@ class MasksListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
     def InsertNewItem(self, index=0, label=_("Mask"), threshold="(1000, 4500)",
                       colour=None):
         self.InsertStringItem(index, "")
-        self.SetStringItem(index, 1, label, 
-                           imageId=self.mask_list_index[index]) 
+        self.SetStringItem(index, 1, label,
+                           imageId=self.mask_list_index[index])
         self.SetStringItem(index, 2, threshold)
         self.SetItemImage(index, 1)
         for key in self.mask_list_index.keys():
             if key != index:
                 self.SetItemImage(key, 0)
         self.current_index = index
-        
+
     def AddMask(self, pubsub_evt):
         index, mask_name, threshold_range, colour = pubsub_evt.data
         image = self.CreateColourBitmap(colour)
         image_index = self.imagelist.Add(image)
         self.mask_list_index[index] = image_index
         self.InsertNewItem(index, mask_name, str(threshold_range))
-                
+
     def EditMaskThreshold(self, pubsub_evt):
         index, threshold_range = pubsub_evt.data
         self.SetStringItem(index, 2, str(threshold_range))
@@ -553,8 +550,7 @@ class SurfacePage(wx.Panel):
     Page related to mask items.
     """
     def __init__(self, parent):
-        wx.Panel.__init__(self, parent, pos=wx.Point(0, 50),
-                            size=wx.Size(256, 140))
+        wx.Panel.__init__(self, parent)
         self.__init_gui()
 
     def __init_gui(self):
@@ -581,7 +577,7 @@ class SurfaceButtonControlPanel(wx.Panel):
         self.__init_gui()
 
     def __init_gui(self):
-        
+
         # Bitmaps to be used in plate buttons
         BMP_NEW = wx.Bitmap("../icons/data_new.png",
                             wx.BITMAP_TYPE_PNG)
@@ -595,15 +591,15 @@ class SurfaceButtonControlPanel(wx.Panel):
         button_new = pbtn.PlateButton(self, BTN_NEW, "",
                                      BMP_NEW,
                                      style=button_style,
-                                     size = wx.Size(18, 18))
+                                     size = wx.Size(24, 20))
         button_remove = pbtn.PlateButton(self, BTN_REMOVE, "",
                                          BMP_REMOVE,
                                          style=button_style,
-                                         size = wx.Size(18, 18))
+                                         size = wx.Size(24, 20))
         button_duplicate = pbtn.PlateButton(self, BTN_DUPLICATE, "",
                                             BMP_DUPLICATE,
                                             style=button_style,
-                                            size = wx.Size(18, 18))
+                                            size = wx.Size(24, 20))
 
         # Add all controls to gui
         sizer = wx.BoxSizer(wx.HORIZONTAL)
@@ -627,7 +623,7 @@ class SurfaceButtonControlPanel(wx.Panel):
 
     def OnNew(self):
         sl = slice_.Slice()
-        dialog = dlg.SurfaceCreationDialog(None, -1, 
+        dialog = dlg.SurfaceCreationDialog(None, -1,
                             _('New surface'),
                             mask_edited=sl.current_mask.was_edited)
         try:
@@ -653,18 +649,18 @@ class SurfaceButtonControlPanel(wx.Panel):
         if selected_items:
             Publisher.sendMessage('Duplicate surfaces', selected_items)
         else:
-           dlg.SurfaceSelectionRequiredForDuplication() 
+           dlg.SurfaceSelectionRequiredForDuplication()
 
 
 class SurfacesListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
 
     def __init__(self, parent, ID=-1, pos=wx.DefaultPosition,
                  size=wx.DefaultSize, style=wx.LC_REPORT):
-        
+
         # native look and feel for MacOS
         #if wx.Platform == "__WXMAC__":
         #    wx.SystemOptions.SetOptionInt("mac.listctrl.always_use_generic", 0)
-        
+
         wx.ListCtrl.__init__(self, parent, ID, pos, size, style=wx.LC_REPORT)
         listmix.TextEditMixin.__init__(self)
 
@@ -686,7 +682,7 @@ class SurfacesListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
         Publisher.subscribe(self.OnHideSurface, 'Hide surface items')
 
         Publisher.subscribe(self.OnShowSingle, 'Show single surface')
-        Publisher.subscribe(self.OnShowMultiple, 'Show multiple surfaces') 
+        Publisher.subscribe(self.OnShowMultiple, 'Show multiple surfaces')
 
     def __bind_events_wx(self):
         self.Bind(wx.EVT_LIST_ITEM_ACTIVATED, self.OnItemActivated)
@@ -730,7 +726,7 @@ class SurfacesListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
 
             Publisher.sendMessage('Remove surfaces', selected_items)
         else:
-           dlg.SurfaceSelectionRequiredForRemoval() 
+           dlg.SurfaceSelectionRequiredForRemoval()
 
     def OnCloseProject(self, pubsub_evt):
         self.DeleteAllItems()
@@ -762,17 +758,17 @@ class SurfacesListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
         return selected
 
     def __init_columns(self):
-        
+
         self.InsertColumn(0, "", wx.LIST_FORMAT_CENTER)
         self.InsertColumn(1, _("Name"))
         self.InsertColumn(2, _(u"Volume (mm³)"))
         self.InsertColumn(3, _("Transparency"), wx.LIST_FORMAT_RIGHT)
-        
-        self.SetColumnWidth(0, 20)
+
+        self.SetColumnWidth(0, 25)
         self.SetColumnWidth(1, 85)
         self.SetColumnWidth(2, 85)
         self.SetColumnWidth(3, 80)
-        
+
     def __init_image_list(self):
         self.imagelist = wx.ImageList(16, 16)
 
@@ -787,7 +783,7 @@ class SurfacesListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
         bitmap.SetWidth(16)
         bitmap.SetHeight(16)
         img_check = self.imagelist.Add(bitmap)
-        
+
         self.SetImageList(self.imagelist,wx.IMAGE_LIST_SMALL)
 
         self.image_gray = Image.open("../icons/object_colour.jpg")
@@ -795,13 +791,13 @@ class SurfacesListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
     def OnEditLabel(self, evt):
         Publisher.sendMessage('Change surface name', (evt.GetIndex(), evt.GetLabel()))
         evt.Skip()
-        
+
     def OnItemActivated(self, evt):
         self.ToggleItem(evt.m_itemIndex)
         evt.Skip()
-        
+
     def OnCheckItem(self, index, flag):
-        Publisher.sendMessage('Show surface', (index, flag)) 
+        Publisher.sendMessage('Show surface', (index, flag))
 
     def OnShowSingle(self, pubsub_evt):
         index, visibility = pubsub_evt.data
@@ -809,7 +805,7 @@ class SurfacesListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
             if key != index:
                 self.SetItemImage(key, not visibility)
                 Publisher.sendMessage('Show surface',
-                                            (key, not visibility)) 
+                                            (key, not visibility))
         self.SetItemImage(index, visibility)
         Publisher.sendMessage('Show surface',
                                    (index, visibility))
@@ -820,7 +816,7 @@ class SurfacesListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
             if key not in index_list:
                 self.SetItemImage(key, not visibility)
                 Publisher.sendMessage('Show surface',
-                                            (key, not visibility)) 
+                                            (key, not visibility))
         for index in index_list:
             self.SetItemImage(index, visibility)
             Publisher.sendMessage('Show surface',
@@ -832,7 +828,7 @@ class SurfacesListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
         colour = pubsub_evt.data[2]
         volume = "%.3f"%pubsub_evt.data[3]
         transparency = "%d%%"%(int(100*pubsub_evt.data[4]))
-       
+
         if index not in self.surface_list_index:
             image = self.CreateColourBitmap(colour)
             image_index = self.imagelist.Add(image)
@@ -849,7 +845,7 @@ class SurfacesListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
                       transparency="0%%", colour=None):
         self.InsertStringItem(index, "")
         self.SetStringItem(index, 1, label,
-                            imageId = self.surface_list_index[index]) 
+                            imageId = self.surface_list_index[index])
         self.SetStringItem(index, 2, volume)
         self.SetStringItem(index, 3, transparency)
         self.SetItemImage(index, 1)
@@ -857,11 +853,11 @@ class SurfacesListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
     def UpdateItemInfo(self, index=0, label="Surface 1", volume="0 mm3",
                       transparency="0%%", colour=None):
         self.SetStringItem(index, 1, label,
-                            imageId = self.surface_list_index[index]) 
+                            imageId = self.surface_list_index[index])
         self.SetStringItem(index, 2, volume)
         self.SetStringItem(index, 3, transparency)
         self.SetItemImage(index, 1)
-        
+
     def CreateColourBitmap(self, colour):
         """
         Create a wx Image with a mask colour.
@@ -887,7 +883,7 @@ class SurfacesListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
         """
         index, value = pubsub_evt.data
         self.SetStringItem(index, 3, "%d%%"%(int(value*100)))
-        
+
     def EditSurfaceColour(self, pubsub_evt):
         """
         """
@@ -905,11 +901,11 @@ class MeasuresListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
 
     def __init__(self, parent, ID=-1, pos=wx.DefaultPosition,
                  size=wx.DefaultSize, style=wx.LC_REPORT):
-        
+
         # native look and feel for MacOS
         #if wx.Platform == "__WXMAC__":
         #    wx.SystemOptions.SetOptionInt("mac.listctrl.always_use_generic", 0)
-        
+
         wx.ListCtrl.__init__(self, parent, ID, pos, size, style=wx.LC_REPORT)
         listmix.TextEditMixin.__init__(self)
 
@@ -927,7 +923,7 @@ class MeasuresListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
                                  'Set measurement colour')
         Publisher.subscribe(self.OnCloseProject, 'Close project data')
         Publisher.subscribe(self.OnShowSingle, 'Show single measurement')
-        Publisher.subscribe(self.OnShowMultiple, 'Show multiple measurements') 
+        Publisher.subscribe(self.OnShowMultiple, 'Show multiple measurements')
         Publisher.subscribe(self.OnLoadData, 'Load measurement dict')
 
     def __bind_events_wx(self):
@@ -1007,13 +1003,13 @@ class MeasuresListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
         self.InsertColumn(2, _("Location"))
         self.InsertColumn(3, _("Type"))
         self.InsertColumn(4, _("Value"), wx.LIST_FORMAT_RIGHT)
-        
-        self.SetColumnWidth(0, 20)
+
+        self.SetColumnWidth(0, 25)
         self.SetColumnWidth(1, 65)
         self.SetColumnWidth(2, 55)
         self.SetColumnWidth(3, 50)
         self.SetColumnWidth(4, 75)
- 
+
     def __init_image_list(self):
         self.imagelist = wx.ImageList(16, 16)
 
@@ -1028,7 +1024,7 @@ class MeasuresListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
         bitmap.SetWidth(16)
         bitmap.SetHeight(16)
         img_check = self.imagelist.Add(bitmap)
-        
+
         self.SetImageList(self.imagelist,wx.IMAGE_LIST_SMALL)
 
         self.image_gray = Image.open("../icons/object_colour.jpg")
@@ -1037,14 +1033,14 @@ class MeasuresListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
     def OnEditLabel(self, evt):
         Publisher.sendMessage('Change measurement name', (evt.GetIndex(), evt.GetLabel()))
         evt.Skip()
-        
+
     def OnItemActivated(self, evt):
         self.ToggleItem(evt.m_itemIndex)
         evt.Skip()
 
-        
+
     def OnCheckItem(self, index, flag):
-        Publisher.sendMessage('Show measurement', (index, flag)) 
+        Publisher.sendMessage('Show measurement', (index, flag))
 
     def OnShowSingle(self, pubsub_evt):
         index, visibility = pubsub_evt.data
@@ -1052,7 +1048,7 @@ class MeasuresListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
             if key != index:
                 self.SetItemImage(key, not visibility)
                 Publisher.sendMessage('Show measurement',
-                                            (key, not visibility)) 
+                                            (key, not visibility))
         self.SetItemImage(index, visibility)
         Publisher.sendMessage('Show measurement',
                                    (index, visibility))
@@ -1063,7 +1059,7 @@ class MeasuresListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
             if key not in index_list:
                 self.SetItemImage(key, not visibility)
                 Publisher.sendMessage('Show measurement',
-                                            (key, not visibility)) 
+                                            (key, not visibility))
         for index in index_list:
             self.SetItemImage(index, visibility)
             Publisher.sendMessage('Show measurement',
@@ -1078,7 +1074,7 @@ class MeasuresListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
             m = items_dict[i]
             image = self.CreateColourBitmap(m.colour)
             image_index = self.imagelist.Add(image)
-        
+
             index_list = self._list_index.keys()
             self._list_index[m.index] = image_index
 
@@ -1105,7 +1101,7 @@ class MeasuresListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
         if index not in self._list_index:
             image = self.CreateColourBitmap(colour)
             image_index = self.imagelist.Add(image)
-        
+
             index_list = self._list_index.keys()
             self._list_index[index] = image_index
 
@@ -1120,7 +1116,7 @@ class MeasuresListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
                        location="SURFACE", type_="LINEAR", value="0 mm"):
         self.InsertStringItem(index, "")
         self.SetStringItem(index, 1, label,
-                            imageId = self._list_index[index]) 
+                            imageId = self._list_index[index])
         self.SetStringItem(index, 2, location)
         self.SetStringItem(index, 3, type_)
         self.SetStringItem(index, 4, value)
@@ -1130,13 +1126,13 @@ class MeasuresListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
     def UpdateItemInfo(self, index=0, label="Measurement 1", colour=None,
                       type_="LINEAR", location="SURFACE", value="0 mm"):
         self.SetStringItem(index, 1, label,
-                            imageId = self._list_index[index]) 
+                            imageId = self._list_index[index])
         self.SetStringItem(index, 2, type_)
         self.SetStringItem(index, 3, location)
         self.SetStringItem(index, 4, value)
         self.SetItemImage(index, 1)
         self.Refresh()
-        
+
     def CreateColourBitmap(self, colour):
         """
         Create a wx Image with a mask colour.
@@ -1169,41 +1165,41 @@ class MeasuresListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
 #*******************************************************************
 #*******************************************************************
 
-    
+
 class AnnotationsListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
     # TODO: Remove edimixin, allow only visible and invisible
     def __init__(self, parent, ID=-1, pos=wx.DefaultPosition,
                  size=wx.DefaultSize, style=wx.LC_REPORT):
-        
+
         # native look and feel for MacOS
         #if wx.Platform == "__WXMAC__":
         #    wx.SystemOptions.SetOptionInt("mac.listctrl.always_use_generic", 0)
-        
+
         wx.ListCtrl.__init__(self, parent, ID, pos, size, style=wx.LC_REPORT)
         listmix.TextEditMixin.__init__(self)
 
         self.__init_columns()
         self.__init_image_list()
         self.__init_evt()
-        
+
         # just testing
         self.Populate()
-        
+
     def __init_evt(self):
         self.Bind(wx.EVT_LIST_ITEM_ACTIVATED, self.OnItemActivated)
 
     def __init_columns(self):
-        
+
         self.InsertColumn(0, "", wx.LIST_FORMAT_CENTER)
         self.InsertColumn(1, _("Name"))
         self.InsertColumn(2, _("Type"), wx.LIST_FORMAT_CENTER)
         self.InsertColumn(3, _("Value"))
-        
-        self.SetColumnWidth(0, 20)
+
+        self.SetColumnWidth(0, 25)
         self.SetColumnWidth(1, 90)
         self.SetColumnWidth(2, 50)
         self.SetColumnWidth(3, 120)
-        
+
     def __init_image_list(self):
         self.imagelist = wx.ImageList(16, 16)
 
@@ -1212,7 +1208,7 @@ class AnnotationsListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
         bitmap.SetWidth(16)
         bitmap.SetHeight(16)
         img_check = self.imagelist.Add(bitmap)
-        
+
         image = wx.Image("../icons/object_invisible.jpg")
         bitmap = wx.BitmapFromImage(image.Scale(16, 16))
         bitmap.SetWidth(16)
@@ -1224,13 +1220,13 @@ class AnnotationsListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
         bitmap.SetWidth(16)
         bitmap.SetHeight(16)
         self.img_colour = self.imagelist.Add(bitmap)
-        
+
         self.SetImageList(self.imagelist,wx.IMAGE_LIST_SMALL)
 
-        
+
     def OnItemActivated(self, evt):
         self.ToggleItem(evt.m_itemIndex)
-        
+
     def OnCheckItem(self, index, flag):
         # TODO: use pubsub to communicate to models
         if flag:
@@ -1241,10 +1237,10 @@ class AnnotationsListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
     def InsertNewItem(self, index=0, name="Axial 1", type_="2d",
                       value="bla", colour=None):
         self.InsertStringItem(index, "")
-        self.SetStringItem(index, 1, name, imageId = self.img_colour) 
+        self.SetStringItem(index, 1, name, imageId = self.img_colour)
         self.SetStringItem(index, 2, type_)
         self.SetStringItem(index, 3, value)
-        
+
     def Populate(self):
         dict = ((0, "Axial 1", "2D", "blalbalblabllablalbla"),
                 (1, "Coronal 1", "2D", "hello here we are again"),

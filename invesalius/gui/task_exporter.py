@@ -44,7 +44,7 @@ WILDCARD_SAVE_3D = "Inventor (*.iv)|*.iv|"\
                    "VTK PolyData (*.vtp)|*.vtp|"\
                    "Wavefront (*.obj)|*.obj|"\
                    "X3D (*.x3d)|*.x3d"
-                     
+
 INDEX_TO_TYPE_3D = {0: const.FILETYPE_IV,
                     1: const.FILETYPE_PLY,
                     2: const.FILETYPE_RIB,
@@ -86,7 +86,7 @@ class TaskPanel(wx.Panel):
 
         inner_panel = InnerTaskPanel(self)
 
-        sizer = wx.BoxSizer(wx.HORIZONTAL)
+        sizer = wx.BoxSizer(wx.VERTICAL)
         sizer.Add(inner_panel, 1, wx.EXPAND | wx.GROW | wx.BOTTOM | wx.RIGHT |
                   wx.LEFT, 7)
         sizer.Fit(self)
@@ -99,7 +99,8 @@ class InnerTaskPanel(wx.Panel):
 
     def __init__(self, parent):
         wx.Panel.__init__(self, parent)
-        self.SetBackgroundColour(wx.Colour(255,255,255))
+        backgroud_colour = wx.Colour(255,255,255)
+        self.SetBackgroundColour(backgroud_colour)
         self.SetAutoLayout(1)
 
         # Counter for projects loaded in current GUI
@@ -109,7 +110,9 @@ class InnerTaskPanel(wx.Panel):
         link_export_picture = hl.HyperLinkCtrl(self, -1,
                                             _("Export picture..."))
         link_export_picture.SetUnderlines(False, False, False)
+        link_export_picture.SetBold(True)
         link_export_picture.SetColours("BLACK", "BLACK", "BLACK")
+        link_export_picture.SetBackgroundColour(self.GetBackgroundColour())
         link_export_picture.SetToolTip(tooltip)
         link_export_picture.AutoBrowse(False)
         link_export_picture.UpdateLink()
@@ -119,7 +122,9 @@ class InnerTaskPanel(wx.Panel):
         tooltip = wx.ToolTip(_("Export 3D surface"))
         link_export_surface = hl.HyperLinkCtrl(self, -1,_("Export 3D surface..."))
         link_export_surface.SetUnderlines(False, False, False)
+        link_export_surface.SetBold(True)
         link_export_surface.SetColours("BLACK", "BLACK", "BLACK")
+        link_export_surface.SetBackgroundColour(self.GetBackgroundColour())
         link_export_surface.SetToolTip(tooltip)
         link_export_surface.AutoBrowse(False)
         link_export_surface.UpdateLink()
@@ -160,26 +165,28 @@ class InnerTaskPanel(wx.Panel):
         if sys.platform == 'darwin':
             BMP_EXPORT_SURFACE = wx.Bitmap(\
                                   "../icons/surface_export_original.png",
-                                  wx.BITMAP_TYPE_PNG)
+                                  wx.BITMAP_TYPE_PNG).ConvertToImage()\
+                                          .Rescale(25, 25).ConvertToBitmap()
             BMP_TAKE_PICTURE = wx.Bitmap(\
                                  "../icons/tool_photo_original.png",
-                                 wx.BITMAP_TYPE_PNG)
+                                 wx.BITMAP_TYPE_PNG).ConvertToImage()\
+                                          .Rescale(25, 25).ConvertToBitmap()
+
             #BMP_EXPORT_MASK = wx.Bitmap("../icons/mask.png",
             #                            wx.BITMAP_TYPE_PNG)
         else:
             BMP_EXPORT_SURFACE = wx.Bitmap("../icons/surface_export.png",
-                                        wx.BITMAP_TYPE_PNG)
+                                        wx.BITMAP_TYPE_PNG).ConvertToImage()\
+                                          .Rescale(25, 25).ConvertToBitmap()
+
             BMP_TAKE_PICTURE = wx.Bitmap("../icons/tool_photo.png",
-                                     wx.BITMAP_TYPE_PNG)
+                                     wx.BITMAP_TYPE_PNG).ConvertToImage()\
+                                          .Rescale(25, 25).ConvertToBitmap()
+
             #BMP_EXPORT_MASK = wx.Bitmap("../icons/mask_small.png",
             #                            wx.BITMAP_TYPE_PNG)
 
 
-        bmp_list = [BMP_TAKE_PICTURE, BMP_EXPORT_SURFACE]#,
-        #            BMP_EXPORT_MASK]
-        for bmp in bmp_list:
-            bmp.SetWidth(25)
-            bmp.SetHeight(25)
 
         # Buttons related to hyperlinks
         button_style = pbtn.PB_STYLE_SQUARE | pbtn.PB_STYLE_DEFAULT
@@ -187,11 +194,13 @@ class InnerTaskPanel(wx.Panel):
         button_picture = pbtn.PlateButton(self, BTN_PICTURE, "",
                                                BMP_TAKE_PICTURE,
                                                style=button_style)
+        button_picture.SetBackgroundColour(self.GetBackgroundColour())
         self.button_picture = button_picture
 
         button_surface = pbtn.PlateButton(self, BTN_SURFACE, "",
                                                 BMP_EXPORT_SURFACE,
                                               style=button_style)
+        button_surface.SetBackgroundColour(self.GetBackgroundColour())
         #button_mask = pbtn.PlateButton(self, BTN_MASK, "",
         #                                BMP_EXPORT_MASK,
         #                                style=button_style)
@@ -232,7 +241,7 @@ class InnerTaskPanel(wx.Panel):
         self.__init_menu()
 
     def __init_menu(self):
-        
+
 
         menu = wx.Menu()
         self.id_to_name = {const.AXIAL:_("Axial slice"),
@@ -244,23 +253,23 @@ class InnerTaskPanel(wx.Panel):
             item = wx.MenuItem(menu, id, self.id_to_name[id])
             menu.AppendItem(item)
 
-        self.menu_picture = menu 
+        self.menu_picture = menu
         menu.Bind(wx.EVT_MENU, self.OnMenuPicture)
 
     def OnMenuPicture(self, evt):
-        print "OnMenuPicture" 
+        print "OnMenuPicture"
         id = evt.GetId()
         value = dlg.ExportPicture(self.id_to_name[id])
         if value:
-            filename, filetype = value 
+            filename, filetype = value
             Publisher.sendMessage('Export picture to file',
                                        (id, filename, filetype))
- 
+
 
 
     def OnLinkExportPicture(self, evt=None):
         self.button_picture.PopupMenu(self.menu_picture)
-        
+
 
     def OnLinkExportMask(self, evt=None):
         project = proj.Project()
@@ -276,9 +285,9 @@ class InnerTaskPanel(wx.Panel):
                             "", # last used directory
                             project_name, # filename
                             WILDCARD_SAVE_MASK,
-                            wx.SAVE|wx.OVERWRITE_PROMPT)
+                            wx.FD_SAVE|wx.FD_OVERWRITE_PROMPT)
         dlg.SetFilterIndex(0) # default is VTI
-                                
+
         if dlg.ShowModal() == wx.ID_OK:
             filename = dlg.GetPath()
             print "filename", filename
@@ -312,9 +321,9 @@ class InnerTaskPanel(wx.Panel):
                                 "", # last used directory
                                 project_name, # filename
                                 WILDCARD_SAVE_3D,
-                                wx.SAVE|wx.OVERWRITE_PROMPT)
+                                wx.FD_SAVE|wx.FD_OVERWRITE_PROMPT)
             dlg.SetFilterIndex(3) # default is STL
-                                
+
             if dlg.ShowModal() == wx.ID_OK:
                 filetype_index = dlg.GetFilterIndex()
                 filetype = INDEX_TO_TYPE_3D[filetype_index]
