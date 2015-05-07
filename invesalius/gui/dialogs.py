@@ -1151,7 +1151,7 @@ class SurfaceCreationOptionsPanel(wx.Panel):
         flag_link = wx.EXPAND|wx.GROW|wx.ALL
         flag_button = wx.ALL | wx.EXPAND| wx.GROW
 
-        fixed_sizer = wx.FlexGridSizer(rows=2, cols=2, hgap=10, vgap=5)
+        fixed_sizer = wx.FlexGridSizer(rows=3, cols=2, hgap=10, vgap=5)
         fixed_sizer.AddGrowableCol(0, 1)
         fixed_sizer.AddMany([ (label_surface, 1, flag_link, 0),
                               (text, 1, flag_button, 0),
