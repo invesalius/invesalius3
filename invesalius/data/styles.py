@@ -1220,9 +1220,7 @@ class WaterShedInteractorStyle(DefaultInteractorStyle):
 
             self.viewer.slice_.current_mask.was_edited = True
             self.viewer.slice_.current_mask.clear_history()
-            Publisher.sendMessage('Reload actual slice')
-        else:
-            self.viewer.OnScrollBar(update3D=False)
+        Publisher.sendMessage('Reload actual slice')
 
     def get_coordinate_cursor(self):
         # Find position
