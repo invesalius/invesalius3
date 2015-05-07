@@ -400,13 +400,12 @@ class SurfaceProperties(wx.Panel):
         default_colour = wx.SystemSettings_GetColour(wx.SYS_COLOUR_MENUBAR)
         self.SetBackgroundColour(default_colour)
 
-        self.surface_dict = utl.TwoWaysDictionary()
+        self.surface_list = []
 
         ## LINE 1
 
         # Combo related to mask naem
-        combo_surface_name = wx.ComboBox(self, -1, "", choices=
-                                         self.surface_dict.keys() or ["", ],
+        combo_surface_name = wx.ComboBox(self, -1, "",
                                      style=wx.CB_DROPDOWN|wx.CB_READONLY)
         combo_surface_name.SetSelection(0)
         if sys.platform != 'win32':
@@ -476,20 +475,20 @@ class SurfaceProperties(wx.Panel):
     def OnRemoveSurfaces(self, pubsub_evt):
         list_index = pubsub_evt.data
 
-        old_dict = self.surface_dict
-        new_dict = utl.TwoWaysDictionary()
-        for index in list_index:
-            self.combo_surface_name.Delete(index)
+        old_dict = self.surface_list
+        new_dict = []
+        for n, (name, index) in enumerate(old_dict):
+            if n not in list_index:
+                new_dict.append([name, index])
+        self.surface_list = new_dict
 
-            for name in old_dict:
-                if old_dict[name] < index:
-                    new_dict[name] = old_dict[name]
-                if old_dict[name] > index:
-                    new_dict[name] = old_dict[name] -1
-            old_dict = new_dict
-        self.surface_dict = new_dict
+        s = self.combo_surface_name.GetSelection()
+        self.combo_surface_name.SetItems([n[0] for n in self.surface_list])
 
-
+        if s in list_index:
+            self.combo_surface_name.SetSelection(0)
+        else:
+            self.combo_surface_name.SetSelection(s)
 
     def OnCloseProject(self, pubsub_evt):
         self.CloseProject()
@@ -501,27 +500,37 @@ class SurfaceProperties(wx.Panel):
 
     def ChangeSurfaceName(self, pubsub_evt):
         index, name = pubsub_evt.data
-        old_name = self.surface_dict.get_key(index)
-        self.surface_dict.remove(old_name)
-        self.surface_dict[name] = index
+        self.surface_list[index][0] = name
         self.combo_surface_name.SetString(index, name)
-        self.combo_surface_name.Refresh()
+
+        print ">>>> SURFACE DICT", self.surface_list
 
     def InsertNewSurface(self, pubsub_evt):
         #not_update = len(pubsub_evt.data) == 5
         index = pubsub_evt.data[0]
         name = pubsub_evt.data[1]
         colour = [value*255 for value in pubsub_evt.data[2]]
-        overwrite = name in self.surface_dict.keys()
-        #if index not in self.surface_dict.values():
-        if not overwrite or not self.surface_dict:
-            self.surface_dict[name] = index
-            index = self.combo_surface_name.Append(name)
+        i = 0
+        try:
+            i = self.surface_list.index([name, index])
+            overwrite = True
+        except ValueError:
+            overwrite = False
+
+        if overwrite:
+            self.surface_list[i] = [name, index]
+        else:
+            self.surface_list.append([name, index])
+            i = len(self.surface_list) - 1
+
+        self.combo_surface_name.SetItems([n[0] for n in self.surface_list])
+        self.combo_surface_name.SetSelection(i)
         transparency = 100*pubsub_evt.data[4]
         self.button_colour.SetColour(colour)
         self.slider_transparency.SetValue(transparency)
-        self.combo_surface_name.SetSelection(index)
         Publisher.sendMessage('Update surface data', (index))
+
+
 
     def OnComboName(self, evt):
         surface_name = evt.GetString()
