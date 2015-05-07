@@ -503,8 +503,6 @@ class SurfaceProperties(wx.Panel):
         self.surface_list[index][0] = name
         self.combo_surface_name.SetString(index, name)
 
-        print ">>>> SURFACE DICT", self.surface_list
-
     def InsertNewSurface(self, pubsub_evt):
         #not_update = len(pubsub_evt.data) == 5
         index = pubsub_evt.data[0]
@@ -529,8 +527,6 @@ class SurfaceProperties(wx.Panel):
         self.button_colour.SetColour(colour)
         self.slider_transparency.SetValue(transparency)
         Publisher.sendMessage('Update surface data', (index))
-
-
 
     def OnComboName(self, evt):
         surface_name = evt.GetString()
