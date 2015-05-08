@@ -405,9 +405,9 @@ class SurfaceProperties(wx.Panel):
         ## LINE 1
 
         # Combo related to mask naem
-        combo_surface_name = wx.ComboBox(self, -1, "",
+        combo_surface_name = wx.ComboBox(self, -1,
                                      style=wx.CB_DROPDOWN|wx.CB_READONLY)
-        combo_surface_name.SetSelection(0)
+        #combo_surface_name.SetSelection(0)
         if sys.platform != 'win32':
             combo_surface_name.SetWindowVariant(wx.WINDOW_VARIANT_SMALL)
         combo_surface_name.Bind(wx.EVT_COMBOBOX, self.OnComboName)
