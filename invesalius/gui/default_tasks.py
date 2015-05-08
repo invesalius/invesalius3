@@ -230,10 +230,6 @@ class UpperTaskPanel(wx.Panel):
                                       wx.DefaultSize,FPB_DEFAULT_STYLE,
                                       fpb.FPB_SINGLE_FOLD)
 
-        sizer = wx.BoxSizer(wx.VERTICAL)
-        sizer.Add(fold_panel, 1, wx.GROW|wx.EXPAND)
-        self.SetSizer(sizer)
-
         image_list = wx.ImageList(16,16)
         image_list.Add(GetExpandedIconBitmap())
         image_list.Add(GetCollapsedIconBitmap())
@@ -287,6 +283,10 @@ class UpperTaskPanel(wx.Panel):
 
         fold_panel.Expand(fold_panel.GetFoldPanel(0))
         self.fold_panel = fold_panel
+
+        sizer = wx.BoxSizer(wx.VERTICAL)
+        sizer.Add(fold_panel, 1, wx.GROW|wx.EXPAND)
+        self.SetSizerAndFit(sizer)
 
         self.SetStateProjectClose()
         self.__bind_events()
