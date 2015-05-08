@@ -84,7 +84,7 @@ class Surface():
         #plist_filepath = os.path.join(dir_temp, filename + '.plist')
         temp_plist = tempfile.mktemp()
         plistlib.writePlist(surface, temp_plist)
-        
+
         filelist[temp_plist] = plist_filename
 
         return plist_filename
@@ -145,7 +145,7 @@ class SurfaceManager():
         Publisher.subscribe(self.OnDuplicate, "Duplicate surfaces")
         Publisher.subscribe(self.OnRemove,"Remove surfaces")
         Publisher.subscribe(self.UpdateSurfaceInterpolation, 'Update Surface Interpolation')
-    
+
     def OnDuplicate(self, pubsub_evt):
         selected_items = pubsub_evt.data
         proj = prj.Project()
@@ -155,7 +155,7 @@ class SurfaceManager():
             # compute copy name
             name = original_surface.name
             names_list = [surface_dict[i].name for i in surface_dict.keys()]
-            new_name = utl.next_copy_name(name, names_list) 
+            new_name = utl.next_copy_name(name, names_list)
             # create new mask
             self.CreateSurfaceFromPolydata(polydata = original_surface.polydata,
                                            overwrite = False,
@@ -221,7 +221,7 @@ class SurfaceManager():
             index_list.append(index)
             #self.ShowActor(index, True)
 
-        Publisher.sendMessage('Show multiple surfaces', (index_list, True)) 
+        Publisher.sendMessage('Show multiple surfaces', (index_list, True))
 
     def OnLargestSurface(self, pubsub_evt):
         """
@@ -329,7 +329,8 @@ class SurfaceManager():
                                     surface.colour, surface.volume,
                                     surface.transparency))
         self.last_surface_index = index
-        self.ShowActor(index, True)
+        if surface.is_shown:
+            self.ShowActor(index, True)
 
     def OnLoadSurfaceDict(self, pubsub_evt):
         surface_dict = pubsub_evt.data
@@ -388,10 +389,10 @@ class SurfaceManager():
         matrix = slice_.matrix
         filename_img = slice_.matrix_filename
         spacing = slice_.spacing
-        
+
         algorithm = surface_parameters['method']['algorithm']
         options = surface_parameters['method']['options']
-        
+
         surface_name = surface_parameters['options']['name']
         quality = surface_parameters['options']['quality']
         fill_holes = surface_parameters['options']['fill']
@@ -425,7 +426,7 @@ class SurfaceManager():
             pipeline_size += 1
         if keep_largest:
             pipeline_size += 1
-    
+
         ## Update progress value in GUI
         UpdateProgress = vu.ShowProgress(pipeline_size)
         UpdateProgress(0, _("Creating 3D surface..."))
@@ -438,7 +439,7 @@ class SurfaceManager():
             flip_image = True
 
         n_processors = multiprocessing.cpu_count()
-            
+
         pipe_in, pipe_out = multiprocessing.Pipe()
         o_piece = 1
         piece_size = 2000
@@ -455,7 +456,7 @@ class SurfaceManager():
                                                 mask.temp_file,
                                                 mask.matrix.shape,
                                                 mask.matrix.dtype,
-                                                spacing, 
+                                                spacing,
                                                 mode, min_value, max_value,
                                                 decimate_reduction,
                                                 smooth_relaxation_factor,
@@ -642,7 +643,7 @@ class SurfaceManager():
             polydata.SetSource(None)
             polydata.DebugOn()
             del filled_polydata
-        
+
         normals = vtk.vtkPolyDataNormals()
         normals.ReleaseDataFlagOn()
         normals_ref = weakref.ref(normals)
@@ -741,19 +742,19 @@ class SurfaceManager():
                                     (surface.index, surface.name,
                                     surface.colour, surface.volume,
                                     surface.transparency))
-        
+
         #When you finalize the progress. The bar is cleaned.
         UpdateProgress = vu.ShowProgress(1)
         UpdateProgress(0, _("Ready"))
         Publisher.sendMessage('Update status text in GUI', _("Ready"))
-        
+
         Publisher.sendMessage('End busy cursor')
         del actor
 
     def UpdateSurfaceInterpolation(self, pub_evt):
         interpolation = int(ses.Session().surface_interpolation)
         key_actors = self.actors_dict.keys()
-        
+
         for key in self.actors_dict:
             self.actors_dict[key].GetProperty().SetInterpolation(interpolation)
         Publisher.sendMessage('Render volume viewer')

@@ -104,7 +104,7 @@ class ResizeImageDialog(wx.Dialog):
                    pos=wx.DefaultPosition,
                    style=wx.DEFAULT_DIALOG_STYLE)
         self.PostCreate(pre)
-        
+
         lbl_message = wx.StaticText(self, -1, _("InVesalius is running on a 32-bit operating system or has insufficient memory. \nIf you want to work with 3D surfaces or volume rendering, \nit is recommended to reduce the medical images resolution."))
         icon = wx.ArtProvider.GetBitmap(wx.ART_WARNING, wx.ART_MESSAGE_BOX, (32,32))
         bmp = wx.StaticBitmap(self, -1, icon)
@@ -143,7 +143,7 @@ class ResizeImageDialog(wx.Dialog):
         sizer_general.Fit(self)
         self.Layout()
         self.Centre()
-    
+
     def SetValue(self, value):
         self.num_ctrl_porcent.SetValue(value)
 
@@ -611,7 +611,7 @@ class NewMask(wx.Dialog):
         thresh_min, thresh_max = project.threshold_modes[_("Bone")]
         original_colour = random.choice(const.MASK_COLOUR)
         self.colour = original_colour
-        colour = [255*i for i in original_colour] 
+        colour = [255*i for i in original_colour]
         colour.append(100)
         gradient = grad.GradientSlider(self, -1, int(bound_min),
                                         int(bound_max),
@@ -673,7 +673,7 @@ class NewMask(wx.Dialog):
         proj = prj.Project()
         if thresh  in proj.threshold_modes.values():
             preset_name = proj.threshold_modes.get_key(thresh)[0]
-            index = self.thresh_list.index(preset_name) 
+            index = self.thresh_list.index(preset_name)
             self.combo_thresh.SetSelection(index)
         else:
             index = self.thresh_list.index(_("Custom"))
@@ -790,14 +790,14 @@ def ShowAboutDialog(parent):
                         "Dimitris Glezos",
                         "Eugene Liscio",
                         u"Frédéric Lopez",
-                        "Javier de Lima Moreno"
+                        "Javier de Lima Moreno",
                         "Nikos Korkakakis",
                         "Massimo Crisantemo",
                         "Raul Bolliger Neto",
                         "Sebastian Hilbert",
                         "Semarang Pari"]
 
-    #info.DocWriters = ["Fabio Francisco da Silva (PT)"] 
+    #info.DocWriters = ["Fabio Francisco da Silva (PT)"]
 
     info.Artists = ["Otavio Henrique Junqueira Amorim"]
 
@@ -1101,7 +1101,7 @@ class SurfaceCreationOptionsPanel(wx.Panel):
         import constants as const
         import data.surface as surface
         import project as prj
-        
+
         wx.Panel.__init__(self, parent, ID)
 
         # LINE 1: Surface name
@@ -1151,7 +1151,7 @@ class SurfaceCreationOptionsPanel(wx.Panel):
         flag_link = wx.EXPAND|wx.GROW|wx.ALL
         flag_button = wx.ALL | wx.EXPAND| wx.GROW
 
-        fixed_sizer = wx.FlexGridSizer(rows=2, cols=2, hgap=10, vgap=5)
+        fixed_sizer = wx.FlexGridSizer(rows=3, cols=2, hgap=10, vgap=5)
         fixed_sizer.AddGrowableCol(0, 1)
         fixed_sizer.AddMany([ (label_surface, 1, flag_link, 0),
                               (text, 1, flag_button, 0),
@@ -1208,7 +1208,7 @@ class CAOptions(wx.Panel):
     def __init__(self, parent):
         wx.Panel.__init__(self, parent, -1)
         self._build_widgets()
-    
+
     def _build_widgets(self):
         sb = wx.StaticBox(self, -1, _('Options'))
         self.angle = floatspin.FloatSpin(self, -1, value=0.7, min_val=0.0,
@@ -1222,7 +1222,7 @@ class CAOptions(wx.Panel):
         self.min_weight = floatspin.FloatSpin(self, -1, value=0.2, min_val=0.0,
                                          max_val=1.0, increment=0.1,
                                          digits=1)
-        
+
         self.steps = wx.SpinCtrl(self, -1, value='10', min=1, max=100)
 
         layout_sizer = wx.FlexGridSizer(rows=4, cols=2, hgap=5, vgap=5)
@@ -1285,7 +1285,7 @@ class SurfaceMethodPanel(wx.Panel):
         self.SetSizer(self.main_sizer)
         self.Layout()
         self.Fit()
-        
+
         if self.mask_edited:
             self.cb_types.SetValue(_(u'Context aware smoothing'))
             self.ca_options.Enable()
@@ -1324,9 +1324,9 @@ class SurfaceMethodPanel(wx.Panel):
         algorithm = self.GetAlgorithmSelected()
         options = self.GetOptions()
 
-        return {"algorithm": algorithm, 
+        return {"algorithm": algorithm,
                 "options": options}
-        
+
     def ReloadMethodsOptions(self):
         self.cb_types.Clear()
         self.cb_types.AppendItems([i for i in sorted(self.alg_types)
@@ -1388,32 +1388,37 @@ class ClutImagedataDialog(wx.Dialog):
         if gen_evt:
             self.clut_widget._generate_event()
 
- 
-class WatershedOptions(wx.Panel):
-    def __init__(self, parent):
+
+class WatershedOptionsPanel(wx.Panel):
+    def __init__(self, parent, config):
         wx.Panel.__init__(self, parent)
-        
+
         self.algorithms = ("Watershed", "Watershed IFT")
         self.con2d_choices = (4, 8)
         self.con3d_choices = (6, 18, 26)
 
+        self.config = config
+
         self._init_gui()
-        self._bind_events()
 
     def _init_gui(self):
         self.choice_algorithm = wx.RadioBox(self, -1, "Algorithm",
-                                           choices=("Watershed", "Watershed IFT"),
+                                           choices=self.algorithms,
                                            style=wx.NO_BORDER | wx.HORIZONTAL)
+        self.choice_algorithm.SetSelection(self.algorithms.index(self.config.algorithm))
 
         self.choice_2dcon = wx.RadioBox(self, -1, "2D",
                                         choices=[str(i) for i in self.con2d_choices],
                                         style=wx.NO_BORDER | wx.HORIZONTAL)
+        self.choice_2dcon.SetSelection(self.con2d_choices.index(self.config.con_2d))
 
         self.choice_3dcon = wx.RadioBox(self, -1, "3D",
                                         choices=[str(i) for i in self.con3d_choices],
                                         style=wx.NO_BORDER | wx.HORIZONTAL)
+        self.choice_3dcon.SetSelection(self.con3d_choices.index(self.config.con_3d))
 
         self.gaussian_size = wx.SpinCtrl(self, -1, "", min=1, max=10)
+        self.gaussian_size.SetValue(self.config.mg_size)
 
         box_sizer = wx.StaticBoxSizer(wx.StaticBox(self, -1, "Conectivity"), wx.VERTICAL)
         box_sizer.Add(self.choice_2dcon, 0, wx.ALIGN_CENTER_VERTICAL,2)
@@ -1432,47 +1437,52 @@ class WatershedOptions(wx.Panel):
         sizer.Fit(self)
         self.Layout()
 
-    def _bind_events(self):
-        self.choice_algorithm.Bind(wx.EVT_RADIOBOX, self.OnSetAlgorithm)
-        self.gaussian_size.Bind(wx.EVT_SPINCTRL, self.OnSetGaussianSize)
-        self.choice_2dcon.Bind(wx.EVT_RADIOBOX, self.OnSetCon2D)
-        self.choice_3dcon.Bind(wx.EVT_RADIOBOX, self.OnSetCon3D)
-
-    def OnSetAlgorithm(self, evt):
-        v = self.algorithms[evt.GetInt()]
-        Publisher.sendMessage("Set watershed algorithm", v)
-
-    def OnSetGaussianSize(self, evt):
-        v = self.gaussian_size.GetValue()
-        Publisher.sendMessage("Set watershed gaussian size", v)
-
-    def OnSetCon2D(self, evt):
-        v = self.con2d_choices[evt.GetInt()]
-        Publisher.sendMessage("Set watershed 2d con", v)
-
-    def OnSetCon3D(self, evt):
-        v = self.con3d_choices[evt.GetInt()]
-        Publisher.sendMessage("Set watershed 3d con", v)
+    def apply_options(self):
+        self.config.algorithm = self.algorithms[self.choice_algorithm.GetSelection()]
+        self.config.con_2d = self.con2d_choices[self.choice_2dcon.GetSelection()]
+        self.config.con_3d = self.con3d_choices[self.choice_3dcon.GetSelection()]
+        self.config.mg_size = self.gaussian_size.GetValue()
 
 
 class WatershedOptionsDialog(wx.Dialog):
-    def __init__(self):
+    def __init__(self, config):
         pre = wx.PreDialog()
         pre.Create(wx.GetApp().GetTopWindow(), -1, style=wx.DEFAULT_DIALOG_STYLE|wx.FRAME_FLOAT_ON_PARENT)
         self.PostCreate(pre)
 
+        self.config = config
+
         self._init_gui()
 
     def _init_gui(self):
-        wop = WatershedOptions(self)
+        wop = WatershedOptionsPanel(self, self.config)
+        self.wop = wop
 
-        sizer = wx.BoxSizer(wx.VERTICAL) 
+        sizer = wx.BoxSizer(wx.VERTICAL)
+
+        btn_ok = wx.Button(self, wx.ID_OK)
+        btn_ok.SetDefault()
+
+        btn_cancel = wx.Button(self, wx.ID_CANCEL)
+
+        btnsizer = wx.StdDialogButtonSizer()
+        btnsizer.AddButton(btn_ok)
+        btnsizer.AddButton(btn_cancel)
+        btnsizer.Realize()
+
         sizer.Add(wop, 0, wx.EXPAND)
+        sizer.Add(btnsizer, 0, wx.EXPAND)
+        sizer.AddSpacer(5)
 
         self.SetSizer(sizer)
         sizer.Fit(self)
         self.Layout()
 
+        btn_ok.Bind(wx.EVT_BUTTON, self.OnOk)
+
+    def OnOk(self, evt):
+        self.wop.apply_options()
+        evt.Skip()
 
 class MaskBooleanDialog(wx.Dialog):
     def __init__(self, masks):
@@ -1500,7 +1510,7 @@ class MaskBooleanDialog(wx.Dialog):
 
         icon_folder = '../icons/'
         op_choices = ((_(u"Union"), const.BOOLEAN_UNION, 'bool_union.png'),
-                      (_(u"Difference"), const.BOOLEAN_DIFF, 'bool_difference.png'), 
+                      (_(u"Difference"), const.BOOLEAN_DIFF, 'bool_difference.png'),
                       (_(u"Intersection"), const.BOOLEAN_AND, 'bool_intersection.png'),
                       (_(u"Exclusive disjunction"), const.BOOLEAN_XOR, 'bool_disjunction.png'))
         self.op_boolean = wx.combo.BitmapComboBox(self, -1, op_choices[0][0], choices=[])

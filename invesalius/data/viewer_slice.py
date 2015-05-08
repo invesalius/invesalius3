@@ -62,6 +62,7 @@ class ContourMIPConfig(wx.Panel):
         wx.Panel.__init__(self, prnt)
         self.mip_size_spin = wx.SpinCtrl(self, -1, min=1, max=240,
                                          initial=const.PROJECTION_MIP_SIZE)
+        self.mip_size_spin.SetValue(const.PROJECTION_MIP_SIZE)
         self.mip_size_spin.SetToolTip(wx.ToolTip(_("Number of slices used to compound the visualization.")))
         w, h = self.mip_size_spin.GetTextExtent('M')
         self.mip_size_spin.SetMinSize((5 * w + 10, -1))
@@ -525,12 +526,6 @@ class Viewer(wx.Panel):
         ren.GetActiveCamera().Zoom(1.0)
         self.interactor.Render()
 
-    def ChangeBrushSize(self, pubsub_evt):
-        size = pubsub_evt.data
-        self._brush_cursor_size = size
-        #for slice_data in self.slice_data_list:
-        self.slice_data.cursor.SetSize(size)
-
     def ChangeBrushColour(self, pubsub_evt):
         vtk_colour = pubsub_evt.data[3]
         self._brush_cursor_colour = vtk_colour
@@ -544,27 +539,6 @@ class Viewer(wx.Panel):
         self._brush_cursor_colour = colour_vtk
         if self.slice_data.cursor:
             self.slice_data.cursor.SetColour(colour_vtk)
-
-    def ChangeBrushActor(self, pubsub_evt):
-        brush_type = pubsub_evt.data
-        slice_data = self.slice_data
-        self._brush_cursor_type = brush_type
-
-        if brush_type == const.BRUSH_SQUARE:
-            cursor = ca.CursorRectangle()
-        elif brush_type == const.BRUSH_CIRCLE:
-            cursor = ca.CursorCircle()
-
-        cursor.SetOrientation(self.orientation)
-        coordinates = {"SAGITAL": [slice_data.number, 0, 0],
-                       "CORONAL": [0, slice_data.number, 0],
-                       "AXIAL": [0, 0, slice_data.number]}
-        cursor.SetPosition(coordinates[self.orientation])
-        cursor.SetSpacing(self.slice_.spacing)
-        cursor.SetColour(self._brush_cursor_colour)
-        cursor.SetSize(self._brush_cursor_size)
-        slice_data.SetCursor(cursor)
-        self.interactor.Render()
 
     def Navigation(self, pubsub_evt):
         # Get point from base change
@@ -700,14 +674,8 @@ class Viewer(wx.Panel):
         Publisher.subscribe(self.Navigation,
                                  'Co-registered Points')
         ###
-        Publisher.subscribe(self.ChangeBrushSize,
-                                 'Set edition brush size')
         Publisher.subscribe(self.ChangeBrushColour,
                                  'Add mask')
-        Publisher.subscribe(self.ChangeBrushActor,
-                                 'Set brush format')
-        Publisher.subscribe(self.ChangeBrushOperation,
-                                 'Set edition operation')
 
         Publisher.subscribe(self.UpdateWindowLevelValue,
                             'Update window level value')
@@ -833,9 +801,6 @@ class Viewer(wx.Panel):
         if (state != const.SLICE_STATE_EDITOR):
             Publisher.sendMessage('Set interactor default cursor')
         
-    def ChangeBrushOperation(self, pubsub_evt):
-        self._brush_cursor_op = pubsub_evt.data
-
     def __bind_events_wx(self):
         self.scroll.Bind(wx.EVT_SCROLL, self.OnScrollBar)
         self.scroll.Bind(wx.EVT_SCROLL_THUMBTRACK, self.OnScrollBarRelease)

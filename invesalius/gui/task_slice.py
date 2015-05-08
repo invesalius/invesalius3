@@ -682,7 +682,7 @@ class EditionTools(wx.Panel):
         spin_brush_size = wx.SpinCtrl(self, -1, "", size=(width + 20, -1))
         spin_brush_size.SetRange(1,100)
         spin_brush_size.SetValue(const.BRUSH_SIZE)
-        spin_brush_size.Bind(wx.EVT_TEXT, self.OnBrushSize)
+        spin_brush_size.Bind(wx.EVT_SPINCTRL, self.OnBrushSize)
         self.spin = spin_brush_size
 
         combo_brush_op = wx.ComboBox(self, -1, "", size=(15,-1),
@@ -740,6 +740,7 @@ class EditionTools(wx.Panel):
                                         'Update threshold limits')
         Publisher.subscribe(self.ChangeMaskColour, 'Change mask colour')
         Publisher.subscribe(self.SetGradientColour, 'Add mask')
+        Publisher.subscribe(self._set_brush_size, 'Set edition brush size')
 
     def ChangeMaskColour(self, pubsub_evt):
         colour = pubsub_evt.data
@@ -792,6 +793,10 @@ class EditionTools(wx.Panel):
         # Strangelly this is being called twice
         Publisher.sendMessage('Set edition brush size',self.spin.GetValue())
 
+    def _set_brush_size(self, pubsub_evt):
+        size = pubsub_evt.data
+        self.spin.SetValue(size)
+
     def OnComboBrushOp(self, evt):
         brush_op_id = evt.GetSelection()
         Publisher.sendMessage('Set edition operation', brush_op_id)
@@ -837,7 +842,7 @@ class WatershedTool(EditionTools):
         spin_brush_size = wx.SpinCtrl(self, -1, "", size=(width + 20, -1))
         spin_brush_size.SetRange(1,100)
         spin_brush_size.SetValue(const.BRUSH_SIZE)
-        spin_brush_size.Bind(wx.EVT_TEXT, self.OnBrushSize)
+        spin_brush_size.Bind(wx.EVT_SPINCTRL, self.OnBrushSize)
         self.spin = spin_brush_size
 
         combo_brush_op = wx.ComboBox(self, -1, "", size=(15,-1),
@@ -897,6 +902,7 @@ class WatershedTool(EditionTools):
         self.SetAutoLayout(1)
 
         self.__bind_events_wx()
+        self.__bind_pubsub_evt()
 
 
     def __bind_events_wx(self):
@@ -906,6 +912,9 @@ class WatershedTool(EditionTools):
         self.ww_wl_cbox.Bind(wx.EVT_CHECKBOX, self.OnCheckWWWL)
         self.btn_exp_watershed.Bind(wx.EVT_BUTTON, self.OnExpandWatershed)
         self.btn_wconfig.Bind(wx.EVT_BUTTON, self.OnConfig)
+
+    def __bind_pubsub_evt(self):
+        Publisher.subscribe(self._set_brush_size, 'Set watershed brush size')
 
     def ChangeMaskColour(self, pubsub_evt):
         colour = pubsub_evt.data
@@ -951,6 +960,10 @@ class WatershedTool(EditionTools):
         # Strangelly this is being called twice
         Publisher.sendMessage('Set watershed brush size',self.spin.GetValue())
 
+    def _set_brush_size(self, pubsub_evt):
+        size = pubsub_evt.data
+        self.spin.SetValue(size)
+
     def OnComboBrushOp(self, evt):
         brush_op = self.combo_brush_op.GetValue()
         Publisher.sendMessage('Set watershed operation', brush_op)
@@ -964,7 +977,9 @@ class WatershedTool(EditionTools):
         Publisher.sendMessage('Set use ww wl', value)
 
     def OnConfig(self, evt):
-        dlg.WatershedOptionsDialog().Show()
+        from data.styles import WatershedConfig
+        config = WatershedConfig()
+        dlg.WatershedOptionsDialog(config).Show()
 
     def OnExpandWatershed(self, evt):
         Publisher.sendMessage('Expand watershed to 3D AXIAL')

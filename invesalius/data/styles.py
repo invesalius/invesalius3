@@ -57,7 +57,7 @@ WATERSHED_OPERATIONS = {_("Erase"): BRUSH_ERASE,
                         _("Background"): BRUSH_BACKGROUND,}
 
 def get_LUT_value(data, window, level):
-    return np.piecewise(data, 
+    return np.piecewise(data,
                         [data <= (level - 0.5 - (window-1)/2),
                          data > (level - 0.5 + (window-1)/2)],
                         [0, 255, lambda data: ((data - (level - 0.5))/(window-1) + 0.5)*(255-0)])
@@ -100,8 +100,8 @@ class BaseImageInteractorStyle(vtk.vtkInteractorStyleImage):
 
 class DefaultInteractorStyle(BaseImageInteractorStyle):
     """
-    Interactor style responsible for Default functionalities: 
-    * Zoom moving mouse with right button pressed; 
+    Interactor style responsible for Default functionalities:
+    * Zoom moving mouse with right button pressed;
     * Change the slices with the scroll.
     """
     def __init__(self, viewer):
@@ -129,10 +129,33 @@ class DefaultInteractorStyle(BaseImageInteractorStyle):
         evt.StartDolly()
 
     def OnScrollForward(self, evt, obj):
-        self.viewer.OnScrollForward()
+        iren = self.viewer.interactor
+        viewer = self.viewer
+        if  iren.GetShiftKey():
+            opacity = viewer.slice_.opacity + 0.1
+            if opacity <= 1:
+                viewer.slice_.opacity = opacity
+                self.viewer.slice_.buffer_slices['AXIAL'].discard_vtk_mask()
+                self.viewer.slice_.buffer_slices['CORONAL'].discard_vtk_mask()
+                self.viewer.slice_.buffer_slices['SAGITAL'].discard_vtk_mask()
+                Publisher.sendMessage('Reload actual slice')
+        else:
+            self.viewer.OnScrollForward()
 
     def OnScrollBackward(self, evt, obj):
-        self.viewer.OnScrollBackward()
+        iren = self.viewer.interactor
+        viewer = self.viewer
+
+        if iren.GetShiftKey():
+            opacity = viewer.slice_.opacity - 0.1
+            if opacity >= 0.1:
+                viewer.slice_.opacity = opacity
+                self.viewer.slice_.buffer_slices['AXIAL'].discard_vtk_mask()
+                self.viewer.slice_.buffer_slices['CORONAL'].discard_vtk_mask()
+                self.viewer.slice_.buffer_slices['SAGITAL'].discard_vtk_mask()
+                Publisher.sendMessage('Reload actual slice')
+        else:
+            self.viewer.OnScrollBackward()
 
 
 class CrossInteractorStyle(DefaultInteractorStyle):
@@ -182,7 +205,7 @@ class CrossInteractorStyle(DefaultInteractorStyle):
         # Forcing focal point to be setted in the center of the pixel.
         coord_cross = self.slice_actor.GetInput().GetPoint(position)
 
-        coord = self.calcultate_scroll_position(position)   
+        coord = self.calcultate_scroll_position(position)
         self.ScrollSlice(coord)
 
         Publisher.sendMessage('Update cross position', coord_cross)
@@ -190,7 +213,7 @@ class CrossInteractorStyle(DefaultInteractorStyle):
                                    coord_cross)
         Publisher.sendMessage('Set camera in volume', coord_cross)
         Publisher.sendMessage('Render volume viewer')
-        
+
         iren.Render()
 
 
@@ -292,7 +315,7 @@ class WWWLInteractorStyle(DefaultInteractorStyle):
             const.WINDOW_LEVEL['Manual'] = (self.acum_achange_window,\
                                            self.acum_achange_level)
             Publisher.sendMessage('Check window and level other')
-            Publisher.sendMessage('Update window level value',(self.acum_achange_window, 
+            Publisher.sendMessage('Update window level value',(self.acum_achange_window,
                                                                 self.acum_achange_level))
             #Necessary update the slice plane in the volume case exists
             Publisher.sendMessage('Update slice viewer')
@@ -339,7 +362,7 @@ class LinearMeasureInteractorStyle(DefaultInteractorStyle):
         slice_number = self.slice_data.number
         self.picker.Pick(x, y, 0, render)
         x, y, z = self.picker.GetPickPosition()
-        if self.picker.GetViewProp(): 
+        if self.picker.GetViewProp():
             Publisher.sendMessage("Add measurement point",
                                   ((x, y,z), const.LINEAR,
                                    ORIENTATIONS[self.orientation],
@@ -383,7 +406,7 @@ class AngularMeasureInteractorStyle(DefaultInteractorStyle):
         slice_number = self.slice_data.number
         self.picker.Pick(x, y, 0, render)
         x, y, z = self.picker.GetPickPosition()
-        if self.picker.GetViewProp(): 
+        if self.picker.GetViewProp():
             Publisher.sendMessage("Add measurement point",
                                   ((x, y,z), const.ANGULAR,
                                    ORIENTATIONS[self.orientation],
@@ -434,7 +457,7 @@ class SpinInteractorStyle(DefaultInteractorStyle):
         ren = iren.FindPokedRenderer(mouse_x, mouse_y)
         cam = ren.GetActiveCamera()
         if (self.left_pressed):
-            self.viewer.UpdateTextDirection(cam)    
+            self.viewer.UpdateTextDirection(cam)
             obj.Spin()
             obj.OnRightButtonDown()
 
@@ -456,7 +479,7 @@ class ZoomInteractorStyle(DefaultInteractorStyle):
     """
     def __init__(self, viewer):
         DefaultInteractorStyle.__init__(self, viewer)
-        
+
         self.viewer = viewer
 
         self.AddObserver("MouseMoveEvent", self.OnZoomMoveLeft)
@@ -532,12 +555,22 @@ class ChangeSliceInteractorStyle(DefaultInteractorStyle):
         self.last_position = position[1]
 
 
+class EditorConfig(object):
+    __metaclass__= utils.Singleton
+    def __init__(self):
+        self.operation = const.BRUSH_THRESH
+        self.cursor_type = const.BRUSH_CIRCLE
+        self.cursor_size = const.BRUSH_SIZE
+
+
 class EditorInteractorStyle(DefaultInteractorStyle):
     def __init__(self, viewer):
         DefaultInteractorStyle.__init__(self, viewer)
 
         self.viewer = viewer
         self.orientation = self.viewer.orientation
+
+        self.config = EditorConfig()
 
         self.picker = vtk.vtkWorldPointPicker()
 
@@ -553,13 +586,55 @@ class EditorInteractorStyle(DefaultInteractorStyle):
         self.AddObserver("MouseWheelForwardEvent",self.EOnScrollForward)
         self.AddObserver("MouseWheelBackwardEvent", self.EOnScrollBackward)
 
+        Publisher.subscribe(self.set_bsize, 'Set edition brush size')
+        Publisher.subscribe(self.set_bformat, 'Set brush format')
+        Publisher.subscribe(self.set_boperation, 'Set edition operation')
+
+        self._set_cursor()
+        self.viewer.slice_data.cursor.Show(0)
+
+    def CleanUp(self):
+        Publisher.unsubscribe(self.set_bsize, 'Set edition brush size')
+        Publisher.unsubscribe(self.set_bformat, 'Set brush format')
+        Publisher.unsubscribe(self.set_boperation, 'Set edition operation')
+
+    def set_bsize(self, pubsub_evt):
+        size = pubsub_evt.data
+        self.config.cursor_size = size
+        self.viewer.slice_data.cursor.SetSize(size)
+
+    def set_bformat(self, pubsub_evt):
+        self.config.cursor_type = pubsub_evt.data
+        self._set_cursor()
+
+    def set_boperation(self, pubsub_evt):
+        self.config.operation = pubsub_evt.data
+
+    def _set_cursor(self):
+        if self.config.cursor_type == const.BRUSH_SQUARE:
+            cursor = ca.CursorRectangle()
+        elif self.config.cursor_type == const.BRUSH_CIRCLE:
+            cursor = ca.CursorCircle()
+
+        cursor.SetOrientation(self.orientation)
+        n = self.viewer.slice_data.number
+        coordinates = {"SAGITAL": [n, 0, 0],
+                       "CORONAL": [0, n, 0],
+                       "AXIAL": [0, 0, n]}
+        cursor.SetPosition(coordinates[self.orientation])
+        spacing = self.viewer.slice_.spacing
+        cursor.SetSpacing(spacing)
+        cursor.SetColour(self.viewer._brush_cursor_colour)
+        cursor.SetSize(self.config.cursor_size)
+        self.viewer.slice_data.SetCursor(cursor)
+
     def OnEnterInteractor(self, obj, evt):
         if (self.viewer.slice_.buffer_slices[self.orientation].mask is None):
             return
         self.viewer.slice_data.cursor.Show()
         self.viewer.interactor.SetCursor(wx.StockCursor(wx.CURSOR_BLANK))
         self.viewer.interactor.Render()
-        
+
     def OnLeaveInteractor(self, obj, evt):
         self.viewer.slice_data.cursor.Show(0)
         self.viewer.interactor.SetCursor(wx.StockCursor(wx.CURSOR_DEFAULT))
@@ -569,11 +644,10 @@ class EditorInteractorStyle(DefaultInteractorStyle):
         if (self.viewer.slice_.buffer_slices[self.orientation].mask is None):
             return
 
-
         viewer = self.viewer
         iren = viewer.interactor
 
-        operation = viewer._brush_cursor_op 
+        operation = self.config.operation
         if operation == const.BRUSH_THRESH:
             if iren.GetControlKey():
                 if iren.GetShiftKey():
@@ -590,7 +664,7 @@ class EditorInteractorStyle(DefaultInteractorStyle):
             operation = const.BRUSH_ERASE
 
         viewer._set_editor_cursor_visibility(1)
- 
+
         mouse_x, mouse_y = iren.GetEventPosition()
         render = iren.FindPokedRenderer(mouse_x, mouse_y)
         slice_data = viewer.get_slice_data(render)
@@ -601,10 +675,10 @@ class EditorInteractorStyle(DefaultInteractorStyle):
         slice_data.cursor.Show()
 
         self.picker.Pick(mouse_x, mouse_y, 0, render)
-        
+
         coord = self.get_coordinate_cursor()
         position = slice_data.actor.GetInput().FindPoint(coord)
-        
+
         if position != -1:
             coord = slice_data.actor.GetInput().GetPoint(position)
 
@@ -630,12 +704,12 @@ class EditorInteractorStyle(DefaultInteractorStyle):
         iren = viewer.interactor
 
         viewer._set_editor_cursor_visibility(1)
- 
+
         mouse_x, mouse_y = iren.GetEventPosition()
         render = iren.FindPokedRenderer(mouse_x, mouse_y)
         slice_data = viewer.get_slice_data(render)
 
-        operation = viewer._brush_cursor_op 
+        operation = self.config.operation
         if operation == const.BRUSH_THRESH:
             if iren.GetControlKey():
                 if iren.GetShiftKey():
@@ -656,12 +730,12 @@ class EditorInteractorStyle(DefaultInteractorStyle):
             #i.cursor.Show(0)
 
         self.picker.Pick(mouse_x, mouse_y, 0, render)
-        
+
         #if (self.pick.GetViewProp()):
             #self.interactor.SetCursor(wx.StockCursor(wx.CURSOR_BLANK))
         #else:
             #self.interactor.SetCursor(wx.StockCursor(wx.CURSOR_DEFAULT))
-            
+
         coord = self.get_coordinate_cursor()
         position = viewer.slice_data.actor.GetInput().FindPoint(coord)
 
@@ -672,7 +746,7 @@ class EditorInteractorStyle(DefaultInteractorStyle):
             coord = slice_data.actor.GetInput().GetPoint(position)
         slice_data.cursor.SetPosition(coord)
         #self.__update_cursor_position(slice_data, coord)
-        
+
         if (self.left_pressed):
             cursor = slice_data.cursor
             position = slice_data.actor.GetInput().FindPoint(coord)
@@ -680,7 +754,7 @@ class EditorInteractorStyle(DefaultInteractorStyle):
 
             if position < 0:
                 position = viewer.calculate_matrix_position(coord)
-                
+
             viewer.slice_.edit_mask_pixel(operation, cursor.GetPixels(),
                                         position, radius, self.orientation)
             # TODO: To create a new function to reload images to viewer.
@@ -698,32 +772,35 @@ class EditorInteractorStyle(DefaultInteractorStyle):
 
     def EOnScrollForward(self, evt, obj):
         iren = self.viewer.interactor
+        viewer = self.viewer
         if iren.GetControlKey():
             mouse_x, mouse_y = iren.GetEventPosition()
             render = iren.FindPokedRenderer(mouse_x, mouse_y)
             slice_data = self.viewer.get_slice_data(render)
             cursor = slice_data.cursor
             size = cursor.radius * 2
+            size += 1
 
-            if size < 100:
-                Publisher.sendMessage('Set edition brush size', size + 1)
+            if size <= 100:
+                Publisher.sendMessage('Set edition brush size', size)
                 cursor.SetPosition(cursor.position)
                 self.viewer.interactor.Render()
-            
         else:
             self.OnScrollForward(obj, evt)
 
     def EOnScrollBackward(self, evt, obj):
         iren = self.viewer.interactor
+        viewer = self.viewer
         if iren.GetControlKey():
             mouse_x, mouse_y = iren.GetEventPosition()
             render = iren.FindPokedRenderer(mouse_x, mouse_y)
             slice_data = self.viewer.get_slice_data(render)
             cursor = slice_data.cursor
             size = cursor.radius * 2
+            size -= 1
 
             if size > 0:
-                Publisher.sendMessage('Set edition brush size', size - 1)
+                Publisher.sendMessage('Set edition brush size', size)
                 cursor.SetPosition(cursor.position)
                 self.viewer.interactor.Render()
         else:
@@ -742,41 +819,29 @@ class EditorInteractorStyle(DefaultInteractorStyle):
         return x, y, z
 
 
-class WatershedProgressWindow(wx.Frame):
-    def __init__(self, process, parent=None):
-        wx.Frame.__init__(self, parent, -1)
+class WatershedProgressWindow(object):
+    def __init__(self, process):
         self.process = process
-        self._build_gui()
-        self._bind_wx_events()
-        self.timer = wx.Timer(self)
-        self.timer.Start(1000)
+        self.title = "InVesalius 3"
+        self.msg = _("Applying watershed ...")
+        self.style = wx.PD_APP_MODAL | wx.PD_APP_MODAL | wx.PD_CAN_ABORT
 
-    def _build_gui(self):
-        self.gauge = wx.Gauge(self, -1, 100)
-        self.btn_cancel = wx.Button(self, wx.ID_CANCEL)
-        
-        sizer = wx.BoxSizer(wx.VERTICAL)
-        sizer.Add(wx.StaticText(self, -1, _("Applying watershed")))
-        sizer.Add(self.gauge, 0, wx.EXPAND)
-        sizer.Add(self.btn_cancel, 0, wx.ALIGN_LEFT)
+        self.dlg = wx.ProgressDialog(self.title,
+                                     self.msg,
+                                     parent = None,
+                                     style  = self.style)
 
-        self.SetSizer(sizer)
-        sizer.Fit(self)
-        self.Layout()
+        self.dlg.Bind(wx.EVT_BUTTON, self.Cancel)
+        self.dlg.Show()
 
-    def __del__(self):
-        self.timer.Stop()
-
-    def _bind_wx_events(self):
-        self.Bind(wx.EVT_TIMER, self.TimeHandler)
-        self.btn_cancel.Bind(wx.EVT_BUTTON, self.on_cancel)
-
-    def on_cancel(self, evt):
-        self.timer.Stop()    
+    def Cancel(self, evt):
         self.process.terminate()
 
-    def TimeHandler(self, evt):
-        self.gauge.Pulse()
+    def Update(self):
+        self.dlg.Pulse()
+
+    def Close(self):
+        self.dlg.Destroy()
 
 
 class WatershedConfig(object):
@@ -851,6 +916,7 @@ class WaterShedInteractorStyle(DefaultInteractorStyle):
         Publisher.subscribe(self.set_bformat, 'Set watershed brush format')
 
         self._set_cursor()
+        self.viewer.slice_data.cursor.Show(0)
 
     def SetUp(self):
         mask = self.viewer.slice_.current_mask.matrix
@@ -898,7 +964,6 @@ class WaterShedInteractorStyle(DefaultInteractorStyle):
         cursor.SetColour(self.viewer._brush_cursor_colour)
         cursor.SetSize(self.config.cursor_size)
         self.viewer.slice_data.SetCursor(cursor)
-        self.viewer.interactor.Render()
 
     def set_bsize(self, pubsub_evt):
         size = pubsub_evt.data
@@ -913,41 +978,49 @@ class WaterShedInteractorStyle(DefaultInteractorStyle):
         if (self.viewer.slice_.buffer_slices[self.orientation].mask is None):
             return
         self.viewer.slice_data.cursor.Show()
-        #self.viewer.interactor.SetCursor(wx.StockCursor(wx.CURSOR_BLANK))
+        self.viewer.interactor.SetCursor(wx.StockCursor(wx.CURSOR_BLANK))
         self.viewer.interactor.Render()
-        
+
     def OnLeaveInteractor(self, obj, evt):
         self.viewer.slice_data.cursor.Show(0)
-        #self.viewer.interactor.SetCursor(wx.StockCursor(wx.CURSOR_DEFAULT))
+        self.viewer.interactor.SetCursor(wx.StockCursor(wx.CURSOR_DEFAULT))
         self.viewer.interactor.Render()
 
     def WOnScrollBackward(self, obj, evt):
+        iren = self.viewer.interactor
         viewer = self.viewer
-        iren = viewer.interactor
         if iren.GetControlKey():
-            if viewer.slice_.opacity > 0:
-                viewer.slice_.opacity -= 0.1
-                self.viewer.slice_.buffer_slices['AXIAL'].discard_vtk_mask()
-                self.viewer.slice_.buffer_slices['CORONAL'].discard_vtk_mask()
-                self.viewer.slice_.buffer_slices['SAGITAL'].discard_vtk_mask()
-                viewer.OnScrollBar()
+            mouse_x, mouse_y = iren.GetEventPosition()
+            render = iren.FindPokedRenderer(mouse_x, mouse_y)
+            slice_data = self.viewer.get_slice_data(render)
+            cursor = slice_data.cursor
+            size = cursor.radius * 2
+            size -= 1
+
+            if size > 0:
+                Publisher.sendMessage('Set watershed brush size', size)
+                cursor.SetPosition(cursor.position)
+                self.viewer.interactor.Render()
         else:
             self.OnScrollBackward(obj, evt)
 
-
     def WOnScrollForward(self, obj, evt):
+        iren = self.viewer.interactor
         viewer = self.viewer
-        iren = viewer.interactor
         if iren.GetControlKey():
-            if viewer.slice_.opacity < 1:
-                viewer.slice_.opacity += 0.1
-                self.viewer.slice_.buffer_slices['AXIAL'].discard_vtk_mask()
-                self.viewer.slice_.buffer_slices['CORONAL'].discard_vtk_mask()
-                self.viewer.slice_.buffer_slices['SAGITAL'].discard_vtk_mask()
-                viewer.OnScrollBar()
+            mouse_x, mouse_y = iren.GetEventPosition()
+            render = iren.FindPokedRenderer(mouse_x, mouse_y)
+            slice_data = self.viewer.get_slice_data(render)
+            cursor = slice_data.cursor
+            size = cursor.radius * 2
+            size += 1
+
+            if size <= 100:
+                Publisher.sendMessage('Set watershed brush size', size)
+                cursor.SetPosition(cursor.position)
+                self.viewer.interactor.Render()
         else:
             self.OnScrollForward(obj, evt)
-
 
     def OnBrushClick(self, obj, evt):
         if (self.viewer.slice_.buffer_slices[self.orientation].mask is None):
@@ -957,7 +1030,7 @@ class WaterShedInteractorStyle(DefaultInteractorStyle):
         iren = viewer.interactor
 
         viewer._set_editor_cursor_visibility(1)
- 
+
         mouse_x, mouse_y = iren.GetEventPosition()
         render = iren.FindPokedRenderer(mouse_x, mouse_y)
         slice_data = viewer.get_slice_data(render)
@@ -968,10 +1041,10 @@ class WaterShedInteractorStyle(DefaultInteractorStyle):
         slice_data.cursor.Show()
 
         self.picker.Pick(mouse_x, mouse_y, 0, render)
-        
+
         coord = self.get_coordinate_cursor()
         position = slice_data.actor.GetInput().FindPoint(coord)
-        
+
         if position != -1:
             coord = slice_data.actor.GetInput().GetPoint(position)
 
@@ -1017,7 +1090,7 @@ class WaterShedInteractorStyle(DefaultInteractorStyle):
         iren = viewer.interactor
 
         viewer._set_editor_cursor_visibility(1)
- 
+
         mouse_x, mouse_y = iren.GetEventPosition()
         render = iren.FindPokedRenderer(mouse_x, mouse_y)
         slice_data = viewer.get_slice_data(render)
@@ -1027,12 +1100,12 @@ class WaterShedInteractorStyle(DefaultInteractorStyle):
             #i.cursor.Show(0)
 
         self.picker.Pick(mouse_x, mouse_y, 0, render)
-        
+
         #if (self.pick.GetViewProp()):
             #self.interactor.SetCursor(wx.StockCursor(wx.CURSOR_BLANK))
         #else:
             #self.interactor.SetCursor(wx.StockCursor(wx.CURSOR_DEFAULT))
-            
+
         coord = self.get_coordinate_cursor()
         position = viewer.slice_data.actor.GetInput().FindPoint(coord)
 
@@ -1043,7 +1116,7 @@ class WaterShedInteractorStyle(DefaultInteractorStyle):
             coord = slice_data.actor.GetInput().GetPoint(position)
         slice_data.cursor.SetPosition(coord)
         #self.__update_cursor_position(slice_data, coord)
-        
+
         if (self.left_pressed):
             cursor = slice_data.cursor
             position = slice_data.actor.GetInput().FindPoint(coord)
@@ -1104,7 +1177,7 @@ class WaterShedInteractorStyle(DefaultInteractorStyle):
 
         ww = self.viewer.slice_.window_width
         wl = self.viewer.slice_.window_level
-        
+
         if BRUSH_BACKGROUND in markers and BRUSH_FOREGROUND in markers:
             #w_algorithm = WALGORITHM[self.config.algorithm]
             bstruct = generate_binary_structure(2, CON2D[self.config.con_2d])
@@ -1146,9 +1219,7 @@ class WaterShedInteractorStyle(DefaultInteractorStyle):
 
             self.viewer.slice_.current_mask.was_edited = True
             self.viewer.slice_.current_mask.clear_history()
-            Publisher.sendMessage('Reload actual slice')
-        else:
-            self.viewer.OnScrollBar(update3D=False)
+        Publisher.sendMessage('Reload actual slice')
 
     def get_coordinate_cursor(self):
         # Find position
@@ -1253,18 +1324,14 @@ class WaterShedInteractorStyle(DefaultInteractorStyle):
                                         self.config.use_ww_wl, wl, ww, q))
 
             wp = WatershedProgressWindow(p)
-            wp.Center(wx.BOTH)
-            wp.Show()
-            wp.MakeModal()
-
             p.start()
 
             while q.empty() and p.is_alive():
                 time.sleep(0.5)
+                wp.Update()
                 wx.Yield()
 
-            wp.MakeModal(False)
-            wp.Destroy()
+            wp.Close()
             del wp
 
             if q.empty():

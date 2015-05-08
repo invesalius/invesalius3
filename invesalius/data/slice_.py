@@ -142,6 +142,7 @@ class Slice(object):
         Publisher.subscribe(self.__set_mask_name, 'Change mask name')
         Publisher.subscribe(self.__show_mask, 'Show mask')
         Publisher.subscribe(self.__hide_current_mask, 'Hide current mask')
+        Publisher.subscribe(self.__clean_current_mask, 'Clean current mask')
 
         Publisher.subscribe(self.__set_current_mask_threshold_limits,
                                         'Update threshold limits')
@@ -211,6 +212,7 @@ class Slice(object):
                     buffer_.discard_vtk_mask()
                     buffer_.discard_mask()
 
+                Publisher.sendMessage('Show mask', (item, 0))
                 Publisher.sendMessage('Reload actual slice')
 
     def OnDuplicateMasks(self, pubsub_evt):
@@ -384,6 +386,15 @@ class Slice(object):
             index = self.current_mask.index
             value = False
             Publisher.sendMessage('Show mask', (index, value))
+
+    def __clean_current_mask(self, pubsub_evt):
+        if self.current_mask:
+            self.current_mask.clean()
+            for buffer_ in self.buffer_slices.values():
+                buffer_.discard_vtk_mask()
+                buffer_.discard_mask()
+            self.current_mask.clear_history()
+            self.current_mask.was_edited = True
 
     def create_temp_mask(self):
         temp_file = tempfile.mktemp()
@@ -1012,6 +1023,7 @@ class Slice(object):
 
         if show:
             self.current_mask = mask
+            Publisher.sendMessage('Show mask', (mask.index, 1))
             Publisher.sendMessage('Change mask selected', mask.index)
             Publisher.sendMessage('Update slice viewer')
 

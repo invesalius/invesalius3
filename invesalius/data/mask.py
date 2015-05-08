@@ -285,6 +285,12 @@ class Mask():
         shape = shape[0] + 1, shape[1] + 1, shape[2] + 1
         self.matrix = numpy.memmap(self.temp_file, mode='w+', dtype='uint8', shape=shape)
 
+    def clean(self):
+        self.matrix[1:, 1:, 1:] = 0
+        self.matrix[0, :, :] = 1
+        self.matrix[:, 0, :] = 1
+        self.matrix[:, :, 0] = 1
+
     def copy(self, copy_name):
         """
         creates and return a copy from the mask instance.
