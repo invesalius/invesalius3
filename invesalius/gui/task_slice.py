@@ -271,7 +271,7 @@ class InnerFoldPanel(wx.Panel):
                                       leftSpacing=0, rightSpacing=0)
 
         # Fold 2 - Advanced edition tools
-        item = fold_panel.AddFoldPanel(_("Advanced editing tools"), collapsed=True)
+        item = fold_panel.AddFoldPanel(_("Manual edition"), collapsed=True)
         etw = EditionTools(item)
 
         fold_panel.ApplyCaptionStyle(item, style)

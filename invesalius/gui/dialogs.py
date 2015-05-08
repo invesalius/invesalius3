@@ -762,8 +762,8 @@ def ShowAboutDialog(parent):
 
     info = wx.AboutDialogInfo()
     info.Name = "InVesalius"
-    info.Version = "3.0 - Beta 5"
-    info.Copyright = _("(c) 2007-2013 Renato Archer Information Technology Center - CTI")
+    info.Version = "3.0"
+    info.Copyright = _("(c) 2007-2015 Renato Archer Information Technology Center - CTI")
     info.Description = wordwrap(_("InVesalius is a medical imaging program for 3D reconstruction. It uses a sequence of 2D DICOM image files acquired with CT or MRI scanners. InVesalius allows exporting 3D volumes or surfaces as STL files for creating physical models of a patient's anatomy using rapid prototyping technologies. The software is supported by CTI, CNPq and the Brazilian Ministry of Health.\n\n Contact: invesalius@cti.gov.br"), 350, wx.ClientDC(parent))
 
 #       _("InVesalius is a software for medical imaging 3D reconstruction. ")+\
@@ -1402,7 +1402,7 @@ class WatershedOptionsPanel(wx.Panel):
         self._init_gui()
 
     def _init_gui(self):
-        self.choice_algorithm = wx.RadioBox(self, -1, "Algorithm",
+        self.choice_algorithm = wx.RadioBox(self, -1, _(u"Method"),
                                            choices=self.algorithms,
                                            style=wx.NO_BORDER | wx.HORIZONTAL)
         self.choice_algorithm.SetSelection(self.algorithms.index(self.config.algorithm))
@@ -1425,7 +1425,7 @@ class WatershedOptionsPanel(wx.Panel):
         box_sizer.Add(self.choice_3dcon, 0, wx.ALIGN_CENTER_VERTICAL,2)
 
         g_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        g_sizer.Add(wx.StaticText(self, -1, "Gaussian size"), 0, wx.ALIGN_RIGHT | wx.ALL, 5)
+        g_sizer.Add(wx.StaticText(self, -1, _("Gaussian sigma")), 0, wx.ALIGN_RIGHT | wx.ALL, 5)
         g_sizer.Add(self.gaussian_size, 0, wx.ALIGN_LEFT | wx.ALL, 5)
 
         sizer = wx.BoxSizer(wx.VERTICAL)
