@@ -579,7 +579,6 @@ class EditorInteractorStyle(DefaultInteractorStyle):
 
         self.AddObserver("LeftButtonPressEvent", self.OnBrushClick)
         self.AddObserver("LeftButtonReleaseEvent", self.OnBrushRelease)
-        self.RemoveObservers("MouseMoveEvent")
         self.AddObserver("MouseMoveEvent", self.OnBrushMove)
 
         self.RemoveObservers("MouseWheelForwardEvent")
