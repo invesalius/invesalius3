@@ -329,7 +329,8 @@ class SurfaceManager():
                                     surface.colour, surface.volume,
                                     surface.transparency))
         self.last_surface_index = index
-        self.ShowActor(index, True)
+        if surface.is_shown:
+            self.ShowActor(index, True)
 
     def OnLoadSurfaceDict(self, pubsub_evt):
         surface_dict = pubsub_evt.data
