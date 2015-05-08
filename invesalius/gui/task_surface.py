@@ -485,10 +485,11 @@ class SurfaceProperties(wx.Panel):
         s = self.combo_surface_name.GetSelection()
         self.combo_surface_name.SetItems([n[0] for n in self.surface_list])
 
-        if s in list_index:
-            self.combo_surface_name.SetSelection(0)
-        else:
-            self.combo_surface_name.SetSelection(s)
+        if self.surface_list:
+            if s in list_index:
+                self.combo_surface_name.SetSelection(0)
+            else:
+                self.combo_surface_name.SetSelection(s)
 
     def OnCloseProject(self, pubsub_evt):
         self.CloseProject()
