@@ -331,7 +331,6 @@ class GradientCtrl(wx.Panel):
         self.changed = False
         self._draw_controls()
         self._bind_events_wx()
-        self.SetBackgroundColour((0, 255, 0))
         self.Show()
 
     def _draw_controls(self):
@@ -352,9 +351,9 @@ class GradientCtrl(wx.Panel):
             self.spin_max.SetWindowVariant(wx.WINDOW_VARIANT_SMALL)
 
         sizer = wx.BoxSizer(wx.HORIZONTAL)
-        sizer.Add(self.spin_min, 0, wx.EXPAND)
+        sizer.Add(self.spin_min, 0, wx.EXPAND | wx.RIGHT, 2)
         sizer.Add(self.gradient_slider, 1, wx.EXPAND)
-        sizer.Add(self.spin_max, 0, wx.EXPAND)
+        sizer.Add(self.spin_max, 0, wx.EXPAND | wx.LEFT, 2)
         self.sizer.Add(sizer, 1, wx.EXPAND)
 
     def _bind_events_wx(self):
