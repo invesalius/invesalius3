@@ -790,7 +790,7 @@ def ShowAboutDialog(parent):
                         "Dimitris Glezos",
                         "Eugene Liscio",
                         u"Frédéric Lopez",
-                        "Javier de Lima Moreno"
+                        "Javier de Lima Moreno",
                         "Nikos Korkakakis",
                         "Massimo Crisantemo",
                         "Raul Bolliger Neto",
