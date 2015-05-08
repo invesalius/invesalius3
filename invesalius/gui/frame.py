@@ -684,9 +684,9 @@ class MenuBar(wx.MenuBar):
         help_menu.Append(const.ID_ABOUT, _("About..."))
         #help_menu.Append(107, "Check For Updates Now...")
 
-        if platform.system() == 'Darwin':
-           wx.App.SetMacAboutMenuItemId(const.ID_ABOUT)
-           wx.App.SetMacExitMenuItemId(const.ID_EXIT)
+        #if platform.system() == 'Darwin':
+           #wx.App.SetMacAboutMenuItemId(const.ID_ABOUT)
+           #wx.App.SetMacExitMenuItemId(const.ID_EXIT)
 
         # Add all menus to menubar
         self.Append(file_menu, _("File"))
