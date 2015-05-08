@@ -477,9 +477,11 @@ class SurfaceProperties(wx.Panel):
 
         old_dict = self.surface_list
         new_dict = []
+        i = 0
         for n, (name, index) in enumerate(old_dict):
             if n not in list_index:
-                new_dict.append([name, index])
+                new_dict.append([name, i])
+                i+=1
         self.surface_list = new_dict
 
         s = self.combo_surface_name.GetSelection()
@@ -510,6 +512,7 @@ class SurfaceProperties(wx.Panel):
         name = pubsub_evt.data[1]
         colour = [value*255 for value in pubsub_evt.data[2]]
         i = 0
+        print name, index, self.surface_list
         try:
             i = self.surface_list.index([name, index])
             overwrite = True
@@ -532,7 +535,7 @@ class SurfaceProperties(wx.Panel):
     def OnComboName(self, evt):
         surface_name = evt.GetString()
         surface_index = evt.GetSelection()
-        Publisher.sendMessage('Change surface selected', surface_index)
+        Publisher.sendMessage('Change surface selected', self.surface_list[surface_index][1])
 
     def OnSelectColour(self, evt):
         colour = [value/255.0 for value in evt.GetValue()]
