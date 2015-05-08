@@ -61,8 +61,8 @@ class ContourMIPConfig(wx.Panel):
     def __init__(self, prnt, orientation):
         wx.Panel.__init__(self, prnt)
         self.mip_size_spin = wx.SpinCtrl(self, -1, min=1, max=240,
-                                         value=str(const.PROJECTION_MIP_SIZE),
                                          initial=const.PROJECTION_MIP_SIZE)
+        self.mip_size_spin.SetValue(const.PROJECTION_MIP_SIZE)
         self.mip_size_spin.SetToolTip(wx.ToolTip(_("Number of slices used to compound the visualization.")))
         w, h = self.mip_size_spin.GetTextExtent('M')
         self.mip_size_spin.SetMinSize((5 * w + 10, -1))
