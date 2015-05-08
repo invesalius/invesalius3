@@ -916,6 +916,7 @@ class WaterShedInteractorStyle(DefaultInteractorStyle):
         Publisher.subscribe(self.set_bformat, 'Set watershed brush format')
 
         self._set_cursor()
+        self.viewer.slice_data.cursor.Show(0)
 
     def SetUp(self):
         mask = self.viewer.slice_.current_mask.matrix
@@ -963,7 +964,6 @@ class WaterShedInteractorStyle(DefaultInteractorStyle):
         cursor.SetColour(self.viewer._brush_cursor_colour)
         cursor.SetSize(self.config.cursor_size)
         self.viewer.slice_data.SetCursor(cursor)
-        self.viewer.interactor.Render()
 
     def set_bsize(self, pubsub_evt):
         size = pubsub_evt.data
