@@ -682,7 +682,7 @@ class EditionTools(wx.Panel):
         spin_brush_size = wx.SpinCtrl(self, -1, "", size=(width + 20, -1))
         spin_brush_size.SetRange(1,100)
         spin_brush_size.SetValue(const.BRUSH_SIZE)
-        spin_brush_size.Bind(wx.EVT_TEXT, self.OnBrushSize)
+        spin_brush_size.Bind(wx.EVT_SPINCTRL, self.OnBrushSize)
         self.spin = spin_brush_size
 
         combo_brush_op = wx.ComboBox(self, -1, "", size=(15,-1),
@@ -842,7 +842,7 @@ class WatershedTool(EditionTools):
         spin_brush_size = wx.SpinCtrl(self, -1, "", size=(width + 20, -1))
         spin_brush_size.SetRange(1,100)
         spin_brush_size.SetValue(const.BRUSH_SIZE)
-        spin_brush_size.Bind(wx.EVT_TEXT, self.OnBrushSize)
+        spin_brush_size.Bind(wx.EVT_SPINCTRL, self.OnBrushSize)
         self.spin = spin_brush_size
 
         combo_brush_op = wx.ComboBox(self, -1, "", size=(15,-1),
