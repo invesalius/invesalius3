@@ -591,6 +591,7 @@ class EditorInteractorStyle(DefaultInteractorStyle):
         Publisher.subscribe(self.set_boperation, 'Set edition operation')
 
         self._set_cursor()
+        self.viewer.slice_data.cursor.Show(0)
 
     def CleanUp(self):
         Publisher.unsubscribe(self.set_bsize, 'Set edition brush size')
@@ -626,7 +627,6 @@ class EditorInteractorStyle(DefaultInteractorStyle):
         cursor.SetColour(self.viewer._brush_cursor_colour)
         cursor.SetSize(self.config.cursor_size)
         self.viewer.slice_data.SetCursor(cursor)
-        self.viewer.interactor.Render()
 
     def OnEnterInteractor(self, obj, evt):
         if (self.viewer.slice_.buffer_slices[self.orientation].mask is None):
