@@ -977,7 +977,9 @@ class WatershedTool(EditionTools):
         Publisher.sendMessage('Set use ww wl', value)
 
     def OnConfig(self, evt):
-        dlg.WatershedOptionsDialog().Show()
+        from data.styles import WatershedConfig
+        config = WatershedConfig()
+        dlg.WatershedOptionsDialog(config).Show()
 
     def OnExpandWatershed(self, evt):
         Publisher.sendMessage('Expand watershed to 3D AXIAL')
