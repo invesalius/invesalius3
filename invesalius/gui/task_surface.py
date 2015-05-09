@@ -474,6 +474,8 @@ class SurfaceProperties(wx.Panel):
 
     def OnRemoveSurfaces(self, pubsub_evt):
         list_index = pubsub_evt.data
+        s = self.combo_surface_name.GetSelection()
+        ns = 0
 
         old_dict = self.surface_list
         new_dict = []
@@ -481,17 +483,15 @@ class SurfaceProperties(wx.Panel):
         for n, (name, index) in enumerate(old_dict):
             if n not in list_index:
                 new_dict.append([name, i])
+                if s == n:
+                    ns = i
                 i+=1
         self.surface_list = new_dict
 
-        s = self.combo_surface_name.GetSelection()
         self.combo_surface_name.SetItems([n[0] for n in self.surface_list])
 
         if self.surface_list:
-            if s in list_index:
-                self.combo_surface_name.SetSelection(0)
-            else:
-                self.combo_surface_name.SetSelection(s)
+            self.combo_surface_name.SetSelection(ns)
 
     def OnCloseProject(self, pubsub_evt):
         self.CloseProject()
