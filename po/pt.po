@@ -12,14 +12,13 @@ msgstr ""
 "Project-Id-Version: InVesalius3\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2015-05-11 14:29-0300\n"
-"PO-Revision-Date: 2015-05-11 16:36+0000\n"
+"PO-Revision-Date: 2015-05-11 17:31+0000\n"
 "Last-Translator: InVesalius <invesalius@cti.gov.br>\n"
-"Language-Team: Portuguese (http://www.transifex.com/projects/p/invesalius3/"
-"language/pt/)\n"
-"Language: pt\n"
+"Language-Team: Portuguese (http://www.transifex.com/projects/p/invesalius3/language/pt/)\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
+"Language: pt\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 "X-Poedit-Country: GENERIC\n"
 "X-Poedit-Language: English\n"
@@ -541,16 +540,10 @@ msgstr "Não se aplicará o valor."
 
 #: dialogs.py:108
 msgid ""
-"InVesalius is running on a 32-bit operating system or has insufficient "
-"memory. \n"
+"InVesalius is running on a 32-bit operating system or has insufficient memory. \n"
 "If you want to work with 3D surfaces or volume rendering, \n"
 "it is recommended to reduce the medical images resolution."
-msgstr ""
-"Está-se a executar o InVesalius em sistema operacional de 32 bits\n"
-"ou não há memória suficiente disponível. Se desejas trabalhar com "
-"superfícies 3D\n"
-"ou renderização volumétrica, recomenda-se diminuir a resolução das imagens "
-"médicas."
+msgstr "Está-se a executar o InVesalius em sistema operacional de 32 bits\nou não há memória suficiente disponível. Se desejas trabalhar com superfícies 3D\nou renderização volumétrica, recomenda-se diminuir a resolução das imagens médicas."
 
 #: dialogs.py:122
 msgid "Percentage of original resolution"
@@ -584,9 +577,7 @@ msgstr "Projecto do InVesalius (*.inv3)|*.inv3"
 msgid ""
 "A new version of InVesalius is available. Do you want to open the download "
 "website now?"
-msgstr ""
-"Uma nova versão do InVesalius está disponível. Gostarias de abrir a página "
-"para descarregé-la?"
+msgstr "Uma nova versão do InVesalius está disponível. Gostarias de abrir a página para descarregé-la?"
 
 #: dialogs.py:381 utils.py:376
 msgid "Invesalius Update"
@@ -597,9 +588,7 @@ msgstr "Actualização do InVesalius"
 msgid ""
 "The project %s has been modified.\n"
 "Save changes?"
-msgstr ""
-"O projecto %s foi modificado.\n"
-"Guardar com as alterações?"
+msgstr "O projecto %s foi modificado.\nGuardar com as alterações?"
 
 #: dialogs.py:453
 #, python-format
@@ -659,8 +648,7 @@ msgstr "%s não existe."
 
 #: dialogs.py:705
 msgid "Please, provide more than one DICOM file for 3D reconstruction"
-msgstr ""
-"Favor fornecer mais de um ficheiro DICOM para reconstrução em três dimensões"
+msgstr "Favor fornecer mais de um ficheiro DICOM para reconstrução em três dimensões"
 
 #: dialogs.py:766
 msgid "(c) 2007-2015 Renato Archer Information Technology Center - CTI"
@@ -668,25 +656,10 @@ msgstr ""
 
 #: dialogs.py:767
 msgid ""
-"InVesalius is a medical imaging program for 3D reconstruction. It uses a "
-"sequence of 2D DICOM image files acquired with CT or MRI scanners. "
-"InVesalius allows exporting 3D volumes or surfaces as STL files for creating "
-"physical models of a patient's anatomy using rapid prototyping technologies. "
-"The software is supported by CTI, CNPq and the Brazilian Ministry of "
-"Health.\n"
+"InVesalius is a medical imaging program for 3D reconstruction. It uses a sequence of 2D DICOM image files acquired with CT or MRI scanners. InVesalius allows exporting 3D volumes or surfaces as STL files for creating physical models of a patient's anatomy using rapid prototyping technologies. The software is supported by CTI, CNPq and the Brazilian Ministry of Health.\n"
 "\n"
 " Contact: invesalius@cti.gov.br"
-msgstr ""
-"InVesalius é um programa para reconstrução de imagens médicas em 3 "
-"dimensões. Ele utiliza uma sequência de ficheiros no formato DICOM com "
-"imagens em 2 dimensões, obtidas por equipamentos de tomografia por "
-"computador ou de ressonância nuclear magnética. O programa InVesalius "
-"permite a exportação de volumes ou superfícies em três dimensões em "
-"ficheiros no formato STL para a criação de modelos físicos da anatomia do "
-"paciente utilizando tecnologias de prototipagem rápida.O programa é "
-"patrocinado pelo CTI, CNPq e Mnistério da Saúde do Brasil\n"
-"\n"
-" Contacto: invesalius@cti.gov.br"
+msgstr "InVesalius é um programa para reconstrução de imagens médicas em 3 dimensões. Ele utiliza uma sequência de ficheiros no formato DICOM com imagens em 2 dimensões, obtidas por equipamentos de tomografia por computador ou de ressonância nuclear magnética. O programa InVesalius permite a exportação de volumes ou superfícies em três dimensões em ficheiros no formato STL para a criação de modelos físicos da anatomia do paciente utilizando tecnologias de prototipagem rápida.O programa é patrocinado pelo CTI, CNPq e Mnistério da Saúde do Brasil\n\n Contacto: invesalius@cti.gov.br"
 
 #: dialogs.py:775
 msgid "GNU GPL (General Public License) version 2"
@@ -861,9 +834,7 @@ msgstr "Localização: %.2f"
 msgid ""
 "%s %s\n"
 "Made in InVesalius"
-msgstr ""
-"%s %s\n"
-"Criado com InVesalius"
+msgstr "%s %s\nCriado com InVesalius"
 
 #: dicom_preview_panel.py:189 dicom_preview_panel.py:190
 msgid "Image"
@@ -1184,9 +1155,7 @@ msgstr "GPU (apenas para placas NVidia"
 msgid ""
 "Language settings will be applied \n"
 " the next time InVesalius starts."
-msgstr ""
-"Aplicar-se-ão as configurações de idioma\n"
-"na próxima iniciação do InVesalius"
+msgstr "Aplicar-se-ão as configurações de idioma\nna próxima iniciação do InVesalius"
 
 #: presets.py:34 presets.py:52 presets.py:107 presets.py:138
 msgid "Soft Tissue"
@@ -1434,9 +1403,9 @@ msgid "Advanced options"
 msgstr "Opções avançadas"
 
 #: task_surface.py:274
-msgid "Automatically select largest disconnected region and create new surface"
-msgstr ""
-"Seleccionar automaticamente a região desconexa máxima e criar superfície nova"
+msgid ""
+"Automatically select largest disconnected region and create new surface"
+msgstr "Seleccionar automaticamente a região desconexa máxima e criar superfície nova"
 
 #: task_surface.py:275
 msgid "Select largest surface"
@@ -1444,10 +1413,9 @@ msgstr "Seleccionar a superfície máxima"
 
 #: task_surface.py:283
 msgid ""
-"Automatically select disconnected regions and create a new surface per region"
-msgstr ""
-"Seleccionar automaticamente regiões desconexas e criar uma superfície nova "
-"por região"
+"Automatically select disconnected regions and create a new surface per "
+"region"
+msgstr "Seleccionar automaticamente regiões desconexas e criar uma superfície nova por região"
 
 #: task_surface.py:284
 msgid "Split all disconnected surfaces"
@@ -1455,9 +1423,7 @@ msgstr "Separar todas as superfícies desconexas"
 
 #: task_surface.py:292
 msgid "Manually insert seeds of regions of interest and create a new surface"
-msgstr ""
-"Inserir manualmente sementes nas regiões de interesse e criar uma superfície "
-"nova"
+msgstr "Inserir manualmente sementes nas regiões de interesse e criar uma superfície nova"
 
 #: task_surface.py:293
 msgid "Select regions of interest..."
