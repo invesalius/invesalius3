@@ -5,28 +5,29 @@
 # Paulo Henrique Junqueira Amorim <paulojamorim@gmail.com>
 # Thiago Franco de Morais <totonixsame@gmail.com>
 # Translators:
-# Mohammad Hosseini <PersianPolaris@Gmail.com>, 2011.
+# Translators:
+# Seyed Mohammad Hosseini <PersianPolaris@Gmail.com>, 2011
 msgid ""
 msgstr ""
-"Project-Id-Version: InVesalius\n"
+"Project-Id-Version: InVesalius3\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2015-05-11 13:28-0300\n"
-"PO-Revision-Date: 2011-11-19 09:54+0000\n"
-"Last-Translator: Mohammad Hosseini <PersianPolaris@Gmail.com>\n"
-"Language-Team: Persian <PersianPolaris@Gmail.com>\n"
-"Language: fa\n"
+"PO-Revision-Date: 2015-05-11 16:36+0000\n"
+"Last-Translator: InVesalius <invesalius@cti.gov.br>\n"
+"Language-Team: Persian (http://www.transifex.com/projects/p/invesalius3/language/fa/)\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
+"Language: fa\n"
 "Plural-Forms: nplurals=1; plural=0;\n"
 "X-Poedit-Country: GENERIC\n"
 "X-Poedit-Language: English\n"
 "X-Poedit-SourceCharset: utf-8\n"
 
 #: clut_raycasting.py:535
-#, fuzzy, python-format
+#, python-format
 msgid "Value: %-6d"
-msgstr "مقدار"
+msgstr ""
 
 #: clut_raycasting.py:536
 #, python-format
@@ -300,23 +301,20 @@ msgid "Gold bone"
 msgstr ""
 
 #: constants.py:335
-#, fuzzy
 msgid "High contrast"
-msgstr "شفافيت پایین"
+msgstr ""
 
 #: constants.py:336
-#, fuzzy
 msgid "Low contrast"
-msgstr "شفافيت پایین"
+msgstr ""
 
 #: constants.py:337 constants.py:345
 msgid "Soft on white"
 msgstr ""
 
 #: constants.py:338
-#, fuzzy
 msgid "Mid contrast"
-msgstr "شفافيت پایین"
+msgstr ""
 
 #: constants.py:339
 msgid "MIP"
@@ -432,9 +430,8 @@ msgid "Masks"
 msgstr ""
 
 #: data_notebook.py:67
-#, fuzzy
 msgid "3D surfaces"
-msgstr "3D سطوح"
+msgstr ""
 
 #: data_notebook.py:68
 msgid "Measures"
@@ -458,9 +455,8 @@ msgid "Mask"
 msgstr ""
 
 #: data_notebook.py:627 task_surface.py:140
-#, fuzzy
 msgid "New surface"
-msgstr "ذخيره کردن سطح"
+msgstr ""
 
 #: data_notebook.py:764
 msgid "Volume (mm³)"
@@ -487,9 +483,8 @@ msgid "Data"
 msgstr "اطلاعات"
 
 #: default_tasks.py:244 default_tasks.py:250
-#, fuzzy
 msgid "Load data"
-msgstr "استخراج اطلاعات"
+msgstr ""
 
 #: default_tasks.py:245 default_tasks.py:251 default_tasks.py:279
 msgid "Select region of interest"
@@ -545,8 +540,7 @@ msgstr ""
 
 #: dialogs.py:108
 msgid ""
-"InVesalius is running on a 32-bit operating system or has insufficient "
-"memory. \n"
+"InVesalius is running on a 32-bit operating system or has insufficient memory. \n"
 "If you want to work with 3D surfaces or volume rendering, \n"
 "it is recommended to reduce the medical images resolution."
 msgstr ""
@@ -662,12 +656,7 @@ msgstr ""
 
 #: dialogs.py:767
 msgid ""
-"InVesalius is a medical imaging program for 3D reconstruction. It uses a "
-"sequence of 2D DICOM image files acquired with CT or MRI scanners. "
-"InVesalius allows exporting 3D volumes or surfaces as STL files for creating "
-"physical models of a patient's anatomy using rapid prototyping technologies. "
-"The software is supported by CTI, CNPq and the Brazilian Ministry of "
-"Health.\n"
+"InVesalius is a medical imaging program for 3D reconstruction. It uses a sequence of 2D DICOM image files acquired with CT or MRI scanners. InVesalius allows exporting 3D volumes or surfaces as STL files for creating physical models of a patient's anatomy using rapid prototyping technologies. The software is supported by CTI, CNPq and the Brazilian Ministry of Health.\n"
 "\n"
 " Contact: invesalius@cti.gov.br"
 msgstr ""
@@ -753,18 +742,16 @@ msgid "Angle:"
 msgstr ""
 
 #: dialogs.py:1231
-#, fuzzy
 msgid "Max. distance:"
-msgstr "اندازه گیری فاصله"
+msgstr ""
 
 #: dialogs.py:1233
 msgid "Min. weight:"
 msgstr ""
 
 #: dialogs.py:1235
-#, fuzzy
 msgid "N. steps:"
-msgstr "قدم بعدي"
+msgstr ""
 
 #: dialogs.py:1254 dialogs.py:1290 dialogs.py:1335
 msgid "Context aware smoothing"
@@ -854,9 +841,9 @@ msgid "Image"
 msgstr "تصویر"
 
 #: dicom_preview_panel.py:409
-#, fuzzy, python-format
+#, python-format
 msgid "%d images"
-msgstr "BMP تصوير"
+msgstr ""
 
 #: dicom_preview_panel.py:534 dicom_preview_panel.py:555
 #, python-format
@@ -884,19 +871,16 @@ msgid "Import DICOM...\tCtrl+I"
 msgstr ""
 
 #: frame.py:574
-#, fuzzy
 msgid "Import other files..."
-msgstr "وارد کردن تصاویر پزشکی..."
+msgstr ""
 
 #: frame.py:575
-#, fuzzy
 msgid "Open project...\tCtrl+O"
-msgstr "ذخیره پروژه به عنوان..."
+msgstr ""
 
 #: frame.py:576
-#, fuzzy
 msgid "Save project\tCtrl+S"
-msgstr "ذخیره پروژه به عنوان..."
+msgstr ""
 
 #: frame.py:578
 msgid "Close project"
@@ -927,9 +911,8 @@ msgid "Preferences..."
 msgstr ""
 
 #: frame.py:681
-#, fuzzy
 msgid "Getting started..."
-msgstr "شروع..."
+msgstr ""
 
 #: frame.py:684
 msgid "About..."
@@ -1153,9 +1136,8 @@ msgid "Language"
 msgstr ""
 
 #: preferences.py:95
-#, fuzzy
 msgid "Surface"
-msgstr "3D سطوح"
+msgstr ""
 
 #: preferences.py:98
 msgid "Interpolation "
@@ -1293,9 +1275,8 @@ msgstr ""
 
 #: surface.py:432 surface.py:523 surface.py:541 surface.py:567 surface.py:596
 #: surface.py:618 surface.py:637 surface.py:651 surface.py:668
-#, fuzzy
 msgid "Creating 3D surface..."
-msgstr "استخراج سطح سه بعدي ..."
+msgstr ""
 
 #: task_exporter.py:109
 msgid "Export InVesalius screen to an image file"
@@ -1334,9 +1315,8 @@ msgid "Select DICOM files to be reconstructed"
 msgstr ""
 
 #: task_importer.py:68
-#, fuzzy
 msgid "Import DICOM images..."
-msgstr "وارد کردن تصاویر پزشکی..."
+msgstr ""
 
 #: task_importer.py:87
 msgid "Open an existing InVesalius project..."
@@ -1355,9 +1335,8 @@ msgid "Create new mask"
 msgstr ""
 
 #: task_slice.py:116
-#, fuzzy
 msgid "Create surface"
-msgstr "ذخيره کردن سطح"
+msgstr ""
 
 #: task_slice.py:117
 msgid "Overwrite last surface"
@@ -1368,9 +1347,8 @@ msgid "Mask properties"
 msgstr ""
 
 #: task_slice.py:274
-#, fuzzy
 msgid "Manual edition"
-msgstr "دستی"
+msgstr ""
 
 #: task_slice.py:284
 msgid "Watershed"
@@ -1397,9 +1375,8 @@ msgid "Brush threshold range:"
 msgstr ""
 
 #: task_slice.py:869
-#, fuzzy
 msgid "Overwrite mask"
-msgstr "آیا می خواهید که روی آخرین سطح"
+msgstr ""
 
 #: task_slice.py:870
 msgid "Use WW&WL"
@@ -1414,9 +1391,8 @@ msgid "Create 3D surface based on a mask"
 msgstr ""
 
 #: task_surface.py:88
-#, fuzzy
 msgid "Create new 3D surface"
-msgstr "استخراج سطح سه بعدي"
+msgstr ""
 
 #: task_surface.py:108
 msgid "Next step"
@@ -1431,17 +1407,18 @@ msgid "Advanced options"
 msgstr "گزینه های پیشرفته"
 
 #: task_surface.py:274
-msgid "Automatically select largest disconnected region and create new surface"
+msgid ""
+"Automatically select largest disconnected region and create new surface"
 msgstr ""
 
 #: task_surface.py:275
-#, fuzzy
 msgid "Select largest surface"
-msgstr "آیا می خواهید که روی آخرین سطح"
+msgstr ""
 
 #: task_surface.py:283
 msgid ""
-"Automatically select disconnected regions and create a new surface per region"
+"Automatically select disconnected regions and create a new surface per "
+"region"
 msgstr ""
 
 #: task_surface.py:284
@@ -1552,150 +1529,147 @@ msgstr "B"
 
 #: viewer_slice.py:407 viewer_slice.py:416 viewer_slice.py:425
 #: viewer_slice.py:434
-#, fuzzy
 msgid "AL"
-msgstr "L"
+msgstr ""
 
 #: viewer_slice.py:407 viewer_slice.py:416 viewer_slice.py:425
 #: viewer_slice.py:434
-#, fuzzy
 msgid "RA"
-msgstr "R"
+msgstr ""
 
 #: viewer_slice.py:407 viewer_slice.py:416 viewer_slice.py:425
 #: viewer_slice.py:434
-#, fuzzy
 msgid "PR"
-msgstr "R"
+msgstr ""
 
 #: viewer_slice.py:407 viewer_slice.py:416 viewer_slice.py:425
 #: viewer_slice.py:434
-#, fuzzy
 msgid "LP"
-msgstr "L"
+msgstr ""
 
 #: viewer_slice.py:410 viewer_slice.py:419 viewer_slice.py:428
 #: viewer_slice.py:437
-#, fuzzy
 msgid "LA"
-msgstr "L"
+msgstr ""
 
 #: viewer_slice.py:410 viewer_slice.py:419 viewer_slice.py:428
 #: viewer_slice.py:437
-#, fuzzy
 msgid "AR"
-msgstr "R"
+msgstr ""
 
 #: viewer_slice.py:410 viewer_slice.py:419 viewer_slice.py:428
 #: viewer_slice.py:437
-#, fuzzy
 msgid "RP"
-msgstr "R"
+msgstr ""
 
 #: viewer_slice.py:410 viewer_slice.py:419 viewer_slice.py:428
 #: viewer_slice.py:437
-#, fuzzy
 msgid "PL"
-msgstr "L"
+msgstr ""
 
 #: viewer_slice.py:445 viewer_slice.py:454 viewer_slice.py:463
 #: viewer_slice.py:472
-#, fuzzy
 msgid "TL"
-msgstr "L"
+msgstr ""
 
 #: viewer_slice.py:445 viewer_slice.py:454 viewer_slice.py:463
 #: viewer_slice.py:472
-#, fuzzy
 msgid "RT"
-msgstr "R"
+msgstr ""
 
 #: viewer_slice.py:445 viewer_slice.py:454 viewer_slice.py:463
 #: viewer_slice.py:472
-#, fuzzy
 msgid "BR"
-msgstr "R"
+msgstr ""
 
 #: viewer_slice.py:445 viewer_slice.py:454 viewer_slice.py:463
 #: viewer_slice.py:472
-#, fuzzy
 msgid "LB"
-msgstr "L"
+msgstr ""
 
 #: viewer_slice.py:448 viewer_slice.py:457 viewer_slice.py:466
 #: viewer_slice.py:475
-#, fuzzy
 msgid "LT"
-msgstr "L"
+msgstr ""
 
 #: viewer_slice.py:448 viewer_slice.py:457 viewer_slice.py:466
 #: viewer_slice.py:475
-#, fuzzy
 msgid "TR"
-msgstr "R"
+msgstr ""
 
 #: viewer_slice.py:448 viewer_slice.py:457 viewer_slice.py:466
 #: viewer_slice.py:475
-#, fuzzy
 msgid "RB"
-msgstr "R"
+msgstr ""
 
 #: viewer_slice.py:448 viewer_slice.py:457 viewer_slice.py:466
 #: viewer_slice.py:475
-#, fuzzy
 msgid "BL"
-msgstr "L"
+msgstr ""
 
 #: viewer_slice.py:483 viewer_slice.py:492 viewer_slice.py:501
 #: viewer_slice.py:510
-#, fuzzy
 msgid "TA"
-msgstr "A"
+msgstr ""
 
 #: viewer_slice.py:483 viewer_slice.py:492 viewer_slice.py:501
 #: viewer_slice.py:510
-#, fuzzy
 msgid "PT"
-msgstr "P"
+msgstr ""
 
 #: viewer_slice.py:483 viewer_slice.py:492 viewer_slice.py:501
 #: viewer_slice.py:510
-#, fuzzy
 msgid "BP"
-msgstr "P"
+msgstr ""
 
 #: viewer_slice.py:483 viewer_slice.py:492 viewer_slice.py:501
 #: viewer_slice.py:510
-#, fuzzy
 msgid "AB"
-msgstr "A"
+msgstr ""
 
 #: viewer_slice.py:486 viewer_slice.py:495 viewer_slice.py:504
 #: viewer_slice.py:513
-#, fuzzy
 msgid "AT"
-msgstr "A"
+msgstr ""
 
 #: viewer_slice.py:486 viewer_slice.py:495 viewer_slice.py:504
 #: viewer_slice.py:513
-#, fuzzy
 msgid "TP"
-msgstr "P"
+msgstr ""
 
 #: viewer_slice.py:486 viewer_slice.py:495 viewer_slice.py:504
 #: viewer_slice.py:513
-#, fuzzy
 msgid "PB"
-msgstr "P"
+msgstr ""
 
 #: viewer_slice.py:486 viewer_slice.py:495 viewer_slice.py:504
 #: viewer_slice.py:513
-#, fuzzy
 msgid "BA"
-msgstr "A"
+msgstr ""
+
+#~ msgid "Import medical images..."
+#~ msgstr "Import medical images..."
 
 #~ msgid "Advanced editing tools"
-#~ msgstr "ابزار پيشرفته ي ويرايش"
+#~ msgstr "Advanced editing tools"
 
 #~ msgid "Exit"
-#~ msgstr "خروج"
+#~ msgstr "Exit"
+
+#~ msgid "Off"
+#~ msgstr " Off"
+
+#~ msgid "Save Project As..."
+#~ msgstr "Save Project As..."
+
+#~ msgid "Open a InVesalius project..."
+#~ msgstr "Open a InVesalius project..."
+
+#~ msgid "Getting selected parts"
+#~ msgstr "Getting selected parts"
+
+#~ msgid "InVesalius 3 - New surface"
+#~ msgstr "InVesalius 3 - New surface"
+
+#~ msgid "Image Tiling"
+#~ msgstr "Image Tiling"

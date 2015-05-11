@@ -5,28 +5,28 @@
 # Paulo Henrique Junqueira Amorim <paulojamorim@gmail.com>
 # Thiago Franco de Morais <totonixsame@gmail.com>
 # Translators:
+# Translators:
 msgid ""
 msgstr ""
-"Project-Id-Version: InVesalius\n"
+"Project-Id-Version: InVesalius3\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2015-05-11 13:28-0300\n"
-"PO-Revision-Date: 2010-11-30 02:42+0000\n"
-"Last-Translator: Invesalius team <invesalius@cti.gov.br>\n"
-"Language-Team: Korean (http://www.transifex.com/projects/p/invesalius/"
-"language/ko/)\n"
-"Language: ko\n"
+"PO-Revision-Date: 2015-05-11 16:36+0000\n"
+"Last-Translator: InVesalius <invesalius@cti.gov.br>\n"
+"Language-Team: Korean (http://www.transifex.com/projects/p/invesalius3/language/ko/)\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
+"Language: ko\n"
 "Plural-Forms: nplurals=1; plural=0;\n"
 "X-Poedit-Country: GENERIC\n"
 "X-Poedit-Language: English\n"
 "X-Poedit-SourceCharset: utf-8\n"
 
 #: clut_raycasting.py:535
-#, fuzzy, python-format
+#, python-format
 msgid "Value: %-6d"
-msgstr "값"
+msgstr ""
 
 #: clut_raycasting.py:536
 #, python-format
@@ -175,9 +175,8 @@ msgid "Abdomen"
 msgstr "복부"
 
 #: constants.py:284
-#, fuzzy
 msgid "Brain posterior fossa"
-msgstr "뇌수후부 오목이"
+msgstr ""
 
 #: constants.py:285
 msgid "Brain"
@@ -193,14 +192,12 @@ msgid "Emphysema"
 msgstr "식로"
 
 #: constants.py:288
-#, fuzzy
 msgid "Ischemia - Hard, non contrast"
-msgstr "혈액결핍 - 강 대조불명확"
+msgstr ""
 
 #: constants.py:289
-#, fuzzy
 msgid "Ischemia - Soft, non contrast"
-msgstr "혈액결핌 - 약 대조불명확"
+msgstr ""
 
 #: constants.py:290
 msgid "Larynx"
@@ -287,9 +284,8 @@ msgid "Bone + Skin II"
 msgstr "골격 + 피부 II"
 
 #: constants.py:331
-#, fuzzy
 msgid "Dark bone"
-msgstr "어두운 골격"
+msgstr ""
 
 #: constants.py:332
 msgid "Glossy"
@@ -300,57 +296,48 @@ msgid "Glossy II"
 msgstr "광택 II"
 
 #: constants.py:334
-#, fuzzy
 msgid "Gold bone"
-msgstr "황금색 골격"
+msgstr ""
 
 #: constants.py:335
-#, fuzzy
 msgid "High contrast"
-msgstr "높은 명암대조"
+msgstr ""
 
 #: constants.py:336
-#, fuzzy
 msgid "Low contrast"
-msgstr "낮은 명암대조"
+msgstr ""
 
 #: constants.py:337 constants.py:345
-#, fuzzy
 msgid "Soft on white"
-msgstr "흰색부분 연하게"
+msgstr ""
 
 #: constants.py:338
-#, fuzzy
 msgid "Mid contrast"
-msgstr "중간 명암대조"
+msgstr ""
 
 #: constants.py:339
 msgid "MIP"
 msgstr ""
 
 #: constants.py:340
-#, fuzzy
 msgid "No shading"
-msgstr "음영없음"
+msgstr ""
 
 #: constants.py:341
 msgid "Pencil"
 msgstr "연필"
 
 #: constants.py:342
-#, fuzzy
 msgid "Red on white"
-msgstr "흰색부분 빨갛게"
+msgstr ""
 
 #: constants.py:343
-#, fuzzy
 msgid "Skin on blue"
-msgstr "청색우에 피부"
+msgstr ""
 
 #: constants.py:344
-#, fuzzy
 msgid "Skin on blue II"
-msgstr "청색 II우에 피부"
+msgstr ""
 
 #: constants.py:346
 msgid "Soft + Skin"
@@ -365,9 +352,8 @@ msgid "Soft + Skin III"
 msgstr "연함 + 피부 III"
 
 #: constants.py:349
-#, fuzzy
 msgid "Soft on blue"
-msgstr "청색부분 연하게"
+msgstr ""
 
 #: constants.py:350
 msgid "Soft"
@@ -394,18 +380,17 @@ msgid "Vascular IV"
 msgstr "혈관 IV"
 
 #: constants.py:356
-#, fuzzy
 msgid "Yellow bone"
-msgstr "황색 골격"
+msgstr ""
 
 #: constants.py:382 volume.py:642
 msgid "Cut plane"
 msgstr "자름면"
 
 #: control.py:306
-#, fuzzy, python-format
+#, python-format
 msgid "Loading file %d of %d ..."
-msgstr "파일로딩 %d 중 %d"
+msgstr ""
 
 #: control.py:423
 msgid "Untitled"
@@ -444,9 +429,8 @@ msgid "Masks"
 msgstr "마스크"
 
 #: data_notebook.py:67
-#, fuzzy
 msgid "3D surfaces"
-msgstr "3차원 표면"
+msgstr ""
 
 #: data_notebook.py:68
 msgid "Measures"
@@ -470,9 +454,8 @@ msgid "Mask"
 msgstr "마스크"
 
 #: data_notebook.py:627 task_surface.py:140
-#, fuzzy
 msgid "New surface"
-msgstr "새 표면이름:"
+msgstr ""
 
 #: data_notebook.py:764
 msgid "Volume (mm³)"
@@ -499,9 +482,8 @@ msgid "Data"
 msgstr "자료"
 
 #: default_tasks.py:244 default_tasks.py:250
-#, fuzzy
 msgid "Load data"
-msgstr "자료 반출"
+msgstr ""
 
 #: default_tasks.py:245 default_tasks.py:251 default_tasks.py:279
 msgid "Select region of interest"
@@ -557,16 +539,14 @@ msgstr "값이 적용되지 않습니다."
 
 #: dialogs.py:108
 msgid ""
-"InVesalius is running on a 32-bit operating system or has insufficient "
-"memory. \n"
+"InVesalius is running on a 32-bit operating system or has insufficient memory. \n"
 "If you want to work with 3D surfaces or volume rendering, \n"
 "it is recommended to reduce the medical images resolution."
 msgstr ""
 
 #: dialogs.py:122
-#, fuzzy
 msgid "Percentage of original resolution"
-msgstr "10분의1 해상도낮추기"
+msgstr ""
 
 #: dialogs.py:170
 msgid "Loading DICOM files"
@@ -599,58 +579,48 @@ msgid ""
 msgstr ""
 
 #: dialogs.py:381 utils.py:376
-#, fuzzy
 msgid "Invesalius Update"
-msgstr "인베쌀리우스 기동"
+msgstr ""
 
 #: dialogs.py:439 dialogs.py:717 dialogs.py:742
 #, python-format
 msgid ""
 "The project %s has been modified.\n"
 "Save changes?"
-msgstr ""
-"%s의 프로젝트 변경되였습니다. \n"
-"보관하시겠습니까?"
+msgstr "%s의 프로젝트 변경되였습니다. \n보관하시겠습니까?"
 
 #: dialogs.py:453
-#, fuzzy, python-format
+#, python-format
 msgid "%s is an empty folder."
-msgstr "%s가 빈 등록부입니다."
+msgstr ""
 
 #: dialogs.py:466
-#, fuzzy
 msgid "There are no DICOM files in the selected folder."
-msgstr "선택된 등록부에 DICOM파일들이 없습니다."
+msgstr ""
 
 #: dialogs.py:477
-#, fuzzy
 msgid "A mask is needed to create a surface."
-msgstr "표면을 생성하는데 참고할 마스크가 없습니다."
+msgstr ""
 
 #: dialogs.py:488
-#, fuzzy
 msgid "No mask was selected for removal."
-msgstr "제거할 마스크가 선택되지 않았습니다."
+msgstr ""
 
 #: dialogs.py:499
-#, fuzzy
 msgid "No surface was selected for removal."
-msgstr "제거할 표면이 선택되지 않았습니다."
+msgstr ""
 
 #: dialogs.py:511
-#, fuzzy
 msgid "No measure was selected for removal."
-msgstr "제거할 측정대상이 선택되지 않았습니다."
+msgstr ""
 
 #: dialogs.py:522
-#, fuzzy
 msgid "No mask was selected for duplication."
-msgstr "복제할 마스크가 선택되지 않았습니다."
+msgstr ""
 
 #: dialogs.py:535
-#, fuzzy
 msgid "No surface was selected for duplication."
-msgstr "복제할 표면이 선택되지 않았습니다."
+msgstr ""
 
 #: dialogs.py:581
 msgid "New mask name:"
@@ -680,27 +650,15 @@ msgid "Please, provide more than one DICOM file for 3D reconstruction"
 msgstr "3차원재생성을 위해 한개이상의 DICOM파일들을 제공하십시요."
 
 #: dialogs.py:766
-#, fuzzy
 msgid "(c) 2007-2015 Renato Archer Information Technology Center - CTI"
-msgstr "(c) 2007 -2010 레나토 아쳐 정보기술쎈터"
+msgstr ""
 
 #: dialogs.py:767
-#, fuzzy
 msgid ""
-"InVesalius is a medical imaging program for 3D reconstruction. It uses a "
-"sequence of 2D DICOM image files acquired with CT or MRI scanners. "
-"InVesalius allows exporting 3D volumes or surfaces as STL files for creating "
-"physical models of a patient's anatomy using rapid prototyping technologies. "
-"The software is supported by CTI, CNPq and the Brazilian Ministry of "
-"Health.\n"
+"InVesalius is a medical imaging program for 3D reconstruction. It uses a sequence of 2D DICOM image files acquired with CT or MRI scanners. InVesalius allows exporting 3D volumes or surfaces as STL files for creating physical models of a patient's anatomy using rapid prototyping technologies. The software is supported by CTI, CNPq and the Brazilian Ministry of Health.\n"
 "\n"
 " Contact: invesalius@cti.gov.br"
 msgstr ""
-"인베쌀리우스는 3차원재생성을 위한 의학화상처리 프로그람입니다. 이 프로그람은 "
-"CT 혹은 MRI 스캐너에 의해 입구되는 2차원 DICOM화상파일들의 계렬을 리용합니"
-"다. 인베쌀리우스는 신속한 프로토타입핑 기술을 리용하여 임의의 환자의 해부학적"
-"구조의 물리적모형생성을 위한 STL파일과 같은 3차원 공간 및 표면출력을 가능하"
-"게 해줍니다."
 
 #: dialogs.py:775
 msgid "GNU GPL (General Public License) version 2"
@@ -759,24 +717,20 @@ msgid "TIFF image"
 msgstr "TIFF 화상"
 
 #: dialogs.py:1002
-#, fuzzy
 msgid "Surface generation options"
-msgstr "표면 속성"
+msgstr ""
 
 #: dialogs.py:1032
-#, fuzzy
 msgid "Surface creation"
-msgstr "표면 속성"
+msgstr ""
 
 #: dialogs.py:1059
-#, fuzzy
 msgid "Surface creation options"
-msgstr "표면 속성"
+msgstr ""
 
 #: dialogs.py:1065
-#, fuzzy
 msgid "Surface creation method"
-msgstr "표면 속성"
+msgstr ""
 
 #: dialogs.py:1213 frame.py:697
 msgid "Options"
@@ -787,18 +741,16 @@ msgid "Angle:"
 msgstr ""
 
 #: dialogs.py:1231
-#, fuzzy
 msgid "Max. distance:"
-msgstr "측정거리"
+msgstr ""
 
 #: dialogs.py:1233
 msgid "Min. weight:"
 msgstr ""
 
 #: dialogs.py:1235
-#, fuzzy
 msgid "N. steps:"
-msgstr "다음 단계"
+msgstr ""
 
 #: dialogs.py:1254 dialogs.py:1290 dialogs.py:1335
 msgid "Context aware smoothing"
@@ -834,33 +786,28 @@ msgid "Union"
 msgstr ""
 
 #: dialogs.py:1513
-#, fuzzy
 msgid "Difference"
-msgstr "참조마스크"
+msgstr ""
 
 #: dialogs.py:1514 slice_.py:1238
-#, fuzzy
 msgid "Intersection"
-msgstr "학회"
+msgstr ""
 
 #: dialogs.py:1515
 msgid "Exclusive disjunction"
 msgstr ""
 
 #: dialogs.py:1536
-#, fuzzy
 msgid "Mask 1"
-msgstr "마스크"
+msgstr ""
 
 #: dialogs.py:1538
-#, fuzzy
 msgid "Operation"
-msgstr "채도"
+msgstr ""
 
 #: dialogs.py:1540
-#, fuzzy
 msgid "Mask 2"
-msgstr "마스크"
+msgstr ""
 
 #: dicom.py:1533 dicom.py:1537 dicom.py:1539
 msgid "unnamed"
@@ -886,18 +833,16 @@ msgstr "위치: %.2f"
 msgid ""
 "%s %s\n"
 "Made in InVesalius"
-msgstr ""
-"%s %s\n"
-"인베쌀리우스 제작"
+msgstr "%s %s\n인베쌀리우스 제작"
 
 #: dicom_preview_panel.py:189 dicom_preview_panel.py:190
 msgid "Image"
 msgstr "이미지"
 
 #: dicom_preview_panel.py:409
-#, fuzzy, python-format
+#, python-format
 msgid "%d images"
-msgstr "%d 이미지들"
+msgstr ""
 
 #: dicom_preview_panel.py:534 dicom_preview_panel.py:555
 #, python-format
@@ -925,24 +870,20 @@ msgid "Import DICOM...\tCtrl+I"
 msgstr "DICOM 입력 ...\tCtrl+I"
 
 #: frame.py:574
-#, fuzzy
 msgid "Import other files..."
-msgstr "DICOM파일 입력 ..."
+msgstr ""
 
 #: frame.py:575
-#, fuzzy
 msgid "Open project...\tCtrl+O"
-msgstr "프로젝트 열기 ...\tCtrl+O"
+msgstr ""
 
 #: frame.py:576
-#, fuzzy
 msgid "Save project\tCtrl+S"
-msgstr "프로젝트 보관\tCtrl+S"
+msgstr ""
 
 #: frame.py:578
-#, fuzzy
 msgid "Close project"
-msgstr "프로젝트 닫기"
+msgstr ""
 
 #: frame.py:587
 msgid "Exit\tCtrl+Q"
@@ -957,9 +898,8 @@ msgid "Redo\tCtrl+Y"
 msgstr ""
 
 #: frame.py:638
-#, fuzzy
 msgid "Boolean operations"
-msgstr "부드럽게 반복:"
+msgstr ""
 
 #: frame.py:641
 msgid "Clean Mask\tCtrl+Shift+A"
@@ -970,9 +910,8 @@ msgid "Preferences..."
 msgstr ""
 
 #: frame.py:681
-#, fuzzy
 msgid "Getting started..."
-msgstr "처음으로 시작하기 ..."
+msgstr ""
 
 #: frame.py:684
 msgid "About..."
@@ -995,14 +934,12 @@ msgid "Ready"
 msgstr "대기"
 
 #: frame.py:958
-#, fuzzy
 msgid "Import DICOM files...\tCtrl+I"
-msgstr "DICOM 입력 ...\tCtrl+I"
+msgstr ""
 
 #: frame.py:965
-#, fuzzy
 msgid "Open InVesalius project..."
-msgstr "인베쌀리우스3 프로젝트 열기 ..."
+msgstr ""
 
 #: frame.py:969
 msgid "Save InVesalius project"
@@ -1182,42 +1119,36 @@ msgid "Analysing selected regions..."
 msgstr ""
 
 #: polydata_utils.py:198
-#, fuzzy
 msgid "Splitting disconnected regions..."
-msgstr "련결되지 않은부분 가르기"
+msgstr ""
 
 #: preferences.py:18
-#, fuzzy
 msgid "Preferences"
-msgstr "참조마스크"
+msgstr ""
 
 #: preferences.py:41
 msgid "Visualization"
 msgstr ""
 
 #: preferences.py:42 preferences.py:147
-#, fuzzy
 msgid "Language"
-msgstr "언어선택"
+msgstr ""
 
 #: preferences.py:95
-#, fuzzy
 msgid "Surface"
-msgstr "표면 %d"
+msgstr ""
 
 #: preferences.py:98
 msgid "Interpolation "
 msgstr ""
 
 #: preferences.py:106
-#, fuzzy
 msgid "Volume rendering"
-msgstr "성별"
+msgstr ""
 
 #: preferences.py:109
-#, fuzzy
 msgid "Rendering"
-msgstr "성별"
+msgstr ""
 
 #: preferences.py:113
 msgid "GPU (NVidia video cards only)"
@@ -1318,14 +1249,12 @@ msgid "Contour MIDA"
 msgstr ""
 
 #: slice_menu.py:162
-#, fuzzy
 msgid "Window width and level"
-msgstr "윈도우너비 및 준위"
+msgstr ""
 
 #: slice_menu.py:163
-#, fuzzy
 msgid "Pseudo color"
-msgstr "류사색갈"
+msgstr ""
 
 #: slice_menu.py:164
 msgid "Projection type"
@@ -1345,9 +1274,8 @@ msgstr ""
 
 #: surface.py:432 surface.py:523 surface.py:541 surface.py:567 surface.py:596
 #: surface.py:618 surface.py:637 surface.py:651 surface.py:668
-#, fuzzy
 msgid "Creating 3D surface..."
-msgstr "3차원표면을 생성하고 있는 중입니다 ..."
+msgstr ""
 
 #: task_exporter.py:109
 msgid "Export InVesalius screen to an image file"
@@ -1370,9 +1298,8 @@ msgid "Save 3D surface as..."
 msgstr "3차원 표면으로 보관하기 ..."
 
 #: task_exporter.py:339
-#, fuzzy
 msgid "You need to create a surface and make it "
-msgstr "한개의 표면을 창조하고 제작하여야 합니다"
+msgstr ""
 
 #: task_exporter.py:340
 msgid "visible before exporting it."
@@ -1383,14 +1310,12 @@ msgid "Testing..."
 msgstr "테스트중 ..."
 
 #: task_importer.py:67
-#, fuzzy
 msgid "Select DICOM files to be reconstructed"
-msgstr "재생성할 DICOM 혹은 분석파일들을 선택"
+msgstr ""
 
 #: task_importer.py:68
-#, fuzzy
 msgid "Import DICOM images..."
-msgstr "DICOM파일 입력 ..."
+msgstr ""
 
 #: task_importer.py:87
 msgid "Open an existing InVesalius project..."
@@ -1409,9 +1334,8 @@ msgid "Create new mask"
 msgstr "새 마스크창조"
 
 #: task_slice.py:116
-#, fuzzy
 msgid "Create surface"
-msgstr "표면보관"
+msgstr ""
 
 #: task_slice.py:117
 msgid "Overwrite last surface"
@@ -1422,9 +1346,8 @@ msgid "Mask properties"
 msgstr "마스크 속성"
 
 #: task_slice.py:274
-#, fuzzy
 msgid "Manual edition"
-msgstr "언어선택"
+msgstr ""
 
 #: task_slice.py:284
 msgid "Watershed"
@@ -1451,9 +1374,8 @@ msgid "Brush threshold range:"
 msgstr "붓림계범위"
 
 #: task_slice.py:869
-#, fuzzy
 msgid "Overwrite mask"
-msgstr "이전표면을 덧쓰기"
+msgstr ""
 
 #: task_slice.py:870
 msgid "Use WW&WL"
@@ -1468,9 +1390,8 @@ msgid "Create 3D surface based on a mask"
 msgstr "마스크에 기초한 3차원표면 창조"
 
 #: task_surface.py:88
-#, fuzzy
 msgid "Create new 3D surface"
-msgstr "표면보관"
+msgstr ""
 
 #: task_surface.py:108
 msgid "Next step"
@@ -1485,28 +1406,27 @@ msgid "Advanced options"
 msgstr "개선된 옵션"
 
 #: task_surface.py:274
-msgid "Automatically select largest disconnected region and create new surface"
+msgid ""
+"Automatically select largest disconnected region and create new surface"
 msgstr "자동적으로 가장 큰 비련결령역을 선택하고 새 표면 창조"
 
 #: task_surface.py:275
-#, fuzzy
 msgid "Select largest surface"
-msgstr "가장 큰 부분선택"
+msgstr ""
 
 #: task_surface.py:283
-#, fuzzy
 msgid ""
-"Automatically select disconnected regions and create a new surface per region"
-msgstr "자동적으로 비련결령역들을 선택하고 령역마다 새 표면을 한개씩 창조"
+"Automatically select disconnected regions and create a new surface per "
+"region"
+msgstr ""
 
 #: task_surface.py:284
 msgid "Split all disconnected surfaces"
 msgstr "모든 비련결된 표면들을 가르기"
 
 #: task_surface.py:292
-#, fuzzy
 msgid "Manually insert seeds of regions of interest and create a new surface"
-msgstr "수동적으로 관심령역의 근원들을 삼입하고 하나의 새 표면창조"
+msgstr ""
 
 #: task_surface.py:293
 msgid "Select regions of interest..."
@@ -1547,9 +1467,8 @@ msgid ""
 msgstr ""
 
 #: viewer_slice.py:83
-#, fuzzy
 msgid "Inverted order"
-msgstr "회색반전"
+msgstr ""
 
 #: viewer_slice.py:84
 msgid ""
@@ -1558,9 +1477,8 @@ msgid ""
 msgstr ""
 
 #: viewer_slice.py:90
-#, fuzzy
 msgid "Number of slices"
-msgstr "슬라이스 스크롤"
+msgstr ""
 
 #: viewer_slice.py:91
 msgid "Sharpness"
@@ -1610,172 +1528,147 @@ msgstr "B"
 
 #: viewer_slice.py:407 viewer_slice.py:416 viewer_slice.py:425
 #: viewer_slice.py:434
-#, fuzzy
 msgid "AL"
-msgstr "L"
+msgstr ""
 
 #: viewer_slice.py:407 viewer_slice.py:416 viewer_slice.py:425
 #: viewer_slice.py:434
-#, fuzzy
 msgid "RA"
-msgstr "R"
+msgstr ""
 
 #: viewer_slice.py:407 viewer_slice.py:416 viewer_slice.py:425
 #: viewer_slice.py:434
-#, fuzzy
 msgid "PR"
-msgstr "R"
+msgstr ""
 
 #: viewer_slice.py:407 viewer_slice.py:416 viewer_slice.py:425
 #: viewer_slice.py:434
-#, fuzzy
 msgid "LP"
-msgstr "L"
+msgstr ""
 
 #: viewer_slice.py:410 viewer_slice.py:419 viewer_slice.py:428
 #: viewer_slice.py:437
-#, fuzzy
 msgid "LA"
-msgstr "L"
+msgstr ""
 
 #: viewer_slice.py:410 viewer_slice.py:419 viewer_slice.py:428
 #: viewer_slice.py:437
-#, fuzzy
 msgid "AR"
-msgstr "R"
+msgstr ""
 
 #: viewer_slice.py:410 viewer_slice.py:419 viewer_slice.py:428
 #: viewer_slice.py:437
-#, fuzzy
 msgid "RP"
-msgstr "R"
+msgstr ""
 
 #: viewer_slice.py:410 viewer_slice.py:419 viewer_slice.py:428
 #: viewer_slice.py:437
-#, fuzzy
 msgid "PL"
-msgstr "L"
+msgstr ""
 
 #: viewer_slice.py:445 viewer_slice.py:454 viewer_slice.py:463
 #: viewer_slice.py:472
-#, fuzzy
 msgid "TL"
-msgstr "L"
+msgstr ""
 
 #: viewer_slice.py:445 viewer_slice.py:454 viewer_slice.py:463
 #: viewer_slice.py:472
-#, fuzzy
 msgid "RT"
-msgstr "R"
+msgstr ""
 
 #: viewer_slice.py:445 viewer_slice.py:454 viewer_slice.py:463
 #: viewer_slice.py:472
-#, fuzzy
 msgid "BR"
-msgstr "R"
+msgstr ""
 
 #: viewer_slice.py:445 viewer_slice.py:454 viewer_slice.py:463
 #: viewer_slice.py:472
-#, fuzzy
 msgid "LB"
-msgstr "L"
+msgstr ""
 
 #: viewer_slice.py:448 viewer_slice.py:457 viewer_slice.py:466
 #: viewer_slice.py:475
-#, fuzzy
 msgid "LT"
-msgstr "L"
+msgstr ""
 
 #: viewer_slice.py:448 viewer_slice.py:457 viewer_slice.py:466
 #: viewer_slice.py:475
-#, fuzzy
 msgid "TR"
-msgstr "R"
+msgstr ""
 
 #: viewer_slice.py:448 viewer_slice.py:457 viewer_slice.py:466
 #: viewer_slice.py:475
-#, fuzzy
 msgid "RB"
-msgstr "R"
+msgstr ""
 
 #: viewer_slice.py:448 viewer_slice.py:457 viewer_slice.py:466
 #: viewer_slice.py:475
-#, fuzzy
 msgid "BL"
-msgstr "L"
+msgstr ""
 
 #: viewer_slice.py:483 viewer_slice.py:492 viewer_slice.py:501
 #: viewer_slice.py:510
-#, fuzzy
 msgid "TA"
-msgstr "A"
+msgstr ""
 
 #: viewer_slice.py:483 viewer_slice.py:492 viewer_slice.py:501
 #: viewer_slice.py:510
-#, fuzzy
 msgid "PT"
-msgstr "P"
+msgstr ""
 
 #: viewer_slice.py:483 viewer_slice.py:492 viewer_slice.py:501
 #: viewer_slice.py:510
-#, fuzzy
 msgid "BP"
-msgstr "P"
+msgstr ""
 
 #: viewer_slice.py:483 viewer_slice.py:492 viewer_slice.py:501
 #: viewer_slice.py:510
-#, fuzzy
 msgid "AB"
-msgstr "A"
+msgstr ""
 
 #: viewer_slice.py:486 viewer_slice.py:495 viewer_slice.py:504
 #: viewer_slice.py:513
-#, fuzzy
 msgid "AT"
-msgstr "A"
+msgstr ""
 
 #: viewer_slice.py:486 viewer_slice.py:495 viewer_slice.py:504
 #: viewer_slice.py:513
-#, fuzzy
 msgid "TP"
-msgstr "P"
+msgstr ""
 
 #: viewer_slice.py:486 viewer_slice.py:495 viewer_slice.py:504
 #: viewer_slice.py:513
-#, fuzzy
 msgid "PB"
-msgstr "P"
+msgstr ""
 
 #: viewer_slice.py:486 viewer_slice.py:495 viewer_slice.py:504
 #: viewer_slice.py:513
-#, fuzzy
 msgid "BA"
-msgstr "A"
+msgstr ""
 
 #~ msgid "Import medical images..."
-#~ msgstr "의학화상들을 입력"
+#~ msgstr "Import medical images..."
 
 #~ msgid "Advanced editing tools"
-#~ msgstr "개선된 편집도구"
+#~ msgstr "Advanced editing tools"
 
 #~ msgid "Exit"
-#~ msgstr "나가기"
+#~ msgstr "Exit"
 
-#, fuzzy
 #~ msgid "Off"
-#~ msgstr "차단"
+#~ msgstr " Off"
 
 #~ msgid "Save Project As..."
-#~ msgstr "새 이름으로 프로젝트 보관 ..."
+#~ msgstr "Save Project As..."
 
 #~ msgid "Open a InVesalius project..."
-#~ msgstr "인베쌀리우스 프로젝트 열기..."
+#~ msgstr "Open a InVesalius project..."
 
 #~ msgid "Getting selected parts"
-#~ msgstr "선택된 부분들 얻기"
+#~ msgstr "Getting selected parts"
 
 #~ msgid "InVesalius 3 - New surface"
-#~ msgstr "인베쌀리우스 3 - 새 표면"
+#~ msgstr "InVesalius 3 - New surface"
 
 #~ msgid "Image Tiling"
-#~ msgstr "화상 타일링"
+#~ msgstr "Image Tiling"

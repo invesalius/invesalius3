@@ -5,23 +5,22 @@
 # Paulo Henrique Junqueira Amorim <paulojamorim@gmail.com>
 # Thiago Franco de Morais <totonixsame@gmail.com>
 # Translators:
-# DCamer <dcamer@mail.ru>, 2011.
-#   <dcamer@mail.ru>, 2011.
+# Translators:
+# DCamer <dcamer@mail.ru>, 2011
+# DCamer <dcamer@mail.ru>, 2011
 msgid ""
 msgstr ""
-"Project-Id-Version: InVesalius\n"
+"Project-Id-Version: InVesalius3\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2015-05-11 13:28-0300\n"
-"PO-Revision-Date: 2011-12-10 16:45+0000\n"
-"Last-Translator: DCamer <dcamer@mail.ru>\n"
-"Language-Team: Russian (http://www.transifex.com/projects/p/invesalius/"
-"language/ru/)\n"
-"Language: ru\n"
+"PO-Revision-Date: 2015-05-11 16:36+0000\n"
+"Last-Translator: InVesalius <invesalius@cti.gov.br>\n"
+"Language-Team: Russian (http://www.transifex.com/projects/p/invesalius3/language/ru/)\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n"
-"%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
+"Language: ru\n"
+"Plural-Forms: nplurals=4; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<12 || n%100>14) ? 1 : n%10==0 || (n%10>=5 && n%10<=9) || (n%100>=11 && n%100<=14)? 2 : 3);\n"
 "X-Poedit-Country: GENERIC\n"
 "X-Poedit-Language: English\n"
 "X-Poedit-SourceCharset: utf-8\n"
@@ -178,9 +177,8 @@ msgid "Abdomen"
 msgstr "Живот"
 
 #: constants.py:284
-#, fuzzy
 msgid "Brain posterior fossa"
-msgstr "Задняя черепная ямка мозга"
+msgstr ""
 
 #: constants.py:285
 msgid "Brain"
@@ -196,14 +194,12 @@ msgid "Emphysema"
 msgstr "Эмфизема"
 
 #: constants.py:288
-#, fuzzy
 msgid "Ischemia - Hard, non contrast"
-msgstr "Ишемия - Жесткая, не выражанная"
+msgstr ""
 
 #: constants.py:289
-#, fuzzy
 msgid "Ischemia - Soft, non contrast"
-msgstr "Ишемия - Мягкая, не выражанная"
+msgstr ""
 
 #: constants.py:290
 msgid "Larynx"
@@ -290,9 +286,8 @@ msgid "Bone + Skin II"
 msgstr "Кости + Кожа II"
 
 #: constants.py:331
-#, fuzzy
 msgid "Dark bone"
-msgstr "Темная кость"
+msgstr ""
 
 #: constants.py:332
 msgid "Glossy"
@@ -303,57 +298,48 @@ msgid "Glossy II"
 msgstr "Глянец II"
 
 #: constants.py:334
-#, fuzzy
 msgid "Gold bone"
-msgstr "Золотая кость"
+msgstr ""
 
 #: constants.py:335
-#, fuzzy
 msgid "High contrast"
-msgstr "Высокий контраст"
+msgstr ""
 
 #: constants.py:336
-#, fuzzy
 msgid "Low contrast"
-msgstr "Низкий контраст"
+msgstr ""
 
 #: constants.py:337 constants.py:345
-#, fuzzy
 msgid "Soft on white"
-msgstr "Мягкая на белом"
+msgstr ""
 
 #: constants.py:338
-#, fuzzy
 msgid "Mid contrast"
-msgstr "Средний контраст"
+msgstr ""
 
 #: constants.py:339
 msgid "MIP"
 msgstr ""
 
 #: constants.py:340
-#, fuzzy
 msgid "No shading"
-msgstr "Без заливки"
+msgstr ""
 
 #: constants.py:341
 msgid "Pencil"
 msgstr "Карандаш"
 
 #: constants.py:342
-#, fuzzy
 msgid "Red on white"
-msgstr "Красное на белом"
+msgstr ""
 
 #: constants.py:343
-#, fuzzy
 msgid "Skin on blue"
-msgstr "Кожа на синим"
+msgstr ""
 
 #: constants.py:344
-#, fuzzy
 msgid "Skin on blue II"
-msgstr "Кожа на синим II"
+msgstr ""
 
 #: constants.py:346
 msgid "Soft + Skin"
@@ -368,9 +354,8 @@ msgid "Soft + Skin III"
 msgstr "Мягкая + Кожа III"
 
 #: constants.py:349
-#, fuzzy
 msgid "Soft on blue"
-msgstr "Мягкая на синим"
+msgstr ""
 
 #: constants.py:350
 msgid "Soft"
@@ -397,18 +382,17 @@ msgid "Vascular IV"
 msgstr "Сосудистая IV"
 
 #: constants.py:356
-#, fuzzy
 msgid "Yellow bone"
-msgstr "Желтая кость"
+msgstr ""
 
 #: constants.py:382 volume.py:642
 msgid "Cut plane"
 msgstr "Вырезать плоскость"
 
 #: control.py:306
-#, fuzzy, python-format
+#, python-format
 msgid "Loading file %d of %d ..."
-msgstr "Загрузка файла %d из %d"
+msgstr ""
 
 #: control.py:423
 msgid "Untitled"
@@ -447,9 +431,8 @@ msgid "Masks"
 msgstr "Маски"
 
 #: data_notebook.py:67
-#, fuzzy
 msgid "3D surfaces"
-msgstr "3D-поверхности"
+msgstr ""
 
 #: data_notebook.py:68
 msgid "Measures"
@@ -473,9 +456,8 @@ msgid "Mask"
 msgstr ""
 
 #: data_notebook.py:627 task_surface.py:140
-#, fuzzy
 msgid "New surface"
-msgstr "Поверхность %d"
+msgstr ""
 
 #: data_notebook.py:764
 msgid "Volume (mm³)"
@@ -559,8 +541,7 @@ msgstr ""
 
 #: dialogs.py:108
 msgid ""
-"InVesalius is running on a 32-bit operating system or has insufficient "
-"memory. \n"
+"InVesalius is running on a 32-bit operating system or has insufficient memory. \n"
 "If you want to work with 3D surfaces or volume rendering, \n"
 "it is recommended to reduce the medical images resolution."
 msgstr ""
@@ -676,12 +657,7 @@ msgstr ""
 
 #: dialogs.py:767
 msgid ""
-"InVesalius is a medical imaging program for 3D reconstruction. It uses a "
-"sequence of 2D DICOM image files acquired with CT or MRI scanners. "
-"InVesalius allows exporting 3D volumes or surfaces as STL files for creating "
-"physical models of a patient's anatomy using rapid prototyping technologies. "
-"The software is supported by CTI, CNPq and the Brazilian Ministry of "
-"Health.\n"
+"InVesalius is a medical imaging program for 3D reconstruction. It uses a sequence of 2D DICOM image files acquired with CT or MRI scanners. InVesalius allows exporting 3D volumes or surfaces as STL files for creating physical models of a patient's anatomy using rapid prototyping technologies. The software is supported by CTI, CNPq and the Brazilian Ministry of Health.\n"
 "\n"
 " Contact: invesalius@cti.gov.br"
 msgstr ""
@@ -747,9 +723,8 @@ msgid "Surface generation options"
 msgstr ""
 
 #: dialogs.py:1032
-#, fuzzy
 msgid "Surface creation"
-msgstr "Поверхность %d"
+msgstr ""
 
 #: dialogs.py:1059
 msgid "Surface creation options"
@@ -768,9 +743,8 @@ msgid "Angle:"
 msgstr ""
 
 #: dialogs.py:1231
-#, fuzzy
 msgid "Max. distance:"
-msgstr "Измерение расстояния"
+msgstr ""
 
 #: dialogs.py:1233
 msgid "Min. weight:"
@@ -826,19 +800,16 @@ msgid "Exclusive disjunction"
 msgstr ""
 
 #: dialogs.py:1536
-#, fuzzy
 msgid "Mask 1"
-msgstr "Маска %d"
+msgstr ""
 
 #: dialogs.py:1538
-#, fuzzy
 msgid "Operation"
-msgstr "Насыщенность"
+msgstr ""
 
 #: dialogs.py:1540
-#, fuzzy
 msgid "Mask 2"
-msgstr "Маска %d"
+msgstr ""
 
 #: dicom.py:1533 dicom.py:1537 dicom.py:1539
 msgid "unnamed"
@@ -1166,9 +1137,8 @@ msgid "Language"
 msgstr ""
 
 #: preferences.py:95
-#, fuzzy
 msgid "Surface"
-msgstr "Поверхность %d"
+msgstr ""
 
 #: preferences.py:98
 msgid "Interpolation "
@@ -1378,9 +1348,8 @@ msgid "Mask properties"
 msgstr ""
 
 #: task_slice.py:274
-#, fuzzy
 msgid "Manual edition"
-msgstr "Вручную"
+msgstr ""
 
 #: task_slice.py:284
 msgid "Watershed"
@@ -1439,7 +1408,8 @@ msgid "Advanced options"
 msgstr ""
 
 #: task_surface.py:274
-msgid "Automatically select largest disconnected region and create new surface"
+msgid ""
+"Automatically select largest disconnected region and create new surface"
 msgstr ""
 
 #: task_surface.py:275
@@ -1448,7 +1418,8 @@ msgstr ""
 
 #: task_surface.py:283
 msgid ""
-"Automatically select disconnected regions and create a new surface per region"
+"Automatically select disconnected regions and create a new surface per "
+"region"
 msgstr ""
 
 #: task_surface.py:284
@@ -1498,9 +1469,8 @@ msgid ""
 msgstr ""
 
 #: viewer_slice.py:83
-#, fuzzy
 msgid "Inverted order"
-msgstr "Инверсия серого"
+msgstr ""
 
 #: viewer_slice.py:84
 msgid ""
@@ -1678,6 +1648,29 @@ msgstr ""
 msgid "BA"
 msgstr ""
 
-#, fuzzy
+#~ msgid "Import medical images..."
+#~ msgstr "Import medical images..."
+
+#~ msgid "Advanced editing tools"
+#~ msgstr "Advanced editing tools"
+
+#~ msgid "Exit"
+#~ msgstr "Exit"
+
 #~ msgid "Off"
-#~ msgstr " Выключить"
+#~ msgstr " Off"
+
+#~ msgid "Save Project As..."
+#~ msgstr "Save Project As..."
+
+#~ msgid "Open a InVesalius project..."
+#~ msgstr "Open a InVesalius project..."
+
+#~ msgid "Getting selected parts"
+#~ msgstr "Getting selected parts"
+
+#~ msgid "InVesalius 3 - New surface"
+#~ msgstr "InVesalius 3 - New surface"
+
+#~ msgid "Image Tiling"
+#~ msgstr "Image Tiling"

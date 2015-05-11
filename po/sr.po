@@ -5,22 +5,21 @@
 # Paulo Henrique Junqueira Amorim <paulojamorim@gmail.com>
 # Thiago Franco de Morais <totonixsame@gmail.com>
 # Translators:
-# Мирослав Николић <miroslavnikolic@rocketmail.com>, 2012.
+# Translators:
+# Мирослав Николић <miroslavnikolic@rocketmail.com>, 2012
 msgid ""
 msgstr ""
-"Project-Id-Version: InVesalius\n"
+"Project-Id-Version: InVesalius3\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2015-05-11 13:28-0300\n"
-"PO-Revision-Date: 2012-04-11 17:06+0000\n"
-"Last-Translator: MirosNik <miroslavnikolic@rocketmail.com>\n"
-"Language-Team: Serbian (http://www.transifex.com/projects/p/invesalius/"
-"language/sr/)\n"
-"Language: sr\n"
+"PO-Revision-Date: 2015-05-11 16:36+0000\n"
+"Last-Translator: InVesalius <invesalius@cti.gov.br>\n"
+"Language-Team: Serbian (http://www.transifex.com/projects/p/invesalius3/language/sr/)\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n"
-"%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
+"Language: sr\n"
+"Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
 "X-Poedit-Country: GENERIC\n"
 "X-Poedit-Language: English\n"
 "X-Poedit-SourceCharset: utf-8\n"
@@ -541,8 +540,7 @@ msgstr ""
 
 #: dialogs.py:108
 msgid ""
-"InVesalius is running on a 32-bit operating system or has insufficient "
-"memory. \n"
+"InVesalius is running on a 32-bit operating system or has insufficient memory. \n"
 "If you want to work with 3D surfaces or volume rendering, \n"
 "it is recommended to reduce the medical images resolution."
 msgstr ""
@@ -658,12 +656,7 @@ msgstr ""
 
 #: dialogs.py:767
 msgid ""
-"InVesalius is a medical imaging program for 3D reconstruction. It uses a "
-"sequence of 2D DICOM image files acquired with CT or MRI scanners. "
-"InVesalius allows exporting 3D volumes or surfaces as STL files for creating "
-"physical models of a patient's anatomy using rapid prototyping technologies. "
-"The software is supported by CTI, CNPq and the Brazilian Ministry of "
-"Health.\n"
+"InVesalius is a medical imaging program for 3D reconstruction. It uses a sequence of 2D DICOM image files acquired with CT or MRI scanners. InVesalius allows exporting 3D volumes or surfaces as STL files for creating physical models of a patient's anatomy using rapid prototyping technologies. The software is supported by CTI, CNPq and the Brazilian Ministry of Health.\n"
 "\n"
 " Contact: invesalius@cti.gov.br"
 msgstr ""
@@ -729,9 +722,8 @@ msgid "Surface generation options"
 msgstr ""
 
 #: dialogs.py:1032
-#, fuzzy
 msgid "Surface creation"
-msgstr "Површина %d"
+msgstr ""
 
 #: dialogs.py:1059
 msgid "Surface creation options"
@@ -807,19 +799,16 @@ msgid "Exclusive disjunction"
 msgstr ""
 
 #: dialogs.py:1536
-#, fuzzy
 msgid "Mask 1"
-msgstr "Маска %d"
+msgstr ""
 
 #: dialogs.py:1538
-#, fuzzy
 msgid "Operation"
-msgstr "Засићеност"
+msgstr ""
 
 #: dialogs.py:1540
-#, fuzzy
 msgid "Mask 2"
-msgstr "Маска %d"
+msgstr ""
 
 #: dicom.py:1533 dicom.py:1537 dicom.py:1539
 msgid "unnamed"
@@ -845,18 +834,16 @@ msgstr "Место: %.2f"
 msgid ""
 "%s %s\n"
 "Made in InVesalius"
-msgstr ""
-"%s %s\n"
-"Направљено у УВесалијусу"
+msgstr "%s %s\nНаправљено у УВесалијусу"
 
 #: dicom_preview_panel.py:189 dicom_preview_panel.py:190
 msgid "Image"
 msgstr "Слика"
 
 #: dicom_preview_panel.py:409
-#, fuzzy, python-format
+#, python-format
 msgid "%d images"
-msgstr "%d слика"
+msgstr ""
 
 #: dicom_preview_panel.py:534 dicom_preview_panel.py:555
 #, python-format
@@ -896,9 +883,8 @@ msgid "Save project\tCtrl+S"
 msgstr ""
 
 #: frame.py:578
-#, fuzzy
 msgid "Close project"
-msgstr "Затвори пројекат"
+msgstr ""
 
 #: frame.py:587
 msgid "Exit\tCtrl+Q"
@@ -925,9 +911,8 @@ msgid "Preferences..."
 msgstr ""
 
 #: frame.py:681
-#, fuzzy
 msgid "Getting started..."
-msgstr "Започети коришћење..."
+msgstr ""
 
 #: frame.py:684
 msgid "About..."
@@ -1151,9 +1136,8 @@ msgid "Language"
 msgstr ""
 
 #: preferences.py:95
-#, fuzzy
 msgid "Surface"
-msgstr "Површина %d"
+msgstr ""
 
 #: preferences.py:98
 msgid "Interpolation "
@@ -1164,9 +1148,8 @@ msgid "Volume rendering"
 msgstr ""
 
 #: preferences.py:109
-#, fuzzy
 msgid "Rendering"
-msgstr "Пол"
+msgstr ""
 
 #: preferences.py:113
 msgid "GPU (NVidia video cards only)"
@@ -1424,7 +1407,8 @@ msgid "Advanced options"
 msgstr ""
 
 #: task_surface.py:274
-msgid "Automatically select largest disconnected region and create new surface"
+msgid ""
+"Automatically select largest disconnected region and create new surface"
 msgstr ""
 
 #: task_surface.py:275
@@ -1433,7 +1417,8 @@ msgstr ""
 
 #: task_surface.py:283
 msgid ""
-"Automatically select disconnected regions and create a new surface per region"
+"Automatically select disconnected regions and create a new surface per "
+"region"
 msgstr ""
 
 #: task_surface.py:284
@@ -1483,9 +1468,8 @@ msgid ""
 msgstr ""
 
 #: viewer_slice.py:83
-#, fuzzy
 msgid "Inverted order"
-msgstr "Обрнута сива"
+msgstr ""
 
 #: viewer_slice.py:84
 msgid ""
@@ -1663,8 +1647,29 @@ msgstr ""
 msgid "BA"
 msgstr ""
 
+#~ msgid "Import medical images..."
+#~ msgstr "Import medical images..."
+
+#~ msgid "Advanced editing tools"
+#~ msgstr "Advanced editing tools"
+
 #~ msgid "Exit"
-#~ msgstr "Изађи"
+#~ msgstr "Exit"
+
+#~ msgid "Off"
+#~ msgstr " Off"
 
 #~ msgid "Save Project As..."
-#~ msgstr "Сачувај пројекат као..."
+#~ msgstr "Save Project As..."
+
+#~ msgid "Open a InVesalius project..."
+#~ msgstr "Open a InVesalius project..."
+
+#~ msgid "Getting selected parts"
+#~ msgstr "Getting selected parts"
+
+#~ msgid "InVesalius 3 - New surface"
+#~ msgstr "InVesalius 3 - New surface"
+
+#~ msgid "Image Tiling"
+#~ msgstr "Image Tiling"
