@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: InVesalius\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2015-05-11 13:28-0300\n"
+"POT-Creation-Date: 2015-05-11 14:29-0300\n"
 "PO-Revision-Date: 2010-11-30 02:42+0000\n"
 "Last-Translator: Invesalius team <invesalius@cti.gov.br>\n"
 "Language-Team: InVesalius Team <invesalius@cti.gov.br>\n"
@@ -824,9 +824,10 @@ msgstr ""
 msgid "Gaussian sigma"
 msgstr ""
 
-#: dialogs.py:1490
-msgid "Booleans operations"
-msgstr ""
+#: dialogs.py:1490 frame.py:638
+#, fuzzy
+msgid "Boolean operations"
+msgstr "Smooth iterations:"
 
 #: dialogs.py:1512 slice_.py:1236
 msgid "Union"
@@ -954,11 +955,6 @@ msgstr ""
 #: frame.py:623 frame.py:629
 msgid "Redo\tCtrl+Y"
 msgstr ""
-
-#: frame.py:638
-#, fuzzy
-msgid "Boolean operations"
-msgstr "Smooth iterations:"
 
 #: frame.py:641
 msgid "Clean Mask\tCtrl+Shift+A"

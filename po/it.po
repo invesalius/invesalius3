@@ -12,14 +12,15 @@ msgid ""
 msgstr ""
 "Project-Id-Version: InVesalius3\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2015-05-11 13:28-0300\n"
+"POT-Creation-Date: 2015-05-11 14:29-0300\n"
 "PO-Revision-Date: 2015-05-11 16:36+0000\n"
 "Last-Translator: InVesalius <invesalius@cti.gov.br>\n"
-"Language-Team: Italian (http://www.transifex.com/projects/p/invesalius3/language/it/)\n"
+"Language-Team: Italian (http://www.transifex.com/projects/p/invesalius3/"
+"language/it/)\n"
+"Language: it\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Language: it\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 "X-Poedit-Country: GENERIC\n"
 "X-Poedit-Language: English\n"
@@ -541,10 +542,15 @@ msgstr "I valori non verranno applicati"
 
 #: dialogs.py:108
 msgid ""
-"InVesalius is running on a 32-bit operating system or has insufficient memory. \n"
+"InVesalius is running on a 32-bit operating system or has insufficient "
+"memory. \n"
 "If you want to work with 3D surfaces or volume rendering, \n"
 "it is recommended to reduce the medical images resolution."
-msgstr "InVesalius è in esecuzione su un sistema operativo 32-bit oppure la memoria è insufficiente.\nSe voui lavorare con superfici 3D o rendering volumetrico, raccomandiamo di ridurre la risoluzione delle immagini mediche"
+msgstr ""
+"InVesalius è in esecuzione su un sistema operativo 32-bit oppure la memoria "
+"è insufficiente.\n"
+"Se voui lavorare con superfici 3D o rendering volumetrico, raccomandiamo di "
+"ridurre la risoluzione delle immagini mediche"
 
 #: dialogs.py:122
 msgid "Percentage of original resolution"
@@ -578,7 +584,9 @@ msgstr "Progetto InVesalius (*.inv3)|*.inv3"
 msgid ""
 "A new version of InVesalius is available. Do you want to open the download "
 "website now?"
-msgstr "Una nuova versione di InVesalius è disponibile. Vuoi aprire il sito di download e aggiornarla adesso?"
+msgstr ""
+"Una nuova versione di InVesalius è disponibile. Vuoi aprire il sito di "
+"download e aggiornarla adesso?"
 
 #: dialogs.py:381 utils.py:376
 msgid "Invesalius Update"
@@ -589,7 +597,9 @@ msgstr "Invesalius Update"
 msgid ""
 "The project %s has been modified.\n"
 "Save changes?"
-msgstr "Il progetto %s è stato modificato. \nSalvare le modifiche?"
+msgstr ""
+"Il progetto %s è stato modificato. \n"
+"Salvare le modifiche?"
 
 #: dialogs.py:453
 #, python-format
@@ -657,10 +667,22 @@ msgstr ""
 
 #: dialogs.py:767
 msgid ""
-"InVesalius is a medical imaging program for 3D reconstruction. It uses a sequence of 2D DICOM image files acquired with CT or MRI scanners. InVesalius allows exporting 3D volumes or surfaces as STL files for creating physical models of a patient's anatomy using rapid prototyping technologies. The software is supported by CTI, CNPq and the Brazilian Ministry of Health.\n"
+"InVesalius is a medical imaging program for 3D reconstruction. It uses a "
+"sequence of 2D DICOM image files acquired with CT or MRI scanners. "
+"InVesalius allows exporting 3D volumes or surfaces as STL files for creating "
+"physical models of a patient's anatomy using rapid prototyping technologies. "
+"The software is supported by CTI, CNPq and the Brazilian Ministry of "
+"Health.\n"
 "\n"
 " Contact: invesalius@cti.gov.br"
-msgstr "InVesalius è un programma per la ricostruzione 3D di immagini mediche. Utilizza una sequenza di immagini DICOM 2D aquisite tramite scanner CT o MRI. InVesalius permette l'esportazione di volumi 3D o superfici in file formato STL, per la creazione di modelli fisici dell'anatomia del paziente attraverso le tecnologie di prototipazione rapida 3D.\n\nContatta: invesalius@cti.gov.br"
+msgstr ""
+"InVesalius è un programma per la ricostruzione 3D di immagini mediche. "
+"Utilizza una sequenza di immagini DICOM 2D aquisite tramite scanner CT o "
+"MRI. InVesalius permette l'esportazione di volumi 3D o superfici in file "
+"formato STL, per la creazione di modelli fisici dell'anatomia del paziente "
+"attraverso le tecnologie di prototipazione rapida 3D.\n"
+"\n"
+"Contatta: invesalius@cti.gov.br"
 
 #: dialogs.py:775
 msgid "GNU GPL (General Public License) version 2"
@@ -765,7 +787,9 @@ msgstr "Binario"
 #: dialogs.py:1273
 msgid ""
 "It is not possible to use the Default method because the mask was edited."
-msgstr "Non è possibile usare il metodo Predefinito perchè la maschera è stata modificata"
+msgstr ""
+"Non è possibile usare il metodo Predefinito perchè la maschera è stata "
+"modificata"
 
 #: dialogs.py:1276
 msgid "Method:"
@@ -779,8 +803,8 @@ msgstr ""
 msgid "Gaussian sigma"
 msgstr ""
 
-#: dialogs.py:1490
-msgid "Booleans operations"
+#: dialogs.py:1490 frame.py:638
+msgid "Boolean operations"
 msgstr ""
 
 #: dialogs.py:1512 slice_.py:1236
@@ -835,7 +859,9 @@ msgstr "Posizione: %.2f"
 msgid ""
 "%s %s\n"
 "Made in InVesalius"
-msgstr "%s %s\nFatto con InVesalius"
+msgstr ""
+"%s %s\n"
+"Fatto con InVesalius"
 
 #: dicom_preview_panel.py:189 dicom_preview_panel.py:190
 msgid "Image"
@@ -898,10 +924,6 @@ msgstr "Undo⇥Ctrl+Z"
 #: frame.py:623 frame.py:629
 msgid "Redo\tCtrl+Y"
 msgstr "Redo⇥Ctrl+Y"
-
-#: frame.py:638
-msgid "Boolean operations"
-msgstr ""
 
 #: frame.py:641
 msgid "Clean Mask\tCtrl+Shift+A"
@@ -1160,7 +1182,9 @@ msgstr "GPU (solo schede video NVidia)"
 msgid ""
 "Language settings will be applied \n"
 " the next time InVesalius starts."
-msgstr "Le impostazioni di lingua verranno applicate\nal prossimo avvio di InVesalius."
+msgstr ""
+"Le impostazioni di lingua verranno applicate\n"
+"al prossimo avvio di InVesalius."
 
 #: presets.py:34 presets.py:52 presets.py:107 presets.py:138
 msgid "Soft Tissue"
@@ -1408,9 +1432,10 @@ msgid "Advanced options"
 msgstr "Opzioni avanzate"
 
 #: task_surface.py:274
-msgid ""
-"Automatically select largest disconnected region and create new surface"
-msgstr "Seleziona automaticamente l'area disconnessa più grande e creare nuova superfice"
+msgid "Automatically select largest disconnected region and create new surface"
+msgstr ""
+"Seleziona automaticamente l'area disconnessa più grande e creare nuova "
+"superfice"
 
 #: task_surface.py:275
 msgid "Select largest surface"
@@ -1418,9 +1443,10 @@ msgstr "Seleziona la superficie maggiore"
 
 #: task_surface.py:283
 msgid ""
-"Automatically select disconnected regions and create a new surface per "
-"region"
-msgstr "Seleziona automaticamente aree disconnessee crea una nuova superfice per ogni regione"
+"Automatically select disconnected regions and create a new surface per region"
+msgstr ""
+"Seleziona automaticamente aree disconnessee crea una nuova superfice per "
+"ogni regione"
 
 #: task_surface.py:284
 msgid "Split all disconnected surfaces"
@@ -1428,7 +1454,9 @@ msgstr "Dividere tutte le superfici disconnesse"
 
 #: task_surface.py:292
 msgid "Manually insert seeds of regions of interest and create a new surface"
-msgstr "Inserire manualmente i punti delle regioni di interesse e creare una nuova superfice"
+msgstr ""
+"Inserire manualmente i punti delle regioni di interesse e creare una nuova "
+"superfice"
 
 #: task_surface.py:293
 msgid "Select regions of interest..."
@@ -1466,7 +1494,9 @@ msgstr "Numero di strati utilizzati per comporre la visualizzazione"
 msgid ""
 "Controls the sharpness of the contour. The greater the value, the sharper "
 "the contour."
-msgstr "Controlla la nitidezza del contorno. Maggiore è il valore, maggiore è la nitidezza del contorno"
+msgstr ""
+"Controlla la nitidezza del contorno. Maggiore è il valore, maggiore è la "
+"nitidezza del contorno"
 
 #: viewer_slice.py:83
 msgid "Inverted order"
@@ -1476,7 +1506,9 @@ msgstr "Ordine invertito"
 msgid ""
 "If checked, the slices are traversed in descending order to compound the "
 "visualization instead of ascending order."
-msgstr "Se selezionati, gli strati per comporre la visualizzazione sono attraversati in ordine discendente, e non ascendente."
+msgstr ""
+"Se selezionati, gli strati per comporre la visualizzazione sono attraversati "
+"in ordine discendente, e non ascendente."
 
 #: viewer_slice.py:90
 msgid "Number of slices"

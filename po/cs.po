@@ -11,14 +11,15 @@ msgid ""
 msgstr ""
 "Project-Id-Version: InVesalius3\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2015-05-11 13:28-0300\n"
+"POT-Creation-Date: 2015-05-11 14:29-0300\n"
 "PO-Revision-Date: 2015-05-11 16:36+0000\n"
 "Last-Translator: InVesalius <invesalius@cti.gov.br>\n"
-"Language-Team: Czech (http://www.transifex.com/projects/p/invesalius3/language/cs/)\n"
+"Language-Team: Czech (http://www.transifex.com/projects/p/invesalius3/"
+"language/cs/)\n"
+"Language: cs\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Language: cs\n"
 "Plural-Forms: nplurals=3; plural=(n==1) ? 0 : (n>=2 && n<=4) ? 1 : 2;\n"
 "X-Poedit-Country: GENERIC\n"
 "X-Poedit-Language: English\n"
@@ -540,7 +541,8 @@ msgstr "Hodnota se nepoužije."
 
 #: dialogs.py:108
 msgid ""
-"InVesalius is running on a 32-bit operating system or has insufficient memory. \n"
+"InVesalius is running on a 32-bit operating system or has insufficient "
+"memory. \n"
 "If you want to work with 3D surfaces or volume rendering, \n"
 "it is recommended to reduce the medical images resolution."
 msgstr ""
@@ -588,7 +590,9 @@ msgstr ""
 msgid ""
 "The project %s has been modified.\n"
 "Save changes?"
-msgstr "Projekt %s byl změněn.\nUložit změny?"
+msgstr ""
+"Projekt %s byl změněn.\n"
+"Uložit změny?"
 
 #: dialogs.py:453
 #, python-format
@@ -648,7 +652,9 @@ msgstr "%s neexistuje."
 
 #: dialogs.py:705
 msgid "Please, provide more than one DICOM file for 3D reconstruction"
-msgstr "Poskytněte, prosím, pro trojrozměrné opětné sestrojení více než jeden soubor DICOM"
+msgstr ""
+"Poskytněte, prosím, pro trojrozměrné opětné sestrojení více než jeden soubor "
+"DICOM"
 
 #: dialogs.py:766
 msgid "(c) 2007-2015 Renato Archer Information Technology Center - CTI"
@@ -656,7 +662,12 @@ msgstr ""
 
 #: dialogs.py:767
 msgid ""
-"InVesalius is a medical imaging program for 3D reconstruction. It uses a sequence of 2D DICOM image files acquired with CT or MRI scanners. InVesalius allows exporting 3D volumes or surfaces as STL files for creating physical models of a patient's anatomy using rapid prototyping technologies. The software is supported by CTI, CNPq and the Brazilian Ministry of Health.\n"
+"InVesalius is a medical imaging program for 3D reconstruction. It uses a "
+"sequence of 2D DICOM image files acquired with CT or MRI scanners. "
+"InVesalius allows exporting 3D volumes or surfaces as STL files for creating "
+"physical models of a patient's anatomy using rapid prototyping technologies. "
+"The software is supported by CTI, CNPq and the Brazilian Ministry of "
+"Health.\n"
 "\n"
 " Contact: invesalius@cti.gov.br"
 msgstr ""
@@ -778,8 +789,8 @@ msgstr ""
 msgid "Gaussian sigma"
 msgstr ""
 
-#: dialogs.py:1490
-msgid "Booleans operations"
+#: dialogs.py:1490 frame.py:638
+msgid "Boolean operations"
 msgstr ""
 
 #: dialogs.py:1512 slice_.py:1236
@@ -834,7 +845,9 @@ msgstr "Umístění: %.2f"
 msgid ""
 "%s %s\n"
 "Made in InVesalius"
-msgstr "%s %s\nVytvořeno s InVesalius"
+msgstr ""
+"%s %s\n"
+"Vytvořeno s InVesalius"
 
 #: dicom_preview_panel.py:189 dicom_preview_panel.py:190
 msgid "Image"
@@ -896,10 +909,6 @@ msgstr ""
 
 #: frame.py:623 frame.py:629
 msgid "Redo\tCtrl+Y"
-msgstr ""
-
-#: frame.py:638
-msgid "Boolean operations"
 msgstr ""
 
 #: frame.py:641
@@ -1407,8 +1416,7 @@ msgid "Advanced options"
 msgstr "Pokročilé volby"
 
 #: task_surface.py:274
-msgid ""
-"Automatically select largest disconnected region and create new surface"
+msgid "Automatically select largest disconnected region and create new surface"
 msgstr "Vybrat automaticky největší odpojenou oblast a vytvořit nový povrch"
 
 #: task_surface.py:275
@@ -1417,8 +1425,7 @@ msgstr ""
 
 #: task_surface.py:283
 msgid ""
-"Automatically select disconnected regions and create a new surface per "
-"region"
+"Automatically select disconnected regions and create a new surface per region"
 msgstr ""
 
 #: task_surface.py:284

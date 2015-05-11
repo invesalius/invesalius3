@@ -11,14 +11,15 @@ msgid ""
 msgstr ""
 "Project-Id-Version: InVesalius3\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2015-05-11 13:28-0300\n"
+"POT-Creation-Date: 2015-05-11 14:29-0300\n"
 "PO-Revision-Date: 2015-05-11 17:23+0000\n"
 "Last-Translator: tfmoraes <totonixsame@gmail.com>\n"
-"Language-Team: Portuguese (Brazil) (http://www.transifex.com/projects/p/invesalius3/language/pt_BR/)\n"
+"Language-Team: Portuguese (Brazil) (http://www.transifex.com/projects/p/"
+"invesalius3/language/pt_BR/)\n"
+"Language: pt_BR\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Language: pt_BR\n"
 "Plural-Forms: nplurals=2; plural=(n > 1);\n"
 "X-Poedit-Country: GENERIC\n"
 "X-Poedit-Language: English\n"
@@ -540,10 +541,16 @@ msgstr "O valor não será aplicado."
 
 #: dialogs.py:108
 msgid ""
-"InVesalius is running on a 32-bit operating system or has insufficient memory. \n"
+"InVesalius is running on a 32-bit operating system or has insufficient "
+"memory. \n"
 "If you want to work with 3D surfaces or volume rendering, \n"
 "it is recommended to reduce the medical images resolution."
-msgstr "O InVesalius está sendo executado sobre um sistema operacional de 32 bits\nou não dispõe de memória suficiente. Se você deseja trabalhar com superfícies 3D\nou renderização volumétrica, recomenda-se diminuir a resolução das imagens médicas."
+msgstr ""
+"O InVesalius está sendo executado sobre um sistema operacional de 32 bits\n"
+"ou não dispõe de memória suficiente. Se você deseja trabalhar com "
+"superfícies 3D\n"
+"ou renderização volumétrica, recomenda-se diminuir a resolução das imagens "
+"médicas."
 
 #: dialogs.py:122
 msgid "Percentage of original resolution"
@@ -577,7 +584,9 @@ msgstr "Projeto do InVesalius (*.inv3)|*.inv3"
 msgid ""
 "A new version of InVesalius is available. Do you want to open the download "
 "website now?"
-msgstr "Uma nova versão do InVesalius está disponível. Você gostaria de abrir a página de download?"
+msgstr ""
+"Uma nova versão do InVesalius está disponível. Você gostaria de abrir a "
+"página de download?"
 
 #: dialogs.py:381 utils.py:376
 msgid "Invesalius Update"
@@ -588,7 +597,9 @@ msgstr "Atualização do InVesalius"
 msgid ""
 "The project %s has been modified.\n"
 "Save changes?"
-msgstr "O projeto %s foi modificado.\n Deseja salvar as alterações?"
+msgstr ""
+"O projeto %s foi modificado.\n"
+" Deseja salvar as alterações?"
 
 #: dialogs.py:453
 #, python-format
@@ -656,10 +667,23 @@ msgstr "(c) 2007-2015 Centro de Tecnologia da Informação Renato Archer - CTI"
 
 #: dialogs.py:767
 msgid ""
-"InVesalius is a medical imaging program for 3D reconstruction. It uses a sequence of 2D DICOM image files acquired with CT or MRI scanners. InVesalius allows exporting 3D volumes or surfaces as STL files for creating physical models of a patient's anatomy using rapid prototyping technologies. The software is supported by CTI, CNPq and the Brazilian Ministry of Health.\n"
+"InVesalius is a medical imaging program for 3D reconstruction. It uses a "
+"sequence of 2D DICOM image files acquired with CT or MRI scanners. "
+"InVesalius allows exporting 3D volumes or surfaces as STL files for creating "
+"physical models of a patient's anatomy using rapid prototyping technologies. "
+"The software is supported by CTI, CNPq and the Brazilian Ministry of "
+"Health.\n"
 "\n"
 " Contact: invesalius@cti.gov.br"
-msgstr "O InVesalius é um programa para reconstrução 3D de imagens médicas a partir de uma sequência de imagens DICOM 2D, obtidas com equipamentos de TC ou RM. O InVesalius permite que sejam exportados volumes ou superfícies 3D no formato STL, para criação de réplicas físicas de estruturas anatômicas do paciente por meio de tecnologias de prototipagem rápida. O programa é mantido pelo CTI, CNPq e Ministério da Saúde.\n\nContato: invesalius@cti.gov.br"
+msgstr ""
+"O InVesalius é um programa para reconstrução 3D de imagens médicas a partir "
+"de uma sequência de imagens DICOM 2D, obtidas com equipamentos de TC ou RM. "
+"O InVesalius permite que sejam exportados volumes ou superfícies 3D no "
+"formato STL, para criação de réplicas físicas de estruturas anatômicas do "
+"paciente por meio de tecnologias de prototipagem rápida. O programa é "
+"mantido pelo CTI, CNPq e Ministério da Saúde.\n"
+"\n"
+"Contato: invesalius@cti.gov.br"
 
 #: dialogs.py:775
 msgid "GNU GPL (General Public License) version 2"
@@ -778,8 +802,8 @@ msgstr "Método"
 msgid "Gaussian sigma"
 msgstr "Sigma da gaussiana"
 
-#: dialogs.py:1490
-msgid "Booleans operations"
+#: dialogs.py:1490 frame.py:638
+msgid "Boolean operations"
 msgstr "Operações booleanas"
 
 #: dialogs.py:1512 slice_.py:1236
@@ -834,7 +858,9 @@ msgstr "Localização: %.2f"
 msgid ""
 "%s %s\n"
 "Made in InVesalius"
-msgstr "%s %s\n Criado com InVesalius"
+msgstr ""
+"%s %s\n"
+" Criado com InVesalius"
 
 #: dicom_preview_panel.py:189 dicom_preview_panel.py:190
 msgid "Image"
@@ -897,10 +923,6 @@ msgstr "Desfazer\tCtrl+Z"
 #: frame.py:623 frame.py:629
 msgid "Redo\tCtrl+Y"
 msgstr "Refazer\tCtrl+Y"
-
-#: frame.py:638
-msgid "Boolean operations"
-msgstr "Operações booleanas"
 
 #: frame.py:641
 msgid "Clean Mask\tCtrl+Shift+A"
@@ -1159,7 +1181,9 @@ msgstr "GPU (Somente em placas de vídeo NVidia)"
 msgid ""
 "Language settings will be applied \n"
 " the next time InVesalius starts."
-msgstr "Configurações de idioma terão efeito \nna próxima vez em que o InVesalius iniciar."
+msgstr ""
+"Configurações de idioma terão efeito \n"
+"na próxima vez em que o InVesalius iniciar."
 
 #: presets.py:34 presets.py:52 presets.py:107 presets.py:138
 msgid "Soft Tissue"
@@ -1407,9 +1431,9 @@ msgid "Advanced options"
 msgstr "Opções avançadas"
 
 #: task_surface.py:274
-msgid ""
-"Automatically select largest disconnected region and create new surface"
-msgstr "Seleção automática de maior região desconexa e criação de nova superfície"
+msgid "Automatically select largest disconnected region and create new surface"
+msgstr ""
+"Seleção automática de maior região desconexa e criação de nova superfície"
 
 #: task_surface.py:275
 msgid "Select largest surface"
@@ -1417,9 +1441,10 @@ msgstr "Separar maior superfície"
 
 #: task_surface.py:283
 msgid ""
-"Automatically select disconnected regions and create a new surface per "
-"region"
-msgstr "Seleção automática de regiões desconexas e criação de superfícies correspondentes"
+"Automatically select disconnected regions and create a new surface per region"
+msgstr ""
+"Seleção automática de regiões desconexas e criação de superfícies "
+"correspondentes"
 
 #: task_surface.py:284
 msgid "Split all disconnected surfaces"
@@ -1427,7 +1452,9 @@ msgstr "Separar todas regiões desconexas"
 
 #: task_surface.py:292
 msgid "Manually insert seeds of regions of interest and create a new surface"
-msgstr "Selecionar manualmente regiões de interesse por meio de sementes e criar uma nova superfície"
+msgstr ""
+"Selecionar manualmente regiões de interesse por meio de sementes e criar uma "
+"nova superfície"
 
 #: task_surface.py:293
 msgid "Select regions of interest..."
@@ -1465,7 +1492,9 @@ msgstr "Número de fatias usadas para compor a visualização"
 msgid ""
 "Controls the sharpness of the contour. The greater the value, the sharper "
 "the contour."
-msgstr "Controla a nitidez do contorno. Quanto maior o valor, maior a nítidez do contorno."
+msgstr ""
+"Controla a nitidez do contorno. Quanto maior o valor, maior a nítidez do "
+"contorno."
 
 #: viewer_slice.py:83
 msgid "Inverted order"
@@ -1475,7 +1504,9 @@ msgstr "Ordem invertida"
 msgid ""
 "If checked, the slices are traversed in descending order to compound the "
 "visualization instead of ascending order."
-msgstr "Se selecionado, as fatias são percorridos em ordem decrescente para compor a visualização em vez de ordem crescente."
+msgstr ""
+"Se selecionado, as fatias são percorridos em ordem decrescente para compor a "
+"visualização em vez de ordem crescente."
 
 #: viewer_slice.py:90
 msgid "Number of slices"
@@ -1646,6 +1677,9 @@ msgstr "PI"
 #: viewer_slice.py:513
 msgid "BA"
 msgstr "IA"
+
+#~ msgid "Booleans operations"
+#~ msgstr "Operações booleanas"
 
 #~ msgid "Import medical images..."
 #~ msgstr "Import medical images..."
