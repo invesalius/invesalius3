@@ -396,6 +396,10 @@ class Slice(object):
             self.current_mask.clear_history()
             self.current_mask.was_edited = True
 
+            # Marking the project as changed
+            session = ses.Session()
+            session.ChangeProject()
+
     def create_temp_mask(self):
         temp_file = tempfile.mktemp()
         shape = self.matrix.shape
@@ -485,6 +489,10 @@ class Slice(object):
             elif operation == const.BRUSH_ERASE:
                 roi_m[index] = 1
             self.buffer_slices[orientation].discard_vtk_mask()
+
+        # Marking the project as changed
+        session = ses.Session()
+        session.ChangeProject()
 
 
     def GetSlices(self, orientation, slice_number, number_slices,

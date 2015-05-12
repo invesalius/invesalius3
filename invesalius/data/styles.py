@@ -30,6 +30,8 @@ from wx.lib.pubsub import pub as Publisher
 import constants as const
 import converters
 import cursor_actors as ca
+import session as ses
+
 import numpy as np
 
 from scipy import ndimage
@@ -1219,6 +1221,11 @@ class WaterShedInteractorStyle(DefaultInteractorStyle):
 
             self.viewer.slice_.current_mask.was_edited = True
             self.viewer.slice_.current_mask.clear_history()
+
+            # Marking the project as changed
+            session = ses.Session()
+            session.ChangeProject()
+
         Publisher.sendMessage('Reload actual slice')
 
     def get_coordinate_cursor(self):
@@ -1380,9 +1387,9 @@ class WaterShedInteractorStyle(DefaultInteractorStyle):
             self.viewer.slice_.current_mask.clear_history()
             Publisher.sendMessage('Reload actual slice')
 
-
-
-
+            # Marking the project as changed
+            session = ses.Session()
+            session.ChangeProject()
 
 
 def get_style(style):
