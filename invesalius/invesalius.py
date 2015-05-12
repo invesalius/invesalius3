@@ -156,6 +156,9 @@ class SplashScreen(wx.SplashScreen):
 
             path = os.path.join("..","icons", icon_file)
 
+            if not os.path.exists(path):
+                path = os.path.join("..", "icons", "splash_en.png")
+
             bmp = wx.Image(path).ConvertToBitmap()
 
             style = wx.SPLASH_TIMEOUT | wx.SPLASH_CENTRE_ON_SCREEN
