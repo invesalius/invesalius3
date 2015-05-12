@@ -13,8 +13,8 @@ msgstr ""
 "Project-Id-Version: InVesalius3\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2015-05-11 14:29-0300\n"
-"PO-Revision-Date: 2015-05-11 17:31+0000\n"
-"Last-Translator: InVesalius <invesalius@cti.gov.br>\n"
+"PO-Revision-Date: 2015-05-12 15:27+0000\n"
+"Last-Translator: Annalisa Manenti <manentinabs88@yahoo.it>\n"
 "Language-Team: Italian (http://www.transifex.com/projects/p/invesalius3/language/it/)\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
@@ -653,7 +653,7 @@ msgstr "Prego, fornire più di un file DICOM per la ricostruzione 3D"
 
 #: dialogs.py:766
 msgid "(c) 2007-2015 Renato Archer Information Technology Center - CTI"
-msgstr ""
+msgstr "(c) 2007-2015 Renato Archer Information Technology Center - CTI"
 
 #: dialogs.py:767
 msgid ""
@@ -773,43 +773,43 @@ msgstr "Metodo:"
 
 #: dialogs.py:1405
 msgid "Method"
-msgstr ""
+msgstr "Metodo"
 
 #: dialogs.py:1428
 msgid "Gaussian sigma"
-msgstr ""
+msgstr "Sigma della Gaussiana"
 
 #: dialogs.py:1490 frame.py:638
 msgid "Boolean operations"
-msgstr ""
+msgstr "Operazioni booleane"
 
 #: dialogs.py:1512 slice_.py:1236
 msgid "Union"
-msgstr ""
+msgstr "Unione"
 
 #: dialogs.py:1513
 msgid "Difference"
-msgstr ""
+msgstr "Differenza"
 
 #: dialogs.py:1514 slice_.py:1238
 msgid "Intersection"
-msgstr ""
+msgstr "Intersezione"
 
 #: dialogs.py:1515
 msgid "Exclusive disjunction"
-msgstr ""
+msgstr "Disgiunzione esclusiva"
 
 #: dialogs.py:1536
 msgid "Mask 1"
-msgstr ""
+msgstr "Maschera 1"
 
 #: dialogs.py:1538
 msgid "Operation"
-msgstr ""
+msgstr "Operazione"
 
 #: dialogs.py:1540
 msgid "Mask 2"
-msgstr ""
+msgstr "Maschera 2"
 
 #: dicom.py:1533 dicom.py:1537 dicom.py:1539
 msgid "unnamed"
@@ -877,11 +877,11 @@ msgstr "Importa altri file"
 
 #: frame.py:575
 msgid "Open project...\tCtrl+O"
-msgstr "Apri progetto...⇥Ctrl+O"
+msgstr "Apri progetto...\tCtrl+O"
 
 #: frame.py:576
 msgid "Save project\tCtrl+S"
-msgstr "Salva progetto⇥Ctrl+S"
+msgstr "Salva progetto\tCtrl+S"
 
 #: frame.py:578
 msgid "Close project"
@@ -889,19 +889,19 @@ msgstr "Chiudi progetto"
 
 #: frame.py:587
 msgid "Exit\tCtrl+Q"
-msgstr "Uscire⇥Ctrl+Q"
+msgstr "Uscire\tCtrl+Q"
 
 #: frame.py:618 frame.py:628
 msgid "Undo\tCtrl+Z"
-msgstr "Undo⇥Ctrl+Z"
+msgstr "Undo\tCtrl+Z"
 
 #: frame.py:623 frame.py:629
 msgid "Redo\tCtrl+Y"
-msgstr "Redo⇥Ctrl+Y"
+msgstr "Redo\tCtrl+Y"
 
 #: frame.py:641
 msgid "Clean Mask\tCtrl+Shift+A"
-msgstr ""
+msgstr "Pulire maschera\tCtrl+Shift+A"
 
 #: frame.py:677
 msgid "Preferences..."
@@ -933,7 +933,7 @@ msgstr "Pronto"
 
 #: frame.py:958
 msgid "Import DICOM files...\tCtrl+I"
-msgstr "Importa file DICOM...⇥Ctrl+I"
+msgstr "Importa file DICOM...\tCtrl+I"
 
 #: frame.py:965
 msgid "Open InVesalius project..."
@@ -1212,11 +1212,11 @@ msgstr "Pelle (Bambino)"
 
 #: slice_.py:1237
 msgid "Diff"
-msgstr ""
+msgstr "Diff"
 
 #: slice_.py:1239
 msgid "XOR"
-msgstr ""
+msgstr "XOR"
 
 #: slice_menu.py:38
 msgid "Normal"
@@ -1260,15 +1260,15 @@ msgstr "Tipo di proiezione"
 
 #: styles.py:56 task_slice.py:849
 msgid "Foreground"
-msgstr ""
+msgstr "Primo piano"
 
 #: styles.py:57 task_slice.py:850
 msgid "Background"
-msgstr ""
+msgstr "Secondo piano"
 
 #: styles.py:826
 msgid "Applying watershed ..."
-msgstr ""
+msgstr "Applicando watershed ..."
 
 #: surface.py:432 surface.py:523 surface.py:541 surface.py:567 surface.py:596
 #: surface.py:618 surface.py:637 surface.py:651 surface.py:668
@@ -1309,11 +1309,11 @@ msgstr "Prova..."
 
 #: task_importer.py:67
 msgid "Select DICOM files to be reconstructed"
-msgstr ""
+msgstr "Seleziona i files DICOM da ricostruire"
 
 #: task_importer.py:68
 msgid "Import DICOM images..."
-msgstr ""
+msgstr "Importa immagini DICOM ..."
 
 #: task_importer.py:87
 msgid "Open an existing InVesalius project..."
@@ -1345,11 +1345,11 @@ msgstr "Proprietà maschera"
 
 #: task_slice.py:274
 msgid "Manual edition"
-msgstr ""
+msgstr "Edizione manulae"
 
 #: task_slice.py:284
 msgid "Watershed"
-msgstr ""
+msgstr "Watershed"
 
 #: task_slice.py:422
 msgid "Set predefined or manual threshold:"
@@ -1373,15 +1373,15 @@ msgstr "Soglia range pennello"
 
 #: task_slice.py:869
 msgid "Overwrite mask"
-msgstr ""
+msgstr "Sovrascrivi maschera"
 
 #: task_slice.py:870
 msgid "Use WW&WL"
-msgstr ""
+msgstr "Considera luminosità e contrasto"
 
 #: task_slice.py:879
 msgid "Expand watershed to 3D"
-msgstr ""
+msgstr "Espandi watershed al 3D"
 
 #: task_surface.py:87
 msgid "Create 3D surface based on a mask"
