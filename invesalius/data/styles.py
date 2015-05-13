@@ -1341,6 +1341,14 @@ class WaterShedInteractorStyle(DefaultInteractorStyle):
             wp.Close()
             del wp
 
+            w_x, w_y = wx.GetMousePosition()
+            x, y = self.viewer.ScreenToClientXY(w_x, w_y)
+            flag = self.viewer.interactor.HitTest((x, y))
+
+            if flag == wx.HT_WINDOW_INSIDE:
+                self.OnEnterInteractor(None, None)
+
+
             if q.empty():
                 return
             #do_watershed(image, markers, tmp_mask, bstruct, self.config.algorithm,
