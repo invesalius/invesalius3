@@ -792,8 +792,9 @@ def ShowAboutDialog(parent):
                         u"Frédéric Lopez",
                         "fri",
                         "Javier de Lima Moreno",
-                        "Nikos Korkakakis",
+                        "Mario Regino Moreno Guerra",
                         "Massimo Crisantemo",
+                        "Nikos Korkakakis",
                         "Raul Bolliger Neto",
                         "Sebastian Hilbert",
                         "Semarang Pari"]
