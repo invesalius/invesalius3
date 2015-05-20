@@ -62,7 +62,7 @@ def get_LUT_value(data, window, level):
     return np.piecewise(data,
                         [data <= (level - 0.5 - (window-1)/2),
                          data > (level - 0.5 + (window-1)/2)],
-                        [0, 255, lambda data: ((data - (level - 0.5))/(window-1) + 0.5)*(255-0)])
+                        [0, window, lambda data: ((data - (level - 0.5))/(window-1) + 0.5)*(window)])
 
 class BaseImageInteractorStyle(vtk.vtkInteractorStyleImage):
     def __init__(self, viewer):
