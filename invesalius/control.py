@@ -155,7 +155,8 @@ class Controller():
         # Open project
         filepath = dialog.ShowOpenProjectDialog()
         if filepath:
-            self.CloseProject()
+            if session.IsOpen():
+                self.CloseProject()
             self.OpenProject(filepath)
 
     def ShowDialogSaveProject(self, saveas=False):
@@ -195,7 +196,6 @@ class Controller():
                     Publisher.sendMessage("Enable state project", False)
                     Publisher.sendMessage('Set project name')
                     Publisher.sendMessage("Stop Config Recording")
-                    Publisher.sendMessage("Exit")
                 elif answer == 1:
                     self.ShowDialogSaveProject()
                     utils.debug("Save changes and close")
@@ -203,7 +203,6 @@ class Controller():
                     Publisher.sendMessage("Enable state project", False)
                     Publisher.sendMessage('Set project name')
                     Publisher.sendMessage("Stop Config Recording")
-                    Publisher.sendMessage("Exit")
                 elif answer == -1:
                     utils.debug("Cancel")
             else:
@@ -211,11 +210,9 @@ class Controller():
                 Publisher.sendMessage("Enable state project", False)
                 Publisher.sendMessage('Set project name')
                 Publisher.sendMessage("Stop Config Recording")
-                Publisher.sendMessage("Exit")
 
         else:
             Publisher.sendMessage('Stop Config Recording')
-            Publisher.sendMessage('Exit')
 
 
 ###########################
@@ -234,7 +231,8 @@ class Controller():
                 answer = dialog.SaveChangesDialog2(filename)
                 if answer:
                     self.ShowDialogSaveProject()
-            self.CloseProject()
+            if session.IsOpen():
+                self.CloseProject()
             self.OpenProject(filepath)
         else:
             dialog.InexistentPath(filepath)

@@ -70,6 +70,10 @@ class Session(object):
         self.rendering = 0
         self.WriteSessionFile()
 
+    def IsOpen(self):
+        import constants as const
+        return self.project_status != const.PROJ_CLOSE
+
     def SaveConfigFileBackup(self):
         path = os.path.join(self.homedir ,
                             '.invesalius', 'config.cfg')
