@@ -463,6 +463,8 @@ class Frame(wx.Frame):
         """
         path = os.path.join(const.DOC_DIR,
                             "user_guide_pt_BR.pdf")
+        if sys.platform == 'darwin':
+            path = r'file://' + path
         webbrowser.open(path)
 
     def ShowImportDicomPanel(self):
