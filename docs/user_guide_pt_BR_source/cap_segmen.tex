@@ -147,12 +147,11 @@ Há situações em que a segmentação por limiar não é eficiente, pois ela é
 todo das imagens. Para aplicar a segmentação a imagens isoladas, pode-se usar a segmentação
 manual. Com ela, é possível adicionar ou apagar uma determinada região da imagem que foi
 segmentada por limiar. No entanto, a segmentação manual requer maior conhecimento de anatomia
-por parte do usuário. Para utilizá-la, é necessário clicar em \textbf{Ferramentas avançadas
-de edição} (figura \ref{fig:advanced_edition}) para abrir o painel de edição.
+por parte do usuário. Para utilizá-la, é necessário clicar em \textbf{Edição Manual} (figura \ref{fig:advanced_edition}) para abrir o painel de edição.
 
 \begin{figure}[!htb]
 \centering
-\includegraphics[scale=0.6]{edicao_avancada}
+\includegraphics[scale=0.6]{edicao_avancada.png}
 \caption{Ferramentas avançadas de edição}
 \label{fig:advanced_edition}
 \end{figure}
@@ -271,4 +270,109 @@ Demais detalhes serão discutidos no capítulo \ref{cap_surface}.
 \includegraphics[scale=0.5]{create_surface_edited.png}
 \caption{Método de criação de superfície}
 \label{fig:new_surface_edited}
+\end{figure}
+
+
+\section{Watershed}
+
+A segmentação por watershed, necessita que o usuário indique através de marcadores o que é objeto e o que é fundo. Esse método de segmentação interpreta a imagem como uma bacia hidrográfica, sendo que os valores dos níveis de cinza são as altitudes, formando vales e montanhas, os marcadores de fundo e objeto são as fontes de água. Essas fontes de água, começam "encher" essa bacia hidrográfica até se encontrarem, assim segmentando a imagem em fundo e objeto. Para utilizá-la, é necessário clicar na opção \textbf{Watershed} para abrir o painel de edição (figura~\ref{fig:watershed_painel}).
+
+\begin{figure}[!htb]
+\centering
+\includegraphics[scale=0.6]{watershed_panel.png}
+\caption{Painel de segmentação por Watershed}
+\label{fig:watershed_painel}
+\end{figure}
+
+Para inserir marcadores de fundo e objeto, é utilizada uma ferramenta em forma de pincel, a exemplo da segmentação manual, existe a opção de selecionar pincel retangular ou circular, também é possível alterar o tamanho deles. 
+
+É necessário também selecionar o tipo de operação que será realizada pelo pincel. As opções são as
+seguintes:\\
+\\
+\textbf{Objeto}, para inserir marcadores de objeto;\\
+\textbf{Fundo}, para inserir marcadores de fundo (não é objeto);\\
+\textbf{Apagar}, para apagar marcadores de objeto ou fundo.\\
+
+A opção "\textbf{Sobrescrever máscara}" é utilizada quando deseja-se que a máscara selecionada seja substituída pelo resultado da segmentação. Já a opção "\textbf{Considerar brilho e contraste}" é utilizada para o algoritmo levar em consideração a imagem que está sendo visualizada, assim é possível alterar o brilho e contraste e obter resultados melhores de segmentação.
+
+É possível configurar o método de \textit{Watershed} através do botão ao lado esquerdo do painel (figura~\ref{fig:watershed_conf}). Ao abrir essa opção é mostrada a janela~\ref{fig:watershed_janela_conf}. A opção método permite alterar o algoritmo que é utilizado na segmentação, existe o Wartershed convencional e o Watershed baseado no método de IFT (\textit{Image Forest Transform}), em alguns casos, como segmentação de cérebro ele apresenta melhor resultado.
+
+A conectividade dos pixels que serão levados em consideração, pode ser alterados, no caso 2D, é possível selecionar conectividade $4$ e $8$, já no caso 3D pode-se selecionar $6$,$18$ ou $26$. O valor "\textbf{Sigma da gaussiana}" é alterado para o método suavizar mais ou menos a imagem ao aplicar a segmentação, valores altos tendem a deixar a imagem mais suavizada e consequentemente o algoritmo seleciona menos detalhes e ruídos.
+
+\begin{figure}[!htb]
+\centering
+\includegraphics[scale=0.5]{configuration.png}
+\caption{Botão para abrir a configuração do método de Watershed}
+\label{fig:watershed_conf}
+\end{figure}
+
+\begin{figure}[!htb]
+\centering
+\includegraphics[scale=0.5]{watershed_opcao.png}
+\caption{Opções de configuração do método de Watershed}
+\label{fig:watershed_janela_conf}
+\end{figure}
+
+Existe a opção do método ser executado para todo o volume (expandir para outras fatias), para isso, após ser inserido os marcadores de objeto e de fundo, é necessário clicar no botão \textbf{Expandir watershed para 3D}, localizado no painel. Na figura~\ref{fig:watershed_2d} é exibido o resultado da segmentação do cérebro em uma fatia (2D), já na figura~\ref{fig:watershed_3d} é mostrado a expansão para todo o volume (3D). 
+
+Ainda na figura~\ref{fig:watershed_2d}, podemos visualizar os marcadores de objeto em verde claro, os marcadores de fundo em vermelho e a máscara em verde transparente cobrindo a região selecionada (resultado).
+
+\begin{figure}[!htb]
+\centering
+\includegraphics[scale=0.2]{watershed_2d.png}
+\caption{Watershed aplicado em uma fatia de um volume.}
+\label{fig:watershed_2d}
+\end{figure}
+
+\begin{figure}[!htb]
+\centering
+\includegraphics[scale=0.2]{watershed_3d.png}
+\caption{Segmentação do cérebro com o método de Watershed aplicado em todo um volume (expandido em 3D).}
+\label{fig:watershed_3d}
+\end{figure}
+
+\section{Operações booleanas}
+
+Após efetuar segmentações, é possível realizar operações booleanas entre as máscaras. As operações booleanas suportadas são:\\
+\\
+\textbf{União}, realiza a união de duas máscaras;\\
+\textbf{Diferença}, realiza a diferença entre a primeira máscara com a segunda;\\
+\textbf{Intersecção}, para apagar marcadores de objeto ou fundo.\\
+\textbf{Disjunção exclusiva}, também é conhecida como XOR, mantém as regiões de ambas as máscara que possuem diferença.\\
+
+Para ativar essa ferramenta é necessário ir no menu \textbf{Ferramentas}, \textbf{Operações boolenas}, como é exibido na figura~\ref{fig:booleano_menu} 
+
+\begin{figure}[!htb]
+\centering
+\includegraphics[scale=0.5]{booleano_menu.png}
+\caption{Menu para ativar a ferramenta de operações booleanas.}
+\label{fig:booleano_menu}
+\end{figure}
+
+É necessário selecionar a primeira máscara, a operação a ser realizada e a segunda máscara conforme mostra a figura~\ref{fig:booleano_janela}. Em seguida é necessário clicar no botão \textbf{Ok}.
+
+\begin{figure}[!htb]
+\centering
+\includegraphics[scale=0.5]{boolano_janela.png}
+\caption{Ferramenta de operações booleanas.}
+\label{fig:booleano_janela}
+\end{figure}
+
+Na figura~\ref{fig:op_boolana}, apresentamos um exemplo de utilização da ferramenta.
+
+\begin{figure}[!htb]
+  \centering
+  \subfloat[Máscara A]{\includegraphics[width=0.332\textwidth]{booleano_m_a}}                
+  \hfill
+  \subfloat[Máscara B]{\includegraphics[width=0.332\textwidth]{booleano_m_b}}	
+  \hfill  
+  \subfloat[União (A $\cup$ B)]{\includegraphics[width=0.332\textwidth]{booleano_uniao}}
+  \hfill  
+  \subfloat[Diferença (A - B)]{\includegraphics[width=0.332\textwidth]{booleano_dif}}
+  \hfill  
+  \subfloat[Intersecção (A $\cap$ B)]{\includegraphics[width=0.332\textwidth]{booleano_interc}}
+  \hfill  
+  \subfloat[Disjunção exclusiva (A $\oplus$ B)]{\includegraphics[width=0.332\textwidth]{booleano_disj_exc}}
+  \caption{Exemplo de operações booleanas.}
+  \label{fig:op_boolana}
 \end{figure}
