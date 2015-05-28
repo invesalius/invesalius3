@@ -353,7 +353,8 @@ class Frame(wx.Frame):
         Close all project data.
         """
         Publisher.sendMessage('Close Project')
-        Publisher.sendMessage('Exit')
+        if not ses.Session().IsOpen():
+            Publisher.sendMessage('Exit')
 
     def OnMenuClick(self, evt):
         """
