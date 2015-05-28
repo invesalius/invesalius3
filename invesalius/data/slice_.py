@@ -1278,6 +1278,10 @@ class Slice(object):
         elif op == const.BOOLEAN_XOR:
             m[:] = numpy.logical_xor((m1 > 2), (m2 > 2)) * 255
 
+        for o in self.buffer_slices:
+            self.buffer_slices[o].discard_mask()
+            self.buffer_slices[o].discard_vtk_mask()
+
         future_mask.was_edited = True
         self._add_mask_into_proj(future_mask)
 
