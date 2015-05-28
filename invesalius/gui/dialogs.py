@@ -1481,6 +1481,7 @@ class WatershedOptionsDialog(wx.Dialog):
         self.Layout()
 
         btn_ok.Bind(wx.EVT_BUTTON, self.OnOk)
+        self.CenterOnScreen()
 
     def OnOk(self, evt):
         self.wop.apply_options()
