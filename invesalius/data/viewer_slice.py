@@ -717,6 +717,12 @@ class Viewer(wx.Panel):
 
         Publisher.subscribe(self.OnSetOverwriteMask, "Set overwrite mask")
 
+        Publisher.subscribe(self.RefreshViewer, "Refresh viewer")
+
+
+    def RefreshViewer(self, pubsub_evt):
+        self.Refresh()
+
     def SetDefaultCursor(self, pusub_evt):
         self.interactor.SetCursor(wx.StockCursor(wx.CURSOR_DEFAULT))
     

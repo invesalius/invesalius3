@@ -404,8 +404,9 @@ class MasksListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
         if new_dict:
             if index == self.current_index:
                 self.SetItemImage(0, 1)
-                Publisher.sendMessage('Show mask', (0, 1))
                 Publisher.sendMessage('Change mask selected', 0)
+                Publisher.sendMessage('Show mask', (0, 1))
+                Publisher.sendMessage('Refresh viewer')
                 for key in new_dict:
                     if key:
                          self.SetItemImage(key, 0)

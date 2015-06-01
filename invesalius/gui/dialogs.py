@@ -1561,6 +1561,7 @@ class MaskBooleanDialog(wx.Dialog):
 
         Publisher.sendMessage('Do boolean operation', (op, m1, m2))
         Publisher.sendMessage('Reload actual slice')
+        Publisher.sendMessage('Refresh viewer')
 
         self.Close()
         self.Destroy()
