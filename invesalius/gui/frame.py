@@ -353,7 +353,8 @@ class Frame(wx.Frame):
         Close all project data.
         """
         Publisher.sendMessage('Close Project')
-        Publisher.sendMessage('Exit')
+        if not ses.Session().IsOpen():
+            Publisher.sendMessage('Exit')
 
     def OnMenuClick(self, evt):
         """
@@ -462,6 +463,8 @@ class Frame(wx.Frame):
         """
         path = os.path.join(const.DOC_DIR,
                             "user_guide_pt_BR.pdf")
+        if sys.platform == 'darwin':
+            path = r'file://' + path
         webbrowser.open(path)
 
     def ShowImportDicomPanel(self):

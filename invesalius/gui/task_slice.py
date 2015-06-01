@@ -800,6 +800,10 @@ class EditionTools(wx.Panel):
     def OnComboBrushOp(self, evt):
         brush_op_id = evt.GetSelection()
         Publisher.sendMessage('Set edition operation', brush_op_id)
+        if brush_op_id == const.BRUSH_THRESH:
+            self.gradient_thresh.Enable()
+        else:
+            self.gradient_thresh.Disable()
 
 
 class WatershedTool(EditionTools):
