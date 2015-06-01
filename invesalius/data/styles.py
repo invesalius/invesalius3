@@ -697,7 +697,7 @@ class EditorInteractorStyle(DefaultInteractorStyle):
 
         viewer.slice_.edit_mask_pixel(operation, cursor.GetPixels(),
                                     position, radius, viewer.orientation)
-        viewer._flush_buffer = True
+        #viewer._flush_buffer = True
 
         # TODO: To create a new function to reload images to viewer.
         viewer.OnScrollBar()
@@ -773,6 +773,7 @@ class EditorInteractorStyle(DefaultInteractorStyle):
         if (self.viewer.slice_.buffer_slices[self.orientation].mask is None):
             return
 
+        self.viewer._flush_buffer = True
         self.viewer.slice_.apply_slice_buffer_to_mask(self.orientation)
         self.viewer._flush_buffer = False
 
