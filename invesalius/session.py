@@ -37,6 +37,9 @@ class Session(object):
 
     def __init__(self):
         self.temp_item = False
+        # Initializing as project status closed.
+        # TODO: A better way to initialize project_status as closed (3)
+        self.project_status = 3
 
     def CreateItens(self):
         import constants as const
@@ -246,7 +249,9 @@ class Session(object):
         try:
             config.read(path)
             self.mode = config.get('session', 'mode')
-            self.project_status = config.get('session', 'status')
+            # Do not reading project status from the config file, since there
+            # isn't a recover sessession tool in InVesalius
+            #self.project_status = int(config.get('session', 'status'))
             self.debug = config.get('session','debug')
             self.language = config.get('session','language')
             self.recent_projects = eval(config.get('project','recent_projects'))
