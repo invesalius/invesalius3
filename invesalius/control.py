@@ -630,4 +630,4 @@ class Controller():
 
     def ShowBooleanOpDialog(self, pubsub_evt):
         dlg = dialogs.MaskBooleanDialog(prj.Project().mask_dict)
-        dlg.ShowModal()
+        dlg.Show()

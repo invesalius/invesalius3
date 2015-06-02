@@ -475,7 +475,6 @@ class Frame(wx.Frame):
         Publisher.sendMessage('Show import directory dialog')
 
     def ShowRetrieveDicomPanel(self):
-        print "teste.............."
         Publisher.sendMessage('Show retrieve dicom panel')
 
     def ShowOpenProject(self):
@@ -506,15 +505,12 @@ class Frame(wx.Frame):
         Publisher.sendMessage('Reload actual slice')
 
     def OnUndo(self):
-        print "Undo"
         Publisher.sendMessage('Undo edition')
 
     def OnRedo(self):
-        print "Redo"
         Publisher.sendMessage('Redo edition')
 
     def OnMaskBoolean(self):
-        print "Mask boolean"
         Publisher.sendMessage('Show boolean dialog')
 
     def OnCleanMask(self):
@@ -1376,7 +1372,6 @@ class SliceToolBar(AuiToolBar):
         for item in self.enable_items:
             state = self.GetToolToggled(item)
             if state and (item != id):
-                print ">>>>", item
                 self.ToggleTool(item, False)
         #self.ToggleTool(const.SLICE_STATE_SCROLL, self.GetToolToggled(const.SLICE_STATE_CROSS))
         #self.Update()
@@ -1691,11 +1686,9 @@ class HistoryToolBar(AuiToolBar):
         self.SetToolNormalBitmap(ID_LAYOUT,self.BMP_WITH_MENU)
 
     def OnUndo(self, event):
-        print "Undo"
         Publisher.sendMessage('Undo edition')
 
     def OnRedo(self, event):
-        print "Redo"
         Publisher.sendMessage('Redo edition')
 
     def OnToggle(self, event):

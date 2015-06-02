@@ -433,7 +433,6 @@ class MasksListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
                 self.SetItemImage(key, 0)
 
     def __hide_current_mask(self, pubsub_evt):
-        print self.mask_list_index.keys()
         self.SetItemImage(self.current_index, 0)
 
     def __init_columns(self):

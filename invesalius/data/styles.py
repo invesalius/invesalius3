@@ -1381,9 +1381,6 @@ class WaterShedInteractorStyle(DefaultInteractorStyle):
                     ##tmp_image = ndimage.morphological_gradient((image - image.min()).astype('uint16'), self.config.mg_size)
                     #tmp_mask = watershed_ift(tmp_image, markers.astype('int8'), bstruct)
 
-            print "mask.max >>>", tmp_mask.max()
-            print "mask.min >>>", tmp_mask.min()
-
             if self.viewer.overwrite_mask:
                 mask[:] = 0
                 mask[tmp_mask == 1] = 253

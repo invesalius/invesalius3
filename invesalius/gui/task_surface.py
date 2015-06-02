@@ -512,7 +512,6 @@ class SurfaceProperties(wx.Panel):
         name = pubsub_evt.data[1]
         colour = [value*255 for value in pubsub_evt.data[2]]
         i = 0
-        print name, index, self.surface_list
         try:
             i = self.surface_list.index([name, index])
             overwrite = True

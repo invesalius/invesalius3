@@ -457,7 +457,6 @@ class VolumeToolPanel(wx.Panel):
         self.id_cutplane = None
         submenu = wx.Menu()
         for name in const.RAYCASTING_TOOLS:
-           print name
            id = wx.NewId()
            if not(self.id_cutplane):
                self.id_cutplane = id

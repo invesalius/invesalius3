@@ -370,7 +370,6 @@ class Slice(object):
         # "if" is necessary because wx events are calling this before any mask
         # has been created
         print "__show_mask"
-        print "self.current_mask", self.current_mask
         if self.current_mask:
             index, value = pubsub_evt.data
             self.ShowMask(index, value)
@@ -805,7 +804,6 @@ class Slice(object):
         """
         self.current_mask.was_edited = False
         thresh_min, thresh_max = threshold_range
-        print "Threshold"
 
         if self.current_mask.index == index:
             # TODO: find out a better way to do threshold
@@ -817,7 +815,6 @@ class Slice(object):
                     m[m == 1] = 255
                     self.current_mask.matrix[n+1, 1:, 1:] = m
             else:
-                print "Only one slice"
                 slice_ = self.buffer_slices[orientation].image
                 self.buffer_slices[orientation].mask = (255 * ((slice_ >= thresh_min) & (slice_ <= thresh_max))).astype('uint8')
 
@@ -873,7 +870,6 @@ class Slice(object):
     #---------------------------------------------------------------------------
 
     def CreateSurfaceFromIndex(self, pubsub_evt):
-        print pubsub_evt.data
         surface_parameters = pubsub_evt.data
 
         proj = Project()
@@ -1112,7 +1108,6 @@ class Slice(object):
         else:
             thresh_min, thresh_max = self.current_mask.threshold_range
 
-        print ">>>> THreshold", thresh_min, thresh_max
         m = (((slice_matrix >= thresh_min) & (slice_matrix <= thresh_max)) * 255)
         m[mask == 1] = 1
         m[mask == 2] = 2
@@ -1379,8 +1374,6 @@ class Slice(object):
 
         for buffer_ in self.buffer_slices.values():
             buffer_.discard_buffer()
-
-        print type(self.matrix)
 
     def OnExportMask(self, pubsub_evt):
         pass

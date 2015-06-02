@@ -1228,7 +1228,6 @@ class Viewer(wx.Panel):
         "Inserting actors"
         actors, n = pubsub_evt.data
         pos = self.scroll.GetThumbPosition()
-        print actors
         #try:
             #renderer = self.renderers_by_slice_number[n]
             #for actor in actors:

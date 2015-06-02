@@ -475,7 +475,6 @@ class GradientCtrl(wx.Panel):
     def ChangeMinValue(self, e):
         # Why do I need to change slide min value if it has been changed for
         # the user?
-        print "ChangeMinValue", self.slided
         if not self.slided:
             self.gradient_slider.SetMinValue(int(self.spin_min.GetValue()))
             self._GenerateEvent(myEVT_THRESHOLD_CHANGE)
@@ -496,10 +495,8 @@ class GradientCtrl(wx.Panel):
     def _GenerateEvent(self, event):
         if event == myEVT_THRESHOLD_CHANGING:
             self.changed = True
-            print 'changing'
         elif event == myEVT_THRESHOLD_CHANGED :
             self.changed = False
-            print 'changed'
 
         evt = SliderEvent(event, self.GetId(), self.min_range,
                           self.max_range, self.minimun, self.maximun)

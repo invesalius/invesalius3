@@ -1489,7 +1489,10 @@ class WatershedOptionsDialog(wx.Dialog):
 
 class MaskBooleanDialog(wx.Dialog):
     def __init__(self, masks):
-        wx.Dialog.__init__(self, wx.GetApp().GetTopWindow(), -1, _(u"Boolean operations"))
+        pre = wx.PreDialog()
+        pre.Create(wx.GetApp().GetTopWindow(), -1, _(u"Boolean operations"),  style=wx.DEFAULT_DIALOG_STYLE|wx.FRAME_FLOAT_ON_PARENT|wx.STAY_ON_TOP)
+        self.PostCreate(pre)
+
         self._init_gui(masks)
         self.CenterOnScreen()
 

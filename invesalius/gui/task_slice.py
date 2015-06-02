@@ -305,7 +305,6 @@ class InnerFoldPanel(wx.Panel):
         self.__bind_pubsub_evt()
 
     def __calc_best_size(self, panel):
-        print "Best size", self.GetSize()
         parent = panel.GetParent()
         q = panel.Reparent(self)
 
@@ -334,8 +333,6 @@ class InnerFoldPanel(wx.Panel):
 
         #if self.last_size is None or self.last_size.GetHeight() < size.GetHeight():
             #self.SetInitialSize(size)
-
-        print "Best size", size, self.GetSize(), self.GetClientSize(), q
 
     def __bind_evt(self):
         self.fold_panel.Bind(fpb.EVT_CAPTIONBAR, self.OnFoldPressCaption)
@@ -494,7 +491,6 @@ class MaskProperties(wx.Panel):
             self.combo_thresh.Delete(i)
 
     def OnRemoveMasks(self, pubsub_evt):
-        print "OnRemoveMasks"
         list_index = pubsub_evt.data
         for i in list_index:
             self.combo_mask_name.Delete(i)

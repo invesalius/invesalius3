@@ -257,7 +257,6 @@ class InnerTaskPanel(wx.Panel):
         menu.Bind(wx.EVT_MENU, self.OnMenuPicture)
 
     def OnMenuPicture(self, evt):
-        print "OnMenuPicture"
         id = evt.GetId()
         value = dlg.ExportPicture(self.id_to_name[id])
         if value:
@@ -273,7 +272,6 @@ class InnerTaskPanel(wx.Panel):
 
     def OnLinkExportMask(self, evt=None):
         project = proj.Project()
-        print "OnLinkEportMask"
         if sys.platform == 'win32':
             project_name = project.name
         else:
@@ -290,7 +288,6 @@ class InnerTaskPanel(wx.Panel):
 
         if dlg.ShowModal() == wx.ID_OK:
             filename = dlg.GetPath()
-            print "filename", filename
             extension = "vti"
             if sys.platform != 'win32':
                 if filename.split(".")[-1] != extension:
