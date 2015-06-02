@@ -1489,11 +1489,9 @@ class WatershedOptionsDialog(wx.Dialog):
 
 class MaskBooleanDialog(wx.Dialog):
     def __init__(self, masks):
-        pre = wx.PreDialog()
-        pre.Create(wx.GetApp().GetTopWindow(), -1, _(u"Boolean operations"),  style=wx.DEFAULT_DIALOG_STYLE|wx.FRAME_FLOAT_ON_PARENT)
-        self.PostCreate(pre)
-
+        wx.Dialog.__init__(self, wx.GetApp().GetTopWindow(), -1, _(u"Boolean operations"))
         self._init_gui(masks)
+        self.CenterOnScreen()
 
     def _init_gui(self, masks):
         mask_choices = [(masks[i].name, masks[i]) for i in sorted(masks)]
@@ -1550,7 +1548,6 @@ class MaskBooleanDialog(wx.Dialog):
         self.SetSizer(sizer)
         sizer.Fit(self)
 
-        self.Centre()
 
         btn_ok.Bind(wx.EVT_BUTTON, self.OnOk)
 
