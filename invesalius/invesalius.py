@@ -82,6 +82,9 @@ class InVesalius(wx.App):
     def Startup2(self):
         self.control = self.splash.control
         self.frame = self.splash.main
+        self.SetTopWindow(self.frame)
+        self.frame.Show()
+        self.frame.Raise()
 
 # ------------------------------------------------------------------
 

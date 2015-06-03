@@ -251,7 +251,8 @@ class Frame(wx.Frame):
         Exit InVesalius.
         """
         self.Destroy()
-        #sys.exit(0)
+        if hasattr(sys,"frozen") and sys.platform == 'darwin':
+            sys.exit(0)
 
     def _HideContentPanel(self, pubsub_evt):
         """
