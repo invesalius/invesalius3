@@ -435,6 +435,8 @@ class Frame(wx.Frame):
 
     def ShowPreferences(self):
 
+        self.preferences.Center()
+        
         if self.preferences.ShowModal() == wx.ID_OK:
             values = self.preferences.GetPreferences()
             self.preferences.Close()
