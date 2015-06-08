@@ -38,7 +38,8 @@ def GetLocales():
                                 'el_GR':u'Ελληνική', 
                                 'it':'Italiano', 
                                 'de_DE': 'Deutsch',
-                                'cs': u'Čeština'}) 
+                                'cs': u'Čeština', 
+                                'tr_TR': u'Türkçe'}) 
     return d 
  
 def GetLocaleOS(): 

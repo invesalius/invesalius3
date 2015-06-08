@@ -784,6 +784,7 @@ def ShowAboutDialog(parent):
                        "Olly Betts (patches to support wxPython3)"]
 
     info.Translators = ["Alex P. Natsios",
+                        "Anderson Antonio Mamede da Silva",
                         "Andreas Loupasakis",
                         "Annalisa Manenti",
                         "Cheng-Chia Tseng",
