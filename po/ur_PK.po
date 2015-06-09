@@ -10,8 +10,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: InVesalius3\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2015-05-11 14:29-0300\n"
-"PO-Revision-Date: 2015-05-11 17:31+0000\n"
+"POT-Creation-Date: 2015-06-02 13:24-0300\n"
+"PO-Revision-Date: 2015-06-02 16:40+0000\n"
 "Last-Translator: InVesalius <invesalius@cti.gov.br>\n"
 "Language-Team: Urdu (Pakistan) (http://www.transifex.com/projects/p/invesalius3/language/ur_PK/)\n"
 "MIME-Version: 1.0\n"
@@ -141,11 +141,11 @@ msgstr ""
 msgid "Draw"
 msgstr ""
 
-#: constants.py:257 styles.py:55 task_slice.py:851 task_surface.py:43
+#: constants.py:257 styles.py:57 task_slice.py:855 task_surface.py:43
 msgid "Erase"
 msgstr ""
 
-#: constants.py:257 data_notebook.py:442 task_surface.py:43
+#: constants.py:257 data_notebook.py:443 task_surface.py:43
 msgid "Threshold"
 msgstr ""
 
@@ -182,8 +182,8 @@ msgstr ""
 msgid "Brain"
 msgstr ""
 
-#: constants.py:286 control.py:367 dialogs.py:1253 dialogs.py:1256
-#: dialogs.py:1264 dialogs.py:1339 slice_menu.py:61 slice_menu.py:73
+#: constants.py:286 control.py:365 dialogs.py:1255 dialogs.py:1258
+#: dialogs.py:1266 dialogs.py:1341 slice_menu.py:61 slice_menu.py:73
 msgid "Default"
 msgstr ""
 
@@ -219,7 +219,7 @@ msgstr ""
 msgid "Mediastinum"
 msgstr ""
 
-#: constants.py:295 control.py:368 slice_menu.py:68 slice_menu.py:73
+#: constants.py:295 control.py:366 slice_menu.py:68 slice_menu.py:73
 msgid "Manual"
 msgstr ""
 
@@ -387,16 +387,16 @@ msgstr ""
 msgid "Cut plane"
 msgstr ""
 
-#: control.py:306
+#: control.py:304
 #, python-format
 msgid "Loading file %d of %d ..."
 msgstr ""
 
-#: control.py:423
+#: control.py:421
 msgid "Untitled"
 msgstr ""
 
-#: control.py:561
+#: control.py:559
 msgid "Fix gantry tilt applying the degrees below"
 msgstr ""
 
@@ -436,44 +436,44 @@ msgstr ""
 msgid "Measures"
 msgstr ""
 
-#: data_notebook.py:185 frame.py:1136
+#: data_notebook.py:185 frame.py:1160
 msgid "Measure distance"
 msgstr ""
 
-#: data_notebook.py:188 frame.py:1141
+#: data_notebook.py:188 frame.py:1166
 msgid "Measure angle"
 msgstr ""
 
-#: data_notebook.py:441 data_notebook.py:763 data_notebook.py:1002
-#: data_notebook.py:1194
+#: data_notebook.py:442 data_notebook.py:764 data_notebook.py:1003
+#: data_notebook.py:1195
 msgid "Name"
 msgstr ""
 
-#: data_notebook.py:502 frame.py:644
+#: data_notebook.py:503 frame.py:652
 msgid "Mask"
 msgstr ""
 
-#: data_notebook.py:627 task_surface.py:140
+#: data_notebook.py:628 task_surface.py:140
 msgid "New surface"
 msgstr ""
 
-#: data_notebook.py:764
+#: data_notebook.py:765
 msgid "Volume (mm³)"
 msgstr ""
 
-#: data_notebook.py:765
+#: data_notebook.py:766
 msgid "Transparency"
 msgstr ""
 
-#: data_notebook.py:1003
+#: data_notebook.py:1004
 msgid "Location"
 msgstr ""
 
-#: data_notebook.py:1004 data_notebook.py:1195
+#: data_notebook.py:1005 data_notebook.py:1196
 msgid "Type"
 msgstr ""
 
-#: data_notebook.py:1005 data_notebook.py:1196
+#: data_notebook.py:1006 data_notebook.py:1197
 msgid "Value"
 msgstr ""
 
@@ -525,7 +525,7 @@ msgstr ""
 msgid "Save raycasting preset"
 msgstr ""
 
-#: default_viewers.py:471 frame.py:694
+#: default_viewers.py:471 frame.py:702
 msgid "Tools"
 msgstr ""
 
@@ -564,7 +564,7 @@ msgstr ""
 msgid "Choose a DICOM folder:"
 msgstr ""
 
-#: dialogs.py:312 frame.py:577
+#: dialogs.py:312 frame.py:585
 msgid "Save project as..."
 msgstr ""
 
@@ -650,12 +650,14 @@ msgid "Please, provide more than one DICOM file for 3D reconstruction"
 msgstr ""
 
 #: dialogs.py:766
-msgid "(c) 2007-2015 Renato Archer Information Technology Center - CTI"
+msgid "(c) 2007-2015 Center for Information Technology Renato Archer - CTI"
 msgstr ""
 
 #: dialogs.py:767
 msgid ""
-"InVesalius is a medical imaging program for 3D reconstruction. It uses a sequence of 2D DICOM image files acquired with CT or MRI scanners. InVesalius allows exporting 3D volumes or surfaces as STL files for creating physical models of a patient's anatomy using rapid prototyping technologies. The software is supported by CTI, CNPq and the Brazilian Ministry of Health.\n"
+"InVesalius is a medical imaging program for 3D reconstruction. It uses a sequence of 2D DICOM image files acquired with CT or MRI scanners. InVesalius allows exporting 3D volumes or surfaces as mesh files for creating physical models of a patient's anatomy using additive manufacturing (3D printing) technologies. The software is developed by Center for Information Technology Renato Archer (CTI), National Council for Scientific and Technological Development (CNPq) and the Brazilian Ministry of Health.\n"
+"\n"
+" InVesalius must be used only for research. The Center for Information Technology Renato Archer is not responsible for damages caused by the use of this software.\n"
 "\n"
 " Contact: invesalius@cti.gov.br"
 msgstr ""
@@ -664,148 +666,152 @@ msgstr ""
 msgid "GNU GPL (General Public License) version 2"
 msgstr ""
 
-#: dialogs.py:810
+#: dialogs.py:812
 msgid "Save raycasting preset as:"
 msgstr ""
 
-#: dialogs.py:853 dialogs.py:1108
+#: dialogs.py:855 dialogs.py:1110
 msgid "New surface name:"
 msgstr ""
 
-#: dialogs.py:857 dialogs.py:1112
+#: dialogs.py:859 dialogs.py:1114
 msgid "Name the surface to be created"
 msgstr ""
 
-#: dialogs.py:864 dialogs.py:1119
+#: dialogs.py:866 dialogs.py:1121
 msgid "Mask of reference:"
 msgstr ""
 
-#: dialogs.py:882 dialogs.py:1137
+#: dialogs.py:884 dialogs.py:1139
 msgid "Surface quality:"
 msgstr ""
 
-#: dialogs.py:911 dialogs.py:1165
+#: dialogs.py:913 dialogs.py:1167
 msgid "Fill holes"
 msgstr ""
 
-#: dialogs.py:914 dialogs.py:1168
+#: dialogs.py:916 dialogs.py:1170
 msgid "Keep largest region"
 msgstr ""
 
-#: dialogs.py:952
+#: dialogs.py:954
 msgid "BMP image"
 msgstr ""
 
-#: dialogs.py:953
+#: dialogs.py:955
 msgid "JPG image"
 msgstr ""
 
-#: dialogs.py:954
+#: dialogs.py:956
 msgid "PNG image"
 msgstr ""
 
-#: dialogs.py:955
+#: dialogs.py:957
 msgid "PostScript document"
 msgstr ""
 
-#: dialogs.py:956
+#: dialogs.py:958
 msgid "POV-Ray file"
 msgstr ""
 
-#: dialogs.py:957
+#: dialogs.py:959
 msgid "TIFF image"
 msgstr ""
 
-#: dialogs.py:1002
+#: dialogs.py:1004
 msgid "Surface generation options"
 msgstr ""
 
-#: dialogs.py:1032
+#: dialogs.py:1034
 msgid "Surface creation"
 msgstr ""
 
-#: dialogs.py:1059
+#: dialogs.py:1061
 msgid "Surface creation options"
 msgstr ""
 
-#: dialogs.py:1065
+#: dialogs.py:1067
 msgid "Surface creation method"
 msgstr ""
 
-#: dialogs.py:1213 frame.py:697
+#: dialogs.py:1215 frame.py:705
 msgid "Options"
 msgstr ""
 
-#: dialogs.py:1229
+#: dialogs.py:1231
 msgid "Angle:"
 msgstr ""
 
-#: dialogs.py:1231
+#: dialogs.py:1233
 msgid "Max. distance:"
 msgstr ""
 
-#: dialogs.py:1233
+#: dialogs.py:1235
 msgid "Min. weight:"
 msgstr ""
 
-#: dialogs.py:1235
+#: dialogs.py:1237
 msgid "N. steps:"
 msgstr ""
 
-#: dialogs.py:1254 dialogs.py:1290 dialogs.py:1335
+#: dialogs.py:1256 dialogs.py:1292 dialogs.py:1337
 msgid "Context aware smoothing"
 msgstr ""
 
-#: dialogs.py:1255
+#: dialogs.py:1257
 msgid "Binary"
 msgstr ""
 
-#: dialogs.py:1273
+#: dialogs.py:1275
 msgid ""
 "It is not possible to use the Default method because the mask was edited."
 msgstr ""
 
-#: dialogs.py:1276
+#: dialogs.py:1278
 msgid "Method:"
 msgstr ""
 
-#: dialogs.py:1405
+#: dialogs.py:1407
 msgid "Method"
 msgstr ""
 
-#: dialogs.py:1428
+#: dialogs.py:1430
 msgid "Gaussian sigma"
 msgstr ""
 
-#: dialogs.py:1490 frame.py:638
+#: dialogs.py:1452 task_slice.py:284
+msgid "Watershed"
+msgstr ""
+
+#: dialogs.py:1492 frame.py:646
 msgid "Boolean operations"
 msgstr ""
 
-#: dialogs.py:1512 slice_.py:1236
+#: dialogs.py:1513 slice_.py:1244
 msgid "Union"
 msgstr ""
 
-#: dialogs.py:1513
+#: dialogs.py:1514
 msgid "Difference"
 msgstr ""
 
-#: dialogs.py:1514 slice_.py:1238
+#: dialogs.py:1515 slice_.py:1246
 msgid "Intersection"
 msgstr ""
 
-#: dialogs.py:1515
+#: dialogs.py:1516
 msgid "Exclusive disjunction"
 msgstr ""
 
-#: dialogs.py:1536
+#: dialogs.py:1537
 msgid "Mask 1"
 msgstr ""
 
-#: dialogs.py:1538
+#: dialogs.py:1539
 msgid "Operation"
 msgstr ""
 
-#: dialogs.py:1540
+#: dialogs.py:1541
 msgid "Mask 2"
 msgstr ""
 
@@ -853,143 +859,143 @@ msgstr ""
 msgid "Auto-play"
 msgstr ""
 
-#: frame.py:162
+#: frame.py:164
 msgid "Data panel"
 msgstr ""
 
-#: frame.py:169
+#: frame.py:171
 msgid "Preview medical data to be reconstructed"
 msgstr ""
 
-#: frame.py:175
+#: frame.py:177
 msgid "Retrieve DICOM from PACS"
 msgstr ""
 
-#: frame.py:572
+#: frame.py:580
 msgid "Import DICOM...\tCtrl+I"
 msgstr ""
 
-#: frame.py:574
+#: frame.py:582
 msgid "Import other files..."
 msgstr ""
 
-#: frame.py:575
+#: frame.py:583
 msgid "Open project...\tCtrl+O"
 msgstr ""
 
-#: frame.py:576
+#: frame.py:584
 msgid "Save project\tCtrl+S"
 msgstr ""
 
-#: frame.py:578
+#: frame.py:586
 msgid "Close project"
 msgstr ""
 
-#: frame.py:587
+#: frame.py:595
 msgid "Exit\tCtrl+Q"
 msgstr ""
 
-#: frame.py:618 frame.py:628
+#: frame.py:626 frame.py:636
 msgid "Undo\tCtrl+Z"
 msgstr ""
 
-#: frame.py:623 frame.py:629
+#: frame.py:631 frame.py:637
 msgid "Redo\tCtrl+Y"
 msgstr ""
 
-#: frame.py:641
+#: frame.py:649
 msgid "Clean Mask\tCtrl+Shift+A"
 msgstr ""
 
-#: frame.py:677
+#: frame.py:685
 msgid "Preferences..."
 msgstr ""
 
-#: frame.py:681
+#: frame.py:689
 msgid "Getting started..."
 msgstr ""
 
-#: frame.py:684
+#: frame.py:692
 msgid "About..."
 msgstr ""
 
-#: frame.py:692
+#: frame.py:700
 msgid "File"
 msgstr ""
 
-#: frame.py:693
+#: frame.py:701
 msgid "Edit"
 msgstr ""
 
-#: frame.py:698
+#: frame.py:706
 msgid "Help"
 msgstr ""
 
-#: frame.py:808 surface.py:371 surface.py:748 surface.py:749
+#: frame.py:816 surface.py:371 surface.py:748 surface.py:749
 msgid "Ready"
 msgstr ""
 
-#: frame.py:958
+#: frame.py:969
 msgid "Import DICOM files...\tCtrl+I"
 msgstr ""
 
-#: frame.py:965
+#: frame.py:978
 msgid "Open InVesalius project..."
 msgstr ""
 
-#: frame.py:969
+#: frame.py:984
 msgid "Save InVesalius project"
 msgstr ""
 
-#: frame.py:1111
+#: frame.py:1130
 msgid "Zoom"
 msgstr ""
 
-#: frame.py:1116
+#: frame.py:1136
 msgid "Zoom based on selection"
 msgstr ""
 
-#: frame.py:1121
+#: frame.py:1142
 msgid "Rotate"
 msgstr ""
 
-#: frame.py:1126
+#: frame.py:1148
 msgid "Move"
 msgstr ""
 
-#: frame.py:1131
+#: frame.py:1154
 msgid "Constrast"
 msgstr ""
 
-#: frame.py:1284
+#: frame.py:1312
 msgid "Scroll slices"
 msgstr ""
 
-#: frame.py:1288
+#: frame.py:1318
 msgid "Slices' cross intersection"
 msgstr ""
 
-#: frame.py:1445 frame.py:1514 frame.py:1690
+#: frame.py:1488 frame.py:1560 frame.py:1741
 msgid "Hide task panel"
 msgstr ""
 
-#: frame.py:1449 frame.py:1536 frame.py:1712
+#: frame.py:1494 frame.py:1582 frame.py:1763
 msgid "Hide text"
 msgstr ""
 
-#: frame.py:1520 frame.py:1696
+#: frame.py:1566 frame.py:1747
 msgid "Show task panel"
 msgstr ""
 
-#: frame.py:1530 frame.py:1706
+#: frame.py:1576 frame.py:1757
 msgid "Show text"
 msgstr ""
 
-#: frame.py:1609
+#: frame.py:1657
 msgid "Undo"
 msgstr ""
 
-#: frame.py:1614
+#: frame.py:1664
 msgid "Redo"
 msgstr ""
 
@@ -1208,11 +1214,11 @@ msgstr ""
 msgid "Skin Tissue (Child)"
 msgstr ""
 
-#: slice_.py:1237
+#: slice_.py:1245
 msgid "Diff"
 msgstr ""
 
-#: slice_.py:1239
+#: slice_.py:1247
 msgid "XOR"
 msgstr ""
 
@@ -1256,15 +1262,15 @@ msgstr ""
 msgid "Projection type"
 msgstr ""
 
-#: styles.py:56 task_slice.py:849
+#: styles.py:58 task_slice.py:853
 msgid "Foreground"
 msgstr ""
 
-#: styles.py:57 task_slice.py:850
+#: styles.py:59 task_slice.py:854
 msgid "Background"
 msgstr ""
 
-#: styles.py:826
+#: styles.py:833
 msgid "Applying watershed ..."
 msgstr ""
 
@@ -1345,23 +1351,19 @@ msgstr ""
 msgid "Manual edition"
 msgstr ""
 
-#: task_slice.py:284
-msgid "Watershed"
-msgstr ""
-
 #: task_slice.py:422
 msgid "Set predefined or manual threshold:"
 msgstr ""
 
-#: task_slice.py:652 task_slice.py:812
+#: task_slice.py:652 task_slice.py:816
 msgid "Choose brush type, size or operation:"
 msgstr ""
 
-#: task_slice.py:658 task_slice.py:818
+#: task_slice.py:658 task_slice.py:822
 msgid "Circle"
 msgstr ""
 
-#: task_slice.py:662 task_slice.py:822
+#: task_slice.py:662 task_slice.py:826
 msgid "Square"
 msgstr ""
 
@@ -1369,15 +1371,15 @@ msgstr ""
 msgid "Brush threshold range:"
 msgstr ""
 
-#: task_slice.py:869
+#: task_slice.py:873
 msgid "Overwrite mask"
 msgstr ""
 
-#: task_slice.py:870
+#: task_slice.py:874
 msgid "Use WW&WL"
 msgstr ""
 
-#: task_slice.py:879
+#: task_slice.py:883
 msgid "Expand watershed to 3D"
 msgstr ""
 
