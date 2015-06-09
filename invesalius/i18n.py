@@ -40,7 +40,11 @@ def GetLocales():
                                 'it':'Italiano', 
                                 'de_DE': 'Deutsch',
                                 'cs': u'Čeština', 
-                                'tr_TR': u'Türkçe'}) 
+                                'tr_TR': u'Türkçe',
+                                'ca': u'Català',
+                                'ko': u'한국어',
+                                'ro': u'Română',
+                                }) 
     return d 
  
 def GetLocaleOS(): 
