@@ -12,7 +12,7 @@ msgstr ""
 "Project-Id-Version: InVesalius3\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2015-06-02 13:24-0300\n"
-"PO-Revision-Date: 2015-06-08 13:53+0000\n"
+"PO-Revision-Date: 2015-06-09 12:07+0000\n"
 "Last-Translator: tfmoraes <totonixsame@gmail.com>\n"
 "Language-Team: Portuguese (Brazil) (http://www.transifex.com/projects/p/invesalius3/language/pt_BR/)\n"
 "MIME-Version: 1.0\n"
@@ -1473,7 +1473,7 @@ msgstr "Ordem invertida"
 msgid ""
 "If checked, the slices are traversed in descending order to compound the "
 "visualization instead of ascending order."
-msgstr "Se selecionado, as fatias são percorridos em ordem decrescente para compor a visualização em vez de ordem crescente."
+msgstr "Se selecionado, as fatias são percorridas em ordem decrescente para compor a visualização em vez de ordem crescente."
 
 #: viewer_slice.py:90
 msgid "Number of slices"
@@ -1481,7 +1481,7 @@ msgstr "Número de fatias"
 
 #: viewer_slice.py:91
 msgid "Sharpness"
-msgstr "Nítidez"
+msgstr "Nitidez"
 
 #: viewer_slice.py:333 viewer_slice.py:337 viewer_slice.py:390
 #: viewer_slice.py:392 viewer_slice.py:404 viewer_slice.py:413
