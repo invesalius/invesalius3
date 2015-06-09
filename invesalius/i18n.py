@@ -34,6 +34,7 @@ def GetLocales():
                                 'en': u'English', 
                                 'es': u'Español', 
                                 'pt_BR': u'Português (Brasil)', 
+                                'pt': u'Português',
                                 'fr':u'Français', 
                                 'el_GR':u'Ελληνική', 
                                 'it':'Italiano', 
