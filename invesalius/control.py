@@ -433,8 +433,8 @@ class Controller():
         else:
             proj.original_orientation =  const.SAGITAL
 
-        proj.threshold_range = (header['glmin'],
-                                header['glmax'])
+        proj.threshold_range = (int(header['glmin']),
+                                int(header['glmax']))
         proj.window = proj.threshold_range[1] - proj.threshold_range[0]
         proj.level =  (0.5 * (proj.threshold_range[1] + proj.threshold_range[0]))
         proj.spacing = header['pixdim'][1:4]
@@ -567,7 +567,7 @@ class Controller():
         self.Slice.window_level = wl
         self.Slice.window_width = ww
 
-        scalar_range = self.matrix.min(), self.matrix.max()
+        scalar_range = int(self.matrix.min()), int(self.matrix.max())
 
         Publisher.sendMessage('Update threshold limits list', scalar_range)
 
