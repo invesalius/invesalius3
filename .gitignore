@@ -8,6 +8,7 @@ invesalius/*.swo
 invesalius/*.swp
 invesalius/data/*.log
 invesalius/data/*.pyc
+invesalius/data/*.pyd
 invesalius/gui/*.log
 invesalius/gui/*.pyc
 invesalius/gui/widgets/*.log
