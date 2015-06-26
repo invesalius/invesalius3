@@ -8,9 +8,16 @@ invesalius/*.swo
 invesalius/*.swp
 invesalius/data/*.log
 invesalius/data/*.pyc
+invesalius/data/*.pyd
 invesalius/gui/*.log
 invesalius/gui/*.pyc
 invesalius/gui/widgets/*.log
 invesalius/gui/widgets/*.pyc
 invesalius/reader/*.log
 invesalius/reader/*.pyc
+
+*.pyc
+*.swp
+*.so
+tags
+*.c
