@@ -30,8 +30,9 @@ if sys.platform == 'win32':
 else:
     if sys.platform != 'darwin':
         import wxversion
-        wxversion.ensureMinimal('2.8-unicode', optionsRequired=True)
-        wxversion.select('2.8-unicode', optionsRequired=True)
+        #wxversion.ensureMinimal('2.8-unicode', optionsRequired=True)
+        #wxversion.select('2.8-unicode', optionsRequired=True)
+        wxversion.ensureMinimal('3.0')
         
 import wx
 #from wx.lib.pubsub import setupv1 #new wx
@@ -81,6 +82,9 @@ class InVesalius(wx.App):
     def Startup2(self):
         self.control = self.splash.control
         self.frame = self.splash.main
+        self.SetTopWindow(self.frame)
+        self.frame.Show()
+        self.frame.Raise()
 
 # ------------------------------------------------------------------
 
@@ -154,6 +158,9 @@ class SplashScreen(wx.SplashScreen):
                 icon_file = "splash_" + lang + ".png"
 
             path = os.path.join("..","icons", icon_file)
+
+            if not os.path.exists(path):
+                path = os.path.join("..", "icons", "splash_en.png")
 
             bmp = wx.Image(path).ConvertToBitmap()
 

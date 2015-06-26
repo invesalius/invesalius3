@@ -23,8 +23,9 @@ import random
 import sys
 
 import vtk
-import wx
 from vtk.wx.wxVTKRenderWindowInteractor import wxVTKRenderWindowInteractor
+import wx
+import wx.combo
 from wx.lib import masked
 from wx.lib.agw import floatspin
 from wx.lib.wordwrap import wordwrap
@@ -220,7 +221,7 @@ def ShowOpenProjectDialog():
     dlg = wx.FileDialog(None, message=_("Open InVesalius 3 project..."),
                         defaultDir="",
                         defaultFile="", wildcard=WILDCARD_OPEN,
-                        style=wx.OPEN|wx.CHANGE_DIR)
+                        style=wx.FD_OPEN|wx.FD_CHANGE_DIR)
 
     # inv3 filter is default
     dlg.SetFilterIndex(0)
@@ -248,7 +249,7 @@ def ShowOpenAnalyzeDialog():
     dlg = wx.FileDialog(None, message=_("Open Analyze file"),
                         defaultDir="",
                         defaultFile="", wildcard=WILDCARD_ANALYZE,
-                        style=wx.OPEN|wx.CHANGE_DIR)
+                        style=wx.FD_OPEN|wx.FD_CHANGE_DIR)
 
     # inv3 filter is default
     dlg.SetFilterIndex(0)
@@ -345,7 +346,7 @@ def ShowSaveAsProjectDialog(default_filename=None):
                         "", # last used directory
                         default_filename,
                         _("InVesalius project (*.inv3)|*.inv3"),
-                        wx.SAVE|wx.OVERWRITE_PROMPT)
+                        wx.FD_SAVE|wx.FD_OVERWRITE_PROMPT)
     #dlg.SetFilterIndex(0) # default is VTI
 
     filename = None
@@ -811,7 +812,6 @@ class NewMask(wx.Dialog):
         self.Bind(grad.EVT_THRESHOLD_CHANGED, self.OnSlideChanged, self.gradient)
         self.combo_thresh.Bind(wx.EVT_COMBOBOX, self.OnComboThresh)
 
-
     def OnComboThresh(self, evt):
         import project as prj
         proj = prj.Project()
@@ -916,9 +916,9 @@ def ShowAboutDialog(parent):
 
     info = wx.AboutDialogInfo()
     info.Name = "InVesalius"
-    info.Version = "3.0 - Beta 5"
-    info.Copyright = _("(c) 2007-2013 Renato Archer Information Technology Center - CTI")
-    info.Description = wordwrap(_("InVesalius is a medical imaging program for 3D reconstruction. It uses a sequence of 2D DICOM image files acquired with CT or MRI scanners. InVesalius allows exporting 3D volumes or surfaces as STL files for creating physical models of a patient's anatomy using rapid prototyping technologies. The software is supported by CTI, CNPq and the Brazilian Ministry of Health.\n\n Contact: invesalius@cti.gov.br"), 350, wx.ClientDC(parent))
+    info.Version = "3.0"
+    info.Copyright = _("(c) 2007-2015 Center for Information Technology Renato Archer - CTI")
+    info.Description = wordwrap(_("InVesalius is a medical imaging program for 3D reconstruction. It uses a sequence of 2D DICOM image files acquired with CT or MRI scanners. InVesalius allows exporting 3D volumes or surfaces as mesh files for creating physical models of a patient's anatomy using additive manufacturing (3D printing) technologies. The software is developed by Center for Information Technology Renato Archer (CTI), National Council for Scientific and Technological Development (CNPq) and the Brazilian Ministry of Health.\n\n InVesalius must be used only for research. The Center for Information Technology Renato Archer is not responsible for damages caused by the use of this software.\n\n Contact: invesalius@cti.gov.br"), 350, wx.ClientDC(parent))
 
 #       _("InVesalius is a software for medical imaging 3D reconstruction. ")+\
 #       _("Its input is a sequency of DICOM 2D image files acquired with CT or MR.\n\n")+\
@@ -934,22 +934,27 @@ def ShowAboutDialog(parent):
                        "Tatiana Al-Chueyr (former)",
                        "Guilherme Cesar Soares Ruppert (former)",
                        "Fabio de Souza Azevedo (former)",
-                       "Bruno Lara Bottazzini (contributor)"]
+                       "Bruno Lara Bottazzini (contributor)",
+                       "Olly Betts (patches to support wxPython3)"]
 
     info.Translators = ["Alex P. Natsios",
+                        "Anderson Antonio Mamede da Silva",
                         "Andreas Loupasakis",
+                        "Annalisa Manenti",
                         "Cheng-Chia Tseng",
                         "Dimitris Glezos",
                         "Eugene Liscio",
                         u"Frédéric Lopez",
-                        "Javier de Lima Moreno"
-                        "Nikos Korkakakis",
+                        "fri",
+                        "Javier de Lima Moreno",
+                        "Mario Regino Moreno Guerra",
                         "Massimo Crisantemo",
+                        "Nikos Korkakakis",
                         "Raul Bolliger Neto",
                         "Sebastian Hilbert",
                         "Semarang Pari"]
 
-    #info.DocWriters = ["Fabio Francisco da Silva (PT)"] 
+    #info.DocWriters = ["Fabio Francisco da Silva (PT)"]
 
     info.Artists = ["Otavio Henrique Junqueira Amorim"]
 
@@ -1127,7 +1132,7 @@ def ExportPicture(type_=""):
                         "", # last used directory
                         project_name, # filename
                         WILDCARD_SAVE_PICTURE,
-                        wx.SAVE|wx.OVERWRITE_PROMPT)
+                        wx.FD_SAVE|wx.FD_OVERWRITE_PROMPT)
     dlg.SetFilterIndex(1) # default is VTI
 
     if dlg.ShowModal() == wx.ID_OK:
@@ -1970,6 +1975,7 @@ def CreateSphereMarkers(self,ballsize,ballcolour,coord):
 # # #         
 # # #         self.ren.AddActor(self.coilActor)
 # # #         self.ren.AddActor(axes)
+
 class ObjectCalibration(wx.Dialog):
     def __init__(self, parent=None, ID=-1, title="Calibration Dialog", size=wx.DefaultSize,
             pos=wx.DefaultPosition, style=wx.DEFAULT_DIALOG_STYLE,
@@ -2151,7 +2157,6 @@ class ObjectCalibration(wx.Dialog):
         print "\n===================================="
         print "orientation: ", self.coilActor.GetOrientation()
         print "====================================\n"
-
 
     def DirectionCosinesTest_eulerangles(self, evt):
         #p1, p2, p3 = self.ball_centers[:3]
@@ -2406,7 +2411,7 @@ class SurfaceCreationOptionsPanel(wx.Panel):
         flag_link = wx.EXPAND|wx.GROW|wx.ALL
         flag_button = wx.ALL | wx.EXPAND| wx.GROW
 
-        fixed_sizer = wx.FlexGridSizer(rows=2, cols=2, hgap=10, vgap=5)
+        fixed_sizer = wx.FlexGridSizer(rows=3, cols=2, hgap=10, vgap=5)
         fixed_sizer.AddGrowableCol(0, 1)
         fixed_sizer.AddMany([ (label_surface, 1, flag_link, 0),
                               (text, 1, flag_button, 0),
@@ -2642,3 +2647,179 @@ class ClutImagedataDialog(wx.Dialog):
         super(wx.Dialog, self).Show(show)
         if gen_evt:
             self.clut_widget._generate_event()
+
+
+class WatershedOptionsPanel(wx.Panel):
+    def __init__(self, parent, config):
+        wx.Panel.__init__(self, parent)
+
+        self.algorithms = ("Watershed", "Watershed IFT")
+        self.con2d_choices = (4, 8)
+        self.con3d_choices = (6, 18, 26)
+
+        self.config = config
+
+        self._init_gui()
+
+    def _init_gui(self):
+        self.choice_algorithm = wx.RadioBox(self, -1, _(u"Method"),
+                                           choices=self.algorithms,
+                                           style=wx.NO_BORDER | wx.HORIZONTAL)
+        self.choice_algorithm.SetSelection(self.algorithms.index(self.config.algorithm))
+
+        self.choice_2dcon = wx.RadioBox(self, -1, "2D",
+                                        choices=[str(i) for i in self.con2d_choices],
+                                        style=wx.NO_BORDER | wx.HORIZONTAL)
+        self.choice_2dcon.SetSelection(self.con2d_choices.index(self.config.con_2d))
+
+        self.choice_3dcon = wx.RadioBox(self, -1, "3D",
+                                        choices=[str(i) for i in self.con3d_choices],
+                                        style=wx.NO_BORDER | wx.HORIZONTAL)
+        self.choice_3dcon.SetSelection(self.con3d_choices.index(self.config.con_3d))
+
+        self.gaussian_size = wx.SpinCtrl(self, -1, "", min=1, max=10)
+        self.gaussian_size.SetValue(self.config.mg_size)
+
+        box_sizer = wx.StaticBoxSizer(wx.StaticBox(self, -1, "Conectivity"), wx.VERTICAL)
+        box_sizer.Add(self.choice_2dcon, 0, wx.ALIGN_CENTER_VERTICAL,2)
+        box_sizer.Add(self.choice_3dcon, 0, wx.ALIGN_CENTER_VERTICAL,2)
+
+        g_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        g_sizer.Add(wx.StaticText(self, -1, _("Gaussian sigma")), 0, wx.ALIGN_RIGHT | wx.ALL, 5)
+        g_sizer.Add(self.gaussian_size, 0, wx.ALIGN_LEFT | wx.ALL, 5)
+
+        sizer = wx.BoxSizer(wx.VERTICAL)
+        sizer.Add(self.choice_algorithm, 0, wx.ALIGN_CENTER_VERTICAL,2)
+        sizer.Add(box_sizer, 1, wx.EXPAND,2)
+        sizer.Add(g_sizer, 0, wx.ALIGN_LEFT, 2)
+
+        self.SetSizer(sizer)
+        sizer.Fit(self)
+        self.Layout()
+
+    def apply_options(self):
+        self.config.algorithm = self.algorithms[self.choice_algorithm.GetSelection()]
+        self.config.con_2d = self.con2d_choices[self.choice_2dcon.GetSelection()]
+        self.config.con_3d = self.con3d_choices[self.choice_3dcon.GetSelection()]
+        self.config.mg_size = self.gaussian_size.GetValue()
+
+
+class WatershedOptionsDialog(wx.Dialog):
+    def __init__(self, config):
+        pre = wx.PreDialog()
+        pre.Create(wx.GetApp().GetTopWindow(), -1, _(u'Watershed'), style=wx.DEFAULT_DIALOG_STYLE|wx.FRAME_FLOAT_ON_PARENT)
+        self.PostCreate(pre)
+
+        self.config = config
+
+        self._init_gui()
+
+    def _init_gui(self):
+        wop = WatershedOptionsPanel(self, self.config)
+        self.wop = wop
+
+        sizer = wx.BoxSizer(wx.VERTICAL)
+
+        btn_ok = wx.Button(self, wx.ID_OK)
+        btn_ok.SetDefault()
+
+        btn_cancel = wx.Button(self, wx.ID_CANCEL)
+
+        btnsizer = wx.StdDialogButtonSizer()
+        btnsizer.AddButton(btn_ok)
+        btnsizer.AddButton(btn_cancel)
+        btnsizer.Realize()
+
+        sizer.Add(wop, 0, wx.EXPAND)
+        sizer.Add(btnsizer, 0, wx.EXPAND)
+        sizer.AddSpacer(5)
+
+        self.SetSizer(sizer)
+        sizer.Fit(self)
+        self.Layout()
+
+        btn_ok.Bind(wx.EVT_BUTTON, self.OnOk)
+        self.CenterOnScreen()
+
+    def OnOk(self, evt):
+        self.wop.apply_options()
+        evt.Skip()
+
+class MaskBooleanDialog(wx.Dialog):
+    def __init__(self, masks):
+        pre = wx.PreDialog()
+        pre.Create(wx.GetApp().GetTopWindow(), -1, _(u"Boolean operations"),  style=wx.DEFAULT_DIALOG_STYLE|wx.FRAME_FLOAT_ON_PARENT|wx.STAY_ON_TOP)
+        self.PostCreate(pre)
+
+        self._init_gui(masks)
+        self.CenterOnScreen()
+
+    def _init_gui(self, masks):
+        mask_choices = [(masks[i].name, masks[i]) for i in sorted(masks)]
+        self.mask1 = wx.ComboBox(self, -1, mask_choices[0][0], choices=[])
+        self.mask2 = wx.ComboBox(self, -1, mask_choices[0][0], choices=[])
+
+        for n, m in mask_choices:
+            self.mask1.Append(n, m)
+            self.mask2.Append(n, m)
+
+        self.mask1.SetSelection(0)
+
+        if len(mask_choices) > 1:
+            self.mask2.SetSelection(1)
+        else:
+            self.mask2.SetSelection(0)
+
+        icon_folder = '../icons/'
+        op_choices = ((_(u"Union"), const.BOOLEAN_UNION, 'bool_union.png'),
+                      (_(u"Difference"), const.BOOLEAN_DIFF, 'bool_difference.png'),
+                      (_(u"Intersection"), const.BOOLEAN_AND, 'bool_intersection.png'),
+                      (_(u"Exclusive disjunction"), const.BOOLEAN_XOR, 'bool_disjunction.png'))
+        self.op_boolean = wx.combo.BitmapComboBox(self, -1, op_choices[0][0], choices=[])
+
+        for n, i, f in op_choices:
+            bmp = wx.Bitmap(os.path.join(icon_folder, f), wx.BITMAP_TYPE_PNG)
+            self.op_boolean.Append(n, bmp, i)
+
+        self.op_boolean.SetSelection(0)
+
+        btn_ok = wx.Button(self, wx.ID_OK)
+        btn_ok.SetDefault()
+
+        btn_cancel = wx.Button(self, wx.ID_CANCEL)
+
+        btnsizer = wx.StdDialogButtonSizer()
+        btnsizer.AddButton(btn_ok)
+        btnsizer.AddButton(btn_cancel)
+        btnsizer.Realize()
+
+        gsizer = wx.FlexGridSizer(rows=3, cols=2, hgap=5, vgap=5)
+
+        gsizer.Add(wx.StaticText(self, -1, _(u"Mask 1")))
+        gsizer.Add(self.mask1, 1, wx.EXPAND)
+        gsizer.Add(wx.StaticText(self, -1, _(u"Operation")))
+        gsizer.Add(self.op_boolean, 1, wx.EXPAND)
+        gsizer.Add(wx.StaticText(self, -1, _(u"Mask 2")))
+        gsizer.Add(self.mask2, 1, wx.EXPAND)
+
+        sizer = wx.BoxSizer(wx.VERTICAL)
+        sizer.Add(gsizer, 0, wx.EXPAND | wx.ALIGN_CENTER | wx.ALL, border=5)
+        sizer.Add(btnsizer, 0, wx.EXPAND | wx.ALIGN_CENTER | wx.ALL, border=5)
+
+        self.SetSizer(sizer)
+        sizer.Fit(self)
+
+
+        btn_ok.Bind(wx.EVT_BUTTON, self.OnOk)
+
+    def OnOk(self, evt):
+        op = self.op_boolean.GetClientData(self.op_boolean.GetSelection())
+        m1 = self.mask1.GetClientData(self.mask1.GetSelection())
+        m2 = self.mask2.GetClientData(self.mask2.GetSelection())
+
+        Publisher.sendMessage('Do boolean operation', (op, m1, m2))
+        Publisher.sendMessage('Reload actual slice')
+        Publisher.sendMessage('Refresh viewer')
+
+        self.Close()
+        self.Destroy()

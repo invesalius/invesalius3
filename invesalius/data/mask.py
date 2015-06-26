@@ -28,6 +28,7 @@ import vtk
 
 import constants as const
 import imagedata_utils as iu
+import session as ses
 
 from wx.lib.pubsub import pub as Publisher
 
@@ -197,8 +198,16 @@ class Mask():
     def undo_history(self, actual_slices):
         self.history.undo(self.matrix, actual_slices)
 
+        # Marking the project as changed
+        session = ses.Session()
+        session.ChangeProject()
+
     def redo_history(self, actual_slices):
         self.history.redo(self.matrix, actual_slices)
+
+        # Marking the project as changed
+        session = ses.Session()
+        session.ChangeProject()
 
     def on_show(self):
         self.history._config_undo_redo(self.is_shown)
@@ -284,6 +293,12 @@ class Mask():
         self.temp_file = tempfile.mktemp()
         shape = shape[0] + 1, shape[1] + 1, shape[2] + 1
         self.matrix = numpy.memmap(self.temp_file, mode='w+', dtype='uint8', shape=shape)
+
+    def clean(self):
+        self.matrix[1:, 1:, 1:] = 0
+        self.matrix[0, :, :] = 1
+        self.matrix[:, 0, :] = 1
+        self.matrix[:, :, 0] = 1
 
     def copy(self, copy_name):
         """

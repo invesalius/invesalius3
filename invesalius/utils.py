@@ -410,7 +410,7 @@ def UpdateCheck():
         data = urllib.urlencode(data)
         req = urllib2.Request(url, data, headers)
         try:
-            response = urllib2.urlopen(req)
+            response = urllib2.urlopen(req, timeout=10)
         except:
             return
         last = response.readline().rstrip()

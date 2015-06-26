@@ -1,0 +1,1673 @@
+# InVesalius 3.0 Beta - English
+# Copyright (C) 2007-2009 Centro de Tecnologia da Informação Renato Archer
+# This file is distributed under the same license as the InVesalius package. (GNU General Public License v2)
+# Tatiana Al-Chueyr Pereira Martins <tatiana.alchueyr@gmail.com>
+# Paulo Henrique Junqueira Amorim <paulojamorim@gmail.com>
+# Thiago Franco de Morais <totonixsame@gmail.com>
+# Translators:
+# Translators:
+# Anderson Antonio Mamede da Silva <ortodontia@terra.com.br>, 2015
+msgid ""
+msgstr ""
+"Project-Id-Version: InVesalius3\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2015-06-02 13:24-0300\n"
+"PO-Revision-Date: 2015-06-08 12:24+0000\n"
+"Last-Translator: InVesalius <invesalius@cti.gov.br>\n"
+"Language-Team: Turkish (Turkey) (http://www.transifex.com/projects/p/invesalius3/language/tr_TR/)\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Language: tr_TR\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"X-Poedit-Country: GENERIC\n"
+"X-Poedit-Language: English\n"
+"X-Poedit-SourceCharset: utf-8\n"
+
+#: clut_raycasting.py:535
+#, python-format
+msgid "Value: %-6d"
+msgstr "Değer: %-6d "
+
+#: clut_raycasting.py:536
+#, python-format
+msgid "Alpha: %-.3f"
+msgstr "Alfa: %-.3f"
+
+#: constants.py:32
+#, python-format
+msgid "M %d"
+msgstr "M %d"
+
+#: constants.py:44 constants.py:379 constants.py:381
+msgid " Off"
+msgstr "Kapalı"
+
+#: constants.py:45
+msgid "Red-blue"
+msgstr "Kırmızı-Mavi"
+
+#: constants.py:46
+msgid "CristalEyes"
+msgstr "Kristal gözler"
+
+#: constants.py:47
+msgid "Interlaced"
+msgstr "Geçmeli"
+
+#: constants.py:48 constants.py:314
+msgid "Left"
+msgstr "Sol"
+
+#: constants.py:49 constants.py:313
+msgid "Right"
+msgstr "Sağ"
+
+#: constants.py:50
+msgid "Dresden"
+msgstr "Dresden"
+
+#: constants.py:51
+msgid "Checkboard"
+msgstr "Kontrol noktası"
+
+#: constants.py:52
+msgid "Anaglyph"
+msgstr "Anaglif"
+
+#: constants.py:105
+msgid "Keep all slices"
+msgstr "Tüm kesitleri tut"
+
+#: constants.py:105
+msgid "Skip 1 for each 2 slices"
+msgstr "2 kesitten 1' ini atla"
+
+#: constants.py:106
+msgid "Skip 2 for each 3 slices"
+msgstr "3 kesitten 2' sini atla"
+
+#: constants.py:106
+msgid "Skip 3 for each 4 slices"
+msgstr "4 kesitten 3' ünü atla"
+
+#: constants.py:107
+msgid "Skip 4 for each 5 slices"
+msgstr "5 kesitten 4' ünü atla"
+
+#: constants.py:107
+msgid "Skip 5 for each 6 slices"
+msgstr "6 kesitten 5' ini atla"
+
+#: constants.py:147 slice_menu.py:104 slice_menu.py:111
+msgid "Default "
+msgstr "Varsayılan"
+
+#: constants.py:148
+msgid "Hue"
+msgstr "Renk"
+
+#: constants.py:149
+msgid "Saturation"
+msgstr "Doygunluk"
+
+#: constants.py:150
+msgid "Desert"
+msgstr "çöl"
+
+#: constants.py:151
+msgid "Rainbow"
+msgstr "Gökkuşağı"
+
+#: constants.py:152
+msgid "Ocean"
+msgstr "Okyanus"
+
+#: constants.py:153
+msgid "Inverse Gray"
+msgstr "tersine gri"
+
+#: constants.py:194 constants.py:195 constants.py:283 dialogs.py:598
+#: dialogs.py:611 dicom_preview_panel.py:675 dicom_preview_panel.py:676
+#: presets.py:33 presets.py:51 presets.py:106 presets.py:137
+msgid "Bone"
+msgstr "kemik"
+
+#: constants.py:201
+#, python-format
+msgid "Mask %d"
+msgstr "Maske %d"
+
+#: constants.py:257 task_surface.py:43
+msgid "Draw"
+msgstr "Çizim"
+
+#: constants.py:257 styles.py:57 task_slice.py:855 task_surface.py:43
+msgid "Erase"
+msgstr "Sil"
+
+#: constants.py:257 data_notebook.py:443 task_surface.py:43
+msgid "Threshold"
+msgstr "Eşik"
+
+#: constants.py:269 constants.py:274
+msgid "Low"
+msgstr "Düşük"
+
+#: constants.py:270 constants.py:274
+msgid "Medium"
+msgstr "Orta"
+
+#: constants.py:271 constants.py:274
+msgid "High"
+msgstr "Yüksek"
+
+#: constants.py:272 constants.py:273 constants.py:274 task_slice.py:175
+msgid "Optimal *"
+msgstr "Optimal"
+
+#: constants.py:279
+#, python-format
+msgid "Surface %d"
+msgstr "Yüzey %d"
+
+#: constants.py:282
+msgid "Abdomen"
+msgstr "abdomen"
+
+#: constants.py:284
+msgid "Brain posterior fossa"
+msgstr "Beyin posterior fossa"
+
+#: constants.py:285
+msgid "Brain"
+msgstr "Beyin"
+
+#: constants.py:286 control.py:365 dialogs.py:1255 dialogs.py:1258
+#: dialogs.py:1266 dialogs.py:1341 slice_menu.py:61 slice_menu.py:73
+msgid "Default"
+msgstr "Varsayılan"
+
+#: constants.py:287
+msgid "Emphysema"
+msgstr "Amfizem"
+
+#: constants.py:288
+msgid "Ischemia - Hard, non contrast"
+msgstr "İskemi - Sert, kontrast olmayan"
+
+#: constants.py:289
+msgid "Ischemia - Soft, non contrast"
+msgstr "İskemi - Yumuşak, kontrast olmayan"
+
+#: constants.py:290
+msgid "Larynx"
+msgstr "Larinks"
+
+#: constants.py:291
+msgid "Liver"
+msgstr "Karaciğer"
+
+#: constants.py:292
+msgid "Lung - Soft"
+msgstr "Akciğer - Yumuşak"
+
+#: constants.py:293
+msgid "Lung - Hard"
+msgstr "Akciğer - Sert"
+
+#: constants.py:294
+msgid "Mediastinum"
+msgstr "Mediyastenum"
+
+#: constants.py:295 control.py:366 slice_menu.py:68 slice_menu.py:73
+msgid "Manual"
+msgstr "Manüel"
+
+#: constants.py:296
+msgid "Pelvis"
+msgstr "Pelvis"
+
+#: constants.py:297
+msgid "Sinus"
+msgstr "Sinüs"
+
+#: constants.py:298
+msgid "Vasculature - Hard"
+msgstr "Vaskülatür - Sert"
+
+#: constants.py:299
+msgid "Vasculature - Soft"
+msgstr "Vaskülatür - Yumuşak"
+
+#: constants.py:300
+msgid "Contour"
+msgstr "Kontür"
+
+#: constants.py:309
+msgid "Front"
+msgstr "Ön"
+
+#: constants.py:310
+msgid "Back"
+msgstr "Arka"
+
+#: constants.py:311
+msgid "Top"
+msgstr "Üst"
+
+#: constants.py:312
+msgid "Bottom"
+msgstr "Alt"
+
+#: constants.py:315
+msgid "Isometric"
+msgstr "izometrik"
+
+#: constants.py:326
+msgid "Airways"
+msgstr "Solunum Yolları"
+
+#: constants.py:327
+msgid "Airways II"
+msgstr "Solunum Yolları II"
+
+#: constants.py:328
+msgid "Black & White"
+msgstr "Siyah & Beyaz"
+
+#: constants.py:329
+msgid "Bone + Skin"
+msgstr "Kemik + Cilt"
+
+#: constants.py:330
+msgid "Bone + Skin II"
+msgstr "Kemik + Cilt II"
+
+#: constants.py:331
+msgid "Dark bone"
+msgstr "Koyu Kemik"
+
+#: constants.py:332
+msgid "Glossy"
+msgstr "Parlak"
+
+#: constants.py:333
+msgid "Glossy II"
+msgstr "Parlak II"
+
+#: constants.py:334
+msgid "Gold bone"
+msgstr "Altın Kemik"
+
+#: constants.py:335
+msgid "High contrast"
+msgstr "Yüksek Kontrast"
+
+#: constants.py:336
+msgid "Low contrast"
+msgstr "Düşük Kontrast"
+
+#: constants.py:337 constants.py:345
+msgid "Soft on white"
+msgstr "yumuşak beyaz"
+
+#: constants.py:338
+msgid "Mid contrast"
+msgstr "Orta Kontrast"
+
+#: constants.py:339
+msgid "MIP"
+msgstr "MIP"
+
+#: constants.py:340
+msgid "No shading"
+msgstr "Gölgesiz"
+
+#: constants.py:341
+msgid "Pencil"
+msgstr "Kalem"
+
+#: constants.py:342
+msgid "Red on white"
+msgstr "Beyaz üzerine Kırmızı"
+
+#: constants.py:343
+msgid "Skin on blue"
+msgstr "Cilt Mavi"
+
+#: constants.py:344
+msgid "Skin on blue II"
+msgstr "Cilt Mavi II"
+
+#: constants.py:346
+msgid "Soft + Skin"
+msgstr "Yumuşak + Cilt"
+
+#: constants.py:347
+msgid "Soft + Skin II"
+msgstr "Yumuşak + Cilt II"
+
+#: constants.py:348
+msgid "Soft + Skin III"
+msgstr "Yumuşak + Cilt III"
+
+#: constants.py:349
+msgid "Soft on blue"
+msgstr "Yumuşak Mavi"
+
+#: constants.py:350
+msgid "Soft"
+msgstr "Yumuşak"
+
+#: constants.py:351
+msgid "Standard"
+msgstr "Standart"
+
+#: constants.py:352
+msgid "Vascular"
+msgstr "Vasküler"
+
+#: constants.py:353
+msgid "Vascular II"
+msgstr "Vasküler II"
+
+#: constants.py:354
+msgid "Vascular III"
+msgstr "Vasküler III"
+
+#: constants.py:355
+msgid "Vascular IV"
+msgstr "Vasküler IV"
+
+#: constants.py:356
+msgid "Yellow bone"
+msgstr "Sarı Kemik"
+
+#: constants.py:382 volume.py:642
+msgid "Cut plane"
+msgstr "Kesit Düzlemi"
+
+#: control.py:304
+#, python-format
+msgid "Loading file %d of %d ..."
+msgstr "Dosya yüklemesi %d' nin %d' si ..."
+
+#: control.py:421
+msgid "Untitled"
+msgstr "Başlıksız"
+
+#: control.py:559
+msgid "Fix gantry tilt applying the degrees below"
+msgstr "Aşağıdaki derecelerde eğim uygulayarak düzelt"
+
+#: data_notebook.py:44 measures.py:14
+msgid "Linear"
+msgstr "lineer"
+
+#: data_notebook.py:45 measures.py:15
+msgid "Angular"
+msgstr "anguler"
+
+#: data_notebook.py:48 measures.py:18
+msgid "3D"
+msgstr "3D"
+
+#: data_notebook.py:49 measures.py:19
+msgid "Axial"
+msgstr "Aksiyal"
+
+#: data_notebook.py:50 measures.py:20
+msgid "Coronal"
+msgstr "Koronal"
+
+#: data_notebook.py:51 measures.py:21
+msgid "Sagittal"
+msgstr "Sagittal"
+
+#: data_notebook.py:66
+msgid "Masks"
+msgstr "Maskeler"
+
+#: data_notebook.py:67
+msgid "3D surfaces"
+msgstr "3D Yüzeyleri"
+
+#: data_notebook.py:68
+msgid "Measures"
+msgstr "Ölçüler"
+
+#: data_notebook.py:185 frame.py:1160
+msgid "Measure distance"
+msgstr "Mesafeyi Ölç"
+
+#: data_notebook.py:188 frame.py:1166
+msgid "Measure angle"
+msgstr "Açıyı Ölç"
+
+#: data_notebook.py:442 data_notebook.py:764 data_notebook.py:1003
+#: data_notebook.py:1195
+msgid "Name"
+msgstr "İsim"
+
+#: data_notebook.py:503 frame.py:652
+msgid "Mask"
+msgstr "Maske"
+
+#: data_notebook.py:628 task_surface.py:140
+msgid "New surface"
+msgstr "Yeni yüzey"
+
+#: data_notebook.py:765
+msgid "Volume (mm³)"
+msgstr "Hacim (mm³)"
+
+#: data_notebook.py:766
+msgid "Transparency"
+msgstr "Şeffaflık"
+
+#: data_notebook.py:1004
+msgid "Location"
+msgstr "Lokasyon"
+
+#: data_notebook.py:1005 data_notebook.py:1196
+msgid "Type"
+msgstr "Tip"
+
+#: data_notebook.py:1006 data_notebook.py:1197
+msgid "Value"
+msgstr "Değer"
+
+#: default_tasks.py:151
+msgid "Data"
+msgstr "Veri"
+
+#: default_tasks.py:244 default_tasks.py:250
+msgid "Load data"
+msgstr "Veriyi yükle"
+
+#: default_tasks.py:245 default_tasks.py:251 default_tasks.py:279
+msgid "Select region of interest"
+msgstr "İlgilendiğiniz bölgeyi seçin"
+
+#: default_tasks.py:246 default_tasks.py:252 default_tasks.py:281
+msgid "Configure 3D surface"
+msgstr "3D yüzeyi oluştur"
+
+#: default_tasks.py:247
+msgid "Export data"
+msgstr "Veriyi dışa aktar"
+
+#: default_tasks.py:253
+msgid "Utilize navigation system"
+msgstr "Navigasyon sistemini kullan"
+
+#: default_viewers.py:79 default_viewers.py:168 task_exporter.py:247
+msgid "Axial slice"
+msgstr "Aksiyel kesit"
+
+#: default_viewers.py:84 default_viewers.py:174 task_exporter.py:248
+msgid "Coronal slice"
+msgstr "Koronal kesit"
+
+#: default_viewers.py:89 default_viewers.py:180 task_exporter.py:249
+msgid "Sagittal slice"
+msgstr "Sagittal kesit"
+
+#: default_viewers.py:95 default_viewers.py:186 task_exporter.py:250
+msgid "Volume"
+msgstr "Hacim"
+
+#: default_viewers.py:434
+msgid "Preset name"
+msgstr "Belirlenmiş isim"
+
+#: default_viewers.py:437
+msgid "Save raycasting preset"
+msgstr "Mevcut ışın ayarını koru"
+
+#: default_viewers.py:471 frame.py:702
+msgid "Tools"
+msgstr "Araçlar"
+
+#: dialogs.py:70
+msgid "Value will be applied."
+msgstr "Değer uygulanacak"
+
+#: dialogs.py:74
+msgid "Value will not be applied."
+msgstr "Değer uygulanmayacak"
+
+#: dialogs.py:108
+msgid ""
+"InVesalius is running on a 32-bit operating system or has insufficient memory. \n"
+"If you want to work with 3D surfaces or volume rendering, \n"
+"it is recommended to reduce the medical images resolution."
+msgstr "InVasilus 32-işletim sistemi ile çalışıyor veya hafıza yetersiz. 3D arayüzler veya hacim oluşturma araçlarıyla çalışmak istiyorsanız medikal görüntülerin çözünürlüklerini düşürmeniz önerilir."
+
+#: dialogs.py:122
+msgid "Percentage of original resolution"
+msgstr "Orjinal çözünürlüğün yüzdesi"
+
+#: dialogs.py:170
+msgid "Loading DICOM files"
+msgstr "DICOM dosyaları yükleniyor"
+
+#: dialogs.py:215
+msgid "Open InVesalius 3 project..."
+msgstr "InVasilus 3 proje ... aç"
+
+#: dialogs.py:243
+msgid "Open Analyze file"
+msgstr "Analiz dosyasını aç"
+
+#: dialogs.py:281
+msgid "Choose a DICOM folder:"
+msgstr "Bir DICOM dosyası seç:"
+
+#: dialogs.py:312 frame.py:585
+msgid "Save project as..."
+msgstr "Projeyi kaydet ..."
+
+#: dialogs.py:315
+msgid "InVesalius project (*.inv3)|*.inv3"
+msgstr "InVesalius projesi (*.inv3)I*.inv3"
+
+#: dialogs.py:380 utils.py:375
+msgid ""
+"A new version of InVesalius is available. Do you want to open the download "
+"website now?"
+msgstr "InVesalius yeni sürümü mevcut. WEB sayfasından hemen indirmek ister misiniz?"
+
+#: dialogs.py:381 utils.py:376
+msgid "Invesalius Update"
+msgstr "InVesalius Güncelleştirmesi"
+
+#: dialogs.py:439 dialogs.py:717 dialogs.py:742
+#, python-format
+msgid ""
+"The project %s has been modified.\n"
+"Save changes?"
+msgstr "Proje %s oranında değiştirildi? Değişiklikler kaydedilsin mi?"
+
+#: dialogs.py:453
+#, python-format
+msgid "%s is an empty folder."
+msgstr "%s boş klasör"
+
+#: dialogs.py:466
+msgid "There are no DICOM files in the selected folder."
+msgstr "Seçilen klasörde DICOM dosyası yoktur."
+
+#: dialogs.py:477
+msgid "A mask is needed to create a surface."
+msgstr "Yüzey oluşturabilmek için maske gerekmektedir."
+
+#: dialogs.py:488
+msgid "No mask was selected for removal."
+msgstr "Silmek için maske seçilmedi."
+
+#: dialogs.py:499
+msgid "No surface was selected for removal."
+msgstr "Silmek için yüzey seçilmedi."
+
+#: dialogs.py:511
+msgid "No measure was selected for removal."
+msgstr "Silmek için ölçüm seçilmedi."
+
+#: dialogs.py:522
+msgid "No mask was selected for duplication."
+msgstr "Dublikasyon için maske seçilmedi."
+
+#: dialogs.py:535
+msgid "No surface was selected for duplication."
+msgstr "Kopyalamak için yeterli alan yok."
+
+#: dialogs.py:581
+msgid "New mask name:"
+msgstr "Yeni maske adı:"
+
+#: dialogs.py:585
+msgid "Name the mask to be created"
+msgstr "Oluşturulacak maskeye isim verin"
+
+#: dialogs.py:592
+msgid "Threshold preset:"
+msgstr "Belirlenmiş eşik:"
+
+#: dialogs.py:679 presets.py:47 presets.py:65 presets.py:120 presets.py:151
+#: slice_menu.py:129 slice_menu.py:266 task_slice.py:538 task_slice.py:540
+#: task_slice.py:552 task_slice.py:554 task_slice.py:597 task_slice.py:600
+msgid "Custom"
+msgstr "Uyarlanabilir"
+
+#: dialogs.py:694
+#, python-format
+msgid "%s does not exist."
+msgstr "%s yok"
+
+#: dialogs.py:705
+msgid "Please, provide more than one DICOM file for 3D reconstruction"
+msgstr "3D yapılandırma için lütfen birden fazla DICOM dosyası seçin"
+
+#: dialogs.py:766
+msgid "(c) 2007-2015 Center for Information Technology Renato Archer - CTI"
+msgstr "(c) 2007-2015 Bilgi Teknolojileri Merkezi Renato Archer - CTI"
+
+#: dialogs.py:767
+msgid ""
+"InVesalius is a medical imaging program for 3D reconstruction. It uses a sequence of 2D DICOM image files acquired with CT or MRI scanners. InVesalius allows exporting 3D volumes or surfaces as mesh files for creating physical models of a patient's anatomy using additive manufacturing (3D printing) technologies. The software is developed by Center for Information Technology Renato Archer (CTI), National Council for Scientific and Technological Development (CNPq) and the Brazilian Ministry of Health.\n"
+"\n"
+" InVesalius must be used only for research. The Center for Information Technology Renato Archer is not responsible for damages caused by the use of this software.\n"
+"\n"
+" Contact: invesalius@cti.gov.br"
+msgstr "İnVesalius 3D yapılandırma için medikal görüntüme programıdır. CT veya MRI görüntüleme ile elde edilen bir dizi 2 boyutlu DICOM görüntüleri kullanır. 3 boyutlu hacim ve yüzeyleri mesh dosyası olarak dışa aktararak ilave imalat teknolojileri kullanımına (3 boyutlu yazıcı) izin verir. Program Renato Archer Bilgi Teknolojileri Merkezi (CTI), Ulusal Bilim ve Teknoloji Geliştirme kurulu (CNPq) ve Brezilya Sağlık Bakanlığı tarafından geliştirilmiştir.\n\n\nInVesalius sadece araştırma amacıyla kullanılmalıdır. Renato Archer Bilgi Teknolojileri Merkezi bu programın kullanımından doğabilecek zararlardan sorumlu değildir.\n\n\nİletişim: invesalius@cti.gov.br"
+
+#: dialogs.py:775
+msgid "GNU GPL (General Public License) version 2"
+msgstr "GNU GPL (Genel Kamu Lisansı ) sürüm 2"
+
+#: dialogs.py:812
+msgid "Save raycasting preset as:"
+msgstr "Mevcut ışın atım ayarını kaydet:"
+
+#: dialogs.py:855 dialogs.py:1110
+msgid "New surface name:"
+msgstr "Yeni yüzey adı:"
+
+#: dialogs.py:859 dialogs.py:1114
+msgid "Name the surface to be created"
+msgstr "Oluşturulacak yüzeyi isimlendirin"
+
+#: dialogs.py:866 dialogs.py:1121
+msgid "Mask of reference:"
+msgstr "Referans maske:"
+
+#: dialogs.py:884 dialogs.py:1139
+msgid "Surface quality:"
+msgstr "Yüzey kalitesi:"
+
+#: dialogs.py:913 dialogs.py:1167
+msgid "Fill holes"
+msgstr "Boşlukları doldurun"
+
+#: dialogs.py:916 dialogs.py:1170
+msgid "Keep largest region"
+msgstr "En geniş bölgeyi koru"
+
+#: dialogs.py:954
+msgid "BMP image"
+msgstr "BMP resim"
+
+#: dialogs.py:955
+msgid "JPG image"
+msgstr "JPG resim"
+
+#: dialogs.py:956
+msgid "PNG image"
+msgstr "PNG resim"
+
+#: dialogs.py:957
+msgid "PostScript document"
+msgstr "PostScript belge"
+
+#: dialogs.py:958
+msgid "POV-Ray file"
+msgstr "POV-Ray dosya"
+
+#: dialogs.py:959
+msgid "TIFF image"
+msgstr "TIFF resim"
+
+#: dialogs.py:1004
+msgid "Surface generation options"
+msgstr "Yüzey oluşturma seçenekleri"
+
+#: dialogs.py:1034
+msgid "Surface creation"
+msgstr "Yüzey oluşturma"
+
+#: dialogs.py:1061
+msgid "Surface creation options"
+msgstr "Yüzey oluşturma seçenekleri"
+
+#: dialogs.py:1067
+msgid "Surface creation method"
+msgstr "Yüzey oluşturma yöntemi"
+
+#: dialogs.py:1215 frame.py:705
+msgid "Options"
+msgstr "Seçenekler"
+
+#: dialogs.py:1231
+msgid "Angle:"
+msgstr "Açı:"
+
+#: dialogs.py:1233
+msgid "Max. distance:"
+msgstr "Maks. mesafe:"
+
+#: dialogs.py:1235
+msgid "Min. weight:"
+msgstr "Min. ağırlık"
+
+#: dialogs.py:1237
+msgid "N. steps:"
+msgstr "N. basamakları:"
+
+#: dialogs.py:1256 dialogs.py:1292 dialogs.py:1337
+msgid "Context aware smoothing"
+msgstr "İçeriği yumuşatabilmek."
+
+#: dialogs.py:1257
+msgid "Binary"
+msgstr "İkili"
+
+#: dialogs.py:1275
+msgid ""
+"It is not possible to use the Default method because the mask was edited."
+msgstr "Maske işlem gördüğü için varsayılan yöntem kullanılamaz"
+
+#: dialogs.py:1278
+msgid "Method:"
+msgstr "Yöntem:"
+
+#: dialogs.py:1407
+msgid "Method"
+msgstr "Yöntem"
+
+#: dialogs.py:1430
+msgid "Gaussian sigma"
+msgstr "Gauss sigma"
+
+#: dialogs.py:1452 task_slice.py:284
+msgid "Watershed"
+msgstr "Dönüm noktası"
+
+#: dialogs.py:1492 frame.py:646
+msgid "Boolean operations"
+msgstr "Boolean işlemleri"
+
+#: dialogs.py:1513 slice_.py:1244
+msgid "Union"
+msgstr "Birleşme"
+
+#: dialogs.py:1514
+msgid "Difference"
+msgstr "Fark"
+
+#: dialogs.py:1515 slice_.py:1246
+msgid "Intersection"
+msgstr "Kesişme"
+
+#: dialogs.py:1516
+msgid "Exclusive disjunction"
+msgstr "Özel ayrılma"
+
+#: dialogs.py:1537
+msgid "Mask 1"
+msgstr "Maske 1"
+
+#: dialogs.py:1539
+msgid "Operation"
+msgstr "İşlem"
+
+#: dialogs.py:1541
+msgid "Mask 2"
+msgstr "Maske 2"
+
+#: dicom.py:1533 dicom.py:1537 dicom.py:1539
+msgid "unnamed"
+msgstr "İsimsiz"
+
+#: dicom_preview_panel.py:49
+#, python-format
+msgid "Image size: %d x %d"
+msgstr "Resim boyutu: %d x %d"
+
+#: dicom_preview_panel.py:50
+#, python-format
+msgid "Spacing: %.2f"
+msgstr "Aralık: %.2f"
+
+#: dicom_preview_panel.py:51
+#, python-format
+msgid "Location: %.2f"
+msgstr "Konum: %.2f"
+
+#: dicom_preview_panel.py:53
+#, python-format
+msgid ""
+"%s %s\n"
+"Made in InVesalius"
+msgstr "%s %s\nMade in InVesalius"
+
+#: dicom_preview_panel.py:189 dicom_preview_panel.py:190
+msgid "Image"
+msgstr "Resim"
+
+#: dicom_preview_panel.py:409
+#, python-format
+msgid "%d images"
+msgstr "%d resimler"
+
+#: dicom_preview_panel.py:534 dicom_preview_panel.py:555
+#, python-format
+msgid "Image %d"
+msgstr "Resim %d"
+
+#: dicom_preview_panel.py:747
+msgid "Auto-play"
+msgstr "Otomatik oynatma"
+
+#: frame.py:164
+msgid "Data panel"
+msgstr "Veri paneli"
+
+#: frame.py:171
+msgid "Preview medical data to be reconstructed"
+msgstr "Oluşturulacak medikal veri önizlemesi"
+
+#: frame.py:177
+msgid "Retrieve DICOM from PACS"
+msgstr "DICOM u PACS dan kurtar"
+
+#: frame.py:580
+msgid "Import DICOM...\tCtrl+I"
+msgstr "DICOM... içe aktar \tCtrl+I"
+
+#: frame.py:582
+msgid "Import other files..."
+msgstr "Diğer dosyaları içe aktar..."
+
+#: frame.py:583
+msgid "Open project...\tCtrl+O"
+msgstr "Proje ... aç \tCtrl+O"
+
+#: frame.py:584
+msgid "Save project\tCtrl+S"
+msgstr "Projeyi kaydet \tCtrl+S"
+
+#: frame.py:586
+msgid "Close project"
+msgstr "Projeyi kapat"
+
+#: frame.py:595
+msgid "Exit\tCtrl+Q"
+msgstr "Çıkış \tCtrl+Q"
+
+#: frame.py:626 frame.py:636
+msgid "Undo\tCtrl+Z"
+msgstr "Geri al \tCtrl+Z"
+
+#: frame.py:631 frame.py:637
+msgid "Redo\tCtrl+Y"
+msgstr "Baştan yap \tCtrl+Y"
+
+#: frame.py:649
+msgid "Clean Mask\tCtrl+Shift+A"
+msgstr "Maskeyi sil \tCtrl+Shift+A"
+
+#: frame.py:685
+msgid "Preferences..."
+msgstr "Tercihler..."
+
+#: frame.py:689
+msgid "Getting started..."
+msgstr "Başlıyor ..."
+
+#: frame.py:692
+msgid "About..."
+msgstr "Hakkında..."
+
+#: frame.py:700
+msgid "File"
+msgstr "Dosya"
+
+#: frame.py:701
+msgid "Edit"
+msgstr "Düzenle"
+
+#: frame.py:706
+msgid "Help"
+msgstr "Yardım"
+
+#: frame.py:816 surface.py:371 surface.py:748 surface.py:749
+msgid "Ready"
+msgstr "Hazır"
+
+#: frame.py:969
+msgid "Import DICOM files...\tCtrl+I"
+msgstr "DICOM dosyaları içe aktar...\tCtrl+I"
+
+#: frame.py:978
+msgid "Open InVesalius project..."
+msgstr "InVesalius proje aç..."
+
+#: frame.py:984
+msgid "Save InVesalius project"
+msgstr "InVesalius projesi kaydet"
+
+#: frame.py:1130
+msgid "Zoom"
+msgstr "Büyüt"
+
+#: frame.py:1136
+msgid "Zoom based on selection"
+msgstr "Seçimi Büyüt"
+
+#: frame.py:1142
+msgid "Rotate"
+msgstr "Döndür"
+
+#: frame.py:1148
+msgid "Move"
+msgstr "Taşı"
+
+#: frame.py:1154
+msgid "Constrast"
+msgstr "Kontrast"
+
+#: frame.py:1312
+msgid "Scroll slices"
+msgstr "Kesitleri kaydır"
+
+#: frame.py:1318
+msgid "Slices' cross intersection"
+msgstr "Kesitlerler çapraz kesişmesi"
+
+#: frame.py:1488 frame.py:1560 frame.py:1741
+msgid "Hide task panel"
+msgstr "Görev panelini gizle"
+
+#: frame.py:1494 frame.py:1582 frame.py:1763
+msgid "Hide text"
+msgstr "Metni sakla"
+
+#: frame.py:1566 frame.py:1747
+msgid "Show task panel"
+msgstr "Görev panelini göster"
+
+#: frame.py:1576 frame.py:1757
+msgid "Show text"
+msgstr "Metni göster"
+
+#: frame.py:1657
+msgid "Undo"
+msgstr "Geri al"
+
+#: frame.py:1664
+msgid "Redo"
+msgstr "yeniden yapmak"
+
+#: imagedata_utils.py:92 imagedata_utils.py:226 imagedata_utils.py:331
+#: imagedata_utils.py:424
+msgid "Generating multiplanar visualization..."
+msgstr "Multiplanar görselleştirme oluşturuluyor ..."
+
+#: import_network_panel.py:101 import_panel.py:94
+msgid "Import"
+msgstr "İçe aktar"
+
+#: import_network_panel.py:239 import_panel.py:224
+msgid "Patient name"
+msgstr "Hasta adı"
+
+#: import_network_panel.py:240 import_panel.py:225
+msgid "Patient ID"
+msgstr "Hasta kimliği"
+
+#: import_network_panel.py:241 import_panel.py:226
+msgid "Age"
+msgstr "Yaş"
+
+#: import_network_panel.py:242 import_panel.py:227
+msgid "Gender"
+msgstr "Cinsiyet"
+
+#: import_network_panel.py:243 import_panel.py:228
+msgid "Study description"
+msgstr "Çalışma açıklaması"
+
+#: import_network_panel.py:244 import_panel.py:229
+msgid "Modality"
+msgstr "Yöntem"
+
+#: import_network_panel.py:245 import_panel.py:230
+msgid "Date acquired"
+msgstr "Tarih gerekli"
+
+#: import_network_panel.py:246 import_panel.py:231
+msgid "# Images"
+msgstr "# Resimler"
+
+#: import_network_panel.py:247 import_panel.py:232
+msgid "Institution"
+msgstr "Kurum"
+
+#: import_network_panel.py:248 import_panel.py:233
+msgid "Date of birth"
+msgstr "Doğum tarihi"
+
+#: import_network_panel.py:249 import_panel.py:234
+msgid "Accession Number"
+msgstr "Erişim Numarası"
+
+#: import_network_panel.py:250 import_panel.py:235
+msgid "Referring physician"
+msgstr "Yönlendiren doktor"
+
+#: import_network_panel.py:266 import_panel.py:251
+msgid "InVesalius Database"
+msgstr "InVesalius Veritabanı"
+
+#: import_network_panel.py:497
+msgid "Word"
+msgstr "Word"
+
+#: import_network_panel.py:504
+msgid "Search"
+msgstr "Arama"
+
+#: import_network_panel.py:663
+msgid "Active"
+msgstr "Aktif"
+
+#: import_network_panel.py:664
+msgid "Host"
+msgstr "Host"
+
+#: import_network_panel.py:665
+msgid "Port"
+msgstr "Port"
+
+#: import_network_panel.py:666
+msgid "AETitle"
+msgstr "AEBaşlık"
+
+#: import_network_panel.py:667
+msgid "Status"
+msgstr "Durum"
+
+#: import_network_panel.py:694
+msgid "Add"
+msgstr "Ekle"
+
+#: import_network_panel.py:695
+msgid "Remove"
+msgstr "Kaldır"
+
+#: import_network_panel.py:696
+msgid "Check status"
+msgstr "Durum kontrol"
+
+#: import_network_panel.py:769
+msgid "ok"
+msgstr "ok"
+
+#: import_network_panel.py:771
+msgid "error"
+msgstr "hata"
+
+#: language_dialog.py:78
+msgid "Language selection"
+msgstr "Dil seçimi"
+
+#: language_dialog.py:122
+msgid "Choose user interface language"
+msgstr "Kullanıcı arayüz dili seç"
+
+#: polydata_utils.py:139
+msgid "Analysing selected regions..."
+msgstr "Seçili bölgeler analiz ediliyor..."
+
+#: polydata_utils.py:198
+msgid "Splitting disconnected regions..."
+msgstr "Bağlantısı kesilmiş bölgeler ayrılıyor..."
+
+#: preferences.py:18
+msgid "Preferences"
+msgstr "Tercihler"
+
+#: preferences.py:41
+msgid "Visualization"
+msgstr "Görüntüleme"
+
+#: preferences.py:42 preferences.py:147
+msgid "Language"
+msgstr "Dil"
+
+#: preferences.py:95
+msgid "Surface"
+msgstr "Yüzey"
+
+#: preferences.py:98
+msgid "Interpolation "
+msgstr "İnterpolasyon"
+
+#: preferences.py:106
+msgid "Volume rendering"
+msgstr "Hacim render"
+
+#: preferences.py:109
+msgid "Rendering"
+msgstr "Rendering"
+
+#: preferences.py:113
+msgid "GPU (NVidia video cards only)"
+msgstr "GPU (sadece NVidia video kartları)"
+
+#: preferences.py:150
+msgid ""
+"Language settings will be applied \n"
+" the next time InVesalius starts."
+msgstr "InVesalius tekrar başlatıldığında\ndil ayarları uygulanacak."
+
+#: presets.py:34 presets.py:52 presets.py:107 presets.py:138
+msgid "Soft Tissue"
+msgstr "Yumuşak Doku"
+
+#: presets.py:35 presets.py:53 presets.py:108 presets.py:139
+msgid "Enamel (Adult)"
+msgstr "Mine (Erişkin)"
+
+#: presets.py:36 presets.py:54 presets.py:109 presets.py:140
+msgid "Enamel (Child)"
+msgstr "Mine (Çocuk)"
+
+#: presets.py:37 presets.py:55 presets.py:110 presets.py:141
+msgid "Compact Bone (Adult)"
+msgstr "Kompakt Kemik (Erişkin)"
+
+#: presets.py:38 presets.py:56 presets.py:111 presets.py:142
+msgid "Compact Bone (Child)"
+msgstr "Kompakt Kemik (Çocuk)"
+
+#: presets.py:39 presets.py:57 presets.py:112 presets.py:143
+msgid "Spongial Bone (Adult)"
+msgstr "Spongiyoz Kemik (Erişkin)"
+
+#: presets.py:40 presets.py:58 presets.py:113 presets.py:144
+msgid "Spongial Bone (Child)"
+msgstr "Spongiyoz Kemik (Çocuk)"
+
+#: presets.py:41 presets.py:59 presets.py:114 presets.py:145
+msgid "Muscle Tissue (Adult)"
+msgstr "Kas Dokusu (Erişkin)"
+
+#: presets.py:42 presets.py:60 presets.py:115 presets.py:146
+msgid "Muscle Tissue (Child)"
+msgstr "Kas Dokusu (Çocuk)"
+
+#: presets.py:43 presets.py:61 presets.py:116 presets.py:147
+msgid "Fat Tissue (Adult)"
+msgstr "Yağ Dokusu (Erişkin)"
+
+#: presets.py:44 presets.py:62 presets.py:117 presets.py:148
+msgid "Fat Tissue (Child)"
+msgstr "Yağ Dokusu (Çocuk)"
+
+#: presets.py:45 presets.py:63 presets.py:118 presets.py:149
+msgid "Skin Tissue (Adult)"
+msgstr "Cilt Dokusu (Erişkin)"
+
+#: presets.py:46 presets.py:64 presets.py:119 presets.py:150
+msgid "Skin Tissue (Child)"
+msgstr "Cilt Dokusu (Çocuk)"
+
+#: slice_.py:1245
+msgid "Diff"
+msgstr "Diff"
+
+#: slice_.py:1247
+msgid "XOR"
+msgstr "XOR"
+
+#: slice_menu.py:38
+msgid "Normal"
+msgstr "Normal"
+
+#: slice_menu.py:39
+msgid "MaxIP"
+msgstr "MaxIP"
+
+#: slice_menu.py:40
+msgid "MinIP"
+msgstr "MinIP"
+
+#: slice_menu.py:41
+msgid "MeanIP"
+msgstr "OrtalamaIP"
+
+#: slice_menu.py:42
+msgid "MIDA"
+msgstr "MIDA"
+
+#: slice_menu.py:43
+msgid "Contour MaxIP"
+msgstr "MaxIP çerçevesini çiz"
+
+#: slice_menu.py:44
+msgid "Contour MIDA"
+msgstr "MIDA Çerçevesini çiz"
+
+#: slice_menu.py:162
+msgid "Window width and level"
+msgstr "Pencere genişliği ve seviyesi"
+
+#: slice_menu.py:163
+msgid "Pseudo color"
+msgstr "Sözde renk"
+
+#: slice_menu.py:164
+msgid "Projection type"
+msgstr "Projeksiyon tipi"
+
+#: styles.py:58 task_slice.py:853
+msgid "Foreground"
+msgstr "Önplan"
+
+#: styles.py:59 task_slice.py:854
+msgid "Background"
+msgstr "Arkaplan"
+
+#: styles.py:833
+msgid "Applying watershed ..."
+msgstr "Set uygulanıyor..."
+
+#: surface.py:432 surface.py:523 surface.py:541 surface.py:567 surface.py:596
+#: surface.py:618 surface.py:637 surface.py:651 surface.py:668
+msgid "Creating 3D surface..."
+msgstr "3D yüzey oluşturuluyor..."
+
+#: task_exporter.py:109
+msgid "Export InVesalius screen to an image file"
+msgstr "InVesalius ekranını bir resim dosyası için dışa aktar"
+
+#: task_exporter.py:111
+msgid "Export picture..."
+msgstr "Resmi dışa aktar..."
+
+#: task_exporter.py:122
+msgid "Export 3D surface"
+msgstr "3D yüzeyi dışa aktar"
+
+#: task_exporter.py:123
+msgid "Export 3D surface..."
+msgstr "3D yüzeyi dışa aktar..."
+
+#: task_exporter.py:320
+msgid "Save 3D surface as..."
+msgstr "3D yüzeyi kaydet..."
+
+#: task_exporter.py:339
+msgid "You need to create a surface and make it "
+msgstr "Bir yüzey oluşturarak yapmalısınız"
+
+#: task_exporter.py:340
+msgid "visible before exporting it."
+msgstr "dışa aktarmadan görülebilir."
+
+#: task_generic.py:65
+msgid "Testing..."
+msgstr "Test ediliyor..."
+
+#: task_importer.py:67
+msgid "Select DICOM files to be reconstructed"
+msgstr "Yapılandırılacak DICOM dosyaları seç"
+
+#: task_importer.py:68
+msgid "Import DICOM images..."
+msgstr "DICOM görüntüleri içe aktar..."
+
+#: task_importer.py:87
+msgid "Open an existing InVesalius project..."
+msgstr "Mevcut bir InVesalius projesi aç..."
+
+#: task_importer.py:88
+msgid "Open an existing project..."
+msgstr "Mevcut bir proje aç..."
+
+#: task_slice.py:85
+msgid "Create mask for slice segmentation and editing"
+msgstr "Kesit segmentasyonu ve düzenlemesi için maske oluştur"
+
+#: task_slice.py:86
+msgid "Create new mask"
+msgstr "Yeni maske oluştur"
+
+#: task_slice.py:116
+msgid "Create surface"
+msgstr "Yüzey oluştur"
+
+#: task_slice.py:117
+msgid "Overwrite last surface"
+msgstr "Son yüzeyin üzerine yaz"
+
+#: task_slice.py:266
+msgid "Mask properties"
+msgstr "Maske özellikleri"
+
+#: task_slice.py:274
+msgid "Manual edition"
+msgstr "Manuel baskı"
+
+#: task_slice.py:422
+msgid "Set predefined or manual threshold:"
+msgstr "Önceden tanımlanmış veya manuel eşiği ayarlayın:"
+
+#: task_slice.py:652 task_slice.py:816
+msgid "Choose brush type, size or operation:"
+msgstr "Fırça tipi, boyutu veya işlemi seçin:"
+
+#: task_slice.py:658 task_slice.py:822
+msgid "Circle"
+msgstr "Çember"
+
+#: task_slice.py:662 task_slice.py:826
+msgid "Square"
+msgstr "Kare"
+
+#: task_slice.py:703
+msgid "Brush threshold range:"
+msgstr "Fırça eşik aralığı:"
+
+#: task_slice.py:873
+msgid "Overwrite mask"
+msgstr "Maske üzerine yaz"
+
+#: task_slice.py:874
+msgid "Use WW&WL"
+msgstr "Pencere genişliği ve seviyesi kullan"
+
+#: task_slice.py:883
+msgid "Expand watershed to 3D"
+msgstr "Dönüm noktasını 3 boyutlu değiştirmek"
+
+#: task_surface.py:87
+msgid "Create 3D surface based on a mask"
+msgstr "Maskeye göre 3D yüzey oluştur"
+
+#: task_surface.py:88
+msgid "Create new 3D surface"
+msgstr "Yeni 3D yüzey oluştur"
+
+#: task_surface.py:108
+msgid "Next step"
+msgstr "Sonraki aşama"
+
+#: task_surface.py:216
+msgid "Surface properties"
+msgstr "Yüzey özellikleri"
+
+#: task_surface.py:222
+msgid "Advanced options"
+msgstr "Gelişmiş seçenekler"
+
+#: task_surface.py:274
+msgid ""
+"Automatically select largest disconnected region and create new surface"
+msgstr "En geniş bağlantısız yüzeyi otomatik olarak seçip yeni yüzey oluştur"
+
+#: task_surface.py:275
+msgid "Select largest surface"
+msgstr "En geniş yüzeyi seç"
+
+#: task_surface.py:283
+msgid ""
+"Automatically select disconnected regions and create a new surface per "
+"region"
+msgstr "Bağlantısız bölgeleri otomatk olarak seçip her biri için yeni yüzey oluştur"
+
+#: task_surface.py:284
+msgid "Split all disconnected surfaces"
+msgstr "Tüm bağlantısız yüzeyleri ayır"
+
+#: task_surface.py:292
+msgid "Manually insert seeds of regions of interest and create a new surface"
+msgstr "İlgilenilen alanlara manuel tohumlar ekleyerek yeni yüzey oluştur"
+
+#: task_surface.py:293
+msgid "Select regions of interest..."
+msgstr "İlgilenilen bölgeleri seç..."
+
+#: task_surface.py:429
+msgid "Transparency:"
+msgstr "Saydamlık:"
+
+#: task_surface.py:578
+msgid "Decimate resolution:"
+msgstr "Çözünürlüğü düşür:"
+
+#: task_surface.py:588
+msgid "Smooth iterations:"
+msgstr "Pürüzsüz tekrarlanmalar:"
+
+#: task_tools.py:60
+msgid "Measure distances"
+msgstr "Mesafeleri ölç"
+
+#: task_tools.py:61
+msgid "Measure"
+msgstr "Ölçüm"
+
+#: task_tools.py:64 task_tools.py:65
+msgid "Add text annotations"
+msgstr "Metin açıklamaları ekle"
+
+#: viewer_slice.py:66
+msgid "Number of slices used to compound the visualization."
+msgstr "Görüntüyü oluşturmak üzere kullanılan kesit sayısı"
+
+#: viewer_slice.py:75
+msgid ""
+"Controls the sharpness of the contour. The greater the value, the sharper "
+"the contour."
+msgstr "Kontür keskinliğini kontrol eder. Değer attıkça kontür keskinliği artar."
+
+#: viewer_slice.py:83
+msgid "Inverted order"
+msgstr "Ters düzen"
+
+#: viewer_slice.py:84
+msgid ""
+"If checked, the slices are traversed in descending order to compound the "
+"visualization instead of ascending order."
+msgstr "eğer seçersek, parçalar alçalarak düzensiz bir şekilde çapraz geçer  bu bileşimin vizüalizasyonu büyüyen sıranın yerine seçer."
+
+#: viewer_slice.py:90
+msgid "Number of slices"
+msgstr "Parçaların numarları"
+
+#: viewer_slice.py:91
+msgid "Sharpness"
+msgstr "keskinlik"
+
+#: viewer_slice.py:333 viewer_slice.py:337 viewer_slice.py:390
+#: viewer_slice.py:392 viewer_slice.py:404 viewer_slice.py:413
+#: viewer_slice.py:422 viewer_slice.py:431 viewer_slice.py:442
+#: viewer_slice.py:451 viewer_slice.py:460 viewer_slice.py:469
+msgid "R"
+msgstr "R"
+
+#: viewer_slice.py:333 viewer_slice.py:337 viewer_slice.py:390
+#: viewer_slice.py:392 viewer_slice.py:404 viewer_slice.py:413
+#: viewer_slice.py:422 viewer_slice.py:431 viewer_slice.py:442
+#: viewer_slice.py:451 viewer_slice.py:460 viewer_slice.py:469
+msgid "L"
+msgstr "L"
+
+#: viewer_slice.py:333 viewer_slice.py:335 viewer_slice.py:390
+#: viewer_slice.py:394 viewer_slice.py:404 viewer_slice.py:413
+#: viewer_slice.py:422 viewer_slice.py:431 viewer_slice.py:480
+#: viewer_slice.py:489 viewer_slice.py:498 viewer_slice.py:507
+msgid "A"
+msgstr "A"
+
+#: viewer_slice.py:333 viewer_slice.py:335 viewer_slice.py:390
+#: viewer_slice.py:394 viewer_slice.py:404 viewer_slice.py:413
+#: viewer_slice.py:422 viewer_slice.py:431 viewer_slice.py:480
+#: viewer_slice.py:489 viewer_slice.py:498 viewer_slice.py:507
+msgid "P"
+msgstr "P"
+
+#: viewer_slice.py:335 viewer_slice.py:337 viewer_slice.py:392
+#: viewer_slice.py:394 viewer_slice.py:442 viewer_slice.py:451
+#: viewer_slice.py:460 viewer_slice.py:469 viewer_slice.py:480
+#: viewer_slice.py:489 viewer_slice.py:498 viewer_slice.py:507
+msgid "T"
+msgstr "T"
+
+#: viewer_slice.py:335 viewer_slice.py:337 viewer_slice.py:392
+#: viewer_slice.py:394 viewer_slice.py:442 viewer_slice.py:451
+#: viewer_slice.py:460 viewer_slice.py:469 viewer_slice.py:480
+#: viewer_slice.py:489 viewer_slice.py:498 viewer_slice.py:507
+msgid "B"
+msgstr "B"
+
+#: viewer_slice.py:407 viewer_slice.py:416 viewer_slice.py:425
+#: viewer_slice.py:434
+msgid "AL"
+msgstr "AL"
+
+#: viewer_slice.py:407 viewer_slice.py:416 viewer_slice.py:425
+#: viewer_slice.py:434
+msgid "RA"
+msgstr "RA"
+
+#: viewer_slice.py:407 viewer_slice.py:416 viewer_slice.py:425
+#: viewer_slice.py:434
+msgid "PR"
+msgstr "PR"
+
+#: viewer_slice.py:407 viewer_slice.py:416 viewer_slice.py:425
+#: viewer_slice.py:434
+msgid "LP"
+msgstr "LP"
+
+#: viewer_slice.py:410 viewer_slice.py:419 viewer_slice.py:428
+#: viewer_slice.py:437
+msgid "LA"
+msgstr "LA"
+
+#: viewer_slice.py:410 viewer_slice.py:419 viewer_slice.py:428
+#: viewer_slice.py:437
+msgid "AR"
+msgstr "AR"
+
+#: viewer_slice.py:410 viewer_slice.py:419 viewer_slice.py:428
+#: viewer_slice.py:437
+msgid "RP"
+msgstr "RP"
+
+#: viewer_slice.py:410 viewer_slice.py:419 viewer_slice.py:428
+#: viewer_slice.py:437
+msgid "PL"
+msgstr "PL"
+
+#: viewer_slice.py:445 viewer_slice.py:454 viewer_slice.py:463
+#: viewer_slice.py:472
+msgid "TL"
+msgstr "TL"
+
+#: viewer_slice.py:445 viewer_slice.py:454 viewer_slice.py:463
+#: viewer_slice.py:472
+msgid "RT"
+msgstr "RT"
+
+#: viewer_slice.py:445 viewer_slice.py:454 viewer_slice.py:463
+#: viewer_slice.py:472
+msgid "BR"
+msgstr "BR"
+
+#: viewer_slice.py:445 viewer_slice.py:454 viewer_slice.py:463
+#: viewer_slice.py:472
+msgid "LB"
+msgstr "LB"
+
+#: viewer_slice.py:448 viewer_slice.py:457 viewer_slice.py:466
+#: viewer_slice.py:475
+msgid "LT"
+msgstr "LT"
+
+#: viewer_slice.py:448 viewer_slice.py:457 viewer_slice.py:466
+#: viewer_slice.py:475
+msgid "TR"
+msgstr "TR"
+
+#: viewer_slice.py:448 viewer_slice.py:457 viewer_slice.py:466
+#: viewer_slice.py:475
+msgid "RB"
+msgstr "RB"
+
+#: viewer_slice.py:448 viewer_slice.py:457 viewer_slice.py:466
+#: viewer_slice.py:475
+msgid "BL"
+msgstr "BL"
+
+#: viewer_slice.py:483 viewer_slice.py:492 viewer_slice.py:501
+#: viewer_slice.py:510
+msgid "TA"
+msgstr "TA"
+
+#: viewer_slice.py:483 viewer_slice.py:492 viewer_slice.py:501
+#: viewer_slice.py:510
+msgid "PT"
+msgstr "PT"
+
+#: viewer_slice.py:483 viewer_slice.py:492 viewer_slice.py:501
+#: viewer_slice.py:510
+msgid "BP"
+msgstr "BP"
+
+#: viewer_slice.py:483 viewer_slice.py:492 viewer_slice.py:501
+#: viewer_slice.py:510
+msgid "AB"
+msgstr "AB"
+
+#: viewer_slice.py:486 viewer_slice.py:495 viewer_slice.py:504
+#: viewer_slice.py:513
+msgid "AT"
+msgstr "AT"
+
+#: viewer_slice.py:486 viewer_slice.py:495 viewer_slice.py:504
+#: viewer_slice.py:513
+msgid "TP"
+msgstr "TP"
+
+#: viewer_slice.py:486 viewer_slice.py:495 viewer_slice.py:504
+#: viewer_slice.py:513
+msgid "PB"
+msgstr "PB"
+
+#: viewer_slice.py:486 viewer_slice.py:495 viewer_slice.py:504
+#: viewer_slice.py:513
+msgid "BA"
+msgstr "BA"
+
+#~ msgid "Import medical images..."
+#~ msgstr "Import medical images..."
+
+#~ msgid "Advanced editing tools"
+#~ msgstr "Advanced editing tools"
+
+#~ msgid "Exit"
+#~ msgstr "Exit"
+
+#~ msgid "Off"
+#~ msgstr " Off"
+
+#~ msgid "Save Project As..."
+#~ msgstr "Save Project As..."
+
+#~ msgid "Open a InVesalius project..."
+#~ msgstr "Open a InVesalius project..."
+
+#~ msgid "Getting selected parts"
+#~ msgstr "Getting selected parts"
+
+#~ msgid "InVesalius 3 - New surface"
+#~ msgstr "InVesalius 3 - New surface"
+
+#~ msgid "Image Tiling"
+#~ msgstr "Image Tiling"

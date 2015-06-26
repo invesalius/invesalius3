@@ -83,6 +83,7 @@ class Controller():
         Publisher.subscribe(self.OnOpenProject, 'Open project')
         Publisher.subscribe(self.OnOpenRecentProject, 'Open recent project')
         Publisher.subscribe(self.OnShowAnalyzeFile, 'Show analyze dialog')
+        Publisher.subscribe(self.ShowBooleanOpDialog, 'Show boolean dialog')
         Publisher.subscribe(self.OnShowNiftiFile, 'Show nifti dialog')
 
     def OnCancelImport(self, pubsub_evt):
@@ -164,7 +165,8 @@ class Controller():
         # Open project
         filepath = dialog.ShowOpenProjectDialog()
         if filepath:
-            self.CloseProject()
+            if session.IsOpen():
+                self.CloseProject()
             self.OpenProject(filepath)
 
     def ShowDialogSaveProject(self, saveas=False):
@@ -204,7 +206,6 @@ class Controller():
                     Publisher.sendMessage("Enable state project", False)
                     Publisher.sendMessage('Set project name')
                     Publisher.sendMessage("Stop Config Recording")
-                    Publisher.sendMessage("Exit")
                 elif answer == 1:
                     self.ShowDialogSaveProject()
                     utils.debug("Save changes and close")
@@ -212,7 +213,6 @@ class Controller():
                     Publisher.sendMessage("Enable state project", False)
                     Publisher.sendMessage('Set project name')
                     Publisher.sendMessage("Stop Config Recording")
-                    Publisher.sendMessage("Exit")
                 elif answer == -1:
                     utils.debug("Cancel")
             else:
@@ -220,11 +220,9 @@ class Controller():
                 Publisher.sendMessage("Enable state project", False)
                 Publisher.sendMessage('Set project name')
                 Publisher.sendMessage("Stop Config Recording")
-                Publisher.sendMessage("Exit")
 
         else:
             Publisher.sendMessage('Stop Config Recording')
-            Publisher.sendMessage('Exit')
 
 
 ###########################
@@ -243,7 +241,8 @@ class Controller():
                 answer = dialog.SaveChangesDialog2(filename)
                 if answer:
                     self.ShowDialogSaveProject()
-            self.CloseProject()
+            if session.IsOpen():
+                self.CloseProject()
             self.OpenProject(filepath)
         else:
             dialog.InexistentPath(filepath)
@@ -442,9 +441,9 @@ class Controller():
         proj.imagedata = None
         proj.name = _("Untitled")
         proj.SetAcquisitionModality("MRI")
-        #TODO: Verify if all Analyse are in AXIAL orientation
+        #TODO: Verify if all Analyze are in AXIAL orientation
 
-        # To get  Z, X, Y (used by InVesaliu), not X, Y, Z
+        # To get  Z, X, Y (used by InVesalius), not X, Y, Z
         matrix, matrix_filename = image_utils.analyze2mmap(imagedata)
         if header['orient'] == 0:
             proj.original_orientation =  const.AXIAL
@@ -471,8 +470,8 @@ class Controller():
         self.Slice.window_width = proj.window
         self.Slice.spacing = header.get_zooms()[:3]
 
-        Publisher.sendMessage('Update threshold limits',
-                                   proj.threshold_range)
+        Publisher.sendMessage('Update threshold limits list',
+                              proj.threshold_range)
         
     def CreateNiftiProject(self, imagedata):
         header = imagedata.get_header()
@@ -497,7 +496,7 @@ class Controller():
 
         proj.threshold_range = (numpy.amin(matrix), numpy.amax(matrix))
         proj.window = proj.threshold_range[1] - proj.threshold_range[0]
-        proj.level =  (0.5 * (proj.threshold_range[1] + proj.threshold_range[0]))
+        proj.level = (0.5 * (proj.threshold_range[1] + proj.threshold_range[0]))
         proj.spacing = header['pixdim'][1:4]
         proj.matrix_shape = matrix.shape 
 
@@ -510,7 +509,7 @@ class Controller():
         self.Slice.spacing = header.get_zooms()[:3]
 
         Publisher.sendMessage('Update threshold limits list',
-                                   proj.threshold_range)
+                              proj.threshold_range)
 
     def CreateDicomProject(self, dicom, matrix, matrix_filename):
         name_to_const = {"AXIAL":const.AXIAL,
@@ -628,7 +627,7 @@ class Controller():
         self.Slice.window_level = wl
         self.Slice.window_width = ww
 
-        scalar_range = self.matrix.min(), self.matrix.max()
+        scalar_range = int(self.matrix.min()), int(self.matrix.max())
 
         Publisher.sendMessage('Update threshold limits list', scalar_range)
 
@@ -689,6 +688,6 @@ class Controller():
                                   preset_name + '.plist')
         plistlib.writePlist(preset, preset_dir)
 
-
-
-
+    def ShowBooleanOpDialog(self, pubsub_evt):
+        dlg = dialogs.MaskBooleanDialog(prj.Project().mask_dict)
+        dlg.Show()

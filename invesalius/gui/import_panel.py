@@ -110,16 +110,16 @@ class InnerPanel(wx.Panel):
 
         sizer = wx.BoxSizer(wx.VERTICAL)
         sizer.Add(splitter, 20, wx.EXPAND)
-        sizer.Add(panel, 1, wx.EXPAND|wx.LEFT, 90)
-
-        self.SetSizer(sizer)
-        sizer.Fit(self)
+        sizer.Add(panel, 0, wx.EXPAND|wx.LEFT, 90)
 
         self.text_panel = TextPanel(splitter)
         splitter.AppendWindow(self.text_panel, 250)
 
         self.image_panel = ImagePanel(splitter)
         splitter.AppendWindow(self.image_panel, 250)
+        
+        self.SetSizer(sizer)
+        sizer.Fit(self)
 
         self.Layout()
         self.Update()

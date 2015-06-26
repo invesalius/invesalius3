@@ -34,10 +34,17 @@ def GetLocales():
                                 'en': u'English', 
                                 'es': u'Español', 
                                 'pt_BR': u'Português (Brasil)', 
+                                'pt': u'Português',
                                 'fr':u'Français', 
                                 'el_GR':u'Ελληνική', 
-                                #'it_IT':'Italiano', 
-                                'de_DE': 'Deutsch'}) 
+                                'it':'Italiano', 
+                                'de_DE': 'Deutsch',
+                                'cs': u'Čeština', 
+                                'tr_TR': u'Türkçe',
+                                'ca': u'Català',
+                                'ko': u'한국어',
+                                'ro': u'Română',
+                                }) 
     return d 
  
 def GetLocaleOS(): 

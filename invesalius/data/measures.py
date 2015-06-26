@@ -172,12 +172,13 @@ class MeasurementManager(object):
                 value = u"%.2f mm"% m.value
             else:
                 value = u"%.2f°"% m.value
-        
+
             msg =  'Update measurement info in GUI',
             Publisher.sendMessage(msg,
-                    (index, name, colour,
-                        type_, location,
-                        value))
+                                  (index, name, colour,
+                                   location,
+                                   type_,
+                                   value))
             self.current = None
 
     def _change_name(self, pubsub_evt):

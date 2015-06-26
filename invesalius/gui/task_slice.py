@@ -65,17 +65,19 @@ class TaskPanel(wx.Panel):
 class InnerTaskPanel(wx.Panel):
     def __init__(self, parent):
         wx.Panel.__init__(self, parent)
-        self.SetBackgroundColour(wx.Colour(255,255,255))
+        backgroud_colour = wx.Colour(255,255,255)
+        self.SetBackgroundColour(backgroud_colour)
         self.SetAutoLayout(1)
 
         # Image(s) for buttons
         BMP_ADD = wx.Bitmap("../icons/object_add.png", wx.BITMAP_TYPE_PNG)
-        BMP_ADD.SetWidth(25)
-        BMP_ADD.SetHeight(25)
+        #BMP_ADD.SetWidth(25)
+        #BMP_ADD.SetHeight(25)
 
         # Button for creating new surface
         button_new_mask = pbtn.PlateButton(self, BTN_NEW, "", BMP_ADD, style=\
                                    pbtn.PB_STYLE_SQUARE | pbtn.PB_STYLE_DEFAULT)
+        button_new_mask.SetBackgroundColour(self.GetBackgroundColour())
         self.Bind(wx.EVT_BUTTON, self.OnButton)
 
 
@@ -83,7 +85,9 @@ class InnerTaskPanel(wx.Panel):
         tooltip = wx.ToolTip(_("Create mask for slice segmentation and editing"))
         link_new_mask = hl.HyperLinkCtrl(self, -1, _("Create new mask"))
         link_new_mask.SetUnderlines(False, False, False)
+        link_new_mask.SetBold(True)
         link_new_mask.SetColours("BLACK", "BLACK", "BLACK")
+        link_new_mask.SetBackgroundColour(self.GetBackgroundColour())
         link_new_mask.SetToolTip(tooltip)
         link_new_mask.AutoBrowse(False)
         link_new_mask.UpdateLink()
@@ -117,20 +121,23 @@ class InnerTaskPanel(wx.Panel):
             check_box.SetWindowVariant(wx.WINDOW_VARIANT_SMALL)
         button_next.Bind(wx.EVT_BUTTON, self.OnButtonNextTask)
 
+        next_btn_sizer = wx.BoxSizer(wx.VERTICAL)
+        next_btn_sizer.Add(button_next, 1, wx.ALIGN_RIGHT)
+
         line_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        line_sizer.Add(check_box, 1, wx.ALIGN_LEFT|wx.RIGHT|wx.LEFT|wx.BOTTOM, 5)
-        line_sizer.Add(button_next, 0,
-                       wx.ALIGN_RIGHT|wx.RIGHT|wx.LEFT|wx.BOTTOM, 5)
+        line_sizer.Add(check_box, 0, wx.ALIGN_LEFT|wx.RIGHT|wx.LEFT, 5)
+        line_sizer.Add(next_btn_sizer, 1, wx.EXPAND|wx.ALIGN_RIGHT|wx.RIGHT|wx.LEFT, 5)
         line_sizer.Fit(self)
 
         # Add line sizers into main sizer
         main_sizer = wx.BoxSizer(wx.VERTICAL)
         main_sizer.Add(line_new, 0,wx.GROW|wx.EXPAND|wx.LEFT|wx.RIGHT|wx.TOP, 5)
-        main_sizer.Add(fold_panel, 6, wx.GROW|wx.EXPAND|wx.ALL, 5)
-        main_sizer.AddSizer(line_sizer, 1, wx.GROW|wx.EXPAND)
+        main_sizer.Add(fold_panel, 1, wx.GROW|wx.EXPAND|wx.ALL, 5)
+        main_sizer.AddSizer(line_sizer, 0, wx.GROW|wx.EXPAND)
+        main_sizer.AddSpacer(5)
         main_sizer.Fit(self)
 
-        self.SetSizer(main_sizer)
+        self.SetSizerAndFit(main_sizer)
         self.Update()
         self.SetAutoLayout(1)
 
@@ -161,7 +168,7 @@ class InnerTaskPanel(wx.Panel):
 
             if to_generate:
                 mask_index = sl.current_mask.index
-                method = {'algorithm': algorithm, 
+                method = {'algorithm': algorithm,
                           'options': options}
                 srf_options = {"index": mask_index,
                                "name": '',
@@ -170,7 +177,7 @@ class InnerTaskPanel(wx.Panel):
                                "keep_largest": False,
                                "overwrite": overwrite}
 
-                Publisher.sendMessage('Create surface from index', 
+                Publisher.sendMessage('Create surface from index',
                                       {'method': method, 'options': srf_options})
                 Publisher.sendMessage('Fold surface task')
 
@@ -200,8 +207,7 @@ class InnerTaskPanel(wx.Panel):
 
 class FoldPanel(wx.Panel):
     def __init__(self, parent):
-        wx.Panel.__init__(self, parent, size=(50,50))
-        self.SetBackgroundColour(wx.Colour(0,255,0))
+        wx.Panel.__init__(self, parent)
 
         inner_panel = InnerFoldPanel(self)
 
@@ -209,7 +215,7 @@ class FoldPanel(wx.Panel):
         sizer.Add(inner_panel, 1, wx.EXPAND|wx.GROW, 2)
         sizer.Fit(self)
 
-        self.SetSizer(sizer)
+        self.SetSizerAndFit(sizer)
         self.Update()
         self.SetAutoLayout(1)
 
@@ -231,8 +237,24 @@ class InnerFoldPanel(wx.Panel):
         # is not working properly in this panel. It might be on some child or
         # parent panel. Perhaps we need to insert the item into the sizer also...
         # Study this.
+        #gbs = wx.GridBagSizer()
+
+        #gbs.AddGrowableRow(0, 1)
+        #gbs.AddGrowableCol(0, 1)
+
+        #self.gbs = gbs
+
+        self.last_size = None
+
+        # Panel sizer to expand fold panel
+        sizer = wx.BoxSizer(wx.VERTICAL)
+        #sizer.Add(gbs, 1, wx.GROW|wx.EXPAND)
+        self.SetSizer(sizer)
+
         fold_panel = fpb.FoldPanelBar(self, -1, wx.DefaultPosition,
-                                      (10, 220), 0,fpb.FPB_SINGLE_FOLD)
+                                      wx.DefaultSize, 0,fpb.FPB_SINGLE_FOLD)
+        self.fold_panel = fold_panel
+
 
         # Fold panel style
         style = fpb.CaptionBarStyle()
@@ -243,41 +265,74 @@ class InnerFoldPanel(wx.Panel):
         # Fold 1 - Mask properties
         item = fold_panel.AddFoldPanel(_("Mask properties"), collapsed=True)
         self.mask_prop_panel = MaskProperties(item)
+
         fold_panel.ApplyCaptionStyle(item, style)
         fold_panel.AddFoldPanelWindow(item, self.mask_prop_panel, Spacing= 0,
                                       leftSpacing=0, rightSpacing=0)
-        fold_panel.Expand(fold_panel.GetFoldPanel(0))
 
         # Fold 2 - Advanced edition tools
-        item = fold_panel.AddFoldPanel(_("Advanced editing tools"), collapsed=True)
+        item = fold_panel.AddFoldPanel(_("Manual edition"), collapsed=True)
+        etw = EditionTools(item)
+
         fold_panel.ApplyCaptionStyle(item, style)
-        fold_panel.AddFoldPanelWindow(item, EditionTools(item), Spacing= 0,
+        fold_panel.AddFoldPanelWindow(item, etw, Spacing= 0,
                                       leftSpacing=0, rightSpacing=0)
         self.__id_editor = item.GetId()
         self.last_panel_opened = None
 
         # Fold 3 - Watershed
         item = fold_panel.AddFoldPanel(_("Watershed"), collapsed=True)
+        wtw = WatershedTool(item)
+
         fold_panel.ApplyCaptionStyle(item, style)
-        fold_panel.AddFoldPanelWindow(item, WatershedTool(item), Spacing= 0,
+        fold_panel.AddFoldPanelWindow(item, wtw, Spacing= 0,
                                       leftSpacing=0, rightSpacing=0)
         self.__id_watershed = item.GetId()
 
-        #fold_panel.Expand(fold_panel.GetFoldPanel(1))
+        sizer.Add(fold_panel, 1, wx.EXPAND)
 
-        # Panel sizer to expand fold panel
-        sizer = wx.BoxSizer(wx.VERTICAL)
-        sizer.Add(fold_panel, 1, wx.GROW|wx.EXPAND)
-        sizer.Fit(self)
-        self.SetSizer(sizer)
-        self.Update()
-        self.SetAutoLayout(1)
+        fold_panel.Expand(fold_panel.GetFoldPanel(2))
+        self.ResizeFPB()
+        fold_panel.Expand(fold_panel.GetFoldPanel(0))
+
+        sizer.Layout()
+        self.Fit()
 
         self.fold_panel = fold_panel
         self.last_style = None
 
         self.__bind_evt()
         self.__bind_pubsub_evt()
+
+    def __calc_best_size(self, panel):
+        parent = panel.GetParent()
+        q = panel.Reparent(self)
+
+        #gbs = self.gbs
+        fold_panel = self.fold_panel
+
+        # Calculating the size
+        #gbs.AddGrowableRow(0, 1)
+        #gbs.AddGrowableRow(0, 1)
+        #gbs.Add(panel, (0, 0), flag=wx.EXPAND)
+        self.GetSizer().Add(panel, 1, wx.EXPAND)
+        #self.SetSizerAndFit(self.GetSizer())
+        self.GetSizer().Layout()
+        self.GetSizer().Fit(self)
+        #gbs.Layout()
+        #self.Fit()
+        #self.GetSizer().Layout()
+        size = panel.GetSize()
+
+        #gbs.Remove(0)
+        #gbs.RemoveGrowableRow(0)
+
+        self.GetSizer().Remove(0)
+        panel.Reparent(parent)
+        panel.SetInitialSize(size)
+
+        #if self.last_size is None or self.last_size.GetHeight() < size.GetHeight():
+            #self.SetInitialSize(size)
 
     def __bind_evt(self):
         self.fold_panel.Bind(fpb.EVT_CAPTIONBAR, self.OnFoldPressCaption)
@@ -313,6 +368,13 @@ class InnerFoldPanel(wx.Panel):
             self.last_style = None
 
         evt.Skip()
+        wx.CallAfter(self.ResizeFPB)
+
+
+    def ResizeFPB(self):
+        sizeNeeded = self.fold_panel.GetPanelsLength(0, 0)[2]
+        self.fold_panel.SetMinSize((self.fold_panel.GetSize()[0], sizeNeeded ))
+        self.fold_panel.SetSize((self.fold_panel.GetSize()[0], sizeNeeded))
 
     def OnRetrieveStyle(self, pubsub_evt):
         if (self.last_style == const.SLICE_STATE_EDITOR):
@@ -331,14 +393,14 @@ class InnerFoldPanel(wx.Panel):
 
 class MaskProperties(wx.Panel):
     def __init__(self, parent):
-        wx.Panel.__init__(self, parent, size=(50,240))
+        wx.Panel.__init__(self, parent)
 
         ## LINE 1
 
         # Combo related to mask naem
         combo_mask_name = wx.ComboBox(self, -1, "", choices= MASK_LIST,
                                      style=wx.CB_DROPDOWN|wx.CB_READONLY)
-        combo_mask_name.SetSelection(0) # wx.CB_SORT
+        #combo_mask_name.SetSelection(0) # wx.CB_SORT
         if sys.platform != 'win32':
             combo_mask_name.SetWindowVariant(wx.WINDOW_VARIANT_SMALL)
         self.combo_mask_name = combo_mask_name
@@ -350,20 +412,22 @@ class MaskProperties(wx.Panel):
         # Sizer which represents the first line
         line1 = wx.BoxSizer(wx.HORIZONTAL)
         line1.Add(combo_mask_name, 1, wx.EXPAND|wx.GROW|wx.TOP|wx.RIGHT, 2)
-        line1.Add(button_colour, 0, wx.TOP|wx.LEFT|wx.RIGHT, 2)
+        line1.Add(button_colour, 0, wx.TOP|wx.LEFT|wx.RIGHT|wx.ALIGN_CENTER_VERTICAL , 2)
 
-        ## LINE 2
+        ### LINE 2
         text_thresh = wx.StaticText(self, -1,
                                     _("Set predefined or manual threshold:"))
 
-        ## LINE 3
-        combo_thresh = wx.ComboBox(self, -1, "", size=(15,-1),
-                                   choices=[],#THRESHOLD_LIST
+        ### LINE 3
+        THRESHOLD_LIST = ["",]
+        combo_thresh = wx.ComboBox(self, -1, "", #size=(15,-1),
+                                   choices=THRESHOLD_LIST,
                                    style=wx.CB_DROPDOWN|wx.CB_READONLY)
         combo_thresh.SetSelection(0)
         if sys.platform != 'win32':
             combo_thresh.SetWindowVariant(wx.WINDOW_VARIANT_SMALL)
         self.combo_thresh = combo_thresh
+
 
         ## LINE 4
         gradient = grad.GradientCtrl(self, -1, -5000, 5000, 0, 5000,
@@ -372,13 +436,21 @@ class MaskProperties(wx.Panel):
 
         # Add all lines into main sizer
         sizer = wx.BoxSizer(wx.VERTICAL)
-        sizer.Add(line1, 1, wx.GROW|wx.EXPAND|wx.LEFT|wx.RIGHT|wx.TOP, 5)
-        sizer.Add(text_thresh, 1, wx.GROW|wx.EXPAND|wx.ALL, 5)
-        sizer.Add(combo_thresh, 1, wx.GROW|wx.EXPAND|wx.LEFT|wx.RIGHT, 5)
-        sizer.Add(gradient, 1, wx.EXPAND|wx.TOP|wx.LEFT|wx.RIGHT|wx.BOTTOM, 6)
+        sizer.AddSpacer(7)
+        sizer.Add(line1, 0, wx.GROW|wx.EXPAND|wx.LEFT|wx.RIGHT, 5)
+
+        sizer.AddSpacer(5)
+        sizer.Add(text_thresh, 0, wx.GROW|wx.EXPAND|wx.LEFT|wx.RIGHT, 5)
+        sizer.AddSpacer(2)
+        sizer.Add(combo_thresh, 0, wx.EXPAND|wx.GROW|wx.LEFT|wx.RIGHT, 5)
+
+        sizer.AddSpacer(5)
+        sizer.Add(gradient, 1, wx.EXPAND|wx.LEFT|wx.RIGHT, 5)
+        sizer.AddSpacer(7)
+
         sizer.Fit(self)
 
-        self.SetSizer(sizer)
+        self.SetSizerAndFit(sizer)
         self.Update()
         self.SetAutoLayout(1)
 
@@ -417,9 +489,8 @@ class MaskProperties(wx.Panel):
         n = self.combo_thresh.GetCount()
         for i in xrange(n-1, -1, -1):
             self.combo_thresh.Delete(i)
-    
+
     def OnRemoveMasks(self, pubsub_evt):
-        print "OnRemoveMasks"
         list_index = pubsub_evt.data
         for i in list_index:
             self.combo_mask_name.Delete(i)
@@ -457,7 +528,7 @@ class MaskProperties(wx.Panel):
         thresh = (thresh_min, thresh_max)
         if thresh in Project().threshold_modes.values():
             preset_name = Project().threshold_modes.get_key(thresh)[0]
-            index = self.threshold_modes_names.index(preset_name) 
+            index = self.threshold_modes_names.index(preset_name)
             self.combo_thresh.SetSelection(index)
         else:
             index = self.threshold_modes_names.index(_("Custom"))
@@ -471,7 +542,7 @@ class MaskProperties(wx.Panel):
         thresh = (thresh_min, thresh_max)
         if thresh in Project().threshold_modes.values():
             preset_name = Project().threshold_modes.get_key(thresh)[0]
-            index = self.threshold_modes_names.index(preset_name) 
+            index = self.threshold_modes_names.index(preset_name)
             self.combo_thresh.SetSelection(index)
         else:
             index = self.threshold_modes_names.index(_("Custom"))
@@ -515,7 +586,7 @@ class MaskProperties(wx.Panel):
 
         elif default_thresh in proj.threshold_modes.values():
             preset_name = proj.threshold_modes.get_key(default_thresh)[0]
-            index = self.threshold_modes_names.index(preset_name) 
+            index = self.threshold_modes_names.index(preset_name)
             self.combo_thresh.SetSelection(index)
             thresh_min, thresh_max = default_thresh
         else:
@@ -569,7 +640,7 @@ class MaskProperties(wx.Panel):
 
 class EditionTools(wx.Panel):
     def __init__(self, parent):
-        wx.Panel.__init__(self, parent, size=(50,240))
+        wx.Panel.__init__(self, parent)
         default_colour = wx.SystemSettings_GetColour(wx.SYS_COLOUR_MENUBAR)
         self.SetBackgroundColour(default_colour)
 
@@ -599,10 +670,15 @@ class EditionTools(wx.Panel):
         btn_brush_format.SetMenu(menu)
         self.btn_brush_format = btn_brush_format
 
-        spin_brush_size = wx.SpinCtrl(self, -1, "", (20, 50))
+        # To calculate best width to spinctrl
+        dc = wx.WindowDC(self)
+        dc.SetFont(self.GetFont())
+        width, height = dc.GetTextExtent("MMM")
+
+        spin_brush_size = wx.SpinCtrl(self, -1, "", size=(width + 20, -1))
         spin_brush_size.SetRange(1,100)
         spin_brush_size.SetValue(const.BRUSH_SIZE)
-        spin_brush_size.Bind(wx.EVT_TEXT, self.OnBrushSize)
+        spin_brush_size.Bind(wx.EVT_SPINCTRL, self.OnBrushSize)
         self.spin = spin_brush_size
 
         combo_brush_op = wx.ComboBox(self, -1, "", size=(15,-1),
@@ -615,9 +691,9 @@ class EditionTools(wx.Panel):
 
         # Sizer which represents the second line
         line2 = wx.BoxSizer(wx.HORIZONTAL)
-        line2.Add(btn_brush_format, 0, wx.EXPAND|wx.GROW|wx.TOP|wx.RIGHT, 0)
-        line2.Add(spin_brush_size, 0, wx.RIGHT, 5)
-        line2.Add(combo_brush_op, 1, wx.EXPAND|wx.TOP|wx.RIGHT|wx.LEFT, 5)
+        line2.Add(btn_brush_format, 0, wx.EXPAND|wx.GROW|wx.RIGHT, 5)
+        line2.Add(spin_brush_size, 0, wx.RIGHT|wx.ALIGN_CENTER_VERTICAL, 5)
+        line2.Add(combo_brush_op, 1, wx.RIGHT|wx.LEFT|wx.ALIGN_CENTER_VERTICAL, 5)
 
         ## LINE 3
         text_thresh = wx.StaticText(self, -1, _("Brush threshold range:"))
@@ -630,14 +706,18 @@ class EditionTools(wx.Panel):
 
         # Add lines into main sizer
         sizer = wx.BoxSizer(wx.VERTICAL)
-        sizer.Add(text1, 0, wx.GROW|wx.EXPAND|wx.LEFT|wx.RIGHT|wx.TOP, 5)
-        sizer.Add(line2, 0, wx.GROW|wx.EXPAND|wx.LEFT|wx.RIGHT|wx.TOP, 5)
-        sizer.Add(text_thresh, 0, wx.GROW|wx.EXPAND|wx.LEFT|wx.RIGHT|wx.TOP, 5)
-        sizer.Add(gradient_thresh, 0, wx.EXPAND|wx.TOP|wx.LEFT|wx.RIGHT|
-                  wx.BOTTOM, 6)
+        sizer.AddSpacer(7)
+        sizer.Add(text1, 0, wx.GROW|wx.EXPAND|wx.LEFT|wx.RIGHT, 5)
+        sizer.AddSpacer(2)
+        sizer.Add(line2, 0, wx.GROW|wx.EXPAND|wx.LEFT|wx.RIGHT, 5)
+        sizer.AddSpacer(5)
+        sizer.Add(text_thresh, 0, wx.GROW|wx.EXPAND|wx.LEFT|wx.RIGHT, 5)
+        sizer.AddSpacer(5)
+        sizer.Add(gradient_thresh, 0, wx.EXPAND|wx.LEFT|wx.RIGHT, 5)
+        sizer.AddSpacer(7)
         sizer.Fit(self)
 
-        self.SetSizer(sizer)
+        self.SetSizerAndFit(sizer)
         self.Update()
         self.SetAutoLayout(1)
 
@@ -656,6 +736,7 @@ class EditionTools(wx.Panel):
                                         'Update threshold limits')
         Publisher.subscribe(self.ChangeMaskColour, 'Change mask colour')
         Publisher.subscribe(self.SetGradientColour, 'Add mask')
+        Publisher.subscribe(self._set_brush_size, 'Set edition brush size')
 
     def ChangeMaskColour(self, pubsub_evt):
         colour = pubsub_evt.data
@@ -708,19 +789,27 @@ class EditionTools(wx.Panel):
         # Strangelly this is being called twice
         Publisher.sendMessage('Set edition brush size',self.spin.GetValue())
 
+    def _set_brush_size(self, pubsub_evt):
+        size = pubsub_evt.data
+        self.spin.SetValue(size)
+
     def OnComboBrushOp(self, evt):
         brush_op_id = evt.GetSelection()
         Publisher.sendMessage('Set edition operation', brush_op_id)
+        if brush_op_id == const.BRUSH_THRESH:
+            self.gradient_thresh.Enable()
+        else:
+            self.gradient_thresh.Disable()
 
 
 class WatershedTool(EditionTools):
     def __init__(self, parent):
-        wx.Panel.__init__(self, parent, size=(50,150))
+        wx.Panel.__init__(self, parent)
         default_colour = wx.SystemSettings_GetColour(wx.SYS_COLOUR_MENUBAR)
         self.SetBackgroundColour(default_colour)
 
         ## LINE 1
-        text1 = wx.StaticText(self, -1, _("Choose brush type and size:"))
+        text1 = wx.StaticText(self, -1, _("Choose brush type, size or operation:"))
 
         ## LINE 2
         menu = wx.Menu()
@@ -745,10 +834,15 @@ class WatershedTool(EditionTools):
         btn_brush_format.SetMenu(menu)
         self.btn_brush_format = btn_brush_format
 
-        spin_brush_size = wx.SpinCtrl(self, -1, "", (20, 50))
+        # To calculate best width to spinctrl
+        dc = wx.WindowDC(self)
+        dc.SetFont(self.GetFont())
+        width, height = dc.GetTextExtent("MMM")
+
+        spin_brush_size = wx.SpinCtrl(self, -1, "", size=(width + 20, -1))
         spin_brush_size.SetRange(1,100)
         spin_brush_size.SetValue(const.BRUSH_SIZE)
-        spin_brush_size.Bind(wx.EVT_TEXT, self.OnBrushSize)
+        spin_brush_size.Bind(wx.EVT_SPINCTRL, self.OnBrushSize)
         self.spin = spin_brush_size
 
         combo_brush_op = wx.ComboBox(self, -1, "", size=(15,-1),
@@ -763,9 +857,9 @@ class WatershedTool(EditionTools):
 
         # Sizer which represents the second line
         line2 = wx.BoxSizer(wx.HORIZONTAL)
-        line2.Add(btn_brush_format, 0, wx.EXPAND|wx.GROW|wx.TOP|wx.RIGHT, 0)
-        line2.Add(spin_brush_size, 0, wx.RIGHT, 5)
-        line2.Add(combo_brush_op, 1, wx.EXPAND|wx.TOP|wx.RIGHT|wx.LEFT, 5)
+        line2.Add(btn_brush_format, 0, wx.EXPAND|wx.GROW|wx.RIGHT, 5)
+        line2.Add(spin_brush_size, 0, wx.RIGHT|wx.ALIGN_CENTER_VERTICAL, 5)
+        line2.Add(combo_brush_op, 1, wx.RIGHT|wx.LEFT|wx.ALIGN_CENTER_VERTICAL, 5)
 
         ## LINE 3
 
@@ -773,31 +867,54 @@ class WatershedTool(EditionTools):
 
         # LINE 5
         check_box = wx.CheckBox(self, -1, _("Overwrite mask"))
+        ww_wl_cbox = wx.CheckBox(self, -1, _("Use WW&WL"))
+        ww_wl_cbox.SetValue(True)
         self.check_box = check_box
+        self.ww_wl_cbox = ww_wl_cbox
 
         # Line 6
+        bmp = wx.Bitmap("../icons/configuration.png", wx.BITMAP_TYPE_PNG)
+        self.btn_wconfig = wx.BitmapButton(self, -1, bitmap=bmp,
+                                           size=(bmp.GetWidth()+10, bmp.GetHeight()+10))
         self.btn_exp_watershed = wx.Button(self, -1, _('Expand watershed to 3D'))
+
+        sizer_btns = wx.BoxSizer(wx.HORIZONTAL)
+        sizer_btns.Add(self.btn_wconfig, 0, wx.ALIGN_LEFT | wx.LEFT | wx.TOP | wx.DOWN, 5)
+        sizer_btns.Add(self.btn_exp_watershed, 0, wx.GROW|wx.EXPAND| wx.ALL, 5)
 
         # Add lines into main sizer
         sizer = wx.BoxSizer(wx.VERTICAL)
-        sizer.Add(text1, 0, wx.GROW|wx.EXPAND|wx.LEFT|wx.RIGHT|wx.TOP, 5)
-        sizer.Add(line2, 0, wx.GROW|wx.EXPAND|wx.LEFT|wx.RIGHT|wx.TOP, 5)
-        sizer.Add(check_box, 0, wx.GROW|wx.EXPAND|wx.LEFT|wx.RIGHT|wx.TOP, 5)
-        sizer.Add(self.btn_exp_watershed, 0, wx.GROW|wx.EXPAND|wx.LEFT|wx.RIGHT|wx.TOP, 5)
+        sizer.AddSpacer(7)
+        sizer.Add(text1, 0, wx.GROW|wx.EXPAND|wx.LEFT|wx.RIGHT, 5)
+        sizer.AddSpacer(2)
+        sizer.Add(line2, 0, wx.GROW|wx.EXPAND|wx.LEFT|wx.RIGHT, 5)
+        sizer.AddSpacer(5)
+        sizer.Add(check_box, 0, wx.GROW|wx.EXPAND|wx.LEFT|wx.RIGHT, 5)
+        sizer.AddSpacer(2)
+        sizer.Add(ww_wl_cbox, 0, wx.GROW|wx.EXPAND|wx.LEFT|wx.RIGHT, 5)
+        sizer.AddSpacer(5)
+        sizer.Add(sizer_btns, 0, wx.EXPAND)
+        sizer.AddSpacer(7)
         sizer.Fit(self)
 
-        self.SetSizer(sizer)
+        self.SetSizerAndFit(sizer)
         self.Update()
         self.SetAutoLayout(1)
 
         self.__bind_events_wx()
+        self.__bind_pubsub_evt()
 
 
     def __bind_events_wx(self):
         self.Bind(wx.EVT_MENU, self.OnMenu)
         self.combo_brush_op.Bind(wx.EVT_COMBOBOX, self.OnComboBrushOp)
         self.check_box.Bind(wx.EVT_CHECKBOX, self.OnCheckOverwriteMask)
+        self.ww_wl_cbox.Bind(wx.EVT_CHECKBOX, self.OnCheckWWWL)
         self.btn_exp_watershed.Bind(wx.EVT_BUTTON, self.OnExpandWatershed)
+        self.btn_wconfig.Bind(wx.EVT_BUTTON, self.OnConfig)
+
+    def __bind_pubsub_evt(self):
+        Publisher.subscribe(self._set_brush_size, 'Set watershed brush size')
 
     def ChangeMaskColour(self, pubsub_evt):
         colour = pubsub_evt.data
@@ -834,14 +951,18 @@ class WatershedTool(EditionTools):
 
         self.btn_brush_format.SetBitmap(bitmap[evt.GetId()])
 
-        Publisher.sendMessage('Set brush format', brush[evt.GetId()])
+        Publisher.sendMessage('Set watershed brush format', brush[evt.GetId()])
 
     def OnBrushSize(self, evt):
         """ """
         # FIXME: Using wx.EVT_SPINCTRL in MacOS it doesnt capture changes only
         # in the text ctrl - so we are capturing only changes on text
         # Strangelly this is being called twice
-        Publisher.sendMessage('Set edition brush size',self.spin.GetValue())
+        Publisher.sendMessage('Set watershed brush size',self.spin.GetValue())
+
+    def _set_brush_size(self, pubsub_evt):
+        size = pubsub_evt.data
+        self.spin.SetValue(size)
 
     def OnComboBrushOp(self, evt):
         brush_op = self.combo_brush_op.GetValue()
@@ -850,6 +971,15 @@ class WatershedTool(EditionTools):
     def OnCheckOverwriteMask(self, evt):
         value = self.check_box.GetValue()
         Publisher.sendMessage('Set overwrite mask', value)
+
+    def OnCheckWWWL(self, evt):
+        value = self.ww_wl_cbox.GetValue()
+        Publisher.sendMessage('Set use ww wl', value)
+
+    def OnConfig(self, evt):
+        from data.styles import WatershedConfig
+        config = WatershedConfig()
+        dlg.WatershedOptionsDialog(config).Show()
 
     def OnExpandWatershed(self, evt):
         Publisher.sendMessage('Expand watershed to 3D AXIAL')

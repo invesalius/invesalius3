@@ -142,6 +142,7 @@ class Slice(object):
         Publisher.subscribe(self.__set_mask_name, 'Change mask name')
         Publisher.subscribe(self.__show_mask, 'Show mask')
         Publisher.subscribe(self.__hide_current_mask, 'Hide current mask')
+        Publisher.subscribe(self.__clean_current_mask, 'Clean current mask')
 
         Publisher.subscribe(self.__set_current_mask_threshold_limits,
                                         'Update threshold limits')
@@ -159,6 +160,8 @@ class Slice(object):
                                  'Change colour table from background image from widget')
 
         Publisher.subscribe(self._set_projection_type, 'Set projection type')
+
+        Publisher.subscribe(self._do_boolean_op, 'Do boolean operation')
 
         Publisher.subscribe(self.OnExportMask,'Export mask to file')
 
@@ -209,6 +212,7 @@ class Slice(object):
                     buffer_.discard_vtk_mask()
                     buffer_.discard_mask()
 
+                Publisher.sendMessage('Show mask', (item, 0))
                 Publisher.sendMessage('Reload actual slice')
 
     def OnDuplicateMasks(self, pubsub_evt):
@@ -366,7 +370,6 @@ class Slice(object):
         # "if" is necessary because wx events are calling this before any mask
         # has been created
         print "__show_mask"
-        print "self.current_mask", self.current_mask
         if self.current_mask:
             index, value = pubsub_evt.data
             self.ShowMask(index, value)
@@ -382,6 +385,19 @@ class Slice(object):
             index = self.current_mask.index
             value = False
             Publisher.sendMessage('Show mask', (index, value))
+
+    def __clean_current_mask(self, pubsub_evt):
+        if self.current_mask:
+            self.current_mask.clean()
+            for buffer_ in self.buffer_slices.values():
+                buffer_.discard_vtk_mask()
+                buffer_.discard_mask()
+            self.current_mask.clear_history()
+            self.current_mask.was_edited = True
+
+            # Marking the project as changed
+            session = ses.Session()
+            session.ChangeProject()
 
     def create_temp_mask(self):
         temp_file = tempfile.mktemp()
@@ -472,6 +488,10 @@ class Slice(object):
             elif operation == const.BRUSH_ERASE:
                 roi_m[index] = 1
             self.buffer_slices[orientation].discard_vtk_mask()
+
+        # Marking the project as changed
+        session = ses.Session()
+        session.ChangeProject()
 
 
     def GetSlices(self, orientation, slice_number, number_slices,
@@ -784,7 +804,6 @@ class Slice(object):
         """
         self.current_mask.was_edited = False
         thresh_min, thresh_max = threshold_range
-        print "Threshold"
 
         if self.current_mask.index == index:
             # TODO: find out a better way to do threshold
@@ -796,7 +815,6 @@ class Slice(object):
                     m[m == 1] = 255
                     self.current_mask.matrix[n+1, 1:, 1:] = m
             else:
-                print "Only one slice"
                 slice_ = self.buffer_slices[orientation].image
                 self.buffer_slices[orientation].mask = (255 * ((slice_ >= thresh_min) & (slice_ <= thresh_max))).astype('uint8')
 
@@ -852,7 +870,6 @@ class Slice(object):
     #---------------------------------------------------------------------------
 
     def CreateSurfaceFromIndex(self, pubsub_evt):
-        print pubsub_evt.data
         surface_parameters = pubsub_evt.data
 
         proj = Project()
@@ -1010,6 +1027,7 @@ class Slice(object):
 
         if show:
             self.current_mask = mask
+            Publisher.sendMessage('Show mask', (mask.index, 1))
             Publisher.sendMessage('Change mask selected', mask.index)
             Publisher.sendMessage('Update slice viewer')
 
@@ -1080,12 +1098,16 @@ class Slice(object):
                 else:
                     node.value += shiftWW * factor
 
-    def do_threshold_to_a_slice(self, slice_matrix, mask):
+    def do_threshold_to_a_slice(self, slice_matrix, mask, threshold=None):
         """ 
         Based on the current threshold bounds generates a threshold mask to
         given slice_matrix.
         """
-        thresh_min, thresh_max = self.current_mask.threshold_range
+        if threshold:
+            thresh_min, thresh_max = threshold
+        else:
+            thresh_min, thresh_max = self.current_mask.threshold_range
+
         m = (((slice_matrix >= thresh_min) & (slice_matrix <= thresh_max)) * 255)
         m[mask == 1] = 1
         m[mask == 2] = 2
@@ -1106,7 +1128,7 @@ class Slice(object):
         for n in xrange(1, mask.matrix.shape[0]):
             if mask.matrix[n, 0, 0] == 0:
                 m = mask.matrix[n, 1:, 1:]
-                mask.matrix[n, 1:, 1:] = self.do_threshold_to_a_slice(self.matrix[n-1], m)
+                mask.matrix[n, 1:, 1:] = self.do_threshold_to_a_slice(self.matrix[n-1], m, mask.threshold_range)
 
         mask.matrix.flush()
 
@@ -1209,6 +1231,55 @@ class Slice(object):
 
         return blend_imagedata.GetOutput()
 
+    def _do_boolean_op(self, pubsub_evt):
+        op, m1, m2 = pubsub_evt.data
+        self.do_boolean_op(op, m1, m2)
+
+    def do_boolean_op(self, op, m1, m2):
+        name_ops = {const.BOOLEAN_UNION: _(u"Union"), 
+                    const.BOOLEAN_DIFF: _(u"Diff"),
+                    const.BOOLEAN_AND: _(u"Intersection"),
+                    const.BOOLEAN_XOR: _(u"XOR")}
+
+
+        name = u"%s_%s_%s" % (name_ops[op], m1.name, m2.name)
+        proj = Project()
+        mask_dict = proj.mask_dict
+        names_list = [mask_dict[i].name for i in mask_dict.keys()]
+        new_name = utils.next_copy_name(name, names_list)
+
+        future_mask = Mask()
+        future_mask.create_mask(self.matrix.shape)
+        future_mask.name = new_name
+
+        future_mask.matrix[:] = 1
+        m = future_mask.matrix[1:, 1:, 1:]
+
+        self.do_threshold_to_all_slices(m1)
+        m1 = m1.matrix[1:, 1:, 1:]
+
+        self.do_threshold_to_all_slices(m2)
+        m2 = m2.matrix[1:, 1:, 1:]
+
+        if op == const.BOOLEAN_UNION:
+            m[:] = ((m1 > 2) + (m2 > 2)) * 255
+
+        elif op == const.BOOLEAN_DIFF:
+            m[:] = ((m1 > 2) - ((m1 > 2) & (m2 > 2))) * 255
+
+        elif op == const.BOOLEAN_AND:
+            m[:] = ((m1 > 2) & (m2 > 2)) * 255
+
+        elif op == const.BOOLEAN_XOR:
+            m[:] = numpy.logical_xor((m1 > 2), (m2 > 2)) * 255
+
+        for o in self.buffer_slices:
+            self.buffer_slices[o].discard_mask()
+            self.buffer_slices[o].discard_vtk_mask()
+
+        future_mask.was_edited = True
+        self._add_mask_into_proj(future_mask)
+
     def apply_slice_buffer_to_mask(self, orientation):
         """
         Apply the modifications (edition) in mask buffer to mask.
@@ -1303,8 +1374,6 @@ class Slice(object):
 
         for buffer_ in self.buffer_slices.values():
             buffer_.discard_buffer()
-
-        print type(self.matrix)
 
     def OnExportMask(self, pubsub_evt):
         pass

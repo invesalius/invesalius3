@@ -312,8 +312,6 @@ class CursorCircle(CursorBase):
 
         y,x = numpy.ogrid[yi:yf, xi:xf]
 
-        print "AREA", x
-
         index = (y*sy)**2 + (x*sx)**2 <= r**2
         self.points = index
 

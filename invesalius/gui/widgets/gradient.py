@@ -75,9 +75,18 @@ class GradientSlider(wx.Panel):
         self.Bind(wx.EVT_LEFT_UP, self.OnRelease)
         self.Bind(wx.EVT_PAINT, self.OnPaint)
         self.Bind(wx.EVT_ERASE_BACKGROUND, self.OnEraseBackGround)
+
+        if sys.platform == 'win32':
+            self.Bind(wx.EVT_LEAVE_WINDOW, self.OnLeaveWindow)
+
         self.Bind(wx.EVT_MOTION, self.OnMotion)
         self.Bind(wx.EVT_SIZE, self.OnSize)
 
+    def OnLeaveWindow(self, evt):
+        self.selected = 0
+        evt.Skip()
+
+        
     def OnPaint(self, evt):
         # Where the magic happens. Here the controls are drawn.
         dc = wx.BufferedPaintDC(self)
@@ -322,7 +331,6 @@ class GradientCtrl(wx.Panel):
         self.changed = False
         self._draw_controls()
         self._bind_events_wx()
-        self.SetBackgroundColour((0, 255, 0))
         self.Show()
 
     def _draw_controls(self):
@@ -343,9 +351,9 @@ class GradientCtrl(wx.Panel):
             self.spin_max.SetWindowVariant(wx.WINDOW_VARIANT_SMALL)
 
         sizer = wx.BoxSizer(wx.HORIZONTAL)
-        sizer.Add(self.spin_min, 0, wx.EXPAND)
+        sizer.Add(self.spin_min, 0, wx.EXPAND | wx.RIGHT, 2)
         sizer.Add(self.gradient_slider, 1, wx.EXPAND)
-        sizer.Add(self.spin_max, 0, wx.EXPAND)
+        sizer.Add(self.spin_max, 0, wx.EXPAND | wx.LEFT, 2)
         self.sizer.Add(sizer, 1, wx.EXPAND)
 
     def _bind_events_wx(self):
@@ -467,7 +475,6 @@ class GradientCtrl(wx.Panel):
     def ChangeMinValue(self, e):
         # Why do I need to change slide min value if it has been changed for
         # the user?
-        print "ChangeMinValue", self.slided
         if not self.slided:
             self.gradient_slider.SetMinValue(int(self.spin_min.GetValue()))
             self._GenerateEvent(myEVT_THRESHOLD_CHANGE)
@@ -488,10 +495,8 @@ class GradientCtrl(wx.Panel):
     def _GenerateEvent(self, event):
         if event == myEVT_THRESHOLD_CHANGING:
             self.changed = True
-            print 'changing'
         elif event == myEVT_THRESHOLD_CHANGED :
             self.changed = False
-            print 'changed'
 
         evt = SliderEvent(event, self.GetId(), self.min_range,
                           self.max_range, self.minimun, self.maximun)

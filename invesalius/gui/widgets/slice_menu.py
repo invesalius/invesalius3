@@ -258,7 +258,6 @@ class SliceMenu(wx.Menu):
             Publisher.sendMessage('Update slice viewer')
 
         elif key in PROJECTIONS_ID:
-            print 'Key', key
             pid = PROJECTIONS_ID[key]
             Publisher.sendMessage('Set projection type', pid)
             Publisher.sendMessage('Reload actual slice')

@@ -49,8 +49,8 @@ class TaskPanel(wx.Panel):
 
         inner_panel = InnerTaskPanel(self)
 
-        sizer = wx.BoxSizer(wx.HORIZONTAL)
-        sizer.Add(inner_panel, 1, wx.EXPAND | wx.GROW | wx.BOTTOM | wx.RIGHT |
+        sizer = wx.BoxSizer(wx.VERTICAL)
+        sizer.Add(inner_panel, 0, wx.EXPAND | wx.GROW | wx.BOTTOM | wx.RIGHT |
                   wx.LEFT, 7)
         sizer.Fit(self)
 
@@ -68,24 +68,28 @@ class InnerTaskPanel(wx.Panel):
     def __init__(self, parent):
         wx.Panel.__init__(self, parent)
         default_colour = self.GetBackgroundColour()
-        self.SetBackgroundColour(wx.Colour(255,255,255))
+        backgroud_colour = wx.Colour(255,255,255)
+        self.SetBackgroundColour(backgroud_colour)
         self.SetAutoLayout(1)
 
 
         BMP_ADD = wx.Bitmap("../icons/object_add.png", wx.BITMAP_TYPE_PNG)
-        BMP_ADD.SetWidth(25)
-        BMP_ADD.SetHeight(25)
+        #BMP_ADD.SetWidth(25)
+        #BMP_ADD.SetHeight(25)
 
         # Button for creating new surface
         button_new_surface = pbtn.PlateButton(self, BTN_NEW, "", BMP_ADD, style=\
                                    pbtn.PB_STYLE_SQUARE | pbtn.PB_STYLE_DEFAULT)
+        button_new_surface.SetBackgroundColour(self.GetBackgroundColour())
         self.Bind(wx.EVT_BUTTON, self.OnButton)
 
         # Fixed hyperlink items
         tooltip = wx.ToolTip(_("Create 3D surface based on a mask"))
         link_new_surface = hl.HyperLinkCtrl(self, -1, _("Create new 3D surface"))
         link_new_surface.SetUnderlines(False, False, False)
+        link_new_surface.SetBold(True)
         link_new_surface.SetColours("BLACK", "BLACK", "BLACK")
+        link_new_surface.SetBackgroundColour(self.GetBackgroundColour())
         link_new_surface.SetToolTip(tooltip)
         link_new_surface.AutoBrowse(False)
         link_new_surface.UpdateLink()
@@ -109,13 +113,13 @@ class InnerTaskPanel(wx.Panel):
         # Add line sizers into main sizer
         main_sizer = wx.BoxSizer(wx.VERTICAL)
         main_sizer.Add(line_new, 0,wx.GROW|wx.EXPAND|wx.LEFT|wx.RIGHT|wx.TOP, 5)
-        main_sizer.Add(fold_panel, 1, wx.GROW|wx.EXPAND|wx.ALL, 5)
+        main_sizer.Add(fold_panel, 0, wx.GROW|wx.EXPAND|wx.ALL, 5)
         main_sizer.Add(button_next, 0, wx.ALIGN_RIGHT|wx.RIGHT|wx.BOTTOM, 5)
         main_sizer.Fit(self)
 
-        self.SetSizer(main_sizer)
+        self.SetSizerAndFit(main_sizer)
         self.Update()
-        self.SetAutoLayout(1)
+        #self.SetAutoLayout(1)
 
         self.sizer = main_sizer
 
@@ -132,7 +136,7 @@ class InnerTaskPanel(wx.Panel):
     def OnLinkNewSurface(self, evt=None):
         #import gui.dialogs as dlg
         sl = slice_.Slice()
-        dialog = dlg.SurfaceCreationDialog(None, -1, 
+        dialog = dlg.SurfaceCreationDialog(None, -1,
                             _('New surface'),
                             mask_edited=sl.current_mask.was_edited)
 
@@ -176,15 +180,14 @@ class InnerTaskPanel(wx.Panel):
 class FoldPanel(wx.Panel):
     def __init__(self, parent):
         wx.Panel.__init__(self, parent, size=(50,700))
-        self.SetBackgroundColour(wx.Colour(0,255,0))
 
         inner_panel = InnerFoldPanel(self)
 
         sizer = wx.BoxSizer(wx.VERTICAL)
-        sizer.Add(inner_panel, 1, wx.EXPAND|wx.GROW, 2)
+        sizer.Add(inner_panel, 0, wx.EXPAND|wx.GROW, 2)
         sizer.Fit(self)
 
-        self.SetSizer(sizer)
+        self.SetSizerAndFit(sizer)
         self.Update()
         self.SetAutoLayout(1)
 
@@ -201,7 +204,7 @@ class InnerFoldPanel(wx.Panel):
         # parent panel. Perhaps we need to insert the item into the sizer also...
         # Study this.
         fold_panel = fpb.FoldPanelBar(self, -1, wx.DefaultPosition,
-                                      (10, 140), 0,fpb.FPB_SINGLE_FOLD)
+                                      wx.DefaultSize, 0,fpb.FPB_SINGLE_FOLD)
 
         # Fold panel style
         style = fpb.CaptionBarStyle()
@@ -214,7 +217,6 @@ class InnerFoldPanel(wx.Panel):
         fold_panel.ApplyCaptionStyle(item, style)
         fold_panel.AddFoldPanelWindow(item, SurfaceProperties(item), Spacing= 0,
                                       leftSpacing=0, rightSpacing=0)
-        fold_panel.Expand(fold_panel.GetFoldPanel(0))
 
         # Fold 2 - Surface tools
         item = fold_panel.AddFoldPanel(_("Advanced options"), collapsed=True)
@@ -226,6 +228,9 @@ class InnerFoldPanel(wx.Panel):
         #                              leftSpacing=0, rightSpacing=0)
         #fold_panel.Expand(fold_panel.GetFoldPanel(1))
 
+        self.fold_panel = fold_panel
+        self.__bind_evt()
+
         # Panel sizer to expand fold panel
         sizer = wx.BoxSizer(wx.VERTICAL)
         sizer.Add(fold_panel, 1, wx.GROW|wx.EXPAND)
@@ -235,12 +240,29 @@ class InnerFoldPanel(wx.Panel):
         self.Update()
         self.SetAutoLayout(1)
 
+
+        fold_panel.Expand(fold_panel.GetFoldPanel(1))
+        self.ResizeFPB()
+        fold_panel.Expand(fold_panel.GetFoldPanel(0))
+
+    def __bind_evt(self):
+        self.fold_panel.Bind(fpb.EVT_CAPTIONBAR, self.OnFoldPressCaption)
+
+    def OnFoldPressCaption(self, evt):
+        evt.Skip()
+        wx.CallAfter(self.ResizeFPB)
+
+    def ResizeFPB(self):
+        sizeNeeded = self.fold_panel.GetPanelsLength(0, 0)[2]
+        self.fold_panel.SetMinSize((self.fold_panel.GetSize()[0], sizeNeeded ))
+        self.fold_panel.SetSize((self.fold_panel.GetSize()[0], sizeNeeded))
+
 BTN_LARGEST = wx.NewId()
 BTN_SPLIT = wx.NewId()
 BTN_SEEDS = wx.NewId()
 class SurfaceTools(wx.Panel):
     def __init__(self, parent):
-        wx.Panel.__init__(self, parent, size=(50,400))
+        wx.Panel.__init__(self, parent)
         default_colour = wx.SystemSettings_GetColour(wx.SYS_COLOUR_MENUBAR)
         self.SetBackgroundColour(default_colour)
 
@@ -327,9 +349,8 @@ class SurfaceTools(wx.Panel):
         main_sizer.Add(fixed_sizer, 0, wx.GROW|wx.EXPAND|wx.TOP, 5)
 
         # Update main sizer and panel layout
-        self.SetSizer(main_sizer)
+        self.SetSizerAndFit(main_sizer)
         self.Update()
-        self.SetAutoLayout(1)
         self.sizer = main_sizer
 
     def OnLinkLargest(self, evt):
@@ -375,18 +396,18 @@ class SurfaceTools(wx.Panel):
 
 class SurfaceProperties(wx.Panel):
     def __init__(self, parent):
-        wx.Panel.__init__(self, parent, size=(50,400))
+        wx.Panel.__init__(self, parent)
         default_colour = wx.SystemSettings_GetColour(wx.SYS_COLOUR_MENUBAR)
         self.SetBackgroundColour(default_colour)
 
-        self.surface_dict = utl.TwoWaysDictionary()
+        self.surface_list = []
 
         ## LINE 1
 
         # Combo related to mask naem
-        combo_surface_name = wx.ComboBox(self, -1, "", choices= self.surface_dict.keys(),
+        combo_surface_name = wx.ComboBox(self, -1,
                                      style=wx.CB_DROPDOWN|wx.CB_READONLY)
-        combo_surface_name.SetSelection(0)
+        #combo_surface_name.SetSelection(0)
         if sys.platform != 'win32':
             combo_surface_name.SetWindowVariant(wx.WINDOW_VARIANT_SMALL)
         combo_surface_name.Bind(wx.EVT_COMBOBOX, self.OnComboName)
@@ -436,9 +457,9 @@ class SurfaceProperties(wx.Panel):
         #sizer.Add(cb, 0, wx.GROW|wx.EXPAND|wx.RIGHT|wx.LEFT|wx.TOP|wx.BOTTOM, 5)
         sizer.Fit(self)
 
-        self.SetSizer(sizer)
+        self.SetSizerAndFit(sizer)
         self.Update()
-        self.SetAutoLayout(1)
+        #self.SetAutoLayout(1)
 
         self.__bind_events()
 
@@ -453,21 +474,24 @@ class SurfaceProperties(wx.Panel):
 
     def OnRemoveSurfaces(self, pubsub_evt):
         list_index = pubsub_evt.data
+        s = self.combo_surface_name.GetSelection()
+        ns = 0
 
-        old_dict = self.surface_dict
-        new_dict = utl.TwoWaysDictionary()
-        for index in list_index:
-            self.combo_surface_name.Delete(index)
+        old_dict = self.surface_list
+        new_dict = []
+        i = 0
+        for n, (name, index) in enumerate(old_dict):
+            if n not in list_index:
+                new_dict.append([name, i])
+                if s == n:
+                    ns = i
+                i+=1
+        self.surface_list = new_dict
 
-            for name in old_dict:
-                if old_dict[name] < index:
-                    new_dict[name] = old_dict[name]
-                if old_dict[name] > index:
-                    new_dict[name] = old_dict[name] -1
-            old_dict = new_dict
-        self.surface_dict = new_dict
+        self.combo_surface_name.SetItems([n[0] for n in self.surface_list])
 
-
+        if self.surface_list:
+            self.combo_surface_name.SetSelection(ns)
 
     def OnCloseProject(self, pubsub_evt):
         self.CloseProject()
@@ -479,32 +503,38 @@ class SurfaceProperties(wx.Panel):
 
     def ChangeSurfaceName(self, pubsub_evt):
         index, name = pubsub_evt.data
-        old_name = self.surface_dict.get_key(index)
-        self.surface_dict.remove(old_name)
-        self.surface_dict[name] = index
+        self.surface_list[index][0] = name
         self.combo_surface_name.SetString(index, name)
-        self.combo_surface_name.Refresh()
 
     def InsertNewSurface(self, pubsub_evt):
         #not_update = len(pubsub_evt.data) == 5
         index = pubsub_evt.data[0]
         name = pubsub_evt.data[1]
         colour = [value*255 for value in pubsub_evt.data[2]]
-        overwrite = name in self.surface_dict.keys()
-        #if index not in self.surface_dict.values():
-        if not overwrite or not self.surface_dict:
-            self.surface_dict[name] = index
-            index = self.combo_surface_name.Append(name)
+        i = 0
+        try:
+            i = self.surface_list.index([name, index])
+            overwrite = True
+        except ValueError:
+            overwrite = False
+
+        if overwrite:
+            self.surface_list[i] = [name, index]
+        else:
+            self.surface_list.append([name, index])
+            i = len(self.surface_list) - 1
+
+        self.combo_surface_name.SetItems([n[0] for n in self.surface_list])
+        self.combo_surface_name.SetSelection(i)
         transparency = 100*pubsub_evt.data[4]
         self.button_colour.SetColour(colour)
         self.slider_transparency.SetValue(transparency)
-        self.combo_surface_name.SetSelection(index)
-        Publisher.sendMessage('Update surface data', (index))        
+        Publisher.sendMessage('Update surface data', (index))
 
     def OnComboName(self, evt):
         surface_name = evt.GetString()
         surface_index = evt.GetSelection()
-        Publisher.sendMessage('Change surface selected', surface_index)
+        Publisher.sendMessage('Change surface selected', self.surface_list[surface_index][1])
 
     def OnSelectColour(self, evt):
         colour = [value/255.0 for value in evt.GetValue]
@@ -527,13 +557,15 @@ class SurfaceProperties(wx.Panel):
 class QualityAdjustment(wx.Panel):
     def __init__(self, parent):
         import constants as const
-        wx.Panel.__init__(self, parent, size=(50,240))
+        wx.Panel.__init__(self, parent)
         default_colour = wx.SystemSettings_GetColour(wx.SYS_COLOUR_MENUBAR)
         self.SetBackgroundColour(default_colour)
 
         # LINE 1
 
-        combo_quality = wx.ComboBox(self, -1, "", choices=const.SURFACE_QUALITY.keys(),
+        combo_quality = wx.ComboBox(self, -1, "",
+                                    choices=const.SURFACE_QUALITY.keys() or
+                                    ["", ],
                                      style=wx.CB_DROPDOWN|wx.CB_READONLY)
         combo_quality.SetSelection(3)
         combo_quality.SetWindowVariant(wx.WINDOW_VARIANT_SMALL)
