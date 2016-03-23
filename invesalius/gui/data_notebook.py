@@ -496,7 +496,10 @@ class MasksListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
 
         wx_image = wx.EmptyImage(new_image.size[0],
                                  new_image.size[1])
-        wx_image.SetData(new_image.tostring())
+        try:
+            wx_image.SetData(new_image.tostring())
+        except Exception:
+            wx_image.SetData(new_image.tobytes())
         return wx.BitmapFromImage(wx_image.Scale(16, 16))
 
     def InsertNewItem(self, index=0, label=_("Mask"), threshold="(1000, 4500)",
@@ -873,7 +876,11 @@ class SurfacesListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
 
         wx_image = wx.EmptyImage(new_image.size[0],
                                  new_image.size[1])
-        wx_image.SetData(new_image.tostring())
+        try:
+            wx_image.SetData(new_image.tostring())
+        except Exception:
+            wx_image.SetData(new_image.tobytes())
+
         return wx.BitmapFromImage(wx_image.Scale(16, 16))
 
     def EditSurfaceTransparency(self, pubsub_evt):
@@ -1148,7 +1155,10 @@ class MeasuresListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
 
         wx_image = wx.EmptyImage(new_image.size[0],
                                  new_image.size[1])
-        wx_image.SetData(new_image.tostring())
+        try:
+            wx_image.SetData(new_image.tostring())
+        except:
+            wx_image.SetData(new_image.tobytes())
         return wx.BitmapFromImage(wx_image.Scale(16, 16))
 
     def EditItemColour(self, pubsub_evt):
