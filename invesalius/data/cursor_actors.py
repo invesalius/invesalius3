@@ -24,6 +24,7 @@ import vtk
 import imagedata_utils
 from project import Project
 import constants as const
+import converters
 
 from vtk.util import numpy_support
 
@@ -224,7 +225,7 @@ class CursorBase(object):
         img_colours_mask = vtk.vtkImageMapToColors()
         img_colours_mask.SetLookupTable(lut_mask)
         img_colours_mask.SetOutputFormatToRGBA()
-        img_colours_mask.SetInput(imagedata)
+        img_colours_mask.SetInputData(imagedata)
         img_colours_mask.Update()
 
         return img_colours_mask.GetOutput()
@@ -269,17 +270,17 @@ class CursorCircle(CursorBase):
         z,y,x = numpy.ogrid[zi:zf,yi:yf, xi:xf]
 
         circle_m = (z*sz)**2 + (y*sy)**2 + (x*sx)**2 <= r**2
-        circle_i = to_vtk(circle_m.astype('uint8'),
+        circle_i = converters.to_vtk(circle_m.astype('uint8'),
                                           self.spacing, 0, self.orientation)
         circle_ci = self._set_colour(circle_i, self.colour)
 
         if self.mapper is None:
-            self.actor.SetInput(circle_ci)
+            self.actor.SetInputData(circle_ci)
             self.actor.InterpolateOff()
             self.actor.PickableOff()
             self.actor.SetDisplayExtent(circle_ci.GetExtent())
         else:
-            self.mapper.SetInput(circle_ci)
+            self.mapper.SetInputData(circle_ci)
             self.mapper.BorderOn()
 
             self.mapper.SetOrientation(ORIENTATION[self.orientation])
@@ -343,16 +344,16 @@ class CursorRectangle(CursorBase):
             z = math.floor(r/sz)
 
         rectangle_m = numpy.ones((z, y, x), dtype='uint8')
-        rectangle_i = to_vtk(rectangle_m, self.spacing, 0, self.orientation)
+        rectangle_i = converters.to_vtk(rectangle_m, self.spacing, 0, self.orientation)
         rectangle_ci = self._set_colour(rectangle_i, self.colour)
 
         if self.mapper is None:
-            self.actor.SetInput(rectangle_ci)
+            self.actor.SetInputData(rectangle_ci)
             self.actor.InterpolateOff()
             self.actor.PickableOff()
             self.actor.SetDisplayExtent(rectangle_ci.GetExtent())
         else:
-            self.mapper.SetInput(rectangle_ci)
+            self.mapper.SetInputData(rectangle_ci)
             self.mapper.BorderOn()
             self.mapper.SetOrientation(ORIENTATION[self.orientation])
 

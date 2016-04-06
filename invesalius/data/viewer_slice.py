@@ -919,7 +919,7 @@ class Viewer(wx.Panel):
         c.SetCoordinateSystemToWorld()
 
         cross_mapper = vtk.vtkPolyDataMapper()
-        cross_mapper.SetInput(cross.GetOutput())
+        cross_mapper.SetInputConnection(cross.GetOutputPort())
         #cross_mapper.SetTransformCoordinate(c)
 
         p = vtk.vtkProperty()
@@ -1176,7 +1176,7 @@ class Viewer(wx.Panel):
         border_size = self.mip_ctrls.border_spin.GetValue()
         image = self.slice_.GetSlices(self.orientation, index,
                                       self.number_slices, inverted, border_size)
-        self.slice_data.actor.SetInput(image)
+        self.slice_data.actor.SetInputData(image)
         for actor in self.actors_by_slice_number.get(self.slice_data.number, []):
             self.slice_data.renderer.RemoveActor(actor)
         for actor in self.actors_by_slice_number.get(index, []):

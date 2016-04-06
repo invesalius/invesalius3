@@ -43,16 +43,16 @@ def to_vtk(n_array, spacing, slice_number, orientation):
     image = vtk.vtkImageData()
     image.SetOrigin(0, 0, 0)
     image.SetSpacing(spacing)
-    image.SetNumberOfScalarComponents(1)
     image.SetDimensions(dx, dy, dz)
+    # SetNumberOfScalarComponents and SetScalrType were replaced by
+    # AllocateScalars
+    #  image.SetNumberOfScalarComponents(1)
+    #  image.SetScalarType(numpy_support.get_vtk_array_type(n_array.dtype))
+    image.AllocateScalars(numpy_support.get_vtk_array_type(n_array.dtype), 1)
     image.SetExtent(extent)
-    image.SetScalarType(numpy_support.get_vtk_array_type(n_array.dtype))
-    image.AllocateScalars()
     image.GetPointData().SetScalars(v_image)
-    image.Update()
 
     image_copy = vtk.vtkImageData()
     image_copy.DeepCopy(image)
-    image_copy.Update()
 
     return image_copy

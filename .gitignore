@@ -20,3 +20,7 @@ invesalius/reader/*.pyc
 *.so
 tags
 *.c
+
+build
+*.patch
+*.tgz
