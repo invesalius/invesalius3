@@ -26,7 +26,7 @@ def ResampleImage3D(imagedata, value):
     resolution = (height/(extent[1]-extent[0])+1)*spacing[1]
 
     resample = vtk.vtkImageResample()
-    resample.SetInput(imagedata)
+    resample.SetInputData(imagedata)
     resample.SetAxisMagnificationFactor(0, resolution)
     resample.SetAxisMagnificationFactor(1, resolution)
 
@@ -106,7 +106,7 @@ class SurfaceProcess(multiprocessing.Process):
                                            "AXIAL")
 
                 gauss = vtk.vtkImageGaussianSmooth()
-                gauss.SetInput(image)
+                gauss.SetInputData(image)
                 gauss.SetRadiusFactor(0.3)
                 gauss.ReleaseDataFlagOn()
                 gauss.Update()
@@ -125,7 +125,7 @@ class SurfaceProcess(multiprocessing.Process):
             image = ResampleImage3D(image, self.imagedata_resolution)
 
         flip = vtk.vtkImageFlip()
-        flip.SetInput(image)
+        flip.SetInputData(image)
         flip.SetFilteredAxis(1)
         flip.FlipAboutOriginOn()
         flip.ReleaseDataFlagOn()
@@ -148,7 +148,7 @@ class SurfaceProcess(multiprocessing.Process):
         #if self.mode == "CONTOUR":
         #print "Contour"
         contour = vtk.vtkContourFilter()
-        contour.SetInput(image)
+        contour.SetInputData(image)
         #contour.SetInput(flip.GetOutput())
         if self.from_binary:
             contour.SetValue(0, 127) # initial threshold
@@ -202,7 +202,7 @@ class SurfaceProcess(multiprocessing.Process):
         
         filename = tempfile.mktemp(suffix='_%s.vtp' % (self.pid))
         writer = vtk.vtkXMLPolyDataWriter()
-        writer.SetInput(polydata)
+        writer.SetInputData(polydata)
         writer.SetFileName(filename)
         writer.Write()
 
