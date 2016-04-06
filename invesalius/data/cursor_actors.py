@@ -24,7 +24,6 @@ import vtk
 import imagedata_utils
 from project import Project
 import constants as const
-import converters
 
 from vtk.util import numpy_support
 
@@ -56,19 +55,19 @@ def to_vtk(n_array, spacing, slice_number, orientation):
     image = vtk.vtkImageData()
     image.SetOrigin(0, 0, 0)
     image.SetSpacing(spacing)
-    image.SetNumberOfScalarComponents(1)
     image.SetDimensions(dx, dy, dz)
     image.SetExtent(extent)
-    image.SetScalarType(numpy_support.get_vtk_array_type(n_array.dtype))
-    image.AllocateScalars()
-    image.Update()
+    #  image.SetNumberOfScalarComponents(1)
+    #  image.SetScalarType(numpy_support.get_vtk_array_type(n_array.dtype))
+    image.AllocateScalars(numpy_support.get_vtk_array_type(n_array.dtype), 1)
+    #  image.Update()
     image.GetCellData().SetScalars(v_image)
     image.GetPointData().SetScalars(v_image)
-    image.Update()
+    #  image.Update()
 
     image_copy = vtk.vtkImageData()
     image_copy.DeepCopy(image)
-    image_copy.Update()
+    #  image_copy.Update()
 
     return image_copy
 
@@ -270,7 +269,7 @@ class CursorCircle(CursorBase):
         z,y,x = numpy.ogrid[zi:zf,yi:yf, xi:xf]
 
         circle_m = (z*sz)**2 + (y*sy)**2 + (x*sx)**2 <= r**2
-        circle_i = converters.to_vtk(circle_m.astype('uint8'),
+        circle_i = to_vtk(circle_m.astype('uint8'),
                                           self.spacing, 0, self.orientation)
         circle_ci = self._set_colour(circle_i, self.colour)
 
@@ -344,7 +343,7 @@ class CursorRectangle(CursorBase):
             z = math.floor(r/sz)
 
         rectangle_m = numpy.ones((z, y, x), dtype='uint8')
-        rectangle_i = converters.to_vtk(rectangle_m, self.spacing, 0, self.orientation)
+        rectangle_i = to_vtk(rectangle_m, self.spacing, 0, self.orientation)
         rectangle_ci = self._set_colour(rectangle_i, self.colour)
 
         if self.mapper is None:
