@@ -6,11 +6,14 @@ from skimage import filter
 
 
 def get_LUT_value(data, window, level):
-    return np.piecewise(data, 
-                        [data <= (level - 0.5 - (window-1)/2),
-                         data > (level - 0.5 + (window-1)/2)],
-                        [0, 255, lambda data: ((data - (level - 0.5))/(window-1) + 0.5)*(255-0)])
-
+    shape = data.shape
+    data_ = data.ravel()
+    data = np.piecewise(data_,
+                        [data_ <= (level - 0.5 - (window-1)/2),
+                         data_ > (level - 0.5 + (window-1)/2)],
+                        [0, window, lambda data_: ((data_ - (level - 0.5))/(window-1) + 0.5)*(window)])
+    data.shape = shape
+    return data
 
 
 def do_watershed(image, markers,  tfile, shape, bstruct, algorithm, mg_size, use_ww_wl, wl, ww, q):
