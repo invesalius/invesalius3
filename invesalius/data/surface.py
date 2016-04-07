@@ -245,6 +245,7 @@ class SurfaceManager():
         normals.SetInputData(polydata)
         normals.SetFeatureAngle(80)
         normals.AutoOrientNormalsOn()
+        normals.Update()
 
         mapper = vtk.vtkPolyDataMapper()
         mapper.SetInputData(normals.GetOutput())
@@ -295,7 +296,8 @@ class SurfaceManager():
             triangle_filter.Update()
 
             measured_polydata = vtk.vtkMassProperties()
-            measured_polydata.SetInputData(triangle_filter.GetOutput())
+            measured_polydata.SetInputConnection(triangle_filter.GetOutputPort())
+            measured_polydata.Update()
             volume =  measured_polydata.GetVolume()
             surface.volume = volume
             print ">>>>", surface.volume
