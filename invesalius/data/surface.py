@@ -865,6 +865,7 @@ class SurfaceManager():
                 normals.AutoOrientNormalsOn()
                 #  normals.GetOutput().ReleaseDataFlagOn()
                 normals.UpdateInformation()
+                normals.Update()
                 polydata = normals.GetOutput()
 
             filename = filename.encode(wx.GetDefaultPyEncoding())
