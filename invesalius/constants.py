@@ -597,12 +597,7 @@ DYNAMIC_REF = 1
 DEFAULT_REF_MODE = DYNAMIC_REF
 REF_MODE = [_("Static Reference"), _("Dynamic Reference")]
 
-<<<<<<< af224d7de6f42b6edf0cf24d5d55c65b8d198d22
-OBJECTS = [_("Eigth Coil"),_("Simple Coil")]
-=======
 BUTTERFLY_COIL = 0
 CIRCULAR_COIL = 1
 DEFAULT_COIL = BUTTERFLY_COIL
 COILS = [_("Butterfly Coil"),_("Circular Coil")]
-# ------
->>>>>>> ENH: Updating navigation tools.

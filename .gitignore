@@ -1,3 +1,4 @@
+invesalius/.idea
 invesalius/*.classpath
 invesalius/*.hg
 invesalius/*.log
@@ -8,6 +9,7 @@ invesalius/*.swo
 invesalius/*.swp
 invesalius/data/*.log
 invesalius/data/*.pyc
+invesalius/data/*.pyd
 invesalius/gui/*.log
 invesalius/gui/*.pyc
 invesalius/gui/widgets/*.log
@@ -15,12 +17,14 @@ invesalius/gui/widgets/*.pyc
 invesalius/reader/*.log
 invesalius/reader/*.pyc
 
+.idea
+build
+tags
+
 *.pyc
 *.swp
 *.so
-tags
 *.c
-
-build
 *.patch
 *.tgz
+

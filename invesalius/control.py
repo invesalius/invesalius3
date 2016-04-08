@@ -455,10 +455,6 @@ class Controller():
         else:
             proj.original_orientation =  const.SAGITAL
 
-<<<<<<< c06ff6da71d81a8848bc9a436d1ecd46c22e2841
-        proj.threshold_range = (int(header['glmin']),
-                                int(header['glmax']))
-=======
         proj.threshold_range = (header['glmin'],
                                 header['glmax'])
         # Window level and wide are normalized to best visualization experience in NIFTI
@@ -500,7 +496,6 @@ class Controller():
         proj.original_orientation =  const.CORONAL
 
         proj.threshold_range = (numpy.amin(matrix), numpy.amax(matrix))
->>>>>>> Revert "Revert "ENH: Update neuronavigator modules""
         proj.window = proj.threshold_range[1] - proj.threshold_range[0]
         proj.level =  (0.5 * (proj.threshold_range[1] + proj.threshold_range[0]))
         proj.spacing = header['pixdim'][1:4]
