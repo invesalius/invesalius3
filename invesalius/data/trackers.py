@@ -1,7 +1,7 @@
-import ClaronTracker
-import usb.core
+#import ClaronTracker
+#import usb.core
 import serial
-import usb.util
+#import usb.util
 import sys
 import gui.dialogs as dlg
 
