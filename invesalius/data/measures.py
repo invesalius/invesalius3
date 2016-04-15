@@ -341,8 +341,8 @@ class CrossPointRepresentation(object):
         sv.SetPoint2(p4)
 
         cruz = vtk.vtkAppendPolyData()
-        cruz.AddInput(sv.GetOutput())
-        cruz.AddInput(sh.GetOutput())
+        cruz.AddInputData(sv.GetOutput())
+        cruz.AddInputData(sh.GetOutput())
 
         c = vtk.vtkCoordinate()
         c.SetCoordinateSystemToWorld()
@@ -563,9 +563,11 @@ class AngularMeasure(object):
         arc = self.DrawArc()
 
         line = vtk.vtkAppendPolyData()
-        line.AddInput(line1.GetOutput())
-        line.AddInput(line2.GetOutput())
-        line.AddInput(arc.GetOutput())
+        line.AddInputConnection(line1.GetOutputPort())
+        line.AddInputConnection(line2.GetOutputPort())
+        line.AddInputConnection(arc.GetOutputPort())
+
+        print line
 
         c = vtk.vtkCoordinate()
         c.SetCoordinateSystemToWorld()

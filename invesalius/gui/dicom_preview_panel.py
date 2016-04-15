@@ -848,12 +848,12 @@ class SingleImagePreview(wx.Panel):
         window_level = dicom.image.level
         window_width = dicom.image.window
         colorer = vtk.vtkImageMapToWindowLevelColors()
-        colorer.SetInput(rdicom.GetOutput())
+        colorer.SetInputConnection(rdicom.GetOutputPort())
         colorer.SetWindow(float(window_width))
         colorer.SetLevel(float(window_level))
 
         # PLOT IMAGE INTO VIEWER
-        self.actor.SetInput(colorer.GetOutput())
+        self.actor.SetInputData(colorer.GetOutput())
         self.renderer.ResetCamera()
         self.interactor.Render()
 

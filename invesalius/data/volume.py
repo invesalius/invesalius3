@@ -224,7 +224,7 @@ class Volume():
         # Update convolution filter
         original_imagedata = self.imagedata.GetOutput()
         imagedata = self.ApplyConvolution(original_imagedata)
-        self.volume_mapper.SetInput(imagedata)
+        self.volume_mapper.SetInputData(imagedata)
 
         # Update other information
         self.SetShading()
@@ -484,7 +484,7 @@ class Volume():
                 update_progress = vtk_utils.ShowProgress(number_filters)
             for filter in self.config['convolutionFilters']:
                 convolve = vtk.vtkImageConvolve()
-                convolve.SetInput(imagedata)
+                convolve.SetInputData(imagedata)
                 convolve.SetKernel5x5([i/60.0 for i in Kernels[filter]])
                 convolve.ReleaseDataFlagOn()
 
@@ -530,7 +530,7 @@ class Volume():
         update_progress= vtk_utils.ShowProgress(2 + number_filters) 
         # Flip original vtkImageData
         flip = vtk.vtkImageFlip()
-        flip.SetInput(image)
+        flip.SetInputData(image)
         flip.SetFilteredAxis(1)
         flip.FlipAboutOriginOn()
         flip.ReleaseDataFlagOn()
@@ -545,7 +545,7 @@ class Volume():
         self.scale = scale
 
         cast = vtk.vtkImageShiftScale()
-        cast.SetInput(image)
+        cast.SetInputData(image)
         cast.SetShift(abs(scale[0]))
         cast.SetOutputScalarTypeToUnsignedShort()
         cast.ReleaseDataFlagOn()
@@ -589,7 +589,7 @@ class Volume():
                 self.volume_mapper = volume_mapper
 
         self.SetTypeRaycasting()
-        volume_mapper.SetInput(image2)
+        volume_mapper.SetInputData(image2)
 
         # TODO: Look to this
         #volume_mapper_hw = vtk.vtkVolumeTextureMapper3D()
@@ -657,7 +657,7 @@ class Volume():
         image = self.image
         r = int(image.GetScalarRange()[1] - image.GetScalarRange()[0])
         accumulate = vtk.vtkImageAccumulate()
-        accumulate.SetInput(image)
+        accumulate.SetInputData(image)
         accumulate.SetComponentExtent(0, r -1, 0, 0, 0, 0)
         accumulate.SetComponentOrigin(image.GetScalarRange()[0], 0, 0)
         accumulate.ReleaseDataFlagOn()

@@ -36,7 +36,7 @@ def ApplyDecimationFilter(polydata, reduction_factor):
     # Important: vtkQuadricDecimation presented better results than
     # vtkDecimatePro
     decimation = vtk.vtkQuadricDecimation()
-    decimation.SetInput(polydata)
+    decimation.SetInputData(polydata)
     decimation.SetTargetReduction(reduction_factor)
     decimation.GetOutput().ReleaseDataFlagOn()
     decimation.AddObserver("ProgressEvent", lambda obj, evt:
@@ -48,7 +48,7 @@ def ApplySmoothFilter(polydata, iterations, relaxation_factor):
     Smooth given vtkPolyData surface, based on iteration and relaxation_factor.
     """
     smoother = vtk.vtkSmoothPolyDataFilter()
-    smoother.SetInput(polydata)
+    smoother.SetInputData(polydata)
     smoother.SetNumberOfIterations(iterations)
     smoother.SetFeatureAngle(80)
     smoother.SetRelaxationFactor(relaxation_factor)
@@ -69,7 +69,7 @@ def FillSurfaceHole(polydata):
     # Filter used to detect and fill holes. Only fill
     print "Filling polydata"
     filled_polydata = vtk.vtkFillHolesFilter()
-    filled_polydata.SetInput(polydata)
+    filled_polydata.SetInputData(polydata)
     filled_polydata.SetHoleSize(500)
     return filled_polydata.GetOutput()
 
@@ -79,7 +79,7 @@ def CalculateSurfaceVolume(polydata):
     """
     # Filter used to calculate volume and area from a polydata
     measured_polydata = vtk.vtkMassProperties()
-    measured_polydata.SetInput(polydata)
+    measured_polydata.SetInputData(polydata)
     return measured_polydata.GetVolume()
 
 def CalculateSurfaceArea(polydata):
@@ -88,7 +88,7 @@ def CalculateSurfaceArea(polydata):
     """
     # Filter used to calculate volume and area from a polydata
     measured_polydata = vtk.vtkMassProperties()
-    measured_polydata.SetInput(polydata)
+    measured_polydata.SetInputData(polydata)
     return measured_polydata.GetSurfaceArea()
 
 def Merge(polydata_list):
@@ -96,11 +96,11 @@ def Merge(polydata_list):
 
     for polydata in polydata_list:
         triangle = vtk.vtkTriangleFilter()
-        triangle.SetInput(polydata)
-        append.AddInput(triangle.GetOutput())
+        triangle.SetInputData(polydata)
+        append.AddInputData(triangle.GetOutput())
 
     clean = vtk.vtkCleanPolyData()
-    clean.SetInput(append.GetOutput())
+    clean.SetInputData(append.GetOutput())
 
     return append.GetOutput()
 
@@ -112,7 +112,7 @@ def Export(polydata, filename, bin=False):
         writer.SetDataModeToBinary()
     else:
         writer.SetDataModeToAscii()
-    writer.SetInput(polydata)
+    writer.SetInputData(polydata)
     writer.Write()
 
 def Import(filename):
@@ -130,7 +130,7 @@ def JoinSeedsParts(polydata, point_id_list):
     from vtkPolyData.
     """
     conn = vtk.vtkPolyDataConnectivityFilter()
-    conn.SetInput(polydata)
+    conn.SetInputData(polydata)
     conn.SetExtractionModeToPointSeededRegions()
     UpdateProgress = vu.ShowProgress(1 + len(point_id_list))
     pos = 1
@@ -145,7 +145,6 @@ def JoinSeedsParts(polydata, point_id_list):
 
     result = vtk.vtkPolyData()
     result.DeepCopy(conn.GetOutput())
-    result.Update()
     return result
 
 def SelectLargestPart(polydata):
@@ -153,7 +152,7 @@ def SelectLargestPart(polydata):
     """
     UpdateProgress = vu.ShowProgress(1)
     conn = vtk.vtkPolyDataConnectivityFilter()
-    conn.SetInput(polydata)
+    conn.SetInputData(polydata)
     conn.SetExtractionModeToLargestRegion()
     conn.AddObserver("ProgressEvent", lambda obj, evt:
                   UpdateProgress(conn, "Getting largest part..."))
@@ -161,14 +160,13 @@ def SelectLargestPart(polydata):
 
     result = vtk.vtkPolyData()
     result.DeepCopy(conn.GetOutput())
-    result.Update()
     return result
 
 def SplitDisconectedParts(polydata):
     """
     """
     conn = vtk.vtkPolyDataConnectivityFilter()
-    conn.SetInput(polydata)
+    conn.SetInputData(polydata)
     conn.SetExtractionModeToAllRegions()
     conn.Update()
 
@@ -191,7 +189,6 @@ def SplitDisconectedParts(polydata):
 
         p = vtk.vtkPolyData()
         p.DeepCopy(conn.GetOutput())
-        p.Update()
 
         polydata_collection.append(p)
         if progress:

@@ -964,18 +964,18 @@ class Slice(object):
         img = self.buffer_slices[orientation].vtk_image
         original_orientation = Project().original_orientation
         cast = vtk.vtkImageCast()
-        cast.SetInput(img)
+        cast.SetInputData(img)
         cast.SetOutputScalarTypeToDouble() 
         cast.ClampOverflowOn()
         cast.Update()
 
         #if (original_orientation == const.AXIAL):
         flip = vtk.vtkImageFlip()
-        flip.SetInput(cast.GetOutput())
+        flip.SetInputConnection(cast.GetOutputPort())
         flip.SetFilteredAxis(1)
         flip.FlipAboutOriginOn()
         flip.Update()
-        widget.SetInput(flip.GetOutput())
+        widget.SetInputConnection(flip.GetOutputPort())
         #else:
             #widget.SetInput(cast.GetOutput())
 
@@ -1044,7 +1044,7 @@ class Slice(object):
                 i += 1
 
             colorer = vtk.vtkImageMapToColors()
-            colorer.SetInput(image)
+            colorer.SetInputData(image)
             colorer.SetLookupTable(lut)
             colorer.SetOutputFormatToRGB()
             colorer.Update()
@@ -1059,12 +1059,12 @@ class Slice(object):
 
             colorer = vtk.vtkImageMapToColors()
             colorer.SetLookupTable(lut)
-            colorer.SetInput(image)
+            colorer.SetInputData(image)
             colorer.SetOutputFormatToRGB()
             colorer.Update()
         else:
             colorer = vtk.vtkImageMapToWindowLevelColors()
-            colorer.SetInput(image)
+            colorer.SetInputData(image)
             colorer.SetWindow(self.window_width)
             colorer.SetLevel(self.window_level)
             colorer.SetOutputFormatToRGB()
@@ -1148,7 +1148,7 @@ class Slice(object):
             img_colours_bg = vtk.vtkImageMapToColors()
             img_colours_bg.SetOutputFormatToRGB()
             img_colours_bg.SetLookupTable(lut_bg)
-            img_colours_bg.SetInput(imagedata)
+            img_colours_bg.SetInputData(imagedata)
             img_colours_bg.Update()
 
             return img_colours_bg.GetOutput()
@@ -1179,7 +1179,7 @@ class Slice(object):
         img_colours_mask = vtk.vtkImageMapToColors()
         img_colours_mask.SetLookupTable(lut_mask)
         img_colours_mask.SetOutputFormatToRGBA()
-        img_colours_mask.SetInput(imagedata)
+        img_colours_mask.SetInputData(imagedata)
         img_colours_mask.Update()
         # self.img_colours_mask = img_colours_mask
 
@@ -1211,7 +1211,7 @@ class Slice(object):
         img_colours_mask = vtk.vtkImageMapToColors()
         img_colours_mask.SetLookupTable(lut_mask)
         img_colours_mask.SetOutputFormatToRGBA()
-        img_colours_mask.SetInput(imagedata)
+        img_colours_mask.SetInputData(imagedata)
         img_colours_mask.Update()
         # self.img_colours_mask = img_colours_mask
 
@@ -1225,8 +1225,8 @@ class Slice(object):
         blend_imagedata.SetBlendModeToNormal()
         # blend_imagedata.SetOpacity(0, 1.0)
         blend_imagedata.SetOpacity(1, 0.8)
-        blend_imagedata.SetInput(imagedata)
-        blend_imagedata.AddInput(mask)
+        blend_imagedata.SetInputData(imagedata)
+        blend_imagedata.AddInputData(mask)
         blend_imagedata.Update()
 
         return blend_imagedata.GetOutput()

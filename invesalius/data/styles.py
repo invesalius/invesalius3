@@ -59,10 +59,14 @@ WATERSHED_OPERATIONS = {_("Erase"): BRUSH_ERASE,
                         _("Background"): BRUSH_BACKGROUND,}
 
 def get_LUT_value(data, window, level):
-    return np.piecewise(data,
-                        [data <= (level - 0.5 - (window-1)/2),
-                         data > (level - 0.5 + (window-1)/2)],
-                        [0, window, lambda data: ((data - (level - 0.5))/(window-1) + 0.5)*(window)])
+    shape = data.shape
+    data_ = data.ravel()
+    data = np.piecewise(data_,
+                        [data_ <= (level - 0.5 - (window-1)/2),
+                         data_ > (level - 0.5 + (window-1)/2)],
+                        [0, window, lambda data_: ((data_ - (level - 0.5))/(window-1) + 0.5)*(window)])
+    data.shape = shape
+    return data
 
 class BaseImageInteractorStyle(vtk.vtkInteractorStyleImage):
     def __init__(self, viewer):
