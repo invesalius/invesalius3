@@ -62,7 +62,7 @@ class InnerTaskPanel(wx.Panel):
 
         # Create horizontal sizer to represent lines in the panel
         line_new = wx.BoxSizer(wx.HORIZONTAL)
-        line_new.Add(text_nav, 1, wx.EXPAND|wx.GROW|wx.TOP|wx.RIGHT, 4)
+        line_new.Add(text_nav, 1, wx.EXPAND|wx.GROW, 4)
 
         # Fold panel which contains navigation configurations
         fold_panel = FoldPanel(self)
@@ -77,14 +77,14 @@ class InnerTaskPanel(wx.Panel):
 
         self.SetSizer(main_sizer)
         self.Update()
-        self.SetAutoLayout(1)
+        #self.SetAutoLayout(1)
 
         self.sizer = main_sizer
 
     
 class FoldPanel(wx.Panel):
     def __init__(self, parent):
-        wx.Panel.__init__(self, parent, size=(50,700))
+        wx.Panel.__init__(self, parent)
         self.SetBackgroundColour(wx.Colour(0,255,0))
 
         inner_panel = InnerFoldPanel(self)
@@ -159,7 +159,7 @@ Neuronavigate = wx.NewId()
 FineCorregistration = wx.NewId()
 class NeuronavigationTools(wx.Panel):
     def __init__(self, parent):
-        wx.Panel.__init__(self, parent, size=(50,400))
+        wx.Panel.__init__(self, parent)
         default_colour = wx.SystemSettings_GetColour(wx.SYS_COLOUR_MENUBAR)
         self.SetBackgroundColour(default_colour)
 
@@ -536,7 +536,7 @@ class NeuronavigationTools(wx.Panel):
 #===============================================================================
 class ObjectWNeuronavigation(wx.Panel):
     def __init__(self, parent):
-        wx.Panel.__init__(self, parent, size=(50,400))
+        wx.Panel.__init__(self, parent)
         default_colour = wx.SystemSettings_GetColour(wx.SYS_COLOUR_MENUBAR)
         self.SetBackgroundColour(default_colour)
          
@@ -678,7 +678,7 @@ class ObjectWNeuronavigation(wx.Panel):
 #===============================================================================        
 class Markers(wx.Panel):
     def __init__(self, parent):
-        wx.Panel.__init__(self, parent, size=(50,400))
+        wx.Panel.__init__(self, parent)
         default_colour = wx.SystemSettings_GetColour(wx.SYS_COLOUR_MENUBAR)
         self.SetBackgroundColour(default_colour)
         
@@ -686,58 +686,71 @@ class Markers(wx.Panel):
         self.flagpoint1 = 0
         self.ballid = 0
         self.colour = 0.0, 0.0, 1.0
-        
+
         ##LINE 1
         # Change marker size
-        spin_marker_size = wx.SpinCtrl(self, -1, "", size = wx.Size(147,23))
-        spin_marker_size.SetRange(1,100)
+        spin_marker_size = wx.SpinCtrl(self, -1, "", size=wx.Size(40, 23))
+        spin_marker_size.SetRange(1, 99)
         spin_marker_size.SetValue(const.MARKER_SIZE)
-        #spin_marker_size.Bind(wx.EVT_TEXT, self.OnMarkerSize)
+        # spin_marker_size.Bind(wx.EVT_TEXT, self.OnMarkerSize)
         self.spin = spin_marker_size
 
         # Marker colour
-        marker_colour = csel.ColourSelect(self, -1,colour=(0,0,255),size=wx.Size(23,23))
+        marker_colour = csel.ColourSelect(self, -1, colour=(0, 0, 255), size=wx.Size(20, 23))
         marker_colour.Bind(csel.EVT_COLOURSELECT, self.OnSelectColour)
         self.marker_colour = marker_colour
 
-        line1 = wx.FlexGridSizer(rows=1, cols=2, hgap=5, vgap=5)
-        line1.AddMany([(spin_marker_size, 1, wx.RIGHT),
-                       (marker_colour, 0, wx.LEFT)])
+        create_markers = wx.Button(self, -1, label='Create Marker', size=wx.Size(135, 23))
+        create_markers.Bind(wx.EVT_BUTTON, self.OnCreateMarker)
+
+        line1 = wx.FlexGridSizer(rows=1, cols=3, hgap=5, vgap=5)
+        line1.AddMany([(spin_marker_size, 1),
+                       (marker_colour, 0),
+                       (create_markers, 0)])
 
         ## LINE 2
-        
-        create_markers = wx.Button(self, -1, label='Create Markers', size = wx.Size(175,23))
-        create_markers.Bind(wx.EVT_BUTTON, self.OnCreateMarker)
-        
-        ##LINE 3
-        del_markers = wx.Button(self, -1, label='Delete Markers', size = wx.Size(85,23))
-        del_markers.Bind(wx.EVT_BUTTON, self.OnDelMarker)
-        
-        markers_visibility = wx.ToggleButton(self, -1, "Hide Markers", size = wx.Size(85,23))
-        markers_visibility.Bind(wx.EVT_TOGGLEBUTTON, self.OnMarkersVisibility)
-        self.markers_visibility = markers_visibility
-
-        line3 = wx.FlexGridSizer(rows=1, cols=2, hgap=5, vgap=5)
-        line3.AddMany([(del_markers, 1, wx.RIGHT),
-                             (markers_visibility, 0, wx.LEFT)])
-        
-        ## LINE 4
-        save_markers = wx.Button(self, -1, label='Save Markers', size = wx.Size(85,23))
+        save_markers = wx.Button(self, -1, label='Save', size=wx.Size(65, 23))
         save_markers.Bind(wx.EVT_BUTTON, self.OnSaveMarkers)
-        
-        load_markers = wx.Button(self, -1, label='Load Markers', size = wx.Size(85,23))
+
+        load_markers = wx.Button(self, -1, label='Load', size=wx.Size(65, 23))
         load_markers.Bind(wx.EVT_BUTTON, self.OnLoadMarkers)
 
-        line4 = wx.FlexGridSizer(rows=1, cols=2, hgap=5, vgap=5)
-        line4.AddMany([(save_markers, 1, wx.RIGHT),
-                             (load_markers, 0, wx.LEFT)])
+        self.markers_visibility = wx.ToggleButton(self, -1, "Hide", size=wx.Size(65, 23))
+        self.markers_visibility.Bind(wx.EVT_TOGGLEBUTTON, self.OnMarkersVisibility)
+
+        line2 = wx.FlexGridSizer(rows=1, cols=3, hgap=5, vgap=5)
+        line2.AddMany([(save_markers, 1, wx.RIGHT),
+                       (load_markers, 0, wx.LEFT | wx.RIGHT),
+                       (self.markers_visibility, 0, wx.LEFT)])
+
+        ## Line 3
+        del_s_markers = wx.Button(self, -1, label='Remove', size=wx.Size(65, 23))
+        del_s_markers.Bind(wx.EVT_BUTTON, self.DelSingleMarker)
+
+        del_markers = wx.Button(self, -1, label='Delete All Markers', size=wx.Size(135, 23))
+        del_markers.Bind(wx.EVT_BUTTON, self.OnDelMarker)
+
+        line3 = wx.FlexGridSizer(rows=1, cols=2, hgap=5, vgap=5)
+        line3.AddMany([(del_s_markers, 1, wx.RIGHT),
+                       (del_markers, 0, wx.LEFT)])
+
+        ##ListCtrl
+        self.lc = wx.ListCtrl(self, -1, style=wx.LC_REPORT)
+        self.lc.InsertColumn(0, '#')
+        self.lc.InsertColumn(1, 'X')
+        self.lc.InsertColumn(2, 'Y')
+        self.lc.InsertColumn(3, 'Z')
+        self.lc.SetColumnWidth(0, 50)
+        self.lc.SetColumnWidth(1, 50)
+        self.lc.SetColumnWidth(2, 50)
+        self.lc.SetColumnWidth(3, 50)
 
         # Add all lines into main sizer
         sizer = wx.BoxSizer(wx.VERTICAL)
-        sizer.Add(line1, 0, wx.ALIGN_CENTER_HORIZONTAL, 10)
-        sizer.Add(create_markers, 1, wx.ALIGN_CENTER_HORIZONTAL, 10)
-        sizer.Add(line3, 0, wx.ALIGN_CENTER_HORIZONTAL, 10)
-        sizer.Add(line4, 0, wx.ALIGN_CENTER_HORIZONTAL, 10)
+        sizer.Add(line1, 0, wx.TOP | wx.BOTTOM | wx.ALIGN_CENTER_HORIZONTAL, 5)
+        sizer.Add(line2, 0, wx.BOTTOM | wx.ALIGN_CENTER_HORIZONTAL, 5)
+        sizer.Add(line3, 0, wx.BOTTOM | wx.ALIGN_CENTER_HORIZONTAL, 5)
+        sizer.Add(self.lc, 0, wx.EXPAND | wx.ALL | wx.ALIGN_CENTER_HORIZONTAL, 5)
         sizer.Fit(self)
 
         self.SetSizer(sizer)
@@ -754,9 +767,9 @@ class Markers(wx.Panel):
         coord = coord_data
         colour = colour_data
         size = size_data
-        
-        self.ballid = self.ballid + 1
+
         Publisher.sendMessage('Create ball', (self.ballid, size, colour,  coord))
+        self.ballid = self.ballid + 1
         #sum 1 for each coordinate to matlab comprehension
         #coord = coord[0] + 1.0, coord[1] + 1.0, coord[2] + 1.0
         #line with coordinates and properties of a marker
@@ -767,10 +780,32 @@ class Markers(wx.Panel):
         else:
             #adding actual line to a list of all markers already created
             self.list_coord.append(line)
-            
+
+        ##ListCtrl
+        num_items = self.lc.GetItemCount()
+        cont = num_items + 1
+        self.lc.InsertStringItem(num_items, str(cont))
+        self.lc.SetStringItem(num_items, 1, str(coord[0]))
+        self.lc.SetStringItem(num_items, 2, str(coord[1]))
+        self.lc.SetStringItem(num_items, 3, str(coord[2]))
+
     def OnDelMarker(self,pubsub_evt):
         self.list_coord = []
-        Publisher.sendMessage('Remove Markers', self.ballid)
+        Publisher.sendMessage('Remove Markers', self.lc.GetItemCount())
+        self.lc.DeleteAllItems()
+        self.ballid = 0
+
+    def DelSingleMarker(self, pubsub_evt):
+        if self.lc.GetFocusedItem() is not -1:
+            index = self.lc.GetFocusedItem()
+            del self.list_coord[index]
+            self.lc.DeleteItem(index)
+            for x in range(0,self.lc.GetItemCount()):
+                self.lc.SetStringItem(x, 0, str(x+1))
+            self.ballid = self.ballid - 1
+            Publisher.sendMessage('Remove Single Marker', index)
+        else:
+            print "No data selected"
     
     def GetPoint(self, pubsub_evt):
         self.ijk = pubsub_evt.data
@@ -805,46 +840,16 @@ class Markers(wx.Panel):
         except:
             dlg.InvalidTxt()
             raise ValueError('Invalid Txt File')
-        
-#        # BEFORE 2014-10-28
-#         text_file = open(filepath, "r")
-#        #reading all lines and splitting into a float vector
-#         while 1:
-#             line1 = text_file.readline()
-#             if not line1:
-#                 break
-#             try:
-#                 line1 = [float(s) for s in line.split()]
-#                 print line1
-#                 # before 2014-10-28
-#                 #coord = float(line1[1] - 1.0), float(line1[0] - 1.0), float(line1[2] - 1.0)
-#                 coord = float(line1[0]), float(line1[1]), float(line1[2])           
-#                 colour = line1[3], line1[4], line1[5]
-#                 size = line1[6]
-#                 self.CreateMarker(coord, colour, size)
-#             except:
-#                 dlg.InvalidTxt()
-#                 raise ValueError('Invalid Txt File')
-#         while 1:
-#             line = text_file.readline()
-#             if line is None:
-#                  break
-#             line = [float(s) for s in line.split()]
-#             print line
-#             coord = float(line[0]-1.), float(line[1]-1.), float(line[2]-1.)           
-#             colour = line[3], line[4], line[5]
-#             size = line[6]
-#             self.CreateMarker(coord, colour, size)
-             
+
     def OnMarkersVisibility(self, evt):
-        ballid = self.ballid
+        ballid = self.lc.GetItemCount()
         flag5 = self.markers_visibility.GetValue()
         if flag5 == True:
             Publisher.sendMessage('Hide balls',  ballid)
-            self.markers_visibility.SetLabel('Show Markers')
+            self.markers_visibility.SetLabel('Show')
         elif flag5 == False:
             Publisher.sendMessage('Show balls',  ballid)
-            self.markers_visibility.SetLabel('Hide Markers')
+            self.markers_visibility.SetLabel('Hide')
             
     def OnSaveMarkers(self, evt):
         print "Save the points!"
@@ -867,4 +872,4 @@ class Markers(wx.Panel):
     
     def OnSelectColour(self, evt):
         self.colour = [value/255.0 for value in self.marker_colour.GetValue()]
-        
+
