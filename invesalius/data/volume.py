@@ -692,7 +692,7 @@ class CutPlane:
             
     def Create(self):
         self.plane_widget = plane_widget = vtk.vtkImagePlaneWidget()
-        plane_widget.SetInput(self.img)
+        plane_widget.SetInputData(self.img)
         plane_widget.SetPlaneOrientationToXAxes()
         #plane_widget.SetResliceInterpolateToLinear()
         plane_widget.TextureVisibilityOff()
@@ -710,7 +710,7 @@ class CutPlane:
         plane_source.SetPoint2(plane_widget.GetPoint2())
         plane_source.SetNormal(plane_widget.GetNormal())
         plane_mapper = self.plane_mapper = vtk.vtkPolyDataMapper()
-        plane_mapper.SetInput(plane_source.GetOutput())
+        plane_mapper.SetInputData(plane_source.GetOutput())
         self.plane_actor = plane_actor = vtk.vtkActor()
         plane_actor.SetMapper(plane_mapper)
         plane_actor.GetProperty().BackfaceCullingOn()

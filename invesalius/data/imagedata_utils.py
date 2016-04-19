@@ -51,7 +51,7 @@ def ResampleImage3D(imagedata, value):
     resolution = (height/(extent[1]-extent[0])+1)*spacing[1]
 
     resample = vtk.vtkImageResample()
-    resample.SetInput(imagedata)
+    resample.SetInputData(imagedata)
     resample.SetAxisMagnificationFactor(0, resolution)
     resample.SetAxisMagnificationFactor(1, resolution)
 
@@ -84,7 +84,7 @@ def ResampleImage2D(imagedata, px=None, py=None, resolution_percentage = None,
     factor_y = py/float(f+1)
 
     resample = vtk.vtkImageResample()
-    resample.SetInput(imagedata)
+    resample.SetInputData(imagedata)
     resample.SetAxisMagnificationFactor(0, factor_x)
     resample.SetAxisMagnificationFactor(1, factor_y)
     resample.SetOutputSpacing(spacing[0] * factor_x, spacing[1] * factor_y, spacing[2])
@@ -149,20 +149,20 @@ def BuildEditedImage(imagedata, points):
             zf = z
 
     clip = vtk.vtkImageClip()
-    clip.SetInput(imagedata)
+    clip.SetInputData(imagedata)
     clip.SetOutputWholeExtent(xi, xf, yi, yf, zi, zf)
     clip.Update()
 
     gauss = vtk.vtkImageGaussianSmooth()
-    gauss.SetInput(clip.GetOutput())
+    gauss.SetInputData(clip.GetOutput())
     gauss.SetRadiusFactor(0.6)
     gauss.Update()
 
     app = vtk.vtkImageAppend()
     app.PreserveExtentsOn()
     app.SetAppendAxis(2)
-    app.SetInput(0, imagedata)
-    app.SetInput(1, gauss.GetOutput())
+    app.SetInputData(0, imagedata)
+    app.SetInputData(1, gauss.GetOutput())
     app.Update()
 
     return app.GetOutput()
@@ -189,7 +189,7 @@ def Import(filename):
 
 def View(imagedata):
     viewer = vtk.vtkImageViewer()
-    viewer.SetInput(imagedata)
+    viewer.SetInputData(imagedata)
     viewer.SetColorWindow(200)
     viewer.SetColorLevel(100)
     viewer.Render()
@@ -199,7 +199,7 @@ def View(imagedata):
 
 def ViewGDCM(imagedata):
     viewer = vtkgdcm.vtkImageColorViewer()
-    viewer.SetInput(reader.GetOutput())
+    viewer.SetInputData(reader.GetOutput())
     viewer.SetColorWindow(500.)
     viewer.SetColorLevel(50.)
     viewer.Render()
@@ -216,7 +216,7 @@ def ExtractVOI(imagedata,xi,xf,yi,yf,zi,zf):
     """
     voi = vtk.vtkExtractVOI()
     voi.SetVOI(xi,xf,yi,yf,zi,zf)
-    voi.SetInput(imagedata)
+    voi.SetInputData(imagedata)
     voi.SetSampleRate(1, 1, 1)
     voi.Update()
     return voi.GetOutput()
