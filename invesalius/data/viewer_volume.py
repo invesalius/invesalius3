@@ -48,6 +48,9 @@ class Viewer(wx.Panel):
         self.ball_reference = None
         self.initial_foco = None
 
+        self.staticballs = []
+        self.axisAssembly = vtk.vtkAssembly()
+
         style =  vtk.vtkInteractorStyleTrackballCamera()
         self.style = style
 
@@ -265,7 +268,7 @@ class Viewer(wx.Panel):
         ball_ref.SetCenter(x, y, z)
 
         mapper = vtk.vtkPolyDataMapper()
-        mapper.SetInput(ball_ref.GetOutput())
+        mapper.SetInputData(ball_ref.GetOutput())
 
         prop = vtk.vtkProperty()
         prop.SetColor(ballcolour)
@@ -524,7 +527,7 @@ class Viewer(wx.Panel):
         self.ball_reference.SetRadius(r)
 
         mapper = vtk.vtkPolyDataMapper()
-        mapper.SetInputConnection(self.ball_reference.GetOutputPort())
+        mapper.SetInputData(self.ball_reference.GetOutput())
 
         p = vtk.vtkProperty()
         p.SetColor(1, 0, 0)
@@ -600,7 +603,7 @@ class Viewer(wx.Panel):
             if filetype == const.FILETYPE_POV:
                 renwin = self.interactor.GetRenderWindow()
                 image = vtk.vtkWindowToImageFilter()
-                image.SetInput(renwin)
+                image.SetInputData(renwin)
                 writer = vtk.vtkPOVExporter()
                 writer.SetFileName(filename)
                 writer.SetRenderWindow(renwin)
@@ -608,7 +611,7 @@ class Viewer(wx.Panel):
             else:
                 #Use tiling to generate a large rendering.
                 image = vtk.vtkRenderLargeImage()
-                image.SetInput(self.ren)
+                image.SetInputData(self.ren)
                 image.SetMagnification(1)
                 image.Update()
 
@@ -684,7 +687,7 @@ class Viewer(wx.Panel):
         point.SetRadius(radius)
 
         mapper = vtk.vtkPolyDataMapper()
-        mapper.SetInput(point.GetOutput())
+        mapper.SetInputData(point.GetOutput())
 
         p = vtk.vtkProperty()
         p.SetColor(colour)
@@ -907,28 +910,28 @@ class Viewer(wx.Panel):
             writer = vtk.vtkRIBExporter()
             writer.SetFilePrefix(fileprefix)
             writer.SetTexturePrefix(fileprefix)
-            writer.SetInput(renwin)
+            writer.SetInputData(renwin)
             writer.Write()
         elif filetype == const.FILETYPE_VRML:
             writer = vtk.vtkVRMLExporter()
             writer.SetFileName(filename)
-            writer.SetInput(renwin)
+            writer.SetInputData(renwin)
             writer.Write()
         elif filetype == const.FILETYPE_X3D:
             writer = vtk.vtkX3DExporter()
-            writer.SetInput(renwin)
+            writer.SetInputData(renwin)
             writer.SetFileName(filename)
             writer.Update()
             writer.Write()
         elif filetype == const.FILETYPE_OBJ:
             writer = vtk.vtkOBJExporter()
             writer.SetFilePrefix(fileprefix)
-            writer.SetInput(renwin)
+            writer.SetInputData(renwin)
             writer.Write()
         elif filetype == const.FILETYPE_IV:
             writer = vtk.vtkIVExporter()
             writer.SetFileName(filename)
-            writer.SetInput(renwin)
+            writer.SetInputData(renwin)
             writer.Write()
 
     def OnEnableBrightContrast(self, pubsub_evt):

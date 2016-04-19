@@ -1277,7 +1277,7 @@ class Viewer(wx.Panel):
             if filetype == const.FILETYPE_POV:
                 renwin = self.interactor.GetRenderWindow()
                 image = vtk.vtkWindowToImageFilter()
-                image.SetInput(renwin)
+                image.SetInputData(renwin)
                 writer = vtk.vtkPOVExporter()
                 writer.SetFilePrefix(filename.split(".")[0])
                 writer.SetRenderWindow(renwin)
@@ -1286,7 +1286,7 @@ class Viewer(wx.Panel):
                 ren = self.slice_data.renderer
                 #Use tiling to generate a large rendering.
                 image = vtk.vtkRenderLargeImage()
-                image.SetInput(ren)
+                image.SetInputData(ren)
                 image.SetMagnification(1)
                 image.Update()
 
