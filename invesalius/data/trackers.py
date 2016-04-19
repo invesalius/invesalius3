@@ -37,12 +37,43 @@ class Tracker:
                 dlg.TrackerNotConnected(0)
 
         except ImportError:
-            dlg.TrackerNotConnected(5)
+            dlg.TrackerNotConnected(0)
 
         return trck_init
 
     def PlhFastrak(self):
-        trck_init = self.polhemus_serial(1)
+        trck_init = None
+
+        try:
+            import sys
+
+            import usb.core as uc
+            # import usb.util as uu
+
+            trck_init = uc.find(idVendor=0x0F44, idProduct=0x0003)
+
+            if not trck_init:
+                print 'Could not find Polhemus PATRIOT USB. Trying Polhemus ' \
+                      'serial connection...'
+
+                trck_init = self.polhemus_serial(1)
+
+            else:
+                try:
+                    cfg = trck_init.get_active_configuration()
+                    for i in cfg:
+                        for x in i:
+                            # TODO: try better code
+                            x = x
+                    trck_init.set_configuration()
+
+                except uc.USBError as err:
+                    dlg.TrackerNotConnected(1)
+                    print 'Could not set configuration %s' % err
+
+        except ImportError and uc.NoBackendError:
+            print 'Import Error for Polhemus PATRIOT USB.'
+            trck_init = self.polhemus_serial(1)
 
         return trck_init
 
@@ -81,7 +112,7 @@ class Tracker:
                     dlg.TrackerNotConnected(3)
                     print 'Could not set configuration %s' % err
 
-        except ImportError:
+        except ImportError and uc.NoBackendError:
             print 'Import Error for Polhemus PATRIOT USB.'
             trck_init = self.polhemus_serial(3)
 
@@ -120,9 +151,10 @@ class Tracker:
 
                 if not data:
                     dlg.TrackerNotConnected(plh_id)
-
             except serial.SerialException:
                 dlg.TrackerNotConnected(6)
+            except AttributeError:
+                dlg.TrackerNotConnected(plh_id)
 
         except ImportError:
             dlg.TrackerNotConnected(5)
