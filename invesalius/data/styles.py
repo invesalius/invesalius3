@@ -1405,6 +1405,46 @@ class WaterShedInteractorStyle(DefaultInteractorStyle):
             session.ChangeProject()
 
 
+class ReorientImageInteractorStyle(DefaultInteractorStyle):
+    """
+    Interactor style responsible for image reorientation
+    """
+    def __init__(self, viewer):
+        DefaultInteractorStyle.__init__(self, viewer)
+
+        self.viewer =  viewer
+
+        self.AddObserver("KeyPressEvent", self.OnKeyPress)
+
+    def SetUp(self):
+        self.viewer.slice_.current_mask.is_shown = False
+        Publisher.sendMessage('Reload actual slice')
+
+    def OnKeyPress(self, evt, obj):
+        key = self.viewer.interactor.GetKeyCode()
+        if key == '+':
+            delta = 1
+        elif key == '-':
+            delta = -1
+        else:
+            return
+
+        rx, ry, rz = self.viewer.slice_.rotations
+        orientation = self.viewer.orientation
+        if orientation == 'AXIAL':
+            rz += np.deg2rad(delta)
+        elif orientation == 'CORONAL':
+            ry += np.deg2rad(delta)
+        elif orientation == 'SAGITAL':
+            rx += np.deg2rad(delta)
+
+        self.viewer.slice_.rotations = (rx, ry, rz)
+
+        self.viewer.slice_.discard_all_buffers()
+        self.viewer.slice_.current_mask.clear_history()
+        Publisher.sendMessage('Reload actual slice')
+
+
 def get_style(style):
     STYLES = {
               const.STATE_DEFAULT: DefaultInteractorStyle,
@@ -1419,5 +1459,6 @@ def get_style(style):
               const.SLICE_STATE_SCROLL: ChangeSliceInteractorStyle,
               const.SLICE_STATE_EDITOR: EditorInteractorStyle,
               const.SLICE_STATE_WATERSHED: WaterShedInteractorStyle,
+              const.SLICE_STATE_REORIENT: ReorientImageInteractorStyle,
              }
     return STYLES[style]

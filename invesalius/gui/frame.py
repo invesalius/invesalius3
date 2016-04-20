@@ -1278,7 +1278,8 @@ class SliceToolBar(AuiToolBar):
 
         self.parent = parent
         self.enable_items = [const.SLICE_STATE_SCROLL,
-                             const.SLICE_STATE_CROSS]
+                             const.SLICE_STATE_CROSS,
+                             const.SLICE_STATE_REORIENT]
         self.__init_items()
         self.__bind_events()
         self.__bind_events_wx()
@@ -1297,12 +1298,18 @@ class SliceToolBar(AuiToolBar):
 
             path = os.path.join(d,"cross_original.png")
             BMP_CROSS = wx.Bitmap(path, wx.BITMAP_TYPE_PNG)
+
+            path = os.path.join(d, "tool_rotate_original.png")
+            BMP_REORIENT = wx.Bitmap(path, wx.BITMAP_TYPE_PNG)
         else:
             path = os.path.join(d, "slice.png")
             BMP_SLICE = wx.Bitmap(path, wx.BITMAP_TYPE_PNG)
 
             path = os.path.join(d,"cross.png")
             BMP_CROSS = wx.Bitmap(path, wx.BITMAP_TYPE_PNG)
+
+            path = os.path.join(d, "tool_rotate.png")
+            BMP_REORIENT = wx.Bitmap(path, wx.BITMAP_TYPE_PNG)
 
         self.sst = self.AddToggleTool(const.SLICE_STATE_SCROLL,
                           BMP_SLICE,#, kind=wx.ITEM_CHECK)
@@ -1315,6 +1322,12 @@ class SliceToolBar(AuiToolBar):
                           wx.NullBitmap,
                           toggle=True,
                           short_help_string=_("Slices' cross intersection"))
+
+        self.srt = self.AddToggleTool(const.SLICE_STATE_REORIENT,
+                          BMP_REORIENT,#, kind=wx.ITEM_CHECK)
+                          wx.NullBitmap,
+                          toggle=True,
+                          short_help_string=_("Reorient slices"))
 
     def __bind_events(self):
         """

@@ -584,7 +584,7 @@ class Slice(object):
             if orientation == 'AXIAL':
                 tmp_array = np.array(self.matrix[slice_number:slice_number + number_slices])
                 if np.any(self.rotations):
-                    transforms.apply_view_matrix_transform(self.matrix, self.spacing, M, slice_number, orientation, 1, self.matrix.min(), tmp_array)
+                    transforms.apply_view_matrix_transform(self.matrix, self.spacing, M, slice_number, orientation, 2, self.matrix.min(), tmp_array)
                 if self._type_projection == const.PROJECTION_NORMAL:
                     n_image = tmp_array.squeeze()
                 else:
