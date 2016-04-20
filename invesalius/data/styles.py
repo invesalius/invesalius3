@@ -216,9 +216,8 @@ class CrossInteractorStyle(DefaultInteractorStyle):
         coord_cross = self.slice_actor.GetInput().GetPoint(position)
 
         coord = self.calcultate_scroll_position(position)
-        self.ScrollSlice(coord)
-
         Publisher.sendMessage('Update cross position', coord_cross)
+        self.ScrollSlice(coord)
         Publisher.sendMessage('Set ball reference position based on bound',
                                    coord_cross)
         Publisher.sendMessage('Set camera in volume', coord_cross)
