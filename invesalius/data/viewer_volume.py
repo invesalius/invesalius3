@@ -219,6 +219,7 @@ class Viewer(wx.Panel):
         Publisher.subscribe(self.ChangeInitCoilAngle, 'Change Init Coil Angle')
         # =========aji=========================================================
         Publisher.subscribe(self.RemoveMarkers, 'Remove Markers')
+        Publisher.subscribe(self.RemoveSingleMarker, 'Remove Single Marker')
         Publisher.subscribe(self.CoilAngleTracking, 'Track Coil Angle')
         Publisher.subscribe(self.HideShowObject, 'Hide Show Object')
         Publisher.subscribe(self.ShowObject, 'Show Object status')
@@ -257,7 +258,7 @@ class Viewer(wx.Panel):
 
     # --- functions for navigation
     def CreateSphereMarkers(self, pubsub_evt):
-        ball_id = pubsub_evt.data[0]
+        self.ball_id = pubsub_evt.data[0]
         ballsize = pubsub_evt.data[1]
         ballcolour = pubsub_evt.data[2]
         coord = pubsub_evt.data[3]
@@ -268,7 +269,7 @@ class Viewer(wx.Panel):
         ball_ref.SetCenter(x, y, z)
 
         mapper = vtk.vtkPolyDataMapper()
-        mapper.SetInputData(ball_ref.GetOutput())
+        mapper.SetInputConnection(ball_ref.GetOutputPort())
 
         prop = vtk.vtkProperty()
         prop.SetColor(ballcolour)
@@ -276,22 +277,22 @@ class Viewer(wx.Panel):
         #adding a new actor for the present ball
         self.staticballs.append(vtk.vtkActor())
         
-        self.staticballs[ball_id].SetMapper(mapper)
-        self.staticballs[ball_id].SetProperty(prop)
+        self.staticballs[self.ball_id].SetMapper(mapper)
+        self.staticballs[self.ball_id].SetProperty(prop)
         
-        self.ren.AddActor(self.staticballs[ball_id]) 
-        ball_id = ball_id + 1
+        self.ren.AddActor(self.staticballs[self.ball_id])
+        self.ball_id = self.ball_id + 1
         self.UpdateRender()
     
     def HideSphereMarkers(self, pubsub_evt):
         ballid = pubsub_evt.data
-        for i in range(0, ballid + 1):
+        for i in range(0, ballid):
             self.staticballs[i].SetVisibility(0)
         self.UpdateRender()
     
     def ShowSphereMarkers(self, pubsub_evt):
         ballid = pubsub_evt.data
-        for i in range(0, ballid + 1):
+        for i in range(0, ballid):
             self.staticballs[i].SetVisibility(1)
         self.UpdateRender()
   
@@ -466,10 +467,18 @@ class Viewer(wx.Panel):
 
     # ======aji ==============================================================
     def RemoveMarkers(self, pubsub_evt):
-        ballid=pubsub_evt.data
-        for i in range(0, ballid + 1):
-            self.ren.RemoveActor(self.staticballs[i]) 
-        self.UpdateRender()      
+        ballid = pubsub_evt.data
+        for i in range(0, ballid):
+            self.ren.RemoveActor(self.staticballs[i])
+        self.staticballs = []
+        self.UpdateRender()
+
+    def RemoveSingleMarker(self, pubsub_evt):
+        index = pubsub_evt.data
+        self.ren.RemoveActor(self.staticballs[index])
+        del self.staticballs[index]
+        self.ball_id = self.ball_id - 1
+        self.UpdateRender()
             
     def HideShowObject(self, pubsub_evt):
          objectbin = pubsub_evt.data
@@ -527,7 +536,7 @@ class Viewer(wx.Panel):
         self.ball_reference.SetRadius(r)
 
         mapper = vtk.vtkPolyDataMapper()
-        mapper.SetInputData(self.ball_reference.GetOutput())
+        mapper.SetInputConnection(self.ball_reference.GetOutputPort())
 
         p = vtk.vtkProperty()
         p.SetColor(1, 0, 0)
@@ -687,7 +696,7 @@ class Viewer(wx.Panel):
         point.SetRadius(radius)
 
         mapper = vtk.vtkPolyDataMapper()
-        mapper.SetInputData(point.GetOutput())
+        mapper.SetInputConnection(point.GetOutputPort())
 
         p = vtk.vtkProperty()
         p.SetColor(colour)

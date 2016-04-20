@@ -785,9 +785,10 @@ class Markers(wx.Panel):
         num_items = self.lc.GetItemCount()
         cont = num_items + 1
         self.lc.InsertStringItem(num_items, str(cont))
-        self.lc.SetStringItem(num_items, 1, str(coord[0]))
-        self.lc.SetStringItem(num_items, 2, str(coord[1]))
-        self.lc.SetStringItem(num_items, 3, str(coord[2]))
+        self.lc.SetStringItem(num_items, 1, str(round(coord[0],2)))
+        self.lc.SetStringItem(num_items, 2, str(round(coord[1],2)))
+        self.lc.SetStringItem(num_items, 3, str(round(coord[2],2)))
+        self.lc.EnsureVisible(num_items)
 
     def OnDelMarker(self,pubsub_evt):
         self.list_coord = []
