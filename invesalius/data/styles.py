@@ -1412,7 +1412,7 @@ class ReorientImageInteractorStyle(DefaultInteractorStyle):
     def __init__(self, viewer):
         DefaultInteractorStyle.__init__(self, viewer)
 
-        self.viewer =  viewer
+        self.viewer = viewer
 
         self.AddObserver("KeyPressEvent", self.OnKeyPress)
 
@@ -1440,25 +1440,28 @@ class ReorientImageInteractorStyle(DefaultInteractorStyle):
 
         self.viewer.slice_.rotations = (rx, ry, rz)
 
-        self.viewer.slice_.discard_all_buffers()
+        for buffer_ in self.viewer.slice_.buffer_slices.values():
+            buffer_.discard_vtk_image()
+            buffer_.discard_image()
+
         self.viewer.slice_.current_mask.clear_history()
         Publisher.sendMessage('Reload actual slice')
 
 
 def get_style(style):
     STYLES = {
-              const.STATE_DEFAULT: DefaultInteractorStyle,
-              const.SLICE_STATE_CROSS: CrossInteractorStyle,
-              const.STATE_WL: WWWLInteractorStyle,
-              const.STATE_MEASURE_DISTANCE: LinearMeasureInteractorStyle,
-              const.STATE_MEASURE_ANGLE: AngularMeasureInteractorStyle,
-              const.STATE_PAN: PanMoveInteractorStyle,
-              const.STATE_SPIN: SpinInteractorStyle,
-              const.STATE_ZOOM: ZoomInteractorStyle,
-              const.STATE_ZOOM_SL: ZoomSLInteractorStyle,
-              const.SLICE_STATE_SCROLL: ChangeSliceInteractorStyle,
-              const.SLICE_STATE_EDITOR: EditorInteractorStyle,
-              const.SLICE_STATE_WATERSHED: WaterShedInteractorStyle,
-              const.SLICE_STATE_REORIENT: ReorientImageInteractorStyle,
-             }
+        const.STATE_DEFAULT: DefaultInteractorStyle,
+        const.SLICE_STATE_CROSS: CrossInteractorStyle,
+        const.STATE_WL: WWWLInteractorStyle,
+        const.STATE_MEASURE_DISTANCE: LinearMeasureInteractorStyle,
+        const.STATE_MEASURE_ANGLE: AngularMeasureInteractorStyle,
+        const.STATE_PAN: PanMoveInteractorStyle,
+        const.STATE_SPIN: SpinInteractorStyle,
+        const.STATE_ZOOM: ZoomInteractorStyle,
+        const.STATE_ZOOM_SL: ZoomSLInteractorStyle,
+        const.SLICE_STATE_SCROLL: ChangeSliceInteractorStyle,
+        const.SLICE_STATE_EDITOR: EditorInteractorStyle,
+        const.SLICE_STATE_WATERSHED: WaterShedInteractorStyle,
+        const.SLICE_STATE_REORIENT: ReorientImageInteractorStyle,
+    }
     return STYLES[style]
