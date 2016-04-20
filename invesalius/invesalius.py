@@ -311,6 +311,7 @@ if __name__ == '__main__':
 
     # Add current directory to PYTHONPATH, so other classes can
     # import modules as they were on root invesalius folder
+    sys.path.insert(0, '..')
     sys.path.append(".")
 
 

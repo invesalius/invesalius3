@@ -12,7 +12,18 @@ if sys.platform == 'linux2':
         ext_modules = [ Extension("invesalius.data.mips", ["invesalius/data/mips.pyx"],
                                   include_dirs =  [numpy.get_include()],
                                   extra_compile_args=['-fopenmp'],
-                                  extra_link_args=['-fopenmp'],)]
+                                  extra_link_args=['-fopenmp']),
+
+                       Extension("invesalius.data.interpolation", ["invesalius/data/interpolation.pyx"],
+                                 include_dirs=[numpy.get_include()],
+                                 extra_compile_args=['-fopenmp',],
+                                 extra_link_args=['-fopenmp',]),
+
+                       Extension("invesalius.data.transforms", ["invesalius/data/transforms.pyx"],
+                                 include_dirs=[numpy.get_include()],
+                                 extra_compile_args=['-fopenmp',],
+                                 extra_link_args=['-fopenmp',]),
+                       ]
          )
 
 elif sys.platform == 'win32':

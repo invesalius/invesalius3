@@ -19,7 +19,7 @@
 import os
 import tempfile
 
-import numpy
+import numpy as np
 import vtk
 from wx.lib.pubsub import pub as Publisher
 
@@ -33,6 +33,9 @@ import utils
 from mask import Mask
 from project import Project
 from data import mips
+
+from data import transforms
+import transformations
 
 OTHER=0
 PLIST=1
@@ -91,6 +94,7 @@ class Slice(object):
         self.n_border = const.PROJECTION_BORDER_SIZE
 
         self.spacing = (1.0, 1.0, 1.0)
+        self.rotations = (0, 0, 0)
 
         self.number_of_colours = 256
         self.saturation_range = (0, 0)
@@ -120,7 +124,7 @@ class Slice(object):
         self._matrix = value
         i, e = value.min(), value.max()
         r = int(e) - int(i)
-        self.histogram = numpy.histogram(self._matrix, r, (i, e))[0]
+        self.histogram = np.histogram(self._matrix, r, (i, e))[0]
 
     def __bind_events(self):
         # General slice control
@@ -402,7 +406,7 @@ class Slice(object):
     def create_temp_mask(self):
         temp_file = tempfile.mktemp()
         shape = self.matrix.shape
-        matrix = numpy.memmap(temp_file, mode='w+', dtype='uint8', shape=shape)
+        matrix = np.memmap(temp_file, mode='w+', dtype='uint8', shape=shape)
         return temp_file, matrix
 
     def edit_mask_pixel(self, operation, index, position, radius, orientation):
@@ -560,145 +564,168 @@ class Slice(object):
            and self.buffer_slices[orientation].image is not None:
             n_image = self.buffer_slices[orientation].image
         else:
+            if self._type_projection == const.PROJECTION_NORMAL:
+                number_slices = 1
+
+            if np.any(self.rotations):
+                dz, dy, dx = self.matrix.shape
+                rx, ry, rz = self.rotations
+                sx, sy, sz = self.spacing
+                T0 = transformations.translation_matrix((-dz/2.0 * sz, -dy/2.0 * sy, -dx/2.0 * sx))
+                Rx = transformations.rotation_matrix(rx, (0, 0, 1))
+                Ry = transformations.rotation_matrix(ry, (0, 1, 0))
+                Rz = transformations.rotation_matrix(rz, (1, 0, 0))
+                #  R = transformations.euler_matrix(rz, ry, rx, 'rzyx')
+                R = transformations.concatenate_matrices(Rx, Ry, Rz)
+                T1 = transformations.translation_matrix((dz/2.0 * sz, dy/2.0 * sy, dx/2.0 * sx))
+                M = transformations.concatenate_matrices(T1, R.T, T0)
+
 
             if orientation == 'AXIAL':
+                tmp_array = np.array(self.matrix[slice_number:slice_number + number_slices])
+                if np.any(self.rotations):
+                    transforms.apply_view_matrix_transform(self.matrix, self.spacing, M, slice_number, orientation, 1, self.matrix.min(), tmp_array)
                 if self._type_projection == const.PROJECTION_NORMAL:
-                    n_image = numpy.array(self.matrix[slice_number])
+                    n_image = tmp_array.squeeze()
                 else:
-                    tmp_array = numpy.array(self.matrix[slice_number:
-                                                        slice_number + number_slices])
                     if inverted:
                         tmp_array = tmp_array[::-1]
 
                     if self._type_projection == const.PROJECTION_MaxIP:
-                        n_image = numpy.array(tmp_array).max(0)
+                        n_image = np.array(tmp_array).max(0)
                     elif self._type_projection == const.PROJECTION_MinIP:
-                        n_image = numpy.array(tmp_array).min(0)
+                        n_image = np.array(tmp_array).min(0)
                     elif self._type_projection == const.PROJECTION_MeanIP:
-                        n_image = numpy.array(tmp_array).mean(0)
+                        n_image = np.array(tmp_array).mean(0)
                     elif self._type_projection == const.PROJECTION_LMIP:
-                        n_image = numpy.empty(shape=(tmp_array.shape[1],
+                        n_image = np.empty(shape=(tmp_array.shape[1],
                                                      tmp_array.shape[2]),
                                               dtype=tmp_array.dtype)
                         mips.lmip(tmp_array, 0, self.window_level, self.window_level, n_image)
                     elif self._type_projection == const.PROJECTION_MIDA:
-                        n_image = numpy.empty(shape=(tmp_array.shape[1],
+                        n_image = np.empty(shape=(tmp_array.shape[1],
                                                      tmp_array.shape[2]),
                                               dtype=tmp_array.dtype)
                         mips.mida(tmp_array, 0, self.window_level, self.window_level, n_image)
                     elif self._type_projection == const.PROJECTION_CONTOUR_MIP:
-                        n_image = numpy.empty(shape=(tmp_array.shape[1],
+                        n_image = np.empty(shape=(tmp_array.shape[1],
                                                      tmp_array.shape[2]),
                                               dtype=tmp_array.dtype)
                         mips.fast_countour_mip(tmp_array, border_size, 0, self.window_level,
                                                self.window_level, 0, n_image)
                     elif self._type_projection == const.PROJECTION_CONTOUR_LMIP:
-                        n_image = numpy.empty(shape=(tmp_array.shape[1],
+                        n_image = np.empty(shape=(tmp_array.shape[1],
                                                      tmp_array.shape[2]),
                                               dtype=tmp_array.dtype)
                         mips.fast_countour_mip(tmp_array, border_size, 0, self.window_level,
                                                self.window_level, 1, n_image)
                     elif self._type_projection == const.PROJECTION_CONTOUR_MIDA:
-                        n_image = numpy.empty(shape=(tmp_array.shape[1],
+                        n_image = np.empty(shape=(tmp_array.shape[1],
                                                      tmp_array.shape[2]),
                                               dtype=tmp_array.dtype)
                         mips.fast_countour_mip(tmp_array, border_size, 0, self.window_level,
                                                self.window_level, 2, n_image)
                     else:
-                        n_image = numpy.array(self.matrix[slice_number])
+                        n_image = np.array(self.matrix[slice_number])
 
             elif orientation == 'CORONAL':
+                tmp_array = np.array(self.matrix[:, slice_number: slice_number + number_slices, :])
+                if np.any(self.rotations):
+                    transforms.apply_view_matrix_transform(self.matrix, self.spacing, M, slice_number, orientation, 1, self.matrix.min(), tmp_array)
+
                 if self._type_projection == const.PROJECTION_NORMAL:
-                    n_image = numpy.array(self.matrix[..., slice_number, ...])
+                    n_image = tmp_array.squeeze()
                 else:
                     #if slice_number == 0:
                         #slice_number = 1
                     #if slice_number - number_slices < 0:
                         #number_slices = slice_number
-                    tmp_array = numpy.array(self.matrix[..., slice_number: slice_number + number_slices, ...])
                     if inverted:
-                        tmp_array = tmp_array[..., ::-1, ...]
+                        tmp_array = tmp_array[:, ::-1, :]
                     if self._type_projection == const.PROJECTION_MaxIP:
-                        n_image = numpy.array(tmp_array).max(1)
+                        n_image = np.array(tmp_array).max(1)
                     elif self._type_projection == const.PROJECTION_MinIP:
-                        n_image = numpy.array(tmp_array).min(1)
+                        n_image = np.array(tmp_array).min(1)
                     elif self._type_projection == const.PROJECTION_MeanIP:
-                        n_image = numpy.array(tmp_array).mean(1)
+                        n_image = np.array(tmp_array).mean(1)
                     elif self._type_projection == const.PROJECTION_LMIP:
-                        n_image = numpy.empty(shape=(tmp_array.shape[0],
+                        n_image = np.empty(shape=(tmp_array.shape[0],
                                                      tmp_array.shape[2]),
                                               dtype=tmp_array.dtype)
                         mips.lmip(tmp_array, 1, self.window_level, self.window_level, n_image)
                     elif self._type_projection == const.PROJECTION_MIDA:
-                        n_image = numpy.empty(shape=(tmp_array.shape[0],
+                        n_image = np.empty(shape=(tmp_array.shape[0],
                                                      tmp_array.shape[2]),
                                               dtype=tmp_array.dtype)
                         mips.mida(tmp_array, 1, self.window_level, self.window_level, n_image)
                     elif self._type_projection == const.PROJECTION_CONTOUR_MIP:
-                        n_image = numpy.empty(shape=(tmp_array.shape[0],
+                        n_image = np.empty(shape=(tmp_array.shape[0],
                                                      tmp_array.shape[2]),
                                               dtype=tmp_array.dtype)
                         mips.fast_countour_mip(tmp_array, border_size, 1, self.window_level,
                                                self.window_level, 0, n_image)
                     elif self._type_projection == const.PROJECTION_CONTOUR_LMIP:
-                        n_image = numpy.empty(shape=(tmp_array.shape[0],
+                        n_image = np.empty(shape=(tmp_array.shape[0],
                                                      tmp_array.shape[2]),
                                               dtype=tmp_array.dtype)
                         mips.fast_countour_mip(tmp_array, border_size, 1, self.window_level,
                                                self.window_level, 1, n_image)
                     elif self._type_projection == const.PROJECTION_CONTOUR_MIDA:
-                        n_image = numpy.empty(shape=(tmp_array.shape[0],
+                        n_image = np.empty(shape=(tmp_array.shape[0],
                                                      tmp_array.shape[2]),
                                               dtype=tmp_array.dtype)
                         mips.fast_countour_mip(tmp_array, border_size, 1, self.window_level,
                                                self.window_level, 2, n_image)
                     else:
-                        n_image = numpy.array(self.matrix[..., slice_number, ...])
+                        n_image = np.array(self.matrix[:, slice_number, :])
             elif orientation == 'SAGITAL':
+                tmp_array = np.array(self.matrix[:, :, slice_number: slice_number + number_slices])
+                if np.any(self.rotations):
+                    transforms.apply_view_matrix_transform(self.matrix, self.spacing, M, slice_number, orientation, 1, self.matrix.min(), tmp_array)
+
                 if self._type_projection == const.PROJECTION_NORMAL:
-                    n_image = numpy.array(self.matrix[..., ..., slice_number])
+                    n_image = tmp_array.squeeze()
                 else:
-                    tmp_array = numpy.array(self.matrix[..., ..., 
-                                                        slice_number: slice_number + number_slices])
                     if inverted:
-                        tmp_array = tmp_array[..., ..., ::-1]
+                        tmp_array = tmp_array[:, :, ::-1]
                     if self._type_projection == const.PROJECTION_MaxIP:
-                        n_image = numpy.array(tmp_array).max(2)
+                        n_image = np.array(tmp_array).max(2)
                     elif self._type_projection == const.PROJECTION_MinIP:
-                        n_image = numpy.array(tmp_array).min(2)
+                        n_image = np.array(tmp_array).min(2)
                     elif self._type_projection == const.PROJECTION_MeanIP:
-                        n_image = numpy.array(tmp_array).mean(2)
+                        n_image = np.array(tmp_array).mean(2)
                     elif self._type_projection == const.PROJECTION_LMIP:
-                        n_image = numpy.empty(shape=(tmp_array.shape[0],
+                        n_image = np.empty(shape=(tmp_array.shape[0],
                                                      tmp_array.shape[1]),
                                               dtype=tmp_array.dtype)
                         mips.lmip(tmp_array, 2, self.window_level, self.window_level, n_image)
                     elif self._type_projection == const.PROJECTION_MIDA:
-                        n_image = numpy.empty(shape=(tmp_array.shape[0],
+                        n_image = np.empty(shape=(tmp_array.shape[0],
                                                      tmp_array.shape[1]),
                                               dtype=tmp_array.dtype)
                         mips.mida(tmp_array, 2, self.window_level, self.window_level, n_image)
 
                     elif self._type_projection == const.PROJECTION_CONTOUR_MIP:
-                        n_image = numpy.empty(shape=(tmp_array.shape[0],
+                        n_image = np.empty(shape=(tmp_array.shape[0],
                                                      tmp_array.shape[1]),
                                               dtype=tmp_array.dtype)
                         mips.fast_countour_mip(tmp_array, border_size, 2, self.window_level,
                                                self.window_level, 0, n_image)
                     elif self._type_projection == const.PROJECTION_CONTOUR_LMIP:
-                        n_image = numpy.empty(shape=(tmp_array.shape[0],
+                        n_image = np.empty(shape=(tmp_array.shape[0],
                                                      tmp_array.shape[1]),
                                               dtype=tmp_array.dtype)
                         mips.fast_countour_mip(tmp_array, border_size, 2, self.window_level,
                                                self.window_level, 1, n_image)
                     elif self._type_projection == const.PROJECTION_CONTOUR_MIDA:
-                        n_image = numpy.empty(shape=(tmp_array.shape[0],
+                        n_image = np.empty(shape=(tmp_array.shape[0],
                                                      tmp_array.shape[1]),
                                               dtype=tmp_array.dtype)
                         mips.fast_countour_mip(tmp_array, border_size, 2, self.window_level,
                                                self.window_level, 2, n_image)
                     else:
-                        n_image = numpy.array(self.matrix[..., ..., slice_number])
+                        n_image = np.array(self.matrix[:, :, slice_number])
+
         return n_image
 
     def get_mask_slice(self, orientation, slice_number):
@@ -719,7 +746,7 @@ class Slice(object):
                                                                          slice_number),
                                                                             mask)
                 self.current_mask.matrix[n, 0, 0] = 1
-            n_mask = numpy.array(self.current_mask.matrix[n, 1:, 1:],
+            n_mask = np.array(self.current_mask.matrix[n, 1:, 1:],
                                 dtype=self.current_mask.matrix.dtype)
 
         elif orientation == 'CORONAL':
@@ -729,7 +756,7 @@ class Slice(object):
                                                                          slice_number),
                                                                             mask)
                 self.current_mask.matrix[0, n, 0] = 1
-            n_mask = numpy.array(self.current_mask.matrix[1:, n, 1:],
+            n_mask = np.array(self.current_mask.matrix[1:, n, 1:],
                                 dtype=self.current_mask.matrix.dtype)
 
         elif orientation == 'SAGITAL':
@@ -739,7 +766,7 @@ class Slice(object):
                                                                          slice_number),
                                                                             mask)
                 self.current_mask.matrix[0, 0, n] = 1
-            n_mask = numpy.array(self.current_mask.matrix[1:, 1:, n],
+            n_mask = np.array(self.current_mask.matrix[1:, 1:, n],
                                 dtype=self.current_mask.matrix.dtype)
 
         return n_mask
@@ -747,11 +774,11 @@ class Slice(object):
     def get_aux_slice(self, name, orientation, n):
         m = self.aux_matrices[name]
         if orientation == 'AXIAL':
-            return numpy.array(m[n])
+            return np.array(m[n])
         elif orientation == 'CORONAL':
-            return numpy.array(m[:, n, :])
+            return np.array(m[:, n, :])
         elif orientation == 'SAGITAL':
-            return numpy.array(m[:, :, n])
+            return np.array(m[:, :, n])
 
     def GetNumberOfSlices(self, orientation):
         if orientation == 'AXIAL':
@@ -809,7 +836,7 @@ class Slice(object):
             # TODO: find out a better way to do threshold
             if slice_number is None:
                 for n, slice_ in enumerate(self.matrix):
-                    m = numpy.ones(slice_.shape, self.current_mask.matrix.dtype)
+                    m = np.ones(slice_.shape, self.current_mask.matrix.dtype)
                     m[slice_ < thresh_min] = 0
                     m[slice_ > thresh_max] = 0
                     m[m == 1] = 255
@@ -1271,7 +1298,7 @@ class Slice(object):
             m[:] = ((m1 > 2) & (m2 > 2)) * 255
 
         elif op == const.BOOLEAN_XOR:
-            m[:] = numpy.logical_xor((m1 > 2), (m2 > 2)) * 255
+            m[:] = np.logical_xor((m1 > 2), (m2 > 2)) * 255
 
         for o in self.buffer_slices:
             self.buffer_slices[o].discard_mask()
@@ -1348,7 +1375,7 @@ class Slice(object):
 
     def _open_image_matrix(self, filename, shape, dtype):
         self.matrix_filename = filename
-        self.matrix = numpy.memmap(filename, shape=shape, dtype=dtype, mode='r+')
+        self.matrix = np.memmap(filename, shape=shape, dtype=dtype, mode='r+')
 
     def OnFlipVolume(self, pubsub_evt):
         axis = pubsub_evt.data
