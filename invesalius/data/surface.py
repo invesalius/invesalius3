@@ -248,7 +248,7 @@ class SurfaceManager():
         normals.Update()
 
         mapper = vtk.vtkPolyDataMapper()
-        mapper.SetInputData(normals.GetOutput())
+        mapper.SetInputConnection(normals.GetOutputPort())
         mapper.ScalarVisibilityOff()
         mapper.ImmediateModeRenderingOn() # improve performance
 
@@ -349,12 +349,12 @@ class SurfaceManager():
 
 	    # Improve performance
             stripper = vtk.vtkStripper()
-            stripper.SetInputData(normals.GetOutput())
+            stripper.SetInputConnection(normals.GetOutputPort())
             stripper.PassThroughCellIdsOn()
             stripper.PassThroughPointIdsOn()
 
             mapper = vtk.vtkPolyDataMapper()
-            mapper.SetInputData(stripper.GetOutput())
+            mapper.SetInputConnection(stripper.GetOutputPort())
             mapper.ScalarVisibilityOff()
             mapper.ImmediateModeRenderingOn() # improve performance
 

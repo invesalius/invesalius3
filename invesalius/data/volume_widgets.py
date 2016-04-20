@@ -113,7 +113,7 @@ class Plane():
         self.source = source
         
         mapper = vtk.vtkPolyDataMapper()
-        mapper.SetInputData(source.GetOutput())
+        mapper.SetInputConnection(source.GetOutputPort())
 
         actor = vtk.vtkActor()
         actor.SetMapper(mapper)

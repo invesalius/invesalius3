@@ -100,7 +100,7 @@ def Merge(polydata_list):
         append.AddInputData(triangle.GetOutput())
 
     clean = vtk.vtkCleanPolyData()
-    clean.SetInputData(append.GetOutput())
+    clean.SetInputConnection(append.GetOutputPort())
 
     return append.GetOutput()
 

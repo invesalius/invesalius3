@@ -154,7 +154,7 @@ def BuildEditedImage(imagedata, points):
     clip.Update()
 
     gauss = vtk.vtkImageGaussianSmooth()
-    gauss.SetInputData(clip.GetOutput())
+    gauss.SetInputConnection(clip.GetOutputPort())
     gauss.SetRadiusFactor(0.6)
     gauss.Update()
 
@@ -199,7 +199,7 @@ def View(imagedata):
 
 def ViewGDCM(imagedata):
     viewer = vtkgdcm.vtkImageColorViewer()
-    viewer.SetInputData(reader.GetOutput())
+    viewer.SetInputConnection(reader.GetOutputPort())
     viewer.SetColorWindow(500.)
     viewer.SetColorLevel(50.)
     viewer.Render()
