@@ -51,18 +51,17 @@ class TaskPanel(wx.Panel):
 
 class InnerTaskPanel(wx.Panel):
     def __init__(self, parent):
-        wx.Panel.__init__(self, parent)
+        wx.Panel.__init__(self, parent, size=wx.Size(0,310))
         default_color = self.GetBackgroundColour()
         self.SetBackgroundColour(wx.Colour(255, 255, 255))
         self.SetAutoLayout(1)
 
-        text_nav = wx.StaticText(self, -1, 'Configure spatial tracker and '
-                                           'coregistrate for neuronavigation.',
-                                 size=wx.Size(90, 30))
+        text_nav = wx.StaticText(self, -1, _('Configure spatial tracker and coregistrate'),
+                                 size=wx.Size(90, 20))
 
         # Create horizontal sizer to represent lines in the panel
         line_new = wx.BoxSizer(wx.HORIZONTAL)
-        line_new.Add(text_nav, 1, wx.EXPAND|wx.GROW, 4)
+        line_new.Add(text_nav, 1, wx.EXPAND|wx.GROW, 5)
 
         # Fold panel which contains navigation configurations
         fold_panel = FoldPanel(self)
@@ -70,14 +69,12 @@ class InnerTaskPanel(wx.Panel):
 
         # Add line sizer into main sizer
         main_sizer = wx.BoxSizer(wx.VERTICAL)
-        main_sizer.Add(line_new, 0,
-                       wx.GROW|wx.EXPAND|wx.LEFT|wx.RIGHT|wx.TOP, 5)
-        main_sizer.Add(fold_panel, 1, wx.GROW|wx.EXPAND|wx.ALL, 5)
+        main_sizer.Add(line_new, 0, wx.GROW|wx.EXPAND|wx.LEFT|wx.RIGHT, 5)
+        main_sizer.Add(fold_panel, 1, wx.GROW|wx.EXPAND|wx.LEFT|wx.RIGHT|wx.BOTTOM, 5)
         main_sizer.Fit(self)
 
         self.SetSizer(main_sizer)
         self.Update()
-        #self.SetAutoLayout(1)
 
         self.sizer = main_sizer
 
@@ -90,7 +87,7 @@ class FoldPanel(wx.Panel):
         inner_panel = InnerFoldPanel(self)
 
         sizer = wx.BoxSizer(wx.VERTICAL)
-        sizer.Add(inner_panel, 1, wx.EXPAND|wx.GROW, 2)
+        sizer.Add(inner_panel, 0, wx.EXPAND|wx.GROW)
         sizer.Fit(self)
 
         self.SetSizer(sizer)
@@ -125,16 +122,15 @@ class InnerFoldPanel(wx.Panel):
         fold_panel.AddFoldPanelWindow(item, NeuronavigationTools(item), Spacing= 0,
                                       leftSpacing=0, rightSpacing=0)
         fold_panel.Expand(fold_panel.GetFoldPanel(0))
-        #====aji===================================================================
+
         # Fold 2 - Object properties
-        item = fold_panel.AddFoldPanel(_("Object Corregistrate"), collapsed=True)
+        item = fold_panel.AddFoldPanel(_("Object Registration"), collapsed=True)
         fold_panel.ApplyCaptionStyle(item, style)
         fold_panel.AddFoldPanelWindow(item, ObjectWNeuronavigation(item), Spacing= 0,
                                       leftSpacing=0, rightSpacing=0)
-                 
-        #=======================================================================
+
         # Fold 3 - Surface tools
-        item = fold_panel.AddFoldPanel(_("Navigation Tools"), collapsed=True)
+        item = fold_panel.AddFoldPanel(_("Extra Tools"), collapsed=True)
         fold_panel.ApplyCaptionStyle(item, style)
         fold_panel.AddFoldPanelWindow(item, Markers(item), Spacing= 0,
                                       leftSpacing=0, rightSpacing=0)
@@ -163,11 +159,9 @@ class NeuronavigationTools(wx.Panel):
         default_colour = wx.SystemSettings_GetColour(wx.SYS_COLOUR_MENUBAR)
         self.SetBackgroundColour(default_colour)
 
-        #self.SetBackgroundColour(wx.Colour(255,255,255))
         self.SetAutoLayout(1)
 
         self.__bind_events()
-        self.aux_img__INO_ref=0
         self.aux_img_ref1 = 0
         self.aux_img_ref2 = 0
         self.aux_img_ref3 = 0
@@ -201,35 +195,35 @@ class NeuronavigationTools(wx.Panel):
         choice_ref_mode.Bind(wx.EVT_COMBOBOX, self.OnChoiceRefMode)
         
         
-        self.button_img_ref1 = wx.ToggleButton(self, IR1, label = 'TEI', size = wx.Size(30,23))
+        self.button_img_ref1 = wx.ToggleButton(self, IR1, label = _('LTI'), size = wx.Size(30,23))
         self.button_img_ref1.Bind(wx.EVT_TOGGLEBUTTON, self.Img_Ref_ToggleButton1)
         
-        self.button_img_ref2 = wx.ToggleButton(self, IR2, label = 'TDI', size = wx.Size(30,23))
+        self.button_img_ref2 = wx.ToggleButton(self, IR2, label = _('RTI'), size = wx.Size(30,23))
         self.button_img_ref2.Bind(wx.EVT_TOGGLEBUTTON, self.Img_Ref_ToggleButton2)
         
-        self.button_img_ref3 = wx.ToggleButton(self, IR3, label = 'FNI', size = wx.Size(30,23))
+        self.button_img_ref3 = wx.ToggleButton(self, IR3, label = _('RI'), size = wx.Size(30,23))
         self.button_img_ref3.Bind(wx.EVT_TOGGLEBUTTON, self.Img_Ref_ToggleButton3)
         
-        self.button_img_inio = wx.ToggleButton(self, INO, label = 'INO', size = wx.Size(30,23))
-        self.button_img_inio.Bind(wx.EVT_TOGGLEBUTTON, self.Img_Inio_ToggleButton)
+        #self.button_img_inio = wx.ToggleButton(self, INO, label = 'INO', size = wx.Size(30,23))
+        #self.button_img_inio.Bind(wx.EVT_TOGGLEBUTTON, self.Img_Inio_ToggleButton)
         
-        self.button_trck_ref1 = wx.Button(self, TR1, label = 'TET', size = wx.Size(30,23))
-        self.button_trck_ref2 = wx.Button(self, TR2, label = 'TDT', size = wx.Size(30,23))
-        self.button_trck_ref3 = wx.Button(self, TR3, label = 'FNT', size = wx.Size(30,23))
+        self.button_trck_ref1 = wx.Button(self, TR1, label = _('LTT'), size = wx.Size(30,23))
+        self.button_trck_ref2 = wx.Button(self, TR2, label = _('RTT'), size = wx.Size(30,23))
+        self.button_trck_ref3 = wx.Button(self, TR3, label = _('NT'), size = wx.Size(30,23))
         
         
-        self.button_crg = wx.Button(self, FineCorregistration, label='Accurate Corregistrate')
+        self.button_crg = wx.Button(self, FineCorregistration, label=_('Accurate Corregistrate'))
         self.Bind(wx.EVT_BUTTON, self.Buttons)
                        
-        self.button_neuronavigate = wx.ToggleButton(self, Neuronavigate, "Neuronavigate")
+        self.button_neuronavigate = wx.ToggleButton(self, Neuronavigate, _("Neuronavigate"))
         self.button_neuronavigate.Bind(wx.EVT_TOGGLEBUTTON, self.Neuronavigate_ToggleButton)
         
-        self.numCtrl1I = wx.lib.masked.numctrl.NumCtrl(
-            name='numCtrl1I', parent=self, integerWidth = 4, fractionWidth = 1)
-        self.numCtrl2I = wx.lib.masked.numctrl.NumCtrl(
-            name='numCtrl2I', parent=self, integerWidth = 4, fractionWidth = 1)
-        self.numCtrl3I = wx.lib.masked.numctrl.NumCtrl(
-            name='numCtrl3I', parent=self, integerWidth = 4, fractionWidth = 1)
+        #self.numCtrl1I = wx.lib.masked.numctrl.NumCtrl(
+        #    name='numCtrl1I', parent=self, integerWidth = 4, fractionWidth = 1)
+        #self.numCtrl2I = wx.lib.masked.numctrl.NumCtrl(
+        #    name='numCtrl2I', parent=self, integerWidth = 4, fractionWidth = 1)
+        #self.numCtrl3I = wx.lib.masked.numctrl.NumCtrl(
+        #    name='numCtrl3I', parent=self, integerWidth = 4, fractionWidth = 1)
         
         self.numCtrl1a = wx.lib.masked.numctrl.NumCtrl(
             name='numCtrl1a', parent=self, integerWidth = 4, fractionWidth = 1)
@@ -268,7 +262,6 @@ class NeuronavigationTools(wx.Panel):
         self.numCtrl3f = wx.lib.masked.numctrl.NumCtrl(
             name='numCtrl3f', parent=self, integerWidth = 4, fractionWidth = 1)
 
-        
         choice_sizer = wx.FlexGridSizer(rows=1, cols=2, hgap=5, vgap=5)
         choice_sizer.AddMany([ (choice_tracker, wx.LEFT),
                                 (choice_ref_mode, wx.RIGHT)])
@@ -308,17 +301,17 @@ class NeuronavigationTools(wx.Panel):
                                 (self.numCtrl1f, wx.RIGHT),
                                 (self.numCtrl2f),
                                 (self.numCtrl3f, wx.LEFT)])
-        line3 = wx.FlexGridSizer(rows=1, cols=4, hgap=5, vgap=5)
-        line3.AddMany([(self.button_img_inio),
-                       (self.numCtrl1I),
-                       (self.numCtrl2I),
-                       (self.numCtrl3I)])
+        #line3 = wx.FlexGridSizer(rows=1, cols=4, hgap=5, vgap=5)
+        #line3.AddMany([(self.button_img_inio),
+        #               (self.numCtrl1I),
+        #               (self.numCtrl2I),
+        #               (self.numCtrl3I)])
         
         Buttons_sizer = wx.FlexGridSizer(rows=1, cols=2, hgap=5, vgap=5)
         Buttons_sizer.AddMany([(self.button_crg, wx.LEFT|wx.RIGHT),
                                (self.button_neuronavigate, wx.LEFT|wx.RIGHT)])
-        
-        
+
+
         Ref_sizer = wx.FlexGridSizer(rows=9, cols=1, hgap=5, vgap=5)
         Ref_sizer.AddGrowableCol(0, 1)
         Ref_sizer.AddGrowableRow(0, 1)
@@ -338,7 +331,7 @@ class NeuronavigationTools(wx.Panel):
                             (RefPlh_sizer1, 0, wx.ALIGN_CENTER_HORIZONTAL),
                             (RefPlh_sizer2, 0, wx.ALIGN_CENTER_HORIZONTAL),
                             (RefPlh_sizer3, 0, wx.ALIGN_CENTER_HORIZONTAL),
-                            (line3, 0,wx.ALIGN_CENTER_HORIZONTAL),
+                            #(line3, 0,wx.ALIGN_CENTER_HORIZONTAL),
                             (Buttons_sizer, 0, wx.ALIGN_CENTER_HORIZONTAL)])
         
         main_sizer = wx.BoxSizer(wx.HORIZONTAL)
@@ -366,12 +359,11 @@ class NeuronavigationTools(wx.Panel):
             self.numCtrl1c.SetValue(x)
             self.numCtrl2c.SetValue(y)
             self.numCtrl3c.SetValue(z)
-        if self.aux_img__INO_ref == 0: 
-            self.numCtrl1I.SetValue(x)
-            self.numCtrl2I.SetValue(y)
-            self.numCtrl3I.SetValue(z) 
+        #if self.aux_img__INO_ref == 0:
+        #    self.numCtrl1I.SetValue(x)
+        #    self.numCtrl2I.SetValue(y)
+        #    self.numCtrl3I.SetValue(z)
 
-        
     def __update_points_trck(self, pubsub_evt):
         coord = pubsub_evt.data   
         if self.aux_trck_ref1 == 0:    
@@ -420,6 +412,8 @@ class NeuronavigationTools(wx.Panel):
         if img_id == True:
             self.coord1a = x, y, z
             self.aux_img_ref1 = 1
+            Publisher.sendMessage("Create fiducial markers", (self.coord1a, "LTI"))
+
         elif img_id == False:
             self.aux_img_ref1 = 0
             self.coord1a = (0, 0, 0)
@@ -435,6 +429,7 @@ class NeuronavigationTools(wx.Panel):
         if img_id == True:
             self.coord2a = x, y, z
             self.aux_img_ref2 = 1
+            Publisher.sendMessage("Create fiducial markers", (self.coord2a, "RTI"))
         elif img_id == False:
             self.aux_img_ref2 = 0
             self.coord2a = (0, 0, 0)
@@ -450,6 +445,7 @@ class NeuronavigationTools(wx.Panel):
         if img_id == True:
             self.coord3a = x, y, z
             self.aux_img_ref3 = 1
+            Publisher.sendMessage("Create fiducial markers", (self.coord3a, "RI"))
         elif img_id == False:
             self.aux_img_ref3 = 0
             self.coord3a = (0, 0, 0)
@@ -457,19 +453,19 @@ class NeuronavigationTools(wx.Panel):
             self.numCtrl2c.SetValue(y)
             self.numCtrl3c.SetValue(z)
     
-    def Img_Inio_ToggleButton(self, evt):
-        img_id = self.button_img_inio.GetValue()
-        x, y, z = self.a
-        if img_id == True:
-            self.img_inio = x, y, z
-            self.aux_img__INO_ref = 1
-            print self.img_inio
-        elif img_id == False:
-            self.aux_img__INO_ref = 0
-            self.img_inio = (0, 0, 0)
-            self.numCtrl1I.SetValue(x)
-            self.numCtrl2I.SetValue(y)
-            self.numCtrl3I.SetValue(z)
+#    def Img_Inio_ToggleButton(self, evt):
+#        img_id = self.button_img_inio.GetValue()
+#        x, y, z = self.a
+#        if img_id == True:
+#            self.img_inio = x, y, z
+#            self.aux_img__INO_ref = 1
+#            print self.img_inio
+#        elif img_id == False:
+#            self.aux_img__INO_ref = 0
+#            self.img_inio = (0, 0, 0)
+#            self.numCtrl1I.SetValue(x)
+#            self.numCtrl2I.SetValue(y)
+#            self.numCtrl3I.SetValue(z)
             
     def Neuronavigate_ToggleButton(self, evt):
         nav_id = self.button_neuronavigate.GetValue()
@@ -529,10 +525,9 @@ class NeuronavigationTools(wx.Panel):
                                                            self.tracker_id,
                                                            self.ref_mode_id,
                                                            self.a,
-                                                           self.coord3a,
-                                                           self.img_inio])
+                                                           self.coord3a])
 
-#=========aji======================================================================
+#===============================================================================
 #===============================================================================
 class ObjectWNeuronavigation(wx.Panel):
     def __init__(self, parent):
@@ -542,72 +537,87 @@ class ObjectWNeuronavigation(wx.Panel):
          
         self.SetAutoLayout(1)
         self.object_id = const.COILS
-#         self.aux_img__INO_ref=0
+        self.aux_img__INO_ref=0
         self.showObj = None
          
         self.__bind_events()
+
                
-        #Line 1      
+        #Line 1
+
         text_choice = wx.StaticText(self, -1, _("Select the Object:"))  
         #Line 2      
-        choice_object = wx.ComboBox(self, -1, "Select the Object:",
+        choice_object = wx.ComboBox(self, -1, _("Select the Object:"),
                                          size=(97, 23),
                                          choices = const.COILS,
                                          style = wx.CB_DROPDOWN|wx.CB_READONLY|wx.CB_SORT)
         choice_object.SetSelection(const.DEFAULT_COIL)
         choice_object.Bind(wx.EVT_COMBOBOX, self.OnChoiceObject)
              
-        #Line 3        
-        correg_object= wx.Button(self, -1, label='Corregistrate object', size = wx.Size(125,23))
+        #Line 3
+        correg_object= wx.Button(self, -1, label=_('Object Registration'), size = wx.Size(125,23))
         correg_object.Bind(wx.EVT_BUTTON, self.OnCorregObject)
          
-        #self.button_img_inio = wx.ToggleButton(self, IR3, label = 'INO', size = wx.Size(30,23))
-        #self.button_img_inio.Bind(wx.EVT_TOGGLEBUTTON, self.Img_Inio_ToggleButton)
+        self.button_img_inio = wx.ToggleButton(self, IR3, label = _('INO'), size = wx.Size(30,23))
+        self.button_img_inio.Bind(wx.EVT_TOGGLEBUTTON, self.Img_Inio_ToggleButton)
          
-        self.showObj = wx.CheckBox(self, -1, 'Show Object', (10, 10))
+        self.showObj = wx.CheckBox(self, -1, _('Show Object'), (10, 10))
         self.showObj.SetValue(False)
         wx.EVT_CHECKBOX(self, self.showObj.GetId(), self.ShowObject)    
-         
-#         self.numCtrl1I = wx.lib.masked.numctrl.NumCtrl(
-#             name='numCtrl1I', parent=self, integerWidth = 4, fractionWidth = 1)
-#         self.numCtrl2I = wx.lib.masked.numctrl.NumCtrl(
-#             name='numCtrl2I', parent=self, integerWidth = 4, fractionWidth = 1)
-#         self.numCtrl3I = wx.lib.masked.numctrl.NumCtrl(
-#             name='numCtrl3I', parent=self, integerWidth = 4, fractionWidth = 1)
-         
+
+        self.numCtrl1I = wx.lib.masked.numctrl.NumCtrl(
+             name='numCtrl1I', parent=self, integerWidth = 4, fractionWidth = 1)
+        self.numCtrl2I = wx.lib.masked.numctrl.NumCtrl(
+             name='numCtrl2I', parent=self, integerWidth = 4, fractionWidth = 1)
+        self.numCtrl3I = wx.lib.masked.numctrl.NumCtrl(
+             name='numCtrl3I', parent=self, integerWidth = 4, fractionWidth = 1)
+
         line2 = wx.FlexGridSizer(rows=1, cols=2, hgap=5, vgap=5)
         line2.AddMany([(choice_object, 1,wx.EXPAND|wx.LEFT|wx.TOP),
                        (correg_object, 1, wx.GROW|wx.EXPAND|wx.RIGHT|wx.TOP)])
          
-#         line3 = wx.FlexGridSizer(rows=1, cols=4, hgap=5, vgap=5)
-#         line3.AddMany([(self.button_img_inio),
-#                        (self.numCtrl1I),
-#                        (self.numCtrl2I),
-#                        (self.numCtrl3I)])
+        line3 = wx.FlexGridSizer(rows=1, cols=4, hgap=5, vgap=5)
+        line3.AddMany([(self.button_img_inio),
+                        (self.numCtrl1I),
+                        (self.numCtrl2I),
+                        (self.numCtrl3I)])
          
         main_sizer = wx.BoxSizer(wx.VERTICAL)        
         main_sizer.Add(text_choice, 0,wx.GROW|wx.EXPAND|wx.LEFT|wx.RIGHT|wx.TOP|wx.BOTTOM, 5)        
         main_sizer.Add(line2, 0,  wx.ALIGN_CENTER, 5)                  
-#       main_sizer.Add(line3, 0,  wx.ALIGN_RIGHT|wx.LEFT|wx.RIGHT|wx.BOTTOM|wx.TOP, 5)
+        main_sizer.Add(line3, 0,  wx.ALIGN_CENTER|wx.LEFT|wx.RIGHT|wx.BOTTOM|wx.TOP, 5)
         main_sizer.Add(self.showObj, 0,  wx.ALIGN_RIGHT|wx.LEFT|wx.RIGHT|wx.BOTTOM|wx.TOP, 5)
         self.sizer = main_sizer
         self.SetSizer(main_sizer)
         self.Fit()
-         
+
+    def Img_Inio_ToggleButton(self, evt):
+        img_id = self.button_img_inio.GetValue()
+        x, y, z = self.a
+        if img_id == True:
+            self.img_inio = x, y, z
+            self.aux_img__INO_ref = 1
+            print self.img_inio
+        elif img_id == False:
+            self.aux_img__INO_ref = 0
+            self.img_inio = (0, 0, 0)
+            self.numCtrl1I.SetValue(x)
+            self.numCtrl2I.SetValue(y)
+            self.numCtrl3I.SetValue(z)
+
     def __bind_events(self):
         Publisher.subscribe(self.correget, 'Corregistrate Object')
-        Publisher.subscribe(self.LoadParamObj,
-                                 'Load Param Obj')
-#         Publisher.subscribe(self.__update_points_img_INO, 'Update cross INO position')
-#     
-#     def __update_points_img_INO(self, pubsub_evt):
-#         x, y, z = pubsub_evt.data
-#         self.a = x, y, z
-#         if self.aux_img__INO_ref == 0: 
-#             self.numCtrl1I.SetValue(x)
-#             self.numCtrl2I.SetValue(y)
-#             self.numCtrl3I.SetValue(z)   
-          
+        Publisher.subscribe(self.LoadParamObj, 'Load Param Obj')
+        Publisher.subscribe(self.__update_points_img_INO, 'Update cross position')
+
+    def __update_points_img_INO(self, pubsub_evt):
+        x, y, z = pubsub_evt.data
+        self.a = x, y, z
+        if self.aux_img__INO_ref == 0:
+            self.numCtrl1I.SetValue(x)
+            self.numCtrl2I.SetValue(y)
+            self.numCtrl3I.SetValue(z)
+
     def correget(self, pubsub_evt):
         self.Minv=pubsub_evt.data[0]
         self.N=pubsub_evt.data[1]
@@ -618,7 +628,7 @@ class ObjectWNeuronavigation(wx.Panel):
         self.ref_mode_id=pubsub_evt.data[6]
         self.a=pubsub_evt.data[7]
         self.coord3a=pubsub_evt.data[8]   
-        self.img_inio=pubsub_evt.data[9]       
+        #self.img_inio=pubsub_evt.data[9]
          
     def OnChoiceObject(self, evt):
         self.object_id = evt.GetSelection()  
@@ -686,6 +696,9 @@ class Markers(wx.Panel):
         self.flagpoint1 = 0
         self.ballid = 0
         self.colour = 0.0, 0.0, 1.0
+        self.fiducial_color = 0.0, 1.0, 0.0
+        self.fiducial_flag = 0
+        self.fiducial_ID = ""
 
         ##LINE 1
         # Change marker size
@@ -700,7 +713,7 @@ class Markers(wx.Panel):
         marker_colour.Bind(csel.EVT_COLOURSELECT, self.OnSelectColour)
         self.marker_colour = marker_colour
 
-        create_markers = wx.Button(self, -1, label='Create Marker', size=wx.Size(135, 23))
+        create_markers = wx.Button(self, -1, label=_('Create Marker'), size=wx.Size(135, 23))
         create_markers.Bind(wx.EVT_BUTTON, self.OnCreateMarker)
 
         line1 = wx.FlexGridSizer(rows=1, cols=3, hgap=5, vgap=5)
@@ -709,13 +722,13 @@ class Markers(wx.Panel):
                        (create_markers, 0)])
 
         ## LINE 2
-        save_markers = wx.Button(self, -1, label='Save', size=wx.Size(65, 23))
+        save_markers = wx.Button(self, -1, label=_('Save'), size=wx.Size(65, 23))
         save_markers.Bind(wx.EVT_BUTTON, self.OnSaveMarkers)
 
-        load_markers = wx.Button(self, -1, label='Load', size=wx.Size(65, 23))
+        load_markers = wx.Button(self, -1, label=_('Load'), size=wx.Size(65, 23))
         load_markers.Bind(wx.EVT_BUTTON, self.OnLoadMarkers)
 
-        self.markers_visibility = wx.ToggleButton(self, -1, "Hide", size=wx.Size(65, 23))
+        self.markers_visibility = wx.ToggleButton(self, -1, _("Hide"), size=wx.Size(65, 23))
         self.markers_visibility.Bind(wx.EVT_TOGGLEBUTTON, self.OnMarkersVisibility)
 
         line2 = wx.FlexGridSizer(rows=1, cols=3, hgap=5, vgap=5)
@@ -724,10 +737,10 @@ class Markers(wx.Panel):
                        (self.markers_visibility, 0, wx.LEFT)])
 
         ## Line 3
-        del_s_markers = wx.Button(self, -1, label='Remove', size=wx.Size(65, 23))
+        del_s_markers = wx.Button(self, -1, label=_('Remove'), size=wx.Size(65, 23))
         del_s_markers.Bind(wx.EVT_BUTTON, self.DelSingleMarker)
 
-        del_markers = wx.Button(self, -1, label='Delete All Markers', size=wx.Size(135, 23))
+        del_markers = wx.Button(self, -1, label=_('Delete All Markers'), size=wx.Size(135, 23))
         del_markers.Bind(wx.EVT_BUTTON, self.OnDelMarker)
 
         line3 = wx.FlexGridSizer(rows=1, cols=2, hgap=5, vgap=5)
@@ -735,15 +748,17 @@ class Markers(wx.Panel):
                        (del_markers, 0, wx.LEFT)])
 
         ##ListCtrl
-        self.lc = wx.ListCtrl(self, -1, style=wx.LC_REPORT)
+        self.lc = wx.ListCtrl(self, -1, style=wx.LC_REPORT, size=wx.Size(0,120))
         self.lc.InsertColumn(0, '#')
         self.lc.InsertColumn(1, 'X')
         self.lc.InsertColumn(2, 'Y')
         self.lc.InsertColumn(3, 'Z')
-        self.lc.SetColumnWidth(0, 50)
+        self.lc.InsertColumn(4, 'ID')
+        self.lc.SetColumnWidth(0, 25)
         self.lc.SetColumnWidth(1, 50)
         self.lc.SetColumnWidth(2, 50)
         self.lc.SetColumnWidth(3, 50)
+        self.lc.SetColumnWidth(4, 50)
 
         # Add all lines into main sizer
         sizer = wx.BoxSizer(wx.VERTICAL)
@@ -761,7 +776,14 @@ class Markers(wx.Panel):
 
     def __bind_events(self):
         Publisher.subscribe(self.GetPoint, 'Update cross position')
-    
+        Publisher.subscribe(self.Fiducial_markers, 'Create fiducial markers')
+
+    def Fiducial_markers(self, pubsub_evt):
+        coord = pubsub_evt.data[0]
+        self.fiducial_ID = pubsub_evt.data[1]
+        self.fiducial_flag = 1
+        self.CreateMarker(coord,self.fiducial_color, self.spin.GetValue())
+
     def CreateMarker(self, coord_data, colour_data, size_data):
         #Create a file and write the points given by getpoint's button 
         coord = coord_data
@@ -773,7 +795,11 @@ class Markers(wx.Panel):
         #sum 1 for each coordinate to matlab comprehension
         #coord = coord[0] + 1.0, coord[1] + 1.0, coord[2] + 1.0
         #line with coordinates and properties of a marker
-        line = coord[0] , coord[1] , coord[2] , self.colour[0], self.colour[1], self.colour[2], self.spin.GetValue()
+        if self.fiducial_flag == 1:
+            self.fiducial_flag = 0
+        else:
+            self.fiducial_ID = ""
+        line = coord[0] , coord[1] , coord[2] , colour[0], colour[1], colour[2], self.spin.GetValue(), self.fiducial_ID
         if self.flagpoint1 == 0:
             self.list_coord = [line]
             self.flagpoint1 = 1
@@ -788,6 +814,7 @@ class Markers(wx.Panel):
         self.lc.SetStringItem(num_items, 1, str(round(coord[0],2)))
         self.lc.SetStringItem(num_items, 2, str(round(coord[1],2)))
         self.lc.SetStringItem(num_items, 3, str(round(coord[2],2)))
+        self.lc.SetStringItem(num_items,4, str(self.fiducial_ID))
         self.lc.EnsureVisible(num_items)
 
     def OnDelMarker(self,pubsub_evt):
@@ -830,13 +857,18 @@ class Markers(wx.Panel):
         #TODO: ver bug de fazer load dos pontos sem ter clicado na cruz antes (criacao de ator e tal)
         
         filepath = dlg.ShowLoadMarkersDialog()
-        try:  
+        try:
             content = [s.rstrip() for s in open(filepath)]
             for data in content:
-                line = [float(s) for s in data.split()]
-                coord = line[0], line[1], line[2]
-                colour = line[3], line[4], line[5]
-                size = line[6]
+                line = [s for s in data.split()]
+                coord = float(line[0]), float(line[1]), float(line[2])
+                colour = float(line[3]), float(line[4]), float(line[5])
+                size = float(line[6])
+                if len(line) == 8:
+                    self.fiducial_flag = 1
+                    self.fiducial_ID = line[7]
+                else:
+                    self.fiducial_flag = 0
                 self.CreateMarker(coord, colour, size)
         except:
             dlg.InvalidTxt()
@@ -859,13 +891,13 @@ class Markers(wx.Panel):
         text_file = open(filename, "w")
         list_slice1 = self.list_coord[0]
         coord = str('%.3f' %self.list_coord[0][0]) + "\t" + str('%.3f' %self.list_coord[0][1]) + "\t" + str('%.3f' %self.list_coord[0][2])
-        properties = str('%.3f' %list_slice1[3]) + "\t" + str('%.3f' %list_slice1[4]) + "\t" + str('%.3f' %list_slice1[5]) + "\t" + str('%.1f' %list_slice1[6])
+        properties = str('%.3f' %list_slice1[3]) + "\t" + str('%.3f' %list_slice1[4]) + "\t" + str('%.3f' %list_slice1[5]) + "\t" + str('%.1f' %list_slice1[6]) + "\t" + list_slice1[7]
         line = coord + "\t" + properties + "\n"
         list_slice = self.list_coord[1:]
         for i in list_slice:
             #line = line + str('%.3f' %i[0]) + "\t" + str('%.3f' %i[1]) + "\t" + str('%.3f' %i[2]) + "\n"
             coord = str('%.3f' %i[0]) + "\t" + str('%.3f' %i[1]) + "\t" + str('%.3f' %i[2])
-            properties = str('%.3f' %i[3]) + "\t" + str('%.3f' %i[4]) + "\t" + str('%.3f' %i[5]) + "\t" + str('%.1f' %i[6])
+            properties = str('%.3f' %i[3]) + "\t" + str('%.3f' %i[4]) + "\t" + str('%.3f' %i[5]) + "\t" + str('%.1f' %i[6]) + "\t" + i[7]
             line = line + coord + "\t" + properties + "\n"
         text_file.writelines(line)
         text_file.close()
