@@ -343,6 +343,7 @@ class NeuronavigationTools(wx.Panel):
     def __bind_events(self):
         Publisher.subscribe(self.__update_points_img, 'Update cross position')
         Publisher.subscribe(self.__update_points_trck, 'Update tracker position')
+        Publisher.subscribe(self.__load_points_img, 'Load Fiducial')
                  
     def __update_points_img(self, pubsub_evt):
         x, y, z = pubsub_evt.data
@@ -381,7 +382,52 @@ class NeuronavigationTools(wx.Panel):
             self.numCtrl2f.SetValue(coord[1])
             self.numCtrl3f.SetValue(coord[2])
             self.aux_trck_ref3 = 1
-           
+
+    def __load_points_img(self, pubsub_evt):
+        load = pubsub_evt.data[0]
+        coord = pubsub_evt.data[1]
+        if load == "LTI":
+            self.Load_Ref_LTI(coord)
+        elif load == "RTI":
+            self.Load_Ref_RTI(coord)
+        elif load == "NI":
+            self.Load_Ref_NI(coord)
+
+    def Load_Ref_LTI(self,coord):
+        img_id = self.button_img_ref1.GetValue()
+        x, y, z = coord
+        if img_id == False:
+            self.numCtrl1a.SetValue(x)
+            self.numCtrl2a.SetValue(y)
+            self.numCtrl3a.SetValue(z)
+            self.button_img_ref1.SetValue(True)
+            self.aux_img_ref1 = 1
+        else:
+            None
+
+    def Load_Ref_RTI(self,coord):
+        img_id = self.button_img_ref2.GetValue()
+        x, y, z = coord
+        if img_id == False:
+            self.numCtrl1b.SetValue(x)
+            self.numCtrl2b.SetValue(y)
+            self.numCtrl3b.SetValue(z)
+            self.button_img_ref2.SetValue(True)
+            self.aux_img_ref2 = 1
+        else:
+            None
+
+    def Load_Ref_NI(self,coord):
+        img_id = self.button_img_ref3.GetValue()
+        x, y, z = coord
+        if img_id == False:
+            self.numCtrl1c.SetValue(x)
+            self.numCtrl2c.SetValue(y)
+            self.numCtrl3c.SetValue(z)
+            self.button_img_ref3.SetValue(True)
+            self.aux_img_ref3 = 1
+        else:
+            None
     def Buttons(self, evt):
         id = evt.GetId()
         x, y, z = self.a
@@ -875,24 +921,27 @@ class Markers(wx.Panel):
         self.CreateMarker(coord, self.colour, self.spin.GetValue())
             
     def OnLoadMarkers(self, evt):
-
         filepath = dlg.ShowLoadMarkersDialog()
-        try:
-            content = [s.rstrip() for s in open(filepath)]
-            for data in content:
-                line = [s for s in data.split()]
-                coord = float(line[0]), float(line[1]), float(line[2])
-                colour = float(line[3]), float(line[4]), float(line[5])
-                size = float(line[6])
-                if len(line) == 8:
-                    self.fiducial_flag = 1
-                    self.fiducial_ID = line[7]
-                else:
-                    self.fiducial_flag = 0
-                self.CreateMarker(coord, colour, size)
-        except:
-            dlg.InvalidTxt()
-            raise ValueError('Invalid Txt File')
+        if filepath is not None:
+            try:
+                content = [s.rstrip() for s in open(filepath)]
+                for data in content:
+                    line = [s for s in data.split()]
+                    coord = float(line[0]), float(line[1]), float(line[2])
+                    colour = float(line[3]), float(line[4]), float(line[5])
+                    size = float(line[6])
+                    if len(line) == 8:
+                        self.fiducial_flag = 1
+                        self.fiducial_ID = line[7]
+                        Publisher.sendMessage('Load Fiducial', (self.fiducial_ID,coord))
+                    else:
+                        self.fiducial_flag = 0
+                    self.CreateMarker(coord, colour, size)
+            except:
+                dlg.InvalidTxt()
+                raise ValueError('Invalid Txt File')
+        else:
+            None
 
     def OnMarkersVisibility(self, evt):
         ballid = self.lc.GetItemCount()
@@ -905,23 +954,23 @@ class Markers(wx.Panel):
             self.markers_visibility.SetLabel('Hide')
             
     def OnSaveMarkers(self, evt):
-        print "Save the points!"
-
         filename = dlg.ShowSaveMarkersDialog("Markers.txt")
-        text_file = open(filename, "w")
-        list_slice1 = self.list_coord[0]
-        coord = str('%.3f' %self.list_coord[0][0]) + "\t" + str('%.3f' %self.list_coord[0][1]) + "\t" + str('%.3f' %self.list_coord[0][2])
-        properties = str('%.3f' %list_slice1[3]) + "\t" + str('%.3f' %list_slice1[4]) + "\t" + str('%.3f' %list_slice1[5]) + "\t" + str('%.1f' %list_slice1[6]) + "\t" + list_slice1[7]
-        line = coord + "\t" + properties + "\n"
-        list_slice = self.list_coord[1:]
-        for i in list_slice:
-            #line = line + str('%.3f' %i[0]) + "\t" + str('%.3f' %i[1]) + "\t" + str('%.3f' %i[2]) + "\n"
-            coord = str('%.3f' %i[0]) + "\t" + str('%.3f' %i[1]) + "\t" + str('%.3f' %i[2])
-            properties = str('%.3f' %i[3]) + "\t" + str('%.3f' %i[4]) + "\t" + str('%.3f' %i[5]) + "\t" + str('%.1f' %i[6]) + "\t" + i[7]
-            line = line + coord + "\t" + properties + "\n"
-        text_file.writelines(line)
-        text_file.close()
-    
+        if filename is not None:
+            text_file = open(filename, "w")
+            list_slice1 = self.list_coord[0]
+            coord = str('%.3f' %self.list_coord[0][0]) + "\t" + str('%.3f' %self.list_coord[0][1]) + "\t" + str('%.3f' %self.list_coord[0][2])
+            properties = str('%.3f' %list_slice1[3]) + "\t" + str('%.3f' %list_slice1[4]) + "\t" + str('%.3f' %list_slice1[5]) + "\t" + str('%.1f' %list_slice1[6]) + "\t" + list_slice1[7]
+            line = coord + "\t" + properties + "\n"
+            list_slice = self.list_coord[1:]
+            for i in list_slice:
+                #line = line + str('%.3f' %i[0]) + "\t" + str('%.3f' %i[1]) + "\t" + str('%.3f' %i[2]) + "\n"
+                coord = str('%.3f' %i[0]) + "\t" + str('%.3f' %i[1]) + "\t" + str('%.3f' %i[2])
+                properties = str('%.3f' %i[3]) + "\t" + str('%.3f' %i[4]) + "\t" + str('%.3f' %i[5]) + "\t" + str('%.1f' %i[6]) + "\t" + i[7]
+                line = line + coord + "\t" + properties + "\n"
+            text_file.writelines(line)
+            text_file.close()
+        else:
+            None
     
     def OnSelectColour(self, evt):
         self.colour = [value/255.0 for value in self.marker_colour.GetValue()]
