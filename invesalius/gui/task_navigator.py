@@ -201,7 +201,7 @@ class NeuronavigationTools(wx.Panel):
         self.button_img_ref2 = wx.ToggleButton(self, IR2, label = _('RTI'), size = wx.Size(30,23))
         self.button_img_ref2.Bind(wx.EVT_TOGGLEBUTTON, self.Img_Ref_ToggleButton2)
         
-        self.button_img_ref3 = wx.ToggleButton(self, IR3, label = _('RI'), size = wx.Size(30,23))
+        self.button_img_ref3 = wx.ToggleButton(self, IR3, label = _('NI'), size = wx.Size(30,23))
         self.button_img_ref3.Bind(wx.EVT_TOGGLEBUTTON, self.Img_Ref_ToggleButton3)
         
         #self.button_img_inio = wx.ToggleButton(self, INO, label = 'INO', size = wx.Size(30,23))
@@ -420,7 +420,8 @@ class NeuronavigationTools(wx.Panel):
             self.numCtrl1a.SetValue(x)
             self.numCtrl2a.SetValue(y)
             self.numCtrl3a.SetValue(z)
-            
+            Publisher.sendMessage("Delete fiducial marker", "LTI")
+
     def Img_Ref_ToggleButton2(self, evt):
         img_id = self.button_img_ref2.GetValue()
         #this fixed points are from dicom2 exam
@@ -436,6 +437,7 @@ class NeuronavigationTools(wx.Panel):
             self.numCtrl1b.SetValue(x)
             self.numCtrl2b.SetValue(y)
             self.numCtrl3b.SetValue(z)
+            Publisher.sendMessage("Delete fiducial marker", "RTI")
             
     def Img_Ref_ToggleButton3(self, evt):
         img_id = self.button_img_ref3.GetValue()
@@ -445,14 +447,15 @@ class NeuronavigationTools(wx.Panel):
         if img_id == True:
             self.coord3a = x, y, z
             self.aux_img_ref3 = 1
-            Publisher.sendMessage("Create fiducial markers", (self.coord3a, "RI"))
+            Publisher.sendMessage("Create fiducial markers", (self.coord3a, "NI"))
         elif img_id == False:
             self.aux_img_ref3 = 0
             self.coord3a = (0, 0, 0)
             self.numCtrl1c.SetValue(x)
             self.numCtrl2c.SetValue(y)
             self.numCtrl3c.SetValue(z)
-    
+            Publisher.sendMessage("Delete fiducial marker", "NI")
+
 #    def Img_Inio_ToggleButton(self, evt):
 #        img_id = self.button_img_inio.GetValue()
 #        x, y, z = self.a
@@ -776,6 +779,7 @@ class Markers(wx.Panel):
 
     def __bind_events(self):
         Publisher.subscribe(self.GetPoint, 'Update cross position')
+        Publisher.subscribe(self.DelSingleMarker, 'Delete fiducial marker')
         Publisher.subscribe(self.Fiducial_markers, 'Create fiducial markers')
 
     def Fiducial_markers(self, pubsub_evt):
@@ -824,6 +828,24 @@ class Markers(wx.Panel):
         self.ballid = 0
 
     def DelSingleMarker(self, pubsub_evt):
+        ##this try is to remove the toggle=false fiducial marker, doesnt matter the order
+        try:
+            id = pubsub_evt.data
+            for idx in range(self.lc.GetItemCount()):
+                item = self.lc.GetItem(idx, 4)
+                if item.GetText() == id:
+                    if id == "LTI":
+                        self.lc.Focus(item.GetId())
+                        break
+                    if id == "RTI":
+                        self.lc.Focus(item.GetId())
+                        break
+                    if id == "NI":
+                        self.lc.Focus(item.GetId())
+                        break
+        except:
+            None
+
         if self.lc.GetFocusedItem() is not -1:
             index = self.lc.GetFocusedItem()
             del self.list_coord[index]
@@ -853,9 +875,7 @@ class Markers(wx.Panel):
         self.CreateMarker(coord, self.colour, self.spin.GetValue())
             
     def OnLoadMarkers(self, evt):
-        print "Reading the points!"
-        #TODO: ver bug de fazer load dos pontos sem ter clicado na cruz antes (criacao de ator e tal)
-        
+
         filepath = dlg.ShowLoadMarkersDialog()
         try:
             content = [s.rstrip() for s in open(filepath)]
