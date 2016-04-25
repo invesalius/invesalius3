@@ -35,16 +35,16 @@ class Corregistration(threading.Thread):
 
         while self.nav_id:
             trck_coord = co.Coordinates(trck_init, trck, trck_mode).Returns()
-            trck_coord = numpy.matrix([[trck_coord[0]], [trck_coord[1]],
+            trck_xyz = numpy.matrix([[trck_coord[0]], [trck_coord[1]],
                                       [trck_coord[2]]])
-            img = q1 + (m_inv*n)*(trck_coord - q2)
-            coord = (float(img[0]), float(img[1]), float(img[2]), trck[3],
-                     trck[4], trck[5])
+            img = q1 + (m_inv*n)*(trck_xyz - q2)
+
+            coord = (float(img[0]), float(img[1]), float(img[2]), trck_coord[3],
+                     trck_coord[4], trck_coord[5])
             coord_xyz = coord[0:3]
 
-            wx.CallAfter(Publisher.sendMessage, 'Set camera in volume', coord)
-            wx.CallAfter(Publisher.sendMessage, 'Corregistered Points',
-                         coord_xyz)
+            wx.CallAfter(Publisher.sendMessage, 'Set camera in volume for Navigation', coord)
+            wx.CallAfter(Publisher.sendMessage, 'Co-registered Points', coord_xyz)
             # TODO: Create flag to check if coil angle must be tracked
             # Code for angle tracking
             # f_angles = trck_coord[3:6]

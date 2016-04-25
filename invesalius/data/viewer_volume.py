@@ -47,6 +47,7 @@ class Viewer(wx.Panel):
         self.interaction_style = st.StyleStateManager()
 
         self.ball_reference = None
+        self.init_plh_angles = None
         self.initial_foco = None
 
         self.staticballs = []
@@ -172,6 +173,7 @@ class Viewer(wx.Panel):
 
         Publisher.subscribe(self.ResetCamClippingRange, 'Reset cam clipping range')
         Publisher.subscribe(self.SetVolumeCamera, 'Set camera in volume')
+        Publisher.subscribe(self.SetVolumeCameraNav, 'Set camera in volume for Navigation')
 
         Publisher.subscribe(self.OnEnableStyle, 'Enable style')
         Publisher.subscribe(self.OnDisableStyle, 'Disable style')
@@ -199,7 +201,7 @@ class Viewer(wx.Panel):
                 'Deactivate ball reference')
 		# see if these subscribes are here just for navigation and if
 		# they are being used
-        Publisher.subscribe(self.SetBallReferencePosition,
+        Publisher.subscribe(self.SetBallReferencePosition_,
                 'Set ball reference position')
         Publisher.subscribe(self.SetBallReferencePositionBasedOnBound,
                 'Set ball reference position based on bound')
@@ -366,6 +368,9 @@ class Viewer(wx.Panel):
         self.UpdateRender()
 
     def SetBallReferencePosition(self, coord, angles):
+        if not self.ball_reference:
+                self.CreateBallReference()
+
         coord = coord
         angles = angles
         #Coronal Images dont require this transformation - 1 tested
@@ -387,30 +392,31 @@ class Viewer(wx.Panel):
 ##        print "coord: ", coord       
         
         transf = vtk.vtkTransform()
+        transf.Translate(x, y, z) #center
         
-        if angles and self.init_plh_angles:
-            #plh angles variation
-            delta_angles = (angles[0] - self.init_plh_angles[0],
-                           angles[1] - self.init_plh_angles[1],
-                           angles[2] - self.init_plh_angles[2])
-            
-            transf.Translate(x, y, z) #center
-            ##transf.Translate(0, 0, 0) #origin
-            
-            transf.RotateWXYZ(delta_angles[0], self.vectors[2])
-            transf.RotateWXYZ(delta_angles[1], self.vectors[0])
-            transf.RotateWXYZ(delta_angles[2], self.vectors[1])
-            #transf.Scale(1, 1, 1)
-            #transf.Translate(-center[0], -center[1], -center[2]) #- origin
-            #transf.Translate(-orig[0], -orig[1], -orig[2])
-        else:
-            #transf.Translate(-center[0], -center[1], -center[2])
-            transf.Translate(x, y, z) #center
-            #transf.RotateWXYZ(90, 3.0, 1.0, 0.5)
-        try:    
-            self.coilActor.SetUserMatrix(transf.GetMatrix())
-        except:
-            None
+        # if angles and self.init_plh_angles:
+        #     #plh angles variation
+        #     delta_angles = (angles[0] - self.init_plh_angles[0],
+        #                    angles[1] - self.init_plh_angles[1],
+        #                    angles[2] - self.init_plh_angles[2])
+        #
+        #     transf.Translate(x, y, z) #center
+        #     ##transf.Translate(0, 0, 0) #origin
+        #
+        #     transf.RotateWXYZ(delta_angles[0], self.vectors[2])
+        #     transf.RotateWXYZ(delta_angles[1], self.vectors[0])
+        #     transf.RotateWXYZ(delta_angles[2], self.vectors[1])
+        #     #transf.Scale(1, 1, 1)
+        #     #transf.Translate(-center[0], -center[1], -center[2]) #- origin
+        #     #transf.Translate(-orig[0], -orig[1], -orig[2])
+        # else:
+        #     #transf.Translate(-center[0], -center[1], -center[2])
+        #     transf.Translate(x, y, z) #center
+        #     #transf.RotateWXYZ(90, 3.0, 1.0, 0.5)
+        # try:
+        #     self.coilActor.SetUserMatrix(transf.GetMatrix())
+        # except:
+        #     None
         self.ball_reference.SetCenter(x, y, z)
         self.axisAssembly.SetPosition(x, y, z)
         
@@ -426,45 +432,6 @@ class Viewer(wx.Panel):
 ##        print "orient com wxyz", b
         ##self.coilActor.SetPosition(x, y, z)
         ##self.ball_reference.SetCenter(x, y, z)
-
-    def SetVolumeCamera(self, pubsub_evt):
-        
-        coord = pubsub_evt.data
-         
-        if len(coord) == 6:
-            coord_camera = coord[0:3]
-            angles = coord[3:6]
-        else:
-            coord_camera = coord[0:3]
-            angles = None
-
-        self.SetBallReferencePosition(coord_camera, angles)
-        
-        #Coronal Images dont require this transformation - 1 tested
-        #and for this case, at navigation, the z axis is inverted
-        coord_camera = np.array(bases.flip_x(coord_camera))
-
-        cam = self.ren.GetActiveCamera()
-         
-        if self.initial_foco is None:
-            self.initial_foco = np.array(cam.GetFocalPoint())
-
-        cam_initialposition = np.array(cam.GetPosition())
-        cam_initialfoco = np.array(cam.GetFocalPoint())
-         
-        cam_sub = cam_initialposition - cam_initialfoco
-        cam_sub_norm = np.linalg.norm(cam_sub)
-        #vet1 = cam_sub/cam_sub_norm
-         
-        cam_sub_novo = coord_camera - self.initial_foco
-        cam_sub_novo_norm = np.linalg.norm(cam_sub_novo)
-        vet2 = cam_sub_novo/cam_sub_novo_norm
-        vet2 = vet2*cam_sub_norm + coord_camera
-
-        cam.SetFocalPoint(coord_camera)
-        cam.SetPosition(vet2)
-        
-        self.UpdateRender()
 
     # ======aji ==============================================================
     def RemoveMarkers(self, pubsub_evt):
@@ -585,7 +552,7 @@ class Viewer(wx.Panel):
             self._to_show_ball -= 1
         self._check_and_set_ball_visibility()
 	# see if these two next functions are being used
-    def SetBallReferencePosition(self, pubsub_evt):
+    def SetBallReferencePosition_(self, pubsub_evt):
         x, y, z = pubsub_evt.data
         self.ball_reference.SetCenter(x, y, z)
 
@@ -886,28 +853,61 @@ class Viewer(wx.Panel):
         self.ren.ResetCamera()
         self.ren.ResetCameraClippingRange()
 
-    def SetVolumeCamera(self, pubsub_evt):
-        
-        coord_camera = pubsub_evt.data
+    def SetVolumeCameraNav(self, pubsub_evt):
+        coord = pubsub_evt.data
+        if len(coord) == 6:
+            coord_camera = coord[0:3]
+            angles = coord[3:6]
+        else:
+            coord_camera = coord[0:3]
+            angles = None
+        self.SetBallReferencePosition(coord_camera,angles)
         coord_camera = numpy.array(bases.flip_x(coord_camera))
-        
+
         cam = self.ren.GetActiveCamera()
-        
+
         if self.initial_foco is None:
             self.initial_foco = numpy.array(cam.GetFocalPoint())
-        
+
         cam_initialposition = numpy.array(cam.GetPosition())
         cam_initialfoco = numpy.array(cam.GetFocalPoint())
-        
+
         cam_sub = cam_initialposition - cam_initialfoco
         cam_sub_norm = numpy.linalg.norm(cam_sub)
         vet1 = cam_sub/cam_sub_norm
-        
+
         cam_sub_novo = coord_camera - self.initial_foco
         cam_sub_novo_norm = numpy.linalg.norm(cam_sub_novo)
         vet2 = cam_sub_novo/cam_sub_novo_norm
         vet2 = vet2*cam_sub_norm + coord_camera
-        
+
+        cam.SetFocalPoint(coord_camera)
+        cam.SetPosition(vet2)
+
+        self.Refresh()
+
+    def SetVolumeCamera(self, pubsub_evt):
+
+        coord_camera = pubsub_evt.data
+        coord_camera = numpy.array(bases.flip_x(coord_camera))
+
+        cam = self.ren.GetActiveCamera()
+
+        if self.initial_foco is None:
+            self.initial_foco = numpy.array(cam.GetFocalPoint())
+
+        cam_initialposition = numpy.array(cam.GetPosition())
+        cam_initialfoco = numpy.array(cam.GetFocalPoint())
+
+        cam_sub = cam_initialposition - cam_initialfoco
+        cam_sub_norm = numpy.linalg.norm(cam_sub)
+        vet1 = cam_sub/cam_sub_norm
+
+        cam_sub_novo = coord_camera - self.initial_foco
+        cam_sub_novo_norm = numpy.linalg.norm(cam_sub_novo)
+        vet2 = cam_sub_novo/cam_sub_novo_norm
+        vet2 = vet2*cam_sub_norm + coord_camera
+
         cam.SetFocalPoint(coord_camera)
         cam.SetPosition(vet2)
 
@@ -1031,7 +1031,9 @@ class Viewer(wx.Panel):
 
     def LoadVolume(self, pubsub_evt):
         self.raycasting_volume = True
-        #self._to_show_ball += 1
+        self._to_show_ball += 1
+        if not self.ball_reference:
+                self.CreateBallReference()
 
         volume = pubsub_evt.data[0]
         colour = pubsub_evt.data[1]

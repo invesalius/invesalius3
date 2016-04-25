@@ -1,22 +1,13 @@
-#import ClaronTracker
-#import usb.core
-import serial
-#import usb.util
 import sys
 import gui.dialogs as dlg
 
 
 class Tracker:
-    def __init__(self, trck_id):
-        """
-        Initialize spatial trackers for neuronavigation
+    """
+    Initialize spatial trackers for neuronavigation
 
-        :param trck_id: identifier of spatial tracker
-        :return: spatial tracker initialization variable
-        """
-
-        self.ReturnTracker(trck_id)
-
+    return: spatial tracker initialization variable
+    """
     def ClaronTracker(self):
         trck_init = None
 
@@ -160,20 +151,6 @@ class Tracker:
             dlg.TrackerNotConnected(5)
 
         return trck_init
-
-    def ReturnTracker(self, trck_id):
-
-        print "Returning"
-        print "This is the tracker selected!", trck_id
-
-        trck = {0 : self.ClaronTracker,
-                1 : self.PlhFastrak,
-                2 : self.PlhIsotrakII,
-                3 : self.PlhPatriot,
-                4 : self.ZebrisCMS20}
-
-        return trck[trck_id]()
-
 
 # class Tracker_Init:
 #     def PolhemusISO_init(self):
