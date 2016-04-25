@@ -939,6 +939,7 @@ class Viewer(wx.Panel):
             y = my
             z = mx
 
+
         coord = x, y, z
         Publisher.sendMessage('Update cross position', coord_cross)
         # Publisher.sendMessage('Set ball reference position based on bound',

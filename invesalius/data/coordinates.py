@@ -60,21 +60,13 @@ class Coordinates:
         self.__bind_events()
         self.coord = None
 
-        # self.coordTT = [0,0,0]
-        # self.coordcoil = [0,0,0]
-        # self.MTC_status = None
-        # Publisher.sendMessage('Update MTC status')
-       
-        if trck == 0:
-            self.coord = self.Claron(trck_init, ref_mode)
-        elif trck == 1:
-            self.coord = self.PolhemusFAST(trck_init, ref_mode)
-        elif trck == 2:
-            self.coord = self.PolhemusISO(trck_init, ref_mode)
-        elif trck == 3:
-            self.coord = self.Polhemus(trck_init, ref_mode)
-        elif trck == 4:
-            self.coord = self.Zebris(trck_init, ref_mode)
+        trck_ID = {0 : self.Claron,
+                1 : self.PolhemusFAST,
+                2 : self.PolhemusISO,
+                3 : self.Polhemus,
+                4 : self.Zebris}
+
+        self.coord = trck_ID[trck](trck_init, ref_mode)
             
     def __bind_events(self):
         Publisher.subscribe(self.__update_points_MTC, 'Update MTC position')
@@ -320,7 +312,7 @@ class Coordinates:
                      float(coord[4]), float(coord[5]))
 
         elif ref_mode == 1:
-            data1 = dev.read(endpoint.bEndpointAddress, 2 * endpoint.wMaxPacketSize)
+            data1 = trck_init.read(endpoint.bEndpointAddress, 2 * endpoint.wMaxPacketSize)
 
             data1str = data1.tostring()
 
