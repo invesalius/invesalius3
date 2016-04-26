@@ -124,13 +124,13 @@ class InnerFoldPanel(wx.Panel):
         fold_panel.Expand(fold_panel.GetFoldPanel(0))
 
         # Fold 2 - Object properties
-        item = fold_panel.AddFoldPanel(_("Object Registration"), collapsed=True)
+        item = fold_panel.AddFoldPanel(_("Object registration"), collapsed=True)
         fold_panel.ApplyCaptionStyle(item, style)
         fold_panel.AddFoldPanelWindow(item, ObjectWNeuronavigation(item), Spacing= 0,
                                       leftSpacing=0, rightSpacing=0)
 
         # Fold 3 - Surface tools
-        item = fold_panel.AddFoldPanel(_("Extra Tools"), collapsed=True)
+        item = fold_panel.AddFoldPanel(_("Extra tools"), collapsed=True)
         fold_panel.ApplyCaptionStyle(item, style)
         fold_panel.AddFoldPanelWindow(item, Markers(item), Spacing= 0,
                                       leftSpacing=0, rightSpacing=0)
@@ -184,11 +184,11 @@ class NeuronavigationTools(wx.Panel):
         self.trk_init = None
         
         #Combo Box
-        choice_tracker = wx.ComboBox(self, -1, "", size=(130, 23),
+        self.choice_tracker = wx.ComboBox(self, -1, "", size=(130, 23),
                                      choices = const.TRACKER, style = wx.CB_DROPDOWN|wx.CB_READONLY)
-        choice_tracker.SetSelection(const.DEFAULT_TRACKER)
-        choice_tracker.Bind(wx.EVT_COMBOBOX, self.OnChoiceTracker)
-        
+        self.choice_tracker.SetSelection(const.DEFAULT_TRACKER)
+        self.choice_tracker.Bind(wx.EVT_COMBOBOX, self.OnChoiceTracker)
+
         choice_ref_mode = wx.ComboBox(self, -1, "", size=(120, 23),
                                      choices = const.REF_MODE, style = wx.CB_DROPDOWN|wx.CB_READONLY)
         choice_ref_mode.SetSelection(const.DEFAULT_REF_MODE)
@@ -212,7 +212,7 @@ class NeuronavigationTools(wx.Panel):
         self.button_trck_ref3 = wx.Button(self, TR3, label = _('NT'), size = wx.Size(30,23))
         
         
-        self.button_crg = wx.Button(self, FineCorregistration, label=_('Accurate Corregistrate'))
+        self.button_crg = wx.Button(self, FineCorregistration, label=_('Accurate corregistrate'))
         self.Bind(wx.EVT_BUTTON, self.Buttons)
                        
         self.button_neuronavigate = wx.ToggleButton(self, Neuronavigate, _("Neuronavigate"))
@@ -263,7 +263,7 @@ class NeuronavigationTools(wx.Panel):
             name='numCtrl3f', parent=self, integerWidth = 4, fractionWidth = 1)
 
         choice_sizer = wx.FlexGridSizer(rows=1, cols=2, hgap=5, vgap=5)
-        choice_sizer.AddMany([ (choice_tracker, wx.LEFT),
+        choice_sizer.AddMany([ (self.choice_tracker, wx.LEFT),
                                 (choice_ref_mode, wx.RIGHT)])
         
         RefImg_sizer1 = wx.FlexGridSizer(rows=1, cols=4, hgap=5, vgap=5)
@@ -552,6 +552,9 @@ class NeuronavigationTools(wx.Panel):
                         5 : dt.Tracker().ZebrisCMS20}
 
                 self.trk_init = trck[self.tracker_id]()
+                if self.trk_init is None:
+                    self.choice_tracker.SetSelection(0)
+                    self.tracker_id = 0
 
                 print "Tracker changed!"
             else:
@@ -598,9 +601,9 @@ class ObjectWNeuronavigation(wx.Panel):
                
         #Line 1
 
-        text_choice = wx.StaticText(self, -1, _("Select the Object:"))  
+        text_choice = wx.StaticText(self, -1, _("Select the object:"))
         #Line 2      
-        choice_object = wx.ComboBox(self, -1, _("Select the Object:"),
+        choice_object = wx.ComboBox(self, -1, _("Select the object:"),
                                          size=(97, 23),
                                          choices = const.COILS,
                                          style = wx.CB_DROPDOWN|wx.CB_READONLY|wx.CB_SORT)
@@ -608,13 +611,13 @@ class ObjectWNeuronavigation(wx.Panel):
         choice_object.Bind(wx.EVT_COMBOBOX, self.OnChoiceObject)
              
         #Line 3
-        correg_object= wx.Button(self, -1, label=_('Object Registration'), size = wx.Size(125,23))
+        correg_object= wx.Button(self, -1, label=_('Object registration'), size = wx.Size(125,23))
         correg_object.Bind(wx.EVT_BUTTON, self.OnCorregObject)
          
         self.button_img_inio = wx.ToggleButton(self, IR3, label = _('INO'), size = wx.Size(30,23))
         self.button_img_inio.Bind(wx.EVT_TOGGLEBUTTON, self.Img_Inio_ToggleButton)
          
-        self.showObj = wx.CheckBox(self, -1, _('Show Object'), (10, 10))
+        self.showObj = wx.CheckBox(self, -1, _('Show object'), (10, 10))
         self.showObj.SetValue(False)
         wx.EVT_CHECKBOX(self, self.showObj.GetId(), self.ShowObject)    
 
@@ -766,7 +769,7 @@ class Markers(wx.Panel):
         marker_colour.Bind(csel.EVT_COLOURSELECT, self.OnSelectColour)
         self.marker_colour = marker_colour
 
-        create_markers = wx.Button(self, -1, label=_('Create Marker'), size=wx.Size(135, 23))
+        create_markers = wx.Button(self, -1, label=_('Create marker'), size=wx.Size(135, 23))
         create_markers.Bind(wx.EVT_BUTTON, self.OnCreateMarker)
 
         line1 = wx.FlexGridSizer(rows=1, cols=3, hgap=5, vgap=5)
@@ -793,7 +796,7 @@ class Markers(wx.Panel):
         del_s_markers = wx.Button(self, -1, label=_('Remove'), size=wx.Size(65, 23))
         del_s_markers.Bind(wx.EVT_BUTTON, self.DelSingleMarker)
 
-        del_markers = wx.Button(self, -1, label=_('Delete All Markers'), size=wx.Size(135, 23))
+        del_markers = wx.Button(self, -1, label=_('Delete all markers'), size=wx.Size(135, 23))
         del_markers.Bind(wx.EVT_BUTTON, self.OnDelMarker)
 
         line3 = wx.FlexGridSizer(rows=1, cols=2, hgap=5, vgap=5)

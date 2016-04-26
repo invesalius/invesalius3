@@ -590,16 +590,16 @@ ZEBRIS = 5
 DEFAULT_TRACKER = SELECT
 #TRACKER = [_("Polhemus PATRIOT"), _("Polhemus PATRIOT"),
 #  _("Polhemus ISOTRAK II"), _("Claron MicronTracker"), _("Zebris CMS20")]
-TRACKER = [_("Select Tracker:"),_("Claron MicronTracker"), _("Polhemus FASTRAK"),
+TRACKER = [_("Select tracker:"),_("Claron MicronTracker"), _("Polhemus FASTRAK"),
            _("Polhemus ISOTRAK II"),  _("Polhemus PATRIOT"), _("Zebris CMS20")]
 
 
 STATIC_REF = 0
 DYNAMIC_REF = 1
 DEFAULT_REF_MODE = DYNAMIC_REF
-REF_MODE = [_("Static Reference"), _("Dynamic Reference")]
+REF_MODE = [_("Static reference"), _("Dynamic reference")]
 
 BUTTERFLY_COIL = 0
 CIRCULAR_COIL = 1
 DEFAULT_COIL = BUTTERFLY_COIL
-COILS = [_("Butterfly Coil"),_("Circular Coil")]
+COILS = [_("Butterfly coil"),_("Circular coil")]

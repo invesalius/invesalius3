@@ -1,7 +1,7 @@
 import sys
 import gui.dialogs as dlg
 
-
+#TODO: Disconnect tracker when a new one is connected
 class Tracker:
     """
     Initialize spatial trackers for neuronavigation
