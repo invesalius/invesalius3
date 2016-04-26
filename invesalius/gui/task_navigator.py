@@ -435,17 +435,27 @@ class NeuronavigationTools(wx.Panel):
         id = evt.GetId()
         x, y, z = self.a
         if id == TR1:
-            self.aux_trck_ref1 = 0
-            self.coord1b = dco.Coordinates(self.trk_init, self.tracker_id, self.ref_mode_id).Returns()
-            coord = self.coord1b[0:3]
+            if self.trk_init:
+                self.aux_trck_ref1 = 0
+                self.coord1b = dco.Coordinates(self.trk_init, self.tracker_id, self.ref_mode_id).Returns()
+                coord = self.coord1b[0:3]
+            else:
+                dlg.TrackerNotConnected(self.tracker_id)
+
         elif id == TR2:
-            self.aux_trck_ref2 = 0
-            self.coord2b = dco.Coordinates(self.trk_init, self.tracker_id, self.ref_mode_id).Returns()
-            coord = self.coord2b[0:3]
+            if self.trk_init:
+                self.aux_trck_ref2 = 0
+                self.coord2b = dco.Coordinates(self.trk_init, self.tracker_id, self.ref_mode_id).Returns()
+                coord = self.coord2b[0:3]
+            else:
+                dlg.TrackerNotConnected(self.tracker_id)
         elif id == TR3:
-            self.aux_trck_ref3 = 0
-            self.coord3b = dco.Coordinates(self.trk_init, self.tracker_id, self.ref_mode_id).Returns()
-            coord = self.coord3b[0:3]            
+            if self.trk_init:
+                self.aux_trck_ref3 = 0
+                self.coord3b = dco.Coordinates(self.trk_init, self.tracker_id, self.ref_mode_id).Returns()
+                coord = self.coord3b[0:3]
+            else:
+                dlg.TrackerNotConnected(self.tracker_id)
         elif id == FineCorregistration:
             self.Corregistration()
             dialog = dlg.FineCalibration(self, -1, _('InVesalius 3 - Calibration'))
@@ -530,18 +540,23 @@ class NeuronavigationTools(wx.Panel):
             self.correg.stop()
             
     def OnChoiceTracker(self, evt):
-        trck_id = evt.GetSelection()
+        if (self.tracker_id == evt.GetSelection()) and (self.trk_init is not None):
+            dlg.TrackerAlreadyConnected()
+        else:
+            self.tracker_id = evt.GetSelection()
+            if self.tracker_id != 0:
+                trck = {1 : dt.Tracker().ClaronTracker,
+                        2 : dt.Tracker().PlhFastrak,
+                        3 : dt.Tracker().PlhIsotrakII,
+                        4 : dt.Tracker().PlhPatriot,
+                        5 : dt.Tracker().ZebrisCMS20}
 
-        trck = {0 : dt.Tracker().ClaronTracker,
-                1 : dt.Tracker().PlhFastrak,
-                2 : dt.Tracker().PlhIsotrakII,
-                3 : dt.Tracker().PlhPatriot,
-                4 : dt.Tracker().ZebrisCMS20}
+                self.trk_init = trck[self.tracker_id]()
 
-        self.trk_init = trck[trck_id]()
+                print "Tracker changed!"
+            else:
+                print "Select Tracker"
 
-        print "Tracker changed!"
-    
     def OnChoiceRefMode(self, evt):
         self.ref_mode_id = evt.GetSelection()
         print "Ref_Mode changed!" 
