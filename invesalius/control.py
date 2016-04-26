@@ -15,7 +15,7 @@
 #    COMERCIALIZACAO ou de ADEQUACAO A QUALQUER PROPOSITO EM
 #    PARTICULAR. Consulte a Licenca Publica Geral GNU para obter mais
 #    detalhes.
-# --------------------------------------------------------------------------
+#--------------------------------------------------------------------------
 import os
 import plistlib
 import wx
@@ -64,22 +64,21 @@ class Controller():
                                  'Show import directory dialog')
         Publisher.subscribe(self.OnShowDialogImportOtherFiles,
                             	 'Show import other files dialog')
-
         Publisher.subscribe(self.OnShowDialogOpenProject,
                                  'Show open project dialog')
 
         Publisher.subscribe(self.OnShowDialogSaveProject, 'Show save dialog')
 
         Publisher.subscribe(self.LoadRaycastingPreset,
-                                 'Load raycasting preset')
+                            'Load raycasting preset')
         Publisher.subscribe(self.SaveRaycastingPreset,
-                                 'Save raycasting preset')
+                            'Save raycasting preset')
         Publisher.subscribe(self.OnOpenDicomGroup,
                                  'Open DICOM group')
         Publisher.subscribe(self.OnOpenBitmapFiles,
-                                'Open bitmap files')
+                                 'Open bitmap files')
         Publisher.subscribe(self.OnOpenOtherFiles,
-                                'Open other files')
+                                 'Open other files')
 
         Publisher.subscribe(self.Progress, "Update dicom load")
         Publisher.subscribe(self.Progress, "Update bitmap load")
@@ -159,7 +158,6 @@ class Controller():
         elif dirpath:
             self.StartImportBitmapPanel(dirpath)
         #    Publisher.sendMessage("Load data to import panel", dirpath)
-
 
     def ShowDialogImportDirectory(self):
         # Offer to save current project if necessary
@@ -312,8 +310,6 @@ class Controller():
         else:
             dialog.InexistentPath(filepath)
 
-
-
     def OpenProject(self, filepath):
         Publisher.sendMessage('Begin busy cursor')
         path = os.path.abspath(filepath)
@@ -373,7 +369,7 @@ class Controller():
 
     def StartImportPanel(self, path):
 
-        # retrieve DICOM files splited into groups
+        # retrieve DICOM files splitted into groups
         reader = dcm.ProgressDicomReader()
         reader.SetWindowEvent(self.frame)
         reader.SetDirectoryPath(path)
@@ -628,7 +624,7 @@ class Controller():
         # TODO: Create standard import image for all acquisition orientations
         orientation = 'CORONAL'
 
-        proj.original_orientation = \
+        proj.original_orientation =\
             name_to_const[orientation]
 
         proj.window = self.Slice.window_width

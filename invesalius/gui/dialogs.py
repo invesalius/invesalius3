@@ -593,6 +593,7 @@ def ImportEmptyDirectory(dirpath):
     dlg.ShowModal()
     dlg.Destroy()
 
+
 def ImportInvalidFiles(ftype="DICOM"):
     if ftype == "Bitmap":
         msg =  _("There are no Bitmap, JPEG, PNG or TIFF files in the selected folder.")
@@ -614,10 +615,10 @@ def ImportAnalyzeWarning():
     msg2 = _("Slices may be wrongly oriented and functions may not work properly.")
     if sys.platform == 'darwin':
         dlg = wx.MessageDialog(None, "", msg1 + msg2,
-                               wx.ICON_INFORMATION | wx.OK)
+                                wx.ICON_INFORMATION | wx.OK)
     else:
         dlg = wx.MessageDialog(None, msg1 + msg2, "InVesalius 3",
-                               wx.ICON_INFORMATION | wx.OK)
+                                wx.ICON_INFORMATION | wx.OK)
     dlg.ShowModal()
     dlg.Destroy()
 
