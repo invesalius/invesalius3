@@ -18,26 +18,34 @@
 #--------------------------------------------------------------------------
 
 import os
-import multiprocessing
-import tempfile
 
 import vtk
+import nibabel as nib
 
-from nibabel import AnalyzeImage, squeeze_image
+import constants as const
 
-def ReadAnalyze(filename):
-    anlz = squeeze_image(AnalyzeImage.from_filename(filename))
-    return anlz
 
-def ReadDirectory(dir_):
-    """ 
-    Looking for analyze files in the given directory
+def ReadOthers(dir_):
     """
-    imagedata = None
-    for root, sub_folders, files in os.walk(dir_):
-        for file in files:
-            if file.split(".")[-1] == "hdr":
-                filename = os.path.join(root,file)
-                imagedata = ReadAnalyze(filename)
-                return imagedata
+    Read the given Analyze, NIfTI, Compressed NIfTI or PAR/REC file,
+    remove singleton image dimensions and convert image orientation to
+    RAS+ canonical coordinate system. Analyze header does not support
+    affine transformation matrix, though cannot be converted automatically
+    to canonical orientation.
+
+    :param dir_: file path
+    :return: imagedata object
+    """
+
+    if not const.VTK_WARNING:
+        log_path = os.path.join(const.LOG_FOLDER, 'vtkoutput.txt')
+        fow = vtk.vtkFileOutputWindow()
+        fow.SetFileName(log_path)
+        ow = vtk.vtkOutputWindow()
+        ow.SetInstance(fow)
+
+    imagedata = nib.squeeze_image(nib.load(dir_))
+    imagedata = nib.as_closest_canonical(imagedata)
+    imagedata.update_header()
+
     return imagedata

@@ -210,11 +210,16 @@ class ProgressDialog(object):
 WILDCARD_OPEN = "InVesalius 3 project (*.inv3)|*.inv3|"\
                 "All files (*.*)|*.*"
 
-WILDCARD_ANALYZE = "Analyze (*.hdr)|*.hdr|"\
-                "All files (*.*)|*.*"
+WILDCARD_ANALYZE = "Analyze 7.5 (*.hdr)|*.hdr|" \
+                   "All files (*.*)|*.*"
 
-WILDCARD_NIFTI = "NIfTI (*.nii)|*.nii|"\
-                "All files (*.*)|*.*"
+WILDCARD_NIFTI = "NIfTI 1 (*.nii)|*.nii|" \
+                 "Compressed NIfTI (*.nii.gz)|*.nii.gz|" \
+                 "All files (*.*)|*.*"
+
+WILDCARD_PARREC = "PAR/REC (*.par)|*.par|" \
+                 "All files (*.*)|*.*"
+
 
 def ShowOpenProjectDialog():
     # Default system path
@@ -223,61 +228,6 @@ def ShowOpenProjectDialog():
                         defaultDir="",
                         defaultFile="", wildcard=WILDCARD_OPEN,
                         style=wx.FD_OPEN|wx.FD_CHANGE_DIR)
-
-    # inv3 filter is default
-    dlg.SetFilterIndex(0)
-
-    # Show the dialog and retrieve the user response. If it is the OK response,
-    # process the data.
-    filepath = None
-    try:
-        if dlg.ShowModal() == wx.ID_OK:
-            # This returns a Python list of files that were selected.
-            filepath = dlg.GetPath()
-    except(wx._core.PyAssertionError): #FIX: win64
-        filepath = dlg.GetPath()
-
-    # Destroy the dialog. Don't do this until you are done with it!
-    # BAD things can happen otherwise!
-    dlg.Destroy()
-    os.chdir(current_dir)
-    return filepath
-
-
-def ShowOpenAnalyzeDialog():
-    # Default system path
-    current_dir = os.path.abspath(".")
-    dlg = wx.FileDialog(None, message=_("Open Analyze file"),
-                        defaultDir="",
-                        defaultFile="", wildcard=WILDCARD_ANALYZE,
-                        style=wx.FD_OPEN|wx.FD_CHANGE_DIR)
-
-    # inv3 filter is default
-    dlg.SetFilterIndex(0)
-
-    # Show the dialog and retrieve the user response. If it is the OK response,
-    # process the data.
-    filepath = None
-    try:
-        if dlg.ShowModal() == wx.ID_OK:
-            # This returns a Python list of files that were selected.
-            filepath = dlg.GetPath()
-    except(wx._core.PyAssertionError): #FIX: win64
-        filepath = dlg.GetPath()
-
-    # Destroy the dialog. Don't do this until you are done with it!
-    # BAD things can happen otherwise!
-    dlg.Destroy()
-    os.chdir(current_dir)
-    return filepath
-
-def ShowOpenNiftiDialog():
-    # Default system path
-    current_dir = os.path.abspath(".")
-    dlg = wx.FileDialog(None, message=_("Open NIfTI file"),
-                        defaultDir="",
-                        defaultFile="", wildcard=WILDCARD_NIFTI,
-                        style=wx.OPEN|wx.CHANGE_DIR)
 
     # inv3 filter is default
     dlg.SetFilterIndex(0)
@@ -339,6 +289,48 @@ def ShowImportDirDialog():
     dlg.Destroy()
     os.chdir(current_dir)
     return path
+
+
+def ShowImportOtherFilesDialog(id_type):
+    # Default system path
+    current_dir = os.path.abspath(".")
+    dlg = wx.FileDialog(None, message=_("Import Analyze 7.5 file"),
+                        defaultDir="",
+                        defaultFile="", wildcard=WILDCARD_ANALYZE,
+                        style=wx.FD_OPEN | wx.FD_CHANGE_DIR)
+
+    if id_type == const.ID_NIFTI_IMPORT:
+        dlg.SetMessage(_("Import NIFTi 1 file"))
+        dlg.SetWildcard(WILDCARD_NIFTI)
+    elif id_type == const.ID_PARREC_IMPORT:
+        dlg.SetMessage(_("Import PAR/REC file"))
+        dlg.SetWildcard(WILDCARD_PARREC)
+
+    # inv3 filter is default
+    dlg.SetFilterIndex(0)
+
+    # Show the dialog and retrieve the user response. If it is the OK response,
+    # process the data.
+    filename = None
+    try:
+        if dlg.ShowModal() == wx.ID_OK:
+            # GetPath returns in unicode, if a path has non-ascii characters a
+            # UnicodeEncodeError is raised. To avoid this, path is encoded in utf-8
+            if sys.platform == "win32":
+                filename = dlg.GetPath()
+            else:
+                filename = dlg.GetPath().encode('utf-8')
+
+    except(wx._core.PyAssertionError):  # TODO: error win64
+        if (dlg.GetPath()):
+            filename = dlg.GetPath()
+
+    # Destroy the dialog. Don't do this until you are done with it!
+    # BAD things can happen otherwise!
+    dlg.Destroy()
+    os.chdir(current_dir)
+    return filename
+
 
 def ShowSaveAsProjectDialog(default_filename=None):
     current_dir = os.path.abspath(".")
@@ -556,12 +548,25 @@ def ImportEmptyDirectory(dirpath):
     dlg.Destroy()
 
 def ImportInvalidFiles():
-    msg = _("There are no DICOM files in the selected folder.")
+    msg = _("There are no supported files in the selected folder.")
     if sys.platform == 'darwin':
         dlg = wx.MessageDialog(None, "", msg,
                                 wx.ICON_INFORMATION | wx.OK)
     else:
         dlg = wx.MessageDialog(None, msg, "InVesalius 3",
+                                wx.ICON_INFORMATION | wx.OK)
+    dlg.ShowModal()
+    dlg.Destroy()
+
+
+def ImportAnalyzeWarning():
+    msg1 = _("Warning! InVesalius has limited support to Analyze format.\n")
+    msg2 = _("Slices may be wrongly oriented and functions may not work properly.")
+    if sys.platform == 'darwin':
+        dlg = wx.MessageDialog(None, "", msg1 + msg2,
+                                wx.ICON_INFORMATION | wx.OK)
+    else:
+        dlg = wx.MessageDialog(None, msg1 + msg2, "InVesalius 3",
                                 wx.ICON_INFORMATION | wx.OK)
     dlg.ShowModal()
     dlg.Destroy()
