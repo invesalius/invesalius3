@@ -643,15 +643,16 @@ BOOLEAN_XOR = 4
 #This constantes were created by Victor Hugo for the Neuronavigator task
 MARKER_SIZE = 4
 
-MTC = 0
-FASTRAK = 1
-ISOTRAKII = 2
-PATRIOT = 3
-ZEBRIS = 4
-DEFAULT_TRACKER = PATRIOT
+SELECT = 0
+MTC = 1
+FASTRAK = 2
+ISOTRAKII = 3
+PATRIOT = 4
+ZEBRIS = 5
+DEFAULT_TRACKER = SELECT
 #TRACKER = [_("Polhemus PATRIOT"), _("Polhemus PATRIOT"),
 #  _("Polhemus ISOTRAK II"), _("Claron MicronTracker"), _("Zebris CMS20")]
-TRACKER = [_("Claron MicronTracker"), _("Polhemus FASTRAK"),
+TRACKER = [_("Select Tracker:"),_("Claron MicronTracker"), _("Polhemus FASTRAK"),
            _("Polhemus ISOTRAK II"),  _("Polhemus PATRIOT"), _("Zebris CMS20")]
 
 

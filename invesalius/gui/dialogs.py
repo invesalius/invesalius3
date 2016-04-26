@@ -708,18 +708,20 @@ def TrackerNotConnected(trck_id):
     """Spatial Tracker connection error
 
     """
-    trck = {0 : 'Claron MicronTracker',
-            1 : 'Polhemus FASTRAK',
-            2 : 'Polhemus ISOTRAK II',
-            3 : 'Polhemus PATRIOT',
-            4 : 'Zebris CMS20'}
-
-    if trck_id < 5:
-        msg = trck[trck_id] + ' is not connected.'
-    elif trck_id == 5:
-        msg = 'The library for specified tracker is not installed.'
+    trck = {0 : _('No Tracker Selected'),
+            1 : 'Claron MicronTracker',
+            2 : 'Polhemus FASTRAK',
+            3 : 'Polhemus ISOTRAK II',
+            4 : 'Polhemus PATRIOT',
+            5 : 'Zebris CMS20'}
+    if trck_id == 0:
+        msg = trck[trck_id]
+    elif ((trck_id < 6) and (trck_id > 0)):
+        msg = trck[trck_id] + _(' is not connected.')
     elif trck_id == 6:
-        msg = 'The tracker connection is already set.'
+        msg = _('The library for specified tracker is not installed.')
+    elif trck_id == 7:
+        msg = _('The tracker connection is already set.')
 
     if sys.platform == 'darwin':
         dlg = wx.MessageDialog(None, "", msg,
@@ -744,7 +746,6 @@ def TrackerAlreadyConnected():
     dlg.ShowModal()
     dlg.Destroy()
 
-	
 def InvalidTxt():
     msg = _("The TXT file is invalid.")
     if sys.platform == 'darwin':

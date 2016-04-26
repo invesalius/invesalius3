@@ -5,14 +5,17 @@ import gui.dialogs as dlg
 
 class Tracker:
     def __init__(self, trck_id):
+        if trck_id != 0:
+            trck = {1 : self.ClaronTracker,
+                    2 : self.PlhFastrak,
+                    3 : self.PlhIsotrakII,
+                    4 : self.PlhPatriot,
+                    5 : self.ZebrisCMS20}
 
-        trck = {0 : self.ClaronTracker,
-                1 : self.PlhFastrak,
-                2 : self.PlhIsotrakII,
-                3 : self.PlhPatriot,
-                4 : self.ZebrisCMS20}
+            self.ReturnTracker(trck, trck_id)
 
-        self.ReturnTracker(trck, trck_id)
+        else:
+            print "Select Tracker"
 
     def ClaronTracker(self):
         try:
@@ -59,14 +62,18 @@ class Coordinates:
 
         self.__bind_events()
         self.coord = None
+        if trck != 0:
 
-        trck_ID = {0 : self.Claron,
-                1 : self.PolhemusFAST,
-                2 : self.PolhemusISO,
-                3 : self.Polhemus,
-                4 : self.Zebris}
+            trck_ID = {1 : self.Claron,
+                    2 : self.PolhemusFAST,
+                    3 : self.PolhemusISO,
+                    4 : self.Polhemus,
+                    5 : self.Zebris}
 
-        self.coord = trck_ID[trck](trck_init, ref_mode)
+            self.coord = trck_ID[trck](trck_init, ref_mode)
+
+        else:
+            print "Select Tracker"
             
     def __bind_events(self):
         Publisher.subscribe(self.__update_points_MTC, 'Update MTC position')
