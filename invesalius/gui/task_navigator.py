@@ -51,7 +51,7 @@ class TaskPanel(wx.Panel):
 
 class InnerTaskPanel(wx.Panel):
     def __init__(self, parent):
-        wx.Panel.__init__(self, parent, size=wx.Size(0,310))
+        wx.Panel.__init__(self, parent, size=wx.Size(0,330))
         default_color = self.GetBackgroundColour()
         self.SetBackgroundColour(wx.Colour(255, 255, 255))
         self.SetAutoLayout(1)
@@ -108,7 +108,7 @@ class InnerFoldPanel(wx.Panel):
         # parent panel. Perhaps we need to insert the item into the sizer also...
         # Study this.
         fold_panel = fpb.FoldPanelBar(self, -1, wx.DefaultPosition,
-                                      (10, 330), 0,fpb.FPB_SINGLE_FOLD)
+                                      (10, 320), 0,fpb.FPB_SINGLE_FOLD)
 
         # Fold panel style
         style = fpb.CaptionBarStyle()
@@ -165,6 +165,7 @@ class NeuronavigationTools(wx.Panel):
         self.aux_img_ref1 = 0
         self.aux_img_ref2 = 0
         self.aux_img_ref3 = 0
+        self.aux_img__INO_ref = 0
         self.aux_trck_ref1 = 1
         self.aux_trck_ref2 = 1
         self.aux_trck_ref3 = 1
@@ -204,8 +205,9 @@ class NeuronavigationTools(wx.Panel):
         self.button_img_ref3 = wx.ToggleButton(self, IR3, label = _('NI'), size = wx.Size(30,23))
         self.button_img_ref3.Bind(wx.EVT_TOGGLEBUTTON, self.Img_Ref_ToggleButton3)
 
-        self.button_img_inio = wx.Button(self, INO, label = 'INO', size = wx.Size(30,23))
-        self.button_img_inio.Bind(wx.EVT_BUTTON, self.Img_Inio_ToggleButton)
+        #self.button_img_inio = wx.Button(self, INO, label='INO', size=wx.Size(30, 23))
+        self.button_img_inio = wx.ToggleButton(self, INO, label = 'INO', size = wx.Size(30,23))
+        self.button_img_inio.Bind(wx.EVT_TOGGLEBUTTON, self.Img_Inio_ToggleButton)
 
         self.button_trck_ref1 = wx.Button(self, TR1, label = _('LTT'), size = wx.Size(30,23))
         self.button_trck_ref2 = wx.Button(self, TR2, label = _('RTT'), size = wx.Size(30,23))
@@ -361,10 +363,10 @@ class NeuronavigationTools(wx.Panel):
             self.numCtrl1c.SetValue(x)
             self.numCtrl2c.SetValue(y)
             self.numCtrl3c.SetValue(z)
-        #if self.aux_img__INO_ref == 0:
-        #    self.numCtrl1I.SetValue(x)
-        #    self.numCtrl2I.SetValue(y)
-        #    self.numCtrl3I.SetValue(z)
+        if self.aux_img__INO_ref == 0:
+           self.numCtrl1I.SetValue(x)
+           self.numCtrl2I.SetValue(y)
+           self.numCtrl3I.SetValue(z)
 
     def __update_points_trck(self, pubsub_evt):
         coord = pubsub_evt.data
@@ -517,14 +519,28 @@ class NeuronavigationTools(wx.Panel):
             self.numCtrl3c.SetValue(z)
             Publisher.sendMessage("Delete fiducial marker", "NI")
 
+    # def Img_Inio_ToggleButton(self, evt):
+    #     if self.trk_init:
+    #         self.coordINO = dco.Coordinates(self.trk_init, self.tracker_id, self.ref_mode_id).Returns()
+    #         self.numCtrl1I.SetValue(self.coordINO[0])
+    #         self.numCtrl2I.SetValue(self.coordINO[1])
+    #         self.numCtrl3I.SetValue(self.coordINO[2])
+    #     else:
+    #         dlg.TrackerNotConnected(self.tracker_id)
+
     def Img_Inio_ToggleButton(self, evt):
-        if self.trk_init:
-            self.coordINO = dco.Coordinates(self.trk_init, self.tracker_id, self.ref_mode_id).Returns()
-            self.numCtrl1I.SetValue(self.coordINO[0])
-            self.numCtrl2I.SetValue(self.coordINO[1])
-            self.numCtrl3I.SetValue(self.coordINO[2])
-        else:
-            dlg.TrackerNotConnected(self.tracker_id)
+           img_id = self.button_img_inio.GetValue()
+           x, y, z = self.a
+           if img_id == True:
+               self.img_inio = x, y, z
+               self.aux_img__INO_ref = 1
+               self.coordINO = np.array([x,y,z])
+           elif img_id == False:
+               self.aux_img__INO_ref = 0
+               self.img_inio = (0, 0, 0)
+               self.numCtrl1I.SetValue(x)
+               self.numCtrl2I.SetValue(y)
+               self.numCtrl3I.SetValue(z)
 
     def Neuronavigate_ToggleButton(self, evt):
         nav_id = self.button_neuronavigate.GetValue()
@@ -555,42 +571,45 @@ class NeuronavigationTools(wx.Panel):
 
         print "\nFRE:", FRE
 
-        N1 = ([self.coord1a[0], self.coord2a[0], self.coord3a[0]])
-        norm1 = [float(i) / sum(N1) for i in N1]
-        N2 = ([self.coord1a[1], self.coord2a[1], self.coord3a[1]])
-        norm2 = [float(i) / sum(N2) for i in N2]
-        N3 = ([self.coord1a[2], self.coord2a[2], self.coord3a[2]])
-        norm3 = [float(i) / sum(N3) for i in N3]
+        if self.aux_img__INO_ref == 1:
+            N1 = ([self.coord1a[0], self.coord2a[0], self.coord3a[0]])
+            norm1 = [float(i) / sum(N1) for i in N1]
+            N2 = ([self.coord1a[1], self.coord2a[1], self.coord3a[1]])
+            norm2 = [float(i) / sum(N2) for i in N2]
+            N3 = ([self.coord1a[2], self.coord2a[2], self.coord3a[2]])
+            norm3 = [float(i) / sum(N3) for i in N3]
 
-        plhT = np.matrix([[self.coordINO[0]], [self.coordINO[1]], [self.coordINO[2]]])
-        imgT = self.q1 + (self.Minv * self.N) * (plhT - self.q2)
-        imgT = np.array([float(imgT[0]), float(imgT[1]), float(imgT[2])])
-        centroid = np.array([(self.coord1a[0] + self.coord2a[0] + self.coord3a[0]) / 3, (self.coord1a[1] + self.coord2a[1] + self.coord3a[1]) / 3, (self.coord1a[2] + self.coord2a[2] + self.coord3a[2]) / 3])
-        dif_vector = imgT - centroid
+            plhT = np.matrix([[self.coordINO[0]], [self.coordINO[1]], [self.coordINO[2]]])
+            imgT = self.q1 + (self.Minv * self.N) * (plhT - self.q2)
+            imgT = np.array([float(imgT[0]), float(imgT[1]), float(imgT[2])])
+            centroid = np.array([(self.coord1a[0] + self.coord2a[0] + self.coord3a[0]) / 3, (self.coord1a[1] + self.coord2a[1] + self.coord3a[1]) / 3, (self.coord1a[2] + self.coord2a[2] + self.coord3a[2]) / 3])
+            dif_vector = imgT - centroid
 
-        er1 = np.linalg.norm(np.cross(norm1, dif_vector))
-        er2 = np.linalg.norm(np.cross(norm2, dif_vector))
-        er3 = np.linalg.norm(np.cross(norm3, dif_vector))
+            er1 = np.linalg.norm(np.cross(norm1, dif_vector))
+            er2 = np.linalg.norm(np.cross(norm2, dif_vector))
+            er3 = np.linalg.norm(np.cross(norm3, dif_vector))
 
-        err1 = err2 = err3 = 0
-        for i in range(0, 3):
-            diff_vector = [self.coord1a[i] - centroid[0], self.coord2a[i] - centroid[0], self.coord3a[i] - centroid[0]]
+            err1 = err2 = err3 = 0
+            for i in range(0, 3):
+                diff_vector = [self.coord1a[i] - centroid[0], self.coord2a[i] - centroid[0], self.coord3a[i] - centroid[0]]
 
-            err1 += (np.linalg.norm(np.cross(norm1, diff_vector)))** 2
-            err2 += (np.linalg.norm(np.cross(norm2, diff_vector)))** 2
-            err3 += (np.linalg.norm(np.cross(norm3, diff_vector)))** 2
+                err1 += (np.linalg.norm(np.cross(norm1, diff_vector)))** 2
+                err2 += (np.linalg.norm(np.cross(norm2, diff_vector)))** 2
+                err3 += (np.linalg.norm(np.cross(norm3, diff_vector)))** 2
 
-        f1 = np.sqrt(err1 / 3)
-        f2 = np.sqrt(err2 / 3)
-        f3 = np.sqrt(err3 / 3)
+            f1 = np.sqrt(err1 / 3)
+            f2 = np.sqrt(err2 / 3)
+            f3 = np.sqrt(err3 / 3)
 
-        TRE = ((er1 ** 2) / (f1 ** 2)) + ((er2 ** 2) / (f2 ** 2)) + ((er3 ** 2) / (f3 ** 2))
-        TREf = np.sqrt((FRE ** 2) * (1 + (TRE / 3)))
+            TRE = ((er1 ** 2) / (f1 ** 2)) + ((er2 ** 2) / (f2 ** 2)) + ((er3 ** 2) / (f3 ** 2))
+            TREf = np.sqrt((FRE ** 2) * (1 + (TRE / 3)))
 
-        print "\nTRE: ", TREf
+            print "\nTRE: ", TREf
 
-        self.button_crg.SetValue("FRE: " + str(round(FRE, 2))+" TRE: " + str(round(TREf, 2)))
+            self.button_crg.SetValue("FRE: " + str(round(FRE, 2))+" TRE: " + str(round(TREf, 2)))
+        else:
 
+            self.button_crg.SetValue("FRE: " + str(round(FRE, 2)))
 
 
     def OnChoiceTracker(self, evt):
