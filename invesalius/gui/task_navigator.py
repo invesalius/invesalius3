@@ -544,11 +544,11 @@ class NeuronavigationTools(wx.Panel):
 
     def Neuronavigate_ToggleButton(self, evt):
         nav_id = self.button_neuronavigate.GetValue()
-        self.Corregistration()
-        bases = self.Minv, self.N, self.q1, self.q2
-        tracker_mode = self.trk_init, self.tracker_id, self.ref_mode_id
-        self.Calculate_FRE()
         if nav_id == True:
+            self.Corregistration()
+            bases = self.Minv, self.N, self.q1, self.q2
+            tracker_mode = self.trk_init, self.tracker_id, self.ref_mode_id
+            self.Calculate_FRE()
             self.correg = dcr.Corregistration(bases, nav_id, tracker_mode)
         elif nav_id == False:
             self.correg.stop()
@@ -580,17 +580,21 @@ class NeuronavigationTools(wx.Panel):
             norm3 = [float(i) / sum(N3) for i in N3]
 
             plhT = np.matrix([[self.coordINO[0]], [self.coordINO[1]], [self.coordINO[2]]])
-            imgT = self.q1 + (self.Minv * self.N) * (plhT - self.q2)
-            imgT = np.array([float(imgT[0]), float(imgT[1]), float(imgT[2])])
+            #imgT = self.q1 + (self.Minv * self.N) * (plhT - self.q2)
+            #imgT = np.array([float(imgT[0]), float(imgT[1]), float(imgT[2])])
             centroid = np.array([(self.coord1a[0] + self.coord2a[0] + self.coord3a[0]) / 3, (self.coord1a[1] + self.coord2a[1] + self.coord3a[1]) / 3, (self.coord1a[2] + self.coord2a[2] + self.coord3a[2]) / 3])
-            dif_vector = imgT - centroid
+            #Difference between the target point (after coregister) with the fiducials centroid
+            #dif_vector = imgT - centroid
+            dif_vector = plhT - centroid
 
             er1 = np.linalg.norm(np.cross(norm1, dif_vector))
             er2 = np.linalg.norm(np.cross(norm2, dif_vector))
             er3 = np.linalg.norm(np.cross(norm3, dif_vector))
 
             err1 = err2 = err3 = 0
+
             for i in range(0, 3):
+                # Difference between each fiducial with the fiducials centroid
                 diff_vector = [self.coord1a[i] - centroid[0], self.coord2a[i] - centroid[0], self.coord3a[i] - centroid[0]]
 
                 err1 += (np.linalg.norm(np.cross(norm1, diff_vector)))** 2
@@ -601,16 +605,20 @@ class NeuronavigationTools(wx.Panel):
             f2 = np.sqrt(err2 / 3)
             f3 = np.sqrt(err3 / 3)
 
-            TRE = ((er1 ** 2) / (f1 ** 2)) + ((er2 ** 2) / (f2 ** 2)) + ((er3 ** 2) / (f3 ** 2))
-            TREf = np.sqrt((FRE ** 2) * (1 + (TRE / 3)))
+            SUM = ((er1 ** 2) / (f1 ** 2)) + ((er2 ** 2) / (f2 ** 2)) + ((er3 ** 2) / (f3 ** 2))
+            TREf = np.sqrt((FRE ** 2) * (1 + (SUM / 3)))
 
             print "\nTRE: ", TREf
 
             self.button_crg.SetValue("FRE: " + str(round(FRE, 2))+" TRE: " + str(round(TREf, 2)))
-        else:
 
+        else:
             self.button_crg.SetValue("FRE: " + str(round(FRE, 2)))
 
+        if FRE < 3:
+            self.button_crg.SetBackgroundColour('GREEN')
+        else:
+            self.button_crg.SetBackgroundColour('RED')
 
     def OnChoiceTracker(self, evt):
         if (self.tracker_id == evt.GetSelection()) and (self.trk_init is not None):
