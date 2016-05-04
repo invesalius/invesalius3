@@ -1,4 +1,5 @@
 import numpy as np
+from math import radians, sin, cos
 from wx.lib.pubsub import pub as Publisher
 
 import gui.dialogs as dlg
@@ -37,11 +38,7 @@ class Tracker:
         return 2
 
     def PlhPatriot(self):
-        import sys
-
-        import serial
-        import usb.core
-        import usb.util
+        import Polhemus
 
         print "PATRIOT func"
         return 3
@@ -281,82 +278,41 @@ class Coordinates:
 
     def Polhemus(self, trck_init, ref_mode):
 
-        # If Polhemus is not connected return this coord
-
-        endpoint = trck_init[0][(0, 0)][0]
-        trck_init.write(0x2, "P")
-
         coord = None
-        data1 = None
-        data2 = None
         inch2mm = 25.4
+        plh = trck_init
 
         if ref_mode == 0:
-            # TODO: Verify which is the best way to convert the string in line1
-            data1 = trck_init.read(endpoint.bEndpointAddress,
-                                   endpoint.wMaxPacketSize)
-
-            astr = [chr(s) for s in data1]
-            aofloat = str()
-            for i in range(0, len(astr)):
-                aofloat += astr[i]
-            aostr = [s for s in aofloat.split()]
-
-            line1 = ''
-
-            for j in range(0, 7):
-                line1 = line1+aostr[j] + ' '
-
-            line1 = [s for s in line1.split()]
-            coord = [float(s) for s in line1[1:len(line1)]]
-
-            if not coord:
-                print "error 0,0,0"
-                coord = np.zeros((1, 6))
+            plh.Run()
+            coord = (plh.PositionTooltipX1, plh.PositionTooltipY1, plh.PositionTooltipZ1,
+                     plh.AngleX1, plh.AngleY1, plh.AngleZ1)
 
             coord = (float(coord[0])*inch2mm, float(coord[1])*inch2mm,
                      float(coord[2])*(-inch2mm), float(coord[3]),
                      float(coord[4]), float(coord[5]))
 
         elif ref_mode == 1:
-            data1 = trck_init.read(endpoint.bEndpointAddress, 2 * endpoint.wMaxPacketSize)
-
-            data1str = data1.tostring()
-
-            count = 0
-            for i, j in enumerate(data1str):
-                if j == '-':
-                    data1str = data1str[:i + count] + ' ' + data1str[i + count:]
-                    count = count + 1
-            aostr1 = [s for s in data1str.split()]
-            plh1 = [float(s) for s in aostr1[1:len(aostr1)]]
-            plh2 = [float(s) for s in aostr1[8:14]]
-
-            a = radians(plh2[3])
-            b = radians(plh2[4])
-            g = radians(plh2[5])
-
-            angs1 = plh2[3:6]
-            plh1 = matrix(plh1[0:3])
-            plh1.reshape(3, 1)
-            plh2 = matrix(plh2[0:3])
-            plh2.reshape(3, 1)
-
-            vet = plh1 - plh2
+            plh.Run()
+            Tooltip1 = np.array([plh.PositionTooltipX1, plh.PositionTooltipY1, plh.PositionTooltipZ1])
+            Tooltip2 = np.array([plh.PositionTooltipX2, plh.PositionTooltipY2, plh.PositionTooltipZ2])
+            angs1 = np.array([plh.AngleX1, plh.AngleY1, plh.AngleZ1])
+            angs2 = np.array([plh.AngleX2, plh.AngleY2, plh.AngleZ2])
+            a = radians(angs2[2])
+            b = radians(angs2[1])
+            g = radians(angs2[0])
+            vet = Tooltip1 - Tooltip2
             vet = vet.reshape(3, 1)
 
             # Attitude Matrix given by Patriot Manual
-            Mrot = matrix([[cos(a) * cos(b), sin(b) * sin(g) * cos(a) - cos(g) * sin(a),
+            Mrot = np.matrix([[cos(a) * cos(b), sin(b) * sin(g) * cos(a) - cos(g) * sin(a),
                             cos(a) * sin(b) * cos(g) + sin(a) * sin(g)],
                            [cos(b) * sin(a), sin(b) * sin(g) * sin(a) + cos(g) * cos(a),
                             cos(g) * sin(b) * sin(a) - sin(g) * cos(a)],
                            [-sin(b), sin(g) * cos(b), cos(b) * cos(g)]])
 
             coord_fin = (Mrot.T) * vet
-            coord = coord_fin[0], coord_fin[1], coord_fin[2], angs1[0], angs1[1], angs1[2]
 
-            if not coord:
-                coord = (0, 0, 0, 0, 0, 0)
+            coord = coord_fin[0], coord_fin[1], coord_fin[2], angs1[0], angs1[1], angs1[2]
 
             coord = (float(coord[0]) * inch2mm, float(coord[1]) * inch2mm,
                      float(coord[2]) * (-inch2mm), float(coord[3]),
@@ -372,27 +328,3 @@ class Coordinates:
         return self.coord
 #TODO: Precisa dessa funcao returns.. num da pra usar a propria de cada um direto na func de escolher o navegador (interrogacao)
 
-# it was inside Polhemus
-# plh1 = [float(s) for s in line1[1:7]]
-# plh2 = [float(s) for s in line2[1:len(line2)]]
-
-# a (alfa) -> rotation around x, b (beta) -> rotation around y, g (gama) ->rotation around z
-# a = radians(plh2[3])
-# b = radians(plh2[4])
-# g = radians(plh2[5])
-# angs1 = plh1[3:6]
-# plh1 = matrix(plh1[0:3])
-# plh1.reshape(3, 1)
-# plh2 = matrix(plh2[0:3])
-# plh2.reshape(3, 1)
-# vet = plh1 - plh2
-# vet=plh1
-# vet = vet.reshape(3, 1)
-# Attitude Matrix given by Patriot Manual
-# Mrot = matrix([[cos(a)*cos(b), sin(b)*sin(g)*cos(a) - cos(g)*sin(a), cos(a)*sin(b)*cos(g) + sin(a)*sin(g)],
-#                [cos(b)*sin(a), sin(b)*sin(g)*sin(a) + cos(g)*cos(a), cos(g)*sin(b)*sin(a) - sin(g)*cos(a)],
-#                [-sin(b), sin(g)*cos(b), cos(b)*cos(g)]])
-
-# coord_fin = (Mrot.T)*vet
-# coord = (coord_fin[0], coord_fin[1], coord_fin[2], angs1[0],
-#          angs1[1], angs1[2])

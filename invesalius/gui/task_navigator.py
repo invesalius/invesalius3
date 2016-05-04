@@ -441,7 +441,6 @@ class NeuronavigationTools(wx.Panel):
             if self.trk_init:
                 self.aux_trck_ref1 = 0
                 self.coord1b = dco.Coordinates(self.trk_init, self.tracker_id, self.ref_mode_id).Returns()
-                print self.coord1b
                 coord = self.coord1b[0:3]
             else:
                 dlg.TrackerNotConnected(self.tracker_id)
