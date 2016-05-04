@@ -666,6 +666,7 @@ class DicomPreviewSlice(wx.Panel):
 class SingleImagePreview(wx.Panel):
     def __init__(self, parent):
         wx.Panel.__init__(self, parent, -1)
+        self.actor = None
         self.__init_gui()
         self.__init_vtk()
         self.__bind_evt_gui()
@@ -676,9 +677,6 @@ class SingleImagePreview(wx.Panel):
         self.window_level = const.WINDOW_LEVEL[_("Bone")][1]
 
     def __init_vtk(self):
-        actor = vtk.vtkImageActor()
-        self.actor = actor
-
         text_image_size = vtku.Text()
         text_image_size.SetPosition(const.TEXT_POS_LEFT_UP)
         text_image_size.SetValue("")
@@ -708,7 +706,6 @@ class SingleImagePreview(wx.Panel):
         self.text_acquisition = text_acquisition
 
         renderer = vtk.vtkRenderer()
-        renderer.AddActor(actor)
         renderer.AddActor(text_image_size.actor)
         renderer.AddActor(text_image_location.actor)
         renderer.AddActor(text_patient.actor)
@@ -816,7 +813,7 @@ class SingleImagePreview(wx.Panel):
             value1 = '' 
         else: 
             value1 = STR_SPC %(dicom.image.spacing[2])
-        
+
         if dicom.image.orientation_label == 'AXIAL':
             value2 = STR_LOCAL %(dicom.image.position[2])
         elif dicom.image.orientation_label == 'CORONAL':
@@ -838,7 +835,6 @@ class SingleImagePreview(wx.Panel):
         value = STR_ACQ % (dicom.acquisition.date,
                             dicom.acquisition.time)
         self.text_acquisition.SetValue(value)
-        
 
         rdicom = vtkgdcm.vtkGDCMImageReader()
         rdicom.SetFileName(dicom.image.file)
@@ -851,6 +847,11 @@ class SingleImagePreview(wx.Panel):
         colorer.SetInputConnection(rdicom.GetOutputPort())
         colorer.SetWindow(float(window_width))
         colorer.SetLevel(float(window_level))
+        colorer.Update()
+
+        if self.actor is None:
+            self.actor = vtk.vtkImageActor()
+            self.renderer.AddActor(self.actor)
 
         # PLOT IMAGE INTO VIEWER
         self.actor.SetInputData(colorer.GetOutput())
