@@ -232,7 +232,7 @@ class Viewer(wx.Panel):
         self.ball_reference.SetRadius(r)
 
         mapper = vtk.vtkPolyDataMapper()
-        mapper.SetInput(self.ball_reference.GetOutput())
+        mapper.SetInputConnection(self.ball_reference.GetOutputPort())
 
         p = vtk.vtkProperty()
         p.SetColor(1, 0, 0)

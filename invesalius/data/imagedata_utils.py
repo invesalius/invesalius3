@@ -84,7 +84,7 @@ def ResampleImage2D(imagedata, px=None, py=None, resolution_percentage = None,
     factor_y = py/float(f+1)
 
     resample = vtk.vtkImageResample()
-    resample.SetInput(imagedata)
+    resample.SetInputData(imagedata)
     resample.SetAxisMagnificationFactor(0, factor_x)
     resample.SetAxisMagnificationFactor(1, factor_y)
     resample.SetOutputSpacing(spacing[0] * factor_x, spacing[1] * factor_y, spacing[2])
