@@ -561,7 +561,7 @@ class SurfaceManager():
                                                  options['min weight'],
                                                  options['steps'])
             #  polydata.SetSource(None)
-            polydata.DebugOn()
+            #  polydata.DebugOn()
 
         else:
             #smoother = vtk.vtkWindowedSincPolyDataFilter()
@@ -645,7 +645,7 @@ class SurfaceManager():
             polydata = filled_polydata.GetOutput()
             #polydata.Register(None)
             #  polydata.SetSource(None)
-            polydata.DebugOn()
+            #  polydata.DebugOn()
             del filled_polydata
 
         normals = vtk.vtkPolyDataNormals()
