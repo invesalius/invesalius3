@@ -1414,10 +1414,15 @@ class ReorientImageInteractorStyle(DefaultInteractorStyle):
 
         self.viewer = viewer
 
+        self.line1 = None
+        self.line2 = None
+
         self.AddObserver("KeyPressEvent", self.OnKeyPress)
+        self.viewer.slice_data.renderer.AddObserver("StartEvent", self.OnUpdate)
 
     def SetUp(self):
         self.viewer.slice_.current_mask.is_shown = False
+        self.draw_lines()
         Publisher.sendMessage('Reload actual slice')
 
     def OnKeyPress(self, evt, obj):
@@ -1446,6 +1451,58 @@ class ReorientImageInteractorStyle(DefaultInteractorStyle):
 
         self.viewer.slice_.current_mask.clear_history()
         Publisher.sendMessage('Reload actual slice')
+
+    def OnUpdate(self, obj, evt):
+        w, h = self.viewer.slice_data.renderer.GetSize()
+
+        center = self.viewer.slice_data.actor.GetCenter()
+        coord = vtk.vtkCoordinate()
+        coord.SetValue(center)
+        x, y = coord.GetComputedDisplayValue(self.viewer.slice_data.renderer)
+
+        self.line1.SetPoint1(0, y, 0)
+        self.line1.SetPoint2(w, y, 0)
+        self.line1.Update()
+
+        self.line2.SetPoint1(x, 0, 0)
+        self.line2.SetPoint2(x, h, 0)
+        self.line2.Update()
+
+    def _create_line(self, x0, y0, x1, y1, color):
+        line = vtk.vtkLineSource()
+        line.SetPoint1(x0, y0, 0)
+        line.SetPoint2(x1, y1, 0)
+
+        coord = vtk.vtkCoordinate()
+        coord.SetCoordinateSystemToDisplay()
+
+        mapper = vtk.vtkPolyDataMapper2D()
+        mapper.SetTransformCoordinate(coord)
+        mapper.SetInputConnection(line.GetOutputPort())
+        mapper.Update()
+
+        actor = vtk.vtkActor2D()
+        actor.SetMapper(mapper)
+        actor.GetProperty().SetLineWidth(2.0)
+        actor.GetProperty().SetColor(color)
+
+        self.viewer.slice_data.renderer.AddActor(actor)
+
+        return line
+
+    def draw_lines(self):
+        if self.viewer.orientation == 'AXIAL':
+            color1 = (0, 1, 0)
+            color2 = (0, 0, 1)
+        elif self.viewer.orientation == 'CORONAL':
+            color1 = (1, 0, 0)
+            color2 = (0, 0, 1)
+        elif self.viewer.orientation == 'SAGITAL':
+            color1 = (1, 0, 0)
+            color2 = (0, 1, 0)
+
+        self.line1 = self._create_line(0, 0.5, 1, 0.5, color1)
+        self.line2 = self._create_line(0.5, 0, 0.5, 1, color2)
 
 
 def get_style(style):
