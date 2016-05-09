@@ -93,8 +93,9 @@ class Slice(object):
         self._type_projection = const.PROJECTION_NORMAL
         self.n_border = const.PROJECTION_BORDER_SIZE
 
-        self.spacing = (1.0, 1.0, 1.0)
+        self._spacing = (1.0, 1.0, 1.0)
         self.rotations = (0, 0, 0)
+        self.center = [0, 0, 0]
 
         self.number_of_colours = 256
         self.saturation_range = (0, 0)
@@ -125,6 +126,16 @@ class Slice(object):
         i, e = value.min(), value.max()
         r = int(e) - int(i)
         self.histogram = np.histogram(self._matrix, r, (i, e))[0]
+        self.center = [(s * d/2.0) for (d, s) in zip(self.matrix.shape[::-1], self.spacing)]
+
+    @property
+    def spacing(self):
+        return self._spacing
+
+    @spacing.setter
+    def spacing(self, value):
+        self._spacing = value
+        self.center = [(s * d/2.0) for (d, s) in zip(self.matrix.shape[::-1], self.spacing)]
 
     def __bind_events(self):
         # General slice control
@@ -568,16 +579,16 @@ class Slice(object):
                 number_slices = 1
 
             if np.any(self.rotations):
-                dz, dy, dx = self.matrix.shape
+                cx, cy, cz = self.center
                 rx, ry, rz = self.rotations
                 sx, sy, sz = self.spacing
-                T0 = transformations.translation_matrix((-dz/2.0 * sz, -dy/2.0 * sy, -dx/2.0 * sx))
+                T0 = transformations.translation_matrix((-cz, -cy, -cx))
                 Rx = transformations.rotation_matrix(rx, (0, 0, 1))
                 Ry = transformations.rotation_matrix(ry, (0, 1, 0))
                 Rz = transformations.rotation_matrix(rz, (1, 0, 0))
                 #  R = transformations.euler_matrix(rz, ry, rx, 'rzyx')
                 R = transformations.concatenate_matrices(Rx, Ry, Rz)
-                T1 = transformations.translation_matrix((dz/2.0 * sz, dy/2.0 * sy, dx/2.0 * sx))
+                T1 = transformations.translation_matrix((cz, cy, cx))
                 M = transformations.concatenate_matrices(T1, R.T, T0)
 
 
