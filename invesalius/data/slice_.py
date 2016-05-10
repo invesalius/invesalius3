@@ -94,7 +94,7 @@ class Slice(object):
         self.n_border = const.PROJECTION_BORDER_SIZE
 
         self._spacing = (1.0, 1.0, 1.0)
-        self.rotations = (0, 0, 0)
+        self.rotations = [0, 0, 0]
         self.center = [0, 0, 0]
 
         self.number_of_colours = 256
