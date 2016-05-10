@@ -1419,9 +1419,14 @@ class ReorientImageInteractorStyle(DefaultInteractorStyle):
 
         self.actors = []
 
+        self._over_center = False
+        self.dragging = False
+
         self.picker = vtk.vtkWorldPointPicker()
 
         self.AddObserver("KeyPressEvent", self.OnKeyPress)
+        self.AddObserver("LeftButtonPressEvent",self.OnLeftClick)
+        self.AddObserver("LeftButtonReleaseEvent", self.OnLeftRelease)
         self.AddObserver("MouseMoveEvent", self.OnMouseMove)
         self.viewer.slice_data.renderer.AddObserver("StartEvent", self.OnUpdate)
 
@@ -1461,6 +1466,13 @@ class ReorientImageInteractorStyle(DefaultInteractorStyle):
         self.viewer.slice_.current_mask.clear_history()
         Publisher.sendMessage('Reload actual slice')
 
+    def OnLeftClick(self, obj, evt):
+        if self._over_center:
+            self.dragging = True
+
+    def OnLeftRelease(self, obj, evt):
+        self.dragging = False
+
     def OnMouseMove(self, obj, evt):
         """
         This event is responsible to reorient image, set mouse cursors
@@ -1477,25 +1489,28 @@ class ReorientImageInteractorStyle(DefaultInteractorStyle):
 
         dist_center = ((mx - cx)**2 + (my - cy)**2)**0.5
 
-        if dist_center <= 15:
-            cursor = wx.StockCursor(wx.CURSOR_SIZENESW)
+        if self.dragging:
+            self.picker.Pick(mx, my, 0, self.viewer.slice_data.renderer)
+            x, y, z = self.picker.GetPickPosition()
+            icx, icy, icz = self.viewer.slice_.center
 
-            if self.left_pressed:
-                self.picker.Pick(mx, my, 0, self.viewer.slice_data.renderer)
-                x, y, z = self.picker.GetPickPosition()
-                icx, icy, icz = self.viewer.slice_.center
+            if self.viewer.orientation == 'AXIAL':
+                self.viewer.slice_.center = (x, y, icz)
+            elif self.viewer.orientation == 'CORONAL':
+                self.viewer.slice_.center = (x, icy, z)
+            elif self.viewer.orientation == 'SAGITAL':
+                self.viewer.slice_.center = (icx, y, z)
+            Publisher.sendMessage('Update slice viewer')
 
-                if self.viewer.orientation == 'AXIAL':
-                    self.viewer.slice_.center = (x, y, icz)
-                elif self.viewer.orientation == 'CORONAL':
-                    self.viewer.slice_.center = (x, icy, z)
-                elif self.viewer.orientation == 'SAGITAL':
-                    self.viewer.slice_.center = (icx, y, z)
-                Publisher.sendMessage('Update slice viewer')
         else:
-            cursor = wx.StockCursor(wx.CURSOR_DEFAULT)
+            if dist_center <= 15:
+                self._over_center = True
+                cursor = wx.StockCursor(wx.CURSOR_SIZENESW)
+            else:
+                self._over_center = False
+                cursor = wx.StockCursor(wx.CURSOR_DEFAULT)
 
-        self.viewer.interactor.SetCursor(cursor)
+            self.viewer.interactor.SetCursor(cursor)
 
     def OnUpdate(self, obj, evt):
         w, h = self.viewer.slice_data.renderer.GetSize()
