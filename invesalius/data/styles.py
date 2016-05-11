@@ -43,6 +43,7 @@ from skimage import filter
 import watershed_process
 
 import utils
+import transformations
 
 ORIENTATIONS = {
         "AXIAL": const.AXIAL,
@@ -1479,13 +1480,13 @@ class ReorientImageInteractorStyle(DefaultInteractorStyle):
             self.picker.Pick(x, y, 0, self.viewer.slice_data.renderer)
             x, y, z = self.picker.GetPickPosition()
 
-            if self.viewer.orientation == 'AXIAL':
-                self.p0 = np.array((y-cy, x-cx))
-            elif self.viewer.orientation == 'CORONAL':
-                self.p0 = np.array((z-cz, x-cx))
-            elif self.viewer.orientation == 'SAGITAL':
-                self.p0 = np.array((z-cz, y-cy))
-
+            #  if self.viewer.orientation == 'AXIAL':
+                #  self.p0 = np.array((y-cy, x-cx))
+            #  elif self.viewer.orientation == 'CORONAL':
+                #  self.p0 = np.array((z-cz, x-cx))
+            #  elif self.viewer.orientation == 'SAGITAL':
+                #  self.p0 = np.array((z-cz, y-cy))
+            self.p0 = self.get_image_point_coord(x, y, z)
             self.to_rot = True
 
 
@@ -1541,6 +1542,7 @@ class ReorientImageInteractorStyle(DefaultInteractorStyle):
 
     def OnDblClick(self, evt):
         self.viewer.slice_.rotations = [0, 0, 0]
+        self.viewer.slice_.q_orientation = np.array((1, 0, 0, 0))
         self._discard_buffers()
         self.viewer.slice_.current_mask.clear_history()
         Publisher.sendMessage('Reload actual slice')
@@ -1582,20 +1584,49 @@ class ReorientImageInteractorStyle(DefaultInteractorStyle):
         elif self.viewer.orientation == 'SAGITAL':
             p1 = np.array((z-cz, y-cy))
         p0 = self.p0
+        p1 = self.get_image_point_coord(x, y, z)
+
+        axis = np.cross(p0, p1)
+        axis = axis / np.linalg.norm(axis)
+        angle = np.arccos(np.dot(p0, p1)/(np.linalg.norm(p0)*np.linalg.norm(p1)))
+
+        self.viewer.slice_.q_orientation = transformations.quaternion_multiply(self.viewer.slice_.q_orientation, transformations.quaternion_about_axis(angle, axis))
+
+        #  print axis, angle, self.viewer.slice_.q_orientation
+        print axis, angle
 
         if self.viewer.orientation == 'AXIAL':
-            angle = np.arctan2(p0[0] , p0[1]) - np.arctan2(p1[0], p1[1])
+            #  angle = np.arctan2(p0[0] , p0[1]) - np.arctan2(p1[0], p1[1])
             self.viewer.slice_.rotations[2] = angle
         elif self.viewer.orientation == 'CORONAL':
-            angle = np.arctan2(p0[0] , p0[1]) - np.arctan2(p1[0], p1[1])
+            #  angle = np.arctan2(p0[0] , p0[1]) - np.arctan2(p1[0], p1[1])
             self.viewer.slice_.rotations[1] = angle
         elif self.viewer.orientation == 'SAGITAL':
-            angle = np.arctan2(p0[0] , p0[1]) - np.arctan2(p1[0], p1[1])
+            #  angle = np.arctan2(p0[0] , p0[1]) - np.arctan2(p1[0], p1[1])
             self.viewer.slice_.rotations[0] = angle
 
         self._discard_buffers()
         self.viewer.slice_.current_mask.clear_history()
         Publisher.sendMessage('Reload actual slice')
+        self.p0 = self.get_image_point_coord(x, y, z)
+
+    def get_image_point_coord(self, x, y, z):
+        cx, cy, cz = self.viewer.slice_.center
+        if self.viewer.orientation == 'AXIAL':
+            z = cz
+        elif self.viewer.orientation == 'CORONAL':
+            y = cy
+        elif self.viewer.orientation == 'SAGITAL':
+            x = cx
+
+        x, y, z = x-cx, y-cy, z-cz
+
+        M = transformations.quaternion_matrix(self.viewer.slice_.q_orientation)
+        tcoord = np.array((z, y, x, 1)).dot(M)
+        tcoord = tcoord[:3]/tcoord[3]
+
+        #  print (z, y, x), tcoord
+        return tcoord
 
     def _create_line(self, x0, y0, x1, y1, color):
         line = vtk.vtkLineSource()

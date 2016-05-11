@@ -97,6 +97,8 @@ class Slice(object):
         self.rotations = [0, 0, 0]
         self.center = [0, 0, 0]
 
+        self.q_orientation = np.array((1, 0, 0, 0))
+
         self.number_of_colours = 256
         self.saturation_range = (0, 0)
         self.hue_range = (0, 0)
@@ -583,11 +585,12 @@ class Slice(object):
                 rx, ry, rz = self.rotations
                 sx, sy, sz = self.spacing
                 T0 = transformations.translation_matrix((-cz, -cy, -cx))
-                Rx = transformations.rotation_matrix(rx, (0, 0, 1))
-                Ry = transformations.rotation_matrix(ry, (0, 1, 0))
-                Rz = transformations.rotation_matrix(rz, (1, 0, 0))
-                #  R = transformations.euler_matrix(rz, ry, rx, 'rzyx')
-                R = transformations.concatenate_matrices(Rx, Ry, Rz)
+                #  Rx = transformations.rotation_matrix(rx, (0, 0, 1))
+                #  Ry = transformations.rotation_matrix(ry, (0, 1, 0))
+                #  Rz = transformations.rotation_matrix(rz, (1, 0, 0))
+                #  #  R = transformations.euler_matrix(rz, ry, rx, 'rzyx')
+                #  R = transformations.concatenate_matrices(Rx, Ry, Rz)
+                R = transformations.quaternion_matrix(self.q_orientation)
                 T1 = transformations.translation_matrix((cz, cy, cx))
                 M = transformations.concatenate_matrices(T1, R.T, T0)
 
