@@ -1431,6 +1431,8 @@ class ReorientImageInteractorStyle(DefaultInteractorStyle):
         self.AddObserver("MouseMoveEvent", self.OnMouseMove)
         self.viewer.slice_data.renderer.AddObserver("StartEvent", self.OnUpdate)
 
+        self.viewer.interactor.Bind(wx.EVT_LEFT_DCLICK, self.OnDblClick)
+
     def SetUp(self):
         self.viewer.slice_.current_mask.is_shown = False
         self.draw_lines()
@@ -1495,55 +1497,22 @@ class ReorientImageInteractorStyle(DefaultInteractorStyle):
         """
         This event is responsible to reorient image, set mouse cursors
         """
-        # Getting mouse position
-        iren = self.viewer.interactor
-        mx, my = iren.GetEventPosition()
-
-        # Getting center value
-        center = self.viewer.slice_.center
-        coord = vtk.vtkCoordinate()
-        coord.SetValue(center)
-        cx, cy = coord.GetComputedDisplayValue(self.viewer.slice_data.renderer)
-
-        self.picker.Pick(mx, my, 0, self.viewer.slice_data.renderer)
-        x, y, z = self.picker.GetPickPosition()
 
         if self.dragging:
-            icx, icy, icz = self.viewer.slice_.center
-
-            if self.viewer.orientation == 'AXIAL':
-                self.viewer.slice_.center = (x, y, icz)
-            elif self.viewer.orientation == 'CORONAL':
-                self.viewer.slice_.center = (x, icy, z)
-            elif self.viewer.orientation == 'SAGITAL':
-                self.viewer.slice_.center = (icx, y, z)
-            Publisher.sendMessage('Update slice viewer')
-
+            self._move_center_rot()
         elif self.to_rot:
-            cx, cy, cz = self.viewer.slice_.center
-            #  x, y, z = self.picker.GetPickPosition()
-            if self.viewer.orientation == 'AXIAL':
-                p1 = np.array((y-cy, x-cx))
-            elif self.viewer.orientation == 'CORONAL':
-                p1 = np.array((z-cz, x-cx))
-            elif self.viewer.orientation == 'SAGITAL':
-                p1 = np.array((z-cz, y-cy))
-            p0 = self.p0
-
-            if self.viewer.orientation == 'AXIAL':
-                angle = np.arctan2(p0[0] , p0[1]) - np.arctan2(p1[0], p1[1])
-                self.viewer.slice_.rotations[2] = angle
-            elif self.viewer.orientation == 'CORONAL':
-                angle = np.arctan2(p0[0] , p0[1]) - np.arctan2(p1[0], p1[1])
-                self.viewer.slice_.rotations[1] = angle
-            elif self.viewer.orientation == 'SAGITAL':
-                angle = np.arctan2(p0[0] , p0[1]) - np.arctan2(p1[0], p1[1])
-                self.viewer.slice_.rotations[0] = angle
-            self._discard_buffers()
-            self.viewer.slice_.current_mask.clear_history()
-            Publisher.sendMessage('Reload actual slice')
-            Publisher.sendMessage('Update slice viewer')
+            self._rotate()
         else:
+            # Getting mouse position
+            iren = self.viewer.interactor
+            mx, my = iren.GetEventPosition()
+
+            # Getting center value
+            center = self.viewer.slice_.center
+            coord = vtk.vtkCoordinate()
+            coord.SetValue(center)
+            cx, cy = coord.GetComputedDisplayValue(self.viewer.slice_data.renderer)
+
             dist_center = ((mx - cx)**2 + (my - cy)**2)**0.5
             if dist_center <= 15:
                 self._over_center = True
@@ -1570,6 +1539,64 @@ class ReorientImageInteractorStyle(DefaultInteractorStyle):
         self.line2.SetPoint2(x, h, 0)
         self.line2.Update()
 
+    def OnDblClick(self, evt):
+        self.viewer.slice_.rotations = [0, 0, 0]
+        self._discard_buffers()
+        self.viewer.slice_.current_mask.clear_history()
+        Publisher.sendMessage('Reload actual slice')
+
+    def _move_center_rot(self):
+        iren = self.viewer.interactor
+        mx, my = iren.GetEventPosition()
+
+        icx, icy, icz = self.viewer.slice_.center
+
+        self.picker.Pick(mx, my, 0, self.viewer.slice_data.renderer)
+        x, y, z = self.picker.GetPickPosition()
+
+        if self.viewer.orientation == 'AXIAL':
+            self.viewer.slice_.center = (x, y, icz)
+        elif self.viewer.orientation == 'CORONAL':
+            self.viewer.slice_.center = (x, icy, z)
+        elif self.viewer.orientation == 'SAGITAL':
+            self.viewer.slice_.center = (icx, y, z)
+
+        self._discard_buffers()
+        self.viewer.slice_.current_mask.clear_history()
+        Publisher.sendMessage('Reload actual slice')
+
+    def _rotate(self):
+        # Getting mouse position
+        iren = self.viewer.interactor
+        mx, my = iren.GetEventPosition()
+
+        cx, cy, cz = self.viewer.slice_.center
+
+        self.picker.Pick(mx, my, 0, self.viewer.slice_data.renderer)
+        x, y, z = self.picker.GetPickPosition()
+
+        if self.viewer.orientation == 'AXIAL':
+            p1 = np.array((y-cy, x-cx))
+        elif self.viewer.orientation == 'CORONAL':
+            p1 = np.array((z-cz, x-cx))
+        elif self.viewer.orientation == 'SAGITAL':
+            p1 = np.array((z-cz, y-cy))
+        p0 = self.p0
+
+        if self.viewer.orientation == 'AXIAL':
+            angle = np.arctan2(p0[0] , p0[1]) - np.arctan2(p1[0], p1[1])
+            self.viewer.slice_.rotations[2] = angle
+        elif self.viewer.orientation == 'CORONAL':
+            angle = np.arctan2(p0[0] , p0[1]) - np.arctan2(p1[0], p1[1])
+            self.viewer.slice_.rotations[1] = angle
+        elif self.viewer.orientation == 'SAGITAL':
+            angle = np.arctan2(p0[0] , p0[1]) - np.arctan2(p1[0], p1[1])
+            self.viewer.slice_.rotations[0] = angle
+
+        self._discard_buffers()
+        self.viewer.slice_.current_mask.clear_history()
+        Publisher.sendMessage('Reload actual slice')
+
     def _create_line(self, x0, y0, x1, y1, color):
         line = vtk.vtkLineSource()
         line.SetPoint1(x0, y0, 0)
@@ -1587,6 +1614,7 @@ class ReorientImageInteractorStyle(DefaultInteractorStyle):
         actor.SetMapper(mapper)
         actor.GetProperty().SetLineWidth(2.0)
         actor.GetProperty().SetColor(color)
+        actor.GetProperty().SetOpacity(0.5)
 
         self.viewer.slice_data.renderer.AddActor(actor)
 
