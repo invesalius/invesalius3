@@ -1492,7 +1492,10 @@ class ReorientImageInteractorStyle(DefaultInteractorStyle):
 
     def OnLeftRelease(self, obj, evt):
         self.dragging = False
-        self.to_rot = False
+
+        if self.to_rot:
+            Publisher.sendMessage('Reload actual slice')
+            self.to_rot = False
 
     def OnMouseMove(self, obj, evt):
         """
@@ -1607,7 +1610,7 @@ class ReorientImageInteractorStyle(DefaultInteractorStyle):
 
         self._discard_buffers()
         self.viewer.slice_.current_mask.clear_history()
-        Publisher.sendMessage('Reload actual slice')
+        Publisher.sendMessage('Reload actual slice %s' % self.viewer.orientation)
         self.p0 = self.get_image_point_coord(x, y, z)
 
     def get_image_point_coord(self, x, y, z):
