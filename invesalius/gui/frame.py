@@ -411,6 +411,9 @@ class Frame(wx.Frame):
         elif id == const.ID_CLEAN_MASK:
             self.OnCleanMask()
 
+        elif id == const.ID_REORIENT_IMG:
+            self.OnReorientImg()
+
     def OnSize(self, evt):
         """
         Refresh GUI when frame is resized.
@@ -520,6 +523,11 @@ class Frame(wx.Frame):
         Publisher.sendMessage('Clean current mask')
         Publisher.sendMessage('Reload actual slice')
 
+    def OnReorientImg(self):
+        Publisher.sendMessage('Enable style', const.SLICE_STATE_REORIENT)
+        rdlg = dlg.ReorientImageDialog()
+        rdlg.Show()
+
 # ------------------------------------------------------------------
 # ------------------------------------------------------------------
 # ------------------------------------------------------------------
@@ -538,7 +546,8 @@ class MenuBar(wx.MenuBar):
         # not. Eg. save should only be available if a project is open
         self.enable_items = [const.ID_PROJECT_SAVE,
                              const.ID_PROJECT_SAVE_AS,
-                             const.ID_PROJECT_CLOSE]
+                             const.ID_PROJECT_CLOSE,
+                             const.ID_REORIENT_IMG]
         self.__init_items()
         self.__bind_events()
 
@@ -649,6 +658,12 @@ class MenuBar(wx.MenuBar):
         self.clean_mask_menu.Enable(False)
 
         tools_menu.AppendMenu(-1,  _(u"Mask"), mask_menu)
+
+        # Image menu
+        image_menu = wx.Menu()
+        reorient_menu = image_menu.Append(const.ID_REORIENT_IMG, _(u'Reorient image\tCtrl+Shift+R'))
+        reorient_menu.Enable(False)
+        tools_menu.AppendMenu(-1, _(u'Image'), image_menu)
 
 
         # VIEW
@@ -1278,8 +1293,7 @@ class SliceToolBar(AuiToolBar):
 
         self.parent = parent
         self.enable_items = [const.SLICE_STATE_SCROLL,
-                             const.SLICE_STATE_CROSS,
-                             const.SLICE_STATE_REORIENT]
+                             const.SLICE_STATE_CROSS,]
         self.__init_items()
         self.__bind_events()
         self.__bind_events_wx()
@@ -1298,18 +1312,12 @@ class SliceToolBar(AuiToolBar):
 
             path = os.path.join(d,"cross_original.png")
             BMP_CROSS = wx.Bitmap(path, wx.BITMAP_TYPE_PNG)
-
-            path = os.path.join(d, "tool_rotate_original.png")
-            BMP_REORIENT = wx.Bitmap(path, wx.BITMAP_TYPE_PNG)
         else:
             path = os.path.join(d, "slice.png")
             BMP_SLICE = wx.Bitmap(path, wx.BITMAP_TYPE_PNG)
 
             path = os.path.join(d,"cross.png")
             BMP_CROSS = wx.Bitmap(path, wx.BITMAP_TYPE_PNG)
-
-            path = os.path.join(d, "tool_rotate.png")
-            BMP_REORIENT = wx.Bitmap(path, wx.BITMAP_TYPE_PNG)
 
         self.sst = self.AddToggleTool(const.SLICE_STATE_SCROLL,
                           BMP_SLICE,#, kind=wx.ITEM_CHECK)
@@ -1322,12 +1330,6 @@ class SliceToolBar(AuiToolBar):
                           wx.NullBitmap,
                           toggle=True,
                           short_help_string=_("Slices' cross intersection"))
-
-        self.srt = self.AddToggleTool(const.SLICE_STATE_REORIENT,
-                          BMP_REORIENT,#, kind=wx.ITEM_CHECK)
-                          wx.NullBitmap,
-                          toggle=True,
-                          short_help_string=_("Reorient slices"))
 
     def __bind_events(self):
         """

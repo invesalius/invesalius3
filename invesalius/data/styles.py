@@ -1426,7 +1426,7 @@ class ReorientImageInteractorStyle(DefaultInteractorStyle):
 
         self.picker = vtk.vtkWorldPointPicker()
 
-        self.AddObserver("KeyPressEvent", self.OnKeyPress)
+        #  self.AddObserver("KeyPressEvent", self.OnKeyPress)
         self.AddObserver("LeftButtonPressEvent",self.OnLeftClick)
         self.AddObserver("LeftButtonReleaseEvent", self.OnLeftRelease)
         self.AddObserver("MouseMoveEvent", self.OnMouseMove)
@@ -1546,6 +1546,9 @@ class ReorientImageInteractorStyle(DefaultInteractorStyle):
     def OnDblClick(self, evt):
         self.viewer.slice_.rotations = [0, 0, 0]
         self.viewer.slice_.q_orientation = np.array((1, 0, 0, 0))
+
+        Publisher.sendMessage('Update reorient angles', (0, 0, 0))
+
         self._discard_buffers()
         self.viewer.slice_.current_mask.clear_history()
         Publisher.sendMessage('Reload actual slice')
@@ -1565,6 +1568,7 @@ class ReorientImageInteractorStyle(DefaultInteractorStyle):
             self.viewer.slice_.center = (x, icy, z)
         elif self.viewer.orientation == 'SAGITAL':
             self.viewer.slice_.center = (icx, y, z)
+
 
         self._discard_buffers()
         self.viewer.slice_.current_mask.clear_history()
@@ -1607,6 +1611,9 @@ class ReorientImageInteractorStyle(DefaultInteractorStyle):
         elif self.viewer.orientation == 'SAGITAL':
             #  angle = np.arctan2(p0[0] , p0[1]) - np.arctan2(p1[0], p1[1])
             self.viewer.slice_.rotations[0] = angle
+
+        az, ay, ax = transformations.euler_from_quaternion(self.viewer.slice_.q_orientation)
+        Publisher.sendMessage('Update reorient angles', (ax, ay, az))
 
         self._discard_buffers()
         self.viewer.slice_.current_mask.clear_history()
