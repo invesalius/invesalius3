@@ -94,7 +94,6 @@ class Slice(object):
         self.n_border = const.PROJECTION_BORDER_SIZE
 
         self._spacing = (1.0, 1.0, 1.0)
-        self.rotations = [0, 0, 0]
         self.center = [0, 0, 0]
 
         self.q_orientation = np.array((1, 0, 0, 0))
@@ -580,10 +579,8 @@ class Slice(object):
             if self._type_projection == const.PROJECTION_NORMAL:
                 number_slices = 1
 
-            if np.any(self.rotations):
+            if np.any(self.q_orientation[1::]):
                 cx, cy, cz = self.center
-                rx, ry, rz = self.rotations
-                sx, sy, sz = self.spacing
                 T0 = transformations.translation_matrix((-cz, -cy, -cx))
                 #  Rx = transformations.rotation_matrix(rx, (0, 0, 1))
                 #  Ry = transformations.rotation_matrix(ry, (0, 1, 0))
@@ -597,7 +594,7 @@ class Slice(object):
 
             if orientation == 'AXIAL':
                 tmp_array = np.array(self.matrix[slice_number:slice_number + number_slices])
-                if np.any(self.rotations):
+                if np.any(self.q_orientation[1::]):
                     transforms.apply_view_matrix_transform(self.matrix, self.spacing, M, slice_number, orientation, 2, self.matrix.min(), tmp_array)
                 if self._type_projection == const.PROJECTION_NORMAL:
                     n_image = tmp_array.squeeze()
@@ -644,7 +641,7 @@ class Slice(object):
 
             elif orientation == 'CORONAL':
                 tmp_array = np.array(self.matrix[:, slice_number: slice_number + number_slices, :])
-                if np.any(self.rotations):
+                if np.any(self.q_orientation[1::]):
                     transforms.apply_view_matrix_transform(self.matrix, self.spacing, M, slice_number, orientation, 1, self.matrix.min(), tmp_array)
 
                 if self._type_projection == const.PROJECTION_NORMAL:
@@ -694,7 +691,7 @@ class Slice(object):
                         n_image = np.array(self.matrix[:, slice_number, :])
             elif orientation == 'SAGITAL':
                 tmp_array = np.array(self.matrix[:, :, slice_number: slice_number + number_slices])
-                if np.any(self.rotations):
+                if np.any(self.q_orientation[1::]):
                     transforms.apply_view_matrix_transform(self.matrix, self.spacing, M, slice_number, orientation, 1, self.matrix.min(), tmp_array)
 
                 if self._type_projection == const.PROJECTION_NORMAL:
@@ -1363,6 +1360,30 @@ class Slice(object):
             if o != orientation:
                 self.buffer_slices[o].discard_mask()
                 self.buffer_slices[o].discard_vtk_mask()
+        Publisher.sendMessage('Reload actual slice')
+
+    def apply_reorientation(self):
+        temp_file = tempfile.mktemp()
+        mcopy = np.memmap(temp_file, shape=self.matrix.shape, dtype=self.matrix.dtype, mode='w+')
+        mcopy[:] = self.matrix
+
+        cx, cy, cz = self.center
+        T0 = transformations.translation_matrix((-cz, -cy, -cx))
+        R = transformations.quaternion_matrix(self.q_orientation)
+        T1 = transformations.translation_matrix((cz, cy, cx))
+        M = transformations.concatenate_matrices(T1, R.T, T0)
+
+        transforms.apply_view_matrix_transform(mcopy, self.spacing, M, 0, 'AXIAL', 2, mcopy.min(), self.matrix)
+
+        del mcopy
+        os.remove(temp_file)
+
+        self.q_orientation = np.array((1, 0, 0, 0))
+        self.center = [(s * d/2.0) for (d, s) in zip(self.matrix.shape[::-1], self.spacing)]
+
+        self.__clean_current_mask(None)
+        self.current_mask.matrix[:] = 0
+
         Publisher.sendMessage('Reload actual slice')
 
     def __undo_edition(self, pub_evt):

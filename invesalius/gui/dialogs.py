@@ -1576,13 +1576,14 @@ class ReorientImageDialog(wx.Dialog):
 
         self._init_gui()
         self._bind_events()
+        self._bind_events_wx()
 
     def _init_gui(self):
-        self.anglex = wx.TextCtrl(self, -1, "0.0")
-        self.angley = wx.TextCtrl(self, -1, "0.0")
-        self.anglez = wx.TextCtrl(self, -1, "0.0")
+        self.anglex = wx.TextCtrl(self, -1, "0.0", style=wx.TE_READONLY)
+        self.angley = wx.TextCtrl(self, -1, "0.0", style=wx.TE_READONLY)
+        self.anglez = wx.TextCtrl(self, -1, "0.0", style=wx.TE_READONLY)
 
-        btnapply = wx.Button(self, -1, _("Apply"))
+        self.btnapply = wx.Button(self, -1, _("Apply"))
 
         sizer = wx.BoxSizer(wx.HORIZONTAL)
 
@@ -1598,7 +1599,7 @@ class ReorientImageDialog(wx.Dialog):
         sizer.Add(self.anglez, 0, wx.EXPAND | wx.ALL, 5)
         sizer.AddSpacer(5)
 
-        sizer.Add(btnapply, 0, wx.EXPAND | wx.ALL, 5)
+        sizer.Add(self.btnapply, 0, wx.EXPAND | wx.ALL, 5)
         sizer.AddSpacer(5)
 
         self.SetSizer(sizer)
@@ -1607,10 +1608,21 @@ class ReorientImageDialog(wx.Dialog):
     def _bind_events(self):
         Publisher.subscribe(self._update_angles, 'Update reorient angles')
 
+    def _bind_events_wx(self):
+        self.btnapply.Bind(wx.EVT_BUTTON, self.apply_reorientation)
+        self.Bind(wx.EVT_CLOSE, self.OnClose)
+
     def _update_angles(self, pubsub_evt):
         anglex, angley, anglez = pubsub_evt.data
         self.anglex.SetValue("%.2f" % np.rad2deg(anglex))
         self.angley.SetValue("%.2f" % np.rad2deg(angley))
         self.anglez.SetValue("%.2f" % np.rad2deg(anglez))
 
-        print anglex, angley, anglez
+    def apply_reorientation(self, evt):
+        Publisher.sendMessage('Apply reorientation')
+        self.Close()
+
+    def OnClose(self, evt):
+        Publisher.sendMessage('Disable style', const.SLICE_STATE_REORIENT)
+        Publisher.sendMessage('Enable style', const.STATE_DEFAULT)
+        self.Destroy()

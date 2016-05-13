@@ -1426,7 +1426,6 @@ class ReorientImageInteractorStyle(DefaultInteractorStyle):
 
         self.picker = vtk.vtkWorldPointPicker()
 
-        #  self.AddObserver("KeyPressEvent", self.OnKeyPress)
         self.AddObserver("LeftButtonPressEvent",self.OnLeftClick)
         self.AddObserver("LeftButtonReleaseEvent", self.OnLeftRelease)
         self.AddObserver("MouseMoveEvent", self.OnMouseMove)
@@ -1435,37 +1434,19 @@ class ReorientImageInteractorStyle(DefaultInteractorStyle):
         self.viewer.interactor.Bind(wx.EVT_LEFT_DCLICK, self.OnDblClick)
 
     def SetUp(self):
-        self.viewer.slice_.current_mask.is_shown = False
         self.draw_lines()
+        Publisher.sendMessage('Show mask', (self.viewer.slice_.current_mask.index, False))
         Publisher.sendMessage('Reload actual slice')
 
     def CleanUp(self):
         for actor in self.actors:
             self.viewer.slice_data.renderer.RemoveActor(actor)
 
-    def OnKeyPress(self, evt, obj):
-        key = self.viewer.interactor.GetKeyCode()
-        if key == '+':
-            delta = 1
-        elif key == '-':
-            delta = -1
-        else:
-            return
-
-        rx, ry, rz = self.viewer.slice_.rotations
-        orientation = self.viewer.orientation
-        if orientation == 'AXIAL':
-            rz += np.deg2rad(delta)
-        elif orientation == 'CORONAL':
-            ry += np.deg2rad(delta)
-        elif orientation == 'SAGITAL':
-            rx += np.deg2rad(delta)
-
-        self.viewer.slice_.rotations = (rx, ry, rz)
+        self.viewer.slice_.rotations = [0, 0, 0]
+        self.viewer.slice_.q_orientation = np.array((1, 0, 0, 0))
         self._discard_buffers()
-
-        self.viewer.slice_.current_mask.clear_history()
-        Publisher.sendMessage('Reload actual slice')
+        Publisher.sendMessage('Show mask', (self.viewer.slice_.current_mask.index, True))
+        Publisher.sendMessage('Reload actual slice %s' % self.viewer.orientation)
 
     def OnLeftClick(self, obj, evt):
         if self._over_center:
@@ -1480,15 +1461,8 @@ class ReorientImageInteractorStyle(DefaultInteractorStyle):
             self.picker.Pick(x, y, 0, self.viewer.slice_data.renderer)
             x, y, z = self.picker.GetPickPosition()
 
-            #  if self.viewer.orientation == 'AXIAL':
-                #  self.p0 = np.array((y-cy, x-cx))
-            #  elif self.viewer.orientation == 'CORONAL':
-                #  self.p0 = np.array((z-cz, x-cx))
-            #  elif self.viewer.orientation == 'SAGITAL':
-                #  self.p0 = np.array((z-cz, y-cy))
             self.p0 = self.get_image_point_coord(x, y, z)
             self.to_rot = True
-
 
     def OnLeftRelease(self, obj, evt):
         self.dragging = False
@@ -1501,7 +1475,6 @@ class ReorientImageInteractorStyle(DefaultInteractorStyle):
         """
         This event is responsible to reorient image, set mouse cursors
         """
-
         if self.dragging:
             self._move_center_rot()
         elif self.to_rot:
@@ -1599,19 +1572,6 @@ class ReorientImageInteractorStyle(DefaultInteractorStyle):
 
         self.viewer.slice_.q_orientation = transformations.quaternion_multiply(self.viewer.slice_.q_orientation, transformations.quaternion_about_axis(angle, axis))
 
-        #  print axis, angle, self.viewer.slice_.q_orientation
-        print axis, angle
-
-        if self.viewer.orientation == 'AXIAL':
-            #  angle = np.arctan2(p0[0] , p0[1]) - np.arctan2(p1[0], p1[1])
-            self.viewer.slice_.rotations[2] = angle
-        elif self.viewer.orientation == 'CORONAL':
-            #  angle = np.arctan2(p0[0] , p0[1]) - np.arctan2(p1[0], p1[1])
-            self.viewer.slice_.rotations[1] = angle
-        elif self.viewer.orientation == 'SAGITAL':
-            #  angle = np.arctan2(p0[0] , p0[1]) - np.arctan2(p1[0], p1[1])
-            self.viewer.slice_.rotations[0] = angle
-
         az, ay, ax = transformations.euler_from_quaternion(self.viewer.slice_.q_orientation)
         Publisher.sendMessage('Update reorient angles', (ax, ay, az))
 
@@ -1676,7 +1636,6 @@ class ReorientImageInteractorStyle(DefaultInteractorStyle):
 
         self.line1 = self._create_line(0, 0.5, 1, 0.5, color1)
         self.line2 = self._create_line(0.5, 0, 0.5, 1, color2)
-
 
     def _discard_buffers(self):
         for buffer_ in self.viewer.slice_.buffer_slices.values():
