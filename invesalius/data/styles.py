@@ -1568,7 +1568,6 @@ class ReorientImageInteractorStyle(DefaultInteractorStyle):
         axis = np.cross(p0, p1)
         norm = np.linalg.norm(axis)
         if norm == 0:
-            print "NORM 0"
             return
         axis = axis / norm
         angle = np.arccos(np.dot(p0, p1)/(np.linalg.norm(p0)*np.linalg.norm(p1)))
