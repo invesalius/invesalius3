@@ -1607,6 +1607,7 @@ class ReorientImageDialog(wx.Dialog):
 
     def _bind_events(self):
         Publisher.subscribe(self._update_angles, 'Update reorient angles')
+        Publisher.subscribe(self._close_dialog, 'Close reorient dialog')
 
     def _bind_events_wx(self):
         self.btnapply.Bind(wx.EVT_BUTTON, self.apply_reorientation)
@@ -1617,6 +1618,9 @@ class ReorientImageDialog(wx.Dialog):
         self.anglex.SetValue("%.2f" % np.rad2deg(anglex))
         self.angley.SetValue("%.2f" % np.rad2deg(angley))
         self.anglez.SetValue("%.2f" % np.rad2deg(anglez))
+
+    def _close_dialog(self, pubsub_evt):
+        self.Destroy()
 
     def apply_reorientation(self, evt):
         Publisher.sendMessage('Apply reorientation')

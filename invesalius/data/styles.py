@@ -1445,6 +1445,7 @@ class ReorientImageInteractorStyle(DefaultInteractorStyle):
         self.viewer.slice_.rotations = [0, 0, 0]
         self.viewer.slice_.q_orientation = np.array((1, 0, 0, 0))
         self._discard_buffers()
+        Publisher.sendMessage('Close reorient dialog')
         Publisher.sendMessage('Show current mask')
 
     def OnLeftClick(self, obj, evt):
