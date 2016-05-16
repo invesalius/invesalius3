@@ -622,6 +622,9 @@ class NeuronavigationTools(wx.Panel):
     def OnChoiceTracker(self, evt):
         if (self.tracker_id == evt.GetSelection()) and (self.trk_init is not None):
             dlg.TrackerAlreadyConnected()
+            dt.Tracker().Tracker_off()
+            self.choice_tracker.SetSelection(0)
+            self.tracker_id = 0
         else:
             self.tracker_id = evt.GetSelection()
             if self.tracker_id != 0:

@@ -684,7 +684,7 @@ def TrackerNotConnected(trck_id):
 
 def TrackerAlreadyConnected():
 
-    msg = _("This tracker is already connected")
+    msg = _("This tracker is already connected. Please, choose another one. ")
 
     if sys.platform == 'darwin':
         dlg = wx.MessageDialog(None, "", msg,

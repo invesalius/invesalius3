@@ -8,6 +8,8 @@ class Tracker:
 
     return: spatial tracker initialization variable
     """
+    def __init__(self):
+        self.trck_flag = 0
     def ClaronTracker(self):
         trck_init = None
         try:
@@ -23,6 +25,7 @@ class Tracker:
             if trck_init.GetIdentifyingCamera():
                 print "MicronTracker camera identified."
                 trck_init.Run()
+                self.trck_flag = 1
             else:
                 dlg.TrackerNotConnected(1)
 
@@ -40,6 +43,7 @@ class Tracker:
             # import usb.util as uu
 
             trck_init = uc.find(idVendor=0x0F44, idProduct=0x0003)
+            self.trck_flag = 2
 
             if not trck_init:
                 print 'Could not find Polhemus PATRIOT USB. Trying Polhemus ' \
@@ -68,6 +72,7 @@ class Tracker:
 
     def PlhIsotrakII(self):
         trck_init = self.polhemus_serial(3)
+        self.trck_flag = 3
 
         return trck_init
 
@@ -78,19 +83,22 @@ class Tracker:
             trck_init = Polhemus.Polhemus()
             initplh = trck_init.Initialize()
             trck_init.Run() #This run is necessary to discard the first coord collection
+            self.trck_flag = 4
             if initplh == False:
-                dlg.TrackerNotConnected(4)
-                raise ValueError('Device not found')
                 trck_init = None
+                dlg.TrackerNotConnected(4)
+                #raise ValueError('Device not found')
 
         except ImportError:
-                dlg.TrackerNotConnected(4)
+            trck_init = None
+            dlg.TrackerNotConnected(4)
 
         return trck_init
 
 
     def ZebrisCMS20(self):
         trck_init = None
+        self.trck_flag = 5
         dlg.TrackerNotConnected(5)
         print 'Zebris device not found.'
 
@@ -116,6 +124,7 @@ class Tracker:
                 trck_init = serial.Serial(0, baudrate=115200, timeout=0.2)
                 trck_init.write('P')
                 data = trck_init.readlines()
+                self.trck_flag = 3
 
                 if not data:
                     dlg.TrackerNotConnected(plh_id)
@@ -128,5 +137,19 @@ class Tracker:
             dlg.TrackerNotConnected(6)
 
         return trck_init
+
+    def Tracker_off(self):
+        if self.trck_flag == 1:
+            ClaronTracker.ClaronTracker().Close()
+        elif self.trck_flag == 2:
+            None
+        elif self.trck_flag == 3:
+            None
+        elif self.trck_flag == 4:
+            Polhemus.Polhemus().Close()
+        elif self.trck_flag == 5:
+            None
+        else:
+            None
 
 
