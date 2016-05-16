@@ -31,10 +31,18 @@ if sys.platform == 'linux2':
 elif sys.platform == 'win32':
     setup(
         cmdclass = {'build_ext': build_ext},
-        ext_modules = [ Extension("invesalius.data.mips", ["invesalius/data/mips.pyx"],
+        ext_modules = cythonize([ Extension("invesalius.data.mips", ["invesalius/data/mips.pyx"],
                                   include_dirs =  [numpy.get_include()],
-                                  extra_compile_args=['/openmp'],
-                                 )]
+                                  extra_compile_args=['/openmp'],),
+
+                       Extension("invesalius.data.interpolation", ["invesalius/data/interpolation.pyx"],
+                                 include_dirs=[numpy.get_include()],
+                                  extra_compile_args=['/openmp'],),
+
+                       Extension("invesalius.data.transforms", ["invesalius/data/transforms.pyx"],
+                                 include_dirs=[numpy.get_include()],
+                                  extra_compile_args=['/openmp'],),
+                                 ])
          )
 
 else:
