@@ -1435,7 +1435,7 @@ class ReorientImageInteractorStyle(DefaultInteractorStyle):
 
     def SetUp(self):
         self.draw_lines()
-        Publisher.sendMessage('Show mask', (self.viewer.slice_.current_mask.index, False))
+        Publisher.sendMessage('Hide current mask')
         Publisher.sendMessage('Reload actual slice')
 
     def CleanUp(self):
@@ -1445,7 +1445,7 @@ class ReorientImageInteractorStyle(DefaultInteractorStyle):
         self.viewer.slice_.rotations = [0, 0, 0]
         self.viewer.slice_.q_orientation = np.array((1, 0, 0, 0))
         self._discard_buffers()
-        Publisher.sendMessage('Show mask', (self.viewer.slice_.current_mask.index, True))
+        Publisher.sendMessage('Show current mask')
 
     def OnLeftClick(self, obj, evt):
         if self._over_center:

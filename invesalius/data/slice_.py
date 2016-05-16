@@ -158,6 +158,7 @@ class Slice(object):
         Publisher.subscribe(self.__set_mask_name, 'Change mask name')
         Publisher.subscribe(self.__show_mask, 'Show mask')
         Publisher.subscribe(self.__hide_current_mask, 'Hide current mask')
+        Publisher.subscribe(self.__show_current_mask, 'Show current mask')
         Publisher.subscribe(self.__clean_current_mask, 'Clean current mask')
 
         Publisher.subscribe(self.__set_current_mask_threshold_limits,
@@ -400,6 +401,12 @@ class Slice(object):
         if self.current_mask:
             index = self.current_mask.index
             value = False
+            Publisher.sendMessage('Show mask', (index, value))
+
+    def __show_current_mask(self, pubsub_evt):
+        if self.current_mask:
+            index = self.current_mask.index
+            value = True
             Publisher.sendMessage('Show mask', (index, value))
 
     def __clean_current_mask(self, pubsub_evt):
