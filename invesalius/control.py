@@ -84,6 +84,8 @@ class Controller():
 
         Publisher.subscribe(self.ShowBooleanOpDialog, 'Show boolean dialog')
 
+        Publisher.subscribe(self.ApplyReorientation, 'Apply reorientation')
+
 
     def OnCancelImport(self, pubsub_evt):
         #self.cancel_import = True
@@ -631,3 +633,6 @@ class Controller():
     def ShowBooleanOpDialog(self, pubsub_evt):
         dlg = dialogs.MaskBooleanDialog(prj.Project().mask_dict)
         dlg.Show()
+
+    def ApplyReorientation(self, pubsub_evt):
+        self.Slice.apply_reorientation()

@@ -43,6 +43,7 @@ from skimage import filter
 import watershed_process
 
 import utils
+import transformations
 
 ORIENTATIONS = {
         "AXIAL": const.AXIAL,
@@ -1405,19 +1406,259 @@ class WaterShedInteractorStyle(DefaultInteractorStyle):
             session.ChangeProject()
 
 
+class ReorientImageInteractorStyle(DefaultInteractorStyle):
+    """
+    Interactor style responsible for image reorientation
+    """
+    def __init__(self, viewer):
+        DefaultInteractorStyle.__init__(self, viewer)
+
+        self.viewer = viewer
+
+        self.line1 = None
+        self.line2 = None
+
+        self.actors = []
+
+        self._over_center = False
+        self.dragging = False
+        self.to_rot = False
+
+        self.picker = vtk.vtkWorldPointPicker()
+
+        self.AddObserver("LeftButtonPressEvent",self.OnLeftClick)
+        self.AddObserver("LeftButtonReleaseEvent", self.OnLeftRelease)
+        self.AddObserver("MouseMoveEvent", self.OnMouseMove)
+        self.viewer.slice_data.renderer.AddObserver("StartEvent", self.OnUpdate)
+
+        self.viewer.interactor.Bind(wx.EVT_LEFT_DCLICK, self.OnDblClick)
+
+    def SetUp(self):
+        self.draw_lines()
+        Publisher.sendMessage('Hide current mask')
+        Publisher.sendMessage('Reload actual slice')
+
+    def CleanUp(self):
+        for actor in self.actors:
+            self.viewer.slice_data.renderer.RemoveActor(actor)
+
+        self.viewer.slice_.rotations = [0, 0, 0]
+        self.viewer.slice_.q_orientation = np.array((1, 0, 0, 0))
+        self._discard_buffers()
+        Publisher.sendMessage('Close reorient dialog')
+        Publisher.sendMessage('Show current mask')
+
+    def OnLeftClick(self, obj, evt):
+        if self._over_center:
+            self.dragging = True
+        else:
+            x, y = self.viewer.interactor.GetEventPosition()
+            w, h = self.viewer.interactor.GetSize()
+
+            self.picker.Pick(h/2.0, w/2.0, 0, self.viewer.slice_data.renderer)
+            cx, cy, cz = self.viewer.slice_.center
+
+            self.picker.Pick(x, y, 0, self.viewer.slice_data.renderer)
+            x, y, z = self.picker.GetPickPosition()
+
+            self.p0 = self.get_image_point_coord(x, y, z)
+            self.to_rot = True
+
+    def OnLeftRelease(self, obj, evt):
+        self.dragging = False
+
+        if self.to_rot:
+            Publisher.sendMessage('Reload actual slice')
+            self.to_rot = False
+
+    def OnMouseMove(self, obj, evt):
+        """
+        This event is responsible to reorient image, set mouse cursors
+        """
+        if self.dragging:
+            self._move_center_rot()
+        elif self.to_rot:
+            self._rotate()
+        else:
+            # Getting mouse position
+            iren = self.viewer.interactor
+            mx, my = iren.GetEventPosition()
+
+            # Getting center value
+            center = self.viewer.slice_.center
+            coord = vtk.vtkCoordinate()
+            coord.SetValue(center)
+            cx, cy = coord.GetComputedDisplayValue(self.viewer.slice_data.renderer)
+
+            dist_center = ((mx - cx)**2 + (my - cy)**2)**0.5
+            if dist_center <= 15:
+                self._over_center = True
+                cursor = wx.StockCursor(wx.CURSOR_SIZENESW)
+            else:
+                self._over_center = False
+                cursor = wx.StockCursor(wx.CURSOR_DEFAULT)
+
+            self.viewer.interactor.SetCursor(cursor)
+
+    def OnUpdate(self, obj, evt):
+        w, h = self.viewer.slice_data.renderer.GetSize()
+
+        center = self.viewer.slice_.center
+        coord = vtk.vtkCoordinate()
+        coord.SetValue(center)
+        x, y = coord.GetComputedDisplayValue(self.viewer.slice_data.renderer)
+
+        self.line1.SetPoint1(0, y, 0)
+        self.line1.SetPoint2(w, y, 0)
+        self.line1.Update()
+
+        self.line2.SetPoint1(x, 0, 0)
+        self.line2.SetPoint2(x, h, 0)
+        self.line2.Update()
+
+    def OnDblClick(self, evt):
+        self.viewer.slice_.rotations = [0, 0, 0]
+        self.viewer.slice_.q_orientation = np.array((1, 0, 0, 0))
+
+        Publisher.sendMessage('Update reorient angles', (0, 0, 0))
+
+        self._discard_buffers()
+        self.viewer.slice_.current_mask.clear_history()
+        Publisher.sendMessage('Reload actual slice')
+
+    def _move_center_rot(self):
+        iren = self.viewer.interactor
+        mx, my = iren.GetEventPosition()
+
+        icx, icy, icz = self.viewer.slice_.center
+
+        self.picker.Pick(mx, my, 0, self.viewer.slice_data.renderer)
+        x, y, z = self.picker.GetPickPosition()
+
+        if self.viewer.orientation == 'AXIAL':
+            self.viewer.slice_.center = (x, y, icz)
+        elif self.viewer.orientation == 'CORONAL':
+            self.viewer.slice_.center = (x, icy, z)
+        elif self.viewer.orientation == 'SAGITAL':
+            self.viewer.slice_.center = (icx, y, z)
+
+
+        self._discard_buffers()
+        self.viewer.slice_.current_mask.clear_history()
+        Publisher.sendMessage('Reload actual slice')
+
+    def _rotate(self):
+        # Getting mouse position
+        iren = self.viewer.interactor
+        mx, my = iren.GetEventPosition()
+
+        cx, cy, cz = self.viewer.slice_.center
+
+        self.picker.Pick(mx, my, 0, self.viewer.slice_data.renderer)
+        x, y, z = self.picker.GetPickPosition()
+
+        if self.viewer.orientation == 'AXIAL':
+            p1 = np.array((y-cy, x-cx))
+        elif self.viewer.orientation == 'CORONAL':
+            p1 = np.array((z-cz, x-cx))
+        elif self.viewer.orientation == 'SAGITAL':
+            p1 = np.array((z-cz, y-cy))
+        p0 = self.p0
+        p1 = self.get_image_point_coord(x, y, z)
+
+        axis = np.cross(p0, p1)
+        norm = np.linalg.norm(axis)
+        if norm == 0:
+            return
+        axis = axis / norm
+        angle = np.arccos(np.dot(p0, p1)/(np.linalg.norm(p0)*np.linalg.norm(p1)))
+
+        self.viewer.slice_.q_orientation = transformations.quaternion_multiply(self.viewer.slice_.q_orientation, transformations.quaternion_about_axis(angle, axis))
+
+        az, ay, ax = transformations.euler_from_quaternion(self.viewer.slice_.q_orientation)
+        Publisher.sendMessage('Update reorient angles', (ax, ay, az))
+
+        self._discard_buffers()
+        self.viewer.slice_.current_mask.clear_history()
+        Publisher.sendMessage('Reload actual slice %s' % self.viewer.orientation)
+        self.p0 = self.get_image_point_coord(x, y, z)
+
+    def get_image_point_coord(self, x, y, z):
+        cx, cy, cz = self.viewer.slice_.center
+        if self.viewer.orientation == 'AXIAL':
+            z = cz
+        elif self.viewer.orientation == 'CORONAL':
+            y = cy
+        elif self.viewer.orientation == 'SAGITAL':
+            x = cx
+
+        x, y, z = x-cx, y-cy, z-cz
+
+        M = transformations.quaternion_matrix(self.viewer.slice_.q_orientation)
+        tcoord = np.array((z, y, x, 1)).dot(M)
+        tcoord = tcoord[:3]/tcoord[3]
+
+        #  print (z, y, x), tcoord
+        return tcoord
+
+    def _create_line(self, x0, y0, x1, y1, color):
+        line = vtk.vtkLineSource()
+        line.SetPoint1(x0, y0, 0)
+        line.SetPoint2(x1, y1, 0)
+
+        coord = vtk.vtkCoordinate()
+        coord.SetCoordinateSystemToDisplay()
+
+        mapper = vtk.vtkPolyDataMapper2D()
+        mapper.SetTransformCoordinate(coord)
+        mapper.SetInputConnection(line.GetOutputPort())
+        mapper.Update()
+
+        actor = vtk.vtkActor2D()
+        actor.SetMapper(mapper)
+        actor.GetProperty().SetLineWidth(2.0)
+        actor.GetProperty().SetColor(color)
+        actor.GetProperty().SetOpacity(0.5)
+
+        self.viewer.slice_data.renderer.AddActor(actor)
+
+        self.actors.append(actor)
+
+        return line
+
+    def draw_lines(self):
+        if self.viewer.orientation == 'AXIAL':
+            color1 = (0, 1, 0)
+            color2 = (0, 0, 1)
+        elif self.viewer.orientation == 'CORONAL':
+            color1 = (1, 0, 0)
+            color2 = (0, 0, 1)
+        elif self.viewer.orientation == 'SAGITAL':
+            color1 = (1, 0, 0)
+            color2 = (0, 1, 0)
+
+        self.line1 = self._create_line(0, 0.5, 1, 0.5, color1)
+        self.line2 = self._create_line(0.5, 0, 0.5, 1, color2)
+
+    def _discard_buffers(self):
+        for buffer_ in self.viewer.slice_.buffer_slices.values():
+            buffer_.discard_vtk_image()
+            buffer_.discard_image()
+
 def get_style(style):
     STYLES = {
-              const.STATE_DEFAULT: DefaultInteractorStyle,
-              const.SLICE_STATE_CROSS: CrossInteractorStyle,
-              const.STATE_WL: WWWLInteractorStyle,
-              const.STATE_MEASURE_DISTANCE: LinearMeasureInteractorStyle,
-              const.STATE_MEASURE_ANGLE: AngularMeasureInteractorStyle,
-              const.STATE_PAN: PanMoveInteractorStyle,
-              const.STATE_SPIN: SpinInteractorStyle,
-              const.STATE_ZOOM: ZoomInteractorStyle,
-              const.STATE_ZOOM_SL: ZoomSLInteractorStyle,
-              const.SLICE_STATE_SCROLL: ChangeSliceInteractorStyle,
-              const.SLICE_STATE_EDITOR: EditorInteractorStyle,
-              const.SLICE_STATE_WATERSHED: WaterShedInteractorStyle,
-             }
+        const.STATE_DEFAULT: DefaultInteractorStyle,
+        const.SLICE_STATE_CROSS: CrossInteractorStyle,
+        const.STATE_WL: WWWLInteractorStyle,
+        const.STATE_MEASURE_DISTANCE: LinearMeasureInteractorStyle,
+        const.STATE_MEASURE_ANGLE: AngularMeasureInteractorStyle,
+        const.STATE_PAN: PanMoveInteractorStyle,
+        const.STATE_SPIN: SpinInteractorStyle,
+        const.STATE_ZOOM: ZoomInteractorStyle,
+        const.STATE_ZOOM_SL: ZoomSLInteractorStyle,
+        const.SLICE_STATE_SCROLL: ChangeSliceInteractorStyle,
+        const.SLICE_STATE_EDITOR: EditorInteractorStyle,
+        const.SLICE_STATE_WATERSHED: WaterShedInteractorStyle,
+        const.SLICE_STATE_REORIENT: ReorientImageInteractorStyle,
+    }
     return STYLES[style]

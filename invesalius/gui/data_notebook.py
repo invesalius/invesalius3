@@ -364,6 +364,7 @@ class MasksListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
 
         Publisher.subscribe(self.OnChangeCurrentMask, 'Change mask selected')
         Publisher.subscribe(self.__hide_current_mask, 'Hide current mask')
+        Publisher.subscribe(self.__show_current_mask, 'Show current mask')
         Publisher.subscribe(self.OnCloseProject, 'Close project data')
 
     def OnKeyEvent(self, event):
@@ -434,6 +435,9 @@ class MasksListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
 
     def __hide_current_mask(self, pubsub_evt):
         self.SetItemImage(self.current_index, 0)
+
+    def __show_current_mask(self, pubsub_evt):
+        self.SetItemImage(self.current_index, 1)
 
     def __init_columns(self):
 

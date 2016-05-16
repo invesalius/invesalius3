@@ -1566,3 +1566,67 @@ class MaskBooleanDialog(wx.Dialog):
 
         self.Close()
         self.Destroy()
+
+
+class ReorientImageDialog(wx.Dialog):
+    def __init__(self):
+        pre = wx.PreDialog()
+        pre.Create(wx.GetApp().GetTopWindow(), -1, _(u'Image reorientation'), style=wx.DEFAULT_DIALOG_STYLE|wx.FRAME_FLOAT_ON_PARENT)
+        self.PostCreate(pre)
+
+        self._init_gui()
+        self._bind_events()
+        self._bind_events_wx()
+
+    def _init_gui(self):
+        self.anglex = wx.TextCtrl(self, -1, "0.0", style=wx.TE_READONLY)
+        self.angley = wx.TextCtrl(self, -1, "0.0", style=wx.TE_READONLY)
+        self.anglez = wx.TextCtrl(self, -1, "0.0", style=wx.TE_READONLY)
+
+        self.btnapply = wx.Button(self, -1, _("Apply"))
+
+        sizer = wx.BoxSizer(wx.HORIZONTAL)
+
+        sizer.Add(wx.StaticText(self, -1, _("Angle X")), 0, wx.EXPAND | wx.ALIGN_CENTER_VERTICAL | wx.ALL, 5)
+        sizer.Add(self.anglex, 0, wx.EXPAND | wx.ALL, 5)
+        sizer.AddSpacer(5)
+
+        sizer.Add(wx.StaticText(self, -1, _("Angle Y")), 0, wx.EXPAND | wx.ALIGN_CENTER_VERTICAL | wx.ALL, 5)
+        sizer.Add(self.angley, 0, wx.EXPAND | wx.ALL, 5)
+        sizer.AddSpacer(5)
+
+        sizer.Add(wx.StaticText(self, -1, _("Angle Z")), 0, wx.EXPAND | wx.ALIGN_CENTER_VERTICAL | wx.ALL, 5)
+        sizer.Add(self.anglez, 0, wx.EXPAND | wx.ALL, 5)
+        sizer.AddSpacer(5)
+
+        sizer.Add(self.btnapply, 0, wx.EXPAND | wx.ALL, 5)
+        sizer.AddSpacer(5)
+
+        self.SetSizer(sizer)
+        self.Fit()
+
+    def _bind_events(self):
+        Publisher.subscribe(self._update_angles, 'Update reorient angles')
+        Publisher.subscribe(self._close_dialog, 'Close reorient dialog')
+
+    def _bind_events_wx(self):
+        self.btnapply.Bind(wx.EVT_BUTTON, self.apply_reorientation)
+        self.Bind(wx.EVT_CLOSE, self.OnClose)
+
+    def _update_angles(self, pubsub_evt):
+        anglex, angley, anglez = pubsub_evt.data
+        self.anglex.SetValue("%.2f" % np.rad2deg(anglex))
+        self.angley.SetValue("%.2f" % np.rad2deg(angley))
+        self.anglez.SetValue("%.2f" % np.rad2deg(anglez))
+
+    def _close_dialog(self, pubsub_evt):
+        self.Destroy()
+
+    def apply_reorientation(self, evt):
+        Publisher.sendMessage('Apply reorientation')
+        self.Close()
+
+    def OnClose(self, evt):
+        Publisher.sendMessage('Disable style', const.SLICE_STATE_REORIENT)
+        Publisher.sendMessage('Enable style', const.STATE_DEFAULT)
+        self.Destroy()

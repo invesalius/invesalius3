@@ -706,6 +706,7 @@ class Viewer(wx.Panel):
         Publisher.subscribe(self.OnSwapVolumeAxes, 'Swap volume axes')
 
         Publisher.subscribe(self.ReloadActualSlice, 'Reload actual slice')
+        Publisher.subscribe(self.ReloadActualSlice, 'Reload actual slice %s' % self.orientation)
         Publisher.subscribe(self.OnUpdateScroll, 'Update scroll')
 
 
