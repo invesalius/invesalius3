@@ -1566,7 +1566,11 @@ class ReorientImageInteractorStyle(DefaultInteractorStyle):
         p1 = self.get_image_point_coord(x, y, z)
 
         axis = np.cross(p0, p1)
-        axis = axis / np.linalg.norm(axis)
+        norm = np.linalg.norm(axis)
+        if norm == 0:
+            print "NORM 0"
+            return
+        axis = axis / norm
         angle = np.arccos(np.dot(p0, p1)/(np.linalg.norm(p0)*np.linalg.norm(p1)))
 
         self.viewer.slice_.q_orientation = transformations.quaternion_multiply(self.viewer.slice_.q_orientation, transformations.quaternion_about_axis(angle, axis))
