@@ -900,7 +900,7 @@ class SurfacesListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
         index and value.
         """
         index, value = pubsub_evt.data
-        self.SetStringItem(index, 3, "%d%%"%(int(value*100)))
+        self.SetStringItem(index, 4, "%d%%"%(int(value*100)))
 
     def EditSurfaceColour(self, pubsub_evt):
         """

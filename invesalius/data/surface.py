@@ -316,9 +316,9 @@ class SurfaceManager():
         Publisher.sendMessage('Load surface actor into viewer', actor)
 
         Publisher.sendMessage('Update surface info in GUI',
-                                        (surface.index, surface.name,
-                                        surface.colour, surface.volume,
-                                        surface.transparency))
+                              (surface.index, surface.name,
+                               surface.colour, surface.volume,
+                               surface.area, surface.transparency))
         return surface.index
 
     def OnCloseProject(self, pubsub_evt):
@@ -337,9 +337,9 @@ class SurfaceManager():
         proj = prj.Project()
         surface = proj.surface_dict[index]
         Publisher.sendMessage('Update surface info in GUI',
-                                    (index, surface.name,
-                                    surface.colour, surface.volume,
-                                    surface.transparency))
+                              (index, surface.name,
+                               surface.colour, surface.volume,
+                               surface.area, surface.transparency))
         self.last_surface_index = index
         if surface.is_shown:
             self.ShowActor(index, True)
