@@ -854,8 +854,6 @@ class SurfacesListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
     def InsertNewItem(self, index=0, label="Surface 1", volume="0 mm3",
                       area="0 mm2", transparency="0%%", colour=None):
         self.InsertStringItem(index, "")
-        print ">>>>AREA<<<<<<", area
-        print ">>>>AREA<<<<<<", transparency
         self.SetStringItem(index, 1, label,
                             imageId = self.surface_list_index[index])
         self.SetStringItem(index, 2, volume)
