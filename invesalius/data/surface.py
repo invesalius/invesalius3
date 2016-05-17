@@ -59,7 +59,8 @@ class Surface():
         self.polydata = ''
         self.colour = ''
         self.transparency = const.SURFACE_TRANSPARENCY
-        self.volume = 0
+        self.volume = 0.0
+        self.area = 0.0
         self.is_shown = 1
         if not name:
             self.name = const.SURFACE_NAME_PATTERN %(self.index+1)
@@ -81,6 +82,7 @@ class Surface():
                    'transparency': self.transparency,
                    'visible': bool(self.is_shown),
                    'volume': self.volume,
+                   'area': self.area,
                   }
         plist_filename = filename + '.plist'
         #plist_filepath = os.path.join(dir_temp, filename + '.plist')
@@ -100,6 +102,10 @@ class Surface():
         self.transparency = sp['transparency']
         self.is_shown = sp['visible']
         self.volume = sp['volume']
+        try:
+            self.area = sp['area']
+        except KeyError:
+            self.area = 0.0
         self.polydata = pu.Import(os.path.join(dirpath, sp['polydata']))
         Surface.general_index = max(Surface.general_index, self.index)
 
@@ -299,7 +305,9 @@ class SurfaceManager():
             measured_polydata.SetInputConnection(triangle_filter.GetOutputPort())
             measured_polydata.Update()
             volume =  measured_polydata.GetVolume()
+            area =  measured_polydata.GetSurfaceArea()
             surface.volume = volume
+            surface.area = area
             print ">>>>", surface.volume
         else:
             surface.volume = volume
@@ -377,8 +385,8 @@ class SurfaceManager():
             # The following lines have to be here, otherwise all volumes disappear
             Publisher.sendMessage('Update surface info in GUI',
                                         (surface.index, surface.name,
-                                        surface.colour, surface.volume,
-                                        surface.transparency))
+                                         surface.colour, surface.volume,
+                                         surface.area, surface.transparency))
             if not surface.is_shown:
                 self.ShowActor(key, False)
 
@@ -727,7 +735,9 @@ class SurfaceManager():
         #  measured_polydata.ReleaseDataFlagOn()
         measured_polydata.SetInputData(to_measure)
         volume =  float(measured_polydata.GetVolume())
+        area =  float(measured_polydata.GetSurfaceArea())
         surface.volume = volume
+        surface.area = area
         self.last_surface_index = surface.index
         del measured_polydata
         del to_measure
@@ -745,6 +755,7 @@ class SurfaceManager():
         Publisher.sendMessage('Update surface info in GUI',
                                     (surface.index, surface.name,
                                     surface.colour, surface.volume,
+                                    surface.area,
                                     surface.transparency))
 
         #When you finalize the progress. The bar is cleaned.
