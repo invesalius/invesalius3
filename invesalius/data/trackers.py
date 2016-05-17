@@ -27,6 +27,7 @@ class Tracker:
                 trck_init.Run()
                 self.trck_flag = 1
             else:
+                trck_init = None
                 dlg.TrackerNotConnected(1)
 
         except ImportError:
@@ -61,10 +62,12 @@ class Tracker:
                     trck_init.set_configuration()
 
                 except uc.USBError as err:
+                    trck_init = None
                     dlg.TrackerNotConnected(2)
                     print 'Could not set configuration %s' % err
 
-        except ImportError and uc.NoBackendError:
+        #except ImportError or ValueError('No backend available'):
+        except:
             print 'Import Error for Polhemus PATRIOT USB.'
             trck_init = self.polhemus_serial(2)
 
@@ -127,10 +130,13 @@ class Tracker:
                 self.trck_flag = 3
 
                 if not data:
+                    trck_init = None
                     dlg.TrackerNotConnected(plh_id)
             except serial.SerialException:
+                trck_init = None
                 dlg.TrackerNotConnected(7)
             except AttributeError:
+                trck_init = None
                 dlg.TrackerNotConnected(plh_id)
 
         except ImportError:

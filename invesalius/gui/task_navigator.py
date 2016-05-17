@@ -150,7 +150,7 @@ IR3 = wx.NewId()
 TR1 = wx.NewId()
 TR2 = wx.NewId()
 TR3 = wx.NewId()
-INO = wx.NewId()
+T = wx.NewId()
 Neuronavigate = wx.NewId()
 # FineCorregistration = wx.NewId()
 class NeuronavigationTools(wx.Panel):
@@ -165,7 +165,7 @@ class NeuronavigationTools(wx.Panel):
         self.aux_img_ref1 = 0
         self.aux_img_ref2 = 0
         self.aux_img_ref3 = 0
-        self.aux_img__INO_ref = 0
+        self.aux_img__T_ref = 0
         self.aux_trck_ref1 = 1
         self.aux_trck_ref2 = 1
         self.aux_trck_ref3 = 1
@@ -206,8 +206,8 @@ class NeuronavigationTools(wx.Panel):
         self.button_img_ref3.Bind(wx.EVT_TOGGLEBUTTON, self.Img_Ref_ToggleButton3)
 
         #self.button_img_inio = wx.Button(self, INO, label='INO', size=wx.Size(30, 23))
-        self.button_img_inio = wx.ToggleButton(self, INO, label = 'INO', size = wx.Size(30,23))
-        self.button_img_inio.Bind(wx.EVT_TOGGLEBUTTON, self.Img_Inio_ToggleButton)
+        self.button_img_T = wx.ToggleButton(self, T, label = 'T', size = wx.Size(30,23))
+        self.button_img_T.Bind(wx.EVT_TOGGLEBUTTON, self.Img_T_ToggleButton)
 
         self.button_trck_ref1 = wx.Button(self, TR1, label = _('LTT'), size = wx.Size(30,23))
         self.button_trck_ref2 = wx.Button(self, TR2, label = _('RTT'), size = wx.Size(30,23))
@@ -306,7 +306,7 @@ class NeuronavigationTools(wx.Panel):
                                 (self.numCtrl3f, wx.LEFT)])
 
         line3 = wx.FlexGridSizer(rows=1, cols=4, hgap=5, vgap=5)
-        line3.AddMany([(self.button_img_inio),
+        line3.AddMany([(self.button_img_T),
                       (self.numCtrl1I),
                       (self.numCtrl2I),
                       (self.numCtrl3I)])
@@ -363,7 +363,7 @@ class NeuronavigationTools(wx.Panel):
             self.numCtrl1c.SetValue(x)
             self.numCtrl2c.SetValue(y)
             self.numCtrl3c.SetValue(z)
-        if self.aux_img__INO_ref == 0:
+        if self.aux_img__T_ref == 0:
            self.numCtrl1I.SetValue(x)
            self.numCtrl2I.SetValue(y)
            self.numCtrl3I.SetValue(z)
@@ -527,16 +527,16 @@ class NeuronavigationTools(wx.Panel):
     #     else:
     #         dlg.TrackerNotConnected(self.tracker_id)
 
-    def Img_Inio_ToggleButton(self, evt):
-           img_id = self.button_img_inio.GetValue()
+    def Img_T_ToggleButton(self, evt):
+           img_id = self.button_img_T.GetValue()
            x, y, z = self.a
            if img_id == True:
-               self.img_inio = x, y, z
-               self.aux_img__INO_ref = 1
-               self.coordINO = np.array([x,y,z])
+               self.img_T = x, y, z
+               self.aux_img__T_ref = 1
+               self.coordT = np.array([x,y,z])
            elif img_id == False:
-               self.aux_img__INO_ref = 0
-               self.img_inio = (0, 0, 0)
+               self.aux_img__T_ref = 0
+               self.img_T = (0, 0, 0)
                self.numCtrl1I.SetValue(x)
                self.numCtrl2I.SetValue(y)
                self.numCtrl3I.SetValue(z)
@@ -570,7 +570,7 @@ class NeuronavigationTools(wx.Panel):
 
         print "\nFRE:", FRE
 
-        if self.aux_img__INO_ref == 1:
+        if self.aux_img__T_ref == 1:
             N1 = ([self.coord1a[0], self.coord2a[0], self.coord3a[0]])
             norm1 = [float(i) / sum(N1) for i in N1]
             N2 = ([self.coord1a[1], self.coord2a[1], self.coord3a[1]])
@@ -578,7 +578,7 @@ class NeuronavigationTools(wx.Panel):
             N3 = ([self.coord1a[2], self.coord2a[2], self.coord3a[2]])
             norm3 = [float(i) / sum(N3) for i in N3]
 
-            plhT = np.matrix([[self.coordINO[0]], [self.coordINO[1]], [self.coordINO[2]]])
+            plhT = np.matrix([[self.coordT[0]], [self.coordT[1]], [self.coordT[2]]])
             #imgT = self.q1 + (self.Minv * self.N) * (plhT - self.q2)
             #imgT = np.array([float(imgT[0]), float(imgT[1]), float(imgT[2])])
             centroid = np.array([(self.coord1a[0] + self.coord2a[0] + self.coord3a[0]) / 3, (self.coord1a[1] + self.coord2a[1] + self.coord3a[1]) / 3, (self.coord1a[2] + self.coord2a[2] + self.coord3a[2]) / 3])
