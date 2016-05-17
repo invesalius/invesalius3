@@ -850,6 +850,8 @@ class SurfacesListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
                 self.UpdateItemInfo(index, name, volume, area, transparency, colour)
             else:
                 self.InsertNewItem(index, name, volume, area, transparency, colour)
+        else:
+            self.UpdateItemInfo(index, name, volume, area, transparency, colour)
 
     def InsertNewItem(self, index=0, label="Surface 1", volume="0 mm3",
                       area="0 mm2", transparency="0%%", colour=None):
