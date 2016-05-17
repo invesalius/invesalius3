@@ -170,7 +170,8 @@ class SurfaceManager():
                                            name = new_name,
                                            colour = original_surface.colour,
                                            transparency = original_surface.transparency,
-                                           volume = original_surface.volume)
+                                           volume = original_surface.volume,
+                                           area = original_surface.area)
 
     def OnRemove(self, pubsub_evt):
         selected_items = pubsub_evt.data
@@ -246,7 +247,7 @@ class SurfaceManager():
 
     def CreateSurfaceFromPolydata(self, polydata, overwrite=False,
                                   name=None, colour=None,
-                                  transparency=None, volume=None):
+                                  transparency=None, volume=None, area=None):
         normals = vtk.vtkPolyDataNormals()
         normals.SetInputData(polydata)
         normals.SetFeatureAngle(80)
@@ -296,7 +297,7 @@ class SurfaceManager():
         session.ChangeProject()
 
         # The following lines have to be here, otherwise all volumes disappear
-        if not volume:
+        if not volume or not area:
             triangle_filter = vtk.vtkTriangleFilter()
             triangle_filter.SetInputData(polydata)
             triangle_filter.Update()
@@ -311,6 +312,8 @@ class SurfaceManager():
             print ">>>>", surface.volume
         else:
             surface.volume = volume
+            surface.area = area
+
         self.last_surface_index = surface.index
 
         Publisher.sendMessage('Load surface actor into viewer', actor)
