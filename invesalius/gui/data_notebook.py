@@ -769,12 +769,14 @@ class SurfacesListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
         self.InsertColumn(0, "", wx.LIST_FORMAT_CENTER)
         self.InsertColumn(1, _("Name"))
         self.InsertColumn(2, _(u"Volume (mm³)"))
-        self.InsertColumn(3, _("Transparency"), wx.LIST_FORMAT_RIGHT)
+        self.InsertColumn(3, _(u"Area (mm²)"))
+        self.InsertColumn(4, _("Transparency"), wx.LIST_FORMAT_RIGHT)
 
         self.SetColumnWidth(0, 25)
         self.SetColumnWidth(1, 85)
         self.SetColumnWidth(2, 85)
-        self.SetColumnWidth(3, 80)
+        self.SetColumnWidth(3, 85)
+        self.SetColumnWidth(4, 80)
 
     def __init_image_list(self):
         self.imagelist = wx.ImageList(16, 16)
@@ -834,7 +836,8 @@ class SurfacesListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
         name = pubsub_evt.data[1]
         colour = pubsub_evt.data[2]
         volume = "%.3f"%pubsub_evt.data[3]
-        transparency = "%d%%"%(int(100*pubsub_evt.data[4]))
+        area = "%.3f"%pubsub_evt.data[4]
+        transparency = "%d%%"%(int(100*pubsub_evt.data[5]))
 
         if index not in self.surface_list_index:
             image = self.CreateColourBitmap(colour)
@@ -844,25 +847,29 @@ class SurfacesListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
             self.surface_list_index[index] = image_index
 
             if (index in index_list) and index_list:
-                self.UpdateItemInfo(index, name, volume, transparency, colour)
+                self.UpdateItemInfo(index, name, volume, area, transparency, colour)
             else:
-                self.InsertNewItem(index, name, volume, transparency, colour)
+                self.InsertNewItem(index, name, volume, area, transparency, colour)
+        else:
+            self.UpdateItemInfo(index, name, volume, area, transparency, colour)
 
     def InsertNewItem(self, index=0, label="Surface 1", volume="0 mm3",
-                      transparency="0%%", colour=None):
+                      area="0 mm2", transparency="0%%", colour=None):
         self.InsertStringItem(index, "")
         self.SetStringItem(index, 1, label,
                             imageId = self.surface_list_index[index])
         self.SetStringItem(index, 2, volume)
-        self.SetStringItem(index, 3, transparency)
+        self.SetStringItem(index, 3, area)
+        self.SetStringItem(index, 4, transparency)
         self.SetItemImage(index, 1)
 
     def UpdateItemInfo(self, index=0, label="Surface 1", volume="0 mm3",
-                      transparency="0%%", colour=None):
+                       area="0 mm2", transparency="0%%", colour=None):
         self.SetStringItem(index, 1, label,
                             imageId = self.surface_list_index[index])
         self.SetStringItem(index, 2, volume)
-        self.SetStringItem(index, 3, transparency)
+        self.SetStringItem(index, 3, area)
+        self.SetStringItem(index, 4, transparency)
         self.SetItemImage(index, 1)
 
     def CreateColourBitmap(self, colour):
@@ -893,7 +900,7 @@ class SurfacesListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
         index and value.
         """
         index, value = pubsub_evt.data
-        self.SetStringItem(index, 3, "%d%%"%(int(value*100)))
+        self.SetStringItem(index, 4, "%d%%"%(int(value*100)))
 
     def EditSurfaceColour(self, pubsub_evt):
         """
