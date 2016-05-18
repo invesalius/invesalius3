@@ -540,7 +540,6 @@ class Slice(object):
                 mask = None
 
             self.buffer_slices[orientation].index = slice_number
-            self.buffer_slices[orientation].image = n_image
             self.buffer_slices[orientation].mask = n_mask
             self.buffer_slices[orientation].vtk_image = image
             self.buffer_slices[orientation].vtk_mask = mask
@@ -559,6 +558,7 @@ class Slice(object):
         if self.buffer_slices[orientation].index == slice_number \
            and self.buffer_slices[orientation].image is not None:
             n_image = self.buffer_slices[orientation].image
+            #  print "BUFFER IMAGE"
         else:
 
             if orientation == 'AXIAL':
@@ -699,6 +699,8 @@ class Slice(object):
                                                self.window_level, 2, n_image)
                     else:
                         n_image = numpy.array(self.matrix[..., ..., slice_number])
+
+            self.buffer_slices[orientation].image = n_image
         return n_image
 
     def get_mask_slice(self, orientation, slice_number):
@@ -816,6 +818,7 @@ class Slice(object):
                     self.current_mask.matrix[n+1, 1:, 1:] = m
             else:
                 slice_ = self.buffer_slices[orientation].image
+                print ">>>", slice_, index
                 self.buffer_slices[orientation].mask = (255 * ((slice_ >= thresh_min) & (slice_ <= thresh_max))).astype('uint8')
 
             # Update viewer
