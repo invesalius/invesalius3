@@ -563,7 +563,6 @@ class Slice(object):
                 mask = None
 
             self.buffer_slices[orientation].index = slice_number
-            self.buffer_slices[orientation].image = n_image
             self.buffer_slices[orientation].mask = n_mask
             self.buffer_slices[orientation].vtk_image = image
             self.buffer_slices[orientation].vtk_mask = mask
@@ -582,6 +581,7 @@ class Slice(object):
         if self.buffer_slices[orientation].index == slice_number \
            and self.buffer_slices[orientation].image is not None:
             n_image = self.buffer_slices[orientation].image
+            #  print "BUFFER IMAGE"
         else:
             if self._type_projection == const.PROJECTION_NORMAL:
                 number_slices = 1
@@ -744,6 +744,7 @@ class Slice(object):
                     else:
                         n_image = np.array(self.matrix[:, :, slice_number])
 
+            self.buffer_slices[orientation].image = n_image
         return n_image
 
     def get_mask_slice(self, orientation, slice_number):
@@ -861,6 +862,7 @@ class Slice(object):
                     self.current_mask.matrix[n+1, 1:, 1:] = m
             else:
                 slice_ = self.buffer_slices[orientation].image
+                print ">>>", slice_, index
                 self.buffer_slices[orientation].mask = (255 * ((slice_ >= thresh_min) & (slice_ <= thresh_max))).astype('uint8')
 
             # Update viewer
@@ -1390,6 +1392,9 @@ class Slice(object):
 
         self.__clean_current_mask(None)
         self.current_mask.matrix[:] = 0
+
+        for o in self.buffer_slices:
+            self.buffer_slices[o].discard_buffer()
 
         Publisher.sendMessage('Reload actual slice')
 
