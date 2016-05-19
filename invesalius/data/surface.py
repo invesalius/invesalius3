@@ -351,6 +351,7 @@ class SurfaceManager():
         surface_dict = pubsub_evt.data
         for key in surface_dict:
             surface = surface_dict[key]
+
             # Map polygonal data (vtkPolyData) to graphics primitives.
             normals = vtk.vtkPolyDataNormals()
             normals.SetInputData(surface.polydata)
@@ -358,14 +359,14 @@ class SurfaceManager():
             normals.AutoOrientNormalsOn()
             #  normals.GetOutput().ReleaseDataFlagOn()
 
-	    # Improve performance
+            # Improve performance
             stripper = vtk.vtkStripper()
-            stripper.SetInputData(normals.GetOutput())
+            stripper.SetInputConnection(normals.GetOutputPort())
             stripper.PassThroughCellIdsOn()
             stripper.PassThroughPointIdsOn()
 
             mapper = vtk.vtkPolyDataMapper()
-            mapper.SetInputData(stripper.GetOutput())
+            mapper.SetInputConnection(stripper.GetOutputPort())
             mapper.ScalarVisibilityOff()
             mapper.ImmediateModeRenderingOn() # improve performance
 
