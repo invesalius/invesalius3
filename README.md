@@ -25,5 +25,5 @@ InVesalius generates 3D medical imaging reconstructions based on a sequence of 2
 
 2) **wxPython 3.0** - ftp://ftp.cti.gov.br/pub/dt3d/invesalius/files/dev/win64/wxPython3.0-win64-3.0.2.0-py27.exe
 
-3) [PIP](http://bit.ly/1YJesZT)
+3) **PIP** - ftp://ftp.cti.gov.br/pub/dt3d/invesalius/files/dev/win64/get-pip.py
 * Download the script and execute *python get-pip.py* 
