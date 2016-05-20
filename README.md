@@ -1,5 +1,5 @@
-InVesalius
-==========
+** InVesalius **
+============================
 
 InVesalius generates 3D medical imaging reconstructions based on a sequence of 2D DICOM files acquired with CT or MRI equipments.  InVesalius is internationalized (currently available in English, Portuguese, French, German, Spanish, Catalan, Romanian, Korean, Italian and Czech), multi-platform (GNU Linux, Windows and MacOS) and provides several tools:
   * DICOM-support including: (a) ACR-NEMA version 1 and 2; (b) DICOM version 3.0 (including various encodings of JPEG -lossless and lossy-, RLE)
@@ -14,5 +14,10 @@ InVesalius generates 3D medical imaging reconstructions based on a sequence of 2
   * Pre-defined volume rendering presets
   * Volume rendering crop plane
   * Picture exportation (including: BMP, TIFF, JPG, PostScript, POV-Ray)
+
+** Development ** 
+
+- Windows 64 bits (tested on Windows 7)
+1 - Install Python
 
 Access http://svn.softwarepublico.gov.br/trac/invesalius/ to more informations.
