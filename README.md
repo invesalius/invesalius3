@@ -66,8 +66,7 @@ InVesalius generates 3D medical imaging reconstructions based on a sequence of 2
 
 16) **Cython**
 * Execute *python install cython*
- 
-17) ** Compiled InVesalius parts **
+17) **Compiled InVesalius parts**
 
 * Option 1: Install [Microsoft Visual Studio Community 2015](https://www.visualstudio.com/pt-br/downloads/download-visual-studio-vs.aspx) and execute *python setup.py build_ext --inplace*
 
