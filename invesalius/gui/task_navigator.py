@@ -166,9 +166,12 @@ class NeuronavigationTools(wx.Panel):
         self.aux_img_ref2 = 0
         self.aux_img_ref3 = 0
         self.aux_img__T_ref = 0
-        self.aux_trck_ref1 = 1
-        self.aux_trck_ref2 = 1
-        self.aux_trck_ref3 = 1
+        self.aux_trck_ref1 = 0
+        self.aux_trck_ref2 = 0
+        self.aux_trck_ref3 = 0
+        self.aux_trck1 = 0
+        self.aux_trck2 = 0
+        self.aux_trck3 = 0
         self.a = 0, 0, 0
         self.coord1a = (0, 0, 0)
         self.coord2a = (0, 0, 0)
@@ -190,10 +193,10 @@ class NeuronavigationTools(wx.Panel):
         self.choice_tracker.SetSelection(const.DEFAULT_TRACKER)
         self.choice_tracker.Bind(wx.EVT_COMBOBOX, self.OnChoiceTracker)
 
-        choice_ref_mode = wx.ComboBox(self, -1, "", size=(120, 23),
+        self.choice_ref_mode = wx.ComboBox(self, -1, "", size=(120, 23),
                                      choices = const.REF_MODE, style = wx.CB_DROPDOWN|wx.CB_READONLY)
-        choice_ref_mode.SetSelection(const.DEFAULT_REF_MODE)
-        choice_ref_mode.Bind(wx.EVT_COMBOBOX, self.OnChoiceRefMode)
+        self.choice_ref_mode.SetSelection(const.DEFAULT_REF_MODE)
+        self.choice_ref_mode.Bind(wx.EVT_COMBOBOX, self.OnChoiceRefMode)
 
 
         self.button_img_ref1 = wx.ToggleButton(self, IR1, label = _('LTI'), size = wx.Size(30,23))
@@ -215,7 +218,6 @@ class NeuronavigationTools(wx.Panel):
 
         self.button_crg = wx.TextCtrl(self, value="")
         self.button_crg.SetEditable(0)
-        # self.button_crg = wx.Button(self, FineCorregistration, label=_('Accurate corregistrate'))
         self.Bind(wx.EVT_BUTTON, self.Buttons)
 
         self.button_neuronavigate = wx.ToggleButton(self, Neuronavigate, _("Neuronavigate"))
@@ -267,7 +269,7 @@ class NeuronavigationTools(wx.Panel):
 
         choice_sizer = wx.FlexGridSizer(rows=1, cols=2, hgap=5, vgap=5)
         choice_sizer.AddMany([ (self.choice_tracker, wx.LEFT),
-                                (choice_ref_mode, wx.RIGHT)])
+                                (self.choice_ref_mode, wx.RIGHT)])
 
         RefImg_sizer1 = wx.FlexGridSizer(rows=1, cols=4, hgap=5, vgap=5)
         RefImg_sizer1.AddMany([ (self.button_img_ref1),
@@ -370,21 +372,24 @@ class NeuronavigationTools(wx.Panel):
 
     def __update_points_trck(self, pubsub_evt):
         coord = pubsub_evt.data
-        if self.aux_trck_ref1 == 0:
+        if self.aux_trck_ref1 == 1:
             self.numCtrl1d.SetValue(coord[0])
             self.numCtrl2d.SetValue(coord[1])
             self.numCtrl3d.SetValue(coord[2])
-            self.aux_trck_ref1 = 1
-        if self.aux_trck_ref2 == 0:
+            self.aux_trck1 = 1
+            self.aux_trck_ref1 = 0
+        if self.aux_trck_ref2 == 1:
             self.numCtrl1e.SetValue(coord[0])
             self.numCtrl2e.SetValue(coord[1])
             self.numCtrl3e.SetValue(coord[2])
-            self.aux_trck_ref2 = 1
-        if self.aux_trck_ref3 == 0:
+            self.aux_trck2 = 1
+            self.aux_trck_ref2 = 0
+        if self.aux_trck_ref3 == 1:
             self.numCtrl1f.SetValue(coord[0])
             self.numCtrl2f.SetValue(coord[1])
             self.numCtrl3f.SetValue(coord[2])
-            self.aux_trck_ref3 = 1
+            self.aux_trck3 = 1
+            self.aux_trck_ref3 = 0
 
     def __load_points_img(self, pubsub_evt):
         load = pubsub_evt.data[0]
@@ -439,7 +444,7 @@ class NeuronavigationTools(wx.Panel):
         x, y, z = self.a
         if id == TR1:
             if self.trk_init:
-                self.aux_trck_ref1 = 0
+                self.aux_trck_ref1 = 1
                 self.coord1b = dco.Coordinates(self.trk_init, self.tracker_id, self.ref_mode_id).Returns()
                 coord = self.coord1b[0:3]
             else:
@@ -447,21 +452,18 @@ class NeuronavigationTools(wx.Panel):
 
         elif id == TR2:
             if self.trk_init:
-                self.aux_trck_ref2 = 0
+                self.aux_trck_ref2 = 1
                 self.coord2b = dco.Coordinates(self.trk_init, self.tracker_id, self.ref_mode_id).Returns()
                 coord = self.coord2b[0:3]
             else:
                 dlg.TrackerNotConnected(self.tracker_id)
         elif id == TR3:
             if self.trk_init:
-                self.aux_trck_ref3 = 0
+                self.aux_trck_ref3 = 1
                 self.coord3b = dco.Coordinates(self.trk_init, self.tracker_id, self.ref_mode_id).Returns()
                 coord = self.coord3b[0:3]
             else:
                 dlg.TrackerNotConnected(self.tracker_id)
-        # elif id == FineCorregistration:
-        #     self.Corregistration()
-        #     dialog = dlg.FineCalibration(self, -1, _('InVesalius 3 - Calibration'))
 
         if self.aux_trck_ref1 == 0 or self.aux_trck_ref2 == 0 or self.aux_trck_ref3 == 0:
             Publisher.sendMessage('Update tracker position', coord)
@@ -518,15 +520,6 @@ class NeuronavigationTools(wx.Panel):
             self.numCtrl3c.SetValue(z)
             Publisher.sendMessage("Delete fiducial marker", "NI")
 
-    # def Img_Inio_ToggleButton(self, evt):
-    #     if self.trk_init:
-    #         self.coordINO = dco.Coordinates(self.trk_init, self.tracker_id, self.ref_mode_id).Returns()
-    #         self.numCtrl1I.SetValue(self.coordINO[0])
-    #         self.numCtrl2I.SetValue(self.coordINO[1])
-    #         self.numCtrl3I.SetValue(self.coordINO[2])
-    #     else:
-    #         dlg.TrackerNotConnected(self.tracker_id)
-
     def Img_T_ToggleButton(self, evt):
            img_id = self.button_img_T.GetValue()
            x, y, z = self.a
@@ -544,13 +537,25 @@ class NeuronavigationTools(wx.Panel):
     def Neuronavigate_ToggleButton(self, evt):
         nav_id = self.button_neuronavigate.GetValue()
         if nav_id == True:
-            self.Corregistration()
-            bases = self.Minv, self.N, self.q1, self.q2
-            tracker_mode = self.trk_init, self.tracker_id, self.ref_mode_id
-            self.Calculate_FRE()
-            self.correg = dcr.Corregistration(bases, nav_id, tracker_mode)
+            if self.aux_trck1 and self.aux_trck2 and self.aux_trck3:
+                self.Enable_Disable_buttons(False)
+                self.Corregistration()
+                bases = self.Minv, self.N, self.q1, self.q2
+                tracker_mode = self.trk_init, self.tracker_id, self.ref_mode_id
+                self.Calculate_FRE()
+                self.correg = dcr.Corregistration(bases, nav_id, tracker_mode)
+            else:
+                self.button_neuronavigate.SetValue(False)
         elif nav_id == False:
+            self.Enable_Disable_buttons(True)
             self.correg.stop()
+
+    def Enable_Disable_buttons(self,status):
+        self.choice_ref_mode.Enable(status)
+        self.choice_tracker.Enable(status)
+        self.button_img_ref1.Enable(status)
+        self.button_img_ref2.Enable(status)
+        self.button_img_ref3.Enable(status)
 
     def Calculate_FRE(self):
 
@@ -567,8 +572,6 @@ class NeuronavigationTools(wx.Panel):
         ED3=np.sqrt((((img3[0]-self.coord3a[0])**2) + ((img3[1]-self.coord3a[1])**2) +((img3[2]-self.coord3a[2])**2)))
 
         FRE = float(np.sqrt((ED1**2 + ED2**2 + ED3**2)/3))
-
-        print "\nFRE:", FRE
 
         if self.aux_img__T_ref == 1:
             N1 = ([self.coord1a[0], self.coord2a[0], self.coord3a[0]])
@@ -607,14 +610,12 @@ class NeuronavigationTools(wx.Panel):
             SUM = ((er1 ** 2) / (f1 ** 2)) + ((er2 ** 2) / (f2 ** 2)) + ((er3 ** 2) / (f3 ** 2))
             TREf = np.sqrt((FRE ** 2) * (1 + (SUM / 3)))
 
-            print "\nTRE: ", TREf
-
             self.button_crg.SetValue("FRE: " + str(round(FRE, 2))+" TRE: " + str(round(TREf, 2)))
 
         else:
             self.button_crg.SetValue("FRE: " + str(round(FRE, 2)))
 
-        if FRE < 3:
+        if FRE <= 3:
             self.button_crg.SetBackgroundColour('GREEN')
         else:
             self.button_crg.SetBackgroundColour('RED')
@@ -646,9 +647,24 @@ class NeuronavigationTools(wx.Panel):
     def OnChoiceRefMode(self, evt):
         self.ref_mode_id = evt.GetSelection()
         print "Ref_Mode changed!"
+        #When ref mode is changed the tracker coords are set as null, self.aux_trck is the flag that sets it
+        self.numCtrl1d.SetValue(0)
+        self.numCtrl2d.SetValue(0)
+        self.numCtrl3d.SetValue(0)
+        self.aux_trck1 = 0
+
+        self.numCtrl1e.SetValue(0)
+        self.numCtrl2e.SetValue(0)
+        self.numCtrl3e.SetValue(0)
+        self.aux_trck2 = 0
+
+        self.numCtrl1f.SetValue(0)
+        self.numCtrl2f.SetValue(0)
+        self.numCtrl3f.SetValue(0)
+        self.aux_trck3 = 0
+
 
     def Corregistration(self):
-
         if self.aux_img_ref1 and self.aux_img_ref2 and self.aux_img_ref3:
             self.M, self.q1, self.Minv = db.base_creation(self.coord1a,
                                                           self.coord2a,
@@ -1009,7 +1025,7 @@ class Markers(wx.Panel):
     def OnCreateMarker(self, evt):
         coord = self.ijk
         self.CreateMarker(coord, self.colour, self.spin.GetValue())
-            
+
     def OnLoadMarkers(self, evt):
         filepath = dlg.ShowLoadMarkersDialog()
         if filepath is not None:
