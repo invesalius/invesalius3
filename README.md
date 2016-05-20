@@ -24,3 +24,6 @@ InVesalius generates 3D medical imaging reconstructions based on a sequence of 2
 * Insert into *Path* varibale the value *%PYTHONPATH%*
 
 2) [wxPython 3.0](http://bit.ly/1YJesZT)
+
+3) [PIP](http://bit.ly/1YJesZT)
+* Download the script and execute *python get-pip.py* 
