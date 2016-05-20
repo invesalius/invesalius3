@@ -23,7 +23,13 @@ InVesalius generates 3D medical imaging reconstructions based on a sequence of 2
 * Create a system variable named *%PYTHONPATH%* with values: *C:\Python27;C:\Python27\Lib;C:\Python27\Lib\site-packages;C:\Python27\Scripts;*
 * Insert into *Path* varibale the value *%PYTHONPATH%*
 
-2) **wxPython 3.0** - ftp://ftp.cti.gov.br/pub/dt3d/invesalius/files/dev/win64/wxPython3.0-win64-3.0.2.0-py27.exe
+2) **wxPython 3.0.2** - ftp://ftp.cti.gov.br/pub/dt3d/invesalius/files/dev/win64/wxPython3.0-win64-3.0.2.0-py27.exe
 
 3) **PIP** - ftp://ftp.cti.gov.br/pub/dt3d/invesalius/files/dev/win64/get-pip.py
 * Download the script and execute *python get-pip.py* 
+
+4) **Numpy 1.11.0** - ftp://ftp.cti.gov.br/pub/dt3d/invesalius/files/dev/win64/numpy-1.11.0+mkl-cp27-cp27m-win_amd64.whl
+* Download and execute pip install numpy-1.11.0+mkl-cp27-cp27m-win_amd64.whl
+
+5) **Scipy 0.17.1** - ftp://ftp.cti.gov.br/pub/dt3d/invesalius/files/dev/win64/scipy-0.17.1-cp27-cp27m-win_amd64.whl
+* Download and execute pip install scipy-0.17.1-cp27-cp27m-win_amd64.whl
