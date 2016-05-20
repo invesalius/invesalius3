@@ -14,8 +14,8 @@ InVesalius generates 3D medical imaging reconstructions based on a sequence of 2
   * Volume rendering crop plane
   * Picture exportation (including: BMP, TIFF, JPG, PostScript, POV-Ray)
 
-## Development
+### Development
 
 #### Windows 64 bits (tested on Windows 7)
 
-* [Python 2.7.8](http://bit.ly/1W6JQ6L)
+1. [Python 2.7.8](http://bit.ly/1W6JQ6L)
