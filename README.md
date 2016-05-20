@@ -20,6 +20,6 @@ InVesalius generates 3D medical imaging reconstructions based on a sequence of 2
 
 1). [Python 2.7.8](http://bit.ly/1W6JQ6L)
 
-* Create a system variable named %PYTHONPATH% with values: C:\Python27;C:\Python27\Lib;C:\Python27\Lib\site-packages;C:\Python27\Scripts; 
+* Create a system variable named *%PYTHONPATH%* with values: *C:\Python27;C:\Python27\Lib;C:\Python27\Lib\site-packages;C:\Python27\Scripts;* 
 
 2). [wxPython 3.0](http://bit.ly/1YJesZT)
