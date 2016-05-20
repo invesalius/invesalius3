@@ -73,4 +73,5 @@ InVesalius generates 3D medical imaging reconstructions based on a sequence of 2
 
 * Option 2: Download compiled parts and unzip on *invesalius3/invesalius/data* - ftp://ftp.cti.gov.br/pub/dt3d/invesalius/files/dev/win64/invesalius-compiled_parts.zip
 
-*Special thank's to Christoph Gohlke, Laboratory for Fluorescence Dynamics for providing the pre-compiled of various [python packages for Windows 64 bits](http://www.lfd.uci.edu/~gohlke/pythonlibs/)
+
+Special thank's to Christoph Gohlke, Laboratory for Fluorescence Dynamics, University of California, Irvine for providing the pre-compiled of various [python packages for Windows 64 bits](http://www.lfd.uci.edu/~gohlke/pythonlibs/)
