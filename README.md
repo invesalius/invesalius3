@@ -53,10 +53,10 @@ InVesalius generates 3D medical imaging reconstructions based on a sequence of 2
 * Download and execute *pip install psutil-4.2.0-cp27-cp27m-win_amd64.whl*
 
 12) **VTK 6.3.0** - ftp://ftp.cti.gov.br/pub/dt3d/invesalius/files/dev/win64/vtk.zip
-* Download and unzip on *C:\Python27\Lib\site-packages* and add on PYTHONPATH variable *C:\Python27\Lib\site-packages\vtk\vtk;*
+* Download and unzip on *C:\Python27\Lib\site-packages* and add on *%PYTHONPATH%* variable the value *C:\Python27\Lib\site-packages\vtk\vtk;*
 
 13) **GDCM (trunk)** - ftp://ftp.cti.gov.br/pub/dt3d/invesalius/files/dev/win64/gdcm.zip
-* Download and unzip on *C:\Python27\Lib\site-packages* and add on PYTHONPATH variable *C:\Python27\Lib\site-packages\gdcm;*
+* Download and unzip on *C:\Python27\Lib\site-packages* and add on *%PYTHONPATH%* variable the value *C:\Python27\Lib\site-packages\gdcm;*
 
 14) **CA Smoothing** - ftp://ftp.cti.gov.br/pub/dt3d/invesalius/files/dev/win64/python_ca_smoothing.zip
 * Download and unzip the two files on *C:\Python27\Lib\site-packages*
@@ -69,6 +69,6 @@ InVesalius generates 3D medical imaging reconstructions based on a sequence of 2
 
 17) **Compiled InVesalius parts**
 
-* Option 1: Install [Microsoft Visual Studio Community 2015](https://www.visualstudio.com/pt-br/downloads/download-visual-studio-vs.aspx) and execute *python setup.py build_ext --inplace*
+* Option 1: Install [Microsoft Visual Studio Community 2015](https://www.visualstudio.com/pt-br/downloads/download-visual-studio-vs.aspx) and execute *python setup.py build_ext --inplace* on invesalius3 folder.
 
 * Option 2: Download compiled parts and unzip on *invesalius3/invesalius/data* - ftp://ftp.cti.gov.br/pub/dt3d/invesalius/files/dev/win64/invesalius-compiled_parts.zip
