@@ -18,4 +18,4 @@ InVesalius generates 3D medical imaging reconstructions based on a sequence of 2
 
 #### Windows 64 bits (tested on Windows 7)
 
-* [Python 2.7.8](http://goo.gl/idbywr)
+* [Python 2.7.8](http://bit.ly/1W6JQ6L)
