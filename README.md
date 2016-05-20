@@ -18,12 +18,12 @@ InVesalius generates 3D medical imaging reconstructions based on a sequence of 2
 
 #### Windows 64 bits (tested on Windows 7)
 
-1) **Python 2.7.8**(ftp://ftp.cti.gov.br/pub/dt3d/invesalius/files/dev/win64/python-2.7.8.amd64.msi)
+1) **Python 2.7.8** - ftp://ftp.cti.gov.br/pub/dt3d/invesalius/files/dev/win64/python-2.7.8.amd64.msi
 
 * Create a system variable named *%PYTHONPATH%* with values: *C:\Python27;C:\Python27\Lib;C:\Python27\Lib\site-packages;C:\Python27\Scripts;*
 * Insert into *Path* varibale the value *%PYTHONPATH%*
 
-2) [wxPython 3.0](ftp://ftp.cti.gov.br/pub/dt3d/invesalius/files/dev/win64/wxPython3.0-win64-3.0.2.0-py27.exe)
+2) **wxPython 3.0** - ftp://ftp.cti.gov.br/pub/dt3d/invesalius/files/dev/win64/wxPython3.0-win64-3.0.2.0-py27.exe
 
 3) [PIP](http://bit.ly/1YJesZT)
 * Download the script and execute *python get-pip.py* 
