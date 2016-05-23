@@ -71,7 +71,7 @@ InVesalius generates 3D medical imaging reconstructions based on a sequence of 2
 * Download and install
 
 16) **Cython**
-* Execute `python install cython`
+* Execute `pip install cython`
 
 17) **Compiled InVesalius parts**
 
