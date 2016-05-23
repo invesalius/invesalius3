@@ -16,6 +16,10 @@ InVesalius generates 3D medical imaging reconstructions based on a sequence of 2
 
 ### Development
 
+#### Linux 64 bits (tested on Ubuntu 16.04)
+
+<source> sudo apt-get install python-wxgtk3.0 python-numpy python-scipy python-pil python-matplotlib python-skimage python-nibabel python-serial python-psutil python-vtk6 python-vtkgdcm python-gdcm python-casmoothing cython <source>
+
 #### Windows 64 bits (tested on Windows 7)
 
 1) **Python 2.7.8** - ftp://ftp.cti.gov.br/pub/dt3d/invesalius/files/dev/win64/python-2.7.8.amd64.msi
