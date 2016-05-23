@@ -642,7 +642,7 @@ def SurfaceSelectionRequiredForDuplication():
 
 #=========aji======================================================================
 def InvalidReferences():
-    msg = _("The references are not set.")
+    msg = _("The fiducials references are not properly set.")
     if sys.platform == 'darwin':
         dlg = wx.MessageDialog(None, "", msg,
                                 wx.ICON_INFORMATION | wx.OK)

@@ -193,34 +193,51 @@ class NeuronavigationTools(wx.Panel):
         self.choice_tracker.SetSelection(const.DEFAULT_TRACKER)
         self.choice_tracker.Bind(wx.EVT_COMBOBOX, self.OnChoiceTracker)
 
+        tooltip = wx.ToolTip(_("Choose the navigation reference mode"))
         self.choice_ref_mode = wx.ComboBox(self, -1, "", size=(120, 23),
                                      choices = const.REF_MODE, style = wx.CB_DROPDOWN|wx.CB_READONLY)
         self.choice_ref_mode.SetSelection(const.DEFAULT_REF_MODE)
+        self.choice_ref_mode.SetToolTip(tooltip)
         self.choice_ref_mode.Bind(wx.EVT_COMBOBOX, self.OnChoiceRefMode)
 
-
+        tooltip = wx.ToolTip(_("Select left auricular tragus at image"))
         self.button_img_ref1 = wx.ToggleButton(self, IR1, label = _('LTI'), size = wx.Size(30,23))
+        self.button_img_ref1.SetToolTip(tooltip)
         self.button_img_ref1.Bind(wx.EVT_TOGGLEBUTTON, self.Img_Ref_ToggleButton1)
 
+        tooltip = wx.ToolTip(_("Select right auricular tragus at image"))
         self.button_img_ref2 = wx.ToggleButton(self, IR2, label = _('RTI'), size = wx.Size(30,23))
+        self.button_img_ref2.SetToolTip(tooltip)
         self.button_img_ref2.Bind(wx.EVT_TOGGLEBUTTON, self.Img_Ref_ToggleButton2)
 
+        tooltip = wx.ToolTip(_("Select nasion at image"))
         self.button_img_ref3 = wx.ToggleButton(self, IR3, label = _('NI'), size = wx.Size(30,23))
+        self.button_img_ref3.SetToolTip(tooltip)
         self.button_img_ref3.Bind(wx.EVT_TOGGLEBUTTON, self.Img_Ref_ToggleButton3)
 
         #self.button_img_inio = wx.Button(self, INO, label='INO', size=wx.Size(30, 23))
+        tooltip = wx.ToolTip(_("Select target point at image for target registration error calculation"))
         self.button_img_T = wx.ToggleButton(self, T, label = 'T', size = wx.Size(30,23))
+        self.button_img_T.SetToolTip(tooltip)
         self.button_img_T.Bind(wx.EVT_TOGGLEBUTTON, self.Img_T_ToggleButton)
 
+        tooltip = wx.ToolTip(_("Select left auricular tragus with spatial tracker"))
         self.button_trck_ref1 = wx.Button(self, TR1, label = _('LTT'), size = wx.Size(30,23))
+        self.button_trck_ref1.SetToolTip(tooltip)
+        tooltip = wx.ToolTip(_("Select right auricular tragus with spatial tracker"))
         self.button_trck_ref2 = wx.Button(self, TR2, label = _('RTT'), size = wx.Size(30,23))
+        self.button_trck_ref2.SetToolTip(tooltip)
+        tooltip = wx.ToolTip(_("Select nasion with spatial tracker"))
         self.button_trck_ref3 = wx.Button(self, TR3, label = _('NT'), size = wx.Size(30,23))
+        self.button_trck_ref3.SetToolTip(tooltip)
 
         self.button_crg = wx.TextCtrl(self, value="")
         self.button_crg.SetEditable(0)
         self.Bind(wx.EVT_BUTTON, self.Buttons)
 
+        tooltip = wx.ToolTip(_("Start neuronavigation"))
         self.button_neuronavigate = wx.ToggleButton(self, Neuronavigate, _("Neuronavigate"))
+        self.button_neuronavigate.SetToolTip(tooltip)
         self.button_neuronavigate.Bind(wx.EVT_TOGGLEBUTTON, self.Neuronavigate_ToggleButton)
 
         self.numCtrl1I = wx.lib.masked.numctrl.NumCtrl(
@@ -266,6 +283,16 @@ class NeuronavigationTools(wx.Panel):
             name='numCtrl2f', parent=self, integerWidth = 4, fractionWidth = 1)
         self.numCtrl3f = wx.lib.masked.numctrl.NumCtrl(
             name='numCtrl3f', parent=self, integerWidth = 4, fractionWidth = 1)
+
+        self.numCtrl1d.SetEditable(False)
+        self.numCtrl2d.SetEditable(False)
+        self.numCtrl3d.SetEditable(False)
+        self.numCtrl1e.SetEditable(False)
+        self.numCtrl2e.SetEditable(False)
+        self.numCtrl3e.SetEditable(False)
+        self.numCtrl1f.SetEditable(False)
+        self.numCtrl2f.SetEditable(False)
+        self.numCtrl3f.SetEditable(False)
 
         choice_sizer = wx.FlexGridSizer(rows=1, cols=2, hgap=5, vgap=5)
         choice_sizer.AddMany([ (self.choice_tracker, wx.LEFT),
@@ -439,6 +466,7 @@ class NeuronavigationTools(wx.Panel):
             self.aux_img_ref3 = 1
         else:
             None
+
     def Buttons(self, evt):
         id = evt.GetId()
         x, y, z = self.a
@@ -465,7 +493,7 @@ class NeuronavigationTools(wx.Panel):
             else:
                 dlg.TrackerNotConnected(self.tracker_id)
 
-        if self.aux_trck_ref1 == 0 or self.aux_trck_ref2 == 0 or self.aux_trck_ref3 == 0:
+        if self.aux_trck_ref1 == 1 or self.aux_trck_ref2 == 1 or self.aux_trck_ref3 == 1:
             Publisher.sendMessage('Update tracker position', coord)
 
     def Img_Ref_ToggleButton1(self, evt):
@@ -537,7 +565,9 @@ class NeuronavigationTools(wx.Panel):
     def Neuronavigate_ToggleButton(self, evt):
         nav_id = self.button_neuronavigate.GetValue()
         if nav_id == True:
-            if self.aux_trck1 and self.aux_trck2 and self.aux_trck3:
+            if self.aux_trck1 and self.aux_trck2 and self.aux_trck3 and self.aux_img_ref1 and self.aux_img_ref2 and self.aux_img_ref3:
+                tooltip = wx.ToolTip(_("Stop neuronavigation"))
+                self.button_neuronavigate.SetToolTip(tooltip)
                 self.Enable_Disable_buttons(False)
                 self.Corregistration()
                 bases = self.Minv, self.N, self.q1, self.q2
@@ -545,9 +575,12 @@ class NeuronavigationTools(wx.Panel):
                 self.Calculate_FRE()
                 self.correg = dcr.Corregistration(bases, nav_id, tracker_mode)
             else:
+                dlg.InvalidReferences()
                 self.button_neuronavigate.SetValue(False)
         elif nav_id == False:
             self.Enable_Disable_buttons(True)
+            tooltip = wx.ToolTip(_("Start neuronavigation"))
+            self.button_neuronavigate.SetToolTip(tooltip)
             self.correg.stop()
 
     def Enable_Disable_buttons(self,status):
@@ -665,22 +698,21 @@ class NeuronavigationTools(wx.Panel):
 
 
     def Corregistration(self):
-        if self.aux_img_ref1 and self.aux_img_ref2 and self.aux_img_ref3:
-            self.M, self.q1, self.Minv = db.base_creation(self.coord1a,
-                                                          self.coord2a,
-                                                          self.coord3a)
-            self.N, self.q2, self.Ninv = db.base_creation(self.coord1b,
-                                                          self.coord2b,
-                                                          self.coord3b)
-            Publisher.sendMessage('Corregistrate Object', [self.Minv,
-                                                           self.N,
-                                                           self.q1,
-                                                           self.q2,
-                                                           self.trk_init,
-                                                           self.tracker_id,
-                                                           self.ref_mode_id,
-                                                           self.a,
-                                                           self.coord3a])
+        self.M, self.q1, self.Minv = db.base_creation(self.coord1a,
+                                                      self.coord2a,
+                                                      self.coord3a)
+        self.N, self.q2, self.Ninv = db.base_creation(self.coord1b,
+                                                      self.coord2b,
+                                                      self.coord3b)
+        Publisher.sendMessage('Corregistrate Object', [self.Minv,
+                                                       self.N,
+                                                       self.q1,
+                                                       self.q2,
+                                                       self.trk_init,
+                                                       self.tracker_id,
+                                                       self.ref_mode_id,
+                                                       self.a,
+                                                       self.coord3a])
 
 #===============================================================================
 #===============================================================================
