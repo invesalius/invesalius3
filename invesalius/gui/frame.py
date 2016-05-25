@@ -170,8 +170,8 @@ class Frame(wx.Frame):
         # are shown, this should be hiden
         caption = _("Preview medical data to be reconstructed")
         aui_manager.AddPane(imp.Panel(self), wx.aui.AuiPaneInfo().
-                          Name("Import").Centre().Hide().
-                          MaximizeButton(True).Floatable(True).
+                          Name("Import").CloseButton(False).Centre().Hide().
+                          MaximizeButton(False).Floatable(True).
                           Caption(caption).CaptionVisible(True))
 
         ncaption = _("Retrieve DICOM from PACS")
