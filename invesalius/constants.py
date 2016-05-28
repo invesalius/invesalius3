@@ -597,7 +597,7 @@ TRACKER = [_("Select tracker:"),_("Claron MicronTracker"), _("Polhemus FASTRAK")
 STATIC_REF = 0
 DYNAMIC_REF = 1
 DEFAULT_REF_MODE = DYNAMIC_REF
-REF_MODE = [_("Static reference"), _("Dynamic reference")]
+REF_MODE = [_("Static ref."), _("Dynamic ref.")]
 
 BUTTERFLY_COIL = 0
 CIRCULAR_COIL = 1
