@@ -149,7 +149,7 @@ class Controller():
         #    Publisher.sendMessage("Load data to import panel", dirpath)
 
 
-def ShowDialogImportDirectory(self):
+    def ShowDialogImportDirectory(self):
         # Offer to save current project if necessary
         session = ses.Session()
         st = session.project_status
