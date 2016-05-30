@@ -306,7 +306,7 @@ def ShowImportDirDialog():
     os.chdir(current_dir)
     return path
 
-def ShowImportTiffDirDialog():
+def ShowImportBitmapDirDialog():
     current_dir = os.path.abspath(".")
 
     if (sys.platform == 'win32') or (sys.platform == 'linux2'):

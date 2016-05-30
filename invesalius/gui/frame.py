@@ -372,7 +372,7 @@ class Frame(wx.Frame):
         elif id == const.ID_ANALYZE_IMPORT:
             self.ShowAnalyzeImporter()
         elif id == const.ID_TIFF_JPG_PNG:
-            self.ShowTiffImporter()
+            self.ShowBitmapImporter()
         elif id == const.ID_PROJECT_SAVE:
             session = ses.Session()
             if session.temp_item:
@@ -503,9 +503,9 @@ class Frame(wx.Frame):
         """
         Publisher.sendMessage('Show analyze dialog', True)
 
-    def ShowTiffImporter(self):
+    def ShowBitmapImporter(self):
         """
-        Tiff, JPEG and PNG
+        Tiff, BMP, JPEG and PNG
         """
         Publisher.sendMessage('Show tiff dialog', True)
 

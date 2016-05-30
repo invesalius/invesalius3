@@ -81,7 +81,7 @@ class Controller():
         Publisher.subscribe(self.OnOpenProject, 'Open project')
         Publisher.subscribe(self.OnOpenRecentProject, 'Open recent project')
         Publisher.subscribe(self.OnShowAnalyzeFile, 'Show analyze dialog')
-        Publisher.subscribe(self.OnShowTiffFile, 'Show tiff dialog')
+        Publisher.subscribe(self.OnShowBitmapFile, 'Show tiff dialog')
 
         Publisher.subscribe(self.ShowBooleanOpDialog, 'Show boolean dialog')
 
@@ -120,11 +120,11 @@ class Controller():
         self.LoadProject()
         Publisher.sendMessage("Enable state project", True)
 
-    def OnShowTiffFile(self, pubsub_evt):
-        self.ShowDialogImportTiffFile()
+    def OnShowBitmapFile(self, pubsub_evt):
+        self.ShowDialogImportBitmapFile()
 ###########################
 
-    def ShowDialogImportTiffFile(self):
+    def ShowDialogImportBitmapFile(self):
         # Offer to save current project if necessary
         session = ses.Session()
         st = session.project_status
@@ -140,7 +140,7 @@ class Controller():
             Publisher.sendMessage("Set slice interaction style", const.STATE_DEFAULT)
 
         # Import TIFF, BMP, JPEG or PNG
-        dirpath = dialog.ShowImportTiffDirDialog()
+        dirpath = dialog.ShowImportBitmapDirDialog()
 
         if dirpath and not os.listdir(dirpath):
             dialog.ImportEmptyDirectory(dirpath)
