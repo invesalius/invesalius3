@@ -188,18 +188,19 @@ class NeuronavigationTools(wx.Panel):
         self.trk_init = None
 
         #Combo Box
-        self.choice_tracker = wx.ComboBox(self, -1, "", size=(130, 23),
+        self.choice_tracker = wx.ComboBox(self, -1, "",
                                      choices = const.TRACKER, style = wx.CB_DROPDOWN|wx.CB_READONLY)
         self.choice_tracker.SetSelection(const.DEFAULT_TRACKER)
         self.choice_tracker.Bind(wx.EVT_COMBOBOX, self.OnChoiceTracker)
 
         tooltip = wx.ToolTip(_("Choose the navigation reference mode"))
-        self.choice_ref_mode = wx.ComboBox(self, -1, "", size=(120, 23),
+        self.choice_ref_mode = wx.ComboBox(self, -1, "",
                                      choices = const.REF_MODE, style = wx.CB_DROPDOWN|wx.CB_READONLY)
         self.choice_ref_mode.SetSelection(const.DEFAULT_REF_MODE)
         self.choice_ref_mode.SetToolTip(tooltip)
         self.choice_ref_mode.Bind(wx.EVT_COMBOBOX, self.OnChoiceRefMode)
 
+        #Toggle Buttons for ref images
         tooltip = wx.ToolTip(_("Select left auricular tragus at image"))
         self.button_img_ref1 = wx.ToggleButton(self, IR1, label = _('LTI'), size = wx.Size(30,23))
         self.button_img_ref1.SetToolTip(tooltip)
@@ -221,6 +222,7 @@ class NeuronavigationTools(wx.Panel):
         self.button_img_T.SetToolTip(tooltip)
         self.button_img_T.Bind(wx.EVT_TOGGLEBUTTON, self.Img_T_ToggleButton)
 
+        #Buttons for ref tracker
         tooltip = wx.ToolTip(_("Select left auricular tragus with spatial tracker"))
         self.button_trck_ref1 = wx.Button(self, TR1, label = _('LTT'), size = wx.Size(30,23))
         self.button_trck_ref1.SetToolTip(tooltip)
@@ -231,6 +233,7 @@ class NeuronavigationTools(wx.Panel):
         self.button_trck_ref3 = wx.Button(self, TR3, label = _('NT'), size = wx.Size(30,23))
         self.button_trck_ref3.SetToolTip(tooltip)
 
+        #Error text box
         self.button_crg = wx.TextCtrl(self, value="")
         self.button_crg.SetEditable(0)
         self.Bind(wx.EVT_BUTTON, self.Buttons)
@@ -502,9 +505,17 @@ class NeuronavigationTools(wx.Panel):
         x, y, z = self.a
 #        x, y, z = 201.1, 113.3, 31.5
         if img_id == True:
-            self.coord1a = x, y, z
-            self.aux_img_ref1 = 1
-            Publisher.sendMessage("Create fiducial markers", (self.coord1a, "LTI"))
+            #This condition allows the user writes the image coords
+            if self.numCtrl1a.GetValue() != round(x, 1) or self.numCtrl2a.GetValue() != round(y,1) or self.numCtrl3a.GetValue() != round(z, 1):
+                self.coord1a = self.numCtrl1a.GetValue(), self.numCtrl2a.GetValue(), self.numCtrl3a.GetValue()
+                Publisher.sendMessage('Set camera in volume for Navigation', self.coord1a)
+                Publisher.sendMessage('Co-registered Points', self.coord1a)
+                self.aux_img_ref1 = 1
+                Publisher.sendMessage("Create fiducial markers", (self.coord1a, "LTI"))
+            else:
+                self.coord1a = x, y, z
+                self.aux_img_ref1 = 1
+                Publisher.sendMessage("Create fiducial markers", (self.coord1a, "LTI"))
 
         elif img_id == False:
             self.aux_img_ref1 = 0
@@ -520,9 +531,18 @@ class NeuronavigationTools(wx.Panel):
         x, y, z = self.a
 #        x, y, z = 50.4, 113.3, 30.0
         if img_id == True:
-            self.coord2a = x, y, z
-            self.aux_img_ref2 = 1
-            Publisher.sendMessage("Create fiducial markers", (self.coord2a, "RTI"))
+            #This condition allows the user writes the image coords
+            if self.numCtrl1b.GetValue() != round(x, 1) or self.numCtrl2b.GetValue() != round(y,1) or self.numCtrl3b.GetValue() != round(z, 1):
+                self.coord2a = self.numCtrl1b.GetValue(), self.numCtrl2b.GetValue(), self.numCtrl3b.GetValue()
+                Publisher.sendMessage('Set camera in volume for Navigation', self.coord2a)
+                Publisher.sendMessage('Co-registered Points', self.coord2a)
+                self.aux_img_ref2 = 1
+                Publisher.sendMessage("Create fiducial markers", (self.coord2a, "RTI"))
+            else:
+                self.coord2a = x, y, z
+                self.aux_img_ref2 = 1
+                Publisher.sendMessage("Create fiducial markers", (self.coord2a, "RTI"))
+
         elif img_id == False:
             self.aux_img_ref2 = 0
             self.coord2a = (0, 0, 0)
@@ -537,9 +557,18 @@ class NeuronavigationTools(wx.Panel):
         x, y, z = self.a
 #        x, y, z = 123.4, 207.4, 67.5
         if img_id == True:
-            self.coord3a = x, y, z
-            self.aux_img_ref3 = 1
-            Publisher.sendMessage("Create fiducial markers", (self.coord3a, "NI"))
+            #This condition allows the user writes the image coords
+            if self.numCtrl1c.GetValue() != round(x, 1) or self.numCtrl2c.GetValue() != round(y,1) or self.numCtrl3c.GetValue() != round(z, 1):
+                self.coord3a = self.numCtrl1c.GetValue(), self.numCtrl2c.GetValue(), self.numCtrl3c.GetValue()
+                Publisher.sendMessage('Set camera in volume for Navigation', self.coord3a)
+                Publisher.sendMessage('Co-registered Points', self.coord3a)
+                self.aux_img_ref3 = 1
+                Publisher.sendMessage("Create fiducial markers", (self.coord3a, "NI"))
+            else:
+                self.coord3a = x, y, z
+                self.aux_img_ref3 = 1
+                Publisher.sendMessage("Create fiducial markers", (self.coord3a, "NI"))
+
         elif img_id == False:
             self.aux_img_ref3 = 0
             self.coord3a = (0, 0, 0)
@@ -552,9 +581,17 @@ class NeuronavigationTools(wx.Panel):
            img_id = self.button_img_T.GetValue()
            x, y, z = self.a
            if img_id == True:
-               self.img_T = x, y, z
-               self.aux_img__T_ref = 1
-               self.coordT = np.array([x,y,z])
+               # This condition allows the user writes the image coords
+               if self.numCtrl1I.GetValue() != round(x,1) or self.numCtrl2I.GetValue() != round(y,1) or self.numCtrl3I.GetValue() != round(z,1):
+                   self.img_T = self.numCtrl1I.GetValue(), self.numCtrl2I.GetValue(), self.numCtrl3I.GetValue()
+                   Publisher.sendMessage('Set camera in volume for Navigation', self.img_T)
+                   Publisher.sendMessage('Co-registered Points', self.img_T)
+                   self.aux_img__T_ref = 1
+                   self.coordT = np.array([self.numCtrl1I.GetValue(),self.numCtrl2I.GetValue(),self.numCtrl3I.GetValue()])
+               else:
+                   self.img_T = x, y, z
+                   self.aux_img__T_ref = 1
+                   self.coordT = np.array([x,y,z])
            elif img_id == False:
                self.aux_img__T_ref = 0
                self.img_T = (0, 0, 0)
@@ -606,48 +643,49 @@ class NeuronavigationTools(wx.Panel):
 
         FRE = float(np.sqrt((ED1**2 + ED2**2 + ED3**2)/3))
 
-        if self.aux_img__T_ref == 1:
-            N1 = ([self.coord1a[0], self.coord2a[0], self.coord3a[0]])
-            norm1 = [float(i) / sum(N1) for i in N1]
-            N2 = ([self.coord1a[1], self.coord2a[1], self.coord3a[1]])
-            norm2 = [float(i) / sum(N2) for i in N2]
-            N3 = ([self.coord1a[2], self.coord2a[2], self.coord3a[2]])
-            norm3 = [float(i) / sum(N3) for i in N3]
-
-            plhT = np.matrix([[self.coordT[0]], [self.coordT[1]], [self.coordT[2]]])
-            #imgT = self.q1 + (self.Minv * self.N) * (plhT - self.q2)
-            #imgT = np.array([float(imgT[0]), float(imgT[1]), float(imgT[2])])
-            centroid = np.array([(self.coord1a[0] + self.coord2a[0] + self.coord3a[0]) / 3, (self.coord1a[1] + self.coord2a[1] + self.coord3a[1]) / 3, (self.coord1a[2] + self.coord2a[2] + self.coord3a[2]) / 3])
-            #Difference between the target point (after coregister) with the fiducials centroid
-            #dif_vector = imgT - centroid
-            dif_vector = plhT - centroid
-
-            er1 = np.linalg.norm(np.cross(norm1, dif_vector))
-            er2 = np.linalg.norm(np.cross(norm2, dif_vector))
-            er3 = np.linalg.norm(np.cross(norm3, dif_vector))
-
-            err1 = err2 = err3 = 0
-
-            for i in range(0, 3):
-                # Difference between each fiducial with the fiducials centroid
-                diff_vector = [self.coord1a[i] - centroid[0], self.coord2a[i] - centroid[0], self.coord3a[i] - centroid[0]]
-
-                err1 += (np.linalg.norm(np.cross(norm1, diff_vector)))** 2
-                err2 += (np.linalg.norm(np.cross(norm2, diff_vector)))** 2
-                err3 += (np.linalg.norm(np.cross(norm3, diff_vector)))** 2
-
-            f1 = np.sqrt(err1 / 3)
-            f2 = np.sqrt(err2 / 3)
-            f3 = np.sqrt(err3 / 3)
-
-            SUM = ((er1 ** 2) / (f1 ** 2)) + ((er2 ** 2) / (f2 ** 2)) + ((er3 ** 2) / (f3 ** 2))
-            TREf = np.sqrt((FRE ** 2) * (1 + (SUM / 3)))
-
-            self.button_crg.SetValue("FRE: " + str(round(FRE, 2))+" TRE: " + str(round(TREf, 2)))
-
-        else:
-            self.button_crg.SetValue("FRE: " + str(round(FRE, 2)))
-
+        #TRE calculation
+        # if self.aux_img__T_ref == 1:
+        #     N1 = ([self.coord1a[0], self.coord2a[0], self.coord3a[0]])
+        #     norm1 = [float(i) / sum(N1) for i in N1]
+        #     N2 = ([self.coord1a[1], self.coord2a[1], self.coord3a[1]])
+        #     norm2 = [float(i) / sum(N2) for i in N2]
+        #     N3 = ([self.coord1a[2], self.coord2a[2], self.coord3a[2]])
+        #     norm3 = [float(i) / sum(N3) for i in N3]
+        #
+        #     plhT = np.matrix([[self.coordT[0]], [self.coordT[1]], [self.coordT[2]]])
+        #     #imgT = self.q1 + (self.Minv * self.N) * (plhT - self.q2)
+        #     #imgT = np.array([float(imgT[0]), float(imgT[1]), float(imgT[2])])
+        #     centroid = np.array([(self.coord1a[0] + self.coord2a[0] + self.coord3a[0]) / 3, (self.coord1a[1] + self.coord2a[1] + self.coord3a[1]) / 3, (self.coord1a[2] + self.coord2a[2] + self.coord3a[2]) / 3])
+        #     #Difference between the target point (after coregister) with the fiducials centroid
+        #     #dif_vector = imgT - centroid
+        #     dif_vector = plhT - centroid
+        #
+        #     er1 = np.linalg.norm(np.cross(norm1, dif_vector))
+        #     er2 = np.linalg.norm(np.cross(norm2, dif_vector))
+        #     er3 = np.linalg.norm(np.cross(norm3, dif_vector))
+        #
+        #     err1 = err2 = err3 = 0
+        #
+        #     for i in range(0, 3):
+        #         # Difference between each fiducial with the fiducials centroid
+        #         diff_vector = [self.coord1a[i] - centroid[0], self.coord2a[i] - centroid[0], self.coord3a[i] - centroid[0]]
+        #
+        #         err1 += (np.linalg.norm(np.cross(norm1, diff_vector)))** 2
+        #         err2 += (np.linalg.norm(np.cross(norm2, diff_vector)))** 2
+        #         err3 += (np.linalg.norm(np.cross(norm3, diff_vector)))** 2
+        #
+        #     f1 = np.sqrt(err1 / 3)
+        #     f2 = np.sqrt(err2 / 3)
+        #     f3 = np.sqrt(err3 / 3)
+        #
+        #     SUM = ((er1 ** 2) / (f1 ** 2)) + ((er2 ** 2) / (f2 ** 2)) + ((er3 ** 2) / (f3 ** 2))
+        #     TREf = np.sqrt((FRE ** 2) * (1 + (SUM / 3)))
+        #
+        #     self.button_crg.SetValue("FRE: " + str(round(FRE, 2))+" TRE: " + str(round(TREf, 2)))
+        #
+        # else:
+        #     self.button_crg.SetValue("FRE: " + str(round(FRE, 2)))
+        self.button_crg.SetValue("FRE: " + str(round(FRE, 2)))
         if FRE <= 3:
             self.button_crg.SetBackgroundColour('GREEN')
         else:
