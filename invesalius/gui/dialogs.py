@@ -306,6 +306,48 @@ def ShowImportDirDialog():
     os.chdir(current_dir)
     return path
 
+def ShowImportTiffDirDialog():
+    current_dir = os.path.abspath(".")
+
+    if (sys.platform == 'win32') or (sys.platform == 'linux2'):
+        session = ses.Session()
+
+        if (session.GetLastDicomFolder()):
+            folder = session.GetLastDicomFolder()
+        else:
+            folder = ''
+    else:
+        folder = ''
+
+    dlg = wx.DirDialog(None, _("Choose a folder with TIFF, BMP, JPG or PNG:"), folder,
+                        style=wx.DD_DEFAULT_STYLE
+                        | wx.DD_DIR_MUST_EXIST
+                        | wx.DD_CHANGE_DIR)
+
+    path = None
+    try:
+        if dlg.ShowModal() == wx.ID_OK:
+            # GetPath returns in unicode, if a path has non-ascii characters a
+            # UnicodeEncodeError is raised. To avoid this, path is encoded in utf-8
+            if sys.platform == "win32":
+                path = dlg.GetPath()
+            else:
+                path = dlg.GetPath().encode('utf-8')
+
+    except(wx._core.PyAssertionError): #TODO: error win64
+         if (dlg.GetPath()):
+             path = dlg.GetPath()
+
+    if (sys.platform != 'darwin'):
+        if (path):
+            session.SetLastDicomFolder(path)
+
+    # Only destroy a dialog after you're done with it.
+    dlg.Destroy()
+    os.chdir(current_dir)
+    return path
+
+
 def ShowSaveAsProjectDialog(default_filename=None):
     current_dir = os.path.abspath(".")
     dlg = wx.FileDialog(None,

@@ -371,6 +371,8 @@ class Frame(wx.Frame):
             self.ShowOpenProject()
         elif id == const.ID_ANALYZE_IMPORT:
             self.ShowAnalyzeImporter()
+        elif id == const.ID_TIFF_JPG_PNG:
+            self.ShowTiffImporter()
         elif id == const.ID_PROJECT_SAVE:
             session = ses.Session()
             if session.temp_item:
@@ -500,6 +502,12 @@ class Frame(wx.Frame):
         Show save as dialog.
         """
         Publisher.sendMessage('Show analyze dialog', True)
+
+    def ShowTiffImporter(self):
+        """
+        Tiff, JPEG and PNG
+        """
+        Publisher.sendMessage('Show tiff dialog', True)
 
     def FlipVolume(self, axis):
         Publisher.sendMessage('Flip volume', axis)

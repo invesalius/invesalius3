@@ -81,6 +81,7 @@ class Controller():
         Publisher.subscribe(self.OnOpenProject, 'Open project')
         Publisher.subscribe(self.OnOpenRecentProject, 'Open recent project')
         Publisher.subscribe(self.OnShowAnalyzeFile, 'Show analyze dialog')
+        Publisher.subscribe(self.OnShowTiffFile, 'Show tiff dialog')
 
         Publisher.subscribe(self.ShowBooleanOpDialog, 'Show boolean dialog')
 
@@ -119,10 +120,36 @@ class Controller():
         self.LoadProject()
         Publisher.sendMessage("Enable state project", True)
 
-
+    def OnShowTiffFile(self, pubsub_evt):
+        self.ShowDialogImportTiffFile()
 ###########################
 
-    def ShowDialogImportDirectory(self):
+    def ShowDialogImportTiffFile(self):
+        # Offer to save current project if necessary
+        session = ses.Session()
+        st = session.project_status
+        if (st == const.PROJ_NEW) or (st == const.PROJ_CHANGE):
+            filename = session.project_path[1]
+            answer = dialog.SaveChangesDialog2(filename)
+            if answer:
+                self.ShowDialogSaveProject()
+            self.CloseProject()
+            #Publisher.sendMessage("Enable state project", False)
+            Publisher.sendMessage('Set project name')
+            Publisher.sendMessage("Stop Config Recording")
+            Publisher.sendMessage("Set slice interaction style", const.STATE_DEFAULT)
+
+        # Import TIFF, BMP, JPEG or PNG
+        dirpath = dialog.ShowImportTiffDirDialog()
+
+        if dirpath and not os.listdir(dirpath):
+            dialog.ImportEmptyDirectory(dirpath)
+        #elif dirpath:
+        #    self.StartImportPanel(dirpath)
+        #    Publisher.sendMessage("Load data to import panel", dirpath)
+
+
+def ShowDialogImportDirectory(self):
         # Offer to save current project if necessary
         session = ses.Session()
         st = session.project_status
