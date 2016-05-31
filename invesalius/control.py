@@ -365,7 +365,8 @@ class Controller():
             Publisher.sendMessage("Show import panel in frame")
 
     def OnLoadImportBitmapPanel(self, evt):
-        patient_series = evt.data
+        files = evt.data
+        print files
         #ok = self.LoadImportPanel(patient_series)
         #if ok:
         #    Publisher.sendMessage('Show import panel')

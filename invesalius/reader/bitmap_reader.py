@@ -21,6 +21,8 @@ import Queue
 import threading
 import tempfile
 import sys
+import vtk
+import re
 import constants as const
 
 from wx.lib.pubsub import pub as Publisher
@@ -31,11 +33,23 @@ class BitmapFiles:
     def __init__(self):
         self.bitmapfiles = []
 
-    def Add(self, path):
-        self.bitmapfiles.append(path)
+    def Add(self, bmp):
+        self.bitmapfiles.append(bmp)
+
+    def Sort(self, x):
+
+        c_re = re.compile('\d+')
+
+        if len(c_re.findall(x[0])) > 0:
+            return c_re.findall(x[0])[-1] 
+        else:
+            return '0'
 
     def GetValues(self):
-        return self.bitmapfiles
+        bmpfile = self.bitmapfiles
+        bmpfile.sort(key = self.Sort)
+
+        return bmpfile
 
 class LoadBitmap:
 
@@ -49,7 +63,33 @@ class LoadBitmap:
         self.run()
     
     def run(self):
-        self.bmp_file.Add(self.filepath)
+        
+        #----- verify extension ------------------
+        ex = self.filepath.split('.')[-1]
+        ex = ex.lower()
+
+        if ex == 'bmp':
+            reader = vtk.vtkBMPReader()
+
+        reader.SetFileName(self.filepath)
+        reader.Update()
+
+        resample = vtk.vtkImageResample()
+        resample.SetInputConnection(reader.GetOutputPort())
+        resample.SetAxisMagnificationFactor ( 0, 0.25 )
+        resample.SetAxisMagnificationFactor ( 1, 0.25 )
+        resample.SetAxisMagnificationFactor ( 2, 1 )    
+        resample.Update()
+
+        thumbnail_path = tempfile.mktemp()
+
+        write_png = vtk.vtkPNGWriter()
+        write_png.SetInputConnection(resample.GetOutputPort())
+        write_png.SetFileName(thumbnail_path)
+        write_png.Write()
+
+        bmp_item = [self.filepath, thumbnail_path, ex]
+        self.bmp_file.Add(bmp_item)
 
 
 def yGetBitmaps(directory, recursive=True, gui=True):
