@@ -35,6 +35,7 @@ import project as prj
 import reader.analyze_reader as analyze
 import reader.dicom_grouper as dg
 import reader.dicom_reader as dcm
+import reader.bitmap_reader as bmp
 import session as ses
 
 import utils 
@@ -75,13 +76,17 @@ class Controller():
         Publisher.subscribe(self.OnOpenDicomGroup,
                                  'Open DICOM group')
         Publisher.subscribe(self.Progress, "Update dicom load")
+        Publisher.subscribe(self.Progress, "Update bitmap load")
         Publisher.subscribe(self.OnLoadImportPanel, "End dicom load")
+        Publisher.subscribe(self.OnLoadImportBitmapPanel, "End bitmap load")
         Publisher.subscribe(self.OnCancelImport, 'Cancel DICOM load')
+        Publisher.subscribe(self.OnCancelImportBitmap, 'Cancel bitmap load')
+
         Publisher.subscribe(self.OnShowDialogCloseProject, 'Close Project')
         Publisher.subscribe(self.OnOpenProject, 'Open project')
         Publisher.subscribe(self.OnOpenRecentProject, 'Open recent project')
         Publisher.subscribe(self.OnShowAnalyzeFile, 'Show analyze dialog')
-        Publisher.subscribe(self.OnShowBitmapFile, 'Show tiff dialog')
+        Publisher.subscribe(self.OnShowBitmapFile, 'Show bitmap dialog')
 
         Publisher.subscribe(self.ShowBooleanOpDialog, 'Show boolean dialog')
 
@@ -93,7 +98,9 @@ class Controller():
         Publisher.sendMessage('Hide import panel')
 
 
-
+    def OnCancelImportBitmap(self, pubsub_evt):
+        #self.cancel_import = True
+        Publisher.sendMessage('Hide import bitmap panel')
 
 ###########################
 ###########################
@@ -144,8 +151,8 @@ class Controller():
 
         if dirpath and not os.listdir(dirpath):
             dialog.ImportEmptyDirectory(dirpath)
-        #elif dirpath:
-        #    self.StartImportPanel(dirpath)
+        elif dirpath:
+            self.StartImportBitmapPanel(dirpath)
         #    Publisher.sendMessage("Load data to import panel", dirpath)
 
 
@@ -318,6 +325,12 @@ class Controller():
 
 ###########################
 
+    def StartImportBitmapPanel(self, path):
+        # retrieve DICOM files splited into groups
+        reader = bmp.ProgressBitmapReader()
+        reader.SetWindowEvent(self.frame)
+        reader.SetDirectoryPath(path)
+        Publisher.sendMessage('End busy cursor')
 
     def StartImportPanel(self, path):
 
@@ -351,6 +364,14 @@ class Controller():
             Publisher.sendMessage('Show import panel')
             Publisher.sendMessage("Show import panel in frame")
 
+    def OnLoadImportBitmapPanel(self, evt):
+        patient_series = evt.data
+        #ok = self.LoadImportPanel(patient_series)
+        #if ok:
+        #    Publisher.sendMessage('Show import panel')
+        #    Publisher.sendMessage("Show import panel in frame")
+
+
 
     def LoadImportPanel(self, patient_series):
         if patient_series and isinstance(patient_series, list):
@@ -361,6 +382,9 @@ class Controller():
         else:
             dialog.ImportInvalidFiles()
         return False
+
+
+    #----------- to import by command line ---------------------------------------------------
 
     def OnImportMedicalImages(self, pubsub_evt):
         directory = pubsub_evt.data
@@ -384,6 +408,8 @@ class Controller():
                 return
         self.LoadProject()
         Publisher.sendMessage("Enable state project", True)
+
+    #-------------------------------------------------------------------------------------
 
     def LoadProject(self):
         proj = prj.Project()

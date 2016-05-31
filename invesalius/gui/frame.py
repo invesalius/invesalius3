@@ -507,7 +507,7 @@ class Frame(wx.Frame):
         """
         Tiff, BMP, JPEG and PNG
         """
-        Publisher.sendMessage('Show tiff dialog', True)
+        Publisher.sendMessage('Show bitmap dialog', True)
 
     def FlipVolume(self, axis):
         Publisher.sendMessage('Flip volume', axis)

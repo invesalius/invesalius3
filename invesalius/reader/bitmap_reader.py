@@ -16,9 +16,43 @@
 #    PARTICULAR. Consulte a Licenca Publica Geral GNU para obter mais
 #    detalhes.
 #--------------------------------------------------------------------------
+import os
+import Queue
+import threading
+import tempfile
+import sys
+import constants as const
+
+from wx.lib.pubsub import pub as Publisher
+from multiprocessing import cpu_count
+
+class BitmapFiles:
+
+    def __init__(self):
+        self.bitmapfiles = []
+
+    def Add(self, path):
+        self.bitmapfiles.append(path)
+
+    def GetValues(self):
+        return self.bitmapfiles
+
+class LoadBitmap:
+
+    def __init__(self, bmp_file, filepath):
+        self.bmp_file = bmp_file
+        if sys.platform == 'win32':
+            self.filepath = filepath.encode(utils.get_system_encoding())
+        else:
+            self.filepath = filepath
+        
+        self.run()
+    
+    def run(self):
+        self.bmp_file.Add(self.filepath)
 
 
-def yGetDicomGroups(directory, recursive=True, gui=True):
+def yGetBitmaps(directory, recursive=True, gui=True):
     """
     Return all full paths to DICOM files inside given directory.
     """
@@ -31,16 +65,11 @@ def yGetDicomGroups(directory, recursive=True, gui=True):
         dirpath, dirnames, filenames = os.walk(directory)
         nfiles = len(filenames)
 
+
     counter = 0
-    grouper = dicom_grouper.DicomPatientGrouper() 
-    #q = Queue.Queue()
-    #l = threading.Lock()
-    #threads = []
-    #for i in xrange(cpu_count()):
-    #    t = LoadDicom(grouper, q, l)
-    #    t.start()
-    #    threads.append(t)
-    # Retrieve only DICOM files, splited into groups
+    bmp_file = BitmapFiles()
+
+    # Retrieve only TIFF, BMP, JPEG and PNG files
     if recursive:
         for dirpath, dirnames, filenames in os.walk(directory):
             for name in filenames:
@@ -48,7 +77,8 @@ def yGetDicomGroups(directory, recursive=True, gui=True):
                 counter += 1
                 if gui:
                     yield (counter,nfiles)
-                LoadDicom(grouper, filepath)
+                #LoadDicom(grouper, filepath)
+                LoadBitmap(bmp_file, filepath)
     else:
         dirpath, dirnames, filenames = os.walk(directory)
         for name in filenames:
@@ -66,14 +96,10 @@ def yGetDicomGroups(directory, recursive=True, gui=True):
 
     #TODO: Is this commented update necessary?
     #grouper.Update()
-    yield grouper.GetPatientsGroups()
+    yield bmp_file.GetValues()
 
 
-def GetDicomGroups(directory, recursive=True):
-    return yGetDicomGroups(directory, recursive, gui=False).next()
-
-
-class ProgressDicomReader:
+class ProgressBitmapReader:
     def __init__(self):
         Publisher.subscribe(self.CancelLoad, "Cancel bitmap load")
 
@@ -87,7 +113,7 @@ class ProgressDicomReader:
     def SetDirectoryPath(self, path,recursive=True):
         self.running = True
         self.stoped = False
-        self.GetDicomGroups(path,recursive)
+        self.GetBitmaps(path,recursive)
 
     def UpdateLoadFileProgress(self,cont_progress):
         Publisher.sendMessage("Update bitmap load", cont_progress)
@@ -95,16 +121,16 @@ class ProgressDicomReader:
     def EndLoadFile(self, patient_list):
         Publisher.sendMessage("End bitmap load", patient_list)
 
-    def GetDicomGroups(self, path, recursive):
+    def GetBitmaps(self, path, recursive):
 
-        if not const.VTK_WARNING:
-            log_path = os.path.join(const.LOG_FOLDER, 'vtkoutput.txt')
-            fow = vtk.vtkFileOutputWindow()
-            fow.SetFileName(log_path)
-            ow = vtk.vtkOutputWindow()
-            ow.SetInstance(fow)
+        #if not const.VTK_WARNING:
+        #    log_path = os.path.join(const.LOG_FOLDER, 'vtkoutput.txt')
+        #    fow = vtk.vtkFileOutputWindow()
+        #    fow.SetFileName(log_path)
+        #    ow = vtk.vtkOutputWindow()
+        #    ow.SetInstance(fow)
 
-        y = yGetDicomGroups(path, recursive)
+        y = yGetBitmaps(path, recursive)
         for value_progress in y:
             if not self.running:
                 break
@@ -118,4 +144,21 @@ class ProgressDicomReader:
         if(self.stoped):
             self.UpdateLoadFileProgress(None)
             self.stoped = False   
+
+
+#def GetPatientsGroups(self):
+#        """
+#        How to use:
+#        patient_list = grouper.GetPatientsGroups()
+#        for patient in patient_list:
+#            group_list = patient.GetGroups()
+#            for group in group_list:
+#                group.GetList()
+#                # :) you've got a list of dicom.Dicom
+#                # of the same series
+#        """
+#        plist = self.patients_dict.values()
+#        plist = sorted(plist, key = lambda patient:patient.key[0])
+#        return plist
+
 
