@@ -36,6 +36,7 @@ import default_tasks as tasks
 import default_viewers as viewers
 import gui.dialogs as dlg
 import import_panel as imp
+import import_bitmap_panel as imp_bmp
 import import_network_panel as imp_net
 import project as prj
 import session as ses
@@ -126,6 +127,7 @@ class Frame(wx.Frame):
         sub(self._ShowImportPanel, 'Show import panel in frame')
         #sub(self._ShowHelpMessage, 'Show help message')
         sub(self._ShowImportNetwork, 'Show retrieve dicom panel')
+        sub(self._ShowImportBitmap, 'Show import bitmap panel in frame')
         sub(self._ShowTask, 'Show task panel')
         sub(self._UpdateAUI, 'Update AUI')
         sub(self._Exit, 'Exit')
@@ -171,6 +173,12 @@ class Frame(wx.Frame):
         caption = _("Preview medical data to be reconstructed")
         aui_manager.AddPane(imp.Panel(self), wx.aui.AuiPaneInfo().
                           Name("Import").CloseButton(False).Centre().Hide().
+                          MaximizeButton(False).Floatable(True).
+                          Caption(caption).CaptionVisible(True))
+
+        caption = _("Preview bitmap to be reconstructed")
+        aui_manager.AddPane(imp_bmp.Panel(self), wx.aui.AuiPaneInfo().
+                          Name("ImportBMP").CloseButton(False).Centre().Hide().
                           MaximizeButton(False).Floatable(True).
                           Caption(caption).CaptionVisible(True))
 
@@ -309,6 +317,18 @@ class Frame(wx.Frame):
         Publisher.sendMessage("Set layout button full")
         aui_manager = self.aui_manager
         aui_manager.GetPane("Retrieve").Show(1)
+        aui_manager.GetPane("Data").Show(0)
+        aui_manager.GetPane("Tasks").Show(0)
+        aui_manager.GetPane("Import").Show(0)
+        aui_manager.Update()
+
+    def _ShowImportBitmap(self, evt_pubsub):
+        """
+        Show viewers and task, hide import panel.
+        """
+        Publisher.sendMessage("Set layout button full")
+        aui_manager = self.aui_manager
+        aui_manager.GetPane("ImportBMP").Show(1)
         aui_manager.GetPane("Data").Show(0)
         aui_manager.GetPane("Tasks").Show(0)
         aui_manager.GetPane("Import").Show(0)

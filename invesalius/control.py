@@ -369,7 +369,7 @@ class Controller():
         print files
         #ok = self.LoadImportPanel(patient_series)
         #if ok:
-        #    Publisher.sendMessage('Show import panel')
+        Publisher.sendMessage('Show import bitmap panel in frame')
         #    Publisher.sendMessage("Show import panel in frame")
 
 
