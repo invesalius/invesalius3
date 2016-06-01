@@ -221,32 +221,17 @@ class TextPanel(wx.Panel):
                                   )
 
 
-        tree.AddColumn(_("Patient name"))
-        tree.AddColumn(_("Patient ID"))
-        tree.AddColumn(_("Age"))
-        tree.AddColumn(_("Gender"))
-        tree.AddColumn(_("Study description"))
-        tree.AddColumn(_("Modality"))
-        tree.AddColumn(_("Date acquired"))
-        tree.AddColumn(_("# Images"))
-        tree.AddColumn(_("Institution"))
-        tree.AddColumn(_("Date of birth"))
-        tree.AddColumn(_("Accession Number"))
-        tree.AddColumn(_("Referring physician"))
+        tree.AddColumn(_("Path"))
+        tree.AddColumn(_("Height"))
+        tree.AddColumn(_("Width"))
+        tree.AddColumn(_("Type"))
+
 
         tree.SetMainColumn(0)        # the one with the tree in it...
-        tree.SetColumnWidth(0, 280)  # Patient name
-        tree.SetColumnWidth(1, 110)  # Patient ID
-        tree.SetColumnWidth(2, 40)   # Age
+        tree.SetColumnWidth(0, 580)  # Patient name
+        tree.SetColumnWidth(1, 60)  # Patient ID
+        tree.SetColumnWidth(2, 60)   # Age
         tree.SetColumnWidth(3, 60)   # Gender
-        tree.SetColumnWidth(4, 160)  # Study description
-        tree.SetColumnWidth(5, 70)   # Modality
-        tree.SetColumnWidth(6, 200)  # Date acquired
-        tree.SetColumnWidth(7, 70)   # Number Images
-        tree.SetColumnWidth(8, 130)  # Institution
-        tree.SetColumnWidth(9, 100)  # Date of birth
-        tree.SetColumnWidth(10, 140) # Accession Number
-        tree.SetColumnWidth(11, 160) # Referring physician
 
         self.root = tree.AddRoot(_("InVesalius Database"))
         self.tree = tree
