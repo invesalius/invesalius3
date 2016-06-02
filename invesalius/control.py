@@ -365,13 +365,24 @@ class Controller():
             Publisher.sendMessage("Show import panel in frame")
 
     def OnLoadImportBitmapPanel(self, evt):
-        files = evt.data
-        print files
-        #ok = self.LoadImportPanel(patient_series)
-        #if ok:
-        Publisher.sendMessage('Show import bitmap panel in frame')
-        #    Publisher.sendMessage("Show import panel in frame")
+        data = evt.data
+        ok = self.LoadImportBitmapPanel(data)
+        if ok:
+            Publisher.sendMessage('Show import bitmap panel in frame')
+            #Publisher.sendMessage("Show import panel in frame")
 
+    def LoadImportBitmapPanel(self, data):
+        #if patient_series and isinstance(patient_series, list):
+            #Publisher.sendMessage("Load import panel", patient_series)
+            #first_patient = patient_series[0]
+            #Publisher.sendMessage("Load dicom preview", first_patient)
+        if  data:
+            Publisher.sendMessage("Load import bitmap panel", data)
+
+            return True
+        else:
+            dialog.ImportInvalidFiles()
+        return False
 
 
     def LoadImportPanel(self, patient_series):

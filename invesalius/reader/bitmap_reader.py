@@ -92,7 +92,7 @@ class LoadBitmap:
         write_png.SetFileName(thumbnail_path)
         write_png.Write()
 
-        bmp_item = [self.filepath, thumbnail_path, extension, x, y]
+        bmp_item = [self.filepath, thumbnail_path, extension, x, y, str(x) + ' x ' + str(y)]
         self.bmp_file.Add(bmp_item)
 
 
