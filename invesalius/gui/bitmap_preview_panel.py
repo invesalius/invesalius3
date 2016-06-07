@@ -1,3 +1,4 @@
+import wx
 import vtk
 
 from vtk.util import  numpy_support
@@ -75,24 +76,25 @@ class SerieEvent(PreviewEvent):
         super(SerieEvent, self).__init__(evtType, id)
 
 
-class DicomInfo(object):
+class BitmapInfo(object):
     """
     Keep the informations and the image used by preview.
     """
-    def __init__(self, id, dicom, title, subtitle):
-        self.id = id
-        self.dicom = dicom
-        self.title = title
-        self.subtitle = subtitle
-        self._preview = None
-        self.selected = False
-        self.filename = ""
+    def __init__(self, data):
+        #self.id = id
+        #self.dicom = dicom
+        #self.title = title
+        #self.subtitle = subtitle
+        #self._preview = None
+        #self.selected = False
+        #self.filename = ""
+        self.thumbnail_path = data[1]
 
     @property
     def preview(self):
         
         if not self._preview:
-            bmp = wx.Bitmap(self.dicom.image.thumbnail_path, wx.BITMAP_TYPE_PNG)
+            bmp = wx.Bitmap(self.thumbnail_path, wx.BITMAP_TYPE_PNG)
             self._preview = bmp.ConvertToImage()
         return self._preview
         
@@ -205,22 +207,25 @@ class Preview(wx.Panel):
 
         #self.Bind(wx.EVT_SIZE, self.OnSize)
 
-    def SetDicomToPreview(self, dicom_info):
+    def SetBitmapToPreview(self, data):
         """
         Set a dicom to preview.
         """
         if self.dicom_info:
             self.dicom_info.release_thumbnail()
 
-        self.dicom_info = dicom_info
-        self.SetTitle(dicom_info.title)
-        self.SetSubtitle(dicom_info.subtitle)
-        self.ID = dicom_info.id
-        dicom_info.size = self.image_viewer.GetSize()
-        image = dicom_info.preview
+        #self.dicom_info = dicom_info
+        print data
+        print "^^^ ^ ^^^^^^"
+        self.SetTitle(data[6])
+        self.SetSubtitle('')
+
+        #self.ID = dicom_info.id
+        #dicom_info.size = self.image_viewer.GetSize()
+        image = self.dicom_info.preview
         self.image_viewer.SetImage(image)
-        self.data = dicom_info.id
-        self.select_on = dicom_info.selected
+        #self.data = dicom_info.id
+        #self.select_on = dicom_info.selected
         self.Select()
         self.Update()
 
@@ -276,7 +281,7 @@ class Preview(wx.Panel):
 
     def OnSize(self, evt):
         if self.dicom_info:
-            self.SetDicomToPreview(self.dicom_info)
+            self.SetBitmapToPreview(self.dicom_info)
         evt.Skip()
 
     def Select(self, on=True):
@@ -367,27 +372,40 @@ class DicomPreviewSeries(wx.Panel):
         self.selected_dicom = self.selected_panel.dicom_info
         self.GetEventHandler().ProcessEvent(my_evt)
 
-    def SetPatientGroups(self, patient):
-        self.files = []
-        self.displayed_position = 0
-        self.nhidden_last_display = 0
-        group_list = patient.GetGroups()
-        self.group_list = group_list
-        n = 0
-        for group in group_list:
-            info = DicomInfo((group.dicom.patient.id,
-                              group.dicom.acquisition.serie_number),
-                             group.dicom,
-                             group.title,
-                             _("%d images") %(group.nslices))
-            self.files.append(info)
-            n+=1
+
+    def SetBitmapFiles(self, data):
+        self.files = data
+
+        scroll_range = len(self.files)/NCOLS
 
         scroll_range = len(self.files)/NCOLS
         if scroll_range * NCOLS < len(self.files):
             scroll_range +=1
         self.scroll.SetScrollbar(0, NROWS, scroll_range, NCOLS)
         self._display_previews()
+
+    
+    #def SetPatientGroups(self, patient):
+    #    self.files = []
+    #    self.displayed_position = 0
+    #    self.nhidden_last_display = 0
+    #    group_list = patient.GetGroups()
+    #    self.group_list = group_list
+    #    n = 0
+    #    for group in group_list:
+    #        info = BitmapInfo((group.dicom.patient.id,
+    #                          group.dicom.acquisition.serie_number),
+    #                         group.dicom,
+    #                         group.title,
+    #                         _("%d images") %(group.nslices))
+    #        self.files.append(info)
+    #        n+=1
+    #    scroll_range = len(self.files)/NCOLS
+    #    if scroll_range * NCOLS < len(self.files):
+    #        scroll_range +=1
+    #    self.scroll.SetScrollbar(0, NROWS, scroll_range, NCOLS)
+    #    self._display_previews()
+
 
     def _display_previews(self):
         initial = self.displayed_position * NCOLS
@@ -411,12 +429,16 @@ class DicomPreviewSeries(wx.Panel):
                 self.nhidden_last_display = 0
 
         for f, p in zip(self.files[initial:final], self.previews):
-            p.SetDicomToPreview(f)
-            if f.selected:
-                self.selected_panel = p
-
-        for f, p in zip(self.files[initial:final], self.previews):
+            p.SetBitmapToPreview(f)
             p.Show()
+
+        #for f, p in zip(self.files[initial:final], self.previews):
+        #    p.SetBitmapToPreview(f)
+        #    if f.selected:
+        #        self.selected_panel = p
+
+        #for f, p in zip(self.files[initial:final], self.previews):
+        #    p.Show()
 
     def OnScroll(self, evt=None):
         if evt:
@@ -503,7 +525,7 @@ class DicomPreviewSlice(wx.Panel):
         dicom_files = group.GetHandSortedList()
         n = 0
         for dicom in dicom_files:
-            info = DicomInfo(n, dicom,
+            info = BitmapInfo(n, dicom,
                              _("Image %d") % (dicom.image.number),
                              "%.2f" % (dicom.image.position[2]))
             self.files.append(info)
@@ -524,7 +546,7 @@ class DicomPreviewSlice(wx.Panel):
         dicom_files = group.GetHandSortedList()
         n = 0
         for dicom in dicom_files:
-            info = DicomInfo(n, dicom,
+            info = BitmapInfo(n, dicom,
                              _("Image %d") % (dicom.image.number),
                              "%.2f" % (dicom.image.position[2]),
                             )
@@ -558,7 +580,7 @@ class DicomPreviewSlice(wx.Panel):
                 self.nhidden_last_display = 0
 
         for f, p in zip(self.files[initial:final], self.previews):
-            p.SetDicomToPreview(f)
+            p.SetBitmapToPreview(f)
             if f.selected:
                 self.selected_panel = p
             #p.interactor.Render()

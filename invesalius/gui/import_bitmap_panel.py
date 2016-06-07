@@ -174,23 +174,25 @@ class InnerPanel(wx.Panel):
         Publisher.sendMessage("Cancel DICOM load")
 
     def LoadDicom(self, group):
-        interval = self.combo_interval.GetSelection()
-        if not isinstance(group, dcm.DicomGroup):
-            group = max(group.GetGroups(), key=lambda g: g.nslices)
+        #interval = self.combo_interval.GetSelection()
+        #if not isinstance(group, dcm.DicomGroup):
+        #    group = max(group.GetGroups(), key=lambda g: g.nslices)
         
-        slice_amont = group.nslices
-        if (self.first_image_selection != None) and (self.first_image_selection != self.last_image_selection):
-            slice_amont = (self.last_image_selection) - self.first_image_selection
-            slice_amont += 1
-            if slice_amont == 0:
-                slice_amont = group.nslices
+        #slice_amont = group.nslices
+        #if (self.first_image_selection != None) and (self.first_image_selection != self.last_image_selection):
+        #    slice_amont = (self.last_image_selection) - self.first_image_selection
+        #    slice_amont += 1
+        #    if slice_amont == 0:
+        #        slice_amont = group.nslices
 
-        nslices_result = slice_amont / (interval + 1)
-        if (nslices_result > 1):
-            Publisher.sendMessage('Open DICOM group', (group, interval, 
-                                    [self.first_image_selection, self.last_image_selection]))
-        else:
-            dlg.MissingFilesForReconstruction()
+        #nslices_result = slice_amont / (interval + 1)
+        #if (nslices_result > 1):
+        #    Publisher.sendMessage('Open DICOM group', (group, interval, 
+        #                            [self.first_image_selection, self.last_image_selection]))
+        #else:
+        #    dlg.MissingFilesForReconstruction()
+        pass
+
 
 class TextPanel(wx.Panel):
     def __init__(self, parent):
@@ -247,8 +249,11 @@ class TextPanel(wx.Panel):
 
         tree.Expand(self.root)
         #tree.SelectItem(parent_select)
-        #tree.Bind(wx.EVT_TREE_ITEM_ACTIVATED, self.OnActivate)
-        #tree.Bind(wx.EVT_TREE_SEL_CHANGED, self.OnSelChanged)
+        tree.Bind(wx.EVT_TREE_ITEM_ACTIVATED, self.OnActivate)
+        tree.Bind(wx.EVT_TREE_SEL_CHANGED, self.OnSelChanged)
+
+        Publisher.sendMessage('Load bitmap into import panel', data)
+
 
     def OnSelChanged(self, evt):
         item = self.tree.GetSelection()
@@ -264,7 +269,8 @@ class TextPanel(wx.Panel):
                 my_evt.SetSelectedID(id)
                 self.GetEventHandler().ProcessEvent(my_evt)
 
-                Publisher.sendMessage('Load patient into import panel',
+                Publisher.sendMessage('Load bitmap into import panel',
+
                                             group)
         else:
             parent_id = self.tree.GetItemParent(item)
@@ -366,7 +372,7 @@ class SeriesPanel(wx.Panel):
     def __bind_evt(self):
         Publisher.subscribe(self.ShowDicomSeries, 'Load dicom preview')
         Publisher.subscribe(self.SetDicomSeries, 'Load group into import panel')
-        Publisher.subscribe(self.SetPatientSeries, 'Load patient into import panel')
+        Publisher.subscribe(self.SetPatientSeries, 'Load bitmap into import panel')
 
     def _bind_gui_evt(self):
         self.serie_preview.Bind(bpp.EVT_CLICK_SERIE, self.OnSelectSerie)
@@ -385,12 +391,12 @@ class SeriesPanel(wx.Panel):
 
     def SetPatientSeries(self, pubsub_evt):
         patient = pubsub_evt.data
-
+        print patient
         self.dicom_preview.Show(0)
         self.serie_preview.Show(1)
 
-        self.serie_preview.SetPatientGroups(patient)
-        self.dicom_preview.SetPatientGroups(patient)
+        self.serie_preview.SetBitmapFiles(patient)
+        #self.dicom_preview.SetPatientGroups(patient)
 
         self.Update()
 
@@ -432,7 +438,7 @@ class SlicePanel(wx.Panel):
     def __bind_evt(self):
         Publisher.subscribe(self.ShowDicomSeries, 'Load dicom preview')
         Publisher.subscribe(self.SetDicomSeries, 'Load group into import panel')
-        Publisher.subscribe(self.SetPatientSeries, 'Load patient into import panel')
+        Publisher.subscribe(self.SetPatientSeries, 'Load bitmap into import panel')
 
     def __init_gui(self):
         self.SetBackgroundColour((255,255,255))
@@ -449,8 +455,8 @@ class SlicePanel(wx.Panel):
 
     def SetPatientSeries(self, pubsub_evt):
         patient = pubsub_evt.data
-        group = patient.GetGroups()[0]
-        self.dicom_preview.SetDicomGroup(group)
+        #group = patient.GetGroups()[0]
+        #self.dicom_preview.SetBitmapFiles(group)
         self.sizer.Layout()
         self.Update()
 

@@ -68,6 +68,8 @@ class LoadBitmap:
         ex = self.filepath.split('.')[-1]
         extension = ex.lower()
 
+        file_name = self.filepath.split(os.path.sep)[-1]
+
         if extension == 'bmp':
             reader = vtk.vtkBMPReader()
 
@@ -92,7 +94,7 @@ class LoadBitmap:
         write_png.SetFileName(thumbnail_path)
         write_png.Write()
 
-        bmp_item = [self.filepath, thumbnail_path, extension, x, y, str(x) + ' x ' + str(y)]
+        bmp_item = [self.filepath, thumbnail_path, extension, x, y, str(x) + ' x ' + str(y), file_name]
         self.bmp_file.Add(bmp_item)
 
 
