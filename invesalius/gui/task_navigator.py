@@ -979,12 +979,12 @@ class Markers(wx.Panel):
         self.lc.InsertColumn(2, 'Y')
         self.lc.InsertColumn(3, 'Z')
         self.lc.InsertColumn(4, 'ID')
-        self.lc.SetColumnWidth(0, 25)
+        self.lc.SetColumnWidth(0, 28)
         self.lc.SetColumnWidth(1, 50)
         self.lc.SetColumnWidth(2, 50)
         self.lc.SetColumnWidth(3, 50)
         self.lc.SetColumnWidth(4, 50)
-
+        self.lc.Bind(wx.EVT_LIST_ITEM_RIGHT_CLICK, self.menu)
         # Add all lines into main sizer
         sizer = wx.BoxSizer(wx.VERTICAL)
         sizer.Add(line1, 0, wx.TOP | wx.BOTTOM | wx.ALIGN_CENTER_HORIZONTAL, 5)
@@ -1003,6 +1003,20 @@ class Markers(wx.Panel):
         Publisher.subscribe(self.GetPoint, 'Update cross position')
         Publisher.subscribe(self.DelSingleMarker, 'Delete fiducial marker')
         Publisher.subscribe(self.Fiducial_markers, 'Create fiducial markers')
+
+    def menu(self, evt):
+        menu = wx.Menu()
+        menu.Append(-1, _('Edit ID'))
+        menu.Bind(wx.EVT_MENU, self.EditID)
+        self.PopupMenu(menu)
+        menu.Destroy()
+
+    def EditID(self,evt):
+        ID = dlg.enter_ID(self.lc.GetItemText(self.lc.GetFocusedItem(), 4))
+        index = self.lc.GetFocusedItem()
+        self.lc.SetStringItem(index, 4, ID)
+        #add the new ID to exported list
+        self.list_coord[index][7] = str(ID)
 
     def Fiducial_markers(self, pubsub_evt):
         coord = pubsub_evt.data[0]
@@ -1025,7 +1039,7 @@ class Markers(wx.Panel):
             self.fiducial_flag = 0
         else:
             self.fiducial_ID = ""
-        line = coord[0] , coord[1] , coord[2] , colour[0], colour[1], colour[2], self.spin.GetValue(), self.fiducial_ID
+        line = [coord[0] , coord[1] , coord[2] , colour[0], colour[1], colour[2], self.spin.GetValue(), self.fiducial_ID]
         if self.flagpoint1 == 0:
             self.list_coord = [line]
             self.flagpoint1 = 1
@@ -1077,7 +1091,7 @@ class Markers(wx.Panel):
             self.ballid = self.ballid - 1
             Publisher.sendMessage('Remove Single Marker', index)
         else:
-            print "No data selected"
+            dlg.NoDataSelected()
     
     def GetPoint(self, pubsub_evt):
         self.ijk = pubsub_evt.data
