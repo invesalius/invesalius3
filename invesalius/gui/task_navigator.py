@@ -692,10 +692,12 @@ class NeuronavigationTools(wx.Panel):
             self.button_crg.SetBackgroundColour('RED')
 
     def OnChoiceTracker(self, evt):
+        #this condition check if the trackers is already connected
         if (self.tracker_id == evt.GetSelection()) and (self.trk_init is not None):
             dlg.TrackerAlreadyConnected()
             dt.Tracker().Tracker_off()
             self.choice_tracker.SetSelection(0)
+            self.SetTrackerFiducialsNone()
             self.tracker_id = 0
         else:
             self.tracker_id = evt.GetSelection()
@@ -710,15 +712,19 @@ class NeuronavigationTools(wx.Panel):
                 if self.trk_init is None:
                     self.choice_tracker.SetSelection(0)
                     self.tracker_id = 0
-
+                    self.SetTrackerFiducialsNone()
                 print "Tracker changed!"
             else:
+                self.SetTrackerFiducialsNone()
                 print "Select Tracker"
 
     def OnChoiceRefMode(self, evt):
         self.ref_mode_id = evt.GetSelection()
         print "Ref_Mode changed!"
         #When ref mode is changed the tracker coords are set as null, self.aux_trck is the flag that sets it
+        self.SetTrackerFiducialsNone()
+
+    def SetTrackerFiducialsNone(self):
         self.numCtrl1d.SetValue(0)
         self.numCtrl2d.SetValue(0)
         self.numCtrl3d.SetValue(0)
@@ -733,7 +739,6 @@ class NeuronavigationTools(wx.Panel):
         self.numCtrl2f.SetValue(0)
         self.numCtrl3f.SetValue(0)
         self.aux_trck3 = 0
-
 
     def Corregistration(self):
         self.M, self.q1, self.Minv = db.base_creation(self.coord1a,
