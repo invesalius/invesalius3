@@ -701,6 +701,7 @@ class NeuronavigationTools(wx.Panel):
             self.tracker_id = 0
         else:
             self.tracker_id = evt.GetSelection()
+            dt.Tracker().Tracker_off()
             if self.tracker_id != 0:
                 trck = {1 : dt.Tracker().ClaronTracker,
                         2 : dt.Tracker().PlhFastrak,
