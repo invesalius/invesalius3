@@ -730,9 +730,8 @@ class Viewer(wx.Panel):
     def OnExportPicture(self, pubsub_evt):
         Publisher.sendMessage('Begin busy cursor')
         view_prop_list = []
-        for slice_data in self.slice_data_list:
-            view_prop_list.append(slice_data.box_actor) 
-            self.ren.RemoveViewProp(slice_data.box_actor)
+        view_prop_list.append(self.slice_data.box_actor) 
+        self.slice_data.renderer.RemoveViewProp(self.slice_data.box_actor)
 
         id, filename, filetype = pubsub_evt.data
         dict = {"AXIAL": const.AXIAL,
@@ -777,7 +776,7 @@ class Viewer(wx.Panel):
                 writer.Write()
 
             for actor in view_prop_list:
-                self.ren.AddViewProp(actor)
+                self.slice_data.renderer.AddViewProp(actor)
 
         Publisher.sendMessage('End busy cursor')
 
