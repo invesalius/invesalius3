@@ -211,23 +211,23 @@ class Preview(wx.Panel):
         """
         Set a dicom to preview.
         """
-        if self.dicom_info:
-            self.dicom_info.release_thumbnail()
+        #if self.dicom_info:
+        #    self.dicom_info.release_thumbnail()
 
-        #self.dicom_info = dicom_info
-        print data
-        print "^^^ ^ ^^^^^^"
-        self.SetTitle(data[6])
-        self.SetSubtitle('')
+        ##self.dicom_info = dicom_info
+        #print data
+        #print "^^^ ^ ^^^^^^"
+        #self.SetTitle(data[6])
+        #self.SetSubtitle('')
 
-        #self.ID = dicom_info.id
-        #dicom_info.size = self.image_viewer.GetSize()
-        image = self.dicom_info.preview
-        self.image_viewer.SetImage(image)
-        #self.data = dicom_info.id
-        #self.select_on = dicom_info.selected
-        self.Select()
-        self.Update()
+        ##self.ID = dicom_info.id
+        ##dicom_info.size = self.image_viewer.GetSize()
+        #image = self.dicom_info.preview
+        #self.image_viewer.SetImage(image)
+        ##self.data = dicom_info.id
+        ##self.select_on = dicom_info.selected
+        #self.Select()
+        #self.Update()
 
     def SetTitle(self, title):
         self.title.SetLabel(title)
@@ -300,10 +300,10 @@ class Preview(wx.Panel):
         self.GetEventHandler().ProcessEvent(my_evt)
 
 
-class DicomPreviewSeries(wx.Panel):
+class BitmapPreviewSeries(wx.Panel):
     """A dicom series preview panel"""
     def __init__(self, parent):
-        super(DicomPreviewSeries, self).__init__(parent)
+        super(BitmapPreviewSeries, self).__init__(parent)
         # TODO: 3 pixels between the previews is a good idea?
         # I have to test.
         #self.sizer = wx.BoxSizer(wx.HORIZONTAL)
@@ -454,10 +454,10 @@ class DicomPreviewSeries(wx.Panel):
         self.scroll.SetThumbPosition(self.scroll.GetThumbPosition() - d)
         self.OnScroll()
 
-class DicomPreviewSlice(wx.Panel):
+class BitmapPreviewSlice(wx.Panel):
     """A dicom preview panel"""
     def __init__(self, parent):
-        super(DicomPreviewSlice, self).__init__(parent)
+        super(BitmapPreviewSlice, self).__init__(parent)
         # TODO: 3 pixels between the previews is a good idea?
         # I have to test.
         self.displayed_position = 0

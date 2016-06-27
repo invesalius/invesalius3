@@ -350,8 +350,8 @@ class SeriesPanel(wx.Panel):
         wx.Panel.__init__(self, parent, -1)
         #self.SetBackgroundColour((0,0,0))
 
-        self.serie_preview = bpp.DicomPreviewSeries(self)
-        self.dicom_preview = bpp.DicomPreviewSlice(self)
+        self.serie_preview = bpp.BitmapPreviewSeries(self)
+        self.dicom_preview = bpp.BitmapPreviewSlice(self)
         self.dicom_preview.Show(0)
         
 
@@ -370,7 +370,7 @@ class SeriesPanel(wx.Panel):
         self._bind_gui_evt()
 
     def __bind_evt(self):
-        Publisher.subscribe(self.ShowDicomSeries, 'Load dicom preview')
+        Publisher.subscribe(self.ShowDicomSeries, 'Load bitmap preview')
         Publisher.subscribe(self.SetDicomSeries, 'Load group into import panel')
         Publisher.subscribe(self.SetPatientSeries, 'Load bitmap into import panel')
 
@@ -436,7 +436,7 @@ class SlicePanel(wx.Panel):
         self.__bind_evt()
 
     def __bind_evt(self):
-        Publisher.subscribe(self.ShowDicomSeries, 'Load dicom preview')
+        Publisher.subscribe(self.ShowDicomSeries, 'Load bitmap preview')
         Publisher.subscribe(self.SetDicomSeries, 'Load group into import panel')
         Publisher.subscribe(self.SetPatientSeries, 'Load bitmap into import panel')
 
