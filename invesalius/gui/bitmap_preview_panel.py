@@ -81,11 +81,11 @@ class BitmapInfo(object):
     Keep the informations and the image used by preview.
     """
     def __init__(self, data):
-        #self.id = id
+        self.id = id
         #self.dicom = dicom
-        #self.title = title
+        self.title = data[6]
         #self.subtitle = subtitle
-        #self._preview = None
+        self._preview = None
         #self.selected = False
         #self.filename = ""
         self.thumbnail_path = data[1]
@@ -154,7 +154,7 @@ class Preview(wx.Panel):
         super(Preview, self).__init__(parent)
         # Will it be white?
         self.select_on = False
-        self.dicom_info = None
+        self.bitmap_info = None
         self._init_ui()
         self._bind_events()
 
@@ -207,27 +207,47 @@ class Preview(wx.Panel):
 
         #self.Bind(wx.EVT_SIZE, self.OnSize)
 
-    def SetBitmapToPreview(self, data):
+    def SetBitmapToPreview(self, bitmap_info):
         """
         Set a dicom to preview.
         """
-        #if self.dicom_info:
-        #    self.dicom_info.release_thumbnail()
+    
+        """
+        self.dicom_info = dicom_info
+        self.SetTitle(dicom_info.title)
+        self.SetSubtitle(dicom_info.subtitle)
+        self.ID = dicom_info.id
+        dicom_info.size = self.image_viewer.GetSize()
+        image = dicom_info.preview
+        self.image_viewer.SetImage(image)
+        self.data = dicom_info.id
+        self.select_on = dicom_info.selected
+        self.Select()
+        self.Update()
+        """
 
-        ##self.dicom_info = dicom_info
-        #print data
-        #print "^^^ ^ ^^^^^^"
-        #self.SetTitle(data[6])
-        #self.SetSubtitle('')
 
-        ##self.ID = dicom_info.id
-        ##dicom_info.size = self.image_viewer.GetSize()
-        #image = self.dicom_info.preview
-        #self.image_viewer.SetImage(image)
-        ##self.data = dicom_info.id
-        ##self.select_on = dicom_info.selected
-        #self.Select()
-        #self.Update()
+
+        if self.bitmap_info:
+            self.bitmap_info.release_thumbnail()
+
+        self.bitmap_info = bitmap_info
+        self.SetTitle(self.bitmap_info.title[-10:])
+        self.SetSubtitle('')
+
+        ##self.ID = bitmap_info.id
+        ##bitmap_info.size = self.image_viewer.GetSize()
+        image = self.bitmap_info.preview
+        
+        print image
+        print type(image)
+        print "----------------------------------------------"
+
+        self.image_viewer.SetImage(image)
+        #self.data = bitmap_info.id
+        #self.select_on = bitmap_info.selected
+        self.Select()
+        self.Update()
 
     def SetTitle(self, title):
         self.title.SetLabel(title)
@@ -252,9 +272,9 @@ class Preview(wx.Panel):
         if evt.m_shiftDown:
             shift_pressed = True
 
-        dicom_id = self.dicom_info.id
+        dicom_id = self.bitmap_info.id
         self.select_on = True
-        self.dicom_info.selected = True
+        self.bitmap_info.selected = True
         ##c = wx.SystemSettings_GetColour(wx.SYS_COLOUR_BTNHIGHLIGHT)
         ##c = wx.SystemSettings_GetColour(wx.SYS_COLOUR_HOTLIGHT)
         #c = wx.SystemSettings_GetColour(wx.SYS_COLOUR_HIGHLIGHT)
@@ -271,8 +291,8 @@ class Preview(wx.Panel):
 
         # Generating a EVT_PREVIEW_CLICK event
         my_evt = SerieEvent(myEVT_PREVIEW_CLICK, self.GetId())
-        my_evt.SetSelectedID(self.dicom_info.id)
-        my_evt.SetItemData(self.dicom_info.dicom)
+        my_evt.SetSelectedID(self.bitmap_info.id)
+        my_evt.SetItemData(self.bitmap_info.dicom)
         my_evt.SetShiftStatus(shift_pressed)
         my_evt.SetEventObject(self)
         self.GetEventHandler().ProcessEvent(my_evt)
@@ -280,8 +300,8 @@ class Preview(wx.Panel):
         
 
     def OnSize(self, evt):
-        if self.dicom_info:
-            self.SetBitmapToPreview(self.dicom_info)
+        if self.bitmap_info:
+            self.SetBitmapToPreview(self.bitmap_info)
         evt.Skip()
 
     def Select(self, on=True):
@@ -294,8 +314,8 @@ class Preview(wx.Panel):
 
     def OnDClick(self, evt):
         my_evt = SerieEvent(myEVT_PREVIEW_DBLCLICK, self.GetId())
-        my_evt.SetSelectedID(self.dicom_info.id)
-        my_evt.SetItemData(self.dicom_info.dicom)
+        my_evt.SetSelectedID(self.bitmap_info.id)
+        my_evt.SetItemData(self.bitmap_info.dicom)
         my_evt.SetEventObject(self)
         self.GetEventHandler().ProcessEvent(my_evt)
 
@@ -365,18 +385,20 @@ class BitmapPreviewSeries(wx.Panel):
 
         if self.selected_dicom:
             self.selected_dicom.selected = self.selected_dicom is \
-                    evt.GetEventObject().dicom_info
+                    evt.GetEventObject().bitmap_info
             self.selected_panel.select_on = self.selected_panel is evt.GetEventObject()
             self.selected_panel.Select()
         self.selected_panel = evt.GetEventObject()
-        self.selected_dicom = self.selected_panel.dicom_info
+        self.selected_dicom = self.selected_panel.bitmap_info
         self.GetEventHandler().ProcessEvent(my_evt)
 
 
     def SetBitmapFiles(self, data):
-        self.files = data
-
-        scroll_range = len(self.files)/NCOLS
+        #self.files = data
+        self.files = []
+        for d in data:
+            info = BitmapInfo(d)
+            self.files.append(info)
 
         scroll_range = len(self.files)/NCOLS
         if scroll_range * NCOLS < len(self.files):
@@ -623,7 +645,7 @@ class BitmapPreviewSlice(wx.Panel):
 
         if self.selected_dicom:
             self.selected_dicom.selected = self.selected_dicom is \
-                    evt.GetEventObject().dicom_info
+                    evt.GetEventObject().bitmap_info
             self.selected_panel.select_on = self.selected_panel is evt.GetEventObject()
             
             if self.first_selection != self.last_selection:
@@ -638,7 +660,7 @@ class BitmapPreviewSlice(wx.Panel):
 
         self._display_previews()
         self.selected_panel = evt.GetEventObject()
-        self.selected_dicom = self.selected_panel.dicom_info
+        self.selected_dicom = self.selected_panel.bitmap_info
         self.GetEventHandler().ProcessEvent(my_evt)
 
         Publisher.sendMessage("Selected Import Images", [self.first_selection, \

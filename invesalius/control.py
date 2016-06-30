@@ -375,7 +375,7 @@ class Controller():
         #if patient_series and isinstance(patient_series, list):
             #Publisher.sendMessage("Load import panel", patient_series)
             #first_patient = patient_series[0]
-            #Publisher.sendMessage("Load dicom preview", first_patient)
+            #Publisher.sendMessage("Load bitmap preview", first_patient)
         if  data:
             Publisher.sendMessage("Load import bitmap panel", data)
 

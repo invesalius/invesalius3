@@ -370,8 +370,8 @@ class SeriesPanel(wx.Panel):
         self._bind_gui_evt()
 
     def __bind_evt(self):
-        Publisher.subscribe(self.ShowDicomSeries, 'Load bitmap preview')
-        Publisher.subscribe(self.SetDicomSeries, 'Load group into import panel')
+        #Publisher.subscribe(self.ShowDicomSeries, 'Load bitmap preview')
+        #Publisher.subscribe(self.SetDicomSeries, 'Load group into import panel')
         Publisher.subscribe(self.SetPatientSeries, 'Load bitmap into import panel')
 
     def _bind_gui_evt(self):
@@ -391,7 +391,6 @@ class SeriesPanel(wx.Panel):
 
     def SetPatientSeries(self, pubsub_evt):
         patient = pubsub_evt.data
-        print patient
         self.dicom_preview.Show(0)
         self.serie_preview.Show(1)
 
