@@ -147,13 +147,17 @@ class InnerPanel(wx.Panel):
         self.text_panel.Bind(EVT_SELECT_SERIE_TEXT, self.OnDblClickTextPanel)
 
     def OnSelectSerie(self, evt):
-        patient_id, serie_number = evt.GetSelectID()
-        self.text_panel.SelectSerie(evt.GetSelectID())
-        for patient in self.patients:
-            if patient_id == patient.GetDicomSample().patient.id:
-                for group in patient.GetGroups():
-                    if serie_number == group.GetDicomSample().acquisition.serie_number:
-                        self.image_panel.SetSerie(group)
+        #patient_id, serie_number = evt.GetSelectID()
+        #self.text_panel.SelectSerie(evt.GetSelectID())
+        #for patient in self.patients:
+        #    if patient_id == patient.GetDicomSample().patient.id:
+        #        for group in patient.GetGroups():
+        #            if serie_number == group.GetDicomSample().acquisition.serie_number:
+        #                self.image_panel.SetSerie(group)
+
+        pass
+
+
 
     def OnSelectSlice(self, evt):
         pass
@@ -338,11 +342,11 @@ class ImagePanel(wx.Panel):
         evt.Skip()
 
     def OnSelectSlice(self, evt):
-        self.image_panel.dicom_preview.ShowSlice(evt.GetSelectID())
+        self.image_panel.bitmap_preview.ShowSlice(evt.GetSelectID())
         evt.Skip()
 
     def SetSerie(self, serie):
-        self.image_panel.dicom_preview.SetDicomGroup(serie)
+        self.image_panel.bitmap_preview.SetDicomGroup(serie)
 
 
 class SeriesPanel(wx.Panel):
@@ -350,14 +354,14 @@ class SeriesPanel(wx.Panel):
         wx.Panel.__init__(self, parent, -1)
         #self.SetBackgroundColour((0,0,0))
 
-        self.serie_preview = bpp.BitmapPreviewSeries(self)
-        self.dicom_preview = bpp.BitmapPreviewSlice(self)
-        self.dicom_preview.Show(0)
+        self.thumbnail_preview = bpp.BitmapPreviewSeries(self)
+        self.bitmap_preview = bpp.BitmapPreviewSlice(self)
+        self.bitmap_preview.Show(0)
         
 
         self.sizer = wx.BoxSizer(wx.HORIZONTAL)
-        self.sizer.Add(self.serie_preview, 1, wx.EXPAND | wx.ALL, 5)
-        self.sizer.Add(self.dicom_preview, 1, wx.EXPAND | wx.ALL, 5)
+        self.sizer.Add(self.thumbnail_preview, 1, wx.EXPAND | wx.ALL, 5)
+        self.sizer.Add(self.bitmap_preview, 1, wx.EXPAND | wx.ALL, 5)
         self.sizer.Fit(self)
 
         self.SetSizer(self.sizer)
@@ -375,32 +379,31 @@ class SeriesPanel(wx.Panel):
         Publisher.subscribe(self.SetPatientSeries, 'Load bitmap into import panel')
 
     def _bind_gui_evt(self):
-        self.serie_preview.Bind(bpp.EVT_CLICK_SERIE, self.OnSelectSerie)
-        self.dicom_preview.Bind(bpp.EVT_CLICK_SLICE, self.OnSelectSlice)
+        self.thumbnail_preview.Bind(bpp.EVT_CLICK_SERIE, self.OnSelectSerie)
+        self.bitmap_preview.Bind(bpp.EVT_CLICK_SLICE, self.OnSelectSlice)
 
-    def SetDicomSeries(self, pubsub_evt):
-        group = pubsub_evt.data
-        self.dicom_preview.SetDicomGroup(group)
-        self.dicom_preview.Show(1)
-        self.serie_preview.Show(0)
-        self.sizer.Layout()
-        self.Update()
+    #def SetDicomSeries(self, pubsub_evt):
+    #    group = pubsub_evt.data
+    #    self.bitmap_preview.SetDicomGroup(group)
+    #    self.bitmap_preview.Show(1)
+    #    self.thumbnail_preview.Show(0)
+    #    self.sizer.Layout()
+    #    self.Update()
 
     def GetSelectedImagesRange(self):
-        return [self.dicom_preview.first_selected, self.dicom_preview_last_selection]
+        return [self.bitmap_preview.first_selected, self.dicom_preview_last_selection]
 
     def SetPatientSeries(self, pubsub_evt):
         patient = pubsub_evt.data
-        self.dicom_preview.Show(0)
-        self.serie_preview.Show(1)
+        self.bitmap_preview.Show(0)
+        self.thumbnail_preview.Show(1)
 
-        self.serie_preview.SetBitmapFiles(patient)
-        #self.dicom_preview.SetPatientGroups(patient)
+        self.thumbnail_preview.SetBitmapFiles(patient)
+        #self.bitmap_preview.SetPatientGroups(patient)
 
         self.Update()
 
     def OnSelectSerie(self, evt):
-        serie = evt.GetItemData()
         data = evt.GetItemData()
 
         my_evt = SelectEvent(myEVT_SELECT_SERIE, self.GetId())
@@ -408,11 +411,11 @@ class SeriesPanel(wx.Panel):
         my_evt.SetItemData(evt.GetItemData())
         self.GetEventHandler().ProcessEvent(my_evt)
 
-        #self.dicom_preview.SetDicomGroup(serie)
-        #self.dicom_preview.Show(1)
-        #self.serie_preview.Show(0)
+        self.bitmap_preview.SetDicomGroup(data)
+        self.bitmap_preview.Show(1)
+        self.thumbnail_preview.Show(0)
         self.sizer.Layout()
-        #self.Show()
+        self.Show()
         self.Update()
 
     def OnSelectSlice(self, evt):
@@ -421,11 +424,12 @@ class SeriesPanel(wx.Panel):
         my_evt.SetItemData(evt.GetItemData())
         self.GetEventHandler().ProcessEvent(my_evt)
 
-    def ShowDicomSeries(self, pubsub_evt):
-        patient = pubsub_evt.data
-        if isinstance(patient, dcm.PatientGroup):
-            self.serie_preview.SetPatientGroups(patient)
-            self.dicom_preview.SetPatientGroups(patient)
+
+    #def ShowDicomSeries(self, pubsub_evt):
+    #    patient = pubsub_evt.data
+    #    if isinstance(patient, dcm.PatientGroup):
+    #        self.thumbnail_preview.SetPatientGroups(patient)
+    #        self.bitmap_preview.SetPatientGroups(patient)
 
 
 class SlicePanel(wx.Panel):
@@ -435,16 +439,16 @@ class SlicePanel(wx.Panel):
         self.__bind_evt()
 
     def __bind_evt(self):
-        Publisher.subscribe(self.ShowDicomSeries, 'Load bitmap preview')
-        Publisher.subscribe(self.SetDicomSeries, 'Load group into import panel')
-        Publisher.subscribe(self.SetPatientSeries, 'Load bitmap into import panel')
+        #Publisher.subscribe(self.ShowDicomSeries, 'Load bitmap preview')
+        #Publisher.subscribe(self.SetDicomSeries, 'Load group into import panel')
+        Publisher.subscribe(self.SetBitmapFiles, 'Load bitmap into import panel')
 
     def __init_gui(self):
         self.SetBackgroundColour((255,255,255))
-        self.dicom_preview = bpp.SingleImagePreview(self)
+        self.bitmap_preview = bpp.SingleImagePreview(self)
 
         sizer = wx.BoxSizer(wx.VERTICAL)
-        sizer.Add(self.dicom_preview, 1, wx.GROW|wx.EXPAND)
+        sizer.Add(self.bitmap_preview, 1, wx.GROW|wx.EXPAND)
         sizer.Fit(self)
         self.SetSizer(sizer)
         self.Layout()
@@ -452,23 +456,22 @@ class SlicePanel(wx.Panel):
         self.SetAutoLayout(1)
         self.sizer = sizer
 
-    def SetPatientSeries(self, pubsub_evt):
-        patient = pubsub_evt.data
-        #group = patient.GetGroups()[0]
-        #self.dicom_preview.SetBitmapFiles(group)
+    def SetBitmapFiles(self, pubsub_evt):
+        data = pubsub_evt.data
+        self.bitmap_preview.SetBitmapFiles(data)
         self.sizer.Layout()
         self.Update()
 
-    def SetDicomSeries(self, evt):
-        group = evt.data
-        self.dicom_preview.SetDicomGroup(group)
-        self.sizer.Layout()
-        self.Update()
+    #def SetDicomSeries(self, evt):
+    #    group = evt.data
+    #    self.bitmap_preview.SetDicomGroup(group)
+    #    self.sizer.Layout()
+    #    self.Update()
 
-    def ShowDicomSeries(self, pubsub_evt):
-        patient = pubsub_evt.data
-        group = patient.GetGroups()[0]
-        self.dicom_preview.SetDicomGroup(group)
-        self.sizer.Layout()
-        self.Update()
+    #def ShowDicomSeries(self, pubsub_evt):
+    #    patient = pubsub_evt.data
+    #    group = patient.GetGroups()[0]
+    #    self.bitmap_preview.SetDicomGroup(group)
+    #    self.sizer.Layout()
+    #    self.Update()
 

@@ -24,6 +24,7 @@ import sys
 import vtk
 import re
 import constants as const
+import wx
 
 from wx.lib.pubsub import pub as Publisher
 from multiprocessing import cpu_count
@@ -94,7 +95,10 @@ class LoadBitmap:
         write_png.SetFileName(thumbnail_path)
         write_png.Write()
 
-        bmp_item = [self.filepath, thumbnail_path, extension, x, y, str(x) + ' x ' + str(y), file_name]
+        id = wx.NewId()
+
+        bmp_item = [self.filepath, thumbnail_path, extension, x, y,\
+                                str(x) + ' x ' + str(y), file_name, id]
         self.bmp_file.Add(bmp_item)
 
 

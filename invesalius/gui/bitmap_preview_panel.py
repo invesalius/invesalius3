@@ -82,7 +82,7 @@ class BitmapInfo(object):
     """
     def __init__(self, data):
         self.id = id
-        #self.dicom = dicom
+        self.dicom = data[7]
         self.title = data[6]
         #self.subtitle = subtitle
         self._preview = None
@@ -537,50 +537,74 @@ class BitmapPreviewSlice(wx.Panel):
     def SetPatientGroups(self, patient):
         self.group_list = patient.GetGroups()
 
-    def SetDicomSerie(self, pos):
-        self.files = []
-        self.displayed_position = 0
-        self.nhidden_last_display = 0
-        group = self.group_list[pos]
-        self.group = group
-        #dicom_files = group.GetList()
-        dicom_files = group.GetHandSortedList()
-        n = 0
-        for dicom in dicom_files:
-            info = BitmapInfo(n, dicom,
-                             _("Image %d") % (dicom.image.number),
-                             "%.2f" % (dicom.image.position[2]))
-            self.files.append(info)
-            n+=1
 
-        scroll_range = len(self.files)/NCOLS
-        if scroll_range * NCOLS < len(self.files):
-            scroll_range +=1
-        self.scroll.SetScrollbar(0, NROWS, scroll_range, NCOLS)
+    #def SetDicomSerie(self, pos):
+    #    self.files = []
+    #    self.displayed_position = 0
+    #    self.nhidden_last_display = 0
+    #    group = self.group_list[pos]
+    #    self.group = group
+    #    #dicom_files = group.GetList()
+    #    dicom_files = group.GetHandSortedList()
+    #    n = 0
+    #    for dicom in dicom_files:
+    #        info = BitmapInfo(n, dicom,
+    #                         _("Image %d") % (dicom.image.number),
+    #                         "%.2f" % (dicom.image.position[2]))
+    #        self.files.append(info)
+    #        n+=1
 
-        self._display_previews()
+    #    scroll_range = len(self.files)/NCOLS
+    #    if scroll_range * NCOLS < len(self.files):
+    #        scroll_range +=1
+    #    self.scroll.SetScrollbar(0, NROWS, scroll_range, NCOLS)
+    
+    #    self._display_previews()
 
-    def SetDicomGroup(self, group):
-        self.files = []
-        self.displayed_position = 0
-        self.nhidden_last_display = 0
-        #dicom_files = group.GetList()
-        dicom_files = group.GetHandSortedList()
-        n = 0
-        for dicom in dicom_files:
-            info = BitmapInfo(n, dicom,
-                             _("Image %d") % (dicom.image.number),
-                             "%.2f" % (dicom.image.position[2]),
-                            )
-            self.files.append(info)
-            n+=1
+    #def SetDicomGroup(self, group):
+    #    self.files = []
+    #    self.displayed_position = 0
+    #    self.nhidden_last_display = 0
+    #    #dicom_files = group.GetList()
+    #    dicom_files = group.GetHandSortedList()
+    #    n = 0
+    #    for dicom in dicom_files:
+    #        info = BitmapInfo(n, dicom,
+    #                         _("Image %d") % (dicom.image.number),
+    #                         "%.2f" % (dicom.image.position[2]),
+    #                        )
+    #        self.files.append(info)
+    #        n+=1
 
-        scroll_range = len(self.files)/NCOLS
-        if scroll_range * NCOLS < len(self.files):
-            scroll_range +=1
-        self.scroll.SetScrollbar(0, NROWS, scroll_range, NCOLS)
+    #    scroll_range = len(self.files)/NCOLS
+    #    if scroll_range * NCOLS < len(self.files):
+    #        scroll_range +=1
+    #    self.scroll.SetScrollbar(0, NROWS, scroll_range, NCOLS)
 
-        self._display_previews()
+    #    self._display_previews()
+
+    #def SetDicomGroup(self, group):
+    #    self.files = []
+    #    self.displayed_position = 0
+    #    self.nhidden_last_display = 0
+    #    #dicom_files = group.GetList()
+    #    dicom_files = group.GetHandSortedList()
+    #    n = 0
+    #    for dicom in dicom_files:
+    #        info = BitmapInfo(n, dicom,
+    #                         _("Image %d") % (dicom.image.number),
+    #                         "%.2f" % (dicom.image.position[2]),
+    #                        )
+    #        self.files.append(info)
+    #        n+=1
+
+    #    scroll_range = len(self.files)/NCOLS
+    #    if scroll_range * NCOLS < len(self.files):
+    #        scroll_range +=1
+    #    self.scroll.SetScrollbar(0, NROWS, scroll_range, NCOLS)
+
+    #    self._display_previews()
+
 
     def _display_previews(self):
         initial = self.displayed_position * NCOLS
@@ -679,6 +703,8 @@ class BitmapPreviewSlice(wx.Panel):
         d = evt.GetWheelDelta() / evt.GetWheelRotation()
         self.scroll.SetThumbPosition(self.scroll.GetThumbPosition() - d)
         self.OnScroll()
+
+
 
 class SingleImagePreview(wx.Panel):
     def __init__(self, parent):
@@ -808,70 +834,86 @@ class SingleImagePreview(wx.Panel):
             finally:
                 wx.CallAfter(self.OnRun)
 
-    def SetDicomGroup(self, group):
-        self.dicom_list = group.GetHandSortedList()
+    def SetBitmapFiles(self, data):
+        #self.dicom_list = group.GetHandSortedList()
+        self.bitmap_list = data
         self.current_index = 0
-        self.nimages = len(self.dicom_list)
+        self.nimages = len(data)
         # GUI
         self.slider.SetMax(self.nimages-1)
         self.slider.SetValue(0)
         self.ShowSlice()
 
     def ShowSlice(self, index = 0):
-        dicom = self.dicom_list[index]
+        bitmap = self.bitmap_list[index]
 
         # UPDATE GUI
         ## Text related to size
-        value = STR_SIZE %(dicom.image.size[0], dicom.image.size[1])
+        value = STR_SIZE %(bitmap[3], bitmap[4])
         self.text_image_size.SetValue(value)
 
-        ## Text related to slice position
-        if not(dicom.image.spacing):
-            value1 = '' 
-        else: 
-            value1 = STR_SPC %(dicom.image.spacing[2])
+        ### Text related to slice position
+        #if not(dicom.image.spacing):
+        #    value1 = '' 
+        #else: 
+        #    value1 = STR_SPC %(dicom.image.spacing[2])
+        
+        #if dicom.image.orientation_label == 'AXIAL':
+        #    value2 = STR_LOCAL %(dicom.image.position[2])
+        #elif dicom.image.orientation_label == 'CORONAL':
+        #    value2 = STR_LOCAL %(dicom.image.position[1])
+        #elif dicom.image.orientation_label == 'SAGITTAL':
+        #    value2 = STR_LOCAL %(dicom.image.position[0])
+        #else:
+        #    value2 = ''
 
-        if dicom.image.orientation_label == 'AXIAL':
-            value2 = STR_LOCAL %(dicom.image.position[2])
-        elif dicom.image.orientation_label == 'CORONAL':
-            value2 = STR_LOCAL %(dicom.image.position[1])
-        elif dicom.image.orientation_label == 'SAGITTAL':
-            value2 = STR_LOCAL %(dicom.image.position[0])
-        else:
-            value2 = ''
+        value1 = ''
+        value2 = ''
 
         value = "%s\n%s" %(value1, value2)
         self.text_image_location.SetValue(value)
 
         ## Text related to patient/ acquisiiton data
-        value = STR_PATIENT %(dicom.patient.id,\
-                              dicom.acquisition.protocol_name)
-        self.text_patient.SetValue(value)
+        #value = STR_PATIENT %(dicom.patient.id,\
+        #                      dicom.acquisition.protocol_name)
+        
+
+        #self.text_patient.SetValue(value)
+        self.text_patient.SetValue('')
 
         ## Text related to acquisition date and time
-        value = STR_ACQ % (dicom.acquisition.date,
-                            dicom.acquisition.time)
-        self.text_acquisition.SetValue(value)
+        #value = STR_ACQ % (dicom.acquisition.date,
+        #                    dicom.acquisition.time)
+        
+        #self.text_acquisition.SetValue(value)
+        self.text_acquisition.SetValue('')
 
-        rdicom = vtkgdcm.vtkGDCMImageReader()
-        rdicom.SetFileName(dicom.image.file)
-        rdicom.Update()
+        extension = 'bmp'
+        if extension == 'bmp':
+            reader = vtk.vtkBMPReader()
+
+        reader.SetFileName(bitmap[0])
+        reader.Update()
+
+        #rdicom = vtkgdcm.vtkGDCMImageReader()
+        #rdicom.SetFileName(dicom.image.file)
+        #rdicom.Update()
 
         # ADJUST CONTRAST
-        window_level = dicom.image.level
-        window_width = dicom.image.window
-        colorer = vtk.vtkImageMapToWindowLevelColors()
-        colorer.SetInputConnection(rdicom.GetOutputPort())
-        colorer.SetWindow(float(window_width))
-        colorer.SetLevel(float(window_level))
-        colorer.Update()
+        #window_level = dicom.image.level
+        #window_width = dicom.image.window
+        #colorer = vtk.vtkImageMapToWindowLevelColors()
+        #colorer.SetInputConnection(rdicom.GetOutputPort())
+        #colorer.SetWindow(float(window_width))
+        #colorer.SetLevel(float(window_level))
+        #colorer.Update()
 
         if self.actor is None:
             self.actor = vtk.vtkImageActor()
             self.renderer.AddActor(self.actor)
 
         # PLOT IMAGE INTO VIEWER
-        self.actor.SetInputData(colorer.GetOutput())
+        self.actor.SetInputData(reader.GetOutput())
         self.renderer.ResetCamera()
         self.interactor.Render()
 
