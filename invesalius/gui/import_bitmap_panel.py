@@ -342,7 +342,6 @@ class ImagePanel(wx.Panel):
         evt.Skip()
 
     def OnSelectSlice(self, evt):
-        print "SELECIONOUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUU"
         self.image_panel.bitmap_preview.ShowSlice(evt.GetSelectID())
         evt.Skip()
 

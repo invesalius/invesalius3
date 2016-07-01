@@ -88,7 +88,7 @@ class BitmapInfo(object):
         self.pos = data[8]
         #self.subtitle = subtitle
         self._preview = None
-        #self.selected = False
+        self.selected = False
         #self.filename = ""
         self.thumbnail_path = data[1]
 
@@ -243,7 +243,7 @@ class Preview(wx.Panel):
         
         self.image_viewer.SetImage(image)
         #self.data = bitmap_info.id
-        #self.select_on = bitmap_info.selected
+        self.select_on = bitmap_info.selected
         self.Select()
         self.Update()
 
@@ -309,6 +309,7 @@ class Preview(wx.Panel):
         my_evt.SetItemData(self.bitmap_info.data)
         my_evt.SetEventObject(self)
         self.GetEventHandler().ProcessEvent(my_evt)
+        evt.Skip()
 
 
 class BitmapPreviewSeries(wx.Panel):
@@ -382,7 +383,7 @@ class BitmapPreviewSeries(wx.Panel):
         self.selected_panel = evt.GetEventObject()
         self.selected_dicom = self.selected_panel.bitmap_info
         self.GetEventHandler().ProcessEvent(my_evt)
-
+        evt.Skip()
 
     def SetBitmapFiles(self, data):
         #self.files = data
@@ -446,15 +447,12 @@ class BitmapPreviewSeries(wx.Panel):
 
         for f, p in zip(self.files[initial:final], self.previews):
             p.SetBitmapToPreview(f)
+            if f.selected:
+                self.selected_panel = p
+
+        for f, p in zip(self.files[initial:final], self.previews):
             p.Show()
 
-        #for f, p in zip(self.files[initial:final], self.previews):
-        #    p.SetBitmapToPreview(f)
-        #    if f.selected:
-        #        self.selected_panel = p
-
-        #for f, p in zip(self.files[initial:final], self.previews):
-        #    p.Show()
 
     def OnScroll(self, evt=None):
         if evt:
@@ -469,7 +467,6 @@ class BitmapPreviewSeries(wx.Panel):
         d = evt.GetWheelDelta() / evt.GetWheelRotation()
         self.scroll.SetThumbPosition(self.scroll.GetThumbPosition() - d)
         self.OnScroll()
-
 
 
 class SingleImagePreview(wx.Panel):
