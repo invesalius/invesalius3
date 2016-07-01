@@ -342,6 +342,7 @@ class ImagePanel(wx.Panel):
         evt.Skip()
 
     def OnSelectSlice(self, evt):
+        print "SELECIONOUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUU"
         self.image_panel.bitmap_preview.ShowSlice(evt.GetSelectID())
         evt.Skip()
 
@@ -355,13 +356,13 @@ class SeriesPanel(wx.Panel):
         #self.SetBackgroundColour((0,0,0))
 
         self.thumbnail_preview = bpp.BitmapPreviewSeries(self)
-        self.bitmap_preview = bpp.BitmapPreviewSlice(self)
-        self.bitmap_preview.Show(0)
+        #self.bitmap_preview = bpp.BitmapPreviewSlice(self)
+        #self.bitmap_preview.Show(0)
         
 
         self.sizer = wx.BoxSizer(wx.HORIZONTAL)
         self.sizer.Add(self.thumbnail_preview, 1, wx.EXPAND | wx.ALL, 5)
-        self.sizer.Add(self.bitmap_preview, 1, wx.EXPAND | wx.ALL, 5)
+        #self.sizer.Add(self.bitmap_preview, 1, wx.EXPAND | wx.ALL, 5)
         self.sizer.Fit(self)
 
         self.SetSizer(self.sizer)
@@ -380,7 +381,7 @@ class SeriesPanel(wx.Panel):
 
     def _bind_gui_evt(self):
         self.thumbnail_preview.Bind(bpp.EVT_CLICK_SERIE, self.OnSelectSerie)
-        self.bitmap_preview.Bind(bpp.EVT_CLICK_SLICE, self.OnSelectSlice)
+        #self.bitmap_preview.Bind(bpp.EVT_CLICK_SLICE, self.OnSelectSlice)
 
     #def SetDicomSeries(self, pubsub_evt):
     #    group = pubsub_evt.data
@@ -394,8 +395,10 @@ class SeriesPanel(wx.Panel):
         return [self.bitmap_preview.first_selected, self.dicom_preview_last_selection]
 
     def SetPatientSeries(self, pubsub_evt):
+
+
         patient = pubsub_evt.data
-        self.bitmap_preview.Show(0)
+        #self.bitmap_preview.Show(0)
         self.thumbnail_preview.Show(1)
 
         self.thumbnail_preview.SetBitmapFiles(patient)
@@ -411,9 +414,9 @@ class SeriesPanel(wx.Panel):
         my_evt.SetItemData(evt.GetItemData())
         self.GetEventHandler().ProcessEvent(my_evt)
 
-        self.bitmap_preview.SetDicomGroup(data)
-        self.bitmap_preview.Show(1)
-        self.thumbnail_preview.Show(0)
+        #self.bitmap_preview.SetDicomGroup(data)
+        #self.bitmap_preview.Show(1)
+        #self.thumbnail_preview.Show(0)
         self.sizer.Layout()
         self.Show()
         self.Update()
