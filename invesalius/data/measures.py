@@ -22,6 +22,35 @@ LOCATION = {const.SURFACE: _(u"3D"),
         }
 
 
+class MeasureData:
+    """
+    Responsible to keep measures data.
+    """
+    def __init__(self):
+        self.measures = {const.SURFACE: {},
+                         const.AXIAL:   {},
+                         const.CORONAL: {},
+                         const.SAGITAL: {}}
+        self._list_measures = []
+
+    def append(self, m):
+        print m[0].location, m[0].slice_number
+        try:
+            self.measures[m[0].location][m[0].slice_number].append(m)
+        except KeyError:
+            self.measures[m[0].location][m[0].slice_number] = [m, ]
+
+        self._list_measures.append(m)
+
+    def pop(self, idx):
+        m = self._list_measures.pop(idx)
+        self.measures[m[0].location][m[0].slice_number].remove(m)
+        return m
+
+    def __len__(self):
+        return len(self._list_measures)
+
+
 class MeasurementManager(object):
     """
     A class to manage the use (Addition, remotion and visibility) from
@@ -29,7 +58,7 @@ class MeasurementManager(object):
     """
     def __init__(self):
         self.current = None
-        self.measures = []
+        self.measures = MeasureData()
         self._bind_events()
 
     def _bind_events(self):
