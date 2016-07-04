@@ -25,6 +25,7 @@ import constants as const
 import gui.dialogs as dlg
 import bitmap_preview_panel as bpp
 import reader.dicom_grouper as dcm
+from dialogs import ImportBitmapParameters
 
 myEVT_SELECT_SERIE = wx.NewEventType()
 EVT_SELECT_SERIE = wx.PyEventBinder(myEVT_SELECT_SERIE, 1)
@@ -170,6 +171,9 @@ class InnerPanel(wx.Panel):
         self.LoadDicom(group)
 
     def OnClickOk(self, evt):
+        parm = dlg.ImportBitmapParameters()
+        parm.ShowModal()
+
         group = self.text_panel.GetSelection()
         if group:
             self.LoadDicom(group)

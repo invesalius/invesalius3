@@ -39,6 +39,12 @@ from gui.widgets.clut_imagedata import CLUTImageDataWidget, EVT_CLUT_NODE_CHANGE
 
 import numpy as np
 
+try:
+    from agw import floatspin as FS
+except ImportError: # if it's not there locally, try the wxPython lib.
+    import wx.lib.agw.floatspin as FS
+
+
 class MaskEvent(wx.PyCommandEvent):
     def __init__(self , evtType, id, mask_index):
         wx.PyCommandEvent.__init__(self, evtType, id,)
@@ -1671,4 +1677,165 @@ class ReorientImageDialog(wx.Dialog):
     def OnClose(self, evt):
         Publisher.sendMessage('Disable style', const.SLICE_STATE_REORIENT)
         Publisher.sendMessage('Enable style', const.STATE_DEFAULT)
+        self.Destroy()
+
+
+
+class ImportBitmapParameters(wx.Dialog):
+    def __init__(self):
+        pre = wx.PreDialog()
+        pre.Create(wx.GetApp().GetTopWindow(), -1, _(u"Parameters"),size=wx.Size(380,230),\
+                                style=wx.DEFAULT_DIALOG_STYLE|wx.FRAME_FLOAT_ON_PARENT|wx.STAY_ON_TOP)
+        self.PostCreate(pre)
+
+        self._init_gui()
+        self.CenterOnScreen()
+
+    def _init_gui(self):
+        
+        
+        p = wx.Panel(self, -1, style = wx.TAB_TRAVERSAL
+                     | wx.CLIP_CHILDREN
+                     | wx.FULL_REPAINT_ON_RESIZE)
+       
+        gbs_principal = self.gbs = wx.GridBagSizer(3,1)
+
+        gbs = self.gbs = wx.GridBagSizer(4, 2)
+        
+        stx_name = wx.StaticText(p, -1, _(u"Project name:"))
+        tx_name = wx.TextCtrl(p, -1, "InVesalius Bitmap", size=wx.Size(220,-1))
+
+        stx_orientation = wx.StaticText(p, -1, _(u"Slices orientation:"))
+        cb_orientation_options = [_(u'Axial'), _(u'Coronal'), _(u'Sagital')]
+        cb_orientation = wx.ComboBox(p, value="Axial", choices=cb_orientation_options,\
+                                                size=wx.Size(160,-1), style=wx.CB_DROPDOWN)
+
+        stx_spacing = wx.StaticText(p, -1, _(u"Spacing (mm):"))
+
+        gbs.Add(stx_name, (0,0))
+        gbs.Add(tx_name, (0,1))
+
+        gbs.Add(stx_orientation, (1,0))
+        gbs.Add(cb_orientation, (1,1))
+
+        gbs.Add(stx_spacing, (2,0))
+
+        #--- spacing --------------
+        gbs_spacing = wx.GridBagSizer(2, 6)
+        
+        stx_spacing_x =wx.StaticText(p, -1, _(u"X:"))
+        fsp_spacing_x = FS.FloatSpin(p, -1, min_val=0, increment=0.25, value=1.0, digits=6)
+
+        stx_spacing_y =wx.StaticText(p, -1, _(u"Y:"))
+        fsp_spacing_y = FS.FloatSpin(p, -1, min_val=0, increment=0.25, value=1.0, digits=6)
+
+        stx_spacing_z =wx.StaticText(p, -1, _(u"Z:"))
+        fsp_spacing_z = FS.FloatSpin(p, -1, min_val=0, increment=0.25, value=1.0, digits=6)
+
+        gbs_spacing.Add(stx_spacing_x, (0,0))
+        gbs_spacing.Add(fsp_spacing_x, (0,1))
+
+        gbs_spacing.Add(stx_spacing_y, (0,2))
+        gbs_spacing.Add(fsp_spacing_y, (0,3))
+
+        gbs_spacing.Add(stx_spacing_z, (0,4))
+        gbs_spacing.Add(fsp_spacing_z, (0,5))
+
+
+
+        #----- buttons ------------------------
+        gbs_button = wx.GridBagSizer(1, 4)
+ 
+        btn_ok = wx.Button(p, wx.ID_OK)
+        btn_ok.SetDefault()
+
+        btn_cancel = wx.Button(p, wx.ID_CANCEL)
+
+        gbs_button.Add(btn_cancel, (1,2))
+        gbs_button.Add(btn_ok, (1,3))
+
+
+        gbs_principal.Add(gbs, (0,0))
+        gbs_principal.Add(gbs_spacing, (1,0))
+        gbs_principal.Add(gbs_button, (2,0), flag = wx.ALIGN_RIGHT)
+
+        box = wx.BoxSizer()
+        box.Add(gbs_principal, 1, wx.ALL|wx.EXPAND, 10)
+        
+        p.SetSizer(box)
+
+        #gbs.Add( wx.TextCtrl(p, -1, "pos(3,2), span(1,2)\nthis row and col are growable", style=wx.TE_MULTILINE),
+        #         (3,2), (1,2), flag=wx.EXPAND ) 
+
+
+
+        #mask_choices = [(masks[i].name, masks[i]) for i in sorted(masks)]
+        #self.mask1 = wx.ComboBox(self, -1, mask_choices[0][0], choices=[])
+        #self.mask2 = wx.ComboBox(self, -1, mask_choices[0][0], choices=[])
+
+        #for n, m in mask_choices:
+        #    self.mask1.Append(n, m)
+        #    self.mask2.Append(n, m)
+
+        #self.mask1.SetSelection(0)
+
+        #if len(mask_choices) > 1:
+        #    self.mask2.SetSelection(1)
+        #else:
+        #    self.mask2.SetSelection(0)
+
+        #icon_folder = '../icons/'
+        #op_choices = ((_(u"Union"), const.BOOLEAN_UNION, 'bool_union.png'),
+        #              (_(u"Difference"), const.BOOLEAN_DIFF, 'bool_difference.png'),
+        #              (_(u"Intersection"), const.BOOLEAN_AND, 'bool_intersection.png'),
+        #              (_(u"Exclusive disjunction"), const.BOOLEAN_XOR, 'bool_disjunction.png'))
+        #self.op_boolean = wx.combo.BitmapComboBox(self, -1, op_choices[0][0], choices=[])
+
+        #for n, i, f in op_choices:
+        #    bmp = wx.Bitmap(os.path.join(icon_folder, f), wx.BITMAP_TYPE_PNG)
+        #    self.op_boolean.Append(n, bmp, i)
+
+        #self.op_boolean.SetSelection(0)
+
+        #btn_ok = wx.Button(self, wx.ID_OK)
+        #btn_ok.SetDefault()
+
+        #btn_cancel = wx.Button(self, wx.ID_CANCEL)
+
+        #btnsizer = wx.StdDialogButtonSizer()
+        #btnsizer.AddButton(btn_ok)
+        #btnsizer.AddButton(btn_cancel)
+        #btnsizer.Realize()
+
+        #gsizer = wx.FlexGridSizer(rows=3, cols=2, hgap=5, vgap=5)
+
+        #gsizer.Add(wx.StaticText(self, -1, _(u"Mask 1")))
+        #gsizer.Add(self.mask1, 1, wx.EXPAND)
+        #gsizer.Add(wx.StaticText(self, -1, _(u"Operation")))
+        #gsizer.Add(self.op_boolean, 1, wx.EXPAND)
+        #gsizer.Add(wx.StaticText(self, -1, _(u"Mask 2")))
+        #gsizer.Add(self.mask2, 1, wx.EXPAND)
+
+        #sizer = wx.BoxSizer(wx.VERTICAL)
+        #sizer.Add(gsizer, 0, wx.EXPAND | wx.ALIGN_CENTER | wx.ALL, border=5)
+        #sizer.Add(btnsizer, 0, wx.EXPAND | wx.ALIGN_CENTER | wx.ALL, border=5)
+
+        #self.SetSizer(sizer)
+        #sizer.Fit(self)
+
+
+        btn_ok.Bind(wx.EVT_BUTTON, self.OnOk)
+
+
+
+    def OnOk(self, evt):
+        #op = self.op_boolean.GetClientData(self.op_boolean.GetSelection())
+        #m1 = self.mask1.GetClientData(self.mask1.GetSelection())
+        #m2 = self.mask2.GetClientData(self.mask2.GetSelection())
+
+        #Publisher.sendMessage('Do boolean operation', (op, m1, m2))
+        #Publisher.sendMessage('Reload actual slice')
+        #Publisher.sendMessage('Refresh viewer')
+
+        self.Close()
         self.Destroy()
