@@ -10,6 +10,7 @@ import vtk
 import constants as const
 import project as prj
 import session as ses
+import utils
 
 TYPE = {const.LINEAR: _(u"Linear"),
         const.ANGULAR: _(u"Angular"),
@@ -26,6 +27,7 @@ class MeasureData:
     """
     Responsible to keep measures data.
     """
+    __metaclass__= utils.Singleton
     def __init__(self):
         self.measures = {const.SURFACE: {},
                          const.AXIAL:   {},
@@ -34,7 +36,6 @@ class MeasureData:
         self._list_measures = []
 
     def append(self, m):
-        print m[0].location, m[0].slice_number
         try:
             self.measures[m[0].location][m[0].slice_number].append(m)
         except KeyError:

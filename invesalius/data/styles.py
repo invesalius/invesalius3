@@ -40,6 +40,8 @@ from scipy.ndimage import watershed_ift, generate_binary_structure
 from skimage.morphology import watershed
 from skimage import filter
 
+from .measures import MeasureData
+
 import watershed_process
 
 import utils
@@ -350,34 +352,44 @@ class LinearMeasureInteractorStyle(DefaultInteractorStyle):
         self.orientation = viewer.orientation
         self.slice_data = viewer.slice_data
 
+        self.measures = MeasureData()
+
         spacing = self.slice_data.actor.GetInput().GetSpacing()
 
         if self.orientation == "AXIAL":
             self.radius = min(spacing[1], spacing[2]) * 0.8
+            self._ori = const.AXIAL
 
         elif self.orientation == 'CORONAL':
             self.radius = min(spacing[0], spacing[1]) * 0.8
+            self._ori = const.CORONAL
 
         elif self.orientation == 'SAGITAL':
             self.radius = min(spacing[1], spacing[2]) * 0.8
+            self._ori = const.SAGITAL
 
         self.picker = vtk.vtkCellPicker()
+        self.picker.PickFromListOn()
 
         self.AddObserver("LeftButtonPressEvent", self.OnInsertLinearMeasurePoint)
 
     def OnInsertLinearMeasurePoint(self, obj, evt):
         iren = obj.GetInteractor()
-        x,y = iren.GetEventPosition()
-        render = iren.FindPokedRenderer(x, y)
+        mx,my = iren.GetEventPosition()
+        render = iren.FindPokedRenderer(mx, my)
         slice_number = self.slice_data.number
-        self.picker.Pick(x, y, 0, render)
+        self.picker.AddPickList(self.slice_data.actor)
+        self.picker.Pick(mx, my, 0, render)
         x, y, z = self.picker.GetPickPosition()
+        self.picker.DeletePickList(self.slice_data.actor)
+
         if self.picker.GetViewProp():
             Publisher.sendMessage("Add measurement point",
                                   ((x, y,z), const.LINEAR,
                                    ORIENTATIONS[self.orientation],
                                    slice_number, self.radius))
             self.viewer.interactor.Render()
+
 
     def CleanUp(self):
         Publisher.sendMessage("Remove incomplete measurements")
