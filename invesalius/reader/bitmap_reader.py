@@ -112,7 +112,7 @@ class LoadBitmap:
       
         if not(isinstance(n_array, numpy.ndarray)):
             return False
-        
+            
         image = converters.to_vtk(n_array, spacing=(1,1,1),\
                 slice_number=1, orientation="AXIAL")
 
