@@ -314,7 +314,10 @@ def VtkRead(filepath, t):
             luminanceFilter.SetInputData(image)
             luminanceFilter.Update()
 
-        img_array = numpy_support.vtk_to_numpy(luminanceFilter.GetOutput().GetPointData().GetScalars())
+            image = vtk.vtkImageData()
+            image.DeepCopy(luminanceFilter.GetOutput())
+
+        img_array = numpy_support.vtk_to_numpy(image.GetPointData().GetScalars())
         img_array.shape = (extent[3] + 1,extent[1] + 1)
 
         return img_array
@@ -355,3 +358,4 @@ def VerifyDataType(filepath):
         return t
     except IOError:
         return False
+
