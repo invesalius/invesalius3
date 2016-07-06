@@ -109,6 +109,9 @@ class LoadBitmap:
         #if extension == 'bmp':
         #    reader = vtk.vtkBMPReader()
         n_array = ReadBitmap(self.filepath)
+      
+        if not(isinstance(n_array, numpy.ndarray)):
+            return False
         
         image = converters.to_vtk(n_array, spacing=(1,1,1),\
                 slice_number=1, orientation="AXIAL")
@@ -303,10 +306,10 @@ def VtkRead(filepath, t):
         image = reader.GetOutput()
         extent = reader.GetDataExtent()
        
-        #if reader.GetNumberOfScalarComponents() > 1:
-        luminanceFilter = vtk.vtkImageLuminance()
-        luminanceFilter.SetInputData(image)
-        luminanceFilter.Update()
+        if reader.GetNumberOfScalarComponents() > 1:
+            luminanceFilter = vtk.vtkImageLuminance()
+            luminanceFilter.SetInputData(image)
+            luminanceFilter.Update()
 
         img_array = numpy_support.vtk_to_numpy(luminanceFilter.GetOutput().GetPointData().GetScalars())
         img_array.shape = (extent[3] + 1,extent[1] + 1)
