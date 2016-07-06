@@ -60,6 +60,9 @@ class BitmapData:
     def GetData(self):
         return self.data
 
+    def SetData(self, data):
+        self.data = data
+
 class BitmapFiles:
 
     def __init__(self):
