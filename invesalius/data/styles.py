@@ -389,7 +389,7 @@ class LinearMeasureInteractorStyle(DefaultInteractorStyle):
                                       ((x, y,z), const.LINEAR,
                                        ORIENTATIONS[self.orientation],
                                        slice_number, self.radius))
-                self.viewer.interactor.Render()
+                Publisher.sendMessage('Reload actual slice %s' % self.orientation)
 
     def OnReleaseMeasurePoint(self, obj, evt):
         if self.selected:
@@ -405,7 +405,8 @@ class LinearMeasureInteractorStyle(DefaultInteractorStyle):
                 mr.SetPoint2(x, y, z)
                 m.points[1] = x, y, z
 
-            self.viewer.interactor.Render()
+            m.value = mr.GetValue()
+
             Publisher.sendMessage('Reload actual slice %s' % self.orientation)
             self.selected = None
 
@@ -423,7 +424,6 @@ class LinearMeasureInteractorStyle(DefaultInteractorStyle):
                 mr.SetPoint2(x, y, z)
                 m.points[1] = x, y, z
 
-            self.viewer.interactor.Render()
             Publisher.sendMessage('Reload actual slice %s' % self.orientation)
 
     def CleanUp(self):
@@ -441,12 +441,20 @@ class LinearMeasureInteractorStyle(DefaultInteractorStyle):
 
     def _verify_clicked(self, x, y, z):
         slice_number = self.slice_data.number
+        sx, sy, sz = self.viewer.slice_.spacing
+        if self.orientation == "AXIAL":
+            max_dist = 2 * max(sx, sy)
+        elif self.orientation == "CORONAL":
+            max_dist = 2 * max(sx, sz)
+        elif self.orientation == "SAGITAL":
+            max_dist = 2 * max(sy, sz)
+
         if slice_number in self.measures.measures[self._ori]:
             for m, mr in self.measures.measures[self._ori][slice_number]:
                 for n, p in enumerate(m.points):
                     px, py, pz = p
                     dist = ((px-x)**2 + (py-y)**2 + (pz-z)**2)**0.5
-                    if dist < 2:
+                    if dist < max_dist:
                         return (n, m, mr)
         return None
 

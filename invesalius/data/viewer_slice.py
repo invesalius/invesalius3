@@ -19,6 +19,7 @@
 #    detalhes.
 #--------------------------------------------------------------------------
 
+import collections
 import itertools
 import tempfile
 
@@ -172,7 +173,7 @@ class Viewer(wx.Panel):
         self.orientation_texts = []
 
         self.measures = measures.MeasureData()
-        self.actors_by_slice_number = {}
+        self.actors_by_slice_number = collections.defaultdict(list)
         self.renderers_by_slice_number = {}
 
         self.orientation = orientation
@@ -1178,9 +1179,9 @@ class Viewer(wx.Panel):
         image = self.slice_.GetSlices(self.orientation, index,
                                       self.number_slices, inverted, border_size)
         self.slice_data.actor.SetInputData(image)
-        for actor in self.actors_by_slice_number.get(self.slice_data.number, []):
+        for actor in self.actors_by_slice_number[self.slice_data.number]:
             self.slice_data.renderer.RemoveActor(actor)
-        for actor in self.actors_by_slice_number.get(index, []):
+        for actor in self.actors_by_slice_number[index]:
             self.slice_data.renderer.AddActor(actor)
 
         for (m, mr) in self.measures[self.orientation].get(self.slice_data.number, []):
@@ -1247,10 +1248,7 @@ class Viewer(wx.Panel):
             for actor in actors:
                 self.slice_data.renderer.AddActor(actor)
 
-        try:
-            self.actors_by_slice_number[n].extend(actors)
-        except KeyError:
-            self.actors_by_slice_number[n] = list(actors)
+        self.actors_by_slice_number[n].extend(actors)
 
     def RemoveActors(self, pubsub_evt):
         "Remove a list of actors"

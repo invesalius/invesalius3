@@ -490,6 +490,7 @@ class LinearMeasure(object):
         a.GetPositionCoordinate().SetCoordinateSystemToWorld()
         a.GetPositionCoordinate().SetValue(x,y,z)
         a.GetProperty().SetColor((0, 1, 0))
+        a.GetProperty().SetOpacity(0.75)
         self.text_actor = a
 
     def GetNumberOfPoints(self):
