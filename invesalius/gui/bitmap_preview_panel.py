@@ -1,16 +1,17 @@
 import wx
 import vtk
+import vtkgdcm
+import time
 
 from vtk.util import  numpy_support
 from vtk.wx.wxVTKRenderWindowInteractor import wxVTKRenderWindowInteractor
 from wx.lib.pubsub import pub as Publisher
 
 import constants as const
-from reader import dicom_reader
 import data.vtk_utils as vtku
+from data import converters
+from reader import bitmap_reader
 import utils
-import vtkgdcm
-import time
 
 NROWS = 3
 NCOLS = 6
@@ -660,32 +661,49 @@ class SingleImagePreview(wx.Panel):
         #self.text_acquisition.SetValue(value)
         self.text_acquisition.SetValue('')
 
-        extension = 'bmp'
-        if extension == 'bmp':
-            reader = vtk.vtkBMPReader()
 
-        reader.SetFileName(bitmap[0])
-        reader.Update()
+
+        #extension = 'bmp'
+        #if extension == 'bmp':
+        #    reader = vtk.vtkBMPReader()
+
+        #reader.SetFileName(bitmap[0])
+        #reader.Update()
+
+
+
+        n_array = bitmap_reader.ReadBitmap(bitmap[0])
+        
+        image = converters.to_vtk(n_array, spacing=(1,1,1),\
+                slice_number=1, orientation="AXIAL")
+
+
+        #img = vtk.vtkImageCast()
+        #img.SetInputData(image)
+        #img.SetOutputScalarTypeToUnsignedInt()
+        #img.SetClampOverflow(1)
+        #img.Update()
 
         #rdicom = vtkgdcm.vtkGDCMImageReader()
         #rdicom.SetFileName(dicom.image.file)
         #rdicom.Update()
 
         # ADJUST CONTRAST
-        #window_level = dicom.image.level
-        #window_width = dicom.image.window
-        #colorer = vtk.vtkImageMapToWindowLevelColors()
-        #colorer.SetInputConnection(rdicom.GetOutputPort())
-        #colorer.SetWindow(float(window_width))
-        #colorer.SetLevel(float(window_level))
-        #colorer.Update()
+        window_level = n_array.max()/2
+        window_width = n_array.max()
+        
+        colorer = vtk.vtkImageMapToWindowLevelColors()
+        colorer.SetInputData(image)
+        colorer.SetWindow(float(window_width))
+        colorer.SetLevel(float(window_level))
+        colorer.Update()
 
         if self.actor is None:
             self.actor = vtk.vtkImageActor()
             self.renderer.AddActor(self.actor)
 
         # PLOT IMAGE INTO VIEWER
-        self.actor.SetInputData(reader.GetOutput())
+        self.actor.SetInputData(colorer.GetOutput())
         self.renderer.ResetCamera()
         self.interactor.Render()
 

@@ -380,7 +380,7 @@ class SeriesPanel(wx.Panel):
     def __bind_evt(self):
         #Publisher.subscribe(self.ShowDicomSeries, 'Load bitmap preview')
         #Publisher.subscribe(self.SetDicomSeries, 'Load group into import panel')
-        Publisher.subscribe(self.SetPatientSeries, 'Load bitmap into import panel')
+        Publisher.subscribe(self.SetBitmapFiles, 'Load bitmap into import panel')
 
     def _bind_gui_evt(self):
         self.thumbnail_preview.Bind(bpp.EVT_CLICK_SERIE, self.OnSelectSerie)
@@ -397,14 +397,14 @@ class SeriesPanel(wx.Panel):
     def GetSelectedImagesRange(self):
         return [self.bitmap_preview.first_selected, self.dicom_preview_last_selection]
 
-    def SetPatientSeries(self, pubsub_evt):
+    def SetBitmapFiles(self, pubsub_evt):
 
 
-        patient = pubsub_evt.data
+        bitmap = pubsub_evt.data
         #self.bitmap_preview.Show(0)
         self.thumbnail_preview.Show(1)
 
-        self.thumbnail_preview.SetBitmapFiles(patient)
+        self.thumbnail_preview.SetBitmapFiles(bitmap)
         #self.bitmap_preview.SetPatientGroups(patient)
 
         self.Update()

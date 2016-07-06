@@ -38,6 +38,7 @@ import reader.dicom_reader as dcm
 import reader.bitmap_reader as bmp
 import session as ses
 
+
 import utils 
 import gui.dialogs as dialogs
 import subprocess
@@ -75,6 +76,8 @@ class Controller():
                                  'Save raycasting preset')
         Publisher.subscribe(self.OnOpenDicomGroup,
                                  'Open DICOM group')
+        Publisher.subscribe(self.OnOpenBitmapFiles,
+                                'Open bitmap files')
         Publisher.subscribe(self.Progress, "Update dicom load")
         Publisher.subscribe(self.Progress, "Update bitmap load")
         Publisher.subscribe(self.OnLoadImportPanel, "End dicom load")
@@ -547,6 +550,10 @@ class Controller():
 
         dirpath = session.CreateProject(filename)
         #proj.SavePlistProject(dirpath, filename)
+
+    def OnOpenBitmapFiles(self, pubsub_evt):
+        bmp_data = bmp.BitmapData()
+        print ">>>>", bmp_data.GetData()
 
     def OnOpenDicomGroup(self, pubsub_evt):
         group, interval, file_range = pubsub_evt.data
