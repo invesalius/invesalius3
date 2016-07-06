@@ -353,6 +353,7 @@ class LinearMeasureInteractorStyle(DefaultInteractorStyle):
         self.slice_data = viewer.slice_data
 
         self.measures = MeasureData()
+        self.selected = None
 
         spacing = self.slice_data.actor.GetInput().GetSpacing()
 
@@ -372,28 +373,82 @@ class LinearMeasureInteractorStyle(DefaultInteractorStyle):
         self.picker.PickFromListOn()
 
         self.AddObserver("LeftButtonPressEvent", self.OnInsertLinearMeasurePoint)
+        self.AddObserver("LeftButtonReleaseEvent", self.OnReleaseMeasurePoint)
+        self.AddObserver("MouseMoveEvent", self.OnMoveMeasurePoint)
 
     def OnInsertLinearMeasurePoint(self, obj, evt):
-        iren = obj.GetInteractor()
-        mx,my = iren.GetEventPosition()
-        render = iren.FindPokedRenderer(mx, my)
         slice_number = self.slice_data.number
-        self.picker.AddPickList(self.slice_data.actor)
-        self.picker.Pick(mx, my, 0, render)
-        x, y, z = self.picker.GetPickPosition()
-        self.picker.DeletePickList(self.slice_data.actor)
+        x, y, z = self._get_pos_clicked()
 
-        if self.picker.GetViewProp():
-            Publisher.sendMessage("Add measurement point",
-                                  ((x, y,z), const.LINEAR,
-                                   ORIENTATIONS[self.orientation],
-                                   slice_number, self.radius))
+        selected =  self._verify_clicked(x, y, z)
+        if selected:
+            self.selected = selected
+        else:
+            if self.picker.GetViewProp():
+                Publisher.sendMessage("Add measurement point",
+                                      ((x, y,z), const.LINEAR,
+                                       ORIENTATIONS[self.orientation],
+                                       slice_number, self.radius))
+                self.viewer.interactor.Render()
+
+    def OnReleaseMeasurePoint(self, obj, evt):
+        if self.selected:
+            print "Changing Position"
+            n, m, mr = self.selected
+            x, y, z = self._get_pos_clicked()
+            ren = self.slice_data.renderer
+            mr.renderer = ren
+            if n == 0:
+                mr.SetPoint1(x, y, z)
+                m.points[0] = x, y, z
+            elif n == 1:
+                mr.SetPoint2(x, y, z)
+                m.points[1] = x, y, z
+
             self.viewer.interactor.Render()
+            Publisher.sendMessage('Reload actual slice %s' % self.orientation)
+            self.selected = None
 
+    def OnMoveMeasurePoint(self, obj, evt):
+        if self.selected:
+            print "Changing Position"
+            n, m, mr = self.selected
+            x, y, z = self._get_pos_clicked()
+            ren = self.slice_data.renderer
+            mr.renderer = ren
+            if n == 0:
+                mr.SetPoint1(x, y, z)
+                m.points[0] = x, y, z
+            elif n == 1:
+                mr.SetPoint2(x, y, z)
+                m.points[1] = x, y, z
+
+            self.viewer.interactor.Render()
+            Publisher.sendMessage('Reload actual slice %s' % self.orientation)
 
     def CleanUp(self):
         Publisher.sendMessage("Remove incomplete measurements")
 
+    def _get_pos_clicked(self):
+        iren = self.viewer.interactor
+        mx,my = iren.GetEventPosition()
+        render = iren.FindPokedRenderer(mx, my)
+        self.picker.AddPickList(self.slice_data.actor)
+        self.picker.Pick(mx, my, 0, render)
+        x, y, z = self.picker.GetPickPosition()
+        self.picker.DeletePickList(self.slice_data.actor)
+        return (x, y, z)
+
+    def _verify_clicked(self, x, y, z):
+        slice_number = self.slice_data.number
+        if slice_number in self.measures.measures[self._ori]:
+            for m, mr in self.measures.measures[self._ori][slice_number]:
+                for n, p in enumerate(m.points):
+                    px, py, pz = p
+                    dist = ((px-x)**2 + (py-y)**2 + (pz-z)**2)**0.5
+                    if dist < 2:
+                        return (n, m, mr)
+        return None
 
 class AngularMeasureInteractorStyle(DefaultInteractorStyle):
     """

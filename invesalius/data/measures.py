@@ -22,6 +22,12 @@ LOCATION = {const.SURFACE: _(u"3D"),
             const.SAGITAL: _(u"Sagittal")
         }
 
+map_locations = {
+    "3D":       const.SURFACE,
+    "AXIAL":    const.AXIAL,
+    "CORONAL":  const.CORONAL,
+    "SAGITAL": const.SAGITAL,
+}
 
 class MeasureData:
     """
@@ -50,6 +56,9 @@ class MeasureData:
 
     def __len__(self):
         return len(self._list_measures)
+
+    def __getitem__(self, key):
+        return self.measures[map_locations[key]] 
 
 
 class MeasurementManager(object):
@@ -102,8 +111,8 @@ class MeasurementManager(object):
             for point in m.points:
                 x, y, z = point
                 actors = mr.AddPoint(x, y, z)
-                Publisher.sendMessage(("Add actors " + str(m.location)),
-                    (actors, m.slice_number))
+                #  Publisher.sendMessage(("Add actors " + str(m.location)),
+                    #  (actors, m.slice_number))
             self.current = None
 
             if not m.is_shown:
@@ -186,8 +195,8 @@ class MeasurementManager(object):
         x, y, z = position
         actors = mr.AddPoint(x, y, z)
         m.points.append(position)
-        Publisher.sendMessage("Add actors " + str(location),
-                (actors, m.slice_number))
+        #  Publisher.sendMessage("Add actors " + str(location),
+                #  (actors, m.slice_number))
 
         if mr.IsComplete():
             index = prj.Project().AddMeasurement(m)
@@ -394,6 +403,7 @@ class LinearMeasure(object):
         self.point_actor2 = None
         self.line_actor = None
         self.text_actor = None
+        self.renderer = None
         if not representation:
             representation = CirclePointRepresentation(colour)
         self.representation = representation
@@ -414,13 +424,31 @@ class LinearMeasure(object):
             return (self.point_actor2, self.line_actor, self.text_actor)
 
     def SetPoint1(self, x, y, z):
-        self.points.append((x, y, z))
-        self.point_actor1 = self.representation.GetRepresentation(x, y, z)
+        if len(self.points) == 0:
+            self.points.append((x, y, z))
+            self.point_actor1 = self.representation.GetRepresentation(x, y, z)
+        else:
+            self.points[0] = (x, y, z)
+            if len(self.points) == 2:
+                self.Remove()
+                self.point_actor1 = self.representation.GetRepresentation(*self.points[0])
+                self.point_actor2 = self.representation.GetRepresentation(*self.points[1])
+                self.CreateMeasure()
+            else:
+                self.Remove()
+                self.point_actor1 = self.representation.GetRepresentation(*self.points[0])
 
     def SetPoint2(self, x, y, z):
-        self.points.append((x, y, z))
-        self.point_actor2 = self.representation.GetRepresentation(x, y, z)
-        self.CreateMeasure()
+        if len(self.points) == 1:
+            self.points.append((x, y, z))
+            self.point_actor2 = self.representation.GetRepresentation(*self.points[1])
+            self.CreateMeasure()
+        else:
+            self.points[1] = (x, y, z)
+            self.Remove()
+            self.point_actor1 = self.representation.GetRepresentation(*self.points[0])
+            self.point_actor2 = self.representation.GetRepresentation(*self.points[1])
+            self.CreateMeasure()
 
     def CreateMeasure(self):
         self._draw_line()
@@ -473,22 +501,22 @@ class LinearMeasure(object):
 
     def SetRenderer(self, renderer):
         if self.point_actor1:
-            self.render.RemoveActor(self.point_actor1)
+            self.renderer.RemoveActor(self.point_actor1)
             renderer.AddActor(self.point_actor1)
 
         if self.point_actor2:
-            self.render.RemoveActor(self.point_actor2)
+            self.renderer.RemoveActor(self.point_actor2)
             renderer.AddActor(self.point_actor2)
 
         if self.line_actor:
-            self.render.RemoveActor(self.line_actor)
+            self.renderer.RemoveActor(self.line_actor)
             renderer.AddActor(self.line_actor)
 
         if self.text_actor:
-            self.render.RemoveActor(self.text_actor)
+            self.renderer.RemoveActor(self.text_actor)
             renderer.AddActor(self.text_actor)
 
-        self.render = renderer
+        self.renderer = renderer
 
     def SetVisibility(self, v):
         self.point_actor1.SetVisibility(v)
@@ -513,19 +541,19 @@ class LinearMeasure(object):
 
     def Remove(self):
         if self.point_actor1:
-            self.render.RemoveActor(self.point_actor1)
+            self.renderer.RemoveActor(self.point_actor1)
             del self.point_actor1
 
         if self.point_actor2:
-            self.render.RemoveActor(self.point_actor2)
+            self.renderer.RemoveActor(self.point_actor2)
             del self.point_actor2
 
         if self.line_actor:
-            self.render.RemoveActor(self.line_actor)
+            self.renderer.RemoveActor(self.line_actor)
             del self.line_actor
 
         if self.text_actor:
-            self.render.RemoveActor(self.text_actor)
+            self.renderer.RemoveActor(self.text_actor)
             del self.text_actor
 
     # def __del__(self):
@@ -707,47 +735,47 @@ class AngularMeasure(object):
 
     def Remove(self):
         if self.point_actor1:
-            self.render.RemoveActor(self.point_actor1)
+            self.renderer.RemoveActor(self.point_actor1)
             del self.point_actor1
 
         if self.point_actor2:
-            self.render.RemoveActor(self.point_actor2)
+            self.renderer.RemoveActor(self.point_actor2)
             del self.point_actor2
 
         if self.point_actor3:
-            self.render.RemoveActor(self.point_actor3)
+            self.renderer.RemoveActor(self.point_actor3)
             del self.point_actor3
 
         if self.line_actor:
-            self.render.RemoveActor(self.line_actor)
+            self.renderer.RemoveActor(self.line_actor)
             del self.line_actor
 
         if self.text_actor:
-            self.render.RemoveActor(self.text_actor)
+            self.renderer.RemoveActor(self.text_actor)
             del self.text_actor
 
     def SetRenderer(self, renderer):
         if self.point_actor1:
-            self.render.RemoveActor(self.point_actor1)
+            self.renderer.RemoveActor(self.point_actor1)
             renderer.AddActor(self.point_actor1)
 
         if self.point_actor2:
-            self.render.RemoveActor(self.point_actor2)
+            self.renderer.RemoveActor(self.point_actor2)
             renderer.AddActor(self.point_actor2)
 
         if self.point_actor3:
-            self.render.RemoveActor(self.point_actor3)
+            self.renderer.RemoveActor(self.point_actor3)
             renderer.AddActor(self.point_actor3)
 
         if self.line_actor:
-            self.render.RemoveActor(self.line_actor)
+            self.renderer.RemoveActor(self.line_actor)
             renderer.AddActor(self.line_actor)
 
         if self.text_actor:
-            self.render.RemoveActor(self.text_actor)
+            self.renderer.RemoveActor(self.text_actor)
             renderer.AddActor(self.text_actor)
 
-        self.render = renderer
+        self.renderer = renderer
 
     # def __del__(self):
         # self.Remove()

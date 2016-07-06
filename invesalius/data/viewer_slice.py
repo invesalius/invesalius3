@@ -171,7 +171,7 @@ class Viewer(wx.Panel):
         self.layout = (1, 1)
         self.orientation_texts = []
 
-        self.measures = []
+        self.measures = measures.MeasureData()
         self.actors_by_slice_number = {}
         self.renderers_by_slice_number = {}
 
@@ -1182,6 +1182,14 @@ class Viewer(wx.Panel):
             self.slice_data.renderer.RemoveActor(actor)
         for actor in self.actors_by_slice_number.get(index, []):
             self.slice_data.renderer.AddActor(actor)
+
+        for (m, mr) in self.measures[self.orientation].get(self.slice_data.number, []):
+            for actor in mr.GetActors():
+                self.slice_data.renderer.RemoveActor(actor)
+
+        for (m, mr) in self.measures[self.orientation].get(index, []):
+            for actor in mr.GetActors():
+                self.slice_data.renderer.AddActor(actor)
 
         if self.slice_._type_projection == const.PROJECTION_NORMAL:
             self.slice_data.SetNumber(index)
