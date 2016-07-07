@@ -1780,10 +1780,12 @@ class ImportBitmapParameters(wx.Dialog):
         self.interval = v
 
     def OnOk(self, evt):
+        self.Close()
+        self.Destroy()
+
         values = [self.tx_name.GetValue(), self.cb_orientation.GetValue(),\
                   self.fsp_spacing_x.GetValue(), self.fsp_spacing_y.GetValue(),\
                   self.fsp_spacing_z.GetValue(), self.interval]
         Publisher.sendMessage('Open bitmap files', values)
 
-        self.Close()
-        self.Destroy()
+
