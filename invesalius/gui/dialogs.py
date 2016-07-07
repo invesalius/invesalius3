@@ -1687,6 +1687,9 @@ class ImportBitmapParameters(wx.Dialog):
         pre = wx.PreDialog()
         pre.Create(wx.GetApp().GetTopWindow(), -1, _(u"Parameters"),size=wx.Size(380,230),\
                                 style=wx.DEFAULT_DIALOG_STYLE|wx.FRAME_FLOAT_ON_PARENT|wx.STAY_ON_TOP)
+
+        self.interval = 0
+        
         self.PostCreate(pre)
 
         self._init_gui()
@@ -1772,12 +1775,14 @@ class ImportBitmapParameters(wx.Dialog):
 
     def bind_evts(self):
         self.btn_ok.Bind(wx.EVT_BUTTON, self.OnOk)
-    
+   
+    def SetInterval(self, v):
+        self.interval = v
+
     def OnOk(self, evt):
         values = [self.tx_name.GetValue(), self.cb_orientation.GetValue(),\
                   self.fsp_spacing_x.GetValue(), self.fsp_spacing_y.GetValue(),\
-                  self.fsp_spacing_z.GetValue()]
-
+                  self.fsp_spacing_z.GetValue(), self.interval]
         Publisher.sendMessage('Open bitmap files', values)
 
         self.Close()

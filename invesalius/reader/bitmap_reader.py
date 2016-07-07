@@ -63,6 +63,34 @@ class BitmapData:
     def SetData(self, data):
         self.data = data
 
+    def GetOnlyBitmapPath(self):
+        paths = [item[0] for item in self.data]
+        return paths
+
+    def GetFirstBitmapSize(self):
+        return (self.data[0][3], self.data[0][4])
+
+    def IsAllBitmapSameSize(self):
+        sizes = [item[5] for item in self.data]
+
+        k = {}
+        for v in sizes:
+            k[v] = ''
+
+        if len(k.keys()) > 1:
+            return False
+        else:
+            return True
+
+    def GetFirstPixelSize(self):
+        
+        path = self.data[0][0] 
+        size = ReadBitmap(path).dtype.itemsize * 8
+        
+        return size
+
+
+
 class BitmapFiles:
 
     def __init__(self):
@@ -123,9 +151,9 @@ class LoadBitmap:
         #reader.SetFileName(self.filepath)
         #reader.Update()
 
-        extent = image.GetExtent()
-        x = extent[1]
-        y = extent[3]
+        extent = image.GetDimensions()
+        x = extent[0]
+        y = extent[1]
 
         img = vtk.vtkImageResample()
         img.SetInputData(image)

@@ -172,6 +172,7 @@ class InnerPanel(wx.Panel):
 
     def OnClickOk(self, evt):
         parm = dlg.ImportBitmapParameters()
+        parm.SetInterval(self.combo_interval.GetSelection())
         parm.ShowModal()
 
         group = self.text_panel.GetSelection()
