@@ -389,6 +389,10 @@ class BitmapPreviewSeries(wx.Panel):
     def SetBitmapFiles(self, data):
         #self.files = data
         self.files = []
+        
+        bitmap = bitmap_reader.BitmapData()
+        bitmap.SetData(data)
+
         pos = 0
         for d in data:
             d.append(pos)
@@ -625,50 +629,18 @@ class SingleImagePreview(wx.Panel):
         value = STR_SIZE %(bitmap[3], bitmap[4])
         self.text_image_size.SetValue(value)
 
-        ### Text related to slice position
-        #if not(dicom.image.spacing):
-        #    value1 = '' 
-        #else: 
-        #    value1 = STR_SPC %(dicom.image.spacing[2])
-        
-        #if dicom.image.orientation_label == 'AXIAL':
-        #    value2 = STR_LOCAL %(dicom.image.position[2])
-        #elif dicom.image.orientation_label == 'CORONAL':
-        #    value2 = STR_LOCAL %(dicom.image.position[1])
-        #elif dicom.image.orientation_label == 'SAGITTAL':
-        #    value2 = STR_LOCAL %(dicom.image.position[0])
-        #else:
-        #    value2 = ''
-
         value1 = ''
         value2 = ''
 
         value = "%s\n%s" %(value1, value2)
         self.text_image_location.SetValue(value)
 
-        ## Text related to patient/ acquisiiton data
-        #value = STR_PATIENT %(dicom.patient.id,\
-        #                      dicom.acquisition.protocol_name)
-        
 
         #self.text_patient.SetValue(value)
         self.text_patient.SetValue('')
 
-        ## Text related to acquisition date and time
-        #value = STR_ACQ % (dicom.acquisition.date,
-        #                    dicom.acquisition.time)
-        
         #self.text_acquisition.SetValue(value)
         self.text_acquisition.SetValue('')
-
-
-
-        #extension = 'bmp'
-        #if extension == 'bmp':
-        #    reader = vtk.vtkBMPReader()
-
-        #reader.SetFileName(bitmap[0])
-        #reader.Update()
 
 
 
@@ -677,16 +649,6 @@ class SingleImagePreview(wx.Panel):
         image = converters.to_vtk(n_array, spacing=(1,1,1),\
                 slice_number=1, orientation="AXIAL")
 
-
-        #img = vtk.vtkImageCast()
-        #img.SetInputData(image)
-        #img.SetOutputScalarTypeToUnsignedInt()
-        #img.SetClampOverflow(1)
-        #img.Update()
-
-        #rdicom = vtkgdcm.vtkGDCMImageReader()
-        #rdicom.SetFileName(dicom.image.file)
-        #rdicom.Update()
 
         # ADJUST CONTRAST
         window_level = n_array.max()/2

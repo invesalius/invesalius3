@@ -269,9 +269,9 @@ def ScipyRead(filepath):
     try:
         r = misc.imread(filepath, flatten=True)
         dt = r.dtype 
-
-        if dt == "float32":   
-            
+        
+        if  dt == "float" or dt == "float16"\
+                          or dt == "float32" or dt == "float64":   
             shift=-r.max()/2
             simage = numpy.zeros_like(r, dtype='int16')
             simage[:] = r.astype('int32') + shift
