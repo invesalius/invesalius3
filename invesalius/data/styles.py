@@ -385,10 +385,11 @@ class LinearMeasureInteractorStyle(DefaultInteractorStyle):
             self.selected = selected
         else:
             if self.picker.GetViewProp():
+                renderer = self.viewer.slice_data.renderer
                 Publisher.sendMessage("Add measurement point",
                                       ((x, y,z), const.LINEAR,
                                        ORIENTATIONS[self.orientation],
-                                       slice_number, self.radius))
+                                       slice_number, self.radius, renderer))
                 Publisher.sendMessage('Reload actual slice %s' % self.orientation)
 
     def OnReleaseMeasurePoint(self, obj, evt):

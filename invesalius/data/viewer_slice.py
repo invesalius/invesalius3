@@ -1184,11 +1184,11 @@ class Viewer(wx.Panel):
         for actor in self.actors_by_slice_number[index]:
             self.slice_data.renderer.AddActor(actor)
 
-        for (m, mr) in self.measures[self.orientation].get(self.slice_data.number, []):
+        for (m, mr) in self.measures.get(self.orientation, self.slice_data.number):
             for actor in mr.GetActors():
                 self.slice_data.renderer.RemoveActor(actor)
 
-        for (m, mr) in self.measures[self.orientation].get(index, []):
+        for (m, mr) in self.measures.get(self.orientation, index):
             for actor in mr.GetActors():
                 self.slice_data.renderer.AddActor(actor)
 

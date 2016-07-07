@@ -22,12 +22,18 @@ LOCATION = {const.SURFACE: _(u"3D"),
             const.SAGITAL: _(u"Sagittal")
         }
 
-map_locations = {
+map_locations_id = {
     "3D":       const.SURFACE,
     "AXIAL":    const.AXIAL,
     "CORONAL":  const.CORONAL,
     "SAGITAL": const.SAGITAL,
 }
+
+map_id_locations = {const.SURFACE: "3D",
+                    const.AXIAL: "AXIAL",
+                    const.CORONAL: "CORONAL",
+                    const.SAGITAL: "SAGITAL",
+                    }
 
 class MeasureData:
     """
@@ -49,16 +55,29 @@ class MeasureData:
 
         self._list_measures.append(m)
 
-    def pop(self, idx):
-        m = self._list_measures.pop(idx)
+    def get(self, location, slice_number):
+        return self.measures[map_locations_id[location]].get(slice_number, [])
+
+    def pop(self, idx=None):
+        if idx is None:
+            m = self._list_measures.pop()
+        else:
+            m = self._list_measures.pop(idx)
         self.measures[m[0].location][m[0].slice_number].remove(m)
         return m
 
+    def remove(self, m):
+        self._list_measures.remove(m)
+        self.measures[m[0].location][m[0].slice_number].remove(m)
+
+    def __contains__(self, m):
+        return m in self._list_measures
+
+    def __getitem__(self, idx):
+        return self._list_measures[idx]
+
     def __len__(self):
         return len(self._list_measures)
-
-    def __getitem__(self, key):
-        return self.measures[map_locations[key]] 
 
 
 class MeasurementManager(object):
@@ -126,6 +145,7 @@ class MeasurementManager(object):
         position = pubsub_evt.data[0]
         type = pubsub_evt.data[1] # Linear or Angular
         location = pubsub_evt.data[2] # 3D, AXIAL, SAGITAL, CORONAL
+        renderer = pubsub_evt.data[-1]
 
         if location == const.SURFACE:
             slice_number = 0
@@ -173,16 +193,18 @@ class MeasurementManager(object):
                 mr = LinearMeasure(m.colour, representation)
             else:
                 mr = AngularMeasure(m.colour, representation)
+            mr.renderer = renderer
             if to_remove:
                 print "---To REMOVE"
-                actors = self.current[1].GetActors()
-                slice_number = self.current[0].slice_number
-                Publisher.sendMessage(('Remove actors ' + str(self.current[0].location)),
-                                      (actors, slice_number))
+                #  actors = self.current[1].GetActors()
+                #  slice_number = self.current[0].slice_number
+                #  Publisher.sendMessage(('Remove actors ' + str(self.current[0].location)),
+                                      #  (actors, slice_number))
+                self.measures.pop()[1].Remove()
                 if self.current[0].location == const.SURFACE:
                     Publisher.sendMessage('Render volume viewer')
                 else:
-                    Publisher.sendMessage('Update slice viewer')
+                    Publisher.sendMessage('Reload actual slice')
 
             session = ses.Session()
             session.ChangeProject()
@@ -198,10 +220,12 @@ class MeasurementManager(object):
         #  Publisher.sendMessage("Add actors " + str(location),
                 #  (actors, m.slice_number))
 
+        if self.current not in self.measures:
+            self.measures.append(self.current)
+
         if mr.IsComplete():
             index = prj.Project().AddMeasurement(m)
             #m.index = index # already done in proj
-            self.measures.append(self.current)
             name = m.name
             colour = m.colour
             m.value = mr.GetValue()
@@ -222,7 +246,7 @@ class MeasurementManager(object):
 
     def _change_name(self, pubsub_evt):
         index, new_name = pubsub_evt.data
-        self.measures[index][0].name = new_name
+        self.measures[index].name = new_name
 
     def _remove_measurements(self, pubsub_evt):
         indexes = pubsub_evt.data
@@ -257,6 +281,7 @@ class MeasurementManager(object):
         print "RM INC M", self.current, mr.IsComplete()
         if not mr.IsComplete():
             print "---To REMOVE"
+            self.measures.pop()
             actors = mr.GetActors()
             slice_number = self.current[0].slice_number
             Publisher.sendMessage(('Remove actors ' + str(self.current[0].location)),
