@@ -39,6 +39,12 @@ from gui.widgets.clut_imagedata import CLUTImageDataWidget, EVT_CLUT_NODE_CHANGE
 
 import numpy as np
 
+try:
+    from agw import floatspin as FS
+except ImportError: # if it's not there locally, try the wxPython lib.
+    import wx.lib.agw.floatspin as FS
+
+
 class MaskEvent(wx.PyCommandEvent):
     def __init__(self , evtType, id, mask_index):
         wx.PyCommandEvent.__init__(self, evtType, id,)
@@ -305,6 +311,48 @@ def ShowImportDirDialog():
     dlg.Destroy()
     os.chdir(current_dir)
     return path
+
+def ShowImportBitmapDirDialog():
+    current_dir = os.path.abspath(".")
+
+    if (sys.platform == 'win32') or (sys.platform == 'linux2'):
+        session = ses.Session()
+
+        if (session.GetLastDicomFolder()):
+            folder = session.GetLastDicomFolder()
+        else:
+            folder = ''
+    else:
+        folder = ''
+
+    dlg = wx.DirDialog(None, _("Choose a folder with TIFF, BMP, JPG or PNG:"), folder,
+                        style=wx.DD_DEFAULT_STYLE
+                        | wx.DD_DIR_MUST_EXIST
+                        | wx.DD_CHANGE_DIR)
+
+    path = None
+    try:
+        if dlg.ShowModal() == wx.ID_OK:
+            # GetPath returns in unicode, if a path has non-ascii characters a
+            # UnicodeEncodeError is raised. To avoid this, path is encoded in utf-8
+            if sys.platform == "win32":
+                path = dlg.GetPath()
+            else:
+                path = dlg.GetPath().encode('utf-8')
+
+    except(wx._core.PyAssertionError): #TODO: error win64
+         if (dlg.GetPath()):
+             path = dlg.GetPath()
+
+    if (sys.platform != 'darwin'):
+        if (path):
+            session.SetLastDicomFolder(path)
+
+    # Only destroy a dialog after you're done with it.
+    dlg.Destroy()
+    os.chdir(current_dir)
+    return path
+
 
 def ShowSaveAsProjectDialog(default_filename=None):
     current_dir = os.path.abspath(".")
@@ -1630,3 +1678,114 @@ class ReorientImageDialog(wx.Dialog):
         Publisher.sendMessage('Disable style', const.SLICE_STATE_REORIENT)
         Publisher.sendMessage('Enable style', const.STATE_DEFAULT)
         self.Destroy()
+
+
+
+class ImportBitmapParameters(wx.Dialog):
+
+    def __init__(self):
+        pre = wx.PreDialog()
+        pre.Create(wx.GetApp().GetTopWindow(), -1, _(u"Parameters"),size=wx.Size(380,230),\
+                                style=wx.DEFAULT_DIALOG_STYLE|wx.FRAME_FLOAT_ON_PARENT|wx.STAY_ON_TOP)
+
+        self.interval = 0
+        
+        self.PostCreate(pre)
+
+        self._init_gui()
+
+        self.bind_evts()
+        self.CenterOnScreen()
+
+
+    def _init_gui(self):
+        
+        
+        p = wx.Panel(self, -1, style = wx.TAB_TRAVERSAL
+                     | wx.CLIP_CHILDREN
+                     | wx.FULL_REPAINT_ON_RESIZE)
+       
+        gbs_principal = self.gbs = wx.GridBagSizer(3,1)
+
+        gbs = self.gbs = wx.GridBagSizer(4, 2)
+        
+        stx_name = wx.StaticText(p, -1, _(u"Project name:"))
+        tx_name = self.tx_name = wx.TextCtrl(p, -1, "InVesalius Bitmap", size=wx.Size(220,-1))
+
+        stx_orientation = wx.StaticText(p, -1, _(u"Slices orientation:"))
+        cb_orientation_options = [_(u'Axial'), _(u'Coronal'), _(u'Sagital')]
+        cb_orientation = self.cb_orientation = wx.ComboBox(p, value="Axial", choices=cb_orientation_options,\
+                                                size=wx.Size(160,-1), style=wx.CB_DROPDOWN|wx.CB_READONLY)
+
+        stx_spacing = wx.StaticText(p, -1, _(u"Spacing (mm):"))
+
+        gbs.Add(stx_name, (0,0))
+        gbs.Add(tx_name, (0,1))
+
+        gbs.Add(stx_orientation, (1,0))
+        gbs.Add(cb_orientation, (1,1))
+
+        gbs.Add(stx_spacing, (2,0))
+
+        #--- spacing --------------
+        gbs_spacing = wx.GridBagSizer(2, 6)
+        
+        stx_spacing_x = stx_spacing_x = wx.StaticText(p, -1, _(u"X:"))
+        fsp_spacing_x = self.fsp_spacing_x = FS.FloatSpin(p, -1, min_val=0,\
+                                            increment=0.25, value=1.0, digits=6)
+
+        stx_spacing_y = stx_spacing_y = wx.StaticText(p, -1, _(u"Y:"))
+        fsp_spacing_y = self.fsp_spacing_y = FS.FloatSpin(p, -1, min_val=0,\
+                                            increment=0.25, value=1.0, digits=6)
+
+        stx_spacing_z = stx_spacing_z = wx.StaticText(p, -1, _(u"Z:"))
+        fsp_spacing_z = self.fsp_spacing_z = FS.FloatSpin(p, -1, min_val=0,\
+                                            increment=0.25, value=1.0, digits=6)
+
+        gbs_spacing.Add(stx_spacing_x, (0,0))
+        gbs_spacing.Add(fsp_spacing_x, (0,1))
+
+        gbs_spacing.Add(stx_spacing_y, (0,2))
+        gbs_spacing.Add(fsp_spacing_y, (0,3))
+
+        gbs_spacing.Add(stx_spacing_z, (0,4))
+        gbs_spacing.Add(fsp_spacing_z, (0,5))
+
+        #----- buttons ------------------------
+        gbs_button = wx.GridBagSizer(1, 4)
+ 
+        btn_ok = self.btn_ok= wx.Button(p, wx.ID_OK)
+        btn_ok.SetDefault()
+
+        btn_cancel = wx.Button(p, wx.ID_CANCEL)
+
+        gbs_button.Add(btn_cancel, (1,2))
+        gbs_button.Add(btn_ok, (1,3))
+
+
+        gbs_principal.Add(gbs, (0,0))
+        gbs_principal.Add(gbs_spacing, (1,0))
+        gbs_principal.Add(gbs_button, (2,0), flag = wx.ALIGN_RIGHT)
+
+        box = wx.BoxSizer()
+        box.Add(gbs_principal, 1, wx.ALL|wx.EXPAND, 10)
+        
+        p.SetSizer(box)
+
+
+    def bind_evts(self):
+        self.btn_ok.Bind(wx.EVT_BUTTON, self.OnOk)
+   
+    def SetInterval(self, v):
+        self.interval = v
+
+    def OnOk(self, evt):
+        self.Close()
+        self.Destroy()
+
+        values = [self.tx_name.GetValue(), self.cb_orientation.GetValue().upper(),\
+                  self.fsp_spacing_x.GetValue(), self.fsp_spacing_y.GetValue(),\
+                  self.fsp_spacing_z.GetValue(), self.interval]
+        Publisher.sendMessage('Open bitmap files', values)
+
+

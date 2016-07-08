@@ -35,7 +35,9 @@ import project as prj
 import reader.analyze_reader as analyze
 import reader.dicom_grouper as dg
 import reader.dicom_reader as dcm
+import reader.bitmap_reader as bmp
 import session as ses
+
 
 import utils 
 import gui.dialogs as dialogs
@@ -74,13 +76,20 @@ class Controller():
                                  'Save raycasting preset')
         Publisher.subscribe(self.OnOpenDicomGroup,
                                  'Open DICOM group')
+        Publisher.subscribe(self.OnOpenBitmapFiles,
+                                'Open bitmap files')
         Publisher.subscribe(self.Progress, "Update dicom load")
+        Publisher.subscribe(self.Progress, "Update bitmap load")
         Publisher.subscribe(self.OnLoadImportPanel, "End dicom load")
+        Publisher.subscribe(self.OnLoadImportBitmapPanel, "End bitmap load")
         Publisher.subscribe(self.OnCancelImport, 'Cancel DICOM load')
+        Publisher.subscribe(self.OnCancelImportBitmap, 'Cancel bitmap load')
+
         Publisher.subscribe(self.OnShowDialogCloseProject, 'Close Project')
         Publisher.subscribe(self.OnOpenProject, 'Open project')
         Publisher.subscribe(self.OnOpenRecentProject, 'Open recent project')
         Publisher.subscribe(self.OnShowAnalyzeFile, 'Show analyze dialog')
+        Publisher.subscribe(self.OnShowBitmapFile, 'Show bitmap dialog')
 
         Publisher.subscribe(self.ShowBooleanOpDialog, 'Show boolean dialog')
 
@@ -92,7 +101,9 @@ class Controller():
         Publisher.sendMessage('Hide import panel')
 
 
-
+    def OnCancelImportBitmap(self, pubsub_evt):
+        #self.cancel_import = True
+        Publisher.sendMessage('Hide import bitmap panel')
 
 ###########################
 ###########################
@@ -119,8 +130,34 @@ class Controller():
         self.LoadProject()
         Publisher.sendMessage("Enable state project", True)
 
-
+    def OnShowBitmapFile(self, pubsub_evt):
+        self.ShowDialogImportBitmapFile()
 ###########################
+
+    def ShowDialogImportBitmapFile(self):
+        # Offer to save current project if necessary
+        session = ses.Session()
+        st = session.project_status
+        if (st == const.PROJ_NEW) or (st == const.PROJ_CHANGE):
+            filename = session.project_path[1]
+            answer = dialog.SaveChangesDialog2(filename)
+            if answer:
+                self.ShowDialogSaveProject()
+            self.CloseProject()
+            #Publisher.sendMessage("Enable state project", False)
+            Publisher.sendMessage('Set project name')
+            Publisher.sendMessage("Stop Config Recording")
+            Publisher.sendMessage("Set slice interaction style", const.STATE_DEFAULT)
+
+        # Import TIFF, BMP, JPEG or PNG
+        dirpath = dialog.ShowImportBitmapDirDialog()
+
+        if dirpath and not os.listdir(dirpath):
+            dialog.ImportEmptyDirectory(dirpath)
+        elif dirpath:
+            self.StartImportBitmapPanel(dirpath)
+        #    Publisher.sendMessage("Load data to import panel", dirpath)
+
 
     def ShowDialogImportDirectory(self):
         # Offer to save current project if necessary
@@ -291,6 +328,12 @@ class Controller():
 
 ###########################
 
+    def StartImportBitmapPanel(self, path):
+        # retrieve DICOM files splited into groups
+        reader = bmp.ProgressBitmapReader()
+        reader.SetWindowEvent(self.frame)
+        reader.SetDirectoryPath(path)
+        Publisher.sendMessage('End busy cursor')
 
     def StartImportPanel(self, path):
 
@@ -324,6 +367,26 @@ class Controller():
             Publisher.sendMessage('Show import panel')
             Publisher.sendMessage("Show import panel in frame")
 
+    def OnLoadImportBitmapPanel(self, evt):
+        data = evt.data
+        ok = self.LoadImportBitmapPanel(data)
+        if ok:
+            Publisher.sendMessage('Show import bitmap panel in frame')
+            #Publisher.sendMessage("Show import panel in frame")
+
+    def LoadImportBitmapPanel(self, data):
+        #if patient_series and isinstance(patient_series, list):
+            #Publisher.sendMessage("Load import panel", patient_series)
+            #first_patient = patient_series[0]
+            #Publisher.sendMessage("Load bitmap preview", first_patient)
+        if  data:
+            Publisher.sendMessage("Load import bitmap panel", data)
+
+            return True
+        else:
+            dialog.ImportInvalidFiles()
+        return False
+
 
     def LoadImportPanel(self, patient_series):
         if patient_series and isinstance(patient_series, list):
@@ -334,6 +397,9 @@ class Controller():
         else:
             dialog.ImportInvalidFiles()
         return False
+
+
+    #----------- to import by command line ---------------------------------------------------
 
     def OnImportMedicalImages(self, pubsub_evt):
         directory = pubsub_evt.data
@@ -357,6 +423,8 @@ class Controller():
                 return
         self.LoadProject()
         Publisher.sendMessage("Enable state project", True)
+
+    #-------------------------------------------------------------------------------------
 
     def LoadProject(self):
         proj = prj.Project()
@@ -401,9 +469,13 @@ class Controller():
             Publisher.sendMessage('Show mask', (mask_index, True))
         else:
             mask_name = const.MASK_NAME_PATTERN % (1,)
-            thresh = const.THRESHOLD_RANGE
-            colour = const.MASK_COLOUR[0]
 
+            if proj.modality != "UNKNOWN":
+                thresh = const.THRESHOLD_RANGE
+            else:
+                thresh = proj.threshold_range
+
+            colour = const.MASK_COLOUR[0]
             Publisher.sendMessage('Create new mask',
                                        (mask_name, thresh, colour))
 
@@ -482,6 +554,138 @@ class Controller():
 
         dirpath = session.CreateProject(filename)
         #proj.SavePlistProject(dirpath, filename)
+
+
+    def CreateBitmapProject(self, bmp_data, rec_data, matrix, matrix_filename):
+        name_to_const = {"AXIAL":const.AXIAL,
+                         "CORONAL":const.CORONAL,
+                         "SAGITTAL":const.SAGITAL}
+
+        name = rec_data[0]
+        orientation = rec_data[1]
+        sp_x = float(rec_data[2])
+        sp_y = float(rec_data[3])
+        sp_z = float(rec_data[4])
+        interval = int(rec_data[5])
+        
+        bits = bmp_data.GetFirstPixelSize()
+        sx, sy = size =  bmp_data.GetFirstBitmapSize()
+        
+        proj = prj.Project()
+        proj.name = name
+        proj.modality = 'UNKNOWN'
+        proj.SetAcquisitionModality(proj.modality)
+        proj.matrix_shape = matrix.shape
+        proj.matrix_dtype = matrix.dtype.name
+        proj.matrix_filename = matrix_filename
+        #proj.imagedata = imagedata
+        #proj.dicom_sample = dicom
+        proj.original_orientation =\
+                    name_to_const[orientation.upper()]
+        proj.window = float(matrix.max())
+        proj.level = float(matrix.max()/2)
+        
+        proj.threshold_range = int(matrix.min()), int(matrix.max())
+        #const.THRESHOLD_RANGE = proj.threshold_range
+
+        proj.spacing = self.Slice.spacing
+
+        ######
+        session = ses.Session()
+        filename = proj.name+".inv3"
+
+        filename = filename.replace("/", "") #Fix problem case other/Skull_DICOM
+
+        dirpath = session.CreateProject(filename)
+
+    def OnOpenBitmapFiles(self, pubsub_evt):
+        rec_data = pubsub_evt.data
+        bmp_data = bmp.BitmapData()
+        matrix, matrix_filename = self.OpenBitmapFiles(bmp_data, rec_data)
+        
+        self.CreateBitmapProject(bmp_data, rec_data, matrix, matrix_filename)
+
+        self.LoadProject()
+        Publisher.sendMessage("Enable state project", True)
+
+
+    def OpenBitmapFiles(self, bmp_data, rec_data):
+
+        if bmp_data.IsAllBitmapSameSize():
+
+            name = rec_data[0]
+            orientation = rec_data[1]
+            sp_x = float(rec_data[2])
+            sp_y = float(rec_data[3])
+            sp_z = float(rec_data[4])
+            interval = int(rec_data[5])
+         
+            interval += 1
+            
+            filelist = bmp_data.GetOnlyBitmapPath()[::interval]
+            bits = bmp_data.GetFirstPixelSize()
+
+            sx, sy = size =  bmp_data.GetFirstBitmapSize()
+            n_slices = len(filelist)
+            resolution_percentage = utils.calculate_resizing_tofitmemory(int(sx), int(sy), n_slices, bits/8)
+            
+            zspacing = sp_z * interval
+            xyspacing = (sp_y, sp_x)
+
+            if resolution_percentage < 1.0:
+
+                re_dialog = dialog.ResizeImageDialog()
+                re_dialog.SetValue(int(resolution_percentage*100))
+                re_dialog_value = re_dialog.ShowModal()
+                re_dialog.Close() 
+                
+                if re_dialog_value == wx.ID_OK:
+                    percentage = re_dialog.GetValue()
+                    resolution_percentage = percentage / 100.0
+                else:
+                    return
+
+                xyspacing = xyspacing[0] / resolution_percentage, xyspacing[1] / resolution_percentage
+ 
+
+            
+            self.matrix, scalar_range, self.filename = image_utils.bitmap2memmap(filelist, size,
+                                                                    orientation, (sp_z, sp_y, sp_x),resolution_percentage)
+
+
+            self.Slice = sl.Slice()
+            self.Slice.matrix = self.matrix
+            self.Slice.matrix_filename = self.filename
+
+            if orientation == 'AXIAL':
+                self.Slice.spacing = xyspacing[0], xyspacing[1], zspacing
+            elif orientation == 'CORONAL':
+                self.Slice.spacing = xyspacing[0], zspacing, xyspacing[1]
+            elif orientation == 'SAGITTAL':
+                self.Slice.spacing = zspacing, xyspacing[1], xyspacing[0]
+            
+            # 1(a): Fix gantry tilt, if any
+            #tilt_value = dicom.acquisition.tilt
+            #if (tilt_value) and (gui):
+            #    # Tell user gantry tilt and fix, according to answer
+            #    message = _("Fix gantry tilt applying the degrees below")
+            #    value = -1*tilt_value
+            #    tilt_value = dialog.ShowNumberDialog(message, value)
+            #    image_utils.FixGantryTilt(self.matrix, self.Slice.spacing, tilt_value)
+            #elif (tilt_value) and not (gui):
+            #    tilt_value = -1*tilt_value
+            #    image_utils.FixGantryTilt(self.matrix, self.Slice.spacing, tilt_value)
+
+            self.Slice.window_level = float(self.matrix.max()/2)
+            self.Slice.window_width = float(self.matrix.max())
+
+            scalar_range = int(self.matrix.min()), int(self.matrix.max())
+            Publisher.sendMessage('Update threshold limits list', scalar_range)
+
+            return self.matrix, self.filename#, dicom
+
+        else:
+            print "Error: All slices must be of the same size."
 
     def OnOpenDicomGroup(self, pubsub_evt):
         group, interval, file_range = pubsub_evt.data
