@@ -489,7 +489,6 @@ def bitmap2memmap(files, slice_size, orientation, resolution_percentage):
             # sagittal cases.
             matrix[:, :, n] = array
         else:
-            print array.shape, matrix.shape
             array.shape = matrix.shape[1], matrix.shape[2]
             matrix[n] = array
         update_progress(cont,message)
