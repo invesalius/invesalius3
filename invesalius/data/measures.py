@@ -657,20 +657,59 @@ class AngularMeasure(object):
             return (self.point_actor3, self.line_actor, self.text_actor)
 
     def SetPoint1(self, x, y, z):
-        self.points[0] = (x, y, z)
-        self.number_of_points = 1
-        self.point_actor1 = self.representation.GetRepresentation(x, y, z)
+        if self.number_of_points == 0:
+            self.points[0] = (x, y, z)
+            self.number_of_points = 1
+            self.point_actor1 = self.representation.GetRepresentation(x, y, z)
+        else:
+            self.points[0] = (x, y, z)
+            if len(self.points) == 3:
+                self.Remove()
+                self.point_actor1 = self.representation.GetRepresentation(*self.points[0])
+                self.point_actor2 = self.representation.GetRepresentation(*self.points[1])
+                self.point_actor3 = self.representation.GetRepresentation(*self.points[2])
+                self.CreateMeasure()
+            else:
+                self.Remove()
+                self.point_actor1 = self.representation.GetRepresentation(*self.points[0])
+                self.point_actor2 = self.representation.GetRepresentation(*self.points[1])
 
     def SetPoint2(self, x, y, z):
-        self.number_of_points = 2
-        self.points[1] = (x, y, z)
-        self.point_actor2 = self.representation.GetRepresentation(x, y, z)
+        if self.number_of_points == 1:
+            self.number_of_points = 2
+            self.points[1] = (x, y, z)
+            self.point_actor2 = self.representation.GetRepresentation(x, y, z)
+        else:
+            self.points[1] = (x, y, z)
+            if len(self.points) == 3:
+                self.Remove()
+                self.point_actor1 = self.representation.GetRepresentation(*self.points[0])
+                self.point_actor2 = self.representation.GetRepresentation(*self.points[1])
+                self.point_actor3 = self.representation.GetRepresentation(*self.points[2])
+                self.CreateMeasure()
+            else:
+                self.Remove()
+                self.point_actor1 = self.representation.GetRepresentation(*self.points[0])
+                self.point_actor2 = self.representation.GetRepresentation(*self.points[1])
 
     def SetPoint3(self, x, y, z):
-        self.number_of_points = 3
-        self.points[2] = (x, y, z)
-        self.point_actor3 = self.representation.GetRepresentation(x, y, z)
-        self.CreateMeasure()
+        if self.number_of_points == 2:
+            self.number_of_points = 3
+            self.points[2] = (x, y, z)
+            self.point_actor3 = self.representation.GetRepresentation(x, y, z)
+            self.CreateMeasure()
+        else:
+            self.points[2] = (x, y, z)
+            if len(self.points) == 3:
+                self.Remove()
+                self.point_actor1 = self.representation.GetRepresentation(*self.points[0])
+                self.point_actor2 = self.representation.GetRepresentation(*self.points[1])
+                self.point_actor3 = self.representation.GetRepresentation(*self.points[2])
+                self.CreateMeasure()
+            else:
+                self.Remove()
+                self.point_actor1 = self.representation.GetRepresentation(*self.points[0])
+                self.point_actor2 = self.representation.GetRepresentation(*self.points[1])
 
     def CreateMeasure(self):
         self._draw_line()

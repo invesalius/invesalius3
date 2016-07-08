@@ -355,6 +355,8 @@ class LinearMeasureInteractorStyle(DefaultInteractorStyle):
         self.measures = MeasureData()
         self.selected = None
 
+        self._type = const.LINEAR
+
         spacing = self.slice_data.actor.GetInput().GetSpacing()
 
         if self.orientation == "AXIAL":
@@ -372,6 +374,9 @@ class LinearMeasureInteractorStyle(DefaultInteractorStyle):
         self.picker = vtk.vtkCellPicker()
         self.picker.PickFromListOn()
 
+        self._bind_events()
+
+    def _bind_events(self):
         self.AddObserver("LeftButtonPressEvent", self.OnInsertLinearMeasurePoint)
         self.AddObserver("LeftButtonReleaseEvent", self.OnReleaseMeasurePoint)
         self.AddObserver("MouseMoveEvent", self.OnMoveMeasurePoint)
@@ -387,7 +392,7 @@ class LinearMeasureInteractorStyle(DefaultInteractorStyle):
             if self.picker.GetViewProp():
                 renderer = self.viewer.slice_data.renderer
                 Publisher.sendMessage("Add measurement point",
-                                      ((x, y,z), const.LINEAR,
+                                      ((x, y,z), self._type,
                                        ORIENTATIONS[self.orientation],
                                        slice_number, self.radius))
                 Publisher.sendMessage('Reload actual slice %s' % self.orientation)
@@ -411,6 +416,7 @@ class LinearMeasureInteractorStyle(DefaultInteractorStyle):
             Publisher.sendMessage('Reload actual slice %s' % self.orientation)
 
     def CleanUp(self):
+        self.picker.PickFromListOff()
         Publisher.sendMessage("Remove incomplete measurements")
 
     def _get_pos_clicked(self):
@@ -443,45 +449,10 @@ class LinearMeasureInteractorStyle(DefaultInteractorStyle):
                             return (n, m, mr)
         return None
 
-class AngularMeasureInteractorStyle(DefaultInteractorStyle):
-    """
-    Interactor style responsible for insert angular measurements.
-    """
+class AngularMeasureInteractorStyle(LinearMeasureInteractorStyle):
     def __init__(self, viewer):
-        DefaultInteractorStyle.__init__(self, viewer)
-
-        self.viewer = viewer
-        self.orientation = viewer.orientation
-        self.slice_data = viewer.slice_data
-
-        spacing = self.slice_data.actor.GetInput().GetSpacing()
-
-        if self.orientation == "AXIAL":
-            self.radius = min(spacing[1], spacing[2]) * 0.8
-
-        elif self.orientation == 'CORONAL':
-            self.radius = min(spacing[0], spacing[1]) * 0.8
-
-        elif self.orientation == 'SAGITAL':
-            self.radius = min(spacing[1], spacing[2]) * 0.8
-
-        self.picker = vtk.vtkCellPicker()
-
-        self.AddObserver("LeftButtonPressEvent", self.OnInsertAngularMeasurePoint)
-
-    def OnInsertAngularMeasurePoint(self, obj, evt):
-        iren = obj.GetInteractor()
-        x,y = iren.GetEventPosition()
-        render = iren.FindPokedRenderer(x, y)
-        slice_number = self.slice_data.number
-        self.picker.Pick(x, y, 0, render)
-        x, y, z = self.picker.GetPickPosition()
-        if self.picker.GetViewProp():
-            Publisher.sendMessage("Add measurement point",
-                                  ((x, y,z), const.ANGULAR,
-                                   ORIENTATIONS[self.orientation],
-                                   slice_number, self.radius))
-            self.viewer.interactor.Render()
+        LinearMeasureInteractorStyle.__init__(self, viewer)
+        self._type = const.ANGULAR
 
 
 class PanMoveInteractorStyle(DefaultInteractorStyle):
