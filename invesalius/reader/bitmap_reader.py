@@ -151,9 +151,9 @@ class LoadBitmap:
         #reader.SetFileName(self.filepath)
         #reader.Update()
 
-        extent = image.GetDimensions()
-        x = extent[0]
-        y = extent[1]
+        dim = image.GetDimensions()
+        x = dim[0]
+        y = dim[1]
 
         img = vtk.vtkImageResample()
         img.SetInputData(image)
@@ -335,7 +335,7 @@ def VtkRead(filepath, t):
     
     if no_error:
         image = reader.GetOutput()
-        extent = reader.GetDataExtent()
+        dim = image.GetDimensions()
        
         if reader.GetNumberOfScalarComponents() > 1:
             luminanceFilter = vtk.vtkImageLuminance()
@@ -346,7 +346,7 @@ def VtkRead(filepath, t):
             image.DeepCopy(luminanceFilter.GetOutput())
 
         img_array = numpy_support.vtk_to_numpy(image.GetPointData().GetScalars())
-        img_array.shape = (extent[3] + 1,extent[1] + 1)
+        img_array.shape = (dim[1], dim[0])
 
         return img_array
     else:
