@@ -469,9 +469,13 @@ class Controller():
             Publisher.sendMessage('Show mask', (mask_index, True))
         else:
             mask_name = const.MASK_NAME_PATTERN % (1,)
-            thresh = const.THRESHOLD_RANGE
-            colour = const.MASK_COLOUR[0]
 
+            if proj.modality != "UNKNOWN":
+                thresh = const.THRESHOLD_RANGE
+            else:
+                thresh = proj.threshold_range
+
+            colour = const.MASK_COLOUR[0]
             Publisher.sendMessage('Create new mask',
                                        (mask_name, thresh, colour))
 
@@ -569,7 +573,7 @@ class Controller():
         
         proj = prj.Project()
         proj.name = name
-        proj.modality = 'uCT'
+        proj.modality = 'UNKNOWN'
         proj.SetAcquisitionModality(proj.modality)
         proj.matrix_shape = matrix.shape
         proj.matrix_dtype = matrix.dtype.name
@@ -580,7 +584,10 @@ class Controller():
                     name_to_const[orientation.upper()]
         proj.window = float(matrix.max())
         proj.level = float(matrix.max()/2)
+        
         proj.threshold_range = int(matrix.min()), int(matrix.max())
+        #const.THRESHOLD_RANGE = proj.threshold_range
+
         proj.spacing = self.Slice.spacing
 
         ######
@@ -673,17 +680,9 @@ class Controller():
             self.Slice.window_width = float(self.matrix.max())
 
             scalar_range = int(self.matrix.min()), int(self.matrix.max())
-
             Publisher.sendMessage('Update threshold limits list', scalar_range)
 
             return self.matrix, self.filename#, dicom
-
-
-
-
-            #values = [self.tx_name.GetValue(), self.cb_orientation.GetValue(),\
-            #      self.fsp_spacing_x.GetValue(), self.fsp_spacing_y.GetValue(),\
-            #      self.fsp_spacing_z.GetValue()]
 
         else:
             print "Error: All slices must be of the same size."
