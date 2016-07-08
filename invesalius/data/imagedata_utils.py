@@ -418,7 +418,7 @@ class ImageCreator:
 
         return imagedata
 
-def bitmap2memmap(files, slice_size, orientation, resolution_percentage):
+def bitmap2memmap(files, slice_size, orientation, spacing, resolution_percentage):
     """
     From a list of dicom files it creates memmap file in the temp folder and
     returns it and its related filename.
@@ -456,7 +456,7 @@ def bitmap2memmap(files, slice_size, orientation, resolution_percentage):
     for n, f in enumerate(files):
         image_as_array = bitmap_reader.ReadBitmap(f)
 
-        image = converters.to_vtk(image_as_array, spacing=(1,1,1),\
+        image = converters.to_vtk(image_as_array, spacing=spacing,\
                                     slice_number=1, orientation=orientation.upper())
 
         if resolution_percentage != 1.0:
@@ -489,6 +489,7 @@ def bitmap2memmap(files, slice_size, orientation, resolution_percentage):
             # sagittal cases.
             matrix[:, :, n] = array
         else:
+            print array.shape, matrix.shape
             array.shape = matrix.shape[1], matrix.shape[2]
             matrix[n] = array
         update_progress(cont,message)

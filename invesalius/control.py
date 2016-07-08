@@ -622,6 +622,9 @@ class Controller():
             n_slices = len(filelist)
             resolution_percentage = utils.calculate_resizing_tofitmemory(int(sx), int(sy), n_slices, bits/8)
             
+            zspacing = sp_z * interval
+            xyspacing = (sp_y, sp_x)
+
             if resolution_percentage < 1.0:
 
                 re_dialog = dialog.ResizeImageDialog()
@@ -640,7 +643,7 @@ class Controller():
 
             
             self.matrix, scalar_range, self.filename = image_utils.bitmap2memmap(filelist, size,
-                                                                    orientation, resolution_percentage)
+                                                                    orientation, (sp_z, sp_y, sp_x),resolution_percentage)
 
 
             self.Slice = sl.Slice()
@@ -653,7 +656,7 @@ class Controller():
                 self.Slice.spacing = xyspacing[0], zspacing, xyspacing[1]
             elif orientation == 'SAGITTAL':
                 self.Slice.spacing = zspacing, xyspacing[1], xyspacing[0]
-
+            
             # 1(a): Fix gantry tilt, if any
             #tilt_value = dicom.acquisition.tilt
             #if (tilt_value) and (gui):
