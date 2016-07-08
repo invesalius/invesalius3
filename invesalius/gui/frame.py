@@ -306,6 +306,9 @@ class Frame(wx.Frame):
         Publisher.sendMessage("Set layout button full")
         aui_manager = self.aui_manager
         aui_manager.GetPane("Import").Show(0)
+        
+        aui_manager.GetPane("ImportBMP").Show(0)
+
         aui_manager.GetPane("Data").Show(1)
         aui_manager.GetPane("Tasks").Show(1)
         aui_manager.Update()

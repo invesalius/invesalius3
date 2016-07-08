@@ -466,7 +466,6 @@ def bitmap2memmap(files, slice_size, orientation, resolution_percentage):
                                 resolution_percentage = resolution_percentage, update_progress = None)
 
             image = image_resized
-            print ">>>>>>>>>", image.GetDimensions()
 
         min_aux, max_aux = image.GetScalarRange()
         if min_scalar is None or min_aux < min_scalar:
@@ -549,7 +548,6 @@ def dcm2memmap(files, slice_size, orientation, resolution_percentage):
                                 resolution_percentage = resolution_percentage, update_progress = None)
 
             image = image_resized
-            print ">>>>>>>>>", image.GetDimensions()
 
         min_aux, max_aux = image.GetScalarRange()
         if min_scalar is None or min_aux < min_scalar:
@@ -569,7 +567,6 @@ def dcm2memmap(files, slice_size, orientation, resolution_percentage):
             # sagittal cases.
             matrix[:, :, n] = array
         else:
-            print array.shape, matrix.shape
             array.shape = matrix.shape[1], matrix.shape[2]
             matrix[n] = array
         update_progress(cont,message)

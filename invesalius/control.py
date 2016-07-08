@@ -601,6 +601,7 @@ class Controller():
         self.LoadProject()
         Publisher.sendMessage("Enable state project", True)
 
+
     def OpenBitmapFiles(self, bmp_data, rec_data):
 
         if bmp_data.IsAllBitmapSameSize():
