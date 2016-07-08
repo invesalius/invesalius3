@@ -107,7 +107,7 @@ class MeasurementManager(object):
             spacing = 1.0, 1.0, 1.0
         for i in dict:
             m = dict[i]
-            
+
             if m.location == const.AXIAL:
                 radius = min(spacing[1], spacing[2]) * const.PROP_MEASURE
 
@@ -130,8 +130,10 @@ class MeasurementManager(object):
             for point in m.points:
                 x, y, z = point
                 actors = mr.AddPoint(x, y, z)
-                #  Publisher.sendMessage(("Add actors " + str(m.location)),
-                    #  (actors, m.slice_number))
+
+                if m.location == const.SURFACE:
+                    Publisher.sendMessage(("Add actors " + str(m.location)),
+                        (actors, m.slice_number))
             self.current = None
 
             if not m.is_shown:
@@ -145,7 +147,6 @@ class MeasurementManager(object):
         position = pubsub_evt.data[0]
         type = pubsub_evt.data[1] # Linear or Angular
         location = pubsub_evt.data[2] # 3D, AXIAL, SAGITAL, CORONAL
-        renderer = pubsub_evt.data[-1]
 
         if location == const.SURFACE:
             slice_number = 0
@@ -193,7 +194,6 @@ class MeasurementManager(object):
                 mr = LinearMeasure(m.colour, representation)
             else:
                 mr = AngularMeasure(m.colour, representation)
-            mr.renderer = renderer
             if to_remove:
                 print "---To REMOVE"
                 #  actors = self.current[1].GetActors()
@@ -217,8 +217,10 @@ class MeasurementManager(object):
         x, y, z = position
         actors = mr.AddPoint(x, y, z)
         m.points.append(position)
-        #  Publisher.sendMessage("Add actors " + str(location),
-                #  (actors, m.slice_number))
+
+        if m.location == const.SURFACE:
+            Publisher.sendMessage("Add actors " + str(location),
+                    (actors, m.slice_number))
 
         if self.current not in self.measures:
             self.measures.append(self.current)
@@ -250,13 +252,17 @@ class MeasurementManager(object):
 
     def _remove_measurements(self, pubsub_evt):
         indexes = pubsub_evt.data
-        print indexes
         for index in indexes:
             m, mr = self.measures.pop(index)
-            actors = mr.GetActors()
+            try:
+                mr.Remove()
+            except AttributeError:
+                # The is not being displayed
+                pass
             prj.Project().RemoveMeasurement(index)
-            Publisher.sendMessage(('Remove actors ' + str(m.location)), 
-                    (actors, m.slice_number))
+            if m.location == const.SURFACE:
+                Publisher.sendMessage(('Remove actors ' + str(m.location)),
+                        (mr.GetActors(), m.slice_number))
         Publisher.sendMessage('Update slice viewer')
         Publisher.sendMessage('Render volume viewer')
 
@@ -275,7 +281,7 @@ class MeasurementManager(object):
 
     def _rm_incomplete_measurements(self, pubsub_evt):
         if self.current is None:
-            return 
+            return
 
         mr = self.current[1]
         print "RM INC M", self.current, mr.IsComplete()

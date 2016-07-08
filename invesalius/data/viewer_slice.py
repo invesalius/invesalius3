@@ -1189,6 +1189,7 @@ class Viewer(wx.Panel):
                 self.slice_data.renderer.RemoveActor(actor)
 
         for (m, mr) in self.measures.get(self.orientation, index):
+            mr.renderer = self.slice_data.renderer
             for actor in mr.GetActors():
                 self.slice_data.renderer.AddActor(actor)
 
