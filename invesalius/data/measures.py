@@ -98,6 +98,7 @@ class MeasurementManager(object):
         Publisher.subscribe(self._load_measurements, "Load measurement dict")
         Publisher.subscribe(self._rm_incomplete_measurements,
                             "Remove incomplete measurements")
+        Publisher.subscribe(self._change_measure_point_pos, 'Change measurement point position')
 
     def _load_measurements(self, pubsub_evt):
         try:
@@ -245,6 +246,40 @@ class MeasurementManager(object):
                                    type_,
                                    value))
             self.current = None
+
+    def _change_measure_point_pos(self, pubsub_evt):
+        index, npoint, pos = pubsub_evt.data
+        print index, npoint, pos
+        m, mr = self.measures[index]
+        x, y, z = pos
+        if npoint == 0:
+            mr.SetPoint1(x, y, z)
+            m.points[0] = x, y, z
+        elif npoint == 1:
+            mr.SetPoint2(x, y, z)
+            m.points[1] = x, y, z
+        elif npoint == 2:
+            mr.SetPoint3(x, y, z)
+            m.points[2] = x, y, z
+
+        m.value = mr.GetValue()
+
+        name = m.name
+        colour = m.colour
+        m.value = mr.GetValue()
+        type_ = TYPE[m.type]
+        location = LOCATION[m.location]
+
+        if m.type == const.LINEAR:
+            value = u"%.2f mm"% m.value
+        else:
+            value = u"%.2f°"% m.value
+
+        Publisher.sendMessage('Update measurement info in GUI',
+                              (index, name, colour,
+                               location,
+                               type_,
+                               value))
 
     def _change_name(self, pubsub_evt):
         index, new_name = pubsub_evt.data

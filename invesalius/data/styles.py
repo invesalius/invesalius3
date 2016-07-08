@@ -394,36 +394,19 @@ class LinearMeasureInteractorStyle(DefaultInteractorStyle):
 
     def OnReleaseMeasurePoint(self, obj, evt):
         if self.selected:
-            print "Changing Position"
             n, m, mr = self.selected
             x, y, z = self._get_pos_clicked()
-            ren = self.slice_data.renderer
-            mr.renderer = ren
-            if n == 0:
-                mr.SetPoint1(x, y, z)
-                m.points[0] = x, y, z
-            elif n == 1:
-                mr.SetPoint2(x, y, z)
-                m.points[1] = x, y, z
-
-            m.value = mr.GetValue()
-
+            idx = self.measures._list_measures.index((m, mr))
+            Publisher.sendMessage('Change measurement point position', (idx, n, (x, y, z)))
             Publisher.sendMessage('Reload actual slice %s' % self.orientation)
             self.selected = None
 
     def OnMoveMeasurePoint(self, obj, evt):
         if self.selected:
-            print "Changing Position"
             n, m, mr = self.selected
             x, y, z = self._get_pos_clicked()
-            ren = self.slice_data.renderer
-            mr.renderer = ren
-            if n == 0:
-                mr.SetPoint1(x, y, z)
-                m.points[0] = x, y, z
-            elif n == 1:
-                mr.SetPoint2(x, y, z)
-                m.points[1] = x, y, z
+            idx = self.measures._list_measures.index((m, mr))
+            Publisher.sendMessage('Change measurement point position', (idx, n, (x, y, z)))
 
             Publisher.sendMessage('Reload actual slice %s' % self.orientation)
 
@@ -452,11 +435,12 @@ class LinearMeasureInteractorStyle(DefaultInteractorStyle):
 
         if slice_number in self.measures.measures[self._ori]:
             for m, mr in self.measures.measures[self._ori][slice_number]:
-                for n, p in enumerate(m.points):
-                    px, py, pz = p
-                    dist = ((px-x)**2 + (py-y)**2 + (pz-z)**2)**0.5
-                    if dist < max_dist:
-                        return (n, m, mr)
+                if mr.IsComplete():
+                    for n, p in enumerate(m.points):
+                        px, py, pz = p
+                        dist = ((px-x)**2 + (py-y)**2 + (pz-z)**2)**0.5
+                        if dist < max_dist:
+                            return (n, m, mr)
         return None
 
 class AngularMeasureInteractorStyle(DefaultInteractorStyle):

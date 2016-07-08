@@ -1127,6 +1127,8 @@ class MeasuresListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
                 self.UpdateItemInfo(index, name, colour, location, type_, value)
             else:
                 self.InsertNewItem(index, name, colour, location, type_, value)
+        else:
+            self.UpdateItemInfo(index, name, colour, location, type_, value)
 
 
 
