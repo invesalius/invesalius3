@@ -23,6 +23,8 @@ import re
 import locale
 import math
 
+import numpy as np
+
 def format_time(value):
     sp1 = value.split(".")
     sp2 = value.split(":")
@@ -418,3 +420,11 @@ def UpdateCheck():
         if (last!=const.INVESALIUS_VERSION):
             print "  ...New update found!!! -> version:", last #, ", url=",url
             wx.CallAfter(wx.CallLater, 1000, _show_update_info)
+
+
+def vtkarray_to_numpy(m):
+    nm = np.zeros((4, 4))
+    for i in xrange(4):
+        for j in xrange(4):
+            nm[i, j] = m.GetElement(i, j)
+    return nm

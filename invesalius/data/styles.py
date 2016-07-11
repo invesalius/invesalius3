@@ -40,6 +40,8 @@ from scipy.ndimage import watershed_ift, generate_binary_structure
 from skimage.morphology import watershed
 from skimage import filter
 
+from .measures import MeasureData
+
 import watershed_process
 
 import utils
@@ -350,78 +352,107 @@ class LinearMeasureInteractorStyle(DefaultInteractorStyle):
         self.orientation = viewer.orientation
         self.slice_data = viewer.slice_data
 
+        self.measures = MeasureData()
+        self.selected = None
+
+        self._type = const.LINEAR
+
         spacing = self.slice_data.actor.GetInput().GetSpacing()
 
         if self.orientation == "AXIAL":
             self.radius = min(spacing[1], spacing[2]) * 0.8
+            self._ori = const.AXIAL
 
         elif self.orientation == 'CORONAL':
             self.radius = min(spacing[0], spacing[1]) * 0.8
+            self._ori = const.CORONAL
 
         elif self.orientation == 'SAGITAL':
             self.radius = min(spacing[1], spacing[2]) * 0.8
+            self._ori = const.SAGITAL
 
         self.picker = vtk.vtkCellPicker()
+        self.picker.PickFromListOn()
 
+        self._bind_events()
+
+    def _bind_events(self):
         self.AddObserver("LeftButtonPressEvent", self.OnInsertLinearMeasurePoint)
+        self.AddObserver("LeftButtonReleaseEvent", self.OnReleaseMeasurePoint)
+        self.AddObserver("MouseMoveEvent", self.OnMoveMeasurePoint)
 
     def OnInsertLinearMeasurePoint(self, obj, evt):
-        iren = obj.GetInteractor()
-        x,y = iren.GetEventPosition()
-        render = iren.FindPokedRenderer(x, y)
         slice_number = self.slice_data.number
-        self.picker.Pick(x, y, 0, render)
-        x, y, z = self.picker.GetPickPosition()
-        if self.picker.GetViewProp():
-            Publisher.sendMessage("Add measurement point",
-                                  ((x, y,z), const.LINEAR,
-                                   ORIENTATIONS[self.orientation],
-                                   slice_number, self.radius))
-            self.viewer.interactor.Render()
+        x, y, z = self._get_pos_clicked()
+
+        selected =  self._verify_clicked(x, y, z)
+        if selected:
+            self.selected = selected
+        else:
+            if self.picker.GetViewProp():
+                renderer = self.viewer.slice_data.renderer
+                Publisher.sendMessage("Add measurement point",
+                                      ((x, y,z), self._type,
+                                       ORIENTATIONS[self.orientation],
+                                       slice_number, self.radius))
+                Publisher.sendMessage('Reload actual slice %s' % self.orientation)
+
+    def OnReleaseMeasurePoint(self, obj, evt):
+        if self.selected:
+            n, m, mr = self.selected
+            x, y, z = self._get_pos_clicked()
+            idx = self.measures._list_measures.index((m, mr))
+            Publisher.sendMessage('Change measurement point position', (idx, n, (x, y, z)))
+            Publisher.sendMessage('Reload actual slice %s' % self.orientation)
+            self.selected = None
+
+    def OnMoveMeasurePoint(self, obj, evt):
+        if self.selected:
+            n, m, mr = self.selected
+            x, y, z = self._get_pos_clicked()
+            idx = self.measures._list_measures.index((m, mr))
+            Publisher.sendMessage('Change measurement point position', (idx, n, (x, y, z)))
+
+            Publisher.sendMessage('Reload actual slice %s' % self.orientation)
 
     def CleanUp(self):
+        self.picker.PickFromListOff()
         Publisher.sendMessage("Remove incomplete measurements")
 
-
-class AngularMeasureInteractorStyle(DefaultInteractorStyle):
-    """
-    Interactor style responsible for insert angular measurements.
-    """
-    def __init__(self, viewer):
-        DefaultInteractorStyle.__init__(self, viewer)
-
-        self.viewer = viewer
-        self.orientation = viewer.orientation
-        self.slice_data = viewer.slice_data
-
-        spacing = self.slice_data.actor.GetInput().GetSpacing()
-
-        if self.orientation == "AXIAL":
-            self.radius = min(spacing[1], spacing[2]) * 0.8
-
-        elif self.orientation == 'CORONAL':
-            self.radius = min(spacing[0], spacing[1]) * 0.8
-
-        elif self.orientation == 'SAGITAL':
-            self.radius = min(spacing[1], spacing[2]) * 0.8
-
-        self.picker = vtk.vtkCellPicker()
-
-        self.AddObserver("LeftButtonPressEvent", self.OnInsertAngularMeasurePoint)
-
-    def OnInsertAngularMeasurePoint(self, obj, evt):
-        iren = obj.GetInteractor()
-        x,y = iren.GetEventPosition()
-        render = iren.FindPokedRenderer(x, y)
-        slice_number = self.slice_data.number
-        self.picker.Pick(x, y, 0, render)
+    def _get_pos_clicked(self):
+        iren = self.viewer.interactor
+        mx,my = iren.GetEventPosition()
+        render = iren.FindPokedRenderer(mx, my)
+        self.picker.AddPickList(self.slice_data.actor)
+        self.picker.Pick(mx, my, 0, render)
         x, y, z = self.picker.GetPickPosition()
-        if self.picker.GetViewProp():
-            Publisher.sendMessage("Add measurement point",
-                                  ((x, y,z), const.ANGULAR,
-                                   ORIENTATIONS[self.orientation],
-                                   slice_number, self.radius))
-            self.viewer.interactor.Render()
+        self.picker.DeletePickList(self.slice_data.actor)
+        return (x, y, z)
+
+    def _verify_clicked(self, x, y, z):
+        slice_number = self.slice_data.number
+        sx, sy, sz = self.viewer.slice_.spacing
+        if self.orientation == "AXIAL":
+            max_dist = 2 * max(sx, sy)
+        elif self.orientation == "CORONAL":
+            max_dist = 2 * max(sx, sz)
+        elif self.orientation == "SAGITAL":
+            max_dist = 2 * max(sy, sz)
+
+        if slice_number in self.measures.measures[self._ori]:
+            for m, mr in self.measures.measures[self._ori][slice_number]:
+                if mr.IsComplete():
+                    for n, p in enumerate(m.points):
+                        px, py, pz = p
+                        dist = ((px-x)**2 + (py-y)**2 + (pz-z)**2)**0.5
+                        if dist < max_dist:
+                            return (n, m, mr)
+        return None
+
+class AngularMeasureInteractorStyle(LinearMeasureInteractorStyle):
+    def __init__(self, viewer):
+        LinearMeasureInteractorStyle.__init__(self, viewer)
+        self._type = const.ANGULAR
 
 
 class PanMoveInteractorStyle(DefaultInteractorStyle):
