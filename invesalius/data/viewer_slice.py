@@ -23,7 +23,7 @@ import collections
 import itertools
 import tempfile
 
-import numpy
+import numpy as np
 
 import vtk
 from vtk.wx.wxVTKRenderWindowInteractor import wxVTKRenderWindowInteractor
@@ -45,6 +45,8 @@ import data.vtk_utils as vtku
 import project
 import slice_data as sd
 import utils
+
+from data import converters
 
 from data import measures
 
@@ -143,6 +145,50 @@ class ContourMIPConfig(wx.Panel):
             self.border_spin.Disable()
             self.txt_mip_border.Disable()
 
+
+class CanvasRendererCTX:
+    def __init__(self, viewer):
+        self.viewer = viewer
+        self.canvas_renderer = viewer.slice_data.canvas_renderer
+        self._size = self.canvas_renderer.GetSize()
+        self._init_canvas()
+        viewer.slice_data.renderer.AddObserver("EndEvent", self.OnPaint)
+
+    def _init_canvas(self):
+        w, h = self._size
+        self._array = np.empty((h, w, 4), dtype=np.uint8)
+
+        self._cv_image = converters.np_rgba_to_vtk(self._array)
+
+        self.mapper = vtk.vtkImageMapper()
+        self.mapper.SetInputData(self._cv_image)
+        self.mapper.SetColorWindow(255)
+        self.mapper.SetColorLevel(128)
+
+        self.actor = vtk.vtkActor2D()
+        self.actor.SetPosition(0, 0)
+        self.actor.SetMapper(self.mapper)
+        self.actor.GetProperty().SetOpacity(0.99)
+
+        self.canvas_renderer.AddActor2D(self.actor)
+
+    def _resize_canvas(self, w, h):
+        self._array = np.empty((h, w, 4), dtype=np.uint8)
+        self._cv_image = converters.np_rgba_to_vtk(self._array)
+        self.mapper.SetInputData(self._cv_image)
+        self.mapper.Update()
+
+    def OnPaint(self, evt, obj):
+        size = self.canvas_renderer.GetSize()
+        w, h = size
+        if self._size != size:
+            self._size = size
+            self._resize_canvas(w, h)
+
+        self._array[:] = 0
+        self._array[150:500, 150:500, 0] = 255
+        self._array[150:500, 150:500, 3] = 127
+        self._cv_image.Modified()
 
 
 class Viewer(wx.Panel):
@@ -896,6 +942,8 @@ class Viewer(wx.Panel):
         self.cam = self.slice_data.renderer.GetActiveCamera()
         self.__build_cross_lines()
 
+        canvas = CanvasRendererCTX(self)
+
         # Set the slice number to the last slice to ensure the camera if far
         # enough to show all slices.
         self.set_slice_number(max_slice_number - 1)
@@ -958,13 +1006,20 @@ class Viewer(wx.Panel):
         renderer.SetLayer(0)
         cam = renderer.GetActiveCamera()
 
+        canvas_renderer = vtk.vtkRenderer()
+        canvas_renderer.SetLayer(1)
+        canvas_renderer.SetActiveCamera(cam)
+        canvas_renderer.SetInteractive(0)
+        canvas_renderer.PreserveDepthBufferOn()
+
         overlay_renderer = vtk.vtkRenderer()
-        overlay_renderer.SetLayer(1)
+        overlay_renderer.SetLayer(2)
         overlay_renderer.SetActiveCamera(cam)
         overlay_renderer.SetInteractive(0)
-        
-        self.interactor.GetRenderWindow().SetNumberOfLayers(2)
+
+        self.interactor.GetRenderWindow().SetNumberOfLayers(3)
         self.interactor.GetRenderWindow().AddRenderer(overlay_renderer)
+        self.interactor.GetRenderWindow().AddRenderer(canvas_renderer)
         self.interactor.GetRenderWindow().AddRenderer(renderer)
 
         actor = vtk.vtkImageActor()
@@ -974,12 +1029,14 @@ class Viewer(wx.Panel):
         slice_data = sd.SliceData()
         slice_data.SetOrientation(self.orientation)
         slice_data.renderer = renderer
+        slice_data.canvas_renderer = canvas_renderer
         slice_data.overlay_renderer = overlay_renderer
         slice_data.actor = actor
         slice_data.SetBorderStyle(sd.BORDER_ALL)
         renderer.AddActor(actor)
         renderer.AddActor(slice_data.text.actor)
         renderer.AddViewProp(slice_data.box_actor)
+
         return slice_data
 
     def __update_camera(self):
