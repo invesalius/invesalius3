@@ -156,7 +156,7 @@ class CanvasRendererCTX:
 
     def _init_canvas(self):
         w, h = self._size
-        self._array = np.empty((h, w, 4), dtype=np.uint8)
+        self._array = np.zeros((h, w, 4), dtype=np.uint8)
 
         self._cv_image = converters.np_rgba_to_vtk(self._array)
 
@@ -172,11 +172,14 @@ class CanvasRendererCTX:
 
         self.canvas_renderer.AddActor2D(self.actor)
 
+        self.bitmap = wx.EmptyBitmapRGBA(w, h)
+
     def _resize_canvas(self, w, h):
-        self._array = np.empty((h, w, 4), dtype=np.uint8)
+        self._array = np.zeros((h, w, 4), dtype=np.uint8)
         self._cv_image = converters.np_rgba_to_vtk(self._array)
         self.mapper.SetInputData(self._cv_image)
         self.mapper.Update()
+        self.bitmap = wx.EmptyBitmapRGBA(w, h)
 
     def OnPaint(self, evt, obj):
         size = self.canvas_renderer.GetSize()
@@ -185,11 +188,26 @@ class CanvasRendererCTX:
             self._size = size
             self._resize_canvas(w, h)
 
-        self._array[:] = 0
-        self._array[150:500, 150:500, 0] = 255
-        self._array[150:500, 150:500, 3] = 127
+        pen = wx.Pen(wx.Colour(255, 0, 0, 255), 10, wx.SOLID)
+        memorydc = wx.MemoryDC(self.bitmap)
+        #  memorydc.SelectObject(self.bitmap)
+        memorydc.SetPen(pen)
+        memorydc.SetBrush(wx.Brush(wx.Colour(255, 255, 0, 255)))
+        #  self.memorydc.Clear()
+        #  self.memorydc.BeginDrawing()
+        memorydc.DrawCircle(100, 100, self.viewer.slice_data.number * 5)
+        memorydc.DrawCircle(500, 500, 500)
+        memorydc.DrawRectangle(0, 0, w, h)
+        #  self.memorydc.EndDrawing()
+        memorydc.SelectObject(wx.NullBitmap)
+        #  self.bitmap.CopyToBuffer(self._array, wx.BitmapBufferFormat_RGBA)
+
         self._cv_image.Modified()
 
+        self.canvas_renderer.Render()
+
+        img = self.bitmap.ConvertToImage()
+        img.SaveFile('/tmp/manolo.png', wx.BITMAP_TYPE_PNG)
 
 class Viewer(wx.Panel):
 
@@ -1241,14 +1259,14 @@ class Viewer(wx.Panel):
         for actor in self.actors_by_slice_number[index]:
             self.slice_data.renderer.AddActor(actor)
 
-        for (m, mr) in self.measures.get(self.orientation, self.slice_data.number):
-            for actor in mr.GetActors():
-                self.slice_data.renderer.RemoveActor(actor)
+        #  for (m, mr) in self.measures.get(self.orientation, self.slice_data.number):
+            #  for actor in mr.GetActors():
+                #  self.slice_data.renderer.RemoveActor(actor)
 
-        for (m, mr) in self.measures.get(self.orientation, index):
-            mr.renderer = self.slice_data.renderer
-            for actor in mr.GetActors():
-                self.slice_data.renderer.AddActor(actor)
+        #  for (m, mr) in self.measures.get(self.orientation, index):
+            #  mr.renderer = self.slice_data.renderer
+            #  for actor in mr.GetActors():
+                #  self.slice_data.renderer.AddActor(actor)
 
         if self.slice_._type_projection == const.PROJECTION_NORMAL:
             self.slice_data.SetNumber(index)
