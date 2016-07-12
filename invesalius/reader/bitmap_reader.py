@@ -34,6 +34,7 @@ from scipy import misc
 import numpy
 import imghdr
 
+import utils
 from data import converters
 
 #flag to control vtk error in read files
