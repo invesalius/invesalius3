@@ -337,8 +337,8 @@ class WWWLInteractorStyle(DefaultInteractorStyle):
         iren = obj.GetInteractor()
         self.last_x, self.last_y = iren.GetLastEventPosition()
 
-        self.acum_achange_window = viewer.slice_.window_width
-        self.acum_achange_level = viewer.slice_.window_level
+        self.acum_achange_window = self.viewer.slice_.window_width
+        self.acum_achange_level = self.viewer.slice_.window_level
 
 
 class LinearMeasureInteractorStyle(DefaultInteractorStyle):
