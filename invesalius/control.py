@@ -580,10 +580,11 @@ class Controller():
         proj.matrix_filename = matrix_filename
         #proj.imagedata = imagedata
         #proj.dicom_sample = dicom
+
         proj.original_orientation =\
                     name_to_const[orientation.upper()]
         proj.window = float(matrix.max())
-        proj.level = float(matrix.max()/2)
+        proj.level = float(matrix.max()/4)
         
         proj.threshold_range = int(matrix.min()), int(matrix.max())
         #const.THRESHOLD_RANGE = proj.threshold_range
@@ -664,19 +665,7 @@ class Controller():
             elif orientation == 'SAGITTAL':
                 self.Slice.spacing = zspacing, xyspacing[1], xyspacing[0]
             
-            # 1(a): Fix gantry tilt, if any
-            #tilt_value = dicom.acquisition.tilt
-            #if (tilt_value) and (gui):
-            #    # Tell user gantry tilt and fix, according to answer
-            #    message = _("Fix gantry tilt applying the degrees below")
-            #    value = -1*tilt_value
-            #    tilt_value = dialog.ShowNumberDialog(message, value)
-            #    image_utils.FixGantryTilt(self.matrix, self.Slice.spacing, tilt_value)
-            #elif (tilt_value) and not (gui):
-            #    tilt_value = -1*tilt_value
-            #    image_utils.FixGantryTilt(self.matrix, self.Slice.spacing, tilt_value)
-
-            self.Slice.window_level = float(self.matrix.max()/2)
+            self.Slice.window_level = float(self.matrix.max()/4)
             self.Slice.window_width = float(self.matrix.max())
 
             scalar_range = int(self.matrix.min()), int(self.matrix.max())

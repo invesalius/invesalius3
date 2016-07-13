@@ -452,7 +452,6 @@ def bitmap2memmap(files, slice_size, orientation, spacing, resolution_percentage
     cont = 0
     max_scalar = None
     min_scalar = None
-    
     for n, f in enumerate(files):
         image_as_array = bitmap_reader.ReadBitmap(f)
 
@@ -475,21 +474,23 @@ def bitmap2memmap(files, slice_size, orientation, spacing, resolution_percentage
             max_scalar = max_aux
 
         array = numpy_support.vtk_to_numpy(image.GetPointData().GetScalars())
-        array = array.astype("int16")
 
-        array = image_as_array
+        if array.dtype == 'uint16':
+            array = array - 32768/2
+       
+        array = array.astype("int16")
 
         if orientation == 'CORONAL':
             array.shape = matrix.shape[0], matrix.shape[2]
-            matrix[:, n, :] = array
+            matrix[:, n, :] = array[:,::-1]
         elif orientation == 'SAGITTAL':
             array.shape = matrix.shape[0], matrix.shape[1]
             # TODO: Verify if it's necessary to add the slices swapped only in
             # sagittal rmi or only in # Rasiane's case or is necessary in all
             # sagittal cases.
-            matrix[:, :, n] = array
+            matrix[:, :, n] = array[:,::-1]
         else:
-            print array.shape, matrix.shape
+            #print array.shape, matrix.shape
             array.shape = matrix.shape[1], matrix.shape[2]
             matrix[n] = array
         update_progress(cont,message)

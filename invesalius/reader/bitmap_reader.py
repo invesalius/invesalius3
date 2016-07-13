@@ -298,7 +298,6 @@ def ScipyRead(filepath):
     try:
         r = misc.imread(filepath, flatten=True)
         dt = r.dtype 
-        
         if  dt == "float" or dt == "float16"\
                           or dt == "float32" or dt == "float64":   
             shift=-r.max()/2
