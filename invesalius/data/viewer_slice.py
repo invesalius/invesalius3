@@ -33,6 +33,8 @@ import styles
 import wx
 from wx.lib.pubsub import pub as Publisher
 
+import Image, ImageDraw
+
 try:
     from agw import floatspin as FS
 except ImportError: # if it's not there locally, try the wxPython lib.
@@ -152,7 +154,7 @@ class CanvasRendererCTX:
         self.canvas_renderer = viewer.slice_data.canvas_renderer
         self._size = self.canvas_renderer.GetSize()
         self._init_canvas()
-        viewer.slice_data.renderer.AddObserver("EndEvent", self.OnPaint)
+        viewer.slice_data.renderer.AddObserver("StartEvent", self.OnPaint2)
 
     def _init_canvas(self):
         w, h = self._size
@@ -172,14 +174,40 @@ class CanvasRendererCTX:
 
         self.canvas_renderer.AddActor2D(self.actor)
 
+        rgb = np.zeros((h, w, 3), dtype=np.uint8)
+        alpha = np.zeros((h, w, 1), dtype=np.uint8)
+
         self.bitmap = wx.EmptyBitmapRGBA(w, h)
+        self.image = wx.ImageFromBuffer(w, h, rgb, alpha)
+
+        self._im = Image.frombuffer('RGBA', (h, w), self._array,  "raw", "RGBA", 0, 1)
 
     def _resize_canvas(self, w, h):
         self._array = np.zeros((h, w, 4), dtype=np.uint8)
         self._cv_image = converters.np_rgba_to_vtk(self._array)
         self.mapper.SetInputData(self._cv_image)
         self.mapper.Update()
+
+        rgb = np.zeros((h, w, 3), dtype=np.uint8)
+        alpha = np.zeros((h, w, 1), dtype=np.uint8)
+
         self.bitmap = wx.EmptyBitmapRGBA(w, h)
+        self.image = wx.ImageFromBuffer(w, h, rgb, alpha)
+
+        self._im = Image.frombuffer('RGBA', (h, w), self._array,  "raw", "RGBA", 0, 1)
+
+    def OnPaint2(self, evt, obj):
+        size = self.canvas_renderer.GetSize()
+        w, h = size
+        if self._size != size:
+            self._size = size
+            self._resize_canvas(w, h)
+
+        draw = ImageDraw.Draw(self._im)
+        draw.rectangle((30, 30, 500, 500), fill=(0, 255, 0, 255))
+
+        print ">>", self._array.max()
+        self._cv_image.Modified()
 
     def OnPaint(self, evt, obj):
         size = self.canvas_renderer.GetSize()
@@ -188,26 +216,42 @@ class CanvasRendererCTX:
             self._size = size
             self._resize_canvas(w, h)
 
-        pen = wx.Pen(wx.Colour(255, 0, 0, 255), 10, wx.SOLID)
-        memorydc = wx.MemoryDC(self.bitmap)
+
+        self.image.Clear()
+        gc = wx.GraphicsContext.Create(self.image)
+        gc.SetAntialiasMode(0)
+        #  memorydc = wx.MemoryDC(self.bitmap)
         #  memorydc.SelectObject(self.bitmap)
-        memorydc.SetPen(pen)
-        memorydc.SetBrush(wx.Brush(wx.Colour(255, 255, 0, 255)))
+
+        pen = wx.Pen(wx.Colour(255, 0, 0, 128), 1, wx.SOLID)
+        brush = wx.Brush(wx.Colour(0, 255, 0, 128))
+        gc.SetPen(pen)
+        gc.SetBrush(brush)
+
+
+        path = gc.CreatePath()
+        path.AddArc(w/2.0, h/2.0, self.viewer.slice_data.number, 0, np.pi * 2)
+        gc.StrokePath(path)
+        gc.FillPath(path)
         #  self.memorydc.Clear()
         #  self.memorydc.BeginDrawing()
-        memorydc.DrawCircle(100, 100, self.viewer.slice_data.number * 5)
-        memorydc.DrawCircle(500, 500, 500)
-        memorydc.DrawRectangle(0, 0, w, h)
-        #  self.memorydc.EndDrawing()
-        memorydc.SelectObject(wx.NullBitmap)
-        #  self.bitmap.CopyToBuffer(self._array, wx.BitmapBufferFormat_RGBA)
+        #  gc.DrawCircle(100, 100, self.viewer.slice_data.number * 5)
+        #  memorydc.DrawCircle(500, 500, 500)
+        #  memorydc.DrawRectangle(0, 0, w, h)
+        #  #  self.memorydc.EndDrawing()
+        #  memorydc.SelectObject(wx.NullBitmap)
+        #  #  self.bitmap.CopyToBuffer(self._array, wx.BitmapBufferFormat_RGBA)
+        gc.Destroy()
+
+        self.bitmap = self.image.ConvertToBitmap()
+        self.bitmap.CopyToBuffer(self._array, wx.BitmapBufferFormat_RGBA)
 
         self._cv_image.Modified()
 
-        self.canvas_renderer.Render()
+        #  self.canvas_renderer.Render()
 
-        img = self.bitmap.ConvertToImage()
-        img.SaveFile('/tmp/manolo.png', wx.BITMAP_TYPE_PNG)
+        #  img = self.bitmap.ConvertToImage()
+        #  img.SaveFile('/tmp/manolo.png', wx.BITMAP_TYPE_PNG)
 
 class Viewer(wx.Panel):
 
