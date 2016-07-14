@@ -154,7 +154,7 @@ class CanvasRendererCTX:
         self.canvas_renderer = viewer.slice_data.canvas_renderer
         self._size = self.canvas_renderer.GetSize()
         self._init_canvas()
-        viewer.slice_data.renderer.AddObserver("StartEvent", self.OnPaint2)
+        viewer.slice_data.renderer.AddObserver("StartEvent", self.OnPaint)
 
     def _init_canvas(self):
         w, h = self._size
@@ -174,11 +174,11 @@ class CanvasRendererCTX:
 
         self.canvas_renderer.AddActor2D(self.actor)
 
-        rgb = np.zeros((h, w, 3), dtype=np.uint8)
-        alpha = np.zeros((h, w, 1), dtype=np.uint8)
+        self.rgb = np.zeros((h, w, 3), dtype=np.uint8)
+        self.alpha = np.zeros((h, w, 1), dtype=np.uint8)
 
         self.bitmap = wx.EmptyBitmapRGBA(w, h)
-        self.image = wx.ImageFromBuffer(w, h, rgb, alpha)
+        self.image = wx.ImageFromBuffer(w, h, self.rgb, self.alpha)
 
         self._im = Image.frombuffer('RGBA', (h, w), self._array,  "raw", "RGBA", 0, 1)
 
@@ -188,11 +188,11 @@ class CanvasRendererCTX:
         self.mapper.SetInputData(self._cv_image)
         self.mapper.Update()
 
-        rgb = np.zeros((h, w, 3), dtype=np.uint8)
-        alpha = np.zeros((h, w, 1), dtype=np.uint8)
+        self.rgb = np.zeros((h, w, 3), dtype=np.uint8)
+        self.alpha = np.zeros((h, w, 1), dtype=np.uint8)
 
         self.bitmap = wx.EmptyBitmapRGBA(w, h)
-        self.image = wx.ImageFromBuffer(w, h, rgb, alpha)
+        self.image = wx.ImageFromBuffer(w, h, self.rgb, self.alpha)
 
         self._im = Image.frombuffer('RGBA', (h, w), self._array,  "raw", "RGBA", 0, 1)
 
@@ -216,31 +216,42 @@ class CanvasRendererCTX:
             self._size = size
             self._resize_canvas(w, h)
 
+        coord = vtk.vtkCoordinate()
 
+        self.image.SetDataBuffer(self.rgb)
+        self.image.SetAlphaBuffer(self.alpha)
         self.image.Clear()
         gc = wx.GraphicsContext.Create(self.image)
         gc.SetAntialiasMode(0)
-        #  memorydc = wx.MemoryDC(self.bitmap)
-        #  memorydc.SelectObject(self.bitmap)
 
-        pen = wx.Pen(wx.Colour(255, 0, 0, 128), 1, wx.SOLID)
+        font = wx.SystemSettings.GetFont(wx.SYS_DEFAULT_GUI_FONT)
+        font.SetWeight(wx.BOLD)
+        font = gc.CreateFont(font, (0, 0, 255))
+        gc.SetFont(font)
+
+        pen = wx.Pen(wx.Colour(255, 0, 0, 128), 2, wx.SOLID)
         brush = wx.Brush(wx.Colour(0, 255, 0, 128))
         gc.SetPen(pen)
         gc.SetBrush(brush)
+        gc.Scale(1, -1)
 
+        for (m, mr) in self.viewer.measures.get(self.viewer.orientation, self.viewer.slice_data.number):
+            lines = []
+            for p in m.points:
+                coord.SetValue(p)
+                cx, cy = coord.GetComputedDisplayValue(self.viewer.slice_data.renderer)
+                cy = -cy
+                lines.append((cx, cy))
+                path = gc.CreatePath()
+                path.AddArc(cx, cy, 5, 0, np.pi * 2)
+                gc.StrokePath(path)
+                gc.FillPath(path)
 
-        path = gc.CreatePath()
-        path.AddArc(w/2.0, h/2.0, self.viewer.slice_data.number, 0, np.pi * 2)
-        gc.StrokePath(path)
-        gc.FillPath(path)
-        #  self.memorydc.Clear()
-        #  self.memorydc.BeginDrawing()
-        #  gc.DrawCircle(100, 100, self.viewer.slice_data.number * 5)
-        #  memorydc.DrawCircle(500, 500, 500)
-        #  memorydc.DrawRectangle(0, 0, w, h)
-        #  #  self.memorydc.EndDrawing()
-        #  memorydc.SelectObject(wx.NullBitmap)
-        #  #  self.bitmap.CopyToBuffer(self._array, wx.BitmapBufferFormat_RGBA)
+            if len(lines) > 1:
+                gc.DrawLines(lines)
+                txt = u"%.3f" % m.value
+                gc.DrawText(txt, *lines[0])
+
         gc.Destroy()
 
         self.bitmap = self.image.ConvertToBitmap()
