@@ -448,10 +448,17 @@ def bitmap2memmap(files, slice_size, orientation, spacing, resolution_percentage
             shape = len(files), math.ceil(slice_size[1]*resolution_percentage),\
                                         math.ceil(slice_size[0]*resolution_percentage)
 
-    matrix = numpy.memmap(temp_file, mode='w+', dtype='int16', shape=shape)
+
+    if resolution_percentage == 1.0:
+        matrix = numpy.memmap(temp_file, mode='w+', dtype='int16', shape=shape)
+    
     cont = 0
     max_scalar = None
     min_scalar = None
+
+    xy_shape = None
+    first_resample_entry = False
+
     for n, f in enumerate(files):
         image_as_array = bitmap_reader.ReadBitmap(f)
 
@@ -460,9 +467,17 @@ def bitmap2memmap(files, slice_size, orientation, spacing, resolution_percentage
 
         if resolution_percentage != 1.0:
             
-
+            
             image_resized = ResampleImage2D(image, px=None, py=None,\
                                 resolution_percentage = resolution_percentage, update_progress = None)
+
+            yx_shape = image_resized.GetDimensions()[1], image_resized.GetDimensions()[0]
+
+
+            if not(first_resample_entry):
+                shape = shape[0], yx_shape[0], yx_shape[1] 
+                matrix = numpy.memmap(temp_file, mode='w+', dtype='int16', shape=shape)
+                first_resample_entry = True
 
             image = image_resized
 
@@ -490,9 +505,9 @@ def bitmap2memmap(files, slice_size, orientation, spacing, resolution_percentage
             # sagittal cases.
             matrix[:, :, n] = array[:,::-1]
         else:
-            #print array.shape, matrix.shape
             array.shape = matrix.shape[1], matrix.shape[2]
             matrix[n] = array
+        
         update_progress(cont,message)
         cont += 1
 
