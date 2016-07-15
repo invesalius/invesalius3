@@ -225,7 +225,7 @@ class CanvasRendererCTX:
         gc.SetAntialiasMode(0)
 
         font = wx.SystemSettings.GetFont(wx.SYS_DEFAULT_GUI_FONT)
-        font.SetWeight(wx.BOLD)
+        #  font.SetWeight(wx.BOLD)
         font = gc.CreateFont(font, (0, 0, 255))
         gc.SetFont(font)
 
@@ -240,16 +240,49 @@ class CanvasRendererCTX:
             for p in m.points:
                 coord.SetValue(p)
                 cx, cy = coord.GetComputedDisplayValue(self.viewer.slice_data.renderer)
+                print (p, cx, cy)
                 cy = -cy
                 lines.append((cx, cy))
                 path = gc.CreatePath()
-                path.AddArc(cx, cy, 5, 0, np.pi * 2)
+                path.AddCircle(cx, cy, 2.5)
                 gc.StrokePath(path)
                 gc.FillPath(path)
 
             if len(lines) > 1:
-                gc.DrawLines(lines)
-                txt = u"%.3f" % m.value
+                path = gc.CreatePath()
+
+                path.MoveToPoint(*lines[0])
+                for p in lines[1::]:
+                    path.AddLineToPoint(*p)
+                gc.StrokePath(path)
+                if m.type == const.ANGULAR:
+                    txt = u"%.3f°" % m.value
+
+                    if len(lines) == 3:
+                        path = gc.CreatePath()
+
+                        c = np.array(lines[1])
+                        v0 = np.array(lines[0]) - c
+                        v1 = np.array(lines[2]) - c
+
+                        s0 = np.linalg.norm(v0)
+                        s1 = np.linalg.norm(v1)
+
+                        a0 = np.arctan2(v0[1] , v0[0])
+                        a1 = np.arctan2(v1[1] , v1[0])
+
+                        if (a1 - a0) % (np.pi*2) < (a0 - a1) % (np.pi*2):
+                            sa = a0
+                            ea = a1
+                        else:
+                            sa = a1
+                            ea = a0
+
+                        path.AddArc((c[0], c[1]), min(s0, s1), sa, ea)
+                        gc.StrokePath(path)
+
+                else:
+                    txt = u"%.3f mm ひらがな - Hiragana, 히라가나" % m.value
                 gc.DrawText(txt, *lines[0])
 
         gc.Destroy()
