@@ -407,13 +407,19 @@ class LinearMeasureInteractorStyle(DefaultInteractorStyle):
             self.selected = None
 
     def OnMoveMeasurePoint(self, obj, evt):
+        x, y, z = self._get_pos_clicked()
         if self.selected:
             n, m, mr = self.selected
-            x, y, z = self._get_pos_clicked()
             idx = self.measures._list_measures.index((m, mr))
             Publisher.sendMessage('Change measurement point position', (idx, n, (x, y, z)))
 
             Publisher.sendMessage('Reload actual slice %s' % self.orientation)
+
+        else:
+            if self._verify_clicked(x, y, z):
+                self.viewer.interactor.SetCursor(wx.StockCursor(wx.CURSOR_HAND))
+            else:
+                self.viewer.interactor.SetCursor(wx.StockCursor(wx.CURSOR_DEFAULT))
 
     def CleanUp(self):
         self.picker.PickFromListOff()
