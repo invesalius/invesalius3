@@ -1814,3 +1814,12 @@ class ImportBitmapParameters(wx.Dialog):
         Publisher.sendMessage('Open bitmap files', values)
 
 
+def BitmapNotSameSize():
+    
+    dlg = wx.MessageDialog(None,_("All bitmaps files must be the same width and height size"), 'Error',\
+                                wx.OK | wx.ICON_ERROR
+                               #wx.YES_NO | wx.NO_DEFAULT | wx.CANCEL | wx.ICON_INFORMATION
+                                )
+ 
+    dlg.ShowModal()
+    dlg.Destroy()
