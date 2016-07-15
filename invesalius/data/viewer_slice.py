@@ -33,8 +33,6 @@ import styles
 import wx
 from wx.lib.pubsub import pub as Publisher
 
-import Image, ImageDraw
-
 try:
     from agw import floatspin as FS
 except ImportError: # if it's not there locally, try the wxPython lib.
@@ -180,8 +178,6 @@ class CanvasRendererCTX:
         self.bitmap = wx.EmptyBitmapRGBA(w, h)
         self.image = wx.ImageFromBuffer(w, h, self.rgb, self.alpha)
 
-        self._im = Image.frombuffer('RGBA', (h, w), self._array,  "raw", "RGBA", 0, 1)
-
     def _resize_canvas(self, w, h):
         self._array = np.zeros((h, w, 4), dtype=np.uint8)
         self._cv_image = converters.np_rgba_to_vtk(self._array)
@@ -193,21 +189,6 @@ class CanvasRendererCTX:
 
         self.bitmap = wx.EmptyBitmapRGBA(w, h)
         self.image = wx.ImageFromBuffer(w, h, self.rgb, self.alpha)
-
-        self._im = Image.frombuffer('RGBA', (h, w), self._array,  "raw", "RGBA", 0, 1)
-
-    def OnPaint2(self, evt, obj):
-        size = self.canvas_renderer.GetSize()
-        w, h = size
-        if self._size != size:
-            self._size = size
-            self._resize_canvas(w, h)
-
-        draw = ImageDraw.Draw(self._im)
-        draw.rectangle((30, 30, 500, 500), fill=(0, 255, 0, 255))
-
-        print ">>", self._array.max()
-        self._cv_image.Modified()
 
     def OnPaint(self, evt, obj):
         size = self.canvas_renderer.GetSize()
