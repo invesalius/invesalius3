@@ -95,6 +95,11 @@ class Controller():
 
         Publisher.subscribe(self.ApplyReorientation, 'Apply reorientation')
 
+        Publisher.subscribe(self.SetBitmapSpacing, 'Set bitmap spacing')
+
+    def SetBitmapSpacing(self, pubsub_evt):
+        proj = prj.Project()
+        proj.spacing = pubsub_evt.data
 
     def OnCancelImport(self, pubsub_evt):
         #self.cancel_import = True

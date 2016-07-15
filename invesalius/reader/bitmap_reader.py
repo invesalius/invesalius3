@@ -134,6 +134,7 @@ class LoadBitmap:
 
         #----- verify extension ------------------
         #ex = self.filepath.split('.')[-1]
+        
         extension = VerifyDataType(self.filepath)
 
         file_name = self.filepath.split(os.path.sep)[-1]
@@ -355,10 +356,14 @@ def VtkRead(filepath, t):
 
 
 def ReadBitmap(filepath): 
-    
     t = VerifyDataType(filepath)
 
     if t == False:
+        measures_info = GetPixelSpacingFromInfoFile(filepath)
+        
+        if measures_info:
+            Publisher.sendMessage('Set bitmap spacing', measures_info)
+
         return False
 
     img_array = VtkRead(filepath, t)
@@ -373,7 +378,54 @@ def ReadBitmap(filepath):
             return False
 
     return img_array
-            
+           
+
+def GetPixelSpacingFromInfoFile(filepath):
+    
+    fi = open(filepath, 'r')
+    lines = fi.readlines()
+    measure_scale = 'mm'
+    values = []
+
+    if len(lines) > 0:
+        #info text from avizo
+        if '# Avizo Stacked Slices' in lines[0]:
+            value = lines[2].split(' ')
+            spx = float(value[1])
+            spy = float(value[2])
+            value = lines[5].split(' ')
+            spz = float(value[1])
+
+            return [spx * 0.001, spy * 0.001, spz * 0.001]
+        else:
+            #info text from skyscan
+            for l in lines:
+                if 'Pixel Size' in l:
+                    if 'um' in l:
+                        measure_scale = 'um'
+                    
+                    value = l.split("=")[-1]
+                    values.append(value)
+
+            if len(values) > 0:
+                value = values[-1]
+                
+                value = value.replace('\n','')
+                value = value.replace('\r','')
+
+                #convert um to mm (InVesalius default)
+                if measure_scale == 'um':
+                    value = float(value) * 0.001
+                    measure_scale = 'mm'
+
+                elif measure_scale == 'nm':
+                    value = float(value) * 0.000001
+
+                return [value, value, value]
+            else:
+                return False
+    else:
+        return False
 
 def VtkErrorToPy(obj, evt):
     global no_error
@@ -383,7 +435,10 @@ def VtkErrorToPy(obj, evt):
 def VerifyDataType(filepath):
     try:
         t = imghdr.what(filepath)
-        return t
+        if t:
+            return t
+        else:
+            return False
     except IOError:
         return False
 
