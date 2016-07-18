@@ -377,15 +377,16 @@ class LinearMeasureInteractorStyle(DefaultInteractorStyle):
         self._bind_events()
 
     def _bind_events(self):
-        self.AddObserver("LeftButtonPressEvent", self.OnInsertLinearMeasurePoint)
+        self.AddObserver("LeftButtonPressEvent", self.OnInsertMeasurePoint)
         self.AddObserver("LeftButtonReleaseEvent", self.OnReleaseMeasurePoint)
         self.AddObserver("MouseMoveEvent", self.OnMoveMeasurePoint)
 
-    def OnInsertLinearMeasurePoint(self, obj, evt):
+    def OnInsertMeasurePoint(self, obj, evt):
         slice_number = self.slice_data.number
         x, y, z = self._get_pos_clicked()
+        mx, my = self.viewer.interactor.GetEventPosition()
 
-        selected =  self._verify_clicked(x, y, z)
+        selected =  self._verify_clicked_display(mx, my)
         if selected:
             self.selected = selected
         else:
@@ -416,7 +417,8 @@ class LinearMeasureInteractorStyle(DefaultInteractorStyle):
             Publisher.sendMessage('Reload actual slice %s' % self.orientation)
 
         else:
-            if self._verify_clicked(x, y, z):
+            mx, my = self.viewer.interactor.GetEventPosition()
+            if self._verify_clicked_display(mx, my):
                 self.viewer.interactor.SetCursor(wx.StockCursor(wx.CURSOR_HAND))
             else:
                 self.viewer.interactor.SetCursor(wx.StockCursor(wx.CURSOR_DEFAULT))
@@ -452,6 +454,21 @@ class LinearMeasureInteractorStyle(DefaultInteractorStyle):
                         px, py, pz = p
                         dist = ((px-x)**2 + (py-y)**2 + (pz-z)**2)**0.5
                         if dist < max_dist:
+                            return (n, m, mr)
+        return None
+
+    def _verify_clicked_display(self, x, y, max_dist=5.0):
+        slice_number = self.slice_data.number
+        max_dist = max_dist**2
+        coord = vtk.vtkCoordinate()
+        if slice_number in self.measures.measures[self._ori]:
+            for m, mr in self.measures.measures[self._ori][slice_number]:
+                if mr.IsComplete():
+                    for n, p in enumerate(m.points):
+                        coord.SetValue(p)
+                        cx, cy = coord.GetComputedDisplayValue(self.viewer.slice_data.renderer)
+                        dist = ((cx-x)**2 + (cy-y)**2)
+                        if dist <= max_dist:
                             return (n, m, mr)
         return None
 
