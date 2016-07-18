@@ -1105,7 +1105,7 @@ class MeasuresListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
                 value = (u"%.2f°") % m.value
             self.InsertNewItem(m.index, m.name, colour, location, type, value)
 
-            if not m.is_shown:
+            if not m.visible:
                 self.SetItemImage(i, False)
 
     def AddItem_(self, pubsub_evt):

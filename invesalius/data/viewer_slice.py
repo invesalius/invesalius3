@@ -218,6 +218,8 @@ class CanvasRendererCTX:
 
         for (m, mr) in self.viewer.measures.get(self.viewer.orientation, self.viewer.slice_data.number):
             lines = []
+            if not m.visible:
+                continue
             for p in m.points:
                 coord.SetValue(p)
                 cx, cy = coord.GetComputedDisplayValue(self.viewer.slice_data.renderer)

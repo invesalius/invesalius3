@@ -137,7 +137,7 @@ class MeasurementManager(object):
                         (actors, m.slice_number))
             self.current = None
 
-            if not m.is_shown:
+            if not m.visible:
                 mr.SetVisibility(False)
                 if m.location == const.SURFACE:
                     Publisher.sendMessage('Render volume viewer')
@@ -307,7 +307,7 @@ class MeasurementManager(object):
     def _set_visibility(self, pubsub_evt):
         index, visibility = pubsub_evt.data
         m, mr = self.measures[index]
-        m.is_shown = visibility
+        m.visible = visibility
         mr.SetVisibility(visibility)
         if m.location == const.SURFACE:
             Publisher.sendMessage('Render volume viewer')
@@ -349,7 +349,7 @@ class Measurement():
         self.type = const.LINEAR # ANGULAR
         self.slice_number = 0
         self.points = []
-        self.is_shown = True
+        self.visible = True
 
     def Load(self, info):
         self.index = info["index"]
@@ -360,7 +360,7 @@ class Measurement():
         self.type = info["type"]
         self.slice_number = info["slice_number"]
         self.points = info["points"]
-        self.is_shown = info["visible"]
+        self.visible = info["visible"]
 
 class CirclePointRepresentation(object):
     """

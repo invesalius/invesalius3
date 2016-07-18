@@ -190,7 +190,7 @@ class Project(object):
             item["type"] = m.type
             item["slice_number"] = m.slice_number
             item["points"] = m.points
-            item["visible"] = m.is_shown
+            item["visible"] = m.visible
             measures[str(m.index)] = item
         return measures
 
