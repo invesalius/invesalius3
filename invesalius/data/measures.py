@@ -5,6 +5,8 @@ import math
 import random
 
 from wx.lib.pubsub import pub as Publisher
+
+import numpy as np
 import vtk
 
 import constants as const
@@ -559,6 +561,37 @@ class LinearMeasure(object):
         a.GetProperty().SetOpacity(0.75)
         self.text_actor = a
 
+    def draw_to_canvas(self, gc, viewer):
+        """
+        Draws to an wx.GraphicsContext.
+
+        Parameters:
+            gc: is a wx.GraphicsContext
+            viewer: the viewer where the canvas is in.
+        """
+        coord = vtk.vtkCoordinate()
+        lines = []
+        for p in self.points:
+            coord.SetValue(p)
+            cx, cy = coord.GetComputedDisplayValue(viewer.slice_data.renderer)
+            cy = -cy
+            lines.append((cx, cy))
+            path = gc.CreatePath()
+            path.AddCircle(cx, cy, 2.5)
+            gc.StrokePath(path)
+            gc.FillPath(path)
+
+        if len(lines) > 1:
+            path = gc.CreatePath()
+
+            path.MoveToPoint(*lines[0])
+            for p in lines[1::]:
+                path.AddLineToPoint(*p)
+            gc.StrokePath(path)
+
+            txt = u"%.3f mm" % self.GetValue()
+            gc.DrawText(txt, *lines[0])
+
     def GetNumberOfPoints(self):
         return len(self.points)
 
@@ -631,7 +664,7 @@ class LinearMeasure(object):
 class AngularMeasure(object):
     def __init__(self, colour=(1, 0, 0), representation=None):
         self.colour = colour
-        self.points = [0, 0, 0]
+        self.points = []
         self.number_of_points = 0
         self.point_actor1 = None
         self.point_actor2 = None
@@ -659,7 +692,7 @@ class AngularMeasure(object):
 
     def SetPoint1(self, x, y, z):
         if self.number_of_points == 0:
-            self.points[0] = (x, y, z)
+            self.points.append((x, y, z))
             self.number_of_points = 1
             self.point_actor1 = self.representation.GetRepresentation(x, y, z)
         else:
@@ -678,7 +711,7 @@ class AngularMeasure(object):
     def SetPoint2(self, x, y, z):
         if self.number_of_points == 1:
             self.number_of_points = 2
-            self.points[1] = (x, y, z)
+            self.points.append((x, y, z))
             self.point_actor2 = self.representation.GetRepresentation(x, y, z)
         else:
             self.points[1] = (x, y, z)
@@ -696,7 +729,7 @@ class AngularMeasure(object):
     def SetPoint3(self, x, y, z):
         if self.number_of_points == 2:
             self.number_of_points = 3
-            self.points[2] = (x, y, z)
+            self.points.append((x, y, z))
             self.point_actor3 = self.representation.GetRepresentation(x, y, z)
             self.CreateMeasure()
         else:
@@ -793,6 +826,63 @@ class AngularMeasure(object):
         a.GetPositionCoordinate().SetCoordinateSystemToWorld()
         a.GetPositionCoordinate().SetValue(x,y,z)
         self.text_actor = a
+
+    def draw_to_canvas(self, gc, viewer):
+        """
+        Draws to an wx.GraphicsContext.
+
+        Parameters:
+            gc: is a wx.GraphicsContext
+            viewer: the viewer where the canvas is in.
+        """
+        coord = vtk.vtkCoordinate()
+        lines = []
+        for p in self.points:
+            print p
+            coord.SetValue(p)
+            cx, cy = coord.GetComputedDisplayValue(viewer.slice_data.renderer)
+            cy = -cy
+            lines.append((cx, cy))
+            path = gc.CreatePath()
+            path.AddCircle(cx, cy, 2.5)
+            gc.StrokePath(path)
+            gc.FillPath(path)
+
+        if len(lines) > 1:
+            path = gc.CreatePath()
+
+            path.MoveToPoint(*lines[0])
+            for p in lines[1::]:
+                path.AddLineToPoint(*p)
+            gc.StrokePath(path)
+
+            if len(lines) == 3:
+                txt = u"%.3f° / %.3f°" % (self.GetValue(), 360.0 - self.GetValue())
+                gc.DrawText(txt, *lines[0])
+
+                path = gc.CreatePath()
+
+                c = np.array(lines[1])
+                v0 = np.array(lines[0]) - c
+                v1 = np.array(lines[2]) - c
+
+                s0 = np.linalg.norm(v0)
+                s1 = np.linalg.norm(v1)
+
+                a0 = np.arctan2(v0[1] , v0[0])
+                a1 = np.arctan2(v1[1] , v1[0])
+
+                if (a1 - a0) % (np.pi*2) < (a0 - a1) % (np.pi*2):
+                    sa = a0
+                    ea = a1
+                else:
+                    sa = a1
+                    ea = a0
+
+                path.AddArc((c[0], c[1]), min(s0, s1), sa, ea)
+                gc.StrokePath(path)
+
+                gc.DrawText(txt, *lines[0])
 
     def GetNumberOfPoints(self):
         return self.number_of_points

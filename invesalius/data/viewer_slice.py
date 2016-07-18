@@ -217,55 +217,9 @@ class CanvasRendererCTX:
         gc.Scale(1, -1)
 
         for (m, mr) in self.viewer.measures.get(self.viewer.orientation, self.viewer.slice_data.number):
-            lines = []
             if not m.visible:
                 continue
-            for p in m.points:
-                coord.SetValue(p)
-                cx, cy = coord.GetComputedDisplayValue(self.viewer.slice_data.renderer)
-                print (p, cx, cy)
-                cy = -cy
-                lines.append((cx, cy))
-                path = gc.CreatePath()
-                path.AddCircle(cx, cy, 2.5)
-                gc.StrokePath(path)
-                gc.FillPath(path)
-
-            if len(lines) > 1:
-                path = gc.CreatePath()
-
-                path.MoveToPoint(*lines[0])
-                for p in lines[1::]:
-                    path.AddLineToPoint(*p)
-                gc.StrokePath(path)
-                if m.type == const.ANGULAR:
-                    txt = u"%.3f° / %.3f" % (m.value, 360.0 - m.value)
-
-                    if len(lines) == 3:
-                        path = gc.CreatePath()
-
-                        c = np.array(lines[1])
-                        v0 = np.array(lines[0]) - c
-                        v1 = np.array(lines[2]) - c
-
-                        s0 = np.linalg.norm(v0)
-                        s1 = np.linalg.norm(v1)
-
-                        a0 = np.arctan2(v0[1] , v0[0])
-                        a1 = np.arctan2(v1[1] , v1[0])
-
-                        if (a1 - a0) % (np.pi*2) < (a0 - a1) % (np.pi*2):
-                            sa = a0
-                            ea = a1
-                        else:
-                            sa = a1
-                            ea = a0
-
-                        #  path.AddArc((c[0], c[1]), min(s0, s1), sa, ea)
-                        #  gc.StrokePath(path)
-                else:
-                    txt = u"%.3f mm" % m.value
-                gc.DrawText(txt, *lines[0])
+            mr.draw_to_canvas(gc, self.viewer)
 
         gc.Destroy()
 
@@ -274,10 +228,6 @@ class CanvasRendererCTX:
 
         self._cv_image.Modified()
 
-        #  self.canvas_renderer.Render()
-
-        #  img = self.bitmap.ConvertToImage()
-        #  img.SaveFile('/tmp/manolo.png', wx.BITMAP_TYPE_PNG)
 
 class Viewer(wx.Panel):
 
