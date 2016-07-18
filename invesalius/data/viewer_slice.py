@@ -237,7 +237,7 @@ class CanvasRendererCTX:
                     path.AddLineToPoint(*p)
                 gc.StrokePath(path)
                 if m.type == const.ANGULAR:
-                    txt = u"%.3f°" % m.value
+                    txt = u"%.3f° / %.3f" % (m.value, 360.0 - m.value)
 
                     if len(lines) == 3:
                         path = gc.CreatePath()
@@ -259,11 +259,10 @@ class CanvasRendererCTX:
                             sa = a1
                             ea = a0
 
-                        path.AddArc((c[0], c[1]), min(s0, s1), sa, ea)
-                        gc.StrokePath(path)
-
+                        #  path.AddArc((c[0], c[1]), min(s0, s1), sa, ea)
+                        #  gc.StrokePath(path)
                 else:
-                    txt = u"%.3f mm ひらがな - Hiragana, 히라가나" % m.value
+                    txt = u"%.3f mm" % m.value
                 gc.DrawText(txt, *lines[0])
 
         gc.Destroy()
