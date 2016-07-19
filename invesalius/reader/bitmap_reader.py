@@ -101,13 +101,11 @@ class BitmapFiles:
         self.bitmapfiles.append(bmp)
 
     def Sort(self, x):
-
         c_re = re.compile('\d+')
-
-        if len(c_re.findall(x[0])) > 0:
-            return c_re.findall(x[0])[-1] 
+        if len(c_re.findall(x[6])) > 0:
+            return [int(i) for i in c_re.findall(x[6])]
         else:
-            return '0'
+            return [str(x[6])]
 
     def GetValues(self):
         bmpfile = self.bitmapfiles
