@@ -582,12 +582,8 @@ class LinearMeasure(object):
             gc.FillPath(path)
 
         if len(lines) > 1:
-            path = gc.CreatePath()
-
-            path.MoveToPoint(*lines[0])
-            for p in lines[1::]:
-                path.AddLineToPoint(*p)
-            gc.StrokePath(path)
+            for (p0, p1) in zip(lines[:-1:], lines[1::]):
+                canvas.draw_line(p0, p1)
 
             txt = u"%.3f mm" % self.GetValue()
             #  gc.DrawText(txt, *lines[0])
@@ -852,10 +848,8 @@ class AngularMeasure(object):
         if len(lines) > 1:
             path = gc.CreatePath()
 
-            path.MoveToPoint(*lines[0])
-            for p in lines[1::]:
-                path.AddLineToPoint(*p)
-            gc.StrokePath(path)
+            for (p0, p1) in zip(lines[:-1:], lines[1::]):
+                canvas.draw_line(p0, p1)
 
             if len(lines) == 3:
                 txt = u"%.3f° / %.3f°" % (self.GetValue(), 360.0 - self.GetValue())

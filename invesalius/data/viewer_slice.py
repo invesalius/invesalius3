@@ -89,7 +89,7 @@ class ContourMIPConfig(wx.Panel):
                                               " order to compound the"
                                               " visualization instead of"
                                               " ascending order.")))
-        
+
         txt_mip_size = wx.StaticText(self, -1, _("Number of slices"), style=wx.ALIGN_CENTER_HORIZONTAL)
         self.txt_mip_border = wx.StaticText(self, -1, _("Sharpness"))
 
@@ -113,7 +113,7 @@ class ContourMIPConfig(wx.Panel):
         self.mip_size_spin.Bind(wx.EVT_SPINCTRL, self.OnSetMIPSize)
         self.border_spin.Bind(wx.EVT_SPINCTRL, self.OnSetMIPBorder)
         self.inverted.Bind(wx.EVT_CHECKBOX, self.OnCheckInverted)
-        
+
         Publisher.subscribe(self._set_projection_type, 'Set projection type')
 
     def OnSetMIPSize(self, evt):
@@ -136,7 +136,7 @@ class ContourMIPConfig(wx.Panel):
             self.inverted.Enable()
         else:
             self.inverted.Disable()
-        
+
         if tprojection in (const.PROJECTION_CONTOUR_MIP,
                            const.PROJECTION_CONTOUR_MIDA):
             self.border_spin.Enable()
@@ -233,7 +233,24 @@ class CanvasRendererCTX:
 
         self._cv_image.Modified()
 
-    def draw_text_box(self, text, pos, font=None, txt_colour=(0.0, 0.0, 0.0), bg_colour=(128, 0, 0, 128), border=5):
+    def draw_line(self, pos0, pos1, colour=(255, 0, 0, 128), width=2, style=wx.SOLID):
+        """
+        Draw a line from pos0 to pos1
+        """
+        if self.gc is None:
+            return None
+        gc = self.gc
+
+        pen = wx.Pen(wx.Colour(*colour), width, wx.SOLID)
+        gc.SetPen(pen)
+
+        path = gc.CreatePath()
+        path.MoveToPoint(*pos0)
+        path.AddLineToPoint(*pos1)
+        gc.StrokePath(path)
+
+
+    def draw_text_box(self, text, pos, font=None, txt_colour=(255, 255, 255), bg_colour=(128, 128, 128, 128), border=5):
         """
         Draw text inside a text box.
 
@@ -281,7 +298,7 @@ class Viewer(wx.Panel):
 
         self._number_slices = const.PROJECTION_MIP_SIZE
         self._mip_inverted = False
-        
+
         self.style = None
         self.last_position_mouse_move = ()
         self.state = const.STATE_DEFAULT
@@ -354,7 +371,7 @@ class Viewer(wx.Panel):
             self.menu.caller = self
             self.PopupMenu(self.menu)
         evt.Skip()
-            
+
     def SetPopupMenu(self, menu):
         self.menu = menu
 
@@ -440,14 +457,14 @@ class Viewer(wx.Panel):
                               (slc.window_width, slc.window_level))
 
     def SetWLText(self, window_width, window_level):
-        value = STR_WL%(window_level, window_width) 
+        value = STR_WL%(window_level, window_width)
         if (self.wl_text):
             self.wl_text.SetValue(value)
             #self.interactor.Render()
 
     def EnableText(self):
         if not (self.wl_text):
-            proj = project.Project()            
+            proj = project.Project()
             colour = const.ORIENTATION_COLOUR[self.orientation]
 
             # Window & Level text
@@ -460,7 +477,7 @@ class Viewer(wx.Panel):
                 values = [_('P'), _('A'), _('T'), _('B')]
             else:
                 values = [_('R'), _('L'), _('T'), _('B')]
-                
+
             left_text = self.left_text = vtku.TextZero()
             left_text.ShadowOff()
             left_text.SetColour(colour)
@@ -539,30 +556,30 @@ class Viewer(wx.Panel):
 
             elif(croll > 91 and croll <= 135):
                self.RenderTextDirection([_("LP"), _("AL"), _("RA"), _("PR")])
-     
+
             elif(croll > 135 and croll <= 177):
                 self.RenderTextDirection([_("PL"), _("LA"), _("AR"), _("RP")])
-     
+
             elif(croll >= -180 and croll <= -178) or (croll < 180 and croll > 177):
                 self.RenderTextDirection([_("P"), _("L"), _("A"), _("R")])
-            
+
             elif(croll >= -177 and croll <= -133):
                 self.RenderTextDirection([_("PR"), _("LP"), _("AL"), _("RA")])
-    
+
             elif(croll >= -132 and croll <= -101):
                 self.RenderTextDirection([_("RP"), _("PL"), _("LA"), _("AR")])
 
             elif(croll >= -101 and croll <= -87):
                 self.RenderTextDirection([_("R"), _("P"), _("L"), _("A")])
-    
+
             elif(croll >= -86 and croll <= -42):
                 self.RenderTextDirection([_("RA"), _("PR"), _("LP"), _("AL")])
-     
+
             elif(croll >= -41 and croll <= -2):
                 self.RenderTextDirection([_("AR"), _("RP"), _("PL"), _("LA")])
 
         elif(self.orientation == "CORONAL"):
-           
+
             if (croll >= -2 and croll <= 1):
                 self.RenderTextDirection([_("T"), _("R"), _("B"), _("L")])
 
@@ -577,25 +594,25 @@ class Viewer(wx.Panel):
 
             elif(croll > 91 and croll <= 135):
                self.RenderTextDirection([_("LB"), _("TL"), _("RT"), _("BR")])
-     
+
             elif(croll > 135 and croll <= 177):
                 self.RenderTextDirection([_("BL"), _("LT"), _("TR"), _("RB")])
-     
+
             elif(croll >= -180 and croll <= -178) or (croll < 180 and croll > 177):
                 self.RenderTextDirection([_("B"), _("L"), _("T"), _("R")])
-            
+
             elif(croll >= -177 and croll <= -133):
                 self.RenderTextDirection([_("BR"), _("LB"), _("TL"), _("RT")])
-    
+
             elif(croll >= -132 and croll <= -101):
                 self.RenderTextDirection([_("RB"), _("BL"), _("LT"), _("TR")])
 
             elif(croll >= -101 and croll <= -87):
                 self.RenderTextDirection([_("R"), _("B"), _("L"), _("T")])
-    
+
             elif(croll >= -86 and croll <= -42):
                 self.RenderTextDirection([_("RT"), _("BR"), _("LB"), _("TL")])
-     
+
             elif(croll >= -41 and croll <= -2):
                 self.RenderTextDirection([_("TR"), _("RB"), _("BL"), _("LT")])
 
@@ -603,13 +620,13 @@ class Viewer(wx.Panel):
 
             if(croll >= -101 and croll <= -87):
                 self.RenderTextDirection([_("T"), _("P"), _("B"), _("A")])
-    
+
             elif(croll >= -86 and croll <= -42):
                 self.RenderTextDirection([_("TA"), _("PT"), _("BP"), _("AB")])
-     
+
             elif(croll >= -41 and croll <= -2):
                 self.RenderTextDirection([_("AT"), _("TP"), _("PB"), _("BA")])
-        
+
             elif (croll >= -2 and croll <= 1):
                 self.RenderTextDirection([_("A"), _("T"), _("P"), _("B")])
 
@@ -624,16 +641,16 @@ class Viewer(wx.Panel):
 
             elif(croll > 91 and croll <= 135):
                self.RenderTextDirection([_("BP"), _("AB"), _("TA"), _("PT")])
-     
+
             elif(croll > 135 and croll <= 177):
                 self.RenderTextDirection([_("PB"), _("BA"), _("AT"), _("TP")])
-     
+
             elif(croll >= -180 and croll <= -178) or (croll < 180 and croll > 177):
                 self.RenderTextDirection([_("P"), _("B"), _("A"), _("T")])
-            
+
             elif(croll >= -177 and croll <= -133):
                 self.RenderTextDirection([_("PT"), _("BP"), _("AB"), _("TA")])
-    
+
             elif(croll >= -132 and croll <= -101):
                 self.RenderTextDirection([_("TP"), _("PB"), _("BA"), _("AT")])
 
@@ -668,12 +685,12 @@ class Viewer(wx.Panel):
     def Navigation(self, pubsub_evt):
         # Get point from base change
         x, y, z = pubsub_evt.data
-        coord_cross = x, y, z      
+        coord_cross = x, y, z
         position = self.slice_data.actor.GetInput().FindPoint(x, y, z)
         coord_cross = self.slice_data.actor.GetInput().GetPoint(position)
-        coord = self.calcultate_scroll_position(position)   
+        coord = self.calcultate_scroll_position(position)
         Publisher.sendMessage('Update cross position', coord_cross)
-        
+
         self.ScrollSlice(coord)
         self.interactor.Render()
 
@@ -698,7 +715,7 @@ class Viewer(wx.Panel):
         #for slice_data in self.slice_data_list:
             #if slice_data.renderer is render:
                 #return slice_data
-        # WARN: Return the only slice_data used in this slice_viewer. 
+        # WARN: Return the only slice_data used in this slice_viewer.
         return self.slice_data
 
     def calcultate_scroll_position(self, position):
@@ -825,7 +842,7 @@ class Viewer(wx.Panel):
                                  'Hide text actors on viewers')
         Publisher.subscribe(self.OnExportPicture,'Export picture to file')
         Publisher.subscribe(self.SetDefaultCursor, 'Set interactor default cursor')
-    
+
         Publisher.subscribe(self.AddActors, 'Add actors ' + str(ORIENTATIONS[self.orientation]))
         Publisher.subscribe(self.RemoveActors, 'Remove actors ' + str(ORIENTATIONS[self.orientation]))
         Publisher.subscribe(self.OnSwapVolumeAxes, 'Swap volume axes')
@@ -851,11 +868,11 @@ class Viewer(wx.Panel):
 
     def SetDefaultCursor(self, pusub_evt):
         self.interactor.SetCursor(wx.StockCursor(wx.CURSOR_DEFAULT))
-    
+
     def OnExportPicture(self, pubsub_evt):
         Publisher.sendMessage('Begin busy cursor')
         view_prop_list = []
-        view_prop_list.append(self.slice_data.box_actor) 
+        view_prop_list.append(self.slice_data.box_actor)
         self.slice_data.renderer.RemoveViewProp(self.slice_data.box_actor)
 
         id, filename, filetype = pubsub_evt.data
@@ -917,7 +934,7 @@ class Viewer(wx.Panel):
     def CloseProject(self):
         for slice_data in self.slice_data_list:
             del slice_data
-            
+
         self.slice_data_list = []
         self.layout = (1, 1)
         self.orientation_texts = []
@@ -929,10 +946,10 @@ class Viewer(wx.Panel):
     def OnSetInteractorStyle(self, pubsub_evt):
         state = pubsub_evt.data
         self.SetInteractorStyle(state)
-        
+
         if (state != const.SLICE_STATE_EDITOR):
             Publisher.sendMessage('Set interactor default cursor')
-        
+
     def __bind_events_wx(self):
         self.scroll.Bind(wx.EVT_SCROLL, self.OnScrollBar)
         self.scroll.Bind(wx.EVT_SCROLL_THUMBTRACK, self.OnScrollBarRelease)
@@ -1162,15 +1179,15 @@ class Viewer(wx.Panel):
     def set_scroll_position(self, position):
         self.scroll.SetThumbPosition(position)
         self.OnScrollBar()
-    
+
     def UpdateSlice3D(self, pos):
         original_orientation = project.Project().original_orientation
         pos = self.scroll.GetThumbPosition()
         Publisher.sendMessage('Change slice from slice plane',\
                                    (self.orientation, pos))
-                
+
     def OnScrollBar(self, evt=None, update3D=True):
-        pos = self.scroll.GetThumbPosition() 
+        pos = self.scroll.GetThumbPosition()
         self.set_slice_number(pos)
         if update3D:
             self.UpdateSlice3D(pos)
@@ -1179,14 +1196,14 @@ class Viewer(wx.Panel):
             # the actual orientation.
             focal_point = self.cross.GetFocalPoint()
             Publisher.sendMessage('Update cross position', focal_point)
-            Publisher.sendMessage('Update slice viewer') 
+            Publisher.sendMessage('Update slice viewer')
         else:
-            self.interactor.Render() 
+            self.interactor.Render()
         if evt:
             if self._flush_buffer:
                 self.slice_.apply_slice_buffer_to_mask(self.orientation)
             evt.Skip()
-            
+
     def OnScrollBarRelease(self, evt):
         pos = self.scroll.GetThumbPosition()
         evt.Skip()
@@ -1212,7 +1229,7 @@ class Viewer(wx.Panel):
         if (evt.GetKeyCode() == wx.WXK_UP and pos > min):
             self.OnScrollForward()
             self.OnScrollBar()
-            
+
         elif (evt.GetKeyCode() == wx.WXK_DOWN and pos < max):
             self.OnScrollBackward()
             self.OnScrollBar()
@@ -1236,7 +1253,7 @@ class Viewer(wx.Panel):
             Publisher.sendMessage('Set projection type', projections[evt.GetKeyCode()])
             Publisher.sendMessage('Reload actual slice')
             skip = False
-        
+
         self.UpdateSlice3D(pos)
         self.interactor.Render()
 
@@ -1246,18 +1263,18 @@ class Viewer(wx.Panel):
     def OnScrollForward(self, evt=None, obj=None):
         pos = self.scroll.GetThumbPosition()
         min = 0
-        
+
         if(pos > min):
             if self._flush_buffer:
                 self.slice_.apply_slice_buffer_to_mask(self.orientation)
             pos = pos - 1
             self.scroll.SetThumbPosition(pos)
             self.OnScrollBar()
-    
+
     def OnScrollBackward(self, evt=None, obj=None):
         pos = self.scroll.GetThumbPosition()
         max = self.slice_.GetMaxSliceNumber(self.orientation)
-        
+
         if(pos < max):
             if self._flush_buffer:
                 self.slice_.apply_slice_buffer_to_mask(self.orientation)
@@ -1266,7 +1283,7 @@ class Viewer(wx.Panel):
             self.OnScrollBar()
 
     def OnSize(self, evt):
-        w, h = evt.GetSize() 
+        w, h = evt.GetSize()
         w = float(w)
         h = float(h)
         if self.slice_data:
@@ -1303,7 +1320,7 @@ class Viewer(wx.Panel):
             self.mip_ctrls.Hide()
             self.GetSizer().Remove(self.mip_ctrls)
             self.Layout()
-    
+
     def OnSetOverwriteMask(self, pubsub_evt):
         value = pubsub_evt.data
         self.overwrite_mask = value
@@ -1360,7 +1377,7 @@ class Viewer(wx.Panel):
         # orientation
         axis0, axis1 = pubsub_evt.data
         cursor = self.slice_data.cursor
-        spacing = cursor.spacing       
+        spacing = cursor.spacing
         if (axis0, axis1) == (2, 1):
             cursor.SetSpacing((spacing[1], spacing[0], spacing[2]))
         elif (axis0, axis1) == (2, 0):
