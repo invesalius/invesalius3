@@ -151,6 +151,7 @@ class CanvasRendererCTX:
         self.viewer = viewer
         self.canvas_renderer = viewer.slice_data.canvas_renderer
         self._size = self.canvas_renderer.GetSize()
+        self.gc = None
         self._init_canvas()
         viewer.slice_data.renderer.AddObserver("StartEvent", self.OnPaint)
 
@@ -205,6 +206,8 @@ class CanvasRendererCTX:
         gc = wx.GraphicsContext.Create(self.image)
         gc.SetAntialiasMode(0)
 
+        self.gc = gc
+
         font = wx.SystemSettings.GetFont(wx.SYS_DEFAULT_GUI_FONT)
         #  font.SetWeight(wx.BOLD)
         font = gc.CreateFont(font, (0, 0, 255))
@@ -219,14 +222,51 @@ class CanvasRendererCTX:
         for (m, mr) in self.viewer.measures.get(self.viewer.orientation, self.viewer.slice_data.number):
             if not m.visible:
                 continue
-            mr.draw_to_canvas(gc, self.viewer)
+            mr.draw_to_canvas(gc, self)
 
         gc.Destroy()
+
+        self.gc = None
 
         self.bitmap = self.image.ConvertToBitmap()
         self.bitmap.CopyToBuffer(self._array, wx.BitmapBufferFormat_RGBA)
 
         self._cv_image.Modified()
+
+    def draw_text_box(self, text, pos, font=None, txt_colour=(0.0, 0.0, 0.0), bg_colour=(128, 0, 0, 128), border=5):
+        """
+        Draw text inside a text box.
+
+        Params:
+            text: an unicode text.
+            pos: (x, y) position.
+            font: if None it'll use the default gui font.
+            txt_colour: RGB text colour
+            bg_colour: RGBA box colour
+            border: the border size.
+        """
+        if self.gc is None:
+            return None
+        gc = self.gc
+
+        if font is None:
+            font = wx.SystemSettings.GetFont(wx.SYS_DEFAULT_GUI_FONT)
+
+        font = gc.CreateFont(font, txt_colour)
+        gc.SetFont(font)
+        w, h = gc.GetTextExtent(text)
+
+        px, py = pos
+        py = -py
+
+        # Drawing the box
+        cw, ch = w + border * 2, h + border * 2
+        gc.SetBrush(wx.Brush(bg_colour))
+        gc.SetPen(wx.Pen(bg_colour))
+        gc.DrawRectangle(px, py, cw, ch)
+
+        tpx, tpy = px + border, py + border
+        gc.DrawText(text, tpx, tpy)
 
 
 class Viewer(wx.Panel):

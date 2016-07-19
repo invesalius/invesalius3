@@ -561,19 +561,19 @@ class LinearMeasure(object):
         a.GetProperty().SetOpacity(0.75)
         self.text_actor = a
 
-    def draw_to_canvas(self, gc, viewer):
+    def draw_to_canvas(self, gc, canvas):
         """
         Draws to an wx.GraphicsContext.
 
         Parameters:
             gc: is a wx.GraphicsContext
-            viewer: the viewer where the canvas is in.
+            canvas: the canvas it's being drawn.
         """
         coord = vtk.vtkCoordinate()
         lines = []
         for p in self.points:
             coord.SetValue(p)
-            cx, cy = coord.GetComputedDisplayValue(viewer.slice_data.renderer)
+            cx, cy = coord.GetComputedDisplayValue(canvas.viewer.slice_data.renderer)
             cy = -cy
             lines.append((cx, cy))
             path = gc.CreatePath()
@@ -590,7 +590,8 @@ class LinearMeasure(object):
             gc.StrokePath(path)
 
             txt = u"%.3f mm" % self.GetValue()
-            gc.DrawText(txt, *lines[0])
+            #  gc.DrawText(txt, *lines[0])
+            canvas.draw_text_box(txt, (lines[0][0], -lines[0][1]))
 
     def GetNumberOfPoints(self):
         return len(self.points)
@@ -827,20 +828,20 @@ class AngularMeasure(object):
         a.GetPositionCoordinate().SetValue(x,y,z)
         self.text_actor = a
 
-    def draw_to_canvas(self, gc, viewer):
+    def draw_to_canvas(self, gc, canvas):
         """
         Draws to an wx.GraphicsContext.
 
         Parameters:
             gc: is a wx.GraphicsContext
-            viewer: the viewer where the canvas is in.
+            canvas: the canvas it's being drawn.
         """
         coord = vtk.vtkCoordinate()
         lines = []
         for p in self.points:
             print p
             coord.SetValue(p)
-            cx, cy = coord.GetComputedDisplayValue(viewer.slice_data.renderer)
+            cx, cy = coord.GetComputedDisplayValue(canvas.viewer.slice_data.renderer)
             cy = -cy
             lines.append((cx, cy))
             path = gc.CreatePath()
@@ -858,7 +859,6 @@ class AngularMeasure(object):
 
             if len(lines) == 3:
                 txt = u"%.3f° / %.3f°" % (self.GetValue(), 360.0 - self.GetValue())
-                gc.DrawText(txt, *lines[0])
 
                 path = gc.CreatePath()
 
@@ -882,7 +882,8 @@ class AngularMeasure(object):
                 path.AddArc((c[0], c[1]), min(s0, s1), sa, ea)
                 gc.StrokePath(path)
 
-                gc.DrawText(txt, *lines[0])
+                #  gc.DrawText(txt, *lines[0])
+                canvas.draw_text_box(txt, (lines[0][0], -lines[0][1]))
 
     def GetNumberOfPoints(self):
         return self.number_of_points
