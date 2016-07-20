@@ -241,13 +241,48 @@ class CanvasRendererCTX:
             return None
         gc = self.gc
 
+        p0x, p0y = pos0
+        p1x, p1y = pos1
+
+        p0y = -p0y
+        p1y = -p1y
+
         pen = wx.Pen(wx.Colour(*colour), width, wx.SOLID)
         gc.SetPen(pen)
 
         path = gc.CreatePath()
-        path.MoveToPoint(*pos0)
-        path.AddLineToPoint(*pos1)
+        path.MoveToPoint(p0x, p0y)
+        path.AddLineToPoint(p1x, p1y)
         gc.StrokePath(path)
+
+    def draw_circle(self, center, radius, width=2, line_colour=(255, 0, 0, 128), fill_colour=(0, 0, 0, 0)):
+        """
+        Draw a circle centered at center with the given radius.
+
+        Params:
+            center: (x, y) position.
+            radius: float number.
+            width: line width.
+            line_colour: RGBA line colour
+            fill_colour: RGBA fill colour.
+        """
+        if self.gc is None:
+            return None
+        gc = self.gc
+
+        pen = wx.Pen(wx.Colour(*line_colour), width, wx.SOLID)
+        gc.SetPen(pen)
+
+        brush = wx.Brush(wx.Colour(*fill_colour))
+        gc.SetBrush(brush)
+
+        cx, cy = center
+        cy = -cy
+
+        path = gc.CreatePath()
+        path.AddCircle(cx, cy, 2.5)
+        gc.StrokePath(path)
+        gc.FillPath(path)
 
 
     def draw_text_box(self, text, pos, font=None, txt_colour=(255, 255, 255), bg_colour=(128, 128, 128, 128), border=5):

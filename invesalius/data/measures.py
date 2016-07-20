@@ -570,24 +570,19 @@ class LinearMeasure(object):
             canvas: the canvas it's being drawn.
         """
         coord = vtk.vtkCoordinate()
-        lines = []
+        points = []
         for p in self.points:
             coord.SetValue(p)
             cx, cy = coord.GetComputedDisplayValue(canvas.viewer.slice_data.renderer)
-            cy = -cy
-            lines.append((cx, cy))
-            path = gc.CreatePath()
-            path.AddCircle(cx, cy, 2.5)
-            gc.StrokePath(path)
-            gc.FillPath(path)
+            canvas.draw_circle((cx, cy), 2.5)
+            points.append((cx, cy))
 
-        if len(lines) > 1:
-            for (p0, p1) in zip(lines[:-1:], lines[1::]):
+        if len(points) > 1:
+            for (p0, p1) in zip(points[:-1:], points[1::]):
                 canvas.draw_line(p0, p1)
 
             txt = u"%.3f mm" % self.GetValue()
-            #  gc.DrawText(txt, *lines[0])
-            canvas.draw_text_box(txt, (lines[0][0], -lines[0][1]))
+            canvas.draw_text_box(txt, (points[0][0], points[0][1]))
 
     def GetNumberOfPoints(self):
         return len(self.points)
@@ -832,52 +827,45 @@ class AngularMeasure(object):
             gc: is a wx.GraphicsContext
             canvas: the canvas it's being drawn.
         """
+
         coord = vtk.vtkCoordinate()
-        lines = []
+        points = []
         for p in self.points:
-            print p
             coord.SetValue(p)
             cx, cy = coord.GetComputedDisplayValue(canvas.viewer.slice_data.renderer)
-            cy = -cy
-            lines.append((cx, cy))
-            path = gc.CreatePath()
-            path.AddCircle(cx, cy, 2.5)
-            gc.StrokePath(path)
-            gc.FillPath(path)
+            canvas.draw_circle((cx, cy), 2.5)
+            points.append((cx, cy))
 
-        if len(lines) > 1:
-            path = gc.CreatePath()
-
-            for (p0, p1) in zip(lines[:-1:], lines[1::]):
+        if len(points) > 1:
+            for (p0, p1) in zip(points[:-1:], points[1::]):
                 canvas.draw_line(p0, p1)
 
-            if len(lines) == 3:
+            if len(points) == 3:
                 txt = u"%.3f° / %.3f°" % (self.GetValue(), 360.0 - self.GetValue())
 
-                path = gc.CreatePath()
+                #  path = gc.CreatePath()
 
-                c = np.array(lines[1])
-                v0 = np.array(lines[0]) - c
-                v1 = np.array(lines[2]) - c
+                #  c = np.array(lines[1])
+                #  v0 = np.array(lines[0]) - c
+                #  v1 = np.array(lines[2]) - c
 
-                s0 = np.linalg.norm(v0)
-                s1 = np.linalg.norm(v1)
+                #  s0 = np.linalg.norm(v0)
+                #  s1 = np.linalg.norm(v1)
 
-                a0 = np.arctan2(v0[1] , v0[0])
-                a1 = np.arctan2(v1[1] , v1[0])
+                #  a0 = np.arctan2(v0[1] , v0[0])
+                #  a1 = np.arctan2(v1[1] , v1[0])
 
-                if (a1 - a0) % (np.pi*2) < (a0 - a1) % (np.pi*2):
-                    sa = a0
-                    ea = a1
-                else:
-                    sa = a1
-                    ea = a0
+                #  if (a1 - a0) % (np.pi*2) < (a0 - a1) % (np.pi*2):
+                    #  sa = a0
+                    #  ea = a1
+                #  else:
+                    #  sa = a1
+                    #  ea = a0
 
-                path.AddArc((c[0], c[1]), min(s0, s1), sa, ea)
-                gc.StrokePath(path)
+                #  path.AddArc((c[0], c[1]), min(s0, s1), sa, ea)
+                #  gc.StrokePath(path)
 
-                #  gc.DrawText(txt, *lines[0])
-                canvas.draw_text_box(txt, (lines[0][0], -lines[0][1]))
+                canvas.draw_text_box(txt, (points[0][0], points[0][1]))
 
     def GetNumberOfPoints(self):
         return self.number_of_points
