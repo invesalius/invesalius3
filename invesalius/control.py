@@ -386,10 +386,9 @@ class Controller():
             #Publisher.sendMessage("Load bitmap preview", first_patient)
         if  data:
             Publisher.sendMessage("Load import bitmap panel", data)
-
             return True
         else:
-            dialog.ImportInvalidFiles()
+            dialog.ImportInvalidFiles("Bitmap")
         return False
 
 
@@ -400,7 +399,7 @@ class Controller():
             Publisher.sendMessage("Load dicom preview", first_patient)
             return True
         else:
-            dialog.ImportInvalidFiles()
+            dialog.ImportInvalidFiles("DICOM")
         return False
 
 

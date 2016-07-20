@@ -510,8 +510,12 @@ def ImportEmptyDirectory(dirpath):
     dlg.ShowModal()
     dlg.Destroy()
 
-def ImportInvalidFiles():
-    msg = _("There are no DICOM files in the selected folder.")
+def ImportInvalidFiles(ftype="DICOM"):
+    if ftype == "Bitmap":
+        msg =  _("There are no Bitmap, JPEG, PNG or TIFF files in the selected folder.")
+    else:
+        msg = _("There are no DICOM files in the selected folder.")
+
     if sys.platform == 'darwin':
         dlg = wx.MessageDialog(None, "", msg,
                                 wx.ICON_INFORMATION | wx.OK)
