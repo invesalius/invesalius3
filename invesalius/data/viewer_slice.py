@@ -320,6 +320,38 @@ class CanvasRendererCTX:
         tpx, tpy = px + border, py + border
         gc.DrawText(text, tpx, tpy)
 
+    def draw_arc(self, center, p0, p1, line_colour=(255, 0, 0, 128), width=2):
+        if self.gc is None:
+            return None
+        gc = self.gc
+        pen = wx.Pen(wx.Colour(*line_colour), width, wx.SOLID)
+        gc.SetPen(pen)
+
+        c = np.array(center)
+        v0 = np.array(p0) - c
+        v1 = np.array(p1) - c
+
+        c[1] = -c[1]
+        v0[1] = -v0[1]
+        v1[1] = -v1[1]
+
+        s0 = np.linalg.norm(v0)
+        s1 = np.linalg.norm(v1)
+
+        a0 = np.arctan2(v0[1] , v0[0])
+        a1 = np.arctan2(v1[1] , v1[0])
+
+        if (a1 - a0) % (np.pi*2) < (a0 - a1) % (np.pi*2):
+            sa = a0
+            ea = a1
+        else:
+            sa = a1
+            ea = a0
+
+        path = gc.CreatePath()
+        path.AddArc((c[0], c[1]), min(s0, s1), sa, ea)
+        gc.StrokePath(path)
+
 
 class Viewer(wx.Panel):
 

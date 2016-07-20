@@ -865,6 +865,7 @@ class AngularMeasure(object):
                 #  path.AddArc((c[0], c[1]), min(s0, s1), sa, ea)
                 #  gc.StrokePath(path)
 
+                canvas.draw_arc(points[1], points[0], points[2])
                 canvas.draw_text_box(txt, (points[0][0], points[0][1]))
 
     def GetNumberOfPoints(self):
