@@ -321,6 +321,16 @@ class CanvasRendererCTX:
         gc.DrawText(text, tpx, tpy)
 
     def draw_arc(self, center, p0, p1, line_colour=(255, 0, 0, 128), width=2):
+        """
+        Draw an arc passing in p0 and p1 centered at center.
+
+        Params:
+            center: (x, y) center of the arc.
+            p0: (x, y).
+            p1: (x, y).
+            line_colour: RGBA line colour.
+            width: width of the line.
+        """
         if self.gc is None:
             return None
         gc = self.gc
