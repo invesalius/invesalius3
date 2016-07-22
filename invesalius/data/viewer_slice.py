@@ -233,7 +233,7 @@ class CanvasRendererCTX:
 
         self._cv_image.Modified()
 
-    def draw_line(self, pos0, pos1, colour=(255, 0, 0, 128), width=2, style=wx.SOLID):
+    def draw_line(self, pos0, pos1, arrow_start=False, arrow_end=False, colour=(255, 0, 0, 128), width=2, style=wx.SOLID):
         """
         Draw a line from pos0 to pos1
         """
@@ -254,6 +254,41 @@ class CanvasRendererCTX:
         path.MoveToPoint(p0x, p0y)
         path.AddLineToPoint(p1x, p1y)
         gc.StrokePath(path)
+
+        font = wx.SystemSettings.GetFont(wx.SYS_DEFAULT_GUI_FONT)
+        font = gc.CreateFont(font)
+        gc.SetFont(font)
+        w, h = gc.GetTextExtent("M")
+
+        p0 = np.array((p0x, p0y))
+        p3 = np.array((p1x, p1y))
+        if arrow_start:
+            v = p3 - p0
+            v = v / np.linalg.norm(v)
+            iv = np.array((v[1], -v[0]))
+            p1 = p0 + w*v + iv*w/2.0
+            p2 = p0 + w*v + (-iv)*w/2.0
+
+            path = gc.CreatePath()
+            path.MoveToPoint(p0)
+            path.AddLineToPoint(p1)
+            path.MoveToPoint(p0)
+            path.AddLineToPoint(p2)
+            gc.StrokePath(path)
+
+        if arrow_end:
+            v = p3 - p0
+            v = v / np.linalg.norm(v)
+            iv = np.array((v[1], -v[0]))
+            p1 = p3 - w*v + iv*w/2.0
+            p2 = p3 - w*v + (-iv)*w/2.0
+
+            path = gc.CreatePath()
+            path.MoveToPoint(p3)
+            path.AddLineToPoint(p1)
+            path.MoveToPoint(p3)
+            path.AddLineToPoint(p2)
+            gc.StrokePath(path)
 
     def draw_circle(self, center, radius, width=2, line_colour=(255, 0, 0, 128), fill_colour=(0, 0, 0, 0)):
         """
