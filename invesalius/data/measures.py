@@ -582,7 +582,7 @@ class LinearMeasure(object):
                 canvas.draw_line(p0, p1)
 
             txt = u"%.3f mm" % self.GetValue()
-            canvas.draw_text_box(txt, (points[0][0], points[0][1]))
+            canvas.draw_text_box(txt, ((points[0][0]+points[1][0])/2.0, (points[0][1]+points[1][1])/2.0))
 
     def GetNumberOfPoints(self):
         return len(self.points)
@@ -843,30 +843,8 @@ class AngularMeasure(object):
             if len(points) == 3:
                 txt = u"%.3f° / %.3f°" % (self.GetValue(), 360.0 - self.GetValue())
 
-                #  path = gc.CreatePath()
-
-                #  c = np.array(lines[1])
-                #  v0 = np.array(lines[0]) - c
-                #  v1 = np.array(lines[2]) - c
-
-                #  s0 = np.linalg.norm(v0)
-                #  s1 = np.linalg.norm(v1)
-
-                #  a0 = np.arctan2(v0[1] , v0[0])
-                #  a1 = np.arctan2(v1[1] , v1[0])
-
-                #  if (a1 - a0) % (np.pi*2) < (a0 - a1) % (np.pi*2):
-                    #  sa = a0
-                    #  ea = a1
-                #  else:
-                    #  sa = a1
-                    #  ea = a0
-
-                #  path.AddArc((c[0], c[1]), min(s0, s1), sa, ea)
-                #  gc.StrokePath(path)
-
                 canvas.draw_arc(points[1], points[0], points[2])
-                canvas.draw_text_box(txt, (points[0][0], points[0][1]))
+                canvas.draw_text_box(txt, (points[1][0], points[1][1]))
 
     def GetNumberOfPoints(self):
         return self.number_of_points
