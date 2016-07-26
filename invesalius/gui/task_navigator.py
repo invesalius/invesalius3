@@ -474,7 +474,7 @@ class NeuronavigationTools(wx.Panel):
         id = evt.GetId()
         x, y, z = self.a
         if id == TR1:
-            if self.trk_init:
+            if self.trk_init and (self.tracker_id != 0):
                 self.aux_trck_ref1 = 1
                 self.coord1b = dco.Coordinates(self.trk_init, self.tracker_id, self.ref_mode_id).Returns()
                 coord = self.coord1b[0:3]
@@ -482,14 +482,14 @@ class NeuronavigationTools(wx.Panel):
                 dlg.TrackerNotConnected(self.tracker_id)
 
         elif id == TR2:
-            if self.trk_init:
+            if self.trk_init and (self.tracker_id != 0):
                 self.aux_trck_ref2 = 1
                 self.coord2b = dco.Coordinates(self.trk_init, self.tracker_id, self.ref_mode_id).Returns()
                 coord = self.coord2b[0:3]
             else:
                 dlg.TrackerNotConnected(self.tracker_id)
         elif id == TR3:
-            if self.trk_init:
+            if self.trk_init and (self.tracker_id != 0):
                 self.aux_trck_ref3 = 1
                 self.coord3b = dco.Coordinates(self.trk_init, self.tracker_id, self.ref_mode_id).Returns()
                 coord = self.coord3b[0:3]
@@ -692,32 +692,49 @@ class NeuronavigationTools(wx.Panel):
             self.button_crg.SetBackgroundColour('RED')
 
     def OnChoiceTracker(self, evt):
-        #this condition check if the trackers is already connected
-        if (self.tracker_id == evt.GetSelection()) and (self.trk_init is not None):
+        #this condition check if the trackers is already connected and disconnect this tracker
+        if (self.tracker_id == evt.GetSelection()) and (self.trk_init is not None) and (self.tracker_id != 0):
             dlg.TrackerAlreadyConnected()
-            dt.Tracker().Tracker_off()
+            self.tracker_rem_id = self.tracker_id
+            self.RemoveTracker()
             self.choice_tracker.SetSelection(0)
             self.SetTrackerFiducialsNone()
             self.tracker_id = 0
         else:
             self.tracker_id = evt.GetSelection()
-            dt.Tracker().Tracker_off()
             if self.tracker_id != 0:
                 trck = {1 : dt.Tracker().ClaronTracker,
                         2 : dt.Tracker().PlhFastrak,
                         3 : dt.Tracker().PlhIsotrakII,
                         4 : dt.Tracker().PlhPatriot,
                         5 : dt.Tracker().ZebrisCMS20}
-
+                self.tracker_rem_id = self.tracker_id
                 self.trk_init = trck[self.tracker_id]()
                 if self.trk_init is None:
+                    self.RemoveTracker()
                     self.choice_tracker.SetSelection(0)
                     self.tracker_id = 0
+                    self.tracker_rem_id = 0
                     self.SetTrackerFiducialsNone()
-                print "Tracker changed!"
+                else:
+                    print "Tracker changed!"
             else:
+                try:
+                    self.RemoveTracker()
+                    self.tracker_rem_id = 0
+                except:
+                    print "No tracker connected"
                 self.SetTrackerFiducialsNone()
                 print "Select Tracker"
+
+    def RemoveTracker(self):
+        remove_trck = {1: dt.RemoveTracker().ClaronTracker,
+                2: dt.RemoveTracker().PlhFastrak,
+                3: dt.RemoveTracker().PlhIsotrakII,
+                4: dt.RemoveTracker().PlhPatriot,
+                5: dt.RemoveTracker().ZebrisCMS20}
+        rem = remove_trck[self.tracker_rem_id]()
+        self.trk_init = None
 
     def OnChoiceRefMode(self, evt):
         self.ref_mode_id = evt.GetSelection()

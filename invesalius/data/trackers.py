@@ -8,8 +8,6 @@ class Tracker:
 
     return: spatial tracker initialization variable
     """
-    def __init__(self):
-        self.trck_flag = 0
     def ClaronTracker(self):
         trck_init = None
         try:
@@ -31,7 +29,8 @@ class Tracker:
                 dlg.TrackerNotConnected(1)
 
         except ImportError:
-            dlg.TrackerNotConnected(1)
+            trck_init = None
+            #dlg.TrackerNotConnected(1)
 
         return trck_init
 
@@ -94,7 +93,7 @@ class Tracker:
 
         except ImportError:
             trck_init = None
-            dlg.TrackerNotConnected(4)
+            #dlg.TrackerNotConnected(4)
 
         return trck_init
 
@@ -138,24 +137,41 @@ class Tracker:
             except AttributeError:
                 trck_init = None
                 dlg.TrackerNotConnected(plh_id)
+            except:
+                trck_init = None
+                dlg.TrackerNotConnected(plh_id)
 
         except ImportError:
             dlg.TrackerNotConnected(6)
 
         return trck_init
 
-    def Tracker_off(self):
-        if self.trck_flag == 1:
-            ClaronTracker.ClaronTracker().Close()
-        elif self.trck_flag == 2:
-            None
-        elif self.trck_flag == 3:
-            None
-        elif self.trck_flag == 4:
-            Polhemus.Polhemus().Close()
-        elif self.trck_flag == 5:
-            None
-        else:
+class RemoveTracker:
+        """
+        Remove spatial trackers
+        """
+        def ClaronTracker(self):
+            try:
+                import ClaronTracker
+                ClaronTracker.ClaronTracker().Close()
+            except ImportError:
+                dlg.TrackerNotConnected(1)
+
+        def PlhFastrak(self):
             None
 
+        def PlhIsotrakII(self):
+            None
 
+        def PlhPatriot(self):
+            try:
+                import Polhemus
+                Polhemus.Polhemus().Close()
+            except ImportError:
+                dlg.TrackerNotConnected(4)
+
+        def ZebrisCMS20(self):
+            None
+
+        def polhemus_serial(self):
+            None
