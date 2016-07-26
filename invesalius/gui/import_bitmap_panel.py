@@ -263,27 +263,10 @@ class TextPanel(wx.Panel):
 
         Publisher.sendMessage('Load bitmap into import panel', data)
 
-
     def OnSelChanged(self, evt):
         item = self.tree.GetSelection()
         if self._selected_by_user:
-            group = self.tree.GetItemPyData(item)
-            if isinstance(group, dcm.DicomGroup):
-                Publisher.sendMessage('Load group into import panel',
-                                            group)
-
-            elif isinstance(group, dcm.PatientGroup):
-                id = group.GetDicomSample().patient.id
-                my_evt = SelectEvent(myEVT_SELECT_PATIENT, self.GetId())
-                my_evt.SetSelectedID(id)
-                self.GetEventHandler().ProcessEvent(my_evt)
-
-                Publisher.sendMessage('Load bitmap into import panel',
-
-                                            group)
-        else:
-            parent_id = self.tree.GetItemParent(item)
-            self.tree.Expand(parent_id)
+            print self.tree.GetItemText(item)
         evt.Skip()
 
     def OnActivate(self, evt):
@@ -412,7 +395,6 @@ class SeriesPanel(wx.Panel):
 
     def OnSelectSerie(self, evt):
         data = evt.GetItemData()
-
         my_evt = SelectEvent(myEVT_SELECT_SERIE, self.GetId())
         my_evt.SetSelectedID(evt.GetSelectID())
         my_evt.SetItemData(evt.GetItemData())

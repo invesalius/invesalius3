@@ -286,6 +286,7 @@ class Preview(wx.Panel):
         my_evt.SetEventObject(self)
         self.GetEventHandler().ProcessEvent(my_evt)
 
+        print ">>>",self.bitmap_info.pos, self.bitmap_info.id, self.bitmap_info.data
         Publisher.sendMessage('Set bitmap in preview panel', self.bitmap_info.pos)
 
         evt.Skip()

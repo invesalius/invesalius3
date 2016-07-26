@@ -430,10 +430,10 @@ def bitmap2memmap(files, slice_size, orientation, spacing, resolution_percentage
 
     if orientation == 'SAGITTAL':
         if resolution_percentage == 1.0:
-            shape = slice_size[0], slice_size[1], len(files)
+            shape = slice_size[1], slice_size[0], len(files)
         else:
-            shape = math.ceil(slice_size[0]*resolution_percentage),\
-                    math.ceil(slice_size[1]*resolution_percentage), len(files)
+            shape = math.ceil(slice_size[1]*resolution_percentage),\
+                    math.ceil(slice_size[0]*resolution_percentage), len(files)
 
     elif orientation == 'CORONAL':
         if resolution_percentage == 1.0:
