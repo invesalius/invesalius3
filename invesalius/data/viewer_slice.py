@@ -192,6 +192,7 @@ class CanvasRendererCTX:
         self.image = wx.ImageFromBuffer(w, h, self.rgb, self.alpha)
 
     def OnPaint(self, evt, obj):
+        self._array[:] = 0
         size = self.canvas_renderer.GetSize()
         w, h = size
         if self._size != size:
@@ -219,17 +220,20 @@ class CanvasRendererCTX:
         gc.SetBrush(brush)
         gc.Scale(1, -1)
 
+        modified = False
         for (m, mr) in self.viewer.measures.get(self.viewer.orientation, self.viewer.slice_data.number):
             if not m.visible:
                 continue
             mr.draw_to_canvas(gc, self)
+            modified = True
 
         gc.Destroy()
 
         self.gc = None
 
-        self.bitmap = self.image.ConvertToBitmap()
-        self.bitmap.CopyToBuffer(self._array, wx.BitmapBufferFormat_RGBA)
+        if modified:
+            self.bitmap = self.image.ConvertToBitmap()
+            self.bitmap.CopyToBuffer(self._array, wx.BitmapBufferFormat_RGBA)
 
         self._cv_image.Modified()
 
@@ -248,6 +252,7 @@ class CanvasRendererCTX:
         p1y = -p1y
 
         pen = wx.Pen(wx.Colour(*colour), width, wx.SOLID)
+        pen.SetCap(wx.CAP_BUTT)
         gc.SetPen(pen)
 
         path = gc.CreatePath()
