@@ -164,11 +164,12 @@ class RemoveTracker:
             None
 
         def PlhPatriot(self):
-            try:
-                import Polhemus
-                Polhemus.Polhemus().Close()
-            except ImportError:
-                dlg.TrackerNotConnected(4)
+            # try:
+            #     import Polhemus
+            #     Polhemus.Polhemus().Close()
+            # except ImportError:
+            #     dlg.TrackerNotConnected(4)
+            None
 
         def ZebrisCMS20(self):
             None
