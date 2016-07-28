@@ -436,6 +436,7 @@ class Viewer(wx.Panel):
 
         self.orientation = orientation
         self.slice_number = 0
+        self.scroll_enabled = True
 
         self.__init_gui()
 
@@ -1378,6 +1379,8 @@ class Viewer(wx.Panel):
             evt.Skip()
 
     def OnScrollForward(self, evt=None, obj=None):
+        if not self.scroll_enabled:
+            return
         pos = self.scroll.GetThumbPosition()
         min = 0
 
@@ -1389,6 +1392,8 @@ class Viewer(wx.Panel):
             self.OnScrollBar()
 
     def OnScrollBackward(self, evt=None, obj=None):
+        if not self.scroll_enabled:
+            return
         pos = self.scroll.GetThumbPosition()
         max = self.slice_.GetMaxSliceNumber(self.orientation)
 

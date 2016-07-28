@@ -390,13 +390,14 @@ class LinearMeasureInteractorStyle(DefaultInteractorStyle):
 
         if self.selected:
             self.selected = None
+            self.viewer.scroll_enabled = True
             return
 
         if self.creating:
             n, m, mr = self.creating
             if mr.IsComplete():
-                print "COMPLETED"
                 self.creating = None
+                self.viewer.scroll_enabled = True
             else:
                 Publisher.sendMessage("Add measurement point",
                                       ((x, y, z), self._type,
@@ -405,11 +406,13 @@ class LinearMeasureInteractorStyle(DefaultInteractorStyle):
                 n = len(m.points)-1
                 self.creating = n, m, mr
                 Publisher.sendMessage('Reload actual slice %s' % self.orientation)
+                self.viewer.scroll_enabled = False
             return
 
         selected =  self._verify_clicked_display(mx, my)
         if selected:
             self.selected = selected
+            self.viewer.scroll_enabled = False
         else:
             if self.picker.GetViewProp():
                 renderer = self.viewer.slice_data.renderer
@@ -425,6 +428,7 @@ class LinearMeasureInteractorStyle(DefaultInteractorStyle):
                 n, (m, mr) =  1, self.measures.measures[self._ori][slice_number][-1]
                 self.creating = n, m, mr
                 Publisher.sendMessage('Reload actual slice %s' % self.orientation)
+                self.viewer.scroll_enabled = False
 
     def OnReleaseMeasurePoint(self, obj, evt):
         if self.selected:
@@ -434,6 +438,7 @@ class LinearMeasureInteractorStyle(DefaultInteractorStyle):
             Publisher.sendMessage('Change measurement point position', (idx, n, (x, y, z)))
             Publisher.sendMessage('Reload actual slice %s' % self.orientation)
             self.selected = None
+            self.viewer.scroll_enabled = True
 
     def OnMoveMeasurePoint(self, obj, evt):
         x, y, z = self._get_pos_clicked()
@@ -466,6 +471,7 @@ class LinearMeasureInteractorStyle(DefaultInteractorStyle):
             self.creating = None
             self.selected = None
             Publisher.sendMessage('Update slice viewer')
+            self.viewer.scroll_enabled = True
 
     def CleanUp(self):
         self.picker.PickFromListOff()
