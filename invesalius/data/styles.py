@@ -354,6 +354,7 @@ class LinearMeasureInteractorStyle(DefaultInteractorStyle):
 
         self.measures = MeasureData()
         self.selected = None
+        self.creating = None
 
         self._type = const.LINEAR
 
@@ -377,25 +378,57 @@ class LinearMeasureInteractorStyle(DefaultInteractorStyle):
         self._bind_events()
 
     def _bind_events(self):
-        self.AddObserver("LeftButtonPressEvent", self.OnInsertLinearMeasurePoint)
+        self.AddObserver("LeftButtonPressEvent", self.OnInsertMeasurePoint)
         self.AddObserver("LeftButtonReleaseEvent", self.OnReleaseMeasurePoint)
         self.AddObserver("MouseMoveEvent", self.OnMoveMeasurePoint)
+        self.AddObserver("LeaveEvent", self.OnLeaveMeasureInteractor)
 
-    def OnInsertLinearMeasurePoint(self, obj, evt):
+    def OnInsertMeasurePoint(self, obj, evt):
         slice_number = self.slice_data.number
         x, y, z = self._get_pos_clicked()
+        mx, my = self.viewer.interactor.GetEventPosition()
 
-        selected =  self._verify_clicked(x, y, z)
+        if self.selected:
+            self.selected = None
+            self.viewer.scroll_enabled = True
+            return
+
+        if self.creating:
+            n, m, mr = self.creating
+            if mr.IsComplete():
+                self.creating = None
+                self.viewer.scroll_enabled = True
+            else:
+                Publisher.sendMessage("Add measurement point",
+                                      ((x, y, z), self._type,
+                                       ORIENTATIONS[self.orientation],
+                                       slice_number, self.radius))
+                n = len(m.points)-1
+                self.creating = n, m, mr
+                Publisher.sendMessage('Reload actual slice %s' % self.orientation)
+                self.viewer.scroll_enabled = False
+            return
+
+        selected =  self._verify_clicked_display(mx, my)
         if selected:
             self.selected = selected
+            self.viewer.scroll_enabled = False
         else:
             if self.picker.GetViewProp():
                 renderer = self.viewer.slice_data.renderer
                 Publisher.sendMessage("Add measurement point",
-                                      ((x, y,z), self._type,
+                                      ((x, y, z), self._type,
                                        ORIENTATIONS[self.orientation],
                                        slice_number, self.radius))
+                Publisher.sendMessage("Add measurement point",
+                                      ((x, y, z), self._type,
+                                       ORIENTATIONS[self.orientation],
+                                       slice_number, self.radius))
+
+                n, (m, mr) =  1, self.measures.measures[self._ori][slice_number][-1]
+                self.creating = n, m, mr
                 Publisher.sendMessage('Reload actual slice %s' % self.orientation)
+                self.viewer.scroll_enabled = False
 
     def OnReleaseMeasurePoint(self, obj, evt):
         if self.selected:
@@ -405,15 +438,40 @@ class LinearMeasureInteractorStyle(DefaultInteractorStyle):
             Publisher.sendMessage('Change measurement point position', (idx, n, (x, y, z)))
             Publisher.sendMessage('Reload actual slice %s' % self.orientation)
             self.selected = None
+            self.viewer.scroll_enabled = True
 
     def OnMoveMeasurePoint(self, obj, evt):
+        x, y, z = self._get_pos_clicked()
         if self.selected:
             n, m, mr = self.selected
-            x, y, z = self._get_pos_clicked()
             idx = self.measures._list_measures.index((m, mr))
             Publisher.sendMessage('Change measurement point position', (idx, n, (x, y, z)))
 
             Publisher.sendMessage('Reload actual slice %s' % self.orientation)
+
+        elif self.creating:
+            n, m, mr = self.creating
+            idx = self.measures._list_measures.index((m, mr))
+            Publisher.sendMessage('Change measurement point position', (idx, n, (x, y, z)))
+
+            Publisher.sendMessage('Reload actual slice %s' % self.orientation)
+
+        else:
+            mx, my = self.viewer.interactor.GetEventPosition()
+            if self._verify_clicked_display(mx, my):
+                self.viewer.interactor.SetCursor(wx.StockCursor(wx.CURSOR_HAND))
+            else:
+                self.viewer.interactor.SetCursor(wx.StockCursor(wx.CURSOR_DEFAULT))
+
+    def OnLeaveMeasureInteractor(self, obj, evt):
+        if self.creating or self.selected:
+            n, m, mr = self.creating
+            if not mr.IsComplete():
+                Publisher.sendMessage("Remove incomplete measurements")
+            self.creating = None
+            self.selected = None
+            Publisher.sendMessage('Update slice viewer')
+            self.viewer.scroll_enabled = True
 
     def CleanUp(self):
         self.picker.PickFromListOff()
@@ -446,6 +504,21 @@ class LinearMeasureInteractorStyle(DefaultInteractorStyle):
                         px, py, pz = p
                         dist = ((px-x)**2 + (py-y)**2 + (pz-z)**2)**0.5
                         if dist < max_dist:
+                            return (n, m, mr)
+        return None
+
+    def _verify_clicked_display(self, x, y, max_dist=5.0):
+        slice_number = self.slice_data.number
+        max_dist = max_dist**2
+        coord = vtk.vtkCoordinate()
+        if slice_number in self.measures.measures[self._ori]:
+            for m, mr in self.measures.measures[self._ori][slice_number]:
+                if mr.IsComplete():
+                    for n, p in enumerate(m.points):
+                        coord.SetValue(p)
+                        cx, cy = coord.GetComputedDisplayValue(self.viewer.slice_data.renderer)
+                        dist = ((cx-x)**2 + (cy-y)**2)
+                        if dist <= max_dist:
                             return (n, m, mr)
         return None
 

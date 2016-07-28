@@ -5,6 +5,8 @@ import math
 import random
 
 from wx.lib.pubsub import pub as Publisher
+
+import numpy as np
 import vtk
 
 import constants as const
@@ -137,7 +139,7 @@ class MeasurementManager(object):
                         (actors, m.slice_number))
             self.current = None
 
-            if not m.is_shown:
+            if not m.visible:
                 mr.SetVisibility(False)
                 if m.location == const.SURFACE:
                     Publisher.sendMessage('Render volume viewer')
@@ -307,7 +309,7 @@ class MeasurementManager(object):
     def _set_visibility(self, pubsub_evt):
         index, visibility = pubsub_evt.data
         m, mr = self.measures[index]
-        m.is_shown = visibility
+        m.visible = visibility
         mr.SetVisibility(visibility)
         if m.location == const.SURFACE:
             Publisher.sendMessage('Render volume viewer')
@@ -318,22 +320,24 @@ class MeasurementManager(object):
         if self.current is None:
             return
 
-        mr = self.current[1]
-        print "RM INC M", self.current, mr.IsComplete()
+        m, mr = self.current
         if not mr.IsComplete():
             print "---To REMOVE"
-            self.measures.pop()
+            idx = self.measures._list_measures.index((m, mr))
+            self.measures.remove((m, mr))
+            Publisher.sendMessage("Remove GUI measurement", idx)
             actors = mr.GetActors()
             slice_number = self.current[0].slice_number
-            Publisher.sendMessage(('Remove actors ' + str(self.current[0].location)),
-                                  (actors, slice_number))
+            if m.location == const.SURFACE:
+                Publisher.sendMessage(('Remove actors ' + str(self.current[0].location)),
+                                      (actors, slice_number))
             if self.current[0].location == const.SURFACE:
                 Publisher.sendMessage('Render volume viewer')
             else:
                 Publisher.sendMessage('Update slice viewer')
 
-            if self.measures:
-                self.measures.pop()
+            #  if self.measures:
+                #  self.measures.pop()
             self.current = None
 
 
@@ -349,7 +353,7 @@ class Measurement():
         self.type = const.LINEAR # ANGULAR
         self.slice_number = 0
         self.points = []
-        self.is_shown = True
+        self.visible = True
 
     def Load(self, info):
         self.index = info["index"]
@@ -360,7 +364,7 @@ class Measurement():
         self.type = info["type"]
         self.slice_number = info["slice_number"]
         self.points = info["points"]
-        self.is_shown = info["visible"]
+        self.visible = info["visible"]
 
 class CirclePointRepresentation(object):
     """
@@ -559,12 +563,38 @@ class LinearMeasure(object):
         a.GetProperty().SetOpacity(0.75)
         self.text_actor = a
 
+    def draw_to_canvas(self, gc, canvas):
+        """
+        Draws to an wx.GraphicsContext.
+
+        Parameters:
+            gc: is a wx.GraphicsContext
+            canvas: the canvas it's being drawn.
+        """
+        coord = vtk.vtkCoordinate()
+        points = []
+        for p in self.points:
+            coord.SetValue(p)
+            cx, cy = coord.GetComputedDisplayValue(canvas.viewer.slice_data.renderer)
+            #  canvas.draw_circle((cx, cy), 2.5)
+            points.append((cx, cy))
+
+        if len(points) > 1:
+            for (p0, p1) in zip(points[:-1:], points[1::]):
+                canvas.draw_line(p0, p1)
+
+            txt = u"%.3f mm" % self.GetValue()
+            canvas.draw_text_box(txt, ((points[0][0]+points[1][0])/2.0, (points[0][1]+points[1][1])/2.0))
+
     def GetNumberOfPoints(self):
         return len(self.points)
 
     def GetValue(self):
-        p1, p2 = self.points
-        return math.sqrt(vtk.vtkMath.Distance2BetweenPoints(p1, p2))
+        if self.IsComplete():
+            p1, p2 = self.points
+            return math.sqrt(vtk.vtkMath.Distance2BetweenPoints(p1, p2))
+        else:
+            return 0.0
 
     def SetRenderer(self, renderer):
         if self.point_actor1:
@@ -607,21 +637,22 @@ class LinearMeasure(object):
         return actors
 
     def Remove(self):
-        if self.point_actor1:
-            self.renderer.RemoveActor(self.point_actor1)
-            del self.point_actor1
+        pass
+        #  if self.point_actor1:
+            #  self.renderer.RemoveActor(self.point_actor1)
+            #  del self.point_actor1
 
-        if self.point_actor2:
-            self.renderer.RemoveActor(self.point_actor2)
-            del self.point_actor2
+        #  if self.point_actor2:
+            #  self.renderer.RemoveActor(self.point_actor2)
+            #  del self.point_actor2
 
-        if self.line_actor:
-            self.renderer.RemoveActor(self.line_actor)
-            del self.line_actor
+        #  if self.line_actor:
+            #  self.renderer.RemoveActor(self.line_actor)
+            #  del self.line_actor
 
-        if self.text_actor:
-            self.renderer.RemoveActor(self.text_actor)
-            del self.text_actor
+        #  if self.text_actor:
+            #  self.renderer.RemoveActor(self.text_actor)
+            #  del self.text_actor
 
     # def __del__(self):
         # self.Remove()
@@ -630,7 +661,7 @@ class LinearMeasure(object):
 class AngularMeasure(object):
     def __init__(self, colour=(1, 0, 0), representation=None):
         self.colour = colour
-        self.points = [0, 0, 0]
+        self.points = []
         self.number_of_points = 0
         self.point_actor1 = None
         self.point_actor2 = None
@@ -658,7 +689,7 @@ class AngularMeasure(object):
 
     def SetPoint1(self, x, y, z):
         if self.number_of_points == 0:
-            self.points[0] = (x, y, z)
+            self.points.append((x, y, z))
             self.number_of_points = 1
             self.point_actor1 = self.representation.GetRepresentation(x, y, z)
         else:
@@ -677,7 +708,7 @@ class AngularMeasure(object):
     def SetPoint2(self, x, y, z):
         if self.number_of_points == 1:
             self.number_of_points = 2
-            self.points[1] = (x, y, z)
+            self.points.append((x, y, z))
             self.point_actor2 = self.representation.GetRepresentation(x, y, z)
         else:
             self.points[1] = (x, y, z)
@@ -695,7 +726,7 @@ class AngularMeasure(object):
     def SetPoint3(self, x, y, z):
         if self.number_of_points == 2:
             self.number_of_points = 3
-            self.points[2] = (x, y, z)
+            self.points.append((x, y, z))
             self.point_actor3 = self.representation.GetRepresentation(x, y, z)
             self.CreateMeasure()
         else:
@@ -793,11 +824,41 @@ class AngularMeasure(object):
         a.GetPositionCoordinate().SetValue(x,y,z)
         self.text_actor = a
 
+    def draw_to_canvas(self, gc, canvas):
+        """
+        Draws to an wx.GraphicsContext.
+
+        Parameters:
+            gc: is a wx.GraphicsContext
+            canvas: the canvas it's being drawn.
+        """
+
+        coord = vtk.vtkCoordinate()
+        points = []
+        for p in self.points:
+            coord.SetValue(p)
+            cx, cy = coord.GetComputedDisplayValue(canvas.viewer.slice_data.renderer)
+            #  canvas.draw_circle((cx, cy), 2.5)
+            points.append((cx, cy))
+
+        if len(points) > 1:
+            for (p0, p1) in zip(points[:-1:], points[1::]):
+                canvas.draw_line(p0, p1)
+
+            if len(points) == 3:
+                txt = u"%.3f° / %.3f°" % (self.GetValue(), 360.0 - self.GetValue())
+
+                canvas.draw_arc(points[1], points[0], points[2])
+                canvas.draw_text_box(txt, (points[1][0], points[1][1]))
+
     def GetNumberOfPoints(self):
         return self.number_of_points
 
     def GetValue(self):
-        return self.CalculateAngle()
+        if self.IsComplete():
+            return self.CalculateAngle()
+        else:
+            return 0.0
 
     def SetVisibility(self, v):
         self.point_actor1.SetVisibility(v)
@@ -835,30 +896,35 @@ class AngularMeasure(object):
         v2 = [j-i for i,j in zip(self.points[2], self.points[1])]
         #print vtk.vtkMath.Normalize(v1)
         #print vtk.vtkMath.Normalize(v2)
-        cos = vtk.vtkMath.Dot(v1, v2)/(vtk.vtkMath.Norm(v1)*vtk.vtkMath.Norm(v2))
+        try:
+            cos = vtk.vtkMath.Dot(v1, v2)/(vtk.vtkMath.Norm(v1)*vtk.vtkMath.Norm(v2))
+        except ZeroDivisionError:
+            return 0.0
+
         angle = math.degrees(math.acos(cos))
         return angle
 
     def Remove(self):
-        if self.point_actor1:
-            self.renderer.RemoveActor(self.point_actor1)
-            del self.point_actor1
+        pass
+        #  if self.point_actor1:
+            #  self.renderer.RemoveActor(self.point_actor1)
+            #  del self.point_actor1
 
-        if self.point_actor2:
-            self.renderer.RemoveActor(self.point_actor2)
-            del self.point_actor2
+        #  if self.point_actor2:
+            #  self.renderer.RemoveActor(self.point_actor2)
+            #  del self.point_actor2
 
-        if self.point_actor3:
-            self.renderer.RemoveActor(self.point_actor3)
-            del self.point_actor3
+        #  if self.point_actor3:
+            #  self.renderer.RemoveActor(self.point_actor3)
+            #  del self.point_actor3
 
-        if self.line_actor:
-            self.renderer.RemoveActor(self.line_actor)
-            del self.line_actor
+        #  if self.line_actor:
+            #  self.renderer.RemoveActor(self.line_actor)
+            #  del self.line_actor
 
-        if self.text_actor:
-            self.renderer.RemoveActor(self.text_actor)
-            del self.text_actor
+        #  if self.text_actor:
+            #  self.renderer.RemoveActor(self.text_actor)
+            #  del self.text_actor
 
     def SetRenderer(self, renderer):
         if self.point_actor1:
