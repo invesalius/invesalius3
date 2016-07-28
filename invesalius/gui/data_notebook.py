@@ -943,6 +943,7 @@ class MeasuresListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
         Publisher.subscribe(self.OnShowSingle, 'Show single measurement')
         Publisher.subscribe(self.OnShowMultiple, 'Show multiple measurements')
         Publisher.subscribe(self.OnLoadData, 'Load measurement dict')
+        Publisher.subscribe(self.OnRemoveGUIMeasure, 'Remove GUI measurement')
 
     def __bind_events_wx(self):
         self.Bind(wx.EVT_LIST_ITEM_ACTIVATED, self.OnItemActivated)
@@ -958,6 +959,19 @@ class MeasuresListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
             self.RemoveMeasurements()
         elif (keycode == wx.WXK_DELETE):
             self.RemoveMeasurements()
+
+    def OnRemoveGUIMeasure(self, pubsub_evt):
+        idx = pubsub_evt.data
+        self.DeleteItem(idx)
+
+        old_dict = self._list_index
+        new_dict = {}
+        j = 0
+        for i in old_dict:
+            if i != idx:
+                new_dict[j] = old_dict[i]
+                j+=1
+        self._list_index = new_dict
 
     def RemoveMeasurements(self):
         """

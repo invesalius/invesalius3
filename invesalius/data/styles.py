@@ -381,6 +381,7 @@ class LinearMeasureInteractorStyle(DefaultInteractorStyle):
         self.AddObserver("LeftButtonPressEvent", self.OnInsertMeasurePoint)
         self.AddObserver("LeftButtonReleaseEvent", self.OnReleaseMeasurePoint)
         self.AddObserver("MouseMoveEvent", self.OnMoveMeasurePoint)
+        self.AddObserver("LeaveEvent", self.OnLeaveMeasureInteractor)
 
     def OnInsertMeasurePoint(self, obj, evt):
         slice_number = self.slice_data.number
@@ -456,6 +457,15 @@ class LinearMeasureInteractorStyle(DefaultInteractorStyle):
                 self.viewer.interactor.SetCursor(wx.StockCursor(wx.CURSOR_HAND))
             else:
                 self.viewer.interactor.SetCursor(wx.StockCursor(wx.CURSOR_DEFAULT))
+
+    def OnLeaveMeasureInteractor(self, obj, evt):
+        if self.creating or self.selected:
+            n, m, mr = self.creating
+            if not mr.IsComplete():
+                Publisher.sendMessage("Remove incomplete measurements")
+            self.creating = None
+            self.selected = None
+            Publisher.sendMessage('Update slice viewer')
 
     def CleanUp(self):
         self.picker.PickFromListOff()

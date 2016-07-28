@@ -320,22 +320,24 @@ class MeasurementManager(object):
         if self.current is None:
             return
 
-        mr = self.current[1]
-        print "RM INC M", self.current, mr.IsComplete()
+        m, mr = self.current
         if not mr.IsComplete():
             print "---To REMOVE"
-            self.measures.pop()
+            idx = self.measures._list_measures.index((m, mr))
+            self.measures.remove((m, mr))
+            Publisher.sendMessage("Remove GUI measurement", idx)
             actors = mr.GetActors()
             slice_number = self.current[0].slice_number
-            Publisher.sendMessage(('Remove actors ' + str(self.current[0].location)),
-                                  (actors, slice_number))
+            if m.location == const.SURFACE:
+                Publisher.sendMessage(('Remove actors ' + str(self.current[0].location)),
+                                      (actors, slice_number))
             if self.current[0].location == const.SURFACE:
                 Publisher.sendMessage('Render volume viewer')
             else:
                 Publisher.sendMessage('Update slice viewer')
 
-            if self.measures:
-                self.measures.pop()
+            #  if self.measures:
+                #  self.measures.pop()
             self.current = None
 
 
