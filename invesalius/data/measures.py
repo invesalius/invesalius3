@@ -574,7 +574,7 @@ class LinearMeasure(object):
         for p in self.points:
             coord.SetValue(p)
             cx, cy = coord.GetComputedDisplayValue(canvas.viewer.slice_data.renderer)
-            canvas.draw_circle((cx, cy), 2.5)
+            #  canvas.draw_circle((cx, cy), 2.5)
             points.append((cx, cy))
 
         if len(points) > 1:
@@ -588,8 +588,11 @@ class LinearMeasure(object):
         return len(self.points)
 
     def GetValue(self):
-        p1, p2 = self.points
-        return math.sqrt(vtk.vtkMath.Distance2BetweenPoints(p1, p2))
+        if self.IsComplete():
+            p1, p2 = self.points
+            return math.sqrt(vtk.vtkMath.Distance2BetweenPoints(p1, p2))
+        else:
+            return 0.0
 
     def SetRenderer(self, renderer):
         if self.point_actor1:
@@ -833,7 +836,7 @@ class AngularMeasure(object):
         for p in self.points:
             coord.SetValue(p)
             cx, cy = coord.GetComputedDisplayValue(canvas.viewer.slice_data.renderer)
-            canvas.draw_circle((cx, cy), 2.5)
+            #  canvas.draw_circle((cx, cy), 2.5)
             points.append((cx, cy))
 
         if len(points) > 1:
@@ -850,7 +853,10 @@ class AngularMeasure(object):
         return self.number_of_points
 
     def GetValue(self):
-        return self.CalculateAngle()
+        if self.IsComplete():
+            return self.CalculateAngle()
+        else:
+            return 0.0
 
     def SetVisibility(self, v):
         self.point_actor1.SetVisibility(v)
@@ -888,7 +894,11 @@ class AngularMeasure(object):
         v2 = [j-i for i,j in zip(self.points[2], self.points[1])]
         #print vtk.vtkMath.Normalize(v1)
         #print vtk.vtkMath.Normalize(v2)
-        cos = vtk.vtkMath.Dot(v1, v2)/(vtk.vtkMath.Norm(v1)*vtk.vtkMath.Norm(v2))
+        try:
+            cos = vtk.vtkMath.Dot(v1, v2)/(vtk.vtkMath.Norm(v1)*vtk.vtkMath.Norm(v2))
+        except ZeroDivisionError:
+            return 0.0
+
         angle = math.degrees(math.acos(cos))
         return angle
 

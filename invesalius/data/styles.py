@@ -354,6 +354,7 @@ class LinearMeasureInteractorStyle(DefaultInteractorStyle):
 
         self.measures = MeasureData()
         self.selected = None
+        self.creating = None
 
         self._type = const.LINEAR
 
@@ -386,6 +387,25 @@ class LinearMeasureInteractorStyle(DefaultInteractorStyle):
         x, y, z = self._get_pos_clicked()
         mx, my = self.viewer.interactor.GetEventPosition()
 
+        if self.selected:
+            self.selected = None
+            return
+
+        if self.creating:
+            n, m, mr = self.creating
+            if mr.IsComplete():
+                print "COMPLETED"
+                self.creating = None
+            else:
+                Publisher.sendMessage("Add measurement point",
+                                      ((x, y, z), self._type,
+                                       ORIENTATIONS[self.orientation],
+                                       slice_number, self.radius))
+                n = len(m.points)-1
+                self.creating = n, m, mr
+                Publisher.sendMessage('Reload actual slice %s' % self.orientation)
+            return
+
         selected =  self._verify_clicked_display(mx, my)
         if selected:
             self.selected = selected
@@ -393,9 +413,16 @@ class LinearMeasureInteractorStyle(DefaultInteractorStyle):
             if self.picker.GetViewProp():
                 renderer = self.viewer.slice_data.renderer
                 Publisher.sendMessage("Add measurement point",
-                                      ((x, y,z), self._type,
+                                      ((x, y, z), self._type,
                                        ORIENTATIONS[self.orientation],
                                        slice_number, self.radius))
+                Publisher.sendMessage("Add measurement point",
+                                      ((x, y, z), self._type,
+                                       ORIENTATIONS[self.orientation],
+                                       slice_number, self.radius))
+
+                n, (m, mr) =  1, self.measures.measures[self._ori][slice_number][-1]
+                self.creating = n, m, mr
                 Publisher.sendMessage('Reload actual slice %s' % self.orientation)
 
     def OnReleaseMeasurePoint(self, obj, evt):
@@ -411,6 +438,13 @@ class LinearMeasureInteractorStyle(DefaultInteractorStyle):
         x, y, z = self._get_pos_clicked()
         if self.selected:
             n, m, mr = self.selected
+            idx = self.measures._list_measures.index((m, mr))
+            Publisher.sendMessage('Change measurement point position', (idx, n, (x, y, z)))
+
+            Publisher.sendMessage('Reload actual slice %s' % self.orientation)
+
+        elif self.creating:
+            n, m, mr = self.creating
             idx = self.measures._list_measures.index((m, mr))
             Publisher.sendMessage('Change measurement point position', (idx, n, (x, y, z)))
 
