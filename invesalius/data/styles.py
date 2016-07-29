@@ -405,7 +405,7 @@ class LinearMeasureInteractorStyle(DefaultInteractorStyle):
                                        slice_number, self.radius))
                 n = len(m.points)-1
                 self.creating = n, m, mr
-                Publisher.sendMessage('Update slice viewer')
+                self.viewer.UpdateCanvas()
                 self.viewer.scroll_enabled = False
             return
 
@@ -427,7 +427,7 @@ class LinearMeasureInteractorStyle(DefaultInteractorStyle):
 
                 n, (m, mr) =  1, self.measures.measures[self._ori][slice_number][-1]
                 self.creating = n, m, mr
-                Publisher.sendMessage('Update slice viewer')
+                self.viewer.UpdateCanvas()
                 self.viewer.scroll_enabled = False
 
     def OnReleaseMeasurePoint(self, obj, evt):
@@ -436,7 +436,7 @@ class LinearMeasureInteractorStyle(DefaultInteractorStyle):
             x, y, z = self._get_pos_clicked()
             idx = self.measures._list_measures.index((m, mr))
             Publisher.sendMessage('Change measurement point position', (idx, n, (x, y, z)))
-            Publisher.sendMessage('Update slice viewer')
+            self.viewer.UpdateCanvas()
             self.selected = None
             self.viewer.scroll_enabled = True
 
@@ -446,13 +446,13 @@ class LinearMeasureInteractorStyle(DefaultInteractorStyle):
             n, m, mr = self.selected
             idx = self.measures._list_measures.index((m, mr))
             Publisher.sendMessage('Change measurement point position', (idx, n, (x, y, z)))
-            Publisher.sendMessage('Update slice viewer')
+            self.viewer.UpdateCanvas()
 
         elif self.creating:
             n, m, mr = self.creating
             idx = self.measures._list_measures.index((m, mr))
             Publisher.sendMessage('Change measurement point position', (idx, n, (x, y, z)))
-            Publisher.sendMessage('Update slice viewer')
+            self.viewer.UpdateCanvas()
 
         else:
             mx, my = self.viewer.interactor.GetEventPosition()
@@ -468,7 +468,7 @@ class LinearMeasureInteractorStyle(DefaultInteractorStyle):
                 Publisher.sendMessage("Remove incomplete measurements")
             self.creating = None
             self.selected = None
-            Publisher.sendMessage('Update slice viewer')
+            self.viewer.UpdateCanvas()
             self.viewer.scroll_enabled = True
 
     def CleanUp(self):

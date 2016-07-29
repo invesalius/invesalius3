@@ -109,6 +109,7 @@ class ContourMIPConfig(wx.Panel):
         self.SetAutoLayout(1)
 
         self.orientation = orientation
+        self.canvas = None
 
         self.mip_size_spin.Bind(wx.EVT_SPINCTRL, self.OnSetMIPSize)
         self.border_spin.Bind(wx.EVT_SPINCTRL, self.OnSetMIPBorder)
@@ -152,6 +153,8 @@ class CanvasRendererCTX:
         self.canvas_renderer = viewer.slice_data.canvas_renderer
         self._size = self.canvas_renderer.GetSize()
         self.gc = None
+        self.last_cam_modif_time = -1
+        self.modified = True
         self._init_canvas()
         viewer.slice_data.renderer.AddObserver("StartEvent", self.OnPaint)
 
@@ -191,13 +194,22 @@ class CanvasRendererCTX:
         self.bitmap = wx.EmptyBitmapRGBA(w, h)
         self.image = wx.ImageFromBuffer(w, h, self.rgb, self.alpha)
 
+        self.modified = True
+
     def OnPaint(self, evt, obj):
-        self._array[:] = 0
         size = self.canvas_renderer.GetSize()
         w, h = size
         if self._size != size:
             self._size = size
             self._resize_canvas(w, h)
+
+        cam_modif_time = self.viewer.cam.GetMTime()
+        if (not self.modified) and cam_modif_time == self.last_cam_modif_time:
+            return
+
+        self.last_cam_modif_time = cam_modif_time
+
+        self._array[:] = 0
 
         coord = vtk.vtkCoordinate()
 
@@ -236,6 +248,7 @@ class CanvasRendererCTX:
             self.bitmap.CopyToBuffer(self._array, wx.BitmapBufferFormat_RGBA)
 
         self._cv_image.Modified()
+        self.modified = False
 
     def draw_line(self, pos0, pos1, arrow_start=False, arrow_end=False, colour=(255, 0, 0, 128), width=2, style=wx.SOLID):
         """
@@ -976,6 +989,12 @@ class Viewer(wx.Panel):
                                  'Change mask colour')
         Publisher.subscribe(self.UpdateRender,
                                  'Update slice viewer')
+        Publisher.subscribe(self.UpdateRender,
+                                 'Update slice viewer %s' % self.orientation)
+        Publisher.subscribe(self.UpdateCanvas,
+                            'Redraw canvas')
+        Publisher.subscribe(self.UpdateCanvas,
+                            'Redraw canvas %s' % self.orientation)
         Publisher.subscribe(self.ChangeSliceNumber,
                                  ('Set scroll position',
                                   self.orientation))
@@ -1205,7 +1224,7 @@ class Viewer(wx.Panel):
         self.cam = self.slice_data.renderer.GetActiveCamera()
         self.__build_cross_lines()
 
-        canvas = CanvasRendererCTX(self)
+        self.canvas = CanvasRendererCTX(self)
 
         # Set the slice number to the last slice to ensure the camera if far
         # enough to show all slices.
@@ -1320,6 +1339,11 @@ class Viewer(wx.Panel):
 
     def UpdateRender(self, evt):
         print "Updating viewer", self.orientation
+        self.interactor.Render()
+
+    def UpdateCanvas(self, evt=None):
+        print "Updating viewer and canvas", self.orientation
+        self.canvas.modified = True
         self.interactor.Render()
 
     def __configure_scroll(self):
