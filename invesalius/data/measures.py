@@ -170,20 +170,14 @@ class MeasurementManager(object):
 
         to_remove = False
         if self.current is None:
-            print "To Create"
             to_create = True
         elif self.current[0].location != location:
-            print "To Create"
-            print "To Remove"
             to_create = True
             to_remove = True
         elif self.current[0].slice_number != slice_number:
-            print "To Create"
-            print "To Remove"
             to_create = True
             to_remove = True
         else:
-            print "To not Create"
             to_create = False
 
         if to_create:
@@ -198,7 +192,6 @@ class MeasurementManager(object):
             else:
                 mr = AngularMeasure(m.colour, representation)
             if to_remove:
-                print "---To REMOVE"
                 #  actors = self.current[1].GetActors()
                 #  slice_number = self.current[0].slice_number
                 #  Publisher.sendMessage(('Remove actors ' + str(self.current[0].location)),
@@ -251,7 +244,6 @@ class MeasurementManager(object):
 
     def _change_measure_point_pos(self, pubsub_evt):
         index, npoint, pos = pubsub_evt.data
-        print index, npoint, pos
         m, mr = self.measures[index]
         x, y, z = pos
         if npoint == 0:
@@ -322,7 +314,6 @@ class MeasurementManager(object):
 
         m, mr = self.current
         if not mr.IsComplete():
-            print "---To REMOVE"
             idx = self.measures._list_measures.index((m, mr))
             self.measures.remove((m, mr))
             Publisher.sendMessage("Remove GUI measurement", idx)
@@ -477,7 +468,6 @@ class LinearMeasure(object):
         if not representation:
             representation = CirclePointRepresentation(colour)
         self.representation = representation
-        print colour
 
     def IsComplete(self):
         """
@@ -671,7 +661,6 @@ class AngularMeasure(object):
         if not representation:
             representation = CirclePointRepresentation(colour)
         self.representation = representation
-        print colour
 
     def IsComplete(self):
         return not self.point_actor3 is None
@@ -761,8 +750,6 @@ class AngularMeasure(object):
         line.AddInputConnection(line1.GetOutputPort())
         line.AddInputConnection(line2.GetOutputPort())
         line.AddInputConnection(arc.GetOutputPort())
-
-        print line
 
         c = vtk.vtkCoordinate()
         c.SetCoordinateSystemToWorld()
@@ -894,8 +881,6 @@ class AngularMeasure(object):
         """
         v1 = [j-i for i,j in zip(self.points[0], self.points[1])]
         v2 = [j-i for i,j in zip(self.points[2], self.points[1])]
-        #print vtk.vtkMath.Normalize(v1)
-        #print vtk.vtkMath.Normalize(v2)
         try:
             cos = vtk.vtkMath.Dot(v1, v2)/(vtk.vtkMath.Norm(v1)*vtk.vtkMath.Norm(v2))
         except ZeroDivisionError:

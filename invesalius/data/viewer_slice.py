@@ -1338,11 +1338,9 @@ class Viewer(wx.Panel):
         self.slice_data.renderer.ResetCameraClippingRange()
 
     def UpdateRender(self, evt):
-        print "Updating viewer", self.orientation
         self.interactor.Render()
 
     def UpdateCanvas(self, evt=None):
-        print "Updating viewer and canvas", self.orientation
         self.canvas.modified = True
         self.interactor.Render()
 
