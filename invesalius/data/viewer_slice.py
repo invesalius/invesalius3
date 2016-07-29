@@ -350,7 +350,7 @@ class CanvasRendererCTX:
 
         Params:
             text: an unicode text.
-            pos: (x, y) position.
+            pos: (x, y) top left position.
             font: if None it'll use the default gui font.
             txt_colour: RGB text colour
         """
@@ -373,7 +373,7 @@ class CanvasRendererCTX:
 
         Params:
             text: an unicode text.
-            pos: (x, y) position.
+            pos: (x, y) top left position.
             font: if None it'll use the default gui font.
             txt_colour: RGB text colour
             bg_colour: RGBA box colour
