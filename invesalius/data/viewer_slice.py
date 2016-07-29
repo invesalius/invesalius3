@@ -1440,7 +1440,7 @@ class Viewer(wx.Panel):
                 self.Layout()
         else:
             self.mip_ctrls.Hide()
-            self.GetSizer().Remove(self.mip_ctrls)
+            self.GetSizer().Detach(self.mip_ctrls)
             self.Layout()
 
     def OnSetOverwriteMask(self, pubsub_evt):
