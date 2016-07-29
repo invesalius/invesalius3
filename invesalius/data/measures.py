@@ -144,7 +144,7 @@ class MeasurementManager(object):
                 if m.location == const.SURFACE:
                     Publisher.sendMessage('Render volume viewer')
                 else:
-                    Publisher.sendMessage('Update slice viewer')
+                    Publisher.sendMessage('Redraw canvas')
 
     def _add_point(self, pubsub_evt):
         position = pubsub_evt.data[0]
@@ -207,7 +207,7 @@ class MeasurementManager(object):
                 if self.current[0].location == const.SURFACE:
                     Publisher.sendMessage('Render volume viewer')
                 else:
-                    Publisher.sendMessage('Reload actual slice')
+                    Publisher.sendMessage('Redraw canvas')
 
             session = ses.Session()
             session.ChangeProject()
@@ -300,7 +300,7 @@ class MeasurementManager(object):
             if m.location == const.SURFACE:
                 Publisher.sendMessage(('Remove actors ' + str(m.location)),
                         (mr.GetActors(), m.slice_number))
-        Publisher.sendMessage('Update slice viewer')
+        Publisher.sendMessage('Redraw canvas')
         Publisher.sendMessage('Render volume viewer')
 
         session = ses.Session()
@@ -314,7 +314,7 @@ class MeasurementManager(object):
         if m.location == const.SURFACE:
             Publisher.sendMessage('Render volume viewer')
         else:
-            Publisher.sendMessage('Update slice viewer')
+            Publisher.sendMessage('Redraw canvas')
 
     def _rm_incomplete_measurements(self, pubsub_evt):
         if self.current is None:
@@ -334,7 +334,7 @@ class MeasurementManager(object):
             if self.current[0].location == const.SURFACE:
                 Publisher.sendMessage('Render volume viewer')
             else:
-                Publisher.sendMessage('Update slice viewer')
+                Publisher.sendMessage('Redraw canvas')
 
             #  if self.measures:
                 #  self.measures.pop()
