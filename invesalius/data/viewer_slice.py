@@ -240,6 +240,15 @@ class CanvasRendererCTX:
     def draw_line(self, pos0, pos1, arrow_start=False, arrow_end=False, colour=(255, 0, 0, 128), width=2, style=wx.SOLID):
         """
         Draw a line from pos0 to pos1
+
+        Params:
+            pos0: the start of the line position (x, y).
+            pos1: the end of the line position (x, y).
+            arrow_start: if to draw a arrow at the start of the line.
+            arrow_end: if to draw a arrow at the end of the line.
+            colour: RGBA line colour.
+            width: the width of line.
+            style: default wx.SOLID.
         """
         if self.gc is None:
             return None
