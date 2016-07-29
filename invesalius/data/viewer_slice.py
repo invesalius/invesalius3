@@ -344,6 +344,29 @@ class CanvasRendererCTX:
         gc.SetBrush(wx.Brush(fill_colour))
         gc.DrawRectangle(px, py, width, height)
 
+    def draw_text(self, text, pos, font=None, txt_colour=(255, 255, 255)):
+        """
+        Draw text.
+
+        Params:
+            text: an unicode text.
+            pos: (x, y) position.
+            font: if None it'll use the default gui font.
+            txt_colour: RGB text colour
+        """
+        if self.gc is None:
+            return None
+        gc = self.gc
+
+        if font is None:
+            font = wx.SystemSettings.GetFont(wx.SYS_DEFAULT_GUI_FONT)
+
+        font = gc.CreateFont(font, txt_colour)
+        gc.SetFont(font)
+
+        px, py = pos
+        gc.DrawText(text, px, py)
+
     def draw_text_box(self, text, pos, font=None, txt_colour=(255, 255, 255), bg_colour=(128, 128, 128, 128), border=5):
         """
         Draw text inside a text box.
@@ -363,8 +386,8 @@ class CanvasRendererCTX:
         if font is None:
             font = wx.SystemSettings.GetFont(wx.SYS_DEFAULT_GUI_FONT)
 
-        font = gc.CreateFont(font, txt_colour)
-        gc.SetFont(font)
+        _font = gc.CreateFont(font, txt_colour)
+        gc.SetFont(_font)
         w, h = gc.GetTextExtent(text)
 
         px, py = pos
@@ -374,8 +397,9 @@ class CanvasRendererCTX:
         cw, ch = w + border * 2, h + border * 2
         self.draw_rectangle((px, py), cw, ch, bg_colour, bg_colour)
 
+        # Drawing the text
         tpx, tpy = px + border, py + border
-        gc.DrawText(text, tpx, tpy)
+        self.draw_text(text, (tpx, tpy), font, txt_colour)
 
     def draw_arc(self, center, p0, p1, line_colour=(255, 0, 0, 128), width=2):
         """
