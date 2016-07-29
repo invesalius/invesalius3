@@ -324,6 +324,25 @@ class CanvasRendererCTX:
         gc.StrokePath(path)
         gc.FillPath(path)
 
+    def draw_rectangle(self, pos, width, height, line_colour=(255, 0, 0, 128), fill_colour=(0, 0, 0, 0)):
+        """
+        Draw a rectangle with its top left at pos and with the given width and height.
+
+        Params:
+            pos: The top left pos (x, y) of the rectangle.
+            width: width of the rectangle.
+            height: heigth of the rectangle.
+            line_colour: RGBA line colour.
+            fill_colour: RGBA fill colour.
+        """
+        if self.gc is None:
+            return None
+        gc = self.gc
+
+        px, py = pos
+        gc.SetPen(wx.Pen(line_colour))
+        gc.SetBrush(wx.Brush(fill_colour))
+        gc.DrawRectangle(px, py, width, height)
 
     def draw_text_box(self, text, pos, font=None, txt_colour=(255, 255, 255), bg_colour=(128, 128, 128, 128), border=5):
         """
@@ -353,9 +372,7 @@ class CanvasRendererCTX:
 
         # Drawing the box
         cw, ch = w + border * 2, h + border * 2
-        gc.SetBrush(wx.Brush(bg_colour))
-        gc.SetPen(wx.Pen(bg_colour))
-        gc.DrawRectangle(px, py, cw, ch)
+        self.draw_rectangle((px, py), cw, ch, bg_colour, bg_colour)
 
         tpx, tpy = px + border, py + border
         gc.DrawText(text, tpx, tpy)
