@@ -3,6 +3,7 @@
 
 import math
 import random
+import sys
 
 from wx.lib.pubsub import pub as Publisher
 
@@ -36,6 +37,15 @@ map_id_locations = {const.SURFACE: "3D",
                     const.CORONAL: "CORONAL",
                     const.SAGITAL: "SAGITAL",
                     }
+
+if sys.platform == 'win32':
+    MEASURE_LINE_COLOUR = (255, 0, 0, 255)
+    MEASURE_TEXT_COLOUR = (0, 0, 0)
+    MEASURE_TEXTBOX_COLOUR = (255, 255, 165, 255)
+else:
+    MEASURE_LINE_COLOUR = (255, 0, 0, 128)
+    MEASURE_TEXT_COLOUR = (0, 0, 0)
+    MEASURE_TEXTBOX_COLOUR = (255, 255, 165, 255)
 
 class MeasureData:
     """
@@ -571,10 +581,10 @@ class LinearMeasure(object):
 
         if len(points) > 1:
             for (p0, p1) in zip(points[:-1:], points[1::]):
-                canvas.draw_line(p0, p1)
+                canvas.draw_line(p0, p1, colour=MEASURE_LINE_COLOUR)
 
             txt = u"%.3f mm" % self.GetValue()
-            canvas.draw_text_box(txt, ((points[0][0]+points[1][0])/2.0, (points[0][1]+points[1][1])/2.0))
+            canvas.draw_text_box(txt, ((points[0][0]+points[1][0])/2.0, (points[0][1]+points[1][1])/2.0), txt_colour=MEASURE_TEXT_COLOUR, bg_colour=MEASURE_TEXTBOX_COLOUR)
 
     def GetNumberOfPoints(self):
         return len(self.points)
@@ -830,13 +840,13 @@ class AngularMeasure(object):
 
         if len(points) > 1:
             for (p0, p1) in zip(points[:-1:], points[1::]):
-                canvas.draw_line(p0, p1)
+                canvas.draw_line(p0, p1, colour=MEASURE_LINE_COLOUR)
 
             if len(points) == 3:
                 txt = u"%.3f° / %.3f°" % (self.GetValue(), 360.0 - self.GetValue())
 
-                canvas.draw_arc(points[1], points[0], points[2])
-                canvas.draw_text_box(txt, (points[1][0], points[1][1]))
+                canvas.draw_arc(points[1], points[0], points[2], line_colour=MEASURE_LINE_COLOUR)
+                canvas.draw_text_box(txt, (points[1][0], points[1][1]), txt_colour=MEASURE_TEXT_COLOUR, bg_colour=MEASURE_TEXTBOX_COLOUR)
 
     def GetNumberOfPoints(self):
         return self.number_of_points
