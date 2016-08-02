@@ -581,7 +581,8 @@ class LinearMeasure(object):
 
         if len(points) > 1:
             for (p0, p1) in zip(points[:-1:], points[1::]):
-                canvas.draw_line(p0, p1, colour=MEASURE_LINE_COLOUR)
+                r, g, b = self.colour
+                canvas.draw_line(p0, p1, colour=(r*255, g*255, b*255, 255))
 
             txt = u"%.3f mm" % self.GetValue()
             canvas.draw_text_box(txt, ((points[0][0]+points[1][0])/2.0, (points[0][1]+points[1][1])/2.0), txt_colour=MEASURE_TEXT_COLOUR, bg_colour=MEASURE_TEXTBOX_COLOUR)
@@ -840,12 +841,13 @@ class AngularMeasure(object):
 
         if len(points) > 1:
             for (p0, p1) in zip(points[:-1:], points[1::]):
-                canvas.draw_line(p0, p1, colour=MEASURE_LINE_COLOUR)
+                r, g, b = self.colour
+                canvas.draw_line(p0, p1, colour=(r*255, g*255, b*255, 255))
 
             if len(points) == 3:
                 txt = u"%.3f° / %.3f°" % (self.GetValue(), 360.0 - self.GetValue())
-
-                canvas.draw_arc(points[1], points[0], points[2], line_colour=MEASURE_LINE_COLOUR)
+                r, g, b = self.colour
+                canvas.draw_arc(points[1], points[0], points[2], line_colour=(r*255, g*255, b*255, 255))
                 canvas.draw_text_box(txt, (points[1][0], points[1][1]), txt_colour=MEASURE_TEXT_COLOUR, bg_colour=MEASURE_TEXTBOX_COLOUR)
 
     def GetNumberOfPoints(self):
