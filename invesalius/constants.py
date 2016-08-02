@@ -21,6 +21,7 @@ import os.path
 import platform
 import sys
 import wx
+import itertools
 
 from project import Project
 
@@ -219,11 +220,11 @@ MASK_COLOUR =  [[0.33, 1, 0.33],
                 #(0.66666666666666663, 0.792156862745098, 1.0)]
 
 
-MEASURE_COLOUR =  [[1, 0, 0],
-                [1, 0.4, 0],
-                [0, 0, 1],
-                [1, 0, 1],
-                [0, 0.6, 0]]
+MEASURE_COLOUR =  itertools.cycle([[1, 0, 0],
+                                   [1, 0.4, 0],
+                                   [0, 0, 1],
+                                   [1, 0, 1],
+                                   [0, 0.6, 0]])
 
 SURFACE_COLOUR =  [(0.33, 1, 0.33),
                 (1, 1, 0.33),
