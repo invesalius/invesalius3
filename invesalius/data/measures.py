@@ -240,9 +240,9 @@ class MeasurementManager(object):
             type_ = TYPE[type]
             location = LOCATION[location]
             if type == const.LINEAR:
-                value = u"%.2f mm"% m.value
+                value = u"%.3f mm"% m.value
             else:
-                value = u"%.2f°"% m.value
+                value = u"%.3f°"% m.value
 
             msg =  'Update measurement info in GUI',
             Publisher.sendMessage(msg,
@@ -275,9 +275,9 @@ class MeasurementManager(object):
         location = LOCATION[m.location]
 
         if m.type == const.LINEAR:
-            value = u"%.2f mm"% m.value
+            value = u"%.3f mm"% m.value
         else:
-            value = u"%.2f°"% m.value
+            value = u"%.3f°"% m.value
 
         Publisher.sendMessage('Update measurement info in GUI',
                               (index, name, colour,
@@ -543,7 +543,7 @@ class LinearMeasure(object):
 
     def _draw_text(self):
         p1, p2 = self.points
-        text = ' %.2f mm ' % \
+        text = ' %.3f mm ' % \
                 math.sqrt(vtk.vtkMath.Distance2BetweenPoints(p1, p2))
         x,y,z=[(i+j)/2 for i,j in zip(p1, p2)]
         textsource = vtk.vtkTextSource()
@@ -804,7 +804,7 @@ class AngularMeasure(object):
         return arc
 
     def _draw_text(self):
-        text = u' %.2f ' % \
+        text = u' %.3f ' % \
                 self.CalculateAngle()
         x,y,z= self.points[1]
         textsource = vtk.vtkTextSource()
