@@ -835,7 +835,8 @@ class AngularMeasure(object):
         points = []
         for p in self.points:
             coord.SetValue(p)
-            cx, cy = coord.GetComputedDisplayValue(canvas.evt_renderer)
+            cx, cy = coord.GetComputedDoubleDisplayValue(canvas.evt_renderer)
+            print cx, cy
             #  canvas.draw_circle((cx, cy), 2.5)
             points.append((cx, cy))
 
