@@ -258,6 +258,30 @@ class CanvasRendererCTX:
         self._cv_image.Modified()
         self.modified = False
 
+    def calc_text_size(self, text, font=None):
+        """
+        Given an unicode text and a font returns the width and height of the
+        rendered text in pixels.
+
+        Params:
+            text: An unicode text.
+            font: An wxFont.
+
+        Returns:
+            A tuple with width and height values in pixels
+        """
+        if self.gc is None:
+            return None
+        gc = self.gc
+
+        if font is None:
+            font = wx.SystemSettings.GetFont(wx.SYS_DEFAULT_GUI_FONT)
+
+        _font = gc.CreateFont(font)
+        gc.SetFont(_font)
+        w, h = gc.GetTextExtent(text)
+        return w, h
+
     def draw_line(self, pos0, pos1, arrow_start=False, arrow_end=False, colour=(255, 0, 0, 128), width=2, style=wx.SOLID):
         """
         Draw a line from pos0 to pos1
