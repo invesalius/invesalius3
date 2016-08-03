@@ -97,10 +97,13 @@ def Merge(polydata_list):
     for polydata in polydata_list:
         triangle = vtk.vtkTriangleFilter()
         triangle.SetInputData(polydata)
+        triangle.Update()
         append.AddInputData(triangle.GetOutput())
 
+    append.Update()
     clean = vtk.vtkCleanPolyData()
     clean.SetInputData(append.GetOutput())
+    clean.Update()
 
     return append.GetOutput()
 
