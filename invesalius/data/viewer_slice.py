@@ -1549,7 +1549,10 @@ class Viewer(wx.Panel):
             self.slice_data.renderer.AddActor(actor)
 
         for (m, mr) in self.measures.get(self.orientation, self.slice_data.number):
-            self.canvas.draw_list.remove(mr)
+            try:
+                self.canvas.draw_list.remove(mr)
+            except ValueError:
+                pass
 
         for (m, mr) in self.measures.get(self.orientation, index):
             if m.visible:
