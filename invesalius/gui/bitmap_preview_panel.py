@@ -425,6 +425,11 @@ class BitmapPreviewSeries(wx.Panel):
                     self.Update()
                     self.Layout()
     
+        for n, p in enumerate(self.previews):
+            if p.bitmap_info != None:
+
+                if p.IsShown():
+                    p.bitmap_info.pos = n
     
     #def SetPatientGroups(self, patient):
     #    self.files = []
