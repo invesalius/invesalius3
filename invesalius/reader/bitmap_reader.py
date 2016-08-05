@@ -90,7 +90,10 @@ class BitmapData:
         
         return size
 
-
+    def RemoveFileByPath(self, path):
+        for d in self.data:
+            if path in d:
+                self.data.remove(d)
 
 class BitmapFiles:
 

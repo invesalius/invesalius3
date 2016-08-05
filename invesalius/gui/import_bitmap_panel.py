@@ -24,7 +24,7 @@ import wx.lib.splitter as spl
 import constants as const
 import gui.dialogs as dlg
 import bitmap_preview_panel as bpp
-import reader.dicom_grouper as dcm
+import reader.bitmap_reader as bpr
 from dialogs import ImportBitmapParameters
 
 myEVT_SELECT_SERIE = wx.NewEventType()
@@ -207,9 +207,13 @@ class TextPanel(wx.Panel):
     def __init__(self, parent):
         wx.Panel.__init__(self, parent, -1)
 
+        self.parent = parent
+
         self._selected_by_user = True
         self.idserie_treeitem = {}
         self.treeitem_idpatient = {}
+
+        self.selected_item = None
 
         self.__init_gui()
         self.__bind_events_wx()
@@ -220,6 +224,7 @@ class TextPanel(wx.Panel):
 
     def __bind_events_wx(self):
         self.Bind(wx.EVT_SIZE, self.OnSize)
+        self.Bind(wx.EVT_CHAR_HOOK, self.OnKeyPress)
 
     def __init_gui(self):
         tree = gizmos.TreeListCtrl(self, -1, style =
@@ -237,7 +242,6 @@ class TextPanel(wx.Panel):
         tree.AddColumn(_("Type"))
         tree.AddColumn(_("Width x Height"))
 
-
         tree.SetMainColumn(0)
         tree.SetColumnWidth(0, 880)
         tree.SetColumnWidth(1, 60)
@@ -245,6 +249,18 @@ class TextPanel(wx.Panel):
 
         self.root = tree.AddRoot(_("InVesalius Database"))
         self.tree = tree
+
+    def OnKeyPress(self, evt):
+        key_code = evt.GetKeyCode()
+        if key_code == wx.WXK_DELETE or key_code == wx.WXK_NUMPAD_DELETE:
+            if self.selected_item != self.tree.GetRootItem():
+                text_item = self.tree.GetItemText(self.selected_item)
+                bpr.BitmapData().RemoveFileByPath(text_item)
+                self.tree.Delete(self.selected_item)
+                self.tree.Update()
+                self.tree.Refresh()
+                Publisher.sendMessage('Remove preview panel', text_item)
+        evt.Skip()
 
     def SelectSeries(self, pubsub_evt):
         group_index = pubsub_evt.data
@@ -266,7 +282,7 @@ class TextPanel(wx.Panel):
     def OnSelChanged(self, evt):
         item = self.tree.GetSelection()
         if self._selected_by_user:
-            print self.tree.GetItemText(item)
+            self.selected_item = item
         evt.Skip()
 
     def OnActivate(self, evt):
@@ -278,6 +294,7 @@ class TextPanel(wx.Panel):
 
     def OnSize(self, evt):
         self.tree.SetSize(self.GetSize())
+        evt.Skip()
 
     def SelectSerie(self, serie):
         self._selected_by_user = False

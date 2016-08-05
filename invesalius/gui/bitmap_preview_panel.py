@@ -351,6 +351,7 @@ class BitmapPreviewSeries(wx.Panel):
 
         self._Add_Panels_Preview()
         self._bind_events()
+        self._bind_pub_sub_events()
 
     def _Add_Panels_Preview(self):
         self.previews = []
@@ -371,6 +372,9 @@ class BitmapPreviewSeries(wx.Panel):
         # When the user scrolls the window
         self.Bind(wx.EVT_SCROLL, self.OnScroll)
         self.Bind(wx.EVT_MOUSEWHEEL, self.OnWheel)
+
+    def _bind_pub_sub_events(self):
+        Publisher.subscribe(self.RemovePanel, 'Remove preview panel')
 
     def OnSelect(self, evt):
         my_evt = SerieEvent(myEVT_CLICK_SERIE, self.GetId())
@@ -407,6 +411,20 @@ class BitmapPreviewSeries(wx.Panel):
         self.scroll.SetScrollbar(0, NROWS, scroll_range, NCOLS)
         self._display_previews()
 
+
+    def RemovePanel(self, pub_sub):
+        data = pub_sub.data
+        for p, f in zip(self.previews, self.files):
+            if p.bitmap_info != None:
+                if data in p.bitmap_info.data:
+                    self.files.remove(f)
+                    p.Hide()
+                    self._display_previews()
+                    Publisher.sendMessage('Update max of slidebar in single preview image', len(self.files))
+
+                    self.Update()
+                    self.Layout()
+    
     
     #def SetPatientGroups(self, patient):
     #    self.files = []
@@ -577,6 +595,7 @@ class SingleImagePreview(wx.Panel):
 
     def __bind_pubsub(self):
         Publisher.subscribe(self.ShowBitmapByPosition, 'Set bitmap in preview panel')
+        Publisher.subscribe(self.UpdateMaxValueSliderBar, 'Update max of slidebar in single preview image')
 
     def ShowBitmapByPosition(self, evt):
         pos = evt.data 
@@ -621,6 +640,11 @@ class SingleImagePreview(wx.Panel):
         self.slider.SetMax(self.nimages-1)
         self.slider.SetValue(0)
         self.ShowSlice()
+
+    def UpdateMaxValueSliderBar(self, pub_sub):
+        self.slider.SetMax(pub_sub.data - 1)
+        self.slider.Refresh()
+        self.slider.Update()
 
     def ShowSlice(self, index = 0):
         bitmap = self.bitmap_list[index]
