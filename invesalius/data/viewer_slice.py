@@ -148,15 +148,30 @@ class ContourMIPConfig(wx.Panel):
 
 
 class CanvasRendererCTX:
-    def __init__(self, viewer):
-        self.viewer = viewer
-        self.canvas_renderer = viewer.slice_data.canvas_renderer
+    def __init__(self, evt_renderer, canvas_renderer):
+        """
+        A Canvas to render over a vtktRenderer.
+
+        Params:
+            evt_renderer: a vtkRenderer which this class is going to watch for
+                any render event to update the canvas content.
+            canvas_renderer: the vtkRenderer where the canvas is going to be
+                added.
+
+        This class uses wx.GraphicsContext to render to a vtkImage.
+
+        TODO: Verify why in Windows the color are strange when using transparency.
+        TODO: Add support to evento (ex. click on a square)
+        """
+        self.canvas_renderer = canvas_renderer
+        self.evt_renderer = evt_renderer
         self._size = self.canvas_renderer.GetSize()
+        self.draw_list = []
         self.gc = None
         self.last_cam_modif_time = -1
         self.modified = True
         self._init_canvas()
-        viewer.slice_data.renderer.AddObserver("StartEvent", self.OnPaint)
+        evt_renderer.AddObserver("StartEvent", self.OnPaint)
 
     def _init_canvas(self):
         w, h = self._size
@@ -203,7 +218,7 @@ class CanvasRendererCTX:
             self._size = size
             self._resize_canvas(w, h)
 
-        cam_modif_time = self.viewer.cam.GetMTime()
+        cam_modif_time = self.evt_renderer.GetActiveCamera().GetMTime()
         if (not self.modified) and cam_modif_time == self.last_cam_modif_time:
             return
 
@@ -233,10 +248,8 @@ class CanvasRendererCTX:
         gc.Scale(1, -1)
 
         modified = False
-        for (m, mr) in self.viewer.measures.get(self.viewer.orientation, self.viewer.slice_data.number):
-            if not m.visible:
-                continue
-            mr.draw_to_canvas(gc, self)
+        for d in self.draw_list:
+            d.draw_to_canvas(gc, self)
             modified = True
 
         gc.Destroy()
@@ -249,6 +262,30 @@ class CanvasRendererCTX:
 
         self._cv_image.Modified()
         self.modified = False
+
+    def calc_text_size(self, text, font=None):
+        """
+        Given an unicode text and a font returns the width and height of the
+        rendered text in pixels.
+
+        Params:
+            text: An unicode text.
+            font: An wxFont.
+
+        Returns:
+            A tuple with width and height values in pixels
+        """
+        if self.gc is None:
+            return None
+        gc = self.gc
+
+        if font is None:
+            font = wx.SystemSettings.GetFont(wx.SYS_DEFAULT_GUI_FONT)
+
+        _font = gc.CreateFont(font)
+        gc.SetFont(_font)
+        w, h = gc.GetTextExtent(text)
+        return w, h
 
     def draw_line(self, pos0, pos1, arrow_start=False, arrow_end=False, colour=(255, 0, 0, 128), width=2, style=wx.SOLID):
         """
@@ -1224,7 +1261,7 @@ class Viewer(wx.Panel):
         self.cam = self.slice_data.renderer.GetActiveCamera()
         self.__build_cross_lines()
 
-        self.canvas = CanvasRendererCTX(self)
+        self.canvas = CanvasRendererCTX(self.slice_data.renderer, self.slice_data.canvas_renderer)
 
         # Set the slice number to the last slice to ensure the camera if far
         # enough to show all slices.
@@ -1341,6 +1378,16 @@ class Viewer(wx.Panel):
         self.interactor.Render()
 
     def UpdateCanvas(self, evt=None):
+        for (m, mr) in self.measures.get(self.orientation, self.slice_data.number):
+            try:
+                self.canvas.draw_list.remove(mr)
+            except ValueError:
+                pass
+
+        for (m, mr) in self.measures.get(self.orientation, self.slice_data.number):
+            if m.visible:
+                self.canvas.draw_list.append(mr)
+
         self.canvas.modified = True
         self.interactor.Render()
 
@@ -1530,14 +1577,15 @@ class Viewer(wx.Panel):
         for actor in self.actors_by_slice_number[index]:
             self.slice_data.renderer.AddActor(actor)
 
-        #  for (m, mr) in self.measures.get(self.orientation, self.slice_data.number):
-            #  for actor in mr.GetActors():
-                #  self.slice_data.renderer.RemoveActor(actor)
+        for (m, mr) in self.measures.get(self.orientation, self.slice_data.number):
+            try:
+                self.canvas.draw_list.remove(mr)
+            except ValueError:
+                pass
 
-        #  for (m, mr) in self.measures.get(self.orientation, index):
-            #  mr.renderer = self.slice_data.renderer
-            #  for actor in mr.GetActors():
-                #  self.slice_data.renderer.AddActor(actor)
+        for (m, mr) in self.measures.get(self.orientation, index):
+            if m.visible:
+                self.canvas.draw_list.append(mr)
 
         if self.slice_._type_projection == const.PROJECTION_NORMAL:
             self.slice_data.SetNumber(index)
