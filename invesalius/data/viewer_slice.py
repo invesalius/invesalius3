@@ -153,10 +153,15 @@ class CanvasRendererCTX:
         A Canvas to render over a vtktRenderer.
 
         Params:
-            evt_renderer: a vtkRenderer which this class is going to watch any
-                render event to update the canvas content.
+            evt_renderer: a vtkRenderer which this class is going to watch for
+                any render event to update the canvas content.
             canvas_renderer: the vtkRenderer where the canvas is going to be
                 added.
+
+        This class uses wx.GraphicsContext to render to a vtkImage.
+
+        TODO: Verify why in Windows the color are strange when using transparency.
+        TODO: Add support to evento (ex. click on a square)
         """
         self.canvas_renderer = canvas_renderer
         self.evt_renderer = evt_renderer
