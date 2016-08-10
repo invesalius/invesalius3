@@ -255,7 +255,20 @@ class TextPanel(wx.Panel):
         if key_code == wx.WXK_DELETE or key_code == wx.WXK_NUMPAD_DELETE:
             if self.selected_item != self.tree.GetRootItem():
                 text_item = self.tree.GetItemText(self.selected_item)
+                
+                index = bpr.BitmapData().GetIndexByPath(text_item)
+
                 bpr.BitmapData().RemoveFileByPath(text_item)
+
+                data_size = len(bpr.BitmapData().GetData())
+                
+                if index >= 0 and index < data_size:
+                    Publisher.sendMessage('Set bitmap in preview panel', index)
+                elif index == data_size and data_size > 0:
+                    Publisher.sendMessage('Set bitmap in preview panel', index - 1)
+                elif data_size == 1:
+                    Publisher.sendMessage('Set bitmap in preview panel', 0)
+                
                 self.tree.Delete(self.selected_item)
                 self.tree.Update()
                 self.tree.Refresh()
