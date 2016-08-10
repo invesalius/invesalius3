@@ -339,12 +339,17 @@ class Volume():
             g = p['Green']
             b = p['Blue']
             colors = zip(r,g,b)
-            ww = self.config['ww']
-            wl = self.TranslateScale(scale, self.config['wl'])
-            init = wl - ww/2.0
-            inc = ww / (len(colors) - 1.0)
-            for n,rgb in enumerate(colors):
-                color_transfer.AddRGBPoint(init + n * inc, *[i/255.0 for i in rgb])
+        else:
+            # Grayscale from black to white
+            colors = [(i, i, i) for i in xrange(256)]
+
+        ww = self.config['ww']
+        wl = self.TranslateScale(scale, self.config['wl'])
+        init = wl - ww/2.0
+        inc = ww / (len(colors) - 1.0)
+        for n,rgb in enumerate(colors):
+            color_transfer.AddRGBPoint(init + n * inc, *[i/255.0 for i in rgb])
+
         self.color_transfer = color_transfer
 
     def CreateOpacityTable(self, scale):
@@ -486,7 +491,7 @@ class Volume():
                 convolve = vtk.vtkImageConvolve()
                 convolve.SetInputData(imagedata)
                 convolve.SetKernel5x5([i/60.0 for i in Kernels[filter]])
-                convolve.ReleaseDataFlagOn()
+                #  convolve.ReleaseDataFlagOn()
 
                 convolve_ref = weakref.ref(convolve)
                 
@@ -533,7 +538,7 @@ class Volume():
         flip.SetInputData(image)
         flip.SetFilteredAxis(1)
         flip.FlipAboutOriginOn()
-        flip.ReleaseDataFlagOn()
+        #  flip.ReleaseDataFlagOn()
 
         flip_ref = weakref.ref(flip)
         flip_ref().AddObserver("ProgressEvent", lambda obj,evt:
@@ -548,7 +553,7 @@ class Volume():
         cast.SetInputData(image)
         cast.SetShift(abs(scale[0]))
         cast.SetOutputScalarTypeToUnsignedShort()
-        cast.ReleaseDataFlagOn()
+        #  cast.ReleaseDataFlagOn()
         cast_ref = weakref.ref(cast)
         cast_ref().AddObserver("ProgressEvent", lambda obj,evt:
                             update_progress(cast_ref(), "Rendering..."))
@@ -660,7 +665,7 @@ class Volume():
         accumulate.SetInputData(image)
         accumulate.SetComponentExtent(0, r -1, 0, 0, 0, 0)
         accumulate.SetComponentOrigin(image.GetScalarRange()[0], 0, 0)
-        accumulate.ReleaseDataFlagOn()
+        #  accumulate.ReleaseDataFlagOn()
         accumulate.Update()
         n_image = numpy_support.vtk_to_numpy(accumulate.GetOutput().GetPointData().GetScalars())
         del accumulate
