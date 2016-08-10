@@ -92,8 +92,13 @@ class BitmapData:
 
     def RemoveFileByPath(self, path):
         for d in self.data:
-            if path in d:
+            if path.encode('utf-8') in d:
                 self.data.remove(d)
+
+    def GetIndexByPath(self, path):
+        for i, v in enumerate(self.data):
+            if path.encode('utf-8') in v:
+                return i
 
 class BitmapFiles:
 

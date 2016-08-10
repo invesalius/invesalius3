@@ -283,6 +283,11 @@ class TextPanel(wx.Panel):
         item = self.tree.GetSelection()
         if self._selected_by_user:
             self.selected_item = item
+            
+            text_item = self.tree.GetItemText(self.selected_item)
+            index = bpr.BitmapData().GetIndexByPath(text_item)
+            Publisher.sendMessage('Set bitmap in preview panel', index)
+
         evt.Skip()
 
     def OnActivate(self, evt):

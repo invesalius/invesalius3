@@ -271,7 +271,6 @@ class Preview(wx.Panel):
         if evt.m_shiftDown:
             shift_pressed = True
 
-        dicom_id = self.bitmap_info.id
         self.select_on = True
         self.bitmap_info.selected = True
         self.Select()
@@ -287,10 +286,10 @@ class Preview(wx.Panel):
         self.GetEventHandler().ProcessEvent(my_evt)
 
         print ">>>",self.bitmap_info.pos, self.bitmap_info.id, self.bitmap_info.data
+        
         Publisher.sendMessage('Set bitmap in preview panel', self.bitmap_info.pos)
 
         evt.Skip()
-        
 
     def OnSize(self, evt):
         if self.bitmap_info:
@@ -375,6 +374,7 @@ class BitmapPreviewSeries(wx.Panel):
 
     def _bind_pub_sub_events(self):
         Publisher.subscribe(self.RemovePanel, 'Remove preview panel')
+        #Publisher.subscribe(self.GetBmpInfoIdByOrder, 'Set bitmap in thumbnail')
 
     def OnSelect(self, evt):
         my_evt = SerieEvent(myEVT_CLICK_SERIE, self.GetId())
@@ -416,7 +416,7 @@ class BitmapPreviewSeries(wx.Panel):
         data = pub_sub.data
         for p, f in zip(self.previews, self.files):
             if p.bitmap_info != None:
-                if data in p.bitmap_info.data:
+                if data.encode('utf-8') in p.bitmap_info.data:
                     self.files.remove(f)
                     p.Hide()
                     self._display_previews()
@@ -430,7 +430,45 @@ class BitmapPreviewSeries(wx.Panel):
 
                 if p.IsShown():
                     p.bitmap_info.pos = n
+  
+    #def GetBmpInfoIdByOrder(self, pub_sub):
+    #    order = pub_sub.data
+    #    
+    #    for p in self.previews:
+    #        if p.bitmap_info != None:
+    #            if p.select_on:
+    #                p.select_on = False
+    #                p.selected = False
+
+    #                c = (PREVIEW_BACKGROUND)
+    #                p.SetBackgroundColour(c)
+
+
+     #   for p in self.previews:
+     #       if p.bitmap_info != None:
+     #           if p.bitmap_info.pos == order:
+     
+     #               p.select_on = True
+     #               p.selected = True
+
+     #               p.Select()
+
+     #               # Generating a EVT_PREVIEW_CLICK event
+     #               my_evt = SerieEvent(myEVT_PREVIEW_CLICK, p.GetId())
+
+     #               my_evt.SetSelectedID(p.bitmap_info.id)
+     #               my_evt.SetItemData(p.bitmap_info.data)
+
+     #               my_evt.SetShiftStatus(False)
+     #               my_evt.SetEventObject(p)
+     #               self.GetEventHandler().ProcessEvent(my_evt)
+
     
+     #              #c = wx.SystemSettings_GetColour(wx.SYS_COLOUR_BTNFACE)
+     #              #p.SetBackgroundColour(c)
+
+                #return p.id
+
     #def SetPatientGroups(self, patient):
     #    self.files = []
     #    self.displayed_position = 0
@@ -603,8 +641,9 @@ class SingleImagePreview(wx.Panel):
         Publisher.subscribe(self.UpdateMaxValueSliderBar, 'Update max of slidebar in single preview image')
 
     def ShowBitmapByPosition(self, evt):
-        pos = evt.data 
-        self.ShowSlice(pos)
+        pos = evt.data
+        if pos != None:
+            self.ShowSlice(int(pos))
 
 
     def OnSlider(self, evt):
