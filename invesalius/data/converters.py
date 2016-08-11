@@ -22,6 +22,10 @@ import vtk
 from vtk.util import numpy_support
 
 def to_vtk(n_array, spacing, slice_number, orientation):
+
+    if orientation == "SAGITTAL":
+        orientation = "SAGITAL"
+
     try:
         dz, dy, dx = n_array.shape
     except ValueError:

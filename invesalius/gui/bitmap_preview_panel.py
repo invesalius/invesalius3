@@ -2,6 +2,7 @@ import wx
 import vtk
 import vtkgdcm
 import time
+import numpy
 
 from vtk.util import  numpy_support
 from vtk.wx.wxVTKRenderWindowInteractor import wxVTKRenderWindowInteractor
@@ -271,7 +272,6 @@ class Preview(wx.Panel):
         if evt.m_shiftDown:
             shift_pressed = True
 
-        dicom_id = self.bitmap_info.id
         self.select_on = True
         self.bitmap_info.selected = True
         self.Select()
@@ -286,10 +286,11 @@ class Preview(wx.Panel):
         my_evt.SetEventObject(self)
         self.GetEventHandler().ProcessEvent(my_evt)
 
+        print ">>>",self.bitmap_info.pos, self.bitmap_info.id, self.bitmap_info.data
+        
         Publisher.sendMessage('Set bitmap in preview panel', self.bitmap_info.pos)
 
         evt.Skip()
-        
 
     def OnSize(self, evt):
         if self.bitmap_info:
@@ -350,6 +351,7 @@ class BitmapPreviewSeries(wx.Panel):
 
         self._Add_Panels_Preview()
         self._bind_events()
+        self._bind_pub_sub_events()
 
     def _Add_Panels_Preview(self):
         self.previews = []
@@ -370,6 +372,10 @@ class BitmapPreviewSeries(wx.Panel):
         # When the user scrolls the window
         self.Bind(wx.EVT_SCROLL, self.OnScroll)
         self.Bind(wx.EVT_MOUSEWHEEL, self.OnWheel)
+
+    def _bind_pub_sub_events(self):
+        Publisher.subscribe(self.RemovePanel, 'Remove preview panel')
+        #Publisher.subscribe(self.GetBmpInfoIdByOrder, 'Set bitmap in thumbnail')
 
     def OnSelect(self, evt):
         my_evt = SerieEvent(myEVT_CLICK_SERIE, self.GetId())
@@ -406,7 +412,64 @@ class BitmapPreviewSeries(wx.Panel):
         self.scroll.SetScrollbar(0, NROWS, scroll_range, NCOLS)
         self._display_previews()
 
+
+    def RemovePanel(self, pub_sub):
+        data = pub_sub.data
+        for p, f in zip(self.previews, self.files):
+            if p.bitmap_info != None:
+                if data.encode('utf-8') in p.bitmap_info.data:
+                    self.files.remove(f)
+                    p.Hide()
+                    self._display_previews()
+                    Publisher.sendMessage('Update max of slidebar in single preview image', len(self.files))
+
+                    self.Update()
+                    self.Layout()
     
+        for n, p in enumerate(self.previews):
+            if p.bitmap_info != None:
+
+                if p.IsShown():
+                    p.bitmap_info.pos = n
+  
+    #def GetBmpInfoIdByOrder(self, pub_sub):
+    #    order = pub_sub.data
+    #    
+    #    for p in self.previews:
+    #        if p.bitmap_info != None:
+    #            if p.select_on:
+    #                p.select_on = False
+    #                p.selected = False
+
+    #                c = (PREVIEW_BACKGROUND)
+    #                p.SetBackgroundColour(c)
+
+
+     #   for p in self.previews:
+     #       if p.bitmap_info != None:
+     #           if p.bitmap_info.pos == order:
+     
+     #               p.select_on = True
+     #               p.selected = True
+
+     #               p.Select()
+
+     #               # Generating a EVT_PREVIEW_CLICK event
+     #               my_evt = SerieEvent(myEVT_PREVIEW_CLICK, p.GetId())
+
+     #               my_evt.SetSelectedID(p.bitmap_info.id)
+     #               my_evt.SetItemData(p.bitmap_info.data)
+
+     #               my_evt.SetShiftStatus(False)
+     #               my_evt.SetEventObject(p)
+     #               self.GetEventHandler().ProcessEvent(my_evt)
+
+    
+     #              #c = wx.SystemSettings_GetColour(wx.SYS_COLOUR_BTNFACE)
+     #              #p.SetBackgroundColour(c)
+
+                #return p.id
+
     #def SetPatientGroups(self, patient):
     #    self.files = []
     #    self.displayed_position = 0
@@ -576,10 +639,13 @@ class SingleImagePreview(wx.Panel):
 
     def __bind_pubsub(self):
         Publisher.subscribe(self.ShowBitmapByPosition, 'Set bitmap in preview panel')
+        Publisher.subscribe(self.UpdateMaxValueSliderBar, 'Update max of slidebar in single preview image')
+        Publisher.subscribe(self.ShowBlackSlice, 'Show black slice in single preview image')
 
     def ShowBitmapByPosition(self, evt):
-        pos = evt.data 
-        self.ShowSlice(pos)
+        pos = evt.data
+        if pos != None:
+            self.ShowSlice(int(pos))
 
 
     def OnSlider(self, evt):
@@ -620,6 +686,36 @@ class SingleImagePreview(wx.Panel):
         self.slider.SetMax(self.nimages-1)
         self.slider.SetValue(0)
         self.ShowSlice()
+
+    def UpdateMaxValueSliderBar(self, pub_sub):
+        self.slider.SetMax(pub_sub.data - 1)
+        self.slider.Refresh()
+        self.slider.Update()
+
+    def ShowBlackSlice(self, pub_sub):
+        n_array = numpy.zeros((100,100))
+       
+        self.text_image_size.SetValue('')
+
+        image = converters.to_vtk(n_array, spacing=(1,1,1),\
+                slice_number=1, orientation="AXIAL")
+
+        colorer = vtk.vtkImageMapToWindowLevelColors()
+        colorer.SetInputData(image)
+        colorer.Update()
+
+        if self.actor is None:
+            self.actor = vtk.vtkImageActor()
+            self.renderer.AddActor(self.actor)
+
+        # PLOT IMAGE INTO VIEWER
+        self.actor.SetInputData(colorer.GetOutput())
+        self.renderer.ResetCamera()
+        self.interactor.Render()
+
+        # Setting slider position
+        self.slider.SetValue(0)
+
 
     def ShowSlice(self, index = 0):
         bitmap = self.bitmap_list[index]

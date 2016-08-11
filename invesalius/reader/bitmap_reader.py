@@ -34,6 +34,7 @@ from scipy import misc
 import numpy
 import imghdr
 
+import utils
 from data import converters
 
 #flag to control vtk error in read files
@@ -89,7 +90,15 @@ class BitmapData:
         
         return size
 
+    def RemoveFileByPath(self, path):
+        for d in self.data:
+            if path.encode('utf-8') in d:
+                self.data.remove(d)
 
+    def GetIndexByPath(self, path):
+        for i, v in enumerate(self.data):
+            if path.encode('utf-8') in v:
+                return i
 
 class BitmapFiles:
 
@@ -100,13 +109,11 @@ class BitmapFiles:
         self.bitmapfiles.append(bmp)
 
     def Sort(self, x):
-
         c_re = re.compile('\d+')
-
-        if len(c_re.findall(x[0])) > 0:
-            return c_re.findall(x[0])[-1] 
+        if len(c_re.findall(x[6])) > 0:
+            return [int(i) for i in c_re.findall(x[6])]
         else:
-            return '0'
+            return [str(x[6])]
 
     def GetValues(self):
         bmpfile = self.bitmapfiles
@@ -133,6 +140,7 @@ class LoadBitmap:
 
         #----- verify extension ------------------
         #ex = self.filepath.split('.')[-1]
+        
         extension = VerifyDataType(self.filepath)
 
         file_name = self.filepath.split(os.path.sep)[-1]
@@ -297,7 +305,6 @@ def ScipyRead(filepath):
     try:
         r = misc.imread(filepath, flatten=True)
         dt = r.dtype 
-        
         if  dt == "float" or dt == "float16"\
                           or dt == "float32" or dt == "float64":   
             shift=-r.max()/2
@@ -355,10 +362,14 @@ def VtkRead(filepath, t):
 
 
 def ReadBitmap(filepath): 
-    
     t = VerifyDataType(filepath)
 
     if t == False:
+        measures_info = GetPixelSpacingFromInfoFile(filepath)
+        
+        if measures_info:
+            Publisher.sendMessage('Set bitmap spacing', measures_info)
+
         return False
 
     img_array = VtkRead(filepath, t)
@@ -373,7 +384,54 @@ def ReadBitmap(filepath):
             return False
 
     return img_array
-            
+           
+
+def GetPixelSpacingFromInfoFile(filepath):
+    
+    fi = open(filepath, 'r')
+    lines = fi.readlines()
+    measure_scale = 'mm'
+    values = []
+
+    if len(lines) > 0:
+        #info text from avizo
+        if '# Avizo Stacked Slices' in lines[0]:
+            value = lines[2].split(' ')
+            spx = float(value[1])
+            spy = float(value[2])
+            value = lines[5].split(' ')
+            spz = float(value[1])
+
+            return [spx * 0.001, spy * 0.001, spz * 0.001]
+        else:
+            #info text from skyscan
+            for l in lines:
+                if 'Pixel Size' in l:
+                    if 'um' in l:
+                        measure_scale = 'um'
+                    
+                    value = l.split("=")[-1]
+                    values.append(value)
+
+            if len(values) > 0:
+                value = values[-1]
+                
+                value = value.replace('\n','')
+                value = value.replace('\r','')
+
+                #convert um to mm (InVesalius default)
+                if measure_scale == 'um':
+                    value = float(value) * 0.001
+                    measure_scale = 'mm'
+
+                elif measure_scale == 'nm':
+                    value = float(value) * 0.000001
+
+                return [value, value, value]
+            else:
+                return False
+    else:
+        return False
 
 def VtkErrorToPy(obj, evt):
     global no_error
@@ -383,7 +441,10 @@ def VtkErrorToPy(obj, evt):
 def VerifyDataType(filepath):
     try:
         t = imghdr.what(filepath)
-        return t
+        if t:
+            return t
+        else:
+            return False
     except IOError:
         return False
 

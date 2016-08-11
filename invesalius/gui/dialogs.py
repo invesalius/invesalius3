@@ -510,8 +510,12 @@ def ImportEmptyDirectory(dirpath):
     dlg.ShowModal()
     dlg.Destroy()
 
-def ImportInvalidFiles():
-    msg = _("There are no DICOM files in the selected folder.")
+def ImportInvalidFiles(ftype="DICOM"):
+    if ftype == "Bitmap":
+        msg =  _("There are no Bitmap, JPEG, PNG or TIFF files in the selected folder.")
+    else:
+        msg = _("There are no DICOM files in the selected folder.")
+
     if sys.platform == 'darwin':
         dlg = wx.MessageDialog(None, "", msg,
                                 wx.ICON_INFORMATION | wx.OK)
@@ -1700,6 +1704,7 @@ class ImportBitmapParameters(wx.Dialog):
 
     def _init_gui(self):
         
+        import project as prj
         
         p = wx.Panel(self, -1, style = wx.TAB_TRAVERSAL
                      | wx.CLIP_CHILDREN
@@ -1732,15 +1737,30 @@ class ImportBitmapParameters(wx.Dialog):
         
         stx_spacing_x = stx_spacing_x = wx.StaticText(p, -1, _(u"X:"))
         fsp_spacing_x = self.fsp_spacing_x = FS.FloatSpin(p, -1, min_val=0,\
-                                            increment=0.25, value=1.0, digits=6)
+                                            increment=0.25, value=1.0, digits=8)
 
         stx_spacing_y = stx_spacing_y = wx.StaticText(p, -1, _(u"Y:"))
         fsp_spacing_y = self.fsp_spacing_y = FS.FloatSpin(p, -1, min_val=0,\
-                                            increment=0.25, value=1.0, digits=6)
+                                            increment=0.25, value=1.0, digits=8)
 
         stx_spacing_z = stx_spacing_z = wx.StaticText(p, -1, _(u"Z:"))
         fsp_spacing_z = self.fsp_spacing_z = FS.FloatSpin(p, -1, min_val=0,\
-                                            increment=0.25, value=1.0, digits=6)
+                                            increment=0.25, value=1.0, digits=8)
+
+
+        try:
+            proj = prj.Project()
+            
+            sx = proj.spacing[0]
+            sy = proj.spacing[1]
+            sz = proj.spacing[2]
+
+            fsp_spacing_x.SetValue(sx)
+            fsp_spacing_y.SetValue(sy)
+            fsp_spacing_z.SetValue(sz)
+
+        except(AttributeError):
+            pass
 
         gbs_spacing.Add(stx_spacing_x, (0,0))
         gbs_spacing.Add(fsp_spacing_x, (0,1))
@@ -1783,9 +1803,27 @@ class ImportBitmapParameters(wx.Dialog):
         self.Close()
         self.Destroy()
 
-        values = [self.tx_name.GetValue(), self.cb_orientation.GetValue().upper(),\
+        orient_selection = self.cb_orientation.GetSelection()
+
+        if(orient_selection == 1):
+            orientation = u"CORONAL"
+        elif(orient_selection == 2):
+            orientation = u"SAGITTAL"
+        else:
+            orientation = u"AXIAL"
+
+        values = [self.tx_name.GetValue(), orientation,\
                   self.fsp_spacing_x.GetValue(), self.fsp_spacing_y.GetValue(),\
                   self.fsp_spacing_z.GetValue(), self.interval]
         Publisher.sendMessage('Open bitmap files', values)
 
 
+def BitmapNotSameSize():
+    
+    dlg = wx.MessageDialog(None,_("All bitmaps files must be the same width and height size"), 'Error',\
+                                wx.OK | wx.ICON_ERROR
+                               #wx.YES_NO | wx.NO_DEFAULT | wx.CANCEL | wx.ICON_INFORMATION
+                                )
+ 
+    dlg.ShowModal()
+    dlg.Destroy()

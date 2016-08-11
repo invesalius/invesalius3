@@ -612,7 +612,7 @@ class MenuBar(wx.MenuBar):
         #Import Others Files
         others_file_menu = wx.Menu()
         others_file_menu.Append(const.ID_ANALYZE_IMPORT, "Analyze")
-        others_file_menu.Append(const.ID_TIFF_JPG_PNG, "TIFF,BMP,JPG or PNG")
+        others_file_menu.Append(const.ID_TIFF_JPG_PNG, u"TIFF,BMP,JPG or PNG (\xb5CT)")
 
         # FILE
         file_menu = wx.Menu()
