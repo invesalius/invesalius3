@@ -268,6 +268,8 @@ class TextPanel(wx.Panel):
                     Publisher.sendMessage('Set bitmap in preview panel', index - 1)
                 elif data_size == 1:
                     Publisher.sendMessage('Set bitmap in preview panel', 0)
+                else:
+                    Publisher.sendMessage('Show black slice in single preview image')
                 
                 self.tree.Delete(self.selected_item)
                 self.tree.Update()

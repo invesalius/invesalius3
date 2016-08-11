@@ -2,6 +2,7 @@ import wx
 import vtk
 import vtkgdcm
 import time
+import numpy
 
 from vtk.util import  numpy_support
 from vtk.wx.wxVTKRenderWindowInteractor import wxVTKRenderWindowInteractor
@@ -639,6 +640,7 @@ class SingleImagePreview(wx.Panel):
     def __bind_pubsub(self):
         Publisher.subscribe(self.ShowBitmapByPosition, 'Set bitmap in preview panel')
         Publisher.subscribe(self.UpdateMaxValueSliderBar, 'Update max of slidebar in single preview image')
+        Publisher.subscribe(self.ShowBlackSlice, 'Show black slice in single preview image')
 
     def ShowBitmapByPosition(self, evt):
         pos = evt.data
@@ -689,6 +691,31 @@ class SingleImagePreview(wx.Panel):
         self.slider.SetMax(pub_sub.data - 1)
         self.slider.Refresh()
         self.slider.Update()
+
+    def ShowBlackSlice(self, pub_sub):
+        n_array = numpy.zeros((100,100))
+       
+        self.text_image_size.SetValue('')
+
+        image = converters.to_vtk(n_array, spacing=(1,1,1),\
+                slice_number=1, orientation="AXIAL")
+
+        colorer = vtk.vtkImageMapToWindowLevelColors()
+        colorer.SetInputData(image)
+        colorer.Update()
+
+        if self.actor is None:
+            self.actor = vtk.vtkImageActor()
+            self.renderer.AddActor(self.actor)
+
+        # PLOT IMAGE INTO VIEWER
+        self.actor.SetInputData(colorer.GetOutput())
+        self.renderer.ResetCamera()
+        self.interactor.Render()
+
+        # Setting slider position
+        self.slider.SetValue(0)
+
 
     def ShowSlice(self, index = 0):
         bitmap = self.bitmap_list[index]
