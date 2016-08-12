@@ -318,7 +318,13 @@ def ScipyRead(filepath):
         return False
 
 def VtkRead(filepath, t):
-    
+    if not const.VTK_WARNING:
+        log_path = os.path.join(const.LOG_FOLDER, 'vtkoutput.txt')
+        fow = vtk.vtkFileOutputWindow()
+        fow.SetFileName(log_path)
+        ow = vtk.vtkOutputWindow()
+        ow.SetInstance(fow)
+
     global no_error
 
     if t == "bmp":
