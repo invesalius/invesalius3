@@ -12,7 +12,7 @@ from cython.parallel import prange
 @cython.boundscheck(False) # turn of bounds-checking for entire function
 @cython.cdivision(True)
 @cython.wraparound(False)
-cdef inline void mul_mat4_vec4(np.float64_t[:, :] M,
+cdef inline void mul_mat4_vec4(double[:, :] M,
                             double* coord,
                             double* out) nogil:
 
@@ -25,7 +25,7 @@ cdef inline void mul_mat4_vec4(np.float64_t[:, :] M,
 @cython.boundscheck(False) # turn of bounds-checking for entire function
 @cython.cdivision(True)
 @cython.wraparound(False)
-cdef image_t coord_transform(image_t[:, :, :] volume, np.float64_t[:, :] M, int x, int y, int z, double sx, double sy, double sz, short minterpol, image_t cval) nogil:
+cdef image_t coord_transform(image_t[:, :, :] volume, double[:, :] M, int x, int y, int z, double sx, double sy, double sz, short minterpol, image_t cval) nogil:
 
     cdef double coord[4]
     coord[0] = z*sz
@@ -71,7 +71,7 @@ cdef image_t coord_transform(image_t[:, :, :] volume, np.float64_t[:, :] M, int 
 @cython.wraparound(False)
 def apply_view_matrix_transform(image_t[:, :, :] volume,
                                 spacing,
-                                np.float64_t[:, :] M,
+                                double[:, :] M,
                                 unsigned int n, str orientation,
                                 int minterpol,
                                 image_t cval,
