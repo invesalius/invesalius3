@@ -1378,12 +1378,15 @@ class Viewer(wx.Panel):
         self.interactor.Render()
 
     def UpdateCanvas(self, evt=None):
-        for (m, mr) in self.measures.get(self.orientation, self.slice_data.number):
-            try:
-                self.canvas.draw_list.remove(mr)
-            except ValueError:
-                pass
+        cp_draw_list = self.canvas.draw_list[:]
+        self.canvas.draw_list = []
 
+        # Removing all measures
+        for i in cp_draw_list:
+            if not isinstance(i, (measures.AngularMeasure, measures.LinearMeasure)):
+                self.canvas.draw_list.append(i)
+
+        # Then add all needed measures
         for (m, mr) in self.measures.get(self.orientation, self.slice_data.number):
             if m.visible:
                 self.canvas.draw_list.append(mr)
