@@ -81,7 +81,7 @@ def floodfill(np.ndarray[image_t, ndim=3] data, int i, int j, int k, int v, int 
 @cython.boundscheck(False) # turn of bounds-checking for entire function
 @cython.wraparound(False)
 @cython.nonecheck(False)
-def floodfill_threshold(np.ndarray[image_t, ndim=3] data, list seeds, int t0, int t1, int fill, np.ndarray[mask_t, ndim=3] out):
+def floodfill_threshold(np.ndarray[image_t, ndim=3] data, list seeds, int t0, int t1, int fill, tuple neighbor_iter, np.ndarray[mask_t, ndim=3] out):
 
     cdef int to_return = 0
     if out is None:
@@ -89,6 +89,7 @@ def floodfill_threshold(np.ndarray[image_t, ndim=3] data, list seeds, int t0, in
         to_return = 1
 
     cdef int x, y, z
+    cdef int xd, yd, zd
     cdef int w, h, d
     cdef int xo, yo, zo
 
@@ -106,33 +107,38 @@ def floodfill_threshold(np.ndarray[image_t, ndim=3] data, list seeds, int t0, in
     while stack:
         x, y, z = stack.pop()
 
-        xo = x
-        yo = y
-        zo = z
 
-        if z + 1 < d and data[z + 1, y, x] >= t0 and data[z + 1, y, x] <= t1 and out[zo + 1, yo, xo] != fill:
-            out[zo + 1, yo, xo] =  fill
-            stack.append((x, y, z + 1))
+        for xd, yd, zd in neighbor_iter:
+            xo = x + xd
+            yo = y + yd
+            zo = z + zd
+            if 0 <= (x + xd) < w and 0 <= (y + yd) < h and 0 <= (z + zd) < d and out[zo, yo, xo] != fill and t0 <= data[zo, yo, xo] <= t1:
+                out[zo, yo, xo] = fill
+                stack.append((xo, yo, zo))
 
-        if z - 1 >= 0 and data[z - 1, y, x] >= t0 and data[z - 1, y, x] <= t1 and out[zo - 1, yo, xo] != fill:
-            out[zo - 1, yo, xo] = fill
-            stack.append((x, y, z - 1))
+        #  if z + 1 < d and data[z + 1, y, x] >= t0 and data[z + 1, y, x] <= t1 and out[zo + 1, yo, xo] != fill:
+            #  out[zo + 1, yo, xo] =  fill
+            #  stack.append((x, y, z + 1))
 
-        if y + 1 < h and data[z, y + 1, x] >= t0 and data[z, y + 1, x] <= t1 and out[zo, yo + 1, xo] != fill:
-            out[zo, yo + 1, xo] = fill
-            stack.append((x, y + 1, z))
+        #  if z - 1 >= 0 and data[z - 1, y, x] >= t0 and data[z - 1, y, x] <= t1 and out[zo - 1, yo, xo] != fill:
+            #  out[zo - 1, yo, xo] = fill
+            #  stack.append((x, y, z - 1))
 
-        if y - 1 >= 0 and data[z, y - 1, x] >= t0 and data[z, y - 1, x] <= t1 and out[zo, yo - 1, xo] != fill:
-            out[zo, yo - 1, xo] = fill
-            stack.append((x, y - 1, z))
+        #  if y + 1 < h and data[z, y + 1, x] >= t0 and data[z, y + 1, x] <= t1 and out[zo, yo + 1, xo] != fill:
+            #  out[zo, yo + 1, xo] = fill
+            #  stack.append((x, y + 1, z))
 
-        if x + 1 < w and data[z, y, x + 1] >= t0 and data[z, y, x + 1] <= t1 and out[zo, yo, xo + 1] != fill:
-            out[zo, yo, xo + 1] = fill
-            stack.append((x + 1, y, z))
+        #  if y - 1 >= 0 and data[z, y - 1, x] >= t0 and data[z, y - 1, x] <= t1 and out[zo, yo - 1, xo] != fill:
+            #  out[zo, yo - 1, xo] = fill
+            #  stack.append((x, y - 1, z))
 
-        if x - 1 >= 0 and data[z, y, x - 1] >= t0 and data[z, y, x - 1] <= t1 and out[zo, yo, xo - 1] != fill:
-            out[zo, yo, xo - 1] = fill
-            stack.append((x - 1, y, z))
+        #  if x + 1 < w and data[z, y, x + 1] >= t0 and data[z, y, x + 1] <= t1 and out[zo, yo, xo + 1] != fill:
+            #  out[zo, yo, xo + 1] = fill
+            #  stack.append((x + 1, y, z))
+
+        #  if x - 1 >= 0 and data[z, y, x - 1] >= t0 and data[z, y, x - 1] <= t1 and out[zo, yo, xo - 1] != fill:
+            #  out[zo, yo, xo - 1] = fill
+            #  stack.append((x - 1, y, z))
 
     if to_return:
         return out

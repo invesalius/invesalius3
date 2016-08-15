@@ -1769,7 +1769,6 @@ class FlooFillMaskInteractorStyle(DefaultInteractorStyle):
         if (self.viewer.slice_.buffer_slices[self.orientation].mask is None):
             return
 
-
         viewer = self.viewer
         iren = viewer.interactor
 
@@ -1793,9 +1792,35 @@ class FlooFillMaskInteractorStyle(DefaultInteractorStyle):
 
         cp_mask = mask.copy()
 
-        floodfill.floodfill_threshold(cp_mask, [[x, y, z]], 0, 1, 254, mask)
+        from_3d = True
+        if from_3d:
+            neighbor_iter = ((-1, 0, 0),
+                             (1,  0, 0),
+                             (0,  -1, 0),
+                             (0,  1, 0),
+                             (0,  0, -1),
+                             (0,  0, 1))
+        else:
+            neighbor_iter = ((-1, 0, 0),
+                             (1,  0, 0),
+                             (0,  -1, 0),
+                             (0,  1, 0))
 
-        viewer.OnScrollBar()
+        if iren.GetControlKey():
+            floodfill.floodfill_threshold(cp_mask, [[x, y, z]], 254, 255, 1, neighbor_iter, mask)
+        else:
+            floodfill.floodfill_threshold(cp_mask, [[x, y, z]], 0, 1, 254, neighbor_iter, mask)
+
+        self.viewer.slice_.buffer_slices['AXIAL'].discard_mask()
+        self.viewer.slice_.buffer_slices['CORONAL'].discard_mask()
+        self.viewer.slice_.buffer_slices['SAGITAL'].discard_mask()
+
+        self.viewer.slice_.buffer_slices['AXIAL'].discard_vtk_mask()
+        self.viewer.slice_.buffer_slices['CORONAL'].discard_vtk_mask()
+        self.viewer.slice_.buffer_slices['SAGITAL'].discard_vtk_mask()
+
+        self.viewer.slice_.current_mask.was_edited = True
+        Publisher.sendMessage('Reload actual slice')
 
     def get_coordinate_cursor(self):
         # Find position
