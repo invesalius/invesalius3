@@ -213,7 +213,8 @@ class TextPanel(wx.Panel):
         self.idserie_treeitem = {}
         self.treeitem_idpatient = {}
 
-        self.selected_item = None
+        self.selected_items = None
+        self.shift_pressed = False
 
         self.__init_gui()
         self.__bind_events_wx()
@@ -233,7 +234,7 @@ class TextPanel(wx.Panel):
                                    | wx.TR_ROW_LINES
                                    | wx.TR_COLUMN_LINES
                                    | wx.TR_FULL_ROW_HIGHLIGHT
-                                   | wx.TR_SINGLE
+                                   | wx.TR_MULTIPLE
                                    | wx.TR_HIDE_ROOT
                                    )
 
@@ -250,31 +251,40 @@ class TextPanel(wx.Panel):
         self.root = tree.AddRoot(_("InVesalius Database"))
         self.tree = tree
 
+
+
     def OnKeyPress(self, evt):
         key_code = evt.GetKeyCode()
+        
         if key_code == wx.WXK_DELETE or key_code == wx.WXK_NUMPAD_DELETE:
-            if self.selected_item != self.tree.GetRootItem():
-                text_item = self.tree.GetItemText(self.selected_item)
-                
-                index = bpr.BitmapData().GetIndexByPath(text_item)
+            print self.selected_items
+            print len(self.selected_items)
+            for selected_item in self.selected_items:
 
-                bpr.BitmapData().RemoveFileByPath(text_item)
 
-                data_size = len(bpr.BitmapData().GetData())
-                
-                if index >= 0 and index < data_size:
-                    Publisher.sendMessage('Set bitmap in preview panel', index)
-                elif index == data_size and data_size > 0:
-                    Publisher.sendMessage('Set bitmap in preview panel', index - 1)
-                elif data_size == 1:
-                    Publisher.sendMessage('Set bitmap in preview panel', 0)
-                else:
-                    Publisher.sendMessage('Show black slice in single preview image')
-                
-                self.tree.Delete(self.selected_item)
-                self.tree.Update()
-                self.tree.Refresh()
-                Publisher.sendMessage('Remove preview panel', text_item)
+                if selected_item != self.tree.GetRootItem():
+                    text_item = self.tree.GetItemText(selected_item)
+                    
+                    index = bpr.BitmapData().GetIndexByPath(text_item)
+
+                    bpr.BitmapData().RemoveFileByPath(text_item)
+
+                    data_size = len(bpr.BitmapData().GetData())
+                    
+                    if index >= 0 and index < data_size:
+                        Publisher.sendMessage('Set bitmap in preview panel', index)
+                    elif index == data_size and data_size > 0:
+                        Publisher.sendMessage('Set bitmap in preview panel', index - 1)
+                    elif data_size == 1:
+                        Publisher.sendMessage('Set bitmap in preview panel', 0)
+                    else:
+                        Publisher.sendMessage('Show black slice in single preview image')
+                    
+                    self.tree.Delete(selected_item)
+                    self.tree.Update()
+                    self.tree.Refresh()
+                    Publisher.sendMessage('Remove preview panel', text_item)
+
         evt.Skip()
 
     def SelectSeries(self, pubsub_evt):
@@ -295,11 +305,12 @@ class TextPanel(wx.Panel):
         Publisher.sendMessage('Load bitmap into import panel', data)
 
     def OnSelChanged(self, evt):
-        item = self.tree.GetSelection()
+        self.selected_items = self.tree.GetSelections()
+        item = self.selected_items[-1]
+        
         if self._selected_by_user:
-            self.selected_item = item
-            
-            text_item = self.tree.GetItemText(self.selected_item)
+
+            text_item = self.tree.GetItemText(item)
             index = bpr.BitmapData().GetIndexByPath(text_item)
             Publisher.sendMessage('Set bitmap in preview panel', index)
 
