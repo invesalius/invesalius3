@@ -1689,7 +1689,7 @@ class ImportBitmapParameters(wx.Dialog):
 
     def __init__(self):
         pre = wx.PreDialog()
-        pre.Create(wx.GetApp().GetTopWindow(), -1, _(u"Parameters"),size=wx.Size(380,230),\
+        pre.Create(wx.GetApp().GetTopWindow(), -1, _(u"Parameters"),size=wx.Size(380,220),\
                                 style=wx.DEFAULT_DIALOG_STYLE|wx.FRAME_FLOAT_ON_PARENT|wx.STAY_ON_TOP)
 
         self.interval = 0
@@ -1713,21 +1713,23 @@ class ImportBitmapParameters(wx.Dialog):
         gbs_principal = self.gbs = wx.GridBagSizer(3,1)
 
         gbs = self.gbs = wx.GridBagSizer(4, 2)
-        
+       
+        flag_labels = wx.ALIGN_RIGHT  | wx.ALIGN_CENTER_VERTICAL
+
         stx_name = wx.StaticText(p, -1, _(u"Project name:"))
         tx_name = self.tx_name = wx.TextCtrl(p, -1, "InVesalius Bitmap", size=wx.Size(220,-1))
 
-        stx_orientation = wx.StaticText(p, -1, _(u"Slices orientation:"))
+        stx_orientation = wx.StaticText(p, -1, _(u"Slices orientation:"),)
         cb_orientation_options = [_(u'Axial'), _(u'Coronal'), _(u'Sagital')]
         cb_orientation = self.cb_orientation = wx.ComboBox(p, value="Axial", choices=cb_orientation_options,\
                                                 size=wx.Size(160,-1), style=wx.CB_DROPDOWN|wx.CB_READONLY)
 
         stx_spacing = wx.StaticText(p, -1, _(u"Spacing (mm):"))
 
-        gbs.Add(stx_name, (0,0))
+        gbs.Add(stx_name, (0,0), flag=flag_labels)
         gbs.Add(tx_name, (0,1))
 
-        gbs.Add(stx_orientation, (1,0))
+        gbs.Add(stx_orientation, (1,0), flag=flag_labels)
         gbs.Add(cb_orientation, (1,1))
 
         gbs.Add(stx_spacing, (2,0))
@@ -1738,6 +1740,7 @@ class ImportBitmapParameters(wx.Dialog):
         stx_spacing_x = stx_spacing_x = wx.StaticText(p, -1, _(u"X:"))
         fsp_spacing_x = self.fsp_spacing_x = FS.FloatSpin(p, -1, min_val=0,\
                                             increment=0.25, value=1.0, digits=8)
+
 
         stx_spacing_y = stx_spacing_y = wx.StaticText(p, -1, _(u"Y:"))
         fsp_spacing_y = self.fsp_spacing_y = FS.FloatSpin(p, -1, min_val=0,\
@@ -1762,13 +1765,13 @@ class ImportBitmapParameters(wx.Dialog):
         except(AttributeError):
             pass
 
-        gbs_spacing.Add(stx_spacing_x, (0,0))
+        gbs_spacing.Add(stx_spacing_x, (0,0), flag=flag_labels)
         gbs_spacing.Add(fsp_spacing_x, (0,1))
 
-        gbs_spacing.Add(stx_spacing_y, (0,2))
+        gbs_spacing.Add(stx_spacing_y, (0,2), flag=flag_labels)
         gbs_spacing.Add(fsp_spacing_y, (0,3))
 
-        gbs_spacing.Add(stx_spacing_z, (0,4))
+        gbs_spacing.Add(stx_spacing_z, (0,4), flag=flag_labels)
         gbs_spacing.Add(fsp_spacing_z, (0,5))
 
         #----- buttons ------------------------
@@ -1783,12 +1786,12 @@ class ImportBitmapParameters(wx.Dialog):
         gbs_button.Add(btn_ok, (1,3))
 
 
-        gbs_principal.Add(gbs, (0,0))
-        gbs_principal.Add(gbs_spacing, (1,0))
-        gbs_principal.Add(gbs_button, (2,0), flag = wx.ALIGN_RIGHT)
+        gbs_principal.AddSizer(gbs, (0,0), flag = wx.ALL|wx.EXPAND)
+        gbs_principal.AddSizer(gbs_spacing, (1,0),  flag=wx.ALL|wx.EXPAND)
+        gbs_principal.AddSizer(gbs_button, (2,0), flag = wx.ALIGN_RIGHT)
 
         box = wx.BoxSizer()
-        box.Add(gbs_principal, 1, wx.ALL|wx.EXPAND, 10)
+        box.AddSizer(gbs_principal, 1, wx.ALL|wx.EXPAND, 10)
         
         p.SetSizer(box)
 
