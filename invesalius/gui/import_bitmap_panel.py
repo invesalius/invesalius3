@@ -257,10 +257,8 @@ class TextPanel(wx.Panel):
         key_code = evt.GetKeyCode()
         
         if key_code == wx.WXK_DELETE or key_code == wx.WXK_NUMPAD_DELETE:
-            print self.selected_items
-            print len(self.selected_items)
+            
             for selected_item in self.selected_items:
-
 
                 if selected_item != self.tree.GetRootItem():
                     text_item = self.tree.GetItemText(selected_item)
