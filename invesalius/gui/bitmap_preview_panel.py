@@ -88,10 +88,8 @@ class BitmapInfo(object):
         self.title = data[6]
         self.data = data
         self.pos = data[8]
-        #self.subtitle = subtitle
         self._preview = None
         self.selected = False
-        #self.filename = ""
         self.thumbnail_path = data[1]
 
     @property
@@ -187,50 +185,16 @@ class Preview(wx.Panel):
 
     def _bind_events(self):
         self.Bind( wx.EVT_LEFT_DCLICK, self.OnDClick)
-        #self.interactor.Bind( wx.EVT_LEFT_DCLICK, self.OnDClick)
-        #self.panel.Bind( wx.EVT_LEFT_DCLICK, self.OnDClick)
-        #self.title.Bind( wx.EVT_LEFT_DCLICK, self.OnDClick)
-        #self.subtitle.Bind( wx.EVT_LEFT_DCLICK, self.OnDClick)
-
         self.Bind(wx.EVT_ENTER_WINDOW, self.OnEnter)
-        #self.interactor.Bind(wx.EVT_ENTER_WINDOW, self.OnEnter)
-        #self.panel.Bind(wx.EVT_ENTER_WINDOW, self.OnEnter)
-        #self.title.Bind(wx.EVT_ENTER_WINDOW, self.OnEnter)
-        #self.subtitle.Bind(wx.EVT_ENTER_WINDOW, self.OnEnter)
-
         self.Bind(wx.EVT_LEAVE_WINDOW, self.OnLeave)
-        #self.interactor.Bind(wx.EVT_LEAVE_WINDOW, self.OnLeave)
-        #self.panel.Bind(wx.EVT_LEAVE_WINDOW, self.OnLeave)
-        #self.title.Bind(wx.EVT_LEAVE_WINDOW, self.OnLeave)
-        #self.subtitle.Bind(wx.EVT_LEAVE_WINDOW, self.OnLeave)
 
         self.Bind(wx.EVT_LEFT_DOWN, self.OnSelect)
         self.title.Bind(wx.EVT_LEFT_DOWN, self.OnSelect)
         self.subtitle.Bind(wx.EVT_LEFT_DOWN, self.OnSelect)
         self.image_viewer.Bind(wx.EVT_LEFT_DOWN, self.OnSelect)
 
-        #self.Bind(wx.EVT_SIZE, self.OnSize)
 
     def SetBitmapToPreview(self, bitmap_info):
-        """
-        Set a dicom to preview.
-        """
-    
-        """
-        self.dicom_info = dicom_info
-        self.SetTitle(dicom_info.title)
-        self.SetSubtitle(dicom_info.subtitle)
-        self.ID = dicom_info.id
-        dicom_info.size = self.image_viewer.GetSize()
-        image = dicom_info.preview
-        self.image_viewer.SetImage(image)
-        self.data = dicom_info.id
-        self.select_on = dicom_info.selected
-        self.Select()
-        self.Update()
-        """
-
-
 
         if self.bitmap_info:
             self.bitmap_info.release_thumbnail()
@@ -239,12 +203,9 @@ class Preview(wx.Panel):
         self.SetTitle(self.bitmap_info.title[-10:])
         self.SetSubtitle('')
 
-        ##self.ID = bitmap_info.id
-        ##bitmap_info.size = self.image_viewer.GetSize()
         image = self.bitmap_info.preview
         
         self.image_viewer.SetImage(image)
-        #self.data = bitmap_info.id
         self.select_on = bitmap_info.selected
         self.Select()
         self.Update()
@@ -257,7 +218,6 @@ class Preview(wx.Panel):
 
     def OnEnter(self, evt):
         if not self.select_on:
-            #c = wx.SystemSettings_GetColour(wx.SYS_COLOUR_3DHILIGHT)
             c = wx.SystemSettings_GetColour(wx.SYS_COLOUR_BTNFACE)
             self.SetBackgroundColour(c)
 
@@ -318,8 +278,6 @@ class BitmapPreviewSeries(wx.Panel):
         super(BitmapPreviewSeries, self).__init__(parent)
         # TODO: 3 pixels between the previews is a good idea?
         # I have to test.
-        #self.sizer = wx.BoxSizer(wx.HORIZONTAL)
-        #self.SetSizer(self.sizer)
         self.displayed_position = 0
         self.nhidden_last_display = 0
         self.selected_dicom = None
@@ -357,14 +315,10 @@ class BitmapPreviewSeries(wx.Panel):
             for j in xrange(NCOLS):
                 p = Preview(self)
                 p.Bind(EVT_PREVIEW_CLICK, self.OnSelect)
-                #if (i == j == 0):
-                    #self._show_shadow(p)
-                #p.Hide()
+
                 self.previews.append(p)
                 self.grid.Add(p, 1, flag=wx.EXPAND)
 
-    #def _show_shadow(self, preview):
-    #    preview.ShowShadow()
 
     def _bind_events(self):
         # When the user scrolls the window
@@ -373,7 +327,6 @@ class BitmapPreviewSeries(wx.Panel):
 
     def _bind_pub_sub_events(self):
         Publisher.subscribe(self.RemovePanel, 'Remove preview panel')
-        #Publisher.subscribe(self.GetBmpInfoIdByOrder, 'Set bitmap in thumbnail')
 
     def OnSelect(self, evt):
         my_evt = SerieEvent(myEVT_CLICK_SERIE, self.GetId())
@@ -391,7 +344,6 @@ class BitmapPreviewSeries(wx.Panel):
         evt.Skip()
 
     def SetBitmapFiles(self, data):
-        #self.files = data
         self.files = []
         
         bitmap = bitmap_reader.BitmapData()
@@ -429,65 +381,6 @@ class BitmapPreviewSeries(wx.Panel):
 
                 if p.IsShown():
                     p.bitmap_info.pos = n
-  
-    #def GetBmpInfoIdByOrder(self, pub_sub):
-    #    order = pub_sub.data
-    #    
-    #    for p in self.previews:
-    #        if p.bitmap_info != None:
-    #            if p.select_on:
-    #                p.select_on = False
-    #                p.selected = False
-
-    #                c = (PREVIEW_BACKGROUND)
-    #                p.SetBackgroundColour(c)
-
-
-     #   for p in self.previews:
-     #       if p.bitmap_info != None:
-     #           if p.bitmap_info.pos == order:
-     
-     #               p.select_on = True
-     #               p.selected = True
-
-     #               p.Select()
-
-     #               # Generating a EVT_PREVIEW_CLICK event
-     #               my_evt = SerieEvent(myEVT_PREVIEW_CLICK, p.GetId())
-
-     #               my_evt.SetSelectedID(p.bitmap_info.id)
-     #               my_evt.SetItemData(p.bitmap_info.data)
-
-     #               my_evt.SetShiftStatus(False)
-     #               my_evt.SetEventObject(p)
-     #               self.GetEventHandler().ProcessEvent(my_evt)
-
-    
-     #              #c = wx.SystemSettings_GetColour(wx.SYS_COLOUR_BTNFACE)
-     #              #p.SetBackgroundColour(c)
-
-                #return p.id
-
-    #def SetPatientGroups(self, patient):
-    #    self.files = []
-    #    self.displayed_position = 0
-    #    self.nhidden_last_display = 0
-    #    group_list = patient.GetGroups()
-    #    self.group_list = group_list
-    #    n = 0
-    #    for group in group_list:
-    #        info = BitmapInfo((group.dicom.patient.id,
-    #                          group.dicom.acquisition.serie_number),
-    #                         group.dicom,
-    #                         group.title,
-    #                         _("%d images") %(group.nslices))
-    #        self.files.append(info)
-    #        n+=1
-    #    scroll_range = len(self.files)/NCOLS
-    #    if scroll_range * NCOLS < len(self.files):
-    #        scroll_range +=1
-    #    self.scroll.SetScrollbar(0, NROWS, scroll_range, NCOLS)
-    #    self._display_previews()
 
 
     def _display_previews(self):
@@ -765,233 +658,3 @@ class SingleImagePreview(wx.Panel):
 
         # Setting slider position
         self.slider.SetValue(index)
-
-
-#class BitmapPreviewSlice(wx.Panel):
-#    def __init__(self, parent):
-#        super(BitmapPreviewSlice, self).__init__(parent)
-#        # TODO: 3 pixels between the previews is a good idea?
-#        # I have to test.
-#        self.displayed_position = 0
-#        self.nhidden_last_display = 0
-#        self.selected_dicom = None
-#        self.selected_panel = None
-#        self.first_selection = None
-#        self.last_selection = None
-#        self._init_ui()
-#
-#    def _init_ui(self):
-#        scroll = wx.ScrollBar(self, -1, style=wx.SB_VERTICAL)
-#        self.scroll = scroll
-#
-#        self.grid = wx.GridSizer(rows=NROWS, cols=NCOLS, vgap=3, hgap=3)
-#
-#        sizer = wx.BoxSizer(wx.HORIZONTAL)
-#        sizer.AddSizer(self.grid, 1, wx.EXPAND|wx.GROW|wx.ALL, 2)
-#
-#        background_sizer = wx.BoxSizer(wx.HORIZONTAL)
-#        background_sizer.AddSizer(sizer, 1, wx.EXPAND|wx.GROW|wx.ALL, 2)
-#        background_sizer.Add(scroll, 0, wx.EXPAND|wx.GROW)
-#        self.SetSizer(background_sizer)
-#        background_sizer.Fit(self)
-#
-#        self.Layout()
-#        self.Update()
-#        self.SetAutoLayout(1)
-#
-#        self.sizer = background_sizer
-#
-#        self._Add_Panels_Preview()
-#        self._bind_events()
-#
-#    def _Add_Panels_Preview(self):
-#        self.previews = []
-#        for i in xrange(NROWS):
-#            for j in xrange(NCOLS):
-#                p = Preview(self)
-#                p.Bind(EVT_PREVIEW_CLICK, self.OnPreviewClick)
-#                #p.Hide()
-#                self.previews.append(p)
-#                self.grid.Add(p, 1, flag=wx.EXPAND)
-#
-#    def _bind_events(self):
-#        # When the user scrolls the window
-#        self.Bind(wx.EVT_SCROLL, self.OnScroll)
-#        self.Bind(wx.EVT_MOUSEWHEEL, self.OnWheel)
-#
-#    def SetDicomDirectory(self, directory):
-#        utils.debug("Setting Dicom Directory %s" % directory)
-#        self.directory = directory
-#        self.series = dicom_reader.GetSeries(directory)[0]
-#
-#    def SetPatientGroups(self, patient):
-#        self.group_list = patient.GetGroups()
-#
-#
-#    #def SetDicomSerie(self, pos):
-#    #    self.files = []
-#    #    self.displayed_position = 0
-#    #    self.nhidden_last_display = 0
-#    #    group = self.group_list[pos]
-#    #    self.group = group
-#    #    #dicom_files = group.GetList()
-#    #    dicom_files = group.GetHandSortedList()
-#    #    n = 0
-#    #    for dicom in dicom_files:
-#    #        info = BitmapInfo(n, dicom,
-#    #                         _("Image %d") % (dicom.image.number),
-#    #                         "%.2f" % (dicom.image.position[2]))
-#    #        self.files.append(info)
-#    #        n+=1
-#
-#    #    scroll_range = len(self.files)/NCOLS
-#    #    if scroll_range * NCOLS < len(self.files):
-#    #        scroll_range +=1
-#    #    self.scroll.SetScrollbar(0, NROWS, scroll_range, NCOLS)
-#    
-#    #    self._display_previews()
-#
-#    #def SetDicomGroup(self, group):
-#    #    self.files = []
-#    #    self.displayed_position = 0
-#    #    self.nhidden_last_display = 0
-#    #    #dicom_files = group.GetList()
-#    #    dicom_files = group.GetHandSortedList()
-#    #    n = 0
-#    #    for dicom in dicom_files:
-#    #        info = BitmapInfo(n, dicom,
-#    #                         _("Image %d") % (dicom.image.number),
-#    #                         "%.2f" % (dicom.image.position[2]),
-#    #                        )
-#    #        self.files.append(info)
-#    #        n+=1
-#
-#    #    scroll_range = len(self.files)/NCOLS
-#    #    if scroll_range * NCOLS < len(self.files):
-#    #        scroll_range +=1
-#    #    self.scroll.SetScrollbar(0, NROWS, scroll_range, NCOLS)
-#
-#    #    self._display_previews()
-#
-#    #def SetDicomGroup(self, group):
-#    #    self.files = []
-#    #    self.displayed_position = 0
-#    #    self.nhidden_last_display = 0
-#    #    #dicom_files = group.GetList()
-#    #    dicom_files = group.GetHandSortedList()
-#    #    n = 0
-#    #    for dicom in dicom_files:
-#    #        info = BitmapInfo(n, dicom,
-#    #                         _("Image %d") % (dicom.image.number),
-#    #                         "%.2f" % (dicom.image.position[2]),
-#    #                        )
-#    #        self.files.append(info)
-#    #        n+=1
-#
-#    #    scroll_range = len(self.files)/NCOLS
-#    #    if scroll_range * NCOLS < len(self.files):
-#    #        scroll_range +=1
-#    #    self.scroll.SetScrollbar(0, NROWS, scroll_range, NCOLS)
-#
-#    #    self._display_previews()
-#
-#
-#    def _display_previews(self):
-#        initial = self.displayed_position * NCOLS
-#        final = initial + NUM_PREVIEWS
-#        if len(self.files) < final:
-#            for i in xrange(final-len(self.files)):
-#                try:
-#                    self.previews[-i-1].Hide()
-#                except IndexError:
-#                    utils.debug("doesn't exist!")
-#            self.nhidden_last_display = final-len(self.files)
-#        else:
-#            if self.nhidden_last_display:
-#                for i in xrange(self.nhidden_last_display):
-#                    try:
-#                        self.previews[-i-1].Show()
-#                    except IndexError:
-#                        utils.debug("doesn't exist!")
-#                self.nhidden_last_display = 0
-#
-#        for f, p in zip(self.files[initial:final], self.previews):
-#            p.SetBitmapToPreview(f)
-#            if f.selected:
-#                self.selected_panel = p
-#            #p.interactor.Render()
-#
-#        for f, p in zip(self.files[initial:final], self.previews):
-#            p.Show()
-#
-#    def OnPreviewClick(self, evt):
-#
-#        dicom_id = evt.GetSelectID()
-#        
-#        if self.first_selection is None:
-#            self.first_selection = dicom_id
-#
-#        if self.last_selection is None:
-#            self.last_selection = dicom_id  
-#
-#        
-#        if evt.GetPressedShift():
-# 
-#            if dicom_id < self.first_selection and dicom_id < self.last_selection:
-#                self.first_selection = dicom_id
-#            else:
-#                self.last_selection = dicom_id
-#        else:
-#            self.first_selection = dicom_id
-#            self.last_selection = dicom_id
-#
-#            for i in xrange(len(self.files)):
-#            
-#                if i == dicom_id:
-#                    self.files[i].selected = True
-#                else:
-#                    self.files[i].selected = False
-#
-#
-#        my_evt = SerieEvent(myEVT_CLICK_SLICE, self.GetId())
-#        my_evt.SetSelectedID(evt.GetSelectID())
-#        my_evt.SetItemData(evt.GetItemData())
-#
-#        if self.selected_dicom:
-#            self.selected_dicom.selected = self.selected_dicom is \
-#                    evt.GetEventObject().bitmap_info
-#            self.selected_panel.select_on = self.selected_panel is evt.GetEventObject()
-#            
-#            if self.first_selection != self.last_selection:
-#                for i in xrange(len(self.files)):
-#                    if i >= self.first_selection and i <= self.last_selection:
-#                        self.files[i].selected = True
-#                    else:
-#                        self.files[i].selected = False
-#
-#            else:
-#                self.selected_panel.Select()
-#
-#        self._display_previews()
-#        self.selected_panel = evt.GetEventObject()
-#        self.selected_dicom = self.selected_panel.bitmap_info
-#        self.GetEventHandler().ProcessEvent(my_evt)
-#
-#        #Publisher.sendMessage("Selected Import Images", [self.first_selection, \
-#        #                                                         self.last_selection])  
-#
-#    def OnScroll(self, evt=None):
-#        if evt:
-#            if self.displayed_position != evt.GetPosition():
-#                self.displayed_position = evt.GetPosition()
-#        else:
-#            if self.displayed_position != self.scroll.GetThumbPosition():
-#                self.displayed_position = self.scroll.GetThumbPosition()
-#        self._display_previews()
-#
-#    def OnWheel(self, evt):
-#        d = evt.GetWheelDelta() / evt.GetWheelRotation()
-#        self.scroll.SetThumbPosition(self.scroll.GetThumbPosition() - d)
-#        self.OnScroll()
-
-

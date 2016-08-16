@@ -139,14 +139,10 @@ class LoadBitmap:
         global vtk_error
 
         #----- verify extension ------------------
-        #ex = self.filepath.split('.')[-1]
-        
         extension = VerifyDataType(self.filepath)
 
         file_name = self.filepath.split(os.path.sep)[-1]
 
-        #if extension == 'bmp':
-        #    reader = vtk.vtkBMPReader()
         n_array = ReadBitmap(self.filepath)
       
         if not(isinstance(n_array, numpy.ndarray)):
@@ -155,9 +151,6 @@ class LoadBitmap:
         image = converters.to_vtk(n_array, spacing=(1,1,1),\
                 slice_number=1, orientation="AXIAL")
 
-
-        #reader.SetFileName(self.filepath)
-        #reader.Update()
 
         dim = image.GetDimensions()
         x = dim[0]
@@ -229,7 +222,6 @@ def yGetBitmaps(directory, recursive=True, gui=True):
                 counter += 1
                 if gui:
                     yield (counter,nfiles)
-                #LoadDicom(grouper, filepath)
                 LoadBitmap(bmp_file, filepath)
     else:
         dirpath, dirnames, filenames = os.walk(directory)
@@ -238,16 +230,7 @@ def yGetBitmaps(directory, recursive=True, gui=True):
             counter += 1
             if gui:
                 yield (counter,nfiles)
-            #q.put(filepath)
 
-    #for t in threads:
-    #    q.put(0)
-
-    #for t in threads:
-    #    t.join()
-
-    #TODO: Is this commented update necessary?
-    #grouper.Update()
     yield bmp_file.GetValues()
 
 
@@ -274,13 +257,6 @@ class ProgressBitmapReader:
         Publisher.sendMessage("End bitmap load", bitmap_list)
 
     def GetBitmaps(self, path, recursive):
-
-        #if not const.VTK_WARNING:
-        #    log_path = os.path.join(const.LOG_FOLDER, 'vtkoutput.txt')
-        #    fow = vtk.vtkFileOutputWindow()
-        #    fow.SetFileName(log_path)
-        #    ow = vtk.vtkOutputWindow()
-        #    ow.SetInstance(fow)
 
         y = yGetBitmaps(path, recursive)
         for value_progress in y:
