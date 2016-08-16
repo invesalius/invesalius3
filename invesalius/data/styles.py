@@ -1806,10 +1806,22 @@ class FlooFillMaskInteractorStyle(DefaultInteractorStyle):
                              (0,  -1, 0),
                              (0,  1, 0))
 
+        neighbor_iter = []
+        for i in xrange(-1, 2):
+            for j in xrange(-1, 2):
+                for k in xrange(-1, 2):
+                    neighbor_iter.append((i, j, k))
+
         if iren.GetControlKey():
-            floodfill.floodfill_threshold(cp_mask, [[x, y, z]], 254, 255, 1, neighbor_iter, mask)
+            t0 = 254
+            t1 = 255
+            fill = 1
         else:
-            floodfill.floodfill_threshold(cp_mask, [[x, y, z]], 0, 1, 254, neighbor_iter, mask)
+            t0 = 0
+            t1 = 1
+            fill = 254
+
+        floodfill.floodfill_threshold(cp_mask, [[x, y, z]], t0, t1, fill, neighbor_iter, mask)
 
         self.viewer.slice_.buffer_slices['AXIAL'].discard_mask()
         self.viewer.slice_.buffer_slices['CORONAL'].discard_mask()
