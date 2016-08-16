@@ -1833,10 +1833,8 @@ class ImportBitmapParameters(wx.Dialog):
 
 def BitmapNotSameSize():
     
-    dlg = wx.MessageDialog(None,_("All bitmaps files must be the same width and height size"), 'Error',\
-                                wx.OK | wx.ICON_ERROR
-                               #wx.YES_NO | wx.NO_DEFAULT | wx.CANCEL | wx.ICON_INFORMATION
-                                )
+    dlg = wx.MessageDialog(None,_("All bitmaps files must be the same \n width and height size."), 'Error',\
+                                wx.OK | wx.ICON_ERROR)
  
     dlg.ShowModal()
     dlg.Destroy()
