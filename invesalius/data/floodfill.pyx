@@ -6,8 +6,17 @@ from collections import deque
 
 from libc.math cimport floor, ceil
 from libcpp.deque cimport deque as cdeque
+from libcpp.vector cimport vector
 
 from cy_my_types cimport image_t, mask_t
+
+cdef struct s_coord:
+    int x
+    int y
+    int z
+
+ctypedef s_coord coord
+
 
 @cython.boundscheck(False) # turn of bounds-checking for entire function
 @cython.wraparound(False)
@@ -81,7 +90,7 @@ def floodfill(np.ndarray[image_t, ndim=3] data, int i, int j, int k, int v, int 
 @cython.boundscheck(False) # turn of bounds-checking for entire function
 @cython.wraparound(False)
 @cython.nonecheck(False)
-def floodfill_threshold(np.ndarray[image_t, ndim=3] data, list seeds, int t0, int t1, int fill, tuple neighbor_iter, np.ndarray[mask_t, ndim=3] out):
+def floodfill_threshold(np.ndarray[image_t, ndim=3] data, list seeds, int t0, int t1, int fill, vector[vector[int]] neighbor_iter, np.ndarray[mask_t, ndim=3] out):
 
     cdef int to_return = 0
     if out is None:
@@ -92,53 +101,39 @@ def floodfill_threshold(np.ndarray[image_t, ndim=3] data, list seeds, int t0, in
     cdef int xd, yd, zd
     cdef int w, h, d
     cdef int xo, yo, zo
+    cdef int i
 
     d = data.shape[0]
     h = data.shape[1]
     w = data.shape[2]
 
-    stack = deque()
+    cdef cdeque[coord] stack
+    cdef coord c
 
     for i, j, k in seeds:
         if data[k, j, i] >= t0 and data[k, j, i] <= t1:
-            stack.append((i, j, k))
+            c.x = i
+            c.y = j
+            c.z = k
+            stack.push_back(c)
             out[k, j, i] = fill
 
-    while stack:
-        x, y, z = stack.pop()
+    with nogil:
+        while stack.size():
+            c = stack.front()
+            stack.pop_front()
 
+            for i in xrange(neighbor_iter.size()):
+                xo = c.x + neighbor_iter[i][0]
+                yo = c.y + neighbor_iter[i][1]
+                zo = c.z + neighbor_iter[i][2]
 
-        for xd, yd, zd in neighbor_iter:
-            xo = x + xd
-            yo = y + yd
-            zo = z + zd
-            if 0 <= (x + xd) < w and 0 <= (y + yd) < h and 0 <= (z + zd) < d and out[zo, yo, xo] != fill and t0 <= data[zo, yo, xo] <= t1:
-                out[zo, yo, xo] = fill
-                stack.append((xo, yo, zo))
-
-        #  if z + 1 < d and data[z + 1, y, x] >= t0 and data[z + 1, y, x] <= t1 and out[zo + 1, yo, xo] != fill:
-            #  out[zo + 1, yo, xo] =  fill
-            #  stack.append((x, y, z + 1))
-
-        #  if z - 1 >= 0 and data[z - 1, y, x] >= t0 and data[z - 1, y, x] <= t1 and out[zo - 1, yo, xo] != fill:
-            #  out[zo - 1, yo, xo] = fill
-            #  stack.append((x, y, z - 1))
-
-        #  if y + 1 < h and data[z, y + 1, x] >= t0 and data[z, y + 1, x] <= t1 and out[zo, yo + 1, xo] != fill:
-            #  out[zo, yo + 1, xo] = fill
-            #  stack.append((x, y + 1, z))
-
-        #  if y - 1 >= 0 and data[z, y - 1, x] >= t0 and data[z, y - 1, x] <= t1 and out[zo, yo - 1, xo] != fill:
-            #  out[zo, yo - 1, xo] = fill
-            #  stack.append((x, y - 1, z))
-
-        #  if x + 1 < w and data[z, y, x + 1] >= t0 and data[z, y, x + 1] <= t1 and out[zo, yo, xo + 1] != fill:
-            #  out[zo, yo, xo + 1] = fill
-            #  stack.append((x + 1, y, z))
-
-        #  if x - 1 >= 0 and data[z, y, x - 1] >= t0 and data[z, y, x - 1] <= t1 and out[zo, yo, xo - 1] != fill:
-            #  out[zo, yo, xo - 1] = fill
-            #  stack.append((x - 1, y, z))
+                if 0 <= xo < w and 0 <= yo < h and 0 <= zo < d and out[zo, yo, xo] != fill and t0 <= data[zo, yo, xo] <= t1:
+                    out[zo, yo, xo] = fill
+                    c.x = xo
+                    c.y = yo
+                    c.z = zo
+                    stack.push_back(c)
 
     if to_return:
         return out
