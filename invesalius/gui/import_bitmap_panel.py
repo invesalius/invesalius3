@@ -58,8 +58,7 @@ class SelectEvent(wx.PyCommandEvent):
 
 class Panel(wx.Panel):
     def __init__(self, parent):
-        wx.Panel.__init__(self, parent, pos=wx.Point(5, 5))#,
-                          #size=wx.Size(280, 656))
+        wx.Panel.__init__(self, parent, pos=wx.Point(5, 5))
 
         sizer = wx.BoxSizer(wx.VERTICAL)
         sizer.Add(InnerPanel(self), 1, wx.EXPAND|wx.GROW|wx.ALL, 5)
@@ -75,8 +74,7 @@ class Panel(wx.Panel):
 # Inner fold panel
 class InnerPanel(wx.Panel):
     def __init__(self, parent):
-        wx.Panel.__init__(self, parent, pos=wx.Point(5, 5))#,
-                          #size=wx.Size(680, 656))
+        wx.Panel.__init__(self, parent, pos=wx.Point(5, 5))
 
         self.patients = []
         self.first_image_selection = None
@@ -140,25 +138,11 @@ class InnerPanel(wx.Panel):
         self.last_image_selection = pubsub_evt.data[1]
         
     def _bind_events(self):
-        self.Bind(EVT_SELECT_SERIE, self.OnSelectSerie)
         self.Bind(EVT_SELECT_SLICE, self.OnSelectSlice)
         self.Bind(EVT_SELECT_PATIENT, self.OnSelectPatient)
         self.btn_ok.Bind(wx.EVT_BUTTON, self.OnClickOk)
         self.btn_cancel.Bind(wx.EVT_BUTTON, self.OnClickCancel)
         self.text_panel.Bind(EVT_SELECT_SERIE_TEXT, self.OnDblClickTextPanel)
-
-    def OnSelectSerie(self, evt):
-        #patient_id, serie_number = evt.GetSelectID()
-        #self.text_panel.SelectSerie(evt.GetSelectID())
-        #for patient in self.patients:
-        #    if patient_id == patient.GetDicomSample().patient.id:
-        #        for group in patient.GetGroups():
-        #            if serie_number == group.GetDicomSample().acquisition.serie_number:
-        #                self.image_panel.SetSerie(group)
-
-        pass
-
-
 
     def OnSelectSlice(self, evt):
         pass
@@ -175,32 +159,9 @@ class InnerPanel(wx.Panel):
         parm.SetInterval(self.combo_interval.GetSelection())
         parm.ShowModal()
 
-        group = self.text_panel.GetSelection()
-        if group:
-            self.LoadDicom(group)
 
     def OnClickCancel(self, evt):
         Publisher.sendMessage("Cancel DICOM load")
-
-    def LoadDicom(self, group):
-        #interval = self.combo_interval.GetSelection()
-        #if not isinstance(group, dcm.DicomGroup):
-        #    group = max(group.GetGroups(), key=lambda g: g.nslices)
-        
-        #slice_amont = group.nslices
-        #if (self.first_image_selection != None) and (self.first_image_selection != self.last_image_selection):
-        #    slice_amont = (self.last_image_selection) - self.first_image_selection
-        #    slice_amont += 1
-        #    if slice_amont == 0:
-        #        slice_amont = group.nslices
-
-        #nslices_result = slice_amont / (interval + 1)
-        #if (nslices_result > 1):
-        #    Publisher.sendMessage('Open DICOM group', (group, interval, 
-        #                            [self.first_image_selection, self.last_image_selection]))
-        #else:
-        #    dlg.MissingFilesForReconstruction()
-        pass
 
 
 class TextPanel(wx.Panel):
@@ -213,7 +174,8 @@ class TextPanel(wx.Panel):
         self.idserie_treeitem = {}
         self.treeitem_idpatient = {}
 
-        self.selected_item = None
+        self.selected_items = None
+        self.shift_pressed = False
 
         self.__init_gui()
         self.__bind_events_wx()
@@ -233,7 +195,7 @@ class TextPanel(wx.Panel):
                                    | wx.TR_ROW_LINES
                                    | wx.TR_COLUMN_LINES
                                    | wx.TR_FULL_ROW_HIGHLIGHT
-                                   | wx.TR_SINGLE
+                                   | wx.TR_MULTIPLE
                                    | wx.TR_HIDE_ROOT
                                    )
 
@@ -250,31 +212,38 @@ class TextPanel(wx.Panel):
         self.root = tree.AddRoot(_("InVesalius Database"))
         self.tree = tree
 
+
+
     def OnKeyPress(self, evt):
         key_code = evt.GetKeyCode()
+        
         if key_code == wx.WXK_DELETE or key_code == wx.WXK_NUMPAD_DELETE:
-            if self.selected_item != self.tree.GetRootItem():
-                text_item = self.tree.GetItemText(self.selected_item)
-                
-                index = bpr.BitmapData().GetIndexByPath(text_item)
+            
+            for selected_item in self.selected_items:
 
-                bpr.BitmapData().RemoveFileByPath(text_item)
+                if selected_item != self.tree.GetRootItem():
+                    text_item = self.tree.GetItemText(selected_item)
+                    
+                    index = bpr.BitmapData().GetIndexByPath(text_item)
 
-                data_size = len(bpr.BitmapData().GetData())
-                
-                if index >= 0 and index < data_size:
-                    Publisher.sendMessage('Set bitmap in preview panel', index)
-                elif index == data_size and data_size > 0:
-                    Publisher.sendMessage('Set bitmap in preview panel', index - 1)
-                elif data_size == 1:
-                    Publisher.sendMessage('Set bitmap in preview panel', 0)
-                else:
-                    Publisher.sendMessage('Show black slice in single preview image')
-                
-                self.tree.Delete(self.selected_item)
-                self.tree.Update()
-                self.tree.Refresh()
-                Publisher.sendMessage('Remove preview panel', text_item)
+                    bpr.BitmapData().RemoveFileByPath(text_item)
+
+                    data_size = len(bpr.BitmapData().GetData())
+                    
+                    if index >= 0 and index < data_size:
+                        Publisher.sendMessage('Set bitmap in preview panel', index)
+                    elif index == data_size and data_size > 0:
+                        Publisher.sendMessage('Set bitmap in preview panel', index - 1)
+                    elif data_size == 1:
+                        Publisher.sendMessage('Set bitmap in preview panel', 0)
+                    else:
+                        Publisher.sendMessage('Show black slice in single preview image')
+                    
+                    self.tree.Delete(selected_item)
+                    self.tree.Update()
+                    self.tree.Refresh()
+                    Publisher.sendMessage('Remove preview panel', text_item)
+
         evt.Skip()
 
     def SelectSeries(self, pubsub_evt):
@@ -288,18 +257,18 @@ class TextPanel(wx.Panel):
             self.tree.SetItemText(parent, value[5], 2)
 
         tree.Expand(self.root)
-        #tree.SelectItem(parent_select)
         tree.Bind(wx.EVT_TREE_ITEM_ACTIVATED, self.OnActivate)
         tree.Bind(wx.EVT_TREE_SEL_CHANGED, self.OnSelChanged)
 
         Publisher.sendMessage('Load bitmap into import panel', data)
 
     def OnSelChanged(self, evt):
-        item = self.tree.GetSelection()
+        self.selected_items = self.tree.GetSelections()
+        item = self.selected_items[-1]
+        
         if self._selected_by_user:
-            self.selected_item = item
-            
-            text_item = self.tree.GetItemText(self.selected_item)
+
+            text_item = self.tree.GetItemText(item)
             index = bpr.BitmapData().GetIndexByPath(text_item)
             Publisher.sendMessage('Set bitmap in preview panel', index)
 
@@ -360,11 +329,7 @@ class ImagePanel(wx.Panel):
         self.SetAutoLayout(1)
 
     def _bind_events(self):
-        self.text_panel.Bind(EVT_SELECT_SERIE, self.OnSelectSerie)
         self.text_panel.Bind(EVT_SELECT_SLICE, self.OnSelectSlice)
-
-    def OnSelectSerie(self, evt):
-        evt.Skip()
 
     def OnSelectSlice(self, evt):
         self.image_panel.bitmap_preview.ShowSlice(evt.GetSelectID())
@@ -377,16 +342,12 @@ class ImagePanel(wx.Panel):
 class SeriesPanel(wx.Panel):
     def __init__(self, parent):
         wx.Panel.__init__(self, parent, -1)
-        #self.SetBackgroundColour((0,0,0))
 
         self.thumbnail_preview = bpp.BitmapPreviewSeries(self)
-        #self.bitmap_preview = bpp.BitmapPreviewSlice(self)
-        #self.bitmap_preview.Show(0)
-        
+
 
         self.sizer = wx.BoxSizer(wx.HORIZONTAL)
         self.sizer.Add(self.thumbnail_preview, 1, wx.EXPAND | wx.ALL, 5)
-        #self.sizer.Add(self.bitmap_preview, 1, wx.EXPAND | wx.ALL, 5)
         self.sizer.Fit(self)
 
         self.SetSizer(self.sizer)
@@ -399,21 +360,11 @@ class SeriesPanel(wx.Panel):
         self._bind_gui_evt()
 
     def __bind_evt(self):
-        #Publisher.subscribe(self.ShowDicomSeries, 'Load bitmap preview')
-        #Publisher.subscribe(self.SetDicomSeries, 'Load group into import panel')
         Publisher.subscribe(self.SetBitmapFiles, 'Load bitmap into import panel')
 
     def _bind_gui_evt(self):
         self.thumbnail_preview.Bind(bpp.EVT_CLICK_SERIE, self.OnSelectSerie)
-        #self.bitmap_preview.Bind(bpp.EVT_CLICK_SLICE, self.OnSelectSlice)
 
-    #def SetDicomSeries(self, pubsub_evt):
-    #    group = pubsub_evt.data
-    #    self.bitmap_preview.SetDicomGroup(group)
-    #    self.bitmap_preview.Show(1)
-    #    self.thumbnail_preview.Show(0)
-    #    self.sizer.Layout()
-    #    self.Update()
 
     def GetSelectedImagesRange(self):
         return [self.bitmap_preview.first_selected, self.dicom_preview_last_selection]
@@ -422,11 +373,9 @@ class SeriesPanel(wx.Panel):
 
 
         bitmap = pubsub_evt.data
-        #self.bitmap_preview.Show(0)
         self.thumbnail_preview.Show(1)
 
         self.thumbnail_preview.SetBitmapFiles(bitmap)
-        #self.bitmap_preview.SetPatientGroups(patient)
 
         self.Update()
 
@@ -437,9 +386,6 @@ class SeriesPanel(wx.Panel):
         my_evt.SetItemData(evt.GetItemData())
         self.GetEventHandler().ProcessEvent(my_evt)
 
-        #self.bitmap_preview.SetDicomGroup(data)
-        #self.bitmap_preview.Show(1)
-        #self.thumbnail_preview.Show(0)
         self.sizer.Layout()
         self.Show()
         self.Update()
@@ -451,12 +397,6 @@ class SeriesPanel(wx.Panel):
         self.GetEventHandler().ProcessEvent(my_evt)
 
 
-    #def ShowDicomSeries(self, pubsub_evt):
-    #    patient = pubsub_evt.data
-    #    if isinstance(patient, dcm.PatientGroup):
-    #        self.thumbnail_preview.SetPatientGroups(patient)
-    #        self.bitmap_preview.SetPatientGroups(patient)
-
 
 class SlicePanel(wx.Panel):
     def __init__(self, parent):
@@ -465,8 +405,6 @@ class SlicePanel(wx.Panel):
         self.__bind_evt()
 
     def __bind_evt(self):
-        #Publisher.subscribe(self.ShowDicomSeries, 'Load bitmap preview')
-        #Publisher.subscribe(self.SetDicomSeries, 'Load group into import panel')
         Publisher.subscribe(self.SetBitmapFiles, 'Load bitmap into import panel')
 
     def __init_gui(self):
@@ -487,17 +425,3 @@ class SlicePanel(wx.Panel):
         self.bitmap_preview.SetBitmapFiles(data)
         self.sizer.Layout()
         self.Update()
-
-    #def SetDicomSeries(self, evt):
-    #    group = evt.data
-    #    self.bitmap_preview.SetDicomGroup(group)
-    #    self.sizer.Layout()
-    #    self.Update()
-
-    #def ShowDicomSeries(self, pubsub_evt):
-    #    patient = pubsub_evt.data
-    #    group = patient.GetGroups()[0]
-    #    self.bitmap_preview.SetDicomGroup(group)
-    #    self.sizer.Layout()
-    #    self.Update()
-
