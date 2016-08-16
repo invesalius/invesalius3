@@ -1344,7 +1344,7 @@ class Viewer(wx.Panel):
         actor = vtk.vtkImageActor()
         # TODO: Create a option to let the user set if he wants to interpolate
         # the slice images.
-        #actor.InterpolateOff()
+        actor.InterpolateOff()
         slice_data = sd.SliceData()
         slice_data.SetOrientation(self.orientation)
         slice_data.renderer = renderer

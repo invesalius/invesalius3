@@ -1777,8 +1777,6 @@ class FloodFillMaskInteractorStyle(DefaultInteractorStyle):
             dlg_ffill = dialogs.FFillOptionsDialog(self.config)
             dlg_ffill.Show()
 
-        self.viewer.slice_.do_threshold_to_all_slices()
-
         self.AddObserver("LeftButtonPressEvent", self.OnFFClick)
 
     def OnFFClick(self, obj, evt):
@@ -1816,6 +1814,7 @@ class FloodFillMaskInteractorStyle(DefaultInteractorStyle):
                              (0,  1, 0),
                              (0,  0, -1),
                              (0,  0, 1))
+            self.viewer.slice_.do_threshold_to_all_slices()
         else:
             neighbor_iter = ((-1, 0, 0),
                              (1,  0, 0),

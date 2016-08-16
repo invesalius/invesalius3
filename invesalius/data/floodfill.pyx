@@ -123,10 +123,16 @@ def floodfill_threshold(np.ndarray[image_t, ndim=3] data, list seeds, int t0, in
             c = stack.front()
             stack.pop_front()
 
+            x = c.x
+            y = c.y
+            z = c.z
+
+            out[z, y, x] = fill
+
             for i in xrange(neighbor_iter.size()):
-                xo = c.x + neighbor_iter[i][0]
-                yo = c.y + neighbor_iter[i][1]
-                zo = c.z + neighbor_iter[i][2]
+                xo = x + neighbor_iter[i][0]
+                yo = y + neighbor_iter[i][1]
+                zo = z + neighbor_iter[i][2]
 
                 if 0 <= xo < w and 0 <= yo < h and 0 <= zo < d and out[zo, yo, xo] != fill and t0 <= data[zo, yo, xo] <= t1:
                     out[zo, yo, xo] = fill
