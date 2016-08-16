@@ -40,6 +40,7 @@ from scipy.ndimage import watershed_ift, generate_binary_structure
 from skimage.morphology import watershed
 from skimage import filter
 
+from gui import dialogs
 from .measures import MeasureData
 
 from . import floodfill
@@ -1750,7 +1751,15 @@ class ReorientImageInteractorStyle(DefaultInteractorStyle):
             buffer_.discard_image()
 
 
-class FlooFillMaskInteractorStyle(DefaultInteractorStyle):
+class FFillConfig(object):
+    __metaclass__= utils.Singleton
+    def __init__(self):
+        self.dlg_visible = False
+        self.target = "2D"
+
+
+class FloodFillMaskInteractorStyle(DefaultInteractorStyle):
+    dialog = None
     def __init__(self, viewer):
         DefaultInteractorStyle.__init__(self, viewer)
 
@@ -1760,6 +1769,13 @@ class FlooFillMaskInteractorStyle(DefaultInteractorStyle):
         self.picker = vtk.vtkWorldPointPicker()
         self.slice_actor = viewer.slice_data.actor
         self.slice_data = viewer.slice_data
+
+        self.config = FFillConfig()
+
+        if not self.config.dlg_visible:
+            self.config.dlg_visible = True
+            dlg_ffill = dialogs.FFillOptionsDialog(self.config)
+            dlg_ffill.Show()
 
         self.viewer.slice_.do_threshold_to_all_slices()
 
@@ -1793,7 +1809,7 @@ class FlooFillMaskInteractorStyle(DefaultInteractorStyle):
         cp_mask = mask.copy()
 
         from_3d = True
-        if from_3d:
+        if self.config.target == "3D":
             neighbor_iter = ((-1, 0, 0),
                              (1,  0, 0),
                              (0,  -1, 0),
@@ -1806,11 +1822,11 @@ class FlooFillMaskInteractorStyle(DefaultInteractorStyle):
                              (0,  -1, 0),
                              (0,  1, 0))
 
-        neighbor_iter = []
-        for i in xrange(-1, 2):
-            for j in xrange(-1, 2):
-                for k in xrange(-1, 2):
-                    neighbor_iter.append((i, j, k))
+        #  neighbor_iter = []
+        #  for i in xrange(-1, 2):
+            #  for j in xrange(-1, 2):
+                #  for k in xrange(-1, 2):
+                    #  neighbor_iter.append((i, j, k))
 
         if iren.GetControlKey():
             t0 = 254
@@ -1887,7 +1903,7 @@ def get_style(style):
         const.SLICE_STATE_EDITOR: EditorInteractorStyle,
         const.SLICE_STATE_WATERSHED: WaterShedInteractorStyle,
         const.SLICE_STATE_REORIENT: ReorientImageInteractorStyle,
-        const.SLICE_STATE_MASK_FFILL: FlooFillMaskInteractorStyle,
+        const.SLICE_STATE_MASK_FFILL: FloodFillMaskInteractorStyle,
     }
     return STYLES[style]
 

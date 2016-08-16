@@ -1838,3 +1838,47 @@ def BitmapNotSameSize():
  
     dlg.ShowModal()
     dlg.Destroy()
+
+
+class FFillOptionsDialog(wx.Dialog):
+    def __init__(self, config):
+        pre = wx.PreDialog()
+        pre.Create(wx.GetApp().GetTopWindow(), -1, _(u'Floodfill'), style=wx.DEFAULT_DIALOG_STYLE|wx.FRAME_FLOAT_ON_PARENT)
+        self.PostCreate(pre)
+
+        self.config = config
+
+        self._init_gui()
+
+    def _init_gui(self):
+        sizer = wx.GridBagSizer(3, 1)
+
+        flag_labels = wx.ALIGN_RIGHT  | wx.ALIGN_CENTER_VERTICAL
+
+        self.target = wx.RadioBox(self, -1, _(u"Target"),
+                                 choices=[_(u"Slice"), _(u"Volume")],
+                                 style=wx.NO_BORDER | wx.HORIZONTAL)
+
+        if self.config.target == "2D":
+            self.target.SetSelection(0)
+        else:
+            self.target.SetSelection(1)
+
+        sizer.Add(self.target, (0, 0))
+
+        self.SetSizer(sizer)
+        sizer.Fit(self)
+        self.Layout()
+
+        self.target.Bind(wx.EVT_RADIOBOX, self.OnSetTarget)
+        self.Bind(wx.EVT_CLOSE, self.OnClose)
+
+    def OnSetTarget(self, evt):
+        if self.target.GetSelection() == 0:
+            self.config.target = "2D"
+        else:
+            self.config.target = "3D"
+
+    def OnClose(self, evt):
+        self.config.dlg_visible = False
+        evt.Skip()
