@@ -90,7 +90,7 @@ def floodfill(np.ndarray[image_t, ndim=3] data, int i, int j, int k, int v, int 
 @cython.boundscheck(False) # turn of bounds-checking for entire function
 @cython.wraparound(False)
 @cython.nonecheck(False)
-def floodfill_threshold(np.ndarray[image_t, ndim=3] data, list seeds, int t0, int t1, int fill, vector[vector[int]] neighbor_iter, np.ndarray[mask_t, ndim=3] out):
+def floodfill_threshold(np.ndarray[image_t, ndim=3] data, list seeds, int t0, int t1, int fill, np.ndarray[mask_t, ndim=3] strct, np.ndarray[mask_t, ndim=3] out):
 
     cdef int to_return = 0
     if out is None:
@@ -98,17 +98,26 @@ def floodfill_threshold(np.ndarray[image_t, ndim=3] data, list seeds, int t0, in
         to_return = 1
 
     cdef int x, y, z
-    cdef int xd, yd, zd
-    cdef int w, h, d
+    cdef int dx, dy, dz
+    cdef int odx, ody, odz
     cdef int xo, yo, zo
-    cdef int i
+    cdef int i, j, k
+    cdef int offset_x, offset_y, offset_z
 
-    d = data.shape[0]
-    h = data.shape[1]
-    w = data.shape[2]
+    dz = data.shape[0]
+    dy = data.shape[1]
+    dx = data.shape[2]
+
+    odz = strct.shape[0]
+    ody = strct.shape[1]
+    odx = strct.shape[2]
 
     cdef cdeque[coord] stack
     cdef coord c
+
+    offset_z = odz / 2
+    offset_y = ody / 2
+    offset_x = odx / 2
 
     for i, j, k in seeds:
         if data[k, j, i] >= t0 and data[k, j, i] <= t1:
@@ -129,17 +138,20 @@ def floodfill_threshold(np.ndarray[image_t, ndim=3] data, list seeds, int t0, in
 
             out[z, y, x] = fill
 
-            for i in xrange(neighbor_iter.size()):
-                xo = x + neighbor_iter[i][0]
-                yo = y + neighbor_iter[i][1]
-                zo = z + neighbor_iter[i][2]
+            for k in xrange(odz):
+                for j in xrange(ody):
+                    for i in xrange(odx):
+                        if strct[k, j, i]:
+                            xo = x + i - offset_x
+                            yo = y + j - offset_y
+                            zo = z + k - offset_z
 
-                if 0 <= xo < w and 0 <= yo < h and 0 <= zo < d and out[zo, yo, xo] != fill and t0 <= data[zo, yo, xo] <= t1:
-                    out[zo, yo, xo] = fill
-                    c.x = xo
-                    c.y = yo
-                    c.z = zo
-                    stack.push_back(c)
+                            if 0 <= xo < dx and 0 <= yo < dy and 0 <= zo < dz and out[zo, yo, xo] != fill and t0 <= data[zo, yo, xo] <= t1:
+                                out[zo, yo, xo] = fill
+                                c.x = xo
+                                c.y = yo
+                                c.z = zo
+                                stack.push_back(c)
 
     if to_return:
         return out

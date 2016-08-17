@@ -1803,24 +1803,23 @@ class FloodFillMaskInteractorStyle(DefaultInteractorStyle):
 
         x, y, z = self.calcultate_scroll_position(position)
 
-        from_3d = True
         if self.config.target == "3D":
-            print "DOING 3D, manolo!"
-            neighbor_iter = ((-1, 0, 0),
-                             (1,  0, 0),
-                             (0,  -1, 0),
-                             (0,  1, 0),
-                             (0,  0, -1),
-                             (0,  0, 1))
+            bstruct = generate_binary_structure(3, 1)
             self.viewer.slice_.do_threshold_to_all_slices()
         else:
-            neighbor_iter = ((-1, 0, 0),
-                             (1,  0, 0),
-                             (0,  -1, 0),
-                             (0,  1, 0))
+            _bstruct = generate_binary_structure(2, 1)
+            if self.orientation == 'AXIAL':
+                bstruct = np.zeros((1, 3, 3), dtype='uint8')
+                bstruct[0] = _bstruct
+            elif self.orientation == 'CORONAL':
+                bstruct = np.zeros((3, 1, 3), dtype='uint8')
+                bstruct[:, 0, :] = _bstruct
+            elif self.orientation == 'SAGITAL':
+                bstruct = np.zeros((3, 3, 1), dtype='uint8')
+                bstruct[:, :, 0] = _bstruct
 
         mask = self.viewer.slice_.current_mask.matrix[1:, 1:, 1:]
-        cp_mask = mask.copy()
+        cp_mask = mask
 
         #  neighbor_iter = []
         #  for i in xrange(-1, 2):
@@ -1837,7 +1836,7 @@ class FloodFillMaskInteractorStyle(DefaultInteractorStyle):
             t1 = 1
             fill = 254
 
-        floodfill.floodfill_threshold(cp_mask, [[x, y, z]], t0, t1, fill, neighbor_iter, mask)
+        floodfill.floodfill_threshold(cp_mask, [[x, y, z]], t0, t1, fill, bstruct, mask)
 
         self.viewer.slice_.buffer_slices['AXIAL'].discard_mask()
         self.viewer.slice_.buffer_slices['CORONAL'].discard_mask()
