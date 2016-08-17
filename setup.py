@@ -28,8 +28,6 @@ if sys.platform == 'linux2':
 
                        Extension("invesalius.data.floodfill", ["invesalius/data/floodfill.pyx"],
                                  include_dirs=[numpy.get_include()],
-                                 extra_compile_args=['-fopenmp',],
-                                 extra_link_args=['-fopenmp',],
                                  language='c++',),
                        ])
          )
@@ -51,7 +49,6 @@ elif sys.platform == 'win32':
 
                                  Extension("invesalius.data.floodfill", ["invesalius/data/floodfill.pyx"],
                                            include_dirs=[numpy.get_include()],
-                                           extra_compile_args=['/openmp',],
                                            language='c++',),
                                  ])
     )
@@ -77,8 +74,6 @@ else:
 
                                  Extension("invesalius.data.floodfill", ["invesalius/data/floodfill.pyx"],
                                            include_dirs=[numpy.get_include()],
-                                           extra_compile_args=['-fopenmp',],
-                                           extra_link_args=['-fopenmp',],
                                            language='c++',),
                                  ])
     )
