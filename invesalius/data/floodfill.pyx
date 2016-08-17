@@ -120,8 +120,8 @@ def floodfill_threshold(np.ndarray[image_t, ndim=3] data, list seeds, int t0, in
 
     with nogil:
         while stack.size():
-            c = stack.front()
-            stack.pop_front()
+            c = stack.back()
+            stack.pop_back()
 
             x = c.x
             y = c.y

@@ -1802,12 +1802,10 @@ class FloodFillMaskInteractorStyle(DefaultInteractorStyle):
             position = viewer.calculate_matrix_position(coord)
 
         x, y, z = self.calcultate_scroll_position(position)
-        mask = self.viewer.slice_.current_mask.matrix[1:, 1:, 1:]
-
-        cp_mask = mask.copy()
 
         from_3d = True
         if self.config.target == "3D":
+            print "DOING 3D, manolo!"
             neighbor_iter = ((-1, 0, 0),
                              (1,  0, 0),
                              (0,  -1, 0),
@@ -1820,6 +1818,9 @@ class FloodFillMaskInteractorStyle(DefaultInteractorStyle):
                              (1,  0, 0),
                              (0,  -1, 0),
                              (0,  1, 0))
+
+        mask = self.viewer.slice_.current_mask.matrix[1:, 1:, 1:]
+        cp_mask = mask.copy()
 
         #  neighbor_iter = []
         #  for i in xrange(-1, 2):
