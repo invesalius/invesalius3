@@ -139,13 +139,12 @@ def floodfill_threshold(np.ndarray[image_t, ndim=3] data, list seeds, int t0, in
             out[z, y, x] = fill
 
             for k in xrange(odz):
+                zo = z + k - offset_z
                 for j in xrange(ody):
+                    yo = y + j - offset_y
                     for i in xrange(odx):
                         if strct[k, j, i]:
                             xo = x + i - offset_x
-                            yo = y + j - offset_y
-                            zo = z + k - offset_z
-
                             if 0 <= xo < dx and 0 <= yo < dy and 0 <= zo < dz and out[zo, yo, xo] != fill and t0 <= data[zo, yo, xo] <= t1:
                                 out[zo, yo, xo] = fill
                                 c.x = xo
