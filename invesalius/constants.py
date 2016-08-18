@@ -482,6 +482,7 @@ ID_CLEAN_MASK = wx.NewId()
 
 ID_REORIENT_IMG = wx.NewId()
 ID_FLOODFILL_MASK = wx.NewId()
+ID_REMOVE_MASK_PART = wx.NewId()
 
 #---------------------------------------------------------
 STATE_DEFAULT = 1000

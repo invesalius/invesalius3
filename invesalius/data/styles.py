@@ -1783,9 +1783,10 @@ class FloodFillMaskInteractorStyle(DefaultInteractorStyle):
             self.dlg_ffill.Show()
 
     def CleanUp(self):
-        self.config.dlg_visible = False
-        if self.dlg_ffill is not None:
+        if (self.dlg_ffill is not None) and (self.config.dlg_visible):
+            self.config.dlg_visible = False
             self.dlg_ffill.Destroy()
+            self.dlg_ffill = None
 
     def OnFFClick(self, obj, evt):
         if (self.viewer.slice_.buffer_slices[self.orientation].mask is None):

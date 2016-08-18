@@ -1851,7 +1851,7 @@ class FFillOptionsDialog(wx.Dialog):
         self._init_gui()
 
     def _init_gui(self):
-        sizer = wx.GridBagSizer(3, 1)
+        sizer = wx.GridBagSizer(3, 3)
 
         flag_labels = wx.ALIGN_RIGHT  | wx.ALIGN_CENTER_VERTICAL
 
@@ -1883,9 +1883,9 @@ class FFillOptionsDialog(wx.Dialog):
             self.conect3D.SetSelection(0)
             self.config.con_3d = 6
 
-        sizer.Add(self.target, (0, 0))
-        sizer.Add(self.conect2D, (1, 0))
-        sizer.Add(self.conect3D, (2, 0))
+        sizer.Add(self.target, (0, 0), (1, 3), flag=wx.EXPAND, border=5)
+        sizer.Add(self.conect2D, (1, 0), flag=wx.EXPAND, border=5)
+        sizer.Add(self.conect3D, (2, 0), flag=wx.EXPAND, border=5)
 
         self.SetSizer(sizer)
         sizer.Fit(self)
@@ -1911,7 +1911,7 @@ class FFillOptionsDialog(wx.Dialog):
         print self.config.con_3d
 
     def OnClose(self, evt):
-        Publisher.sendMessage('Disable style', const.SLICE_STATE_MASK_FFILL)
-        self.config.dlg_visible = False
+        if self.config.dlg_visible:
+            Publisher.sendMessage('Disable style', const.SLICE_STATE_MASK_FFILL)
         evt.Skip()
         self.Destroy()

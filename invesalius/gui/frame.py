@@ -442,6 +442,9 @@ class Frame(wx.Frame):
         elif id == const.ID_FLOODFILL_MASK:
             self.OnFillHolesManually()
 
+        elif id == const.ID_REMOVE_MASK_PART:
+            self.OnRemoveMaskParts()
+
     def OnSize(self, evt):
         """
         Refresh GUI when frame is resized.
@@ -565,6 +568,9 @@ class Frame(wx.Frame):
     def OnFillHolesManually(self):
         Publisher.sendMessage('Enable style', const.SLICE_STATE_MASK_FFILL)
 
+    def OnRemoveMaskParts(self):
+        Publisher.sendMessage('Enable style', const.SLICE_STATE_MASK_FFILL)
+
 # ------------------------------------------------------------------
 # ------------------------------------------------------------------
 # ------------------------------------------------------------------
@@ -585,7 +591,8 @@ class MenuBar(wx.MenuBar):
                              const.ID_PROJECT_SAVE_AS,
                              const.ID_PROJECT_CLOSE,
                              const.ID_REORIENT_IMG,
-                             const.ID_FLOODFILL_MASK]
+                             const.ID_FLOODFILL_MASK,
+                             const.ID_REMOVE_MASK_PART,]
         self.__init_items()
         self.__bind_events()
 
@@ -698,6 +705,9 @@ class MenuBar(wx.MenuBar):
 
         self.fill_hole_mask_menu = mask_menu.Append(const.ID_FLOODFILL_MASK, _(u"Fill mask holes manually"))
         self.fill_hole_mask_menu.Enable(False)
+
+        self.remove_mask_part_menu = mask_menu.Append(const.ID_REMOVE_MASK_PART, _(u"Remove parts"))
+        self.remove_mask_part_menu.Enable(False)
 
         tools_menu.AppendMenu(-1,  _(u"Mask"), mask_menu)
 
