@@ -569,7 +569,7 @@ class Frame(wx.Frame):
         Publisher.sendMessage('Enable style', const.SLICE_STATE_MASK_FFILL)
 
     def OnRemoveMaskParts(self):
-        Publisher.sendMessage('Enable style', const.SLICE_STATE_MASK_FFILL)
+        Publisher.sendMessage('Enable style', const.SLICE_STATE_REMOVE_MASK_PARTS)
 
 # ------------------------------------------------------------------
 # ------------------------------------------------------------------

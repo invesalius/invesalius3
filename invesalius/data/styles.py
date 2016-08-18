@@ -1774,6 +1774,10 @@ class FloodFillMaskInteractorStyle(DefaultInteractorStyle):
         self.config = FFillConfig()
         self.dlg_ffill = None
 
+        self.t0 = 0
+        self.t1 = 1
+        self.fill_value = 254
+
         self.AddObserver("LeftButtonPressEvent", self.OnFFClick)
 
     def SetUp(self):
@@ -1831,16 +1835,7 @@ class FloodFillMaskInteractorStyle(DefaultInteractorStyle):
         mask = self.viewer.slice_.current_mask.matrix[1:, 1:, 1:]
         cp_mask = mask
 
-        if iren.GetControlKey():
-            t0 = 254
-            t1 = 255
-            fill = 1
-        else:
-            t0 = 0
-            t1 = 1
-            fill = 254
-
-        floodfill.floodfill_threshold(cp_mask, [[x, y, z]], t0, t1, fill, bstruct, mask)
+        floodfill.floodfill_threshold(cp_mask, [[x, y, z]], self.t0, self.t1, self.fill_value, bstruct, mask)
 
         self.viewer.slice_.buffer_slices['AXIAL'].discard_mask()
         self.viewer.slice_.buffer_slices['CORONAL'].discard_mask()
@@ -1891,6 +1886,14 @@ class FloodFillMaskInteractorStyle(DefaultInteractorStyle):
         return sagital, coronal, axial
 
 
+class RemoveMaskPartsInteractorStyle(FloodFillMaskInteractorStyle):
+        def __init__(self, viewer):
+            FloodFillMaskInteractorStyle.__init__(self, viewer)
+            self.t0 = 254
+            self.t1 = 255
+            self.fill_value = 1
+
+
 def get_style(style):
     STYLES = {
         const.STATE_DEFAULT: DefaultInteractorStyle,
@@ -1907,6 +1910,7 @@ def get_style(style):
         const.SLICE_STATE_WATERSHED: WaterShedInteractorStyle,
         const.SLICE_STATE_REORIENT: ReorientImageInteractorStyle,
         const.SLICE_STATE_MASK_FFILL: FloodFillMaskInteractorStyle,
+        const.SLICE_STATE_REMOVE_MASK_PARTS: RemoveMaskPartsInteractorStyle,
     }
     return STYLES[style]
 
