@@ -1806,7 +1806,7 @@ class FloodFillMaskInteractorStyle(DefaultInteractorStyle):
         x, y, z = self.calcultate_scroll_position(position)
 
         if self.config.target == "3D":
-            bstruct = np.array(generate_binary_structure(3, CON3D[self.config.con_3d], dtype='uint8'))
+            bstruct = np.array(generate_binary_structure(3, CON3D[self.config.con_3d]), dtype='uint8')
             self.viewer.slice_.do_threshold_to_all_slices()
         else:
             _bstruct = generate_binary_structure(2, CON2D[self.config.con_2d])
