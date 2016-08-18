@@ -1761,7 +1761,6 @@ class FFillConfig(object):
 
 
 class FloodFillMaskInteractorStyle(DefaultInteractorStyle):
-    dialog = None
     def __init__(self, viewer):
         DefaultInteractorStyle.__init__(self, viewer)
 
@@ -1773,13 +1772,20 @@ class FloodFillMaskInteractorStyle(DefaultInteractorStyle):
         self.slice_data = viewer.slice_data
 
         self.config = FFillConfig()
-
-        if not self.config.dlg_visible:
-            self.config.dlg_visible = True
-            dlg_ffill = dialogs.FFillOptionsDialog(self.config)
-            dlg_ffill.Show()
+        self.dlg_ffill = None
 
         self.AddObserver("LeftButtonPressEvent", self.OnFFClick)
+
+    def SetUp(self):
+        if not self.config.dlg_visible:
+            self.config.dlg_visible = True
+            self.dlg_ffill = dialogs.FFillOptionsDialog(self.config)
+            self.dlg_ffill.Show()
+
+    def CleanUp(self):
+        self.config.dlg_visible = False
+        if self.dlg_ffill is not None:
+            self.dlg_ffill.Destroy()
 
     def OnFFClick(self, obj, evt):
         if (self.viewer.slice_.buffer_slices[self.orientation].mask is None):
