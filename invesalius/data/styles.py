@@ -1824,12 +1824,6 @@ class FloodFillMaskInteractorStyle(DefaultInteractorStyle):
         mask = self.viewer.slice_.current_mask.matrix[1:, 1:, 1:]
         cp_mask = mask
 
-        #  neighbor_iter = []
-        #  for i in xrange(-1, 2):
-            #  for j in xrange(-1, 2):
-                #  for k in xrange(-1, 2):
-                    #  neighbor_iter.append((i, j, k))
-
         if iren.GetControlKey():
             t0 = 254
             t1 = 255
