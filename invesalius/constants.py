@@ -526,7 +526,7 @@ VOLUME_STYLES.append(STATE_DEFAULT)
 
 STYLE_LEVEL = {SLICE_STATE_EDITOR: 1,
                SLICE_STATE_WATERSHED: 1,
-               SLICE_STATE_MASK_FFILL: 1,
+               SLICE_STATE_MASK_FFILL: 2,
                SLICE_STATE_CROSS: 2,
                SLICE_STATE_SCROLL: 2,
                SLICE_STATE_REORIENT: 2,
