@@ -1843,7 +1843,7 @@ def BitmapNotSameSize():
 class FFillOptionsDialog(wx.Dialog):
     def __init__(self, config):
         pre = wx.PreDialog()
-        pre.Create(wx.GetApp().GetTopWindow(), -1, _(u'Floodfill'), style=wx.DEFAULT_DIALOG_STYLE|wx.FRAME_FLOAT_ON_PARENT)
+        pre.Create(wx.GetApp().GetTopWindow(), -1, _(u'Floodfill options'), style=wx.DEFAULT_DIALOG_STYLE|wx.FRAME_FLOAT_ON_PARENT)
         self.PostCreate(pre)
 
         self.config = config
@@ -1855,22 +1855,45 @@ class FFillOptionsDialog(wx.Dialog):
 
         flag_labels = wx.ALIGN_RIGHT  | wx.ALIGN_CENTER_VERTICAL
 
-        self.target = wx.RadioBox(self, -1, _(u"Target"),
-                                 choices=[_(u"Slice"), _(u"Volume")],
-                                 style=wx.NO_BORDER | wx.HORIZONTAL)
+        self.target = wx.RadioBox(self, -1, "",
+                                 choices=[_(u"2D - Actual slice"), _(u"3D - Entire volume")],
+                                 style=wx.NO_BORDER | wx.VERTICAL)
 
         if self.config.target == "2D":
             self.target.SetSelection(0)
         else:
             self.target.SetSelection(1)
 
+        choices2d = ["4", "8"]
+        choices3d = ["6", "18", "26"]
+        self.conect2D = wx.RadioBox(self, -1, _(u"2D Connectivity"), choices=choices2d)
+        self.conect3D = wx.RadioBox(self, -1, _(u"3D Connectivity"), choices=choices3d)
+
+        try:
+            self.conect2D.SetSelection(choices2d.index(str(self.config.con_2d)))
+        except ValueError:
+            print "ERROR 2D"
+            self.conect2D.SetSelection(0)
+            self.config.con_2d = 4
+
+        try:
+            self.conect3D.SetSelection(choices3d.index(str(self.config.con_3d)))
+        except ValueError:
+            print "ERROR 3D"
+            self.conect3D.SetSelection(0)
+            self.config.con_3d = 6
+
         sizer.Add(self.target, (0, 0))
+        sizer.Add(self.conect2D, (1, 0))
+        sizer.Add(self.conect3D, (2, 0))
 
         self.SetSizer(sizer)
         sizer.Fit(self)
         self.Layout()
 
         self.target.Bind(wx.EVT_RADIOBOX, self.OnSetTarget)
+        self.conect2D.Bind(wx.EVT_RADIOBOX, self.OnSetCon2D)
+        self.conect3D.Bind(wx.EVT_RADIOBOX, self.OnSetCon3D)
         self.Bind(wx.EVT_CLOSE, self.OnClose)
 
     def OnSetTarget(self, evt):
@@ -1879,6 +1902,16 @@ class FFillOptionsDialog(wx.Dialog):
         else:
             self.config.target = "3D"
 
+    def OnSetCon2D(self, evt):
+        self.config.con_2d = int(self.conect2D.GetStringSelection())
+        print self.config.con_2d
+
+    def OnSetCon3D(self, evt):
+        self.config.con_3d = int(self.conect3D.GetStringSelection())
+        print self.config.con_3d
+
     def OnClose(self, evt):
+        Publisher.sendMessage('Disable style', const.SLICE_STATE_MASK_FFILL)
         self.config.dlg_visible = False
         evt.Skip()
+        self.Destroy()

@@ -1756,6 +1756,8 @@ class FFillConfig(object):
     def __init__(self):
         self.dlg_visible = False
         self.target = "2D"
+        self.con_2d = 4
+        self.con_3d = 6
 
 
 class FloodFillMaskInteractorStyle(DefaultInteractorStyle):
@@ -1804,10 +1806,10 @@ class FloodFillMaskInteractorStyle(DefaultInteractorStyle):
         x, y, z = self.calcultate_scroll_position(position)
 
         if self.config.target == "3D":
-            bstruct = np.array(generate_binary_structure(3, 1), dtype='uint8')
+            bstruct = np.array(generate_binary_structure(3, CON3D[self.config.con_3d], dtype='uint8'))
             self.viewer.slice_.do_threshold_to_all_slices()
         else:
-            _bstruct = generate_binary_structure(2, 1)
+            _bstruct = generate_binary_structure(2, CON2D[self.config.con_2d])
             if self.orientation == 'AXIAL':
                 bstruct = np.zeros((1, 3, 3), dtype='uint8')
                 bstruct[0] = _bstruct
@@ -1818,6 +1820,7 @@ class FloodFillMaskInteractorStyle(DefaultInteractorStyle):
                 bstruct = np.zeros((3, 3, 1), dtype='uint8')
                 bstruct[:, :, 0] = _bstruct
 
+        print bstruct
         mask = self.viewer.slice_.current_mask.matrix[1:, 1:, 1:]
         cp_mask = mask
 
