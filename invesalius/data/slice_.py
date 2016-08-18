@@ -1402,7 +1402,8 @@ class Slice(object):
         buffer_slices = self.buffer_slices
         actual_slices = {"AXIAL": buffer_slices["AXIAL"].index,
                          "CORONAL": buffer_slices["CORONAL"].index,
-                         "SAGITAL": buffer_slices["SAGITAL"].index,}
+                         "SAGITAL": buffer_slices["SAGITAL"].index,
+                         "VOLUME": 0}
         self.current_mask.undo_history(actual_slices)
         for o in self.buffer_slices:
             self.buffer_slices[o].discard_mask()
@@ -1413,7 +1414,8 @@ class Slice(object):
         buffer_slices = self.buffer_slices
         actual_slices = {"AXIAL": buffer_slices["AXIAL"].index,
                          "CORONAL": buffer_slices["CORONAL"].index,
-                         "SAGITAL": buffer_slices["SAGITAL"].index,}
+                         "SAGITAL": buffer_slices["SAGITAL"].index,
+                         "VOLUME": 0}
         self.current_mask.redo_history(actual_slices)
         for o in self.buffer_slices:
             self.buffer_slices[o].discard_mask()

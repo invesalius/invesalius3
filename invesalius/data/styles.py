@@ -1814,11 +1814,15 @@ class FloodFillMaskInteractorStyle(DefaultInteractorStyle):
         if position < 0:
             position = viewer.calculate_matrix_position(coord)
 
+        mask = self.viewer.slice_.current_mask.matrix[1:, 1:, 1:]
         x, y, z = self.calcultate_scroll_position(position)
+        if mask[z, y, x] < self.t0 or mask[z, y, x] > self.t1:
+            return
 
         if self.config.target == "3D":
             bstruct = np.array(generate_binary_structure(3, CON3D[self.config.con_3d]), dtype='uint8')
             self.viewer.slice_.do_threshold_to_all_slices()
+            cp_mask = self.viewer.slice_.current_mask.matrix.copy()
         else:
             _bstruct = generate_binary_structure(2, CON2D[self.config.con_2d])
             if self.orientation == 'AXIAL':
@@ -1831,11 +1835,23 @@ class FloodFillMaskInteractorStyle(DefaultInteractorStyle):
                 bstruct = np.zeros((3, 3, 1), dtype='uint8')
                 bstruct[:, :, 0] = _bstruct
 
-        print bstruct
-        mask = self.viewer.slice_.current_mask.matrix[1:, 1:, 1:]
-        cp_mask = mask
 
-        floodfill.floodfill_threshold(cp_mask, [[x, y, z]], self.t0, self.t1, self.fill_value, bstruct, mask)
+        floodfill.floodfill_threshold(mask, [[x, y, z]], self.t0, self.t1, self.fill_value, bstruct, mask)
+
+        if self.config.target == '2D':
+            b_mask = self.viewer.slice_.buffer_slices[self.orientation].mask
+            index = self.viewer.slice_.buffer_slices[self.orientation].index
+
+            if self.orientation == 'AXIAL':
+                p_mask = mask[index,:,:].copy()
+            elif self.orientation == 'CORONAL':
+                p_mask = mask[:, index, :].copy()
+            elif self.orientation == 'SAGITAL':
+                p_mask = mask[:, :, index].copy()
+
+            self.viewer.slice_.current_mask.save_history(index, self.orientation, p_mask, b_mask)
+        else:
+            self.viewer.slice_.current_mask.save_history(0, 'VOLUME', self.viewer.slice_.current_mask.matrix.copy(), cp_mask)
 
         self.viewer.slice_.buffer_slices['AXIAL'].discard_mask()
         self.viewer.slice_.buffer_slices['CORONAL'].discard_mask()
