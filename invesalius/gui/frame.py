@@ -439,6 +439,12 @@ class Frame(wx.Frame):
         elif id == const.ID_REORIENT_IMG:
             self.OnReorientImg()
 
+        elif id == const.ID_FLOODFILL_MASK:
+            self.OnFillHolesManually()
+
+        elif id == const.ID_REMOVE_MASK_PART:
+            self.OnRemoveMaskParts()
+
     def OnSize(self, evt):
         """
         Refresh GUI when frame is resized.
@@ -559,6 +565,12 @@ class Frame(wx.Frame):
         rdlg = dlg.ReorientImageDialog()
         rdlg.Show()
 
+    def OnFillHolesManually(self):
+        Publisher.sendMessage('Enable style', const.SLICE_STATE_MASK_FFILL)
+
+    def OnRemoveMaskParts(self):
+        Publisher.sendMessage('Enable style', const.SLICE_STATE_REMOVE_MASK_PARTS)
+
 # ------------------------------------------------------------------
 # ------------------------------------------------------------------
 # ------------------------------------------------------------------
@@ -578,7 +590,9 @@ class MenuBar(wx.MenuBar):
         self.enable_items = [const.ID_PROJECT_SAVE,
                              const.ID_PROJECT_SAVE_AS,
                              const.ID_PROJECT_CLOSE,
-                             const.ID_REORIENT_IMG]
+                             const.ID_REORIENT_IMG,
+                             const.ID_FLOODFILL_MASK,
+                             const.ID_REMOVE_MASK_PART,]
         self.__init_items()
         self.__bind_events()
 
@@ -688,6 +702,12 @@ class MenuBar(wx.MenuBar):
 
         self.clean_mask_menu = mask_menu.Append(const.ID_CLEAN_MASK, _(u"Clean Mask\tCtrl+Shift+A"))
         self.clean_mask_menu.Enable(False)
+
+        self.fill_hole_mask_menu = mask_menu.Append(const.ID_FLOODFILL_MASK, _(u"Fill holes manually"))
+        self.fill_hole_mask_menu.Enable(False)
+
+        self.remove_mask_part_menu = mask_menu.Append(const.ID_REMOVE_MASK_PART, _(u"Remove parts"))
+        self.remove_mask_part_menu.Enable(False)
 
         tools_menu.AppendMenu(-1,  _(u"Mask"), mask_menu)
 

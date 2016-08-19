@@ -40,7 +40,10 @@ from scipy.ndimage import watershed_ift, generate_binary_structure
 from skimage.morphology import watershed
 from skimage import filter
 
+from gui import dialogs
 from .measures import MeasureData
+
+from . import floodfill
 
 import watershed_process
 
@@ -1747,6 +1750,170 @@ class ReorientImageInteractorStyle(DefaultInteractorStyle):
             buffer_.discard_vtk_image()
             buffer_.discard_image()
 
+
+class FFillConfig(object):
+    __metaclass__= utils.Singleton
+    def __init__(self):
+        self.dlg_visible = False
+        self.target = "2D"
+        self.con_2d = 4
+        self.con_3d = 6
+
+
+class FloodFillMaskInteractorStyle(DefaultInteractorStyle):
+    def __init__(self, viewer):
+        DefaultInteractorStyle.__init__(self, viewer)
+
+        self.viewer = viewer
+        self.orientation = self.viewer.orientation
+
+        self.picker = vtk.vtkWorldPointPicker()
+        self.slice_actor = viewer.slice_data.actor
+        self.slice_data = viewer.slice_data
+
+        self.config = FFillConfig()
+        self.dlg_ffill = None
+
+        self.t0 = 0
+        self.t1 = 1
+        self.fill_value = 254
+
+        self._dlg_title = _(u"Fill holes")
+
+        self.AddObserver("LeftButtonPressEvent", self.OnFFClick)
+
+    def SetUp(self):
+        if not self.config.dlg_visible:
+            self.config.dlg_visible = True
+            self.dlg_ffill = dialogs.FFillOptionsDialog(self._dlg_title, self.config)
+            self.dlg_ffill.Show()
+
+    def CleanUp(self):
+        if (self.dlg_ffill is not None) and (self.config.dlg_visible):
+            self.config.dlg_visible = False
+            self.dlg_ffill.Destroy()
+            self.dlg_ffill = None
+
+    def OnFFClick(self, obj, evt):
+        if (self.viewer.slice_.buffer_slices[self.orientation].mask is None):
+            return
+
+        viewer = self.viewer
+        iren = viewer.interactor
+
+        mouse_x, mouse_y = iren.GetEventPosition()
+        render = iren.FindPokedRenderer(mouse_x, mouse_y)
+        slice_data = viewer.get_slice_data(render)
+
+        self.picker.Pick(mouse_x, mouse_y, 0, render)
+
+        coord = self.get_coordinate_cursor()
+        position = slice_data.actor.GetInput().FindPoint(coord)
+
+        if position != -1:
+            coord = slice_data.actor.GetInput().GetPoint(position)
+
+        if position < 0:
+            position = viewer.calculate_matrix_position(coord)
+
+        mask = self.viewer.slice_.current_mask.matrix[1:, 1:, 1:]
+        x, y, z = self.calcultate_scroll_position(position)
+        if mask[z, y, x] < self.t0 or mask[z, y, x] > self.t1:
+            return
+
+        if self.config.target == "3D":
+            bstruct = np.array(generate_binary_structure(3, CON3D[self.config.con_3d]), dtype='uint8')
+            self.viewer.slice_.do_threshold_to_all_slices()
+            cp_mask = self.viewer.slice_.current_mask.matrix.copy()
+        else:
+            _bstruct = generate_binary_structure(2, CON2D[self.config.con_2d])
+            if self.orientation == 'AXIAL':
+                bstruct = np.zeros((1, 3, 3), dtype='uint8')
+                bstruct[0] = _bstruct
+            elif self.orientation == 'CORONAL':
+                bstruct = np.zeros((3, 1, 3), dtype='uint8')
+                bstruct[:, 0, :] = _bstruct
+            elif self.orientation == 'SAGITAL':
+                bstruct = np.zeros((3, 3, 1), dtype='uint8')
+                bstruct[:, :, 0] = _bstruct
+
+
+        floodfill.floodfill_threshold(mask, [[x, y, z]], self.t0, self.t1, self.fill_value, bstruct, mask)
+
+        if self.config.target == '2D':
+            b_mask = self.viewer.slice_.buffer_slices[self.orientation].mask
+            index = self.viewer.slice_.buffer_slices[self.orientation].index
+
+            if self.orientation == 'AXIAL':
+                p_mask = mask[index,:,:].copy()
+            elif self.orientation == 'CORONAL':
+                p_mask = mask[:, index, :].copy()
+            elif self.orientation == 'SAGITAL':
+                p_mask = mask[:, :, index].copy()
+
+            self.viewer.slice_.current_mask.save_history(index, self.orientation, p_mask, b_mask)
+        else:
+            self.viewer.slice_.current_mask.save_history(0, 'VOLUME', self.viewer.slice_.current_mask.matrix.copy(), cp_mask)
+
+        self.viewer.slice_.buffer_slices['AXIAL'].discard_mask()
+        self.viewer.slice_.buffer_slices['CORONAL'].discard_mask()
+        self.viewer.slice_.buffer_slices['SAGITAL'].discard_mask()
+
+        self.viewer.slice_.buffer_slices['AXIAL'].discard_vtk_mask()
+        self.viewer.slice_.buffer_slices['CORONAL'].discard_vtk_mask()
+        self.viewer.slice_.buffer_slices['SAGITAL'].discard_vtk_mask()
+
+        self.viewer.slice_.current_mask.was_edited = True
+        Publisher.sendMessage('Reload actual slice')
+
+    def get_coordinate_cursor(self):
+        # Find position
+        x, y, z = self.picker.GetPickPosition()
+        bounds = self.viewer.slice_data.actor.GetBounds()
+        if bounds[0] == bounds[1]:
+            x = bounds[0]
+        elif bounds[2] == bounds[3]:
+            y = bounds[2]
+        elif bounds[4] == bounds[5]:
+            z = bounds[4]
+        return x, y, z
+
+    def calcultate_scroll_position(self, position):
+        # Based in the given coord (x, y, z), returns a list with the scroll positions for each
+        # orientation, being the first position the sagital, second the coronal
+        # and the last, axial.
+
+        if self.orientation == 'AXIAL':
+            image_width = self.slice_actor.GetInput().GetDimensions()[0]
+            axial = self.slice_data.number
+            coronal = position / image_width
+            sagital = position % image_width
+
+        elif self.orientation == 'CORONAL':
+            image_width = self.slice_actor.GetInput().GetDimensions()[0]
+            axial = position / image_width
+            coronal = self.slice_data.number
+            sagital = position % image_width
+
+        elif self.orientation == 'SAGITAL':
+            image_width = self.slice_actor.GetInput().GetDimensions()[1]
+            axial = position / image_width
+            coronal = position % image_width
+            sagital = self.slice_data.number
+
+        return sagital, coronal, axial
+
+
+class RemoveMaskPartsInteractorStyle(FloodFillMaskInteractorStyle):
+        def __init__(self, viewer):
+            FloodFillMaskInteractorStyle.__init__(self, viewer)
+            self.t0 = 254
+            self.t1 = 255
+            self.fill_value = 1
+
+            self._dlg_title = _(u"Remove parts")
+
+
 def get_style(style):
     STYLES = {
         const.STATE_DEFAULT: DefaultInteractorStyle,
@@ -1762,5 +1929,9 @@ def get_style(style):
         const.SLICE_STATE_EDITOR: EditorInteractorStyle,
         const.SLICE_STATE_WATERSHED: WaterShedInteractorStyle,
         const.SLICE_STATE_REORIENT: ReorientImageInteractorStyle,
+        const.SLICE_STATE_MASK_FFILL: FloodFillMaskInteractorStyle,
+        const.SLICE_STATE_REMOVE_MASK_PARTS: RemoveMaskPartsInteractorStyle,
     }
     return STYLES[style]
+
+

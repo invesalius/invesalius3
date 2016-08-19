@@ -60,6 +60,8 @@ class EditionHistoryNode(object):
             mvolume[1:, 1:, self.index+1] = array
             if self.clean:
                 mvolume[0, 0, self.index+1] = 1
+        elif self.orientation == 'VOLUME':
+            mvolume[:] = array
 
         print "applying to", self.orientation, "at slice", self.index
 
@@ -106,7 +108,15 @@ class EditionHistory(object):
                 ##self.index -= 1
                 ##h[self.index].commit_history(mvolume)
                 #self._reload_slice(self.index - 1)
-            if actual_slices and actual_slices[h[self.index - 1].orientation] != h[self.index - 1].index:
+            if h[self.index - 1].orientation == 'VOLUME':
+                self.index -= 1
+                print "================================"
+                print mvolume.shape
+                print "================================"
+                h[self.index].commit_history(mvolume)
+                self._reload_slice(self.index)
+                Publisher.sendMessage("Enable redo", True)
+            elif actual_slices and actual_slices[h[self.index - 1].orientation] != h[self.index - 1].index:
                 self._reload_slice(self.index - 1)
             else:
                 self.index -= 1
@@ -129,7 +139,12 @@ class EditionHistory(object):
                 ##h[self.index].commit_history(mvolume)
                 #self._reload_slice(self.index + 1)
 
-            if actual_slices and actual_slices[h[self.index + 1].orientation] != h[self.index + 1].index:
+            if h[self.index + 1].orientation == 'VOLUME':
+                self.index += 1
+                h[self.index].commit_history(mvolume)
+                self._reload_slice(self.index)
+                Publisher.sendMessage("Enable undo", True)
+            elif actual_slices and actual_slices[h[self.index + 1].orientation] != h[self.index + 1].index:
                 self._reload_slice(self.index + 1)
             else:
                 self.index += 1
