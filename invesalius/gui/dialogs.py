@@ -1885,12 +1885,12 @@ class FFillOptionsDialog(wx.Dialog):
             self.conect3D.SetSelection(0)
             self.config.con_3d = 6
 
-        sizer.Add(wx.StaticText(self, -1, _(u"Parameters")), (0, 0), flag=wx.TOP | wx.LEFT | wx.RIGHT, border=5)
+        sizer.Add(wx.StaticText(self, -1, _(u"Parameters")), (0, 0), flag=wx.TOP|wx.LEFT|wx.RIGHT, border=7)
         sizer.AddStretchSpacer((0, 5))
-        sizer.Add(self.target_2d, (1, 0), (1, 3))
-        sizer.Add(self.target_3d, (2, 0), (1, 3))
-        sizer.Add(self.conect2D, (3, 0), flag=wx.TOP | wx.LEFT | wx.RIGHT, border=5)
-        sizer.Add(self.conect3D, (4, 0), flag=wx.TOP | wx.LEFT | wx.RIGHT, border=5)
+        sizer.Add(self.target_2d, (1, 0), (1, 3), flag=wx.LEFT|wx.RIGHT, border=9)
+        sizer.Add(self.target_3d, (2, 0), (1, 3), flag=wx.LEFT|wx.RIGHT, border=9)
+        sizer.Add(self.conect2D, (3, 0), flag=wx.TOP|wx.LEFT|wx.RIGHT, border=9)
+        sizer.Add(self.conect3D, (4, 0), flag=wx.ALL, border=9)
 
         self.SetSizer(sizer)
         sizer.Fit(self)
