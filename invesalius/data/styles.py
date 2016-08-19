@@ -1778,12 +1778,14 @@ class FloodFillMaskInteractorStyle(DefaultInteractorStyle):
         self.t1 = 1
         self.fill_value = 254
 
+        self._dlg_title = _(u"Fill holes")
+
         self.AddObserver("LeftButtonPressEvent", self.OnFFClick)
 
     def SetUp(self):
         if not self.config.dlg_visible:
             self.config.dlg_visible = True
-            self.dlg_ffill = dialogs.FFillOptionsDialog(self.config)
+            self.dlg_ffill = dialogs.FFillOptionsDialog(self._dlg_title, self.config)
             self.dlg_ffill.Show()
 
     def CleanUp(self):
@@ -1908,6 +1910,8 @@ class RemoveMaskPartsInteractorStyle(FloodFillMaskInteractorStyle):
             self.t0 = 254
             self.t1 = 255
             self.fill_value = 1
+
+            self._dlg_title = _(u"Remove parts")
 
 
 def get_style(style):

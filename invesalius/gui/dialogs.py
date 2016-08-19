@@ -1841,9 +1841,9 @@ def BitmapNotSameSize():
 
 
 class FFillOptionsDialog(wx.Dialog):
-    def __init__(self, config):
+    def __init__(self, title, config):
         pre = wx.PreDialog()
-        pre.Create(wx.GetApp().GetTopWindow(), -1, _(u'Floodfill options'), style=wx.DEFAULT_DIALOG_STYLE|wx.FRAME_FLOAT_ON_PARENT)
+        pre.Create(wx.GetApp().GetTopWindow(), -1, title, style=wx.DEFAULT_DIALOG_STYLE|wx.FRAME_FLOAT_ON_PARENT)
         self.PostCreate(pre)
 
         self.config = config
