@@ -1839,8 +1839,7 @@ class FloodFillMaskInteractorStyle(DefaultInteractorStyle):
                 bstruct = np.zeros((3, 3, 1), dtype='uint8')
                 bstruct[:, :, 0] = _bstruct
 
-
-
+        print bstruct
         if self.config.target == '2D':
             floodfill.floodfill_threshold(mask, [[x, y, z]], self.t0, self.t1, self.fill_value, bstruct, mask)
             b_mask = self.viewer.slice_.buffer_slices[self.orientation].mask
@@ -1857,7 +1856,7 @@ class FloodFillMaskInteractorStyle(DefaultInteractorStyle):
         else:
             with futures.ThreadPoolExecutor(max_workers=1) as executor:
                 future = executor.submit(floodfill.floodfill_threshold, mask, [[x, y, z]], self.t0, self.t1, self.fill_value, bstruct, mask)
-                
+
                 dlg = wx.ProgressDialog("Filling ...", "Doido", parent=None, style=wx.PD_APP_MODAL)
                 while not future.done():
                     dlg.Pulse()
