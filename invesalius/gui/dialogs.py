@@ -1851,14 +1851,11 @@ class FFillOptionsDialog(wx.Dialog):
         self._init_gui()
 
     def _init_gui(self):
-        sizer = wx.GridBagSizer(5, 6)
-
-        flag_labels = wx.ALIGN_RIGHT  | wx.ALIGN_CENTER_VERTICAL
-
-        #  self.target = wx.RadioBox(self, -1, "",
-                                 #  choices=[_(u"2D - Actual slice"), _(u"3D - Entire volume")],
-                                 #  style=wx.NO_BORDER | wx.VERTICAL)
-        self.target_2d = wx.RadioButton(self, -1, _(u"2D - Actual slice"))
+        """
+        Create the widgets.
+        """
+        # Target
+        self.target_2d = wx.RadioButton(self, -1, _(u"2D - Actual slice"), style=wx.RB_GROUP)
         self.target_3d = wx.RadioButton(self, -1, _(u"3D - All slices"))
 
         if self.config.target == "2D":
@@ -1866,54 +1863,77 @@ class FFillOptionsDialog(wx.Dialog):
         else:
             self.target_3d.SetValue(1)
 
-        choices2d = ["4", "8"]
-        choices3d = ["6", "18", "26"]
-        self.conect2D = wx.RadioBox(self, -1, _(u"2D Connectivity"), choices=choices2d, style=wx.NO_BORDER | wx.HORIZONTAL)
-        self.conect3D = wx.RadioBox(self, -1, _(u"3D Connectivity"), choices=choices3d, style=wx.NO_BORDER | wx.HORIZONTAL)
+        # Connectivity 2D
+        self.conect2D_4 = wx.RadioButton(self, -1, "4", style=wx.RB_GROUP)
+        self.conect2D_8 = wx.RadioButton(self, -1, "8")
 
-        try:
-            self.conect2D.SetSelection(choices2d.index(str(self.config.con_2d)))
-        except ValueError:
-            print "ERROR 2D"
-            self.conect2D.SetSelection(0)
+        if self.config.con_2d == 8:
+            self.conect2D_8.SetValue(1)
+        else:
+            self.conect2D_4.SetValue(1)
             self.config.con_2d = 4
 
-        try:
-            self.conect3D.SetSelection(choices3d.index(str(self.config.con_3d)))
-        except ValueError:
-            print "ERROR 3D"
-            self.conect3D.SetSelection(0)
-            self.config.con_3d = 6
+        # Connectivity 3D
+        self.conect3D_6 = wx.RadioButton(self, -1, "6", style=wx.RB_GROUP)
+        self.conect3D_18 = wx.RadioButton(self, -1, "18")
+        self.conect3D_26 = wx.RadioButton(self, -1, "26")
 
-        sizer.Add(wx.StaticText(self, -1, _(u"Parameters")), (0, 0), flag=wx.TOP|wx.LEFT|wx.RIGHT, border=7)
-        sizer.AddStretchSpacer((0, 5))
-        sizer.Add(self.target_2d, (1, 0), (1, 3), flag=wx.LEFT|wx.RIGHT, border=9)
-        sizer.Add(self.target_3d, (2, 0), (1, 3), flag=wx.LEFT|wx.RIGHT, border=9)
-        sizer.Add(self.conect2D, (3, 0), flag=wx.TOP|wx.LEFT|wx.RIGHT, border=9)
-        sizer.Add(self.conect3D, (4, 0), flag=wx.ALL, border=9)
+        if self.config.con_3d == 18:
+            self.conect3D_18.SetValue(1)
+        elif self.config.con_3d == 26:
+            self.conect3D_26.SetValue(1)
+        else:
+            self.conect3D_6.SetValue(1)
+
+        # Sizer
+        sizer = wx.GridBagSizer(11, 6)
+        sizer.AddStretchSpacer((0, 0))
+
+        sizer.Add(wx.StaticText(self, -1, _(u"Parameters")), (1, 0), (1, 6), flag=wx.LEFT, border=7)
+        sizer.Add(self.target_2d, (2, 0), (1, 6), flag=wx.LEFT, border=9)
+        sizer.Add(self.target_3d, (3, 0), (1, 6), flag=wx.LEFT, border=9)
+
+        sizer.AddStretchSpacer((4, 0))
+
+        sizer.Add(wx.StaticText(self, -1, _(u"2D Connectivity")), (5, 0), (1, 6), flag=wx.LEFT, border=9)
+        sizer.Add(self.conect2D_4, (6, 0), flag=wx.LEFT, border=9)
+        sizer.Add(self.conect2D_8, (6, 1), flag=wx.LEFT, border=9)
+
+        sizer.AddStretchSpacer((7, 0))
+
+        sizer.Add(wx.StaticText(self, -1, _(u"3D Connectivity")), (8, 0), (1, 6), flag=wx.LEFT, border=9)
+        sizer.Add(self.conect3D_6, (9, 0), flag=wx.LEFT, border=9)
+        sizer.Add(self.conect3D_18, (9, 1), flag=wx.LEFT, border=9)
+        sizer.Add(self.conect3D_26, (9, 2), flag=wx.LEFT, border=9)
+        sizer.AddStretchSpacer((10, 0))
 
         self.SetSizer(sizer)
         sizer.Fit(self)
         self.Layout()
 
-        self.Bind(wx.EVT_RADIOBUTTON, self.OnSetTarget)
-        self.conect2D.Bind(wx.EVT_RADIOBOX, self.OnSetCon2D)
-        self.conect3D.Bind(wx.EVT_RADIOBOX, self.OnSetCon3D)
+        self.Bind(wx.EVT_RADIOBUTTON, self.OnSetRadio)
         self.Bind(wx.EVT_CLOSE, self.OnClose)
 
-    def OnSetTarget(self, evt):
+    def OnSetRadio(self, evt):
+        # Target
         if self.target_2d.GetValue():
             self.config.target = "2D"
         else:
             self.config.target = "3D"
 
-    def OnSetCon2D(self, evt):
-        self.config.con_2d = int(self.conect2D.GetStringSelection())
-        print self.config.con_2d
+        # 2D
+        if self.conect2D_4.GetValue():
+            self.config.con_2d = 4
+        elif self.conect2D_8.GetValue():
+            self.config.con_2d = 8
 
-    def OnSetCon3D(self, evt):
-        self.config.con_3d = int(self.conect3D.GetStringSelection())
-        print self.config.con_3d
+        # 3D
+        if self.conect3D_6.GetValue():
+            self.config.con_3d = 6
+        elif self.conect3D_18.GetValue():
+            self.config.con_3d = 18
+        elif self.conect3D_26.GetValue():
+            self.config.con_3d = 26
 
     def OnClose(self, evt):
         if self.config.dlg_visible:

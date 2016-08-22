@@ -22,6 +22,8 @@ import multiprocessing
 import tempfile
 import time
 
+from concurrent import futures
+
 import vtk
 import wx
 
@@ -1779,6 +1781,8 @@ class FloodFillMaskInteractorStyle(DefaultInteractorStyle):
         self.fill_value = 254
 
         self._dlg_title = _(u"Fill holes")
+        self._progr_title = _(u"Fill hole")
+        self._progr_msg = _(u"Filling hole ...")
 
         self.AddObserver("LeftButtonPressEvent", self.OnFFClick)
 
@@ -1837,10 +1841,8 @@ class FloodFillMaskInteractorStyle(DefaultInteractorStyle):
                 bstruct = np.zeros((3, 3, 1), dtype='uint8')
                 bstruct[:, :, 0] = _bstruct
 
-
-        floodfill.floodfill_threshold(mask, [[x, y, z]], self.t0, self.t1, self.fill_value, bstruct, mask)
-
         if self.config.target == '2D':
+            floodfill.floodfill_threshold(mask, [[x, y, z]], self.t0, self.t1, self.fill_value, bstruct, mask)
             b_mask = self.viewer.slice_.buffer_slices[self.orientation].mask
             index = self.viewer.slice_.buffer_slices[self.orientation].index
 
@@ -1853,6 +1855,16 @@ class FloodFillMaskInteractorStyle(DefaultInteractorStyle):
 
             self.viewer.slice_.current_mask.save_history(index, self.orientation, p_mask, b_mask)
         else:
+            with futures.ThreadPoolExecutor(max_workers=1) as executor:
+                future = executor.submit(floodfill.floodfill_threshold, mask, [[x, y, z]], self.t0, self.t1, self.fill_value, bstruct, mask)
+
+                dlg = wx.ProgressDialog(self._progr_title, self._progr_msg, parent=None, style=wx.PD_APP_MODAL)
+                while not future.done():
+                    dlg.Pulse()
+                    time.sleep(0.1)
+
+                dlg.Destroy()
+
             self.viewer.slice_.current_mask.save_history(0, 'VOLUME', self.viewer.slice_.current_mask.matrix.copy(), cp_mask)
 
         self.viewer.slice_.buffer_slices['AXIAL'].discard_mask()
@@ -1912,6 +1924,8 @@ class RemoveMaskPartsInteractorStyle(FloodFillMaskInteractorStyle):
             self.fill_value = 1
 
             self._dlg_title = _(u"Remove parts")
+            self._progr_title = _(u"Remove part")
+            self._progr_msg = _(u"Removing part ...")
 
 
 def get_style(style):
