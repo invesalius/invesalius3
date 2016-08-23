@@ -26,7 +26,7 @@ class Preferences(wx.Dialog):
 
         sizer = wx.BoxSizer(wx.VERTICAL)
 
-        bookStyle = fnb.FNB_NODRAG | fnb.FNB_NO_NAV_BUTTONS | fnb.FNB_NO_X_BUTTON
+        bookStyle = fnb.FNB_NODRAG | fnb.FNB_NO_X_BUTTON
 
         if AGW:
             self.book = fnb.FlatNotebook(self, wx.ID_ANY, agwStyle=bookStyle)
@@ -35,10 +35,12 @@ class Preferences(wx.Dialog):
 
         sizer.Add(self.book, 80, wx.EXPAND|wx.ALL)
 
+        self.pnl_viewer2d = Viewer2D(self)
         self.pnl_viewer3d = Viewer3D(self)
         self.pnl_language = Language(self)
 
-        self.book.AddPage(self.pnl_viewer3d, _("Visualization"))
+        self.book.AddPage(self.pnl_viewer2d, _("2D Visualization"))
+        self.book.AddPage(self.pnl_viewer3d, _("3D Visualization"))
         self.book.AddPage(self.pnl_language, _("Language"))
 
         line = wx.StaticLine(self, -1, size=(20,-1), style=wx.LI_HORIZONTAL)
@@ -69,17 +71,23 @@ class Preferences(wx.Dialog):
         values = {}
         lang = self.pnl_language.GetSelection()
         viewer = self.pnl_viewer3d.GetSelection()
+        viewer2d = self.pnl_viewer2d.GetSelection()
         values.update(lang)
         values.update(viewer)
+        values.update(viewer2d)
+        
         return values
 
     def LoadPreferences(self, pub_evt):
         se = ses.Session()
+        
         values = {const.RENDERING:se.rendering,
                   const.SURFACE_INTERPOLATION:se.surface_interpolation,
-                  const.LANGUAGE:se.language
+                  const.LANGUAGE:se.language,
+                  const.SLICE_INTERPOLATION: se.slice_interpolation,
                 }
 
+        self.pnl_viewer2d.LoadSelection(values)
         self.pnl_viewer3d.LoadSelection(values)
         self.pnl_language.LoadSelection(values)
 
@@ -134,6 +142,42 @@ class Viewer3D(wx.Panel):
 
         self.rb_rendering.SetSelection(int(rendering))
         self.rb_inter.SetSelection(int(surface_interpolation))
+
+
+class Viewer2D(wx.Panel):
+
+    def __init__(self, parent):
+
+        wx.Panel.__init__(self, parent)
+
+        box_visualization = wx.StaticBox(self, -1, _("Slices"))
+        bsizer = wx.StaticBoxSizer(box_visualization, wx.VERTICAL)
+
+        lbl_inter = wx.StaticText(self, -1, _("Interpolated "))
+        bsizer.Add(lbl_inter, 0, wx.TOP|wx.LEFT, 10)
+
+        rb_inter = self.rb_inter = wx.RadioBox(self, -1, "", wx.DefaultPosition, wx.DefaultSize,
+                    [_('Yes'), _('No')], 3, wx.RA_SPECIFY_COLS | wx.NO_BORDER)
+
+        bsizer.Add(rb_inter, 0, wx.TOP|wx.LEFT, 0)
+
+        border = wx.BoxSizer(wx.VERTICAL)
+        border.Add(bsizer, 50, wx.EXPAND|wx.ALL, 10)
+        self.SetSizer(border)
+
+        border.Fit(self)
+
+
+    def GetSelection(self):
+
+        options = {const.SLICE_INTERPOLATION:self.rb_inter.GetSelection()}
+
+        return options
+
+    def LoadSelection(self, values):
+        value = values[const.SLICE_INTERPOLATION]
+        self.rb_inter.SetSelection(int(value))
+
 
 class Language(wx.Panel):
 

@@ -70,6 +70,7 @@ class Session(object):
         self.recent_projects = [(const.SAMPLE_DIR, "Cranium.inv3")]
         self.last_dicom_folder = ''
         self.surface_interpolation = 1
+        self.slice_interpolation = 0
         self.rendering = 0
         self.WriteSessionFile()
 
@@ -162,6 +163,7 @@ class Session(object):
         config.set('session', 'random_id', self.random_id)
         config.set('session', 'surface_interpolation', self.surface_interpolation)
         config.set('session', 'rendering', self.rendering)
+        config.set('session', 'slice_interpolation', self.slice_interpolation)
 
         config.add_section('project')
         config.set('project', 'recent_projects', self.recent_projects)
@@ -261,6 +263,8 @@ class Session(object):
             self.last_dicom_folder = self.last_dicom_folder.decode('utf-8')
 
             self.surface_interpolation = config.get('session', 'surface_interpolation')
+            self.slice_interpolation = config.get('session', 'slice_interpolation')
+
             self.rendering = config.get('session', 'rendering')
             self.random_id = config.get('session','random_id')
             return True
@@ -277,6 +281,7 @@ class Session(object):
         except(ConfigParser.NoOptionError):
             #Added to fix new version compatibility
             self.surface_interpolation = 0
+            self.slice_interpolation = 0
             self.rendering = 0
             self.random_id = randint(0,pow(10,16))  
             self.WriteSessionFile()
