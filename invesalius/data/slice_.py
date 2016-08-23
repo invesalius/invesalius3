@@ -1282,6 +1282,22 @@ class Slice(object):
         op, m1, m2 = pubsub_evt.data
         self.do_boolean_op(op, m1, m2)
 
+    def create_new_mask(self, show=True):
+        last_name = self.current_mask.name
+
+        proj = Project()
+        mask_dict = proj.mask_dict
+        names_list = [mask_dict[i].name for i in mask_dict.keys()]
+        new_name = utils.next_copy_name(last_name, names_list)
+
+        future_mask = Mask()
+        future_mask.create_mask(self.matrix.shape)
+        future_mask.name = new_name
+
+        self._add_mask_into_proj(future_mask, show=show)
+
+        return future_mask
+
     def do_boolean_op(self, op, m1, m2):
         name_ops = {const.BOOLEAN_UNION: _(u"Union"), 
                     const.BOOLEAN_DIFF: _(u"Diff"),

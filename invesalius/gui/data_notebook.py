@@ -512,11 +512,11 @@ class MasksListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
         self.SetStringItem(index, 1, label,
                            imageId=self.mask_list_index[index])
         self.SetStringItem(index, 2, threshold)
-        self.SetItemImage(index, 1)
-        for key in self.mask_list_index.keys():
-            if key != index:
-                self.SetItemImage(key, 0)
-        self.current_index = index
+        #  self.SetItemImage(index, 1)
+        #  for key in self.mask_list_index.keys():
+            #  if key != index:
+                #  self.SetItemImage(key, 0)
+        #  self.current_index = index
 
     def AddMask(self, pubsub_evt):
         index, mask_name, threshold_range, colour = pubsub_evt.data
