@@ -1931,7 +1931,7 @@ class RemoveMaskPartsInteractorStyle(FloodFillMaskInteractorStyle):
 class SelectPartConfig(object):
     __metaclass__= utils.Singleton
     def __init__(self):
-        self.matrix = None
+        self.mask = None
         self.con_3d = 6
 
 
@@ -1956,7 +1956,10 @@ class SelectMaskPartsInteractorStyle(DefaultInteractorStyle):
         self.AddObserver("LeftButtonPressEvent", self.OnSelect)
 
     def CleanUp(self):
-        self.config.matrix = None
+        if self.config.mask:
+            self.config.mask = None
+            del self.viewer.slice_.aux_matrices['SELECT']
+            self.viewer.slice_.to_show_aux = ''
 
     def OnSelect(self, obj, evt):
         if (self.viewer.slice_.buffer_slices[self.orientation].mask is None):
@@ -1986,10 +1989,15 @@ class SelectMaskPartsInteractorStyle(DefaultInteractorStyle):
         bstruct = np.array(generate_binary_structure(3, CON3D[self.config.con_3d]), dtype='uint8')
         self.viewer.slice_.do_threshold_to_all_slices()
 
-        if self.config.matrix is None:
+        if self.config.mask is None:
             self._create_new_mask()
 
-        floodfill.floodfill_threshold(mask, [[x, y, z]], self.t0, self.t1, self.fill_value, bstruct, self.config.matrix[1:, 1:, 1:])
+        floodfill.floodfill_threshold(mask, [[x, y, z]], self.t0, self.t1, self.fill_value, bstruct, self.config.mask.matrix[1:, 1:, 1:])
+        self.viewer.slice_.aux_matrices['SELECT'] = self.config.mask.matrix[1:, 1:, 1:]
+        self.viewer.slice_.to_show_aux = 'SELECT'
+
+        self.config.mask.was_edited = True
+        Publisher.sendMessage('Reload actual slice')
 
     def _create_new_mask(self):
         mask = self.viewer.slice_.create_new_mask(show=False)
@@ -1998,7 +2006,7 @@ class SelectMaskPartsInteractorStyle(DefaultInteractorStyle):
         mask.matrix[:, 0, :] = 1
         mask.matrix[:, :, 0] = 1
 
-        self.config.matrix = mask.matrix
+        self.config.mask = mask
 
     def get_coordinate_cursor(self):
         # Find position
