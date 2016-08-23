@@ -525,7 +525,9 @@ class Viewer(wx.Panel):
         # All renderers and image actors in this viewer
         self.slice_data_list = []
         self.slice_data = None
+        
         self.slice_actor = None
+        self.interpolation_slice_status = True
 
         # The layout from slice_data, the first is number of cols, the second
         # is the number of rows
@@ -1348,7 +1350,10 @@ class Viewer(wx.Panel):
         self.slice_actor = actor
         # TODO: Create a option to let the user set if he wants to interpolate
         # the slice images.
-        #actor.InterpolateOff()
+        
+        if not(self.interpolation_slice_status):
+            actor.InterpolateOff()
+
         slice_data = sd.SliceData()
         slice_data.SetOrientation(self.orientation)
         slice_data.renderer = renderer
@@ -1363,8 +1368,8 @@ class Viewer(wx.Panel):
         return slice_data
 
     def SetInterpolatedSlices(self, pub_sub):
-        status = pub_sub.data
-
+        self.interpolation_slice_status = status = pub_sub.data
+        
         if self.slice_actor != None:
             if status == True:
                 self.slice_actor.InterpolateOn()
