@@ -1960,6 +1960,7 @@ class SelectMaskPartsInteractorStyle(DefaultInteractorStyle):
             self.config.mask = None
             del self.viewer.slice_.aux_matrices['SELECT']
             self.viewer.slice_.to_show_aux = ''
+            Publisher.sendMessage('Reload actual slice')
 
     def OnSelect(self, obj, evt):
         if (self.viewer.slice_.buffer_slices[self.orientation].mask is None):
