@@ -85,6 +85,9 @@ class Frame(wx.Frame):
 
         self.mw = None
 
+        #to control check and unckeck of menu view -> interpolated_slices
+        self.actived_interpolated_slices = True
+
         if sys.platform != 'darwin':
             self.Maximize()
 
@@ -445,6 +448,19 @@ class Frame(wx.Frame):
         elif id == const.ID_REMOVE_MASK_PART:
             self.OnRemoveMaskParts()
 
+        elif id == const.ID_VIEW_INTERPOLATED:
+            if self.actived_interpolated_slices:
+                self.actived_interpolated_slices = False
+                self.OnInterpolatedSlices(False)
+            else:
+                self.actived_interpolated_slices = True
+                self.OnInterpolatedSlices(True)
+
+    def OnInterpolatedSlices(self, status):
+
+        Publisher.sendMessage('Set interpolated slices', status)
+
+
     def OnSize(self, evt):
         """
         Refresh GUI when frame is resized.
@@ -718,7 +734,14 @@ class MenuBar(wx.MenuBar):
         tools_menu.AppendMenu(-1, _(u'Image'), image_menu)
 
 
-        # VIEW
+        #View
+
+        view_menu = wx.Menu()
+        view_menu.Append(const.ID_VIEW_INTERPOLATED, _(u'Interpolated slices'), "", wx.ITEM_CHECK)
+        view_menu.Check(const.ID_VIEW_INTERPOLATED, True)
+        
+
+
         #view_tool_menu = wx.Menu()
         #app = view_tool_menu.Append
         #app(const.ID_TOOL_PROJECT, "Project Toolbar")
@@ -765,8 +788,8 @@ class MenuBar(wx.MenuBar):
         # Add all menus to menubar
         self.Append(file_menu, _("File"))
         self.Append(file_edit, _("Edit"))
+        self.Append(view_menu, _(u"View"))
         self.Append(tools_menu, _(u"Tools"))
-        #self.Append(view_menu, "View")
         #self.Append(tools_menu, "Tools")
         self.Append(options_menu, _("Options"))
         self.Append(help_menu, _("Help"))
