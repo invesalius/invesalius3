@@ -45,7 +45,7 @@ import data.vtk_utils as vtku
 import project
 import slice_data as sd
 import utils
-
+import session as ses
 from data import converters
 
 from data import measures
@@ -525,6 +525,10 @@ class Viewer(wx.Panel):
         # All renderers and image actors in this viewer
         self.slice_data_list = []
         self.slice_data = None
+        
+        self.slice_actor = None
+        self.interpolation_slice_status = True
+
         # The layout from slice_data, the first is number of cols, the second
         # is the number of rows
         self.layout = (1, 1)
@@ -1085,6 +1089,8 @@ class Viewer(wx.Panel):
         Publisher.subscribe(self.OnSetOverwriteMask, "Set overwrite mask")
 
         Publisher.subscribe(self.RefreshViewer, "Refresh viewer")
+        Publisher.subscribe(self.SetInterpolatedSlices, "Set interpolated slices")
+        Publisher.subscribe(self.UpdateInterpolatedSlice, "Update Slice Interpolation")
 
 
     def RefreshViewer(self, pubsub_evt):
@@ -1342,9 +1348,15 @@ class Viewer(wx.Panel):
         self.interactor.GetRenderWindow().AddRenderer(renderer)
 
         actor = vtk.vtkImageActor()
+        self.slice_actor = actor
         # TODO: Create a option to let the user set if he wants to interpolate
         # the slice images.
-        actor.InterpolateOff()
+       
+        if int(ses.Session().slice_interpolation) == 1:
+            actor.InterpolateOff()
+        else:
+            actor.InterpolateOn()
+
         slice_data = sd.SliceData()
         slice_data.SetOrientation(self.orientation)
         slice_data.renderer = renderer
@@ -1357,6 +1369,26 @@ class Viewer(wx.Panel):
         renderer.AddViewProp(slice_data.box_actor)
 
         return slice_data
+
+    def UpdateInterpolatedSlice(self, pub_sub):
+        if self.slice_actor != None:    
+            if ses.Session().slice_interpolation:
+                self.slice_actor.InterpolateOff()
+            else:
+                self.slice_actor.InterpolateOn()
+            self.interactor.Render()
+
+
+    def SetInterpolatedSlices(self, pub_sub):
+        self.interpolation_slice_status = status = pub_sub.data
+        
+        if self.slice_actor != None:
+            if status == True:
+                self.slice_actor.InterpolateOn()
+            else:
+                self.slice_actor.InterpolateOff()
+            
+            self.interactor.Render()
 
     def __update_camera(self):
         orientation = self.orientation

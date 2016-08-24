@@ -85,6 +85,7 @@ class Frame(wx.Frame):
 
         self.mw = None
 
+
         if sys.platform != 'darwin':
             self.Maximize()
 
@@ -95,8 +96,13 @@ class Frame(wx.Frame):
         #self.SetSize(wx.Size(1024, 748))
 
 
+        #to control check and unckeck of menu view -> interpolated_slices
+        main_menu = MenuBar(self)
+
+        self.actived_interpolated_slices = main_menu.view_menu
+
         # Set menus, status and task bar
-        self.SetMenuBar(MenuBar(self))
+        self.SetMenuBar(main_menu)
         self.SetStatusBar(StatusBar(self))
 
         # Set TaskBarIcon
@@ -445,6 +451,20 @@ class Frame(wx.Frame):
         elif id == const.ID_REMOVE_MASK_PART:
             self.OnRemoveMaskParts()
 
+        elif id == const.ID_VIEW_INTERPOLATED:
+            
+            st = self.actived_interpolated_slices.IsChecked(const.ID_VIEW_INTERPOLATED)
+
+            if st:
+                self.OnInterpolatedSlices(True)
+            else:
+                self.OnInterpolatedSlices(False)
+
+    def OnInterpolatedSlices(self, status):
+
+        Publisher.sendMessage('Set interpolated slices', status)
+
+
     def OnSize(self, evt):
         """
         Refresh GUI when frame is resized.
@@ -478,9 +498,12 @@ class Frame(wx.Frame):
             ses.Session().rendering = values[const.RENDERING]
             ses.Session().surface_interpolation = values[const.SURFACE_INTERPOLATION]
             ses.Session().language = values[const.LANGUAGE]
+            ses.Session().slice_interpolation = values[const.SLICE_INTERPOLATION]
 
             Publisher.sendMessage('Remove Volume')
             Publisher.sendMessage('Reset Reaycasting')
+            Publisher.sendMessage('Update Slice Interpolation')
+            Publisher.sendMessage('Update Slice Interpolation MenuBar')
             Publisher.sendMessage('Update Surface Interpolation')
 
     def ShowAbout(self):
@@ -614,6 +637,7 @@ class MenuBar(wx.MenuBar):
         sub(self.OnAddMask, "Add mask")
         sub(self.OnRemoveMasks, "Remove masks")
         sub(self.OnShowMask, "Show mask")
+        sub(self.OnUpdateSliceInterpolation, "Update Slice Interpolation MenuBar")
 
         self.num_masks = 0
 
@@ -718,7 +742,19 @@ class MenuBar(wx.MenuBar):
         tools_menu.AppendMenu(-1, _(u'Image'), image_menu)
 
 
-        # VIEW
+        #View
+
+        self.view_menu = view_menu = wx.Menu()
+        view_menu.Append(const.ID_VIEW_INTERPOLATED, _(u'Interpolated slices'), "", wx.ITEM_CHECK)
+
+
+        v = self.SliceInterpolationStatus()
+        self.view_menu.Check(const.ID_VIEW_INTERPOLATED, v)
+
+        self.actived_interpolated_slices = self.view_menu
+        
+
+
         #view_tool_menu = wx.Menu()
         #app = view_tool_menu.Append
         #app(const.ID_TOOL_PROJECT, "Project Toolbar")
@@ -765,11 +801,28 @@ class MenuBar(wx.MenuBar):
         # Add all menus to menubar
         self.Append(file_menu, _("File"))
         self.Append(file_edit, _("Edit"))
+        self.Append(view_menu, _(u"View"))
         self.Append(tools_menu, _(u"Tools"))
-        #self.Append(view_menu, "View")
         #self.Append(tools_menu, "Tools")
         self.Append(options_menu, _("Options"))
         self.Append(help_menu, _("Help"))
+
+
+    def SliceInterpolationStatus(self):
+        
+        status = int(ses.Session().slice_interpolation)
+        
+        if status == 0:
+            v = True
+        else:
+            v = False
+
+        return v
+
+    def OnUpdateSliceInterpolation(self, pubsub_evt):
+        v = self.SliceInterpolationStatus()
+        self.view_menu.Check(const.ID_VIEW_INTERPOLATED, v)
+
 
     def OnEnableState(self, pubsub_evt):
         """
