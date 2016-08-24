@@ -1290,17 +1290,22 @@ class Slice(object):
         op, m1, m2 = pubsub_evt.data
         self.do_boolean_op(op, m1, m2)
 
-    def create_new_mask(self, show=True):
-        last_name = self.current_mask.name
+    def create_new_mask(self, name=None, show=True):
+        """
+        Creates a new mask and add it to project.
 
-        proj = Project()
-        mask_dict = proj.mask_dict
-        names_list = [mask_dict[i].name for i in mask_dict.keys()]
-        new_name = utils.next_copy_name(last_name, names_list)
+        Parameters:
+            name (string): name of the new mask. If name is None a automatic
+                name will be used.
+            show (bool): if this new mask will be showed and set as current
+                mask.
+        """
+        if name is None:
+            name =  const.MASK_NAME_PATTERN %(Mask.general_index+2)
 
         future_mask = Mask()
         future_mask.create_mask(self.matrix.shape)
-        future_mask.name = new_name
+        future_mask.name = name
 
         self._add_mask_into_proj(future_mask, show=show)
 
