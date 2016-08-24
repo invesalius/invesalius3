@@ -977,9 +977,12 @@ class Viewer(wx.Panel):
             my = round((z - zi)/self.slice_.spacing[2], 0)
         return my, mx
 
-    def get_coordinate_cursor(self):
+    def get_coordinate_cursor(self, picker=None):
         # Find position
-        x, y, z = self.pick.GetPickPosition()
+        if picker is None:
+            picker = self.pick
+
+        x, y, z = picker.GetPickPosition()
         bounds = self.slice_data.actor.GetBounds()
         if bounds[0] == bounds[1]:
             x = bounds[0]
@@ -989,11 +992,14 @@ class Viewer(wx.Panel):
             z = bounds[4]
         return x, y, z
 
-    def get_coordinate_cursor_edition(self, slice_data):
+    def get_coordinate_cursor_edition(self, slice_data, picker=None):
         # Find position
         actor = slice_data.actor
         slice_number = slice_data.number
-        x, y, z = self.pick.GetPickPosition()
+        if picker is None:
+            picker = self.pick
+
+        x, y, z = picker.GetPickPosition()
 
         # First we fix the position origin, based on vtkActor bounds
         bounds = actor.GetBounds()
@@ -1022,6 +1028,41 @@ class Viewer(wx.Panel):
             z = slice_number
 
         return x, y, z
+
+    def get_voxel_clicked(self, mx, my, picker=None):
+        """
+        Given the (mx, my) mouse clicked position returns the voxel coordinate
+        of the voxel at (that mx, my) position.
+
+        Parameters:
+            mx (int): x position.
+            my (int): y position
+            picker: the picker used to get calculate the voxel coordinate.
+
+        Returns:
+            voxel_coordinate (x, y, z): voxel coordinate inside the matrix. Can
+                be used to access the voxel value inside the matrix.
+        """
+        if picker is None:
+            picker = self.pick
+
+        slice_data = self.slice_data
+        renderer = slice_data.renderer
+
+        picker.Pick(mx, my, 0, renderer)
+
+        coord = self.get_coordinate_cursor(picker)
+        position = slice_data.actor.GetInput().FindPoint(coord)
+
+        if position != -1:
+            coord = slice_data.actor.GetInput().GetPoint(position)
+
+        if position < 0:
+            position = viewer.calculate_matrix_position(coord)
+
+        x, y, z = self.calcultate_scroll_position(position)
+
+        return (x, y, z)
 
     def __bind_events(self):
         Publisher.subscribe(self.LoadImagedata,
