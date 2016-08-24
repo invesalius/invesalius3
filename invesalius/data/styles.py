@@ -1771,8 +1771,10 @@ class CropMaskInteractorStyle(DefaultInteractorStyle):
         self.slice_data = viewer.slice_data
         
     def SetUp(self):
-        i = DrawCrop2DRetangle()
         
+        i = DrawCrop2DRetangle()
+        i.SetViewer(self.viewer)
+
         self.viewer.canvas.draw_list.append(i)
         self.viewer.UpdateCanvas()
 
@@ -1782,7 +1784,7 @@ class CropMaskInteractorStyle(DefaultInteractorStyle):
 
     def CleanUp(self):
         pass
-       #for actor in self.actors:
+        #for actor in self.actors:
         #    self.viewer.slice_data.renderer.RemoveActor(actor)
 
         #self.viewer.slice_.rotations = [0, 0, 0]
@@ -1793,9 +1795,9 @@ class CropMaskInteractorStyle(DefaultInteractorStyle):
 
 
 class DrawCrop2DRetangle():
-
+    
     def __init__(self):
-        pass
+        self.viewer = None
     
 
     def draw_to_canvas(self, gc, canvas):
@@ -1806,7 +1808,37 @@ class DrawCrop2DRetangle():
             gc: is a wx.GraphicsContext
             canvas: the canvas it's being drawn.
         """
-        canvas.draw_line((0,0),(100,100))
+
+        self.MakeBox(canvas)
+
+    def Coord3DtoDisplay(self, x, y, z, canvas):
+
+        coord = vtk.vtkCoordinate()
+        coord.SetValue(x, y, z)
+        cx, cy = coord.GetComputedDisplayValue(canvas.evt_renderer)
+ 
+        return (cx, cy)
+
+
+    def MakeBox(self, canvas):
+
+        if canvas.orientation == "AXIAL":
+            xi, xf, yi, yf, zi, zf = self.viewer.slice_data.actor.GetBounds()               
+            cxi, cyi = self.Coord3DtoDisplay(xi, yi, zi, canvas)
+
+            cxf, cyf = self.Coord3DtoDisplay(xf, yf, zf ,canvas)
+
+            #  canvas.draw_circle((cx, cy), 2.5)
+            #points.append((cx, cy))
+
+            canvas.draw_line((cxi,cyi),(cxf, cyf))
+
+
+    def SetViewer(self, viewer):
+
+        self.viewer = viewer
+
+        
 
 
 class SelectPartConfig(object):
