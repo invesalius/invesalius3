@@ -1085,8 +1085,8 @@ class Viewer(wx.Panel):
         Publisher.subscribe(self.Navigation,
                                  'Co-registered Points')
         ###
-        Publisher.subscribe(self.ChangeBrushColour,
-                                 'Add mask')
+        #  Publisher.subscribe(self.ChangeBrushColour,
+                                 #  'Add mask')
 
         Publisher.subscribe(self.UpdateWindowLevelValue,
                             'Update window level value')
