@@ -1933,6 +1933,7 @@ class SelectPartConfig(object):
     def __init__(self):
         self.mask = None
         self.con_3d = 6
+        self.dlg_visible = False
 
 
 class SelectMaskPartsInteractorStyle(DefaultInteractorStyle):
@@ -1947,7 +1948,7 @@ class SelectMaskPartsInteractorStyle(DefaultInteractorStyle):
         self.slice_data = viewer.slice_data
 
         self.config = SelectPartConfig()
-        self.dlg_ffill = None
+        self.dlg = None
 
         self.t0 = 254
         self.t1 = 255
@@ -1955,9 +1956,21 @@ class SelectMaskPartsInteractorStyle(DefaultInteractorStyle):
 
         self.AddObserver("LeftButtonPressEvent", self.OnSelect)
 
+    def SetUp(self):
+        if not self.config.dlg_visible:
+            self.config.dlg_visible = True
+            self.dlg= dialogs.SelectPartsOptionsDialog(self.config)
+            self.dlg.Show()
+
     def CleanUp(self):
+        if (self.dlg is not None) and (self.config.dlg_visible):
+            self.config.dlg_visible = False
+            self.dlg.Destroy()
+            self.dlg = None
+
         if self.config.mask:
             self.viewer.slice_.SelectCurrentMask(self.config.mask.index)
+            Publisher.sendMessage('Change mask selected', self.config.mask.index)
             self.config.mask = None
             del self.viewer.slice_.aux_matrices['SELECT']
             self.viewer.slice_.to_show_aux = ''
