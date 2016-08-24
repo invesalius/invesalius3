@@ -1760,10 +1760,53 @@ class RemoveMaskPartsInteractorStyle(FloodFillMaskInteractorStyle):
 
 class CropMaskInteractorStyle(DefaultInteractorStyle):
 
-    def __init(self, viewer):
+    def __init__(self, viewer):
         DefaultInteractorStyle.__init__(self, viewer)
 
+        self.viewer = viewer
+        self.orientation = self.viewer.orientation
+
+        self.picker = vtk.vtkWorldPointPicker()
+        self.slice_actor = viewer.slice_data.actor
+        self.slice_data = viewer.slice_data
         
+    def SetUp(self):
+        i = DrawCrop2DRetangle()
+        
+        self.viewer.canvas.draw_list.append(i)
+        self.viewer.UpdateCanvas()
+
+        #self.draw_lines()
+        #Publisher.sendMessage('Hide current mask')
+        #Publisher.sendMessage('Reload actual slice')
+
+    def CleanUp(self):
+        pass
+       #for actor in self.actors:
+        #    self.viewer.slice_data.renderer.RemoveActor(actor)
+
+        #self.viewer.slice_.rotations = [0, 0, 0]
+        #self.viewer.slice_.q_orientation = np.array((1, 0, 0, 0))
+        #self._discard_buffers()
+        #Publisher.sendMessage('Close reorient dialog')
+        #Publisher.sendMessage('Show current mask')
+
+
+class DrawCrop2DRetangle():
+
+    def __init__(self):
+        pass
+    
+
+    def draw_to_canvas(self, gc, canvas):
+        """
+        Draws to an wx.GraphicsContext.
+
+        Parameters:
+            gc: is a wx.GraphicsContext
+            canvas: the canvas it's being drawn.
+        """
+        canvas.draw_line((0,0),(100,100))
 
 
 class SelectPartConfig(object):

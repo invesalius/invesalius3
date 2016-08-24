@@ -148,7 +148,7 @@ class ContourMIPConfig(wx.Panel):
 
 
 class CanvasRendererCTX:
-    def __init__(self, evt_renderer, canvas_renderer):
+    def __init__(self, evt_renderer, canvas_renderer, orientation=None):
         """
         A Canvas to render over a vtktRenderer.
 
@@ -167,6 +167,7 @@ class CanvasRendererCTX:
         self.evt_renderer = evt_renderer
         self._size = self.canvas_renderer.GetSize()
         self.draw_list = []
+        self.orientation = orientation
         self.gc = None
         self.last_cam_modif_time = -1
         self.modified = True
@@ -641,7 +642,7 @@ class Viewer(wx.Panel):
             self.style.CleanUp()
 
         del self.style
-
+        
         style = styles.get_style(state)(self)
 
         setup = getattr(style, 'SetUp', None)
@@ -1384,7 +1385,7 @@ class Viewer(wx.Panel):
         self.cam = self.slice_data.renderer.GetActiveCamera()
         self.__build_cross_lines()
 
-        self.canvas = CanvasRendererCTX(self.slice_data.renderer, self.slice_data.canvas_renderer)
+        self.canvas = CanvasRendererCTX(self.slice_data.renderer, self.slice_data.canvas_renderer, self.orientation)
 
         # Set the slice number to the last slice to ensure the camera if far
         # enough to show all slices.

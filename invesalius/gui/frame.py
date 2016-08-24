@@ -610,7 +610,7 @@ class Frame(wx.Frame):
         Publisher.sendMessage('Set interpolated slices', status)
     
     def OnCropMask(self):
-        pass
+        Publisher.sendMessage('Enable style', const.SLICE_STATE_CROP_MASK)
 
 # ------------------------------------------------------------------
 # ------------------------------------------------------------------
