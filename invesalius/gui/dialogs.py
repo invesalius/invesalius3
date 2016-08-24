@@ -1953,11 +1953,8 @@ class SelectPartsOptionsDialog(wx.Dialog):
         self._init_gui()
 
     def _init_gui(self):
-        import data.mask as mask
-
-        default_name =  const.MASK_NAME_PATTERN %(mask.Mask.general_index+2)
         self.target_name = wx.TextCtrl(self, -1)
-        self.target_name.SetValue(default_name)
+        self.target_name.SetValue(self.config.mask_name)
 
         # Connectivity 3D
         self.conect3D_6 = wx.RadioButton(self, -1, "6", style=wx.RB_GROUP)
@@ -1989,8 +1986,13 @@ class SelectPartsOptionsDialog(wx.Dialog):
         sizer.Fit(self)
         self.Layout()
 
+        self.target_name.Bind(wx.EVT_CHAR, self.OnChar)
         self.Bind(wx.EVT_RADIOBUTTON, self.OnSetRadio)
         self.Bind(wx.EVT_CLOSE, self.OnClose)
+
+    def OnChar(self, evt):
+        evt.Skip()
+        self.config.mask_name = self.target_name.GetValue()
 
     def OnSetRadio(self, evt):
         if self.conect3D_6.GetValue():
@@ -1998,7 +2000,7 @@ class SelectPartsOptionsDialog(wx.Dialog):
         elif self.conect3D_18.GetValue():
             self.config.con_3d = 18
         elif self.conect3D_26.GetValue():
-            self.config.con_3d = 2
+            self.config.con_3d = 26
 
     def OnClose(self, evt):
         if self.config.dlg_visible:

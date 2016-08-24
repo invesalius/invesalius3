@@ -1039,6 +1039,7 @@ class Slice(object):
                         opacity=None,
                         threshold_range=None,
                         edition_threshold_range=None,
+                        add_to_project=True,
                         show=True):
         """
         Creates a new mask and add it to project.
@@ -1073,7 +1074,8 @@ class Slice(object):
         if threshold_range:
             future_mask.threshold_range = threshold_range
 
-        self._add_mask_into_proj(future_mask, show=show)
+        if add_to_project:
+            self._add_mask_into_proj(future_mask, show=show)
 
         return future_mask
 

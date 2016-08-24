@@ -1934,6 +1934,7 @@ class SelectPartConfig(object):
         self.mask = None
         self.con_3d = 6
         self.dlg_visible = False
+        self.mask_name = ''
 
 
 class SelectMaskPartsInteractorStyle(DefaultInteractorStyle):
@@ -1958,6 +1959,10 @@ class SelectMaskPartsInteractorStyle(DefaultInteractorStyle):
 
     def SetUp(self):
         if not self.config.dlg_visible:
+            import data.mask as mask
+            default_name =  const.MASK_NAME_PATTERN %(mask.Mask.general_index+2)
+
+            self.config.mask_name = default_name
             self.config.dlg_visible = True
             self.dlg= dialogs.SelectPartsOptionsDialog(self.config)
             self.dlg.Show()
@@ -1969,6 +1974,8 @@ class SelectMaskPartsInteractorStyle(DefaultInteractorStyle):
             self.dlg = None
 
         if self.config.mask:
+            self.config.mask.name = self.config.mask_name
+            self.viewer.slice_._add_mask_into_proj(self.config.mask)
             self.viewer.slice_.SelectCurrentMask(self.config.mask.index)
             Publisher.sendMessage('Change mask selected', self.config.mask.index)
             self.config.mask = None
@@ -1989,6 +1996,8 @@ class SelectMaskPartsInteractorStyle(DefaultInteractorStyle):
         bstruct = np.array(generate_binary_structure(3, CON3D[self.config.con_3d]), dtype='uint8')
         self.viewer.slice_.do_threshold_to_all_slices()
 
+        print bstruct
+
         if self.config.mask is None:
             self._create_new_mask()
 
@@ -2004,7 +2013,7 @@ class SelectMaskPartsInteractorStyle(DefaultInteractorStyle):
         Publisher.sendMessage('Reload actual slice')
 
     def _create_new_mask(self):
-        mask = self.viewer.slice_.create_new_mask(show=False)
+        mask = self.viewer.slice_.create_new_mask(show=False, add_to_project=False)
         mask.was_edited = True
         mask.matrix[0, :, :] = 1
         mask.matrix[:, 0, :] = 1
