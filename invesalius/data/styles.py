@@ -1957,6 +1957,7 @@ class SelectMaskPartsInteractorStyle(DefaultInteractorStyle):
 
     def CleanUp(self):
         if self.config.mask:
+            self.viewer.slice_.SelectCurrentMask(self.config.mask.index)
             self.config.mask = None
             del self.viewer.slice_.aux_matrices['SELECT']
             self.viewer.slice_.to_show_aux = ''
@@ -1978,7 +1979,11 @@ class SelectMaskPartsInteractorStyle(DefaultInteractorStyle):
         if self.config.mask is None:
             self._create_new_mask()
 
-        floodfill.floodfill_threshold(mask, [[x, y, z]], self.t0, self.t1, self.fill_value, bstruct, self.config.mask.matrix[1:, 1:, 1:])
+        if iren.GetControlKey():
+            floodfill.floodfill_threshold(self.config.mask.matrix[1:, 1:, 1:], [[x, y, z]], 254, 255, 0, bstruct, self.config.mask.matrix[1:, 1:, 1:])
+        else:
+            floodfill.floodfill_threshold(mask, [[x, y, z]], self.t0, self.t1, self.fill_value, bstruct, self.config.mask.matrix[1:, 1:, 1:])
+
         self.viewer.slice_.aux_matrices['SELECT'] = self.config.mask.matrix[1:, 1:, 1:]
         self.viewer.slice_.to_show_aux = 'SELECT'
 
