@@ -126,7 +126,7 @@ class EditionHistory(object):
                     h[self.index].commit_history(mvolume)
                 self._reload_slice(self.index)
                 Publisher.sendMessage("Enable redo", True)
-        
+
         if self.index == 0:
             Publisher.sendMessage("Enable undo", False)
         print "AT", self.index, len(self.history), self.history[self.index].filename
@@ -154,7 +154,7 @@ class EditionHistory(object):
                     h[self.index].commit_history(mvolume)
                 self._reload_slice(self.index)
                 Publisher.sendMessage("Enable undo", True)
-        
+
         if self.index == len(h) - 1:
             Publisher.sendMessage("Enable redo", False)
         print "AT", self.index, len(h), h[self.index].filename
@@ -174,7 +174,7 @@ class EditionHistory(object):
                 v_undo = False
             elif self.index == len(self.history) - 1:
                 v_redo = False
-            
+
         Publisher.sendMessage("Enable undo", v_undo)
         Publisher.sendMessage("Enable redo", v_redo)
 
@@ -229,7 +229,7 @@ class Mask():
 
     def SavePlist(self, dir_temp, filelist):
         mask = {}
-        filename = u'mask_%d' % self.index 
+        filename = u'mask_%d' % self.index
         mask_filename = u'%s.dat' % filename
         mask_filepath = os.path.join(dir_temp, mask_filename)
         filelist[self.temp_file] = mask_filename
@@ -304,7 +304,12 @@ class Mask():
         Mask.general_index = index
 
     def create_mask(self, shape):
-        print "Creating a mask"
+        """
+        Creates a new mask object. This method do not append this new mask into the project.
+
+        Parameters:
+            shape(int, int, int): The shape of the new mask.
+        """
         self.temp_file = tempfile.mktemp()
         shape = shape[0] + 1, shape[1] + 1, shape[2] + 1
         self.matrix = numpy.memmap(self.temp_file, mode='w+', dtype='uint8', shape=shape)
@@ -329,7 +334,7 @@ class Mask():
         new_mask.threshold_range = self.threshold_range
         new_mask.edition_threshold_range = self.edition_threshold_range
         new_mask.is_shown = self.is_shown
-        
+
         new_mask.create_mask(shape=[i-1 for i in self.matrix.shape])
         new_mask.matrix[:] = self.matrix[:]
 
