@@ -1,4 +1,4 @@
-#--------------------------------------------------------------------------
+                    #--------------------------------------------------------------------------
 # Software:     InVesalius - Software de Reconstrucao 3D de Imagens Medicas
 # Copyright:    (C) 2001  Centro de Pesquisas Renato Archer
 # Homepage:     http://www.softwarepublico.gov.br
@@ -485,6 +485,7 @@ ID_FLOODFILL_MASK = wx.NewId()
 ID_REMOVE_MASK_PART = wx.NewId()
 ID_SELECT_MASK_PART = wx.NewId()
 ID_FLOODFILL_SEGMENTATION = wx.NewId()
+ID_CROP_MASK = wx.NewId()
 
 #---------------------------------------------------------
 STATE_DEFAULT = 1000
@@ -506,6 +507,7 @@ SLICE_STATE_MASK_FFILL = 3011
 SLICE_STATE_REMOVE_MASK_PARTS = 3012
 SLICE_STATE_SELECT_MASK_PARTS = 3013
 SLICE_STATE_FFILL_SEGMENTATION = 3014
+SLICE_STATE_CROP_MASK = 3015
 
 VOLUME_STATE_SEED = 2001
 #  STATE_LINEAR_MEASURE = 3001
@@ -527,6 +529,7 @@ SLICE_STYLES.append(SLICE_STATE_MASK_FFILL)
 SLICE_STYLES.append(SLICE_STATE_REMOVE_MASK_PARTS)
 SLICE_STYLES.append(SLICE_STATE_SELECT_MASK_PARTS)
 SLICE_STYLES.append(SLICE_STATE_FFILL_SEGMENTATION)
+SLICE_STYLES.append(SLICE_STATE_CROP_MASK)
 
 VOLUME_STYLES = TOOL_STATES + [VOLUME_STATE_SEED, STATE_MEASURE_DISTANCE,
         STATE_MEASURE_ANGLE]
@@ -542,6 +545,7 @@ STYLE_LEVEL = {SLICE_STATE_EDITOR: 1,
                SLICE_STATE_CROSS: 2,
                SLICE_STATE_SCROLL: 2,
                SLICE_STATE_REORIENT: 2,
+               SLICE_STATE_CROP_MASK: 2,
                STATE_ANNOTATE: 2,
                STATE_DEFAULT: 0,
                STATE_MEASURE_ANGLE: 2,

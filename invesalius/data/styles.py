@@ -1758,6 +1758,13 @@ class RemoveMaskPartsInteractorStyle(FloodFillMaskInteractorStyle):
             self._progr_title = _(u"Remove part")
             self._progr_msg = _(u"Removing part ...")
 
+class CropMaskInteractorStyle(DefaultInteractorStyle):
+
+    def __init(self, viewer):
+        DefaultInteractorStyle.__init__(self, viewer)
+
+        
+
 
 class SelectPartConfig(object):
     __metaclass__= utils.Singleton
@@ -2054,6 +2061,7 @@ def get_style(style):
         const.SLICE_STATE_REMOVE_MASK_PARTS: RemoveMaskPartsInteractorStyle,
         const.SLICE_STATE_SELECT_MASK_PARTS: SelectMaskPartsInteractorStyle,
         const.SLICE_STATE_FFILL_SEGMENTATION: FloodFillSegmentInteractorStyle,
+        const.SLICE_STATE_CROP_MASK:CropMaskInteractorStyle,
     }
     return STYLES[style]
 
