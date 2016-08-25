@@ -218,12 +218,12 @@ class CrossInteractorStyle(DefaultInteractorStyle):
 
         # Get in what slice data the click occurred
         # pick to get click position in the 3d world
-        coord_cross = self.get_coordinate_cursor()
+        coord_cross = self.viewer.get_coordinate_cursor(self.picker)
         position = self.slice_actor.GetInput().FindPoint(coord_cross)
         # Forcing focal point to be setted in the center of the pixel.
         coord_cross = self.slice_actor.GetInput().GetPoint(position)
 
-        coord = self.calcultate_scroll_position(position)
+        coord = self.viewer.calcultate_scroll_position(position)
         Publisher.sendMessage('Update cross position', coord_cross)
         self.ScrollSlice(coord)
         Publisher.sendMessage('Set ball reference position based on bound',
@@ -232,32 +232,6 @@ class CrossInteractorStyle(DefaultInteractorStyle):
         Publisher.sendMessage('Render volume viewer')
 
         iren.Render()
-
-
-    def calcultate_scroll_position(self, position):
-        # Based in the given coord (x, y, z), returns a list with the scroll positions for each
-        # orientation, being the first position the sagital, second the coronal
-        # and the last, axial.
-
-        if self.orientation == 'AXIAL':
-            image_width = self.slice_actor.GetInput().GetDimensions()[0]
-            axial = self.slice_data.number
-            coronal = position / image_width
-            sagital = position % image_width
-
-        elif self.orientation == 'CORONAL':
-            image_width = self.slice_actor.GetInput().GetDimensions()[0]
-            axial = position / image_width
-            coronal = self.slice_data.number
-            sagital = position % image_width
-
-        elif self.orientation == 'SAGITAL':
-            image_width = self.slice_actor.GetInput().GetDimensions()[1]
-            axial = position / image_width
-            coronal = position % image_width
-            sagital = self.slice_data.number
-
-        return sagital, coronal, axial
 
     def ScrollSlice(self, coord):
         if self.orientation == "AXIAL":
@@ -275,18 +249,6 @@ class CrossInteractorStyle(DefaultInteractorStyle):
                                        coord[2])
             Publisher.sendMessage(('Set scroll position', 'SAGITAL'),
                                        coord[0])
-
-    def get_coordinate_cursor(self):
-        # Find position
-        x, y, z = self.picker.GetPickPosition()
-        bounds = self.viewer.slice_data.actor.GetBounds()
-        if bounds[0] == bounds[1]:
-            x = bounds[0]
-        elif bounds[2] == bounds[3]:
-            y = bounds[2]
-        elif bounds[4] == bounds[5]:
-            z = bounds[4]
-        return x, y, z
 
 
 class WWWLInteractorStyle(DefaultInteractorStyle):
