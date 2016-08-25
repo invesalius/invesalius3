@@ -562,10 +562,10 @@ class MaskProperties(wx.Panel):
         mask_thresh = evt_pubsub.data[2]
         mask_colour = [int(c*255) for c in evt_pubsub.data[3]]
         index = self.combo_mask_name.Append(mask_name)
-        self.combo_mask_name.SetSelection(index)
-        self.button_colour.SetColour(mask_colour)
-        self.gradient.SetColour(mask_colour)
-        self.combo_mask_name.SetSelection(index)
+        #  self.combo_mask_name.SetSelection(index)
+        #  self.button_colour.SetColour(mask_colour)
+        #  self.gradient.SetColour(mask_colour)
+        #  self.combo_mask_name.SetSelection(index)
 
     def GetMaskSelected(self):
         x = self.combo_mask_name.GetSelection()

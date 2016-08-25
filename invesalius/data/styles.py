@@ -1928,6 +1928,98 @@ class RemoveMaskPartsInteractorStyle(FloodFillMaskInteractorStyle):
             self._progr_msg = _(u"Removing part ...")
 
 
+class SelectPartConfig(object):
+    __metaclass__= utils.Singleton
+    def __init__(self):
+        self.mask = None
+        self.con_3d = 6
+        self.dlg_visible = False
+        self.mask_name = ''
+
+
+class SelectMaskPartsInteractorStyle(DefaultInteractorStyle):
+    def __init__(self, viewer):
+        DefaultInteractorStyle.__init__(self, viewer)
+
+        self.viewer = viewer
+        self.orientation = self.viewer.orientation
+
+        self.picker = vtk.vtkWorldPointPicker()
+        self.slice_actor = viewer.slice_data.actor
+        self.slice_data = viewer.slice_data
+
+        self.config = SelectPartConfig()
+        self.dlg = None
+
+        self.t0 = 254
+        self.t1 = 255
+        self.fill_value = 254
+
+        self.AddObserver("LeftButtonPressEvent", self.OnSelect)
+
+    def SetUp(self):
+        if not self.config.dlg_visible:
+            import data.mask as mask
+            default_name =  const.MASK_NAME_PATTERN %(mask.Mask.general_index+2)
+
+            self.config.mask_name = default_name
+            self.config.dlg_visible = True
+            self.dlg= dialogs.SelectPartsOptionsDialog(self.config)
+            self.dlg.Show()
+
+    def CleanUp(self):
+        if (self.dlg is not None) and (self.config.dlg_visible):
+            self.config.dlg_visible = False
+            self.dlg.Destroy()
+            self.dlg = None
+
+        if self.config.mask:
+            self.config.mask.name = self.config.mask_name
+            self.viewer.slice_._add_mask_into_proj(self.config.mask)
+            self.viewer.slice_.SelectCurrentMask(self.config.mask.index)
+            Publisher.sendMessage('Change mask selected', self.config.mask.index)
+            self.config.mask = None
+            del self.viewer.slice_.aux_matrices['SELECT']
+            self.viewer.slice_.to_show_aux = ''
+            Publisher.sendMessage('Reload actual slice')
+
+    def OnSelect(self, obj, evt):
+        if (self.viewer.slice_.buffer_slices[self.orientation].mask is None):
+            return
+
+        iren = self.viewer.interactor
+        mouse_x, mouse_y = iren.GetEventPosition()
+        x, y, z = self.viewer.get_voxel_clicked(mouse_x, mouse_y, self.picker)
+
+        mask = self.viewer.slice_.current_mask.matrix[1:, 1:, 1:]
+
+        bstruct = np.array(generate_binary_structure(3, CON3D[self.config.con_3d]), dtype='uint8')
+        self.viewer.slice_.do_threshold_to_all_slices()
+
+        if self.config.mask is None:
+            self._create_new_mask()
+
+        if iren.GetControlKey():
+            floodfill.floodfill_threshold(self.config.mask.matrix[1:, 1:, 1:], [[x, y, z]], 254, 255, 0, bstruct, self.config.mask.matrix[1:, 1:, 1:])
+        else:
+            floodfill.floodfill_threshold(mask, [[x, y, z]], self.t0, self.t1, self.fill_value, bstruct, self.config.mask.matrix[1:, 1:, 1:])
+
+        self.viewer.slice_.aux_matrices['SELECT'] = self.config.mask.matrix[1:, 1:, 1:]
+        self.viewer.slice_.to_show_aux = 'SELECT'
+
+        self.config.mask.was_edited = True
+        Publisher.sendMessage('Reload actual slice')
+
+    def _create_new_mask(self):
+        mask = self.viewer.slice_.create_new_mask(show=False, add_to_project=False)
+        mask.was_edited = True
+        mask.matrix[0, :, :] = 1
+        mask.matrix[:, 0, :] = 1
+        mask.matrix[:, :, 0] = 1
+
+        self.config.mask = mask
+
+
 def get_style(style):
     STYLES = {
         const.STATE_DEFAULT: DefaultInteractorStyle,
@@ -1945,6 +2037,7 @@ def get_style(style):
         const.SLICE_STATE_REORIENT: ReorientImageInteractorStyle,
         const.SLICE_STATE_MASK_FFILL: FloodFillMaskInteractorStyle,
         const.SLICE_STATE_REMOVE_MASK_PARTS: RemoveMaskPartsInteractorStyle,
+        const.SLICE_STATE_SELECT_MASK_PARTS: SelectMaskPartsInteractorStyle,
     }
     return STYLES[style]
 

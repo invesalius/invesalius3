@@ -1940,3 +1940,94 @@ class FFillOptionsDialog(wx.Dialog):
             Publisher.sendMessage('Disable style', const.SLICE_STATE_MASK_FFILL)
         evt.Skip()
         self.Destroy()
+
+
+class SelectPartsOptionsDialog(wx.Dialog):
+    def __init__(self, config):
+        pre = wx.PreDialog()
+        pre.Create(wx.GetApp().GetTopWindow(), -1, _(u"Select mask parts"), style=wx.DEFAULT_DIALOG_STYLE|wx.FRAME_FLOAT_ON_PARENT)
+        self.PostCreate(pre)
+
+        self.config = config
+
+        self._init_gui()
+
+    def _init_gui(self):
+        self.target_name = wx.TextCtrl(self, -1)
+        self.target_name.SetValue(self.config.mask_name)
+
+        # Connectivity 3D
+        self.conect3D_6 = wx.RadioButton(self, -1, "6", style=wx.RB_GROUP)
+        self.conect3D_18 = wx.RadioButton(self, -1, "18")
+        self.conect3D_26 = wx.RadioButton(self, -1, "26")
+
+        if self.config.con_3d == 18:
+            self.conect3D_18.SetValue(1)
+        elif self.config.con_3d == 26:
+            self.conect3D_26.SetValue(1)
+        else:
+            self.conect3D_6.SetValue(1)
+
+        sizer_t = wx.BoxSizer(wx.HORIZONTAL)
+        sizer_t.AddSpacer(7)
+        sizer_t.Add(wx.StaticText(self, -1, _(u"Target mask name")), 1, wx.ALIGN_CENTRE_VERTICAL)
+        sizer_t.AddSpacer(7)
+        sizer_t.Add(self.target_name, 1, wx.EXPAND)
+        sizer_t.AddSpacer(7)
+
+        sizer_c = wx.BoxSizer(wx.HORIZONTAL)
+        sizer_c.AddSpacer(7)
+        sizer_c.Add(self.conect3D_6)
+        sizer_c.AddSpacer(7)
+        sizer_c.Add(self.conect3D_18)
+        sizer_c.AddSpacer(7)
+        sizer_c.Add(self.conect3D_26)
+
+        sizer = wx.BoxSizer(wx.VERTICAL)
+        sizer.AddSpacer(7)
+        sizer.Add(sizer_t, 1, wx.EXPAND)
+        sizer.AddSpacer(7)
+        sizer.Add(wx.StaticText(self, -1, _(u"3D Connectivity")), 0, wx.LEFT, 7)
+        sizer.AddSpacer(5)
+        sizer.Add(sizer_c)
+        sizer.AddSpacer(7)
+
+        #  sizer = wx.GridBagSizer(11, 6)
+        #  sizer.AddStretchSpacer((0, 0))
+
+        #  sizer.Add(wx.StaticText(self, -1, _(u"Target mask name")), (1, 0), (1, 6), flag=wx.LEFT|wx.ALIGN_BOTTOM|wx.EXPAND, border=7)
+        #  sizer.Add(self.target_name, (2, 0), (1, 6), flag=wx.LEFT|wx.EXPAND|wx.RIGHT|wx.ALIGN_TOP, border=9)
+
+        #  #  sizer.AddStretchSpacer((3, 0))
+
+        #  sizer.Add(wx.StaticText(self, -1, _(u"3D Connectivity")), (3, 0), (1, 6), flag=wx.LEFT, border=7)
+        #  sizer.Add(self.conect3D_6, (4, 0), flag=wx.LEFT, border=9)
+        #  sizer.Add(self.conect3D_18, (4, 1), flag=wx.LEFT, border=9)
+        #  sizer.Add(self.conect3D_26, (4, 2), flag=wx.LEFT, border=9)
+        #  sizer.AddStretchSpacer((5, 0))
+
+        self.SetSizer(sizer)
+        sizer.Fit(self)
+        self.Layout()
+
+        self.target_name.Bind(wx.EVT_CHAR, self.OnChar)
+        self.Bind(wx.EVT_RADIOBUTTON, self.OnSetRadio)
+        self.Bind(wx.EVT_CLOSE, self.OnClose)
+
+    def OnChar(self, evt):
+        evt.Skip()
+        self.config.mask_name = self.target_name.GetValue()
+
+    def OnSetRadio(self, evt):
+        if self.conect3D_6.GetValue():
+            self.config.con_3d = 6
+        elif self.conect3D_18.GetValue():
+            self.config.con_3d = 18
+        elif self.conect3D_26.GetValue():
+            self.config.con_3d = 26
+
+    def OnClose(self, evt):
+        if self.config.dlg_visible:
+            Publisher.sendMessage('Disable style', const.SLICE_STATE_SELECT_MASK_PARTS)
+        evt.Skip()
+        self.Destroy()

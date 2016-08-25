@@ -451,19 +451,15 @@ class Frame(wx.Frame):
         elif id == const.ID_REMOVE_MASK_PART:
             self.OnRemoveMaskParts()
 
-        elif id == const.ID_VIEW_INTERPOLATED:
-            
-            st = self.actived_interpolated_slices.IsChecked(const.ID_VIEW_INTERPOLATED)
+        elif id == const.ID_SELECT_MASK_PART:
+            self.OnSelectMaskParts()
 
+        elif id == const.ID_VIEW_INTERPOLATED:
+            st = self.actived_interpolated_slices.IsChecked(const.ID_VIEW_INTERPOLATED)
             if st:
                 self.OnInterpolatedSlices(True)
             else:
                 self.OnInterpolatedSlices(False)
-
-    def OnInterpolatedSlices(self, status):
-
-        Publisher.sendMessage('Set interpolated slices', status)
-
 
     def OnSize(self, evt):
         """
@@ -594,6 +590,12 @@ class Frame(wx.Frame):
     def OnRemoveMaskParts(self):
         Publisher.sendMessage('Enable style', const.SLICE_STATE_REMOVE_MASK_PARTS)
 
+    def OnSelectMaskParts(self):
+        Publisher.sendMessage('Enable style', const.SLICE_STATE_SELECT_MASK_PARTS)
+
+    def OnInterpolatedSlices(self, status):
+        Publisher.sendMessage('Set interpolated slices', status)
+
 # ------------------------------------------------------------------
 # ------------------------------------------------------------------
 # ------------------------------------------------------------------
@@ -615,7 +617,8 @@ class MenuBar(wx.MenuBar):
                              const.ID_PROJECT_CLOSE,
                              const.ID_REORIENT_IMG,
                              const.ID_FLOODFILL_MASK,
-                             const.ID_REMOVE_MASK_PART,]
+                             const.ID_REMOVE_MASK_PART,
+                             const.ID_SELECT_MASK_PART,]
         self.__init_items()
         self.__bind_events()
 
@@ -732,6 +735,9 @@ class MenuBar(wx.MenuBar):
 
         self.remove_mask_part_menu = mask_menu.Append(const.ID_REMOVE_MASK_PART, _(u"Remove parts"))
         self.remove_mask_part_menu.Enable(False)
+
+        self.select_mask_part_menu = mask_menu.Append(const.ID_SELECT_MASK_PART, _(u"Select parts"))
+        self.select_mask_part_menu.Enable(False)
 
         tools_menu.AppendMenu(-1,  _(u"Mask"), mask_menu)
 

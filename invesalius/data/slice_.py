@@ -302,14 +302,14 @@ class Slice(object):
 
     def __add_mask(self, pubsub_evt):
         mask_name = pubsub_evt.data
-        self.CreateMask(name=mask_name)
+        self.create_new_mask(name=mask_name)
         self.SetMaskColour(self.current_mask.index, self.current_mask.colour)
 
     def __add_mask_thresh(self, pubsub_evt):
         mask_name = pubsub_evt.data[0]
         thresh = pubsub_evt.data[1]
         colour = pubsub_evt.data[2]
-        self.CreateMask(name=mask_name, threshold_range=thresh, colour =colour)
+        self.create_new_mask(name=mask_name, threshold_range=thresh, colour=colour)
         self.SetMaskColour(self.current_mask.index, self.current_mask.colour)
         self.SelectCurrentMask(self.current_mask.index)
         Publisher.sendMessage('Reload actual slice')
@@ -574,6 +574,14 @@ class Slice(object):
                                                         1: (0.0, 1.0, 0.0, 1.0),
                                                         2: (1.0, 0.0, 0.0, 1.0)})
             final_image = self.do_blend(final_image, cimage)
+        elif self.to_show_aux and self.current_mask:
+            m = self.get_aux_slice(self.to_show_aux, orientation, slice_number)
+            tmp_vimage = converters.to_vtk(m, self.spacing, slice_number, orientation)
+            aux_image = self.do_custom_colour(tmp_vimage, {0: (0.0, 0.0, 0.0, 0.0),
+                                                           1: (0.0, 0.0, 0.0, 0.0),
+                                                           254: (1.0, 0.0, 0.0, 1.0),
+                                                           255: (1.0, 0.0, 0.0, 1.0)})
+            final_image = self.do_blend(final_image, aux_image)
         return final_image
 
     def get_image_slice(self, orientation, slice_number, number_slices=1,
@@ -1026,14 +1034,32 @@ class Slice(object):
         #else:
             #widget.SetInput(cast.GetOutput())
 
+    def create_new_mask(self, name=None,
+                        colour=None,
+                        opacity=None,
+                        threshold_range=None,
+                        edition_threshold_range=None,
+                        add_to_project=True,
+                        show=True):
+        """
+        Creates a new mask and add it to project.
 
+        Parameters:
+            name (string): name of the new mask. If name is None a automatic
+                name will be used.
+            colour (R, G, B): a RGB tuple of float number.
+            opacity (float): a float number, from 0 to 1. If opacity is None
+                the default one will be used.
+            threshold_range (int, int): a 2-tuple indicating threshold range.
+                If None the default one will be used.
+            edition_threshold_range (int, int): a 2-tuple indicating threshold
+                range. If None the default one will be used.
+            show (bool): if this new mask will be showed and set as current
+                mask.
 
-    def CreateMask(self, imagedata=None, name=None, colour=None,
-                    opacity=None, threshold_range=None,
-                    edition_threshold_range = None,
-                    edited_points=None):
-        
-        # TODO: mask system to new system.
+        Returns:
+            new_mask: The new mask object.
+        """
         future_mask = Mask()
         future_mask.create_mask(self.matrix.shape)
 
@@ -1045,12 +1071,13 @@ class Slice(object):
             future_mask.opacity = opacity
         if edition_threshold_range:
             future_mask.edition_threshold_range = edition_threshold_range
-        if edited_points:
-            future_mask.edited_points = edited_points
         if threshold_range:
             future_mask.threshold_range = threshold_range
 
-        self._add_mask_into_proj(future_mask)
+        if add_to_project:
+            self._add_mask_into_proj(future_mask, show=show)
+
+        return future_mask
 
 
     def _add_mask_into_proj(self, mask, show=True):
@@ -1281,6 +1308,7 @@ class Slice(object):
     def _do_boolean_op(self, pubsub_evt):
         op, m1, m2 = pubsub_evt.data
         self.do_boolean_op(op, m1, m2)
+
 
     def do_boolean_op(self, op, m1, m2):
         name_ops = {const.BOOLEAN_UNION: _(u"Union"), 
