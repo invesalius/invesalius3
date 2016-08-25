@@ -1029,9 +1029,9 @@ class Viewer(wx.Panel):
 
         return x, y, z
 
-    def get_voxel_clicked(self, mx, my, picker=None):
+    def get_voxel_coord_by_screen_pos(self, mx, my, picker=None):
         """
-        Given the (mx, my) mouse clicked position returns the voxel coordinate
+        Given the (mx, my) screen position returns the voxel coordinate
         of the voxel at (that mx, my) position.
 
         Parameters:
@@ -1063,6 +1063,74 @@ class Viewer(wx.Panel):
         x, y, z = self.calcultate_scroll_position(position)
 
         return (x, y, z)
+
+    def get_slice_pixel_coord_by_screen_pos(self, mx, my, picker=None):
+        """
+        Given the (mx, my) screen position returns the pixel coordinate
+        of the slice at (that mx, my) position.
+
+        Parameters:
+            mx (int): x position.
+            my (int): y position
+            picker: the picker used to get calculate the pixel coordinate.
+
+        Returns:
+            voxel_coordinate (x, y): voxel coordinate inside the matrix. Can
+                be used to access the voxel value inside the matrix.
+        """
+        if picker is None:
+            picker = self.pick
+
+        slice_data = self.slice_data
+        renderer = slice_data.renderer
+
+        picker.Pick(mx, my, 0, renderer)
+
+        coord = self.get_coordinate_cursor(picker)
+        position = slice_data.actor.GetInput().FindPoint(coord)
+
+        if position != -1:
+            coord = slice_data.actor.GetInput().GetPoint(position)
+
+        if position < 0:
+            px, py = viewer.calculate_matrix_position(coord)
+        else:
+            spacing = self.slice_.spacing
+            image = self.slice_.buffer_slices[self.orientation].image
+            if self.orientation == 'AXIAL':
+                sx = spacing[0]
+                sy = spacing[1]
+                py = position / image.shape[1]
+                px = position % image.shape[1]
+            elif self.orientation == 'CORONAL':
+                sx = spacing[0]
+                sy = spacing[2]
+                py = position / image.shape[1]
+                px = position % image.shape[1]
+            elif self.orientation == 'SAGITAL':
+                sx = spacing[2]
+                sy = spacing[1]
+                py = position / image.shape[1]
+                px = position % image.shape[1]
+
+        return px, py
+
+    def get_coord_inside_volume(self, mx, my, picker=None):
+        if picker is None:
+            picker = self.pick
+
+        slice_data = self.slice_data
+        renderer = slice_data.renderer
+
+        picker.Pick(mx, my, 0, renderer)
+
+        coord = self.get_coordinate_cursor(picker)
+        position = slice_data.actor.GetInput().FindPoint(coord)
+
+        if position != -1:
+            coord = slice_data.actor.GetInput().GetPoint(position)
+
+        return coord
 
     def __bind_events(self):
         Publisher.subscribe(self.LoadImagedata,

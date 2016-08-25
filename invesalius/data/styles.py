@@ -1115,27 +1115,14 @@ class WaterShedInteractorStyle(DefaultInteractorStyle):
         render = iren.FindPokedRenderer(mouse_x, mouse_y)
         slice_data = viewer.get_slice_data(render)
 
-        # TODO: Improve!
-        #for i in self.slice_data_list:
-            #i.cursor.Show(0)
+        coord = self.viewer.get_coord_inside_volume(mouse_x, mouse_y, picker=None)
+        position = self.viewer.get_slice_pixel_coord_by_screen_pos(mouse_x, mouse_y, self.picker)
+
         slice_data.cursor.Show()
-
-        self.picker.Pick(mouse_x, mouse_y, 0, render)
-
-        coord = self.get_coordinate_cursor()
-        position = slice_data.actor.GetInput().FindPoint(coord)
-
-        if position != -1:
-            coord = slice_data.actor.GetInput().GetPoint(position)
-
         slice_data.cursor.SetPosition(coord)
 
         cursor = slice_data.cursor
-        position = slice_data.actor.GetInput().FindPoint(coord)
         radius = cursor.radius
-
-        if position < 0:
-            position = viewer.calculate_matrix_position(coord)
 
         operation = self.config.operation
 
@@ -1175,31 +1162,12 @@ class WaterShedInteractorStyle(DefaultInteractorStyle):
         render = iren.FindPokedRenderer(mouse_x, mouse_y)
         slice_data = viewer.get_slice_data(render)
 
-        # TODO: Improve!
-        #for i in self.slice_data_list:
-            #i.cursor.Show(0)
-
-        self.picker.Pick(mouse_x, mouse_y, 0, render)
-
-        #if (self.pick.GetViewProp()):
-            #self.interactor.SetCursor(wx.StockCursor(wx.CURSOR_BLANK))
-        #else:
-            #self.interactor.SetCursor(wx.StockCursor(wx.CURSOR_DEFAULT))
-
-        coord = self.get_coordinate_cursor()
-        position = viewer.slice_data.actor.GetInput().FindPoint(coord)
-
-        # when position == -1 the cursos is not over the image, so is not
-        # necessary to set the cursor position to world coordinate center of
-        # pixel from slice image.
-        if position != -1:
-            coord = slice_data.actor.GetInput().GetPoint(position)
+        coord = self.viewer.get_coord_inside_volume(mouse_x, mouse_y, picker=None)
         slice_data.cursor.SetPosition(coord)
-        #self.__update_cursor_position(slice_data, coord)
 
         if (self.left_pressed):
             cursor = slice_data.cursor
-            position = slice_data.actor.GetInput().FindPoint(coord)
+            position = self.viewer.get_slice_pixel_coord_by_screen_pos(mouse_x, mouse_y, self.picker)
             radius = cursor.radius
 
             if position < 0:
@@ -1306,18 +1274,6 @@ class WaterShedInteractorStyle(DefaultInteractorStyle):
 
         Publisher.sendMessage('Reload actual slice')
 
-    def get_coordinate_cursor(self):
-        # Find position
-        x, y, z = self.picker.GetPickPosition()
-        bounds = self.viewer.slice_data.actor.GetBounds()
-        if bounds[0] == bounds[1]:
-            x = bounds[0]
-        elif bounds[2] == bounds[3]:
-            y = bounds[2]
-        elif bounds[4] == bounds[5]:
-            z = bounds[4]
-        return x, y, z
-
     def edit_mask_pixel(self, operation, n, index, position, radius, orientation):
         if orientation == 'AXIAL':
             mask = self.matrix[n, :, :]
@@ -1328,7 +1284,7 @@ class WaterShedInteractorStyle(DefaultInteractorStyle):
 
         spacing = self.viewer.slice_.spacing
         if hasattr(position, '__iter__'):
-            py, px = position
+            px, py = position
             if orientation == 'AXIAL':
                 sx = spacing[0]
                 sy = spacing[1]
@@ -1767,7 +1723,7 @@ class FloodFillMaskInteractorStyle(DefaultInteractorStyle):
         viewer = self.viewer
         iren = viewer.interactor
         mouse_x, mouse_y = iren.GetEventPosition()
-        x, y, z = self.viewer.get_voxel_clicked(mouse_x, mouse_y, self.picker)
+        x, y, z = self.viewer.get_voxel_coord_by_screen_pos(mouse_x, mouse_y, self.picker)
 
         mask = self.viewer.slice_.current_mask.matrix[1:, 1:, 1:]
         if mask[z, y, x] < self.t0 or mask[z, y, x] > self.t1:
@@ -1900,7 +1856,7 @@ class SelectMaskPartsInteractorStyle(DefaultInteractorStyle):
 
         iren = self.viewer.interactor
         mouse_x, mouse_y = iren.GetEventPosition()
-        x, y, z = self.viewer.get_voxel_clicked(mouse_x, mouse_y, self.picker)
+        x, y, z = self.viewer.get_voxel_coord_by_screen_pos(mouse_x, mouse_y, self.picker)
 
         mask = self.viewer.slice_.current_mask.matrix[1:, 1:, 1:]
 
