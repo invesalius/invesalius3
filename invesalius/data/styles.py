@@ -1996,8 +1996,6 @@ class SelectMaskPartsInteractorStyle(DefaultInteractorStyle):
         bstruct = np.array(generate_binary_structure(3, CON3D[self.config.con_3d]), dtype='uint8')
         self.viewer.slice_.do_threshold_to_all_slices()
 
-        print bstruct
-
         if self.config.mask is None:
             self._create_new_mask()
 

@@ -1968,19 +1968,43 @@ class SelectPartsOptionsDialog(wx.Dialog):
         else:
             self.conect3D_6.SetValue(1)
 
-        sizer = wx.GridBagSizer(11, 6)
-        sizer.AddStretchSpacer((0, 0))
+        sizer_t = wx.BoxSizer(wx.HORIZONTAL)
+        sizer_t.AddSpacer(7)
+        sizer_t.Add(wx.StaticText(self, -1, _(u"Target mask name")), 1, wx.ALIGN_CENTRE_VERTICAL)
+        sizer_t.AddSpacer(7)
+        sizer_t.Add(self.target_name, 1, wx.EXPAND)
+        sizer_t.AddSpacer(7)
 
-        sizer.Add(wx.StaticText(self, -1, _(u"Target mask name")), (1, 0), (1, 2), flag=wx.LEFT, border=7)
-        sizer.Add(self.target_name, (1, 3),  (1, 3), flag=wx.RIGHT, border=7)
+        sizer_c = wx.BoxSizer(wx.HORIZONTAL)
+        sizer_c.AddSpacer(7)
+        sizer_c.Add(self.conect3D_6)
+        sizer_c.AddSpacer(7)
+        sizer_c.Add(self.conect3D_18)
+        sizer_c.AddSpacer(7)
+        sizer_c.Add(self.conect3D_26)
 
-        sizer.AddStretchSpacer((2, 0))
+        sizer = wx.BoxSizer(wx.VERTICAL)
+        sizer.AddSpacer(7)
+        sizer.Add(sizer_t, 1, wx.EXPAND)
+        sizer.AddSpacer(7)
+        sizer.Add(wx.StaticText(self, -1, _(u"3D Connectivity")), 0, wx.LEFT, 7)
+        sizer.AddSpacer(5)
+        sizer.Add(sizer_c)
+        sizer.AddSpacer(7)
 
-        sizer.Add(wx.StaticText(self, -1, _(u"3D Connectivity")), (3, 0), (1, 6), flag=wx.LEFT, border=9)
-        sizer.Add(self.conect3D_6, (4, 0), flag=wx.LEFT, border=9)
-        sizer.Add(self.conect3D_18, (4, 1), flag=wx.LEFT, border=9)
-        sizer.Add(self.conect3D_26, (4, 2), flag=wx.LEFT, border=9)
-        sizer.AddStretchSpacer((5, 0))
+        #  sizer = wx.GridBagSizer(11, 6)
+        #  sizer.AddStretchSpacer((0, 0))
+
+        #  sizer.Add(wx.StaticText(self, -1, _(u"Target mask name")), (1, 0), (1, 6), flag=wx.LEFT|wx.ALIGN_BOTTOM|wx.EXPAND, border=7)
+        #  sizer.Add(self.target_name, (2, 0), (1, 6), flag=wx.LEFT|wx.EXPAND|wx.RIGHT|wx.ALIGN_TOP, border=9)
+
+        #  #  sizer.AddStretchSpacer((3, 0))
+
+        #  sizer.Add(wx.StaticText(self, -1, _(u"3D Connectivity")), (3, 0), (1, 6), flag=wx.LEFT, border=7)
+        #  sizer.Add(self.conect3D_6, (4, 0), flag=wx.LEFT, border=9)
+        #  sizer.Add(self.conect3D_18, (4, 1), flag=wx.LEFT, border=9)
+        #  sizer.Add(self.conect3D_26, (4, 2), flag=wx.LEFT, border=9)
+        #  sizer.AddStretchSpacer((5, 0))
 
         self.SetSizer(sizer)
         sizer.Fit(self)
