@@ -467,7 +467,6 @@ class Frame(wx.Frame):
             self.OnCropMask()
 
     def OnInterpolatedSlices(self, status):
-
         Publisher.sendMessage('Set interpolated slices', status)
 
 
@@ -758,6 +757,7 @@ class MenuBar(wx.MenuBar):
         self.select_mask_part_menu.Enable(False)
     
         mask_menu.AppendSeparator()
+        
         self.crop_mask_menu = mask_menu.Append(const.ID_CROP_MASK, _("Crop"))
         self.crop_mask_menu.Enable(False)
 
