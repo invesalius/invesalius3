@@ -434,7 +434,7 @@ class Slice(object):
         thresh_min, thresh_max = self.current_mask.edition_threshold_range
 
         if hasattr(position, '__iter__'):
-            py, px = position
+            px, py = position
             if orientation == 'AXIAL':
                 sx = self.spacing[0]
                 sy = self.spacing[1]

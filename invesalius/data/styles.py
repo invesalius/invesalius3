@@ -76,6 +76,7 @@ def get_LUT_value(data, window, level):
     data.shape = shape
     return data
 
+
 class BaseImageInteractorStyle(vtk.vtkInteractorStyleImage):
     def __init__(self, viewer):
         self.right_pressed = False
@@ -745,21 +746,13 @@ class EditorInteractorStyle(DefaultInteractorStyle):
             #i.cursor.Show(0)
         slice_data.cursor.Show()
 
-        self.picker.Pick(mouse_x, mouse_y, 0, render)
+        wx, wy, wz = viewer.get_coordinate_cursor(mouse_x, mouse_y, self.picker)
+        position = viewer.get_slice_pixel_coord_by_world_pos(wx, wy, wz)
 
-        coord = self.get_coordinate_cursor()
-        position = slice_data.actor.GetInput().FindPoint(coord)
-
-        if position != -1:
-            coord = slice_data.actor.GetInput().GetPoint(position)
-
-        slice_data.cursor.SetPosition(coord)
         cursor = slice_data.cursor
         radius = cursor.radius
 
-        if position < 0:
-            position = viewer.calculate_matrix_position(coord)
-
+        slice_data.cursor.SetPosition((wx, wy, wz))
         viewer.slice_.edit_mask_pixel(operation, cursor.GetPixels(),
                                     position, radius, viewer.orientation)
         #viewer._flush_buffer = True
@@ -796,39 +789,19 @@ class EditorInteractorStyle(DefaultInteractorStyle):
         elif operation == const.BRUSH_DRAW and iren.GetControlKey():
             operation = const.BRUSH_ERASE
 
-        # TODO: Improve!
-        #for i in self.slice_data_list:
-            #i.cursor.Show(0)
-
-        self.picker.Pick(mouse_x, mouse_y, 0, render)
-
-        #if (self.pick.GetViewProp()):
-            #self.interactor.SetCursor(wx.StockCursor(wx.CURSOR_BLANK))
-        #else:
-            #self.interactor.SetCursor(wx.StockCursor(wx.CURSOR_DEFAULT))
-
-        coord = self.get_coordinate_cursor()
-        position = viewer.slice_data.actor.GetInput().FindPoint(coord)
-
-        # when position == -1 the cursos is not over the image, so is not
-        # necessary to set the cursor position to world coordinate center of
-        # pixel from slice image.
-        if position != -1:
-            coord = slice_data.actor.GetInput().GetPoint(position)
-        slice_data.cursor.SetPosition(coord)
-        #self.__update_cursor_position(slice_data, coord)
+        wx, wy, wz = viewer.get_coordinate_cursor(mouse_x, mouse_y, self.picker)
+        slice_data.cursor.SetPosition((wx, wy, wz))
 
         if (self.left_pressed):
             cursor = slice_data.cursor
-            position = slice_data.actor.GetInput().FindPoint(coord)
             radius = cursor.radius
 
-            if position < 0:
-                position = viewer.calculate_matrix_position(coord)
+            position = viewer.get_slice_pixel_coord_by_world_pos(wx, wy, wz)
 
+            slice_data.cursor.SetPosition((wx, wy, wz))
             viewer.slice_.edit_mask_pixel(operation, cursor.GetPixels(),
-                                        position, radius, self.orientation)
-            # TODO: To create a new function to reload images to viewer.
+                                          position, radius, viewer.orientation)
+
             viewer.OnScrollBar(update3D=False)
 
         else:
@@ -877,18 +850,6 @@ class EditorInteractorStyle(DefaultInteractorStyle):
                 self.viewer.interactor.Render()
         else:
             self.OnScrollBackward(obj, evt)
-
-    def get_coordinate_cursor(self):
-        # Find position
-        x, y, z = self.picker.GetPickPosition()
-        bounds = self.viewer.slice_data.actor.GetBounds()
-        if bounds[0] == bounds[1]:
-            x = bounds[0]
-        elif bounds[2] == bounds[3]:
-            y = bounds[2]
-        elif bounds[4] == bounds[5]:
-            z = bounds[4]
-        return x, y, z
 
 
 class WatershedProgressWindow(object):
