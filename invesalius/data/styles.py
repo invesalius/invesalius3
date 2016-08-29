@@ -1162,12 +1162,13 @@ class WaterShedInteractorStyle(DefaultInteractorStyle):
         render = iren.FindPokedRenderer(mouse_x, mouse_y)
         slice_data = viewer.get_slice_data(render)
 
-        coord = self.viewer.get_coord_inside_volume(mouse_x, mouse_y, picker=None)
+        coord = self.viewer.get_coord_inside_volume(mouse_x, mouse_y, self.picker)
         slice_data.cursor.SetPosition(coord)
 
         if (self.left_pressed):
             cursor = slice_data.cursor
-            position = self.viewer.get_slice_pixel_coord_by_screen_pos(mouse_x, mouse_y, self.picker)
+            position = self.viewer.get_slice_pixel_coord_by_world_pos(*coord)
+            print ">>>", position
             radius = cursor.radius
 
             if position < 0:
