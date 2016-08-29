@@ -975,11 +975,15 @@ class Viewer(wx.Panel):
             my = round((z - zi)/self.slice_.spacing[2], 0)
         return mx, my
 
-    def get_coordinate_cursor(self, picker=None):
+    def get_coordinate_cursor(self, mx, my, picker=None):
         # Find position
         if picker is None:
             picker = self.pick
 
+        slice_data = self.slice_data
+        renderer = slice_data.renderer
+
+        picker.Pick(mx, my, 0, renderer)
         x, y, z = picker.GetPickPosition()
         bounds = self.slice_data.actor.GetBounds()
         if bounds[0] == bounds[1]:
@@ -1030,7 +1034,7 @@ class Viewer(wx.Panel):
     def get_voxel_coord_by_screen_pos(self, mx, my, picker=None):
         """
         Given the (mx, my) screen position returns the voxel coordinate
-        of the voxel at (that mx, my) position.
+        of the volume at (that mx, my) position.
 
         Parameters:
             mx (int): x position.
@@ -1044,12 +1048,7 @@ class Viewer(wx.Panel):
         if picker is None:
             picker = self.pick
 
-        slice_data = self.slice_data
-        renderer = slice_data.renderer
-
-        picker.Pick(mx, my, 0, renderer)
-
-        wx, wy, wz = self.get_coordinate_cursor(picker)
+        wx, wy, wz = self.get_coordinate_cursor(mx, my, picker)
         x, y, z = self.get_voxel_coord_by_world_pos(wx, wy, wz)
 
         return (x, y, z)
@@ -1057,7 +1056,7 @@ class Viewer(wx.Panel):
     def get_voxel_coord_by_world_pos(self, wx, wy, wz):
         """
         Given the (x, my) screen position returns the voxel coordinate
-        of the voxel at (that mx, my) position.
+        of the volume at (that mx, my) position.
 
         Parameters:
             wx (float): x position.
@@ -1091,12 +1090,7 @@ class Viewer(wx.Panel):
         if picker is None:
             picker = self.pick
 
-        slice_data = self.slice_data
-        renderer = slice_data.renderer
-
-        picker.Pick(mx, my, 0, renderer)
-
-        wx, wy, wz = self.get_coordinate_cursor(picker)
+        wx, wy, wz = self.get_coordinate_cursor(mx, my, picker)
         return self.get_slice_pixel_coord_by_world_pos(wx, wy, wz)
 
         return px, py
@@ -1126,8 +1120,6 @@ class Viewer(wx.Panel):
 
         slice_data = self.slice_data
         renderer = slice_data.renderer
-
-        picker.Pick(mx, my, 0, renderer)
 
         coord = self.get_coordinate_cursor(picker)
         position = slice_data.actor.GetInput().FindPoint(coord)

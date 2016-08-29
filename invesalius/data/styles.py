@@ -213,22 +213,14 @@ class CrossInteractorStyle(DefaultInteractorStyle):
 
     def ChangeCrossPosition(self, iren):
         mouse_x, mouse_y = iren.GetEventPosition()
-        ren = iren.GetRenderWindow().GetRenderers().GetFirstRenderer()
-        self.picker.Pick(mouse_x, mouse_y, 0, ren)
-
-        # Get in what slice data the click occurred
-        # pick to get click position in the 3d world
-        coord_cross = self.viewer.get_coordinate_cursor(self.picker)
-        position = self.slice_actor.GetInput().FindPoint(coord_cross)
-        # Forcing focal point to be setted in the center of the pixel.
-        coord_cross = self.slice_actor.GetInput().GetPoint(position)
-
-        coord = self.viewer.calcultate_scroll_position(position)
-        Publisher.sendMessage('Update cross position', coord_cross)
+        wx, wy, wz = self.viewer.get_coordinate_cursor(mouse_x, mouse_y, self.picker)
+        px, py = self.viewer.get_slice_pixel_coord_by_world_pos(wx, wy, wz)
+        coord = self.viewer.calcultate_scroll_position(px, py)
+        Publisher.sendMessage('Update cross position', (wx, wy, wz))
         self.ScrollSlice(coord)
         Publisher.sendMessage('Set ball reference position based on bound',
-                                   coord_cross)
-        Publisher.sendMessage('Set camera in volume', coord_cross)
+                                   (wx, wy, wz))
+        Publisher.sendMessage('Set camera in volume', (wx, wy, wz))
         Publisher.sendMessage('Render volume viewer')
 
         iren.Render()
@@ -1115,7 +1107,7 @@ class WaterShedInteractorStyle(DefaultInteractorStyle):
         render = iren.FindPokedRenderer(mouse_x, mouse_y)
         slice_data = viewer.get_slice_data(render)
 
-        coord = self.viewer.get_coord_inside_volume(mouse_x, mouse_y, picker=None)
+        coord = self.viewer.get_coordinate_cursor(mouse_x, mouse_y, picker=None)
         position = self.viewer.get_slice_pixel_coord_by_screen_pos(mouse_x, mouse_y, self.picker)
 
         slice_data.cursor.Show()
@@ -1162,7 +1154,7 @@ class WaterShedInteractorStyle(DefaultInteractorStyle):
         render = iren.FindPokedRenderer(mouse_x, mouse_y)
         slice_data = viewer.get_slice_data(render)
 
-        coord = self.viewer.get_coord_inside_volume(mouse_x, mouse_y, self.picker)
+        coord = self.viewer.get_coordinate_cursor(mouse_x, mouse_y, self.picker)
         slice_data.cursor.SetPosition(coord)
 
         if (self.left_pressed):
