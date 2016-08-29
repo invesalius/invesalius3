@@ -1823,22 +1823,84 @@ class DrawCrop2DRetangle():
     def MakeBox(self, canvas):
 
         if canvas.orientation == "AXIAL":
-            xi, xf, yi, yf, zi, zf = self.viewer.slice_data.actor.GetBounds()               
-            cxi, cyi = self.Coord3DtoDisplay(xi, yi, zi, canvas)
+            xi, xf, yi, yf, zi, zf = self.viewer.slice_data.actor.GetBounds()
+            print "\n\n"
+            print ">>", xi, xf, yi, yf, zi, zf
+            print ">>",self.viewer.slice_data.number
+            print ">>", self.viewer.slice_.matrix.shape
+            print ">>", self.viewer.slice_.spacing
+            print zi, zf
 
-            cxf, cyf = self.Coord3DtoDisplay(xf, yf, zf ,canvas)
+            #upper line
+            s_cxi, s_cyi = self.Coord3DtoDisplay((xf - xi)/2, (yf - yi)/2, zi, canvas)
+            s_cxf, s_cyf = self.Coord3DtoDisplay(xf, (yf - yi)/2, zf ,canvas)
+            canvas.draw_line((s_cxi, s_cyi),(s_cxf, s_cyf))
 
-            #  canvas.draw_circle((cx, cy), 2.5)
-            #points.append((cx, cy))
+            #right line 
+            s_cxi, s_cyi = self.Coord3DtoDisplay((xf - xi)/2, (yf - yi)/2, zi, canvas)
+            s_cxf, s_cyf = self.Coord3DtoDisplay((xf - xi)/2, yi, zf ,canvas)
+            canvas.draw_line((s_cxi, s_cyi),(s_cxf, s_cyf))
 
-            canvas.draw_line((cxi,cyi),(cxf, cyf))
+            #left line 
+            s_cxi, s_cyi = self.Coord3DtoDisplay(xf, (yf - yi)/2, zi, canvas)
+            s_cxf, s_cyf = self.Coord3DtoDisplay(xf, yi, zf ,canvas)
+            canvas.draw_line((s_cxi, s_cyi),(s_cxf, s_cyf))
+
+            #lower line
+            s_cxi, s_cyi = self.Coord3DtoDisplay((xf - xi)/2, yi, zi, canvas)
+            s_cxf, s_cyf = self.Coord3DtoDisplay(xf, yi, zi,canvas)
+            canvas.draw_line((s_cxi, s_cyi),(s_cxf, s_cyf))
 
 
     def SetViewer(self, viewer):
 
         self.viewer = viewer
 
-        
+       
+class Box():
+
+    def __init__(self):
+        self.xi = None
+        self.xf = None
+
+        self.yi = None
+        self.yf = None
+
+        self.zi = None
+        self.zf = None
+
+    def SetX(i, f):
+        pass
+    
+    def SetY(i, f):
+        pass
+
+    def SetZ(i, f):
+        pass
+
+    def SetSpacing(x, y, z):
+        pass
+
+    def Make(self):
+
+        #SAGITAL
+        xy = [[self.xi, self.yi, self.zi],\
+              [self.xi, self.yi, self.zf],\
+
+              [self.xi, self.yi, self.zf],\
+              [self.xi, self.yf, self.zf],
+
+              [self.xi, self.yf, zi],\
+              [self.xi, self.yf, zf],]
+
+              [self.xi, self.yi, zi],\
+              [self.xi, self.yf, zi],\
+
+
+        #CORONAL
+        y = [[self.xi, self.yi, self.zi],\
+              self.xf, self.yi, self.zi],
+
 
 
 class SelectPartConfig(object):
