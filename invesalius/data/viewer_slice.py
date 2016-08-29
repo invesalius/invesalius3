@@ -940,25 +940,23 @@ class Viewer(wx.Panel):
         # WARN: Return the only slice_data used in this slice_viewer.
         return self.slice_data
 
-    def calcultate_scroll_position(self, position):
-        # Based in the given coord (x, y, z), returns a list with the scroll positions for each
+    def calcultate_scroll_position(self, x, y):
+        # Based in the given coord (x, y), returns a list with the scroll positions for each
         # orientation, being the first position the sagital, second the coronal
         # and the last, axial.
-        image_width = self.slice_.buffer_slices[self.orientation].image.shape[1]
-
         if self.orientation == 'AXIAL':
             axial = self.slice_data.number
-            coronal = position / image_width
-            sagital = position % image_width
+            coronal = y
+            sagital = x
 
         elif self.orientation == 'CORONAL':
-            axial = position / image_width
+            axial = y
             coronal = self.slice_data.number
-            sagital = position % image_width
+            sagital = x
 
         elif self.orientation == 'SAGITAL':
-            axial = position / image_width
-            coronal = position % image_width
+            axial = y
+            coronal = x
             sagital = self.slice_data.number
 
         return sagital, coronal, axial
@@ -975,13 +973,28 @@ class Viewer(wx.Panel):
         elif self.orientation == 'SAGITAL':
             mx = round((y - yi)/self.slice_.spacing[1], 0)
             my = round((z - zi)/self.slice_.spacing[2], 0)
-        return my, mx
+        return mx, my
 
-    def get_coordinate_cursor(self, picker=None):
-        # Find position
+    def get_coordinate_cursor(self, mx, my, picker=None):
+        """
+        Given the mx, my screen position returns the x, y, z position in world
+        coordinates.
+
+        Parameters
+            mx (int): x position.
+            my (int): y position
+            picker: the picker used to get calculate the voxel coordinate.
+
+        Returns:
+            world coordinate (x, y, z)
+        """
         if picker is None:
             picker = self.pick
 
+        slice_data = self.slice_data
+        renderer = slice_data.renderer
+
+        picker.Pick(mx, my, 0, renderer)
         x, y, z = picker.GetPickPosition()
         bounds = self.slice_data.actor.GetBounds()
         if bounds[0] == bounds[1]:
@@ -1029,10 +1042,10 @@ class Viewer(wx.Panel):
 
         return x, y, z
 
-    def get_voxel_clicked(self, mx, my, picker=None):
+    def get_voxel_coord_by_screen_pos(self, mx, my, picker=None):
         """
-        Given the (mx, my) mouse clicked position returns the voxel coordinate
-        of the voxel at (that mx, my) position.
+        Given the (mx, my) screen position returns the voxel coordinate
+        of the volume at (that mx, my) position.
 
         Parameters:
             mx (int): x position.
@@ -1046,10 +1059,78 @@ class Viewer(wx.Panel):
         if picker is None:
             picker = self.pick
 
+        wx, wy, wz = self.get_coordinate_cursor(mx, my, picker)
+        x, y, z = self.get_voxel_coord_by_world_pos(wx, wy, wz)
+
+        return (x, y, z)
+
+    def get_voxel_coord_by_world_pos(self, wx, wy, wz):
+        """
+        Given the (x, my) screen position returns the voxel coordinate
+        of the volume at (that mx, my) position.
+
+        Parameters:
+            wx (float): x position.
+            wy (float): y position
+            wz (float): z position
+
+        Returns:
+            voxel_coordinate (x, y, z): voxel coordinate inside the matrix. Can
+                be used to access the voxel value inside the matrix.
+        """
+        px, py = self.get_slice_pixel_coord_by_world_pos(wx, wy, wz)
+        x, y, z = self.calcultate_scroll_position(px, py)
+
+        return (x, y, z)
+
+
+    def get_slice_pixel_coord_by_screen_pos(self, mx, my, picker=None):
+        """
+        Given the (mx, my) screen position returns the pixel coordinate
+        of the slice at (that mx, my) position.
+
+        Parameters:
+            mx (int): x position.
+            my (int): y position
+            picker: the picker used to get calculate the pixel coordinate.
+
+        Returns:
+            voxel_coordinate (x, y): voxel coordinate inside the matrix. Can
+                be used to access the voxel value inside the matrix.
+        """
+        if picker is None:
+            picker = self.pick
+
+        wx, wy, wz = self.get_coordinate_cursor(mx, my, picker)
+        return self.get_slice_pixel_coord_by_world_pos(wx, wy, wz)
+
+        return px, py
+
+    def get_slice_pixel_coord_by_world_pos(self, wx, wy, wz):
+        """
+        Given the (wx, wy, wz) world position returns the pixel coordinate
+        of the slice at (that mx, my) position.
+
+        Parameters:
+            mx (int): x position.
+            my (int): y position
+            picker: the picker used to get calculate the pixel coordinate.
+
+        Returns:
+            voxel_coordinate (x, y): voxel coordinate inside the matrix. Can
+                be used to access the voxel value inside the matrix.
+        """
+        coord = wx, wy, wz
+        px, py = self.calculate_matrix_position(coord)
+
+        return px, py
+
+    def get_coord_inside_volume(self, mx, my, picker=None):
+        if picker is None:
+            picker = self.pick
+
         slice_data = self.slice_data
         renderer = slice_data.renderer
-
-        picker.Pick(mx, my, 0, renderer)
 
         coord = self.get_coordinate_cursor(picker)
         position = slice_data.actor.GetInput().FindPoint(coord)
@@ -1057,12 +1138,7 @@ class Viewer(wx.Panel):
         if position != -1:
             coord = slice_data.actor.GetInput().GetPoint(position)
 
-        if position < 0:
-            position = viewer.calculate_matrix_position(coord)
-
-        x, y, z = self.calcultate_scroll_position(position)
-
-        return (x, y, z)
+        return coord
 
     def __bind_events(self):
         Publisher.subscribe(self.LoadImagedata,
