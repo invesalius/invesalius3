@@ -976,7 +976,18 @@ class Viewer(wx.Panel):
         return mx, my
 
     def get_coordinate_cursor(self, mx, my, picker=None):
-        # Find position
+        """
+        Given the mx, my screen position returns the x, y, z position in world
+        coordinates.
+
+        Parameters
+            mx (int): x position.
+            my (int): y position
+            picker: the picker used to get calculate the voxel coordinate.
+
+        Returns:
+            world coordinate (x, y, z)
+        """
         if picker is None:
             picker = self.pick
 
