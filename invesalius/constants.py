@@ -1,4 +1,4 @@
-                    #--------------------------------------------------------------------------
+#--------------------------------------------------------------------------
 # Software:     InVesalius - Software de Reconstrucao 3D de Imagens Medicas
 # Copyright:    (C) 2001  Centro de Pesquisas Renato Archer
 # Homepage:     http://www.softwarepublico.gov.br

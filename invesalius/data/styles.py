@@ -1765,7 +1765,7 @@ class CropMaskInteractorStyle(DefaultInteractorStyle):
 
         self.viewer = viewer
         self.orientation = self.viewer.orientation
-
+        print self.orientation, "<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
         self.picker = vtk.vtkWorldPointPicker()
         self.slice_actor = viewer.slice_data.actor
         self.slice_data = viewer.slice_data
@@ -1869,6 +1869,10 @@ class Box():
         self.zi = None
         self.zf = None
 
+        self.sagital = None
+        self.coronal = None
+        self.axial = None
+
     def SetX(i, f):
         pass
     
@@ -1879,28 +1883,51 @@ class Box():
         pass
 
     def SetSpacing(x, y, z):
-        pass
+        pass 
 
-    def Make(self):
+    def Make(self, orientation, slice_number):
+        
+        if orientation == "SAGITAL":
+            #SAGITAL (xy)
+            self.sagital = [[self.xi, self.yi, self.zi],\
+                  [self.xi, self.yi, self.zf],\
 
-        #SAGITAL
-        xy = [[self.xi, self.yi, self.zi],\
-              [self.xi, self.yi, self.zf],\
+                  [self.xi, self.yi, self.zf],\
+                  [self.xi, self.yf, self.zf],
 
-              [self.xi, self.yi, self.zf],\
-              [self.xi, self.yf, self.zf],
+                  [self.xi, self.yf, zf],
+                  [self.xi, self.yf, zi],\
 
-              [self.xi, self.yf, zi],\
-              [self.xi, self.yf, zf],]
+                  [self.xi, self.yf, zi],\
+                  [self.xi, self.yi, zi]]
 
-              [self.xi, self.yi, zi],\
-              [self.xi, self.yf, zi],\
+        elif orientation == "CORONAL":
+            #CORONAL (y)
+            self.coronal = [[self.xi, self.yi, self.zi],\
+                  [self.xf, self.yi, self.zi],\
+                  
+                  [self.xf, self.yi, self.zi],\
+                  [self.xf, self.yf, self.zi],\
+                
+                  [self.xf, self.yf, self.zi],\
+                  [self.xi, self.yf, self.zi],\
 
+                  [self.xi, self.yf, self.zi],\
+                  [self.xi, self.yi, self.zi]]
 
-        #CORONAL
-        y = [[self.xi, self.yi, self.zi],\
-              self.xf, self.yi, self.zi],
+        elif orientation == "AXIAL":
+            # AXIAL (z)
+            self.axial = [[self.xi, self.yf, self.zi],\
+                 [self.xf, self.yf, self.zi],\
 
+                 [self.xf, self.yf, self.zi],\
+                 [self.xf, self.yf, self.zf],\
+
+                 [self.xf, self.yf, self.zf],\
+                 [self.xi, self.yf, self.zf],\
+
+                 [self.xi, self.yf, self.zf],\
+                 [self.xi, self.yf, self.zi]]
 
 
 class SelectPartConfig(object):
