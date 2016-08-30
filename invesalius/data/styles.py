@@ -1898,7 +1898,9 @@ class FloodFillSegmentInteractorStyle(DefaultInteractorStyle):
         mask = self.viewer.slice_.current_mask.matrix[1:, 1:, 1:]
         image = self.viewer.slice_.matrix
 
-        if mask[z, y, x] < self.config.t0 or mask[z, y, x] > self.config.t1:
+        print image[z, y, x]
+
+        if image[z, y, x] < self.config.t0 or image[z, y, x] > self.config.t1:
             return
 
         if self.config.target == "3D":

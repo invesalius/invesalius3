@@ -493,7 +493,6 @@ class GradientCtrl(wx.Panel):
         return self.minimun
 
     def _GenerateEvent(self, event):
-        print "GEN"
         if event == myEVT_THRESHOLD_CHANGING:
             self.changed = True
         elif event == myEVT_THRESHOLD_CHANGED :
