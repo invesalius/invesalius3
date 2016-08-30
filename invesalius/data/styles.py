@@ -1822,34 +1822,67 @@ class DrawCrop2DRetangle():
 
     def MakeBox(self, canvas):
 
+        slice_size = self.viewer.slice_.matrix.shape
+        zf, yf, xf = slice_size
+        
+        slice_spacing = self.viewer.slice_.spacing
+        xs, ys, zs = slice_spacing
+
+        b = Box()
+        
         if canvas.orientation == "AXIAL":
-            xi, xf, yi, yf, zi, zf = self.viewer.slice_data.actor.GetBounds()
-            print "\n\n"
-            print ">>", xi, xf, yi, yf, zi, zf
-            print ">>",self.viewer.slice_data.number
-            print ">>", self.viewer.slice_.matrix.shape
-            print ">>", self.viewer.slice_.spacing
-            print zi, zf
+            b.SetX(0, xf)
+            b.SetY(0, yf)
+            b.SetZ(0, zf)
+            b.SetSpacing(xs, ys, zs)
+            b.MakeMatrix("AXIAL")
+            
+            print "________________________________________________________"
+            i = 0
+            for points in b.axial:
+                pi_x, pi_y, pi_z = points[0]
+                pf_x, pf_y, pf_z = points[1]
+
+                s_cxi, s_cyi = self.Coord3DtoDisplay(pi_x, pi_y, pi_z, canvas)
+                s_cxf, s_cyf = self.Coord3DtoDisplay(pf_x, pf_y, pf_z ,canvas)
+                canvas.draw_line((s_cxi, s_cyi),(s_cxf, s_cyf))
+ 
+                print i
+                print points
+                print s_cxi, s_cyi
+                print s_cxf, s_cyf
+                
+                i += 1
+
+
+                print "\n"
+            #xi, xf, yi, yf, zi, zf = self.viewer.slice_data.actor.GetBounds()
+            #print "\n\n"
+            #print ">>", xi, xf, yi, yf, zi, zf
+            #print ">>",self.viewer.slice_data.number
+            #print ">>", self.viewer.slice_.matrix.shape
+            #print ">>", self.viewer.slice_.spacing
+            #print zi, zf
 
             #upper line
-            s_cxi, s_cyi = self.Coord3DtoDisplay((xf - xi)/2, (yf - yi)/2, zi, canvas)
-            s_cxf, s_cyf = self.Coord3DtoDisplay(xf, (yf - yi)/2, zf ,canvas)
-            canvas.draw_line((s_cxi, s_cyi),(s_cxf, s_cyf))
+            #s_cxi, s_cyi = self.Coord3DtoDisplay((xf - xi)/2, (yf - yi)/2, zi, canvas)
+            #s_cxf, s_cyf = self.Coord3DtoDisplay(xf, (yf - yi)/2, zf ,canvas)
+            #canvas.draw_line((s_cxi, s_cyi),(s_cxf, s_cyf))
 
             #right line 
-            s_cxi, s_cyi = self.Coord3DtoDisplay((xf - xi)/2, (yf - yi)/2, zi, canvas)
-            s_cxf, s_cyf = self.Coord3DtoDisplay((xf - xi)/2, yi, zf ,canvas)
-            canvas.draw_line((s_cxi, s_cyi),(s_cxf, s_cyf))
+            #s_cxi, s_cyi = self.Coord3DtoDisplay((xf - xi)/2, (yf - yi)/2, zi, canvas)
+            #s_cxf, s_cyf = self.Coord3DtoDisplay((xf - xi)/2, yi, zf ,canvas)
+            #canvas.draw_line((s_cxi, s_cyi),(s_cxf, s_cyf))
 
             #left line 
-            s_cxi, s_cyi = self.Coord3DtoDisplay(xf, (yf - yi)/2, zi, canvas)
-            s_cxf, s_cyf = self.Coord3DtoDisplay(xf, yi, zf ,canvas)
-            canvas.draw_line((s_cxi, s_cyi),(s_cxf, s_cyf))
+            #s_cxi, s_cyi = self.Coord3DtoDisplay(xf, (yf - yi)/2, zi, canvas)
+            #s_cxf, s_cyf = self.Coord3DtoDisplay(xf, yi, zf ,canvas)
+            #canvas.draw_line((s_cxi, s_cyi),(s_cxf, s_cyf))
 
             #lower line
-            s_cxi, s_cyi = self.Coord3DtoDisplay((xf - xi)/2, yi, zi, canvas)
-            s_cxf, s_cyf = self.Coord3DtoDisplay(xf, yi, zi,canvas)
-            canvas.draw_line((s_cxi, s_cyi),(s_cxf, s_cyf))
+            #s_cxi, s_cyi = self.Coord3DtoDisplay((xf - xi)/2, yi, zi, canvas)
+            #s_cxf, s_cyf = self.Coord3DtoDisplay(xf, yi, zi,canvas)
+            #canvas.draw_line((s_cxi, s_cyi),(s_cxf, s_cyf))
 
 
     def SetViewer(self, viewer):
@@ -1873,61 +1906,70 @@ class Box():
         self.coronal = None
         self.axial = None
 
-    def SetX(i, f):
-        pass
+        self.xs = None
+        self.ys = None
+        self.zs = None
+
+    def SetX(self, i, f):
+        self.xi = i
+        self.xf = f
     
-    def SetY(i, f):
-        pass
+    def SetY(self, i, f):
+        self.yi = i
+        self.yf = f
 
-    def SetZ(i, f):
-        pass
+    def SetZ(self, i, f):
+        self.zi = i
+        self.zf = f
 
-    def SetSpacing(x, y, z):
-        pass 
+    def SetSpacing(self, x, y, z):
+        self.xs = x 
+        self.ys = y
+        self.zs = z
 
-    def Make(self, orientation, slice_number):
+        self.xi = self.xi * self.xs
+        self.xf = self.xf * self.xs
+
+        self.yi = self.yi * self.ys
+        self.yf = self.yf * self.ys
+
+        self.zi = self.zi * self.zs
+        self.zf = self.zf * self.zs
+
+    def MakeMatrix(self, orientation, slice_number=None):
         
         if orientation == "SAGITAL":
             #SAGITAL (xy)
-            self.sagital = [[self.xi, self.yi, self.zi],\
-                  [self.xi, self.yi, self.zf],\
+            self.sagital =\
+                  [[[self.xi, self.yi, self.zi], [self.xi, self.yi, self.zf]],\
 
-                  [self.xi, self.yi, self.zf],\
-                  [self.xi, self.yf, self.zf],
+                  [[self.xi, self.yi, self.zf], [self.xi, self.yf, self.zf]],\
 
-                  [self.xi, self.yf, zf],
-                  [self.xi, self.yf, zi],\
+                  [[self.xi, self.yf, self.zf], [self.xi, self.yf, self.zi]],\
 
-                  [self.xi, self.yf, zi],\
-                  [self.xi, self.yi, zi]]
+                  [[self.xi, self.yf, self.zi], [self.xi, self.yi, self.zi]]]
 
         elif orientation == "CORONAL":
             #CORONAL (y)
-            self.coronal = [[self.xi, self.yi, self.zi],\
-                  [self.xf, self.yi, self.zi],\
+            self.coronal =\
+                  [[[self.xi, self.yi, self.zi], [self.xf, self.yi, self.zi]],\
                   
-                  [self.xf, self.yi, self.zi],\
-                  [self.xf, self.yf, self.zi],\
+                  [[self.xf, self.yi, self.zi], [self.xf, self.yf, self.zi]],\
                 
-                  [self.xf, self.yf, self.zi],\
-                  [self.xi, self.yf, self.zi],\
+                  [[self.xf, self.yf, self.zi], [self.xi, self.yf, self.zi]],\
 
-                  [self.xi, self.yf, self.zi],\
-                  [self.xi, self.yi, self.zi]]
+                  [[self.xi, self.yf, self.zi], [self.xi, self.yi, self.zi]]]
 
         elif orientation == "AXIAL":
             # AXIAL (z)
-            self.axial = [[self.xi, self.yf, self.zi],\
-                 [self.xf, self.yf, self.zi],\
+            self.axial =\
+                 [[[self.xi, self.yi, self.zi], [self.xf, self.yi, self.zi]],\
 
-                 [self.xf, self.yf, self.zi],\
-                 [self.xf, self.yf, self.zf],\
+                 [[self.xi, self.yf, self.zi], [self.xf, self.yf, self.zf]],\
 
-                 [self.xf, self.yf, self.zf],\
-                 [self.xi, self.yf, self.zf],\
+                 [[self.xi, self.yi, self.zf], [self.xi, self.yf, self.zf]],\
 
-                 [self.xi, self.yf, self.zf],\
-                 [self.xi, self.yf, self.zi]]
+                 [[self.xf, self.yi, self.zf], [self.xf, self.yf, self.zi]]]
 
 
 class SelectPartConfig(object):
