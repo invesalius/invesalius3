@@ -1798,7 +1798,14 @@ class DrawCrop2DRetangle():
     
     def __init__(self):
         self.viewer = None
-    
+   
+
+    def __evts__(self):
+        self.viewer.interactor.AddObserver("MouseMoveEvent", self.OnMove)
+        print ">>>>>>>>>>>>>>>>>>>>>>>>>",dir(self.viewer)
+
+    def OnMove(self, evt, obj):
+        print "VAAAAAAAAAAAAa"
 
     def draw_to_canvas(self, gc, canvas):
         """
@@ -1904,6 +1911,7 @@ class DrawCrop2DRetangle():
     def SetViewer(self, viewer):
 
         self.viewer = viewer
+        self.__evts__()
 
        
 class Box():
