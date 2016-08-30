@@ -1823,7 +1823,7 @@ class DrawCrop2DRetangle():
     def MakeBox(self, canvas):
 
         slice_size = self.viewer.slice_.matrix.shape
-        zf, yf, xf = slice_size
+        zf, yf, xf = slice_size[0] - 1, slice_size[1] - 1, slice_size[2] - 1
         
         slice_spacing = self.viewer.slice_.spacing
         xs, ys, zs = slice_spacing
@@ -1834,11 +1834,8 @@ class DrawCrop2DRetangle():
         b.SetZ(0, zf)
         b.SetSpacing(xs, ys, zs)
         b.MakeMatrix()
-            
 
         if canvas.orientation == "AXIAL":
-            print "________________________________________________________"
-            i = 0
             for points in b.axial:
                 pi_x, pi_y, pi_z = points[0]
                 pf_x, pf_y, pf_z = points[1]
@@ -1847,15 +1844,34 @@ class DrawCrop2DRetangle():
                 s_cxf, s_cyf = self.Coord3DtoDisplay(pf_x, pf_y, pf_z ,canvas)
                 canvas.draw_line((s_cxi, s_cyi),(s_cxf, s_cyf))
  
-                print i
-                print points
-                print s_cxi, s_cyi
-                print s_cxf, s_cyf
+        elif canvas.orientation == "CORONAL":
+            for points in b.coronal:
+                pi_x, pi_y, pi_z = points[0]
+                pf_x, pf_y, pf_z = points[1]
+
+                s_cxi, s_cyi = self.Coord3DtoDisplay(pi_x, pi_y, pi_z, canvas)
+                s_cxf, s_cyf = self.Coord3DtoDisplay(pf_x, pf_y, pf_z ,canvas)
+                canvas.draw_line((s_cxi, s_cyi),(s_cxf, s_cyf))
+
+        elif canvas.orientation == "SAGITAL":
+            for points in b.sagital:
+                pi_x, pi_y, pi_z = points[0]
+                pf_x, pf_y, pf_z = points[1]
+
+                s_cxi, s_cyi = self.Coord3DtoDisplay(pi_x, pi_y, pi_z, canvas)
+                s_cxf, s_cyf = self.Coord3DtoDisplay(pf_x, pf_y, pf_z ,canvas)
+                canvas.draw_line((s_cxi, s_cyi),(s_cxf, s_cyf))
+
+
+                #print i
+                #print points
+                #print s_cxi, s_cyi
+                #print s_cxf, s_cyf
                 
-                i += 1
+                #i += 1
 
 
-                print "\n"
+                #print "\n"
             #xi, xf, yi, yf, zi, zf = self.viewer.slice_data.actor.GetBounds()
             #print "\n\n"
             #print ">>", xi, xf, yi, yf, zi, zf
@@ -1950,11 +1966,11 @@ class Box():
         self.coronal =\
               [[[self.xi, self.yi, self.zi], [self.xf, self.yi, self.zi]],\
               
-              [[self.xf, self.yi, self.zi], [self.xf, self.yf, self.zi]],\
+              [[self.xi, self.yi, self.zf], [self.xf, self.yi, self.zf]],\
             
-              [[self.xf, self.yf, self.zi], [self.xi, self.yf, self.zi]],\
+              [[self.xi, self.yi, self.zi], [self.xi, self.yi, self.zf]],\
 
-              [[self.xi, self.yf, self.zi], [self.xi, self.yi, self.zi]]]
+              [[self.xf, self.yi, self.zi], [self.xf, self.yi, self.zf]]]
 
         self.axial =\
              [[[self.xi, self.yi, self.zi], [self.xf, self.yi, self.zi]],\
