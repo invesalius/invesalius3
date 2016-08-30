@@ -1829,14 +1829,14 @@ class DrawCrop2DRetangle():
         xs, ys, zs = slice_spacing
 
         b = Box()
-        
-        if canvas.orientation == "AXIAL":
-            b.SetX(0, xf)
-            b.SetY(0, yf)
-            b.SetZ(0, zf)
-            b.SetSpacing(xs, ys, zs)
-            b.MakeMatrix("AXIAL")
+        b.SetX(0, xf)
+        b.SetY(0, yf)
+        b.SetZ(0, zf)
+        b.SetSpacing(xs, ys, zs)
+        b.MakeMatrix()
             
+
+        if canvas.orientation == "AXIAL":
             print "________________________________________________________"
             i = 0
             for points in b.axial:
@@ -1936,40 +1936,34 @@ class Box():
         self.zi = self.zi * self.zs
         self.zf = self.zf * self.zs
 
-    def MakeMatrix(self, orientation, slice_number=None):
+    def MakeMatrix(self):
         
-        if orientation == "SAGITAL":
-            #SAGITAL (xy)
-            self.sagital =\
-                  [[[self.xi, self.yi, self.zi], [self.xi, self.yi, self.zf]],\
+        self.sagital =\
+              [[[self.xi, self.yi, self.zi], [self.xi, self.yi, self.zf]],\
 
-                  [[self.xi, self.yi, self.zf], [self.xi, self.yf, self.zf]],\
+              [[self.xi, self.yi, self.zf], [self.xi, self.yf, self.zf]],\
 
-                  [[self.xi, self.yf, self.zf], [self.xi, self.yf, self.zi]],\
+              [[self.xi, self.yf, self.zf], [self.xi, self.yf, self.zi]],\
 
-                  [[self.xi, self.yf, self.zi], [self.xi, self.yi, self.zi]]]
+              [[self.xi, self.yf, self.zi], [self.xi, self.yi, self.zi]]]
 
-        elif orientation == "CORONAL":
-            #CORONAL (y)
-            self.coronal =\
-                  [[[self.xi, self.yi, self.zi], [self.xf, self.yi, self.zi]],\
-                  
-                  [[self.xf, self.yi, self.zi], [self.xf, self.yf, self.zi]],\
-                
-                  [[self.xf, self.yf, self.zi], [self.xi, self.yf, self.zi]],\
+        self.coronal =\
+              [[[self.xi, self.yi, self.zi], [self.xf, self.yi, self.zi]],\
+              
+              [[self.xf, self.yi, self.zi], [self.xf, self.yf, self.zi]],\
+            
+              [[self.xf, self.yf, self.zi], [self.xi, self.yf, self.zi]],\
 
-                  [[self.xi, self.yf, self.zi], [self.xi, self.yi, self.zi]]]
+              [[self.xi, self.yf, self.zi], [self.xi, self.yi, self.zi]]]
 
-        elif orientation == "AXIAL":
-            # AXIAL (z)
-            self.axial =\
-                 [[[self.xi, self.yi, self.zi], [self.xf, self.yi, self.zi]],\
+        self.axial =\
+             [[[self.xi, self.yi, self.zi], [self.xf, self.yi, self.zi]],\
 
-                 [[self.xi, self.yf, self.zi], [self.xf, self.yf, self.zf]],\
+             [[self.xi, self.yf, self.zi], [self.xf, self.yf, self.zf]],\
 
-                 [[self.xi, self.yi, self.zf], [self.xi, self.yf, self.zf]],\
+             [[self.xi, self.yi, self.zf], [self.xi, self.yf, self.zf]],\
 
-                 [[self.xf, self.yi, self.zf], [self.xf, self.yf, self.zi]]]
+             [[self.xf, self.yi, self.zf], [self.xf, self.yf, self.zi]]]
 
 
 class SelectPartConfig(object):
