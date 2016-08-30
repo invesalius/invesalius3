@@ -454,6 +454,9 @@ class Frame(wx.Frame):
         elif id == const.ID_SELECT_MASK_PART:
             self.OnSelectMaskParts()
 
+        elif id == const.ID_FLOODFILL_SEGMENTATION:
+            self.OnFFillSegmentation()
+
         elif id == const.ID_VIEW_INTERPOLATED:
             st = self.actived_interpolated_slices.IsChecked(const.ID_VIEW_INTERPOLATED)
             if st:
@@ -593,6 +596,9 @@ class Frame(wx.Frame):
     def OnSelectMaskParts(self):
         Publisher.sendMessage('Enable style', const.SLICE_STATE_SELECT_MASK_PARTS)
 
+    def OnFFillSegmentation(self):
+        Publisher.sendMessage('Enable style', const.SLICE_STATE_FFILL_SEGMENTATION)
+
     def OnInterpolatedSlices(self, status):
         Publisher.sendMessage('Set interpolated slices', status)
 
@@ -618,7 +624,8 @@ class MenuBar(wx.MenuBar):
                              const.ID_REORIENT_IMG,
                              const.ID_FLOODFILL_MASK,
                              const.ID_REMOVE_MASK_PART,
-                             const.ID_SELECT_MASK_PART,]
+                             const.ID_SELECT_MASK_PART,
+                             const.ID_FLOODFILL_SEGMENTATION,]
         self.__init_items()
         self.__bind_events()
 
@@ -741,6 +748,13 @@ class MenuBar(wx.MenuBar):
 
         tools_menu.AppendMenu(-1,  _(u"Mask"), mask_menu)
 
+        # Segmentation Menu
+        segmentation_menu = wx.Menu()
+        self.ffill_segmentation = segmentation_menu.Append(const.ID_FLOODFILL_SEGMENTATION, _(u"Floodfill"))
+        self.ffill_segmentation.Enable(False)
+
+        tools_menu.AppendMenu(-1, _("Segmentation"), segmentation_menu)
+
         # Image menu
         image_menu = wx.Menu()
         reorient_menu = image_menu.Append(const.ID_REORIENT_IMG, _(u'Reorient image\tCtrl+Shift+R'))
@@ -758,8 +772,6 @@ class MenuBar(wx.MenuBar):
         self.view_menu.Check(const.ID_VIEW_INTERPOLATED, v)
 
         self.actived_interpolated_slices = self.view_menu
-        
-
 
         #view_tool_menu = wx.Menu()
         #app = view_tool_menu.Append
