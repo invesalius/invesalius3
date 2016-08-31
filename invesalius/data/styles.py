@@ -21,6 +21,7 @@ import os
 import multiprocessing
 import tempfile
 import time
+import math
 
 from concurrent import futures
 
@@ -1765,19 +1766,32 @@ class CropMaskInteractorStyle(DefaultInteractorStyle):
 
         self.viewer = viewer
         self.orientation = self.viewer.orientation
-        print self.orientation, "<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
         self.picker = vtk.vtkWorldPointPicker()
         self.slice_actor = viewer.slice_data.actor
         self.slice_data = viewer.slice_data
-        
+        self.draw_retangle = None
+       
+    def __evts__(self):
+        self.AddObserver("MouseMoveEvent", self.OnMove)
+        self.AddObserver("LeftButtonPressEvent", self.OnLeftPressed)
+
+    def OnMove(self, obj, evt):
+        iren = self.viewer.interactor
+        x, y = iren.GetEventPosition()
+        self.draw_retangle.MouseMove(x,y)
+
+    def OnLeftPressed(self, obj, evt):
+        pass
+
     def SetUp(self):
         
-        i = DrawCrop2DRetangle()
-        i.SetViewer(self.viewer)
+        self.draw_retangle = DrawCrop2DRetangle()
+        self.draw_retangle.SetViewer(self.viewer)
 
-        self.viewer.canvas.draw_list.append(i)
+        self.viewer.canvas.draw_list.append(self.draw_retangle)
         self.viewer.UpdateCanvas()
 
+        self.__evts__()
         #self.draw_lines()
         #Publisher.sendMessage('Hide current mask')
         #Publisher.sendMessage('Reload actual slice')
@@ -1798,14 +1812,67 @@ class DrawCrop2DRetangle():
     
     def __init__(self):
         self.viewer = None
-   
+        self.points_in_display = {}
+        self.box = None
 
-    def __evts__(self):
-        self.viewer.interactor.AddObserver("MouseMoveEvent", self.OnMove)
-        print ">>>>>>>>>>>>>>>>>>>>>>>>>",dir(self.viewer)
+    #def __evts__(self):
+    #    self.viewer.interactor.AddObserver("MouseMoveEvent", self.OnMove)
 
-    def OnMove(self, evt, obj):
-        print "VAAAAAAAAAAAAa"
+    def MouseMove(self, x, y):
+        x_pos_sl, y_pos_sl = self.viewer.get_slice_pixel_coord_by_screen_pos(x, y)
+
+        slice_spacing = self.viewer.slice_.spacing
+        xs, ys, zs = slice_spacing
+        
+        
+        if self.viewer.orientation == "AXIAL":
+            x_pos_sl = x_pos_sl * xs
+            y_pos_sl = y_pos_sl * ys
+
+            for p in self.box.axial:
+                p0 = p[0]
+                p1 = p[1]
+
+                dist = self.distance_from_point_line((p0[0], p0[1]),\
+                                                     (p1[0], p1[1]),\
+                                                     (x_pos_sl, y_pos_sl))
+
+                if dist <= 5:
+                    if self.point_between_line(p0, p1, (x_pos_sl, y_pos_sl), "AXIAL"):
+                        print "Na linha..."
+
+
+        if self.viewer.orientation == "CORONAL":
+            x_pos_sl = x_pos_sl * xs
+            y_pos_sl = y_pos_sl * zs
+            
+            for p in self.box.coronal:
+                p0 = p[0]
+                p1 = p[1]
+
+                dist = self.distance_from_point_line((p0[0], p0[2]),\
+                                                     (p1[0], p1[2]),\
+                                                     (x_pos_sl, y_pos_sl))
+
+                if dist <= 5:
+                    if self.point_between_line(p0, p1, (x_pos_sl, y_pos_sl), "CORONAL"):
+                        print "Na linha coronal.........."
+
+        if self.viewer.orientation == "SAGITAL":
+            x_pos_sl = x_pos_sl * ys
+            y_pos_sl = y_pos_sl * zs
+
+            for p in self.box.sagital:
+                p0 = p[0]
+                p1 = p[1]
+
+                dist = self.distance_from_point_line((p0[1], p0[2]),\
+                                                     (p1[1], p1[2]),\
+                                                     (x_pos_sl, y_pos_sl))
+
+                if dist <= 5:
+                    if self.point_between_line(p0, p1, (x_pos_sl, y_pos_sl), "SAGITAL"):
+                        print "Na linha SAGITALLLLLLLLLLLL"
 
     def draw_to_canvas(self, gc, canvas):
         """
@@ -1818,6 +1885,55 @@ class DrawCrop2DRetangle():
 
         self.MakeBox(canvas)
 
+    def point_between_line(self, p1, p2, pc, axis):
+        """
+        Checks whether a point is in the line limits 
+        """
+        if axis == "AXIAL":
+            if p1[0] < pc[0] and p2[0] > pc[0]:
+                return True
+            elif p1[1] < pc[1] and p2[1] > pc[1]:
+                return True
+            else:
+                return False
+        elif axis == "SAGITAL":
+            if p1[1] < pc[0] and p2[1] > pc[0]:
+                return True
+            elif p1[2] < pc[1] and p2[2] > pc[1]:
+                return True
+            else:
+                return False
+        elif axis == "CORONAL":
+            if p1[0] < pc[0] and p2[0] > pc[0]:
+                return True
+            elif p1[2] < pc[1] and p2[2] > pc[1]:
+                return True
+            else:
+                return False
+
+
+    def distance_from_point_line(self, p1, p2, pc):
+        """
+        Calculate the distance from point pc to a line formed by p1 and p2.
+        """
+
+        #TODO: Same function into clut_raycasting
+        # Create a function to organize it.
+
+        # Create a vector pc-p1 and p2-p1
+        A = np.array(pc) - np.array(p1)
+        B = np.array(p2) - np.array(p1)
+        # Calculate the size from those vectors
+        len_A = np.linalg.norm(A)
+        len_B = np.linalg.norm(B)
+        # calculate the angle theta (in radians) between those vector
+        theta = math.acos(np.dot(A, B) / (len_A * len_B))
+        # Using the sin from theta, calculate the adjacent leg, which is the
+        # distance from the point to the line
+        distance = math.sin(theta) * len_A
+        return distance
+
+
     def Coord3DtoDisplay(self, x, y, z, canvas):
 
         coord = vtk.vtkCoordinate()
@@ -1825,6 +1941,12 @@ class DrawCrop2DRetangle():
         cx, cy = coord.GetComputedDisplayValue(canvas.evt_renderer)
  
         return (cx, cy)
+
+    def StoreDisplayPoints(self, p1, p2, orientation):
+        if orientation in self.points_in_display:
+            self.points_in_display[orientation].append([p1, p2])
+        else:
+            self.points_in_display[orientation] = [[p1, p2]]
 
 
     def MakeBox(self, canvas):
@@ -1835,7 +1957,7 @@ class DrawCrop2DRetangle():
         slice_spacing = self.viewer.slice_.spacing
         xs, ys, zs = slice_spacing
 
-        b = Box()
+        b = self.box = Box()
         b.SetX(0, xf)
         b.SetY(0, yf)
         b.SetZ(0, zf)
@@ -1849,6 +1971,9 @@ class DrawCrop2DRetangle():
 
                 s_cxi, s_cyi = self.Coord3DtoDisplay(pi_x, pi_y, pi_z, canvas)
                 s_cxf, s_cyf = self.Coord3DtoDisplay(pf_x, pf_y, pf_z ,canvas)
+
+                self.StoreDisplayPoints([s_cxi, s_cyi],[s_cxf, s_cyf],"AXIAL")
+
                 canvas.draw_line((s_cxi, s_cyi),(s_cxf, s_cyf))
  
         elif canvas.orientation == "CORONAL":
@@ -1858,6 +1983,9 @@ class DrawCrop2DRetangle():
 
                 s_cxi, s_cyi = self.Coord3DtoDisplay(pi_x, pi_y, pi_z, canvas)
                 s_cxf, s_cyf = self.Coord3DtoDisplay(pf_x, pf_y, pf_z ,canvas)
+
+                self.StoreDisplayPoints([s_cxi, s_cyi],[s_cxf, s_cyf],"CORONAL")
+                
                 canvas.draw_line((s_cxi, s_cyi),(s_cxf, s_cyf))
 
         elif canvas.orientation == "SAGITAL":
@@ -1867,6 +1995,9 @@ class DrawCrop2DRetangle():
 
                 s_cxi, s_cyi = self.Coord3DtoDisplay(pi_x, pi_y, pi_z, canvas)
                 s_cxf, s_cyf = self.Coord3DtoDisplay(pf_x, pf_y, pf_z ,canvas)
+
+                self.StoreDisplayPoints([s_cxi, s_cyi],[s_cxf, s_cyf],"SAGITAL")
+
                 canvas.draw_line((s_cxi, s_cyi),(s_cxf, s_cyf))
 
 
@@ -1911,7 +2042,7 @@ class DrawCrop2DRetangle():
     def SetViewer(self, viewer):
 
         self.viewer = viewer
-        self.__evts__()
+        #self.__evts__()
 
        
 class Box():
@@ -1961,15 +2092,24 @@ class Box():
         self.zf = self.zf * self.zs
 
     def MakeMatrix(self):
-        
+
         self.sagital =\
               [[[self.xi, self.yi, self.zi], [self.xi, self.yi, self.zf]],\
 
-              [[self.xi, self.yi, self.zf], [self.xi, self.yf, self.zf]],\
+              [[self.xi, self.yf, self.zi], [self.xi, self.yf, self.zf]],\
 
-              [[self.xi, self.yf, self.zf], [self.xi, self.yf, self.zi]],\
+              [[self.xi, self.yi, self.zi], [self.xi, self.yf, self.zi]],\
 
-              [[self.xi, self.yf, self.zi], [self.xi, self.yi, self.zi]]]
+              [[self.xi, self.yi, self.zf], [self.xi, self.yf, self.zf]]]
+
+        #self.sagital =\
+        #      [[[self.xi, self.yi, self.zi], [self.xi, self.yi, self.zf]],\
+
+        #      [[self.xi, self.yi, self.zf], [self.xi, self.yf, self.zf]],\
+
+        #      [[self.xi, self.yf, self.zf], [self.xi, self.yf, self.zi]],\
+
+        #      [[self.xi, self.yf, self.zi], [self.xi, self.yi, self.zi]]]
 
         self.coronal =\
               [[[self.xi, self.yi, self.zi], [self.xf, self.yi, self.zi]],\
