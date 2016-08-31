@@ -1890,23 +1890,23 @@ class DrawCrop2DRetangle():
         Checks whether a point is in the line limits 
         """
         if axis == "AXIAL":
-            if p1[0] < pc[0] and p2[0] > pc[0]:
+            if p1[0] < pc[0] and p2[0] > pc[0]: #x axis
                 return True
-            elif p1[1] < pc[1] and p2[1] > pc[1]:
+            elif p1[1] < pc[1] and p2[1] > pc[1]: #y axis
                 return True
             else:
                 return False
         elif axis == "SAGITAL":
-            if p1[1] < pc[0] and p2[1] > pc[0]:
+            if p1[1] < pc[0] and p2[1] > pc[0]: #y axis
                 return True
-            elif p1[2] < pc[1] and p2[2] > pc[1]:
+            elif p1[2] < pc[1] and p2[2] > pc[1]: #z axis
                 return True
             else:
                 return False
         elif axis == "CORONAL":
-            if p1[0] < pc[0] and p2[0] > pc[0]:
+            if p1[0] < pc[0] and p2[0] > pc[0]: #x axis
                 return True
-            elif p1[2] < pc[1] and p2[2] > pc[1]:
+            elif p1[2] < pc[1] and p2[2] > pc[1]: #z axis
                 return True
             else:
                 return False
