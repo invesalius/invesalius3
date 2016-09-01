@@ -1774,6 +1774,7 @@ class CropMaskInteractorStyle(DefaultInteractorStyle):
     def __evts__(self):
         self.AddObserver("MouseMoveEvent", self.OnMove)
         self.AddObserver("LeftButtonPressEvent", self.OnLeftPressed)
+        self.AddObserver("LeftButtonReleaseEvent", self.OnReleaseLeftButton)
 
     def OnMove(self, obj, evt):
         iren = self.viewer.interactor
@@ -1781,7 +1782,10 @@ class CropMaskInteractorStyle(DefaultInteractorStyle):
         self.draw_retangle.MouseMove(x,y)
 
     def OnLeftPressed(self, obj, evt):
-        pass
+        self.draw_retangle.mouse_pressed = True
+
+    def OnReleaseLeftButton(self, obj, evt):
+        self.draw_retangle.mouse_pressed = False
 
     def SetUp(self):
         
@@ -1814,20 +1818,19 @@ class DrawCrop2DRetangle():
         self.viewer = None
         self.points_in_display = {}
         self.box = None
-
-    #def __evts__(self):
-    #    self.viewer.interactor.AddObserver("MouseMoveEvent", self.OnMove)
+        self.mouse_pressed = False
+        self.canvas = None
 
     def MouseMove(self, x, y):
-        x_pos_sl, y_pos_sl = self.viewer.get_slice_pixel_coord_by_screen_pos(x, y)
+        x_pos_sl_, y_pos_sl_ = self.viewer.get_slice_pixel_coord_by_screen_pos(x, y)
 
         slice_spacing = self.viewer.slice_.spacing
         xs, ys, zs = slice_spacing
         
         
         if self.viewer.orientation == "AXIAL":
-            x_pos_sl = x_pos_sl * xs
-            y_pos_sl = y_pos_sl * ys
+            x_pos_sl = x_pos_sl_ * xs
+            y_pos_sl = y_pos_sl_ * ys
 
             for k, p in self.box.axial.iteritems():
                 p0 = p[0]
@@ -1839,12 +1842,16 @@ class DrawCrop2DRetangle():
 
                 if dist <= 5:
                     if self.point_between_line(p0, p1, (x_pos_sl, y_pos_sl), "AXIAL"):
-                        print k == const.AXIAL_UPPER
+                        if k == const.AXIAL_UPPER and self.mouse_pressed:
+                            x, y, z = self.viewer.get_voxel_coord_by_screen_pos(x, y)
+                            #print "*******************  ",x, y, z
+                            #self.box.UpdatePosition(x, y, "AXIAL", const.AXIAL_UPPER)
+                            #self.UpdateCropCanvas((x_pos_sl), (y_pos_sl), "AXIAL")
 
 
         if self.viewer.orientation == "CORONAL":
-            x_pos_sl = x_pos_sl * xs
-            y_pos_sl = y_pos_sl * zs
+            x_pos_sl = x_pos_sl_ * xs
+            y_pos_sl = y_pos_sl_ * zs
             
             for k, p in self.box.coronal.iteritems():
                 p0 = p[0]
@@ -1859,8 +1866,8 @@ class DrawCrop2DRetangle():
                         print "Na linha coronal.........."
 
         if self.viewer.orientation == "SAGITAL":
-            x_pos_sl = x_pos_sl * ys
-            y_pos_sl = y_pos_sl * zs
+            x_pos_sl = x_pos_sl_ * ys
+            y_pos_sl = y_pos_sl_ * zs
 
             for k, p in self.box.sagital.iteritems():
                 p0 = p[0]
@@ -1882,7 +1889,8 @@ class DrawCrop2DRetangle():
             gc: is a wx.GraphicsContext
             canvas: the canvas it's being drawn.
         """
-
+        print "UPDATE......................"
+        self.canvas = canvas
         self.MakeBox(canvas)
 
     def point_between_line(self, p1, p2, pc, axis):
@@ -2006,43 +2014,12 @@ class DrawCrop2DRetangle():
                 canvas.draw_line((s_cxi, s_cyi),(s_cxf, s_cyf))
 
 
-                #print i
-                #print points
-                #print s_cxi, s_cyi
-                #print s_cxf, s_cyf
-                
-                #i += 1
+    def UpdateCropCanvas(self, p1, p2, axis):
+        if self.canvas.orientation == axis:
+            self.canvas.draw_line(p1,p2)
+            print "DESCENDO....."
 
-
-                #print "\n"
-            #xi, xf, yi, yf, zi, zf = self.viewer.slice_data.actor.GetBounds()
-            #print "\n\n"
-            #print ">>", xi, xf, yi, yf, zi, zf
-            #print ">>",self.viewer.slice_data.number
-            #print ">>", self.viewer.slice_.matrix.shape
-            #print ">>", self.viewer.slice_.spacing
-            #print zi, zf
-
-            #upper line
-            #s_cxi, s_cyi = self.Coord3DtoDisplay((xf - xi)/2, (yf - yi)/2, zi, canvas)
-            #s_cxf, s_cyf = self.Coord3DtoDisplay(xf, (yf - yi)/2, zf ,canvas)
-            #canvas.draw_line((s_cxi, s_cyi),(s_cxf, s_cyf))
-
-            #right line 
-            #s_cxi, s_cyi = self.Coord3DtoDisplay((xf - xi)/2, (yf - yi)/2, zi, canvas)
-            #s_cxf, s_cyf = self.Coord3DtoDisplay((xf - xi)/2, yi, zf ,canvas)
-            #canvas.draw_line((s_cxi, s_cyi),(s_cxf, s_cyf))
-
-            #left line 
-            #s_cxi, s_cyi = self.Coord3DtoDisplay(xf, (yf - yi)/2, zi, canvas)
-            #s_cxf, s_cyf = self.Coord3DtoDisplay(xf, yi, zf ,canvas)
-            #canvas.draw_line((s_cxi, s_cyi),(s_cxf, s_cyf))
-
-            #lower line
-            #s_cxi, s_cyi = self.Coord3DtoDisplay((xf - xi)/2, yi, zi, canvas)
-            #s_cxf, s_cyf = self.Coord3DtoDisplay(xf, yi, zi,canvas)
-            #canvas.draw_line((s_cxi, s_cyi),(s_cxf, s_cyf))
-
+        Publisher.sendMessage('Redraw canvas')
 
     def SetViewer(self, viewer):
 
@@ -2099,53 +2076,54 @@ class Box():
     def MakeMatrix(self):
 
         self.sagital = {}
-        self.sagital[const.SAGITAL_BOTTOM] = [[self.xi, self.yi, self.zi], [self.xi, self.yi, self.zf]]
-        self.sagital[const.SAGITAL_UPPER] = [[self.xi, self.yf, self.zi], [self.xi, self.yf, self.zf]]
-        self.sagital[const.SAGITAL_LEFT] = [[self.xi, self.yi, self.zi], [self.xi, self.yf, self.zi]]
-        self.sagital[const.SAGITAL_RIGHT] =  [[self.xi, self.yi, self.zf], [self.xi, self.yf, self.zf]]
+        self.sagital[const.SAGITAL_BOTTOM] = [[self.xi, self.yi, self.zi],\
+                                              [self.xi, self.yi, self.zf]]
 
-        #self.sagital =\
-        #      [[[self.xi, self.yi, self.zi], [self.xi, self.yi, self.zf], const.SAGITAL_BOTTOM],\
+        self.sagital[const.SAGITAL_UPPER] = [[self.xi, self.yf, self.zi],\
+                                             [self.xi, self.yf, self.zf]]
 
-        #      [[self.xi, self.yf, self.zi], [self.xi, self.yf, self.zf], const.SAGITAL_UPPER],\
+        self.sagital[const.SAGITAL_LEFT] = [[self.xi, self.yi, self.zi],\
+                                            [self.xi, self.yf, self.zi]]
 
-        #      [[self.xi, self.yi, self.zi], [self.xi, self.yf, self.zi], const.SAGITAL_LEFT],\
+        self.sagital[const.SAGITAL_RIGHT] =  [[self.xi, self.yi, self.zf],\
+                                              [self.xi, self.yf, self.zf]]
 
-        #      [[self.xi, self.yi, self.zf], [self.xi, self.yf, self.zf], const.SAGITAL_RIGHT]]
-
-    
         self.coronal = {}
-        self.coronal[const.CORONAL_BOTTOM] = [[self.xi, self.yi, self.zi], [self.xf, self.yi, self.zi]]
-        self.coronal[const.CORONAL_UPPER] = [[self.xi, self.yi, self.zf], [self.xf, self.yi, self.zf]]
-        self.coronal[const.CORONAL_LEFT] = [[self.xi, self.yi, self.zi], [self.xi, self.yi, self.zf]]
-        self.coronal[const.CORONAL_RIGHT] = [[self.xf, self.yi, self.zi], [self.xf, self.yi, self.zf]]
+        self.coronal[const.CORONAL_BOTTOM] = [[self.xi, self.yi, self.zi],\
+                                              [self.xf, self.yi, self.zi]]
 
+        self.coronal[const.CORONAL_UPPER] = [[self.xi, self.yi, self.zf],\
+                                             [self.xf, self.yi, self.zf]]
 
+        self.coronal[const.CORONAL_LEFT] = [[self.xi, self.yi, self.zi],\
+                                            [self.xi, self.yi, self.zf]]
 
-
-        #self.coronal =\
-        #      [[[self.xi, self.yi, self.zi], [self.xf, self.yi, self.zi], const.CORONAL_BOTTOM],\
-              
-        #      [[self.xi, self.yi, self.zf], [self.xf, self.yi, self.zf], const.CORONAL_UPPER],\
-            
-        #      [[self.xi, self.yi, self.zi], [self.xi, self.yi, self.zf], const.CORONAL_LEFT],\
-
-        #      [[self.xf, self.yi, self.zi], [self.xf, self.yi, self.zf], const.CORONAL_RIGHT]]
+        self.coronal[const.CORONAL_RIGHT] = [[self.xf, self.yi, self.zi],\
+                                             [self.xf, self.yi, self.zf]]
 
         self.axial = {}
-        self.axial[const.AXIAL_BOTTOM] = [[self.xi, self.yi, self.zi], [self.xf, self.yi, self.zi]]
-        self.axial[const.AXIAL_UPPER] = [[self.xi, self.yf, self.zi], [self.xf, self.yf, self.zi]]
-        self.axial[const.AXIAL_LEFT] = [[self.xi, self.yi, self.zf], [self.xi, self.yf, self.zi]]
-        self.axial[const.AXIAL_RIGHT] = [[self.xf, self.yi, self.zi], [self.xf, self.yf, self.zi]]
+        self.axial[const.AXIAL_BOTTOM] = [[self.xi, self.yi, self.zi],\
+                                          [self.xf, self.yi, self.zi]]
 
-        #self.axial =\
-        #     [[[self.xi, self.yi, self.zi], [self.xf, self.yi, self.zi], const.AXIAL_BOTTOM],\
+        self.axial[const.AXIAL_UPPER] = [[self.xi, self.yf, self.zi],\
+                                         [self.xf, self.yf, self.zi]]
 
-        #     [[self.xi, self.yf, self.zi], [self.xf, self.yf, self.zi], const.AXIAL_UPPER],\
+        self.axial[const.AXIAL_LEFT] = [[self.xi, self.yi, self.zf],\
+                                        [self.xi, self.yf, self.zi]]
 
-        #     [[self.xi, self.yi, self.zf], [self.xi, self.yf, self.zi], const.AXIAL_LEFT],\
+        self.axial[const.AXIAL_RIGHT] = [[self.xf, self.yi, self.zi],\
+                                         [self.xf, self.yf, self.zi]]
 
-        #     [[self.xf, self.yi, self.zi], [self.xf, self.yf, self.zi], const.AXIAL_RIGHT]]
+
+    def UpdatePosition(self, pc, axis, position):
+        
+        if axis == "AXIAL":
+            p1, p2 = self.axial[position]
+
+            if position == const.AXIAL_UPPER:
+                self.axial[position] = [[p1[0], pc[1], p1[2]],\
+                                        [p2[0], pc[1], p1[2]]]
+
 
 
 class SelectPartConfig(object):
