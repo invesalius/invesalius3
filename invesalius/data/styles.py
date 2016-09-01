@@ -1829,7 +1829,7 @@ class DrawCrop2DRetangle():
             x_pos_sl = x_pos_sl * xs
             y_pos_sl = y_pos_sl * ys
 
-            for p in self.box.axial:
+            for k, p in self.box.axial.iteritems():
                 p0 = p[0]
                 p1 = p[1]
 
@@ -1839,14 +1839,14 @@ class DrawCrop2DRetangle():
 
                 if dist <= 5:
                     if self.point_between_line(p0, p1, (x_pos_sl, y_pos_sl), "AXIAL"):
-                        print "Na linha..."
+                        print k == const.AXIAL_UPPER
 
 
         if self.viewer.orientation == "CORONAL":
             x_pos_sl = x_pos_sl * xs
             y_pos_sl = y_pos_sl * zs
             
-            for p in self.box.coronal:
+            for k, p in self.box.coronal.iteritems():
                 p0 = p[0]
                 p1 = p[1]
 
@@ -1862,7 +1862,7 @@ class DrawCrop2DRetangle():
             x_pos_sl = x_pos_sl * ys
             y_pos_sl = y_pos_sl * zs
 
-            for p in self.box.sagital:
+            for k, p in self.box.sagital.iteritems():
                 p0 = p[0]
                 p1 = p[1]
 
@@ -1889,6 +1889,11 @@ class DrawCrop2DRetangle():
         """
         Checks whether a point is in the line limits 
         """
+        print ">>>>> p1: ", p1
+        print ">>>>> p2: ", p2
+        print ">>>>> pc: ", pc
+        print "\n\n"
+
         if axis == "AXIAL":
             if p1[0] < pc[0] and p2[0] > pc[0]: #x axis
                 return True
@@ -1965,7 +1970,7 @@ class DrawCrop2DRetangle():
         b.MakeMatrix()
 
         if canvas.orientation == "AXIAL":
-            for points in b.axial:
+            for points in b.axial.values():
                 pi_x, pi_y, pi_z = points[0]
                 pf_x, pf_y, pf_z = points[1]
 
@@ -1977,7 +1982,7 @@ class DrawCrop2DRetangle():
                 canvas.draw_line((s_cxi, s_cyi),(s_cxf, s_cyf))
  
         elif canvas.orientation == "CORONAL":
-            for points in b.coronal:
+            for points in b.coronal.values():
                 pi_x, pi_y, pi_z = points[0]
                 pf_x, pf_y, pf_z = points[1]
 
@@ -1989,7 +1994,7 @@ class DrawCrop2DRetangle():
                 canvas.draw_line((s_cxi, s_cyi),(s_cxf, s_cyf))
 
         elif canvas.orientation == "SAGITAL":
-            for points in b.sagital:
+            for points in b.sagital.values():
                 pi_x, pi_y, pi_z = points[0]
                 pf_x, pf_y, pf_z = points[1]
 
@@ -2093,41 +2098,54 @@ class Box():
 
     def MakeMatrix(self):
 
-        self.sagital =\
-              [[[self.xi, self.yi, self.zi], [self.xi, self.yi, self.zf]],\
-
-              [[self.xi, self.yf, self.zi], [self.xi, self.yf, self.zf]],\
-
-              [[self.xi, self.yi, self.zi], [self.xi, self.yf, self.zi]],\
-
-              [[self.xi, self.yi, self.zf], [self.xi, self.yf, self.zf]]]
+        self.sagital = {}
+        self.sagital[const.SAGITAL_BOTTOM] = [[self.xi, self.yi, self.zi], [self.xi, self.yi, self.zf]]
+        self.sagital[const.SAGITAL_UPPER] = [[self.xi, self.yf, self.zi], [self.xi, self.yf, self.zf]]
+        self.sagital[const.SAGITAL_LEFT] = [[self.xi, self.yi, self.zi], [self.xi, self.yf, self.zi]]
+        self.sagital[const.SAGITAL_RIGHT] =  [[self.xi, self.yi, self.zf], [self.xi, self.yf, self.zf]]
 
         #self.sagital =\
-        #      [[[self.xi, self.yi, self.zi], [self.xi, self.yi, self.zf]],\
+        #      [[[self.xi, self.yi, self.zi], [self.xi, self.yi, self.zf], const.SAGITAL_BOTTOM],\
 
-        #      [[self.xi, self.yi, self.zf], [self.xi, self.yf, self.zf]],\
+        #      [[self.xi, self.yf, self.zi], [self.xi, self.yf, self.zf], const.SAGITAL_UPPER],\
 
-        #      [[self.xi, self.yf, self.zf], [self.xi, self.yf, self.zi]],\
+        #      [[self.xi, self.yi, self.zi], [self.xi, self.yf, self.zi], const.SAGITAL_LEFT],\
 
-        #      [[self.xi, self.yf, self.zi], [self.xi, self.yi, self.zi]]]
+        #      [[self.xi, self.yi, self.zf], [self.xi, self.yf, self.zf], const.SAGITAL_RIGHT]]
 
-        self.coronal =\
-              [[[self.xi, self.yi, self.zi], [self.xf, self.yi, self.zi]],\
+    
+        self.coronal = {}
+        self.coronal[const.CORONAL_BOTTOM] = [[self.xi, self.yi, self.zi], [self.xf, self.yi, self.zi]]
+        self.coronal[const.CORONAL_UPPER] = [[self.xi, self.yi, self.zf], [self.xf, self.yi, self.zf]]
+        self.coronal[const.CORONAL_LEFT] = [[self.xi, self.yi, self.zi], [self.xi, self.yi, self.zf]]
+        self.coronal[const.CORONAL_RIGHT] = [[self.xf, self.yi, self.zi], [self.xf, self.yi, self.zf]]
+
+
+
+
+        #self.coronal =\
+        #      [[[self.xi, self.yi, self.zi], [self.xf, self.yi, self.zi], const.CORONAL_BOTTOM],\
               
-              [[self.xi, self.yi, self.zf], [self.xf, self.yi, self.zf]],\
+        #      [[self.xi, self.yi, self.zf], [self.xf, self.yi, self.zf], const.CORONAL_UPPER],\
             
-              [[self.xi, self.yi, self.zi], [self.xi, self.yi, self.zf]],\
+        #      [[self.xi, self.yi, self.zi], [self.xi, self.yi, self.zf], const.CORONAL_LEFT],\
 
-              [[self.xf, self.yi, self.zi], [self.xf, self.yi, self.zf]]]
+        #      [[self.xf, self.yi, self.zi], [self.xf, self.yi, self.zf], const.CORONAL_RIGHT]]
 
-        self.axial =\
-             [[[self.xi, self.yi, self.zi], [self.xf, self.yi, self.zi]],\
+        self.axial = {}
+        self.axial[const.AXIAL_BOTTOM] = [[self.xi, self.yi, self.zi], [self.xf, self.yi, self.zi]]
+        self.axial[const.AXIAL_UPPER] = [[self.xi, self.yf, self.zi], [self.xf, self.yf, self.zi]]
+        self.axial[const.AXIAL_LEFT] = [[self.xi, self.yi, self.zf], [self.xi, self.yf, self.zi]]
+        self.axial[const.AXIAL_RIGHT] = [[self.xf, self.yi, self.zi], [self.xf, self.yf, self.zi]]
 
-             [[self.xi, self.yf, self.zi], [self.xf, self.yf, self.zf]],\
+        #self.axial =\
+        #     [[[self.xi, self.yi, self.zi], [self.xf, self.yi, self.zi], const.AXIAL_BOTTOM],\
 
-             [[self.xi, self.yi, self.zf], [self.xi, self.yf, self.zf]],\
+        #     [[self.xi, self.yf, self.zi], [self.xf, self.yf, self.zi], const.AXIAL_UPPER],\
 
-             [[self.xf, self.yi, self.zf], [self.xf, self.yf, self.zi]]]
+        #     [[self.xi, self.yi, self.zf], [self.xi, self.yf, self.zi], const.AXIAL_LEFT],\
+
+        #     [[self.xf, self.yi, self.zi], [self.xf, self.yf, self.zi], const.AXIAL_RIGHT]]
 
 
 class SelectPartConfig(object):
