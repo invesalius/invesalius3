@@ -1854,6 +1854,11 @@ class FFillSegmentationConfig(object):
 
         self.fill_value = 254
 
+        self.method = 'threshold'
+
+        self.dev_min = 50
+        self.dev_max = 50
+
 
 class FloodFillSegmentInteractorStyle(DefaultInteractorStyle):
     def __init__(self, viewer):
@@ -1898,9 +1903,20 @@ class FloodFillSegmentInteractorStyle(DefaultInteractorStyle):
         mask = self.viewer.slice_.current_mask.matrix[1:, 1:, 1:]
         image = self.viewer.slice_.matrix
 
-        print image[z, y, x]
+        v = image[z, y, x]
+        print v
 
-        if image[z, y, x] < self.config.t0 or image[z, y, x] > self.config.t1:
+        if self.config.method == 'threshold':
+            t0 = self.config.t0
+            t1 = self.config.t1
+        elif self.config.method == 'dynamic':
+            print 'Method dynamic'
+            t0 = v - self.config.dev_min
+            t1 = v + self.config.dev_max
+
+        print v, t0, t1
+
+        if image[z, y, x] < t0 or image[z, y, x] > t1:
             return
 
         if self.config.target == "3D":
@@ -1920,7 +1936,7 @@ class FloodFillSegmentInteractorStyle(DefaultInteractorStyle):
                 bstruct[:, :, 0] = _bstruct
 
         if self.config.target == '2D':
-            floodfill.floodfill_threshold(image, [[x, y, z]], self.config.t0, self.config.t1, self.config.fill_value, bstruct, mask)
+            floodfill.floodfill_threshold(image, [[x, y, z]], t0, t1, self.config.fill_value, bstruct, mask)
             b_mask = self.viewer.slice_.buffer_slices[self.orientation].mask
             index = self.viewer.slice_.buffer_slices[self.orientation].index
 
@@ -1934,7 +1950,7 @@ class FloodFillSegmentInteractorStyle(DefaultInteractorStyle):
             self.viewer.slice_.current_mask.save_history(index, self.orientation, p_mask, b_mask)
         else:
             with futures.ThreadPoolExecutor(max_workers=1) as executor:
-                future = executor.submit(floodfill.floodfill_threshold, image, [[x, y, z]], self.config.t0, self.config.t1, self.config.fill_value, bstruct, mask)
+                future = executor.submit(floodfill.floodfill_threshold, image, [[x, y, z]], t0, t1, self.config.fill_value, bstruct, mask)
 
                 dlg = wx.ProgressDialog(self._progr_title, self._progr_msg, parent=None, style=wx.PD_APP_MODAL)
                 while not future.done():
