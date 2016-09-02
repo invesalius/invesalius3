@@ -1844,9 +1844,9 @@ class DrawCrop2DRetangle():
                     if self.point_between_line(p0, p1, (x_pos_sl, y_pos_sl), "AXIAL"):
                         if k == const.AXIAL_UPPER and self.mouse_pressed:
                             x, y, z = self.viewer.get_voxel_coord_by_screen_pos(x, y)
-                            #print "*******************  ",x, y, z
-                            #self.box.UpdatePosition(x, y, "AXIAL", const.AXIAL_UPPER)
-                            #self.UpdateCropCanvas((x_pos_sl), (y_pos_sl), "AXIAL")
+                            print "Arrastando *******************  ",x, y, z, " <<>> ", x_pos_sl, y_pos_sl
+                            self.box.UpdatePosition((x * xs, y * ys, z * zs), "AXIAL", const.AXIAL_UPPER)
+                            self.UpdateCropCanvas((x_pos_sl), (y_pos_sl), "AXIAL")
 
 
         if self.viewer.orientation == "CORONAL":
@@ -1891,7 +1891,7 @@ class DrawCrop2DRetangle():
         """
         print "UPDATE......................"
         self.canvas = canvas
-        self.MakeBox(canvas)
+        self.UpdateValues(canvas)
 
     def point_between_line(self, p1, p2, pc, axis):
         """
@@ -1962,7 +1962,7 @@ class DrawCrop2DRetangle():
             self.points_in_display[orientation] = [[p1, p2]]
 
 
-    def MakeBox(self, canvas):
+    def MakeBox(self):
 
         slice_size = self.viewer.slice_.matrix.shape
         zf, yf, xf = slice_size[0] - 1, slice_size[1] - 1, slice_size[2] - 1
@@ -1970,15 +1970,20 @@ class DrawCrop2DRetangle():
         slice_spacing = self.viewer.slice_.spacing
         xs, ys, zs = slice_spacing
 
-        b = self.box = Box()
-        b.SetX(0, xf)
-        b.SetY(0, yf)
-        b.SetZ(0, zf)
-        b.SetSpacing(xs, ys, zs)
-        b.MakeMatrix()
+        self.box = box = Box()
+        box.SetX(0, xf)
+        box.SetY(0, yf)
+        box.SetZ(0, zf)
+        box.SetSpacing(xs, ys, zs)
+        box.MakeMatrix()
+
+
+    def UpdateValues(self, canvas):
+
+        box = self.box
 
         if canvas.orientation == "AXIAL":
-            for points in b.axial.values():
+            for points in box.axial.values():
                 pi_x, pi_y, pi_z = points[0]
                 pf_x, pf_y, pf_z = points[1]
 
@@ -1990,7 +1995,7 @@ class DrawCrop2DRetangle():
                 canvas.draw_line((s_cxi, s_cyi),(s_cxf, s_cyf))
  
         elif canvas.orientation == "CORONAL":
-            for points in b.coronal.values():
+            for points in box.coronal.values():
                 pi_x, pi_y, pi_z = points[0]
                 pf_x, pf_y, pf_z = points[1]
 
@@ -2002,7 +2007,7 @@ class DrawCrop2DRetangle():
                 canvas.draw_line((s_cxi, s_cyi),(s_cxf, s_cyf))
 
         elif canvas.orientation == "SAGITAL":
-            for points in b.sagital.values():
+            for points in box.sagital.values():
                 pi_x, pi_y, pi_z = points[0]
                 pf_x, pf_y, pf_z = points[1]
 
@@ -2022,9 +2027,8 @@ class DrawCrop2DRetangle():
         Publisher.sendMessage('Redraw canvas')
 
     def SetViewer(self, viewer):
-
         self.viewer = viewer
-        #self.__evts__()
+        self.MakeBox()
 
        
 class Box():
@@ -2117,14 +2121,20 @@ class Box():
 
     def UpdatePosition(self, pc, axis, position):
         
+        print "antigo: "
+        print self.axial[position]
+
         if axis == "AXIAL":
+            print "Atualizando ", pc
             p1, p2 = self.axial[position]
 
             if position == const.AXIAL_UPPER:
                 self.axial[position] = [[p1[0], pc[1], p1[2]],\
                                         [p2[0], pc[1], p1[2]]]
 
-
+                print "Novo: "
+                print self.axial[position]
+                print "___________________________"
 
 class SelectPartConfig(object):
     __metaclass__= utils.Singleton
