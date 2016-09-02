@@ -1910,7 +1910,6 @@ class DrawCrop2DRetangle():
             gc: is a wx.GraphicsContext
             canvas: the canvas it's being drawn.
         """
-        print "UPDATE......................"
         self.canvas = canvas
         self.UpdateValues(canvas)
 
@@ -1918,10 +1917,6 @@ class DrawCrop2DRetangle():
         """
         Checks whether a point is in the line limits 
         """
-        print ">>>>> p1: ", p1
-        print ">>>>> p2: ", p2
-        print ">>>>> pc: ", pc
-        print "\n\n"
 
         if axis == "AXIAL":
             if p1[0] < pc[0] and p2[0] > pc[0]: #x axis
@@ -1976,11 +1971,11 @@ class DrawCrop2DRetangle():
  
         return (cx, cy)
 
-    def StoreDisplayPoints(self, p1, p2, orientation):
-        if orientation in self.points_in_display:
-            self.points_in_display[orientation].append([p1, p2])
-        else:
-            self.points_in_display[orientation] = [[p1, p2]]
+    #def StoreDisplayPoints(self, p1, p2, orientation):
+    #    if orientation in self.points_in_display:
+    #        self.points_in_display[orientation].append([p1, p2])
+    #    else:
+    #        self.points_in_display[orientation] = [[p1, p2]]
 
 
     def MakeBox(self):
@@ -2011,7 +2006,7 @@ class DrawCrop2DRetangle():
                 s_cxi, s_cyi = self.Coord3DtoDisplay(pi_x, pi_y, pi_z, canvas)
                 s_cxf, s_cyf = self.Coord3DtoDisplay(pf_x, pf_y, pf_z ,canvas)
 
-                self.StoreDisplayPoints([s_cxi, s_cyi],[s_cxf, s_cyf],"AXIAL")
+                #self.StoreDisplayPoints([s_cxi, s_cyi],[s_cxf, s_cyf],"AXIAL")
 
                 canvas.draw_line((s_cxi, s_cyi),(s_cxf, s_cyf))
  
@@ -2023,26 +2018,28 @@ class DrawCrop2DRetangle():
                 s_cxi, s_cyi = self.Coord3DtoDisplay(pi_x, pi_y, pi_z, canvas)
                 s_cxf, s_cyf = self.Coord3DtoDisplay(pf_x, pf_y, pf_z ,canvas)
 
-                self.StoreDisplayPoints([s_cxi, s_cyi],[s_cxf, s_cyf],"CORONAL")
+                #self.StoreDisplayPoints([s_cxi, s_cyi],[s_cxf, s_cyf],"CORONAL")
                 
                 canvas.draw_line((s_cxi, s_cyi),(s_cxf, s_cyf))
 
         elif canvas.orientation == "SAGITAL":
             for points in box.sagital.values():
+                print ">> ",points[0], points[1]
+                
                 pi_x, pi_y, pi_z = points[0]
                 pf_x, pf_y, pf_z = points[1]
 
                 s_cxi, s_cyi = self.Coord3DtoDisplay(pi_x, pi_y, pi_z, canvas)
                 s_cxf, s_cyf = self.Coord3DtoDisplay(pf_x, pf_y, pf_z ,canvas)
 
-                self.StoreDisplayPoints([s_cxi, s_cyi],[s_cxf, s_cyf],"SAGITAL")
+                #self.StoreDisplayPoints([s_cxi, s_cyi],[s_cxf, s_cyf],"SAGITAL")
 
                 canvas.draw_line((s_cxi, s_cyi),(s_cxf, s_cyf))
+
 
     def UpdateCropCanvas(self, p1, p2, axis):
         if self.canvas.orientation == axis:
             self.canvas.draw_line(p1,p2)
-            print "DESCENDO....."
 
         Publisher.sendMessage('Redraw canvas')
 
@@ -2141,24 +2138,28 @@ class Box():
 
     def UpdatePosition(self, pc, axis, position):
         
-        print "antigo: "
-        print self.axial[position]
+        print "antigo: ", self.sagital[const.SAGITAL_LEFT]
 
         if axis == "AXIAL":
-            print "Atualizando ", pc
             p1, p2 = self.axial[position]
 
             if position == const.AXIAL_UPPER:
                 self.axial[position] = [[p1[0], pc[1], p1[2]],\
                                         [p2[0], pc[1], p2[2]]]
 
+                self.axial[const.AXIAL_LEFT][1][1] = pc[1]
+                self.axial[const.AXIAL_RIGHT][1][1] = pc[1]
+
+                self.sagital[const.SAGITAL_LEFT][0][2] = pc[1]
+                #self.sagital[const.SAGITAL_LEFT][1][2] = pc[1]
+
+
                 #self.axial[const.AXIAL_LEFT] = [[p1[0], pc[1], p1[2]],\
                 #                                [p2[0], p2[1], p2[2]]]
   
 
-                print "Novo: "
-                print self.axial[position]
-                print "___________________________"
+                print "Novo: ", self.sagital[const.SAGITAL_LEFT]
+                print "\n\n"
 
 class SelectPartConfig(object):
     __metaclass__= utils.Singleton
