@@ -1859,6 +1859,8 @@ class FFillSegmentationConfig(object):
         self.dev_min = 50
         self.dev_max = 50
 
+        self.use_ww_wl = True
+
 
 class FloodFillSegmentInteractorStyle(DefaultInteractorStyle):
     def __init__(self, viewer):
@@ -1903,18 +1905,23 @@ class FloodFillSegmentInteractorStyle(DefaultInteractorStyle):
         mask = self.viewer.slice_.current_mask.matrix[1:, 1:, 1:]
         image = self.viewer.slice_.matrix
 
-        v = image[z, y, x]
-        print v
 
         if self.config.method == 'threshold':
+            v = image[z, y, x]
             t0 = self.config.t0
             t1 = self.config.t1
+
         elif self.config.method == 'dynamic':
-            print 'Method dynamic'
+            if self.config.use_ww_wl:
+                print "Using WW&WL"
+                ww = self.viewer.slice_.window_width
+                wl = self.viewer.slice_.window_level
+                image = get_LUT_value(image, ww, wl)
+
+            v = image[z, y, x]
+
             t0 = v - self.config.dev_min
             t1 = v + self.config.dev_max
-
-        print v, t0, t1
 
         if image[z, y, x] < t0 or image[z, y, x] > t1:
             return

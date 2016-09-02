@@ -2097,6 +2097,9 @@ class FFillSegmentationOptionsDialog(wx.Dialog):
             self.method_threshold.SetValue(1)
             self.config.method = 'threshold'
 
+        self.use_ww_wl = wx.CheckBox(self, -1,  _(u"Use WW\&WL"))
+        self.use_ww_wl.SetValue(self.config.use_ww_wl)
+
         self.deviation_min = wx.SpinCtrl(self, -1, value='%d' % self.config.dev_min, min=0, max=10000)
         self.deviation_max = wx.SpinCtrl(self, -1, value='%d' % self.config.dev_max, min=0, max=10000)
 
@@ -2139,6 +2142,8 @@ class FFillSegmentationOptionsDialog(wx.Dialog):
         sizer.AddSpacer(5)
         sizer.Add(self.method_dynamic, flag=wx.LEFT, border=11)
         sizer.AddSpacer(5)
+        sizer.Add(self.use_ww_wl, flag=wx.LEFT, border=13)
+        sizer.AddSpacer(5)
         sizer.Add(self.deviation_min, flag=wx.LEFT, border=13)
         sizer.Add(self.deviation_max, flag=wx.LEFT, border=13)
 
@@ -2150,6 +2155,7 @@ class FFillSegmentationOptionsDialog(wx.Dialog):
 
         self.Bind(wx.EVT_RADIOBUTTON, self.OnSetRadio)
         self.Bind(grad.EVT_THRESHOLD_CHANGING, self.OnSlideChanged, self.threshold)
+        self.use_ww_wl.Bind(wx.EVT_CHECKBOX, self.OnSetUseWWWL)
         self.deviation_min.Bind(wx.EVT_SPINCTRL, self.OnSetDeviation)
         self.deviation_max.Bind(wx.EVT_SPINCTRL, self.OnSetDeviation)
         self.Bind(wx.EVT_CLOSE, self.OnClose)
@@ -2185,6 +2191,9 @@ class FFillSegmentationOptionsDialog(wx.Dialog):
         self.config.t0 = int(self.threshold.GetMinValue())
         self.config.t1 = int(self.threshold.GetMaxValue())
         print self.config.t0, self.config.t1
+
+    def OnSetUseWWWL(self, evt):
+        self.config.use_ww_wl = self.use_ww_wl.GetValue()
 
     def OnSetDeviation(self, evt):
         self.config.dev_max = self.deviation_max.GetValue()
