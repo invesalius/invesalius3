@@ -1783,9 +1783,13 @@ class CropMaskInteractorStyle(DefaultInteractorStyle):
 
     def OnLeftPressed(self, obj, evt):
         self.draw_retangle.mouse_pressed = True
+        iren = self.viewer.interactor
+        x, y = iren.GetEventPosition()
+        self.draw_retangle.LeftPressed(x,y)
 
     def OnReleaseLeftButton(self, obj, evt):
         self.draw_retangle.mouse_pressed = False
+        self.draw_retangle.ReleaseLeft()
 
     def SetUp(self):
         
@@ -1820,8 +1824,27 @@ class DrawCrop2DRetangle():
         self.box = None
         self.mouse_pressed = False
         self.canvas = None
+        self.status_move = None
 
     def MouseMove(self, x, y):
+        x_pos_sl_, y_pos_sl_ = self.viewer.get_slice_pixel_coord_by_screen_pos(x, y)
+        slice_spacing = self.viewer.slice_.spacing
+        xs, ys, zs = slice_spacing
+        
+        x_pos_sl = x_pos_sl_ * xs
+        y_pos_sl = y_pos_sl_ * ys
+
+        if self.status_move == const.AXIAL_UPPER:
+            
+            x, y, z = self.viewer.get_voxel_coord_by_screen_pos(x, y)
+            self.box.UpdatePosition((x * xs, y * ys, z * zs), "AXIAL", const.AXIAL_UPPER)
+            self.UpdateCropCanvas((x_pos_sl), (y_pos_sl), "AXIAL")
+
+
+    def ReleaseLeft(self):
+        self.status_move = None
+
+    def LeftPressed(self, x, y):
         x_pos_sl_, y_pos_sl_ = self.viewer.get_slice_pixel_coord_by_screen_pos(x, y)
 
         slice_spacing = self.viewer.slice_.spacing
@@ -1843,10 +1866,8 @@ class DrawCrop2DRetangle():
                 if dist <= 5:
                     if self.point_between_line(p0, p1, (x_pos_sl, y_pos_sl), "AXIAL"):
                         if k == const.AXIAL_UPPER and self.mouse_pressed:
-                            x, y, z = self.viewer.get_voxel_coord_by_screen_pos(x, y)
-                            print "Arrastando *******************  ",x, y, z, " <<>> ", x_pos_sl, y_pos_sl
-                            self.box.UpdatePosition((x * xs, y * ys, z * zs), "AXIAL", const.AXIAL_UPPER)
-                            self.UpdateCropCanvas((x_pos_sl), (y_pos_sl), "AXIAL")
+                            self.status_move = const.AXIAL_UPPER
+
 
 
         if self.viewer.orientation == "CORONAL":
@@ -2018,7 +2039,6 @@ class DrawCrop2DRetangle():
 
                 canvas.draw_line((s_cxi, s_cyi),(s_cxf, s_cyf))
 
-
     def UpdateCropCanvas(self, p1, p2, axis):
         if self.canvas.orientation == axis:
             self.canvas.draw_line(p1,p2)
@@ -2130,7 +2150,11 @@ class Box():
 
             if position == const.AXIAL_UPPER:
                 self.axial[position] = [[p1[0], pc[1], p1[2]],\
-                                        [p2[0], pc[1], p1[2]]]
+                                        [p2[0], pc[1], p2[2]]]
+
+                #self.axial[const.AXIAL_LEFT] = [[p1[0], pc[1], p1[2]],\
+                #                                [p2[0], p2[1], p2[2]]]
+  
 
                 print "Novo: "
                 print self.axial[position]
