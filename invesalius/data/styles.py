@@ -1132,7 +1132,6 @@ class WaterShedInteractorStyle(DefaultInteractorStyle):
         if (self.left_pressed):
             cursor = slice_data.cursor
             position = self.viewer.get_slice_pixel_coord_by_world_pos(*coord)
-            print ">>>", position
             radius = cursor.radius
 
             if position < 0:
@@ -1834,11 +1833,14 @@ class DrawCrop2DRetangle():
         x_pos_sl = x_pos_sl_ * xs
         y_pos_sl = y_pos_sl_ * ys
 
-        if self.status_move == const.AXIAL_UPPER:
+        x, y, z = self.viewer.get_voxel_coord_by_screen_pos(x, y)
+        
+        if self.status_move:
+            Publisher.sendMessage('Update box positions', [(x * xs, y * ys, z * zs),\
+                                                           self.viewer.orientation,\
+                                                           self.status_move])
             
-            x, y, z = self.viewer.get_voxel_coord_by_screen_pos(x, y)
-            self.box.UpdatePosition((x * xs, y * ys, z * zs), "AXIAL", const.AXIAL_UPPER)
-            self.UpdateCropCanvas((x_pos_sl), (y_pos_sl), "AXIAL")
+        Publisher.sendMessage('Redraw canvas')
 
 
     def ReleaseLeft(self):
@@ -1865,8 +1867,15 @@ class DrawCrop2DRetangle():
 
                 if dist <= 5:
                     if self.point_between_line(p0, p1, (x_pos_sl, y_pos_sl), "AXIAL"):
-                        if k == const.AXIAL_UPPER and self.mouse_pressed:
-                            self.status_move = const.AXIAL_UPPER
+                        if self.mouse_pressed:
+                            self.status_move = k
+
+                        #if k == const.AXIAL_UPPER and self.mouse_pressed:
+                        #    self.status_move = const.AXIAL_UPPER
+                        
+                        #elif k == const.AXIAL_BOTTOM and self.mouse_pressed:
+                        #    self.status_move = const.AXIAL_BOTTOM
+
 
 
 
@@ -2024,7 +2033,6 @@ class DrawCrop2DRetangle():
 
         elif canvas.orientation == "SAGITAL":
             for points in box.sagital.values():
-                print ">> ",points[0], points[1]
                 
                 pi_x, pi_y, pi_z = points[0]
                 pf_x, pf_y, pf_z = points[1]
@@ -2037,11 +2045,11 @@ class DrawCrop2DRetangle():
                 canvas.draw_line((s_cxi, s_cyi),(s_cxf, s_cyf))
 
 
-    def UpdateCropCanvas(self, p1, p2, axis):
-        if self.canvas.orientation == axis:
-            self.canvas.draw_line(p1,p2)
+    #def UpdateCropCanvas(self, p1, p2, axis):
+    #    #if self.canvas.orientation == axis:
+    #    #    self.canvas.draw_line(p1,p2)
 
-        Publisher.sendMessage('Redraw canvas')
+    #    Publisher.sendMessage('Redraw canvas')
 
     def SetViewer(self, viewer):
         self.viewer = viewer
@@ -2060,13 +2068,15 @@ class Box():
         self.zi = None
         self.zf = None
 
-        self.sagital = None
-        self.coronal = None
-        self.axial = None
+        self.sagital = {}
+        self.coronal = {}
+        self.axial = {}
 
         self.xs = None
         self.ys = None
         self.zs = None
+
+        Publisher.subscribe(self.UpdatePosition, "Update box positions")
 
     def SetX(self, i, f):
         self.xi = i
@@ -2096,20 +2106,19 @@ class Box():
 
     def MakeMatrix(self):
 
-        self.sagital = {}
-        self.sagital[const.SAGITAL_BOTTOM] = [[self.xi, self.yi, self.zi],\
+        self.sagital[const.SAGITAL_LEFT] = [[self.xi, self.yi, self.zi],\
                                               [self.xi, self.yi, self.zf]]
 
-        self.sagital[const.SAGITAL_UPPER] = [[self.xi, self.yf, self.zi],\
+        self.sagital[const.SAGITAL_RIGHT] = [[self.xi, self.yf, self.zi],\
                                              [self.xi, self.yf, self.zf]]
 
-        self.sagital[const.SAGITAL_LEFT] = [[self.xi, self.yi, self.zi],\
+        self.sagital[const.SAGITAL_BOTTOM] = [[self.xi, self.yi, self.zi],\
                                             [self.xi, self.yf, self.zi]]
 
-        self.sagital[const.SAGITAL_RIGHT] =  [[self.xi, self.yi, self.zf],\
+        self.sagital[const.SAGITAL_UPPER] =  [[self.xi, self.yi, self.zf],\
                                               [self.xi, self.yf, self.zf]]
 
-        self.coronal = {}
+        
         self.coronal[const.CORONAL_BOTTOM] = [[self.xi, self.yi, self.zi],\
                                               [self.xf, self.yi, self.zi]]
 
@@ -2118,11 +2127,11 @@ class Box():
 
         self.coronal[const.CORONAL_LEFT] = [[self.xi, self.yi, self.zi],\
                                             [self.xi, self.yi, self.zf]]
-
+        
         self.coronal[const.CORONAL_RIGHT] = [[self.xf, self.yi, self.zi],\
                                              [self.xf, self.yi, self.zf]]
 
-        self.axial = {}
+
         self.axial[const.AXIAL_BOTTOM] = [[self.xi, self.yi, self.zi],\
                                           [self.xf, self.yi, self.zi]]
 
@@ -2136,9 +2145,10 @@ class Box():
                                          [self.xf, self.yf, self.zi]]
 
 
-    def UpdatePosition(self, pc, axis, position):
-        
-        print "antigo: ", self.sagital[const.SAGITAL_LEFT]
+    def UpdatePosition(self, pubsub_evt):
+        #def UpdatePosition(self, pc, axis, position):
+   
+        pc, axis, position = pubsub_evt.data
 
         if axis == "AXIAL":
             p1, p2 = self.axial[position]
@@ -2150,16 +2160,33 @@ class Box():
                 self.axial[const.AXIAL_LEFT][1][1] = pc[1]
                 self.axial[const.AXIAL_RIGHT][1][1] = pc[1]
 
-                self.sagital[const.SAGITAL_LEFT][0][2] = pc[1]
-                #self.sagital[const.SAGITAL_LEFT][1][2] = pc[1]
+                self.sagital[const.SAGITAL_RIGHT][0][1] = pc[1]
+                self.sagital[const.SAGITAL_RIGHT][1][1] = pc[1]
+                
+                self.sagital[const.SAGITAL_UPPER][1][1] = pc[1]
+                self.sagital[const.SAGITAL_BOTTOM][1][1] = pc[1]
+
+            if position == const.AXIAL_BOTTOM:
+
+                self.axial[position] = [[p1[0], pc[1], p1[2]],\
+                                        [p2[0], pc[1], p2[2]]]
+                
+
+                self.axial[const.AXIAL_LEFT][0][1] = pc[1]
+                self.axial[const.AXIAL_RIGHT][0][1] = pc[1]
+
+                self.sagital[const.SAGITAL_LEFT][0][1] = pc[1]
+                self.sagital[const.SAGITAL_LEFT][1][1] = pc[1]
+
+                self.sagital[const.SAGITAL_UPPER][0][1] = pc[1]
+                self.sagital[const.SAGITAL_BOTTOM][0][1] = pc[1]
+
+            if position == const.AXIAL_LEFT:
+                self.axial[position] = [[pc[0], p1[1], p1[2]],\
+                                        [pc[0], p2[1], p2[2]]]
+                
 
 
-                #self.axial[const.AXIAL_LEFT] = [[p1[0], pc[1], p1[2]],\
-                #                                [p2[0], p2[1], p2[2]]]
-  
-
-                print "Novo: ", self.sagital[const.SAGITAL_LEFT]
-                print "\n\n"
 
 class SelectPartConfig(object):
     __metaclass__= utils.Singleton
