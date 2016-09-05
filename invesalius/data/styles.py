@@ -2037,11 +2037,16 @@ class DrawCrop2DRetangle():
                 pi_x, pi_y, pi_z = points[0]
                 pf_x, pf_y, pf_z = points[1]
 
+                print pi_x, pi_y, pi_z
+                print pf_x, pf_y, pf_z
+                print "\n\n"
+                print ">>>",self.viewer.slice_data.number
+
                 s_cxi, s_cyi = self.Coord3DtoDisplay(pi_x, pi_y, pi_z, canvas)
                 s_cxf, s_cyf = self.Coord3DtoDisplay(pf_x, pf_y, pf_z ,canvas)
 
                 #self.StoreDisplayPoints([s_cxi, s_cyi],[s_cxf, s_cyf],"SAGITAL")
-
+                
                 canvas.draw_line((s_cxi, s_cyi),(s_cxf, s_cyf))
 
 
@@ -2186,6 +2191,7 @@ class Box():
 
                 self.axial[const.AXIAL_UPPER][0][0] = pc[0]
                 self.axial[const.AXIAL_BOTTOM][0][0] = pc[0]
+
 
 
             if position == const.AXIAL_RIGHT:
