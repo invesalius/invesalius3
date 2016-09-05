@@ -2162,8 +2162,11 @@ class Box(object):
                 self.axial[position] = [[p1[0], pc[1], p1[2]],\
                                         [p2[0], pc[1], p2[2]]]
 
-                self.axial[const.AXIAL_LEFT][1][1] = pc[1]
-                self.axial[const.AXIAL_RIGHT][1][1] = pc[1]
+                #self.axial[const.AXIAL_LEFT][1][1] = pc[1]
+                #self.axial[const.AXIAL_RIGHT][1][1] = pc[1]
+
+                #self.yi = pc[1]
+                self.yf = pc[1]
 
                 self.sagital[const.SAGITAL_RIGHT][0][1] = pc[1]
                 self.sagital[const.SAGITAL_RIGHT][1][1] = pc[1]
