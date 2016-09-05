@@ -2037,10 +2037,10 @@ class DrawCrop2DRetangle():
                 pi_x, pi_y, pi_z = points[0]
                 pf_x, pf_y, pf_z = points[1]
 
-                print pi_x, pi_y, pi_z
-                print pf_x, pf_y, pf_z
-                print "\n\n"
-                print ">>>",self.viewer.slice_data.number
+                #print pi_x, pi_y, pi_z
+                #print pf_x, pf_y, pf_z
+                #print "\n\n"
+                #print ">>>",self.viewer.slice_data.number
 
                 s_cxi, s_cyi = self.Coord3DtoDisplay(pi_x, pi_y, pi_z, canvas)
                 s_cxf, s_cyf = self.Coord3DtoDisplay(pf_x, pf_y, pf_z ,canvas)
@@ -2061,7 +2061,8 @@ class DrawCrop2DRetangle():
         self.MakeBox()
 
        
-class Box():
+class Box(object):
+    __metaclass__= utils.Singleton
 
     def __init__(self):
         self.xi = None
@@ -2151,7 +2152,7 @@ class Box():
 
 
     def UpdatePosition(self, pubsub_evt):
-   
+         
         pc, axis, position = pubsub_evt.data
 
         if axis == "AXIAL":
