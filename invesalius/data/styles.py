@@ -2146,7 +2146,6 @@ class Box():
 
 
     def UpdatePosition(self, pubsub_evt):
-        #def UpdatePosition(self, pc, axis, position):
    
         pc, axis, position = pubsub_evt.data
 
@@ -2184,8 +2183,17 @@ class Box():
             if position == const.AXIAL_LEFT:
                 self.axial[position] = [[pc[0], p1[1], p1[2]],\
                                         [pc[0], p2[1], p2[2]]]
-                
 
+                self.axial[const.AXIAL_UPPER][0][0] = pc[0]
+                self.axial[const.AXIAL_BOTTOM][0][0] = pc[0]
+
+
+            if position == const.AXIAL_RIGHT:
+                self.axial[position] = [[pc[0], p1[1], p1[2]],\
+                                        [pc[0], p2[1], p2[2]]]
+
+                self.axial[const.AXIAL_UPPER][1][0] = pc[0]
+                self.axial[const.AXIAL_BOTTOM][1][0] = pc[0]
 
 
 class SelectPartConfig(object):
