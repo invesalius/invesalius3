@@ -1891,9 +1891,14 @@ class DrawCrop2DRetangle():
                                                      (p1[0], p1[2]),\
                                                      (x_pos_sl, y_pos_sl))
 
+                #if dist <= 5:
+                #    if self.point_between_line(p0, p1, (x_pos_sl, y_pos_sl), "CORONAL"):
+                #        print "Na linha coronal.........."
+
                 if dist <= 5:
                     if self.point_between_line(p0, p1, (x_pos_sl, y_pos_sl), "CORONAL"):
-                        print "Na linha coronal.........."
+                        if self.mouse_pressed:
+                            self.status_move = k
 
         if self.viewer.orientation == "SAGITAL":
             x_pos_sl = x_pos_sl_ * ys
@@ -1909,7 +1914,13 @@ class DrawCrop2DRetangle():
 
                 if dist <= 5:
                     if self.point_between_line(p0, p1, (x_pos_sl, y_pos_sl), "SAGITAL"):
-                        print "Na linha SAGITALLLLLLLLLLLL"
+                        if self.mouse_pressed:
+                            self.status_move = k
+
+
+                #if dist <= 5:
+                #    if self.point_between_line(p0, p1, (x_pos_sl, y_pos_sl), "SAGITAL"):
+                #        print "Na linha SAGITALLLLLLLLLLLL"
 
     def draw_to_canvas(self, gc, canvas):
         """
@@ -2156,55 +2167,49 @@ class Box(object):
         pc, axis, position = pubsub_evt.data
 
         if axis == "AXIAL":
-            p1, p2 = self.axial[position]
 
             if position == const.AXIAL_UPPER:
-                self.axial[position] = [[p1[0], pc[1], p1[2]],\
-                                        [p2[0], pc[1], p2[2]]]
-
-                #self.axial[const.AXIAL_LEFT][1][1] = pc[1]
-                #self.axial[const.AXIAL_RIGHT][1][1] = pc[1]
-
-                #self.yi = pc[1]
                 self.yf = pc[1]
 
-                self.sagital[const.SAGITAL_RIGHT][0][1] = pc[1]
-                self.sagital[const.SAGITAL_RIGHT][1][1] = pc[1]
-                
-                self.sagital[const.SAGITAL_UPPER][1][1] = pc[1]
-                self.sagital[const.SAGITAL_BOTTOM][1][1] = pc[1]
-
             if position == const.AXIAL_BOTTOM:
-
-                self.axial[position] = [[p1[0], pc[1], p1[2]],\
-                                        [p2[0], pc[1], p2[2]]]
-                
-
-                self.axial[const.AXIAL_LEFT][0][1] = pc[1]
-                self.axial[const.AXIAL_RIGHT][0][1] = pc[1]
-
-                self.sagital[const.SAGITAL_LEFT][0][1] = pc[1]
-                self.sagital[const.SAGITAL_LEFT][1][1] = pc[1]
-
-                self.sagital[const.SAGITAL_UPPER][0][1] = pc[1]
-                self.sagital[const.SAGITAL_BOTTOM][0][1] = pc[1]
+                self.yi = pc[1]
 
             if position == const.AXIAL_LEFT:
-                self.axial[position] = [[pc[0], p1[1], p1[2]],\
-                                        [pc[0], p2[1], p2[2]]]
-
-                self.axial[const.AXIAL_UPPER][0][0] = pc[0]
-                self.axial[const.AXIAL_BOTTOM][0][0] = pc[0]
-
-
-
+                self.xi = pc[0]
+                
             if position == const.AXIAL_RIGHT:
-                self.axial[position] = [[pc[0], p1[1], p1[2]],\
-                                        [pc[0], p2[1], p2[2]]]
+                self.xf = pc[0]
 
-                self.axial[const.AXIAL_UPPER][1][0] = pc[0]
-                self.axial[const.AXIAL_BOTTOM][1][0] = pc[0]
 
+        if axis == "SAGITAL":
+            if position == const.SAGITAL_UPPER:
+                self.zf = pc[2]
+
+            if position == const.SAGITAL_BOTTOM:
+                self.zi = pc[2]
+
+            if position == const.SAGITAL_LEFT:
+                self.yi = pc[1]
+
+            if position == const.SAGITAL_RIGHT:
+                self.yf = pc[1]
+
+
+        if axis == "CORONAL":
+
+            if position == const.CORONAL_UPPER:
+                self.zf = pc[2]
+
+            if position == const.CORONAL_BOTTOM:
+                self.zi = pc[2]
+
+            if position == const.CORONAL_LEFT:
+                self.xi = pc[0]
+                
+            if position == const.CORONAL_RIGHT:
+                self.xf = pc[0]             
+
+        self.MakeMatrix()
 
 class SelectPartConfig(object):
     __metaclass__= utils.Singleton
