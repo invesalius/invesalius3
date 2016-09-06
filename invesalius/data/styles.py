@@ -2017,7 +2017,11 @@ class DrawCrop2DRetangle():
     def UpdateValues(self, canvas):
 
         box = self.box
+        slice_number = self.viewer.slice_data.number 
 
+        slice_spacing = self.viewer.slice_.spacing
+        xs, ys, zs = slice_spacing
+        
         if canvas.orientation == "AXIAL":
             for points in box.axial.values():
                 pi_x, pi_y, pi_z = points[0]
@@ -2025,9 +2029,6 @@ class DrawCrop2DRetangle():
 
                 s_cxi, s_cyi = self.Coord3DtoDisplay(pi_x, pi_y, pi_z, canvas)
                 s_cxf, s_cyf = self.Coord3DtoDisplay(pf_x, pf_y, pf_z ,canvas)
-
-                #self.StoreDisplayPoints([s_cxi, s_cyi],[s_cxf, s_cyf],"AXIAL")
-
                 canvas.draw_line((s_cxi, s_cyi),(s_cxf, s_cyf))
  
         elif canvas.orientation == "CORONAL":
@@ -2038,9 +2039,18 @@ class DrawCrop2DRetangle():
                 s_cxi, s_cyi = self.Coord3DtoDisplay(pi_x, pi_y, pi_z, canvas)
                 s_cxf, s_cyf = self.Coord3DtoDisplay(pf_x, pf_y, pf_z ,canvas)
 
-                #self.StoreDisplayPoints([s_cxi, s_cyi],[s_cxf, s_cyf],"CORONAL")
-                
-                canvas.draw_line((s_cxi, s_cyi),(s_cxf, s_cyf))
+                print "inicial: ",pi_x, pi_y, pi_z
+                print "final: ",pf_x, pf_y, pf_z
+                #print slice_number, ">>>", box.xi, box.xf, box.yi, box.yf, box.zi, box.zf, "\n"
+                print "------------------------------"
+                print "slice_number", slice_number
+                sn = slice_number * ys
+                print "slice_number sp ", sn
+                print "\n"
+                if sn >= box.yi:
+                    #print slice_number, box.zi
+                    canvas.draw_line((s_cxi, s_cyi),(s_cxf, s_cyf))
+                #canvas.draw_line((s_cxi, s_cyi),(s_cxf, s_cyf))
 
         elif canvas.orientation == "SAGITAL":
             for points in box.sagital.values():
@@ -2137,29 +2147,32 @@ class Box(object):
 
         
         self.coronal[const.CORONAL_BOTTOM] = [[self.xi, self.yi, self.zi],\
-                                              [self.xf, self.yi, self.zi]]
+                                              [self.xf, self.yf, self.zi]]
 
         self.coronal[const.CORONAL_UPPER] = [[self.xi, self.yi, self.zf],\
-                                             [self.xf, self.yi, self.zf]]
+                                             [self.xf, self.yf, self.zf]]
 
         self.coronal[const.CORONAL_LEFT] = [[self.xi, self.yi, self.zi],\
-                                            [self.xi, self.yi, self.zf]]
+                                            [self.xi, self.yf, self.zf]]
         
         self.coronal[const.CORONAL_RIGHT] = [[self.xf, self.yi, self.zi],\
-                                             [self.xf, self.yi, self.zf]]
+                                             [self.xf, self.yf, self.zf]]
 
 
         self.axial[const.AXIAL_BOTTOM] = [[self.xi, self.yi, self.zi],\
-                                          [self.xf, self.yi, self.zi]]
+                                          [self.xf, self.yi, self.zf]]
+
+        #self.axial[const.AXIAL_UPPER] = [[self.xi, self.yf, self.zi],\
+        #                                 [self.xf, self.yf, self.zi]]
 
         self.axial[const.AXIAL_UPPER] = [[self.xi, self.yf, self.zi],\
-                                         [self.xf, self.yf, self.zi]]
+                                         [self.xf, self.yf, self.zf]]
 
-        self.axial[const.AXIAL_LEFT] = [[self.xi, self.yi, self.zf],\
-                                        [self.xi, self.yf, self.zi]]
+        self.axial[const.AXIAL_LEFT] = [[self.xi, self.yi, self.zi],\
+                                        [self.xi, self.yf, self.zf]]
 
         self.axial[const.AXIAL_RIGHT] = [[self.xf, self.yi, self.zi],\
-                                         [self.xf, self.yf, self.zi]]
+                                         [self.xf, self.yf, self.zf]]
 
 
     def UpdatePosition(self, pubsub_evt):
