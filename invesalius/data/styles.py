@@ -1836,9 +1836,8 @@ class DrawCrop2DRetangle():
         x, y, z = self.viewer.get_voxel_coord_by_screen_pos(x, y)
         
         if self.status_move:
-            Publisher.sendMessage('Update box positions', [(x * xs, y * ys, z * zs),\
-                                                           self.viewer.orientation,\
-                                                           self.status_move])
+            self.box.UpdatePosition((x * xs, y * ys, z * zs),\
+                                    self.viewer.orientation, self.status_move)
             
         Publisher.sendMessage('Redraw canvas')
 
@@ -1870,14 +1869,6 @@ class DrawCrop2DRetangle():
                         if self.mouse_pressed:
                             self.status_move = k
 
-                        #if k == const.AXIAL_UPPER and self.mouse_pressed:
-                        #    self.status_move = const.AXIAL_UPPER
-                        
-                        #elif k == const.AXIAL_BOTTOM and self.mouse_pressed:
-                        #    self.status_move = const.AXIAL_BOTTOM
-
-
-
 
         if self.viewer.orientation == "CORONAL":
             x_pos_sl = x_pos_sl_ * xs
@@ -1890,10 +1881,6 @@ class DrawCrop2DRetangle():
                 dist = self.distance_from_point_line((p0[0], p0[2]),\
                                                      (p1[0], p1[2]),\
                                                      (x_pos_sl, y_pos_sl))
-
-                #if dist <= 5:
-                #    if self.point_between_line(p0, p1, (x_pos_sl, y_pos_sl), "CORONAL"):
-                #        print "Na linha coronal.........."
 
                 if dist <= 5:
                     if self.point_between_line(p0, p1, (x_pos_sl, y_pos_sl), "CORONAL"):
@@ -1918,9 +1905,6 @@ class DrawCrop2DRetangle():
                             self.status_move = k
 
 
-                #if dist <= 5:
-                #    if self.point_between_line(p0, p1, (x_pos_sl, y_pos_sl), "SAGITAL"):
-                #        print "Na linha SAGITALLLLLLLLLLLL"
 
     def draw_to_canvas(self, gc, canvas):
         """
@@ -1991,13 +1975,6 @@ class DrawCrop2DRetangle():
  
         return (cx, cy)
 
-    #def StoreDisplayPoints(self, p1, p2, orientation):
-    #    if orientation in self.points_in_display:
-    #        self.points_in_display[orientation].append([p1, p2])
-    #    else:
-    #        self.points_in_display[orientation] = [[p1, p2]]
-
-
     def MakeBox(self):
 
         slice_size = self.viewer.slice_.matrix.shape
@@ -2042,18 +2019,10 @@ class DrawCrop2DRetangle():
                 s_cxi, s_cyi = self.Coord3DtoDisplay(pi_x, pi_y, pi_z, canvas)
                 s_cxf, s_cyf = self.Coord3DtoDisplay(pf_x, pf_y, pf_z ,canvas)
 
-                print "inicial: ",pi_x, pi_y, pi_z
-                print "final: ",pf_x, pf_y, pf_z
-                #print slice_number, ">>>", box.xi, box.xf, box.yi, box.yf, box.zi, box.zf, "\n"
-                print "------------------------------"
-                print "slice_number", slice_number
                 sn = slice_number * ys
-                print "slice_number sp ", sn
-                print "\n"
+
                 if sn >= box.yi and sn <= box.yf:
-                    #print slice_number, box.zi
                     canvas.draw_line((s_cxi, s_cyi),(s_cxf, s_cyf))
-                #canvas.draw_line((s_cxi, s_cyi),(s_cxf, s_cyf))
 
         elif canvas.orientation == "SAGITAL":
             for points in box.sagital.values():
@@ -2061,25 +2030,13 @@ class DrawCrop2DRetangle():
                 pi_x, pi_y, pi_z = points[0]
                 pf_x, pf_y, pf_z = points[1]
 
-                #print pi_x, pi_y, pi_z
-                #print pf_x, pf_y, pf_z
-                #print "\n\n"
-                #print ">>>",self.viewer.slice_data.number
-
                 s_cxi, s_cyi = self.Coord3DtoDisplay(pi_x, pi_y, pi_z, canvas)
                 s_cxf, s_cyf = self.Coord3DtoDisplay(pf_x, pf_y, pf_z ,canvas)
 
-                #self.StoreDisplayPoints([s_cxi, s_cyi],[s_cxf, s_cyf],"SAGITAL")
                 sn = slice_number * xs
                 if sn >= box.xi and sn <= box.xf:
                     canvas.draw_line((s_cxi, s_cyi),(s_cxf, s_cyf))
 
-
-    #def UpdateCropCanvas(self, p1, p2, axis):
-    #    #if self.canvas.orientation == axis:
-    #    #    self.canvas.draw_line(p1,p2)
-
-    #    Publisher.sendMessage('Redraw canvas')
 
     def SetViewer(self, viewer):
         self.viewer = viewer
@@ -2107,7 +2064,7 @@ class Box(object):
         self.ys = None
         self.zs = None
 
-        Publisher.subscribe(self.UpdatePosition, "Update box positions")
+        #Publisher.subscribe(self.UpdatePosition, "Update box positions")
 
     def SetX(self, i, f):
         self.xi = i
@@ -2179,9 +2136,9 @@ class Box(object):
                                          [self.xf, self.yf, self.zf]]
 
 
-    def UpdatePosition(self, pubsub_evt):
+    def UpdatePosition(self, pc, axis, position):
          
-        pc, axis, position = pubsub_evt.data
+        #pc, axis, position = pubsub_evt.data
 
         if axis == "AXIAL":
 
