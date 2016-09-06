@@ -2029,7 +2029,10 @@ class DrawCrop2DRetangle():
 
                 s_cxi, s_cyi = self.Coord3DtoDisplay(pi_x, pi_y, pi_z, canvas)
                 s_cxf, s_cyf = self.Coord3DtoDisplay(pf_x, pf_y, pf_z ,canvas)
-                canvas.draw_line((s_cxi, s_cyi),(s_cxf, s_cyf))
+
+                sn = slice_number * zs
+                if sn >= box.zi and sn <= box.zf:
+                    canvas.draw_line((s_cxi, s_cyi),(s_cxf, s_cyf))
  
         elif canvas.orientation == "CORONAL":
             for points in box.coronal.values():
@@ -2047,7 +2050,7 @@ class DrawCrop2DRetangle():
                 sn = slice_number * ys
                 print "slice_number sp ", sn
                 print "\n"
-                if sn >= box.yi:
+                if sn >= box.yi and sn <= box.yf:
                     #print slice_number, box.zi
                     canvas.draw_line((s_cxi, s_cyi),(s_cxf, s_cyf))
                 #canvas.draw_line((s_cxi, s_cyi),(s_cxf, s_cyf))
@@ -2067,8 +2070,9 @@ class DrawCrop2DRetangle():
                 s_cxf, s_cyf = self.Coord3DtoDisplay(pf_x, pf_y, pf_z ,canvas)
 
                 #self.StoreDisplayPoints([s_cxi, s_cyi],[s_cxf, s_cyf],"SAGITAL")
-                
-                canvas.draw_line((s_cxi, s_cyi),(s_cxf, s_cyf))
+                sn = slice_number * xs
+                if sn >= box.xi and sn <= box.xf:
+                    canvas.draw_line((s_cxi, s_cyi),(s_cxf, s_cyf))
 
 
     #def UpdateCropCanvas(self, p1, p2, axis):
