@@ -1826,6 +1826,9 @@ class DrawCrop2DRetangle():
         self.status_move = None
 
     def MouseMove(self, x, y):
+
+        print "aaa"
+
         x_pos_sl_, y_pos_sl_ = self.viewer.get_slice_pixel_coord_by_screen_pos(x, y)
         slice_spacing = self.viewer.slice_.spacing
         xs, ys, zs = slice_spacing
@@ -1834,6 +1837,14 @@ class DrawCrop2DRetangle():
         y_pos_sl = y_pos_sl_ * ys
 
         x, y, z = self.viewer.get_voxel_coord_by_screen_pos(x, y)
+        
+        if self.viewer.orientation == "AXIAL":
+            if self.status_move == const.AXIAL_UPPER:
+                Publisher.sendMessage('Set interactor resize NS cursor')
+                print "CURSORRRRR"
+            else:
+                Publisher.sendMessage('Set interactor default cursor')
+        
         
         if self.status_move:
             self.box.UpdatePosition((x * xs, y * ys, z * zs),\
@@ -1864,7 +1875,7 @@ class DrawCrop2DRetangle():
                                                      (p1[0], p1[1]),\
                                                      (x_pos_sl, y_pos_sl))
 
-                if dist <= 5:
+                if dist <= 2:
                     if self.point_between_line(p0, p1, (x_pos_sl, y_pos_sl), "AXIAL"):
                         if self.mouse_pressed:
                             self.status_move = k
@@ -1882,7 +1893,7 @@ class DrawCrop2DRetangle():
                                                      (p1[0], p1[2]),\
                                                      (x_pos_sl, y_pos_sl))
 
-                if dist <= 5:
+                if dist <= 2:
                     if self.point_between_line(p0, p1, (x_pos_sl, y_pos_sl), "CORONAL"):
                         if self.mouse_pressed:
                             self.status_move = k
@@ -1899,7 +1910,7 @@ class DrawCrop2DRetangle():
                                                      (p1[1], p1[2]),\
                                                      (x_pos_sl, y_pos_sl))
 
-                if dist <= 5:
+                if dist <= 2:
                     if self.point_between_line(p0, p1, (x_pos_sl, y_pos_sl), "SAGITAL"):
                         if self.mouse_pressed:
                             self.status_move = k
@@ -2056,6 +2067,10 @@ class Box(object):
         self.zi = None
         self.zf = None
 
+        self.size_x = None
+        self.size_y = None
+        self.size_z = None
+
         self.sagital = {}
         self.coronal = {}
         self.axial = {}
@@ -2069,14 +2084,18 @@ class Box(object):
     def SetX(self, i, f):
         self.xi = i
         self.xf = f
-    
+        self.size_x = f 
+
+
     def SetY(self, i, f):
         self.yi = i
         self.yf = f
+        self.size_y = f
 
     def SetZ(self, i, f):
         self.zi = i
         self.zf = f
+        self.size_z = f
 
     def SetSpacing(self, x, y, z):
         self.xs = x 
@@ -2091,6 +2110,10 @@ class Box(object):
 
         self.zi = self.zi * self.zs
         self.zf = self.zf * self.zs
+
+        self.size_x = self.size_x * self.xs
+        self.size_y = self.size_y * self.ys
+        self.size_z = self.size_z * self.zs
 
     def MakeMatrix(self):
 
@@ -2141,18 +2164,29 @@ class Box(object):
         #pc, axis, position = pubsub_evt.data
 
         if axis == "AXIAL":
+            print "self.xi",self.xi 
+            print "self.xf",self.xf
+            print "pc[0]",pc[0]
+            print "self.size_x",self.size_x,"\n"
 
             if position == const.AXIAL_UPPER:
-                self.yf = pc[1]
+                if pc[1] > self.yi and pc[1] > 0 and pc[1] <= self.size_y:
+                    self.yf = pc[1]
 
             if position == const.AXIAL_BOTTOM:
-                self.yi = pc[1]
+                if pc[1] < self.yf and pc[1] >= 0:
+                    self.yi = pc[1]
 
             if position == const.AXIAL_LEFT:
-                self.xi = pc[0]
+                print "LEFT"
+                if pc[0] < self.xf and pc[0] > 0: #and pc[0] <= self.size_x:
+                    self.xi = pc[0]
+
                 
             if position == const.AXIAL_RIGHT:
-                self.xf = pc[0]
+                print "RIGHT"
+                if pc[0] > self.xi and pc[0] <= self.size_x:# and pc[0] > self.size_y:
+                    self.xf = pc[0]
 
 
         if axis == "SAGITAL":
