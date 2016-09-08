@@ -1823,11 +1823,12 @@ class DrawCrop2DRetangle():
         self.box = None
         self.mouse_pressed = False
         self.canvas = None
+        self.status_mouse_move = None
         self.status_move = None
 
     def MouseMove(self, x, y):
 
-        print "aaa"
+        self.VerifyLine(x,y)
 
         x_pos_sl_, y_pos_sl_ = self.viewer.get_slice_pixel_coord_by_screen_pos(x, y)
         slice_spacing = self.viewer.slice_.spacing
@@ -1839,7 +1840,7 @@ class DrawCrop2DRetangle():
         x, y, z = self.viewer.get_voxel_coord_by_screen_pos(x, y)
         
         if self.viewer.orientation == "AXIAL":
-            if self.status_move == const.AXIAL_UPPER:
+            if self.status_mouse_move == const.AXIAL_UPPER or self.status_mouse_move == const.AXIAL_BOTTOM:
                 Publisher.sendMessage('Set interactor resize NS cursor')
                 print "CURSORRRRR"
             else:
@@ -1852,11 +1853,15 @@ class DrawCrop2DRetangle():
             
         Publisher.sendMessage('Redraw canvas')
 
-
     def ReleaseLeft(self):
         self.status_move = None
+        self.status_mouse_move = None
 
     def LeftPressed(self, x, y):
+        self.status_move = self.status_mouse_move 
+        
+    def VerifyLine(self, x, y):
+
         x_pos_sl_, y_pos_sl_ = self.viewer.get_slice_pixel_coord_by_screen_pos(x, y)
 
         slice_spacing = self.viewer.slice_.spacing
@@ -1874,12 +1879,17 @@ class DrawCrop2DRetangle():
                 dist = self.distance_from_point_line((p0[0], p0[1]),\
                                                      (p1[0], p1[1]),\
                                                      (x_pos_sl, y_pos_sl))
-
-                if dist <= 2:
+                
+                if dist <= 5: 
                     if self.point_between_line(p0, p1, (x_pos_sl, y_pos_sl), "AXIAL"):
                         if self.mouse_pressed:
                             self.status_move = k
-
+                        self.status_mouse_move = k
+                else:
+                    if self.status_mouse_move and not self.mouse_pressed:
+                        #if not self.mouse_pressed:
+                        #print "C"
+                        self.status_mouse_move = None
 
         if self.viewer.orientation == "CORONAL":
             x_pos_sl = x_pos_sl_ * xs
@@ -1897,6 +1907,9 @@ class DrawCrop2DRetangle():
                     if self.point_between_line(p0, p1, (x_pos_sl, y_pos_sl), "CORONAL"):
                         if self.mouse_pressed:
                             self.status_move = k
+                        else:
+                            self.status_mouse_move = k
+
 
         if self.viewer.orientation == "SAGITAL":
             x_pos_sl = x_pos_sl_ * ys
@@ -1914,6 +1927,9 @@ class DrawCrop2DRetangle():
                     if self.point_between_line(p0, p1, (x_pos_sl, y_pos_sl), "SAGITAL"):
                         if self.mouse_pressed:
                             self.status_move = k
+                        else:
+                            self.status_mouse_move = k
+
 
 
 
@@ -1934,10 +1950,14 @@ class DrawCrop2DRetangle():
         """
 
         if axis == "AXIAL":
-            if p1[0] < pc[0] and p2[0] > pc[0]: #x axis
+            #if pc[0] >= p1[0] and pc[0] <= p2[0]:
+            #    return True
+            #else:
+            #    return False
+            if p1[0] <= pc[0] and p2[0] >= pc[0]: #x axis
                 return True
-            elif p1[1] < pc[1] and p2[1] > pc[1]: #y axis
-                return True
+            #elif p1[1] <= pc[1] and p2[1] >= pc[1]: #y axis
+            #    return True
             else:
                 return False
         elif axis == "SAGITAL":

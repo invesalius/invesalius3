@@ -1189,6 +1189,9 @@ class Viewer(wx.Panel):
         Publisher.subscribe(self.OnExportPicture,'Export picture to file')
         Publisher.subscribe(self.SetDefaultCursor, 'Set interactor default cursor')
 
+        Publisher.subscribe(self.SetSizeNSCursor, 'Set interactor resize NS cursor')
+        Publisher.subscribe(self.SetSizeWECursor, 'Set interactor resize WE cursor')
+
         Publisher.subscribe(self.AddActors, 'Add actors ' + str(ORIENTATIONS[self.orientation]))
         Publisher.subscribe(self.RemoveActors, 'Remove actors ' + str(ORIENTATIONS[self.orientation]))
         Publisher.subscribe(self.OnSwapVolumeAxes, 'Swap volume axes')
@@ -1216,6 +1219,12 @@ class Viewer(wx.Panel):
 
     def SetDefaultCursor(self, pusub_evt):
         self.interactor.SetCursor(wx.StockCursor(wx.CURSOR_DEFAULT))
+
+    def SetSizeNSCursor(self, pusub_evt):
+        self.interactor.SetCursor(wx.StockCursor(wx.CURSOR_SIZENS))
+
+    def SetSizeWECursor(self, pusub_evt):
+        self.interactor.SetCursor(wx.StockCursor(wx.CURSOR_SIZEWE))
 
     def OnExportPicture(self, pubsub_evt):
         Publisher.sendMessage('Begin busy cursor')
