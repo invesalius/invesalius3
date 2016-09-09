@@ -1840,26 +1840,54 @@ class DrawCrop2DRetangle():
         x, y, z = self.viewer.get_voxel_coord_by_screen_pos(x, y)
         
         if self.viewer.orientation == "AXIAL":
-            if self.status_mouse_move == const.AXIAL_UPPER or self.status_mouse_move == const.AXIAL_BOTTOM:
-                Publisher.sendMessage('Set interactor resize NS cursor')
-                print "CURSORRRRR"
+            
+            if self.status_mouse_move:
+                if self.status_mouse_move == const.AXIAL_UPPER or\
+                   self.status_mouse_move == const.AXIAL_BOTTOM: 
+                    Publisher.sendMessage('Set interactor resize NS cursor')
+                
+                if self.status_mouse_move == const.AXIAL_LEFT or\
+                        self.status_mouse_move == const.AXIAL_RIGHT:
+                    Publisher.sendMessage('Set interactor resize WE cursor')
             else:
                 Publisher.sendMessage('Set interactor default cursor')
-        
-        
+
+        elif self.viewer.orientation == "CORONAL":
+            if self.status_mouse_move:
+                if self.status_mouse_move == const.CORONAL_UPPER or\
+                   self.status_mouse_move == const.CORONAL_BOTTOM: 
+                    Publisher.sendMessage('Set interactor resize NS cursor')
+                
+                if self.status_mouse_move == const.CORONAL_LEFT or\
+                        self.status_mouse_move == const.CORONAL_RIGHT:
+                    Publisher.sendMessage('Set interactor resize WE cursor')
+            else:
+                Publisher.sendMessage('Set interactor default cursor')
+        else:
+            if self.status_mouse_move:
+                if self.status_mouse_move == const.SAGITAL_UPPER or\
+                   self.status_mouse_move == const.SAGITAL_BOTTOM: 
+                    Publisher.sendMessage('Set interactor resize NS cursor')
+                
+                if self.status_mouse_move == const.SAGITAL_LEFT or\
+                        self.status_mouse_move == const.SAGITAL_RIGHT:
+                    Publisher.sendMessage('Set interactor resize WE cursor')
+
+            else:
+                Publisher.sendMessage('Set interactor default cursor')
+
         if self.status_move:
             self.box.UpdatePosition((x * xs, y * ys, z * zs),\
-                                    self.viewer.orientation, self.status_move)
-            
+                                self.viewer.orientation, self.status_move)           
+        
         Publisher.sendMessage('Redraw canvas')
 
     def ReleaseLeft(self):
         self.status_move = None
-        self.status_mouse_move = None
 
     def LeftPressed(self, x, y):
         self.status_move = self.status_mouse_move 
-        
+
     def VerifyLine(self, x, y):
 
         x_pos_sl_, y_pos_sl_ = self.viewer.get_slice_pixel_coord_by_screen_pos(x, y)
@@ -1880,16 +1908,15 @@ class DrawCrop2DRetangle():
                                                      (p1[0], p1[1]),\
                                                      (x_pos_sl, y_pos_sl))
                 
-                if dist <= 5: 
-                    if self.point_between_line(p0, p1, (x_pos_sl, y_pos_sl), "AXIAL"):
-                        if self.mouse_pressed:
-                            self.status_move = k
-                        self.status_mouse_move = k
+                if dist <= 2 and self.point_between_line(p0, p1, (x_pos_sl, y_pos_sl), "AXIAL"):
+                    self.status_mouse_move = k
+                    if self.mouse_pressed:
+                        self.status_move = k
+                    break
                 else:
-                    if self.status_mouse_move and not self.mouse_pressed:
-                        #if not self.mouse_pressed:
-                        #print "C"
-                        self.status_mouse_move = None
+                    self.status_mouse_move = None
+
+
 
         if self.viewer.orientation == "CORONAL":
             x_pos_sl = x_pos_sl_ * xs
@@ -1903,12 +1930,14 @@ class DrawCrop2DRetangle():
                                                      (p1[0], p1[2]),\
                                                      (x_pos_sl, y_pos_sl))
 
-                if dist <= 2:
-                    if self.point_between_line(p0, p1, (x_pos_sl, y_pos_sl), "CORONAL"):
-                        if self.mouse_pressed:
-                            self.status_move = k
-                        else:
-                            self.status_mouse_move = k
+                if dist <= 2 and self.point_between_line(p0, p1, (x_pos_sl, y_pos_sl), "CORONAL"):
+                    self.status_mouse_move = k
+                    if self.mouse_pressed:
+                        self.status_move = k
+                    break
+                else:
+                    self.status_mouse_move = None
+
 
 
         if self.viewer.orientation == "SAGITAL":
@@ -1923,15 +1952,13 @@ class DrawCrop2DRetangle():
                                                      (p1[1], p1[2]),\
                                                      (x_pos_sl, y_pos_sl))
 
-                if dist <= 2:
-                    if self.point_between_line(p0, p1, (x_pos_sl, y_pos_sl), "SAGITAL"):
-                        if self.mouse_pressed:
-                            self.status_move = k
-                        else:
-                            self.status_mouse_move = k
-
-
-
+                if dist <= 2 and self.point_between_line(p0, p1, (x_pos_sl, y_pos_sl), "SAGITAL"):
+                    self.status_mouse_move = k
+                    if self.mouse_pressed:
+                        self.status_move = k
+                    break
+                else:
+                    self.status_mouse_move = None
 
     def draw_to_canvas(self, gc, canvas):
         """
@@ -1948,18 +1975,16 @@ class DrawCrop2DRetangle():
         """
         Checks whether a point is in the line limits 
         """
-
         if axis == "AXIAL":
-            #if pc[0] >= p1[0] and pc[0] <= p2[0]:
-            #    return True
-            #else:
-            #    return False
-            if p1[0] <= pc[0] and p2[0] >= pc[0]: #x axis
+            
+            if p1[0] <= pc[0] and p2[0] >= pc[0]:
                 return True
-            #elif p1[1] <= pc[1] and p2[1] >= pc[1]: #y axis
-            #    return True
-            else:
-                return False
+
+            if p1[1] <= pc[1] and p2[1] >= pc[1]: #y axis
+                return True
+
+            return False
+
         elif axis == "SAGITAL":
             if p1[1] < pc[0] and p2[1] > pc[0]: #y axis
                 return True
@@ -2181,13 +2206,7 @@ class Box(object):
 
     def UpdatePosition(self, pc, axis, position):
          
-        #pc, axis, position = pubsub_evt.data
-
         if axis == "AXIAL":
-            print "self.xi",self.xi 
-            print "self.xf",self.xf
-            print "pc[0]",pc[0]
-            print "self.size_x",self.size_x,"\n"
 
             if position == const.AXIAL_UPPER:
                 if pc[1] > self.yi and pc[1] > 0 and pc[1] <= self.size_y:
@@ -2198,29 +2217,37 @@ class Box(object):
                     self.yi = pc[1]
 
             if position == const.AXIAL_LEFT:
-                print "LEFT"
-                if pc[0] < self.xf and pc[0] > 0: #and pc[0] <= self.size_x:
+                if pc[0] < self.xf and pc[0] >= 0: 
                     self.xi = pc[0]
 
                 
             if position == const.AXIAL_RIGHT:
-                print "RIGHT"
-                if pc[0] > self.xi and pc[0] <= self.size_x:# and pc[0] > self.size_y:
+                if pc[0] > self.xi and pc[0] <= self.size_x:
                     self.xf = pc[0]
 
 
         if axis == "SAGITAL":
+            print "pc", pc
+            print "zi", self.zi
+            print "zf", self.zf,"\n"
+
             if position == const.SAGITAL_UPPER:
-                self.zf = pc[2]
+                if pc[2] > self.zi and pc[2] > 0 and pc[2] <= self.size_z:
+                    self.zf = pc[2]
 
             if position == const.SAGITAL_BOTTOM:
-                self.zi = pc[2]
+                if pc[2] < self.zf and pc[2] >= 0:
+                    self.zi = pc[2]
 
             if position == const.SAGITAL_LEFT:
-                self.yi = pc[1]
+                print "LEFT"
+                if pc[1] < self.yf and pc[1] >= 0: 
+                    self.yi = pc[1]
 
             if position == const.SAGITAL_RIGHT:
-                self.yf = pc[1]
+                print "RIGHT"
+                if pc[1] > self.yi and pc[1] <= self.size_y:
+                    self.yf = pc[1]
 
 
         if axis == "CORONAL":
