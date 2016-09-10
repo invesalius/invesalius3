@@ -1824,6 +1824,7 @@ class DrawCrop2DRetangle():
         self.mouse_pressed = False
         self.canvas = None
         self.status_move = None
+        self.crop_pan = None
 
     def MouseMove(self, x, y):
 
@@ -1846,8 +1847,12 @@ class DrawCrop2DRetangle():
             elif self.status_move == const.AXIAL_LEFT or\
                     self.status_move == const.AXIAL_RIGHT:
                 Publisher.sendMessage('Set interactor resize WE cursor')
+            elif self.crop_pan == const.CROP_PAN:
+                Publisher.sendMessage('Set interactor resize NSWE cursor')
             else:
                 Publisher.sendMessage('Set interactor default cursor')
+
+
 
         if self.viewer.orientation == "SAGITAL":
             
@@ -1906,6 +1911,15 @@ class DrawCrop2DRetangle():
                         self.status_move = k
                         break
 
+                if self.point_into_box(p0, p1, (x_pos_sl, y_pos_sl), "AXIAL")\
+                        and self.status_move == None:
+                    self.crop_pan = const.CROP_PAN
+                    #break
+                else:
+                    if self.crop_pan:
+                        self.crop_pan = None
+                        break
+
                 if not (self.mouse_pressed) and k != self.status_move:
                     self.status_move = None
 
@@ -1962,6 +1976,16 @@ class DrawCrop2DRetangle():
         """
         self.canvas = canvas
         self.UpdateValues(canvas)
+
+    def point_into_box(self, p1, p2, pc, axis):
+
+        if axis == "AXIAL":
+            if pc[0] > self.box.xi + 30 and pc[0] < self.box.xf - 30\
+                    and pc[1] - 30 > self.box.yi and pc[1] < self.box.yf - 30:   
+                return True
+            else:
+                return False
+
 
     def point_between_line(self, p1, p2, pc, axis):
         """

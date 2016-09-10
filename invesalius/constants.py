@@ -158,6 +158,8 @@ CORONAL_LEFT = 10
 CORONAL_UPPER = 11
 CORONAL_BOTTOM = 12
 
+CROP_PAN = 13
+
 #Color Table from Slice
 #NumberOfColors, SaturationRange, HueRange, ValueRange
 SLICE_COLOR_TABLE = {_("Default "):(None,(0,0),(0,0),(0,1)),
