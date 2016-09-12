@@ -1897,6 +1897,23 @@ class FloodFillSegmentInteractorStyle(DefaultInteractorStyle):
         if (self.viewer.slice_.buffer_slices[self.orientation].mask is None):
             return
 
+        if self.config.target == "3D":
+            self.do_3d_seg()
+        else:
+            self.do_2d_seg()
+
+        self.viewer.slice_.buffer_slices['AXIAL'].discard_mask()
+        self.viewer.slice_.buffer_slices['CORONAL'].discard_mask()
+        self.viewer.slice_.buffer_slices['SAGITAL'].discard_mask()
+
+        self.viewer.slice_.buffer_slices['AXIAL'].discard_vtk_mask()
+        self.viewer.slice_.buffer_slices['CORONAL'].discard_vtk_mask()
+        self.viewer.slice_.buffer_slices['SAGITAL'].discard_vtk_mask()
+
+        self.viewer.slice_.current_mask.was_edited = True
+        Publisher.sendMessage('Reload actual slice')
+
+    def do_2d_seg(self):
         viewer = self.viewer
         iren = viewer.interactor
         mouse_x, mouse_y = iren.GetEventPosition()
@@ -1904,7 +1921,6 @@ class FloodFillSegmentInteractorStyle(DefaultInteractorStyle):
 
         mask = self.viewer.slice_.current_mask.matrix[1:, 1:, 1:]
         image = self.viewer.slice_.matrix
-
 
         if self.config.method == 'threshold':
             v = image[z, y, x]
@@ -1926,59 +1942,74 @@ class FloodFillSegmentInteractorStyle(DefaultInteractorStyle):
         if image[z, y, x] < t0 or image[z, y, x] > t1:
             return
 
-        if self.config.target == "3D":
-            bstruct = np.array(generate_binary_structure(3, CON3D[self.config.con_3d]), dtype='uint8')
-            self.viewer.slice_.do_threshold_to_all_slices()
-            cp_mask = self.viewer.slice_.current_mask.matrix.copy()
-        else:
-            _bstruct = generate_binary_structure(2, CON2D[self.config.con_2d])
-            if self.orientation == 'AXIAL':
-                bstruct = np.zeros((1, 3, 3), dtype='uint8')
-                bstruct[0] = _bstruct
-            elif self.orientation == 'CORONAL':
-                bstruct = np.zeros((3, 1, 3), dtype='uint8')
-                bstruct[:, 0, :] = _bstruct
-            elif self.orientation == 'SAGITAL':
-                bstruct = np.zeros((3, 3, 1), dtype='uint8')
-                bstruct[:, :, 0] = _bstruct
+        _bstruct = generate_binary_structure(2, CON2D[self.config.con_2d])
+        if self.orientation == 'AXIAL':
+            bstruct = np.zeros((1, 3, 3), dtype='uint8')
+            bstruct[0] = _bstruct
+        elif self.orientation == 'CORONAL':
+            bstruct = np.zeros((3, 1, 3), dtype='uint8')
+            bstruct[:, 0, :] = _bstruct
+        elif self.orientation == 'SAGITAL':
+            bstruct = np.zeros((3, 3, 1), dtype='uint8')
+            bstruct[:, :, 0] = _bstruct
 
-        if self.config.target == '2D':
-            floodfill.floodfill_threshold(image, [[x, y, z]], t0, t1, self.config.fill_value, bstruct, mask)
-            b_mask = self.viewer.slice_.buffer_slices[self.orientation].mask
-            index = self.viewer.slice_.buffer_slices[self.orientation].index
+        floodfill.floodfill_threshold(image, [[x, y, z]], t0, t1, self.config.fill_value, bstruct, mask)
+        b_mask = self.viewer.slice_.buffer_slices[self.orientation].mask
+        index = self.viewer.slice_.buffer_slices[self.orientation].index
 
-            if self.orientation == 'AXIAL':
-                p_mask = mask[index,:,:].copy()
-            elif self.orientation == 'CORONAL':
-                p_mask = mask[:, index, :].copy()
-            elif self.orientation == 'SAGITAL':
-                p_mask = mask[:, :, index].copy()
+        if self.orientation == 'AXIAL':
+            p_mask = mask[index,:,:].copy()
+        elif self.orientation == 'CORONAL':
+            p_mask = mask[:, index, :].copy()
+        elif self.orientation == 'SAGITAL':
+            p_mask = mask[:, :, index].copy()
 
-            self.viewer.slice_.current_mask.save_history(index, self.orientation, p_mask, b_mask)
-        else:
-            with futures.ThreadPoolExecutor(max_workers=1) as executor:
-                future = executor.submit(floodfill.floodfill_threshold, image, [[x, y, z]], t0, t1, self.config.fill_value, bstruct, mask)
+        self.viewer.slice_.current_mask.save_history(index, self.orientation, p_mask, b_mask)
 
-                dlg = wx.ProgressDialog(self._progr_title, self._progr_msg, parent=None, style=wx.PD_APP_MODAL)
-                while not future.done():
-                    dlg.Pulse()
-                    time.sleep(0.1)
+    def do_3d_seg(self):
+        viewer = self.viewer
+        iren = viewer.interactor
+        mouse_x, mouse_y = iren.GetEventPosition()
+        x, y, z = self.viewer.get_voxel_coord_by_screen_pos(mouse_x, mouse_y, self.picker)
 
-                dlg.Destroy()
+        mask = self.viewer.slice_.current_mask.matrix[1:, 1:, 1:]
+        image = self.viewer.slice_.matrix
 
-            self.viewer.slice_.current_mask.save_history(0, 'VOLUME', self.viewer.slice_.current_mask.matrix.copy(), cp_mask)
+        if self.config.method == 'threshold':
+            v = image[z, y, x]
+            t0 = self.config.t0
+            t1 = self.config.t1
 
-        self.viewer.slice_.buffer_slices['AXIAL'].discard_mask()
-        self.viewer.slice_.buffer_slices['CORONAL'].discard_mask()
-        self.viewer.slice_.buffer_slices['SAGITAL'].discard_mask()
+        elif self.config.method == 'dynamic':
+            if self.config.use_ww_wl:
+                print "Using WW&WL"
+                ww = self.viewer.slice_.window_width
+                wl = self.viewer.slice_.window_level
+                image = get_LUT_value(image, ww, wl)
 
-        self.viewer.slice_.buffer_slices['AXIAL'].discard_vtk_mask()
-        self.viewer.slice_.buffer_slices['CORONAL'].discard_vtk_mask()
-        self.viewer.slice_.buffer_slices['SAGITAL'].discard_vtk_mask()
+            v = image[z, y, x]
 
-        self.viewer.slice_.current_mask.was_edited = True
-        Publisher.sendMessage('Reload actual slice')
+            t0 = v - self.config.dev_min
+            t1 = v + self.config.dev_max
 
+        if image[z, y, x] < t0 or image[z, y, x] > t1:
+            return
+
+        bstruct = np.array(generate_binary_structure(3, CON3D[self.config.con_3d]), dtype='uint8')
+        self.viewer.slice_.do_threshold_to_all_slices()
+        cp_mask = self.viewer.slice_.current_mask.matrix.copy()
+
+        with futures.ThreadPoolExecutor(max_workers=1) as executor:
+            future = executor.submit(floodfill.floodfill_threshold, image, [[x, y, z]], t0, t1, self.config.fill_value, bstruct, mask)
+
+            dlg = wx.ProgressDialog(self._progr_title, self._progr_msg, parent=None, style=wx.PD_APP_MODAL)
+            while not future.done():
+                dlg.Pulse()
+                time.sleep(0.1)
+
+            dlg.Destroy()
+
+        self.viewer.slice_.current_mask.save_history(0, 'VOLUME', self.viewer.slice_.current_mask.matrix.copy(), cp_mask)
 
 def get_style(style):
     STYLES = {
