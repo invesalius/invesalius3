@@ -1804,15 +1804,11 @@ class CropMaskInteractorStyle(DefaultInteractorStyle):
         #Publisher.sendMessage('Reload actual slice')
 
     def CleanUp(self):
-        pass
-        #for actor in self.actors:
-        #    self.viewer.slice_data.renderer.RemoveActor(actor)
 
-        #self.viewer.slice_.rotations = [0, 0, 0]
-        #self.viewer.slice_.q_orientation = np.array((1, 0, 0, 0))
-        #self._discard_buffers()
-        #Publisher.sendMessage('Close reorient dialog')
-        #Publisher.sendMessage('Show current mask')
+        for draw in self.viewer.canvas.draw_list:
+             self.viewer.canvas.draw_list.remove(draw)
+
+        Publisher.sendMessage('Redraw canvas')
 
 
 class DrawCrop2DRetangle():
@@ -1825,6 +1821,9 @@ class DrawCrop2DRetangle():
         self.canvas = None
         self.status_move = None
         self.crop_pan = None
+        self.last_x = 0
+        self.last_y = 0
+        self.last_z = 0
 
     def MouseMove(self, x, y):
 
@@ -1838,7 +1837,7 @@ class DrawCrop2DRetangle():
         y_pos_sl = y_pos_sl_ * ys
 
         x, y, z = self.viewer.get_voxel_coord_by_screen_pos(x, y)
-        
+
         if self.viewer.orientation == "AXIAL":
             
             if self.status_move == const.AXIAL_UPPER or\
@@ -1851,8 +1850,6 @@ class DrawCrop2DRetangle():
                 Publisher.sendMessage('Set interactor resize NSWE cursor')
             else:
                 Publisher.sendMessage('Set interactor default cursor')
-
-
 
         if self.viewer.orientation == "SAGITAL":
             
@@ -1883,7 +1880,19 @@ class DrawCrop2DRetangle():
         if self.mouse_pressed and self.status_move:
             self.box.UpdatePosition((x * xs, y * ys, z * zs),\
                                     self.viewer.orientation, self.status_move)
-            
+
+        nv_x = x - self.last_x
+        nv_y = y - self.last_y
+        nv_z = z - self.last_z
+
+        if self.mouse_pressed and self.crop_pan:
+            self.box.UpdatePositionByMove((nv_x * xs, nv_y * ys, nv_z * zs),\
+                                    self.viewer.orientation)
+
+        self.last_x = x
+        self.last_y = y
+        self.last_z = z
+
         Publisher.sendMessage('Redraw canvas')
 
     def ReleaseLeft(self):
@@ -2002,22 +2011,22 @@ class DrawCrop2DRetangle():
     def point_into_box(self, p1, p2, pc, axis):
 
         if axis == "AXIAL":
-            if pc[0] > self.box.xi + 30 and pc[0] < self.box.xf - 30\
-                    and pc[1] - 30 > self.box.yi and pc[1] < self.box.yf - 30:   
+            if pc[0] > self.box.xi + 20 and pc[0] < self.box.xf - 20\
+                    and pc[1] - 20 > self.box.yi and pc[1] < self.box.yf - 20:   
                 return True
             else:
                 return False
 
         if axis == "SAGITAL":
-            if pc[0] > self.box.yi + 30 and pc[0] < self.box.yf - 30\
-                    and pc[1] - 30 > self.box.zi and pc[1] < self.box.zf - 30:   
+            if pc[0] > self.box.yi + 20 and pc[0] < self.box.yf - 20\
+                    and pc[1] - 20 > self.box.zi and pc[1] < self.box.zf - 20:   
                 return True
             else:
                 return False
 
         if axis == "CORONAL":
-            if pc[0] > self.box.xi + 30 and pc[0] < self.box.xf - 30\
-                    and pc[1] - 30 > self.box.zi and pc[1] < self.box.zf - 30:   
+            if pc[0] > self.box.xi + 20 and pc[0] < self.box.xf - 20\
+                    and pc[1] - 20 > self.box.zi and pc[1] < self.box.zf - 20:   
                 return True
             else:
                 return False
@@ -2302,6 +2311,41 @@ class Box(object):
             if position == const.CORONAL_RIGHT:
                 if pc[1] > self.yi and pc[1] <= self.size_y:
                     self.xf = pc[0]             
+
+        self.MakeMatrix()
+
+
+    def UpdatePositionByMove(self, pc, axis):
+
+        if axis == "AXIAL":
+
+            if self.yf + pc[1] <= self.size_y and self.yi + pc[1] >= 0:
+                self.yf = self.yf + pc[1]
+                self.yi = self.yi + pc[1]
+
+            if self.xf + pc[0] <= self.size_x and self.xi + pc[0] >= 0:
+                self.xf = self.xf + pc[0]
+                self.xi = self.xi + pc[0]
+
+        if axis == "SAGITAL":
+
+            if self.yf + pc[1] <= self.size_y and self.yi + pc[1] >= 0:
+                self.yf = self.yf + pc[1]
+                self.yi = self.yi + pc[1]
+
+            if self.zf + pc[2] <= self.size_z and self.zi + pc[2] >= 0:
+                self.zf = self.zf + pc[2]
+                self.zi = self.zi + pc[2]
+
+        if axis == "CORONAL":
+
+            if self.xf + pc[0] <= self.size_x and self.xi + pc[0] >= 0:
+                self.xf = self.xf + pc[0]
+                self.xi = self.xi + pc[0]
+
+            if self.zf + pc[2] <= self.size_z and self.zi + pc[2] >= 0:
+                self.zf = self.zf + pc[2]
+                self.zi = self.zi + pc[2]
 
         self.MakeMatrix()
 
