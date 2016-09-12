@@ -1862,6 +1862,8 @@ class DrawCrop2DRetangle():
             elif self.status_move == const.SAGITAL_LEFT or\
                     self.status_move == const.SAGITAL_RIGHT:
                 Publisher.sendMessage('Set interactor resize WE cursor')
+            elif self.crop_pan == const.CROP_PAN:
+                Publisher.sendMessage('Set interactor resize NSWE cursor')
             else:
                 Publisher.sendMessage('Set interactor default cursor')
 
@@ -1873,6 +1875,8 @@ class DrawCrop2DRetangle():
             elif self.status_move == const.CORONAL_LEFT or\
                     self.status_move == const.CORONAL_RIGHT:
                 Publisher.sendMessage('Set interactor resize WE cursor')
+            elif self.crop_pan == const.CROP_PAN:
+                Publisher.sendMessage('Set interactor resize NSWE cursor')
             else:
                 Publisher.sendMessage('Set interactor default cursor')
         
@@ -1940,6 +1944,15 @@ class DrawCrop2DRetangle():
                         self.status_move = k
                         break
 
+                if self.point_into_box(p0, p1, (x_pos_sl, y_pos_sl), "CORONAL")\
+                        and self.status_move == None:
+                    self.crop_pan = const.CROP_PAN
+                    #break
+                else:
+                    if self.crop_pan:
+                        self.crop_pan = None
+                        break
+
                 if not (self.mouse_pressed) and k != self.status_move:
                     self.status_move = None
 
@@ -1959,6 +1972,15 @@ class DrawCrop2DRetangle():
                 if dist <= 2:
                     if self.point_between_line(p0, p1, (x_pos_sl, y_pos_sl), "SAGITAL"):
                         self.status_move = k
+                        break
+
+                if self.point_into_box(p0, p1, (x_pos_sl, y_pos_sl), "SAGITAL")\
+                        and self.status_move == None:
+                    self.crop_pan = const.CROP_PAN
+                    #break
+                else:
+                    if self.crop_pan:
+                        self.crop_pan = None
                         break
 
                 if not (self.mouse_pressed) and k != self.status_move:
@@ -1982,6 +2004,20 @@ class DrawCrop2DRetangle():
         if axis == "AXIAL":
             if pc[0] > self.box.xi + 30 and pc[0] < self.box.xf - 30\
                     and pc[1] - 30 > self.box.yi and pc[1] < self.box.yf - 30:   
+                return True
+            else:
+                return False
+
+        if axis == "SAGITAL":
+            if pc[0] > self.box.yi + 30 and pc[0] < self.box.yf - 30\
+                    and pc[1] - 30 > self.box.zi and pc[1] < self.box.zf - 30:   
+                return True
+            else:
+                return False
+
+        if axis == "CORONAL":
+            if pc[0] > self.box.xi + 30 and pc[0] < self.box.xf - 30\
+                    and pc[1] - 30 > self.box.zi and pc[1] < self.box.zf - 30:   
                 return True
             else:
                 return False
