@@ -2225,6 +2225,21 @@ class CropOptionsDialog(wx.Dialog):
         self._init_gui()
         #self.config = config
 
+    def UpdateValues(self, pubsub_evt):
+
+        data = pubsub_evt.data
+
+        xi, xf, yi, yf, zi, zf = data
+
+        self.tx_axial_i.SetValue(str(zi))
+        self.tx_axial_f.SetValue(str(zf))
+
+        self.tx_sagital_i.SetValue(str(xi))
+        self.tx_sagital_f.SetValue(str(xf))
+
+        self.tx_coronal_i.SetValue(str(yi))
+        self.tx_coronal_f.SetValue(str(yf))
+
     def _init_gui(self):
 
         
@@ -2239,9 +2254,9 @@ class CropOptionsDialog(wx.Dialog):
         flag_labels = wx.ALIGN_RIGHT  | wx.ALIGN_CENTER_VERTICAL
 
         stx_axial = wx.StaticText(p, -1, _(u"Axial:"))
-        tx_axial_i = wx.TextCtrl(p, -1, "", size=wx.Size(50,-1))
+        self.tx_axial_i = tx_axial_i = wx.TextCtrl(p, -1, "", size=wx.Size(50,-1))
         stx_axial_t = wx.StaticText(p, -1, _(u" - "))
-        tx_axial_f = wx.TextCtrl(p, -1, "", size=wx.Size(50,-1))
+        self.tx_axial_f = tx_axial_f = wx.TextCtrl(p, -1, "", size=wx.Size(50,-1))
 
         gbs.Add(stx_axial, (0,0), flag=flag_labels)
         gbs.Add(tx_axial_i, (0,1))
@@ -2249,9 +2264,9 @@ class CropOptionsDialog(wx.Dialog):
         gbs.Add(tx_axial_f, (0,3))
 
         stx_sagital = wx.StaticText(p, -1, _(u"Sagital:"))
-        tx_sagital_i = wx.TextCtrl(p, -1, "", size=wx.Size(50,-1))
+        self.tx_sagital_i = tx_sagital_i = wx.TextCtrl(p, -1, "", size=wx.Size(50,-1))
         stx_sagital_t = wx.StaticText(p, -1, _(u" - "))
-        tx_sagital_f = wx.TextCtrl(p, -1, "", size=wx.Size(50,-1))
+        self.tx_sagital_f = tx_sagital_f = wx.TextCtrl(p, -1, "", size=wx.Size(50,-1))
 
         gbs.Add(stx_sagital, (1,0), flag=flag_labels)
         gbs.Add(tx_sagital_i, (1,1))
@@ -2259,15 +2274,14 @@ class CropOptionsDialog(wx.Dialog):
         gbs.Add(tx_sagital_f, (1,3))
 
         stx_coronal = wx.StaticText(p, -1, _(u"Coronal:"))
-        tx_coronal_i = wx.TextCtrl(p, -1, "", size=wx.Size(50,-1))
+        self.tx_coronal_i = tx_coronal_i = wx.TextCtrl(p, -1, "", size=wx.Size(50,-1))
         stx_coronal_t = wx.StaticText(p, -1, _(u" - "))
-        tx_coronal_f = wx.TextCtrl(p, -1, "", size=wx.Size(50,-1))
+        self.tx_coronal_f = tx_coronal_f = wx.TextCtrl(p, -1, "", size=wx.Size(50,-1))
 
         gbs.Add(stx_coronal, (2,0), flag=flag_labels)
         gbs.Add(tx_coronal_i, (2,1))
         gbs.Add(stx_coronal_t, (2,2), flag=flag_labels)        
         gbs.Add(tx_coronal_f, (2,3))
-
 
         gbs_button = wx.GridBagSizer(2, 4)
  
@@ -2289,6 +2303,7 @@ class CropOptionsDialog(wx.Dialog):
         
         p.SetSizer(box)
         
+        Publisher.subscribe(self.UpdateValues, 'Update crop limits into gui')
         #self.target_name.Bind(wx.EVT_CHAR, self.OnChar)
         #self.Bind(wx.EVT_RADIOBUTTON, self.OnSetRadio)
         #self.Bind(wx.EVT_CLOSE, self.OnClose)

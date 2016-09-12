@@ -1795,11 +1795,11 @@ class CropMaskInteractorStyle(DefaultInteractorStyle):
         self.draw_retangle = DrawCrop2DRetangle()
         self.draw_retangle.SetViewer(self.viewer)
 
-        dlg = dialogs.CropOptionsDialog()
-        dlg.Show()
-
         self.viewer.canvas.draw_list.append(self.draw_retangle)
         self.viewer.UpdateCanvas()
+
+        dlg = dialogs.CropOptionsDialog()
+        dlg.Show()
 
         self.__evts__()
         #self.draw_lines()
@@ -2262,6 +2262,9 @@ class Box(object):
         self.axial[const.AXIAL_RIGHT] = [[self.xf, self.yi, self.zi],\
                                          [self.xf, self.yf, self.zf]]
 
+        Publisher.sendMessage('Update crop limits into gui', (int(self.xi / self.xs), int(self.xf / self. xs),\
+                                                              int(self.yi / self.ys), int(self.yf / self.ys),\
+                                                              int(self.zi / self.zs), int(self.zf / self.zs)))
 
     def UpdatePosition(self, pc, axis, position):
          
