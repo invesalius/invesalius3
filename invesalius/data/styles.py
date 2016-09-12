@@ -2099,11 +2099,13 @@ class DrawCrop2DRetangle():
         xs, ys, zs = slice_spacing
 
         self.box = box = Box()
-        box.SetX(0, xf)
-        box.SetY(0, yf)
-        box.SetZ(0, zf)
-        box.SetSpacing(xs, ys, zs)
-        box.MakeMatrix()
+
+        if self.box.first_run:
+            box.SetX(0, xf)
+            box.SetY(0, yf)
+            box.SetZ(0, zf)
+            box.SetSpacing(xs, ys, zs)
+            box.MakeMatrix()
 
 
     def UpdateValues(self, canvas):
@@ -2183,11 +2185,12 @@ class Box(object):
         self.ys = None
         self.zs = None
 
+        self.first_run = True
+
     def SetX(self, i, f):
         self.xi = i
         self.xf = f
         self.size_x = f 
-
 
     def SetY(self, i, f):
         self.yi = i
@@ -2216,6 +2219,9 @@ class Box(object):
         self.size_x = self.size_x * self.xs
         self.size_y = self.size_y * self.ys
         self.size_z = self.size_z * self.zs
+
+        if self.first_run:
+            self.first_run = False
 
     def MakeMatrix(self):
 
