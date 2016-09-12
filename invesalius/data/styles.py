@@ -1917,13 +1917,13 @@ class FloodFillSegmentInteractorStyle(DefaultInteractorStyle):
         viewer = self.viewer
         iren = viewer.interactor
         mouse_x, mouse_y = iren.GetEventPosition()
-        x, y, z = self.viewer.get_voxel_coord_by_screen_pos(mouse_x, mouse_y, self.picker)
+        x, y = self.viewer.get_slice_pixel_coord_by_screen_pos(mouse_x, mouse_y, self.picker)
 
-        mask = self.viewer.slice_.current_mask.matrix[1:, 1:, 1:]
-        image = self.viewer.slice_.matrix
+        mask = self.viewer.slice_.buffer_slices[self.orientation].mask.copy()
+        image = self.viewer.slice_.buffer_slices[self.orientation].image
 
         if self.config.method == 'threshold':
-            v = image[z, y, x]
+            v = image[y, x]
             t0 = self.config.t0
             t1 = self.config.t1
 
@@ -1934,37 +1934,36 @@ class FloodFillSegmentInteractorStyle(DefaultInteractorStyle):
                 wl = self.viewer.slice_.window_level
                 image = get_LUT_value(image, ww, wl)
 
-            v = image[z, y, x]
+            v = image[y, x]
 
             t0 = v - self.config.dev_min
             t1 = v + self.config.dev_max
 
-        if image[z, y, x] < t0 or image[z, y, x] > t1:
+        print v, x, y
+        if image[y, x] < t0 or image[y, x] > t1:
             return
 
-        _bstruct = generate_binary_structure(2, CON2D[self.config.con_2d])
-        if self.orientation == 'AXIAL':
-            bstruct = np.zeros((1, 3, 3), dtype='uint8')
-            bstruct[0] = _bstruct
-        elif self.orientation == 'CORONAL':
-            bstruct = np.zeros((3, 1, 3), dtype='uint8')
-            bstruct[:, 0, :] = _bstruct
-        elif self.orientation == 'SAGITAL':
-            bstruct = np.zeros((3, 3, 1), dtype='uint8')
-            bstruct[:, :, 0] = _bstruct
+        dy, dx = image.shape
+        image = image.reshape((1, dy, dx))
+        mask = mask.reshape((1, dy, dx))
 
-        floodfill.floodfill_threshold(image, [[x, y, z]], t0, t1, self.config.fill_value, bstruct, mask)
-        b_mask = self.viewer.slice_.buffer_slices[self.orientation].mask
+        bstruct = np.array(generate_binary_structure(2, CON2D[self.config.con_2d]), dtype='uint8')
+        bstruct = bstruct.reshape((1, 3, 3))
+
+        floodfill.floodfill_threshold(image, [[x, y, 0]], t0, t1, self.config.fill_value, bstruct, mask)
+
         index = self.viewer.slice_.buffer_slices[self.orientation].index
+        b_mask = self.viewer.slice_.buffer_slices[self.orientation].mask
+        vol_mask = self.viewer.slice_.current_mask.matrix[1:, 1:, 1:]
 
         if self.orientation == 'AXIAL':
-            p_mask = mask[index,:,:].copy()
+            vol_mask[index, :, :] = mask
         elif self.orientation == 'CORONAL':
-            p_mask = mask[:, index, :].copy()
+            vol_mask[:, index, :] = mask
         elif self.orientation == 'SAGITAL':
-            p_mask = mask[:, :, index].copy()
+            vol_mask[:, :, index] = mask
 
-        self.viewer.slice_.current_mask.save_history(index, self.orientation, p_mask, b_mask)
+        self.viewer.slice_.current_mask.save_history(index, self.orientation, mask, b_mask)
 
     def do_3d_seg(self):
         viewer = self.viewer
