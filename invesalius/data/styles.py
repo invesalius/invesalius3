@@ -1795,6 +1795,9 @@ class CropMaskInteractorStyle(DefaultInteractorStyle):
         self.draw_retangle = DrawCrop2DRetangle()
         self.draw_retangle.SetViewer(self.viewer)
 
+        dlg = dialogs.CropOptionsDialog()
+        dlg.Show()
+
         self.viewer.canvas.draw_list.append(self.draw_retangle)
         self.viewer.UpdateCanvas()
 
@@ -1852,7 +1855,6 @@ class DrawCrop2DRetangle():
                 Publisher.sendMessage('Set interactor default cursor')
 
         if self.viewer.orientation == "SAGITAL":
-            
             if self.status_move == const.SAGITAL_UPPER or\
                     self.status_move == const.SAGITAL_BOTTOM:
                 Publisher.sendMessage('Set interactor resize NS cursor')
@@ -1865,7 +1867,6 @@ class DrawCrop2DRetangle():
                 Publisher.sendMessage('Set interactor default cursor')
 
         if self.viewer.orientation == "CORONAL":
-            
             if self.status_move == const.CORONAL_UPPER or\
                     self.status_move == const.CORONAL_BOTTOM:
                 Publisher.sendMessage('Set interactor resize NS cursor')
@@ -2011,22 +2012,22 @@ class DrawCrop2DRetangle():
     def point_into_box(self, p1, p2, pc, axis):
 
         if axis == "AXIAL":
-            if pc[0] > self.box.xi + 20 and pc[0] < self.box.xf - 20\
-                    and pc[1] - 20 > self.box.yi and pc[1] < self.box.yf - 20:   
+            if pc[0] > self.box.xi + 10 and pc[0] < self.box.xf - 10\
+                    and pc[1] - 10 > self.box.yi and pc[1] < self.box.yf - 10:   
                 return True
             else:
                 return False
 
         if axis == "SAGITAL":
-            if pc[0] > self.box.yi + 20 and pc[0] < self.box.yf - 20\
-                    and pc[1] - 20 > self.box.zi and pc[1] < self.box.zf - 20:   
+            if pc[0] > self.box.yi + 10 and pc[0] < self.box.yf - 10\
+                    and pc[1] - 10 > self.box.zi and pc[1] < self.box.zf - 10:   
                 return True
             else:
                 return False
 
         if axis == "CORONAL":
-            if pc[0] > self.box.xi + 20 and pc[0] < self.box.xf - 20\
-                    and pc[1] - 20 > self.box.zi and pc[1] < self.box.zf - 20:   
+            if pc[0] > self.box.xi + 10 and pc[0] < self.box.xf - 10\
+                    and pc[1] - 10 > self.box.zi and pc[1] < self.box.zf - 10:   
                 return True
             else:
                 return False

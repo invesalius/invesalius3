@@ -1696,7 +1696,7 @@ class ImportBitmapParameters(wx.Dialog):
         else:
             size=wx.Size(380,210)
 
-        pre.Create(wx.GetApp().GetTopWindow(), -1, _(u"Create project from bitmap"),size=wx.Size(380,220),\
+        pre.Create(wx.GetApp().GetTopWindow(), -1, _(u"Create project from bitmap"),size=size,\
                                 style=wx.DEFAULT_DIALOG_STYLE|wx.FRAME_FLOAT_ON_PARENT|wx.STAY_ON_TOP)
 
         self.interval = 0
@@ -2032,7 +2032,6 @@ class SelectPartsOptionsDialog(wx.Dialog):
         evt.Skip()
         self.Destroy()
 
-
 class FFillSegmentationOptionsDialog(wx.Dialog):
     def __init__(self, config):
         pre = wx.PreDialog()
@@ -2203,5 +2202,114 @@ class FFillSegmentationOptionsDialog(wx.Dialog):
     def OnClose(self, evt):
         if self.config.dlg_visible:
             Publisher.sendMessage('Disable style', const.SLICE_STATE_MASK_FFILL)
+        evt.Skip()
+        self.Destroy()
+
+class CropOptionsDialog(wx.Dialog):
+    
+    __metaclass__= utils.Singleton
+
+    def __init__(self):
+        pre = wx.PreDialog()
+
+        if sys.platform == 'win32':
+            size=wx.Size(240,180)
+        else:
+            size=wx.Size(205,180)
+
+        pre.Create(wx.GetApp().GetTopWindow(), -1, _(u"Crop mask"),\
+                    size=size, style=wx.DEFAULT_DIALOG_STYLE|wx.FRAME_FLOAT_ON_PARENT)
+                
+        self.PostCreate(pre)
+
+        self._init_gui()
+        #self.config = config
+
+    def _init_gui(self):
+
+        
+        p = wx.Panel(self, -1, style = wx.TAB_TRAVERSAL
+                     | wx.CLIP_CHILDREN
+                     | wx.FULL_REPAINT_ON_RESIZE)
+       
+        gbs_principal = self.gbs = wx.GridBagSizer(4,1)
+
+        gbs = self.gbs = wx.GridBagSizer(3, 4)
+       
+        flag_labels = wx.ALIGN_RIGHT  | wx.ALIGN_CENTER_VERTICAL
+
+        stx_axial = wx.StaticText(p, -1, _(u"Axial:"))
+        tx_axial_i = wx.TextCtrl(p, -1, "", size=wx.Size(50,-1))
+        stx_axial_t = wx.StaticText(p, -1, _(u" - "))
+        tx_axial_f = wx.TextCtrl(p, -1, "", size=wx.Size(50,-1))
+
+        gbs.Add(stx_axial, (0,0), flag=flag_labels)
+        gbs.Add(tx_axial_i, (0,1))
+        gbs.Add(stx_axial_t, (0,2), flag=flag_labels)        
+        gbs.Add(tx_axial_f, (0,3))
+
+        stx_sagital = wx.StaticText(p, -1, _(u"Sagital:"))
+        tx_sagital_i = wx.TextCtrl(p, -1, "", size=wx.Size(50,-1))
+        stx_sagital_t = wx.StaticText(p, -1, _(u" - "))
+        tx_sagital_f = wx.TextCtrl(p, -1, "", size=wx.Size(50,-1))
+
+        gbs.Add(stx_sagital, (1,0), flag=flag_labels)
+        gbs.Add(tx_sagital_i, (1,1))
+        gbs.Add(stx_sagital_t, (1,2), flag=flag_labels)        
+        gbs.Add(tx_sagital_f, (1,3))
+
+        stx_coronal = wx.StaticText(p, -1, _(u"Coronal:"))
+        tx_coronal_i = wx.TextCtrl(p, -1, "", size=wx.Size(50,-1))
+        stx_coronal_t = wx.StaticText(p, -1, _(u" - "))
+        tx_coronal_f = wx.TextCtrl(p, -1, "", size=wx.Size(50,-1))
+
+        gbs.Add(stx_coronal, (2,0), flag=flag_labels)
+        gbs.Add(tx_coronal_i, (2,1))
+        gbs.Add(stx_coronal_t, (2,2), flag=flag_labels)        
+        gbs.Add(tx_coronal_f, (2,3))
+
+
+        gbs_button = wx.GridBagSizer(2, 4)
+ 
+        btn_ok = self.btn_ok= wx.Button(p, wx.ID_OK)
+        btn_ok.SetDefault()
+
+        btn_cancel = wx.Button(p, wx.ID_CANCEL)
+
+        gbs_button.Add(btn_cancel, (0,0))
+        gbs_button.Add(btn_ok, (0,1))
+
+        gbs_principal.AddSizer(gbs, (0,0), flag = wx.ALL|wx.EXPAND)
+        gbs_principal.AddStretchSpacer((1,0))
+        gbs_principal.AddStretchSpacer((2,0))
+        gbs_principal.AddSizer(gbs_button, (3,0), flag = wx.ALIGN_RIGHT)
+
+        box = wx.BoxSizer()
+        box.AddSizer(gbs_principal, 1, wx.ALL|wx.EXPAND, 10)
+        
+        p.SetSizer(box)
+        
+        #self.target_name.Bind(wx.EVT_CHAR, self.OnChar)
+        #self.Bind(wx.EVT_RADIOBUTTON, self.OnSetRadio)
+        #self.Bind(wx.EVT_CLOSE, self.OnClose)
+
+
+    def OnChar(self, evt):
+        #evt.Skip()
+        #self.config.mask_name = self.target_name.GetValue()
+        pass
+
+    def OnSetRadio(self, evt):
+        #if self.conect3D_6.GetValue():
+        #    self.config.con_3d = 6
+        #elif self.conect3D_18.GetValue():
+        #    self.config.con_3d = 18
+        #elif self.conect3D_26.GetValue():
+        #    self.config.con_3d = 26
+        pass
+
+    def OnClose(self, evt):
+        #if self.config.dlg_visible:
+            #Publisher.sendMessage('Disable style', const.SLICE_STATE_SELECT_MASK_PARTS)
         evt.Skip()
         self.Destroy()
