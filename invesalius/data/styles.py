@@ -1898,7 +1898,16 @@ class FloodFillSegmentInteractorStyle(DefaultInteractorStyle):
             return
 
         if self.config.target == "3D":
-            self.do_3d_seg()
+            with futures.ThreadPoolExecutor(max_workers=1) as executor:
+                future = executor.submit(self.do_3d_seg)
+
+                dlg = wx.ProgressDialog(self._progr_title, self._progr_msg, parent=None, style=wx.PD_APP_MODAL)
+                while not future.done():
+                    dlg.Pulse()
+                    time.sleep(0.1)
+
+                dlg.Destroy()
+
         else:
             self.do_2d_seg()
 
@@ -1939,7 +1948,6 @@ class FloodFillSegmentInteractorStyle(DefaultInteractorStyle):
             t0 = v - self.config.dev_min
             t1 = v + self.config.dev_max
 
-        print v, x, y
         if image[y, x] < t0 or image[y, x] > t1:
             return
 
@@ -1947,10 +1955,14 @@ class FloodFillSegmentInteractorStyle(DefaultInteractorStyle):
         image = image.reshape((1, dy, dx))
         mask = mask.reshape((1, dy, dx))
 
+        out_mask = np.zeros_like(mask)
+
         bstruct = np.array(generate_binary_structure(2, CON2D[self.config.con_2d]), dtype='uint8')
         bstruct = bstruct.reshape((1, 3, 3))
 
-        floodfill.floodfill_threshold(image, [[x, y, 0]], t0, t1, self.config.fill_value, bstruct, mask)
+        floodfill.floodfill_threshold(image, [[x, y, 0]], t0, t1, 1, bstruct, out_mask)
+
+        mask[out_mask.astype('bool')] = self.config.fill_value
 
         index = self.viewer.slice_.buffer_slices[self.orientation].index
         b_mask = self.viewer.slice_.buffer_slices[self.orientation].mask
@@ -1994,19 +2006,14 @@ class FloodFillSegmentInteractorStyle(DefaultInteractorStyle):
         if image[z, y, x] < t0 or image[z, y, x] > t1:
             return
 
+        out_mask = np.zeros_like(mask)
+
         bstruct = np.array(generate_binary_structure(3, CON3D[self.config.con_3d]), dtype='uint8')
         self.viewer.slice_.do_threshold_to_all_slices()
         cp_mask = self.viewer.slice_.current_mask.matrix.copy()
 
-        with futures.ThreadPoolExecutor(max_workers=1) as executor:
-            future = executor.submit(floodfill.floodfill_threshold, image, [[x, y, z]], t0, t1, self.config.fill_value, bstruct, mask)
-
-            dlg = wx.ProgressDialog(self._progr_title, self._progr_msg, parent=None, style=wx.PD_APP_MODAL)
-            while not future.done():
-                dlg.Pulse()
-                time.sleep(0.1)
-
-            dlg.Destroy()
+        floodfill.floodfill_threshold(image, [[x, y, z]], t0, t1, 1, bstruct, out_mask)
+        mask[out_mask.astype('bool')] = self.config.fill_value
 
         self.viewer.slice_.current_mask.save_history(0, 'VOLUME', self.viewer.slice_.current_mask.matrix.copy(), cp_mask)
 
