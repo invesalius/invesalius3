@@ -76,6 +76,16 @@ def get_LUT_value(data, window, level):
     data.shape = shape
     return data
 
+def get_LUT_value_255(data, window, level):
+    shape = data.shape
+    data_ = data.ravel()
+    data = np.piecewise(data_,
+                        [data_ <= (level - 0.5 - (window-1)/2),
+                         data_ > (level - 0.5 + (window-1)/2)],
+                        [0, 255, lambda data_: ((data_ - (level - 0.5))/(window-1) + 0.5)*(255)])
+    data.shape = shape
+    return data
+
 
 class BaseImageInteractorStyle(vtk.vtkInteractorStyleImage):
     def __init__(self, viewer):
@@ -1841,6 +1851,200 @@ class SelectMaskPartsInteractorStyle(DefaultInteractorStyle):
         self.config.mask = mask
 
 
+class FFillSegmentationConfig(object):
+    __metaclass__= utils.Singleton
+    def __init__(self):
+        self.dlg_visible = False
+        self.target = "2D"
+        self.con_2d = 4
+        self.con_3d = 6
+
+        self.t0 = None
+        self.t1 = None
+
+        self.fill_value = 254
+
+        self.method = 'threshold'
+
+        self.dev_min = 25
+        self.dev_max = 25
+
+        self.use_ww_wl = True
+
+
+class FloodFillSegmentInteractorStyle(DefaultInteractorStyle):
+    def __init__(self, viewer):
+        DefaultInteractorStyle.__init__(self, viewer)
+
+        self.viewer = viewer
+        self.orientation = self.viewer.orientation
+
+        self.picker = vtk.vtkWorldPointPicker()
+        self.slice_actor = viewer.slice_data.actor
+        self.slice_data = viewer.slice_data
+
+        self.config = FFillSegmentationConfig()
+        self.dlg_ffill = None
+
+        self._progr_title = _(u"Floodfill segmentation")
+        self._progr_msg = _(u"Segmenting ...")
+
+        self.AddObserver("LeftButtonPressEvent", self.OnFFClick)
+
+    def SetUp(self):
+        if not self.config.dlg_visible:
+
+            if self.config.t0 is None:
+                image = self.viewer.slice_.matrix
+                _min, _max = image.min(), image.max()
+
+                self.config.t0 = int(_min + (3.0/4.0) * (_max - _min))
+                self.config.t1 = int(_max)
+
+            self.config.dlg_visible = True
+            self.dlg_ffill = dialogs.FFillSegmentationOptionsDialog(self.config)
+            self.dlg_ffill.Show()
+
+    def CleanUp(self):
+        if (self.dlg_ffill is not None) and (self.config.dlg_visible):
+            self.config.dlg_visible = False
+            self.dlg_ffill.Destroy()
+            self.dlg_ffill = None
+
+    def OnFFClick(self, obj, evt):
+        if (self.viewer.slice_.buffer_slices[self.orientation].mask is None):
+            return
+
+        if self.config.target == "3D":
+            self.do_3d_seg()
+            with futures.ThreadPoolExecutor(max_workers=1) as executor:
+                future = executor.submit(self.do_3d_seg)
+
+                dlg = wx.ProgressDialog(self._progr_title, self._progr_msg, parent=None, style=wx.PD_APP_MODAL)
+                while not future.done():
+                    dlg.Pulse()
+                    time.sleep(0.1)
+
+                dlg.Destroy()
+
+        else:
+            self.do_2d_seg()
+
+        self.viewer.slice_.buffer_slices['AXIAL'].discard_mask()
+        self.viewer.slice_.buffer_slices['CORONAL'].discard_mask()
+        self.viewer.slice_.buffer_slices['SAGITAL'].discard_mask()
+
+        self.viewer.slice_.buffer_slices['AXIAL'].discard_vtk_mask()
+        self.viewer.slice_.buffer_slices['CORONAL'].discard_vtk_mask()
+        self.viewer.slice_.buffer_slices['SAGITAL'].discard_vtk_mask()
+
+        self.viewer.slice_.current_mask.was_edited = True
+        Publisher.sendMessage('Reload actual slice')
+
+    def do_2d_seg(self):
+        viewer = self.viewer
+        iren = viewer.interactor
+        mouse_x, mouse_y = iren.GetEventPosition()
+        x, y = self.viewer.get_slice_pixel_coord_by_screen_pos(mouse_x, mouse_y, self.picker)
+
+        mask = self.viewer.slice_.buffer_slices[self.orientation].mask.copy()
+        image = self.viewer.slice_.buffer_slices[self.orientation].image
+
+        if self.config.method == 'threshold':
+            v = image[y, x]
+            t0 = self.config.t0
+            t1 = self.config.t1
+
+        elif self.config.method == 'dynamic':
+            if self.config.use_ww_wl:
+                print "Using WW&WL"
+                ww = self.viewer.slice_.window_width
+                wl = self.viewer.slice_.window_level
+                image = get_LUT_value_255(image, ww, wl)
+
+            v = image[y, x]
+
+            t0 = v - self.config.dev_min
+            t1 = v + self.config.dev_max
+
+        if image[y, x] < t0 or image[y, x] > t1:
+            return
+
+        dy, dx = image.shape
+        image = image.reshape((1, dy, dx))
+        mask = mask.reshape((1, dy, dx))
+
+        out_mask = np.zeros_like(mask)
+
+        bstruct = np.array(generate_binary_structure(2, CON2D[self.config.con_2d]), dtype='uint8')
+        bstruct = bstruct.reshape((1, 3, 3))
+
+        floodfill.floodfill_threshold(image, [[x, y, 0]], t0, t1, 1, bstruct, out_mask)
+
+        mask[out_mask.astype('bool')] = self.config.fill_value
+
+        index = self.viewer.slice_.buffer_slices[self.orientation].index
+        b_mask = self.viewer.slice_.buffer_slices[self.orientation].mask
+        vol_mask = self.viewer.slice_.current_mask.matrix[1:, 1:, 1:]
+
+        if self.orientation == 'AXIAL':
+            vol_mask[index, :, :] = mask
+        elif self.orientation == 'CORONAL':
+            vol_mask[:, index, :] = mask
+        elif self.orientation == 'SAGITAL':
+            vol_mask[:, :, index] = mask
+
+        self.viewer.slice_.current_mask.save_history(index, self.orientation, mask, b_mask)
+
+    def do_3d_seg(self):
+        viewer = self.viewer
+        iren = viewer.interactor
+        mouse_x, mouse_y = iren.GetEventPosition()
+        x, y, z = self.viewer.get_voxel_coord_by_screen_pos(mouse_x, mouse_y, self.picker)
+
+        mask = self.viewer.slice_.current_mask.matrix[1:, 1:, 1:]
+        image = self.viewer.slice_.matrix
+
+        if self.config.method == 'threshold':
+            v = image[z, y, x]
+            t0 = self.config.t0
+            t1 = self.config.t1
+
+        elif self.config.method == 'dynamic':
+            if self.config.use_ww_wl:
+                print "Using WW&WL"
+                ww = self.viewer.slice_.window_width
+                wl = self.viewer.slice_.window_level
+                image = get_LUT_value_255(image, ww, wl)
+
+            v = image[z, y, x]
+
+            t0 = v - self.config.dev_min
+            t1 = v + self.config.dev_max
+
+        if image[z, y, x] < t0 or image[z, y, x] > t1:
+            return
+
+        out_mask = np.zeros_like(mask)
+
+        bstruct = np.array(generate_binary_structure(3, CON3D[self.config.con_3d]), dtype='uint8')
+        self.viewer.slice_.do_threshold_to_all_slices()
+        cp_mask = self.viewer.slice_.current_mask.matrix.copy()
+
+        with futures.ThreadPoolExecutor(max_workers=1) as executor:
+            future = executor.submit(floodfill.floodfill_threshold, image, [[x, y, z]], t0, t1, 1, bstruct, out_mask)
+
+            dlg = wx.ProgressDialog(self._progr_title, self._progr_msg, parent=None, style=wx.PD_APP_MODAL)
+            while not future.done():
+                dlg.Pulse()
+                time.sleep(0.1)
+
+            dlg.Destroy()
+
+        mask[out_mask.astype('bool')] = self.config.fill_value
+
+        self.viewer.slice_.current_mask.save_history(0, 'VOLUME', self.viewer.slice_.current_mask.matrix.copy(), cp_mask)
+
 def get_style(style):
     STYLES = {
         const.STATE_DEFAULT: DefaultInteractorStyle,
@@ -1859,6 +2063,7 @@ def get_style(style):
         const.SLICE_STATE_MASK_FFILL: FloodFillMaskInteractorStyle,
         const.SLICE_STATE_REMOVE_MASK_PARTS: RemoveMaskPartsInteractorStyle,
         const.SLICE_STATE_SELECT_MASK_PARTS: SelectMaskPartsInteractorStyle,
+        const.SLICE_STATE_FFILL_SEGMENTATION: FloodFillSegmentInteractorStyle,
     }
     return STYLES[style]
 

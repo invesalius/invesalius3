@@ -2031,3 +2031,177 @@ class SelectPartsOptionsDialog(wx.Dialog):
             Publisher.sendMessage('Disable style', const.SLICE_STATE_SELECT_MASK_PARTS)
         evt.Skip()
         self.Destroy()
+
+
+class FFillSegmentationOptionsDialog(wx.Dialog):
+    def __init__(self, config):
+        pre = wx.PreDialog()
+        pre.Create(wx.GetApp().GetTopWindow(), -1, _(u"Floodfill Segmentation"), style=wx.DEFAULT_DIALOG_STYLE|wx.FRAME_FLOAT_ON_PARENT)
+        self.PostCreate(pre)
+
+        self.config = config
+
+        self._init_gui()
+
+    def _init_gui(self):
+        """
+        Create the widgets.
+        """
+        import project as prj
+        # Target
+        self.target_2d = wx.RadioButton(self, -1, _(u"2D - Actual slice"), style=wx.RB_GROUP)
+        self.target_3d = wx.RadioButton(self, -1, _(u"3D - All slices"))
+
+        if self.config.target == "2D":
+            self.target_2d.SetValue(1)
+        else:
+            self.target_3d.SetValue(1)
+
+        # Connectivity 2D
+        self.conect2D_4 = wx.RadioButton(self, -1, "4", style=wx.RB_GROUP)
+        self.conect2D_8 = wx.RadioButton(self, -1, "8")
+
+        if self.config.con_2d == 8:
+            self.conect2D_8.SetValue(1)
+        else:
+            self.conect2D_4.SetValue(1)
+            self.config.con_2d = 4
+
+        # Connectivity 3D
+        self.conect3D_6 = wx.RadioButton(self, -1, "6", style=wx.RB_GROUP)
+        self.conect3D_18 = wx.RadioButton(self, -1, "18")
+        self.conect3D_26 = wx.RadioButton(self, -1, "26")
+
+        if self.config.con_3d == 18:
+            self.conect3D_18.SetValue(1)
+        elif self.config.con_3d == 26:
+            self.conect3D_26.SetValue(1)
+        else:
+            self.conect3D_6.SetValue(1)
+
+        project = prj.Project()
+        bound_min, bound_max = project.threshold_range
+        colour = [i*255 for i in const.MASK_COLOUR[0]]
+        colour.append(100)
+        self.threshold = grad.GradientCtrl(self, -1, int(bound_min),
+                                             int(bound_max), self.config.t0,
+                                             self.config.t1, colour)
+        self.threshold.SetMinSize((250, -1))
+
+        self.method_threshold = wx.RadioButton(self, -1, _(u"Threshold"), style=wx.RB_GROUP)
+        self.method_dynamic = wx.RadioButton(self, -1, _(u"Dynamic"))
+
+        if self.config.method == 'dynamic':
+            self.method_dynamic.SetValue(1)
+        else:
+            self.method_threshold.SetValue(1)
+            self.config.method = 'threshold'
+
+        self.use_ww_wl = wx.CheckBox(self, -1,  _(u"Use WW\&WL"))
+        self.use_ww_wl.SetValue(self.config.use_ww_wl)
+
+        self.deviation_min = wx.SpinCtrl(self, -1, value='%d' % self.config.dev_min, min=0, max=10000)
+        self.deviation_max = wx.SpinCtrl(self, -1, value='%d' % self.config.dev_max, min=0, max=10000)
+
+        # Sizer
+        sizer = wx.BoxSizer(wx.VERTICAL)
+
+        sizer.AddSpacer(7)
+
+        sizer.Add(wx.StaticText(self, -1, _(u"Parameters")), flag=wx.LEFT, border=7)
+        sizer.AddSpacer(5)
+        sizer.Add(self.target_2d, flag=wx.LEFT, border=9)
+        sizer.Add(self.target_3d, flag=wx.LEFT, border=9)
+
+        sizer.AddSpacer(7)
+
+        sizer.Add(wx.StaticText(self, -1, _(u"2D Connectivity")), flag=wx.LEFT, border=9)
+        sizer.AddSpacer(5)
+        sizer_2d = wx.BoxSizer(wx.HORIZONTAL)
+        sizer_2d.Add(self.conect2D_4, flag=wx.LEFT, border=11)
+        sizer_2d.Add(self.conect2D_8, flag=wx.LEFT, border=11)
+        sizer.Add(sizer_2d)
+
+        sizer.AddSpacer(7)
+
+        sizer.Add(wx.StaticText(self, -1, _(u"3D Connectivity")), flag=wx.LEFT, border=9)
+        sizer.AddSpacer(5)
+        sizer_3d = wx.BoxSizer(wx.HORIZONTAL)
+        sizer_3d.Add(self.conect3D_6, flag=wx.LEFT, border=11)
+        sizer_3d.Add(self.conect3D_18, flag=wx.LEFT, border=11)
+        sizer_3d.Add(self.conect3D_26, flag=wx.LEFT, border=11)
+        sizer.Add(sizer_3d)
+
+        sizer.AddSpacer(7)
+
+        sizer.Add(wx.StaticText(self, -1, _(u"Method")), flag=wx.LEFT, border=9)
+        sizer.AddSpacer(5)
+        sizer.Add(self.method_threshold, flag=wx.LEFT, border=11)
+        sizer.AddSpacer(5)
+        sizer.Add(self.threshold, flag=wx.LEFT|wx.RIGHT|wx.EXPAND, border=13)
+        sizer.AddSpacer(5)
+        sizer.Add(self.method_dynamic, flag=wx.LEFT, border=11)
+        sizer.AddSpacer(5)
+        sizer.Add(self.use_ww_wl, flag=wx.LEFT, border=13)
+        sizer.AddSpacer(5)
+        sizer.Add(self.deviation_min, flag=wx.LEFT, border=13)
+        sizer.Add(self.deviation_max, flag=wx.LEFT, border=13)
+
+        sizer.AddSpacer(7)
+
+        self.SetSizer(sizer)
+        sizer.Fit(self)
+        self.Layout()
+
+        self.Bind(wx.EVT_RADIOBUTTON, self.OnSetRadio)
+        self.Bind(grad.EVT_THRESHOLD_CHANGING, self.OnSlideChanged, self.threshold)
+        self.Bind(grad.EVT_THRESHOLD_CHANGED, self.OnSlideChanged, self.threshold)
+        self.use_ww_wl.Bind(wx.EVT_CHECKBOX, self.OnSetUseWWWL)
+        self.deviation_min.Bind(wx.EVT_SPINCTRL, self.OnSetDeviation)
+        self.deviation_max.Bind(wx.EVT_SPINCTRL, self.OnSetDeviation)
+        self.Bind(wx.EVT_CLOSE, self.OnClose)
+
+    def OnSetRadio(self, evt):
+        # Target
+        if self.target_2d.GetValue():
+            self.config.target = "2D"
+        else:
+            self.config.target = "3D"
+
+        # 2D
+        if self.conect2D_4.GetValue():
+            self.config.con_2d = 4
+        elif self.conect2D_8.GetValue():
+            self.config.con_2d = 8
+
+        # 3D
+        if self.conect3D_6.GetValue():
+            self.config.con_3d = 6
+        elif self.conect3D_18.GetValue():
+            self.config.con_3d = 18
+        elif self.conect3D_26.GetValue():
+            self.config.con_3d = 26
+
+        # Method
+        if self.method_threshold.GetValue():
+            self.config.method = 'threshold'
+        else:
+            self.config.method = 'dynamic'
+
+    def OnSlideChanged(self, evt):
+        self.config.t0 = int(self.threshold.GetMinValue())
+        self.config.t1 = int(self.threshold.GetMaxValue())
+        print self.config.t0, self.config.t1
+
+    def OnSetUseWWWL(self, evt):
+        self.config.use_ww_wl = self.use_ww_wl.GetValue()
+
+    def OnSetDeviation(self, evt):
+        self.config.dev_max = self.deviation_max.GetValue()
+        self.config.dev_min = self.deviation_min.GetValue()
+
+    def OnClose(self, evt):
+        if self.config.dlg_visible:
+            Publisher.sendMessage('Disable style', const.SLICE_STATE_MASK_FFILL)
+        evt.Skip()
+        self.Destroy()
