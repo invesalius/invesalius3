@@ -2227,7 +2227,10 @@ class CropOptionsDialog(wx.Dialog):
 
     def UpdateValues(self, pubsub_evt):
 
-        data = pubsub_evt.data
+        if type(pubsub_evt) == list:
+            data = pubsub_evt
+        else:
+            data = pubsub_evt.data
 
         xi, xf, yi, yf, zi, zf = data
 
