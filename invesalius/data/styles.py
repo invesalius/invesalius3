@@ -76,6 +76,16 @@ def get_LUT_value(data, window, level):
     data.shape = shape
     return data
 
+def get_LUT_value_255(data, window, level):
+    shape = data.shape
+    data_ = data.ravel()
+    data = np.piecewise(data_,
+                        [data_ <= (level - 0.5 - (window-1)/2),
+                         data_ > (level - 0.5 + (window-1)/2)],
+                        [0, 255, lambda data_: ((data_ - (level - 0.5))/(window-1) + 0.5)*(255)])
+    data.shape = shape
+    return data
+
 
 class BaseImageInteractorStyle(vtk.vtkInteractorStyleImage):
     def __init__(self, viewer):
@@ -1849,8 +1859,8 @@ class FFillSegmentationConfig(object):
         self.con_2d = 4
         self.con_3d = 6
 
-        self.t0 = 0
-        self.t1 = 100
+        self.t0 = None
+        self.t1 = None
 
         self.fill_value = 254
 
@@ -1876,13 +1886,21 @@ class FloodFillSegmentInteractorStyle(DefaultInteractorStyle):
         self.config = FFillSegmentationConfig()
         self.dlg_ffill = None
 
-        self._progr_title = _(u"Fill hole")
-        self._progr_msg = _(u"Filling hole ...")
+        self._progr_title = _(u"Floodfill segmentation")
+        self._progr_msg = _(u"Segmenting ...")
 
         self.AddObserver("LeftButtonPressEvent", self.OnFFClick)
 
     def SetUp(self):
         if not self.config.dlg_visible:
+
+            if self.config.t0 is None:
+                image = self.viewer.slice_.matrix
+                _min, _max = image.min(), image.max()
+
+                self.config.t0 = int(_min + (3.0/4.0) * (_max - _min))
+                self.config.t1 = int(_max)
+
             self.config.dlg_visible = True
             self.dlg_ffill = dialogs.FFillSegmentationOptionsDialog(self.config)
             self.dlg_ffill.Show()
@@ -1898,6 +1916,7 @@ class FloodFillSegmentInteractorStyle(DefaultInteractorStyle):
             return
 
         if self.config.target == "3D":
+            self.do_3d_seg()
             with futures.ThreadPoolExecutor(max_workers=1) as executor:
                 future = executor.submit(self.do_3d_seg)
 
@@ -1941,7 +1960,7 @@ class FloodFillSegmentInteractorStyle(DefaultInteractorStyle):
                 print "Using WW&WL"
                 ww = self.viewer.slice_.window_width
                 wl = self.viewer.slice_.window_level
-                image = get_LUT_value(image, ww, wl)
+                image = get_LUT_value_255(image, ww, wl)
 
             v = image[y, x]
 
@@ -1996,7 +2015,7 @@ class FloodFillSegmentInteractorStyle(DefaultInteractorStyle):
                 print "Using WW&WL"
                 ww = self.viewer.slice_.window_width
                 wl = self.viewer.slice_.window_level
-                image = get_LUT_value(image, ww, wl)
+                image = get_LUT_value_255(image, ww, wl)
 
             v = image[z, y, x]
 
@@ -2012,7 +2031,16 @@ class FloodFillSegmentInteractorStyle(DefaultInteractorStyle):
         self.viewer.slice_.do_threshold_to_all_slices()
         cp_mask = self.viewer.slice_.current_mask.matrix.copy()
 
-        floodfill.floodfill_threshold(image, [[x, y, z]], t0, t1, 1, bstruct, out_mask)
+        with futures.ThreadPoolExecutor(max_workers=1) as executor:
+            future = executor.submit(floodfill.floodfill_threshold, image, [[x, y, z]], t0, t1, 1, bstruct, out_mask)
+
+            dlg = wx.ProgressDialog(self._progr_title, self._progr_msg, parent=None, style=wx.PD_APP_MODAL)
+            while not future.done():
+                dlg.Pulse()
+                time.sleep(0.1)
+
+            dlg.Destroy()
+
         mask[out_mask.astype('bool')] = self.config.fill_value
 
         self.viewer.slice_.current_mask.save_history(0, 'VOLUME', self.viewer.slice_.current_mask.matrix.copy(), cp_mask)

@@ -2155,6 +2155,7 @@ class FFillSegmentationOptionsDialog(wx.Dialog):
 
         self.Bind(wx.EVT_RADIOBUTTON, self.OnSetRadio)
         self.Bind(grad.EVT_THRESHOLD_CHANGING, self.OnSlideChanged, self.threshold)
+        self.Bind(grad.EVT_THRESHOLD_CHANGED, self.OnSlideChanged, self.threshold)
         self.use_ww_wl.Bind(wx.EVT_CHECKBOX, self.OnSetUseWWWL)
         self.deviation_min.Bind(wx.EVT_SPINCTRL, self.OnSetDeviation)
         self.deviation_max.Bind(wx.EVT_SPINCTRL, self.OnSetDeviation)
