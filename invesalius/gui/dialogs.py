@@ -2035,7 +2035,7 @@ class SelectPartsOptionsDialog(wx.Dialog):
 class FFillSegmentationOptionsDialog(wx.Dialog):
     def __init__(self, config):
         pre = wx.PreDialog()
-        pre.Create(wx.GetApp().GetTopWindow(), -1, _(u"Floodfill Segmentation"), style=wx.DEFAULT_DIALOG_STYLE|wx.FRAME_FLOAT_ON_PARENT)
+        pre.Create(wx.GetApp().GetTopWindow(), -1, _(u"Region growing"), style=wx.DEFAULT_DIALOG_STYLE|wx.FRAME_FLOAT_ON_PARENT)
         self.PostCreate(pre)
 
         self.config = config

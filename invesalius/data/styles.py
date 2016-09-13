@@ -1991,7 +1991,7 @@ class FloodFillSegmentInteractorStyle(DefaultInteractorStyle):
         self.config = FFillSegmentationConfig()
         self.dlg_ffill = None
 
-        self._progr_title = _(u"Floodfill segmentation")
+        self._progr_title = _(u"Region growing")
         self._progr_msg = _(u"Segmenting ...")
 
         self.AddObserver("LeftButtonPressEvent", self.OnFFClick)
