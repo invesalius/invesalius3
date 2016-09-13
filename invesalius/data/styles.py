@@ -1866,8 +1866,8 @@ class FFillSegmentationConfig(object):
 
         self.method = 'threshold'
 
-        self.dev_min = 50
-        self.dev_max = 50
+        self.dev_min = 25
+        self.dev_max = 25
 
         self.use_ww_wl = True
 
