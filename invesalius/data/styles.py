@@ -1917,16 +1917,6 @@ class FloodFillSegmentInteractorStyle(DefaultInteractorStyle):
 
         if self.config.target == "3D":
             self.do_3d_seg()
-            with futures.ThreadPoolExecutor(max_workers=1) as executor:
-                future = executor.submit(self.do_3d_seg)
-
-                dlg = wx.ProgressDialog(self._progr_title, self._progr_msg, parent=None, style=wx.PD_APP_MODAL)
-                while not future.done():
-                    dlg.Pulse()
-                    time.sleep(0.1)
-
-                dlg.Destroy()
-
         else:
             self.do_2d_seg()
 
