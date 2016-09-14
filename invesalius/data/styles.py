@@ -1776,6 +1776,8 @@ class CropMaskInteractorStyle(DefaultInteractorStyle):
         self.AddObserver("LeftButtonPressEvent", self.OnLeftPressed)
         self.AddObserver("LeftButtonReleaseEvent", self.OnReleaseLeftButton)
 
+        Publisher.subscribe(self.CropMask, "Crop mask")
+
     def OnMove(self, obj, evt):
         iren = self.viewer.interactor
         x, y = iren.GetEventPosition()
@@ -1815,8 +1817,43 @@ class CropMaskInteractorStyle(DefaultInteractorStyle):
 
         Publisher.sendMessage('Redraw canvas')
 
+    def CropMask(self, pubsub_evt):
+        if self.viewer.orientation == "AXIAL":
+            
+            xi, xf, yi, yf, zi, zf = self.draw_retangle.box.GetLimits()
 
-    
+            xi += 1
+            xf += 1
+
+            yi += 1
+            yf += 1
+            
+            zi += 1
+            zf += 1
+
+            self.viewer.slice_.do_threshold_to_all_slices()
+            cp_mask = self.viewer.slice_.current_mask.matrix.copy()
+
+            tmp_mask = self.viewer.slice_.current_mask.matrix[zi:zf, yi:yf, xi:xf].copy()
+            
+            self.viewer.slice_.current_mask.matrix[:] = 1
+
+            self.viewer.slice_.current_mask.matrix[zi:zf, yi:yf, xi:xf] = tmp_mask
+
+            self.viewer.slice_.current_mask.save_history(0, 'VOLUME', self.viewer.slice_.current_mask.matrix.copy(), cp_mask)
+            
+            self.viewer.slice_.buffer_slices['AXIAL'].discard_mask()
+            self.viewer.slice_.buffer_slices['CORONAL'].discard_mask()
+            self.viewer.slice_.buffer_slices['SAGITAL'].discard_mask()
+
+            self.viewer.slice_.buffer_slices['AXIAL'].discard_vtk_mask()
+            self.viewer.slice_.buffer_slices['CORONAL'].discard_vtk_mask()
+            self.viewer.slice_.buffer_slices['SAGITAL'].discard_vtk_mask()
+
+            self.viewer.slice_.current_mask.was_edited = True
+            Publisher.sendMessage('Reload actual slice')           
+
+     
 class SelectPartConfig(object):
     __metaclass__= utils.Singleton
     def __init__(self):

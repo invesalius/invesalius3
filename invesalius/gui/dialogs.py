@@ -2307,15 +2307,16 @@ class CropOptionsDialog(wx.Dialog):
         p.SetSizer(box)
         
         Publisher.subscribe(self.UpdateValues, 'Update crop limits into gui')
-        #self.target_name.Bind(wx.EVT_CHAR, self.OnChar)
+        self.btn_ok.Bind(wx.EVT_BUTTON, self.OnOk)
         #self.Bind(wx.EVT_RADIOBUTTON, self.OnSetRadio)
-        #self.Bind(wx.EVT_CLOSE, self.OnClose)
+        self.Bind(wx.EVT_CLOSE, self.OnClose)
 
 
-    def OnChar(self, evt):
-        #evt.Skip()
+    def OnOk(self, evt):
+        evt.Skip()
+        Publisher.sendMessage('Crop mask')
+        Publisher.sendMessage('Disable style', const.SLICE_STATE_CROP_MASK)
         #self.config.mask_name = self.target_name.GetValue()
-        pass
 
     def OnSetRadio(self, evt):
         #if self.conect3D_6.GetValue():
@@ -2327,6 +2328,8 @@ class CropOptionsDialog(wx.Dialog):
         pass
 
     def OnClose(self, evt):
+
+        Publisher.sendMessage('Disable style', const.SLICE_STATE_CROP_MASK)
         #if self.config.dlg_visible:
             #Publisher.sendMessage('Disable style', const.SLICE_STATE_SELECT_MASK_PARTS)
         evt.Skip()

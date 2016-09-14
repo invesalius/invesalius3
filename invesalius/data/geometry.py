@@ -571,7 +571,7 @@ class DrawCrop2DRetangle():
 
                 sn = slice_number * zs
                 if sn >= box.zi and sn <= box.zf:
-                    canvas.draw_line((s_cxi, s_cyi),(s_cxf, s_cyf))
+                    canvas.draw_line((s_cxi, s_cyi),(s_cxf, s_cyf), colour=(255,255,255,255))
  
         elif canvas.orientation == "CORONAL":
             for points in box.coronal.values():
@@ -584,7 +584,7 @@ class DrawCrop2DRetangle():
                 sn = slice_number * ys
 
                 if sn >= box.yi and sn <= box.yf:
-                    canvas.draw_line((s_cxi, s_cyi),(s_cxf, s_cyf))
+                    canvas.draw_line((s_cxi, s_cyi),(s_cxf, s_cyf), colour=(255,255,255,255))
 
         elif canvas.orientation == "SAGITAL":
             for points in box.sagital.values():
@@ -597,7 +597,7 @@ class DrawCrop2DRetangle():
 
                 sn = slice_number * xs
                 if sn >= box.xi and sn <= box.xf:
-                    canvas.draw_line((s_cxi, s_cyi),(s_cxf, s_cyf))
+                    canvas.draw_line((s_cxi, s_cyi),(s_cxf, s_cyf), colour=(255,255,255,255))
 
 
     def SetViewer(self, viewer):
