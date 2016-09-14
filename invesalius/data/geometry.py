@@ -100,41 +100,41 @@ class Box(object):
         Update values in a matrix to each orientation.
         """
 
-        self.sagital[const.SAGITAL_LEFT] = [[self.xi, self.yi, self.zi],\
-                                              [self.xi, self.yi, self.zf]]
+        self.sagital[const.SAGITAL_LEFT] = [[self.xi, self.yi - (self.ys/2), self.zi],\
+                                            [self.xi, self.yi - (self.ys/2), self.zf]]
 
-        self.sagital[const.SAGITAL_RIGHT] = [[self.xi, self.yf, self.zi],\
-                                             [self.xi, self.yf, self.zf]]
+        self.sagital[const.SAGITAL_RIGHT] = [[self.xi, self.yf + (self.ys/2), self.zi],\
+                                             [self.xi, self.yf + (self.ys/2), self.zf]]
 
-        self.sagital[const.SAGITAL_BOTTOM] = [[self.xi, self.yi, self.zi],\
-                                            [self.xi, self.yf, self.zi]]
+        self.sagital[const.SAGITAL_BOTTOM] = [[self.xi, self.yi, self.zi - (self.zs/2)],\
+                                              [self.xi, self.yf, self.zi - (self.zs/2)]]
 
-        self.sagital[const.SAGITAL_UPPER] =  [[self.xi, self.yi, self.zf],\
-                                              [self.xi, self.yf, self.zf]]
+        self.sagital[const.SAGITAL_UPPER] =  [[self.xi, self.yi, self.zf + (self.zs/2) ],\
+                                              [self.xi, self.yf, self.zf + (self.zs/2) ]]
 
-        self.coronal[const.CORONAL_BOTTOM] = [[self.xi, self.yi, self.zi],\
-                                              [self.xf, self.yf, self.zi]]
+        self.coronal[const.CORONAL_BOTTOM] = [[self.xi, self.yi, self.zi - (self.zs/2)],\
+                                              [self.xf, self.yf, self.zi - (self.zs/2)]]
 
-        self.coronal[const.CORONAL_UPPER] = [[self.xi, self.yi, self.zf],\
-                                             [self.xf, self.yf, self.zf]]
+        self.coronal[const.CORONAL_UPPER] = [[self.xi, self.yi, self.zf + (self.zs/2)],\
+                                             [self.xf, self.yf, self.zf + (self.zs/2)]]
 
-        self.coronal[const.CORONAL_LEFT] = [[self.xi, self.yi, self.zi],\
-                                            [self.xi, self.yf, self.zf]]
+        self.coronal[const.CORONAL_LEFT] = [[self.xi  - (self.xs/2), self.yi, self.zi],\
+                                            [self.xi  - (self.xs/2), self.yf, self.zf]]
         
-        self.coronal[const.CORONAL_RIGHT] = [[self.xf, self.yi, self.zi],\
-                                             [self.xf, self.yf, self.zf]]
+        self.coronal[const.CORONAL_RIGHT] = [[self.xf  + (self.xs/2), self.yi, self.zi],\
+                                             [self.xf  + (self.xs/2), self.yf, self.zf]]
 
-        self.axial[const.AXIAL_BOTTOM] = [[self.xi, self.yi, self.zi],\
-                                          [self.xf, self.yi, self.zf]]
+        self.axial[const.AXIAL_BOTTOM] = [[self.xi, self.yi - (self.ys/2), self.zi],\
+                                          [self.xf, self.yi - (self.ys/2), self.zf]]
 
-        self.axial[const.AXIAL_UPPER] = [[self.xi, self.yf, self.zi],\
-                                         [self.xf, self.yf, self.zf]]
+        self.axial[const.AXIAL_UPPER] = [[self.xi, self.yf + (self.ys/2), self.zi],\
+                                         [self.xf, self.yf + (self.ys/2), self.zf]]
 
-        self.axial[const.AXIAL_LEFT] = [[self.xi, self.yi, self.zi],\
-                                        [self.xi, self.yf, self.zf]]
+        self.axial[const.AXIAL_LEFT] = [[self.xi - (self.xs/2), self.yi, self.zi],\
+                                        [self.xi - (self.xs/2), self.yf, self.zf]]
 
-        self.axial[const.AXIAL_RIGHT] = [[self.xf, self.yi, self.zi],\
-                                         [self.xf, self.yf, self.zf]]
+        self.axial[const.AXIAL_RIGHT] = [[self.xf + (self.xs/2), self.yi, self.zi],\
+                                         [self.xf + (self.xs/2), self.yf, self.zf]]
 
         Publisher.sendMessage('Update crop limits into gui', self.GetLimits())
 
@@ -208,7 +208,7 @@ class Box(object):
                     self.xi = pc[0]
                 
             if position == const.CORONAL_RIGHT:
-                if pc[1] > self.yi and pc[1] <= self.size_y:
+                if pc[0] > self.yi and pc[0] <= self.size_y:
                     self.xf = pc[0]             
 
         self.MakeMatrix()
@@ -566,8 +566,8 @@ class DrawCrop2DRetangle():
                 pi_x, pi_y, pi_z = points[0]
                 pf_x, pf_y, pf_z = points[1]
 
-                s_cxi, s_cyi = self.Coord3DtoDisplay(pi_x + xs/2, pi_y + ys/2, pi_z, canvas)
-                s_cxf, s_cyf = self.Coord3DtoDisplay(pf_x + xs/2, pf_y + ys/2, pf_z ,canvas)
+                s_cxi, s_cyi = self.Coord3DtoDisplay(pi_x, pi_y, pi_z, canvas)
+                s_cxf, s_cyf = self.Coord3DtoDisplay(pf_x, pf_y, pf_z ,canvas)
 
                 sn = slice_number * zs
                 if sn >= box.zi and sn <= box.zf:
