@@ -566,8 +566,8 @@ class DrawCrop2DRetangle():
                 pi_x, pi_y, pi_z = points[0]
                 pf_x, pf_y, pf_z = points[1]
 
-                s_cxi, s_cyi = self.Coord3DtoDisplay(pi_x, pi_y, pi_z, canvas)
-                s_cxf, s_cyf = self.Coord3DtoDisplay(pf_x, pf_y, pf_z ,canvas)
+                s_cxi, s_cyi = self.Coord3DtoDisplay(pi_x + xs/2, pi_y + ys/2, pi_z, canvas)
+                s_cxf, s_cyf = self.Coord3DtoDisplay(pf_x + xs/2, pf_y + ys/2, pf_z ,canvas)
 
                 sn = slice_number * zs
                 if sn >= box.zi and sn <= box.zf:

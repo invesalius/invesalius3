@@ -2207,9 +2207,10 @@ class FFillSegmentationOptionsDialog(wx.Dialog):
 
 class CropOptionsDialog(wx.Dialog):
     
-    __metaclass__= utils.Singleton
+    def __init__(self, config):
 
-    def __init__(self):
+        self.config = config
+
         pre = wx.PreDialog()
 
         if sys.platform == 'win32':
@@ -2307,30 +2308,20 @@ class CropOptionsDialog(wx.Dialog):
         p.SetSizer(box)
         
         Publisher.subscribe(self.UpdateValues, 'Update crop limits into gui')
-        self.btn_ok.Bind(wx.EVT_BUTTON, self.OnOk)
-        #self.Bind(wx.EVT_RADIOBUTTON, self.OnSetRadio)
+        
+        btn_ok.Bind(wx.EVT_BUTTON, self.OnOk)
+        btn_cancel.Bind(wx.EVT_BUTTON, self.OnClose)
         self.Bind(wx.EVT_CLOSE, self.OnClose)
 
 
     def OnOk(self, evt):
-        evt.Skip()
+        self.config.dlg_visible = False
         Publisher.sendMessage('Crop mask')
         Publisher.sendMessage('Disable style', const.SLICE_STATE_CROP_MASK)
-        #self.config.mask_name = self.target_name.GetValue()
-
-    def OnSetRadio(self, evt):
-        #if self.conect3D_6.GetValue():
-        #    self.config.con_3d = 6
-        #elif self.conect3D_18.GetValue():
-        #    self.config.con_3d = 18
-        #elif self.conect3D_26.GetValue():
-        #    self.config.con_3d = 26
-        pass
+        evt.Skip()
 
     def OnClose(self, evt):
-
+        self.config.dlg_visible = False
         Publisher.sendMessage('Disable style', const.SLICE_STATE_CROP_MASK)
-        #if self.config.dlg_visible:
-            #Publisher.sendMessage('Disable style', const.SLICE_STATE_SELECT_MASK_PARTS)
         evt.Skip()
         self.Destroy()

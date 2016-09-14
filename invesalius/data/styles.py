@@ -1759,6 +1759,11 @@ class RemoveMaskPartsInteractorStyle(FloodFillMaskInteractorStyle):
             self._progr_title = _(u"Remove part")
             self._progr_msg = _(u"Removing part ...")
 
+class CropMaskConfig(object):
+    __metaclass__= utils.Singleton
+    def __init__(self):
+        self.dlg_visible = False
+
 class CropMaskInteractorStyle(DefaultInteractorStyle):
 
     def __init__(self, viewer):
@@ -1770,7 +1775,9 @@ class CropMaskInteractorStyle(DefaultInteractorStyle):
         self.slice_actor = viewer.slice_data.actor
         self.slice_data = viewer.slice_data
         self.draw_retangle = None
-       
+        
+        self.config = CropMaskConfig()
+
     def __evts__(self):
         self.AddObserver("MouseMoveEvent", self.OnMove)
         self.AddObserver("LeftButtonPressEvent", self.OnLeftPressed)
@@ -1800,10 +1807,13 @@ class CropMaskInteractorStyle(DefaultInteractorStyle):
 
         self.viewer.canvas.draw_list.append(self.draw_retangle)
         self.viewer.UpdateCanvas()
+        
+        if not(self.config.dlg_visible):
+            self.config.dlg_visible = True
 
-        dlg = dialogs.CropOptionsDialog()
-        dlg.UpdateValues(self.draw_retangle.box.GetLimits())
-        dlg.Show()
+            dlg = dialogs.CropOptionsDialog(self.config)
+            dlg.UpdateValues(self.draw_retangle.box.GetLimits())
+            dlg.Show()
 
         self.__evts__()
         #self.draw_lines()
