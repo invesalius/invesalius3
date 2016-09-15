@@ -1921,9 +1921,15 @@ class FFillOptionsDialog(wx.Dialog):
         Create the widgets.
         """
         # Target
-        self.panel_target = PanelTargeFFill(self, style=wx.SUNKEN_BORDER)
-        self.panel2dcon = Panel2DConnectivity(self, style=wx.SUNKEN_BORDER)
-        self.panel3dcon = Panel3DConnectivity(self, style=wx.SUNKEN_BORDER)
+
+        if sys.platform == "win32":
+            border_style = wx.SIMPLE_BORDER
+        else:
+            border_style = wx.SUNKEN_BORDER
+
+        self.panel_target = PanelTargeFFill(self, style=border_style|wx.TAB_TRAVERSAL)
+        self.panel2dcon = Panel2DConnectivity(self, style=border_style|wx.TAB_TRAVERSAL)
+        self.panel3dcon = Panel3DConnectivity(self, style=border_style|wx.TAB_TRAVERSAL)
 
         if self.config.target == "2D":
             self.panel_target.target_2d.SetValue(1)
