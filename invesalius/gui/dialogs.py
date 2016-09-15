@@ -2214,7 +2214,7 @@ class CropOptionsDialog(wx.Dialog):
         pre = wx.PreDialog()
 
         if sys.platform == 'win32':
-            size=wx.Size(240,180)
+            size=wx.Size(204,165)
         else:
             size=wx.Size(205,180)
 
@@ -2257,10 +2257,12 @@ class CropOptionsDialog(wx.Dialog):
        
         flag_labels = wx.ALIGN_RIGHT  | wx.ALIGN_CENTER_VERTICAL
 
+        txt_style = wx.TE_READONLY 
+
         stx_axial = wx.StaticText(p, -1, _(u"Axial:"))
-        self.tx_axial_i = tx_axial_i = wx.TextCtrl(p, -1, "", size=wx.Size(50,-1))
+        self.tx_axial_i = tx_axial_i = wx.TextCtrl(p, -1, "", size=wx.Size(50,-1), style=txt_style)
         stx_axial_t = wx.StaticText(p, -1, _(u" - "))
-        self.tx_axial_f = tx_axial_f = wx.TextCtrl(p, -1, "", size=wx.Size(50,-1))
+        self.tx_axial_f = tx_axial_f = wx.TextCtrl(p, -1, "", size=wx.Size(50,-1), style=txt_style)
 
         gbs.Add(stx_axial, (0,0), flag=flag_labels)
         gbs.Add(tx_axial_i, (0,1))
@@ -2268,9 +2270,9 @@ class CropOptionsDialog(wx.Dialog):
         gbs.Add(tx_axial_f, (0,3))
 
         stx_sagital = wx.StaticText(p, -1, _(u"Sagital:"))
-        self.tx_sagital_i = tx_sagital_i = wx.TextCtrl(p, -1, "", size=wx.Size(50,-1))
+        self.tx_sagital_i = tx_sagital_i = wx.TextCtrl(p, -1, "", size=wx.Size(50,-1), style=txt_style)
         stx_sagital_t = wx.StaticText(p, -1, _(u" - "))
-        self.tx_sagital_f = tx_sagital_f = wx.TextCtrl(p, -1, "", size=wx.Size(50,-1))
+        self.tx_sagital_f = tx_sagital_f = wx.TextCtrl(p, -1, "", size=wx.Size(50,-1), style=txt_style)
 
         gbs.Add(stx_sagital, (1,0), flag=flag_labels)
         gbs.Add(tx_sagital_i, (1,1))
@@ -2278,9 +2280,9 @@ class CropOptionsDialog(wx.Dialog):
         gbs.Add(tx_sagital_f, (1,3))
 
         stx_coronal = wx.StaticText(p, -1, _(u"Coronal:"))
-        self.tx_coronal_i = tx_coronal_i = wx.TextCtrl(p, -1, "", size=wx.Size(50,-1))
+        self.tx_coronal_i = tx_coronal_i = wx.TextCtrl(p, -1, "", size=wx.Size(50,-1), style=txt_style)
         stx_coronal_t = wx.StaticText(p, -1, _(u" - "))
-        self.tx_coronal_f = tx_coronal_f = wx.TextCtrl(p, -1, "", size=wx.Size(50,-1))
+        self.tx_coronal_f = tx_coronal_f = wx.TextCtrl(p, -1, "", size=wx.Size(50,-1), style=txt_style)
 
         gbs.Add(stx_coronal, (2,0), flag=flag_labels)
         gbs.Add(tx_coronal_i, (2,1))
