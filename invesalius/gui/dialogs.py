@@ -1849,10 +1849,12 @@ class PanelTargeFFill(wx.Panel):
         self.target_2d = wx.RadioButton(self, -1, _(u"2D - Actual slice"), style=wx.RB_GROUP)
         self.target_3d = wx.RadioButton(self, -1, _(u"3D - All slices"))
 
-        sizer = wx.GridBagSizer(10)
+        sizer = wx.GridBagSizer(5, 5)
 
-        sizer.Add(self.target_2d, (0, 0), (1, 6), flag=wx.LEFT, border=5)
-        sizer.Add(self.target_3d, (1, 0), (1, 6), flag=wx.LEFT, border=5)
+        sizer.AddStretchSpacer((0, 0))
+        sizer.Add(self.target_2d, (1, 0), (1, 6), flag=wx.LEFT, border=5)
+        sizer.Add(self.target_3d, (2, 0), (1, 6), flag=wx.LEFT, border=5)
+        sizer.AddStretchSpacer((3, 0))
 
         self.SetSizer(sizer)
         sizer.Fit(self)
@@ -1867,11 +1869,13 @@ class Panel2DConnectivity(wx.Panel):
         self.conect2D_4 = wx.RadioButton(self, -1, "4", style=wx.RB_GROUP)
         self.conect2D_8 = wx.RadioButton(self, -1, "8")
 
-        sizer = wx.GridBagSizer(10)
+        sizer = wx.GridBagSizer(5, 5)
 
-        sizer.Add(wx.StaticText(self, -1, _(u"2D Connectivity")), (0, 0), (1, 6), flag=wx.LEFT, border=5)
-        sizer.Add(self.conect2D_4, (1, 0), flag=wx.LEFT, border=7)
-        sizer.Add(self.conect2D_8, (1, 1), flag=wx.LEFT, border=7)
+        sizer.AddStretchSpacer((0, 0))
+        sizer.Add(wx.StaticText(self, -1, _(u"2D Connectivity")), (1, 0), (1, 6), flag=wx.LEFT, border=5)
+        sizer.Add(self.conect2D_4, (2, 0), flag=wx.LEFT, border=7)
+        sizer.Add(self.conect2D_8, (2, 1), flag=wx.LEFT, border=7)
+        sizer.AddStretchSpacer((3, 0))
 
         self.SetSizer(sizer)
         sizer.Fit(self)
@@ -1890,10 +1894,12 @@ class Panel3DConnectivity(wx.Panel):
 
         sizer = wx.GridBagSizer(5, 5)
 
-        sizer.Add(wx.StaticText(self, -1, _(u"3D Connectivity")), (0, 0), (1, 6), flag=wx.LEFT, border=5)
-        sizer.Add(self.conect3D_6, (1, 0), flag=wx.LEFT, border=9)
-        sizer.Add(self.conect3D_18, (1, 1), flag=wx.LEFT, border=9)
-        sizer.Add(self.conect3D_26, (1, 2), flag=wx.LEFT, border=9)
+        sizer.AddStretchSpacer((0, 0))
+        sizer.Add(wx.StaticText(self, -1, _(u"3D Connectivity")), (1, 0), (1, 6), flag=wx.LEFT, border=5)
+        sizer.Add(self.conect3D_6, (2, 0), flag=wx.LEFT, border=9)
+        sizer.Add(self.conect3D_18, (2, 1), flag=wx.LEFT, border=9)
+        sizer.Add(self.conect3D_26, (2, 2), flag=wx.LEFT, border=9)
+        sizer.AddStretchSpacer((3, 0))
 
         self.SetSizer(sizer)
         sizer.Fit(self)
@@ -1941,8 +1947,13 @@ class FFillOptionsDialog(wx.Dialog):
         else:
             self.panel3dcon.conect3D_6.SetValue(1)
 
+        self.close_btn = wx.Button(self, wx.ID_CLOSE)
+        #  btn_sizer = self.CreateStdDialogButtonSizer(wx.CLOSE)
+        #  btn_sizer.Add(self.close_btn)
+
         # Sizer
         sizer = wx.BoxSizer(wx.VERTICAL)
+
 
         sizer.AddSpacer(5)
         sizer.Add(wx.StaticText(self, -1, _(u"Parameters")), flag=wx.LEFT, border=5)
@@ -1953,14 +1964,20 @@ class FFillOptionsDialog(wx.Dialog):
         sizer.AddSpacer(5)
         sizer.Add(self.panel3dcon, flag=wx.LEFT|wx.RIGHT|wx.EXPAND, border=7)
         sizer.AddSpacer(5)
+        sizer.AddSizer(self.close_btn, 0, flag=wx.ALIGN_RIGHT|wx.RIGHT, border=7)
+        sizer.AddSpacer(5)
 
 
         self.SetSizer(sizer)
         sizer.Fit(self)
         self.Layout()
 
+        self.close_btn.Bind(wx.EVT_BUTTON, self.OnBtnClose)
         self.Bind(wx.EVT_RADIOBUTTON, self.OnSetRadio)
         self.Bind(wx.EVT_CLOSE, self.OnClose)
+
+    def OnBtnClose(self, evt):
+        self.Close()
 
     def OnSetRadio(self, evt):
         # Target
@@ -1984,6 +2001,7 @@ class FFillOptionsDialog(wx.Dialog):
             self.config.con_3d = 26
 
     def OnClose(self, evt):
+        print "ONCLOSE"
         if self.config.dlg_visible:
             Publisher.sendMessage('Disable style', const.SLICE_STATE_MASK_FFILL)
         evt.Skip()
