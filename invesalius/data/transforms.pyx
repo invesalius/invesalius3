@@ -12,7 +12,7 @@ from cython.parallel import prange
 @cython.boundscheck(False) # turn of bounds-checking for entire function
 @cython.cdivision(True)
 @cython.wraparound(False)
-cdef inline void mul_mat4_vec4(double[:, :] M,
+cdef void mul_mat4_vec4(double[:, :] M,
                             double* coord,
                             double* out) nogil:
 
@@ -77,7 +77,7 @@ def apply_view_matrix_transform(image_t[:, :, :] volume,
                                 image_t cval,
                                 image_t[:, :, :] out):
 
-    cdef unsigned int dz, dy, dx
+    cdef int dz, dy, dx
     cdef int z, y, x
     dz = volume.shape[0]
     dy = volume.shape[1]

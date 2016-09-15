@@ -77,7 +77,7 @@ cdef double[64][64] temp = [
 @cython.boundscheck(False) # turn of bounds-checking for entire function
 @cython.cdivision(True)
 @cython.wraparound(False)
-cdef inline double interpolate(image_t[:, :, :] V, double x, double y, double z) nogil:
+cdef double interpolate(image_t[:, :, :] V, double x, double y, double z) nogil:
     cdef double xd, yd, zd
     cdef double c00, c10, c01, c11
     cdef double c0, c1
@@ -123,7 +123,7 @@ cdef inline double interpolate(image_t[:, :, :] V, double x, double y, double z)
 @cython.boundscheck(False) # turn of bounds-checking for entire function
 @cython.cdivision(True)
 @cython.wraparound(False)
-cdef inline image_t _G(image_t[:, :, :] V, int x, int y, int z) nogil:
+cdef image_t _G(image_t[:, :, :] V, int x, int y, int z) nogil:
     cdef int dz, dy, dx
     dz = V.shape[0] - 1
     dy = V.shape[1] - 1
@@ -236,7 +236,7 @@ cdef void calc_coef_tricub(image_t[:, :, :] V, double x, double y, double z, dou
 @cython.boundscheck(False) # turn of bounds-checking for entire function
 @cython.cdivision(True)
 @cython.wraparound(False)
-cdef inline double tricub_interpolate(image_t[:, :, :] V, double x, double y, double z) nogil:
+cdef double tricub_interpolate(image_t[:, :, :] V, double x, double y, double z) nogil:
     # From: Tricubic interpolation in three dimensions. Lekien and Marsden
     cdef double[64] coef
     cdef double result = 0.0
@@ -261,14 +261,14 @@ cdef inline double tricub_interpolate(image_t[:, :, :] V, double x, double y, do
 @cython.boundscheck(False) # turn of bounds-checking for entire function
 @cython.cdivision(True)
 @cython.wraparound(False)
-cdef inline double cubicInterpolate(double p[4], double x) nogil: 
+cdef double cubicInterpolate(double p[4], double x) nogil: 
     return p[1] + 0.5 * x*(p[2] - p[0] + x*(2.0*p[0] - 5.0*p[1] + 4.0*p[2] - p[3] + x*(3.0*(p[1] - p[2]) + p[3] - p[0])))
 
 
 @cython.boundscheck(False) # turn of bounds-checking for entire function
 @cython.cdivision(True)
 @cython.wraparound(False)
-cdef inline double bicubicInterpolate (double p[4][4], double x, double y) nogil:
+cdef double bicubicInterpolate (double p[4][4], double x, double y) nogil:
     cdef double arr[4]
     arr[0] = cubicInterpolate(p[0], y)
     arr[1] = cubicInterpolate(p[1], y)
@@ -280,7 +280,7 @@ cdef inline double bicubicInterpolate (double p[4][4], double x, double y) nogil
 @cython.boundscheck(False) # turn of bounds-checking for entire function
 @cython.cdivision(True)
 @cython.wraparound(False)
-cdef inline double tricubicInterpolate(image_t[:, :, :] V, double x, double y, double z) nogil:
+cdef double tricubicInterpolate(image_t[:, :, :] V, double x, double y, double z) nogil:
     # From http://www.paulinternet.nl/?page=bicubic
     cdef double p[4][4][4]
 
