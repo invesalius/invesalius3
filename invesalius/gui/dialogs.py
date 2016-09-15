@@ -1922,15 +1922,19 @@ class FFillOptionsDialog(wx.Dialog):
         """
         # Target
         self.panel_target = PanelTargeFFill(self, style=wx.SUNKEN_BORDER)
+        self.panel2dcon = Panel2DConnectivity(self, style=wx.SUNKEN_BORDER)
+        self.panel3dcon = Panel3DConnectivity(self, style=wx.SUNKEN_BORDER)
 
         if self.config.target == "2D":
             self.panel_target.target_2d.SetValue(1)
+            self.panel2dcon.Enable(1)
+            self.panel3dcon.Enable(0)
         else:
             self.panel_target.target_3d.SetValue(1)
+            self.panel3dcon.Enable(1)
+            self.panel2dcon.Enable(0)
 
         # Connectivity 2D
-        self.panel2dcon = Panel2DConnectivity(self, style=wx.SUNKEN_BORDER)
-
         if self.config.con_2d == 8:
             self.panel2dcon.conect2D_8.SetValue(1)
         else:
@@ -1938,8 +1942,6 @@ class FFillOptionsDialog(wx.Dialog):
             self.config.con_2d = 4
 
         # Connectivity 3D
-        self.panel3dcon = Panel3DConnectivity(self, style=wx.SUNKEN_BORDER)
-
         if self.config.con_3d == 18:
             self.panel3dcon.conect3D_18.SetValue(1)
         elif self.config.con_3d == 26:
@@ -1948,12 +1950,9 @@ class FFillOptionsDialog(wx.Dialog):
             self.panel3dcon.conect3D_6.SetValue(1)
 
         self.close_btn = wx.Button(self, wx.ID_CLOSE)
-        #  btn_sizer = self.CreateStdDialogButtonSizer(wx.CLOSE)
-        #  btn_sizer.Add(self.close_btn)
 
         # Sizer
         sizer = wx.BoxSizer(wx.VERTICAL)
-
 
         sizer.AddSpacer(5)
         sizer.Add(wx.StaticText(self, -1, _(u"Parameters")), flag=wx.LEFT, border=5)
@@ -1966,7 +1965,6 @@ class FFillOptionsDialog(wx.Dialog):
         sizer.AddSpacer(5)
         sizer.AddSizer(self.close_btn, 0, flag=wx.ALIGN_RIGHT|wx.RIGHT, border=7)
         sizer.AddSpacer(5)
-
 
         self.SetSizer(sizer)
         sizer.Fit(self)
@@ -1983,8 +1981,12 @@ class FFillOptionsDialog(wx.Dialog):
         # Target
         if self.panel_target.target_2d.GetValue():
             self.config.target = "2D"
+            self.panel2dcon.Enable(1)
+            self.panel3dcon.Enable(0)
         else:
             self.config.target = "3D"
+            self.panel3dcon.Enable(1)
+            self.panel2dcon.Enable(0)
 
         # 2D
         if self.panel2dcon.conect2D_4.GetValue():
