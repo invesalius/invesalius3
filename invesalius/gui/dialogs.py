@@ -1920,8 +1920,8 @@ class FFillOptionsDialog(wx.Dialog):
         """
         Create the widgets.
         """
-        # Target
 
+        # Target
         if sys.platform == "win32":
             border_style = wx.SIMPLE_BORDER
         else:
@@ -2042,43 +2042,56 @@ class SelectPartsOptionsDialog(wx.Dialog):
         else:
             self.conect3D_6.SetValue(1)
 
-        sizer_t = wx.BoxSizer(wx.HORIZONTAL)
-        sizer_t.AddSpacer(7)
-        sizer_t.Add(wx.StaticText(self, -1, _(u"Target mask name")), 1, wx.ALIGN_CENTRE_VERTICAL)
-        sizer_t.AddSpacer(7)
-        sizer_t.Add(self.target_name, 1, wx.EXPAND)
-        sizer_t.AddSpacer(7)
+        self.btn_ok = wx.Button(self, wx.ID_OK)
+        self.btn_cancel = wx.Button(self, wx.ID_CANCEL)
 
-        sizer_c = wx.BoxSizer(wx.HORIZONTAL)
-        sizer_c.AddSpacer(7)
-        sizer_c.Add(self.conect3D_6)
-        sizer_c.AddSpacer(7)
-        sizer_c.Add(self.conect3D_18)
-        sizer_c.AddSpacer(7)
-        sizer_c.Add(self.conect3D_26)
+        #  sizer_t = wx.BoxSizer(wx.HORIZONTAL)
+        #  sizer_t.AddSpacer(7)
+        #  sizer_t.Add(wx.StaticText(self, -1, _(u"Target mask name")), 1, wx.ALIGN_CENTRE_VERTICAL)
+        #  sizer_t.AddSpacer(7)
+        #  sizer_t.Add(self.target_name, 1, wx.EXPAND)
+        #  sizer_t.AddSpacer(7)
 
-        sizer = wx.BoxSizer(wx.VERTICAL)
-        sizer.AddSpacer(7)
-        sizer.Add(sizer_t, 1, wx.EXPAND)
-        sizer.AddSpacer(7)
-        sizer.Add(wx.StaticText(self, -1, _(u"3D Connectivity")), 0, wx.LEFT, 7)
-        sizer.AddSpacer(5)
-        sizer.Add(sizer_c)
-        sizer.AddSpacer(7)
+        #  sizer_c = wx.BoxSizer(wx.HORIZONTAL)
+        #  sizer_c.AddSpacer(7)
+        #  sizer_c.Add(self.conect3D_6)
+        #  sizer_c.AddSpacer(7)
+        #  sizer_c.Add(self.conect3D_18)
+        #  sizer_c.AddSpacer(7)
+        #  sizer_c.Add(self.conect3D_26)
 
-        #  sizer = wx.GridBagSizer(11, 6)
-        #  sizer.AddStretchSpacer((0, 0))
+        #  sizer = wx.BoxSizer(wx.VERTICAL)
+        #  sizer.AddSpacer(7)
+        #  sizer.Add(sizer_t, 1, wx.EXPAND)
+        #  sizer.AddSpacer(7)
+        #  sizer.Add(wx.StaticText(self, -1, _(u"3D Connectivity")), 0, wx.LEFT, 7)
+        #  sizer.AddSpacer(5)
+        #  sizer.Add(sizer_c)
+        #  sizer.AddSpacer(7)
 
-        #  sizer.Add(wx.StaticText(self, -1, _(u"Target mask name")), (1, 0), (1, 6), flag=wx.LEFT|wx.ALIGN_BOTTOM|wx.EXPAND, border=7)
-        #  sizer.Add(self.target_name, (2, 0), (1, 6), flag=wx.LEFT|wx.EXPAND|wx.RIGHT|wx.ALIGN_TOP, border=9)
+        sizer = wx.GridBagSizer(5, 5)
 
-        #  #  sizer.AddStretchSpacer((3, 0))
+        sizer.AddStretchSpacer((0, 0))
 
-        #  sizer.Add(wx.StaticText(self, -1, _(u"3D Connectivity")), (3, 0), (1, 6), flag=wx.LEFT, border=7)
-        #  sizer.Add(self.conect3D_6, (4, 0), flag=wx.LEFT, border=9)
-        #  sizer.Add(self.conect3D_18, (4, 1), flag=wx.LEFT, border=9)
-        #  sizer.Add(self.conect3D_26, (4, 2), flag=wx.LEFT, border=9)
-        #  sizer.AddStretchSpacer((5, 0))
+        sizer.Add(wx.StaticText(self, -1, _(u"Target mask name")), (1, 0), (1, 6), flag=wx.LEFT|wx.ALIGN_BOTTOM|wx.EXPAND, border=5)
+        sizer.Add(self.target_name, (2, 0), (1, 6), flag=wx.LEFT|wx.EXPAND|wx.RIGHT|wx.ALIGN_TOP, border=9)
+
+        sizer.AddStretchSpacer((3, 0))
+
+        sizer.Add(wx.StaticText(self, -1, _(u"3D Connectivity")), (4, 0), (1, 6), flag=wx.LEFT, border=5)
+        sizer.Add(self.conect3D_6, (5, 0), flag=wx.LEFT, border=9)
+        sizer.Add(self.conect3D_18, (5, 1), flag=wx.LEFT, border=9)
+        sizer.Add(self.conect3D_26, (5, 2), flag=wx.LEFT, border=9)
+
+        sizer.AddStretchSpacer((6, 0))
+
+        btn_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        btn_sizer.Add(self.btn_ok, 0, flag=wx.RIGHT|wx.ALIGN_RIGHT, border=5)
+        btn_sizer.Add(self.btn_cancel, 0, flag=wx.RIGHT|wx.ALIGN_RIGHT, border=5)
+
+        sizer.AddSizer(btn_sizer, (7, 0), (1, 6), flag=wx.EXPAND|wx.RIGHT|wx.LEFT|wx.ALIGN_RIGHT, border=5)
+
+        sizer.AddStretchSpacer((8, 0))
 
         self.SetSizer(sizer)
         sizer.Fit(self)
