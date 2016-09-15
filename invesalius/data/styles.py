@@ -21,6 +21,7 @@ import os
 import multiprocessing
 import tempfile
 import time
+import math
 
 from concurrent import futures
 
@@ -51,6 +52,7 @@ import watershed_process
 
 import utils
 import transformations
+import geometry as geom
 
 ORIENTATIONS = {
         "AXIAL": const.AXIAL,
@@ -1131,7 +1133,6 @@ class WaterShedInteractorStyle(DefaultInteractorStyle):
         if (self.left_pressed):
             cursor = slice_data.cursor
             position = self.viewer.get_slice_pixel_coord_by_world_pos(*coord)
-            print ">>>", position
             radius = cursor.radius
 
             if position < 0:
@@ -1758,7 +1759,111 @@ class RemoveMaskPartsInteractorStyle(FloodFillMaskInteractorStyle):
             self._progr_title = _(u"Remove part")
             self._progr_msg = _(u"Removing part ...")
 
+class CropMaskConfig(object):
+    __metaclass__= utils.Singleton
+    def __init__(self):
+        self.dlg_visible = False
 
+class CropMaskInteractorStyle(DefaultInteractorStyle):
+
+    def __init__(self, viewer):
+        DefaultInteractorStyle.__init__(self, viewer)
+
+        self.viewer = viewer
+        self.orientation = self.viewer.orientation
+        self.picker = vtk.vtkWorldPointPicker()
+        self.slice_actor = viewer.slice_data.actor
+        self.slice_data = viewer.slice_data
+        self.draw_retangle = None
+        
+        self.config = CropMaskConfig()
+
+    def __evts__(self):
+        self.AddObserver("MouseMoveEvent", self.OnMove)
+        self.AddObserver("LeftButtonPressEvent", self.OnLeftPressed)
+        self.AddObserver("LeftButtonReleaseEvent", self.OnReleaseLeftButton)
+
+        Publisher.subscribe(self.CropMask, "Crop mask")
+
+    def OnMove(self, obj, evt):
+        iren = self.viewer.interactor
+        x, y = iren.GetEventPosition()
+        self.draw_retangle.MouseMove(x,y)
+
+    def OnLeftPressed(self, obj, evt):
+        self.draw_retangle.mouse_pressed = True
+        iren = self.viewer.interactor
+        x, y = iren.GetEventPosition()
+        self.draw_retangle.LeftPressed(x,y)
+
+    def OnReleaseLeftButton(self, obj, evt):
+        self.draw_retangle.mouse_pressed = False
+        self.draw_retangle.ReleaseLeft()
+
+    def SetUp(self):
+        
+        self.draw_retangle = geom.DrawCrop2DRetangle()
+        self.draw_retangle.SetViewer(self.viewer)
+
+        self.viewer.canvas.draw_list.append(self.draw_retangle)
+        self.viewer.UpdateCanvas()
+        
+        if not(self.config.dlg_visible):
+            self.config.dlg_visible = True
+
+            dlg = dialogs.CropOptionsDialog(self.config)
+            dlg.UpdateValues(self.draw_retangle.box.GetLimits())
+            dlg.Show()
+
+        self.__evts__()
+        #self.draw_lines()
+        #Publisher.sendMessage('Hide current mask')
+        #Publisher.sendMessage('Reload actual slice')
+
+    def CleanUp(self):
+
+        for draw in self.viewer.canvas.draw_list:
+             self.viewer.canvas.draw_list.remove(draw)
+
+        Publisher.sendMessage('Redraw canvas')
+
+    def CropMask(self, pubsub_evt):
+        if self.viewer.orientation == "AXIAL":
+            
+            xi, xf, yi, yf, zi, zf = self.draw_retangle.box.GetLimits()
+
+            xi += 1
+            xf += 1
+
+            yi += 1
+            yf += 1
+            
+            zi += 1
+            zf += 1
+
+            self.viewer.slice_.do_threshold_to_all_slices()
+            cp_mask = self.viewer.slice_.current_mask.matrix.copy()
+
+            tmp_mask = self.viewer.slice_.current_mask.matrix[zi-1:zf+1, yi-1:yf+1, xi-1:xf+1].copy()
+            
+            self.viewer.slice_.current_mask.matrix[:] = 1
+
+            self.viewer.slice_.current_mask.matrix[zi-1:zf+1, yi-1:yf+1, xi-1:xf+1] = tmp_mask
+
+            self.viewer.slice_.current_mask.save_history(0, 'VOLUME', self.viewer.slice_.current_mask.matrix.copy(), cp_mask)
+            
+            self.viewer.slice_.buffer_slices['AXIAL'].discard_mask()
+            self.viewer.slice_.buffer_slices['CORONAL'].discard_mask()
+            self.viewer.slice_.buffer_slices['SAGITAL'].discard_mask()
+
+            self.viewer.slice_.buffer_slices['AXIAL'].discard_vtk_mask()
+            self.viewer.slice_.buffer_slices['CORONAL'].discard_vtk_mask()
+            self.viewer.slice_.buffer_slices['SAGITAL'].discard_vtk_mask()
+
+            self.viewer.slice_.current_mask.was_edited = True
+            Publisher.sendMessage('Reload actual slice')           
+
+     
 class SelectPartConfig(object):
     __metaclass__= utils.Singleton
     def __init__(self):
@@ -2054,7 +2159,9 @@ def get_style(style):
         const.SLICE_STATE_REMOVE_MASK_PARTS: RemoveMaskPartsInteractorStyle,
         const.SLICE_STATE_SELECT_MASK_PARTS: SelectMaskPartsInteractorStyle,
         const.SLICE_STATE_FFILL_SEGMENTATION: FloodFillSegmentInteractorStyle,
+        const.SLICE_STATE_CROP_MASK:CropMaskInteractorStyle,
     }
     return STYLES[style]
+
 
 

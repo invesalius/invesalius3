@@ -463,6 +463,12 @@ class Frame(wx.Frame):
                 self.OnInterpolatedSlices(True)
             else:
                 self.OnInterpolatedSlices(False)
+        elif id == const.ID_CROP_MASK:
+            self.OnCropMask()
+
+    def OnInterpolatedSlices(self, status):
+        Publisher.sendMessage('Set interpolated slices', status)
+
 
     def OnSize(self, evt):
         """
@@ -601,6 +607,9 @@ class Frame(wx.Frame):
 
     def OnInterpolatedSlices(self, status):
         Publisher.sendMessage('Set interpolated slices', status)
+    
+    def OnCropMask(self):
+        Publisher.sendMessage('Enable style', const.SLICE_STATE_CROP_MASK)
 
 # ------------------------------------------------------------------
 # ------------------------------------------------------------------
@@ -737,6 +746,7 @@ class MenuBar(wx.MenuBar):
         self.clean_mask_menu = mask_menu.Append(const.ID_CLEAN_MASK, _(u"Clean Mask\tCtrl+Shift+A"))
         self.clean_mask_menu.Enable(False)
 
+        mask_menu.AppendSeparator()
         self.fill_hole_mask_menu = mask_menu.Append(const.ID_FLOODFILL_MASK, _(u"Fill holes manually"))
         self.fill_hole_mask_menu.Enable(False)
 
@@ -745,6 +755,11 @@ class MenuBar(wx.MenuBar):
 
         self.select_mask_part_menu = mask_menu.Append(const.ID_SELECT_MASK_PART, _(u"Select parts"))
         self.select_mask_part_menu.Enable(False)
+    
+        mask_menu.AppendSeparator()
+        
+        self.crop_mask_menu = mask_menu.Append(const.ID_CROP_MASK, _("Crop"))
+        self.crop_mask_menu.Enable(False)
 
         tools_menu.AppendMenu(-1,  _(u"Mask"), mask_menu)
 
@@ -892,6 +907,7 @@ class MenuBar(wx.MenuBar):
     def OnShowMask(self, pubsub_evt):
         index, value = pubsub_evt.data
         self.clean_mask_menu.Enable(value)
+        self.crop_mask_menu.Enable(value)
 
 
 # ------------------------------------------------------------------
