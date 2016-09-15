@@ -31,6 +31,7 @@ from vtk.wx.wxVTKRenderWindowInteractor import wxVTKRenderWindowInteractor
 import styles
 
 import wx
+import sys
 from wx.lib.pubsub import pub as Publisher
 
 try:
@@ -171,6 +172,7 @@ class CanvasRendererCTX:
         self.gc = None
         self.last_cam_modif_time = -1
         self.modified = True
+        self._drawn = False
         self._init_canvas()
         evt_renderer.AddObserver("StartEvent", self.OnPaint)
 
@@ -248,21 +250,20 @@ class CanvasRendererCTX:
         gc.SetBrush(brush)
         gc.Scale(1, -1)
 
-        modified = False
         for d in self.draw_list:
             d.draw_to_canvas(gc, self)
-            modified = True
 
         gc.Destroy()
 
         self.gc = None
 
-        if modified:
+        if self._drawn:
             self.bitmap = self.image.ConvertToBitmap()
             self.bitmap.CopyToBuffer(self._array, wx.BitmapBufferFormat_RGBA)
 
         self._cv_image.Modified()
         self.modified = False
+        self._drawn = False
 
     def calc_text_size(self, text, font=None):
         """
@@ -355,6 +356,8 @@ class CanvasRendererCTX:
             path.AddLineToPoint(p2)
             gc.StrokePath(path)
 
+        self._drawn = True
+
     def draw_circle(self, center, radius, width=2, line_colour=(255, 0, 0, 128), fill_colour=(0, 0, 0, 0)):
         """
         Draw a circle centered at center with the given radius.
@@ -383,6 +386,7 @@ class CanvasRendererCTX:
         path.AddCircle(cx, cy, 2.5)
         gc.StrokePath(path)
         gc.FillPath(path)
+        self._drawn = True
 
     def draw_rectangle(self, pos, width, height, line_colour=(255, 0, 0, 128), fill_colour=(0, 0, 0, 0)):
         """
@@ -403,6 +407,7 @@ class CanvasRendererCTX:
         gc.SetPen(wx.Pen(line_colour))
         gc.SetBrush(wx.Brush(fill_colour))
         gc.DrawRectangle(px, py, width, height)
+        self._drawn = True
 
     def draw_text(self, text, pos, font=None, txt_colour=(255, 255, 255)):
         """
@@ -426,6 +431,7 @@ class CanvasRendererCTX:
 
         px, py = pos
         gc.DrawText(text, px, py)
+        self._drawn = True
 
     def draw_text_box(self, text, pos, font=None, txt_colour=(255, 255, 255), bg_colour=(128, 128, 128, 128), border=5):
         """
@@ -460,6 +466,7 @@ class CanvasRendererCTX:
         # Drawing the text
         tpx, tpy = px + border, py + border
         self.draw_text(text, (tpx, tpy), font, txt_colour)
+        self._drawn = True
 
     def draw_arc(self, center, p0, p1, line_colour=(255, 0, 0, 128), width=2):
         """
@@ -502,6 +509,7 @@ class CanvasRendererCTX:
         path = gc.CreatePath()
         path.AddArc((c[0], c[1]), min(s0, s1), sa, ea)
         gc.StrokePath(path)
+        self._drawn = True
 
 
 class Viewer(wx.Panel):
@@ -1228,7 +1236,10 @@ class Viewer(wx.Panel):
         self.interactor.SetCursor(wx.StockCursor(wx.CURSOR_SIZEWE))
 
     def SetSizeNWSECursor(self, pubsub_evt):
-        self.interactor.SetCursor(wx.StockCursor(wx.CURSOR_SIZENWSE))
+        if sys.platform == 'win32':
+            self.interactor.SetCursor(wx.StockCursor(wx.CURSOR_SIZING))
+        else:
+            self.interactor.SetCursor(wx.StockCursor(wx.CURSOR_SIZENWSE))
 
     def OnExportPicture(self, pubsub_evt):
         Publisher.sendMessage('Begin busy cursor')
