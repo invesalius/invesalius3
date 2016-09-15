@@ -1844,11 +1844,11 @@ class CropMaskInteractorStyle(DefaultInteractorStyle):
             self.viewer.slice_.do_threshold_to_all_slices()
             cp_mask = self.viewer.slice_.current_mask.matrix.copy()
 
-            tmp_mask = self.viewer.slice_.current_mask.matrix[zi:zf, yi:yf, xi:xf].copy()
+            tmp_mask = self.viewer.slice_.current_mask.matrix[zi-1:zf+1, yi-1:yf+1, xi-1:xf+1].copy()
             
             self.viewer.slice_.current_mask.matrix[:] = 1
 
-            self.viewer.slice_.current_mask.matrix[zi:zf, yi:yf, xi:xf] = tmp_mask
+            self.viewer.slice_.current_mask.matrix[zi-1:zf+1, yi-1:yf+1, xi-1:xf+1] = tmp_mask
 
             self.viewer.slice_.current_mask.save_history(0, 'VOLUME', self.viewer.slice_.current_mask.matrix.copy(), cp_mask)
             
