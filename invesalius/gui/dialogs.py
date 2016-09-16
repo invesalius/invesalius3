@@ -2033,67 +2033,33 @@ class SelectPartsOptionsDialog(wx.Dialog):
         self.target_name.SetValue(self.config.mask_name)
 
         # Connectivity 3D
-        self.conect3D_6 = wx.RadioButton(self, -1, "6", style=wx.RB_GROUP)
-        self.conect3D_18 = wx.RadioButton(self, -1, "18")
-        self.conect3D_26 = wx.RadioButton(self, -1, "26")
-
+        self.panel3dcon = Panel3DConnectivity(self)
         if self.config.con_3d == 18:
-            self.conect3D_18.SetValue(1)
+            self.panel3dcon.conect3D_18.SetValue(1)
         elif self.config.con_3d == 26:
-            self.conect3D_26.SetValue(1)
+            self.panel3dcon.conect3D_26.SetValue(1)
         else:
-            self.conect3D_6.SetValue(1)
+            self.panel3dcon.conect3D_6.SetValue(1)
 
         self.btn_ok = wx.Button(self, wx.ID_OK)
         self.btn_cancel = wx.Button(self, wx.ID_CANCEL)
 
-        #  sizer_t = wx.BoxSizer(wx.HORIZONTAL)
-        #  sizer_t.AddSpacer(7)
-        #  sizer_t.Add(wx.StaticText(self, -1, _(u"Target mask name")), 1, wx.ALIGN_CENTRE_VERTICAL)
-        #  sizer_t.AddSpacer(7)
-        #  sizer_t.Add(self.target_name, 1, wx.EXPAND)
-        #  sizer_t.AddSpacer(7)
+        sizer = wx.BoxSizer(wx.VERTICAL)
 
-        #  sizer_c = wx.BoxSizer(wx.HORIZONTAL)
-        #  sizer_c.AddSpacer(7)
-        #  sizer_c.Add(self.conect3D_6)
-        #  sizer_c.AddSpacer(7)
-        #  sizer_c.Add(self.conect3D_18)
-        #  sizer_c.AddSpacer(7)
-        #  sizer_c.Add(self.conect3D_26)
-
-        #  sizer = wx.BoxSizer(wx.VERTICAL)
-        #  sizer.AddSpacer(7)
-        #  sizer.Add(sizer_t, 1, wx.EXPAND)
-        #  sizer.AddSpacer(7)
-        #  sizer.Add(wx.StaticText(self, -1, _(u"3D Connectivity")), 0, wx.LEFT, 7)
-        #  sizer.AddSpacer(5)
-        #  sizer.Add(sizer_c)
-        #  sizer.AddSpacer(7)
-
-        sizer = wx.GridBagSizer(5, 5)
-
-        sizer.AddStretchSpacer((0, 0))
-
-        sizer.Add(wx.StaticText(self, -1, _(u"Target mask name")), (1, 0), (1, 6), flag=wx.LEFT|wx.ALIGN_BOTTOM|wx.EXPAND, border=5)
-        sizer.Add(self.target_name, (2, 0), (1, 6), flag=wx.LEFT|wx.EXPAND|wx.RIGHT|wx.ALIGN_TOP, border=9)
-
-        sizer.AddStretchSpacer((3, 0))
-
-        sizer.Add(wx.StaticText(self, -1, _(u"3D Connectivity")), (4, 0), (1, 6), flag=wx.LEFT, border=5)
-        sizer.Add(self.conect3D_6, (5, 0), flag=wx.LEFT, border=9)
-        sizer.Add(self.conect3D_18, (5, 1), flag=wx.LEFT, border=9)
-        sizer.Add(self.conect3D_26, (5, 2), flag=wx.LEFT, border=9)
-
-        sizer.AddStretchSpacer((6, 0))
+        sizer.AddSpacer(5)
+        sizer.Add(wx.StaticText(self, -1, _(u"Target mask name")), flag=wx.LEFT, border=5)
+        sizer.AddSpacer(5)
+        sizer.Add(self.target_name, flag=wx.LEFT|wx.EXPAND|wx.RIGHT, border=9)
+        sizer.AddSpacer(5)
+        sizer.Add(self.panel3dcon, flag=wx.LEFT|wx.RIGHT|wx.EXPAND)
+        sizer.AddSpacer(5)
 
         btn_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        btn_sizer.Add(self.btn_ok, 0, flag=wx.RIGHT|wx.ALIGN_RIGHT, border=5)
-        btn_sizer.Add(self.btn_cancel, 0, flag=wx.RIGHT|wx.ALIGN_RIGHT, border=5)
+        btn_sizer.Add(self.btn_ok, 0, flag=wx.ALIGN_RIGHT, border=5)
+        btn_sizer.Add(self.btn_cancel, 0, flag=wx.LEFT|wx.ALIGN_RIGHT, border=5)
 
-        sizer.AddSizer(btn_sizer, (7, 0), (1, 6), flag=wx.EXPAND|wx.RIGHT|wx.LEFT|wx.ALIGN_RIGHT, border=5)
-
-        sizer.AddStretchSpacer((8, 0))
+        sizer.AddSizer(btn_sizer, 0, flag=wx.ALIGN_RIGHT|wx.LEFT|wx.RIGHT, border=5)
+        sizer.AddSpacer(5)
 
         self.SetSizer(sizer)
         sizer.Fit(self)
@@ -2119,11 +2085,11 @@ class SelectPartsOptionsDialog(wx.Dialog):
         self.config.mask_name = self.target_name.GetValue()
 
     def OnSetRadio(self, evt):
-        if self.conect3D_6.GetValue():
+        if self.panel3dcon.conect3D_6.GetValue():
             self.config.con_3d = 6
-        elif self.conect3D_18.GetValue():
+        elif self.panel3dcon.conect3D_18.GetValue():
             self.config.con_3d = 18
-        elif self.conect3D_26.GetValue():
+        elif self.panel3dcon.conect3D_26.GetValue():
             self.config.con_3d = 26
 
     def OnClose(self, evt):
