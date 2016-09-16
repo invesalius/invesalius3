@@ -2024,6 +2024,8 @@ class SelectPartsOptionsDialog(wx.Dialog):
 
         self.config = config
 
+        self.button_clicked = wx.CANCEL
+
         self._init_gui()
 
     def _init_gui(self):
@@ -2097,9 +2099,20 @@ class SelectPartsOptionsDialog(wx.Dialog):
         sizer.Fit(self)
         self.Layout()
 
+        self.btn_ok.Bind(wx.EVT_BUTTON, self.OnOk)
+        self.btn_cancel.Bind(wx.EVT_BUTTON, self.OnCancel)
+
         self.target_name.Bind(wx.EVT_CHAR, self.OnChar)
         self.Bind(wx.EVT_RADIOBUTTON, self.OnSetRadio)
         self.Bind(wx.EVT_CLOSE, self.OnClose)
+
+    def OnOk(self, evt):
+        self.button_clicked = wx.OK
+        self.Close()
+
+    def OnCancel(self, evt):
+        self.button_clicked = wx.CANCEL
+        self.Close()
 
     def OnChar(self, evt):
         evt.Skip()

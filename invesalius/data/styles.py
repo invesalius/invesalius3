@@ -1904,20 +1904,28 @@ class SelectMaskPartsInteractorStyle(DefaultInteractorStyle):
             self.dlg.Show()
 
     def CleanUp(self):
-        if (self.dlg is not None) and (self.config.dlg_visible):
+        if self.dlg is None:
+            return
+
+        dialog_return = self.dlg.button_clicked
+
+        if self.config.dlg_visible:
             self.config.dlg_visible = False
             self.dlg.Destroy()
             self.dlg = None
 
         if self.config.mask:
-            self.config.mask.name = self.config.mask_name
-            self.viewer.slice_._add_mask_into_proj(self.config.mask)
-            self.viewer.slice_.SelectCurrentMask(self.config.mask.index)
-            Publisher.sendMessage('Change mask selected', self.config.mask.index)
-            self.config.mask = None
+            if dialog_return == wx.OK:
+                self.config.mask.name = self.config.mask_name
+                self.viewer.slice_._add_mask_into_proj(self.config.mask)
+                self.viewer.slice_.SelectCurrentMask(self.config.mask.index)
+                Publisher.sendMessage('Change mask selected', self.config.mask.index)
+
             del self.viewer.slice_.aux_matrices['SELECT']
             self.viewer.slice_.to_show_aux = ''
             Publisher.sendMessage('Reload actual slice')
+            self.config.mask = None
+
 
     def OnSelect(self, obj, evt):
         if (self.viewer.slice_.buffer_slices[self.orientation].mask is None):
