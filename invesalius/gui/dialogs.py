@@ -2024,7 +2024,7 @@ class SelectPartsOptionsDialog(wx.Dialog):
 
         self.config = config
 
-        self.button_clicked = wx.CANCEL
+        self.SetReturnCode(wx.CANCEL)
 
         self._init_gui()
 
@@ -2107,11 +2107,11 @@ class SelectPartsOptionsDialog(wx.Dialog):
         self.Bind(wx.EVT_CLOSE, self.OnClose)
 
     def OnOk(self, evt):
-        self.button_clicked = wx.OK
+        self.SetReturnCode(wx.OK)
         self.Close()
 
     def OnCancel(self, evt):
-        self.button_clicked = wx.CANCEL
+        self.SetReturnCode(wx.CANCEL)
         self.Close()
 
     def OnChar(self, evt):

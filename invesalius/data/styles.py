@@ -1907,7 +1907,7 @@ class SelectMaskPartsInteractorStyle(DefaultInteractorStyle):
         if self.dlg is None:
             return
 
-        dialog_return = self.dlg.button_clicked
+        dialog_return = self.dlg.GetReturnCode()
 
         if self.config.dlg_visible:
             self.config.dlg_visible = False
