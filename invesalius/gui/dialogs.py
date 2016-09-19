@@ -1840,6 +1840,164 @@ def BitmapNotSameSize():
     dlg.Destroy()
 
 
+class PanelTargeFFill(wx.Panel):
+    def __init__(self, parent, ID=-1, style=wx.TAB_TRAVERSAL|wx.NO_BORDER):
+        wx.Panel.__init__(self, parent, ID, style=style)
+        self._init_gui()
+
+    def _init_gui(self):
+        self.target_2d = wx.RadioButton(self, -1, _(u"2D - Actual slice"), style=wx.RB_GROUP)
+        self.target_3d = wx.RadioButton(self, -1, _(u"3D - All slices"))
+
+        sizer = wx.GridBagSizer(5, 5)
+
+        sizer.AddStretchSpacer((0, 0))
+        sizer.Add(self.target_2d, (1, 0), (1, 6), flag=wx.LEFT, border=5)
+        sizer.Add(self.target_3d, (2, 0), (1, 6), flag=wx.LEFT, border=5)
+        sizer.AddStretchSpacer((3, 0))
+
+        self.SetSizer(sizer)
+        sizer.Fit(self)
+        self.Layout()
+
+class Panel2DConnectivity(wx.Panel):
+    def __init__(self, parent, ID=-1, style=wx.TAB_TRAVERSAL|wx.NO_BORDER):
+        wx.Panel.__init__(self, parent, ID, style=style)
+        self._init_gui()
+
+    def _init_gui(self):
+        self.conect2D_4 = wx.RadioButton(self, -1, "4", style=wx.RB_GROUP)
+        self.conect2D_8 = wx.RadioButton(self, -1, "8")
+
+        sizer = wx.GridBagSizer(5, 5)
+
+        sizer.AddStretchSpacer((0, 0))
+        sizer.Add(wx.StaticText(self, -1, _(u"2D Connectivity")), (1, 0), (1, 6), flag=wx.LEFT, border=5)
+        sizer.Add(self.conect2D_4, (2, 0), flag=wx.LEFT, border=7)
+        sizer.Add(self.conect2D_8, (2, 1), flag=wx.LEFT, border=7)
+        sizer.AddStretchSpacer((3, 0))
+
+        self.SetSizer(sizer)
+        sizer.Fit(self)
+        self.Layout()
+
+
+class Panel3DConnectivity(wx.Panel):
+    def __init__(self, parent, ID=-1, style=wx.TAB_TRAVERSAL|wx.NO_BORDER):
+        wx.Panel.__init__(self, parent, ID, style=style)
+        self._init_gui()
+
+    def _init_gui(self):
+        self.conect3D_6 = wx.RadioButton(self, -1, "6", style=wx.RB_GROUP)
+        self.conect3D_18 = wx.RadioButton(self, -1, "18")
+        self.conect3D_26 = wx.RadioButton(self, -1, "26")
+
+        sizer = wx.GridBagSizer(5, 5)
+
+        sizer.AddStretchSpacer((0, 0))
+        sizer.Add(wx.StaticText(self, -1, _(u"3D Connectivity")), (1, 0), (1, 6), flag=wx.LEFT, border=5)
+        sizer.Add(self.conect3D_6, (2, 0), flag=wx.LEFT, border=9)
+        sizer.Add(self.conect3D_18, (2, 1), flag=wx.LEFT, border=9)
+        sizer.Add(self.conect3D_26, (2, 2), flag=wx.LEFT, border=9)
+        sizer.AddStretchSpacer((3, 0))
+
+        self.SetSizer(sizer)
+        sizer.Fit(self)
+        self.Layout()
+
+
+class PanelFFillThreshold(wx.Panel):
+    def __init__(self, parent, config, ID=-1, style=wx.TAB_TRAVERSAL|wx.NO_BORDER):
+        wx.Panel.__init__(self, parent, ID, style=style)
+
+        self.config = config
+
+        self._init_gui()
+
+    def _init_gui(self):
+        import project as prj
+
+        project = prj.Project()
+        bound_min, bound_max = project.threshold_range
+        colour = [i*255 for i in const.MASK_COLOUR[0]]
+        colour.append(100)
+
+        self.threshold = grad.GradientCtrl(self, -1, int(bound_min),
+                                             int(bound_max), self.config.t0,
+                                             self.config.t1, colour)
+
+        # sizer
+        sizer = wx.BoxSizer(wx.VERTICAL)
+        sizer.AddSpacer(5)
+        sizer.Add(self.threshold, 0, wx.EXPAND|wx.LEFT|wx.RIGHT, 5)
+        sizer.AddSpacer(5)
+
+        self.SetSizer(sizer)
+        sizer.Fit(self)
+        self.Layout()
+
+        self.Bind(grad.EVT_THRESHOLD_CHANGING, self.OnSlideChanged, self.threshold)
+        self.Bind(grad.EVT_THRESHOLD_CHANGED, self.OnSlideChanged, self.threshold)
+
+    def OnSlideChanged(self, evt):
+        self.config.t0 = int(self.threshold.GetMinValue())
+        self.config.t1 = int(self.threshold.GetMaxValue())
+        print self.config.t0, self.config.t1
+
+
+class PanelFFillDynamic(wx.Panel):
+    def __init__(self, parent, config, ID=-1, style=wx.TAB_TRAVERSAL|wx.NO_BORDER):
+        wx.Panel.__init__(self, parent, ID, style=style)
+
+        self.config = config
+
+        self._init_gui()
+
+    def _init_gui(self):
+        self.use_ww_wl = wx.CheckBox(self, -1,  _(u"Use WW&WL"))
+        self.use_ww_wl.SetValue(self.config.use_ww_wl)
+
+        self.deviation_min = wx.SpinCtrl(self, -1, value='%d' % self.config.dev_min, min=0, max=10000)
+        w, h = self.deviation_min.GetTextExtent('M')
+        self.deviation_min.SetMinSize((w*5, -1))
+
+        self.deviation_max = wx.SpinCtrl(self, -1, value='%d' % self.config.dev_max, min=0, max=10000)
+        self.deviation_max.SetMinSize((w*5, -1))
+
+        sizer = wx.GridBagSizer(5, 5)
+
+        sizer.AddStretchSpacer((0, 0))
+
+        sizer.Add(self.use_ww_wl, (1, 0), (1, 6), flag=wx.LEFT, border=5)
+
+        sizer.AddStretchSpacer((2, 0))
+
+        sizer.Add(wx.StaticText(self, -1, _(u"Deviation")), (3, 0), (1, 6), flag=wx.LEFT, border=5)
+
+        sizer.Add(wx.StaticText(self, -1, _(u"Min:")), (4, 0), flag=wx.ALIGN_CENTER_VERTICAL|wx.LEFT, border=9)
+        sizer.Add(self.deviation_min, (4, 1))
+
+        sizer.Add(wx.StaticText(self, -1, _(u"Max:")), (4, 2), flag=wx.ALIGN_CENTER_VERTICAL|wx.LEFT, border=9)
+        sizer.Add(self.deviation_max, (4, 3))
+
+        sizer.AddStretchSpacer((5, 0))
+
+        self.SetSizer(sizer)
+        sizer.Fit(self)
+        self.Layout()
+
+        self.use_ww_wl.Bind(wx.EVT_CHECKBOX, self.OnSetUseWWWL)
+        self.deviation_min.Bind(wx.EVT_SPINCTRL, self.OnSetDeviation)
+        self.deviation_max.Bind(wx.EVT_SPINCTRL, self.OnSetDeviation)
+
+    def OnSetUseWWWL(self, evt):
+        self.config.use_ww_wl = self.use_ww_wl.GetValue()
+
+    def OnSetDeviation(self, evt):
+        self.config.dev_max = self.deviation_max.GetValue()
+        self.config.dev_min = self.deviation_min.GetValue()
+
+
 class FFillOptionsDialog(wx.Dialog):
     def __init__(self, title, config):
         pre = wx.PreDialog()
@@ -1854,88 +2012,96 @@ class FFillOptionsDialog(wx.Dialog):
         """
         Create the widgets.
         """
+
         # Target
-        self.target_2d = wx.RadioButton(self, -1, _(u"2D - Actual slice"), style=wx.RB_GROUP)
-        self.target_3d = wx.RadioButton(self, -1, _(u"3D - All slices"))
+        if sys.platform == "win32":
+            border_style = wx.SIMPLE_BORDER
+        else:
+            border_style = wx.SUNKEN_BORDER
+
+        self.panel_target = PanelTargeFFill(self, style=border_style|wx.TAB_TRAVERSAL)
+        self.panel2dcon = Panel2DConnectivity(self, style=border_style|wx.TAB_TRAVERSAL)
+        self.panel3dcon = Panel3DConnectivity(self, style=border_style|wx.TAB_TRAVERSAL)
 
         if self.config.target == "2D":
-            self.target_2d.SetValue(1)
+            self.panel_target.target_2d.SetValue(1)
+            self.panel2dcon.Enable(1)
+            self.panel3dcon.Enable(0)
         else:
-            self.target_3d.SetValue(1)
+            self.panel_target.target_3d.SetValue(1)
+            self.panel3dcon.Enable(1)
+            self.panel2dcon.Enable(0)
 
         # Connectivity 2D
-        self.conect2D_4 = wx.RadioButton(self, -1, "4", style=wx.RB_GROUP)
-        self.conect2D_8 = wx.RadioButton(self, -1, "8")
-
         if self.config.con_2d == 8:
-            self.conect2D_8.SetValue(1)
+            self.panel2dcon.conect2D_8.SetValue(1)
         else:
-            self.conect2D_4.SetValue(1)
+            self.panel2dcon.conect2D_4.SetValue(1)
             self.config.con_2d = 4
 
         # Connectivity 3D
-        self.conect3D_6 = wx.RadioButton(self, -1, "6", style=wx.RB_GROUP)
-        self.conect3D_18 = wx.RadioButton(self, -1, "18")
-        self.conect3D_26 = wx.RadioButton(self, -1, "26")
-
         if self.config.con_3d == 18:
-            self.conect3D_18.SetValue(1)
+            self.panel3dcon.conect3D_18.SetValue(1)
         elif self.config.con_3d == 26:
-            self.conect3D_26.SetValue(1)
+            self.panel3dcon.conect3D_26.SetValue(1)
         else:
-            self.conect3D_6.SetValue(1)
+            self.panel3dcon.conect3D_6.SetValue(1)
+
+        self.close_btn = wx.Button(self, wx.ID_CLOSE)
 
         # Sizer
-        sizer = wx.GridBagSizer(11, 6)
-        sizer.AddStretchSpacer((0, 0))
+        sizer = wx.BoxSizer(wx.VERTICAL)
 
-        sizer.Add(wx.StaticText(self, -1, _(u"Parameters")), (1, 0), (1, 6), flag=wx.LEFT, border=7)
-        sizer.Add(self.target_2d, (2, 0), (1, 6), flag=wx.LEFT, border=9)
-        sizer.Add(self.target_3d, (3, 0), (1, 6), flag=wx.LEFT, border=9)
-
-        sizer.AddStretchSpacer((4, 0))
-
-        sizer.Add(wx.StaticText(self, -1, _(u"2D Connectivity")), (5, 0), (1, 6), flag=wx.LEFT, border=9)
-        sizer.Add(self.conect2D_4, (6, 0), flag=wx.LEFT, border=9)
-        sizer.Add(self.conect2D_8, (6, 1), flag=wx.LEFT, border=9)
-
-        sizer.AddStretchSpacer((7, 0))
-
-        sizer.Add(wx.StaticText(self, -1, _(u"3D Connectivity")), (8, 0), (1, 6), flag=wx.LEFT, border=9)
-        sizer.Add(self.conect3D_6, (9, 0), flag=wx.LEFT, border=9)
-        sizer.Add(self.conect3D_18, (9, 1), flag=wx.LEFT, border=9)
-        sizer.Add(self.conect3D_26, (9, 2), flag=wx.LEFT, border=9)
-        sizer.AddStretchSpacer((10, 0))
+        sizer.AddSpacer(5)
+        sizer.Add(wx.StaticText(self, -1, _(u"Parameters")), flag=wx.LEFT, border=5)
+        sizer.AddSpacer(5)
+        sizer.Add(self.panel_target, flag=wx.LEFT|wx.RIGHT|wx.EXPAND, border=7)
+        sizer.AddSpacer(5)
+        sizer.Add(self.panel2dcon, flag=wx.LEFT|wx.RIGHT|wx.EXPAND, border=7)
+        sizer.AddSpacer(5)
+        sizer.Add(self.panel3dcon, flag=wx.LEFT|wx.RIGHT|wx.EXPAND, border=7)
+        sizer.AddSpacer(5)
+        sizer.Add(self.close_btn, 0, flag=wx.ALIGN_RIGHT|wx.RIGHT, border=7)
+        sizer.AddSpacer(5)
 
         self.SetSizer(sizer)
         sizer.Fit(self)
         self.Layout()
 
+        self.close_btn.Bind(wx.EVT_BUTTON, self.OnBtnClose)
         self.Bind(wx.EVT_RADIOBUTTON, self.OnSetRadio)
         self.Bind(wx.EVT_CLOSE, self.OnClose)
 
+    def OnBtnClose(self, evt):
+        self.Close()
+
     def OnSetRadio(self, evt):
         # Target
-        if self.target_2d.GetValue():
+        if self.panel_target.target_2d.GetValue():
             self.config.target = "2D"
+            self.panel2dcon.Enable(1)
+            self.panel3dcon.Enable(0)
         else:
             self.config.target = "3D"
+            self.panel3dcon.Enable(1)
+            self.panel2dcon.Enable(0)
 
         # 2D
-        if self.conect2D_4.GetValue():
+        if self.panel2dcon.conect2D_4.GetValue():
             self.config.con_2d = 4
-        elif self.conect2D_8.GetValue():
+        elif self.panel2dcon.conect2D_8.GetValue():
             self.config.con_2d = 8
 
         # 3D
-        if self.conect3D_6.GetValue():
+        if self.panel3dcon.conect3D_6.GetValue():
             self.config.con_3d = 6
-        elif self.conect3D_18.GetValue():
+        elif self.panel3dcon.conect3D_18.GetValue():
             self.config.con_3d = 18
-        elif self.conect3D_26.GetValue():
+        elif self.panel3dcon.conect3D_26.GetValue():
             self.config.con_3d = 26
 
     def OnClose(self, evt):
+        print "ONCLOSE"
         if self.config.dlg_visible:
             Publisher.sendMessage('Disable style', const.SLICE_STATE_MASK_FFILL)
         evt.Skip()
@@ -1950,6 +2116,8 @@ class SelectPartsOptionsDialog(wx.Dialog):
 
         self.config = config
 
+        self.SetReturnCode(wx.CANCEL)
+
         self._init_gui()
 
     def _init_gui(self):
@@ -1957,73 +2125,63 @@ class SelectPartsOptionsDialog(wx.Dialog):
         self.target_name.SetValue(self.config.mask_name)
 
         # Connectivity 3D
-        self.conect3D_6 = wx.RadioButton(self, -1, "6", style=wx.RB_GROUP)
-        self.conect3D_18 = wx.RadioButton(self, -1, "18")
-        self.conect3D_26 = wx.RadioButton(self, -1, "26")
-
+        self.panel3dcon = Panel3DConnectivity(self)
         if self.config.con_3d == 18:
-            self.conect3D_18.SetValue(1)
+            self.panel3dcon.conect3D_18.SetValue(1)
         elif self.config.con_3d == 26:
-            self.conect3D_26.SetValue(1)
+            self.panel3dcon.conect3D_26.SetValue(1)
         else:
-            self.conect3D_6.SetValue(1)
+            self.panel3dcon.conect3D_6.SetValue(1)
 
-        sizer_t = wx.BoxSizer(wx.HORIZONTAL)
-        sizer_t.AddSpacer(7)
-        sizer_t.Add(wx.StaticText(self, -1, _(u"Target mask name")), 1, wx.ALIGN_CENTRE_VERTICAL)
-        sizer_t.AddSpacer(7)
-        sizer_t.Add(self.target_name, 1, wx.EXPAND)
-        sizer_t.AddSpacer(7)
-
-        sizer_c = wx.BoxSizer(wx.HORIZONTAL)
-        sizer_c.AddSpacer(7)
-        sizer_c.Add(self.conect3D_6)
-        sizer_c.AddSpacer(7)
-        sizer_c.Add(self.conect3D_18)
-        sizer_c.AddSpacer(7)
-        sizer_c.Add(self.conect3D_26)
+        self.btn_ok = wx.Button(self, wx.ID_OK)
+        self.btn_cancel = wx.Button(self, wx.ID_CANCEL)
 
         sizer = wx.BoxSizer(wx.VERTICAL)
-        sizer.AddSpacer(7)
-        sizer.Add(sizer_t, 1, wx.EXPAND)
-        sizer.AddSpacer(7)
-        sizer.Add(wx.StaticText(self, -1, _(u"3D Connectivity")), 0, wx.LEFT, 7)
+
         sizer.AddSpacer(5)
-        sizer.Add(sizer_c)
-        sizer.AddSpacer(7)
+        sizer.Add(wx.StaticText(self, -1, _(u"Target mask name")), flag=wx.LEFT, border=5)
+        sizer.AddSpacer(5)
+        sizer.Add(self.target_name, flag=wx.LEFT|wx.EXPAND|wx.RIGHT, border=9)
+        sizer.AddSpacer(5)
+        sizer.Add(self.panel3dcon, flag=wx.LEFT|wx.RIGHT|wx.EXPAND)
+        sizer.AddSpacer(5)
 
-        #  sizer = wx.GridBagSizer(11, 6)
-        #  sizer.AddStretchSpacer((0, 0))
+        btn_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        btn_sizer.Add(self.btn_ok, 0, flag=wx.ALIGN_RIGHT, border=5)
+        btn_sizer.Add(self.btn_cancel, 0, flag=wx.LEFT|wx.ALIGN_RIGHT, border=5)
 
-        #  sizer.Add(wx.StaticText(self, -1, _(u"Target mask name")), (1, 0), (1, 6), flag=wx.LEFT|wx.ALIGN_BOTTOM|wx.EXPAND, border=7)
-        #  sizer.Add(self.target_name, (2, 0), (1, 6), flag=wx.LEFT|wx.EXPAND|wx.RIGHT|wx.ALIGN_TOP, border=9)
-
-        #  #  sizer.AddStretchSpacer((3, 0))
-
-        #  sizer.Add(wx.StaticText(self, -1, _(u"3D Connectivity")), (3, 0), (1, 6), flag=wx.LEFT, border=7)
-        #  sizer.Add(self.conect3D_6, (4, 0), flag=wx.LEFT, border=9)
-        #  sizer.Add(self.conect3D_18, (4, 1), flag=wx.LEFT, border=9)
-        #  sizer.Add(self.conect3D_26, (4, 2), flag=wx.LEFT, border=9)
-        #  sizer.AddStretchSpacer((5, 0))
+        sizer.AddSizer(btn_sizer, 0, flag=wx.ALIGN_RIGHT|wx.LEFT|wx.RIGHT, border=5)
+        sizer.AddSpacer(5)
 
         self.SetSizer(sizer)
         sizer.Fit(self)
         self.Layout()
 
+        self.btn_ok.Bind(wx.EVT_BUTTON, self.OnOk)
+        self.btn_cancel.Bind(wx.EVT_BUTTON, self.OnCancel)
+
         self.target_name.Bind(wx.EVT_CHAR, self.OnChar)
         self.Bind(wx.EVT_RADIOBUTTON, self.OnSetRadio)
         self.Bind(wx.EVT_CLOSE, self.OnClose)
+
+    def OnOk(self, evt):
+        self.SetReturnCode(wx.OK)
+        self.Close()
+
+    def OnCancel(self, evt):
+        self.SetReturnCode(wx.CANCEL)
+        self.Close()
 
     def OnChar(self, evt):
         evt.Skip()
         self.config.mask_name = self.target_name.GetValue()
 
     def OnSetRadio(self, evt):
-        if self.conect3D_6.GetValue():
+        if self.panel3dcon.conect3D_6.GetValue():
             self.config.con_3d = 6
-        elif self.conect3D_18.GetValue():
+        elif self.panel3dcon.conect3D_18.GetValue():
             self.config.con_3d = 18
-        elif self.conect3D_26.GetValue():
+        elif self.panel3dcon.conect3D_26.GetValue():
             self.config.con_3d = 26
 
     def OnClose(self, evt):
@@ -2035,7 +2193,7 @@ class SelectPartsOptionsDialog(wx.Dialog):
 class FFillSegmentationOptionsDialog(wx.Dialog):
     def __init__(self, config):
         pre = wx.PreDialog()
-        pre.Create(wx.GetApp().GetTopWindow(), -1, _(u"Floodfill Segmentation"), style=wx.DEFAULT_DIALOG_STYLE|wx.FRAME_FLOAT_ON_PARENT)
+        pre.Create(wx.GetApp().GetTopWindow(), -1, _(u"Region growing"), style=wx.DEFAULT_DIALOG_STYLE|wx.FRAME_FLOAT_ON_PARENT)
         self.PostCreate(pre)
 
         self.config = config
@@ -2047,163 +2205,149 @@ class FFillSegmentationOptionsDialog(wx.Dialog):
         Create the widgets.
         """
         import project as prj
+
         # Target
-        self.target_2d = wx.RadioButton(self, -1, _(u"2D - Actual slice"), style=wx.RB_GROUP)
-        self.target_3d = wx.RadioButton(self, -1, _(u"3D - All slices"))
+        if sys.platform == "win32":
+            border_style = wx.SIMPLE_BORDER
+        else:
+            border_style = wx.SUNKEN_BORDER
+
+        self.panel_target = PanelTargeFFill(self, style=border_style|wx.TAB_TRAVERSAL)
+        self.panel2dcon = Panel2DConnectivity(self, style=border_style|wx.TAB_TRAVERSAL)
+        self.panel3dcon = Panel3DConnectivity(self, style=border_style|wx.TAB_TRAVERSAL)
 
         if self.config.target == "2D":
-            self.target_2d.SetValue(1)
+            self.panel_target.target_2d.SetValue(1)
+            self.panel2dcon.Enable(1)
+            self.panel3dcon.Enable(0)
         else:
-            self.target_3d.SetValue(1)
+            self.panel_target.target_3d.SetValue(1)
+            self.panel3dcon.Enable(1)
+            self.panel2dcon.Enable(0)
 
         # Connectivity 2D
-        self.conect2D_4 = wx.RadioButton(self, -1, "4", style=wx.RB_GROUP)
-        self.conect2D_8 = wx.RadioButton(self, -1, "8")
-
         if self.config.con_2d == 8:
-            self.conect2D_8.SetValue(1)
+            self.panel2dcon.conect2D_8.SetValue(1)
         else:
-            self.conect2D_4.SetValue(1)
+            self.panel2dcon.conect2D_4.SetValue(1)
             self.config.con_2d = 4
 
         # Connectivity 3D
-        self.conect3D_6 = wx.RadioButton(self, -1, "6", style=wx.RB_GROUP)
-        self.conect3D_18 = wx.RadioButton(self, -1, "18")
-        self.conect3D_26 = wx.RadioButton(self, -1, "26")
-
         if self.config.con_3d == 18:
-            self.conect3D_18.SetValue(1)
+            self.panel3dcon.conect3D_18.SetValue(1)
         elif self.config.con_3d == 26:
-            self.conect3D_26.SetValue(1)
+            self.panel3dcon.conect3D_26.SetValue(1)
         else:
-            self.conect3D_6.SetValue(1)
+            self.panel3dcon.conect3D_6.SetValue(1)
 
-        project = prj.Project()
-        bound_min, bound_max = project.threshold_range
-        colour = [i*255 for i in const.MASK_COLOUR[0]]
-        colour.append(100)
-        self.threshold = grad.GradientCtrl(self, -1, int(bound_min),
-                                             int(bound_max), self.config.t0,
-                                             self.config.t1, colour)
-        self.threshold.SetMinSize((250, -1))
-
-        self.method_threshold = wx.RadioButton(self, -1, _(u"Threshold"), style=wx.RB_GROUP)
-        self.method_dynamic = wx.RadioButton(self, -1, _(u"Dynamic"))
+        self.cmb_method = wx.ComboBox(self, -1, choices=(_(u"Dynamic"), _(u"Threshold")), style=wx.CB_READONLY)
 
         if self.config.method == 'dynamic':
-            self.method_dynamic.SetValue(1)
+            self.cmb_method.SetSelection(0)
         else:
-            self.method_threshold.SetValue(1)
+            self.cmb_method.SetSelection(1)
             self.config.method = 'threshold'
 
-        self.use_ww_wl = wx.CheckBox(self, -1,  _(u"Use WW\&WL"))
-        self.use_ww_wl.SetValue(self.config.use_ww_wl)
+        self.panel_ffill_threshold = PanelFFillThreshold(self, self.config, -1, style=border_style|wx.TAB_TRAVERSAL)
+        self.panel_ffill_threshold.SetMinSize((250, -1))
+        self.panel_ffill_threshold.Hide()
 
-        self.deviation_min = wx.SpinCtrl(self, -1, value='%d' % self.config.dev_min, min=0, max=10000)
-        self.deviation_max = wx.SpinCtrl(self, -1, value='%d' % self.config.dev_max, min=0, max=10000)
+        self.panel_ffill_dynamic = PanelFFillDynamic(self, self.config, -1, style=border_style|wx.TAB_TRAVERSAL)
+        self.panel_ffill_dynamic.SetMinSize((250, -1))
+        self.panel_ffill_dynamic.Hide()
+
+        self.close_btn = wx.Button(self, wx.ID_CLOSE)
 
         # Sizer
-        sizer = wx.BoxSizer(wx.VERTICAL)
+        sizer = wx.GridBagSizer(2, 2)
 
-        sizer.AddSpacer(7)
+        sizer.AddStretchSpacer((0, 0))
+        sizer.Add(wx.StaticText(self, -1, _(u"Parameters")), (1, 0), (1, 6), flag=wx.LEFT, border=5)
+        sizer.AddStretchSpacer((2, 0))
+        sizer.Add(self.panel_target, (3, 0), (1, 6), flag=wx.LEFT|wx.RIGHT|wx.EXPAND, border=7)
+        sizer.AddStretchSpacer((4, 0))
+        sizer.Add(self.panel2dcon, (5, 0), (1, 6), flag=wx.LEFT|wx.RIGHT|wx.EXPAND, border=7)
+        sizer.AddStretchSpacer((6, 0))
+        sizer.Add(self.panel3dcon, (7, 0), (1, 6), flag=wx.LEFT|wx.RIGHT|wx.EXPAND, border=7)
+        sizer.AddStretchSpacer((8, 0))
 
-        sizer.Add(wx.StaticText(self, -1, _(u"Parameters")), flag=wx.LEFT, border=7)
-        sizer.AddSpacer(5)
-        sizer.Add(self.target_2d, flag=wx.LEFT, border=9)
-        sizer.Add(self.target_3d, flag=wx.LEFT, border=9)
+        sizer.Add(wx.StaticText(self, -1, _(u"Method")), (9, 0), (1, 1), flag=wx.LEFT|wx.ALIGN_CENTER_VERTICAL, border=7)
+        sizer.Add(self.cmb_method, (9, 1), (1, 5), flag=wx.LEFT|wx.RIGHT|wx.EXPAND, border=7)
 
-        sizer.AddSpacer(7)
+        sizer.AddStretchSpacer((10, 0))
 
-        sizer.Add(wx.StaticText(self, -1, _(u"2D Connectivity")), flag=wx.LEFT, border=9)
-        sizer.AddSpacer(5)
-        sizer_2d = wx.BoxSizer(wx.HORIZONTAL)
-        sizer_2d.Add(self.conect2D_4, flag=wx.LEFT, border=11)
-        sizer_2d.Add(self.conect2D_8, flag=wx.LEFT, border=11)
-        sizer.Add(sizer_2d)
+        if self.config.method == 'dynamic':
+            self.cmb_method.SetSelection(0)
+            self.panel_ffill_dynamic.Show()
+            sizer.Add(self.panel_ffill_dynamic, (11, 0), (1, 6), flag=wx.LEFT|wx.RIGHT|wx.EXPAND, border=7)
+        else:
+            self.cmb_method.SetSelection(1)
+            self.panel_ffill_threshold.Show()
+            sizer.Add(self.panel_ffill_threshold, (11, 0), (1, 6), flag=wx.LEFT|wx.RIGHT|wx.EXPAND, border=7)
+            self.config.method = 'threshold'
 
-        sizer.AddSpacer(7)
-
-        sizer.Add(wx.StaticText(self, -1, _(u"3D Connectivity")), flag=wx.LEFT, border=9)
-        sizer.AddSpacer(5)
-        sizer_3d = wx.BoxSizer(wx.HORIZONTAL)
-        sizer_3d.Add(self.conect3D_6, flag=wx.LEFT, border=11)
-        sizer_3d.Add(self.conect3D_18, flag=wx.LEFT, border=11)
-        sizer_3d.Add(self.conect3D_26, flag=wx.LEFT, border=11)
-        sizer.Add(sizer_3d)
-
-        sizer.AddSpacer(7)
-
-        sizer.Add(wx.StaticText(self, -1, _(u"Method")), flag=wx.LEFT, border=9)
-        sizer.AddSpacer(5)
-        sizer.Add(self.method_threshold, flag=wx.LEFT, border=11)
-        sizer.AddSpacer(5)
-        sizer.Add(self.threshold, flag=wx.LEFT|wx.RIGHT|wx.EXPAND, border=13)
-        sizer.AddSpacer(5)
-        sizer.Add(self.method_dynamic, flag=wx.LEFT, border=11)
-        sizer.AddSpacer(5)
-        sizer.Add(self.use_ww_wl, flag=wx.LEFT, border=13)
-        sizer.AddSpacer(5)
-        sizer.Add(self.deviation_min, flag=wx.LEFT, border=13)
-        sizer.Add(self.deviation_max, flag=wx.LEFT, border=13)
-
-        sizer.AddSpacer(7)
+        sizer.AddStretchSpacer((12, 0))
+        sizer.Add(self.close_btn, (13, 0), (1, 6), flag=wx.ALIGN_RIGHT|wx.RIGHT, border=5)
+        sizer.AddStretchSpacer((14, 0))
 
         self.SetSizer(sizer)
         sizer.Fit(self)
         self.Layout()
 
         self.Bind(wx.EVT_RADIOBUTTON, self.OnSetRadio)
-        self.Bind(grad.EVT_THRESHOLD_CHANGING, self.OnSlideChanged, self.threshold)
-        self.Bind(grad.EVT_THRESHOLD_CHANGED, self.OnSlideChanged, self.threshold)
-        self.use_ww_wl.Bind(wx.EVT_CHECKBOX, self.OnSetUseWWWL)
-        self.deviation_min.Bind(wx.EVT_SPINCTRL, self.OnSetDeviation)
-        self.deviation_max.Bind(wx.EVT_SPINCTRL, self.OnSetDeviation)
+        self.cmb_method.Bind(wx.EVT_COMBOBOX, self.OnSetMethod)
+        self.close_btn.Bind(wx.EVT_BUTTON, self.OnBtnClose)
         self.Bind(wx.EVT_CLOSE, self.OnClose)
 
     def OnSetRadio(self, evt):
         # Target
-        if self.target_2d.GetValue():
+        if self.panel_target.target_2d.GetValue():
             self.config.target = "2D"
+            self.panel2dcon.Enable(1)
+            self.panel3dcon.Enable(0)
         else:
             self.config.target = "3D"
+            self.panel3dcon.Enable(1)
+            self.panel2dcon.Enable(0)
 
         # 2D
-        if self.conect2D_4.GetValue():
+        if self.panel2dcon.conect2D_4.GetValue():
             self.config.con_2d = 4
-        elif self.conect2D_8.GetValue():
+        elif self.panel2dcon.conect2D_8.GetValue():
             self.config.con_2d = 8
 
         # 3D
-        if self.conect3D_6.GetValue():
+        if self.panel3dcon.conect3D_6.GetValue():
             self.config.con_3d = 6
-        elif self.conect3D_18.GetValue():
+        elif self.panel3dcon.conect3D_18.GetValue():
             self.config.con_3d = 18
-        elif self.conect3D_26.GetValue():
+        elif self.panel3dcon.conect3D_26.GetValue():
             self.config.con_3d = 26
 
-        # Method
-        if self.method_threshold.GetValue():
-            self.config.method = 'threshold'
-        else:
+    def OnSetMethod(self, evt):
+        if self.cmb_method.GetSelection() == 0:
             self.config.method = 'dynamic'
+            self.panel_ffill_threshold.Hide()
+            self.panel_ffill_dynamic.Show()
+            self.GetSizer().Replace(self.panel_ffill_threshold, self.panel_ffill_dynamic)
+        else:
+            self.config.method = 'threshold'
+            self.panel_ffill_dynamic.Hide()
+            self.panel_ffill_threshold.Show()
+            self.GetSizer().Replace(self.panel_ffill_dynamic, self.panel_ffill_threshold)
 
-    def OnSlideChanged(self, evt):
-        self.config.t0 = int(self.threshold.GetMinValue())
-        self.config.t1 = int(self.threshold.GetMaxValue())
-        print self.config.t0, self.config.t1
+        self.GetSizer().Fit(self)
+        self.Layout()
 
-    def OnSetUseWWWL(self, evt):
-        self.config.use_ww_wl = self.use_ww_wl.GetValue()
-
-    def OnSetDeviation(self, evt):
-        self.config.dev_max = self.deviation_max.GetValue()
-        self.config.dev_min = self.deviation_min.GetValue()
+    def OnBtnClose(self, evt):
+        self.Close()
 
     def OnClose(self, evt):
         if self.config.dlg_visible:
             Publisher.sendMessage('Disable style', const.SLICE_STATE_MASK_FFILL)
         evt.Skip()
         self.Destroy()
+
 
 class CropOptionsDialog(wx.Dialog):
     

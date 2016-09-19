@@ -765,7 +765,7 @@ class MenuBar(wx.MenuBar):
 
         # Segmentation Menu
         segmentation_menu = wx.Menu()
-        self.ffill_segmentation = segmentation_menu.Append(const.ID_FLOODFILL_SEGMENTATION, _(u"Floodfill"))
+        self.ffill_segmentation = segmentation_menu.Append(const.ID_FLOODFILL_SEGMENTATION, _(u"Region growing"))
         self.ffill_segmentation.Enable(False)
 
         tools_menu.AppendMenu(-1, _("Segmentation"), segmentation_menu)

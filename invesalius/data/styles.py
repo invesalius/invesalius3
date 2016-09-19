@@ -1904,20 +1904,28 @@ class SelectMaskPartsInteractorStyle(DefaultInteractorStyle):
             self.dlg.Show()
 
     def CleanUp(self):
-        if (self.dlg is not None) and (self.config.dlg_visible):
+        if self.dlg is None:
+            return
+
+        dialog_return = self.dlg.GetReturnCode()
+
+        if self.config.dlg_visible:
             self.config.dlg_visible = False
             self.dlg.Destroy()
             self.dlg = None
 
         if self.config.mask:
-            self.config.mask.name = self.config.mask_name
-            self.viewer.slice_._add_mask_into_proj(self.config.mask)
-            self.viewer.slice_.SelectCurrentMask(self.config.mask.index)
-            Publisher.sendMessage('Change mask selected', self.config.mask.index)
-            self.config.mask = None
+            if dialog_return == wx.OK:
+                self.config.mask.name = self.config.mask_name
+                self.viewer.slice_._add_mask_into_proj(self.config.mask)
+                self.viewer.slice_.SelectCurrentMask(self.config.mask.index)
+                Publisher.sendMessage('Change mask selected', self.config.mask.index)
+
             del self.viewer.slice_.aux_matrices['SELECT']
             self.viewer.slice_.to_show_aux = ''
             Publisher.sendMessage('Reload actual slice')
+            self.config.mask = None
+
 
     def OnSelect(self, obj, evt):
         if (self.viewer.slice_.buffer_slices[self.orientation].mask is None):
@@ -1969,7 +1977,7 @@ class FFillSegmentationConfig(object):
 
         self.fill_value = 254
 
-        self.method = 'threshold'
+        self.method = 'dynamic'
 
         self.dev_min = 25
         self.dev_max = 25
@@ -1991,7 +1999,7 @@ class FloodFillSegmentInteractorStyle(DefaultInteractorStyle):
         self.config = FFillSegmentationConfig()
         self.dlg_ffill = None
 
-        self._progr_title = _(u"Floodfill segmentation")
+        self._progr_title = _(u"Region growing")
         self._progr_msg = _(u"Segmenting ...")
 
         self.AddObserver("LeftButtonPressEvent", self.OnFFClick)
