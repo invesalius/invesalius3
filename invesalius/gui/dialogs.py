@@ -2296,6 +2296,7 @@ class FFillSegmentationOptionsDialog(wx.Dialog):
 
         self.Bind(wx.EVT_RADIOBUTTON, self.OnSetRadio)
         self.cmb_method.Bind(wx.EVT_COMBOBOX, self.OnSetMethod)
+        self.close_btn.Bind(wx.EVT_BUTTON, self.OnBtnClose)
         self.Bind(wx.EVT_CLOSE, self.OnClose)
 
     def OnSetRadio(self, evt):
@@ -2337,6 +2338,9 @@ class FFillSegmentationOptionsDialog(wx.Dialog):
 
         self.GetSizer().Fit(self)
         self.Layout()
+
+    def OnBtnClose(self, evt):
+        self.Close()
 
     def OnClose(self, evt):
         if self.config.dlg_visible:
