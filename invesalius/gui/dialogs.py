@@ -2259,7 +2259,7 @@ class FFillSegmentationOptionsDialog(wx.Dialog):
         self.close_btn = wx.Button(self, wx.ID_CLOSE)
 
         # Sizer
-        sizer = wx.GridBagSizer(5, 5)
+        sizer = wx.GridBagSizer(2, 2)
 
         sizer.AddStretchSpacer((0, 0))
         sizer.Add(wx.StaticText(self, -1, _(u"Parameters")), (1, 0), (1, 6), flag=wx.LEFT, border=5)
@@ -2271,7 +2271,7 @@ class FFillSegmentationOptionsDialog(wx.Dialog):
         sizer.Add(self.panel3dcon, (7, 0), (1, 6), flag=wx.LEFT|wx.RIGHT|wx.EXPAND, border=7)
         sizer.AddStretchSpacer((8, 0))
 
-        sizer.Add(wx.StaticText(self, -1, _(u"Method")), (9, 0), (1, 1), flag=wx.LEFT|wx.ALIGN_CENTER_VERTICAL|wx.EXPAND, border=7)
+        sizer.Add(wx.StaticText(self, -1, _(u"Method")), (9, 0), (1, 1), flag=wx.LEFT|wx.ALIGN_CENTER_VERTICAL, border=7)
         sizer.Add(self.cmb_method, (9, 1), (1, 5), flag=wx.LEFT|wx.RIGHT|wx.EXPAND, border=7)
 
         sizer.AddStretchSpacer((10, 0))
@@ -2286,9 +2286,9 @@ class FFillSegmentationOptionsDialog(wx.Dialog):
             sizer.Add(self.panel_ffill_threshold, (11, 0), (1, 6), flag=wx.LEFT|wx.RIGHT|wx.EXPAND, border=7)
             self.config.method = 'threshold'
 
-        sizer.AddStretchSpacer((11, 0))
-        sizer.Add(self.close_btn, (12, 0), (1, 6), flag=wx.ALIGN_RIGHT|wx.RIGHT, border=5)
-        sizer.AddStretchSpacer((13, 0))
+        sizer.AddStretchSpacer((12, 0))
+        sizer.Add(self.close_btn, (13, 0), (1, 6), flag=wx.ALIGN_RIGHT|wx.RIGHT, border=5)
+        sizer.AddStretchSpacer((14, 0))
 
         self.SetSizer(sizer)
         sizer.Fit(self)
