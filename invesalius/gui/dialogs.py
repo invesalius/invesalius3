@@ -2240,12 +2240,12 @@ class FFillSegmentationOptionsDialog(wx.Dialog):
         else:
             self.panel3dcon.conect3D_6.SetValue(1)
 
-        self.cmb_method = wx.ComboBox(self, -1, choices=(_(u"Threshold"), _(u"Dynamic")), style=wx.CB_READONLY)
+        self.cmb_method = wx.ComboBox(self, -1, choices=(_(u"Dynamic"), _(u"Threshold")), style=wx.CB_READONLY)
 
         if self.config.method == 'dynamic':
-            self.cmb_method.SetSelection(1)
-        else:
             self.cmb_method.SetSelection(0)
+        else:
+            self.cmb_method.SetSelection(1)
             self.config.method = 'threshold'
 
         self.panel_ffill_threshold = PanelFFillThreshold(self, self.config, -1, style=border_style|wx.TAB_TRAVERSAL)
@@ -2277,11 +2277,11 @@ class FFillSegmentationOptionsDialog(wx.Dialog):
         sizer.AddStretchSpacer((10, 0))
 
         if self.config.method == 'dynamic':
-            self.cmb_method.SetSelection(1)
+            self.cmb_method.SetSelection(0)
             self.panel_ffill_dynamic.Show()
             sizer.Add(self.panel_ffill_dynamic, (11, 0), (1, 6), flag=wx.LEFT|wx.RIGHT|wx.EXPAND, border=7)
         else:
-            self.cmb_method.SetSelection(0)
+            self.cmb_method.SetSelection(1)
             self.panel_ffill_threshold.Show()
             sizer.Add(self.panel_ffill_threshold, (11, 0), (1, 6), flag=wx.LEFT|wx.RIGHT|wx.EXPAND, border=7)
             self.config.method = 'threshold'
@@ -2324,7 +2324,7 @@ class FFillSegmentationOptionsDialog(wx.Dialog):
             self.config.con_3d = 26
 
     def OnSetMethod(self, evt):
-        if self.cmb_method.GetSelection() == 1:
+        if self.cmb_method.GetSelection() == 0:
             self.config.method = 'dynamic'
             self.panel_ffill_threshold.Hide()
             self.panel_ffill_dynamic.Show()

@@ -1977,7 +1977,7 @@ class FFillSegmentationConfig(object):
 
         self.fill_value = 254
 
-        self.method = 'threshold'
+        self.method = 'dynamic'
 
         self.dev_min = 25
         self.dev_max = 25
