@@ -24,8 +24,8 @@ import wx.lib.hyperlink as hl
 import wx.lib.platebtn as pbtn
 from wx.lib.pubsub import pub as Publisher
 
-import constants as const
-import gui.dialogs as dlg
+import invesalius.constants as const
+import invesalius.gui.dialogs as dlg
 
 BTN_IMPORT_LOCAL = wx.NewId()
 BTN_IMPORT_PACS = wx.NewId()
@@ -96,9 +96,9 @@ class InnerTaskPanel(wx.Panel):
         link_open_proj.Bind(hl.EVT_HYPERLINK_LEFT, self.OnLinkOpenProject)
 
         # Image(s) for buttons
-        BMP_IMPORT = wx.Bitmap("../icons/file_import.png", wx.BITMAP_TYPE_PNG)
-        BMP_NET = wx.Bitmap("../icons/file_from_internet.png", wx.BITMAP_TYPE_PNG)
-        BMP_OPEN_PROJECT = wx.Bitmap("../icons/file_open.png", wx.BITMAP_TYPE_PNG)
+        BMP_IMPORT = wx.Bitmap("./icons/file_import.png", wx.BITMAP_TYPE_PNG)
+        BMP_NET = wx.Bitmap("./icons/file_from_internet.png", wx.BITMAP_TYPE_PNG)
+        BMP_OPEN_PROJECT = wx.Bitmap("./icons/file_open.png", wx.BITMAP_TYPE_PNG)
 
         bmp_list = [BMP_IMPORT, BMP_NET, BMP_OPEN_PROJECT]
         #for bmp in bmp_list:
@@ -159,7 +159,7 @@ class InnerTaskPanel(wx.Panel):
     #        self.LoadProject(filename, path)
 
     def TestLoadProjects2(self):
-        import session as ses
+        import invesalius.session as ses
         session = ses.Session()
         projects = session.recent_projects
         for tuple in projects:
@@ -175,7 +175,7 @@ class InnerTaskPanel(wx.Panel):
 
     def LoadProject(self, proj_name="Unnamed", proj_dir=""):
         """
-        Load into user interface name of project into import task panel.
+        Load into user interface name of invesalius.project into import task panel.
         Can be called 3 times in sequence.
         Call UnloadProjects to empty it.
         """

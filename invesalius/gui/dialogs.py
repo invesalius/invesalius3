@@ -29,14 +29,21 @@ from wx.lib.agw import floatspin
 from wx.lib.wordwrap import wordwrap
 from wx.lib.pubsub import pub as Publisher
 
-import constants as const
-import gui.widgets.gradient as grad
-import project as proj
-import session as ses
-import utils
+print 3.1
+import invesalius.constants as const
+print 3.2
+import invesalius.gui.widgets.gradient as grad
+print 3.4
+print 3.5
+import invesalius.session as ses
+print 3.6
+import invesalius.utils as utils
+print 3.7
+from invesalius.gui.widgets import clut_imagedata
+print 3.8
+from invesalius.gui.widgets.clut_imagedata import CLUTImageDataWidget, EVT_CLUT_NODE_CHANGED
 
-from gui.widgets.clut_imagedata import CLUTImageDataWidget, EVT_CLUT_NODE_CHANGED
-
+print 3.9
 import numpy as np
 
 try:
@@ -603,9 +610,9 @@ class NewMask(wx.Dialog):
                  pos=wx.DefaultPosition,
                  style=wx.DEFAULT_DIALOG_STYLE,
                  useMetal=False):
-        import constants as const
-        import data.mask as mask
-        import project as prj
+        import invesalius.constants as const
+        import invesalius.data.mask as mask
+        import invesalius.project as prj
 
         # Instead of calling wx.Dialog.__init__ we precreate the dialog
         # so we can set an extra style that must be set before
@@ -711,14 +718,14 @@ class NewMask(wx.Dialog):
 
 
     def OnComboThresh(self, evt):
-        import project as prj
+        import invesalius.project as prj
         proj = prj.Project()
         (thresh_min, thresh_max) = proj.threshold_modes[evt.GetString()]
         self.gradient.SetMinimun(thresh_min)
         self.gradient.SetMaximun(thresh_max)
 
     def OnSlideChanged(self, evt):
-        import project as prj
+        import invesalius.project as prj
         thresh_min = self.gradient.GetMinValue()
         thresh_max = self.gradient.GetMaxValue()
         thresh = (thresh_min, thresh_max)
@@ -878,9 +885,9 @@ class NewSurfaceDialog(wx.Dialog):
     def __init__(self, parent=None, ID=-1, title="InVesalius 3", size=wx.DefaultSize,
             pos=wx.DefaultPosition, style=wx.DEFAULT_DIALOG_STYLE,
             useMetal=False):
-        import constants as const
-        import data.surface as surface
-        import project as prj
+        import invesalius.constants as const
+        import invesalius.data.surface as surface
+        import invesalius.project as prj
 
         # Instead of calling wx.Dialog.__init__ we precreate the dialog
         # so we can set an extra style that must be set before
@@ -1002,7 +1009,9 @@ class NewSurfaceDialog(wx.Dialog):
 
 
 def ExportPicture(type_=""):
-    import constants as const
+    import invesalius.constants as const
+    import invesalius.project as proj
+    
     INDEX_TO_EXTENSION = {0: "bmp", 1: "jpg", 2: "png", 3: "ps", 4:"povray", 5:"tiff"}
     WILDCARD_SAVE_PICTURE = _("BMP image")+" (*.bmp)|*.bmp|"+\
                                 _("JPG image")+" (*.jpg)|*.jpg|"+\
@@ -1143,6 +1152,7 @@ class SurfaceCreationDialog(wx.Dialog):
         sizer.Fit(self)
 
     def OnSetMask(self, evt):
+        import invesalius.project as proj
         mask = proj.Project().mask_dict[evt.mask_index]
         self.ca.mask_edited = mask.was_edited
         self.ca.ReloadMethodsOptions()
@@ -1153,9 +1163,9 @@ class SurfaceCreationDialog(wx.Dialog):
 
 class SurfaceCreationOptionsPanel(wx.Panel):
     def __init__(self, parent, ID=-1):
-        import constants as const
-        import data.surface as surface
-        import project as prj
+        import invesalius.constants as const
+        import invesalius.data.surface as surface
+        import invesalius.project as prj
 
         wx.Panel.__init__(self, parent, ID)
 
@@ -1565,7 +1575,7 @@ class MaskBooleanDialog(wx.Dialog):
         else:
             self.mask2.SetSelection(0)
 
-        icon_folder = '../icons/'
+        icon_folder = './icons/'
         op_choices = ((_(u"Union"), const.BOOLEAN_UNION, 'bool_union.png'),
                       (_(u"Difference"), const.BOOLEAN_DIFF, 'bool_difference.png'),
                       (_(u"Intersection"), const.BOOLEAN_AND, 'bool_intersection.png'),
@@ -1711,7 +1721,7 @@ class ImportBitmapParameters(wx.Dialog):
 
     def _init_gui(self):
         
-        import project as prj
+        import invesalius.project as prj
         
         p = wx.Panel(self, -1, style = wx.TAB_TRAVERSAL
                      | wx.CLIP_CHILDREN
@@ -1915,7 +1925,7 @@ class PanelFFillThreshold(wx.Panel):
         self._init_gui()
 
     def _init_gui(self):
-        import project as prj
+        import invesalius.project as prj
 
         project = prj.Project()
         bound_min, bound_max = project.threshold_range
@@ -2204,7 +2214,7 @@ class FFillSegmentationOptionsDialog(wx.Dialog):
         """
         Create the widgets.
         """
-        import project as prj
+        import invesalius.project as prj
 
         # Target
         if sys.platform == "win32":

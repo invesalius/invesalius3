@@ -27,10 +27,9 @@ import wx.lib.masked.numctrl
 import wx.lib.platebtn as pbtn
 from wx.lib.pubsub import pub as Publisher
 
-import data.bases as db
-import data.co_registration as dcr
-import project
-
+import invesalius.data.bases as db
+import invesalius.data.co_registration as dcr
+import invesalius.project as project
 IR1 = wx.NewId()
 IR2 = wx.NewId()
 IR3 = wx.NewId()

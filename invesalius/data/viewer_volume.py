@@ -28,14 +28,13 @@ import vtk
 from vtk.wx.wxVTKRenderWindowInteractor import wxVTKRenderWindowInteractor
 from wx.lib.pubsub import pub as Publisher
 
-import constants as const
-import data.bases as bases
-import data.vtk_utils as vtku
-import project as prj
-import style as st
-import utils
-
-from data import measures
+import invesalius.constants as const
+import invesalius.data.bases as bases
+import invesalius.data.vtk_utils as vtku
+import invesalius.project as prj
+import invesalius.style as st
+import invesalius.utils as utils
+import invesalius.data.measures as measures
 
 PROP_MEASURE = 0.8
 

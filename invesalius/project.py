@@ -29,13 +29,11 @@ import wx
 from wx.lib.pubsub import pub as Publisher
 import vtk
 
-import constants as const
-import data.mask as msk
-import data.polydata_utils as pu
-import data.surface as srf
-from presets import Presets
-from utils import Singleton, debug
-import version
+import invesalius.constants as const
+import invesalius.data.polydata_utils as pu
+from invesalius.presets import Presets 
+from invesalius.utils import Singleton, debug as utilsimport 
+import invesalius.version as version
 
 class Project(object):
     # Only one project will be initialized per time. Therefore, we use
@@ -268,8 +266,10 @@ class Project(object):
                 os.remove(f)
 
     def OpenPlistProject(self, filename):
-        import data.measures as ms
- 
+        import invesalius.data.measures as ms
+        import invesalius.data.mask as msk
+        import invesalius.data.surface as srf
+        
         if not const.VTK_WARNING:
             log_path = os.path.join(const.LOG_FOLDER, 'vtkoutput.txt')
             fow = vtk.vtkFileOutputWindow()

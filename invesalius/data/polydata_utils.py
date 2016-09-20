@@ -23,7 +23,7 @@ import vtk
 import wx
 from wx.lib.pubsub import pub as Publisher
 
-import vtk_utils as vu
+import invesalius.data.vtk_utils as vu
 
 # Update progress value in GUI
 UpdateProgress = vu.ShowProgress()

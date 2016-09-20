@@ -21,9 +21,9 @@ import math
 
 import numpy
 import vtk
-import imagedata_utils
-from project import Project
-import constants as const
+import invesalius.data.imagedata_utils as imagedata_utils
+from invesalius.project import Project as project
+import invesalius.constants as const
 
 from vtk.util import numpy_support
 

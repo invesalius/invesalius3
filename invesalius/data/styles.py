@@ -30,10 +30,10 @@ import wx
 
 from wx.lib.pubsub import pub as Publisher
 
-import constants as const
-import converters
-import cursor_actors as ca
-import session as ses
+import invesalius.constants as const
+import invesalius.data.converters as converters
+import invesalius.data.cursor_actors as ca
+import invesalius.session as ses
 
 import numpy as np
 
@@ -43,16 +43,15 @@ from scipy.ndimage import watershed_ift, generate_binary_structure
 from skimage.morphology import watershed
 from skimage import filter
 
-from gui import dialogs
-from .measures import MeasureData
+import invesalius.gui.dialogs as dialogs
+from invesalius.data.measures import MeasureData
 
 from . import floodfill
 
-import watershed_process
-
-import utils
-import transformations
-import geometry as geom
+import invesalius.data.watershed_process as watershed_process
+import invesalius.utils as utils
+import invesalius.data.transformations as transformations
+import invesalius.data.geometry as geom
 
 ORIENTATIONS = {
         "AXIAL": const.AXIAL,
@@ -1895,7 +1894,7 @@ class SelectMaskPartsInteractorStyle(DefaultInteractorStyle):
 
     def SetUp(self):
         if not self.config.dlg_visible:
-            import data.mask as mask
+            import invesalius.data.mask as mask
             default_name =  const.MASK_NAME_PATTERN %(mask.Mask.general_index+2)
 
             self.config.mask_name = default_name

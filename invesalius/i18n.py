@@ -26,7 +26,7 @@ import gettext
 import os
 import sys
  
-import utils as utl 
+import invesalius.utils as utl 
  
 def GetLocales(): 
     """Return a dictionary which defines supported languages""" 
@@ -59,7 +59,7 @@ def GetLocaleOS():
         return locale.getdefaultlocale()[0] 
  
 def InstallLanguage(language): 
-    language_dir = os.path.abspath(os.path.join('..','locale')) 
+    language_dir = os.path.abspath(os.path.join('.','locale')) 
     lang = gettext.translation('invesalius', language_dir,\
                                    languages=[language], codeset='utf8') 
     # Using unicode 

@@ -5,9 +5,9 @@ import time
 import numpy
 import vtk
 
-import i18n
-import converters
-# import imagedata_utils as iu
+import invesalius.i18n as i18n
+import invesalius.data.converters as converters
+# import invesalius.data.imagedata_utils as iu
 
 from scipy import ndimage
 

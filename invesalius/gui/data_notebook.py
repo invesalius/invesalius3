@@ -32,11 +32,11 @@ import wx.lib.flatnotebook as fnb
 import wx.lib.platebtn as pbtn
 from wx.lib.pubsub import pub as Publisher
 
-import constants as const
-import data.slice_ as slice_
-import gui.dialogs as dlg
-import gui.widgets.listctrl as listmix
-import utils as ul
+import invesalius.constants as const
+import invesalius.data.slice_ as slice_
+import invesalius.gui.dialogs as dlg
+import invesalius.gui.widgets.listctrl as listmix
+import invesalius.utils as ul
 
 
 BTN_NEW, BTN_REMOVE, BTN_DUPLICATE = [wx.NewId() for i in xrange(3)]
@@ -148,11 +148,11 @@ class MeasureButtonControlPanel(wx.Panel):
     def __init_gui(self):
 
         # Bitmaps to be used in plate buttons
-        BMP_NEW = wx.Bitmap("../icons/data_new.png",
+        BMP_NEW = wx.Bitmap("./icons/data_new.png",
                             wx.BITMAP_TYPE_PNG)
-        BMP_REMOVE = wx.Bitmap("../icons/data_remove.png",
+        BMP_REMOVE = wx.Bitmap("./icons/data_remove.png",
                                 wx.BITMAP_TYPE_PNG)
-        BMP_DUPLICATE = wx.Bitmap("../icons/data_duplicate.png",
+        BMP_DUPLICATE = wx.Bitmap("./icons/data_duplicate.png",
                                 wx.BITMAP_TYPE_PNG)
 
         # Plate buttons based on previous bitmaps
@@ -261,11 +261,11 @@ class ButtonControlPanel(wx.Panel):
     def __init_gui(self):
 
         # Bitmaps to be used in plate buttons
-        BMP_NEW = wx.Bitmap("../icons/data_new.png",
+        BMP_NEW = wx.Bitmap("./icons/data_new.png",
                             wx.BITMAP_TYPE_PNG)
-        BMP_REMOVE = wx.Bitmap("../icons/data_remove.png",
+        BMP_REMOVE = wx.Bitmap("./icons/data_remove.png",
                                 wx.BITMAP_TYPE_PNG)
-        BMP_DUPLICATE = wx.Bitmap("../icons/data_duplicate.png",
+        BMP_DUPLICATE = wx.Bitmap("./icons/data_duplicate.png",
                                 wx.BITMAP_TYPE_PNG)
 
         # Plate buttons based on previous bitmaps
@@ -452,13 +452,13 @@ class MasksListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
     def __init_image_list(self):
         self.imagelist = wx.ImageList(16, 16)
 
-        image = wx.Image("../icons/object_invisible.jpg")
+        image = wx.Image("./icons/object_invisible.jpg")
         bitmap = wx.BitmapFromImage(image.Scale(16, 16))
         bitmap.SetWidth(16)
         bitmap.SetHeight(16)
         img_null = self.imagelist.Add(bitmap)
 
-        image = wx.Image("../icons/object_visible.jpg")
+        image = wx.Image("./icons/object_visible.jpg")
         bitmap = wx.BitmapFromImage(image.Scale(16, 16))
         bitmap.SetWidth(16)
         bitmap.SetHeight(16)
@@ -466,7 +466,7 @@ class MasksListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
 
         self.SetImageList(self.imagelist,wx.IMAGE_LIST_SMALL)
 
-        self.image_gray = Image.open("../icons/object_colour.jpg")
+        self.image_gray = Image.open("./icons/object_colour.jpg")
 
     def OnEditLabel(self, evt):
         Publisher.sendMessage('Change mask name',
@@ -586,11 +586,11 @@ class SurfaceButtonControlPanel(wx.Panel):
     def __init_gui(self):
 
         # Bitmaps to be used in plate buttons
-        BMP_NEW = wx.Bitmap("../icons/data_new.png",
+        BMP_NEW = wx.Bitmap("./icons/data_new.png",
                             wx.BITMAP_TYPE_PNG)
-        BMP_REMOVE = wx.Bitmap("../icons/data_remove.png",
+        BMP_REMOVE = wx.Bitmap("./icons/data_remove.png",
                                 wx.BITMAP_TYPE_PNG)
-        BMP_DUPLICATE = wx.Bitmap("../icons/data_duplicate.png",
+        BMP_DUPLICATE = wx.Bitmap("./icons/data_duplicate.png",
                                 wx.BITMAP_TYPE_PNG)
 
         # Plate buttons based on previous bitmaps
@@ -781,13 +781,13 @@ class SurfacesListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
     def __init_image_list(self):
         self.imagelist = wx.ImageList(16, 16)
 
-        image = wx.Image("../icons/object_invisible.jpg")
+        image = wx.Image("./icons/object_invisible.jpg")
         bitmap = wx.BitmapFromImage(image.Scale(16, 16))
         bitmap.SetWidth(16)
         bitmap.SetHeight(16)
         img_null = self.imagelist.Add(bitmap)
 
-        image = wx.Image("../icons//object_visible.jpg")
+        image = wx.Image("./icons//object_visible.jpg")
         bitmap = wx.BitmapFromImage(image.Scale(16, 16))
         bitmap.SetWidth(16)
         bitmap.SetHeight(16)
@@ -795,7 +795,7 @@ class SurfacesListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
 
         self.SetImageList(self.imagelist,wx.IMAGE_LIST_SMALL)
 
-        self.image_gray = Image.open("../icons/object_colour.jpg")
+        self.image_gray = Image.open("./icons/object_colour.jpg")
 
     def OnEditLabel(self, evt):
         Publisher.sendMessage('Change surface name', (evt.GetIndex(), evt.GetLabel()))
@@ -1045,13 +1045,13 @@ class MeasuresListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
     def __init_image_list(self):
         self.imagelist = wx.ImageList(16, 16)
 
-        image = wx.Image("../icons/object_invisible.jpg")
+        image = wx.Image("./icons/object_invisible.jpg")
         bitmap = wx.BitmapFromImage(image.Scale(16, 16))
         bitmap.SetWidth(16)
         bitmap.SetHeight(16)
         img_null = self.imagelist.Add(bitmap)
 
-        image = wx.Image("../icons/object_visible.jpg")
+        image = wx.Image("./icons/object_visible.jpg")
         bitmap = wx.BitmapFromImage(image.Scale(16, 16))
         bitmap.SetWidth(16)
         bitmap.SetHeight(16)
@@ -1059,7 +1059,7 @@ class MeasuresListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
 
         self.SetImageList(self.imagelist,wx.IMAGE_LIST_SMALL)
 
-        self.image_gray = Image.open("../icons/object_colour.jpg")
+        self.image_gray = Image.open("./icons/object_colour.jpg")
 
 
     def OnEditLabel(self, evt):
@@ -1240,19 +1240,19 @@ class AnnotationsListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
     def __init_image_list(self):
         self.imagelist = wx.ImageList(16, 16)
 
-        image = wx.Image("../icons/object_visible.jpg")
+        image = wx.Image("./icons/object_visible.jpg")
         bitmap = wx.BitmapFromImage(image.Scale(16, 16))
         bitmap.SetWidth(16)
         bitmap.SetHeight(16)
         img_check = self.imagelist.Add(bitmap)
 
-        image = wx.Image("../icons/object_invisible.jpg")
+        image = wx.Image("./icons/object_invisible.jpg")
         bitmap = wx.BitmapFromImage(image.Scale(16, 16))
         bitmap.SetWidth(16)
         bitmap.SetHeight(16)
         img_null = self.imagelist.Add(bitmap)
 
-        image = wx.Image("../icons/object_colour.jpg")
+        image = wx.Image("./icons/object_colour.jpg")
         bitmap = wx.BitmapFromImage(image.Scale(16, 16))
         bitmap.SetWidth(16)
         bitmap.SetHeight(16)

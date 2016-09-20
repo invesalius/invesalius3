@@ -23,20 +23,18 @@ import numpy as np
 import vtk
 from wx.lib.pubsub import pub as Publisher
 
-import constants as const
-import converters
-import imagedata_utils as iu
-import style as st
-import session as ses
-import utils
+import invesalius.constants as const
+import invesalius.data.converters as converters
+import invesalius.data.imagedata_utils as iu
+import invesalius.style as st
+import invesalius.session as ses
+import invesalius.utils as utils
+from invesalius.data.mask import Mask
+from invesalius.project import Project
+from invesalius.data import mips
 
-from mask import Mask
-from project import Project
-from data import mips
-
-from data import transforms
-import transformations
-
+from invesalius.data import transforms
+import invesalius.data.transformations as transformations
 OTHER=0
 PLIST=1
 WIDGET=2

@@ -23,8 +23,7 @@ import wx.lib.hyperlink as hl
 import wx.lib.platebtn as pbtn
 from wx.lib.pubsub import pub as Publisher
 
-import constants
-
+import invesalius.constants as constants
 ID_BTN_MEASURE_LINEAR = wx.NewId()
 ID_BTN_MEASURE_ANGULAR = wx.NewId()
 ID_BTN_ANNOTATION = wx.NewId()
@@ -71,9 +70,9 @@ class InnerTaskPanel(wx.Panel):
         txt_annotation.Bind(hl.EVT_HYPERLINK_LEFT, self.OnTextAnnotation)
 
         # Image(s) for buttons
-        BMP_ANNOTATE = wx.Bitmap("../icons/annotation.png", wx.BITMAP_TYPE_PNG)
-        BMP_ANGLE = wx.Bitmap("../icons/measure_angle.jpg", wx.BITMAP_TYPE_JPEG)
-        BMP_DISTANCE = wx.Bitmap("../icons/measure_line.png", wx.BITMAP_TYPE_PNG)
+        BMP_ANNOTATE = wx.Bitmap("./icons/annotation.png", wx.BITMAP_TYPE_PNG)
+        BMP_ANGLE = wx.Bitmap("./icons/measure_angle.jpg", wx.BITMAP_TYPE_JPEG)
+        BMP_DISTANCE = wx.Bitmap("./icons/measure_line.png", wx.BITMAP_TYPE_PNG)
         BMP_ANNOTATE.SetWidth(25)
         BMP_ANNOTATE.SetHeight(25)
         BMP_ANGLE.SetWidth(25)

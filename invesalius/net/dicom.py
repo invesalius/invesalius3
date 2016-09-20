@@ -1,6 +1,5 @@
 import gdcm
-import utils
-
+import invesalius.utils as utils
 
 class DicomNet:
     

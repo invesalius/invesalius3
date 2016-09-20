@@ -53,8 +53,7 @@
 
 import gdcm
 
-import utils
-
+import invesalius.utils as utils
 ORIENT_MAP = {"SAGITTAL":0, "CORONAL":1, "AXIAL":2, "OBLIQUE":2}
 
 

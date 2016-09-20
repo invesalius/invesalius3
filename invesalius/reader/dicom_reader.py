@@ -29,14 +29,12 @@ import vtkgdcm
 import gdcm
 from wx.lib.pubsub import pub as Publisher
 
-import constants as const
-import dicom
-import dicom_grouper
-import session
-
+import invesalius.constants as const
+import invesalius.reader.dicom as dicom
+import invesalius.reader.dicom_grouper as dicom_grouper
+import invesalius.session as session
 import glob
-import utils
-
+import invesalius.utils as utils
 
 import plistlib
 

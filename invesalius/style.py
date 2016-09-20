@@ -64,7 +64,7 @@ from wx.lib.pubsub import pub as Publisher
 #----------------------
 
 
-import constants as const
+import invesalius.constants as const
 
 class StyleStateManager(object):
 # don't need to be singleton, only needs to be instantiated inside

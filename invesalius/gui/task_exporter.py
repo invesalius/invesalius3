@@ -25,9 +25,9 @@ import wx.lib.hyperlink as hl
 import wx.lib.platebtn as pbtn
 from wx.lib.pubsub import pub as Publisher
 
-import constants as const
-import gui.dialogs as dlg
-import project as proj
+import invesalius.constants as const
+import invesalius.gui.dialogs as dlg
+import invesalius.project as proj
 
 BTN_MASK = wx.NewId()
 BTN_PICTURE = wx.NewId()
@@ -164,22 +164,22 @@ class InnerTaskPanel(wx.Panel):
         # Image(s) for buttons
         if sys.platform == 'darwin':
             BMP_EXPORT_SURFACE = wx.Bitmap(\
-                                  "../icons/surface_export_original.png",
+                                  "./icons/surface_export_original.png",
                                   wx.BITMAP_TYPE_PNG).ConvertToImage()\
                                           .Rescale(25, 25).ConvertToBitmap()
             BMP_TAKE_PICTURE = wx.Bitmap(\
-                                 "../icons/tool_photo_original.png",
+                                 "./icons/tool_photo_original.png",
                                  wx.BITMAP_TYPE_PNG).ConvertToImage()\
                                           .Rescale(25, 25).ConvertToBitmap()
 
             #BMP_EXPORT_MASK = wx.Bitmap("../icons/mask.png",
             #                            wx.BITMAP_TYPE_PNG)
         else:
-            BMP_EXPORT_SURFACE = wx.Bitmap("../icons/surface_export.png",
+            BMP_EXPORT_SURFACE = wx.Bitmap("./icons/surface_export.png",
                                         wx.BITMAP_TYPE_PNG).ConvertToImage()\
                                           .Rescale(25, 25).ConvertToBitmap()
 
-            BMP_TAKE_PICTURE = wx.Bitmap("../icons/tool_photo.png",
+            BMP_TAKE_PICTURE = wx.Bitmap("./icons/tool_photo.png",
                                      wx.BITMAP_TYPE_PNG).ConvertToImage()\
                                           .Rescale(25, 25).ConvertToBitmap()
 

@@ -23,8 +23,8 @@ import math
 import vtk
 from wx.lib.pubsub import pub as Publisher
 
-import utils
-import constants as const
+import invesalius.utils as utils
+import invesalius.constants as const
 
 
 class Box(object):

@@ -27,8 +27,9 @@ import time
 #import wx.lib.pubsub as ps
 from wx.lib.pubsub import pub as Publisher
 
-from utils import Singleton, debug
-from random import randint
+from invesalius.utils import Singleton, debug
+import random
+#import randint
 
 class Session(object):
     # Only one session will be initialized per time. Therefore, we use
@@ -42,7 +43,7 @@ class Session(object):
         self.project_status = 3
 
     def CreateItens(self):
-        import constants as const
+        import invesalius.constants as const
         self.project_path = ()
         self.debug = False
         self.project_status = const.PROJ_CLOSE
@@ -75,7 +76,7 @@ class Session(object):
         self.WriteSessionFile()
 
     def IsOpen(self):
-        import constants as const
+        import invesalius.constants as const
         return self.project_status != const.PROJ_CLOSE
 
     def SaveConfigFileBackup(self):
@@ -98,7 +99,7 @@ class Session(object):
            return False
 
     def CloseProject(self):
-        import constants as const
+        import invesalius.constants as const
         debug("Session.CloseProject")
         self.project_path = ()
         self.project_status = const.PROJ_CLOSE
@@ -107,7 +108,7 @@ class Session(object):
         self.WriteSessionFile()
 
     def SaveProject(self, path=()):
-        import constants as const
+        import invesalius.constants as const
         debug("Session.SaveProject")
         self.project_status = const.PROJ_OPEN
         if path:
@@ -118,12 +119,12 @@ class Session(object):
         self.WriteSessionFile()
 
     def ChangeProject(self):
-        import constants as const
+        import invesalius.constants as const
         debug("Session.ChangeProject")
         self.project_status = const.PROJ_CHANGE
 
     def CreateProject(self, filename):
-        import constants as const
+        import invesalius.constants as const
         debug("Session.CreateProject")
         Publisher.sendMessage('Begin busy cursor')
         # Set session info
@@ -134,7 +135,7 @@ class Session(object):
         return self.tempdir
 
     def OpenProject(self, filepath):
-        import constants as const
+        import invesalius.constants as const
         debug("Session.OpenProject")
         # Add item to recent projects list
         item = (path, file) = os.path.split(filepath)
@@ -183,7 +184,7 @@ class Session(object):
         configfile.close()
 
     def __add_to_list(self, item):
-        import constants as const
+        import invesalius.constants as const
         # Last projects list
         l = self.recent_projects
 

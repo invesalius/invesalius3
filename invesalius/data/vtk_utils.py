@@ -20,9 +20,8 @@ import sys
 
 import vtk
 from wx.lib.pubsub import pub as Publisher
-
-import constants as const
-from gui.dialogs import ProgressDialog
+import invesalius.constants as const
+from invesalius.gui.dialogs import ProgressDialog
 
 # If you are frightened by the code bellow, or think it must have been result of
 # an identation error, lookup at:

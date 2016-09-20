@@ -1,9 +1,8 @@
 import wx
-import constants as const
+import invesalius.constants as const
 from wx.lib.pubsub import pub as Publisher
-import session as ses
-from language_dialog import ComboBoxLanguage
-
+import invesalius.session as ses
+from invesalius.gui.language_dialog import ComboBoxLanguage
 ID = wx.NewId()
 
 try:

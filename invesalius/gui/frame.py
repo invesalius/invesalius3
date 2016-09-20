@@ -31,18 +31,17 @@ import wx.lib.popupctl as pc
 
 from wx.lib.agw.aui.auibar import AuiToolBar, AUI_TB_PLAIN_BACKGROUND
 
-import constants as const
-import default_tasks as tasks
-import default_viewers as viewers
-import gui.dialogs as dlg
-import import_panel as imp
-import import_bitmap_panel as imp_bmp
-import import_network_panel as imp_net
-import project as prj
-import session as ses
-import utils
-import preferences
-
+import invesalius.constants as const
+import invesalius.gui.default_tasks as tasks
+import invesalius.gui.default_viewers as viewers
+import invesalius.gui.dialogs as dlg
+import invesalius.gui.import_panel as imp
+import invesalius.gui.import_bitmap_panel as imp_bmp
+import invesalius.gui.import_network_panel as imp_net
+import invesalius.project as prj
+import invesalius.session as ses
+import invesalius.utils as utils
+import invesalius.gui.preferences as preferences
 # Layout tools' IDs - this is used only locally, therefore doesn't
 # need to be defined in constants.py
 VIEW_TOOLS = [ID_LAYOUT, ID_TEXT] =\
@@ -174,8 +173,7 @@ class Frame(wx.Frame):
                           Hide().Layer(1).MaximizeButton(True).
                           Name("Data").Position(1))
 
-        # This is the DICOM import panel. When the two panels above
-        # are shown, this should be hiden
+        # This is the DICOM import panel. When the two panels above as dicom        # are shown, this should be hiden
         caption = _("Preview medical data to be reconstructed")
         aui_manager.AddPane(imp.Panel(self), wx.aui.AuiPaneInfo().
                           Name("Import").CloseButton(False).Centre().Hide().
@@ -353,8 +351,7 @@ class Frame(wx.Frame):
 
     def _ShowImportPanel(self, evt_pubsub):
         """
-        Show only DICOM import panel.
-        """
+        Show only DICOM import panel. as dicom        """
         Publisher.sendMessage("Set layout button data only")
         aui_manager = self.aui_manager
         aui_manager.GetPane("Import").Show(1)
@@ -535,8 +532,7 @@ class Frame(wx.Frame):
 
     def ShowImportDicomPanel(self):
         """
-        Show import DICOM panel.
-        """
+        Show import DICOM panel. as dicom        """
         Publisher.sendMessage('Show import directory dialog')
 
     def ShowRetrieveDicomPanel(self):
@@ -1041,8 +1037,7 @@ class TaskBarIcon(wx.TaskBarIcon):
 
 class ProjectToolBar(AuiToolBar):
     """
-    Toolbar related to general project operations, including: import,
-    open, save and saveas, among others.
+    Toolbar related to general invesalius.project operations, including: import, as project    open, save and saveas, among others.
     """
     def __init__(self, parent):
         style = AUI_TB_PLAIN_BACKGROUND

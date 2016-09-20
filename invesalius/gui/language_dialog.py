@@ -21,9 +21,8 @@ import os
 import wx
 import wx.combo
 
-import i18n
-
-ICON_DIR = os.path.abspath(os.path.join('..', 'icons'))
+import invesalius.i18n as i18n
+ICON_DIR = os.path.abspath(os.path.join('.', 'icons'))
 
 class ComboBoxLanguage:
 

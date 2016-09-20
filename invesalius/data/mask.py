@@ -26,9 +26,12 @@ import tempfile
 import numpy
 import vtk
 
-import constants as const
-import imagedata_utils as iu
-import session as ses
+import invesalius.constants as const
+print "1"
+import invesalius.data.imagedata_utils as iu
+print "2"
+import invesalius.session as ses
+print "3"
 
 from wx.lib.pubsub import pub as Publisher
 
