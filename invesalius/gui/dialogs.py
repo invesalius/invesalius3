@@ -1863,11 +1863,11 @@ class PanelTargeFFill(wx.Panel):
         self.Layout()
 
 class Panel2DConnectivity(wx.Panel):
-    def __init__(self, parent, ID=-1, style=wx.TAB_TRAVERSAL|wx.NO_BORDER):
+    def __init__(self, parent, ID=-1, show_orientation=False, style=wx.TAB_TRAVERSAL|wx.NO_BORDER):
         wx.Panel.__init__(self, parent, ID, style=style)
-        self._init_gui()
+        self._init_gui(show_orientation)
 
-    def _init_gui(self):
+    def _init_gui(self, show_orientation):
         self.conect2D_4 = wx.RadioButton(self, -1, "4", style=wx.RB_GROUP)
         self.conect2D_8 = wx.RadioButton(self, -1, "8")
 
@@ -1878,6 +1878,14 @@ class Panel2DConnectivity(wx.Panel):
         sizer.Add(self.conect2D_4, (2, 0), flag=wx.LEFT, border=7)
         sizer.Add(self.conect2D_8, (2, 1), flag=wx.LEFT, border=7)
         sizer.AddStretchSpacer((3, 0))
+
+        if show_orientation:
+            self.cmb_orientation = wx.ComboBox(self, -1, choices=(_(u"Axial"), _(u"Coronal"), _(u"Sagital")), style=wx.CB_READONLY)
+            self.cmb_orientation.SetSelection(0)
+
+            sizer.Add(wx.StaticText(self, -1, _(u"Orientation")), (4, 0), (1, 6), flag=wx.LEFT|wx.RIGHT|wx.ALIGN_CENTER_VERTICAL, border=5)
+            sizer.Add(self.cmb_orientation, (5, 0), (1, 10), flag=wx.LEFT|wx.RIGHT|wx.EXPAND, border=7)
+            sizer.AddStretchSpacer((6, 0))
 
         self.SetSizer(sizer)
         sizer.Fit(self)
@@ -2471,5 +2479,92 @@ class CropOptionsDialog(wx.Dialog):
     def OnClose(self, evt):
         self.config.dlg_visible = False
         Publisher.sendMessage('Disable style', const.SLICE_STATE_CROP_MASK)
+        evt.Skip()
+        self.Destroy()
+
+
+class FillHolesAutoDialog(wx.Dialog):
+    def __init__(self, title, config):
+        pre = wx.PreDialog()
+        pre.Create(wx.GetApp().GetTopWindow(), -1, title, style=wx.DEFAULT_DIALOG_STYLE|wx.FRAME_FLOAT_ON_PARENT)
+        self.PostCreate(pre)
+
+        self._init_gui()
+
+    def _init_gui(self):
+        if sys.platform == "win32":
+            border_style = wx.SIMPLE_BORDER
+        else:
+            border_style = wx.SUNKEN_BORDER
+
+        self.panel_target = PanelTargeFFill(self, style=border_style|wx.TAB_TRAVERSAL)
+        self.panel2dcon = Panel2DConnectivity(self, show_orientation=True, style=border_style|wx.TAB_TRAVERSAL)
+        self.panel3dcon = Panel3DConnectivity(self, style=border_style|wx.TAB_TRAVERSAL)
+
+        self.panel_target.target_2d.SetValue(1)
+        self.panel2dcon.Enable(1)
+        self.panel3dcon.Enable(0)
+
+        self.panel2dcon.conect2D_8.SetValue(1)
+
+        self.apply_btn = wx.Button(self, wx.ID_APPLY)
+        self.close_btn = wx.Button(self, wx.ID_CLOSE)
+
+        # Sizer
+        sizer = wx.BoxSizer(wx.VERTICAL)
+
+        sizer.AddSpacer(5)
+        sizer.Add(wx.StaticText(self, -1, _(u"Parameters")), flag=wx.LEFT, border=5)
+        sizer.AddSpacer(5)
+        sizer.Add(self.panel_target, flag=wx.LEFT|wx.RIGHT|wx.EXPAND, border=7)
+        sizer.AddSpacer(5)
+        sizer.Add(self.panel2dcon, flag=wx.LEFT|wx.RIGHT|wx.EXPAND, border=7)
+        sizer.AddSpacer(5)
+        sizer.Add(self.panel3dcon, flag=wx.LEFT|wx.RIGHT|wx.EXPAND, border=7)
+        sizer.AddSpacer(5)
+        sizer.Add(self.apply_btn, 0, flag=wx.ALIGN_RIGHT|wx.RIGHT, border=7)
+        sizer.Add(self.close_btn, 0, flag=wx.ALIGN_RIGHT|wx.RIGHT, border=7)
+        sizer.AddSpacer(5)
+
+        self.SetSizer(sizer)
+        sizer.Fit(self)
+        self.Layout()
+
+        self.close_btn.Bind(wx.EVT_BUTTON, self.OnBtnClose)
+        self.Bind(wx.EVT_RADIOBUTTON, self.OnSetRadio)
+        self.Bind(wx.EVT_CLOSE, self.OnClose)
+
+    def OnBtnClose(self, evt):
+        self.Close()
+
+    def OnSetRadio(self, evt):
+        # Target
+        if self.panel_target.target_2d.GetValue():
+            self.config.target = "2D"
+            self.panel2dcon.Enable(1)
+            self.panel3dcon.Enable(0)
+        else:
+            self.config.target = "3D"
+            self.panel3dcon.Enable(1)
+            self.panel2dcon.Enable(0)
+
+        # 2D
+        if self.panel2dcon.conect2D_4.GetValue():
+            self.config.con_2d = 4
+        elif self.panel2dcon.conect2D_8.GetValue():
+            self.config.con_2d = 8
+
+        # 3D
+        if self.panel3dcon.conect3D_6.GetValue():
+            self.config.con_3d = 6
+        elif self.panel3dcon.conect3D_18.GetValue():
+            self.config.con_3d = 18
+        elif self.panel3dcon.conect3D_26.GetValue():
+            self.config.con_3d = 26
+
+    def OnClose(self, evt):
+        print "ONCLOSE"
+        if self.config.dlg_visible:
+            Publisher.sendMessage('Disable style', const.SLICE_STATE_MASK_FFILL)
         evt.Skip()
         self.Destroy()

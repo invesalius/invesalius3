@@ -445,6 +445,9 @@ class Frame(wx.Frame):
         elif id == const.ID_FLOODFILL_MASK:
             self.OnFillHolesManually()
 
+        elif id == const.ID_FILL_HOLE_AUTO:
+            self.OnFillHolesAutomatically()
+
         elif id == const.ID_REMOVE_MASK_PART:
             self.OnRemoveMaskParts()
 
@@ -592,6 +595,11 @@ class Frame(wx.Frame):
     def OnFillHolesManually(self):
         Publisher.sendMessage('Enable style', const.SLICE_STATE_MASK_FFILL)
 
+    def OnFillHolesAutomatically(self):
+        #  Publisher.sendMessage('Fill holes automatically')
+        fdlg = dlg.FillHolesAutoDialog()
+        fdlg.Show()
+
     def OnRemoveMaskParts(self):
         Publisher.sendMessage('Enable style', const.SLICE_STATE_REMOVE_MASK_PARTS)
 
@@ -628,6 +636,7 @@ class MenuBar(wx.MenuBar):
                              const.ID_PROJECT_CLOSE,
                              const.ID_REORIENT_IMG,
                              const.ID_FLOODFILL_MASK,
+                             const.ID_FILL_HOLE_AUTO,
                              const.ID_REMOVE_MASK_PART,
                              const.ID_SELECT_MASK_PART,
                              const.ID_FLOODFILL_SEGMENTATION,]
@@ -744,6 +753,9 @@ class MenuBar(wx.MenuBar):
 
         mask_menu.AppendSeparator()
         self.fill_hole_mask_menu = mask_menu.Append(const.ID_FLOODFILL_MASK, _(u"Fill holes manually"))
+        self.fill_hole_mask_menu.Enable(False)
+
+        self.fill_hole_auto_menu = mask_menu.Append(const.ID_FILL_HOLE_AUTO, _(u"Fill holes automatically"))
         self.fill_hole_mask_menu.Enable(False)
 
         self.remove_mask_part_menu = mask_menu.Append(const.ID_REMOVE_MASK_PART, _(u"Remove parts"))

@@ -23,15 +23,17 @@ import random
 import shutil
 import tempfile
 
-import numpy
+import numpy as np
 import vtk
 
 import invesalius.constants as const
 import invesalius.data.imagedata_utils as iu
 import invesalius.session as ses
 
-from wx.lib.pubsub import pub as Publisher
+from . import floodfill
 
+from wx.lib.pubsub import pub as Publisher
+from scipy import ndimage
 
 class EditionHistoryNode(object):
     def __init__(self, index, orientation, array, clean=False):
@@ -43,11 +45,11 @@ class EditionHistoryNode(object):
         self._save_array(array)
 
     def _save_array(self, array):
-        numpy.save(self.filename, array)
+        np.save(self.filename, array)
         print "Saving history", self.index, self.orientation, self.filename, self.clean
 
     def commit_history(self, mvolume):
-        array = numpy.load(self.filename)
+        array = np.load(self.filename)
         if self.orientation == 'AXIAL':
             mvolume[self.index+1,1:,1:] = array
             if self.clean:
@@ -295,7 +297,7 @@ class Mask():
     def _open_mask(self, filename, shape, dtype='uint8'):
         print ">>", filename, shape
         self.temp_file = filename
-        self.matrix = numpy.memmap(filename, shape=shape, dtype=dtype, mode="r+")
+        self.matrix = np.memmap(filename, shape=shape, dtype=dtype, mode="r+")
 
     def _set_class_index(self, index):
         Mask.general_index = index
@@ -309,7 +311,7 @@ class Mask():
         """
         self.temp_file = tempfile.mktemp()
         shape = shape[0] + 1, shape[1] + 1, shape[2] + 1
-        self.matrix = numpy.memmap(self.temp_file, mode='w+', dtype='uint8', shape=shape)
+        self.matrix = np.memmap(self.temp_file, mode='w+', dtype='uint8', shape=shape)
 
     def clean(self):
         self.matrix[1:, 1:, 1:] = 0
@@ -339,6 +341,24 @@ class Mask():
 
     def clear_history(self):
         self.history.clear_history()
+
+    def fill_holes_auto(self, idx):
+        matrix = self.matrix[idx+1, 1:, 1:]
+        matrix = matrix.reshape(1, matrix.shape[0], matrix.shape[1])
+        imask = (~(matrix > 127))
+        labels, nlabels = ndimage.label(imask, output=np.uint16)
+
+        floodfill.fill_holes_automatically(matrix, labels, nlabels, 100000)
+
+        #  for l in xrange(nlabels):
+            #  trues = (labels == l)
+            #  size = trues.sum()
+            #  print l, size
+
+            #  if size <= 1000:
+                #  matrix[trues] = 254
+                #  self.was_edited = True
+
 
     def __del__(self):
         if self.is_shown:
