@@ -70,6 +70,11 @@ def InstallLanguage(language):
         abs_file_path = os.path.abspath(file_path + os.sep + "..")
         language_dir = os.path.join(abs_file_path, 'locale')
 
+    # MAC App
+    if not os.path.exists(language_dir):
+        abs_file_path = os.path.abspath(os.path.join(file_path, '..', '..',  '..', '..'))
+        language_dir = os.path.join(abs_file_path, 'locale')
+
     lang = gettext.translation('invesalius', language_dir,\
                                    languages=[language], codeset='utf8') 
     # Using unicode 

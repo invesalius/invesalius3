@@ -34,6 +34,10 @@ if hasattr(sys,"frozen") and (sys.frozen == "windows_exe"\
 else:
     ICON_DIR = os.path.abspath(os.path.join(file_path, '..', '..','icons'))
 
+# MAC App
+if not os.path.exists(ICON_DIR):
+    ICON_DIR = os.path.abspath(os.path.join(file_path, '..', '..', '..', '..', '..',  'icons'))
+
 class ComboBoxLanguage:
 
     def __init__(self, parent):

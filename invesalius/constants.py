@@ -334,6 +334,13 @@ else:
     DOC_DIR = os.path.abspath(os.path.join(FILE_PATH,'..', 'docs'))
 
 
+# MAC App
+if not os.path.exists(ICON_DIR):
+    ICON_DIR = os.path.abspath(os.path.join(FILE_PATH, '..', '..', '..', '..', 'icons'))
+    SAMPLE_DIR = os.path.abspath(os.path.join(FILE_PATH,'..',  '..', '..', '..', 'samples'))
+    DOC_DIR = os.path.abspath(os.path.join(FILE_PATH,'..', '..', '..', '..', 'docs'))
+
+
 ID_TO_BMP = {VOL_FRONT: [_("Front"), os.path.join(ICON_DIR, "view_front.png")],
              VOL_BACK: [_("Back"), os.path.join(ICON_DIR, "view_back.png")],
              VOL_TOP: [_("Top"), os.path.join(ICON_DIR, "view_top.png")],

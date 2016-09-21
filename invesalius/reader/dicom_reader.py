@@ -69,7 +69,7 @@ def SortFiles(filelist, dicom):
     # Sort slices
     # FIXME: Coronal Crash. necessary verify
     if (dicom.image.orientation_label <> "CORONAL"):
-        #Organize reversed image
+        ##Organize reversed image
         sorter = gdcm.IPPSorter()
         sorter.SetComputeZSpacing(True)
         sorter.SetZSpacingTolerance(1e-10)
