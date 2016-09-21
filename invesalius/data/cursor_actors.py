@@ -241,7 +241,6 @@ class CursorCircle(CursorBase):
         """
         Function to plot the circle
         """
-        print "Building circle cursor", self.orientation
         r = self.radius
         sx, sy, sz = self.spacing
         if self.orientation == 'AXIAL':
@@ -284,12 +283,6 @@ class CursorCircle(CursorBase):
 
             self.mapper.SetOrientation(ORIENTATION[self.orientation])
 
-        print '===================================='
-        print self.orientation
-        print circle_ci.GetSpacing()
-        print xi, xf, yi, yf, zi, zf
-        print '===================================='
-        
     def _calculate_area_pixels(self):
         """
         Return the cursor's pixels.

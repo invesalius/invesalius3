@@ -525,7 +525,7 @@ class MaskProperties(wx.Panel):
         self.bind_evt_gradient = False
         self.gradient.SetMinValue(thresh_min)
         self.gradient.SetMaxValue(thresh_max)
-        print ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>", thresh_min, thresh_max
+        
         self.bind_evt_gradient = True
         thresh = (thresh_min, thresh_max)
         if thresh in Project().threshold_modes.values():

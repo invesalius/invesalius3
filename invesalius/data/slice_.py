@@ -384,7 +384,6 @@ class Slice(object):
     def __show_mask(self, pubsub_evt):
         # "if" is necessary because wx events are calling this before any mask
         # has been created
-        print "__show_mask"
         if self.current_mask:
             index, value = pubsub_evt.data
             self.ShowMask(index, value)
@@ -887,7 +886,6 @@ class Slice(object):
 
     def ShowMask(self, index, value):
         "Show a mask given its index and 'show' value (0: hide, other: show)"
-        print "Showing Mask"
         proj = Project()
         proj.mask_dict[index].is_shown = value
         proj.mask_dict[index].on_show()

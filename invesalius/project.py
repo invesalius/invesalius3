@@ -262,7 +262,6 @@ class Project(object):
 
         for f in filelist:
             if filelist[f].endswith('.plist'):
-                print f
                 os.remove(f)
 
     def OpenPlistProject(self, filename):
@@ -358,7 +357,6 @@ def Extract(filename, folder):
         del fsrc
         del fdst
     tar.close()
-    print filelist
     return filelist
 
     

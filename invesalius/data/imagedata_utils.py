@@ -30,15 +30,10 @@ from wx.lib.pubsub import pub as Publisher
 from scipy.ndimage import shift
 from vtk.util import numpy_support
 
-print 1.1
 import invesalius.constants as const
-print 1.2
 from invesalius.data import vtk_utils as vtk_utils
-print 1.3
 import invesalius.reader.bitmap_reader as bitmap_reader
-print 1.4
 import invesalius.utils as utils
-print 1.5
 import invesalius.data.converters as converters
 # TODO: Test cases which are originally in sagittal/coronal orientation
 # and have gantry

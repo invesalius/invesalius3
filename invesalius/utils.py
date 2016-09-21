@@ -74,7 +74,6 @@ def debug(error_str):
     from invesalius.session import Session
     session = Session()
     #if session.debug:
-    print >> sys.stderr, error_str
 
 def next_copy_name(original_name, names_list):
     """
