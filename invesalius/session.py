@@ -28,8 +28,7 @@ import time
 from wx.lib.pubsub import pub as Publisher
 
 from invesalius.utils import Singleton, debug
-import random
-#import randint
+from random import randint
 
 class Session(object):
     # Only one session will be initialized per time. Therefore, we use

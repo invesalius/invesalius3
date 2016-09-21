@@ -17,6 +17,7 @@
 #    detalhes.
 #--------------------------------------------------------------------------
 import sys
+import os
 
 import wx
 import wx.lib.agw.fourwaysplitter as fws
@@ -27,11 +28,14 @@ import invesalius.data.viewer_volume as volume_viewer
 import invesalius.project as project
 import invesalius.gui.widgets.slice_menu as slice_menu_
 
+
 from invesalius.gui.widgets.clut_raycasting import CLUTRaycastingWidget, \
         EVT_CLUT_POINT_RELEASE, EVT_CLUT_CURVE_SELECT, \
         EVT_CLUT_CURVE_WL_CHANGE
 
 from invesalius.constants import ID_TO_BMP
+import invesalius.constants as const
+
 class Panel(wx.Panel):
     def __init__(self, parent):
         wx.Panel.__init__(self, parent, pos=wx.Point(0, 50),
@@ -332,14 +336,14 @@ class VolumeToolPanel(wx.Panel):
         wx.Panel.__init__(self, parent)
 
         # VOLUME RAYCASTING BUTTON
-        BMP_RAYCASTING = wx.Bitmap("./icons/volume_raycasting.png",
+        BMP_RAYCASTING = wx.Bitmap(os.path.join(const.ICON_DIR, "volume_raycasting.png"),
                                     wx.BITMAP_TYPE_PNG)
 
-        BMP_SLICE_PLANE = wx.Bitmap("./icons/slice_plane.png",
+        BMP_SLICE_PLANE = wx.Bitmap(os.path.join(const.ICON_DIR, "slice_plane.png"),
                                     wx.BITMAP_TYPE_PNG)
 
 
-        BMP_3D_STEREO = wx.Bitmap("./icons/3D_glasses.png",
+        BMP_3D_STEREO = wx.Bitmap(os.path.join(const.ICON_DIR, "3D_glasses.png"),
                                     wx.BITMAP_TYPE_PNG)
 
 

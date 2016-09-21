@@ -32,7 +32,7 @@ import vtk
 import invesalius.constants as const
 import invesalius.data.polydata_utils as pu
 from invesalius.presets import Presets 
-from invesalius.utils import Singleton, debug as utilsimport 
+from invesalius.utils import Singleton, debug 
 import invesalius.version as version
 
 class Project(object):

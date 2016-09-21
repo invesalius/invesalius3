@@ -320,9 +320,18 @@ WINDOW_LEVEL = {_("Abdomen"):(350,50),
 
 REDUCE_IMAGEDATA_QUALITY = 0
 
-ICON_DIR = os.path.abspath(os.path.join('.', 'icons'))
-SAMPLE_DIR = os.path.abspath(os.path.join('.', 'samples'))
-DOC_DIR = os.path.abspath(os.path.join('.', 'docs'))
+FILE_PATH = os.path.split(__file__)[0]
+
+if hasattr(sys,"frozen") and (sys.frozen == "windows_exe"\
+                            or sys.frozen == "console_exe"):
+    abs_path_icon = os.path.abspath(FILE_PATH + os.sep + ".." + os.sep + ".." + os.sep + "..")
+    ICON_DIR = os.path.join(abs_path_icon, "icons")
+    SAMPLE_DIR = os.path.join(FILE_PATH, 'samples')
+    DOC_DIR = os.path.join(FILE_PATH, 'docs')
+else:
+    ICON_DIR = os.path.abspath(os.path.join(FILE_PATH, '..', 'icons'))
+    SAMPLE_DIR = os.path.abspath(os.path.join(FILE_PATH,'..', 'samples'))
+    DOC_DIR = os.path.abspath(os.path.join(FILE_PATH,'..', 'docs'))
 
 
 ID_TO_BMP = {VOL_FRONT: [_("Front"), os.path.join(ICON_DIR, "view_front.png")],

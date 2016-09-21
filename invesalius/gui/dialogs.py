@@ -29,21 +29,13 @@ from wx.lib.agw import floatspin
 from wx.lib.wordwrap import wordwrap
 from wx.lib.pubsub import pub as Publisher
 
-print 3.1
 import invesalius.constants as const
-print 3.2
 import invesalius.gui.widgets.gradient as grad
-print 3.4
-print 3.5
 import invesalius.session as ses
-print 3.6
 import invesalius.utils as utils
-print 3.7
 from invesalius.gui.widgets import clut_imagedata
-print 3.8
 from invesalius.gui.widgets.clut_imagedata import CLUTImageDataWidget, EVT_CLUT_NODE_CHANGED
 
-print 3.9
 import numpy as np
 
 try:
@@ -1575,7 +1567,7 @@ class MaskBooleanDialog(wx.Dialog):
         else:
             self.mask2.SetSelection(0)
 
-        icon_folder = './icons/'
+        icon_folder = const.ICON_DIR
         op_choices = ((_(u"Union"), const.BOOLEAN_UNION, 'bool_union.png'),
                       (_(u"Difference"), const.BOOLEAN_DIFF, 'bool_difference.png'),
                       (_(u"Intersection"), const.BOOLEAN_AND, 'bool_intersection.png'),

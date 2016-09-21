@@ -96,9 +96,9 @@ class InnerTaskPanel(wx.Panel):
         link_open_proj.Bind(hl.EVT_HYPERLINK_LEFT, self.OnLinkOpenProject)
 
         # Image(s) for buttons
-        BMP_IMPORT = wx.Bitmap("./icons/file_import.png", wx.BITMAP_TYPE_PNG)
-        BMP_NET = wx.Bitmap("./icons/file_from_internet.png", wx.BITMAP_TYPE_PNG)
-        BMP_OPEN_PROJECT = wx.Bitmap("./icons/file_open.png", wx.BITMAP_TYPE_PNG)
+        BMP_IMPORT = wx.Bitmap(os.path.join(const.ICON_DIR, "file_import.png"), wx.BITMAP_TYPE_PNG)
+        BMP_NET = wx.Bitmap(os.path.join(const.ICON_DIR, "file_from_internet.png"), wx.BITMAP_TYPE_PNG)
+        BMP_OPEN_PROJECT = wx.Bitmap(os.path.join(const.ICON_DIR, "file_open.png"), wx.BITMAP_TYPE_PNG)
 
         bmp_list = [BMP_IMPORT, BMP_NET, BMP_OPEN_PROJECT]
         #for bmp in bmp_list:
