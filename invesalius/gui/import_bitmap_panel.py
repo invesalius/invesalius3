@@ -21,12 +21,11 @@ import wx.gizmos as gizmos
 from wx.lib.pubsub import pub as Publisher
 import wx.lib.splitter as spl
 
-import constants as const
-import gui.dialogs as dlg
-import bitmap_preview_panel as bpp
-import reader.bitmap_reader as bpr
-from dialogs import ImportBitmapParameters
-
+import invesalius.constants as const
+import invesalius.gui.dialogs as dlg
+import invesalius.gui.bitmap_preview_panel as bpp
+import invesalius.reader.bitmap_reader as bpr
+from invesalius.gui.dialogs import ImportBitmapParameters as dialogs
 myEVT_SELECT_SERIE = wx.NewEventType()
 EVT_SELECT_SERIE = wx.PyEventBinder(myEVT_SELECT_SERIE, 1)
 

@@ -23,7 +23,7 @@ import tempfile
 import sys
 import vtk
 import re
-import constants as const
+import invesalius.constants as const
 import wx
 
 from wx.lib.pubsub import pub as Publisher
@@ -34,9 +34,8 @@ from scipy import misc
 import numpy
 import imghdr
 
-import utils
-from data import converters
-
+import invesalius.utils as utils
+import invesalius.data.converters as converters
 #flag to control vtk error in read files
 no_error = True 
 vtk_error = False

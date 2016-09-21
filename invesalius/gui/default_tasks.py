@@ -21,15 +21,15 @@ import wx
 import wx.lib.foldpanelbar as fpb
 from wx.lib.pubsub import pub as Publisher
 
-import constants as const
-import data_notebook as nb
-import session as ses
-import task_exporter as exporter
-import task_slice as slice_
-import task_importer as importer
-import task_surface as surface
-import task_tools as tools
-import task_navigator as navigator
+import invesalius.constants as const
+import invesalius.gui.data_notebook as nb
+import invesalius.session as ses
+import invesalius.gui.task_exporter as exporter
+import invesalius.gui.task_slice as slice_
+import invesalius.gui.task_importer as importer
+import invesalius.gui.task_surface as surface
+import invesalius.gui.task_tools as tools
+import invesalius.gui.task_navigator as navigator
 
 FPB_DEFAULT_STYLE = 2621440
 

@@ -8,11 +8,11 @@ from vtk.util import  numpy_support
 from vtk.wx.wxVTKRenderWindowInteractor import wxVTKRenderWindowInteractor
 from wx.lib.pubsub import pub as Publisher
 
-import constants as const
-import data.vtk_utils as vtku
-from data import converters
-from reader import bitmap_reader
-import utils
+import invesalius.constants as const
+import invesalius.data.vtk_utils as vtku
+import invesalius.data.converters as converters
+import invesalius.reader.bitmap_reader as bitmap_reader
+import invesalius.utils as utils
 
 NROWS = 3
 NCOLS = 6

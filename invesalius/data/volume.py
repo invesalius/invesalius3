@@ -25,13 +25,13 @@ import vtk
 import wx
 from wx.lib.pubsub import pub as Publisher
 
-import constants as const
-import project as prj
-import slice_
-import converters
-from data import vtk_utils
+import invesalius.constants as const
+import invesalius.project as prj
+import invesalius.data.slice_ as slice_
+import invesalius.data.converters as converters
+import invesalius.data.vtk_utils as vtk_utils
 from vtk.util import numpy_support
-import session as ses
+import invesalius.session as ses
 
 
 Kernels = { 

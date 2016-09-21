@@ -21,8 +21,8 @@ import time
 #import gdcm
 #import vtkgdcm
 import sys
-import utils
-import constants as const
+import invesalius.utils as utils
+import invesalius.constants as const
 # In DICOM file format, if multiple values are present for the
 # "Window Center" (Level) and "Window Width", both attributes
 # shall have the same number of values and shall be considered as

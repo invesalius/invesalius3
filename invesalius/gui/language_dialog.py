@@ -18,12 +18,25 @@
 #--------------------------------------------------------------------------
 
 import os
+import sys
 import wx
 import wx.combo
 
-import i18n
+import invesalius.i18n as i18n
 
-ICON_DIR = os.path.abspath(os.path.join('..', 'icons'))
+file_path = os.path.split(__file__)[0]
+
+if hasattr(sys,"frozen") and (sys.frozen == "windows_exe"\
+                            or sys.frozen == "console_exe"):
+    abs_file_path = os.path.abspath(file_path + os.sep + ".." +\
+                                os.sep + ".." + os.sep + ".." + os.sep + "..")
+    ICON_DIR = os.path.abspath(os.path.join(abs_file_path, 'icons'))
+else:
+    ICON_DIR = os.path.abspath(os.path.join(file_path, '..', '..','icons'))
+
+# MAC App
+if not os.path.exists(ICON_DIR):
+    ICON_DIR = os.path.abspath(os.path.join(file_path, '..', '..', '..', '..', '..',  'icons'))
 
 class ComboBoxLanguage:
 

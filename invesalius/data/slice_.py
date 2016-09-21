@@ -23,20 +23,18 @@ import numpy as np
 import vtk
 from wx.lib.pubsub import pub as Publisher
 
-import constants as const
-import converters
-import imagedata_utils as iu
-import style as st
-import session as ses
-import utils
+import invesalius.constants as const
+import invesalius.data.converters as converters
+import invesalius.data.imagedata_utils as iu
+import invesalius.style as st
+import invesalius.session as ses
+import invesalius.utils as utils
+from invesalius.data.mask import Mask
+from invesalius.project import Project
+from invesalius.data import mips
 
-from mask import Mask
-from project import Project
-from data import mips
-
-from data import transforms
-import transformations
-
+from invesalius.data import transforms
+import invesalius.data.transformations as transformations
 OTHER=0
 PLIST=1
 WIDGET=2
@@ -386,7 +384,6 @@ class Slice(object):
     def __show_mask(self, pubsub_evt):
         # "if" is necessary because wx events are calling this before any mask
         # has been created
-        print "__show_mask"
         if self.current_mask:
             index, value = pubsub_evt.data
             self.ShowMask(index, value)
@@ -889,7 +886,6 @@ class Slice(object):
 
     def ShowMask(self, index, value):
         "Show a mask given its index and 'show' value (0: hide, other: show)"
-        print "Showing Mask"
         proj = Project()
         proj.mask_dict[index].is_shown = value
         proj.mask_dict[index].on_show()

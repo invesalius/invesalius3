@@ -49,10 +49,10 @@ from wx.lib.pubsub import pub as Publisher
 #        _SplashScreen = wx.SplashScreen
 
 
-import gui.language_dialog as lang_dlg
-import i18n
-import session as ses
-import utils
+import invesalius.gui.language_dialog as lang_dlg
+import invesalius.i18n as i18n
+import invesalius.session as ses
+import invesalius.utils as utils
 
 # ------------------------------------------------------------------
 
@@ -157,11 +157,18 @@ class SplashScreen(wx.SplashScreen):
             else:
                 icon_file = "splash_" + lang + ".png"
 
-            path = os.path.join("..","icons", icon_file)
+            if hasattr(sys,"frozen") and (sys.frozen == "windows_exe"\
+                                        or sys.frozen == "console_exe"):
+                abs_file_path = os.path.abspath(".." + os.sep)
+                path = abs_file_path
+            
+		path = os.path.join(path, "icons", icon_file)
+            else:
 
-            if not os.path.exists(path):
-                path = os.path.join("..", "icons", "splash_en.png")
-
+                path = os.path.join(".","icons", icon_file)
+                if not os.path.exists(path):
+                    path = os.path.join(".", "icons", "splash_en.png")
+				
             bmp = wx.Image(path).ConvertToBitmap()
 
             style = wx.SPLASH_TIMEOUT | wx.SPLASH_CENTRE_ON_SCREEN
@@ -178,9 +185,9 @@ class SplashScreen(wx.SplashScreen):
     def Startup(self):
         # Importing takes sometime, therefore it will be done
         # while splash is being shown
-        from gui.frame import Frame
-        from control import Controller
-        from project import Project
+        from invesalius.gui.frame import Frame
+        from invesalius.control import Controller
+        from invesalius.project import Project
         
         self.main = Frame(None)
         self.control = Controller(self.main)
@@ -311,7 +318,7 @@ if __name__ == '__main__':
 
     # Add current directory to PYTHONPATH, so other classes can
     # import modules as they were on root invesalius folder
-    sys.path.insert(0, '..')
+    sys.path.insert(0, '.')
     sys.path.append(".")
 
 

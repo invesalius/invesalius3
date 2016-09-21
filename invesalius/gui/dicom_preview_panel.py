@@ -31,10 +31,10 @@ from vtk.util import  numpy_support
 from vtk.wx.wxVTKRenderWindowInteractor import wxVTKRenderWindowInteractor
 from wx.lib.pubsub import pub as Publisher
 
-import constants as const
-from reader import dicom_reader
-import data.vtk_utils as vtku
-import utils
+import invesalius.constants as const
+import invesalius.reader.dicom_reader as dicom_reader
+import invesalius.data.vtk_utils as vtku
+import invesalius.utils as utils
 import vtkgdcm
 
 

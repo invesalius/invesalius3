@@ -18,8 +18,8 @@
 #--------------------------------------------------------------------------
 import vtk
 
-import constants as const
-import vtk_utils as vu
+import invesalius.constants as const
+import invesalius.data.vtk_utils as vu
 
 BORDER_UP = 1
 BORDER_DOWN = 2

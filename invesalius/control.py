@@ -23,24 +23,24 @@ import wx
 import numpy
 from wx.lib.pubsub import pub as Publisher
 
-import constants as const
-import data.imagedata_utils as image_utils
-import data.mask as msk
-import data.measures
-import data.slice_ as sl
-import data.surface as srf
-import data.volume as volume
-import gui.dialogs as dialog
-import project as prj
-import reader.analyze_reader as analyze
-import reader.dicom_grouper as dg
-import reader.dicom_reader as dcm
-import reader.bitmap_reader as bmp
-import session as ses
+import invesalius.constants as const
+import invesalius.data.imagedata_utils as image_utils
+import invesalius.data.mask as msk
+import invesalius.data.measures as measures
+import invesalius.data.slice_ as sl
+import invesalius.data.surface as srf
+import invesalius.data.volume as volume
+import invesalius.gui.dialogs as dialog
+import invesalius.project as prj
+import invesalius.reader.analyze_reader as analyze
+import invesalius.reader.dicom_grouper as dg
+import invesalius.reader.dicom_reader as dcm
+import invesalius.reader.bitmap_reader as bmp
+import invesalius.session as ses
 
 
-import utils 
-import gui.dialogs as dialogs
+import invesalius.utils  as utils
+import invesalius.gui.dialogs as dialogs
 import subprocess
 import sys
 
@@ -57,7 +57,7 @@ class Controller():
         self.cancel_import = False
         #Init session
         session = ses.Session()
-        self.measure_manager = data.measures.MeasurementManager()
+        self.measure_manager = measures.MeasurementManager()
 
         Publisher.sendMessage('Load Preferences')
 
@@ -376,8 +376,8 @@ class Controller():
         data = evt.data
         ok = self.LoadImportBitmapPanel(data)
         if ok:
-            Publisher.sendMessage('Show import bitmap panel in frame')
-            #Publisher.sendMessage("Show import panel in frame")
+            Publisher.sendMessage('Show import bitmap panel in frame')            
+            #Publisher.sendMessage("Show import panel in invesalius.gui.frame") as frame
 
     def LoadImportBitmapPanel(self, data):
         #if patient_series and isinstance(patient_series, list):
@@ -435,6 +435,7 @@ class Controller():
         
         const.THRESHOLD_OUTVALUE = proj.threshold_range[0]
         const.THRESHOLD_INVALUE = proj.threshold_range[1]
+        const.THRESHOLD_RANGE = proj.threshold_modes[_("Bone")]
 
         const.WINDOW_LEVEL[_('Default')] = (proj.window, proj.level)
         const.WINDOW_LEVEL[_('Manual')] = (proj.window, proj.level)

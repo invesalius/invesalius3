@@ -26,9 +26,9 @@ import tempfile
 import numpy
 import vtk
 
-import constants as const
-import imagedata_utils as iu
-import session as ses
+import invesalius.constants as const
+import invesalius.data.imagedata_utils as iu
+import invesalius.session as ses
 
 from wx.lib.pubsub import pub as Publisher
 
@@ -110,9 +110,6 @@ class EditionHistory(object):
                 #self._reload_slice(self.index - 1)
             if h[self.index - 1].orientation == 'VOLUME':
                 self.index -= 1
-                print "================================"
-                print mvolume.shape
-                print "================================"
                 h[self.index].commit_history(mvolume)
                 self._reload_slice(self.index)
                 Publisher.sendMessage("Enable redo", True)

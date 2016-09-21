@@ -28,14 +28,14 @@ import vtk
 import wx
 from wx.lib.pubsub import pub as Publisher
 
-import constants as const
-import imagedata_utils as iu
-import polydata_utils as pu
-import project as prj
-import session as ses
-import surface_process
-import utils as utl
-import vtk_utils as vu
+import invesalius.constants as const
+import invesalius.data.imagedata_utils as iu
+import invesalius.data.polydata_utils as pu
+import invesalius.project as prj
+import invesalius.session as ses
+import invesalius.data.surface_process as surface_process
+import invesalius.utils as utl
+import invesalius.data.vtk_utils as vu
 
 try:
     import ca_smoothing

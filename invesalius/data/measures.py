@@ -10,11 +10,10 @@ from wx.lib.pubsub import pub as Publisher
 import numpy as np
 import vtk
 
-import constants as const
-import project as prj
-import session as ses
-import utils
-
+import invesalius.constants as const
+import invesalius.project as prj
+import invesalius.session as ses
+import invesalius.utils as utils
 TYPE = {const.LINEAR: _(u"Linear"),
         const.ANGULAR: _(u"Angular"),
         }

@@ -23,8 +23,7 @@ import sys
 import wx
 import itertools
 
-from project import Project
-
+#from invesalius.project import Project
 INVESALIUS_VERSION = "3.0"
 
 #---------------
@@ -208,8 +207,10 @@ VOLUME_POSITION = {AXIAL: [AXIAL_VOLUME_CAM_VIEW_UP, AXIAL_VOLUME_CAM_POSITION],
 
 
 # Mask threshold options
-proj = Project()
-THRESHOLD_RANGE = proj.threshold_modes[_("Bone")]
+
+#proj = Project()
+#THRESHOLD_RANGE = proj.threshold_modes[_("Bone")]
+THRESHOLD_RANGE = [0,3033]
 THRESHOLD_PRESETS_INDEX = _("Bone")
 THRESHOLD_HUE_RANGE = (0, 0.6667)
 THRESHOLD_INVALUE = 5000
@@ -319,9 +320,25 @@ WINDOW_LEVEL = {_("Abdomen"):(350,50),
 
 REDUCE_IMAGEDATA_QUALITY = 0
 
-ICON_DIR = os.path.abspath(os.path.join('..', 'icons'))
-SAMPLE_DIR = os.path.abspath(os.path.join('..', 'samples'))
-DOC_DIR = os.path.abspath(os.path.join('..', 'docs'))
+FILE_PATH = os.path.split(__file__)[0]
+
+if hasattr(sys,"frozen") and (sys.frozen == "windows_exe"\
+                            or sys.frozen == "console_exe"):
+    abs_path_icon = os.path.abspath(FILE_PATH + os.sep + ".." + os.sep + ".." + os.sep + "..")
+    ICON_DIR = os.path.join(abs_path_icon, "icons")
+    SAMPLE_DIR = os.path.join(FILE_PATH, 'samples')
+    DOC_DIR = os.path.join(FILE_PATH, 'docs')
+else:
+    ICON_DIR = os.path.abspath(os.path.join(FILE_PATH, '..', 'icons'))
+    SAMPLE_DIR = os.path.abspath(os.path.join(FILE_PATH,'..', 'samples'))
+    DOC_DIR = os.path.abspath(os.path.join(FILE_PATH,'..', 'docs'))
+
+
+# MAC App
+if not os.path.exists(ICON_DIR):
+    ICON_DIR = os.path.abspath(os.path.join(FILE_PATH, '..', '..', '..', '..', 'icons'))
+    SAMPLE_DIR = os.path.abspath(os.path.join(FILE_PATH,'..',  '..', '..', '..', 'samples'))
+    DOC_DIR = os.path.abspath(os.path.join(FILE_PATH,'..', '..', '..', '..', 'docs'))
 
 
 ID_TO_BMP = {VOL_FRONT: [_("Front"), os.path.join(ICON_DIR, "view_front.png")],
@@ -336,7 +353,7 @@ ID_TO_BMP = {VOL_FRONT: [_("Front"), os.path.join(ICON_DIR, "view_front.png")],
 # if 1, use vtkVolumeRaycastMapper, if 0, use vtkFixedPointVolumeRayCastMapper
 TYPE_RAYCASTING_MAPPER = 0
 
-folder=RAYCASTING_PRESETS_DIRECTORY= os.path.abspath(os.path.join("..",
+folder=RAYCASTING_PRESETS_DIRECTORY= os.path.abspath(os.path.join(".",
                                                                   "presets",
                                                                   "raycasting"))
 

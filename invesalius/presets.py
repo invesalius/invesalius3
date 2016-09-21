@@ -20,12 +20,11 @@ import glob
 import os
 import plistlib
 
-import constants as const
+import invesalius.constants as const
 
 from wx.lib.pubsub import pub as Publisher
 
-from utils import TwoWaysDictionary
-
+from invesalius.utils import TwoWaysDictionary
 class Presets():
 
     def __init__(self):

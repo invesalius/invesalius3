@@ -28,8 +28,7 @@ import numpy as np
 import vtk
 from vtk.wx.wxVTKRenderWindowInteractor import wxVTKRenderWindowInteractor
 
-import styles
-
+import invesalius.data.styles as styles
 import wx
 import sys
 from wx.lib.pubsub import pub as Publisher
@@ -39,17 +38,16 @@ try:
 except ImportError: # if it's not there locally, try the wxPython lib.
     import wx.lib.agw.floatspin as FS
 
-import constants as const
-import cursor_actors as ca
-import data.slice_ as sl
-import data.vtk_utils as vtku
-import project
-import slice_data as sd
-import utils
-import session as ses
-from data import converters
-
-from data import measures
+import invesalius.constants as const
+import invesalius.data.cursor_actors as ca
+import invesalius.data.slice_ as sl
+import invesalius.data.vtk_utils as vtku
+import invesalius.project as project
+import invesalius.data.slice_data as sd
+import invesalius.utils as utils
+import invesalius.session as ses
+import invesalius.data.converters as converters
+import invesalius.data.measures as measures
 
 ID_TO_TOOL_ITEM = {}
 STR_WL = "WL: %d  WW: %d"
@@ -1236,10 +1234,10 @@ class Viewer(wx.Panel):
         self.interactor.SetCursor(wx.StockCursor(wx.CURSOR_SIZEWE))
 
     def SetSizeNWSECursor(self, pubsub_evt):
-        if sys.platform == 'win32':
-            self.interactor.SetCursor(wx.StockCursor(wx.CURSOR_SIZING))
-        else:
+        if sys.platform == 'linux2':
             self.interactor.SetCursor(wx.StockCursor(wx.CURSOR_SIZENWSE))
+        else:
+            self.interactor.SetCursor(wx.StockCursor(wx.CURSOR_SIZING))
 
     def OnExportPicture(self, pubsub_evt):
         Publisher.sendMessage('Begin busy cursor')

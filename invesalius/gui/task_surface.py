@@ -17,19 +17,20 @@
 #    detalhes.
 #--------------------------------------------------------------------------
 import sys
+import os
 
 import wx
 import wx.lib.hyperlink as hl
 from wx.lib.pubsub import pub as Publisher
 
-import constants as const
-import data.slice_ as slice_
-import gui.dialogs as dlg
-import gui.widgets.foldpanelbar as fpb
-import gui.widgets.colourselect as csel
-import gui.widgets.platebtn as pbtn
-import project as prj
-import utils as utl
+import invesalius.constants as const
+import invesalius.data.slice_ as slice_
+import invesalius.gui.dialogs as dlg
+import invesalius.gui.widgets.foldpanelbar as fpb
+import invesalius.gui.widgets.colourselect as csel
+import invesalius.gui.widgets.platebtn as pbtn
+import invesalius.project as prj
+import invesalius.utils as utl
 
 #INTERPOLATION_MODE_LIST = ["Cubic", "Linear", "NearestNeighbor"]
 MIN_TRANSPARENCY = 0
@@ -73,7 +74,7 @@ class InnerTaskPanel(wx.Panel):
         self.SetAutoLayout(1)
 
 
-        BMP_ADD = wx.Bitmap("../icons/object_add.png", wx.BITMAP_TYPE_PNG)
+        BMP_ADD = wx.Bitmap(os.path.join(const.ICON_DIR, "object_add.png"), wx.BITMAP_TYPE_PNG)
         #BMP_ADD.SetWidth(25)
         #BMP_ADD.SetHeight(25)
 
@@ -134,7 +135,7 @@ class InnerTaskPanel(wx.Panel):
             evt.Skip()
 
     def OnLinkNewSurface(self, evt=None):
-        #import gui.dialogs as dlg
+        #import invesalius.gui.dialogs as dlg
         sl = slice_.Slice()
         dialog = dlg.SurfaceCreationDialog(None, -1,
                             _('New surface'),
@@ -299,17 +300,17 @@ class SurfaceTools(wx.Panel):
         link_seeds.Bind(hl.EVT_HYPERLINK_LEFT, self.OnLinkSeed)
 
         # Image(s) for buttons
-        img_largest = wx.Image("../icons/connectivity_largest.png",
+        img_largest = wx.Image(os.path.join(const.ICON_DIR, "connectivity_largest.png"),
                                wx.BITMAP_TYPE_PNG)
         img_largest.Rescale(25, 25)
         bmp_largest = img_largest.ConvertToBitmap()
 
-        img_split_all = wx.Image("../icons/connectivity_split_all.png",
+        img_split_all = wx.Image(os.path.join(const.ICON_DIR, "connectivity_split_all.png"),
                                  wx.BITMAP_TYPE_PNG)
         img_split_all.Rescale(25, 25)
         bmp_split_all = img_split_all.ConvertToBitmap()
 
-        img_seeds = wx.Image("../icons/connectivity_manual.png",
+        img_seeds = wx.Image(os.path.join(const.ICON_DIR, "connectivity_manual.png"),
                              wx.BITMAP_TYPE_PNG)
         img_seeds.Rescale(25, 25)
         bmp_seeds = img_seeds.ConvertToBitmap()
@@ -556,7 +557,7 @@ class SurfaceProperties(wx.Panel):
 
 class QualityAdjustment(wx.Panel):
     def __init__(self, parent):
-        import constants as const
+        import invesalius.constants as const
         wx.Panel.__init__(self, parent)
         default_colour = wx.SystemSettings_GetColour(wx.SYS_COLOUR_MENUBAR)
         self.SetBackgroundColour(default_colour)
