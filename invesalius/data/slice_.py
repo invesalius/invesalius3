@@ -1486,8 +1486,19 @@ class Slice(object):
             #iu.Export(imagedata, filename)
 
     def _fill_holes_auto(self, pubsub_evt):
-        self.do_threshold_to_all_slices()
-        self.current_mask.fill_holes_auto(self.buffer_slices['AXIAL'].index)
+        data = pubsub_evt.data
+        target = data['target']
+        conn = data['conn']
+        orientation = data['orientation']
+        size = data['size']
+
+        if target == '2D':
+            index = self.buffer_slices[orientation].index
+        else:
+            index = 0
+            self.do_threshold_to_all_slices()
+
+        self.current_mask.fill_holes_auto(target, conn, orientation, index, size)
 
         self.buffer_slices['AXIAL'].discard_mask()
         self.buffer_slices['CORONAL'].discard_mask()

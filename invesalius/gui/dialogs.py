@@ -1891,6 +1891,21 @@ class Panel2DConnectivity(wx.Panel):
         sizer.Fit(self)
         self.Layout()
 
+    def GetConnSelected(self):
+        if self.conect2D_4.GetValue():
+            return 4
+        else:
+            return 8
+
+    def GetOrientation(self):
+        dic_ori = {
+            _(u"Axial"): 'AXIAL',
+            _(u"Coronal"): 'CORONAL',
+            _(u"Sagital"): 'SAGITAL'
+        }
+
+        return dic_ori[self.cmb_orientation.GetStringSelection()]
+
 
 class Panel3DConnectivity(wx.Panel):
     def __init__(self, parent, ID=-1, style=wx.TAB_TRAVERSAL|wx.NO_BORDER):
@@ -1914,6 +1929,14 @@ class Panel3DConnectivity(wx.Panel):
         self.SetSizer(sizer)
         sizer.Fit(self)
         self.Layout()
+
+    def GetConnSelected(self):
+        if self.conect3D_6.GetValue():
+            return 6
+        elif self.conect3D_18.GetValue():
+            return 18
+        else:
+            return 26
 
 
 class PanelFFillThreshold(wx.Panel):
@@ -2484,7 +2507,7 @@ class CropOptionsDialog(wx.Dialog):
 
 
 class FillHolesAutoDialog(wx.Dialog):
-    def __init__(self, title, config):
+    def __init__(self, title):
         pre = wx.PreDialog()
         pre.Create(wx.GetApp().GetTopWindow(), -1, title, style=wx.DEFAULT_DIALOG_STYLE|wx.FRAME_FLOAT_ON_PARENT)
         self.PostCreate(pre)
@@ -2522,49 +2545,52 @@ class FillHolesAutoDialog(wx.Dialog):
         sizer.AddSpacer(5)
         sizer.Add(self.panel3dcon, flag=wx.LEFT|wx.RIGHT|wx.EXPAND, border=7)
         sizer.AddSpacer(5)
-        sizer.Add(self.apply_btn, 0, flag=wx.ALIGN_RIGHT|wx.RIGHT, border=7)
-        sizer.Add(self.close_btn, 0, flag=wx.ALIGN_RIGHT|wx.RIGHT, border=7)
+
+        btn_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        btn_sizer.Add(self.apply_btn, 0, flag=wx.ALIGN_RIGHT, border=5)
+        btn_sizer.Add(self.close_btn, 0, flag=wx.LEFT|wx.ALIGN_RIGHT, border=5)
+
+        sizer.AddSizer(btn_sizer, 0, flag=wx.ALIGN_RIGHT|wx.LEFT|wx.RIGHT, border=5)
+
         sizer.AddSpacer(5)
 
         self.SetSizer(sizer)
         sizer.Fit(self)
         self.Layout()
 
+        self.apply_btn.Bind(wx.EVT_BUTTON, self.OnApply)
         self.close_btn.Bind(wx.EVT_BUTTON, self.OnBtnClose)
         self.Bind(wx.EVT_RADIOBUTTON, self.OnSetRadio)
-        self.Bind(wx.EVT_CLOSE, self.OnClose)
+
+    def OnApply(self, evt):
+        if self.panel_target.target_2d.GetValue():
+            target = "2D"
+            conn = self.panel2dcon.GetConnSelected()
+            orientation = self.panel2dcon.GetOrientation()
+        else:
+            target = "3D"
+            conn = self.panel3dcon.GetConnSelected()
+            orientation = ''
+
+        data = {
+            'target': target,
+            'conn': conn,
+            'orientation': orientation,
+            'size': 1000,
+        }
+
+        Publisher.sendMessage("Fill holes automatically", data)
+
 
     def OnBtnClose(self, evt):
         self.Close()
+        self.Destroy()
 
     def OnSetRadio(self, evt):
         # Target
         if self.panel_target.target_2d.GetValue():
-            self.config.target = "2D"
             self.panel2dcon.Enable(1)
             self.panel3dcon.Enable(0)
         else:
-            self.config.target = "3D"
             self.panel3dcon.Enable(1)
             self.panel2dcon.Enable(0)
-
-        # 2D
-        if self.panel2dcon.conect2D_4.GetValue():
-            self.config.con_2d = 4
-        elif self.panel2dcon.conect2D_8.GetValue():
-            self.config.con_2d = 8
-
-        # 3D
-        if self.panel3dcon.conect3D_6.GetValue():
-            self.config.con_3d = 6
-        elif self.panel3dcon.conect3D_18.GetValue():
-            self.config.con_3d = 18
-        elif self.panel3dcon.conect3D_26.GetValue():
-            self.config.con_3d = 26
-
-    def OnClose(self, evt):
-        print "ONCLOSE"
-        if self.config.dlg_visible:
-            Publisher.sendMessage('Disable style', const.SLICE_STATE_MASK_FFILL)
-        evt.Skip()
-        self.Destroy()

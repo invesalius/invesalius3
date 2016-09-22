@@ -597,7 +597,7 @@ class Frame(wx.Frame):
 
     def OnFillHolesAutomatically(self):
         #  Publisher.sendMessage('Fill holes automatically')
-        fdlg = dlg.FillHolesAutoDialog()
+        fdlg = dlg.FillHolesAutoDialog(_(u"Fill holes automatically"))
         fdlg.Show()
 
     def OnRemoveMaskParts(self):

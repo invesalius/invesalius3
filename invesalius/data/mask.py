@@ -342,13 +342,34 @@ class Mask():
     def clear_history(self):
         self.history.clear_history()
 
-    def fill_holes_auto(self, idx):
-        matrix = self.matrix[idx+1, 1:, 1:]
-        matrix = matrix.reshape(1, matrix.shape[0], matrix.shape[1])
-        imask = (~(matrix > 127))
-        labels, nlabels = ndimage.label(imask, output=np.uint16)
+    def fill_holes_auto(self, target, conn, orientation, index, size):
+        CON2D = {4: 1, 8: 2}
+        CON3D = {6: 1, 18: 2, 26: 3}
 
-        floodfill.fill_holes_automatically(matrix, labels, nlabels, 100000)
+        if target == '3D':
+            matrix = self.matrix[1:, 1:, 1:]
+            bstruct = ndimage.generate_binary_structure(3, CON3D[conn])
+
+            imask = (~(matrix > 127))
+            labels, nlabels = ndimage.label(imask, bstruct, output=np.uint16)
+        else:
+            bstruct = ndimage.generate_binary_structure(2, CON2D[conn])
+
+            if orientation == 'AXIAL':
+                matrix = self.matrix[index+1, 1:, 1:]
+            elif orientation == 'CORONAL':
+                matrix = self.matrix[1:, index+1, 1:]
+            elif orientation == 'SAGITAL':
+                matrix = self.matrix[1:, 1:, index+1]
+
+            imask = (~(matrix > 127))
+            labels, nlabels = ndimage.label(imask, bstruct, output=np.uint16)
+
+            labels = labels.reshape(1, labels.shape[0], labels.shape[1])
+            matrix = matrix.reshape(1, matrix.shape[0], matrix.shape[1])
+
+
+        floodfill.fill_holes_automatically(matrix, labels, nlabels, size)
 
         #  for l in xrange(nlabels):
             #  trues = (labels == l)
