@@ -324,15 +324,20 @@ FILE_PATH = os.path.split(__file__)[0]
 
 if hasattr(sys,"frozen") and (sys.frozen == "windows_exe"\
                             or sys.frozen == "console_exe"):
-    abs_path_icon = os.path.abspath(FILE_PATH + os.sep + ".." + os.sep + ".." + os.sep + "..")
-    ICON_DIR = os.path.join(abs_path_icon, "icons")
+    abs_path = os.path.abspath(FILE_PATH + os.sep + ".." + os.sep + ".." + os.sep + "..")
+    ICON_DIR = os.path.join(abs_path, "icons")
     SAMPLE_DIR = os.path.join(FILE_PATH, 'samples')
     DOC_DIR = os.path.join(FILE_PATH, 'docs')
+
+    folder=RAYCASTING_PRESETS_DIRECTORY= os.path.join(abs_path, "presets", "raycasting")
 else:
     ICON_DIR = os.path.abspath(os.path.join(FILE_PATH, '..', 'icons'))
     SAMPLE_DIR = os.path.abspath(os.path.join(FILE_PATH,'..', 'samples'))
     DOC_DIR = os.path.abspath(os.path.join(FILE_PATH,'..', 'docs'))
 
+    folder=RAYCASTING_PRESETS_DIRECTORY= os.path.abspath(os.path.join(".",
+                                                                  "presets",
+                                                                  "raycasting"))
 
 # MAC App
 if not os.path.exists(ICON_DIR):
@@ -352,10 +357,6 @@ ID_TO_BMP = {VOL_FRONT: [_("Front"), os.path.join(ICON_DIR, "view_front.png")],
 
 # if 1, use vtkVolumeRaycastMapper, if 0, use vtkFixedPointVolumeRayCastMapper
 TYPE_RAYCASTING_MAPPER = 0
-
-folder=RAYCASTING_PRESETS_DIRECTORY= os.path.abspath(os.path.join(".",
-                                                                  "presets",
-                                                                  "raycasting"))
 
 
 RAYCASTING_FILES = {_("Airways"): "Airways.plist",
