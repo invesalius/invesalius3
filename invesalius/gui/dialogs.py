@@ -2528,8 +2528,6 @@ class FillHolesAutoDialog(wx.Dialog):
         self.panel2dcon.Enable(1)
         self.panel3dcon.Enable(0)
 
-        self.panel2dcon.conect2D_8.SetValue(1)
-
         self.apply_btn = wx.Button(self, wx.ID_APPLY)
         self.close_btn = wx.Button(self, wx.ID_CLOSE)
 
@@ -2570,7 +2568,7 @@ class FillHolesAutoDialog(wx.Dialog):
         else:
             target = "3D"
             conn = self.panel3dcon.GetConnSelected()
-            orientation = ''
+            orientation = 'VOLUME'
 
         data = {
             'target': target,

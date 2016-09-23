@@ -347,11 +347,15 @@ class Mask():
         CON3D = {6: 1, 18: 2, 26: 3}
 
         if target == '3D':
+            cp_mask = self.matrix.copy()
             matrix = self.matrix[1:, 1:, 1:]
             bstruct = ndimage.generate_binary_structure(3, CON3D[conn])
 
             imask = (~(matrix > 127))
             labels, nlabels = ndimage.label(imask, bstruct, output=np.uint16)
+            print ">>>>", nlabels
+            floodfill.fill_holes_automatically(matrix, labels, nlabels, size)
+            self.save_history(index, orientation, self.matrix.copy(), cp_mask)
         else:
             bstruct = ndimage.generate_binary_structure(2, CON2D[conn])
 
@@ -362,24 +366,16 @@ class Mask():
             elif orientation == 'SAGITAL':
                 matrix = self.matrix[1:, 1:, index+1]
 
+            cp_mask = matrix.copy()
+
             imask = (~(matrix > 127))
             labels, nlabels = ndimage.label(imask, bstruct, output=np.uint16)
 
             labels = labels.reshape(1, labels.shape[0], labels.shape[1])
             matrix = matrix.reshape(1, matrix.shape[0], matrix.shape[1])
 
-
-        floodfill.fill_holes_automatically(matrix, labels, nlabels, size)
-
-        #  for l in xrange(nlabels):
-            #  trues = (labels == l)
-            #  size = trues.sum()
-            #  print l, size
-
-            #  if size <= 1000:
-                #  matrix[trues] = 254
-                #  self.was_edited = True
-
+            floodfill.fill_holes_automatically(matrix, labels, nlabels, size)
+            self.save_history(index, orientation, matrix.copy(), cp_mask)
 
     def __del__(self):
         if self.is_shown:

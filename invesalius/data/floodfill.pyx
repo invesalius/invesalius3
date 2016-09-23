@@ -233,9 +233,9 @@ def floodfill_auto_threshold(np.ndarray[image_t, ndim=3] data, list seeds, float
         return out
 
 
-#  @cython.boundscheck(False)
-#  @cython.wraparound(False)
-#  @cython.nonecheck(False)
+@cython.boundscheck(False)
+@cython.wraparound(False)
+@cython.nonecheck(False)
 def fill_holes_automatically(np.ndarray[mask_t, ndim=3] mask, np.ndarray[np.uint16_t, ndim=3] labels, unsigned int nlabels, unsigned int max_size):
         cdef np.ndarray[np.uint32_t, ndim=1] sizes = np.zeros(shape=(nlabels + 1), dtype=np.uint32)
         cdef int x, y, z
