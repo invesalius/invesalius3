@@ -2520,6 +2520,7 @@ class FillHolesAutoDialog(wx.Dialog):
         else:
             border_style = wx.SUNKEN_BORDER
 
+        self.spin_size = wx.SpinCtrl(self, -1, value='1000', min=1, max=1000000000)
         self.panel_target = PanelTargeFFill(self, style=border_style|wx.TAB_TRAVERSAL)
         self.panel2dcon = Panel2DConnectivity(self, show_orientation=True, style=border_style|wx.TAB_TRAVERSAL)
         self.panel3dcon = Panel3DConnectivity(self, style=border_style|wx.TAB_TRAVERSAL)
@@ -2537,11 +2538,20 @@ class FillHolesAutoDialog(wx.Dialog):
         sizer.AddSpacer(5)
         sizer.Add(wx.StaticText(self, -1, _(u"Parameters")), flag=wx.LEFT, border=5)
         sizer.AddSpacer(5)
+
         sizer.Add(self.panel_target, flag=wx.LEFT|wx.RIGHT|wx.EXPAND, border=7)
         sizer.AddSpacer(5)
         sizer.Add(self.panel2dcon, flag=wx.LEFT|wx.RIGHT|wx.EXPAND, border=7)
         sizer.AddSpacer(5)
         sizer.Add(self.panel3dcon, flag=wx.LEFT|wx.RIGHT|wx.EXPAND, border=7)
+        sizer.AddSpacer(5)
+
+        spin_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        spin_sizer.Add(wx.StaticText(self, -1, _(u"Max hole size")), flag=wx.LEFT|wx.ALIGN_CENTER_VERTICAL, border=5)
+        spin_sizer.Add(self.spin_size, 0, flag=wx.LEFT|wx.RIGHT, border=5)
+        spin_sizer.Add(wx.StaticText(self, -1, _(u"voxels")), flag=wx.RIGHT|wx.ALIGN_CENTER_VERTICAL, border=5)
+
+        sizer.Add(spin_sizer, 0, flag=wx.LEFT|wx.RIGHT|wx.EXPAND, border=7)
         sizer.AddSpacer(5)
 
         btn_sizer = wx.BoxSizer(wx.HORIZONTAL)
@@ -2574,7 +2584,7 @@ class FillHolesAutoDialog(wx.Dialog):
             'target': target,
             'conn': conn,
             'orientation': orientation,
-            'size': 1000,
+            'size': self.spin_size.GetValue(),
         }
 
         Publisher.sendMessage("Fill holes automatically", data)
