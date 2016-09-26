@@ -353,9 +353,13 @@ class Mask():
 
             imask = (~(matrix > 127))
             labels, nlabels = ndimage.label(imask, bstruct, output=np.uint16)
-            print ">>>>", nlabels
-            floodfill.fill_holes_automatically(matrix, labels, nlabels, size)
-            self.save_history(index, orientation, self.matrix.copy(), cp_mask)
+
+            if nlabels == 0:
+                return
+
+            ret = floodfill.fill_holes_automatically(matrix, labels, nlabels, size)
+            if ret:
+                self.save_history(index, orientation, self.matrix.copy(), cp_mask)
         else:
             bstruct = ndimage.generate_binary_structure(2, CON2D[conn])
 
@@ -371,11 +375,15 @@ class Mask():
             imask = (~(matrix > 127))
             labels, nlabels = ndimage.label(imask, bstruct, output=np.uint16)
 
+            if nlabels == 0:
+                return
+
             labels = labels.reshape(1, labels.shape[0], labels.shape[1])
             matrix = matrix.reshape(1, matrix.shape[0], matrix.shape[1])
 
-            floodfill.fill_holes_automatically(matrix, labels, nlabels, size)
-            self.save_history(index, orientation, matrix.copy(), cp_mask)
+            ret = floodfill.fill_holes_automatically(matrix, labels, nlabels, size)
+            if ret:
+                self.save_history(index, orientation, matrix.copy(), cp_mask)
 
     def __del__(self):
         if self.is_shown:

@@ -596,7 +596,6 @@ class Frame(wx.Frame):
         Publisher.sendMessage('Enable style', const.SLICE_STATE_MASK_FFILL)
 
     def OnFillHolesAutomatically(self):
-        #  Publisher.sendMessage('Fill holes automatically')
         fdlg = dlg.FillHolesAutoDialog(_(u"Fill holes automatically"))
         fdlg.Show()
 
@@ -752,20 +751,23 @@ class MenuBar(wx.MenuBar):
         self.clean_mask_menu.Enable(False)
 
         mask_menu.AppendSeparator()
+
         self.fill_hole_mask_menu = mask_menu.Append(const.ID_FLOODFILL_MASK, _(u"Fill holes manually"))
         self.fill_hole_mask_menu.Enable(False)
 
         self.fill_hole_auto_menu = mask_menu.Append(const.ID_FILL_HOLE_AUTO, _(u"Fill holes automatically"))
         self.fill_hole_mask_menu.Enable(False)
 
+        mask_menu.AppendSeparator()
+
         self.remove_mask_part_menu = mask_menu.Append(const.ID_REMOVE_MASK_PART, _(u"Remove parts"))
         self.remove_mask_part_menu.Enable(False)
 
         self.select_mask_part_menu = mask_menu.Append(const.ID_SELECT_MASK_PART, _(u"Select parts"))
         self.select_mask_part_menu.Enable(False)
-    
+
         mask_menu.AppendSeparator()
-        
+
         self.crop_mask_menu = mask_menu.Append(const.ID_CROP_MASK, _("Crop"))
         self.crop_mask_menu.Enable(False)
 

@@ -6,6 +6,7 @@ from collections import deque
 
 from cython.parallel import prange
 from libc.math cimport floor, ceil
+from libcpp cimport bool
 from libcpp.deque cimport deque as cdeque
 from libcpp.vector cimport vector
 
@@ -237,22 +238,37 @@ def floodfill_auto_threshold(np.ndarray[image_t, ndim=3] data, list seeds, float
 @cython.wraparound(False)
 @cython.nonecheck(False)
 def fill_holes_automatically(np.ndarray[mask_t, ndim=3] mask, np.ndarray[np.uint16_t, ndim=3] labels, unsigned int nlabels, unsigned int max_size):
-        cdef np.ndarray[np.uint32_t, ndim=1] sizes = np.zeros(shape=(nlabels + 1), dtype=np.uint32)
-        cdef int x, y, z
-        cdef int dx, dy, dz
+    """
+    Fill mask holes automatically. The hole must <= max_size. Return True if any hole were filled.
+    """
+    cdef np.ndarray[np.uint32_t, ndim=1] sizes = np.zeros(shape=(nlabels + 1), dtype=np.uint32)
+    cdef int x, y, z
+    cdef int dx, dy, dz
+    cdef int i
 
-        dz = mask.shape[0]
-        dy = mask.shape[1]
-        dx = mask.shape[2]
+    cdef bool modified = False
 
-        for z in xrange(dz):
-            for y in xrange(dy):
-                for x in xrange(dx):
-                    sizes[labels[z, y, x]] += 1
+    dz = mask.shape[0]
+    dy = mask.shape[1]
+    dx = mask.shape[2]
 
+    for z in xrange(dz):
+        for y in xrange(dy):
+            for x in xrange(dx):
+                sizes[labels[z, y, x]] += 1
 
-        for z in prange(dz, nogil=True):
-            for y in xrange(dy):
-                for x in xrange(dx):
-                    if sizes[labels[z, y, x]] <= max_size:
-                        mask[z, y, x] = 254
+    #Checking if any hole will be filled
+    for i in xrange(nlabels + 1):
+        if sizes[i] <= max_size:
+            modified = True
+
+    if not modified:
+        return 0
+
+    for z in prange(dz, nogil=True):
+        for y in xrange(dy):
+            for x in xrange(dx):
+                if sizes[labels[z, y, x]] <= max_size:
+                    mask[z, y, x] = 254
+
+    return modified
