@@ -1863,11 +1863,11 @@ class PanelTargeFFill(wx.Panel):
         self.Layout()
 
 class Panel2DConnectivity(wx.Panel):
-    def __init__(self, parent, ID=-1, style=wx.TAB_TRAVERSAL|wx.NO_BORDER):
+    def __init__(self, parent, ID=-1, show_orientation=False, style=wx.TAB_TRAVERSAL|wx.NO_BORDER):
         wx.Panel.__init__(self, parent, ID, style=style)
-        self._init_gui()
+        self._init_gui(show_orientation)
 
-    def _init_gui(self):
+    def _init_gui(self, show_orientation):
         self.conect2D_4 = wx.RadioButton(self, -1, "4", style=wx.RB_GROUP)
         self.conect2D_8 = wx.RadioButton(self, -1, "8")
 
@@ -1879,9 +1879,32 @@ class Panel2DConnectivity(wx.Panel):
         sizer.Add(self.conect2D_8, (2, 1), flag=wx.LEFT, border=7)
         sizer.AddStretchSpacer((3, 0))
 
+        if show_orientation:
+            self.cmb_orientation = wx.ComboBox(self, -1, choices=(_(u"Axial"), _(u"Coronal"), _(u"Sagital")), style=wx.CB_READONLY)
+            self.cmb_orientation.SetSelection(0)
+
+            sizer.Add(wx.StaticText(self, -1, _(u"Orientation")), (4, 0), (1, 6), flag=wx.LEFT|wx.RIGHT|wx.ALIGN_CENTER_VERTICAL, border=5)
+            sizer.Add(self.cmb_orientation, (5, 0), (1, 10), flag=wx.LEFT|wx.RIGHT|wx.EXPAND, border=7)
+            sizer.AddStretchSpacer((6, 0))
+
         self.SetSizer(sizer)
         sizer.Fit(self)
         self.Layout()
+
+    def GetConnSelected(self):
+        if self.conect2D_4.GetValue():
+            return 4
+        else:
+            return 8
+
+    def GetOrientation(self):
+        dic_ori = {
+            _(u"Axial"): 'AXIAL',
+            _(u"Coronal"): 'CORONAL',
+            _(u"Sagital"): 'SAGITAL'
+        }
+
+        return dic_ori[self.cmb_orientation.GetStringSelection()]
 
 
 class Panel3DConnectivity(wx.Panel):
@@ -1906,6 +1929,14 @@ class Panel3DConnectivity(wx.Panel):
         self.SetSizer(sizer)
         sizer.Fit(self)
         self.Layout()
+
+    def GetConnSelected(self):
+        if self.conect3D_6.GetValue():
+            return 6
+        elif self.conect3D_18.GetValue():
+            return 18
+        else:
+            return 26
 
 
 class PanelFFillThreshold(wx.Panel):
@@ -2473,3 +2504,101 @@ class CropOptionsDialog(wx.Dialog):
         Publisher.sendMessage('Disable style', const.SLICE_STATE_CROP_MASK)
         evt.Skip()
         self.Destroy()
+
+
+class FillHolesAutoDialog(wx.Dialog):
+    def __init__(self, title):
+        pre = wx.PreDialog()
+        pre.Create(wx.GetApp().GetTopWindow(), -1, title, style=wx.DEFAULT_DIALOG_STYLE|wx.FRAME_FLOAT_ON_PARENT)
+        self.PostCreate(pre)
+
+        self._init_gui()
+
+    def _init_gui(self):
+        if sys.platform == "win32":
+            border_style = wx.SIMPLE_BORDER
+        else:
+            border_style = wx.SUNKEN_BORDER
+
+        self.spin_size = wx.SpinCtrl(self, -1, value='1000', min=1, max=1000000000)
+        self.panel_target = PanelTargeFFill(self, style=border_style|wx.TAB_TRAVERSAL)
+        self.panel2dcon = Panel2DConnectivity(self, show_orientation=True, style=border_style|wx.TAB_TRAVERSAL)
+        self.panel3dcon = Panel3DConnectivity(self, style=border_style|wx.TAB_TRAVERSAL)
+
+        self.panel_target.target_2d.SetValue(1)
+        self.panel2dcon.Enable(1)
+        self.panel3dcon.Enable(0)
+
+        self.apply_btn = wx.Button(self, wx.ID_APPLY)
+        self.close_btn = wx.Button(self, wx.ID_CLOSE)
+
+        # Sizer
+        sizer = wx.BoxSizer(wx.VERTICAL)
+
+        sizer.AddSpacer(5)
+        sizer.Add(wx.StaticText(self, -1, _(u"Parameters")), flag=wx.LEFT, border=5)
+        sizer.AddSpacer(5)
+
+        sizer.Add(self.panel_target, flag=wx.LEFT|wx.RIGHT|wx.EXPAND, border=7)
+        sizer.AddSpacer(5)
+        sizer.Add(self.panel2dcon, flag=wx.LEFT|wx.RIGHT|wx.EXPAND, border=7)
+        sizer.AddSpacer(5)
+        sizer.Add(self.panel3dcon, flag=wx.LEFT|wx.RIGHT|wx.EXPAND, border=7)
+        sizer.AddSpacer(5)
+
+        spin_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        spin_sizer.Add(wx.StaticText(self, -1, _(u"Max hole size")), flag=wx.LEFT|wx.ALIGN_CENTER_VERTICAL, border=5)
+        spin_sizer.Add(self.spin_size, 0, flag=wx.LEFT|wx.RIGHT, border=5)
+        spin_sizer.Add(wx.StaticText(self, -1, _(u"voxels")), flag=wx.RIGHT|wx.ALIGN_CENTER_VERTICAL, border=5)
+
+        sizer.Add(spin_sizer, 0, flag=wx.LEFT|wx.RIGHT|wx.EXPAND, border=7)
+        sizer.AddSpacer(5)
+
+        btn_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        btn_sizer.Add(self.apply_btn, 0, flag=wx.ALIGN_RIGHT, border=5)
+        btn_sizer.Add(self.close_btn, 0, flag=wx.LEFT|wx.ALIGN_RIGHT, border=5)
+
+        sizer.AddSizer(btn_sizer, 0, flag=wx.ALIGN_RIGHT|wx.LEFT|wx.RIGHT, border=5)
+
+        sizer.AddSpacer(5)
+
+        self.SetSizer(sizer)
+        sizer.Fit(self)
+        self.Layout()
+
+        self.apply_btn.Bind(wx.EVT_BUTTON, self.OnApply)
+        self.close_btn.Bind(wx.EVT_BUTTON, self.OnBtnClose)
+        self.Bind(wx.EVT_RADIOBUTTON, self.OnSetRadio)
+
+    def OnApply(self, evt):
+        if self.panel_target.target_2d.GetValue():
+            target = "2D"
+            conn = self.panel2dcon.GetConnSelected()
+            orientation = self.panel2dcon.GetOrientation()
+        else:
+            target = "3D"
+            conn = self.panel3dcon.GetConnSelected()
+            orientation = 'VOLUME'
+
+        data = {
+            'target': target,
+            'conn': conn,
+            'orientation': orientation,
+            'size': self.spin_size.GetValue(),
+        }
+
+        Publisher.sendMessage("Fill holes automatically", data)
+
+
+    def OnBtnClose(self, evt):
+        self.Close()
+        self.Destroy()
+
+    def OnSetRadio(self, evt):
+        # Target
+        if self.panel_target.target_2d.GetValue():
+            self.panel2dcon.Enable(1)
+            self.panel3dcon.Enable(0)
+        else:
+            self.panel3dcon.Enable(1)
+            self.panel2dcon.Enable(0)

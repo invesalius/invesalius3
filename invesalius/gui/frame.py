@@ -445,6 +445,9 @@ class Frame(wx.Frame):
         elif id == const.ID_FLOODFILL_MASK:
             self.OnFillHolesManually()
 
+        elif id == const.ID_FILL_HOLE_AUTO:
+            self.OnFillHolesAutomatically()
+
         elif id == const.ID_REMOVE_MASK_PART:
             self.OnRemoveMaskParts()
 
@@ -592,6 +595,10 @@ class Frame(wx.Frame):
     def OnFillHolesManually(self):
         Publisher.sendMessage('Enable style', const.SLICE_STATE_MASK_FFILL)
 
+    def OnFillHolesAutomatically(self):
+        fdlg = dlg.FillHolesAutoDialog(_(u"Fill holes automatically"))
+        fdlg.Show()
+
     def OnRemoveMaskParts(self):
         Publisher.sendMessage('Enable style', const.SLICE_STATE_REMOVE_MASK_PARTS)
 
@@ -628,6 +635,7 @@ class MenuBar(wx.MenuBar):
                              const.ID_PROJECT_CLOSE,
                              const.ID_REORIENT_IMG,
                              const.ID_FLOODFILL_MASK,
+                             const.ID_FILL_HOLE_AUTO,
                              const.ID_REMOVE_MASK_PART,
                              const.ID_SELECT_MASK_PART,
                              const.ID_FLOODFILL_SEGMENTATION,]
@@ -743,17 +751,23 @@ class MenuBar(wx.MenuBar):
         self.clean_mask_menu.Enable(False)
 
         mask_menu.AppendSeparator()
+
         self.fill_hole_mask_menu = mask_menu.Append(const.ID_FLOODFILL_MASK, _(u"Fill holes manually"))
         self.fill_hole_mask_menu.Enable(False)
+
+        self.fill_hole_auto_menu = mask_menu.Append(const.ID_FILL_HOLE_AUTO, _(u"Fill holes automatically"))
+        self.fill_hole_mask_menu.Enable(False)
+
+        mask_menu.AppendSeparator()
 
         self.remove_mask_part_menu = mask_menu.Append(const.ID_REMOVE_MASK_PART, _(u"Remove parts"))
         self.remove_mask_part_menu.Enable(False)
 
         self.select_mask_part_menu = mask_menu.Append(const.ID_SELECT_MASK_PART, _(u"Select parts"))
         self.select_mask_part_menu.Enable(False)
-    
+
         mask_menu.AppendSeparator()
-        
+
         self.crop_mask_menu = mask_menu.Append(const.ID_CROP_MASK, _("Crop"))
         self.crop_mask_menu.Enable(False)
 
