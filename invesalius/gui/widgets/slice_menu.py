@@ -32,7 +32,8 @@ from wx.lib.pubsub import pub as Publisher
 import invesalius.constants as const
 import invesalius.data.slice_ as sl
 import invesalius.presets as presets
-from invesalius.gui.dialogs import ClutImagedataDialog as dialogs
+from invesalius.gui.dialogs import ClutImagedataDialog
+
 PROJECTIONS_ID = OrderedDict(((_('Normal'), const.PROJECTION_NORMAL),
                               (_('MaxIP'), const.PROJECTION_MaxIP),
                               (_('MinIP'), const.PROJECTION_MinIP),
