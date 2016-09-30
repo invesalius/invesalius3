@@ -2273,13 +2273,14 @@ class FFillSegmentationOptionsDialog(wx.Dialog):
         else:
             self.panel3dcon.conect3D_6.SetValue(1)
 
-        self.cmb_method = wx.ComboBox(self, -1, choices=(_(u"Dynamic"), _(u"Threshold")), style=wx.CB_READONLY)
+        self.cmb_method = wx.ComboBox(self, -1, choices=(_(u"Dynamic"), _(u"Threshold"), _(u"Confidence")), style=wx.CB_READONLY)
 
         if self.config.method == 'dynamic':
             self.cmb_method.SetSelection(0)
-        else:
+        elif self.config.method == 'threshold':
             self.cmb_method.SetSelection(1)
-            self.config.method = 'threshold'
+        elif self.config.method == 'confidence':
+            self.cmb_method.SetSelection(2)
 
         self.panel_ffill_threshold = PanelFFillThreshold(self, self.config, -1, style=border_style|wx.TAB_TRAVERSAL)
         self.panel_ffill_threshold.SetMinSize((250, -1))
@@ -2311,6 +2312,10 @@ class FFillSegmentationOptionsDialog(wx.Dialog):
 
         if self.config.method == 'dynamic':
             self.cmb_method.SetSelection(0)
+            self.panel_ffill_dynamic.Show()
+            sizer.Add(self.panel_ffill_dynamic, (11, 0), (1, 6), flag=wx.LEFT|wx.RIGHT|wx.EXPAND, border=7)
+        elif self.config.method == 'confidence':
+            self.cmb_method.SetSelection(2)
             self.panel_ffill_dynamic.Show()
             sizer.Add(self.panel_ffill_dynamic, (11, 0), (1, 6), flag=wx.LEFT|wx.RIGHT|wx.EXPAND, border=7)
         else:
@@ -2360,6 +2365,11 @@ class FFillSegmentationOptionsDialog(wx.Dialog):
     def OnSetMethod(self, evt):
         if self.cmb_method.GetSelection() == 0:
             self.config.method = 'dynamic'
+            self.panel_ffill_threshold.Hide()
+            self.panel_ffill_dynamic.Show()
+            self.GetSizer().Replace(self.panel_ffill_threshold, self.panel_ffill_dynamic)
+        elif self.cmb_method.GetSelection() == 2:
+            self.config.method = 'confidence'
             self.panel_ffill_threshold.Hide()
             self.panel_ffill_dynamic.Show()
             self.GetSizer().Replace(self.panel_ffill_threshold, self.panel_ffill_dynamic)
