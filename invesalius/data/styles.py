@@ -2056,7 +2056,11 @@ class FloodFillSegmentInteractorStyle(DefaultInteractorStyle):
             dy, dx = image.shape
             image = image.reshape((1, dy, dx))
             mask = mask.reshape((1, dy, dx))
-            out_mask = self.do_rg_confidence((x, y, 0), image, mask)
+
+            bstruct = np.array(generate_binary_structure(2, CON2D[self.config.con_2d]), dtype='uint8')
+            bstruct = bstruct.reshape((1, 3, 3))
+
+            out_mask = self.do_rg_confidence(image, mask, (x, y, 0), bstruct)
         else:
             if self.config.method == 'threshold':
                 v = image[y, x]
@@ -2114,47 +2118,51 @@ class FloodFillSegmentInteractorStyle(DefaultInteractorStyle):
         mask = self.viewer.slice_.current_mask.matrix[1:, 1:, 1:]
         image = self.viewer.slice_.matrix
 
-        if self.config.method == 'threshold':
-            v = image[z, y, x]
-            t0 = self.config.t0
-            t1 = self.config.t1
+        if self.config.method != 'confidence':
+            if self.config.method == 'threshold':
+                v = image[z, y, x]
+                t0 = self.config.t0
+                t1 = self.config.t1
 
-        elif self.config.method == 'dynamic':
-            if self.config.use_ww_wl:
-                print "Using WW&WL"
-                ww = self.viewer.slice_.window_width
-                wl = self.viewer.slice_.window_level
-                image = get_LUT_value_255(image, ww, wl)
+            elif self.config.method == 'dynamic':
+                if self.config.use_ww_wl:
+                    print "Using WW&WL"
+                    ww = self.viewer.slice_.window_width
+                    wl = self.viewer.slice_.window_level
+                    image = get_LUT_value_255(image, ww, wl)
 
-            v = image[z, y, x]
+                v = image[z, y, x]
 
-            t0 = v - self.config.dev_min
-            t1 = v + self.config.dev_max
+                t0 = v - self.config.dev_min
+                t1 = v + self.config.dev_max
 
-        if image[z, y, x] < t0 or image[z, y, x] > t1:
-            return
+            if image[z, y, x] < t0 or image[z, y, x] > t1:
+                return
 
-        out_mask = np.zeros_like(mask)
 
         bstruct = np.array(generate_binary_structure(3, CON3D[self.config.con_3d]), dtype='uint8')
         self.viewer.slice_.do_threshold_to_all_slices()
         cp_mask = self.viewer.slice_.current_mask.matrix.copy()
 
-        with futures.ThreadPoolExecutor(max_workers=1) as executor:
-            future = executor.submit(floodfill.floodfill_threshold, image, [[x, y, z]], t0, t1, 1, bstruct, out_mask)
+        if self.config.method == 'confidence':
+            out_mask = self.do_rg_confidence(image, mask, (x, y, z), bstruct)
+        else:
+            out_mask = np.zeros_like(mask)
+            with futures.ThreadPoolExecutor(max_workers=1) as executor:
+                future = executor.submit(floodfill.floodfill_threshold, image, [[x, y, z]], t0, t1, 1, bstruct, out_mask)
 
-            dlg = wx.ProgressDialog(self._progr_title, self._progr_msg, parent=None, style=wx.PD_APP_MODAL)
-            while not future.done():
-                dlg.Pulse()
-                time.sleep(0.1)
+                dlg = wx.ProgressDialog(self._progr_title, self._progr_msg, parent=None, style=wx.PD_APP_MODAL)
+                while not future.done():
+                    dlg.Pulse()
+                    time.sleep(0.1)
 
-            dlg.Destroy()
+                dlg.Destroy()
 
         mask[out_mask.astype('bool')] = self.config.fill_value
 
         self.viewer.slice_.current_mask.save_history(0, 'VOLUME', self.viewer.slice_.current_mask.matrix.copy(), cp_mask)
 
-    def do_rg_confidence(self, p, image, mask):
+    def do_rg_confidence(self, image, mask, p, bstruct):
         x, y, z = p
         if self.config.use_ww_wl:
             print "Using WW&WL"
@@ -2171,9 +2179,6 @@ class FloodFillSegmentInteractorStyle(DefaultInteractorStyle):
                     continue
                 bool_mask[0, j, i] = True
 
-
-        bstruct = np.array(generate_binary_structure(2, CON2D[self.config.con_2d]), dtype='uint8')
-        bstruct = bstruct.reshape((1, 3, 3))
 
         for i in xrange(3):
             var = np.std(image[bool_mask])
