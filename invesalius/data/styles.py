@@ -2057,7 +2057,7 @@ class FloodFillSegmentInteractorStyle(DefaultInteractorStyle):
             t0 = self.config.t0
             t1 = self.config.t1
 
-        elif self.config.method == 'dynamic':
+        elif self.config.method == 'dynamic1':
             if self.config.use_ww_wl:
                 print "Using WW&WL"
                 ww = self.viewer.slice_.window_width
@@ -2068,6 +2068,58 @@ class FloodFillSegmentInteractorStyle(DefaultInteractorStyle):
 
             t0 = v - self.config.dev_min
             t1 = v + self.config.dev_max
+
+        else:
+            dy, dx = image.shape
+            image = image.reshape((1, dy, dx))
+            mask = mask.reshape((1, dy, dx))
+            if self.config.use_ww_wl:
+                print "Using WW&WL"
+                ww = self.viewer.slice_.window_width
+                wl = self.viewer.slice_.window_level
+                image = get_LUT_value_255(image, ww, wl)
+            bool_mask = np.zeros_like(mask, dtype='bool')
+            out_mask = np.zeros_like(mask)
+            for i in xrange(int(x-1), int(x+2)):
+                if i < 0 or i >= bool_mask.shape[2]:
+                    continue
+                for j in xrange(int(y-1), int(y+2)):
+                    if j < 0 or j >= bool_mask.shape[1]:
+                        continue
+                    bool_mask[0, j, i] = True
+
+
+            bstruct = np.array(generate_binary_structure(2, CON2D[self.config.con_2d]), dtype='uint8')
+            bstruct = bstruct.reshape((1, 3, 3))
+
+            for i in xrange(3):
+                var = np.std(image[bool_mask])
+                mean = np.mean(image[bool_mask])
+
+                t0 = mean - var * 2.5
+                t1 = mean + var * 2.5
+                print var, mean, t0, t1
+
+                floodfill.floodfill_threshold(image, [[x, y, 0]], t0, t1, 1, bstruct, out_mask)
+
+                bool_mask[out_mask == 1] = True
+
+            mask[out_mask.astype('bool')] = self.config.fill_value
+
+            index = self.viewer.slice_.buffer_slices[self.orientation].index
+            b_mask = self.viewer.slice_.buffer_slices[self.orientation].mask
+            vol_mask = self.viewer.slice_.current_mask.matrix[1:, 1:, 1:]
+
+            if self.orientation == 'AXIAL':
+                vol_mask[index, :, :] = mask
+            elif self.orientation == 'CORONAL':
+                vol_mask[:, index, :] = mask
+            elif self.orientation == 'SAGITAL':
+                vol_mask[:, :, index] = mask
+
+            self.viewer.slice_.current_mask.save_history(index, self.orientation, mask, b_mask)
+
+            return
 
         if image[y, x] < t0 or image[y, x] > t1:
             return
