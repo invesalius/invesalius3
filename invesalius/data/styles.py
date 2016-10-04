@@ -2177,7 +2177,10 @@ class FloodFillSegmentInteractorStyle(DefaultInteractorStyle):
             for j in xrange(int(y-1), int(y+2)):
                 if j < 0 or j >= bool_mask.shape[1]:
                     continue
-                bool_mask[0, j, i] = True
+                for k in xrange(int(z-1), int(z+2)):
+                    if k < 0 or k >= bool_mask.shape[0]:
+                        continue
+                    bool_mask[k, j, i] = True
 
 
         for i in xrange(3):
