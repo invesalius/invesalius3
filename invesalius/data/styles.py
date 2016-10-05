@@ -2176,7 +2176,6 @@ class FloodFillSegmentInteractorStyle(DefaultInteractorStyle):
     def do_rg_confidence(self, image, mask, p, bstruct):
         x, y, z = p
         if self.config.use_ww_wl:
-            print "Using WW&WL"
             ww = self.viewer.slice_.window_width
             wl = self.viewer.slice_.window_level
             image = get_LUT_value_255(image, ww, wl)
@@ -2200,8 +2199,6 @@ class FloodFillSegmentInteractorStyle(DefaultInteractorStyle):
 
             t0 = mean - var * self.config.confid_mult
             t1 = mean + var * self.config.confid_mult
-
-            print self.config.confid_iters, self.config.confid_mult
 
             floodfill.floodfill_threshold(image, [[x, y, z]], t0, t1, 1, bstruct, out_mask)
 
