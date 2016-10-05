@@ -2031,6 +2031,64 @@ class PanelFFillDynamic(wx.Panel):
         self.config.dev_min = self.deviation_min.GetValue()
 
 
+class PanelFFillConfidence(wx.Panel):
+    def __init__(self, parent, config, ID=-1, style=wx.TAB_TRAVERSAL|wx.NO_BORDER):
+        wx.Panel.__init__(self, parent, ID, style=style)
+
+        self.config = config
+
+        self._init_gui()
+
+    def _init_gui(self):
+        self.use_ww_wl = wx.CheckBox(self, -1,  _(u"Use WW&WL"))
+        self.use_ww_wl.SetValue(self.config.use_ww_wl)
+
+        self.spin_mult = floatspin.FloatSpin(self, -1,
+                                             value=self.config.confid_mult,
+                                             min_val=1.0, max_val=10.0,
+                                             increment=0.1, digits=1,
+                                             style=wx.TE_PROCESS_TAB|wx.TE_PROCESS_ENTER,
+                                             agwStyle=floatspin.FS_RIGHT)
+        w, h = self.spin_mult.GetTextExtent('M')
+        self.spin_mult.SetMinSize((w*7, -1))
+
+        self.spin_iters = wx.SpinCtrl(self, -1, value='%d' % self.config.confid_iters, min=0, max=100)
+        self.spin_iters.SetMinSize((w*7, -1))
+
+        sizer = wx.GridBagSizer(5, 5)
+
+        sizer.AddStretchSpacer((0, 0))
+
+        sizer.Add(self.use_ww_wl, (1, 0), (1, 6), flag=wx.LEFT, border=5)
+
+        sizer.AddStretchSpacer((2, 0))
+
+        sizer.Add(wx.StaticText(self, -1, _(u"Multiplier")), (3, 0), (1, 3), flag=wx.ALIGN_CENTER_VERTICAL|wx.LEFT, border=5)
+        sizer.Add(self.spin_mult, (3, 3), (1, 2))
+
+        sizer.Add(wx.StaticText(self, -1, _(u"Iterations")), (4, 0), (1, 3), flag=wx.ALIGN_CENTER_VERTICAL|wx.LEFT, border=5)
+        sizer.Add(self.spin_iters, (4, 3), (1, 2))
+
+        sizer.AddStretchSpacer((5, 0))
+
+        self.SetSizer(sizer)
+        sizer.Fit(self)
+        self.Layout()
+
+        self.use_ww_wl.Bind(wx.EVT_CHECKBOX, self.OnSetUseWWWL)
+        self.spin_mult.Bind(wx.EVT_SPINCTRL, self.OnSetMult)
+        self.spin_iters.Bind(wx.EVT_SPINCTRL, self.OnSetIters)
+
+    def OnSetUseWWWL(self, evt):
+        self.config.use_ww_wl = self.use_ww_wl.GetValue()
+
+    def OnSetMult(self, evt):
+        self.config.confid_mult = self.spin_mult.GetValue()
+
+    def OnSetIters(self, evt):
+        self.config.confid_iters = self.spin_iters.GetValue()
+
+
 class FFillOptionsDialog(wx.Dialog):
     def __init__(self, title, config):
         pre = wx.PreDialog()
@@ -2273,13 +2331,14 @@ class FFillSegmentationOptionsDialog(wx.Dialog):
         else:
             self.panel3dcon.conect3D_6.SetValue(1)
 
-        self.cmb_method = wx.ComboBox(self, -1, choices=(_(u"Dynamic"), _(u"Threshold")), style=wx.CB_READONLY)
+        self.cmb_method = wx.ComboBox(self, -1, choices=(_(u"Dynamic"), _(u"Threshold"), _(u"Confidence")), style=wx.CB_READONLY)
 
         if self.config.method == 'dynamic':
             self.cmb_method.SetSelection(0)
-        else:
+        elif self.config.method == 'threshold':
             self.cmb_method.SetSelection(1)
-            self.config.method = 'threshold'
+        elif self.config.method == 'confidence':
+            self.cmb_method.SetSelection(2)
 
         self.panel_ffill_threshold = PanelFFillThreshold(self, self.config, -1, style=border_style|wx.TAB_TRAVERSAL)
         self.panel_ffill_threshold.SetMinSize((250, -1))
@@ -2288,6 +2347,10 @@ class FFillSegmentationOptionsDialog(wx.Dialog):
         self.panel_ffill_dynamic = PanelFFillDynamic(self, self.config, -1, style=border_style|wx.TAB_TRAVERSAL)
         self.panel_ffill_dynamic.SetMinSize((250, -1))
         self.panel_ffill_dynamic.Hide()
+
+        self.panel_ffill_confidence = PanelFFillConfidence(self, self.config, -1, style=border_style|wx.TAB_TRAVERSAL)
+        self.panel_ffill_confidence.SetMinSize((250, -1))
+        self.panel_ffill_confidence.Hide()
 
         self.close_btn = wx.Button(self, wx.ID_CLOSE)
 
@@ -2313,6 +2376,10 @@ class FFillSegmentationOptionsDialog(wx.Dialog):
             self.cmb_method.SetSelection(0)
             self.panel_ffill_dynamic.Show()
             sizer.Add(self.panel_ffill_dynamic, (11, 0), (1, 6), flag=wx.LEFT|wx.RIGHT|wx.EXPAND, border=7)
+        elif self.config.method == 'confidence':
+            self.cmb_method.SetSelection(2)
+            self.panel_ffill_confidence.Show()
+            sizer.Add(self.panel_ffill_confidence, (11, 0), (1, 6), flag=wx.LEFT|wx.RIGHT|wx.EXPAND, border=7)
         else:
             self.cmb_method.SetSelection(1)
             self.panel_ffill_threshold.Show()
@@ -2358,16 +2425,25 @@ class FFillSegmentationOptionsDialog(wx.Dialog):
             self.config.con_3d = 26
 
     def OnSetMethod(self, evt):
+        item_panel = self.GetSizer().FindItemAtPosition((11, 0)).GetWindow()
+
         if self.cmb_method.GetSelection() == 0:
             self.config.method = 'dynamic'
-            self.panel_ffill_threshold.Hide()
+            item_panel.Hide()
             self.panel_ffill_dynamic.Show()
-            self.GetSizer().Replace(self.panel_ffill_threshold, self.panel_ffill_dynamic)
+            self.GetSizer().Replace(item_panel, self.panel_ffill_dynamic)
+
+        elif self.cmb_method.GetSelection() == 2:
+            self.config.method = 'confidence'
+            item_panel.Hide()
+            self.panel_ffill_confidence.Show()
+            self.GetSizer().Replace(item_panel, self.panel_ffill_confidence)
+
         else:
             self.config.method = 'threshold'
-            self.panel_ffill_dynamic.Hide()
+            item_panel.Hide()
             self.panel_ffill_threshold.Show()
-            self.GetSizer().Replace(self.panel_ffill_dynamic, self.panel_ffill_threshold)
+            self.GetSizer().Replace(item_panel, self.panel_ffill_threshold)
 
         self.GetSizer().Fit(self)
         self.Layout()

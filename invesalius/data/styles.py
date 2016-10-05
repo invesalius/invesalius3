@@ -1983,6 +1983,9 @@ class FFillSegmentationConfig(object):
 
         self.use_ww_wl = True
 
+        self.confid_mult = 2.5
+        self.confid_iters = 3
+
 
 class FloodFillSegmentInteractorStyle(DefaultInteractorStyle):
     def __init__(self, viewer):
@@ -2052,36 +2055,47 @@ class FloodFillSegmentInteractorStyle(DefaultInteractorStyle):
         mask = self.viewer.slice_.buffer_slices[self.orientation].mask.copy()
         image = self.viewer.slice_.buffer_slices[self.orientation].image
 
-        if self.config.method == 'threshold':
-            v = image[y, x]
-            t0 = self.config.t0
-            t1 = self.config.t1
+        if self.config.method == 'confidence':
+            dy, dx = image.shape
+            image = image.reshape((1, dy, dx))
+            mask = mask.reshape((1, dy, dx))
 
-        elif self.config.method == 'dynamic':
-            if self.config.use_ww_wl:
-                print "Using WW&WL"
-                ww = self.viewer.slice_.window_width
-                wl = self.viewer.slice_.window_level
-                image = get_LUT_value_255(image, ww, wl)
+            bstruct = np.array(generate_binary_structure(2, CON2D[self.config.con_2d]), dtype='uint8')
+            bstruct = bstruct.reshape((1, 3, 3))
 
-            v = image[y, x]
+            out_mask = self.do_rg_confidence(image, mask, (x, y, 0), bstruct)
+        else:
+            if self.config.method == 'threshold':
+                v = image[y, x]
+                t0 = self.config.t0
+                t1 = self.config.t1
 
-            t0 = v - self.config.dev_min
-            t1 = v + self.config.dev_max
+            elif self.config.method == 'dynamic':
+                if self.config.use_ww_wl:
+                    print "Using WW&WL"
+                    ww = self.viewer.slice_.window_width
+                    wl = self.viewer.slice_.window_level
+                    image = get_LUT_value_255(image, ww, wl)
 
-        if image[y, x] < t0 or image[y, x] > t1:
-            return
+                v = image[y, x]
 
-        dy, dx = image.shape
-        image = image.reshape((1, dy, dx))
-        mask = mask.reshape((1, dy, dx))
+                t0 = v - self.config.dev_min
+                t1 = v + self.config.dev_max
 
-        out_mask = np.zeros_like(mask)
 
-        bstruct = np.array(generate_binary_structure(2, CON2D[self.config.con_2d]), dtype='uint8')
-        bstruct = bstruct.reshape((1, 3, 3))
+            if image[y, x] < t0 or image[y, x] > t1:
+                return
 
-        floodfill.floodfill_threshold(image, [[x, y, 0]], t0, t1, 1, bstruct, out_mask)
+            dy, dx = image.shape
+            image = image.reshape((1, dy, dx))
+            mask = mask.reshape((1, dy, dx))
+
+            out_mask = np.zeros_like(mask)
+
+            bstruct = np.array(generate_binary_structure(2, CON2D[self.config.con_2d]), dtype='uint8')
+            bstruct = bstruct.reshape((1, 3, 3))
+
+            floodfill.floodfill_threshold(image, [[x, y, 0]], t0, t1, 1, bstruct, out_mask)
 
         mask[out_mask.astype('bool')] = self.config.fill_value
 
@@ -2107,45 +2121,90 @@ class FloodFillSegmentInteractorStyle(DefaultInteractorStyle):
         mask = self.viewer.slice_.current_mask.matrix[1:, 1:, 1:]
         image = self.viewer.slice_.matrix
 
-        if self.config.method == 'threshold':
-            v = image[z, y, x]
-            t0 = self.config.t0
-            t1 = self.config.t1
+        if self.config.method != 'confidence':
+            if self.config.method == 'threshold':
+                v = image[z, y, x]
+                t0 = self.config.t0
+                t1 = self.config.t1
 
-        elif self.config.method == 'dynamic':
-            if self.config.use_ww_wl:
-                print "Using WW&WL"
-                ww = self.viewer.slice_.window_width
-                wl = self.viewer.slice_.window_level
-                image = get_LUT_value_255(image, ww, wl)
+            elif self.config.method == 'dynamic':
+                if self.config.use_ww_wl:
+                    print "Using WW&WL"
+                    ww = self.viewer.slice_.window_width
+                    wl = self.viewer.slice_.window_level
+                    image = get_LUT_value_255(image, ww, wl)
 
-            v = image[z, y, x]
+                v = image[z, y, x]
 
-            t0 = v - self.config.dev_min
-            t1 = v + self.config.dev_max
+                t0 = v - self.config.dev_min
+                t1 = v + self.config.dev_max
 
-        if image[z, y, x] < t0 or image[z, y, x] > t1:
-            return
+            if image[z, y, x] < t0 or image[z, y, x] > t1:
+                return
 
-        out_mask = np.zeros_like(mask)
 
         bstruct = np.array(generate_binary_structure(3, CON3D[self.config.con_3d]), dtype='uint8')
         self.viewer.slice_.do_threshold_to_all_slices()
         cp_mask = self.viewer.slice_.current_mask.matrix.copy()
 
-        with futures.ThreadPoolExecutor(max_workers=1) as executor:
-            future = executor.submit(floodfill.floodfill_threshold, image, [[x, y, z]], t0, t1, 1, bstruct, out_mask)
+        if self.config.method == 'confidence':
+            with futures.ThreadPoolExecutor(max_workers=1) as executor:
+                future = executor.submit(self.do_rg_confidence, image, mask, (x, y, z), bstruct)
 
-            dlg = wx.ProgressDialog(self._progr_title, self._progr_msg, parent=None, style=wx.PD_APP_MODAL)
-            while not future.done():
-                dlg.Pulse()
-                time.sleep(0.1)
+                dlg = wx.ProgressDialog(self._progr_title, self._progr_msg, parent=None, style=wx.PD_APP_MODAL)
+                while not future.done():
+                    dlg.Pulse()
+                    time.sleep(0.1)
+                dlg.Destroy()
+                out_mask = future.result()
+        else:
+            out_mask = np.zeros_like(mask)
+            with futures.ThreadPoolExecutor(max_workers=1) as executor:
+                future = executor.submit(floodfill.floodfill_threshold, image, [[x, y, z]], t0, t1, 1, bstruct, out_mask)
 
-            dlg.Destroy()
+                dlg = wx.ProgressDialog(self._progr_title, self._progr_msg, parent=None, style=wx.PD_APP_MODAL)
+                while not future.done():
+                    dlg.Pulse()
+                    time.sleep(0.1)
+
+                dlg.Destroy()
 
         mask[out_mask.astype('bool')] = self.config.fill_value
 
         self.viewer.slice_.current_mask.save_history(0, 'VOLUME', self.viewer.slice_.current_mask.matrix.copy(), cp_mask)
+
+    def do_rg_confidence(self, image, mask, p, bstruct):
+        x, y, z = p
+        if self.config.use_ww_wl:
+            ww = self.viewer.slice_.window_width
+            wl = self.viewer.slice_.window_level
+            image = get_LUT_value_255(image, ww, wl)
+        bool_mask = np.zeros_like(mask, dtype='bool')
+        out_mask = np.zeros_like(mask)
+
+        for k in xrange(int(z-1), int(z+2)):
+            if k < 0 or k >= bool_mask.shape[0]:
+                continue
+            for j in xrange(int(y-1), int(y+2)):
+                if j < 0 or j >= bool_mask.shape[1]:
+                    continue
+                for i in xrange(int(x-1), int(x+2)):
+                    if i < 0 or i >= bool_mask.shape[2]:
+                        continue
+                    bool_mask[k, j, i] = True
+
+        for i in xrange(self.config.confid_iters):
+            var = np.std(image[bool_mask])
+            mean = np.mean(image[bool_mask])
+
+            t0 = mean - var * self.config.confid_mult
+            t1 = mean + var * self.config.confid_mult
+
+            floodfill.floodfill_threshold(image, [[x, y, z]], t0, t1, 1, bstruct, out_mask)
+
+            bool_mask[out_mask == 1] = True
+
+        return out_mask
 
 def get_style(style):
     STYLES = {
