@@ -1983,6 +1983,9 @@ class FFillSegmentationConfig(object):
 
         self.use_ww_wl = True
 
+        self.confid_mult = 2.5
+        self.confid_iters = 3
+
 
 class FloodFillSegmentInteractorStyle(DefaultInteractorStyle):
     def __init__(self, viewer):
@@ -2145,7 +2148,15 @@ class FloodFillSegmentInteractorStyle(DefaultInteractorStyle):
         cp_mask = self.viewer.slice_.current_mask.matrix.copy()
 
         if self.config.method == 'confidence':
-            out_mask = self.do_rg_confidence(image, mask, (x, y, z), bstruct)
+            with futures.ThreadPoolExecutor(max_workers=1) as executor:
+                future = executor.submit(self.do_rg_confidence, image, mask, (x, y, z), bstruct)
+
+                dlg = wx.ProgressDialog(self._progr_title, self._progr_msg, parent=None, style=wx.PD_APP_MODAL)
+                while not future.done():
+                    dlg.Pulse()
+                    time.sleep(0.1)
+                dlg.Destroy()
+                out_mask = future.result()
         else:
             out_mask = np.zeros_like(mask)
             with futures.ThreadPoolExecutor(max_workers=1) as executor:
@@ -2171,27 +2182,28 @@ class FloodFillSegmentInteractorStyle(DefaultInteractorStyle):
             image = get_LUT_value_255(image, ww, wl)
         bool_mask = np.zeros_like(mask, dtype='bool')
         out_mask = np.zeros_like(mask)
-        for i in xrange(int(x-1), int(x+2)):
-            if i < 0 or i >= bool_mask.shape[2]:
+
+        for k in xrange(int(z-1), int(z+2)):
+            if k < 0 or k >= bool_mask.shape[0]:
                 continue
             for j in xrange(int(y-1), int(y+2)):
                 if j < 0 or j >= bool_mask.shape[1]:
                     continue
-                for k in xrange(int(z-1), int(z+2)):
-                    if k < 0 or k >= bool_mask.shape[0]:
+                for i in xrange(int(x-1), int(x+2)):
+                    if i < 0 or i >= bool_mask.shape[2]:
                         continue
                     bool_mask[k, j, i] = True
 
-
-        for i in xrange(3):
+        for i in xrange(self.config.confid_iters):
             var = np.std(image[bool_mask])
             mean = np.mean(image[bool_mask])
 
-            t0 = mean - var * 2.5
-            t1 = mean + var * 2.5
-            print var, mean, t0, t1
+            t0 = mean - var * self.config.confid_mult
+            t1 = mean + var * self.config.confid_mult
 
-            floodfill.floodfill_threshold(image, [[x, y, 0]], t0, t1, 1, bstruct, out_mask)
+            print self.config.confid_iters, self.config.confid_mult
+
+            floodfill.floodfill_threshold(image, [[x, y, z]], t0, t1, 1, bstruct, out_mask)
 
             bool_mask[out_mask == 1] = True
 
