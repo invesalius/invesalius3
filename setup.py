@@ -29,6 +29,12 @@ if sys.platform == 'linux2':
                        Extension("invesalius.data.floodfill", ["invesalius/data/floodfill.pyx"],
                                  include_dirs=[numpy.get_include()],
                                  language='c++',),
+
+                       Extension("invesalius.data.cy_mesh", ["invesalius/data/cy_mesh.pyx"],
+                                 include_dirs=[numpy.get_include()],
+                                 extra_compile_args=['-fopenmp', '-std=c++11'],
+                                 extra_link_args=['-fopenmp', '-std=c++11'],
+                                 language='c++',),
                        ])
          )
 

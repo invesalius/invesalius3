@@ -42,6 +42,7 @@ try:
 except ImportError:
     import data.ca_smoothing as ca_smoothing
 
+import cy_mesh
 # TODO: Verificar ReleaseDataFlagOn and SetSource 
 
 class Surface():
@@ -532,6 +533,11 @@ class SurfaceManager():
         #  polydata.SetSource(None)
         del polydata_append
 
+        w = vtk.vtkPLYWriter()
+        w.SetInputData(polydata)
+        w.SetFileName('/home/tfmoraes/Meshes/PLY/0051_bin.ply')
+        w.Write()
+
         if algorithm == 'ca_smoothing':
             normals = vtk.vtkPolyDataNormals()
             normals_ref = weakref.ref(normals)
@@ -564,16 +570,28 @@ class SurfaceManager():
             #  polydata.SetSource(None)
             del clean
 
-            try:
-                polydata.BuildLinks()
-            except TypeError:
-                polydata.BuildLinks(0)
-            polydata = ca_smoothing.ca_smoothing(polydata, options['angle'],
-                                                 options['max distance'],
-                                                 options['min weight'],
-                                                 options['steps'])
+            #  try:
+                #  polydata.BuildLinks()
+            #  except TypeError:
+                #  polydata.BuildLinks(0)
+            #  polydata = ca_smoothing.ca_smoothing(polydata, options['angle'],
+                                                 #  options['max distance'],
+                                                 #  options['min weight'],
+                                                 #  options['steps'])
+
+            mesh = cy_mesh.Mesh(polydata)
+            cy_mesh.ca_smoothing(mesh, options['angle'],
+                                 options['max distance'],
+                                 options['min weight'],
+                                 options['steps'])
+            #  polydata = mesh.to_vtk()
+
             #  polydata.SetSource(None)
             #  polydata.DebugOn()
+            w = vtk.vtkPLYWriter()
+            w.SetInputData(polydata)
+            w.SetFileName('/tmp/ca_smoothing_inv.ply')
+            w.Write()
 
         else:
             #smoother = vtk.vtkWindowedSincPolyDataFilter()

@@ -10,3 +10,7 @@ ctypedef fused image_t:
     np.uint8_t
 
 ctypedef np.uint8_t mask_t
+
+ctypedef np.float32_t vertex_t
+ctypedef np.float32_t normal_t
+ctypedef np.int64_t vertex_id_t
