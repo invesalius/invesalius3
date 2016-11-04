@@ -412,7 +412,7 @@ cdef void taubin_smooth(Mesh mesh, vector[weight_t]& weights, float l, float m, 
     """
     cdef int s, i, nvertices
     nvertices = mesh.vertices.shape[0]
-    cdef vector[Point] D = vector[Point](mesh.vertices.shape[0])
+    cdef vector[Point] D = vector[Point](nvertices)
     cdef vertex_t* vi
     for s in xrange(steps):
         for i in prange(nvertices, nogil=True):
