@@ -533,11 +533,6 @@ class SurfaceManager():
         #  polydata.SetSource(None)
         del polydata_append
 
-        w = vtk.vtkPLYWriter()
-        w.SetInputData(polydata)
-        w.SetFileName('/home/tfmoraes/Meshes/PLY/0051_bin.ply')
-        w.Write()
-
         if algorithm == 'ca_smoothing':
             normals = vtk.vtkPolyDataNormals()
             normals_ref = weakref.ref(normals)
