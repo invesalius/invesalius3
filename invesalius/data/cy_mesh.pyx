@@ -410,22 +410,23 @@ cdef void taubin_smooth(Mesh mesh, vector[weight_t]& weights, float l, float m, 
     Signal Processing Approach To Fair Surface Design". His benefeat is it
     avoids surface shrinking.
     """
+    cdef int s, i, nvertices
+    nvertices = mesh.vertices.shape[0]
     cdef vector[Point] D = vector[Point](mesh.vertices.shape[0])
     cdef vertex_t* vi
-    cdef int s, i
     for s in xrange(steps):
-        for i in prange(D.size(), nogil=True):
+        for i in prange(nvertices, nogil=True):
             D[i] = calc_d(mesh, i)
 
-        for i in prange(D.size(), nogil=True):
+        for i in prange(nvertices, nogil=True):
             mesh.vertices[i, 0] += weights[i]*l*D[i].x;
             mesh.vertices[i, 1] += weights[i]*l*D[i].y;
             mesh.vertices[i, 2] += weights[i]*l*D[i].z;
 
-        for i in prange(D.size(), nogil=True):
+        for i in prange(nvertices, nogil=True):
             D[i] = calc_d(mesh, i)
 
-        for i in prange(D.size(), nogil=True):
+        for i in prange(nvertices, nogil=True):
             mesh.vertices[i, 0] += weights[i]*m*D[i].x;
             mesh.vertices[i, 1] += weights[i]*m*D[i].y;
             mesh.vertices[i, 2] += weights[i]*m*D[i].z;
