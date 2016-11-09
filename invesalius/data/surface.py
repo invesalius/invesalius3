@@ -37,12 +37,7 @@ import invesalius.data.surface_process as surface_process
 import invesalius.utils as utl
 import invesalius.data.vtk_utils as vu
 
-try:
-    import ca_smoothing
-except ImportError:
-    import data.ca_smoothing as ca_smoothing
-
-import cy_mesh
+from invesalius.data import cy_mesh
 # TODO: Verificar ReleaseDataFlagOn and SetSource 
 
 class Surface():
