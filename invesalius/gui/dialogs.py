@@ -1276,7 +1276,7 @@ class CAOptions(wx.Panel):
                                          max_val=100.0, increment=0.1,
                                          digits=2)
 
-        self.min_weight = floatspin.FloatSpin(self, -1, value=0.2, min_val=0.0,
+        self.min_weight = floatspin.FloatSpin(self, -1, value=0.5, min_val=0.0,
                                          max_val=1.0, increment=0.1,
                                          digits=1)
 

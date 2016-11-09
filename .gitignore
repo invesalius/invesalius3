@@ -24,3 +24,9 @@ tags
 build
 *.patch
 *.tgz
+
+*.pyd
+*.cpp
+*.diff
+
+*.directory
