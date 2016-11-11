@@ -1658,8 +1658,13 @@ class FloodFillMaskInteractorStyle(DefaultInteractorStyle):
         self.config = FFillConfig()
         self.dlg_ffill = None
 
+        # InVesalius uses the following values to mark non selected parts in a
+        # mask:
+        # 0 - Threshold
+        # 1 - Manual edition and  floodfill
+        # 2 - Watershed
         self.t0 = 0
-        self.t1 = 1
+        self.t1 = 2
         self.fill_value = 254
 
         self._dlg_title = _(u"Fill holes")
@@ -1750,7 +1755,12 @@ class FloodFillMaskInteractorStyle(DefaultInteractorStyle):
 class RemoveMaskPartsInteractorStyle(FloodFillMaskInteractorStyle):
         def __init__(self, viewer):
             FloodFillMaskInteractorStyle.__init__(self, viewer)
-            self.t0 = 254
+            # InVesalius uses the following values to mark selected parts in a
+            # mask:
+            # 255 - Threshold
+            # 254 - Manual edition and  floodfill
+            # 253 - Watershed
+            self.t0 = 253
             self.t1 = 255
             self.fill_value = 1
 
@@ -1886,7 +1896,12 @@ class SelectMaskPartsInteractorStyle(DefaultInteractorStyle):
         self.config = SelectPartConfig()
         self.dlg = None
 
-        self.t0 = 254
+        # InVesalius uses the following values to mark selected parts in a
+        # mask:
+        # 255 - Threshold
+        # 254 - Manual edition and  floodfill
+        # 253 - Watershed
+        self.t0 = 253
         self.t1 = 255
         self.fill_value = 254
 
