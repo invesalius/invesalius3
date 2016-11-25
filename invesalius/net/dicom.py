@@ -1,6 +1,5 @@
 import gdcm
-import utils
-
+import invesalius.utils as utils
 
 class DicomNet:
     
@@ -110,7 +109,6 @@ class DicomNet:
                 acquisition_date = utils.format_date(self.GetValueFromDICOM(rt, (0x0008,0x0022)))
 
                 teste = self.GetValueFromDICOM(rt, (0x0020,0x000d))
-                print ">>>>>>>>>>>>>>>>>>>>", teste
 
                 patients[patient_id][serie_id] = {'name':name, 'age':age, 'gender':gender,\
                                                   'study_description':study_description,\
@@ -145,11 +143,6 @@ class DicomNet:
 
         patient_id = str(values[0])        
         serie_id = str(values[1])
-
-        print "(0x0010, 0x0020)",patient_id
-        
-        print "(0x0020, 0x000e)",serie_id
-        print "\n\n"
 
         de_patient.SetByteValue(patient_id,  gdcm.VL(len(patient_id)))
         de_serie.SetByteValue(serie_id, gdcm.VL(len(serie_id)))

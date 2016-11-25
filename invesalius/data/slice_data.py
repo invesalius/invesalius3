@@ -18,8 +18,8 @@
 #--------------------------------------------------------------------------
 import vtk
 
-import constants as const
-import vtk_utils as vu
+import invesalius.constants as const
+import invesalius.data.vtk_utils as vu
 
 BORDER_UP = 1
 BORDER_DOWN = 2
@@ -38,6 +38,7 @@ class SliceData(object):
         self.number = 0
         self.orientation = 'AXIAL'
         self.renderer = None
+        self.canvas_renderer = None
         self.overlay_renderer = None
         self.__create_text()
         self.__create_box()

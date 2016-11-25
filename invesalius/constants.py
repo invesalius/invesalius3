@@ -21,9 +21,9 @@ import os.path
 import platform
 import sys
 import wx
+import itertools
 
-from project import Project
-
+#from invesalius.project import Project
 INVESALIUS_VERSION = "3.0"
 
 #---------------
@@ -140,7 +140,24 @@ MODE_NAVIGATOR = 1
 MODE_RADIOLOGY = 2
 MODE_ODONTOLOGY = 3
 
+#Crop box sides code
 
+AXIAL_RIGHT = 1
+AXIAL_LEFT = 2
+AXIAL_UPPER = 3
+AXIAL_BOTTOM = 4
+
+SAGITAL_RIGHT = 5
+SAGITAL_LEFT = 6
+SAGITAL_UPPER = 7
+SAGITAL_BOTTOM = 8
+
+CORONAL_RIGHT = 9
+CORONAL_LEFT = 10
+CORONAL_UPPER = 11
+CORONAL_BOTTOM = 12
+
+CROP_PAN = 13
 
 #Color Table from Slice
 #NumberOfColors, SaturationRange, HueRange, ValueRange
@@ -190,8 +207,10 @@ VOLUME_POSITION = {AXIAL: [AXIAL_VOLUME_CAM_VIEW_UP, AXIAL_VOLUME_CAM_POSITION],
 
 
 # Mask threshold options
-proj = Project()
-THRESHOLD_RANGE = proj.threshold_modes[_("Bone")]
+
+#proj = Project()
+#THRESHOLD_RANGE = proj.threshold_modes[_("Bone")]
+THRESHOLD_RANGE = [0,3033]
 THRESHOLD_PRESETS_INDEX = _("Bone")
 THRESHOLD_HUE_RANGE = (0, 0.6667)
 THRESHOLD_INVALUE = 5000
@@ -219,11 +238,11 @@ MASK_COLOUR =  [[0.33, 1, 0.33],
                 #(0.66666666666666663, 0.792156862745098, 1.0)]
 
 
-MEASURE_COLOUR =  [[1, 0, 0],
-                [1, 0.4, 0],
-                [0, 0, 1],
-                [1, 0, 1],
-                [0, 0.6, 0]]
+MEASURE_COLOUR =  itertools.cycle([[1, 0, 0],
+                                   [1, 0.4, 0],
+                                   [0, 0, 1],
+                                   [1, 0, 1],
+                                   [0, 0.6, 0]])
 
 SURFACE_COLOUR =  [(0.33, 1, 0.33),
                 (1, 1, 0.33),
@@ -301,9 +320,30 @@ WINDOW_LEVEL = {_("Abdomen"):(350,50),
 
 REDUCE_IMAGEDATA_QUALITY = 0
 
-ICON_DIR = os.path.abspath(os.path.join('..', 'icons'))
-SAMPLE_DIR = os.path.abspath(os.path.join('..', 'samples'))
-DOC_DIR = os.path.abspath(os.path.join('..', 'docs'))
+FILE_PATH = os.path.split(__file__)[0]
+
+if hasattr(sys,"frozen") and (sys.frozen == "windows_exe"\
+                            or sys.frozen == "console_exe"):
+    abs_path = os.path.abspath(FILE_PATH + os.sep + ".." + os.sep + ".." + os.sep + "..")
+    ICON_DIR = os.path.join(abs_path, "icons")
+    SAMPLE_DIR = os.path.join(FILE_PATH, 'samples')
+    DOC_DIR = os.path.join(FILE_PATH, 'docs')
+
+    folder=RAYCASTING_PRESETS_DIRECTORY= os.path.join(abs_path, "presets", "raycasting")
+else:
+    ICON_DIR = os.path.abspath(os.path.join(FILE_PATH, '..', 'icons'))
+    SAMPLE_DIR = os.path.abspath(os.path.join(FILE_PATH,'..', 'samples'))
+    DOC_DIR = os.path.abspath(os.path.join(FILE_PATH,'..', 'docs'))
+
+    folder=RAYCASTING_PRESETS_DIRECTORY= os.path.abspath(os.path.join(".",
+                                                                  "presets",
+                                                                  "raycasting"))
+
+# MAC App
+if not os.path.exists(ICON_DIR):
+    ICON_DIR = os.path.abspath(os.path.join(FILE_PATH, '..', '..', '..', '..', 'icons'))
+    SAMPLE_DIR = os.path.abspath(os.path.join(FILE_PATH,'..',  '..', '..', '..', 'samples'))
+    DOC_DIR = os.path.abspath(os.path.join(FILE_PATH,'..', '..', '..', '..', 'docs'))
 
 
 ID_TO_BMP = {VOL_FRONT: [_("Front"), os.path.join(ICON_DIR, "view_front.png")],
@@ -317,10 +357,6 @@ ID_TO_BMP = {VOL_FRONT: [_("Front"), os.path.join(ICON_DIR, "view_front.png")],
 
 # if 1, use vtkVolumeRaycastMapper, if 0, use vtkFixedPointVolumeRayCastMapper
 TYPE_RAYCASTING_MAPPER = 0
-
-folder=RAYCASTING_PRESETS_DIRECTORY= os.path.abspath(os.path.join("..",
-                                                                  "presets",
-                                                                  "raycasting"))
 
 
 RAYCASTING_FILES = {_("Airways"): "Airways.plist",
@@ -452,7 +488,7 @@ VTK_WARNING = 0
 [ID_DICOM_IMPORT, ID_PROJECT_OPEN, ID_PROJECT_SAVE_AS, ID_PROJECT_SAVE,
 ID_PROJECT_CLOSE, ID_PROJECT_INFO, ID_SAVE_SCREENSHOT, ID_DICOM_LOAD_NET,
 ID_PRINT_SCREENSHOT, ID_IMPORT_OTHERS_FILES, ID_ANALYZE_IMPORT, ID_PREFERENCES,
-ID_DICOM_NETWORK] = [wx.NewId() for number in range(13)]
+ID_DICOM_NETWORK, ID_TIFF_JPG_PNG, ID_VIEW_INTERPOLATED] = [wx.NewId() for number in range(15)]
 ID_EXIT = wx.ID_EXIT
 ID_ABOUT = wx.ID_ABOUT
 
@@ -479,6 +515,14 @@ ID_SWAP_YZ = wx.NewId()
 ID_BOOLEAN_MASK = wx.NewId()
 ID_CLEAN_MASK = wx.NewId()
 
+ID_REORIENT_IMG = wx.NewId()
+ID_FLOODFILL_MASK = wx.NewId()
+ID_FILL_HOLE_AUTO = wx.NewId()
+ID_REMOVE_MASK_PART = wx.NewId()
+ID_SELECT_MASK_PART = wx.NewId()
+ID_FLOODFILL_SEGMENTATION = wx.NewId()
+ID_CROP_MASK = wx.NewId()
+
 #---------------------------------------------------------
 STATE_DEFAULT = 1000
 STATE_WL = 1001
@@ -494,22 +538,34 @@ SLICE_STATE_CROSS = 3006
 SLICE_STATE_SCROLL = 3007
 SLICE_STATE_EDITOR = 3008
 SLICE_STATE_WATERSHED = 3009
+SLICE_STATE_REORIENT = 3010
+SLICE_STATE_MASK_FFILL = 3011
+SLICE_STATE_REMOVE_MASK_PARTS = 3012
+SLICE_STATE_SELECT_MASK_PARTS = 3013
+SLICE_STATE_FFILL_SEGMENTATION = 3014
+SLICE_STATE_CROP_MASK = 3015
 
 VOLUME_STATE_SEED = 2001
-#STATE_LINEAR_MEASURE = 3001
-#STATE_ANGULAR_MEASURE = 3002
+#  STATE_LINEAR_MEASURE = 3001
+#  STATE_ANGULAR_MEASURE = 3002
 
 TOOL_STATES = [STATE_WL, STATE_SPIN, STATE_ZOOM,
                STATE_ZOOM_SL, STATE_PAN, STATE_MEASURE_DISTANCE,
-               STATE_MEASURE_ANGLE]#, STATE_ANNOTATE]
+               STATE_MEASURE_ANGLE]  #, STATE_ANNOTATE]
 
-TOOL_SLICE_STATES = [SLICE_STATE_CROSS, SLICE_STATE_SCROLL]
+TOOL_SLICE_STATES = [SLICE_STATE_CROSS, SLICE_STATE_SCROLL,
+                     SLICE_STATE_REORIENT]
 
 
 SLICE_STYLES = TOOL_STATES + TOOL_SLICE_STATES
 SLICE_STYLES.append(STATE_DEFAULT)
 SLICE_STYLES.append(SLICE_STATE_EDITOR)
 SLICE_STYLES.append(SLICE_STATE_WATERSHED)
+SLICE_STYLES.append(SLICE_STATE_MASK_FFILL)
+SLICE_STYLES.append(SLICE_STATE_REMOVE_MASK_PARTS)
+SLICE_STYLES.append(SLICE_STATE_SELECT_MASK_PARTS)
+SLICE_STYLES.append(SLICE_STATE_FFILL_SEGMENTATION)
+SLICE_STYLES.append(SLICE_STATE_CROP_MASK)
 
 VOLUME_STYLES = TOOL_STATES + [VOLUME_STATE_SEED, STATE_MEASURE_DISTANCE,
         STATE_MEASURE_ANGLE]
@@ -518,8 +574,14 @@ VOLUME_STYLES.append(STATE_DEFAULT)
 
 STYLE_LEVEL = {SLICE_STATE_EDITOR: 1,
                SLICE_STATE_WATERSHED: 1,
+               SLICE_STATE_MASK_FFILL: 2,
+               SLICE_STATE_REMOVE_MASK_PARTS: 2,
+               SLICE_STATE_SELECT_MASK_PARTS: 2,
+               SLICE_STATE_FFILL_SEGMENTATION: 2,
                SLICE_STATE_CROSS: 2,
                SLICE_STATE_SCROLL: 2,
+               SLICE_STATE_REORIENT: 2,
+               SLICE_STATE_CROP_MASK: 1,
                STATE_ANNOTATE: 2,
                STATE_DEFAULT: 0,
                STATE_MEASURE_ANGLE: 2,
@@ -535,7 +597,7 @@ STYLE_LEVEL = {SLICE_STATE_EDITOR: 1,
 RENDERING = 0
 SURFACE_INTERPOLATION = 1
 LANGUAGE = 2
-
+SLICE_INTERPOLATION = 3
 
 #Correlaction extracted from pyDicom
 DICOM_ENCODING_TO_PYTHON = {

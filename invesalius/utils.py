@@ -23,6 +23,8 @@ import re
 import locale
 import math
 
+import numpy as np
+
 def format_time(value):
     sp1 = value.split(".")
     sp2 = value.split(":")
@@ -69,10 +71,9 @@ def debug(error_str):
     Redirects output to file, or to the terminal
     This should be used in the place of "print"
     """
-    from session import Session
+    from invesalius.session import Session
     session = Session()
     #if session.debug:
-    print >> sys.stderr, error_str
 
 def next_copy_name(original_name, names_list):
     """
@@ -370,8 +371,9 @@ def UpdateCheck():
     import urllib
     import urllib2
     import wx
+    import invesalius.session as ses
     def _show_update_info():
-        from gui import dialogs
+        from invesalius.gui import dialogs
         msg=_("A new version of InVesalius is available. Do you want to open the download website now?")
         title=_("Invesalius Update")
         msgdlg = dialogs.UpdateMessageDialog(url)
@@ -383,8 +385,7 @@ def UpdateCheck():
     print "Checking updates..."
     
     # Check if there is a language set
-    #import i18n
-    import session as ses
+    #import invesalius.i18n as i18n    import invesalius.session as ses
     session = ses.Session()
     install_lang = 0
     if session.ReadLanguage():
@@ -398,7 +399,7 @@ def UpdateCheck():
         random_id = session.GetRandomId()
 
         # Fetch update data from server
-        import constants as const
+        import invesalius.constants as const
         url = "http://www.cti.gov.br/dt3d/invesalius/update/checkupdate.php"
         headers = { 'User-Agent' : 'Mozilla/5.0 (compatible; MSIE 5.5; Windows NT)' }
         data = {'update_protocol_version' : '1', 
@@ -418,3 +419,11 @@ def UpdateCheck():
         if (last!=const.INVESALIUS_VERSION):
             print "  ...New update found!!! -> version:", last #, ", url=",url
             wx.CallAfter(wx.CallLater, 1000, _show_update_info)
+
+
+def vtkarray_to_numpy(m):
+    nm = np.zeros((4, 4))
+    for i in xrange(4):
+        for j in xrange(4):
+            nm[i, j] = m.GetElement(i, j)
+    return nm

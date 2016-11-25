@@ -30,10 +30,11 @@ from wx.lib.pubsub import pub as Publisher
 from scipy.ndimage import shift
 from vtk.util import numpy_support
 
-import constants as const
-from data import vtk_utils
-import utils
-
+import invesalius.constants as const
+from invesalius.data import vtk_utils as vtk_utils
+import invesalius.reader.bitmap_reader as bitmap_reader
+import invesalius.utils as utils
+import invesalius.data.converters as converters
 # TODO: Test cases which are originally in sagittal/coronal orientation
 # and have gantry
 
@@ -84,7 +85,7 @@ def ResampleImage2D(imagedata, px=None, py=None, resolution_percentage = None,
     factor_y = py/float(f+1)
 
     resample = vtk.vtkImageResample()
-    resample.SetInput(imagedata)
+    resample.SetInputData(imagedata)
     resample.SetAxisMagnificationFactor(0, factor_x)
     resample.SetAxisMagnificationFactor(1, factor_y)
     resample.SetOutputSpacing(spacing[0] * factor_x, spacing[1] * factor_y, spacing[2])
@@ -416,6 +417,106 @@ class ImageCreator:
 
         return imagedata
 
+def bitmap2memmap(files, slice_size, orientation, spacing, resolution_percentage):
+    """
+    From a list of dicom files it creates memmap file in the temp folder and
+    returns it and its related filename.
+    """
+    message = _("Generating multiplanar visualization...")
+    update_progress= vtk_utils.ShowProgress(len(files) - 1, dialog_type = "ProgressDialog")
+
+    temp_file = tempfile.mktemp()
+
+    if orientation == 'SAGITTAL':
+        if resolution_percentage == 1.0:
+            shape = slice_size[1], slice_size[0], len(files)
+        else:
+            shape = math.ceil(slice_size[1]*resolution_percentage),\
+                    math.ceil(slice_size[0]*resolution_percentage), len(files)
+
+    elif orientation == 'CORONAL':
+        if resolution_percentage == 1.0:
+            shape = slice_size[1], len(files), slice_size[0]
+        else:
+            shape = math.ceil(slice_size[1]*resolution_percentage), len(files),\
+                                        math.ceil(slice_size[0]*resolution_percentage)
+    else:
+        if resolution_percentage == 1.0:
+            shape = len(files), slice_size[1], slice_size[0]
+        else:
+            shape = len(files), math.ceil(slice_size[1]*resolution_percentage),\
+                                        math.ceil(slice_size[0]*resolution_percentage)
+
+
+    if resolution_percentage == 1.0:
+        matrix = numpy.memmap(temp_file, mode='w+', dtype='int16', shape=shape)
+    
+    cont = 0
+    max_scalar = None
+    min_scalar = None
+
+    xy_shape = None
+    first_resample_entry = False
+
+    for n, f in enumerate(files):
+        image_as_array = bitmap_reader.ReadBitmap(f)
+
+        image = converters.to_vtk(image_as_array, spacing=spacing,\
+                                    slice_number=1, orientation=orientation.upper())
+
+        if resolution_percentage != 1.0:
+            
+            
+            image_resized = ResampleImage2D(image, px=None, py=None,\
+                                resolution_percentage = resolution_percentage, update_progress = None)
+
+            yx_shape = image_resized.GetDimensions()[1], image_resized.GetDimensions()[0]
+
+
+            if not(first_resample_entry):
+                shape = shape[0], yx_shape[0], yx_shape[1] 
+                matrix = numpy.memmap(temp_file, mode='w+', dtype='int16', shape=shape)
+                first_resample_entry = True
+
+            image = image_resized
+
+        min_aux, max_aux = image.GetScalarRange()
+        if min_scalar is None or min_aux < min_scalar:
+            min_scalar = min_aux
+
+        if max_scalar is None or max_aux > max_scalar:
+            max_scalar = max_aux
+
+        array = numpy_support.vtk_to_numpy(image.GetPointData().GetScalars())
+
+        if array.dtype == 'uint16':
+            array = array - 32768/2
+       
+        array = array.astype("int16")
+
+        if orientation == 'CORONAL':
+            array.shape = matrix.shape[0], matrix.shape[2]
+            matrix[:, n, :] = array[:,::-1]
+        elif orientation == 'SAGITTAL':
+            array.shape = matrix.shape[0], matrix.shape[1]
+            # TODO: Verify if it's necessary to add the slices swapped only in
+            # sagittal rmi or only in # Rasiane's case or is necessary in all
+            # sagittal cases.
+            matrix[:, :, n] = array[:,::-1]
+        else:
+            array.shape = matrix.shape[1], matrix.shape[2]
+            matrix[n] = array
+        
+        update_progress(cont,message)
+        cont += 1
+
+    matrix.flush()
+    scalar_range = min_scalar, max_scalar
+
+    return matrix, scalar_range, temp_file
+
+
+
 def dcm2memmap(files, slice_size, orientation, resolution_percentage):
     """
     From a list of dicom files it creates memmap file in the temp folder and
@@ -462,7 +563,6 @@ def dcm2memmap(files, slice_size, orientation, resolution_percentage):
                                 resolution_percentage = resolution_percentage, update_progress = None)
 
             image = image_resized
-            print ">>>>>>>>>", image.GetDimensions()
 
         min_aux, max_aux = image.GetScalarRange()
         if min_scalar is None or min_aux < min_scalar:
@@ -482,7 +582,6 @@ def dcm2memmap(files, slice_size, orientation, resolution_percentage):
             # sagittal cases.
             matrix[:, :, n] = array
         else:
-            print array.shape, matrix.shape
             array.shape = matrix.shape[1], matrix.shape[2]
             matrix[n] = array
         update_progress(cont,message)

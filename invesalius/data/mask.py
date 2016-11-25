@@ -23,15 +23,17 @@ import random
 import shutil
 import tempfile
 
-import numpy
+import numpy as np
 import vtk
 
-import constants as const
-import imagedata_utils as iu
-import session as ses
+import invesalius.constants as const
+import invesalius.data.imagedata_utils as iu
+import invesalius.session as ses
+
+from . import floodfill
 
 from wx.lib.pubsub import pub as Publisher
-
+from scipy import ndimage
 
 class EditionHistoryNode(object):
     def __init__(self, index, orientation, array, clean=False):
@@ -43,11 +45,11 @@ class EditionHistoryNode(object):
         self._save_array(array)
 
     def _save_array(self, array):
-        numpy.save(self.filename, array)
+        np.save(self.filename, array)
         print "Saving history", self.index, self.orientation, self.filename, self.clean
 
     def commit_history(self, mvolume):
-        array = numpy.load(self.filename)
+        array = np.load(self.filename)
         if self.orientation == 'AXIAL':
             mvolume[self.index+1,1:,1:] = array
             if self.clean:
@@ -60,6 +62,8 @@ class EditionHistoryNode(object):
             mvolume[1:, 1:, self.index+1] = array
             if self.clean:
                 mvolume[0, 0, self.index+1] = 1
+        elif self.orientation == 'VOLUME':
+            mvolume[:] = array
 
         print "applying to", self.orientation, "at slice", self.index
 
@@ -106,7 +110,12 @@ class EditionHistory(object):
                 ##self.index -= 1
                 ##h[self.index].commit_history(mvolume)
                 #self._reload_slice(self.index - 1)
-            if actual_slices and actual_slices[h[self.index - 1].orientation] != h[self.index - 1].index:
+            if h[self.index - 1].orientation == 'VOLUME':
+                self.index -= 1
+                h[self.index].commit_history(mvolume)
+                self._reload_slice(self.index)
+                Publisher.sendMessage("Enable redo", True)
+            elif actual_slices and actual_slices[h[self.index - 1].orientation] != h[self.index - 1].index:
                 self._reload_slice(self.index - 1)
             else:
                 self.index -= 1
@@ -116,7 +125,7 @@ class EditionHistory(object):
                     h[self.index].commit_history(mvolume)
                 self._reload_slice(self.index)
                 Publisher.sendMessage("Enable redo", True)
-        
+
         if self.index == 0:
             Publisher.sendMessage("Enable undo", False)
         print "AT", self.index, len(self.history), self.history[self.index].filename
@@ -129,7 +138,12 @@ class EditionHistory(object):
                 ##h[self.index].commit_history(mvolume)
                 #self._reload_slice(self.index + 1)
 
-            if actual_slices and actual_slices[h[self.index + 1].orientation] != h[self.index + 1].index:
+            if h[self.index + 1].orientation == 'VOLUME':
+                self.index += 1
+                h[self.index].commit_history(mvolume)
+                self._reload_slice(self.index)
+                Publisher.sendMessage("Enable undo", True)
+            elif actual_slices and actual_slices[h[self.index + 1].orientation] != h[self.index + 1].index:
                 self._reload_slice(self.index + 1)
             else:
                 self.index += 1
@@ -139,7 +153,7 @@ class EditionHistory(object):
                     h[self.index].commit_history(mvolume)
                 self._reload_slice(self.index)
                 Publisher.sendMessage("Enable undo", True)
-        
+
         if self.index == len(h) - 1:
             Publisher.sendMessage("Enable redo", False)
         print "AT", self.index, len(h), h[self.index].filename
@@ -159,7 +173,7 @@ class EditionHistory(object):
                 v_undo = False
             elif self.index == len(self.history) - 1:
                 v_redo = False
-            
+
         Publisher.sendMessage("Enable undo", v_undo)
         Publisher.sendMessage("Enable redo", v_redo)
 
@@ -214,7 +228,7 @@ class Mask():
 
     def SavePlist(self, dir_temp, filelist):
         mask = {}
-        filename = u'mask_%d' % self.index 
+        filename = u'mask_%d' % self.index
         mask_filename = u'%s.dat' % filename
         mask_filepath = os.path.join(dir_temp, mask_filename)
         filelist[self.temp_file] = mask_filename
@@ -283,16 +297,21 @@ class Mask():
     def _open_mask(self, filename, shape, dtype='uint8'):
         print ">>", filename, shape
         self.temp_file = filename
-        self.matrix = numpy.memmap(filename, shape=shape, dtype=dtype, mode="r+")
+        self.matrix = np.memmap(filename, shape=shape, dtype=dtype, mode="r+")
 
     def _set_class_index(self, index):
         Mask.general_index = index
 
     def create_mask(self, shape):
-        print "Creating a mask"
+        """
+        Creates a new mask object. This method do not append this new mask into the project.
+
+        Parameters:
+            shape(int, int, int): The shape of the new mask.
+        """
         self.temp_file = tempfile.mktemp()
         shape = shape[0] + 1, shape[1] + 1, shape[2] + 1
-        self.matrix = numpy.memmap(self.temp_file, mode='w+', dtype='uint8', shape=shape)
+        self.matrix = np.memmap(self.temp_file, mode='w+', dtype='uint8', shape=shape)
 
     def clean(self):
         self.matrix[1:, 1:, 1:] = 0
@@ -314,7 +333,7 @@ class Mask():
         new_mask.threshold_range = self.threshold_range
         new_mask.edition_threshold_range = self.edition_threshold_range
         new_mask.is_shown = self.is_shown
-        
+
         new_mask.create_mask(shape=[i-1 for i in self.matrix.shape])
         new_mask.matrix[:] = self.matrix[:]
 
@@ -322,6 +341,49 @@ class Mask():
 
     def clear_history(self):
         self.history.clear_history()
+
+    def fill_holes_auto(self, target, conn, orientation, index, size):
+        CON2D = {4: 1, 8: 2}
+        CON3D = {6: 1, 18: 2, 26: 3}
+
+        if target == '3D':
+            cp_mask = self.matrix.copy()
+            matrix = self.matrix[1:, 1:, 1:]
+            bstruct = ndimage.generate_binary_structure(3, CON3D[conn])
+
+            imask = (~(matrix > 127))
+            labels, nlabels = ndimage.label(imask, bstruct, output=np.uint16)
+
+            if nlabels == 0:
+                return
+
+            ret = floodfill.fill_holes_automatically(matrix, labels, nlabels, size)
+            if ret:
+                self.save_history(index, orientation, self.matrix.copy(), cp_mask)
+        else:
+            bstruct = ndimage.generate_binary_structure(2, CON2D[conn])
+
+            if orientation == 'AXIAL':
+                matrix = self.matrix[index+1, 1:, 1:]
+            elif orientation == 'CORONAL':
+                matrix = self.matrix[1:, index+1, 1:]
+            elif orientation == 'SAGITAL':
+                matrix = self.matrix[1:, 1:, index+1]
+
+            cp_mask = matrix.copy()
+
+            imask = (~(matrix > 127))
+            labels, nlabels = ndimage.label(imask, bstruct, output=np.uint16)
+
+            if nlabels == 0:
+                return
+
+            labels = labels.reshape(1, labels.shape[0], labels.shape[1])
+            matrix = matrix.reshape(1, matrix.shape[0], matrix.shape[1])
+
+            ret = floodfill.fill_holes_automatically(matrix, labels, nlabels, size)
+            if ret:
+                self.save_history(index, orientation, matrix.copy(), cp_mask)
 
     def __del__(self):
         if self.is_shown:

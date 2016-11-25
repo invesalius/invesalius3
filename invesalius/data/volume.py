@@ -25,13 +25,13 @@ import vtk
 import wx
 from wx.lib.pubsub import pub as Publisher
 
-import constants as const
-import project as prj
-import slice_
-import converters
-from data import vtk_utils
+import invesalius.constants as const
+import invesalius.project as prj
+import invesalius.data.slice_ as slice_
+import invesalius.data.converters as converters
+import invesalius.data.vtk_utils as vtk_utils
 from vtk.util import numpy_support
-import session as ses
+import invesalius.session as ses
 
 
 Kernels = { 
@@ -339,12 +339,17 @@ class Volume():
             g = p['Green']
             b = p['Blue']
             colors = zip(r,g,b)
-            ww = self.config['ww']
-            wl = self.TranslateScale(scale, self.config['wl'])
-            init = wl - ww/2.0
-            inc = ww / (len(colors) - 1.0)
-            for n,rgb in enumerate(colors):
-                color_transfer.AddRGBPoint(init + n * inc, *[i/255.0 for i in rgb])
+        else:
+            # Grayscale from black to white
+            colors = [(i, i, i) for i in xrange(256)]
+
+        ww = self.config['ww']
+        wl = self.TranslateScale(scale, self.config['wl'])
+        init = wl - ww/2.0
+        inc = ww / (len(colors) - 1.0)
+        for n,rgb in enumerate(colors):
+            color_transfer.AddRGBPoint(init + n * inc, *[i/255.0 for i in rgb])
+
         self.color_transfer = color_transfer
 
     def CreateOpacityTable(self, scale):
@@ -486,7 +491,7 @@ class Volume():
                 convolve = vtk.vtkImageConvolve()
                 convolve.SetInputData(imagedata)
                 convolve.SetKernel5x5([i/60.0 for i in Kernels[filter]])
-                convolve.ReleaseDataFlagOn()
+                #  convolve.ReleaseDataFlagOn()
 
                 convolve_ref = weakref.ref(convolve)
                 
@@ -533,7 +538,7 @@ class Volume():
         flip.SetInputData(image)
         flip.SetFilteredAxis(1)
         flip.FlipAboutOriginOn()
-        flip.ReleaseDataFlagOn()
+        #  flip.ReleaseDataFlagOn()
 
         flip_ref = weakref.ref(flip)
         flip_ref().AddObserver("ProgressEvent", lambda obj,evt:
@@ -548,7 +553,7 @@ class Volume():
         cast.SetInputData(image)
         cast.SetShift(abs(scale[0]))
         cast.SetOutputScalarTypeToUnsignedShort()
-        cast.ReleaseDataFlagOn()
+        #  cast.ReleaseDataFlagOn()
         cast_ref = weakref.ref(cast)
         cast_ref().AddObserver("ProgressEvent", lambda obj,evt:
                             update_progress(cast_ref(), "Rendering..."))
@@ -648,7 +653,7 @@ class Volume():
                     self.plane_on = False
                     self.plane.Disable()
             else:
-                self.final_imagedata.Update()
+                #  self.final_imagedata.Update()
                 self.plane_on = True
                 self.plane = CutPlane(self.final_imagedata,
                                       self.volume_mapper)
@@ -660,7 +665,7 @@ class Volume():
         accumulate.SetInputData(image)
         accumulate.SetComponentExtent(0, r -1, 0, 0, 0, 0)
         accumulate.SetComponentOrigin(image.GetScalarRange()[0], 0, 0)
-        accumulate.ReleaseDataFlagOn()
+        #  accumulate.ReleaseDataFlagOn()
         accumulate.Update()
         n_image = numpy_support.vtk_to_numpy(accumulate.GetOutput().GetPointData().GetScalars())
         del accumulate
@@ -692,7 +697,7 @@ class CutPlane:
             
     def Create(self):
         self.plane_widget = plane_widget = vtk.vtkImagePlaneWidget()
-        plane_widget.SetInput(self.img)
+        plane_widget.SetInputData(self.img)
         plane_widget.SetPlaneOrientationToXAxes()
         #plane_widget.SetResliceInterpolateToLinear()
         plane_widget.TextureVisibilityOff()
@@ -710,7 +715,7 @@ class CutPlane:
         plane_source.SetPoint2(plane_widget.GetPoint2())
         plane_source.SetNormal(plane_widget.GetNormal())
         plane_mapper = self.plane_mapper = vtk.vtkPolyDataMapper()
-        plane_mapper.SetInput(plane_source.GetOutput())
+        plane_mapper.SetInputData(plane_source.GetOutput())
         self.plane_actor = plane_actor = vtk.vtkActor()
         plane_actor.SetMapper(plane_mapper)
         plane_actor.GetProperty().BackfaceCullingOn()

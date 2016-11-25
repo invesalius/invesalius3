@@ -23,7 +23,7 @@ import vtk
 import wx
 from wx.lib.pubsub import pub as Publisher
 
-import vtk_utils as vu
+import invesalius.data.vtk_utils as vu
 
 # Update progress value in GUI
 UpdateProgress = vu.ShowProgress()
@@ -97,10 +97,13 @@ def Merge(polydata_list):
     for polydata in polydata_list:
         triangle = vtk.vtkTriangleFilter()
         triangle.SetInputData(polydata)
+        triangle.Update()
         append.AddInputData(triangle.GetOutput())
 
+    append.Update()
     clean = vtk.vtkCleanPolyData()
     clean.SetInputData(append.GetOutput())
+    clean.Update()
 
     return append.GetOutput()
 

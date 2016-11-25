@@ -26,8 +26,8 @@ import numpy
 import wx
 from wx.lib.pubsub import pub as Publisher
 
-import gui.dialogs as dialog
-import constants as const
+import invesalius.gui.dialogs as dialog
+import invesalius.constants as const
 
 FONT_COLOUR = (1, 1, 1)
 LINE_COLOUR = (128, 128, 128)

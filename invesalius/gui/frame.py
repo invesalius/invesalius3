@@ -31,17 +31,17 @@ import wx.lib.popupctl as pc
 
 from wx.lib.agw.aui.auibar import AuiToolBar, AUI_TB_PLAIN_BACKGROUND
 
-import constants as const
-import default_tasks as tasks
-import default_viewers as viewers
-import gui.dialogs as dlg
-import import_panel as imp
-import import_network_panel as imp_net
-import project as prj
-import session as ses
-import utils
-import preferences
-
+import invesalius.constants as const
+import invesalius.gui.default_tasks as tasks
+import invesalius.gui.default_viewers as viewers
+import invesalius.gui.dialogs as dlg
+import invesalius.gui.import_panel as imp
+import invesalius.gui.import_bitmap_panel as imp_bmp
+import invesalius.gui.import_network_panel as imp_net
+import invesalius.project as prj
+import invesalius.session as ses
+import invesalius.utils as utils
+import invesalius.gui.preferences as preferences
 # Layout tools' IDs - this is used only locally, therefore doesn't
 # need to be defined in constants.py
 VIEW_TOOLS = [ID_LAYOUT, ID_TEXT] =\
@@ -84,6 +84,7 @@ class Frame(wx.Frame):
 
         self.mw = None
 
+
         if sys.platform != 'darwin':
             self.Maximize()
 
@@ -94,8 +95,13 @@ class Frame(wx.Frame):
         #self.SetSize(wx.Size(1024, 748))
 
 
+        #to control check and unckeck of menu view -> interpolated_slices
+        main_menu = MenuBar(self)
+
+        self.actived_interpolated_slices = main_menu.view_menu
+
         # Set menus, status and task bar
-        self.SetMenuBar(MenuBar(self))
+        self.SetMenuBar(main_menu)
         self.SetStatusBar(StatusBar(self))
 
         # Set TaskBarIcon
@@ -126,6 +132,7 @@ class Frame(wx.Frame):
         sub(self._ShowImportPanel, 'Show import panel in frame')
         #sub(self._ShowHelpMessage, 'Show help message')
         sub(self._ShowImportNetwork, 'Show retrieve dicom panel')
+        sub(self._ShowImportBitmap, 'Show import bitmap panel in frame')
         sub(self._ShowTask, 'Show task panel')
         sub(self._UpdateAUI, 'Update AUI')
         sub(self._Exit, 'Exit')
@@ -166,12 +173,17 @@ class Frame(wx.Frame):
                           Hide().Layer(1).MaximizeButton(True).
                           Name("Data").Position(1))
 
-        # This is the DICOM import panel. When the two panels above
-        # are shown, this should be hiden
+        # This is the DICOM import panel. When the two panels above as dicom        # are shown, this should be hiden
         caption = _("Preview medical data to be reconstructed")
         aui_manager.AddPane(imp.Panel(self), wx.aui.AuiPaneInfo().
-                          Name("Import").Centre().Hide().
-                          MaximizeButton(True).Floatable(True).
+                          Name("Import").CloseButton(False).Centre().Hide().
+                          MaximizeButton(False).Floatable(True).
+                          Caption(caption).CaptionVisible(True))
+
+        caption = _("Preview bitmap to be reconstructed")
+        aui_manager.AddPane(imp_bmp.Panel(self), wx.aui.AuiPaneInfo().
+                          Name("ImportBMP").CloseButton(False).Centre().Hide().
+                          MaximizeButton(False).Floatable(True).
                           Caption(caption).CaptionVisible(True))
 
         ncaption = _("Retrieve DICOM from PACS")
@@ -298,6 +310,9 @@ class Frame(wx.Frame):
         Publisher.sendMessage("Set layout button full")
         aui_manager = self.aui_manager
         aui_manager.GetPane("Import").Show(0)
+        
+        aui_manager.GetPane("ImportBMP").Show(0)
+
         aui_manager.GetPane("Data").Show(1)
         aui_manager.GetPane("Tasks").Show(1)
         aui_manager.Update()
@@ -314,6 +329,18 @@ class Frame(wx.Frame):
         aui_manager.GetPane("Import").Show(0)
         aui_manager.Update()
 
+    def _ShowImportBitmap(self, evt_pubsub):
+        """
+        Show viewers and task, hide import panel.
+        """
+        Publisher.sendMessage("Set layout button full")
+        aui_manager = self.aui_manager
+        aui_manager.GetPane("ImportBMP").Show(1)
+        aui_manager.GetPane("Data").Show(0)
+        aui_manager.GetPane("Tasks").Show(0)
+        aui_manager.GetPane("Import").Show(0)
+        aui_manager.Update()
+
     def _ShowHelpMessage(self, evt_pubsub):
         aui_manager = self.aui_manager
         pos = aui_manager.GetPane("Data").window.GetScreenPosition()
@@ -324,8 +351,7 @@ class Frame(wx.Frame):
 
     def _ShowImportPanel(self, evt_pubsub):
         """
-        Show only DICOM import panel.
-        """
+        Show only DICOM import panel. as dicom        """
         Publisher.sendMessage("Set layout button data only")
         aui_manager = self.aui_manager
         aui_manager.GetPane("Import").Show(1)
@@ -371,6 +397,8 @@ class Frame(wx.Frame):
             self.ShowOpenProject()
         elif id == const.ID_ANALYZE_IMPORT:
             self.ShowAnalyzeImporter()
+        elif id == const.ID_TIFF_JPG_PNG:
+            self.ShowBitmapImporter()
         elif id == const.ID_PROJECT_SAVE:
             session = ses.Session()
             if session.temp_item:
@@ -411,6 +439,37 @@ class Frame(wx.Frame):
         elif id == const.ID_CLEAN_MASK:
             self.OnCleanMask()
 
+        elif id == const.ID_REORIENT_IMG:
+            self.OnReorientImg()
+
+        elif id == const.ID_FLOODFILL_MASK:
+            self.OnFillHolesManually()
+
+        elif id == const.ID_FILL_HOLE_AUTO:
+            self.OnFillHolesAutomatically()
+
+        elif id == const.ID_REMOVE_MASK_PART:
+            self.OnRemoveMaskParts()
+
+        elif id == const.ID_SELECT_MASK_PART:
+            self.OnSelectMaskParts()
+
+        elif id == const.ID_FLOODFILL_SEGMENTATION:
+            self.OnFFillSegmentation()
+
+        elif id == const.ID_VIEW_INTERPOLATED:
+            st = self.actived_interpolated_slices.IsChecked(const.ID_VIEW_INTERPOLATED)
+            if st:
+                self.OnInterpolatedSlices(True)
+            else:
+                self.OnInterpolatedSlices(False)
+        elif id == const.ID_CROP_MASK:
+            self.OnCropMask()
+
+    def OnInterpolatedSlices(self, status):
+        Publisher.sendMessage('Set interpolated slices', status)
+
+
     def OnSize(self, evt):
         """
         Refresh GUI when frame is resized.
@@ -444,9 +503,12 @@ class Frame(wx.Frame):
             ses.Session().rendering = values[const.RENDERING]
             ses.Session().surface_interpolation = values[const.SURFACE_INTERPOLATION]
             ses.Session().language = values[const.LANGUAGE]
+            ses.Session().slice_interpolation = values[const.SLICE_INTERPOLATION]
 
             Publisher.sendMessage('Remove Volume')
             Publisher.sendMessage('Reset Reaycasting')
+            Publisher.sendMessage('Update Slice Interpolation')
+            Publisher.sendMessage('Update Slice Interpolation MenuBar')
             Publisher.sendMessage('Update Surface Interpolation')
 
     def ShowAbout(self):
@@ -473,8 +535,7 @@ class Frame(wx.Frame):
 
     def ShowImportDicomPanel(self):
         """
-        Show import DICOM panel.
-        """
+        Show import DICOM panel. as dicom        """
         Publisher.sendMessage('Show import directory dialog')
 
     def ShowRetrieveDicomPanel(self):
@@ -498,6 +559,12 @@ class Frame(wx.Frame):
         """
         Publisher.sendMessage('Show analyze dialog', True)
 
+    def ShowBitmapImporter(self):
+        """
+        Tiff, BMP, JPEG and PNG
+        """
+        Publisher.sendMessage('Show bitmap dialog', True)
+
     def FlipVolume(self, axis):
         Publisher.sendMessage('Flip volume', axis)
         Publisher.sendMessage('Reload actual slice')
@@ -520,6 +587,33 @@ class Frame(wx.Frame):
         Publisher.sendMessage('Clean current mask')
         Publisher.sendMessage('Reload actual slice')
 
+    def OnReorientImg(self):
+        Publisher.sendMessage('Enable style', const.SLICE_STATE_REORIENT)
+        rdlg = dlg.ReorientImageDialog()
+        rdlg.Show()
+
+    def OnFillHolesManually(self):
+        Publisher.sendMessage('Enable style', const.SLICE_STATE_MASK_FFILL)
+
+    def OnFillHolesAutomatically(self):
+        fdlg = dlg.FillHolesAutoDialog(_(u"Fill holes automatically"))
+        fdlg.Show()
+
+    def OnRemoveMaskParts(self):
+        Publisher.sendMessage('Enable style', const.SLICE_STATE_REMOVE_MASK_PARTS)
+
+    def OnSelectMaskParts(self):
+        Publisher.sendMessage('Enable style', const.SLICE_STATE_SELECT_MASK_PARTS)
+
+    def OnFFillSegmentation(self):
+        Publisher.sendMessage('Enable style', const.SLICE_STATE_FFILL_SEGMENTATION)
+
+    def OnInterpolatedSlices(self, status):
+        Publisher.sendMessage('Set interpolated slices', status)
+    
+    def OnCropMask(self):
+        Publisher.sendMessage('Enable style', const.SLICE_STATE_CROP_MASK)
+
 # ------------------------------------------------------------------
 # ------------------------------------------------------------------
 # ------------------------------------------------------------------
@@ -538,7 +632,13 @@ class MenuBar(wx.MenuBar):
         # not. Eg. save should only be available if a project is open
         self.enable_items = [const.ID_PROJECT_SAVE,
                              const.ID_PROJECT_SAVE_AS,
-                             const.ID_PROJECT_CLOSE]
+                             const.ID_PROJECT_CLOSE,
+                             const.ID_REORIENT_IMG,
+                             const.ID_FLOODFILL_MASK,
+                             const.ID_FILL_HOLE_AUTO,
+                             const.ID_REMOVE_MASK_PART,
+                             const.ID_SELECT_MASK_PART,
+                             const.ID_FLOODFILL_SEGMENTATION,]
         self.__init_items()
         self.__bind_events()
 
@@ -560,6 +660,7 @@ class MenuBar(wx.MenuBar):
         sub(self.OnAddMask, "Add mask")
         sub(self.OnRemoveMasks, "Remove masks")
         sub(self.OnShowMask, "Show mask")
+        sub(self.OnUpdateSliceInterpolation, "Update Slice Interpolation MenuBar")
 
         self.num_masks = 0
 
@@ -572,6 +673,7 @@ class MenuBar(wx.MenuBar):
         #Import Others Files
         others_file_menu = wx.Menu()
         others_file_menu.Append(const.ID_ANALYZE_IMPORT, "Analyze")
+        others_file_menu.Append(const.ID_TIFF_JPG_PNG, u"TIFF,BMP,JPG or PNG (\xb5CT)")
 
         # FILE
         file_menu = wx.Menu()
@@ -648,10 +750,54 @@ class MenuBar(wx.MenuBar):
         self.clean_mask_menu = mask_menu.Append(const.ID_CLEAN_MASK, _(u"Clean Mask\tCtrl+Shift+A"))
         self.clean_mask_menu.Enable(False)
 
+        mask_menu.AppendSeparator()
+
+        self.fill_hole_mask_menu = mask_menu.Append(const.ID_FLOODFILL_MASK, _(u"Fill holes manually"))
+        self.fill_hole_mask_menu.Enable(False)
+
+        self.fill_hole_auto_menu = mask_menu.Append(const.ID_FILL_HOLE_AUTO, _(u"Fill holes automatically"))
+        self.fill_hole_mask_menu.Enable(False)
+
+        mask_menu.AppendSeparator()
+
+        self.remove_mask_part_menu = mask_menu.Append(const.ID_REMOVE_MASK_PART, _(u"Remove parts"))
+        self.remove_mask_part_menu.Enable(False)
+
+        self.select_mask_part_menu = mask_menu.Append(const.ID_SELECT_MASK_PART, _(u"Select parts"))
+        self.select_mask_part_menu.Enable(False)
+
+        mask_menu.AppendSeparator()
+
+        self.crop_mask_menu = mask_menu.Append(const.ID_CROP_MASK, _("Crop"))
+        self.crop_mask_menu.Enable(False)
+
         tools_menu.AppendMenu(-1,  _(u"Mask"), mask_menu)
 
+        # Segmentation Menu
+        segmentation_menu = wx.Menu()
+        self.ffill_segmentation = segmentation_menu.Append(const.ID_FLOODFILL_SEGMENTATION, _(u"Region growing"))
+        self.ffill_segmentation.Enable(False)
 
-        # VIEW
+        tools_menu.AppendMenu(-1, _("Segmentation"), segmentation_menu)
+
+        # Image menu
+        image_menu = wx.Menu()
+        reorient_menu = image_menu.Append(const.ID_REORIENT_IMG, _(u'Reorient image\tCtrl+Shift+R'))
+        reorient_menu.Enable(False)
+        tools_menu.AppendMenu(-1, _(u'Image'), image_menu)
+
+
+        #View
+
+        self.view_menu = view_menu = wx.Menu()
+        view_menu.Append(const.ID_VIEW_INTERPOLATED, _(u'Interpolated slices'), "", wx.ITEM_CHECK)
+
+
+        v = self.SliceInterpolationStatus()
+        self.view_menu.Check(const.ID_VIEW_INTERPOLATED, v)
+
+        self.actived_interpolated_slices = self.view_menu
+
         #view_tool_menu = wx.Menu()
         #app = view_tool_menu.Append
         #app(const.ID_TOOL_PROJECT, "Project Toolbar")
@@ -698,11 +844,28 @@ class MenuBar(wx.MenuBar):
         # Add all menus to menubar
         self.Append(file_menu, _("File"))
         self.Append(file_edit, _("Edit"))
+        self.Append(view_menu, _(u"View"))
         self.Append(tools_menu, _(u"Tools"))
-        #self.Append(view_menu, "View")
         #self.Append(tools_menu, "Tools")
         self.Append(options_menu, _("Options"))
         self.Append(help_menu, _("Help"))
+
+
+    def SliceInterpolationStatus(self):
+        
+        status = int(ses.Session().slice_interpolation)
+        
+        if status == 0:
+            v = True
+        else:
+            v = False
+
+        return v
+
+    def OnUpdateSliceInterpolation(self, pubsub_evt):
+        v = self.SliceInterpolationStatus()
+        self.view_menu.Check(const.ID_VIEW_INTERPOLATED, v)
+
 
     def OnEnableState(self, pubsub_evt):
         """
@@ -754,6 +917,7 @@ class MenuBar(wx.MenuBar):
     def OnShowMask(self, pubsub_evt):
         index, value = pubsub_evt.data
         self.clean_mask_menu.Enable(value)
+        self.crop_mask_menu.Enable(value)
 
 
 # ------------------------------------------------------------------
@@ -887,8 +1051,7 @@ class TaskBarIcon(wx.TaskBarIcon):
 
 class ProjectToolBar(AuiToolBar):
     """
-    Toolbar related to general project operations, including: import,
-    open, save and saveas, among others.
+    Toolbar related to general invesalius.project operations, including: import, as project    open, save and saveas, among others.
     """
     def __init__(self, parent):
         style = AUI_TB_PLAIN_BACKGROUND
@@ -1278,7 +1441,7 @@ class SliceToolBar(AuiToolBar):
 
         self.parent = parent
         self.enable_items = [const.SLICE_STATE_SCROLL,
-                             const.SLICE_STATE_CROSS]
+                             const.SLICE_STATE_CROSS,]
         self.__init_items()
         self.__bind_events()
         self.__bind_events_wx()

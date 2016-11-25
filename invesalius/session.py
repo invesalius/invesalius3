@@ -27,7 +27,7 @@ import time
 #import wx.lib.pubsub as ps
 from wx.lib.pubsub import pub as Publisher
 
-from utils import Singleton, debug
+from invesalius.utils import Singleton, debug
 from random import randint
 
 class Session(object):
@@ -42,7 +42,7 @@ class Session(object):
         self.project_status = 3
 
     def CreateItens(self):
-        import constants as const
+        import invesalius.constants as const
         self.project_path = ()
         self.debug = False
         self.project_status = const.PROJ_CLOSE
@@ -70,11 +70,12 @@ class Session(object):
         self.recent_projects = [(const.SAMPLE_DIR, "Cranium.inv3")]
         self.last_dicom_folder = ''
         self.surface_interpolation = 1
+        self.slice_interpolation = 0
         self.rendering = 0
         self.WriteSessionFile()
 
     def IsOpen(self):
-        import constants as const
+        import invesalius.constants as const
         return self.project_status != const.PROJ_CLOSE
 
     def SaveConfigFileBackup(self):
@@ -97,7 +98,7 @@ class Session(object):
            return False
 
     def CloseProject(self):
-        import constants as const
+        import invesalius.constants as const
         debug("Session.CloseProject")
         self.project_path = ()
         self.project_status = const.PROJ_CLOSE
@@ -106,7 +107,7 @@ class Session(object):
         self.WriteSessionFile()
 
     def SaveProject(self, path=()):
-        import constants as const
+        import invesalius.constants as const
         debug("Session.SaveProject")
         self.project_status = const.PROJ_OPEN
         if path:
@@ -117,12 +118,12 @@ class Session(object):
         self.WriteSessionFile()
 
     def ChangeProject(self):
-        import constants as const
+        import invesalius.constants as const
         debug("Session.ChangeProject")
         self.project_status = const.PROJ_CHANGE
 
     def CreateProject(self, filename):
-        import constants as const
+        import invesalius.constants as const
         debug("Session.CreateProject")
         Publisher.sendMessage('Begin busy cursor')
         # Set session info
@@ -133,7 +134,7 @@ class Session(object):
         return self.tempdir
 
     def OpenProject(self, filepath):
-        import constants as const
+        import invesalius.constants as const
         debug("Session.OpenProject")
         # Add item to recent projects list
         item = (path, file) = os.path.split(filepath)
@@ -162,6 +163,7 @@ class Session(object):
         config.set('session', 'random_id', self.random_id)
         config.set('session', 'surface_interpolation', self.surface_interpolation)
         config.set('session', 'rendering', self.rendering)
+        config.set('session', 'slice_interpolation', self.slice_interpolation)
 
         config.add_section('project')
         config.set('project', 'recent_projects', self.recent_projects)
@@ -181,7 +183,7 @@ class Session(object):
         configfile.close()
 
     def __add_to_list(self, item):
-        import constants as const
+        import invesalius.constants as const
         # Last projects list
         l = self.recent_projects
 
@@ -261,6 +263,8 @@ class Session(object):
             self.last_dicom_folder = self.last_dicom_folder.decode('utf-8')
 
             self.surface_interpolation = config.get('session', 'surface_interpolation')
+            self.slice_interpolation = config.get('session', 'slice_interpolation')
+
             self.rendering = config.get('session', 'rendering')
             self.random_id = config.get('session','random_id')
             return True
@@ -277,6 +281,7 @@ class Session(object):
         except(ConfigParser.NoOptionError):
             #Added to fix new version compatibility
             self.surface_interpolation = 0
+            self.slice_interpolation = 0
             self.rendering = 0
             self.random_id = randint(0,pow(10,16))  
             self.WriteSessionFile()

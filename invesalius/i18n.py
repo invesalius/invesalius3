@@ -26,7 +26,7 @@ import gettext
 import os
 import sys
  
-import utils as utl 
+import invesalius.utils as utl
  
 def GetLocales(): 
     """Return a dictionary which defines supported languages""" 
@@ -58,8 +58,23 @@ def GetLocaleOS():
  
         return locale.getdefaultlocale()[0] 
  
-def InstallLanguage(language): 
-    language_dir = os.path.abspath(os.path.join('..','locale')) 
+def InstallLanguage(language):
+    file_path = os.path.split(__file__)[0]
+
+    if hasattr(sys,"frozen") and (sys.frozen == "windows_exe"\
+                            or sys.frozen == "console_exe"):
+
+        abs_file_path = os.path.abspath(file_path + os.sep + ".." + os.sep + ".." + os.sep + "..")
+        language_dir = os.path.join(abs_file_path, 'locale')
+    else:
+        abs_file_path = os.path.abspath(file_path + os.sep + "..")
+        language_dir = os.path.join(abs_file_path, 'locale')
+
+    # MAC App
+    if not os.path.exists(language_dir):
+        abs_file_path = os.path.abspath(os.path.join(file_path, '..', '..',  '..', '..'))
+        language_dir = os.path.join(abs_file_path, 'locale')
+
     lang = gettext.translation('invesalius', language_dir,\
                                    languages=[language], codeset='utf8') 
     # Using unicode 

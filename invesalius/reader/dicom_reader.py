@@ -29,14 +29,12 @@ import vtkgdcm
 import gdcm
 from wx.lib.pubsub import pub as Publisher
 
-import constants as const
-import dicom
-import dicom_grouper
-import session
-
+import invesalius.constants as const
+import invesalius.reader.dicom as dicom
+import invesalius.reader.dicom_grouper as dicom_grouper
+import invesalius.session as session
 import glob
-import utils
-
+import invesalius.utils as utils
 
 import plistlib
 
@@ -71,7 +69,7 @@ def SortFiles(filelist, dicom):
     # Sort slices
     # FIXME: Coronal Crash. necessary verify
     if (dicom.image.orientation_label <> "CORONAL"):
-        #Organize reversed image
+        ##Organize reversed image
         sorter = gdcm.IPPSorter()
         sorter.SetComputeZSpacing(True)
         sorter.SetZSpacingTolerance(1e-10)

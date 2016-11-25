@@ -29,13 +29,11 @@ import wx
 from wx.lib.pubsub import pub as Publisher
 import vtk
 
-import constants as const
-import data.mask as msk
-import data.polydata_utils as pu
-import data.surface as srf
-from presets import Presets
-from utils import Singleton, debug
-import version
+import invesalius.constants as const
+import invesalius.data.polydata_utils as pu
+from invesalius.presets import Presets 
+from invesalius.utils import Singleton, debug 
+import invesalius.version as version
 
 class Project(object):
     # Only one project will be initialized per time. Therefore, we use
@@ -190,7 +188,7 @@ class Project(object):
             item["type"] = m.type
             item["slice_number"] = m.slice_number
             item["points"] = m.points
-            item["visible"] = m.is_shown
+            item["visible"] = m.visible
             measures[str(m.index)] = item
         return measures
 
@@ -264,12 +262,13 @@ class Project(object):
 
         for f in filelist:
             if filelist[f].endswith('.plist'):
-                print f
                 os.remove(f)
 
     def OpenPlistProject(self, filename):
-        import data.measures as ms
- 
+        import invesalius.data.measures as ms
+        import invesalius.data.mask as msk
+        import invesalius.data.surface as srf
+        
         if not const.VTK_WARNING:
             log_path = os.path.join(const.LOG_FOLDER, 'vtkoutput.txt')
             fow = vtk.vtkFileOutputWindow()
@@ -358,7 +357,6 @@ def Extract(filename, folder):
         del fsrc
         del fdst
     tar.close()
-    print filelist
     return filelist
 
     

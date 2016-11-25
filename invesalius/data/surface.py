@@ -28,20 +28,16 @@ import vtk
 import wx
 from wx.lib.pubsub import pub as Publisher
 
-import constants as const
-import imagedata_utils as iu
-import polydata_utils as pu
-import project as prj
-import session as ses
-import surface_process
-import utils as utl
-import vtk_utils as vu
+import invesalius.constants as const
+import invesalius.data.imagedata_utils as iu
+import invesalius.data.polydata_utils as pu
+import invesalius.project as prj
+import invesalius.session as ses
+import invesalius.data.surface_process as surface_process
+import invesalius.utils as utl
+import invesalius.data.vtk_utils as vu
 
-try:
-    import ca_smoothing
-except ImportError:
-    import data.ca_smoothing as ca_smoothing
-
+from invesalius.data import cy_mesh
 # TODO: Verificar ReleaseDataFlagOn and SetSource 
 
 class Surface():
@@ -59,7 +55,8 @@ class Surface():
         self.polydata = ''
         self.colour = ''
         self.transparency = const.SURFACE_TRANSPARENCY
-        self.volume = 0
+        self.volume = 0.0
+        self.area = 0.0
         self.is_shown = 1
         if not name:
             self.name = const.SURFACE_NAME_PATTERN %(self.index+1)
@@ -81,6 +78,7 @@ class Surface():
                    'transparency': self.transparency,
                    'visible': bool(self.is_shown),
                    'volume': self.volume,
+                   'area': self.area,
                   }
         plist_filename = filename + '.plist'
         #plist_filepath = os.path.join(dir_temp, filename + '.plist')
@@ -100,6 +98,10 @@ class Surface():
         self.transparency = sp['transparency']
         self.is_shown = sp['visible']
         self.volume = sp['volume']
+        try:
+            self.area = sp['area']
+        except KeyError:
+            self.area = 0.0
         self.polydata = pu.Import(os.path.join(dirpath, sp['polydata']))
         Surface.general_index = max(Surface.general_index, self.index)
 
@@ -164,7 +166,8 @@ class SurfaceManager():
                                            name = new_name,
                                            colour = original_surface.colour,
                                            transparency = original_surface.transparency,
-                                           volume = original_surface.volume)
+                                           volume = original_surface.volume,
+                                           area = original_surface.area)
 
     def OnRemove(self, pubsub_evt):
         selected_items = pubsub_evt.data
@@ -240,7 +243,7 @@ class SurfaceManager():
 
     def CreateSurfaceFromPolydata(self, polydata, overwrite=False,
                                   name=None, colour=None,
-                                  transparency=None, volume=None):
+                                  transparency=None, volume=None, area=None):
         normals = vtk.vtkPolyDataNormals()
         normals.SetInputData(polydata)
         normals.SetFeatureAngle(80)
@@ -290,7 +293,7 @@ class SurfaceManager():
         session.ChangeProject()
 
         # The following lines have to be here, otherwise all volumes disappear
-        if not volume:
+        if not volume or not area:
             triangle_filter = vtk.vtkTriangleFilter()
             triangle_filter.SetInputData(polydata)
             triangle_filter.Update()
@@ -299,18 +302,22 @@ class SurfaceManager():
             measured_polydata.SetInputConnection(triangle_filter.GetOutputPort())
             measured_polydata.Update()
             volume =  measured_polydata.GetVolume()
+            area =  measured_polydata.GetSurfaceArea()
             surface.volume = volume
+            surface.area = area
             print ">>>>", surface.volume
         else:
             surface.volume = volume
+            surface.area = area
+
         self.last_surface_index = surface.index
 
         Publisher.sendMessage('Load surface actor into viewer', actor)
 
         Publisher.sendMessage('Update surface info in GUI',
-                                        (surface.index, surface.name,
-                                        surface.colour, surface.volume,
-                                        surface.transparency))
+                              (surface.index, surface.name,
+                               surface.colour, surface.volume,
+                               surface.area, surface.transparency))
         return surface.index
 
     def OnCloseProject(self, pubsub_evt):
@@ -329,9 +336,9 @@ class SurfaceManager():
         proj = prj.Project()
         surface = proj.surface_dict[index]
         Publisher.sendMessage('Update surface info in GUI',
-                                    (index, surface.name,
-                                    surface.colour, surface.volume,
-                                    surface.transparency))
+                              (index, surface.name,
+                               surface.colour, surface.volume,
+                               surface.area, surface.transparency))
         self.last_surface_index = index
         if surface.is_shown:
             self.ShowActor(index, True)
@@ -340,6 +347,7 @@ class SurfaceManager():
         surface_dict = pubsub_evt.data
         for key in surface_dict:
             surface = surface_dict[key]
+
             # Map polygonal data (vtkPolyData) to graphics primitives.
             normals = vtk.vtkPolyDataNormals()
             normals.SetInputData(surface.polydata)
@@ -347,14 +355,14 @@ class SurfaceManager():
             normals.AutoOrientNormalsOn()
             #  normals.GetOutput().ReleaseDataFlagOn()
 
-	    # Improve performance
+            # Improve performance
             stripper = vtk.vtkStripper()
-            stripper.SetInputData(normals.GetOutput())
+            stripper.SetInputConnection(normals.GetOutputPort())
             stripper.PassThroughCellIdsOn()
             stripper.PassThroughPointIdsOn()
 
             mapper = vtk.vtkPolyDataMapper()
-            mapper.SetInputData(stripper.GetOutput())
+            mapper.SetInputConnection(stripper.GetOutputPort())
             mapper.ScalarVisibilityOff()
             mapper.ImmediateModeRenderingOn() # improve performance
 
@@ -377,8 +385,8 @@ class SurfaceManager():
             # The following lines have to be here, otherwise all volumes disappear
             Publisher.sendMessage('Update surface info in GUI',
                                         (surface.index, surface.name,
-                                        surface.colour, surface.volume,
-                                        surface.transparency))
+                                         surface.colour, surface.volume,
+                                         surface.area, surface.transparency))
             if not surface.is_shown:
                 self.ShowActor(key, False)
 
@@ -552,16 +560,28 @@ class SurfaceManager():
             #  polydata.SetSource(None)
             del clean
 
-            try:
-                polydata.BuildLinks()
-            except TypeError:
-                polydata.BuildLinks(0)
-            polydata = ca_smoothing.ca_smoothing(polydata, options['angle'],
-                                                 options['max distance'],
-                                                 options['min weight'],
-                                                 options['steps'])
+            #  try:
+                #  polydata.BuildLinks()
+            #  except TypeError:
+                #  polydata.BuildLinks(0)
+            #  polydata = ca_smoothing.ca_smoothing(polydata, options['angle'],
+                                                 #  options['max distance'],
+                                                 #  options['min weight'],
+                                                 #  options['steps'])
+
+            mesh = cy_mesh.Mesh(polydata)
+            cy_mesh.ca_smoothing(mesh, options['angle'],
+                                 options['max distance'],
+                                 options['min weight'],
+                                 options['steps'])
+            #  polydata = mesh.to_vtk()
+
             #  polydata.SetSource(None)
-            polydata.DebugOn()
+            #  polydata.DebugOn()
+            w = vtk.vtkPLYWriter()
+            w.SetInputData(polydata)
+            w.SetFileName('/tmp/ca_smoothing_inv.ply')
+            w.Write()
 
         else:
             #smoother = vtk.vtkWindowedSincPolyDataFilter()
@@ -645,7 +665,7 @@ class SurfaceManager():
             polydata = filled_polydata.GetOutput()
             #polydata.Register(None)
             #  polydata.SetSource(None)
-            polydata.DebugOn()
+            #  polydata.DebugOn()
             del filled_polydata
 
         normals = vtk.vtkPolyDataNormals()
@@ -727,7 +747,9 @@ class SurfaceManager():
         #  measured_polydata.ReleaseDataFlagOn()
         measured_polydata.SetInputData(to_measure)
         volume =  float(measured_polydata.GetVolume())
+        area =  float(measured_polydata.GetSurfaceArea())
         surface.volume = volume
+        surface.area = area
         self.last_surface_index = surface.index
         del measured_polydata
         del to_measure
@@ -745,6 +767,7 @@ class SurfaceManager():
         Publisher.sendMessage('Update surface info in GUI',
                                     (surface.index, surface.name,
                                     surface.colour, surface.volume,
+                                    surface.area,
                                     surface.transparency))
 
         #When you finalize the progress. The bar is cleaned.

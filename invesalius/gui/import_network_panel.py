@@ -22,11 +22,11 @@ import wx.gizmos as gizmos
 from wx.lib.pubsub import pub as Publisher
 import wx.lib.splitter as spl
 
-import constants as const
-import gui.dialogs as dlg
-#import dicom_preview_panel as dpp
-import reader.dicom_grouper as dcm
-import net.dicom as dcm_net
+import invesalius.constants as const
+import invesalius.gui.dialogs as dlg
+#import invesalius.gui.dicom_preview_panel as dpp
+import invesalius.reader.dicom_grouper as dcm
+import invesalius.net.dicom as dcm_net
 
 from wx.lib.mixins.listctrl import CheckListCtrlMixin
 #from dicionario import musicdata

@@ -20,12 +20,11 @@ import glob
 import os
 import plistlib
 
-import constants as const
+import invesalius.constants as const
 
 from wx.lib.pubsub import pub as Publisher
 
-from utils import TwoWaysDictionary
-
+from invesalius.utils import TwoWaysDictionary
 class Presets():
 
     def __init__(self):
@@ -73,12 +72,13 @@ class Presets():
     def UpdateThresholdModes(self, evt):
     
         thresh_min, thresh_max = evt.data
-        
         presets_list = (self.thresh_ct, self.thresh_mri)
 
         for presets in presets_list:
             for key in presets:
                 (t_min, t_max) = presets[key]
+
+
                 if (t_min is None) or (t_max is None): # setting custom preset
                     t_min = thresh_min
                     t_max = thresh_max
@@ -93,7 +93,7 @@ class Presets():
                     t_min = thresh_min
                 if (t_max < thresh_min):
                     t_max = thresh_max
-                    
+
                 presets[key] = (t_min, t_max)
                     
         Publisher.sendMessage('Update threshold limits', (thresh_min,     
