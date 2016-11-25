@@ -1,1 +1,0 @@
-This folder contains all the calibration files for the installed MicronTrackers

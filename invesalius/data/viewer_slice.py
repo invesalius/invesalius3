@@ -445,13 +445,13 @@ class Viewer(wx.Panel):
                 self.RenderTextDirection([_("TL"), _("RT"), _("BR"), _("LB")])
 
             elif(croll > 44 and croll <= 88):
-                self.RenderTextDirection([_("LT"), _("TR"), _("RB"), _("BL")])
+               self.RenderTextDirection([_("LT"), _("TR"), _("RB"), _("BL")])
 
             elif(croll > 89 and croll <= 91):
-                self.RenderTextDirection([_("L"), _("T"), _("R"), _("B")])
+               self.RenderTextDirection([_("L"), _("T"), _("R"), _("B")])
 
             elif(croll > 91 and croll <= 135):
-                self.RenderTextDirection([_("LB"), _("TL"), _("RT"), _("BR")])
+               self.RenderTextDirection([_("LB"), _("TL"), _("RT"), _("BR")])
      
             elif(croll > 135 and croll <= 177):
                 self.RenderTextDirection([_("BL"), _("LT"), _("TR"), _("RB")])
@@ -542,36 +542,13 @@ class Viewer(wx.Panel):
 
     def Navigation(self, pubsub_evt):
         # Get point from base change
-        coord_cross = pubsub_evt.data
-        # print "\ncoordcross_init:",coord_cross
-        # position = self.slice_data.actor.GetInput().FindPoint(coord_cross)
-        # coord_cross = self.slice_data.actor.GetInput().GetPoint(position)
-        # coord = self.calcultate_scroll_position(position)
-
-# this is the code written in the invesalius_navigator 05/02/2015
-# with navigation working
-        #coord_cross = pubsub_evt.data
-        mx, my = self.calculate_matrix_position(coord_cross)
-
-        if self.orientation == 'AXIAL':
-           x = my
-           y = mx
-           z = self.slice_data.number
-
-        elif self.orientation == 'CORONAL':
-           x = my
-           y = self.slice_data.number
-           z = mx
-
-        elif self.orientation == 'SAGITAL':
-           x = self.slice_data.number
-           y = my
-           z = mx
-
-        coord = x, y, z
+        x, y, z = pubsub_evt.data
+        coord_cross = x, y, z      
+        position = self.slice_data.actor.GetInput().FindPoint(x, y, z)
+        coord_cross = self.slice_data.actor.GetInput().GetPoint(position)
+        coord = self.calcultate_scroll_position(position)   
         Publisher.sendMessage('Update cross position', coord_cross)
-        # Publisher.sendMessage('Set ball reference position based on bound',
-        #                            coord_cross)
+        
         self.ScrollSlice(coord)
         self.interactor.Render()
 
@@ -765,7 +742,7 @@ class Viewer(wx.Panel):
             if filetype == const.FILETYPE_POV:
                 renwin = self.interactor.GetRenderWindow()
                 image = vtk.vtkWindowToImageFilter()
-                image.SetInputData(renwin)
+                image.SetInput(renwin)
                 writer = vtk.vtkPOVExporter()
                 writer.SetFilePrefix(filename.split(".")[0])
                 writer.SetRenderWindow(renwin)
@@ -774,7 +751,7 @@ class Viewer(wx.Panel):
                 ren = self.slice_data.renderer
                 #Use tiling to generate a large rendering.
                 image = vtk.vtkRenderLargeImage()
-                image.SetInputData(ren)
+                image.SetInput(ren)
                 image.SetMagnification(1)
                 image.Update()
 
@@ -918,7 +895,7 @@ class Viewer(wx.Panel):
         self.cam = self.slice_data.renderer.GetActiveCamera()
         self.__build_cross_lines()
 
-        # Set the slice number to the last slice to ensure the camera is far
+        # Set the slice number to the last slice to ensure the camera if far
         # enough to show all slices.
         self.set_slice_number(max_slice_number - 1)
         self.__update_camera()

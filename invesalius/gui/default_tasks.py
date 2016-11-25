@@ -250,8 +250,7 @@ class UpperTaskPanel(wx.Panel):
             tasks = [(_("Load data"), importer.TaskPanel),
                      (_("Select region of interest"), slice_.TaskPanel),
                      (_("Configure 3D surface"), surface.TaskPanel),
-                     (_("Export data"), exporter.TaskPanel),
-                     (_("Navigation system"), navigator.TaskPanel)]
+                     (_("Utilize navigation system"), navigator.TaskPanel)]
 
         for i in xrange(len(tasks)):
             (name, panel) = tasks[i]

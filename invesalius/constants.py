@@ -451,9 +451,8 @@ VTK_WARNING = 0
 
 [ID_DICOM_IMPORT, ID_PROJECT_OPEN, ID_PROJECT_SAVE_AS, ID_PROJECT_SAVE,
 ID_PROJECT_CLOSE, ID_PROJECT_INFO, ID_SAVE_SCREENSHOT, ID_DICOM_LOAD_NET,
-ID_PRINT_SCREENSHOT, ID_IMPORT_OTHERS_FILES, ID_PREFERENCES, ID_DICOM_NETWORK,
-ID_ANALYZE_IMPORT, ID_NIFTI_IMPORT,
-ID_PARREC_IMPORT] = [wx.NewId() for number in range(15)]
+ID_PRINT_SCREENSHOT, ID_IMPORT_OTHERS_FILES, ID_ANALYZE_IMPORT, ID_PREFERENCES,
+ID_DICOM_NETWORK] = [wx.NewId() for number in range(13)]
 ID_EXIT = wx.ID_EXIT
 ID_ABOUT = wx.ID_ABOUT
 
@@ -576,30 +575,3 @@ BOOLEAN_UNION = 1
 BOOLEAN_DIFF = 2
 BOOLEAN_AND = 3
 BOOLEAN_XOR = 4
-
-#------------ Navigation Constants ------------
-#This constantes were created by Victor Hugo for the Neuronavigator task
-MARKER_SIZE = 4
-
-SELECT = 0
-MTC = 1
-FASTRAK = 2
-ISOTRAKII = 3
-PATRIOT = 4
-ZEBRIS = 5
-DEFAULT_TRACKER = SELECT
-#TRACKER = [_("Polhemus PATRIOT"), _("Polhemus PATRIOT"),
-#  _("Polhemus ISOTRAK II"), _("Claron MicronTracker"), _("Zebris CMS20")]
-TRACKER = [_("Select tracker:"),_("Claron MicronTracker"), _("Polhemus FASTRAK"),
-           _("Polhemus ISOTRAK II"),  _("Polhemus PATRIOT"), _("Zebris CMS20")]
-
-
-STATIC_REF = 0
-DYNAMIC_REF = 1
-DEFAULT_REF_MODE = DYNAMIC_REF
-REF_MODE = [_("Static ref."), _("Dynamic ref.")]
-
-BUTTERFLY_COIL = 0
-CIRCULAR_COIL = 1
-DEFAULT_COIL = BUTTERFLY_COIL
-COILS = [_("Butterfly coil"),_("Circular coil")]

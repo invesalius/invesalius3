@@ -89,7 +89,7 @@ class Orientation(object):
             ys = extent[3] - extent[2] + 1
 
             actor = self.actor            
-            actor.SetInputData(self.image)
+            actor.SetInput(self.image)
             actor.SetDisplayExtent(extent[0], extent[1], 
                                    extent[2], extent[3], 
                                    self.slice, self.slice)
@@ -99,7 +99,7 @@ class Orientation(object):
             ys = extent[5] - extent[4] + 1
 
             actor = self.actor            
-            actor.SetInputData(self.image)
+            actor.SetInput(self.image)
             actor.SetDisplayExtent(extent[0], extent[1],
                                     self.slice, self.slice,
                                     extent[4], extent[5])
@@ -109,7 +109,7 @@ class Orientation(object):
             ys = extent[5] - extent[4] + 1
 
             actor = self.actor            
-            actor.SetInputData(self.image)
+            actor.SetInput(self.image)
             actor.SetDisplayExtent(self.slice, self.slice, 
                                     extent[2], extent[3],
                                     extent[4], extent[5])

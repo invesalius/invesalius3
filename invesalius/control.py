@@ -16,28 +16,33 @@
 #    PARTICULAR. Consulte a Licenca Publica Geral GNU para obter mais
 #    detalhes.
 #--------------------------------------------------------------------------
+import math
 import os
 import plistlib
 import wx
+import numpy
 from wx.lib.pubsub import pub as Publisher
 
 import constants as const
 import data.imagedata_utils as image_utils
+import data.mask as msk
 import data.measures
 import data.slice_ as sl
 import data.surface as srf
 import data.volume as volume
 import gui.dialogs as dialog
 import project as prj
-import reader.others_reader as oth
+import reader.analyze_reader as analyze
+import reader.dicom_grouper as dg
 import reader.dicom_reader as dcm
 import session as ses
 
 import utils 
 import gui.dialogs as dialogs
+import subprocess
+import sys
 
 DEFAULT_THRESH_MODE = 0
-
 
 class Controller():
 
@@ -57,30 +62,28 @@ class Controller():
     def __bind_events(self):
         Publisher.subscribe(self.OnImportMedicalImages, 'Import directory')
         Publisher.subscribe(self.OnShowDialogImportDirectory,
-                            'Show import directory dialog')
-        Publisher.subscribe(self.OnShowDialogImportOtherFiles,
-                            'Show import other files dialog')
+                                 'Show import directory dialog')
         Publisher.subscribe(self.OnShowDialogOpenProject,
-                            'Show open project dialog')
+                                 'Show open project dialog')
 
         Publisher.subscribe(self.OnShowDialogSaveProject, 'Show save dialog')
 
         Publisher.subscribe(self.LoadRaycastingPreset,
-                            'Load raycasting preset')
+                                 'Load raycasting preset')
         Publisher.subscribe(self.SaveRaycastingPreset,
-                            'Save raycasting preset')
+                                 'Save raycasting preset')
         Publisher.subscribe(self.OnOpenDicomGroup,
-                            'Open DICOM group')
-        Publisher.subscribe(self.OnOpenOtherFiles,
-                            'Open other files')
+                                 'Open DICOM group')
         Publisher.subscribe(self.Progress, "Update dicom load")
         Publisher.subscribe(self.OnLoadImportPanel, "End dicom load")
         Publisher.subscribe(self.OnCancelImport, 'Cancel DICOM load')
         Publisher.subscribe(self.OnShowDialogCloseProject, 'Close Project')
         Publisher.subscribe(self.OnOpenProject, 'Open project')
         Publisher.subscribe(self.OnOpenRecentProject, 'Open recent project')
+        Publisher.subscribe(self.OnShowAnalyzeFile, 'Show analyze dialog')
+
         Publisher.subscribe(self.ShowBooleanOpDialog, 'Show boolean dialog')
-        
+
 
     def OnCancelImport(self, pubsub_evt):
         #self.cancel_import = True
@@ -95,10 +98,6 @@ class Controller():
     def OnShowDialogImportDirectory(self, pubsub_evt):
         self.ShowDialogImportDirectory()
 
-    def OnShowDialogImportOtherFiles(self, pubsub_evt):
-        id_type = pubsub_evt.data
-        self.ShowDialogImportOtherFiles(id_type)
-
     def OnShowDialogOpenProject(self, pubsub_evt):
         self.ShowDialogOpenProject()
 
@@ -108,6 +107,15 @@ class Controller():
 
     def OnShowDialogCloseProject(self, pubsub_evt):
         self.ShowDialogCloseProject()
+
+    def OnShowAnalyzeFile(self, pubsub_evt):
+        dirpath = dialog.ShowOpenAnalyzeDialog()
+        imagedata = analyze.ReadAnalyze(dirpath)
+        if imagedata:
+            self.CreateAnalyzeProject(imagedata)
+            
+        self.LoadProject()
+        Publisher.sendMessage("Enable state project", True)
 
 
 ###########################
@@ -133,40 +141,6 @@ class Controller():
         elif dirpath:
             self.StartImportPanel(dirpath)
             Publisher.sendMessage("Load data to import panel", dirpath)
-
-    def ShowDialogImportOtherFiles(self, id_type):
-        # Offer to save current project if necessary
-        session = ses.Session()
-        st = session.project_status
-        if (st == const.PROJ_NEW) or (st == const.PROJ_CHANGE):
-            filename = session.project_path[1]
-            answer = dialog.SaveChangesDialog2(filename)
-            if answer:
-                self.ShowDialogSaveProject()
-            self.CloseProject()
-            # Publisher.sendMessage("Enable state project", False)
-            Publisher.sendMessage('Set project name')
-            Publisher.sendMessage("Stop Config Recording")
-            Publisher.sendMessage("Set slice interaction style", const.STATE_DEFAULT)
-
-        # Warning for limited support to Analyze format
-        if id_type == const.ID_ANALYZE_IMPORT:
-            dialog.ImportAnalyzeWarning()
-
-        # Import project treating compressed nifti exception
-        suptype = ('hdr', 'nii', 'nii.gz', 'par')
-        filepath = dialog.ShowImportOtherFilesDialog(id_type)
-        name = filepath.rpartition('\\')[-1].split('.')
-
-        if name[-1] == 'gz':
-            name[1] = 'nii.gz'
-
-        filetype = name[1].lower()
-
-        if filetype in suptype:
-            Publisher.sendMessage("Open other files", filepath)
-        else:
-            dialog.ImportInvalidFiles()
 
     def ShowDialogOpenProject(self):
         # Offer to save current project if necessary
@@ -263,6 +237,8 @@ class Controller():
         else:
             dialog.InexistentPath(filepath)
 
+
+
     def OpenProject(self, filepath):
         Publisher.sendMessage('Begin busy cursor')
         path = os.path.abspath(filepath)
@@ -313,9 +289,10 @@ class Controller():
 
 ###########################
 
+
     def StartImportPanel(self, path):
 
-        # retrieve DICOM files splitted into groups
+        # retrieve DICOM files splited into groups
         reader = dcm.ProgressDicomReader()
         reader.SetWindowEvent(self.frame)
         reader.SetDirectoryPath(path)
@@ -361,33 +338,21 @@ class Controller():
         self.ImportMedicalImages(directory)
 
     def ImportMedicalImages(self, directory):
+        # OPTION 1: DICOM?
         patients_groups = dcm.GetDicomGroups(directory)
-        name = directory.rpartition('\\')[-1].split('.')
-        print "patients: ", patients_groups
-
         if len(patients_groups):
-            # OPTION 1: DICOM
             group = dcm.SelectLargerDicomGroup(patients_groups)
             matrix, matrix_filename, dicom = self.OpenDicomGroup(group, 0, [0,0],gui=True)
             self.CreateDicomProject(dicom, matrix, matrix_filename)
+        # OPTION 2: ANALYZE?
         else:
-            # OPTION 2: NIfTI, Analyze or PAR/REC
-            if name[-1] == 'gz':
-                name[1] = 'nii.gz'
-
-            suptype = ('hdr', 'nii', 'nii.gz', 'par')
-            filetype = name[1].lower()
-
-            if filetype in suptype:
-                group = oth.ReadOthers(directory)
+            imagedata = analyze.ReadDirectory(directory)
+            if imagedata:
+                self.CreateAnalyzeProject(imagedata)
+            # OPTION 3: Nothing...
             else:
                 utils.debug("No medical images found on given directory")
                 return
-
-            matrix, matrix_filename = self.OpenOtherFiles(group)
-            self.CreateOtherProject(str(name[0]), matrix, matrix_filename)
-            # OPTION 4: Nothing...
-
         self.LoadProject()
         Publisher.sendMessage("Enable state project", True)
 
@@ -449,6 +414,43 @@ class Controller():
         
         Publisher.sendMessage('End busy cursor')
 
+    def CreateAnalyzeProject(self, imagedata):
+        header = imagedata.get_header()
+        proj = prj.Project()
+        proj.imagedata = None
+        proj.name = _("Untitled")
+        proj.SetAcquisitionModality("MRI")
+        #TODO: Verify if all Analyse are in AXIAL orientation
+
+        # To get  Z, X, Y (used by InVesaliu), not X, Y, Z
+        matrix, matrix_filename = image_utils.analyze2mmap(imagedata)
+        if header['orient'] == 0:
+            proj.original_orientation =  const.AXIAL
+        elif header['orient'] == 1:
+            proj.original_orientation = const.CORONAL
+        elif header['orient'] == 2:
+            proj.original_orientation = const.SAGITAL
+        else:
+            proj.original_orientation =  const.SAGITAL
+
+        proj.threshold_range = (int(header['glmin']),
+                                int(header['glmax']))
+        proj.window = proj.threshold_range[1] - proj.threshold_range[0]
+        proj.level =  (0.5 * (proj.threshold_range[1] + proj.threshold_range[0]))
+        proj.spacing = header['pixdim'][1:4]
+        proj.matrix_shape = matrix.shape 
+
+        self.Slice = sl.Slice()
+        self.Slice.matrix = matrix
+        self.Slice.matrix_filename = matrix_filename
+
+        self.Slice.window_level = proj.level
+        self.Slice.window_width = proj.window
+        self.Slice.spacing = header.get_zooms()[:3]
+
+        Publisher.sendMessage('Update threshold limits list',
+                                   proj.threshold_range)
+
     def CreateDicomProject(self, dicom, matrix, matrix_filename):
         name_to_const = {"AXIAL":const.AXIAL,
                          "CORONAL":const.CORONAL,
@@ -479,64 +481,10 @@ class Controller():
         dirpath = session.CreateProject(filename)
         #proj.SavePlistProject(dirpath, filename)
 
-    def CreateOtherProject(self, name, matrix, matrix_filename):
-        name_to_const = {"AXIAL": const.AXIAL,
-                         "CORONAL": const.CORONAL,
-                         "SAGITTAL": const.SAGITAL}
-
-        proj = prj.Project()
-        proj.name = name
-        proj.modality = 'MRI'
-        proj.SetAcquisitionModality('MRI')
-        proj.matrix_shape = matrix.shape
-        proj.matrix_dtype = matrix.dtype.name
-        proj.matrix_filename = matrix_filename
-
-        # Orientation must be CORONAL in order to as_closes_canonical and
-        # swap axis in img2memmap to work in a standardized way.
-        # TODO: Create standard import image for all acquisition orientations
-        orientation = 'CORONAL'
-
-        proj.original_orientation =\
-            name_to_const[orientation]
-
-        proj.window = self.Slice.window_width
-        proj.level = self.Slice.window_level
-        proj.threshold_range = int(matrix.min()), int(matrix.max())
-        proj.spacing = self.Slice.spacing
-
-        ######
-        session = ses.Session()
-        filename = proj.name + ".inv3"
-
-        filename = filename.replace("/", "")  # Fix problem case other/Skull_DICOM
-
-        dirpath = session.CreateProject(filename)
-
     def OnOpenDicomGroup(self, pubsub_evt):
         group, interval, file_range = pubsub_evt.data
         matrix, matrix_filename, dicom = self.OpenDicomGroup(group, interval, file_range, gui=True)
         self.CreateDicomProject(dicom, matrix, matrix_filename)
-        self.LoadProject()
-        Publisher.sendMessage("Enable state project", True)
-
-    def OnOpenOtherFiles(self, pubsub_evt):
-        filepath = pubsub_evt.data
-        name = filepath.rpartition('\\')[-1].split('.')
-
-        if name[-1] == 'gz':
-            name[1] = 'nii.gz'
-
-        suptype = ('hdr', 'nii', 'nii.gz', 'par')
-        filetype = name[1].lower()
-
-        if filetype in suptype:
-            group = oth.ReadOthers(filepath)
-        else:
-            dialog.ImportInvalidFiles()
-
-        matrix, matrix_filename = self.OpenOtherFiles(group)
-        self.CreateOtherProject(str(name[0]), matrix, matrix_filename)
         self.LoadProject()
         Publisher.sendMessage("Enable state project", True)
 
@@ -624,30 +572,6 @@ class Controller():
         Publisher.sendMessage('Update threshold limits list', scalar_range)
 
         return self.matrix, self.filename, dicom
-
-    def OpenOtherFiles(self, group):
-        # Retreaving matrix from image data
-        self.matrix, scalar_range, self.filename = image_utils.img2memmap(group)
-
-        hdr = group.header
-        hdr.set_data_dtype('int16')
-        dims = hdr.get_zooms()
-        dimsf = tuple([float(s) for s in dims])
-
-        wl = float((scalar_range[0] + scalar_range[1]) * 0.5)
-        ww = float((scalar_range[1] - scalar_range[0]))
-
-        self.Slice = sl.Slice()
-        self.Slice.matrix = self.matrix
-        self.Slice.matrix_filename = self.filename
-
-        self.Slice.spacing = dimsf
-        self.Slice.window_level = wl
-        self.Slice.window_width = ww
-
-        scalar_range = int(scalar_range[0]), int(scalar_range[1])
-        Publisher.sendMessage('Update threshold limits list', scalar_range)
-        return self.matrix, self.filename
 
     def LoadImagedataInfo(self):
         proj = prj.Project()

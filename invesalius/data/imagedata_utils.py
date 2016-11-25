@@ -21,6 +21,7 @@ import math
 import os
 import tempfile
 
+import gdcm
 import numpy
 import vtk
 import vtkgdcm
@@ -50,7 +51,7 @@ def ResampleImage3D(imagedata, value):
     resolution = (height/(extent[1]-extent[0])+1)*spacing[1]
 
     resample = vtk.vtkImageResample()
-    resample.SetInputData(imagedata)
+    resample.SetInput(imagedata)
     resample.SetAxisMagnificationFactor(0, resolution)
     resample.SetAxisMagnificationFactor(1, resolution)
 
@@ -83,7 +84,7 @@ def ResampleImage2D(imagedata, px=None, py=None, resolution_percentage = None,
     factor_y = py/float(f+1)
 
     resample = vtk.vtkImageResample()
-    resample.SetInputData(imagedata)
+    resample.SetInput(imagedata)
     resample.SetAxisMagnificationFactor(0, factor_x)
     resample.SetAxisMagnificationFactor(1, factor_y)
     resample.SetOutputSpacing(spacing[0] * factor_x, spacing[1] * factor_y, spacing[2])
@@ -148,20 +149,20 @@ def BuildEditedImage(imagedata, points):
             zf = z
 
     clip = vtk.vtkImageClip()
-    clip.SetInputData(imagedata)
+    clip.SetInput(imagedata)
     clip.SetOutputWholeExtent(xi, xf, yi, yf, zi, zf)
     clip.Update()
 
     gauss = vtk.vtkImageGaussianSmooth()
-    gauss.SetInputConnection(clip.GetOutputPort())
+    gauss.SetInput(clip.GetOutput())
     gauss.SetRadiusFactor(0.6)
     gauss.Update()
 
     app = vtk.vtkImageAppend()
     app.PreserveExtentsOn()
     app.SetAppendAxis(2)
-    app.SetInputData(0, imagedata)
-    app.SetInputData(1, gauss.GetOutput())
+    app.SetInput(0, imagedata)
+    app.SetInput(1, gauss.GetOutput())
     app.Update()
 
     return app.GetOutput()
@@ -188,7 +189,7 @@ def Import(filename):
 
 def View(imagedata):
     viewer = vtk.vtkImageViewer()
-    viewer.SetInputData(imagedata)
+    viewer.SetInput(imagedata)
     viewer.SetColorWindow(200)
     viewer.SetColorLevel(100)
     viewer.Render()
@@ -198,7 +199,7 @@ def View(imagedata):
 
 def ViewGDCM(imagedata):
     viewer = vtkgdcm.vtkImageColorViewer()
-    viewer.SetInputConnection(reader.GetOutputPort())
+    viewer.SetInput(reader.GetOutput())
     viewer.SetColorWindow(500.)
     viewer.SetColorLevel(50.)
     viewer.Render()
@@ -215,7 +216,7 @@ def ExtractVOI(imagedata,xi,xf,yi,yf,zi,zf):
     """
     voi = vtk.vtkExtractVOI()
     voi.SetVOI(xi,xf,yi,yf,zi,zf)
-    voi.SetInputData(imagedata)
+    voi.SetInput(imagedata)
     voi.SetSampleRate(1, 1, 1)
     voi.Update()
     return voi.GetOutput()
@@ -415,7 +416,6 @@ class ImageCreator:
 
         return imagedata
 
-
 def dcm2memmap(files, slice_size, orientation, resolution_percentage):
     """
     From a list of dicom files it creates memmap file in the temp folder and
@@ -493,55 +493,41 @@ def dcm2memmap(files, slice_size, orientation, resolution_percentage):
 
     return matrix, scalar_range, temp_file
 
-
-def img2memmap(group):
-    """
-    From a nibabel image data creates a memmap file in the temp folder and
-    returns it and its related filename.
-    """
-
+def analyze2mmap(analyze):
+    data = analyze.get_data()
+    header = analyze.get_header()
     temp_file = tempfile.mktemp()
 
-    data = group.get_data()
-    # Normalize image pixel values and convert to int16
-    data = imgnormalize(data)
+    # Sagital
+    if header['orient'] == 2:
+        print "Orientation Sagital"
+        shape = tuple([data.shape[i] for i in (1, 2, 0)])
+        matrix = numpy.memmap(temp_file, mode='w+', dtype=data.dtype, shape=shape)
+        for n, slice in enumerate(data):
+            matrix[:,:, n] = slice
 
-    # Convert RAS+ to default InVesalius orientation ZYX
-    data = numpy.swapaxes(data, 0, 2)
-    data = numpy.fliplr(data)
+    # Coronal
+    elif header['orient'] == 1:
+        print "Orientation coronal"
+        shape = tuple([data.shape[i] for i in (1, 0, 2)])
+        matrix = numpy.memmap(temp_file, mode='w+', dtype=data.dtype, shape=shape)
+        for n, slice in enumerate(data):
+            matrix[:,n,:] = slice
 
-    matrix = numpy.memmap(temp_file, mode='w+', dtype=data.dtype, shape=data.shape)
-    matrix[:] = data[:]
-    matrix.flush()
+    # AXIAL
+    elif header['orient'] == 0:
+        print "no orientation"
+        shape = tuple([data.shape[i] for i in (0, 1, 2)])
+        matrix = numpy.memmap(temp_file, mode='w+', dtype=data.dtype, shape=shape)
+        for n, slice in enumerate(data):
+            matrix[n] = slice
 
-    scalar_range = numpy.amin(matrix), numpy.amax(matrix)
-
-    return matrix, scalar_range, temp_file
-
-
-def imgnormalize(data, srange=(0, 255)):
-    """
-    Normalize image pixel intensity for int16 gray scale values.
-
-    :param data: image matrix
-    :param srange: range for normalization, default is 0 to 255
-    :return: normalized pixel intensity matrix
-    """
-
-    dataf = numpy.asarray(data)
-    rangef = numpy.asarray(srange)
-    faux = numpy.ravel(dataf).astype(float)
-    minimum = numpy.min(faux)
-    maximum = numpy.max(faux)
-    lower = rangef[0]
-    upper = rangef[1]
-
-    if minimum == maximum:
-        datan = numpy.ones(dataf.shape)*(upper + lower) / 2.
     else:
-        datan = (faux-minimum)*(upper-lower) / (maximum-minimum) + lower
+        print "Orientation Sagital"
+        shape = tuple([data.shape[i] for i in (1, 2, 0)])
+        matrix = numpy.memmap(temp_file, mode='w+', dtype=data.dtype, shape=shape)
+        for n, slice in enumerate(data):
+            matrix[:,:, n] = slice
 
-    datan = numpy.reshape(datan, dataf.shape)
-    datan = datan.astype(numpy.int16)
-
-    return datan
+    matrix.flush()
+    return matrix, temp_file

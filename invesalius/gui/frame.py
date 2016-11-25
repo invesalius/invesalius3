@@ -370,11 +370,7 @@ class Frame(wx.Frame):
         elif id == const.ID_PROJECT_OPEN:
             self.ShowOpenProject()
         elif id == const.ID_ANALYZE_IMPORT:
-            self.ShowImportOtherFiles(id)
-        elif id == const.ID_NIFTI_IMPORT:
-            self.ShowImportOtherFiles(id)
-        elif id == const.ID_PARREC_IMPORT:
-            self.ShowImportOtherFiles(id)
+            self.ShowAnalyzeImporter()
         elif id == const.ID_PROJECT_SAVE:
             session = ses.Session()
             if session.temp_item:
@@ -431,6 +427,7 @@ class Frame(wx.Frame):
         Publisher.sendMessage(('ProgressBar Reposition'))
         self.sizeChanged = False
 
+
     def OnMove(self, evt):
         aui_manager = self.aui_manager
         pos = aui_manager.GetPane("Data").window.GetScreenPosition()
@@ -480,12 +477,6 @@ class Frame(wx.Frame):
         """
         Publisher.sendMessage('Show import directory dialog')
 
-    def ShowImportOtherFiles(self, id_file):
-        """
-        Show import Analyze, NiFTI1 or PAR/REC dialog.
-        """
-        Publisher.sendMessage('Show import other files dialog', id_file)
-
     def ShowRetrieveDicomPanel(self):
         Publisher.sendMessage('Show retrieve dicom panel')
 
@@ -500,6 +491,12 @@ class Frame(wx.Frame):
         Show save as dialog.
         """
         Publisher.sendMessage('Show save dialog', True)
+
+    def ShowAnalyzeImporter(self):
+        """
+        Show save as dialog.
+        """
+        Publisher.sendMessage('Show analyze dialog', True)
 
     def FlipVolume(self, axis):
         Publisher.sendMessage('Flip volume', axis)
@@ -574,9 +571,7 @@ class MenuBar(wx.MenuBar):
 
         #Import Others Files
         others_file_menu = wx.Menu()
-        others_file_menu.Append(const.ID_ANALYZE_IMPORT, _("Analyze 7.5"))
-        others_file_menu.Append(const.ID_NIFTI_IMPORT, _("NIfTI 1"))
-        others_file_menu.Append(const.ID_PARREC_IMPORT, _("PAR/REC"))
+        others_file_menu.Append(const.ID_ANALYZE_IMPORT, "Analyze")
 
         # FILE
         file_menu = wx.Menu()

@@ -165,7 +165,7 @@ class MeasurementManager(object):
             self.measures.append(self.current)
             name = m.name
             colour = m.colour
-            m.value = mr.GetValue
+            m.value = mr.GetValue()
             type_ = TYPE[type]
             location = LOCATION[location]
             if type == const.LINEAR:
