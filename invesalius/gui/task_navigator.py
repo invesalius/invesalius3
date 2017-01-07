@@ -27,9 +27,10 @@ from wx.lib.pubsub import pub as Publisher
 
 import invesalius.constants as const
 import invesalius.data.bases as db
-import invesalius.data.corregistration as dcr
-import invesalius.data.trackers as dt
 import invesalius.data.coordinates as dco
+import invesalius.data.coregistration as dcr
+import invesalius.data.tms_trigger as tms
+import invesalius.data.trackers as dt
 import invesalius.gui.dialogs as dlg
 import invesalius.gui.widgets.foldpanelbar as fpb
 import invesalius.gui.widgets.colourselect as csel
@@ -191,6 +192,7 @@ class NeuronavigationTools(wx.Panel):
         self.ref_mode_id = const.DEFAULT_REF_MODE
 
         self.trk_init = None
+        self.plhButton = False
 
         #Combo Box
         self.choice_tracker = wx.ComboBox(self, -1, "",
@@ -384,6 +386,7 @@ class NeuronavigationTools(wx.Panel):
         Publisher.subscribe(self.__update_points_img, 'Update cross position')
         Publisher.subscribe(self.__update_points_trck, 'Update tracker position')
         Publisher.subscribe(self.__load_points_img, 'Load Fiducial')
+        Publisher.subscribe(self.__StylusStatus, 'Stylus Button')
 
     def __update_points_img(self, pubsub_evt):
         x, y, z = pubsub_evt.data
@@ -435,6 +438,9 @@ class NeuronavigationTools(wx.Panel):
             self.Load_Ref_RTI(coord)
         elif load == "NI":
             self.Load_Ref_NI(coord)
+
+    def __StylusStatus(self, pubsub_evt):
+        self.plhButton = pubsub_evt.data
 
     def Load_Ref_LTI(self,coord):
         img_id = self.button_img_ref1.GetValue()
@@ -611,11 +617,13 @@ class NeuronavigationTools(wx.Panel):
                 tooltip = wx.ToolTip(_("Stop neuronavigation"))
                 self.button_neuronavigate.SetToolTip(tooltip)
                 self.Enable_Disable_buttons(False)
-                self.Corregistration()
+                self.Coregister()
                 bases = self.Minv, self.N, self.q1, self.q2
-                tracker_mode = self.trk_init, self.tracker_id, self.ref_mode_id
+                tracker_mode = self.trk_init, self.tracker_id, self.ref_mode_id, self.plhButton
                 self.Calculate_FRE()
-                self.correg = dcr.Corregistration(bases, nav_id, tracker_mode)
+                self.correg = dcr.Coregistration(bases, nav_id, tracker_mode)
+                #self.plh = tms.PLHbutton(nav_id)
+                self.TMS = tms.Trigger(nav_id)
             else:
                 dlg.InvalidReferences()
                 self.button_neuronavigate.SetValue(False)
@@ -624,6 +632,8 @@ class NeuronavigationTools(wx.Panel):
             tooltip = wx.ToolTip(_("Start neuronavigation"))
             self.button_neuronavigate.SetToolTip(tooltip)
             self.correg.stop()
+            #self.plh.stop()
+            self.TMS.stop()
 
     def Enable_Disable_buttons(self,status):
         self.choice_ref_mode.Enable(status)
@@ -763,7 +773,7 @@ class NeuronavigationTools(wx.Panel):
         self.numCtrl3f.SetValue(0)
         self.aux_trck3 = 0
 
-    def Corregistration(self):
+    def Coregister(self):
         self.M, self.q1, self.Minv = db.base_creation(self.coord1a,
                                                       self.coord2a,
                                                       self.coord3a)
@@ -810,13 +820,13 @@ class ObjectWNeuronavigation(wx.Panel):
         #Line 3
         correg_object= wx.Button(self, -1, label=_('Object registration'), size = wx.Size(125,23))
         correg_object.Bind(wx.EVT_BUTTON, self.OnCorregObject)
-
+         
         self.button_img_inio = wx.ToggleButton(self, IR3, label = _('INO'), size = wx.Size(30,23))
         self.button_img_inio.Bind(wx.EVT_TOGGLEBUTTON, self.Img_Inio_ToggleButton)
-
-        self.showObj = wx.CheckBox(self, -1, _('Show object'), (10, 10))
-        self.showObj.SetValue(False)
-        wx.EVT_CHECKBOX(self, self.showObj.GetId(), self.ShowObject)
+         
+        self.plhButton = wx.CheckBox(self, -1, _('Activate Polhemus stylus button'), (10, 10))
+        self.plhButton.SetValue(False)
+        wx.EVT_CHECKBOX(self, self.plhButton.GetId(), self.PlhButton)
 
         self.numCtrl1I = wx.lib.masked.numctrl.NumCtrl(
              name='numCtrl1I', parent=self, integerWidth = 4, fractionWidth = 1)
@@ -828,18 +838,18 @@ class ObjectWNeuronavigation(wx.Panel):
         line2 = wx.FlexGridSizer(rows=1, cols=2, hgap=5, vgap=5)
         line2.AddMany([(choice_object, 1,wx.EXPAND|wx.LEFT|wx.TOP),
                        (correg_object, 1, wx.GROW|wx.EXPAND|wx.RIGHT|wx.TOP)])
-
+         
         line3 = wx.FlexGridSizer(rows=1, cols=4, hgap=5, vgap=5)
         line3.AddMany([(self.button_img_inio),
                         (self.numCtrl1I),
                         (self.numCtrl2I),
                         (self.numCtrl3I)])
-
-        main_sizer = wx.BoxSizer(wx.VERTICAL)
-        main_sizer.Add(text_choice, 0,wx.GROW|wx.EXPAND|wx.LEFT|wx.RIGHT|wx.TOP|wx.BOTTOM, 5)
-        main_sizer.Add(line2, 0,  wx.ALIGN_CENTER, 5)
+         
+        main_sizer = wx.BoxSizer(wx.VERTICAL)        
+        main_sizer.Add(text_choice, 0,wx.GROW|wx.EXPAND|wx.LEFT|wx.RIGHT|wx.TOP|wx.BOTTOM, 5)        
+        main_sizer.Add(line2, 0,  wx.ALIGN_CENTER, 5)                  
         main_sizer.Add(line3, 0,  wx.ALIGN_CENTER|wx.LEFT|wx.RIGHT|wx.BOTTOM|wx.TOP, 5)
-        main_sizer.Add(self.showObj, 0,  wx.ALIGN_RIGHT|wx.LEFT|wx.RIGHT|wx.BOTTOM|wx.TOP, 5)
+        main_sizer.Add(self.plhButton, 0,  wx.ALIGN_RIGHT|wx.LEFT|wx.RIGHT|wx.BOTTOM|wx.TOP, 5)
         self.sizer = main_sizer
         self.SetSizer(main_sizer)
         self.Fit()
@@ -905,7 +915,7 @@ class ObjectWNeuronavigation(wx.Panel):
                                             nav_prop = nav_prop)
         try:
             if self.dialog.ShowModal() == wx.ID_OK:
-
+              
                 coil_orient, self.coil_axis = self.dialog.GetValue
                 self.showObj.SetValue(True)
                 self.angle_tracking()
@@ -924,10 +934,13 @@ class ObjectWNeuronavigation(wx.Panel):
         Publisher.sendMessage('Track Coil Angle', (self.coil_axis,
                                                    self.ap_axis))
         Publisher.sendMessage('Change Init Coil Angle', coil_orient)
-
-
-    def ShowObject(self, evt):
-        Publisher.sendMessage('Hide Show Object', self.showObj.Value)
+            
+              
+    def PlhButton(self, evt):
+        #TODO: PLHbutton checkbox
+        None
+        #wx.CallAfter(Publisher.sendMessage, 'Stylus Button', self.plhButton.Value)
+        #Publisher.sendMessage('Hide Show Object', self.showObj.Value)
 
     def angle_tracking(self):
         # self.ap_axis = db.AP_calculus(self.img_inio, self.coord3a)
@@ -938,13 +951,13 @@ class ObjectWNeuronavigation(wx.Panel):
         self.ap_axis = p1 - p2
 
 #===============================================================================
-#===============================================================================
+#===============================================================================        
 class Markers(wx.Panel):
     def __init__(self, parent):
         wx.Panel.__init__(self, parent)
         default_colour = wx.SystemSettings_GetColour(wx.SYS_COLOUR_MENUBAR)
         self.SetBackgroundColour(default_colour)
-
+        
         self.ijk = 0, 0, 0
         self.flagpoint1 = 0
         self.ballid = 0
@@ -1031,6 +1044,7 @@ class Markers(wx.Panel):
         Publisher.subscribe(self.GetPoint, 'Update cross position')
         Publisher.subscribe(self.DelSingleMarker, 'Delete fiducial marker')
         Publisher.subscribe(self.Fiducial_markers, 'Create fiducial markers')
+        Publisher.subscribe(self.OnCreateMarker, 'Create markers')
 
     def menu(self, evt):
         menu = wx.Menu()
@@ -1120,20 +1134,20 @@ class Markers(wx.Panel):
             Publisher.sendMessage('Remove Single Marker', index)
         else:
             dlg.NoDataSelected()
-
+    
     def GetPoint(self, pubsub_evt):
         self.ijk = pubsub_evt.data
         ##print "ijk: ", self.ijk
-
+        
         """pt_id = self.imagedata.FindPoint(self.xyz)
         pt_id = self.ijk
         #print "pt_id: ", pt_id
-
+        
         rest = pt_id%(256*256)
-        i = rest/256 + 1
+        i = rest/256 + 1 
         j = rest%256 + 1
         k = (pt_id/(256*256)) + 1"""
-
+                   
     def OnCreateMarker(self, evt):
         coord = self.ijk
         self.CreateMarker(coord, self.colour, self.spin.GetValue())
@@ -1170,7 +1184,7 @@ class Markers(wx.Panel):
         elif flag5 == False:
             Publisher.sendMessage('Show balls',  ballid)
             self.markers_visibility.SetLabel('Hide')
-
+            
     def OnSaveMarkers(self, evt):
         filename = dlg.ShowSaveMarkersDialog("Markers.txt")
         if filename is not None:
@@ -1189,7 +1203,7 @@ class Markers(wx.Panel):
             text_file.close()
         else:
             None
-
+    
     def OnSelectColour(self, evt):
         self.colour = [value/255.0 for value in self.marker_colour.GetValue()]
 

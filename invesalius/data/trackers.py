@@ -14,8 +14,8 @@ class Tracker:
             import pyclaron
 
             trck_init = pyclaron.pyclaron()
-            trck_init.CalibrationDir = "../objects/mtc_files/CalibrationFiles"
-            trck_init.MarkerDir = "../objects/mtc_files/Markers"
+            trck_init.CalibrationDir = "../navigation/mtc_files/CalibrationFiles"
+            trck_init.MarkerDir = "../navigation/mtc_files/Markers"
             trck_init.NumberFramesProcessed = 10
             trck_init.FramesExtrapolated = 0
             trck_init.Initialize()
