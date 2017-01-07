@@ -141,7 +141,7 @@ class Text(object):
                                                     position[1])
 
     def GetPosition(self, position):
-        self.actor.GetPositionCoordinate().GetValue
+        self.actor.GetPositionCoordinate().GetValue()
 
     def SetJustificationToRight(self):
         self.property.SetJustificationToRight()
@@ -209,7 +209,7 @@ class TextZero(object):
                                                     position[1])
 
     def GetPosition(self, position):
-        self.actor.GetPositionCoordinate().GetValue
+        self.actor.GetPositionCoordinate().GetValue()
 
     def SetJustificationToRight(self):
         self.property.SetJustificationToRight()

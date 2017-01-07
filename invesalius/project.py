@@ -239,7 +239,7 @@ class Project(object):
         # Saving the measurements
         measurements = self.GetMeasuresDict()
         measurements_filename = 'measurements.plist'
-        temp_mplist = tempfile.mktemp()
+        temp_mplist = tempfile.mktemp() 
         plistlib.writePlist(measurements, 
                             temp_mplist)
         filelist[temp_mplist] = measurements_filename
@@ -275,7 +275,7 @@ class Project(object):
             fow.SetFileName(log_path)
             ow = vtk.vtkOutputWindow()
             ow.SetInstance(fow)
-
+            
         filelist = Extract(filename, tempfile.mkdtemp())
         dirpath = os.path.abspath(os.path.split(filelist[0])[0])
 

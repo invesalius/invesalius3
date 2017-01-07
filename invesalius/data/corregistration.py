@@ -5,7 +5,7 @@ import numpy
 import wx
 from wx.lib.pubsub import pub as Publisher
 
-import data.coordinates as co
+import invesalius.data.coordinates as co
 
 
 class Corregistration(threading.Thread):

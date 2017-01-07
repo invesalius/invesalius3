@@ -22,7 +22,7 @@ import os
 import vtk
 import nibabel as nib
 
-import constants as const
+import invesalius.constants as const
 
 
 def ReadOthers(dir_):

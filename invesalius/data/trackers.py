@@ -1,5 +1,4 @@
-import sys
-import gui.dialogs as dlg
+import invesalius.gui.dialogs as dlg
 
 #TODO: Disconnect tracker when a new one is connected
 class Tracker:

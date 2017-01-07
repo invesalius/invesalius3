@@ -541,7 +541,7 @@ class Frame(wx.Frame):
         Show import DICOM panel. as dicom        """
         Publisher.sendMessage('Show import directory dialog')
 
-	def ShowImportOtherFiles(self, id_file):
+    def ShowImportOtherFiles(self, id_file):
         """
         Show import Analyze, NiFTI1 or PAR/REC dialog.
         """

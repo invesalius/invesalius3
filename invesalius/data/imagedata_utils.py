@@ -21,6 +21,7 @@ import math
 import os
 import tempfile
 
+import gdcm
 import numpy
 import vtk
 import vtkgdcm
@@ -51,7 +52,7 @@ def ResampleImage3D(imagedata, value):
     resolution = (height/(extent[1]-extent[0])+1)*spacing[1]
 
     resample = vtk.vtkImageResample()
-    resample.SetInputData(imagedata)
+    resample.SetInput(imagedata)
     resample.SetAxisMagnificationFactor(0, resolution)
     resample.SetAxisMagnificationFactor(1, resolution)
 
@@ -149,20 +150,20 @@ def BuildEditedImage(imagedata, points):
             zf = z
 
     clip = vtk.vtkImageClip()
-    clip.SetInputData(imagedata)
+    clip.SetInput(imagedata)
     clip.SetOutputWholeExtent(xi, xf, yi, yf, zi, zf)
     clip.Update()
 
     gauss = vtk.vtkImageGaussianSmooth()
-    gauss.SetInputConnection(clip.GetOutputPort())
+    gauss.SetInput(clip.GetOutput())
     gauss.SetRadiusFactor(0.6)
     gauss.Update()
 
     app = vtk.vtkImageAppend()
     app.PreserveExtentsOn()
     app.SetAppendAxis(2)
-    app.SetInputData(0, imagedata)
-    app.SetInputData(1, gauss.GetOutput())
+    app.SetInput(0, imagedata)
+    app.SetInput(1, gauss.GetOutput())
     app.Update()
 
     return app.GetOutput()
@@ -189,7 +190,7 @@ def Import(filename):
 
 def View(imagedata):
     viewer = vtk.vtkImageViewer()
-    viewer.SetInputData(imagedata)
+    viewer.SetInput(imagedata)
     viewer.SetColorWindow(200)
     viewer.SetColorLevel(100)
     viewer.Render()
@@ -199,7 +200,7 @@ def View(imagedata):
 
 def ViewGDCM(imagedata):
     viewer = vtkgdcm.vtkImageColorViewer()
-    viewer.SetInputConnection(reader.GetOutputPort())
+    viewer.SetInput(reader.GetOutput())
     viewer.SetColorWindow(500.)
     viewer.SetColorLevel(50.)
     viewer.Render()
@@ -216,7 +217,7 @@ def ExtractVOI(imagedata,xi,xf,yi,yf,zi,zf):
     """
     voi = vtk.vtkExtractVOI()
     voi.SetVOI(xi,xf,yi,yf,zi,zf)
-    voi.SetInputData(imagedata)
+    voi.SetInput(imagedata)
     voi.SetSampleRate(1, 1, 1)
     voi.Update()
     return voi.GetOutput()
@@ -513,6 +514,7 @@ def bitmap2memmap(files, slice_size, orientation, spacing, resolution_percentage
     scalar_range = min_scalar, max_scalar
 
     return matrix, scalar_range, temp_file
+
 
 
 def dcm2memmap(files, slice_size, orientation, resolution_percentage):

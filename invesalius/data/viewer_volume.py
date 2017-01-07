@@ -579,7 +579,7 @@ class Viewer(wx.Panel):
             if filetype == const.FILETYPE_POV:
                 renwin = self.interactor.GetRenderWindow()
                 image = vtk.vtkWindowToImageFilter()
-                image.SetInputData(renwin)
+                image.SetInput(renwin)
                 writer = vtk.vtkPOVExporter()
                 writer.SetFileName(filename)
                 writer.SetRenderWindow(renwin)
@@ -587,7 +587,7 @@ class Viewer(wx.Panel):
             else:
                 #Use tiling to generate a large rendering.
                 image = vtk.vtkRenderLargeImage()
-                image.SetInputData(self.ren)
+                image.SetInput(self.ren)
                 image.SetMagnification(1)
                 image.Update()
 
@@ -663,7 +663,7 @@ class Viewer(wx.Panel):
         point.SetRadius(radius)
 
         mapper = vtk.vtkPolyDataMapper()
-        mapper.SetInputConnection(point.GetOutputPort())
+        mapper.SetInput(point.GetOutput())
 
         p = vtk.vtkProperty()
         p.SetColor(colour)
@@ -919,28 +919,28 @@ class Viewer(wx.Panel):
             writer = vtk.vtkRIBExporter()
             writer.SetFilePrefix(fileprefix)
             writer.SetTexturePrefix(fileprefix)
-            writer.SetInputData(renwin)
+            writer.SetInput(renwin)
             writer.Write()
         elif filetype == const.FILETYPE_VRML:
             writer = vtk.vtkVRMLExporter()
             writer.SetFileName(filename)
-            writer.SetInputData(renwin)
+            writer.SetInput(renwin)
             writer.Write()
         elif filetype == const.FILETYPE_X3D:
             writer = vtk.vtkX3DExporter()
-            writer.SetInputData(renwin)
+            writer.SetInput(renwin)
             writer.SetFileName(filename)
             writer.Update()
             writer.Write()
         elif filetype == const.FILETYPE_OBJ:
             writer = vtk.vtkOBJExporter()
             writer.SetFilePrefix(fileprefix)
-            writer.SetInputData(renwin)
+            writer.SetInput(renwin)
             writer.Write()
         elif filetype == const.FILETYPE_IV:
             writer = vtk.vtkIVExporter()
             writer.SetFileName(filename)
-            writer.SetInputData(renwin)
+            writer.SetInput(renwin)
             writer.Write()
 
     def OnEnableBrightContrast(self, pubsub_evt):

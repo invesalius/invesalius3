@@ -1,7 +1,7 @@
 import numpy as np
 from wx.lib.pubsub import pub as Publisher
 
-import gui.dialogs as dlg
+import invesalius.gui.dialogs as dlg
 
 class Tracker:
     def __init__(self, trck_id):

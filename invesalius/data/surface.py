@@ -251,7 +251,7 @@ class SurfaceManager():
         normals.Update()
 
         mapper = vtk.vtkPolyDataMapper()
-        mapper.SetInputConnection(normals.GetOutputPort())
+        mapper.SetInputData(normals.GetOutput())
         mapper.ScalarVisibilityOff()
         mapper.ImmediateModeRenderingOn() # improve performance
 

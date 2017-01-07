@@ -20,17 +20,19 @@ import sys
 
 import numpy as np
 import wx
+import wx.lib.hyperlink as hl
 import wx.lib.masked.numctrl
+import wx.lib.platebtn as pbtn
 from wx.lib.pubsub import pub as Publisher
 
-import constants as const
-import data.bases as db
-import data.corregistration as dcr
-import data.trackers as dt
-import data.coordinates as dco
-import gui.dialogs as dlg
-import gui.widgets.foldpanelbar as fpb
-import gui.widgets.colourselect as csel
+import invesalius.constants as const
+import invesalius.data.bases as db
+import invesalius.data.corregistration as dcr
+import invesalius.data.trackers as dt
+import invesalius.data.coordinates as dco
+import invesalius.gui.dialogs as dlg
+import invesalius.gui.widgets.foldpanelbar as fpb
+import invesalius.gui.widgets.colourselect as csel
 
 
 class TaskPanel(wx.Panel):
@@ -552,7 +554,7 @@ class NeuronavigationTools(wx.Panel):
                         5 : dt.Tracker().ZebrisCMS20}
 
                 self.trk_init = trck[self.tracker_id]()
-				if self.trk_init is None:
+                if self.trk_init is None:
                     self.choice_tracker.SetSelection(0)
                     self.tracker_id = 0
 

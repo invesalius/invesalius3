@@ -36,7 +36,8 @@ import invesalius.reader.bitmap_reader as bmp
 import invesalius.reader.others_reader as oth
 import invesalius.session as ses
 
-import invesalius.utils as utils
+
+import invesalius.utils  as utils
 import invesalius.gui.dialogs as dialogs
 import subprocess
 import sys
@@ -70,9 +71,9 @@ class Controller():
         Publisher.subscribe(self.OnShowDialogSaveProject, 'Show save dialog')
 
         Publisher.subscribe(self.LoadRaycastingPreset,
-                            'Load raycasting preset')
+                                 'Load raycasting preset')
         Publisher.subscribe(self.SaveRaycastingPreset,
-                            'Save raycasting preset')
+                                 'Save raycasting preset')
         Publisher.subscribe(self.OnOpenDicomGroup,
                                  'Open DICOM group')
         Publisher.subscribe(self.OnOpenBitmapFiles,
@@ -369,7 +370,7 @@ class Controller():
 
     def StartImportPanel(self, path):
 
-        # retrieve DICOM files splitted into groups
+        # retrieve DICOM files split into groups
         reader = dcm.ProgressDicomReader()
         reader.SetWindowEvent(self.frame)
         reader.SetDirectoryPath(path)
@@ -606,7 +607,7 @@ class Controller():
 
         dirpath = session.CreateProject(filename)
 
-	def CreateOtherProject(self, name, matrix, matrix_filename):
+    def CreateOtherProject(self, name, matrix, matrix_filename):
         name_to_const = {"AXIAL": const.AXIAL,
                          "CORONAL": const.CORONAL,
                          "SAGITTAL": const.SAGITAL}
@@ -640,7 +641,7 @@ class Controller():
 
         dirpath = session.CreateProject(filename)
 
-	def OnOpenBitmapFiles(self, pubsub_evt):
+    def OnOpenBitmapFiles(self, pubsub_evt):
         rec_data = pubsub_evt.data
         bmp_data = bmp.BitmapData()
 
