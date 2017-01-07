@@ -33,7 +33,6 @@ from wx.lib.wordwrap import wordwrap
 from wx.lib.pubsub import pub as Publisher
 
 import invesalius.constants as const
-import invesalius.data.bases as bases
 import invesalius.gui.widgets.gradient as grad
 import invesalius.session as ses
 import invesalius.utils as utils
@@ -770,7 +769,29 @@ def error_correg_fine():
     dlg.ShowModal()
     dlg.Destroy()
 
-# ===============================================================================
+def NoDataSelected():
+    msg = _("No data selected")
+    if sys.platform == 'darwin':
+        dlg = wx.MessageDialog(None, "", msg,
+                                wx.ICON_INFORMATION | wx.OK)
+    else:
+        dlg = wx.MessageDialog(None,msg, "InVesalius 3 - Neuronavigator",
+                                wx.ICON_INFORMATION | wx.OK)
+    dlg.ShowModal()
+    dlg.Destroy()
+
+def enter_ID(default):
+    msg = _("Edit ID")
+    if sys.platform == 'darwin':
+        dlg = wx.TextEntryDialog(None, "", msg, defaultValue=default)
+    else:
+        dlg = wx.TextEntryDialog(None, msg, "InVesalius 3", defaultValue=default)
+    dlg.ShowModal()
+    result = dlg.GetValue()
+    dlg.Destroy()
+    return result
+
+#===============================================================================
 
 class NewMask(wx.Dialog):
     def __init__(self,
@@ -1247,7 +1268,7 @@ class FineCalibration(wx.Window):
         # actors parameters
         self.color_head_init = 1.0, 0.0, 0.0
         self.color_cloud = 0.0, 1.0, 0.0
-        self.color_head_icp = 224.0 / 255.0, 201.0 / 255.0, 190.0 / 255.0
+        self.color_head_icp = 224.0/255.0, 201.0/255.0, 190.0/255.0
         self.opacity_head_init = 1.0
         self.opacity_cloud = 0.7
         self.opacity_head_icp = 1.0
@@ -1307,7 +1328,7 @@ class FineCalibration(wx.Window):
             if dlg.ShowModal() == wx.ID_OK:
                 # This returns a Python list of files that were selected.
                 filepath = dlg.GetPath()
-        except(wx._core.PyAssertionError):  # FIX: win64
+        except(wx._core.PyAssertionError): #FIX: win64
             filepath = dlg.GetPath()
 
         # Destroy the dialog. Don't do this until you are done with it!
@@ -1365,11 +1386,11 @@ class FineCalibration(wx.Window):
         self.spin_X = spin_X
 
         text_Y = wx.StaticText(self.panel, -1, _("Y:"))
-        spin_Y = wx.SpinCtrl(self.panel, -1, "Y", size=wx.Size(67, 23))
-        spin_Y.SetValue(0)
+        spin_Y = wx.SpinCtrl(self.panel, -1, "Y", size = wx.Size(67,23))
+        spin_Y .SetValue(0)
         spin_Y.Bind(wx.EVT_SPINCTRL, self.translate_rotate)
         spin_Y.Bind(wx.EVT_TEXT, self.translate_rotate)
-        spin_Y.SetRange(-500, 500)
+        spin_Y .SetRange(-500,500)
 
         self.spin_Y = spin_Y
 
@@ -1428,7 +1449,7 @@ class FineCalibration(wx.Window):
         #spin_mean= wx.SpinCtrl(self.panel, 1, "mean", size = wx.Size(107,23))
         spin_mean = floatspin.FloatSpin(self.panel,-1,value=0.01, min_val=0.0,max_val=10.0, increment=0.01, digits=2)
 
-        #spin_mean.SetValue(0.01)                                  
+        #spin_mean.SetValue(0.01)
         #spin_mean .SetRange(0,10)
 #       spin_Z .SetValue()
         self.spin_mean = spin_mean
@@ -1445,7 +1466,7 @@ class FineCalibration(wx.Window):
 
         ok = wx.Button(self.panel, wx.ID_OK)
         ok.Bind(wx.EVT_BUTTON, self.OK)
-        cancel = wx.Button(self.panel, wx.ID_CANCEL)
+        cancel = wx.Button(self.panel,wx.ID_CANCEL)
         cancel.Bind(wx.EVT_BUTTON, self.CANCEL)
 
         checkb = wx.FlexGridSizer(rows=3, cols=1, hgap=1, vgap=1)
@@ -1466,11 +1487,11 @@ class FineCalibration(wx.Window):
                       (cancel, 1)])
 
         button_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        button_sizer.Add(col1, 0, wx.EXPAND | wx.ALL, 10)
-        button_sizer.Add(checkb, 0, wx.EXPAND | wx.ALL, 10)
-        button_sizer.Add(spinicp, 0, wx.EXPAND | wx.ALL, 10)
-        button_sizer.Add(spin, 0, wx.EXPAND | wx.ALL, 10)
-        button_sizer.Add(col4, 0, wx.EXPAND | wx.ALL, 10)
+        button_sizer.Add(col1,0,wx.EXPAND | wx.ALL,10)
+        button_sizer.Add(checkb,0,wx.EXPAND | wx.ALL,10)
+        button_sizer.Add(spinicp,0,wx.EXPAND | wx.ALL,10)
+        button_sizer.Add(spin,0,wx.EXPAND | wx.ALL,10)
+        button_sizer.Add(col4,0,wx.EXPAND | wx.ALL,10)
         self.panel.SetSizer(button_sizer)
         # OVERVIEW
         # Merge all sizers and checkboxes
@@ -1764,7 +1785,6 @@ class FineCalibration(wx.Window):
 
     def LoadVolumeDLG(self, pubsub_evt):
         self.raycasting_volume = True
-
         #self._to_show_ball += 1
         #print "to show ball", self._to_show_ball
 
@@ -1791,8 +1811,8 @@ class FineCalibration(wx.Window):
         self.outline.SetMapper(mapoutline)
         self.outline.GetProperty().SetColor(0.0, 0.0, 1.0)
 
-def CreateSphereMarkers(self,ballsize,ballcolour,coord):
-
+    def CreateSphereMarkers(self,ballsize,ballcolour,coord):
+        import invesalius.data.bases as bases
         x, y, z = bases.flip_x(coord)
 
         ball_ref = vtk.vtkSphereSource()
@@ -2136,7 +2156,7 @@ class ObjectCalibration(wx.Dialog):
         # Merge all sizers and checkboxes
         sizer = wx.BoxSizer(wx.VERTICAL)
         sizer.Add(self.interactor, 0, wx.EXPAND)
-        sizer.Add(button_sizer, 0, wx.TOP | wx.RIGHT | wx.LEFT | wx.GROW | wx.EXPAND, 20)
+        sizer.Add(button_sizer, 0, wx.TOP|wx.RIGHT|wx.LEFT|wx.GROW|wx.EXPAND, 20)
 
         self.SetSizer(sizer)
         sizer.Fit(self)
@@ -2242,17 +2262,19 @@ class ObjectCalibration(wx.Dialog):
 
         # site http://met.fzu.edu.cn/cai/Matlab6.5/help/toolbox/aeroblks/directioncosinematrixtoeulerangles.html
         theta = np.rad2deg(-np.arcsin(dcm[0][2]))
-        phi = np.rad2deg(np.arctan(dcm[1][2] / dcm[2][2]))
-        psi = np.rad2deg(np.arctan(dcm[0][1] / dcm[0][0]))
+        phi = np.rad2deg(np.arctan(dcm[1][2]/dcm[2][2]))
+        psi = np.rad2deg(np.arctan(dcm[0][1]/dcm[0][0]))
 
         self.coilActor.RotateWXYZ(psi, 0, 0, 1)
         self.coilActor.RotateWXYZ(phi, 1, 0, 0)
         self.coilActor.RotateWXYZ(theta, 0, 1, 0)
         self.interactor.Render()
 
+
         print "\n===================================="
         print "orientation: ", self.coilActor.GetOrientation()
         print "====================================\n"
+
 
 
     def Reset(self, evt):
@@ -2298,9 +2320,9 @@ class ObjectCalibration(wx.Dialog):
         # theta == beta
         # psi == alpha
         # phi == gama
-        gama = np.rad2deg(np.arctan(m[1, 2] / m[2, 2]))
-        beta = np.rad2deg(np.arcsin(-m[0, 2]))
-        alpha = np.rad2deg(np.arctan(m[0, 1] / m[0, 0]))
+        gama = np.rad2deg(np.arctan(m[1,2]/m[2,2]))
+        beta = np.rad2deg(np.arcsin(-m[0,2]))
+        alpha = np.rad2deg(np.arctan(m[0,1]/m[0,0]))
 
         print "Angulos", gama, beta, alpha
 
