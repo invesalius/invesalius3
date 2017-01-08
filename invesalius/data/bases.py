@@ -3,7 +3,7 @@ import numpy as np
 
 
 def angle_calculation(ap_axis, coil_axis):
-    # Function to calculate the angle (in degrees) between two given axis
+    # Calculate angle between two given axis (in degrees)
     ap_axis = np.array([ap_axis[0], ap_axis[1]])
     coil_axis = np.array([float(coil_axis[0]), float(coil_axis[1])])
     angle = np.rad2deg(np.arccos((np.dot(ap_axis, coil_axis))/(
@@ -13,10 +13,10 @@ def angle_calculation(ap_axis, coil_axis):
 
 
 def base_creation(p1, p2, p3):
-    # Function to calculate the origin and matrix for coordinate system
+    # Calculate the origin and matrix for coordinate system
     # transformation.
     # q: origin of coordinate system
-    # g1, g2, g3: orthogonal vectors of the coordinate system
+    # g1, g2, g3: orthogonal vectors of coordinate system
 
     p1 = np.array([p1[0], p1[1], p1[2]])
     p2 = np.array([p2[0], p2[1], p2[2]])
@@ -54,16 +54,16 @@ def base_creation(p1, p2, p3):
 
 
 def flip_x(point):
-    # Function to flip the coordinates of a vector according to the X axis
+    # Flip coordinates of a vector according to X axis
 
     # TODO: check if the Flip function is related to the X or Y axis
-    # Coronal Images dont require this transformation - 1 tested
+    # Coronal Images do not require this transformation - 1 tested
     # and for this case, at navigation, the z axis is inverted
                
     # It's necessary to multiply the z coordinate by (-1). Possibly
     # because the origin of coordinate system of imagedata is
     # located in superior left corner and the origin of VTK scene coordinate
-    #  system (polygonal surface) is in the interior left corner. Second
+    # system (polygonal surface) is in the interior left corner. Second
     # possibility is the order of slice stacking
 
     point = np.matrix(point + (0,))

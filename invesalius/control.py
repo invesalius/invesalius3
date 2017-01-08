@@ -64,7 +64,7 @@ class Controller():
         Publisher.subscribe(self.OnShowDialogImportDirectory,
                                  'Show import directory dialog')
         Publisher.subscribe(self.OnShowDialogImportOtherFiles,
-                            	 'Show import other files dialog')
+                                 'Show import other files dialog')
         Publisher.subscribe(self.OnShowDialogOpenProject,
                                  'Show open project dialog')
 
@@ -80,7 +80,6 @@ class Controller():
                                  'Open bitmap files')
         Publisher.subscribe(self.OnOpenOtherFiles,
                                  'Open other files')
-
         Publisher.subscribe(self.Progress, "Update dicom load")
         Publisher.subscribe(self.Progress, "Update bitmap load")
         Publisher.subscribe(self.OnLoadImportPanel, "End dicom load")

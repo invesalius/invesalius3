@@ -490,6 +490,7 @@ class Frame(wx.Frame):
         Publisher.sendMessage(('ProgressBar Reposition'))
         self.sizeChanged = False
 
+
     def OnMove(self, evt):
         aui_manager = self.aui_manager
         pos = aui_manager.GetPane("Data").window.GetScreenPosition()

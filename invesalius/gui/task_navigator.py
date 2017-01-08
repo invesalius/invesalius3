@@ -519,7 +519,7 @@ class NeuronavigationTools(wx.Panel):
             #This condition allows the user writes the image coords
             if self.numCtrl1a.GetValue() != round(x, 1) or self.numCtrl2a.GetValue() != round(y,1) or self.numCtrl3a.GetValue() != round(z, 1):
                 self.coord1a = self.numCtrl1a.GetValue(), self.numCtrl2a.GetValue(), self.numCtrl3a.GetValue()
-                Publisher.sendMessage('Set camera in volume for Navigation', self.coord1a)
+                Publisher.sendMessage('Set camera in volume', self.coord1a[0:3])
                 Publisher.sendMessage('Co-registered Points', self.coord1a)
                 self.aux_img_ref1 = 1
                 Publisher.sendMessage("Create fiducial markers", (self.coord1a, "LTI"))
@@ -545,7 +545,7 @@ class NeuronavigationTools(wx.Panel):
             #This condition allows the user writes the image coords
             if self.numCtrl1b.GetValue() != round(x, 1) or self.numCtrl2b.GetValue() != round(y,1) or self.numCtrl3b.GetValue() != round(z, 1):
                 self.coord2a = self.numCtrl1b.GetValue(), self.numCtrl2b.GetValue(), self.numCtrl3b.GetValue()
-                Publisher.sendMessage('Set camera in volume for Navigation', self.coord2a)
+                Publisher.sendMessage('Set camera in volume', self.coord2a[0:3])
                 Publisher.sendMessage('Co-registered Points', self.coord2a)
                 self.aux_img_ref2 = 1
                 Publisher.sendMessage("Create fiducial markers", (self.coord2a, "RTI"))
@@ -571,7 +571,7 @@ class NeuronavigationTools(wx.Panel):
             #This condition allows the user writes the image coords
             if self.numCtrl1c.GetValue() != round(x, 1) or self.numCtrl2c.GetValue() != round(y,1) or self.numCtrl3c.GetValue() != round(z, 1):
                 self.coord3a = self.numCtrl1c.GetValue(), self.numCtrl2c.GetValue(), self.numCtrl3c.GetValue()
-                Publisher.sendMessage('Set camera in volume for Navigation', self.coord3a)
+                Publisher.sendMessage('Set camera in volume', self.coord3a[0:3])
                 Publisher.sendMessage('Co-registered Points', self.coord3a)
                 self.aux_img_ref3 = 1
                 Publisher.sendMessage("Create fiducial markers", (self.coord3a, "NI"))
@@ -595,7 +595,7 @@ class NeuronavigationTools(wx.Panel):
                # This condition allows the user writes the image coords
                if self.numCtrl1I.GetValue() != round(x,1) or self.numCtrl2I.GetValue() != round(y,1) or self.numCtrl3I.GetValue() != round(z,1):
                    self.img_T = self.numCtrl1I.GetValue(), self.numCtrl2I.GetValue(), self.numCtrl3I.GetValue()
-                   Publisher.sendMessage('Set camera in volume for Navigation', self.img_T)
+                   Publisher.sendMessage('Set camera in volume', self.img_T[0:3])
                    Publisher.sendMessage('Co-registered Points', self.img_T)
                    self.aux_img__T_ref = 1
                    self.coordT = np.array([self.numCtrl1I.GetValue(),self.numCtrl2I.GetValue(),self.numCtrl3I.GetValue()])
@@ -625,7 +625,7 @@ class NeuronavigationTools(wx.Panel):
                 #self.plh = tms.PLHbutton(nav_id)
                 self.TMS = tms.Trigger(nav_id)
             else:
-                dlg.InvalidReferences()
+                dlg.InvalidFiducials()
                 self.button_neuronavigate.SetValue(False)
         elif nav_id == False:
             self.Enable_Disable_buttons(True)
@@ -819,7 +819,7 @@ class ObjectWNeuronavigation(wx.Panel):
 
         #Line 3
         correg_object= wx.Button(self, -1, label=_('Object registration'), size = wx.Size(125,23))
-        correg_object.Bind(wx.EVT_BUTTON, self.OnCorregObject)
+        # correg_object.Bind(wx.EVT_BUTTON, self.OnCorregObject)
          
         self.button_img_inio = wx.ToggleButton(self, IR3, label = _('INO'), size = wx.Size(30,23))
         self.button_img_inio.Bind(wx.EVT_TOGGLEBUTTON, self.Img_Inio_ToggleButton)
@@ -870,7 +870,7 @@ class ObjectWNeuronavigation(wx.Panel):
 
     def __bind_events(self):
         Publisher.subscribe(self.correget, 'Corregistrate Object')
-        Publisher.subscribe(self.LoadParamObj, 'Load Param Obj')
+        # Publisher.subscribe(self.LoadParamObj, 'Load Param Obj')
         Publisher.subscribe(self.__update_points_img_INO, 'Update cross position')
 
     def __update_points_img_INO(self, pubsub_evt):
@@ -904,36 +904,37 @@ class ObjectWNeuronavigation(wx.Panel):
 ##
         print self.object_name
 
-    def OnCorregObject(self, evt):
-        id = evt.GetId()
-        coil_orient = None
-        bases = self.Minv, self.N, self.q1, self.q2
-        tracker_mode = self.trk_init, self.tracker_id, self.ref_mode_id
-        nav_prop = bases, tracker_mode, self.tracker_id
-        self.dialog = dlg.ObjectCalibration(self, -1,
-                                            _('InVesalius 3 - Calibration'),
-                                            nav_prop = nav_prop)
-        try:
-            if self.dialog.ShowModal() == wx.ID_OK:
-              
-                coil_orient, self.coil_axis = self.dialog.GetValue
-                self.showObj.SetValue(True)
-                self.angle_tracking()
-                Publisher.sendMessage('Change Init Coil Angle', coil_orient)
-                Publisher.sendMessage('Track Coil Angle', (self.coil_axis,
-                                                           self.ap_axis))
-        except wx.core.PyAssertionError:  # TODO FIX: win64
-            None
-#         print "coil_orient: ", coil_orient
-
+# remove to v1.0 of nav
+#     def OnCorregObject(self, evt):
+#         id = evt.GetId()
+#         coil_orient = None
+#         bases = self.Minv, self.N, self.q1, self.q2
+#         tracker_mode = self.trk_init, self.tracker_id, self.ref_mode_id
+#         nav_prop = bases, tracker_mode, self.tracker_id
+#         self.dialog = dlg.ObjectCalibration(self, -1,
+#                                             _('InVesalius 3 - Calibration'),
+#                                             nav_prop = nav_prop)
+#         try:
+#             if self.dialog.ShowModal() == wx.ID_OK:
 #
-    def LoadParamObj(self, pubsub_evt):
-        coil_orient, self.coil_axis = self.dialog.GetValue
-        self.showObj.SetValue(True)
-        self.angle_tracking()
-        Publisher.sendMessage('Track Coil Angle', (self.coil_axis,
-                                                   self.ap_axis))
-        Publisher.sendMessage('Change Init Coil Angle', coil_orient)
+#                 coil_orient, self.coil_axis = self.dialog.GetValue
+#                 self.showObj.SetValue(True)
+#                 self.angle_tracking()
+#                 Publisher.sendMessage('Change Init Coil Angle', coil_orient)
+#                 Publisher.sendMessage('Track Coil Angle', (self.coil_axis,
+#                                                            self.ap_axis))
+#         except wx.core.PyAssertionError:  # TODO FIX: win64
+#             None
+# #         print "coil_orient: ", coil_orient
+#
+# #
+#     def LoadParamObj(self, pubsub_evt):
+#         coil_orient, self.coil_axis = self.dialog.GetValue
+#         self.showObj.SetValue(True)
+#         self.angle_tracking()
+#         Publisher.sendMessage('Track Coil Angle', (self.coil_axis,
+#                                                    self.ap_axis))
+#         Publisher.sendMessage('Change Init Coil Angle', coil_orient)
             
               
     def PlhButton(self, evt):
@@ -1054,7 +1055,7 @@ class Markers(wx.Panel):
         menu.Destroy()
 
     def EditID(self,evt):
-        ID = dlg.enter_ID(self.lc.GetItemText(self.lc.GetFocusedItem(), 4))
+        ID = dlg.EnterMarkerID(self.lc.GetItemText(self.lc.GetFocusedItem(), 4))
         index = self.lc.GetFocusedItem()
         self.lc.SetStringItem(index, 4, ID)
         #add the new ID to exported list
@@ -1072,7 +1073,7 @@ class Markers(wx.Panel):
         colour = colour_data
         size = size_data
 
-        Publisher.sendMessage('Create ball', (self.ballid, size, colour,  coord))
+        Publisher.sendMessage('Add marker', (self.ballid, size, colour,  coord))
         self.ballid = self.ballid + 1
         #sum 1 for each coordinate to matlab comprehension
         #coord = coord[0] + 1.0, coord[1] + 1.0, coord[2] + 1.0
@@ -1101,7 +1102,7 @@ class Markers(wx.Panel):
 
     def OnDelMarker(self,pubsub_evt):
         self.list_coord = []
-        Publisher.sendMessage('Remove Markers', self.lc.GetItemCount())
+        Publisher.sendMessage('Remove all markers', self.lc.GetItemCount())
         self.lc.DeleteAllItems()
         self.ballid = 0
 
@@ -1131,9 +1132,9 @@ class Markers(wx.Panel):
             for x in range(0,self.lc.GetItemCount()):
                 self.lc.SetStringItem(x, 0, str(x+1))
             self.ballid = self.ballid - 1
-            Publisher.sendMessage('Remove Single Marker', index)
+            Publisher.sendMessage('Remove marker', index)
         else:
-            dlg.NoDataSelected()
+            dlg.NoMarkerSelected()
     
     def GetPoint(self, pubsub_evt):
         self.ijk = pubsub_evt.data
@@ -1170,8 +1171,8 @@ class Markers(wx.Panel):
                         self.fiducial_flag = 0
                     self.CreateMarker(coord, colour, size)
             except:
-                dlg.InvalidTxt()
-                raise ValueError('Invalid Txt File')
+                dlg.InvalidMarkersFile()
+                # raise ValueError('Invalid Markers File')
         else:
             None
 
@@ -1179,10 +1180,10 @@ class Markers(wx.Panel):
         ballid = self.lc.GetItemCount()
         flag5 = self.markers_visibility.GetValue()
         if flag5 == True:
-            Publisher.sendMessage('Hide balls',  ballid)
+            Publisher.sendMessage('Hide all markers',  ballid)
             self.markers_visibility.SetLabel('Show')
         elif flag5 == False:
-            Publisher.sendMessage('Show balls',  ballid)
+            Publisher.sendMessage('Show all markers',  ballid)
             self.markers_visibility.SetLabel('Hide')
             
     def OnSaveMarkers(self, evt):

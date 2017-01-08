@@ -639,8 +639,7 @@ BOOLEAN_DIFF = 2
 BOOLEAN_AND = 3
 BOOLEAN_XOR = 4
 
-#------------ Navigation Constants ------------
-#This constantes were created by Victor Hugo for the Neuronavigator task
+#------------ Navigation defaults -------------------
 MARKER_SIZE = 4
 
 SELECT = 0
@@ -648,20 +647,13 @@ MTC = 1
 FASTRAK = 2
 ISOTRAKII = 3
 PATRIOT = 4
-ZEBRIS = 5
 DEFAULT_TRACKER = SELECT
-#TRACKER = [_("Polhemus PATRIOT"), _("Polhemus PATRIOT"),
-#  _("Polhemus ISOTRAK II"), _("Claron MicronTracker"), _("Zebris CMS20")]
-TRACKER = [_("Select tracker:"),_("Claron MicronTracker"), _("Polhemus FASTRAK"),
-           _("Polhemus ISOTRAK II"),  _("Polhemus PATRIOT"), _("Zebris CMS20")]
 
+TRACKER = [_("Select tracker:"), _("Claron MicronTracker"),
+           _("Polhemus FASTRAK"), _("Polhemus ISOTRAK II"),
+           _("Polhemus PATRIOT")]
 
 STATIC_REF = 0
 DYNAMIC_REF = 1
 DEFAULT_REF_MODE = DYNAMIC_REF
 REF_MODE = [_("Static ref."), _("Dynamic ref.")]
-
-BUTTERFLY_COIL = 0
-CIRCULAR_COIL = 1
-DEFAULT_COIL = BUTTERFLY_COIL
-COILS = [_("Butterfly coil"),_("Circular coil")]
