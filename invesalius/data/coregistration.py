@@ -44,11 +44,6 @@ class Coregistration(threading.Thread):
 
             wx.CallAfter(Publisher.sendMessage, 'Set camera in volume', coord[0:3])
             wx.CallAfter(Publisher.sendMessage, 'Co-registered Points', coord[0:3])
-            # TODO: Create flag to check if coil angle must be tracked
-            # Code for angle tracking
-            # f_angles = trck_coord[3:6]
-            # wx.CallAfter(ps.Publisher().sendMessage, 'Change Coil Angle',
-            # f_angles)
 
             sleep(0.175)
 
