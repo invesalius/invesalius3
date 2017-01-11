@@ -12,15 +12,15 @@ def angle_calculation(ap_axis, coil_axis):
     return float(angle)
 
 
-def base_creation(p1, p2, p3):
+def base_creation(fiducials):
     # Calculate the origin and matrix for coordinate system
     # transformation.
     # q: origin of coordinate system
     # g1, g2, g3: orthogonal vectors of coordinate system
 
-    p1 = np.array([p1[0], p1[1], p1[2]])
-    p2 = np.array([p2[0], p2[1], p2[2]])
-    p3 = np.array([p3[0], p3[1], p3[2]])
+    p1 = fiducials[0, :]
+    p2 = fiducials[1, :]
+    p3 = fiducials[2, :]
 
     sub1 = p2 - p1
     sub2 = p3 - p1

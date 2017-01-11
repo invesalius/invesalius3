@@ -657,3 +657,29 @@ STATIC_REF = 0
 DYNAMIC_REF = 1
 DEFAULT_REF_MODE = DYNAMIC_REF
 REF_MODE = [_("Static ref."), _("Dynamic ref.")]
+
+IR1 = wx.NewId()
+IR2 = wx.NewId()
+IR3 = wx.NewId()
+TR1 = wx.NewId()
+TR2 = wx.NewId()
+TR3 = wx.NewId()
+REF = wx.NewId()
+
+BTNS_IMG = {IR1: {0: _('LEI')},
+            IR2: {1: _('REI')},
+            IR3: {2: _('NAI')},
+            REF: {6: _('REF')}}
+
+TIPS_IMG = [wx.ToolTip(_("Select left ear in image")),
+            wx.ToolTip(_("Select right ear in image")),
+            wx.ToolTip(_("Select nasion in image")),
+            wx.ToolTip(_("Select reference in image for target error calculation"))]
+
+BTNS_TRK = {TR1: {3: _('LET')},
+            TR2: {4: _('RET')},
+            TR3: {5: _('NAT')}}
+
+TIPS_TRK = [wx.ToolTip(_("Select left ear with spatial tracker")),
+            wx.ToolTip(_("Select right ear with spatial tracker")),
+            wx.ToolTip(_("Select nasion with spatial tracker"))]

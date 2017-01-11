@@ -23,6 +23,7 @@ import wx
 import wx.lib.hyperlink as hl
 import wx.lib.masked.numctrl
 import wx.lib.platebtn as pbtn
+from functools import partial
 from wx.lib.pubsub import pub as Publisher
 
 import invesalius.constants as const
@@ -34,15 +35,6 @@ import invesalius.data.trackers as dt
 import invesalius.gui.dialogs as dlg
 import invesalius.gui.widgets.foldpanelbar as fpb
 import invesalius.gui.widgets.colourselect as csel
-
-IR1 = wx.NewId()
-IR2 = wx.NewId()
-IR3 = wx.NewId()
-TR1 = wx.NewId()
-TR2 = wx.NewId()
-TR3 = wx.NewId()
-T = wx.NewId()
-NAV = wx.NewId()
 
 class TaskPanel(wx.Panel):
     def __init__(self, parent):
@@ -68,12 +60,12 @@ class InnerTaskPanel(wx.Panel):
         self.SetBackgroundColour(background_colour)
         self.SetAutoLayout(1)
 
-        text_nav = wx.StaticText(self, -1, _('Configure spatial tracker and coregistrate'),
-                                 size=wx.Size(90, 20))
+        txt_nav = wx.StaticText(self, -1, _('Select fiducials and navigate'),
+                                size=wx.Size(90, 20))
 
         # Create horizontal sizer to represent lines in the panel
-        line_new = wx.BoxSizer(wx.HORIZONTAL)
-        line_new.Add(text_nav, 1, wx.EXPAND|wx.GROW, 5)
+        txt_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        txt_sizer.Add(txt_nav, 1, wx.EXPAND|wx.GROW, 5)
 
         # Fold panel which contains navigation configurations
         fold_panel = FoldPanel(self)
@@ -81,7 +73,7 @@ class InnerTaskPanel(wx.Panel):
 
         # Add line sizer into main sizer
         main_sizer = wx.BoxSizer(wx.VERTICAL)
-        main_sizer.Add(line_new, 0, wx.GROW|wx.EXPAND|wx.LEFT|wx.RIGHT, 5)
+        main_sizer.Add(txt_sizer, 0, wx.GROW|wx.EXPAND|wx.LEFT|wx.RIGHT, 5)
         main_sizer.Add(fold_panel, 1, wx.GROW|wx.EXPAND|wx.LEFT|wx.RIGHT|wx.BOTTOM, 5)
         main_sizer.Fit(self)
 
@@ -130,7 +122,7 @@ class InnerFoldPanel(wx.Panel):
 
         # Fold 1 - Navigation panel
         item = fold_panel.AddFoldPanel(_("Neuronavigation"), collapsed=True)
-        ntw = NeuronavigationTools(item)
+        ntw = NeuronavigationPanel(item)
 
         fold_panel.ApplyCaptionStyle(item, style)
         fold_panel.AddFoldPanelWindow(item, ntw, Spacing= 0,
@@ -139,7 +131,7 @@ class InnerFoldPanel(wx.Panel):
 
         # Fold 2 - Markers panel
         item = fold_panel.AddFoldPanel(_("Extra tools"), collapsed=True)
-        mtw = Markers(item)
+        mtw = MarkersPanel(item)
 
         fold_panel.ApplyCaptionStyle(item, style)
         fold_panel.AddFoldPanelWindow(item, mtw, Spacing= 0,
@@ -155,7 +147,7 @@ class InnerFoldPanel(wx.Panel):
         self.SetAutoLayout(1)
 
 
-class NeuronavigationTools(wx.Panel):
+class NeuronavigationPanel(wx.Panel):
     def __init__(self, parent):
         wx.Panel.__init__(self, parent)
         default_colour = wx.SystemSettings_GetColour(wx.SYS_COLOUR_MENUBAR)
@@ -175,7 +167,7 @@ class NeuronavigationTools(wx.Panel):
         self.aux_trck1 = 0
         self.aux_trck2 = 0
         self.aux_trck3 = 0
-        self.a = 0, 0, 0
+        self.current_coord = 0, 0, 0
         self.coord1a = (0, 0, 0)
         self.coord2a = (0, 0, 0)
         self.coord3a = (0, 0, 0)
@@ -185,356 +177,253 @@ class NeuronavigationTools(wx.Panel):
         self.correg = None
         self.filename = None
         self.c1 = None
+
+        self.fiducials = np.full([6, 3], np.nan)
+
         self.tracker_id = const.DEFAULT_TRACKER
         self.ref_mode_id = const.DEFAULT_REF_MODE
 
         self.trk_init = None
 
         # Initialize list of buttons and numctrls for wx objects
-        self.Btn_coord = [None] * 7
-        self.NumCtrl_coord = [list(), list(), list(), list(), list(), list(), list()]
+        self.btns_coord = [None] * 7
+        self.numctrls_coord = [list(), list(), list(), list(), list(), list(), list()]
 
         # ComboBox for spatial tracker device selection
-        self.choice_tracker = wx.ComboBox(self, -1, "",
-                                          choices = const.TRACKER, style = wx.CB_DROPDOWN|wx.CB_READONLY)
-        self.choice_tracker.SetSelection(const.DEFAULT_TRACKER)
-        self.choice_tracker.Bind(wx.EVT_COMBOBOX, self.OnChoiceTracker)
+        tooltip = wx.ToolTip(_("Choose the tracking device"))
+        self.choice_trck = wx.ComboBox(self, -1, "",
+                                       choices=const.TRACKER, style=wx.CB_DROPDOWN|wx.CB_READONLY)
+        self.choice_trck.SetToolTip(tooltip)
+        self.choice_trck.SetSelection(const.DEFAULT_TRACKER)
+        self.choice_trck.Bind(wx.EVT_COMBOBOX, self.OnChoiceTracker)
 
         # ComboBox for tracker reference mode
         tooltip = wx.ToolTip(_("Choose the navigation reference mode"))
-        self.choice_ref_mode = wx.ComboBox(self, -1, "",
-                                           choices = const.REF_MODE, style = wx.CB_DROPDOWN|wx.CB_READONLY)
-        self.choice_ref_mode.SetSelection(const.DEFAULT_REF_MODE)
-        self.choice_ref_mode.SetToolTip(tooltip)
-        self.choice_ref_mode.Bind(wx.EVT_COMBOBOX, self.OnChoiceRefMode)
+        self.choice_ref = wx.ComboBox(self, -1, "",
+                                      choices=const.REF_MODE, style=wx.CB_DROPDOWN|wx.CB_READONLY)
+        self.choice_ref.SetSelection(const.DEFAULT_REF_MODE)
+        self.choice_ref.SetToolTip(tooltip)
+        self.choice_ref.Bind(wx.EVT_COMBOBOX, self.OnChoiceRefMode)
 
-        # Toggle buttons for selecting fiducials coordinates in images
-        tooltip = wx.ToolTip(_("Select left ear in image"))
-        self.Btn_coord[0] = wx.ToggleButton(self, IR1, label = _('LTI'), size = wx.Size(30,23))
-        self.Btn_coord[0].SetToolTip(tooltip)
-        self.Btn_coord[0].Bind(wx.EVT_TOGGLEBUTTON, self.OnToggleButtonImg)
+        # Toggle buttons for image fiducials
+        btns_img = const.BTNS_IMG
+        tips_img = const.TIPS_IMG
 
-        tooltip = wx.ToolTip(_("Select right ear in image"))
-        self.Btn_coord[1] = wx.ToggleButton(self, IR2, label = _('RTI'), size = wx.Size(30,23))
-        self.Btn_coord[1].SetToolTip(tooltip)
-        self.Btn_coord[1].Bind(wx.EVT_TOGGLEBUTTON, self.OnToggleButtonImg)
+        for k in btns_img:
+            n = btns_img[k].keys()[0]
+            lab = btns_img[k].values()[0]
+            # Excepetion for reference coordinate in tooltips dictionary
+            p = n
+            if p == 6:
+                p = 3
+            self.btns_coord[n] = wx.ToggleButton(self, k, label=lab, size=wx.Size(30, 23))
+            self.btns_coord[n].SetToolTip(tips_img[p])
+            self.btns_coord[n].Bind(wx.EVT_TOGGLEBUTTON, self.OnImageFiducials)
+            # self.btns_coord[n].Bind(wx.EVT_TOGGLEBUTTON, partial(self.OnImageFiducials, num_ctrl=self.numctrls_coord))
 
-        tooltip = wx.ToolTip(_("Select nasion in image"))
-        self.Btn_coord[2] = wx.ToggleButton(self, IR3, label = _('NI'), size = wx.Size(30,23))
-        self.Btn_coord[2].SetToolTip(tooltip)
-        self.Btn_coord[2].Bind(wx.EVT_TOGGLEBUTTON, self.OnToggleButtonImg)
+        # Push buttons for tracker fiducials
+        btns_trk = const.BTNS_TRK
+        tips_trk = const.TIPS_TRK
 
-        # Toggle buttons to get fiducials coordinates with tracking device
-
-        tooltip = wx.ToolTip(_("Select left ear with spatial tracker"))
-        self.Btn_coord[3] = wx.Button(self, TR1, label = _('LTT'), size = wx.Size(30,23))
-        self.Btn_coord[3].SetToolTip(tooltip)
-
-        tooltip = wx.ToolTip(_("Select right ear with spatial tracker"))
-        self.Btn_coord[4] = wx.Button(self, TR2, label = _('RTT'), size = wx.Size(30,23))
-        self.Btn_coord[4].SetToolTip(tooltip)
-
-        tooltip = wx.ToolTip(_("Select nasion with spatial tracker"))
-        self.Btn_coord[5] = wx.Button(self, TR3, label = _('NT'), size = wx.Size(30,23))
-        self.Btn_coord[5].SetToolTip(tooltip)
-
-        # Toggle button to get image coordinate to calculate target registration error
-        tooltip = wx.ToolTip(_("Select target point at image for target error calculation"))
-        self.Btn_coord[6] = wx.ToggleButton(self, T, label='T', size=wx.Size(30, 23))
-        self.Btn_coord[6].SetToolTip(tooltip)
-        self.Btn_coord[6].Bind(wx.EVT_TOGGLEBUTTON, self.OnToggleButtonImg)
+        for k in btns_trk:
+            n = btns_trk[k].keys()[0]
+            lab = btns_trk[k].values()[0]
+            self.btns_coord[n] = wx.Button(self, k, label=lab, size=wx.Size(30, 23))
+            self.btns_coord[n].SetToolTip(tips_trk[n-3])
+            self.btns_coord[n].Bind(wx.EVT_BUTTON, self.OnTrackerFiducials)
+            # self.btns_coord[n].Bind(wx.EVT_BUTTON, partial(self.OnTrackerFiducials, num_ctrl=self.numctrls_coord))
 
         # Toggle button for neuronavigation
         tooltip = wx.ToolTip(_("Start navigation"))
-        self.button_neuronavigate = wx.ToggleButton(self, NAV, _("Neuronavigate"))
-        self.button_neuronavigate.SetToolTip(tooltip)
-        self.button_neuronavigate.Bind(wx.EVT_TOGGLEBUTTON, self.Neuronavigate_ToggleButton)
+        btn_nav = wx.ToggleButton(self, -1, _("Neuronavigate"))
+        btn_nav.SetToolTip(tooltip)
+        btn_nav.Bind(wx.EVT_TOGGLEBUTTON, partial(self.OnNavigate, btn=btn_nav))
 
         # Target registration error text box
         tooltip = wx.ToolTip(_("Target registration error"))
-        self.Text_TRE = wx.TextCtrl(self, value="")
-        self.Text_TRE.SetEditable(0)
-        self.Text_TRE.SetToolTip(tooltip)
+        self.txtctrl_tre = wx.TextCtrl(self, value="")
+        self.txtctrl_tre.SetEditable(0)
+        self.txtctrl_tre.SetToolTip(tooltip)
 
-        self.Bind(wx.EVT_BUTTON, self.Buttons)
-
-        for i in range(0, 7):
-            for j in range(0, 3):
-                self.NumCtrl_coord[i].append(
+        for m in range(0, 7):
+            for n in range(0, 3):
+                self.numctrls_coord[m].append(
                     wx.lib.masked.numctrl.NumCtrl(parent=self, integerWidth=4, fractionWidth=1))
 
         choice_sizer = wx.FlexGridSizer(rows=1, cols=2, hgap=5, vgap=5)
-        choice_sizer.AddMany([ (self.choice_tracker, wx.LEFT),
-                                (self.choice_ref_mode, wx.RIGHT)])
+        choice_sizer.AddMany([(self.choice_trck, wx.LEFT),
+                              (self.choice_ref, wx.RIGHT)])
 
-        Grid_coord = wx.GridBagSizer(hgap=5, vgap=5)
+        coord_sizer = wx.GridBagSizer(hgap=5, vgap=5)
 
-        for i in range(0, 7):
-            Grid_coord.Add(self.Btn_coord[i], pos=wx.GBPosition(i, 0))
-            for j in range(0, 3):
-                Grid_coord.Add(self.NumCtrl_coord[i][j], pos=wx.GBPosition(i, j+1))
-                if i == 5 or i == 4 or i == 3:
-                    self.NumCtrl_coord[i][j].SetEditable(False)
+        for m in range(0, 7):
+            coord_sizer.Add(self.btns_coord[m], pos=wx.GBPosition(m, 0))
+            for n in range(0, 3):
+                coord_sizer.Add(self.numctrls_coord[m][n], pos=wx.GBPosition(m, n+1))
+                if m in [3, 4, 5]:
+                    self.numctrls_coord[m][n].SetEditable(False)
 
-        Buttons_sizer = wx.FlexGridSizer(rows=1, cols=2, hgap=5, vgap=5)
-        Buttons_sizer.AddMany([(self.Text_TRE, wx.LEFT|wx.RIGHT),
-                               (self.button_neuronavigate, wx.LEFT|wx.RIGHT)])
+        nav_sizer = wx.FlexGridSizer(rows=1, cols=2, hgap=5, vgap=5)
+        nav_sizer.AddMany([(self.txtctrl_tre, wx.LEFT|wx.RIGHT),
+                           (btn_nav, wx.LEFT|wx.RIGHT)])
 
-        Ref_sizer = wx.FlexGridSizer(rows=9, cols=1, hgap=5, vgap=5)
-        Ref_sizer.AddGrowableCol(0, 1)
-        Ref_sizer.AddGrowableRow(0, 1)
-        Ref_sizer.AddGrowableRow(1, 1)
-        Ref_sizer.AddGrowableRow(2, 1)
-        Ref_sizer.SetFlexibleDirection(wx.BOTH)
-        Ref_sizer.AddMany([(choice_sizer, 0, wx.ALIGN_CENTER_HORIZONTAL),
-                           (Grid_coord, 0,wx.ALIGN_CENTER_HORIZONTAL),
-                           (Buttons_sizer, 0, wx.ALIGN_CENTER_HORIZONTAL)])
+        group_sizer = wx.FlexGridSizer(rows=9, cols=1, hgap=5, vgap=5)
+        group_sizer.AddGrowableCol(0, 1)
+        group_sizer.AddGrowableRow(0, 1)
+        group_sizer.AddGrowableRow(1, 1)
+        group_sizer.AddGrowableRow(2, 1)
+        group_sizer.SetFlexibleDirection(wx.BOTH)
+        group_sizer.AddMany([(choice_sizer, 0, wx.ALIGN_CENTER_HORIZONTAL),
+                             (coord_sizer, 0, wx.ALIGN_CENTER_HORIZONTAL),
+                             (nav_sizer, 0, wx.ALIGN_CENTER_HORIZONTAL)])
 
         main_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        main_sizer.Add(Ref_sizer, 1, wx.ALIGN_CENTER_HORIZONTAL, 10)
+        main_sizer.Add(group_sizer, 1, wx.ALIGN_CENTER_HORIZONTAL, 10)
         self.sizer = main_sizer
         self.SetSizer(main_sizer)
         self.Fit()
 
     def __bind_events(self):
-        Publisher.subscribe(self.__update_points_img, 'Update cross position')
-        Publisher.subscribe(self.__update_points_trck, 'Update tracker position')
-        Publisher.subscribe(self.__load_points_img, 'Load Fiducial')
+        Publisher.subscribe(self.UpdateImageCoordinates, 'Update cross position')
+        Publisher.subscribe(self.LoadImageFiducials, 'Load Fiducials')
 
-    def __update_points_img(self, pubsub_evt):
-        x, y, z = pubsub_evt.data
-        self.a = x, y, z
-        if self.aux_img_ref1 == 0:
-            for n in [0,1,2]:
-                self.NumCtrl_coord[0][n].SetValue(self.a[n])
-        if self.aux_img_ref2 == 0:
-            for n in [0,1,2]:
-                self.NumCtrl_coord[1][n].SetValue(self.a[n])
-        if self.aux_img_ref3 == 0:
-            for n in [0,1,2]:
-                self.NumCtrl_coord[2][n].SetValue(self.a[n])
-        if self.aux_img__T_ref == 0:
-            for n in [0,1,2]:
-                self.NumCtrl_coord[6][n].SetValue(self.a[n])
+    def UpdateImageCoordinates(self, pubsub_evt):
 
-    def __update_points_trck(self, pubsub_evt):
-        coord = pubsub_evt.data
-        if self.aux_trck_ref1 == 1:
-            for n in [0,1,2]:
-                self.NumCtrl_coord[3][n].SetValue(coord[n])
-            self.aux_trck1 = 1
-            self.aux_trck_ref1 = 0
-        if self.aux_trck_ref2 == 1:
-            for n in [0,1,2]:
-                self.NumCtrl_coord[4][n].SetValue(coord[n])
-            self.aux_trck2 = 1
-            self.aux_trck_ref2 = 0
-        if self.aux_trck_ref3 == 1:
-            for n in [0,1,2]:
-                self.NumCtrl_coord[5][n].SetValue(coord[n])
-            self.aux_trck3 = 1
-            self.aux_trck_ref3 = 0
+        self.current_coord = pubsub_evt.data
 
-    def __load_points_img(self, pubsub_evt):
-        load = pubsub_evt.data[0]
+        for m in [0, 1, 2, 6]:
+            btn_state = self.btns_coord[m].GetValue()
+            if not btn_state:
+                for n in [0, 1, 2]:
+                    self.numctrls_coord[m][n].SetValue(self.current_coord[n])
+
+    def LoadImageFiducials(self, pubsub_evt):
+        marker_id = pubsub_evt.data[0]
         coord = pubsub_evt.data[1]
-        if load == "LTI":
-            self.Load_Ref_LTI(coord)
-        elif load == "RTI":
-            self.Load_Ref_RTI(coord)
-        elif load == "NI":
-            self.Load_Ref_NI(coord)
+        for n in const.BTNS_IMG:
+            btn_id = const.BTNS_IMG[n].keys()[0]
+            fid_id = const.BTNS_IMG[n].values()[0]
+            if marker_id == fid_id and not self.btns_coord[btn_id].GetValue():
+                self.btns_coord[btn_id].SetValue(True)
+                for n in [0, 1, 2]:
+                    self.numctrls_coord[btn_id][n].SetValue(coord[n])
 
-    def Load_Ref_LTI(self,coord):
-        img_id = self.Btn_coord[0].GetValue()
-        x, y, z = coord
-        if img_id == False:
-            for n in [0,1,2]:
-                self.NumCtrl_coord[0][n].SetValue(coord[n])
-            self.coord1a = x, y, z
-            self.Btn_coord[0].SetValue(True)
-            self.aux_img_ref1 = 1
+    def OnImageFiducials(self, evt):
+        btn_id = const.BTNS_IMG[evt.GetId()].keys()[0]
+        marker_id = const.BTNS_IMG[evt.GetId()].values()[0]
+        if self.btns_coord[btn_id].GetValue():
+            coord = self.numctrls_coord[btn_id][0].GetValue(),\
+                    self.numctrls_coord[btn_id][1].GetValue(),\
+                    self.numctrls_coord[btn_id][2].GetValue()
+            self.fiducials[btn_id, :] = coord
+            Publisher.sendMessage('Create fiducial markers', (coord, marker_id))
         else:
-            None
+            for n in [0, 1, 2]:
+                self.numctrls_coord[btn_id][n].SetValue(self.current_coord[n])
+            self.fiducials[btn_id, :] = np.nan
+            Publisher.sendMessage('Delete fiducial marker', marker_id)
 
-    def Load_Ref_RTI(self,coord):
-        img_id = self.Btn_coord[1].GetValue()
-        x, y, z = coord
-        if img_id == False:
-            for n in [0,1,2]:
-                self.NumCtrl_coord[1][n].SetValue(coord[n])
-            self.coord2a = x, y, z
-            self.Btn_coord[1].SetValue(True)
-            self.aux_img_ref2 = 1
+            # This is how it was done before for each button
+            # self.coord1a = x, y, z
+            # self.aux_img_ref1 = 1
+            # Publisher.sendMessage("Create fiducial markers", (self.coord1a, "LTI"))
+
+            # This was done to allow user writes the image coords
+            # xflag = self.numctrls_coord[n][0].GetValue() != round(x, 1)
+            # yflag = self.numctrls_coord[n][1].GetValue() != round(y, 1)
+            # zflag = self.numctrls_coord[n][2].GetValue() != round(z, 1)
+            # if xflag or yflag or zflag:
+            #     coord = self.numctrls_coord[n][0].GetValue(), self.numctrls_coord[n][1].GetValue(), \
+            #             self.numctrls_coord[n][2].GetValue()
+            #     if btn_id == IR1:
+            #         self.coord1a = coord
+            #         Publisher.sendMessage('Set camera in volume', self.coord1a[0:3])
+            #         Publisher.sendMessage('Co-registered Points', self.coord1a)
+            #         self.aux_img_ref1 = 1
+            #         Publisher.sendMessage("Create fiducial markers", (self.coord1a, "LTI"))
+            #     elif btn_id == IR2:
+            #         self.coord2a = coord
+            #         Publisher.sendMessage('Set camera in volume', self.coord2a[0:3])
+            #         Publisher.sendMessage('Co-registered Points', self.coord2a)
+            #         self.aux_img_ref2 = 1
+            #         Publisher.sendMessage("Create fiducial markers", (self.coord2a, "RTI"))
+            #     elif btn_id == IR3:
+            #         self.coord3a = coord
+            #         Publisher.sendMessage('Set camera in volume', self.coord3a[0:3])
+            #         Publisher.sendMessage('Co-registered Points', self.coord3a)
+            #         self.aux_img_ref3 = 1
+            #         Publisher.sendMessage("Create fiducial markers", (self.coord3a, "NI"))
+            #     elif btn_id == T:
+            #         self.img_T = coord
+            #         Publisher.sendMessage('Set camera in volume', self.img_T[0:3])
+            #         Publisher.sendMessage('Co-registered Points', self.img_T)
+            #         self.aux_img__T_ref = 1
+            #         self.coordT = np.array([coord])
+
+    def OnTrackerFiducials(self, evt):
+        btn_id = const.BTNS_TRK[evt.GetId()].keys()[0]
+        coord = None
+        if self.trk_init and self.tracker_id:
+            coord = dco.Coordinates(self.trk_init, self.tracker_id, self.ref_mode_id).Returns()
+            # This is how it was done before for each button
+            # self.aux_trck_ref1 = 1
+            # self.coord1b = dco.Coordinates(self.trk_init, self.tracker_id, self.ref_mode_id).Returns()
+            # coord = self.coord1b[0:3]
         else:
-            None
+            dlg.TrackerNotConnected(self.tracker_id)
 
-    def Load_Ref_NI(self,coord):
-        img_id = self.Btn_coord[2].GetValue()
-        x, y, z = coord
-        if img_id == False:
-            for n in [0,1,2]:
-                self.NumCtrl_coord[2][n].SetValue(coord[n])
-            self.coord3a = x, y, z
-            self.Btn_coord[2].SetValue(True)
-            self.aux_img_ref3 = 1
-        else:
-            None
+        # Update number controls with tracker coordinates
+        if coord:
+            self.fiducials[btn_id, :] = coord
+            for n in [0, 1, 2]:
+                self.numctrls_coord[btn_id][n].SetValue(coord[n])
 
-    def Buttons(self, evt):
-        id_pb = evt.GetId()
-
-        if id_pb == TR1:
-            if self.trk_init and (self.tracker_id != 0):
-                self.aux_trck_ref1 = 1
-                self.coord1b = dco.Coordinates(self.trk_init, self.tracker_id, self.ref_mode_id).Returns()
-                coord = self.coord1b[0:3]
-            else:
-                dlg.TrackerNotConnected(self.tracker_id)
-
-        elif id_pb == TR2:
-            if self.trk_init and (self.tracker_id != 0):
-                self.aux_trck_ref2 = 1
-                self.coord2b = dco.Coordinates(self.trk_init, self.tracker_id, self.ref_mode_id).Returns()
-                coord = self.coord2b[0:3]
-            else:
-                dlg.TrackerNotConnected(self.tracker_id)
-        elif id_pb == TR3:
-            if self.trk_init and (self.tracker_id != 0):
-                self.aux_trck_ref3 = 1
-                self.coord3b = dco.Coordinates(self.trk_init, self.tracker_id, self.ref_mode_id).Returns()
-                coord = self.coord3b[0:3]
-            else:
-                dlg.TrackerNotConnected(self.tracker_id)
-
-        if self.aux_trck_ref1 == 1 or self.aux_trck_ref2 == 1 or self.aux_trck_ref3 == 1:
-            Publisher.sendMessage('Update tracker position', coord)
-
-    def OnToggleButtonImg(self, evt):
-
-        #TODO: Way to edit text is working bad. Fix it.
-
-        btn_id = evt.GetId()
-        if btn_id == IR1:
-            n = 0
-        elif btn_id == IR2:
-            n = 1
-        elif btn_id == IR3:
-            n = 2
-        elif btn_id == T:
-            n = 6
-
-        img_id = self.Btn_coord[n].GetValue()
-
-        x, y, z = self.a
-        if img_id:
-            #This condition allows the user writes the image coords
-            if self.NumCtrl_coord[n][0].GetValue() != round(x, 1) or self.NumCtrl_coord[n][1].GetValue() != round(y,1) or self.NumCtrl_coord[n][2].GetValue() != round(z, 1):
-                coord = self.NumCtrl_coord[n][0].GetValue(), self.NumCtrl_coord[n][1].GetValue(), \
-                               self.NumCtrl_coord[n][2].GetValue()
-                if btn_id == IR1:
-                    self.coord1a = coord
-                    Publisher.sendMessage('Set camera in volume', self.coord1a[0:3])
-                    Publisher.sendMessage('Co-registered Points', self.coord1a)
-                    self.aux_img_ref1 = 1
-                    Publisher.sendMessage("Create fiducial markers", (self.coord1a, "LTI"))
-                elif btn_id == IR2:
-                    self.coord2a = coord
-                    Publisher.sendMessage('Set camera in volume', self.coord2a[0:3])
-                    Publisher.sendMessage('Co-registered Points', self.coord2a)
-                    self.aux_img_ref2 = 1
-                    Publisher.sendMessage("Create fiducial markers", (self.coord2a, "RTI"))
-                elif btn_id == IR3:
-                    self.coord3a = coord
-                    Publisher.sendMessage('Set camera in volume', self.coord3a[0:3])
-                    Publisher.sendMessage('Co-registered Points', self.coord3a)
-                    self.aux_img_ref3 = 1
-                    Publisher.sendMessage("Create fiducial markers", (self.coord3a, "NI"))
-                elif btn_id == T:
-                    self.img_T = coord
-                    Publisher.sendMessage('Set camera in volume', self.img_T[0:3])
-                    Publisher.sendMessage('Co-registered Points', self.img_T)
-                    self.aux_img__T_ref = 1
-                    self.coordT = np.array([coord])
-
-            else:
-                if btn_id == IR1:
-                    self.coord1a = x, y, z
-                    self.aux_img_ref1 = 1
-                    Publisher.sendMessage("Create fiducial markers", (self.coord1a, "LTI"))
-                elif btn_id == IR2:
-                    self.coord2a = x, y, z
-                    self.aux_img_ref2 = 1
-                    Publisher.sendMessage("Create fiducial markers", (self.coord2a, "RTI"))
-                elif btn_id == IR3:
-                    self.coord3a = x, y, z
-                    self.aux_img_ref3 = 1
-                    Publisher.sendMessage("Create fiducial markers", (self.coord3a, "NI"))
-                elif btn_id == T:
-                    self.img_T = x, y, z
-                    self.aux_img__T_ref = 1
-                    self.coordT = np.array([x, y, z])
-
-        elif not img_id:
-            self.NumCtrl_coord[n][0].SetValue(x)
-            self.NumCtrl_coord[n][1].SetValue(y)
-            self.NumCtrl_coord[n][2].SetValue(z)
-            if btn_id == IR1:
-                self.aux_img_ref1 = 0
-                self.coord1a = (0, 0, 0)
-                Publisher.sendMessage("Delete fiducial marker", "LTI")
-            elif btn_id == IR2:
-                self.aux_img_ref2 = 0
-                self.coord2a = (0, 0, 0)
-                Publisher.sendMessage("Delete fiducial marker", "RTI")
-            elif btn_id == IR3:
-                self.aux_img_ref3 = 0
-                self.coord3a = (0, 0, 0)
-                Publisher.sendMessage("Delete fiducial marker", "NI")
-            elif btn_id == T:
-                self.aux_img__T_ref = 0
-                self.img_T = (0, 0, 0)
-
-    def Neuronavigate_ToggleButton(self, evt):
-        nav_id = self.button_neuronavigate.GetValue()
-        if nav_id == True:
-            if self.aux_trck1 and self.aux_trck2 and self.aux_trck3 and self.aux_img_ref1 and self.aux_img_ref2 and self.aux_img_ref3:
+    def OnNavigate(self, evt, btn):
+        nav_id = btn.GetValue()
+        if nav_id:
+            if np.isnan(self.fiducials).any():
                 tooltip = wx.ToolTip(_("Stop neuronavigation"))
-                self.button_neuronavigate.SetToolTip(tooltip)
-                self.Enable_Disable_buttons(False)
-                self.Coregister()
-                bases = self.Minv, self.N, self.q1, self.q2
+                btn.SetToolTip(tooltip)
+
+                # Disable all navigation buttons
+                self.choice_ref.Enable(False)
+                self.choice_trck.Enable(False)
+                for btn_c in self.btns_coord:
+                    btn_c.Enable(False)
+
+                M, q1, Minv = db.base_creation(self.fiducials[0:3, :])
+                N, q2, Ninv = db.base_creation(self.fiducials[3::, :])
+
                 tracker_mode = self.trk_init, self.tracker_id, self.ref_mode_id
-                self.Calculate_FRE()
-                self.correg = dcr.Coregistration(bases, nav_id, tracker_mode)
+                self.Calculate_FRE(Minv, N, q1, q2)
+                self.correg = dcr.Coregistration((Minv, N, q1, q2), nav_id, tracker_mode)
                 self.TMS = tms.Trigger(nav_id)
             else:
                 dlg.InvalidFiducials()
-                self.button_neuronavigate.SetValue(False)
-        elif nav_id == False:
-            self.Enable_Disable_buttons(True)
-            tooltip = wx.ToolTip(_("Start neuronavigation"))
-            self.button_neuronavigate.SetToolTip(tooltip)
+                btn.SetValue(False)
+        elif not nav_id:
             self.correg.stop()
-            #self.plh.stop()
             self.TMS.stop()
 
-    def Enable_Disable_buttons(self,status):
-        self.choice_ref_mode.Enable(status)
-        self.choice_tracker.Enable(status)
-        self.Btn_coord[0].Enable(status)
-        self.Btn_coord[1].Enable(status)
-        self.Btn_coord[2].Enable(status)
+            tooltip = wx.ToolTip(_("Start neuronavigation"))
+            btn.SetToolTip(tooltip)
 
-    def Calculate_FRE(self):
+            # Enable all navigation buttons
+            self.choice_ref.Enable(True)
+            self.choice_trck.Enable(True)
+            for btn_c in self.btns_coord:
+                btn_c.Enable(True)
 
-        p1 = np.matrix([[self.coord1b[0]],[self.coord1b[1]],[self.coord1b[2]]])
-        p2 = np.matrix([[self.coord2b[0]],[self.coord2b[1]],[self.coord2b[2]]])
-        p3 = np.matrix([[self.coord3b[0]],[self.coord3b[1]],[self.coord3b[2]]])
+    def Calculate_FRE(self, Minv, N, q1, q2):
+        fids = self.fiducials
 
-        img1 = self.q1 + (self.Minv * self.N) * (p1 - self.q2)
-        img2 = self.q1 + (self.Minv * self.N) * (p2 - self.q2)
-        img3 = self.q1 + (self.Minv * self.N) * (p3 - self.q2)
+        p1 = np.matrix(fids[3, :].reshape(3, 1))
+        p2 = np.matrix(fids[4, :].reshape(3, 1))
+        p3 = np.matrix(fids[5, :].reshape(3, 1))
+
+        img1 = q1 + (Minv * N) * (p1 - q2)
+        img2 = q1 + (Minv * N) * (p2 - q2)
+        img3 = q1 + (Minv * N) * (p3 - q2)
 
         ED1=np.sqrt((((img1[0]-self.coord1a[0])**2) + ((img1[1]-self.coord1a[1])**2) +((img1[2]-self.coord1a[2])**2)))
         ED2=np.sqrt((((img2[0]-self.coord2a[0])**2) + ((img2[1]-self.coord2a[1])**2) +((img2[2]-self.coord2a[2])**2)))
@@ -543,19 +432,20 @@ class NeuronavigationTools(wx.Panel):
         FRE = float(np.sqrt((ED1**2 + ED2**2 + ED3**2)/3))
 
 
-        self.Text_TRE.SetValue("FRE: " + str(round(FRE, 2)))
+        self.txtctrl_tre.SetValue("FRE: " + str(round(FRE, 2)))
         if FRE <= 3:
-            self.Text_TRE.SetBackgroundColour('GREEN')
+            self.txtctrl_tre.SetBackgroundColour('GREEN')
         else:
-            self.Text_TRE.SetBackgroundColour('RED')
+            self.txtctrl_tre.SetBackgroundColour('RED')
 
     def OnChoiceTracker(self, evt):
-        #this condition check if the trackers is already connected and disconnect this tracker
+        # this condition check if the trackers is already connected and disconnect this tracker
+        # for PATRIOT it is trying to check serial connection forever... put timeout
         if (self.tracker_id == evt.GetSelection()) and (self.trk_init is not None) and (self.tracker_id != 0):
             dlg.TrackerAlreadyConnected()
             self.tracker_rem_id = self.tracker_id
             self.RemoveTracker()
-            self.choice_tracker.SetSelection(0)
+            self.choice_trck.SetSelection(0)
             self.SetTrackerFiducialsNone()
             self.tracker_id = 0
         else:
@@ -569,7 +459,7 @@ class NeuronavigationTools(wx.Panel):
                 self.trk_init = trck[self.tracker_id]()
                 if self.trk_init is None:
                     self.RemoveTracker()
-                    self.choice_tracker.SetSelection(0)
+                    self.choice_trck.SetSelection(0)
                     self.tracker_id = 0
                     self.tracker_rem_id = 0
                     self.SetTrackerFiducialsNone()
@@ -601,31 +491,14 @@ class NeuronavigationTools(wx.Panel):
     def SetTrackerFiducialsNone(self):
         for i in range(3, 6):
             for j in range(0, 3):
-                self.NumCtrl_coord[i][j].SetValue(0)
+                self.numctrls_coord[i][j].SetValue(0)
 
         self.aux_trck1 = 0
         self.aux_trck2 = 0
         self.aux_trck3 = 0
 
-    def Coregister(self):
-        self.M, self.q1, self.Minv = db.base_creation(self.coord1a,
-                                                      self.coord2a,
-                                                      self.coord3a)
-        self.N, self.q2, self.Ninv = db.base_creation(self.coord1b,
-                                                      self.coord2b,
-                                                      self.coord3b)
-        Publisher.sendMessage('Corregistrate Object', [self.Minv,
-                                                       self.N,
-                                                       self.q1,
-                                                       self.q2,
-                                                       self.trk_init,
-                                                       self.tracker_id,
-                                                       self.ref_mode_id,
-                                                       self.a,
-                                                       self.coord3a])
 
-
-class Markers(wx.Panel):
+class MarkersPanel(wx.Panel):
     def __init__(self, parent):
         wx.Panel.__init__(self, parent)
         default_colour = wx.SystemSettings_GetColour(wx.SYS_COLOUR_MENUBAR)
@@ -759,7 +632,7 @@ class Markers(wx.Panel):
             self.list_coord = [line]
             self.flagpoint1 = 1
         else:
-            #adding actual line to a list of all markers already created
+            #adding current line to a list of all markers already created
             self.list_coord.append(line)
 
         ##ListCtrl
@@ -780,24 +653,29 @@ class Markers(wx.Panel):
 
     def DelSingleMarker(self, pubsub_evt):
         ##this try is to remove the toggle=false fiducial marker, doesnt matter the order
-        try:
-            id = pubsub_evt.data
+        # try:
+        id = pubsub_evt.data
+        # print 'id: ', id
+        # print 'count: ', self.lc.GetItemCount()
+        if self.lc.GetItemCount():
             for idx in range(self.lc.GetItemCount()):
                 item = self.lc.GetItem(idx, 4)
+                # print 'item: ', item
+                # print 'text: ', item.GetText()
                 if item.GetText() == id:
-                    if id == "LTI":
+                    if id == "LEI":
                         self.lc.Focus(item.GetId())
                         break
-                    if id == "RTI":
+                    if id == "REI":
                         self.lc.Focus(item.GetId())
                         break
-                    if id == "NI":
+                    if id == "NAI":
                         self.lc.Focus(item.GetId())
                         break
-        except:
-            None
+        # except:
+        #     None
 
-        if self.lc.GetFocusedItem() is not -1:
+        if self.lc.GetFocusedItem() is not -1 and self.lc.GetItemCount():
             index = self.lc.GetFocusedItem()
             del self.list_coord[index]
             self.lc.DeleteItem(index)
@@ -805,6 +683,8 @@ class Markers(wx.Panel):
                 self.lc.SetStringItem(x, 0, str(x+1))
             self.ballid = self.ballid - 1
             Publisher.sendMessage('Remove marker', index)
+        elif not self.lc.GetItemCount():
+            None
         else:
             dlg.NoMarkerSelected()
     
@@ -838,7 +718,7 @@ class Markers(wx.Panel):
                     if len(line) == 8:
                         self.fiducial_flag = 1
                         self.fiducial_ID = line[7]
-                        Publisher.sendMessage('Load Fiducial', (self.fiducial_ID,coord))
+                        Publisher.sendMessage('Load Fiducials', (self.fiducial_ID, coord))
                     else:
                         self.fiducial_flag = 0
                     self.CreateMarker(coord, colour, size)
