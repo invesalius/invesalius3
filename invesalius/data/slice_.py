@@ -531,10 +531,12 @@ class Slice(object):
                 image = self.do_colour_image(ww_wl_image)
             if self.current_mask and self.current_mask.is_shown:
                 if self.buffer_slices[orientation].vtk_mask:
-                    print "Getting from buffer"
+                    # Prints that during navigation causes delay in update
+                    # print "Getting from buffer"
                     mask = self.buffer_slices[orientation].vtk_mask
                 else:
-                    print "Do not getting from buffer"
+                    # Prints that during navigation causes delay in update
+                    # print "Do not getting from buffer"
                     n_mask = self.get_mask_slice(orientation, slice_number)
                     mask = converters.to_vtk(n_mask, self.spacing, slice_number, orientation)
                     mask = self.do_colour_mask(mask, self.opacity)

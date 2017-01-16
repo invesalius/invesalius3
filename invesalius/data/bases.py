@@ -47,8 +47,8 @@ def base_creation(fiducials):
     q = np.matrix(q.copy())
     m_inv = m.I
 
-    print"M: ", m
-    print"q: ", q
+    # print"M: ", m
+    # print"q: ", q
 
     return m, q, m_inv
 

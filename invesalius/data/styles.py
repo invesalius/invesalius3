@@ -232,7 +232,6 @@ class CrossInteractorStyle(DefaultInteractorStyle):
         self.ScrollSlice(coord)
         Publisher.sendMessage('Set ball reference position', (wx, wy, wz))
         Publisher.sendMessage('Set camera in volume', (wx, wy, wz))
-        Publisher.sendMessage('Render volume viewer')
 
         iren.Render()
 

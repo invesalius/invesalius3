@@ -705,24 +705,24 @@ def InvalidFiducials():
     dlg.Destroy()
 
 
-def TrackerNotConnected(trck_id):
+def NavigationTrackerWarning(trck_id, lib_mode):
     """
     Spatial Tracker connection error
     """
-    trck = {0 : _('No Tracker Selected'),
-            1 : 'Claron MicronTracker',
-            2 : 'Polhemus FASTRAK',
-            3 : 'Polhemus ISOTRAK II',
-            4 : 'Polhemus PATRIOT',
-            5 : 'Zebris CMS20'}
-    if trck_id == 0:
-        msg = trck[trck_id]
-    elif ((trck_id < 6) and (trck_id > 0)):
+    trck = {1: 'Claron MicronTracker',
+            2: 'Polhemus FASTRAK',
+            3: 'Polhemus ISOTRAK',
+            4: 'Polhemus PATRIOT',
+            5: 'Debug tracker device'}
+
+    if lib_mode == 'choose':
+        msg = _('No tracking device selected')
+    elif lib_mode == 'error':
+        msg = trck[trck_id] + _(' is not installed.')
+    elif lib_mode == 'disconnect':
+        msg = trck[trck_id] + _(' disconnected.')
+    else:
         msg = trck[trck_id] + _(' is not connected.')
-    elif trck_id == 6:
-        msg = _('The library for specified tracker is not installed.')
-    elif trck_id == 7:
-        msg = _('The tracker connection is already set.')
 
     if sys.platform == 'darwin':
         dlg = wx.MessageDialog(None, "", msg,
@@ -731,19 +731,6 @@ def TrackerNotConnected(trck_id):
         dlg = wx.MessageDialog(None, msg, "InVesalius 3 - Neuronavigator",
                                wx.ICON_INFORMATION | wx.OK)
 
-    dlg.ShowModal()
-    dlg.Destroy()
-
-
-def TrackerAlreadyConnected():
-    msg = _("This tracker is already connected")
-
-    if sys.platform == 'darwin':
-        dlg = wx.MessageDialog(None, "", msg,
-                               wx.ICON_INFORMATION | wx.OK)
-    else:
-        dlg = wx.MessageDialog(None, msg, "InVesalius 3 - Neuronavigator",
-                               wx.ICON_INFORMATION | wx.OK)
     dlg.ShowModal()
     dlg.Destroy()
 

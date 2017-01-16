@@ -1,330 +1,277 @@
+#--------------------------------------------------------------------------
+# Software:     InVesalius - Software de Reconstrucao 3D de Imagens Medicas
+# Copyright:    (C) 2001  Centro de Pesquisas Renato Archer
+# Homepage:     http://www.softwarepublico.gov.br
+# Contact:      invesalius@cti.gov.br
+# License:      GNU - GPL 2 (LICENSE.txt/LICENCA.txt)
+#--------------------------------------------------------------------------
+#    Este programa e software livre; voce pode redistribui-lo e/ou
+#    modifica-lo sob os termos da Licenca Publica Geral GNU, conforme
+#    publicada pela Free Software Foundation; de acordo com a versao 2
+#    da Licenca.
+#
+#    Este programa eh distribuido na expectativa de ser util, mas SEM
+#    QUALQUER GARANTIA; sem mesmo a garantia implicita de
+#    COMERCIALIZACAO ou de ADEQUACAO A QUALQUER PROPOSITO EM
+#    PARTICULAR. Consulte a Licenca Publica Geral GNU para obter mais
+#    detalhes.
+#--------------------------------------------------------------------------
+
+from math import sin, cos
 import numpy as np
-from math import radians, sin, cos
-from wx.lib.pubsub import pub as Publisher
 
-import invesalius.gui.dialogs as dlg
-
-class Tracker:
-    def __init__(self, trck_id):
-        if trck_id != 0:
-            trck = {1 : self.ClaronTracker,
-                    2 : self.PlhFastrak,
-                    3 : self.PlhIsotrakII,
-                    4 : self.PlhPatriot,
-                    5 : self.ZebrisCMS20}
-
-            self.ReturnTracker(trck, trck_id)
-
-        else:
-            print "Select Tracker"
-
-    def ClaronTracker(self):
-        try:
-            import pyclaron as mtc
-        except ImportError:
-            print 'The ClaronTracker library is not installed'
-
-        print "CLARON func"
-        return 0
-
-    def PlhFastrak(self):
-        import serial
-        print "FASTRAK func"
-        return 1
-
-    def PlhIsotrakII(self):
-        import serial
-        print "ISOTRAKII func"
-        return 2
-
-    def PlhPatriot(self):
-        import polhemus
-
-        print "PATRIOT func"
-        return 3
-
-    def ZebrisCMS20(self):
-        print "ZEBRIS func"
-        return 4
-
-    def ReturnTracker(self, trck, trck_id):
-        print "Returning"
-        print "This is the tracker selected!", trck_id
-        return trck[trck_id]()
+from random import uniform
 
 
-class Coordinates:
-    def __init__(self, trck_init, trck, ref_mode):
-        # Module to get coordinates from spatial trackers
+def GetCoordinates(trck_init, trck_id, ref_mode):
 
-        self.__bind_events()
-        self.coord = None
-        if trck != 0:
+    """
+    Read coordinates from spatial tracking devices using
 
-            trck_ID = {1 : self.Claron,
-                    2 : self.PolhemusFAST,
-                    3 : self.PolhemusISO,
-                    4 : self.Polhemus,
-                    5 : self.Zebris}
+    :param trck_init: Initialization variable of tracking device and connection type. See tracker.py.
+    :param trck_id: ID of tracking device.
+    :param ref_mode: Single or dynamic reference mode of tracking.
+    :return: array of six coordinates (x, y, z, alpha, beta, gamma)
+    """
 
-            self.coord = trck_ID[trck](trck_init, ref_mode)
+    coord = None
+    if trck_id:
+        getcoord = {1: ClaronCoord,
+                    2: PolhemusCoord,
+                    3: PolhemusCoord,
+                    4: PolhemusCoord,
+                    5: DebugCoord}
+        coord = getcoord[trck_id](trck_init, trck_id, ref_mode)
+    else:
+        print "Select Tracker"
 
-        else:
-            print "Select Tracker"
-            
-    def __bind_events(self):
-        Publisher.subscribe(self.__update_points_MTC, 'Update MTC position')
-        Publisher.subscribe(self.__update_status_MTC, 'Update MTC status 2')   
-        Publisher.subscribe(self.__update_points_coil, 'Update coil position')  
-        
-        
-    def __update_status_MTC(self, pubsub_evt):  
-        self.MTC_status = pubsub_evt.data
+    return coord
 
-    def __update_points_MTC(self, pubsub_evt): 
-        self.coordTT = pubsub_evt.data
 
-    def __update_points_coil(self, pubsub_evt): 
-        self.coordcoil = pubsub_evt.data
+def ClaronCoord(trck_init, trck_id, ref_mode):
+    trck = trck_init[0]
+    scale = 10. * np.array([1., 1.0, -1.0])
+    coord = None
+    k = 0
+    # TODO: try to replace while and use some Claron internal computation
+    if ref_mode:
+        while k < 20:
+            try:
+                trck.Run()
+                probe = np.array([trck.PositionTooltipX1 * scale[0], trck.PositionTooltipY1 * scale[1],
+                                  trck.PositionTooltipZ1 * scale[2], trck.AngleX1, trck.AngleY1, trck.AngleZ1])
+                reference = np.array([trck.PositionTooltipX2 * scale[0], trck.PositionTooltipY2 * scale[1],
+                                      trck.PositionTooltipZ2 * scale[2], trck.AngleX2, trck.AngleY2, trck.AngleZ2])
+                k = 30
+            except AttributeError:
+                k += 1
+                print "wait, collecting coordinates ..."
+        if k == 30:
+            coord = dynamic_reference(probe, reference)
+    else:
+        while k < 20:
+            try:
+                trck.Run()
+                coord = np.array([trck.PositionTooltipX1 * scale[0], trck.PositionTooltipY1 * scale[1],
+                                  trck.PositionTooltipZ1 * scale[2], trck.AngleX1, trck.AngleY1, trck.AngleZ1])
+                k = 30
+            except AttributeError:
+                k += 1
+                print "wait, collecting coordinates ..."
 
-    def Claron(self, trk_init, ref_mode):
-        mtc = trk_init
-        i = 0
-        # TODO: set a maximum value for the while, ie. use a count and iterate it 10 times
-        if ref_mode == 0:
-            while i == 0:
+    return coord
+
+
+def PolhemusCoord(trck, trck_id, ref_mode):
+    coord = None
+
+    if trck[1] == 'serial':
+        coord = PolhemusSerialCoord(trck[0], trck_id, ref_mode)
+
+    elif trck[1] == 'usb':
+        coord = PolhemusUSBCoord(trck[0], trck_id, ref_mode)
+
+    elif trck[1] == 'wrapper':
+        coord = PolhemusWrapperCoord(trck[0], trck_id, ref_mode)
+
+    return coord
+
+
+def PolhemusWrapperCoord(trck, trck_id, ref_mode):
+    if trck_id == 2:
+        scale = 10. * np.array([1., 1.0, -1.0])
+    else:
+        scale = 25.4 * np.array([1., 1.0, -1.0])
+    coord = None
+
+    if ref_mode:
+        trck.Run()
+        probe = np.array([float(trck.PositionTooltipX1) * scale[0], float(trck.PositionTooltipY1) * scale[1],
+                          float(trck.PositionTooltipZ1) * scale[2], float(trck.AngleX1), float(trck.AngleY1),
+                          float(trck.AngleZ1)])
+        reference = np.array([float(trck.PositionTooltipX2) * scale[0], float(trck.PositionTooltipY2) * scale[1],
+                          float(trck.PositionTooltipZ2) * scale[2], float(trck.AngleX2), float(trck.AngleY2),
+                          float(trck.AngleZ2)])
+
+        if probe and reference:
+            coord = dynamic_reference(probe, reference)
+
+    else:
+        trck.Run()
+        coord = np.array([float(trck.PositionTooltipX1) * scale[0], float(trck.PositionTooltipY1) * scale[1],
+                          float(trck.PositionTooltipZ1) * scale[2], float(trck.AngleX1), float(trck.AngleY1),
+                          float(trck.AngleZ1)])
+
+    return coord
+
+
+def PolhemusUSBCoord(trck, trck_id, ref_mode):
+    endpoint = trck[0][(0, 0)][0]
+    # Tried to write some settings to Polhemus in trackers.py while initializing the device.
+    # TODO: Check if it's working properly.
+    trck.write(0x02, "P")
+    if trck_id == 2:
+        scale = 10. * np.array([1., 1.0, -1.0])
+    else:
+        scale = 25.4 * np.array([1., 1.0, -1.0])
+    coord = None
+
+    if ref_mode:
+
+        data = trck.read(endpoint.bEndpointAddress, 2 * endpoint.wMaxPacketSize)
+        data = str2float(data.tostring())
+
+        # six coordinates of first and second sensor: x, y, z and alfa, beta and gama
+        # jump one element for reference to avoid the sensor ID returned by Polhemus
+        probe = data[0] * scale[0], data[1] * scale[1], data[2] * scale[2], \
+                data[3], data[4], data[5], data[6]
+        reference = data[7] * scale[0], data[8] * scale[1], data[9] * scale[2], data[10], \
+                    data[11], data[12], data[13]
+
+        if probe and reference:
+            coord = dynamic_reference(probe, reference)
+
+        return coord
+
+    else:
+        data = trck.read(endpoint.bEndpointAddress, endpoint.wMaxPacketSize)
+        coord = str2float(data.tostring())
+
+        coord = np.array((coord[0] * scale[0], coord[1] * scale[1], coord[2] * scale[2],
+                          coord[3], coord[4], coord[5]))
+
+        return coord
+
+
+def PolhemusSerialCoord(trck_init, trck_id, ref_mode):
+    # mudanca para fastrak - ref 1 tem somente x, y, z
+    # aoflt -> 0:letter 1:x 2:y 3:z
+    # this method is not optimized to work with all trackers, only with ISOTRAK
+    # serial connection is obsolete, remove in future
+    trck_init.write("P")
+    lines = trck_init.readlines()
+
+    coord = None
+
+    if lines[0][0] != '0':
+        print "The Polhemus is not connected!"
+    else:
+        for s in lines:
+            if s[1] == '1':
+                data = s
+            elif s[1] == '2':
+                data = s
+
+        # single ref mode
+        if not ref_mode:
+            data = data.replace('-', ' -')
+            data = [s for s in data.split()]
+            j = 0
+            while j == 0:
                 try:
-                    mtc.Run()
-                    coord = (mtc.PositionTooltipX1, mtc.PositionTooltipY1, mtc.PositionTooltipZ1,
-                             mtc.AngleX1, mtc.AngleY1, mtc.AngleZ1)
-                    i = 1
-                except AttributeError:
-                    print "wait, collecting the coordinates ..."
+                    plh1 = [float(s) for s in data[1:len(data)]]
+                    j = 1
+                except ValueError:
+                    trck_init.write("P")
+                    data = trck_init.readline()
+                    data = data.replace('-', ' -')
+                    data = [s for s in data.split()]
+                    print "Trying to fix the error!!"
 
-        if ref_mode == 1:
-            while i == 0:
-                try:
-                    mtc.Run()
-                    Tooltip1 = np.array([mtc.PositionTooltipX1, mtc.PositionTooltipY1, mtc.PositionTooltipZ1])
-                    Tooltip2 = np.array([mtc.PositionTooltipX2, mtc.PositionTooltipY2, mtc.PositionTooltipZ2])
-                    angs1 = np.array([mtc.AngleX1, mtc.AngleY1, mtc.AngleZ1])
-                    angs2 = np.array([mtc.AngleX2, mtc.AngleY2, mtc.AngleZ2])
-                    i = 1
-                except AttributeError:
-                    print "wait, collecting the coordinates ..."
+            coord = data[0:6]
+    return coord
 
-            a = radians(angs2[2])
-            b = radians(angs2[1])
-            g = radians(angs2[0])
-            vet = Tooltip1 - Tooltip2
-            vet = vet.reshape(3, 1)
 
-            # Attitude Matrix given by Patriot Manual
-            Mrot = np.matrix([[cos(a) * cos(b), sin(b) * sin(g) * cos(a) - cos(g) * sin(a),
-                            cos(a) * sin(b) * cos(g) + sin(a) * sin(g)],
-                           [cos(b) * sin(a), sin(b) * sin(g) * sin(a) + cos(g) * cos(a),
-                            cos(g) * sin(b) * sin(a) - sin(g) * cos(a)],
-                           [-sin(b), sin(g) * cos(b), cos(b) * cos(g)]])
+def DebugCoord(trk_init, trck_id, ref_mode):
+    """
+    Method to simulate a tracking device for debug and error check. Generate a random
+    x, y, z, alfa, beta and gama coordinates in interval [1, 200[
+    :param trk_init: tracker initialization instance
+    :param ref_mode: flag for singular of dynamic reference
+    :param trck_id: id of tracking device
+    :return: six coordinates x, y, z, alfa, beta and gama
+    """
 
-            coord_fin = (Mrot.T) * vet
+    if ref_mode:
+        probe = np.array([uniform(1, 200), uniform(1, 200), uniform(1, 200),
+                          uniform(1, 200), uniform(1, 200), uniform(1, 200)])
+        reference = np.array([uniform(1, 200), uniform(1, 200), uniform(1, 200),
+                              uniform(1, 200), uniform(1, 200), uniform(1, 200)])
 
-            coord = (coord_fin[0], coord_fin[1], coord_fin[2], angs1[0], angs1[1], angs1[2])
+        coord = dynamic_reference(probe, reference)
 
-        x = 10.0
-        y = 10.0
-        z = -10.0
-        print coord
-        # Os fatores subtraidos (-0.36, 3.12, 1.88) representam um offset para navegacao com a bobina, caso for navegar so com a probe excluir esses fatores
-        try:
-            # if self.MTC_status == True and self.coordTT != None and self.coordcoil != None:
-            fact_coil1 = self.coordTT[0] - self.coordcoil[0]
-            fact_coil2 = self.coordTT[1] - self.coordcoil[1]
-            fact_coil3 = self.coordTT[2] - self.coordcoil[2]
-            fact_coil = [fact_coil1, fact_coil2, fact_coil3]
-            coord = (
-            float(coord[0]) * x + fact_coil[0], float(coord[1]) * y + fact_coil[1], float(coord[2]) * z + fact_coil[2],
-            float(coord[3]), float(coord[4]), float(coord[5]))
-            # coord = (float(coord[0])*x + 0.36, float(coord[1])*y -3.12, float(coord[2])*z -1.88,float(coord[3]),float(coord[4]),float(coord[5]))
-        # else:
-        except:
-            coord = (float(coord[0]) * x, float(coord[1]) * y, float(coord[2]) * z, float(coord[3]), float(coord[4]),
-                     float(coord[5]))
-        return coord
+    else:
+        coord = np.array([uniform(1, 200), uniform(1, 200), uniform(1, 200),
+                          uniform(1, 200), uniform(1, 200), uniform(1, 200)])
 
-    def PolhemusFAST(self, trck_init, ref_mode):
-        dev = trk_init
-        endpoint = dev[0][(0, 0)][0]
-        coord = None
-        dev.write(0x02, "u")
-        dev.write(0x02, "F")
-        dev.write(0x02, "P")
+    return coord
 
-        if ref_mode == 0:
 
-            data = dev.read(endpoint.bEndpointAddress,
-                            endpoint.wMaxPacketSize)
+def dynamic_reference(probe, reference):
+    """
+    Apply dynamic reference correction to probe coordinates. Uses the alpha, beta and gama
+    rotation angles of reference to rotate the probe coordinate and returns the x, y, z
+    difference between probe and reference. Angles sequences and equation was extracted from
+    Polhemus manual and Attitude matrix in Wikipedia.
+    General equation is:
+    coord = Mrot * (probe - reference)
+    :param probe: sensor one defined as probe
+    :param reference: sensor two defined as reference
+    :return: rotated and translated coordinates
+    """
+    a, b, g = np.radians(reference[3:6])
 
-            data2 = data.tostring()
-            count = 0
-            for i, j in enumerate(data2):
-                if j == '-':
-                    data2 = data2[:i + count] + ' ' + data2[i + count:]
-                    count = count + 1
+    vet = probe[0:3] - reference[0:3]
+    vet = np.mat(vet.reshape(3, 1))
 
-            aostr = [s for s in data2.split()]
-            coord = [float(s) for s in aostr[1:len(aostr)]]
+    # Attitude Matrix given by Patriot Manual
+    Mrot = np.mat([[cos(a) * cos(b), sin(b) * sin(g) * cos(a) - cos(g) * sin(a),
+                       cos(a) * sin(b) * cos(g) + sin(a) * sin(g)],
+                      [cos(b) * sin(a), sin(b) * sin(g) * sin(a) + cos(g) * cos(a),
+                       cos(g) * sin(b) * sin(a) - sin(g) * cos(a)],
+                      [-sin(b), sin(g) * cos(b), cos(b) * cos(g)]])
 
-            x = 10.0
-            y = 10.0
-            z = -10.0
+    coord_rot = Mrot.T * vet
+    coord_rot = np.squeeze(np.asarray(coord_rot))
 
-            if not coord:
-                print "error 0,0,0"
-                coord = (0, 0, 0, 0, 0, 0)
+    return coord_rot[0], coord_rot[1], coord_rot[2], probe[3], probe[4], probe[5]
 
-            coord = (float(coord[0]) * x, float(coord[1]) * y, float(coord[2]) * z, float(coord[3]), float(coord[4]),
-                     float(coord[5]))
-            return coord
 
-        elif ref_mode == 1:
+def str2float(data):
+    """
+    Converts string detected wth Polhemus device to float array of coordinates. THis method applies
+    a correction for the minus sign in string that raises error while splitting the string into coordinates.
+    :param data: string of coordinates read with Polhemus
+    :return: six float coordinates x, y, z, alfa, beta and gama
+    """
 
-            data1 = dev.read(endpoint.bEndpointAddress, 2 * endpoint.wMaxPacketSize)
+    count = 0
+    for i, j in enumerate(data):
+        if j == '-':
+            data = data[:i + count] + ' ' + data[i + count:]
+            count += 1
 
-            data1str = data1.tostring()
+    data = [s for s in data.split()]
+    data = [float(s) for s in data[1:len(data)]]
 
-            count = 0
-            for i, j in enumerate(data1str):
-                if j == '-':
-                    data1str = data1str[:i + count] + ' ' + data1str[i + count:]
-                    count = count + 1
-            aostr1 = [s for s in data1str.split()]
-            plh1 = [float(s) for s in aostr1[1:len(aostr1)]]
-            plh2 = [float(s) for s in aostr1[8:14]]
-
-            a = radians(plh2[3])
-            b = radians(plh2[4])
-            g = radians(plh2[5])
-
-            angs1 = plh2[3:6]
-            plh1 = np.matrix(plh1[0:3])
-            plh1.reshape(3, 1)
-            plh2 = np.matrix(plh2[0:3])
-            plh2.reshape(3, 1)
-
-            vet = plh1 - plh2
-            vet = vet.reshape(3, 1)
-
-            # Attitude Matrix given by Patriot Manual
-            Mrot = np.matrix([[cos(a) * cos(b), sin(b) * sin(g) * cos(a) - cos(g) * sin(a),
-                            cos(a) * sin(b) * cos(g) + sin(a) * sin(g)],
-                           [cos(b) * sin(a), sin(b) * sin(g) * sin(a) + cos(g) * cos(a),
-                            cos(g) * sin(b) * sin(a) - sin(g) * cos(a)],
-                           [-sin(b), sin(g) * cos(b), cos(b) * cos(g)]])
-
-            coord_fin = (Mrot.T) * vet
-            coord = coord_fin[0], coord_fin[1], coord_fin[2], angs1[0], angs1[1], angs1[2]
-
-            # fastrak ja esta em cm, transforma pra mm
-            x = 10.0
-            y = 10.0
-            z = -10.0
-
-            if not coord:
-                print "ahh meu amigo... eh tudo zero viu"
-                coord = (0, 0, 0, 0, 0, 0)
-
-            coord = (float(coord[0]) * x, float(coord[1]) * y, float(coord[2]) * z,
-                     float(coord[3]), float(coord[4]), float(coord[5]))
-            return coord
-
-    def PolhemusISO(self, trck_init, ref_mode):
-        # mudanca para fastrak - ref 1 tem somente x, y, z
-        # aoflt -> 0:letter 1:x 2:y 3:z
-
-        trck_init.write("Y")
-        trck_init.write("P")
-        lines = trck_init.readlines()
-
-        coord = None
-
-        if lines[0][0] != '0':
-            dlg.TrackerNotConnected(0)
-            print "The Polhemus is not connected!"
-        else:
-            for s in lines:
-                if s[1] == '1':
-                    line1 = s
-                elif s[1] == '2':
-                    line2 = s
-
-            # single ref mode
-            if ref_mode == 0:
-                line1 = line1.replace('-', ' -')
-                line1 = [s for s in line1.split()]
-                j = 0
-                while j == 0:
-                    try:
-                        plh1 = [float(s) for s in line1[1:len(line1)]]
-                        j = 1
-                    except ValueError:
-                        trck_init.write("P")
-                        line1 = trck_init.readline()
-                        line1 = line1.replace('-', ' -')
-                        line1 = [s for s in line1.split()]
-                        print "Trying to fix the error!!"
-
-                coord = plh1[0:6]
-        return coord
-
-    def Polhemus(self, trck_init, ref_mode):
-
-        coord = None
-        inch2mm = 25.4
-        plh = trck_init
-
-        if ref_mode == 0:
-            plh.Run()
-            coord = (plh.PositionTooltipX1, plh.PositionTooltipY1, plh.PositionTooltipZ1,
-                     plh.AngleX1, plh.AngleY1, plh.AngleZ1)
-
-            coord = (float(coord[0])*inch2mm, float(coord[1])*inch2mm,
-                     float(coord[2])*(-inch2mm), float(coord[3]),
-                     float(coord[4]), float(coord[5]))
-
-        elif ref_mode == 1:
-            plh.Run()
-            Tooltip1 = np.array([plh.PositionTooltipX1, plh.PositionTooltipY1, plh.PositionTooltipZ1])
-            Tooltip2 = np.array([plh.PositionTooltipX2, plh.PositionTooltipY2, plh.PositionTooltipZ2])
-            angs1 = np.array([plh.AngleX1, plh.AngleY1, plh.AngleZ1])
-            angs2 = np.array([plh.AngleX2, plh.AngleY2, plh.AngleZ2])
-            a = radians(angs2[2])
-            b = radians(angs2[1])
-            g = radians(angs2[0])
-            vet = Tooltip1 - Tooltip2
-            vet = vet.reshape(3, 1)
-
-            # Attitude Matrix given by Patriot Manual
-            Mrot = np.matrix([[cos(a) * cos(b), sin(b) * sin(g) * cos(a) - cos(g) * sin(a),
-                            cos(a) * sin(b) * cos(g) + sin(a) * sin(g)],
-                           [cos(b) * sin(a), sin(b) * sin(g) * sin(a) + cos(g) * cos(a),
-                            cos(g) * sin(b) * sin(a) - sin(g) * cos(a)],
-                           [-sin(b), sin(g) * cos(b), cos(b) * cos(g)]])
-
-            coord_fin = (Mrot.T) * vet
-
-            coord = coord_fin[0], coord_fin[1], coord_fin[2], angs1[0], angs1[1], angs1[2]
-
-            coord = (float(coord[0]) * inch2mm, float(coord[1]) * inch2mm,
-                     float(coord[2]) * (-inch2mm), float(coord[3]),
-                     float(coord[4]), float(coord[5]))
-
-        return coord
-
-    def Zebris(self, trk_init, ref_mode):
-        dlg.TrackerNotConnected(3)
-        return (0, 0, 0)
-    
-    def Returns(self):
-        return self.coord
-#TODO: Precisa dessa funcao returns.. num da pra usar a propria de cada um direto na func de escolher o navegador (interrogacao)
-
+    return data

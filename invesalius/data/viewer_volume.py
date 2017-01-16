@@ -656,10 +656,18 @@ class Viewer(wx.Panel):
 
         v1 = (cam_focus - self.initial_focus)
         v1n = np.sqrt(inner1d(v1, v1))
+        if not v1n:
+            v1n = 1.0
         cam_pos = (v1/v1n)*v0n + cam_focus
 
         cam.SetFocalPoint(cam_focus)
         cam.SetPosition(cam_pos)
+
+        # It works without doing the reset. Check with trackers if there is any difference.
+        # self.ren.ResetCameraClippingRange()
+        # self.ren.ResetCamera()
+
+        self.interactor.Render()
 
     def OnExportSurface(self, pubsub_evt):
         filename, filetype = pubsub_evt.data

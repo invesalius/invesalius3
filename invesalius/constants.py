@@ -647,11 +647,14 @@ MTC = 1
 FASTRAK = 2
 ISOTRAKII = 3
 PATRIOT = 4
+DEBUGTRACK = 5
+DISCTRACK = 6
 DEFAULT_TRACKER = SELECT
 
 TRACKER = [_("Select tracker:"), _("Claron MicronTracker"),
            _("Polhemus FASTRAK"), _("Polhemus ISOTRAK II"),
-           _("Polhemus PATRIOT")]
+           _("Polhemus PATRIOT"), _("Debug tracker"),
+           _("Disconnect tracker")]
 
 STATIC_REF = 0
 DYNAMIC_REF = 1
@@ -664,22 +667,22 @@ IR3 = wx.NewId()
 TR1 = wx.NewId()
 TR2 = wx.NewId()
 TR3 = wx.NewId()
-REF = wx.NewId()
+SET = wx.NewId()
 
 BTNS_IMG = {IR1: {0: _('LEI')},
             IR2: {1: _('REI')},
-            IR3: {2: _('NAI')},
-            REF: {6: _('REF')}}
+            IR3: {2: _('NAI')}}
 
 TIPS_IMG = [wx.ToolTip(_("Select left ear in image")),
             wx.ToolTip(_("Select right ear in image")),
-            wx.ToolTip(_("Select nasion in image")),
-            wx.ToolTip(_("Select reference in image for target error calculation"))]
+            wx.ToolTip(_("Select nasion in image"))]
 
 BTNS_TRK = {TR1: {3: _('LET')},
             TR2: {4: _('RET')},
-            TR3: {5: _('NAT')}}
+            TR3: {5: _('NAT')},
+            SET: {6: _('SET')}}
 
 TIPS_TRK = [wx.ToolTip(_("Select left ear with spatial tracker")),
             wx.ToolTip(_("Select right ear with spatial tracker")),
-            wx.ToolTip(_("Select nasion with spatial tracker"))]
+            wx.ToolTip(_("Select nasion with spatial tracker")),
+            wx.ToolTip(_("Show set coordinates in image"))]
