@@ -17,7 +17,6 @@
 #    detalhes.
 #--------------------------------------------------------------------------
 from functools import partial
-from time import sleep
 
 import numpy as np
 import wx
@@ -175,7 +174,7 @@ class NeuronavigationPanel(wx.Panel):
                                   choices=const.TRACKER, style=wx.CB_DROPDOWN|wx.CB_READONLY)
         choice_trck.SetToolTip(tooltip)
         choice_trck.SetSelection(const.DEFAULT_TRACKER)
-        choice_trck.Bind(wx.EVT_COMBOBOX, partial(self.OnChoiceTracker, choice_trck=choice_trck))
+        choice_trck.Bind(wx.EVT_COMBOBOX, partial(self.OnChoiceTracker, ctrl=choice_trck))
 
         # ComboBox for tracker reference mode
         tooltip = wx.ToolTip(_("Choose the navigation reference mode"))
@@ -183,7 +182,7 @@ class NeuronavigationPanel(wx.Panel):
                                  choices=const.REF_MODE, style=wx.CB_DROPDOWN|wx.CB_READONLY)
         choice_ref.SetSelection(const.DEFAULT_REF_MODE)
         choice_ref.SetToolTip(tooltip)
-        choice_ref.Bind(wx.EVT_COMBOBOX, partial(self.OnChoiceRefMode, choice_trck=choice_trck))
+        choice_ref.Bind(wx.EVT_COMBOBOX, partial(self.OnChoiceRefMode, ctrl=choice_trck))
 
         # Toggle buttons for image fiducials
         btns_img = const.BTNS_IMG
@@ -268,7 +267,7 @@ class NeuronavigationPanel(wx.Panel):
         Publisher.subscribe(self.LoadImageFiducials, 'Load Fiducials')
 
     def UpdateImageCoordinates(self, pubsub_evt):
-        # Updating using message cross position does not update during navigation
+        # TODO: Change from world coordinates to matrix coordinates. They are better for multi software communication.
         self.current_coord = pubsub_evt.data
         for m in [0, 1, 2, 6]:
             if m == 6:
@@ -407,7 +406,7 @@ class NeuronavigationPanel(wx.Panel):
 
         return float(np.sqrt(np.sum(dist ** 2) / 3))
 
-    def OnChoiceTracker(self, evt, choice_trck):
+    def OnChoiceTracker(self, evt, ctrl):
         if evt:
             choice = evt.GetSelection()
         else:
@@ -428,10 +427,10 @@ class NeuronavigationPanel(wx.Panel):
                 self.trk_init = dt.TrackerConnection(self.tracker_id, 'connect')
                 if not self.trk_init[0]:
                     dlg.NavigationTrackerWarning(self.tracker_id, self.trk_init[1])
-                    choice_trck.SetSelection(0)
+                    ctrl.SetSelection(0)
                     print "Tracker not connected!"
                 else:
-                    choice_trck.SetSelection(self.tracker_id)
+                    ctrl.SetSelection(self.tracker_id)
                     print "Tracker connected!"
         elif choice == 6:
             if trck:
@@ -439,12 +438,12 @@ class NeuronavigationPanel(wx.Panel):
                 if not self.trk_init[0]:
                     dlg.NavigationTrackerWarning(self.tracker_id, 'disconnect')
                     self.tracker_id = 0
-                    choice_trck.SetSelection(self.tracker_id)
+                    ctrl.SetSelection(self.tracker_id)
                     print "Tracker disconnected!"
                 else:
                     print "Tracker still connected!"
             else:
-                choice_trck.SetSelection(self.tracker_id)
+                ctrl.SetSelection(self.tracker_id)
 
         else:
             # If trk_init is None try to connect. If doesn't succeed show dialog.
@@ -454,13 +453,13 @@ class NeuronavigationPanel(wx.Panel):
                 if not self.trk_init[0]:
                     dlg.NavigationTrackerWarning(self.tracker_id, self.trk_init[1])
                     self.tracker_id = 0
-                    choice_trck.SetSelection(self.tracker_id)
+                    ctrl.SetSelection(self.tracker_id)
 
-    def OnChoiceRefMode(self, evt, choice_trck):
+    def OnChoiceRefMode(self, evt, ctrl):
         # When ref mode is changed the tracker coords are set to zero, self.aux_trck is the flag that sets it
         self.ref_mode_id = evt.GetSelection()
         self.ResetTrackerFiducials()
-        self.OnChoiceTracker(None, choice_trck)
+        self.OnChoiceTracker(None, ctrl)
         print "Reference mode changed!"
 
     def ResetTrackerFiducials(self):
@@ -482,22 +481,24 @@ class MarkersPanel(wx.Panel):
         self.ijk = 0, 0, 0
         self.flagpoint1 = 0
         self.ballid = 0
-        self.colour = 0.0, 0.0, 1.0
         self.fiducial_color = 0.0, 1.0, 0.0
         self.fiducial_flag = 0
         self.fiducial_ID = ""
 
+        self.marker_colour = (0.0, 0.0, 1.)
+        self.marker_size = 4
+
         # Change marker size
         spin_marker_size = wx.SpinCtrl(self, -1, "", size=wx.Size(40, 23))
         spin_marker_size.SetRange(1, 99)
-        spin_marker_size.SetValue(const.MARKER_SIZE)
-        # spin_marker_size.Bind(wx.EVT_TEXT, self.OnMarkerSize)
-        self.spin = spin_marker_size
+        spin_marker_size.SetValue(self.marker_size)
+        spin_marker_size.Bind(wx.EVT_TEXT, partial(self.OnSelectSize, ctrl=spin_marker_size))
+        spin_marker_size.Bind(wx.EVT_SPINCTRL, partial(self.OnSelectSize, ctrl=spin_marker_size))
+        # self.spin = spin_marker_size
 
         # Marker colour select
-        marker_colour = csel.ColourSelect(self, -1, colour=(0, 0, 255), size=wx.Size(20, 23))
-        marker_colour.Bind(csel.EVT_COLOURSELECT, self.OnSelectColour)
-        self.marker_colour = marker_colour
+        marker_colour = csel.ColourSelect(self, -1, colour=[255*s for s in self.marker_colour], size=wx.Size(20, 23))
+        marker_colour.Bind(csel.EVT_COLOURSELECT, partial(self.OnSelectColour, ctrl=marker_colour))
 
         create_markers = wx.Button(self, -1, label=_('Create marker'), size=wx.Size(135, 23))
         create_markers.Bind(wx.EVT_BUTTON, self.OnCreateMarker)
@@ -557,7 +558,6 @@ class MarkersPanel(wx.Panel):
         self.SetSizer(sizer)
         self.Update()
 
-
     def __bind_events(self):
         Publisher.subscribe(self.GetPoint, 'Set ball reference position')
         Publisher.subscribe(self.DelSingleMarker, 'Delete fiducial marker')
@@ -582,7 +582,7 @@ class MarkersPanel(wx.Panel):
         coord = pubsub_evt.data[0]
         self.fiducial_ID = pubsub_evt.data[1]
         self.fiducial_flag = 1
-        self.CreateMarker(coord,self.fiducial_color, self.spin.GetValue())
+        self.CreateMarker(coord, self.fiducial_color, self.marker_size)
 
     def CreateMarker(self, coord_data, colour_data, size_data):
         #Create a file and write the points given by getpoint's button 
@@ -599,7 +599,7 @@ class MarkersPanel(wx.Panel):
             self.fiducial_flag = 0
         else:
             self.fiducial_ID = ""
-        line = [coord[0] , coord[1] , coord[2] , colour[0], colour[1], colour[2], self.spin.GetValue(), self.fiducial_ID]
+        line = [coord[0] , coord[1] , coord[2] , colour[0], colour[1], colour[2], self.marker_size, self.fiducial_ID]
         if self.flagpoint1 == 0:
             self.list_coord = [line]
             self.flagpoint1 = 1
@@ -614,10 +614,10 @@ class MarkersPanel(wx.Panel):
         self.lc.SetStringItem(num_items, 1, str(round(coord[0],2)))
         self.lc.SetStringItem(num_items, 2, str(round(coord[1],2)))
         self.lc.SetStringItem(num_items, 3, str(round(coord[2],2)))
-        self.lc.SetStringItem(num_items,4, str(self.fiducial_ID))
+        self.lc.SetStringItem(num_items, 4, str(self.fiducial_ID))
         self.lc.EnsureVisible(num_items)
 
-    def OnDelMarker(self,pubsub_evt):
+    def OnDelMarker(self, pubsub_evt):
         self.list_coord = []
         Publisher.sendMessage('Remove all markers', self.lc.GetItemCount())
         self.lc.DeleteAllItems()
@@ -625,27 +625,28 @@ class MarkersPanel(wx.Panel):
 
     def DelSingleMarker(self, pubsub_evt):
         ##this try is to remove the toggle=false fiducial marker, doesnt matter the order
-        # try:
-        id = pubsub_evt.data
-        # print 'id: ', id
-        # print 'count: ', self.lc.GetItemCount()
-        if self.lc.GetItemCount():
-            for idx in range(self.lc.GetItemCount()):
-                item = self.lc.GetItem(idx, 4)
-                # print 'item: ', item
-                # print 'text: ', item.GetText()
-                if item.GetText() == id:
-                    if id == "LEI":
-                        self.lc.Focus(item.GetId())
-                        break
-                    if id == "REI":
-                        self.lc.Focus(item.GetId())
-                        break
-                    if id == "NAI":
-                        self.lc.Focus(item.GetId())
-                        break
-        # except:
-        #     None
+        try:
+            id = pubsub_evt.data
+            print 'event id: ', id
+            # print 'id: ', id
+            # print 'count: ', self.lc.GetItemCount()
+            if self.lc.GetItemCount():
+                for idx in range(self.lc.GetItemCount()):
+                    item = self.lc.GetItem(idx, 4)
+                    # print 'item: ', item
+                    # print 'text: ', item.GetText()
+                    if item.GetText() == id:
+                        if id == "LEI":
+                            self.lc.Focus(item.GetId())
+                            break
+                        if id == "REI":
+                            self.lc.Focus(item.GetId())
+                            break
+                        if id == "NAI":
+                            self.lc.Focus(item.GetId())
+                            break
+        except AttributeError:
+            pass
 
         if self.lc.GetFocusedItem() is not -1 and self.lc.GetItemCount():
             index = self.lc.GetFocusedItem()
@@ -656,7 +657,7 @@ class MarkersPanel(wx.Panel):
             self.ballid = self.ballid - 1
             Publisher.sendMessage('Remove marker', index)
         elif not self.lc.GetItemCount():
-            None
+            pass
         else:
             dlg.NoMarkerSelected()
     
@@ -675,7 +676,7 @@ class MarkersPanel(wx.Panel):
                    
     def OnCreateMarker(self, evt):
         coord = self.ijk
-        self.CreateMarker(coord, self.colour, self.spin.GetValue())
+        self.CreateMarker(coord, self.marker_colour, self.marker_size)
 
     def OnLoadMarkers(self, evt):
         filepath = dlg.ShowLoadMarkersDialog()
@@ -698,7 +699,7 @@ class MarkersPanel(wx.Panel):
                 dlg.InvalidMarkersFile()
                 # raise ValueError('Invalid Markers File')
         else:
-            None
+            pass
 
     def OnMarkersVisibility(self, evt):
         ballid = self.lc.GetItemCount()
@@ -727,7 +728,10 @@ class MarkersPanel(wx.Panel):
             text_file.writelines(line)
             text_file.close()
         else:
-            None
+            pass
     
-    def OnSelectColour(self, evt):
-        self.colour = [value/255.0 for value in self.marker_colour.GetValue()]
+    def OnSelectColour(self, evt, ctrl):
+        self.marker_colour = [colour/255.0 for colour in ctrl.GetValue()]
+
+    def OnSelectSize(self, evt, ctrl):
+        self.marker_size = ctrl.GetValue()
