@@ -59,14 +59,16 @@ def DefaultTracker(tracker_id):
 
 
 def ClaronTracker(tracker_id):
+    import invesalius.constants as const
+
     trck_init = None
     try:
         import pyclaron
 
         lib_mode = 'wrapper'
         trck_init = pyclaron.pyclaron()
-        trck_init.CalibrationDir = "../navigation/mtc_files/CalibrationFiles"
-        trck_init.MarkerDir = "../navigation/mtc_files/Markers"
+        trck_init.CalibrationDir = const.CAL_DIR
+        trck_init.MarkerDir = const.MAR_DIR
         trck_init.NumberFramesProcessed = 10
         trck_init.FramesExtrapolated = 0
         trck_init.Initialize()
@@ -115,10 +117,10 @@ def PlhWrapperConnection():
     try:
         import polhemus
 
-        trck_open = polhemus.polhemus()
-        trck_init = trck_open.Initialize()
+        trck_init = polhemus.polhemus()
+        trck_check = trck_init.Initialize()
 
-        if trck_init:
+        if trck_check:
             # First run is necessary to discard the first coord collection
             trck_init.Run()
     except:
@@ -203,6 +205,15 @@ def DisconnectTracker(tracker_id):
         except ImportError:
             lib_mode = 'error'
             print 'The ClaronTracker library is not installed.'
+
+    elif tracker_id == 4:
+        try:
+            import polhemus
+            polhemus.polhemus().Close()
+            lib_mode = 'wrapper'
+        except ImportError:
+            lib_mode = 'error'
+            print 'The polhemus library is not installed.'
 
     elif tracker_id == 5:
         print 'Debug tracker disconnected.'

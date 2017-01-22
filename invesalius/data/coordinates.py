@@ -113,7 +113,7 @@ def PolhemusWrapperCoord(trck, trck_id, ref_mode):
                           float(trck.PositionTooltipZ2) * scale[2], float(trck.AngleX2), float(trck.AngleY2),
                           float(trck.AngleZ2)])
 
-        if probe and reference:
+        if probe.all() and reference.all():
             coord = dynamic_reference(probe, reference)
 
     else:
@@ -148,7 +148,7 @@ def PolhemusUSBCoord(trck, trck_id, ref_mode):
         reference = data[7] * scale[0], data[8] * scale[1], data[9] * scale[2], data[10], \
                     data[11], data[12], data[13]
 
-        if probe and reference:
+        if probe.all() and reference.all():
             coord = dynamic_reference(probe, reference)
 
         return coord

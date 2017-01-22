@@ -685,3 +685,6 @@ TIPS_TRK = [wx.ToolTip(_("Select left ear with spatial tracker")),
             wx.ToolTip(_("Select right ear with spatial tracker")),
             wx.ToolTip(_("Select nasion with spatial tracker")),
             wx.ToolTip(_("Show set coordinates in image"))]
+
+CAL_DIR = os.path.abspath(os.path.join(FILE_PATH, '..', 'navigation', 'mtc_files', 'CalibrationFiles'))
+MAR_DIR = os.path.abspath(os.path.join(FILE_PATH, '..', 'navigation', 'mtc_files', 'Markers'))

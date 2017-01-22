@@ -3,7 +3,14 @@ import numpy as np
 
 
 def angle_calculation(ap_axis, coil_axis):
-    # Calculate angle between two given axis (in degrees)
+    """
+    Calculate angle between two given axis (in degrees)
+
+    :param ap_axis: anterior posterior axis represented
+    :param coil_axis: tms coil axis
+    :return: angle between the two given axes
+    """
+
     ap_axis = np.array([ap_axis[0], ap_axis[1]])
     coil_axis = np.array([float(coil_axis[0]), float(coil_axis[1])])
     angle = np.rad2deg(np.arccos((np.dot(ap_axis, coil_axis))/(
@@ -13,10 +20,15 @@ def angle_calculation(ap_axis, coil_axis):
 
 
 def base_creation(fiducials):
-    # Calculate the origin and matrix for coordinate system
-    # transformation.
-    # q: origin of coordinate system
-    # g1, g2, g3: orthogonal vectors of coordinate system
+    """
+    Calculate the origin and matrix for coordinate system
+    transformation.
+    q: origin of coordinate system
+    g1, g2, g3: orthogonal vectors of coordinate system
+
+    :param fiducials: array of 3 rows (p1, p2, p3) and 3 columns (x, y, z) with fiducials coordinates
+    :return: matrix and origin for base transformation
+    """
 
     p1 = fiducials[0, :]
     p2 = fiducials[1, :]
@@ -53,18 +65,53 @@ def base_creation(fiducials):
     return m, q, m_inv
 
 
+def calculate_fre(fiducials, minv, n, q1, q2):
+    """
+    Calculate the Fiducial Registration Error for neuronavigation.
+
+    :param fiducials: array of 6 rows (image and tracker fiducials) and 3 columns (x, y, z) with coordinates
+    :param minv: inverse matrix given by base creation
+    :param n: base change matrix given by base creation
+    :param q1: origin of first base
+    :param q2: origin of second base
+    :return: float number of fiducial registration error
+    """
+
+    img = np.zeros([3, 3])
+    dist = np.zeros([3, 1])
+
+    p1 = np.mat(fiducials[3, :]).reshape(3, 1)
+    p2 = np.mat(fiducials[4, :]).reshape(3, 1)
+    p3 = np.mat(fiducials[5, :]).reshape(3, 1)
+
+    img[0, :] = np.asarray((q1 + (minv * n) * (p1 - q2)).reshape(1, 3))
+    img[1, :] = np.asarray((q1 + (minv * n) * (p2 - q2)).reshape(1, 3))
+    img[2, :] = np.asarray((q1 + (minv * n) * (p3 - q2)).reshape(1, 3))
+
+    dist[0] = np.sqrt(np.sum(np.power((img[0, :] - fiducials[0, :]), 2)))
+    dist[1] = np.sqrt(np.sum(np.power((img[1, :] - fiducials[1, :]), 2)))
+    dist[2] = np.sqrt(np.sum(np.power((img[2, :] - fiducials[2, :]), 2)))
+
+    return float(np.sqrt(np.sum(dist ** 2) / 3))
+
+
 def flip_x(point):
-    # Flip coordinates of a vector according to X axis
+    """
+    Flip coordinates of a vector according to X axis
+    Coronal Images do not require this transformation - 1 tested
+    and for this case, at navigation, the z axis is inverted
+
+    It's necessary to multiply the z coordinate by (-1). Possibly
+    because the origin of coordinate system of imagedata is
+    located in superior left corner and the origin of VTK scene coordinate
+    system (polygonal surface) is in the interior left corner. Second
+    possibility is the order of slice stacking
+
+    :param point: list of coordinates x, y and z
+    :return: flipped coordinates
+    """
 
     # TODO: check if the Flip function is related to the X or Y axis
-    # Coronal Images do not require this transformation - 1 tested
-    # and for this case, at navigation, the z axis is inverted
-               
-    # It's necessary to multiply the z coordinate by (-1). Possibly
-    # because the origin of coordinate system of imagedata is
-    # located in superior left corner and the origin of VTK scene coordinate
-    # system (polygonal surface) is in the interior left corner. Second
-    # possibility is the order of slice stacking
 
     point = np.matrix(point + (0,))
     point[0, 2] = -point[0, 2]

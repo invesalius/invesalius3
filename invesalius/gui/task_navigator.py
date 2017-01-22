@@ -310,6 +310,18 @@ class NeuronavigationPanel(wx.Panel):
         Publisher.subscribe(self.UpdateTriggerState, 'Update trigger state')
         Publisher.subscribe(self.UpdateImageCoordinates, 'Set ball reference position')
 
+    def LoadImageFiducials(self, pubsub_evt):
+        marker_id = pubsub_evt.data[0]
+        coord = pubsub_evt.data[1]
+        for n in const.BTNS_IMG:
+            btn_id = const.BTNS_IMG[n].keys()[0]
+            fid_id = const.BTNS_IMG[n].values()[0]
+            if marker_id == fid_id and not self.btns_coord[btn_id].GetValue():
+                self.btns_coord[btn_id].SetValue(True)
+                self.fiducials[btn_id, :] = coord[0:3]
+                for m in [0, 1, 2]:
+                    self.numctrls_coord[btn_id][m].SetValue(coord[m])
+
     def UpdateImageCoordinates(self, pubsub_evt):
         # TODO: Change from world coordinates to matrix coordinates. They are better for multi software communication.
         self.current_coord = pubsub_evt.data
@@ -326,17 +338,63 @@ class NeuronavigationPanel(wx.Panel):
     def UpdateTriggerState (self, pubsub_evt):
         self.trigger_state = pubsub_evt.data
 
-    def LoadImageFiducials(self, pubsub_evt):
-        marker_id = pubsub_evt.data[0]
-        coord = pubsub_evt.data[1]
-        for n in const.BTNS_IMG:
-            btn_id = const.BTNS_IMG[n].keys()[0]
-            fid_id = const.BTNS_IMG[n].values()[0]
-            if marker_id == fid_id and not self.btns_coord[btn_id].GetValue():
-                self.btns_coord[btn_id].SetValue(True)
-                self.fiducials[btn_id, :] = coord[0:3]
-                for m in [0, 1, 2]:
-                    self.numctrls_coord[btn_id][m].SetValue(coord[m])
+    def OnChoiceTracker(self, evt, ctrl):
+        if evt:
+            choice = evt.GetSelection()
+        else:
+            choice = self.tracker_id
+
+        if self.trk_init:
+            trck = self.trk_init[0]
+        else:
+            trck = None
+
+        # Conditions check if click was on current selection and if any other tracker
+        # has been initialized before
+        if trck and choice != 6:
+            self.ResetTrackerFiducials()
+            self.trk_init = dt.TrackerConnection(self.tracker_id, 'disconnect')
+            self.tracker_id = choice
+            if not self.trk_init[0]:
+                self.trk_init = dt.TrackerConnection(self.tracker_id, 'connect')
+                if not self.trk_init[0]:
+                    dlg.NavigationTrackerWarning(self.tracker_id, self.trk_init[1])
+                    ctrl.SetSelection(0)
+                    print "Tracker not connected!"
+                else:
+                    ctrl.SetSelection(self.tracker_id)
+                    print "Tracker connected!"
+        elif choice == 6:
+            if trck:
+                self.trk_init = dt.TrackerConnection(self.tracker_id, 'disconnect')
+                if not self.trk_init[0]:
+                    dlg.NavigationTrackerWarning(self.tracker_id, 'disconnect')
+                    self.tracker_id = 0
+                    ctrl.SetSelection(self.tracker_id)
+                    print "Tracker disconnected!"
+                else:
+                    print "Tracker still connected!"
+            else:
+                ctrl.SetSelection(self.tracker_id)
+
+        else:
+            # If trk_init is None try to connect. If doesn't succeed show dialog.
+            if choice:
+                self.tracker_id = choice
+                self.trk_init = dt.TrackerConnection(self.tracker_id, 'connect')
+                if not self.trk_init[0]:
+                    dlg.NavigationTrackerWarning(self.tracker_id, self.trk_init[1])
+                    self.tracker_id = 0
+                    ctrl.SetSelection(self.tracker_id)
+
+    def OnChoiceRefMode(self, evt, ctrl):
+        # When ref mode is changed the tracker coords are set to zero
+        self.ref_mode_id = evt.GetSelection()
+        self.ResetTrackerFiducials()
+        # Some trackers do not accept restarting within this time window
+        # TODO: Improve the restarting of trackers after changing reference mode
+        # self.OnChoiceTracker(None, ctrl)
+        print "Reference mode changed!"
 
     def OnSetImageCoordinates(self, evt):
         # FIXME: Cross does not update in last clicked slice, only on the other two
@@ -412,7 +470,7 @@ class NeuronavigationPanel(wx.Panel):
                 tracker_mode = self.trk_init, self.tracker_id, self.ref_mode_id
                 # FIXME: FRE is taking long to calculate so it updates on GUI delayed to navigation - I think its fixed
                 # TODO: Exhibit FRE in a warning dialog and only starts navigation after user clicks ok
-                fre = self.CalculateFRE(minv, n, q1, q2)
+                fre = db.calculate_fre(self.fiducials, minv, n, q1, q2)
 
                 txtctrl_fre.SetValue(str(round(fre, 2)))
                 if fre <= 3:
@@ -439,81 +497,6 @@ class NeuronavigationPanel(wx.Panel):
                 self.trigger.stop()
 
             self.correg.stop()
-
-    def CalculateFRE(self, minv, n, q1, q2):
-
-        img = np.zeros([3, 3])
-        dist = np.zeros([3, 1])
-
-        p1 = np.mat(self.fiducials[3, :]).reshape(3, 1)
-        p2 = np.mat(self.fiducials[4, :]).reshape(3, 1)
-        p3 = np.mat(self.fiducials[5, :]).reshape(3, 1)
-
-        img[0, :] = np.asarray((q1 + (minv * n) * (p1 - q2)).reshape(1, 3))
-        img[1, :] = np.asarray((q1 + (minv * n) * (p2 - q2)).reshape(1, 3))
-        img[2, :] = np.asarray((q1 + (minv * n) * (p3 - q2)).reshape(1, 3))
-
-        dist[0] = np.sqrt(np.sum(np.power((img[0, :] - self.fiducials[0, :]), 2)))
-        dist[1] = np.sqrt(np.sum(np.power((img[1, :] - self.fiducials[1, :]), 2)))
-        dist[2] = np.sqrt(np.sum(np.power((img[2, :] - self.fiducials[2, :]), 2)))
-
-        return float(np.sqrt(np.sum(dist ** 2) / 3))
-
-    def OnChoiceTracker(self, evt, ctrl):
-        if evt:
-            choice = evt.GetSelection()
-        else:
-            choice = self.tracker_id
-
-        if self.trk_init:
-            trck = self.trk_init[0]
-        else:
-            trck = None
-
-        # Conditions check if click was on current selection and if any other tracker
-        # has been initialized before
-        if trck and choice != 6:
-            self.ResetTrackerFiducials()
-            self.trk_init = dt.TrackerConnection(self.tracker_id, 'disconnect')
-            self.tracker_id = choice
-            if not self.trk_init[0]:
-                self.trk_init = dt.TrackerConnection(self.tracker_id, 'connect')
-                if not self.trk_init[0]:
-                    dlg.NavigationTrackerWarning(self.tracker_id, self.trk_init[1])
-                    ctrl.SetSelection(0)
-                    print "Tracker not connected!"
-                else:
-                    ctrl.SetSelection(self.tracker_id)
-                    print "Tracker connected!"
-        elif choice == 6:
-            if trck:
-                self.trk_init = dt.TrackerConnection(self.tracker_id, 'disconnect')
-                if not self.trk_init[0]:
-                    dlg.NavigationTrackerWarning(self.tracker_id, 'disconnect')
-                    self.tracker_id = 0
-                    ctrl.SetSelection(self.tracker_id)
-                    print "Tracker disconnected!"
-                else:
-                    print "Tracker still connected!"
-            else:
-                ctrl.SetSelection(self.tracker_id)
-
-        else:
-            # If trk_init is None try to connect. If doesn't succeed show dialog.
-            if choice:
-                self.tracker_id = choice
-                self.trk_init = dt.TrackerConnection(self.tracker_id, 'connect')
-                if not self.trk_init[0]:
-                    dlg.NavigationTrackerWarning(self.tracker_id, self.trk_init[1])
-                    self.tracker_id = 0
-                    ctrl.SetSelection(self.tracker_id)
-
-    def OnChoiceRefMode(self, evt, ctrl):
-        # When ref mode is changed the tracker coords are set to zero
-        self.ref_mode_id = evt.GetSelection()
-        self.ResetTrackerFiducials()
-        self.OnChoiceTracker(None, ctrl)
-        print "Reference mode changed!"
 
     def ResetTrackerFiducials(self):
         for m in range(3, 6):
@@ -613,6 +596,9 @@ class MarkersPanel(wx.Panel):
         Publisher.subscribe(self.OnDeleteSingleMarker, 'Delete fiducial marker')
         Publisher.subscribe(self.OnCreateMarker, 'Create marker')
 
+    def UpdateCurrentCoord(self, pubsub_evt):
+        self.current_coord = pubsub_evt.data
+
     def OnListEditMarkerId(self, evt):
         menu_id = wx.Menu()
         menu_id.Append(-1, _('Edit ID'))
@@ -626,43 +612,6 @@ class MarkersPanel(wx.Panel):
         self.lc.SetStringItem(list_index, 4, id_label)
         # Add the new ID to exported list
         self.list_coord[list_index][7] = str(id_label)
-
-    def OnCreateMarker(self, evt):
-        # OnCreateMarker is used for both pubsub and button click events
-        # Pubsub is used for markers created with fiducial buttons, trigger and create marker button
-        if hasattr(evt, 'data'):
-            if evt.data:
-                self.CreateMarker(evt.data[0], (0.0, 1.0, 0.0), self.marker_size, evt.data[1])
-            else:
-                self.CreateMarker(self.current_coord, self.marker_colour, self.marker_size)
-        else:
-            self.CreateMarker(self.current_coord, self.marker_colour, self.marker_size)
-
-    def CreateMarker(self, coord, colour, size, marker_id=""):
-        # TODO: Use matrix coordinates and not world coordinates as current method.
-        # This makes easier for inter-software comprehension.
-
-        Publisher.sendMessage('Add marker', (self.marker_ind, size, colour,  coord))
-
-        self.marker_ind += 1
-
-        # List of lists with coordinates and properties of a marker
-        line = [coord[0], coord[1], coord[2], colour[0], colour[1], colour[2], self.marker_size, marker_id]
-
-        # Adding current line to a list of all markers already created
-        if not self.list_coord:
-            self.list_coord = [line]
-        else:
-            self.list_coord.append(line)
-
-        # Add item to list control in panel
-        num_items = self.lc.GetItemCount()
-        self.lc.InsertStringItem(num_items, str(num_items + 1))
-        self.lc.SetStringItem(num_items, 1, str(round(coord[0], 2)))
-        self.lc.SetStringItem(num_items, 2, str(round(coord[1], 2)))
-        self.lc.SetStringItem(num_items, 3, str(round(coord[2], 2)))
-        self.lc.SetStringItem(num_items, 4, str(marker_id))
-        self.lc.EnsureVisible(num_items)
 
     def OnDeleteAllMarkers(self, pubsub_evt):
         self.list_coord = []
@@ -696,9 +645,17 @@ class MarkersPanel(wx.Panel):
                 pass
             else:
                 dlg.NoMarkerSelected()
-    
-    def UpdateCurrentCoord(self, pubsub_evt):
-        self.current_coord = pubsub_evt.data
+
+    def OnCreateMarker(self, evt):
+        # OnCreateMarker is used for both pubsub and button click events
+        # Pubsub is used for markers created with fiducial buttons, trigger and create marker button
+        if hasattr(evt, 'data'):
+            if evt.data:
+                self.CreateMarker(evt.data[0], (0.0, 1.0, 0.0), self.marker_size, evt.data[1])
+            else:
+                self.CreateMarker(self.current_coord, self.marker_colour, self.marker_size)
+        else:
+            self.CreateMarker(self.current_coord, self.marker_colour, self.marker_size)
 
     def OnLoadMarkers(self, evt):
         filepath = dlg.ShowLoadMarkersDialog()
@@ -754,3 +711,29 @@ class MarkersPanel(wx.Panel):
 
     def OnSelectSize(self, evt, ctrl):
         self.marker_size = ctrl.GetValue()
+
+    def CreateMarker(self, coord, colour, size, marker_id=""):
+        # TODO: Use matrix coordinates and not world coordinates as current method.
+        # This makes easier for inter-software comprehension.
+
+        Publisher.sendMessage('Add marker', (self.marker_ind, size, colour,  coord))
+
+        self.marker_ind += 1
+
+        # List of lists with coordinates and properties of a marker
+        line = [coord[0], coord[1], coord[2], colour[0], colour[1], colour[2], self.marker_size, marker_id]
+
+        # Adding current line to a list of all markers already created
+        if not self.list_coord:
+            self.list_coord = [line]
+        else:
+            self.list_coord.append(line)
+
+        # Add item to list control in panel
+        num_items = self.lc.GetItemCount()
+        self.lc.InsertStringItem(num_items, str(num_items + 1))
+        self.lc.SetStringItem(num_items, 1, str(round(coord[0], 2)))
+        self.lc.SetStringItem(num_items, 2, str(round(coord[1], 2)))
+        self.lc.SetStringItem(num_items, 3, str(round(coord[2], 2)))
+        self.lc.SetStringItem(num_items, 4, str(marker_id))
+        self.lc.EnsureVisible(num_items)
