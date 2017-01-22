@@ -113,6 +113,8 @@ class Viewer(wx.Panel):
         self.repositioned_coronal_plan = 0
         self.added_actor = 0
 
+        self.camera_state = True
+
         self.ball_actor = None
         self._mode_cross = False
         self._to_show_ball = 0
@@ -156,6 +158,7 @@ class Viewer(wx.Panel):
 
         Publisher.subscribe(self.ResetCamClippingRange, 'Reset cam clipping range')
         Publisher.subscribe(self.SetVolumeCamera, 'Set camera in volume')
+        Publisher.subscribe(self.SetVolumeCameraState, 'Update volume camera state')
 
         Publisher.subscribe(self.OnEnableStyle, 'Enable style')
         Publisher.subscribe(self.OnDisableStyle, 'Disable style')
@@ -640,33 +643,37 @@ class Viewer(wx.Panel):
         self.ren.ResetCamera()
         self.ren.ResetCameraClippingRange()
 
+    def SetVolumeCameraState(self, pubsub_evt):
+        self.camera_state = pubsub_evt.data
+
     def SetVolumeCamera(self, pubsub_evt):
-        #TODO: exclude dependency on initial focus
-        cam_focus = np.array(bases.flip_x(pubsub_evt.data))
-        cam = self.ren.GetActiveCamera()
+        if self.camera_state:
+            #TODO: exclude dependency on initial focus
+            cam_focus = np.array(bases.flip_x(pubsub_evt.data))
+            cam = self.ren.GetActiveCamera()
 
-        if self.initial_focus is None:
-            self.initial_focus = np.array(cam.GetFocalPoint())
+            if self.initial_focus is None:
+                self.initial_focus = np.array(cam.GetFocalPoint())
 
-        cam_pos0 = np.array(cam.GetPosition())
-        cam_focus0 = np.array(cam.GetFocalPoint())
+            cam_pos0 = np.array(cam.GetPosition())
+            cam_focus0 = np.array(cam.GetFocalPoint())
 
-        v0 = cam_pos0 - cam_focus0
-        v0n = np.sqrt(inner1d(v0, v0))
+            v0 = cam_pos0 - cam_focus0
+            v0n = np.sqrt(inner1d(v0, v0))
 
-        v1 = (cam_focus - self.initial_focus)
-        v1n = np.sqrt(inner1d(v1, v1))
-        if not v1n:
-            v1n = 1.0
-        cam_pos = (v1/v1n)*v0n + cam_focus
+            v1 = (cam_focus - self.initial_focus)
+            v1n = np.sqrt(inner1d(v1, v1))
+            if not v1n:
+                v1n = 1.0
+            cam_pos = (v1/v1n)*v0n + cam_focus
 
-        cam.SetFocalPoint(cam_focus)
-        cam.SetPosition(cam_pos)
+            cam.SetFocalPoint(cam_focus)
+            cam.SetPosition(cam_pos)
 
         # It works without doing the reset. Check with trackers if there is any difference.
+        # Need to be outside condition for sphere marker position update
         # self.ren.ResetCameraClippingRange()
         # self.ren.ResetCamera()
-
         self.interactor.Render()
 
     def OnExportSurface(self, pubsub_evt):

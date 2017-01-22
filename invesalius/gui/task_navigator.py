@@ -16,7 +16,9 @@
 #    PARTICULAR. Consulte a Licenca Publica Geral GNU para obter mais
 #    detalhes.
 #--------------------------------------------------------------------------
+
 from functools import partial
+import sys
 
 import numpy as np
 import wx
@@ -29,6 +31,7 @@ import invesalius.data.bases as db
 import invesalius.data.coordinates as dco
 import invesalius.data.coregistration as dcr
 import invesalius.data.trackers as dt
+import invesalius.data.trigger as trig
 import invesalius.gui.dialogs as dlg
 import invesalius.gui.widgets.foldpanelbar as fpb
 import invesalius.gui.widgets.colourselect as csel
@@ -56,10 +59,10 @@ class InnerTaskPanel(wx.Panel):
         default_colour = self.GetBackgroundColour()
         background_colour = wx.Colour(255,255,255)
         self.SetBackgroundColour(background_colour)
-        self.SetAutoLayout(1)
 
         txt_nav = wx.StaticText(self, -1, _('Select fiducials and navigate'),
                                 size=wx.Size(90, 20))
+        txt_nav.SetFont(wx.Font(9, wx.DEFAULT, wx.NORMAL, wx.BOLD))
 
         # Create horizontal sizer to represent lines in the panel
         txt_sizer = wx.BoxSizer(wx.HORIZONTAL)
@@ -69,16 +72,48 @@ class InnerTaskPanel(wx.Panel):
         fold_panel = FoldPanel(self)
         fold_panel.SetBackgroundColour(default_colour)
 
+        # Check box for camera update in volume rendering during navigation
+        tooltip = wx.ToolTip(_("Update camera in volume"))
+        checkcamera = wx.CheckBox(self, -1, _('Volume camera'))
+        checkcamera.SetToolTip(tooltip)
+        checkcamera.SetValue(True)
+        checkcamera.Bind(wx.EVT_CHECKBOX, partial(self.UpdateVolumeCamera, ctrl=checkcamera))
+
+        # Check box for camera update in volume rendering during navigation
+        tooltip = wx.ToolTip(_("Enable external trigger for creating markers"))
+        checktrigger = wx.CheckBox(self, -1, _('External trigger'))
+        checktrigger.SetToolTip(tooltip)
+        checktrigger.SetValue(False)
+        checktrigger.Bind(wx.EVT_CHECKBOX, partial(self.UpdateExternalTrigger, ctrl=checktrigger))
+
+        if sys.platform != 'win32':
+            checkcamera.SetWindowVariant(wx.WINDOW_VARIANT_SMALL)
+            checktrigger.SetWindowVariant(wx.WINDOW_VARIANT_SMALL)
+
+        line_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        line_sizer.Add(checkcamera, 0, wx.ALIGN_LEFT | wx.RIGHT | wx.LEFT, 5)
+        line_sizer.Add(checktrigger, 1, wx.EXPAND | wx.ALIGN_RIGHT | wx.RIGHT | wx.LEFT, 5)
+        line_sizer.Fit(self)
+
         # Add line sizer into main sizer
         main_sizer = wx.BoxSizer(wx.VERTICAL)
         main_sizer.Add(txt_sizer, 0, wx.GROW|wx.EXPAND|wx.LEFT|wx.RIGHT, 5)
         main_sizer.Add(fold_panel, 1, wx.GROW|wx.EXPAND|wx.LEFT|wx.RIGHT|wx.BOTTOM, 5)
+        main_sizer.AddSizer(line_sizer, 0, wx.GROW | wx.EXPAND)
+        main_sizer.AddSpacer(5)
         main_sizer.Fit(self)
 
-        self.SetSizer(main_sizer)
+        self.SetSizerAndFit(main_sizer)
         self.Update()
+        self.SetAutoLayout(1)
 
         self.sizer = main_sizer
+
+    def UpdateExternalTrigger(self, evt, ctrl):
+        Publisher.sendMessage('Update trigger state', ctrl.GetValue())
+
+    def UpdateVolumeCamera(self, evt, ctrl):
+        Publisher.sendMessage('Update volume camera state', ctrl.GetValue())
 
 
 class FoldPanel(wx.Panel):
@@ -156,10 +191,12 @@ class NeuronavigationPanel(wx.Panel):
         self.__bind_events()
 
         # Initialize global variables
-        self.correg = None
-        self.trk_init = None
-        self.current_coord = 0, 0, 0
         self.fiducials = np.full([6, 3], np.nan)
+        self.correg = None
+        self.current_coord = 0, 0, 0
+        self.trk_init = None
+        self.trigger = None
+        self.trigger_state = False
 
         self.tracker_id = const.DEFAULT_TRACKER
         self.ref_mode_id = const.DEFAULT_REF_MODE
@@ -210,17 +247,22 @@ class NeuronavigationPanel(wx.Panel):
             else:
                 self.btns_coord[n].Bind(wx.EVT_BUTTON, self.OnTrackerFiducials)
 
-        # Target registration error text box
-        tooltip = wx.ToolTip(_("Target registration error"))
-        txtctrl_tre = wx.TextCtrl(self, value="")
-        txtctrl_tre.SetEditable(0)
-        txtctrl_tre.SetToolTip(tooltip)
+        # TODO: Find a better allignment between FRE, text and navigate button
+        txt_fre = wx.StaticText(self, -1, _('FRE:'))
+
+        # Fiducial registration error text box
+        tooltip = wx.ToolTip(_("Fiducial registration error"))
+        txtctrl_fre = wx.TextCtrl(self, value="", size=wx.Size(60, 25))
+        txtctrl_fre.SetFont(wx.Font(9, wx.DEFAULT, wx.NORMAL, wx.BOLD))
+        txtctrl_fre.SetBackgroundColour('WHITE')
+        txtctrl_fre.SetEditable(0)
+        txtctrl_fre.SetToolTip(tooltip)
 
         # Toggle button for neuronavigation
         tooltip = wx.ToolTip(_("Start navigation"))
-        btn_nav = wx.ToggleButton(self, -1, _("Neuronavigate"))
+        btn_nav = wx.ToggleButton(self, -1, _("Navigate"), size=wx.Size(80, 28))
         btn_nav.SetToolTip(tooltip)
-        btn_nav.Bind(wx.EVT_TOGGLEBUTTON, partial(self.OnNavigate, btn=(btn_nav, choice_trck, choice_ref, txtctrl_tre)))
+        btn_nav.Bind(wx.EVT_TOGGLEBUTTON, partial(self.OnNavigate, btn=(btn_nav, choice_trck, choice_ref, txtctrl_fre)))
 
         # Image and tracker coordinates number controls
         for m in range(0, 7):
@@ -242,9 +284,10 @@ class NeuronavigationPanel(wx.Panel):
                 if m in range(1, 6):
                     self.numctrls_coord[m][n].SetEditable(False)
 
-        nav_sizer = wx.FlexGridSizer(rows=1, cols=2, hgap=5, vgap=5)
-        nav_sizer.AddMany([(txtctrl_tre, wx.LEFT|wx.RIGHT),
-                           (btn_nav, wx.LEFT|wx.RIGHT)])
+        nav_sizer = wx.FlexGridSizer(rows=1, cols=3, hgap=5, vgap=5)
+        nav_sizer.AddMany([(txt_fre, 0, wx.ALIGN_CENTER_HORIZONTAL),
+                           (txtctrl_fre, 0, wx.ALIGN_CENTER_HORIZONTAL),
+                           (btn_nav, 0, wx.ALIGN_CENTER_HORIZONTAL)])
 
         group_sizer = wx.FlexGridSizer(rows=9, cols=1, hgap=5, vgap=5)
         group_sizer.AddGrowableCol(0, 1)
@@ -263,21 +306,25 @@ class NeuronavigationPanel(wx.Panel):
         self.Fit()
 
     def __bind_events(self):
+        Publisher.subscribe(self.LoadImageFiducials, 'Load image fiducials')
+        Publisher.subscribe(self.UpdateTriggerState, 'Update trigger state')
         Publisher.subscribe(self.UpdateImageCoordinates, 'Set ball reference position')
-        Publisher.subscribe(self.LoadImageFiducials, 'Load Fiducials')
 
     def UpdateImageCoordinates(self, pubsub_evt):
         # TODO: Change from world coordinates to matrix coordinates. They are better for multi software communication.
         self.current_coord = pubsub_evt.data
         for m in [0, 1, 2, 6]:
-            if m == 6:
+            if m == 6 and self.btns_coord[m].IsEnabled():
                 for n in [0, 1, 2]:
                     self.numctrls_coord[m][n].SetValue(self.current_coord[n])
-            else:
-                btn_state = self.btns_coord[m].GetValue()
-                if not btn_state:
-                    for n in [0, 1, 2]:
-                        self.numctrls_coord[m][n].SetValue(self.current_coord[n])
+            elif m != 6 and not self.btns_coord[m].GetValue():
+                # btn_state = self.btns_coord[m].GetValue()
+                # if not btn_state:
+                for n in [0, 1, 2]:
+                    self.numctrls_coord[m][n].SetValue(self.current_coord[n])
+
+    def UpdateTriggerState (self, pubsub_evt):
+        self.trigger_state = pubsub_evt.data
 
     def LoadImageFiducials(self, pubsub_evt):
         marker_id = pubsub_evt.data[0]
@@ -287,10 +334,12 @@ class NeuronavigationPanel(wx.Panel):
             fid_id = const.BTNS_IMG[n].values()[0]
             if marker_id == fid_id and not self.btns_coord[btn_id].GetValue():
                 self.btns_coord[btn_id].SetValue(True)
-                for n in [0, 1, 2]:
-                    self.numctrls_coord[btn_id][n].SetValue(coord[n])
+                self.fiducials[btn_id, :] = coord[0:3]
+                for m in [0, 1, 2]:
+                    self.numctrls_coord[btn_id][m].SetValue(coord[m])
 
     def OnSetImageCoordinates(self, evt):
+        # FIXME: Cross does not update in last clicked slice, only on the other two
         btn_id = const.BTNS_TRK[evt.GetId()].keys()[0]
 
         wx, wy, wz = self.numctrls_coord[btn_id][0].GetValue(), \
@@ -310,13 +359,13 @@ class NeuronavigationPanel(wx.Panel):
             coord = self.numctrls_coord[btn_id][0].GetValue(),\
                     self.numctrls_coord[btn_id][1].GetValue(),\
                     self.numctrls_coord[btn_id][2].GetValue()
-            # if btn_id != 6:
+
             self.fiducials[btn_id, :] = coord[0:3]
-            Publisher.sendMessage('Create fiducial markers', (coord, marker_id))
+            Publisher.sendMessage('Create marker', (coord, marker_id))
         else:
             for n in [0, 1, 2]:
                 self.numctrls_coord[btn_id][n].SetValue(self.current_coord[n])
-            # if btn_id != 6:
+
             self.fiducials[btn_id, :] = np.nan
             Publisher.sendMessage('Delete fiducial marker', marker_id)
 
@@ -332,8 +381,6 @@ class NeuronavigationPanel(wx.Panel):
         # Update number controls with tracker coordinates
         if coord is not None:
             self.fiducials[btn_id, :] = coord[0:3]
-            # print 'coord: ', coord
-            # print 'fids: ', self.fiducials
             for n in [0, 1, 2]:
                 self.numctrls_coord[btn_id][n].SetValue(float(coord[n]))
 
@@ -341,7 +388,7 @@ class NeuronavigationPanel(wx.Panel):
         btn_nav = btn[0]
         choice_trck = btn[1]
         choice_ref = btn[2]
-        txtctrl_tre = btn[3]
+        txtctrl_fre = btn[3]
 
         nav_id = btn_nav.GetValue()
         if nav_id:
@@ -363,15 +410,18 @@ class NeuronavigationPanel(wx.Panel):
                 n, q2, ninv = db.base_creation(self.fiducials[3::, :])
 
                 tracker_mode = self.trk_init, self.tracker_id, self.ref_mode_id
-                # FIXME: FRE is taking long to calculate so it updates on GUI delayed to navigation - i think its fixed
+                # FIXME: FRE is taking long to calculate so it updates on GUI delayed to navigation - I think its fixed
                 # TODO: Exhibit FRE in a warning dialog and only starts navigation after user clicks ok
                 fre = self.CalculateFRE(minv, n, q1, q2)
 
-                txtctrl_tre.SetValue("FRE: " + str(round(fre, 2)))
+                txtctrl_fre.SetValue(str(round(fre, 2)))
                 if fre <= 3:
-                    txtctrl_tre.SetBackgroundColour('GREEN')
+                    txtctrl_fre.SetBackgroundColour('GREEN')
                 else:
-                    txtctrl_tre.SetBackgroundColour('RED')
+                    txtctrl_fre.SetBackgroundColour('RED')
+
+                if self.trigger_state:
+                    self.trigger = trig.Trigger(nav_id)
 
                 self.correg = dcr.Coregistration((minv, n, q1, q2), nav_id, tracker_mode)
 
@@ -384,6 +434,9 @@ class NeuronavigationPanel(wx.Panel):
             choice_trck.Enable(True)
             for btn_c in self.btns_coord:
                 btn_c.Enable(True)
+
+            if self.trigger_state:
+                self.trigger.stop()
 
             self.correg.stop()
 
@@ -456,7 +509,7 @@ class NeuronavigationPanel(wx.Panel):
                     ctrl.SetSelection(self.tracker_id)
 
     def OnChoiceRefMode(self, evt, ctrl):
-        # When ref mode is changed the tracker coords are set to zero, self.aux_trck is the flag that sets it
+        # When ref mode is changed the tracker coords are set to zero
         self.ref_mode_id = evt.GetSelection()
         self.ResetTrackerFiducials()
         self.OnChoiceTracker(None, ctrl)
@@ -477,64 +530,60 @@ class MarkersPanel(wx.Panel):
         self.SetAutoLayout(1)
 
         self.__bind_events()
-        
-        self.ijk = 0, 0, 0
-        self.flagpoint1 = 0
-        self.ballid = 0
-        self.fiducial_color = 0.0, 1.0, 0.0
-        self.fiducial_flag = 0
-        self.fiducial_ID = ""
+
+        self.current_coord = 0, 0, 0
+        self.list_coord = []
+        self.marker_ind = 0
 
         self.marker_colour = (0.0, 0.0, 1.)
         self.marker_size = 4
 
         # Change marker size
-        spin_marker_size = wx.SpinCtrl(self, -1, "", size=wx.Size(40, 23))
-        spin_marker_size.SetRange(1, 99)
-        spin_marker_size.SetValue(self.marker_size)
-        spin_marker_size.Bind(wx.EVT_TEXT, partial(self.OnSelectSize, ctrl=spin_marker_size))
-        spin_marker_size.Bind(wx.EVT_SPINCTRL, partial(self.OnSelectSize, ctrl=spin_marker_size))
-        # self.spin = spin_marker_size
+        spin_size = wx.SpinCtrl(self, -1, "", size=wx.Size(40, 23))
+        spin_size.SetRange(1, 99)
+        spin_size.SetValue(self.marker_size)
+        spin_size.Bind(wx.EVT_TEXT, partial(self.OnSelectSize, ctrl=spin_size))
+        spin_size.Bind(wx.EVT_SPINCTRL, partial(self.OnSelectSize, ctrl=spin_size))
 
         # Marker colour select
-        marker_colour = csel.ColourSelect(self, -1, colour=[255*s for s in self.marker_colour], size=wx.Size(20, 23))
-        marker_colour.Bind(csel.EVT_COLOURSELECT, partial(self.OnSelectColour, ctrl=marker_colour))
+        select_colour = csel.ColourSelect(self, -1, colour=[255*s for s in self.marker_colour], size=wx.Size(20, 23))
+        select_colour.Bind(csel.EVT_COLOURSELECT, partial(self.OnSelectColour, ctrl=select_colour))
 
-        create_markers = wx.Button(self, -1, label=_('Create marker'), size=wx.Size(135, 23))
-        create_markers.Bind(wx.EVT_BUTTON, self.OnCreateMarker)
+        btn_create = wx.Button(self, -1, label=_('Create marker'), size=wx.Size(135, 23))
+        btn_create.Bind(wx.EVT_BUTTON, self.OnCreateMarker)
 
-        line1 = wx.FlexGridSizer(rows=1, cols=3, hgap=5, vgap=5)
-        line1.AddMany([(spin_marker_size, 1),
-                       (marker_colour, 0),
-                       (create_markers, 0)])
+        sizer_create = wx.FlexGridSizer(rows=1, cols=3, hgap=5, vgap=5)
+        sizer_create.AddMany([(spin_size, 1),
+                              (select_colour, 0),
+                              (btn_create, 0)])
 
-        ## LINE 2
-        save_markers = wx.Button(self, -1, label=_('Save'), size=wx.Size(65, 23))
-        save_markers.Bind(wx.EVT_BUTTON, self.OnSaveMarkers)
+        # Buttons to save and load markers and to change its visibility as well
+        btn_save = wx.Button(self, -1, label=_('Save'), size=wx.Size(65, 23))
+        btn_save.Bind(wx.EVT_BUTTON, self.OnSaveMarkers)
 
-        load_markers = wx.Button(self, -1, label=_('Load'), size=wx.Size(65, 23))
-        load_markers.Bind(wx.EVT_BUTTON, self.OnLoadMarkers)
+        btn_load = wx.Button(self, -1, label=_('Load'), size=wx.Size(65, 23))
+        btn_load.Bind(wx.EVT_BUTTON, self.OnLoadMarkers)
 
-        self.markers_visibility = wx.ToggleButton(self, -1, _("Hide"), size=wx.Size(65, 23))
-        self.markers_visibility.Bind(wx.EVT_TOGGLEBUTTON, self.OnMarkersVisibility)
+        btn_visibility = wx.ToggleButton(self, -1, _("Hide"), size=wx.Size(65, 23))
+        btn_visibility.Bind(wx.EVT_TOGGLEBUTTON, partial(self.OnMarkersVisibility, ctrl=btn_visibility))
 
-        line2 = wx.FlexGridSizer(rows=1, cols=3, hgap=5, vgap=5)
-        line2.AddMany([(save_markers, 1, wx.RIGHT),
-                       (load_markers, 0, wx.LEFT | wx.RIGHT),
-                       (self.markers_visibility, 0, wx.LEFT)])
+        sizer_btns = wx.FlexGridSizer(rows=1, cols=3, hgap=5, vgap=5)
+        sizer_btns.AddMany([(btn_save, 1, wx.RIGHT),
+                            (btn_load, 0, wx.LEFT | wx.RIGHT),
+                            (btn_visibility, 0, wx.LEFT)])
 
-        ## Line 3
-        del_s_markers = wx.Button(self, -1, label=_('Remove'), size=wx.Size(65, 23))
-        del_s_markers.Bind(wx.EVT_BUTTON, self.DelSingleMarker)
+        # Buttons to delete or remove markers
+        btn_delete_single = wx.Button(self, -1, label=_('Remove'), size=wx.Size(65, 23))
+        btn_delete_single.Bind(wx.EVT_BUTTON, self.OnDeleteSingleMarker)
 
-        del_markers = wx.Button(self, -1, label=_('Delete all markers'), size=wx.Size(135, 23))
-        del_markers.Bind(wx.EVT_BUTTON, self.OnDelMarker)
+        btn_delete_all = wx.Button(self, -1, label=_('Delete all markers'), size=wx.Size(135, 23))
+        btn_delete_all.Bind(wx.EVT_BUTTON, self.OnDeleteAllMarkers)
 
-        line3 = wx.FlexGridSizer(rows=1, cols=2, hgap=5, vgap=5)
-        line3.AddMany([(del_s_markers, 1, wx.RIGHT),
-                       (del_markers, 0, wx.LEFT)])
+        sizer_delete = wx.FlexGridSizer(rows=1, cols=2, hgap=5, vgap=5)
+        sizer_delete.AddMany([(btn_delete_single, 1, wx.RIGHT),
+                              (btn_delete_all, 0, wx.LEFT)])
 
-        ##ListCtrl
+        # List of markers
         self.lc = wx.ListCtrl(self, -1, style=wx.LC_REPORT, size=wx.Size(0,120))
         self.lc.InsertColumn(0, '#')
         self.lc.InsertColumn(1, 'X')
@@ -546,141 +595,115 @@ class MarkersPanel(wx.Panel):
         self.lc.SetColumnWidth(2, 50)
         self.lc.SetColumnWidth(3, 50)
         self.lc.SetColumnWidth(4, 50)
-        self.lc.Bind(wx.EVT_LIST_ITEM_RIGHT_CLICK, self.menu)
-        # Add all lines into main sizer
-        sizer = wx.BoxSizer(wx.VERTICAL)
-        sizer.Add(line1, 0, wx.TOP | wx.BOTTOM | wx.ALIGN_CENTER_HORIZONTAL, 5)
-        sizer.Add(line2, 0, wx.BOTTOM | wx.ALIGN_CENTER_HORIZONTAL, 5)
-        sizer.Add(line3, 0, wx.BOTTOM | wx.ALIGN_CENTER_HORIZONTAL, 5)
-        sizer.Add(self.lc, 0, wx.EXPAND | wx.ALL | wx.ALIGN_CENTER_HORIZONTAL, 5)
-        sizer.Fit(self)
+        self.lc.Bind(wx.EVT_LIST_ITEM_RIGHT_CLICK, self.OnListEditMarkerId)
 
-        self.SetSizer(sizer)
+        # Add all lines into main sizer
+        group_sizer = wx.BoxSizer(wx.VERTICAL)
+        group_sizer.Add(sizer_create, 0, wx.TOP | wx.BOTTOM | wx.ALIGN_CENTER_HORIZONTAL, 5)
+        group_sizer.Add(sizer_btns, 0, wx.BOTTOM | wx.ALIGN_CENTER_HORIZONTAL, 5)
+        group_sizer.Add(sizer_delete, 0, wx.BOTTOM | wx.ALIGN_CENTER_HORIZONTAL, 5)
+        group_sizer.Add(self.lc, 0, wx.EXPAND | wx.ALL | wx.ALIGN_CENTER_HORIZONTAL, 5)
+        group_sizer.Fit(self)
+
+        self.SetSizer(group_sizer)
         self.Update()
 
     def __bind_events(self):
-        Publisher.subscribe(self.GetPoint, 'Set ball reference position')
-        Publisher.subscribe(self.DelSingleMarker, 'Delete fiducial marker')
-        Publisher.subscribe(self.Fiducial_markers, 'Create fiducial markers')
-        Publisher.subscribe(self.OnCreateMarker, 'Create markers')
+        Publisher.subscribe(self.UpdateCurrentCoord, 'Set ball reference position')
+        Publisher.subscribe(self.OnDeleteSingleMarker, 'Delete fiducial marker')
+        Publisher.subscribe(self.OnCreateMarker, 'Create marker')
 
-    def menu(self, evt):
-        menu = wx.Menu()
-        menu.Append(-1, _('Edit ID'))
-        menu.Bind(wx.EVT_MENU, self.EditID)
-        self.PopupMenu(menu)
-        menu.Destroy()
+    def OnListEditMarkerId(self, evt):
+        menu_id = wx.Menu()
+        menu_id.Append(-1, _('Edit ID'))
+        menu_id.Bind(wx.EVT_MENU, self.OnMenuEditMarkerId)
+        self.PopupMenu(menu_id)
+        menu_id.Destroy()
 
-    def EditID(self,evt):
-        ID = dlg.EnterMarkerID(self.lc.GetItemText(self.lc.GetFocusedItem(), 4))
-        index = self.lc.GetFocusedItem()
-        self.lc.SetStringItem(index, 4, ID)
-        #add the new ID to exported list
-        self.list_coord[index][7] = str(ID)
+    def OnMenuEditMarkerId(self, evt):
+        id_label = dlg.EnterMarkerID(self.lc.GetItemText(self.lc.GetFocusedItem(), 4))
+        list_index = self.lc.GetFocusedItem()
+        self.lc.SetStringItem(list_index, 4, id_label)
+        # Add the new ID to exported list
+        self.list_coord[list_index][7] = str(id_label)
 
-    def Fiducial_markers(self, pubsub_evt):
-        coord = pubsub_evt.data[0]
-        self.fiducial_ID = pubsub_evt.data[1]
-        self.fiducial_flag = 1
-        self.CreateMarker(coord, self.fiducial_color, self.marker_size)
-
-    def CreateMarker(self, coord_data, colour_data, size_data):
-        #Create a file and write the points given by getpoint's button 
-        coord = coord_data
-        colour = colour_data
-        size = size_data
-
-        Publisher.sendMessage('Add marker', (self.ballid, size, colour,  coord))
-        self.ballid = self.ballid + 1
-        #sum 1 for each coordinate to matlab comprehension
-        #coord = coord[0] + 1.0, coord[1] + 1.0, coord[2] + 1.0
-        #line with coordinates and properties of a marker
-        if self.fiducial_flag == 1:
-            self.fiducial_flag = 0
+    def OnCreateMarker(self, evt):
+        # OnCreateMarker is used for both pubsub and button click events
+        # Pubsub is used for markers created with fiducial buttons, trigger and create marker button
+        if hasattr(evt, 'data'):
+            if evt.data:
+                self.CreateMarker(evt.data[0], (0.0, 1.0, 0.0), self.marker_size, evt.data[1])
+            else:
+                self.CreateMarker(self.current_coord, self.marker_colour, self.marker_size)
         else:
-            self.fiducial_ID = ""
-        line = [coord[0] , coord[1] , coord[2] , colour[0], colour[1], colour[2], self.marker_size, self.fiducial_ID]
-        if self.flagpoint1 == 0:
+            self.CreateMarker(self.current_coord, self.marker_colour, self.marker_size)
+
+    def CreateMarker(self, coord, colour, size, marker_id=""):
+        # TODO: Use matrix coordinates and not world coordinates as current method.
+        # This makes easier for inter-software comprehension.
+
+        Publisher.sendMessage('Add marker', (self.marker_ind, size, colour,  coord))
+
+        self.marker_ind += 1
+
+        # List of lists with coordinates and properties of a marker
+        line = [coord[0], coord[1], coord[2], colour[0], colour[1], colour[2], self.marker_size, marker_id]
+
+        # Adding current line to a list of all markers already created
+        if not self.list_coord:
             self.list_coord = [line]
-            self.flagpoint1 = 1
         else:
-            #adding current line to a list of all markers already created
             self.list_coord.append(line)
 
-        ##ListCtrl
+        # Add item to list control in panel
         num_items = self.lc.GetItemCount()
-        cont = num_items + 1
-        self.lc.InsertStringItem(num_items, str(cont))
-        self.lc.SetStringItem(num_items, 1, str(round(coord[0],2)))
-        self.lc.SetStringItem(num_items, 2, str(round(coord[1],2)))
-        self.lc.SetStringItem(num_items, 3, str(round(coord[2],2)))
-        self.lc.SetStringItem(num_items, 4, str(self.fiducial_ID))
+        self.lc.InsertStringItem(num_items, str(num_items + 1))
+        self.lc.SetStringItem(num_items, 1, str(round(coord[0], 2)))
+        self.lc.SetStringItem(num_items, 2, str(round(coord[1], 2)))
+        self.lc.SetStringItem(num_items, 3, str(round(coord[2], 2)))
+        self.lc.SetStringItem(num_items, 4, str(marker_id))
         self.lc.EnsureVisible(num_items)
 
-    def OnDelMarker(self, pubsub_evt):
+    def OnDeleteAllMarkers(self, pubsub_evt):
         self.list_coord = []
+        self.marker_ind = 0
         Publisher.sendMessage('Remove all markers', self.lc.GetItemCount())
         self.lc.DeleteAllItems()
-        self.ballid = 0
 
-    def DelSingleMarker(self, pubsub_evt):
-        ##this try is to remove the toggle=false fiducial marker, doesnt matter the order
-        try:
-            id = pubsub_evt.data
-            print 'event id: ', id
-            # print 'id: ', id
-            # print 'count: ', self.lc.GetItemCount()
+    def OnDeleteSingleMarker(self, evt):
+        # OnDeleteSingleMarker is used for both pubsub and button click events
+        # Pubsub is used for fiducial handle and button click for all others
+
+        if hasattr(evt, 'data'):
+            marker_id = evt.data
             if self.lc.GetItemCount():
-                for idx in range(self.lc.GetItemCount()):
-                    item = self.lc.GetItem(idx, 4)
-                    # print 'item: ', item
-                    # print 'text: ', item.GetText()
-                    if item.GetText() == id:
-                        if id == "LEI":
+                for id_n in range(self.lc.GetItemCount()):
+                    item = self.lc.GetItem(id_n, 4)
+                    if item.GetText() == marker_id:
+                        if marker_id == "LEI" or marker_id == "REI" or marker_id == "NAI":
                             self.lc.Focus(item.GetId())
                             break
-                        if id == "REI":
-                            self.lc.Focus(item.GetId())
-                            break
-                        if id == "NAI":
-                            self.lc.Focus(item.GetId())
-                            break
-        except AttributeError:
-            pass
-
-        if self.lc.GetFocusedItem() is not -1 and self.lc.GetItemCount():
-            index = self.lc.GetFocusedItem()
-            del self.list_coord[index]
-            self.lc.DeleteItem(index)
-            for x in range(0,self.lc.GetItemCount()):
-                self.lc.SetStringItem(x, 0, str(x+1))
-            self.ballid = self.ballid - 1
-            Publisher.sendMessage('Remove marker', index)
-        elif not self.lc.GetItemCount():
-            pass
         else:
-            dlg.NoMarkerSelected()
+            if self.lc.GetFocusedItem() is not -1 and self.lc.GetItemCount():
+                index = self.lc.GetFocusedItem()
+                del self.list_coord[index]
+                self.lc.DeleteItem(index)
+                for n in range(0, self.lc.GetItemCount()):
+                    self.lc.SetStringItem(n, 0, str(n+1))
+                self.marker_ind -= 1
+                Publisher.sendMessage('Remove marker', index)
+            elif not self.lc.GetItemCount():
+                pass
+            else:
+                dlg.NoMarkerSelected()
     
-    def GetPoint(self, pubsub_evt):
-        self.ijk = pubsub_evt.data
-        ##print "ijk: ", self.ijk
-        
-        """pt_id = self.imagedata.FindPoint(self.xyz)
-        pt_id = self.ijk
-        #print "pt_id: ", pt_id
-        
-        rest = pt_id%(256*256)
-        i = rest/256 + 1 
-        j = rest%256 + 1
-        k = (pt_id/(256*256)) + 1"""
-                   
-    def OnCreateMarker(self, evt):
-        coord = self.ijk
-        self.CreateMarker(coord, self.marker_colour, self.marker_size)
+    def UpdateCurrentCoord(self, pubsub_evt):
+        self.current_coord = pubsub_evt.data
 
     def OnLoadMarkers(self, evt):
         filepath = dlg.ShowLoadMarkersDialog()
-        if filepath is not None:
+
+        if filepath:
             try:
                 content = [s.rstrip() for s in open(filepath)]
                 for data in content:
@@ -688,47 +711,43 @@ class MarkersPanel(wx.Panel):
                     coord = float(line[0]), float(line[1]), float(line[2])
                     colour = float(line[3]), float(line[4]), float(line[5])
                     size = float(line[6])
+
                     if len(line) == 8:
-                        self.fiducial_flag = 1
-                        self.fiducial_ID = line[7]
-                        Publisher.sendMessage('Load Fiducials', (self.fiducial_ID, coord))
+                        if line[7] == "LEI" or line[7] == "REI" or line[7] == "NAI":
+                            Publisher.sendMessage('Load image fiducials', (line[7], coord))
+                            self.CreateMarker(coord, colour, size, line[7])
                     else:
-                        self.fiducial_flag = 0
-                    self.CreateMarker(coord, colour, size)
+                        self.CreateMarker(coord, colour, size)
             except:
                 dlg.InvalidMarkersFile()
-                # raise ValueError('Invalid Markers File')
-        else:
-            pass
 
-    def OnMarkersVisibility(self, evt):
-        ballid = self.lc.GetItemCount()
-        flag5 = self.markers_visibility.GetValue()
-        if flag5 == True:
-            Publisher.sendMessage('Hide all markers',  ballid)
-            self.markers_visibility.SetLabel('Show')
-        elif flag5 == False:
-            Publisher.sendMessage('Show all markers',  ballid)
-            self.markers_visibility.SetLabel('Hide')
+    def OnMarkersVisibility(self, evt, ctrl):
+
+        if ctrl.GetValue():
+            Publisher.sendMessage('Hide all markers',  self.lc.GetItemCount())
+            ctrl.SetLabel('Show')
+        else:
+            Publisher.sendMessage('Show all markers',  self.lc.GetItemCount())
+            ctrl.SetLabel('Hide')
             
     def OnSaveMarkers(self, evt):
-        filename = dlg.ShowSaveMarkersDialog("Markers.txt")
-        if filename is not None:
-            text_file = open(filename, "w")
-            list_slice1 = self.list_coord[0]
-            coord = str('%.3f' %self.list_coord[0][0]) + "\t" + str('%.3f' %self.list_coord[0][1]) + "\t" + str('%.3f' %self.list_coord[0][2])
-            properties = str('%.3f' %list_slice1[3]) + "\t" + str('%.3f' %list_slice1[4]) + "\t" + str('%.3f' %list_slice1[5]) + "\t" + str('%.1f' %list_slice1[6]) + "\t" + list_slice1[7]
-            line = coord + "\t" + properties + "\n"
-            list_slice = self.list_coord[1:]
-            for i in list_slice:
-                #line = line + str('%.3f' %i[0]) + "\t" + str('%.3f' %i[1]) + "\t" + str('%.3f' %i[2]) + "\n"
-                coord = str('%.3f' %i[0]) + "\t" + str('%.3f' %i[1]) + "\t" + str('%.3f' %i[2])
-                properties = str('%.3f' %i[3]) + "\t" + str('%.3f' %i[4]) + "\t" + str('%.3f' %i[5]) + "\t" + str('%.1f' %i[6]) + "\t" + i[7]
-                line = line + coord + "\t" + properties + "\n"
-            text_file.writelines(line)
-            text_file.close()
-        else:
-            pass
+        filename = dlg.ShowSaveMarkersDialog("markers.txt")
+        if filename:
+            if self.list_coord:
+                text_file = open(filename, "w")
+                list_slice1 = self.list_coord[0]
+                coord = str('%.3f' %self.list_coord[0][0]) + "\t" + str('%.3f' %self.list_coord[0][1]) + "\t" + str('%.3f' %self.list_coord[0][2])
+                properties = str('%.3f' %list_slice1[3]) + "\t" + str('%.3f' %list_slice1[4]) + "\t" + str('%.3f' %list_slice1[5]) + "\t" + str('%.1f' %list_slice1[6]) + "\t" + list_slice1[7]
+                line = coord + "\t" + properties + "\n"
+                list_slice = self.list_coord[1:]
+
+                for value in list_slice:
+                    coord = str('%.3f' %value[0]) + "\t" + str('%.3f' %value[1]) + "\t" + str('%.3f' %value[2])
+                    properties = str('%.3f' %value[3]) + "\t" + str('%.3f' %value[4]) + "\t" + str('%.3f' %value[5]) + "\t" + str('%.1f' %value[6]) + "\t" + value[7]
+                    line = line + coord + "\t" + properties + "\n"
+
+                text_file.writelines(line)
+                text_file.close()
     
     def OnSelectColour(self, evt, ctrl):
         self.marker_colour = [colour/255.0 for colour in ctrl.GetValue()]

@@ -640,8 +640,6 @@ BOOLEAN_AND = 3
 BOOLEAN_XOR = 4
 
 #------------ Navigation defaults -------------------
-MARKER_SIZE = 4
-MARKER_COLOUR = (0.0, 0.0, 1.)
 
 SELECT = 0
 MTC = 1
