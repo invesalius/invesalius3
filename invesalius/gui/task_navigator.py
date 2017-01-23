@@ -72,34 +72,11 @@ class InnerTaskPanel(wx.Panel):
         fold_panel = FoldPanel(self)
         fold_panel.SetBackgroundColour(default_colour)
 
-        # Check box for camera update in volume rendering during navigation
-        tooltip = wx.ToolTip(_("Update camera in volume"))
-        checkcamera = wx.CheckBox(self, -1, _('Volume camera'))
-        checkcamera.SetToolTip(tooltip)
-        checkcamera.SetValue(True)
-        checkcamera.Bind(wx.EVT_CHECKBOX, partial(self.UpdateVolumeCamera, ctrl=checkcamera))
-
-        # Check box for camera update in volume rendering during navigation
-        tooltip = wx.ToolTip(_("Enable external trigger for creating markers"))
-        checktrigger = wx.CheckBox(self, -1, _('External trigger'))
-        checktrigger.SetToolTip(tooltip)
-        checktrigger.SetValue(False)
-        checktrigger.Bind(wx.EVT_CHECKBOX, partial(self.UpdateExternalTrigger, ctrl=checktrigger))
-
-        if sys.platform != 'win32':
-            checkcamera.SetWindowVariant(wx.WINDOW_VARIANT_SMALL)
-            checktrigger.SetWindowVariant(wx.WINDOW_VARIANT_SMALL)
-
-        line_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        line_sizer.Add(checkcamera, 0, wx.ALIGN_LEFT | wx.RIGHT | wx.LEFT, 5)
-        line_sizer.Add(checktrigger, 1, wx.EXPAND | wx.ALIGN_RIGHT | wx.RIGHT | wx.LEFT, 5)
-        line_sizer.Fit(self)
 
         # Add line sizer into main sizer
         main_sizer = wx.BoxSizer(wx.VERTICAL)
         main_sizer.Add(txt_sizer, 0, wx.GROW|wx.EXPAND|wx.LEFT|wx.RIGHT, 5)
-        main_sizer.Add(fold_panel, 1, wx.GROW|wx.EXPAND|wx.LEFT|wx.RIGHT|wx.BOTTOM, 5)
-        main_sizer.AddSizer(line_sizer, 0, wx.GROW | wx.EXPAND)
+        main_sizer.Add(fold_panel, 1, wx.GROW|wx.EXPAND|wx.LEFT|wx.RIGHT, 5)
         main_sizer.AddSpacer(5)
         main_sizer.Fit(self)
 
@@ -108,12 +85,6 @@ class InnerTaskPanel(wx.Panel):
         self.SetAutoLayout(1)
 
         self.sizer = main_sizer
-
-    def UpdateExternalTrigger(self, evt, ctrl):
-        Publisher.sendMessage('Update trigger state', ctrl.GetValue())
-
-    def UpdateVolumeCamera(self, evt, ctrl):
-        Publisher.sendMessage('Update volume camera state', ctrl.GetValue())
 
 
 class FoldPanel(wx.Panel):
@@ -145,7 +116,7 @@ class InnerFoldPanel(wx.Panel):
         # Study this.
 
         fold_panel = fpb.FoldPanelBar(self, -1, wx.DefaultPosition,
-                                      (10, 320), 0, fpb.FPB_SINGLE_FOLD)
+                                      (10, 293), 0, fpb.FPB_SINGLE_FOLD)
 
         # Fold panel style
         style = fpb.CaptionBarStyle()
@@ -170,14 +141,47 @@ class InnerFoldPanel(wx.Panel):
         fold_panel.AddFoldPanelWindow(item, mtw, Spacing= 0,
                                       leftSpacing=0, rightSpacing=0)
 
+        
+        # Check box for camera update in volume rendering during navigation
+        tooltip = wx.ToolTip(_("Update camera in volume"))
+        checkcamera = wx.CheckBox(self, -1, _('Volume camera'))
+        checkcamera.SetToolTip(tooltip)
+        checkcamera.SetValue(True)
+        checkcamera.Bind(wx.EVT_CHECKBOX, partial(self.UpdateVolumeCamera, ctrl=checkcamera))
+
+        # Check box for camera update in volume rendering during navigation
+        tooltip = wx.ToolTip(_("Enable external trigger for creating markers"))
+        checktrigger = wx.CheckBox(self, -1, _('External trigger'))
+        checktrigger.SetToolTip(tooltip)
+        checktrigger.SetValue(False)
+        checktrigger.Bind(wx.EVT_CHECKBOX, partial(self.UpdateExternalTrigger, ctrl=checktrigger))
+
+        if sys.platform != 'win32':
+            checkcamera.SetWindowVariant(wx.WINDOW_VARIANT_SMALL)
+            checktrigger.SetWindowVariant(wx.WINDOW_VARIANT_SMALL)
+
+        line_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        line_sizer.Add(checkcamera, 0, wx.ALIGN_LEFT | wx.RIGHT | wx.LEFT, 5)
+        line_sizer.Add(checktrigger, 1,wx.ALIGN_RIGHT | wx.RIGHT | wx.LEFT, 5)
+        line_sizer.Fit(self)
+
         # Panel sizer to expand fold panel
         sizer = wx.BoxSizer(wx.VERTICAL)
-        sizer.Add(fold_panel, 1, wx.GROW|wx.EXPAND)
+        sizer.Add(fold_panel, 0, wx.GROW|wx.EXPAND)
+        sizer.Add(line_sizer, 1, wx.GROW | wx.EXPAND)
         sizer.Fit(self)
 
         self.SetSizer(sizer)
         self.Update()
         self.SetAutoLayout(1)
+        
+    def UpdateExternalTrigger(self, evt, ctrl):
+        Publisher.sendMessage('Update trigger state', ctrl.GetValue())
+
+    def UpdateVolumeCamera(self, evt, ctrl):
+        Publisher.sendMessage('Update volume camera state', ctrl.GetValue())
+
+
 
 
 class NeuronavigationPanel(wx.Panel):
@@ -252,7 +256,7 @@ class NeuronavigationPanel(wx.Panel):
 
         # Fiducial registration error text box
         tooltip = wx.ToolTip(_("Fiducial registration error"))
-        txtctrl_fre = wx.TextCtrl(self, value="", size=wx.Size(60, 25))
+        txtctrl_fre = wx.TextCtrl(self, value="", size=wx.Size(60, -1), style=wx.TE_CENTRE)
         txtctrl_fre.SetFont(wx.Font(9, wx.DEFAULT, wx.NORMAL, wx.BOLD))
         txtctrl_fre.SetBackgroundColour('WHITE')
         txtctrl_fre.SetEditable(0)
@@ -260,7 +264,7 @@ class NeuronavigationPanel(wx.Panel):
 
         # Toggle button for neuronavigation
         tooltip = wx.ToolTip(_("Start navigation"))
-        btn_nav = wx.ToggleButton(self, -1, _("Navigate"), size=wx.Size(80, 28))
+        btn_nav = wx.ToggleButton(self, -1, _("Navigate"), size=wx.Size(80, -1))
         btn_nav.SetToolTip(tooltip)
         btn_nav.Bind(wx.EVT_TOGGLEBUTTON, partial(self.OnNavigate, btn=(btn_nav, choice_trck, choice_ref, txtctrl_fre)))
 
@@ -285,9 +289,9 @@ class NeuronavigationPanel(wx.Panel):
                     self.numctrls_coord[m][n].SetEditable(False)
 
         nav_sizer = wx.FlexGridSizer(rows=1, cols=3, hgap=5, vgap=5)
-        nav_sizer.AddMany([(txt_fre, 0, wx.ALIGN_CENTER_HORIZONTAL),
-                           (txtctrl_fre, 0, wx.ALIGN_CENTER_HORIZONTAL),
-                           (btn_nav, 0, wx.ALIGN_CENTER_HORIZONTAL)])
+        nav_sizer.AddMany([(txt_fre, 0, wx.ALIGN_CENTER_HORIZONTAL | wx.ALIGN_CENTER_VERTICAL),
+                           (txtctrl_fre, 0, wx.ALIGN_CENTER_HORIZONTAL | wx.ALIGN_CENTER_VERTICAL),
+                           (btn_nav, 0, wx.ALIGN_CENTER_HORIZONTAL | wx.ALIGN_CENTER_VERTICAL)])
 
         group_sizer = wx.FlexGridSizer(rows=9, cols=1, hgap=5, vgap=5)
         group_sizer.AddGrowableCol(0, 1)
@@ -672,6 +676,8 @@ class MarkersPanel(wx.Panel):
                     if len(line) == 8:
                         if line[7] == "LEI" or line[7] == "REI" or line[7] == "NAI":
                             Publisher.sendMessage('Load image fiducials', (line[7], coord))
+                            self.CreateMarker(coord, colour, size, line[7])
+                        else:
                             self.CreateMarker(coord, colour, size, line[7])
                     else:
                         self.CreateMarker(coord, colour, size)
