@@ -676,11 +676,9 @@ class MarkersPanel(wx.Panel):
                     if len(line) == 8:
                         if line[7] == "LEI" or line[7] == "REI" or line[7] == "NAI":
                             Publisher.sendMessage('Load image fiducials', (line[7], coord))
-                            self.CreateMarker(coord, colour, size, line[7])
-                        else:
-                            self.CreateMarker(coord, colour, size, line[7])
                     else:
-                        self.CreateMarker(coord, colour, size)
+                        line.append("")
+                    self.CreateMarker(coord, colour, size, line[7])
             except:
                 dlg.InvalidMarkersFile()
 
