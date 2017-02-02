@@ -487,8 +487,9 @@ VTK_WARNING = 0
 
 [ID_DICOM_IMPORT, ID_PROJECT_OPEN, ID_PROJECT_SAVE_AS, ID_PROJECT_SAVE,
 ID_PROJECT_CLOSE, ID_PROJECT_INFO, ID_SAVE_SCREENSHOT, ID_DICOM_LOAD_NET,
-ID_PRINT_SCREENSHOT, ID_IMPORT_OTHERS_FILES, ID_ANALYZE_IMPORT, ID_PREFERENCES,
-ID_DICOM_NETWORK, ID_TIFF_JPG_PNG, ID_VIEW_INTERPOLATED] = [wx.NewId() for number in range(15)]
+ID_PRINT_SCREENSHOT, ID_IMPORT_OTHERS_FILES, ID_PREFERENCES, ID_DICOM_NETWORK,
+ID_TIFF_JPG_PNG, ID_VIEW_INTERPOLATED, ID_ANALYZE_IMPORT, ID_NIFTI_IMPORT,
+ID_PARREC_IMPORT] = [wx.NewId() for number in range(17)]
 ID_EXIT = wx.ID_EXIT
 ID_ABOUT = wx.ID_ABOUT
 
@@ -637,3 +638,53 @@ BOOLEAN_UNION = 1
 BOOLEAN_DIFF = 2
 BOOLEAN_AND = 3
 BOOLEAN_XOR = 4
+
+#------------ Navigation defaults -------------------
+
+SELECT = 0
+MTC = 1
+FASTRAK = 2
+ISOTRAKII = 3
+PATRIOT = 4
+DEBUGTRACK = 5
+DISCTRACK = 6
+DEFAULT_TRACKER = SELECT
+
+TRACKER = [_("Select tracker:"), _("Claron MicronTracker"),
+           _("Polhemus FASTRAK"), _("Polhemus ISOTRAK II"),
+           _("Polhemus PATRIOT"), _("Debug tracker"),
+           _("Disconnect tracker")]
+
+STATIC_REF = 0
+DYNAMIC_REF = 1
+DEFAULT_REF_MODE = DYNAMIC_REF
+REF_MODE = [_("Static ref."), _("Dynamic ref.")]
+
+IR1 = wx.NewId()
+IR2 = wx.NewId()
+IR3 = wx.NewId()
+TR1 = wx.NewId()
+TR2 = wx.NewId()
+TR3 = wx.NewId()
+SET = wx.NewId()
+
+BTNS_IMG = {IR1: {0: _('LEI')},
+            IR2: {1: _('REI')},
+            IR3: {2: _('NAI')}}
+
+TIPS_IMG = [wx.ToolTip(_("Select left ear in image")),
+            wx.ToolTip(_("Select right ear in image")),
+            wx.ToolTip(_("Select nasion in image"))]
+
+BTNS_TRK = {TR1: {3: _('LET')},
+            TR2: {4: _('RET')},
+            TR3: {5: _('NAT')},
+            SET: {6: _('SET')}}
+
+TIPS_TRK = [wx.ToolTip(_("Select left ear with spatial tracker")),
+            wx.ToolTip(_("Select right ear with spatial tracker")),
+            wx.ToolTip(_("Select nasion with spatial tracker")),
+            wx.ToolTip(_("Show set coordinates in image"))]
+
+CAL_DIR = os.path.abspath(os.path.join(FILE_PATH, '..', 'navigation', 'mtc_files', 'CalibrationFiles'))
+MAR_DIR = os.path.abspath(os.path.join(FILE_PATH, '..', 'navigation', 'mtc_files', 'Markers'))

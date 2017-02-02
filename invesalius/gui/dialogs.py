@@ -22,8 +22,11 @@ import os
 import random
 import sys
 
+import vtk
 import wx
 import wx.combo
+
+from vtk.wx.wxVTKRenderWindowInteractor import wxVTKRenderWindowInteractor
 from wx.lib import masked
 from wx.lib.agw import floatspin
 from wx.lib.wordwrap import wordwrap
@@ -206,13 +209,20 @@ class ProgressDialog(object):
         self.dlg.Destroy()
 
 
-
-#---------
-WILDCARD_OPEN = "InVesalius 3 project (*.inv3)|*.inv3|"\
+# ---------
+WILDCARD_OPEN = "InVesalius 3 project (*.inv3)|*.inv3|" \
                 "All files (*.*)|*.*"
 
-WILDCARD_ANALYZE = "Analyze (*.hdr)|*.hdr|"\
-                "All files (*.*)|*.*"
+WILDCARD_ANALYZE = "Analyze 7.5 (*.hdr)|*.hdr|" \
+                   "All files (*.*)|*.*"
+
+WILDCARD_NIFTI = "NIfTI 1 (*.nii)|*.nii|" \
+                 "Compressed NIfTI (*.nii.gz)|*.nii.gz|" \
+                 "All files (*.*)|*.*"
+
+WILDCARD_PARREC = "PAR/REC (*.par)|*.par|" \
+                  "All files (*.*)|*.*"
+
 
 def ShowOpenProjectDialog():
     # Default system path
@@ -232,35 +242,7 @@ def ShowOpenProjectDialog():
         if dlg.ShowModal() == wx.ID_OK:
             # This returns a Python list of files that were selected.
             filepath = dlg.GetPath()
-    except(wx._core.PyAssertionError): #FIX: win64
-        filepath = dlg.GetPath()
-
-    # Destroy the dialog. Don't do this until you are done with it!
-    # BAD things can happen otherwise!
-    dlg.Destroy()
-    os.chdir(current_dir)
-    return filepath
-
-
-def ShowOpenAnalyzeDialog():
-    # Default system path
-    current_dir = os.path.abspath(".")
-    dlg = wx.FileDialog(None, message=_("Open Analyze file"),
-                        defaultDir="",
-                        defaultFile="", wildcard=WILDCARD_ANALYZE,
-                        style=wx.FD_OPEN|wx.FD_CHANGE_DIR)
-
-    # inv3 filter is default
-    dlg.SetFilterIndex(0)
-
-    # Show the dialog and retrieve the user response. If it is the OK response,
-    # process the data.
-    filepath = None
-    try:
-        if dlg.ShowModal() == wx.ID_OK:
-            # This returns a Python list of files that were selected.
-            filepath = dlg.GetPath()
-    except(wx._core.PyAssertionError): #FIX: win64
+    except(wx._core.PyAssertionError):  # FIX: win64
         filepath = dlg.GetPath()
 
     # Destroy the dialog. Don't do this until you are done with it!
@@ -353,6 +335,47 @@ def ShowImportBitmapDirDialog():
     return path
 
 
+def ShowImportOtherFilesDialog(id_type):
+    # Default system path
+    current_dir = os.path.abspath(".")
+    dlg = wx.FileDialog(None, message=_("Import Analyze 7.5 file"),
+                        defaultDir="",
+                        defaultFile="", wildcard=WILDCARD_ANALYZE,
+                        style=wx.FD_OPEN | wx.FD_CHANGE_DIR)
+
+    if id_type == const.ID_NIFTI_IMPORT:
+        dlg.SetMessage(_("Import NIFTi 1 file"))
+        dlg.SetWildcard(WILDCARD_NIFTI)
+    elif id_type == const.ID_PARREC_IMPORT:
+        dlg.SetMessage(_("Import PAR/REC file"))
+        dlg.SetWildcard(WILDCARD_PARREC)
+
+    # inv3 filter is default
+    dlg.SetFilterIndex(0)
+
+    # Show the dialog and retrieve the user response. If it is the OK response,
+    # process the data.
+    filename = None
+    try:
+        if dlg.ShowModal() == wx.ID_OK:
+            # GetPath returns in unicode, if a path has non-ascii characters a
+            # UnicodeEncodeError is raised. To avoid this, path is encoded in utf-8
+            if sys.platform == "win32":
+                filename = dlg.GetPath()
+            else:
+                filename = dlg.GetPath().encode('utf-8')
+
+    except(wx._core.PyAssertionError):  # TODO: error win64
+        if (dlg.GetPath()):
+            filename = dlg.GetPath()
+
+    # Destroy the dialog. Don't do this until you are done with it!
+    # BAD things can happen otherwise!
+    dlg.Destroy()
+    os.chdir(current_dir)
+    return filename
+
+
 def ShowSaveAsProjectDialog(default_filename=None):
     current_dir = os.path.abspath(".")
     dlg = wx.FileDialog(None,
@@ -380,9 +403,69 @@ def ShowSaveAsProjectDialog(default_filename=None):
             if filename.split(".")[-1] != extension:
                 filename = filename + "." + extension
 
+    os.chdir(current_dir)
+    return filename
+
+
+# Dialog for neuronavigation markers
+def ShowSaveMarkersDialog(default_filename=None):
+    current_dir = os.path.abspath(".")
+    dlg = wx.FileDialog(None,
+                        _("Save markers as..."),  # title
+                        "",  # last used directory
+                        default_filename,
+                        _("Markers (*.txt)|*.txt"),
+                        wx.SAVE | wx.OVERWRITE_PROMPT)
+    # dlg.SetFilterIndex(0) # default is VTI
+
+    filename = None
+    try:
+        if dlg.ShowModal() == wx.ID_OK:
+            filename = dlg.GetPath()
+            ok = 1
+        else:
+            ok = 0
+    except(wx._core.PyAssertionError):  # TODO: fix win64
+        filename = dlg.GetPath()
+        ok = 1
+
+    if (ok):
+        extension = "txt"
+        if sys.platform != 'win32':
+            if filename.split(".")[-1] != extension:
+                filename = filename + "." + extension
 
     os.chdir(current_dir)
     return filename
+
+
+def ShowLoadMarkersDialog():
+    current_dir = os.path.abspath(".")
+
+    dlg = wx.FileDialog(None, message=_("Load markers"),
+                        defaultDir="",
+                        defaultFile="",
+                        style=wx.OPEN|wx.CHANGE_DIR)
+
+    # inv3 filter is default
+    dlg.SetFilterIndex(0)
+
+    # Show the dialog and retrieve the user response. If it is the OK response,
+    # process the data.
+    filepath = None
+    try:
+        if dlg.ShowModal() == wx.ID_OK:
+            # This returns a Python list of files that were selected.
+            filepath = dlg.GetPath()
+    except(wx._core.PyAssertionError):  # FIX: win64
+        filepath = dlg.GetPath()
+
+    # Destroy the dialog. Don't do this until you are done with it!
+    # BAD things can happen otherwise!
+    dlg.Destroy()
+    os.chdir(current_dir)
+    return filepath
+
 
 class MessageDialog(wx.Dialog):
     def __init__(self, message):
@@ -509,6 +592,7 @@ def ImportEmptyDirectory(dirpath):
     dlg.ShowModal()
     dlg.Destroy()
 
+
 def ImportInvalidFiles(ftype="DICOM"):
     if ftype == "Bitmap":
         msg =  _("There are no Bitmap, JPEG, PNG or TIFF files in the selected folder.")
@@ -523,6 +607,20 @@ def ImportInvalidFiles(ftype="DICOM"):
                                 wx.ICON_INFORMATION | wx.OK)
     dlg.ShowModal()
     dlg.Destroy()
+
+
+def ImportAnalyzeWarning():
+    msg1 = _("Warning! InVesalius has limited support to Analyze format.\n")
+    msg2 = _("Slices may be wrongly oriented and functions may not work properly.")
+    if sys.platform == 'darwin':
+        dlg = wx.MessageDialog(None, "", msg1 + msg2,
+                                wx.ICON_INFORMATION | wx.OK)
+    else:
+        dlg = wx.MessageDialog(None, msg1 + msg2, "InVesalius 3",
+                                wx.ICON_INFORMATION | wx.OK)
+    dlg.ShowModal()
+    dlg.Destroy()
+
 
 def InexistentMask():
     msg = _("A mask is needed to create a surface.")
@@ -592,6 +690,86 @@ def SurfaceSelectionRequiredForDuplication():
                                 wx.ICON_INFORMATION | wx.OK)
     dlg.ShowModal()
     dlg.Destroy()
+
+
+# Dialogs for neuronavigation mode
+def InvalidFiducials():
+    msg = _("Fiducials are invalid. Select six coordinates.")
+    if sys.platform == 'darwin':
+        dlg = wx.MessageDialog(None, "", msg,
+                               wx.ICON_INFORMATION | wx.OK)
+    else:
+        dlg = wx.MessageDialog(None, msg, "InVesalius 3 - Neuronavigator",
+                               wx.ICON_INFORMATION | wx.OK)
+    dlg.ShowModal()
+    dlg.Destroy()
+
+
+def NavigationTrackerWarning(trck_id, lib_mode):
+    """
+    Spatial Tracker connection error
+    """
+    trck = {1: 'Claron MicronTracker',
+            2: 'Polhemus FASTRAK',
+            3: 'Polhemus ISOTRAK',
+            4: 'Polhemus PATRIOT',
+            5: 'Debug tracker device'}
+
+    if lib_mode == 'choose':
+        msg = _('No tracking device selected')
+    elif lib_mode == 'error':
+        msg = trck[trck_id] + _(' is not installed.')
+    elif lib_mode == 'disconnect':
+        msg = trck[trck_id] + _(' disconnected.')
+    else:
+        msg = trck[trck_id] + _(' is not connected.')
+
+    if sys.platform == 'darwin':
+        dlg = wx.MessageDialog(None, "", msg,
+                               wx.ICON_INFORMATION | wx.OK)
+    else:
+        dlg = wx.MessageDialog(None, msg, "InVesalius 3 - Neuronavigator",
+                               wx.ICON_INFORMATION | wx.OK)
+
+    dlg.ShowModal()
+    dlg.Destroy()
+
+
+def InvalidMarkersFile():
+    msg = _("The TXT file is invalid.")
+    if sys.platform == 'darwin':
+        dlg = wx.MessageDialog(None, "", msg,
+                               wx.ICON_INFORMATION | wx.OK)
+    else:
+        dlg = wx.MessageDialog(None, msg, "InVesalius 3 - Neuronavigator",
+                               wx.ICON_INFORMATION | wx.OK)
+    dlg.ShowModal()
+    dlg.Destroy()
+
+
+def NoMarkerSelected():
+    msg = _("No data selected")
+    if sys.platform == 'darwin':
+        dlg = wx.MessageDialog(None, "", msg,
+                                wx.ICON_INFORMATION | wx.OK)
+    else:
+        dlg = wx.MessageDialog(None,msg, "InVesalius 3 - Neuronavigator",
+                                wx.ICON_INFORMATION | wx.OK)
+    dlg.ShowModal()
+    dlg.Destroy()
+
+
+def EnterMarkerID(default):
+    msg = _("Edit marker ID")
+    if sys.platform == 'darwin':
+        dlg = wx.TextEntryDialog(None, "", msg, defaultValue=default)
+    else:
+        dlg = wx.TextEntryDialog(None, msg, "InVesalius 3", defaultValue=default)
+    dlg.ShowModal()
+    result = dlg.GetValue()
+    dlg.Destroy()
+    return result
+
 
 class NewMask(wx.Dialog):
     def __init__(self,
@@ -828,6 +1006,8 @@ def ShowAboutDialog(parent):
     info.Developers = ["Paulo Henrique Junqueira Amorim",
                        "Thiago Franco de Moraes",
                        "Jorge Vicente Lopes da Silva",
+                       "Victor Hugo de Oliveira e Souza (navigator)",
+                       "Renan Hiroshi Matsuda (navigator)"
                        "Tatiana Al-Chueyr (former)",
                        "Guilherme Cesar Soares Ruppert (former)",
                        "Fabio de Souza Azevedo (former)",

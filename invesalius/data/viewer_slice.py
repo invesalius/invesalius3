@@ -911,17 +911,15 @@ class Viewer(wx.Panel):
         if self.slice_data.cursor:
             self.slice_data.cursor.SetColour(colour_vtk)
 
-    def Navigation(self, pubsub_evt):
+    def UpdateSlicesNavigation(self, pubsub_evt):
         # Get point from base change
-        x, y, z = pubsub_evt.data
-        coord_cross = x, y, z
-        position = self.slice_data.actor.GetInput().FindPoint(x, y, z)
-        coord_cross = self.slice_data.actor.GetInput().GetPoint(position)
-        coord = self.calcultate_scroll_position(position)
-        Publisher.sendMessage('Update cross position', coord_cross)
+        wx, wy, wz = pubsub_evt.data
+        px, py = self.get_slice_pixel_coord_by_world_pos(wx, wy, wz)
+        coord = self.calcultate_scroll_position(px, py)
 
+        self.cross.SetFocalPoint((wx, wy, wz))
         self.ScrollSlice(coord)
-        self.interactor.Render()
+        Publisher.sendMessage('Set ball reference position', (wx, wy, wz))
 
     def ScrollSlice(self, coord):
         if self.orientation == "AXIAL":
@@ -1165,8 +1163,8 @@ class Viewer(wx.Panel):
                                   self.orientation))
         Publisher.subscribe(self.__update_cross_position,
                                 'Update cross position')
-        Publisher.subscribe(self.Navigation,
-                                 'Co-registered Points')
+        Publisher.subscribe(self.UpdateSlicesNavigation,
+                            'Co-registered points')
         ###
         #  Publisher.subscribe(self.ChangeBrushColour,
                                  #  'Add mask')

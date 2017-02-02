@@ -230,10 +230,8 @@ class CrossInteractorStyle(DefaultInteractorStyle):
         coord = self.viewer.calcultate_scroll_position(px, py)
         Publisher.sendMessage('Update cross position', (wx, wy, wz))
         self.ScrollSlice(coord)
-        Publisher.sendMessage('Set ball reference position based on bound',
-                                   (wx, wy, wz))
+        Publisher.sendMessage('Set ball reference position', (wx, wy, wz))
         Publisher.sendMessage('Set camera in volume', (wx, wy, wz))
-        Publisher.sendMessage('Render volume viewer')
 
         iren.Render()
 

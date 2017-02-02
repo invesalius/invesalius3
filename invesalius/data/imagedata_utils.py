@@ -592,41 +592,55 @@ def dcm2memmap(files, slice_size, orientation, resolution_percentage):
 
     return matrix, scalar_range, temp_file
 
-def analyze2mmap(analyze):
-    data = analyze.get_data()
-    header = analyze.get_header()
+
+def img2memmap(group):
+    """
+    From a nibabel image data creates a memmap file in the temp folder and
+    returns it and its related filename.
+    """
+
     temp_file = tempfile.mktemp()
 
-    # Sagital
-    if header['orient'] == 2:
-        print "Orientation Sagital"
-        shape = tuple([data.shape[i] for i in (1, 2, 0)])
-        matrix = numpy.memmap(temp_file, mode='w+', dtype=data.dtype, shape=shape)
-        for n, slice in enumerate(data):
-            matrix[:,:, n] = slice
+    data = group.get_data()
+    # Normalize image pixel values and convert to int16
+    data = imgnormalize(data)
 
-    # Coronal
-    elif header['orient'] == 1:
-        print "Orientation coronal"
-        shape = tuple([data.shape[i] for i in (1, 0, 2)])
-        matrix = numpy.memmap(temp_file, mode='w+', dtype=data.dtype, shape=shape)
-        for n, slice in enumerate(data):
-            matrix[:,n,:] = slice
+    # Convert RAS+ to default InVesalius orientation ZYX
+    data = numpy.swapaxes(data, 0, 2)
+    data = numpy.fliplr(data)
 
-    # AXIAL
-    elif header['orient'] == 0:
-        print "no orientation"
-        shape = tuple([data.shape[i] for i in (0, 1, 2)])
-        matrix = numpy.memmap(temp_file, mode='w+', dtype=data.dtype, shape=shape)
-        for n, slice in enumerate(data):
-            matrix[n] = slice
-
-    else:
-        print "Orientation Sagital"
-        shape = tuple([data.shape[i] for i in (1, 2, 0)])
-        matrix = numpy.memmap(temp_file, mode='w+', dtype=data.dtype, shape=shape)
-        for n, slice in enumerate(data):
-            matrix[:,:, n] = slice
-
+    matrix = numpy.memmap(temp_file, mode='w+', dtype=data.dtype, shape=data.shape)
+    matrix[:] = data[:]
     matrix.flush()
-    return matrix, temp_file
+
+    scalar_range = numpy.amin(matrix), numpy.amax(matrix)
+
+    return matrix, scalar_range, temp_file
+
+
+def imgnormalize(data, srange=(0, 255)):
+    """
+    Normalize image pixel intensity for int16 gray scale values.
+
+    :param data: image matrix
+    :param srange: range for normalization, default is 0 to 255
+    :return: normalized pixel intensity matrix
+    """
+
+    dataf = numpy.asarray(data)
+    rangef = numpy.asarray(srange)
+    faux = numpy.ravel(dataf).astype(float)
+    minimum = numpy.min(faux)
+    maximum = numpy.max(faux)
+    lower = rangef[0]
+    upper = rangef[1]
+
+    if minimum == maximum:
+        datan = numpy.ones(dataf.shape)*(upper + lower) / 2.
+    else:
+        datan = (faux-minimum)*(upper-lower) / (maximum-minimum) + lower
+
+    datan = numpy.reshape(datan, dataf.shape)
+    datan = datan.astype(numpy.int16)
+
+    return datan
