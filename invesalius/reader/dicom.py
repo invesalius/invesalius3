@@ -1295,7 +1295,10 @@ class Parser():
         if (data):
             encoding = self.GetEncoding()
             # Returns a unicode decoded in the own dicom encoding
-            return data.decode(encoding, 'replace')
+            try:
+                return data.decode(encoding, 'replace')
+            except(UnicodeEncodeError):
+                return data
         return ""
 
 
