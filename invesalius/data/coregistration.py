@@ -74,8 +74,8 @@ class Coregistration(threading.Thread):
             # TODO: Optimize the value of sleep for each tracking device.
             # Debug tracker is not working with 0.175 so changed to 0.2
             # However, 0.2 is too low update frequency ~5 Hz. Need optimization URGENTLY.
-            sleep(.3)
-            # sleep(0.175)
+            #sleep(.3)
+            sleep(0.175)
 
             if self._pause_:
                 return

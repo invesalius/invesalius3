@@ -20,6 +20,7 @@
 from math import sin, cos
 import numpy as np
 
+from time import sleep
 from random import uniform
 
 
@@ -211,7 +212,7 @@ def DebugCoord(trk_init, trck_id, ref_mode):
     :param trck_id: id of tracking device
     :return: six coordinates x, y, z, alfa, beta and gama
     """
-
+    sleep(0.2)
     if ref_mode:
         probe = np.array([uniform(1, 200), uniform(1, 200), uniform(1, 200),
                           uniform(1, 200), uniform(1, 200), uniform(1, 200)])
