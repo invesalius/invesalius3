@@ -22,7 +22,8 @@
 
 import sys
 
-import numpy
+import numpy as np
+from numpy.core.umath_tests import inner1d
 import wx
 import vtk
 from vtk.wx.wxVTKRenderWindowInteractor import wxVTKRenderWindowInteractor
@@ -45,10 +46,11 @@ class Viewer(wx.Panel):
 
         self.interaction_style = st.StyleStateManager()
 
-        self.ball_reference = None
-        self.initial_foco = None
+        self.initial_focus = None
 
-        style =  vtk.vtkInteractorStyleTrackballCamera()
+        self.staticballs = []
+
+        style = vtk.vtkInteractorStyleTrackballCamera()
         self.style = style
 
         interactor = wxVTKRenderWindowInteractor(self, -1, size = self.GetSize())
@@ -111,6 +113,9 @@ class Viewer(wx.Panel):
         self.repositioned_coronal_plan = 0
         self.added_actor = 0
 
+        self.camera_state = True
+
+        self.ball_actor = None
         self._mode_cross = False
         self._to_show_ball = 0
         self._ball_ref_visibility = False
@@ -153,6 +158,7 @@ class Viewer(wx.Panel):
 
         Publisher.subscribe(self.ResetCamClippingRange, 'Reset cam clipping range')
         Publisher.subscribe(self.SetVolumeCamera, 'Set camera in volume')
+        Publisher.subscribe(self.SetVolumeCameraState, 'Update volume camera state')
 
         Publisher.subscribe(self.OnEnableStyle, 'Enable style')
         Publisher.subscribe(self.OnDisableStyle, 'Disable style')
@@ -174,22 +180,23 @@ class Viewer(wx.Panel):
         Publisher.subscribe(self.OnStartSeed,'Create surface by seeding - start')
         Publisher.subscribe(self.OnEndSeed,'Create surface by seeding - end')
 
-        Publisher.subscribe(self.ActivateBallReference,
-                'Activate ball reference')
-        Publisher.subscribe(self.DeactivateBallReference,
-                'Deactivate ball reference')
-        Publisher.subscribe(self.SetBallReferencePosition,
-                'Set ball reference position')
-        Publisher.subscribe(self.SetBallReferencePositionBasedOnBound,
-                'Set ball reference position based on bound')
         Publisher.subscribe(self.SetStereoMode, 'Set stereo mode')
     
         Publisher.subscribe(self.Reposition3DPlane, 'Reposition 3D Plane')
         
         Publisher.subscribe(self.RemoveVolume, 'Remove Volume')
 
+        Publisher.subscribe(self.SetBallReferencePosition,
+                            'Set ball reference position')
         Publisher.subscribe(self._check_ball_reference, 'Enable style')
         Publisher.subscribe(self._uncheck_ball_reference, 'Disable style')
+
+        # Related to marker creation in navigation tools
+        Publisher.subscribe(self.AddMarker, 'Add marker')
+        Publisher.subscribe(self.HideAllMarkers, 'Hide all markers')
+        Publisher.subscribe(self.ShowAllMarkers, 'Show all markers')
+        Publisher.subscribe(self.RemoveAllMarkers, 'Remove all markers')
+        Publisher.subscribe(self.RemoveMarker, 'Remove marker')
 
     def SetStereoMode(self, pubsub_evt):
         mode = pubsub_evt.data
@@ -220,43 +227,6 @@ class Viewer(wx.Panel):
         
         self.interactor.Render()
 
-    def CreateBallReference(self):
-        MRAD = 3.0
-        proj = prj.Project()
-        s = proj.spacing
-        # The sphere's radius will be MRAD times bigger than the media of the
-        # spacing values.
-        r = (s[0] + s[1] + s[2]) / 3.0 * MRAD
-        self.ball_reference = vtk.vtkSphereSource()
-        self.ball_reference.SetRadius(r)
-
-        mapper = vtk.vtkPolyDataMapper()
-        mapper.SetInputConnection(self.ball_reference.GetOutputPort())
-
-        p = vtk.vtkProperty()
-        p.SetColor(1, 0, 0)
-
-        self.ball_actor = vtk.vtkActor()
-        self.ball_actor.SetMapper(mapper)
-        self.ball_actor.SetProperty(p)
-
-    def RemoveBallReference(self):
-        self._ball_ref_visibility = False
-        if self.ball_reference:
-            self.ren.RemoveActor(self.ball_actor)
-
-    def ActivateBallReference(self, pubsub_evt):
-        self._mode_cross = True
-        self._ball_ref_visibility = True
-        if self._to_show_ball:
-            if not self.ball_reference:
-                self.CreateBallReference()
-            self.ren.AddActor(self.ball_actor)
-
-    def DeactivateBallReference(self, pubsub_evt):
-        self._mode_cross = False
-        self.RemoveBallReference()
-
     def _check_ball_reference(self, pubsub_evt):
         st = pubsub_evt.data
         if st == const.SLICE_STATE_CROSS:
@@ -278,19 +248,6 @@ class Viewer(wx.Panel):
         else:
             self._to_show_ball -= 1
         self._check_and_set_ball_visibility()
-
-    def SetBallReferencePosition(self, pubsub_evt):
-        x, y, z = pubsub_evt.data
-        self.ball_reference.SetCenter(x, y, z)
-
-    def SetBallReferencePositionBasedOnBound(self, pubsub_evt):
-        if self._to_show_ball:
-            self.ActivateBallReference(None)
-            coord = pubsub_evt.data
-            x, y, z = bases.FlipX(coord)
-            self.ball_reference.SetCenter(x, y, z)
-        else:
-            self.DeactivateBallReference(None)
 
     def OnStartSeed(self, pubsub_evt):
         index = pubsub_evt.data
@@ -402,7 +359,6 @@ class Viewer(wx.Panel):
         actor.PickableOff()
 
         self.ren.AddActor(actor)
-
         self.points_reference.append(actor)
 
     def RemoveAllPointsReference(self):
@@ -417,6 +373,113 @@ class Viewer(wx.Panel):
         """
         actor = self.points_reference.pop(point)
         self.ren.RemoveActor(actor)
+
+    def AddMarker(self, pubsub_evt):
+        """
+        Markers create by navigation tools and
+        rendered in volume viewer.
+        """
+        self.ball_id = pubsub_evt.data[0]
+        ballsize = pubsub_evt.data[1]
+        ballcolour = pubsub_evt.data[2]
+        coord = pubsub_evt.data[3]
+        x, y, z = bases.flip_x(coord)
+
+        ball_ref = vtk.vtkSphereSource()
+        ball_ref.SetRadius(ballsize)
+        ball_ref.SetCenter(x, y, z)
+
+        mapper = vtk.vtkPolyDataMapper()
+        mapper.SetInputConnection(ball_ref.GetOutputPort())
+
+        prop = vtk.vtkProperty()
+        prop.SetColor(ballcolour)
+
+        #adding a new actor for the present ball
+        self.staticballs.append(vtk.vtkActor())
+
+        self.staticballs[self.ball_id].SetMapper(mapper)
+        self.staticballs[self.ball_id].SetProperty(prop)
+
+        self.ren.AddActor(self.staticballs[self.ball_id])
+        self.ball_id = self.ball_id + 1
+        self.UpdateRender()
+
+    def HideAllMarkers(self, pubsub_evt):
+        ballid = pubsub_evt.data
+        for i in range(0, ballid):
+            self.staticballs[i].SetVisibility(0)
+        self.UpdateRender()
+
+    def ShowAllMarkers(self, pubsub_evt):
+        ballid = pubsub_evt.data
+        for i in range(0, ballid):
+            self.staticballs[i].SetVisibility(1)
+        self.UpdateRender()
+
+    def RemoveAllMarkers(self, pubsub_evt):
+        ballid = pubsub_evt.data
+        for i in range(0, ballid):
+            self.ren.RemoveActor(self.staticballs[i])
+        self.staticballs = []
+        self.UpdateRender()
+
+    def RemoveMarker(self, pubsub_evt):
+        index = pubsub_evt.data
+        self.ren.RemoveActor(self.staticballs[index])
+        del self.staticballs[index]
+        self.ball_id = self.ball_id - 1
+        self.UpdateRender()
+
+    def CreateBallReference(self):
+        """
+        Red sphere on volume visualization to reference center of
+        cross in slice planes.
+        The sphere's radius will be scale times bigger than the average of
+        image spacing values.
+        """
+        scale = 3.0
+        proj = prj.Project()
+        s = proj.spacing
+        r = (s[0] + s[1] + s[2]) / 3.0 * scale
+
+        ball_source = vtk.vtkSphereSource()
+        ball_source.SetRadius(r)
+
+        mapper = vtk.vtkPolyDataMapper()
+        mapper.SetInputConnection(ball_source.GetOutputPort())
+
+        self.ball_actor = vtk.vtkActor()
+        self.ball_actor.SetMapper(mapper)
+        self.ball_actor.GetProperty().SetColor(1, 0, 0)
+
+        self.ren.AddActor(self.ball_actor)
+
+    def ActivateBallReference(self):
+        self._mode_cross = True
+        self._ball_ref_visibility = True
+        if self._to_show_ball:
+            if not self.ball_actor:
+                self.CreateBallReference()
+
+    def RemoveBallReference(self):
+        self._mode_cross = False
+        self._ball_ref_visibility = False
+        if self.ball_actor:
+            self.ren.RemoveActor(self.ball_actor)
+            self.ball_actor = None
+
+    def SetBallReferencePosition(self, pubsub_evt):
+        if self._to_show_ball:
+            if not self.ball_actor:
+                self.ActivateBallReference()
+
+            coord = pubsub_evt.data
+            x, y, z = bases.flip_x(coord)
+            self.ball_actor.SetPosition(x, y, z)
+
+        else:
+            self.RemoveBallReference()
 
     def __bind_events_wx(self):
         #self.Bind(wx.EVT_SIZE, self.OnSize)
@@ -580,30 +643,38 @@ class Viewer(wx.Panel):
         self.ren.ResetCamera()
         self.ren.ResetCameraClippingRange()
 
+    def SetVolumeCameraState(self, pubsub_evt):
+        self.camera_state = pubsub_evt.data
+
     def SetVolumeCamera(self, pubsub_evt):
-        
-        coord_camera = pubsub_evt.data
-        coord_camera = numpy.array(bases.FlipX(coord_camera))
-        
-        cam = self.ren.GetActiveCamera()
-        
-        if self.initial_foco is None:
-            self.initial_foco = numpy.array(cam.GetFocalPoint())
-        
-        cam_initialposition = numpy.array(cam.GetPosition())
-        cam_initialfoco = numpy.array(cam.GetFocalPoint())
-        
-        cam_sub = cam_initialposition - cam_initialfoco
-        cam_sub_norm = numpy.linalg.norm(cam_sub)
-        vet1 = cam_sub/cam_sub_norm
-        
-        cam_sub_novo = coord_camera - self.initial_foco
-        cam_sub_novo_norm = numpy.linalg.norm(cam_sub_novo)
-        vet2 = cam_sub_novo/cam_sub_novo_norm
-        vet2 = vet2*cam_sub_norm + coord_camera
-        
-        cam.SetFocalPoint(coord_camera)
-        cam.SetPosition(vet2)
+        if self.camera_state:
+            #TODO: exclude dependency on initial focus
+            cam_focus = np.array(bases.flip_x(pubsub_evt.data))
+            cam = self.ren.GetActiveCamera()
+
+            if self.initial_focus is None:
+                self.initial_focus = np.array(cam.GetFocalPoint())
+
+            cam_pos0 = np.array(cam.GetPosition())
+            cam_focus0 = np.array(cam.GetFocalPoint())
+
+            v0 = cam_pos0 - cam_focus0
+            v0n = np.sqrt(inner1d(v0, v0))
+
+            v1 = (cam_focus - self.initial_focus)
+            v1n = np.sqrt(inner1d(v1, v1))
+            if not v1n:
+                v1n = 1.0
+            cam_pos = (v1/v1n)*v0n + cam_focus
+
+            cam.SetFocalPoint(cam_focus)
+            cam.SetPosition(cam_pos)
+
+        # It works without doing the reset. Check with trackers if there is any difference.
+        # Need to be outside condition for sphere marker position update
+        # self.ren.ResetCameraClippingRange()
+        # self.ren.ResetCamera()
+        self.interactor.Render()
 
     def OnExportSurface(self, pubsub_evt):
         filename, filetype = pubsub_evt.data
@@ -706,19 +777,18 @@ class Viewer(wx.Panel):
         self.interactor.Render()
         self._to_show_ball -= 1
         self._check_and_set_ball_visibility()
-        
+
     def RemoveAllActor(self, pubsub_evt):
         utils.debug("RemoveAllActor")
         self.ren.RemoveAllProps()
         Publisher.sendMessage('Render volume viewer')
 
-        
     def LoadSlicePlane(self, pubsub_evt):
         self.slice_plane = SlicePlane()
 
     def LoadVolume(self, pubsub_evt):
         self.raycasting_volume = True
-        #self._to_show_ball += 1
+        self._to_show_ball += 1
 
         volume = pubsub_evt.data[0]
         colour = pubsub_evt.data[1]
@@ -895,14 +965,16 @@ class Viewer(wx.Panel):
                 self.repositioned_coronal_plan = 1
 
     def _check_and_set_ball_visibility(self):
+        #TODO: When creating Raycasting volume and cross is pressed, it is not
+        # automatically creating the ball reference.
         if self._mode_cross:
             if self._to_show_ball > 0 and not self._ball_ref_visibility:
-                self.ActivateBallReference(None)
+                self.ActivateBallReference()
                 self.interactor.Render()
             elif not self._to_show_ball and self._ball_ref_visibility:
                 self.RemoveBallReference()
                 self.interactor.Render()
-            
+
 
 class SlicePlane:
     def __init__(self):

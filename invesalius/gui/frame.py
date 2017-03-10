@@ -396,7 +396,11 @@ class Frame(wx.Frame):
         elif id == const.ID_PROJECT_OPEN:
             self.ShowOpenProject()
         elif id == const.ID_ANALYZE_IMPORT:
-            self.ShowAnalyzeImporter()
+            self.ShowImportOtherFiles(id)
+        elif id == const.ID_NIFTI_IMPORT:
+            self.ShowImportOtherFiles(id)
+        elif id == const.ID_PARREC_IMPORT:
+            self.ShowImportOtherFiles(id)
         elif id == const.ID_TIFF_JPG_PNG:
             self.ShowBitmapImporter()
         elif id == const.ID_PROJECT_SAVE:
@@ -538,6 +542,12 @@ class Frame(wx.Frame):
         Show import DICOM panel. as dicom        """
         Publisher.sendMessage('Show import directory dialog')
 
+    def ShowImportOtherFiles(self, id_file):
+        """
+        Show import Analyze, NiFTI1 or PAR/REC dialog.
+        """
+        Publisher.sendMessage('Show import other files dialog', id_file)
+
     def ShowRetrieveDicomPanel(self):
         Publisher.sendMessage('Show retrieve dicom panel')
 
@@ -552,12 +562,6 @@ class Frame(wx.Frame):
         Show save as dialog.
         """
         Publisher.sendMessage('Show save dialog', True)
-
-    def ShowAnalyzeImporter(self):
-        """
-        Show save as dialog.
-        """
-        Publisher.sendMessage('Show analyze dialog', True)
 
     def ShowBitmapImporter(self):
         """
@@ -672,7 +676,9 @@ class MenuBar(wx.MenuBar):
 
         #Import Others Files
         others_file_menu = wx.Menu()
-        others_file_menu.Append(const.ID_ANALYZE_IMPORT, "Analyze")
+        others_file_menu.Append(const.ID_ANALYZE_IMPORT, _("Analyze 7.5"))
+        others_file_menu.Append(const.ID_NIFTI_IMPORT, _("NIfTI 1"))
+        others_file_menu.Append(const.ID_PARREC_IMPORT, _("PAR/REC"))
         others_file_menu.Append(const.ID_TIFF_JPG_PNG, u"TIFF,BMP,JPG or PNG (\xb5CT)")
 
         # FILE
