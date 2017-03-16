@@ -20,7 +20,11 @@
 #    detalhes.
 #--------------------------------------------------------------------------
 
-import ConfigParser
+try:
+    import configparser as ConfigParser
+except(ImportError):
+    import ConfigParser
+
 import locale
 import gettext
 import os

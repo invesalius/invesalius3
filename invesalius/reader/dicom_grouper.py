@@ -111,7 +111,7 @@ class DicomGroup:
 
         filelist = [dicom.image.file for dicom in
                 self.slices_dict.values()]
-        
+       
         # Sort slices using GDCM
         if (self.dicom.image.orientation_label <> "CORONAL"):
             #Organize reversed image
@@ -121,9 +121,11 @@ class DicomGroup:
             sorter.Sort(filelist)
             filelist = sorter.GetFilenames()
 
-            #Getting organized image
+        # for breast-CT of koning manufacturing (KBCT)
+        if self.slices_dict.values()[0].parser.GetManufacturerName() == "Koning":
+            filelist.sort()
+        
         return filelist
-
 
     def GetHandSortedList(self):
         # This will be used to fix problem 1, after merging

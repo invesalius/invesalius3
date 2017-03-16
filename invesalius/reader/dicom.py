@@ -1439,6 +1439,20 @@ class Parser():
             return data
         return ""
 
+    def GetManufacturerName(self):
+        """
+        Return Manufacturer of the equipment that produced 
+        the composite instances.
+        """
+        try:
+            data = self.data_image[str(0x0008)][str(0x0070)]
+        except(KeyError):
+            return ""
+
+        if (data):
+            return data
+        return ""
+
     def GetEquipmentManufacturer(self):
         """
         Return manufacturer name (string).
