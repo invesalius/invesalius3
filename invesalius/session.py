@@ -17,7 +17,11 @@
 #    detalhes.
 #--------------------------------------------------------------------------
 
-import ConfigParser
+try:
+    import configparser as ConfigParser
+except(ImportError):
+    import ConfigParser
+
 import os
 import shutil
 import sys
