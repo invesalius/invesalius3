@@ -65,6 +65,10 @@ class InVesalius(wx.App):
         """
         Initialize splash screen and main frame.
         """
+        
+        from multiprocessing import freeze_support
+        freeze_support()
+
         self.SetAppName("InVesalius 3")
         self.splash = SplashScreen()
         self.splash.Show()
@@ -283,14 +287,15 @@ def main():
     application.MainLoop()
 
 if __name__ == '__main__':
-    # Needed in win 32 exe
-    if hasattr(sys,"frozen") and (sys.frozen == "windows_exe"\
-                               or sys.frozen == "console_exe"):
-        multiprocessing.freeze_support()
+    #Is needed because of pyinstaller
+    multiprocessing.freeze_support()
+    
+    #Needed in win 32 exe
+    if hasattr(sys,"frozen") and sys.platform.startswith('win'):
 
         #Click in the .inv3 file support
         root = _winreg.HKEY_CLASSES_ROOT
-        key = "InVesalius 3.0\InstallationDir"
+        key = "InVesalius 3.1\InstallationDir"
         hKey = _winreg.OpenKey (root, key, 0, _winreg.KEY_READ)
         value, type_ = _winreg.QueryValueEx (hKey, "")
         path = os.path.join(value,'dist')
