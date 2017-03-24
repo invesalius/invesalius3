@@ -674,7 +674,8 @@ class Viewer(wx.Panel):
         # Need to be outside condition for sphere marker position update
         # self.ren.ResetCameraClippingRange()
         # self.ren.ResetCamera()
-        self.interactor.Render()
+        #self.interactor.Render()
+        self.Refresh()
 
     def OnExportSurface(self, pubsub_evt):
         filename, filetype = pubsub_evt.data

@@ -633,22 +633,27 @@ class MarkersPanel(wx.Panel):
                 for id_n in range(self.lc.GetItemCount()):
                     item = self.lc.GetItem(id_n, 4)
                     if item.GetText() == marker_id:
-                        if marker_id == "LEI" or marker_id == "REI" or marker_id == "NAI":
-                            self.lc.Focus(item.GetId())
-                            break
+                        for i in const.BTNS_IMG:
+                            if marker_id in const.BTNS_IMG[i].values()[0]:
+                                self.lc.Focus(item.GetId())
+                                break
+                self.DeleteMarker()
         else:
-            if self.lc.GetFocusedItem() is not -1 and self.lc.GetItemCount():
-                index = self.lc.GetFocusedItem()
-                del self.list_coord[index]
-                self.lc.DeleteItem(index)
-                for n in range(0, self.lc.GetItemCount()):
-                    self.lc.SetStringItem(n, 0, str(n+1))
-                self.marker_ind -= 1
-                Publisher.sendMessage('Remove marker', index)
+            if self.lc.GetFocusedItem() is not -1:
+                self.DeleteMarker()
             elif not self.lc.GetItemCount():
                 pass
             else:
                 dlg.NoMarkerSelected()
+
+    def DeleteMarker(self):
+        index = self.lc.GetFocusedItem()
+        del self.list_coord[index]
+        self.lc.DeleteItem(index)
+        for n in range(0, self.lc.GetItemCount()):
+            self.lc.SetStringItem(n, 0, str(n+1))
+        self.marker_ind -= 1
+        Publisher.sendMessage('Remove marker', index)
 
     def OnCreateMarker(self, evt):
         # OnCreateMarker is used for both pubsub and button click events
@@ -674,8 +679,9 @@ class MarkersPanel(wx.Panel):
                     size = float(line[6])
 
                     if len(line) == 8:
-                        if line[7] == "LEI" or line[7] == "REI" or line[7] == "NAI":
-                            Publisher.sendMessage('Load image fiducials', (line[7], coord))
+                        for i in const.BTNS_IMG:
+                            if line[7] in const.BTNS_IMG[i].values()[0]:
+                                Publisher.sendMessage('Load image fiducials', (line[7], coord))
                     else:
                         line.append("")
                     self.CreateMarker(coord, colour, size, line[7])
