@@ -355,6 +355,7 @@ class Controller():
 
         Publisher.sendMessage('Hide content panel')
         Publisher.sendMessage('Close project data')
+        Publisher.sendMessage('Set slice interaction style', const.STATE_DEFAULT)
         session = ses.Session()
         session.CloseProject()
 
@@ -509,8 +510,10 @@ class Controller():
                 Publisher.sendMessage('Add mask',
                                            (m.index, m.name,
                                             m.threshold_range, m.colour))
-            self.Slice.current_mask = proj.mask_dict[mask_index]
-            Publisher.sendMessage('Show mask', (mask_index, True))
+                if m.is_shown:
+                    self.Slice.current_mask = proj.mask_dict[mask_index]
+                    Publisher.sendMessage('Show mask', (m.index, True))
+                    Publisher.sendMessage('Change mask selected', m.index)
         else:
             mask_name = const.MASK_NAME_PATTERN % (1,)
 

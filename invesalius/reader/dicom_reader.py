@@ -188,7 +188,7 @@ class LoadDicom:
                 level = [float(value) for value in data.split('\\')][0]
                 data = data_dict[str(0x028)][str(0x1051)]
                 window =  [float(value) for value in data.split('\\')][0]
-            except(KeyError):
+            except(KeyError, ValueError):
                 level = 300.0
                 window = 2000.0 
      
