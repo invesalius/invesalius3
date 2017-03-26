@@ -1276,10 +1276,10 @@ class WaterShedInteractorStyle(DefaultInteractorStyle):
 
         cx = index.shape[1] / 2 + 1
         cy = index.shape[0] / 2 + 1
-        xi = px - index.shape[1] + cx
-        xf = xi + index.shape[1]
-        yi = py - index.shape[0] + cy
-        yf = yi + index.shape[0]
+        xi = int(px - index.shape[1] + cx)
+        xf = int(xi + index.shape[1])
+        yi = int(py - index.shape[0] + cy)
+        yf = int(yi + index.shape[0])
 
         if yi < 0:
             index = index[abs(yi):,:]
