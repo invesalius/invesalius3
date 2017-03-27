@@ -223,9 +223,10 @@ WILDCARD_NIFTI = "NIfTI 1 (*.nii)|*.nii|" \
 WILDCARD_PARREC = "PAR/REC (*.par)|*.par|" \
                   "All files (*.*)|*.*"
 
-WILDCARD_MESH_FILES = "STL (*.stl)|*.stl|" \
-                      "PLY (*.ply)|*.ply|" \
-                      "VTP (*.vtp)|*.vtp|" \
+WILDCARD_MESH_FILES = "STL File format (*.stl)|*.stl|" \
+                      "Standard Polygon File Format (*.ply)|*.ply|" \
+                      "Alias Wavefront Object (*.obj)|*.obj|" \
+                      "VTK Polydata File Format (*.vtp)|*.vtp|" \
                       "All files (*.*)|*.*"
 
 

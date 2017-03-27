@@ -245,7 +245,7 @@ class SurfaceManager():
 
     def OnImportSurfaceFile(self, pubsub_evt):
         """
-        Creates a new surface from a surface file (STL, PLY or VTP)
+        Creates a new surface from a surface file (STL, PLY, OBJ or VTP)
         """
         filename = pubsub_evt.data
         self.CreateSurfaceFromFile(filename)
@@ -255,6 +255,8 @@ class SurfaceManager():
             reader = vtk.vtkSTLReader()
         elif filename.lower().endswith('.ply'):
             reader = vtk.vtkPLYReader()
+        elif filename.lower().endswith('.obj'):
+            reader = vtk.vtkOBJReader()
         elif filename.lower().endswith('.vtp'):
             reader = vtk.vtkXMLPolyDataReader()
         else:
