@@ -1265,7 +1265,7 @@ msgstr "Segmentação"
 
 #: frame.py:791
 msgid "Reorient image\tCtrl+Shift+R"
-msgstr "Reorientar imagem\nCtrl+Shift+R"
+msgstr "Reorientar imagem\tCtrl+Shift+R"
 
 #: frame.py:799
 msgid "Interpolated slices"
