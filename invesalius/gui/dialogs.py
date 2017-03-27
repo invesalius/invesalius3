@@ -223,6 +223,11 @@ WILDCARD_NIFTI = "NIfTI 1 (*.nii)|*.nii|" \
 WILDCARD_PARREC = "PAR/REC (*.par)|*.par|" \
                   "All files (*.*)|*.*"
 
+WILDCARD_MESH_FILES = "STL (*.stl)|*.stl|" \
+                      "PLY (*.ply)|*.ply|" \
+                      "VTP (*.vtp)|*.vtp|" \
+                      "All files (*.*)|*.*"
+
 
 def ShowOpenProjectDialog():
     # Default system path
@@ -351,6 +356,40 @@ def ShowImportOtherFilesDialog(id_type):
         dlg.SetWildcard(WILDCARD_PARREC)
 
     # inv3 filter is default
+    dlg.SetFilterIndex(0)
+
+    # Show the dialog and retrieve the user response. If it is the OK response,
+    # process the data.
+    filename = None
+    try:
+        if dlg.ShowModal() == wx.ID_OK:
+            # GetPath returns in unicode, if a path has non-ascii characters a
+            # UnicodeEncodeError is raised. To avoid this, path is encoded in utf-8
+            if sys.platform == "win32":
+                filename = dlg.GetPath()
+            else:
+                filename = dlg.GetPath().encode('utf-8')
+
+    except(wx._core.PyAssertionError):  # TODO: error win64
+        if (dlg.GetPath()):
+            filename = dlg.GetPath()
+
+    # Destroy the dialog. Don't do this until you are done with it!
+    # BAD things can happen otherwise!
+    dlg.Destroy()
+    os.chdir(current_dir)
+    return filename
+
+
+def ShowImportMeshFilesDialog():
+    # Default system path
+    current_dir = os.path.abspath(".")
+    dlg = wx.FileDialog(None, message=_("Import surface file"),
+                        defaultDir="",
+                        defaultFile="", wildcard=WILDCARD_MESH_FILES,
+                        style=wx.FD_OPEN | wx.FD_CHANGE_DIR)
+
+    # stl filter is default
     dlg.SetFilterIndex(0)
 
     # Show the dialog and retrieve the user response. If it is the OK response,

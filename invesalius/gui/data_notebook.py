@@ -40,7 +40,7 @@ import invesalius.gui.widgets.listctrl as listmix
 import invesalius.utils as ul
 
 
-BTN_NEW, BTN_REMOVE, BTN_DUPLICATE = [wx.NewId() for i in xrange(3)]
+BTN_NEW, BTN_REMOVE, BTN_DUPLICATE, BTN_OPEN = [wx.NewId() for i in xrange(4)]
 
 TYPE = {const.LINEAR: _(u"Linear"),
         const.ANGULAR: _(u"Angular"),
@@ -594,6 +594,9 @@ class SurfaceButtonControlPanel(wx.Panel):
         BMP_DUPLICATE = wx.Bitmap(os.path.join(const.ICON_DIR, "data_duplicate.png"),
                                 wx.BITMAP_TYPE_PNG)
 
+        BMP_OPEN = wx.Bitmap(os.path.join(const.ICON_DIR, "data_duplicate.png"),
+                                wx.BITMAP_TYPE_PNG)
+
         # Plate buttons based on previous bitmaps
         button_style = pbtn.PB_STYLE_SQUARE | pbtn.PB_STYLE_DEFAULT
         button_new = pbtn.PlateButton(self, BTN_NEW, "",
@@ -608,12 +611,17 @@ class SurfaceButtonControlPanel(wx.Panel):
                                             BMP_DUPLICATE,
                                             style=button_style,
                                             size = wx.Size(24, 20))
+        button_open = pbtn.PlateButton(self, BTN_OPEN, "",
+                                       BMP_OPEN,
+                                       style=button_style,
+                                       size = wx.Size(24, 20))
 
         # Add all controls to gui
         sizer = wx.BoxSizer(wx.HORIZONTAL)
         sizer.Add(button_new, 0, wx.GROW|wx.EXPAND|wx.LEFT)
         sizer.Add(button_remove, 0, wx.GROW|wx.EXPAND)
         sizer.Add(button_duplicate, 0, wx.GROW|wx.EXPAND)
+        sizer.Add(button_open, 0, wx.GROW|wx.EXPAND)
         self.SetSizer(sizer)
         self.Fit()
 
@@ -628,6 +636,8 @@ class SurfaceButtonControlPanel(wx.Panel):
             self.OnRemove()
         elif id ==  BTN_DUPLICATE:
             self.OnDuplicate()
+        elif id == BTN_OPEN:
+            self.OnOpenMesh()
 
     def OnNew(self):
         sl = slice_.Slice()
@@ -658,6 +668,11 @@ class SurfaceButtonControlPanel(wx.Panel):
             Publisher.sendMessage('Duplicate surfaces', selected_items)
         else:
            dlg.SurfaceSelectionRequiredForDuplication()
+
+    def OnOpenMesh(self):
+        filename = dlg.ShowImportMeshFilesDialog()
+        if filename:
+            Publisher.sendMessage('Import surface file', filename)
 
 
 class SurfacesListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
