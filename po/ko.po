@@ -6,19 +6,19 @@
 # Thiago Franco de Morais <totonixsame@gmail.com>
 # Translators:
 # Translators:
+# jangblue <jangblue@gmail.com>, 2016
 msgid ""
 msgstr ""
 "Project-Id-Version: InVesalius3\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2017-03-27 11:03-0300\n"
-"PO-Revision-Date: 2015-06-02 16:40+0000\n"
+"PO-Revision-Date: 2017-03-27 14:16+0000\n"
 "Last-Translator: InVesalius <invesalius@cti.gov.br>\n"
-"Language-Team: Korean (http://www.transifex.com/projects/p/invesalius3/"
-"language/ko/)\n"
-"Language: ko\n"
+"Language-Team: Korean (http://www.transifex.com/invesalius/invesalius3/language/ko/)\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
+"Language: ko\n"
 "Plural-Forms: nplurals=1; plural=0;\n"
 "X-Poedit-Country: GENERIC\n"
 "X-Poedit-Language: English\n"
@@ -44,9 +44,7 @@ msgstr "위치: %.2f"
 msgid ""
 "%s %s\n"
 "Made in InVesalius"
-msgstr ""
-"%s %s\n"
-"인베쌀리우스 제작"
+msgstr "%s %s\n인베쌀리우스 제작"
 
 #: bitmap_preview_panel.py:166 bitmap_preview_panel.py:167
 #: dicom_preview_panel.py:189 dicom_preview_panel.py:190 frame.py:793
@@ -58,7 +56,7 @@ msgstr "이미지"
 #: dicom_preview_panel.py:676 dicom_preview_panel.py:677 presets.py:32
 #: presets.py:50 presets.py:106 presets.py:137
 msgid "Bone"
-msgstr "골격"
+msgstr "골"
 
 #: bitmap_preview_panel.py:510 dicom_preview_panel.py:744
 msgid "Auto-play"
@@ -67,12 +65,12 @@ msgstr "자동실행"
 #: clut_raycasting.py:535
 #, python-format
 msgid "Value: %-6d"
-msgstr ""
+msgstr "값: %-6d"
 
 #: clut_raycasting.py:536
 #, python-format
 msgid "Alpha: %-.3f"
-msgstr ""
+msgstr "알파: %-.3f"
 
 #: constants.py:32
 #, python-format
@@ -81,11 +79,11 @@ msgstr "M %d"
 
 #: constants.py:44 constants.py:415 constants.py:417
 msgid " Off"
-msgstr "차단"
+msgstr "끄기"
 
 #: constants.py:45
 msgid "Red-blue"
-msgstr ""
+msgstr "적-청"
 
 #: constants.py:46
 msgid "CristalEyes"
@@ -93,7 +91,7 @@ msgstr ""
 
 #: constants.py:47
 msgid "Interlaced"
-msgstr ""
+msgstr "격자형"
 
 #: constants.py:48 constants.py:354
 msgid "Left"
@@ -113,39 +111,39 @@ msgstr ""
 
 #: constants.py:52
 msgid "Anaglyph"
-msgstr ""
+msgstr "입체 사진"
 
 #: constants.py:105
 msgid "Keep all slices"
-msgstr "슬라이스 전부 보존"
+msgstr "모든 슬라이스 유지"
 
 #: constants.py:105
 msgid "Skip 1 for each 2 slices"
-msgstr "2슬라이스마다 1개 뛰여넘기"
+msgstr "2슬라이스마다 1개 생략"
 
 #: constants.py:106
 msgid "Skip 2 for each 3 slices"
-msgstr "3슬라이스마다 2개 뛰여넘기"
+msgstr "3슬라이스마다 2개 생략"
 
 #: constants.py:106
 msgid "Skip 3 for each 4 slices"
-msgstr "4슬라이스마다 3개 뛰여넘기"
+msgstr "4슬라이스마다 3개 생략"
 
 #: constants.py:107
 msgid "Skip 4 for each 5 slices"
-msgstr "5슬라이스마다 4개 뛰여넘기"
+msgstr "5슬라이스마다 4개 생략"
 
 #: constants.py:107
 msgid "Skip 5 for each 6 slices"
-msgstr "6슬라이스마다 5개 뛰여넘기"
+msgstr "6슬라이스마다 5개 생략"
 
 #: constants.py:164 slice_menu.py:103 slice_menu.py:110
 msgid "Default "
-msgstr "기정"
+msgstr "기본값"
 
 #: constants.py:165
 msgid "Hue"
-msgstr "색채"
+msgstr "색상"
 
 #: constants.py:166
 msgid "Saturation"
@@ -165,7 +163,7 @@ msgstr "대양"
 
 #: constants.py:170
 msgid "Inverse Gray"
-msgstr "회색반전"
+msgstr "회색 반전"
 
 #: constants.py:220
 #, python-format
@@ -182,23 +180,23 @@ msgstr "지우기"
 
 #: constants.py:276 data_notebook.py:447 dialogs.py:2514 task_surface.py:44
 msgid "Threshold"
-msgstr "림계값"
+msgstr "임계값"
 
 #: constants.py:288 constants.py:293
 msgid "Low"
-msgstr "낮은"
+msgstr "저"
 
 #: constants.py:289 constants.py:293
 msgid "Medium"
-msgstr "중간"
+msgstr "중"
 
 #: constants.py:290 constants.py:293
 msgid "High"
-msgstr "높은"
+msgstr "고"
 
 #: constants.py:291 constants.py:292 constants.py:293 task_slice.py:176
 msgid "Optimal *"
-msgstr "최량의"
+msgstr "최적"
 
 #: constants.py:298
 #, python-format
@@ -211,28 +209,28 @@ msgstr "복부"
 
 #: constants.py:303
 msgid "Brain posterior fossa"
-msgstr ""
+msgstr "뇌 후와"
 
 #: constants.py:304
 msgid "Brain"
-msgstr "뇌수"
+msgstr "뇌"
 
 #: constants.py:305 control.py:480 dialogs.py:1490 dialogs.py:1493
 #: dialogs.py:1501 dialogs.py:1576 slice_menu.py:60 slice_menu.py:72
 msgid "Default"
-msgstr "기정"
+msgstr "기본값"
 
 #: constants.py:306
 msgid "Emphysema"
-msgstr "식로"
+msgstr "기종"
 
 #: constants.py:307
 msgid "Ischemia - Hard, non contrast"
-msgstr ""
+msgstr "허혈 - 강, 비 대조"
 
 #: constants.py:308
 msgid "Ischemia - Soft, non contrast"
-msgstr ""
+msgstr "허혈 - 약, 비 대조"
 
 #: constants.py:309
 msgid "Larynx"
@@ -244,15 +242,15 @@ msgstr "간"
 
 #: constants.py:311
 msgid "Lung - Soft"
-msgstr "페 - 약"
+msgstr "폐 - 약"
 
 #: constants.py:312
 msgid "Lung - Hard"
-msgstr "페 - 강"
+msgstr "폐 - 강"
 
 #: constants.py:313
 msgid "Mediastinum"
-msgstr "격막"
+msgstr "종격"
 
 #: constants.py:314 control.py:481 slice_menu.py:67 slice_menu.py:72
 msgid "Manual"
@@ -264,27 +262,27 @@ msgstr "골반"
 
 #: constants.py:316
 msgid "Sinus"
-msgstr "오목이"
+msgstr "동"
 
 #: constants.py:317
 msgid "Vasculature - Hard"
-msgstr "막관구조 - 강"
+msgstr "맥관 - 강"
 
 #: constants.py:318
 msgid "Vasculature - Soft"
-msgstr "막관구조 - 약"
+msgstr "맥관 - 약"
 
 #: constants.py:319
 msgid "Contour"
-msgstr ""
+msgstr "외형"
 
 #: constants.py:349
 msgid "Front"
-msgstr "앞"
+msgstr "전방"
 
 #: constants.py:350
 msgid "Back"
-msgstr "뒤"
+msgstr "후방"
 
 #: constants.py:351
 msgid "Top"
@@ -296,15 +294,15 @@ msgstr "하"
 
 #: constants.py:355
 msgid "Isometric"
-msgstr "등척성의"
+msgstr "등척성"
 
 #: constants.py:362
 msgid "Airways"
-msgstr "숨길"
+msgstr "기도"
 
 #: constants.py:363
 msgid "Airways II"
-msgstr "숨길 II"
+msgstr "기도 II"
 
 #: constants.py:364
 msgid "Black & White"
@@ -336,11 +334,11 @@ msgstr ""
 
 #: constants.py:371
 msgid "High contrast"
-msgstr ""
+msgstr "강 대조"
 
 #: constants.py:372
 msgid "Low contrast"
-msgstr ""
+msgstr "저 대조"
 
 #: constants.py:373 constants.py:381
 msgid "Soft on white"
@@ -348,7 +346,7 @@ msgstr ""
 
 #: constants.py:374
 msgid "Mid contrast"
-msgstr ""
+msgstr "중 대조"
 
 #: constants.py:375
 msgid "MIP"
@@ -396,23 +394,23 @@ msgstr "부드러움"
 
 #: constants.py:387
 msgid "Standard"
-msgstr "포준"
+msgstr "표준"
 
 #: constants.py:388
 msgid "Vascular"
-msgstr "혈관"
+msgstr "맥관"
 
 #: constants.py:389
 msgid "Vascular II"
-msgstr "혈관 II"
+msgstr "맥관 II"
 
 #: constants.py:390
 msgid "Vascular III"
-msgstr "혈관 III"
+msgstr "맥관 III"
 
 #: constants.py:391
 msgid "Vascular IV"
-msgstr "혈관 IV"
+msgstr "맥관 IV"
 
 #: constants.py:392
 msgid "Yellow bone"
@@ -420,7 +418,7 @@ msgstr ""
 
 #: constants.py:418 volume.py:647
 msgid "Cut plane"
-msgstr "자름면"
+msgstr "절단면"
 
 #: constants.py:653
 msgid "Select tracker:"
@@ -517,7 +515,7 @@ msgstr ""
 #: control.py:382
 #, python-format
 msgid "Loading file %d of %d ..."
-msgstr ""
+msgstr "파일 읽는 중 %d / %d ..."
 
 #: control.py:818
 msgid "Fix gantry tilt applying the degrees below"
@@ -555,7 +553,7 @@ msgstr "마스크"
 
 #: data_notebook.py:68
 msgid "3D surfaces"
-msgstr ""
+msgstr "3차원 면"
 
 #: data_notebook.py:69
 msgid "Measures"
@@ -580,7 +578,7 @@ msgstr "마스크"
 
 #: data_notebook.py:635 task_surface.py:141
 msgid "New surface"
-msgstr ""
+msgstr "새 면"
 
 #: data_notebook.py:772
 msgid "Volume (mm³)"
@@ -608,40 +606,39 @@ msgstr "값"
 
 #: default_tasks.py:151
 msgid "Data"
-msgstr "자료"
+msgstr "데이터"
 
 #: default_tasks.py:244 default_tasks.py:250
 msgid "Load data"
-msgstr ""
+msgstr "데이터 읽기"
 
 #: default_tasks.py:245 default_tasks.py:251 default_tasks.py:280
 msgid "Select region of interest"
-msgstr "관심령역 선택"
+msgstr "관심 영역 선택"
 
 #: default_tasks.py:246 default_tasks.py:252 default_tasks.py:282
 msgid "Configure 3D surface"
-msgstr "3차원 표면구성"
+msgstr "3차원 면 구성"
 
 #: default_tasks.py:247 default_tasks.py:253
 msgid "Export data"
-msgstr "자료 반출"
+msgstr "데이터 내보내기"
 
 #: default_tasks.py:254
-#, fuzzy
 msgid "Navigation system"
-msgstr "이동체계를 리용"
+msgstr ""
 
 #: default_viewers.py:82 default_viewers.py:171 task_exporter.py:247
 msgid "Axial slice"
-msgstr "축성슬라이스"
+msgstr "수평 단면"
 
 #: default_viewers.py:87 default_viewers.py:177 task_exporter.py:248
 msgid "Coronal slice"
-msgstr "두정슬라이스"
+msgstr "전두 단면"
 
 #: default_viewers.py:92 default_viewers.py:183 task_exporter.py:249
 msgid "Sagittal slice"
-msgstr "시상슬라이스"
+msgstr "시상 단면"
 
 #: default_viewers.py:98 default_viewers.py:189 task_exporter.py:250
 msgid "Volume"
@@ -669,8 +666,7 @@ msgstr "값이 적용되지 않습니다."
 
 #: dialogs.py:116
 msgid ""
-"InVesalius is running on a 32-bit operating system or has insufficient "
-"memory. \n"
+"InVesalius is running on a 32-bit operating system or has insufficient memory. \n"
 "If you want to work with 3D surfaces or volume rendering, \n"
 "it is recommended to reduce the medical images resolution."
 msgstr ""
@@ -681,15 +677,15 @@ msgstr ""
 
 #: dialogs.py:178
 msgid "Loading DICOM files"
-msgstr "DICOM파일 로딩"
+msgstr "DICOM 파일 로딩 중"
 
 #: dialogs.py:230
 msgid "Open InVesalius 3 project..."
-msgstr "인베쌀리우스3 프로젝트 열기 ..."
+msgstr "InVesalius 3 프로젝트 열기 ..."
 
 #: dialogs.py:268
 msgid "Choose a DICOM folder:"
-msgstr "DICOM등록부 선택:"
+msgstr "DICOM 폴더 선택"
 
 #: dialogs.py:309
 msgid "Choose a folder with TIFF, BMP, JPG or PNG:"
@@ -709,16 +705,15 @@ msgstr ""
 
 #: dialogs.py:382 frame.py:692
 msgid "Save project as..."
-msgstr "새 이름으로 프로젝트 보관 ..."
+msgstr "다른 이름으로 프로젝트 저장 ..."
 
 #: dialogs.py:385
 msgid "InVesalius project (*.inv3)|*.inv3"
-msgstr "인베쌀리우스 프로젝트 (*.inv3)|*.inv3"
+msgstr "InVesalius 프로젝트 (*.inv3)|*.inv3"
 
 #: dialogs.py:414
-#, fuzzy
 msgid "Save markers as..."
-msgstr "새 이름으로 프로젝트 보관 ..."
+msgstr ""
 
 #: dialogs.py:417
 msgid "Markers (*.txt)|*.txt"
@@ -732,25 +727,23 @@ msgstr ""
 msgid ""
 "A new version of InVesalius is available. Do you want to open the download "
 "website now?"
-msgstr ""
+msgstr "새 버전의 InVesalius가 나왔습니다. 다운로드 할 웹 사이트를 열겠습니까?"
 
 #: dialogs.py:511 utils.py:378
 msgid "Invesalius Update"
-msgstr ""
+msgstr "InVesalius 업데이트"
 
 #: dialogs.py:569 dialogs.py:946 dialogs.py:971
 #, python-format
 msgid ""
 "The project %s has been modified.\n"
 "Save changes?"
-msgstr ""
-"%s의 프로젝트 변경되였습니다. \n"
-"보관하시겠습니까?"
+msgstr "프로젝트 %s 이(가) 변경되었습니다.\n저장하시겠습니까?"
 
 #: dialogs.py:583
 #, python-format
 msgid "%s is an empty folder."
-msgstr ""
+msgstr "%s 은(는) 빈 폴더입니다."
 
 #: dialogs.py:598
 msgid "There are no Bitmap, JPEG, PNG or TIFF files in the selected folder."
@@ -758,7 +751,7 @@ msgstr ""
 
 #: dialogs.py:600
 msgid "There are no DICOM files in the selected folder."
-msgstr ""
+msgstr "선택한 폴더에는 DICOM 파일이 없습니다."
 
 #: dialogs.py:613
 msgid "Warning! InVesalius has limited support to Analyze format.\n"
@@ -770,7 +763,7 @@ msgstr ""
 
 #: dialogs.py:626
 msgid "A mask is needed to create a surface."
-msgstr ""
+msgstr "면을 생성하려면 마스크가 필요합니다."
 
 #: dialogs.py:637
 msgid "No mask was selected for removal."
@@ -801,9 +794,8 @@ msgid "No tracking device selected"
 msgstr ""
 
 #: dialogs.py:721
-#, fuzzy
 msgid " is not installed."
-msgstr "%s가 존재하지 않습니다."
+msgstr ""
 
 #: dialogs.py:723
 msgid " disconnected."
@@ -858,17 +850,9 @@ msgstr ""
 
 #: dialogs.py:996
 msgid ""
-"InVesalius is a medical imaging program for 3D reconstruction. It uses a "
-"sequence of 2D DICOM image files acquired with CT or MRI scanners. "
-"InVesalius allows exporting 3D volumes or surfaces as mesh files for "
-"creating physical models of a patient's anatomy using additive manufacturing "
-"(3D printing) technologies. The software is developed by Center for "
-"Information Technology Renato Archer (CTI), National Council for Scientific "
-"and Technological Development (CNPq) and the Brazilian Ministry of Health.\n"
+"InVesalius is a medical imaging program for 3D reconstruction. It uses a sequence of 2D DICOM image files acquired with CT or MRI scanners. InVesalius allows exporting 3D volumes or surfaces as mesh files for creating physical models of a patient's anatomy using additive manufacturing (3D printing) technologies. The software is developed by Center for Information Technology Renato Archer (CTI), National Council for Scientific and Technological Development (CNPq) and the Brazilian Ministry of Health.\n"
 "\n"
-" InVesalius must be used only for research. The Center for Information "
-"Technology Renato Archer is not responsible for damages caused by the use of "
-"this software.\n"
+" InVesalius must be used only for research. The Center for Information Technology Renato Archer is not responsible for damages caused by the use of this software.\n"
 "\n"
 " Contact: invesalius@cti.gov.br"
 msgstr ""
@@ -1051,24 +1035,20 @@ msgid "Create project from bitmap"
 msgstr ""
 
 #: dialogs.py:1908
-#, fuzzy
 msgid "Project name:"
-msgstr "미리설정 이름"
+msgstr ""
 
 #: dialogs.py:1911
-#, fuzzy
 msgid "Slices orientation:"
-msgstr "슬라이스 교차공통부분"
+msgstr ""
 
 #: dialogs.py:1912 dialogs.py:2063 dialogs.py:2084
-#, fuzzy
 msgid "Sagital"
-msgstr "시상방향"
+msgstr ""
 
 #: dialogs.py:1916
-#, fuzzy
 msgid "Spacing (mm):"
-msgstr "간격: %.2f"
+msgstr ""
 
 #: dialogs.py:1931
 msgid "X:"
@@ -1089,14 +1069,12 @@ msgid ""
 msgstr ""
 
 #: dialogs.py:2031
-#, fuzzy
 msgid "2D - Actual slice"
-msgstr "축성슬라이스"
+msgstr ""
 
 #: dialogs.py:2032
-#, fuzzy
 msgid "3D - All slices"
-msgstr "슬라이스 전부 보존"
+msgstr ""
 
 #: dialogs.py:2057
 msgid "2D Connectivity"
@@ -1131,9 +1109,8 @@ msgid "Multiplier"
 msgstr ""
 
 #: dialogs.py:2249
-#, fuzzy
 msgid "Iterations"
-msgstr "채도"
+msgstr ""
 
 #: dialogs.py:2327 dialogs.py:2541 dialogs.py:2795
 msgid "Parameters"
@@ -1144,9 +1121,8 @@ msgid "Select mask parts"
 msgstr ""
 
 #: dialogs.py:2413
-#, fuzzy
 msgid "Target mask name"
-msgstr "새 마스크 이름:"
+msgstr ""
 
 #: dialogs.py:2467 frame.py:784 styles.py:2017
 msgid "Region growing"
@@ -1165,23 +1141,20 @@ msgid "Crop mask"
 msgstr ""
 
 #: dialogs.py:2695
-#, fuzzy
 msgid "Axial:"
-msgstr "축성방향"
+msgstr ""
 
 #: dialogs.py:2697 dialogs.py:2707 dialogs.py:2717
 msgid " - "
 msgstr ""
 
 #: dialogs.py:2705
-#, fuzzy
 msgid "Sagital:"
-msgstr "시상방향"
+msgstr ""
 
 #: dialogs.py:2715
-#, fuzzy
 msgid "Coronal:"
-msgstr "두정방향"
+msgstr ""
 
 #: dialogs.py:2806
 msgid "Max hole size"
@@ -1210,9 +1183,8 @@ msgid "Preview medical data to be reconstructed"
 msgstr "재생성되는 의학자료 미리보기"
 
 #: frame.py:183
-#, fuzzy
 msgid "Preview bitmap to be reconstructed"
-msgstr "재생성되는 의학자료 미리보기"
+msgstr ""
 
 #: frame.py:189
 msgid "Retrieve DICOM from PACS"
@@ -1271,36 +1243,32 @@ msgid "Clean Mask\tCtrl+Shift+A"
 msgstr ""
 
 #: frame.py:761
-#, fuzzy
 msgid "Fill holes manually"
-msgstr "구멍 채우기"
+msgstr ""
 
 #: frame.py:769 styles.py:1765
 msgid "Remove parts"
 msgstr ""
 
 #: frame.py:772
-#, fuzzy
 msgid "Select parts"
-msgstr "Getting selected parts"
+msgstr ""
 
 #: frame.py:777
 msgid "Crop"
 msgstr ""
 
 #: frame.py:787
-#, fuzzy
 msgid "Segmentation"
-msgstr "채도"
+msgstr ""
 
 #: frame.py:791
 msgid "Reorient image\tCtrl+Shift+R"
 msgstr ""
 
 #: frame.py:799
-#, fuzzy
 msgid "Interpolated slices"
-msgstr "슬라이스 스크롤"
+msgstr ""
 
 #: frame.py:836
 msgid "Preferences..."
@@ -1568,9 +1536,8 @@ msgid "GPU (NVidia video cards only)"
 msgstr ""
 
 #: preferences.py:152
-#, fuzzy
 msgid "Slices"
-msgstr "슬라이스 스크롤"
+msgstr ""
 
 #: preferences.py:155
 msgid "Interpolated "
@@ -1703,14 +1670,12 @@ msgid "Applying watershed ..."
 msgstr ""
 
 #: styles.py:1669
-#, fuzzy
 msgid "Fill hole"
-msgstr "구멍 채우기"
+msgstr ""
 
 #: styles.py:1670
-#, fuzzy
 msgid "Filling hole ..."
-msgstr "구멍 채우기"
+msgstr ""
 
 #: styles.py:1766
 msgid "Remove part"
@@ -1721,9 +1686,8 @@ msgid "Removing part ..."
 msgstr ""
 
 #: styles.py:2018
-#, fuzzy
 msgid "Segmenting ..."
-msgstr "테스트중 ..."
+msgstr ""
 
 #: surface.py:444 surface.py:535 surface.py:553 surface.py:591 surface.py:620
 #: surface.py:642 surface.py:661 surface.py:675 surface.py:692
@@ -1768,7 +1732,7 @@ msgstr ""
 
 #: task_importer.py:68
 msgid "Import medical images..."
-msgstr "Import medical images..."
+msgstr ""
 
 #: task_importer.py:87
 msgid "Open an existing InVesalius project..."
@@ -1795,9 +1759,8 @@ msgid "Update camera in volume"
 msgstr ""
 
 #: task_navigator.py:147
-#, fuzzy
 msgid "Volume camera"
-msgstr "공간"
+msgstr ""
 
 #: task_navigator.py:153
 msgid "Enable external trigger for creating markers"
@@ -1824,28 +1787,24 @@ msgid "Fiducial registration error"
 msgstr ""
 
 #: task_navigator.py:266
-#, fuzzy
 msgid "Start navigation"
-msgstr "채도"
+msgstr ""
 
 #: task_navigator.py:267
 msgid "Navigate"
 msgstr ""
 
 #: task_navigator.py:462
-#, fuzzy
 msgid "Stop neuronavigation"
-msgstr "채도"
+msgstr ""
 
 #: task_navigator.py:491
-#, fuzzy
 msgid "Start neuronavigation"
-msgstr "채도"
+msgstr ""
 
 #: task_navigator.py:539
-#, fuzzy
 msgid "Create marker"
-msgstr "새 마스크창조"
+msgstr ""
 
 #: task_navigator.py:548
 msgid "Save"
@@ -1856,9 +1815,8 @@ msgid "Load"
 msgstr ""
 
 #: task_navigator.py:554
-#, fuzzy
 msgid "Hide"
-msgstr "본문 숨기기"
+msgstr ""
 
 #: task_navigator.py:566
 msgid "Delete all markers"
@@ -1941,7 +1899,8 @@ msgid "Advanced options"
 msgstr "개선된 옵션"
 
 #: task_surface.py:275
-msgid "Automatically select largest disconnected region and create new surface"
+msgid ""
+"Automatically select largest disconnected region and create new surface"
 msgstr "자동적으로 가장 큰 비련결령역을 선택하고 새 표면 창조"
 
 #: task_surface.py:276
@@ -1950,7 +1909,8 @@ msgstr ""
 
 #: task_surface.py:284
 msgid ""
-"Automatically select disconnected regions and create a new surface per region"
+"Automatically select disconnected regions and create a new surface per "
+"region"
 msgstr ""
 
 #: task_surface.py:285
@@ -2180,10 +2140,13 @@ msgid "BA"
 msgstr ""
 
 #~ msgid "Untitled"
-#~ msgstr "제목없음"
+#~ msgstr "Untitled"
 
 #~ msgid "unnamed"
-#~ msgstr "이름없는"
+#~ msgstr "unnamed"
+
+#~ msgid "Import DICOM images..."
+#~ msgstr "Import DICOM files..."
 
 #~ msgid "Advanced editing tools"
 #~ msgstr "Advanced editing tools"

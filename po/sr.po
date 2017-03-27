@@ -12,16 +12,14 @@ msgstr ""
 "Project-Id-Version: InVesalius3\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2017-03-27 11:03-0300\n"
-"PO-Revision-Date: 2015-06-02 16:40+0000\n"
+"PO-Revision-Date: 2017-03-27 14:16+0000\n"
 "Last-Translator: InVesalius <invesalius@cti.gov.br>\n"
-"Language-Team: Serbian (http://www.transifex.com/projects/p/invesalius3/"
-"language/sr/)\n"
-"Language: sr\n"
+"Language-Team: Serbian (http://www.transifex.com/invesalius/invesalius3/language/sr/)\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n"
-"%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
+"Language: sr\n"
+"Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
 "X-Poedit-Country: GENERIC\n"
 "X-Poedit-Language: English\n"
 "X-Poedit-SourceCharset: utf-8\n"
@@ -46,9 +44,7 @@ msgstr "Место: %.2f"
 msgid ""
 "%s %s\n"
 "Made in InVesalius"
-msgstr ""
-"%s %s\n"
-"Направљено у УВесалијусу"
+msgstr "%s %s\nНаправљено у УВесалијусу"
 
 #: bitmap_preview_panel.py:166 bitmap_preview_panel.py:167
 #: dicom_preview_panel.py:189 dicom_preview_panel.py:190 frame.py:793
@@ -670,8 +666,7 @@ msgstr ""
 
 #: dialogs.py:116
 msgid ""
-"InVesalius is running on a 32-bit operating system or has insufficient "
-"memory. \n"
+"InVesalius is running on a 32-bit operating system or has insufficient memory. \n"
 "If you want to work with 3D surfaces or volume rendering, \n"
 "it is recommended to reduce the medical images resolution."
 msgstr ""
@@ -717,9 +712,8 @@ msgid "InVesalius project (*.inv3)|*.inv3"
 msgstr ""
 
 #: dialogs.py:414
-#, fuzzy
 msgid "Save markers as..."
-msgstr "Save Project As..."
+msgstr ""
 
 #: dialogs.py:417
 msgid "Markers (*.txt)|*.txt"
@@ -856,17 +850,9 @@ msgstr ""
 
 #: dialogs.py:996
 msgid ""
-"InVesalius is a medical imaging program for 3D reconstruction. It uses a "
-"sequence of 2D DICOM image files acquired with CT or MRI scanners. "
-"InVesalius allows exporting 3D volumes or surfaces as mesh files for "
-"creating physical models of a patient's anatomy using additive manufacturing "
-"(3D printing) technologies. The software is developed by Center for "
-"Information Technology Renato Archer (CTI), National Council for Scientific "
-"and Technological Development (CNPq) and the Brazilian Ministry of Health.\n"
+"InVesalius is a medical imaging program for 3D reconstruction. It uses a sequence of 2D DICOM image files acquired with CT or MRI scanners. InVesalius allows exporting 3D volumes or surfaces as mesh files for creating physical models of a patient's anatomy using additive manufacturing (3D printing) technologies. The software is developed by Center for Information Technology Renato Archer (CTI), National Council for Scientific and Technological Development (CNPq) and the Brazilian Ministry of Health.\n"
 "\n"
-" InVesalius must be used only for research. The Center for Information "
-"Technology Renato Archer is not responsible for damages caused by the use of "
-"this software.\n"
+" InVesalius must be used only for research. The Center for Information Technology Renato Archer is not responsible for damages caused by the use of this software.\n"
 "\n"
 " Contact: invesalius@cti.gov.br"
 msgstr ""
@@ -1049,9 +1035,8 @@ msgid "Create project from bitmap"
 msgstr ""
 
 #: dialogs.py:1908
-#, fuzzy
 msgid "Project name:"
-msgstr "Име пацијента"
+msgstr ""
 
 #: dialogs.py:1911
 msgid "Slices orientation:"
@@ -1062,9 +1047,8 @@ msgid "Sagital"
 msgstr ""
 
 #: dialogs.py:1916
-#, fuzzy
 msgid "Spacing (mm):"
-msgstr "Размак: %.2f"
+msgstr ""
 
 #: dialogs.py:1931
 msgid "X:"
@@ -1089,9 +1073,8 @@ msgid "2D - Actual slice"
 msgstr ""
 
 #: dialogs.py:2032
-#, fuzzy
 msgid "3D - All slices"
-msgstr "Задржи све исечке"
+msgstr ""
 
 #: dialogs.py:2057
 msgid "2D Connectivity"
@@ -1126,9 +1109,8 @@ msgid "Multiplier"
 msgstr ""
 
 #: dialogs.py:2249
-#, fuzzy
 msgid "Iterations"
-msgstr "Засићеност"
+msgstr ""
 
 #: dialogs.py:2327 dialogs.py:2541 dialogs.py:2795
 msgid "Parameters"
@@ -1269,18 +1251,16 @@ msgid "Remove parts"
 msgstr ""
 
 #: frame.py:772
-#, fuzzy
 msgid "Select parts"
-msgstr "Getting selected parts"
+msgstr ""
 
 #: frame.py:777
 msgid "Crop"
 msgstr ""
 
 #: frame.py:787
-#, fuzzy
 msgid "Segmentation"
-msgstr "Засићеност"
+msgstr ""
 
 #: frame.py:791
 msgid "Reorient image\tCtrl+Shift+R"
@@ -1752,7 +1732,7 @@ msgstr ""
 
 #: task_importer.py:68
 msgid "Import medical images..."
-msgstr "Import medical images..."
+msgstr ""
 
 #: task_importer.py:87
 msgid "Open an existing InVesalius project..."
@@ -1807,23 +1787,20 @@ msgid "Fiducial registration error"
 msgstr ""
 
 #: task_navigator.py:266
-#, fuzzy
 msgid "Start navigation"
-msgstr "Засићеност"
+msgstr ""
 
 #: task_navigator.py:267
 msgid "Navigate"
 msgstr ""
 
 #: task_navigator.py:462
-#, fuzzy
 msgid "Stop neuronavigation"
-msgstr "Засићеност"
+msgstr ""
 
 #: task_navigator.py:491
-#, fuzzy
 msgid "Start neuronavigation"
-msgstr "Засићеност"
+msgstr ""
 
 #: task_navigator.py:539
 msgid "Create marker"
@@ -1922,7 +1899,8 @@ msgid "Advanced options"
 msgstr ""
 
 #: task_surface.py:275
-msgid "Automatically select largest disconnected region and create new surface"
+msgid ""
+"Automatically select largest disconnected region and create new surface"
 msgstr ""
 
 #: task_surface.py:276
@@ -1931,7 +1909,8 @@ msgstr ""
 
 #: task_surface.py:284
 msgid ""
-"Automatically select disconnected regions and create a new surface per region"
+"Automatically select disconnected regions and create a new surface per "
+"region"
 msgstr ""
 
 #: task_surface.py:285
@@ -2160,8 +2139,14 @@ msgstr ""
 msgid "BA"
 msgstr ""
 
+#~ msgid "Untitled"
+#~ msgstr "Untitled"
+
 #~ msgid "unnamed"
-#~ msgstr "неименовано"
+#~ msgstr "unnamed"
+
+#~ msgid "Import DICOM images..."
+#~ msgstr "Import DICOM files..."
 
 #~ msgid "Advanced editing tools"
 #~ msgstr "Advanced editing tools"
@@ -2171,6 +2156,9 @@ msgstr ""
 
 #~ msgid "Off"
 #~ msgstr " Off"
+
+#~ msgid "Save Project As..."
+#~ msgstr "Save Project As..."
 
 #~ msgid "Open a InVesalius project..."
 #~ msgstr "Open a InVesalius project..."

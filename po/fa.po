@@ -12,14 +12,13 @@ msgstr ""
 "Project-Id-Version: InVesalius3\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2017-03-27 11:03-0300\n"
-"PO-Revision-Date: 2015-06-02 16:40+0000\n"
+"PO-Revision-Date: 2017-03-27 14:16+0000\n"
 "Last-Translator: InVesalius <invesalius@cti.gov.br>\n"
-"Language-Team: Persian (http://www.transifex.com/projects/p/invesalius3/"
-"language/fa/)\n"
-"Language: fa\n"
+"Language-Team: Persian (http://www.transifex.com/invesalius/invesalius3/language/fa/)\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
+"Language: fa\n"
 "Plural-Forms: nplurals=1; plural=0;\n"
 "X-Poedit-Country: GENERIC\n"
 "X-Poedit-Language: English\n"
@@ -667,8 +666,7 @@ msgstr ""
 
 #: dialogs.py:116
 msgid ""
-"InVesalius is running on a 32-bit operating system or has insufficient "
-"memory. \n"
+"InVesalius is running on a 32-bit operating system or has insufficient memory. \n"
 "If you want to work with 3D surfaces or volume rendering, \n"
 "it is recommended to reduce the medical images resolution."
 msgstr ""
@@ -714,9 +712,8 @@ msgid "InVesalius project (*.inv3)|*.inv3"
 msgstr ""
 
 #: dialogs.py:414
-#, fuzzy
 msgid "Save markers as..."
-msgstr "ذخیره پروژه به عنوان..."
+msgstr ""
 
 #: dialogs.py:417
 msgid "Markers (*.txt)|*.txt"
@@ -853,17 +850,9 @@ msgstr ""
 
 #: dialogs.py:996
 msgid ""
-"InVesalius is a medical imaging program for 3D reconstruction. It uses a "
-"sequence of 2D DICOM image files acquired with CT or MRI scanners. "
-"InVesalius allows exporting 3D volumes or surfaces as mesh files for "
-"creating physical models of a patient's anatomy using additive manufacturing "
-"(3D printing) technologies. The software is developed by Center for "
-"Information Technology Renato Archer (CTI), National Council for Scientific "
-"and Technological Development (CNPq) and the Brazilian Ministry of Health.\n"
+"InVesalius is a medical imaging program for 3D reconstruction. It uses a sequence of 2D DICOM image files acquired with CT or MRI scanners. InVesalius allows exporting 3D volumes or surfaces as mesh files for creating physical models of a patient's anatomy using additive manufacturing (3D printing) technologies. The software is developed by Center for Information Technology Renato Archer (CTI), National Council for Scientific and Technological Development (CNPq) and the Brazilian Ministry of Health.\n"
 "\n"
-" InVesalius must be used only for research. The Center for Information "
-"Technology Renato Archer is not responsible for damages caused by the use of "
-"this software.\n"
+" InVesalius must be used only for research. The Center for Information Technology Renato Archer is not responsible for damages caused by the use of this software.\n"
 "\n"
 " Contact: invesalius@cti.gov.br"
 msgstr ""
@@ -1084,9 +1073,8 @@ msgid "2D - Actual slice"
 msgstr ""
 
 #: dialogs.py:2032
-#, fuzzy
 msgid "3D - All slices"
-msgstr "حفظ تمام برش ها"
+msgstr ""
 
 #: dialogs.py:2057
 msgid "2D Connectivity"
@@ -1153,9 +1141,8 @@ msgid "Crop mask"
 msgstr ""
 
 #: dialogs.py:2695
-#, fuzzy
 msgid "Axial:"
-msgstr "محوری"
+msgstr ""
 
 #: dialogs.py:2697 dialogs.py:2707 dialogs.py:2717
 msgid " - "
@@ -1264,9 +1251,8 @@ msgid "Remove parts"
 msgstr ""
 
 #: frame.py:772
-#, fuzzy
 msgid "Select parts"
-msgstr "Getting selected parts"
+msgstr ""
 
 #: frame.py:777
 msgid "Crop"
@@ -1700,9 +1686,8 @@ msgid "Removing part ..."
 msgstr ""
 
 #: styles.py:2018
-#, fuzzy
 msgid "Segmenting ..."
-msgstr "تست کردن ..."
+msgstr ""
 
 #: surface.py:444 surface.py:535 surface.py:553 surface.py:591 surface.py:620
 #: surface.py:642 surface.py:661 surface.py:675 surface.py:692
@@ -1747,7 +1732,7 @@ msgstr ""
 
 #: task_importer.py:68
 msgid "Import medical images..."
-msgstr "Import medical images..."
+msgstr ""
 
 #: task_importer.py:87
 msgid "Open an existing InVesalius project..."
@@ -1774,9 +1759,8 @@ msgid "Update camera in volume"
 msgstr ""
 
 #: task_navigator.py:147
-#, fuzzy
 msgid "Volume camera"
-msgstr "حجم"
+msgstr ""
 
 #: task_navigator.py:153
 msgid "Enable external trigger for creating markers"
@@ -1831,9 +1815,8 @@ msgid "Load"
 msgstr ""
 
 #: task_navigator.py:554
-#, fuzzy
 msgid "Hide"
-msgstr "پنهان کردن متن"
+msgstr ""
 
 #: task_navigator.py:566
 msgid "Delete all markers"
@@ -1916,7 +1899,8 @@ msgid "Advanced options"
 msgstr "گزینه های پیشرفته"
 
 #: task_surface.py:275
-msgid "Automatically select largest disconnected region and create new surface"
+msgid ""
+"Automatically select largest disconnected region and create new surface"
 msgstr ""
 
 #: task_surface.py:276
@@ -1925,7 +1909,8 @@ msgstr ""
 
 #: task_surface.py:284
 msgid ""
-"Automatically select disconnected regions and create a new surface per region"
+"Automatically select disconnected regions and create a new surface per "
+"region"
 msgstr ""
 
 #: task_surface.py:285
@@ -2155,10 +2140,13 @@ msgid "BA"
 msgstr ""
 
 #~ msgid "Untitled"
-#~ msgstr "بدون عنوان"
+#~ msgstr "Untitled"
 
 #~ msgid "unnamed"
-#~ msgstr "بدون نام گذاري"
+#~ msgstr "unnamed"
+
+#~ msgid "Import DICOM images..."
+#~ msgstr "Import DICOM files..."
 
 #~ msgid "Advanced editing tools"
 #~ msgstr "Advanced editing tools"

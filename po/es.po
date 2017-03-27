@@ -14,14 +14,13 @@ msgstr ""
 "Project-Id-Version: InVesalius3\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2017-03-27 11:03-0300\n"
-"PO-Revision-Date: 2015-06-02 16:40+0000\n"
+"PO-Revision-Date: 2017-03-27 14:16+0000\n"
 "Last-Translator: InVesalius <invesalius@cti.gov.br>\n"
-"Language-Team: Spanish (http://www.transifex.com/projects/p/invesalius3/"
-"language/es/)\n"
-"Language: es\n"
+"Language-Team: Spanish (http://www.transifex.com/invesalius/invesalius3/language/es/)\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
+"Language: es\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 "X-Poedit-Country: GENERIC\n"
 "X-Poedit-Language: English\n"
@@ -47,9 +46,7 @@ msgstr "Ubicación: %.2f"
 msgid ""
 "%s %s\n"
 "Made in InVesalius"
-msgstr ""
-"%s %s\n"
-"Hecho en InVesalius"
+msgstr "%s %s\nHecho en InVesalius"
 
 #: bitmap_preview_panel.py:166 bitmap_preview_panel.py:167
 #: dicom_preview_panel.py:189 dicom_preview_panel.py:190 frame.py:793
@@ -426,9 +423,8 @@ msgid "Cut plane"
 msgstr "Plano de corte"
 
 #: constants.py:653
-#, fuzzy
 msgid "Select tracker:"
-msgstr "Seleccionar la superficie más grande"
+msgstr ""
 
 #: constants.py:653
 msgid "Claron MicronTracker"
@@ -475,9 +471,8 @@ msgid "NAI"
 msgstr ""
 
 #: constants.py:675
-#, fuzzy
 msgid "Select left ear in image"
-msgstr "Seleccionar la superficie más grande"
+msgstr ""
 
 #: constants.py:676
 msgid "Select right ear in image"
@@ -488,19 +483,16 @@ msgid "Select nasion in image"
 msgstr ""
 
 #: constants.py:679
-#, fuzzy
 msgid "LET"
-msgstr "IS"
+msgstr ""
 
 #: constants.py:680
-#, fuzzy
 msgid "RET"
-msgstr "DS"
+msgstr ""
 
 #: constants.py:681
-#, fuzzy
 msgid "NAT"
-msgstr "AS"
+msgstr ""
 
 #: constants.py:682
 msgid "SET"
@@ -529,8 +521,7 @@ msgstr "Cargando archivo %d de %d ..."
 
 #: control.py:818
 msgid "Fix gantry tilt applying the degrees below"
-msgstr ""
-"Arreglar la inclinación (gantry tilt) con la aplicación de los grados abajo"
+msgstr "Arreglar la inclinación (gantry tilt) con la aplicación de los grados abajo"
 
 #: data_notebook.py:45 measures.py:17
 msgid "Linear"
@@ -636,9 +627,8 @@ msgid "Export data"
 msgstr "Exportar los datos"
 
 #: default_tasks.py:254
-#, fuzzy
 msgid "Navigation system"
-msgstr "Usar sistema de navegación"
+msgstr ""
 
 #: default_viewers.py:82 default_viewers.py:171 task_exporter.py:247
 msgid "Axial slice"
@@ -678,15 +668,10 @@ msgstr "Valor no se aplicará."
 
 #: dialogs.py:116
 msgid ""
-"InVesalius is running on a 32-bit operating system or has insufficient "
-"memory. \n"
+"InVesalius is running on a 32-bit operating system or has insufficient memory. \n"
 "If you want to work with 3D surfaces or volume rendering, \n"
 "it is recommended to reduce the medical images resolution."
-msgstr ""
-"InVesalius se ejecuta en un sistema operativo de 32-bits o no tiene "
-"suficiente memoria. \n"
-"Si quieres trabajar con superficies 3D o renderización de volumen, \n"
-"se recomienda reducir la resolución de las imágenes médicas."
+msgstr "InVesalius se ejecuta en un sistema operativo de 32-bits o no tiene suficiente memoria. \nSi quieres trabajar con superficies 3D o renderización de volumen, \nse recomienda reducir la resolución de las imágenes médicas."
 
 #: dialogs.py:130
 msgid "Percentage of original resolution"
@@ -709,19 +694,16 @@ msgid "Choose a folder with TIFF, BMP, JPG or PNG:"
 msgstr ""
 
 #: dialogs.py:341
-#, fuzzy
 msgid "Import Analyze 7.5 file"
-msgstr "Abrir archivo Analyze"
+msgstr ""
 
 #: dialogs.py:347
-#, fuzzy
 msgid "Import NIFTi 1 file"
-msgstr "Importar otros archivos..."
+msgstr ""
 
 #: dialogs.py:350
-#, fuzzy
 msgid "Import PAR/REC file"
-msgstr "Importar otros archivos..."
+msgstr ""
 
 #: dialogs.py:382 frame.py:692
 msgid "Save project as..."
@@ -732,9 +714,8 @@ msgid "InVesalius project (*.inv3)|*.inv3"
 msgstr "Proyecto InVesalius (*.inv3)|*.inv3"
 
 #: dialogs.py:414
-#, fuzzy
 msgid "Save markers as..."
-msgstr "Guardar proyecto como..."
+msgstr ""
 
 #: dialogs.py:417
 msgid "Markers (*.txt)|*.txt"
@@ -748,9 +729,7 @@ msgstr ""
 msgid ""
 "A new version of InVesalius is available. Do you want to open the download "
 "website now?"
-msgstr ""
-"Una nueva versión de InVesalius está disponible. ¿Desea abrir el sitio web "
-"de descarga?"
+msgstr "Una nueva versión de InVesalius está disponible. ¿Desea abrir el sitio web de descarga?"
 
 #: dialogs.py:511 utils.py:378
 msgid "Invesalius Update"
@@ -761,9 +740,7 @@ msgstr "Actualización de InVesalius"
 msgid ""
 "The project %s has been modified.\n"
 "Save changes?"
-msgstr ""
-"El proyecto %s ha sido cambiado.\n"
-"Guardar cambios?"
+msgstr "El proyecto %s ha sido cambiado.\nGuardar cambios?"
 
 #: dialogs.py:583
 #, python-format
@@ -771,9 +748,8 @@ msgid "%s is an empty folder."
 msgstr "%s es un directorio vacío."
 
 #: dialogs.py:598
-#, fuzzy
 msgid "There are no Bitmap, JPEG, PNG or TIFF files in the selected folder."
-msgstr "No hay archivos DICOM en el directorio seleccionado."
+msgstr ""
 
 #: dialogs.py:600
 msgid "There are no DICOM files in the selected folder."
@@ -820,9 +796,8 @@ msgid "No tracking device selected"
 msgstr ""
 
 #: dialogs.py:721
-#, fuzzy
 msgid " is not installed."
-msgstr "%s no existe."
+msgstr ""
 
 #: dialogs.py:723
 msgid " disconnected."
@@ -877,17 +852,9 @@ msgstr ""
 
 #: dialogs.py:996
 msgid ""
-"InVesalius is a medical imaging program for 3D reconstruction. It uses a "
-"sequence of 2D DICOM image files acquired with CT or MRI scanners. "
-"InVesalius allows exporting 3D volumes or surfaces as mesh files for "
-"creating physical models of a patient's anatomy using additive manufacturing "
-"(3D printing) technologies. The software is developed by Center for "
-"Information Technology Renato Archer (CTI), National Council for Scientific "
-"and Technological Development (CNPq) and the Brazilian Ministry of Health.\n"
+"InVesalius is a medical imaging program for 3D reconstruction. It uses a sequence of 2D DICOM image files acquired with CT or MRI scanners. InVesalius allows exporting 3D volumes or surfaces as mesh files for creating physical models of a patient's anatomy using additive manufacturing (3D printing) technologies. The software is developed by Center for Information Technology Renato Archer (CTI), National Council for Scientific and Technological Development (CNPq) and the Brazilian Ministry of Health.\n"
 "\n"
-" InVesalius must be used only for research. The Center for Information "
-"Technology Renato Archer is not responsible for damages caused by the use of "
-"this software.\n"
+" InVesalius must be used only for research. The Center for Information Technology Renato Archer is not responsible for damages caused by the use of this software.\n"
 "\n"
 " Contact: invesalius@cti.gov.br"
 msgstr ""
@@ -995,8 +962,7 @@ msgstr "Binario"
 #: dialogs.py:1510
 msgid ""
 "It is not possible to use the Default method because the mask was edited."
-msgstr ""
-"No es posible usar el método predeterminado porque la máscara fue editada."
+msgstr "No es posible usar el método predeterminado porque la máscara fue editada."
 
 #: dialogs.py:1513
 msgid "Method:"
@@ -1055,43 +1021,36 @@ msgid "Apply"
 msgstr ""
 
 #: dialogs.py:1824
-#, fuzzy
 msgid "Angle X"
-msgstr "Ángulo"
+msgstr ""
 
 #: dialogs.py:1828
-#, fuzzy
 msgid "Angle Y"
-msgstr "Ángulo"
+msgstr ""
 
 #: dialogs.py:1832
-#, fuzzy
 msgid "Angle Z"
-msgstr "Ángulo"
+msgstr ""
 
 #: dialogs.py:1881
 msgid "Create project from bitmap"
 msgstr ""
 
 #: dialogs.py:1908
-#, fuzzy
 msgid "Project name:"
-msgstr "Nombre del preajuste"
+msgstr ""
 
 #: dialogs.py:1911
-#, fuzzy
 msgid "Slices orientation:"
-msgstr "Cruce para intersección de rebanadas"
+msgstr ""
 
 #: dialogs.py:1912 dialogs.py:2063 dialogs.py:2084
-#, fuzzy
 msgid "Sagital"
-msgstr "Sagital"
+msgstr ""
 
 #: dialogs.py:1916
-#, fuzzy
 msgid "Spacing (mm):"
-msgstr "Espaciamiento: %.2f"
+msgstr ""
 
 #: dialogs.py:1931
 msgid "X:"
@@ -1112,23 +1071,20 @@ msgid ""
 msgstr ""
 
 #: dialogs.py:2031
-#, fuzzy
 msgid "2D - Actual slice"
-msgstr "Corte Axial"
+msgstr ""
 
 #: dialogs.py:2032
-#, fuzzy
 msgid "3D - All slices"
-msgstr "Mantener todas las rebanadas"
+msgstr ""
 
 #: dialogs.py:2057
 msgid "2D Connectivity"
 msgstr ""
 
 #: dialogs.py:2066
-#, fuzzy
 msgid "Orientation"
-msgstr "Operación"
+msgstr ""
 
 #: dialogs.py:2103
 msgid "3D Connectivity"
@@ -1139,9 +1095,8 @@ msgid "Use WW&WL"
 msgstr "Usar WW&WL"
 
 #: dialogs.py:2188
-#, fuzzy
 msgid "Deviation"
-msgstr "Operación"
+msgstr ""
 
 #: dialogs.py:2190
 msgid "Min:"
@@ -1156,9 +1111,8 @@ msgid "Multiplier"
 msgstr ""
 
 #: dialogs.py:2249
-#, fuzzy
 msgid "Iterations"
-msgstr "Interpolación"
+msgstr ""
 
 #: dialogs.py:2327 dialogs.py:2541 dialogs.py:2795
 msgid "Parameters"
@@ -1169,9 +1123,8 @@ msgid "Select mask parts"
 msgstr ""
 
 #: dialogs.py:2413
-#, fuzzy
 msgid "Target mask name"
-msgstr "Nombre de la nueva máscara:"
+msgstr ""
 
 #: dialogs.py:2467 frame.py:784 styles.py:2017
 msgid "Region growing"
@@ -1190,23 +1143,20 @@ msgid "Crop mask"
 msgstr ""
 
 #: dialogs.py:2695
-#, fuzzy
 msgid "Axial:"
-msgstr "Axial"
+msgstr ""
 
 #: dialogs.py:2697 dialogs.py:2707 dialogs.py:2717
 msgid " - "
 msgstr ""
 
 #: dialogs.py:2705
-#, fuzzy
 msgid "Sagital:"
-msgstr "Sagital"
+msgstr ""
 
 #: dialogs.py:2715
-#, fuzzy
 msgid "Coronal:"
-msgstr "Coronal"
+msgstr ""
 
 #: dialogs.py:2806
 msgid "Max hole size"
@@ -1235,9 +1185,8 @@ msgid "Preview medical data to be reconstructed"
 msgstr "Vista previa de los datos médicos que van a ser reconstruidos"
 
 #: frame.py:183
-#, fuzzy
 msgid "Preview bitmap to be reconstructed"
-msgstr "Vista previa de los datos médicos que van a ser reconstruidos"
+msgstr ""
 
 #: frame.py:189
 msgid "Retrieve DICOM from PACS"
@@ -1296,38 +1245,32 @@ msgid "Clean Mask\tCtrl+Shift+A"
 msgstr "Limpiar máscara\tCtrl+Shift+A"
 
 #: frame.py:761
-#, fuzzy
 msgid "Fill holes manually"
-msgstr "Llenar los agujeros"
+msgstr ""
 
 #: frame.py:769 styles.py:1765
-#, fuzzy
 msgid "Remove parts"
-msgstr "Remover"
+msgstr ""
 
 #: frame.py:772
-#, fuzzy
 msgid "Select parts"
-msgstr "Getting selected parts"
+msgstr ""
 
 #: frame.py:777
 msgid "Crop"
 msgstr ""
 
 #: frame.py:787
-#, fuzzy
 msgid "Segmentation"
-msgstr "Saturación"
+msgstr ""
 
 #: frame.py:791
-#, fuzzy
 msgid "Reorient image\tCtrl+Shift+R"
-msgstr "Limpiar máscara\tCtrl+Shift+A"
+msgstr ""
 
 #: frame.py:799
-#, fuzzy
 msgid "Interpolated slices"
-msgstr "Interpolación"
+msgstr ""
 
 #: frame.py:836
 msgid "Preferences..."
@@ -1563,14 +1506,12 @@ msgid "Preferences"
 msgstr "Preferencias"
 
 #: preferences.py:41
-#, fuzzy
 msgid "2D Visualization"
-msgstr "Visualización"
+msgstr ""
 
 #: preferences.py:42
-#, fuzzy
 msgid "3D Visualization"
-msgstr "Visualización"
+msgstr ""
 
 #: preferences.py:43 preferences.py:190
 msgid "Language"
@@ -1597,14 +1538,12 @@ msgid "GPU (NVidia video cards only)"
 msgstr "GPU (Solo para tarjetas gráficas NVidia)"
 
 #: preferences.py:152
-#, fuzzy
 msgid "Slices"
-msgstr "Cambiar la rebanada"
+msgstr ""
 
 #: preferences.py:155
-#, fuzzy
 msgid "Interpolated "
-msgstr "Interpolación"
+msgstr ""
 
 #: preferences.py:159
 msgid "Yes"
@@ -1618,9 +1557,7 @@ msgstr ""
 msgid ""
 "Language settings will be applied \n"
 " the next time InVesalius starts."
-msgstr ""
-"Los ajustes de idioma se aplicarán\n"
-"la próxima vez que se inicie InVesalius."
+msgstr "Los ajustes de idioma se aplicarán\nla próxima vez que se inicie InVesalius."
 
 #: presets.py:33 presets.py:51 presets.py:107 presets.py:138
 msgid "Soft Tissue"
@@ -1735,29 +1672,24 @@ msgid "Applying watershed ..."
 msgstr "Aplicando watershed..."
 
 #: styles.py:1669
-#, fuzzy
 msgid "Fill hole"
-msgstr "Llenar los agujeros"
+msgstr ""
 
 #: styles.py:1670
-#, fuzzy
 msgid "Filling hole ..."
-msgstr "Llenar los agujeros"
+msgstr ""
 
 #: styles.py:1766
-#, fuzzy
 msgid "Remove part"
-msgstr "Remover"
+msgstr ""
 
 #: styles.py:1767
-#, fuzzy
 msgid "Removing part ..."
-msgstr "Cómo empezar..."
+msgstr ""
 
 #: styles.py:2018
-#, fuzzy
 msgid "Segmenting ..."
-msgstr "Probando..."
+msgstr ""
 
 #: surface.py:444 surface.py:535 surface.py:553 surface.py:591 surface.py:620
 #: surface.py:642 surface.py:661 surface.py:675 surface.py:692
@@ -1797,13 +1729,12 @@ msgid "Testing..."
 msgstr "Probando..."
 
 #: task_importer.py:67
-#, fuzzy
 msgid "Select DICOM, Analyze, NIfTI or REC/PAR files to be reconstructed"
-msgstr "Seleccionar archivos DICOM a ser reconstruidos"
+msgstr ""
 
 #: task_importer.py:68
 msgid "Import medical images..."
-msgstr "Import medical images..."
+msgstr ""
 
 #: task_importer.py:87
 msgid "Open an existing InVesalius project..."
@@ -1830,9 +1761,8 @@ msgid "Update camera in volume"
 msgstr ""
 
 #: task_navigator.py:147
-#, fuzzy
 msgid "Volume camera"
-msgstr "Volumen"
+msgstr ""
 
 #: task_navigator.py:153
 msgid "Enable external trigger for creating markers"
@@ -1859,51 +1789,44 @@ msgid "Fiducial registration error"
 msgstr ""
 
 #: task_navigator.py:266
-#, fuzzy
 msgid "Start navigation"
-msgstr "Saturación"
+msgstr ""
 
 #: task_navigator.py:267
 msgid "Navigate"
 msgstr ""
 
 #: task_navigator.py:462
-#, fuzzy
 msgid "Stop neuronavigation"
-msgstr "Saturación"
+msgstr ""
 
 #: task_navigator.py:491
-#, fuzzy
 msgid "Start neuronavigation"
-msgstr "Saturación"
+msgstr ""
 
 #: task_navigator.py:539
-#, fuzzy
 msgid "Create marker"
-msgstr "Crear nueva máscara"
+msgstr ""
 
 #: task_navigator.py:548
 msgid "Save"
 msgstr ""
 
 #: task_navigator.py:551
-#, fuzzy
 msgid "Load"
-msgstr "Cargar los datos"
+msgstr ""
 
 #: task_navigator.py:554
-#, fuzzy
 msgid "Hide"
-msgstr "Ocultar texto"
+msgstr ""
 
 #: task_navigator.py:566
 msgid "Delete all markers"
 msgstr ""
 
 #: task_navigator.py:608
-#, fuzzy
 msgid "Edit ID"
-msgstr "Editar"
+msgstr ""
 
 #: task_slice.py:86
 msgid "Create mask for slice segmentation and editing"
@@ -1978,10 +1901,9 @@ msgid "Advanced options"
 msgstr "Opciones avanzadas"
 
 #: task_surface.py:275
-msgid "Automatically select largest disconnected region and create new surface"
-msgstr ""
-"Seleccionar automáticamente la mayor región desconexa y crear una nueva "
-"superficie"
+msgid ""
+"Automatically select largest disconnected region and create new surface"
+msgstr "Seleccionar automáticamente la mayor región desconexa y crear una nueva superficie"
 
 #: task_surface.py:276
 msgid "Select largest surface"
@@ -1989,10 +1911,9 @@ msgstr "Seleccionar la superficie más grande"
 
 #: task_surface.py:284
 msgid ""
-"Automatically select disconnected regions and create a new surface per region"
-msgstr ""
-"Seleccionar automáticamente las regiones desconectadas y crear una nueva "
-"superficie por cada región"
+"Automatically select disconnected regions and create a new surface per "
+"region"
+msgstr "Seleccionar automáticamente las regiones desconectadas y crear una nueva superficie por cada región"
 
 #: task_surface.py:285
 msgid "Split all disconnected surfaces"
@@ -2000,9 +1921,7 @@ msgstr "Separar todas las superficies de desconexión"
 
 #: task_surface.py:293
 msgid "Manually insert seeds of regions of interest and create a new surface"
-msgstr ""
-"Insertar manualmente las semillas en las regiones de interés y crear una "
-"nueva superficie"
+msgstr "Insertar manualmente las semillas en las regiones de interés y crear una nueva superficie"
 
 #: task_surface.py:294
 msgid "Select regions of interest..."
@@ -2040,9 +1959,7 @@ msgstr "Número de rebanadas usadas para generar la visualización."
 msgid ""
 "Controls the sharpness of the contour. The greater the value, the sharper "
 "the contour."
-msgstr ""
-"Controla la nitidez del contorno. Cuanto mayor sea el parametro, más nitido "
-"será el contorno."
+msgstr "Controla la nitidez del contorno. Cuanto mayor sea el parametro, más nitido será el contorno."
 
 #: viewer_slice.py:85
 msgid "Inverted order"
@@ -2052,9 +1969,7 @@ msgstr "Orden invertido"
 msgid ""
 "If checked, the slices are traversed in descending order to compound the "
 "visualization instead of ascending order."
-msgstr ""
-"Si se selecciona, las rebanadas son acomodadas en orden descendente para "
-"generar la visualización en lugar de en orden ascendente."
+msgstr "Si se selecciona, las rebanadas son acomodadas en orden descendente para generar la visualización en lugar de en orden ascendente."
 
 #: viewer_slice.py:92
 msgid "Number of slices"
@@ -2227,13 +2142,13 @@ msgid "BA"
 msgstr "IA"
 
 #~ msgid "Untitled"
-#~ msgstr "Sin Título"
+#~ msgstr "Untitled"
 
 #~ msgid "unnamed"
-#~ msgstr "sin_nombre"
+#~ msgstr "unnamed"
 
 #~ msgid "Import DICOM images..."
-#~ msgstr "Importar imágenes DICOM..."
+#~ msgstr "Import DICOM files..."
 
 #~ msgid "Advanced editing tools"
 #~ msgstr "Advanced editing tools"
