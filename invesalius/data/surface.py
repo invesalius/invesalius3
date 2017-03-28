@@ -150,6 +150,8 @@ class SurfaceManager():
         Publisher.subscribe(self.OnRemove,"Remove surfaces")
         Publisher.subscribe(self.UpdateSurfaceInterpolation, 'Update Surface Interpolation')
 
+        Publisher.subscribe(self.OnImportSurfaceFile, 'Import surface file')
+
     def OnDuplicate(self, pubsub_evt):
         selected_items = pubsub_evt.data
         proj = prj.Project()
@@ -240,6 +242,36 @@ class SurfaceManager():
         new_polydata = pu.SelectLargestPart(surface.polydata)
         new_index = self.CreateSurfaceFromPolydata(new_polydata)
         Publisher.sendMessage('Show single surface', (new_index, True))
+
+    def OnImportSurfaceFile(self, pubsub_evt):
+        """
+        Creates a new surface from a surface file (STL, PLY, OBJ or VTP)
+        """
+        filename = pubsub_evt.data
+        self.CreateSurfaceFromFile(filename)
+
+    def CreateSurfaceFromFile(self, filename):
+        if filename.lower().endswith('.stl'):
+            reader = vtk.vtkSTLReader()
+        elif filename.lower().endswith('.ply'):
+            reader = vtk.vtkPLYReader()
+        elif filename.lower().endswith('.obj'):
+            reader = vtk.vtkOBJReader()
+        elif filename.lower().endswith('.vtp'):
+            reader = vtk.vtkXMLPolyDataReader()
+        else:
+            wx.MessageBox(_("File format not reconized by InVesalius"), _("Import surface error"))
+            return
+
+        reader.SetFileName(filename)
+        reader.Update()
+        polydata = reader.GetOutput()
+
+        if polydata.GetNumberOfPoints() == 0:
+            wx.MessageBox(_("InVesalius was not able to import this surface"), _("Import surface error"))
+        else:
+            name = os.path.splitext(os.path.split(filename)[-1])[0]
+            self.CreateSurfaceFromPolydata(polydata, name=name)
 
     def CreateSurfaceFromPolydata(self, polydata, overwrite=False,
                                   name=None, colour=None,

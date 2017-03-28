@@ -40,7 +40,7 @@ import invesalius.gui.widgets.listctrl as listmix
 import invesalius.utils as ul
 
 
-BTN_NEW, BTN_REMOVE, BTN_DUPLICATE = [wx.NewId() for i in xrange(3)]
+BTN_NEW, BTN_REMOVE, BTN_DUPLICATE, BTN_OPEN = [wx.NewId() for i in xrange(4)]
 
 TYPE = {const.LINEAR: _(u"Linear"),
         const.ANGULAR: _(u"Angular"),
@@ -162,15 +162,20 @@ class MeasureButtonControlPanel(wx.Panel):
                                      BMP_NEW,
                                      style=button_style,
                                      size = wx.Size(24, 20))
+        button_new.SetToolTipString(_("Create a new measure"))
         self.button_new = button_new
+
         button_remove = pbtn.PlateButton(self, BTN_REMOVE, "",
                                          BMP_REMOVE,
                                          style=button_style,
                                          size = wx.Size(24, 20))
+        button_remove.SetToolTipString(_("Remove measure"))
+
         button_duplicate = pbtn.PlateButton(self, BTN_DUPLICATE, "",
                                             BMP_DUPLICATE,
                                             style=button_style,
                                             size = wx.Size(24, 20))
+        button_duplicate.SetToolTipString(_("Duplicate measure"))
         button_duplicate.Disable()
 
         # Add all controls to gui
@@ -275,14 +280,19 @@ class ButtonControlPanel(wx.Panel):
                                      BMP_NEW,
                                      style=button_style,
                                      size = wx.Size(24, 20))
+        button_new.SetToolTipString(_("Create a new mask"))
+
         button_remove = pbtn.PlateButton(self, BTN_REMOVE, "",
                                          BMP_REMOVE,
                                          style=button_style,
                                          size = wx.Size(24, 20))
+        button_remove.SetToolTipString(_("Remove mask"))
+
         button_duplicate = pbtn.PlateButton(self, BTN_DUPLICATE, "",
                                             BMP_DUPLICATE,
                                             style=button_style,
                                             size = wx.Size(24, 20))
+        button_duplicate.SetToolTipString(_("Duplicate mask"))
 
         # Add all controls to gui
         sizer = wx.BoxSizer(wx.HORIZONTAL)
@@ -593,6 +603,7 @@ class SurfaceButtonControlPanel(wx.Panel):
                                 wx.BITMAP_TYPE_PNG)
         BMP_DUPLICATE = wx.Bitmap(os.path.join(const.ICON_DIR, "data_duplicate.png"),
                                 wx.BITMAP_TYPE_PNG)
+        BMP_OPEN = wx.ArtProvider.GetBitmap(wx.ART_FOLDER_OPEN, wx.ART_BUTTON, (18,18))
 
         # Plate buttons based on previous bitmaps
         button_style = pbtn.PB_STYLE_SQUARE | pbtn.PB_STYLE_DEFAULT
@@ -600,20 +611,32 @@ class SurfaceButtonControlPanel(wx.Panel):
                                      BMP_NEW,
                                      style=button_style,
                                      size = wx.Size(24, 20))
+        button_new.SetToolTipString(_("Create a new surface"))
+
         button_remove = pbtn.PlateButton(self, BTN_REMOVE, "",
                                          BMP_REMOVE,
                                          style=button_style,
                                          size = wx.Size(24, 20))
+        button_remove.SetToolTipString(_("Remove surface"))
+
         button_duplicate = pbtn.PlateButton(self, BTN_DUPLICATE, "",
                                             BMP_DUPLICATE,
                                             style=button_style,
                                             size = wx.Size(24, 20))
+        button_duplicate.SetToolTipString(_("Duplicate surface"))
+
+        button_open = pbtn.PlateButton(self, BTN_OPEN, "",
+                                       BMP_OPEN,
+                                       style=button_style,
+                                       size = wx.Size(24, 20))
+        button_open.SetToolTipString(_("Import a surface file into InVesalius"))
 
         # Add all controls to gui
         sizer = wx.BoxSizer(wx.HORIZONTAL)
         sizer.Add(button_new, 0, wx.GROW|wx.EXPAND|wx.LEFT)
         sizer.Add(button_remove, 0, wx.GROW|wx.EXPAND)
         sizer.Add(button_duplicate, 0, wx.GROW|wx.EXPAND)
+        sizer.Add(button_open, 0, wx.GROW|wx.EXPAND)
         self.SetSizer(sizer)
         self.Fit()
 
@@ -628,6 +651,8 @@ class SurfaceButtonControlPanel(wx.Panel):
             self.OnRemove()
         elif id ==  BTN_DUPLICATE:
             self.OnDuplicate()
+        elif id == BTN_OPEN:
+            self.OnOpenMesh()
 
     def OnNew(self):
         sl = slice_.Slice()
@@ -658,6 +683,11 @@ class SurfaceButtonControlPanel(wx.Panel):
             Publisher.sendMessage('Duplicate surfaces', selected_items)
         else:
            dlg.SurfaceSelectionRequiredForDuplication()
+
+    def OnOpenMesh(self):
+        filename = dlg.ShowImportMeshFilesDialog()
+        if filename:
+            Publisher.sendMessage('Import surface file', filename)
 
 
 class SurfacesListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
