@@ -27,6 +27,7 @@ import shutil
 import sys
 from threading import Thread
 import time
+import codecs
 
 #import wx.lib.pubsub as ps
 from wx.lib.pubsub import pub as Publisher
@@ -175,14 +176,16 @@ class Session(object):
         config.add_section('paths')
         config.set('paths','homedir',self.homedir)
         config.set('paths','tempdir',self.tempdir)
-        try:
-            config.set('paths','last_dicom_folder',self.last_dicom_folder.encode('utf-8'))
-        except (UnicodeEncodeError, UnicodeDecodeError):
-            config.set('paths','last_dicom_folder',self.last_dicom_folder)
+        config.set('paths','last_dicom_folder',self.last_dicom_folder)
+
         path = os.path.join(self.homedir ,
                             '.invesalius', 'config.cfg')
 
-        configfile = open(path, 'wb')
+        if sys.platform == 'win32':
+            configfile = codecs.open(path, 'wb', 'utf-8')
+        else:
+            configfile = open(path, 'wb')
+
         config.write(configfile)
         configfile.close()
 
@@ -263,8 +266,10 @@ class Session(object):
             self.recent_projects = eval(config.get('project','recent_projects'))
             self.homedir = config.get('paths','homedir')
             self.tempdir = config.get('paths','tempdir')
-            self.last_dicom_folder = config.get('paths','last_dicom_folder')
-            self.last_dicom_folder = self.last_dicom_folder.decode('utf-8')
+            self.last_dicom_folder = config.get('paths','last_dicom_folder') 
+            
+            #if not(sys.platform == 'win32'):
+            #    self.last_dicom_folder = self.last_dicom_folder.decode('utf-8')
 
             self.surface_interpolation = config.get('session', 'surface_interpolation')
             self.slice_interpolation = config.get('session', 'slice_interpolation')
