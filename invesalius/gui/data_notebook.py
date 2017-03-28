@@ -593,9 +593,7 @@ class SurfaceButtonControlPanel(wx.Panel):
                                 wx.BITMAP_TYPE_PNG)
         BMP_DUPLICATE = wx.Bitmap(os.path.join(const.ICON_DIR, "data_duplicate.png"),
                                 wx.BITMAP_TYPE_PNG)
-
-        BMP_OPEN = wx.Bitmap(os.path.join(const.ICON_DIR, "data_duplicate.png"),
-                                wx.BITMAP_TYPE_PNG)
+        BMP_OPEN = wx.ArtProvider.GetBitmap(wx.ART_FOLDER_OPEN, wx.ART_BUTTON, (18,18))
 
         # Plate buttons based on previous bitmaps
         button_style = pbtn.PB_STYLE_SQUARE | pbtn.PB_STYLE_DEFAULT
@@ -615,6 +613,7 @@ class SurfaceButtonControlPanel(wx.Panel):
                                        BMP_OPEN,
                                        style=button_style,
                                        size = wx.Size(24, 20))
+        button_open.SetToolTipString(_("Import a surface file into InVesalius"))
 
         # Add all controls to gui
         sizer = wx.BoxSizer(wx.HORIZONTAL)

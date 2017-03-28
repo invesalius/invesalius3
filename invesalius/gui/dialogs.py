@@ -386,8 +386,7 @@ def ShowImportMeshFilesDialog():
     # Default system path
     current_dir = os.path.abspath(".")
     dlg = wx.FileDialog(None, message=_("Import surface file"),
-                        defaultDir="",
-                        defaultFile="", wildcard=WILDCARD_MESH_FILES,
+                        wildcard=WILDCARD_MESH_FILES,
                         style=wx.FD_OPEN | wx.FD_CHANGE_DIR)
 
     # stl filter is default
