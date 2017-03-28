@@ -260,15 +260,18 @@ class SurfaceManager():
         elif filename.lower().endswith('.vtp'):
             reader = vtk.vtkXMLPolyDataReader()
         else:
+            wx.MessageBox(_("File format not reconized by InVesalius"), _("Import surface error"))
             return
 
         reader.SetFileName(filename)
         reader.Update()
         polydata = reader.GetOutput()
 
-        name = os.path.splitext(os.path.split(filename)[-1])[0]
-
-        self.CreateSurfaceFromPolydata(polydata, name=name)
+        if polydata.GetNumberOfPoints() == 0:
+            wx.MessageBox(_("InVesalius was not able to import this surface"), _("Import surface error"))
+        else:
+            name = os.path.splitext(os.path.split(filename)[-1])[0]
+            self.CreateSurfaceFromPolydata(polydata, name=name)
 
     def CreateSurfaceFromPolydata(self, polydata, overwrite=False,
                                   name=None, colour=None,
