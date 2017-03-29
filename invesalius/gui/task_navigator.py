@@ -485,6 +485,8 @@ class NeuronavigationPanel(wx.Panel):
                 if self.trigger_state:
                     self.trigger = trig.Trigger(nav_id)
 
+                Publisher.sendMessage("Navigation Status", True)
+
                 self.correg = dcr.Coregistration((minv, n, q1, q2), nav_id, tracker_mode)
 
         else:
@@ -501,6 +503,8 @@ class NeuronavigationPanel(wx.Panel):
                 self.trigger.stop()
 
             self.correg.stop()
+
+            Publisher.sendMessage("Navigation Status", False)
 
     def ResetTrackerFiducials(self):
         for m in range(3, 6):
