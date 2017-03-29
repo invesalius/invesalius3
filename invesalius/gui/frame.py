@@ -673,6 +673,7 @@ class MenuBar(wx.MenuBar):
         sub(self.OnEnableState, "Enable state project")
         sub(self.OnEnableUndo, "Enable undo")
         sub(self.OnEnableRedo, "Enable redo")
+        sub(self.OnEnableNavigation, "Navigation Status")
 
         sub(self.OnAddMask, "Add mask")
         sub(self.OnRemoveMasks, "Remove masks")
@@ -949,6 +950,17 @@ class MenuBar(wx.MenuBar):
             self.FindItemById(wx.ID_REDO).Enable(True)
         else:
             self.FindItemById(wx.ID_REDO).Enable(False)
+
+    def OnEnableNavigation(self, pubsub_evt):
+        """
+        Disable mode menu when navigation is on.
+        :param pubsub_evt: Navigation status
+        """
+        value = pubsub_evt.data
+        if value:
+            self.FindItemById(const.ID_MODE_NAVIGATION).Enable(False)
+        else:
+            self.FindItemById(const.ID_MODE_NAVIGATION).Enable(True)
 
     def OnAddMask(self, pubsub_evt):
         self.num_masks += 1
