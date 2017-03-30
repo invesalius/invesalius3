@@ -449,6 +449,21 @@ class Frame(wx.Frame):
         elif id == const.ID_REORIENT_IMG:
             self.OnReorientImg()
 
+        elif id == const.ID_THRESHOLD_SEGMENTATION:
+            Publisher.sendMessage("Show panel", const.ID_THRESHOLD_SEGMENTATION)
+            Publisher.sendMessage('Disable actual style')
+            Publisher.sendMessage('Enable style', const.STATE_DEFAULT)
+
+        elif id == const.ID_MANUAL_SEGMENTATION:
+            Publisher.sendMessage("Show panel", const.ID_MANUAL_SEGMENTATION)
+            Publisher.sendMessage('Disable actual style')
+            Publisher.sendMessage('Enable style', const.SLICE_STATE_EDITOR)
+
+        elif id == const.ID_WATERSHED_SEGMENTATION:
+            Publisher.sendMessage("Show panel", const.ID_WATERSHED_SEGMENTATION)
+            Publisher.sendMessage('Disable actual style')
+            Publisher.sendMessage('Enable style', const.SLICE_STATE_WATERSHED)
+
         elif id == const.ID_FLOODFILL_MASK:
             self.OnFillHolesManually()
 
@@ -664,7 +679,12 @@ class MenuBar(wx.MenuBar):
                              const.ID_FLIP_Z,
                              const.ID_SWAP_XY,
                              const.ID_SWAP_XZ,
-                             const.ID_SWAP_YZ,]
+                             const.ID_SWAP_YZ,
+                             const.ID_THRESHOLD_SEGMENTATION,
+                             const.ID_MANUAL_SEGMENTATION,
+                             const.ID_WATERSHED_SEGMENTATION,
+                             const.ID_THRESHOLD_SEGMENTATION,
+                             const.ID_FLOODFILL_SEGMENTATION,]
         self.__init_items()
         self.__bind_events()
 
@@ -784,6 +804,9 @@ class MenuBar(wx.MenuBar):
 
         # Segmentation Menu
         segmentation_menu = wx.Menu()
+        self.threshold_segmentation = segmentation_menu.Append(const.ID_THRESHOLD_SEGMENTATION, _(u"Threshold"))
+        self.manual_segmentation = segmentation_menu.Append(const.ID_MANUAL_SEGMENTATION, _(u"Manual segmentation"))
+        self.watershed_segmentation = segmentation_menu.Append(const.ID_WATERSHED_SEGMENTATION, _(u"Watershed"))
         self.ffill_segmentation = segmentation_menu.Append(const.ID_FLOODFILL_SEGMENTATION, _(u"Region growing"))
         self.ffill_segmentation.Enable(False)
 

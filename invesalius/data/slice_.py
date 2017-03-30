@@ -184,6 +184,7 @@ class Slice(object):
 
         Publisher.subscribe(self.OnEnableStyle, 'Enable style')
         Publisher.subscribe(self.OnDisableStyle, 'Disable style')
+        Publisher.subscribe(self.OnDisableActualStyle, 'Disable actual style')
 
         Publisher.subscribe(self.OnRemoveMasks, 'Remove masks')
         Publisher.subscribe(self.OnDuplicateMasks, 'Duplicate masks')
@@ -262,6 +263,9 @@ class Slice(object):
             if (state == const.SLICE_STATE_EDITOR):
                 Publisher.sendMessage('Set interactor default cursor')
             self.state = new_state
+
+    def OnDisableActualStyle(self, pubsub_evt):
+        self.interaction_style.Reset()
 
     def OnCloseProject(self, pubsub_evt):
         self.CloseProject()

@@ -342,6 +342,7 @@ class InnerFoldPanel(wx.Panel):
         Publisher.subscribe(self.OnRetrieveStyle, 'Retrieve task slice style')
         Publisher.subscribe(self.OnDisableStyle, 'Disable task slice style')
         Publisher.subscribe(self.OnCloseProject, 'Close project data')
+        Publisher.subscribe(self.OnColapsePanel, 'Show panel')
 
     def OnFoldPressCaption(self, evt):
         id = evt.GetTag().GetId()
@@ -387,6 +388,19 @@ class InnerFoldPanel(wx.Panel):
 
     def OnCloseProject(self, pubsub_evt):
         self.fold_panel.Expand(self.fold_panel.GetFoldPanel(0))
+
+    def OnColapsePanel(self, pubsub_evt):
+        panel_seg_id = {
+            const.ID_THRESHOLD_SEGMENTATION: 0,
+            const.ID_MANUAL_SEGMENTATION: 1,
+            const.ID_WATERSHED_SEGMENTATION: 2
+        }
+
+        try:
+            _id = panel_seg_id[pubsub_evt.data]
+            self.fold_panel.Expand(self.fold_panel.GetFoldPanel(_id))
+        except KeyError:
+            pass
 
     def GetMaskSelected(self):
         x= self.mask_prop_panel.GetMaskSelected()
