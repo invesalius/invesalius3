@@ -35,7 +35,7 @@ import invesalius.data.trigger as trig
 import invesalius.gui.dialogs as dlg
 import invesalius.gui.widgets.foldpanelbar as fpb
 import invesalius.gui.widgets.colourselect as csel
-
+import invesalius.gui.frame
 
 class TaskPanel(wx.Panel):
     def __init__(self, parent):
@@ -317,9 +317,9 @@ class NeuronavigationPanel(wx.Panel):
     def LoadImageFiducials(self, pubsub_evt):
         marker_id = pubsub_evt.data[0]
         coord = pubsub_evt.data[1]
-        for n in const.BTNS_IMG:
-            btn_id = const.BTNS_IMG[n].keys()[0]
-            fid_id = const.BTNS_IMG[n].values()[0]
+        for n in const.BTNS_IMG_MKS:
+            btn_id = const.BTNS_IMG_MKS[n].keys()[0]
+            fid_id = const.BTNS_IMG_MKS[n].values()[0]
             if marker_id == fid_id and not self.btns_coord[btn_id].GetValue():
                 self.btns_coord[btn_id].SetValue(True)
                 self.fiducials[btn_id, :] = coord[0:3]
@@ -343,6 +343,7 @@ class NeuronavigationPanel(wx.Panel):
         self.trigger_state = pubsub_evt.data
 
     def OnChoiceTracker(self, evt, ctrl):
+        Publisher.sendMessage('Update status text in GUI', _("Configuring tracker ..."))
         if evt:
             choice = evt.GetSelection()
         else:
@@ -390,6 +391,7 @@ class NeuronavigationPanel(wx.Panel):
                     dlg.NavigationTrackerWarning(self.tracker_id, self.trk_init[1])
                     self.tracker_id = 0
                     ctrl.SetSelection(self.tracker_id)
+        Publisher.sendMessage('Update status text in GUI', _("Ready"))
 
     def OnChoiceRefMode(self, evt, ctrl):
         # When ref mode is changed the tracker coords are set to zero
@@ -414,8 +416,8 @@ class NeuronavigationPanel(wx.Panel):
         Publisher.sendMessage('Update cross position', (wx, wy, wz))
 
     def OnImageFiducials(self, evt):
-        btn_id = const.BTNS_IMG[evt.GetId()].keys()[0]
-        marker_id = const.BTNS_IMG[evt.GetId()].values()[0]
+        btn_id = const.BTNS_IMG_MKS[evt.GetId()].keys()[0]
+        marker_id = const.BTNS_IMG_MKS[evt.GetId()].values()[0]
 
         if self.btns_coord[btn_id].GetValue():
             coord = self.numctrls_coord[btn_id][0].GetValue(),\
@@ -486,6 +488,8 @@ class NeuronavigationPanel(wx.Panel):
                     self.trigger = trig.Trigger(nav_id)
 
                 Publisher.sendMessage("Navigation Status", True)
+                Publisher.sendMessage("Toggle Cross", const.SLICE_STATE_CROSS)
+                Publisher.sendMessage("Hide current mask")
 
                 self.correg = dcr.Coregistration((minv, n, q1, q2), nav_id, tracker_mode)
 
@@ -637,10 +641,9 @@ class MarkersPanel(wx.Panel):
                 for id_n in range(self.lc.GetItemCount()):
                     item = self.lc.GetItem(id_n, 4)
                     if item.GetText() == marker_id:
-                        for i in const.BTNS_IMG:
-                            if marker_id in const.BTNS_IMG[i].values()[0]:
+                        for i in const.BTNS_IMG_MKS:
+                            if marker_id in const.BTNS_IMG_MKS[i].values()[0]:
                                 self.lc.Focus(item.GetId())
-                                break
                 self.DeleteMarker()
         else:
             if self.lc.GetFocusedItem() is not -1:
@@ -683,8 +686,8 @@ class MarkersPanel(wx.Panel):
                     size = float(line[6])
 
                     if len(line) == 8:
-                        for i in const.BTNS_IMG:
-                            if line[7] in const.BTNS_IMG[i].values()[0]:
+                        for i in const.BTNS_IMG_MKS:
+                            if line[7] in const.BTNS_IMG_MKS[i].values()[0]:
                                 Publisher.sendMessage('Load image fiducials', (line[7], coord))
                     else:
                         line.append("")
@@ -702,7 +705,7 @@ class MarkersPanel(wx.Panel):
             ctrl.SetLabel('Hide')
 
     def OnSaveMarkers(self, evt):
-        filename = dlg.ShowSaveMarkersDialog("markers.txt")
+        filename = dlg.ShowSaveMarkersDialog("markers.mks")
         if filename:
             if self.list_coord:
                 text_file = open(filename, "w")

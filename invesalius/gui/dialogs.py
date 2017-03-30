@@ -453,7 +453,7 @@ def ShowSaveMarkersDialog(default_filename=None):
                         _("Save markers as..."),  # title
                         "",  # last used directory
                         default_filename,
-                        _("Markers (*.txt)|*.txt"),
+                        _("Markers (*.mks)|*.mks"),
                         wx.SAVE | wx.OVERWRITE_PROMPT)
     # dlg.SetFilterIndex(0) # default is VTI
 
