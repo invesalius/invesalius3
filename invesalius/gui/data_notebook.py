@@ -603,7 +603,8 @@ class SurfaceButtonControlPanel(wx.Panel):
                                 wx.BITMAP_TYPE_PNG)
         BMP_DUPLICATE = wx.Bitmap(os.path.join(const.ICON_DIR, "data_duplicate.png"),
                                 wx.BITMAP_TYPE_PNG)
-        BMP_OPEN = wx.ArtProvider.GetBitmap(wx.ART_FOLDER_OPEN, wx.ART_BUTTON, (18,18))
+        BMP_OPEN = wx.Bitmap(os.path.join(const.ICON_DIR, "load_mesh.png"),
+                                wx.BITMAP_TYPE_PNG)
 
         # Plate buttons based on previous bitmaps
         button_style = pbtn.PB_STYLE_SQUARE | pbtn.PB_STYLE_DEFAULT
