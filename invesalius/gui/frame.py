@@ -94,11 +94,13 @@ class Frame(wx.Frame):
         self.SetSize(self.GetSize())
         #self.SetSize(wx.Size(1024, 748))
 
+        self._show_navigator_message = True
 
         #to control check and unckeck of menu view -> interpolated_slices
         main_menu = MenuBar(self)
 
         self.actived_interpolated_slices = main_menu.view_menu
+        self.actived_navigation_mode = main_menu.mode_menu
 
         # Set menus, status and task bar
         self.SetMenuBar(main_menu)
@@ -467,12 +469,22 @@ class Frame(wx.Frame):
                 self.OnInterpolatedSlices(True)
             else:
                 self.OnInterpolatedSlices(False)
+
+        elif id == const.ID_MODE_NAVIGATION:
+            st = self.actived_navigation_mode.IsChecked(const.ID_MODE_NAVIGATION)
+            self.OnNavigationMode(st)
+
         elif id == const.ID_CROP_MASK:
             self.OnCropMask()
 
     def OnInterpolatedSlices(self, status):
         Publisher.sendMessage('Set interpolated slices', status)
 
+    def OnNavigationMode(self, status):
+        if status and self._show_navigator_message and sys.platform != 'win32':
+            wx.MessageBox(_('Currently the Navigation mode is only working on Windows'), 'Info', wx.OK | wx.ICON_INFORMATION)
+            self._show_navigator_message = False
+        Publisher.sendMessage('Set navigation mode', status)
 
     def OnSize(self, evt):
         """
@@ -513,6 +525,7 @@ class Frame(wx.Frame):
             Publisher.sendMessage('Reset Reaycasting')
             Publisher.sendMessage('Update Slice Interpolation')
             Publisher.sendMessage('Update Slice Interpolation MenuBar')
+            Publisher.sendMessage('Update Navigation Mode MenuBar')
             Publisher.sendMessage('Update Surface Interpolation')
 
     def ShowAbout(self):
@@ -660,11 +673,13 @@ class MenuBar(wx.MenuBar):
         sub(self.OnEnableState, "Enable state project")
         sub(self.OnEnableUndo, "Enable undo")
         sub(self.OnEnableRedo, "Enable redo")
+        sub(self.OnEnableNavigation, "Navigation Status")
 
         sub(self.OnAddMask, "Add mask")
         sub(self.OnRemoveMasks, "Remove masks")
         sub(self.OnShowMask, "Show mask")
         sub(self.OnUpdateSliceInterpolation, "Update Slice Interpolation MenuBar")
+        sub(self.OnUpdateNavigationMode, "Update Navigation Mode MenuBar")
 
         self.num_masks = 0
 
@@ -835,6 +850,15 @@ class MenuBar(wx.MenuBar):
         options_menu = wx.Menu()
         options_menu.Append(const.ID_PREFERENCES, _("Preferences..."))
 
+        #Mode
+        self.mode_menu = mode_menu = wx.Menu()
+        mode_menu.Append(const.ID_MODE_NAVIGATION, _(u'Navigation mode'), "", wx.ITEM_CHECK)
+
+        v = self.NavigationModeStatus()
+        self.mode_menu.Check(const.ID_MODE_NAVIGATION, v)
+
+        self.actived_navigation_mode = self.mode_menu
+
         # HELP
         help_menu = wx.Menu()
         help_menu.Append(const.ID_START, _("Getting started..."))
@@ -854,6 +878,7 @@ class MenuBar(wx.MenuBar):
         self.Append(tools_menu, _(u"Tools"))
         #self.Append(tools_menu, "Tools")
         self.Append(options_menu, _("Options"))
+        self.Append(mode_menu, _("Mode"))
         self.Append(help_menu, _("Help"))
 
 
@@ -868,10 +893,21 @@ class MenuBar(wx.MenuBar):
 
         return v
 
+    def NavigationModeStatus(self):
+        status = int(ses.Session().mode)
+
+        if status == 1:
+            return True
+        else:
+            return False
+
     def OnUpdateSliceInterpolation(self, pubsub_evt):
         v = self.SliceInterpolationStatus()
         self.view_menu.Check(const.ID_VIEW_INTERPOLATED, v)
 
+    def OnUpdateNavigationMode(self, pubsub_evt):
+        v = self.NavigationModeStatus()
+        self.mode_menu.Check(const.ID_MODE_NAVIGATION, v)
 
     def OnEnableState(self, pubsub_evt):
         """
@@ -911,6 +947,17 @@ class MenuBar(wx.MenuBar):
             self.FindItemById(wx.ID_REDO).Enable(True)
         else:
             self.FindItemById(wx.ID_REDO).Enable(False)
+
+    def OnEnableNavigation(self, pubsub_evt):
+        """
+        Disable mode menu when navigation is on.
+        :param pubsub_evt: Navigation status
+        """
+        value = pubsub_evt.data
+        if value:
+            self.FindItemById(const.ID_MODE_NAVIGATION).Enable(False)
+        else:
+            self.FindItemById(const.ID_MODE_NAVIGATION).Enable(True)
 
     def OnAddMask(self, pubsub_evt):
         self.num_masks += 1

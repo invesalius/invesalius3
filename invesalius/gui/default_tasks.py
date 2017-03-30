@@ -284,9 +284,11 @@ class UpperTaskPanel(wx.Panel):
 
         fold_panel.Expand(fold_panel.GetFoldPanel(0))
         self.fold_panel = fold_panel
+        self.image_list = image_list
 
         sizer = wx.BoxSizer(wx.VERTICAL)
         sizer.Add(fold_panel, 1, wx.GROW|wx.EXPAND)
+        self.sizer = sizer
         self.SetSizerAndFit(sizer)
 
         self.SetStateProjectClose()
@@ -298,6 +300,7 @@ class UpperTaskPanel(wx.Panel):
         Publisher.subscribe(self.OnOverwrite, 'Create surface from index')
         Publisher.subscribe(self.OnFoldSurface, 'Fold surface task')
         Publisher.subscribe(self.OnFoldExport, 'Fold export task')
+        Publisher.subscribe(self.SetNavigationMode, "Set navigation mode")
 
     def OnOverwrite(self, pubsub_evt):
         self.overwrite = pubsub_evt.data['options']['overwrite']
@@ -315,6 +318,37 @@ class UpperTaskPanel(wx.Panel):
             self.SetStateProjectOpen()
         else:
             self.SetStateProjectClose()
+
+    def SetNavigationMode(self, pubsub_evt):
+        self.navigation_mode_status = status = pubsub_evt.data
+        name = _("Navigation system")
+        panel = navigator.TaskPanel
+        if status and (self.fold_panel.GetCount()<=4):
+            # Create panel
+            item = self.fold_panel.AddFoldPanel("%d. %s"%(5, name),
+                                                collapsed=True,
+                                                foldIcons=self.image_list)
+            style = self.fold_panel.GetCaptionStyle(item)
+            col = style.GetFirstColour()
+
+            # Add panel to FoldPanel
+            self.fold_panel.AddFoldPanelWindow(item,
+                                               panel(item),
+                                               #Spacing=0,
+                                               leftSpacing=0,
+                                               rightSpacing=0)
+            self.enable_items.append(item)
+            if not self.fold_panel.GetFoldPanel(2).IsEnabled():
+                item.Disable()
+
+        elif status and (self.fold_panel.GetCount()>4):
+            self.fold_panel.GetFoldPanel(4).Show()
+
+        else:
+            self.fold_panel.GetFoldPanel(4).Hide()
+        self.sizer.Layout()
+
+
 
     def SetStateProjectClose(self):
         self.fold_panel.Expand(self.fold_panel.GetFoldPanel(0))
