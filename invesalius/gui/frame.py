@@ -1539,7 +1539,6 @@ class SliceToolBar(AuiToolBar):
         sub = Publisher.subscribe
         sub(self._EnableState, "Enable state project")
         sub(self._UntoggleAllItems, 'Untoggle slice toolbar items')
-        #sub(self.OnToggle, 'Navigation Status')
         sub(self.OnToggle, 'Toggle Cross')
 
     def __bind_events_wx(self):

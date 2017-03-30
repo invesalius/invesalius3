@@ -35,7 +35,6 @@ import invesalius.data.trigger as trig
 import invesalius.gui.dialogs as dlg
 import invesalius.gui.widgets.foldpanelbar as fpb
 import invesalius.gui.widgets.colourselect as csel
-import invesalius.gui.frame
 
 class TaskPanel(wx.Panel):
     def __init__(self, parent):
