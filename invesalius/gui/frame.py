@@ -94,6 +94,7 @@ class Frame(wx.Frame):
         self.SetSize(self.GetSize())
         #self.SetSize(wx.Size(1024, 748))
 
+        self._show_navigator_message = True
 
         #to control check and unckeck of menu view -> interpolated_slices
         main_menu = MenuBar(self)
@@ -471,10 +472,7 @@ class Frame(wx.Frame):
 
         elif id == const.ID_MODE_NAVIGATION:
             st = self.actived_navigation_mode.IsChecked(const.ID_MODE_NAVIGATION)
-            if st:
-                self.OnNavigationMode(True)
-            else:
-                self.OnNavigationMode(False)
+            self.OnNavigationMode(st)
 
         elif id == const.ID_CROP_MASK:
             self.OnCropMask()
@@ -483,6 +481,9 @@ class Frame(wx.Frame):
         Publisher.sendMessage('Set interpolated slices', status)
 
     def OnNavigationMode(self, status):
+        if status and self._show_navigator_message and sys.platform != 'win32':
+            wx.MessageBox(_('Currently the Navigation mode is only working on Windows'), 'Info', wx.OK | wx.ICON_INFORMATION)
+            self._show_navigator_message = False
         Publisher.sendMessage('Set navigation mode', status)
 
     def OnSize(self, evt):
@@ -893,15 +894,12 @@ class MenuBar(wx.MenuBar):
         return v
 
     def NavigationModeStatus(self):
-
         status = int(ses.Session().mode)
 
         if status == 1:
-            v = True
+            return True
         else:
-            v = False
-
-        return v
+            return False
 
     def OnUpdateSliceInterpolation(self, pubsub_evt):
         v = self.SliceInterpolationStatus()

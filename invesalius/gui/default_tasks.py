@@ -321,7 +321,8 @@ class UpperTaskPanel(wx.Panel):
 
     def SetNavigationMode(self, pubsub_evt):
         self.navigation_mode_status = status = pubsub_evt.data
-        (name, panel) = (_("Navigation system"), navigator.TaskPanel)
+        name = _("Navigation system")
+        panel = navigator.TaskPanel
         if status and (self.fold_panel.GetCount()<=4):
             # Create panel
             item = self.fold_panel.AddFoldPanel("%d. %s"%(5, name),
@@ -333,7 +334,7 @@ class UpperTaskPanel(wx.Panel):
             # Add panel to FoldPanel
             self.fold_panel.AddFoldPanelWindow(item,
                                                panel(item),
-                                               #Spacing= 0,
+                                               #Spacing=0,
                                                leftSpacing=0,
                                                rightSpacing=0)
             self.enable_items.append(item)
