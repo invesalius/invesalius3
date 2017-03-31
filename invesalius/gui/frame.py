@@ -1578,14 +1578,15 @@ class SliceToolBar(AuiToolBar):
         Update status of other items on toolbar (only one item
         should be toggle each time).
         """
-        try:
-            id = evt.GetId()
-            evt.Skip()
-        except:
+        if hasattr(evt, 'data'):
             id = evt.data
             if not self.GetToolToggled(id):
                 self.ToggleTool(id, True)
                 self.Refresh()
+        else:
+            id = evt.GetId()
+            evt.Skip()
+
         state = self.GetToolToggled(id)
 
         if state:
