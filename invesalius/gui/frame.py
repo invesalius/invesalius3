@@ -1539,6 +1539,7 @@ class SliceToolBar(AuiToolBar):
         sub = Publisher.subscribe
         sub(self._EnableState, "Enable state project")
         sub(self._UntoggleAllItems, 'Untoggle slice toolbar items')
+        sub(self.OnToggle, 'Toggle Cross')
 
     def __bind_events_wx(self):
         """
@@ -1577,8 +1578,14 @@ class SliceToolBar(AuiToolBar):
         Update status of other items on toolbar (only one item
         should be toggle each time).
         """
-        id = evt.GetId()
-        evt.Skip()
+        if hasattr(evt, 'data'):
+            id = evt.data
+            if not self.GetToolToggled(id):
+                self.ToggleTool(id, True)
+                self.Refresh()
+        else:
+            id = evt.GetId()
+            evt.Skip()
 
         state = self.GetToolToggled(id)
 

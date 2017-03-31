@@ -453,7 +453,7 @@ def ShowSaveMarkersDialog(default_filename=None):
                         _("Save markers as..."),  # title
                         "",  # last used directory
                         default_filename,
-                        _("Markers (*.txt)|*.txt"),
+                        _("Markers files (*.mks)|*.mks"),
                         wx.SAVE | wx.OVERWRITE_PROMPT)
     # dlg.SetFilterIndex(0) # default is VTI
 
@@ -469,7 +469,7 @@ def ShowSaveMarkersDialog(default_filename=None):
         ok = 1
 
     if (ok):
-        extension = "txt"
+        extension = "mks"
         if sys.platform != 'win32':
             if filename.split(".")[-1] != extension:
                 filename = filename + "." + extension
@@ -484,6 +484,7 @@ def ShowLoadMarkersDialog():
     dlg = wx.FileDialog(None, message=_("Load markers"),
                         defaultDir="",
                         defaultFile="",
+                        wildcard=_("Markers files (*.mks)|*.mks"),
                         style=wx.OPEN|wx.CHANGE_DIR)
 
     # inv3 filter is default

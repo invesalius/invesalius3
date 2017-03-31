@@ -672,6 +672,10 @@ BTNS_IMG = {IR1: {0: _('LEI')},
             IR2: {1: _('REI')},
             IR3: {2: _('NAI')}}
 
+BTNS_IMG_MKS = {IR1: {0: 'LEI'},
+            IR2: {1: 'REI'},
+            IR3: {2: 'NAI'}}
+
 TIPS_IMG = [wx.ToolTip(_("Select left ear in image")),
             wx.ToolTip(_("Select right ear in image")),
             wx.ToolTip(_("Select nasion in image"))]
