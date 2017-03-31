@@ -328,8 +328,9 @@ if hasattr(sys,"frozen") and (sys.frozen == "windows_exe"\
     ICON_DIR = os.path.join(abs_path, "icons")
     SAMPLE_DIR = os.path.join(FILE_PATH, 'samples')
     DOC_DIR = os.path.join(FILE_PATH, 'docs')
-
     folder=RAYCASTING_PRESETS_DIRECTORY= os.path.join(abs_path, "presets", "raycasting")
+    RAYCASTING_PRESETS_COLOR_DIRECTORY = os.path.join(abs_path, "presets", "raycasting", "color_list")
+
 else:
     ICON_DIR = os.path.abspath(os.path.join(FILE_PATH, '..', 'icons'))
     SAMPLE_DIR = os.path.abspath(os.path.join(FILE_PATH,'..', 'samples'))
@@ -338,6 +339,12 @@ else:
     folder=RAYCASTING_PRESETS_DIRECTORY= os.path.abspath(os.path.join(".",
                                                                   "presets",
                                                                   "raycasting"))
+
+    RAYCASTING_PRESETS_COLOR_DIRECTORY = os.path.abspath(os.path.join(".",
+                                                                  "presets",
+                                                                  "raycasting",
+                                                                  "color_list"))
+
 
 # MAC App
 if not os.path.exists(ICON_DIR):

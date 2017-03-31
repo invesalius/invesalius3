@@ -169,7 +169,7 @@ class Presets():
 
 
 def get_wwwl_presets():
-    files = glob.glob(os.path.join('..', 'presets', 'raycasting', 'color_list', '*.plist'))
+    files = glob.glob(os.path.join(const.RAYCASTING_PRESETS_COLOR_DIRECTORY, '*.plist'))
     presets = {}
     for f in files:
         p = os.path.splitext(os.path.basename(f))[0]
