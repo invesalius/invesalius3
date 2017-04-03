@@ -549,8 +549,10 @@ class Controller():
         proj.matrix_filename = matrix_filename
         #proj.imagedata = imagedata
         proj.dicom_sample = dicom
-        proj.original_orientation =\
-                    name_to_const[dicom.image.orientation_label]
+        #  proj.original_orientation =\
+                    #  name_to_const[dicom.image.orientation_label]
+        # Forcing to Axial
+        proj.original_orientation = const.AXIAL
         proj.window = float(dicom.image.window)
         proj.level = float(dicom.image.level)
         proj.threshold_range = int(matrix.min()), int(matrix.max())
