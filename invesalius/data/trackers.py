@@ -202,6 +202,7 @@ def DisconnectTracker(tracker_id):
             import pyclaron
             pyclaron.pyclaron().Close()
             lib_mode = 'wrapper'
+            print 'Claron tracker disconnected.'
         except ImportError:
             lib_mode = 'error'
             print 'The ClaronTracker library is not installed.'
@@ -211,6 +212,7 @@ def DisconnectTracker(tracker_id):
             import polhemus
             polhemus.polhemus().Close()
             lib_mode = 'wrapper'
+            print 'Polhemus tracker disconnected.'
         except ImportError:
             lib_mode = 'error'
             print 'The polhemus library is not installed.'
