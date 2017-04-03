@@ -574,7 +574,7 @@ def dcm2memmap(files, slice_size, orientation, resolution_percentage):
         array = numpy_support.vtk_to_numpy(image.GetPointData().GetScalars())
         if orientation == 'CORONAL':
             array.shape = matrix.shape[0], matrix.shape[2]
-            matrix[:, n, :] = array
+            matrix[:, shape[1] - n - 1, :] = array
         elif orientation == 'SAGITTAL':
             array.shape = matrix.shape[0], matrix.shape[1]
             # TODO: Verify if it's necessary to add the slices swapped only in
