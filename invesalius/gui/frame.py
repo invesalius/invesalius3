@@ -655,7 +655,13 @@ class MenuBar(wx.MenuBar):
                              const.ID_FILL_HOLE_AUTO,
                              const.ID_REMOVE_MASK_PART,
                              const.ID_SELECT_MASK_PART,
-                             const.ID_FLOODFILL_SEGMENTATION,]
+                             const.ID_FLOODFILL_SEGMENTATION,
+                             const.ID_FLIP_X,
+                             const.ID_FLIP_Y,
+                             const.ID_FLIP_Z,
+                             const.ID_SWAP_XY,
+                             const.ID_SWAP_XZ,
+                             const.ID_SWAP_YZ,]
         self.__init_items()
         self.__bind_events()
 
@@ -783,14 +789,14 @@ class MenuBar(wx.MenuBar):
 
         # Flip
         flip_menu = wx.Menu()
-        flip_menu.Append(const.ID_FLIP_X, _("Right - Left"))
-        flip_menu.Append(const.ID_FLIP_Y, _("Anterior - Posterior"))
-        flip_menu.Append(const.ID_FLIP_Z, _("Top - Bottom"))
+        flip_menu.Append(const.ID_FLIP_X, _("Right - Left")).Enable(False)
+        flip_menu.Append(const.ID_FLIP_Y, _("Anterior - Posterior")).Enable(False)
+        flip_menu.Append(const.ID_FLIP_Z, _("Top - Bottom")).Enable(False)
 
         swap_axes_menu = wx.Menu()
-        swap_axes_menu.Append(const.ID_SWAP_XY, _("From Right-Left to Anterior-Posterior"))
-        swap_axes_menu.Append(const.ID_SWAP_XZ, _("From Right-Left to Top-Bottom"))
-        swap_axes_menu.Append(const.ID_SWAP_YZ, _("From Anterior-Posterior to Top-Bottom"))
+        swap_axes_menu.Append(const.ID_SWAP_XY, _("From Right-Left to Anterior-Posterior")).Enable(False)
+        swap_axes_menu.Append(const.ID_SWAP_XZ, _("From Right-Left to Top-Bottom")).Enable(False)
+        swap_axes_menu.Append(const.ID_SWAP_YZ, _("From Anterior-Posterior to Top-Bottom")).Enable(False)
 
         image_menu.AppendMenu(wx.NewId(), _('Flip'), flip_menu)
         image_menu.AppendMenu(wx.NewId(), _('Swap axes'), swap_axes_menu)
