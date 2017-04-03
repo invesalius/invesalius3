@@ -716,26 +716,7 @@ class MenuBar(wx.MenuBar):
         #file_menu.AppendSeparator()
         app(const.ID_EXIT, _("Exit\tCtrl+Q"))
 
-
-        ############################### EDIT###############################
-        # Flip
-        #flip_menu = wx.Menu()
-        #app = flip_menu.Append
-        #app(const.ID_FLIP_X, _("R <-> L"))
-        #app(const.ID_FLIP_Y, _("A <-> P"))
-        #app(const.ID_FLIP_Z, _("T <-> B"))
-
-        #swap_axes_menu = wx.Menu()
-        #app = swap_axes_menu.Append
-        #app(const.ID_SWAP_XY, _("R-L <-> A-P"))
-        #app(const.ID_SWAP_XZ, _("R-L <-> T-B"))
-        #app(const.ID_SWAP_YZ, _("A-P <-> T-B"))
-
         file_edit = wx.Menu()
-        #file_edit.AppendMenu(wx.NewId(), _('Flip'), flip_menu)
-        #file_edit.AppendMenu(wx.NewId(), _('Swap axes'), swap_axes_menu)
-
-
         d = const.ICON_DIR
         if not(sys.platform == 'darwin'):
             # Bitmaps for show/hide task panel item
@@ -792,20 +773,34 @@ class MenuBar(wx.MenuBar):
         self.crop_mask_menu = mask_menu.Append(const.ID_CROP_MASK, _("Crop"))
         self.crop_mask_menu.Enable(False)
 
-        tools_menu.AppendMenu(-1,  _(u"Mask"), mask_menu)
-
         # Segmentation Menu
         segmentation_menu = wx.Menu()
         self.ffill_segmentation = segmentation_menu.Append(const.ID_FLOODFILL_SEGMENTATION, _(u"Region growing"))
         self.ffill_segmentation.Enable(False)
 
-        tools_menu.AppendMenu(-1, _("Segmentation"), segmentation_menu)
-
         # Image menu
         image_menu = wx.Menu()
+
+        # Flip
+        flip_menu = wx.Menu()
+        flip_menu.Append(const.ID_FLIP_X, _("Right - Left"))
+        flip_menu.Append(const.ID_FLIP_Y, _("Anterior - Posterior"))
+        flip_menu.Append(const.ID_FLIP_Z, _("Top - Bottom"))
+
+        swap_axes_menu = wx.Menu()
+        swap_axes_menu.Append(const.ID_SWAP_XY, _("From Right-Left to Anterior-Posterior"))
+        swap_axes_menu.Append(const.ID_SWAP_XZ, _("From Right-Left to Top-Bottom"))
+        swap_axes_menu.Append(const.ID_SWAP_YZ, _("From Anterior-Posterior to Top-Bottom"))
+
+        image_menu.AppendMenu(wx.NewId(), _('Flip'), flip_menu)
+        image_menu.AppendMenu(wx.NewId(), _('Swap axes'), swap_axes_menu)
+
         reorient_menu = image_menu.Append(const.ID_REORIENT_IMG, _(u'Reorient image\tCtrl+Shift+R'))
+
         reorient_menu.Enable(False)
         tools_menu.AppendMenu(-1, _(u'Image'), image_menu)
+        tools_menu.AppendMenu(-1,  _(u"Mask"), mask_menu)
+        tools_menu.AppendMenu(-1, _("Segmentation"), segmentation_menu)
 
 
         #View
