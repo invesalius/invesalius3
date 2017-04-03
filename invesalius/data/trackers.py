@@ -123,6 +123,8 @@ def PlhWrapperConnection():
         if trck_check:
             # First run is necessary to discard the first coord collection
             trck_init.Run()
+        else:
+            trck_init = trck_check
     except:
         print 'Could not connect to Polhemus via wrapper.'
 
@@ -195,6 +197,8 @@ def DisconnectTracker(tracker_id):
 
     :param tracker_id: ID of tracking device.
     """
+    from wx.lib.pubsub import pub as Publisher
+    Publisher.sendMessage('Update status text in GUI', _("Disconnecting tracker ..."))
     trck_init = None
     # TODO: create individual functions to disconnect each other device, e.g. Polhemus.
     if tracker_id == 1:
@@ -220,5 +224,7 @@ def DisconnectTracker(tracker_id):
     elif tracker_id == 5:
         print 'Debug tracker disconnected.'
         lib_mode = 'debug'
+
+    Publisher.sendMessage('Update status text in GUI', _("Ready"))
 
     return trck_init, lib_mode
