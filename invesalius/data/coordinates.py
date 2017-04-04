@@ -52,6 +52,7 @@ def GetCoordinates(trck_init, trck_id, ref_mode):
 def ClaronCoord(trck_init, trck_id, ref_mode):
     trck = trck_init[0]
     scale = np.array([1.0, 1.0, -1.0])
+
     coord = None
     k = 0
     # TODO: try to replace while and use some Claron internal computation
@@ -171,7 +172,6 @@ def PolhemusSerialCoord(trck_init, trck_id, ref_mode):
     # serial connection is obsolete, remove in future
     trck_init.write("P")
     lines = trck_init.readlines()
-
     coord = None
 
     if lines[0][0] != '0':
@@ -192,12 +192,8 @@ def PolhemusSerialCoord(trck_init, trck_id, ref_mode):
                 try:
                     plh1 = [float(s) for s in data[1:len(data)]]
                     j = 1
-                except ValueError:
-                    trck_init.write("P")
-                    data = trck_init.readline()
-                    data = data.replace('-', ' -')
-                    data = [s for s in data.split()]
-                    print "Trying to fix the error!!"
+                except:
+                    print "error!!"
 
             coord = data[0:6]
     return coord

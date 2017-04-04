@@ -136,7 +136,7 @@ def PlhSerialConnection(tracker_id):
     try:
         import serial
 
-        trck_init = serial.Serial(0, baudrate=115200, timeout=0.2)
+        trck_init = serial.Serial('COM1', baudrate=115200, timeout=0.2)
 
         if tracker_id == 2:
             # Polhemus FASTRAK needs configurations first
@@ -145,6 +145,7 @@ def PlhSerialConnection(tracker_id):
         elif tracker_id == 3:
             # Polhemus ISOTRAK needs to set tracking point from
             # center to tip.
+            trck_init.write("F")
             trck_init.write("Y")
 
         trck_init.write('P')
