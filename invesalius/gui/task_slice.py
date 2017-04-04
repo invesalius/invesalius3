@@ -979,7 +979,7 @@ class WatershedTool(EditionTools):
         Publisher.sendMessage('Set use ww wl', value)
 
     def OnConfig(self, evt):
-        from invesalius.data.styles import WatershedConfig as styles
+        from invesalius.data.styles import WatershedConfig
         config = WatershedConfig()
         dlg.WatershedOptionsDialog(config).Show()
 
