@@ -41,7 +41,6 @@ from scipy import ndimage
 from scipy.misc import imsave
 from scipy.ndimage import watershed_ift, generate_binary_structure
 from skimage.morphology import watershed
-from skimage import filter
 
 import invesalius.gui.dialogs as dialogs
 from invesalius.data.measures import MeasureData
