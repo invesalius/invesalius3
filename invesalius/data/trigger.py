@@ -35,7 +35,7 @@ class Trigger(threading.Thread):
         try:
             import serial
 
-            self.trigger_init = serial.Serial('COM1', baudrate=115200, timeout=0)
+            self.trigger_init = serial.Serial('COM1', baudrate=9600, timeout=0)
             self.nav_id = nav_id
             self._pause_ = False
             self.start()

@@ -163,7 +163,7 @@ def PlhUSBConnection(tracker_id):
     trck_init = None
     try:
         import usb.core as uc
-        trck_init = uc.find(idVendor=0x0F44, idProduct=0x0003)
+        trck_init = uc.find()
         cfg = trck_init.get_active_configuration()
         for i in cfg:
             for x in i:
@@ -183,9 +183,7 @@ def PlhUSBConnection(tracker_id):
         if not data:
             trck_init = None
 
-    except uc.USBError as err:
-        print 'Could not set configuration %s' % err
-    else:
+    except:
         print 'Could not connect to Polhemus USB.'
 
     return trck_init
