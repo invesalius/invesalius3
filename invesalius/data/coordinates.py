@@ -52,7 +52,6 @@ def GetCoordinates(trck_init, trck_id, ref_mode):
 def ClaronCoord(trck_init, trck_id, ref_mode):
     trck = trck_init[0]
     scale = np.array([1.0, 1.0, -1.0])
-
     coord = None
     k = 0
     # TODO: try to replace while and use some Claron internal computation

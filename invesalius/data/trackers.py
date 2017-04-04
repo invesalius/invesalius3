@@ -132,7 +132,6 @@ def PlhWrapperConnection():
 
 
 def PlhSerialConnection(tracker_id):
-    trck_init = None
     try:
         import serial
 
@@ -150,11 +149,13 @@ def PlhSerialConnection(tracker_id):
 
         trck_init.write('P')
         data = trck_init.readlines()
+        print data
 
         if not data:
             trck_init = None
 
     except:
+        trck_init = None
         print 'Could not connect to Polhemus serial.'
 
     return trck_init
@@ -164,7 +165,7 @@ def PlhUSBConnection(tracker_id):
     trck_init = None
     try:
         import usb.core as uc
-        trck_init = uc.find()
+        trck_init = uc.find(idVendor=0x0F44, idProduct=0x0003)
         cfg = trck_init.get_active_configuration()
         for i in cfg:
             for x in i:
