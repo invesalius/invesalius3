@@ -132,11 +132,10 @@ def PlhWrapperConnection():
 
 
 def PlhSerialConnection(tracker_id):
-    trck_init = None
     try:
         import serial
 
-        trck_init = serial.Serial(0, baudrate=115200, timeout=0.2)
+        trck_init = serial.Serial('COM1', baudrate=115200, timeout=0.2)
 
         if tracker_id == 2:
             # Polhemus FASTRAK needs configurations first
@@ -145,6 +144,7 @@ def PlhSerialConnection(tracker_id):
         elif tracker_id == 3:
             # Polhemus ISOTRAK needs to set tracking point from
             # center to tip.
+            trck_init.write("F")
             trck_init.write("Y")
 
         trck_init.write('P')
@@ -154,6 +154,7 @@ def PlhSerialConnection(tracker_id):
             trck_init = None
 
     except:
+        trck_init = None
         print 'Could not connect to Polhemus serial.'
 
     return trck_init
@@ -183,9 +184,7 @@ def PlhUSBConnection(tracker_id):
         if not data:
             trck_init = None
 
-    except uc.USBError as err:
-        print 'Could not set configuration %s' % err
-    else:
+    except:
         print 'Could not connect to Polhemus USB.'
 
     return trck_init
