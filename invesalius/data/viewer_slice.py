@@ -1534,8 +1534,8 @@ class Viewer(wx.Panel):
         orig_orien = proj.original_orientation
 
         self.cam.SetFocalPoint(0, 0, 0)
-        self.cam.SetViewUp(const.SLICE_POSITION[const.AXIAL][0][self.orientation])
-        self.cam.SetPosition(const.SLICE_POSITION[const.AXIAL][1][self.orientation])
+        self.cam.SetViewUp(const.SLICE_POSITION[orig_orien][0][self.orientation])
+        self.cam.SetPosition(const.SLICE_POSITION[orig_orien][1][self.orientation])
         #self.cam.ComputeViewPlaneNormal()
         #self.cam.OrthogonalizeViewUp()
         self.cam.ParallelProjectionOn()
