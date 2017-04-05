@@ -149,7 +149,6 @@ def PlhSerialConnection(tracker_id):
 
         trck_init.write('P')
         data = trck_init.readlines()
-        print data
 
         if not data:
             trck_init = None

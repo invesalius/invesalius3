@@ -171,6 +171,7 @@ def PolhemusSerialCoord(trck_init, trck_id, ref_mode):
     # serial connection is obsolete, remove in future
     trck_init.write("P")
     lines = trck_init.readlines()
+
     coord = None
 
     if lines[0][0] != '0':
