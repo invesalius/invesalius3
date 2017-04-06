@@ -71,6 +71,8 @@ def ClaronTracker(tracker_id):
         trck_init.MarkerDir = const.MAR_DIR
         trck_init.NumberFramesProcessed = 10
         trck_init.FramesExtrapolated = 0
+        trck_init.PROBE_NAME = "1Probe"
+        trck_init.REF_NAME = "5Ref"
         trck_init.Initialize()
 
         if trck_init.GetIdentifyingCamera():
