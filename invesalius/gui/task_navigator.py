@@ -313,6 +313,7 @@ class NeuronavigationPanel(wx.Panel):
         Publisher.subscribe(self.UpdateTriggerState, 'Update trigger state')
         Publisher.subscribe(self.UpdateImageCoordinates, 'Set ball reference position')
         Publisher.subscribe(self.OnDisconnectTracker, 'Disconnect tracker')
+        Publisher.subscribe(self.OnSensors, 'Sensors ID')
 
     def LoadImageFiducials(self, pubsub_evt):
         marker_id = pubsub_evt.data[0]
@@ -346,6 +347,18 @@ class NeuronavigationPanel(wx.Panel):
         if self.tracker_id:
             dt.TrackerConnection(self.tracker_id, 'disconnect')
 
+    def OnSensors(self, pubsub_evt):
+        probe_id = pubsub_evt.data[0]
+        ref_id = pubsub_evt.data[1]
+        if probe_id:
+            self.numctrls_coord[6][0].SetBackgroundColour('GREEN')
+        else:
+            self.numctrls_coord[6][0].SetBackgroundColour('RED')
+        if ref_id:
+            self.numctrls_coord[6][1].SetBackgroundColour('GREEN')
+        else:
+            self.numctrls_coord[6][1].SetBackgroundColour('RED')
+        self.Refresh()
     def OnChoiceTracker(self, evt, ctrl):
         Publisher.sendMessage('Update status text in GUI', _("Configuring tracker ..."))
         if evt:

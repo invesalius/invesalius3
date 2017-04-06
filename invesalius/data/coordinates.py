@@ -22,7 +22,7 @@ import numpy as np
 
 from time import sleep
 from random import uniform
-
+from wx.lib.pubsub import pub as Publisher
 
 def GetCoordinates(trck_init, trck_id, ref_mode):
 
@@ -55,6 +55,7 @@ def ClaronCoord(trck_init, trck_id, ref_mode):
     coord = None
     k = 0
     # TODO: try to replace while and use some Claron internal computation
+
     if ref_mode:
         while k < 20:
             try:
@@ -79,6 +80,7 @@ def ClaronCoord(trck_init, trck_id, ref_mode):
             except AttributeError:
                 k += 1
                 print "wait, collecting coordinates ..."
+    Publisher.sendMessage('Sensors ID', [trck.probeID, trck.refID])
 
     return coord
 
