@@ -107,6 +107,7 @@ class InnerFoldPanel(wx.Panel):
         default_colour = wx.SystemSettings_GetColour(wx.SYS_COLOUR_MENUBAR)
         self.SetBackgroundColour(default_colour)
 
+        self.__bind_events()
         # Fold panel and its style settings
         # FIXME: If we dont insert a value in size or if we set wx.DefaultSize,
         # the fold_panel doesnt show. This means that, for some reason, Sizer
@@ -154,6 +155,7 @@ class InnerFoldPanel(wx.Panel):
         checktrigger.SetToolTip(tooltip)
         checktrigger.SetValue(False)
         checktrigger.Bind(wx.EVT_CHECKBOX, partial(self.UpdateExternalTrigger, ctrl=checktrigger))
+        self.checktrigger = checktrigger
 
         if sys.platform != 'win32':
             checkcamera.SetWindowVariant(wx.WINDOW_VARIANT_SMALL)
@@ -173,6 +175,16 @@ class InnerFoldPanel(wx.Panel):
         self.SetSizer(sizer)
         self.Update()
         self.SetAutoLayout(1)
+        
+    def __bind_events(self):
+        Publisher.subscribe(self.OnTrigger, 'Navigation Status')
+
+    def OnTrigger(self, pubsub_evt):
+        status = pubsub_evt.data
+        if status:
+            self.checktrigger.Enable(False)
+        else:
+            self.checktrigger.Enable(True)
 
     def UpdateExternalTrigger(self, evt, ctrl):
         Publisher.sendMessage('Update trigger state', ctrl.GetValue())

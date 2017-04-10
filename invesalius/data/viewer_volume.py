@@ -403,8 +403,9 @@ class Viewer(wx.Panel):
 
         self.ren.AddActor(self.staticballs[self.ball_id])
         self.ball_id = self.ball_id + 1
-        self.UpdateRender()
-
+        #self.UpdateRender()
+        self.Refresh()
+        
     def HideAllMarkers(self, pubsub_evt):
         ballid = pubsub_evt.data
         for i in range(0, ballid):
