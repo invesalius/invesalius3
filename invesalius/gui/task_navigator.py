@@ -175,6 +175,7 @@ class InnerFoldPanel(wx.Panel):
         self.SetSizer(sizer)
         self.Update()
         self.SetAutoLayout(1)
+        
     def __bind_events(self):
         Publisher.subscribe(self.OnTrigger, 'Navigation Status')
 
