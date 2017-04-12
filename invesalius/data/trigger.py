@@ -19,6 +19,7 @@
 
 import threading
 from time import sleep
+from winsound import Beep
 
 import wx
 from wx.lib.pubsub import pub as Publisher
@@ -47,18 +48,21 @@ class Trigger(threading.Thread):
             print 'Connection with port COM1 failed.'
 
     def stop(self):
-        if self.trigger_init:
-            self.trigger_init.close()
         self._pause_ = True
 
     def run(self):
         while self.nav_id:
+            self.trigger_init.write('0')
+            sleep(0.3)
             lines = self.trigger_init.readlines()
             # Following lines can simulate a trigger in 3 sec repetitions
             # sleep(3)
             # lines = True
             if lines:
                 wx.CallAfter(Publisher.sendMessage, 'Create marker')
+                Beep(1000, 500)
             sleep(0.175)
             if self._pause_:
+                if self.trigger_init:
+                    self.trigger_init.close()
                 return
