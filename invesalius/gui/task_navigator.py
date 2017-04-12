@@ -313,6 +313,7 @@ class NeuronavigationPanel(wx.Panel):
         Publisher.subscribe(self.UpdateTriggerState, 'Update trigger state')
         Publisher.subscribe(self.UpdateImageCoordinates, 'Set ball reference position')
         Publisher.subscribe(self.OnDisconnectTracker, 'Disconnect tracker')
+        Publisher.subscribe(self.OnStylusButton, 'PLH Stylus Button On')
 
     def LoadImageFiducials(self, pubsub_evt):
         marker_id = pubsub_evt.data[0]
@@ -345,6 +346,10 @@ class NeuronavigationPanel(wx.Panel):
     def OnDisconnectTracker(self, pubsub_evt):
         if self.tracker_id:
             dt.TrackerConnection(self.tracker_id, 'disconnect')
+
+    def OnStylusButton(self, pubsub_evt):
+        if self.trigger_state:
+            Publisher.sendMessage('Create marker')
 
     def OnChoiceTracker(self, evt, ctrl):
         Publisher.sendMessage('Update status text in GUI', _("Configuring tracker ..."))
@@ -670,7 +675,7 @@ class MarkersPanel(wx.Panel):
         # OnCreateMarker is used for both pubsub and button click events
         # Pubsub is used for markers created with fiducial buttons, trigger and create marker button
         if hasattr(evt, 'data'):
-            if evt.data:
+            if evt.data is not None:
                 self.CreateMarker(evt.data[0], (0.0, 1.0, 0.0), self.marker_size, evt.data[1])
             else:
                 self.CreateMarker(self.current_coord, self.marker_colour, self.marker_size)

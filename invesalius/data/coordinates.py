@@ -126,6 +126,9 @@ def PolhemusWrapperCoord(trck, trck_id, ref_mode):
                           float(trck.PositionTooltipZ1) * scale[2], float(trck.AngleX1), float(trck.AngleY1),
                           float(trck.AngleZ1)])
 
+    if trck.StylusButton:
+        Publisher.sendMessage('PLH Stylus Button On')
+
     return coord
 
 
