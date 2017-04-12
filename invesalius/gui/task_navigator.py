@@ -647,10 +647,12 @@ class MarkersPanel(wx.Panel):
         self.list_coord[list_index][7] = str(id_label)
 
     def OnDeleteAllMarkers(self, pubsub_evt):
-        self.list_coord = []
-        self.marker_ind = 0
-        Publisher.sendMessage('Remove all markers', self.lc.GetItemCount())
-        self.lc.DeleteAllItems()
+        result = dlg.DeleteAllMarkers()
+        if result == wx.ID_OK:
+            self.list_coord = []
+            self.marker_ind = 0
+            Publisher.sendMessage('Remove all markers', self.lc.GetItemCount())
+            self.lc.DeleteAllItems()
 
     def OnDeleteSingleMarker(self, evt):
         # OnDeleteSingleMarker is used for both pubsub and button click events
