@@ -19,11 +19,9 @@
 
 from math import sin, cos
 import numpy as np
-from winsound import Beep
 
 from time import sleep
 from random import uniform
-import wx
 from wx.lib.pubsub import pub as Publisher
 
 def GetCoordinates(trck_init, trck_id, ref_mode):

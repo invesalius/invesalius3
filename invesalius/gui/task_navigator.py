@@ -25,7 +25,6 @@ import wx
 import wx.lib.hyperlink as hl
 import wx.lib.masked.numctrl
 from wx.lib.pubsub import pub as Publisher
-from winsound import Beep
 
 import invesalius.constants as const
 import invesalius.data.bases as db
