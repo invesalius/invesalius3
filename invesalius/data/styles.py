@@ -276,7 +276,8 @@ class WWWLInteractorStyle(DefaultInteractorStyle):
 
     def CleanUp(self):
         self.viewer.on_wl = False
-        self.viewer.wl_text.Hide()
+        if self.viewer.wl_text is not None:
+            self.viewer.wl_text.Hide()
 
     def OnWindowLevelMove(self, obj, evt):
         if (self.left_pressed):
