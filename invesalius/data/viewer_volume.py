@@ -286,10 +286,11 @@ class Viewer(wx.Panel):
         self.interactor.Render()
 
     def OnRemoveSensorsID(self, pubsub_evt):
-        self.ren.RemoveActor(self.sen1.actor)
-        self.ren.RemoveActor(self.sen2.actor)
-        self.sen1 = self.sen2 = False
-        self.interactor.Render()
+        if self.sen1:
+            self.ren.RemoveActor(self.sen1.actor)
+            self.ren.RemoveActor(self.sen2.actor)
+            self.sen1 = self.sen2 = False
+            self.interactor.Render()
 
     def OnShowSurface(self, pubsub_evt):
         index, value = pubsub_evt.data
