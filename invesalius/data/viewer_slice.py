@@ -978,7 +978,7 @@ class Viewer(wx.Panel):
         elif self.orientation == 'SAGITAL':
             mx = round((y - yi)/self.slice_.spacing[1], 0)
             my = round((z - zi)/self.slice_.spacing[2], 0)
-        return mx, my
+        return int(mx), int(my)
 
     def get_coordinate_cursor(self, mx, my, picker=None):
         """
@@ -1086,7 +1086,7 @@ class Viewer(wx.Panel):
         px, py = self.get_slice_pixel_coord_by_world_pos(wx, wy, wz)
         x, y, z = self.calcultate_scroll_position(px, py)
 
-        return (x, y, z)
+        return (int(x), int(y), int(z))
 
 
     def get_slice_pixel_coord_by_screen_pos(self, mx, my, picker=None):
@@ -1107,9 +1107,8 @@ class Viewer(wx.Panel):
             picker = self.pick
 
         wx, wy, wz = self.get_coordinate_cursor(mx, my, picker)
-        return self.get_slice_pixel_coord_by_world_pos(wx, wy, wz)
-
-        return px, py
+        x, y = self.get_slice_pixel_coord_by_world_pos(wx, wy, wz)
+        return int(x), int(y)
 
     def get_slice_pixel_coord_by_world_pos(self, wx, wy, wz):
         """
