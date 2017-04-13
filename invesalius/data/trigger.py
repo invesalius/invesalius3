@@ -47,12 +47,12 @@ class Trigger(threading.Thread):
             print 'Connection with port COM1 failed.'
 
     def stop(self):
-        if self.trigger_init:
-            self.trigger_init.close()
         self._pause_ = True
 
     def run(self):
         while self.nav_id:
+            self.trigger_init.write('0')
+            sleep(0.3)
             lines = self.trigger_init.readlines()
             # Following lines can simulate a trigger in 3 sec repetitions
             # sleep(3)
@@ -61,4 +61,6 @@ class Trigger(threading.Thread):
                 wx.CallAfter(Publisher.sendMessage, 'Create marker')
             sleep(0.175)
             if self._pause_:
+                if self.trigger_init:
+                    self.trigger_init.close()
                 return

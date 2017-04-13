@@ -120,6 +120,9 @@ class Viewer(wx.Panel):
         self._to_show_ball = 0
         self._ball_ref_visibility = False
 
+        self.sen1 = False
+        self.sen2 = False
+
     def __bind_events(self):
         Publisher.subscribe(self.LoadActor,
                                  'Load surface actor into viewer')
@@ -191,6 +194,9 @@ class Viewer(wx.Panel):
         Publisher.subscribe(self._check_ball_reference, 'Enable style')
         Publisher.subscribe(self._uncheck_ball_reference, 'Disable style')
 
+        Publisher.subscribe(self.OnSensors, 'Sensors ID')
+        Publisher.subscribe(self.OnRemoveSensorsID, 'Remove sensors ID')
+
         # Related to marker creation in navigation tools
         Publisher.subscribe(self.AddMarker, 'Add marker')
         Publisher.subscribe(self.HideAllMarkers, 'Hide all markers')
@@ -239,6 +245,51 @@ class Viewer(wx.Panel):
         if st == const.SLICE_STATE_CROSS:
             self._mode_cross = False
             self.RemoveBallReference()
+            self.interactor.Render()
+
+    def OnSensors(self, pubsub_evt):
+        probe_id = pubsub_evt.data[0]
+        ref_id = pubsub_evt.data[1]
+        if not self.sen1:
+            self.CreateSensorID()
+
+        if probe_id:
+            colour1 = (0, 1, 0)
+        else:
+            colour1 = (1, 0, 0)
+        if ref_id:
+            colour2 = (0, 1, 0)
+        else:
+            colour2 = (1, 0, 0)
+
+        self.sen1.SetColour(colour1)
+        self.sen2.SetColour(colour2)
+        self.Refresh()
+
+    def CreateSensorID(self):
+        sen1 = vtku.Text()
+        sen1.SetSize(const.TEXT_SIZE_LARGE)
+        sen1.SetPosition((const.X, const.Y))
+        sen1.ShadowOff()
+        sen1.SetValue("O")
+        self.sen1 = sen1
+        self.ren.AddActor(sen1.actor)
+
+        sen2 = vtku.Text()
+        sen2.SetSize(const.TEXT_SIZE_LARGE)
+        sen2.SetPosition((const.X+0.04, const.Y))
+        sen2.ShadowOff()
+        sen2.SetValue("O")
+        self.sen2 = sen2
+        self.ren.AddActor(sen2.actor)
+
+        self.interactor.Render()
+
+    def OnRemoveSensorsID(self, pubsub_evt):
+        if self.sen1:
+            self.ren.RemoveActor(self.sen1.actor)
+            self.ren.RemoveActor(self.sen2.actor)
+            self.sen1 = self.sen2 = False
             self.interactor.Render()
 
     def OnShowSurface(self, pubsub_evt):

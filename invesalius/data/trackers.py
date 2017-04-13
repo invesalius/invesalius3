@@ -200,6 +200,7 @@ def DisconnectTracker(tracker_id):
     """
     from wx.lib.pubsub import pub as Publisher
     Publisher.sendMessage('Update status text in GUI', _("Disconnecting tracker ..."))
+    Publisher.sendMessage('Remove sensors ID')
     trck_init = None
     # TODO: create individual functions to disconnect each other device, e.g. Polhemus.
     if tracker_id == 1:

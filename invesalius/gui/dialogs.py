@@ -793,10 +793,22 @@ def NoMarkerSelected():
         dlg = wx.MessageDialog(None, "", msg,
                                 wx.ICON_INFORMATION | wx.OK)
     else:
-        dlg = wx.MessageDialog(None,msg, "InVesalius 3 - Neuronavigator",
+        dlg = wx.MessageDialog(None, msg, "InVesalius 3 - Neuronavigator",
                                 wx.ICON_INFORMATION | wx.OK)
     dlg.ShowModal()
     dlg.Destroy()
+
+def DeleteAllMarkers():
+    msg = _("Do you really want to delete all markers?")
+    if sys.platform == 'darwin':
+        dlg = wx.MessageDialog(None, "", msg,
+                               wx.OK | wx.CANCEL | wx.ICON_QUESTION)
+    else:
+        dlg = wx.MessageDialog(None, msg, "InVesalius 3 - Neuronavigator",
+                               wx.OK | wx.CANCEL | wx.ICON_QUESTION)
+    result = dlg.ShowModal()
+    dlg.Destroy()
+    return result
 
 
 def EnterMarkerID(default):

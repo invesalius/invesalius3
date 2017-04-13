@@ -486,6 +486,8 @@ class Frame(wx.Frame):
             wx.MessageBox(_('Currently the Navigation mode is only working on Windows'), 'Info', wx.OK | wx.ICON_INFORMATION)
             self._show_navigator_message = False
         Publisher.sendMessage('Set navigation mode', status)
+        if not status:
+            Publisher.sendMessage('Remove sensors ID')
 
     def OnSize(self, evt):
         """

@@ -22,7 +22,7 @@ import numpy as np
 
 from time import sleep
 from random import uniform
-
+from wx.lib.pubsub import pub as Publisher
 
 def GetCoordinates(trck_init, trck_id, ref_mode):
 
@@ -55,6 +55,7 @@ def ClaronCoord(trck_init, trck_id, ref_mode):
     coord = None
     k = 0
     # TODO: try to replace while and use some Claron internal computation
+
     if ref_mode:
         while k < 20:
             try:
@@ -79,6 +80,8 @@ def ClaronCoord(trck_init, trck_id, ref_mode):
             except AttributeError:
                 k += 1
                 print "wait, collecting coordinates ..."
+
+    Publisher.sendMessage('Sensors ID', [trck.probeID, trck.refID])
 
     return coord
 
@@ -122,6 +125,9 @@ def PolhemusWrapperCoord(trck, trck_id, ref_mode):
         coord = np.array([float(trck.PositionTooltipX1) * scale[0], float(trck.PositionTooltipY1) * scale[1],
                           float(trck.PositionTooltipZ1) * scale[2], float(trck.AngleX1), float(trck.AngleY1),
                           float(trck.AngleZ1)])
+
+    if trck.StylusButton:
+        Publisher.sendMessage('PLH Stylus Button On')
 
     return coord
 
@@ -220,6 +226,8 @@ def DebugCoord(trk_init, trck_id, ref_mode):
     else:
         coord = np.array([uniform(1, 200), uniform(1, 200), uniform(1, 200),
                           uniform(1, 200), uniform(1, 200), uniform(1, 200)])
+
+    Publisher.sendMessage('Sensors ID', [int(uniform(0, 5)), int(uniform(0, 5))])
 
     return coord
 
