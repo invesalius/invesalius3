@@ -676,22 +676,23 @@ class MarkersPanel(wx.Panel):
                         for i in const.BTNS_IMG_MKS:
                             if marker_id in const.BTNS_IMG_MKS[i].values()[0]:
                                 self.lc.Focus(item.GetId())
-                self.DeleteMarker()
+                index = [self.lc.GetFocusedItem()]
         else:
             if self.lc.GetFocusedItem() is not -1:
-                self.DeleteMarker()
+                index = self.GetSelectedItems()
             elif not self.lc.GetItemCount():
                 pass
             else:
                 dlg.NoMarkerSelected()
+        self.DeleteMarker(index)
 
-    def DeleteMarker(self):
-        index = self.lc.GetFocusedItem()
-        del self.list_coord[index]
-        self.lc.DeleteItem(index)
-        for n in range(0, self.lc.GetItemCount()):
-            self.lc.SetStringItem(n, 0, str(n+1))
-        self.marker_ind -= 1
+    def DeleteMarker(self, index):
+        for i in reversed(index):
+            del self.list_coord[i]
+            self.lc.DeleteItem(i)
+            for n in range(0, self.lc.GetItemCount()):
+                self.lc.SetStringItem(n, 0, str(n+1))
+            self.marker_ind -= 1
         Publisher.sendMessage('Remove marker', index)
 
     def OnCreateMarker(self, evt):
@@ -786,3 +787,15 @@ class MarkersPanel(wx.Panel):
         self.lc.SetStringItem(num_items, 3, str(round(coord[2], 2)))
         self.lc.SetStringItem(num_items, 4, str(marker_id))
         self.lc.EnsureVisible(num_items)
+
+    def GetSelectedItems(self):
+        """    
+        Returns a list of the selected items in the list control.
+        """
+        selection = []
+        index = self.lc.GetFirstSelected()
+        selection.append(index)
+        while len(selection) != self.lc.GetSelectedItemCount():
+            index = self.lc.GetNextSelected(index)
+            selection.append(index)
+        return selection

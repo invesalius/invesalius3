@@ -483,9 +483,10 @@ class Viewer(wx.Panel):
 
     def RemoveMarker(self, pubsub_evt):
         index = pubsub_evt.data
-        self.ren.RemoveActor(self.staticballs[index])
-        del self.staticballs[index]
-        self.ball_id = self.ball_id - 1
+        for i in reversed(index):
+            self.ren.RemoveActor(self.staticballs[i])
+            del self.staticballs[i]
+            self.ball_id = self.ball_id - 1
         self.UpdateRender()
 
     def BlinkMarker(self, pubsub_evt):
