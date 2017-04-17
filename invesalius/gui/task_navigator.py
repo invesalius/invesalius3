@@ -612,7 +612,8 @@ class MarkersPanel(wx.Panel):
         self.lc.SetColumnWidth(3, 50)
         self.lc.SetColumnWidth(4, 50)
         self.lc.Bind(wx.EVT_LIST_ITEM_RIGHT_CLICK, self.OnListEditMarkerId)
-        self.lc.Bind(wx.EVT_LIST_ITEM_FOCUSED, self.OnItemBlink)
+        self.lc.Bind(wx.EVT_LIST_ITEM_ACTIVATED, self.OnItemBlink)
+        self.lc.Bind(wx.EVT_LIST_ITEM_DESELECTED, self.OnStopItemBlink)
 
         # Add all lines into main sizer
         group_sizer = wx.BoxSizer(wx.VERTICAL)
@@ -641,7 +642,10 @@ class MarkersPanel(wx.Panel):
         menu_id.Destroy()
 
     def OnItemBlink(self, evt):
-        Publisher.sendMessage('Blink marker', self.lc.GetFocusedItem())
+        Publisher.sendMessage('Blink Marker', self.lc.GetFocusedItem())
+
+    def OnStopItemBlink(self, evt):
+        Publisher.sendMessage('Stop Blink Marker')
 
     def OnMenuEditMarkerId(self, evt):
         id_label = dlg.EnterMarkerID(self.lc.GetItemText(self.lc.GetFocusedItem(), 4))
@@ -657,6 +661,7 @@ class MarkersPanel(wx.Panel):
             self.marker_ind = 0
             Publisher.sendMessage('Remove all markers', self.lc.GetItemCount())
             self.lc.DeleteAllItems()
+            Publisher.sendMessage('Stop Blink Marker', 'DeleteAll')
 
     def OnDeleteSingleMarker(self, evt):
         # OnDeleteSingleMarker is used for both pubsub and button click events
