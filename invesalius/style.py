@@ -110,6 +110,6 @@ class StyleStateManager(object):
         max_level = max(self.stack.keys())
         return self.stack[max_level]
 
-    def Reset(self):
-        self.stack[const.STYLE_LEVEL[const.STATE_DEFAULT]] = \
-            const.STATE_DEFAULT
+    def RemoveActualState(self):
+        max_level = max(self.stack.keys())
+        return self.stack.pop(max_level)

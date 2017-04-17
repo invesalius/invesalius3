@@ -184,7 +184,6 @@ class Slice(object):
 
         Publisher.subscribe(self.OnEnableStyle, 'Enable style')
         Publisher.subscribe(self.OnDisableStyle, 'Disable style')
-        Publisher.subscribe(self.OnDisableActualStyle, 'Disable actual style')
 
         Publisher.subscribe(self.OnRemoveMasks, 'Remove masks')
         Publisher.subscribe(self.OnDuplicateMasks, 'Duplicate masks')
@@ -197,10 +196,10 @@ class Slice(object):
         Publisher.subscribe(self.__redo_edition, 'Redo edition')
 
         Publisher.subscribe(self._fill_holes_auto, 'Fill holes automatically')
- 
+
     def GetMaxSliceNumber(self, orientation):
         shape = self.matrix.shape
-        
+
         # Because matrix indexing starts with 0 so the last slice is the shape
         # minu 1.
         if orientation == 'AXIAL':
@@ -263,9 +262,6 @@ class Slice(object):
             if (state == const.SLICE_STATE_EDITOR):
                 Publisher.sendMessage('Set interactor default cursor')
             self.state = new_state
-
-    def OnDisableActualStyle(self, pubsub_evt):
-        self.interaction_style.Reset()
 
     def OnCloseProject(self, pubsub_evt):
         self.CloseProject()
