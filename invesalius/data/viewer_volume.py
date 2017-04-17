@@ -123,6 +123,8 @@ class Viewer(wx.Panel):
         self.sen1 = False
         self.sen2 = False
 
+        self.blink = False
+
     def __bind_events(self):
         Publisher.subscribe(self.LoadActor,
                                  'Load surface actor into viewer')
@@ -203,6 +205,7 @@ class Viewer(wx.Panel):
         Publisher.subscribe(self.ShowAllMarkers, 'Show all markers')
         Publisher.subscribe(self.RemoveAllMarkers, 'Remove all markers')
         Publisher.subscribe(self.RemoveMarker, 'Remove marker')
+        Publisher.subscribe(self.BlinkMarker, 'Blink marker')
 
     def SetStereoMode(self, pubsub_evt):
         mode = pubsub_evt.data
@@ -482,6 +485,17 @@ class Viewer(wx.Panel):
         del self.staticballs[index]
         self.ball_id = self.ball_id - 1
         self.UpdateRender()
+
+    def BlinkMarker(self, pubsub_evt):
+        index = pubsub_evt.data
+        cb = vtkTimerCallback()
+        if self.blink:
+            self.interactor.DestroyTimer('TimerEvent', cb.execute)
+        else:
+
+            cb.actor = self.staticballs[index]
+            self.interactor.AddObserver('TimerEvent', cb.execute)
+            self.blink = self.interactor.CreateRepeatingTimer(500)
 
     def CreateBallReference(self):
         """
@@ -1028,6 +1042,16 @@ class Viewer(wx.Panel):
                 self.RemoveBallReference()
                 self.interactor.Render()
 
+
+class vtkTimerCallback():
+    def __init__(self):
+        self.timer_count = 0
+
+    def execute(self, obj, event):
+        self.actor.SetVisibility(int(self.timer_count % 2))
+        iren = obj
+        iren.GetRenderWindow().Render()
+        self.timer_count += 1
 
 class SlicePlane:
     def __init__(self):

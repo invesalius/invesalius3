@@ -612,6 +612,7 @@ class MarkersPanel(wx.Panel):
         self.lc.SetColumnWidth(3, 50)
         self.lc.SetColumnWidth(4, 50)
         self.lc.Bind(wx.EVT_LIST_ITEM_RIGHT_CLICK, self.OnListEditMarkerId)
+        self.lc.Bind(wx.EVT_LIST_ITEM_FOCUSED, self.OnItemBlink)
 
         # Add all lines into main sizer
         group_sizer = wx.BoxSizer(wx.VERTICAL)
@@ -638,6 +639,9 @@ class MarkersPanel(wx.Panel):
         menu_id.Bind(wx.EVT_MENU, self.OnMenuEditMarkerId)
         self.PopupMenu(menu_id)
         menu_id.Destroy()
+
+    def OnItemBlink(self, evt):
+        Publisher.sendMessage('Blink marker', self.lc.GetFocusedItem())
 
     def OnMenuEditMarkerId(self, evt):
         id_label = dlg.EnterMarkerID(self.lc.GetItemText(self.lc.GetFocusedItem(), 4))
