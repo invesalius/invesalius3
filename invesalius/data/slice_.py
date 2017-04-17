@@ -196,10 +196,10 @@ class Slice(object):
         Publisher.subscribe(self.__redo_edition, 'Redo edition')
 
         Publisher.subscribe(self._fill_holes_auto, 'Fill holes automatically')
- 
+
     def GetMaxSliceNumber(self, orientation):
         shape = self.matrix.shape
-        
+
         # Because matrix indexing starts with 0 so the last slice is the shape
         # minu 1.
         if orientation == 'AXIAL':

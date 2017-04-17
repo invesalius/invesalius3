@@ -78,10 +78,10 @@ class StyleStateManager(object):
                     const.STATE_DEFAULT
 
     def AddState(self, state):
-        
+
         level = const.STYLE_LEVEL[state]
         max_level = max(self.stack.keys())
-                
+
         # Insert new state into stack
         self.stack[level] = state
 
@@ -93,7 +93,7 @@ class StyleStateManager(object):
         level = const.STYLE_LEVEL[state]
         if level in self.stack.keys():
             max_level = max(self.stack.keys())
-        
+
             # Remove item from stack
             self.stack.pop(level)
 
@@ -104,9 +104,12 @@ class StyleStateManager(object):
             # level in stack has been removed
             if level == max_level:
                 new_state = self.stack[new_max_level]
-        
+
             return self.stack[new_max_level]
-        
+
         max_level = max(self.stack.keys())
         return self.stack[max_level]
-        
+
+    def RemoveActualState(self):
+        max_level = max(self.stack.keys())
+        return self.stack.pop(max_level)
