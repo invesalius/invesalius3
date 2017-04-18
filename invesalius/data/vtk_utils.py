@@ -19,6 +19,7 @@
 import sys
 
 import vtk
+import wx
 from wx.lib.pubsub import pub as Publisher
 import invesalius.constants as const
 from invesalius.gui.dialogs import ProgressDialog
@@ -247,5 +248,7 @@ class TextZero(object):
         coord.SetCoordinateSystemToNormalizedDisplay()
         coord.SetValue(*self.position)
         x, y = coord.GetComputedDisplayValue(canvas.evt_renderer)
-        print x, y, self.text
-        canvas.draw_text(self.text, (x, y))
+
+        font = wx.SystemSettings.GetFont(wx.SYS_DEFAULT_GUI_FONT)
+        font.SetWeight(wx.FONTWEIGHT_BOLD)
+        canvas.draw_text(self.text, (x, y), font=font)
