@@ -463,7 +463,7 @@ class CanvasRendererCTX:
         self.draw_rectangle((px, -py), cw, ch, bg_colour, bg_colour)
 
         # Drawing the text
-        tpx, tpy = px + border, -py + border
+        tpx, tpy = px + border, py - border
         self.draw_text(text, (tpx, tpy), font, txt_colour)
         self._drawn = True
 
@@ -698,7 +698,7 @@ class Viewer(wx.Panel):
             colour = const.ORIENTATION_COLOUR[self.orientation]
 
             # Window & Level text
-            self.wl_text = vtku.Text()
+            self.wl_text = vtku.TextZero()
             self.SetWLText(proj.level, proj.window)
             # Orientation text
             if self.orientation == 'AXIAL':
@@ -741,12 +741,17 @@ class Viewer(wx.Panel):
             self.orientation_texts = [left_text, right_text, up_text,
                                       down_text]
 
+            self.canvas.draw_list.append(self.wl_text)
+            self.canvas.draw_list.append(self.left_text)
+            self.canvas.draw_list.append(self.right_text)
+            self.canvas.draw_list.append(self.up_text)
+            self.canvas.draw_list.append(self.down_text)
 
-            self.slice_data.renderer.AddActor(self.wl_text.actor)
-            self.slice_data.renderer.AddActor(left_text.actor)
-            self.slice_data.renderer.AddActor(right_text.actor)
-            self.slice_data.renderer.AddActor(up_text.actor)
-            self.slice_data.renderer.AddActor(down_text.actor)
+            #  self.slice_data.renderer.AddActor(self.wl_text.actor)
+            #  self.slice_data.renderer.AddActor(left_text.actor)
+            #  self.slice_data.renderer.AddActor(right_text.actor)
+            #  self.slice_data.renderer.AddActor(up_text.actor)
+            #  self.slice_data.renderer.AddActor(down_text.actor)
 
     def RenderTextDirection(self, directions):
         # Values are on ccw order, starting from the top:
