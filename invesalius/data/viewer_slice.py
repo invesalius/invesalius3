@@ -428,6 +428,8 @@ class CanvasRendererCTX:
         gc.SetFont(font)
 
         px, py = pos
+        py = -py
+
         gc.DrawText(text, px, py)
         self._drawn = True
 
@@ -455,14 +457,13 @@ class CanvasRendererCTX:
         w, h = gc.GetTextExtent(text)
 
         px, py = pos
-        py = -py
 
         # Drawing the box
         cw, ch = w + border * 2, h + border * 2
-        self.draw_rectangle((px, py), cw, ch, bg_colour, bg_colour)
+        self.draw_rectangle((px, -py), cw, ch, bg_colour, bg_colour)
 
         # Drawing the text
-        tpx, tpy = px + border, py + border
+        tpx, tpy = px + border, -py + border
         self.draw_text(text, (tpx, tpy), font, txt_colour)
         self._drawn = True
 
@@ -1405,6 +1406,7 @@ class Viewer(wx.Panel):
         self.__build_cross_lines()
 
         self.canvas = CanvasRendererCTX(self.slice_data.renderer, self.slice_data.canvas_renderer, self.orientation)
+        self.canvas.draw_list.append(self.slice_data.text)
 
         # Set the slice number to the last slice to ensure the camera if far
         # enough to show all slices.
@@ -1502,7 +1504,7 @@ class Viewer(wx.Panel):
         slice_data.actor = actor
         slice_data.SetBorderStyle(sd.BORDER_ALL)
         renderer.AddActor(actor)
-        renderer.AddActor(slice_data.text.actor)
+        #  renderer.AddActor(slice_data.text.actor)
         renderer.AddViewProp(slice_data.box_actor)
 
         return slice_data
