@@ -325,7 +325,6 @@ class NeuronavigationPanel(wx.Panel):
         Publisher.subscribe(self.UpdateTriggerState, 'Update trigger state')
         Publisher.subscribe(self.UpdateImageCoordinates, 'Set ball reference position')
         Publisher.subscribe(self.OnDisconnectTracker, 'Disconnect tracker')
-        Publisher.subscribe(self.OnStylusButton, 'PLH Stylus Button On')
 
     def LoadImageFiducials(self, pubsub_evt):
         marker_id = pubsub_evt.data[0]
@@ -358,10 +357,6 @@ class NeuronavigationPanel(wx.Panel):
     def OnDisconnectTracker(self, pubsub_evt):
         if self.tracker_id:
             dt.TrackerConnection(self.tracker_id, 'disconnect')
-
-    def OnStylusButton(self, pubsub_evt):
-        if self.trigger_state:
-            Publisher.sendMessage('Create marker')
 
     def OnChoiceTracker(self, evt, ctrl):
         Publisher.sendMessage('Update status text in GUI', _("Configuring tracker ..."))
