@@ -212,6 +212,10 @@ class CanvasRendererCTX:
 
         self.modified = True
 
+    def remove_from_renderer(self):
+        self.canvas_renderer.RemoveActor(self.actor)
+        self.evt_renderer.RemoveObservers("StartEvent")
+
     def OnPaint(self, evt, obj):
         size = self.canvas_renderer.GetSize()
         w, h = size
@@ -754,18 +758,6 @@ class Viewer(wx.Panel):
 
             self.orientation_texts = [left_text, right_text, up_text,
                                       down_text]
-
-            #  self.canvas.draw_list.append(self.wl_text)
-            #  self.canvas.draw_list.append(self.left_text)
-            #  self.canvas.draw_list.append(self.right_text)
-            #  self.canvas.draw_list.append(self.up_text)
-            #  self.canvas.draw_list.append(self.down_text)
-
-            #  self.slice_data.renderer.AddActor(self.wl_text.actor)
-            #  self.slice_data.renderer.AddActor(left_text.actor)
-            #  self.slice_data.renderer.AddActor(right_text.actor)
-            #  self.slice_data.renderer.AddActor(up_text.actor)
-            #  self.slice_data.renderer.AddActor(down_text.actor)
 
     def RenderTextDirection(self, directions):
         # Values are on ccw order, starting from the top:
@@ -1324,7 +1316,16 @@ class Viewer(wx.Panel):
 
         self.slice_data_list = []
         self.layout = (1, 1)
+
+        del self.slice_data
+        self.slice_data = None
+
+        self.canvas.draw_list = []
+        self.canvas.remove_from_renderer()
+        self.canvas = None
+
         self.orientation_texts = []
+
         self.slice_number = 0
         self.cursor = None
         self.wl_text = None

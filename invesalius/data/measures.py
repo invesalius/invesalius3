@@ -66,6 +66,13 @@ class MeasureData:
 
         self._list_measures.append(m)
 
+    def clean(self):
+        self.measures = {const.SURFACE: {},
+                         const.AXIAL:   {},
+                         const.CORONAL: {},
+                         const.SAGITAL: {}}
+        self._list_measures = []
+
     def get(self, location, slice_number):
         return self.measures[map_locations_id[location]].get(slice_number, [])
 
@@ -110,6 +117,7 @@ class MeasurementManager(object):
         Publisher.subscribe(self._rm_incomplete_measurements,
                             "Remove incomplete measurements")
         Publisher.subscribe(self._change_measure_point_pos, 'Change measurement point position')
+        Publisher.subscribe(self.OnCloseProject, 'Close project data')
 
     def _load_measurements(self, pubsub_evt):
         try:
@@ -339,6 +347,9 @@ class MeasurementManager(object):
             #  if self.measures:
                 #  self.measures.pop()
             self.current = None
+
+    def OnCloseProject(self, pubsub_evt):
+        self.measures.clean()
 
 
 class Measurement():
