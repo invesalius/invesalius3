@@ -114,10 +114,13 @@ class InnerFoldPanel(wx.Panel):
         # is not working properly in this panel. It might be on some child or
         # parent panel. Perhaps we need to insert the item into the sizer also...
         # Study this.
-
-        fold_panel = fpb.FoldPanelBar(self, -1, wx.DefaultPosition,
-                                      (10, 293), 0, fpb.FPB_SINGLE_FOLD)
-
+        displaySize = wx.DisplaySize()
+        if displaySize[1] > 768:
+            fold_panel = fpb.FoldPanelBar(self, -1, wx.DefaultPosition,
+                                          (10, 350), 0, fpb.FPB_SINGLE_FOLD)
+        else:
+            fold_panel = fpb.FoldPanelBar(self, -1, wx.DefaultPosition,
+                                          (10, 293), 0, fpb.FPB_SINGLE_FOLD)
         # Fold panel style
         style = fpb.CaptionBarStyle()
         style.SetCaptionStyle(fpb.CAPTIONBAR_GRADIENT_V)
@@ -243,7 +246,7 @@ class NeuronavigationPanel(wx.Panel):
         for k in btns_img:
             n = btns_img[k].keys()[0]
             lab = btns_img[k].values()[0]
-            self.btns_coord[n] = wx.ToggleButton(self, k, label=lab, size=wx.Size(30, 23))
+            self.btns_coord[n] = wx.ToggleButton(self, k, label=lab, size=wx.Size(45, 23))
             self.btns_coord[n].SetToolTip(tips_img[n])
             self.btns_coord[n].Bind(wx.EVT_TOGGLEBUTTON, self.OnImageFiducials)
 
@@ -254,7 +257,7 @@ class NeuronavigationPanel(wx.Panel):
         for k in btns_trk:
             n = btns_trk[k].keys()[0]
             lab = btns_trk[k].values()[0]
-            self.btns_coord[n] = wx.Button(self, k, label=lab, size=wx.Size(30, 23))
+            self.btns_coord[n] = wx.Button(self, k, label=lab, size=wx.Size(45, 23))
             self.btns_coord[n].SetToolTip(tips_trk[n-3])
             # Excepetion for event of button that set image coordinates
             if n == 6:
@@ -587,7 +590,7 @@ class MarkersPanel(wx.Panel):
         btn_delete_single = wx.Button(self, -1, label=_('Remove'), size=wx.Size(65, 23))
         btn_delete_single.Bind(wx.EVT_BUTTON, self.OnDeleteSingleMarker)
 
-        btn_delete_all = wx.Button(self, -1, label=_('Delete all markers'), size=wx.Size(135, 23))
+        btn_delete_all = wx.Button(self, -1, label=_('Delete all'), size=wx.Size(135, 23))
         btn_delete_all.Bind(wx.EVT_BUTTON, self.OnDeleteAllMarkers)
 
         sizer_delete = wx.FlexGridSizer(rows=1, cols=2, hgap=5, vgap=5)
