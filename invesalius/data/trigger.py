@@ -32,6 +32,8 @@ class Trigger(threading.Thread):
     def __init__(self, nav_id):
         threading.Thread.__init__(self)
         self.trigger_init = None
+        self.stylusplh = False
+        self.__bind_events()
         try:
             import serial
 
@@ -46,6 +48,12 @@ class Trigger(threading.Thread):
         except serial.serialutil.SerialException:
             print 'Connection with port COM1 failed.'
 
+    def __bind_events(self):
+        Publisher.subscribe(self.OnStylusPLH, 'PLH Stylus Button On')
+
+    def OnStylusPLH(self, pubsuv_evt):
+        self.stylusplh = True
+
     def stop(self):
         self._pause_ = True
 
@@ -59,6 +67,13 @@ class Trigger(threading.Thread):
             # lines = True
             if lines:
                 wx.CallAfter(Publisher.sendMessage, 'Create marker')
+                sleep(0.5)
+
+            if self.stylusplh:
+                wx.CallAfter(Publisher.sendMessage, 'Create marker')
+                sleep(0.5)
+                self.stylusplh = False
+
             sleep(0.175)
             if self._pause_:
                 if self.trigger_init:

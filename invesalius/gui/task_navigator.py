@@ -114,10 +114,13 @@ class InnerFoldPanel(wx.Panel):
         # is not working properly in this panel. It might be on some child or
         # parent panel. Perhaps we need to insert the item into the sizer also...
         # Study this.
-
-        fold_panel = fpb.FoldPanelBar(self, -1, wx.DefaultPosition,
-                                      (10, 293), 0, fpb.FPB_SINGLE_FOLD)
-
+        displaySize = wx.DisplaySize()
+        if displaySize[1] > 768:
+            fold_panel = fpb.FoldPanelBar(self, -1, wx.DefaultPosition,
+                                          (10, 350), 0, fpb.FPB_SINGLE_FOLD)
+        else:
+            fold_panel = fpb.FoldPanelBar(self, -1, wx.DefaultPosition,
+                                          (10, 293), 0, fpb.FPB_SINGLE_FOLD)
         # Fold panel style
         style = fpb.CaptionBarStyle()
         style.SetCaptionStyle(fpb.CAPTIONBAR_GRADIENT_V)
@@ -243,7 +246,7 @@ class NeuronavigationPanel(wx.Panel):
         for k in btns_img:
             n = btns_img[k].keys()[0]
             lab = btns_img[k].values()[0]
-            self.btns_coord[n] = wx.ToggleButton(self, k, label=lab, size=wx.Size(30, 23))
+            self.btns_coord[n] = wx.ToggleButton(self, k, label=lab, size=wx.Size(45, 23))
             self.btns_coord[n].SetToolTip(tips_img[n])
             self.btns_coord[n].Bind(wx.EVT_TOGGLEBUTTON, self.OnImageFiducials)
 
@@ -254,7 +257,7 @@ class NeuronavigationPanel(wx.Panel):
         for k in btns_trk:
             n = btns_trk[k].keys()[0]
             lab = btns_trk[k].values()[0]
-            self.btns_coord[n] = wx.Button(self, k, label=lab, size=wx.Size(30, 23))
+            self.btns_coord[n] = wx.Button(self, k, label=lab, size=wx.Size(45, 23))
             self.btns_coord[n].SetToolTip(tips_trk[n-3])
             # Excepetion for event of button that set image coordinates
             if n == 6:
@@ -325,7 +328,6 @@ class NeuronavigationPanel(wx.Panel):
         Publisher.subscribe(self.UpdateTriggerState, 'Update trigger state')
         Publisher.subscribe(self.UpdateImageCoordinates, 'Set ball reference position')
         Publisher.subscribe(self.OnDisconnectTracker, 'Disconnect tracker')
-        Publisher.subscribe(self.OnStylusButton, 'PLH Stylus Button On')
 
     def LoadImageFiducials(self, pubsub_evt):
         marker_id = pubsub_evt.data[0]
@@ -358,10 +360,6 @@ class NeuronavigationPanel(wx.Panel):
     def OnDisconnectTracker(self, pubsub_evt):
         if self.tracker_id:
             dt.TrackerConnection(self.tracker_id, 'disconnect')
-
-    def OnStylusButton(self, pubsub_evt):
-        if self.trigger_state:
-            Publisher.sendMessage('Create marker')
 
     def OnChoiceTracker(self, evt, ctrl):
         Publisher.sendMessage('Update status text in GUI', _("Configuring tracker ..."))
@@ -592,7 +590,7 @@ class MarkersPanel(wx.Panel):
         btn_delete_single = wx.Button(self, -1, label=_('Remove'), size=wx.Size(65, 23))
         btn_delete_single.Bind(wx.EVT_BUTTON, self.OnDeleteSingleMarker)
 
-        btn_delete_all = wx.Button(self, -1, label=_('Delete all markers'), size=wx.Size(135, 23))
+        btn_delete_all = wx.Button(self, -1, label=_('Delete all'), size=wx.Size(135, 23))
         btn_delete_all.Bind(wx.EVT_BUTTON, self.OnDeleteAllMarkers)
 
         sizer_delete = wx.FlexGridSizer(rows=1, cols=2, hgap=5, vgap=5)
@@ -612,6 +610,8 @@ class MarkersPanel(wx.Panel):
         self.lc.SetColumnWidth(3, 50)
         self.lc.SetColumnWidth(4, 50)
         self.lc.Bind(wx.EVT_LIST_ITEM_RIGHT_CLICK, self.OnListEditMarkerId)
+        self.lc.Bind(wx.EVT_LIST_ITEM_ACTIVATED, self.OnItemBlink)
+        self.lc.Bind(wx.EVT_LIST_ITEM_DESELECTED, self.OnStopItemBlink)
 
         # Add all lines into main sizer
         group_sizer = wx.BoxSizer(wx.VERTICAL)
@@ -639,6 +639,12 @@ class MarkersPanel(wx.Panel):
         self.PopupMenu(menu_id)
         menu_id.Destroy()
 
+    def OnItemBlink(self, evt):
+        Publisher.sendMessage('Blink Marker', self.lc.GetFocusedItem())
+
+    def OnStopItemBlink(self, evt):
+        Publisher.sendMessage('Stop Blink Marker')
+
     def OnMenuEditMarkerId(self, evt):
         id_label = dlg.EnterMarkerID(self.lc.GetItemText(self.lc.GetFocusedItem(), 4))
         list_index = self.lc.GetFocusedItem()
@@ -653,6 +659,7 @@ class MarkersPanel(wx.Panel):
             self.marker_ind = 0
             Publisher.sendMessage('Remove all markers', self.lc.GetItemCount())
             self.lc.DeleteAllItems()
+            Publisher.sendMessage('Stop Blink Marker', 'DeleteAll')
 
     def OnDeleteSingleMarker(self, evt):
         # OnDeleteSingleMarker is used for both pubsub and button click events
@@ -667,22 +674,23 @@ class MarkersPanel(wx.Panel):
                         for i in const.BTNS_IMG_MKS:
                             if marker_id in const.BTNS_IMG_MKS[i].values()[0]:
                                 self.lc.Focus(item.GetId())
-                self.DeleteMarker()
+                index = [self.lc.GetFocusedItem()]
         else:
             if self.lc.GetFocusedItem() is not -1:
-                self.DeleteMarker()
+                index = self.GetSelectedItems()
             elif not self.lc.GetItemCount():
                 pass
             else:
                 dlg.NoMarkerSelected()
+        self.DeleteMarker(index)
 
-    def DeleteMarker(self):
-        index = self.lc.GetFocusedItem()
-        del self.list_coord[index]
-        self.lc.DeleteItem(index)
-        for n in range(0, self.lc.GetItemCount()):
-            self.lc.SetStringItem(n, 0, str(n+1))
-        self.marker_ind -= 1
+    def DeleteMarker(self, index):
+        for i in reversed(index):
+            del self.list_coord[i]
+            self.lc.DeleteItem(i)
+            for n in range(0, self.lc.GetItemCount()):
+                self.lc.SetStringItem(n, 0, str(n+1))
+            self.marker_ind -= 1
         Publisher.sendMessage('Remove marker', index)
 
     def OnCreateMarker(self, evt):
@@ -777,3 +785,15 @@ class MarkersPanel(wx.Panel):
         self.lc.SetStringItem(num_items, 3, str(round(coord[2], 2)))
         self.lc.SetStringItem(num_items, 4, str(marker_id))
         self.lc.EnsureVisible(num_items)
+
+    def GetSelectedItems(self):
+        """    
+        Returns a list of the selected items in the list control.
+        """
+        selection = []
+        index = self.lc.GetFirstSelected()
+        selection.append(index)
+        while len(selection) != self.lc.GetSelectedItemCount():
+            index = self.lc.GetNextSelected(index)
+            selection.append(index)
+        return selection

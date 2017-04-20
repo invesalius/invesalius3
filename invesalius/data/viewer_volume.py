@@ -123,6 +123,9 @@ class Viewer(wx.Panel):
         self.sen1 = False
         self.sen2 = False
 
+        self.timer = False
+        self.index = False
+
     def __bind_events(self):
         Publisher.subscribe(self.LoadActor,
                                  'Load surface actor into viewer')
@@ -203,6 +206,8 @@ class Viewer(wx.Panel):
         Publisher.subscribe(self.ShowAllMarkers, 'Show all markers')
         Publisher.subscribe(self.RemoveAllMarkers, 'Remove all markers')
         Publisher.subscribe(self.RemoveMarker, 'Remove marker')
+        Publisher.subscribe(self.BlinkMarker, 'Blink Marker')
+        Publisher.subscribe(self.StopBlinkMarker, 'Stop Blink Marker')
 
     def SetStereoMode(self, pubsub_evt):
         mode = pubsub_evt.data
@@ -478,10 +483,34 @@ class Viewer(wx.Panel):
 
     def RemoveMarker(self, pubsub_evt):
         index = pubsub_evt.data
-        self.ren.RemoveActor(self.staticballs[index])
-        del self.staticballs[index]
-        self.ball_id = self.ball_id - 1
+        for i in reversed(index):
+            self.ren.RemoveActor(self.staticballs[i])
+            del self.staticballs[i]
+            self.ball_id = self.ball_id - 1
         self.UpdateRender()
+
+    def BlinkMarker(self, pubsub_evt):
+        if self.timer:
+            self.timer.Stop()
+            self.staticballs[self.index].SetVisibility(1)
+        self.index = pubsub_evt.data
+        self.timer = wx.Timer(self)
+        self.Bind(wx.EVT_TIMER, self.blink, self.timer)
+        self.timer.Start(500)
+        self.timer_count = 0
+
+    def blink(self, evt):
+        self.staticballs[self.index].SetVisibility(int(self.timer_count % 2))
+        self.Refresh()
+        self.timer_count += 1
+
+    def StopBlinkMarker(self, pubsub_evt):
+        if self.timer:
+            self.timer.Stop()
+            if pubsub_evt.data == None:
+                self.staticballs[self.index].SetVisibility(1)
+                self.Refresh()
+            self.index = False
 
     def CreateBallReference(self):
         """
@@ -1027,7 +1056,6 @@ class Viewer(wx.Panel):
             elif not self._to_show_ball and self._ball_ref_visibility:
                 self.RemoveBallReference()
                 self.interactor.Render()
-
 
 class SlicePlane:
     def __init__(self):
