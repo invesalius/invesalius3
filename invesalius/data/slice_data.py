@@ -17,6 +17,7 @@
 #    detalhes.
 #--------------------------------------------------------------------------
 import vtk
+import wx
 
 import invesalius.constants as const
 import invesalius.data.vtk_utils as vu
@@ -50,6 +51,7 @@ class SliceData(object):
         text.SetColour(colour)
         text.SetSize(const.TEXT_SIZE_LARGE)
         text.SetPosition(const.TEXT_POS_LEFT_DOWN_ZERO)
+        text.SetSymbolicSize(wx.FONTSIZE_LARGE)
         #text.SetVerticalJustificationToBottom()
         text.SetValue(self.number)
         self.text = text

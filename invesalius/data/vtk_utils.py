@@ -192,6 +192,7 @@ class TextZero(object):
 
         self.text = ''
         self.position = (0, 0)
+        self.symbolic_syze = wx.FONTSIZE_MEDIUM
 
     def SetColour(self, colour):
         self.property.SetColor(colour)
@@ -201,6 +202,9 @@ class TextZero(object):
 
     def SetSize(self, size):
         self.property.SetFontSize(size)
+
+    def SetSymbolicSize(self, size):
+        self.symbolic_syze = size
 
     def SetValue(self, value):
         if isinstance(value, int) or isinstance(value, float):
@@ -250,5 +254,6 @@ class TextZero(object):
         x, y = coord.GetComputedDisplayValue(canvas.evt_renderer)
 
         font = wx.SystemSettings.GetFont(wx.SYS_DEFAULT_GUI_FONT)
-        font.SetWeight(wx.FONTWEIGHT_BOLD)
+        #  font.SetWeight(wx.FONTWEIGHT_BOLD)
+        font.SetSymbolicSize(self.symbolic_syze)
         canvas.draw_text(self.text, (x, y), font=font)

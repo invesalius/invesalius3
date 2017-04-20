@@ -707,7 +707,9 @@ class Viewer(wx.Panel):
             # Window & Level text
             self.wl_text = vtku.TextZero()
             self.wl_text.SetPosition(const.TEXT_POS_LEFT_UP)
+            self.wl_text.SetSymbolicSize(wx.FONTSIZE_LARGE)
             self.SetWLText(proj.level, proj.window)
+
             # Orientation text
             if self.orientation == 'AXIAL':
                 values = [_('R'), _('L'), _('A'), _('P')]
@@ -722,6 +724,7 @@ class Viewer(wx.Panel):
             left_text.SetPosition(const.TEXT_POS_VCENTRE_LEFT)
             left_text.SetVerticalJustificationToCentered()
             left_text.SetValue(values[0])
+            left_text.SetSymbolicSize(wx.FONTSIZE_LARGE)
 
             right_text = self.right_text = vtku.TextZero()
             right_text.ShadowOff()
@@ -730,6 +733,7 @@ class Viewer(wx.Panel):
             right_text.SetVerticalJustificationToCentered()
             right_text.SetJustificationToRight()
             right_text.SetValue(values[1])
+            right_text.SetSymbolicSize(wx.FONTSIZE_LARGE)
 
             up_text = self.up_text = vtku.TextZero()
             up_text.ShadowOff()
@@ -737,6 +741,7 @@ class Viewer(wx.Panel):
             up_text.SetPosition(const.TEXT_POS_HCENTRE_UP)
             up_text.SetJustificationToCentered()
             up_text.SetValue(values[2])
+            up_text.SetSymbolicSize(wx.FONTSIZE_LARGE)
 
             down_text = self.down_text = vtku.TextZero()
             down_text.ShadowOff()
@@ -745,6 +750,7 @@ class Viewer(wx.Panel):
             down_text.SetJustificationToCentered()
             down_text.SetVerticalJustificationToBottom()
             down_text.SetValue(values[3])
+            down_text.SetSymbolicSize(wx.FONTSIZE_LARGE)
 
             self.orientation_texts = [left_text, right_text, up_text,
                                       down_text]
