@@ -237,7 +237,8 @@ class CanvasRendererCTX:
         self.image.SetAlphaBuffer(self.alpha)
         self.image.Clear()
         gc = wx.GraphicsContext.Create(self.image)
-        gc.SetAntialiasMode(0)
+        if sys.platform != 'darwin':
+            gc.SetAntialiasMode(0)
 
         self.gc = gc
 
