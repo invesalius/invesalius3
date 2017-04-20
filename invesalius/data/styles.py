@@ -272,12 +272,14 @@ class WWWLInteractorStyle(DefaultInteractorStyle):
 
     def SetUp(self):
         self.viewer.on_wl = True
-        self.viewer.wl_text.Show()
+        self.viewer.canvas.draw_list.append(self.viewer.wl_text)
+        self.viewer.UpdateCanvas()
 
     def CleanUp(self):
         self.viewer.on_wl = False
         if self.viewer.wl_text is not None:
-            self.viewer.wl_text.Hide()
+            self.viewer.canvas.draw_list.remove(self.viewer.wl_text)
+            self.viewer.UpdateCanvas()
 
     def OnWindowLevelMove(self, obj, evt):
         if (self.left_pressed):

@@ -533,9 +533,11 @@ class Viewer(wx.Panel):
         # All renderers and image actors in this viewer
         self.slice_data_list = []
         self.slice_data = None
-        
+
         self.slice_actor = None
         self.interpolation_slice_status = True
+
+        self.canvas = None
 
         # The layout from slice_data, the first is number of cols, the second
         # is the number of rows
@@ -618,19 +620,23 @@ class Viewer(wx.Panel):
         self.__configure_scroll()
 
     def HideTextActors(self, change_status=True):
-        if self.wl_text:
-            self.wl_text.Hide()
-        [t.Hide() for t in self.orientation_texts]
-        self.interactor.Render()
+        try:
+            self.canvas.draw_list.remove(self.wl_text)
+        except (ValueError, AttributeError):
+            pass
+
+        [self.canvas.draw_list.remove(t) for t in self.orientation_texts]
+        self.UpdateCanvas()
         if change_status:
             self.on_text = False
 
     def ShowTextActors(self):
         if self.on_wl and self.wl_text:
-            self.wl_text.Show()
-        [t.Show() for t in self.orientation_texts]
-        self.Update()
-        self.interactor.Render()
+            self.canvas.draw_list.append(self.wl_text)
+        print "Canvas", self.canvas.draw_list
+        print "text ori", self.orientation_texts
+        [self.canvas.draw_list.append(t) for t in self.orientation_texts]
+        self.UpdateCanvas()
         self.on_text = True
 
     def __set_layout(self, pubsub_evt):
@@ -690,6 +696,7 @@ class Viewer(wx.Panel):
         value = STR_WL%(window_level, window_width)
         if (self.wl_text):
             self.wl_text.SetValue(value)
+            self.canvas.modified = True
             #self.interactor.Render()
 
     def EnableText(self):
@@ -699,6 +706,7 @@ class Viewer(wx.Panel):
 
             # Window & Level text
             self.wl_text = vtku.TextZero()
+            self.wl_text.SetPosition(const.TEXT_POS_LEFT_UP)
             self.SetWLText(proj.level, proj.window)
             # Orientation text
             if self.orientation == 'AXIAL':
@@ -741,11 +749,11 @@ class Viewer(wx.Panel):
             self.orientation_texts = [left_text, right_text, up_text,
                                       down_text]
 
-            self.canvas.draw_list.append(self.wl_text)
-            self.canvas.draw_list.append(self.left_text)
-            self.canvas.draw_list.append(self.right_text)
-            self.canvas.draw_list.append(self.up_text)
-            self.canvas.draw_list.append(self.down_text)
+            #  self.canvas.draw_list.append(self.wl_text)
+            #  self.canvas.draw_list.append(self.left_text)
+            #  self.canvas.draw_list.append(self.right_text)
+            #  self.canvas.draw_list.append(self.up_text)
+            #  self.canvas.draw_list.append(self.down_text)
 
             #  self.slice_data.renderer.AddActor(self.wl_text.actor)
             #  self.slice_data.renderer.AddActor(left_text.actor)
@@ -1554,21 +1562,22 @@ class Viewer(wx.Panel):
         self.interactor.Render()
 
     def UpdateCanvas(self, evt=None):
-        cp_draw_list = self.canvas.draw_list[:]
-        self.canvas.draw_list = []
+        if self.canvas is not None:
+            cp_draw_list = self.canvas.draw_list[:]
+            self.canvas.draw_list = []
 
-        # Removing all measures
-        for i in cp_draw_list:
-            if not isinstance(i, (measures.AngularMeasure, measures.LinearMeasure)):
-                self.canvas.draw_list.append(i)
+            # Removing all measures
+            for i in cp_draw_list:
+                if not isinstance(i, (measures.AngularMeasure, measures.LinearMeasure)):
+                    self.canvas.draw_list.append(i)
 
-        # Then add all needed measures
-        for (m, mr) in self.measures.get(self.orientation, self.slice_data.number):
-            if m.visible:
-                self.canvas.draw_list.append(mr)
+            # Then add all needed measures
+            for (m, mr) in self.measures.get(self.orientation, self.slice_data.number):
+                if m.visible:
+                    self.canvas.draw_list.append(mr)
 
-        self.canvas.modified = True
-        self.interactor.Render()
+            self.canvas.modified = True
+            self.interactor.Render()
 
     def __configure_scroll(self):
         actor = self.slice_data_list[0].actor
