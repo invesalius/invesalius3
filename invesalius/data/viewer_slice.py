@@ -212,6 +212,10 @@ class CanvasRendererCTX:
 
         self.modified = True
 
+    def remove_from_renderer(self):
+        self.canvas_renderer.RemoveActor(self.actor)
+        self.evt_renderer.RemoveObservers("StartEvent")
+
     def OnPaint(self, evt, obj):
         size = self.canvas_renderer.GetSize()
         w, h = size
@@ -233,7 +237,8 @@ class CanvasRendererCTX:
         self.image.SetAlphaBuffer(self.alpha)
         self.image.Clear()
         gc = wx.GraphicsContext.Create(self.image)
-        gc.SetAntialiasMode(0)
+        if sys.platform != 'darwin':
+            gc.SetAntialiasMode(0)
 
         self.gc = gc
 
@@ -428,6 +433,8 @@ class CanvasRendererCTX:
         gc.SetFont(font)
 
         px, py = pos
+        py = -py
+
         gc.DrawText(text, px, py)
         self._drawn = True
 
@@ -455,14 +462,13 @@ class CanvasRendererCTX:
         w, h = gc.GetTextExtent(text)
 
         px, py = pos
-        py = -py
 
         # Drawing the box
         cw, ch = w + border * 2, h + border * 2
-        self.draw_rectangle((px, py), cw, ch, bg_colour, bg_colour)
+        self.draw_rectangle((px, -py), cw, ch, bg_colour, bg_colour)
 
         # Drawing the text
-        tpx, tpy = px + border, py + border
+        tpx, tpy = px + border, py - border
         self.draw_text(text, (tpx, tpy), font, txt_colour)
         self._drawn = True
 
@@ -532,9 +538,11 @@ class Viewer(wx.Panel):
         # All renderers and image actors in this viewer
         self.slice_data_list = []
         self.slice_data = None
-        
+
         self.slice_actor = None
         self.interpolation_slice_status = True
+
+        self.canvas = None
 
         # The layout from slice_data, the first is number of cols, the second
         # is the number of rows
@@ -617,19 +625,23 @@ class Viewer(wx.Panel):
         self.__configure_scroll()
 
     def HideTextActors(self, change_status=True):
-        if self.wl_text:
-            self.wl_text.Hide()
-        [t.Hide() for t in self.orientation_texts]
-        self.interactor.Render()
+        try:
+            self.canvas.draw_list.remove(self.wl_text)
+        except (ValueError, AttributeError):
+            pass
+
+        [self.canvas.draw_list.remove(t) for t in self.orientation_texts]
+        self.UpdateCanvas()
         if change_status:
             self.on_text = False
 
     def ShowTextActors(self):
         if self.on_wl and self.wl_text:
-            self.wl_text.Show()
-        [t.Show() for t in self.orientation_texts]
-        self.Update()
-        self.interactor.Render()
+            self.canvas.draw_list.append(self.wl_text)
+        print "Canvas", self.canvas.draw_list
+        print "text ori", self.orientation_texts
+        [self.canvas.draw_list.append(t) for t in self.orientation_texts]
+        self.UpdateCanvas()
         self.on_text = True
 
     def __set_layout(self, pubsub_evt):
@@ -689,6 +701,7 @@ class Viewer(wx.Panel):
         value = STR_WL%(window_level, window_width)
         if (self.wl_text):
             self.wl_text.SetValue(value)
+            self.canvas.modified = True
             #self.interactor.Render()
 
     def EnableText(self):
@@ -697,8 +710,11 @@ class Viewer(wx.Panel):
             colour = const.ORIENTATION_COLOUR[self.orientation]
 
             # Window & Level text
-            self.wl_text = vtku.Text()
+            self.wl_text = vtku.TextZero()
+            self.wl_text.SetPosition(const.TEXT_POS_LEFT_UP)
+            self.wl_text.SetSymbolicSize(wx.FONTSIZE_LARGE)
             self.SetWLText(proj.level, proj.window)
+
             # Orientation text
             if self.orientation == 'AXIAL':
                 values = [_('R'), _('L'), _('A'), _('P')]
@@ -713,6 +729,7 @@ class Viewer(wx.Panel):
             left_text.SetPosition(const.TEXT_POS_VCENTRE_LEFT)
             left_text.SetVerticalJustificationToCentered()
             left_text.SetValue(values[0])
+            left_text.SetSymbolicSize(wx.FONTSIZE_LARGE)
 
             right_text = self.right_text = vtku.TextZero()
             right_text.ShadowOff()
@@ -721,6 +738,7 @@ class Viewer(wx.Panel):
             right_text.SetVerticalJustificationToCentered()
             right_text.SetJustificationToRight()
             right_text.SetValue(values[1])
+            right_text.SetSymbolicSize(wx.FONTSIZE_LARGE)
 
             up_text = self.up_text = vtku.TextZero()
             up_text.ShadowOff()
@@ -728,6 +746,7 @@ class Viewer(wx.Panel):
             up_text.SetPosition(const.TEXT_POS_HCENTRE_UP)
             up_text.SetJustificationToCentered()
             up_text.SetValue(values[2])
+            up_text.SetSymbolicSize(wx.FONTSIZE_LARGE)
 
             down_text = self.down_text = vtku.TextZero()
             down_text.ShadowOff()
@@ -736,16 +755,10 @@ class Viewer(wx.Panel):
             down_text.SetJustificationToCentered()
             down_text.SetVerticalJustificationToBottom()
             down_text.SetValue(values[3])
+            down_text.SetSymbolicSize(wx.FONTSIZE_LARGE)
 
             self.orientation_texts = [left_text, right_text, up_text,
                                       down_text]
-
-
-            self.slice_data.renderer.AddActor(self.wl_text.actor)
-            self.slice_data.renderer.AddActor(left_text.actor)
-            self.slice_data.renderer.AddActor(right_text.actor)
-            self.slice_data.renderer.AddActor(up_text.actor)
-            self.slice_data.renderer.AddActor(down_text.actor)
 
     def RenderTextDirection(self, directions):
         # Values are on ccw order, starting from the top:
@@ -1304,7 +1317,16 @@ class Viewer(wx.Panel):
 
         self.slice_data_list = []
         self.layout = (1, 1)
+
+        del self.slice_data
+        self.slice_data = None
+
+        self.canvas.draw_list = []
+        self.canvas.remove_from_renderer()
+        self.canvas = None
+
         self.orientation_texts = []
+
         self.slice_number = 0
         self.cursor = None
         self.wl_text = None
@@ -1405,6 +1427,7 @@ class Viewer(wx.Panel):
         self.__build_cross_lines()
 
         self.canvas = CanvasRendererCTX(self.slice_data.renderer, self.slice_data.canvas_renderer, self.orientation)
+        self.canvas.draw_list.append(self.slice_data.text)
 
         # Set the slice number to the last slice to ensure the camera if far
         # enough to show all slices.
@@ -1502,7 +1525,7 @@ class Viewer(wx.Panel):
         slice_data.actor = actor
         slice_data.SetBorderStyle(sd.BORDER_ALL)
         renderer.AddActor(actor)
-        renderer.AddActor(slice_data.text.actor)
+        #  renderer.AddActor(slice_data.text.actor)
         renderer.AddViewProp(slice_data.box_actor)
 
         return slice_data
@@ -1547,21 +1570,22 @@ class Viewer(wx.Panel):
         self.interactor.Render()
 
     def UpdateCanvas(self, evt=None):
-        cp_draw_list = self.canvas.draw_list[:]
-        self.canvas.draw_list = []
+        if self.canvas is not None:
+            cp_draw_list = self.canvas.draw_list[:]
+            self.canvas.draw_list = []
 
-        # Removing all measures
-        for i in cp_draw_list:
-            if not isinstance(i, (measures.AngularMeasure, measures.LinearMeasure)):
-                self.canvas.draw_list.append(i)
+            # Removing all measures
+            for i in cp_draw_list:
+                if not isinstance(i, (measures.AngularMeasure, measures.LinearMeasure)):
+                    self.canvas.draw_list.append(i)
 
-        # Then add all needed measures
-        for (m, mr) in self.measures.get(self.orientation, self.slice_data.number):
-            if m.visible:
-                self.canvas.draw_list.append(mr)
+            # Then add all needed measures
+            for (m, mr) in self.measures.get(self.orientation, self.slice_data.number):
+                if m.visible:
+                    self.canvas.draw_list.append(mr)
 
-        self.canvas.modified = True
-        self.interactor.Render()
+            self.canvas.modified = True
+            self.interactor.Render()
 
     def __configure_scroll(self):
         actor = self.slice_data_list[0].actor

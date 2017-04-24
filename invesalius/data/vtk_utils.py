@@ -19,6 +19,7 @@
 import sys
 
 import vtk
+import wx
 from wx.lib.pubsub import pub as Publisher
 import invesalius.constants as const
 from invesalius.gui.dialogs import ProgressDialog
@@ -189,6 +190,10 @@ class TextZero(object):
         actor.PickableOff()
         self.actor = actor
 
+        self.text = ''
+        self.position = (0, 0)
+        self.symbolic_syze = wx.FONTSIZE_MEDIUM
+
     def SetColour(self, colour):
         self.property.SetColor(colour)
 
@@ -197,6 +202,9 @@ class TextZero(object):
 
     def SetSize(self, size):
         self.property.SetFontSize(size)
+
+    def SetSymbolicSize(self, size):
+        self.symbolic_syze = size
 
     def SetValue(self, value):
         if isinstance(value, int) or isinstance(value, float):
@@ -207,13 +215,15 @@ class TextZero(object):
         # UnicodeEncodeError because they have non-ascii characters. To avoid
         # that we encode in utf-8.
         self.actor.SetInput(value.encode("cp1252"))
+        self.text = value
 
     def SetPosition(self, position):
+        self.position = position
         self.actor.GetPositionCoordinate().SetValue(position[0],
                                                     position[1])
 
-    def GetPosition(self, position):
-        self.actor.GetPositionCoordinate().GetValue()
+    def GetPosition(self):
+        return self.actor.GetPositionCoordinate().GetValue()
 
     def SetJustificationToRight(self):
         self.property.SetJustificationToRight()
@@ -237,3 +247,13 @@ class TextZero(object):
     def Hide(self):
         self.actor.VisibilityOff()
 
+    def draw_to_canvas(self, gc, canvas):
+        coord = vtk.vtkCoordinate()
+        coord.SetCoordinateSystemToNormalizedDisplay()
+        coord.SetValue(*self.position)
+        x, y = coord.GetComputedDisplayValue(canvas.evt_renderer)
+
+        font = wx.SystemSettings.GetFont(wx.SYS_DEFAULT_GUI_FONT)
+        #  font.SetWeight(wx.FONTWEIGHT_BOLD)
+        font.SetSymbolicSize(self.symbolic_syze)
+        canvas.draw_text(self.text, (x, y), font=font)
