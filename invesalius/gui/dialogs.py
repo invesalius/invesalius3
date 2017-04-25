@@ -2693,23 +2693,14 @@ class FFillSegmentationOptionsDialog(wx.Dialog):
 class CropOptionsDialog(wx.Dialog):
     
     def __init__(self, config):
-
         self.config = config
-
         pre = wx.PreDialog()
 
-        if sys.platform == 'win32':
-            size=wx.Size(204,165)
-        else:
-            size=wx.Size(205,180)
-
         pre.Create(wx.GetApp().GetTopWindow(), -1, _(u"Crop mask"),\
-                    size=size, style=wx.DEFAULT_DIALOG_STYLE|wx.FRAME_FLOAT_ON_PARENT)
-                
+                    style=wx.DEFAULT_DIALOG_STYLE|wx.FRAME_FLOAT_ON_PARENT)
         self.PostCreate(pre)
 
         self._init_gui()
-        #self.config = config
 
     def UpdateValues(self, pubsub_evt):
 
@@ -2730,19 +2721,17 @@ class CropOptionsDialog(wx.Dialog):
         self.tx_coronal_f.SetValue(str(yf))
 
     def _init_gui(self):
-
-        
         p = wx.Panel(self, -1, style = wx.TAB_TRAVERSAL
                      | wx.CLIP_CHILDREN
                      | wx.FULL_REPAINT_ON_RESIZE)
-       
+
         gbs_principal = self.gbs = wx.GridBagSizer(4,1)
 
         gbs = self.gbs = wx.GridBagSizer(3, 4)
-       
+
         flag_labels = wx.ALIGN_RIGHT  | wx.ALIGN_CENTER_VERTICAL
 
-        txt_style = wx.TE_READONLY 
+        txt_style = wx.TE_READONLY
 
         stx_axial = wx.StaticText(p, -1, _(u"Axial:"))
         self.tx_axial_i = tx_axial_i = wx.TextCtrl(p, -1, "", size=wx.Size(50,-1), style=txt_style)
@@ -2751,7 +2740,7 @@ class CropOptionsDialog(wx.Dialog):
 
         gbs.Add(stx_axial, (0,0), flag=flag_labels)
         gbs.Add(tx_axial_i, (0,1))
-        gbs.Add(stx_axial_t, (0,2), flag=flag_labels)        
+        gbs.Add(stx_axial_t, (0,2), flag=flag_labels)
         gbs.Add(tx_axial_f, (0,3))
 
         stx_sagital = wx.StaticText(p, -1, _(u"Sagital:"))
@@ -2761,7 +2750,7 @@ class CropOptionsDialog(wx.Dialog):
 
         gbs.Add(stx_sagital, (1,0), flag=flag_labels)
         gbs.Add(tx_sagital_i, (1,1))
-        gbs.Add(stx_sagital_t, (1,2), flag=flag_labels)        
+        gbs.Add(stx_sagital_t, (1,2), flag=flag_labels)
         gbs.Add(tx_sagital_f, (1,3))
 
         stx_coronal = wx.StaticText(p, -1, _(u"Coronal:"))
@@ -2771,11 +2760,11 @@ class CropOptionsDialog(wx.Dialog):
 
         gbs.Add(stx_coronal, (2,0), flag=flag_labels)
         gbs.Add(tx_coronal_i, (2,1))
-        gbs.Add(stx_coronal_t, (2,2), flag=flag_labels)        
+        gbs.Add(stx_coronal_t, (2,2), flag=flag_labels)
         gbs.Add(tx_coronal_f, (2,3))
 
         gbs_button = wx.GridBagSizer(2, 4)
- 
+
         btn_ok = self.btn_ok= wx.Button(p, wx.ID_OK)
         btn_ok.SetDefault()
 
@@ -2791,11 +2780,18 @@ class CropOptionsDialog(wx.Dialog):
 
         box = wx.BoxSizer()
         box.AddSizer(gbs_principal, 1, wx.ALL|wx.EXPAND, 10)
-        
+
         p.SetSizer(box)
-        
+        box.Fit(p)
+        p.Layout()
+
+        sizer = wx.BoxSizer()
+        sizer.Add(p, 1, wx.EXPAND)
+        sizer.Fit(self)
+        self.Layout()
+
         Publisher.subscribe(self.UpdateValues, 'Update crop limits into gui')
-        
+
         btn_ok.Bind(wx.EVT_BUTTON, self.OnOk)
         btn_cancel.Bind(wx.EVT_BUTTON, self.OnClose)
         self.Bind(wx.EVT_CLOSE, self.OnClose)
