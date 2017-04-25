@@ -8,14 +8,14 @@
 # Translators:
 # fri, 2011,2015
 # fri, 2011,2015
-# fri, 2015
+# fri, 2015,2017
 msgid ""
 msgstr ""
 "Project-Id-Version: InVesalius3\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2017-04-24 14:39-0300\n"
-"PO-Revision-Date: 2017-04-24 17:40+0000\n"
-"Last-Translator: InVesalius <invesalius@cti.gov.br>\n"
+"POT-Creation-Date: 2017-03-27 11:03-0300\n"
+"PO-Revision-Date: 2017-04-25 06:56+0000\n"
+"Last-Translator: fri\n"
 "Language-Team: Czech (http://www.transifex.com/invesalius/invesalius3/language/cs/)\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
@@ -49,12 +49,12 @@ msgid ""
 msgstr "%s %s\nVytvořeno s InVesalius"
 
 #: bitmap_preview_panel.py:166 bitmap_preview_panel.py:167
-#: dicom_preview_panel.py:189 dicom_preview_panel.py:190 frame.py:831
+#: dicom_preview_panel.py:189 dicom_preview_panel.py:190 frame.py:793
 msgid "Image"
 msgstr "Obrázek"
 
 #: bitmap_preview_panel.py:442 bitmap_preview_panel.py:443 constants.py:214
-#: constants.py:302 control.py:478 dialogs.py:879 dialogs.py:892
+#: constants.py:302 control.py:478 dialogs.py:827 dialogs.py:840
 #: dicom_preview_panel.py:676 dicom_preview_panel.py:677 presets.py:32
 #: presets.py:50 presets.py:106 presets.py:137
 msgid "Bone"
@@ -67,19 +67,19 @@ msgstr "Automatické přehrávání"
 #: clut_raycasting.py:535
 #, python-format
 msgid "Value: %-6d"
-msgstr ""
+msgstr "Hodnota: %-6d"
 
 #: clut_raycasting.py:536
 #, python-format
 msgid "Alpha: %-.3f"
-msgstr ""
+msgstr "Alfa: %-.3f"
 
 #: constants.py:32
 #, python-format
 msgid "M %d"
 msgstr "M %d"
 
-#: constants.py:44 constants.py:422 constants.py:424
+#: constants.py:44 constants.py:415 constants.py:417
 msgid " Off"
 msgstr " Vypnuto"
 
@@ -95,11 +95,11 @@ msgstr "Křišťálové oči"
 msgid "Interlaced"
 msgstr "Prokládáno"
 
-#: constants.py:48 constants.py:361
+#: constants.py:48 constants.py:354
 msgid "Left"
 msgstr "Vlevo"
 
-#: constants.py:49 constants.py:360
+#: constants.py:49 constants.py:353
 msgid "Right"
 msgstr "Vpravo"
 
@@ -109,7 +109,7 @@ msgstr "Drážďany"
 
 #: constants.py:51
 msgid "Checkboard"
-msgstr ""
+msgstr "Šachovnice"
 
 #: constants.py:52
 msgid "Anaglyph"
@@ -176,12 +176,11 @@ msgstr "Maska %d"
 msgid "Draw"
 msgstr "Kreslit"
 
-#: constants.py:276 styles.py:65 task_slice.py:867 task_surface.py:44
+#: constants.py:276 styles.py:66 task_slice.py:853 task_surface.py:44
 msgid "Erase"
 msgstr "Smazat"
 
-#: constants.py:276 data_notebook.py:457 dialogs.py:2566 frame.py:805
-#: task_surface.py:44
+#: constants.py:276 data_notebook.py:447 dialogs.py:2514 task_surface.py:44
 msgid "Threshold"
 msgstr "Prahová hodnota"
 
@@ -218,8 +217,8 @@ msgstr "Zadní jamka mozku"
 msgid "Brain"
 msgstr "Mozek"
 
-#: constants.py:305 control.py:480 dialogs.py:1542 dialogs.py:1545
-#: dialogs.py:1553 dialogs.py:1628 slice_menu.py:60 slice_menu.py:72
+#: constants.py:305 control.py:480 dialogs.py:1490 dialogs.py:1493
+#: dialogs.py:1501 dialogs.py:1576 slice_menu.py:60 slice_menu.py:72
 msgid "Default"
 msgstr "Výchozí"
 
@@ -277,250 +276,250 @@ msgstr "Cévy - měkké"
 
 #: constants.py:319
 msgid "Contour"
-msgstr ""
+msgstr "Obrys"
 
-#: constants.py:356
+#: constants.py:349
 msgid "Front"
 msgstr "Předek"
 
-#: constants.py:357
+#: constants.py:350
 msgid "Back"
 msgstr "Zadek"
 
-#: constants.py:358
+#: constants.py:351
 msgid "Top"
 msgstr "Nahoře"
 
-#: constants.py:359
+#: constants.py:352
 msgid "Bottom"
 msgstr "Dole"
 
-#: constants.py:362
+#: constants.py:355
 msgid "Isometric"
 msgstr "Rovnoměrný"
 
-#: constants.py:369
+#: constants.py:362
 msgid "Airways"
 msgstr "Dýchací cesty"
 
-#: constants.py:370
+#: constants.py:363
 msgid "Airways II"
 msgstr "Dýchací cesty II"
 
-#: constants.py:371
+#: constants.py:364
 msgid "Black & White"
 msgstr "Černá a bílá"
 
-#: constants.py:372
+#: constants.py:365
 msgid "Bone + Skin"
 msgstr "Kost a kůže"
 
-#: constants.py:373
+#: constants.py:366
 msgid "Bone + Skin II"
 msgstr "Kost a kůže II"
 
-#: constants.py:374
+#: constants.py:367
 msgid "Dark bone"
 msgstr "Tmavá kost"
 
-#: constants.py:375
+#: constants.py:368
 msgid "Glossy"
 msgstr "Lesklý"
 
-#: constants.py:376
+#: constants.py:369
 msgid "Glossy II"
 msgstr "Lesklý II"
 
-#: constants.py:377
+#: constants.py:370
 msgid "Gold bone"
 msgstr "Zlatá kost"
 
-#: constants.py:378
+#: constants.py:371
 msgid "High contrast"
 msgstr "Vysoký kontrast"
 
-#: constants.py:379
+#: constants.py:372
 msgid "Low contrast"
 msgstr "Nízký kontrast"
 
-#: constants.py:380 constants.py:388
+#: constants.py:373 constants.py:381
 msgid "Soft on white"
 msgstr "Měkká na bílé"
 
-#: constants.py:381
+#: constants.py:374
 msgid "Mid contrast"
 msgstr "Střední kontrast"
 
-#: constants.py:382
+#: constants.py:375
 msgid "MIP"
-msgstr ""
+msgstr "MIP"
 
-#: constants.py:383
+#: constants.py:376
 msgid "No shading"
 msgstr "Bez stínování"
 
-#: constants.py:384
+#: constants.py:377
 msgid "Pencil"
 msgstr "Tužka"
 
-#: constants.py:385
+#: constants.py:378
 msgid "Red on white"
 msgstr "Červená a bílá"
 
-#: constants.py:386
+#: constants.py:379
 msgid "Skin on blue"
 msgstr "Kůže na modré"
 
-#: constants.py:387
+#: constants.py:380
 msgid "Skin on blue II"
 msgstr "Kůže na modré II"
 
-#: constants.py:389
+#: constants.py:382
 msgid "Soft + Skin"
 msgstr "Měkká a kůže"
 
-#: constants.py:390
+#: constants.py:383
 msgid "Soft + Skin II"
 msgstr "Měkká a kůže II"
 
-#: constants.py:391
+#: constants.py:384
 msgid "Soft + Skin III"
 msgstr "Měkká a kůže III"
 
-#: constants.py:392
+#: constants.py:385
 msgid "Soft on blue"
 msgstr "Měkká na modré"
 
-#: constants.py:393
+#: constants.py:386
 msgid "Soft"
 msgstr "Měkká"
 
-#: constants.py:394
+#: constants.py:387
 msgid "Standard"
 msgstr "Obvyklý"
 
-#: constants.py:395
+#: constants.py:388
 msgid "Vascular"
 msgstr "Cévní"
 
-#: constants.py:396
+#: constants.py:389
 msgid "Vascular II"
 msgstr "Cévní II"
 
-#: constants.py:397
+#: constants.py:390
 msgid "Vascular III"
 msgstr "Cévní III"
 
-#: constants.py:398
+#: constants.py:391
 msgid "Vascular IV"
 msgstr "Cévní IV"
 
-#: constants.py:399
+#: constants.py:392
 msgid "Yellow bone"
 msgstr "Žlutá kost"
 
-#: constants.py:425 volume.py:647
+#: constants.py:418 volume.py:647
 msgid "Cut plane"
 msgstr "Rovina řezu"
 
-#: constants.py:663
+#: constants.py:653
 msgid "Select tracker:"
-msgstr ""
+msgstr "Vybrat sledovač:"
 
-#: constants.py:663
+#: constants.py:653
 msgid "Claron MicronTracker"
-msgstr ""
+msgstr "Claron MicronTracker"
 
-#: constants.py:664
+#: constants.py:654
 msgid "Polhemus FASTRAK"
-msgstr ""
+msgstr "Polhemus FASTRAK"
 
-#: constants.py:664
+#: constants.py:654
 msgid "Polhemus ISOTRAK II"
-msgstr ""
+msgstr "Polhemus ISOTRAK II"
 
-#: constants.py:665
+#: constants.py:655
 msgid "Polhemus PATRIOT"
-msgstr ""
+msgstr "Polhemus PATRIOT"
 
-#: constants.py:665
+#: constants.py:655
 msgid "Debug tracker"
-msgstr ""
+msgstr "Ladit sledovač"
 
-#: constants.py:666
+#: constants.py:656
 msgid "Disconnect tracker"
-msgstr ""
+msgstr "Odpojit sledovač"
 
-#: constants.py:671
+#: constants.py:661
 msgid "Static ref."
-msgstr ""
+msgstr "Trvalý odkaz"
+
+#: constants.py:661
+msgid "Dynamic ref."
+msgstr "Dynamický odkaz"
 
 #: constants.py:671
-msgid "Dynamic ref."
-msgstr ""
+msgid "LEI"
+msgstr "LEI"
+
+#: constants.py:672
+msgid "REI"
+msgstr "REI"
+
+#: constants.py:673
+msgid "NAI"
+msgstr "NAI"
+
+#: constants.py:675
+msgid "Select left ear in image"
+msgstr "Vybrat v obrázku levé ucho"
+
+#: constants.py:676
+msgid "Select right ear in image"
+msgstr "Vybrat v obrázku pravé ucho"
+
+#: constants.py:677
+msgid "Select nasion in image"
+msgstr "Vybrat v obrázku nasion"
+
+#: constants.py:679
+msgid "LET"
+msgstr "LET"
+
+#: constants.py:680
+msgid "RET"
+msgstr "RET"
 
 #: constants.py:681
-msgid "LEI"
-msgstr ""
+msgid "NAT"
+msgstr "NAT"
 
 #: constants.py:682
-msgid "REI"
-msgstr ""
-
-#: constants.py:683
-msgid "NAI"
-msgstr ""
-
-#: constants.py:689
-msgid "Select left ear in image"
-msgstr ""
-
-#: constants.py:690
-msgid "Select right ear in image"
-msgstr ""
-
-#: constants.py:691
-msgid "Select nasion in image"
-msgstr ""
-
-#: constants.py:693
-msgid "LET"
-msgstr ""
-
-#: constants.py:694
-msgid "RET"
-msgstr ""
-
-#: constants.py:695
-msgid "NAT"
-msgstr ""
-
-#: constants.py:696
 msgid "SET"
-msgstr ""
+msgstr "SET"
 
-#: constants.py:698
+#: constants.py:684
 msgid "Select left ear with spatial tracker"
-msgstr ""
+msgstr "Vybrat levé ucho pomocí prostorového sledovače"
 
-#: constants.py:699
+#: constants.py:685
 msgid "Select right ear with spatial tracker"
-msgstr ""
+msgstr "Vybrat pravé ucho pomocí prostorového sledovače"
 
-#: constants.py:700
+#: constants.py:686
 msgid "Select nasion with spatial tracker"
-msgstr ""
+msgstr "Vybrat nasion pomocí prostorového sledovače"
 
-#: constants.py:701
+#: constants.py:687
 msgid "Show set coordinates in image"
-msgstr ""
+msgstr "Ukázat v obrázku souřadnice sady"
 
 #: control.py:382
 #, python-format
 msgid "Loading file %d of %d ..."
 msgstr "Nahrává se soubor %d z %d..."
 
-#: control.py:820
+#: control.py:818
 msgid "Fix gantry tilt applying the degrees below"
 msgstr "Změnit naklonění nosné konstrukce o níže uvedený počet stupňů"
 
@@ -536,12 +535,12 @@ msgstr "Úhlový"
 msgid "3D"
 msgstr "Trojrozměrný"
 
-#: data_notebook.py:50 dialogs.py:1964 dialogs.py:2115 dialogs.py:2134
+#: data_notebook.py:50 dialogs.py:1912 dialogs.py:2063 dialogs.py:2082
 #: measures.py:22
 msgid "Axial"
 msgstr "Osový"
 
-#: data_notebook.py:51 dialogs.py:1964 dialogs.py:2115 dialogs.py:2135
+#: data_notebook.py:51 dialogs.py:1912 dialogs.py:2063 dialogs.py:2083
 #: measures.py:23
 msgid "Coronal"
 msgstr "Věnčitý"
@@ -562,88 +561,48 @@ msgstr "Trojrozměrné povrchy"
 msgid "Measures"
 msgstr "Měření"
 
-#: data_notebook.py:165
-msgid "Create a new measure"
-msgstr ""
-
-#: data_notebook.py:172
-msgid "Remove measure"
-msgstr ""
-
-#: data_notebook.py:178
-msgid "Duplicate measure"
-msgstr ""
-
-#: data_notebook.py:191 frame.py:1400
+#: data_notebook.py:186 frame.py:1328
 msgid "Measure distance"
 msgstr "Změřit vzdálenost"
 
-#: data_notebook.py:194 frame.py:1406
+#: data_notebook.py:189 frame.py:1334
 msgid "Measure angle"
 msgstr "Změřit úhel"
 
-#: data_notebook.py:283
-msgid "Create a new mask"
-msgstr ""
-
-#: data_notebook.py:289
-msgid "Remove mask"
-msgstr ""
-
-#: data_notebook.py:295
-msgid "Duplicate mask"
-msgstr ""
-
-#: data_notebook.py:456 data_notebook.py:802 data_notebook.py:1066
-#: data_notebook.py:1263
+#: data_notebook.py:446 data_notebook.py:771 data_notebook.py:1035
+#: data_notebook.py:1232
 msgid "Name"
 msgstr "Název"
 
-#: data_notebook.py:520 frame.py:832
+#: data_notebook.py:510 frame.py:780
 msgid "Mask"
 msgstr "Maska"
 
-#: data_notebook.py:615
-msgid "Create a new surface"
-msgstr ""
-
-#: data_notebook.py:621
-msgid "Remove surface"
-msgstr ""
-
-#: data_notebook.py:627
-msgid "Duplicate surface"
-msgstr ""
-
-#: data_notebook.py:633
-msgid "Import a surface file into InVesalius"
-msgstr ""
-
-#: data_notebook.py:661 task_surface.py:141
+#: data_notebook.py:635 task_surface.py:141
 msgid "New surface"
 msgstr "Nový povrch"
 
-#: data_notebook.py:803
+#: data_notebook.py:772
 msgid "Volume (mm³)"
 msgstr "Objem (mm³)"
 
-#: data_notebook.py:804
+#: data_notebook.py:773
 msgid "Area (mm²)"
-msgstr ""
+msgstr "Oblast (mm²)"
 
-#: data_notebook.py:805
+#: data_notebook.py:774
 msgid "Transparency"
 msgstr "Průhlednost"
 
-#: data_notebook.py:1067
+#: data_notebook.py:1036
 msgid "Location"
 msgstr "Místo"
 
-#: data_notebook.py:1068 data_notebook.py:1264 import_bitmap_panel.py:203
+#: data_notebook.py:1037 data_notebook.py:1233 import_bitmap_panel.py:203
 msgid "Type"
 msgstr "Typ"
 
-#: data_notebook.py:1069 data_notebook.py:1265
+#: data_notebook.py:1038 data_notebook.py:1234
 msgid "Value"
 msgstr "Hodnota"
 
@@ -667,9 +626,9 @@ msgstr "Nastavit trojrozměrný povrch"
 msgid "Export data"
 msgstr "Vyvést data"
 
-#: default_tasks.py:254 default_tasks.py:324
+#: default_tasks.py:254
 msgid "Navigation system"
-msgstr ""
+msgstr "Systém pro pohyb"
 
 #: default_viewers.py:82 default_viewers.py:171 task_exporter.py:247
 msgid "Axial slice"
@@ -695,7 +654,7 @@ msgstr "Název přednastavení"
 msgid "Save raycasting preset"
 msgstr "Uložit přednastavení"
 
-#: default_viewers.py:473 frame.py:903
+#: default_viewers.py:473 frame.py:854
 msgid "Tools"
 msgstr "Nástroje"
 
@@ -712,194 +671,186 @@ msgid ""
 "InVesalius is running on a 32-bit operating system or has insufficient memory. \n"
 "If you want to work with 3D surfaces or volume rendering, \n"
 "it is recommended to reduce the medical images resolution."
-msgstr ""
+msgstr "InVesalius běží na 32-bitovém operačním systému nebo má nedostatek paměti. \nPokud chcete pracovat s trojrozměrnými povrchy nebo vykreslit objem, \ndoporučuje se zmenšit rozlišení lékařských obrázků."
 
 #: dialogs.py:130
 msgid "Percentage of original resolution"
-msgstr ""
+msgstr "Procento původního rozlišení"
 
 #: dialogs.py:178
 msgid "Loading DICOM files"
 msgstr "Nahrávají se soubory DICOM"
 
-#: dialogs.py:236
+#: dialogs.py:230
 msgid "Open InVesalius 3 project..."
 msgstr "Otevřít projekt InVesalius 3"
 
-#: dialogs.py:274
+#: dialogs.py:268
 msgid "Choose a DICOM folder:"
 msgstr "Vybrat složku s DICOM:"
 
-#: dialogs.py:315
+#: dialogs.py:309
 msgid "Choose a folder with TIFF, BMP, JPG or PNG:"
-msgstr ""
+msgstr "Vybrat složku s TIFF, BMP, JPG nebo PNG:"
+
+#: dialogs.py:341
+msgid "Import Analyze 7.5 file"
+msgstr "Zavést soubor Analyze 7.5"
 
 #: dialogs.py:347
-msgid "Import Analyze 7.5 file"
-msgstr ""
-
-#: dialogs.py:353
 msgid "Import NIFTi 1 file"
-msgstr ""
+msgstr "Zavést soubor NIFTi 1"
 
-#: dialogs.py:356
+#: dialogs.py:350
 msgid "Import PAR/REC file"
-msgstr ""
+msgstr "Zavést soubor PAR/REC"
 
-#: dialogs.py:388
-msgid "Import surface file"
-msgstr ""
-
-#: dialogs.py:421 frame.py:734
+#: dialogs.py:382 frame.py:692
 msgid "Save project as..."
 msgstr "Uložit projekt jako..."
 
-#: dialogs.py:424
+#: dialogs.py:385
 msgid "InVesalius project (*.inv3)|*.inv3"
 msgstr "Projekt InVesalius (*.inv3)|*.inv3"
 
-#: dialogs.py:453
+#: dialogs.py:414
 msgid "Save markers as..."
-msgstr ""
+msgstr "Uložit značky jako..."
 
-#: dialogs.py:456 dialogs.py:487
-msgid "Markers files (*.mks)|*.mks"
-msgstr ""
+#: dialogs.py:417
+msgid "Markers (*.txt)|*.txt"
+msgstr "Značky (*.txt)|*.txt"
 
-#: dialogs.py:484
+#: dialogs.py:445
 msgid "Load markers"
-msgstr ""
+msgstr "Nahrát značky"
 
-#: dialogs.py:550 utils.py:377
+#: dialogs.py:510 utils.py:377
 msgid ""
 "A new version of InVesalius is available. Do you want to open the download "
 "website now?"
-msgstr ""
+msgstr "Je dostupná nová verze programu InVesalius. Chcete nyní otevřít stránku pro stahování?"
 
-#: dialogs.py:551 utils.py:378
+#: dialogs.py:511 utils.py:378
 msgid "Invesalius Update"
-msgstr ""
+msgstr "Aktualizace InVesalius"
 
-#: dialogs.py:609 dialogs.py:998 dialogs.py:1023
+#: dialogs.py:569 dialogs.py:946 dialogs.py:971
 #, python-format
 msgid ""
 "The project %s has been modified.\n"
 "Save changes?"
 msgstr "Projekt %s byl změněn.\nUložit změny?"
 
-#: dialogs.py:623
+#: dialogs.py:583
 #, python-format
 msgid "%s is an empty folder."
-msgstr ""
+msgstr "%s je prázdná složka."
 
-#: dialogs.py:638
+#: dialogs.py:598
 msgid "There are no Bitmap, JPEG, PNG or TIFF files in the selected folder."
-msgstr ""
+msgstr "Ve vybrané složce nejsou žádné soubory Bitmap, JPEG, PNG nebo TIFF."
 
-#: dialogs.py:640
+#: dialogs.py:600
 msgid "There are no DICOM files in the selected folder."
-msgstr ""
+msgstr "Ve vybrané složce nejsou žádné soubory DICOM."
 
-#: dialogs.py:653
+#: dialogs.py:613
 msgid "Warning! InVesalius has limited support to Analyze format.\n"
-msgstr ""
+msgstr "Varování! InVesalius má omezenou podporu pro formát Analyze.\n"
 
-#: dialogs.py:654
+#: dialogs.py:614
 msgid "Slices may be wrongly oriented and functions may not work properly."
-msgstr ""
+msgstr "Řezy mohou být špatně natočeny a funkce nemusí pracovat správně."
 
-#: dialogs.py:666
+#: dialogs.py:626
 msgid "A mask is needed to create a surface."
-msgstr ""
+msgstr "K vytvoření povrchu je potřeba maska."
 
-#: dialogs.py:677
+#: dialogs.py:637
 msgid "No mask was selected for removal."
-msgstr ""
+msgstr "Pro odstranění nebyla vybrána žádná maska."
 
-#: dialogs.py:688
+#: dialogs.py:648
 msgid "No surface was selected for removal."
-msgstr ""
+msgstr "Pro odstranění nebyl vybrán žádný povrch."
 
-#: dialogs.py:700
+#: dialogs.py:660
 msgid "No measure was selected for removal."
-msgstr ""
+msgstr "Pro odstranění nebylo vybráno žádné měření."
 
-#: dialogs.py:711
+#: dialogs.py:671
 msgid "No mask was selected for duplication."
-msgstr ""
+msgstr "Pro zdvojení nebyla vybrána žádná maska."
 
-#: dialogs.py:724
+#: dialogs.py:684
 msgid "No surface was selected for duplication."
-msgstr ""
+msgstr "Pro zdvojení nebyl vybrán žádný povrch."
 
-#: dialogs.py:737
+#: dialogs.py:697
 msgid "Fiducials are invalid. Select six coordinates."
-msgstr ""
+msgstr "Výchozí jsou neplatné. Vyberte šest souřadnic."
 
-#: dialogs.py:759
+#: dialogs.py:719
 msgid "No tracking device selected"
-msgstr ""
+msgstr "Nevybráno žádné sledovací zařízení"
 
-#: dialogs.py:761
+#: dialogs.py:721
 msgid " is not installed."
-msgstr ""
+msgstr "není nainstalováno."
+
+#: dialogs.py:723
+msgid " disconnected."
+msgstr "odpojeno."
+
+#: dialogs.py:725
+msgid " is not connected."
+msgstr "není připojeno."
+
+#: dialogs.py:739
+msgid "The TXT file is invalid."
+msgstr "Soubor TXT je neplatný"
+
+#: dialogs.py:751
+msgid "No data selected"
+msgstr "Nevybrána žádná data"
 
 #: dialogs.py:763
-msgid " disconnected."
-msgstr ""
-
-#: dialogs.py:765
-msgid " is not connected."
-msgstr ""
-
-#: dialogs.py:779
-msgid "The TXT file is invalid."
-msgstr ""
-
-#: dialogs.py:791
-msgid "No data selected"
-msgstr ""
-
-#: dialogs.py:802
-msgid "Do you really want to delete all markers?"
-msgstr ""
-
-#: dialogs.py:815
 msgid "Edit marker ID"
-msgstr ""
+msgstr "Upravit ID značky"
 
-#: dialogs.py:862
+#: dialogs.py:810
 msgid "New mask name:"
 msgstr "Nový název masky:"
 
-#: dialogs.py:866
+#: dialogs.py:814
 msgid "Name the mask to be created"
 msgstr "Název masky, která se má vytvořit"
 
-#: dialogs.py:873
+#: dialogs.py:821
 msgid "Threshold preset:"
 msgstr "Přednastavení prahu:"
 
-#: dialogs.py:960 presets.py:46 presets.py:64 presets.py:120 presets.py:151
-#: slice_menu.py:128 slice_menu.py:264 task_slice.py:550 task_slice.py:552
-#: task_slice.py:564 task_slice.py:566 task_slice.py:609 task_slice.py:612
+#: dialogs.py:908 presets.py:46 presets.py:64 presets.py:120 presets.py:151
+#: slice_menu.py:128 slice_menu.py:264 task_slice.py:536 task_slice.py:538
+#: task_slice.py:550 task_slice.py:552 task_slice.py:595 task_slice.py:598
 msgid "Custom"
 msgstr "Vlastní"
 
-#: dialogs.py:975
+#: dialogs.py:923
 #, python-format
 msgid "%s does not exist."
 msgstr "%s neexistuje."
 
-#: dialogs.py:986
+#: dialogs.py:934
 msgid "Please, provide more than one DICOM file for 3D reconstruction"
 msgstr "Poskytněte, prosím, pro trojrozměrné opětné sestrojení více než jeden soubor DICOM"
 
-#: dialogs.py:1047
+#: dialogs.py:995
 msgid "(c) 2007-2017 Center for Information Technology Renato Archer - CTI"
-msgstr ""
+msgstr "(c) 2007-2017 Center for Information Technology Renato Archer - CTI"
 
-#: dialogs.py:1048
+#: dialogs.py:996
 msgid ""
 "InVesalius is a medical imaging program for 3D reconstruction. It uses a sequence of 2D DICOM image files acquired with CT or MRI scanners. InVesalius allows exporting 3D volumes or surfaces as mesh files for creating physical models of a patient's anatomy using additive manufacturing (3D printing) technologies. The software is developed by Center for Information Technology Renato Archer (CTI), National Council for Scientific and Technological Development (CNPq) and the Brazilian Ministry of Health.\n"
 "\n"
@@ -908,316 +859,312 @@ msgid ""
 " Contact: invesalius@cti.gov.br"
 msgstr ""
 
-#: dialogs.py:1056
+#: dialogs.py:1004
 msgid "GNU GPL (General Public License) version 2"
 msgstr "GNU GPL (General Public License) Verze 2"
 
-#: dialogs.py:1096
+#: dialogs.py:1044
 msgid "Save raycasting preset as:"
 msgstr "Uložit přednastavení s vrhem paprsků jako:"
 
-#: dialogs.py:1139 dialogs.py:1397
+#: dialogs.py:1087 dialogs.py:1345
 msgid "New surface name:"
 msgstr "Název nového povrchu"
 
-#: dialogs.py:1143 dialogs.py:1401
+#: dialogs.py:1091 dialogs.py:1349
 msgid "Name the surface to be created"
 msgstr "Název povrchu, který se má vytvořit"
 
-#: dialogs.py:1150 dialogs.py:1408
+#: dialogs.py:1098 dialogs.py:1356
 msgid "Mask of reference:"
 msgstr "Srovnávací maska:"
 
-#: dialogs.py:1168 dialogs.py:1426
+#: dialogs.py:1116 dialogs.py:1374
 msgid "Surface quality:"
 msgstr "Jakost povrchu:"
 
-#: dialogs.py:1197 dialogs.py:1454 styles.py:1668
+#: dialogs.py:1145 dialogs.py:1402 styles.py:1668
 msgid "Fill holes"
-msgstr "Vyplnit díry"
+msgstr "Vyplnit otvory"
 
-#: dialogs.py:1200 dialogs.py:1457
+#: dialogs.py:1148 dialogs.py:1405
 msgid "Keep largest region"
 msgstr "Zachovat největší oblast"
 
-#: dialogs.py:1240
+#: dialogs.py:1188
 msgid "BMP image"
 msgstr "Obrázek BMP"
 
-#: dialogs.py:1241
+#: dialogs.py:1189
 msgid "JPG image"
 msgstr "Obrázek JPG"
 
-#: dialogs.py:1242
+#: dialogs.py:1190
 msgid "PNG image"
 msgstr "Obrázek PNG"
 
-#: dialogs.py:1243
+#: dialogs.py:1191
 msgid "PostScript document"
 msgstr "Postskriptový dokument"
 
-#: dialogs.py:1244
+#: dialogs.py:1192
 msgid "POV-Ray file"
 msgstr "Soubor POV-Ray"
 
-#: dialogs.py:1245
+#: dialogs.py:1193
 msgid "TIFF image"
 msgstr "Obrázek TIFF"
 
-#: dialogs.py:1290
+#: dialogs.py:1238
 msgid "Surface generation options"
 msgstr "Volby pro vytvoření povrchu"
 
-#: dialogs.py:1320
+#: dialogs.py:1268
 msgid "Surface creation"
 msgstr "Vytvoření povrchu"
 
-#: dialogs.py:1347
+#: dialogs.py:1295
 msgid "Surface creation options"
 msgstr "Volby pro vytvoření povrchu"
 
-#: dialogs.py:1353
+#: dialogs.py:1301
 msgid "Surface creation method"
 msgstr "Postup pro vytvoření povrchu"
 
-#: dialogs.py:1502 frame.py:905
+#: dialogs.py:1450 frame.py:856
 msgid "Options"
 msgstr "Volby"
 
-#: dialogs.py:1518
+#: dialogs.py:1466
 msgid "Angle:"
 msgstr "Úhel:"
 
-#: dialogs.py:1520
+#: dialogs.py:1468
 msgid "Max. distance:"
 msgstr "Největší vzdálenost:"
 
-#: dialogs.py:1522
+#: dialogs.py:1470
 msgid "Min. weight:"
 msgstr "Nejmenší váha"
 
-#: dialogs.py:1524
+#: dialogs.py:1472
 msgid "N. steps:"
-msgstr ""
+msgstr "Č. kroku:"
 
-#: dialogs.py:1543 dialogs.py:1579 dialogs.py:1624
+#: dialogs.py:1491 dialogs.py:1527 dialogs.py:1572
 msgid "Context aware smoothing"
-msgstr ""
+msgstr "Vyhlazování dle souvislosti"
 
-#: dialogs.py:1544
+#: dialogs.py:1492
 msgid "Binary"
 msgstr "Binární"
 
-#: dialogs.py:1562
+#: dialogs.py:1510
 msgid ""
 "It is not possible to use the Default method because the mask was edited."
-msgstr ""
+msgstr "Není možné použít výchozí způsob, protože maska byla upravena."
 
-#: dialogs.py:1565
+#: dialogs.py:1513
 msgid "Method:"
 msgstr "Metoda:"
 
-#: dialogs.py:1694 dialogs.py:2602
+#: dialogs.py:1642 dialogs.py:2550
 msgid "Method"
 msgstr "Metoda"
 
-#: dialogs.py:1717
+#: dialogs.py:1665
 msgid "Gaussian sigma"
 msgstr "Gaussova směrodatná odchylka (sigma)"
 
-#: dialogs.py:1739 frame.py:807 task_slice.py:285
+#: dialogs.py:1687 task_slice.py:285
 msgid "Watershed"
 msgstr "Předěl"
 
-#: dialogs.py:1780 frame.py:776
+#: dialogs.py:1728 frame.py:753
 msgid "Boolean operations"
 msgstr "Booleánské operace"
 
-#: dialogs.py:1803 slice_.py:1314
+#: dialogs.py:1751 slice_.py:1314
 msgid "Union"
 msgstr "Sjednocení"
 
-#: dialogs.py:1804
+#: dialogs.py:1752
 msgid "Difference"
 msgstr "Rozdíl"
 
-#: dialogs.py:1805 slice_.py:1316
+#: dialogs.py:1753 slice_.py:1316
 msgid "Intersection"
 msgstr "Průnik"
 
-#: dialogs.py:1806
+#: dialogs.py:1754
 msgid "Exclusive disjunction"
-msgstr ""
+msgstr "Výhradní rozpojení"
 
-#: dialogs.py:1827
+#: dialogs.py:1775
 msgid "Mask 1"
 msgstr "Maska 1"
 
-#: dialogs.py:1829
+#: dialogs.py:1777
 msgid "Operation"
 msgstr "Operace"
 
-#: dialogs.py:1831
+#: dialogs.py:1779
 msgid "Mask 2"
 msgstr "Maska 2"
 
-#: dialogs.py:1860
+#: dialogs.py:1808
 msgid "Image reorientation"
-msgstr ""
+msgstr "Znovunatočení obrázku"
 
-#: dialogs.py:1872
+#: dialogs.py:1820
 msgid "Apply"
-msgstr ""
+msgstr "Použít"
 
-#: dialogs.py:1876
+#: dialogs.py:1824
 msgid "Angle X"
-msgstr ""
+msgstr "Úhel X"
 
-#: dialogs.py:1880
+#: dialogs.py:1828
 msgid "Angle Y"
-msgstr ""
+msgstr "Úhel Y"
 
-#: dialogs.py:1884
+#: dialogs.py:1832
 msgid "Angle Z"
-msgstr ""
+msgstr "Úhel Z"
 
-#: dialogs.py:1933
+#: dialogs.py:1881
 msgid "Create project from bitmap"
-msgstr ""
+msgstr "Vytvořit projekt z bitmapy"
 
-#: dialogs.py:1960
+#: dialogs.py:1908
 msgid "Project name:"
-msgstr ""
+msgstr "Název projektu:"
 
-#: dialogs.py:1963
+#: dialogs.py:1911
 msgid "Slices orientation:"
-msgstr ""
+msgstr "Natočení řezů:"
 
-#: dialogs.py:1964 dialogs.py:2115 dialogs.py:2136
+#: dialogs.py:1912 dialogs.py:2063 dialogs.py:2084
 msgid "Sagital"
-msgstr ""
+msgstr "Sagitální (předozadní)"
 
-#: dialogs.py:1968
+#: dialogs.py:1916
 msgid "Spacing (mm):"
-msgstr ""
+msgstr "Rozestupy (mm):"
 
-#: dialogs.py:1983
+#: dialogs.py:1931
 msgid "X:"
-msgstr ""
+msgstr "X:"
 
-#: dialogs.py:1988
+#: dialogs.py:1936
 msgid "Y:"
-msgstr ""
+msgstr "Y:"
 
-#: dialogs.py:1992
+#: dialogs.py:1940
 msgid "Z:"
-msgstr ""
+msgstr "Z:"
 
-#: dialogs.py:2070
+#: dialogs.py:2018
 msgid ""
 "All bitmaps files must be the same \n"
 " width and height size."
-msgstr ""
+msgstr "Všechny soubory s bitmapami musí mít\nstejnou velikost šířky a výšky."
 
-#: dialogs.py:2083
+#: dialogs.py:2031
 msgid "2D - Actual slice"
-msgstr ""
+msgstr "2D - skutečný řez"
 
-#: dialogs.py:2084
+#: dialogs.py:2032
 msgid "3D - All slices"
-msgstr ""
+msgstr "3D - všechny řezy"
 
-#: dialogs.py:2109
+#: dialogs.py:2057
 msgid "2D Connectivity"
-msgstr ""
+msgstr "Propojitelnost 2D"
 
-#: dialogs.py:2118
+#: dialogs.py:2066
 msgid "Orientation"
-msgstr ""
+msgstr "Natočení"
 
-#: dialogs.py:2155
+#: dialogs.py:2103
 msgid "3D Connectivity"
-msgstr ""
+msgstr "Propojitelnost 3D"
 
-#: dialogs.py:2222 dialogs.py:2275 task_slice.py:886
+#: dialogs.py:2170 dialogs.py:2223 task_slice.py:872
 msgid "Use WW&WL"
 msgstr "Použít WW&WL"
 
-#: dialogs.py:2240
+#: dialogs.py:2188
 msgid "Deviation"
-msgstr ""
+msgstr "Výchylka"
 
-#: dialogs.py:2242
+#: dialogs.py:2190
 msgid "Min:"
-msgstr ""
+msgstr "Min:"
 
-#: dialogs.py:2245
+#: dialogs.py:2193
 msgid "Max:"
-msgstr ""
+msgstr "Max:"
 
-#: dialogs.py:2298
+#: dialogs.py:2246
 msgid "Multiplier"
-msgstr ""
+msgstr "Násobič"
 
-#: dialogs.py:2301
+#: dialogs.py:2249
 msgid "Iterations"
-msgstr ""
+msgstr "Opakování"
 
-#: dialogs.py:2379 dialogs.py:2593 dialogs.py:2847
+#: dialogs.py:2327 dialogs.py:2541 dialogs.py:2795
 msgid "Parameters"
-msgstr ""
+msgstr "Parametry"
 
-#: dialogs.py:2437
+#: dialogs.py:2385
 msgid "Select mask parts"
-msgstr ""
+msgstr "Vybrat části masky"
 
-#: dialogs.py:2465
+#: dialogs.py:2413
 msgid "Target mask name"
-msgstr ""
+msgstr "Cílový název masky"
 
-#: dialogs.py:2519 frame.py:808 styles.py:2017
+#: dialogs.py:2467 frame.py:784 styles.py:2017
 msgid "Region growing"
-msgstr ""
+msgstr "Rostoucí oblast"
 
-#: dialogs.py:2566
+#: dialogs.py:2514
 msgid "Dynamic"
-msgstr ""
+msgstr "Dynamicky"
 
-#: dialogs.py:2566
+#: dialogs.py:2514
 msgid "Confidence"
-msgstr ""
+msgstr "Důvěra"
 
-#: dialogs.py:2706
+#: dialogs.py:2654
 msgid "Crop mask"
-msgstr ""
+msgstr "Ořezat masku"
 
-#: dialogs.py:2747
+#: dialogs.py:2695
 msgid "Axial:"
-msgstr ""
+msgstr "Osový:"
 
-#: dialogs.py:2749 dialogs.py:2759 dialogs.py:2769
+#: dialogs.py:2697 dialogs.py:2707 dialogs.py:2717
 msgid " - "
-msgstr ""
+msgstr " - "
 
-#: dialogs.py:2757
+#: dialogs.py:2705
 msgid "Sagital:"
-msgstr ""
+msgstr "Sagitální (předozadní):"
 
-#: dialogs.py:2767
+#: dialogs.py:2715
 msgid "Coronal:"
-msgstr ""
+msgstr "Věnčitý:"
 
-#: dialogs.py:2858
+#: dialogs.py:2806
 msgid "Max hole size"
-msgstr ""
+msgstr "Největší velikost otvoru"
 
-#: dialogs.py:2860
+#: dialogs.py:2808
 msgid "voxels"
-msgstr ""
-
-#: dicom.py:1550 dicom.py:1554 dicom.py:1556
-msgid "unnamed"
-msgstr ""
+msgstr "objemových prvků (voxel)"
 
 #: dicom_preview_panel.py:409
 #, python-format
@@ -1229,244 +1176,195 @@ msgstr "%d obrázků"
 msgid "Image %d"
 msgstr "Obrázek %d"
 
-#: frame.py:173
+#: frame.py:171
 msgid "Data panel"
 msgstr "Datový panel"
 
-#: frame.py:179
+#: frame.py:177
 msgid "Preview medical data to be reconstructed"
 msgstr "Náhled na lékařská data, která se mají opět sestrojit"
 
-#: frame.py:185
+#: frame.py:183
 msgid "Preview bitmap to be reconstructed"
-msgstr ""
+msgstr "Náhled na bitmapu, která se má opět sestrojit"
 
-#: frame.py:191
+#: frame.py:189
 msgid "Retrieve DICOM from PACS"
 msgstr "Získat DICOM z PACS"
 
-#: frame.py:499
-msgid "Currently the Navigation mode is only working on Windows"
-msgstr ""
-
-#: frame.py:632 frame.py:787
+#: frame.py:603 frame.py:764
 msgid "Fill holes automatically"
-msgstr ""
+msgstr "Vyplnit otvory automaticky"
 
-#: frame.py:721
+#: frame.py:679
 msgid "Analyze 7.5"
-msgstr ""
+msgstr "Analyze 7.5"
 
-#: frame.py:722
+#: frame.py:680
 msgid "NIfTI 1"
-msgstr ""
+msgstr "NIfTI 1"
 
-#: frame.py:723
+#: frame.py:681
 msgid "PAR/REC"
-msgstr ""
+msgstr "PAR/REC"
 
-#: frame.py:729
+#: frame.py:687
 msgid "Import DICOM...\tCtrl+I"
 msgstr "Zavést DICOM...\tCtrl+I"
 
-#: frame.py:731
+#: frame.py:689
 msgid "Import other files..."
 msgstr "Zavést jiné soubory..."
 
-#: frame.py:732
+#: frame.py:690
 msgid "Open project...\tCtrl+O"
 msgstr "Otevřít projekt...\tCtrl+O"
 
-#: frame.py:733
+#: frame.py:691
 msgid "Save project\tCtrl+S"
 msgstr "Uložit projekt\tCtrl+S"
 
-#: frame.py:735
+#: frame.py:693
 msgid "Close project"
 msgstr "Zavřít projekt"
 
-#: frame.py:744
+#: frame.py:702
 msgid "Exit\tCtrl+Q"
 msgstr "Ukončit\tCtrl+Q"
 
-#: frame.py:756 frame.py:766
+#: frame.py:733 frame.py:743
 msgid "Undo\tCtrl+Z"
 msgstr "Zpět\tCtrl+Z"
 
-#: frame.py:761 frame.py:767
+#: frame.py:738 frame.py:744
 msgid "Redo\tCtrl+Y"
 msgstr "Znovu\tCtrl+Y"
 
-#: frame.py:779
+#: frame.py:756
 msgid "Clean Mask\tCtrl+Shift+A"
 msgstr "Uklidit masku\tCtrl+Shift+A"
 
-#: frame.py:784
+#: frame.py:761
 msgid "Fill holes manually"
-msgstr ""
+msgstr "Vyplnit otvory ručně"
 
-#: frame.py:792 styles.py:1765
+#: frame.py:769 styles.py:1765
 msgid "Remove parts"
-msgstr ""
+msgstr "Odstranit části"
 
-#: frame.py:795
+#: frame.py:772
 msgid "Select parts"
-msgstr ""
+msgstr "Vybrat části"
 
-#: frame.py:800
+#: frame.py:777
 msgid "Crop"
-msgstr ""
+msgstr "Ořezat"
 
-#: frame.py:806
-msgid "Manual segmentation"
-msgstr ""
-
-#: frame.py:816
-msgid "Right - Left"
-msgstr ""
-
-#: frame.py:817
-msgid "Anterior - Posterior"
-msgstr ""
-
-#: frame.py:818
-msgid "Top - Bottom"
-msgstr ""
-
-#: frame.py:821
-msgid "From Right-Left to Anterior-Posterior"
-msgstr ""
-
-#: frame.py:822
-msgid "From Right-Left to Top-Bottom"
-msgstr ""
-
-#: frame.py:823
-msgid "From Anterior-Posterior to Top-Bottom"
-msgstr ""
-
-#: frame.py:825
-msgid "Flip"
-msgstr ""
-
-#: frame.py:826
-msgid "Swap axes"
-msgstr ""
-
-#: frame.py:828
-msgid "Reorient image\tCtrl+Shift+R"
-msgstr ""
-
-#: frame.py:833
+#: frame.py:787
 msgid "Segmentation"
-msgstr ""
+msgstr "Členění"
 
-#: frame.py:839
+#: frame.py:791
+msgid "Reorient image\tCtrl+Shift+R"
+msgstr "Znovunatočit obrázek\tCtrl+Shift+R"
+
+#: frame.py:799
 msgid "Interpolated slices"
-msgstr ""
+msgstr "Pozměněné řezy"
 
-#: frame.py:876
+#: frame.py:836
 msgid "Preferences..."
 msgstr "Nastavení..."
 
-#: frame.py:880
-msgid "Navigation mode"
-msgstr ""
-
-#: frame.py:889
+#: frame.py:840
 msgid "Getting started..."
 msgstr "První kroky..."
 
-#: frame.py:892
+#: frame.py:843
 msgid "About..."
 msgstr "O programu..."
 
-#: frame.py:900
+#: frame.py:851
 msgid "File"
 msgstr "Soubor"
 
-#: frame.py:901
+#: frame.py:852
 msgid "Edit"
 msgstr "Úpravy"
 
-#: frame.py:902
+#: frame.py:853
 msgid "View"
-msgstr ""
+msgstr "Pohled"
 
-#: frame.py:906
-msgid "Mode"
-msgstr ""
-
-#: frame.py:907
+#: frame.py:857
 msgid "Help"
 msgstr "Nápověda"
 
-#: frame.py:1057 surface.py:415 surface.py:807 surface.py:808
-#: task_navigator.py:413 trackers.py:230
+#: frame.py:985 surface.py:383 surface.py:775 surface.py:776
 msgid "Ready"
 msgstr "Připraven"
 
-#: frame.py:1209
+#: frame.py:1137
 msgid "Import DICOM files...\tCtrl+I"
 msgstr "Zavést soubory DICOM\tCtrl+I"
 
-#: frame.py:1218
+#: frame.py:1146
 msgid "Open InVesalius project..."
 msgstr "Otevřít projekt InVesalius 3..."
 
-#: frame.py:1224
+#: frame.py:1152
 msgid "Save InVesalius project"
 msgstr "Uložit projekt InVesalius"
 
-#: frame.py:1370
+#: frame.py:1298
 msgid "Zoom"
 msgstr "Zvětšit"
 
-#: frame.py:1376
+#: frame.py:1304
 msgid "Zoom based on selection"
 msgstr "Zvětšit výběr"
 
-#: frame.py:1382
+#: frame.py:1310
 msgid "Rotate"
 msgstr "Otočit"
 
-#: frame.py:1388
+#: frame.py:1316
 msgid "Move"
 msgstr "Pohybovat"
 
-#: frame.py:1394
+#: frame.py:1322
 msgid "Constrast"
 msgstr "Kontrast"
 
-#: frame.py:1552
+#: frame.py:1480
 msgid "Scroll slices"
 msgstr "Projíždět řezy"
 
-#: frame.py:1558
+#: frame.py:1486
 msgid "Slices' cross intersection"
 msgstr "Křížový průsečík řezů"
 
-#: frame.py:1734 frame.py:1806 frame.py:1985
+#: frame.py:1655 frame.py:1727 frame.py:1906
 msgid "Hide task panel"
 msgstr "Skrýt panel s úkoly"
 
-#: frame.py:1740 frame.py:1828 frame.py:2007
+#: frame.py:1661 frame.py:1749 frame.py:1928
 msgid "Hide text"
 msgstr "Skrýt text"
 
-#: frame.py:1812 frame.py:1991
+#: frame.py:1733 frame.py:1912
 msgid "Show task panel"
 msgstr "Ukázat panel s úkoly"
 
-#: frame.py:1822 frame.py:2001
+#: frame.py:1743 frame.py:1922
 msgid "Show text"
 msgstr "Ukázat text"
 
-#: frame.py:1903
+#: frame.py:1824
 msgid "Undo"
 msgstr "Zpět"
 
-#: frame.py:1910
+#: frame.py:1831
 msgid "Redo"
 msgstr "Znovu"
 
@@ -1481,11 +1379,11 @@ msgstr "Zavést"
 
 #: import_bitmap_panel.py:202
 msgid "Path"
-msgstr ""
+msgstr "Cesta"
 
 #: import_bitmap_panel.py:204
 msgid "Width x Height"
-msgstr ""
+msgstr "Výška x šířka"
 
 #: import_bitmap_panel.py:211 import_network_panel.py:266 import_panel.py:251
 msgid "InVesalius Database"
@@ -1571,7 +1469,7 @@ msgstr "Stav"
 msgid "Add"
 msgstr "Přidat"
 
-#: import_network_panel.py:695 task_navigator.py:590
+#: import_network_panel.py:695 task_navigator.py:563
 msgid "Remove"
 msgstr "Odstranit"
 
@@ -1609,11 +1507,11 @@ msgstr "Nastavení"
 
 #: preferences.py:41
 msgid "2D Visualization"
-msgstr ""
+msgstr "Dvojrozměrné znázornění"
 
 #: preferences.py:42
 msgid "3D Visualization"
-msgstr ""
+msgstr "Trojrozměrné znázornění"
 
 #: preferences.py:43 preferences.py:190
 msgid "Language"
@@ -1629,7 +1527,7 @@ msgstr "Interpolace"
 
 #: preferences.py:113
 msgid "Volume rendering"
-msgstr ""
+msgstr "Vykreslení objemu"
 
 #: preferences.py:116
 msgid "Rendering"
@@ -1641,19 +1539,19 @@ msgstr "GPU (pouze videokarty NVidia)"
 
 #: preferences.py:152
 msgid "Slices"
-msgstr ""
+msgstr "Řezy"
 
 #: preferences.py:155
 msgid "Interpolated "
-msgstr ""
+msgstr "Pozměněno"
 
 #: preferences.py:159
 msgid "Yes"
-msgstr ""
+msgstr "Ano"
 
 #: preferences.py:159
 msgid "No"
-msgstr ""
+msgstr "Ne"
 
 #: preferences.py:193
 msgid ""
@@ -1761,11 +1659,11 @@ msgstr "Nepravá barva"
 msgid "Projection type"
 msgstr "Typ promítání"
 
-#: styles.py:66 task_slice.py:865
+#: styles.py:67 task_slice.py:851
 msgid "Foreground"
 msgstr "Popředí"
 
-#: styles.py:67 task_slice.py:866
+#: styles.py:68 task_slice.py:852
 msgid "Background"
 msgstr "Pozadí"
 
@@ -1775,38 +1673,26 @@ msgstr "Používá se předěl..."
 
 #: styles.py:1669
 msgid "Fill hole"
-msgstr ""
+msgstr "Vyplnit otvor"
 
 #: styles.py:1670
 msgid "Filling hole ..."
-msgstr ""
+msgstr "Vyplňuje se otvor..."
 
 #: styles.py:1766
 msgid "Remove part"
-msgstr ""
+msgstr "Odstranit část"
 
 #: styles.py:1767
 msgid "Removing part ..."
-msgstr ""
+msgstr "Odstraňuje se část..."
 
 #: styles.py:2018
 msgid "Segmenting ..."
-msgstr ""
+msgstr "Člení se..."
 
-#: surface.py:263
-msgid "File format not reconized by InVesalius"
-msgstr ""
-
-#: surface.py:263 surface.py:271
-msgid "Import surface error"
-msgstr ""
-
-#: surface.py:271
-msgid "InVesalius was not able to import this surface"
-msgstr ""
-
-#: surface.py:476 surface.py:567 surface.py:585 surface.py:623 surface.py:652
-#: surface.py:674 surface.py:693 surface.py:707 surface.py:724
+#: surface.py:444 surface.py:535 surface.py:553 surface.py:591 surface.py:620
+#: surface.py:642 surface.py:661 surface.py:675 surface.py:692
 msgid "Creating 3D surface..."
 msgstr "Vytváří se trojrozměrný povrch..."
 
@@ -1844,11 +1730,11 @@ msgstr "Zkouška..."
 
 #: task_importer.py:67
 msgid "Select DICOM, Analyze, NIfTI or REC/PAR files to be reconstructed"
-msgstr ""
+msgstr "Vyberte soubory DICOM, Analyze, NIfTI nebo REC/PAR, které se mají opět sestrojit"
 
 #: task_importer.py:68
 msgid "Import medical images..."
-msgstr ""
+msgstr "Zavést lékařské obrazy..."
 
 #: task_importer.py:87
 msgid "Open an existing InVesalius project..."
@@ -1858,93 +1744,89 @@ msgstr "Otevřít stávající projekt InVesalius..."
 msgid "Open an existing project..."
 msgstr "Otevřít stávající projekt..."
 
-#: task_navigator.py:62
+#: task_navigator.py:63
 msgid "Select fiducials and navigate"
-msgstr ""
+msgstr "Vybrat výchozí a pohybovat se"
 
-#: task_navigator.py:131
+#: task_navigator.py:128
 msgid "Neuronavigation"
-msgstr ""
+msgstr "Neuropohyb"
 
-#: task_navigator.py:140
+#: task_navigator.py:137
 msgid "Extra tools"
-msgstr ""
+msgstr "Další nástroje"
 
-#: task_navigator.py:149
+#: task_navigator.py:146
 msgid "Update camera in volume"
-msgstr ""
+msgstr "Obnovit kameru v objemu"
 
-#: task_navigator.py:150
+#: task_navigator.py:147
 msgid "Volume camera"
-msgstr ""
+msgstr "Kamera objemu"
 
-#: task_navigator.py:156
+#: task_navigator.py:153
 msgid "Enable external trigger for creating markers"
-msgstr ""
+msgstr "Povolit vnější spouštěč pro vytváření značek"
 
-#: task_navigator.py:157
+#: task_navigator.py:154
 msgid "External trigger"
-msgstr ""
+msgstr "Vnější spouštěč"
 
-#: task_navigator.py:227
+#: task_navigator.py:213
 msgid "Choose the tracking device"
-msgstr ""
+msgstr "Vybrat sledovací zařízení"
 
-#: task_navigator.py:235
+#: task_navigator.py:221
 msgid "Choose the navigation reference mode"
-msgstr ""
+msgstr "Vybrat pohybový srovnávací režim"
 
-#: task_navigator.py:269
+#: task_navigator.py:255
 msgid "FRE:"
-msgstr ""
+msgstr "FRE:"
 
-#: task_navigator.py:272
+#: task_navigator.py:258
 msgid "Fiducial registration error"
-msgstr ""
+msgstr "Chyba zapsání výchozího"
 
-#: task_navigator.py:280
+#: task_navigator.py:266
 msgid "Start navigation"
-msgstr ""
+msgstr "Spustit pohyb"
 
-#: task_navigator.py:281
+#: task_navigator.py:267
 msgid "Navigate"
-msgstr ""
+msgstr "Pohybovat se"
 
-#: task_navigator.py:365
-msgid "Configuring tracker ..."
-msgstr ""
-
-#: task_navigator.py:483
+#: task_navigator.py:462
 msgid "Stop neuronavigation"
-msgstr ""
+msgstr "Zastavit neuropohyb"
 
-#: task_navigator.py:516
+#: task_navigator.py:491
 msgid "Start neuronavigation"
-msgstr ""
+msgstr "Spustit neuropohyb"
+
+#: task_navigator.py:539
+msgid "Create marker"
+msgstr "Vytvořit značku"
+
+#: task_navigator.py:548
+msgid "Save"
+msgstr "Uložit"
+
+#: task_navigator.py:551
+msgid "Load"
+msgstr "Nahrát"
+
+#: task_navigator.py:554
+msgid "Hide"
+msgstr "Skrýt"
 
 #: task_navigator.py:566
-msgid "Create marker"
-msgstr ""
+msgid "Delete all markers"
+msgstr "Smazat všechny značky"
 
-#: task_navigator.py:575
-msgid "Save"
-msgstr ""
-
-#: task_navigator.py:578
-msgid "Load"
-msgstr ""
-
-#: task_navigator.py:581
-msgid "Hide"
-msgstr ""
-
-#: task_navigator.py:593
-msgid "Delete all"
-msgstr ""
-
-#: task_navigator.py:637
+#: task_navigator.py:608
 msgid "Edit ID"
-msgstr ""
+msgstr "Upravit ID"
 
 #: task_slice.py:86
 msgid "Create mask for slice segmentation and editing"
@@ -1970,31 +1852,31 @@ msgstr "Vlastnosti masky"
 msgid "Manual edition"
 msgstr "Ruční úprava"
 
-#: task_slice.py:434
+#: task_slice.py:420
 msgid "Set predefined or manual threshold:"
 msgstr "Nastavit přednastavenou nebo ruční hodnotu prahu:"
 
-#: task_slice.py:664 task_slice.py:828
+#: task_slice.py:650 task_slice.py:814
 msgid "Choose brush type, size or operation:"
 msgstr "vybrat štětec, velikost nebo funkci:"
 
-#: task_slice.py:670 task_slice.py:834
+#: task_slice.py:656 task_slice.py:820
 msgid "Circle"
 msgstr "Kruh"
 
-#: task_slice.py:674 task_slice.py:838
+#: task_slice.py:660 task_slice.py:824
 msgid "Square"
 msgstr "Čtverec"
 
-#: task_slice.py:715
+#: task_slice.py:701
 msgid "Brush threshold range:"
 msgstr "Prahová hodnota štětce:"
 
-#: task_slice.py:885
+#: task_slice.py:871
 msgid "Overwrite mask"
 msgstr "Přepsat masku"
 
-#: task_slice.py:895
+#: task_slice.py:881
 msgid "Expand watershed to 3D"
 msgstr "Roztáhnout předěl k 3D"
 
@@ -2069,10 +1951,6 @@ msgstr "Změřit"
 msgid "Add text annotations"
 msgstr "Přidat textové poznámky"
 
-#: trackers.py:202
-msgid "Disconnecting tracker ..."
-msgstr ""
-
 #: viewer_slice.py:68
 msgid "Number of slices used to compound the visualization."
 msgstr "Počet řezů.použitých k poskládání znázornění."
@@ -2091,7 +1969,7 @@ msgstr "Obrácené pořadí"
 msgid ""
 "If checked, the slices are traversed in descending order to compound the "
 "visualization instead of ascending order."
-msgstr ""
+msgstr "Je-li zaškrtnuto, řezy pro složení znázornění leží přes sebe namísto ve vzestupném pořadí v sestupném pořadí."
 
 #: viewer_slice.py:92
 msgid "Number of slices"
@@ -2266,6 +2144,9 @@ msgstr "BA"
 #~ msgid "Untitled"
 #~ msgstr "Untitled"
 
+#~ msgid "unnamed"
+#~ msgstr "unnamed"
+
 #~ msgid "Import DICOM images..."
 #~ msgstr "Import DICOM files..."
 
@@ -2283,6 +2164,9 @@ msgstr "BA"
 
 #~ msgid "Open a InVesalius project..."
 #~ msgstr "Open a InVesalius project..."
+
+#~ msgid "InVesalius 3 - New surface"
+#~ msgstr "InVesalius 3 - New surface"
 
 #~ msgid "Image Tiling"
 #~ msgstr "Image Tiling"
