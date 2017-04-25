@@ -1830,10 +1830,7 @@ class CropMaskInteractorStyle(DefaultInteractorStyle):
         #Publisher.sendMessage('Reload actual slice')
 
     def CleanUp(self):
-
-        for draw in self.viewer.canvas.draw_list:
-             self.viewer.canvas.draw_list.remove(draw)
-
+        self.viewer.canvas.draw_list.remove(self.draw_retangle)
         Publisher.sendMessage('Redraw canvas')
 
     def CropMask(self, pubsub_evt):
