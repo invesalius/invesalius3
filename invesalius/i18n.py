@@ -48,6 +48,8 @@ def GetLocales():
                                 'ca': u'Català',
                                 'ko': u'한국어',
                                 'ro': u'Română',
+                                'ru': u'Русский',
+                                'ja': u'日本語',
                                 }) 
     return d 
  
