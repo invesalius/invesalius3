@@ -132,6 +132,8 @@ class DefaultInteractorStyle(BaseImageInteractorStyle):
     def __init__(self, viewer):
         BaseImageInteractorStyle.__init__(self, viewer)
 
+        self.state_code = const.STATE_DEFAULT
+
         self.viewer = viewer
 
         # Zoom using right button
@@ -194,6 +196,8 @@ class CrossInteractorStyle(DefaultInteractorStyle):
     def __init__(self, viewer):
         DefaultInteractorStyle.__init__(self, viewer)
 
+        self.state_code = const.SLICE_STATE_CROSS
+
         self.viewer = viewer
         self.orientation = viewer.orientation
         self.slice_actor = viewer.slice_data.actor
@@ -207,9 +211,13 @@ class CrossInteractorStyle(DefaultInteractorStyle):
 
     def SetUp(self):
         self.viewer._set_cross_visibility(1)
+        Publisher.sendMessage('Toggle toolbar item',
+                             (self.state_code, True))
 
     def CleanUp(self):
         self.viewer._set_cross_visibility(0)
+        Publisher.sendMessage('Toggle toolbar item',
+                             (self.state_code, False))
 
     def OnCrossMouseClick(self, obj, evt):
         iren = obj.GetInteractor()
@@ -259,6 +267,8 @@ class WWWLInteractorStyle(DefaultInteractorStyle):
     def __init__(self, viewer):
         DefaultInteractorStyle.__init__(self, viewer)
 
+        self.state_code = const.STATE_WL
+
         self.viewer =  viewer
 
         self.last_x = 0
@@ -272,11 +282,15 @@ class WWWLInteractorStyle(DefaultInteractorStyle):
 
     def SetUp(self):
         self.viewer.on_wl = True
+        Publisher.sendMessage('Toggle toolbar item',
+                             (self.state_code, True))
         self.viewer.canvas.draw_list.append(self.viewer.wl_text)
         self.viewer.UpdateCanvas()
 
     def CleanUp(self):
         self.viewer.on_wl = False
+        Publisher.sendMessage('Toggle toolbar item',
+                             (self.state_code, False))
         if self.viewer.wl_text is not None:
             self.viewer.canvas.draw_list.remove(self.viewer.wl_text)
             self.viewer.UpdateCanvas()
@@ -319,6 +333,8 @@ class LinearMeasureInteractorStyle(DefaultInteractorStyle):
     def __init__(self, viewer):
         DefaultInteractorStyle.__init__(self, viewer)
 
+        self.state_code = const.STATE_MEASURE_DISTANCE
+
         self.viewer = viewer
         self.orientation = viewer.orientation
         self.slice_data = viewer.slice_data
@@ -353,6 +369,16 @@ class LinearMeasureInteractorStyle(DefaultInteractorStyle):
         self.AddObserver("LeftButtonReleaseEvent", self.OnReleaseMeasurePoint)
         self.AddObserver("MouseMoveEvent", self.OnMoveMeasurePoint)
         self.AddObserver("LeaveEvent", self.OnLeaveMeasureInteractor)
+
+    def SetUp(self):
+        Publisher.sendMessage('Toggle toolbar item',
+                             (self.state_code, True))
+
+    def CleanUp(self):
+        Publisher.sendMessage('Toggle toolbar item',
+                             (self.state_code, False))
+        self.picker.PickFromListOff()
+        Publisher.sendMessage("Remove incomplete measurements")
 
     def OnInsertMeasurePoint(self, obj, evt):
         slice_number = self.slice_data.number
@@ -442,10 +468,6 @@ class LinearMeasureInteractorStyle(DefaultInteractorStyle):
             self.viewer.UpdateCanvas()
             self.viewer.scroll_enabled = True
 
-    def CleanUp(self):
-        self.picker.PickFromListOff()
-        Publisher.sendMessage("Remove incomplete measurements")
-
     def _get_pos_clicked(self):
         iren = self.viewer.interactor
         mx,my = iren.GetEventPosition()
@@ -496,6 +518,8 @@ class AngularMeasureInteractorStyle(LinearMeasureInteractorStyle):
         LinearMeasureInteractorStyle.__init__(self, viewer)
         self._type = const.ANGULAR
 
+        self.state_code = const.STATE_MEASURE_ANGLE
+
 
 class PanMoveInteractorStyle(DefaultInteractorStyle):
     """
@@ -504,10 +528,20 @@ class PanMoveInteractorStyle(DefaultInteractorStyle):
     def __init__(self, viewer):
         DefaultInteractorStyle.__init__(self, viewer)
 
+        self.state_code = const.STATE_PAN
+
         self.viewer = viewer
 
         self.AddObserver("MouseMoveEvent", self.OnPanMove)
         self.viewer.interactor.Bind(wx.EVT_LEFT_DCLICK, self.OnUnspan)
+
+    def SetUp(self):
+        Publisher.sendMessage('Toggle toolbar item',
+                             (self.state_code, True))
+
+    def CleanUp(self):
+        Publisher.sendMessage('Toggle toolbar item',
+                             (self.state_code, False))
 
     def OnPanMove(self, obj, evt):
         if self.left_pressed:
@@ -529,10 +563,20 @@ class SpinInteractorStyle(DefaultInteractorStyle):
     def __init__(self, viewer):
         DefaultInteractorStyle.__init__(self, viewer)
 
+        self.state_code = const.STATE_SPIN
+
         self.viewer = viewer
 
         self.AddObserver("MouseMoveEvent", self.OnSpinMove)
         self.viewer.interactor.Bind(wx.EVT_LEFT_DCLICK, self.OnUnspin)
+
+    def SetUp(self):
+        Publisher.sendMessage('Toggle toolbar item',
+                             (self.state_code, True))
+
+    def CleanUp(self):
+        Publisher.sendMessage('Toggle toolbar item',
+                             (self.state_code, False))
 
     def OnSpinMove(self, obj, evt):
         iren = obj.GetInteractor()
@@ -563,10 +607,20 @@ class ZoomInteractorStyle(DefaultInteractorStyle):
     def __init__(self, viewer):
         DefaultInteractorStyle.__init__(self, viewer)
 
+        self.state_code = const.STATE_ZOOM
+
         self.viewer = viewer
 
         self.AddObserver("MouseMoveEvent", self.OnZoomMoveLeft)
         self.viewer.interactor.Bind(wx.EVT_LEFT_DCLICK, self.OnUnZoom)
+
+    def SetUp(self):
+        Publisher.sendMessage('Toggle toolbar item',
+                             (self.state_code, True))
+
+    def CleanUp(self):
+        Publisher.sendMessage('Toggle toolbar item',
+                             (self.state_code, False))
 
     def OnZoomMoveLeft(self, obj, evt):
         if self.left_pressed:
@@ -591,6 +645,16 @@ class ZoomSLInteractorStyle(vtk.vtkInteractorStyleRubberBandZoom):
         self.viewer = viewer
         self.viewer.interactor.Bind(wx.EVT_LEFT_DCLICK, self.OnUnZoom)
 
+        self.state_code = const.STATE_ZOOM_SL
+
+    def SetUp(self):
+        Publisher.sendMessage('Toggle toolbar item',
+                             (self.state_code, True))
+
+    def CleanUp(self):
+        Publisher.sendMessage('Toggle toolbar item',
+                             (self.state_code, False))
+
     def OnUnZoom(self, evt):
         mouse_x, mouse_y = self.viewer.interactor.GetLastEventPosition()
         ren = self.viewer.interactor.FindPokedRenderer(mouse_x, mouse_y)
@@ -608,10 +672,20 @@ class ChangeSliceInteractorStyle(DefaultInteractorStyle):
     def __init__(self, viewer):
         DefaultInteractorStyle.__init__(self, viewer)
 
+        self.state_code = const.SLICE_STATE_SCROLL
+
         self.viewer = viewer
 
         self.AddObserver("MouseMoveEvent", self.OnChangeSliceMove)
         self.AddObserver("LeftButtonPressEvent", self.OnChangeSliceClick)
+
+    def SetUp(self):
+        Publisher.sendMessage('Toggle toolbar item',
+                             (self.state_code, True))
+
+    def CleanUp(self):
+        Publisher.sendMessage('Toggle toolbar item',
+                             (self.state_code, False))
 
     def OnChangeSliceMove(self, evt, obj):
         if self.left_pressed:
@@ -649,6 +723,8 @@ class EditorConfig(object):
 class EditorInteractorStyle(DefaultInteractorStyle):
     def __init__(self, viewer):
         DefaultInteractorStyle.__init__(self, viewer)
+
+        self.state_code = const.SLICE_STATE_EDITOR
 
         self.viewer = viewer
         self.orientation = self.viewer.orientation
@@ -934,6 +1010,8 @@ CON3D = {6: 1, 18: 2, 26: 3}
 class WaterShedInteractorStyle(DefaultInteractorStyle):
     def __init__(self, viewer):
         DefaultInteractorStyle.__init__(self, viewer)
+
+        self.state_code = const.SLICE_STATE_WATERSHED
 
         self.viewer = viewer
         self.orientation = self.viewer.orientation
@@ -1402,6 +1480,8 @@ class ReorientImageInteractorStyle(DefaultInteractorStyle):
     def __init__(self, viewer):
         DefaultInteractorStyle.__init__(self, viewer)
 
+        self.state_code = const.SLICE_STATE_REORIENT
+
         self.viewer = viewer
 
         self.line1 = None
@@ -1648,6 +1728,8 @@ class FloodFillMaskInteractorStyle(DefaultInteractorStyle):
     def __init__(self, viewer):
         DefaultInteractorStyle.__init__(self, viewer)
 
+        self.state_code = const.SLICE_STATE_MASK_FFILL
+
         self.viewer = viewer
         self.orientation = self.viewer.orientation
 
@@ -1753,20 +1835,22 @@ class FloodFillMaskInteractorStyle(DefaultInteractorStyle):
 
 
 class RemoveMaskPartsInteractorStyle(FloodFillMaskInteractorStyle):
-        def __init__(self, viewer):
-            FloodFillMaskInteractorStyle.__init__(self, viewer)
-            # InVesalius uses the following values to mark selected parts in a
-            # mask:
-            # 255 - Threshold
-            # 254 - Manual edition and  floodfill
-            # 253 - Watershed
-            self.t0 = 253
-            self.t1 = 255
-            self.fill_value = 1
+    def __init__(self, viewer):
+        FloodFillMaskInteractorStyle.__init__(self, viewer)
 
-            self._dlg_title = _(u"Remove parts")
-            self._progr_title = _(u"Remove part")
-            self._progr_msg = _(u"Removing part ...")
+        self.state_code = const.SLICE_STATE_REMOVE_MASK_PARTS
+        # InVesalius uses the following values to mark selected parts in a
+        # mask:
+        # 255 - Threshold
+        # 254 - Manual edition and  floodfill
+        # 253 - Watershed
+        self.t0 = 253
+        self.t1 = 255
+        self.fill_value = 1
+
+        self._dlg_title = _(u"Remove parts")
+        self._progr_title = _(u"Remove part")
+        self._progr_msg = _(u"Removing part ...")
 
 class CropMaskConfig(object):
     __metaclass__= utils.Singleton
@@ -1774,9 +1858,10 @@ class CropMaskConfig(object):
         self.dlg_visible = False
 
 class CropMaskInteractorStyle(DefaultInteractorStyle):
-
     def __init__(self, viewer):
         DefaultInteractorStyle.__init__(self, viewer)
+
+        self.state_code = const.SLICE_STATE_CROP_MASK
 
         self.viewer = viewer
         self.orientation = self.viewer.orientation
@@ -1784,7 +1869,7 @@ class CropMaskInteractorStyle(DefaultInteractorStyle):
         self.slice_actor = viewer.slice_data.actor
         self.slice_data = viewer.slice_data
         self.draw_retangle = None
-        
+
         self.config = CropMaskConfig()
 
     def __evts__(self):
@@ -1882,6 +1967,8 @@ class SelectPartConfig(object):
 class SelectMaskPartsInteractorStyle(DefaultInteractorStyle):
     def __init__(self, viewer):
         DefaultInteractorStyle.__init__(self, viewer)
+
+        self.state_code = const.SLICE_STATE_SELECT_MASK_PARTS
 
         self.viewer = viewer
         self.orientation = self.viewer.orientation
@@ -2002,6 +2089,8 @@ class FFillSegmentationConfig(object):
 class FloodFillSegmentInteractorStyle(DefaultInteractorStyle):
     def __init__(self, viewer):
         DefaultInteractorStyle.__init__(self, viewer)
+
+        self.state_code = const.SLICE_STATE_FFILL_SEGMENTATION
 
         self.viewer = viewer
         self.orientation = self.viewer.orientation
@@ -2237,9 +2326,6 @@ def get_style(style):
         const.SLICE_STATE_REMOVE_MASK_PARTS: RemoveMaskPartsInteractorStyle,
         const.SLICE_STATE_SELECT_MASK_PARTS: SelectMaskPartsInteractorStyle,
         const.SLICE_STATE_FFILL_SEGMENTATION: FloodFillSegmentInteractorStyle,
-        const.SLICE_STATE_CROP_MASK:CropMaskInteractorStyle,
+        const.SLICE_STATE_CROP_MASK: CropMaskInteractorStyle,
     }
     return STYLES[style]
-
-
-

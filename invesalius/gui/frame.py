@@ -1302,6 +1302,7 @@ class ObjectToolBar(AuiToolBar):
         sub(self._UntoggleAllItems, 'Untoggle object toolbar items')
         sub(self._ToggleLinearMeasure, "Set tool linear measure")
         sub(self._ToggleAngularMeasure, "Set tool angular measure")
+        sub(self.ToggleItem, 'Toggle toolbar item')
 
     def __bind_events_wx(self):
         """
@@ -1487,6 +1488,12 @@ class ObjectToolBar(AuiToolBar):
                 self.ToggleTool(item, False)
         evt.Skip()
 
+    def ToggleItem(self, evt):
+        _id, value = evt.data
+        if _id in self.enable_items:
+            self.ToggleTool(_id, value)
+            self.Refresh()
+
     def SetStateProjectClose(self):
         """
         Disable menu items (e.g. zoom) when project is closed.
@@ -1567,6 +1574,7 @@ class SliceToolBar(AuiToolBar):
         sub(self._EnableState, "Enable state project")
         sub(self._UntoggleAllItems, 'Untoggle slice toolbar items')
         sub(self.OnToggle, 'Toggle Cross')
+        sub(self.ToggleItem, 'Toggle toolbar item')
 
     def __bind_events_wx(self):
         """
@@ -1632,6 +1640,11 @@ class SliceToolBar(AuiToolBar):
         ##print ">>>", self.sst.IsToggled()
         #print ">>>", self.sst.GetState()
 
+    def ToggleItem(self, evt):
+        _id, value = evt.data
+        if _id in self.enable_items:
+            self.ToggleTool(_id, value)
+            self.Refresh()
 
     def SetStateProjectClose(self):
         """

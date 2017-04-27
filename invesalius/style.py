@@ -111,7 +111,6 @@ class StyleStateManager(object):
         return self.stack[max_level]
 
     def GetActualState(self):
-        print self.stack.keys()
         max_level = max(self.stack.keys())
         state = self.stack[max_level]
         return state
