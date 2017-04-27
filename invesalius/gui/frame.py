@@ -451,15 +451,17 @@ class Frame(wx.Frame):
 
         elif id == const.ID_THRESHOLD_SEGMENTATION:
             Publisher.sendMessage("Show panel", const.ID_THRESHOLD_SEGMENTATION)
+            Publisher.sendMessage('Disable actual style')
             Publisher.sendMessage('Enable style', const.STATE_DEFAULT)
 
         elif id == const.ID_MANUAL_SEGMENTATION:
             Publisher.sendMessage("Show panel", const.ID_MANUAL_SEGMENTATION)
+            Publisher.sendMessage('Disable actual style')
             Publisher.sendMessage('Enable style', const.SLICE_STATE_EDITOR)
 
         elif id == const.ID_WATERSHED_SEGMENTATION:
             Publisher.sendMessage("Show panel", const.ID_WATERSHED_SEGMENTATION)
-            #  Publisher.sendMessage('Disable actual style')
+            Publisher.sendMessage('Disable actual style')
             Publisher.sendMessage('Enable style', const.SLICE_STATE_WATERSHED)
 
         elif id == const.ID_FLOODFILL_MASK:
