@@ -62,7 +62,7 @@ msgstr "Hueso"
 
 #: bitmap_preview_panel.py:510 dicom_preview_panel.py:744
 msgid "Auto-play"
-msgstr "Jugar"
+msgstr "Reproducir"
 
 #: clut_raycasting.py:535
 #, python-format
