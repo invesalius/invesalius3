@@ -676,13 +676,15 @@ class MarkersPanel(wx.Panel):
                                 self.lc.Focus(item.GetId())
                 index = [self.lc.GetFocusedItem()]
         else:
-            if self.lc.GetFocusedItem() is not -1:
+            if self.lc.GetFirstSelected() is not -1:
                 index = self.GetSelectedItems()
-            elif not self.lc.GetItemCount():
-                pass
             else:
-                dlg.NoMarkerSelected()
-        self.DeleteMarker(index)
+                index = None
+
+        if index:
+            self.DeleteMarker(index)
+        else:
+            dlg.NoMarkerSelected()
 
     def DeleteMarker(self, index):
         for i in reversed(index):
