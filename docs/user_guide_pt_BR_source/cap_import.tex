@@ -233,7 +233,7 @@ A exemplo da importação de arquivos DICOM, é possível pular imagens BMP para
 
 Para a reconstrução desse tipo de arquivo é necessário definir um nome para o projeto, indicar qual a orientação das imagens (axial, coronal ou sagital), espaçamento do voxel ($X$, $Y$ e $Z$) em \textbf{milímetros} como mostra a figura~\ref{fig:import_bmp_spacing_pt}. O espaçamento do voxel em $X$ é largura do pixel de cada imagem, $Y$ o comprimento do pixel e $Z$ representa a distância de cada fatia (altura do voxel). 
 
-Caso o conjunto de imagens seja de imagens de microtomografia, mais especificamente de equipamentos das marcas GE e Brucker, é possível que o InVesalius realize a leitura do arquivo texto com os parâmetros de aquisição que normalmente fica na mesma pasta das imagens e insira automaticamente o espaçamento. Essa constatação pode ser feita quando os valores de $X$, $Y$ e $Z$ são diferentes de 1.0000, caso contrário é necessário digitar os valores dos respectivos espaçamento. 
+Caso o conjunto de imagens seja de imagens de microtomografia, mais especificamente de equipamentos das marcas GE e Brucker, é possível que o InVesalius realize a leitura do arquivo texto com os parâmetros de aquisição que normalmente fica na mesma pasta das imagens e insira automaticamente o espaçamento. Essa constatação pode ser feita quando os valores de $X$, $Y$ e $Z$ são diferentes de "1.00000000", caso contrário é necessário digitar os valores dos respectivos espaçamento. 
 
 \textbf{Atenção, o espaçamento é um parâmetro primordial para a correta dimensão dos objetos no software. Espaçamento incorreto irá fornecer medidas incorretas.}
 
@@ -244,4 +244,22 @@ Uma vez preenchido todos os parâmetros, basta clicar no botão \textbf{Ok}.
 \includegraphics[scale=0.5]{import_bmp_spacing_pt.png}
 \caption{Tela de importação}
 \label{fig:import_bmp_spacing_pt}
+\end{figure}
+
+Caso seja detectado quantidade insuficiente de memória disponível na hora de carregar as imagens é recomentado  reduzir a resolução das fatias para trabalhar com visualização volumétrica e de superfície, como mostra a janela \ref{fig:import_bmp_resize_pt}.  As fatias serão redimensionadas de acordo com a porcentagem em relação a resolução original. Por exemplo,  se cada fatia do exame contém a dimensão de 512 x 512 pixeis e for sugerido a "Porcentagem da resolução original" em 60\%, cada imagem resultante terá 307 x 307 pixeis. Caso deseje abrir com a resolução original selecione o valor 100.
+
+\begin{figure}[!htb]
+\centering
+\includegraphics[scale=0.5]{import_bmp_resize_pt.png}
+\caption{Redimensionamento de imagens}
+\label{fig:import_bmp_resize_pt}
+\end{figure}
+
+Após os passos anteriores é necessário aguardar um instante para completar a reconstrução multiplanar conforme mostra a figura~\ref{fig:import_bmp_mpr_pt.png}.
+
+\begin{figure}[!htb]
+\centering
+\includegraphics[scale=0.6]{import_bmp_mpr_pt.png}
+\caption{Reconstrução multiplanar em andamento.}
+\label{fig:import_bmp_mpr_pt.png}
 \end{figure}
