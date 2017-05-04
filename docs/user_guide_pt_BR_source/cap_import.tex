@@ -77,7 +77,7 @@ Em alguns casos, em particular quando não se dispõe de um computador com memó
 processamento satisfatórios para trabalhar com muitas imagens em uma série, pode ser
 recomendável pular (ignorar) algumas delas. Para isso, clique \textbf{uma vez} com o botão
 \textbf{esquerdo} do mouse sobre a descrição da série (figura \ref{fig:import_serie}) e selecione
-quantas imagens serão puladas (figura \ref{fig:skip_image}). Clique em \textbf{OK}.
+quantas imagens serão puladas (figura \ref{fig:skip_image}). Clique em \textbf{Importar}.
 
 \begin{figure}[!htb]
 \centering
@@ -119,7 +119,7 @@ Para importar arquivos no formato Analyze, no menu \textbf{Arquivo}, clique na o
 
 \begin{figure}[!htb]
 \centering
-\includegraphics[scale=0.4]{analyze_menu.png}
+\includegraphics[scale=0.4]{import_analyze_menu_pt.png}
 \caption{Menu para importar imagens no formato analyze}
 \label{fig:analyze_menu}
 \end{figure}
@@ -128,7 +128,120 @@ Selecione o arquivo do tipo Analyze, na extensão \textbf{.hdr} e clique em \tex
 
 \begin{figure}[!htb]
 \centering
-\includegraphics[scale=0.4]{analyze_import.png}
+\includegraphics[scale=0.4]{import_analyze_window_pt.png}
 \caption{Importar imagens no formato analyze}
 \label{fig:analyze_import}
+\end{figure}
+
+\section{NIfTI}
+
+Para importar arquivos no formato NIfTI, no menu \textbf{Arquivo}, clique na opção \textbf{Importar outros arquivos...} em seguida a opção \textbf{NIfTI} como mostra a figura \ref{fig:import_nifti_menu_pt}.
+
+\begin{figure}[!htb]
+\centering
+\includegraphics[scale=0.4]{import_nifti_menu_pt.png}
+\caption{Menu para importar imagens no formato NIfTI}
+\label{fig:import_nifti_menu_pt}
+\end{figure}
+
+Selecione o arquivo do tipo NIfTI, na extensão \textbf{nii.gz} ou \textbf{.nii} e clique em \textbf{Abrir}. (figura \ref{fig:import_nifti_window_pt}). Caso o arquivo esteja em outra extensão como \textbf{.hdr}, selecione a opção \textbf{all files(*.*)}.
+
+\begin{figure}[!htb]
+\centering
+\includegraphics[scale=0.4]{import_nifti_window_pt.png}
+\caption{Importar imagens no formato NIfTI}
+\label{fig:import_nifti_window_pt}
+\end{figure}
+
+\section{PAR/REC}
+
+
+Para importar arquivos no formato PAR/REC, no menu \textbf{Arquivo}, clique na opção \textbf{Importar outros arquivos...} em seguida a opção \textbf{PAR/REC} como mostra a figura \ref{fig:import_parrec_menu_pt}.
+
+\begin{figure}[!htb]
+\centering
+\includegraphics[scale=0.4]{import_parrec_menu_pt.png}
+\caption{Menu para importar imagens no formato PAR/REC}
+\label{fig:import_parrec_menu_pt}
+\end{figure}
+
+Selecione o arquivo do tipo PAR/REC, na extensão \textbf{.par} e clique em \textbf{Abrir}. (figura \ref{fig:import_parrec_window_pt}). Caso o arquivo esteja sem extensão, selecione a opção \textbf{all files(*.*)}.
+
+\begin{figure}[!htb]
+\centering
+\includegraphics[scale=0.4]{import_parrec_window_pt.png}
+\caption{Importar imagens no formato PAR/REC}
+\label{fig:import_parrec_window_pt}
+\end{figure}
+
+
+
+\section{TIFF, JPG, BMP, JPEG ou PNG (micro-CT)}
+
+Arquivos em formato TIFF, JPG, BMP, JPEG ou PNG para reconstrução podem ser providos de equipamentos de microtomografia (micro-CT ou $\mu$CT) e outros. O InVesalius importa arquivos nesses formatos desde que os pixels presentes estejam em escala de cinza.
+
+Para importar, clique no menu \textbf{Arquivo} e na opção \textbf{Importar outros arquivos...} em seguida clique na opção \textbf{TIFF, JPG, BMP, JPEG ou PNG ($\mu$CT)} como mostra a figura~\ref{fig:import_bmp_menu_pt}. 
+
+\begin{figure}[!htb]
+\centering
+\includegraphics[scale=0.4]{import_bmp_menu_pt.png}
+\caption{Importar imagens no formato BMP e outros}
+\label{fig:import_bmp_menu_pt}
+\end{figure}
+
+Selecione o diretório que contenha os arquivos, como mostra a figura \ref{fig:import_bmp_select_folder}. O InVesalius irá procurar por arquivos também em subdiretórios do diretório escolhido, caso existam.
+
+Clique em \textbf{OK}.
+
+\begin{figure}[!htb]
+\centering
+\includegraphics[scale=0.5]{import_bmp_select_folder_pt.png}
+\caption{Seleção de diretório}
+\label{fig:import_bmp_select_folder}
+\end{figure}
+
+
+Enquanto o InVesalius procura por arquivos TIFF, JPG, BMP, JPEG ou PNG no diretório, é exibido o progresso do carregamento dos arquivos verificados, como ilustra a figura \ref{fig:import_bmp_load_pt}.
+
+\begin{figure}[!htb]
+\centering
+\includegraphics[scale=0.6]{import_bmp_load_pt.png}
+\caption{Status de verificação e carregamento de arquivos}
+\label{fig:import_bmp_load_pt}
+\end{figure}
+
+
+Se arquivos do tipo TIFF, JPG, BMP, JPEG ou PNG  forem encontrados, é aberta uma janela (figura~\ref{fig:import_bmp_window_pt}) para exibir os arquivos encontrados elegíveis para reconstrução. Também é possível pular imagens para reconstrução ou remover arquivos da lista para reconstrução. Os arquivos são ordenados de acordo com o nome do arquivo, recomenda-se utilizar números em seus nomes de acordo com a ordem que deseja-se obter na reconstrução.
+
+\begin{figure}[!htb]
+\centering
+\includegraphics[scale=0.3]{import_bmp_window_pt.png}
+\caption{Janela para importação de arquivos do tipo BMP.}
+\label{fig:import_bmp_window_pt}
+\end{figure}
+
+Para excluir os arquivos que não são de interesse, é possível selecionar um arquivo clicando com o \textbf{botão esquerdo do mouse} e em seguida pressionar a tecla \textbf{delete}. É possível também escolher uma faixa de arquivos para deletar, para isso é necessário clicar com o \textbf{botão esquerdo do mouse} no primeiro arquivo da faixa, manter pressionada a tecla \textbf{shift}, clicar novamente com o \textbf{botão esquerdo do mouse} no último arquivo da faixa e finalmente pressionar o botão \textbf{delete}.
+ 
+A exemplo da importação de arquivos DICOM, é possível pular imagens BMP para reconstrução. Em alguns casos, em particular quando não se dispõe de um computador com memória e/ou processamento satisfatórios para trabalhar com muitas imagens em uma série, pode ser recomendável pular (ignorar) algumas delas. Para isso, selecione quantas imagens serão puladas (figura \ref{fig:import_bmp_skip_pt}). Clique em \textbf{Importar}.
+
+\begin{figure}[!htb]
+\centering
+\includegraphics[scale=0.4]{import_bmp_skip_pt.png}
+\caption{Tela de importação}
+\label{fig:import_bmp_skip_pt}
+\end{figure}
+
+Para a reconstrução desse tipo de arquivo é necessário definir um nome para o projeto, indicar qual a orientação das imagens (axial, coronal ou sagital), espaçamento do voxel ($X$, $Y$ e $Z$) em \textbf{milímetros} como mostra a figura~\ref{fig:import_bmp_spacing_pt}. O espaçamento do voxel em $X$ é largura do pixel de cada imagem, $Y$ o comprimento do pixel e $Z$ representa a distância de cada fatia (altura do voxel). 
+
+Caso o conjunto de imagens seja de imagens de microtomografia, mais especificamente de equipamentos das marcas GE e Brucker, é possível que o InVesalius realize a leitura do arquivo texto com os parâmetros de aquisição que normalmente fica na mesma pasta das imagens e insira automaticamente o espaçamento. Essa constatação pode ser feita quando os valores de $X$, $Y$ e $Z$ são diferentes de 1.0000, caso contrário é necessário digitar os valores dos respectivos espaçamento. 
+
+\textbf{Atenção, o espaçamento é um parâmetro primordial para a correta dimensão dos objetos no software. Espaçamento incorreto irá fornecer medidas incorretas.}
+
+Uma vez preenchido todos os parâmetros, basta clicar no botão \textbf{Ok}.
+
+\begin{figure}[!htb]
+\centering
+\includegraphics[scale=0.5]{import_bmp_spacing_pt.png}
+\caption{Tela de importação}
+\label{fig:import_bmp_spacing_pt}
 \end{figure}
