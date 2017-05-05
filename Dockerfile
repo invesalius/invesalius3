@@ -18,10 +18,14 @@ RUN apt-get install -y \
     python-wxgtk3.0 \
     xvfb # For a virtual X server.
 
+RUN apt-get install -y locales
+RUN locale-gen en_US.UTF-8
+ENV LANG en_US.UTF-8
+ENV LANGUAGE en_US:en
+ENV LC_ALL en_US.UTF-8
+
 WORKDIR /usr/local/app
 
 COPY . .
 
 RUN python setup.py build_ext --inplace
-
-RUN Xvfb :10 -ac -screen 0 1024x768x24 &

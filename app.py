@@ -24,6 +24,7 @@ import optparse as op
 import os
 import sys
 import shutil
+import traceback
 
 if sys.platform == 'win32':
     import _winreg
@@ -247,9 +248,10 @@ def parse_comand_line():
                       dest="dicom_dir")
 
     parser.add_option("-s", "--save",
-                      action="store",
-                      dest="save",
                       help="To save the project after an import.")
+
+    parser.add_option("-a", "--export-to-all",
+                      help="To open a project and export it to STL for all mask presets.")
 
     options, args = parser.parse_args()
 
@@ -265,23 +267,60 @@ def parse_comand_line():
 
         if options.save:
             Publisher.sendMessage('Save project', os.path.abspath(options.save))
-            return True
+            exit(0)
+
+        check_for_exporting(options)
 
         return True
 
     # Check if there is a file path somewhere in what the user wrote
     # In case there is, try opening as it was a inv3
     else:
-        i = len(args)
-        while i:
-            i -= 1
-            file = args[i]
-            if os.path.isfile(file):
-                path = os.path.abspath(file)
-                Publisher.sendMessage('Open project', path)
-                i = 0
+        for arg in reversed(args):
+            if os.path.isfile(arg):
+                path_ = os.path.abspath(arg)
+                Publisher.sendMessage('Open project', path_)
+
+                check_for_exporting(options)
+
                 return True
     return False
+
+
+def check_for_exporting(options):
+    if options.export_to_all:
+        try:
+            method = {
+                'algorithm': 'Default',
+                'options': {},
+            }
+
+            import invesalius.constants as const
+            from invesalius.project import Project
+
+            for threshold_name, threshold_range in Project().presets.thresh_ct.iteritems():
+                if isinstance(threshold_range[0], int):
+                    Publisher.sendMessage('Set threshold values', threshold_range)
+
+                    srf_options = {
+                        'index': 0,
+                        'name': '',
+                        'quality': _('Optimal *'),
+                        'fill': False,
+                        'keep_largest': False,
+                        'overwrite': False,
+                    }
+                    Publisher.sendMessage('Create surface from index',
+                                          {'method': method, 'options': srf_options})
+
+                    filename = u'{}-{}.stl'.format(options.export_to_all, threshold_name)
+                    Publisher.sendMessage('Export surface to file', (filename, const.FILETYPE_STL))
+
+                    Publisher.sendMessage('Remove surfaces', [0])
+        except:
+            traceback.print_exc()
+        finally:
+            exit(0)
 
 
 def print_events(data):
