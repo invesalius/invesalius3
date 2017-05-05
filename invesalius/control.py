@@ -98,6 +98,8 @@ class Controller():
 
         Publisher.subscribe(self.SetBitmapSpacing, 'Set bitmap spacing')
 
+        Publisher.subscribe(self.OnSaveProject, 'Save project')
+
     def SetBitmapSpacing(self, pubsub_evt):
         proj = prj.Project()
         proj.spacing = pubsub_evt.data
@@ -333,6 +335,10 @@ class Controller():
         session = ses.Session()
         session.OpenProject(filepath)
         Publisher.sendMessage("Enable state project", True)
+
+    def OnSaveProject(self, pubsub_evt):
+        path = pubsub_evt.data
+        self.SaveProject(path)
 
     def SaveProject(self, path=None):
         Publisher.sendMessage('Begin busy cursor')

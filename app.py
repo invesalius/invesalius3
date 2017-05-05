@@ -245,6 +245,12 @@ def parse_comand_line():
     parser.add_option("-i", "--import",
                       action="store",
                       dest="dicom_dir")
+
+    parser.add_option("-s", "--save",
+                      action="store",
+                      dest="save",
+                      help="To save the project after an import.")
+
     options, args = parser.parse_args()
 
     # If debug argument...
@@ -256,6 +262,11 @@ def parse_comand_line():
     if options.dicom_dir:
         import_dir = options.dicom_dir
         Publisher.sendMessage('Import directory', import_dir)
+
+        if options.save:
+            Publisher.sendMessage('Save project', os.path.abspath(options.save))
+            return True
+
         return True
 
     # Check if there is a file path somewhere in what the user wrote
