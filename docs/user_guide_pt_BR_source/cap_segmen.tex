@@ -332,3 +332,54 @@ Ainda na figura~\ref{fig:watershed_2d}, podemos visualizar os marcadores de obje
 \caption{Segmentação do cérebro com o método de Watershed aplicado em todo um volume (expandido em 3D).}
 \label{fig:watershed_3d}
 \end{figure}
+
+\section{Crescimento de região}
+
+A técnica de segmentação por crescimento de região é ativada no menu \textbf{Ferramentas}, \textbf{Segmentação}, por último \textbf{Crescimento de região} (figura~\ref{menu_segmentation_region_growing}). Inicialmente deve-se selecionar a configuração entre \textbf{2D - Fatia atual} ou \textbf{3D - Todas as fatias}, também é necessário selecionar a conectividade do crescimento entre $4$ ou $8$ para o 2D e $6$, $18$ ou $26$ para 3D. Por último é necessário selecionar o método, entre \textbf{Dinâmico, Limiar ou Confidência} (figura~\ref{fig:segmentation_region_growing_dinamic}).
+
+\begin{figure}[!htb]
+\centering
+\includegraphics[scale=0.5]{menu_segmentation_region_growing_pt.png}
+\caption{Menu para ativar a segmentação por região de crescimento.}
+\label{fig:menu_segmentation_region_growing_pt}
+\end{figure}
+
+\begin{figure}[!htb]
+\centering
+\includegraphics[scale=0.7]{segmentation_region_growing_dinamic_pt.png}
+\caption{Tela para ajuste de parâmetros de segmentação por crescimento de região.}
+\label{fig:segmentation_region_growing_dinamic}
+\end{figure}
+
+A técnica parte de um pixel inicial que é indicado clicando com o \textbf{botão direito} do mouse, os pixels vizinhos que satisfazem as condições indicadas anteriormente são selecionados. Cada método leva em consideração diferentes condições, a seguir são apresentadas as diferenças entre cada método:
+
+\begin{itemize}
+	\item \textbf{Dinâmico}: Esse método captura o valor do pixel que foi clicado, levando em consideração o desvio para baixo (min) e desvio para cima (max). A opção \textbf{Considerar o brilho e contraste} é ativada por padrão, essa opção permite levar em consideração os valores de níveis de cinza que são exibidos e/ou ajustados na opção brilho e contraste. Ao desativar essa opção será levado em consideração os valores de cinza gravador na imagem (figura~\ref{fig:segmentation_region_growing_dinamic_parameter}). 
+	
+	\begin{figure}[!htb]
+	\centering
+	\includegraphics[scale=0.7]{segmentation_region_growing_dinamic_parameter_pt.png}
+	\caption{Ajuste de parâmetros para o método dinâmico.}
+	\label{fig:segmentation_region_growing_dinamic_parameter}
+	\end{figure}
+	
+	\item \textbf{Limiar}: O método limiar selecionará os pixels cuja a vizinhança estejam dentro do valor mínimo e máximo (figura~\ref{fig:segmentation_region_growing_limiar}).
+
+	\begin{figure}[!htb]
+	\centering
+	\includegraphics[scale=0.7]{segmentation_region_growing_limiar_pt.png}
+	\caption{Ajuste de faixa de valores do método limiar.}
+	\label{fig:segmentation_region_growing_limiar}
+	\end{figure}	
+	
+	\item \textbf{Confidência}: O método (figura~\ref{fig:segmentation_region_growing_confidence_parameter})
+	
+	\begin{figure}[!htb]
+	\centering
+	\includegraphics[scale=0.7]{segmentation_region_growing_confidence_parameter_pt.png}
+	\caption{Ajuste de faixa de valores do método limiar.}
+	\label{fig:segmentation_region_growing_confidence_parameter}
+	\end{figure}	
+	
+	
+\end{itemize}
