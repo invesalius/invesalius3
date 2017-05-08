@@ -119,7 +119,29 @@ Para modificar o ponto, mantenha \textbf{pressionado} o botão \textbf{esquerdo}
 Para desativar a funcionalidade, basta clicar novamente sobre o atalho (figura \ref{fig:cross_icon}).
 Esse recurso pode ser utilizado em conjunto com o editor de fatias (que será comentado mais à frente).
 
-\newpage
+
+\section{Interpolação}
+
+Por padrão a visualização das imagens 2D são interpoladas (figura~\ref{fig:interp}).a, caso deseja desativar esse recurso, basta ir no menu \textbf{Visualizar}, \textbf{Fatias interpoladas} (figura~\ref{fig:menu_interpoleted_image_pt}). Dessa forma será possível visualizar cada pixel individualmente como mostra a figura~\ref{fig:interp}.b. 
+
+\textbf{Observação: Essa interpolação é apenas para efeitos de visualização, não influenciando diretamente na segmentação ou na geração de superfície 3D.}
+
+\begin{figure}[!htb]
+\centering
+\includegraphics[scale=0.7]{menu_interpoleted_image_pt.png}
+\caption{Menu para desativar e ativar interpolação}
+\label{fig:menu_interpoleted_image_pt}
+\end{figure}
+
+
+\begin{figure}[!htb]
+  \centering
+  \subfloat[Interpolada]{\includegraphics[width=0.4\textwidth]{axial_interpoleted.png}}  \qquad
+  \subfloat[Não interpolada]{\includegraphics[width=0.4\textwidth]{axial_not_interpoleted.png}}
+  \hfill
+  \caption{Visualização de imagem interpolada e não interpolada.}
+  \label{fig:interp}
+\end{figure}
 
 \section{Mover}
 
