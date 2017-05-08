@@ -686,19 +686,19 @@ BTNS_IMG_MKS = {IR1: {0: 'LEI'},
             IR2: {1: 'REI'},
             IR3: {2: 'NAI'}}
 
-TIPS_IMG = [wx.ToolTip(_("Select left ear in image")),
-            wx.ToolTip(_("Select right ear in image")),
-            wx.ToolTip(_("Select nasion in image"))]
+TIPS_IMG = [_("Select left ear in image"),
+            _("Select right ear in image"),
+            _("Select nasion in image")]
 
 BTNS_TRK = {TR1: {3: _('LET')},
             TR2: {4: _('RET')},
             TR3: {5: _('NAT')},
             SET: {6: _('SET')}}
 
-TIPS_TRK = [wx.ToolTip(_("Select left ear with spatial tracker")),
-            wx.ToolTip(_("Select right ear with spatial tracker")),
-            wx.ToolTip(_("Select nasion with spatial tracker")),
-            wx.ToolTip(_("Show set coordinates in image"))]
+TIPS_TRK = [_("Select left ear with spatial tracker"),
+            _("Select right ear with spatial tracker"),
+            _("Select nasion with spatial tracker"),
+            _("Show set coordinates in image")]
 
 CAL_DIR = os.path.abspath(os.path.join(FILE_PATH, '..', 'navigation', 'mtc_files', 'CalibrationFiles'))
 MAR_DIR = os.path.abspath(os.path.join(FILE_PATH, '..', 'navigation', 'mtc_files', 'Markers'))

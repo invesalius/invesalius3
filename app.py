@@ -198,7 +198,8 @@ class SplashScreen(wx.SplashScreen):
         self.control = Controller(self.main)
         
         self.fc = wx.FutureCall(1, self.ShowMain)
-        wx.FutureCall(1, parse_comand_line)
+        options, args = parse_comand_line()
+        wx.FutureCall(1, use_cmd_optargs, options, args)
 
         # Check for updates
         from threading import Thread
@@ -224,6 +225,24 @@ class SplashScreen(wx.SplashScreen):
         if self.fc.IsRunning():
             self.Raise()
 
+
+def non_gui_startup(options, args):
+    lang = 'en'
+    _ = i18n.InstallLanguage(lang)
+
+    from invesalius.control import Controller
+    from invesalius.project import Project
+
+    session = ses.Session()
+    if not session.ReadSession():
+        session.CreateItens()
+        session.SetLanguage(lang)
+        session.WriteSessionFile()
+
+    control = Controller(None)
+
+    use_cmd_optargs(options, args)
+
 # ------------------------------------------------------------------
 
 
@@ -241,6 +260,10 @@ def parse_comand_line():
                       action="store_true",
                       dest="debug")
 
+    parser.add_option('--no-gui',
+                      action='store_true',
+                      dest='no_gui')
+
     # -i or --import: import DICOM directory
     # chooses largest series
     parser.add_option("-i", "--import",
@@ -254,7 +277,10 @@ def parse_comand_line():
                       help="To open a project and export it to STL for all mask presets.")
 
     options, args = parser.parse_args()
+    return options, args
 
+
+def use_cmd_optargs(options, args):
     # If debug argument...
     if options.debug:
         Publisher.subscribe(print_events, Publisher.ALL_TOPICS)
@@ -333,8 +359,13 @@ def main():
     """
     Initialize InVesalius GUI
     """
-    application = InVesalius(0)
-    application.MainLoop()
+    options, args = parse_comand_line()
+
+    if options.no_gui:
+        non_gui_startup(options, args)
+    else:
+        application = InVesalius(0)
+        application.MainLoop()
 
 if __name__ == '__main__':
     #Is needed because of pyinstaller
