@@ -3,6 +3,7 @@ FROM ubuntu:16.04
 RUN apt-get update
 RUN apt-get install -y \
     cython \
+    locales \
     python-concurrent.futures \
     python-gdcm \
     python-matplotlib \
@@ -15,10 +16,8 @@ RUN apt-get install -y \
     python-skimage \
     python-vtk6 \
     python-vtkgdcm \
-    python-wxgtk3.0 \
-    xvfb # For a virtual X server.
+    python-wxgtk3.0
 
-RUN apt-get install -y locales
 RUN locale-gen en_US.UTF-8
 ENV LANG en_US.UTF-8
 ENV LANGUAGE en_US:en

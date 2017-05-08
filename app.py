@@ -271,10 +271,16 @@ def parse_comand_line():
                       dest="dicom_dir")
 
     parser.add_option("-s", "--save",
-                      help="To save the project after an import.")
+                      help="Save the project after an import.")
+
+    parser.add_option("-t", "--threshold",
+                      help="Define the threshold for the export (e.g. 100-780).")
+
+    parser.add_option("-e", "--export",
+                      help="Export to STL.")
 
     parser.add_option("-a", "--export-to-all",
-                      help="To open a project and export it to STL for all mask presets.")
+                      help="Export to STL for all mask presets.")
 
     options, args = parser.parse_args()
     return options, args
@@ -295,7 +301,7 @@ def use_cmd_optargs(options, args):
             Publisher.sendMessage('Save project', os.path.abspath(options.save))
             exit(0)
 
-        check_for_exporting(options)
+        check_for_export(options)
 
         return True
 
@@ -307,46 +313,55 @@ def use_cmd_optargs(options, args):
                 path_ = os.path.abspath(arg)
                 Publisher.sendMessage('Open project', path_)
 
-                check_for_exporting(options)
+                check_for_export(options)
 
                 return True
     return False
 
 
-def check_for_exporting(options):
-    if options.export_to_all:
+def check_for_export(options):
+    if options.export:
+        if not options.threshold:
+            print("Need option --threshold when using --export.")
+            exit(1)
+        threshold_range = tuple([int(n) for n in options.threshold.split('-')])
+        export(options.export, threshold_range)
+    elif options.export_to_all:
+        # noinspection PyBroadException
         try:
-            method = {
-                'algorithm': 'Default',
-                'options': {},
-            }
-
-            import invesalius.constants as const
             from invesalius.project import Project
 
             for threshold_name, threshold_range in Project().presets.thresh_ct.iteritems():
                 if isinstance(threshold_range[0], int):
-                    Publisher.sendMessage('Set threshold values', threshold_range)
-
-                    srf_options = {
-                        'index': 0,
-                        'name': '',
-                        'quality': _('Optimal *'),
-                        'fill': False,
-                        'keep_largest': False,
-                        'overwrite': False,
-                    }
-                    Publisher.sendMessage('Create surface from index',
-                                          {'method': method, 'options': srf_options})
-
-                    filename = u'{}-{}.stl'.format(options.export_to_all, threshold_name)
-                    Publisher.sendMessage('Export surface to file', (filename, const.FILETYPE_STL))
-
-                    Publisher.sendMessage('Remove surfaces', [0])
+                    path_ = u'{}-{}.stl'.format(options.export_to_all, threshold_name)
+                    export(path_, threshold_range)
         except:
             traceback.print_exc()
         finally:
             exit(0)
+
+
+def export(path_, threshold_range):
+    import invesalius.constants as const
+
+    Publisher.sendMessage('Set threshold values', threshold_range)
+
+    surface_options = {
+        'method': {
+            'algorithm': 'Default',
+            'options': {},
+        }, 'options': {
+            'index': 0,
+            'name': '',
+            'quality': _('Optimal *'),
+            'fill': False,
+            'keep_largest': False,
+            'overwrite': False,
+        }
+    }
+    Publisher.sendMessage('Create surface from index', surface_options)
+    Publisher.sendMessage('Export surface to file', (path_, const.FILETYPE_STL))
+    Publisher.sendMessage('Remove surfaces', [0])
 
 
 def print_events(data):
