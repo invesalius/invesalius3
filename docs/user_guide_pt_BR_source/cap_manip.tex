@@ -2,13 +2,13 @@
 
 \section{Reconstrução Multiplanar}
 
-Ao importar as imagens DICOM, o InVesalius mostra, automaticamente, a sua reconstrução
+Ao importar as imagens, o InVesalius mostra, automaticamente, a sua reconstrução
 multiplanar nas orientações Axial, Sagital e Coronal, bem como uma janela para manipulação 3D.
 Veja a figura \ref{fig:mpr}.
 
 \begin{figure}[!htb]
 \centering
-\includegraphics[scale=0.25]{ScreenHunter_18Dec311140_1.jpg}
+\includegraphics[scale=0.30]{multiplanar_mask_window_pt.png}
 \caption{Reconstrução multiplanar}
 \label{fig:mpr}
 \end{figure}
@@ -27,7 +27,7 @@ da tela. Basta escolher a aba \textbf{Máscaras} e clicar \textbf{uma} vez com o
 
 \begin{figure}[!htb]
 \centering
-\includegraphics[scale=0.5]{ScreenHunter_29Dec311141_.jpg}
+\includegraphics[scale=0.8]{data_mask_pt.png}
 \caption{Gerenciador de máscaras}
 \label{fig:ger_masc}
 \end{figure}
@@ -37,7 +37,7 @@ O ícone do olho desaparece, e as cores da máscara de segmentação são escond
 
 \begin{figure}[!htb]
 \centering
-\includegraphics[scale=0.25]{ScreenHunter_28Dec311141_.jpg}
+\includegraphics[scale=0.30]{multiplanar_window_pt.png}
 \caption{Reconstrução multiplanar sem máscara de segmentação}
 \label{fig:mpr_sem_mask}
 \end{figure}
@@ -51,7 +51,7 @@ região do crânio.
 
 \begin{figure}[!htb]
 \centering
-\includegraphics[scale=0.15]{ScreenHunter_24Dec310029_.jpg}
+\includegraphics[scale=0.15]{axial.jpg}
 \caption{Corte axial}
 \label{fig:axial_corte}
 \end{figure}
@@ -65,7 +65,7 @@ A figura \ref{fig:sagital_slice} mostra uma imagem do crânio em orientação sa
 
 \begin{figure}[!htb]
 \centering
-\includegraphics[scale=0.15]{ScreenHunter_25Dec310029_.jpg}
+\includegraphics[scale=0.15]{sagital.jpg}
 \caption{Corte sagital}
 \label{fig:sagital_slice}
 \end{figure}
@@ -81,13 +81,14 @@ coronal.
 
 \begin{figure}[!htb]
 \centering
-\includegraphics[scale=0.15]{ScreenHunter_24Dec311141_.jpg}
+\includegraphics[scale=0.15]{coronal.jpg}
 \caption{Corte coronal}
 \label{fig:coronal_slice}
 \end{figure}
 
 
 \section{Correspondência entre as orientações axial, sagital e coronal}
+\label{sec:corresp_all_orient}
 
 Para saber qual o ponto comum das imagens nas diferentes orientações, basta acionar o
 recurso "Cruz de interseção de fatias" pelo ícone de atalho localizado na barra de ferramentas.
@@ -111,7 +112,7 @@ Para modificar o ponto, mantenha \textbf{pressionado} o botão \textbf{esquerdo}
 
 \begin{figure}[!htb]
 \centering
-\includegraphics[scale=0.4]{ScreenHunter_01Jan021941.jpg}
+\includegraphics[scale=0.4]{multiplanar_window_cross_pt.png}
 \caption{Ponto comum entre orientações diferentes}
 \label{fig:cross_all}
 \end{figure}
@@ -119,7 +120,29 @@ Para modificar o ponto, mantenha \textbf{pressionado} o botão \textbf{esquerdo}
 Para desativar a funcionalidade, basta clicar novamente sobre o atalho (figura \ref{fig:cross_icon}).
 Esse recurso pode ser utilizado em conjunto com o editor de fatias (que será comentado mais à frente).
 
-\newpage
+
+\section{Interpolação}
+
+Por padrão a visualização das imagens 2D são interpoladas (figura~\ref{fig:interp}).a, caso deseja desativar esse recurso, basta ir no menu \textbf{Visualizar}, \textbf{Fatias interpoladas} (figura~\ref{fig:menu_interpoleted_image_pt}). Dessa forma será possível visualizar cada pixel individualmente como mostra a figura~\ref{fig:interp}.b. 
+
+\textbf{Observação: Essa interpolação é apenas para efeitos de visualização, não influenciando diretamente na segmentação ou na geração de superfície 3D.}
+
+\begin{figure}[!htb]
+\centering
+\includegraphics[scale=0.7]{menu_interpoleted_image_pt.png}
+\caption{Menu para desativar e ativar interpolação}
+\label{fig:menu_interpoleted_image_pt}
+\end{figure}
+
+
+\begin{figure}[!htb]
+  \centering
+  \subfloat[Interpolada]{\includegraphics[width=0.4\textwidth]{axial_interpoleted.png}}  \qquad
+  \subfloat[Não interpolada]{\includegraphics[width=0.4\textwidth]{axial_not_interpoleted.png}}
+  \hfill
+  \caption{Visualização de imagem interpolada e não interpolada.}
+  \label{fig:interp}
+\end{figure}
 
 \section{Mover}
 
@@ -137,7 +160,7 @@ A figura \ref{fig:move_img} mostra uma imagem deslocada (movida).
 
 \begin{figure}[!htb]
 \centering
-\includegraphics[scale=0.25]{ScreenHunter_84Dec311201.jpg}
+\includegraphics[scale=0.25]{axial_pan.jpg}
 \caption{Imagem deslocada}
 \label{fig:move_img}
 \end{figure}
@@ -158,7 +181,7 @@ anti-horário, dependendo do sentido de rotação desejado.
 
 \begin{figure}[!htb]
 \centering
-\includegraphics[scale=0.25]{ScreenHunter_83Dec311201_.jpg}
+\includegraphics[scale=0.25]{axial_rotate.jpg}
 \caption{Imagem rotacionada}
 \label{fig:rotate_all}
 \end{figure}
@@ -180,7 +203,7 @@ anterior, basta clicar novamente no ícone.
 
 \begin{figure}[!htb]
 \centering
-\includegraphics[scale=0.6]{ScreenHunter_27Dec311141__.jpg}
+\includegraphics[scale=0.6]{maximize_sagital_mpr.png}
 \caption{Detalhe de uma subjanela (Observe o ícone de maximizar no canto superior direito)}
 \label{fig:maximize_window}
 \end{figure}
@@ -224,14 +247,14 @@ botão esquerdo do mouse for liberado, a operação de \textit{zoom} será aplic
 
 \begin{figure}[!htb]
 \centering
-\includegraphics[scale=0.25]{ScreenHunter_06Jan062046.jpg}
+\includegraphics[scale=0.25]{tool_zoom_select_image.jpg}
 \caption{Área selecionada para \textit{zoom}}
 \label{fig:zoom_select}
 \end{figure}
 
 \begin{figure}[!htb]
 \centering
-\includegraphics[scale=0.25]{ScreenHunter_08Jan062046.jpg}
+\includegraphics[scale=0.25]{tool_image_with_zoom.jpg}
 \caption{Imagem ampliada}
 \label{fig:zoom_applied}
 \end{figure}
@@ -271,7 +294,7 @@ seguida, clique sobre a opção pré-definida, de acordo com o tipo de tecido, c
 
 \begin{figure}[!htb]
 \centering
-\includegraphics[scale=0.40]{ScreenHunter_12Jan021943_0.png}
+\includegraphics[scale=0.40]{menu_window_and_level_pt.png}
 \caption{Menu de contexto para seleção de brilho e contraste}
 \label{fig:window_level}
 \end{figure}
@@ -329,7 +352,7 @@ mostra a figura \ref{fig:pseudo_color}.
 
 \begin{figure}[H]
 \centering
-\includegraphics[scale=0.40]{pseudo_menu.png}
+\includegraphics[scale=0.40]{pseudo_menu_pt.png}
 \caption{Pseudo Cor}
 \label{fig:pseudo_color}
 \end{figure}
@@ -339,49 +362,49 @@ pseudocor disponíveis.\\
 
 \begin{figure}[H]
 \centering
-\includegraphics[scale=0.30]{ScreenHunter_24Dec310029.jpg}
+\includegraphics[scale=0.30]{pseudo_default.jpg}
 \caption{Padrão}
 \label{fig:image_default}
 \end{figure}
 
 \begin{figure}[H]
 \centering
-\includegraphics[scale=0.30]{ScreenHunter_21Jan021944.jpg}
+\includegraphics[scale=0.30]{pseudo_inverse.jpg}
 \caption{Imagem Cinza Invertido}
 \label{fig:image_inverted}
 \end{figure}
 
 \begin{figure}[H]
 \centering
-\includegraphics[scale=0.30]{ScreenHunter_20Jan021944}
+\includegraphics[scale=0.30]{pseudo_rainbow.jpg}
 \caption{Arco-íris}
 \label{fig:image_arc}
 \end{figure}
 
 \begin{figure}[H]
 \centering
-\includegraphics[scale=0.30]{ScreenHunter_22Jan021944}
+\includegraphics[scale=0.30]{pseudo_desert.jpg}
 \caption{Deserto}
 \label{fig:image_desert}
 \end{figure}
 
 \begin{figure}[H]
 \centering
-\includegraphics[scale=0.30]{ScreenHunter_23Jan021944}
+\includegraphics[scale=0.30]{pseudo_hue.jpg}
 \caption{Matiz}
 \label{fig:image_matiz}
 \end{figure}
 
 \begin{figure}[H]
 \centering
-\includegraphics[scale=0.30]{ScreenHunter_24Jan021944}
+\includegraphics[scale=0.30]{pseudo_ocean.jpg}
 \caption{Oceano}
 \label{fig:image_ocean}
 \end{figure}
 
 \begin{figure}[H]
 \centering
-\includegraphics[scale=0.30]{ScreenHunter_25Jan021944}
+\includegraphics[scale=0.30]{pseudo_saturation.jpg}
 \caption{Saturação}
 \label{fig:image_saturation}
 \end{figure}
@@ -394,7 +417,7 @@ pseudocor disponíveis.\\
 
 \begin{figure}[H]
 \centering
-\includegraphics[scale=0.60]{menu_projection}
+\includegraphics[scale=0.60]{menu_projection_pt.png}
 \caption{Menu de Tipo de projeção}
 \label{fig:menu_proj}
 \end{figure}
@@ -405,7 +428,7 @@ O modo normal é a visualização padrão, ou seja, sem nenhum tipo de projeçã
 
 \begin{figure}[H]
 \centering
-\includegraphics[scale=0.20]{proj_normal}
+\includegraphics[scale=0.40]{multiplanar_window_pt.png}
 \caption{Projeção normal}
 \label{fig:proj_normal}
 \end{figure}
@@ -416,7 +439,7 @@ MaxIP também é conhecido como MIP (\textit{Maximum Intensity Projection}), o m
 
 \begin{figure}[H]
 \centering
-\includegraphics[scale=0.20]{proj_maxIP}
+\includegraphics[scale=0.40]{multiplanar_window_maxip_pt.png}
 \caption{Projeção MaxIP ou MIP}
 \label{fig:proj_maxip}
 \end{figure}
@@ -425,7 +448,7 @@ Como mostra a figura~\ref{fig:proj_maxip_qtd}, a quantidade de imagens que irá 
 
 \begin{figure}[H]
 \centering
-\includegraphics[scale=0.50]{proj_maxIP_qtd}
+\includegraphics[scale=0.80]{multiplanar_window_maxip_number_pt.png}
 \caption{Seleção da quantidade de imagens que compõe o MaxIP ou MIP}
 \label{fig:proj_maxip_qtd}
 \end{figure}
@@ -436,7 +459,7 @@ Ao contrário do MaxIP, o MinIP (\textit{Minimun Intensity Projection}) selecion
 
 \begin{figure}[H]
 \centering
-\includegraphics[scale=0.20]{proj_minIP}
+\includegraphics[scale=0.40]{multiplanar_window_minip_pt.png}
 \caption{Projeção MinIP}
 \label{fig:proj_minIP}
 \end{figure}
@@ -446,7 +469,7 @@ A técnica MeanIP (\textit{Mean Intensity Projection}) que é mostrada na figura
 
 \begin{figure}[H]
 \centering
-\includegraphics[scale=0.20]{proj_meanIP}
+\includegraphics[scale=0.40]{multiplanar_window_mean_pt.png}
 \caption{Projeção MeanIP}
 \label{fig:proj_meanIP}
 \end{figure}
@@ -457,7 +480,7 @@ A técnica MIDA (\textit{Maximum Intensity Difference Accumulation}) projeta uma
 
 \begin{figure}[H]
 \centering
-\includegraphics[scale=0.18]{proj_MIDA}
+\includegraphics[scale=0.40]{multiplanar_window_mida_pt.png}
 \caption{Projeção MIDA}
 \label{fig:proj_MIDA}
 \end{figure}
@@ -466,7 +489,7 @@ Como mostra a figura~\ref{fig:proj_MIDA_inv}, é possível inverter a ordem que 
 
 \begin{figure}[H]
 \centering
-\includegraphics[scale=0.18]{proj_MIDA_inv}
+\includegraphics[scale=0.40]{multiplanar_window_mida_inverted_pt}
 \caption{Projeção MIDA em ordem invertida}
 \label{fig:proj_MIDA_inv}
 \end{figure}
@@ -477,7 +500,7 @@ Compõe a projeção 2D do conjunto de imagens que contém o volume usando a té
 
 \begin{figure}[H]
 \centering
-\includegraphics[scale=0.20]{proj_contornoMaxIP}
+\includegraphics[scale=0.40]{multiplanar_window_contour_maxip_pt.png}
 \caption{Projeção de Contorno MaxIP}
 \label{fig:proj_contorno_maxip}
 \end{figure}
@@ -488,7 +511,7 @@ Compõe a projeção 2D do conjunto de imagens que contém o volume usando a té
 
 \begin{figure}[H]
 \centering
-\includegraphics[scale=0.20]{proj_contornoMIDA}
+\includegraphics[scale=0.40]{multiplanar_window_contour_mida_pt.png}
 \caption{Projeção de Contorno MIDA}
 \label{fig:proj_contorno_mida}
 \end{figure}

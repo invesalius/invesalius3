@@ -16,7 +16,7 @@ no item \textbf{2. Selecione a região de interesse} (figura \ref{fig:region_sel
 
 \begin{figure}[!htb]
 \centering
-\includegraphics[scale=0.4]{ScreenHunter01Jan201144.jpg}
+\includegraphics[scale=0.6]{segmentation_threshold_window_left_pt.png}
 \caption{Seleção de região de interesse}
 \label{fig:region_selection}
 \end{figure}
@@ -27,7 +27,7 @@ imagem com a região selecionada colorida e sobreposta à imagem original. Veja 
 
 \begin{figure}[!htb]
 \centering
-\includegraphics[scale=0.4]{limiar_principal}
+\includegraphics[scale=0.4]{segmentation_threshold_axial_pt.png}
 \caption{Máscara (regiões em amarelo)}
 \label{fig:region_selection_masc}
 \end{figure}
@@ -41,7 +41,7 @@ pintando somente os \textit{pixels} com intensidade dentro da faixa determinada.
 
 \begin{figure}[!htb]
 \centering
-\includegraphics[scale=0.7]{limiar_barra}
+\includegraphics[scale=0.75]{segmentation_threshold_bar.png}
 \caption{Seleção dos \textit{pixels} com intensidade entre 226 e 3021 (Osso)}
 \label{fig:region_selection_bar}
 \end{figure}
@@ -52,7 +52,7 @@ automaticamente.
 
 \begin{figure}[!htb]
 \centering
-\includegraphics[scale=0.6]{limiar_presets}
+\includegraphics[scale=0.65]{segmentation_threshold_presets_pt.png}
 \caption{Caixa de seleção de valores pré-definidos de limiar}
 \label{fig:limiar_presets}
 \end{figure}
@@ -107,7 +107,7 @@ Selecione a faixa de limiar desejada e clique em \textbf{OK}.
 
 \begin{figure}[!htb]
 \centering
-\includegraphics[scale=0.5]{limiar_janela}
+\includegraphics[scale=0.55]{segmentation_threshold_window_dialog_pt.png}
 \caption{Criar uma nova máscara}
 \label{fig:create_new_mask}
 \end{figure}
@@ -124,7 +124,7 @@ selecionar, \textbf{antes} da geração, a opção \textbf{Sobrescrever anterior
 
 \begin{figure}[!htb]
 \centering
-\includegraphics[scale=0.5]{generate_surface}
+\includegraphics[scale=0.55]{segmentation_generate_surface_pt.png}
 \caption{Botão Gerar superfície}
 \label{fig:generate_surface}
 \end{figure}
@@ -134,7 +134,7 @@ Após alguns instantes, a superfície será exibida na janela de visualização 
 
 \begin{figure}[!htb]
 \centering
-\includegraphics[scale=0.5]{3d_model}
+\includegraphics[scale=0.5]{surface_from_threshold.png}
 \caption{Superfície 3D}
 \label{fig:surface}
 \end{figure}
@@ -151,8 +151,8 @@ por parte do usuário. Para utilizá-la, é necessário clicar em \textbf{Ediç�
 
 \begin{figure}[!htb]
 \centering
-\includegraphics[scale=0.6]{edicao_avancada.png}
-\caption{Ferramentas avançadas de edição}
+\includegraphics[scale=0.75]{segmentation_manual_label_pt.png}
+\caption{Ícone para abrir a ferramenta de edição manual}
 \label{fig:advanced_edition}
 \end{figure}
 
@@ -160,7 +160,7 @@ O painel de edição aparece como mostra a figura \ref{fig:edition_slices_ref}.
 
 \begin{figure}[!htb]
 \centering
-\includegraphics[scale=0.5]{edition_slices}
+\includegraphics[scale=0.6]{segmentation_manual_window_pt.png}
 \caption{Painel de edição}
 \label{fig:edition_slices_ref}
 \end{figure}
@@ -172,7 +172,7 @@ mostra a figura \ref{fig:brush_type}.
 
 \begin{figure}[!htb]
 \centering
-\includegraphics[scale=0.5]{edit_pencil}
+\includegraphics[scale=0.9]{segmentation_manual_pencil_type.png}
 \caption{Tipo de pincel}
 \label{fig:brush_type}
 \end{figure}
@@ -183,7 +183,7 @@ Também é possível alterar o diâmetro do pincel, conforme mostra a figura \re
 
 \begin{figure}[!htb]
 \centering
-\includegraphics[scale=0.5]{diametro_pincel}
+\includegraphics[scale=0.8]{segmentation_manual_diameter.png}
 \caption{Seleção do diâmetro do pincel}
 \label{fig:select_diameter}
 \end{figure}
@@ -200,7 +200,7 @@ A figura \ref{fig:select_brush_operations} ilustra a lista de operações do pin
 
 \begin{figure}[!htb]
 \centering
-\includegraphics[scale=0.6]{select_brush_operation}
+\includegraphics[scale=0.7]{segmentation_manual_pencil_type_operation_type_pt.png}
 \caption{Seleção do tipo de operação do pincel}
 \label{fig:select_brush_operations}
 \end{figure}
@@ -212,7 +212,7 @@ seleciona parte dos ruídos, pois eles estão na mesma intensidade do limiar par
 
 \begin{figure}[!htb]
 \centering
-\includegraphics[scale=0.3]{noise_amalgam}
+\includegraphics[scale=0.3]{segmentation_manual_noise_amalgam.jpg}
 \caption{Imagem com ruído segmentada com limiar}
 \label{fig:noise_amalgaman}
 \end{figure}
@@ -222,14 +222,14 @@ segmentação.
 
 \begin{figure}[!htb]
 \centering
-\includegraphics[scale=0.3]{case_almagam}
+\includegraphics[scale=0.3]{segmentation_manual_noise_amalgam_3d.jpg}
 \caption{Superfície gerada a partir de imagem com ruído}
 \label{fig:surface_amagaman}
 \end{figure}
 
 \begin{figure}[!htb]
 \centering
-\includegraphics[scale=0.3]{case_almagam_zoom}
+\includegraphics[scale=0.3]{segmentation_manual_noise_amalgam_3d_zoom.jpg}
 \caption{Zoom da região com ruído}
 \label{fig:surface_amagaman_zoom}
 \end{figure}
@@ -245,14 +245,14 @@ edição.
 
 \begin{figure}[!htb]
 \centering
-\includegraphics[scale=0.3]{editor_amagam}
+\includegraphics[scale=0.3]{segmentation_manual_noise_amalgam_removed.jpg}
 \caption{Imagem com ruído removido}
 \label{fig:editor_amalgaman}
 \end{figure}
 
 \begin{figure}[!htb]
 \centering
-\includegraphics[scale=0.3]{edited_amalgam}
+\includegraphics[scale=0.3]{segmentation_manual_noise_amalgam_removed_3d_zoom.jpg}
 \caption{Superfície criada a partir da imagem com ruído removido}
 \label{fig:surface_edited_amalgaman}
 \end{figure}
@@ -261,13 +261,13 @@ edição.
 Realizada a edição, basta gerar a superfície a partir da imagem editada (figura
 \ref{fig:surface_edited_amalgaman}). Como houve edição, ao clicar em \textbf{Criar superfície}, será
 requerido se deseja gerar a superfície a partir do método \textbf{binário} ou utilizando o método de suavização
-\textbf{Context aware smoothing} (figura \ref{fig:new_surface_edited}) para minimizar os "degraus" na superfície.
+\textbf{Suavização sensível ao contexto} (figura \ref{fig:new_surface_edited}) para minimizar os "degraus" na superfície.
 Demais detalhes serão discutidos no capítulo \ref{cap_surface}.
 %\ref{fig:generate_surface}).
 
 \begin{figure}[!htb]
 \centering
-\includegraphics[scale=0.5]{create_surface_edited.png}
+\includegraphics[scale=0.5]{surface_generation_dialog_pt.png}
 \caption{Método de criação de superfície}
 \label{fig:new_surface_edited}
 \end{figure}
@@ -279,14 +279,7 @@ A segmentação por watershed, necessita que o usuário indique através de marc
 
 \begin{figure}[!htb]
 \centering
-\includegraphics[scale=0.6]{watershed_panel.png}
-\caption{Painel de segmentação por Watershed}
-\label{fig:watershed_painel}
-\end{figure}
-
-\begin{figure}[!htb]
-\centering
-\includegraphics[scale=0.6]{watershed_panel.png}
+\includegraphics[scale=0.75]{segmentation_watershed_panel_pt.png}
 \caption{Painel de segmentação por Watershed}
 \label{fig:watershed_painel}
 \end{figure}
@@ -296,11 +289,12 @@ Antes de iniciar a segmentação por Watershed, é recomendável limpar toda a m
 Para inserir marcadores de fundo e objeto, é utilizada uma ferramenta em forma de pincel, a exemplo da segmentação manual, existe a opção de selecionar pincel retangular ou circular, também é possível alterar o tamanho deles. 
 
 É necessário também selecionar o tipo de operação que será realizada pelo pincel. As opções são as
-seguintes:\\
-\\
-\textbf{Objeto}, para inserir marcadores de objeto;\\
-\textbf{Fundo}, para inserir marcadores de fundo (não é objeto);\\
-\textbf{Apagar}, para apagar marcadores de objeto ou fundo.\\
+seguintes:
+\begin{itemize}
+\item \textbf{Objeto}, para inserir marcadores de objeto;
+\item \textbf{Fundo}, para inserir marcadores de fundo (não é objeto);
+\item \textbf{Apagar}, para apagar marcadores de objeto ou fundo.
+\end{itemize}
 
 A opção "\textbf{Sobrescrever máscara}" é utilizada quando deseja-se que a máscara selecionada seja substituída pelo resultado da segmentação. Já a opção "\textbf{Considerar brilho e contraste}" é utilizada para o algoritmo levar em consideração a imagem que está sendo visualizada, assim é possível alterar o brilho e contraste e obter resultados melhores de segmentação.
 
@@ -317,7 +311,7 @@ A conectividade dos pixels que serão levados em consideração, pode ser altera
 
 \begin{figure}[!htb]
 \centering
-\includegraphics[scale=0.5]{watershed_opcao.png}
+\includegraphics[scale=0.55]{segmentation_watershed_conf_pt.png}
 \caption{Opções de configuração do método de Watershed}
 \label{fig:watershed_janela_conf}
 \end{figure}
@@ -328,72 +322,65 @@ Ainda na figura~\ref{fig:watershed_2d}, podemos visualizar os marcadores de obje
 
 \begin{figure}[!htb]
 \centering
-\includegraphics[scale=0.2]{watershed_2d.png}
+\includegraphics[scale=0.2]{segmentation_watershed_axial.png}
 \caption{Watershed aplicado em uma fatia de um volume.}
 \label{fig:watershed_2d}
 \end{figure}
 
 \begin{figure}[!htb]
 \centering
-\includegraphics[scale=0.2]{watershed_3d.png}
+\includegraphics[scale=0.4]{segmentation_watershed_multiplanar_3d_pt.png}
 \caption{Segmentação do cérebro com o método de Watershed aplicado em todo um volume (expandido em 3D).}
 \label{fig:watershed_3d}
 \end{figure}
 
-\section{Operações booleanas}
+\section{Crescimento de região}
 
-Após efetuar segmentações, é possível realizar operações booleanas entre as máscaras. As operações booleanas suportadas são:\\
-\\
-\textbf{União}, realiza a união de duas máscaras;\\
-\textbf{Diferença}, realiza a diferença entre a primeira máscara com a segunda;\\
-\textbf{Intersecção}, para apagar marcadores de objeto ou fundo.\\
-\textbf{Disjunção exclusiva}, também é conhecida como XOR, mantém as regiões de ambas as máscara que possuem diferença.\\
-
-Para ativar essa ferramenta é necessário ir no menu \textbf{Ferramentas}, \textbf{Operações boolenas}, como é exibido na figura~\ref{fig:booleano_menu} 
+A técnica de segmentação por crescimento de região é ativada no menu \textbf{Ferramentas}, \textbf{Segmentação}, por último \textbf{Crescimento de região} (figura~\ref{menu_segmentation_region_growing}). Inicialmente deve-se selecionar a configuração entre \textbf{2D - Fatia atual} ou \textbf{3D - Todas as fatias}, também é necessário selecionar a conectividade do crescimento entre $4$ ou $8$ para o 2D e $6$, $18$ ou $26$ para 3D. Por último é necessário selecionar o método, entre \textbf{Dinâmico, Limiar ou Confidência} (figura~\ref{fig:segmentation_region_growing_dinamic}).
 
 \begin{figure}[!htb]
 \centering
-\includegraphics[scale=0.5]{booleano_menu.png}
-\caption{Menu para ativar a ferramenta de operações booleanas.}
-\label{fig:booleano_menu}
+\includegraphics[scale=0.5]{menu_segmentation_region_growing_pt.png}
+\caption{Menu para ativar a segmentação por região de crescimento.}
+\label{fig:menu_segmentation_region_growing_pt}
 \end{figure}
-
-É necessário selecionar a primeira máscara, a operação a ser realizada e a segunda máscara conforme mostra a figura~\ref{fig:booleano_janela}. Em seguida é necessário clicar no botão \textbf{Ok}.
 
 \begin{figure}[!htb]
 \centering
-\includegraphics[scale=0.5]{boolano_janela.png}
-\caption{Ferramenta de operações booleanas.}
-\label{fig:booleano_janela}
+\includegraphics[scale=0.7]{segmentation_region_growing_dinamic_pt.png}
+\caption{Tela para ajuste de parâmetros de segmentação por crescimento de região.}
+\label{fig:segmentation_region_growing_dinamic}
 \end{figure}
 
-Na figura~\ref{fig:op_boolana}, apresentamos um exemplo de utilização da ferramenta.
+A técnica parte de um pixel inicial que é indicado clicando com o \textbf{botão direito} do mouse, os pixels vizinhos que satisfazem as condições indicadas anteriormente são selecionados. Cada método leva em consideração diferentes condições, a seguir são apresentadas as diferenças entre cada método:
 
-\begin{figure}[!htb]
-  \centering
-  \subfloat[Máscara A]{\includegraphics[width=0.332\textwidth]{booleano_m_a}}                
-  \hfill
-  \subfloat[Máscara B]{\includegraphics[width=0.332\textwidth]{booleano_m_b}}	
-  \hfill  
-  \subfloat[União (A $\cup$ B)]{\includegraphics[width=0.332\textwidth]{booleano_uniao}}
-  \hfill  
-  \subfloat[Diferença (A - B)]{\includegraphics[width=0.332\textwidth]{booleano_dif}}
-  \hfill  
-  \subfloat[Intersecção (A $\cap$ B)]{\includegraphics[width=0.332\textwidth]{booleano_interc}}
-  \hfill  
-  \subfloat[Disjunção exclusiva (A $\oplus$ B)]{\includegraphics[width=0.332\textwidth]{booleano_disj_exc}}
-  \caption{Exemplo de operações booleanas.}
-  \label{fig:op_boolana}
-\end{figure}
+\begin{itemize}
+	\item \textbf{Dinâmico}: Esse método captura o valor do pixel que foi clicado, levando em consideração o desvio para baixo (min) e desvio para cima (max). A opção \textbf{Considerar o brilho e contraste} é ativada por padrão, essa opção permite levar em consideração os valores de níveis de cinza que são exibidos e/ou ajustados na opção brilho e contraste. Ao desativar essa opção será levado em consideração os valores de cinza gravados na imagem (figura~\ref{fig:segmentation_region_growing_dinamic_parameter}). 
+	
+	\begin{figure}[!htb]
+	\centering
+	\includegraphics[scale=0.7]{segmentation_region_growing_dinamic_parameter_pt.png}
+	\caption{Ajuste de parâmetros para o método dinâmico.}
+	\label{fig:segmentation_region_growing_dinamic_parameter}
+	\end{figure}
+	
+	\item \textbf{Limiar}: O método limiar selecionará os pixels cuja a vizinhança estejam dentro do valor mínimo e máximo (figura~\ref{fig:segmentation_region_growing_limiar}).
 
-\section{Limpeza total da máscara}
-\label{cap:limpeza_mascara}
-
-Pode-se efetuar a limpeza total da máscara (figura~\ref{fig:limpeza_mascara}), isso é recomendado antes de iniciar a inserção de marcadores de Watershed. A ferramenta está localizada no menu, \textbf{Ferramentas}, \textbf{Máscara}, \textbf{Limpar máscara}, também é possível executa-la pressionando as teclas \textbf{CTRL+SHIFT+A}.
-
-\begin{figure}[!htb]
-\centering
-\includegraphics[scale=0.6]{watershed_limpeza.png}
-\caption{Limpeza de máscara}
-\label{fig:limpeza_mascara}
-\end{figure}
+	\begin{figure}[!htb]
+	\centering
+	\includegraphics[scale=0.7]{segmentation_region_growing_limiar_pt.png}
+	\caption{Ajuste de faixa de valores do método limiar.}
+	\label{fig:segmentation_region_growing_limiar}
+	\end{figure}	
+	
+	\item \textbf{Confidência}: O método (figura~\ref{fig:segmentation_region_growing_confidence_parameter})
+	
+	\begin{figure}[!htb]
+	\centering
+	\includegraphics[scale=0.7]{segmentation_region_growing_confidence_parameter_pt.png}
+	\caption{Ajuste de faixa de valores do método limiar.}
+	\label{fig:segmentation_region_growing_confidence_parameter}
+	\end{figure}	
+	
+	
+\end{itemize}
