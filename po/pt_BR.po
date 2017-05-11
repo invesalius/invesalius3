@@ -1169,7 +1169,7 @@ msgstr "Parâmetro"
 
 #: dialogs.py:2437
 msgid "Select mask parts"
-msgstr "javascript:;Selecionar partes da máscara"
+msgstr "Selecionar partes da máscara"
 
 #: dialogs.py:2465
 msgid "Target mask name"
