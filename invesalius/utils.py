@@ -400,7 +400,7 @@ def UpdateCheck():
 
         # Fetch update data from server
         import invesalius.constants as const
-        url = "http://www.cti.gov.br/dt3d/invesalius/update/checkupdate.php"
+        url = "https://www.cti.gov.br/dt3d/invesalius/update/checkupdate.php"
         headers = { 'User-Agent' : 'Mozilla/5.0 (compatible; MSIE 5.5; Windows NT)' }
         data = {'update_protocol_version' : '1', 
                 'invesalius_version' : const.INVESALIUS_VERSION,
