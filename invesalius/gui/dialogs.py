@@ -1052,7 +1052,7 @@ def ShowAboutDialog(parent):
 #       _("The software also allows generating correspondent STL files,")+\
 #       _("so the user can print 3D physical models of the patient's anatomy ")+\
 #       _("using Rapid Prototyping."), 350, wx.ClientDC(parent))
-    info.WebSite = ("http://www.cti.gov.br/invesalius")
+    info.WebSite = ("https://www.cti.gov.br/invesalius")
     info.License = _("GNU GPL (General Public License) version 2")
 
     info.Developers = ["Paulo Henrique Junqueira Amorim",
@@ -1060,6 +1060,8 @@ def ShowAboutDialog(parent):
                        "Jorge Vicente Lopes da Silva",
                        "Victor Hugo de Oliveira e Souza (navigator)",
                        "Renan Hiroshi Matsuda (navigator)",
+                       "André Salles Cunha Peres (navigator)",
+                       "Oswaldo Baffa Filho (navigator)",
                        "Tatiana Al-Chueyr (former)",
                        "Guilherme Cesar Soares Ruppert (former)",
                        "Fabio de Souza Azevedo (former)",
@@ -1067,21 +1069,33 @@ def ShowAboutDialog(parent):
                        "Olly Betts (patches to support wxPython3)"]
 
     info.Translators = ["Alex P. Natsios",
+                        "Alicia Perez",
                         "Anderson Antonio Mamede da Silva",
                         "Andreas Loupasakis",
+                        "Angelo Pucillo",
                         "Annalisa Manenti",
                         "Cheng-Chia Tseng",
+                        "Dan",
+                        "DCamer",
                         "Dimitris Glezos",
                         "Eugene Liscio",
                         u"Frédéric Lopez",
-                        "fri",
+                        "Florin Putura",
+                        "Fri",
+                        "Jangblue",
                         "Javier de Lima Moreno",
+                        "Kensey Okinawa",
+                        "Maki Sugimoto",
                         "Mario Regino Moreno Guerra",
                         "Massimo Crisantemo",
                         "Nikos Korkakakis",
                         "Raul Bolliger Neto",
                         "Sebastian Hilbert",
-                        "Semarang Pari"]
+                        "Semarang Pari",
+                        "Silvério Santos",
+                        "Vasily Shishkin",
+                        "Yohei Sotsuka",
+                        "Yoshihiro Sato"]
 
     #info.DocWriters = ["Fabio Francisco da Silva (PT)"]
 
