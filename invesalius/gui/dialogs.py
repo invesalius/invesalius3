@@ -2038,7 +2038,8 @@ class ImportBitmapParameters(wx.Dialog):
         box.AddSizer(gbs_principal, 1, wx.ALL|wx.EXPAND, 10)
         
         p.SetSizer(box)
-
+        box.Fit(self)
+        self.Layout()
 
     def bind_evts(self):
         self.btn_ok.Bind(wx.EVT_BUTTON, self.OnOk)
