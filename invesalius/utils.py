@@ -23,6 +23,8 @@ import re
 import locale
 import math
 
+from distutils.version import LooseVersion
+
 import numpy as np
 
 def format_time(value):
@@ -416,7 +418,14 @@ def UpdateCheck():
             return
         last = response.readline().rstrip()
         url = response.readline().rstrip()
-        if (last!=const.INVESALIUS_VERSION):
+
+        try:
+            last_ver = LooseVersion(last)
+            actual_ver = LooseVersion(const.INVESALIUS_VERSION)
+        except (ValueError, AttributeError):
+            return
+
+        if last_ver > actual_ver:
             print "  ...New update found!!! -> version:", last #, ", url=",url
             wx.CallAfter(wx.CallLater, 1000, _show_update_info)
 
