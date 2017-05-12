@@ -361,7 +361,6 @@ def export(path_, threshold_range):
     }
     Publisher.sendMessage('Create surface from index', surface_options)
     Publisher.sendMessage('Export surface to file', (path_, const.FILETYPE_STL))
-    Publisher.sendMessage('Remove surfaces', [0])
 
 
 def print_events(data):

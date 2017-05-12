@@ -661,7 +661,6 @@ class SurfaceManager():
             #  polydata.SetSource(None)
             del decimation
 
-        to_measure = polydata
         #to_measure.Register(None)
         #  to_measure.SetSource(None)
 
@@ -700,115 +699,133 @@ class SurfaceManager():
             #  polydata.DebugOn()
             del filled_polydata
 
-        normals = vtk.vtkPolyDataNormals()
-        #  normals.ReleaseDataFlagOn()
-        normals_ref = weakref.ref(normals)
-        normals_ref().AddObserver("ProgressEvent", lambda obj,evt:
-                        UpdateProgress(normals_ref(), _("Creating 3D surface...")))
-        normals.SetInputData(polydata)
-        normals.SetFeatureAngle(80)
-        normals.AutoOrientNormalsOn()
-        #  normals.GetOutput().ReleaseDataFlagOn()
-        normals.Update()
-        del polydata
-        polydata = normals.GetOutput()
-        #polydata.Register(None)
-        #  polydata.SetSource(None)
-        del normals
+        to_measure = polydata
 
-        # Improve performance
-        stripper = vtk.vtkStripper()
-        #  stripper.ReleaseDataFlagOn()
-        stripper_ref = weakref.ref(stripper)
-        stripper_ref().AddObserver("ProgressEvent", lambda obj,evt:
-                        UpdateProgress(stripper_ref(), _("Creating 3D surface...")))
-        stripper.SetInputData(polydata)
-        stripper.PassThroughCellIdsOn()
-        stripper.PassThroughPointIdsOn()
-        #  stripper.GetOutput().ReleaseDataFlagOn()
-        stripper.Update()
-        del polydata
-        polydata = stripper.GetOutput()
-        #polydata.Register(None)
-        #  polydata.SetSource(None)
-        del stripper
+        # If InVesalius is running without GUI
+        if wx.GetApp() is None:
+            proj = prj.Project()
+            #Create Surface instance
+            if overwrite:
+                surface = Surface(index = self.last_surface_index)
+                proj.ChangeSurface(surface)
+            else:
+                surface = Surface(name=surface_name)
+                index = proj.AddSurface(surface)
+                surface.index = index
+                self.last_surface_index = index
+            surface.colour = colour
+            surface.polydata = polydata
 
-        # Map polygonal data (vtkPolyData) to graphics primitives.
-        mapper = vtk.vtkPolyDataMapper()
-        mapper.SetInputData(polydata)
-        mapper.ScalarVisibilityOff()
-        #  mapper.ReleaseDataFlagOn()
-        mapper.ImmediateModeRenderingOn() # improve performance
-
-        # Represent an object (geometry & properties) in the rendered scene
-        actor = vtk.vtkActor()
-        actor.SetMapper(mapper)
-        del mapper
-        #Create Surface instance
-        if overwrite:
-            surface = Surface(index = self.last_surface_index)
+        # With GUI
         else:
-            surface = Surface(name=surface_name)
-        surface.colour = colour
-        surface.polydata = polydata
-        del polydata
+            normals = vtk.vtkPolyDataNormals()
+            #  normals.ReleaseDataFlagOn()
+            normals_ref = weakref.ref(normals)
+            normals_ref().AddObserver("ProgressEvent", lambda obj,evt:
+                            UpdateProgress(normals_ref(), _("Creating 3D surface...")))
+            normals.SetInputData(polydata)
+            normals.SetFeatureAngle(80)
+            normals.AutoOrientNormalsOn()
+            #  normals.GetOutput().ReleaseDataFlagOn()
+            normals.Update()
+            del polydata
+            polydata = normals.GetOutput()
+            #polydata.Register(None)
+            #  polydata.SetSource(None)
+            del normals
 
-        # Set actor colour and transparency
-        actor.GetProperty().SetColor(colour)
-        actor.GetProperty().SetOpacity(1-surface.transparency)
+            # Improve performance
+            stripper = vtk.vtkStripper()
+            #  stripper.ReleaseDataFlagOn()
+            stripper_ref = weakref.ref(stripper)
+            stripper_ref().AddObserver("ProgressEvent", lambda obj,evt:
+                            UpdateProgress(stripper_ref(), _("Creating 3D surface...")))
+            stripper.SetInputData(polydata)
+            stripper.PassThroughCellIdsOn()
+            stripper.PassThroughPointIdsOn()
+            #  stripper.GetOutput().ReleaseDataFlagOn()
+            stripper.Update()
+            del polydata
+            polydata = stripper.GetOutput()
+            #polydata.Register(None)
+            #  polydata.SetSource(None)
+            del stripper
 
-        prop = actor.GetProperty()
+            # Map polygonal data (vtkPolyData) to graphics primitives.
+            mapper = vtk.vtkPolyDataMapper()
+            mapper.SetInputData(polydata)
+            mapper.ScalarVisibilityOff()
+            #  mapper.ReleaseDataFlagOn()
+            mapper.ImmediateModeRenderingOn() # improve performance
 
-        interpolation = int(ses.Session().surface_interpolation)
+            # Represent an object (geometry & properties) in the rendered scene
+            actor = vtk.vtkActor()
+            actor.SetMapper(mapper)
+            del mapper
+            #Create Surface instance
+            if overwrite:
+                surface = Surface(index = self.last_surface_index)
+            else:
+                surface = Surface(name=surface_name)
+            surface.colour = colour
+            surface.polydata = polydata
+            del polydata
 
-        prop.SetInterpolation(interpolation)
+            # Set actor colour and transparency
+            actor.GetProperty().SetColor(colour)
+            actor.GetProperty().SetOpacity(1-surface.transparency)
 
-        proj = prj.Project()
-        if overwrite:
-            proj.ChangeSurface(surface)
-        else:
-            index = proj.AddSurface(surface)
-            surface.index = index
-            self.last_surface_index = index
+            prop = actor.GetProperty()
 
-        session = ses.Session()
-        session.ChangeProject()
+            interpolation = int(ses.Session().surface_interpolation)
 
-        # The following lines have to be here, otherwise all volumes disappear
-        measured_polydata = vtk.vtkMassProperties()
-        #  measured_polydata.ReleaseDataFlagOn()
-        measured_polydata.SetInputData(to_measure)
-        volume =  float(measured_polydata.GetVolume())
-        area =  float(measured_polydata.GetSurfaceArea())
-        surface.volume = volume
-        surface.area = area
-        self.last_surface_index = surface.index
-        del measured_polydata
-        del to_measure
+            prop.SetInterpolation(interpolation)
 
-        Publisher.sendMessage('Load surface actor into viewer', actor)
+            proj = prj.Project()
+            if overwrite:
+                proj.ChangeSurface(surface)
+            else:
+                index = proj.AddSurface(surface)
+                surface.index = index
+                self.last_surface_index = index
 
-        # Send actor by pubsub to viewer's render
-        if overwrite and self.actors_dict.keys():
-            old_actor = self.actors_dict[self.last_surface_index]
-            Publisher.sendMessage('Remove surface actor from viewer', old_actor)
+            session = ses.Session()
+            session.ChangeProject()
 
-        # Save actor for future management tasks
-        self.actors_dict[surface.index] = actor
+            measured_polydata = vtk.vtkMassProperties()
+            #  measured_polydata.ReleaseDataFlagOn()
+            measured_polydata.SetInputData(to_measure)
+            volume =  float(measured_polydata.GetVolume())
+            area =  float(measured_polydata.GetSurfaceArea())
+            surface.volume = volume
+            surface.area = area
+            self.last_surface_index = surface.index
+            del measured_polydata
+            del to_measure
 
-        Publisher.sendMessage('Update surface info in GUI',
-                                    (surface.index, surface.name,
-                                    surface.colour, surface.volume,
-                                    surface.area,
-                                    surface.transparency))
+            Publisher.sendMessage('Load surface actor into viewer', actor)
 
-        #When you finalize the progress. The bar is cleaned.
-        UpdateProgress = vu.ShowProgress(1)
-        UpdateProgress(0, _("Ready"))
-        Publisher.sendMessage('Update status text in GUI', _("Ready"))
+            # Send actor by pubsub to viewer's render
+            if overwrite and self.actors_dict.keys():
+                old_actor = self.actors_dict[self.last_surface_index]
+                Publisher.sendMessage('Remove surface actor from viewer', old_actor)
 
-        Publisher.sendMessage('End busy cursor')
-        del actor
+            # Save actor for future management tasks
+            self.actors_dict[surface.index] = actor
+
+            Publisher.sendMessage('Update surface info in GUI',
+                                        (surface.index, surface.name,
+                                        surface.colour, surface.volume,
+                                        surface.area,
+                                        surface.transparency))
+
+            #When you finalize the progress. The bar is cleaned.
+            UpdateProgress = vu.ShowProgress(1)
+            UpdateProgress(0, _("Ready"))
+            Publisher.sendMessage('Update status text in GUI', _("Ready"))
+
+            Publisher.sendMessage('End busy cursor')
+            del actor
 
     def UpdateSurfaceInterpolation(self, pub_evt):
         interpolation = int(ses.Session().surface_interpolation)
