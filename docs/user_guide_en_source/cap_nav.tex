@@ -1,115 +1,137 @@
-\chapter{Neuronavegação}
+\chapter{Neuronavegation}
 \label{sec:neuronavegador}
 
-A introdução sobre a neuronavegação é feita na seção~\ref{sec:neuronavegador_intro}, é recomendável a leitura caso não tenha sido feita.
+An introduction to neuronavigation theory was presented in section~\ref{sec:neuronavegador_intro}. Reading is recommended before its use.
 
-Para utilizar o neuronavegador, é necessário habilitar o modo de neuronavegação do InVesalius selecionando no menu \textbf{Modo} em seguida \textbf{Navegação} (figura~\ref{fig:nav_menu_pt}). Será ativada uma nova aba "Sistema de navegação" que ficará visível no painel à esquerda da janela principal como é apresentado na figura~\ref{fig:nav_painel_pt}.
+Enable the InVesalius neuronavigation mode by selecting the \textbf{Mode} tab in the main menu and
+then \textbf{Navigation}, figure ~\ref{fig:nav_menu_pt}. A \textbf{Navigation System} tab will be visible in the
+panel in the left of the main window, as shown in figure~\ref{fig:nav_painel_pt}.
 
 \begin{figure}[!htb]
 \centering
 \includegraphics[scale=0.4]{nav_menu_pt.png}
-\caption{Menu para ativar o modulo de neuronavegação.}
+\caption{Menu to enable neuronavigation mode.}
 \label{fig:nav_menu_pt}
 \end{figure}
 
 \begin{figure}[!htb]
 \centering
 \includegraphics[scale=0.6]{nav_painel_pt.png}
-\caption{Aba do sistema de neuronavegação.}
+\caption{Tab for navigation system.}
 \label{fig:nav_painel_pt}
 \end{figure}
 
-\section{Rastreadores espaciais e modo de referência}
+\section{Spatial trackers and reference mode}
 
-O sistema de neuronavegação se comunica com vários sistemas de rastreamento espacial. Atualmente, suporta os dispositivos fabricados pela ClaroNav (figura~\ref{fig:tracker_claron}) e Polhemus (figura~\ref{fig:tracker_polhemus}). 
+Currently, InVesalius Navigator supports three spatial tracking devices from two manufacturers, the MicronTracker
+from ClaroNav (Toronto, Canada; figure~\ref{fig:tracker_claron}) and Fastrak, Isotrak and Patriot
+from Polhemus (Colchester, United States; figure~\ref{fig:tracker_polhemus}).
 
-O usuário deve selecionar o dispositivo correspondente no botão \textbf{Selecione o rastreador:}, figura~\ref{fig:nav_select_tracker}.  Caso o usuário não possua nenhum dos rastreadores suportados e deseja realizar um teste do sistema, deve selecionar a opção \textbf{Depurar rastreador} e realizar normalmente os procedimentos que serão citados a seguir. Nessa opção, trata-se de uma simulação, do qual serão geradas coordenadas aleatórias.
+After this, the first step is to choose the tracker in the menu \textbf{Select tracker:}, figure~\ref{fig:nav_select_tracker}.
+The option \textbf{Debug tracker} allows the user to test the system even if none spatial tracker is connected.
+This option simulates a spatial tracker by generating random coordinates.
 
 \begin{figure}[!htb]
 \centering
 \includegraphics[scale=0.4]{tracker_claron.png}
-\caption{Rastreador Claron - www.claronav.com/microntracker/.}
+\caption{ClaroNav MicronTracker - www.claronav.com/microntracker/.}
 \label{fig:tracker_claron}
 \end{figure}
 
 \begin{figure}[!htb]
 \centering
 \includegraphics[scale=0.5]{tracker_polhemus.jpg}
-\caption{Rastreador Polhemus - http://polhemus.com/motion-tracking/overview/.}
+\caption{Polhemus Patriot tracker - http://polhemus.com/motion-tracking/overview/.}
 \label{fig:tracker_polhemus}
 \end{figure}
 
 \begin{figure}[!htb]
 \centering
 \includegraphics[scale=0.5]{nav_select_tracker_pt.png}
-\caption{Menu para seleção de rastreador.}
+\caption{Menu to select tracking device.}
 \label{fig:nav_select_tracker}
 \end{figure}
 
-É possível realizar a navegação com dois diferentes tipos de referência, estático e dinâmico (figura~\ref{fig:nav_menu_ref}). No modo estático as coordenadas do dispositivo de rastreamento são detectadas com apenas uma sonda. Este modo de navegação é chamado de modo de referência estática porque a cabeça dos sujeitos deve permanecer estática na posição em que foram detectados os pontos fiduciais (Mais informações na seção~\ref{sec:corregistro}). 
-Para evitar problemas relacionados com o movimento da cabeça, alguns dispositivos de rastreamento fornecem uma sonda de referência. A sonda de referência pode ser ligada a uma parte não móvel da cabeça, por exemplo testa, para acompanhar as translações e rotações durante o procedimento de navegação. O uso de uma sonda de referência é o chamado modo de referência dinâmica.
+There are two references types to perform the navigation, static and dynamic (figure~\ref{fig:nav_menu_ref}).
+Static mode uses just one spatial tracker probe. In this mode, the subject head must stay motionless after
+registration (for more info about coregistration see section~\ref{sec:corregistro}). To avoid head movements artifacts,
+a reference probe attached to some static part of the head is required, e.g. forehead. During neuronavigation
+procedures, the reference probe will detect and correct the translation and rotation from the head.
+This mode is known as dynamic reference.
 
 \begin{figure}[!htb]
 \centering
 \includegraphics[scale=0.5]{nav_menu_ref.png}
-\caption{Menu para seleção de referência.}
+\caption{Menu to select reference mode.}
 \label{fig:nav_menu_ref}
 \end{figure}
 
-\section{Corregistro}
+\section{Coregistration}
 \label{sec:corregistro}
 
-O objetivo do corregistro é estabelecer uma relação entre o espaço de coordenadas do rastreador espacial e o espaço de coordenadas virtual (imagem). Para realizar o corregistro, o usuário deve selecionar três marcadores fiduciais na imagem, para isso primeiramente deverá ativar o recurso de \textbf{Correspondência entre as orientações axial, sagital e coronal} (ver seção~\ref{sec:corresp_all_orient}), coletar as três coordenadas fiduciais usando a sonda do dispositivo de rastreamento. Os fiduciais mais utilizados são o trago auricular esquerdo, trago auricular direito e a fossa nasal. A figura~\ref{fig:nav_selec_coord} ilustra a coleta dos pontos fiduciais. Quando é selecionado algum ponto fiducial na imagem, automaticamente é criado um marcador (esfera da cor verde) no volume, figura~\ref{fig:nav_balls_in_head}.
+The aim of coregistration procedure is to find a relation that transforms a coordinate given in the tracking device space
+to a coordinate in the virtual space (image). To perform the coregistration, the user must
+use the function of \textbf{Correspondence between orientations axial, sagittal and coronal} (see section~\ref{sec:corresp_all_orient})
+and select three anatomical fiducials in the image and then collect the same three fiducials with the spatial tracker.
+The most common anatomical fiducials are the nasion and both tragus (ears). Figure~\ref{fig:nav_selec_coord} shows the fiducials panel.
+When some image fiducial is selected, a marker (green sphere) is created in the volume, figure~\ref{fig:nav_balls_in_head}.
 
 \begin{figure}[!htb]
 \centering
 \includegraphics[scale=0.5]{nav_selec_coord_pt.png}
-\caption{Botões e coordenadas para seleção de pontos fiduciais.}
+\caption{Buttons and coordinates to select anatomical fiducials.}
 \label{fig:nav_selec_coord}
 \end{figure}
 
-As siglas dos botões para coleta dos fiduciais representam:
+The buttons acronyms represent:
 
 \begin{itemize}
-	\item OEI: trago auricular esquerdo na imagem
-	\item ODI: trago auricular direito na imagem
-	\item NAI: fossa nasal na imagem
-	\item OER: trago auricular esquerdo no rastreador
-	\item OER: trago auricular direito no rastreador
-	\item NAR: fossa nasal esquerdo no rastreador
+	\item LEI: left ear in image
+	\item REI: right ear in image
+	\item NAI: nasion in image
+	\item LET: left ear with spatial tracker
+	\item RET: right ear with spatial tracker
+	\item NAT: nasion with spatial tracker
 \end{itemize}
 
 \begin{figure}[!htb]
 \centering
 \includegraphics[scale=0.5]{nav_balls_in_head.png}
-\caption{Criação de marcadores nos pontos fiduciais da imagem.}
+\caption{Selected fiducial markers represented as green spheres.}
 \label{fig:nav_balls_in_head}
 \end{figure}
 
 
-\section{Erro de registro fiducial e navegação}
+\section{Fiducial registration error and navigation}
 
-Após o usuário selecionar os três pontos fiduciais na imagem e os respectivos pontos com o rastreador espacial, o próximo passo é clicar no \textbf{botão Navegar} e o procedimento de navegação será iniciado. Para pausar a navegação, basta clicar novamente no \textbf{botão Navegar}. Automaticamente após selecionado a navegação é calculado o erro de registro fiducial, conhecido como \textit{Fiducial Registration Error} (FRE). Esse erro representa a distância média quadrática do ponto fiducial na imagem com o respectivo ponto fiducial obtido após realizado o corregistro. 
+After all fiducials are selected in both spaces (tracker and image) the next step is to press button \textbf{Navegate}
+button to start the neuronavigation. To stop navigation just press the button \textbf{Navigate} again.
+Immediately after the navigation starts, the  \textit{Fiducial Registration Error} (FRE) is calculated. The FRE is the
+root mean square distance between the image fiducials used for and after registration.
 
-Ao lado do botão de navegação, há a caixa de texto respectivo ao FRE. Se o FRE apresentar um valor alto (acima de 3 mm) a navegação não será precisa e a caixa de texto ficará vermelha, figura~\ref{fig:nav_fre_error}, recomenda-se que o corregistro seja refeito. Caso contrário, para FRE menor que 3 mm a caixa de texto fica verde, representando que a navegação terá precisão aceitável, figura~\ref{fig:nav_fre_ok}.
+In the left side of navigate button there is a FRE text box. If FRE is high (greater than 3 mm) the navigation will not
+be precise and the text box will become red, figure~\ref{fig:nav_fre_error}, it is recommended that the coregistration
+is redone. Otherwise, if FRE is lower than 3 mm, the text box becomes green, showing that the navigation has an
+acceptable precision, figure~\ref{fig:nav_fre_ok}.
 
 \begin{figure}[!htb]
 \centering
 \includegraphics[scale=0.6]{nav_fre_error_pt.png}
-\caption{Botão de navegação e FRE com valor elevado para navegação.}
+\caption{Navigation button and high FRE unsuitable for navigation.}
 \label{fig:nav_fre_error}
 \end{figure}
 
 \begin{figure}[!htb]
 \centering
 \includegraphics[scale=0.6]{nav_fre_ok_pt.png}
-\caption{Botão de navegação e FRE com valor aceitável para navegação.}
+\caption{Navigation button and low FRE suitable for navigation.}
 \label{fig:nav_fre_ok}
 \end{figure}
 
-\section{Marcadores}
+\section{Markers}
 
-Durante a navegação, é possível criar marcadores esféricos no volume 3D. Para acessar essa função, basta clicar na aba \textbf{Ferramentas extras}, figura~\ref{fig:nav_extra_tools}.
+During navigation, it is possible to create sphere markers in the 3D volume. To do that, the user needs to select
+\textbf{Extra tools} tab, figure~\ref{fig:nav_extra_tools}.
 
 \begin{figure}[!htb]
 \centering
@@ -118,42 +140,56 @@ Durante a navegação, é possível criar marcadores esféricos no volume 3D. Pa
 \label{fig:nav_extra_tools}
 \end{figure}
 
-A criação de marcadores pode ser executada clicando no botão correspondente, com isso será criado um marcador na posição da cruz vermelha com as características escolhidas na aba, figura~\ref{fig:nav_extra_tools}. O número 4 representa o tamanho do raio da esfera que será criada. Ao lado do tamanho do marcador é possível definir a cor da esfera (figura~\ref{fig:nav_vol_with_markers}). 
+The marker creation will be positioned in the current red cross position. The size and color can be
+changed, figure~\ref{fig:nav_vol_with_markers}.
 
-Caso o usuário desejar identificar o marcador criado no volume, um \textbf{clique duplo com o botão esquerdo do mouse} deve ser realizado no marcador desejado, com isso o respectivo começará a piscar.
-
-É possível criar uma identificação para o marcador, para isso, deve-se clicar com o botão direto sobre o marcador desejado e selecionar \textbf{Editar ID}, figura~\ref{fig:nav_id_list_markers}, será aberto uma janela para o usuário digitar a identificação, figura~\ref{fig:nav_edit_id_markers}.
+When a marker is created, its coordinates appear in the list control. To identify one marker of the list control in the
+volume, \textbf{double-click with left mouse button} the target item and the corresponding marker will blink.
+To stop blinking the markers, the user just needs to select another marker, i.e. press once in another item.
+It is also possible to create an ID to the marker, and to do that right click and select \textbf{Edit ID}, like
+in figure ~\ref{fig:nav_id_list_markers}. Finally, a window will open allowing the user to create
+the ID, figure~\ref{fig:nav_edit_id_markers}.
 
 \begin{figure}[!htb]
 \centering
 \includegraphics[scale=0.4]{nav_vol_with_markers.png}
-\caption{Volume com marcadores em diferentes cores.}
+\caption{Volume with different colors markers.}
 \label{fig:nav_vol_with_markers}
 \end{figure} 
 
 \begin{figure}[!htb]
 \centering
 \includegraphics[scale=0.6]{nav_id_list_markers_pt.png}
-\caption{Aba para manipulação de marcadores.}
+\caption{Task to manage marker creation.}
 \label{fig:nav_id_list_markers}
 \end{figure} 
 
 \begin{figure}[!htb]
 \centering
 \includegraphics[scale=0.6]{nav_edit_id_markers_pt.png}
-\caption{Janela para editar identificação do marcador.}
+\caption{Window to label the marker.}
 \label{fig:nav_edit_id_markers}
 \end{figure} 
 
-A exportação dos marcadores é feita através do \textbf{botão salvar}, a extensão do arquivo gerado é o .mks. Essa extensão de arquivo pode ser aberta por processadores de texto como bloco de notas. O arquivo possui as coordenadas $X$, $Y$ e $Z$ seguido o código $RGB$, tamanho de marcador e a identificação. Posteriormente, esse arquivo pode ser importado através do \textbf{botão Carregar}.
+The marker coordinates may be exported using the button \textbf{Save}. File extension is \textit{.mks}. This extension can be
+opened in any word processor, e.g. Notepad or WordPad software. The file has the X, Y and Z coordinates followed by the RGB code,
+marker size and ID. Posteriorly, the markers can be importated to the navigation system using button \textbf{Load}.
 
-Caso o usuário desejar excluir apenas um marcador basta \textbf{selecionar} o item desejado na lista e clicar no \textbf{botão Remover}, também existe a opção de excluir todos os marcadores criados, \textbf{Deletar todos marcadores}. Além disso, pode-se ocultar/mostrar a exibição dos marcadores no volume pelo \textbf{botão ocultar/mostrar}.
+To remove markers, \textbf{select} one or as much markers needed to be deleted and press button \textbf{Remove}.
+It is also possible to remove all markers, with the button \textbf{Remove all markers}. Another functionality
+is to hide/show the markers in the volume using the \textbf{button show/hide}.
 
-\section{Caixas de seleção, trigger externo}
 
-Outra maneira para criação de marcadores é a monitoração externa de trigger. Para ativa-la basta selecionar a caixa de seleção \textbf{Trigger externo}. Essa função foi desenvolvida para comunicar dispositivos EMT e criar automaticamente o marcador em posições onde os pulsos foram aplicados. No entanto, outras aplicações são possíveis de acordo com a necessidade do usuário.
-A comunicação com o dispositivo externo é feita através da porta serial COM1, e basta enviar qualquer sinal do tipo RS-232 em uma velocidade \textit{baud rate} de 9600 no pino de recepção que será criado um marcador na atual posição da cruz.
+\section{External trigger checkbox}
 
-\section{Câmera do volume}
+Another way to create markers is using an external trigger. To activate this feature, just press the
+checkbox \textbf{External trigger} before the navigation starts. This function was developed to communicate with
+TMS devices, to create a marker whereas the pulses are applied. Besides, it is possible to adapt this function as
+the user needs. The communication with the external device requires a serial port COM1. If this port receives
+any RS-232 signal in 9600 \textit{baud rate} it will create a marker in the current red cross position.
 
-O posicionamento da câmera do volume é atualizado automaticamente, tanto pela posição da cruz vermelha das fatias quanto pela posição da sonda durante a navegação. O usuário pode desabilitar a atualização automática e atualizar a câmera manualmente. O posicionamento será alterado caso o usuário o fizer na janela de volume.  Para isso, basta desmarcar a caixa de seleção \textbf{Câmera do volume}.
+\section{Camera volume checkbox}
+
+The volume camera positioning is updated automatically, both by the red cross and the spatial tracker probe positioning.
+The user can disable this function by unchecking the \textbf{Camera volume} checkbox.
+Therefore, the camera has to be manually changed.
