@@ -61,6 +61,7 @@ class Controller():
 
     def __bind_events(self):
         Publisher.subscribe(self.OnImportMedicalImages, 'Import directory')
+        Publisher.subscribe(self.OnImportGroup, 'Import group')
         Publisher.subscribe(self.OnShowDialogImportDirectory,
                                  'Show import directory dialog')
         Publisher.subscribe(self.OnShowDialogImportOtherFiles,
@@ -440,10 +441,11 @@ class Controller():
     #----------- to import by command line ---------------------------------------------------
 
     def OnImportMedicalImages(self, pubsub_evt):
-        directory = pubsub_evt.data
-        self.ImportMedicalImages(directory)
+        directory = pubsub_evt.data['directory']
+        gui = pubsub_evt.data['gui']
+        self.ImportMedicalImages(directory, gui)
 
-    def ImportMedicalImages(self, directory):
+    def ImportMedicalImages(self, directory, gui=True):
         patients_groups = dcm.GetDicomGroups(directory)
         name = directory.rpartition('\\')[-1].split('.')
         print "patients: ", patients_groups
@@ -451,7 +453,7 @@ class Controller():
         if len(patients_groups):
             # OPTION 1: DICOM
             group = dcm.SelectLargerDicomGroup(patients_groups)
-            matrix, matrix_filename, dicom = self.OpenDicomGroup(group, 0, [0, 0], gui=True)
+            matrix, matrix_filename, dicom = self.OpenDicomGroup(group, 0, [0, 0], gui=gui)
             self.CreateDicomProject(dicom, matrix, matrix_filename)
         else:
             # OPTION 2: NIfTI, Analyze or PAR/REC
@@ -470,6 +472,18 @@ class Controller():
             matrix, matrix_filename = self.OpenOtherFiles(group)
             self.CreateOtherProject(str(name[0]), matrix, matrix_filename)
             # OPTION 4: Nothing...
+
+        self.LoadProject()
+        Publisher.sendMessage("Enable state project", True)
+
+    def OnImportGroup(self, pubsub_evt):
+        group = pubsub_evt.data['group']
+        gui = pubsub_evt.data['gui']
+        self.ImportGroup(group, gui)
+
+    def ImportGroup(self, group, gui=True):
+        matrix, matrix_filename, dicom = self.OpenDicomGroup(group, 0, [0, 0], gui=gui)
+        self.CreateDicomProject(dicom, matrix, matrix_filename)
 
         self.LoadProject()
         Publisher.sendMessage("Enable state project", True)
@@ -788,7 +802,7 @@ class Controller():
         n_slices = len(filelist)
         resolution_percentage = utils.calculate_resizing_tofitmemory(int(sx), int(sy), n_slices, bits/8)
         
-        if resolution_percentage < 1.0:
+        if resolution_percentage < 1.0 and gui:
             re_dialog = dialog.ResizeImageDialog()
             re_dialog.SetValue(int(resolution_percentage*100))
             re_dialog_value = re_dialog.ShowModal()

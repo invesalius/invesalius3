@@ -26,6 +26,8 @@ import sys
 import shutil
 import traceback
 
+import re
+
 if sys.platform == 'win32':
     import _winreg
 else:
@@ -270,6 +272,9 @@ def parse_comand_line():
                       action="store",
                       dest="dicom_dir")
 
+    parser.add_option("--import-all",
+                      action="store")
+
     parser.add_option("-s", "--save",
                       help="Save the project after an import.")
 
@@ -296,7 +301,7 @@ def use_cmd_optargs(options, args):
     # If import DICOM argument...
     if options.dicom_dir:
         import_dir = options.dicom_dir
-        Publisher.sendMessage('Import directory', import_dir)
+        Publisher.sendMessage('Import directory', {'directory': import_dir, 'gui': not options.no_gui})
 
         if options.save:
             Publisher.sendMessage('Save project', os.path.abspath(options.save))
@@ -304,6 +309,14 @@ def use_cmd_optargs(options, args):
 
         check_for_export(options)
 
+        return True
+    elif options.import_all:
+        import invesalius.reader.dicom_reader as dcm
+        for patient in dcm.GetDicomGroups(options.import_all):
+            for group in patient.GetGroups():
+                Publisher.sendMessage('Import group', {'group': group, 'gui': not options.no_gui})
+                check_for_export(options, suffix=group.title, remove_surfaces=False)
+                Publisher.sendMessage('Remove masks', [0])
         return True
 
     # Check if there is a file path somewhere in what the user wrote
@@ -320,13 +333,29 @@ def use_cmd_optargs(options, args):
     return False
 
 
-def check_for_export(options):
+def sanitize(text):
+    text = str(text).strip().replace(' ', '_')
+    return re.sub(r'(?u)[^-\w.]', '', text)
+
+
+def check_for_export(options, suffix='', remove_surfaces=False):
+    suffix = sanitize(suffix)
+
     if options.export:
         if not options.threshold:
             print("Need option --threshold when using --export.")
             exit(1)
-        threshold_range = tuple([int(n) for n in options.threshold.split('-')])
-        export(options.export, threshold_range)
+        threshold_range = tuple([int(n) for n in options.threshold.split(',')])
+
+        if suffix:
+            if options.export.endswith('.stl'):
+                path_ = '{}-{}.stl'.format(options.export[:-4], suffix)
+            else:
+                path_ = '{}-{}.stl'.format(options.export, suffix)
+        else:
+            path_ = options.export
+
+        export(path_, threshold_range, remove_surface=remove_surfaces)
     elif options.export_to_all:
         # noinspection PyBroadException
         try:
@@ -334,15 +363,15 @@ def check_for_export(options):
 
             for threshold_name, threshold_range in Project().presets.thresh_ct.iteritems():
                 if isinstance(threshold_range[0], int):
-                    path_ = u'{}-{}.stl'.format(options.export_to_all, threshold_name)
-                    export(path_, threshold_range)
+                    path_ = u'{}-{}-{}.stl'.format(options.export_to_all, suffix, threshold_name)
+                    export(path_, threshold_range, remove_surface=True)
         except:
             traceback.print_exc()
         finally:
             exit(0)
 
 
-def export(path_, threshold_range):
+def export(path_, threshold_range, remove_surface=False):
     import invesalius.constants as const
 
     Publisher.sendMessage('Set threshold values', threshold_range)
@@ -362,6 +391,8 @@ def export(path_, threshold_range):
     }
     Publisher.sendMessage('Create surface from index', surface_options)
     Publisher.sendMessage('Export surface to file', (path_, const.FILETYPE_STL))
+    if remove_surface:
+        Publisher.sendMessage('Remove surfaces', [0])
 
 
 def print_events(data):
