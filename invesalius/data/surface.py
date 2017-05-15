@@ -180,14 +180,15 @@ class SurfaceManager():
         if selected_items:
             for index in selected_items:
                 proj.RemoveSurface(index)
-                actor = old_dict[index]
-                for i in old_dict:
-                    if i < index:
-                        new_dict[i] = old_dict[i]
-                    if i > index:
-                        new_dict[i-1] = old_dict[i]
-                old_dict = new_dict
-                Publisher.sendMessage('Remove surface actor from viewer', actor)
+                if index in old_dict:
+                    actor = old_dict[index]
+                    for i in old_dict:
+                        if i < index:
+                            new_dict[i] = old_dict[i]
+                        if i > index:
+                            new_dict[i-1] = old_dict[i]
+                    old_dict = new_dict
+                    Publisher.sendMessage('Remove surface actor from viewer', actor)
             self.actors_dict = new_dict
 
         if self.last_surface_index in selected_items:
