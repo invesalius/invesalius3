@@ -79,138 +79,118 @@ In figure \ref{fig:coronal_slice} is displayed  a skull image in coronal orienta
 \end{figure}
 
 
-\section{Correspondência entre as orientações axial, sagital e coronal}
+\section{Correspondence between the axial, sagittal and coronal orientations}
 \label{sec:corresp_all_orient}
 
-Para saber qual o ponto comum das imagens nas diferentes orientações, basta acionar o
-recurso "Cruz de interseção de fatias" pelo ícone de atalho localizado na barra de ferramentas.
-Veja a figura \ref{fig:cross_icon}.
+To find out the common point of the images in differents orientations, simply activate the "Slices' cross intersection" feature with the shortcut icon located on the toolbar.
+See figure \ref{fig:cross_icon}.
 
 \begin{figure}[!htb]
 \centering
 \includegraphics[scale=1]{cross.png}
-\caption{Atalho para mostrar ponto comum entre diferentes orientações}
+\caption{Shortcut to show common point between different orientations}
 \label{fig:cross_icon}
 \end{figure}
 
-Quando o recurso é acionado, dois segmentos de reta que se cruzam perpendicularmente são exibidos
-sobre cada imagem (figura \ref{fig:cross_all}). O ponto de interseção de cada par de segmentos
-representa o ponto comum  entre as diferentes orientações.
+When the feature is fired, two cross segments that intersect perpendicularly are displayed on each image (figure \ref{fig:cross_all}). The intersection point of each pair of segments represents the common point between differents orientations.
 
 \newpage
 
-Para modificar o ponto, mantenha \textbf{pressionado} o botão \textbf{esquerdo} do mouse e o
-\textbf{arraste}. Automaticamente, os pontos correspondentes serão atualizados em cada imagem.
+To modify the point, keep \textbf{pressed} the \textbf{left} mouse button and
+\textbf{drag}. Automatically, the corresponding points will be updated in each image.
 
 \begin{figure}[!htb]
 \centering
 \includegraphics[scale=0.4]{multiplanar_window_cross_pt.png}
-\caption{Ponto comum entre orientações diferentes}
+\caption{Common point between differents orientations}
 \label{fig:cross_all}
 \end{figure}
 
-Para desativar a funcionalidade, basta clicar novamente sobre o atalho (figura \ref{fig:cross_icon}).
-Esse recurso pode ser utilizado em conjunto com o editor de fatias (que será comentado mais à frente).
+To disable the feature, simply click on the shortcut again (figure \ref{fig:cross_icon}). This feature can be used in conjunction with the slice editor (which will be discussed later).
 
+\section{Interpolation}
 
-\section{Interpolação}
+By default the 2D images visualization are interpolated (figure~\ref{fig:interp}).a, to deactivate this feature, in menu press \textbf{View}, \textbf{Interpolated slices} (figure~\ref{fig:menu_interpoleted_image_pt}). In this way it will be possible to visualize each pixel individually as shown in the figure~\ref{fig:interp}.b.
 
-Por padrão a visualização das imagens 2D são interpoladas (figura~\ref{fig:interp}).a, caso deseja desativar esse recurso, basta ir no menu \textbf{Visualizar}, \textbf{Fatias interpoladas} (figura~\ref{fig:menu_interpoleted_image_pt}). Dessa forma será possível visualizar cada pixel individualmente como mostra a figura~\ref{fig:interp}.b. 
-
-\textbf{Observação: Essa interpolação é apenas para efeitos de visualização, não influenciando diretamente na segmentação ou na geração de superfície 3D.}
+\textbf{Note: This interpolation is for visualization purposes only, not directly influencing segmentation or 3D surface generation.}
 
 \begin{figure}[!htb]
 \centering
 \includegraphics[scale=0.7]{menu_interpoleted_image_pt.png}
-\caption{Menu para desativar e ativar interpolação}
+\caption{Menu to disable and enable interpolation}
 \label{fig:menu_interpoleted_image_pt}
 \end{figure}
 
 
 \begin{figure}[!htb]
   \centering
-  \subfloat[Interpolada]{\includegraphics[width=0.4\textwidth]{axial_interpoleted.png}}  \qquad
-  \subfloat[Não interpolada]{\includegraphics[width=0.4\textwidth]{axial_not_interpoleted.png}}
+  \subfloat[Interpolated]{\includegraphics[width=0.4\textwidth]{axial_interpoleted.png}}  \qquad
+  \subfloat[Non-interpolated]{\includegraphics[width=0.4\textwidth]{axial_not_interpoleted.png}}
   \hfill
-  \caption{Visualização de imagem interpolada e não interpolada.}
+  \caption{Interpolated and non-interpolated image visualization.}
   \label{fig:interp}
 \end{figure}
 
-\section{Mover}
+\section{Move}
 
-Para mover uma imagem na tela, pode-se utilizar o ícone do atalho "Mover" da barra de ferramentas (figura
-\ref{fig:move_icon}). Clique sobre o ícone para ativar o recurso e, em seguida, com o botão
-\textbf{esquerdo} do mouse pressionado sobre a imagem, \textbf{arraste-a} para a direção desejada.
-A figura \ref{fig:move_img} mostra uma imagem deslocada (movida).
+To move an image on the screen, the toolbar's "Move" shortcut icon can be used (figure
+\ref{fig:move_icon}). Click on the icon to activate the feature and then with the \textbf{left} mouse button on the image, \textbf{drag} it to the desired direction. The figure \ref{fig:move_img} shows a displaced (moved) image.
 
 \begin{figure}[!htb]
 \centering
 \includegraphics[scale=0.25]{tool_translate_original.png}
-\caption{Atalho para mover imagens}
+\caption{Shortcut to move images}
 \label{fig:move_icon}
 \end{figure}
 
 \begin{figure}[!htb]
 \centering
 \includegraphics[scale=0.25]{axial_pan.jpg}
-\caption{Imagem deslocada}
+\caption{Displaced image}
 \label{fig:move_img}
 \end{figure}
 
-\section{Rotacionar}
+\section{Rotate}
 
-A rotação de imagens pode ser ativada pelo ícone do atalho "Rotacionar" da barra de ferramentas (figura
-\ref{fig:rot_icon}). Para rotacionar uma imagem, clique sobre o ícone e, em seguida, com o botão
-\textbf{esquerdo} do mouse pressionado sobre a imagem, \textbf{arraste-a} no sentido horário ou
-anti-horário, dependendo do sentido de rotação desejado.
+The image rotation can be activated by the toolbar's "Rotate" shortcut icon (figure \ref{fig:rot_icon}). To rotate an image, click on the icon and then with the \textbf{left} mouse button press on the image, \textbf{drag} clockwise or anticlockwise, depending on the desired direction of rotation.
 
 \begin{figure}[!htb]
 \centering
 \includegraphics[scale=0.25]{tool_rotate_original.png}
-\caption{Atalho para rotacionar imagens}
+\caption{Shortcut to rotate images}
 \label{fig:rot_icon}
 \end{figure}
 
 \begin{figure}[!htb]
 \centering
 \includegraphics[scale=0.25]{axial_rotate.jpg}
-\caption{Imagem rotacionada}
+\caption{Rotated image}
 \label{fig:rotate_all}
 \end{figure}
 
-\section{Ampliar (\textit{Zoom})}
+\section{Zoom}
 
-No InVesalius, existem diferentes formas de ampliar uma imagem. Pode-se maximizar a janela da
-orientação desejada, aplicar o \textit{zoom} diretamente na imagem, ou selecionar a região da imagem
-que será ampliada.
+In InVesalius, there are different ways to enlarge an image. You can maximize the desired orientation window, apply zoom directly to the image, or select the region of the image to enlarge.
 
+\subsection{Maximizing orientation windows}
 
-\subsection{Maximizando as janelas de orientação}
-
-Como já sabemos, a janela principal do InVesalius é dividida em 4 subjanelas: axial, sagital, coronal
-e 3D. Cada uma delas pode ser maximizada de modo a ocupar toda a área da janela principal. Para isso,
-basta clicar com o botão \textbf{esquerdo} do mouse no ícone existente no \textbf{canto superior direito}
-da subjanela (figura \ref{fig:maximize_window}). Para restaurar uma janela maximizada a seu tamanho
-anterior, basta clicar novamente no ícone.
+As we already know, the main InVesalius window is divided into 4 subwindows: axial, sagittal, coronal and 3D. Each of these can be maximized to occupy the entire area of the main window. To do this, simply \textbf{left} mouse click on the subwindow icon located in the \textbf{upper right corner} (figure \ref{fig:maximize_window}). To restore a maximized window to its previous size, simply click the icon again.
 
 \begin{figure}[!htb]
 \centering
 \includegraphics[scale=0.6]{maximize_sagital_mpr.png}
-\caption{Detalhe de uma subjanela (Observe o ícone de maximizar no canto superior direito)}
+\caption{Detail of a sub-window (Note the maximize icon in the upper right corner)}
 \label{fig:maximize_window}
 \end{figure}
 
-\subsection{Ampliando ou reduzindo uma imagem}
+\subsection{Enlarging or reducing an image}
 
-Para ampliar ou reduzir uma imagem, clique sobre o ícone do atalho "\textit{Zoom}" na barra de
-ferramentas (figura \ref{fig:zoom_icon}). Mantenha o botão \textbf{esquerdo} pressionado sobre
-a imagem e \textbf{arraste} o mouse para \textbf{cima}, caso deseje ampliá-la, ou para \textbf{baixo},
-caso deseje reduzi-la.
+To enlarging or reducing an image, click on the zoom shortcut icon in the toolbar (figure \ref{fig:zoom_icon}). Hold down the \textbf{left} mouse button on the image and \textbf{drag} the mouse to \textbf{top} if you want to enlarge it, or \textbf{down}, if you want to reduce it.
 
 \begin{figure}[!htb]
 \centering
 \includegraphics[scale=0.25]{tool_zoom_original.png}
-\caption{Atalho de \textit{Zoom}}
+\caption{Zoom shortcut}
 \label{fig:zoom_icon}
 \end{figure}
 
@@ -221,33 +201,28 @@ caso deseje reduzi-la.
 %\label{fig:zoom_}
 %\end{figure}
 
-\subsection{Ampliando uma área da imagem}
+\subsection{Enlarging an Image Area}
 
-Para ampliar uma área determinada da imagem, clique sobre o ícone do atalho "Zoom baseado na seleção" 
-na barra de ferramentas (figura \ref{fig:zoom_icon_loc}). Posicione o ponteiro do mouse na posição
-inicial da seleção, clique e mantenha o botão \textbf{esquerdo} do mouse pressionado e \textbf{arraste-o}
-até a posição final da seleção, formando um retângulo (figura \ref{fig:zoom_select}). Assim que o
-botão esquerdo do mouse for liberado, a operação de \textit{zoom} será aplicada à região selecionada
-(figura \ref{fig:zoom_applied}).
+To enlarging a certain image area, click on the "Zoom based on selection" icon in the toolbar (figure \ref{fig:zoom_icon_loc}). Position the mouse pointer at the start position of the selection, click and hold the \textbf{left} mouse button and \textbf{drag} it to the end selection position, forming a rectangle (figure \ref{fig:zoom_select}). Once the left mouse button is released, the zoom operation will be applied to the selected region (figure \ref{fig:zoom_applied}).
 
 \begin{figure}[!htb]
 \centering
 \includegraphics[scale=0.25]{tool_zoom_select_original.png}
-\caption{Atalho de \textit{Zoom} baseado na seleção}
+\caption{Zoom based on selection shortcut}
 \label{fig:zoom_icon_loc}
 \end{figure}
 
 \begin{figure}[!htb]
 \centering
 \includegraphics[scale=0.25]{tool_zoom_select_image.jpg}
-\caption{Área selecionada para \textit{zoom}}
+\caption{Area selected for zoom}
 \label{fig:zoom_select}
 \end{figure}
 
 \begin{figure}[!htb]
 \centering
 \includegraphics[scale=0.25]{tool_image_with_zoom.jpg}
-\caption{Imagem ampliada}
+\caption{Enlarged Image}
 \label{fig:zoom_applied}
 \end{figure}
 
