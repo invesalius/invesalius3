@@ -1,83 +1,106 @@
-\chapter{Importação}
+%\chapter{Importação}
+\chapter{Image import}
 
-O InVesalius importa arquivos no formato DICOM, incluindo arquivos compactados (JPEG sem perdas e
-com perdas) e arquivos no formato Analyze (Mayo Clinic)$^\copyright$.
+%O InVesalius importa arquivos no formato DICOM, incluindo arquivos compactados (JPEG sem perdas e
+%com perdas) e arquivos no formato Analyze (Mayo Clinic)$^\copyright$.
+
+InVesalius imports files in DICOM format, including compressed files (lossless JPEG), Analyze (Mayo Clinic) $^\copyright$, NIfTI, PAR/REC, BMP, TIFF, JPEG and PNG formats.
 
 \section{DICOM}
 
-No menu \textbf{Arquivo}, clique na opção \textbf{Importar DICOM...}. Se preferir, use o atalho
-do teclado \textbf{Ctrl + I}. A importação também pode ser acionada pelo ícone da barra de ferramentas
-descrito na figura \ref{fig:import}.
+%No menu \textbf{Arquivo}, clique na opção \textbf{Importar DICOM...}. Se preferir, use o atalho
+%do teclado \textbf{Ctrl + I}. A importação também pode ser acionada pelo ícone da barra de ferramentas
+%descrito na figura \ref{fig:import}.
+
+On menu \textbf{File}, click in option \textbf{Import DICOM...}. If you prefer, use the shortcut of keyboard \textbf{Ctrl + I}. Import DICOM images can also be triggered by the toolbar icon described in the figure~\ref{fig:import}.
 
 \begin{figure}[!htb]
 \centering
 \includegraphics[scale=0.2]{file_import_original.png}
-\caption{Atalho para Importar DICOM}
+\caption{Shortcut to DICOM import}
 \label{fig:import}
 \end{figure}
 
 \hspace{.2cm}
 
-Em seguida, selecione o diretório que contenha os arquivos DICOM, como na figura \ref{fig:win_folder}.
-O InVesalius irá procurar por arquivos também em subdiretórios do diretório escolhido, caso existam.
+%Em seguida, selecione o diretório que contenha os arquivos DICOM, como na figura \ref{fig:win_folder}.
+%O InVesalius irá procurar por arquivos também em subdiretórios do diretório escolhido, caso existam. 
+
+Then select the directory containing the DICOM files, as in figure~\ref{fig:win_folder}.
+InVesalius will search for files also in subdirectories of the chosen directory, if they exist.
+
 
 \newpage
 
-Clique em \textbf{OK}.
+%Clique em \textbf{OK}.
+Click on \textbf{OK} button.
 
 \begin{figure}[!htb]
 \centering
 \includegraphics[scale=0.5]{import_select_folder_pt.png}
-\caption{Seleção de diretório}
+\caption{Folder Selection}
 \label{fig:win_folder}
 \end{figure}
 
 \hspace{.2cm}
 
-Enquanto o InVesalius procura por arquivos DICOM no diretório, é exibido o progresso
-do carregamento dos arquivos verificados, como ilustra a figura \ref{fig:ver_file}.
+%Enquanto o InVesalius procura por arquivos DICOM no diretório, é exibido o progresso
+%do carregamento dos arquivos verificados, como ilustra a figura \ref{fig:ver_file}.
+
+While InVesalius search for DICOM files in the directory, the loading progress of the scanned files is displayed, as shown in the figure~\ref{fig:ver_file}.
 
 \begin{figure}[!htb]
 \centering
 \includegraphics[scale=0.6]{import_load_files_pt.png}
-\caption{Status de verificação e carregamento de arquivos}
+\caption{Checking and loading files status}
 \label{fig:ver_file}
 \end{figure}
 
 \newpage
 
-Se arquivos DICOM forem encontrados, é aberta uma janela (figura \ref{fig:win_import})
-para selecionar o paciente e a respectiva série que se deseja abrir. Também é possível
-pular imagens para reconstrução.
+%Se arquivos DICOM forem encontrados, é aberta uma janela (figura \ref{fig:win_import})
+%para selecionar o paciente e a respectiva série que se deseja abrir. Também é possível
+%pular imagens para reconstrução.
+
+If DICOM files are found, a window opens (figure~\ref{fig:win_import}) to select the patient and the respective series to be opened. It is also possible to
+skip images for reconstruction.
 
 \begin{figure}[!htb]
 \centering
 \includegraphics[scale=0.4]{import_window_pt.png}
-\caption{Tela de importação}
+\caption{Import window}
 \label{fig:win_import}
 \end{figure}
 
 \newpage
 
-Caso deseje importar uma série com todas as imagens presentes, clique em "\textbf{+}" ao
-lado do nome do paciente para expandir as séries a ele pertencentes. Dê um \textbf{clique duplo}
-com o botão \textbf{esquerdo} do mouse sobre a descrição da série. Veja a figura
-\ref{fig:import_serie}.
+
+
+%Caso deseje importar uma série com todas as imagens presentes, clique em "\textbf{+}" ao
+%lado do nome do paciente para expandir as séries a ele pertencentes. Dê um \textbf{clique duplo}
+%com o botão \textbf{esquerdo} do mouse sobre a descrição da série. Veja a figura
+%\ref{fig:import_serie}.
+
+
+If you want to import a series with all the images present, click "\textbf{+}" in the side patient's name to expand the series belonging to him. \textbf {Double-click} with left mouse button on the description of the series. See figure~\ref{fig:import_serie}.
 
 \begin{figure}[!htb]
 \centering
 \includegraphics[scale=0.5]{import_window_detail_pt.png}
-\caption{Seleção de série}
+\caption{Series selection}
 \label{fig:import_serie}
 \end{figure}
  
 %\hspace{.2cm}
 
-Em alguns casos, em particular quando não se dispõe de um computador com memória e/ou
-processamento satisfatórios para trabalhar com muitas imagens em uma série, pode ser
-recomendável pular (ignorar) algumas delas. Para isso, clique \textbf{uma vez} com o botão
-\textbf{esquerdo} do mouse sobre a descrição da série (figura \ref{fig:import_serie}) e selecione
-quantas imagens serão puladas (figura \ref{fig:skip_image}). Clique em \textbf{Importar}.
+%Em alguns casos, em particular quando não se dispõe de um computador com memória e/ou
+%processamento satisfatórios para trabalhar com muitas imagens em uma série, pode ser
+%recomendável pular (ignorar) algumas delas. Para isso, clique \textbf{uma vez} com o botão
+%\textbf{esquerdo} do mouse sobre a descrição da série (figura \ref{fig:import_serie}) e selecione
+%quantas imagens serão puladas (figura \ref{fig:skip_image}). Clique em \textbf{Importar}.
+
+
+In some cases, in particular when there is no computer with memory and/or satisfactory processing to work with many images in a series, can be it is recommended to skip (skip) some of them. To do this, click \textbf {once} with the \textbf{left} of the mouse over the description of the series (figure~\ref{fig:import_serie}) and select how many images will be skipped (figure~\ref{fig:skip_image}). Click~\textbf {Import}.
 
 \begin{figure}[!htb]
 \centering
@@ -88,26 +111,31 @@ quantas imagens serão puladas (figura \ref{fig:skip_image}). Clique em \textbf{
 
 %\hspace{.2cm}
 
-Caso seja detectado quantidade insuficiente de memória disponível na hora de carregar as imagens é recomentado 
-reduzir a resolução das fatias para trabalhar com visualização volumétrica e de superfície, como mostra a janela \ref{fig:resize_image}. 
-As fatias serão redimensionadas de acordo com a porcentagem em relação a resolução original. Por exemplo, 
-se cada fatia do exame contém a dimensão de 512 x 512 pixeis e for sugerido a "Porcentagem da resolução original" em 60\%, 
-cada imagem resultante terá 307 x 307 pixeis. Caso deseje abrir com a resolução original selecione o valor 100.
+%Caso seja detectado quantidade insuficiente de memória disponível na hora de carregar as imagens é recomentado 
+%reduzir a resolução das fatias para trabalhar com visualização volumétrica e de superfície, como mostra a janela \ref{fig:resize_image}. 
+%As fatias serão redimensionadas de acordo com a porcentagem em relação a resolução original. Por exemplo, 
+%se cada fatia do exame contém a dimensão de 512 x 512 pixeis e for sugerido a "Porcentagem da resolução original" em 60\%, 
+%cada imagem resultante terá 307 x 307 pixeis. Caso deseje abrir com a resolução original selecione o valor 100.
+
+If insufficient amount of available memory is detected at the time of loading the images it is recommended reduce the resolution of the slices to work with volumetric and surface visualization, as shown in the \ref{fig:resize_image} window.
+The slices will be resized according to the percentage relative to the original resolution. For example, if each slice of the exam contains the dimension of 512 x 512 pixels and the "Percentage of original resolution" is suggested to be 60 \%, each resulting image will be 307 x 307 pixels. If you want to open with the original resolution select the value 100.
 
 \begin{figure}[!htb]
 \centering
 \includegraphics[scale=0.5]{import_window_lower_memory_pt.png}
-\caption{Redução de dimensão da imagem}
+\caption{Image size reduction}
 \label{fig:resize_image}
 \end{figure}
 
-Após os procedimentos anteriores, será apresentada uma janela (figura \ref{fig:prog_recons}) com o progresso
-da reconstrução (quando as imagens são empilhadas e interpoladas).
+%Após os procedimentos anteriores, será apresentada uma janela (figura \ref{fig:prog_recons}) com o progresso
+%da reconstrução (quando as imagens são empilhadas e interpoladas).
+
+After the previous procedures, a window will be displayed (figure \ref{fig:prog_recons}) with progress reconstruction (when images are stacked and interpolated).
 
 \begin{figure}[!htb]
 \centering
 \includegraphics[scale=0.6]{import_window_progress.png} 
-\caption{Progresso da reconstrução}
+\caption{Reconstruction progress}
 \label{fig:prog_recons}
 \end{figure}
 
@@ -115,36 +143,46 @@ da reconstrução (quando as imagens são empilhadas e interpoladas).
 
 \section{Analyze}
 
-Para importar arquivos no formato Analyze, no menu \textbf{Arquivo}, clique na opção \textbf{Importar outros arquivos...} em seguida a opção \textbf{Analyze} como mostra a figura \ref{fig:analyze_menu}.
+%Para importar arquivos no formato Analyze, no menu \textbf{Arquivo}, clique na opção \textbf{Importar outros arquivos...} em seguida a opção \textbf{Analyze} como mostra a figura \ref{fig:analyze_menu}.
+
+To import files in Analyze format, in the menu \textbf{File}, click on \textbf{Importar other files...}, then click in the \textbf{Analyze} option as show the figure~\ref{fig:analyze_menu}.
 
 \begin{figure}[!htb]
 \centering
 \includegraphics[scale=0.4]{import_analyze_menu_pt.png}
-\caption{Menu para importar imagens no formato analyze}
+\caption{Menu for importing images in analyze format.}
 \label{fig:analyze_menu}
 \end{figure}
 
-Selecione o arquivo do tipo Analyze, na extensão \textbf{.hdr} e clique em \textbf{Abrir}. (figura \ref{fig:analyze_import}).
+%Selecione o arquivo do tipo Analyze, na extensão \textbf{.hdr} e clique em \textbf{Abrir}. (figura \ref{fig:analyze_import}).
 
+Select the file of Analyze type, in extension \textbf{.hdr} and click on \textbf{Open}. (Figure \ref{fig:analyze_import}).
+ 
 \begin{figure}[!htb]
 \centering
 \includegraphics[scale=0.4]{import_analyze_window_pt.png}
-\caption{Importar imagens no formato analyze}
+\caption{Import analyze file format}
 \label{fig:analyze_import}
 \end{figure}
 
 \section{NIfTI}
 
-Para importar arquivos no formato NIfTI, no menu \textbf{Arquivo}, clique na opção \textbf{Importar outros arquivos...} em seguida a opção \textbf{NIfTI} como mostra a figura \ref{fig:import_nifti_menu_pt}.
+%Para importar arquivos no formato NIfTI, no menu \textbf{Arquivo}, clique na opção \textbf{Importar outros arquivos...} em seguida a opção \textbf{NIfTI} como mostra a figura \ref{fig:import_nifti_menu_pt}.
+
+To import files in NIfTI format, on menu \textbf{File}, click on option \textbf{Import other files...} and then click on \textbf{NIfTI} option as show figure~\ref{fig:import_nifti_menu_pt}.
+
 
 \begin{figure}[!htb]
 \centering
 \includegraphics[scale=0.4]{import_nifti_menu_pt.png}
-\caption{Menu para importar imagens no formato NIfTI}
+\caption{Menu to import images in NIfTI format}
 \label{fig:import_nifti_menu_pt}
 \end{figure}
 
-Selecione o arquivo do tipo NIfTI, na extensão \textbf{nii.gz} ou \textbf{.nii} e clique em \textbf{Abrir}. (figura \ref{fig:import_nifti_window_pt}). Caso o arquivo esteja em outra extensão como \textbf{.hdr}, selecione a opção \textbf{all files(*.*)}.
+%Selecione o arquivo do tipo NIfTI, na extensão \textbf{nii.gz} ou \textbf{.nii} e clique em \textbf{Abrir}. (figura \ref{fig:import_nifti_window_pt}). Caso o arquivo esteja em outra extensão como \textbf{.hdr}, selecione a opção \textbf{all files(*.*)}.
+
+Select the file of type NIfTI, 
+
 
 \begin{figure}[!htb]
 \centering
