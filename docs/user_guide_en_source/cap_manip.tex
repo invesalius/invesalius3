@@ -1,88 +1,80 @@
-\chapter{Manipulação de Imagens (2D)}
+\chapter{Image Manipulation (2D)}
 
-\section{Reconstrução Multiplanar}
+\section{Multiplanar Reconstruction}
 
-Ao importar as imagens, o InVesalius mostra, automaticamente, a sua reconstrução
-multiplanar nas orientações Axial, Sagital e Coronal, bem como uma janela para manipulação 3D.
-Veja a figura \ref{fig:mpr}.
+When images are imported, InVesalius automatically shows its reconstruction
+Multiplanar in the Axial, Sagittal and Coronal orientations, as well as a window for 3D manipulation.
+See figure \ref{fig:mpr}.
 
 \begin{figure}[!htb]
 \centering
 \includegraphics[scale=0.30]{multiplanar_mask_window_pt.png}
-\caption{Reconstrução multiplanar}
+\caption{Multiplanar Reconstruction}
 \label{fig:mpr}
 \end{figure}
 
 \newpage
 
-Além de criar a reconstrução multiplanar, o InVesalius segmenta a imagem, destacando, por exemplo, os
-ossos dos tecidos moles. O destaque é representado por meio da aplicação de cores sobre a estrutura
-segmentada, isto é, as cores formam uma máscara sobre a imagem destacando a estrutura (figura
-\ref{fig:mpr}). Isso será discutido em mais detalhes nos próximos capítulos.
+In addition to creating a multiplanar reconstruction, InVesalius segments an image, highlighting, for example, soft tissue bones. The highlight is represented by the application of colors on a segmented structure, i.e., the colors forms a mask over an image highlighting the structure (figure \ref{fig:mpr}). This is discussed in more detail in the following chapters.
 
-Para esconder a máscara, usa-se o gerenciador de dados, localizado no canto inferior esquerdo
-da tela. Basta escolher a aba \textbf{Máscaras} e clicar \textbf{uma} vez com o botão
-\textbf{esquerdo} do mouse sobre o ícone do olho ao lado de \textbf{"Máscara 1"}. Veja a figura
+
+To hide the mask, use the data manager, located in the lower left corner
+of the screen. Just choose the tab \textbf{Masks} and click \textbf{once} using the
+\textbf{left} mouse buttom over the eye icon next to \textbf{"Mask 1"}. See figure
 \ref{fig:ger_masc}.
 
 \begin{figure}[!htb]
 \centering
 \includegraphics[scale=0.8]{data_mask_pt.png}
-\caption{Gerenciador de máscaras}
+\caption{Mask manager}
 \label{fig:ger_masc}
 \end{figure}
 
-O ícone do olho desaparece, e as cores da máscara de segmentação são escondidas (figura
+The eye icon disappears, and the colors of the segmentation mask are hidden (figure
 \ref{fig:mpr_sem_mask}).
 
 \begin{figure}[!htb]
 \centering
 \includegraphics[scale=0.30]{multiplanar_window_pt.png}
-\caption{Reconstrução multiplanar sem máscara de segmentação}
+\caption{Multiplanar reconstruction without segmentation mask}
 \label{fig:mpr_sem_mask}
 \end{figure}
 
-\subsection{Orientação axial}
+\subsection{Axial orientation}
 
-A orientação axial é composta de cortes transversais da região
-de interesse, ou seja, cortes paralelos ao plano axial do corpo humano.
-Na figura \ref{fig:axial_corte}, é exibida uma imagem em orientação axial da
-região do crânio.
+The axial orientation consists of cuts made transversal in relation to the region of interest, i.e. parallel cuts to the axial plane of the human body.
+In figure \ref{fig:axial_corte}, an axial image of the skull region is displayed.
 
 \begin{figure}[!htb]
 \centering
 \includegraphics[scale=0.15]{axial.jpg}
-\caption{Corte axial}
+\caption{Axial cut}
 \label{fig:axial_corte}
 \end{figure}
 
-\subsection{Orientação sagital}
+\subsection{Sagittal orientation}
 
-A orientação sagital é composta de cortes realizados lateralmente
-em relação à região de interesse, ou seja, cortes paralelos ao plano sagital do corpo humano,
-que o divide nas porções esquerda e direita.
-A figura \ref{fig:sagital_slice} mostra uma imagem do crânio em orientação sagital.
+The sagittal orientation consists of cuts made laterally in relation to the region of interest, i.e. parallel cuts to the sagittal plane of the human body, which divides it into the left and right portions.
+In figure \ref{fig:sagital_slice}, a sagittal skull image is displayed.
 
 \begin{figure}[!htb]
 \centering
 \includegraphics[scale=0.15]{sagital.jpg}
-\caption{Corte sagital}
+\caption{Sagittal cut}
 \label{fig:sagital_slice}
 \end{figure}
 
 \newpage
 
-\subsection{Orientação coronal}
+\subsection{Coronal orientation}
 
-A orientação coronal é composta de cortes paralelos ao plano coronal,
-que divide o corpo humano em metades ventral e dorsal.
-A figura \ref{fig:coronal_slice} mostra uma imagem do crânio em orientação
-coronal.
+The coronal orientation is composed of cuts parallel to the coronal plane, which divides the human body into ventral and dorsal halves.
+In figure \ref{fig:coronal_slice} is displayed  a skull image in coronal orientation.
 
 \begin{figure}[!htb]
 \centering
 \includegraphics[scale=0.15]{coronal.jpg}
-\caption{Corte coronal}
+\caption{Coronal cut}
 \label{fig:coronal_slice}
 \end{figure}
 
