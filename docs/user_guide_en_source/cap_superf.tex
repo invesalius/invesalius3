@@ -1,95 +1,79 @@
-\chapter{Superfície (Malha de Triângulos)}
+\chapter{Surface (Triangle mesh)}
 \label{cap_surface}
 
-No InVesalius, a superfície 3D é gerada com base em um modelo segmentado (obtido a partir
-da segmentação das imagens). O método utilizado para gerar a superfície é o algoritmo 
-\textit{marching cubes}. Resumidamente, o algoritmo transforma os \textit{voxels} das
-imagens que foram "empilhadas" e segmentadas em uma malha de polígonos simples - no caso,
-triângulos.
+At InVesalius, a 3D surface is generated based on a image segmentation. A surface is generated using the \textit{marching cubes} algorithm. In a nutshell, this algorithm transforms \textit{voxels} from the stacked and segmented images to polygons (triangles in this case).
 
-Os controles disponíveis para a configuração de superfícies 3D no InVesalius encontram-se
-no painel esquerdo do software, dentro do item \textbf{3. Configure a superfície 3D}, opção
-\textbf{Propriedades da superfície}.
+On the left panel, inside \textbf{3. Configure 3D surface}, \textbf{Surface properties} you have the controls to configure a 3D surface.
 
 \begin{figure}[!htb]
 \centering
 \includegraphics[scale=0.65]{surface_config_panel_pt.png}
-\caption{Configuração de uma superfície 3D}
+\caption{3D surface configuration.}
 \label{fig:3d_surface_managment}
 \end{figure}
 
 
-\section{Criando superfícies}
+\section{Creating 3D surfaces}
 
-É possível criar uma nova superfície com base em uma máscara de segmentação já existente.
-Para isso, no painel esquerdo, dentro do item \textbf{3. Configure a superfície 3D}, clique
-no atalho ilustrado na figura \ref{fig:shortcut_new_surface}.
+It's possible create a new surface based on a already segmented mask. To do that, on the left panel, \textbf{3. Configure 3D surface}, click on the button shown at the figure~\ref{fig:shortcut_new_surface}.
 
 \begin{figure}[!htb]
 \centering
 \includegraphics[scale=0.18]{object_add_original}
-\caption{Atalho para criar uma superfície}
+\caption{Button to create a 3D surface.}
 \label{fig:shortcut_new_surface}
 \end{figure}
 
-Ao se clicar nesse atalho, uma janela se abre para permitir a configuração da superfície a
-ser criada (figura \ref{fig:create_surface_1}). Além de ser possível determinar a qualidade
-da superfície a gerar, há opções também para o preenchimento de buracos existentes e para a
-seleção da maior região da superfície.
+After clicking this button a dialog will be shown (figure \ref{fig:create_surface_1}). This dialog allows to configure the 3D surface creation. It allows to set the quality of the surface, to fill the surface holes and to keep only the largest connected region of the surface.
 
 \begin{figure}[!htb]
 \centering
 \includegraphics[scale=0.5]{surface_config_window_pt.png}
-\caption{Janela para criação de superfície}
+\caption{3D surface creation dialog.}
 \label{fig:create_surface_1}
 \end{figure}
 
-%Existe 2 opções para fechar os buracos existentes e para selecionar a maior região da superfície aonde em muitos 
+%Existe 2 opções para fechar os buracos existentes e para selecionar a maior região da superfície aonde em muitos
 %casos é útil para remover o suporte ou a mesa do tomografo.
 
-A seleção da maior região pode ser usada, por exemplo, para remover do modelo o suporte ou a
-mesa do tomógrafo. A figura \ref{fig:surface_ex1} ilustra um caso com as duas opções
-selecionadas: "Preencher buracos" e "Manter maior região".
+The keep largest region option may be used, for instance, to remove the tomograph support. Figure~\ref{fig:surface_ex1} displays a surface created with \textbf{Keep largest region} and \textbf{Fill holes} activated. 
 
-\newpage
-
-\begin{figure}
+\begin{figure}[!htb]
   \centering
-  \subfloat[Frente]{\label{fig:__1}\includegraphics[width=0.338\textwidth]{surface_model_front.jpg}}                
+  \subfloat[Frente]{\label{fig:__1}\includegraphics[width=0.338\textwidth]{surface_model_front.jpg}}
   \subfloat[Baixo]{\label{fig:__1}\includegraphics[width=0.3\textwidth]{surface_model_bottom.jpg}}
-  \caption{Superfície com região maior selecionada e com buracos preenchidos}
+  \caption{Surface created with the options \textbf{Keep largest region} and \textbf{Fill holes} activated.}
   \label{fig:surface_ex1}
 \end{figure}
 
-
-Já a figura \ref{fig:surface_ex2} mostra o mesmo caso sem essas opções selecionadas. Observa-se o
-suporte do tomógrafo e a superfície aberta.
-
+Whereas the figure~\ref{fig:surface_ex2} displays the surface create without activating that options. Note the tomograph support and the holes.
 
 \begin{figure}
   \centering
-  \subfloat[Frente]{\label{fig:__2}\includegraphics[width=0.371\textwidth]{surface_model_front_all_parts.jpg}}                
+  \subfloat[Frente]{\label{fig:__2}\includegraphics[width=0.371\textwidth]{surface_model_front_all_parts.jpg}}
   \subfloat[Baixo]{\label{fig:__2}\includegraphics[width=0.3\textwidth]{surface_model_bottom_all_parts.jpg}}
-  \caption{Superfície sem a seleção da maior região e com buracos abertos}
+  \caption{Surface created with the options \textbf{Keep largest region} and \textbf{Fill holes} deactivated.}
   \label{fig:surface_ex2}
 \end{figure}
 
-O item \textbf{Método de criação de superfície} tem as seguintes opções, \textbf{"Binário"}, \textbf{"Context aware smoothing"} e \textbf{"Padrão}, podemos visualizar um exemplo de superfície a partir dos 3 métodos na figura \ref{fig:surf_method}. 
+The item \textbf{Surface creation method} has the following options:\textbf{Binary}, \textbf{Context aware smoothing} and \textbf{Default}. Figure~\ref{fig:surf_method} shows an example of surface created using each of these 3 methods.
 
 O método \textbf{binário}, tem como partida a máscara que foi segmentada, sendo a região selecionada como 1 e o restante 0. Como existem somente 2 valores, as curvas na superfície que o algoritmo gera são abruptas ou popularmente conhecida como "degraus".
 
+The \textbf{Binary} method takes as input the segmentation mask which is binary, where selected regions have value 1 and non-selected have value 0. As it is binary, the surface generated has a blocky aspect, mainly in high curvature areas.
+
 No método \textbf{Context aware smoothing}, inicialmente a superfície é gerada a partir do método binário, mas em seguida é executado o algoritmo "Context aware smoothing" para suavizar a superfície resultante e evitar os "degraus" na mesma. Neste passo é requerido 4 valores, que serão apresentados a seguir.
 
-O \textbf{ângulo}, nesse caso será formado entre 2 normais de triângulos adjacentes, que \textbf{caso esteja acima do valor} definido no campo ângulo, o triângulo é elegido para ser o ponto de partida da suavização, a faixa de valor é de 0 até 1, sendo $0^\circ$ e $90^\circ$ respectivamente. A \textbf{distância máxima} é o raio a partir dos triângulos elegidos no passo anterior, que será utilizada como limite de suavização. O \textbf{peso mínimo} é o quanto de suavização será aplicado nas áreas que estão fora do raio determinado anteriormente. O \textbf{número de passos} é quantas vezes o algoritmo vai executar. 
+O \textbf{ângulo}, nesse caso será formado entre 2 normais de triângulos adjacentes, que \textbf{caso esteja acima do valor} definido no campo ângulo, o triângulo é elegido para ser o ponto de partida da suavização, a faixa de valor é de 0 até 1, sendo $0^\circ$ e $90^\circ$ respectivamente. A \textbf{distância máxima} é o raio a partir dos triângulos elegidos no passo anterior, que será utilizada como limite de suavização. O \textbf{peso mínimo} é o quanto de suavização será aplicado nas áreas que estão fora do raio determinado anteriormente. O \textbf{número de passos} é quantas vezes o algoritmo vai executar.
 
 O método \textbf{padrão} é ativo \textbf{somente quando não existir edição manual na máscara}, os pixeis da imagem original que estão sob a máscara é utilizado para a geração de superfície, como normalmente imagens de tomografia ou ressonância possui vários níveis de cinza, é gerada uma superfície com curvas mais suaves.
 
 \begin{figure}[!htb]
   \centering
-  \subfloat[Binário]{\label{fig:surf_binary}\includegraphics[width=0.33\textwidth]{binary.png}}                
+  \subfloat[Binário]{\label{fig:surf_binary}\includegraphics[width=0.33\textwidth]{binary.png}}
   \hfill
-  \subfloat[Context aware]{\label{fig:surf_context}\includegraphics[width=0.32\textwidth]{context.png}}	
-  \hfill  
+  \subfloat[Context aware]{\label{fig:surf_context}\includegraphics[width=0.32\textwidth]{context.png}}
+  \hfill
   \subfloat[Padrão]{\label{fig:surfa_default}\includegraphics[width=0.332\textwidth]{default.png}}
   \caption{Superfícies geradas por diferentes métodos }
   \label{fig:surf_method}
@@ -101,7 +85,7 @@ O método \textbf{padrão} é ativo \textbf{somente quando não existir edição
 
 É possível visualizar uma superfície com transparência. Para isso, primeiro selecione a
 superfície por meio da lista de seleção, dentro do item \textbf{3. Configure a superfície 3D}, opção
-\textbf{Propriedades da superfície} (figura \ref{fig:select_surface}).
+\textbf{Propriedades da superfície} (figure \ref{fig:select_surface}).
 
 \begin{figure}[!htb]
 \centering
@@ -111,7 +95,7 @@ superfície por meio da lista de seleção, dentro do item \textbf{3. Configure 
 \end{figure}
 
 Em seguida, para determinar o nível de transparência que a superfície selecionada receberá, arraste
-o controle deslizante ilustrado na figura \ref{fig:select_transparency}. Quanto mais para a direita
+o controle deslizante ilustrado na figure \ref{fig:select_transparency}. Quanto mais para a direita
 o controle, maior será a transparência aplicada.
 
 \begin{figure}[!htb]
@@ -121,7 +105,7 @@ o controle, maior será a transparência aplicada.
 \label{fig:select_transparency}
 \end{figure}
 
-A figura \ref{fig:model_transparency} ilustra a visualização de duas superfícies: uma mais externa
+A figure \ref{fig:model_transparency} ilustra a visualização de duas superfícies: uma mais externa
 (esverdeada) e outra mais interna (amarelada). A superfície mais externa aparece com a transparência
 aumentada.
 
@@ -136,8 +120,8 @@ aumentada.
 
 \section{Cor}
 
-A cor de uma superfície também pode ser alterada. Selecione a superfície (reveja a figura
-\ref{fig:select_surface}) e, em seguida, clique no botão ao lado da superfície selecionada. A figura
+A cor de uma superfície também pode ser alterada. Selecione a superfície (reveja a figure
+\ref{fig:select_surface}) e, em seguida, clique no botão ao lado da superfície selecionada. A figure
 \ref{fig:change_surface_color} ilustra o botão, também localizado no item \textbf{3. Configure a
 superfície 3D}, opção \textbf{Propriedades da superfície}.
 
@@ -148,7 +132,7 @@ superfície 3D}, opção \textbf{Propriedades da superfície}.
 \label{fig:change_surface_color}
 \end{figure}
 
-Uma janela de seleção de cores se abre (figura \ref{fig:button_select_color}). Selecione a cor
+Uma janela de seleção de cores se abre (figure \ref{fig:button_select_color}). Selecione a cor
 desejada e clique no botão \textbf{OK}.
 
 \begin{figure}[!htb]
@@ -162,7 +146,7 @@ desejada e clique no botão \textbf{OK}.
 
 Para separar regiões da superfície que se encontram desconexas, é necessário clicar na opção
 \textbf{Ferramentas avançadas}, dentro do item \textbf{3. Configure a superfície 3D}. Veja a
-figura \ref{fig:advanced_tools}.
+figure \ref{fig:advanced_tools}.
 
 \begin{figure}[!htb]
 \centering
@@ -173,7 +157,7 @@ figura \ref{fig:advanced_tools}.
 
 \newpage
 
-Um menu com as opções disponíveis será exibido, como ilustra a figura
+Um menu com as opções disponíveis será exibido, como ilustra a figure
 \ref{fig:advanced_tools_expanded}.
 
 \begin{figure}[!htb]
@@ -187,7 +171,7 @@ Um menu com as opções disponíveis será exibido, como ilustra a figura
 
 A opção \textbf{Separar maior superfície} seleciona, automaticamente, somente a região
 desconexa que contém maior volume. Para realizar a operação, basta clicar no atalho
-que a figura \ref{fig:short_connectivity_largest} ilustra. É criada uma nova superfície
+que a figure \ref{fig:short_connectivity_largest} ilustra. É criada uma nova superfície
 resultante da operação.
 
 \begin{figure}[!htb]
@@ -197,7 +181,7 @@ resultante da operação.
 \label{fig:short_connectivity_largest}
 \end{figure}
 
-Como exemplo, a figura \ref{fig:extract_most_region_1} mostra um caso antes da separação
+Como exemplo, a figure \ref{fig:extract_most_region_1} mostra um caso antes da separação
 da maior região.
 
 \begin{figure}[!htb]
@@ -207,7 +191,7 @@ da maior região.
 \label{fig:extract_most_region_1}
 \end{figure}
 
-Na figura \ref{fig:extract_most_region2}, observa-se a superfície com a maior região
+Na figure \ref{fig:extract_most_region2}, observa-se a superfície com a maior região
 desconexa separada.
 
 \begin{figure}[!htb]
@@ -222,7 +206,7 @@ desconexa separada.
 \subsection{Selecionar as regiões de interesse}
 
 Outra modalidade de seleção se dá pela opção \textbf{Selecionar as regiões de interesse...}.
-Para ativá-la, o usuário deve clicar sobre o botão ilustrado na figura
+Para ativá-la, o usuário deve clicar sobre o botão ilustrado na figure
 \ref{fig:short_connectivity_manual}. Em seguida, basta clicar sobre as regiões desconexas
 da superfície que se pretende selecionar.
 
@@ -233,7 +217,7 @@ da superfície que se pretende selecionar.
 \label{fig:short_connectivity_manual}
 \end{figure}
 
-No exemplo da figura \ref{fig:extract_most_region3}, foram selecionados o crânio e a parte
+No exemplo da figure \ref{fig:extract_most_region3}, foram selecionados o crânio e a parte
 direita do suporte do tomógrafo.
 
 \begin{figure}[!htb]
@@ -247,7 +231,7 @@ direita do suporte do tomógrafo.
 \subsection{Separar todas regiões desconexas}
 
 É possível, também, separar automaticamente \textit{todas} as regiões desconexas. Para
-isso, basta clicar no botão ilustrado pela figura \ref{fig:connectivity_split_all}, que
+isso, basta clicar no botão ilustrado pela figure \ref{fig:connectivity_split_all}, que
 representa a opção \textbf{Separar todas regiões desconexas}.
 
 \begin{figure}[!htb]
@@ -257,7 +241,7 @@ representa a opção \textbf{Separar todas regiões desconexas}.
 \label{fig:connectivity_split_all}
 \end{figure}
 
-A figura \ref{fig:extrac_most_region_4} mostra um exemplo.
+A figure \ref{fig:extrac_most_region_4} mostra um exemplo.
 
 \begin{figure}[!htb]
 \centering
