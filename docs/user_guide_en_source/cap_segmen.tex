@@ -1,18 +1,14 @@
-\chapter{Segmentação}
+\chapter{Segmentation}
 
-Para selecionar um determinado tipo de tecido da imagem, é utilizado o recurso de 
-segmentação, disponível no InVesalius.
+To select a certain type of tissue from an image it's used the segmentation feature at InVesalius.
 
-\section{Limiar (\textit{Threshold})}
+\section{Threshold}
 
-Limiar é uma técnica de segmentação de imagens que permite selecionar da imagem somente
-os \textit{pixels} cuja intensidade está dentro de um limiar definido pelo usuário.
-O limiar é definido por dois números, limiares inicial e final, também conhecidos como
-\textit{thresholds} mínimo e máximo. Como referência para a definição, é utilizada a
-escala de Hounsfield (tabela \ref{tab:escala_hounsfield}).
+Limiar é uma técnica de segmentação de imagens que permite selecionar da imagem somente os \textit{pixels} cuja intensidade está dentro de um limiar definido pelo usuário.  O limiar é definido por dois números, limiares inicial e final, também conhecidos como \textit{thresholds} mínimo e máximo. Como referência para a definição, é utilizada a escala de Hounsfield (tabela \ref{tab:escala_hounsfield}).
 
-A segmentação é acionada no painel situado no lado esquerdo da interface do InVesalius,
-no item \textbf{2. Selecione a região de interesse} (figura \ref{fig:region_selection}).
+In thresholding segmentation technique only the \textit{pixels} whose intensity is inside threshold range defined by the user. Threshold is defined by two number, the initial and final theshold, also known as minimum and maximum threshold. ...
+
+Thresholding segmentation is located at the InVesalius left-panel, item \textbf{2. Select region of interest} (figure~\ref{fig:region_selection}).
 
 \begin{figure}[!htb]
 \centering
@@ -67,21 +63,21 @@ A tabela \ref{tab:limiar} mostra a faixa de níveis de cinza de acordo com o tip
 Material & Limiar inicial & Limiar final\\
 \hline
 \hline
-Esmalte (Adulto) & 1553 & 2850\\
-Esmalte (Criança) & 2042 & 3021\\
-Osso & 226 & 3021\\
-Osso Compacto (Adulto) & 662 & 1988\\
-Osso Compacto (Criança) & 586 & 2198\\
-Osso Esponjoso (Adulto) & 148 & 661\\
-Osso Esponjoso (Criança) & 156 & 585\\
-Personalizado & Def. Usuário & Def. Usuário\\
-Tecido Epitelial (Adulto) & -718 & -177\\
-Tecido Epitelial (Criança) & -766 & -202\\
-Tecido Gorduroso (Adulto) & -205 & -51\\
-Tecido Gorduroso (Criança) & -212 & -72\\
-Tecido Muscular (Adulto) & -5 & 135\\
-Tecido Muscular (Criança) & -25 & 139\\
-Tecidos Moles & -700 & 225\\
+Bone & 226 & 3021\\
+Compact Bone (Adult) & 662 & 1988\\
+Compact Bone (Child) & 586 & 2198\\
+Custom & User Def. & User Def.\\
+Enamel (Adult) & 1553 & 2850\\
+Enamel (Child) & 2042 & 3021\\
+Fat Tissue (Adult) & -205 & -51\\
+Fat Tissue (Child) & -212 & -72\\
+Muscle Tissue (Adult) & -5 & 135\\
+Muscle Tissue (Child) & -25 & 139\\
+Skin Tissue (Adult) & -718 & -177\\
+Skin Tissue (Child) & -766 & -202\\
+Soft Tissue & -700 & 225\\
+Spongial Bone (Adult) & 148 & 661\\
+Spongial Bone (Child) & 156 & 585\\
 \hline
 \end{tabular}
 \label{tab:limiar}
