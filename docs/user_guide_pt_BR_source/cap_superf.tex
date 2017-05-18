@@ -80,9 +80,9 @@ O método \textbf{binário}, tem como partida a máscara que foi segmentada, sen
 
 No método \textbf{Context aware smoothing}, inicialmente a superfície é gerada a partir do método binário, mas em seguida é executado o algoritmo "Context aware smoothing" para suavizar a superfície resultante e evitar os "degraus" na mesma. Neste passo é requerido 4 valores, que serão apresentados a seguir.
 
-O \textbf{ângulo}, nesse caso será formado entre 2 normais de triângulos adjacentes, que \textbf{caso esteja acima do valor} definido no campo ângulo, o triângulo é elegido para ser o ponto de partida da suavização, a faixa de valor é de 0 até 1, sendo $0^\circ$ e $90^\circ$ respectivamente. A \textbf{distância máxima} é o raio a partir dos triângulos elegidos no passo anterior, que será utilizada como limite de suavização. O \textbf{peso mínimo} é o quanto de suavização será aplicado nas áreas que estão fora do raio determinado anteriormente. O \textbf{número de passos} é quantas vezes o algoritmo vai executar. 
+O \textbf{ângulo}, nesse caso será formado entre 2 normais de triângulos adjacentes, que \textbf{caso esteja acima do valor} definido no campo ângulo, o triângulo é elegido para ser o ponto de partida da suavização, a faixa de valor é de 0 até 1, sendo $0^\circ$ e $90^\circ$ respectivamente. A \textbf{distância máxima} é o raio a partir dos triângulos elegidos no passo anterior, que será utilizada como limite de suavização. O \textbf{peso mínimo} é o quanto de suavização será aplicado nas áreas que estão fora do raio determinado anteriormente. Esse parâmetro varia de $0$ (sem suavização) à $1$ (suavização total). O \textbf{número de passos} é quantas vezes o algoritmo vai executar. Quantos maior o número de passos, mais suave a superfície será.
 
-O método \textbf{padrão} é ativo \textbf{somente quando não existir edição manual na máscara}, os pixeis da imagem original que estão sob a máscara é utilizado para a geração de superfície, como normalmente imagens de tomografia ou ressonância possui vários níveis de cinza, é gerada uma superfície com curvas mais suaves.
+O método \textbf{padrão} é ativo \textbf{somente quando usado a segmentação por limiar e não existir edição manual na máscara}, os pixeis da imagem original que estão sob a máscara é utilizado para a geração de superfície, como normalmente imagens de tomografia ou ressonância possui vários níveis de cinza, é gerada uma superfície com curvas mais suaves.
 
 \begin{figure}[!htb]
   \centering
@@ -224,7 +224,8 @@ desconexa separada.
 Outra modalidade de seleção se dá pela opção \textbf{Selecionar as regiões de interesse...}.
 Para ativá-la, o usuário deve clicar sobre o botão ilustrado na figura
 \ref{fig:short_connectivity_manual}. Em seguida, basta clicar sobre as regiões desconexas
-da superfície que se pretende selecionar.
+da superfície que se pretende selecionar. Depois, clique novamente em \textbf{Selecionar as regiões de interesse...}
+para gerar uma nova superfície com as regiões selecionadas.
 
 \begin{figure}[!htb]
 \centering
