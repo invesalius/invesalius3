@@ -240,69 +240,69 @@ It's possible to generate a surface after manual segmentation (figure~\ref{fig:s
 \begin{figure}[!htb]
 \centering
 \includegraphics[scale=0.5]{surface_generation_dialog_pt.png}
-\caption{Método de criação de superfície}
+\caption{Surface creation methods}
 \label{fig:new_surface_edited}
 \end{figure}
 
 
 \section{Watershed}
 
-A segmentação por watershed, necessita que o usuário indique através de marcadores o que é objeto e o que é fundo. Esse método de segmentação interpreta a imagem como uma bacia hidrográfica, sendo que os valores dos níveis de cinza são as altitudes, formando vales e montanhas, os marcadores de fundo e objeto são as fontes de água. Essas fontes de água, começam "encher" essa bacia hidrográfica até se encontrarem, assim segmentando a imagem em fundo e objeto. Para utilizá-la, é necessário clicar na opção \textbf{Watershed} para abrir o painel de edição (figure~\ref{fig:watershed_painel}).
+In watershed segmentation the user indicates with marks what is object and what is background. This method treats the image as watershed (hence the name watershed) in which the gray values (intensity) are the altitudes, forming valleys and mountains. The markers are water source. The waters fill the watershed until the waters gather together segmenting, this way, the background from the object. To use Watershed segmentation click on \textbf{Watershed} to open the watershed panel (figure~\ref{fig:watershed_painel}).
 
 \begin{figure}[!htb]
 \centering
 \includegraphics[scale=0.75]{segmentation_watershed_panel_pt.png}
-\caption{Painel de segmentação por Watershed}
+\caption{Watershed segmentation panel.}
 \label{fig:watershed_painel}
 \end{figure}
 
-Antes de iniciar a segmentação por Watershed, é recomendável limpar toda a máscara utilizando a ferramenta de limpeza de máscara, conforme é mostrado na seção~\ref{cap:limpeza_mascara}.
+Before starting to segment with watershed it recommended to clean the mask (see section~\ref{cap:limpeza_mascara}).
 
-Para inserir marcadores de fundo e objeto, é utilizada uma ferramenta em forma de pincel, a exemplo da segmentação manual, existe a opção de selecionar pincel retangular ou circular, também é possível alterar o tamanho deles. 
+To insert a marker (object or background) is used a brush, like when manual segmenting. You can use a circle or square brush and set its size.
 
-É necessário também selecionar o tipo de operação que será realizada pelo pincel. As opções são as
-seguintes:
+It necessary to select the brush operation, which are the following:
 \begin{itemize}
-\item \textbf{Objeto}, para inserir marcadores de objeto;
-\item \textbf{Fundo}, para inserir marcadores de fundo (não é objeto);
-\item \textbf{Apagar}, para apagar marcadores de objeto ou fundo.
+    \item \textbf{Object}: to insert object markers;
+    \item \textbf{Background}: to insert background markers (not object);
+    \item \textbf{Delete}: to delete markers;
 \end{itemize}
 
-A opção "\textbf{Sobrescrever máscara}" é utilizada quando deseja-se que a máscara selecionada seja substituída pelo resultado da segmentação. Já a opção "\textbf{Considerar brilho e contraste}" é utilizada para o algoritmo levar em consideração a imagem que está sendo visualizada, assim é possível alterar o brilho e contraste e obter resultados melhores de segmentação.
 
-É possível configurar o método de \textit{Watershed} através do botão ao lado esquerdo do painel (figure~\ref{fig:watershed_conf}). Ao abrir essa opção é mostrada a janela~\ref{fig:watershed_janela_conf}. A opção método permite alterar o algoritmo que é utilizado na segmentação, existe o Wartershed convencional e o Watershed baseado no método de IFT (\textit{Image Forest Transform}), em alguns casos, como segmentação de cérebro ele apresenta melhor resultado.
+The option \textbf{Overwrite mask} is used when the user wants that the result of watershed segmentation overwrites the existent segmentation. The option \textbf{Use WWWL} is used to make watershed take into account the image with the values of \textbf{window width} and \textbf{window level} not the raw one, which may result in better segmentation.
 
-A conectividade dos pixels que serão levados em consideração, pode ser alterados, no caso 2D, é possível selecionar conectividade $4$ e $8$, já no caso 3D pode-se selecionar $6$,$18$ ou $26$. O valor "\textbf{Sigma da gaussiana}" é alterado para o método suavizar mais ou menos a imagem ao aplicar a segmentação, valores altos tendem a deixar a imagem mais suavizada e consequentemente o algoritmo seleciona menos detalhes e ruídos.
+Click on the button on the left side of the panel (figure~\ref{fig:watershed_conf}) to access more watershed configurations. This button will open a dialog (figure~\ref{fig:watershed_janela_conf}). The method option allows to choose the Watershed algorithm to be used to segment. It may be the conventional \textbf{Watershed} or \textbf{Watershed IFT}, which is based on the IFT (\textit{Image Forest Transform}) method. In some cases, like brain segmentation, the \textbf{Watershed IFT} may have a better result.
+
+The connectivity option refers to the pixel neighbourhood which may be $4$ or $8$ when in 2D,  or $6$, $18$ or $26$ when in 3D. \textbf{Gaussian sigma} is a parameter used in the smoothing algorithm (the image is smoothed before the segmentation to remove the noise and get better results). The greater this value the smoother the smoother the image will be.
 
 \begin{figure}[!htb]
-\centering
-\includegraphics[scale=0.5]{configuration.png}
-\caption{Botão para abrir a configuração do método de Watershed}
-\label{fig:watershed_conf}
+    \centering
+    \includegraphics[scale=0.5]{configuration.png}
+    \caption{Button to open the Watershed configuration dialog.}
+    \label{fig:watershed_conf}
 \end{figure}
 
 \begin{figure}[!htb]
-\centering
-\includegraphics[scale=0.55]{segmentation_watershed_conf_pt.png}
-\caption{Opções de configuração do método de Watershed}
-\label{fig:watershed_janela_conf}
+    \centering
+    \includegraphics[scale=0.55]{segmentation_watershed_conf_pt.png}
+    \caption{Watershed configuration dialog.}
+    \label{fig:watershed_janela_conf}
 \end{figure}
 
-Existe a opção do método ser executado para todo o volume (expandir para outras fatias), para isso, após ser inserido os marcadores de objeto e de fundo, é necessário clicar no botão \textbf{Expandir watershed para 3D}, localizado no painel. Na figure~\ref{fig:watershed_2d} é exibido o resultado da segmentação do cérebro em uma fatia (2D), já na figure~\ref{fig:watershed_3d} é mostrado a expansão para todo o volume (3D). 
+Normally, the \textbf{Watershed} is applied only in one slice, not in the whole image. After adding the markers is possible to apply the watershed to the whole image, just click on the button \textbf{Expand watershed to 3D}. Figure~\ref{fig:watershed_2d} shows the result of watershed segmentation in a slice (2D) of brain image. Figure~\ref{fig:watershed_3d} shows the segmentation expanded to the whole image (3D).
 
-Ainda na figure~\ref{fig:watershed_2d}, podemos visualizar os marcadores de objeto em verde claro, os marcadores de fundo em vermelho e a máscara em verde transparente cobrindo a região selecionada (resultado).
+Figure~\ref{fig:watershed_2d} also shows the object markers (in light green), the background markers (in red) and the segmentation mask (in green) overlaying the selected regions (result).
 
 \begin{figure}[!htb]
 \centering
 \includegraphics[scale=0.2]{segmentation_watershed_axial.png}
-\caption{Watershed aplicado em uma fatia de um volume.}
+\caption{Watershed applied to a slice.}
 \label{fig:watershed_2d}
 \end{figure}
 
 \begin{figure}[!htb]
 \centering
 \includegraphics[scale=0.4]{segmentation_watershed_multiplanar_3d_pt.png}
-\caption{Segmentação do cérebro com o método de Watershed aplicado em todo um volume (expandido em 3D).}
+\caption{Brain segmentation using the watershed method applied to the whole image (3D).}
 \label{fig:watershed_3d}
 \end{figure}
 
