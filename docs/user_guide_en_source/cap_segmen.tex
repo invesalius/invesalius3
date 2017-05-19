@@ -188,64 +188,54 @@ Figure~\ref{fig:select_brush_operations} shows the operations.
 \label{fig:select_brush_operations}
 \end{figure}
 
-A figure \ref{fig:noise_amalgaman} mostra um caso em que algumas imagens contêm ruídos causados pela presença de prótese dentária de amálgama no paciente. Observe os "raios" saindo da região da arcada dentária. Isso ocorre porque a máscara de segmentação também seleciona parte dos ruídos, pois eles estão na mesma intensidade do limiar para osso.
-
-Figure~\ref{fig:noise_amalgaman} shows a image with noises caused by the presence of dental prosthesis.
+Figure~\ref{fig:noise_amalgaman} shows a image with noises caused by the presence of dental prosthesis. See the rays emerging from the dental arch. The thresholding segments the noise since its intensity is inside of the threshold of bone.
 
 \begin{figure}[!htb]
 \centering
 \includegraphics[scale=0.3]{segmentation_manual_noise_amalgam.jpg}
-\caption{Imagem com ruído segmentada com limiar}
+\caption{Noisy image segmented with threshold.}
 \label{fig:noise_amalgaman}
 \end{figure}
 
-A figure \ref{fig:surface_amagaman} ilustra como é uma superfície gerada a partir dessa
-segmentação.
+Figure~\ref{fig:surface_amagaman} shows a surface create from that segmentation.
 
 \begin{figure}[!htb]
 \centering
 \includegraphics[scale=0.3]{segmentation_manual_noise_amalgam_3d.jpg}
-\caption{Superfície gerada a partir de imagem com ruído}
+\caption{Surface generated from noisy image.}
 \label{fig:surface_amagaman}
 \end{figure}
 
 \begin{figure}[!htb]
 \centering
 \includegraphics[scale=0.3]{segmentation_manual_noise_amalgam_3d_zoom.jpg}
-\caption{Zoom da região com ruído}
+\caption{Zoom in the noisy area.}
 \label{fig:surface_amagaman_zoom}
 \end{figure}
 
-\newpage
+In such cases use the manual segmentation with the \textbf{erase} brush. Keep the \textbf{left} mouse button pressed while dragging the brush over region you want to remove (in mask).
 
-Em casos como este, utilizando o editor, com o pincel na opção \textbf{Apagar}, mantenha o
-botão \textbf{esquerdo} do mouse pressionado enquanto o \textbf{arrasta} sobre a região que
-deseja remover (na máscara).
-
-A figure \ref{fig:editor_amalgaman} mostra a imagem da figure \ref{fig:noise_amalgaman} após
-edição.
+Figure\ref{fig:editor_amalgaman} shows the image from figure~\ref{fig:noise_amalgaman} after the edition.
 
 \begin{figure}[!htb]
 \centering
 \includegraphics[scale=0.3]{segmentation_manual_noise_amalgam_removed.jpg}
-\caption{Imagem com ruído removido}
+\caption{After removing the noise.}
 \label{fig:editor_amalgaman}
 \end{figure}
 
 \begin{figure}[!htb]
 \centering
 \includegraphics[scale=0.3]{segmentation_manual_noise_amalgam_removed_3d_zoom.jpg}
-\caption{Superfície criada a partir da imagem com ruído removido}
+\caption{Surface generate after removing the noise.}
 \label{fig:surface_edited_amalgaman}
 \end{figure}
 
-\newpage
-Realizada a edição, basta gerar a superfície a partir da imagem editada (figure
-\ref{fig:surface_edited_amalgaman}). Como houve edição, ao clicar em \textbf{Criar superfície}, será
-requerido se deseja gerar a superfície a partir do método \textbf{binário} ou utilizando o método de suavização
-\textbf{Suavização sensível ao contexto} (figure \ref{fig:new_surface_edited}) para minimizar os "degraus" na superfície.
-Demais detalhes serão discutidos no capítulo \ref{cap_surface}.
+Realizada a edição, basta gerar a superfície a partir da imagem editada (figure \ref{fig:surface_edited_amalgaman}). Como houve edição, ao clicar em \textbf{Criar superfície}, será requerido se deseja gerar a superfície a partir do método \textbf{binário} ou utilizando o método de suavização \textbf{Suavização sensível ao contexto} (figure \ref{fig:new_surface_edited}) para minimizar os "degraus" na superfície.  Demais detalhes serão discutidos no capítulo \ref{cap_surface}.
 %\ref{fig:generate_surface}).
+
+It's possible to generate a surface after manual segmentation (figure~\ref{fig:surface_edited_amalgaman}). Since it was used the manual segmentation, when you click on \textbf{Create surface} button, a dialog (figure~\ref{fig:new_surface_edited}) will be opened to  to select if the surface will be created with the method \textbf{Binary} (blocky aspect) or \textbf{Context aware smoothing} (smoother).
+
 
 \begin{figure}[!htb]
 \centering
