@@ -73,7 +73,7 @@ Spongial Bone (Child) & 156 & 585\\
 \hline
 \end{tabular}
 \label{tab:limiar}
-\end{table} 
+\end{table}
 \newpage
 
 The table~\ref{tab:limiar} is indicated to images obtained from medical tomographs. The range of gray values from images obtained from odontological tomographs are greater and non-regular. Thus, it's necessary to use sliding control (figure~\ref{fig:region_selection_bar}) to adjust the thresholding values.
@@ -306,53 +306,55 @@ Figure~\ref{fig:watershed_2d} also shows the object markers (in light green), th
 \label{fig:watershed_3d}
 \end{figure}
 
-\section{Crescimento de região}
+\section{Region growing}
 
-A técnica de segmentação por crescimento de região é ativada no menu \textbf{Ferramentas}, \textbf{Segmentação}, por último \textbf{Crescimento de região} (figure~\ref{fig:menu_segmentation_region_growing}). Inicialmente deve-se selecionar a configuração entre \textbf{2D - Fatia atual} ou \textbf{3D - Todas as fatias}, também é necessário selecionar a conectividade do crescimento entre $4$ ou $8$ para o 2D e $6$, $18$ ou $26$ para 3D. Por último é necessário selecionar o método, entre \textbf{Dinâmico, Limiar ou Confidência} (figure~\ref{fig:segmentation_region_growing_dinamic}).
+Region growing tool is accessed in the menu \textbf{Tools}, \textbf{Segmentation}, \textbf{Region growing} (figure~\ref{fig:menu_segmentation_region_growing}). Before segmenting select if the operation will be in \textbf{2D - Actual slice} or \textbf{3D - All slices}. It is also necessary to select the connectivity: $4$ or $8$ to 2D or $6$, $18$ or $26$ to 3D. It's also necessary to select the method, which may be \textbf{Dynamic, Threshold, or Confidence} (figure~\ref{fig:segmentation_region_growing_dinamic})
 
 \begin{figure}[!htb]
-\centering
-\includegraphics[scale=0.5]{menu_segmentation_region_growing_pt.png}
-\caption{Menu para ativar a segmentação por região de crescimento.}
-\label{fig:menu_segmentation_region_growing}
+    \centering
+    \includegraphics[scale=0.5]{menu_segmentation_region_growing_pt.png}
+    \caption{Menu to access the region growing segmentation segmentation tool.}
+    \label{fig:menu_segmentation_region_growing}
 \end{figure}
 
 \begin{figure}[!htb]
-\centering
-\includegraphics[scale=0.7]{segmentation_region_growing_dinamic_pt.png}
-\caption{Tela para ajuste de parâmetros de segmentação por crescimento de região.}
-\label{fig:segmentation_region_growing_dinamic}
+    \centering
+    \includegraphics[scale=0.7]{segmentation_region_growing_dinamic_pt.png}
+    \caption{Dialog to configure the parameters of region growing segmentation tool.}
+    \label{fig:segmentation_region_growing_dinamic}
 \end{figure}
 
 A técnica parte de um pixel inicial que é indicado clicando com o \textbf{botão direito} do mouse, os pixels vizinhos que satisfazem as condições indicadas anteriormente são selecionados. Cada método leva em consideração diferentes condições, a seguir são apresentadas as diferenças entre cada método:
 
+This segmentation technique starts with a pixel (indicated by the user clicking with the left-button of the mouse). If the neighbour pixels meet some conditions are selected. Iteratively, the selection expands analyzing the neighbourhood of the selected pixels. Each region growing method has a different condition of selection:
+
 \begin{itemize}
-	\item \textbf{Dinâmico}: Esse método captura o valor do pixel que foi clicado, levando em consideração o desvio para baixo (min) e desvio para cima (max). A opção \textbf{Considerar o brilho e contraste} é ativada por padrão, essa opção permite levar em consideração os valores de níveis de cinza que são exibidos e/ou ajustados na opção brilho e contraste. Ao desativar essa opção será levado em consideração os valores de cinza gravados na imagem (figure~\ref{fig:segmentation_region_growing_dinamic_parameter}). 
-	
+	\item \textbf{Dynamic}: In this method uses the value of the pixel clicked by the user. Then every connected pixel inside the lower (min) and the upper (max) range deviation are selected. The option \textbf{Use WWWL} is default and makes region growing taking into account the image with \textbf{window width} and \textbf{window level} applied not the raw one (figure~\ref{fig:segmentation_region_growing_dinamic_parameter}).
+
 	\begin{figure}[!htb]
 	\centering
 	\includegraphics[scale=0.7]{segmentation_region_growing_dinamic_parameter_pt.png}
-	\caption{Ajuste de parâmetros para o método dinâmico.}
+	\caption{Dynamic method parameters.}
 	\label{fig:segmentation_region_growing_dinamic_parameter}
 	\end{figure}
-	
-	\item \textbf{Limiar}: O método limiar selecionará os pixels cuja a vizinhança estejam dentro do valor mínimo e máximo (figure~\ref{fig:segmentation_region_growing_limiar}).
+
+	\item \textbf{Threshold}: This method selects the pixels whose intensity are inside the minimum and maximum threshold (figure~\ref{fig:segmentation_region_growing_limiar}).
 
 	\begin{figure}[!htb]
 	\centering
 	\includegraphics[scale=0.7]{segmentation_region_growing_limiar_pt.png}
-	\caption{Ajuste de faixa de valores do método limiar.}
+    \caption{Adjust the threshold.}
 	\label{fig:segmentation_region_growing_limiar}
-	\end{figure}	
-	
-	\item \textbf{Confidência}: O método (figure~\ref{fig:segmentation_region_growing_confidence_parameter})
-	
+	\end{figure}
+
+	\item \textbf{Confidence}: O método (figure~\ref{fig:segmentation_region_growing_confidence_parameter})
+
 	\begin{figure}[!htb]
 	\centering
 	\includegraphics[scale=0.7]{segmentation_region_growing_confidence_parameter_pt.png}
-	\caption{Ajuste de faixa de valores do método limiar.}
+    \caption{Confidence parameter.}
 	\label{fig:segmentation_region_growing_confidence_parameter}
-	\end{figure}	
-	
-	
+	\end{figure}
+
+
 \end{itemize}
