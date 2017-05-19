@@ -373,7 +373,7 @@ A técnica parte de um pixel inicial que é indicado clicando com o \textbf{bot�
 	\label{fig:segmentation_region_growing_limiar}
 	\end{figure}	
 	
-	\item \textbf{Confidência}: O método (figura~\ref{fig:segmentation_region_growing_confidence_parameter})
+\item \textbf{Confidência}: Esse método inicia calculando o desvio padrão e a média do pixel selecionado pelo usuário e sua vizinhança. Pixels conectados com valores dentro da faixa (que é dado pela média mais e menos o desvio padrão multiplicado pelo \textbf{multiplicador}). É calculada a média e desvio padrão dos pixeis selecionado. Que é seguido por outra etapa de expansão. Esse processo é repetido de acordo com o parâmetro \textbf{Iteração}. A figura~\ref{fig:segmentation_region_growing_confidence_parameter} mostra os parâmetros desse método.
 	
 	\begin{figure}[!htb]
 	\centering

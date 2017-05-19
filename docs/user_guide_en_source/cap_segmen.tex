@@ -347,7 +347,7 @@ This segmentation technique starts with a pixel (indicated by the user clicking 
 	\label{fig:segmentation_region_growing_limiar}
 	\end{figure}
 
-	\item \textbf{Confidence}: O método (figure~\ref{fig:segmentation_region_growing_confidence_parameter})
+    \item \textbf{Confidence}: This method starts by calculating the standard deviation and the mean value of the pixel selected by the user and its neighbourhood. Connected pixels with value inside the range (given by the mean more and less the standard deviation multiplied by the \textbf{Multiplier} parameter). It's calculated the mean and the standard deviation from the selected pixels. Which follows by other expansion step. This process is repeated according to the number of \textbf{Iterations} parameter. The figure~\ref{fig:segmentation_region_growing_confidence_parameter} shows the parameters for this method.
 
 	\begin{figure}[!htb]
 	\centering
