@@ -78,99 +78,87 @@ Spongial Bone (Child) & 156 & 585\\
 
 The table~\ref{tab:limiar} is indicated to images obtained from medical tomographs. The range of gray values from images obtained from odontological tomographs are greater and non-regular. Thus, it's necessary to use sliding control (figure~\ref{fig:region_selection_bar}) to adjust the thresholding values.
 
-Caso se deseje criar uma nova máscara, basta clicar no ícone do atalho presente no painel, dentro
-do item \textbf{2. Selecione a região de interesse}. Veja a figure \ref{fig:shortcut_new_mask}.
+If you want to create a new mask click on the button \textbf{Create new mask} inside the item  \textbf{2. Select region of interest}. See the figure~\ref{fig:shortcut_new_mask}.
 
 \begin{figure}[!htb]
 \centering
 \includegraphics[scale=0.2]{object_add_original}
-\caption{Atalho para criar nova máscara}
+\caption{Button to create a new mask.}
 \label{fig:shortcut_new_mask}
 \end{figure}
 
-Clicando-se nesse atalho, uma nova janela será apresentada (figure \ref{fig:create_new_mask}).
-Selecione a faixa de limiar desejada e clique em \textbf{OK}.
+Clicando-se nesse atalho, uma nova janela será apresentada (figure \ref{fig:create_new_mask}).  Selecione a faixa de limiar desejada e clique em \textbf{OK}.
+
+After clicking on this button a dialog will be shown (figure~\ref{fig:create_new_mask}). Select the desired threshold and click on \textbf{Ok}.
 
 \begin{figure}[!htb]
 \centering
 \includegraphics[scale=0.55]{segmentation_threshold_window_dialog_pt.png}
-\caption{Criar uma nova máscara}
+\caption{Creating a new mask.}
 \label{fig:create_new_mask}
 \end{figure}
 
 \newpage
 
-Com uma máscara de segmentação configurada, é possível gerar a superfície 3D correspondente
-às imagens em estudo. A superfície será composta por uma malha de triângulos. O próximo capítulo
-trará maiores detalhes sobre esse tipo de superfície.
+After the segmentation it's possible to generate a corresponding 3D surface. The surface is formed by triangles. The following chapter will give more details about surfaces.
 
-Para iniciar a geração, clique no botão \textbf{Gerar superfície} (figure \ref{fig:generate_surface}).
-Caso já exista uma superfície gerada previamente, pode-se substituí-la pela nova. Para isso, basta
-selecionar, \textbf{antes} da geração, a opção \textbf{Sobrescrever anterior}.
+Click on the \textbf{Create surface} button (figure~\ref{fig:generate_surface}) to create a new surface. If there is a surface created previously you may overwrite it with the new one. To do this select the option \textbf{Overwrite last surface} before creating the new surface.
 
 \begin{figure}[!htb]
 \centering
 \includegraphics[scale=0.55]{segmentation_generate_surface_pt.png}
-\caption{Botão Gerar superfície}
+\caption{Create surface button.}
 \label{fig:generate_surface}
 \end{figure}
 
-Após alguns instantes, a superfície será exibida na janela de visualização 3D do InVesalius
-(figure \ref{fig:surface}).
+After a few moments the surface will be displayed at the 3D visualization window of InVesalius (figure~\ref{fig:surface}).
 
 \begin{figure}[!htb]
 \centering
 \includegraphics[scale=0.5]{surface_from_threshold.png}
-\caption{Superfície 3D}
+\caption{3D surface.}
 \label{fig:surface}
 \end{figure}
- 
 
 
-\section{Segmentação manual (Edição de imagens)}
 
-Há situações em que a segmentação por limiar não é eficiente, pois ela é aplicada ao conjunto
-todo das imagens. Para aplicar a segmentação a imagens isoladas, pode-se usar a segmentação
-manual. Com ela, é possível adicionar ou apagar uma determinada região da imagem que foi
-segmentada por limiar. No entanto, a segmentação manual requer maior conhecimento de anatomia
-por parte do usuário. Para utilizá-la, é necessário clicar em \textbf{Edição Manual} (figure \ref{fig:advanced_edition}) para abrir o painel de edição.
+\section{Manual segmentation (Image edition)}
+
+Thresholding segmentation may not be efficient in some case since it's applied to the whole image. Manual segmentation may be used o segment only an isolated image region. Manual segmentation turns possible to add or remove some image regions to the segmentation. Manual segmentation requires more knowledge of  human anatomy. To use it click on \textbf{Manual edition} (figure~\ref{fig:advanced_edition}) to open the manual segmentation panel.
 
 \begin{figure}[!htb]
 \centering
 \includegraphics[scale=0.75]{segmentation_manual_label_pt.png}
-\caption{Ícone para abrir a ferramenta de edição manual}
+\caption{Icon to open the Manual segmentation panel.}
 \label{fig:advanced_edition}
 \end{figure}
 
-O painel de edição aparece como mostra a figure \ref{fig:edition_slices_ref}.
+Figure~\ref{fig:edition_slices_ref} show the Manual segmentation panel.
 
 \begin{figure}[!htb]
 \centering
 \includegraphics[scale=0.6]{segmentation_manual_window_pt.png}
-\caption{Painel de edição}
+\caption{Manual segmentation panel.}
 \label{fig:edition_slices_ref}
 \end{figure}
 
-Há dois tipos de pincel disponíveis para desenho: um em forma de círculo e outro em forma
-de quadrado. Para escolher um pincel, clique no triângulo da lista de seleção para abri-la
-e, a seguir, clique sobre o tipo escolhido. O pincel selecionado aparece no painel como
-mostra a figure \ref{fig:brush_type}.
+There are two brushes used to segmentation: a circle and a square. Click on triangle icon (see figure~\ref{fig:brush_type}) to and click on the desired brush.
 
 \begin{figure}[!htb]
 \centering
 \includegraphics[scale=0.9]{segmentation_manual_pencil_type.png}
-\caption{Tipo de pincel}
+\caption{Brush types.}
 \label{fig:brush_type}
 \end{figure}
 
 \newpage
 
-Também é possível alterar o diâmetro do pincel, conforme mostra a figure \ref{fig:select_diameter}.
+It's also possible to adjust the brush size, like shown in the figure~\ref{fig:select_diameter}.
 
 \begin{figure}[!htb]
 \centering
 \includegraphics[scale=0.8]{segmentation_manual_diameter.png}
-\caption{Seleção do diâmetro do pincel}
+\caption{Adjusting the brush size.}
 \label{fig:select_diameter}
 \end{figure}
 
@@ -182,19 +170,27 @@ seguintes:\\
 \textbf{Limiar}, para remover uma região que está fora do limiar e foi selecionada, ou pintar
 uma região que está dentro do limiar e não foi selecionada.\\
 
-A figure \ref{fig:select_brush_operations} ilustra a lista de operações do pincel:
+It's needed to select the operation to be performed by the brush. These are the options:
+
+\textbf{Draw}: to add a non-selected region to the segmentation;
+
+\textbf{Erase}: to remove a selected region from the segmentation;
+
+\textbf{Threshold}: applies the thresholding locally, adding or removing a
+region if in inside or outside of the threshold range.
+
+Figure~\ref{fig:select_brush_operations} shows the operations.
 
 \begin{figure}[!htb]
 \centering
 \includegraphics[scale=0.7]{segmentation_manual_pencil_type_operation_type_pt.png}
-\caption{Seleção do tipo de operação do pincel}
+\caption{Brush operations}
 \label{fig:select_brush_operations}
 \end{figure}
 
-A figure \ref{fig:noise_amalgaman} mostra um caso em que algumas imagens contêm ruídos
-causados pela presença de prótese dentária de amálgama no paciente. Observe os "raios" 
-saindo da região da arcada dentária. Isso ocorre porque a máscara de segmentação também
-seleciona parte dos ruídos, pois eles estão na mesma intensidade do limiar para osso.
+A figure \ref{fig:noise_amalgaman} mostra um caso em que algumas imagens contêm ruídos causados pela presença de prótese dentária de amálgama no paciente. Observe os "raios" saindo da região da arcada dentária. Isso ocorre porque a máscara de segmentação também seleciona parte dos ruídos, pois eles estão na mesma intensidade do limiar para osso.
+
+Figure~\ref{fig:noise_amalgaman} shows a image with noises caused by the presence of dental prosthesis.
 
 \begin{figure}[!htb]
 \centering
