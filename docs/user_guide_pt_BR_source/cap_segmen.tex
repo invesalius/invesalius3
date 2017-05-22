@@ -352,7 +352,7 @@ A técnica de segmentação por crescimento de região é ativada no menu \textb
 \label{fig:segmentation_region_growing_dinamic}
 \end{figure}
 
-A técnica parte de um pixel inicial que é indicado clicando com o \textbf{botão direito} do mouse, os pixels vizinhos que satisfazem as condições indicadas anteriormente são selecionados. Cada método leva em consideração diferentes condições, a seguir são apresentadas as diferenças entre cada método:
+A técnica parte de um pixel inicial que é indicado clicando com o \textbf{botão esquerdo} do mouse, os pixels vizinhos que satisfazem as condições indicadas anteriormente são selecionados. Cada método leva em consideração diferentes condições, a seguir são apresentadas as diferenças entre cada método:
 
 \begin{itemize}
 	\item \textbf{Dinâmico}: Esse método captura o valor do pixel que foi clicado, levando em consideração o desvio para baixo (min) e desvio para cima (max). A opção \textbf{Considerar o brilho e contraste} é ativada por padrão, essa opção permite levar em consideração os valores de níveis de cinza que são exibidos e/ou ajustados na opção brilho e contraste. Ao desativar essa opção será levado em consideração os valores de cinza gravados na imagem (figura~\ref{fig:segmentation_region_growing_dinamic_parameter}). 
@@ -373,7 +373,7 @@ A técnica parte de um pixel inicial que é indicado clicando com o \textbf{bot�
 	\label{fig:segmentation_region_growing_limiar}
 	\end{figure}	
 	
-	\item \textbf{Confidência}: O método (figura~\ref{fig:segmentation_region_growing_confidence_parameter})
+\item \textbf{Confidência}: Esse método inicia calculando o desvio padrão e a média do pixel selecionado pelo usuário e sua vizinhança. Pixels conectados com valores dentro da faixa (que é dado pela média mais e menos o desvio padrão multiplicado pelo \textbf{multiplicador}). É calculada a média e desvio padrão dos pixeis selecionado. Que é seguido por outra etapa de expansão. Esse processo é repetido de acordo com o parâmetro \textbf{Iteração}. A figura~\ref{fig:segmentation_region_growing_confidence_parameter} mostra os parâmetros desse método.
 	
 	\begin{figure}[!htb]
 	\centering

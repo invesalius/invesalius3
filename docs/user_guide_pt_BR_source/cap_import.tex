@@ -101,6 +101,15 @@ cada imagem resultante terá 307 x 307 pixeis. Caso deseje abrir com a resoluç�
 \label{fig:resize_image}
 \end{figure}
 
+Se a imagem foi obtida com o gantry inclinado, será necessário fazer a correção para evitar deformações na reconstrução. O InVesalius permite fazer essa correção. Ao importar uma imagem com o gantry inclinado aparecerá uma janela com o grau de inclinação do tilt (figura~\ref{fig:gantry_tilt}). É possível alterar esse valor, mas não é recomendável. Clique no botão \textbf{OK} para fazer a correção. Se clicar em \textbf{Cancelar} a reconstrução será realizada sem a correção.
+
+\begin{figure}[!htb]
+\centering
+\includegraphics[scale=0.75]{window_gantry_tilt_pt.png}
+\caption{Correção de gantry tilt}
+\label{fig:gantry_tilt}
+\end{figure}
+
 Após os procedimentos anteriores, será apresentada uma janela (figura \ref{fig:prog_recons}) com o progresso
 da reconstrução (quando as imagens são empilhadas e interpoladas).
 
@@ -254,6 +263,7 @@ Caso seja detectado quantidade insuficiente de memória disponível na hora de c
 \caption{Redimensionamento de imagens}
 \label{fig:import_bmp_resize_pt}
 \end{figure}
+
 
 Após os passos anteriores é necessário aguardar um instante para completar a reconstrução multiplanar conforme mostra a figura~\ref{fig:import_bmp_mpr_pt.png}.
 

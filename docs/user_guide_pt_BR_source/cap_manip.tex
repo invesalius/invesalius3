@@ -129,7 +129,7 @@ Por padrão a visualização das imagens 2D são interpoladas (figura~\ref{fig:i
 
 \begin{figure}[!htb]
 \centering
-\includegraphics[scale=0.7]{menu_interpoleted_image_pt.png}
+\includegraphics[scale=0.6]{menu_interpoleted_image_pt.png}
 \caption{Menu para desativar e ativar interpolação}
 \label{fig:menu_interpoleted_image_pt}
 \end{figure}
@@ -151,16 +151,16 @@ Para mover uma imagem na tela, pode-se utilizar o ícone do atalho "Mover" da ba
 \textbf{esquerdo} do mouse pressionado sobre a imagem, \textbf{arraste-a} para a direção desejada.
 A figura \ref{fig:move_img} mostra uma imagem deslocada (movida).
 
-\begin{figure}[!htb]
+\begin{figure}[!h]
 \centering
 \includegraphics[scale=0.25]{tool_translate_original.png}
 \caption{Atalho para mover imagens}
 \label{fig:move_icon}
 \end{figure}
 
-\begin{figure}[!htb]
+\begin{figure}[!h]
 \centering
-\includegraphics[scale=0.25]{axial_pan.jpg}
+\includegraphics[scale=0.15]{axial_pan.jpg}
 \caption{Imagem deslocada}
 \label{fig:move_img}
 \end{figure}
@@ -172,16 +172,16 @@ A rotação de imagens pode ser ativada pelo ícone do atalho "Rotacionar" da ba
 \textbf{esquerdo} do mouse pressionado sobre a imagem, \textbf{arraste-a} no sentido horário ou
 anti-horário, dependendo do sentido de rotação desejado.
 
-\begin{figure}[!htb]
+\begin{figure}[!h]
 \centering
 \includegraphics[scale=0.25]{tool_rotate_original.png}
 \caption{Atalho para rotacionar imagens}
 \label{fig:rot_icon}
 \end{figure}
 
-\begin{figure}[!htb]
+\begin{figure}[!h]
 \centering
-\includegraphics[scale=0.25]{axial_rotate.jpg}
+\includegraphics[scale=0.15]{axial_rotate.jpg}
 \caption{Imagem rotacionada}
 \label{fig:rotate_all}
 \end{figure}
@@ -222,13 +222,6 @@ caso deseje reduzi-la.
 \label{fig:zoom_icon}
 \end{figure}
 
-%\begin{figure}[!htb]
-%\centering
-%\includegraphics[scale=0.2]{ScreenHunter_76Dec311201_.jpg}
-%\caption{Imagem com \textit{Zoom} aplicado}
-%\label{fig:zoom_}
-%\end{figure}
-
 \subsection{Ampliando uma área da imagem}
 
 Para ampliar uma área determinada da imagem, clique sobre o ícone do atalho "Zoom baseado na seleção" 
@@ -247,14 +240,14 @@ botão esquerdo do mouse for liberado, a operação de \textit{zoom} será aplic
 
 \begin{figure}[!htb]
 \centering
-\includegraphics[scale=0.25]{tool_zoom_select_image.jpg}
+\includegraphics[scale=0.15]{tool_zoom_select_image.jpg}
 \caption{Área selecionada para \textit{zoom}}
 \label{fig:zoom_select}
 \end{figure}
 
 \begin{figure}[!htb]
 \centering
-\includegraphics[scale=0.25]{tool_image_with_zoom.jpg}
+\includegraphics[scale=0.15]{tool_image_with_zoom.jpg}
 \caption{Imagem ampliada}
 \label{fig:zoom_applied}
 \end{figure}
@@ -332,7 +325,7 @@ Vascular - Mole & 680 & 160\\
 
 \begin{figure}
   \centering
-  \subfloat[Osso]{\label{fig:contrast_bone}\includegraphics[width=0.4\textwidth]{contraste_osso}}                
+  \subfloat[Osso]{\label{fig:contrast_bone}\includegraphics[width=0.4\textwidth]{contraste_osso}} \qquad          
   \subfloat[Pulmão]{\label{fig:contrast_isq}\includegraphics[width=0.4\textwidth]{contraste_pulmao}}
   \caption{Diferentes tipos de brilho e constraste}
   \label{fig:two_window_level}
@@ -358,55 +351,19 @@ mostra a figura \ref{fig:pseudo_color}.
 \end{figure}
 
 As figuras de \ref{fig:image_default} a \ref{fig:image_saturation} exemplificam as diversas opções de
-pseudocor disponíveis.\\
+pseudocor disponíveis.
 
-\begin{figure}[H]
-\centering
-\includegraphics[scale=0.30]{pseudo_default.jpg}
-\caption{Padrão}
-\label{fig:image_default}
-\end{figure}
-
-\begin{figure}[H]
-\centering
-\includegraphics[scale=0.30]{pseudo_inverse.jpg}
-\caption{Imagem Cinza Invertido}
-\label{fig:image_inverted}
-\end{figure}
-
-\begin{figure}[H]
-\centering
-\includegraphics[scale=0.30]{pseudo_rainbow.jpg}
-\caption{Arco-íris}
-\label{fig:image_arc}
-\end{figure}
-
-\begin{figure}[H]
-\centering
-\includegraphics[scale=0.30]{pseudo_desert.jpg}
-\caption{Deserto}
-\label{fig:image_desert}
-\end{figure}
-
-\begin{figure}[H]
-\centering
-\includegraphics[scale=0.30]{pseudo_hue.jpg}
-\caption{Matiz}
-\label{fig:image_matiz}
-\end{figure}
-
-\begin{figure}[H]
-\centering
-\includegraphics[scale=0.30]{pseudo_ocean.jpg}
-\caption{Oceano}
-\label{fig:image_ocean}
-\end{figure}
-
-\begin{figure}[H]
-\centering
-\includegraphics[scale=0.30]{pseudo_saturation.jpg}
-\caption{Saturação}
-\label{fig:image_saturation}
+\begin{figure}[h]
+  \centering
+  \subfloat[Default]{\label{fig:image_default}\includegraphics[width=0.25\textwidth]{pseudo_default.jpg}} \qquad
+  \subfloat[Inverted Gray Image]{\label{fig:image_inverted}\includegraphics[width=0.25\textwidth]{pseudo_inverse.jpg}} \qquad
+  \subfloat[Rainbow]{\label{fig:image_arc}\includegraphics[width=0.25\textwidth]{pseudo_rainbow.jpg}} \\
+  \subfloat[Desert]{\label{fig:image_desert}\includegraphics[width=0.25\textwidth]{pseudo_desert.jpg}} \qquad
+  \subfloat[Hue]{\label{fig:image_matiz}\includegraphics[width=0.25\textwidth]{pseudo_hue.jpg}} \qquad
+  \subfloat[Ocean]{\label{fig:image_ocean}\includegraphics[width=0.25\textwidth]{pseudo_ocean.jpg}}\\
+\subfloat[Saturation]{\label{fig:image_saturation}\includegraphics[width=0.25\textwidth]{pseudo_saturation.jpg}}  
+  \caption{Alguns tipos diferentes de pseudo-cor}
+  \label{fig:pseudo_color_types}
 \end{figure}
 
 \newpage
