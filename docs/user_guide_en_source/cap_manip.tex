@@ -145,7 +145,7 @@ To move an image on the screen, the toolbar's "Move" shortcut icon can be used (
 
 \begin{figure}[!htb]
 \centering
-\includegraphics[scale=0.25]{axial_pan_en.png}
+\includegraphics[scale=0.20]{axial_pan_en.png}
 \caption{Displaced image}
 \label{fig:move_img}
 \end{figure}
@@ -156,17 +156,18 @@ The image rotation can be activated by the toolbar's "Rotate" shortcut icon (fig
 
 \begin{figure}[!htb]
 \centering
-\includegraphics[scale=0.25]{tool_rotate_original.png}
+\includegraphics[scale=0.20]{tool_rotate_original.png}
 \caption{Shortcut to rotate images}
 \label{fig:rot_icon}
 \end{figure}
 
 \begin{figure}[!htb]
 \centering
-\includegraphics[scale=0.25]{axial_rotate_en.png}
+\includegraphics[scale=0.20]{axial_rotate_en.png}
 \caption{Rotated image}
 \label{fig:rotate_all}
 \end{figure}
+
 
 \section{Zoom}
 
@@ -254,7 +255,7 @@ You can use preset brightness and contrast patterns. The table \ref{tab:window_l
 \label{fig:window_level}
 \end{figure}
 
-\begin{table}[h]
+\begin{table}[!h]
 \centering
 \caption{Brightness and contrast values for some tissues}
 \begin{tabular}{lcc}\\
@@ -286,17 +287,13 @@ Vasculature - Soft & 680 & 160\\
 \label{tab:window_level}
 \end{table} 
 
-\newpage
-
-\begin{figure}
+\begin{figure}[!h]
   \centering
-  \subfloat[Bone]{\label{fig:contrast_bone}\includegraphics[width=0.4\textwidth]{contraste_osso}}
+  \subfloat[Bone]{\label{fig:contrast_bone}\includegraphics[width=0.4\textwidth]{contraste_osso}} \qquad
   \subfloat[Lung]{\label{fig:contrast_isq}\includegraphics[width=0.4\textwidth]{contraste_pulmao}}
   \caption{Different types of brightness and contrast}
   \label{fig:two_window_level}
 \end{figure}
-
-
 
 \section{Pseudo color}
 
@@ -304,71 +301,34 @@ Another feature to improve the visualization of the images is the pseudo color. 
 
 To change the view using a pseudo color, position the mouse cursor over the image and \textbf{right-click} to open a context menu on it. When the menu opens, select the entry \textbf{Pseudo color}, and then click on the desired pseudo color option, as shown in the figure \ref{fig:pseudo_color}.
 
-\begin{figure}[H]
+\begin{figure}[p]
 \centering
 \includegraphics[scale=0.40]{pseudo_menu_en.png}
 \caption{Pseudo Color}
 \label{fig:pseudo_color}
 \end{figure}
 
-Figures \ref{fig:image_default} through \ref{fig:image_saturation} exemplify the various pseudo color options available.\\
+Figures \ref{fig:image_default} through \ref{fig:image_saturation} exemplify the various pseudo color options available.
 
-\begin{figure}[H]
-\centering
-\includegraphics[scale=0.30]{pseudo_default.jpg}
-\caption{Default}
-\label{fig:image_default}
-\end{figure}
-
-\begin{figure}[H]
-\centering
-\includegraphics[scale=0.30]{pseudo_inverse.jpg}
-\caption{Inverted Gray Image}
-\label{fig:image_inverted}
-\end{figure}
-
-\begin{figure}[H]
-\centering
-\includegraphics[scale=0.30]{pseudo_rainbow.jpg}
-\caption{Rainbow}
-\label{fig:image_arc}
-\end{figure}
-
-\begin{figure}[H]
-\centering
-\includegraphics[scale=0.30]{pseudo_desert.jpg}
-\caption{Desert}
-\label{fig:image_desert}
-\end{figure}
-
-\begin{figure}[H]
-\centering
-\includegraphics[scale=0.30]{pseudo_hue.jpg}
-\caption{Hue}
-\label{fig:image_matiz}
-\end{figure}
-
-\begin{figure}[H]
-\centering
-\includegraphics[scale=0.30]{pseudo_ocean.jpg}
-\caption{Ocean}
-\label{fig:image_ocean}
-\end{figure}
-
-\begin{figure}[H]
-\centering
-\includegraphics[scale=0.30]{pseudo_saturation.jpg}
-\caption{Saturation}
-\label{fig:image_saturation}
+\begin{figure}[h]
+  \centering
+  \subfloat[Default]{\label{fig:image_default}\includegraphics[width=0.25\textwidth]{pseudo_default.jpg}} \qquad
+  \subfloat[Inverted Gray Image]{\label{fig:image_inverted}\includegraphics[width=0.25\textwidth]{pseudo_inverse.jpg}} \qquad
+  \subfloat[Rainbow]{\label{fig:image_arc}\includegraphics[width=0.25\textwidth]{pseudo_rainbow.jpg}} \\
+  \subfloat[Desert]{\label{fig:image_desert}\includegraphics[width=0.25\textwidth]{pseudo_desert.jpg}} \qquad
+  \subfloat[Hue]{\label{fig:image_matiz}\includegraphics[width=0.25\textwidth]{pseudo_hue.jpg}} \qquad
+  \subfloat[Ocean]{\label{fig:image_ocean}\includegraphics[width=0.25\textwidth]{pseudo_ocean.jpg}}\\
+\subfloat[Saturation]{\label{fig:image_saturation}\includegraphics[width=0.25\textwidth]{pseudo_saturation.jpg}}  
+  \caption{Some different types of pseudo-color}
+  \label{fig:pseudo_color_types}
 \end{figure}
 
 \newpage
-
 \section{Projection type}
 
 It is possible to change the projection type of the 2D images, in addition to the normal mode, InVesalius has six types of projections that can be accessed as follows: Place the mouse over the image and \textbf{rigth-click} to open a context menu on it. When the menu opens, select the projection type option, and then click on the desired projection option, as shown in the figure ~\ref{fig:menu_proj}.
 
-\begin{figure}[H]
+\begin{figure}[!h]
 \centering
 \includegraphics[scale=0.40]{menu_projection_en.png}
 \caption{Projection Type menu}
@@ -379,7 +339,7 @@ It is possible to change the projection type of the 2D images, in addition to th
 
 Normal mode is the default view, i.e. without any type of projection, originally when the image was acquired or customized previously with either brightness and contrast or pseudo color. As shown in figure ~\ref{fig:proj_normal}.
 
-\begin{figure}[H]
+\begin{figure}[!h]
 \centering
 \includegraphics[scale=0.40]{multiplanar_window_en.png}
 \caption{Normal projection}
@@ -390,7 +350,7 @@ Normal mode is the default view, i.e. without any type of projection, originally
 \label{sec:max_ip}
 MaxIP is also known as MIP (\textit{Maximum Intensity Projection}), the method selects only voxels that have maximum intensity among the visited ones as shown in figure ~\ref{fig:proj_maxip}. According to the amount or "depth" of MaxIP each voxel is visited in order of overlap, for example, to select MaxIP of the pixel $(0,0)$ consisting of 3 slices it is necessary to visit the pixel $(0,0)$ of slices $(1,2,3)$ and select the highest value.
 
-\begin{figure}[H]
+\begin{figure}[!h]
 \centering
 \includegraphics[scale=0.40]{multiplanar_window_maxip_en.png}
 \caption{MaxIP projection}
@@ -399,7 +359,7 @@ MaxIP is also known as MIP (\textit{Maximum Intensity Projection}), the method s
 
 As shown in the figure~\ref{fig:proj_maxip_qtd}, the number of images that will be composed of MaxIP is set at the bottom of each orientation image.
 
-\begin{figure}[H]
+\begin{figure}[!h]
 \centering
 \includegraphics[scale=0.80]{multiplanar_window_maxip_number_en.png}
 \caption{Selection the amount of images that composes the MaxIP or MIP}
@@ -410,7 +370,7 @@ As shown in the figure~\ref{fig:proj_maxip_qtd}, the number of images that will 
 
 Unlike MaxIP, MinIP (\textit{Minimun Intensity Projection}) selects only the voxels that have minimal internsity among the visited ones, an example is shown in figure~\ref{fig:proj_minIP}. The image number selection that will compose the projection is made at the bottom of each orientation image as shown in figure~\ref{fig:proj_maxip_qtd}.
 
-\begin{figure}[H]
+\begin{figure}[!h]
 \centering
 \includegraphics[scale=0.40]{multiplanar_window_minip_en.png}
 \caption{MinIP projection}
@@ -420,7 +380,7 @@ Unlike MaxIP, MinIP (\textit{Minimun Intensity Projection}) selects only the vox
 \subsection{MeanIP}
 The MeanIP (\textit{Mean Intensity Projection}) technique which is shown in the figure~\ref{fig:proj_meanIP} composes the projection by averaging the voxels visited. The voxels are visited in the same way as the MaxIP and MinIP methods. It is also possible to define how many images will compose the projection at the bottom of the image of each orientation as shown in the figure~\ref{fig:proj_maxip_qtd}.
 
-\begin{figure}[H]
+\begin{figure}[!h]
 \centering
 \includegraphics[scale=0.40]{multiplanar_window_mean_en.png}
 \caption{MeanIP projection}
@@ -431,7 +391,7 @@ The MeanIP (\textit{Mean Intensity Projection}) technique which is shown in the 
 \label{sub:mida}
 The MIDA (\textit{Maximum Intensity Difference Accumulation}) technique projects an image taking into account only voxels that have local maximum values. From each pixel a ray is simulated towards the volume, each voxel is intercepted by each of these rays reaching the end of the volume, each of these voxels visited has its accumulated value, but are taken into account only if the value is greater than previously visited values. Like MaxIP, you can select how many images are used to accumulate the values. The figure ~\ref{fig:proj_MIDA} shows an example of MIDA projection.
 
-\begin{figure}[H]
+\begin{figure}[!h]
 \centering
 \includegraphics[scale=0.40]{multiplanar_window_mida_en.png}
 \caption{MIDA projection}
@@ -440,7 +400,7 @@ The MIDA (\textit{Maximum Intensity Difference Accumulation}) technique projects
 
 As the figure ~\ref{fig:proj_MIDA_inv} shows, it is possible to invert the order that the voxels are visited by selecting the option \textbf{Inverted order} in the lower corner of the screen.
 
-\begin{figure}[H]
+\begin{figure}[!h]
 \centering
 \includegraphics[scale=0.40]{multiplanar_window_mida_inverted_en.png}
 \caption{Inverted order MIDA projection}
@@ -451,7 +411,7 @@ As the figure ~\ref{fig:proj_MIDA_inv} shows, it is possible to invert the order
 
 The technique consists in visualizing contours present in the projection generated with MaxIP technique(\ref{sec:max_ip}). An example is presented in the figure~\ref{fig:proj_contorno_maxip}.
 
-\begin{figure}[H]
+\begin{figure}[!h]
 \centering
 \includegraphics[scale=0.40]{multiplanar_window_contour_maxip_en.png}
 \caption{Contour MaxIP projection}
@@ -462,7 +422,7 @@ The technique consists in visualizing contours present in the projection generat
 
 The technique consists in visualizing contours present in the projection generated with the MIDA technique(\ref{sub:mida}). Like MIDA, you can reverse the order that the volume is visited. We exemplify in the figure~\ref{fig:proj_contorno_mida}.
 
-\begin{figure}[H]
+\begin{figure}[!h]
 \centering
 \includegraphics[scale=0.40]{multiplanar_window_contour_mida_en.png}
 \caption{Contour MIDA projection}
