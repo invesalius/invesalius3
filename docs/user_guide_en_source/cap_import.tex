@@ -80,6 +80,15 @@ The slices will be resized according to the percentage relative to the original 
 \label{fig:resize_image}
 \end{figure}
 
+If the image was obtained with the gantry tilted it will be necessary to do a correction to avoid deformations on the reconstruction. InVesalius allows the user do this correction. When importing an image with the gantry tilted it will be shown a dialog with the degree of tilt (figure~\ref{fig:gantry_tilt}). It is possible to change this value, but it is not recommended. Click on the \textbf{Ok} button to do the correction. If you click on the \textbf{cancel} button the correction will not be done.
+
+\begin{figure}[!htb]
+\centering
+\includegraphics[scale=0.75]{window_gantry_tilt_en.png}
+\caption{Gantry tilt correction}
+\label{fig:gantry_tilt}
+\end{figure}
+
 After the previous procedures, a window will be displayed (figure \ref{fig:prog_recons}) with progress reconstruction (when images are stacked and interpolated).
 
 \begin{figure}[!htb]
@@ -227,15 +236,6 @@ If insufficient memory is available when loading images, it is recommended to re
 \includegraphics[scale=0.5]{import_window_lower_memory_en.png}
 \caption{Image resize}
 \label{fig:import_bmp_resize_pt}
-\end{figure}
-
-If the image was obtained with the gantry tilted it will be necessary to do a correction to avoid deformations on the reconstruction. InVesalius allows the user do this correction. When importing an image with the gantry tilted it will be shown a dialog with the degree of tilt (figure~\ref{fig:gantry_tilt}). It is possible to change this value, but it is not recommended. Click on the \textbf{Ok} button to do the correction. If you click on the \textbf{cancel} button the correction will not be done.
-
-\begin{figure}[!htb]
-\centering
-\includegraphics[scale=0.75]{window_gantry_tilt_en.png}
-\caption{Redimensionamento de imagens}
-\label{fig:gantry_tilt}
 \end{figure}
 
 %Após os passos anteriores é necessário aguardar um instante para completar a reconstrução multiplanar conforme mostra a figura~\ref{fig:import_bmp_mpr_pt.png}.
