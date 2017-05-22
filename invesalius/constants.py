@@ -24,7 +24,7 @@ import wx
 import itertools
 
 #from invesalius.project import Project
-INVESALIUS_VERSION = "3.0"
+INVESALIUS_VERSION = "3.1"
 
 #---------------
 
