@@ -34,3 +34,15 @@ build
 *.diff
 
 *.directory
+
+
+# latex
+*.aux
+*.toc
+*.bbl
+*.blg
+*.fls
+*.fdb_latexmk
+*.synctex.gz
+*.out
+*.log
