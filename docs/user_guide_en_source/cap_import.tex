@@ -229,6 +229,15 @@ If insufficient memory is available when loading images, it is recommended to re
 \label{fig:import_bmp_resize_pt}
 \end{figure}
 
+If the image was obtained with the gantry tilted it will be necessary to do a correction to avoid deformations on the reconstruction. InVesalius allows the user do this correction. When importing an image with the gantry tilted it will be shown a dialog with the degree of tilt (figure~\ref{fig:gantry_tilt}). It is possible to change this value, but it is not recommended. Click on the \textbf{Ok} button to do the correction. If you click on the \textbf{cancel} button the correction will not be done.
+
+\begin{figure}[!htb]
+\centering
+\includegraphics[scale=0.75]{window_gantry_tilt_en.png}
+\caption{Redimensionamento de imagens}
+\label{fig:gantry_tilt}
+\end{figure}
+
 %Após os passos anteriores é necessário aguardar um instante para completar a reconstrução multiplanar conforme mostra a figura~\ref{fig:import_bmp_mpr_pt.png}.
 
 After the previous steps it is necessary to wait a moment to complete the multiplanar reconstruction as shown in the figure~\ref{fig:import_bmp_mpr_pt.png}.
