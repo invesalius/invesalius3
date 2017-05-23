@@ -610,11 +610,6 @@ class SurfaceManager():
 
             #  polydata.SetSource(None)
             #  polydata.DebugOn()
-            w = vtk.vtkPLYWriter()
-            w.SetInputData(polydata)
-            w.SetFileName('/tmp/ca_smoothing_inv.ply')
-            w.Write()
-
         else:
             #smoother = vtk.vtkWindowedSincPolyDataFilter()
             smoother = vtk.vtkSmoothPolyDataFilter()
