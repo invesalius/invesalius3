@@ -357,6 +357,7 @@ class Controller():
         Publisher.sendMessage('Set slice interaction style', const.STATE_DEFAULT)
         Publisher.sendMessage('Hide content panel')
         Publisher.sendMessage('Close project data')
+        Publisher.sendMessage('Show import panel in frame')
         session = ses.Session()
         session.CloseProject()
 
