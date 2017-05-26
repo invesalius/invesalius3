@@ -302,6 +302,8 @@ class Slice(object):
         self.hue_range = (0, 0)
         self.value_range = (0, 1)
 
+        self.interaction_style.Reset()
+
         Publisher.sendMessage('Select first item from slice menu')
 
     def __set_current_mask_threshold_limits(self, pubsub_evt):

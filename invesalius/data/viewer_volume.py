@@ -355,7 +355,7 @@ class Viewer(wx.Panel):
     def OnCloseProject(self, pubsub_evt):
         if self.raycasting_volume:
             self.raycasting_volume = False
-            
+
         if  self.slice_plane:
             self.slice_plane.Disable()
             self.slice_plane.DeletePlanes()
@@ -364,6 +364,10 @@ class Viewer(wx.Panel):
             self.mouse_pressed = 0
             self.on_wl = False
             self.slice_plane = 0
+
+        self.interaction_style.Reset()
+        self.SetInteractorStyle(const.STATE_DEFAULT)
+        self._last_state = const.STATE_DEFAULT
 
     def OnHideText(self, pubsub_evt):
         self.text.Hide()
