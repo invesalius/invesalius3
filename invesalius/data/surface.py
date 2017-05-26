@@ -361,6 +361,9 @@ class SurfaceManager():
         del self.actors_dict
         self.actors_dict = {}
 
+        # restarting the surface index
+        Surface.general_index = -1
+
     def OnSelectSurface(self, pubsub_evt):
         index = pubsub_evt.data
         #self.last_surface_index = index

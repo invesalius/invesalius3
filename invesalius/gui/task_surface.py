@@ -501,6 +501,7 @@ class SurfaceProperties(wx.Panel):
         n = self.combo_surface_name.GetCount()
         for i in xrange(n-1, -1, -1):
             self.combo_surface_name.Delete(i)
+        self.surface_list = []
 
     def ChangeSurfaceName(self, pubsub_evt):
         index, name = pubsub_evt.data
