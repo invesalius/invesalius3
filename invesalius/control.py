@@ -53,6 +53,13 @@ class Controller():
         self.frame = frame
         self.progress_dialog = None
         self.cancel_import = False
+
+        #type of imported image
+        #None, others and opened Project = 0
+        #DICOM = 1
+        #TIFF uCT = 2
+        self.img_type = 0 
+
         #Init session
         session = ses.Session()
         self.measure_manager = measures.MeasurementManager()
@@ -357,7 +364,14 @@ class Controller():
         Publisher.sendMessage('Set slice interaction style', const.STATE_DEFAULT)
         Publisher.sendMessage('Hide content panel')
         Publisher.sendMessage('Close project data')
-        Publisher.sendMessage('Show import panel in frame')
+    
+        if self.img_type == 1:
+            Publisher.sendMessage('Show import panel in frame')
+
+        if self.img_type == 2:
+            Publisher.sendMessage('Show import bitmap panel in frame')
+
+
         session = ses.Session()
         session.CloseProject()
 
@@ -401,12 +415,14 @@ class Controller():
         if ok:
             Publisher.sendMessage('Show import panel')
             Publisher.sendMessage("Show import panel in frame")
+            self.img_type = 1
 
     def OnLoadImportBitmapPanel(self, evt):
         data = evt.data
         ok = self.LoadImportBitmapPanel(data)
         if ok:
             Publisher.sendMessage('Show import bitmap panel in frame')            
+            self.img_type = 2
             #Publisher.sendMessage("Show import panel in invesalius.gui.frame") as frame
 
     def LoadImportBitmapPanel(self, data):
