@@ -16,7 +16,7 @@ msgstr ""
 "Project-Id-Version: InVesalius3\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2017-04-26 16:15-0300\n"
-"PO-Revision-Date: 2017-04-26 23:40+0000\n"
+"PO-Revision-Date: 2017-05-11 03:45+0000\n"
 "Last-Translator: Yoshihiro Sato <yoshihiro_sato@zaccoz.net>\n"
 "Language-Team: Japanese (http://www.transifex.com/invesalius/invesalius3/language/ja/)\n"
 "MIME-Version: 1.0\n"
@@ -1000,7 +1000,7 @@ msgstr "最小ウェイト:"
 
 #: dialogs.py:1524
 msgid "N. steps:"
-msgstr "ステップ数:"
+msgstr "段数:"
 
 #: dialogs.py:1543 dialogs.py:1579 dialogs.py:1624
 msgid "Context aware smoothing"

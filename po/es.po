@@ -8,14 +8,15 @@
 # Translators:
 # Alicia Perez <artema91@hotmail.com>, 2011
 # InVesalius <invesalius@cti.gov.br>, 2015
-# Mario Moreno <marioregino@gmail.com>, 2015
+# Mario Moreno <marioregino@gmail.com>, 2015,2017
+# Santiago Castro <bryant@montevideo.com.uy>, 2017
 msgid ""
 msgstr ""
 "Project-Id-Version: InVesalius3\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2017-04-26 16:15-0300\n"
-"PO-Revision-Date: 2017-04-26 19:15+0000\n"
-"Last-Translator: InVesalius <invesalius@cti.gov.br>\n"
+"PO-Revision-Date: 2017-05-23 03:29+0000\n"
+"Last-Translator: Mario Moreno <marioregino@gmail.com>\n"
 "Language-Team: Spanish (http://www.transifex.com/invesalius/invesalius3/language/es/)\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
@@ -34,7 +35,7 @@ msgstr "Tamaño de la imagen: %d x %d"
 #: bitmap_preview_panel.py:26 dicom_preview_panel.py:50
 #, python-format
 msgid "Spacing: %.2f"
-msgstr "Espaciamiento: %.2f"
+msgstr "Espaciado: %.2f"
 
 #: bitmap_preview_panel.py:27 dicom_preview_panel.py:51
 #, python-format
@@ -425,95 +426,95 @@ msgstr "Plano de corte"
 
 #: constants.py:663
 msgid "Select tracker:"
-msgstr ""
+msgstr "Seleccionar rastreador:"
 
 #: constants.py:663
 msgid "Claron MicronTracker"
-msgstr ""
+msgstr "Claron MicronTracker"
 
 #: constants.py:664
 msgid "Polhemus FASTRAK"
-msgstr ""
+msgstr "Polhemus FASTRAK"
 
 #: constants.py:664
 msgid "Polhemus ISOTRAK II"
-msgstr ""
+msgstr "Polhemus ISOTRAK II"
 
 #: constants.py:665
 msgid "Polhemus PATRIOT"
-msgstr ""
+msgstr "Polhemus PATRIOT"
 
 #: constants.py:665
 msgid "Debug tracker"
-msgstr ""
+msgstr "Depurar rastreador"
 
 #: constants.py:666
 msgid "Disconnect tracker"
-msgstr ""
+msgstr "Desconectar rastreador"
 
 #: constants.py:671
 msgid "Static ref."
-msgstr ""
+msgstr "Referencia estática"
 
 #: constants.py:671
 msgid "Dynamic ref."
-msgstr ""
+msgstr "Referencia dinámica"
 
 #: constants.py:681
 msgid "LEI"
-msgstr ""
+msgstr "IOI"
 
 #: constants.py:682
 msgid "REI"
-msgstr ""
+msgstr "IOD"
 
 #: constants.py:683
 msgid "NAI"
-msgstr ""
+msgstr "IN"
 
 #: constants.py:689
 msgid "Select left ear in image"
-msgstr ""
+msgstr "Seleccionar la oreja izquierda en la imagen"
 
 #: constants.py:690
 msgid "Select right ear in image"
-msgstr ""
+msgstr "Seleccionar la oreja derecha en la imagen"
 
 #: constants.py:691
 msgid "Select nasion in image"
-msgstr ""
+msgstr "Seleccionar el nasion en la imagen"
 
 #: constants.py:693
 msgid "LET"
-msgstr ""
+msgstr "OIR"
 
 #: constants.py:694
 msgid "RET"
-msgstr ""
+msgstr "ODR"
 
 #: constants.py:695
 msgid "NAT"
-msgstr ""
+msgstr "NAR"
 
 #: constants.py:696
 msgid "SET"
-msgstr ""
+msgstr "SET"
 
 #: constants.py:698
 msgid "Select left ear with spatial tracker"
-msgstr ""
+msgstr "Seleccionar la oreja izquierda con el rastreador espacial"
 
 #: constants.py:699
 msgid "Select right ear with spatial tracker"
-msgstr ""
+msgstr "Seleccionar la oreja derecha con el rastreador espacial"
 
 #: constants.py:700
 msgid "Select nasion with spatial tracker"
-msgstr ""
+msgstr "Seleccionar el nasion con el rastreador espacial"
 
 #: constants.py:701
 msgid "Show set coordinates in image"
-msgstr ""
+msgstr "Mostrar sistema de coordenadas en la imagen"
 
 #: control.py:382
 #, python-format
@@ -564,15 +565,15 @@ msgstr "Medidas"
 
 #: data_notebook.py:165
 msgid "Create a new measure"
-msgstr ""
+msgstr "Crear una nueva medición"
 
 #: data_notebook.py:172
 msgid "Remove measure"
-msgstr ""
+msgstr "Remover medida"
 
 #: data_notebook.py:178
 msgid "Duplicate measure"
-msgstr ""
+msgstr "Duplicar medida"
 
 #: data_notebook.py:191 frame.py:1400
 msgid "Measure distance"
@@ -584,15 +585,15 @@ msgstr "Medir ángulo"
 
 #: data_notebook.py:283
 msgid "Create a new mask"
-msgstr ""
+msgstr "Crear una nueva mascara"
 
 #: data_notebook.py:289
 msgid "Remove mask"
-msgstr ""
+msgstr "Remover máscara"
 
 #: data_notebook.py:295
 msgid "Duplicate mask"
-msgstr ""
+msgstr "Duplicar máscara"
 
 #: data_notebook.py:456 data_notebook.py:802 data_notebook.py:1066
 #: data_notebook.py:1263
@@ -605,19 +606,19 @@ msgstr "Máscara"
 
 #: data_notebook.py:615
 msgid "Create a new surface"
-msgstr ""
+msgstr "Crear una nueva superficie"
 
 #: data_notebook.py:621
 msgid "Remove surface"
-msgstr ""
+msgstr "Remover superficie"
 
 #: data_notebook.py:627
 msgid "Duplicate surface"
-msgstr ""
+msgstr "Duplicar superficie"
 
 #: data_notebook.py:633
 msgid "Import a surface file into InVesalius"
-msgstr ""
+msgstr "Importar archivo de superficie a InVesalius"
 
 #: data_notebook.py:661 task_surface.py:141
 msgid "New surface"
@@ -629,7 +630,7 @@ msgstr "Volumen (mm³)"
 
 #: data_notebook.py:804
 msgid "Area (mm²)"
-msgstr ""
+msgstr "Área (mm²)"
 
 #: data_notebook.py:805
 msgid "Transparency"
@@ -669,7 +670,7 @@ msgstr "Exportar los datos"
 
 #: default_tasks.py:254 default_tasks.py:324
 msgid "Navigation system"
-msgstr ""
+msgstr "Sistema de navegación"
 
 #: default_viewers.py:82 default_viewers.py:171 task_exporter.py:247
 msgid "Axial slice"
@@ -732,23 +733,23 @@ msgstr "Elegir un directorio DICOM"
 
 #: dialogs.py:315
 msgid "Choose a folder with TIFF, BMP, JPG or PNG:"
-msgstr ""
+msgstr "Escoger una carpeta con TIFF, BMP, JPG o PNG:"
 
 #: dialogs.py:347
 msgid "Import Analyze 7.5 file"
-msgstr ""
+msgstr "Importar archivo Analyze 7.5"
 
 #: dialogs.py:353
 msgid "Import NIFTi 1 file"
-msgstr ""
+msgstr "Importar archivo NIFTi 1"
 
 #: dialogs.py:356
 msgid "Import PAR/REC file"
-msgstr ""
+msgstr "Importar archivo PAR/REC"
 
 #: dialogs.py:388
 msgid "Import surface file"
-msgstr ""
+msgstr "Importar archivo de superficie"
 
 #: dialogs.py:421 frame.py:734
 msgid "Save project as..."
@@ -760,15 +761,15 @@ msgstr "Proyecto InVesalius (*.inv3)|*.inv3"
 
 #: dialogs.py:453
 msgid "Save markers as..."
-msgstr ""
+msgstr "Guardar marcadores como..."
 
 #: dialogs.py:456 dialogs.py:487
 msgid "Markers files (*.mks)|*.mks"
-msgstr ""
+msgstr "Archivos marcadores (*.mks)|*.mks"
 
 #: dialogs.py:484
 msgid "Load markers"
-msgstr ""
+msgstr "Cargar marcadores"
 
 #: dialogs.py:550 utils.py:377
 msgid ""
@@ -794,7 +795,7 @@ msgstr "%s es un directorio vacío."
 
 #: dialogs.py:638
 msgid "There are no Bitmap, JPEG, PNG or TIFF files in the selected folder."
-msgstr ""
+msgstr "No hay archivos Bitmap, JPEG, PNG o TIFF en la carpeta seleccionada."
 
 #: dialogs.py:640
 msgid "There are no DICOM files in the selected folder."
@@ -802,11 +803,11 @@ msgstr "No hay archivos DICOM en el directorio seleccionado."
 
 #: dialogs.py:653
 msgid "Warning! InVesalius has limited support to Analyze format.\n"
-msgstr ""
+msgstr "Advertencia! InVesalius tiene apoyo limitado al formato Analyze\n"
 
 #: dialogs.py:654
 msgid "Slices may be wrongly oriented and functions may not work properly."
-msgstr ""
+msgstr "Las rebanadas pueden estar mal orientadas y algunas funciones podrían no funcionar apropiadamente"
 
 #: dialogs.py:666
 msgid "A mask is needed to create a surface."
@@ -834,39 +835,39 @@ msgstr "No hay superficies seleccionadas para duplicación."
 
 #: dialogs.py:737
 msgid "Fiducials are invalid. Select six coordinates."
-msgstr ""
+msgstr "Marcadores fiduciarios inválidos. Seleciona seis coordenadas."
 
 #: dialogs.py:759
 msgid "No tracking device selected"
-msgstr ""
+msgstr "Dispositivo rastreador no seleccionado"
 
 #: dialogs.py:761
 msgid " is not installed."
-msgstr ""
+msgstr "no está instalado."
 
 #: dialogs.py:763
 msgid " disconnected."
-msgstr ""
+msgstr "desconectado."
 
 #: dialogs.py:765
 msgid " is not connected."
-msgstr ""
+msgstr "no está conectado."
 
 #: dialogs.py:779
 msgid "The TXT file is invalid."
-msgstr ""
+msgstr "El archivo TXT es invalido."
 
 #: dialogs.py:791
 msgid "No data selected"
-msgstr ""
+msgstr "No hay datos seleccionados"
 
 #: dialogs.py:802
 msgid "Do you really want to delete all markers?"
-msgstr ""
+msgstr "¿Realmente desea eliminar todos los marcadores?"
 
 #: dialogs.py:815
 msgid "Edit marker ID"
-msgstr ""
+msgstr "Editar ID del marcador"
 
 #: dialogs.py:862
 msgid "New mask name:"
@@ -884,7 +885,7 @@ msgstr "Umbral:"
 #: slice_menu.py:128 slice_menu.py:264 task_slice.py:550 task_slice.py:552
 #: task_slice.py:564 task_slice.py:566 task_slice.py:609 task_slice.py:612
 msgid "Custom"
-msgstr "Costumbre"
+msgstr "Personalizado"
 
 #: dialogs.py:975
 #, python-format
@@ -897,7 +898,7 @@ msgstr "Elija más de un archivo DICOM para la reconstrucción en 3D"
 
 #: dialogs.py:1047
 msgid "(c) 2007-2017 Center for Information Technology Renato Archer - CTI"
-msgstr ""
+msgstr "(c) 2007-2017 Centro de Tecnología de la Información Renato Archer - CTI"
 
 #: dialogs.py:1048
 msgid ""
@@ -906,7 +907,7 @@ msgid ""
 " InVesalius must be used only for research. The Center for Information Technology Renato Archer is not responsible for damages caused by the use of this software.\n"
 "\n"
 " Contact: invesalius@cti.gov.br"
-msgstr ""
+msgstr "InVesalius es un programa para la reconstrucción 3D de imágenes médicas. Utiliza una secuencia de archivos 2D de imagen DICOM adquiridos mediante TAC o IRM. InVesalius permite exportar volúmenes 3D o superficies como archivos de mallas para crear modelos físicos de la anatomia del paciente usando tecnologías de manufactura aditiva (impresión 3D). El programa es desarrollado por el Centro de Tecnología de la información Renato Archer (CTI), el Consejo Nacional de Desarrollo Científico y Tecnológico (CNPq) y el Ministerio de Salud Brasileño.\n\nInVesalius solo puede ser usado para investigación. El Centro de Tecnología de la Información Renato Archer no es responsable por daños causados por el uso de éste programa.\n\nContacto: invesalius@cti.gov.br"
 
 #: dialogs.py:1056
 msgid "GNU GPL (General Public License) version 2"
@@ -1063,81 +1064,81 @@ msgstr "Máscara 2"
 
 #: dialogs.py:1860
 msgid "Image reorientation"
-msgstr ""
+msgstr "Reorientación de imagen"
 
 #: dialogs.py:1872
 msgid "Apply"
-msgstr ""
+msgstr "Aplicar"
 
 #: dialogs.py:1876
 msgid "Angle X"
-msgstr ""
+msgstr "Ángulo X"
 
 #: dialogs.py:1880
 msgid "Angle Y"
-msgstr ""
+msgstr "Ángulo Y"
 
 #: dialogs.py:1884
 msgid "Angle Z"
-msgstr ""
+msgstr "Ángulo Z"
 
 #: dialogs.py:1933
 msgid "Create project from bitmap"
-msgstr ""
+msgstr "Crear proyecto de un bitmap"
 
 #: dialogs.py:1960
 msgid "Project name:"
-msgstr ""
+msgstr "Nombre del proyecto:"
 
 #: dialogs.py:1963
 msgid "Slices orientation:"
-msgstr ""
+msgstr "Orientación de rebanadas:"
 
 #: dialogs.py:1964 dialogs.py:2115 dialogs.py:2136
 msgid "Sagital"
-msgstr ""
+msgstr "Sagital"
 
 #: dialogs.py:1968
 msgid "Spacing (mm):"
-msgstr ""
+msgstr "Espaciamiento (mm)"
 
 #: dialogs.py:1983
 msgid "X:"
-msgstr ""
+msgstr "X:"
 
 #: dialogs.py:1988
 msgid "Y:"
-msgstr ""
+msgstr "Y:"
 
 #: dialogs.py:1992
 msgid "Z:"
-msgstr ""
+msgstr "Z:"
 
 #: dialogs.py:2070
 msgid ""
 "All bitmaps files must be the same \n"
 " width and height size."
-msgstr ""
+msgstr "Todos los archivos bitmaps deben tener\nel mismo tamaño de alto y ancho."
 
 #: dialogs.py:2083
 msgid "2D - Actual slice"
-msgstr ""
+msgstr "2D - Rebanada real"
 
 #: dialogs.py:2084
 msgid "3D - All slices"
-msgstr ""
+msgstr "3D - Todas las rebanadas"
 
 #: dialogs.py:2109
 msgid "2D Connectivity"
-msgstr ""
+msgstr "Conectividad 2D"
 
 #: dialogs.py:2118
 msgid "Orientation"
-msgstr ""
+msgstr "Orientación"
 
 #: dialogs.py:2155
 msgid "3D Connectivity"
-msgstr ""
+msgstr "Conectividad 3D"
 
 #: dialogs.py:2222 dialogs.py:2275 task_slice.py:886
 msgid "Use WW&WL"
@@ -1145,79 +1146,79 @@ msgstr "Usar WW&WL"
 
 #: dialogs.py:2240
 msgid "Deviation"
-msgstr ""
+msgstr "Desviación"
 
 #: dialogs.py:2242
 msgid "Min:"
-msgstr ""
+msgstr "Mín:"
 
 #: dialogs.py:2245
 msgid "Max:"
-msgstr ""
+msgstr "Máx:"
 
 #: dialogs.py:2298
 msgid "Multiplier"
-msgstr ""
+msgstr "Multiplicador"
 
 #: dialogs.py:2301
 msgid "Iterations"
-msgstr ""
+msgstr "Iteraciones"
 
 #: dialogs.py:2379 dialogs.py:2593 dialogs.py:2847
 msgid "Parameters"
-msgstr ""
+msgstr "Parámetros"
 
 #: dialogs.py:2437
 msgid "Select mask parts"
-msgstr ""
+msgstr "Seleccionar las partes de la máscara"
 
 #: dialogs.py:2465
 msgid "Target mask name"
-msgstr ""
+msgstr "Nombre de máscara de destino"
 
 #: dialogs.py:2519 frame.py:808 styles.py:2016
 msgid "Region growing"
-msgstr ""
+msgstr "Región creciendo"
 
 #: dialogs.py:2566
 msgid "Dynamic"
-msgstr ""
+msgstr "Dinámica"
 
 #: dialogs.py:2566
 msgid "Confidence"
-msgstr ""
+msgstr "Confianza"
 
 #: dialogs.py:2706
 msgid "Crop mask"
-msgstr ""
+msgstr "Cortar mascara"
 
 #: dialogs.py:2747
 msgid "Axial:"
-msgstr ""
+msgstr "Axial:"
 
 #: dialogs.py:2749 dialogs.py:2759 dialogs.py:2769
 msgid " - "
-msgstr ""
+msgstr " -"
 
 #: dialogs.py:2757
 msgid "Sagital:"
-msgstr ""
+msgstr "Sagital:"
 
 #: dialogs.py:2767
 msgid "Coronal:"
-msgstr ""
+msgstr "Coronal:"
 
 #: dialogs.py:2858
 msgid "Max hole size"
-msgstr ""
+msgstr "Máximo tamaño de hoyo"
 
 #: dialogs.py:2860
 msgid "voxels"
-msgstr ""
+msgstr "voxels"
 
 #: dicom.py:1550 dicom.py:1554 dicom.py:1556
 msgid "unnamed"
-msgstr ""
+msgstr "sin nombrar"
 
 #: dicom_preview_panel.py:409
 #, python-format
@@ -1239,7 +1240,7 @@ msgstr "Vista previa de los datos médicos que van a ser reconstruidos"
 
 #: frame.py:185
 msgid "Preview bitmap to be reconstructed"
-msgstr ""
+msgstr "Vista previa del bitmap a ser reconstruido"
 
 #: frame.py:191
 msgid "Retrieve DICOM from PACS"
@@ -1247,23 +1248,23 @@ msgstr "Recuperar DICOM desde PACS"
 
 #: frame.py:499
 msgid "Currently the Navigation mode is only working on Windows"
-msgstr ""
+msgstr "Actualmente el modo de navegación solo está disponible en Windows"
 
 #: frame.py:632 frame.py:787
 msgid "Fill holes automatically"
-msgstr ""
+msgstr "Llenar hoyos automáticamente"
 
 #: frame.py:721
 msgid "Analyze 7.5"
-msgstr ""
+msgstr "Analyze 7.5"
 
 #: frame.py:722
 msgid "NIfTI 1"
-msgstr ""
+msgstr "NIfTI 1"
 
 #: frame.py:723
 msgid "PAR/REC"
-msgstr ""
+msgstr "PAR/REC"
 
 #: frame.py:729
 msgid "Import DICOM...\tCtrl+I"
@@ -1303,67 +1304,67 @@ msgstr "Limpiar máscara\tCtrl+Shift+A"
 
 #: frame.py:784
 msgid "Fill holes manually"
-msgstr ""
+msgstr "Llenar hoyos manualmente"
 
 #: frame.py:792 styles.py:1767
 msgid "Remove parts"
-msgstr ""
+msgstr "Remover partes"
 
 #: frame.py:795
 msgid "Select parts"
-msgstr ""
+msgstr "Seleccionar partes"
 
 #: frame.py:800
 msgid "Crop"
-msgstr ""
+msgstr "Cortar"
 
 #: frame.py:806
 msgid "Manual segmentation"
-msgstr ""
+msgstr "Segmentación manual"
 
 #: frame.py:816
 msgid "Right - Left"
-msgstr ""
+msgstr "Derecha - Izquierda"
 
 #: frame.py:817
 msgid "Anterior - Posterior"
-msgstr ""
+msgstr "Anterior - Posterior"
 
 #: frame.py:818
 msgid "Top - Bottom"
-msgstr ""
+msgstr "Superior - Inferior"
 
 #: frame.py:821
 msgid "From Right-Left to Anterior-Posterior"
-msgstr ""
+msgstr "De Derecha-Izquierda a Anterior-Posterior"
 
 #: frame.py:822
 msgid "From Right-Left to Top-Bottom"
-msgstr ""
+msgstr "De Derecha-Izquierda a Superior-Inferior"
 
 #: frame.py:823
 msgid "From Anterior-Posterior to Top-Bottom"
-msgstr ""
+msgstr "De Anterior-Posterior a Superior-Inferior"
 
 #: frame.py:825
 msgid "Flip"
-msgstr ""
+msgstr "Voltear"
 
 #: frame.py:826
 msgid "Swap axes"
-msgstr ""
+msgstr "Intercambiar ejes"
 
 #: frame.py:828
 msgid "Reorient image\tCtrl+Shift+R"
-msgstr ""
+msgstr "Reorientar imagen\tCtrl+Shift+R"
 
 #: frame.py:833
 msgid "Segmentation"
-msgstr ""
+msgstr "Segmentación"
 
 #: frame.py:839
 msgid "Interpolated slices"
-msgstr ""
+msgstr "Rebanadas interpoladas"
 
 #: frame.py:876
 msgid "Preferences..."
@@ -1371,7 +1372,7 @@ msgstr "Preferencias..."
 
 #: frame.py:880
 msgid "Navigation mode"
-msgstr ""
+msgstr "Modo de navegación"
 
 #: frame.py:889
 msgid "Getting started..."
@@ -1391,11 +1392,11 @@ msgstr "Editar"
 
 #: frame.py:902
 msgid "View"
-msgstr ""
+msgstr "Vista"
 
 #: frame.py:906
 msgid "Mode"
-msgstr ""
+msgstr "Modo"
 
 #: frame.py:907
 msgid "Help"
@@ -1481,11 +1482,11 @@ msgstr "Importar"
 
 #: import_bitmap_panel.py:202
 msgid "Path"
-msgstr ""
+msgstr "Localización"
 
 #: import_bitmap_panel.py:204
 msgid "Width x Height"
-msgstr ""
+msgstr "Ancho x Alto"
 
 #: import_bitmap_panel.py:211 import_network_panel.py:266 import_panel.py:251
 msgid "InVesalius Database"
@@ -1609,11 +1610,11 @@ msgstr "Preferencias"
 
 #: preferences.py:41
 msgid "2D Visualization"
-msgstr ""
+msgstr "Visualización 2D"
 
 #: preferences.py:42
 msgid "3D Visualization"
-msgstr ""
+msgstr "Visualización 3D"
 
 #: preferences.py:43 preferences.py:190
 msgid "Language"
@@ -1641,19 +1642,19 @@ msgstr "GPU (Solo para tarjetas gráficas NVidia)"
 
 #: preferences.py:152
 msgid "Slices"
-msgstr ""
+msgstr "Rebanadas"
 
 #: preferences.py:155
 msgid "Interpolated "
-msgstr ""
+msgstr "Interpolado"
 
 #: preferences.py:159
 msgid "Yes"
-msgstr ""
+msgstr "Sí"
 
 #: preferences.py:159
 msgid "No"
-msgstr ""
+msgstr "No"
 
 #: preferences.py:193
 msgid ""
@@ -1775,35 +1776,35 @@ msgstr "Aplicando watershed..."
 
 #: styles.py:1671
 msgid "Fill hole"
-msgstr ""
+msgstr "Llenar hoyo"
 
 #: styles.py:1672
 msgid "Filling hole ..."
-msgstr ""
+msgstr "Llenando hoyo..."
 
 #: styles.py:1768
 msgid "Remove part"
-msgstr ""
+msgstr "Remover parte"
 
 #: styles.py:1769
 msgid "Removing part ..."
-msgstr ""
+msgstr "Removiendo parte..."
 
 #: styles.py:2017
 msgid "Segmenting ..."
-msgstr ""
+msgstr "Segmentando..."
 
 #: surface.py:263
 msgid "File format not reconized by InVesalius"
-msgstr ""
+msgstr "Formato de archivo no reconocido por InVesalius"
 
 #: surface.py:263 surface.py:271
 msgid "Import surface error"
-msgstr ""
+msgstr "Error al importar superficie"
 
 #: surface.py:271
 msgid "InVesalius was not able to import this surface"
-msgstr ""
+msgstr "InVesalius no fue capaz de importar ésta superficie"
 
 #: surface.py:476 surface.py:567 surface.py:585 surface.py:623 surface.py:652
 #: surface.py:674 surface.py:693 surface.py:707 surface.py:724
@@ -1844,11 +1845,11 @@ msgstr "Probando..."
 
 #: task_importer.py:67
 msgid "Select DICOM, Analyze, NIfTI or REC/PAR files to be reconstructed"
-msgstr ""
+msgstr "Seleccionar archivos DICOM, Analyze, NifTI o REC/PAR para ser reconstruidos"
 
 #: task_importer.py:68
 msgid "Import medical images..."
-msgstr ""
+msgstr "Importar imágenes médicas..."
 
 #: task_importer.py:87
 msgid "Open an existing InVesalius project..."
@@ -1860,91 +1861,91 @@ msgstr "Abrir un proyecto existente..."
 
 #: task_navigator.py:62
 msgid "Select fiducials and navigate"
-msgstr ""
+msgstr "Seleccionar marcadores fiduciarios y navegar"
 
 #: task_navigator.py:131
 msgid "Neuronavigation"
-msgstr ""
+msgstr "Neuronavegación"
 
 #: task_navigator.py:140
 msgid "Extra tools"
-msgstr ""
+msgstr "Herramientas extra"
 
 #: task_navigator.py:149
 msgid "Update camera in volume"
-msgstr ""
+msgstr "Actualizar cámara en volumen"
 
 #: task_navigator.py:150
 msgid "Volume camera"
-msgstr ""
+msgstr "Cámara de volumen"
 
 #: task_navigator.py:156
 msgid "Enable external trigger for creating markers"
-msgstr ""
+msgstr "Activar disparador externo para crear marcadores"
 
 #: task_navigator.py:157
 msgid "External trigger"
-msgstr ""
+msgstr "Disparador externo"
 
 #: task_navigator.py:227
 msgid "Choose the tracking device"
-msgstr ""
+msgstr "Elegir el dispositivo rastreador"
 
 #: task_navigator.py:235
 msgid "Choose the navigation reference mode"
-msgstr ""
+msgstr "Elige el modo de referencia de navegación"
 
 #: task_navigator.py:269
 msgid "FRE:"
-msgstr ""
+msgstr "ERMF:"
 
 #: task_navigator.py:272
 msgid "Fiducial registration error"
-msgstr ""
+msgstr "Error de registro de marcadores fiduciarios"
 
 #: task_navigator.py:280
 msgid "Start navigation"
-msgstr ""
+msgstr "Comenzar navegación"
 
 #: task_navigator.py:281
 msgid "Navigate"
-msgstr ""
+msgstr "Navegar"
 
 #: task_navigator.py:365
 msgid "Configuring tracker ..."
-msgstr ""
+msgstr "Configurando rastreador..."
 
 #: task_navigator.py:483
 msgid "Stop neuronavigation"
-msgstr ""
+msgstr "Detener neuronavegación"
 
 #: task_navigator.py:516
 msgid "Start neuronavigation"
-msgstr ""
+msgstr "Iniciar neuronavegación"
 
 #: task_navigator.py:566
 msgid "Create marker"
-msgstr ""
+msgstr "Crear marcador"
 
 #: task_navigator.py:575
 msgid "Save"
-msgstr ""
+msgstr "Guardar"
 
 #: task_navigator.py:578
 msgid "Load"
-msgstr ""
+msgstr "Cargar"
 
 #: task_navigator.py:581
 msgid "Hide"
-msgstr ""
+msgstr "Ocultar"
 
 #: task_navigator.py:593
 msgid "Delete all"
-msgstr ""
+msgstr "Eliminar todo"
 
 #: task_navigator.py:637
 msgid "Edit ID"
-msgstr ""
+msgstr "Editar ID"
 
 #: task_slice.py:86
 msgid "Create mask for slice segmentation and editing"
@@ -2071,7 +2072,7 @@ msgstr "Añadir anotaciones de texto"
 
 #: trackers.py:202
 msgid "Disconnecting tracker ..."
-msgstr ""
+msgstr "Desconectando rastreador..."
 
 #: viewer_slice.py:68
 msgid "Number of slices used to compound the visualization."

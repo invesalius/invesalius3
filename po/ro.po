@@ -13,8 +13,8 @@ msgstr ""
 "Project-Id-Version: InVesalius3\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2017-04-26 16:15-0300\n"
-"PO-Revision-Date: 2017-04-26 19:15+0000\n"
-"Last-Translator: InVesalius <invesalius@cti.gov.br>\n"
+"PO-Revision-Date: 2017-04-30 14:48+0000\n"
+"Last-Translator: Dan <dan_vlad@yahoo.com>\n"
 "Language-Team: Romanian (http://www.transifex.com/invesalius/invesalius3/language/ro/)\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
@@ -28,7 +28,7 @@ msgstr ""
 #: bitmap_preview_panel.py:25 dicom_preview_panel.py:49
 #, python-format
 msgid "Image size: %d x %d"
-msgstr "Mărimea imaginii: %d x %d"
+msgstr "Dimensiunea imaginii: %d x %d"
 
 #: bitmap_preview_panel.py:26 dicom_preview_panel.py:50
 #, python-format
@@ -66,12 +66,12 @@ msgstr "Auto-redare"
 #: clut_raycasting.py:535
 #, python-format
 msgid "Value: %-6d"
-msgstr ""
+msgstr "Valoare: %-6d"
 
 #: clut_raycasting.py:536
 #, python-format
 msgid "Alpha: %-.3f"
-msgstr ""
+msgstr "Alpha: %-.3f"
 
 #: constants.py:32
 #, python-format
@@ -84,7 +84,7 @@ msgstr "Închidere"
 
 #: constants.py:45
 msgid "Red-blue"
-msgstr ""
+msgstr "Rosu-albastru"
 
 #: constants.py:46
 msgid "CristalEyes"
@@ -608,11 +608,11 @@ msgstr ""
 
 #: data_notebook.py:621
 msgid "Remove surface"
-msgstr ""
+msgstr "Sterge suprafata"
 
 #: data_notebook.py:627
 msgid "Duplicate surface"
-msgstr ""
+msgstr "Copiaza suprafata"
 
 #: data_notebook.py:633
 msgid "Import a surface file into InVesalius"
@@ -711,7 +711,7 @@ msgid ""
 "InVesalius is running on a 32-bit operating system or has insufficient memory. \n"
 "If you want to work with 3D surfaces or volume rendering, \n"
 "it is recommended to reduce the medical images resolution."
-msgstr ""
+msgstr "InVesalius ruleaza pe un sistem de operare pe 32 de biti sau nu are suficienta memorie. \nDaca doriti sa lucrati cu suprafete 3D sau sa executati generari tridimensionale, \neste recomandat sa reduceti rezolutia imaginilor medicale."
 
 #: dialogs.py:130
 msgid "Percentage of original resolution"
@@ -789,7 +789,7 @@ msgstr "Proiectul %s a fost modificat.⏎\nSalvezi schimbările?"
 #: dialogs.py:623
 #, python-format
 msgid "%s is an empty folder."
-msgstr ""
+msgstr "%s nu contine fisiere."
 
 #: dialogs.py:638
 msgid "There are no Bitmap, JPEG, PNG or TIFF files in the selected folder."
@@ -805,7 +805,7 @@ msgstr ""
 
 #: dialogs.py:654
 msgid "Slices may be wrongly oriented and functions may not work properly."
-msgstr ""
+msgstr "Sectiunile pot fi gresit orientate si functiile vor genera rezultate incorecte."
 
 #: dialogs.py:666
 msgid "A mask is needed to create a surface."
@@ -817,11 +817,11 @@ msgstr ""
 
 #: dialogs.py:688
 msgid "No surface was selected for removal."
-msgstr ""
+msgstr "Nicio suprafata nu a fost selectata pentru stergere."
 
 #: dialogs.py:700
 msgid "No measure was selected for removal."
-msgstr ""
+msgstr "Nicio dimensiune nu a fost selectata pentru stergere."
 
 #: dialogs.py:711
 msgid "No mask was selected for duplication."
@@ -1636,7 +1636,7 @@ msgstr ""
 
 #: preferences.py:120
 msgid "GPU (NVidia video cards only)"
-msgstr ""
+msgstr "GPU (numai pentru placa video NVidia)"
 
 #: preferences.py:152
 msgid "Slices"
@@ -1794,7 +1794,7 @@ msgstr ""
 
 #: surface.py:263
 msgid "File format not reconized by InVesalius"
-msgstr ""
+msgstr "Formatul de fisier nu este recunoscut de InVesalius"
 
 #: surface.py:263 surface.py:271
 msgid "Import surface error"
@@ -1915,11 +1915,11 @@ msgstr ""
 
 #: task_navigator.py:483
 msgid "Stop neuronavigation"
-msgstr ""
+msgstr "Finalizare neuronavigatie"
 
 #: task_navigator.py:516
 msgid "Start neuronavigation"
-msgstr ""
+msgstr "Initiere neuronavigatie"
 
 #: task_navigator.py:566
 msgid "Create marker"
@@ -1939,11 +1939,11 @@ msgstr "Ascunde"
 
 #: task_navigator.py:593
 msgid "Delete all"
-msgstr ""
+msgstr "Sterge tot"
 
 #: task_navigator.py:637
 msgid "Edit ID"
-msgstr ""
+msgstr "Editeaza ID"
 
 #: task_slice.py:86
 msgid "Create mask for slice segmentation and editing"
@@ -2024,7 +2024,7 @@ msgstr "Alege automat cea mai mare regiune întreruptă și creează o suprafaț
 
 #: task_surface.py:276
 msgid "Select largest surface"
-msgstr ""
+msgstr "Selecteaza cea mai intinsa suprafata"
 
 #: task_surface.py:284
 msgid ""
@@ -2230,7 +2230,7 @@ msgstr ""
 #: viewer_slice.py:867 viewer_slice.py:876 viewer_slice.py:885
 #: viewer_slice.py:894
 msgid "PT"
-msgstr ""
+msgstr "PS"
 
 #: viewer_slice.py:867 viewer_slice.py:876 viewer_slice.py:885
 #: viewer_slice.py:894
@@ -2240,7 +2240,7 @@ msgstr ""
 #: viewer_slice.py:867 viewer_slice.py:876 viewer_slice.py:885
 #: viewer_slice.py:894
 msgid "AB"
-msgstr ""
+msgstr "AI"
 
 #: viewer_slice.py:870 viewer_slice.py:879 viewer_slice.py:888
 #: viewer_slice.py:897
