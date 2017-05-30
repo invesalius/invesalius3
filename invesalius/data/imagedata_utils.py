@@ -531,21 +531,21 @@ def dcm2memmap(files, slice_size, orientation, resolution_percentage):
         if resolution_percentage == 1.0:
             shape = slice_size[0], slice_size[1], len(files)
         else:
-            shape = math.ceil(slice_size[0]*resolution_percentage),\
-                    math.ceil(slice_size[1]*resolution_percentage), len(files)
+            shape = int(math.ceil(slice_size[0]*resolution_percentage)),\
+                    int(math.ceil(slice_size[1]*resolution_percentage)), len(files)
 
     elif orientation == 'CORONAL':
         if resolution_percentage == 1.0:
             shape = slice_size[1], len(files), slice_size[0]
         else:
-            shape = math.ceil(slice_size[1]*resolution_percentage), len(files),\
-                                        math.ceil(slice_size[0]*resolution_percentage)
+            shape = int(math.ceil(slice_size[1]*resolution_percentage)), len(files),\
+                                        int(math.ceil(slice_size[0]*resolution_percentage))
     else:
         if resolution_percentage == 1.0:
             shape = len(files), slice_size[1], slice_size[0]
         else:
-            shape = len(files), math.ceil(slice_size[1]*resolution_percentage),\
-                                        math.ceil(slice_size[0]*resolution_percentage)
+            shape = len(files), int(math.ceil(slice_size[1]*resolution_percentage)),\
+                                int(math.ceil(slice_size[0]*resolution_percentage))
 
     matrix = numpy.memmap(temp_file, mode='w+', dtype='int16', shape=shape)
     dcm_reader = vtkgdcm.vtkGDCMImageReader()
