@@ -302,9 +302,9 @@ class VolumeInteraction(wx.Panel):
 import wx.lib.platebtn as pbtn
 import wx.lib.buttons as btn
 import wx.lib.pubsub as ps
+import wx.lib.colourselect as csel
 
 import invesalius.constants as const
-import invesalius.gui.widgets.colourselect as csel
 
 [BUTTON_RAYCASTING, BUTTON_VIEW, BUTTON_SLICE_PLANE, BUTTON_3D_STEREO] = [wx.NewId() for num in xrange(4)]
 RAYCASTING_TOOLS = wx.NewId()

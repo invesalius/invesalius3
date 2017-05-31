@@ -26,6 +26,7 @@ import wx.lib.hyperlink as hl
 import wx.lib.masked.numctrl
 import wx.lib.foldpanelbar as fpb
 from wx.lib.pubsub import pub as Publisher
+import wx.lib.colourselect as csel
 
 import invesalius.constants as const
 import invesalius.data.bases as db
@@ -34,7 +35,6 @@ import invesalius.data.coregistration as dcr
 import invesalius.data.trackers as dt
 import invesalius.data.trigger as trig
 import invesalius.gui.dialogs as dlg
-import invesalius.gui.widgets.colourselect as csel
 
 class TaskPanel(wx.Panel):
     def __init__(self, parent):
