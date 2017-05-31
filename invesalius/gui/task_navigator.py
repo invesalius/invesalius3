@@ -24,7 +24,9 @@ import numpy as np
 import wx
 import wx.lib.hyperlink as hl
 import wx.lib.masked.numctrl
+import wx.lib.foldpanelbar as fpb
 from wx.lib.pubsub import pub as Publisher
+import wx.lib.colourselect as csel
 
 import invesalius.constants as const
 import invesalius.data.bases as db
@@ -33,8 +35,6 @@ import invesalius.data.coregistration as dcr
 import invesalius.data.trackers as dt
 import invesalius.data.trigger as trig
 import invesalius.gui.dialogs as dlg
-import invesalius.gui.widgets.foldpanelbar as fpb
-import invesalius.gui.widgets.colourselect as csel
 
 class TaskPanel(wx.Panel):
     def __init__(self, parent):
@@ -132,7 +132,7 @@ class InnerFoldPanel(wx.Panel):
         ntw = NeuronavigationPanel(item)
 
         fold_panel.ApplyCaptionStyle(item, style)
-        fold_panel.AddFoldPanelWindow(item, ntw, Spacing= 0,
+        fold_panel.AddFoldPanelWindow(item, ntw, spacing= 0,
                                       leftSpacing=0, rightSpacing=0)
         fold_panel.Expand(fold_panel.GetFoldPanel(0))
 
@@ -141,7 +141,7 @@ class InnerFoldPanel(wx.Panel):
         mtw = MarkersPanel(item)
 
         fold_panel.ApplyCaptionStyle(item, style)
-        fold_panel.AddFoldPanelWindow(item, mtw, Spacing= 0,
+        fold_panel.AddFoldPanelWindow(item, mtw, spacing= 0,
                                       leftSpacing=0, rightSpacing=0)
 
 

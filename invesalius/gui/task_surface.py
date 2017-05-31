@@ -22,13 +22,13 @@ import os
 import wx
 import wx.lib.hyperlink as hl
 from wx.lib.pubsub import pub as Publisher
+import wx.lib.foldpanelbar as fpb
+import wx.lib.colourselect as csel
 
 import invesalius.constants as const
 import invesalius.data.slice_ as slice_
 import invesalius.gui.dialogs as dlg
-import invesalius.gui.widgets.foldpanelbar as fpb
-import invesalius.gui.widgets.colourselect as csel
-import invesalius.gui.widgets.platebtn as pbtn
+import wx.lib.platebtn as pbtn
 import invesalius.project as prj
 import invesalius.utils as utl
 
@@ -216,13 +216,13 @@ class InnerFoldPanel(wx.Panel):
         # Fold 1 - Surface properties
         item = fold_panel.AddFoldPanel(_("Surface properties"), collapsed=True)
         fold_panel.ApplyCaptionStyle(item, style)
-        fold_panel.AddFoldPanelWindow(item, SurfaceProperties(item), Spacing= 0,
+        fold_panel.AddFoldPanelWindow(item, SurfaceProperties(item), spacing= 0,
                                       leftSpacing=0, rightSpacing=0)
 
         # Fold 2 - Surface tools
         item = fold_panel.AddFoldPanel(_("Advanced options"), collapsed=True)
         fold_panel.ApplyCaptionStyle(item, style)
-        fold_panel.AddFoldPanelWindow(item, SurfaceTools(item), Spacing= 0,
+        fold_panel.AddFoldPanelWindow(item, SurfaceTools(item), spacing= 0,
                                       leftSpacing=0, rightSpacing=0)
 
         #fold_panel.AddFoldPanelWindow(item, QualityAdjustment(item), Spacing= 0,
@@ -415,7 +415,7 @@ class SurfaceProperties(wx.Panel):
         self.combo_surface_name = combo_surface_name
 
         # Mask colour
-        button_colour= csel.ColourSelect(self, -1,colour=(0,0,255),size=(-1,22))
+        button_colour= csel.ColourSelect(self, -1,colour=(0,0,255),size=(22, -1))
         button_colour.Bind(csel.EVT_COLOURSELECT, self.OnSelectColour)
         self.button_colour = button_colour
 
