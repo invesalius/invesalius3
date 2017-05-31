@@ -28,7 +28,7 @@ import invesalius.constants as const
 import invesalius.data.slice_ as slice_
 import invesalius.gui.dialogs as dlg
 import invesalius.gui.widgets.colourselect as csel
-import invesalius.gui.widgets.platebtn as pbtn
+import wx.lib.platebtn as pbtn
 import invesalius.project as prj
 import invesalius.utils as utl
 
