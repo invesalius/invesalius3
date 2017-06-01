@@ -131,11 +131,29 @@ class Volume():
             self.plane.DestroyObjs()
             del self.plane
             self.plane = 0
-            
+
         if self.exist:
             self.exist = None
             Publisher.sendMessage('Remove surface actor from viewer', self.volume)
             Publisher.sendMessage('Disable volume cut menu')
+            Publisher.sendMessage('Unload volume', self.volume)
+
+            del self.image
+            del self.imagedata
+            del self.final_imagedata
+            del self.volume
+            del self.color_transfer
+            del self.opacity_transfer_func
+            del self.volume_properties
+            del self.volume_mapper
+            self.volume = None
+            self.exist = False
+            self.loaded_image = False
+            self.image = None
+            self.final_imagedata = None
+            self.opacity_transfer_func = None
+            self.color_transfer = None
+            Publisher.sendMessage('Render volume viewer')
 
     def OnLoadVolume(self, pubsub_evt):
         label = pubsub_evt.data
