@@ -3,14 +3,17 @@
 
 \section{Boolean operations}
 
-After segmenting it's possible to perform some boolean operations between masks. The boolean operations supported by InVesalius are:\\
-\\
-\textbf{Union}, perform union between two masks;\\
-\textbf{Difference}, perform difference from the first mask to the second one;\\
-\textbf{Intersection}, keeps what is common in both masks.\\
-\textbf{Exclusive disjunction}, also known as XOR, keeps the regions of the first mask wich are not in the second mask and regions from the second mask which are no in the first mask.\\
+After segmenting, some boolean operations can be performed between masks. The boolean operations supported by InVesalius are:\\
 
-To use this tool go to menu \textbf{Tools}, \textbf{Mask}, \textbf{Boolean operations} as shown in the figure~\ref{fig:booleano_menu}.
+\begin{itemize}
+	\item \textbf{Union}, perform union between two masks;
+	\item \textbf{Difference}, perform difference from the first mask to the second one;\\
+	\item \textbf{Intersection}, keeps what is common in both masks.\\
+	\item \textbf{Exclusive disjunction (XOR)}: keeps the regions of the first mask which are not in the second mask and regions from the second mask which are no in the first mask.
+\end{itemize}
+
+To use this tool go to the \textbf{Tools}, menu, select \textbf{Mask}, and then Boolean operations as shown in Figure~\ref{fig:booleano_menu}. Select the first mask, the operation to be performed and the second mask as shown in Figure~\ref{fig:booleano_janela} then click \textbf{OK}.
+
 
 \begin{figure}[!htb]
 \centering
@@ -19,7 +22,6 @@ To use this tool go to menu \textbf{Tools}, \textbf{Mask}, \textbf{Boolean opera
 \label{fig:booleano_menu}
 \end{figure}
 
-It's necessary to select the select the first mask, the operation to be performed and the second mask as shown in the figure~\ref{fig:booleano_janela}. Then click on the \textbf{Ok} button.
 
 \begin{figure}[!htb]
 \centering
@@ -28,7 +30,7 @@ It's necessary to select the select the first mask, the operation to be performe
 \label{fig:booleano_janela}
 \end{figure}
 
-The figure~\ref{fig:op_boolana} shows some examples of utilization of boolean operations tool.
+Figure~\ref{fig:op_boolana} shows some examples of utilization of boolean operations tool.
 
 \begin{figure}[!htb]
   \centering
@@ -50,7 +52,7 @@ The figure~\ref{fig:op_boolana} shows some examples of utilization of boolean op
 \section{Mask cleaning}
 \label{cap:limpeza_mascara}
 
-It's possible to clean a mask (figure~\ref{fig:limpeza_mascara}). This is recommended before starting to insert Watershed markers. This tool is located on menu \textbf{Tools}, \textbf{Mask}, \textbf{Clean mask}. Also, it possible to use keyboard shortcut \textbf{CTRL+SHIFT+A}.
+A mask can be cleaned, as shown in Figure~\ref{fig:limpeza_mascara}. This is recommended before inserting Watershed markers. This tool is located on the \textbf{Tools} menu. Select \textbf{Mask}, then \textbf{Clean mask}, or use the shortcut \textbf{CTRL+SHIFT+A}.
 
 \begin{figure}[!htb]
 \centering
@@ -77,11 +79,9 @@ Segmentation may leave some unwanted holes. It's recommended to fill them becaus
 \label{fig:mask_manual_fill_holes_window}
 \end{figure}
 
-It's possible to fill hole on a mask slice (\textbf{2D - Actual slice}) or on all slices, selecting the option \textbf{3D - All slices}. It's also possible to configure the connectivity used. It may be $4$ or $8$ to 2D and $6$, $18$ and $26$ to 3D.
+It is possible to fill hole on a mask slice (\textbf{2D - Actual slice}) or on all slices, selecting the option (\textbf{3D - All slices}). The connectivity may also be configured: $4$ or $8$ for 2D and $6$, $18$ and $26$ for 3D.
 
-After configuring the desired parameters click with the \textbf{left-button} of the mouse on holes to fill them.
-
-The figure~\ref{fig:mask_fill_hole}.a shows mask with some holes and other mask with the holes filled (figure~\ref{fig:mask_fill_hole}.b). Click on the \textbf{close} button or close the dialog to deactivate this tool.
+After configuring the desired parameters left-click on holes to fill them. Figure~\ref{fig:mask_fill_hole}.a shows a mask with some holes and other mask with the holes filled (Figure~\ref{fig:mask_fill_hole}.b). Click on the close button or close the dialog to deactivate this tool.
 
 \begin{figure}[!htb]
   \centering
@@ -95,7 +95,7 @@ The figure~\ref{fig:mask_fill_hole}.a shows mask with some holes and other mask 
 
 \section{Fill holes automatically}
 
-To open this tool go to the menu \textbf{Tools}, \textbf{Mask}, \textbf{Fill holes automatically} (figure~\ref{fig:menu_mask_automatic_fill_holes}). It'll open a dialog to configure the parameters. This tool doesn't require the user to click on holes he desire to fill. This tool will fill the holes based on the \textbf{max hole size parameter} given in number of voxels (figure~\ref{fig:mask_automatic_fill_holes_window}).
+To open this tool go to the \textbf{Tools} menu, select \textbf{Mask} then \textbf{Fill holes automatically} (Figure~\ref{fig:menu_mask_automatic_fill_holes}). This will open a dialog to configure the parameters. This tool doesn’t require the user to click on holes he desire to fill. This tool will fill the holes based on the \textbf{max hole size parameter} given in number of voxels (Figure~\ref{fig:mask_automatic_fill_holes_window}).
 
 \begin{figure}[!htb]
 \centering
@@ -111,15 +111,15 @@ To open this tool go to the menu \textbf{Tools}, \textbf{Mask}, \textbf{Fill hol
 \label{fig:mask_automatic_fill_holes_window}
 \end{figure}
 
-It's possible to fill hole on a mask slice (\textbf{2D - Actual slice}) or on all slices, selecting the option \textbf{3D - All slices}. It's also possible to configure the connectivity used. It may be $4$ or $8$ to 2D and $6$, $18$ and $26$ to 3D. In 2D case it's needed to indicate in which orientation window the holes will be filled.
+Holes can also be filled on a mask slice (\textbf{2D - Actual slice}) or on all slices, selecting the option (\textbf{3D - All slices}. The connectivity will thus be $4$ or $8$ to 2D and $6$, $18$ and $26$ to 3D. If 2D, the user must indicate in which orientation window the holes will be filled.
 
-After setting the parameters click in \textbf{Apply} button. If the result is not suitable set other hole size value or try other connectivity. Click on \textbf{Close} button to close this tool.
+After setting the parameters click \textbf{Apply}. If the result is not suitable set another hole size value or connectivity. Click \textbf{Close} to close this tool.
 
 \section{Remove parts}
 
-After generating a surface is recommended to remove the unwanted disconnected parts from mask. In this way the surface generation will use less RAM and the process will be quicker.  To remove the unwanted parts go the menu  \textbf{Tools}, \textbf{Mask} e \textbf{Remove Parts} (figure~\ref{fig:menu_mask_remove_part}). A dialog will be shown to configure the parameters of selection (figure~\ref{fig:mask_remove_parts_window}).
+After generating a surface, it is recommended to remove the unwanted disconnected parts from a mask. This way the surface generation will use less RAM and make the process quicker. To remove any unwanted parts, go to the \textbf{Tools} menu, select \textbf{Mask} and then \textbf{Remove Parts} (Figure~\ref{fig:menu_mask_remove_part}). A dialog will be shown to configure the selection parameters  (Figure~\ref{fig:mask_remove_parts_window}).
 
-It's possible to select disconnected part only on a mask slice (\textbf{2D - Actual slice}) or on all slices, selecting the option \textbf{3D - All slices}. It's also possible to configure the connectivity used. It may be $4$ or $8$ to 2D and $6$, $18$ and $26$ to 3D.
+It’s possible to select disconnected parts only on a mask slice (\textbf{2D - Actual slice}) or on all slices (\textbf{3D - All slices}); users may also configure the connectivity at the same time.
 
 \begin{figure}[!htb]
 \centering
@@ -135,7 +135,7 @@ It's possible to select disconnected part only on a mask slice (\textbf{2D - Act
 \label{fig:mask_remove_parts_window}
 \end{figure}
 
-After selecting the desired parameters click with the \textbf{left-button} of the mouse on the region you want to remove. The figure~\ref{fig:mask_removed_part} an example of mask before and after remove a disconnected part. Click on \textbf{Close} button to close this tool.
+After selecting the desired parameters click with the \textbf{left-button} of the mouse on the region you want to remove. Figure~\ref{fig:mask_removed_part} shows an example of a mask before and after the removal of unused parts. Click \textbf{Close} to stop using this tool.
 
 \begin{figure}[!htb]
   \centering
@@ -148,10 +148,9 @@ After selecting the desired parameters click with the \textbf{left-button} of th
 
 \section{Select parts}
 
-To open Select parts tool go to menu \textbf{Tools}, \textbf{Mask}, \textbf{Select parts} (figure~\ref{fig:menu_mask_select_part}). A dialog will be shown to configure the parameters which are the name of the new mask and the connectivity ($6$, $18$ or $26$).
+To open the Select parts tool, access the \textbf{Tools} menu, select \textbf{Mask} then \textbf{Select parts} (Figure~\ref{fig:menu_mask_select_part}). A dialog will be shown to configure the the name of the new mask and the connectivity ($6$, $18$ or $26$).
 
-Click with \textbf{left-button} of the mouse on the wanted pixel of the region you want to select. It's possible to select more than one region. The selected region(s) will be shown with a red mask. After selecting all the wanted regions click on the \textbf{Ok} button to create a new mask with regions selected. The figure~\ref{fig:mask_selected_part}.a shows a region selected in red color. The figure~\ref{fig:mask_selected_part}.b shows the selected region in a new mask.
-
+To select a region, \textbf{left-click} on a pixel; multiple regions can be selected. The selected region(s) will be shown with a red mask. After selecting all the wanted regions, click \textbf{OK} to create a new mask with the selected regions. Figure~\ref{fig:mask_selected_part}.a shows a region selected in red. Figure~\ref{fig:mask_selected_part}.b shows the selected region in a new mask.
 
 \begin{figure}[!htb]
 \centering
@@ -178,7 +177,7 @@ Click with \textbf{left-button} of the mouse on the wanted pixel of the region y
 
 \section{Crop}
 
-It's possible to cut part of a mask in order to select an region of interest. This may reduce the amount of information to processed when generating a surface. To open this tool go to the menu \textbf{Tool}, \textbf{Mask}, \textbf{Crop} (figure~\ref{fig:menu_mask_crop}).
+The crop tool allows users to select and use a specific section of image of interest. This may reduce the amount of information needed to be processed when generating a surface. To open, access the \textbf{Tool} menu, then \textbf{Mask} and \textbf{Crop} (Figure~\ref{fig:menu_mask_crop}).
 
 \begin{figure}[!htb]
 \centering
@@ -187,4 +186,4 @@ It's possible to cut part of a mask in order to select an region of interest. Th
 \label{fig:menu_mask_crop}
 \end{figure}
 
-It will be shown a bounding boxes in each orientation window.
+A box allowing for the selection of a specific area will then be displayed.

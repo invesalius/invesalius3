@@ -1,14 +1,14 @@
 \chapter{Segmentation}
 
-To select a certain type of tissue from an image it's used the segmentation feature at InVesalius.
+To select a certain type of tissue from an image it is used the segmentation feature at InVesalius.
 
 \section{Threshold}
 
-Limiar é uma técnica de segmentação de imagens que permite selecionar da imagem somente os \textit{pixels} cuja intensidade está dentro de um limiar definido pelo usuário.  O limiar é definido por dois números, limiares inicial e final, também conhecidos como \textit{thresholds} mínimo e máximo. Como referência para a definição, é utilizada a escala de Hounsfield (tabela \ref{tab:escala_hounsfield}).
+When using the thresholding segmentation technique, only the pixels whose intensity is inside the threshold range defined by the user are detected. The threshold is defined by two values, the initial (minimum) and final (maximum) threshold.
 
 In thresholding segmentation technique only the \textit{pixels} whose intensity is inside threshold range defined by the user. Threshold is defined by two number, the initial and final threshold, also known as minimum and maximum threshold. ...
 
-Thresholding segmentation is located at the InVesalius left-panel, item \textbf{2. Select region of interest} (figure~\ref{fig:region_selection}).
+Thresholding segmentation is located the InVesalius left-panel, item \textbf{2. Select region of interest} (Figure~\ref{fig:region_selection}).
 
 \begin{figure}[!htb]
 \centering
@@ -17,7 +17,7 @@ Thresholding segmentation is located at the InVesalius left-panel, item \textbf{
 \label{fig:region_selection}
 \end{figure}
 
-Before starting segment it's necessary to configure a mask. A mask is a image overlayed to exam image where the selected regions are colored. See figure~\ref{fig:region_selection_masc}
+Before starting a segment it is necessary to configure a mask. A mask is a image over to examine an image where the selected regions are colored. (Figure~\ref{fig:region_selection_masc}).
 
 \begin{figure}[!htb]
 \centering
@@ -26,17 +26,18 @@ Before starting segment it's necessary to configure a mask. A mask is a image ov
 \label{fig:region_selection_masc}
 \end{figure}
 
-To change the threshold you may use the control that represents the image grayscale (figure~\ref{fig:region_selection_bar}). Move the \textit{left} sliding control to change the initial threshold. Move the \textit{right} sliding control to change the final threshold. It's also possible to to digit the desired threshold values in the text boxes in the left and right side of the thresholding control. Changing the thresholding values, automatically the mask will be updated, showing with a color the \textit{pixel} that are inside the thresholding range.
+To change the threshold, use the image greyscale control (Figure~\ref{fig:region_selection_bar}). Move the \textit{left} sliding control to change the initial threshold. Move the \textbf{right} sliding control to change the final threshold. It is also possible to to input the desired threshold values in the text boxes in
+the left and right side of the thresholding control. The mask will be automatically updated when the thresholding values are changed, showing in color the pixels inside the thresholding range.
 
 
 \begin{figure}[!htb]
 \centering
 \includegraphics[scale=0.75]{segmentation_threshold_bar.png}
-\caption{Selecting the \textit{pixels} with intensity between $226$ and $3021$ (Bone)}
+\caption{Selecting \textit{pixels} with intensity between $226$ and $3021$ (Bone)}
 \label{fig:region_selection_bar}
 \end{figure}
 
-It's also possible to select some predefined thresholding values based on some type of tissues, like displayed in the figure~\ref{fig:limiar_presets}. Just select the desired tissue and the mask automatically updated.
+It is also possible to select some predefined thresholding values based on some type of tissues, like those displayed in Figure~\ref{fig:limiar_presets}. Just select the desired tissue and the mask will automatically update.
 
 \begin{figure}[!htb]
 \centering
@@ -45,7 +46,7 @@ It's also possible to select some predefined thresholding values based on some t
 \label{fig:limiar_presets}
 \end{figure}
 
-The table~\ref{tab:limiar} show thresholding values according to some tissues or materials.
+Table~\ref{tab:limiar} show thresholding values according to some tissues or materials.
 
 \begin{table}[h]
 \centering
@@ -76,9 +77,9 @@ Spongial Bone (Child) & 156 & 585\\
 \end{table}
 \newpage
 
-The table~\ref{tab:limiar} is indicated to images obtained from medical tomographs. The range of gray values from images obtained from odontological tomographs are greater and non-regular. Thus, it's necessary to use sliding control (figure~\ref{fig:region_selection_bar}) to adjust the thresholding values.
+Table~\ref{tab:limiar} indicates images obtained from medical tomographs. The range of gray values from images obtained from odontological tomographs are greater and non-regular. Thus, it is necessary to use sliding controls (Figure~\ref{fig:region_selection_bar}) to adjust the thresholding values.
 
-If you want to create a new mask click on the button \textbf{Create new mask} inside the item  \textbf{2. Select region of interest}. See the figure~\ref{fig:shortcut_new_mask}.
+To create a new mask, click \textbf{Create new mask} (Figure~\ref{fig:shortcut_new_mask}). Then, click \textbf{Select region of interest}.
 
 \begin{figure}[!htb]
 \centering
@@ -87,9 +88,7 @@ If you want to create a new mask click on the button \textbf{Create new mask} in
 \label{fig:shortcut_new_mask}
 \end{figure}
 
-Clicando-se nesse atalho, uma nova janela será apresentada (figure \ref{fig:create_new_mask}).  Selecione a faixa de limiar desejada e clique em \textbf{OK}.
-
-After clicking on this button a dialog will be shown (figure~\ref{fig:create_new_mask}). Select the desired threshold and click on \textbf{Ok}.
+After clicking on this button a dialog will be shown (Figure~\ref{fig:create_new_mask}). Select the desired threshold and click on \textbf{Ok}.
 
 \begin{figure}[!htb]
 \centering
@@ -100,9 +99,9 @@ After clicking on this button a dialog will be shown (figure~\ref{fig:create_new
 
 \newpage
 
-After the segmentation it's possible to generate a corresponding 3D surface. The surface is formed by triangles. The following chapter will give more details about surfaces.
+After segmentation it is possible to generate a corresponding 3D surface. The surface is formed by triangles. The following chapter will give more details about surfaces.
 
-Click on the \textbf{Create surface} button (figure~\ref{fig:generate_surface}) to create a new surface. If there is a surface created previously you may overwrite it with the new one. To do this select the option \textbf{Overwrite last surface} before creating the new surface.
+Click on the \textbf{Create surface} button (Figure~\ref{fig:generate_surface}) to create a new surface. If there is a surface created previously you may overwrite it with the new one. To do this select the option \textbf{Overwrite last surface} before creating the new surface.
 
 \begin{figure}[!htb]
 \centering
@@ -111,7 +110,7 @@ Click on the \textbf{Create surface} button (figure~\ref{fig:generate_surface}) 
 \label{fig:generate_surface}
 \end{figure}
 
-After a few moments the surface will be displayed at the 3D visualization window of InVesalius (figure~\ref{fig:surface}).
+After a few moments the surface will be displayed at the 3D visualization window of InVesalius (Figure~\ref{fig:surface}).
 
 \begin{figure}[!htb]
 \centering
@@ -124,7 +123,7 @@ After a few moments the surface will be displayed at the 3D visualization window
 
 \section{Manual segmentation (Image edition)}
 
-Thresholding segmentation may not be efficient in some case since it's applied to the whole image. Manual segmentation may be used o segment only an isolated image region. Manual segmentation turns possible to add or remove some image regions to the segmentation. Manual segmentation requires more knowledge of  human anatomy. To use it click on \textbf{Manual edition} (figure~\ref{fig:advanced_edition}) to open the manual segmentation panel.
+Thresholding segmentation may not be efficient in some cases since it is applied to the whole image. Manual segmentation may be used to segment only an isolated region. Manual segmentation also allows users to add or remove some image regions from the segmentation. To use it click on \textbf{Manual edition} (Figure~\ref{fig:advanced_edition}) to open the manual segmentation panel.
 
 \begin{figure}[!htb]
 \centering
@@ -142,7 +141,7 @@ Figure~\ref{fig:edition_slices_ref} show the Manual segmentation panel.
 \label{fig:edition_slices_ref}
 \end{figure}
 
-There are two brushes used to segmentation: a circle and a square. Click on triangle icon (see figure~\ref{fig:brush_type}) to and click on the desired brush.
+There are two brushes used for segmentation: a circle and a square. Click on the triangle icon (see Figure~\ref{fig:brush_type}) to show brush types, then click on the desired brush.
 
 \begin{figure}[!htb]
 \centering
@@ -153,7 +152,7 @@ There are two brushes used to segmentation: a circle and a square. Click on tria
 
 \newpage
 
-It's also possible to adjust the brush size, like shown in the figure~\ref{fig:select_diameter}.
+Brush sizes can also be adjusted, as shown in Figure~\ref{fig:select_diameter}.
 
 \begin{figure}[!htb]
 \centering
@@ -162,16 +161,17 @@ It's also possible to adjust the brush size, like shown in the figure~\ref{fig:s
 \label{fig:select_diameter}
 \end{figure}
 
-It's needed to select the operation to be performed by the brush. These are the options:
+The following are available options when using brushes in InVesalius:
 
-\textbf{Draw}: to add a non-selected region to the segmentation;
+\begin{itemize}
+	\item \textbf{Draw}: for adding a non-selected region to the segmentation;
 
-\textbf{Erase}: to remove a selected region from the segmentation;
+	\item \textbf{Erase}: for removal of a non-selected region;
 
-\textbf{Threshold}: applies the thresholding locally, adding or removing a
-region if in inside or outside of the threshold range.
+	\item \textbf{Threshold}: applies the thresholding locally, adding or removing a region inside or outside of the threshold range.
+\end{itemize}
 
-Figure~\ref{fig:select_brush_operations} shows the operations.
+Figure~\ref{fig:select_brush_operations} shows the available brush operations.
 
 \begin{figure}[!htb]
 \centering
@@ -180,7 +180,7 @@ Figure~\ref{fig:select_brush_operations} shows the operations.
 \label{fig:select_brush_operations}
 \end{figure}
 
-Figure~\ref{fig:noise_amalgaman} shows a image with noises caused by the presence of dental prosthesis. See the rays emerging from the dental arch. The thresholding segments the noise since its intensity is inside of the threshold of bone.
+Figure~\ref{fig:noise_amalgaman} shows a image with noise caused by the presence of a dental prosthesis. Note the rays emerging from the dental arch: the thresholding segments the noise since its intensity is inside of the threshold of bone.
 
 \begin{figure}[!htb]
 \centering
@@ -189,7 +189,7 @@ Figure~\ref{fig:noise_amalgaman} shows a image with noises caused by the presenc
 \label{fig:noise_amalgaman}
 \end{figure}
 
-Figure~\ref{fig:surface_amagaman} shows a surface create from that segmentation.
+Figure~\ref{fig:surface_amagaman} shows a surface created from that segmentation.
 
 \begin{figure}[!htb]
 \centering
@@ -205,9 +205,9 @@ Figure~\ref{fig:surface_amagaman} shows a surface create from that segmentation.
 \label{fig:surface_amagaman_zoom}
 \end{figure}
 
-In such cases use the manual segmentation with the \textbf{erase} brush. Keep the \textbf{left} mouse button pressed while dragging the brush over region you want to remove (in mask).
+In such cases use the manual segmentation with the \textbf{erase} brush. Keep the \textbf{left} mouse button pressed while dragging the brush over the region to be removed (in mask).
 
-Figure\ref{fig:editor_amalgaman} shows the image from figure~\ref{fig:noise_amalgaman} after the edition.
+Figure\ref{fig:editor_amalgaman} shows the image from Figure~\ref{fig:noise_amalgaman} after.
 
 \begin{figure}[!htb]
 \centering
@@ -223,11 +223,7 @@ Figure\ref{fig:editor_amalgaman} shows the image from figure~\ref{fig:noise_amal
 \label{fig:surface_edited_amalgaman}
 \end{figure}
 
-Realizada a edição, basta gerar a superfície a partir da imagem editada (figure \ref{fig:surface_edited_amalgaman}). Como houve edição, ao clicar em \textbf{Criar superfície}, será requerido se deseja gerar a superfície a partir do método \textbf{binário} ou utilizando o método de suavização \textbf{Suavização sensível ao contexto} (figure \ref{fig:new_surface_edited}) para minimizar os "degraus" na superfície.  Demais detalhes serão discutidos no capítulo \ref{cap_surface}.
-%\ref{fig:generate_surface}).
-
-It's possible to generate a surface after manual segmentation (figure~\ref{fig:surface_edited_amalgaman}). Since it was used the manual segmentation, when you click on \textbf{Create surface} button, a dialog (figure~\ref{fig:new_surface_edited}) will be opened to  to select if the surface will be created with the method \textbf{Binary} (blocky aspect) or \textbf{Context aware smoothing} (smoother).
-
+A surface can be generated after manual segmentation (Figure~\ref{fig:surface_edited_amalgaman}). Since it was used in the manual segmentation procedure, when clicking on Create surface button, a dialog (Figure~\ref{fig:new_surface_edited}) will be opened to to select if the surface will be created with the method \textbf{Binary} (blocky) or \textbf{Context aware smoothing (smoother)}.
 
 \begin{figure}[!htb]
 \centering
@@ -239,7 +235,7 @@ It's possible to generate a surface after manual segmentation (figure~\ref{fig:s
 
 \section{Watershed}
 
-In watershed segmentation the user indicates with marks what is object and what is background. This method treats the image as watershed (hence the name watershed) in which the gray values (intensity) are the altitudes, forming valleys and mountains. The markers are water source. The waters fill the watershed until the waters gather together segmenting, this way, the background from the object. To use Watershed segmentation click on \textbf{Watershed} to open the watershed panel (figure~\ref{fig:watershed_painel}).
+In watershed segmentation the user demarcates objects and background detail. This method treats the image as watershed (hence the name) in which the gray values (intensity) are the altitudes, forming valleys and mountains. The markers are water source. The waters fill the watershed until the waters gather together, thus distinguishing background from object. To use Watershed segmentation click on Watershed to open the watershed panel (Figure~\ref{fig:watershed_painel}).
 
 \begin{figure}[!htb]
 \centering
@@ -248,11 +244,12 @@ In watershed segmentation the user indicates with marks what is object and what 
 \label{fig:watershed_painel}
 \end{figure}
 
-Before starting to segment with watershed it recommended to clean the mask (see section~\ref{cap:limpeza_mascara}).
+Before segmenting to with Watershed it recommended to clean the mask (see section~\ref{cap:limpeza_mascara}).
 
-To insert a marker (object or background) is used a brush, like when manual segmenting. You can use a circle or square brush and set its size.
+To insert a marker (object or background), a brush is used, similar to manual segmenting. You can use a circle or square brush and set its size.
 
-It necessary to select the brush operation, which are the following:
+Select brush operations from the following:
+
 \begin{itemize}
     \item \textbf{Object}: to insert object markers;
     \item \textbf{Background}: to insert background markers (not object);
@@ -260,11 +257,11 @@ It necessary to select the brush operation, which are the following:
 \end{itemize}
 
 
-The option \textbf{Overwrite mask} is used when the user wants that the result of watershed segmentation overwrites the existent segmentation. The option \textbf{Use WWWL} is used to make watershed take into account the image with the values of \textbf{window width} and \textbf{window level} not the raw one, which may result in better segmentation.
+The option \textbf{Overwrite mask} is used when the user wants the result of watershed segmentation to overwrite the existing segmentation. The option \textbf{Use WWWL} is used to make watershed take into account the image with the values of window width and window level (not the raw image) which may result in better segmentation.
 
-Click on the button on the left side of the panel (figure~\ref{fig:watershed_conf}) to access more watershed configurations. This button will open a dialog (figure~\ref{fig:watershed_janela_conf}). The method option allows to choose the Watershed algorithm to be used to segment. It may be the conventional \textbf{Watershed} or \textbf{Watershed IFT}, which is based on the IFT (\textit{Image Forest Transform}) method. In some cases, like brain segmentation, the \textbf{Watershed IFT} may have a better result.
+Click on the button on the left side of the panel (Figure~\ref{fig:watershed_conf}) to access more watershed configurations. This button will open a dialog (Figure~\ref{fig:watershed_janela_conf}). The method option allows to choose the Watershed algorithm to be used to segment. It may be the conventional \textbf{Watershed} or \textbf{Watershed IFT}, which is based on the IFT (\textit{Image Forest Transform}) method. In some cases, like brain segmentation, the \textbf{Watershed IFT} may have a better result.
 
-The connectivity option refers to the pixel neighbourhood which may be $4$ or $8$ when in 2D,  or $6$, $18$ or $26$ when in 3D. \textbf{Gaussian sigma} is a parameter used in the smoothing algorithm (the image is smoothed before the segmentation to remove the noise and get better results). The greater this value the smoother the smoother the image will be.
+The connectivity option refers to the pixel neighbourhood ($4$ or $8$ when in 2D,  or $6$, $18$ or $26$ when in 3D). \textbf{Gaussian sigma} is a parameter used in the smoothing algorithm (the image is smoothed before the segmentation to remove the noise and get better results). The greater this value the smoother the smoother the image will be.
 
 \begin{figure}[!htb]
     \centering
@@ -280,7 +277,9 @@ The connectivity option refers to the pixel neighbourhood which may be $4$ or $8
     \label{fig:watershed_janela_conf}
 \end{figure}
 
-Normally, the \textbf{Watershed} is applied only in one slice, not in the whole image. After adding the markers is possible to apply the watershed to the whole image, just click on the button \textbf{Expand watershed to 3D}. Figure~\ref{fig:watershed_2d} shows the result of watershed segmentation in a slice (2D) of brain image. Figure~\ref{fig:watershed_3d} shows the segmentation expanded to the whole image (3D).
+Normally the \textbf{Watershed} is applied only in one slice, not in the whole image. After adding the markers is possible to apply the watershed to the whole image by clicking on the button \textbf{Expand watershed to 3D}. Figure~\ref{fig:watershed_2d} shows the result of watershed segmentation in a slice (2D) of brain image. 
+
+Figure~\ref{fig:watershed_3d} shows the segmentation expanded to the whole image (3D).
 
 Figure~\ref{fig:watershed_2d} also shows the object markers (in light green), the background markers (in red) and the segmentation mask (in green) overlaying the selected regions (result).
 
@@ -316,12 +315,10 @@ Region growing tool is accessed in the menu \textbf{Tools}, \textbf{Segmentation
     \label{fig:segmentation_region_growing_dinamic}
 \end{figure}
 
-A técnica parte de um pixel inicial que é indicado clicando com o \textbf{botão direito} do mouse, os pixels vizinhos que satisfazem as condições indicadas anteriormente são selecionados. Cada método leva em consideração diferentes condições, a seguir são apresentadas as diferenças entre cada método:
-
-This segmentation technique starts with a pixel (indicated by the user clicking with the left-button of the mouse). If the neighbour pixels meet some conditions are selected. Iteratively, the selection expands analyzing the neighbourhood of the selected pixels. Each region growing method has a different condition of selection:
+This segmentation technique starts with a pixel (indicated by the user left-clicking with the mouse). The selection expands by analyzing the neighbourhood of the selected pixels and including those of a given set of qualities. Each region growing method has a different condition of selection:
 
 \begin{itemize}
-	\item \textbf{Dynamic}: In this method uses the value of the pixel clicked by the user. Then every connected pixel inside the lower (min) and the upper (max) range deviation are selected. The option \textbf{Use WWWL} is default and makes region growing taking into account the image with \textbf{window width} and \textbf{window level} applied not the raw one (figure~\ref{fig:segmentation_region_growing_dinamic_parameter}).
+	\item \textbf{Dynamic}: Uses the value of the pixel clicked by the user. Then every connected pixel inside the lower (min) and the upper (max) range deviation are selected. The option \textbf{Use WWWL} is default and takes into account the image with \textbf{window width} and \textbf{window level} applied not the raw one (figure~\ref{fig:segmentation_region_growing_dinamic_parameter}).
 
 	\begin{figure}[!htb]
 	\centering
@@ -330,7 +327,7 @@ This segmentation technique starts with a pixel (indicated by the user clicking 
 	\label{fig:segmentation_region_growing_dinamic_parameter}
 	\end{figure}
 
-	\item \textbf{Threshold}: This method selects the pixels whose intensity are inside the minimum and maximum threshold (figure~\ref{fig:segmentation_region_growing_limiar}).
+	\item \textbf{Threshold}: This method selects the pixels whose intensity are inside the minimum and maximum threshold (Figure~\ref{fig:segmentation_region_growing_limiar}).
 
 	\begin{figure}[!htb]
 	\centering
@@ -339,7 +336,7 @@ This segmentation technique starts with a pixel (indicated by the user clicking 
 	\label{fig:segmentation_region_growing_limiar}
 	\end{figure}
 
-    \item \textbf{Confidence}: This method starts by calculating the standard deviation and the mean value of the pixel selected by the user and its neighbourhood. Connected pixels with value inside the range (given by the mean more and less the standard deviation multiplied by the \textbf{Multiplier} parameter). It's calculated the mean and the standard deviation from the selected pixels. Which follows by other expansion step. This process is repeated according to the number of \textbf{Iterations} parameter. The figure~\ref{fig:segmentation_region_growing_confidence_parameter} shows the parameters for this method.
+    \item \textbf{Confidence}: This method starts by calculating the standard deviation and the mean value of the pixel selected by the user and its neighbourhood. Connected pixels with value inside the range (given by the mean more and less the standard deviation multiplied by the \textbf{Multiplier} parameter). It then calculates the mean and the standard deviation from the selected pixels, then carries out the expansion.  This process is repeated according to the \textbf{Iterations} parameter. Figure~\ref{fig:segmentation_region_growing_confidence_parameter} shows the parameters for this method.
 
 	\begin{figure}[!htb]
 	\centering
