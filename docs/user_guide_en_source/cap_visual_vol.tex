@@ -1,13 +1,13 @@
 \chapter{Volume Rendering}
 \label{cap:vis_vol}
 
-For volume rendering models, InVesalius employs a technique known as raycasting. In summary, raycasting is it a technique to simulate the trace a beam of light toward the object for each screen pixel. The pixel color is based on the color and transparence of each voxel intercepted by the light beam.
+For volume rendering models, InVesalius employs a technique known as raycasting. Raycasting is a technique that simulates the trace of a beam of light toward the object through each screen pixel. The pixel color is based on the color and transparency of each voxel intercepted by the light beam.
 
-InVesalius there are several pre-defined patterns (presets) to display specific tissue types or different types of exam (tomographic contrast, for example).
+InVesalius contains several pre-defined patterns (presets) to display specific tissue types or different types of exam (tomographic contrast, for example).
 
-To access this feature, simply click the shortcut shown in figure~\ref{fig:volume_raycasting_origina} in the lower right corner of the screen (next to the display window surfaces) and select one of the available standards.
+To access this feature, simply click the shortcut shown in Figure~\ref{fig:volume_raycasting_origina} in the lower right corner of the screen (next to the surfaces display window) and select one of the available presets.
 
-To turn off the volume rendering, click again on the path indicated by the figure~\ref{fig:volume_raycasting_origina} and select the \textbf{Disabled} option.
+To turn off volume rendering, click again on the path indicated by Figure~\ref{fig:volume_raycasting_origina} and select the \textbf{Disable} option.
 
 \begin{figure}[!htb]
 \centering
@@ -18,7 +18,7 @@ To turn off the volume rendering, click again on the path indicated by the figur
 
 \section{Viewing Standards}
 
-There are several predefined viewing patterns. Some examples are illustrated in the following figures. 
+There are several predefined viewing patterns. Some examples are illustrated in the following figures.
 
 \begin{figure}[!htb]
 \centering
@@ -52,7 +52,7 @@ There are several predefined viewing patterns. Some examples are illustrated in 
 
 \section{Standard Customization}
 
-Some patterns can be personalized (and customized). See figure~\ref{fig:customize_1}, which is exhibiting a pattern and some graphical controls adjustment. With these features, It is possible to change the color of a given structure and its opacity, determining if and how it will be displayed.
+Some patterns can be personalized (and customized). Figure~\ref{fig:customize_1} is exhibiting a pattern and some graphical controls adjustment. With these features, the color of a given structure and its opacity can be altered, determining if and how it will be displayed.
 
 \begin{figure}[!htb]
 \centering
@@ -64,9 +64,9 @@ Some patterns can be personalized (and customized). See figure~\ref{fig:customiz
 
 \newpage
 
-To hide a structure, you must use the control setting chart keeping low the opacity of the corresponding region. In the example in figure~\ref{fig:customize_1} for example, suppose you want to hide the muscular part, which appears in red. To do this, one can simply position the pointer over the point in red and using the left mouse button, drag the point down in order to reduce the opacity (which is equivalent to increasing transparency). Figure~\ref{fig:customize_2} illustrates the result.
+To hide a structure, use the control setting chart to decrease the opacity of the corresponding region. In the example in Figure~\ref{fig:customize_1} suppose we want to hide the muscular part (appearing in red). To do this, simply position the pointer over the muscular part in red and, using the left mouse button, drag the point down to reduce opacity and make the part transparent. Figure~\ref{fig:customize_2} illustrates the result.
 
-Note: The Alpha value indicates the opacity of the color and the value Value, the color intensity of the pixel.
+Note: The Alpha value indicates the opacity of the color and the \textbf{value}, the color intensity of the pixel.
 
 \begin{figure}[!htb]
 \centering
@@ -78,9 +78,7 @@ Note: The Alpha value indicates the opacity of the color and the value Value, th
 
 \newpage
 
-
-It can remove or add points on the graph control setting. For removing, simply click with the right mouse button on the point. For adding a new point, click the left button on the line
-graph. One can also save the resulting pattern by clicking the shortcut.  Figure~\ref{fig:save_preset} illustrates.
+We can also remove or add points on the graph control setting. To remove, simply click with the right mouse button on the point. To add a new point, click the left button on the line graph. One can also save the resulting pattern by clicking the shortcut shown in Figure~\ref{fig:save_preset}.
 
 \begin{figure}[!htb]
 \centering
@@ -89,8 +87,7 @@ graph. One can also save the resulting pattern by clicking the shortcut.  Figure
 \label{fig:save_preset}
 \end{figure}
  
-To save the pattern, InVesalius displays a window like the one in figure~\ref{fig:save_window_preset}.
-Enter a name for the custom pattern and \textbf{click OK} button. The saved pattern will be available with the other the next time the software is opened.
+To save the pattern, InVesalius displays a window like the one shown in Figure~\ref{fig:save_window_preset}. Enter a name for the custom pattern and \textbf{click OK}. The saved pattern will be available for the next time the software is opened.
 
 \begin{figure}[!htb]
 \centering
@@ -101,7 +98,7 @@ Enter a name for the custom pattern and \textbf{click OK} button. The saved patt
 
 \section{Standard Customization with Brightness and Contrast}
 
-You can customize a pattern without using the graphical control setting, which is presented in the previous section. This is done through the control \textbf{brightness and contrast} which is present in the toolbar. To activate the control, click the shortcut shown in figure~\ref{fig:tool_contrast_original_vol}.
+You can customize a pattern without using the graphical control settings presented in the previous section. This is done through the \textbf{brightness and contrast} controls on the toolbar. Activate these by clicking the icon shown in Figure~\ref{fig:tool_contrast_original_vol}.
 
 \begin{figure}[!htb]
 \centering
@@ -110,9 +107,9 @@ You can customize a pattern without using the graphical control setting, which i
 \label{fig:tool_contrast_original_vol}
 \end{figure}
 
-Enable the control by dragging the mouse, with the left button pressed on the volume window, this can change the values of the window width and window level. The procedure is the same as the slices applied to 2D, which can be seen in section~\ref{sec:ww_wl}. Dragging the mouse in the horizontal direction changes  the window level value. To the left, it decreases its window value, and for the right, it increases its window value. Dragging the mouse in the vertical direction changes the value of window width. If dragged down, the value is diminished and, dragging upwards increases its value.
+Enable the control by dragging the mouse, with the left button pressed on the volume window. This will change the values of the window width and window level. The procedure is the same as with slices applied to 2D images, which can be seen in section~\ref{sec:ww_wl}. Dragging the mouse in a horizontal direction changes the window level value; drag left to decrease and right to increase. Dragging the mouse vertically changes the value of window width; drag down to decrease and up to increase.
 
-Manipulating these values can be useful for different viewing results. For example, to add tissue to the display, \textbf{drag} the mouse diagonally with \textbf{left button} pressed from the lower right to the upper left corner of the preview window. To remove tissue visualization, do the opposite, (i.e \textbf{drag} the mouse diagonally from top left to bottom right with \textbf{left button} presseds.). See figure~\ref{fig:raycasting_add}.
+Manipulating these values can be useful for different viewing results. For example, to add tissue to the display, \textbf{drag} the mouse diagonally with \textbf{left button} pressed from the lower right to the upper left corner of the preview window. To remove tissue visualization, do the opposite, (i.e drag the mouse diagonally from top left to bottom right with the left button pressed.). See Figure~\ref{fig:raycasting_add}.
 
 \begin{figure}[!htb]
   \centering
@@ -127,10 +124,9 @@ Manipulating these values can be useful for different viewing results. For examp
 
 \newpage
 
-
 \section{Cut}
 
-In volume rendering, the cut is used to view a region of the internal volume. InVesalius has a cut for tool for this based on a reference plane. With a volume pattern selected, click \textbf{Tools}, and then click \textbf{Cut plane} (figure~\ref{fig:activate_cut_plane}).
+In volume rendering, the cut function is used to view a cross-section of a region. With a volume pattern selected, click \textbf{Tools}, and then click \textbf{Cut plane} (Figure~\ref{fig:activate_cut_plane}).
 
 \begin{figure}[!htb]
 \centering
@@ -139,7 +135,7 @@ In volume rendering, the cut is used to view a region of the internal volume. In
 \label{fig:activate_cut_plane}
 \end{figure}
 
-A plan of representation for cutting appears next to the volume. To make the cut, hold the \textbf{left} mouse button on the plane and \textbf{drag} the mouse. To rotate the plan, hold the \textbf{left} mouse button pressed on its edge and move the mouse in the desired direction. See an example in figure~\ref{fig:cutted_image}.
+An outline for cutting appears next to the volume. To make the cut, hold the left mouse button on the plane and drag the mouse. To rotate the plane, hold the left mouse button pressed on its edge and move the mouse in the desired direction as shown in Figure~\ref{fig:cutted_image}.
 
 \begin{figure}[!htb]
 \centering
@@ -148,4 +144,4 @@ A plan of representation for cutting appears next to the volume. To make the cut
 \label{fig:cutted_image}
 \end{figure}
 
-To disable the cut feature, click \textbf{Tools} and then again \textbf{Cut plan} (figure~\ref{fig:cutted_image}).
+When finished using the function, click \textbf{Tools} and again click \textbf{Cut plane} (Figure~\ref{fig:cutted_image}).
