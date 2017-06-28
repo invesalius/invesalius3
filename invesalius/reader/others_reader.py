@@ -44,8 +44,11 @@ def ReadOthers(dir_):
         ow = vtk.vtkOutputWindow()
         ow.SetInstance(fow)
 
-    imagedata = nib.squeeze_image(nib.load(dir_))
-    imagedata = nib.as_closest_canonical(imagedata)
-    imagedata.update_header()
+    try:
+        imagedata = nib.squeeze_image(nib.load(dir_))
+        imagedata = nib.as_closest_canonical(imagedata)
+        imagedata.update_header()
+    except(nib.filebasedimages.ImageFileError):
+        return False
 
     return imagedata

@@ -207,21 +207,8 @@ class Controller():
         if id_type == const.ID_ANALYZE_IMPORT:
             dialog.ImportAnalyzeWarning()
 
-        # Import project treating compressed nifti exception
-        suptype = ('hdr', 'nii', 'nii.gz', 'par')
         filepath = dialog.ShowImportOtherFilesDialog(id_type)
-        if filepath is not None:
-            name = filepath.rpartition('\\')[-1].split('.')
-
-            if name[-1] == 'gz':
-                name[1] = 'nii.gz'
-
-            filetype = name[1].lower()
-
-            if filetype in suptype:
-                Publisher.sendMessage("Open other files", filepath)
-            else:
-                dialog.ImportInvalidFiles()
+        Publisher.sendMessage("Open other files", filepath)
 
     def ShowDialogOpenProject(self):
         # Offer to save current project if necessary
@@ -749,23 +736,18 @@ class Controller():
 
     def OnOpenOtherFiles(self, pubsub_evt):
         filepath = pubsub_evt.data
-        name = filepath.rpartition('\\')[-1].split('.')
+        if not(filepath) == None:
+            name = filepath.rpartition('\\')[-1].split('.')
 
-        if name[-1] == 'gz':
-            name[1] = 'nii.gz'
-
-        suptype = ('hdr', 'nii', 'nii.gz', 'par')
-        filetype = name[1].lower()
-
-        if filetype in suptype:
             group = oth.ReadOthers(filepath)
-        else:
-            dialog.ImportInvalidFiles()
-
-        matrix, matrix_filename = self.OpenOtherFiles(group)
-        self.CreateOtherProject(str(name[0]), matrix, matrix_filename)
-        self.LoadProject()
-        Publisher.sendMessage("Enable state project", True)
+            
+            if group:
+                matrix, matrix_filename = self.OpenOtherFiles(group)
+                self.CreateOtherProject(str(name[0]), matrix, matrix_filename)
+                self.LoadProject()
+                Publisher.sendMessage("Enable state project", True)
+            else:
+                dialog.ImportInvalidFiles(ftype="Others")
 
     def OpenDicomGroup(self, dicom_group, interval, file_range, gui=True):
         # Retrieve general DICOM headers
