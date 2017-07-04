@@ -7,19 +7,19 @@
 # Translators:
 # Translators:
 # InVesalius <invesalius@cti.gov.br>, 2015
+# Mathieu Malaterre <mathieu.malaterre@gmail.com>, 2017
 msgid ""
 msgstr ""
 "Project-Id-Version: InVesalius3\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2017-06-28 11:05-0300\n"
-"PO-Revision-Date: 2017-04-26 19:15+0000\n"
-"Last-Translator: InVesalius <invesalius@cti.gov.br>\n"
-"Language-Team: French (http://www.transifex.com/invesalius/invesalius3/"
-"language/fr/)\n"
-"Language: fr\n"
+"PO-Revision-Date: 2017-06-29 19:33+0000\n"
+"Last-Translator: Mathieu Malaterre <mathieu.malaterre@gmail.com>\n"
+"Language-Team: French (http://www.transifex.com/invesalius/invesalius3/language/fr/)\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
+"Language: fr\n"
 "Plural-Forms: nplurals=2; plural=(n > 1);\n"
 "X-Poedit-Country: GENERIC\n"
 "X-Poedit-Language: English\n"
@@ -45,9 +45,7 @@ msgstr "Localisation : %.2f"
 msgid ""
 "%s %s\n"
 "Made in InVesalius"
-msgstr ""
-"%s %s\n"
-"Créé avec InVesalius"
+msgstr "%s %s\nCréé avec InVesalius"
 
 #: bitmap_preview_panel.py:166 bitmap_preview_panel.py:167
 #: dicom_preview_panel.py:189 dicom_preview_panel.py:190 frame.py:838
@@ -73,7 +71,7 @@ msgstr "Valeur: %-6d"
 #: clut_raycasting.py:536
 #, python-format
 msgid "Alpha: %-.3f"
-msgstr ""
+msgstr "Alpha: %-.3f"
 
 #: constants.py:32
 #, python-format
@@ -86,7 +84,7 @@ msgstr " Désactivé"
 
 #: constants.py:45
 msgid "Red-blue"
-msgstr ""
+msgstr "Rouge-beu"
 
 #: constants.py:46
 msgid "CristalEyes"
@@ -94,7 +92,7 @@ msgstr ""
 
 #: constants.py:47
 msgid "Interlaced"
-msgstr ""
+msgstr "Entrelacé"
 
 #: constants.py:48 constants.py:361
 msgid "Left"
@@ -110,7 +108,7 @@ msgstr ""
 
 #: constants.py:51
 msgid "Checkboard"
-msgstr ""
+msgstr "Damier"
 
 #: constants.py:52
 msgid "Anaglyph"
@@ -278,7 +276,7 @@ msgstr "Vascularisation - Faible"
 
 #: constants.py:319
 msgid "Contour"
-msgstr ""
+msgstr "Contour"
 
 #: constants.py:356
 msgid "Front"
@@ -322,7 +320,7 @@ msgstr "Os + Peau II"
 
 #: constants.py:374
 msgid "Dark bone"
-msgstr ""
+msgstr "Os Sombre"
 
 #: constants.py:375
 msgid "Glossy"
@@ -334,19 +332,19 @@ msgstr "Brillant II"
 
 #: constants.py:377
 msgid "Gold bone"
-msgstr ""
+msgstr "Os Or"
 
 #: constants.py:378
 msgid "High contrast"
-msgstr ""
+msgstr "Teinte élevée"
 
 #: constants.py:379
 msgid "Low contrast"
-msgstr ""
+msgstr "Teinte faible"
 
 #: constants.py:380 constants.py:388
 msgid "Soft on white"
-msgstr ""
+msgstr "Doux blanc"
 
 #: constants.py:381
 msgid "Mid contrast"
@@ -366,15 +364,15 @@ msgstr "Crayon"
 
 #: constants.py:385
 msgid "Red on white"
-msgstr ""
+msgstr "Rouge sur blanc"
 
 #: constants.py:386
 msgid "Skin on blue"
-msgstr ""
+msgstr "Peau sur bleu"
 
 #: constants.py:387
 msgid "Skin on blue II"
-msgstr ""
+msgstr "Peau sur bleu 2"
 
 #: constants.py:389
 msgid "Soft + Skin"
@@ -418,7 +416,7 @@ msgstr "Vasculaire IV"
 
 #: constants.py:399
 msgid "Yellow bone"
-msgstr ""
+msgstr "Os Jaune"
 
 #: constants.py:425 volume.py:665
 msgid "Cut plane"
@@ -474,11 +472,11 @@ msgstr ""
 
 #: constants.py:689
 msgid "Select left ear in image"
-msgstr ""
+msgstr "Choisir oreille gauche sur l'image"
 
 #: constants.py:690
 msgid "Select right ear in image"
-msgstr ""
+msgstr "Choisir oreille droite sur l'image"
 
 #: constants.py:691
 msgid "Select nasion in image"
@@ -486,23 +484,23 @@ msgstr ""
 
 #: constants.py:693
 msgid "LET"
-msgstr ""
+msgstr "LET"
 
 #: constants.py:694
 msgid "RET"
-msgstr ""
+msgstr "RET"
 
 #: constants.py:695
 msgid "NAT"
-msgstr ""
+msgstr "NAT"
 
 #: constants.py:696
 msgid "SET"
-msgstr ""
+msgstr "SET"
 
 #: constants.py:698
 msgid "Select left ear with spatial tracker"
-msgstr ""
+msgstr "Choisir oreille gauche avec"
 
 #: constants.py:699
 msgid "Select right ear with spatial tracker"
@@ -519,7 +517,7 @@ msgstr ""
 #: control.py:385
 #, python-format
 msgid "Loading file %d of %d ..."
-msgstr ""
+msgstr "Chargement fichier %d de %d ..."
 
 #: control.py:820
 msgid "Fix gantry tilt applying the degrees below"
@@ -557,7 +555,7 @@ msgstr "Masques"
 
 #: data_notebook.py:68
 msgid "3D surfaces"
-msgstr ""
+msgstr "Surfaces 3D"
 
 #: data_notebook.py:69
 msgid "Measures"
@@ -565,15 +563,15 @@ msgstr "Mesures"
 
 #: data_notebook.py:165
 msgid "Create a new measure"
-msgstr ""
+msgstr "Créer une nouvelle mesure"
 
 #: data_notebook.py:172
 msgid "Remove measure"
-msgstr ""
+msgstr "Suprimer mesure"
 
 #: data_notebook.py:178
 msgid "Duplicate measure"
-msgstr ""
+msgstr "Dupliquer mesure"
 
 #: data_notebook.py:191 frame.py:1408
 msgid "Measure distance"
@@ -585,15 +583,15 @@ msgstr "Mesurer les angles"
 
 #: data_notebook.py:283
 msgid "Create a new mask"
-msgstr ""
+msgstr "Créer nouveau masque"
 
 #: data_notebook.py:289
 msgid "Remove mask"
-msgstr ""
+msgstr "Supprimer masque"
 
 #: data_notebook.py:295
 msgid "Duplicate mask"
-msgstr ""
+msgstr "Dupliquer masque"
 
 #: data_notebook.py:456 data_notebook.py:802 data_notebook.py:1066
 #: data_notebook.py:1263
@@ -606,23 +604,23 @@ msgstr "Masque"
 
 #: data_notebook.py:615
 msgid "Create a new surface"
-msgstr ""
+msgstr "Créer une nouvelle surface"
 
 #: data_notebook.py:621
 msgid "Remove surface"
-msgstr ""
+msgstr "Supprimer surface"
 
 #: data_notebook.py:627
 msgid "Duplicate surface"
-msgstr ""
+msgstr "Dupliquer surface"
 
 #: data_notebook.py:633
 msgid "Import a surface file into InVesalius"
-msgstr ""
+msgstr "Importer une surface dans InVesalius"
 
 #: data_notebook.py:661 task_surface.py:141
 msgid "New surface"
-msgstr ""
+msgstr "Nouvelle surface"
 
 #: data_notebook.py:803
 msgid "Volume (mm³)"
@@ -630,7 +628,7 @@ msgstr "Volume (mm³)"
 
 #: data_notebook.py:804
 msgid "Area (mm²)"
-msgstr ""
+msgstr "Aire (mm²)"
 
 #: data_notebook.py:805
 msgid "Transparency"
@@ -654,7 +652,7 @@ msgstr "Donnée"
 
 #: default_tasks.py:244 default_tasks.py:250
 msgid "Load data"
-msgstr ""
+msgstr "Chargement donnée"
 
 #: default_tasks.py:245 default_tasks.py:251 default_tasks.py:280
 msgid "Select region of interest"
@@ -670,7 +668,7 @@ msgstr "Exporter les données"
 
 #: default_tasks.py:254 default_tasks.py:324
 msgid "Navigation system"
-msgstr ""
+msgstr "Système de navigation"
 
 #: default_viewers.py:82 default_viewers.py:171 task_exporter.py:247
 msgid "Axial slice"
@@ -710,15 +708,14 @@ msgstr "La valeur ne sera pas appliquée."
 
 #: dialogs.py:116
 msgid ""
-"InVesalius is running on a 32-bit operating system or has insufficient "
-"memory. \n"
+"InVesalius is running on a 32-bit operating system or has insufficient memory. \n"
 "If you want to work with 3D surfaces or volume rendering, \n"
 "it is recommended to reduce the medical images resolution."
-msgstr ""
+msgstr "InVesalius fonctionne sur un système d'exploitation 32-bit ou a peu de resource mémoire. \nSi vous voulez travaillez avec des surfaces 3D ou des rendus volumiques, \nil est recommendé de réduire la résolution des images médicales"
 
 #: dialogs.py:130
 msgid "Percentage of original resolution"
-msgstr ""
+msgstr "Pourcentage de la résolution originale"
 
 #: dialogs.py:178
 msgid "Loading DICOM files"
@@ -734,23 +731,23 @@ msgstr "Choisir un dossier DICOM :"
 
 #: dialogs.py:316
 msgid "Choose a folder with TIFF, BMP, JPG or PNG:"
-msgstr ""
+msgstr "Choisir un répertoire avec TIFF,BMP,JPG ou PNG:"
 
 #: dialogs.py:348
 msgid "Import Analyze 7.5 file"
-msgstr ""
+msgstr "Importer fichier Analyze 7.5"
 
 #: dialogs.py:354
 msgid "Import NIFTi 1 file"
-msgstr ""
+msgstr "Importer fichier NIFTi 1"
 
 #: dialogs.py:357
 msgid "Import PAR/REC file"
-msgstr ""
+msgstr "Importer fichier PAR/REC"
 
 #: dialogs.py:389
 msgid "Import surface file"
-msgstr ""
+msgstr "Importer fichier surface"
 
 #: dialogs.py:422 frame.py:741
 msgid "Save project as..."
@@ -762,7 +759,7 @@ msgstr "Projet InVesalius (*.inv3)|*.inv3"
 
 #: dialogs.py:454
 msgid "Save markers as..."
-msgstr ""
+msgstr "Sauvegarder marqueurs en tant que..."
 
 #: dialogs.py:457 dialogs.py:488
 msgid "Markers files (*.mks)|*.mks"
@@ -770,47 +767,45 @@ msgstr ""
 
 #: dialogs.py:485
 msgid "Load markers"
-msgstr ""
+msgstr "Charger marqueurs"
 
 #: dialogs.py:551 utils.py:379
 msgid ""
 "A new version of InVesalius is available. Do you want to open the download "
 "website now?"
-msgstr ""
+msgstr "Une nouvelle version d'InVesalius est disponible. Voulez vous ouvrier le site wen pour la téléchargement maintenant?"
 
 #: dialogs.py:552 utils.py:380
 msgid "Invesalius Update"
-msgstr ""
+msgstr "Mise à jour InVesalius"
 
 #: dialogs.py:610 dialogs.py:1001 dialogs.py:1026
 #, python-format
 msgid ""
 "The project %s has been modified.\n"
 "Save changes?"
-msgstr ""
-"Le projet %s a été modifié.\n"
-"Enregistrer les modifications ?"
+msgstr "Le projet %s a été modifié.\nEnregistrer les modifications ?"
 
 #: dialogs.py:624
 #, python-format
 msgid "%s is an empty folder."
-msgstr ""
+msgstr "%s est un répértoire vide."
 
 #: dialogs.py:639
 msgid "There are no Bitmap, JPEG, PNG or TIFF files in the selected folder."
-msgstr ""
+msgstr "Il n'y a ni fichiers Bitmap, JPEG, PNG ou TIFF dans le répertoire séléctionné."
 
 #: dialogs.py:641
 msgid "There are no DICOM files in the selected folder."
-msgstr ""
+msgstr "Il n'y a pas de fichier DICOM dans le répertoire séléctionné."
 
 #: dialogs.py:643
 msgid "Invalid file."
-msgstr ""
+msgstr "Fichier invalide."
 
 #: dialogs.py:656
 msgid "Warning! InVesalius has limited support to Analyze format.\n"
-msgstr ""
+msgstr "Avertissement! InVesalius a un support limité du forma Analyze.\n"
 
 #: dialogs.py:657
 msgid "Slices may be wrongly oriented and functions may not work properly."
@@ -909,17 +904,9 @@ msgstr ""
 
 #: dialogs.py:1051
 msgid ""
-"InVesalius is a medical imaging program for 3D reconstruction. It uses a "
-"sequence of 2D DICOM image files acquired with CT or MRI scanners. "
-"InVesalius allows exporting 3D volumes or surfaces as mesh files for "
-"creating physical models of a patient's anatomy using additive manufacturing "
-"(3D printing) technologies. The software is developed by Center for "
-"Information Technology Renato Archer (CTI), National Council for Scientific "
-"and Technological Development (CNPq) and the Brazilian Ministry of Health.\n"
+"InVesalius is a medical imaging program for 3D reconstruction. It uses a sequence of 2D DICOM image files acquired with CT or MRI scanners. InVesalius allows exporting 3D volumes or surfaces as mesh files for creating physical models of a patient's anatomy using additive manufacturing (3D printing) technologies. The software is developed by Center for Information Technology Renato Archer (CTI), National Council for Scientific and Technological Development (CNPq) and the Brazilian Ministry of Health.\n"
 "\n"
-" InVesalius must be used only for research. The Center for Information "
-"Technology Renato Archer is not responsible for damages caused by the use of "
-"this software.\n"
+" InVesalius must be used only for research. The Center for Information Technology Renato Archer is not responsible for damages caused by the use of this software.\n"
 "\n"
 " Contact: invesalius@cti.gov.br"
 msgstr ""
@@ -2035,10 +2022,9 @@ msgid "Advanced options"
 msgstr "Outils avancés"
 
 #: task_surface.py:275
-msgid "Automatically select largest disconnected region and create new surface"
-msgstr ""
-"Électionner automatiquement plus grande déconnecter región et créer une "
-"nouvelle surface"
+msgid ""
+"Automatically select largest disconnected region and create new surface"
+msgstr "Électionner automatiquement plus grande déconnecter región et créer une nouvelle surface"
 
 #: task_surface.py:276
 msgid "Select largest surface"
@@ -2046,7 +2032,8 @@ msgstr ""
 
 #: task_surface.py:284
 msgid ""
-"Automatically select disconnected regions and create a new surface per region"
+"Automatically select disconnected regions and create a new surface per "
+"region"
 msgstr ""
 
 #: task_surface.py:285
