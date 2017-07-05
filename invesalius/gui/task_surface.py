@@ -330,6 +330,7 @@ class SurfaceTools(wx.Panel):
 
         # When using PlaneButton, it is necessary to bind events from parent win
         self.Bind(wx.EVT_BUTTON, self.OnButton)
+        self.Bind(wx.EVT_TOGGLEBUTTON, self.OnToggleButton)
 
         # Tags and grid sizer for fixed items
         flag_link = wx.EXPAND|wx.GROW|wx.LEFT|wx.TOP
@@ -361,7 +362,8 @@ class SurfaceTools(wx.Panel):
         self.SplitSurface()
 
     def OnLinkSeed(self, evt):
-        self.button_seeds.Toggle()
+        self.button_seeds._SetState(not self.button_seeds.GetState())
+        self.button_seeds.Refresh()
         self.SelectSeed()
 
     def OnButton(self, evt):
@@ -373,6 +375,13 @@ class SurfaceTools(wx.Panel):
         else:
             self.SelectSeed()
 
+    def OnToggleButton(self, evt):
+        id = evt.GetId()
+        if id == BTN_SEEDS:
+            self.button_seeds._SetState(self.button_seeds.IsPressed())
+            self.button_seeds.Refresh()
+            self.SelectSeed()
+
     def SelectLargest(self):
         Publisher.sendMessage('Create surface from largest region')
 
@@ -380,16 +389,18 @@ class SurfaceTools(wx.Panel):
         Publisher.sendMessage('Split surface')
 
     def SelectSeed(self):
-        if self.button_seeds.IsPressed():
+        if self.button_seeds.GetState() == 1:
             self.StartSeeding()
         else:
             self.EndSeeding()
 
     def StartSeeding(self):
+        print "Start Seeding"
         Publisher.sendMessage('Enable style', const.VOLUME_STATE_SEED)
         Publisher.sendMessage('Create surface by seeding - start')
 
     def EndSeeding(self):
+        print "End Seeding"
         Publisher.sendMessage('Disable style', const.VOLUME_STATE_SEED)
         Publisher.sendMessage('Create surface by seeding - end')
 
