@@ -12,7 +12,7 @@
 - Tool to fill mask holes automatically.
 - Tool to fill mask holes interactively.
 - Tool to crop mask.
-- Support to move measure points.
+- Support to move slice measure points.
 - Menu option to (de)activate the navigation mode.
 - Import surface files (STL, PLY, OBJ and VTP) into InVesalius project.
 - Surface area information.
