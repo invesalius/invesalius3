@@ -1060,6 +1060,7 @@ def ShowAboutDialog(parent):
 
     info.Developers = ["Paulo Henrique Junqueira Amorim",
                        "Thiago Franco de Moraes",
+                       "Hélio Pedrini",
                        "Jorge Vicente Lopes da Silva",
                        "Victor Hugo de Oliveira e Souza (navigator)",
                        "Renan Hiroshi Matsuda (navigator)",

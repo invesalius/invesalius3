@@ -6,7 +6,8 @@ The PRIMARY AUTHORS of InVesalius 3 are (and/or have been):
 
 - [Paulo Henrique Junqueira Amorim](https://github.com/paulojamorim)
 - [Thiago Franco de Moraes](https://github.com/tfmoraes)
-- Jorge Vicente Lopes da Silva
+- [Hélio Pedrini](http://www.ic.unicamp.br/~helio/)
+- [Jorge Vicente Lopes da Silva](http://lattes.cnpq.br/6139204122148876)
 - [Victor Hugo de Oliveira e Souza](https://github.com/vhosouza) (navigator)
 - [Renan Hiroshi Matsuda](https://github.com/rmatsuda) (navigator)
 - André Salles Cunha Peres (navigator)
