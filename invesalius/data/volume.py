@@ -161,18 +161,22 @@ class Volume():
         self.LoadVolume()
 
     def OnHideVolume(self, pubsub_evt):
+        print 'Hide Volume'
         self.volume.SetVisibility(0)
         if (self.plane and self.plane_on):
             self.plane.Disable()
         Publisher.sendMessage('Render volume viewer')
 
     def OnShowVolume(self, pubsub_evt = None):
+        print 'Show volume'
         if self.exist:
+            print 'Volume exists'
             self.volume.SetVisibility(1)
             if (self.plane and self.plane_on):
                 self.plane.Enable()
             Publisher.sendMessage('Render volume viewer')
         else:
+            print 'Volume doesnt exit'
             Publisher.sendMessage('Load raycasting preset', const.RAYCASTING_LABEL)
             self.LoadConfig()
             self.LoadVolume()
@@ -655,8 +659,12 @@ class Volume():
 
         self.exist = 1
 
+        if self.plane:
+            self.plane.SetVolumeMapper(volume_mapper)
+
         Publisher.sendMessage('Load volume into viewer',
                                     (volume, colour, (self.ww, self.wl)))
+
         del flip
         del cast
 
@@ -752,7 +760,11 @@ class CutPlane:
         self.p1 = plane_widget.GetPoint1()
         self.p2 = plane_widget.GetPoint2()
         self.normal = plane_widget.GetNormal()
-        
+
+    def SetVolumeMapper(self, volume_mapper):
+        self.volume_mapper = volume_mapper
+        self.volume_mapper.AddClippingPlane(self.plane)
+
     def Update(self, a, b):        
         plane_source = self.plane_source
         plane_widget = self.plane_widget
