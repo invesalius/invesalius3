@@ -3,7 +3,7 @@ cimport numpy as np
 cimport cython
 
 from .cy_my_types cimport image_t
-from .interpolation cimport interpolate, tricub_interpolate, tricubicInterpolate
+from .interpolation cimport interpolate, tricub_interpolate, tricubicInterpolate, lanczos3
 
 from libc.math cimport floor, ceil, sqrt, fabs, round
 from cython.parallel import prange
@@ -57,8 +57,13 @@ cdef image_t coord_transform(image_t[:, :, :] volume, double[:, :] M, int x, int
             return volume[<int>round(nz), <int>round(ny), <int>round(nx)]
         elif minterpol == 1:
             return <image_t>interpolate(volume, nx, ny, nz)
-        else:
+        elif minterpol == 2:
             v = tricubicInterpolate(volume, nx, ny, nz)
+            if (v < cval):
+                v = cval
+            return <image_t>v
+        else:
+            v = lanczos3(volume, nx, ny, nz)
             if (v < cval):
                 v = cval
             return <image_t>v

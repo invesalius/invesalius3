@@ -624,7 +624,8 @@ class Slice(object):
             if orientation == 'AXIAL':
                 tmp_array = np.array(self.matrix[slice_number:slice_number + number_slices])
                 if np.any(self.q_orientation[1::]):
-                    transforms.apply_view_matrix_transform(self.matrix, self.spacing, M, slice_number, orientation, 2, self.matrix.min(), tmp_array)
+                    transforms.apply_view_matrix_transform(self.matrix, self.spacing, M, slice_number, orientation, 3, self.matrix.min(), tmp_array)
+                    print ">>>", tmp_array.min(), tmp_array.max()
                 if self._type_projection == const.PROJECTION_NORMAL:
                     n_image = tmp_array.squeeze()
                 else:
@@ -671,7 +672,7 @@ class Slice(object):
             elif orientation == 'CORONAL':
                 tmp_array = np.array(self.matrix[:, slice_number: slice_number + number_slices, :])
                 if np.any(self.q_orientation[1::]):
-                    transforms.apply_view_matrix_transform(self.matrix, self.spacing, M, slice_number, orientation, 2, self.matrix.min(), tmp_array)
+                    transforms.apply_view_matrix_transform(self.matrix, self.spacing, M, slice_number, orientation, 3, self.matrix.min(), tmp_array)
 
                 if self._type_projection == const.PROJECTION_NORMAL:
                     n_image = tmp_array.squeeze()
@@ -721,7 +722,7 @@ class Slice(object):
             elif orientation == 'SAGITAL':
                 tmp_array = np.array(self.matrix[:, :, slice_number: slice_number + number_slices])
                 if np.any(self.q_orientation[1::]):
-                    transforms.apply_view_matrix_transform(self.matrix, self.spacing, M, slice_number, orientation, 2, self.matrix.min(), tmp_array)
+                    transforms.apply_view_matrix_transform(self.matrix, self.spacing, M, slice_number, orientation, 3, self.matrix.min(), tmp_array)
 
                 if self._type_projection == const.PROJECTION_NORMAL:
                     n_image = tmp_array.squeeze()
