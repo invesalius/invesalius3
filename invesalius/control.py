@@ -345,19 +345,19 @@ class Controller():
         Publisher.sendMessage('End busy cursor')
 
     def CloseProject(self):
-        proj = prj.Project()
-        proj.Close()
-
         Publisher.sendMessage('Set slice interaction style', const.STATE_DEFAULT)
         Publisher.sendMessage('Hide content panel')
         Publisher.sendMessage('Close project data')
-    
+
         if self.img_type == 1:
             Publisher.sendMessage('Show import panel in frame')
 
         if self.img_type == 2:
             Publisher.sendMessage('Show import bitmap panel in frame')
 
+
+        proj = prj.Project()
+        proj.Close()
 
         session = ses.Session()
         session.CloseProject()
