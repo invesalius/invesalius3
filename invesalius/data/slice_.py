@@ -1424,7 +1424,7 @@ class Slice(object):
         T1 = transformations.translation_matrix((cz, cy, cx))
         M = transformations.concatenate_matrices(T1, R.T, T0)
 
-        transforms.apply_view_matrix_transform(mcopy, self.spacing, M, 0, 'AXIAL', 2, mcopy.min(), self.matrix)
+        transforms.apply_view_matrix_transform(mcopy, self.spacing, M, 0, 'AXIAL', 3, mcopy.min(), self.matrix)
 
         del mcopy
         os.remove(temp_file)
