@@ -7,6 +7,9 @@ cimport cython
 from libc.math cimport floor, ceil, sqrt, fabs, round, sin, M_PI
 from cython.parallel import prange
 
+DEF LANCZOS_A = 5
+DEF SIZE_LANCZOS_TMP = LANCZOS_A * 2 - 1
+
 cdef double[64][64] temp = [
     [ 1,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
     [ 0,  0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
@@ -77,6 +80,12 @@ cdef double[64][64] temp = [
 @cython.boundscheck(False) # turn of bounds-checking for entire function
 @cython.cdivision(True)
 @cython.wraparound(False)
+cdef double nearest_neighbour_interp(image_t[:, :, :] V, double x, double y, double z) nogil:
+    return V[<int>round(z), <int>round(y), <int>round(x)]
+
+@cython.boundscheck(False) # turn of bounds-checking for entire function
+@cython.cdivision(True)
+@cython.wraparound(False)
 cdef double interpolate(image_t[:, :, :] V, double x, double y, double z) nogil:
     cdef double xd, yd, zd
     cdef double c00, c10, c01, c11
@@ -123,20 +132,20 @@ cdef double interpolate(image_t[:, :, :] V, double x, double y, double z) nogil:
 @cython.boundscheck(False) # turn of bounds-checking for entire function
 @cython.cdivision(True)
 @cython.wraparound(False)
-cdef double lanczos3_L(double x, int a) nogil:
+cdef inline double lanczos3_L(double x, int a) nogil:
     if x == 0:
         return 1.0
     elif -a <= x < a:
         return (a * sin(M_PI * x) * sin(M_PI * (x / a)))/(M_PI**2 * x**2)
     else:
-        return 0
+        return 0.0
 
 
 @cython.boundscheck(False) # turn of bounds-checking for entire function
 @cython.cdivision(True)
 @cython.wraparound(False)
 cdef double lanczos3(image_t[:, :, :] V, double x, double y, double z) nogil:
-    cdef int a = 3
+    cdef int a = LANCZOS_A
 
     cdef int xd = <int>floor(x)
     cdef int yd = <int>floor(y)
@@ -155,8 +164,8 @@ cdef double lanczos3(image_t[:, :, :] V, double x, double y, double z) nogil:
     cdef double ly = 0.0
     cdef double lz = 0.0
 
-    cdef double[5][5] temp_x
-    cdef double[5] temp_y
+    cdef double[SIZE_LANCZOS_TMP][SIZE_LANCZOS_TMP] temp_x
+    cdef double[SIZE_LANCZOS_TMP] temp_y
 
     cdef int i, j, k
     cdef int m, n, o
@@ -381,4 +390,3 @@ def tricub_interpolate2_py(image_t[:, :, :] V, double x, double y, double z):
 
 def trilin_interpolate_py(image_t[:, :, :] V, double x, double y, double z):
     return interpolate(V, x, y, z)
-
