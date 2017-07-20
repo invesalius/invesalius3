@@ -983,8 +983,7 @@ class Slice(object):
             self.interp_method = interp_method
             for buffer_ in self.buffer_slices.values():
                 buffer_.discard_buffer()
-        Publisher.sendMessage('Reload actual slice')
-
+            Publisher.sendMessage('Reload actual slice')
 
     def UpdateWindowLevelBackground(self, pubsub_evt):
         window, level = pubsub_evt.data

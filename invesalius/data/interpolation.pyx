@@ -7,7 +7,7 @@ cimport cython
 from libc.math cimport floor, ceil, sqrt, fabs, round, sin, M_PI
 from cython.parallel import prange
 
-DEF LANCZOS_A = 5
+DEF LANCZOS_A = 4
 DEF SIZE_LANCZOS_TMP = LANCZOS_A * 2 - 1
 
 cdef double[64][64] temp = [
