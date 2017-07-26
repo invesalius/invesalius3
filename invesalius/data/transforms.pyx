@@ -3,11 +3,12 @@ cimport numpy as np
 cimport cython
 
 from .cy_my_types cimport image_t
-from .interpolation cimport interpolate, tricub_interpolate, tricubicInterpolate
+from .interpolation cimport interpolate, tricub_interpolate, tricubicInterpolate, lanczos3, nearest_neighbour_interp
 
 from libc.math cimport floor, ceil, sqrt, fabs, round
 from cython.parallel import prange
 
+ctypedef double (*interp_function)(image_t[:, :, :], double, double, double) nogil
 
 @cython.boundscheck(False) # turn of bounds-checking for entire function
 @cython.cdivision(True)
@@ -25,7 +26,7 @@ cdef void mul_mat4_vec4(double[:, :] M,
 @cython.boundscheck(False) # turn of bounds-checking for entire function
 @cython.cdivision(True)
 @cython.wraparound(False)
-cdef image_t coord_transform(image_t[:, :, :] volume, double[:, :] M, int x, int y, int z, double sx, double sy, double sz, short minterpol, image_t cval) nogil:
+cdef image_t coord_transform(image_t[:, :, :] volume, double[:, :] M, int x, int y, int z, double sx, double sy, double sz, interp_function f_interp, image_t cval) nogil:
 
     cdef double coord[4]
     coord[0] = z*sz
@@ -53,15 +54,21 @@ cdef image_t coord_transform(image_t[:, :, :] volume, double[:, :] M, int x, int
     cdef double v
 
     if 0 <= nz <= (dz-1) and 0 <= ny <= (dy-1) and 0 <= nx <= (dx-1):
-        if minterpol == 0:
-            return volume[<int>round(nz), <int>round(ny), <int>round(nx)]
-        elif minterpol == 1:
-            return <image_t>interpolate(volume, nx, ny, nz)
-        else:
-            v = tricubicInterpolate(volume, nx, ny, nz)
-            if (v < cval):
-                v = cval
-            return <image_t>v
+        return <image_t>f_interp(volume, nx, ny, nz)
+        #  if minterpol == 0:
+            #  return <image_t>nearest_neighbour_interp(volume, nx, ny, nz)
+        #  elif minterpol == 1:
+            #  return <image_t>interpolate(volume, nx, ny, nz)
+        #  elif minterpol == 2:
+            #  v = tricubicInterpolate(volume, nx, ny, nz)
+            #  if (v < cval):
+                #  v = cval
+            #  return <image_t>v
+        #  else:
+            #  v = lanczos3(volume, nx, ny, nz)
+            #  if (v < cval):
+                #  v = cval
+            #  return <image_t>v
     else:
         return cval
 
@@ -95,23 +102,34 @@ def apply_view_matrix_transform(image_t[:, :, :] volume,
     sy = spacing[1]
     sz = spacing[2]
 
+    cdef interp_function f_interp
+
+    if minterpol == 0:
+        f_interp = nearest_neighbour_interp
+    elif minterpol == 1:
+        f_interp = interpolate
+    elif minterpol == 2:
+        f_interp = tricubicInterpolate
+    else:
+        f_interp = lanczos3
+
     if orientation == 'AXIAL':
         for z in xrange(n, n+odz):
             for y in prange(dy, nogil=True):
                 for x in xrange(dx):
-                    out[count, y, x] = coord_transform(volume, M, x, y, z, sx, sy, sz, minterpol, cval)
+                    out[count, y, x] = coord_transform(volume, M, x, y, z, sx, sy, sz, f_interp, cval)
             count += 1
 
     elif orientation == 'CORONAL':
         for y in xrange(n, n+ody):
             for z in prange(dz, nogil=True):
                 for x in xrange(dx):
-                    out[z, count, x] = coord_transform(volume, M, x, y, z, sx, sy, sz, minterpol, cval)
+                    out[z, count, x] = coord_transform(volume, M, x, y, z, sx, sy, sz, f_interp, cval)
             count += 1
 
     elif orientation == 'SAGITAL':
         for x in xrange(n, n+odx):
             for z in prange(dz, nogil=True):
                 for y in xrange(dy):
-                    out[z, y, count] = coord_transform(volume, M, x, y, z, sx, sy, sz, minterpol,cval)
+                    out[z, y, count] = coord_transform(volume, M, x, y, z, sx, sy, sz, f_interp, cval)
             count += 1

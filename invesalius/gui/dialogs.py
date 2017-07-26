@@ -1883,26 +1883,38 @@ class ReorientImageDialog(wx.Dialog):
         self._bind_events_wx()
 
     def _init_gui(self):
+        interp_methods_choices = ((_("Nearest Neighbour"), 0),
+                                  (_("Trilinear"), 1),
+                                  (_("Tricubic"), 2),
+                                  (_("Lanczos"), 3))
+        self.interp_method = wx.ComboBox(self, -1, choices=[], style=wx.CB_READONLY)
+        for txt, im_code in interp_methods_choices:
+            self.interp_method.Append(txt, im_code)
+        self.interp_method.SetValue(interp_methods_choices[2][0])
+
         self.anglex = wx.TextCtrl(self, -1, "0.0", style=wx.TE_READONLY)
         self.angley = wx.TextCtrl(self, -1, "0.0", style=wx.TE_READONLY)
         self.anglez = wx.TextCtrl(self, -1, "0.0", style=wx.TE_READONLY)
 
         self.btnapply = wx.Button(self, -1, _("Apply"))
 
-        sizer = wx.BoxSizer(wx.HORIZONTAL)
+        sizer = wx.BoxSizer(wx.VERTICAL)
 
-        sizer.Add(wx.StaticText(self, -1, _("Angle X")), 0, wx.EXPAND | wx.ALIGN_CENTER_VERTICAL | wx.ALL, 5)
-        sizer.Add(self.anglex, 0, wx.EXPAND | wx.ALL, 5)
-        sizer.AddSpacer(5)
+        angles_sizer = wx.FlexGridSizer(3, 2, 5, 5)
+        angles_sizer.AddMany([
+            (wx.StaticText(self, -1, _("Angle X")), 1, wx.ALIGN_CENTER_VERTICAL | wx.ALL, 5),
+            (self.anglex, 0, wx.EXPAND | wx.ALL, 5),
 
-        sizer.Add(wx.StaticText(self, -1, _("Angle Y")), 0, wx.EXPAND | wx.ALIGN_CENTER_VERTICAL | wx.ALL, 5)
-        sizer.Add(self.angley, 0, wx.EXPAND | wx.ALL, 5)
-        sizer.AddSpacer(5)
+            (wx.StaticText(self, -1, _("Angle Y")), 1, wx.ALIGN_CENTER_VERTICAL | wx.ALL, 5),
+            (self.angley, 0, wx.EXPAND | wx.ALL, 5),
 
-        sizer.Add(wx.StaticText(self, -1, _("Angle Z")), 0, wx.EXPAND | wx.ALIGN_CENTER_VERTICAL | wx.ALL, 5)
-        sizer.Add(self.anglez, 0, wx.EXPAND | wx.ALL, 5)
-        sizer.AddSpacer(5)
+            (wx.StaticText(self, -1, _("Angle Z")), 1, wx.ALIGN_CENTER_VERTICAL | wx.ALL, 5),
+            (self.anglez, 0, wx.EXPAND | wx.ALL, 5),
+        ])
 
+        sizer.Add(wx.StaticText(self, -1, _("Interpolation method:")), 0, wx.EXPAND | wx.TOP | wx.LEFT | wx.RIGHT, 5)
+        sizer.Add(self.interp_method, 0, wx.EXPAND | wx.ALL, 5)
+        sizer.Add(angles_sizer, 0, wx.EXPAND | wx.ALL, 5)
         sizer.Add(self.btnapply, 0, wx.EXPAND | wx.ALL, 5)
         sizer.AddSpacer(5)
 
@@ -1914,6 +1926,7 @@ class ReorientImageDialog(wx.Dialog):
         Publisher.subscribe(self._close_dialog, 'Close reorient dialog')
 
     def _bind_events_wx(self):
+        self.interp_method.Bind(wx.EVT_COMBOBOX, self.OnSelect)
         self.btnapply.Bind(wx.EVT_BUTTON, self.apply_reorientation)
         self.Bind(wx.EVT_CLOSE, self.OnClose)
 
@@ -1935,6 +1948,9 @@ class ReorientImageDialog(wx.Dialog):
         Publisher.sendMessage('Enable style', const.STATE_DEFAULT)
         self.Destroy()
 
+    def OnSelect(self, evt):
+        im_code = self.interp_method.GetClientData(self.interp_method.GetSelection())
+        Publisher.sendMessage('Set interpolation method', im_code)
 
 
 class ImportBitmapParameters(wx.Dialog):
