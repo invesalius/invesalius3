@@ -31,9 +31,12 @@ import codecs
 
 #import wx.lib.pubsub as ps
 from wx.lib.pubsub import pub as Publisher
+import wx
 
 from invesalius.utils import Singleton, debug
 from random import randint
+
+ENCODE=wx.GetDefaultPyEncoding()
 
 class Session(object):
     # Only one session will be initialized per time. Therefore, we use
@@ -59,8 +62,8 @@ class Session(object):
         # const.MODE_ODONTOLOGY
 
         # InVesalius default projects' directory
-        homedir = self.homedir = os.path.expanduser('~')
-        tempdir = os.path.join(homedir, ".invesalius", "temp")
+        homedir = self.homedir = os.path.expanduser('~').decode(ENCODE)
+        tempdir = os.path.join(homedir, u".invesalius", u"temp")
         if not os.path.isdir(tempdir):
             os.makedirs(tempdir)
         self.tempdir = tempdir
@@ -160,6 +163,10 @@ class Session(object):
     def WriteSessionFile(self):
         config = ConfigParser.RawConfigParser()
 
+        print ">>>", type(self.homedir), self.homedir, repr(self.homedir)
+        print ">>>", type(self.tempdir), self.tempdir, repr(self.tempdir)
+        print ">>>", type(self.language), self.language, repr(self.language)
+
         config.add_section('session')
         config.set('session', 'mode', self.mode)
         config.set('session', 'status', self.project_status)
@@ -178,11 +185,15 @@ class Session(object):
         config.set('paths','tempdir',self.tempdir)
         config.set('paths','last_dicom_folder',self.last_dicom_folder)
 
+        print config.items('session')
+        print config.items('project')
+        print config.items('paths')
+
         path = os.path.join(self.homedir ,
                             '.invesalius', 'config.cfg')
 
         if sys.platform == 'win32':
-            configfile = codecs.open(path, 'wb', 'utf-8')
+            configfile = codecs.open(path, 'wb', 'utf8')
         else:
             configfile = open(path, 'wb')
 
@@ -253,10 +264,10 @@ class Session(object):
 
     def ReadSession(self):
         config = ConfigParser.ConfigParser()
-        home_path = os.path.expanduser('~')
+        home_path = os.path.expanduser('~').decode(ENCODE)
         path = os.path.join(home_path ,'.invesalius', 'config.cfg')
         try:
-            config.read(path)
+            config.readfp(codecs.open(path, 'rb', 'utf8'))
             self.mode = config.get('session', 'mode')
             # Do not reading project status from the config file, since there
             # isn't a recover sessession tool in InVesalius
@@ -267,7 +278,7 @@ class Session(object):
             self.homedir = config.get('paths','homedir')
             self.tempdir = config.get('paths','tempdir')
             self.last_dicom_folder = config.get('paths','last_dicom_folder') 
-            
+
             #if not(sys.platform == 'win32'):
             #    self.last_dicom_folder = self.last_dicom_folder.decode('utf-8')
 
@@ -278,9 +289,13 @@ class Session(object):
             self.random_id = config.get('session','random_id')
             return True
 
+        except IOError:
+            return False
+
         except(ConfigParser.NoSectionError, ConfigParser.MissingSectionHeaderError, 
                                                         ConfigParser.ParsingError):
 
+            print 'Error 1'
             if (self.RecoveryConfigFile()):
                 self.ReadSession()
                 return True
@@ -288,10 +303,15 @@ class Session(object):
                 return False
 
         except(ConfigParser.NoOptionError):
+            print 'Error 2'
             #Added to fix new version compatibility
             self.surface_interpolation = 0
             self.slice_interpolation = 0
             self.rendering = 0
             self.random_id = randint(0,pow(10,16))  
-            self.WriteSessionFile()
+            try:
+                self.WriteSessionFile()
+            except AttributeError:
+                print 'Error 3'
+                return False
             return True

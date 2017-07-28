@@ -100,6 +100,8 @@ class SplashScreen(wx.SplashScreen):
         # Splash screen image will depend on currently language
         lang = False
 
+        self.locale = wx.Locale(wx.LANGUAGE_DEFAULT)
+
         # Language information is available in session configuration
         # file. First we need to check if this file exist, if now, it
         # should be created
@@ -155,6 +157,9 @@ class SplashScreen(wx.SplashScreen):
         # Only after language was defined, splash screen will be
         # shown
         if lang:
+            print "LANG", lang, _, wx.Locale(), wx.GetLocale()
+            import locale
+            locale.setlocale(locale.LC_ALL, '')
             # For pt_BR, splash_pt.png should be used
             if (lang.startswith('pt')):
                 icon_file = "splash_pt.png"
@@ -166,7 +171,6 @@ class SplashScreen(wx.SplashScreen):
                 abs_file_path = os.path.abspath(".." + os.sep)
                 path = abs_file_path
             
-		path = os.path.join(path, "icons", icon_file)
             else:
 
                 path = os.path.join(".","icons", icon_file)
