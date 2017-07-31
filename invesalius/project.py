@@ -197,6 +197,8 @@ class Project(object):
         filename_tmp = os.path.join(dir_temp, 'matrix.dat')
         filelist = {}
 
+        print filename, dir_, type(filename), type(dir_)
+
         project = {
                    # Format info
                    "format_version": 1,
@@ -272,7 +274,7 @@ class Project(object):
         if not const.VTK_WARNING:
             log_path = os.path.join(const.USER_LOG_DIR, 'vtkoutput.txt')
             fow = vtk.vtkFileOutputWindow()
-            fow.SetFileName(log_path)
+            fow.SetFileName(log_path.encode(const.FS_ENCODE))
             ow = vtk.vtkOutputWindow()
             ow.SetInstance(fow)
             
@@ -331,7 +333,7 @@ def Compress(folder, filename, filelist):
     #os.chdir(tmpdir)
     #file_list = glob.glob(os.path.join(tmpdir_,"*"))
     tar_filename = tmpdir_ + ".inv3"
-    tar = tarfile.open(filename.encode(wx.GetDefaultPyEncoding()), "w:gz")
+    tar = tarfile.open(filename, "w:gz")
     for name in filelist:
         tar.add(name, arcname=os.path.join(tmpdir_, filelist[name]))
     tar.close()

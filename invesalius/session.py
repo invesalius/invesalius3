@@ -54,6 +54,8 @@ USER_PRESET_DIR = os.path.join(USER_INV_DIR, u'presets')
 USER_LOG_DIR = os.path.join(USER_INV_DIR, u'logs')
 USER_INV_CFG_PATH = os.path.join(USER_INV_DIR, 'config.cfg')
 
+SESSION_ENCODING = 'utf8'
+
 
 class Session(object):
     # Only one session will be initialized per time. Therefore, we use
@@ -209,7 +211,7 @@ class Session(object):
         path = os.path.join(self.homedir ,
                             '.invesalius', 'config.cfg')
 
-        configfile = codecs.open(path, 'wb', 'utf8')
+        configfile = codecs.open(path, 'wb', SESSION_ENCODING)
         config.write(configfile)
         configfile.close()
 
@@ -253,7 +255,9 @@ class Session(object):
         config = ConfigParser.ConfigParser()
         path = os.path.join(USER_INV_DIR, 'config.cfg')
         try:
-            config.read(path)
+            f = codecs.open(path, 'rb', SESSION_ENCODING)
+            config.readfp(f)
+            f.close()
             self.language = config.get('session','language')
             return self.language
         except (ConfigParser.NoSectionError,
@@ -265,7 +269,9 @@ class Session(object):
         config = ConfigParser.ConfigParser()
         path = os.path.join(USER_INV_DIR, 'config.cfg')
         try:
-            config.read(path)
+            f = codecs.open(path, 'rb', SESSION_ENCODING)
+            config.readfp(f)
+            f.close()
             self.random_id = config.get('session','random_id')
             return self.random_id
         except (ConfigParser.NoSectionError,
@@ -277,7 +283,9 @@ class Session(object):
         config = ConfigParser.ConfigParser()
         path = USER_INV_CFG_PATH
         try:
-            config.readfp(codecs.open(path, 'rb', 'utf8'))
+            f = codecs.open(path, 'rb', SESSION_ENCODING)
+            config.readfp(f)
+            f.close()
             self.mode = config.get('session', 'mode')
             # Do not reading project status from the config file, since there
             # isn't a recover sessession tool in InVesalius
