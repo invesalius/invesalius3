@@ -36,7 +36,13 @@ import wx
 from invesalius.utils import Singleton, debug
 from random import randint
 
-ENCODE=wx.GetDefaultPyEncoding()
+FS_ENCODE = sys.getfilesystemencoding()
+
+USER_DIR = os.path.expanduser('~').decode(FS_ENCODE)
+USER_INV_DIR = os.path.join(USER_DIR, u'.invesalius')
+USER_PRESET_DIR = os.path.join(USER_INV_DIR, u'presets')
+USER_LOG_DIR = os.path.join(USER_INV_DIR, u'logs')
+USER_INV_CFG_PATH = os.path.join(USER_INV_DIR, 'config.cfg')
 
 class Session(object):
     # Only one session will be initialized per time. Therefore, we use
@@ -62,7 +68,7 @@ class Session(object):
         # const.MODE_ODONTOLOGY
 
         # InVesalius default projects' directory
-        homedir = self.homedir = os.path.expanduser('~').decode(ENCODE)
+        homedir = self.homedir = USER_DIR
         tempdir = os.path.join(homedir, u".invesalius", u"temp")
         if not os.path.isdir(tempdir):
             os.makedirs(tempdir)
@@ -75,7 +81,7 @@ class Session(object):
         #print self.random_id
 
         # Recent projects list
-        self.recent_projects = [(const.SAMPLE_DIR, "Cranium.inv3")]
+        self.recent_projects = [(const.SAMPLE_DIR, u"Cranium.inv3")]
         self.last_dicom_folder = ''
         self.surface_interpolation = 1
         self.slice_interpolation = 0
@@ -88,18 +94,18 @@ class Session(object):
 
     def SaveConfigFileBackup(self):
         path = os.path.join(self.homedir ,
-                            '.invesalius', 'config.cfg')
+                            u'.invesalius', u'config.cfg')
         path_dst = os.path.join(self.homedir ,
-                            '.invesalius', 'config.backup')
+                            u'.invesalius', u'config.backup')
         shutil.copy(path, path_dst)
 
     def RecoveryConfigFile(self):
         homedir = self.homedir = os.path.expanduser('~')
         try:
             path = os.path.join(self.homedir ,
-                            '.invesalius', 'config.backup')
+                            u'.invesalius', u'config.backup')
             path_dst = os.path.join(self.homedir ,
-                        '.invesalius', 'config.cfg')
+                        u'.invesalius', u'config.cfg')
             shutil.copy(path, path_dst)
             return True
         except(IOError):
@@ -192,11 +198,7 @@ class Session(object):
         path = os.path.join(self.homedir ,
                             '.invesalius', 'config.cfg')
 
-        if sys.platform == 'win32':
-            configfile = codecs.open(path, 'wb', 'utf8')
-        else:
-            configfile = open(path, 'wb')
-
+        configfile = codecs.open(path, 'wb', 'utf8')
         config.write(configfile)
         configfile.close()
 
@@ -238,8 +240,7 @@ class Session(object):
 
     def ReadLanguage(self):
         config = ConfigParser.ConfigParser()
-        home_path = os.path.expanduser('~')
-        path = os.path.join(home_path ,'.invesalius', 'config.cfg')
+        path = os.path.join(USER_INV_DIR, 'config.cfg')
         try:
             config.read(path)
             self.language = config.get('session','language')
@@ -251,8 +252,7 @@ class Session(object):
 
     def ReadRandomId(self):
         config = ConfigParser.ConfigParser()
-        home_path = os.path.expanduser('~')
-        path = os.path.join(home_path ,'.invesalius', 'config.cfg')
+        path = os.path.join(USER_INV_DIR, 'config.cfg')
         try:
             config.read(path)
             self.random_id = config.get('session','random_id')
@@ -264,8 +264,7 @@ class Session(object):
 
     def ReadSession(self):
         config = ConfigParser.ConfigParser()
-        home_path = os.path.expanduser('~').decode(ENCODE)
-        path = os.path.join(home_path ,'.invesalius', 'config.cfg')
+        path = USER_INV_CFG_PATH
         try:
             config.readfp(codecs.open(path, 'rb', 'utf8'))
             self.mode = config.get('session', 'mode')

@@ -341,7 +341,7 @@ class ProgressDicomReader:
     def GetDicomGroups(self, path, recursive):
 
         if not const.VTK_WARNING:
-            log_path = os.path.join(const.LOG_FOLDER, 'vtkoutput.txt')
+            log_path = os.path.join(const.USER_LOG_DIR, 'vtkoutput.txt')
             fow = vtk.vtkFileOutputWindow()
             fow.SetFileName(log_path)
             ow = vtk.vtkOutputWindow()

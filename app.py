@@ -54,6 +54,14 @@ import invesalius.i18n as i18n
 import invesalius.session as ses
 import invesalius.utils as utils
 
+
+FS_ENCODE = sys.getfilesystemencoding()
+
+USER_DIR = os.path.expanduser('~').decode(FS_ENCODE)
+USER_INV_DIR = os.path.join(USER_DIR, u'.invesalius')
+USER_PRESET_DIR = os.path.join(USER_INV_DIR, u'presets')
+USER_LOG_DIR = os.path.join(USER_INV_DIR, u'logs')
+
 # ------------------------------------------------------------------
 
 
@@ -308,22 +316,16 @@ if __name__ == '__main__':
         os.chdir(path)
 
     # Create raycasting presets' folder, if it doens't exist
-    dirpath = os.path.join(os.path.expanduser('~'),
-                           ".invesalius",
-                           "presets")
-    if not os.path.isdir(dirpath):
-        os.makedirs(dirpath)
+    if not os.path.isdir(USER_PRESET_DIR):
+        os.makedirs(USER_PRESET_DIR)
 
     # Create logs' folder, if it doesn't exist
-    dirpath = os.path.join(os.path.expanduser('~'),
-                           ".invesalius",
-                           "logs")
-    if not os.path.isdir(dirpath):
-        os.makedirs(dirpath)
+    if not os.path.isdir(USER_LOG_DIR):
+        os.makedirs(USER_LOG_DIR)
 
     if hasattr(sys,"frozen") and sys.frozen == "windows_exe":
         # Set system standard error output to file
-        path = os.path.join(dirpath, "stderr.log")
+        path = os.path.join(USER_LOG_DIR, u"stderr.log")
         sys.stderr = open(path, "w")
 
     # Add current directory to PYTHONPATH, so other classes can
