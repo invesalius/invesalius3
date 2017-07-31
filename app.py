@@ -170,6 +170,7 @@ class SplashScreen(wx.SplashScreen):
                                         or sys.frozen == "console_exe"):
                 abs_file_path = os.path.abspath(".." + os.sep)
                 path = abs_file_path
+                path = os.path.join(path, 'icons', icon_file)
             
             else:
 
