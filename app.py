@@ -54,10 +54,19 @@ import invesalius.i18n as i18n
 import invesalius.session as ses
 import invesalius.utils as utils
 
-
 FS_ENCODE = sys.getfilesystemencoding()
 
-USER_DIR = os.path.expanduser('~').decode(FS_ENCODE)
+if sys.platform == 'win32':
+    from invesalius.expanduser import expand_user
+    try:
+        USER_DIR = expand_user()
+    except:
+        USER_DIR = os.path.expanduser('~').decode(FS_ENCODE)
+else:
+    USER_DIR = os.path.expanduser('~').decode(FS_ENCODE)
+
+print USER_DIR
+
 USER_INV_DIR = os.path.join(USER_DIR, u'.invesalius')
 USER_PRESET_DIR = os.path.join(USER_INV_DIR, u'presets')
 USER_LOG_DIR = os.path.join(USER_INV_DIR, u'logs')
