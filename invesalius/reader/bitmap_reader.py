@@ -127,10 +127,7 @@ class LoadBitmap:
 
     def __init__(self, bmp_file, filepath):
         self.bmp_file = bmp_file
-        if sys.platform == 'win32':
-            self.filepath = filepath.encode(utils.get_system_encoding())
-        else:
-            self.filepath = filepath
+        self.filepath = filepath
         
         self.run()
     
@@ -296,7 +293,7 @@ def VtkRead(filepath, t):
     if not const.VTK_WARNING:
         log_path = os.path.join(const.USER_LOG_DIR, 'vtkoutput.txt')
         fow = vtk.vtkFileOutputWindow()
-        fow.SetFileName(log_path)
+        fow.SetFileName(log_path.encode(const.FS_ENCODE))
         ow = vtk.vtkOutputWindow()
         ow.SetInstance(fow)
 
@@ -318,7 +315,7 @@ def VtkRead(filepath, t):
         return False
 
     reader.AddObserver("ErrorEvent", VtkErrorToPy)
-    reader.SetFileName(filepath)
+    reader.SetFileName(filepath.encode(const.FS_ENCODE))
     reader.Update()
     
     if no_error:
@@ -368,7 +365,6 @@ def ReadBitmap(filepath):
            
 
 def GetPixelSpacingFromInfoFile(filepath):
-    
     fi = open(filepath, 'r')
     lines = fi.readlines()
     measure_scale = 'mm'
