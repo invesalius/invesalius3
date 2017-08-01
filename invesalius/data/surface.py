@@ -923,7 +923,7 @@ class SurfaceManager():
                 normals.Update()
                 polydata = normals.GetOutput()
 
-            filename = filename.encode(wx.GetDefaultPyEncoding())
+            filename = filename.encode(const.FS_ENCODE)
             writer.SetFileName(filename)
             writer.SetInputData(polydata)
             writer.Write()

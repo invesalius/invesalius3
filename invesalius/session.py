@@ -47,8 +47,6 @@ if sys.platform == 'win32':
 else:
     USER_DIR = os.path.expanduser('~').decode(FS_ENCODE)
 
-print USER_DIR
-
 USER_INV_DIR = os.path.join(USER_DIR, u'.invesalius')
 USER_PRESET_DIR = os.path.join(USER_INV_DIR, u'presets')
 USER_LOG_DIR = os.path.join(USER_INV_DIR, u'logs')
@@ -91,7 +89,6 @@ class Session(object):
         self.language = "" # "pt_BR", "es"
 
         self.random_id = randint(0,pow(10,16))
-        #print self.random_id
 
         # Recent projects list
         self.recent_projects = [(const.SAMPLE_DIR, u"Cranium.inv3")]
@@ -182,10 +179,6 @@ class Session(object):
     def WriteSessionFile(self):
         config = ConfigParser.RawConfigParser()
 
-        print ">>>", type(self.homedir), self.homedir, repr(self.homedir)
-        print ">>>", type(self.tempdir), self.tempdir, repr(self.tempdir)
-        print ">>>", type(self.language), self.language, repr(self.language)
-
         config.add_section('session')
         config.set('session', 'mode', self.mode)
         config.set('session', 'status', self.project_status)
@@ -203,10 +196,6 @@ class Session(object):
         config.set('paths','homedir',self.homedir)
         config.set('paths','tempdir',self.tempdir)
         config.set('paths','last_dicom_folder',self.last_dicom_folder)
-
-        print config.items('session')
-        print config.items('project')
-        print config.items('paths')
 
         path = os.path.join(self.homedir ,
                             '.invesalius', 'config.cfg')
@@ -317,7 +306,6 @@ class Session(object):
         except(ConfigParser.NoSectionError, ConfigParser.MissingSectionHeaderError, 
                                                         ConfigParser.ParsingError):
 
-            print 'Error 1'
             if (self.RecoveryConfigFile()):
                 self.ReadSession()
                 return True
@@ -325,7 +313,6 @@ class Session(object):
                 return False
 
         except(ConfigParser.NoOptionError):
-            print 'Error 2'
             #Added to fix new version compatibility
             self.surface_interpolation = 0
             self.slice_interpolation = 0
@@ -334,6 +321,5 @@ class Session(object):
             try:
                 self.WriteSessionFile()
             except AttributeError:
-                print 'Error 3'
                 return False
             return True

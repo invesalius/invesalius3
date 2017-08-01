@@ -1321,9 +1321,10 @@ class Viewer(wx.Panel):
         del self.slice_data
         self.slice_data = None
 
-        self.canvas.draw_list = []
-        self.canvas.remove_from_renderer()
-        self.canvas = None
+        if self.canvas:
+            self.canvas.draw_list = []
+            self.canvas.remove_from_renderer()
+            self.canvas = None
 
         self.orientation_texts = []
 

@@ -65,8 +65,6 @@ if sys.platform == 'win32':
 else:
     USER_DIR = os.path.expanduser('~').decode(FS_ENCODE)
 
-print USER_DIR
-
 USER_INV_DIR = os.path.join(USER_DIR, u'.invesalius')
 USER_PRESET_DIR = os.path.join(USER_INV_DIR, u'presets')
 USER_LOG_DIR = os.path.join(USER_INV_DIR, u'logs')
