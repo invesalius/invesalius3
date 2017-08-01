@@ -260,6 +260,8 @@ class Session(object):
             f.close()
             self.language = config.get('session','language')
             return self.language
+        except IOError:
+            return False
         except (ConfigParser.NoSectionError,
                   ConfigParser.NoOptionError,
                   ConfigParser.MissingSectionHeaderError):
@@ -274,6 +276,8 @@ class Session(object):
             f.close()
             self.random_id = config.get('session','random_id')
             return self.random_id
+        except IOError:
+            return False
         except (ConfigParser.NoSectionError,
                   ConfigParser.NoOptionError,
                   ConfigParser.MissingSectionHeaderError):
