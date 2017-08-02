@@ -38,6 +38,15 @@ import invesalius.utils as utils
 
 import plistlib
 
+if sys.platform == 'win32':
+    try:
+        import win32api
+        _has_win32api = True
+    except ImportError:
+        _has_win32api = False
+else:
+    _has_win32api = False
+
 def ReadDicomGroup(dir_):
 
     patient_group = GetDicomGroups(dir_)
@@ -88,18 +97,18 @@ class LoadDicom:
     
     def __init__(self, grouper, filepath):
         self.grouper = grouper
-        if sys.platform == 'win32':
-            self.filepath = filepath.encode(utils.get_system_encoding())
-        else:
-            self.filepath = filepath
+        self.filepath = filepath
         
         self.run()
     
     def run(self):
-
         grouper = self.grouper
         reader = gdcm.ImageReader()
-        reader.SetFileName(self.filepath)
+        if _has_win32api:
+            reader.SetFileName(win32api.GetShortPathName(self.filepath).encode(const.FS_ENCODE))
+        else:
+            reader.SetFileName(self.filepath)
+
         if (reader.Read()):
             file = reader.GetFile()
              
@@ -180,7 +189,11 @@ class LoadDicom:
 
             # -------------- To Create DICOM Thumbnail -----------
             rvtk = vtkgdcm.vtkGDCMImageReader()
-            rvtk.SetFileName(self.filepath)
+
+            if _has_win32api:
+                rvtk.SetFileName(win32api.GetShortPathName(self.filepath))
+            else:
+                rvtk.SetFileName(self.filepath)
             rvtk.Update()
             
             try:
