@@ -422,10 +422,10 @@ RAYCASTING_FILES = {_("Airways"): "Airways.plist",
 #                    os.path.isfile(os.path.join(folder,filename))]
 
 
-USER_RAYCASTING_PRESETS_DIRECTORY = folder
+USER_RAYCASTING_PRESETS_DIRECTORY = os.path.join(USER_PRESET_DIR, u'raycasting')
 RAYCASTING_TYPES = [_(filename.split(".")[0]) for filename in
-                     os.listdir(folder) if
-                     os.path.isfile(os.path.join(folder,filename))]
+                     os.listdir(USER_RAYCASTING_PRESETS_DIRECTORY) if
+                     os.path.isfile(os.path.join(USER_RAYCASTING_PRESETS_DIRECTORY, filename))]
 RAYCASTING_TYPES += RAYCASTING_FILES.keys()
 RAYCASTING_TYPES.append(_(' Off'))
 RAYCASTING_TYPES.sort()

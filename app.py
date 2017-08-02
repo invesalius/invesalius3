@@ -67,6 +67,7 @@ else:
 
 USER_INV_DIR = os.path.join(USER_DIR, u'.invesalius')
 USER_PRESET_DIR = os.path.join(USER_INV_DIR, u'presets')
+USER_RAYCASTING_PRESETS_DIRECTORY = os.path.join(USER_PRESET_DIR, u'raycasting')
 USER_LOG_DIR = os.path.join(USER_INV_DIR, u'logs')
 
 # ------------------------------------------------------------------
@@ -323,8 +324,8 @@ if __name__ == '__main__':
         os.chdir(path)
 
     # Create raycasting presets' folder, if it doens't exist
-    if not os.path.isdir(USER_PRESET_DIR):
-        os.makedirs(USER_PRESET_DIR)
+    if not os.path.isdir(USER_RAYCASTING_PRESETS_DIRECTORY):
+        os.makedirs(USER_RAYCASTING_PRESETS_DIRECTORY)
 
     # Create logs' folder, if it doesn't exist
     if not os.path.isdir(USER_LOG_DIR):
