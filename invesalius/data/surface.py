@@ -21,12 +21,19 @@ import multiprocessing
 import os
 import plistlib
 import random
+import sys
 import tempfile
 import weakref
 
 import vtk
 import wx
 from wx.lib.pubsub import pub as Publisher
+
+if sys.platform == 'win32':
+    import win32api
+    _has_win32api = True
+else:
+    _has_win32api = False
 
 import invesalius.constants as const
 import invesalius.data.imagedata_utils as iu
@@ -263,7 +270,11 @@ class SurfaceManager():
             wx.MessageBox(_("File format not reconized by InVesalius"), _("Import surface error"))
             return
 
-        reader.SetFileName(filename)
+        if _has_win32api:
+            reader.SetFileName(win32api.GetShortPathName(filename))
+        else:
+            reader.SetFileName(filename.encode(const.FS_ENCODE))
+
         reader.Update()
         polydata = reader.GetOutput()
 
