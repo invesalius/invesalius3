@@ -30,8 +30,11 @@ import wx
 from wx.lib.pubsub import pub as Publisher
 
 if sys.platform == 'win32':
-    import win32api
-    _has_win32api = True
+    try:
+        import win32api
+        _has_win32api = True
+    except ImportError:
+        _has_win32api = False
 else:
     _has_win32api = False
 
@@ -880,11 +883,22 @@ class SurfaceManager():
 
     def OnExportSurface(self, pubsub_evt):
         filename, filetype = pubsub_evt.data
-        if (filetype == const.FILETYPE_STL) or\
-           (filetype == const.FILETYPE_VTP) or\
-           (filetype == const.FILETYPE_PLY) or\
-           (filetype == const.FILETYPE_STL_ASCII):
+        if filetype in (const.FILETYPE_STL,
+                        const.FILETYPE_VTP,
+                        const.FILETYPE_PLY,
+                        const.FILETYPE_STL_ASCII):
+            if _has_win32api:
+                utl.touch(filename)
+                win_filename = os.path.join(filename)
+                self._export_surface(win_filename.encode(const.FS_ENCODE), filetype)
+            else:
+                self._export_surface(filename, filetype)
 
+    def _export_surface(self, filename, filetype):
+        if filetype in (const.FILETYPE_STL,
+                        const.FILETYPE_VTP,
+                        const.FILETYPE_PLY,
+                        const.FILETYPE_STL_ASCII):
             # First we identify all surfaces that are selected
             # (if any)
             proj = prj.Project()

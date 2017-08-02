@@ -38,6 +38,15 @@ import invesalius.style as st
 import invesalius.utils as utils
 import invesalius.data.measures as measures
 
+if sys.platform == 'win32':
+    try:
+        import win32api
+        _has_win32api = True
+    except ImportError:
+        _has_win32api = False
+else:
+    _has_win32api = False
+
 PROP_MEASURE = 0.8
 
 class Viewer(wx.Panel):
@@ -769,6 +778,18 @@ class Viewer(wx.Panel):
 
     def OnExportSurface(self, pubsub_evt):
         filename, filetype = pubsub_evt.data
+        if filetype not in (const.FILETYPE_STL,
+                            const.FILETYPE_VTP,
+                            const.FILETYPE_PLY,
+                            const.FILETYPE_STL_ASCII):
+            if _has_win32api:
+                utils.touch(filename)
+                win_filename = os.path.join(filename)
+                self._export_surface(win_filename.encode(const.FS_ENCODE), filetype)
+            else:
+                self._export_surface(filename, filetype)
+
+    def _export_surface(self, filename, filetype):
         fileprefix = filename.split(".")[-2]
         renwin = self.interactor.GetRenderWindow()
 
