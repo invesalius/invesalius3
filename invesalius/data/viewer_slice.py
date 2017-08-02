@@ -21,6 +21,7 @@
 
 import collections
 import itertools
+import os
 import tempfile
 
 import numpy as np
@@ -1296,6 +1297,9 @@ class Viewer(wx.Panel):
                 writer.SetInputData(image)
                 writer.SetFileName(filename.encode(const.FS_ENCODE))
                 writer.Write()
+
+            if not os.path.exists(filename):
+                wx.MessageBox(_("InVesalius was not able to export this picture"), _("Export picture error"))
 
             for actor in view_prop_list:
                 self.slice_data.renderer.AddViewProp(actor)

@@ -20,6 +20,7 @@
 #    detalhes.
 #--------------------------------------------------------------------------
 
+import os
 import sys
 
 import numpy as np
@@ -345,11 +346,15 @@ class Viewer(wx.Panel):
                     writer = vtk.vtkPostScriptWriter()
                 elif (filetype == const.FILETYPE_TIF):
                     writer = vtk.vtkTIFFWriter()
-                    filename = "%s.tif"%filename.strip(".tif")
+                    filename = u"%s.tif"%filename.strip(".tif")
 
                 writer.SetInputData(image)
                 writer.SetFileName(filename.encode(const.FS_ENCODE))
                 writer.Write()
+
+            if not os.path.exists(filename):
+                wx.MessageBox(_("InVesalius was not able to export this picture"), _("Export picture error"))
+
         Publisher.sendMessage('End busy cursor')
 
     def OnCloseProject(self, pubsub_evt):
