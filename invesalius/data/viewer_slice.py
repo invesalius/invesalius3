@@ -1294,7 +1294,7 @@ class Viewer(wx.Panel):
                     filename = "%s.tif"%filename.strip(".tif")
 
                 writer.SetInputData(image)
-                writer.SetFileName(filename)
+                writer.SetFileName(filename.encode(const.FS_ENCODE))
                 writer.Write()
 
             for actor in view_prop_list:

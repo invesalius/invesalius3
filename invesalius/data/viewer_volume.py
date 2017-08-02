@@ -322,7 +322,7 @@ class Viewer(wx.Panel):
                 image = vtk.vtkWindowToImageFilter()
                 image.SetInput(renwin)
                 writer = vtk.vtkPOVExporter()
-                writer.SetFileName(filename)
+                writer.SetFileName(filename.encode(const.FS_ENCODE))
                 writer.SetRenderWindow(renwin)
                 writer.Write()
             else:
@@ -348,7 +348,7 @@ class Viewer(wx.Panel):
                     filename = "%s.tif"%filename.strip(".tif")
 
                 writer.SetInputData(image)
-                writer.SetFileName(filename)
+                writer.SetFileName(filename.encode(const.FS_ENCODE))
                 writer.Write()
         Publisher.sendMessage('End busy cursor')
 
