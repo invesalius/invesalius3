@@ -278,7 +278,7 @@ class Project(object):
             ow = vtk.vtkOutputWindow()
             ow.SetInstance(fow)
             
-        filelist = Extract(filename, tempfile.mkdtemp())
+        filelist = Extract(filename, tempfile.mkdtemp(u''))
         dirpath = os.path.abspath(os.path.split(filelist[0])[0])
 
         # Opening the main file from invesalius 3 project
@@ -341,8 +341,10 @@ def Compress(folder, filename, filelist):
     #os.chdir(current_dir)
 
 def Extract(filename, folder):
+    print type(filename), type(folder), filename, folder
     tar = tarfile.open(filename, "r:gz")
     idir = os.path.split(tar.getnames()[0])[0]
+    print type(idir), idir
     os.mkdir(os.path.join(folder, idir.decode('utf8')))
     filelist = []
     for t in tar.getmembers():

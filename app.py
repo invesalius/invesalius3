@@ -173,7 +173,7 @@ class SplashScreen(wx.SplashScreen):
         # Only after language was defined, splash screen will be
         # shown
         if lang:
-            print "LANG", lang, _, wx.Locale(), wx.GetLocale()
+            #  print "LANG", lang, _, wx.Locale(), wx.GetLocale()
             import locale
             locale.setlocale(locale.LC_ALL, '')
             # For pt_BR, splash_pt.png should be used
