@@ -324,9 +324,18 @@ class Viewer(wx.Panel):
                                     self.seed_points) 
 
     def OnExportPicture(self, pubsub_evt):
-        Publisher.sendMessage('Begin busy cursor')
         id, filename, filetype = pubsub_evt.data
         if id == const.VOLUME:
+            Publisher.sendMessage('Begin busy cursor')
+            if _has_win32api:
+                utils.touch(filename)
+                win_filename = win32api.GetShortPathName(filename)
+                self._export_picture(id, win_filename.encode(const.FS_ENCODE), filetype)
+            else:
+                self._export_picture(id, filename, filetype)
+            Publisher.sendMessage('End busy cursor')
+
+    def _export_picture(self, id, filename, filetype):
             if filetype == const.FILETYPE_POV:
                 renwin = self.interactor.GetRenderWindow()
                 image = vtk.vtkWindowToImageFilter()
@@ -364,7 +373,6 @@ class Viewer(wx.Panel):
             if not os.path.exists(filename):
                 wx.MessageBox(_("InVesalius was not able to export this picture"), _("Export picture error"))
 
-        Publisher.sendMessage('End busy cursor')
 
     def OnCloseProject(self, pubsub_evt):
         if self.raycasting_volume:
@@ -784,7 +792,7 @@ class Viewer(wx.Panel):
                             const.FILETYPE_STL_ASCII):
             if _has_win32api:
                 utils.touch(filename)
-                win_filename = os.path.join(filename)
+                win_filename = win32api.GetShortPathName(filename)
                 self._export_surface(win_filename.encode(const.FS_ENCODE), filetype)
             else:
                 self._export_surface(filename, filetype)
