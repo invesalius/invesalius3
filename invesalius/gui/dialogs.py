@@ -398,12 +398,7 @@ def ShowImportMeshFilesDialog():
     filename = None
     try:
         if dlg.ShowModal() == wx.ID_OK:
-            # GetPath returns in unicode, if a path has non-ascii characters a
-            # UnicodeEncodeError is raised. To avoid this, path is encoded in utf-8
-            if sys.platform == "win32":
-                filename = dlg.GetPath()
-            else:
-                filename = dlg.GetPath().encode('utf-8')
+            filename = dlg.GetPath()
 
     except(wx._core.PyAssertionError):  # TODO: error win64
         if (dlg.GetPath()):
