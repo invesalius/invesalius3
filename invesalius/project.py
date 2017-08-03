@@ -22,6 +22,7 @@ import glob
 import os
 import plistlib
 import shutil
+import sys
 import tarfile
 import tempfile
 
@@ -34,6 +35,15 @@ import invesalius.data.polydata_utils as pu
 from invesalius.presets import Presets 
 from invesalius.utils import Singleton, debug 
 import invesalius.version as version
+
+if sys.platform == 'win32':
+    try:
+        import win32api
+        _has_win32api = True
+    except ImportError:
+        _has_win32api = False
+else:
+    _has_win32api = False
 
 class Project(object):
     # Only one project will be initialized per time. Therefore, we use
@@ -194,6 +204,9 @@ class Project(object):
 
     def SavePlistProject(self, dir_, filename):
         dir_temp = tempfile.mkdtemp()
+        if _has_win32api:
+            dir_temp = win32api.GetShortPathName(dir_temp).decode(const.FS_ENCODE)
+
         filename_tmp = os.path.join(dir_temp, 'matrix.dat')
         filelist = {}
 
@@ -343,6 +356,8 @@ def Compress(folder, filename, filelist):
 
 def Extract(filename, folder):
     print type(filename), type(folder), filename.encode('utf8'), folder
+    if _has_win32api:
+        folder = win32api.GetShortPathName(folder).decode(const.FS_ENCODE)
     tar = tarfile.open(filename, "r:gz")
     idir = os.path.split(tar.getnames()[0])[0]
     print type(idir), idir

@@ -330,7 +330,7 @@ class Viewer(wx.Panel):
             if _has_win32api:
                 utils.touch(filename)
                 win_filename = win32api.GetShortPathName(filename)
-                self._export_picture(id, win_filename.encode(const.FS_ENCODE), filetype)
+                self._export_picture(id, win_filename, filetype)
             else:
                 self._export_picture(id, filename, filetype)
             Publisher.sendMessage('End busy cursor')
