@@ -40,6 +40,15 @@ import invesalius.data.converters as converters
 no_error = True 
 vtk_error = False
 
+if sys.platform == 'win32':
+    try:
+        import win32api
+        _has_win32api = True
+    except ImportError:
+        _has_win32api = False
+else:
+    _has_win32api = False
+
 class Singleton:
 
     def __init__(self,klass):
@@ -314,6 +323,8 @@ def VtkRead(filepath, t):
     else:
         return False
 
+    print ">>>> bmp reader", type(filepath)
+
     reader.AddObserver("ErrorEvent", VtkErrorToPy)
     reader.SetFileName(filepath.encode(const.FS_ENCODE))
     reader.Update()
@@ -341,6 +352,9 @@ def VtkRead(filepath, t):
 
 def ReadBitmap(filepath): 
     t = VerifyDataType(filepath)
+
+    if _has_win32api:
+        filepath = win32api.GetShortPathName(filepath)
 
     if t == False:
         measures_info = GetPixelSpacingFromInfoFile(filepath)
