@@ -197,7 +197,7 @@ class Project(object):
         filename_tmp = os.path.join(dir_temp, 'matrix.dat')
         filelist = {}
 
-        print filename, dir_, type(filename), type(dir_)
+        print filename.encode('utf8'), dir_.encode('utf8'), type(filename), type(dir_)
 
         project = {
                    # Format info
@@ -278,7 +278,7 @@ class Project(object):
             ow = vtk.vtkOutputWindow()
             ow.SetInstance(fow)
             
-        filelist = Extract(filename, tempfile.mkdtemp(u''))
+        filelist = Extract(filename, tempfile.mkdtemp())
         dirpath = os.path.abspath(os.path.split(filelist[0])[0])
 
         # Opening the main file from invesalius 3 project
@@ -341,7 +341,7 @@ def Compress(folder, filename, filelist):
     #os.chdir(current_dir)
 
 def Extract(filename, folder):
-    print type(filename), type(folder), filename, folder
+    print type(filename), type(folder), filename.encode('utf8'), folder
     tar = tarfile.open(filename, "r:gz")
     idir = os.path.split(tar.getnames()[0])[0]
     print type(idir), idir
@@ -350,7 +350,9 @@ def Extract(filename, folder):
     for t in tar.getmembers():
         fsrc = tar.extractfile(t)
 
-        fname = os.path.join(folder, t.name.decode('utf-8'))
+        print "tname", t.name
+        fname = os.path.join(folder.decode(const.FS_ENCODE), t.name.decode('utf-8'))
+        print "fname", fname.encode('utf8'), type(fname)
         fdst = file(fname, 'wb')
 
         shutil.copyfileobj(fsrc, fdst)
