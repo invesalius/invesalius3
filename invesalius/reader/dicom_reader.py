@@ -191,7 +191,8 @@ class LoadDicom:
             rvtk = vtkgdcm.vtkGDCMImageReader()
 
             if _has_win32api:
-                rvtk.SetFileName(win32api.GetShortPathName(self.filepath))
+                print 'dicom', win32api.GetShortPathName(self.filepath)
+                rvtk.SetFileName(win32api.GetShortPathName(self.filepath).encode(const.FS_ENCODE))
             else:
                 rvtk.SetFileName(self.filepath)
             rvtk.Update()
