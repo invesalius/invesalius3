@@ -330,14 +330,15 @@ class Project(object):
 def Compress(folder, filename, filelist):
     tmpdir, tmpdir_ = os.path.split(folder)
     current_dir = os.path.abspath(".")
+    temp_inv3 = tempfile.mktemp().encode(const.FS_ENCODE)
     #os.chdir(tmpdir)
     #file_list = glob.glob(os.path.join(tmpdir_,"*"))
-    tar_filename = tmpdir_ + ".inv3"
-    tar = tarfile.open(filename, "w:gz")
+    print "Tar file", temp_inv3, type(temp_inv3), filename.encode('utf8'), type(filename)
+    tar = tarfile.open(temp_inv3, "w:gz")
     for name in filelist:
         tar.add(name, arcname=os.path.join(tmpdir_, filelist[name]))
     tar.close()
-    #shutil.move(tmpdir_+ ".inv3", filename)
+    shutil.move(temp_inv3, filename)
     #os.chdir(current_dir)
 
 def Extract(filename, folder):
