@@ -947,7 +947,9 @@ class SurfaceManager():
                 #writer.SetColorModeToUniformCellColor()
                 #writer.SetColor(255, 0, 0)
 
-            if filetype in (const.FILETYPE_STL, const.FILETYPE_PLY):
+            if filetype in (const.FILETYPE_STL,
+                            const.FILETYPE_STL_ASCII,
+                            const.FILETYPE_PLY):
                 # Invert normals
                 normals = vtk.vtkPolyDataNormals()
                 normals.SetInputData(polydata)
