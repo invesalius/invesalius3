@@ -357,25 +357,21 @@ def Compress(folder, filename, filelist):
     shutil.move(temp_inv3, filename)
     #os.chdir(current_dir)
 
+
 def Extract(filename, folder):
-    print type(filename), type(folder), filename.encode('utf8'), folder
     if _has_win32api:
         folder = win32api.GetShortPathName(folder)
+    folder = folder.decode(const.FS_ENCODE)
+
     tar = tarfile.open(filename, "r:gz")
-    idir = os.path.split(tar.getnames()[0])[0]
-    print type(idir), idir
-    os.mkdir(os.path.join(folder, idir.decode('utf8')))
+    idir = os.path.split(tar.getnames()[0])[0].decode('utf8')
+    os.mkdir(os.path.join(folder, idir))
     filelist = []
     for t in tar.getmembers():
         fsrc = tar.extractfile(t)
-
-        print "tname", t.name
-        fname = os.path.join(folder.decode(const.FS_ENCODE), t.name.decode('utf-8'))
-        print "fname", fname.encode('utf8'), type(fname)
+        fname = os.path.join(folder, t.name.decode('utf-8'))
         fdst = file(fname, 'wb')
-
         shutil.copyfileobj(fsrc, fdst)
-
         filelist.append(fname)
         fsrc.close()
         fdst.close()
@@ -384,7 +380,7 @@ def Extract(filename, folder):
     tar.close()
     return filelist
 
-    
+
 def Extract_(filename, folder):
     tar = tarfile.open(filename, "r:gz")
     #tar.list(verbose=True)
