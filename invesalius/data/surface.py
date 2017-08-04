@@ -75,8 +75,8 @@ class Surface():
             self.name = name
 
     def SavePlist(self, dir_temp, filelist):
-        filename = 'surface_%d' % self.index
-        vtp_filename = filename + '.vtp'
+        filename = u'surface_%d' % self.index
+        vtp_filename = filename + u'.vtp'
         vtp_filepath = os.path.join(dir_temp, vtp_filename)
         pu.Export(self.polydata, vtp_filepath, bin=True)
 
@@ -91,7 +91,7 @@ class Surface():
                    'volume': self.volume,
                    'area': self.area,
                   }
-        plist_filename = filename + '.plist'
+        plist_filename = filename + u'.plist'
         #plist_filepath = os.path.join(dir_temp, filename + '.plist')
         temp_plist = tempfile.mktemp()
         plistlib.writePlist(surface, temp_plist)

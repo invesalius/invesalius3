@@ -24,6 +24,16 @@ import wx
 from wx.lib.pubsub import pub as Publisher
 
 import invesalius.data.vtk_utils as vu
+from invesalius.utils import touch
+
+if sys.platform == 'win32':
+    try:
+        import win32api
+        _has_win32api = True
+    except ImportError:
+        _has_win32api = False
+else:
+    _has_win32api = False
 
 # Update progress value in GUI
 UpdateProgress = vu.ShowProgress()
@@ -109,8 +119,11 @@ def Merge(polydata_list):
 
 def Export(polydata, filename, bin=False):
     writer = vtk.vtkXMLPolyDataWriter()
+    if _has_win32api:
+        touch(filename)
+        filename = win32api.GetShortPathName(filename)
     print filename, type(filename)
-    writer.SetFileName(filename.encode('utf-8'))
+    writer.SetFileName(filename)
     if bin:
         writer.SetDataModeToBinary()
     else:

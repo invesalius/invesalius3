@@ -245,7 +245,7 @@ class Mask():
         mask['mask_shape'] = self.matrix.shape
         mask['edited'] = self.was_edited
 
-        plist_filename = filename + '.plist'
+        plist_filename = filename + u'.plist'
         #plist_filepath = os.path.join(dir_temp, plist_filename)
 
         temp_plist = tempfile.mktemp()

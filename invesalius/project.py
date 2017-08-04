@@ -203,13 +203,12 @@ class Project(object):
         return measures
 
     def SavePlistProject(self, dir_, filename):
-        dir_temp = tempfile.mkdtemp()
-        if _has_win32api:
-            dir_temp = win32api.GetShortPathName(dir_temp).decode(const.FS_ENCODE)
+        dir_temp = tempfile.mkdtemp().decode(const.FS_ENCODE)
 
-        filename_tmp = os.path.join(dir_temp, 'matrix.dat')
+        filename_tmp = os.path.join(dir_temp, u'matrix.dat')
         filelist = {}
 
+        print type(dir_temp), type(filename)
         print filename.encode('utf8'), dir_.encode('utf8'), type(filename), type(dir_)
 
         project = {
@@ -229,10 +228,11 @@ class Project(object):
                   }
 
         # Saving the matrix containing the slices
-        matrix = {'filename': u'matrix.dat',
-                  'shape': self.matrix_shape,
-                  'dtype': self.matrix_dtype,
-                 }
+        matrix = {
+            'filename': u'matrix.dat',
+            'shape': self.matrix_shape,
+            'dtype': self.matrix_dtype,
+        }
         project['matrix'] = matrix
         filelist[self.matrix_filename] = 'matrix.dat'
         #shutil.copyfile(self.matrix_filename, filename_tmp)
@@ -346,7 +346,9 @@ def Compress(folder, filename, filelist):
     temp_inv3 = tempfile.mktemp()
     if _has_win32api:
         touch(temp_inv3)
-        temp_inv3 = win32api.GetShortPathName(temp_inv3).decode(const.FS_ENCODE)
+        temp_inv3 = win32api.GetShortPathName(temp_inv3)
+
+    temp_inv3 = temp_inv3.decode(const.FS_ENCODE)
     #os.chdir(tmpdir)
     #file_list = glob.glob(os.path.join(tmpdir_,"*"))
     print "Tar file", temp_inv3, type(temp_inv3), filename.encode('utf8'), type(filename)

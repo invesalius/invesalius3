@@ -286,7 +286,7 @@ def parse_comand_line():
         while i:
             i -= 1
             file = args[i]
-            print ">>>>", file.decode('utf8'), type(file)
+            print ">>>>", file.decode(FS_ENCODE), type(file)
             if os.path.isfile(file):
                 path = os.path.abspath(file)
                 print ">>>>>>>> path", path.decode('utf8'), type(path)
