@@ -21,6 +21,7 @@ import multiprocessing
 import os
 import plistlib
 import random
+import shutil
 import sys
 import tempfile
 import weakref
@@ -883,16 +884,25 @@ class SurfaceManager():
 
     def OnExportSurface(self, pubsub_evt):
         filename, filetype = pubsub_evt.data
-        if filetype in (const.FILETYPE_STL,
-                        const.FILETYPE_VTP,
-                        const.FILETYPE_PLY,
-                        const.FILETYPE_STL_ASCII):
+        ftype_prefix = {
+            const.FILETYPE_STL: '.stl',
+            const.FILETYPE_VTP: '.vtp',
+            const.FILETYPE_PLY: '.ply',
+            const.FILETYPE_STL_ASCII: '.stl',
+        }
+        if filetype in ftype_prefix:
+            temp_file = tempfile.mktemp(suffix=ftype_prefix[filetype])
+
             if _has_win32api:
-                utl.touch(filename)
-                win_filename = win32api.GetShortPathName(filename)
-                self._export_surface(win_filename, filetype)
-            else:
-                self._export_surface(filename, filetype)
+                utl.touch(temp_file)
+                _temp_file = temp_file
+                temp_file = win32api.GetShortPathName(temp_file)
+                os.remove(_temp_file)
+
+            temp_file = temp_file.decode(const.FS_ENCODE)
+            self._export_surface(temp_file, filetype)
+
+            shutil.move(temp_file, filename)
 
     def _export_surface(self, filename, filetype):
         if filetype in (const.FILETYPE_STL,
