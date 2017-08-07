@@ -23,6 +23,7 @@ import vtk
 import wx
 from wx.lib.pubsub import pub as Publisher
 
+import invesalius.constants as const
 import invesalius.data.vtk_utils as vu
 from invesalius.utils import touch
 
@@ -122,8 +123,7 @@ def Export(polydata, filename, bin=False):
     if _has_win32api:
         touch(filename)
         filename = win32api.GetShortPathName(filename)
-    print filename, type(filename)
-    writer.SetFileName(filename)
+    writer.SetFileName(filename.encode(const.FS_ENCODE))
     if bin:
         writer.SetDataModeToBinary()
     else:
