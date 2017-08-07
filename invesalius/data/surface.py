@@ -275,7 +275,7 @@ class SurfaceManager():
             return
 
         if _has_win32api:
-            reader.SetFileName(win32api.GetShortPathName(filename))
+            reader.SetFileName(win32api.GetShortPathName(filename).encode(const.FS_ENCODE))
         else:
             reader.SetFileName(filename.encode(const.FS_ENCODE))
 
