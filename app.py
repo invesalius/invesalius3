@@ -253,6 +253,8 @@ def parse_comand_line():
     """
     session = ses.Session()
 
+    print ">>>> stdin encoding", sys.stdin.encoding
+
     # Parse command line arguments
     parser = op.OptionParser()
 
@@ -285,11 +287,9 @@ def parse_comand_line():
         i = len(args)
         while i:
             i -= 1
-            file = args[i]
-            print ">>>>", file.decode(FS_ENCODE), type(file)
+            file = args[i].decode(sys.stdin.encoding)
             if os.path.isfile(file):
                 path = os.path.abspath(file)
-                print ">>>>>>>> path", path.decode('utf8'), type(path)
                 Publisher.sendMessage('Open project', path)
                 i = 0
                 return True
