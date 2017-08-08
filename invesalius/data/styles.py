@@ -1500,6 +1500,9 @@ class ReorientImageInteractorStyle(DefaultInteractorStyle):
         self.AddObserver("MouseMoveEvent", self.OnMouseMove)
         self.viewer.slice_data.renderer.AddObserver("StartEvent", self.OnUpdate)
 
+        if self.viewer.orientation == 'AXIAL':
+            Publisher.subscribe(self._set_reorientation_angles, 'Set reorientation angles')
+
         self.viewer.interactor.Bind(wx.EVT_LEFT_DCLICK, self.OnDblClick)
 
     def SetUp(self):
@@ -1669,6 +1672,15 @@ class ReorientImageInteractorStyle(DefaultInteractorStyle):
 
         #  print (z, y, x), tcoord
         return tcoord
+
+    def _set_reorientation_angles(self, pubsub_evt):
+        ax, ay, az = pubsub_evt.data
+        q = transformations.quaternion_from_euler(az, ay, ax)
+        self.viewer.slice_.q_orientation = q
+
+        self._discard_buffers()
+        self.viewer.slice_.current_mask.clear_history()
+        Publisher.sendMessage('Reload actual slice')
 
     def _create_line(self, x0, y0, x1, y1, color):
         line = vtk.vtkLineSource()

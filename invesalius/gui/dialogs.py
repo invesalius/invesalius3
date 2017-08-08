@@ -1884,9 +1884,9 @@ class ReorientImageDialog(wx.Dialog):
             self.interp_method.Append(txt, im_code)
         self.interp_method.SetValue(interp_methods_choices[2][0])
 
-        self.anglex = wx.TextCtrl(self, -1, "0.0", style=wx.TE_READONLY)
-        self.angley = wx.TextCtrl(self, -1, "0.0", style=wx.TE_READONLY)
-        self.anglez = wx.TextCtrl(self, -1, "0.0", style=wx.TE_READONLY)
+        self.anglex = wx.TextCtrl(self, -1, "0.0")
+        self.angley = wx.TextCtrl(self, -1, "0.0")
+        self.anglez = wx.TextCtrl(self, -1, "0.0")
 
         self.btnapply = wx.Button(self, -1, _("Apply"))
 
@@ -1919,6 +1919,9 @@ class ReorientImageDialog(wx.Dialog):
 
     def _bind_events_wx(self):
         self.interp_method.Bind(wx.EVT_COMBOBOX, self.OnSelect)
+        self.anglex.Bind(wx.EVT_KILL_FOCUS, self.OnLostFocus)
+        self.angley.Bind(wx.EVT_KILL_FOCUS, self.OnLostFocus)
+        self.anglez.Bind(wx.EVT_KILL_FOCUS, self.OnLostFocus)
         self.btnapply.Bind(wx.EVT_BUTTON, self.apply_reorientation)
         self.Bind(wx.EVT_CLOSE, self.OnClose)
 
@@ -1943,6 +1946,14 @@ class ReorientImageDialog(wx.Dialog):
     def OnSelect(self, evt):
         im_code = self.interp_method.GetClientData(self.interp_method.GetSelection())
         Publisher.sendMessage('Set interpolation method', im_code)
+
+    def OnLostFocus(self, evt):
+        print 'OnLost Focus'
+        ax = np.deg2rad(float(self.anglex.GetValue()))
+        ay = np.deg2rad(float(self.angley.GetValue()))
+        az = np.deg2rad(float(self.anglez.GetValue()))
+
+        Publisher.sendMessage('Set reorientation angles', (ax, ay, az))
 
 
 class ImportBitmapParameters(wx.Dialog):
