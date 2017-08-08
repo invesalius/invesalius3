@@ -208,9 +208,6 @@ class Project(object):
         filename_tmp = os.path.join(dir_temp, u'matrix.dat')
         filelist = {}
 
-        print type(dir_temp), type(filename)
-        print filename.encode('utf8'), dir_.encode('utf8'), type(filename), type(dir_)
-
         project = {
                    # Format info
                    "format_version": 1,
@@ -351,7 +348,6 @@ def Compress(folder, filename, filelist):
     temp_inv3 = temp_inv3.decode(const.FS_ENCODE)
     #os.chdir(tmpdir)
     #file_list = glob.glob(os.path.join(tmpdir_,"*"))
-    print "Tar file", temp_inv3, type(temp_inv3), filename.encode('utf8'), type(filename)
     tar = tarfile.open(temp_inv3, "w:gz")
     for name in filelist:
         tar.add(name, arcname=os.path.join(tmpdir_, filelist[name]))

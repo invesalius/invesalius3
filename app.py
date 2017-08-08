@@ -253,7 +253,6 @@ def parse_comand_line():
     """
     session = ses.Session()
 
-    print ">>>> stdin encoding", sys.stdin.encoding
 
     # Parse command line arguments
     parser = op.OptionParser()
