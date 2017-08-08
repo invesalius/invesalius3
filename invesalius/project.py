@@ -22,6 +22,7 @@ import glob
 import os
 import plistlib
 import shutil
+import sys
 import tarfile
 import tempfile
 
@@ -32,8 +33,17 @@ import vtk
 import invesalius.constants as const
 import invesalius.data.polydata_utils as pu
 from invesalius.presets import Presets 
-from invesalius.utils import Singleton, debug 
+from invesalius.utils import Singleton, debug, touch
 import invesalius.version as version
+
+if sys.platform == 'win32':
+    try:
+        import win32api
+        _has_win32api = True
+    except ImportError:
+        _has_win32api = False
+else:
+    _has_win32api = False
 
 class Project(object):
     # Only one project will be initialized per time. Therefore, we use
@@ -193,9 +203,13 @@ class Project(object):
         return measures
 
     def SavePlistProject(self, dir_, filename):
-        dir_temp = tempfile.mkdtemp()
-        filename_tmp = os.path.join(dir_temp, 'matrix.dat')
+        dir_temp = tempfile.mkdtemp().decode(const.FS_ENCODE)
+
+        filename_tmp = os.path.join(dir_temp, u'matrix.dat')
         filelist = {}
+
+        print type(dir_temp), type(filename)
+        print filename.encode('utf8'), dir_.encode('utf8'), type(filename), type(dir_)
 
         project = {
                    # Format info
@@ -214,10 +228,11 @@ class Project(object):
                   }
 
         # Saving the matrix containing the slices
-        matrix = {'filename': u'matrix.dat',
-                  'shape': self.matrix_shape,
-                  'dtype': self.matrix_dtype,
-                 }
+        matrix = {
+            'filename': u'matrix.dat',
+            'shape': self.matrix_shape,
+            'dtype': self.matrix_dtype,
+        }
         project['matrix'] = matrix
         filelist[self.matrix_filename] = 'matrix.dat'
         #shutil.copyfile(self.matrix_filename, filename_tmp)
@@ -270,9 +285,9 @@ class Project(object):
         import invesalius.data.surface as srf
         
         if not const.VTK_WARNING:
-            log_path = os.path.join(const.LOG_FOLDER, 'vtkoutput.txt')
+            log_path = os.path.join(const.USER_LOG_DIR, 'vtkoutput.txt')
             fow = vtk.vtkFileOutputWindow()
-            fow.SetFileName(log_path)
+            fow.SetFileName(log_path.encode(const.FS_ENCODE))
             ow = vtk.vtkOutputWindow()
             ow.SetInstance(fow)
             
@@ -328,29 +343,37 @@ class Project(object):
 def Compress(folder, filename, filelist):
     tmpdir, tmpdir_ = os.path.split(folder)
     current_dir = os.path.abspath(".")
+    temp_inv3 = tempfile.mktemp()
+    if _has_win32api:
+        touch(temp_inv3)
+        temp_inv3 = win32api.GetShortPathName(temp_inv3)
+
+    temp_inv3 = temp_inv3.decode(const.FS_ENCODE)
     #os.chdir(tmpdir)
     #file_list = glob.glob(os.path.join(tmpdir_,"*"))
-    tar_filename = tmpdir_ + ".inv3"
-    tar = tarfile.open(filename.encode(wx.GetDefaultPyEncoding()), "w:gz")
+    print "Tar file", temp_inv3, type(temp_inv3), filename.encode('utf8'), type(filename)
+    tar = tarfile.open(temp_inv3, "w:gz")
     for name in filelist:
         tar.add(name, arcname=os.path.join(tmpdir_, filelist[name]))
     tar.close()
-    #shutil.move(tmpdir_+ ".inv3", filename)
+    shutil.move(temp_inv3, filename)
     #os.chdir(current_dir)
 
+
 def Extract(filename, folder):
+    if _has_win32api:
+        folder = win32api.GetShortPathName(folder)
+    folder = folder.decode(const.FS_ENCODE)
+
     tar = tarfile.open(filename, "r:gz")
-    idir = os.path.split(tar.getnames()[0])[0]
-    os.mkdir(os.path.join(folder, idir.decode('utf8')))
+    idir = os.path.split(tar.getnames()[0])[0].decode('utf8')
+    os.mkdir(os.path.join(folder, idir))
     filelist = []
     for t in tar.getmembers():
         fsrc = tar.extractfile(t)
-
         fname = os.path.join(folder, t.name.decode('utf-8'))
         fdst = file(fname, 'wb')
-
         shutil.copyfileobj(fsrc, fdst)
-
         filelist.append(fname)
         fsrc.close()
         fdst.close()
@@ -359,7 +382,7 @@ def Extract(filename, folder):
     tar.close()
     return filelist
 
-    
+
 def Extract_(filename, folder):
     tar = tarfile.open(filename, "r:gz")
     #tar.list(verbose=True)

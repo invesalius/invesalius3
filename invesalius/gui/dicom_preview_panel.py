@@ -21,6 +21,7 @@
 # -*- coding: UTF-8 -*-
 
 #TODO: To create a beautiful API
+import sys
 import time
 import tempfile
 
@@ -37,6 +38,14 @@ import invesalius.data.vtk_utils as vtku
 import invesalius.utils as utils
 import vtkgdcm
 
+if sys.platform == 'win32':
+    try:
+        import win32api
+        _has_win32api = True
+    except ImportError:
+        _has_win32api = False
+else:
+    _has_win32api = False
 
 NROWS = 3
 NCOLS = 6
@@ -837,7 +846,10 @@ class SingleImagePreview(wx.Panel):
         self.text_acquisition.SetValue(value)
 
         rdicom = vtkgdcm.vtkGDCMImageReader()
-        rdicom.SetFileName(dicom.image.file)
+        if _has_win32api:
+            rdicom.SetFileName(win32api.GetShortPathName(dicom.image.file).encode(const.FS_ENCODE))
+        else:
+            rdicom.SetFileName(dicom.image.file)
         rdicom.Update()
 
         # ADJUST CONTRAST

@@ -331,6 +331,13 @@ class InnerTaskPanel(wx.Panel):
                         filename = filename + "."+ extension
                 Publisher.sendMessage('Export surface to file',
                                             (filename, filetype))
+                if not os.path.exists(filename):
+                    dlg = wx.MessageDialog(None,
+                                       _("It was not possible to save the surface."),
+                                       _("Error saving surface"),
+                                       wx.OK | wx.ICON_ERROR)
+                    dlg.ShowModal()
+                    dlg.Destroy()
         else:
             dlg = wx.MessageDialog(None,
                     _("You need to create a surface and make it ") +

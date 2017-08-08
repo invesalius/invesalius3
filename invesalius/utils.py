@@ -436,3 +436,8 @@ def vtkarray_to_numpy(m):
         for j in xrange(4):
             nm[i, j] = m.GetElement(i, j)
     return nm
+
+
+def touch(fname):
+    with open(fname, 'a'):
+        pass

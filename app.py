@@ -54,6 +54,22 @@ import invesalius.i18n as i18n
 import invesalius.session as ses
 import invesalius.utils as utils
 
+FS_ENCODE = sys.getfilesystemencoding()
+
+if sys.platform == 'win32':
+    from invesalius.expanduser import expand_user
+    try:
+        USER_DIR = expand_user()
+    except:
+        USER_DIR = os.path.expanduser('~').decode(FS_ENCODE)
+else:
+    USER_DIR = os.path.expanduser('~').decode(FS_ENCODE)
+
+USER_INV_DIR = os.path.join(USER_DIR, u'.invesalius')
+USER_PRESET_DIR = os.path.join(USER_INV_DIR, u'presets')
+USER_RAYCASTING_PRESETS_DIRECTORY = os.path.join(USER_PRESET_DIR, u'raycasting')
+USER_LOG_DIR = os.path.join(USER_INV_DIR, u'logs')
+
 # ------------------------------------------------------------------
 
 
@@ -157,7 +173,7 @@ class SplashScreen(wx.SplashScreen):
         # Only after language was defined, splash screen will be
         # shown
         if lang:
-            print "LANG", lang, _, wx.Locale(), wx.GetLocale()
+            #  print "LANG", lang, _, wx.Locale(), wx.GetLocale()
             import locale
             locale.setlocale(locale.LC_ALL, '')
             # For pt_BR, splash_pt.png should be used
@@ -237,6 +253,8 @@ def parse_comand_line():
     """
     session = ses.Session()
 
+    print ">>>> stdin encoding", sys.stdin.encoding
+
     # Parse command line arguments
     parser = op.OptionParser()
 
@@ -269,7 +287,7 @@ def parse_comand_line():
         i = len(args)
         while i:
             i -= 1
-            file = args[i]
+            file = args[i].decode(sys.stdin.encoding)
             if os.path.isfile(file):
                 path = os.path.abspath(file)
                 Publisher.sendMessage('Open project', path)
@@ -308,22 +326,16 @@ if __name__ == '__main__':
         os.chdir(path)
 
     # Create raycasting presets' folder, if it doens't exist
-    dirpath = os.path.join(os.path.expanduser('~'),
-                           ".invesalius",
-                           "presets")
-    if not os.path.isdir(dirpath):
-        os.makedirs(dirpath)
+    if not os.path.isdir(USER_RAYCASTING_PRESETS_DIRECTORY):
+        os.makedirs(USER_RAYCASTING_PRESETS_DIRECTORY)
 
     # Create logs' folder, if it doesn't exist
-    dirpath = os.path.join(os.path.expanduser('~'),
-                           ".invesalius",
-                           "logs")
-    if not os.path.isdir(dirpath):
-        os.makedirs(dirpath)
+    if not os.path.isdir(USER_LOG_DIR):
+        os.makedirs(USER_LOG_DIR)
 
     if hasattr(sys,"frozen") and sys.frozen == "windows_exe":
         # Set system standard error output to file
-        path = os.path.join(dirpath, "stderr.log")
+        path = os.path.join(USER_LOG_DIR, u"stderr.log")
         sys.stderr = open(path, "w")
 
     # Add current directory to PYTHONPATH, so other classes can

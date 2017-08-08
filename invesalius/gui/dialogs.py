@@ -323,10 +323,7 @@ def ShowImportBitmapDirDialog():
         if dlg.ShowModal() == wx.ID_OK:
             # GetPath returns in unicode, if a path has non-ascii characters a
             # UnicodeEncodeError is raised. To avoid this, path is encoded in utf-8
-            if sys.platform == "win32":
-                path = dlg.GetPath()
-            else:
-                path = dlg.GetPath().encode('utf-8')
+            path = dlg.GetPath()
 
     except(wx._core.PyAssertionError): #TODO: error win64
          if (dlg.GetPath()):
@@ -398,12 +395,7 @@ def ShowImportMeshFilesDialog():
     filename = None
     try:
         if dlg.ShowModal() == wx.ID_OK:
-            # GetPath returns in unicode, if a path has non-ascii characters a
-            # UnicodeEncodeError is raised. To avoid this, path is encoded in utf-8
-            if sys.platform == "win32":
-                filename = dlg.GetPath()
-            else:
-                filename = dlg.GetPath().encode('utf-8')
+            filename = dlg.GetPath()
 
     except(wx._core.PyAssertionError):  # TODO: error win64
         if (dlg.GetPath()):
@@ -1058,52 +1050,52 @@ def ShowAboutDialog(parent):
     info.WebSite = ("https://www.cti.gov.br/invesalius")
     info.License = _("GNU GPL (General Public License) version 2")
 
-    info.Developers = ["Paulo Henrique Junqueira Amorim",
-                       "Thiago Franco de Moraes",
-                       "Hélio Pedrini",
-                       "Jorge Vicente Lopes da Silva",
-                       "Victor Hugo de Oliveira e Souza (navigator)",
-                       "Renan Hiroshi Matsuda (navigator)",
-                       "André Salles Cunha Peres (navigator)",
-                       "Oswaldo Baffa Filho (navigator)",
-                       "Tatiana Al-Chueyr (former)",
-                       "Guilherme Cesar Soares Ruppert (former)",
-                       "Fabio de Souza Azevedo (former)",
-                       "Bruno Lara Bottazzini (contributor)",
-                       "Olly Betts (patches to support wxPython3)"]
+    info.Developers = [u"Paulo Henrique Junqueira Amorim",
+                       u"Thiago Franco de Moraes",
+                       u"Hélio Pedrini",
+                       u"Jorge Vicente Lopes da Silva",
+                       u"Victor Hugo de Oliveira e Souza (navigator)",
+                       u"Renan Hiroshi Matsuda (navigator)",
+                       u"André Salles Cunha Peres (navigator)",
+                       u"Oswaldo Baffa Filho (navigator)",
+                       u"Tatiana Al-Chueyr (former)",
+                       u"Guilherme Cesar Soares Ruppert (former)",
+                       u"Fabio de Souza Azevedo (former)",
+                       u"Bruno Lara Bottazzini (contributor)",
+                       u"Olly Betts (patches to support wxPython3)"]
 
-    info.Translators = ["Alex P. Natsios",
-                        "Alicia Perez",
-                        "Anderson Antonio Mamede da Silva",
-                        "Andreas Loupasakis",
-                        "Angelo Pucillo",
-                        "Annalisa Manenti",
-                        "Cheng-Chia Tseng",
-                        "Dan",
-                        "DCamer",
-                        "Dimitris Glezos",
-                        "Eugene Liscio",
+    info.Translators = [u"Alex P. Natsios",
+                        u"Alicia Perez",
+                        u"Anderson Antonio Mamede da Silva",
+                        u"Andreas Loupasakis",
+                        u"Angelo Pucillo",
+                        u"Annalisa Manenti",
+                        u"Cheng-Chia Tseng",
+                        u"Dan",
+                        u"DCamer",
+                        u"Dimitris Glezos",
+                        u"Eugene Liscio",
                         u"Frédéric Lopez",
-                        "Florin Putura",
-                        "Fri",
-                        "Jangblue",
-                        "Javier de Lima Moreno",
-                        "Kensey Okinawa",
-                        "Maki Sugimoto",
-                        "Mario Regino Moreno Guerra",
-                        "Massimo Crisantemo",
-                        "Nikos Korkakakis",
-                        "Raul Bolliger Neto",
-                        "Sebastian Hilbert",
-                        "Semarang Pari",
-                        "Silvério Santos",
-                        "Vasily Shishkin",
-                        "Yohei Sotsuka",
-                        "Yoshihiro Sato"]
+                        u"Florin Putura",
+                        u"Fri",
+                        u"Jangblue",
+                        u"Javier de Lima Moreno",
+                        u"Kensey Okinawa",
+                        u"Maki Sugimoto",
+                        u"Mario Regino Moreno Guerra",
+                        u"Massimo Crisantemo",
+                        u"Nikos Korkakakis",
+                        u"Raul Bolliger Neto",
+                        u"Sebastian Hilbert",
+                        u"Semarang Pari",
+                        u"Silvério Santos",
+                        u"Vasily Shishkin",
+                        u"Yohei Sotsuka",
+                        u"Yoshihiro Sato"]
 
     #info.DocWriters = ["Fabio Francisco da Silva (PT)"]
 
-    info.Artists = ["Otavio Henrique Junqueira Amorim"]
+    info.Artists = [u"Otavio Henrique Junqueira Amorim"]
 
     # Then we call wx.AboutBox providing its info object
     wx.AboutBox(info)

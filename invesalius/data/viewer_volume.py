@@ -20,6 +20,7 @@
 #    detalhes.
 #--------------------------------------------------------------------------
 
+import os
 import sys
 
 import numpy as np
@@ -36,6 +37,15 @@ import invesalius.project as prj
 import invesalius.style as st
 import invesalius.utils as utils
 import invesalius.data.measures as measures
+
+if sys.platform == 'win32':
+    try:
+        import win32api
+        _has_win32api = True
+    except ImportError:
+        _has_win32api = False
+else:
+    _has_win32api = False
 
 PROP_MEASURE = 0.8
 
@@ -314,15 +324,24 @@ class Viewer(wx.Panel):
                                     self.seed_points) 
 
     def OnExportPicture(self, pubsub_evt):
-        Publisher.sendMessage('Begin busy cursor')
         id, filename, filetype = pubsub_evt.data
         if id == const.VOLUME:
+            Publisher.sendMessage('Begin busy cursor')
+            if _has_win32api:
+                utils.touch(filename)
+                win_filename = win32api.GetShortPathName(filename)
+                self._export_picture(id, win_filename, filetype)
+            else:
+                self._export_picture(id, filename, filetype)
+            Publisher.sendMessage('End busy cursor')
+
+    def _export_picture(self, id, filename, filetype):
             if filetype == const.FILETYPE_POV:
                 renwin = self.interactor.GetRenderWindow()
                 image = vtk.vtkWindowToImageFilter()
                 image.SetInput(renwin)
                 writer = vtk.vtkPOVExporter()
-                writer.SetFileName(filename)
+                writer.SetFileName(filename.encode(const.FS_ENCODE))
                 writer.SetRenderWindow(renwin)
                 writer.Write()
             else:
@@ -345,12 +364,15 @@ class Viewer(wx.Panel):
                     writer = vtk.vtkPostScriptWriter()
                 elif (filetype == const.FILETYPE_TIF):
                     writer = vtk.vtkTIFFWriter()
-                    filename = "%s.tif"%filename.strip(".tif")
+                    filename = u"%s.tif"%filename.strip(".tif")
 
                 writer.SetInputData(image)
-                writer.SetFileName(filename)
+                writer.SetFileName(filename.encode(const.FS_ENCODE))
                 writer.Write()
-        Publisher.sendMessage('End busy cursor')
+
+            if not os.path.exists(filename):
+                wx.MessageBox(_("InVesalius was not able to export this picture"), _("Export picture error"))
+
 
     def OnCloseProject(self, pubsub_evt):
         if self.raycasting_volume:
@@ -764,6 +786,18 @@ class Viewer(wx.Panel):
 
     def OnExportSurface(self, pubsub_evt):
         filename, filetype = pubsub_evt.data
+        if filetype not in (const.FILETYPE_STL,
+                            const.FILETYPE_VTP,
+                            const.FILETYPE_PLY,
+                            const.FILETYPE_STL_ASCII):
+            if _has_win32api:
+                utils.touch(filename)
+                win_filename = win32api.GetShortPathName(filename)
+                self._export_surface(win_filename.encode(const.FS_ENCODE), filetype)
+            else:
+                self._export_surface(filename.encode(const.FS_ENCODE), filetype)
+
+    def _export_surface(self, filename, filetype):
         fileprefix = filename.split(".")[-2]
         renwin = self.interactor.GetRenderWindow()
 
