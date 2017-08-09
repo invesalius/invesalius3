@@ -1881,10 +1881,10 @@ class ReorientImageDialog(wx.Dialog):
         self._bind_events_wx()
 
     def _init_gui(self):
-        interp_methods_choices = ((_("Nearest Neighbour"), 0),
-                                  (_("Trilinear"), 1),
-                                  (_("Tricubic"), 2),
-                                  (_("Lanczos"), 3))
+        interp_methods_choices = ((_(u"Nearest Neighbour"), 0),
+                                  (_(u"Trilinear"), 1),
+                                  (_(u"Tricubic"), 2),
+                                  (_(u"Lanczos (experimental)"), 3))
         self.interp_method = wx.ComboBox(self, -1, choices=[], style=wx.CB_READONLY)
         for txt, im_code in interp_methods_choices:
             self.interp_method.Append(txt, im_code)
