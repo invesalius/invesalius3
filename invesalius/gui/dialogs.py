@@ -259,7 +259,7 @@ def ShowOpenProjectDialog():
     return filepath
 
 
-def ShowImportDirDialog():
+def ShowImportDirDialog(self):
     current_dir = os.path.abspath(".")
 
     if (sys.platform == 'win32') or (sys.platform == 'linux2'):
@@ -272,7 +272,7 @@ def ShowImportDirDialog():
     else:
         folder = ''
 
-    dlg = wx.DirDialog(None, _("Choose a DICOM folder:"), folder,
+    dlg = wx.DirDialog(self, _("Choose a DICOM folder:"), folder,
                         style=wx.DD_DEFAULT_STYLE
                         | wx.DD_DIR_MUST_EXIST
                         | wx.DD_CHANGE_DIR)
@@ -300,7 +300,7 @@ def ShowImportDirDialog():
     os.chdir(current_dir)
     return path
 
-def ShowImportBitmapDirDialog():
+def ShowImportBitmapDirDialog(self):
     current_dir = os.path.abspath(".")
 
     if (sys.platform == 'win32') or (sys.platform == 'linux2'):
@@ -313,7 +313,7 @@ def ShowImportBitmapDirDialog():
     else:
         folder = ''
 
-    dlg = wx.DirDialog(None, _("Choose a folder with TIFF, BMP, JPG or PNG:"), folder,
+    dlg = wx.DirDialog(self, _("Choose a folder with TIFF, BMP, JPG or PNG:"), folder,
                         style=wx.DD_DEFAULT_STYLE
                         | wx.DD_DIR_MUST_EXIST
                         | wx.DD_CHANGE_DIR)

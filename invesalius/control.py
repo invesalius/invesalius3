@@ -158,7 +158,7 @@ class Controller():
             Publisher.sendMessage("Set slice interaction style", const.STATE_DEFAULT)
 
         # Import TIFF, BMP, JPEG or PNG
-        dirpath = dialog.ShowImportBitmapDirDialog()
+        dirpath = dialog.ShowImportBitmapDirDialog(self.frame)
 
         if dirpath and not os.listdir(dirpath):
             dialog.ImportEmptyDirectory(dirpath)
@@ -181,7 +181,7 @@ class Controller():
             Publisher.sendMessage("Stop Config Recording")
             Publisher.sendMessage("Set slice interaction style", const.STATE_DEFAULT)
         # Import project
-        dirpath = dialog.ShowImportDirDialog()
+        dirpath = dialog.ShowImportDirDialog(self.frame)
         if dirpath and not os.listdir(dirpath):
             dialog.ImportEmptyDirectory(dirpath)
         elif dirpath:
