@@ -13,14 +13,13 @@ msgstr ""
 "Project-Id-Version: InVesalius3\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2017-08-10 08:58-0300\n"
-"PO-Revision-Date: 2017-06-28 14:09+0000\n"
-"Last-Translator: InVesalius <invesalius@cti.gov.br>\n"
-"Language-Team: German (http://www.transifex.com/invesalius/invesalius3/"
-"language/de/)\n"
-"Language: de\n"
+"PO-Revision-Date: 2017-08-10 12:03+0000\n"
+"Last-Translator: tfmoraes <totonixsame@gmail.com>\n"
+"Language-Team: German (http://www.transifex.com/invesalius/invesalius3/language/de/)\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
+"Language: de\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 "X-Poedit-Country: GENERIC\n"
 "X-Poedit-Language: English\n"
@@ -46,9 +45,7 @@ msgstr "Ort: %.2f"
 msgid ""
 "%s %s\n"
 "Made in InVesalius"
-msgstr ""
-"%s %s\n"
-"Erstellt mit InVesalius"
+msgstr "%s %s\nErstellt mit InVesalius"
 
 #: bitmap_preview_panel.py:166 bitmap_preview_panel.py:167
 #: dicom_preview_panel.py:198 dicom_preview_panel.py:199 frame.py:838
@@ -427,31 +424,31 @@ msgstr "Schnittebene"
 
 #: constants.py:671
 msgid "Select tracker:"
-msgstr ""
+msgstr "Tracker auswählen:"
 
 #: constants.py:671
 msgid "Claron MicronTracker"
-msgstr ""
+msgstr "Claron MicronTracker"
 
 #: constants.py:672
 msgid "Polhemus FASTRAK"
-msgstr ""
+msgstr "Polhemus FASTRAK"
 
 #: constants.py:672
 msgid "Polhemus ISOTRAK II"
-msgstr ""
+msgstr "Polhemus ISOTRAK II"
 
 #: constants.py:673
 msgid "Polhemus PATRIOT"
-msgstr ""
+msgstr "Polhemus PATRIOT"
 
 #: constants.py:673
 msgid "Debug tracker"
-msgstr ""
+msgstr "Tracker debuggen"
 
 #: constants.py:674
 msgid "Disconnect tracker"
-msgstr ""
+msgstr "Verbindung zu Tracker trennen"
 
 #: constants.py:679
 msgid "Static ref."
@@ -711,15 +708,10 @@ msgstr "Wert wird nicht angewendet"
 
 #: dialogs.py:116
 msgid ""
-"InVesalius is running on a 32-bit operating system or has insufficient "
-"memory. \n"
+"InVesalius is running on a 32-bit operating system or has insufficient memory. \n"
 "If you want to work with 3D surfaces or volume rendering, \n"
 "it is recommended to reduce the medical images resolution."
-msgstr ""
-"InVesalius läuft auf einem 32-bit Betriebbsystem oder hat nicht genug "
-"Speicher.\n"
-"Wenn Sie mit 3D Oberflächen oder Körperrendering arbeiten wollen,\n"
-"ist es empfohlen die Auflösung der medizinischen Bilder zu verringern."
+msgstr "InVesalius läuft auf einem 32-bit Betriebbsystem oder hat nicht genug Speicher.\nWenn Sie mit 3D Oberflächen oder Körperrendering arbeiten wollen,\nist es empfohlen die Auflösung der medizinischen Bilder zu verringern."
 
 #: dialogs.py:130
 msgid "Percentage of original resolution"
@@ -743,15 +735,15 @@ msgstr "Wähle einen Ordner mit TIFF, BMP, JPG oder PNG:"
 
 #: dialogs.py:345
 msgid "Import Analyze 7.5 file"
-msgstr ""
+msgstr "Analyze 7.5 Datei importieren"
 
 #: dialogs.py:351
 msgid "Import NIFTi 1 file"
-msgstr ""
+msgstr "NIFTi 1 Datei importieren"
 
 #: dialogs.py:354
 msgid "Import PAR/REC file"
-msgstr ""
+msgstr "PAR/REC Datei importieren"
 
 #: dialogs.py:386
 msgid "Import surface file"
@@ -767,23 +759,21 @@ msgstr "InVesalius Projekt (*.inv3)|*.inv3"
 
 #: dialogs.py:446
 msgid "Save markers as..."
-msgstr ""
+msgstr "Markierungen speichern unter..."
 
 #: dialogs.py:449 dialogs.py:480
 msgid "Markers files (*.mks)|*.mks"
-msgstr ""
+msgstr "Markierungsdateien (*.mks)|*.mks"
 
 #: dialogs.py:477
 msgid "Load markers"
-msgstr ""
+msgstr "Markierungen laden"
 
 #: dialogs.py:543 utils.py:379
 msgid ""
 "A new version of InVesalius is available. Do you want to open the download "
 "website now?"
-msgstr ""
-"Es ist eine neue Version von InVesalius verfügbar. Möchten Sie die Download-"
-"Webseite öffnen?"
+msgstr "Es ist eine neue Version von InVesalius verfügbar. Möchten Sie die Download-Webseite öffnen?"
 
 #: dialogs.py:544 utils.py:380
 msgid "Invesalius Update"
@@ -794,9 +784,7 @@ msgstr "Invesalius Aktualisierung"
 msgid ""
 "The project %s has been modified.\n"
 "Save changes?"
-msgstr ""
-"Das Projekt %s wurde geändert.\n"
-"Änderungen speichern ?"
+msgstr "Das Projekt %s wurde geändert.\nÄnderungen speichern ?"
 
 #: dialogs.py:616
 #, python-format
@@ -813,11 +801,11 @@ msgstr "Es gibt keine DICOM-Dateien im ausgewählten Verzeichnis"
 
 #: dialogs.py:635
 msgid "Invalid file."
-msgstr ""
+msgstr "Ungültige Datei"
 
 #: dialogs.py:648
 msgid "Warning! InVesalius has limited support to Analyze format.\n"
-msgstr ""
+msgstr "Achtung: InVesalius unterstützt das Analyze Format nur eingeschränkt.\n"
 
 #: dialogs.py:649
 msgid "Slices may be wrongly oriented and functions may not work properly."
@@ -869,11 +857,11 @@ msgstr "ist nicht verbunden."
 
 #: dialogs.py:774
 msgid "The TXT file is invalid."
-msgstr ""
+msgstr "Die TXT Datei ist ungültig."
 
 #: dialogs.py:786
 msgid "No data selected"
-msgstr ""
+msgstr "Keine Daten ausgewählt"
 
 #: dialogs.py:797
 msgid "Do you really want to delete all markers?"
@@ -881,7 +869,7 @@ msgstr ""
 
 #: dialogs.py:810
 msgid "Edit marker ID"
-msgstr ""
+msgstr "Markierungs ID bearbeiten"
 
 #: dialogs.py:857
 msgid "New mask name:"
@@ -908,9 +896,7 @@ msgstr "%s existiert nicht."
 
 #: dialogs.py:981
 msgid "Please, provide more than one DICOM file for 3D reconstruction"
-msgstr ""
-"Bitte stellen Sie mehr als eine DICOM-Datei für die 3D-Rekonstruktion zur "
-"Verfügung"
+msgstr "Bitte stellen Sie mehr als eine DICOM-Datei für die 3D-Rekonstruktion zur Verfügung"
 
 #: dialogs.py:1042
 msgid "(c) 2007-2017 Center for Information Technology Renato Archer - CTI"
@@ -918,34 +904,12 @@ msgstr ""
 
 #: dialogs.py:1043
 msgid ""
-"InVesalius is a medical imaging program for 3D reconstruction. It uses a "
-"sequence of 2D DICOM image files acquired with CT or MRI scanners. "
-"InVesalius allows exporting 3D volumes or surfaces as mesh files for "
-"creating physical models of a patient's anatomy using additive manufacturing "
-"(3D printing) technologies. The software is developed by Center for "
-"Information Technology Renato Archer (CTI), National Council for Scientific "
-"and Technological Development (CNPq) and the Brazilian Ministry of Health.\n"
+"InVesalius is a medical imaging program for 3D reconstruction. It uses a sequence of 2D DICOM image files acquired with CT or MRI scanners. InVesalius allows exporting 3D volumes or surfaces as mesh files for creating physical models of a patient's anatomy using additive manufacturing (3D printing) technologies. The software is developed by Center for Information Technology Renato Archer (CTI), National Council for Scientific and Technological Development (CNPq) and the Brazilian Ministry of Health.\n"
 "\n"
-" InVesalius must be used only for research. The Center for Information "
-"Technology Renato Archer is not responsible for damages caused by the use of "
-"this software.\n"
+" InVesalius must be used only for research. The Center for Information Technology Renato Archer is not responsible for damages caused by the use of this software.\n"
 "\n"
 " Contact: invesalius@cti.gov.br"
-msgstr ""
-"InVesalius ist ein Programm zur medizinischen Bildgebung mit 3D Wiedergabe. "
-"Es verwendet 2D DICOM Bilddateien eines CTs oder MRTs. InVesalius "
-"unterstützt den Export von 3D Körpern oder Oberflächen als Meshdateien, um "
-"physische Modelle der Patientenanatomie mittels Additive Manufacturing (3D "
-"Drucken) zu erstellen. Die Software wird vom Center for Information "
-"Technology Renato Archer (CTI), National Council for Scientific and "
-"Technological Development (CNPq) and dem brasilianischen "
-"Gesundheitsministerium entwickelt.\n"
-"\n"
-"InVesalius darf nur für Forschungszwecke verwendet werden. Das  The Center "
-"for Information Technology Renato Archer ist nicht verantwortlich für "
-"Schäden, die durch Nutzung dieser Software entstanden sind.\n"
-"\n"
-"Kontakt: invesalius@cti.gov.br"
+msgstr "InVesalius ist ein Programm zur medizinischen Bildgebung mit 3D Wiedergabe. Es verwendet 2D DICOM Bilddateien eines CTs oder MRTs. InVesalius unterstützt den Export von 3D Körpern oder Oberflächen als Meshdateien, um physische Modelle der Patientenanatomie mittels Additive Manufacturing (3D Drucken) zu erstellen. Die Software wird vom Center for Information Technology Renato Archer (CTI), National Council for Scientific and Technological Development (CNPq) and dem brasilianischen Gesundheitsministerium entwickelt.\n\nInVesalius darf nur für Forschungszwecke verwendet werden. Das  The Center for Information Technology Renato Archer ist nicht verantwortlich für Schäden, die durch Nutzung dieser Software entstanden sind.\n\nKontakt: invesalius@cti.gov.br"
 
 #: dialogs.py:1051
 msgid "GNU GPL (General Public License) version 2"
@@ -1050,8 +1014,7 @@ msgstr "Binär"
 #: dialogs.py:1572
 msgid ""
 "It is not possible to use the Default method because the mask was edited."
-msgstr ""
-"Es ist unmöglich die Vorgabemethode anzuwenden da die Maske bearbeitet wurde."
+msgstr "Es ist unmöglich die Vorgabemethode anzuwenden da die Maske bearbeitet wurde."
 
 #: dialogs.py:1575
 msgid "Method:"
@@ -1110,9 +1073,8 @@ msgid "Nearest Neighbour"
 msgstr ""
 
 #: dialogs.py:1885
-#, fuzzy
 msgid "Trilinear"
-msgstr "Linearen"
+msgstr ""
 
 #: dialogs.py:1886
 msgid "Tricubic"
@@ -1139,9 +1101,8 @@ msgid "Angle Z"
 msgstr "Z Winkel"
 
 #: dialogs.py:1913
-#, fuzzy
 msgid "Interpolation method:"
-msgstr "Interpolation "
+msgstr ""
 
 #: dialogs.py:1993
 msgid "Create project from bitmap"
@@ -1721,9 +1682,7 @@ msgstr "Nein"
 msgid ""
 "Language settings will be applied \n"
 " the next time InVesalius starts."
-msgstr ""
-"Spracheinstellungen werden beim \n"
-"nächsten Start von InVesalius angewendet"
+msgstr "Spracheinstellungen werden beim \nnächsten Start von InVesalius angewendet"
 
 #: presets.py:33 presets.py:51 presets.py:107 presets.py:138
 msgid "Soft Tissue"
@@ -1855,11 +1814,11 @@ msgstr "Entferne Teil ..."
 
 #: styles.py:2118
 msgid "Segmenting ..."
-msgstr ""
+msgstr "Segmentiere ..."
 
 #: surface.py:274
 msgid "File format not reconized by InVesalius"
-msgstr ""
+msgstr "Dateiformat wurde nicht von InVesalius erkannt"
 
 #: surface.py:274 surface.py:286
 msgid "Import surface error"
@@ -1895,14 +1854,12 @@ msgid "Save 3D surface as..."
 msgstr "Speichern der 3D-Oberfläche"
 
 #: task_exporter.py:336
-#, fuzzy
 msgid "It was not possible to save the surface."
-msgstr "InVesalius konnte die Oberfläche nicht importieren"
+msgstr ""
 
 #: task_exporter.py:337
-#, fuzzy
 msgid "Error saving surface"
-msgstr "Export der 3D-Oberfläche"
+msgstr ""
 
 #: task_exporter.py:343
 msgid "You need to create a surface and make it "
@@ -1938,7 +1895,7 @@ msgstr ""
 
 #: task_navigator.py:131
 msgid "Neuronavigation"
-msgstr ""
+msgstr "Neuronavigation"
 
 #: task_navigator.py:140
 msgid "Extra tools"
@@ -1962,7 +1919,7 @@ msgstr "Externer Auslöser"
 
 #: task_navigator.py:227
 msgid "Choose the tracking device"
-msgstr ""
+msgstr "Trackinggerät auswählen"
 
 #: task_navigator.py:235
 msgid "Choose the navigation reference mode"
@@ -2093,10 +2050,9 @@ msgid "Advanced options"
 msgstr "Erweiterte Optionen"
 
 #: task_surface.py:275
-msgid "Automatically select largest disconnected region and create new surface"
-msgstr ""
-"Wähle automatisch den größten nicht zusammenhängenden Bereich aus und "
-"erstelle eine neue Oberfläche"
+msgid ""
+"Automatically select largest disconnected region and create new surface"
+msgstr "Wähle automatisch den größten nicht zusammenhängenden Bereich aus und erstelle eine neue Oberfläche"
 
 #: task_surface.py:276
 msgid "Select largest surface"
@@ -2104,10 +2060,9 @@ msgstr "Größte Oberfläche auswählen"
 
 #: task_surface.py:284
 msgid ""
-"Automatically select disconnected regions and create a new surface per region"
-msgstr ""
-"Wähle automatisch nicht zusammenhängende Bereiche aus und erstelle eine neue "
-"Oberfläche pro Bereich"
+"Automatically select disconnected regions and create a new surface per "
+"region"
+msgstr "Wähle automatisch nicht zusammenhängende Bereiche aus und erstelle eine neue Oberfläche pro Bereich"
 
 #: task_surface.py:285
 msgid "Split all disconnected surfaces"
@@ -2115,9 +2070,7 @@ msgstr "Trenne alle nicht zusammenhängende Oberflächen"
 
 #: task_surface.py:293
 msgid "Manually insert seeds of regions of interest and create a new surface"
-msgstr ""
-"Manuelles Einsetzen von Markierungen in interessante Bereiche und Erzeugen "
-"einer neuen Oberfläche"
+msgstr "Manuelles Einsetzen von Markierungen in interessante Bereiche und Erzeugen einer neuen Oberfläche"
 
 #: task_surface.py:294
 msgid "Select regions of interest..."
@@ -2159,9 +2112,7 @@ msgstr "Anzahl der Schnitte um eine Ansicht zusammenzustellen."
 msgid ""
 "Controls the sharpness of the contour. The greater the value, the sharper "
 "the contour."
-msgstr ""
-"Steuert die Schärfe des Umrisses. Je höher der Wert, desto schärfer der "
-"Umriss."
+msgstr "Steuert die Schärfe des Umrisses. Je höher der Wert, desto schärfer der Umriss."
 
 #: viewer_slice.py:95
 msgid "Inverted order"
@@ -2171,9 +2122,7 @@ msgstr "Umgekehrte Reihenfolge"
 msgid ""
 "If checked, the slices are traversed in descending order to compound the "
 "visualization instead of ascending order."
-msgstr ""
-"Wenn aktiviert werden die Schnitte in absteigender statt in aufsteigender "
-"Reihenfolge angeordnet um die Ansicht zusammenzustellen."
+msgstr "Wenn aktiviert werden die Schnitte in absteigender statt in aufsteigender Reihenfolge angeordnet um die Ansicht zusammenzustellen."
 
 #: viewer_slice.py:102
 msgid "Number of slices"
@@ -2346,14 +2295,12 @@ msgid "BA"
 msgstr "BA"
 
 #: viewer_slice.py:1326 viewer_volume.py:374
-#, fuzzy
 msgid "InVesalius was not able to export this picture"
-msgstr "InVesalius konnte die Oberfläche nicht importieren"
+msgstr ""
 
 #: viewer_slice.py:1326 viewer_volume.py:374
-#, fuzzy
 msgid "Export picture error"
-msgstr "Exportiere Bild..."
+msgstr ""
 
 #~ msgid "Untitled"
 #~ msgstr "Untitled"

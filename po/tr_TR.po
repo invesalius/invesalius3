@@ -12,14 +12,13 @@ msgstr ""
 "Project-Id-Version: InVesalius3\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2017-08-10 08:58-0300\n"
-"PO-Revision-Date: 2017-06-28 14:09+0000\n"
-"Last-Translator: InVesalius <invesalius@cti.gov.br>\n"
-"Language-Team: Turkish (Turkey) (http://www.transifex.com/invesalius/"
-"invesalius3/language/tr_TR/)\n"
-"Language: tr_TR\n"
+"PO-Revision-Date: 2017-08-10 12:03+0000\n"
+"Last-Translator: tfmoraes <totonixsame@gmail.com>\n"
+"Language-Team: Turkish (Turkey) (http://www.transifex.com/invesalius/invesalius3/language/tr_TR/)\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
+"Language: tr_TR\n"
 "Plural-Forms: nplurals=1; plural=0;\n"
 "X-Poedit-Country: GENERIC\n"
 "X-Poedit-Language: English\n"
@@ -45,9 +44,7 @@ msgstr "Konum: %.2f"
 msgid ""
 "%s %s\n"
 "Made in InVesalius"
-msgstr ""
-"%s %s\n"
-"Made in InVesalius"
+msgstr "%s %s\nMade in InVesalius"
 
 #: bitmap_preview_panel.py:166 bitmap_preview_panel.py:167
 #: dicom_preview_panel.py:198 dicom_preview_panel.py:199 frame.py:838
@@ -710,14 +707,10 @@ msgstr "Değer uygulanmayacak"
 
 #: dialogs.py:116
 msgid ""
-"InVesalius is running on a 32-bit operating system or has insufficient "
-"memory. \n"
+"InVesalius is running on a 32-bit operating system or has insufficient memory. \n"
 "If you want to work with 3D surfaces or volume rendering, \n"
 "it is recommended to reduce the medical images resolution."
-msgstr ""
-"InVasilus 32-işletim sistemi ile çalışıyor veya hafıza yetersiz. 3D "
-"arayüzler veya hacim oluşturma araçlarıyla çalışmak istiyorsanız medikal "
-"görüntülerin çözünürlüklerini düşürmeniz önerilir."
+msgstr "InVasilus 32-işletim sistemi ile çalışıyor veya hafıza yetersiz. 3D arayüzler veya hacim oluşturma araçlarıyla çalışmak istiyorsanız medikal görüntülerin çözünürlüklerini düşürmeniz önerilir."
 
 #: dialogs.py:130
 msgid "Percentage of original resolution"
@@ -779,8 +772,7 @@ msgstr ""
 msgid ""
 "A new version of InVesalius is available. Do you want to open the download "
 "website now?"
-msgstr ""
-"InVesalius yeni sürümü mevcut. WEB sayfasından hemen indirmek ister misiniz?"
+msgstr "InVesalius yeni sürümü mevcut. WEB sayfasından hemen indirmek ister misiniz?"
 
 #: dialogs.py:544 utils.py:380
 msgid "Invesalius Update"
@@ -911,35 +903,12 @@ msgstr ""
 
 #: dialogs.py:1043
 msgid ""
-"InVesalius is a medical imaging program for 3D reconstruction. It uses a "
-"sequence of 2D DICOM image files acquired with CT or MRI scanners. "
-"InVesalius allows exporting 3D volumes or surfaces as mesh files for "
-"creating physical models of a patient's anatomy using additive manufacturing "
-"(3D printing) technologies. The software is developed by Center for "
-"Information Technology Renato Archer (CTI), National Council for Scientific "
-"and Technological Development (CNPq) and the Brazilian Ministry of Health.\n"
+"InVesalius is a medical imaging program for 3D reconstruction. It uses a sequence of 2D DICOM image files acquired with CT or MRI scanners. InVesalius allows exporting 3D volumes or surfaces as mesh files for creating physical models of a patient's anatomy using additive manufacturing (3D printing) technologies. The software is developed by Center for Information Technology Renato Archer (CTI), National Council for Scientific and Technological Development (CNPq) and the Brazilian Ministry of Health.\n"
 "\n"
-" InVesalius must be used only for research. The Center for Information "
-"Technology Renato Archer is not responsible for damages caused by the use of "
-"this software.\n"
+" InVesalius must be used only for research. The Center for Information Technology Renato Archer is not responsible for damages caused by the use of this software.\n"
 "\n"
 " Contact: invesalius@cti.gov.br"
-msgstr ""
-"İnVesalius 3D yapılandırma için medikal görüntüme programıdır. CT veya MRI "
-"görüntüleme ile elde edilen bir dizi 2 boyutlu DICOM görüntüleri kullanır. 3 "
-"boyutlu hacim ve yüzeyleri mesh dosyası olarak dışa aktararak ilave imalat "
-"teknolojileri kullanımına (3 boyutlu yazıcı) izin verir. Program Renato "
-"Archer Bilgi Teknolojileri Merkezi (CTI), Ulusal Bilim ve Teknoloji "
-"Geliştirme kurulu (CNPq) ve Brezilya Sağlık Bakanlığı tarafından "
-"geliştirilmiştir.\n"
-"\n"
-"\n"
-"InVesalius sadece araştırma amacıyla kullanılmalıdır. Renato Archer Bilgi "
-"Teknolojileri Merkezi bu programın kullanımından doğabilecek zararlardan "
-"sorumlu değildir.\n"
-"\n"
-"\n"
-"İletişim: invesalius@cti.gov.br"
+msgstr "İnVesalius 3D yapılandırma için medikal görüntüme programıdır. CT veya MRI görüntüleme ile elde edilen bir dizi 2 boyutlu DICOM görüntüleri kullanır. 3 boyutlu hacim ve yüzeyleri mesh dosyası olarak dışa aktararak ilave imalat teknolojileri kullanımına (3 boyutlu yazıcı) izin verir. Program Renato Archer Bilgi Teknolojileri Merkezi (CTI), Ulusal Bilim ve Teknoloji Geliştirme kurulu (CNPq) ve Brezilya Sağlık Bakanlığı tarafından geliştirilmiştir.\n\n\nInVesalius sadece araştırma amacıyla kullanılmalıdır. Renato Archer Bilgi Teknolojileri Merkezi bu programın kullanımından doğabilecek zararlardan sorumlu değildir.\n\n\nİletişim: invesalius@cti.gov.br"
 
 #: dialogs.py:1051
 msgid "GNU GPL (General Public License) version 2"
@@ -1103,9 +1072,8 @@ msgid "Nearest Neighbour"
 msgstr ""
 
 #: dialogs.py:1885
-#, fuzzy
 msgid "Trilinear"
-msgstr "lineer"
+msgstr ""
 
 #: dialogs.py:1886
 msgid "Tricubic"
@@ -1132,9 +1100,8 @@ msgid "Angle Z"
 msgstr ""
 
 #: dialogs.py:1913
-#, fuzzy
 msgid "Interpolation method:"
-msgstr "İnterpolasyon"
+msgstr ""
 
 #: dialogs.py:1993
 msgid "Create project from bitmap"
@@ -1714,9 +1681,7 @@ msgstr ""
 msgid ""
 "Language settings will be applied \n"
 " the next time InVesalius starts."
-msgstr ""
-"InVesalius tekrar başlatıldığında\n"
-"dil ayarları uygulanacak."
+msgstr "InVesalius tekrar başlatıldığında\ndil ayarları uygulanacak."
 
 #: presets.py:33 presets.py:51 presets.py:107 presets.py:138
 msgid "Soft Tissue"
@@ -1892,9 +1857,8 @@ msgid "It was not possible to save the surface."
 msgstr ""
 
 #: task_exporter.py:337
-#, fuzzy
 msgid "Error saving surface"
-msgstr "3D yüzeyi dışa aktar"
+msgstr ""
 
 #: task_exporter.py:343
 msgid "You need to create a surface and make it "
@@ -2085,7 +2049,8 @@ msgid "Advanced options"
 msgstr "Gelişmiş seçenekler"
 
 #: task_surface.py:275
-msgid "Automatically select largest disconnected region and create new surface"
+msgid ""
+"Automatically select largest disconnected region and create new surface"
 msgstr "En geniş bağlantısız yüzeyi otomatik olarak seçip yeni yüzey oluştur"
 
 #: task_surface.py:276
@@ -2094,9 +2059,9 @@ msgstr "En geniş yüzeyi seç"
 
 #: task_surface.py:284
 msgid ""
-"Automatically select disconnected regions and create a new surface per region"
-msgstr ""
-"Bağlantısız bölgeleri otomatk olarak seçip her biri için yeni yüzey oluştur"
+"Automatically select disconnected regions and create a new surface per "
+"region"
+msgstr "Bağlantısız bölgeleri otomatk olarak seçip her biri için yeni yüzey oluştur"
 
 #: task_surface.py:285
 msgid "Split all disconnected surfaces"
@@ -2146,8 +2111,7 @@ msgstr "Görüntüyü oluşturmak üzere kullanılan kesit sayısı"
 msgid ""
 "Controls the sharpness of the contour. The greater the value, the sharper "
 "the contour."
-msgstr ""
-"Kontür keskinliğini kontrol eder. Değer attıkça kontür keskinliği artar."
+msgstr "Kontür keskinliğini kontrol eder. Değer attıkça kontür keskinliği artar."
 
 #: viewer_slice.py:95
 msgid "Inverted order"
@@ -2157,9 +2121,7 @@ msgstr "Ters düzen"
 msgid ""
 "If checked, the slices are traversed in descending order to compound the "
 "visualization instead of ascending order."
-msgstr ""
-"eğer seçersek, parçalar alçalarak düzensiz bir şekilde çapraz geçer  bu "
-"bileşimin vizüalizasyonu büyüyen sıranın yerine seçer."
+msgstr "eğer seçersek, parçalar alçalarak düzensiz bir şekilde çapraz geçer  bu bileşimin vizüalizasyonu büyüyen sıranın yerine seçer."
 
 #: viewer_slice.py:102
 msgid "Number of slices"
@@ -2336,9 +2298,8 @@ msgid "InVesalius was not able to export this picture"
 msgstr ""
 
 #: viewer_slice.py:1326 viewer_volume.py:374
-#, fuzzy
 msgid "Export picture error"
-msgstr "Resmi dışa aktar..."
+msgstr ""
 
 #~ msgid "Untitled"
 #~ msgstr "Untitled"
