@@ -648,8 +648,6 @@ class Viewer(wx.Panel):
     def ShowTextActors(self):
         if self.on_wl and self.wl_text:
             self.canvas.draw_list.append(self.wl_text)
-        print "Canvas", self.canvas.draw_list
-        print "text ori", self.orientation_texts
         [self.canvas.draw_list.append(t) for t in self.orientation_texts]
         self.UpdateCanvas()
         self.on_text = True
