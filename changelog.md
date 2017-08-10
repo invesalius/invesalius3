@@ -1,5 +1,21 @@
 # Changelog
 
+## [3.1.1](https://github.com/invesalius/invesalius3/tree/v3.1.1) - 2017-08-10
+
+### Added
+- Lanczos 3D interpolation method.
+- Option to user set the interpolation method when reorienting an image.
+- Option to user digit the angles used to reorient image.
+
+### Fixed
+- Not starting InVesalius when user home has non-ascii chars.
+- Read DICOM and other image files with non-ascii chars in its filename.
+- Save InVesalius project wih non-ascii chars in its filename.
+- Import and export surface with non-ascii chars in its filename.
+- Export surface with non-ascii chars in its filename.
+- DICOM/Bitmap import dialog was not ShowModal.
+- Cut plane wasn't working when reenabled volume raycasting 
+
 ## [3.1.0](https://github.com/invesalius/invesalius3/tree/v3.1.0) - 2017-07-04
 
 ### Added

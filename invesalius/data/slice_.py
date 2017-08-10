@@ -629,7 +629,6 @@ class Slice(object):
                 tmp_array = np.array(self.matrix[slice_number:slice_number + number_slices])
                 if np.any(self.q_orientation[1::]):
                     transforms.apply_view_matrix_transform(self.matrix, self.spacing, M, slice_number, orientation, self.interp_method, self.matrix.min(), tmp_array)
-                    print ">>>", tmp_array.min(), tmp_array.max()
                 if self._type_projection == const.PROJECTION_NORMAL:
                     n_image = tmp_array.squeeze()
                 else:
@@ -889,7 +888,6 @@ class Slice(object):
                     self.current_mask.matrix[n+1, 1:, 1:] = m
             else:
                 slice_ = self.buffer_slices[orientation].image
-                print ">>>", slice_, index
                 self.buffer_slices[orientation].mask = (255 * ((slice_ >= thresh_min) & (slice_ <= thresh_max))).astype('uint8')
 
             # Update viewer

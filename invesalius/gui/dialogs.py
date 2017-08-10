@@ -1038,7 +1038,7 @@ def ShowAboutDialog(parent):
 
     info = wx.AboutDialogInfo()
     info.Name = "InVesalius"
-    info.Version = "3.1"
+    info.Version = "3.1.1"
     info.Copyright = _("(c) 2007-2017 Center for Information Technology Renato Archer - CTI")
     info.Description = wordwrap(_("InVesalius is a medical imaging program for 3D reconstruction. It uses a sequence of 2D DICOM image files acquired with CT or MRI scanners. InVesalius allows exporting 3D volumes or surfaces as mesh files for creating physical models of a patient's anatomy using additive manufacturing (3D printing) technologies. The software is developed by Center for Information Technology Renato Archer (CTI), National Council for Scientific and Technological Development (CNPq) and the Brazilian Ministry of Health.\n\n InVesalius must be used only for research. The Center for Information Technology Renato Archer is not responsible for damages caused by the use of this software.\n\n Contact: invesalius@cti.gov.br"), 350, wx.ClientDC(parent))
 
