@@ -78,12 +78,22 @@ When this tool is activated a window is opened (Figure~\ref{fig:image_reorient_w
 
 \begin{figure}[!htb]
 \centering
-\includegraphics[scale=0.4]{image_reorient_window_en.png}
+\includegraphics[scale=0.7]{image_reorient_window_en.png}
 \caption{Window that shows the reorientation image parameters.}
 \label{fig:image_reorient_window}
 \end{figure}
 
-To start reorienting the image, define the rotation point by keeping the \textbf{left} mouse button pressed between the two lines intersecting (Figure~\ref{fig:image_reorient_adjust_center}) at one orientation, e.g. axial, coronal or sagittal, and \textbf{drag} to the desired point.
+To start reorienting the image, define the interpolation method that will applied after rotation, by default is tricubic interpolation. The interpolation options are:
+
+\begin{itemize}
+	\item Nearest Neighbour
+	\item Trilinear
+	\item Tricubic
+	\item Lanczos
+\end{itemize}
+
+
+Then, select the rotation point by keeping the \textbf{left} mouse button pressed between the two lines intersecting (Figure~\ref{fig:image_reorient_adjust_center}) at one orientation, e.g. axial, coronal or sagittal, and \textbf{drag} to the desired point.
 
 \begin{figure}[!htb]
 \centering
