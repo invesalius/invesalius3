@@ -51,9 +51,23 @@
 # <dicom.image.number> and <dicom.acquisition.series_number>
 # were swapped
 
+import sys
+
 import gdcm
 
+if sys.platform == 'win32':
+    try:
+        import win32api
+        _has_win32api = True
+    except ImportError:
+        _has_win32api = False
+else:
+    _has_win32api = False
+
 import invesalius.utils as utils
+import invesalius.constants as const
+
+
 ORIENT_MAP = {"SAGITTAL":0, "CORONAL":1, "AXIAL":2, "OBLIQUE":2}
 
 
@@ -109,8 +123,13 @@ class DicomGroup:
         # This list will be used to create the vtkImageData
         # (interpolated)
 
-        filelist = [dicom.image.file for dicom in
-                self.slices_dict.values()]
+        if _has_win32api:
+            filelist = [win32api.GetShortPathName(dicom.image.file).encode(const.FS_ENCODE)
+                        for dicom in
+                        self.slices_dict.values()]
+        else:
+            filelist = [dicom.image.file for dicom in
+                        self.slices_dict.values()]
        
         # Sort slices using GDCM
         if (self.dicom.image.orientation_label <> "CORONAL"):

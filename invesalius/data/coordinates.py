@@ -102,10 +102,8 @@ def PolhemusCoord(trck, trck_id, ref_mode):
 
 
 def PolhemusWrapperCoord(trck, trck_id, ref_mode):
-    if trck_id == 2:
-        scale = 10. * np.array([1., 1.0, -1.0])
-    else:
-        scale = 25.4 * np.array([1., 1.0, -1.0])
+
+    scale = 25.4 * np.array([1., 1.0, -1.0])
     coord = None
 
     if ref_mode:

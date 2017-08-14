@@ -32,7 +32,7 @@ def TrackerConnection(tracker_id, action):
 
     if action == 'connect':
         trck_fcn = {1: ClaronTracker,
-                    2: PolhemusTracker,    # FASTRAK
+                    2: PolhemusTrackerFT,    # FASTRAK
                     3: PolhemusTracker,    # ISOTRAK
                     4: PolhemusTracker,    # PATRIOT
                     5: DebugTracker}
@@ -87,6 +87,24 @@ def ClaronTracker(tracker_id):
 
     return trck_init, lib_mode
 
+def PolhemusTrackerFT(tracker_id):
+    trck_init = None
+    lib_mode = 'wrapper'
+    try:
+        import polhemusFT
+
+        trck_init = polhemusFT.polhemusFT()
+        trck_check = trck_init.Initialize()
+
+        if trck_check:
+            # First run is necessary to discard the first coord collection
+            trck_init.Run()
+        else:
+            trck_init = trck_check
+    except:
+        print 'Could not connect to Polhemus via wrapper.'
+
+    return trck_init, lib_mode
 
 def PolhemusTracker(tracker_id):
     trck_init = None
@@ -212,6 +230,16 @@ def DisconnectTracker(tracker_id):
         except ImportError:
             lib_mode = 'error'
             print 'The ClaronTracker library is not installed.'
+
+    elif tracker_id == 2:
+        try:
+            import polhemusFT
+            polhemusFT.polhemusFT().Close()
+            lib_mode = 'wrapper'
+            print 'Polhemus tracker disconnected.'
+        except ImportError:
+            lib_mode = 'error'
+            print 'The polhemus library is not installed.'
 
     elif tracker_id == 4:
         try:

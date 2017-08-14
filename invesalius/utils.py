@@ -23,6 +23,8 @@ import re
 import locale
 import math
 
+from distutils.version import LooseVersion
+
 import numpy as np
 
 def format_time(value):
@@ -401,7 +403,7 @@ def UpdateCheck():
 
         # Fetch update data from server
         import invesalius.constants as const
-        url = "http://www.cti.gov.br/dt3d/invesalius/update/checkupdate.php"
+        url = "https://www.cti.gov.br/dt3d/invesalius/update/checkupdate.php"
         headers = { 'User-Agent' : 'Mozilla/5.0 (compatible; MSIE 5.5; Windows NT)' }
         data = {'update_protocol_version' : '1', 
                 'invesalius_version' : const.INVESALIUS_VERSION,
@@ -417,7 +419,14 @@ def UpdateCheck():
             return
         last = response.readline().rstrip()
         url = response.readline().rstrip()
-        if (last!=const.INVESALIUS_VERSION):
+
+        try:
+            last_ver = LooseVersion(last)
+            actual_ver = LooseVersion(const.INVESALIUS_VERSION)
+        except (ValueError, AttributeError):
+            return
+
+        if last_ver > actual_ver:
             print "  ...New update found!!! -> version:", last #, ", url=",url
             wx.CallAfter(wx.CallLater, 1000, _show_update_info)
 
@@ -428,3 +437,8 @@ def vtkarray_to_numpy(m):
         for j in xrange(4):
             nm[i, j] = m.GetElement(i, j)
     return nm
+
+
+def touch(fname):
+    with open(fname, 'a'):
+        pass

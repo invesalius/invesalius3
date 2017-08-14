@@ -21,12 +21,23 @@ import multiprocessing
 import os
 import plistlib
 import random
+import shutil
+import sys
 import tempfile
 import weakref
 
 import vtk
 import wx
 from wx.lib.pubsub import pub as Publisher
+
+if sys.platform == 'win32':
+    try:
+        import win32api
+        _has_win32api = True
+    except ImportError:
+        _has_win32api = False
+else:
+    _has_win32api = False
 
 import invesalius.constants as const
 import invesalius.data.imagedata_utils as iu
@@ -64,8 +75,8 @@ class Surface():
             self.name = name
 
     def SavePlist(self, dir_temp, filelist):
-        filename = 'surface_%d' % self.index
-        vtp_filename = filename + '.vtp'
+        filename = u'surface_%d' % self.index
+        vtp_filename = filename + u'.vtp'
         vtp_filepath = os.path.join(dir_temp, vtp_filename)
         pu.Export(self.polydata, vtp_filepath, bin=True)
 
@@ -80,7 +91,7 @@ class Surface():
                    'volume': self.volume,
                    'area': self.area,
                   }
-        plist_filename = filename + '.plist'
+        plist_filename = filename + u'.plist'
         #plist_filepath = os.path.join(dir_temp, filename + '.plist')
         temp_plist = tempfile.mktemp()
         plistlib.writePlist(surface, temp_plist)
@@ -264,7 +275,11 @@ class SurfaceManager():
             wx.MessageBox(_("File format not reconized by InVesalius"), _("Import surface error"))
             return
 
-        reader.SetFileName(filename)
+        if _has_win32api:
+            reader.SetFileName(win32api.GetShortPathName(filename).encode(const.FS_ENCODE))
+        else:
+            reader.SetFileName(filename.encode(const.FS_ENCODE))
+
         reader.Update()
         polydata = reader.GetOutput()
 
@@ -362,6 +377,9 @@ class SurfaceManager():
         del self.actors_dict
         self.actors_dict = {}
 
+        # restarting the surface index
+        Surface.general_index = -1
+
     def OnSelectSurface(self, pubsub_evt):
         index = pubsub_evt.data
         #self.last_surface_index = index
@@ -373,8 +391,8 @@ class SurfaceManager():
                                surface.colour, surface.volume,
                                surface.area, surface.transparency))
         self.last_surface_index = index
-        if surface.is_shown:
-            self.ShowActor(index, True)
+        #  if surface.is_shown:
+        self.ShowActor(index, True)
 
     def OnLoadSurfaceDict(self, pubsub_evt):
         surface_dict = pubsub_evt.data
@@ -611,11 +629,6 @@ class SurfaceManager():
 
             #  polydata.SetSource(None)
             #  polydata.DebugOn()
-            w = vtk.vtkPLYWriter()
-            w.SetInputData(polydata)
-            w.SetFileName('/tmp/ca_smoothing_inv.ply')
-            w.Write()
-
         else:
             #smoother = vtk.vtkWindowedSincPolyDataFilter()
             smoother = vtk.vtkSmoothPolyDataFilter()
@@ -889,11 +902,31 @@ class SurfaceManager():
 
     def OnExportSurface(self, pubsub_evt):
         filename, filetype = pubsub_evt.data
-        if (filetype == const.FILETYPE_STL) or\
-           (filetype == const.FILETYPE_VTP) or\
-           (filetype == const.FILETYPE_PLY) or\
-           (filetype == const.FILETYPE_STL_ASCII):
+        ftype_prefix = {
+            const.FILETYPE_STL: '.stl',
+            const.FILETYPE_VTP: '.vtp',
+            const.FILETYPE_PLY: '.ply',
+            const.FILETYPE_STL_ASCII: '.stl',
+        }
+        if filetype in ftype_prefix:
+            temp_file = tempfile.mktemp(suffix=ftype_prefix[filetype])
 
+            if _has_win32api:
+                utl.touch(temp_file)
+                _temp_file = temp_file
+                temp_file = win32api.GetShortPathName(temp_file)
+                os.remove(_temp_file)
+
+            temp_file = temp_file.decode(const.FS_ENCODE)
+            self._export_surface(temp_file, filetype)
+
+            shutil.move(temp_file, filename)
+
+    def _export_surface(self, filename, filetype):
+        if filetype in (const.FILETYPE_STL,
+                        const.FILETYPE_VTP,
+                        const.FILETYPE_PLY,
+                        const.FILETYPE_STL_ASCII):
             # First we identify all surfaces that are selected
             # (if any)
             proj = prj.Project()
@@ -932,7 +965,9 @@ class SurfaceManager():
                 #writer.SetColorModeToUniformCellColor()
                 #writer.SetColor(255, 0, 0)
 
-            if filetype in (const.FILETYPE_STL, const.FILETYPE_PLY):
+            if filetype in (const.FILETYPE_STL,
+                            const.FILETYPE_STL_ASCII,
+                            const.FILETYPE_PLY):
                 # Invert normals
                 normals = vtk.vtkPolyDataNormals()
                 normals.SetInputData(polydata)
@@ -943,7 +978,7 @@ class SurfaceManager():
                 normals.Update()
                 polydata = normals.GetOutput()
 
-            filename = filename.encode(wx.GetDefaultPyEncoding())
+            filename = filename.encode(const.FS_ENCODE)
             writer.SetFileName(filename)
             writer.SetInputData(polydata)
             writer.Write()

@@ -562,8 +562,13 @@ class Frame(wx.Frame):
         """
         Show getting started window.
         """
+        if ses.Session().language == 'pt_BR':
+            user_guide = "user_guide_pt_BR.pdf"
+        else:
+            user_guide = "user_guide_en.pdf"
+
         path = os.path.join(const.DOC_DIR,
-                            "user_guide_pt_BR.pdf")
+                            user_guide)
         if sys.platform == 'darwin':
             path = r'file://' + path
         webbrowser.open(path)

@@ -648,25 +648,11 @@ class LinearMeasure(object):
         return actors
 
     def Remove(self):
-        pass
-        #  if self.point_actor1:
-            #  self.renderer.RemoveActor(self.point_actor1)
-            #  del self.point_actor1
+        actors = self.GetActors()
+        Publisher.sendMessage("Remove actors " + str(const.SURFACE), (actors,))
 
-        #  if self.point_actor2:
-            #  self.renderer.RemoveActor(self.point_actor2)
-            #  del self.point_actor2
-
-        #  if self.line_actor:
-            #  self.renderer.RemoveActor(self.line_actor)
-            #  del self.line_actor
-
-        #  if self.text_actor:
-            #  self.renderer.RemoveActor(self.text_actor)
-            #  del self.text_actor
-
-    # def __del__(self):
-        # self.Remove()
+    def __del__(self):
+        self.Remove()
 
 
 class AngularMeasure(object):
@@ -913,26 +899,8 @@ class AngularMeasure(object):
         return angle
 
     def Remove(self):
-        pass
-        #  if self.point_actor1:
-            #  self.renderer.RemoveActor(self.point_actor1)
-            #  del self.point_actor1
-
-        #  if self.point_actor2:
-            #  self.renderer.RemoveActor(self.point_actor2)
-            #  del self.point_actor2
-
-        #  if self.point_actor3:
-            #  self.renderer.RemoveActor(self.point_actor3)
-            #  del self.point_actor3
-
-        #  if self.line_actor:
-            #  self.renderer.RemoveActor(self.line_actor)
-            #  del self.line_actor
-
-        #  if self.text_actor:
-            #  self.renderer.RemoveActor(self.text_actor)
-            #  del self.text_actor
+        actors = self.GetActors()
+        Publisher.sendMessage("Remove actors " + str(const.SURFACE), (actors,))
 
     def SetRenderer(self, renderer):
         if self.point_actor1:
@@ -957,5 +925,5 @@ class AngularMeasure(object):
 
         self.renderer = renderer
 
-    # def __del__(self):
-        # self.Remove()
+    def __del__(self):
+        self.Remove()

@@ -1,4 +1,4 @@
-LICENÇA PÚBLICA GERAL GNU
+﻿LICENÇA PÚBLICA GERAL GNU
 Versão 2, junho de 1991
 
  This is an unofficial translation of the GNU General Public License into

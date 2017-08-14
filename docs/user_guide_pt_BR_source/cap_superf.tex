@@ -13,7 +13,7 @@ no painel esquerdo do software, dentro do item \textbf{3. Configure a superfíci
 
 \begin{figure}[!htb]
 \centering
-\includegraphics[scale=0.5]{ScreenHunter_23_Jan_23_23_10}
+\includegraphics[scale=0.65]{surface_config_panel_pt.png}
 \caption{Configuração de uma superfície 3D}
 \label{fig:3d_surface_managment}
 \end{figure}
@@ -39,7 +39,7 @@ seleção da maior região da superfície.
 
 \begin{figure}[!htb]
 \centering
-\includegraphics[scale=0.5]{new_surface.png}
+\includegraphics[scale=0.5]{surface_config_window_pt.png}
 \caption{Janela para criação de superfície}
 \label{fig:create_surface_1}
 \end{figure}
@@ -55,8 +55,8 @@ selecionadas: "Preencher buracos" e "Manter maior região".
 
 \begin{figure}
   \centering
-  \subfloat[Frente]{\label{fig:__1}\includegraphics[width=0.338\textwidth]{ScreenHunter_48_Jan_23_23_34}}                
-  \subfloat[Baixo]{\label{fig:__1}\includegraphics[width=0.3\textwidth]{ScreenHunter_50Jan232334}}
+  \subfloat[Frente]{\label{fig:__1}\includegraphics[width=0.338\textwidth]{surface_model_front.jpg}}                
+  \subfloat[Baixo]{\label{fig:__1}\includegraphics[width=0.3\textwidth]{surface_model_bottom.jpg}}
   \caption{Superfície com região maior selecionada e com buracos preenchidos}
   \label{fig:surface_ex1}
 \end{figure}
@@ -68,8 +68,8 @@ suporte do tomógrafo e a superfície aberta.
 
 \begin{figure}
   \centering
-  \subfloat[Frente]{\label{fig:__2}\includegraphics[width=0.371\textwidth]{ScreenHunter_52Jan232335}}                
-  \subfloat[Baixo]{\label{fig:__2}\includegraphics[width=0.3\textwidth]{ScreenHunter_53Jan232336}}
+  \subfloat[Frente]{\label{fig:__2}\includegraphics[width=0.371\textwidth]{surface_model_front_all_parts.jpg}}                
+  \subfloat[Baixo]{\label{fig:__2}\includegraphics[width=0.3\textwidth]{surface_model_bottom_all_parts.jpg}}
   \caption{Superfície sem a seleção da maior região e com buracos abertos}
   \label{fig:surface_ex2}
 \end{figure}
@@ -80,9 +80,9 @@ O método \textbf{binário}, tem como partida a máscara que foi segmentada, sen
 
 No método \textbf{Context aware smoothing}, inicialmente a superfície é gerada a partir do método binário, mas em seguida é executado o algoritmo "Context aware smoothing" para suavizar a superfície resultante e evitar os "degraus" na mesma. Neste passo é requerido 4 valores, que serão apresentados a seguir.
 
-O \textbf{ângulo}, nesse caso será formado entre 2 normais de triângulos adjacentes, que \textbf{caso esteja acima do valor} definido no campo ângulo, o triângulo é elegido para ser o ponto de partida da suavização, a faixa de valor é de 0 até 1, sendo $0^\circ$ e $90^\circ$ respectivamente. A \textbf{distância máxima} é o raio a partir dos triângulos elegidos no passo anterior, que será utilizada como limite de suavização. O \textbf{peso mínimo} é o quanto de suavização será aplicado nas áreas que estão fora do raio determinado anteriormente. O \textbf{número de passos} é quantas vezes o algoritmo vai executar. 
+O \textbf{ângulo}, nesse caso será formado entre 2 normais de triângulos adjacentes, que \textbf{caso esteja acima do valor} definido no campo ângulo, o triângulo é elegido para ser o ponto de partida da suavização, a faixa de valor é de 0 até 1, sendo $0^\circ$ e $90^\circ$ respectivamente. A \textbf{distância máxima} é o raio a partir dos triângulos elegidos no passo anterior, que será utilizada como limite de suavização. O \textbf{peso mínimo} é o quanto de suavização será aplicado nas áreas que estão fora do raio determinado anteriormente. Esse parâmetro varia de $0$ (sem suavização) à $1$ (suavização total). O \textbf{número de passos} é quantas vezes o algoritmo vai executar. Quantos maior o número de passos, mais suave a superfície será.
 
-O método \textbf{padrão} é ativo \textbf{somente quando não existir edição manual na máscara}, os pixeis da imagem original que estão sob a máscara é utilizado para a geração de superfície, como normalmente imagens de tomografia ou ressonância possui vários níveis de cinza, é gerada uma superfície com curvas mais suaves.
+O método \textbf{padrão} é ativo \textbf{somente quando usado a segmentação por limiar e não existir edição manual na máscara}, os pixeis da imagem original que estão sob a máscara é utilizado para a geração de superfície, como normalmente imagens de tomografia ou ressonância possui vários níveis de cinza, é gerada uma superfície com curvas mais suaves.
 
 \begin{figure}[!htb]
   \centering
@@ -105,7 +105,7 @@ superfície por meio da lista de seleção, dentro do item \textbf{3. Configure 
 
 \begin{figure}[!htb]
 \centering
-\includegraphics[scale=0.6]{select_surface}
+\includegraphics[scale=0.8]{surface_select_menu.png}
 \caption{Seleção de superfície}
 \label{fig:select_surface}
 \end{figure}
@@ -116,7 +116,7 @@ o controle, maior será a transparência aplicada.
 
 \begin{figure}[!htb]
 \centering
-\includegraphics[scale=0.5]{transparency}
+\includegraphics[scale=0.7]{surface_transparency_pt.png}
 \caption{Seleção de nível de transparência}
 \label{fig:select_transparency}
 \end{figure}
@@ -143,7 +143,7 @@ superfície 3D}, opção \textbf{Propriedades da superfície}.
 
 \begin{figure}[!htb]
 \centering
-\includegraphics[scale=0.6]{button_select_color}
+\includegraphics[scale=0.6]{surface_button_select_color_yellow.png}
 \caption{Botão para alteração de cor}
 \label{fig:change_surface_color}
 \end{figure}
@@ -153,7 +153,7 @@ desejada e clique no botão \textbf{OK}.
 
 \begin{figure}[!htb]
 \centering
-\includegraphics[scale=0.4]{ScreenHunter_33Dec311142}
+\includegraphics[scale=0.6]{surface_select_color_windows_so_pt.png}
 \caption{Opções de cor}
 \label{fig:button_select_color}
 \end{figure}
@@ -166,8 +166,8 @@ figura \ref{fig:advanced_tools}.
 
 \begin{figure}[!htb]
 \centering
-\includegraphics[scale=0.4]{ferramentas_avancadas}
-\caption{Atalho para ferramentas avançadas}
+\includegraphics[scale=0.7]{surface_painel_advanced_options_pt.png}
+\caption{Atalho para opções avançadas}
 \label{fig:advanced_tools}
 \end{figure}
 
@@ -178,8 +178,8 @@ Um menu com as opções disponíveis será exibido, como ilustra a figura
 
 \begin{figure}[!htb]
 \centering
-\includegraphics[scale=0.5]{exract_region}
-\caption{Ferramentas avançadas}
+\includegraphics[scale=0.7]{surface_split_pt.png}
+\caption{Opções avançadas}
 \label{fig:advanced_tools_expanded}
 \end{figure}
 
@@ -202,7 +202,7 @@ da maior região.
 
 \begin{figure}[!htb]
 \centering
-\includegraphics[scale=0.3]{extract_most_region_1}
+\includegraphics[scale=0.3]{surface_extract_most_region_1.jpg}
 \caption{Superfícies desconexas}
 \label{fig:extract_most_region_1}
 \end{figure}
@@ -212,7 +212,7 @@ desconexa separada.
 
 \begin{figure}[!htb]
 \centering
-\includegraphics[scale=0.3]{extract_most_region2}
+\includegraphics[scale=0.3]{surface_extract_most_region2.jpg}
 \caption{Maior região separada}
 \label{fig:extract_most_region2}
 \end{figure}
@@ -224,7 +224,8 @@ desconexa separada.
 Outra modalidade de seleção se dá pela opção \textbf{Selecionar as regiões de interesse...}.
 Para ativá-la, o usuário deve clicar sobre o botão ilustrado na figura
 \ref{fig:short_connectivity_manual}. Em seguida, basta clicar sobre as regiões desconexas
-da superfície que se pretende selecionar.
+da superfície que se pretende selecionar. Depois, clique novamente em \textbf{Selecionar as regiões de interesse...}
+para gerar uma nova superfície com as regiões selecionadas.
 
 \begin{figure}[!htb]
 \centering
@@ -238,7 +239,7 @@ direita do suporte do tomógrafo.
 
 \begin{figure}[!htb]
 \centering
-\includegraphics[scale=0.35]{extract_most_region3}
+\includegraphics[scale=0.35]{surface_extract_most_region3.jpg}
 \caption{Exemplo de regiões de interesse selecionadas}
 \label{fig:extract_most_region3}
 \end{figure}
@@ -261,7 +262,7 @@ A figura \ref{fig:extrac_most_region_4} mostra um exemplo.
 
 \begin{figure}[!htb]
 \centering
-\includegraphics[scale=0.3]{extrac_most_region_4}
+\includegraphics[scale=0.3]{surface_extract_most_region_4.jpg}
 \caption{Exemplo de separação de todas as regiões desconexas}
 \label{fig:extrac_most_region_4}
 \end{figure}

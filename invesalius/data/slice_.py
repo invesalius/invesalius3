@@ -91,6 +91,8 @@ class Slice(object):
         self._type_projection = const.PROJECTION_NORMAL
         self.n_border = const.PROJECTION_BORDER_SIZE
 
+        self.interp_method = 2
+
         self._spacing = (1.0, 1.0, 1.0)
         self.center = [0, 0, 0]
 
@@ -198,6 +200,8 @@ class Slice(object):
 
         Publisher.subscribe(self._fill_holes_auto, 'Fill holes automatically')
 
+        Publisher.subscribe(self._set_interpolation_method, 'Set interpolation method')
+
     def GetMaxSliceNumber(self, orientation):
         shape = self.matrix.shape
 
@@ -301,6 +305,8 @@ class Slice(object):
         self.saturation_range = (0, 0)
         self.hue_range = (0, 0)
         self.value_range = (0, 1)
+
+        self.interaction_style.Reset()
 
         Publisher.sendMessage('Select first item from slice menu')
 
@@ -625,7 +631,7 @@ class Slice(object):
             if orientation == 'AXIAL':
                 tmp_array = np.array(self.matrix[slice_number:slice_number + number_slices])
                 if np.any(self.q_orientation[1::]):
-                    transforms.apply_view_matrix_transform(self.matrix, self.spacing, M, slice_number, orientation, 2, self.matrix.min(), tmp_array)
+                    transforms.apply_view_matrix_transform(self.matrix, self.spacing, M, slice_number, orientation, self.interp_method, self.matrix.min(), tmp_array)
                 if self._type_projection == const.PROJECTION_NORMAL:
                     n_image = tmp_array.squeeze()
                 else:
@@ -672,7 +678,7 @@ class Slice(object):
             elif orientation == 'CORONAL':
                 tmp_array = np.array(self.matrix[:, slice_number: slice_number + number_slices, :])
                 if np.any(self.q_orientation[1::]):
-                    transforms.apply_view_matrix_transform(self.matrix, self.spacing, M, slice_number, orientation, 1, self.matrix.min(), tmp_array)
+                    transforms.apply_view_matrix_transform(self.matrix, self.spacing, M, slice_number, orientation, self.interp_method, self.matrix.min(), tmp_array)
 
                 if self._type_projection == const.PROJECTION_NORMAL:
                     n_image = tmp_array.squeeze()
@@ -722,7 +728,7 @@ class Slice(object):
             elif orientation == 'SAGITAL':
                 tmp_array = np.array(self.matrix[:, :, slice_number: slice_number + number_slices])
                 if np.any(self.q_orientation[1::]):
-                    transforms.apply_view_matrix_transform(self.matrix, self.spacing, M, slice_number, orientation, 1, self.matrix.min(), tmp_array)
+                    transforms.apply_view_matrix_transform(self.matrix, self.spacing, M, slice_number, orientation, self.interp_method, self.matrix.min(), tmp_array)
 
                 if self._type_projection == const.PROJECTION_NORMAL:
                     n_image = tmp_array.squeeze()
@@ -954,6 +960,10 @@ class Slice(object):
         tprojection = pubsub_evt.data
         self.SetTypeProjection(tprojection)
 
+    def _set_interpolation_method(self, pubsub_evt):
+        interp_method = pubsub_evt.data
+        self.SetInterpolationMethod(interp_method)
+
     def SetTypeProjection(self, tprojection):
         if self._type_projection != tprojection:
             if self._type_projection == const.PROJECTION_NORMAL:
@@ -969,6 +979,13 @@ class Slice(object):
                 buffer_.discard_buffer()
 
             Publisher.sendMessage('Check projection menu', tprojection)
+
+    def SetInterpolationMethod(self, interp_method):
+        if self.interp_method != interp_method:
+            self.interp_method = interp_method
+            for buffer_ in self.buffer_slices.values():
+                buffer_.discard_buffer()
+            Publisher.sendMessage('Reload actual slice')
 
     def UpdateWindowLevelBackground(self, pubsub_evt):
         window, level = pubsub_evt.data
@@ -1424,7 +1441,7 @@ class Slice(object):
         T1 = transformations.translation_matrix((cz, cy, cx))
         M = transformations.concatenate_matrices(T1, R.T, T0)
 
-        transforms.apply_view_matrix_transform(mcopy, self.spacing, M, 0, 'AXIAL', 2, mcopy.min(), self.matrix)
+        transforms.apply_view_matrix_transform(mcopy, self.spacing, M, 0, 'AXIAL', self.interp_method, mcopy.min(), self.matrix)
 
         del mcopy
         os.remove(temp_file)

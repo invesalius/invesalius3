@@ -218,8 +218,9 @@ WILDCARD_ANALYZE = "Analyze 7.5 (*.hdr)|*.hdr|" \
 
 WILDCARD_NIFTI = "NIfTI 1 (*.nii)|*.nii|" \
                  "Compressed NIfTI (*.nii.gz)|*.nii.gz|" \
+                 "HDR NIfTI (*.hdr)|*.hdr|" \
                  "All files (*.*)|*.*"
-
+#".[jJ][pP][gG]"
 WILDCARD_PARREC = "PAR/REC (*.par)|*.par|" \
                   "All files (*.*)|*.*"
 
@@ -258,7 +259,7 @@ def ShowOpenProjectDialog():
     return filepath
 
 
-def ShowImportDirDialog():
+def ShowImportDirDialog(self):
     current_dir = os.path.abspath(".")
 
     if (sys.platform == 'win32') or (sys.platform == 'linux2'):
@@ -271,7 +272,7 @@ def ShowImportDirDialog():
     else:
         folder = ''
 
-    dlg = wx.DirDialog(None, _("Choose a DICOM folder:"), folder,
+    dlg = wx.DirDialog(self, _("Choose a DICOM folder:"), folder,
                         style=wx.DD_DEFAULT_STYLE
                         | wx.DD_DIR_MUST_EXIST
                         | wx.DD_CHANGE_DIR)
@@ -299,7 +300,7 @@ def ShowImportDirDialog():
     os.chdir(current_dir)
     return path
 
-def ShowImportBitmapDirDialog():
+def ShowImportBitmapDirDialog(self):
     current_dir = os.path.abspath(".")
 
     if (sys.platform == 'win32') or (sys.platform == 'linux2'):
@@ -312,7 +313,7 @@ def ShowImportBitmapDirDialog():
     else:
         folder = ''
 
-    dlg = wx.DirDialog(None, _("Choose a folder with TIFF, BMP, JPG or PNG:"), folder,
+    dlg = wx.DirDialog(self, _("Choose a folder with TIFF, BMP, JPG or PNG:"), folder,
                         style=wx.DD_DEFAULT_STYLE
                         | wx.DD_DIR_MUST_EXIST
                         | wx.DD_CHANGE_DIR)
@@ -322,10 +323,7 @@ def ShowImportBitmapDirDialog():
         if dlg.ShowModal() == wx.ID_OK:
             # GetPath returns in unicode, if a path has non-ascii characters a
             # UnicodeEncodeError is raised. To avoid this, path is encoded in utf-8
-            if sys.platform == "win32":
-                path = dlg.GetPath()
-            else:
-                path = dlg.GetPath().encode('utf-8')
+            path = dlg.GetPath()
 
     except(wx._core.PyAssertionError): #TODO: error win64
          if (dlg.GetPath()):
@@ -397,12 +395,7 @@ def ShowImportMeshFilesDialog():
     filename = None
     try:
         if dlg.ShowModal() == wx.ID_OK:
-            # GetPath returns in unicode, if a path has non-ascii characters a
-            # UnicodeEncodeError is raised. To avoid this, path is encoded in utf-8
-            if sys.platform == "win32":
-                filename = dlg.GetPath()
-            else:
-                filename = dlg.GetPath().encode('utf-8')
+            filename = dlg.GetPath()
 
     except(wx._core.PyAssertionError):  # TODO: error win64
         if (dlg.GetPath()):
@@ -636,8 +629,10 @@ def ImportEmptyDirectory(dirpath):
 def ImportInvalidFiles(ftype="DICOM"):
     if ftype == "Bitmap":
         msg =  _("There are no Bitmap, JPEG, PNG or TIFF files in the selected folder.")
-    else:
+    elif ftype == "DICOM":
         msg = _("There are no DICOM files in the selected folder.")
+    else:
+        msg = _("Invalid file.")
 
     if sys.platform == 'darwin':
         dlg = wx.MessageDialog(None, "", msg,
@@ -1043,7 +1038,7 @@ def ShowAboutDialog(parent):
 
     info = wx.AboutDialogInfo()
     info.Name = "InVesalius"
-    info.Version = "3.1"
+    info.Version = "3.1.1"
     info.Copyright = _("(c) 2007-2017 Center for Information Technology Renato Archer - CTI")
     info.Description = wordwrap(_("InVesalius is a medical imaging program for 3D reconstruction. It uses a sequence of 2D DICOM image files acquired with CT or MRI scanners. InVesalius allows exporting 3D volumes or surfaces as mesh files for creating physical models of a patient's anatomy using additive manufacturing (3D printing) technologies. The software is developed by Center for Information Technology Renato Archer (CTI), National Council for Scientific and Technological Development (CNPq) and the Brazilian Ministry of Health.\n\n InVesalius must be used only for research. The Center for Information Technology Renato Archer is not responsible for damages caused by the use of this software.\n\n Contact: invesalius@cti.gov.br"), 350, wx.ClientDC(parent))
 
@@ -1052,40 +1047,55 @@ def ShowAboutDialog(parent):
 #       _("The software also allows generating correspondent STL files,")+\
 #       _("so the user can print 3D physical models of the patient's anatomy ")+\
 #       _("using Rapid Prototyping."), 350, wx.ClientDC(parent))
-    info.WebSite = ("http://www.cti.gov.br/invesalius")
+    info.WebSite = ("https://www.cti.gov.br/invesalius")
     info.License = _("GNU GPL (General Public License) version 2")
 
-    info.Developers = ["Paulo Henrique Junqueira Amorim",
-                       "Thiago Franco de Moraes",
-                       "Jorge Vicente Lopes da Silva",
-                       "Victor Hugo de Oliveira e Souza (navigator)",
-                       "Renan Hiroshi Matsuda (navigator)",
-                       "Tatiana Al-Chueyr (former)",
-                       "Guilherme Cesar Soares Ruppert (former)",
-                       "Fabio de Souza Azevedo (former)",
-                       "Bruno Lara Bottazzini (contributor)",
-                       "Olly Betts (patches to support wxPython3)"]
+    info.Developers = [u"Paulo Henrique Junqueira Amorim",
+                       u"Thiago Franco de Moraes",
+                       u"Hélio Pedrini",
+                       u"Jorge Vicente Lopes da Silva",
+                       u"Victor Hugo de Oliveira e Souza (navigator)",
+                       u"Renan Hiroshi Matsuda (navigator)",
+                       u"André Salles Cunha Peres (navigator)",
+                       u"Oswaldo Baffa Filho (navigator)",
+                       u"Tatiana Al-Chueyr (former)",
+                       u"Guilherme Cesar Soares Ruppert (former)",
+                       u"Fabio de Souza Azevedo (former)",
+                       u"Bruno Lara Bottazzini (contributor)",
+                       u"Olly Betts (patches to support wxPython3)"]
 
-    info.Translators = ["Alex P. Natsios",
-                        "Anderson Antonio Mamede da Silva",
-                        "Andreas Loupasakis",
-                        "Annalisa Manenti",
-                        "Cheng-Chia Tseng",
-                        "Dimitris Glezos",
-                        "Eugene Liscio",
+    info.Translators = [u"Alex P. Natsios",
+                        u"Alicia Perez",
+                        u"Anderson Antonio Mamede da Silva",
+                        u"Andreas Loupasakis",
+                        u"Angelo Pucillo",
+                        u"Annalisa Manenti",
+                        u"Cheng-Chia Tseng",
+                        u"Dan",
+                        u"DCamer",
+                        u"Dimitris Glezos",
+                        u"Eugene Liscio",
                         u"Frédéric Lopez",
-                        "fri",
-                        "Javier de Lima Moreno",
-                        "Mario Regino Moreno Guerra",
-                        "Massimo Crisantemo",
-                        "Nikos Korkakakis",
-                        "Raul Bolliger Neto",
-                        "Sebastian Hilbert",
-                        "Semarang Pari"]
+                        u"Florin Putura",
+                        u"Fri",
+                        u"Jangblue",
+                        u"Javier de Lima Moreno",
+                        u"Kensey Okinawa",
+                        u"Maki Sugimoto",
+                        u"Mario Regino Moreno Guerra",
+                        u"Massimo Crisantemo",
+                        u"Nikos Korkakakis",
+                        u"Raul Bolliger Neto",
+                        u"Sebastian Hilbert",
+                        u"Semarang Pari",
+                        u"Silvério Santos",
+                        u"Vasily Shishkin",
+                        u"Yohei Sotsuka",
+                        u"Yoshihiro Sato"]
 
     #info.DocWriters = ["Fabio Francisco da Silva (PT)"]
 
-    info.Artists = ["Otavio Henrique Junqueira Amorim"]
+    info.Artists = [u"Otavio Henrique Junqueira Amorim"]
 
     # Then we call wx.AboutBox providing its info object
     wx.AboutBox(info)
@@ -1860,31 +1870,49 @@ class ReorientImageDialog(wx.Dialog):
         pre.Create(wx.GetApp().GetTopWindow(), -1, _(u'Image reorientation'), style=wx.DEFAULT_DIALOG_STYLE|wx.FRAME_FLOAT_ON_PARENT)
         self.PostCreate(pre)
 
+        self._closed = False
+
+        self._last_ax = "0.0"
+        self._last_ay = "0.0"
+        self._last_az = "0.0"
+
         self._init_gui()
         self._bind_events()
         self._bind_events_wx()
 
     def _init_gui(self):
-        self.anglex = wx.TextCtrl(self, -1, "0.0", style=wx.TE_READONLY)
-        self.angley = wx.TextCtrl(self, -1, "0.0", style=wx.TE_READONLY)
-        self.anglez = wx.TextCtrl(self, -1, "0.0", style=wx.TE_READONLY)
+        interp_methods_choices = ((_(u"Nearest Neighbour"), 0),
+                                  (_(u"Trilinear"), 1),
+                                  (_(u"Tricubic"), 2),
+                                  (_(u"Lanczos (experimental)"), 3))
+        self.interp_method = wx.ComboBox(self, -1, choices=[], style=wx.CB_READONLY)
+        for txt, im_code in interp_methods_choices:
+            self.interp_method.Append(txt, im_code)
+        self.interp_method.SetValue(interp_methods_choices[2][0])
+
+        self.anglex = wx.TextCtrl(self, -1, "0.0")
+        self.angley = wx.TextCtrl(self, -1, "0.0")
+        self.anglez = wx.TextCtrl(self, -1, "0.0")
 
         self.btnapply = wx.Button(self, -1, _("Apply"))
 
-        sizer = wx.BoxSizer(wx.HORIZONTAL)
+        sizer = wx.BoxSizer(wx.VERTICAL)
 
-        sizer.Add(wx.StaticText(self, -1, _("Angle X")), 0, wx.EXPAND | wx.ALIGN_CENTER_VERTICAL | wx.ALL, 5)
-        sizer.Add(self.anglex, 0, wx.EXPAND | wx.ALL, 5)
-        sizer.AddSpacer(5)
+        angles_sizer = wx.FlexGridSizer(3, 2, 5, 5)
+        angles_sizer.AddMany([
+            (wx.StaticText(self, -1, _("Angle X")), 1, wx.ALIGN_CENTER_VERTICAL | wx.ALL, 5),
+            (self.anglex, 0, wx.EXPAND | wx.ALL, 5),
 
-        sizer.Add(wx.StaticText(self, -1, _("Angle Y")), 0, wx.EXPAND | wx.ALIGN_CENTER_VERTICAL | wx.ALL, 5)
-        sizer.Add(self.angley, 0, wx.EXPAND | wx.ALL, 5)
-        sizer.AddSpacer(5)
+            (wx.StaticText(self, -1, _("Angle Y")), 1, wx.ALIGN_CENTER_VERTICAL | wx.ALL, 5),
+            (self.angley, 0, wx.EXPAND | wx.ALL, 5),
 
-        sizer.Add(wx.StaticText(self, -1, _("Angle Z")), 0, wx.EXPAND | wx.ALIGN_CENTER_VERTICAL | wx.ALL, 5)
-        sizer.Add(self.anglez, 0, wx.EXPAND | wx.ALL, 5)
-        sizer.AddSpacer(5)
+            (wx.StaticText(self, -1, _("Angle Z")), 1, wx.ALIGN_CENTER_VERTICAL | wx.ALL, 5),
+            (self.anglez, 0, wx.EXPAND | wx.ALL, 5),
+        ])
 
+        sizer.Add(wx.StaticText(self, -1, _("Interpolation method:")), 0, wx.EXPAND | wx.TOP | wx.LEFT | wx.RIGHT, 5)
+        sizer.Add(self.interp_method, 0, wx.EXPAND | wx.ALL, 5)
+        sizer.Add(angles_sizer, 0, wx.EXPAND | wx.ALL, 5)
         sizer.Add(self.btnapply, 0, wx.EXPAND | wx.ALL, 5)
         sizer.AddSpacer(5)
 
@@ -1896,14 +1924,24 @@ class ReorientImageDialog(wx.Dialog):
         Publisher.subscribe(self._close_dialog, 'Close reorient dialog')
 
     def _bind_events_wx(self):
+        self.interp_method.Bind(wx.EVT_COMBOBOX, self.OnSelect)
+
+        self.anglex.Bind(wx.EVT_KILL_FOCUS, self.OnLostFocus)
+        self.angley.Bind(wx.EVT_KILL_FOCUS, self.OnLostFocus)
+        self.anglez.Bind(wx.EVT_KILL_FOCUS, self.OnLostFocus)
+
+        self.anglex.Bind(wx.EVT_SET_FOCUS, self.OnSetFocus)
+        self.angley.Bind(wx.EVT_SET_FOCUS, self.OnSetFocus)
+        self.anglez.Bind(wx.EVT_SET_FOCUS, self.OnSetFocus)
+
         self.btnapply.Bind(wx.EVT_BUTTON, self.apply_reorientation)
         self.Bind(wx.EVT_CLOSE, self.OnClose)
 
     def _update_angles(self, pubsub_evt):
         anglex, angley, anglez = pubsub_evt.data
-        self.anglex.SetValue("%.2f" % np.rad2deg(anglex))
-        self.angley.SetValue("%.2f" % np.rad2deg(angley))
-        self.anglez.SetValue("%.2f" % np.rad2deg(anglez))
+        self.anglex.SetValue("%.3f" % np.rad2deg(anglex))
+        self.angley.SetValue("%.3f" % np.rad2deg(angley))
+        self.anglez.SetValue("%.3f" % np.rad2deg(anglez))
 
     def _close_dialog(self, pubsub_evt):
         self.Destroy()
@@ -1913,10 +1951,32 @@ class ReorientImageDialog(wx.Dialog):
         self.Close()
 
     def OnClose(self, evt):
+        self._closed = True
         Publisher.sendMessage('Disable style', const.SLICE_STATE_REORIENT)
         Publisher.sendMessage('Enable style', const.STATE_DEFAULT)
         self.Destroy()
 
+    def OnSelect(self, evt):
+        im_code = self.interp_method.GetClientData(self.interp_method.GetSelection())
+        Publisher.sendMessage('Set interpolation method', im_code)
+
+    def OnSetFocus(self, evt):
+        self._last_ax = self.anglex.GetValue()
+        self._last_ay = self.angley.GetValue()
+        self._last_az = self.anglez.GetValue()
+
+    def OnLostFocus(self, evt):
+        if not self._closed:
+            try:
+                ax = np.deg2rad(float(self.anglex.GetValue()))
+                ay = np.deg2rad(float(self.angley.GetValue()))
+                az = np.deg2rad(float(self.anglez.GetValue()))
+            except ValueError:
+                self.anglex.SetValue(self._last_ax)
+                self.angley.SetValue(self._last_ay)
+                self.anglez.SetValue(self._last_az)
+                return
+            Publisher.sendMessage('Set reorientation angles', (ax, ay, az))
 
 
 class ImportBitmapParameters(wx.Dialog):
@@ -2038,7 +2098,8 @@ class ImportBitmapParameters(wx.Dialog):
         box.AddSizer(gbs_principal, 1, wx.ALL|wx.EXPAND, 10)
         
         p.SetSizer(box)
-
+        box.Fit(self)
+        self.Layout()
 
     def bind_evts(self):
         self.btn_ok.Bind(wx.EVT_BUTTON, self.OnOk)

@@ -4,8 +4,11 @@ import numpy as np
 cimport numpy as np
 cimport cython
 
-from libc.math cimport floor, ceil, sqrt, fabs, round
+from libc.math cimport floor, ceil, sqrt, fabs, round, sin, M_PI
 from cython.parallel import prange
+
+DEF LANCZOS_A = 4
+DEF SIZE_LANCZOS_TMP = LANCZOS_A * 2 - 1
 
 cdef double[64][64] temp = [
     [ 1,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
@@ -77,6 +80,12 @@ cdef double[64][64] temp = [
 @cython.boundscheck(False) # turn of bounds-checking for entire function
 @cython.cdivision(True)
 @cython.wraparound(False)
+cdef double nearest_neighbour_interp(image_t[:, :, :] V, double x, double y, double z) nogil:
+    return V[<int>round(z), <int>round(y), <int>round(x)]
+
+@cython.boundscheck(False) # turn of bounds-checking for entire function
+@cython.cdivision(True)
+@cython.wraparound(False)
 cdef double interpolate(image_t[:, :, :] V, double x, double y, double z) nogil:
     cdef double xd, yd, zd
     cdef double c00, c10, c01, c11
@@ -118,6 +127,76 @@ cdef double interpolate(image_t[:, :, :] V, double x, double y, double z) nogil:
     c = c0*(1 - zd) + c1*zd
 
     return c
+
+
+@cython.boundscheck(False) # turn of bounds-checking for entire function
+@cython.cdivision(True)
+@cython.wraparound(False)
+cdef inline double lanczos3_L(double x, int a) nogil:
+    if x == 0:
+        return 1.0
+    elif -a <= x < a:
+        return (a * sin(M_PI * x) * sin(M_PI * (x / a)))/(M_PI**2 * x**2)
+    else:
+        return 0.0
+
+
+@cython.boundscheck(False) # turn of bounds-checking for entire function
+@cython.cdivision(True)
+@cython.wraparound(False)
+cdef double lanczos3(image_t[:, :, :] V, double x, double y, double z) nogil:
+    cdef int a = LANCZOS_A
+
+    cdef int xd = <int>floor(x)
+    cdef int yd = <int>floor(y)
+    cdef int zd = <int>floor(z)
+
+    cdef int xi = xd - a + 1
+    cdef int xf = xd + a
+
+    cdef int yi = yd - a + 1
+    cdef int yf = yd + a
+
+    cdef int zi = zd - a + 1
+    cdef int zf = zd + a
+
+    cdef double lx = 0.0
+    cdef double ly = 0.0
+    cdef double lz = 0.0
+
+    cdef double[SIZE_LANCZOS_TMP][SIZE_LANCZOS_TMP] temp_x
+    cdef double[SIZE_LANCZOS_TMP] temp_y
+
+    cdef int i, j, k
+    cdef int m, n, o
+
+    m = 0
+    for k in xrange(zi, zf):
+        n = 0
+        for j in xrange(yi, yf):
+            lx = 0
+            for i in xrange(xi, xf):
+                lx += _G(V, i, j, k) * lanczos3_L(x - i, a)
+            temp_x[m][n] = lx
+            n += 1
+        m += 1
+
+    m = 0
+    for k in xrange(zi, zf):
+        n = 0
+        ly = 0
+        for j in xrange(yi, yf):
+            ly += temp_x[m][n] * lanczos3_L(y - j, a)
+            n += 1
+        temp_y[m] = ly
+        m += 1
+
+    m = 0
+    for k in xrange(zi, zf):
+        lz += temp_y[m] * lanczos3_L(z - k, a)
+        m += 1
+
+    return lz
 
 
 @cython.boundscheck(False) # turn of bounds-checking for entire function
@@ -311,4 +390,3 @@ def tricub_interpolate2_py(image_t[:, :, :] V, double x, double y, double z):
 
 def trilin_interpolate_py(image_t[:, :, :] V, double x, double y, double z):
     return interpolate(V, x, y, z)
-

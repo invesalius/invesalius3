@@ -21,6 +21,7 @@
 
 import collections
 import itertools
+import os
 import tempfile
 
 import numpy as np
@@ -48,6 +49,15 @@ import invesalius.utils as utils
 import invesalius.session as ses
 import invesalius.data.converters as converters
 import invesalius.data.measures as measures
+
+if sys.platform == 'win32':
+    try:
+        import win32api
+        _has_win32api = True
+    except ImportError:
+        _has_win32api = False
+else:
+    _has_win32api = False
 
 ID_TO_TOOL_ITEM = {}
 STR_WL = "WL: %d  WW: %d"
@@ -638,8 +648,6 @@ class Viewer(wx.Panel):
     def ShowTextActors(self):
         if self.on_wl and self.wl_text:
             self.canvas.draw_list.append(self.wl_text)
-        print "Canvas", self.canvas.draw_list
-        print "text ori", self.orientation_texts
         [self.canvas.draw_list.append(t) for t in self.orientation_texts]
         self.UpdateCanvas()
         self.on_text = True
@@ -1250,12 +1258,27 @@ class Viewer(wx.Panel):
             self.interactor.SetCursor(wx.StockCursor(wx.CURSOR_SIZING))
 
     def OnExportPicture(self, pubsub_evt):
-        Publisher.sendMessage('Begin busy cursor')
+        id, filename, filetype = pubsub_evt.data
+
+        dict = {"AXIAL": const.AXIAL,
+                "CORONAL": const.CORONAL,
+                "SAGITAL": const.SAGITAL}
+
+        if id == dict[self.orientation]:
+            Publisher.sendMessage('Begin busy cursor')
+            if _has_win32api:
+                utils.touch(filename)
+                win_filename = win32api.GetShortPathName(filename)
+                self._export_picture(id, win_filename, filetype)
+            else:
+                self._export_picture(id, filename, filetype)
+            Publisher.sendMessage('End busy cursor')
+
+    def _export_picture(self, id, filename, filetype):
         view_prop_list = []
         view_prop_list.append(self.slice_data.box_actor)
         self.slice_data.renderer.RemoveViewProp(self.slice_data.box_actor)
 
-        id, filename, filetype = pubsub_evt.data
         dict = {"AXIAL": const.AXIAL,
                 "CORONAL": const.CORONAL,
                 "SAGITAL": const.SAGITAL}
@@ -1294,8 +1317,11 @@ class Viewer(wx.Panel):
                     filename = "%s.tif"%filename.strip(".tif")
 
                 writer.SetInputData(image)
-                writer.SetFileName(filename)
+                writer.SetFileName(filename.encode(const.FS_ENCODE))
                 writer.Write()
+
+            if not os.path.exists(filename):
+                wx.MessageBox(_("InVesalius was not able to export this picture"), _("Export picture error"))
 
             for actor in view_prop_list:
                 self.slice_data.renderer.AddViewProp(actor)
@@ -1321,9 +1347,10 @@ class Viewer(wx.Panel):
         del self.slice_data
         self.slice_data = None
 
-        self.canvas.draw_list = []
-        self.canvas.remove_from_renderer()
-        self.canvas = None
+        if self.canvas:
+            self.canvas.draw_list = []
+            self.canvas.remove_from_renderer()
+            self.canvas = None
 
         self.orientation_texts = []
 

@@ -23,6 +23,8 @@ import os
 import wx
 import wx.lib.hyperlink as hl
 import wx.lib.platebtn as pbtn
+import wx.lib.foldpanelbar as fpb
+import wx.lib.colourselect as csel
 from wx.lib.pubsub import pub as Publisher
 
 import invesalius.data.mask as mask
@@ -30,8 +32,6 @@ import invesalius.data.slice_ as slice_
 import invesalius.constants as const
 import invesalius.gui.dialogs as dlg
 import invesalius.gui.widgets.gradient as grad
-import invesalius.gui.widgets.foldpanelbar as fpb
-import invesalius.gui.widgets.colourselect as csel
 
 from invesalius.project import Project
 import invesalius.session as ses
@@ -268,7 +268,7 @@ class InnerFoldPanel(wx.Panel):
         self.mask_prop_panel = MaskProperties(item)
 
         fold_panel.ApplyCaptionStyle(item, style)
-        fold_panel.AddFoldPanelWindow(item, self.mask_prop_panel, Spacing= 0,
+        fold_panel.AddFoldPanelWindow(item, self.mask_prop_panel, spacing= 0,
                                       leftSpacing=0, rightSpacing=0)
 
         # Fold 2 - Advanced edition tools
@@ -276,7 +276,7 @@ class InnerFoldPanel(wx.Panel):
         etw = EditionTools(item)
 
         fold_panel.ApplyCaptionStyle(item, style)
-        fold_panel.AddFoldPanelWindow(item, etw, Spacing= 0,
+        fold_panel.AddFoldPanelWindow(item, etw, spacing= 0,
                                       leftSpacing=0, rightSpacing=0)
         self.__id_editor = item.GetId()
         self.last_panel_opened = None
@@ -286,7 +286,7 @@ class InnerFoldPanel(wx.Panel):
         wtw = WatershedTool(item)
 
         fold_panel.ApplyCaptionStyle(item, style)
-        fold_panel.AddFoldPanelWindow(item, wtw, Spacing= 0,
+        fold_panel.AddFoldPanelWindow(item, wtw, spacing= 0,
                                       leftSpacing=0, rightSpacing=0)
         self.__id_watershed = item.GetId()
 
@@ -421,7 +421,7 @@ class MaskProperties(wx.Panel):
         self.combo_mask_name = combo_mask_name
 
         # Mask colour
-        button_colour= csel.ColourSelect(self, 111,colour=(0,255,0),size=(-1,22))
+        button_colour= csel.ColourSelect(self, 111,colour=(0,255,0),size=(22,-1))
         self.button_colour = button_colour
 
         # Sizer which represents the first line

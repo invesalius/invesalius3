@@ -24,7 +24,7 @@ import wx
 import itertools
 
 #from invesalius.project import Project
-INVESALIUS_VERSION = "3.0"
+INVESALIUS_VERSION = "3.1.1"
 
 #---------------
 
@@ -320,46 +320,63 @@ WINDOW_LEVEL = {_("Abdomen"):(350,50),
 
 REDUCE_IMAGEDATA_QUALITY = 0
 
-FILE_PATH = os.path.split(__file__)[0]
+
+# PATHS
+FS_ENCODE = sys.getfilesystemencoding()
+
+if sys.platform == 'win32':
+    from invesalius.expanduser import expand_user
+    try:
+        USER_DIR = expand_user()
+    except:
+        USER_DIR = os.path.expanduser('~').decode(FS_ENCODE)
+else:
+    USER_DIR = os.path.expanduser('~').decode(FS_ENCODE)
+
+USER_INV_DIR = os.path.join(USER_DIR, u'.invesalius')
+USER_PRESET_DIR = os.path.join(USER_INV_DIR, u'presets')
+USER_LOG_DIR = os.path.join(USER_INV_DIR, u'logs')
+
+FILE_PATH = os.path.split(__file__)[0].decode(FS_ENCODE)
 
 if hasattr(sys,"frozen") and (sys.frozen == "windows_exe"\
                             or sys.frozen == "console_exe"):
-    abs_path = os.path.abspath(FILE_PATH + os.sep + ".." + os.sep + ".." + os.sep + "..")
-    ICON_DIR = os.path.join(abs_path, "icons")
-    SAMPLE_DIR = os.path.join(FILE_PATH, 'samples')
-    DOC_DIR = os.path.join(FILE_PATH, 'docs')
-    folder=RAYCASTING_PRESETS_DIRECTORY= os.path.join(abs_path, "presets", "raycasting")
-    RAYCASTING_PRESETS_COLOR_DIRECTORY = os.path.join(abs_path, "presets", "raycasting", "color_list")
+    abs_path = os.path.abspath(FILE_PATH, u'..', u'..', u'..')
+    ICON_DIR = os.path.join(abs_path, u"icons")
+    SAMPLE_DIR = os.path.join(FILE_PATH, u'samples')
+    DOC_DIR = os.path.join(FILE_PATH, u'docs')
+    folder=RAYCASTING_PRESETS_DIRECTORY= os.path.join(abs_path, u"presets", u"raycasting")
+    RAYCASTING_PRESETS_COLOR_DIRECTORY = os.path.join(abs_path, u"presets", u"raycasting", u"color_list")
 
 else:
-    ICON_DIR = os.path.abspath(os.path.join(FILE_PATH, '..', 'icons'))
-    SAMPLE_DIR = os.path.abspath(os.path.join(FILE_PATH,'..', 'samples'))
-    DOC_DIR = os.path.abspath(os.path.join(FILE_PATH,'..', 'docs'))
+    ICON_DIR = os.path.abspath(os.path.join(FILE_PATH, u'..', u'icons'))
+    SAMPLE_DIR = os.path.abspath(os.path.join(FILE_PATH, u'..', u'samples'))
+    DOC_DIR = os.path.abspath(os.path.join(FILE_PATH, u'..', u'docs'))
 
-    folder=RAYCASTING_PRESETS_DIRECTORY= os.path.abspath(os.path.join(".",
-                                                                  "presets",
-                                                                  "raycasting"))
+    folder=RAYCASTING_PRESETS_DIRECTORY= os.path.abspath(os.path.join(u".",
+                                                                  u"presets",
+                                                                  u"raycasting"))
 
-    RAYCASTING_PRESETS_COLOR_DIRECTORY = os.path.abspath(os.path.join(".",
-                                                                  "presets",
-                                                                  "raycasting",
-                                                                  "color_list"))
+    RAYCASTING_PRESETS_COLOR_DIRECTORY = os.path.abspath(os.path.join(u".",
+                                                                  u"presets",
+                                                                  u"raycasting",
+                                                                  u"color_list"))
 
 
 # MAC App
 if not os.path.exists(ICON_DIR):
-    ICON_DIR = os.path.abspath(os.path.join(FILE_PATH, '..', '..', '..', '..', 'icons'))
-    SAMPLE_DIR = os.path.abspath(os.path.join(FILE_PATH,'..',  '..', '..', '..', 'samples'))
-    DOC_DIR = os.path.abspath(os.path.join(FILE_PATH,'..', '..', '..', '..', 'docs'))
+    ICON_DIR = os.path.abspath(os.path.join(FILE_PATH, u'..', u'..', u'..', u'..', u'icons'))
+    SAMPLE_DIR = os.path.abspath(os.path.join(FILE_PATH, u'..',  u'..', u'..', u'..', u'samples'))
+    DOC_DIR = os.path.abspath(os.path.join(FILE_PATH, u'..', u'..', u'..', u'..', u'docs'))
 
 
-ID_TO_BMP = {VOL_FRONT: [_("Front"), os.path.join(ICON_DIR, "view_front.png")],
-             VOL_BACK: [_("Back"), os.path.join(ICON_DIR, "view_back.png")],
-             VOL_TOP: [_("Top"), os.path.join(ICON_DIR, "view_top.png")],
-             VOL_BOTTOM: [_("Bottom"), os.path.join(ICON_DIR, "view_bottom.png")],
-             VOL_RIGHT: [_("Right"), os.path.join(ICON_DIR, "view_right.png")],
-             VOL_LEFT: [_("Left"), os.path.join(ICON_DIR, "view_left.png")],
-             VOL_ISO:[_("Isometric"), os.path.join(ICON_DIR,"view_isometric.png")]
+ID_TO_BMP = {VOL_FRONT: [_("Front"), os.path.join(ICON_DIR, u"view_front.png")],
+             VOL_BACK: [_("Back"), os.path.join(ICON_DIR, u"view_back.png")],
+             VOL_TOP: [_("Top"), os.path.join(ICON_DIR, u"view_top.png")],
+             VOL_BOTTOM: [_("Bottom"), os.path.join(ICON_DIR, u"view_bottom.png")],
+             VOL_RIGHT: [_("Right"), os.path.join(ICON_DIR, u"view_right.png")],
+             VOL_LEFT: [_("Left"), os.path.join(ICON_DIR, u"view_left.png")],
+             VOL_ISO:[_("Isometric"), os.path.join(ICON_DIR, u"view_isometric.png")]
              }
 
 # if 1, use vtkVolumeRaycastMapper, if 0, use vtkFixedPointVolumeRayCastMapper
@@ -405,19 +422,10 @@ RAYCASTING_FILES = {_("Airways"): "Airways.plist",
 #                    os.path.isfile(os.path.join(folder,filename))]
 
 
-LOG_FOLDER = os.path.join(os.path.expanduser('~'), '.invesalius', 'logs')
-if not os.path.isdir(LOG_FOLDER):
-    os.makedirs(LOG_FOLDER)
-
-folder = os.path.join(os.path.expanduser('~'), '.invesalius', 'presets')
-if not os.path.isdir(folder):
-    os.makedirs(folder)
-
-
-USER_RAYCASTING_PRESETS_DIRECTORY = folder
+USER_RAYCASTING_PRESETS_DIRECTORY = os.path.join(USER_PRESET_DIR, u'raycasting')
 RAYCASTING_TYPES = [_(filename.split(".")[0]) for filename in
-                     os.listdir(folder) if
-                     os.path.isfile(os.path.join(folder,filename))]
+                     os.listdir(USER_RAYCASTING_PRESETS_DIRECTORY) if
+                     os.path.isfile(os.path.join(USER_RAYCASTING_PRESETS_DIRECTORY, filename))]
 RAYCASTING_TYPES += RAYCASTING_FILES.keys()
 RAYCASTING_TYPES.append(_(' Off'))
 RAYCASTING_TYPES.sort()

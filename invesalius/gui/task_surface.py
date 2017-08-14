@@ -22,13 +22,13 @@ import os
 import wx
 import wx.lib.hyperlink as hl
 from wx.lib.pubsub import pub as Publisher
+import wx.lib.foldpanelbar as fpb
+import wx.lib.colourselect as csel
 
 import invesalius.constants as const
 import invesalius.data.slice_ as slice_
 import invesalius.gui.dialogs as dlg
-import invesalius.gui.widgets.foldpanelbar as fpb
-import invesalius.gui.widgets.colourselect as csel
-import invesalius.gui.widgets.platebtn as pbtn
+import wx.lib.platebtn as pbtn
 import invesalius.project as prj
 import invesalius.utils as utl
 
@@ -216,13 +216,13 @@ class InnerFoldPanel(wx.Panel):
         # Fold 1 - Surface properties
         item = fold_panel.AddFoldPanel(_("Surface properties"), collapsed=True)
         fold_panel.ApplyCaptionStyle(item, style)
-        fold_panel.AddFoldPanelWindow(item, SurfaceProperties(item), Spacing= 0,
+        fold_panel.AddFoldPanelWindow(item, SurfaceProperties(item), spacing= 0,
                                       leftSpacing=0, rightSpacing=0)
 
         # Fold 2 - Surface tools
         item = fold_panel.AddFoldPanel(_("Advanced options"), collapsed=True)
         fold_panel.ApplyCaptionStyle(item, style)
-        fold_panel.AddFoldPanelWindow(item, SurfaceTools(item), Spacing= 0,
+        fold_panel.AddFoldPanelWindow(item, SurfaceTools(item), spacing= 0,
                                       leftSpacing=0, rightSpacing=0)
 
         #fold_panel.AddFoldPanelWindow(item, QualityAdjustment(item), Spacing= 0,
@@ -330,6 +330,7 @@ class SurfaceTools(wx.Panel):
 
         # When using PlaneButton, it is necessary to bind events from parent win
         self.Bind(wx.EVT_BUTTON, self.OnButton)
+        self.Bind(wx.EVT_TOGGLEBUTTON, self.OnToggleButton)
 
         # Tags and grid sizer for fixed items
         flag_link = wx.EXPAND|wx.GROW|wx.LEFT|wx.TOP
@@ -361,7 +362,8 @@ class SurfaceTools(wx.Panel):
         self.SplitSurface()
 
     def OnLinkSeed(self, evt):
-        self.button_seeds.Toggle()
+        self.button_seeds._SetState(not self.button_seeds.GetState())
+        self.button_seeds.Refresh()
         self.SelectSeed()
 
     def OnButton(self, evt):
@@ -373,6 +375,13 @@ class SurfaceTools(wx.Panel):
         else:
             self.SelectSeed()
 
+    def OnToggleButton(self, evt):
+        id = evt.GetId()
+        if id == BTN_SEEDS:
+            self.button_seeds._SetState(self.button_seeds.IsPressed())
+            self.button_seeds.Refresh()
+            self.SelectSeed()
+
     def SelectLargest(self):
         Publisher.sendMessage('Create surface from largest region')
 
@@ -380,16 +389,18 @@ class SurfaceTools(wx.Panel):
         Publisher.sendMessage('Split surface')
 
     def SelectSeed(self):
-        if self.button_seeds.IsPressed():
+        if self.button_seeds.GetState() == 1:
             self.StartSeeding()
         else:
             self.EndSeeding()
 
     def StartSeeding(self):
+        print "Start Seeding"
         Publisher.sendMessage('Enable style', const.VOLUME_STATE_SEED)
         Publisher.sendMessage('Create surface by seeding - start')
 
     def EndSeeding(self):
+        print "End Seeding"
         Publisher.sendMessage('Disable style', const.VOLUME_STATE_SEED)
         Publisher.sendMessage('Create surface by seeding - end')
 
@@ -415,7 +426,7 @@ class SurfaceProperties(wx.Panel):
         self.combo_surface_name = combo_surface_name
 
         # Mask colour
-        button_colour= csel.ColourSelect(self, -1,colour=(0,0,255),size=(-1,22))
+        button_colour= csel.ColourSelect(self, -1,colour=(0,0,255),size=(22, -1))
         button_colour.Bind(csel.EVT_COLOURSELECT, self.OnSelectColour)
         self.button_colour = button_colour
 
@@ -501,6 +512,7 @@ class SurfaceProperties(wx.Panel):
         n = self.combo_surface_name.GetCount()
         for i in xrange(n-1, -1, -1):
             self.combo_surface_name.Delete(i)
+        self.surface_list = []
 
     def ChangeSurfaceName(self, pubsub_evt):
         index, name = pubsub_evt.data
@@ -527,7 +539,7 @@ class SurfaceProperties(wx.Panel):
 
         self.combo_surface_name.SetItems([n[0] for n in self.surface_list])
         self.combo_surface_name.SetSelection(i)
-        transparency = 100*pubsub_evt.data[4]
+        transparency = 100*pubsub_evt.data[5]
         self.button_colour.SetColour(colour)
         self.slider_transparency.SetValue(transparency)
         Publisher.sendMessage('Update surface data', (index))

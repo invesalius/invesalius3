@@ -38,14 +38,17 @@ def ReadOthers(dir_):
     """
 
     if not const.VTK_WARNING:
-        log_path = os.path.join(const.LOG_FOLDER, 'vtkoutput.txt')
+        log_path = os.path.join(const.USER_LOG_DIR, 'vtkoutput.txt')
         fow = vtk.vtkFileOutputWindow()
-        fow.SetFileName(log_path)
+        fow.SetFileName(log_path.encode(const.FS_ENCODE))
         ow = vtk.vtkOutputWindow()
         ow.SetInstance(fow)
 
-    imagedata = nib.squeeze_image(nib.load(dir_))
-    imagedata = nib.as_closest_canonical(imagedata)
-    imagedata.update_header()
+    try:
+        imagedata = nib.squeeze_image(nib.load(dir_))
+        imagedata = nib.as_closest_canonical(imagedata)
+        imagedata.update_header()
+    except(nib.filebasedimages.ImageFileError):
+        return False
 
     return imagedata

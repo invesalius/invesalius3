@@ -53,6 +53,13 @@ class Controller():
         self.frame = frame
         self.progress_dialog = None
         self.cancel_import = False
+
+        #type of imported image
+        #None, others and opened Project = 0
+        #DICOM = 1
+        #TIFF uCT = 2
+        self.img_type = 0 
+
         #Init session
         session = ses.Session()
         self.measure_manager = measures.MeasurementManager()
@@ -154,7 +161,7 @@ class Controller():
             Publisher.sendMessage("Set slice interaction style", const.STATE_DEFAULT)
 
         # Import TIFF, BMP, JPEG or PNG
-        dirpath = dialog.ShowImportBitmapDirDialog()
+        dirpath = dialog.ShowImportBitmapDirDialog(self.frame)
 
         if dirpath and not os.listdir(dirpath):
             dialog.ImportEmptyDirectory(dirpath)
@@ -177,7 +184,7 @@ class Controller():
             Publisher.sendMessage("Stop Config Recording")
             Publisher.sendMessage("Set slice interaction style", const.STATE_DEFAULT)
         # Import project
-        dirpath = dialog.ShowImportDirDialog()
+        dirpath = dialog.ShowImportDirDialog(self.frame)
         if dirpath and not os.listdir(dirpath):
             dialog.ImportEmptyDirectory(dirpath)
         elif dirpath:
@@ -203,20 +210,8 @@ class Controller():
         if id_type == const.ID_ANALYZE_IMPORT:
             dialog.ImportAnalyzeWarning()
 
-        # Import project treating compressed nifti exception
-        suptype = ('hdr', 'nii', 'nii.gz', 'par')
         filepath = dialog.ShowImportOtherFilesDialog(id_type)
-        name = filepath.rpartition('\\')[-1].split('.')
-
-        if name[-1] == 'gz':
-            name[1] = 'nii.gz'
-
-        filetype = name[1].lower()
-
-        if filetype in suptype:
-            Publisher.sendMessage("Open other files", filepath)
-        else:
-            dialog.ImportInvalidFiles()
+        Publisher.sendMessage("Open other files", filepath)
 
     def ShowDialogOpenProject(self):
         # Offer to save current project if necessary
@@ -350,6 +345,9 @@ class Controller():
         else:
             dirpath, filename = session.project_path
 
+        if isinstance(filename, str):
+            filename = filename.decode(const.FS_ENCODE)
+
         proj = prj.Project()
         prj.Project().SavePlistProject(dirpath, filename)
 
@@ -357,12 +355,20 @@ class Controller():
         Publisher.sendMessage('End busy cursor')
 
     def CloseProject(self):
-        proj = prj.Project()
-        proj.Close()
-
         Publisher.sendMessage('Set slice interaction style', const.STATE_DEFAULT)
         Publisher.sendMessage('Hide content panel')
         Publisher.sendMessage('Close project data')
+
+        if self.img_type == 1:
+            Publisher.sendMessage('Show import panel in frame')
+
+        if self.img_type == 2:
+            Publisher.sendMessage('Show import bitmap panel in frame')
+
+
+        proj = prj.Project()
+        proj.Close()
+
         session = ses.Session()
         session.CloseProject()
 
@@ -406,12 +412,14 @@ class Controller():
         if ok:
             Publisher.sendMessage('Show import panel')
             Publisher.sendMessage("Show import panel in frame")
+            self.img_type = 1
 
     def OnLoadImportBitmapPanel(self, evt):
         data = evt.data
         ok = self.LoadImportBitmapPanel(data)
         if ok:
             Publisher.sendMessage('Show import bitmap panel in frame')            
+            self.img_type = 2
             #Publisher.sendMessage("Show import panel in invesalius.gui.frame") as frame
 
     def LoadImportBitmapPanel(self, data):
@@ -569,10 +577,10 @@ class Controller():
         proj.matrix_filename = matrix_filename
         #proj.imagedata = imagedata
         proj.dicom_sample = dicom
-        #  proj.original_orientation =\
-                    #  name_to_const[dicom.image.orientation_label]
+        proj.original_orientation =\
+                    name_to_const[dicom.image.orientation_label]
         # Forcing to Axial
-        proj.original_orientation = const.AXIAL
+        #  proj.original_orientation = const.AXIAL
         proj.window = float(dicom.image.window)
         proj.level = float(dicom.image.level)
         proj.threshold_range = int(matrix.min()), int(matrix.max())
@@ -751,23 +759,18 @@ class Controller():
 
     def OnOpenOtherFiles(self, pubsub_evt):
         filepath = pubsub_evt.data
-        name = filepath.rpartition('\\')[-1].split('.')
+        if not(filepath) == None:
+            name = filepath.rpartition('\\')[-1].split('.')
 
-        if name[-1] == 'gz':
-            name[1] = 'nii.gz'
-
-        suptype = ('hdr', 'nii', 'nii.gz', 'par')
-        filetype = name[1].lower()
-
-        if filetype in suptype:
             group = oth.ReadOthers(filepath)
-        else:
-            dialog.ImportInvalidFiles()
-
-        matrix, matrix_filename = self.OpenOtherFiles(group)
-        self.CreateOtherProject(str(name[0]), matrix, matrix_filename)
-        self.LoadProject()
-        Publisher.sendMessage("Enable state project", True)
+            
+            if group:
+                matrix, matrix_filename = self.OpenOtherFiles(group)
+                self.CreateOtherProject(str(name[0]), matrix, matrix_filename)
+                self.LoadProject()
+                Publisher.sendMessage("Enable state project", True)
+            else:
+                dialog.ImportInvalidFiles(ftype="Others")
 
     def OpenDicomGroup(self, dicom_group, interval, file_range, gui=True):
         # Retrieve general DICOM headers
