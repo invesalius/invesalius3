@@ -24,6 +24,9 @@ import optparse as op
 import os
 import sys
 import shutil
+import traceback
+
+import re
 
 if sys.platform == 'win32':
     import _winreg
@@ -218,7 +221,8 @@ class SplashScreen(wx.SplashScreen):
         self.control = Controller(self.main)
         
         self.fc = wx.FutureCall(1, self.ShowMain)
-        wx.FutureCall(1, parse_comand_line)
+        options, args = parse_comand_line()
+        wx.FutureCall(1, use_cmd_optargs, options, args)
 
         # Check for updates
         from threading import Thread
@@ -244,6 +248,24 @@ class SplashScreen(wx.SplashScreen):
         if self.fc.IsRunning():
             self.Raise()
 
+
+def non_gui_startup(options, args):
+    lang = 'en'
+    _ = i18n.InstallLanguage(lang)
+
+    from invesalius.control import Controller
+    from invesalius.project import Project
+
+    session = ses.Session()
+    if not session.ReadSession():
+        session.CreateItens()
+        session.SetLanguage(lang)
+        session.WriteSessionFile()
+
+    control = Controller(None)
+
+    use_cmd_optargs(options, args)
+
 # ------------------------------------------------------------------
 
 
@@ -262,37 +284,136 @@ def parse_comand_line():
                       action="store_true",
                       dest="debug")
 
+    parser.add_option('--no-gui',
+                      action='store_true',
+                      dest='no_gui')
+
     # -i or --import: import DICOM directory
     # chooses largest series
     parser.add_option("-i", "--import",
                       action="store",
                       dest="dicom_dir")
-    options, args = parser.parse_args()
 
+    parser.add_option("--import-all",
+                      action="store")
+
+    parser.add_option("-s", "--save",
+                      help="Save the project after an import.")
+
+    parser.add_option("-t", "--threshold",
+                      help="Define the threshold for the export (e.g. 100-780).")
+
+    parser.add_option("-e", "--export",
+                      help="Export to STL.")
+
+    parser.add_option("-a", "--export-to-all",
+                      help="Export to STL for all mask presets.")
+
+    options, args = parser.parse_args()
+    return options, args
+
+
+def use_cmd_optargs(options, args):
     # If debug argument...
     if options.debug:
         Publisher.subscribe(print_events, Publisher.ALL_TOPICS)
+        session = ses.Session()
         session.debug = 1
 
     # If import DICOM argument...
     if options.dicom_dir:
         import_dir = options.dicom_dir
-        Publisher.sendMessage('Import directory', import_dir)
+        Publisher.sendMessage('Import directory', {'directory': import_dir, 'gui': not options.no_gui})
+
+        if options.save:
+            Publisher.sendMessage('Save project', os.path.abspath(options.save))
+            exit(0)
+
+        check_for_export(options)
+
+        return True
+    elif options.import_all:
+        import invesalius.reader.dicom_reader as dcm
+        for patient in dcm.GetDicomGroups(options.import_all):
+            for group in patient.GetGroups():
+                Publisher.sendMessage('Import group', {'group': group, 'gui': not options.no_gui})
+                check_for_export(options, suffix=group.title, remove_surfaces=False)
+                Publisher.sendMessage('Remove masks', [0])
         return True
 
     # Check if there is a file path somewhere in what the user wrote
     # In case there is, try opening as it was a inv3
     else:
-        i = len(args)
-        while i:
-            i -= 1
-            file = args[i].decode(sys.stdin.encoding)
-            if os.path.isfile(file):
-                path = os.path.abspath(file)
-                Publisher.sendMessage('Open project', path)
-                i = 0
+        for arg in reversed(args):
+            if os.path.isfile(arg):
+                path_ = os.path.abspath(arg.decode(sys.stdin.encoding))
+                Publisher.sendMessage('Open project', path_)
+
+                check_for_export(options)
                 return True
     return False
+
+
+def sanitize(text):
+    text = str(text).strip().replace(' ', '_')
+    return re.sub(r'(?u)[^-\w.]', '', text)
+
+
+def check_for_export(options, suffix='', remove_surfaces=False):
+    suffix = sanitize(suffix)
+
+    if options.export:
+        if not options.threshold:
+            print("Need option --threshold when using --export.")
+            exit(1)
+        threshold_range = tuple([int(n) for n in options.threshold.split(',')])
+
+        if suffix:
+            if options.export.endswith('.stl'):
+                path_ = '{}-{}.stl'.format(options.export[:-4], suffix)
+            else:
+                path_ = '{}-{}.stl'.format(options.export, suffix)
+        else:
+            path_ = options.export
+
+        export(path_, threshold_range, remove_surface=remove_surfaces)
+    elif options.export_to_all:
+        # noinspection PyBroadException
+        try:
+            from invesalius.project import Project
+
+            for threshold_name, threshold_range in Project().presets.thresh_ct.iteritems():
+                if isinstance(threshold_range[0], int):
+                    path_ = u'{}-{}-{}.stl'.format(options.export_to_all, suffix, threshold_name)
+                    export(path_, threshold_range, remove_surface=True)
+        except:
+            traceback.print_exc()
+        finally:
+            exit(0)
+
+
+def export(path_, threshold_range, remove_surface=False):
+    import invesalius.constants as const
+
+    Publisher.sendMessage('Set threshold values', threshold_range)
+
+    surface_options = {
+        'method': {
+            'algorithm': 'Default',
+            'options': {},
+        }, 'options': {
+            'index': 0,
+            'name': '',
+            'quality': _('Optimal *'),
+            'fill': False,
+            'keep_largest': False,
+            'overwrite': False,
+        }
+    }
+    Publisher.sendMessage('Create surface from index', surface_options)
+    Publisher.sendMessage('Export surface to file', (path_, const.FILETYPE_STL))
+    if remove_surface:
+        Publisher.sendMessage('Remove surfaces', [0])
 
 
 def print_events(data):
@@ -305,8 +426,13 @@ def main():
     """
     Initialize InVesalius GUI
     """
-    application = InVesalius(0)
-    application.MainLoop()
+    options, args = parse_comand_line()
+
+    if options.no_gui:
+        non_gui_startup(options, args)
+    else:
+        application = InVesalius(0)
+        application.MainLoop()
 
 if __name__ == '__main__':
     #Is needed because of pyinstaller

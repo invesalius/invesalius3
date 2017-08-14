@@ -247,7 +247,7 @@ class NeuronavigationPanel(wx.Panel):
             n = btns_img[k].keys()[0]
             lab = btns_img[k].values()[0]
             self.btns_coord[n] = wx.ToggleButton(self, k, label=lab, size=wx.Size(45, 23))
-            self.btns_coord[n].SetToolTip(tips_img[n])
+            self.btns_coord[n].SetToolTip(wx.ToolTip(tips_img[n]))
             self.btns_coord[n].Bind(wx.EVT_TOGGLEBUTTON, self.OnImageFiducials)
 
         # Push buttons for tracker fiducials
@@ -258,7 +258,7 @@ class NeuronavigationPanel(wx.Panel):
             n = btns_trk[k].keys()[0]
             lab = btns_trk[k].values()[0]
             self.btns_coord[n] = wx.Button(self, k, label=lab, size=wx.Size(45, 23))
-            self.btns_coord[n].SetToolTip(tips_trk[n-3])
+            self.btns_coord[n].SetToolTip(wx.ToolTip(tips_trk[n-3]))
             # Excepetion for event of button that set image coordinates
             if n == 6:
                 self.btns_coord[n].Bind(wx.EVT_BUTTON, self.OnSetImageCoordinates)

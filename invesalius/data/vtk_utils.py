@@ -44,7 +44,10 @@ def ShowProgress(number_of_filters = 1,
     progress = [0]
     last_obj_progress = [0]
     if (dialog_type == "ProgressDialog"):
-        dlg = ProgressDialog(100)
+        try:
+            dlg = ProgressDialog(100)
+        except wx._core.PyNoAppError:
+            return lambda obj, label: 0
 
 
     # when the pipeline is larger than 1, we have to consider this object

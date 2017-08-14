@@ -359,19 +359,22 @@ class Slice(object):
 
         # TODO: merge this code with apply_slice_buffer_to_mask
         b_mask = self.buffer_slices["AXIAL"].mask
-        n = self.buffer_slices["AXIAL"].index + 1
-        self.current_mask.matrix[n, 1:, 1:] = b_mask
-        self.current_mask.matrix[n, 0, 0] = 1
+        if b_mask is not None:
+            n = self.buffer_slices["AXIAL"].index + 1
+            self.current_mask.matrix[n, 1:, 1:] = b_mask
+            self.current_mask.matrix[n, 0, 0] = 1
 
         b_mask = self.buffer_slices["CORONAL"].mask
-        n = self.buffer_slices["CORONAL"].index + 1
-        self.current_mask.matrix[1:, n, 1:] = b_mask
-        self.current_mask.matrix[0, n, 0] = 1
+        if b_mask is not None:
+            n = self.buffer_slices["CORONAL"].index + 1
+            self.current_mask.matrix[1:, n, 1:] = b_mask
+            self.current_mask.matrix[0, n, 0] = 1
 
         b_mask = self.buffer_slices["SAGITAL"].mask
-        n = self.buffer_slices["SAGITAL"].index + 1
-        self.current_mask.matrix[1:, 1:, n] = b_mask
-        self.current_mask.matrix[0, 0, n] = 1
+        if b_mask is not None:
+            n = self.buffer_slices["SAGITAL"].index + 1
+            self.current_mask.matrix[1:, 1:, n] = b_mask
+            self.current_mask.matrix[0, 0, n] = 1
 
         if to_reload:
             Publisher.sendMessage('Reload actual slice')
@@ -888,7 +891,8 @@ class Slice(object):
                     self.current_mask.matrix[n+1, 1:, 1:] = m
             else:
                 slice_ = self.buffer_slices[orientation].image
-                self.buffer_slices[orientation].mask = (255 * ((slice_ >= thresh_min) & (slice_ <= thresh_max))).astype('uint8')
+                if slice_ is not None:
+                    self.buffer_slices[orientation].mask = (255 * ((slice_ >= thresh_min) & (slice_ <= thresh_max))).astype('uint8')
 
             # Update viewer
             #Publisher.sendMessage('Update slice viewer')
