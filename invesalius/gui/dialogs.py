@@ -2108,9 +2108,6 @@ class ImportBitmapParameters(wx.Dialog):
         self.interval = v
 
     def OnOk(self, evt):
-        self.Close()
-        self.Destroy()
-
         orient_selection = self.cb_orientation.GetSelection()
 
         if(orient_selection == 1):
@@ -2124,6 +2121,9 @@ class ImportBitmapParameters(wx.Dialog):
                   self.fsp_spacing_x.GetValue(), self.fsp_spacing_y.GetValue(),\
                   self.fsp_spacing_z.GetValue(), self.interval]
         Publisher.sendMessage('Open bitmap files', values)
+
+        self.Close()
+        self.Destroy()
 
 
 def BitmapNotSameSize():
