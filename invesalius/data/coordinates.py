@@ -150,13 +150,12 @@ def PolhemusUSBCoord(trck, trck_id, ref_mode):
 
         # six coordinates of first and second sensor: x, y, z and alfa, beta and gama
         # jump one element for reference to avoid the sensor ID returned by Polhemus
-        probe = data[0] * scale[0], data[1] * scale[1], data[2] * scale[2], \
-                data[3], data[4], data[5], data[6]
-        reference = data[7] * scale[0], data[8] * scale[1], data[9] * scale[2], data[10], \
-                    data[11], data[12], data[13]
+        probe = data[0], data[1], data[2], data[3], data[4], data[5], data[6]
+        reference = data[7], data[8], data[9], data[10], data[11], data[12], data[13]
 
         if probe.all() and reference.all():
             coord = dynamic_reference(probe, reference)
+            coord = (coord[0] * scale[0], coord[1] * scale[1], coord[2] * scale[2], coord[3], coord[4], coord[5])
 
         return coord
 
