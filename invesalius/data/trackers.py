@@ -67,8 +67,8 @@ def ClaronTracker(tracker_id):
 
         lib_mode = 'wrapper'
         trck_init = pyclaron.pyclaron()
-        trck_init.CalibrationDir = const.CAL_DIR
-        trck_init.MarkerDir = const.MAR_DIR
+        trck_init.CalibrationDir = const.CAL_DIR.encode(const.FS_ENCODE)
+        trck_init.MarkerDir = const.MAR_DIR.encode(const.FS_ENCODE)
         trck_init.NumberFramesProcessed = 10
         trck_init.FramesExtrapolated = 0
         trck_init.PROBE_NAME = "1Probe"
