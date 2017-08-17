@@ -33,20 +33,21 @@ class Trigger(threading.Thread):
         threading.Thread.__init__(self)
         self.trigger_init = None
         self.stylusplh = False
+        self.COM = False
+        self.nav_id = nav_id
         self.__bind_events()
         try:
             import serial
 
             self.trigger_init = serial.Serial('COM1', baudrate=9600, timeout=0)
-            self.nav_id = nav_id
-            self._pause_ = False
-            self.start()
+            self.COM = True
 
-        except ImportError:
-            print 'PySerial library not installed. Please install to use Trigger option.'
-
-        except serial.serialutil.SerialException:
+        except:
             print 'Connection with port COM1 failed.'
+            self.COM = False
+
+        self._pause_ = False
+        self.start()
 
     def __bind_events(self):
         Publisher.subscribe(self.OnStylusPLH, 'PLH Stylus Button On')
@@ -59,15 +60,16 @@ class Trigger(threading.Thread):
 
     def run(self):
         while self.nav_id:
-            self.trigger_init.write('0')
-            sleep(0.3)
-            lines = self.trigger_init.readlines()
-            # Following lines can simulate a trigger in 3 sec repetitions
-            # sleep(3)
-            # lines = True
-            if lines:
-                wx.CallAfter(Publisher.sendMessage, 'Create marker')
-                sleep(0.5)
+            if self.COM:
+                self.trigger_init.write('0')
+                sleep(0.3)
+                lines = self.trigger_init.readlines()
+                # Following lines can simulate a trigger in 3 sec repetitions
+                # sleep(3)
+                # lines = True
+                if lines:
+                    wx.CallAfter(Publisher.sendMessage, 'Create marker')
+                    sleep(0.5)
 
             if self.stylusplh:
                 wx.CallAfter(Publisher.sendMessage, 'Create marker')
