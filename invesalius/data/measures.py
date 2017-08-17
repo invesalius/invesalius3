@@ -927,3 +927,55 @@ class AngularMeasure(object):
 
     def __del__(self):
         self.Remove()
+
+
+class CircleDensityMeasure(object):
+    def __init__(self, colour=(1, 0, 0)):
+        self.colour = colour
+        self.center = (0.0, 0.0, 0.0)
+        self.point1 = (0.0, 0.0, 0.0)
+
+        self._min = 0
+        self._max = 0
+        self._mean = 0
+        self._std = 0
+
+    def set_center(self, pos):
+        self.center = pos
+
+    def set_point1(self, pos):
+        self.point1 = pos
+
+    def set_density_values(self, _min, _max, _mean, _std):
+        self._min = _min
+        self._max = _max
+        self._mean = _mean
+        self._std = _std
+
+    def _3d_to_2d(self, renderer, pos):
+        coord = vtk.vtkCoordinate()
+        coord.SetValue(pos)
+        cx, cy = coord.GetComputedDoubleDisplayValue(renderer)
+        return cx, cy
+
+    def draw_to_canvas(self, gc, canvas):
+        """
+        Draws to an wx.GraphicsContext.
+
+        Parameters:
+            gc: is a wx.GraphicsContext
+            canvas: the canvas it's being drawn.
+        """
+        cx, cy = self._3d_to_2d(canvas.evt_renderer, self.center)
+        px, py = self._3d_to_2d(canvas.evt_renderer, self.point1)
+        radius = ((px - cx)**2 + (py - cy)**2)**0.5
+
+        print self.center, self.point1, radius
+        canvas.draw_circle((cx, cy), radius)
+
+        text = _('Min: %.3f\n'
+                 'Max: %.3f\n'
+                 'Mean: %.3f\n'
+                 'Std: %.3f' % (self._min, self._max, self._mean, self._std))
+
+        canvas.draw_text_box(text, (px, py), txt_colour=MEASURE_TEXT_COLOUR, bg_colour=MEASURE_TEXTBOX_COLOUR)

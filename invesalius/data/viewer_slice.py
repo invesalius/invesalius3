@@ -371,7 +371,7 @@ class CanvasRendererCTX:
 
         self._drawn = True
 
-    def draw_circle(self, center, radius, width=2, line_colour=(255, 0, 0, 128), fill_colour=(0, 0, 0, 0)):
+    def draw_circle(self, center, radius=2.5, width=2, line_colour=(255, 0, 0, 128), fill_colour=(0, 0, 0, 0)):
         """
         Draw a circle centered at center with the given radius.
 
@@ -396,7 +396,7 @@ class CanvasRendererCTX:
         cy = -cy
 
         path = gc.CreatePath()
-        path.AddCircle(cx, cy, 2.5)
+        path.AddCircle(cx, cy, radius)
         gc.StrokePath(path)
         gc.FillPath(path)
         self._drawn = True
@@ -553,6 +553,8 @@ class Viewer(wx.Panel):
         self.interpolation_slice_status = True
 
         self.canvas = None
+
+        self.draw_by_slice_number = collections.defaultdict(list)
 
         # The layout from slice_data, the first is number of cols, the second
         # is the number of rows
@@ -1598,21 +1600,27 @@ class Viewer(wx.Panel):
 
     def UpdateCanvas(self, evt=None):
         if self.canvas is not None:
-            cp_draw_list = self.canvas.draw_list[:]
-            self.canvas.draw_list = []
-
-            # Removing all measures
-            for i in cp_draw_list:
-                if not isinstance(i, (measures.AngularMeasure, measures.LinearMeasure)):
-                    self.canvas.draw_list.append(i)
-
-            # Then add all needed measures
-            for (m, mr) in self.measures.get(self.orientation, self.slice_data.number):
-                if m.visible:
-                    self.canvas.draw_list.append(mr)
-
+            self._update_draw_list()
             self.canvas.modified = True
             self.interactor.Render()
+
+    def _update_draw_list(self):
+        cp_draw_list = self.canvas.draw_list[:]
+        self.canvas.draw_list = []
+
+        # Removing all measures
+        for i in cp_draw_list:
+            if not isinstance(i, (measures.AngularMeasure, measures.LinearMeasure, measures.CircleDensityMeasure)):
+                self.canvas.draw_list.append(i)
+
+        # Then add all needed measures
+        for (m, mr) in self.measures.get(self.orientation, self.slice_data.number):
+            if m.visible:
+                self.canvas.draw_list.append(mr)
+
+        n = self.slice_data.number
+        self.canvas.draw_list.extend(self.draw_by_slice_number[n])
+
 
     def __configure_scroll(self):
         actor = self.slice_data_list[0].actor
@@ -1800,15 +1808,16 @@ class Viewer(wx.Panel):
         for actor in self.actors_by_slice_number[index]:
             self.slice_data.renderer.AddActor(actor)
 
-        for (m, mr) in self.measures.get(self.orientation, self.slice_data.number):
-            try:
-                self.canvas.draw_list.remove(mr)
-            except ValueError:
-                pass
+        #  for (m, mr) in self.measures.get(self.orientation, self.slice_data.number):
+            #  try:
+                #  self.canvas.draw_list.remove(mr)
+            #  except ValueError:
+                #  pass
 
-        for (m, mr) in self.measures.get(self.orientation, index):
-            if m.visible:
-                self.canvas.draw_list.append(mr)
+        #  for (m, mr) in self.measures.get(self.orientation, index):
+            #  if m.visible:
+                #  self.canvas.draw_list.append(mr)
+
 
         if self.slice_._type_projection == const.PROJECTION_NORMAL:
             self.slice_data.SetNumber(index)
@@ -1818,6 +1827,7 @@ class Viewer(wx.Panel):
             self.slice_data.SetNumber(index, end)
         self.__update_display_extent(image)
         self.cross.SetModelBounds(self.slice_data.actor.GetBounds())
+        self._update_draw_list()
 
     def ChangeSliceNumber(self, pubsub_evt):
         index = pubsub_evt.data

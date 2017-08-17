@@ -449,6 +449,9 @@ class Frame(wx.Frame):
         elif id == const.ID_REORIENT_IMG:
             self.OnReorientImg()
 
+        elif id == const.ID_DENSITY_MEASURE:
+            self.OnDensityMeasure()
+
         elif id == const.ID_THRESHOLD_SEGMENTATION:
             Publisher.sendMessage("Show panel", const.ID_THRESHOLD_SEGMENTATION)
             Publisher.sendMessage('Disable actual style')
@@ -632,6 +635,9 @@ class Frame(wx.Frame):
         rdlg = dlg.ReorientImageDialog()
         rdlg.Show()
 
+    def OnDensityMeasure(self):
+        Publisher.sendMessage('Enable style', const.STATE_MEASURE_DENSITY)
+
     def OnFillHolesManually(self):
         Publisher.sendMessage('Enable style', const.SLICE_STATE_MASK_FFILL)
 
@@ -689,7 +695,8 @@ class MenuBar(wx.MenuBar):
                              const.ID_MANUAL_SEGMENTATION,
                              const.ID_WATERSHED_SEGMENTATION,
                              const.ID_THRESHOLD_SEGMENTATION,
-                             const.ID_FLOODFILL_SEGMENTATION,]
+                             const.ID_FLOODFILL_SEGMENTATION,
+                             const.ID_DENSITY_MEASURE,]
         self.__init_items()
         self.__bind_events()
 
@@ -832,6 +839,7 @@ class MenuBar(wx.MenuBar):
         image_menu.AppendMenu(wx.NewId(), _('Flip'), flip_menu)
         image_menu.AppendMenu(wx.NewId(), _('Swap axes'), swap_axes_menu)
 
+        density_menu = image_menu.Append(const.ID_DENSITY_MEASURE, _(u'Density measure'))
         reorient_menu = image_menu.Append(const.ID_REORIENT_IMG, _(u'Reorient image\tCtrl+Shift+R'))
 
         reorient_menu.Enable(False)

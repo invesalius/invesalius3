@@ -43,7 +43,7 @@ from scipy.ndimage import watershed_ift, generate_binary_structure
 from skimage.morphology import watershed
 
 import invesalius.gui.dialogs as dialogs
-from invesalius.data.measures import MeasureData
+from invesalius.data.measures import MeasureData, CircleDensityMeasure
 
 from . import floodfill
 
@@ -519,6 +519,106 @@ class AngularMeasureInteractorStyle(LinearMeasureInteractorStyle):
         self._type = const.ANGULAR
 
         self.state_code = const.STATE_MEASURE_ANGLE
+
+
+class DensityMeasureStyle(DefaultInteractorStyle):
+    """
+    Interactor style responsible for density measurements.
+    """
+    def __init__(self, viewer):
+        DefaultInteractorStyle.__init__(self, viewer)
+
+        self.state_code = const.STATE_MEASURE_DENSITY
+
+        self.viewer = viewer
+        self.orientation = viewer.orientation
+        self.slice_data = viewer.slice_data
+
+        self.picker = vtk.vtkCellPicker()
+        self.picker.PickFromListOn()
+
+        self.measures = MeasureData()
+
+        self._bind_events()
+
+    def _bind_events(self):
+        self.AddObserver("LeftButtonPressEvent", self.OnInsertPoint)
+        #  self.AddObserver("LeftButtonReleaseEvent", self.OnReleaseMeasurePoint)
+        #  self.AddObserver("MouseMoveEvent", self.OnMoveMeasurePoint)
+        #  self.AddObserver("LeaveEvent", self.OnLeaveMeasureInteractor)
+
+    def _calc_density(self, center, radius):
+        n = self.viewer.slice_data.number
+        orientation = self.viewer.orientation
+        img_slice = self.viewer.slice_.get_image_slice(orientation, n)
+        dy, dx = img_slice.shape
+        spacing = self.viewer.slice_.spacing
+
+        if orientation == 'AXIAL':
+            sx, sy = spacing[0], spacing[1]
+            cx, cy = center[0], center[1]
+        elif orientation == 'CORONAL':
+            sx, sy = spacing[0], spacing[2]
+            cx, cy = center[0], center[2]
+        elif orientation == 'SAGITAL':
+            sx, sy = spacing[1], spacing[2]
+            cx, cy = center[1], center[2]
+
+        mask_y, mask_x = np.ogrid[0:dy*sy:sy, 0:dx*sy:sx]
+        mask = ((mask_x - cx)**2 + (mask_y - cy)**2) <= (radius ** 2)
+
+        test_img = np.zeros_like(img_slice)
+        test_img[mask] = img_slice[mask]
+
+        imsave('/tmp/manolo.png', test_img[::-1, :])
+
+        values = img_slice[mask]
+
+        _min = values.min()
+        _max = values.max()
+        _mean = values.mean()
+        _std = values.std()
+
+        return _min, _max, _mean, _std
+
+    def _2d_to_3d(self, pos):
+        mx, my = pos
+        iren = self.viewer.interactor
+        render = iren.FindPokedRenderer(mx, my)
+        self.picker.AddPickList(self.slice_data.actor)
+        self.picker.Pick(mx, my, 0, render)
+        x, y, z = self.picker.GetPickPosition()
+        self.picker.DeletePickList(self.slice_data.actor)
+        return (x, y, z)
+
+    def _pick_position(self):
+        iren = self.viewer.interactor
+        mx, my = iren.GetEventPosition()
+        return (mx, my)
+
+    def _get_pos_clicked(self):
+        return self._2d_to_3d(self._pick_position())
+
+    def OnInsertPoint(self, obj, evt):
+        pos = self._get_pos_clicked()
+
+        mc = self._pick_position()
+        pc = self._2d_to_3d(mc)
+
+        pp1 = self._2d_to_3d([i+10 for i in mc])
+
+        _min, _max, _mean, _std = self._calc_density(pc, sum([(i - j)**2 for (i, j) in zip(pc, pp1)])**0.5)
+
+        m = CircleDensityMeasure()
+        m.set_center(pos)
+        m.set_point1(pp1)
+        m.set_density_values(_min, _max, _mean, _std)
+
+        n = self.viewer.slice_data.number
+
+        self.viewer.draw_by_slice_number[n].append(m)
+
+        self.viewer.UpdateCanvas()
 
 
 class PanMoveInteractorStyle(DefaultInteractorStyle):
@@ -2319,6 +2419,10 @@ class FloodFillSegmentInteractorStyle(DefaultInteractorStyle):
 
         return out_mask
 
+
+
+
+
 def get_style(style):
     STYLES = {
         const.STATE_DEFAULT: DefaultInteractorStyle,
@@ -2326,6 +2430,7 @@ def get_style(style):
         const.STATE_WL: WWWLInteractorStyle,
         const.STATE_MEASURE_DISTANCE: LinearMeasureInteractorStyle,
         const.STATE_MEASURE_ANGLE: AngularMeasureInteractorStyle,
+        const.STATE_MEASURE_DENSITY: DensityMeasureStyle,
         const.STATE_PAN: PanMoveInteractorStyle,
         const.STATE_SPIN: SpinInteractorStyle,
         const.STATE_ZOOM: ZoomInteractorStyle,
