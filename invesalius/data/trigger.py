@@ -43,7 +43,7 @@ class Trigger(threading.Thread):
             self.COM = True
 
         except:
-            print 'Connection with port COM1 failed.'
+            wx.MessageBox(_('Connection with port COM1 failed'), _('Communication error'), wx.OK | wx.ICON_ERROR)
             self.COM = False
 
         self._pause_ = False
