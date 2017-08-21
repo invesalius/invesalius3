@@ -1542,3 +1542,16 @@ class Slice(object):
         self.buffer_slices['SAGITAL'].discard_vtk_mask()
 
         Publisher.sendMessage('Reload actual slice')
+
+    def calc_image_density(self, mask=None):
+        if mask is None:
+            mask = self.current_mask
+        self.do_threshold_to_all_slices(mask)
+        values = self.matrix[mask.matrix[1:, 1:, 1:] > 127]
+
+        _min = values.min()
+        _max = values.max()
+        _mean = values.mean()
+        _std = values.std()
+
+        return _min, _max, _mean, _std

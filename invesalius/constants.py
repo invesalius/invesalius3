@@ -542,6 +542,7 @@ ID_THRESHOLD_SEGMENTATION = wx.NewId()
 ID_FLOODFILL_SEGMENTATION = wx.NewId()
 ID_CROP_MASK = wx.NewId()
 ID_DENSITY_MEASURE = wx.NewId()
+ID_MASK_DENSITY_MEASURE = wx.NewId()
 
 #---------------------------------------------------------
 STATE_DEFAULT = 1000

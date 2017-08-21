@@ -2967,3 +2967,87 @@ class FillHolesAutoDialog(wx.Dialog):
         else:
             self.panel3dcon.Enable(1)
             self.panel2dcon.Enable(0)
+
+
+class MaskDensityDialog(wx.Dialog):
+    def __init__(self, title):
+        pre = wx.PreDialog()
+        pre.Create(wx.GetApp().GetTopWindow(), -1, _("Mask density"), style=wx.DEFAULT_DIALOG_STYLE|wx.FRAME_FLOAT_ON_PARENT)
+        self.PostCreate(pre)
+
+        self._init_gui()
+        self._bind_events()
+
+    def _init_gui(self):
+        import invesalius.project as prj
+        project = prj.Project()
+
+        self.cmb_mask = wx.ComboBox(self, -1, choices=[], style=wx.CB_READONLY)
+        for mask in project.mask_dict.values():
+            self.cmb_mask.Append(mask.name, mask)
+        self.cmb_mask.SetValue(project.mask_dict.values()[0].name)
+
+        self.calc_button = wx.Button(self, -1, _(u'Calculate'))
+
+        self.mean_density = self._create_selectable_label_text('')
+        self.min_density = self._create_selectable_label_text('')
+        self.max_density = self._create_selectable_label_text('')
+        self.std_density = self._create_selectable_label_text('')
+
+
+        slt_mask_sizer = wx.FlexGridSizer(rows=1, cols=3, vgap=5, hgap=5)
+        slt_mask_sizer.AddMany([
+            (wx.StaticText(self, -1, _(u'Mask:'), style=wx.ALIGN_CENTER_VERTICAL),  1, wx.EXPAND),
+            (self.cmb_mask, 1, wx.EXPAND),
+            (self.calc_button, 0, wx.EXPAND),
+        ])
+
+        values_sizer = wx.FlexGridSizer(rows=4, cols=2, vgap=5, hgap=5)
+        values_sizer.AddMany([
+            (wx.StaticText(self, -1, _(u'Mean:')),  0, wx.EXPAND),
+            (self.mean_density, 1, wx.EXPAND),
+
+            (wx.StaticText(self, -1, _(u'Min:')),  0, wx.EXPAND),
+            (self.min_density, 1, wx.EXPAND),
+
+            (wx.StaticText(self, -1, _(u'Max:')),  0, wx.EXPAND),
+            (self.max_density, 1, wx.EXPAND),
+
+            (wx.StaticText(self, -1, _(u'Std:')),  0, wx.EXPAND),
+            (self.std_density, 1, wx.EXPAND),
+        ])
+
+        sizer = wx.FlexGridSizer(rows=4, cols=1, vgap=5, hgap=5)
+        sizer.AddSpacer(5)
+        sizer.AddMany([
+            (slt_mask_sizer, 1, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 5) ,
+            (values_sizer, 1, wx.EXPAND | wx.LEFT | wx.RIGHT, 5),
+        ])
+        sizer.AddSpacer(5)
+
+        self.SetSizer(sizer)
+        sizer.Fit(self)
+        self.Layout()
+
+        self.CenterOnScreen()
+
+    def _create_selectable_label_text(self, text):
+        label = wx.TextCtrl(self, style=wx.TE_READONLY|wx.BORDER_NONE)
+        label.SetValue(text)
+        #  label.SetBackgroundColour(self.GetBackgroundColour())
+        return label
+
+    def _bind_events(self):
+        self.calc_button.Bind(wx.EVT_BUTTON, self.OnCalcButton)
+
+    def OnCalcButton(self, evt):
+        from invesalius.data.slice_ import Slice
+        mask = self.cmb_mask.GetClientData(self.cmb_mask.GetSelection())
+
+        slc = Slice()
+        _min, _max, _mean, _std = slc.calc_image_density(mask)
+
+        self.mean_density.SetValue(str(_mean))
+        self.min_density.SetValue(str(_min))
+        self.max_density.SetValue(str(_max))
+        self.std_density.SetValue(str(_std))

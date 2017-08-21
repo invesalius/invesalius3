@@ -452,6 +452,10 @@ class Frame(wx.Frame):
         elif id == const.ID_DENSITY_MEASURE:
             self.OnDensityMeasure()
 
+        elif id == const.ID_MASK_DENSITY_MEASURE:
+            ddlg = dlg.MaskDensityDialog(self)
+            ddlg.ShowModal()
+
         elif id == const.ID_THRESHOLD_SEGMENTATION:
             Publisher.sendMessage("Show panel", const.ID_THRESHOLD_SEGMENTATION)
             Publisher.sendMessage('Disable actual style')
@@ -696,7 +700,9 @@ class MenuBar(wx.MenuBar):
                              const.ID_WATERSHED_SEGMENTATION,
                              const.ID_THRESHOLD_SEGMENTATION,
                              const.ID_FLOODFILL_SEGMENTATION,
-                             const.ID_DENSITY_MEASURE,]
+                             const.ID_DENSITY_MEASURE,
+                             const.ID_MASK_DENSITY_MEASURE,
+                             ]
         self.__init_items()
         self.__bind_events()
 
@@ -840,6 +846,7 @@ class MenuBar(wx.MenuBar):
         image_menu.AppendMenu(wx.NewId(), _('Swap axes'), swap_axes_menu)
 
         density_menu = image_menu.Append(const.ID_DENSITY_MEASURE, _(u'Density measure'))
+        mask_density_menu = image_menu.Append(const.ID_MASK_DENSITY_MEASURE, _(u'Mask Density measure'))
         reorient_menu = image_menu.Append(const.ID_REORIENT_IMG, _(u'Reorient image\tCtrl+Shift+R'))
 
         reorient_menu.Enable(False)
