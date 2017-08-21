@@ -18,9 +18,13 @@
 #    PARTICULAR. Consulte a Licenca Publica Geral GNU para obter mais
 #    detalhes.
 #--------------------------------------------------------------------------
+import itertools
 import os
 import random
 import sys
+import time
+
+from concurrent import futures
 
 import vtk
 import wx
@@ -2997,23 +3001,23 @@ class MaskDensityDialog(wx.Dialog):
 
         slt_mask_sizer = wx.FlexGridSizer(rows=1, cols=3, vgap=5, hgap=5)
         slt_mask_sizer.AddMany([
-            (wx.StaticText(self, -1, _(u'Mask:'), style=wx.ALIGN_CENTER_VERTICAL),  1, wx.EXPAND),
+            (wx.StaticText(self, -1, _(u'Mask:'), style=wx.ALIGN_CENTER_VERTICAL),  0, wx.ALIGN_CENTRE),
             (self.cmb_mask, 1, wx.EXPAND),
             (self.calc_button, 0, wx.EXPAND),
         ])
 
         values_sizer = wx.FlexGridSizer(rows=4, cols=2, vgap=5, hgap=5)
         values_sizer.AddMany([
-            (wx.StaticText(self, -1, _(u'Mean:')),  0, wx.EXPAND),
+            (wx.StaticText(self, -1, _(u'Mean:')),  0, wx.ALIGN_CENTRE),
             (self.mean_density, 1, wx.EXPAND),
 
-            (wx.StaticText(self, -1, _(u'Min:')),  0, wx.EXPAND),
+            (wx.StaticText(self, -1, _(u'Min:')),  0, wx.ALIGN_CENTRE),
             (self.min_density, 1, wx.EXPAND),
 
-            (wx.StaticText(self, -1, _(u'Max:')),  0, wx.EXPAND),
+            (wx.StaticText(self, -1, _(u'Max:')),  0, wx.ALIGN_CENTRE),
             (self.max_density, 1, wx.EXPAND),
 
-            (wx.StaticText(self, -1, _(u'Std:')),  0, wx.EXPAND),
+            (wx.StaticText(self, -1, _(u'Std:')),  0, wx.ALIGN_CENTRE),
             (self.std_density, 1, wx.EXPAND),
         ])
 
@@ -3032,7 +3036,7 @@ class MaskDensityDialog(wx.Dialog):
         self.CenterOnScreen()
 
     def _create_selectable_label_text(self, text):
-        label = wx.TextCtrl(self, style=wx.TE_READONLY|wx.BORDER_NONE)
+        label = wx.TextCtrl(self, -1, style=wx.TE_READONLY)
         label.SetValue(text)
         #  label.SetBackgroundColour(self.GetBackgroundColour())
         return label
@@ -3045,7 +3049,22 @@ class MaskDensityDialog(wx.Dialog):
         mask = self.cmb_mask.GetClientData(self.cmb_mask.GetSelection())
 
         slc = Slice()
-        _min, _max, _mean, _std = slc.calc_image_density(mask)
+
+        with futures.ThreadPoolExecutor(max_workers=1) as executor:
+            future = executor.submit(slc.calc_image_density, mask)
+            for c in itertools.cycle(['', '.', '..', '...']):
+                s = _(u'Calculating ') + c
+                self.mean_density.SetValue(s)
+                self.min_density.SetValue(s)
+                self.max_density.SetValue(s)
+                self.std_density.SetValue(s)
+                self.Update()
+                self.Refresh()
+                if future.done():
+                    break
+                time.sleep(0.1)
+
+            _min, _max, _mean, _std = future.result()
 
         self.mean_density.SetValue(str(_mean))
         self.min_density.SetValue(str(_min))
