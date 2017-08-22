@@ -345,29 +345,19 @@ def use_cmd_optargs(options, args):
     # In case there is, try opening as it was a inv3
     else:
         for arg in reversed(args):
+            file = arg.decode(sys.stdin.encoding)
+            if os.path.isfile(file):
+                path = os.path.abspath(file)
+                Publisher.sendMessage('Open project', path)
+                check_for_export(options)
+                return True
 
-            try:
-                file = arg
-                if os.path.isfile(file):
-                    path = os.path.abspath(file)
-                    Publisher.sendMessage('Open project', path)
-                    check_for_export(options)
-                    return True
-            except:
-                
-                file = arg.decode(sys.stdin.encoding)
-                if os.path.isfile(file):
-                    path = os.path.abspath(file)
-                    Publisher.sendMessage('Open project', path)
-                    check_for_export(options)
-                    return True
-            
-                file = arg.decode(FS_ENCODE)            
-                if os.path.isfile(file):
-                    path = os.path.abspath(file)
-                    Publisher.sendMessage('Open project', path)
-                    check_for_export(options)
-                    return True
+            file = arg.decode(FS_ENCODE)
+            if os.path.isfile(file):
+                path = os.path.abspath(file)
+                Publisher.sendMessage('Open project', path)
+                check_for_export(options)
+                return True
 
     return False
 
