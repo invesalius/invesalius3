@@ -2987,9 +2987,10 @@ class MaskDensityDialog(wx.Dialog):
         project = prj.Project()
 
         self.cmb_mask = wx.ComboBox(self, -1, choices=[], style=wx.CB_READONLY)
-        for mask in project.mask_dict.values():
-            self.cmb_mask.Append(mask.name, mask)
-        self.cmb_mask.SetValue(project.mask_dict.values()[0].name)
+        if project.mask_dict.values():
+            for mask in project.mask_dict.values():
+                self.cmb_mask.Append(mask.name, mask)
+            self.cmb_mask.SetValue(project.mask_dict.values()[0].name)
 
         self.calc_button = wx.Button(self, -1, _(u'Calculate'))
 
@@ -3008,16 +3009,16 @@ class MaskDensityDialog(wx.Dialog):
 
         values_sizer = wx.FlexGridSizer(rows=4, cols=2, vgap=5, hgap=5)
         values_sizer.AddMany([
-            (wx.StaticText(self, -1, _(u'Mean:')),  0, wx.ALIGN_CENTRE),
+            (wx.StaticText(self, -1, _(u'Mean:')),  0, wx.ALIGN_CENTER_VERTICAL | wx.ALIGN_RIGHT),
             (self.mean_density, 1, wx.EXPAND),
 
-            (wx.StaticText(self, -1, _(u'Min:')),  0, wx.ALIGN_CENTRE),
+            (wx.StaticText(self, -1, _(u'Minimun:')),  0, wx.ALIGN_CENTER_VERTICAL | wx.ALIGN_RIGHT),
             (self.min_density, 1, wx.EXPAND),
 
-            (wx.StaticText(self, -1, _(u'Max:')),  0, wx.ALIGN_CENTRE),
+            (wx.StaticText(self, -1, _(u'Maximun:')),  0, wx.ALIGN_CENTER_VERTICAL | wx.ALIGN_RIGHT),
             (self.max_density, 1, wx.EXPAND),
 
-            (wx.StaticText(self, -1, _(u'Std:')),  0, wx.ALIGN_CENTRE),
+            (wx.StaticText(self, -1, _(u'Standard deviation:')),  0, wx.ALIGN_CENTER_VERTICAL | wx.ALIGN_RIGHT),
             (self.std_density, 1, wx.EXPAND),
         ])
 

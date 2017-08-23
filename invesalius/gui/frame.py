@@ -454,7 +454,7 @@ class Frame(wx.Frame):
 
         elif id == const.ID_MASK_DENSITY_MEASURE:
             ddlg = dlg.MaskDensityDialog(self)
-            ddlg.ShowModal()
+            ddlg.Show()
 
         elif id == const.ID_THRESHOLD_SEGMENTATION:
             Publisher.sendMessage("Show panel", const.ID_THRESHOLD_SEGMENTATION)
