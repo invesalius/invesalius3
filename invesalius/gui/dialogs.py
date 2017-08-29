@@ -3071,3 +3071,5 @@ class MaskDensityDialog(wx.Dialog):
         self.min_density.SetValue(str(_min))
         self.max_density.SetValue(str(_max))
         self.std_density.SetValue(str(_std))
+
+        print ">>>> Area of mask", slc.calc_mask_area(mask)

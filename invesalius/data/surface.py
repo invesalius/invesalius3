@@ -809,8 +809,12 @@ class SurfaceManager():
             measured_polydata = vtk.vtkMassProperties()
             #  measured_polydata.ReleaseDataFlagOn()
             measured_polydata.SetInputData(to_measure)
+            measured_polydata.Update()
             volume =  float(measured_polydata.GetVolume())
             area =  float(measured_polydata.GetSurfaceArea())
+
+            print "Volume", volume
+            print "Area", area
             surface.volume = volume
             surface.area = area
             self.last_surface_index = surface.index

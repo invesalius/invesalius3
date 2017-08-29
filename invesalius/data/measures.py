@@ -14,6 +14,9 @@ import invesalius.constants as const
 import invesalius.project as prj
 import invesalius.session as ses
 import invesalius.utils as utils
+
+from invesalius.gui.widgets.canvas_renderer import TextBox
+
 TYPE = {const.LINEAR: _(u"Linear"),
         const.ANGULAR: _(u"Angular"),
         }
@@ -930,7 +933,7 @@ class AngularMeasure(object):
 
 
 class CircleDensityMeasure(object):
-    def __init__(self, colour=(1, 0, 0)):
+    def __init__(self, colour=(255, 0, 0, 255)):
         self.colour = colour
         self.center = (0.0, 0.0, 0.0)
         self.point1 = (0.0, 0.0, 0.0)
@@ -939,6 +942,8 @@ class CircleDensityMeasure(object):
         self._max = 0
         self._mean = 0
         self._std = 0
+
+        self.text_box = None
 
     def set_center(self, pos):
         self.center = pos
@@ -952,11 +957,21 @@ class CircleDensityMeasure(object):
         self._mean = _mean
         self._std = _std
 
+        text = _('Min: %.3f\n'
+                 'Max: %.3f\n'
+                 'Mean: %.3f\n'
+                 'Std: %.3f' % (self._min, self._max, self._mean, self._std))
+
+        self.text_box = TextBox(text, self.point1, MEASURE_TEXT_COLOUR, MEASURE_TEXTBOX_COLOUR)
+
     def _3d_to_2d(self, renderer, pos):
         coord = vtk.vtkCoordinate()
         coord.SetValue(pos)
         cx, cy = coord.GetComputedDoubleDisplayValue(renderer)
         return cx, cy
+
+    def is_over(self, x, y):
+        return self.text_box.is_over(x, y)
 
     def draw_to_canvas(self, gc, canvas):
         """
@@ -971,11 +986,8 @@ class CircleDensityMeasure(object):
         radius = ((px - cx)**2 + (py - cy)**2)**0.5
 
         print self.center, self.point1, radius
-        canvas.draw_circle((cx, cy), radius)
+        canvas.draw_circle((cx, cy), radius, line_colour=self.colour)
 
-        text = _('Min: %.3f\n'
-                 'Max: %.3f\n'
-                 'Mean: %.3f\n'
-                 'Std: %.3f' % (self._min, self._max, self._mean, self._std))
 
-        canvas.draw_text_box(text, (px, py), txt_colour=MEASURE_TEXT_COLOUR, bg_colour=MEASURE_TEXTBOX_COLOUR)
+        #  canvas.draw_text_box(text, (px, py), )
+        self.text_box.draw_to_canvas(gc, canvas)
