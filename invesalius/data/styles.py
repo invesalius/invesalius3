@@ -542,10 +542,11 @@ class DensityMeasureStyle(DefaultInteractorStyle):
         self._bind_events()
 
     def _bind_events(self):
-        self.AddObserver("LeftButtonPressEvent", self.OnInsertPoint)
+        #  self.AddObserver("LeftButtonPressEvent", self.OnInsertPoint)
         #  self.AddObserver("LeftButtonReleaseEvent", self.OnReleaseMeasurePoint)
         #  self.AddObserver("MouseMoveEvent", self.OnMoveMeasurePoint)
         #  self.AddObserver("LeaveEvent", self.OnLeaveMeasureInteractor)
+        self.viewer.canvas.bind_event('LeftButtonPressEvent', self.OnInsertPoint)
 
     def _calc_density(self, center, radius):
         n = self.viewer.slice_data.number
