@@ -1651,7 +1651,8 @@ class ReorientImageInteractorStyle(DefaultInteractorStyle):
         Publisher.sendMessage('Update reorient angles', (ax, ay, az))
 
         self._discard_buffers()
-        self.viewer.slice_.current_mask.clear_history()
+        if self.viewer.slice_.current_mask:
+            self.viewer.slice_.current_mask.clear_history()
         Publisher.sendMessage('Reload actual slice %s' % self.viewer.orientation)
         self.p0 = self.get_image_point_coord(x, y, z)
 
