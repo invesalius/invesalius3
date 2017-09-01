@@ -571,7 +571,7 @@ class DensityMeasureStyle(DefaultInteractorStyle):
         pos = self._get_pos_clicked()
 
         mc = self._pick_position()
-        pc = self._2d_to_3d(mc)
+        pc = self.viewer.get_coordinate_cursor(mc[0], mc[1], self.picker)
 
         pp1 = self._2d_to_3d([i+10 for i in mc])
 
