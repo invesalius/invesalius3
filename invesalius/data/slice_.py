@@ -1452,6 +1452,7 @@ class Slice(object):
         self.__clean_current_mask(None)
         if self.current_mask:
             self.current_mask.matrix[:] = 0
+            self.current_mask.was_edited = False
 
         for o in self.buffer_slices:
             self.buffer_slices[o].discard_buffer()
