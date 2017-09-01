@@ -540,6 +540,7 @@ class PanMoveInteractorStyle(DefaultInteractorStyle):
                              (self.state_code, True))
 
     def CleanUp(self):
+        self.viewer.interactor.Unbind(wx.EVT_LEFT_DCLICK)
         Publisher.sendMessage('Toggle toolbar item',
                              (self.state_code, False))
 
@@ -575,6 +576,7 @@ class SpinInteractorStyle(DefaultInteractorStyle):
                              (self.state_code, True))
 
     def CleanUp(self):
+        self.viewer.interactor.Unbind(wx.EVT_LEFT_DCLICK)
         Publisher.sendMessage('Toggle toolbar item',
                              (self.state_code, False))
 
@@ -619,6 +621,7 @@ class ZoomInteractorStyle(DefaultInteractorStyle):
                              (self.state_code, True))
 
     def CleanUp(self):
+        self.viewer.interactor.Unbind(wx.EVT_LEFT_DCLICK)
         Publisher.sendMessage('Toggle toolbar item',
                              (self.state_code, False))
 
@@ -652,6 +655,7 @@ class ZoomSLInteractorStyle(vtk.vtkInteractorStyleRubberBandZoom):
                              (self.state_code, True))
 
     def CleanUp(self):
+        self.viewer.interactor.Unbind(wx.EVT_LEFT_DCLICK)
         Publisher.sendMessage('Toggle toolbar item',
                              (self.state_code, False))
 
@@ -1511,6 +1515,8 @@ class ReorientImageInteractorStyle(DefaultInteractorStyle):
         Publisher.sendMessage('Reload actual slice')
 
     def CleanUp(self):
+        self.viewer.interactor.Unbind(wx.EVT_LEFT_DCLICK)
+
         for actor in self.actors:
             self.viewer.slice_data.renderer.RemoveActor(actor)
 
