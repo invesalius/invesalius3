@@ -548,39 +548,6 @@ class DensityMeasureStyle(DefaultInteractorStyle):
         #  self.AddObserver("LeaveEvent", self.OnLeaveMeasureInteractor)
         self.viewer.canvas.subscribe_event('LeftButtonPressEvent', self.OnInsertPoint)
 
-    def _calc_density(self, center, radius):
-        n = self.viewer.slice_data.number
-        orientation = self.viewer.orientation
-        img_slice = self.viewer.slice_.get_image_slice(orientation, n)
-        dy, dx = img_slice.shape
-        spacing = self.viewer.slice_.spacing
-
-        if orientation == 'AXIAL':
-            sx, sy = spacing[0], spacing[1]
-            cx, cy = center[0], center[1]
-        elif orientation == 'CORONAL':
-            sx, sy = spacing[0], spacing[2]
-            cx, cy = center[0], center[2]
-        elif orientation == 'SAGITAL':
-            sx, sy = spacing[1], spacing[2]
-            cx, cy = center[1], center[2]
-
-        mask_y, mask_x = np.ogrid[0:dy*sy:sy, 0:dx*sy:sx]
-        mask = ((mask_x - cx)**2 + (mask_y - cy)**2) <= (radius ** 2)
-
-        test_img = np.zeros_like(img_slice)
-        test_img[mask] = img_slice[mask]
-
-        imsave('/tmp/manolo.png', test_img[::-1, :])
-
-        values = img_slice[mask]
-
-        _min = values.min()
-        _max = values.max()
-        _mean = values.mean()
-        _std = values.std()
-
-        return _min, _max, _mean, _std
 
     def _2d_to_3d(self, pos):
         mx, my = pos
@@ -608,14 +575,11 @@ class DensityMeasureStyle(DefaultInteractorStyle):
 
         pp1 = self._2d_to_3d([i+10 for i in mc])
 
-        _min, _max, _mean, _std = self._calc_density(pc, sum([(i - j)**2 for (i, j) in zip(pc, pp1)])**0.5)
+        n = self.viewer.slice_data.number
 
-        m = CircleDensityMeasure()
+        m = CircleDensityMeasure(self.orientation, n)
         m.set_center(pos)
         m.set_point1(pp1)
-        m.set_density_values(_min, _max, _mean, _std)
-
-        n = self.viewer.slice_data.number
 
         self.viewer.draw_by_slice_number[n].append(m)
 

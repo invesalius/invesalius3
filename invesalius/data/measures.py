@@ -15,7 +15,8 @@ import invesalius.project as prj
 import invesalius.session as ses
 import invesalius.utils as utils
 
-from invesalius.gui.widgets.canvas_renderer import TextBox
+from invesalius.gui.widgets.canvas_renderer import TextBox, CircleHandler
+from scipy.misc import imsave
 
 TYPE = {const.LINEAR: _(u"Linear"),
         const.ANGULAR: _(u"Angular"),
@@ -933,10 +934,13 @@ class AngularMeasure(object):
 
 
 class CircleDensityMeasure(object):
-    def __init__(self, colour=(255, 0, 0, 255)):
+    def __init__(self, orientation, slice_number, colour=(255, 0, 0, 255)):
         self.colour = colour
         self.center = (0.0, 0.0, 0.0)
         self.point1 = (0.0, 0.0, 0.0)
+
+        self.orientation = orientation
+        self.slice_number = slice_number
 
         self._min = 0
         self._max = 0
@@ -945,11 +949,15 @@ class CircleDensityMeasure(object):
 
         self.text_box = None
 
+        self._need_calc = True
+
     def set_center(self, pos):
         self.center = pos
+        self._need_calc = True
 
     def set_point1(self, pos):
         self.point1 = pos
+        self._need_calc = True
 
     def set_density_values(self, _min, _max, _mean, _std):
         self._min = _min
@@ -962,7 +970,11 @@ class CircleDensityMeasure(object):
                  'Mean: %.3f\n'
                  'Std: %.3f' % (self._min, self._max, self._mean, self._std))
 
-        self.text_box = TextBox(text, self.point1, MEASURE_TEXT_COLOUR, MEASURE_TEXTBOX_COLOUR)
+        if self.text_box is None:
+            self.text_box = TextBox(text, self.point1, MEASURE_TEXT_COLOUR, MEASURE_TEXTBOX_COLOUR)
+
+            self.handle_tl = CircleHandler(self.point1)
+            self.handle_tl.on_move(self._on_move)
 
     def _3d_to_2d(self, renderer, pos):
         coord = vtk.vtkCoordinate()
@@ -971,7 +983,14 @@ class CircleDensityMeasure(object):
         return cx, cy
 
     def is_over(self, x, y):
-        return self.text_box.is_over(x, y)
+        if self.handle_tl.is_over(x, y):
+            return self.handle_tl
+        elif self.text_box.is_over(x, y):
+            return self.text_box.is_over(x, y)
+        return None
+
+    def _on_move(self, obj):
+        self.set_point1(obj.position)
 
     def draw_to_canvas(self, gc, canvas):
         """
@@ -985,9 +1004,49 @@ class CircleDensityMeasure(object):
         px, py = self._3d_to_2d(canvas.evt_renderer, self.point1)
         radius = ((px - cx)**2 + (py - cy)**2)**0.5
 
+        if self._need_calc:
+            self._need_calc = False
+            self.calc_density(self.center, np.linalg.norm(np.array(self.center) - np.array(self.point1)))
+
         print self.center, self.point1, radius
         canvas.draw_circle((cx, cy), radius, line_colour=self.colour)
 
-
         #  canvas.draw_text_box(text, (px, py), )
         self.text_box.draw_to_canvas(gc, canvas)
+        self.handle_tl.draw_to_canvas(gc, canvas)
+
+    def calc_density(self, center, radius):
+        from invesalius.data.slice_ import Slice
+        slc = Slice()
+        n = self.slice_number
+        orientation = self.orientation
+        img_slice = slc.get_image_slice(orientation, n)
+        dy, dx = img_slice.shape
+        spacing = slc.spacing
+
+        if orientation == 'AXIAL':
+            sx, sy = spacing[0], spacing[1]
+            cx, cy = center[0], center[1]
+        elif orientation == 'CORONAL':
+            sx, sy = spacing[0], spacing[2]
+            cx, cy = center[0], center[2]
+        elif orientation == 'SAGITAL':
+            sx, sy = spacing[1], spacing[2]
+            cx, cy = center[1], center[2]
+
+        mask_y, mask_x = np.ogrid[0:dy*sy:sy, 0:dx*sy:sx]
+        mask = ((mask_x - cx)**2 + (mask_y - cy)**2) <= (radius ** 2)
+
+        test_img = np.zeros_like(img_slice)
+        test_img[mask] = img_slice[mask]
+
+        imsave('/tmp/manolo.png', test_img)
+
+        values = img_slice[mask]
+
+        _min = values.min()
+        _max = values.max()
+        _mean = values.mean()
+        _std = values.std()
+
+        self.set_density_values(_min, _max, _mean, _std)
