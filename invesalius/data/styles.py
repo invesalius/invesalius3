@@ -138,6 +138,7 @@ class DefaultInteractorStyle(BaseImageInteractorStyle):
 
         # Zoom using right button
         self.AddObserver("RightButtonPressEvent",self.OnZoomRightClick)
+        self.AddObserver("RightButtonReleaseEvent",self.OnZoomRightRelease)
         self.AddObserver("MouseMoveEvent", self.OnZoomRightMove)
 
         self.AddObserver("MouseWheelForwardEvent",self.OnScrollForward)
@@ -158,6 +159,12 @@ class DefaultInteractorStyle(BaseImageInteractorStyle):
 
     def OnZoomRightClick(self, evt, obj):
         evt.StartDolly()
+
+    def OnZoomRightRelease(self, evt, obj):
+        print 'EndDolly'
+        evt.OnRightButtonUp()
+        #  evt.EndDolly()
+        self.right_pressed = False
 
     def OnScrollForward(self, evt, obj):
         iren = self.viewer.interactor

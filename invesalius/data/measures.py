@@ -975,6 +975,8 @@ class CircleDensityMeasure(object):
 
             self.handle_tl = CircleHandler(self.point1)
             self.handle_tl.on_move(self._on_move)
+        else:
+            self.text_box.set_text(text)
 
     def _3d_to_2d(self, renderer, pos):
         coord = vtk.vtkCoordinate()
@@ -1006,9 +1008,8 @@ class CircleDensityMeasure(object):
 
         if self._need_calc:
             self._need_calc = False
-            self.calc_density(self.center, np.linalg.norm(np.array(self.center) - np.array(self.point1)))
+            self.calc_density(self.center, np.linalg.norm(np.array(self.center[:2]) - np.array(self.point1[:2])))
 
-        print self.center, self.point1, radius
         canvas.draw_circle((cx, cy), radius, line_colour=self.colour)
 
         #  canvas.draw_text_box(text, (px, py), )
@@ -1040,7 +1041,7 @@ class CircleDensityMeasure(object):
         test_img = np.zeros_like(img_slice)
         test_img[mask] = img_slice[mask]
 
-        imsave('/tmp/manolo.png', test_img)
+        imsave('/tmp/manolo.png', test_img[::-1,:])
 
         values = img_slice[mask]
 

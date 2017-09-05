@@ -1087,7 +1087,7 @@ class Viewer(wx.Panel):
         self.cam = self.slice_data.renderer.GetActiveCamera()
         self.__build_cross_lines()
 
-        self.canvas = CanvasRendererCTX(self.slice_data.renderer, self.slice_data.canvas_renderer, self.orientation)
+        self.canvas = CanvasRendererCTX(self, self.slice_data.renderer, self.slice_data.canvas_renderer, self.orientation)
         self.canvas.draw_list.append(self.slice_data.text)
 
         # Set the slice number to the last slice to ensure the camera if far
