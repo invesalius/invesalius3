@@ -118,10 +118,10 @@ class LoadDicom:
             # Retrieve header
             header = file.GetHeader()
             stf = gdcm.StringFilter()
+            stf.SetFile(file)
 
             field_dict = {}
             data_dict = {}
-
 
             tag = gdcm.Tag(0x0008, 0x0005)
             ds = reader.GetFile().GetDataSet()
@@ -138,53 +138,52 @@ class LoadDicom:
             else:
                 encoding = "ISO_IR 100"
 
-
             # Iterate through the Header
             iterator = header.GetDES().begin()
             while (not iterator.equal(header.GetDES().end())):
                 dataElement = iterator.next()
-                stf.SetFile(file)
-                tag = dataElement.GetTag()
-                data = stf.ToStringPair(tag)
-                stag = tag.PrintAsPipeSeparatedString()
-                
-                group = str(tag.GetGroup())
-                field = str(tag.GetElement())
+                if not dataElement.IsUndefinedLength():
+                    tag = dataElement.GetTag()
+                    data = stf.ToStringPair(tag)
+                    stag = tag.PrintAsPipeSeparatedString()
 
-                tag_labels[stag] = data[0]
-                
-                if not group in data_dict.keys():
-                    data_dict[group] = {}
+                    group = str(tag.GetGroup())
+                    field = str(tag.GetElement())
 
-                if not(utils.VerifyInvalidPListCharacter(data[1])):
-                    data_dict[group][field] = data[1].decode(encoding)
-                else:
-                    data_dict[group][field] = "Invalid Character"
+                    tag_labels[stag] = data[0]
 
-            
+                    if not group in data_dict.keys():
+                        data_dict[group] = {}
+
+                    if not(utils.VerifyInvalidPListCharacter(data[1])):
+                        data_dict[group][field] = data[1].decode(encoding)
+                    else:
+                        data_dict[group][field] = "Invalid Character"
+
             # Iterate through the Data set
             iterator = dataSet.GetDES().begin()
             while (not iterator.equal(dataSet.GetDES().end())):
                 dataElement = iterator.next()
-                
-                stf.SetFile(file)
-                tag = dataElement.GetTag()
-                data = stf.ToStringPair(tag)
-                stag = tag.PrintAsPipeSeparatedString()
+                if not dataElement.IsUndefinedLength():
+                    tag = dataElement.GetTag()
+                    #  if (tag.GetGroup() == 0x0009 and tag.GetElement() == 0x10e3) \
+                            #  or (tag.GetGroup() == 0x0043 and tag.GetElement() == 0x1027):
+                        #  continue
+                    data = stf.ToStringPair(tag)
+                    stag = tag.PrintAsPipeSeparatedString()
 
-                group = str(tag.GetGroup())
-                field = str(tag.GetElement())
+                    group = str(tag.GetGroup())
+                    field = str(tag.GetElement())
 
-                tag_labels[stag] = data[0]
+                    tag_labels[stag] = data[0]
 
-                if not group in data_dict.keys():
-                    data_dict[group] = {}
+                    if not group in data_dict.keys():
+                        data_dict[group] = {}
 
-                if not(utils.VerifyInvalidPListCharacter(data[1])):
-                    data_dict[group][field] = data[1].decode(encoding, 'replace')
-                else:
-                    data_dict[group][field] = "Invalid Character"
-            
+                    if not(utils.VerifyInvalidPListCharacter(data[1])):
+                        data_dict[group][field] = data[1].decode(encoding, 'replace')
+                    else:
+                        data_dict[group][field] = "Invalid Character"
 
 
             # -------------- To Create DICOM Thumbnail -----------
