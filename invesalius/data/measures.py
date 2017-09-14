@@ -1008,7 +1008,7 @@ class CircleDensityMeasure(object):
 
         if self._need_calc:
             self._need_calc = False
-            self.calc_density(self.center, np.linalg.norm(np.array(self.center[:2]) - np.array(self.point1[:2])))
+            self.calc_density(self.center, np.linalg.norm(np.array(self.center) - np.array(self.point1)))
 
         canvas.draw_circle((cx, cy), radius, line_colour=self.colour)
 

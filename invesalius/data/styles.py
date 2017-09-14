@@ -572,7 +572,9 @@ class DensityMeasureStyle(DefaultInteractorStyle):
         return (mx, my)
 
     def _get_pos_clicked(self):
-        return self._2d_to_3d(self._pick_position())
+        mouse_x, mouse_y = self._pick_position()
+        position = self.viewer.get_coordinate_cursor(mouse_x, mouse_y, self.picker)
+        return position
 
     def OnInsertPoint(self, obj, evt):
         pos = self._get_pos_clicked()

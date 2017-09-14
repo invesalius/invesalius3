@@ -665,8 +665,10 @@ class Viewer(wx.Panel):
             z = bounds[4]
         return x, y, z
 
-    def get_coordinate_cursor_edition(self, slice_data, picker=None):
+    def get_coordinate_cursor_edition(self, slice_data=None, picker=None):
         # Find position
+        if slice_data is None:
+            slice_data = self.slice_data
         actor = slice_data.actor
         slice_number = slice_data.number
         if picker is None:
