@@ -634,8 +634,10 @@ class MarkersPanel(wx.Panel):
 
     def OnListEditMarkerId(self, evt):
         menu_id = wx.Menu()
-        menu_id.Append(-1, _('Edit ID'))
-        menu_id.Bind(wx.EVT_MENU, self.OnMenuEditMarkerId)
+        edit_id = menu_id.Append(-1, _('Edit ID'))
+        menu_id.Bind(wx.EVT_MENU, self.OnMenuEditMarkerId, edit_id)
+        target = menu_id.Append(-1, _('Set as target'))
+        menu_id.Bind(wx.EVT_MENU, self.OnMenuSetTarget, target)
         self.PopupMenu(menu_id)
         menu_id.Destroy()
 
@@ -651,6 +653,9 @@ class MarkersPanel(wx.Panel):
         self.lc.SetStringItem(list_index, 4, id_label)
         # Add the new ID to exported list
         self.list_coord[list_index][7] = str(id_label)
+
+    def OnMenuSetTarget(self, evt):
+        print "target set"
 
     def OnDeleteAllMarkers(self, pubsub_evt):
         result = dlg.DeleteAllMarkers()
