@@ -548,6 +548,7 @@ class MarkersPanel(wx.Panel):
         self.current_coord = 0, 0, 0
         self.list_coord = []
         self.marker_ind = 0
+        self.tgt_flag = self.tgt_index = None
 
         self.marker_colour = (0.0, 0.0, 1.)
         self.marker_size = 4
@@ -655,7 +656,14 @@ class MarkersPanel(wx.Panel):
         self.list_coord[list_index][7] = str(id_label)
 
     def OnMenuSetTarget(self, evt):
-        print "target set"
+        if self.tgt_flag:
+            self.lc.SetItemBackgroundColour(self.tgt_index, 'white')
+
+        self.tgt_index = self.lc.GetFocusedItem()
+        self.lc.SetItemBackgroundColour(self.tgt_index, 'RED')
+        Publisher.sendMessage('Target set', self.tgt_index)
+        self.tgt_flag = True
+        dlg.NewTarget()
 
     def OnDeleteAllMarkers(self, pubsub_evt):
         result = dlg.DeleteAllMarkers()
@@ -685,6 +693,11 @@ class MarkersPanel(wx.Panel):
                 index = self.GetSelectedItems()
             else:
                 index = None
+
+        if self.tgt_flag and self.tgt_index == index[0]:
+            self.tgt_flag = self.tgt_index = None
+            Publisher.sendMessage('Target removed', self.tgt_index)
+            dlg.DeleteTarget()
 
         if index:
             self.DeleteMarker(index)

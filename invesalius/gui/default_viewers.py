@@ -306,7 +306,7 @@ import wx.lib.colourselect as csel
 
 import invesalius.constants as const
 
-[BUTTON_RAYCASTING, BUTTON_VIEW, BUTTON_SLICE_PLANE, BUTTON_3D_STEREO] = [wx.NewId() for num in xrange(4)]
+[BUTTON_RAYCASTING, BUTTON_VIEW, BUTTON_SLICE_PLANE, BUTTON_3D_STEREO, BUTTON_TARGET] = [wx.NewId() for num in xrange(5)]
 RAYCASTING_TOOLS = wx.NewId()
 
 ID_TO_NAME = {}
@@ -346,6 +346,9 @@ class VolumeToolPanel(wx.Panel):
         BMP_3D_STEREO = wx.Bitmap(os.path.join(const.ICON_DIR, "3D_glasses.png"),
                                     wx.BITMAP_TYPE_PNG)
 
+        BMP_TARGET = wx.Bitmap(os.path.join(const.ICON_DIR, "target2.png"),
+                                    wx.BITMAP_TYPE_PNG)
+
 
         button_raycasting = pbtn.PlateButton(self, BUTTON_RAYCASTING,"",
                 BMP_RAYCASTING, style=pbtn.PB_STYLE_SQUARE,
@@ -357,6 +360,10 @@ class VolumeToolPanel(wx.Panel):
 
         button_slice_plane = self.button_slice_plane = pbtn.PlateButton(self, BUTTON_SLICE_PLANE,"",
         BMP_SLICE_PLANE, style=pbtn.PB_STYLE_SQUARE,
+        size=(32,32))
+
+        button_target = self.button_target = pbtn.PlateButton(self, BUTTON_TARGET,"",
+        BMP_TARGET, style=pbtn.PB_STYLE_SQUARE,
         size=(32,32))
 
         self.button_raycasting = button_raycasting
@@ -389,6 +396,7 @@ class VolumeToolPanel(wx.Panel):
         sizer.Add(button_view, 0, wx.TOP|wx.BOTTOM, 1)
         sizer.Add(button_slice_plane, 0, wx.TOP|wx.BOTTOM, 1)
         sizer.Add(button_stereo, 0, wx.TOP|wx.BOTTOM, 1)
+        sizer.Add(button_target, 0, wx.TOP | wx.BOTTOM, 1)
 
 
         sizer.Fit(self)
@@ -419,6 +427,7 @@ class VolumeToolPanel(wx.Panel):
         self.button_view.Bind(wx.EVT_LEFT_DOWN, self.OnButtonView)
         self.button_colour.Bind(csel.EVT_COLOURSELECT, self.OnSelectColour)
         self.button_stereo.Bind(wx.EVT_LEFT_DOWN, self.OnButtonStereo)
+        self.button_target.Bind(wx.EVT_LEFT_DOWN, self.OnButtonTarget)
 
     def OnButtonRaycasting(self, evt):
         # MENU RELATED TO RAYCASTING TYPES
@@ -432,6 +441,10 @@ class VolumeToolPanel(wx.Panel):
 
     def OnButtonSlicePlane(self, evt):
         self.button_slice_plane.PopupMenu(self.slice_plane_menu)
+
+    def OnButtonTarget(self, evt):
+        self.button_target.Enable(0)
+        print "ontarget"
 
     def OnSavePreset(self, evt):
         d = wx.TextEntryDialog(self, _("Preset name"))
