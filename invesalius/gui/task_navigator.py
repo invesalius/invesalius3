@@ -754,7 +754,7 @@ class MarkersPanel(wx.Panel):
 
         if filepath:
             try:
-                count_line = 0
+                count_line = self.lc.GetItemCount()
                 content = [s.rstrip() for s in open(filepath)]
                 for data in content:
                     target = None
