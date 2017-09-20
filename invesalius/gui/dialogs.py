@@ -1011,7 +1011,7 @@ def MissingFilesForReconstruction():
 
 def SaveChangesDialog(filename, parent):
     current_dir = os.path.abspath(".")
-    msg = _("The project %s has been modified.\nSave changes?")%filename
+    msg = _(u"The project %s has been modified.\nSave changes?")%filename
     if sys.platform == 'darwin':
         dlg = wx.MessageDialog(None, "", msg,
                                wx.ICON_QUESTION | wx.YES_NO | wx.CANCEL)

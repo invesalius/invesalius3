@@ -1450,7 +1450,9 @@ class Slice(object):
         self.center = [(s * d/2.0) for (d, s) in zip(self.matrix.shape[::-1], self.spacing)]
 
         self.__clean_current_mask(None)
-        self.current_mask.matrix[:] = 0
+        if self.current_mask:
+            self.current_mask.matrix[:] = 0
+            self.current_mask.was_edited = False
 
         for o in self.buffer_slices:
             self.buffer_slices[o].discard_buffer()

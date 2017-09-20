@@ -540,6 +540,7 @@ class PanMoveInteractorStyle(DefaultInteractorStyle):
                              (self.state_code, True))
 
     def CleanUp(self):
+        self.viewer.interactor.Unbind(wx.EVT_LEFT_DCLICK)
         Publisher.sendMessage('Toggle toolbar item',
                              (self.state_code, False))
 
@@ -575,6 +576,7 @@ class SpinInteractorStyle(DefaultInteractorStyle):
                              (self.state_code, True))
 
     def CleanUp(self):
+        self.viewer.interactor.Unbind(wx.EVT_LEFT_DCLICK)
         Publisher.sendMessage('Toggle toolbar item',
                              (self.state_code, False))
 
@@ -619,6 +621,7 @@ class ZoomInteractorStyle(DefaultInteractorStyle):
                              (self.state_code, True))
 
     def CleanUp(self):
+        self.viewer.interactor.Unbind(wx.EVT_LEFT_DCLICK)
         Publisher.sendMessage('Toggle toolbar item',
                              (self.state_code, False))
 
@@ -652,6 +655,7 @@ class ZoomSLInteractorStyle(vtk.vtkInteractorStyleRubberBandZoom):
                              (self.state_code, True))
 
     def CleanUp(self):
+        self.viewer.interactor.Unbind(wx.EVT_LEFT_DCLICK)
         Publisher.sendMessage('Toggle toolbar item',
                              (self.state_code, False))
 
@@ -1511,6 +1515,8 @@ class ReorientImageInteractorStyle(DefaultInteractorStyle):
         Publisher.sendMessage('Reload actual slice')
 
     def CleanUp(self):
+        self.viewer.interactor.Unbind(wx.EVT_LEFT_DCLICK)
+
         for actor in self.actors:
             self.viewer.slice_data.renderer.RemoveActor(actor)
 
@@ -1651,7 +1657,8 @@ class ReorientImageInteractorStyle(DefaultInteractorStyle):
         Publisher.sendMessage('Update reorient angles', (ax, ay, az))
 
         self._discard_buffers()
-        self.viewer.slice_.current_mask.clear_history()
+        if self.viewer.slice_.current_mask:
+            self.viewer.slice_.current_mask.clear_history()
         Publisher.sendMessage('Reload actual slice %s' % self.viewer.orientation)
         self.p0 = self.get_image_point_coord(x, y, z)
 
