@@ -70,6 +70,7 @@ class Coregistration(threading.Thread):
             # however only this one does not block the GUI during navigation.
             wx.CallAfter(Publisher.sendMessage, 'Co-registered points', coord[0:3])
             wx.CallAfter(Publisher.sendMessage, 'Set camera in volume', coord[0:3])
+            wx.CallAfter(Publisher.sendMessage, 'Update tracker angles', coord[3:6])
 
             # TODO: Optimize the value of sleep for each tracking device.
             # Debug tracker is not working with 0.175 so changed to 0.2
