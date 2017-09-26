@@ -19,6 +19,7 @@
 
 from functools import partial
 import sys
+import os
 
 import numpy as np
 import wx
@@ -27,6 +28,7 @@ import wx.lib.masked.numctrl
 import wx.lib.foldpanelbar as fpb
 from wx.lib.pubsub import pub as Publisher
 import wx.lib.colourselect as csel
+import wx.lib.platebtn as pbtn
 
 import invesalius.constants as const
 import invesalius.data.bases as db
@@ -35,6 +37,10 @@ import invesalius.data.coregistration as dcr
 import invesalius.data.trackers as dt
 import invesalius.data.trigger as trig
 import invesalius.gui.dialogs as dlg
+
+BTN_NEW = wx.NewId()
+BTN_IMPORT_LOCAL = wx.NewId()
+
 
 class TaskPanel(wx.Panel):
     def __init__(self, parent):
@@ -136,7 +142,15 @@ class InnerFoldPanel(wx.Panel):
                                       leftSpacing=0, rightSpacing=0)
         fold_panel.Expand(fold_panel.GetFoldPanel(0))
 
-        # Fold 2 - Markers panel
+        # Fold 2 - Corregistrate coil
+        item = fold_panel.AddFoldPanel(_("Coil corregistration"), collapsed=True)
+        ctw = CoilPanel(item)
+
+        fold_panel.ApplyCaptionStyle(item, style)
+        fold_panel.AddFoldPanelWindow(item, ctw, spacing=0,
+                                      leftSpacing=0, rightSpacing=0)
+
+        # Fold 3 - Markers panel
         item = fold_panel.AddFoldPanel(_("Extra tools"), collapsed=True)
         mtw = MarkersPanel(item)
 
@@ -194,8 +208,6 @@ class InnerFoldPanel(wx.Panel):
 
     def UpdateVolumeCamera(self, evt, ctrl):
         Publisher.sendMessage('Update volume camera state', ctrl.GetValue())
-
-
 
 
 class NeuronavigationPanel(wx.Panel):
@@ -259,7 +271,7 @@ class NeuronavigationPanel(wx.Panel):
             lab = btns_trk[k].values()[0]
             self.btns_coord[n] = wx.Button(self, k, label=lab, size=wx.Size(45, 23))
             self.btns_coord[n].SetToolTip(wx.ToolTip(tips_trk[n-3]))
-            # Excepetion for event of button that set image coordinates
+            # Exception for event of button that set image coordinates
             if n == 6:
                 self.btns_coord[n].Bind(wx.EVT_BUTTON, self.OnSetImageCoordinates)
             else:
@@ -533,6 +545,136 @@ class NeuronavigationPanel(wx.Panel):
         for m in range(3, 6):
             for n in range(0, 3):
                 self.numctrls_coord[m][n].SetValue(0.0)
+
+
+class CoilPanel(wx.Panel):
+    def __init__(self, parent):
+        wx.Panel.__init__(self, parent)
+        default_colour = wx.SystemSettings_GetColour(wx.SYS_COLOUR_MENUBAR)
+        self.SetBackgroundColour(default_colour)
+
+        self.coil_list = const.COIL
+        self.coil_id = const.DEFAULT_COIL
+
+        self.SetAutoLayout(1)
+        # self.__bind_events()
+
+        # Button for creating new coil
+        BMP_ADD = wx.Bitmap(os.path.join(const.ICON_DIR, "object_add.png"), wx.BITMAP_TYPE_PNG)
+        button_new_coil = pbtn.PlateButton(self, BTN_NEW, "", BMP_ADD, style=\
+                                   pbtn.PB_STYLE_SQUARE | pbtn.PB_STYLE_DEFAULT)
+        button_new_coil.SetBackgroundColour(self.GetBackgroundColour())
+        self.Bind(wx.EVT_BUTTON, self.OnLinkCreate, button_new_coil)
+
+        # Fixed hyperlink items
+        tooltip = wx.ToolTip(_("Create new coil"))
+        link_new_coil = hl.HyperLinkCtrl(self, -1, _("Create new coil"))
+        link_new_coil.SetUnderlines(False, False, False)
+        link_new_coil.SetBold(True)
+        link_new_coil.SetColours("BLACK", "BLACK", "BLACK")
+        link_new_coil.SetBackgroundColour(self.GetBackgroundColour())
+        link_new_coil.SetToolTip(tooltip)
+        link_new_coil.AutoBrowse(False)
+        link_new_coil.UpdateLink()
+        link_new_coil.Bind(hl.EVT_HYPERLINK_LEFT, self.OnLinkCreate)
+
+        # Create horizontal sizers to represent lines in the panel
+        line_new = wx.BoxSizer(wx.HORIZONTAL)
+        line_new.Add(link_new_coil, 1, wx.EXPAND|wx.GROW| wx.TOP|wx.RIGHT, 4)
+        line_new.Add(button_new_coil, 0, wx.ALL|wx.EXPAND|wx.GROW, 0)
+
+        # Button for import coil
+        BMP_LOAD = wx.Bitmap(os.path.join(const.ICON_DIR, "file_import.png"), wx.BITMAP_TYPE_PNG)
+        button_import_coil = pbtn.PlateButton(self, BTN_IMPORT_LOCAL, "", BMP_LOAD, style=\
+                                   pbtn.PB_STYLE_SQUARE | pbtn.PB_STYLE_DEFAULT)
+        button_import_coil.SetBackgroundColour(self.GetBackgroundColour())
+        self.Bind(wx.EVT_BUTTON, self.OnLinkLoad, button_import_coil)
+
+        # Fixed hyperlink items
+        tooltip = wx.ToolTip(_("Load coil configuration file"))
+        link_import_local = hl.HyperLinkCtrl(self, -1, _("Load coil configuration"))
+        link_import_local.SetUnderlines(False, False, False)
+        link_import_local.SetBold(True)
+        link_import_local.SetColours("BLACK", "BLACK", "BLACK")
+        link_import_local.SetBackgroundColour(self.GetBackgroundColour())
+        link_import_local.SetToolTip(tooltip)
+        link_import_local.AutoBrowse(False)
+        link_import_local.UpdateLink()
+        link_import_local.Bind(hl.EVT_HYPERLINK_LEFT, self.OnLinkLoad)
+
+        # Create horizontal sizers to represent lines in the panel
+        line_import = wx.BoxSizer(wx.HORIZONTAL)
+        line_import.Add(link_import_local, 1, wx.EXPAND|wx.GROW| wx.TOP|wx.RIGHT, 4)
+        line_import.Add(button_import_coil, 0, wx.ALL|wx.EXPAND|wx.GROW, 0)
+
+        # Combo to select the desired coil
+        combo_coil = wx.ComboBox(self, -1, "",
+                                 choices=const.COIL, style=wx.CB_DROPDOWN | wx.CB_READONLY)
+        combo_coil.SetSelection(const.DEFAULT_COIL)
+        combo_coil.Bind(wx.EVT_COMBOBOX, self.OnComboCoil)
+        self.combo_coil = combo_coil
+
+        # Checkbox to activate coil tracking
+        tooltip = wx.ToolTip(_("Activate coil tracking"))
+        check_coil = wx.CheckBox(self, -1, _('Track coil'))
+        check_coil.SetToolTip(tooltip)
+        check_coil.SetValue(True)
+        check_coil.Bind(wx.EVT_CHECKBOX, partial(self.UpdateCoilTrack, ctrl=check_coil))
+
+        # combo_surface_name.SetSelection(0)
+        if sys.platform != 'win32':
+            combo_coil.SetWindowVariant(wx.WINDOW_VARIANT_SMALL)
+            check_coil.SetWindowVariant(wx.WINDOW_VARIANT_SMALL)
+
+        # Create horizontal sizers to represent lines in the panel
+        line_select = wx.BoxSizer(wx.HORIZONTAL)
+        line_select.Add(combo_coil, 1, wx.ALL | wx.EXPAND | wx.GROW, 5)
+        line_select.Add(check_coil, 0, wx.ALL | wx.EXPAND | wx.GROW, 5)
+
+        # Add line sizers into main sizer
+        main_sizer = wx.BoxSizer(wx.VERTICAL)
+        main_sizer.Add(line_new, 0,wx.GROW|wx.EXPAND|wx.LEFT|wx.RIGHT|wx.TOP, 5)
+        main_sizer.Add(line_import, 0, wx.GROW|wx.EXPAND|wx.LEFT|wx.RIGHT|wx.TOP, 5)
+        main_sizer.Add(line_select, 0, wx.GROW|wx.EXPAND|wx.LEFT|wx.RIGHT|wx.TOP, 5)
+        main_sizer.Fit(self)
+
+        self.SetSizer(main_sizer)
+        self.Update()
+
+    def OnComboCoil(self, evt):
+        # coil_name = evt.GetString()
+        coil_index = evt.GetSelection()
+        Publisher.sendMessage('Change selected coil', self.coil_list[coil_index][1])
+
+    def UpdateCoilTrack(self, evt, ctrl):
+        Publisher.sendMessage('Update coil tracking state', ctrl.GetValue())
+
+    def OnLinkCreate(self, event=None):
+        coil_orient = None
+        # bases = self.Minv, self.N, self.q1, self.q2
+        # tracker_mode = self.trk_init, self.tracker_id, self.ref_mode_id
+        # nav_prop = bases, tracker_mode, self.tracker_id
+        bases = None
+        tracker_mode = None
+        nav_prop = bases, tracker_mode, None
+        dialog = dlg.CoilCalibrationDialog(nav_prop)
+        try:
+            if dialog.ShowModal() == wx.ID_OK:
+                coil_orient = dialog.GetValue()
+                ok = 1
+            else:
+                ok = 0
+        except(wx._core.PyAssertionError):  # TODO FIX: win64
+            ok = 1
+        print "coil_orient: ", coil_orient
+        Publisher().sendMessage('Change Init Coil Angle', coil_orient)
+
+    def OnLinkLoad(self, event=None):
+        filepath = dlg.ShowLoadCoilDialog()
+
+        if filepath:
+            dt.ClaronTrackerCoilOffset(filepath)
+            Publisher.sendMessage('Update status text in GUI', _("Ready"))
 
 
 class MarkersPanel(wx.Panel):

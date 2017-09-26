@@ -2967,3 +2967,619 @@ class FillHolesAutoDialog(wx.Dialog):
         else:
             self.panel3dcon.Enable(1)
             self.panel2dcon.Enable(0)
+
+
+class CoilCalibrationDialog(wx.Dialog):
+    def __init__(self, nav_prop):
+
+        self.nav_prop = nav_prop
+        self.correg = None
+        self.staticballs = []
+        self.ball_id = 0
+        self.ball_centers = []
+        self.to_translate = 0
+        self.init_angle_plh = None
+
+        pre = wx.PreDialog()
+        pre.Create(wx.GetApp().GetTopWindow(), -1, _(u"TMS coil calibration"), size=(900, 740),
+                   style=wx.DEFAULT_DIALOG_STYLE | wx.FRAME_FLOAT_ON_PARENT | wx.STAY_ON_TOP)
+        self.PostCreate(pre)
+
+        self.CenterOnScreen()
+
+        self._init_gui()
+        self.LoadCoil()
+
+    def _init_gui(self):
+        self.interactor = wxVTKRenderWindowInteractor(self, -1, size=self.GetSize())
+        self.interactor.Enable(1)
+        self.ren = vtk.vtkRenderer()
+        self.interactor.GetRenderWindow().AddRenderer(self.ren)
+
+        # Initialize list of buttons and txtctrls for wx objects
+        btns_coord = [None] * 7
+        txt_coord = [list(), list(), list(), list(), list(), list(), list()]
+
+        # Buttons to finish or cancel coil registration
+        tooltip = wx.ToolTip(_(u"Registration done"))
+        btn_ok = wx.Button(self, -1, _(u"Done"), size=wx.Size(90, 30))
+        btn_ok.SetToolTip(tooltip)
+        btn_ok.Bind(wx.EVT_BUTTON, self.OnDone)
+
+        tooltip = wx.ToolTip(_(u"Cancel registration"))
+        btn_cancel = wx.Button(self, -1, _(u"Cancel"), size=wx.Size(90, 30))
+        btn_cancel.SetToolTip(tooltip)
+        btn_cancel.Bind(wx.EVT_BUTTON, self.OnCancel)
+
+        extra_sizer = wx.FlexGridSizer(rows=2, cols=1, hgap=5, vgap=20)
+        extra_sizer.AddMany([btn_cancel,
+                             btn_ok])
+
+        # Push buttons for coil fiducials
+        btns_coil = const.BTNS_COIL
+        tips_coil = const.TIPS_COIL
+
+        for k in btns_coil:
+            n = btns_coil[k].keys()[0]
+            lab = btns_coil[k].values()[0]
+            btns_coord[n] = wx.Button(self, k, label=lab, size=wx.Size(60, 23))
+            btns_coord[n].SetToolTip(wx.ToolTip(tips_coil[n]))
+            btns_coord[n].Bind(wx.EVT_BUTTON, self.OnSetCoilCoordinates)
+
+        for m in range(0, 4):
+            for n in range(0, 3):
+                txt_coord[m].append(wx.StaticText(self, -1, '0.00', style=wx.TE_CENTRE))
+
+        coord_sizer = wx.GridBagSizer(hgap=25, vgap=5)
+
+        for m in range(0, 4):
+            coord_sizer.Add(btns_coord[m], pos=wx.GBPosition(m, 0))
+            for n in range(0, 3):
+                coord_sizer.Add(txt_coord[m][n], pos=wx.GBPosition(m, n + 1), flag=wx.TOP, border=5)
+
+        group_sizer = wx.FlexGridSizer(rows=1, cols=2, hgap=50, vgap=5)
+        group_sizer.AddMany([(coord_sizer, 0, wx.LEFT, 20),
+                             (extra_sizer, 0, wx.LEFT | wx.TOP, 15)])
+
+        main_sizer = wx.BoxSizer(wx.VERTICAL)
+        main_sizer.Add(self.interactor, 0, wx.EXPAND)
+        main_sizer.Add(group_sizer, 0, wx.EXPAND|wx.GROW|wx.LEFT|wx.TOP|wx.RIGHT|wx.BOTTOM|wx.ALIGN_CENTER_HORIZONTAL, 10)
+
+        self.SetSizer(main_sizer)
+        main_sizer.Fit(self)
+
+    def LoadCoil(self):
+        coil_file = os.path.join(const.COIL_DIR, "magstim_fig8_coil.stl")
+
+        coil_obj = vtk.vtkSTLReader()
+        coil_obj.SetFileName(coil_file)
+
+        coil_mapper = vtk.vtkPolyDataMapper()
+        coil_mapper.SetInputConnection(coil_obj.GetOutputPort())
+
+        self.coil_actor = vtk.vtkActor()
+        self.coil_actor.SetMapper(coil_mapper)
+
+        axes = vtk.vtkAxesActor()
+        axes.SetShaftTypeToCylinder()
+        axes.SetXAxisLabelText("x")
+        axes.SetYAxisLabelText("y")
+        axes.SetZAxisLabelText("z")
+        axes.SetTotalLength(50.0, 50.0, 50.0)
+
+        self.ren.AddActor(self.coil_actor)
+        self.ren.AddActor(axes)
+
+    def OnDone(self, evt):
+        self.coilActor.RotateX(90)
+        self.interactor.Render()
+        print 'Coil orientation', self.coilActor.GetOrientation()
+
+    def OnSetCoilCoordinates(self, evt):
+        btn_id = const.BTNS_COIL[evt.GetId()].keys()[0]
+        coord = None
+
+        if self.trk_init and self.tracker_id:
+            coord = dco.GetCoordinates(self.trk_init, self.tracker_id, self.ref_mode_id)
+        else:
+            dlg.NavigationTrackerWarning(0, 'choose')
+
+        # Update number controls with tracker coordinates
+        if coord is not None:
+            self.fiducials[btn_id, :] = coord[0:3]
+            for n in [0, 1, 2]:
+                self.numctrls_coord[btn_id][n].SetValue(float(coord[n]))
+
+    def Testfunc(self):
+
+        import invesalius.data.coordinates as co
+        import invesalius.data.bases as db
+        from numpy import matrix
+        Minv = self.nav_prop[0][0]
+        N = self.nav_prop[0][1]
+        q1 = self.nav_prop[0][2]
+        q2 = self.nav_prop[0][3]
+        nav_id = self.nav_prop[1]
+        tracker_init = self.nav_prop[1][0]
+        tracker = self.nav_prop[1][1]
+        tracker_mode = self.nav_prop[1][2]
+
+        trck = co.Coordinates(tracker_init, tracker, tracker_mode).Returns()
+        tracker = matrix([[trck[0]], [trck[1]], [trck[2]]])
+        self.init_angle_plh = trck[3], trck[4], trck[5]
+        img = q1 + (Minv * N) * (tracker - q2)
+        coord = float(img[0]), float(img[1]), float(img[2])
+        x, y, z = db.FlipX(coord)
+
+        if not self.ball_centers:
+            self.to_translate = -x, -y, -z
+
+        x = x + self.to_translate[0]
+        y = y + self.to_translate[1]
+        z = z + self.to_translate[2]
+
+        ball_ref = vtk.vtkSphereSource()
+        ball_ref.SetRadius(4)
+        ball_ref.SetCenter(x, y, z)
+
+        self.ball_centers.append((x, y, z))
+
+        mapper = vtk.vtkPolyDataMapper()
+        mapper.SetInput(ball_ref.GetOutput())
+
+        prop = vtk.vtkProperty()
+        prop.SetColor(0, 1, 1)
+
+        # adding a new actor for the present ball
+        self.staticballs.append(vtk.vtkActor())
+
+        self.staticballs[self.ball_id].SetMapper(mapper)
+        self.staticballs[self.ball_id].SetProperty(prop)
+
+        self.ren.AddActor(self.staticballs[self.ball_id])
+        self.ball_id += 1
+
+        self.interactor.Render()
+
+    def DirectionCosinesTest_vtkmatrix(self, evt):
+        p1, p2, p3 = self.ball_centers[:3]
+        dcm = self.base_creation(p1, p2, p3)
+
+        mat4x4 = vtk.vtkMatrix4x4()
+        mat4x4.DeepCopy(dcm[0][0], dcm[0][1], dcm[0][2], 0.0,
+                        dcm[1][0], dcm[1][1], dcm[1][2], 0.0,
+                        dcm[2][0], dcm[2][1], dcm[2][2], 0.0,
+                        0.0, 0.0, 0.0, 1.0)
+
+        self.coilActor.SetUserMatrix(mat4x4)
+        print "\n===================================="
+        print "orientation: ", self.coilActor.GetOrientation()
+        print "====================================\n"
+
+    def DirectionCosinesTest_eulerangles(self, evt):
+        # p1, p2, p3 = self.ball_centers[:3]
+        # dcm = self.base_creation(p1, p2, p3)
+
+        dcm = self.nav_prop[0][1]
+
+        # site http://met.fzu.edu.cn/cai/Matlab6.5/help/toolbox/aeroblks/directioncosinematrixtoeulerangles.html
+        theta = np.rad2deg(-np.arcsin(dcm[0][2]))
+        phi = np.rad2deg(np.arctan(dcm[1][2] / dcm[2][2]))
+        psi = np.rad2deg(np.arctan(dcm[0][1] / dcm[0][0]))
+
+        self.coilActor.RotateWXYZ(psi, 0, 0, 1)
+        self.coilActor.RotateWXYZ(phi, 1, 0, 0)
+        self.coilActor.RotateWXYZ(theta, 0, 1, 0)
+        self.interactor.Render()
+
+        print "\n===================================="
+        print "orientation: ", self.coilActor.GetOrientation()
+        print "====================================\n"
+
+    def OnCancel(self, evt):
+        self.ball_centers = []
+        self.ball_id = 0
+        self.to_translate = 0, 0, 0
+        self.coilActor.SetOrientation(0, 0, 0)
+        self.coilActor.SetOrigin(0, 0, 0)
+        for i in range(0, len(self.staticballs)):
+            self.ren.RemoveActor(self.staticballs[i])
+        self.staticballs = []
+
+    def Neuronavigate_ToggleButton(self, evt):
+        p0, p1, p2 = self.ball_centers[:3]
+        m = self.base_creation(p0, p1, p2)
+
+        print "\n===================================="
+        print "Pontos bobina", p0, p1, p2
+        print "====================================\n"
+
+        # vm = vtk.vtkMatrix4x4()
+        # vm.SetElement(0, 0, m[0, 0])
+        # vm.SetElement(0, 1, m[0, 1])
+        # vm.SetElement(0, 2, m[0, 2])
+        # vm.SetElement(0, 3, 0      )
+
+        # vm.SetElement(1, 0, m[1, 0])
+        # vm.SetElement(1, 1, m[1, 1])
+        # vm.SetElement(1, 2, m[1, 2])
+        # vm.SetElement(1, 3, 0      )
+
+        # vm.SetElement(2, 0, m[2, 0])
+        # vm.SetElement(2, 1, m[2, 1])
+        # vm.SetElement(2, 2, m[2, 2])
+        # vm.SetElement(2, 3, 0      )
+
+        # vm.SetElement(3, 0, 0      )
+        # vm.SetElement(3, 1, 0      )
+        # vm.SetElement(3, 2, 0      )
+        # vm.SetElement(3, 3, 1      )
+
+        # self.coilActor.SetUserMatrix(vm)
+        # theta == beta
+        # psi == alpha
+        # phi == gama
+        gama = np.rad2deg(np.arctan(m[1, 2] / m[2, 2]))
+        beta = np.rad2deg(np.arcsin(-m[0, 2]))
+        alpha = np.rad2deg(np.arctan(m[0, 1] / m[0, 0]))
+
+        print "Angulos", gama, beta, alpha
+
+        self.coilActor.RotateWXYZ(alpha, 0, 1, 0)
+        self.coilActor.RotateWXYZ(beta, 1, 0, 0)
+        self.coilActor.RotateWXYZ(gama, 0, 0, 1)
+        self.interactor.Render()
+
+    def GetValue(self):
+        size = len(self.ball_centers) - 1  # ultima casa eh pra pegar o angulo inicial do plh
+        presize = len(self.ball_centers) - 4
+        p1, p2, p3 = self.ball_centers[presize:size]
+        bases = self.base_creation(p1, p2, p3)
+        inits_angles = self.coilActor.GetOrientation(), self.init_angle_plh, bases
+        return inits_angles
+
+    def base_creation(self, p1, p2, p3):
+        p1 = np.array([p1[0], p1[1], p1[2]])
+        p2 = np.array([p2[0], p2[1], p2[2]])
+        p3 = np.array([p3[0], p3[1], p3[2]])
+
+        sub1 = p2 - p1
+        sub2 = p3 - p1
+
+        g1 = sub1
+
+        # g2
+        lamb1 = g1[0] * sub2[0] + g1[1] * sub2[1] + g1[2] * sub2[2]
+        lamb2 = np.dot(g1, g1)
+        lamb = lamb1 / lamb2
+
+        # Ponto q
+        q = p1 + lamb * sub1
+
+        # g1 e g2 com origem em q
+        g1 = p1 - q
+        g2 = p3 - q
+
+        # testa se o g1 nao eh um vetor nulo
+        if g1.any() == False:
+            g1 = p2 - q
+
+        # g3 - Produto vetorial NumPy
+        g3 = np.cross(g2, g1)
+
+        # normalizacao dos vetores
+        g1 = g1 / np.sqrt(lamb2)
+        g2 = g2 / np.sqrt(np.dot(g2, g2))
+        g3 = g3 / np.sqrt(np.dot(g3, g3))
+
+        m = np.matrix([g1,
+                       g2,
+                       g3])
+
+        return m
+
+
+# class CoilCalibrationDialog(wx.Dialog):
+#     def __init__(self, parent=None, ID=-1, title="Calibration Dialog", size=wx.DefaultSize,
+#                  pos=wx.DefaultPosition, style=wx.DEFAULT_DIALOG_STYLE,
+#                  useMetal=False, nav_prop=None):
+#
+#         self.nav_prop = nav_prop
+#         self.correg = None
+#         self.staticballs = []
+#         self.ball_id = 0
+#         self.ball_centers = []
+#         self.to_translate = 0
+#         self.init_angle_plh = None
+#
+#         # Instead of calling wx.Dialog.__init__ we precreate the dialog
+#         # so we can set an extra style that must be set before
+#         # creation, and then we create the GUI object using the Create
+#         # method.
+#         pre = wx.PreDialog()
+#         pre.SetExtraStyle(wx.DIALOG_EX_CONTEXTHELP)
+#         pre.Create(parent, ID, title, pos, (700, 500), style)
+#
+#         # This next step is the most important, it turns this Python
+#         # object into the real wrapper of the dialog (instead of pre)
+#         # as far as the wxPython extension is concerned.
+#         self.PostCreate(pre)
+#
+#         self.CenterOnScreen()
+#
+#         # This extra style can be set after the UI object has been created.
+#         if 'wxMac' in wx.PlatformInfo and useMetal:
+#             self.SetExtraStyle(wx.DIALOG_EX_METAL)
+#
+#         self.CenterOnScreen()
+#         self.draw_gui()
+#         # self.LoadData()
+#
+#         # LINE 1: Janela
+#
+#     def draw_gui(self):
+#         style = vtk.vtkInteractorStyleTrackballActor()
+#
+#         self.interactor = wxVTKRenderWindowInteractor(self, -1, size=self.GetSize())
+#         # self.interactor.SetInteractorStyle(style)
+#         self.interactor.Enable(1)
+#         self.ren = vtk.vtkRenderer()
+#         self.interactor.GetRenderWindow().AddRenderer(self.ren)
+#
+#         # LINE 2: Botoes
+#
+#         marker = wx.Button(self, -1, "Create Marker")
+#         marker.Bind(wx.EVT_BUTTON, self.OnCalibrationMarkers)
+#
+#         dc_vtkMatrix = wx.Button(self, -1, "Matrix")
+#         dc_vtkMatrix.Bind(wx.EVT_BUTTON, self.DirectionCosinesTest_vtkmatrix)
+#
+#         dc_eulerangles = wx.Button(self, -1, "Euler")
+#         dc_eulerangles.Bind(wx.EVT_BUTTON, self.DirectionCosinesTest_eulerangles)
+#
+#         rotate_button = wx.Button(self, -1, "Rotate")
+#         rotate_button.Bind(wx.EVT_BUTTON, self.rotate)
+#
+#         reset = wx.Button(self, -1, "Reset")
+#         reset.Bind(wx.EVT_BUTTON, self.Reset)
+#
+#         button_neuronavigate = wx.Button(self, -1, "Neuronavigate")
+#         button_neuronavigate.Bind(wx.EVT_BUTTON, self.Neuronavigate_ToggleButton)
+#
+#         ok = wx.Button(self, wx.ID_OK)
+#
+#         cancel = wx.Button(self, wx.ID_CANCEL)
+#
+#         button_sizer = wx.BoxSizer(wx.HORIZONTAL)
+#         button_sizer.Add(marker)
+#         button_sizer.Add(dc_vtkMatrix)
+#         button_sizer.Add(dc_eulerangles)
+#         button_sizer.Add(reset)
+#         button_sizer.Add(button_neuronavigate)
+#         button_sizer.Add(rotate_button)
+#         button_sizer.Add(ok)
+#         button_sizer.Add(cancel)
+#
+#         # OVERVIEW
+#         # Merge all sizers and checkboxes
+#         sizer = wx.BoxSizer(wx.VERTICAL)
+#         sizer.Add(self.interactor, 0, wx.EXPAND)
+#         sizer.Add(button_sizer, 0, wx.TOP | wx.RIGHT | wx.LEFT | wx.GROW | wx.EXPAND, 20)
+#
+#         self.SetSizer(sizer)
+#         sizer.Fit(self)
+#
+#     def LoadData(self):
+#         coil_reference = vtk.vtkOBJReader()
+#         # coil_reference.SetFileName(os.path.realpath(os.path.join('..',
+#         #                                                         'models',
+#         #                                                         'coil_cti_2_scale10.obj')))
+#
+#         coil_reference.SetFileName('E:\source\coil\coil_cti_2_scale10.obj')
+#         coilMapper = vtk.vtkPolyDataMapper()
+#         coilMapper.SetInputConnection(coil_reference.GetOutputPort())
+#         self.coilActor = vtk.vtkActor()
+#         # self.coilActor.Scale(10.0, 10.0, 10.0)
+#         self.coilActor.SetMapper(coilMapper)
+#
+#         axes = vtk.vtkAxesActor()
+#         axes.SetShaftTypeToCylinder()
+#         axes.SetXAxisLabelText("x")
+#         axes.SetYAxisLabelText("y")
+#         axes.SetZAxisLabelText("z")
+#         axes.SetTotalLength(50.0, 50.0, 50.0)
+#
+#         self.ren.AddActor(self.coilActor)
+#         self.ren.AddActor(axes)
+#
+#     def rotate(self, evt):
+#         self.coilActor.RotateX(90)
+#         self.interactor.Render()
+#         print 'Coil orientation', self.coilActor.GetOrientation()
+#
+#     def OnCalibrationMarkers(self, evt):
+#         import invesalius.data.coordinates as co
+#         import invesalius.data.bases as db
+#         from numpy import matrix
+#         Minv = self.nav_prop[0][0]
+#         N = self.nav_prop[0][1]
+#         q1 = self.nav_prop[0][2]
+#         q2 = self.nav_prop[0][3]
+#         nav_id = self.nav_prop[1]
+#         tracker_init = self.nav_prop[1][0]
+#         tracker = self.nav_prop[1][1]
+#         tracker_mode = self.nav_prop[1][2]
+#
+#         trck = co.Coordinates(tracker_init, tracker, tracker_mode).Returns()
+#         tracker = matrix([[trck[0]], [trck[1]], [trck[2]]])
+#         self.init_angle_plh = trck[3], trck[4], trck[5]
+#         img = q1 + (Minv * N) * (tracker - q2)
+#         coord = float(img[0]), float(img[1]), float(img[2])
+#         x, y, z = db.FlipX(coord)
+#
+#         if not self.ball_centers:
+#             self.to_translate = -x, -y, -z
+#
+#         x = x + self.to_translate[0]
+#         y = y + self.to_translate[1]
+#         z = z + self.to_translate[2]
+#
+#         ball_ref = vtk.vtkSphereSource()
+#         ball_ref.SetRadius(4)
+#         ball_ref.SetCenter(x, y, z)
+#
+#         self.ball_centers.append((x, y, z))
+#
+#         mapper = vtk.vtkPolyDataMapper()
+#         mapper.SetInput(ball_ref.GetOutput())
+#
+#         prop = vtk.vtkProperty()
+#         prop.SetColor(0, 1, 1)
+#
+#         # adding a new actor for the present ball
+#         self.staticballs.append(vtk.vtkActor())
+#
+#         self.staticballs[self.ball_id].SetMapper(mapper)
+#         self.staticballs[self.ball_id].SetProperty(prop)
+#
+#         self.ren.AddActor(self.staticballs[self.ball_id])
+#         self.ball_id += 1
+#
+#         self.interactor.Render()
+#
+#     def DirectionCosinesTest_vtkmatrix(self, evt):
+#         p1, p2, p3 = self.ball_centers[:3]
+#         dcm = self.base_creation(p1, p2, p3)
+#
+#         mat4x4 = vtk.vtkMatrix4x4()
+#         mat4x4.DeepCopy(dcm[0][0], dcm[0][1], dcm[0][2], 0.0,
+#                         dcm[1][0], dcm[1][1], dcm[1][2], 0.0,
+#                         dcm[2][0], dcm[2][1], dcm[2][2], 0.0,
+#                         0.0, 0.0, 0.0, 1.0)
+#
+#         self.coilActor.SetUserMatrix(mat4x4)
+#         print "\n===================================="
+#         print "orientation: ", self.coilActor.GetOrientation()
+#         print "====================================\n"
+#
+#     def DirectionCosinesTest_eulerangles(self, evt):
+#         # p1, p2, p3 = self.ball_centers[:3]
+#         # dcm = self.base_creation(p1, p2, p3)
+#
+#         dcm = self.nav_prop[0][1]
+#
+#         # site http://met.fzu.edu.cn/cai/Matlab6.5/help/toolbox/aeroblks/directioncosinematrixtoeulerangles.html
+#         theta = np.rad2deg(-np.arcsin(dcm[0][2]))
+#         phi = np.rad2deg(np.arctan(dcm[1][2] / dcm[2][2]))
+#         psi = np.rad2deg(np.arctan(dcm[0][1] / dcm[0][0]))
+#
+#         self.coilActor.RotateWXYZ(psi, 0, 0, 1)
+#         self.coilActor.RotateWXYZ(phi, 1, 0, 0)
+#         self.coilActor.RotateWXYZ(theta, 0, 1, 0)
+#         self.interactor.Render()
+#
+#         print "\n===================================="
+#         print "orientation: ", self.coilActor.GetOrientation()
+#         print "====================================\n"
+#
+#     def Reset(self, evt):
+#         self.ball_centers = []
+#         self.ball_id = 0
+#         self.to_translate = 0, 0, 0
+#         self.coilActor.SetOrientation(0, 0, 0)
+#         self.coilActor.SetOrigin(0, 0, 0)
+#         for i in range(0, len(self.staticballs)):
+#             self.ren.RemoveActor(self.staticballs[i])
+#         self.staticballs = []
+#
+#     def Neuronavigate_ToggleButton(self, evt):
+#         p0, p1, p2 = self.ball_centers[:3]
+#         m = self.base_creation(p0, p1, p2)
+#
+#         print "\n===================================="
+#         print "Pontos bobina", p0, p1, p2
+#         print "====================================\n"
+#
+#         # vm = vtk.vtkMatrix4x4()
+#         # vm.SetElement(0, 0, m[0, 0])
+#         # vm.SetElement(0, 1, m[0, 1])
+#         # vm.SetElement(0, 2, m[0, 2])
+#         # vm.SetElement(0, 3, 0      )
+#
+#         # vm.SetElement(1, 0, m[1, 0])
+#         # vm.SetElement(1, 1, m[1, 1])
+#         # vm.SetElement(1, 2, m[1, 2])
+#         # vm.SetElement(1, 3, 0      )
+#
+#         # vm.SetElement(2, 0, m[2, 0])
+#         # vm.SetElement(2, 1, m[2, 1])
+#         # vm.SetElement(2, 2, m[2, 2])
+#         # vm.SetElement(2, 3, 0      )
+#
+#         # vm.SetElement(3, 0, 0      )
+#         # vm.SetElement(3, 1, 0      )
+#         # vm.SetElement(3, 2, 0      )
+#         # vm.SetElement(3, 3, 1      )
+#
+#         # self.coilActor.SetUserMatrix(vm)
+#         # theta == beta
+#         # psi == alpha
+#         # phi == gama
+#         gama = np.rad2deg(np.arctan(m[1, 2] / m[2, 2]))
+#         beta = np.rad2deg(np.arcsin(-m[0, 2]))
+#         alpha = np.rad2deg(np.arctan(m[0, 1] / m[0, 0]))
+#
+#         print "Angulos", gama, beta, alpha
+#
+#         self.coilActor.RotateWXYZ(alpha, 0, 1, 0)
+#         self.coilActor.RotateWXYZ(beta, 1, 0, 0)
+#         self.coilActor.RotateWXYZ(gama, 0, 0, 1)
+#         self.interactor.Render()
+#
+#     def GetValue(self):
+#         size = len(self.ball_centers) - 1  # ultima casa eh pra pegar o angulo inicial do plh
+#         presize = len(self.ball_centers) - 4
+#         p1, p2, p3 = self.ball_centers[presize:size]
+#         bases = self.base_creation(p1, p2, p3)
+#         inits_angles = self.coilActor.GetOrientation(), self.init_angle_plh, bases
+#         return inits_angles
+#
+#     def base_creation(self, p1, p2, p3):
+#         p1 = np.array([p1[0], p1[1], p1[2]])
+#         p2 = np.array([p2[0], p2[1], p2[2]])
+#         p3 = np.array([p3[0], p3[1], p3[2]])
+#
+#         sub1 = p2 - p1
+#         sub2 = p3 - p1
+#
+#         g1 = sub1
+#
+#         # g2
+#         lamb1 = g1[0] * sub2[0] + g1[1] * sub2[1] + g1[2] * sub2[2]
+#         lamb2 = np.dot(g1, g1)
+#         lamb = lamb1 / lamb2
+#
+#         # Ponto q
+#         q = p1 + lamb * sub1
+#
+#         # g1 e g2 com origem em q
+#         g1 = p1 - q
+#         g2 = p3 - q
+#
+#         # testa se o g1 nao eh um vetor nulo
+#         if g1.any() == False:
+#             g1 = p2 - q
+#
+#         # g3 - Produto vetorial NumPy
+#         g3 = np.cross(g2, g1)
+#
+#         # normalizacao dos vetores
+#         g1 = g1 / np.sqrt(lamb2)
+#         g2 = g2 / np.sqrt(np.dot(g2, g2))
+#         g3 = g3 / np.sqrt(np.dot(g3, g3))
+#
+#         m = np.matrix([g1,
+#                        g2,
+#                        g3])
+#
+#         return m

@@ -678,6 +678,10 @@ DYNAMIC_REF = 1
 DEFAULT_REF_MODE = DYNAMIC_REF
 REF_MODE = [_("Static ref."), _("Dynamic ref.")]
 
+DEFAULT_COIL = SELECT
+COIL = [_("Select coil:"), _("Neurosoft Figure-8"),
+           _("Magstim 70 mm"), _("Nexstim")]
+
 IR1 = wx.NewId()
 IR2 = wx.NewId()
 IR3 = wx.NewId()
@@ -708,5 +712,21 @@ TIPS_TRK = [_("Select left ear with spatial tracker"),
             _("Select nasion with spatial tracker"),
             _("Show set coordinates in image")]
 
+COIL1 = wx.NewId()
+COIL2 = wx.NewId()
+COIL3 = wx.NewId()
+COILC = wx.NewId()
+
+BTNS_COIL = {COIL1: {0: _('Left')},
+             COIL2: {1: _('Right')},
+             COIL3: {2: _('Anterior')},
+             COILC: {3: _('Center')}}
+
+TIPS_COIL = [_("Select left coil wing"),
+            _("Select right coil wing"),
+            _("Select anterior coil point"),
+            _("Select coil center")]
+
 CAL_DIR = os.path.abspath(os.path.join(FILE_PATH, '..', 'navigation', 'mtc_files', 'CalibrationFiles'))
 MAR_DIR = os.path.abspath(os.path.join(FILE_PATH, '..', 'navigation', 'mtc_files', 'Markers'))
+COIL_DIR = os.path.abspath(os.path.join(FILE_PATH, '..', 'navigation', 'coils'))
