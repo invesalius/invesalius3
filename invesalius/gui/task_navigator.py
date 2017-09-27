@@ -28,6 +28,8 @@ import wx.lib.foldpanelbar as fpb
 from wx.lib.pubsub import pub as Publisher
 import wx.lib.colourselect as csel
 
+from time import sleep
+
 import invesalius.constants as const
 import invesalius.data.bases as db
 import invesalius.data.coordinates as dco
@@ -641,6 +643,7 @@ class MarkersPanel(wx.Panel):
 
     def UpdateNavigationStatus(self, pubsub_evt):
         if pubsub_evt.data is False:
+            sleep(0.5)
             self.current_angle = 0, 0, 0
 
     def OnListEditMarkerId(self, evt):
@@ -838,6 +841,7 @@ class MarkersPanel(wx.Panel):
         self.marker_ind += 1
 
         # List of lists with coordinates and properties of a marker
+        print self.current_angle
         line = [coord[0], coord[1], coord[2], self.current_angle[0], self.current_angle[1], self.current_angle[2], colour[0], colour[1], colour[2], size, marker_id]
 
         # Adding current line to a list of all markers already created
