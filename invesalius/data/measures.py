@@ -1045,9 +1045,15 @@ class CircleDensityMeasure(object):
 
         values = img_slice[mask]
 
-        _min = values.min()
-        _max = values.max()
-        _mean = values.mean()
-        _std = values.std()
+        try:
+            _min = values.min()
+            _max = values.max()
+            _mean = values.mean()
+            _std = values.std()
+        except ValueError:
+            _min = 0
+            _max = 0
+            _mean = 0
+            _std = 0
 
         self.set_density_values(_min, _max, _mean, _std)
