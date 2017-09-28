@@ -49,6 +49,8 @@ else:
 
 PROP_MEASURE = 0.8
 
+from invesalius.gui.widgets.canvas_renderer import CanvasRendererCTX, Polygon
+
 class Viewer(wx.Panel):
     def __init__(self, parent):
         wx.Panel.__init__(self, parent, size=wx.Size(320, 320))
@@ -84,17 +86,32 @@ class Viewer(wx.Panel):
         interactor.Enable(1)
 
         ren = vtk.vtkRenderer()
-        interactor.GetRenderWindow().AddRenderer(ren)
         self.ren = ren
+
+        canvas_renderer = vtk.vtkRenderer()
+        canvas_renderer.SetLayer(1)
+        canvas_renderer.SetInteractive(0)
+        canvas_renderer.PreserveDepthBufferOn()
+        self.canvas_renderer = canvas_renderer
+
+        interactor.GetRenderWindow().SetNumberOfLayers(2)
+        interactor.GetRenderWindow().AddRenderer(ren)
+        interactor.GetRenderWindow().AddRenderer(canvas_renderer)
 
         self.raycasting_volume = False
 
         self.onclick = False
 
-        self.text = vtku.Text()
+        self.text = vtku.TextZero()
         self.text.SetValue("")
-        self.ren.AddActor(self.text.actor)
+        self.text.SetPosition(const.TEXT_POS_LEFT_UP)
+        #  self.ren.AddActor(self.text.actor)
 
+        self.polygon = Polygon()
+
+        self.canvas = CanvasRendererCTX(self, self.ren, self.canvas_renderer, 'AXIAL')
+        self.canvas.draw_list.append(self.text)
+        self.canvas.draw_list.append(self.polygon)
 
         self.slice_plane = None
 
@@ -590,7 +607,12 @@ class Viewer(wx.Panel):
 
     def __bind_events_wx(self):
         #self.Bind(wx.EVT_SIZE, self.OnSize)
-        pass
+        self.canvas.subscribe_event('LeftButtonPressEvent', self.on_insert_point)
+
+    def on_insert_point(self, evt):
+        pos = evt.position
+        self.polygon.append_point(pos)
+        self.canvas.Refresh()
 
     def SetInteractorStyle(self, state):
         action = {
@@ -844,6 +866,7 @@ class Viewer(wx.Panel):
         if self.raycasting_volume:
             ww, wl = pubsub_evt.data
             self.text.SetValue("WL: %d  WW: %d"%(wl, ww))
+            self.canvas.modified = True
 
     def OnShowRaycasting(self, pubsub_evt):
         if not self.raycasting_volume:

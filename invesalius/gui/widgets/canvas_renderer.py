@@ -159,6 +159,8 @@ class CanvasRendererCTX:
             #  Publisher.sendMessage('Redraw canvas %s' % self.orientation)
             self.Refresh()
 
+        evt.Skip()
+
     def OnLeftButtonPress(self, evt):
         x, y = evt.GetPosition()
         y = self.viewer.interactor.GetSize()[1] - y
@@ -172,11 +174,12 @@ class CanvasRendererCTX:
                 if cb() is not None:
                     cb()(evt_obj)
                     break
+        evt.Skip()
 
     def OnLeftButtonRelease(self, evt):
-        print "Release mouse"
-        self._over_obj = None
+        #  self._over_obj = None
         self._drag_obj = None
+        evt.Skip()
 
     def OnPaint(self, evt, obj):
         size = self.canvas_renderer.GetSize()
