@@ -29,6 +29,7 @@ import wx
 import vtk
 from vtk.wx.wxVTKRenderWindowInteractor import wxVTKRenderWindowInteractor
 from wx.lib.pubsub import pub as Publisher
+import random
 
 import invesalius.constants as const
 import invesalius.data.bases as bases
@@ -218,6 +219,9 @@ class Viewer(wx.Panel):
         Publisher.subscribe(self.RemoveMarker, 'Remove marker')
         Publisher.subscribe(self.BlinkMarker, 'Blink Marker')
         Publisher.subscribe(self.StopBlinkMarker, 'Stop Blink Marker')
+
+        #Related to nTMS mode
+        Publisher.subscribe(self.OnCoilTracker, 'nTMS mode')
 
     def SetStereoMode(self, pubsub_evt):
         mode = pubsub_evt.data
@@ -537,6 +541,139 @@ class Viewer(wx.Panel):
                 self.staticballs[self.index].SetVisibility(1)
                 self.Refresh()
             self.index = False
+
+    def OnCoilTracker(self, pubsub_evt):
+        # Create a line
+        self.ren.SetViewport(0, 0, 0.75, 1)
+
+        self.ren2 = vtk.vtkRenderer()
+
+        self.interactor.GetRenderWindow().AddRenderer(self.ren2)
+        self.ren2.SetViewport(0.75, 0, 1,1)
+        filename = os.path.join(const.ICON_DIR, "bobina1.stl")
+
+        reader = vtk.vtkSTLReader()
+        reader.SetFileName(filename)
+
+        mapper = vtk.vtkPolyDataMapper()
+        mapper.SetInputConnection(reader.GetOutputPort())
+        self.coilactor = vtk.vtkActor()
+        self.coilactor.SetMapper(mapper)
+        self.coilactor.RotateX(-60)
+        self.coilactor.RotateZ(180)
+        #self.coilactor.GetProperty().SetOpacity(0.7)
+
+        self.coilactor2 = vtk.vtkActor()
+        self.coilactor2.SetMapper(mapper)
+        self.coilactor2.SetPosition(0, -150, 0)
+        self.coilactor2.RotateZ(180)
+        #self.coilactor2.GetProperty().SetOpacity(0.7)
+
+        self.coilactor3 = vtk.vtkActor()
+        self.coilactor3.SetMapper(mapper)
+        self.coilactor3.SetPosition(0, -300, 0)
+        self.coilactor3.RotateY(90)
+        self.coilactor3.RotateZ(180)
+        #self.coilactor3.GetProperty().SetOpacity(0.7)
+
+        self.arrowactorZ1 = self.arrow([-50,-35,12], [-50,-35,50])
+        self.arrowactorZ1.GetProperty().SetColor(0, 0, 1)
+        self.arrowactorZ1.RotateX(-60)
+        self.arrowactorZ1.RotateZ(180)
+        self.arrowactorZ2 = self.arrow([50,-35,0], [50,-35,-50])
+        self.arrowactorZ2.GetProperty().SetColor(0, 0, 1)
+        self.arrowactorZ2.RotateX(-60)
+        self.arrowactorZ2.RotateZ(180)
+
+        self.arrowactorY1 = self.arrow([-50,-35,0], [-50,5,0])
+        self.arrowactorY1.GetProperty().SetColor(0, 1, 0)
+        self.arrowactorY1.SetPosition(0, -150, 0)
+        self.arrowactorY1.RotateZ(180)
+        self.arrowactorY2 = self.arrow([50,-35,0], [50,-75,0])
+        self.arrowactorY2.GetProperty().SetColor(0, 1, 0)
+        self.arrowactorY2.SetPosition(0, -150, 0)
+        self.arrowactorY2.RotateZ(180)
+
+        self.arrowactorX1 = self.arrow([0, 65, 38], [0, 65, 68])
+        self.arrowactorX1.GetProperty().SetColor(1, 0, 0)
+        self.arrowactorX1.SetPosition(0, -300, 0)
+        self.arrowactorX1.RotateY(90)
+        self.arrowactorX1.RotateZ(180)
+        self.arrowactorX2 = self.arrow([0, -55, 5], [0, -55, -30])
+        self.arrowactorX2.GetProperty().SetColor(1, 0, 0)
+        self.arrowactorX2.SetPosition(0, -300, 0)
+        self.arrowactorX2.RotateY(90)
+        self.arrowactorX2.RotateZ(180)
+
+        self.ren2.AddActor(self.coilactor)
+        self.ren2.AddActor(self.arrowactorZ1)
+        self.ren2.AddActor(self.arrowactorZ2)
+        self.ren2.AddActor(self.coilactor2)
+        self.ren2.AddActor(self.arrowactorY1)
+        self.ren2.AddActor(self.arrowactorY2)
+        self.ren2.AddActor(self.coilactor3)
+        self.ren2.AddActor(self.arrowactorX1)
+        self.ren2.AddActor(self.arrowactorX2)
+
+        self.ren2.ResetCamera()
+        self.interactor.Render()
+        #self.Refresh()
+
+
+    def arrow(self, startPoint, endPoint):
+        # Compute a basis
+        normalizedX = [0 for i in range(3)]
+        normalizedY = [0 for i in range(3)]
+        normalizedZ = [0 for i in range(3)]
+
+        # The X axis is a vector from start to end
+        math = vtk.vtkMath()
+        math.Subtract(endPoint, startPoint, normalizedX)
+        length = math.Norm(normalizedX)
+        math.Normalize(normalizedX)
+
+        # The Z axis is an arbitrary vector cross X
+        arbitrary = [0 for i in range(3)]
+        arbitrary[0] = random.uniform(-10, 10)
+        arbitrary[1] = random.uniform(-10, 10)
+        arbitrary[2] = random.uniform(-10, 10)
+        math.Cross(normalizedX, arbitrary, normalizedZ)
+        math.Normalize(normalizedZ)
+
+        # The Y axis is Z cross X
+        math.Cross(normalizedZ, normalizedX, normalizedY)
+        matrix = vtk.vtkMatrix4x4()
+
+        # Create the direction cosine matrix
+        matrix.Identity()
+        for i in range(3):
+            matrix.SetElement(i, 0, normalizedX[i])
+            matrix.SetElement(i, 1, normalizedY[i])
+            matrix.SetElement(i, 2, normalizedZ[i])
+
+        # Apply the transforms arrow 1
+        transform_1 = vtk.vtkTransform()
+        transform_1.Translate(startPoint)
+        transform_1.Concatenate(matrix)
+        transform_1.Scale(length, length, length)
+        # source
+        arrowSource1 = vtk.vtkArrowSource()
+        arrowSource1.SetTipResolution(50)
+        # Create a mapper and actor
+        mapper = vtk.vtkPolyDataMapper()
+        mapper.SetInputConnection(arrowSource1.GetOutputPort())
+        # Transform the polydata
+        transformPD = vtk.vtkTransformPolyDataFilter()
+        transformPD.SetTransform(transform_1)
+        transformPD.SetInputConnection(arrowSource1.GetOutputPort())
+        # mapper transform
+        mapper.SetInputConnection(transformPD.GetOutputPort())
+        # actor
+        actor_arrow = vtk.vtkActor()
+        actor_arrow.SetMapper(mapper)
+        actor_arrow.GetProperty().SetColor(0, 0, 1)
+
+        return actor_arrow
 
     def CreateBallReference(self):
         """

@@ -444,7 +444,7 @@ class VolumeToolPanel(wx.Panel):
 
     def OnButtonTarget(self, evt):
         self.button_target.Enable(0)
-        print "ontarget"
+        Publisher.sendMessage('nTMS mode')
 
     def OnSavePreset(self, evt):
         d = wx.TextEntryDialog(self, _("Preset name"))
