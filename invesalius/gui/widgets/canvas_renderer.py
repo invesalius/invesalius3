@@ -233,6 +233,52 @@ class CanvasRendererCTX:
         self.modified = False
         self._drawn = False
 
+    def draw_element_to_array(self, elements, flip=True):
+        """
+        Draws the given elements to a array.
+
+        Params:
+            elements: a list of elements (objects that contains the
+                draw_to_canvas method) to draw to a array.
+            flip: indicates if it is necessary to flip. In this canvas the Y
+                coordinates starts in the bottom of the screen.
+        """
+        size = self.canvas_renderer.GetSize()
+        w, h = size
+        image = wx.EmptyImage(w, h)
+        image.Clear()
+
+        arr = np.zeros((h, w, 4), dtype=np.uint8)
+
+        gc = wx.GraphicsContext.Create(image)
+        if sys.platform != 'darwin':
+            gc.SetAntialiasMode(0)
+        self.gc = gc
+
+        font = wx.SystemSettings.GetFont(wx.SYS_DEFAULT_GUI_FONT)
+        font = gc.CreateFont(font, (0, 0, 255))
+        gc.SetFont(font)
+
+        pen = wx.Pen(wx.Colour(255, 0, 0, 128), 2, wx.SOLID)
+        brush = wx.Brush(wx.Colour(0, 255, 0, 128))
+        gc.SetPen(pen)
+        gc.SetBrush(brush)
+        gc.Scale(1, -1)
+
+        for element in elements:
+            element.draw_to_canvas(gc, self)
+
+        gc.Destroy()
+        self.gc = None
+
+        bitmap = self.image.ConvertToBitmap()
+        bitmap.CopyToBuffer(arr, wx.BitmapBufferFormat_RGBA)
+
+        if flip:
+            arr = arr[::-1]
+
+        return arr
+
     def calc_text_size(self, text, font=None):
         """
         Given an unicode text and a font returns the width and height of the
@@ -639,7 +685,8 @@ class Polygon(CanvasHandlerBase):
     def __init__(self, points=None,
                  fill=True,
                  line_colour=(255, 255, 255, 255),
-                 fill_colour=(255, 255, 255, 128), width=2):
+                 fill_colour=(255, 255, 255, 128), width=2,
+                 interactive=True):
 
         if points is None:
             self.points = []
@@ -654,13 +701,15 @@ class Polygon(CanvasHandlerBase):
         self.line_colour = line_colour
         self.fill_colour = fill_colour
         self.width = width
+        self.interactive = interactive
 
     def draw_to_canvas(self, gc, canvas):
         if self.points:
             canvas.draw_polygon(self.points, self.fill, self.line_colour, self.fill_colour, self.width)
 
-        for handler in self.handlers:
-            handler.draw_to_canvas(gc, canvas)
+        if self.interactive:
+            for handler in self.handlers:
+                handler.draw_to_canvas(gc, canvas)
 
     def append_point(self, point):
         handler = CircleHandler(point, is_3d=False)
@@ -677,6 +726,7 @@ class Polygon(CanvasHandlerBase):
         self.points[point] = px, py
 
     def is_over(self, x, y):
-        for handler in self.handlers:
-            if handler.is_over(x, y):
-                return handler
+        if self.interactive:
+            for handler in self.handlers:
+                if handler.is_over(x, y):
+                    return handler
