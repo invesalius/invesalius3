@@ -423,6 +423,7 @@ class NeuronavigationPanel(wx.Panel):
                     self.tracker_id = 0
                     ctrl.SetSelection(self.tracker_id)
         Publisher.sendMessage('Update status text in GUI', _("Ready"))
+        Publisher.sendMessage('Update tracker initializer', (self.tracker_id, self.trk_init, self.ref_mode_id))
 
     def OnChoiceRefMode(self, evt, ctrl):
         # When ref mode is changed the tracker coords are set to zero
@@ -431,6 +432,7 @@ class NeuronavigationPanel(wx.Panel):
         # Some trackers do not accept restarting within this time window
         # TODO: Improve the restarting of trackers after changing reference mode
         # self.OnChoiceTracker(None, ctrl)
+        Publisher.sendMessage('Update tracker initializer', (self.tracker_id, self.trk_init, self.ref_mode_id))
         print "Reference mode changed!"
 
     def OnSetImageCoordinates(self, evt):
@@ -469,7 +471,7 @@ class NeuronavigationPanel(wx.Panel):
         coord = None
 
         if self.trk_init and self.tracker_id:
-            coord = dco.GetCoordinates(self.trk_init, self.tracker_id, self.ref_mode_id)
+            coord, probe, reference = dco.GetCoordinates(self.trk_init, self.tracker_id, self.ref_mode_id)
         else:
             dlg.NavigationTrackerWarning(0, 'choose')
 
@@ -556,8 +558,10 @@ class CoilPanel(wx.Panel):
         self.coil_list = const.COIL
         self.coil_id = const.DEFAULT_COIL
 
+        self.nav_prop = None
+
         self.SetAutoLayout(1)
-        # self.__bind_events()
+        self.__bind_events()
 
         # Button for creating new coil
         BMP_ADD = wx.Bitmap(os.path.join(const.ICON_DIR, "object_add.png"), wx.BITMAP_TYPE_PNG)
@@ -641,6 +645,18 @@ class CoilPanel(wx.Panel):
         self.SetSizer(main_sizer)
         self.Update()
 
+    def __bind_events(self):
+        Publisher.subscribe(self.UpdateTrackerInit, 'Update tracker initializer')
+
+    def UpdateTrackerInit(self, pubsub_evt):
+        self.nav_prop = pubsub_evt.data
+        # self.tracker_id = pubsub_evt.data[0]
+        # self.trk_init = pubsub_evt.data[1]
+        # self.ref_mode_id = pubsub_evt.data[2]
+
+        # print "trck id: ", self.tracker_id
+        # print "ref id: ", self.ref_mode_id
+
     def OnComboCoil(self, evt):
         # coil_name = evt.GetString()
         coil_index = evt.GetSelection()
@@ -657,7 +673,7 @@ class CoilPanel(wx.Panel):
         bases = None
         tracker_mode = None
         nav_prop = bases, tracker_mode, None
-        dialog = dlg.CoilCalibrationDialog(nav_prop)
+        dialog = dlg.CoilCalibrationDialog(self.nav_prop)
         try:
             if dialog.ShowModal() == wx.ID_OK:
                 coil_orient = dialog.GetValue()

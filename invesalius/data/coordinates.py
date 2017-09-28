@@ -77,6 +77,7 @@ def ClaronCoord(trck_init, trck_id, ref_mode):
                 trck.Run()
                 coord = np.array([trck.PositionTooltipX1 * scale[0], trck.PositionTooltipY1 * scale[1],
                                   trck.PositionTooltipZ1 * scale[2], trck.AngleX1, trck.AngleY1, trck.AngleZ1])
+
                 k = 30
             except AttributeError:
                 k += 1
@@ -129,7 +130,7 @@ def PolhemusWrapperCoord(trck, trck_id, ref_mode):
     if trck.StylusButton:
         Publisher.sendMessage('PLH Stylus Button On')
 
-    return coord
+    return coord, probe, reference
 
 
 def PolhemusUSBCoord(trck, trck_id, ref_mode):

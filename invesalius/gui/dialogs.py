@@ -33,6 +33,8 @@ from wx.lib.wordwrap import wordwrap
 from wx.lib.pubsub import pub as Publisher
 
 import invesalius.constants as const
+import invesalius.data.bases as db
+import invesalius.data.coordinates as dco
 import invesalius.gui.widgets.gradient as grad
 import invesalius.session as ses
 import invesalius.utils as utils
@@ -2972,13 +2974,18 @@ class FillHolesAutoDialog(wx.Dialog):
 class CoilCalibrationDialog(wx.Dialog):
     def __init__(self, nav_prop):
 
-        self.nav_prop = nav_prop
+        self.tracker_id = nav_prop[0]
+        self.trk_init = nav_prop[1]
+        self.ref_mode_id = nav_prop[2]
+
         self.correg = None
         self.staticballs = []
         self.ball_id = 0
         self.ball_centers = []
         self.to_translate = 0
         self.init_angle_plh = None
+        self.coil_fiducials = np.full([4, 3], np.nan)
+        self.coil_orients = np.full([4, 3], np.nan)
 
         pre = wx.PreDialog()
         pre.Create(wx.GetApp().GetTopWindow(), -1, _(u"TMS coil calibration"), size=(900, 740),
@@ -2998,7 +3005,7 @@ class CoilCalibrationDialog(wx.Dialog):
 
         # Initialize list of buttons and txtctrls for wx objects
         btns_coord = [None] * 7
-        txt_coord = [list(), list(), list(), list(), list(), list(), list()]
+        self.txt_coord = [list(), list(), list(), list(), list(), list(), list()]
 
         # Buttons to finish or cancel coil registration
         tooltip = wx.ToolTip(_(u"Registration done"))
@@ -3028,14 +3035,15 @@ class CoilCalibrationDialog(wx.Dialog):
 
         for m in range(0, 4):
             for n in range(0, 3):
-                txt_coord[m].append(wx.StaticText(self, -1, '0.00', style=wx.TE_CENTRE))
+                self.txt_coord[m].append(wx.StaticText(self, -1, label='-',
+                                                       style=wx.ALIGN_RIGHT, size=wx.Size(40, 23)))
 
-        coord_sizer = wx.GridBagSizer(hgap=25, vgap=5)
+        coord_sizer = wx.GridBagSizer(hgap=20, vgap=5)
 
         for m in range(0, 4):
             coord_sizer.Add(btns_coord[m], pos=wx.GBPosition(m, 0))
             for n in range(0, 3):
-                coord_sizer.Add(txt_coord[m][n], pos=wx.GBPosition(m, n + 1), flag=wx.TOP, border=5)
+                coord_sizer.Add(self.txt_coord[m][n], pos=wx.GBPosition(m, n + 1), flag=wx.TOP, border=5)
 
         group_sizer = wx.FlexGridSizer(rows=1, cols=2, hgap=50, vgap=5)
         group_sizer.AddMany([(coord_sizer, 0, wx.LEFT, 20),
@@ -3060,35 +3068,75 @@ class CoilCalibrationDialog(wx.Dialog):
         self.coil_actor = vtk.vtkActor()
         self.coil_actor.SetMapper(coil_mapper)
 
-        axes = vtk.vtkAxesActor()
-        axes.SetShaftTypeToCylinder()
-        axes.SetXAxisLabelText("x")
-        axes.SetYAxisLabelText("y")
-        axes.SetZAxisLabelText("z")
-        axes.SetTotalLength(50.0, 50.0, 50.0)
+        self.axes = vtk.vtkAxesActor()
+        self.axes.SetShaftTypeToCylinder()
+        self.axes.SetXAxisLabelText("x")
+        self.axes.SetYAxisLabelText("y")
+        self.axes.SetZAxisLabelText("z")
+        self.axes.SetTotalLength(50.0, 50.0, 50.0)
 
         self.ren.AddActor(self.coil_actor)
-        self.ren.AddActor(axes)
+        self.ren.AddActor(self.axes)
 
     def OnDone(self, evt):
-        self.coilActor.RotateX(90)
+        self.coil_actor.RotateX(90)
         self.interactor.Render()
-        print 'Coil orientation', self.coilActor.GetOrientation()
+        # print 'Coil orientation', self.coilActor.GetOrientation()
 
     def OnSetCoilCoordinates(self, evt):
         btn_id = const.BTNS_COIL[evt.GetId()].keys()[0]
-        coord = None
+        # coord = None
 
         if self.trk_init and self.tracker_id:
-            coord = dco.GetCoordinates(self.trk_init, self.tracker_id, self.ref_mode_id)
+            coord, probe, reference = dco.GetCoordinates(self.trk_init, self.tracker_id, self.ref_mode_id)
         else:
-            dlg.NavigationTrackerWarning(0, 'choose')
+            NavigationTrackerWarning(0, 'choose')
 
-        # Update number controls with tracker coordinates
-        if coord is not None:
-            self.fiducials[btn_id, :] = coord[0:3]
+        # Update text controls with tracker coordinates
+        if probe is not None:
+            self.coil_fiducials[btn_id, :] = probe[0:3]
+            self.coil_orients[btn_id, :] = reference[3:6]
             for n in [0, 1, 2]:
-                self.numctrls_coord[btn_id][n].SetValue(float(coord[n]))
+                self.txt_coord[btn_id][n].SetLabel(str(round(probe[n], 1)))
+
+        print self.coil_orients
+
+    # def AddMarker(self, pubsub_evt):
+    #     """
+    #     Markers create by navigation tools and
+    #     rendered in volume viewer.
+    #     """
+    #     (self.marker_ind, size, colour, coord)
+    #
+    #
+    #
+    #     self.ball_id = pubsub_evt.data[0]
+    #     ballsize = pubsub_evt.data[1]
+    #     ballcolour = pubsub_evt.data[2]
+    #     coord = pubsub_evt.data[3]
+    #     x, y, z = bases.flip_x(coord)
+    #
+    #     ball_ref = vtk.vtkSphereSource()
+    #     ball_ref.SetRadius(ballsize)
+    #     ball_ref.SetCenter(x, y, z)
+    #
+    #     mapper = vtk.vtkPolyDataMapper()
+    #     mapper.SetInputConnection(ball_ref.GetOutputPort())
+    #
+    #     prop = vtk.vtkProperty()
+    #     prop.SetColor(ballcolour)
+    #
+    #     #adding a new actor for the present ball
+    #     self.staticballs.append(vtk.vtkActor())
+    #
+    #     self.staticballs[self.ball_id].SetMapper(mapper)
+    #     self.staticballs[self.ball_id].SetProperty(prop)
+    #
+    #     self.ren.AddActor(self.staticballs[self.ball_id])
+    #     self.ball_id += 1
+    #     self.marker_ind += 1
+    #     #self.UpdateRender()
+    #     self.Refresh()
 
     def Testfunc(self):
 
@@ -3177,14 +3225,51 @@ class CoilCalibrationDialog(wx.Dialog):
         print "====================================\n"
 
     def OnCancel(self, evt):
-        self.ball_centers = []
-        self.ball_id = 0
-        self.to_translate = 0, 0, 0
-        self.coilActor.SetOrientation(0, 0, 0)
-        self.coilActor.SetOrigin(0, 0, 0)
-        for i in range(0, len(self.staticballs)):
-            self.ren.RemoveActor(self.staticballs[i])
-        self.staticballs = []
+        # self.ball_centers = []
+        # self.ball_id = 0
+        # self.to_translate = 0, 0, 0
+        # self.coilActor.SetOrientation(0, 0, 0)
+        # self.coilActor.SetOrigin(0, 0, 0)
+        # for i in range(0, len(self.staticballs)):
+        #     self.ren.RemoveActor(self.staticballs[i])
+        # self.staticballs = []
+
+        # self.coil_orients[btn_id, :] = coord[3:6]
+
+        m, q1, minv = db.base_creation(self.coil_fiducials[0:3, :])
+        reference = self.coil_orients[0, :]
+        # img = q1 + m_inv * (trck_xyz - q2)
+
+        coord = self.dynamic_reference()
+
+    def dynamic_reference(self, probe, reference):
+        """
+        Apply dynamic reference correction to probe coordinates. Uses the alpha, beta and gama
+        rotation angles of reference to rotate the probe coordinate and returns the x, y, z
+        difference between probe and reference. Angles sequences and equation was extracted from
+        Polhemus manual and Attitude matrix in Wikipedia.
+        General equation is:
+        coord = Mrot * (probe - reference)
+        :param probe: sensor one defined as probe
+        :param reference: sensor two defined as reference
+        :return: rotated and translated coordinates
+        """
+        a, b, g = np.radians(reference)
+
+        vet = probe[0:3] - reference[0:3]
+        vet = np.mat(vet.reshape(3, 1))
+
+        # Attitude Matrix given by Patriot Manual
+        Mrot = np.mat([[cos(a) * cos(b), sin(b) * sin(g) * cos(a) - cos(g) * sin(a),
+                        cos(a) * sin(b) * cos(g) + sin(a) * sin(g)],
+                       [cos(b) * sin(a), sin(b) * sin(g) * sin(a) + cos(g) * cos(a),
+                        cos(g) * sin(b) * sin(a) - sin(g) * cos(a)],
+                       [-sin(b), sin(g) * cos(b), cos(b) * cos(g)]])
+
+        coord_rot = Mrot.T * vet
+        coord_rot = np.squeeze(np.asarray(coord_rot))
+
+        return coord_rot[0], coord_rot[1], coord_rot[2], probe[3], probe[4], probe[5]
 
     def Neuronavigate_ToggleButton(self, evt):
         p0, p1, p2 = self.ball_centers[:3]
