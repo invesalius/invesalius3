@@ -404,6 +404,46 @@ class CanvasRendererCTX:
 
         return (cx, -cy, radius*2, radius*2)
 
+    def draw_ellipse(self, center, width, height, line_width=2, line_colour=(255, 0, 0, 128), fill_colour=(0, 0, 0, 0)):
+        """
+        Draw a ellipse centered at center with the given width and height.
+
+        Params:
+            center: (x, y) position.
+            width: ellipse width (float number).
+            height: ellipse height (float number)
+            line_width: line width.
+            line_colour: RGBA line colour
+            fill_colour: RGBA fill colour.
+        """
+        if self.gc is None:
+            return None
+        gc = self.gc
+
+        pen = wx.Pen(wx.Colour(*line_colour), line_width, wx.SOLID)
+        gc.SetPen(pen)
+
+        brush = wx.Brush(wx.Colour(*fill_colour))
+        gc.SetBrush(brush)
+
+        cx, cy = center
+        xi = cx - width/2.0
+        xf = cx + width/2.0
+        yi = cy - height/2.0
+        yf = cy + width/2.0
+
+        cx -= width/2.0
+        cy += height/2.0
+        cy = -cy
+
+        path = gc.CreatePath()
+        path.AddEllipse(cx, cy, width, height)
+        gc.StrokePath(path)
+        gc.FillPath(path)
+        self._drawn = True
+
+        return (xi, yi, xf, yf)
+
     def draw_rectangle(self, pos, width, height, line_colour=(255, 0, 0, 128), fill_colour=(0, 0, 0, 0)):
         """
         Draw a rectangle with its top left at pos and with the given width and height.
@@ -650,6 +690,7 @@ class CircleHandler(CanvasHandlerBase):
         self.is_3d = is_3d
 
         self.visible = True
+        self._on_move_function = None
 
     def on_move(self, evt_function):
         self._on_move_function = WeakMethod(evt_function)
@@ -671,12 +712,11 @@ class CircleHandler(CanvasHandlerBase):
             x, y, z = evt.viewer.get_coordinate_cursor(mx, my)
             self.position = (x, y, z)
 
-            if self._on_move_function():
-                self._on_move_function()(self)
         else:
             self.position = mx, my
-            if self._on_move_function():
-                self._on_move_function()(self)
+
+        if self._on_move_function and self._on_move_function():
+            self._on_move_function()(self)
 
         return True
 
@@ -686,7 +726,7 @@ class Polygon(CanvasHandlerBase):
                  fill=True,
                  line_colour=(255, 255, 255, 255),
                  fill_colour=(255, 255, 255, 128), width=2,
-                 interactive=True):
+                 interactive=True, is_3d=True):
 
         if points is None:
             self.points = []
@@ -702,17 +742,22 @@ class Polygon(CanvasHandlerBase):
         self.fill_colour = fill_colour
         self.width = width
         self.interactive = interactive
+        self.is_3d = is_3d
 
     def draw_to_canvas(self, gc, canvas):
         if self.points:
-            canvas.draw_polygon(self.points, self.fill, self.line_colour, self.fill_colour, self.width)
+            if self.is_3d:
+                points = [self._3d_to_2d(canvas.evt_renderer, p) for p in self.points]
+            else:
+                points = self.points
+            canvas.draw_polygon(points, self.fill, self.line_colour, self.fill_colour, self.width)
 
         if self.interactive:
             for handler in self.handlers:
                 handler.draw_to_canvas(gc, canvas)
 
     def append_point(self, point):
-        handler = CircleHandler(point, is_3d=False)
+        handler = CircleHandler(point, is_3d=self.is_3d)
         handler.on_move(self.on_move_point)
         self.handlers.append(handler)
         self.points.append(point)
@@ -730,3 +775,121 @@ class Polygon(CanvasHandlerBase):
             for handler in self.handlers:
                 if handler.is_over(x, y):
                     return handler
+
+
+
+class Ellipse(CanvasHandlerBase):
+    def __init__(self, center,
+                 point1, point2,
+                 fill=True,
+                 line_colour=(255, 255, 255, 255),
+                 fill_colour=(255, 255, 255, 128), width=2,
+                 interactive=True, is_3d=True):
+
+        self.center = center
+        self.point1 = point1
+        self.point2 = point2
+
+        self.bbox = (0, 0, 0, 0)
+
+        self.fill = fill
+        self.line_colour = line_colour
+        self.fill_colour = fill_colour
+        self.width = width
+        self.interactive = interactive
+        self.is_3d = is_3d
+
+        self.handler_1 = CircleHandler(self.point1, is_3d=is_3d)
+        self.handler_2 = CircleHandler(self.point2, is_3d=is_3d)
+
+        self.handler_1.on_move(self.on_move_p1)
+        self.handler_2.on_move(self.on_move_p2)
+
+        self._on_change_function = None
+
+    def draw_to_canvas(self, gc, canvas):
+        if self.is_3d:
+            cx, cy = self._3d_to_2d(canvas.evt_renderer, self.center)
+            p1x, p1y = self._3d_to_2d(canvas.evt_renderer, self.point1)
+            p2x, p2y = self._3d_to_2d(canvas.evt_renderer, self.point2)
+        else:
+            cx, cy = self.center
+            p1x, p1y = self.point1
+            p2x, p2y = self.point2
+
+        width = abs(p1x - cx) * 2.0
+        height = abs(p2y - cy) * 2.0
+
+        print "ELLIPSE WIDTH HEIGHT", width, height
+
+        self.bbox = canvas.draw_ellipse((cx, cy), width, height,
+                                        self.width,
+                                        self.line_colour,
+                                        self.fill_colour)
+
+        self.handler_1.draw_to_canvas(gc, canvas)
+        self.handler_2.draw_to_canvas(gc, canvas)
+
+    def set_point1(self, pos):
+        self.point1 = pos
+        self.handler_1.position = pos
+
+    def set_point2(self, pos):
+        self.point2 = pos
+        self.handler_2.position = pos
+
+    def on_change(self, evt_function):
+        self._on_change_function = WeakMethod(evt_function)
+
+    def on_move_p1(self, evt):
+        pos = evt.position
+        self.set_point1(pos)
+
+        if self._on_change_function and self._on_change_function():
+            self._on_change_function()()
+
+    def on_move_p2(self, evt):
+        pos = evt.position
+        self.set_point2(pos)
+
+        if self._on_change_function and self._on_change_function():
+            self._on_change_function()()
+
+    def is_over(self, x, y):
+        xi, yi, xf, yf = self.bbox
+
+        if self.handler_1.is_over(x, y):
+            return self.handler_1
+        elif self.handler_2.is_over(x, y):
+            return self.handler_2
+        elif xi <= x <= xf and yi <= y <= yf:
+            return self
+
+    def mouse_move(self, evt):
+        mx, my = evt.position
+        if self.is_3d:
+            x, y, z = evt.viewer.get_coordinate_cursor(mx, my)
+            new_pos = (x, y, z)
+        else:
+            new_pos = mx, my
+
+        diff = [i-j for i,j in zip(new_pos, self._last_position)]
+
+        self.center = tuple((i+j for i,j in zip(diff, self.center)))
+        self.set_point1(tuple((i+j for i,j in zip(diff, self.point1))))
+        self.set_point2(tuple((i+j for i,j in zip(diff, self.point2))))
+
+        self._last_position = new_pos
+
+        if self._on_change_function and self._on_change_function():
+            self._on_change_function()()
+
+        return True
+
+    def on_select(self, evt):
+        mx, my = evt.position
+        if self.is_3d:
+            x, y, z = evt.viewer.get_coordinate_cursor(mx, my)
+            self._last_position = (x, y, z)
+        else:
+            self._last_position = (mx, my)

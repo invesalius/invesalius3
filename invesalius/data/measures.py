@@ -15,7 +15,7 @@ import invesalius.project as prj
 import invesalius.session as ses
 import invesalius.utils as utils
 
-from invesalius.gui.widgets.canvas_renderer import TextBox, CircleHandler
+from invesalius.gui.widgets.canvas_renderer import TextBox, CircleHandler, Ellipse
 from scipy.misc import imsave
 
 TYPE = {const.LINEAR: _(u"Linear"),
@@ -938,6 +938,7 @@ class CircleDensityMeasure(object):
         self.colour = colour
         self.center = (0.0, 0.0, 0.0)
         self.point1 = (0.0, 0.0, 0.0)
+        self.point2 = (0.0, 0.0, 0.0)
 
         self.orientation = orientation
         self.slice_number = slice_number
@@ -947,6 +948,8 @@ class CircleDensityMeasure(object):
         self._mean = 0
         self._std = 0
 
+        self.ellipse = Ellipse(self.center, self.point1, self.point2)
+        self.ellipse.on_change(self.on_change_ellipse)
         self.text_box = None
 
         self._need_calc = True
@@ -954,10 +957,17 @@ class CircleDensityMeasure(object):
     def set_center(self, pos):
         self.center = pos
         self._need_calc = True
+        self.ellipse.center = self.center
 
     def set_point1(self, pos):
         self.point1 = pos
         self._need_calc = True
+        self.ellipse.set_point1(self.point1)
+
+    def set_point2(self, pos):
+        self.point2 = pos
+        self._need_calc = True
+        self.ellipse.set_point2(self.point2)
 
     def set_density_values(self, _min, _max, _mean, _std):
         self._min = _min
@@ -973,8 +983,8 @@ class CircleDensityMeasure(object):
         if self.text_box is None:
             self.text_box = TextBox(text, self.point1, MEASURE_TEXT_COLOUR, MEASURE_TEXTBOX_COLOUR)
 
-            self.handle_tl = CircleHandler(self.point1)
-            self.handle_tl.on_move(self._on_move)
+            #  self.handle_tl = CircleHandler(self.point1)
+            #  self.handle_tl.on_move(self._on_move)
         else:
             self.text_box.set_text(text)
 
@@ -985,8 +995,8 @@ class CircleDensityMeasure(object):
         return cx, cy
 
     def is_over(self, x, y):
-        if self.handle_tl.is_over(x, y):
-            return self.handle_tl
+        if self.ellipse.is_over(x, y):
+            return self.ellipse.is_over(x, y)
         elif self.text_box.is_over(x, y):
             return self.text_box.is_over(x, y)
         return None
@@ -1010,11 +1020,12 @@ class CircleDensityMeasure(object):
             self._need_calc = False
             self.calc_density(self.center, np.linalg.norm(np.array(self.center) - np.array(self.point1)))
 
-        canvas.draw_circle((cx, cy), radius, line_colour=self.colour)
+        #  canvas.draw_circle((cx, cy), radius, line_colour=self.colour)
+        self.ellipse.draw_to_canvas(gc, canvas)
 
         #  canvas.draw_text_box(text, (px, py), )
         self.text_box.draw_to_canvas(gc, canvas)
-        self.handle_tl.draw_to_canvas(gc, canvas)
+        #  self.handle_tl.draw_to_canvas(gc, canvas)
 
     def calc_density(self, center, radius):
         from invesalius.data.slice_ import Slice
@@ -1035,8 +1046,17 @@ class CircleDensityMeasure(object):
             sx, sy = spacing[1], spacing[2]
             cx, cy = center[1], center[2]
 
+        a = np.linalg.norm(np.array(self.point1) - np.array(self.center))
+        b = np.linalg.norm(np.array(self.point2) - np.array(self.center))
+
+        print 'ELLIPSE A B', a, b
+        print 'points', self.center
+        print 'points', self.point1
+        print 'points', self.point2
+
         mask_y, mask_x = np.ogrid[0:dy*sy:sy, 0:dx*sy:sx]
-        mask = ((mask_x - cx)**2 + (mask_y - cy)**2) <= (radius ** 2)
+        #  mask = ((mask_x - cx)**2 + (mask_y - cy)**2) <= (radius ** 2)
+        mask = (((mask_x-cx)**2 / a**2) + ((mask_y-cy)**2 / b**2)) <= 1.0
 
         test_img = np.zeros_like(img_slice)
         test_img[mask] = img_slice[mask]
@@ -1057,3 +1077,8 @@ class CircleDensityMeasure(object):
             _std = 0
 
         self.set_density_values(_min, _max, _mean, _std)
+
+    def on_change_ellipse(self):
+        self.center = self.ellipse.center
+        self.set_point1(self.ellipse.point1)
+        self.set_point2(self.ellipse.point2)

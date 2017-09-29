@@ -30,6 +30,8 @@ import vtk
 from vtk.wx.wxVTKRenderWindowInteractor import wxVTKRenderWindowInteractor
 from wx.lib.pubsub import pub as Publisher
 
+from scipy.misc import imsave
+
 import invesalius.constants as const
 import invesalius.data.bases as bases
 import invesalius.data.vtk_utils as vtku
@@ -107,7 +109,7 @@ class Viewer(wx.Panel):
         self.text.SetPosition(const.TEXT_POS_LEFT_UP)
         #  self.ren.AddActor(self.text.actor)
 
-        self.polygon = Polygon()
+        self.polygon = Polygon(is_3d=False)
 
         self.canvas = CanvasRendererCTX(self, self.ren, self.canvas_renderer, 'AXIAL')
         self.canvas.draw_list.append(self.text)
@@ -613,6 +615,9 @@ class Viewer(wx.Panel):
         pos = evt.position
         self.polygon.append_point(pos)
         self.canvas.Refresh()
+
+        arr = self.canvas.draw_element_to_array([self.polygon,])
+        imsave('/tmp/polygon.png', arr)
 
     def SetInteractorStyle(self, state):
         action = {
