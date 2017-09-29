@@ -1058,10 +1058,12 @@ class CircleDensityMeasure(object):
         #  mask = ((mask_x - cx)**2 + (mask_y - cy)**2) <= (radius ** 2)
         mask = (((mask_x-cx)**2 / a**2) + ((mask_y-cy)**2 / b**2)) <= 1.0
 
-        test_img = np.zeros_like(img_slice)
-        test_img[mask] = img_slice[mask]
-
-        imsave('/tmp/manolo.png', test_img[::-1,:])
+        try:
+            test_img = np.zeros_like(img_slice)
+            test_img[mask] = img_slice[mask]
+            imsave('/tmp/manolo.png', test_img[::-1,:])
+        except IndexError:
+                pass
 
         values = img_slice[mask]
 
@@ -1079,6 +1081,10 @@ class CircleDensityMeasure(object):
         self.set_density_values(_min, _max, _mean, _std)
 
     def on_change_ellipse(self):
+        old_center = self.center
         self.center = self.ellipse.center
         self.set_point1(self.ellipse.point1)
         self.set_point2(self.ellipse.point2)
+
+        diff = tuple((i-j for i,j in zip(self.center, old_center)))
+        self.text_box.position = tuple((i+j for i,j in zip(self.text_box.position, diff)))
