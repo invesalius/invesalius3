@@ -24,6 +24,7 @@ from time import sleep
 from random import uniform
 from wx.lib.pubsub import pub as Publisher
 
+
 def GetCoordinates(trck_init, trck_id, ref_mode):
 
     """
@@ -54,7 +55,7 @@ def ClaronCoord(trck_init, trck_id, ref_mode):
     scale = np.array([1.0, 1.0, -1.0])
     coord = None
     k = 0
-    # TODO: try to replace while and use some Claron internal computation
+    # TODO: try to replace 'while' and use some Claron internal computation
 
     if ref_mode:
         while k < 20:
@@ -105,11 +106,17 @@ def PolhemusCoord(trck, trck_id, ref_mode):
 
 def PolhemusWrapperCoord(trck, trck_id, ref_mode):
 
-    scale = 25.4 * np.array([1., 1.0, -1.0])
+    if trck_id == 2:
+        # Fastrak default coordinates are in millimeters
+        scale = 10.0 * np.array([1., 1.0, -1.0])
+    else:
+        # Patriot and Isotrak coordinates are in inches
+        scale = 25.4 * np.array([1., 1.0, -1.0])
+
     coord = None
+    trck.Run()
 
     if ref_mode:
-        trck.Run()
         probe = np.array([float(trck.PositionTooltipX1), float(trck.PositionTooltipY1),
                           float(trck.PositionTooltipZ1), float(trck.AngleX1), float(trck.AngleY1),
                           float(trck.AngleZ1)])
@@ -122,7 +129,6 @@ def PolhemusWrapperCoord(trck, trck_id, ref_mode):
             coord = (coord[0] * scale[0], coord[1] * scale[1], coord[2] * scale[2], coord[3], coord[4], coord[5])
 
     else:
-        trck.Run()
         coord = np.array([float(trck.PositionTooltipX1) * scale[0], float(trck.PositionTooltipY1) * scale[1],
                           float(trck.PositionTooltipZ1) * scale[2], float(trck.AngleX1), float(trck.AngleY1),
                           float(trck.AngleZ1)])
@@ -130,7 +136,8 @@ def PolhemusWrapperCoord(trck, trck_id, ref_mode):
     if trck.StylusButton:
         Publisher.sendMessage('PLH Stylus Button On')
 
-    return coord, probe, reference
+    # return coord, probe, reference
+    return coord
 
 
 def PolhemusUSBCoord(trck, trck_id, ref_mode):
@@ -264,10 +271,10 @@ def dynamic_reference(probe, reference):
 
 def str2float(data):
     """
-    Converts string detected wth Polhemus device to float array of coordinates. THis method applies
+    Converts string detected wth Polhemus device to float array of coordinates. This method applies
     a correction for the minus sign in string that raises error while splitting the string into coordinates.
     :param data: string of coordinates read with Polhemus
-    :return: six float coordinates x, y, z, alfa, beta and gama
+    :return: six float coordinates x, y, z, alpha, beta and gamma
     """
 
     count = 0

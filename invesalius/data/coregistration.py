@@ -58,7 +58,8 @@ class Coregistration(threading.Thread):
         trck_mode = self.trck_info[2]
 
         while self.nav_id:
-            trck_coord, probe, reference = dco.GetCoordinates(trck_init, trck_id, trck_mode)
+            # trck_coord, probe, reference = dco.GetCoordinates(trck_init, trck_id, trck_mode)
+            trck_coord = dco.GetCoordinates(trck_init, trck_id, trck_mode)
             trck_xyz = mat([[trck_coord[0]], [trck_coord[1]], [trck_coord[2]]])
 
             img = q1 + (m_inv*n)*(trck_xyz - q2)

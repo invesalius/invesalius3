@@ -300,7 +300,7 @@ class NeuronavigationPanel(wx.Panel):
                 self.numctrls_coord[m].append(
                     wx.lib.masked.numctrl.NumCtrl(parent=self, integerWidth=4, fractionWidth=1))
 
-        # Sizers to group all GUI objects
+        # Sizer to group all GUI objects
         choice_sizer = wx.FlexGridSizer(rows=1, cols=2, hgap=5, vgap=5)
         choice_sizer.AddMany([(choice_trck, wx.LEFT),
                               (choice_ref, wx.RIGHT)])
@@ -371,7 +371,7 @@ class NeuronavigationPanel(wx.Panel):
 
     def OnDisconnectTracker(self, pubsub_evt):
         if self.tracker_id:
-            dt.TrackerConnection(self.tracker_id, 'disconnect')
+            dt.TrackerConnection(self.tracker_id, self.trk_init[0], 'disconnect')
 
     def OnChoiceTracker(self, evt, ctrl):
         Publisher.sendMessage('Update status text in GUI', _("Configuring tracker ..."))
@@ -389,26 +389,34 @@ class NeuronavigationPanel(wx.Panel):
         # has been initialized before
         if trck and choice != 6:
             self.ResetTrackerFiducials()
-            self.trk_init = dt.TrackerConnection(self.tracker_id, 'disconnect')
+            Publisher.sendMessage('Update status text in GUI', _("Disconnecting tracker..."))
+            Publisher.sendMessage('Remove sensors ID')
+            self.trk_init = dt.TrackerConnection(self.tracker_id, trck, 'disconnect')
             self.tracker_id = choice
-            if not self.trk_init[0]:
-                self.trk_init = dt.TrackerConnection(self.tracker_id, 'connect')
+            if not self.trk_init[0] and choice:
+                Publisher.sendMessage('Update status text in GUI', _("Tracker disconnected successfully"))
+                self.trk_init = dt.TrackerConnection(self.tracker_id, None, 'connect')
                 if not self.trk_init[0]:
                     dlg.NavigationTrackerWarning(self.tracker_id, self.trk_init[1])
                     ctrl.SetSelection(0)
                     print "Tracker not connected!"
                 else:
+                    Publisher.sendMessage('Update status text in GUI', _("Ready"))
                     ctrl.SetSelection(self.tracker_id)
                     print "Tracker connected!"
         elif choice == 6:
             if trck:
-                self.trk_init = dt.TrackerConnection(self.tracker_id, 'disconnect')
+                Publisher.sendMessage('Update status text in GUI', _("Disconnecting tracker ..."))
+                Publisher.sendMessage('Remove sensors ID')
+                self.trk_init = dt.TrackerConnection(self.tracker_id, trck, 'disconnect')
                 if not self.trk_init[0]:
                     dlg.NavigationTrackerWarning(self.tracker_id, 'disconnect')
                     self.tracker_id = 0
                     ctrl.SetSelection(self.tracker_id)
+                    Publisher.sendMessage('Update status text in GUI', _("Tracker disconnected"))
                     print "Tracker disconnected!"
                 else:
+                    Publisher.sendMessage('Update status text in GUI', _("Tracker still connected"))
                     print "Tracker still connected!"
             else:
                 ctrl.SetSelection(self.tracker_id)
@@ -417,12 +425,14 @@ class NeuronavigationPanel(wx.Panel):
             # If trk_init is None try to connect. If doesn't succeed show dialog.
             if choice:
                 self.tracker_id = choice
-                self.trk_init = dt.TrackerConnection(self.tracker_id, 'connect')
+                self.trk_init = dt.TrackerConnection(self.tracker_id, None, 'connect')
                 if not self.trk_init[0]:
                     dlg.NavigationTrackerWarning(self.tracker_id, self.trk_init[1])
                     self.tracker_id = 0
                     ctrl.SetSelection(self.tracker_id)
-        Publisher.sendMessage('Update status text in GUI', _("Ready"))
+                else:
+                    Publisher.sendMessage('Update status text in GUI', _("Ready"))
+
         Publisher.sendMessage('Update tracker initializer', (self.tracker_id, self.trk_init, self.ref_mode_id))
 
     def OnChoiceRefMode(self, evt, ctrl):
@@ -471,7 +481,8 @@ class NeuronavigationPanel(wx.Panel):
         coord = None
 
         if self.trk_init and self.tracker_id:
-            coord, probe, reference = dco.GetCoordinates(self.trk_init, self.tracker_id, self.ref_mode_id)
+            # coord, probe, reference = dco.GetCoordinates(self.trk_init, self.tracker_id, self.ref_mode_id)
+            coord = dco.GetCoordinates(self.trk_init, self.tracker_id, self.ref_mode_id)
         else:
             dlg.NavigationTrackerWarning(0, 'choose')
 
@@ -492,6 +503,9 @@ class NeuronavigationPanel(wx.Panel):
             if np.isnan(self.fiducials).any():
                 dlg.InvalidFiducials()
                 btn_nav.SetValue(False)
+
+            elif not self.trk_init[0]:
+                dlg.NavigationTrackerWarning(0, 'choose')
 
             else:
                 tooltip = wx.ToolTip(_("Stop neuronavigation"))
@@ -545,6 +559,7 @@ class NeuronavigationPanel(wx.Panel):
 
     def ResetTrackerFiducials(self):
         for m in range(3, 6):
+            self.fiducials[m, :] = [np.nan, np.nan, np.nan]
             for n in range(0, 3):
                 self.numctrls_coord[m][n].SetValue(0.0)
 
@@ -565,8 +580,8 @@ class CoilPanel(wx.Panel):
 
         # Button for creating new coil
         BMP_ADD = wx.Bitmap(os.path.join(const.ICON_DIR, "object_add.png"), wx.BITMAP_TYPE_PNG)
-        button_new_coil = pbtn.PlateButton(self, BTN_NEW, "", BMP_ADD, style=\
-                                   pbtn.PB_STYLE_SQUARE | pbtn.PB_STYLE_DEFAULT)
+        button_new_coil = pbtn.PlateButton(self, BTN_NEW, "", BMP_ADD,
+                                           style=pbtn.PB_STYLE_SQUARE | pbtn.PB_STYLE_DEFAULT)
         button_new_coil.SetBackgroundColour(self.GetBackgroundColour())
         self.Bind(wx.EVT_BUTTON, self.OnLinkCreate, button_new_coil)
 
@@ -589,8 +604,8 @@ class CoilPanel(wx.Panel):
 
         # Button for import coil
         BMP_LOAD = wx.Bitmap(os.path.join(const.ICON_DIR, "file_import.png"), wx.BITMAP_TYPE_PNG)
-        button_import_coil = pbtn.PlateButton(self, BTN_IMPORT_LOCAL, "", BMP_LOAD, style=\
-                                   pbtn.PB_STYLE_SQUARE | pbtn.PB_STYLE_DEFAULT)
+        button_import_coil = pbtn.PlateButton(self, BTN_IMPORT_LOCAL, "", BMP_LOAD,
+                                              style=pbtn.PB_STYLE_SQUARE | pbtn.PB_STYLE_DEFAULT)
         button_import_coil.SetBackgroundColour(self.GetBackgroundColour())
         self.Bind(wx.EVT_BUTTON, self.OnLinkLoad, button_import_coil)
 
