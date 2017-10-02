@@ -149,10 +149,10 @@ class InnerFoldPanel(wx.Panel):
 
         # Check box for camera update in volume rendering during navigation
         tooltip = wx.ToolTip(_("Update camera in volume"))
-        checkcamera = wx.CheckBox(self, -1, _('Volume camera'))
-        checkcamera.SetToolTip(tooltip)
-        checkcamera.SetValue(True)
-        checkcamera.Bind(wx.EVT_CHECKBOX, partial(self.UpdateVolumeCamera, ctrl=checkcamera))
+        self.checkcamera = wx.CheckBox(self, -1, _('Volume camera'))
+        self.checkcamera.SetToolTip(tooltip)
+        self.checkcamera.SetValue(True)
+        self.checkcamera.Bind(wx.EVT_CHECKBOX, partial(self.UpdateVolumeCamera))
 
         # Check box for camera update in volume rendering during navigation
         tooltip = wx.ToolTip(_("Enable external trigger for creating markers"))
@@ -163,11 +163,11 @@ class InnerFoldPanel(wx.Panel):
         self.checktrigger = checktrigger
 
         if sys.platform != 'win32':
-            checkcamera.SetWindowVariant(wx.WINDOW_VARIANT_SMALL)
+            self.checkcamera.SetWindowVariant(wx.WINDOW_VARIANT_SMALL)
             checktrigger.SetWindowVariant(wx.WINDOW_VARIANT_SMALL)
 
         line_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        line_sizer.Add(checkcamera, 0, wx.ALIGN_LEFT | wx.RIGHT | wx.LEFT, 5)
+        line_sizer.Add(self.checkcamera, 0, wx.ALIGN_LEFT | wx.RIGHT | wx.LEFT, 5)
         line_sizer.Add(checktrigger, 1,wx.ALIGN_RIGHT | wx.RIGHT | wx.LEFT, 5)
         line_sizer.Fit(self)
 
@@ -183,6 +183,7 @@ class InnerFoldPanel(wx.Panel):
         
     def __bind_events(self):
         Publisher.subscribe(self.OnTrigger, 'Navigation Status')
+        Publisher.subscribe(self.UpdateVolumeCamera, 'nTMS mode')
 
     def OnTrigger(self, pubsub_evt):
         status = pubsub_evt.data
@@ -194,10 +195,11 @@ class InnerFoldPanel(wx.Panel):
     def UpdateExternalTrigger(self, evt, ctrl):
         Publisher.sendMessage('Update trigger state', ctrl.GetValue())
 
-    def UpdateVolumeCamera(self, evt, ctrl):
-        Publisher.sendMessage('Update volume camera state', ctrl.GetValue())
-
-
+    def UpdateVolumeCamera(self, evt):
+        if hasattr(evt, 'data'):
+            if evt.data is True:
+                self.checkcamera.SetValue(0)
+        Publisher.sendMessage('Update volume camera state', self.checkcamera.GetValue())
 
 
 class NeuronavigationPanel(wx.Panel):

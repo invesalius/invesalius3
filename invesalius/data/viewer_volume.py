@@ -551,7 +551,7 @@ class Viewer(wx.Panel):
             self.ren2 = vtk.vtkRenderer()
 
             self.interactor.GetRenderWindow().AddRenderer(self.ren2)
-            self.ren2.SetViewport(0.75, 0, 1,1)
+            self.ren2.SetViewport(0.75, 0, 1, 1)
             filename = os.path.join(const.ICON_DIR, "bobina1.stl")
 
             reader = vtk.vtkSTLReader()
