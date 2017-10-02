@@ -363,7 +363,7 @@ class VolumeToolPanel(wx.Panel):
         size=(32,32))
 
         button_target = self.button_target = pbtn.PlateButton(self, BUTTON_TARGET,"",
-        BMP_TARGET, style=pbtn.PB_STYLE_SQUARE,
+        BMP_TARGET, style=pbtn.PB_STYLE_SQUARE|pbtn.PB_STYLE_TOGGLE,
         size=(32,32))
 
         self.button_raycasting = button_raycasting
@@ -443,8 +443,12 @@ class VolumeToolPanel(wx.Panel):
         self.button_slice_plane.PopupMenu(self.slice_plane_menu)
 
     def OnButtonTarget(self, evt):
-        self.button_target.Enable(0)
-        Publisher.sendMessage('nTMS mode')
+        if not self.button_target.IsPressed():
+            self.button_target._pressed = True
+            Publisher.sendMessage('nTMS mode', self.button_target._pressed)
+        else:
+            self.button_target._pressed = False
+            Publisher.sendMessage('nTMS mode', self.button_target._pressed)
 
     def OnSavePreset(self, evt):
         d = wx.TextEntryDialog(self, _("Preset name"))
