@@ -680,6 +680,12 @@ class MarkersPanel(wx.Panel):
 
         if self.tgt_flag:
             self.lc.SetItemBackgroundColour(self.tgt_index, 'white')
+            self.lc.SetStringItem(self.tgt_index, 4, '')
+            # Add the new ID to exported list
+            if len(self.list_coord[self.tgt_index]) > 8:
+                self.list_coord[self.tgt_index][10] = str('')
+            else:
+                self.list_coord[self.tgt_index][7] = str('')
 
         self.tgt_index = self.lc.GetFocusedItem()
         self.lc.SetItemBackgroundColour(self.tgt_index, 'RED')
