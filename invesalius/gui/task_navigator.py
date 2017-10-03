@@ -664,12 +664,11 @@ class MarkersPanel(wx.Panel):
         Publisher.sendMessage('Stop Blink Marker')
 
     def OnMenuEditMarkerId(self, evt):
+        list_index = self.lc.GetFocusedItem()
         if evt == 'TARGET':
             id_label = evt
-            Publisher.sendMessage('Disable or enable coil tracker', True)
         else:
-            id_label = dlg.EnterMarkerID(self.lc.GetItemText(self.lc.GetFocusedItem(), 4))
-        list_index = self.lc.GetFocusedItem()
+            id_label = dlg.EnterMarkerID(self.lc.GetItemText(list_index, 4))
         self.lc.SetStringItem(list_index, 4, id_label)
         # Add the new ID to exported list
         if len(self.list_coord[list_index]) > 8:
@@ -683,6 +682,7 @@ class MarkersPanel(wx.Panel):
 
         if self.tgt_flag:
             self.lc.SetItemBackgroundColour(self.tgt_index, 'white')
+            Publisher.sendMessage('Set target transparency', [False, self.tgt_index])
             self.lc.SetStringItem(self.tgt_index, 4, '')
             # Add the new ID to exported list
             if len(self.list_coord[self.tgt_index]) > 8:
@@ -693,6 +693,7 @@ class MarkersPanel(wx.Panel):
         self.tgt_index = self.lc.GetFocusedItem()
         self.lc.SetItemBackgroundColour(self.tgt_index, 'RED')
         Publisher.sendMessage('Update target', self.list_coord[self.tgt_index])
+        Publisher.sendMessage('Set target transparency', [True, self.tgt_index])
         Publisher.sendMessage('Disable or enable coil tracker', True)
         self.OnMenuEditMarkerId('TARGET')
         self.tgt_flag = True

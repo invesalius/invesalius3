@@ -138,7 +138,7 @@ class Text(object):
 
     def SetCoilDistanceValue(self, value):
         if isinstance(value, int) or isinstance(value, float):
-            value = 'Distance: ' + str("{0:.2f}".format(value))
+            value = 'Distance: ' + str("{0:.2f}".format(value)) + ' [mm]'
             if sys.platform == 'win32':
                 value += ""
         

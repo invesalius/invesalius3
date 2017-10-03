@@ -38,8 +38,6 @@ import invesalius.data.vtk_utils as vtku
 import invesalius.project as prj
 import invesalius.style as st
 import invesalius.utils as utils
-import invesalius.data.measures as measures
-import invesalius.data.surface as surface
 
 if sys.platform == 'win32':
     try:
@@ -232,6 +230,8 @@ class Viewer(wx.Panel):
         Publisher.subscribe(self.OnUpdateTarget, 'Update target')
         Publisher.subscribe(self.OnRemoveTarget, 'Disable or enable coil tracker')
         Publisher.subscribe(self.UpdateCoordCoilTarget, 'Co-registered points')
+        Publisher.subscribe(self.OnTargetTransparency, 'Set target transparency')
+
 
     def SetStereoMode(self, pubsub_evt):
         mode = pubsub_evt.data
@@ -552,17 +552,26 @@ class Viewer(wx.Panel):
                 self.Refresh()
             self.index = False
 
+    def OnTargetTransparency(self, pubsub_evt):
+        status = pubsub_evt.data[0]
+        index = pubsub_evt.data[1]
+        if status:
+            self.staticballs[index].GetProperty().SetOpacity(0.4)
+        else:
+            self.staticballs[index].GetProperty().SetOpacity(1)
+
     def OnCoilTracker(self, pubsub_evt):
         self.flag = pubsub_evt.data
         if self.target and self.flag:
             self.CreateCoilAim()
-            self.CreateTxtDistance()
             # Create a line
             self.ren.SetViewport(0, 0, 0.75, 1)
             self.ren2 = vtk.vtkRenderer()
 
             self.interactor.GetRenderWindow().AddRenderer(self.ren2)
             self.ren2.SetViewport(0.75, 0, 1, 1)
+            self.CreateTxtDistance()
+
             filename = os.path.join(const.ICON_DIR, "bobina1.stl")
 
             reader = vtk.vtkSTLReader()
@@ -614,6 +623,24 @@ class Viewer(wx.Panel):
             self.arrowactorX2.SetPosition(0, -300, 0)
             self.arrowactorX2.RotateY(90)
             self.arrowactorX2.RotateZ(180)
+
+            self.ren.ResetCamera()
+            cam_focus = self.target[0:3]
+            cam = self.ren.GetActiveCamera()
+            initial_focus = np.array(cam.GetFocalPoint())
+            cam_pos0 = np.array(cam.GetPosition())
+            cam_focus0 = np.array(cam.GetFocalPoint())
+            v0 = cam_pos0 - cam_focus0
+            v0n = np.sqrt(inner1d(v0, v0))
+
+            v1 = (cam_focus - initial_focus)
+            v1n = np.sqrt(inner1d(v1, v1))
+            if not v1n:
+                v1n = 1.0
+            cam_pos = (v1 / v1n) * v0n + cam_focus
+            cam.SetFocalPoint(cam_focus)
+            cam.SetPosition(cam_pos)
+            self.ren.GetActiveCamera().Zoom(4)
 
             self.ren2.AddActor(self.coilactor)
             self.ren2.AddActor(self.arrowactorZ1)
@@ -767,10 +794,10 @@ class Viewer(wx.Panel):
     def CreateTxtDistance(self):
         txt = vtku.Text()
         txt.SetSize(const.TEXT_SIZE_LARGE)
-        txt.SetPosition(const.TEXT_POS_LEFT_DOWN)
+        txt.SetPosition((0.76, 0.97))
         txt.ShadowOff()
         self.txt = txt
-        self.ren.AddActor(txt.actor)
+        self.ren2.AddActor(txt.actor)
 
     def DisableCoilTracker(self):
         try:
