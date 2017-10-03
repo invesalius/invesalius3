@@ -365,6 +365,7 @@ class VolumeToolPanel(wx.Panel):
         button_target = self.button_target = pbtn.PlateButton(self, BUTTON_TARGET,"",
         BMP_TARGET, style=pbtn.PB_STYLE_SQUARE|pbtn.PB_STYLE_TOGGLE,
         size=(32,32))
+        self.button_target.Enable(0)
 
         self.button_raycasting = button_raycasting
         self.button_stereo = button_stereo
@@ -416,6 +417,7 @@ class VolumeToolPanel(wx.Panel):
         Publisher.subscribe(self.DisablePreset, 'Close project data')
         Publisher.subscribe(self.Uncheck, 'Uncheck image plane menu')
         Publisher.subscribe(self.DisableVolumeCutMenu, 'Disable volume cut menu')
+        Publisher.subscribe(self.DisableEnableCoilTracker, 'Disable or enable coil tracker')
         
     def DisablePreset(self, pubsub_evt):
         self.off_item.Check(1)
@@ -441,6 +443,14 @@ class VolumeToolPanel(wx.Panel):
 
     def OnButtonSlicePlane(self, evt):
         self.button_slice_plane.PopupMenu(self.slice_plane_menu)
+
+    def DisableEnableCoilTracker(self, pubsub_evt):
+        status = pubsub_evt.data
+        if status:
+            self.button_target.Enable(1)
+        else:
+            self.button_target._pressed = False
+            self.button_target.Enable(0)
 
     def OnButtonTarget(self, evt):
         if not self.button_target.IsPressed():

@@ -666,6 +666,7 @@ class MarkersPanel(wx.Panel):
     def OnMenuEditMarkerId(self, evt):
         if evt == 'TARGET':
             id_label = evt
+            Publisher.sendMessage('Disable or enable coil tracker', True)
         else:
             id_label = dlg.EnterMarkerID(self.lc.GetItemText(self.lc.GetFocusedItem(), 4))
         list_index = self.lc.GetFocusedItem()
@@ -691,7 +692,8 @@ class MarkersPanel(wx.Panel):
 
         self.tgt_index = self.lc.GetFocusedItem()
         self.lc.SetItemBackgroundColour(self.tgt_index, 'RED')
-        Publisher.sendMessage('Target set', self.tgt_index)
+        Publisher.sendMessage('Update target', self.list_coord[self.tgt_index])
+        Publisher.sendMessage('Disable or enable coil tracker', True)
         self.OnMenuEditMarkerId('TARGET')
         self.tgt_flag = True
         dlg.NewTarget()
@@ -707,7 +709,7 @@ class MarkersPanel(wx.Panel):
 
             if self.tgt_flag:
                 self.tgt_flag = self.tgt_index = None
-                Publisher.sendMessage('Target removed', self.tgt_index)
+                Publisher.sendMessage('Disable or enable coil tracker', False)
                 dlg.DeleteTarget()
 
     def OnDeleteSingleMarker(self, evt):
@@ -732,7 +734,7 @@ class MarkersPanel(wx.Panel):
 
         if self.tgt_flag and self.tgt_index == index[0]:
             self.tgt_flag = self.tgt_index = None
-            Publisher.sendMessage('Target removed', self.tgt_index)
+            Publisher.sendMessage('Disable or enable coil tracker', False)
             dlg.DeleteTarget()
 
         if index:

@@ -135,6 +135,12 @@ class Text(object):
         # With some encoding in some dicom fields (like name) raises a
         # UnicodeEncodeError because they have non-ascii characters. To avoid
         # that we encode in utf-8.
+
+    def SetCoilDistanceValue(self, value):
+        if isinstance(value, int) or isinstance(value, float):
+            value = 'Distance: ' + str("{0:.2f}".format(value))
+            if sys.platform == 'win32':
+                value += ""
         
 	if sys.platform == 'win32':
             self.mapper.SetInput(value.encode("utf-8"))  

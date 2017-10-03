@@ -806,7 +806,7 @@ def DeleteAllMarkers():
     return result
 
 def DeleteTarget():
-    msg = _("Deleted target")
+    msg = _("Target deleted")
     if sys.platform == 'darwin':
         dlg = wx.MessageDialog(None, "", msg,
                                 wx.ICON_INFORMATION | wx.OK)
