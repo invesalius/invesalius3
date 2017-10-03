@@ -436,7 +436,7 @@ class NeuronavigationPanel(wx.Panel):
         Publisher.sendMessage('Update tracker initializer', (self.tracker_id, self.trk_init, self.ref_mode_id))
 
     def OnChoiceRefMode(self, evt, ctrl):
-        # When ref mode is changed the tracker coords are set to zero
+        # When ref mode is changed the tracker coordinatess are set to zero
         self.ref_mode_id = evt.GetSelection()
         self.ResetTrackerFiducials()
         # Some trackers do not accept restarting within this time window
@@ -449,14 +449,14 @@ class NeuronavigationPanel(wx.Panel):
         # FIXME: Cross does not update in last clicked slice, only on the other two
         btn_id = const.BTNS_TRK[evt.GetId()].keys()[0]
 
-        wx, wy, wz = self.numctrls_coord[btn_id][0].GetValue(), \
+        ux, uy, uz = self.numctrls_coord[btn_id][0].GetValue(), \
                      self.numctrls_coord[btn_id][1].GetValue(), \
                      self.numctrls_coord[btn_id][2].GetValue()
 
-        Publisher.sendMessage('Set ball reference position', (wx, wy, wz))
-        Publisher.sendMessage('Set camera in volume', (wx, wy, wz))
-        Publisher.sendMessage('Co-registered points', (wx, wy, wz))
-        Publisher.sendMessage('Update cross position', (wx, wy, wz))
+        Publisher.sendMessage('Set ball reference position', (ux, uy, uz))
+        Publisher.sendMessage('Set camera in volume', (ux, uy, uz))
+        Publisher.sendMessage('Co-registered points', (ux, uy, uz))
+        Publisher.sendMessage('Update cross position', (ux, uy, uz))
 
     def OnImageFiducials(self, evt):
         btn_id = const.BTNS_IMG_MKS[evt.GetId()].keys()[0]
@@ -481,8 +481,12 @@ class NeuronavigationPanel(wx.Panel):
         coord = None
 
         if self.trk_init and self.tracker_id:
-            # coord, probe, reference = dco.GetCoordinates(self.trk_init, self.tracker_id, self.ref_mode_id)
-            coord = dco.GetCoordinates(self.trk_init, self.tracker_id, self.ref_mode_id)
+            coord_raw = dco.GetCoordinates(self.trk_init, self.tracker_id, self.ref_mode_id)
+            if self.ref_mode_id:
+                coord = dco.dynamic_reference(coord_raw[0, ::], coord_raw[1, ::])
+            else:
+                coord = coord_raw[0, ::]
+
         else:
             dlg.NavigationTrackerWarning(0, 'choose')
 
@@ -685,9 +689,9 @@ class CoilPanel(wx.Panel):
         # bases = self.Minv, self.N, self.q1, self.q2
         # tracker_mode = self.trk_init, self.tracker_id, self.ref_mode_id
         # nav_prop = bases, tracker_mode, self.tracker_id
-        bases = None
-        tracker_mode = None
-        nav_prop = bases, tracker_mode, None
+        # bases = None
+        # tracker_mode = None
+        # nav_prop = bases, tracker_mode, None
         dialog = dlg.CoilCalibrationDialog(self.nav_prop)
         try:
             if dialog.ShowModal() == wx.ID_OK:
@@ -698,7 +702,7 @@ class CoilPanel(wx.Panel):
         except(wx._core.PyAssertionError):  # TODO FIX: win64
             ok = 1
         print "coil_orient: ", coil_orient
-        Publisher().sendMessage('Change Init Coil Angle', coil_orient)
+        # Publisher().sendMessage('Change Init Coil Angle', coil_orient)
 
     def OnLinkLoad(self, event=None):
         filepath = dlg.ShowLoadCoilDialog()

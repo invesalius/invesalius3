@@ -756,7 +756,7 @@ class Viewer(wx.Panel):
     def SetVolumeCamera(self, pubsub_evt):
         if self.camera_state:
             #TODO: exclude dependency on initial focus
-            cam_focus = np.array(bases.flip_x(pubsub_evt.data))
+            cam_focus = np.array(bases.flip_x(pubsub_evt.data[:3]))
             cam = self.ren.GetActiveCamera()
 
             if self.initial_focus is None:

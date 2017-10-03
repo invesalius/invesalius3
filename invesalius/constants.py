@@ -723,9 +723,9 @@ BTNS_COIL = {COIL1: {0: _('Left')},
              COILC: {3: _('Center')}}
 
 TIPS_COIL = [_("Select left coil wing"),
-            _("Select right coil wing"),
-            _("Select anterior coil point"),
-            _("Select coil center")]
+             _("Select right coil wing"),
+             _("Select anterior coil point"),
+             _("Select coil center")]
 
 CAL_DIR = os.path.abspath(os.path.join(FILE_PATH, '..', 'navigation', 'mtc_files', 'CalibrationFiles'))
 MAR_DIR = os.path.abspath(os.path.join(FILE_PATH, '..', 'navigation', 'mtc_files', 'Markers'))
