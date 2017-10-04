@@ -2981,7 +2981,8 @@ class CoilCalibrationDialog(wx.Dialog):
 
         self.tracker_id = nav_prop[0]
         self.trk_init = nav_prop[1]
-        self.coil_ref_id = nav_prop[2]
+        # self.coil_ref_id = nav_prop[2]
+        self.coil_ref_id = 0
 
         self.m = None
         self.q1 = None
@@ -3001,7 +3002,7 @@ class CoilCalibrationDialog(wx.Dialog):
                    style=wx.DEFAULT_DIALOG_STYLE | wx.FRAME_FLOAT_ON_PARENT | wx.STAY_ON_TOP)
         self.PostCreate(pre)
 
-        self.CenterOnScreen()
+        # self.CenterOnScreen()
 
         self._init_gui()
         self.__bind_events()

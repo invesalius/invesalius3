@@ -640,7 +640,7 @@ class Viewer(wx.Panel):
 
         x, y, z = bases.flip_x(coord)
 
-        print "a, b, g: ", a, b, g
+        # print "a, b, g: ", a, b, g
 
         Mrot = np.mat([[cos(a) * cos(b), sin(b) * sin(g) * cos(a) - cos(g) * sin(a),
                         cos(a) * sin(b) * cos(g) + sin(a) * sin(g)],
@@ -657,13 +657,17 @@ class Viewer(wx.Panel):
 
         bot = np.array([0.0, 0.0, 0.0])
         rig = np.array([[x], [y], [z], [1]])
+        RotI = np.identity(3)
         newMrot = minv * Mrot * m
         newMrot = np.vstack([newMrot, bot])
         newMrot = np.hstack([newMrot, rig])
+        RotI_4 = np.vstack([RotI, bot])
+        RotI_4 = np.hstack([RotI_4, rig])
         mat4x4 = self.array_to_vtkmatrix4x4(newMrot)
+        axesmat4x4 = self.array_to_vtkmatrix4x4(RotI_4)
         self.coil_actor.SetUserMatrix(mat4x4)
-        self.interactor.Render()
-        # self.Refresh()
+        self.axes.SetUserMatrix(axesmat4x4)
+        self.Refresh()
 
     def array_to_vtkmatrix4x4(self, mrot4x4):
 

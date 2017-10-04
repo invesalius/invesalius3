@@ -126,7 +126,7 @@ class InnerFoldPanel(wx.Panel):
                                           (10, 350), 0, fpb.FPB_SINGLE_FOLD)
         else:
             fold_panel = fpb.FoldPanelBar(self, -1, wx.DefaultPosition,
-                                          (10, 293), 0, fpb.FPB_SINGLE_FOLD)
+                                          (10, 320), 0, fpb.FPB_SINGLE_FOLD)
         # Fold panel style
         style = fpb.CaptionBarStyle()
         style.SetCaptionStyle(fpb.CAPTIONBAR_GRADIENT_V)
@@ -161,18 +161,26 @@ class InnerFoldPanel(wx.Panel):
 
         # Check box for camera update in volume rendering during navigation
         tooltip = wx.ToolTip(_("Update camera in volume"))
-        checkcamera = wx.CheckBox(self, -1, _('Volume camera'))
+        checkcamera = wx.CheckBox(self, -1, _('Vol. camera'))
         checkcamera.SetToolTip(tooltip)
         checkcamera.SetValue(True)
         checkcamera.Bind(wx.EVT_CHECKBOX, partial(self.UpdateVolumeCamera, ctrl=checkcamera))
 
         # Check box for camera update in volume rendering during navigation
         tooltip = wx.ToolTip(_("Enable external trigger for creating markers"))
-        checktrigger = wx.CheckBox(self, -1, _('External trigger'))
+        checktrigger = wx.CheckBox(self, -1, _('Ext. trigger'))
         checktrigger.SetToolTip(tooltip)
         checktrigger.SetValue(False)
         checktrigger.Bind(wx.EVT_CHECKBOX, partial(self.UpdateExternalTrigger, ctrl=checktrigger))
         self.checktrigger = checktrigger
+
+        # Check box for coil position and orientation update in volume rendering during navigation
+        tooltip = wx.ToolTip(_("Show and track TMS coil"))
+        checkcoil = wx.CheckBox(self, -1, _('Show coil'))
+        checkcoil.SetToolTip(tooltip)
+        checkcoil.SetValue(False)
+        checkcoil.Bind(wx.EVT_CHECKBOX, partial(self.UpdateShowCoil, ctrl=checkcoil))
+        self.checkcoil = checkcoil
 
         if sys.platform != 'win32':
             checkcamera.SetWindowVariant(wx.WINDOW_VARIANT_SMALL)
@@ -180,7 +188,8 @@ class InnerFoldPanel(wx.Panel):
 
         line_sizer = wx.BoxSizer(wx.HORIZONTAL)
         line_sizer.Add(checkcamera, 0, wx.ALIGN_LEFT | wx.RIGHT | wx.LEFT, 5)
-        line_sizer.Add(checktrigger, 1,wx.ALIGN_RIGHT | wx.RIGHT | wx.LEFT, 5)
+        line_sizer.Add(checktrigger, 0, wx.ALIGN_CENTER)
+        line_sizer.Add(checkcoil, 0, wx.ALIGN_RIGHT | wx.RIGHT | wx.LEFT, 5)
         line_sizer.Fit(self)
 
         # Panel sizer to expand fold panel
@@ -208,6 +217,9 @@ class InnerFoldPanel(wx.Panel):
 
     def UpdateVolumeCamera(self, evt, ctrl):
         Publisher.sendMessage('Update volume camera state', ctrl.GetValue())
+
+    def UpdateShowCoil(self, evt, ctrl):
+        Publisher.sendMessage('Update coil state', ctrl.GetValue())
 
 
 class NeuronavigationPanel(wx.Panel):
