@@ -554,6 +554,7 @@ class MarkersPanel(wx.Panel):
         self.list_coord = []
         self.marker_ind = 0
         self.tgt_flag = self.tgt_index = None
+        self.nav_status = False
 
         self.marker_colour = (0.0, 0.0, 1.)
         self.marker_size = 4
@@ -615,7 +616,7 @@ class MarkersPanel(wx.Panel):
         self.lc.SetColumnWidth(2, 50)
         self.lc.SetColumnWidth(3, 50)
         self.lc.SetColumnWidth(4, 50)
-        self.lc.Bind(wx.EVT_LIST_ITEM_RIGHT_CLICK, self.OnListEditMarkerId)
+        self.lc.Bind(wx.EVT_LIST_ITEM_RIGHT_CLICK, self.OnMouseRightDown)
         self.lc.Bind(wx.EVT_LIST_ITEM_ACTIVATED, self.OnItemBlink)
         self.lc.Bind(wx.EVT_LIST_ITEM_DESELECTED, self.OnStopItemBlink)
 
@@ -647,13 +648,20 @@ class MarkersPanel(wx.Panel):
         if pubsub_evt.data is False:
             sleep(0.5)
             self.current_angle = 0, 0, 0
+            self.nav_status = False
+        else:
+            self.nav_status = True
 
-    def OnListEditMarkerId(self, evt):
+    def OnMouseRightDown(self, evt):
+        self.OnListEditMarkerId(self.nav_status)
+
+    def OnListEditMarkerId(self, status):
         menu_id = wx.Menu()
-        edit_id = menu_id.Append(-1, _('Edit ID'))
+        edit_id = menu_id.Append(0, _('Edit ID'))
         menu_id.Bind(wx.EVT_MENU, self.OnMenuEditMarkerId, edit_id)
-        target = menu_id.Append(-1, _('Set as target'))
-        menu_id.Bind(wx.EVT_MENU, self.OnMenuSetTarget, target)
+        target_menu = menu_id.Append(1, _('Set as target'))
+        menu_id.Bind(wx.EVT_MENU, self.OnMenuSetTarget, target_menu)
+        target_menu.Enable(status)
         self.PopupMenu(menu_id)
         menu_id.Destroy()
 
@@ -669,6 +677,9 @@ class MarkersPanel(wx.Panel):
             id_label = evt
         else:
             id_label = dlg.EnterMarkerID(self.lc.GetItemText(list_index, 4))
+            if id_label == 'TARGET':
+                id_label = ''
+                dlg.InvalidTargetID()
         self.lc.SetStringItem(list_index, 4, id_label)
         # Add the new ID to exported list
         if len(self.list_coord[list_index]) > 8:
