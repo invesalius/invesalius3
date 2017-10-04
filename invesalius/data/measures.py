@@ -948,7 +948,8 @@ class CircleDensityMeasure(object):
         self._mean = 0
         self._std = 0
 
-        self.ellipse = Ellipse(self.center, self.point1, self.point2)
+        self.ellipse = Ellipse(self.center, self.point1, self.point2, fill=False,
+                               line_colour=self.colour)
         self.ellipse.on_change(self.on_change_ellipse)
         self.text_box = None
 
@@ -1039,15 +1040,35 @@ class CircleDensityMeasure(object):
         if orientation == 'AXIAL':
             sx, sy = spacing[0], spacing[1]
             cx, cy = center[0], center[1]
+
+            a = abs(self.point1[0] - self.center[0])
+            b = abs(self.point2[1] - self.center[1])
+
+            n = slc.buffer_slices["AXIAL"].index + 1
+            m = slc.current_mask.matrix[n, 1:, 1:]
+
         elif orientation == 'CORONAL':
             sx, sy = spacing[0], spacing[2]
             cx, cy = center[0], center[2]
+
+            a = abs(self.point1[0] - self.center[0])
+            b = abs(self.point2[2] - self.center[2])
+
+            n = slc.buffer_slices["CORONAL"].index + 1
+            m = slc.current_mask.matrix[1:, n, 1:]
+
         elif orientation == 'SAGITAL':
             sx, sy = spacing[1], spacing[2]
             cx, cy = center[1], center[2]
 
-        a = np.linalg.norm(np.array(self.point1) - np.array(self.center))
-        b = np.linalg.norm(np.array(self.point2) - np.array(self.center))
+            a = abs(self.point1[1] - self.center[1])
+            b = abs(self.point2[2] - self.center[2])
+
+            n = slc.buffer_slices["SAGITAL"].index + 1
+            m = slc.current_mask.matrix[1:, 1:, n]
+
+        #  a = np.linalg.norm(np.array(self.point1) - np.array(self.center))
+        #  b = np.linalg.norm(np.array(self.point2) - np.array(self.center))
 
         print 'ELLIPSE A B', a, b
         print 'points', self.center
@@ -1058,12 +1079,17 @@ class CircleDensityMeasure(object):
         #  mask = ((mask_x - cx)**2 + (mask_y - cy)**2) <= (radius ** 2)
         mask = (((mask_x-cx)**2 / a**2) + ((mask_y-cy)**2 / b**2)) <= 1.0
 
-        try:
-            test_img = np.zeros_like(img_slice)
-            test_img[mask] = img_slice[mask]
-            imsave('/tmp/manolo.png', test_img[::-1,:])
-        except IndexError:
-                pass
+        #  try:
+            #  test_img = np.zeros_like(img_slice)
+            #  test_img[mask] = img_slice[mask]
+            #  imsave('/tmp/manolo.png', test_img[::-1,:])
+        m[:] = 0
+        m[mask] = 254
+        slc.buffer_slices[self.orientation].discard_vtk_mask()
+        slc.buffer_slices[self.orientation].discard_mask()
+        Publisher.sendMessage('Reload actual slice')
+        #  except IndexError:
+                #  pass
 
         values = img_slice[mask]
 

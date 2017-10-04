@@ -130,6 +130,17 @@ class CanvasRendererCTX:
         self.canvas_renderer.RemoveActor(self.actor)
         self.evt_renderer.RemoveObservers("StartEvent")
 
+    def get_over_mouse_obj(self, x, y):
+        for i in self.draw_list:
+            try:
+                obj = i.is_over(x, y)
+                self._over_obj = obj
+                if obj:
+                    redraw = True
+                    break
+            except AttributeError:
+                pass
+
     def Refresh(self):
         print 'Refresh'
         self.modified = True
@@ -145,15 +156,7 @@ class CanvasRendererCTX:
             evt_obj = CanvasEvent((x, y), self.viewer, self.evt_renderer)
             self._drag_obj.mouse_move(evt_obj)
         else:
-            for i in self.draw_list:
-                try:
-                    obj = i.is_over(x, y)
-                    self._over_obj = obj
-                    if obj:
-                        redraw = True
-                        break
-                except AttributeError:
-                    pass
+            self.get_over_mouse_obj(x, y)
 
         if redraw:
             #  Publisher.sendMessage('Redraw canvas %s' % self.orientation)
@@ -162,6 +165,7 @@ class CanvasRendererCTX:
         evt.Skip()
 
     def OnLeftButtonPress(self, evt):
+        print 'WX LEFT BUTTON'
         x, y = evt.GetPosition()
         y = self.viewer.interactor.GetSize()[1] - y
         evt_obj = CanvasEvent((x, y), self.viewer, self.evt_renderer)
@@ -170,14 +174,18 @@ class CanvasRendererCTX:
             if hasattr(self._over_obj, 'on_select'):
                 self._over_obj.on_select(evt_obj)
         else:
-            for cb in self._callback_events['LeftButtonPressEvent']:
-                if cb() is not None:
-                    cb()(evt_obj)
-                    break
+            print 'ELSE'
+            self.get_over_mouse_obj(x, y)
+            if not self._over_obj:
+                for cb in self._callback_events['LeftButtonPressEvent']:
+                    if cb() is not None:
+                        print 'CALLING LEFT BUTTON CALLBACK'
+                        cb()(evt_obj)
+                        break
         evt.Skip()
 
     def OnLeftButtonRelease(self, evt):
-        #  self._over_obj = None
+        self._over_obj = None
         self._drag_obj = None
         evt.Skip()
 
@@ -794,13 +802,16 @@ class Ellipse(CanvasHandlerBase):
 
         self.fill = fill
         self.line_colour = line_colour
-        self.fill_colour = fill_colour
+        if self.fill:
+            self.fill_colour = fill_colour
+        else:
+            self.fill_colour = (0, 0, 0, 0)
         self.width = width
         self.interactive = interactive
         self.is_3d = is_3d
 
-        self.handler_1 = CircleHandler(self.point1, is_3d=is_3d)
-        self.handler_2 = CircleHandler(self.point2, is_3d=is_3d)
+        self.handler_1 = CircleHandler(self.point1, is_3d=is_3d, fill_colour=(255, 255, 255, 255))
+        self.handler_2 = CircleHandler(self.point2, is_3d=is_3d, fill_colour=(255, 255, 255, 255))
 
         self.handler_1.on_move(self.on_move_p1)
         self.handler_2.on_move(self.on_move_p2)

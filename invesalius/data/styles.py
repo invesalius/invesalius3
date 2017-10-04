@@ -578,6 +578,7 @@ class DensityMeasureStyle(DefaultInteractorStyle):
 
     def OnInsertPoint(self, evt):
         mouse_x, mouse_y = evt.position
+        print 'OnInsertPoint', evt.position
         pos = self.viewer.get_coordinate_cursor(mouse_x, mouse_y, self.picker)
         pp1 = self.viewer.get_coordinate_cursor(mouse_x+50, mouse_y, self.picker)
         pp2 = self.viewer.get_coordinate_cursor(mouse_x, mouse_y+50, self.picker)
