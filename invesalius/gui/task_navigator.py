@@ -227,6 +227,7 @@ class NeuronavigationPanel(wx.Panel):
         self.trk_init = None
         self.trigger = None
         self.trigger_state = False
+        self.coil_registration = None
 
         self.tracker_id = const.DEFAULT_TRACKER
         self.ref_mode_id = const.DEFAULT_REF_MODE
@@ -340,6 +341,7 @@ class NeuronavigationPanel(wx.Panel):
         Publisher.subscribe(self.UpdateTriggerState, 'Update trigger state')
         Publisher.subscribe(self.UpdateImageCoordinates, 'Set ball reference position')
         Publisher.subscribe(self.OnDisconnectTracker, 'Disconnect tracker')
+        Publisher.subscribe(self.UpdateCoilRegistration, 'Update coil registration')
 
     def LoadImageFiducials(self, pubsub_evt):
         marker_id = pubsub_evt.data[0]
@@ -366,7 +368,10 @@ class NeuronavigationPanel(wx.Panel):
                 for n in [0, 1, 2]:
                     self.numctrls_coord[m][n].SetValue(self.current_coord[n])
 
-    def UpdateTriggerState (self, pubsub_evt):
+    def UpdateCoilRegistration(self, pubsub_evt):
+        self.coil_registration = pubsub_evt.data
+
+    def UpdateTriggerState(self, pubsub_evt):
         self.trigger_state = pubsub_evt.data
 
     def OnDisconnectTracker(self, pubsub_evt):
@@ -502,6 +507,11 @@ class NeuronavigationPanel(wx.Panel):
         choice_ref = btn[2]
         txtctrl_fre = btn[3]
 
+        coil_state = self.coil_registration[0]
+        coil_fiducials = self.coil_registration[1]
+        # coil_orients = self.coil_registration[2]
+        coil_mode = self.coil_registration
+
         nav_id = btn_nav.GetValue()
         if nav_id:
             if np.isnan(self.fiducials).any():
@@ -523,6 +533,7 @@ class NeuronavigationPanel(wx.Panel):
 
                 m, q1, minv = db.base_creation(self.fiducials[0:3, :])
                 n, q2, ninv = db.base_creation(self.fiducials[3::, :])
+                bases_coreg = (minv, n, q1, q2)
 
                 tracker_mode = self.trk_init, self.tracker_id, self.ref_mode_id
                 # FIXME: FRE is taking long to calculate so it updates on GUI delayed to navigation - I think its fixed
@@ -542,7 +553,28 @@ class NeuronavigationPanel(wx.Panel):
                 Publisher.sendMessage("Toggle Cross", const.SLICE_STATE_CROSS)
                 Publisher.sendMessage("Hide current mask")
 
-                self.correg = dcr.Coregistration((minv, n, q1, q2), nav_id, tracker_mode)
+                if self.ref_mode_id:
+                    # if coil_state:
+                    coil_img1 = q1 + (minv * n) * (np.asmatrix(coil_fiducials[0, :]).reshape([3, 1]) - q2)
+                    coil_img2 = q1 + (minv * n) * (np.asmatrix(coil_fiducials[1, :]).reshape([3, 1]) - q2)
+                    coil_img3 = q1 + (minv * n) * (np.asmatrix(coil_fiducials[2, :]).reshape([3, 1]) - q2)
+                    coil_img = np.vstack([np.asarray(coil_img1).reshape([1, 3]),
+                                          np.asarray(coil_img2).reshape([1, 3]),
+                                          np.asarray(coil_img3).reshape([1, 3])])
+                    # mcoil, qcoil, minvcoil = db.base_creation(coil_img)
+                    coil_base = db.base_creation(coil_img)
+                    coil_center = np.asmatrix(coil_fiducials[3, :]).reshape([3, 1])
+                    coil_sensor = np.asmatrix(coil_fiducials[4, :]).reshape([3, 1])
+                    coil_mode = (coil_center, coil_sensor, coil_base)
+                    self.correg = dcr.CoregistrationCoilStatic(bases_coreg, nav_id, tracker_mode, coil_mode)
+                    # self.correg = dcr.CoregistrationCoilDynamic(bases_coreg, nav_id, tracker_mode, coil_mode)
+                    # else:
+                    #     self.correg = dcr.CoregistrationDynamic(bases_coreg, nav_id, tracker_mode)
+                else:
+                    if coil_state:
+                        self.correg = dcr.CoregistrationCoilStatic(bases_coreg, nav_id, tracker_mode, coil_mode)
+                    else:
+                        self.correg = dcr.CoregistrationStatic(bases_coreg, nav_id, tracker_mode)
 
         else:
             tooltip = wx.ToolTip(_("Start neuronavigation"))
@@ -576,6 +608,9 @@ class CoilPanel(wx.Panel):
 
         self.coil_list = const.COIL
         self.coil_id = const.DEFAULT_COIL
+        self.coil_fiducials = None
+        self.coil_orients = None
+        self.coil_state = False
 
         self.nav_prop = None
 
@@ -641,7 +676,7 @@ class CoilPanel(wx.Panel):
         tooltip = wx.ToolTip(_("Activate coil tracking"))
         check_coil = wx.CheckBox(self, -1, _('Track coil'))
         check_coil.SetToolTip(tooltip)
-        check_coil.SetValue(True)
+        check_coil.SetValue(False)
         check_coil.Bind(wx.EVT_CHECKBOX, partial(self.UpdateCoilTrack, ctrl=check_coil))
 
         # combo_surface_name.SetSelection(0)
@@ -682,10 +717,12 @@ class CoilPanel(wx.Panel):
         Publisher.sendMessage('Change selected coil', self.coil_list[coil_index][1])
 
     def UpdateCoilTrack(self, evt, ctrl):
-        Publisher.sendMessage('Update coil tracking state', ctrl.GetValue())
+        self.coil_state = ctrl.GetValue()
+        Publisher.sendMessage('Update coil tracking state', self.coil_state)
 
     def OnLinkCreate(self, event=None):
-        coil_orient = None
+        coil_fiducials = None
+        coil_orients = None
         # bases = self.Minv, self.N, self.q1, self.q2
         # tracker_mode = self.trk_init, self.tracker_id, self.ref_mode_id
         # nav_prop = bases, tracker_mode, self.tracker_id
@@ -695,14 +732,22 @@ class CoilPanel(wx.Panel):
         dialog = dlg.CoilCalibrationDialog(self.nav_prop)
         try:
             if dialog.ShowModal() == wx.ID_OK:
-                coil_orient = dialog.GetValue()
+                coil_fiducials, coil_orients = dialog.GetValue()
                 ok = 1
+            elif dialog.ShowModal() == wx.ID_CANCEL:
+                print "Coil registration canceled."
+                ok = 0
             else:
                 ok = 0
         except(wx._core.PyAssertionError):  # TODO FIX: win64
             ok = 1
-        print "coil_orient: ", coil_orient
-        # Publisher().sendMessage('Change Init Coil Angle', coil_orient)
+            pass
+        # print "coil_state: ", self.coil_state
+        # print "coil_fiducials: ", coil_fiducials
+        # print "coil_orient: ", coil_orients
+        if coil_fiducials.all() and coil_orients.all():
+            print "Update de all coil!"
+            Publisher.sendMessage('Update coil registration', (self.coil_state, coil_fiducials, coil_orients))
 
     def OnLinkLoad(self, event=None):
         filepath = dlg.ShowLoadCoilDialog()

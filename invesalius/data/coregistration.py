@@ -21,7 +21,7 @@ import threading
 from math import sin, cos
 from time import sleep
 
-from numpy import mat, radians
+from numpy import mat, radians, asmatrix
 import wx
 from wx.lib.pubsub import pub as Publisher
 
@@ -30,7 +30,7 @@ import invesalius.data.coordinates as dco
 # TODO: Optimize navigation thread. Remove the infinite loop and optimize sleep.
 
 
-class Coregistration(threading.Thread):
+class CoregistrationStatic(threading.Thread):
     """
     Thread to update the coordinates with the fiducial points
     co-registration method while the Navigation Button is pressed.
@@ -61,10 +61,8 @@ class Coregistration(threading.Thread):
         while self.nav_id:
             # trck_coord, probe, reference = dco.GetCoordinates(trck_init, trck_id, trck_mode)
             coord_raw = dco.GetCoordinates(trck_init, trck_id, trck_mode)
-            if trck_mode:
-                trck_coord = dco.dynamic_reference(coord_raw[0, ::], coord_raw[1, ::])
-            else:
-                trck_coord = coord_raw[0, ::]
+
+            trck_coord = coord_raw[0, ::]
 
             trck_xyz = mat([[trck_coord[0]], [trck_coord[1]], [trck_coord[2]]])
             img = q1 + (m_inv*n)*(trck_xyz - q2)
@@ -82,6 +80,188 @@ class Coregistration(threading.Thread):
             # Debug tracker is not working with 0.175 so changed to 0.2
             # However, 0.2 is too low update frequency ~5 Hz. Need optimization URGENTLY.
             #sleep(.3)
+            sleep(0.175)
+
+            if self._pause_:
+                return
+
+
+class CoregistrationDynamic(threading.Thread):
+    """
+    Thread to update the coordinates with the fiducial points
+    co-registration method while the Navigation Button is pressed.
+    Sleep function in run method is used to avoid blocking GUI and
+    for better real-time navigation
+    """
+
+    def __init__(self, bases, nav_id, trck_info):
+        threading.Thread.__init__(self)
+        self.bases = bases
+        self.nav_id = nav_id
+        self.trck_info = trck_info
+        self._pause_ = False
+        self.start()
+
+    def stop(self):
+        self._pause_ = True
+
+    def run(self):
+        m_inv = self.bases[0]
+        n = self.bases[1]
+        q1 = self.bases[2]
+        q2 = self.bases[3]
+        trck_init = self.trck_info[0]
+        trck_id = self.trck_info[1]
+        trck_mode = self.trck_info[2]
+
+        while self.nav_id:
+            # trck_coord, probe, reference = dco.GetCoordinates(trck_init, trck_id, trck_mode)
+            coord_raw = dco.GetCoordinates(trck_init, trck_id, trck_mode)
+
+            trck_coord = dco.dynamic_reference(coord_raw[0, ::], coord_raw[1, ::])
+
+            trck_xyz = mat([[trck_coord[0]], [trck_coord[1]], [trck_coord[2]]])
+            img = q1 + (m_inv * n) * (trck_xyz - q2)
+
+            coord = (float(img[0]), float(img[1]), float(img[2]), trck_coord[3],
+                     trck_coord[4], trck_coord[5])
+
+            # Tried several combinations and different locations to send the messages,
+            # however only this one does not block the GUI during navigation.
+            wx.CallAfter(Publisher.sendMessage, 'Co-registered points', coord[0:3])
+            # wx.CallAfter(Publisher.sendMessage, 'Set camera in volume', coord[0:3])
+            wx.CallAfter(Publisher.sendMessage, 'Set camera in volume', coord)
+
+            # TODO: Optimize the value of sleep for each tracking device.
+            # Debug tracker is not working with 0.175 so changed to 0.2
+            # However, 0.2 is too low update frequency ~5 Hz. Need optimization URGENTLY.
+            # sleep(.3)
+            sleep(0.175)
+
+            if self._pause_:
+                return
+
+
+class CoregistrationCoilStatic(threading.Thread):
+    """
+    Thread to update the coordinates with the fiducial points
+    co-registration method while the Navigation Button is pressed.
+    Sleep function in run method is used to avoid blocking GUI and
+    for better real-time navigation
+    """
+
+    def __init__(self, bases, nav_id, trck_info, coil_info):
+        threading.Thread.__init__(self)
+        self.bases = bases
+        self.nav_id = nav_id
+        self.trck_info = trck_info
+        self.coil_info = coil_info
+        self._pause_ = False
+        self.start()
+
+    def stop(self):
+        self._pause_ = True
+
+    def run(self):
+        m_inv = self.bases[0]
+        n = self.bases[1]
+        q1 = self.bases[2]
+        q2 = self.bases[3]
+        trck_init = self.trck_info[0]
+        trck_id = self.trck_info[1]
+        trck_mode = self.trck_info[2]
+
+        coil_center = self.coil_info[0]
+        coil_sensor = self.coil_info[1]
+        coil_bases = self.coil_info[2]
+
+        print "Vou comecar navegacao static coil"
+
+        while self.nav_id:
+            # trck_coord, probe, reference = dco.GetCoordinates(trck_init, trck_id, trck_mode)
+            coord_raw = dco.GetCoordinates(trck_init, trck_id, trck_mode)
+
+            trck_xyz = asmatrix(coord_raw[0, 0:3]).reshape([3, 1]) + (coil_center - coil_sensor)
+
+            # trck_xyz = mat([[trck_coord[0]], [trck_coord[1]], [trck_coord[2]]])
+            img = q1 + (m_inv * n) * (trck_xyz - q2)
+
+            coord = (float(img[0]), float(img[1]), float(img[2]),
+                     coord_raw[0, 3], coord_raw[0, 4], coord_raw[0, 5])
+            angles = coord_raw[0, 3:6]
+
+            # Tried several combinations and different locations to send the messages,
+            # however only this one does not block the GUI during navigation.
+            wx.CallAfter(Publisher.sendMessage, 'Co-registered points', coord[0:3])
+            # wx.CallAfter(Publisher.sendMessage, 'Set camera in volume', coord[0:3])
+            wx.CallAfter(Publisher.sendMessage, 'Set camera in volume', coord)
+            wx.CallAfter(Publisher.sendMessage, 'Update coil orientation', (coil_bases, angles, coord[0:3]))
+
+            # TODO: Optimize the value of sleep for each tracking device.
+            # Debug tracker is not working with 0.175 so changed to 0.2
+            # However, 0.2 is too low update frequency ~5 Hz. Need optimization URGENTLY.
+            # sleep(.3)
+            sleep(0.175)
+
+            if self._pause_:
+                return
+
+
+class CoregistrationCoilDynamic(threading.Thread):
+    """
+    Thread to update the coordinates with the fiducial points
+    co-registration method while the Navigation Button is pressed.
+    Sleep function in run method is used to avoid blocking GUI and
+    for better real-time navigation
+    """
+
+    def __init__(self, bases, nav_id, trck_info, coil_info):
+        threading.Thread.__init__(self)
+        self.bases = bases
+        self.nav_id = nav_id
+        self.trck_info = trck_info
+        self.coil_info = coil_info
+        self._pause_ = False
+        self.start()
+
+    def stop(self):
+        self._pause_ = True
+
+    def run(self):
+        m_inv = self.bases[0]
+        n = self.bases[1]
+        q1 = self.bases[2]
+        q2 = self.bases[3]
+        trck_init = self.trck_info[0]
+        trck_id = self.trck_info[1]
+        trck_mode = self.trck_info[2]
+
+        coil_q = self.coil_info[0]
+        coil_id = self.coil_info[1]
+        coil_mode = self.coil_info[2]
+
+        while self.nav_id:
+            # trck_coord, probe, reference = dco.GetCoordinates(trck_init, trck_id, trck_mode)
+            coord_raw = dco.GetCoordinates(trck_init, trck_id, trck_mode)
+
+            trck_coord = dco.dynamic_reference(coord_raw[0, ::], coord_raw[1, ::])
+
+            trck_xyz = mat([[trck_coord[0]], [trck_coord[1]], [trck_coord[2]]])
+            img = q1 + (m_inv * n) * (trck_xyz - q2)
+
+            coord = (float(img[0]), float(img[1]), float(img[2]), trck_coord[3],
+                     trck_coord[4], trck_coord[5])
+
+            # Tried several combinations and different locations to send the messages,
+            # however only this one does not block the GUI during navigation.
+            wx.CallAfter(Publisher.sendMessage, 'Co-registered points', coord[0:3])
+            # wx.CallAfter(Publisher.sendMessage, 'Set camera in volume', coord[0:3])
+            wx.CallAfter(Publisher.sendMessage, 'Set camera in volume', coord)
+
+            # TODO: Optimize the value of sleep for each tracking device.
+            # Debug tracker is not working with 0.175 so changed to 0.2
+            # However, 0.2 is too low update frequency ~5 Hz. Need optimization URGENTLY.
+            # sleep(.3)
             sleep(0.175)
 
             if self._pause_:

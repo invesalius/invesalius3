@@ -20,6 +20,7 @@
 #    detalhes.
 #--------------------------------------------------------------------------
 
+from math import cos, sin
 import os
 import sys
 
@@ -126,6 +127,7 @@ class Viewer(wx.Panel):
         self.camera_state = True
 
         self.ball_actor = None
+        self.coil_actor = None
         self._mode_cross = False
         self._to_show_ball = 0
         self._ball_ref_visibility = False
@@ -218,6 +220,11 @@ class Viewer(wx.Panel):
         Publisher.subscribe(self.RemoveMarker, 'Remove marker')
         Publisher.subscribe(self.BlinkMarker, 'Blink Marker')
         Publisher.subscribe(self.StopBlinkMarker, 'Stop Blink Marker')
+
+        # Related to coil tracking for neuronavigation
+        Publisher.subscribe(self.UpdateCoilOrientation, 'Update coil orientation')
+        Publisher.subscribe(self.UpdateCoilInitial, 'Update coil initial')
+        Publisher.subscribe(self.UpdateCoilState, 'Update coil tracking state')
 
     def SetStereoMode(self, pubsub_evt):
         mode = pubsub_evt.data
@@ -587,6 +594,96 @@ class Viewer(wx.Panel):
 
         else:
             self.RemoveBallReference()
+
+    def AddCoil(self):
+        """
+        Coil for navigation rendered in volume viewer.
+        """
+
+        coil_file = os.path.join(const.COIL_DIR, "magstim_fig8_coil.stl")
+
+        reader = vtk.vtkSTLReader()
+        reader.SetFileName(coil_file)
+        reader.Update()
+
+        coil_mapper = vtk.vtkPolyDataMapper()
+        coil_mapper.SetInputData(reader.GetOutput())
+        coil_mapper.ScalarVisibilityOff()
+        coil_mapper.ImmediateModeRenderingOn()  # improve performance
+
+        self.coil_actor = vtk.vtkActor()
+        self.coil_actor.SetMapper(coil_mapper)
+        # self.coil_actor.GetProperty().SetColor()
+        self.coil_actor.GetProperty().SetOpacity(0.8)
+
+        self.axes = vtk.vtkAxesActor()
+        self.axes.SetShaftTypeToCylinder()
+        self.axes.SetXAxisLabelText("x")
+        self.axes.SetYAxisLabelText("y")
+        self.axes.SetZAxisLabelText("z")
+        self.axes.SetTotalLength(50.0, 50.0, 50.0)
+
+        self.ren.AddActor(self.coil_actor)
+        self.ren.AddActor(self.axes)
+        self.Refresh()
+
+    def RemoveCoil(self):
+        self.ren.RemoveActor(self.coil_actor)
+        self.ren.RemoveActor(self.axes)
+        self.interactor.Render()
+
+    def UpdateCoilOrientation(self, pubsub_evt):
+
+        m, q1, minv = pubsub_evt.data[0]
+        a, b, g = np.radians(pubsub_evt.data[1])
+        coord = pubsub_evt.data[2]
+
+        x, y, z = bases.flip_x(coord)
+
+        print "a, b, g: ", a, b, g
+
+        Mrot = np.mat([[cos(a) * cos(b), sin(b) * sin(g) * cos(a) - cos(g) * sin(a),
+                        cos(a) * sin(b) * cos(g) + sin(a) * sin(g)],
+                       [cos(b) * sin(a), sin(b) * sin(g) * sin(a) + cos(g) * cos(a),
+                        cos(g) * sin(b) * sin(a) - sin(g) * cos(a)],
+                       [-sin(b), sin(g) * cos(b), cos(b) * cos(g)]])
+
+        # Mrot = np.mat([[cos(a) * cos(b), sin(b) * sin(g) * cos(a) - cos(g) * sin(a),
+        #                 cos(a) * sin(b) * cos(g) + sin(a) * sin(g), 0.0],
+        #                [cos(b) * sin(a), sin(b) * sin(g) * sin(a) + cos(g) * cos(a),
+        #                 cos(g) * sin(b) * sin(a) - sin(g) * cos(a), 0.0],
+        #                [-sin(b), sin(g) * cos(b), cos(b) * cos(g), 0.0],
+        #                [0.0, 0.0, 0.0, 1.0]])
+
+        bot = np.array([0.0, 0.0, 0.0])
+        rig = np.array([[x], [y], [z], [1]])
+        newMrot = minv * Mrot * m
+        newMrot = np.vstack([newMrot, bot])
+        newMrot = np.hstack([newMrot, rig])
+        mat4x4 = self.array_to_vtkmatrix4x4(newMrot)
+        self.coil_actor.SetUserMatrix(mat4x4)
+        self.interactor.Render()
+        # self.Refresh()
+
+    def array_to_vtkmatrix4x4(self, mrot4x4):
+
+        vtkmat = vtk.vtkMatrix4x4()
+        # mrot4x4 = np.identity(4)
+        # mrot4x4[0:3, 0:3] = mrot3x3[:, :]
+        for i in range(0, 4):
+            for j in range(0, 4):
+                vtkmat.SetElement(i, j, mrot4x4[i, j])
+        return vtkmat
+
+    def UpdateCoilInitial(self, pubsub_evt):
+        return
+
+    def UpdateCoilState(self, pubsub_evt):
+        coil_state = pubsub_evt.data
+        if coil_state and not self.coil_actor:
+            self.AddCoil()
+        else:
+            self.RemoveCoil()
 
     def __bind_events_wx(self):
         #self.Bind(wx.EVT_SIZE, self.OnSize)

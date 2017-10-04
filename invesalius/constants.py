@@ -716,16 +716,19 @@ COIL1 = wx.NewId()
 COIL2 = wx.NewId()
 COIL3 = wx.NewId()
 COILC = wx.NewId()
+COIL0 = wx.NewId()
 
 BTNS_COIL = {COIL1: {0: _('Left')},
              COIL2: {1: _('Right')},
              COIL3: {2: _('Anterior')},
-             COILC: {3: _('Center')}}
+             COILC: {3: _('Center')},
+             COIL0: {4: _('Fixed')}}
 
 TIPS_COIL = [_("Select left coil wing"),
              _("Select right coil wing"),
              _("Select anterior coil point"),
-             _("Select coil center")]
+             _("Select coil center"),
+             _("Attach sensor to coil")]
 
 CAL_DIR = os.path.abspath(os.path.join(FILE_PATH, '..', 'navigation', 'mtc_files', 'CalibrationFiles'))
 MAR_DIR = os.path.abspath(os.path.join(FILE_PATH, '..', 'navigation', 'mtc_files', 'Markers'))
