@@ -1075,7 +1075,7 @@ class CircleDensityMeasure(object):
         print 'points', self.point1
         print 'points', self.point2
 
-        mask_y, mask_x = np.ogrid[0:dy*sy:sy, 0:dx*sy:sx]
+        mask_y, mask_x = np.ogrid[0:dy*sy:sy, 0:dx*sx:sx]
         #  mask = ((mask_x - cx)**2 + (mask_y - cy)**2) <= (radius ** 2)
         mask = (((mask_x-cx)**2 / a**2) + ((mask_y-cy)**2 / b**2)) <= 1.0
 
@@ -1083,13 +1083,15 @@ class CircleDensityMeasure(object):
             #  test_img = np.zeros_like(img_slice)
             #  test_img[mask] = img_slice[mask]
             #  imsave('/tmp/manolo.png', test_img[::-1,:])
-        m[:] = 0
-        m[mask] = 254
-        slc.buffer_slices[self.orientation].discard_vtk_mask()
-        slc.buffer_slices[self.orientation].discard_mask()
-        Publisher.sendMessage('Reload actual slice')
-        #  except IndexError:
-                #  pass
+        print m.shape, mask.shape
+        try:
+            m[:] = 0
+            m[mask] = 254
+            slc.buffer_slices[self.orientation].discard_vtk_mask()
+            slc.buffer_slices[self.orientation].discard_mask()
+            Publisher.sendMessage('Reload actual slice')
+        except IndexError:
+                pass
 
         values = img_slice[mask]
 

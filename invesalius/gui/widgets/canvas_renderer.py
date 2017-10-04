@@ -308,7 +308,13 @@ class CanvasRendererCTX:
 
         _font = gc.CreateFont(font)
         gc.SetFont(_font)
-        w, h = gc.GetTextExtent(text)
+
+        w = 0
+        h = 0
+        for t in text.split('\n'):
+            _w, _h = gc.GetTextExtent(t)
+            w = max(w, _w)
+            h += _h
         return w, h
 
     def draw_line(self, pos0, pos1, arrow_start=False, arrow_end=False, colour=(255, 0, 0, 128), width=2, style=wx.SOLID):
@@ -495,9 +501,15 @@ class CanvasRendererCTX:
         gc.SetFont(font)
 
         px, py = pos
-        py = -py
+        for t in text.split('\n'):
+            _py = -py
+            _px = px
+            gc.DrawText(t, _px, _py)
 
-        gc.DrawText(text, px, py)
+            w, h = self.calc_text_size(t)
+            print t
+            py -= h
+
         self._drawn = True
 
     def draw_text_box(self, text, pos, font=None, txt_colour=(255, 255, 255), bg_colour=(128, 128, 128, 128), border=5):
@@ -521,7 +533,7 @@ class CanvasRendererCTX:
 
         _font = gc.CreateFont(font, txt_colour)
         gc.SetFont(_font)
-        w, h = gc.GetTextExtent(text)
+        w, h = self.calc_text_size(text)
 
         px, py = pos
 
@@ -810,8 +822,8 @@ class Ellipse(CanvasHandlerBase):
         self.interactive = interactive
         self.is_3d = is_3d
 
-        self.handler_1 = CircleHandler(self.point1, is_3d=is_3d, fill_colour=(255, 255, 255, 255))
-        self.handler_2 = CircleHandler(self.point2, is_3d=is_3d, fill_colour=(255, 255, 255, 255))
+        self.handler_1 = CircleHandler(self.point1, is_3d=is_3d, fill_colour=(255, 0, 0, 255))
+        self.handler_2 = CircleHandler(self.point2, is_3d=is_3d, fill_colour=(255, 0, 0, 255))
 
         self.handler_1.on_move(self.on_move_p1)
         self.handler_2.on_move(self.on_move_p2)
