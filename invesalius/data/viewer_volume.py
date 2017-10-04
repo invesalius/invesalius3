@@ -625,21 +625,7 @@ class Viewer(wx.Panel):
             self.arrowactorX2.RotateZ(180)
 
             self.ren.ResetCamera()
-            cam_focus = self.target[0:3]
-            cam = self.ren.GetActiveCamera()
-            initial_focus = np.array(cam.GetFocalPoint())
-            cam_pos0 = np.array(cam.GetPosition())
-            cam_focus0 = np.array(cam.GetFocalPoint())
-            v0 = cam_pos0 - cam_focus0
-            v0n = np.sqrt(inner1d(v0, v0))
-
-            v1 = (cam_focus - initial_focus)
-            v1n = np.sqrt(inner1d(v1, v1))
-            if not v1n:
-                v1n = 1.0
-            cam_pos = (v1 / v1n) * v0n + cam_focus
-            cam.SetFocalPoint(cam_focus)
-            cam.SetPosition(cam_pos)
+            self.SetCamera()
             self.ren.GetActiveCamera().Zoom(4)
 
             self.ren2.AddActor(self.coilactor)
@@ -709,10 +695,30 @@ class Viewer(wx.Panel):
 
     def OnUpdateCoilTracker(self, pubsub_evt):
         if self.target and self.flag:
-            accept = 3
+            arrow_scale = 3
+            arrow_upper_limit = 30
+            accept = 3 * arrow_scale
+
             coordx = self.target[4] - pubsub_evt.data[1]
+            if coordx > arrow_upper_limit:
+                coordx = arrow_upper_limit
+            elif coordx < -arrow_upper_limit:
+                coordx = -arrow_upper_limit
+            coordx = arrow_scale * coordx
+
             coordy = self.target[3] - pubsub_evt.data[0]
+            if coordy > arrow_upper_limit:
+                coordy = arrow_upper_limit
+            elif coordy < -arrow_upper_limit:
+                coordy = -arrow_upper_limit
+            coordy = arrow_scale * coordy
+
             coordz = self.target[5] - pubsub_evt.data[2]
+            if coordz > arrow_upper_limit:
+                coordz = arrow_upper_limit
+            elif coordz < -arrow_upper_limit:
+                coordz = -arrow_upper_limit
+            coordz = arrow_scale * coordz
 
             self.ren2.RemoveActor(self.arrowactorZ1)
             self.ren2.RemoveActor(self.arrowactorZ2)
@@ -789,6 +795,12 @@ class Viewer(wx.Panel):
             target = self.target[0], -self.target[1], self.target[2]
             dst = distance.euclidean(coord, target)
             self.txt.SetCoilDistanceValue(dst)
+            self.ren.ResetCamera()
+            self.SetCamera()
+            if dst > 100:
+                dst = 100
+            # ((-0.0404*dst) + 5.0404) is the linear equation to normalize the zoom between 1 and 5 times with the distance between 1 and 100 mm
+            self.ren.GetActiveCamera().Zoom((-0.0404*dst) + 5.0404)
             self.Refresh()
 
     def CreateTxtDistance(self):
@@ -902,6 +914,23 @@ class Viewer(wx.Panel):
                                 [0, 0, 0, 1]])
 
         return v3, M_plane_inv
+
+    def SetCamera(self):
+        cam_focus = self.target[0:3]
+        cam = self.ren.GetActiveCamera()
+        initial_focus = np.array(cam.GetFocalPoint())
+        cam_pos0 = np.array(cam.GetPosition())
+        cam_focus0 = np.array(cam.GetFocalPoint())
+        v0 = cam_pos0 - cam_focus0
+        v0n = np.sqrt(inner1d(v0, v0))
+
+        v1 = (cam_focus - initial_focus)
+        v1n = np.sqrt(inner1d(v1, v1))
+        if not v1n:
+            v1n = 1.0
+        cam_pos = (v1 / v1n) * v0n + cam_focus
+        cam.SetFocalPoint(cam_focus)
+        cam.SetPosition(cam_pos)
 
     def CreateBallReference(self):
         """
