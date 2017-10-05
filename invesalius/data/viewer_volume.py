@@ -813,9 +813,10 @@ class Viewer(wx.Panel):
 
     def CreateTxtDistance(self):
         txt = vtku.Text()
-        txt.SetSize(const.TEXT_SIZE_LARGE)
-        txt.SetPosition((0.76, 0.97))
+        txt.SetSize(const.TEXT_SIZE_EXTRA_LARGE)
+        txt.SetPosition((0.76, 0.05))
         txt.ShadowOff()
+        txt.BoldOn()
         self.txt = txt
         self.ren2.AddActor(txt.actor)
 

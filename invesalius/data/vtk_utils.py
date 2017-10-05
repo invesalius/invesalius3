@@ -124,6 +124,9 @@ class Text(object):
     def ShadowOff(self):
         self.property.ShadowOff()
 
+    def BoldOn(self):
+        self.property.BoldOn()
+
     def SetSize(self, size):
         self.property.SetFontSize(size)
 
@@ -146,7 +149,7 @@ class Text(object):
 
     def SetCoilDistanceValue(self, value):
         if isinstance(value, int) or isinstance(value, float):
-            value = 'Distance: ' + str("{0:.2f}".format(value)) + ' [mm]'
+            value = 'Dist: ' + str("{:06.2f}".format(value)) + ' mm'
             if sys.platform == 'win32':
                 value += ""  # Otherwise 0 is not shown under win32
                 # With some encoding in some dicom fields (like name) raises a
