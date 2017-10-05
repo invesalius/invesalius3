@@ -219,7 +219,7 @@ class InnerFoldPanel(wx.Panel):
         Publisher.sendMessage('Update volume camera state', ctrl.GetValue())
 
     def UpdateShowCoil(self, evt, ctrl):
-        Publisher.sendMessage('Update coil state', ctrl.GetValue())
+        Publisher.sendMessage('Update coil tracking state', ctrl.GetValue())
 
 
 class NeuronavigationPanel(wx.Panel):
@@ -239,6 +239,7 @@ class NeuronavigationPanel(wx.Panel):
         self.trk_init = None
         self.trigger = None
         self.trigger_state = False
+        self.coil_state = False
         self.coil_registration = None
 
         self.tracker_id = const.DEFAULT_TRACKER
@@ -351,6 +352,7 @@ class NeuronavigationPanel(wx.Panel):
     def __bind_events(self):
         Publisher.subscribe(self.LoadImageFiducials, 'Load image fiducials')
         Publisher.subscribe(self.UpdateTriggerState, 'Update trigger state')
+        Publisher.subscribe(self.UpdateTriggerState, 'Update coil tracking state')
         Publisher.subscribe(self.UpdateImageCoordinates, 'Set ball reference position')
         Publisher.subscribe(self.OnDisconnectTracker, 'Disconnect tracker')
         Publisher.subscribe(self.UpdateCoilRegistration, 'Update coil registration')
@@ -382,6 +384,9 @@ class NeuronavigationPanel(wx.Panel):
 
     def UpdateCoilRegistration(self, pubsub_evt):
         self.coil_registration = pubsub_evt.data
+
+    def UpdateCoilState(self, pubsub_evt):
+        self.coil_state = pubsub_evt.data
 
     def UpdateTriggerState(self, pubsub_evt):
         self.trigger_state = pubsub_evt.data
@@ -519,8 +524,8 @@ class NeuronavigationPanel(wx.Panel):
         choice_ref = btn[2]
         txtctrl_fre = btn[3]
 
-        coil_state = self.coil_registration[0]
-        coil_fiducials = self.coil_registration[1]
+        coil_state = self.coil_state
+        coil_fiducials = self.coil_registration[0]
         # coil_orients = self.coil_registration[2]
         coil_mode = self.coil_registration
 
@@ -566,24 +571,23 @@ class NeuronavigationPanel(wx.Panel):
                 Publisher.sendMessage("Hide current mask")
 
                 if self.ref_mode_id:
-                    # if coil_state:
-                    coil_img1 = q1 + (minv * n) * (np.asmatrix(coil_fiducials[0, :]).reshape([3, 1]) - q2)
-                    coil_img2 = q1 + (minv * n) * (np.asmatrix(coil_fiducials[1, :]).reshape([3, 1]) - q2)
-                    coil_img3 = q1 + (minv * n) * (np.asmatrix(coil_fiducials[2, :]).reshape([3, 1]) - q2)
-                    coil_img = np.vstack([np.asarray(coil_img1).reshape([1, 3]),
-                                          np.asarray(coil_img2).reshape([1, 3]),
-                                          np.asarray(coil_img3).reshape([1, 3])])
-                    # mcoil, qcoil, minvcoil = db.base_creation(coil_img)
-                    coil_base = db.base_creation(coil_img)
-                    coil_center = np.asmatrix(coil_fiducials[3, :]).reshape([3, 1])
-                    coil_sensor = np.asmatrix(coil_fiducials[4, :]).reshape([3, 1])
-                    coil_mode = (coil_center, coil_sensor, coil_base)
-                    self.correg = dcr.CoregistrationCoilStatic(bases_coreg, nav_id, tracker_mode, coil_mode)
-                    # self.correg = dcr.CoregistrationCoilDynamic(bases_coreg, nav_id, tracker_mode, coil_mode)
-                    # else:
-                    #     self.correg = dcr.CoregistrationDynamic(bases_coreg, nav_id, tracker_mode)
+                    if coil_state:
+                        self.correg = dcr.CoregistrationCoilDynamic(bases_coreg, nav_id, tracker_mode, coil_mode)
+                    else:
+                        self.correg = dcr.CoregistrationDynamic(bases_coreg, nav_id, tracker_mode)
                 else:
                     if coil_state:
+                        coil_img1 = q1 + (minv * n) * (np.asmatrix(coil_fiducials[0, :]).reshape([3, 1]) - q2)
+                        coil_img2 = q1 + (minv * n) * (np.asmatrix(coil_fiducials[1, :]).reshape([3, 1]) - q2)
+                        coil_img3 = q1 + (minv * n) * (np.asmatrix(coil_fiducials[2, :]).reshape([3, 1]) - q2)
+                        coil_img = np.vstack([np.asarray(coil_img1).reshape([1, 3]),
+                                              np.asarray(coil_img2).reshape([1, 3]),
+                                              np.asarray(coil_img3).reshape([1, 3])])
+                        # mcoil, qcoil, minvcoil = db.base_creation(coil_img)
+                        coil_base = db.base_creation(coil_img)
+                        coil_center = np.asmatrix(coil_fiducials[3, :]).reshape([3, 1])
+                        coil_sensor = np.asmatrix(coil_fiducials[4, :]).reshape([3, 1])
+                        coil_mode = (coil_center, coil_sensor, coil_base)
                         self.correg = dcr.CoregistrationCoilStatic(bases_coreg, nav_id, tracker_mode, coil_mode)
                     else:
                         self.correg = dcr.CoregistrationStatic(bases_coreg, nav_id, tracker_mode)
@@ -622,7 +626,7 @@ class CoilPanel(wx.Panel):
         self.coil_id = const.DEFAULT_COIL
         self.coil_fiducials = None
         self.coil_orients = None
-        self.coil_state = False
+        # self.coil_state = False
 
         self.nav_prop = None
 
@@ -685,21 +689,21 @@ class CoilPanel(wx.Panel):
         self.combo_coil = combo_coil
 
         # Checkbox to activate coil tracking
-        tooltip = wx.ToolTip(_("Activate coil tracking"))
-        check_coil = wx.CheckBox(self, -1, _('Track coil'))
-        check_coil.SetToolTip(tooltip)
-        check_coil.SetValue(False)
-        check_coil.Bind(wx.EVT_CHECKBOX, partial(self.UpdateCoilTrack, ctrl=check_coil))
+        # tooltip = wx.ToolTip(_("Activate coil tracking"))
+        # check_coil = wx.CheckBox(self, -1, _('Track coil'))
+        # check_coil.SetToolTip(tooltip)
+        # check_coil.SetValue(False)
+        # check_coil.Bind(wx.EVT_CHECKBOX, partial(self.UpdateCoilTrack, ctrl=check_coil))
 
         # combo_surface_name.SetSelection(0)
         if sys.platform != 'win32':
             combo_coil.SetWindowVariant(wx.WINDOW_VARIANT_SMALL)
-            check_coil.SetWindowVariant(wx.WINDOW_VARIANT_SMALL)
+            # check_coil.SetWindowVariant(wx.WINDOW_VARIANT_SMALL)
 
         # Create horizontal sizers to represent lines in the panel
         line_select = wx.BoxSizer(wx.HORIZONTAL)
-        line_select.Add(combo_coil, 1, wx.ALL | wx.EXPAND | wx.GROW, 5)
-        line_select.Add(check_coil, 0, wx.ALL | wx.EXPAND | wx.GROW, 5)
+        line_select.Add(combo_coil, 0, wx.ALL | wx.EXPAND | wx.GROW, 5)
+        # line_select.Add(check_coil, 0, wx.ALL | wx.EXPAND | wx.GROW, 5)
 
         # Add line sizers into main sizer
         main_sizer = wx.BoxSizer(wx.VERTICAL)
@@ -728,9 +732,9 @@ class CoilPanel(wx.Panel):
         coil_index = evt.GetSelection()
         Publisher.sendMessage('Change selected coil', self.coil_list[coil_index][1])
 
-    def UpdateCoilTrack(self, evt, ctrl):
-        self.coil_state = ctrl.GetValue()
-        Publisher.sendMessage('Update coil tracking state', self.coil_state)
+    # def UpdateCoilTrack(self, evt, ctrl):
+    #     self.coil_state = ctrl.GetValue()
+    #     Publisher.sendMessage('Update coil tracking state', self.coil_state)
 
     def OnLinkCreate(self, event=None):
         coil_fiducials = None
@@ -759,7 +763,7 @@ class CoilPanel(wx.Panel):
         # print "coil_orient: ", coil_orients
         if coil_fiducials.all() and coil_orients.all():
             print "Update de all coil!"
-            Publisher.sendMessage('Update coil registration', (self.coil_state, coil_fiducials, coil_orients))
+            Publisher.sendMessage('Update coil registration', (coil_fiducials, coil_orients))
 
     def OnLinkLoad(self, event=None):
         filepath = dlg.ShowLoadCoilDialog()

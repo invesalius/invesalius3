@@ -630,6 +630,7 @@ class Viewer(wx.Panel):
     def RemoveCoil(self):
         self.ren.RemoveActor(self.coil_actor)
         self.ren.RemoveActor(self.axes)
+        self.coil_actor = None
         self.interactor.Render()
 
     def UpdateCoilOrientation(self, pubsub_evt):
