@@ -596,11 +596,11 @@ class Viewer(wx.Panel):
             self.coilactor3.RotateZ(180)
 
             self.arrowactorZ1 = self.arrow([-50,-35,12], [-50,-35,50])
-            self.arrowactorZ1.GetProperty().SetColor(0, 0, 1)
+            self.arrowactorZ1.GetProperty().SetColor(1, 1, 0)
             self.arrowactorZ1.RotateX(-60)
             self.arrowactorZ1.RotateZ(180)
             self.arrowactorZ2 = self.arrow([50,-35,0], [50,-35,-50])
-            self.arrowactorZ2.GetProperty().SetColor(0, 0, 1)
+            self.arrowactorZ2.GetProperty().SetColor(1, 1, 0)
             self.arrowactorZ2.RotateX(-60)
             self.arrowactorZ2.RotateZ(180)
 
@@ -730,9 +730,11 @@ class Viewer(wx.Panel):
             self.arrowactorZ1 = self.arrow([-55, -35, offset], [-55, -35, offset + coordz])
             self.arrowactorZ1.RotateX(-60)
             self.arrowactorZ1.RotateZ(180)
+            self.arrowactorZ1.GetProperty().SetColor(1, 1, 0)
             self.arrowactorZ2 = self.arrow([55, -35, offset], [55, -35, offset - coordz])
             self.arrowactorZ2.RotateX(-60)
             self.arrowactorZ2.RotateZ(180)
+            self.arrowactorZ2.GetProperty().SetColor(1, 1, 0)
             self.ren2.AddActor(self.arrowactorZ1)
             self.ren2.AddActor(self.arrowactorZ2)
 
@@ -801,6 +803,12 @@ class Viewer(wx.Panel):
                 dst = 100
             # ((-0.0404*dst) + 5.0404) is the linear equation to normalize the zoom between 1 and 5 times with the distance between 1 and 100 mm
             self.ren.GetActiveCamera().Zoom((-0.0404*dst) + 5.0404)
+
+            if dst <= 3:
+                self.aim_dummy.GetProperty().SetColor(0, 1, 0)
+            else:
+                self.aim_dummy.GetProperty().SetColor(1, 1, 1)
+
             self.Refresh()
 
     def CreateTxtDistance(self):
@@ -871,7 +879,7 @@ class Viewer(wx.Panel):
         # actor
         actor_arrow = vtk.vtkActor()
         actor_arrow.SetMapper(mapper)
-        actor_arrow.GetProperty().SetColor(0, 0, 1)
+        #actor_arrow.GetProperty().SetColor(0, 0, 1)
 
         return actor_arrow
 
