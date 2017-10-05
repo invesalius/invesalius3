@@ -136,16 +136,27 @@ class Text(object):
         # UnicodeEncodeError because they have non-ascii characters. To avoid
         # that we encode in utf-8.
 
+	if sys.platform == 'win32':
+            self.mapper.SetInput(value.encode("utf-8"))
+        else:
+	    try:
+                self.mapper.SetInput(value.encode("latin-1"))
+            except(UnicodeEncodeError):
+                self.mapper.SetInput(value.encode("utf-8"))
+
     def SetCoilDistanceValue(self, value):
         if isinstance(value, int) or isinstance(value, float):
             value = 'Distance: ' + str("{0:.2f}".format(value)) + ' [mm]'
             if sys.platform == 'win32':
-                value += ""
-        
-	if sys.platform == 'win32':
-            self.mapper.SetInput(value.encode("utf-8"))  
+                value += ""  # Otherwise 0 is not shown under win32
+                # With some encoding in some dicom fields (like name) raises a
+                # UnicodeEncodeError because they have non-ascii characters. To avoid
+                # that we encode in utf-8.
+
+        if sys.platform == 'win32':
+            self.mapper.SetInput(value.encode("utf-8"))
         else:
-	    try:
+            try:
                 self.mapper.SetInput(value.encode("latin-1"))
             except(UnicodeEncodeError):
                 self.mapper.SetInput(value.encode("utf-8"))
