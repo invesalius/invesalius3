@@ -651,9 +651,9 @@ class Viewer(wx.Panel):
             self.RemoveCoilAim()
             self.aim_dummy = None
 
-        pTarget = self.CenterOfMass()
+        self.pTarget = self.CenterOfMass()
 
-        v3, M_plane_inv = self.Plane(self.target[0:3], pTarget)
+        v3, M_plane_inv = self.Plane(self.target[0:3], self.pTarget)
 
         mat4x4 = vtk.vtkMatrix4x4()
         for i in range(4):
@@ -918,13 +918,13 @@ class Viewer(wx.Panel):
     def SetCamera(self):
         cam_focus = self.target[0:3]
         cam = self.ren.GetActiveCamera()
-        initial_focus = np.array(cam.GetFocalPoint())
+
         cam_pos0 = np.array(cam.GetPosition())
         cam_focus0 = np.array(cam.GetFocalPoint())
         v0 = cam_pos0 - cam_focus0
         v0n = np.sqrt(inner1d(v0, v0))
 
-        v1 = (cam_focus - initial_focus)
+        v1 = (cam_focus[0] - self.pTarget[0], cam_focus[1] - self.pTarget[1], cam_focus[2] - self.pTarget[2])
         v1n = np.sqrt(inner1d(v1, v1))
         if not v1n:
             v1n = 1.0
