@@ -171,18 +171,29 @@ class CoregistrationObjectStatic(threading.Thread):
         trck_id = self.trck_info[1]
         trck_mode = self.trck_info[2]
 
-        coil_center = self.coil_info[0]
-        coil_sensor = self.coil_info[1]
-        coil_bases = self.coil_info[2]
+        obj_base_img = self.coil_info[0]
+        obj_base_trck = self.coil_info[1]
+        obj_sensor_orient = self.coil_info[2]
+        obj_center2 = self.coil_info[3]
+        obj_sensor = self.coil_info[4]
+        obj_center = self.coil_info[5]
 
         while self.nav_id:
             # trck_coord, probe, reference = dco.GetCoordinates(trck_init, trck_id, trck_mode)
             coord_raw = dco.GetCoordinates(trck_init, trck_id, trck_mode)
 
-            trck_xyz = asmatrix(coord_raw[0, 0:3]).reshape([3, 1]) + (coil_center - coil_sensor)
+            # print "obj_center: ", obj_center
+            # print "obj_sensor: ", obj_sensor
+
+            trck_xyz = asmatrix(coord_raw[0, 0:3]).reshape([3, 1]) + (obj_center2 - obj_sensor)
+            # obj_center2 = obj_center2[0, 0], obj_center2[1, 0], obj_center2[2, 0]
 
             # trck_xyz = mat([[trck_coord[0]], [trck_coord[1]], [trck_coord[2]]])
             img = q1 + (m_inv * n) * (trck_xyz - q2)
+
+            # print "trck_xyz: ", trck_xyz
+            # print "img: ", img
+            # print "coord_raw: ", coord_raw
 
             coord = (float(img[0]), float(img[1]), float(img[2]),
                      coord_raw[0, 3], coord_raw[0, 4], coord_raw[0, 5])
@@ -193,7 +204,8 @@ class CoregistrationObjectStatic(threading.Thread):
             wx.CallAfter(Publisher.sendMessage, 'Co-registered points', coord[0:3])
             # wx.CallAfter(Publisher.sendMessage, 'Set camera in volume', coord[0:3])
             wx.CallAfter(Publisher.sendMessage, 'Set camera in volume', coord)
-            wx.CallAfter(Publisher.sendMessage, 'Update object orientation', (coil_bases, angles, coord[0:3]))
+            wx.CallAfter(Publisher.sendMessage, 'Update object orientation',
+                         (obj_base_img, obj_base_trck, obj_sensor_orient, coord[0:3], angles))
 
             # TODO: Optimize the value of sleep for each tracking device.
             # Debug tracker is not working with 0.175 so changed to 0.2
@@ -234,9 +246,12 @@ class CoregistrationObjectDynamic(threading.Thread):
         trck_id = self.trck_info[1]
         trck_mode = self.trck_info[2]
 
-        coil_q = self.coil_info[0]
-        coil_id = self.coil_info[1]
-        coil_mode = self.coil_info[2]
+        obj_base_img = self.coil_info[0]
+        obj_base_trck = self.coil_info[1]
+        obj_sensor_orient = self.coil_info[2]
+        obj_center2 = self.coil_info[3]
+        obj_sensor = self.coil_info[4]
+        obj_center = self.coil_info[5]
 
         while self.nav_id:
             # trck_coord, probe, reference = dco.GetCoordinates(trck_init, trck_id, trck_mode)
@@ -244,17 +259,22 @@ class CoregistrationObjectDynamic(threading.Thread):
 
             trck_coord = dco.dynamic_reference(coord_raw[0, ::], coord_raw[1, ::])
 
-            trck_xyz = mat([[trck_coord[0]], [trck_coord[1]], [trck_coord[2]]])
+            trck_xyz = asmatrix(trck_coord[0:3]).reshape([3, 1]) + (obj_center2 - obj_sensor)
+
+            # trck_xyz = mat([[trck_coord[0]], [trck_coord[1]], [trck_coord[2]]])
             img = q1 + (m_inv * n) * (trck_xyz - q2)
 
             coord = (float(img[0]), float(img[1]), float(img[2]), trck_coord[3],
                      trck_coord[4], trck_coord[5])
+            angles = coord_raw[0, 3:6]
 
             # Tried several combinations and different locations to send the messages,
             # however only this one does not block the GUI during navigation.
             wx.CallAfter(Publisher.sendMessage, 'Co-registered points', coord[0:3])
             # wx.CallAfter(Publisher.sendMessage, 'Set camera in volume', coord[0:3])
             wx.CallAfter(Publisher.sendMessage, 'Set camera in volume', coord)
+            wx.CallAfter(Publisher.sendMessage, 'Update object orientation',
+                         (obj_base_img, obj_base_trck, obj_sensor_orient, coord[0:3], angles))
 
             # TODO: Optimize the value of sleep for each tracking device.
             # Debug tracker is not working with 0.175 so changed to 0.2

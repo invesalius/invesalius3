@@ -152,10 +152,10 @@ def object_registration(fiducials, bases):
                          np.asarray(obj_img2).reshape([1, 3]),
                          np.asarray(obj_img3).reshape([1, 3])])
 
-    # obj_center = np.asmatrix(fiducials[3, :]).reshape([3, 1])
+    obj_center2 = np.asmatrix(fiducials[3, :]).reshape([3, 1])
     obj_center = q1 + (minv * n) * (np.asmatrix(fiducials[3, :]).reshape([3, 1]) - q2)
     obj_sensor = np.asmatrix(fiducials[4, :]).reshape([3, 1])
     obj_base = base_creation(obj_img)
     obj_trck = base_creation(fiducials)
 
-    return obj_center.reshape([1, 3]), obj_sensor, obj_base, obj_trck
+    return obj_center.reshape([1, 3]), obj_sensor, obj_base, obj_trck, obj_center2

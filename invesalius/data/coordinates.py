@@ -129,13 +129,13 @@ def PolhemusWrapperCoord(trck, trck_id, ref_mode):
         print "No sensor 2 found."
         pass
 
-    try:
-        coord3 = np.array([float(trck.PositionTooltipX3) * scale[0], float(trck.PositionTooltipY3) * scale[1],
-                           float(trck.PositionTooltipZ3) * scale[2],
-                           float(trck.AngleX3), float(trck.AngleY3), float(trck.AngleZ3)])
-        coord = np.vstack([coord, coord3])
-    except:
-        print "No sensor 3 found."
+    # try:
+    #     coord3 = np.array([float(trck.PositionTooltipX3) * scale[0], float(trck.PositionTooltipY3) * scale[1],
+    #                        float(trck.PositionTooltipZ3) * scale[2],
+    #                        float(trck.AngleX3), float(trck.AngleY3), float(trck.AngleZ3)])
+    #     coord = np.vstack([coord, coord3])
+    # except:
+    #     print "No sensor 3 found."
 
 
     # if ref_mode:

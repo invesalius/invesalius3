@@ -570,6 +570,11 @@ class NeuronavigationPanel(wx.Panel):
                 Publisher.sendMessage("Hide current mask")
 
                 self.obj_reg_status = True
+                # obj_fid = np.array([[152.73527508, 266.62955856, -202.28705912],
+                #                     [181.85043106, 322.48746204, -196.71066742],
+                #                     [187.60802536, 285.95369396, -200.14948368],
+                #                     [164.06406517, 291.1987711,  -212.90461597],
+                #                     [213.89145012, 271.30807629, -177.70791502]])
                 obj_fid = np.array([[152.73527508, 266.62955856, -202.28705912],
                                     [181.85043106, 322.48746204, -196.71066742],
                                     [187.60802536, 285.95369396, -200.14948368],
@@ -586,10 +591,13 @@ class NeuronavigationPanel(wx.Panel):
                     if self.obj_show:
                         # obj_reg[0] is object 3x3 fiducial matrix and obj_reg[1] is 3x3 orientation matrix
                         if self.obj_reg_status:
-                            # obj_center, obj_sensor, obj_base = db.object_registration(self.obj_reg[0], bases_coreg)
-                            # obj_mode = (obj_center, obj_sensor, obj_base, self.obj_reg[1])
-                            obj_center, obj_sensor, obj_base = db.object_registration(obj_fid, bases_coreg)
-                            obj_mode = (obj_center, obj_sensor, obj_base, obj_ori)
+                            obj_center_aux, obj_sensor, obj_base_img, obj_base_trck, obj_center2 = db.object_registration(obj_fid, bases_coreg)
+                            obj_sensor_orient = obj_ori[4, :]
+                            obj_center = obj_center_aux[0, 0], obj_center_aux[0, 1], obj_center_aux[0, 2]
+                            obj_mode = obj_base_img, obj_base_trck, obj_sensor_orient, obj_center2, obj_sensor, obj_center
+
+                            Publisher.sendMessage('Update object initial orientation',
+                                                  (obj_base_img, obj_base_trck, obj_sensor_orient, obj_center))
 
                             self.correg = dcr.CoregistrationObjectDynamic(bases_coreg, nav_id, tracker_mode, obj_mode)
                         else:
@@ -600,17 +608,18 @@ class NeuronavigationPanel(wx.Panel):
                     if self.obj_show:
                         # obj_reg[0] is object 5x3 fiducial matrix and obj_reg[1] is 5x3 orientation matrix
                         if self.obj_reg_status:
-                            obj_center_aux, obj_sensor, obj_base_img, obj_base_trck = db.object_registration(obj_fid, bases_coreg)
+                            obj_center_aux, obj_sensor, obj_base_img, obj_base_trck, obj_center2 = db.object_registration(obj_fid, bases_coreg)
                             # obj_center_aux, obj_sensor, obj_base_img, obj_base_trck = db.object_registration(self.obj_reg[0], bases_coreg)
                             # obj_mode = (obj_center, obj_sensor, obj_base, self.obj_reg[1])
                             obj_sensor_orient = obj_ori[4, :]
                             # obj_sensor_orient = self.obj_reg[1][4, :]
                             obj_center = obj_center_aux[0, 0], obj_center_aux[0, 1], obj_center_aux[0, 2]
+                            obj_mode = obj_base_img, obj_base_trck, obj_sensor_orient, obj_center2, obj_sensor, obj_center
 
                             Publisher.sendMessage('Update object initial orientation',
                                                   (obj_base_img, obj_base_trck, obj_sensor_orient, obj_center))
 
-                            # self.correg = dcr.CoregistrationObjectStatic(bases_coreg, nav_id, tracker_mode, obj_mode)
+                            self.correg = dcr.CoregistrationObjectStatic(bases_coreg, nav_id, tracker_mode, obj_mode)
                         else:
                             dlg.InvalidObjectRegistration()
                     else:
@@ -626,10 +635,10 @@ class NeuronavigationPanel(wx.Panel):
             for btn_c in self.btns_coord:
                 btn_c.Enable(True)
 
-            # if self.trigger_state:
-            #     self.trigger.stop()
-            #
-            # self.correg.stop()
+            if self.trigger_state:
+                self.trigger.stop()
+
+            self.correg.stop()
 
             Publisher.sendMessage("Navigation Status", False)
 
