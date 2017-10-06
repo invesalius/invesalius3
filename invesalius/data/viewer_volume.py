@@ -602,7 +602,7 @@ class Viewer(wx.Panel):
         Coil for navigation rendered in volume viewer.
         """
 
-        coil_file = os.path.join(const.COIL_DIR, "magstim_fig8_coil.stl")
+        coil_file = os.path.join(const.OBJ_DIR, "magstim_fig8_coil.stl")
 
         reader = vtk.vtkSTLReader()
         reader.SetFileName(coil_file)

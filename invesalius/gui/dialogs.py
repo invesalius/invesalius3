@@ -18,11 +18,19 @@
 #    PARTICULAR. Consulte a Licenca Publica Geral GNU para obter mais
 #    detalhes.
 #--------------------------------------------------------------------------
-from functools import partial
-from math import sin, cos
+
 import os
 import random
 import sys
+
+if sys.platform == 'win32':
+    try:
+        import win32api
+        _has_win32api = True
+    except ImportError:
+        _has_win32api = False
+else:
+    _has_win32api = False
 
 import vtk
 import wx
@@ -35,9 +43,7 @@ from wx.lib.wordwrap import wordwrap
 from wx.lib.pubsub import pub as Publisher
 
 import invesalius.constants as const
-import invesalius.data.bases as db
 import invesalius.data.coordinates as dco
-import invesalius.data.coregistration as dcr
 import invesalius.gui.widgets.gradient as grad
 import invesalius.session as ses
 import invesalius.utils as utils
@@ -483,6 +489,66 @@ def ShowLoadMarkersDialog():
                         defaultDir="",
                         defaultFile="",
                         wildcard=_("Markers files (*.mks)|*.mks"),
+                        style=wx.OPEN|wx.CHANGE_DIR)
+
+    # inv3 filter is default
+    dlg.SetFilterIndex(0)
+
+    # Show the dialog and retrieve the user response. If it is the OK response,
+    # process the data.
+    filepath = None
+    try:
+        if dlg.ShowModal() == wx.ID_OK:
+            # This returns a Python list of files that were selected.
+            filepath = dlg.GetPath()
+    except(wx._core.PyAssertionError):  # FIX: win64
+        filepath = dlg.GetPath()
+
+    # Destroy the dialog. Don't do this until you are done with it!
+    # BAD things can happen otherwise!
+    dlg.Destroy()
+    os.chdir(current_dir)
+    return filepath
+
+
+def ShowSaveRegistrationDialog(default_filename=None):
+    current_dir = os.path.abspath(".")
+    dlg = wx.FileDialog(None,
+                        _("Save object registration as..."),  # title
+                        "",  # last used directory
+                        default_filename,
+                        _("Registration files (*.obr)|*.obr"),
+                        wx.SAVE | wx.OVERWRITE_PROMPT)
+    # dlg.SetFilterIndex(0) # default is VTI
+
+    filename = None
+    try:
+        if dlg.ShowModal() == wx.ID_OK:
+            filename = dlg.GetPath()
+            ok = 1
+        else:
+            ok = 0
+    except(wx._core.PyAssertionError):  # TODO: fix win64
+        filename = dlg.GetPath()
+        ok = 1
+
+    if (ok):
+        extension = "obr"
+        if sys.platform != 'win32':
+            if filename.split(".")[-1] != extension:
+                filename = filename + "." + extension
+
+    os.chdir(current_dir)
+    return filename
+
+
+def ShowLoadRegistrationDialog():
+    current_dir = os.path.abspath(".")
+
+    dlg = wx.FileDialog(None, message=_("Load object registration"),
+                        defaultDir="",
+                        defaultFile="",
+                        wildcard=_("Registration files (*.obr)|*.obr"),
                         style=wx.OPEN|wx.CHANGE_DIR)
 
     # inv3 filter is default
@@ -2993,32 +3059,19 @@ class ObjectCalibrationDialog(wx.Dialog):
 
         self.tracker_id = nav_prop[0]
         self.trk_init = nav_prop[1]
-        # self.coil_ref_id = nav_prop[2]
-        self.coil_ref_id = 0
+        self.obj_ref_id = 0
+        self.obj_name = None
 
-        self.m = None
-        self.q1 = None
-        self.minv = None
-
-        self.correg = None
-        self.staticballs = []
-        self.ball_id = 0
-        self.ball_centers = []
-        self.to_translate = 0
-        self.init_angle_plh = None
-        self.coil_fiducials = np.full([5, 3], np.nan)
-        self.coil_orients = np.full([5, 3], np.nan)
+        self.obj_fiducials = np.full([5, 3], np.nan)
+        self.obj_orients = np.full([5, 3], np.nan)
 
         pre = wx.PreDialog()
-        pre.Create(wx.GetApp().GetTopWindow(), -1, _(u"TMS coil calibration"), size=(450, 440),
-                   style=wx.DEFAULT_DIALOG_STYLE | wx.FRAME_FLOAT_ON_PARENT | wx.STAY_ON_TOP)
+        pre.Create(wx.GetApp().GetTopWindow(), -1, _(u"Object calibration"), size=(450, 440),
+                   style=wx.DEFAULT_DIALOG_STYLE | wx.FRAME_FLOAT_ON_PARENT)
         self.PostCreate(pre)
 
-        # self.CenterOnScreen()
-
         self._init_gui()
-        self.__bind_events()
-        self.LoadCoil()
+        self.LoadObject()
 
     def _init_gui(self):
         self.interactor = wxVTKRenderWindowInteractor(self, -1, size=self.GetSize())
@@ -3031,47 +3084,40 @@ class ObjectCalibrationDialog(wx.Dialog):
         self.txt_coord = [list(), list(), list(), list(), list()]
 
         # ComboBox for tracker reference mode
-        tooltip = wx.ToolTip(_(u"Choose the coil reference mode"))
+        tooltip = wx.ToolTip(_(u"Choose the object reference mode"))
         choice_ref = wx.ComboBox(self, -1, "", size=wx.Size(90, 23),
                                  choices=const.REF_MODE, style=wx.CB_DROPDOWN | wx.CB_READONLY)
-        choice_ref.SetSelection(self.coil_ref_id)
+        choice_ref.SetSelection(self.obj_ref_id)
         choice_ref.SetToolTip(tooltip)
         choice_ref.Bind(wx.EVT_COMBOBOX, self.OnChoiceRefMode)
 
-        # Toggle button for neuronavigation
-        tooltip = wx.ToolTip(_(u"Start coil tracking"))
-        btn_nav = wx.ToggleButton(self, -1, _(u"Test coil"), size=wx.Size(90, 30))
-        btn_nav.SetToolTip(tooltip)
-        btn_nav.Bind(wx.EVT_TOGGLEBUTTON, partial(self.OnTestCoil, btn=(btn_nav, choice_ref)))
+        # Save button for object registration
+        tooltip = wx.ToolTip(_(u"Save object registration file"))
+        btn_save = wx.Button(self, -1, _(u"Save"), size=wx.Size(90, 30))
+        btn_save.SetToolTip(tooltip)
+        btn_save.Bind(wx.EVT_BUTTON, self.ShowSaveObjectDialog)
 
-        # Buttons to finish or cancel coil registration
+        # Buttons to finish or cancel object registration
         tooltip = wx.ToolTip(_(u"Registration done"))
         # btn_ok = wx.Button(self, -1, _(u"Done"), size=wx.Size(90, 30))
         btn_ok = wx.Button(self, wx.ID_OK, _(u"Done"), size=wx.Size(90, 30))
         btn_ok.SetToolTip(tooltip)
-        # btn_ok.Bind(wx.EVT_BUTTON, self.OnDone)
 
-        tooltip = wx.ToolTip(_(u"Cancel registration"))
-        btn_cancel = wx.Button(self, wx.ID_CANCEL, _(u"Cancel"), size=wx.Size(90, 30))
-        btn_cancel.SetToolTip(tooltip)
-        # btn_cancel.Bind(wx.EVT_BUTTON, self.OnCancel)
-
-        extra_sizer = wx.FlexGridSizer(rows=4, cols=1, hgap=5, vgap=10)
+        extra_sizer = wx.FlexGridSizer(rows=4, cols=1, hgap=5, vgap=20)
         extra_sizer.AddMany([choice_ref,
-                             btn_nav,
-                             btn_cancel,
+                             btn_save,
                              btn_ok])
 
-        # Push buttons for coil fiducials
-        btns_coil = const.BTNS_COIL
-        tips_coil = const.TIPS_COIL
+        # Push buttons for object fiducials
+        btns_obj = const.BTNS_OBJ
+        tips_obj = const.TIPS_OBJ
 
-        for k in btns_coil:
-            n = btns_coil[k].keys()[0]
-            lab = btns_coil[k].values()[0]
+        for k in btns_obj:
+            n = btns_obj[k].keys()[0]
+            lab = btns_obj[k].values()[0]
             self.btns_coord[n] = wx.Button(self, k, label=lab, size=wx.Size(60, 23))
-            self.btns_coord[n].SetToolTip(wx.ToolTip(tips_coil[n]))
-            self.btns_coord[n].Bind(wx.EVT_BUTTON, self.OnSetCoilCoordinates)
+            self.btns_coord[n].SetToolTip(wx.ToolTip(tips_obj[n]))
+            self.btns_coord[n].Bind(wx.EVT_BUTTON, self.OnGetObjectFiducials)
 
         for m in range(0, 5):
             for n in range(0, 3):
@@ -3091,465 +3137,101 @@ class ObjectCalibrationDialog(wx.Dialog):
 
         main_sizer = wx.BoxSizer(wx.VERTICAL)
         main_sizer.Add(self.interactor, 0, wx.EXPAND)
-        main_sizer.Add(group_sizer, 0, wx.EXPAND|wx.GROW|wx.LEFT|wx.TOP|wx.RIGHT|wx.BOTTOM|wx.ALIGN_CENTER_HORIZONTAL, 10)
+        main_sizer.Add(group_sizer, 0,
+                       wx.EXPAND|wx.GROW|wx.LEFT|wx.TOP|wx.RIGHT|wx.BOTTOM|wx.ALIGN_CENTER_HORIZONTAL, 10)
 
         self.SetSizer(main_sizer)
         main_sizer.Fit(self)
 
-    def __bind_events(self):
-        Publisher.subscribe(self.UpdateCoilAngle, 'Update coil angles')
+    def LoadObject(self):
 
-    def LoadCoil(self):
-        coil_file = os.path.join(const.COIL_DIR, "magstim_fig8_coil.stl")
+        filename = ShowImportMeshFilesDialog()
 
-        coil_obj = vtk.vtkSTLReader()
-        coil_obj.SetFileName(coil_file)
+        if filename:
+            if filename.lower().endswith('.stl'):
+                reader = vtk.vtkSTLReader()
+            elif filename.lower().endswith('.ply'):
+                reader = vtk.vtkPLYReader()
+            elif filename.lower().endswith('.obj'):
+                reader = vtk.vtkOBJReader()
+            elif filename.lower().endswith('.vtp'):
+                reader = vtk.vtkXMLPolyDataReader()
+            else:
+                wx.MessageBox(_("File format not reconized by InVesalius"), _("Import surface error"))
+                return
+        else:
+            filename = os.path.join(const.OBJ_DIR, "magstim_fig8_coil.stl")
+            reader = vtk.vtkSTLReader()
 
-        coil_mapper = vtk.vtkPolyDataMapper()
-        coil_mapper.SetInputConnection(coil_obj.GetOutputPort())
+        if _has_win32api:
+            reader.SetFileName(win32api.GetShortPathName(filename).encode(const.FS_ENCODE))
+        else:
+            reader.SetFileName(filename.encode(const.FS_ENCODE))
 
-        self.coil_actor = vtk.vtkActor()
-        self.coil_actor.SetMapper(coil_mapper)
+        reader.Update()
+        polydata = reader.GetOutput()
 
-        self.axes = vtk.vtkAxesActor()
-        self.axes.SetShaftTypeToCylinder()
-        self.axes.SetXAxisLabelText("x")
-        self.axes.SetYAxisLabelText("y")
-        self.axes.SetZAxisLabelText("z")
-        self.axes.SetTotalLength(50.0, 50.0, 50.0)
+        if polydata.GetNumberOfPoints() == 0:
+            wx.MessageBox(_("InVesalius was not able to import this surface"), _("Import surface error"))
+        else:
+            self.obj_name = os.path.splitext(os.path.split(filename)[-1])[0]
 
-        self.ren.AddActor(self.coil_actor)
-        self.ren.AddActor(self.axes)
+        mapper = vtk.vtkPolyDataMapper()
+        mapper.SetInputData(polydata)
 
-    def OnDone(self, evt):
-        self.coil_actor.RotateX(90)
+        obj_actor = vtk.vtkActor()
+        obj_actor.SetMapper(mapper)
+
+        axes = vtk.vtkAxesActor()
+        axes.SetShaftTypeToCylinder()
+        axes.SetXAxisLabelText("x")
+        axes.SetYAxisLabelText("y")
+        axes.SetZAxisLabelText("z")
+        axes.SetTotalLength(50.0, 50.0, 50.0)
+
+        self.ren.AddActor(obj_actor)
+        self.ren.AddActor(axes)
+
         self.interactor.Render()
-        # print 'Coil orientation', self.coilActor.GetOrientation()
 
-    def UpdateCoilAngle(self, pubsub_evt):
-
-        a, b, g = np.radians(pubsub_evt.data)
-
-        Mrot = np.mat([[cos(a) * cos(b), sin(b) * sin(g) * cos(a) - cos(g) * sin(a),
-                        cos(a) * sin(b) * cos(g) + sin(a) * sin(g)],
-                       [cos(b) * sin(a), sin(b) * sin(g) * sin(a) + cos(g) * cos(a),
-                        cos(g) * sin(b) * sin(a) - sin(g) * cos(a)],
-                       [-sin(b), sin(g) * cos(b), cos(b) * cos(g)]])
-
-        # Mrot = np.mat([[cos(a) * cos(b), sin(b) * sin(g) * cos(a) - cos(g) * sin(a),
-        #                 cos(a) * sin(b) * cos(g) + sin(a) * sin(g), 0.0],
-        #                [cos(b) * sin(a), sin(b) * sin(g) * sin(a) + cos(g) * cos(a),
-        #                 cos(g) * sin(b) * sin(a) - sin(g) * cos(a), 0.0],
-        #                [-sin(b), sin(g) * cos(b), cos(b) * cos(g), 0.0],
-        #                [0.0, 0.0, 0.0, 1.0]])
-
-        newMrot = self.minv*Mrot*self.m
-        mat4x4 = self.array_to_vtkmatrix4x4(newMrot)
-        self.coil_actor.SetUserMatrix(mat4x4)
-        self.interactor.Render()
-
-        # print "\n===================================="
-        # print "orientation: ", self.coil_actor.GetOrientation()
-        # print "====================================\n"
-
-    def OnSetCoilCoordinates(self, evt):
-        btn_id = const.BTNS_COIL[evt.GetId()].keys()[0]
-        # coord = None
+    def OnGetObjectFiducials(self, evt):
+        btn_id = const.BTNS_OBJ[evt.GetId()].keys()[0]
 
         if self.trk_init and self.tracker_id:
-            coord_raw = dco.GetCoordinates(self.trk_init, self.tracker_id, self.coil_ref_id)
-            if self.coil_ref_id:
-                coord = dco.dynamic_reference(coord_raw[0, ::], coord_raw[1, ::])
+            coord_raw = dco.GetCoordinates(self.trk_init, self.tracker_id, self.obj_ref_id)
+            if self.obj_ref_id and btn_id == 4:
+                coord = coord_raw[2, :]
             else:
-                coord = coord_raw[0, ::]
+                coord = coord_raw[0, :]
         else:
             NavigationTrackerWarning(0, 'choose')
 
         # Update text controls with tracker coordinates
-        # print coord
-        if coord is not None:
-            self.coil_fiducials[btn_id, :] = coord[0:3]
-            self.coil_orients[btn_id, :] = coord[3:6]
+        if coord is not None or np.sum(coord) != 0.0:
+            self.obj_fiducials[btn_id, :] = coord[0:3]
+            self.obj_orients[btn_id, :] = coord[3:6]
             for n in [0, 1, 2]:
                 self.txt_coord[btn_id][n].SetLabel(str(round(coord[n], 1)))
-
-        # print self.coil_orients
+        else:
+            NavigationTrackerWarning(0, 'choose')
 
     def OnChoiceRefMode(self, evt):
-        # When ref mode is changed the tracker coordinatess are set to zero
-        self.coil_ref_id = evt.GetSelection()
-        self.ResetTrackerFiducials()
-        print "Coil reference mode changed!"
-
-    def ResetTrackerFiducials(self):
+        # When ref mode is changed the tracker coordinates are set to nan
+        self.obj_ref_id = evt.GetSelection()
         for m in range(0, 5):
-            self.coil_fiducials[m, :] = [np.nan, np.nan, np.nan]
-            self.coil_orients[m, :] = [np.nan, np.nan, np.nan]
+            self.obj_fiducials[m, :] = np.full([1, 3], np.nan)
+            self.obj_orients[m, :] = np.full([1, 3], np.nan)
             for n in range(0, 3):
                 self.txt_coord[m][n].SetLabel('-')
 
-    def OnTestCoil(self, evt, btn):
-        btn_nav = btn[0]
-        choice_ref = btn[1]
-
-        self.m, self.q1, self.minv = db.base_creation(self.coil_fiducials[0:3, :])
-
-        nav_id = btn_nav.GetValue()
-        if nav_id:
-            if np.isnan(self.coil_fiducials).any():
-                InvalidFiducials()
-                btn_nav.SetValue(False)
-
-            elif not self.trk_init:
-                NavigationTrackerWarning(0, 'choose')
-
-            else:
-                tooltip = wx.ToolTip(_(u"Stop coil tracking"))
-                btn_nav.SetToolTip(tooltip)
-
-                print self.btns_coord
-
-                for btn_c in self.btns_coord:
-                    btn_c.Enable(False)
-
-                tracker_mode = self.trk_init, self.tracker_id, self.coil_ref_id
-
-                self.correg = dcr.CoilTest(nav_id, tracker_mode)
-
+    def ShowSaveObjectDialog(self, evt):
+        if np.isnan(self.obj_fiducials).any() or np.isnan(self.obj_orients).any():
+            wx.MessageBox(_("Digitize all object fiducials before saving"), _("Save error"))
         else:
-            tooltip = wx.ToolTip(_(u"Start coil tracking"))
-            btn_nav.SetToolTip(tooltip)
-
-            # Enable all coil fiducials buttons
-            choice_ref.Enable(True)
-            for btn_c in self.btns_coord:
-                btn_c.Enable(True)
-
-            self.correg.stop()
-
-    def array_to_vtkmatrix4x4(self, mrot3x3):
-
-        vtkmat = vtk.vtkMatrix4x4()
-        mrot4x4 = np.identity(4)
-        mrot4x4[0:3, 0:3] = mrot3x3[:, :]
-        for i in range(0, 4):
-            for j in range(0, 4):
-                vtkmat.SetElement(i, j, mrot4x4[i, j])
-        return vtkmat
+            filename = ShowSaveRegistrationDialog("object_registration.obr")
+            hdr = 'Object' + "\t" + self.obj_name + "\t" + 'Reference' + "\t" + str('%d' % self.obj_ref_id)
+            data = np.hstack([self.obj_fiducials, self.obj_orients])
+            np.savetxt(filename, data, fmt='%.4f', delimiter='\t', newline='\n', header=hdr)
 
     def GetValue(self):
-        # size = len(self.ball_centers) - 1  # ultima casa eh pra pegar o angulo inicial do plh
-        # presize = len(self.ball_centers) - 4
-        # p1, p2, p3 = self.ball_centers[presize:size]
-        # bases = self.base_creation(p1, p2, p3)
-        # inits_angles = self.coilActor.GetOrientation(), self.init_angle_plh, bases
-        # return inits_angles
-        # fin = "Passei pelo GetValue"
-        # print fin
-        return self.coil_fiducials, self.coil_orients
-
-
-# class CoilCalib rationDialog(wx.Dialog):
-#     def __init__(self, parent=None, ID=-1, title="Calibration Dialog", size=wx.DefaultSize,
-#                  pos=wx.DefaultPosition, style=wx.DEFAULT_DIALOG_STYLE,
-#                  useMetal=False, nav_prop=None):
-#
-#         self.nav_prop = nav_prop
-#         self.correg = None
-#         self.staticballs = []
-#         self.ball_id = 0
-#         self.ball_centers = []
-#         self.to_translate = 0
-#         self.init_angle_plh = None
-#
-#         # Instead of calling wx.Dialog.__init__ we precreate the dialog
-#         # so we can set an extra style that must be set before
-#         # creation, and then we create the GUI object using the Create
-#         # method.
-#         pre = wx.PreDialog()
-#         pre.SetExtraStyle(wx.DIALOG_EX_CONTEXTHELP)
-#         pre.Create(parent, ID, title, pos, (700, 500), style)
-#
-#         # This next step is the most important, it turns this Python
-#         # object into the real wrapper of the dialog (instead of pre)
-#         # as far as the wxPython extension is concerned.
-#         self.PostCreate(pre)
-#
-#         self.CenterOnScreen()
-#
-#         # This extra style can be set after the UI object has been created.
-#         if 'wxMac' in wx.PlatformInfo and useMetal:
-#             self.SetExtraStyle(wx.DIALOG_EX_METAL)
-#
-#         self.CenterOnScreen()
-#         self.draw_gui()
-#         # self.LoadData()
-#
-#         # LINE 1: Janela
-#
-#     def draw_gui(self):
-#         style = vtk.vtkInteractorStyleTrackballActor()
-#
-#         self.interactor = wxVTKRenderWindowInteractor(self, -1, size=self.GetSize())
-#         # self.interactor.SetInteractorStyle(style)
-#         self.interactor.Enable(1)
-#         self.ren = vtk.vtkRenderer()
-#         self.interactor.GetRenderWindow().AddRenderer(self.ren)
-#
-#         # LINE 2: Botoes
-#
-#         marker = wx.Button(self, -1, "Create Marker")
-#         marker.Bind(wx.EVT_BUTTON, self.OnCalibrationMarkers)
-#
-#         dc_vtkMatrix = wx.Button(self, -1, "Matrix")
-#         dc_vtkMatrix.Bind(wx.EVT_BUTTON, self.DirectionCosinesTest_vtkmatrix)
-#
-#         dc_eulerangles = wx.Button(self, -1, "Euler")
-#         dc_eulerangles.Bind(wx.EVT_BUTTON, self.DirectionCosinesTest_eulerangles)
-#
-#         rotate_button = wx.Button(self, -1, "Rotate")
-#         rotate_button.Bind(wx.EVT_BUTTON, self.rotate)
-#
-#         reset = wx.Button(self, -1, "Reset")
-#         reset.Bind(wx.EVT_BUTTON, self.Reset)
-#
-#         button_neuronavigate = wx.Button(self, -1, "Neuronavigate")
-#         button_neuronavigate.Bind(wx.EVT_BUTTON, self.Neuronavigate_ToggleButton)
-#
-#         ok = wx.Button(self, wx.ID_OK)
-#
-#         cancel = wx.Button(self, wx.ID_CANCEL)
-#
-#         button_sizer = wx.BoxSizer(wx.HORIZONTAL)
-#         button_sizer.Add(marker)
-#         button_sizer.Add(dc_vtkMatrix)
-#         button_sizer.Add(dc_eulerangles)
-#         button_sizer.Add(reset)
-#         button_sizer.Add(button_neuronavigate)
-#         button_sizer.Add(rotate_button)
-#         button_sizer.Add(ok)
-#         button_sizer.Add(cancel)
-#
-#         # OVERVIEW
-#         # Merge all sizers and checkboxes
-#         sizer = wx.BoxSizer(wx.VERTICAL)
-#         sizer.Add(self.interactor, 0, wx.EXPAND)
-#         sizer.Add(button_sizer, 0, wx.TOP | wx.RIGHT | wx.LEFT | wx.GROW | wx.EXPAND, 20)
-#
-#         self.SetSizer(sizer)
-#         sizer.Fit(self)
-#
-#     def LoadData(self):
-#         coil_reference = vtk.vtkOBJReader()
-#         # coil_reference.SetFileName(os.path.realpath(os.path.join('..',
-#         #                                                         'models',
-#         #                                                         'coil_cti_2_scale10.obj')))
-#
-#         coil_reference.SetFileName('E:\source\coil\coil_cti_2_scale10.obj')
-#         coilMapper = vtk.vtkPolyDataMapper()
-#         coilMapper.SetInputConnection(coil_reference.GetOutputPort())
-#         self.coilActor = vtk.vtkActor()
-#         # self.coilActor.Scale(10.0, 10.0, 10.0)
-#         self.coilActor.SetMapper(coilMapper)
-#
-#         axes = vtk.vtkAxesActor()
-#         axes.SetShaftTypeToCylinder()
-#         axes.SetXAxisLabelText("x")
-#         axes.SetYAxisLabelText("y")
-#         axes.SetZAxisLabelText("z")
-#         axes.SetTotalLength(50.0, 50.0, 50.0)
-#
-#         self.ren.AddActor(self.coilActor)
-#         self.ren.AddActor(axes)
-#
-#     def rotate(self, evt):
-#         self.coilActor.RotateX(90)
-#         self.interactor.Render()
-#         print 'Coil orientation', self.coilActor.GetOrientation()
-#
-#     def OnCalibrationMarkers(self, evt):
-#         import invesalius.data.coordinates as co
-#         import invesalius.data.bases as db
-#         from numpy import matrix
-#         Minv = self.nav_prop[0][0]
-#         N = self.nav_prop[0][1]
-#         q1 = self.nav_prop[0][2]
-#         q2 = self.nav_prop[0][3]
-#         nav_id = self.nav_prop[1]
-#         tracker_init = self.nav_prop[1][0]
-#         tracker = self.nav_prop[1][1]
-#         tracker_mode = self.nav_prop[1][2]
-#
-#         trck = co.Coordinates(tracker_init, tracker, tracker_mode).Returns()
-#         tracker = matrix([[trck[0]], [trck[1]], [trck[2]]])
-#         self.init_angle_plh = trck[3], trck[4], trck[5]
-#         img = q1 + (Minv * N) * (tracker - q2)
-#         coord = float(img[0]), float(img[1]), float(img[2])
-#         x, y, z = db.FlipX(coord)
-#
-#         if not self.ball_centers:
-#             self.to_translate = -x, -y, -z
-#
-#         x = x + self.to_translate[0]
-#         y = y + self.to_translate[1]
-#         z = z + self.to_translate[2]
-#
-#         ball_ref = vtk.vtkSphereSource()
-#         ball_ref.SetRadius(4)
-#         ball_ref.SetCenter(x, y, z)
-#
-#         self.ball_centers.append((x, y, z))
-#
-#         mapper = vtk.vtkPolyDataMapper()
-#         mapper.SetInput(ball_ref.GetOutput())
-#
-#         prop = vtk.vtkProperty()
-#         prop.SetColor(0, 1, 1)
-#
-#         # adding a new actor for the present ball
-#         self.staticballs.append(vtk.vtkActor())
-#
-#         self.staticballs[self.ball_id].SetMapper(mapper)
-#         self.staticballs[self.ball_id].SetProperty(prop)
-#
-#         self.ren.AddActor(self.staticballs[self.ball_id])
-#         self.ball_id += 1
-#
-#         self.interactor.Render()
-#
-#     def DirectionCosinesTest_vtkmatrix(self, evt):
-#         p1, p2, p3 = self.ball_centers[:3]
-#         dcm = self.base_creation(p1, p2, p3)
-#
-#         mat4x4 = vtk.vtkMatrix4x4()
-#         mat4x4.DeepCopy(dcm[0][0], dcm[0][1], dcm[0][2], 0.0,
-#                         dcm[1][0], dcm[1][1], dcm[1][2], 0.0,
-#                         dcm[2][0], dcm[2][1], dcm[2][2], 0.0,
-#                         0.0, 0.0, 0.0, 1.0)
-#
-#         self.coilActor.SetUserMatrix(mat4x4)
-#         print "\n===================================="
-#         print "orientation: ", self.coilActor.GetOrientation()
-#         print "====================================\n"
-#
-#     def DirectionCosinesTest_eulerangles(self, evt):
-#         # p1, p2, p3 = self.ball_centers[:3]
-#         # dcm = self.base_creation(p1, p2, p3)
-#
-#         dcm = self.nav_prop[0][1]
-#
-#         # site http://met.fzu.edu.cn/cai/Matlab6.5/help/toolbox/aeroblks/directioncosinematrixtoeulerangles.html
-#         theta = np.rad2deg(-np.arcsin(dcm[0][2]))
-#         phi = np.rad2deg(np.arctan(dcm[1][2] / dcm[2][2]))
-#         psi = np.rad2deg(np.arctan(dcm[0][1] / dcm[0][0]))
-#
-#         self.coilActor.RotateWXYZ(psi, 0, 0, 1)
-#         self.coilActor.RotateWXYZ(phi, 1, 0, 0)
-#         self.coilActor.RotateWXYZ(theta, 0, 1, 0)
-#         self.interactor.Render()
-#
-#         print "\n===================================="
-#         print "orientation: ", self.coilActor.GetOrientation()
-#         print "====================================\n"
-#
-#     def Reset(self, evt):
-#         self.ball_centers = []
-#         self.ball_id = 0
-#         self.to_translate = 0, 0, 0
-#         self.coilActor.SetOrientation(0, 0, 0)
-#         self.coilActor.SetOrigin(0, 0, 0)
-#         for i in range(0, len(self.staticballs)):
-#             self.ren.RemoveActor(self.staticballs[i])
-#         self.staticballs = []
-#
-#     def Neuronavigate_ToggleButton(self, evt):
-#         p0, p1, p2 = self.ball_centers[:3]
-#         m = self.base_creation(p0, p1, p2)
-#
-#         print "\n===================================="
-#         print "Pontos bobina", p0, p1, p2
-#         print "====================================\n"
-#
-#         # vm = vtk.vtkMatrix4x4()
-#         # vm.SetElement(0, 0, m[0, 0])
-#         # vm.SetElement(0, 1, m[0, 1])
-#         # vm.SetElement(0, 2, m[0, 2])
-#         # vm.SetElement(0, 3, 0      )
-#
-#         # vm.SetElement(1, 0, m[1, 0])
-#         # vm.SetElement(1, 1, m[1, 1])
-#         # vm.SetElement(1, 2, m[1, 2])
-#         # vm.SetElement(1, 3, 0      )
-#
-#         # vm.SetElement(2, 0, m[2, 0])
-#         # vm.SetElement(2, 1, m[2, 1])
-#         # vm.SetElement(2, 2, m[2, 2])
-#         # vm.SetElement(2, 3, 0      )
-#
-#         # vm.SetElement(3, 0, 0      )
-#         # vm.SetElement(3, 1, 0      )
-#         # vm.SetElement(3, 2, 0      )
-#         # vm.SetElement(3, 3, 1      )
-#
-#         # self.coilActor.SetUserMatrix(vm)
-#         # theta == beta
-#         # psi == alpha
-#         # phi == gama
-#         gama = np.rad2deg(np.arctan(m[1, 2] / m[2, 2]))
-#         beta = np.rad2deg(np.arcsin(-m[0, 2]))
-#         alpha = np.rad2deg(np.arctan(m[0, 1] / m[0, 0]))
-#
-#         print "Angulos", gama, beta, alpha
-#
-#         self.coilActor.RotateWXYZ(alpha, 0, 1, 0)
-#         self.coilActor.RotateWXYZ(beta, 1, 0, 0)
-#         self.coilActor.RotateWXYZ(gama, 0, 0, 1)
-#         self.interactor.Render()
-#
-#     def GetValue(self):
-#         size = len(self.ball_centers) - 1  # ultima casa eh pra pegar o angulo inicial do plh
-#         presize = len(self.ball_centers) - 4
-#         p1, p2, p3 = self.ball_centers[presize:size]
-#         bases = self.base_creation(p1, p2, p3)
-#         inits_angles = self.coilActor.GetOrientation(), self.init_angle_plh, bases
-#         return inits_angles
-#
-#     def base_creation(self, p1, p2, p3):
-#         p1 = np.array([p1[0], p1[1], p1[2]])
-#         p2 = np.array([p2[0], p2[1], p2[2]])
-#         p3 = np.array([p3[0], p3[1], p3[2]])
-#
-#         sub1 = p2 - p1
-#         sub2 = p3 - p1
-#
-#         g1 = sub1
-#
-#         # g2
-#         lamb1 = g1[0] * sub2[0] + g1[1] * sub2[1] + g1[2] * sub2[2]
-#         lamb2 = np.dot(g1, g1)
-#         lamb = lamb1 / lamb2
-#
-#         # Ponto q
-#         q = p1 + lamb * sub1
-#
-#         # g1 e g2 com origem em q
-#         g1 = p1 - q
-#         g2 = p3 - q
-#
-#         # testa se o g1 nao eh um vetor nulo
-#         if g1.any() == False:
-#             g1 = p2 - q
-#
-#         # g3 - Produto vetorial NumPy
-#         g3 = np.cross(g2, g1)
-#
-#         # normalizacao dos vetores
-#         g1 = g1 / np.sqrt(lamb2)
-#         g2 = g2 / np.sqrt(np.dot(g2, g2))
-#         g3 = g3 / np.sqrt(np.dot(g3, g3))
-#
-#         m = np.matrix([g1,
-#                        g2,
-#                        g3])
-#
-#         return m
+        return self.obj_fiducials, self.obj_orients, self.obj_ref_id

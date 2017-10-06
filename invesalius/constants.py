@@ -712,24 +712,24 @@ TIPS_TRK = [_("Select left ear with spatial tracker"),
             _("Select nasion with spatial tracker"),
             _("Show set coordinates in image")]
 
-COIL1 = wx.NewId()
-COIL2 = wx.NewId()
-COIL3 = wx.NewId()
-COILC = wx.NewId()
-COIL0 = wx.NewId()
+OBJL = wx.NewId()
+OBJR = wx.NewId()
+OBJA = wx.NewId()
+OBJC = wx.NewId()
+OBJF = wx.NewId()
 
-BTNS_COIL = {COIL1: {0: _('Left')},
-             COIL2: {1: _('Right')},
-             COIL3: {2: _('Anterior')},
-             COILC: {3: _('Center')},
-             COIL0: {4: _('Fixed')}}
+BTNS_OBJ = {OBJL: {0: _('Left')},
+            OBJR: {1: _('Right')},
+            OBJA: {2: _('Anterior')},
+            OBJC: {3: _('Center')},
+            OBJF: {4: _('Fixed')}}
 
-TIPS_COIL = [_("Select left coil wing"),
-             _("Select right coil wing"),
-             _("Select anterior coil point"),
-             _("Select coil center"),
-             _("Attach sensor to coil")]
+TIPS_OBJ = [_("Select left object fiducial"),
+            _("Select right object fiducial"),
+            _("Select anterior object fiducial"),
+            _("Select object center"),
+            _("Attach sensor to object")]
 
 CAL_DIR = os.path.abspath(os.path.join(FILE_PATH, '..', 'navigation', 'mtc_files', 'CalibrationFiles'))
 MAR_DIR = os.path.abspath(os.path.join(FILE_PATH, '..', 'navigation', 'mtc_files', 'Markers'))
-COIL_DIR = os.path.abspath(os.path.join(FILE_PATH, '..', 'navigation', 'coils'))
+OBJ_DIR = os.path.abspath(os.path.join(FILE_PATH, '..', 'navigation', 'objects'))

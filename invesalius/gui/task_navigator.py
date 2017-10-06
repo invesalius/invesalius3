@@ -143,10 +143,10 @@ class InnerFoldPanel(wx.Panel):
 
         # Fold 2 - Object registration panel
         item = fold_panel.AddFoldPanel(_("Object registration"), collapsed=True)
-        ctw = CoilPanel(item)
+        otw = ObjectRegistrationPanel(item)
 
         fold_panel.ApplyCaptionStyle(item, style)
-        fold_panel.AddFoldPanelWindow(item, ctw, spacing=0,
+        fold_panel.AddFoldPanelWindow(item, otw, spacing=0,
                                       leftSpacing=0, rightSpacing=0)
 
         # Fold 3 - Markers panel
@@ -528,6 +528,10 @@ class NeuronavigationPanel(wx.Panel):
         choice_ref = btn[2]
         txtctrl_fre = btn[3]
 
+        obj_fiducials = self.obj_reg[0]
+        obj_orients = self.obj_reg[1]
+        obj_reg_mode = self.obj_reg[2]
+
         nav_id = btn_nav.GetValue()
         if nav_id:
             if np.isnan(self.fiducials).any():
@@ -569,30 +573,30 @@ class NeuronavigationPanel(wx.Panel):
                 Publisher.sendMessage("Toggle Cross", const.SLICE_STATE_CROSS)
                 Publisher.sendMessage("Hide current mask")
 
-                self.obj_reg_status = True
+                # self.obj_reg_status = True
                 # obj_fid = np.array([[152.73527508, 266.62955856, -202.28705912],
                 #                     [181.85043106, 322.48746204, -196.71066742],
                 #                     [187.60802536, 285.95369396, -200.14948368],
                 #                     [164.06406517, 291.1987711,  -212.90461597],
                 #                     [213.89145012, 271.30807629, -177.70791502]])
-                obj_fid = np.array([[152.73527508, 266.62955856, -202.28705912],
-                                    [181.85043106, 322.48746204, -196.71066742],
-                                    [187.60802536, 285.95369396, -200.14948368],
-                                    [164.06406517, 291.1987711,  -212.90461597],
-                                    [213.89145012, 271.30807629, -177.70791502]])
-
-                obj_ori = np.array([[135.6554718, -15.11593151, -18.542202],
-                                    [128.07026672, -16.47393227, -20.26235199],
-                                    [127.30979919, -15.69838619, -12.12549877],
-                                    [-143.34231567, 38.09538269, 47.53349304],
-                                    [-26.14866066, -2.64125633, -0.74970043]])
+                # obj_fid = np.array([[152.73527508, 266.62955856, -202.28705912],
+                #                     [181.85043106, 322.48746204, -196.71066742],
+                #                     [187.60802536, 285.95369396, -200.14948368],
+                #                     [164.06406517, 291.1987711,  -212.90461597],
+                #                     [213.89145012, 271.30807629, -177.70791502]])
+                #
+                # obj_ori = np.array([[135.6554718, -15.11593151, -18.542202],
+                #                     [128.07026672, -16.47393227, -20.26235199],
+                #                     [127.30979919, -15.69838619, -12.12549877],
+                #                     [-143.34231567, 38.09538269, 47.53349304],
+                #                     [-26.14866066, -2.64125633, -0.74970043]])
 
                 if self.ref_mode_id:
                     if self.obj_show:
                         # obj_reg[0] is object 3x3 fiducial matrix and obj_reg[1] is 3x3 orientation matrix
                         if self.obj_reg_status:
-                            obj_center_aux, obj_sensor, obj_base_img, obj_base_trck, obj_center2 = db.object_registration(obj_fid, bases_coreg)
-                            obj_sensor_orient = obj_ori[4, :]
+                            obj_center_aux, obj_sensor, obj_base_img, obj_base_trck, obj_center2 = db.object_registration(obj_fiducials, bases_coreg)
+                            obj_sensor_orient = obj_orients[4, :]
                             obj_center = obj_center_aux[0, 0], obj_center_aux[0, 1], obj_center_aux[0, 2]
                             obj_mode = obj_base_img, obj_base_trck, obj_sensor_orient, obj_center2, obj_sensor, obj_center
 
@@ -608,10 +612,10 @@ class NeuronavigationPanel(wx.Panel):
                     if self.obj_show:
                         # obj_reg[0] is object 5x3 fiducial matrix and obj_reg[1] is 5x3 orientation matrix
                         if self.obj_reg_status:
-                            obj_center_aux, obj_sensor, obj_base_img, obj_base_trck, obj_center2 = db.object_registration(obj_fid, bases_coreg)
+                            obj_center_aux, obj_sensor, obj_base_img, obj_base_trck, obj_center2 = db.object_registration(obj_fiducials, bases_coreg)
                             # obj_center_aux, obj_sensor, obj_base_img, obj_base_trck = db.object_registration(self.obj_reg[0], bases_coreg)
                             # obj_mode = (obj_center, obj_sensor, obj_base, self.obj_reg[1])
-                            obj_sensor_orient = obj_ori[4, :]
+                            obj_sensor_orient = obj_orients[4, :]
                             # obj_sensor_orient = self.obj_reg[1][4, :]
                             obj_center = obj_center_aux[0, 0], obj_center_aux[0, 1], obj_center_aux[0, 2]
                             obj_mode = obj_base_img, obj_base_trck, obj_sensor_orient, obj_center2, obj_sensor, obj_center
@@ -649,7 +653,7 @@ class NeuronavigationPanel(wx.Panel):
                 self.numctrls_coord[m][n].SetValue(0.0)
 
 
-class CoilPanel(wx.Panel):
+class ObjectRegistrationPanel(wx.Panel):
     def __init__(self, parent):
         wx.Panel.__init__(self, parent)
         default_colour = wx.SystemSettings_GetColour(wx.SYS_COLOUR_MENUBAR)
@@ -664,70 +668,56 @@ class CoilPanel(wx.Panel):
 
         # Button for creating new coil
         BMP_ADD = wx.Bitmap(os.path.join(const.ICON_DIR, "object_add.png"), wx.BITMAP_TYPE_PNG)
-        button_new_coil = pbtn.PlateButton(self, BTN_NEW, "", BMP_ADD,
+        btn_new_obj = pbtn.PlateButton(self, BTN_NEW, "", BMP_ADD,
                                            style=pbtn.PB_STYLE_SQUARE | pbtn.PB_STYLE_DEFAULT)
-        button_new_coil.SetBackgroundColour(self.GetBackgroundColour())
-        self.Bind(wx.EVT_BUTTON, self.OnLinkCreate, button_new_coil)
+        btn_new_obj.SetBackgroundColour(self.GetBackgroundColour())
+        self.Bind(wx.EVT_BUTTON, self.OnLinkCreate, btn_new_obj)
 
         # Fixed hyperlink items
         tooltip = wx.ToolTip(_("Create new coil"))
-        link_new_coil = hl.HyperLinkCtrl(self, -1, _("Create new coil"))
-        link_new_coil.SetUnderlines(False, False, False)
-        link_new_coil.SetBold(True)
-        link_new_coil.SetColours("BLACK", "BLACK", "BLACK")
-        link_new_coil.SetBackgroundColour(self.GetBackgroundColour())
-        link_new_coil.SetToolTip(tooltip)
-        link_new_coil.AutoBrowse(False)
-        link_new_coil.UpdateLink()
-        link_new_coil.Bind(hl.EVT_HYPERLINK_LEFT, self.OnLinkCreate)
+        link_new_obj = hl.HyperLinkCtrl(self, -1, _("Create new coil"))
+        link_new_obj.SetUnderlines(False, False, False)
+        link_new_obj.SetBold(True)
+        link_new_obj.SetColours("BLACK", "BLACK", "BLACK")
+        link_new_obj.SetBackgroundColour(self.GetBackgroundColour())
+        link_new_obj.SetToolTip(tooltip)
+        link_new_obj.AutoBrowse(False)
+        link_new_obj.UpdateLink()
+        link_new_obj.Bind(hl.EVT_HYPERLINK_LEFT, self.OnLinkCreate)
 
         # Create horizontal sizers to represent lines in the panel
         line_new = wx.BoxSizer(wx.HORIZONTAL)
-        line_new.Add(link_new_coil, 1, wx.EXPAND|wx.GROW| wx.TOP|wx.RIGHT, 4)
-        line_new.Add(button_new_coil, 0, wx.ALL|wx.EXPAND|wx.GROW, 0)
+        line_new.Add(link_new_obj, 1, wx.EXPAND|wx.GROW| wx.TOP|wx.RIGHT, 4)
+        line_new.Add(btn_new_obj, 0, wx.ALL|wx.EXPAND|wx.GROW, 0)
 
         # Button for import coil
         BMP_LOAD = wx.Bitmap(os.path.join(const.ICON_DIR, "file_import.png"), wx.BITMAP_TYPE_PNG)
-        button_import_coil = pbtn.PlateButton(self, BTN_IMPORT_LOCAL, "", BMP_LOAD,
-                                              style=pbtn.PB_STYLE_SQUARE | pbtn.PB_STYLE_DEFAULT)
-        button_import_coil.SetBackgroundColour(self.GetBackgroundColour())
-        self.Bind(wx.EVT_BUTTON, self.OnLinkLoad, button_import_coil)
+        btn_load_reg = pbtn.PlateButton(self, BTN_IMPORT_LOCAL, "", BMP_LOAD,
+                                        style=pbtn.PB_STYLE_SQUARE | pbtn.PB_STYLE_DEFAULT)
+        btn_load_reg.SetBackgroundColour(self.GetBackgroundColour())
+        self.Bind(wx.EVT_BUTTON, self.OnLinkLoad, btn_load_reg)
 
         # Fixed hyperlink items
         tooltip = wx.ToolTip(_("Load coil configuration file"))
-        link_import_local = hl.HyperLinkCtrl(self, -1, _("Load coil configuration"))
-        link_import_local.SetUnderlines(False, False, False)
-        link_import_local.SetBold(True)
-        link_import_local.SetColours("BLACK", "BLACK", "BLACK")
-        link_import_local.SetBackgroundColour(self.GetBackgroundColour())
-        link_import_local.SetToolTip(tooltip)
-        link_import_local.AutoBrowse(False)
-        link_import_local.UpdateLink()
-        link_import_local.Bind(hl.EVT_HYPERLINK_LEFT, self.OnLinkLoad)
+        link_load_obj = hl.HyperLinkCtrl(self, -1, _("Load coil configuration"))
+        link_load_obj.SetUnderlines(False, False, False)
+        link_load_obj.SetBold(True)
+        link_load_obj.SetColours("BLACK", "BLACK", "BLACK")
+        link_load_obj.SetBackgroundColour(self.GetBackgroundColour())
+        link_load_obj.SetToolTip(tooltip)
+        link_load_obj.AutoBrowse(False)
+        link_load_obj.UpdateLink()
+        link_load_obj.Bind(hl.EVT_HYPERLINK_LEFT, self.OnLinkLoad)
 
         # Create horizontal sizers to represent lines in the panel
         line_import = wx.BoxSizer(wx.HORIZONTAL)
-        line_import.Add(link_import_local, 1, wx.EXPAND|wx.GROW| wx.TOP|wx.RIGHT, 4)
-        line_import.Add(button_import_coil, 0, wx.ALL|wx.EXPAND|wx.GROW, 0)
-
-        # Combo to select the desired coil
-        combo_coil = wx.ComboBox(self, -1, "",
-                                 choices=const.COIL, style=wx.CB_DROPDOWN | wx.CB_READONLY)
-        combo_coil.SetSelection(const.DEFAULT_COIL)
-        combo_coil.Bind(wx.EVT_COMBOBOX, self.OnComboCoil)
-
-        if sys.platform != 'win32':
-            combo_coil.SetWindowVariant(wx.WINDOW_VARIANT_SMALL)
-
-        # Create horizontal sizers to represent lines in the panel
-        line_select = wx.BoxSizer(wx.HORIZONTAL)
-        line_select.Add(combo_coil, 0, wx.ALL | wx.EXPAND | wx.GROW, 5)
+        line_import.Add(link_load_obj, 1, wx.EXPAND|wx.GROW| wx.TOP|wx.RIGHT, 4)
+        line_import.Add(btn_load_reg, 0, wx.ALL|wx.EXPAND|wx.GROW, 0)
 
         # Add line sizers into main sizer
         main_sizer = wx.BoxSizer(wx.VERTICAL)
         main_sizer.Add(line_new, 0, wx.GROW|wx.EXPAND|wx.LEFT|wx.RIGHT|wx.TOP, 5)
         main_sizer.Add(line_import, 0, wx.GROW|wx.EXPAND|wx.LEFT|wx.RIGHT|wx.TOP, 5)
-        main_sizer.Add(line_select, 0, wx.GROW|wx.EXPAND|wx.LEFT|wx.RIGHT|wx.TOP, 5)
         main_sizer.Fit(self)
 
         self.SetSizer(main_sizer)
@@ -745,28 +735,38 @@ class CoilPanel(wx.Panel):
         Publisher.sendMessage('Change selected coil', self.coil_list[coil_index][1])
 
     def OnLinkCreate(self, event=None):
+
         if self.nav_prop:
             dialog = dlg.ObjectCalibrationDialog(self.nav_prop)
             try:
                 if dialog.ShowModal() == wx.ID_OK:
-                    obj_fiducials, obj_orients = dialog.GetValue()
-            except(wx._core.PyAssertionError):  # TODO FIX: win64
-                pass
+                    obj_fiducials, obj_orients, obj_ref_mode = dialog.GetValue()
+                    if np.isfinite(obj_fiducials).all() and np.isfinite(obj_orients).all():
+                        Publisher.sendMessage('Update object registration', (obj_fiducials, obj_orients, obj_ref_mode))
+                        Publisher.sendMessage('Update status text in GUI', _("Ready"))
 
-            if np.isfinite(obj_fiducials).all() and np.isfinite(obj_orients).all():
-                Publisher.sendMessage('Update object registration', (obj_fiducials, obj_orients))
-                print "fiducials: ", obj_fiducials
-                print "orients: ", obj_orients
+            except wx._core.PyAssertionError:  # TODO FIX: win64
+                pass
 
         else:
             dlg.NavigationTrackerWarning(0, 'choose')
 
     def OnLinkLoad(self, event=None):
-        filepath = dlg.ShowLoadCoilDialog()
+        filename = dlg.ShowLoadRegistrationDialog()
 
-        if filepath:
-            dt.ClaronTrackerCoilOffset(filepath)
+        if filename:
+            data = np.loadtxt(filename, delimiter='\t')
+            obj_fiducials = data[:, :3]
+            obj_orients = data[:, 3:]
+
+            text_file = open(filename, "r")
+            header = text_file.readline().split('\t')
+            text_file.close()
+
+            Publisher.sendMessage('Update object registration', (obj_fiducials, obj_orients, int(header[-1])))
             Publisher.sendMessage('Update status text in GUI', _("Ready"))
+        else:
+            wx.MessageBox(_("InVesalius was not able to import this registration file"), _("Import error"))
 
 
 class MarkersPanel(wx.Panel):

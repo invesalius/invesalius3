@@ -286,7 +286,7 @@ class CoregistrationObjectDynamic(threading.Thread):
                 return
 
 
-class CoilTest(threading.Thread):
+class ObjectTest(threading.Thread):
     """
     Thread to update the coordinates with the fiducial points
     co-registration method while the Navigation Button is pressed.
@@ -316,7 +316,7 @@ class CoilTest(threading.Thread):
             else:
                 trck_coord = coord_raw[0, ::]
 
-            wx.CallAfter(Publisher.sendMessage, 'Update coil angles',
+            wx.CallAfter(Publisher.sendMessage, 'Update object orientation',
                          (trck_coord[3], trck_coord[4], trck_coord[5]))
 
             # sleep(0.175)

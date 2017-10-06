@@ -106,6 +106,8 @@ def PolhemusCoord(trck, trck_id, ref_mode):
 
 def PolhemusWrapperCoord(trck, trck_id, ref_mode):
 
+    trck.Run()
+
     if trck_id == 2:
         # Fastrak default coordinates are in millimeters
         scale = 10.0 * np.array([1., 1.0, -1.0])
@@ -113,30 +115,20 @@ def PolhemusWrapperCoord(trck, trck_id, ref_mode):
         # Patriot and Isotrak coordinates are in inches
         scale = 25.4 * np.array([1., 1.0, -1.0])
 
-    # coord = np.full([1, 3], np.nan)
-    trck.Run()
-
-    coord = np.array([float(trck.PositionTooltipX1)*scale[0], float(trck.PositionTooltipY1)*scale[1],
+    coord1 = np.array([float(trck.PositionTooltipX1)*scale[0], float(trck.PositionTooltipY1)*scale[1],
                       float(trck.PositionTooltipZ1)*scale[2],
                       float(trck.AngleX1), float(trck.AngleY1), float(trck.AngleZ1)])
 
-    try:
-        coord2 = np.array([float(trck.PositionTooltipX2)*scale[0], float(trck.PositionTooltipY2)*scale[1],
-                           float(trck.PositionTooltipZ2)*scale[2],
-                           float(trck.AngleX2), float(trck.AngleY2), float(trck.AngleZ2)])
-        coord = np.vstack([coord, coord2])
-    except:
-        print "No sensor 2 found."
-        pass
+    coord2 = np.array([float(trck.PositionTooltipX2)*scale[0], float(trck.PositionTooltipY2)*scale[1],
+                       float(trck.PositionTooltipZ2)*scale[2],
+                       float(trck.AngleX2), float(trck.AngleY2), float(trck.AngleZ2)])
+    coord = np.vstack([coord1, coord2])
 
-    # try:
-    #     coord3 = np.array([float(trck.PositionTooltipX3) * scale[0], float(trck.PositionTooltipY3) * scale[1],
-    #                        float(trck.PositionTooltipZ3) * scale[2],
-    #                        float(trck.AngleX3), float(trck.AngleY3), float(trck.AngleZ3)])
-    #     coord = np.vstack([coord, coord3])
-    # except:
-    #     print "No sensor 3 found."
-
+    if trck_id == 2:
+        coord3 = np.array([float(trck.PositionTooltipX3) * scale[0], float(trck.PositionTooltipY3) * scale[1],
+                           float(trck.PositionTooltipZ3) * scale[2],
+                           float(trck.AngleX3), float(trck.AngleY3), float(trck.AngleZ3)])
+        coord = np.vstack([coord, coord3])
 
     # if ref_mode:
     #
@@ -241,31 +233,21 @@ def DebugCoord(trk_init, trck_id, ref_mode):
     :param trck_id: id of tracking device
     :return: six coordinates x, y, z, alfa, beta and gama
     """
-    # sleep(0.2)
+
     sleep(0.05)
 
-    coord = np.array([uniform(1, 200), uniform(1, 200), uniform(1, 200),
+    coord1 = np.array([uniform(1, 200), uniform(1, 200), uniform(1, 200),
                       uniform(-180.0, 180.0), uniform(-180.0, 180.0), uniform(-180.0, 180.0)])
 
-    try:
-        coord2 = np.array([uniform(1, 200), uniform(1, 200), uniform(1, 200),
-                           uniform(-180.0, 180.0), uniform(-180.0, 180.0), uniform(-180.0, 180.0)])
-        coord = np.vstack([coord, coord2])
-    except:
-        print "No sensor 2 found."
-        pass
+    coord2 = np.array([uniform(1, 200), uniform(1, 200), uniform(1, 200),
+                       uniform(-180.0, 180.0), uniform(-180.0, 180.0), uniform(-180.0, 180.0)])
 
-    try:
-        coord3 = np.array([uniform(1, 200), uniform(1, 200), uniform(1, 200),
-                           uniform(-180.0, 180.0), uniform(-180.0, 180.0), uniform(-180.0, 180.0)])
-        coord = np.vstack([coord, coord3])
-    except:
-        print "No sensor 3 found."
-        pass
+    coord3 = np.array([uniform(1, 200), uniform(1, 200), uniform(1, 200),
+                       uniform(-180.0, 180.0), uniform(-180.0, 180.0), uniform(-180.0, 180.0)])
 
     Publisher.sendMessage('Sensors ID', [int(uniform(0, 5)), int(uniform(0, 5))])
 
-    return coord
+    return np.vstack([coord1, coord2, coord3])
 
 
 def dynamic_reference(probe, reference):
@@ -285,14 +267,17 @@ def dynamic_reference(probe, reference):
     vet = probe[0:3] - reference[0:3]
     vet = np.mat(vet.reshape(3, 1))
 
-    # Attitude Matrix given by Patriot Manual
-    Mrot = np.mat([[cos(a) * cos(b), sin(b) * sin(g) * cos(a) - cos(g) * sin(a),
+    # Attitude matrix given by Patriot manual
+    # a: rotation of plane (X, Y) around Z axis (azimuth)
+    # b: rotation of plane (X', Z) around Y' axis (elevation)
+    # a: rotation of plane (Y', Z') around X'' axis (roll)
+    m_rot = np.mat([[cos(a) * cos(b), sin(b) * sin(g) * cos(a) - cos(g) * sin(a),
                     cos(a) * sin(b) * cos(g) + sin(a) * sin(g)],
                    [cos(b) * sin(a), sin(b) * sin(g) * sin(a) + cos(g) * cos(a),
                     cos(g) * sin(b) * sin(a) - sin(g) * cos(a)],
                    [-sin(b), sin(g) * cos(b), cos(b) * cos(g)]])
 
-    coord_rot = Mrot.T * vet
+    coord_rot = m_rot.T * vet
     coord_rot = np.squeeze(np.asarray(coord_rot))
 
     return coord_rot[0], coord_rot[1], coord_rot[2], probe[3], probe[4], probe[5]
