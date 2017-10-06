@@ -734,7 +734,19 @@ def SurfaceSelectionRequiredForDuplication():
 
 # Dialogs for neuronavigation mode
 def InvalidFiducials():
-    msg = _("Fiducials are invalid. Select six coordinates.")
+    msg = _("Fiducials are invalid. Select all coordinates.")
+    if sys.platform == 'darwin':
+        dlg = wx.MessageDialog(None, "", msg,
+                               wx.ICON_INFORMATION | wx.OK)
+    else:
+        dlg = wx.MessageDialog(None, msg, "InVesalius 3 - Neuronavigator",
+                               wx.ICON_INFORMATION | wx.OK)
+    dlg.ShowModal()
+    dlg.Destroy()
+
+
+def InvalidObjectRegistration():
+    msg = _("Perform coil registration before navigation.")
     if sys.platform == 'darwin':
         dlg = wx.MessageDialog(None, "", msg,
                                wx.ICON_INFORMATION | wx.OK)
@@ -2975,7 +2987,7 @@ class FillHolesAutoDialog(wx.Dialog):
             self.panel2dcon.Enable(0)
 
 
-class CoilCalibrationDialog(wx.Dialog):
+class ObjectCalibrationDialog(wx.Dialog):
 
     def __init__(self, nav_prop):
 

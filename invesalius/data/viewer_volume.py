@@ -222,9 +222,9 @@ class Viewer(wx.Panel):
         Publisher.subscribe(self.StopBlinkMarker, 'Stop Blink Marker')
 
         # Related to coil tracking for neuronavigation
-        Publisher.subscribe(self.UpdateCoilOrientation, 'Update coil orientation')
-        Publisher.subscribe(self.UpdateCoilInitial, 'Update coil initial')
-        Publisher.subscribe(self.UpdateCoilState, 'Update coil tracking state')
+        Publisher.subscribe(self.UpdateCoilOrientation, 'Update object orientation')
+        Publisher.subscribe(self.UpdateObjectInitial, 'Update object initial orientation')
+        Publisher.subscribe(self.UpdateCoilState, 'Update object tracking state')
 
     def SetStereoMode(self, pubsub_evt):
         mode = pubsub_evt.data
@@ -670,6 +670,41 @@ class Viewer(wx.Panel):
         self.axes.SetUserMatrix(axesmat4x4)
         self.Refresh()
 
+    def UpdateObjectInitial(self, pubsub_evt):
+        m, q1, minv = pubsub_evt.data[0]
+        m_trck, q1_trck, minv_trck = pubsub_evt.data[1]
+        a, b, g = np.radians(pubsub_evt.data[2])
+        coord = pubsub_evt.data[3]
+
+        x, y, z = bases.flip_x(coord)
+
+        Mrot = np.mat([[cos(a) * cos(b), sin(b) * sin(g) * cos(a) - cos(g) * sin(a),
+                        cos(a) * sin(b) * cos(g) + sin(a) * sin(g)],
+                       [cos(b) * sin(a), sin(b) * sin(g) * sin(a) + cos(g) * cos(a),
+                        cos(g) * sin(b) * sin(a) - sin(g) * cos(a)],
+                       [-sin(b), sin(g) * cos(b), cos(b) * cos(g)]])
+
+        # appear to work with some things inverted (everything is inverted on Z axis, even coil becomes black)
+        # Mrot_img = minv_trck * Mrot
+        Mrot_img = Mrot*minv_trck
+
+        # Mrot_img = minv * Mrot
+
+        bot = np.array([0.0, 0.0, 0.0])
+        # rig = np.array([[0.0], [0.0], [0.0], [1]])
+        rig = np.array([[x], [y], [z], [1]])
+        Mrot_img = np.vstack([Mrot_img, bot])
+        Mrot_img = np.hstack([Mrot_img, rig])
+        Mrot_img_4x4 = self.array_to_vtkmatrix4x4(Mrot_img)
+
+        print Mrot
+        # print Mrot_trck
+        print Mrot_img
+        print Mrot_img_4x4
+
+        self.coil_actor.SetUserMatrix(Mrot_img_4x4)
+        self.Refresh()
+
     def array_to_vtkmatrix4x4(self, mrot4x4):
 
         vtkmat = vtk.vtkMatrix4x4()
@@ -679,9 +714,6 @@ class Viewer(wx.Panel):
             for j in range(0, 4):
                 vtkmat.SetElement(i, j, mrot4x4[i, j])
         return vtkmat
-
-    def UpdateCoilInitial(self, pubsub_evt):
-        return
 
     def UpdateCoilState(self, pubsub_evt):
         coil_state = pubsub_evt.data

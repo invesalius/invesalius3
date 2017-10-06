@@ -133,3 +133,29 @@ def flip_x(point):
     x, y, z = point_rot.tolist()[0][:3]
 
     return x, y, z
+
+
+def object_registration(fiducials, bases):
+    """
+
+    :param fiducials:
+    :param bases:
+    :return:
+    """
+
+    minv, n, q1, q2 = bases
+
+    obj_img1 = q1 + (minv * n) * (np.asmatrix(fiducials[0, :]).reshape([3, 1]) - q2)
+    obj_img2 = q1 + (minv * n) * (np.asmatrix(fiducials[1, :]).reshape([3, 1]) - q2)
+    obj_img3 = q1 + (minv * n) * (np.asmatrix(fiducials[2, :]).reshape([3, 1]) - q2)
+    obj_img = np.vstack([np.asarray(obj_img1).reshape([1, 3]),
+                         np.asarray(obj_img2).reshape([1, 3]),
+                         np.asarray(obj_img3).reshape([1, 3])])
+
+    # obj_center = np.asmatrix(fiducials[3, :]).reshape([3, 1])
+    obj_center = q1 + (minv * n) * (np.asmatrix(fiducials[3, :]).reshape([3, 1]) - q2)
+    obj_sensor = np.asmatrix(fiducials[4, :]).reshape([3, 1])
+    obj_base = base_creation(obj_img)
+    obj_trck = base_creation(fiducials)
+
+    return obj_center.reshape([1, 3]), obj_sensor, obj_base, obj_trck

@@ -142,7 +142,7 @@ class CoregistrationDynamic(threading.Thread):
                 return
 
 
-class CoregistrationCoilStatic(threading.Thread):
+class CoregistrationObjectStatic(threading.Thread):
     """
     Thread to update the coordinates with the fiducial points
     co-registration method while the Navigation Button is pressed.
@@ -175,8 +175,6 @@ class CoregistrationCoilStatic(threading.Thread):
         coil_sensor = self.coil_info[1]
         coil_bases = self.coil_info[2]
 
-        print "Vou comecar navegacao static coil"
-
         while self.nav_id:
             # trck_coord, probe, reference = dco.GetCoordinates(trck_init, trck_id, trck_mode)
             coord_raw = dco.GetCoordinates(trck_init, trck_id, trck_mode)
@@ -195,7 +193,7 @@ class CoregistrationCoilStatic(threading.Thread):
             wx.CallAfter(Publisher.sendMessage, 'Co-registered points', coord[0:3])
             # wx.CallAfter(Publisher.sendMessage, 'Set camera in volume', coord[0:3])
             wx.CallAfter(Publisher.sendMessage, 'Set camera in volume', coord)
-            wx.CallAfter(Publisher.sendMessage, 'Update coil orientation', (coil_bases, angles, coord[0:3]))
+            wx.CallAfter(Publisher.sendMessage, 'Update object orientation', (coil_bases, angles, coord[0:3]))
 
             # TODO: Optimize the value of sleep for each tracking device.
             # Debug tracker is not working with 0.175 so changed to 0.2
@@ -207,7 +205,7 @@ class CoregistrationCoilStatic(threading.Thread):
                 return
 
 
-class CoregistrationCoilDynamic(threading.Thread):
+class CoregistrationObjectDynamic(threading.Thread):
     """
     Thread to update the coordinates with the fiducial points
     co-registration method while the Navigation Button is pressed.
