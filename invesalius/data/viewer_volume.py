@@ -661,7 +661,7 @@ class Viewer(wx.Panel):
             mat4x4.SetElement(i, 1, M_plane_inv[i][1])
             mat4x4.SetElement(i, 2, M_plane_inv[i][2])
             mat4x4.SetElement(i, 3, M_plane_inv[i][3])
-        # filename = os.path.join(const.ICON_DIR, "bobina1_dummy.stl")
+
         filename = os.path.join(const.ICON_DIR, "aim.stl")
 
         reader = vtk.vtkSTLReader()
@@ -672,8 +672,6 @@ class Viewer(wx.Panel):
         # Transform the polydata
         transform = vtk.vtkTransform()
         transform.SetMatrix(mat4x4)
-        transform.Scale(1, 1, 1)
-        # transform.RotateWXYZ(180, 0, 1, 0)
         transformPD = vtk.vtkTransformPolyDataFilter()
         transformPD.SetTransform(transform)
         transformPD.SetInputConnection(reader.GetOutputPort())
@@ -695,34 +693,30 @@ class Viewer(wx.Panel):
 
     def OnUpdateCoilTracker(self, pubsub_evt):
         if self.target and self.flag:
-            arrow_scale = 3
-            arrow_upper_limit = 30
-            accept = 3 * arrow_scale
-
             coordx = self.target[4] - pubsub_evt.data[1]
-            if coordx > arrow_upper_limit:
-                coordx = arrow_upper_limit
-            elif coordx < -arrow_upper_limit:
-                coordx = -arrow_upper_limit
-            coordx = arrow_scale * coordx
+            if coordx > const.ARROW_UPPER_LIMIT:
+                coordx = const.ARROW_UPPER_LIMIT
+            elif coordx < -const.ARROW_UPPER_LIMIT:
+                coordx = -const.ARROW_UPPER_LIMIT
+            coordx = const.ARROW_SCALE * coordx
 
             coordy = self.target[3] - pubsub_evt.data[0]
-            if coordy > arrow_upper_limit:
-                coordy = arrow_upper_limit
-            elif coordy < -arrow_upper_limit:
-                coordy = -arrow_upper_limit
-            coordy = arrow_scale * coordy
+            if coordy > const.ARROW_UPPER_LIMIT:
+                coordy = const.ARROW_UPPER_LIMIT
+            elif coordy < -const.ARROW_UPPER_LIMIT:
+                coordy = -const.ARROW_UPPER_LIMIT
+            coordy = const.ARROW_SCALE * coordy
 
             coordz = self.target[5] - pubsub_evt.data[2]
-            if coordz > arrow_upper_limit:
-                coordz = arrow_upper_limit
-            elif coordz < -arrow_upper_limit:
-                coordz = -arrow_upper_limit
-            coordz = arrow_scale * coordz
+            if coordz > const.ARROW_UPPER_LIMIT:
+                coordz = const.ARROW_UPPER_LIMIT
+            elif coordz < -const.ARROW_UPPER_LIMIT:
+                coordz = -const.ARROW_UPPER_LIMIT
+            coordz = const.ARROW_SCALE * coordz
 
             self.ren2.RemoveActor(self.arrowactorZ1)
             self.ren2.RemoveActor(self.arrowactorZ2)
-            if accept > coordz > -accept:
+            if const.COIL_COORD_THRESHOLD > coordz > -const.COIL_COORD_THRESHOLD:
                 self.coilactor.GetProperty().SetColor(0, 1, 0)
             else:
                 self.coilactor.GetProperty().SetColor(1, 1, 1)
@@ -740,7 +734,7 @@ class Viewer(wx.Panel):
 
             self.ren2.RemoveActor(self.arrowactorY1)
             self.ren2.RemoveActor(self.arrowactorY2)
-            if accept > coordy > -accept:
+            if const.COIL_COORD_THRESHOLD > coordy > -const.COIL_COORD_THRESHOLD:
                 self.coilactor2.GetProperty().SetColor(0, 1, 0)
             else:
                 self.coilactor2.GetProperty().SetColor(1, 1, 1)
@@ -758,7 +752,7 @@ class Viewer(wx.Panel):
 
             self.ren2.RemoveActor(self.arrowactorX1)
             self.ren2.RemoveActor(self.arrowactorX2)
-            if accept > coordx > -accept:
+            if const.COIL_COORD_THRESHOLD > coordx > -const.COIL_COORD_THRESHOLD:
                 self.coilactor3.GetProperty().SetColor(0, 1, 0)
             else:
                 self.coilactor3.GetProperty().SetColor(1, 1, 1)
@@ -880,7 +874,6 @@ class Viewer(wx.Panel):
         # actor
         actor_arrow = vtk.vtkActor()
         actor_arrow.SetMapper(mapper)
-        #actor_arrow.GetProperty().SetColor(0, 0, 1)
 
         return actor_arrow
 

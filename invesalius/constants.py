@@ -711,3 +711,8 @@ TIPS_TRK = [_("Select left ear with spatial tracker"),
 
 CAL_DIR = os.path.abspath(os.path.join(FILE_PATH, '..', 'navigation', 'mtc_files', 'CalibrationFiles'))
 MAR_DIR = os.path.abspath(os.path.join(FILE_PATH, '..', 'navigation', 'mtc_files', 'Markers'))
+
+#COIL TRACKER
+ARROW_SCALE = 3
+ARROW_UPPER_LIMIT = 30
+COIL_COORD_THRESHOLD = 3 * ARROW_SCALE
