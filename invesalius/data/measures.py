@@ -836,7 +836,6 @@ class AngularMeasure(object):
         for p in self.points:
             coord.SetValue(p)
             cx, cy = coord.GetComputedDoubleDisplayValue(canvas.evt_renderer)
-            print cx, cy
             #  canvas.draw_circle((cx, cy), 2.5)
             points.append((cx, cy))
 
@@ -1070,11 +1069,6 @@ class CircleDensityMeasure(object):
         #  a = np.linalg.norm(np.array(self.point1) - np.array(self.center))
         #  b = np.linalg.norm(np.array(self.point2) - np.array(self.center))
 
-        print 'ELLIPSE A B', a, b
-        print 'points', self.center
-        print 'points', self.point1
-        print 'points', self.point2
-
         mask_y, mask_x = np.ogrid[0:dy*sy:sy, 0:dx*sx:sx]
         #  mask = ((mask_x - cx)**2 + (mask_y - cy)**2) <= (radius ** 2)
         mask = (((mask_x-cx)**2 / a**2) + ((mask_y-cy)**2 / b**2)) <= 1.0
@@ -1083,7 +1077,6 @@ class CircleDensityMeasure(object):
             #  test_img = np.zeros_like(img_slice)
             #  test_img[mask] = img_slice[mask]
             #  imsave('/tmp/manolo.png', test_img[::-1,:])
-        print m.shape, mask.shape
         try:
             m[:] = 0
             m[mask] = 254

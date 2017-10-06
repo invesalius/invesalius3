@@ -32,10 +32,16 @@ from wx.lib.pubsub import pub as Publisher
 
 
 class CanvasEvent:
-    def __init__(self, pos, viewer, renderer):
+    def __init__(self, event_name, pos, viewer, renderer,
+                 control_down=False, alt_down=False, shift_down=False):
+        self.event_name = event_name
         self.position = pos
         self.viewer = viewer
         self.renderer = renderer
+
+        self.control_down = control_down
+        self.alt_down = alt_down
+        self.shift_down = shift_down
 
 
 class CanvasRendererCTX:
@@ -153,7 +159,10 @@ class CanvasRendererCTX:
 
         if self._drag_obj:
             redraw = True
-            evt_obj = CanvasEvent((x, y), self.viewer, self.evt_renderer)
+            evt_obj = CanvasEvent('mouse_move', (x, y), self.viewer, self.evt_renderer,
+                                  control_down=evt.ControlDown(),
+                                  alt_down=evt.AltDown(),
+                                  shift_down=evt.ShiftDown())
             self._drag_obj.mouse_move(evt_obj)
         else:
             self.get_over_mouse_obj(x, y)
@@ -165,21 +174,21 @@ class CanvasRendererCTX:
         evt.Skip()
 
     def OnLeftButtonPress(self, evt):
-        print 'WX LEFT BUTTON'
         x, y = evt.GetPosition()
         y = self.viewer.interactor.GetSize()[1] - y
-        evt_obj = CanvasEvent((x, y), self.viewer, self.evt_renderer)
+        evt_obj = CanvasEvent('left_click', (x, y), self.viewer, self.evt_renderer,
+                              control_down=evt.ControlDown(),
+                              alt_down=evt.AltDown(),
+                              shift_down=evt.ShiftDown())
         if self._over_obj and hasattr(self._over_obj, 'mouse_move'):
             self._drag_obj = self._over_obj
             if hasattr(self._over_obj, 'on_select'):
                 self._over_obj.on_select(evt_obj)
         else:
-            print 'ELSE'
             self.get_over_mouse_obj(x, y)
             if not self._over_obj:
                 for cb in self._callback_events['LeftButtonPressEvent']:
                     if cb() is not None:
-                        print 'CALLING LEFT BUTTON CALLBACK'
                         cb()(evt_obj)
                         break
         evt.Skip()
@@ -507,7 +516,6 @@ class CanvasRendererCTX:
             gc.DrawText(t, _px, _py)
 
             w, h = self.calc_text_size(t)
-            print t
             py -= h
 
         self._drawn = True
@@ -736,7 +744,7 @@ class CircleHandler(CanvasHandlerBase):
             self.position = mx, my
 
         if self._on_move_function and self._on_move_function():
-            self._on_move_function()(self)
+            self._on_move_function()(self, evt)
 
         return True
 
@@ -784,9 +792,9 @@ class Polygon(CanvasHandlerBase):
 
         self._ref_handlers[handler] = len(self.points) - 1
 
-    def on_move_point(self, evt):
-        px, py = evt.position
-        handler = evt
+    def on_move_point(self, obj, evt):
+        px, py = obj.position
+        handler = obj
         point = self._ref_handlers[handler]
         self.points[point] = px, py
 
@@ -843,8 +851,6 @@ class Ellipse(CanvasHandlerBase):
         width = abs(p1x - cx) * 2.0
         height = abs(p2y - cy) * 2.0
 
-        print "ELLIPSE WIDTH HEIGHT", width, height
-
         self.bbox = canvas.draw_ellipse((cx, cy), width, height,
                                         self.width,
                                         self.line_colour,
@@ -864,15 +870,29 @@ class Ellipse(CanvasHandlerBase):
     def on_change(self, evt_function):
         self._on_change_function = WeakMethod(evt_function)
 
-    def on_move_p1(self, evt):
-        pos = evt.position
+    def on_move_p1(self, obj, evt):
+        pos = obj.position
+        if evt.viewer.orientation == 'AXIAL':
+            pos = pos[0], self.point1[1], self.point1[2]
+        elif evt.viewer.orientation == 'CORONAL':
+            pos = pos[0], self.point1[1], self.point1[2]
+        elif evt.viewer.orientation == 'SAGITAL':
+            pos = self.point1[0], pos[1], self.point1[2]
+
         self.set_point1(pos)
 
         if self._on_change_function and self._on_change_function():
             self._on_change_function()()
 
-    def on_move_p2(self, evt):
-        pos = evt.position
+    def on_move_p2(self, obj, evt):
+        pos = obj.position
+        if evt.viewer.orientation == 'AXIAL':
+            pos = self.point2[0], pos[1], self.point2[2]
+        elif evt.viewer.orientation == 'CORONAL':
+            pos = self.point2[0], self.point2[1], pos[2]
+        elif evt.viewer.orientation == 'SAGITAL':
+            pos = self.point2[0], self.point2[1], pos[2]
+
         self.set_point2(pos)
 
         if self._on_change_function and self._on_change_function():
