@@ -881,6 +881,14 @@ class Ellipse(CanvasHandlerBase):
 
         self.set_point1(pos)
 
+        if evt.control_down:
+            dist = np.linalg.norm(np.array(self.point1) - np.array(self.center))
+            vec = np.array(self.point2) - np.array(self.center)
+            vec /= np.linalg.norm(vec)
+            point2 = np.array(self.center) + vec * dist
+
+            self.set_point2(tuple(point2))
+
         if self._on_change_function and self._on_change_function():
             self._on_change_function()()
 
@@ -894,6 +902,14 @@ class Ellipse(CanvasHandlerBase):
             pos = self.point2[0], self.point2[1], pos[2]
 
         self.set_point2(pos)
+
+        if evt.control_down:
+            dist = np.linalg.norm(np.array(self.point2) - np.array(self.center))
+            vec = np.array(self.point1) - np.array(self.center)
+            vec /= np.linalg.norm(vec)
+            point1 = np.array(self.center) + vec * dist
+
+            self.set_point1(tuple(point1))
 
         if self._on_change_function and self._on_change_function():
             self._on_change_function()()
