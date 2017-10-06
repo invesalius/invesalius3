@@ -595,30 +595,30 @@ class Viewer(wx.Panel):
             self.coilactor3.RotateY(90)
             self.coilactor3.RotateZ(180)
 
-            self.arrowactorZ1 = self.arrow([-50,-35,12], [-50,-35,50])
+            self.arrowactorZ1 = self.Arrow([-50,-35,12], [-50,-35,50])
             self.arrowactorZ1.GetProperty().SetColor(1, 1, 0)
             self.arrowactorZ1.RotateX(-60)
             self.arrowactorZ1.RotateZ(180)
-            self.arrowactorZ2 = self.arrow([50,-35,0], [50,-35,-50])
+            self.arrowactorZ2 = self.Arrow([50,-35,0], [50,-35,-50])
             self.arrowactorZ2.GetProperty().SetColor(1, 1, 0)
             self.arrowactorZ2.RotateX(-60)
             self.arrowactorZ2.RotateZ(180)
 
-            self.arrowactorY1 = self.arrow([-50,-35,0], [-50,5,0])
+            self.arrowactorY1 = self.Arrow([-50,-35,0], [-50,5,0])
             self.arrowactorY1.GetProperty().SetColor(0, 1, 0)
             self.arrowactorY1.SetPosition(0, -150, 0)
             self.arrowactorY1.RotateZ(180)
-            self.arrowactorY2 = self.arrow([50,-35,0], [50,-75,0])
+            self.arrowactorY2 = self.Arrow([50,-35,0], [50,-75,0])
             self.arrowactorY2.GetProperty().SetColor(0, 1, 0)
             self.arrowactorY2.SetPosition(0, -150, 0)
             self.arrowactorY2.RotateZ(180)
 
-            self.arrowactorX1 = self.arrow([0, 65, 38], [0, 65, 68])
+            self.arrowactorX1 = self.Arrow([0, 65, 38], [0, 65, 68])
             self.arrowactorX1.GetProperty().SetColor(1, 0, 0)
             self.arrowactorX1.SetPosition(0, -300, 0)
             self.arrowactorX1.RotateY(90)
             self.arrowactorX1.RotateZ(180)
-            self.arrowactorX2 = self.arrow([0, -55, 5], [0, -55, -30])
+            self.arrowactorX2 = self.Arrow([0, -55, 5], [0, -55, -30])
             self.arrowactorX2.GetProperty().SetColor(1, 0, 0)
             self.arrowactorX2.SetPosition(0, -300, 0)
             self.arrowactorX2.RotateY(90)
@@ -716,16 +716,16 @@ class Viewer(wx.Panel):
 
             self.ren2.RemoveActor(self.arrowactorZ1)
             self.ren2.RemoveActor(self.arrowactorZ2)
-            if const.COIL_COORD_THRESHOLD > coordz > -const.COIL_COORD_THRESHOLD:
+            if const.COIL_ANGLES_THRESHOLD > coordz > -const.COIL_ANGLES_THRESHOLD:
                 self.coilactor.GetProperty().SetColor(0, 1, 0)
             else:
                 self.coilactor.GetProperty().SetColor(1, 1, 1)
             offset = 5
-            self.arrowactorZ1 = self.arrow([-55, -35, offset], [-55, -35, offset + coordz])
+            self.arrowactorZ1 = self.Arrow([-55, -35, offset], [-55, -35, offset + coordz])
             self.arrowactorZ1.RotateX(-60)
             self.arrowactorZ1.RotateZ(180)
             self.arrowactorZ1.GetProperty().SetColor(1, 1, 0)
-            self.arrowactorZ2 = self.arrow([55, -35, offset], [55, -35, offset - coordz])
+            self.arrowactorZ2 = self.Arrow([55, -35, offset], [55, -35, offset - coordz])
             self.arrowactorZ2.RotateX(-60)
             self.arrowactorZ2.RotateZ(180)
             self.arrowactorZ2.GetProperty().SetColor(1, 1, 0)
@@ -734,13 +734,13 @@ class Viewer(wx.Panel):
 
             self.ren2.RemoveActor(self.arrowactorY1)
             self.ren2.RemoveActor(self.arrowactorY2)
-            if const.COIL_COORD_THRESHOLD > coordy > -const.COIL_COORD_THRESHOLD:
+            if const.COIL_ANGLES_THRESHOLD > coordy > -const.COIL_ANGLES_THRESHOLD:
                 self.coilactor2.GetProperty().SetColor(0, 1, 0)
             else:
                 self.coilactor2.GetProperty().SetColor(1, 1, 1)
             offset = -35
-            self.arrowactorY1 = self.arrow([-55, offset, 0], [-55, offset + coordy, 0])
-            self.arrowactorY2 = self.arrow([55, offset, 0], [55, offset - coordy, 0])
+            self.arrowactorY1 = self.Arrow([-55, offset, 0], [-55, offset + coordy, 0])
+            self.arrowactorY2 = self.Arrow([55, offset, 0], [55, offset - coordy, 0])
             self.arrowactorY1.SetPosition(0, -150, 0)
             self.arrowactorY1.RotateZ(180)
             self.arrowactorY1.GetProperty().SetColor(0, 1, 0)
@@ -752,14 +752,14 @@ class Viewer(wx.Panel):
 
             self.ren2.RemoveActor(self.arrowactorX1)
             self.ren2.RemoveActor(self.arrowactorX2)
-            if const.COIL_COORD_THRESHOLD > coordx > -const.COIL_COORD_THRESHOLD:
+            if const.COIL_ANGLES_THRESHOLD > coordx > -const.COIL_ANGLES_THRESHOLD:
                 self.coilactor3.GetProperty().SetColor(0, 1, 0)
             else:
                 self.coilactor3.GetProperty().SetColor(1, 1, 1)
             offset = 38
-            self.arrowactorX1 = self.arrow([0, 65, offset], [0, 65, offset + coordx])
+            self.arrowactorX1 = self.Arrow([0, 65, offset], [0, 65, offset + coordx])
             offset = 5
-            self.arrowactorX2 = self.arrow([0, -55, offset], [0, -55, offset - coordx])
+            self.arrowactorX2 = self.Arrow([0, -55, offset], [0, -55, offset - coordx])
             self.arrowactorX1.SetPosition(0, -300, 0)
             self.arrowactorX1.RotateY(90)
             self.arrowactorX1.RotateZ(180)
@@ -798,7 +798,7 @@ class Viewer(wx.Panel):
             # ((-0.0404*dst) + 5.0404) is the linear equation to normalize the zoom between 1 and 5 times with the distance between 1 and 100 mm
             self.ren.GetActiveCamera().Zoom((-0.0404*dst) + 5.0404)
 
-            if dst <= 3:
+            if dst <= const.COIL_COORD_THRESHOLD:
                 self.aim_dummy.GetProperty().SetColor(0, 1, 0)
             else:
                 self.aim_dummy.GetProperty().SetColor(1, 1, 1)
@@ -823,7 +823,7 @@ class Viewer(wx.Panel):
         except:
             None
 
-    def arrow(self, startPoint, endPoint):
+    def Arrow(self, startPoint, endPoint):
         # Compute a basis
         normalizedX = [0 for i in range(3)]
         normalizedY = [0 for i in range(3)]
