@@ -229,7 +229,7 @@ class Preview(wx.Panel):
     def OnSelect(self, evt):
 
         shift_pressed = False
-        if evt.m_shiftDown:
+        if evt.shiftDown:
             shift_pressed = True
 
         self.select_on = True
