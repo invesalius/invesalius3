@@ -3091,21 +3091,14 @@ class ObjectCalibrationDialog(wx.Dialog):
         choice_ref.SetToolTip(tooltip)
         choice_ref.Bind(wx.EVT_COMBOBOX, self.OnChoiceRefMode)
 
-        # Save button for object registration
-        tooltip = wx.ToolTip(_(u"Save object registration file"))
-        btn_save = wx.Button(self, -1, _(u"Save"), size=wx.Size(90, 30))
-        btn_save.SetToolTip(tooltip)
-        btn_save.Bind(wx.EVT_BUTTON, self.ShowSaveObjectDialog)
-
         # Buttons to finish or cancel object registration
         tooltip = wx.ToolTip(_(u"Registration done"))
         # btn_ok = wx.Button(self, -1, _(u"Done"), size=wx.Size(90, 30))
         btn_ok = wx.Button(self, wx.ID_OK, _(u"Done"), size=wx.Size(90, 30))
         btn_ok.SetToolTip(tooltip)
 
-        extra_sizer = wx.FlexGridSizer(rows=4, cols=1, hgap=5, vgap=20)
+        extra_sizer = wx.FlexGridSizer(rows=2, cols=1, hgap=5, vgap=30)
         extra_sizer.AddMany([choice_ref,
-                             btn_save,
                              btn_ok])
 
         # Push buttons for object fiducials
@@ -3164,17 +3157,16 @@ class ObjectCalibrationDialog(wx.Dialog):
             reader = vtk.vtkSTLReader()
 
         if _has_win32api:
-            reader.SetFileName(win32api.GetShortPathName(filename).encode(const.FS_ENCODE))
+            self.obj_name = win32api.GetShortPathName(filename).encode(const.FS_ENCODE)
         else:
-            reader.SetFileName(filename.encode(const.FS_ENCODE))
+            self.obj_name = filename.encode(const.FS_ENCODE)
 
+        reader.SetFileName(self.obj_name)
         reader.Update()
         polydata = reader.GetOutput()
 
         if polydata.GetNumberOfPoints() == 0:
             wx.MessageBox(_("InVesalius was not able to import this surface"), _("Import surface error"))
-        else:
-            self.obj_name = os.path.splitext(os.path.split(filename)[-1])[0]
 
         mapper = vtk.vtkPolyDataMapper()
         mapper.SetInputData(polydata)
@@ -3182,15 +3174,15 @@ class ObjectCalibrationDialog(wx.Dialog):
         obj_actor = vtk.vtkActor()
         obj_actor.SetMapper(mapper)
 
-        axes = vtk.vtkAxesActor()
-        axes.SetShaftTypeToCylinder()
-        axes.SetXAxisLabelText("x")
-        axes.SetYAxisLabelText("y")
-        axes.SetZAxisLabelText("z")
-        axes.SetTotalLength(50.0, 50.0, 50.0)
+        obj_axes = vtk.vtkAxesActor()
+        obj_axes.SetShaftTypeToCylinder()
+        obj_axes.SetXAxisLabelText("x")
+        obj_axes.SetYAxisLabelText("y")
+        obj_axes.SetZAxisLabelText("z")
+        obj_axes.SetTotalLength(50.0, 50.0, 50.0)
 
         self.ren.AddActor(obj_actor)
-        self.ren.AddActor(axes)
+        self.ren.AddActor(obj_axes)
 
         self.interactor.Render()
 
@@ -3224,14 +3216,5 @@ class ObjectCalibrationDialog(wx.Dialog):
             for n in range(0, 3):
                 self.txt_coord[m][n].SetLabel('-')
 
-    def ShowSaveObjectDialog(self, evt):
-        if np.isnan(self.obj_fiducials).any() or np.isnan(self.obj_orients).any():
-            wx.MessageBox(_("Digitize all object fiducials before saving"), _("Save error"))
-        else:
-            filename = ShowSaveRegistrationDialog("object_registration.obr")
-            hdr = 'Object' + "\t" + self.obj_name + "\t" + 'Reference' + "\t" + str('%d' % self.obj_ref_id)
-            data = np.hstack([self.obj_fiducials, self.obj_orients])
-            np.savetxt(filename, data, fmt='%.4f', delimiter='\t', newline='\n', header=hdr)
-
     def GetValue(self):
-        return self.obj_fiducials, self.obj_orients, self.obj_ref_id
+        return self.obj_fiducials, self.obj_orients, self.obj_ref_id, self.obj_name

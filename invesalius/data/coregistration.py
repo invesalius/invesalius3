@@ -171,29 +171,20 @@ class CoregistrationObjectStatic(threading.Thread):
         trck_id = self.trck_info[1]
         trck_mode = self.trck_info[2]
 
-        obj_base_img = self.coil_info[0]
-        obj_base_trck = self.coil_info[1]
-        obj_sensor_orient = self.coil_info[2]
-        obj_center2 = self.coil_info[3]
-        obj_sensor = self.coil_info[4]
-        obj_center = self.coil_info[5]
+        m_inv_trck = self.coil_info[0]
+        obj_center_trck = self.coil_info[1]
+        obj_sensor_trck = self.coil_info[2]
+        obj_ref_id = self.coil_info[3]
 
         while self.nav_id:
-            # trck_coord, probe, reference = dco.GetCoordinates(trck_init, trck_id, trck_mode)
             coord_raw = dco.GetCoordinates(trck_init, trck_id, trck_mode)
 
-            # print "obj_center: ", obj_center
-            # print "obj_sensor: ", obj_sensor
+            if obj_ref_id:
+                trck_xyz = asmatrix(coord_raw[2, 0:3]).reshape([3, 1]) + (obj_center_trck - obj_sensor_trck)
+            else:
+                trck_xyz = asmatrix(coord_raw[0, 0:3]).reshape([3, 1]) + (obj_center_trck - obj_sensor_trck)
 
-            trck_xyz = asmatrix(coord_raw[0, 0:3]).reshape([3, 1]) + (obj_center2 - obj_sensor)
-            # obj_center2 = obj_center2[0, 0], obj_center2[1, 0], obj_center2[2, 0]
-
-            # trck_xyz = mat([[trck_coord[0]], [trck_coord[1]], [trck_coord[2]]])
             img = q1 + (m_inv * n) * (trck_xyz - q2)
-
-            # print "trck_xyz: ", trck_xyz
-            # print "img: ", img
-            # print "coord_raw: ", coord_raw
 
             coord = (float(img[0]), float(img[1]), float(img[2]),
                      coord_raw[0, 3], coord_raw[0, 4], coord_raw[0, 5])
@@ -205,7 +196,7 @@ class CoregistrationObjectStatic(threading.Thread):
             # wx.CallAfter(Publisher.sendMessage, 'Set camera in volume', coord[0:3])
             wx.CallAfter(Publisher.sendMessage, 'Set camera in volume', coord)
             wx.CallAfter(Publisher.sendMessage, 'Update object orientation',
-                         (obj_base_img, obj_base_trck, obj_sensor_orient, coord[0:3], angles))
+                         (m_inv_trck, angles, coord[0:3]))
 
             # TODO: Optimize the value of sleep for each tracking device.
             # Debug tracker is not working with 0.175 so changed to 0.2
@@ -246,22 +237,21 @@ class CoregistrationObjectDynamic(threading.Thread):
         trck_id = self.trck_info[1]
         trck_mode = self.trck_info[2]
 
-        obj_base_img = self.coil_info[0]
-        obj_base_trck = self.coil_info[1]
-        obj_sensor_orient = self.coil_info[2]
-        obj_center2 = self.coil_info[3]
-        obj_sensor = self.coil_info[4]
-        obj_center = self.coil_info[5]
+        m_inv_trck = self.coil_info[0]
+        obj_center_trck = self.coil_info[1]
+        obj_sensor_trck = self.coil_info[2]
+        obj_ref_id = self.coil_info[3]
 
         while self.nav_id:
-            # trck_coord, probe, reference = dco.GetCoordinates(trck_init, trck_id, trck_mode)
             coord_raw = dco.GetCoordinates(trck_init, trck_id, trck_mode)
 
-            trck_coord = dco.dynamic_reference(coord_raw[0, ::], coord_raw[1, ::])
+            if obj_ref_id:
+                trck_coord = dco.dynamic_reference(coord_raw[2, :], coord_raw[1, :])
+            else:
+                trck_coord = dco.dynamic_reference(coord_raw[0, :], coord_raw[1, :])
 
-            trck_xyz = asmatrix(trck_coord[0:3]).reshape([3, 1]) + (obj_center2 - obj_sensor)
+            trck_xyz = asmatrix(trck_coord[0:3]).reshape([3, 1]) + (obj_center_trck - obj_sensor_trck)
 
-            # trck_xyz = mat([[trck_coord[0]], [trck_coord[1]], [trck_coord[2]]])
             img = q1 + (m_inv * n) * (trck_xyz - q2)
 
             coord = (float(img[0]), float(img[1]), float(img[2]), trck_coord[3],
@@ -274,53 +264,13 @@ class CoregistrationObjectDynamic(threading.Thread):
             # wx.CallAfter(Publisher.sendMessage, 'Set camera in volume', coord[0:3])
             wx.CallAfter(Publisher.sendMessage, 'Set camera in volume', coord)
             wx.CallAfter(Publisher.sendMessage, 'Update object orientation',
-                         (obj_base_img, obj_base_trck, obj_sensor_orient, coord[0:3], angles))
+                         (m_inv_trck, angles, coord[0:3]))
 
             # TODO: Optimize the value of sleep for each tracking device.
             # Debug tracker is not working with 0.175 so changed to 0.2
             # However, 0.2 is too low update frequency ~5 Hz. Need optimization URGENTLY.
             # sleep(.3)
             sleep(0.175)
-
-            if self._pause_:
-                return
-
-
-class ObjectTest(threading.Thread):
-    """
-    Thread to update the coordinates with the fiducial points
-    co-registration method while the Navigation Button is pressed.
-    Sleep function in run method is used to avoid blocking GUI and
-    for better real-time navigation
-    """
-
-    def __init__(self, nav_id, trck_info):
-        threading.Thread.__init__(self)
-        self.nav_id = nav_id
-        self.trck_info = trck_info
-        self._pause_ = False
-        self.start()
-
-    def stop(self):
-        self._pause_ = True
-
-    def run(self):
-        trck_init = self.trck_info[0]
-        trck_id = self.trck_info[1]
-        trck_mode = self.trck_info[2]
-
-        while self.nav_id:
-            coord_raw = dco.GetCoordinates(trck_init, trck_id, trck_mode)
-            if trck_mode:
-                trck_coord = dco.dynamic_reference(coord_raw[0, ::], coord_raw[1, ::])
-            else:
-                trck_coord = coord_raw[0, ::]
-
-            wx.CallAfter(Publisher.sendMessage, 'Update object orientation',
-                         (trck_coord[3], trck_coord[4], trck_coord[5]))
-
-            # sleep(0.175)
-            sleep(0.05)
 
             if self._pause_:
                 return

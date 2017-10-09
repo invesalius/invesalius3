@@ -127,12 +127,13 @@ class Viewer(wx.Panel):
         self.camera_state = True
 
         self.ball_actor = None
-        self.coil_actor = None
+        self.obj_actor = None
+        self.obj_state = None
+        # self.obj_axes = None
+
         self._mode_cross = False
         self._to_show_ball = 0
         self._ball_ref_visibility = False
-
-        self.init_angles = None
 
         self.sen1 = False
         self.sen2 = False
@@ -223,10 +224,10 @@ class Viewer(wx.Panel):
         Publisher.subscribe(self.BlinkMarker, 'Blink Marker')
         Publisher.subscribe(self.StopBlinkMarker, 'Stop Blink Marker')
 
-        # Related to coil tracking for neuronavigation
+        # Related to object tracking during neuronavigation
         Publisher.subscribe(self.UpdateObjectOrientation, 'Update object orientation')
         Publisher.subscribe(self.UpdateObjectInitial, 'Update object initial orientation')
-        Publisher.subscribe(self.UpdateCoilState, 'Update object tracking state')
+        Publisher.subscribe(self.UpdateObjectState, 'Update object tracking state')
 
     def SetStereoMode(self, pubsub_evt):
         mode = pubsub_evt.data
@@ -597,188 +598,135 @@ class Viewer(wx.Panel):
         else:
             self.RemoveBallReference()
 
-    def AddCoil(self):
+    def AddObject(self, obj_name):
         """
         Coil for navigation rendered in volume viewer.
         """
 
-        coil_file = os.path.join(const.OBJ_DIR, "magstim_fig8_coil.stl")
-
         reader = vtk.vtkSTLReader()
-        reader.SetFileName(coil_file)
+        reader.SetFileName(obj_name)
         reader.Update()
 
         transform = vtk.vtkTransform()
         transform.RotateY(180)
         transform.RotateZ(-90)
-        transformFilter = vtk.vtkTransformPolyDataFilter()
-        transformFilter.SetTransform(transform)
-        transformFilter.SetInputConnection(reader.GetOutputPort())
-        transformFilter.Update()
+
+        transform_filt = vtk.vtkTransformPolyDataFilter()
+        transform_filt.SetTransform(transform)
+        transform_filt.SetInputConnection(reader.GetOutputPort())
+        transform_filt.Update()
 
         normals = vtk.vtkPolyDataNormals()
-        normals.SetInputData(transformFilter.GetOutput())
+        normals.SetInputData(transform_filt.GetOutput())
         normals.SetFeatureAngle(80)
         normals.AutoOrientNormalsOn()
         normals.Update()
 
-        coil_mapper = vtk.vtkPolyDataMapper()
-        coil_mapper.SetInputData(normals.GetOutput())
-        coil_mapper.ScalarVisibilityOff()
-        coil_mapper.ImmediateModeRenderingOn()  # improve performance
+        obj_mapper = vtk.vtkPolyDataMapper()
+        obj_mapper.SetInputData(normals.GetOutput())
+        obj_mapper.ScalarVisibilityOff()
+        obj_mapper.ImmediateModeRenderingOn()  # improve performance
 
-        self.coil_actor = vtk.vtkActor()
-        self.coil_actor.SetMapper(coil_mapper)
-        # self.coil_actor.GetProperty().SetColor()
-        self.coil_actor.GetProperty().SetOpacity(0.8)
+        self.obj_actor = vtk.vtkActor()
+        self.obj_actor.SetMapper(obj_mapper)
+        self.obj_actor.GetProperty().SetOpacity(0.8)
+        # self.obj_actor.GetProperty().SetColor()
+        # self.obj_actor.SetVisibility(0)
 
-        self.axes = vtk.vtkAxesActor()
-        self.axes.SetShaftTypeToCylinder()
-        self.axes.SetXAxisLabelText("x")
-        self.axes.SetYAxisLabelText("y")
-        self.axes.SetZAxisLabelText("z")
-        self.axes.SetTotalLength(50.0, 50.0, 50.0)
+        # self.obj_axes = vtk.vtkAxesActor()
+        # self.obj_axes.SetShaftTypeToCylinder()
+        # self.obj_axes.SetXAxisLabelText("x")
+        # self.obj_axes.SetYAxisLabelText("y")
+        # self.obj_axes.SetZAxisLabelText("z")
+        # self.obj_axes.SetTotalLength(50.0, 50.0, 50.0)
+        # self.obj_axes.SetVisibility(0)
 
-        self.ren.AddActor(self.coil_actor)
-        self.ren.AddActor(self.axes)
-        self.Refresh()
-
-    def RemoveCoil(self):
-        self.ren.RemoveActor(self.coil_actor)
-        self.ren.RemoveActor(self.axes)
-        self.coil_actor = None
-        self.interactor.Render()
+        self.ren.AddActor(self.obj_actor)
+        # self.ren.AddActor(self.obj_axes)
+        # self.Refresh()
 
     def UpdateObjectOrientation(self, pubsub_evt):
-        # m, q1, minv = pubsub_evt.data[0]
-        m_trck, q1_trck, minv_trck = pubsub_evt.data[1]
-        # a, b, g = pubsub_evt.data[4]
-        a, b, g = np.radians(pubsub_evt.data[4])
-        coord = pubsub_evt.data[3]
+        minv_trck = pubsub_evt.data[0]
+        a, b, g = np.radians(pubsub_evt.data[1])
+        coord = pubsub_evt.data[2]
 
         # minv_trck[1, :] = -minv_trck[1, :]
 
         x, y, z = bases.flip_x(coord)
 
-        # print "a, b, g: ", a, b, g
-
-        Mrot = np.mat([[cos(a) * cos(b), sin(b) * sin(g) * cos(a) - cos(g) * sin(a),
+        m_rot = np.mat([[cos(a) * cos(b), sin(b) * sin(g) * cos(a) - cos(g) * sin(a),
                         cos(a) * sin(b) * cos(g) + sin(a) * sin(g)],
                        [cos(b) * sin(a), sin(b) * sin(g) * sin(a) + cos(g) * cos(a),
                         cos(g) * sin(b) * sin(a) - sin(g) * cos(a)],
                        [-sin(b), sin(g) * cos(b), cos(b) * cos(g)]])
 
-        Mrot_img = minv_trck * Mrot
+        m_rot_img = minv_trck * m_rot
 
-        mid = np.identity(3)
+        pad = np.array([0.0, 0.0, 0.0])
+        trans = np.array([[x], [y], [z], [1]])
+        m_rot_affine = np.vstack([m_rot_img, pad])
+        m_rot_affine = np.hstack([m_rot_affine, trans])
+        m_rot_vtk = self.array_to_vtkmatrix4x4(m_rot_affine)
 
-        bot = np.array([0.0, 0.0, 0.0])
-        rig = np.array([[x], [y], [z], [1]])
+        # m_id = np.identity(3)
+        # m_id_affine = np.vstack([m_id, pad])
+        # m_id_affine = np.hstack([m_id_affine, trans])
+        # m_id_vtk = self.array_to_vtkmatrix4x4(m_id_affine)
 
-        Mrot_img = np.vstack([Mrot_img, bot])
-        Mrot_img = np.hstack([Mrot_img, rig])
-        Mrot_img_4x4 = self.array_to_vtkmatrix4x4(Mrot_img)
-
-        mid_rot = np.vstack([mid, bot])
-        mid_rot = np.hstack([mid_rot, rig])
-        Mid_rot_4x4 = self.array_to_vtkmatrix4x4(mid_rot)
-
-        self.axes.SetUserMatrix(Mid_rot_4x4)
-        self.coil_actor.SetUserMatrix(Mrot_img_4x4)
-
-        # transf = vtk.vtkTransform()
-        #
-        # # plh angles variation
-        # delta_angles = (a - self.init_angles[0],
-        #                 b - self.init_angles[1],
-        #                 g - self.init_angles[2])
-        #
-        # transf.Translate(x, y, z)  # center
-        # ##transf.Translate(0, 0, 0) #origin
-        #
-        # # transf.RotateWXYZ(delta_angles[0], self.vectors[2])
-        # # transf.RotateWXYZ(delta_angles[1], self.vectors[0])
-        # # transf.RotateWXYZ(delta_angles[2], self.vectors[1])
-        # transf.RotateZ(delta_angles[0])
-        # transf.RotateX(delta_angles[2])
-        # transf.RotateY(delta_angles[1])
-        # transf.Update()
-        #
-        # transf2 = vtk.vtkTransform()
-        # transf2.Translate(x, y, z)  # center
-        # transf2.Update()
-        #
-        # # 0
-        #
-        # self.coil_actor.SetUserMatrix(transf.GetMatrix())
-        # self.axes.SetUserMatrix(transf2.GetMatrix())
+        self.obj_actor.SetUserMatrix(m_rot_vtk)
+        # self.obj_axes.SetUserMatrix(m_id_vtk)
 
         self.Refresh()
 
     def UpdateObjectInitial(self, pubsub_evt):
-        m, q1, minv = pubsub_evt.data[0]
-        m_trck, q1_trck, minv_trck = pubsub_evt.data[1]
-        a, b, g = np.radians(pubsub_evt.data[2])
-        coord = pubsub_evt.data[3]
-        self.init_angles = pubsub_evt.data[2]
+        minv_trck = pubsub_evt.data[0]
+        a, b, g = np.radians(pubsub_evt.data[1])
+        coord = pubsub_evt.data[2]
+        obj_name = pubsub_evt.data[3]
 
+        if self.obj_state and not self.obj_actor:
+            self.AddObject(obj_name)
+
+        # Flip the Y axis
         minv_trck[1, :] = -minv_trck[1, :]
-        # minv_trck[:, [1, 0]] = minv_trck[:, [0, 1]]
 
         x, y, z = bases.flip_x(coord)
 
-        Mrot = np.mat([[cos(a) * cos(b), sin(b) * sin(g) * cos(a) - cos(g) * sin(a),
+        m_rot = np.mat([[cos(a) * cos(b), sin(b) * sin(g) * cos(a) - cos(g) * sin(a),
                         cos(a) * sin(b) * cos(g) + sin(a) * sin(g)],
                        [cos(b) * sin(a), sin(b) * sin(g) * sin(a) + cos(g) * cos(a),
                         cos(g) * sin(b) * sin(a) - sin(g) * cos(a)],
                        [-sin(b), sin(g) * cos(b), cos(b) * cos(g)]])
 
         # appear to work with some things inverted (everything is inverted on Z axis, even coil becomes black)
-        Mrot_img = minv_trck * Mrot
-        # Mrot_img[1, :] = -Mrot_img[1, :]
-        # Mrot_img = Mrot*minv_trck
+        m_rot_img = minv_trck * m_rot
 
-        # Mrot_img = minv * Mrot
+        pad = np.array([0.0, 0.0, 0.0])
+        trans = np.array([[x], [y], [z], [1]])
+        m_rot_affine = np.vstack([m_rot_img, pad])
+        m_rot_affine = np.hstack([m_rot_affine, trans])
+        m_rot_vtk = self.array_to_vtkmatrix4x4(m_rot_affine)
 
-        mid = np.identity(3)
-
-        bot = np.array([0.0, 0.0, 0.0])
-        # rig = np.array([[0.0], [0.0], [0.0], [1]])
-        rig = np.array([[x], [y], [z], [1]])
-        Mrot_img = np.vstack([Mrot_img, bot])
-        Mrot_img = np.hstack([Mrot_img, rig])
-        Mrot_img_4x4 = self.array_to_vtkmatrix4x4(Mrot_img)
-
-        # print Mrot
-        ## print Mrot_trck
-        # print Mrot_img
-        # print Mrot_img_4x4
-
-        mid_rot = np.vstack([mid, bot])
-        mid_rot = np.hstack([mid_rot, rig])
-        Mid_rot_4x4 = self.array_to_vtkmatrix4x4(mid_rot)
-
-
-        self.axes.SetUserMatrix(Mrot_img_4x4)
-        self.coil_actor.SetUserMatrix(Mrot_img_4x4)
-        self.Refresh()
+        self.obj_actor.SetUserMatrix(m_rot_vtk)
+        # self.obj_axes.SetUserMatrix(m_rot_vtk)
+        # self.Refresh()
 
     def array_to_vtkmatrix4x4(self, mrot4x4):
 
         vtkmat = vtk.vtkMatrix4x4()
-        # mrot4x4 = np.identity(4)
-        # mrot4x4[0:3, 0:3] = mrot3x3[:, :]
         for i in range(0, 4):
             for j in range(0, 4):
                 vtkmat.SetElement(i, j, mrot4x4[i, j])
         return vtkmat
 
-    def UpdateCoilState(self, pubsub_evt):
-        coil_state = pubsub_evt.data
-        if coil_state and not self.coil_actor:
-            self.AddCoil()
-        else:
-            self.RemoveCoil()
+    def UpdateObjectState(self, pubsub_evt):
+        self.obj_state = pubsub_evt.data
+        if not self.obj_state and self.obj_actor:
+            self.ren.RemoveActor(self.obj_actor)
+            # self.ren.RemoveActor(self.obj_axes)
+            self.obj_actor = None
+            # self.obj_axes = None
+            self.Refresh()
 
     def __bind_events_wx(self):
         #self.Bind(wx.EVT_SIZE, self.OnSize)

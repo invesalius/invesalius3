@@ -462,7 +462,7 @@ class NeuronavigationPanel(wx.Panel):
         Publisher.sendMessage('Update tracker initializer', (self.tracker_id, self.trk_init, self.ref_mode_id))
 
     def OnChoiceRefMode(self, evt, ctrl):
-        # When ref mode is changed the tracker coordinatess are set to zero
+        # When ref mode is changed the tracker coordinates are set to zero
         self.ref_mode_id = evt.GetSelection()
         self.ResetTrackerFiducials()
         # Some trackers do not accept restarting within this time window
@@ -509,9 +509,9 @@ class NeuronavigationPanel(wx.Panel):
         if self.trk_init and self.tracker_id:
             coord_raw = dco.GetCoordinates(self.trk_init, self.tracker_id, self.ref_mode_id)
             if self.ref_mode_id:
-                coord = dco.dynamic_reference(coord_raw[0, ::], coord_raw[1, ::])
+                coord = dco.dynamic_reference(coord_raw[0, :], coord_raw[1, :])
             else:
-                coord = coord_raw[0, ::]
+                coord = coord_raw[0, :]
 
         else:
             dlg.NavigationTrackerWarning(0, 'choose')
@@ -528,9 +528,11 @@ class NeuronavigationPanel(wx.Panel):
         choice_ref = btn[2]
         txtctrl_fre = btn[3]
 
+        # obj_reg[0] is object 3x3 fiducial matrix and obj_reg[1] is 3x3 orientation matrix
         obj_fiducials = self.obj_reg[0]
         obj_orients = self.obj_reg[1]
-        obj_reg_mode = self.obj_reg[2]
+        obj_ref_id = self.obj_reg[2]
+        obj_name = self.obj_reg[3]
 
         nav_id = btn_nav.GetValue()
         if nav_id:
@@ -573,61 +575,29 @@ class NeuronavigationPanel(wx.Panel):
                 Publisher.sendMessage("Toggle Cross", const.SLICE_STATE_CROSS)
                 Publisher.sendMessage("Hide current mask")
 
-                # self.obj_reg_status = True
-                # obj_fid = np.array([[152.73527508, 266.62955856, -202.28705912],
-                #                     [181.85043106, 322.48746204, -196.71066742],
-                #                     [187.60802536, 285.95369396, -200.14948368],
-                #                     [164.06406517, 291.1987711,  -212.90461597],
-                #                     [213.89145012, 271.30807629, -177.70791502]])
-                # obj_fid = np.array([[152.73527508, 266.62955856, -202.28705912],
-                #                     [181.85043106, 322.48746204, -196.71066742],
-                #                     [187.60802536, 285.95369396, -200.14948368],
-                #                     [164.06406517, 291.1987711,  -212.90461597],
-                #                     [213.89145012, 271.30807629, -177.70791502]])
-                #
-                # obj_ori = np.array([[135.6554718, -15.11593151, -18.542202],
-                #                     [128.07026672, -16.47393227, -20.26235199],
-                #                     [127.30979919, -15.69838619, -12.12549877],
-                #                     [-143.34231567, 38.09538269, 47.53349304],
-                #                     [-26.14866066, -2.64125633, -0.74970043]])
+                if self.obj_show:
+                    obj_center_img, obj_sensor_trck, m_inv_trck, obj_center_trck = db.object_registration(obj_fiducials,
+                                                                                                          bases_coreg)
+                    obj_sensor_orient = obj_orients[4, :]
+                    obj_mode = m_inv_trck, obj_center_trck, obj_sensor_trck, obj_ref_id
 
-                if self.ref_mode_id:
-                    if self.obj_show:
-                        # obj_reg[0] is object 3x3 fiducial matrix and obj_reg[1] is 3x3 orientation matrix
+                    # Only the m_inv is needed for change of basis
+                    Publisher.sendMessage('Update object initial orientation',
+                                          (m_inv_trck, obj_sensor_orient, obj_center_img, obj_name))
+                    if self.ref_mode_id:
                         if self.obj_reg_status:
-                            obj_center_aux, obj_sensor, obj_base_img, obj_base_trck, obj_center2 = db.object_registration(obj_fiducials, bases_coreg)
-                            obj_sensor_orient = obj_orients[4, :]
-                            obj_center = obj_center_aux[0, 0], obj_center_aux[0, 1], obj_center_aux[0, 2]
-                            obj_mode = obj_base_img, obj_base_trck, obj_sensor_orient, obj_center2, obj_sensor, obj_center
-
-                            Publisher.sendMessage('Update object initial orientation',
-                                                  (obj_base_img, obj_base_trck, obj_sensor_orient, obj_center))
-
                             self.correg = dcr.CoregistrationObjectDynamic(bases_coreg, nav_id, tracker_mode, obj_mode)
                         else:
                             dlg.InvalidObjectRegistration()
                     else:
-                        self.correg = dcr.CoregistrationDynamic(bases_coreg, nav_id, tracker_mode)
+                        self.correg = dcr.CoregistrationObjectStatic(bases_coreg, nav_id, tracker_mode, obj_mode)
+
                 else:
-                    if self.obj_show:
-                        # obj_reg[0] is object 5x3 fiducial matrix and obj_reg[1] is 5x3 orientation matrix
-                        if self.obj_reg_status:
-                            obj_center_aux, obj_sensor, obj_base_img, obj_base_trck, obj_center2 = db.object_registration(obj_fiducials, bases_coreg)
-                            # obj_center_aux, obj_sensor, obj_base_img, obj_base_trck = db.object_registration(self.obj_reg[0], bases_coreg)
-                            # obj_mode = (obj_center, obj_sensor, obj_base, self.obj_reg[1])
-                            obj_sensor_orient = obj_orients[4, :]
-                            # obj_sensor_orient = self.obj_reg[1][4, :]
-                            obj_center = obj_center_aux[0, 0], obj_center_aux[0, 1], obj_center_aux[0, 2]
-                            obj_mode = obj_base_img, obj_base_trck, obj_sensor_orient, obj_center2, obj_sensor, obj_center
-
-                            Publisher.sendMessage('Update object initial orientation',
-                                                  (obj_base_img, obj_base_trck, obj_sensor_orient, obj_center))
-
-                            self.correg = dcr.CoregistrationObjectStatic(bases_coreg, nav_id, tracker_mode, obj_mode)
-                        else:
-                            dlg.InvalidObjectRegistration()
+                    if self.ref_mode_id:
+                        self.correg = dcr.CoregistrationDynamic(bases_coreg, nav_id, tracker_mode)
                     else:
                         self.correg = dcr.CoregistrationStatic(bases_coreg, nav_id, tracker_mode)
+
 
         else:
             tooltip = wx.ToolTip(_("Start neuronavigation"))
@@ -662,6 +632,10 @@ class ObjectRegistrationPanel(wx.Panel):
         self.coil_list = const.COIL
 
         self.nav_prop = None
+        self.obj_fiducials = None
+        self.obj_orients = None
+        self.obj_ref_mode = None
+        self.obj_name = None
 
         self.SetAutoLayout(1)
         self.__bind_events()
@@ -714,10 +688,21 @@ class ObjectRegistrationPanel(wx.Panel):
         line_import.Add(link_load_obj, 1, wx.EXPAND|wx.GROW| wx.TOP|wx.RIGHT, 4)
         line_import.Add(btn_load_reg, 0, wx.ALL|wx.EXPAND|wx.GROW, 0)
 
+        # Save button for object registration
+        tooltip = wx.ToolTip(_(u"Save object registration file"))
+        btn_save = wx.Button(self, -1, _(u"Save"), size=wx.Size(65, 23))
+        btn_save.SetToolTip(tooltip)
+        btn_save.Bind(wx.EVT_BUTTON, self.ShowSaveObjectDialog)
+
+        # Create a horizontal sizer to represent button save
+        line_save = wx.BoxSizer(wx.HORIZONTAL)
+        line_save.Add(btn_save, 1, wx.LEFT| wx.TOP | wx.RIGHT, 4)
+
         # Add line sizers into main sizer
         main_sizer = wx.BoxSizer(wx.VERTICAL)
-        main_sizer.Add(line_new, 0, wx.GROW|wx.EXPAND|wx.LEFT|wx.RIGHT|wx.TOP, 5)
-        main_sizer.Add(line_import, 0, wx.GROW|wx.EXPAND|wx.LEFT|wx.RIGHT|wx.TOP, 5)
+        main_sizer.Add(line_new, 0, wx.GROW | wx.EXPAND | wx.LEFT | wx.RIGHT | wx.TOP, 5)
+        main_sizer.Add(line_import, 0, wx.GROW | wx.EXPAND | wx.LEFT | wx.RIGHT | wx.TOP, 5)
+        main_sizer.Add(line_save, 0, wx.LEFT | wx.RIGHT | wx.TOP, 5)
         main_sizer.Fit(self)
 
         self.SetSizer(main_sizer)
@@ -740,9 +725,10 @@ class ObjectRegistrationPanel(wx.Panel):
             dialog = dlg.ObjectCalibrationDialog(self.nav_prop)
             try:
                 if dialog.ShowModal() == wx.ID_OK:
-                    obj_fiducials, obj_orients, obj_ref_mode = dialog.GetValue()
-                    if np.isfinite(obj_fiducials).all() and np.isfinite(obj_orients).all():
-                        Publisher.sendMessage('Update object registration', (obj_fiducials, obj_orients, obj_ref_mode))
+                    self.obj_fiducials, self.obj_orients, self.obj_ref_mode, self.obj_name = dialog.GetValue()
+                    if np.isfinite(self.obj_fiducials).all() and np.isfinite(self.obj_orients).all():
+                        Publisher.sendMessage('Update object registration',
+                                              (self.obj_fiducials, self.obj_orients, self.obj_ref_mode, self.obj_name))
                         Publisher.sendMessage('Update status text in GUI', _("Ready"))
 
             except wx._core.PyAssertionError:  # TODO FIX: win64
@@ -756,17 +742,30 @@ class ObjectRegistrationPanel(wx.Panel):
 
         if filename:
             data = np.loadtxt(filename, delimiter='\t')
-            obj_fiducials = data[:, :3]
-            obj_orients = data[:, 3:]
+            self.obj_fiducials = data[:, :3]
+            self.obj_orients = data[:, 3:]
 
             text_file = open(filename, "r")
             header = text_file.readline().split('\t')
             text_file.close()
 
-            Publisher.sendMessage('Update object registration', (obj_fiducials, obj_orients, int(header[-1])))
+            self.obj_name = header[1]
+            self.obj_ref_mode = int(header[-1])
+
+            Publisher.sendMessage('Update object registration',
+                                  (self.obj_fiducials, self.obj_orients, self.obj_ref_mode, self.obj_name))
             Publisher.sendMessage('Update status text in GUI', _("Ready"))
         else:
             wx.MessageBox(_("InVesalius was not able to import this registration file"), _("Import error"))
+
+    def ShowSaveObjectDialog(self, evt):
+        if np.isnan(self.obj_fiducials).any() or np.isnan(self.obj_orients).any():
+            wx.MessageBox(_("Digitize all object fiducials before saving"), _("Save error"))
+        else:
+            filename = dlg.ShowSaveRegistrationDialog("object_registration.obr")
+            hdr = 'Object' + "\t" + self.obj_name + "\t" + 'Reference' + "\t" + str('%d' % self.obj_ref_mode)
+            data = np.hstack([self.obj_fiducials, self.obj_orients])
+            np.savetxt(filename, data, fmt='%.4f', delimiter='\t', newline='\n', header=hdr)
 
 
 class MarkersPanel(wx.Panel):

@@ -135,27 +135,20 @@ def flip_x(point):
     return x, y, z
 
 
-def object_registration(fiducials, bases):
+def object_registration(fiducials, bases_coreg):
     """
 
     :param fiducials:
-    :param bases:
+    :param bases_coreg:
     :return:
     """
 
-    minv, n, q1, q2 = bases
+    minv, n, q1, q2 = bases_coreg
 
-    obj_img1 = q1 + (minv * n) * (np.asmatrix(fiducials[0, :]).reshape([3, 1]) - q2)
-    obj_img2 = q1 + (minv * n) * (np.asmatrix(fiducials[1, :]).reshape([3, 1]) - q2)
-    obj_img3 = q1 + (minv * n) * (np.asmatrix(fiducials[2, :]).reshape([3, 1]) - q2)
-    obj_img = np.vstack([np.asarray(obj_img1).reshape([1, 3]),
-                         np.asarray(obj_img2).reshape([1, 3]),
-                         np.asarray(obj_img3).reshape([1, 3])])
+    obj_center_trck = np.asmatrix(fiducials[3, :]).reshape([3, 1])
+    obj_sensor_trck = np.asmatrix(fiducials[4, :]).reshape([3, 1])
+    obj_center = q1 + (minv * n) * (obj_center_trck - q2)
+    obj_center_img = obj_center[0, 0], obj_center[1, 0], obj_center[2, 0]
+    m_trck, q_trck, m_inv_trck = base_creation(fiducials)
 
-    obj_center2 = np.asmatrix(fiducials[3, :]).reshape([3, 1])
-    obj_center = q1 + (minv * n) * (np.asmatrix(fiducials[3, :]).reshape([3, 1]) - q2)
-    obj_sensor = np.asmatrix(fiducials[4, :]).reshape([3, 1])
-    obj_base = base_creation(obj_img)
-    obj_trck = base_creation(fiducials)
-
-    return obj_center.reshape([1, 3]), obj_sensor, obj_base, obj_trck, obj_center2
+    return obj_center_img, obj_sensor_trck, m_inv_trck, obj_center_trck
