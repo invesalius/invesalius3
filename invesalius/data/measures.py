@@ -933,7 +933,7 @@ class AngularMeasure(object):
 
 
 class CircleDensityMeasure(object):
-    def __init__(self, orientation, slice_number, colour=(255, 0, 0, 255)):
+    def __init__(self, orientation, slice_number, colour=(255, 0, 0, 255), interactive=True):
         self.colour = colour
         self.center = (0.0, 0.0, 0.0)
         self.point1 = (0.0, 0.0, 0.0)
@@ -953,6 +953,7 @@ class CircleDensityMeasure(object):
         self.text_box = None
 
         self._need_calc = True
+        self.interactive = interactive
 
     def set_center(self, pos):
         self.center = pos
@@ -995,14 +996,19 @@ class CircleDensityMeasure(object):
         return cx, cy
 
     def is_over(self, x, y):
-        if self.ellipse.is_over(x, y):
-            return self.ellipse.is_over(x, y)
-        elif self.text_box.is_over(x, y):
-            return self.text_box.is_over(x, y)
-        return None
+        if self.interactive:
+            if self.ellipse.is_over(x, y):
+                return self.ellipse.is_over(x, y)
+            elif self.text_box.is_over(x, y):
+                return self.text_box.is_over(x, y)
+            return None
 
     def _on_move(self, obj):
         self.set_point1(obj.position)
+
+    def set_interactive(self, value):
+        self.interactive = bool(value)
+        self.ellipse.interactive = self.interactive
 
     def draw_to_canvas(self, gc, canvas):
         """

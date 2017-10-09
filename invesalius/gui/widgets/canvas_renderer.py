@@ -94,6 +94,13 @@ class CanvasRendererCTX:
         ref = WeakMethod(callback)
         self._callback_events[event].append(ref)
 
+    def unsubscribe_event(self, event, callback):
+        for n, cb in enumerate(self._callback_events[event]):
+            if cb() == callback:
+                print 'removed'
+                self._callback_events[event].pop(n)
+                return
+
     def _init_canvas(self):
         w, h = self._size
         self._array = np.zeros((h, w, 4), dtype=np.uint8)
@@ -856,8 +863,9 @@ class Ellipse(CanvasHandlerBase):
                                         self.line_colour,
                                         self.fill_colour)
 
-        self.handler_1.draw_to_canvas(gc, canvas)
-        self.handler_2.draw_to_canvas(gc, canvas)
+        if self.interactive:
+            self.handler_1.draw_to_canvas(gc, canvas)
+            self.handler_2.draw_to_canvas(gc, canvas)
 
     def set_point1(self, pos):
         self.point1 = pos
@@ -915,14 +923,15 @@ class Ellipse(CanvasHandlerBase):
             self._on_change_function()()
 
     def is_over(self, x, y):
-        xi, yi, xf, yf = self.bbox
+        if self.interactive:
+            xi, yi, xf, yf = self.bbox
 
-        if self.handler_1.is_over(x, y):
-            return self.handler_1
-        elif self.handler_2.is_over(x, y):
-            return self.handler_2
-        elif xi <= x <= xf and yi <= y <= yf:
-            return self
+            if self.handler_1.is_over(x, y):
+                return self.handler_1
+            elif self.handler_2.is_over(x, y):
+                return self.handler_2
+            elif xi <= x <= xf and yi <= y <= yf:
+                return self
 
     def mouse_move(self, evt):
         mx, my = evt.position

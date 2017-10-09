@@ -555,6 +555,21 @@ class DensityMeasureStyle(DefaultInteractorStyle):
         #  self.AddObserver("LeaveEvent", self.OnLeaveMeasureInteractor)
         self.viewer.canvas.subscribe_event('LeftButtonPressEvent', self.OnInsertPoint)
 
+    def SetUp(self):
+        for n in self.viewer.draw_by_slice_number:
+            for i in self.viewer.draw_by_slice_number[n]:
+                if isinstance(i, CircleDensityMeasure):
+                    i.set_interactive(True)
+        self.viewer.canvas.Refresh()
+
+    def CleanUp(self):
+        self.viewer.canvas.unsubscribe_event('LeftButtonPressEvent', self.OnInsertPoint)
+
+        for n in self.viewer.draw_by_slice_number:
+            for i in self.viewer.draw_by_slice_number[n]:
+                if isinstance(i, CircleDensityMeasure):
+                    i.set_interactive(False)
+        self.viewer.canvas.Refresh()
 
     def _2d_to_3d(self, pos):
         mx, my = pos
