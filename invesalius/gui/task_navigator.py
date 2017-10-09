@@ -744,12 +744,11 @@ class MarkersPanel(wx.Panel):
             else:
                 index = None
 
-        if self.tgt_flag and self.tgt_index == index[0]:
-            self.tgt_flag = self.tgt_index = None
-            Publisher.sendMessage('Disable or enable coil tracker', False)
-            dlg.DeleteTarget()
-
         if index:
+            if self.tgt_flag and self.tgt_index == index[0]:
+                self.tgt_flag = self.tgt_index = None
+                Publisher.sendMessage('Disable or enable coil tracker', False)
+                dlg.DeleteTarget()
             self.DeleteMarker(index)
         else:
             dlg.NoMarkerSelected()
@@ -863,7 +862,7 @@ class MarkersPanel(wx.Panel):
         self.marker_ind += 1
 
         # List of lists with coordinates and properties of a marker
-        print self.current_angle
+
         line = [coord[0], coord[1], coord[2], self.current_angle[0], self.current_angle[1], self.current_angle[2], colour[0], colour[1], colour[2], size, marker_id]
 
         # Adding current line to a list of all markers already created
