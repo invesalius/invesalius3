@@ -346,7 +346,7 @@ class VolumeToolPanel(wx.Panel):
         BMP_3D_STEREO = wx.Bitmap(os.path.join(const.ICON_DIR, "3D_glasses.png"),
                                     wx.BITMAP_TYPE_PNG)
 
-        BMP_TARGET = wx.Bitmap(os.path.join(const.ICON_DIR, "target2.png"),
+        BMP_TARGET = wx.Bitmap(os.path.join(const.ICON_DIR, "target.png"),
                                     wx.BITMAP_TYPE_PNG)
 
 
