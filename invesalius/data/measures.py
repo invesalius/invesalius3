@@ -20,6 +20,7 @@ from scipy.misc import imsave
 
 TYPE = {const.LINEAR: _(u"Linear"),
         const.ANGULAR: _(u"Angular"),
+        const.DENSITY_ELLIPSE: _(u"Density Ellipse"),
         }
 
 LOCATION = {const.SURFACE: _(u"3D"),
@@ -121,6 +122,7 @@ class MeasurementManager(object):
         Publisher.subscribe(self._rm_incomplete_measurements,
                             "Remove incomplete measurements")
         Publisher.subscribe(self._change_measure_point_pos, 'Change measurement point position')
+        Publisher.subscribe(self._add_density_measure, "Add density measurement")
         Publisher.subscribe(self.OnCloseProject, 'Close project data')
 
     def _load_measurements(self, pubsub_evt):
@@ -132,32 +134,44 @@ class MeasurementManager(object):
         for i in dict:
             m = dict[i]
 
-            if m.location == const.AXIAL:
-                radius = min(spacing[1], spacing[2]) * const.PROP_MEASURE
+            print m
 
-            elif m.location == const.CORONAL:
-                radius = min(spacing[0], spacing[1]) * const.PROP_MEASURE
-
-            elif m.location == const.SAGITAL:
-                radius = min(spacing[1], spacing[2]) * const.PROP_MEASURE
+            if isinstance(m, DensityMeasurement):
+                mr = CircleDensityMeasure(map_id_locations[m.location],
+                                          m.slice_number,
+                                          m.colour)
+                mr.set_center(m.points[0])
+                mr.set_point1(m.points[1])
+                mr.set_point2(m.points[2])
+                self.measures.append((m, mr))
 
             else:
-                radius = min(spacing) * const.PROP_MEASURE
+                if m.location == const.AXIAL:
+                    radius = min(spacing[1], spacing[2]) * const.PROP_MEASURE
 
-            representation = CirclePointRepresentation(m.colour, radius)
-            if m.type == const.LINEAR:
-                mr = LinearMeasure(m.colour, representation)
-            else:
-                mr = AngularMeasure(m.colour, representation)
-            self.current = (m, mr)
-            self.measures.append(self.current)
-            for point in m.points:
-                x, y, z = point
-                actors = mr.AddPoint(x, y, z)
+                elif m.location == const.CORONAL:
+                    radius = min(spacing[0], spacing[1]) * const.PROP_MEASURE
 
-                if m.location == const.SURFACE:
-                    Publisher.sendMessage(("Add actors " + str(m.location)),
-                        (actors, m.slice_number))
+                elif m.location == const.SAGITAL:
+                    radius = min(spacing[1], spacing[2]) * const.PROP_MEASURE
+
+                else:
+                    radius = min(spacing) * const.PROP_MEASURE
+
+                representation = CirclePointRepresentation(m.colour, radius)
+                if m.type == const.LINEAR:
+                    mr = LinearMeasure(m.colour, representation)
+                else:
+                    mr = AngularMeasure(m.colour, representation)
+                self.current = (m, mr)
+                self.measures.append(self.current)
+                for point in m.points:
+                    x, y, z = point
+                    actors = mr.AddPoint(x, y, z)
+
+                    if m.location == const.SURFACE:
+                        Publisher.sendMessage(("Add actors " + str(m.location)),
+                            (actors, m.slice_number))
             self.current = None
 
             if not m.visible:
@@ -352,6 +366,28 @@ class MeasurementManager(object):
                 #  self.measures.pop()
             self.current = None
 
+    def _add_density_measure(self, pubsub_evt):
+        density_measure = pubsub_evt.data
+        m = DensityMeasurement()
+        m.index = len(self.measures)
+        m.location = density_measure.location
+        m.slice_number = density_measure.slice_number
+        m.colour = density_measure.colour
+        m.value = density_measure._mean
+        m.points = [density_measure.center, density_measure.point1, density_measure.point2]
+        density_measure.index = m.index
+
+        self.measures.append((m, density_measure))
+
+        index = prj.Project().AddMeasurement(m)
+
+        msg =  'Update measurement info in GUI',
+        Publisher.sendMessage(msg,
+                              (m.index, m.name, m.colour,
+                               density_measure.orientation,
+                               'Density',
+                               '%.3f' % m.value))
+
     def OnCloseProject(self, pubsub_evt):
         self.measures.clean()
 
@@ -380,6 +416,35 @@ class Measurement():
         self.slice_number = info["slice_number"]
         self.points = info["points"]
         self.visible = info["visible"]
+
+
+class DensityMeasurement():
+    general_index = -1
+    def __init__(self):
+        DensityMeasurement.general_index += 1
+        self.index = DensityMeasurement.general_index
+        self.name = const.MEASURE_NAME_PATTERN %(self.index+1)
+        self.colour = const.MEASURE_COLOUR.next()
+        self.min = 0
+        self.max = 0
+        self.mean = 0
+        self.location = const.AXIAL
+        self.type = const.DENSITY_ELLIPSE
+        self.slice_number = 0
+        self.points = []
+        self.visible = True
+
+    def Load(self, info):
+        self.index = info["index"]
+        self.name = info["name"]
+        self.colour = info["colour"]
+        self.value = info["value"]
+        self.location = info["location"]
+        self.type = info["type"]
+        self.slice_number = info["slice_number"]
+        self.points = info["points"]
+        self.visible = info["visible"]
+
 
 class CirclePointRepresentation(object):
     """
@@ -942,6 +1007,9 @@ class CircleDensityMeasure(object):
         self.orientation = orientation
         self.slice_number = slice_number
 
+        self.location = map_locations_id[self.orientation]
+        self.index = 0
+
         self._min = 0
         self._max = 0
         self._mean = 0
@@ -955,10 +1023,16 @@ class CircleDensityMeasure(object):
         self._need_calc = True
         self.interactive = interactive
 
+        self.visible = True
+
     def set_center(self, pos):
         self.center = pos
         self._need_calc = True
         self.ellipse.center = self.center
+
+    def SetVisibility(self, value):
+        self.visible = value
+        self.ellipse.visible = value
 
     def set_point1(self, pos):
         self.point1 = pos
@@ -1024,7 +1098,7 @@ class CircleDensityMeasure(object):
 
         if self._need_calc:
             self._need_calc = False
-            self.calc_density(self.center, np.linalg.norm(np.array(self.center) - np.array(self.point1)))
+            self.calc_density()
 
         #  canvas.draw_circle((cx, cy), radius, line_colour=self.colour)
         self.ellipse.draw_to_canvas(gc, canvas)
@@ -1033,7 +1107,7 @@ class CircleDensityMeasure(object):
         self.text_box.draw_to_canvas(gc, canvas)
         #  self.handle_tl.draw_to_canvas(gc, canvas)
 
-    def calc_density(self, center, radius):
+    def calc_density(self):
         from invesalius.data.slice_ import Slice
         slc = Slice()
         n = self.slice_number
@@ -1044,7 +1118,7 @@ class CircleDensityMeasure(object):
 
         if orientation == 'AXIAL':
             sx, sy = spacing[0], spacing[1]
-            cx, cy = center[0], center[1]
+            cx, cy = self.center[0], self.center[1]
 
             a = abs(self.point1[0] - self.center[0])
             b = abs(self.point2[1] - self.center[1])
@@ -1054,7 +1128,7 @@ class CircleDensityMeasure(object):
 
         elif orientation == 'CORONAL':
             sx, sy = spacing[0], spacing[2]
-            cx, cy = center[0], center[2]
+            cx, cy = self.center[0], self.center[2]
 
             a = abs(self.point1[0] - self.center[0])
             b = abs(self.point2[2] - self.center[2])
@@ -1064,7 +1138,7 @@ class CircleDensityMeasure(object):
 
         elif orientation == 'SAGITAL':
             sx, sy = spacing[1], spacing[2]
-            cx, cy = center[1], center[2]
+            cx, cy = self.center[1], self.center[2]
 
             a = abs(self.point1[1] - self.center[1])
             b = abs(self.point2[2] - self.center[2])

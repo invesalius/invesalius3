@@ -845,27 +845,30 @@ class Ellipse(CanvasHandlerBase):
 
         self._on_change_function = None
 
+        self.visible = True
+
     def draw_to_canvas(self, gc, canvas):
-        if self.is_3d:
-            cx, cy = self._3d_to_2d(canvas.evt_renderer, self.center)
-            p1x, p1y = self._3d_to_2d(canvas.evt_renderer, self.point1)
-            p2x, p2y = self._3d_to_2d(canvas.evt_renderer, self.point2)
-        else:
-            cx, cy = self.center
-            p1x, p1y = self.point1
-            p2x, p2y = self.point2
+        if self.visible:
+            if self.is_3d:
+                cx, cy = self._3d_to_2d(canvas.evt_renderer, self.center)
+                p1x, p1y = self._3d_to_2d(canvas.evt_renderer, self.point1)
+                p2x, p2y = self._3d_to_2d(canvas.evt_renderer, self.point2)
+            else:
+                cx, cy = self.center
+                p1x, p1y = self.point1
+                p2x, p2y = self.point2
 
-        width = abs(p1x - cx) * 2.0
-        height = abs(p2y - cy) * 2.0
+            width = abs(p1x - cx) * 2.0
+            height = abs(p2y - cy) * 2.0
 
-        self.bbox = canvas.draw_ellipse((cx, cy), width, height,
-                                        self.width,
-                                        self.line_colour,
-                                        self.fill_colour)
+            self.bbox = canvas.draw_ellipse((cx, cy), width, height,
+                                            self.width,
+                                            self.line_colour,
+                                            self.fill_colour)
 
-        if self.interactive:
-            self.handler_1.draw_to_canvas(gc, canvas)
-            self.handler_2.draw_to_canvas(gc, canvas)
+            if self.interactive:
+                self.handler_1.draw_to_canvas(gc, canvas)
+                self.handler_2.draw_to_canvas(gc, canvas)
 
     def set_point1(self, pos):
         self.point1 = pos

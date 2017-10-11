@@ -333,7 +333,10 @@ class Project(object):
         measurements = plistlib.readPlist(os.path.join(dirpath,
                                                        project["measurements"]))
         for index in measurements:
-            measure = ms.Measurement()
+            if measurements[index]["type"] == const.DENSITY_ELLIPSE:
+                measure = ms.DensityMeasurement()
+            else:
+                measure = ms.Measurement()
             measure.Load(measurements[index])
             self.measurement_dict[int(index)] = measure
 

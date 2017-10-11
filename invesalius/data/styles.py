@@ -604,9 +604,10 @@ class DensityMeasureStyle(DefaultInteractorStyle):
         m.set_center(pos)
         m.set_point1(pp1)
         m.set_point2(pp2)
+        m.calc_density()
 
-        self.viewer.draw_by_slice_number[n].append(m)
-
+        #  self.viewer.draw_by_slice_number[n].append(m)
+        Publisher.sendMessage("Add density measurement", m)
         self.viewer.UpdateCanvas()
 
 

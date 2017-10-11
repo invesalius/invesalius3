@@ -609,7 +609,8 @@ class Viewer(wx.Panel):
 
     def __bind_events_wx(self):
         #self.Bind(wx.EVT_SIZE, self.OnSize)
-        self.canvas.subscribe_event('LeftButtonPressEvent', self.on_insert_point)
+        #  self.canvas.subscribe_event('LeftButtonPressEvent', self.on_insert_point)
+        pass
 
     def on_insert_point(self, evt):
         pos = evt.position
