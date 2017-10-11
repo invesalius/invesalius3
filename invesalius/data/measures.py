@@ -143,7 +143,9 @@ class MeasurementManager(object):
                 mr.set_center(m.points[0])
                 mr.set_point1(m.points[1])
                 mr.set_point2(m.points[2])
+
                 self.measures.append((m, mr))
+                mr.set_measurement(m)
 
             else:
                 if m.location == const.AXIAL:
@@ -376,6 +378,8 @@ class MeasurementManager(object):
         m.value = density_measure._mean
         m.points = [density_measure.center, density_measure.point1, density_measure.point2]
         density_measure.index = m.index
+
+        density_measure.set_measurement(m)
 
         self.measures.append((m, density_measure))
 
@@ -1015,6 +1019,8 @@ class CircleDensityMeasure(object):
         self._mean = 0
         self._std = 0
 
+        self._measurement = None
+
         self.ellipse = Ellipse(self.center, self.point1, self.point2, fill=False,
                                line_colour=self.colour)
         self.ellipse.on_change(self.on_change_ellipse)
@@ -1030,19 +1036,24 @@ class CircleDensityMeasure(object):
         self._need_calc = True
         self.ellipse.center = self.center
 
-    def SetVisibility(self, value):
-        self.visible = value
-        self.ellipse.visible = value
+        if self._measurement:
+            self._measurement.points = [self.center, self.point1, self.point2]
 
     def set_point1(self, pos):
         self.point1 = pos
         self._need_calc = True
         self.ellipse.set_point1(self.point1)
 
+        if self._measurement:
+            self._measurement.points = [self.center, self.point1, self.point2]
+
     def set_point2(self, pos):
         self.point2 = pos
         self._need_calc = True
         self.ellipse.set_point2(self.point2)
+
+        if self._measurement:
+            self._measurement.points = [self.center, self.point1, self.point2]
 
     def set_density_values(self, _min, _max, _mean, _std):
         self._min = _min
@@ -1062,6 +1073,28 @@ class CircleDensityMeasure(object):
             #  self.handle_tl.on_move(self._on_move)
         else:
             self.text_box.set_text(text)
+
+        if self._measurement:
+            self._measurement.value = self._mean
+            self._update_gui_info()
+
+    def _update_gui_info(self):
+        msg =  'Update measurement info in GUI',
+        print msg
+        if self._measurement:
+            m = self._measurement
+            Publisher.sendMessage(msg,
+                                  (m.index, m.name, m.colour,
+                                   self.orientation,
+                                   'Density',
+                                   '%.3f' % m.value))
+
+    def set_measurement(self, dm):
+        self._measurement = dm
+
+    def SetVisibility(self, value):
+        self.visible = value
+        self.ellipse.visible = value
 
     def _3d_to_2d(self, renderer, pos):
         coord = vtk.vtkCoordinate()

@@ -1148,8 +1148,10 @@ class MeasuresListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
             location = LOCATION[m.location]
             if m.type == const.LINEAR:
                 value = (u"%.2f mm") % m.value
-            else:
+            elif m.type == const.ANGULAR:
                 value = (u"%.2f°") % m.value
+            else:
+                value = (u"%.3f") % m.value
             self.InsertNewItem(m.index, m.name, colour, location, type, value)
 
             if not m.visible:
