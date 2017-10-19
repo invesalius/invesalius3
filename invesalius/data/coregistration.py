@@ -18,10 +18,9 @@
 #--------------------------------------------------------------------------
 
 import threading
-from math import sin, cos
 from time import sleep
 
-from numpy import mat, radians, asmatrix
+from numpy import mat, asmatrix
 import wx
 from wx.lib.pubsub import pub as Publisher
 
@@ -73,7 +72,6 @@ class CoregistrationStatic(threading.Thread):
             # Tried several combinations and different locations to send the messages,
             # however only this one does not block the GUI during navigation.
             wx.CallAfter(Publisher.sendMessage, 'Co-registered points', coord[0:3])
-            # wx.CallAfter(Publisher.sendMessage, 'Set camera in volume', coord[0:3])
             wx.CallAfter(Publisher.sendMessage, 'Set camera in volume', coord)
 
             # TODO: Optimize the value of sleep for each tracking device.
@@ -197,6 +195,7 @@ class CoregistrationObjectStatic(threading.Thread):
             wx.CallAfter(Publisher.sendMessage, 'Set camera in volume', coord)
             wx.CallAfter(Publisher.sendMessage, 'Update object orientation',
                          (m_inv_trck, angles, coord[0:3]))
+            wx.CallAfter(Publisher.sendMessage, 'Update tracker angles', angles)
 
             # TODO: Optimize the value of sleep for each tracking device.
             # Debug tracker is not working with 0.175 so changed to 0.2
@@ -265,6 +264,7 @@ class CoregistrationObjectDynamic(threading.Thread):
             wx.CallAfter(Publisher.sendMessage, 'Set camera in volume', coord)
             wx.CallAfter(Publisher.sendMessage, 'Update object orientation',
                          (m_inv_trck, angles, coord[0:3]))
+            wx.CallAfter(Publisher.sendMessage, 'Update tracker angles', angles)
 
             # TODO: Optimize the value of sleep for each tracking device.
             # Debug tracker is not working with 0.175 so changed to 0.2

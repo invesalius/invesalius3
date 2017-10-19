@@ -30,6 +30,8 @@ import wx
 import vtk
 from vtk.wx.wxVTKRenderWindowInteractor import wxVTKRenderWindowInteractor
 from wx.lib.pubsub import pub as Publisher
+import random
+from scipy.spatial import distance
 
 import invesalius.constants as const
 import invesalius.data.bases as bases
@@ -37,7 +39,6 @@ import invesalius.data.vtk_utils as vtku
 import invesalius.project as prj
 import invesalius.style as st
 import invesalius.utils as utils
-import invesalius.data.measures as measures
 
 if sys.platform == 'win32':
     try:
@@ -141,6 +142,10 @@ class Viewer(wx.Panel):
         self.timer = False
         self.index = False
 
+        self.target = None
+        self.aim_dummy = None
+        self.flag = False
+
     def __bind_events(self):
         Publisher.subscribe(self.LoadActor,
                                  'Load surface actor into viewer')
@@ -164,7 +169,7 @@ class Viewer(wx.Panel):
                                 'Update raycasting preset')
         ###
         Publisher.subscribe(self.AppendActor,'AppendActor')
-        Publisher.subscribe(self.SetWidgetInteractor, 
+        Publisher.subscribe(self.SetWidgetInteractor,
                                 'Set Widget Interactor')
         Publisher.subscribe(self.OnSetViewAngle,
                                 'Set volume view angle')
@@ -195,16 +200,16 @@ class Viewer(wx.Panel):
         Publisher.subscribe(self.OnCloseProject, 'Close project data')
 
         Publisher.subscribe(self.RemoveAllActor, 'Remove all volume actors')
-        
+
         Publisher.subscribe(self.OnExportPicture,'Export picture to file')
 
         Publisher.subscribe(self.OnStartSeed,'Create surface by seeding - start')
         Publisher.subscribe(self.OnEndSeed,'Create surface by seeding - end')
 
         Publisher.subscribe(self.SetStereoMode, 'Set stereo mode')
-    
+
         Publisher.subscribe(self.Reposition3DPlane, 'Reposition 3D Plane')
-        
+
         Publisher.subscribe(self.RemoveVolume, 'Remove Volume')
 
         Publisher.subscribe(self.SetBallReferencePosition,
@@ -229,10 +234,17 @@ class Viewer(wx.Panel):
         Publisher.subscribe(self.UpdateObjectInitial, 'Update object initial orientation')
         Publisher.subscribe(self.UpdateObjectState, 'Update object tracking state')
 
+        Publisher.subscribe(self.OnCoilTracker, 'Target navigation mode')
+        Publisher.subscribe(self.OnUpdateCoilTracker, 'Update tracker angles')
+        Publisher.subscribe(self.OnUpdateTarget, 'Update target')
+        Publisher.subscribe(self.OnRemoveTarget, 'Disable or enable coil tracker')
+        Publisher.subscribe(self.UpdateCoordCoilTarget, 'Co-registered points')
+        Publisher.subscribe(self.OnTargetTransparency, 'Set target transparency')
+
     def SetStereoMode(self, pubsub_evt):
         mode = pubsub_evt.data
         ren_win = self.interactor.GetRenderWindow()
-        
+
         if mode == const.STEREO_OFF:
             ren_win.StereoRenderOff()
         else:
@@ -255,7 +267,7 @@ class Viewer(wx.Panel):
                 ren_win.SetStereoTypeToAnaglyph()
 
             ren_win.StereoRenderOn()
-        
+
         self.interactor.Render()
 
     def _check_ball_reference(self, pubsub_evt):
@@ -328,10 +340,10 @@ class Viewer(wx.Panel):
     def OnStartSeed(self, pubsub_evt):
         index = pubsub_evt.data
         self.seed_points = []
-    
+
     def OnEndSeed(self, pubsub_evt):
         Publisher.sendMessage("Create surface from seeds",
-                                    self.seed_points) 
+                                    self.seed_points)
 
     def OnExportPicture(self, pubsub_evt):
         id, filename, filetype = pubsub_evt.data
@@ -497,7 +509,7 @@ class Viewer(wx.Panel):
         self.ball_id = self.ball_id + 1
         #self.UpdateRender()
         self.Refresh()
-        
+
     def HideAllMarkers(self, pubsub_evt):
         ballid = pubsub_evt.data
         for i in range(0, ballid):
@@ -547,6 +559,388 @@ class Viewer(wx.Panel):
                 self.staticballs[self.index].SetVisibility(1)
                 self.Refresh()
             self.index = False
+
+    def OnTargetTransparency(self, pubsub_evt):
+        status = pubsub_evt.data[0]
+        index = pubsub_evt.data[1]
+        if status:
+            self.staticballs[index].GetProperty().SetOpacity(0.4)
+        else:
+            self.staticballs[index].GetProperty().SetOpacity(1)
+
+    def OnCoilTracker(self, pubsub_evt):
+        self.flag = pubsub_evt.data
+        if self.target and self.flag:
+            self.CreateCoilAim()
+            # Create a line
+            self.ren.SetViewport(0, 0, 0.75, 1)
+            self.ren2 = vtk.vtkRenderer()
+
+            self.interactor.GetRenderWindow().AddRenderer(self.ren2)
+            self.ren2.SetViewport(0.75, 0, 1, 1)
+            self.CreateTxtDistance()
+
+            filename = os.path.join(const.ICON_DIR, "bobina1.stl")
+
+            reader = vtk.vtkSTLReader()
+            reader.SetFileName(filename)
+
+            mapper = vtk.vtkPolyDataMapper()
+            mapper.SetInputConnection(reader.GetOutputPort())
+            self.coilactor = vtk.vtkActor()
+            self.coilactor.SetMapper(mapper)
+            self.coilactor.RotateX(-60)
+            self.coilactor.RotateZ(180)
+
+            self.coilactor2 = vtk.vtkActor()
+            self.coilactor2.SetMapper(mapper)
+            self.coilactor2.SetPosition(0, -150, 0)
+            self.coilactor2.RotateZ(180)
+
+            self.coilactor3 = vtk.vtkActor()
+            self.coilactor3.SetMapper(mapper)
+            self.coilactor3.SetPosition(0, -300, 0)
+            self.coilactor3.RotateY(90)
+            self.coilactor3.RotateZ(180)
+
+            self.arrowactorZ1 = self.Arrow([-50,-35,12], [-50,-35,50])
+            self.arrowactorZ1.GetProperty().SetColor(1, 1, 0)
+            self.arrowactorZ1.RotateX(-60)
+            self.arrowactorZ1.RotateZ(180)
+            self.arrowactorZ2 = self.Arrow([50,-35,0], [50,-35,-50])
+            self.arrowactorZ2.GetProperty().SetColor(1, 1, 0)
+            self.arrowactorZ2.RotateX(-60)
+            self.arrowactorZ2.RotateZ(180)
+
+            self.arrowactorY1 = self.Arrow([-50,-35,0], [-50,5,0])
+            self.arrowactorY1.GetProperty().SetColor(0, 1, 0)
+            self.arrowactorY1.SetPosition(0, -150, 0)
+            self.arrowactorY1.RotateZ(180)
+            self.arrowactorY2 = self.Arrow([50,-35,0], [50,-75,0])
+            self.arrowactorY2.GetProperty().SetColor(0, 1, 0)
+            self.arrowactorY2.SetPosition(0, -150, 0)
+            self.arrowactorY2.RotateZ(180)
+
+            self.arrowactorX1 = self.Arrow([0, 65, 38], [0, 65, 68])
+            self.arrowactorX1.GetProperty().SetColor(1, 0, 0)
+            self.arrowactorX1.SetPosition(0, -300, 0)
+            self.arrowactorX1.RotateY(90)
+            self.arrowactorX1.RotateZ(180)
+            self.arrowactorX2 = self.Arrow([0, -55, 5], [0, -55, -30])
+            self.arrowactorX2.GetProperty().SetColor(1, 0, 0)
+            self.arrowactorX2.SetPosition(0, -300, 0)
+            self.arrowactorX2.RotateY(90)
+            self.arrowactorX2.RotateZ(180)
+
+            self.ren.ResetCamera()
+            self.SetCamera()
+            self.ren.GetActiveCamera().Zoom(4)
+
+            self.ren2.AddActor(self.coilactor)
+            self.ren2.AddActor(self.arrowactorZ1)
+            self.ren2.AddActor(self.arrowactorZ2)
+            self.ren2.AddActor(self.coilactor2)
+            self.ren2.AddActor(self.arrowactorY1)
+            self.ren2.AddActor(self.arrowactorY2)
+            self.ren2.AddActor(self.coilactor3)
+            self.ren2.AddActor(self.arrowactorX1)
+            self.ren2.AddActor(self.arrowactorX2)
+
+            self.ren2.ResetCamera()
+            self.ren2.GetActiveCamera().Zoom(2)
+            self.ren2.InteractiveOff()
+            self.interactor.Render()
+
+        else:
+            self.DisableCoilTracker()
+
+    def CreateCoilAim(self):
+        if self.aim_dummy:
+            self.RemoveCoilAim()
+            self.aim_dummy = None
+
+        self.pTarget = self.CenterOfMass()
+
+        v3, M_plane_inv = self.Plane(self.target[0:3], self.pTarget)
+
+        mat4x4 = vtk.vtkMatrix4x4()
+        for i in range(4):
+            mat4x4.SetElement(i, 0, M_plane_inv[i][0])
+            mat4x4.SetElement(i, 1, M_plane_inv[i][1])
+            mat4x4.SetElement(i, 2, M_plane_inv[i][2])
+            mat4x4.SetElement(i, 3, M_plane_inv[i][3])
+
+        filename = os.path.join(const.ICON_DIR, "aim.stl")
+
+        reader = vtk.vtkSTLReader()
+        reader.SetFileName(filename)
+        mapper = vtk.vtkPolyDataMapper()
+        mapper.SetInputConnection(reader.GetOutputPort())
+
+        # Transform the polydata
+        transform = vtk.vtkTransform()
+        transform.SetMatrix(mat4x4)
+        transformPD = vtk.vtkTransformPolyDataFilter()
+        transformPD.SetTransform(transform)
+        transformPD.SetInputConnection(reader.GetOutputPort())
+        transformPD.Update()
+        # mapper transform
+        mapper.SetInputConnection(transformPD.GetOutputPort())
+
+        aim_dummy = vtk.vtkActor()
+        aim_dummy.SetMapper(mapper)
+        aim_dummy.GetProperty().SetColor(1, 1, 1)
+        aim_dummy.GetProperty().SetOpacity(0.4)
+        self.aim_dummy = aim_dummy
+        self.ren.AddActor(aim_dummy)
+        self.Refresh()
+
+    def RemoveCoilAim(self):
+        self.ren.RemoveActor(self.aim_dummy)
+        self.Refresh()
+
+    def OnUpdateCoilTracker(self, pubsub_evt):
+        if self.target and self.flag:
+            coordx = self.target[4] - pubsub_evt.data[1]
+            if coordx > const.ARROW_UPPER_LIMIT:
+                coordx = const.ARROW_UPPER_LIMIT
+            elif coordx < -const.ARROW_UPPER_LIMIT:
+                coordx = -const.ARROW_UPPER_LIMIT
+            coordx = const.ARROW_SCALE * coordx
+
+            coordy = self.target[3] - pubsub_evt.data[0]
+            if coordy > const.ARROW_UPPER_LIMIT:
+                coordy = const.ARROW_UPPER_LIMIT
+            elif coordy < -const.ARROW_UPPER_LIMIT:
+                coordy = -const.ARROW_UPPER_LIMIT
+            coordy = const.ARROW_SCALE * coordy
+
+            coordz = self.target[5] - pubsub_evt.data[2]
+            if coordz > const.ARROW_UPPER_LIMIT:
+                coordz = const.ARROW_UPPER_LIMIT
+            elif coordz < -const.ARROW_UPPER_LIMIT:
+                coordz = -const.ARROW_UPPER_LIMIT
+            coordz = const.ARROW_SCALE * coordz
+
+            self.ren2.RemoveActor(self.arrowactorZ1)
+            self.ren2.RemoveActor(self.arrowactorZ2)
+            if const.COIL_ANGLES_THRESHOLD > coordz > -const.COIL_ANGLES_THRESHOLD:
+                self.coilactor.GetProperty().SetColor(0, 1, 0)
+            else:
+                self.coilactor.GetProperty().SetColor(1, 1, 1)
+            offset = 5
+            self.arrowactorZ1 = self.Arrow([-55, -35, offset], [-55, -35, offset + coordz])
+            self.arrowactorZ1.RotateX(-60)
+            self.arrowactorZ1.RotateZ(180)
+            self.arrowactorZ1.GetProperty().SetColor(1, 1, 0)
+            self.arrowactorZ2 = self.Arrow([55, -35, offset], [55, -35, offset - coordz])
+            self.arrowactorZ2.RotateX(-60)
+            self.arrowactorZ2.RotateZ(180)
+            self.arrowactorZ2.GetProperty().SetColor(1, 1, 0)
+            self.ren2.AddActor(self.arrowactorZ1)
+            self.ren2.AddActor(self.arrowactorZ2)
+
+            self.ren2.RemoveActor(self.arrowactorY1)
+            self.ren2.RemoveActor(self.arrowactorY2)
+            if const.COIL_ANGLES_THRESHOLD > coordy > -const.COIL_ANGLES_THRESHOLD:
+                self.coilactor2.GetProperty().SetColor(0, 1, 0)
+            else:
+                self.coilactor2.GetProperty().SetColor(1, 1, 1)
+            offset = -35
+            self.arrowactorY1 = self.Arrow([-55, offset, 0], [-55, offset + coordy, 0])
+            self.arrowactorY2 = self.Arrow([55, offset, 0], [55, offset - coordy, 0])
+            self.arrowactorY1.SetPosition(0, -150, 0)
+            self.arrowactorY1.RotateZ(180)
+            self.arrowactorY1.GetProperty().SetColor(0, 1, 0)
+            self.arrowactorY2.SetPosition(0, -150, 0)
+            self.arrowactorY2.RotateZ(180)
+            self.arrowactorY2.GetProperty().SetColor(0, 1, 0)
+            self.ren2.AddActor(self.arrowactorY1)
+            self.ren2.AddActor(self.arrowactorY2)
+
+            self.ren2.RemoveActor(self.arrowactorX1)
+            self.ren2.RemoveActor(self.arrowactorX2)
+            if const.COIL_ANGLES_THRESHOLD > coordx > -const.COIL_ANGLES_THRESHOLD:
+                self.coilactor3.GetProperty().SetColor(0, 1, 0)
+            else:
+                self.coilactor3.GetProperty().SetColor(1, 1, 1)
+            offset = 38
+            self.arrowactorX1 = self.Arrow([0, 65, offset], [0, 65, offset + coordx])
+            offset = 5
+            self.arrowactorX2 = self.Arrow([0, -55, offset], [0, -55, offset - coordx])
+            self.arrowactorX1.SetPosition(0, -300, 0)
+            self.arrowactorX1.RotateY(90)
+            self.arrowactorX1.RotateZ(180)
+            self.arrowactorX1.GetProperty().SetColor(1, 0, 0)
+            self.arrowactorX2.SetPosition(0, -300, 0)
+            self.arrowactorX2.RotateY(90)
+            self.arrowactorX2.RotateZ(180)
+            self.arrowactorX2.GetProperty().SetColor(1, 0, 0)
+            self.ren2.AddActor(self.arrowactorX1)
+            self.ren2.AddActor(self.arrowactorX2)
+            self.Refresh()
+
+    def OnUpdateTarget(self, pubsub_evt):
+        self.target = pubsub_evt.data[0:6]
+        self.target[1] = -self.target[1]
+        self.CreateCoilAim()
+
+    def OnRemoveTarget(self, pubsub_evt):
+        status = pubsub_evt.data
+        if not status:
+            self.flag = None
+            self.target = None
+            self.RemoveCoilAim()
+            self.DisableCoilTracker()
+
+    def UpdateCoordCoilTarget(self, pubsub_evt):
+        if self.flag:
+            coord = pubsub_evt.data
+            target = self.target[0], -self.target[1], self.target[2]
+            dst = distance.euclidean(coord, target)
+            self.txt.SetCoilDistanceValue(dst)
+            self.ren.ResetCamera()
+            self.SetCamera()
+            if dst > 100:
+                dst = 100
+            # ((-0.0404*dst) + 5.0404) is the linear equation to normalize the zoom between 1 and 5 times with the distance between 1 and 100 mm
+            self.ren.GetActiveCamera().Zoom((-0.0404*dst) + 5.0404)
+
+            if dst <= const.COIL_COORD_THRESHOLD:
+                self.aim_dummy.GetProperty().SetColor(0, 1, 0)
+            else:
+                self.aim_dummy.GetProperty().SetColor(1, 1, 1)
+
+            self.Refresh()
+
+    def CreateTxtDistance(self):
+        txt = vtku.Text()
+        txt.SetSize(const.TEXT_SIZE_EXTRA_LARGE)
+        txt.SetPosition((0.76, 0.05))
+        txt.ShadowOff()
+        txt.BoldOn()
+        self.txt = txt
+        self.ren2.AddActor(txt.actor)
+
+    def DisableCoilTracker(self):
+        try:
+            self.ren.SetViewport(0, 0, 1, 1)
+            self.interactor.GetRenderWindow().RemoveRenderer(self.ren2)
+            self.ren.RemoveActor(self.txt.actor)
+            self.interactor.Render()
+        except:
+            None
+
+    def Arrow(self, startPoint, endPoint):
+        # Compute a basis
+        normalizedX = [0 for i in range(3)]
+        normalizedY = [0 for i in range(3)]
+        normalizedZ = [0 for i in range(3)]
+
+        # The X axis is a vector from start to end
+        math = vtk.vtkMath()
+        math.Subtract(endPoint, startPoint, normalizedX)
+        length = math.Norm(normalizedX)
+        math.Normalize(normalizedX)
+
+        # The Z axis is an arbitrary vector cross X
+        arbitrary = [0 for i in range(3)]
+        arbitrary[0] = random.uniform(-10, 10)
+        arbitrary[1] = random.uniform(-10, 10)
+        arbitrary[2] = random.uniform(-10, 10)
+        math.Cross(normalizedX, arbitrary, normalizedZ)
+        math.Normalize(normalizedZ)
+
+        # The Y axis is Z cross X
+        math.Cross(normalizedZ, normalizedX, normalizedY)
+        matrix = vtk.vtkMatrix4x4()
+
+        # Create the direction cosine matrix
+        matrix.Identity()
+        for i in range(3):
+            matrix.SetElement(i, 0, normalizedX[i])
+            matrix.SetElement(i, 1, normalizedY[i])
+            matrix.SetElement(i, 2, normalizedZ[i])
+
+        # Apply the transforms arrow 1
+        transform_1 = vtk.vtkTransform()
+        transform_1.Translate(startPoint)
+        transform_1.Concatenate(matrix)
+        transform_1.Scale(length, length, length)
+        # source
+        arrowSource1 = vtk.vtkArrowSource()
+        arrowSource1.SetTipResolution(50)
+        # Create a mapper and actor
+        mapper = vtk.vtkPolyDataMapper()
+        mapper.SetInputConnection(arrowSource1.GetOutputPort())
+        # Transform the polydata
+        transformPD = vtk.vtkTransformPolyDataFilter()
+        transformPD.SetTransform(transform_1)
+        transformPD.SetInputConnection(arrowSource1.GetOutputPort())
+        # mapper transform
+        mapper.SetInputConnection(transformPD.GetOutputPort())
+        # actor
+        actor_arrow = vtk.vtkActor()
+        actor_arrow.SetMapper(mapper)
+
+        return actor_arrow
+
+    def CenterOfMass(self):
+        proj = prj.Project()
+        surface = proj.surface_dict[0].polydata
+        barycenter = [0.0, 0.0, 0.0]
+        n = surface.GetNumberOfPoints()
+        for i in range(n):
+            point = surface.GetPoint(i)
+            barycenter[0] += point[0]
+            barycenter[1] += point[1]
+            barycenter[2] += point[2]
+        barycenter[0] /= n
+        barycenter[1] /= n
+        barycenter[2] /= n
+
+        return barycenter
+
+    def Plane(self, x0, pTarget):
+        v3 = np.array(pTarget) - x0  # normal to the plane
+        v3 = v3 / np.linalg.norm(v3)  # unit vector
+
+        d = np.dot(v3, x0)
+        # prevents division by zero.
+        if v3[0] == 0.0:
+            v3[0] = 1e-09
+
+        x1 = np.array([(d - v3[1] - v3[2]) / v3[0], 1, 1])
+        v2 = x1 - x0
+        v2 = v2 / np.linalg.norm(v2)  # unit vector
+        v1 = np.cross(v3, v2)
+        v1 = v1 / np.linalg.norm(v1)  # unit vector
+        x2 = x0 + v1
+        # calculates the matrix for the change of coordinate systems (from canonical to the plane's).
+        # remember that, in np.dot(M,p), even though p is a line vector (e.g.,np.array([1,2,3])), it is treated as a column for the dot multiplication.
+        M_plane_inv = np.array([[v1[0], v2[0], v3[0], x0[0]],
+                                [v1[1], v2[1], v3[1], x0[1]],
+                                [v1[2], v2[2], v3[2], x0[2]],
+                                [0, 0, 0, 1]])
+
+        return v3, M_plane_inv
+
+    def SetCamera(self):
+        cam_focus = self.target[0:3]
+        cam = self.ren.GetActiveCamera()
+
+        cam_pos0 = np.array(cam.GetPosition())
+        cam_focus0 = np.array(cam.GetFocalPoint())
+        v0 = cam_pos0 - cam_focus0
+        v0n = np.sqrt(inner1d(v0, v0))
+
+        v1 = (cam_focus[0] - self.pTarget[0], cam_focus[1] - self.pTarget[1], cam_focus[2] - self.pTarget[2])
+        v1n = np.sqrt(inner1d(v1, v1))
+        if not v1n:
+            v1n = 1.0
+        cam_pos = (v1 / v1n) * v0n + cam_focus
+        cam.SetFocalPoint(cam_focus)
+        cam.SetPosition(cam_pos)
 
     def CreateBallReference(self):
         """
@@ -753,7 +1147,7 @@ class Viewer(wx.Panel):
                     "LeftButtonReleaseEvent": self.OnReleaseSpinClick,
                     },
               const.STATE_WL:
-                    { 
+                    {
                     "MouseMoveEvent": self.OnWindowLevelMove,
                     "LeftButtonPressEvent": self.OnWindowLevelClick,
                     "LeftButtonReleaseEvent":self.OnWindowLevelRelease
@@ -801,7 +1195,7 @@ class Viewer(wx.Panel):
         else:
             style = vtk.vtkInteractorStyleTrackballCamera()
             self.interactor.SetInteractorStyle(style)
-            self.style = style  
+            self.style = style
 
             # Check each event available for each mode
             for event in action[state]:
@@ -1100,7 +1494,7 @@ class Viewer(wx.Panel):
         cam.SetViewUp(xv,yv,zv)
         cam.SetPosition(xp,yp,zp)
 
-        self.ren.ResetCameraClippingRange() 
+        self.ren.ResetCameraClippingRange()
         self.ren.ResetCamera()
         self.interactor.Render()
 
@@ -1160,10 +1554,10 @@ class Viewer(wx.Panel):
         x,y = self.interactor.GetEventPosition()
         self.measure_picker.Pick(x, y, 0, self.ren)
         x, y, z = self.measure_picker.GetPickPosition()
-        
+
         proj = prj.Project()
         radius = min(proj.spacing) * PROP_MEASURE
-        if self.measure_picker.GetActor(): 
+        if self.measure_picker.GetActor():
             # if not self.measures or self.measures[-1].IsComplete():
                 # m = measures.LinearMeasure(self.ren)
                 # m.AddPoint(x, y, z)
@@ -1172,7 +1566,7 @@ class Viewer(wx.Panel):
                 # m = self.measures[-1]
                 # m.AddPoint(x, y, z)
                 # if m.IsComplete():
-                    # Publisher.sendMessage("Add measure to list", 
+                    # Publisher.sendMessage("Add measure to list",
                             # (u"3D", _(u"%.3f mm" % m.GetValue())))
             Publisher.sendMessage("Add measurement point",
                     ((x, y,z), const.LINEAR, const.SURFACE, radius))
@@ -1185,7 +1579,7 @@ class Viewer(wx.Panel):
 
         proj = prj.Project()
         radius = min(proj.spacing) * PROP_MEASURE
-        if self.measure_picker.GetActor(): 
+        if self.measure_picker.GetActor():
             # if not self.measures or self.measures[-1].IsComplete():
                 # m = measures.AngularMeasure(self.ren)
                 # m.AddPoint(x, y, z)

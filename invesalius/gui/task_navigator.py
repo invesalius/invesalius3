@@ -30,6 +30,8 @@ from wx.lib.pubsub import pub as Publisher
 import wx.lib.colourselect as csel
 import wx.lib.platebtn as pbtn
 
+from time import sleep
+
 import invesalius.constants as const
 import invesalius.data.bases as db
 import invesalius.data.coordinates as dco
@@ -163,7 +165,8 @@ class InnerFoldPanel(wx.Panel):
         checkcamera = wx.CheckBox(self, -1, _('Vol. camera'))
         checkcamera.SetToolTip(tooltip)
         checkcamera.SetValue(True)
-        checkcamera.Bind(wx.EVT_CHECKBOX, partial(self.UpdateVolumeCamera, ctrl=checkcamera))
+        checkcamera.Bind(wx.EVT_CHECKBOX, self.UpdateVolumeCamera)
+        self.checkcamera = checkcamera
 
         # Check box for trigger monitoring to create markers from serial port
         tooltip = wx.ToolTip(_("Enable external trigger for creating markers"))
@@ -182,7 +185,7 @@ class InnerFoldPanel(wx.Panel):
         self.checkobj = checkobj
 
         if sys.platform != 'win32':
-            checkcamera.SetWindowVariant(wx.WINDOW_VARIANT_SMALL)
+            self.checkcamera.SetWindowVariant(wx.WINDOW_VARIANT_SMALL)
             checktrigger.SetWindowVariant(wx.WINDOW_VARIANT_SMALL)
             checkobj.SetWindowVariant(wx.WINDOW_VARIANT_SMALL)
 
@@ -204,6 +207,7 @@ class InnerFoldPanel(wx.Panel):
         
     def __bind_events(self):
         Publisher.subscribe(self.OnCheckStatus, 'Navigation Status')
+        Publisher.subscribe(self.UpdateVolumeCamera, 'Target navigation mode')
 
     def OnCheckStatus(self, pubsub_evt):
         status = pubsub_evt.data
@@ -217,11 +221,14 @@ class InnerFoldPanel(wx.Panel):
     def UpdateExternalTrigger(self, evt, ctrl):
         Publisher.sendMessage('Update trigger state', ctrl.GetValue())
 
-    def UpdateVolumeCamera(self, evt, ctrl):
-        Publisher.sendMessage('Update volume camera state', ctrl.GetValue())
-
     def UpdateShowObject(self, evt, ctrl):
         Publisher.sendMessage('Update object tracking state', ctrl.GetValue())
+
+    def UpdateVolumeCamera(self, evt):
+        if hasattr(evt, 'data'):
+            if evt.data is True:
+                self.checkcamera.SetValue(0)
+        Publisher.sendMessage('Update volume camera state', self.checkcamera.GetValue())
 
 
 class NeuronavigationPanel(wx.Panel):
@@ -528,12 +535,6 @@ class NeuronavigationPanel(wx.Panel):
         choice_ref = btn[2]
         txtctrl_fre = btn[3]
 
-        # obj_reg[0] is object 3x3 fiducial matrix and obj_reg[1] is 3x3 orientation matrix
-        obj_fiducials = self.obj_reg[0]
-        obj_orients = self.obj_reg[1]
-        obj_ref_id = self.obj_reg[2]
-        obj_name = self.obj_reg[3]
-
         nav_id = btn_nav.GetValue()
         if nav_id:
             if np.isnan(self.fiducials).any():
@@ -576,21 +577,27 @@ class NeuronavigationPanel(wx.Panel):
                 Publisher.sendMessage("Hide current mask")
 
                 if self.obj_show:
-                    obj_center_img, obj_sensor_trck, m_inv_trck, obj_center_trck = db.object_registration(obj_fiducials,
-                                                                                                          bases_coreg)
-                    obj_sensor_orient = obj_orients[4, :]
-                    obj_mode = m_inv_trck, obj_center_trck, obj_sensor_trck, obj_ref_id
+                    if self.obj_reg_status:
+                        # obj_reg[0] is object 3x3 fiducial matrix and obj_reg[1] is 3x3 orientation matrix
+                        obj_fiducials = self.obj_reg[0]
+                        obj_orients = self.obj_reg[1]
+                        obj_ref_id = self.obj_reg[2]
+                        obj_name = self.obj_reg[3]
 
-                    # Only the m_inv is needed for change of basis
-                    Publisher.sendMessage('Update object initial orientation',
-                                          (m_inv_trck, obj_sensor_orient, obj_center_img, obj_name))
-                    if self.ref_mode_id:
-                        if self.obj_reg_status:
+                        obj_center_img, obj_sensor_trck, m_inv_trck, obj_center_trck = db.object_registration(obj_fiducials,
+                                                                                                              bases_coreg)
+                        obj_sensor_orient = obj_orients[4, :]
+                        obj_mode = m_inv_trck, obj_center_trck, obj_sensor_trck, obj_ref_id
+
+                        # Only the m_inv is needed for change of basis
+                        Publisher.sendMessage('Update object initial orientation',
+                                              (m_inv_trck, obj_sensor_orient, obj_center_img, obj_name))
+                        if self.ref_mode_id:
                             self.correg = dcr.CoregistrationObjectDynamic(bases_coreg, nav_id, tracker_mode, obj_mode)
                         else:
-                            dlg.InvalidObjectRegistration()
+                            self.correg = dcr.CoregistrationObjectStatic(bases_coreg, nav_id, tracker_mode, obj_mode)
                     else:
-                        self.correg = dcr.CoregistrationObjectStatic(bases_coreg, nav_id, tracker_mode, obj_mode)
+                        dlg.InvalidObjectRegistration()
 
                 else:
                     if self.ref_mode_id:
@@ -779,8 +786,11 @@ class MarkersPanel(wx.Panel):
         self.__bind_events()
 
         self.current_coord = 0, 0, 0
+        self.current_angle = 0, 0, 0
         self.list_coord = []
         self.marker_ind = 0
+        self.tgt_flag = self.tgt_index = None
+        self.nav_status = False
 
         self.marker_colour = (0.0, 0.0, 1.)
         self.marker_size = 4
@@ -842,7 +852,7 @@ class MarkersPanel(wx.Panel):
         self.lc.SetColumnWidth(2, 50)
         self.lc.SetColumnWidth(3, 50)
         self.lc.SetColumnWidth(4, 50)
-        self.lc.Bind(wx.EVT_LIST_ITEM_RIGHT_CLICK, self.OnListEditMarkerId)
+        self.lc.Bind(wx.EVT_LIST_ITEM_RIGHT_CLICK, self.OnMouseRightDown)
         self.lc.Bind(wx.EVT_LIST_ITEM_ACTIVATED, self.OnItemBlink)
         self.lc.Bind(wx.EVT_LIST_ITEM_DESELECTED, self.OnStopItemBlink)
 
@@ -859,16 +869,35 @@ class MarkersPanel(wx.Panel):
 
     def __bind_events(self):
         Publisher.subscribe(self.UpdateCurrentCoord, 'Set ball reference position')
+        Publisher.subscribe(self.UpdateCurrentAngle, 'Update tracker angles')
         Publisher.subscribe(self.OnDeleteSingleMarker, 'Delete fiducial marker')
         Publisher.subscribe(self.OnCreateMarker, 'Create marker')
+        Publisher.subscribe(self.UpdateNavigationStatus, 'Navigation Status')
 
     def UpdateCurrentCoord(self, pubsub_evt):
         self.current_coord = pubsub_evt.data
 
-    def OnListEditMarkerId(self, evt):
+    def UpdateCurrentAngle(self, pubsub_evt):
+        self.current_angle = pubsub_evt.data
+
+    def UpdateNavigationStatus(self, pubsub_evt):
+        if pubsub_evt.data is False:
+            sleep(0.5)
+            self.current_angle = 0, 0, 0
+            self.nav_status = False
+        else:
+            self.nav_status = True
+
+    def OnMouseRightDown(self, evt):
+        self.OnListEditMarkerId(self.nav_status)
+
+    def OnListEditMarkerId(self, status):
         menu_id = wx.Menu()
-        menu_id.Append(-1, _('Edit ID'))
-        menu_id.Bind(wx.EVT_MENU, self.OnMenuEditMarkerId)
+        edit_id = menu_id.Append(0, _('Edit ID'))
+        menu_id.Bind(wx.EVT_MENU, self.OnMenuEditMarkerId, edit_id)
+        target_menu = menu_id.Append(1, _('Set as target'))
+        menu_id.Bind(wx.EVT_MENU, self.OnMenuSetTarget, target_menu)
+        target_menu.Enable(status)
         self.PopupMenu(menu_id)
         menu_id.Destroy()
 
@@ -879,11 +908,43 @@ class MarkersPanel(wx.Panel):
         Publisher.sendMessage('Stop Blink Marker')
 
     def OnMenuEditMarkerId(self, evt):
-        id_label = dlg.EnterMarkerID(self.lc.GetItemText(self.lc.GetFocusedItem(), 4))
         list_index = self.lc.GetFocusedItem()
+        if evt == 'TARGET':
+            id_label = evt
+        else:
+            id_label = dlg.EnterMarkerID(self.lc.GetItemText(list_index, 4))
+            if id_label == 'TARGET':
+                id_label = ''
+                dlg.InvalidTargetID()
         self.lc.SetStringItem(list_index, 4, id_label)
         # Add the new ID to exported list
-        self.list_coord[list_index][7] = str(id_label)
+        if len(self.list_coord[list_index]) > 8:
+            self.list_coord[list_index][10] = str(id_label)
+        else:
+            self.list_coord[list_index][7] = str(id_label)
+
+    def OnMenuSetTarget(self, evt):
+        if isinstance(evt, int):
+            self.lc.Focus(evt)
+
+        if self.tgt_flag:
+            self.lc.SetItemBackgroundColour(self.tgt_index, 'white')
+            Publisher.sendMessage('Set target transparency', [False, self.tgt_index])
+            self.lc.SetStringItem(self.tgt_index, 4, '')
+            # Add the new ID to exported list
+            if len(self.list_coord[self.tgt_index]) > 8:
+                self.list_coord[self.tgt_index][10] = str('')
+            else:
+                self.list_coord[self.tgt_index][7] = str('')
+
+        self.tgt_index = self.lc.GetFocusedItem()
+        self.lc.SetItemBackgroundColour(self.tgt_index, 'RED')
+        Publisher.sendMessage('Update target', self.list_coord[self.tgt_index])
+        Publisher.sendMessage('Set target transparency', [True, self.tgt_index])
+        Publisher.sendMessage('Disable or enable coil tracker', True)
+        self.OnMenuEditMarkerId('TARGET')
+        self.tgt_flag = True
+        dlg.NewTarget()
 
     def OnDeleteAllMarkers(self, pubsub_evt):
         result = dlg.DeleteAllMarkers()
@@ -893,6 +954,11 @@ class MarkersPanel(wx.Panel):
             Publisher.sendMessage('Remove all markers', self.lc.GetItemCount())
             self.lc.DeleteAllItems()
             Publisher.sendMessage('Stop Blink Marker', 'DeleteAll')
+
+            if self.tgt_flag:
+                self.tgt_flag = self.tgt_index = None
+                Publisher.sendMessage('Disable or enable coil tracker', False)
+                dlg.DeleteTarget()
 
     def OnDeleteSingleMarker(self, evt):
         # OnDeleteSingleMarker is used for both pubsub and button click events
@@ -915,6 +981,10 @@ class MarkersPanel(wx.Panel):
                 index = None
 
         if index:
+            if self.tgt_flag and self.tgt_index == index[0]:
+                self.tgt_flag = self.tgt_index = None
+                Publisher.sendMessage('Disable or enable coil tracker', False)
+                dlg.DeleteTarget()
             self.DeleteMarker(index)
         else:
             dlg.NoMarkerSelected()
@@ -944,20 +1014,42 @@ class MarkersPanel(wx.Panel):
 
         if filepath:
             try:
+                count_line = self.lc.GetItemCount()
                 content = [s.rstrip() for s in open(filepath)]
                 for data in content:
+                    target = None
                     line = [s for s in data.split()]
-                    coord = float(line[0]), float(line[1]), float(line[2])
-                    colour = float(line[3]), float(line[4]), float(line[5])
-                    size = float(line[6])
+                    if len(line) > 8:
+                        coord = float(line[0]), float(line[1]), float(line[2])
+                        colour = float(line[6]), float(line[7]), float(line[8])
+                        size = float(line[9])
 
-                    if len(line) == 8:
-                        for i in const.BTNS_IMG_MKS:
-                            if line[7] in const.BTNS_IMG_MKS[i].values()[0]:
-                                Publisher.sendMessage('Load image fiducials', (line[7], coord))
+                        if len(line) == 11:
+                            for i in const.BTNS_IMG_MKS:
+                                if line[10] in const.BTNS_IMG_MKS[i].values()[0]:
+                                    Publisher.sendMessage('Load image fiducials', (line[10], coord))
+                                elif line[10] == 'TARGET':
+                                    target = count_line
+                        else:
+                            line.append("")
+
+                        self.CreateMarker(coord, colour, size, line[10])
+                        if target is not None:
+                            self.OnMenuSetTarget(target)
+
                     else:
-                        line.append("")
-                    self.CreateMarker(coord, colour, size, line[7])
+                        coord = float(line[0]), float(line[1]), float(line[2])
+                        colour = float(line[3]), float(line[4]), float(line[5])
+                        size = float(line[6])
+
+                        if len(line) == 8:
+                            for i in const.BTNS_IMG_MKS:
+                                if line[7] in const.BTNS_IMG_MKS[i].values()[0]:
+                                    Publisher.sendMessage('Load image fiducials', (line[7], coord))
+                        else:
+                            line.append("")
+                        self.CreateMarker(coord, colour, size, line[7])
+                    count_line += 1
             except:
                 dlg.InvalidMarkersFile()
 
@@ -977,14 +1069,16 @@ class MarkersPanel(wx.Panel):
                 text_file = open(filename, "w")
                 list_slice1 = self.list_coord[0]
                 coord = str('%.3f' %self.list_coord[0][0]) + "\t" + str('%.3f' %self.list_coord[0][1]) + "\t" + str('%.3f' %self.list_coord[0][2])
-                properties = str('%.3f' %list_slice1[3]) + "\t" + str('%.3f' %list_slice1[4]) + "\t" + str('%.3f' %list_slice1[5]) + "\t" + str('%.1f' %list_slice1[6]) + "\t" + list_slice1[7]
-                line = coord + "\t" + properties + "\n"
+                angles = str('%.3f' %self.list_coord[0][3]) + "\t" + str('%.3f' %self.list_coord[0][4]) + "\t" + str('%.3f' %self.list_coord[0][5])
+                properties = str('%.3f' %list_slice1[6]) + "\t" + str('%.3f' %list_slice1[7]) + "\t" + str('%.3f' %list_slice1[8]) + "\t" + str('%.1f' %list_slice1[9]) + "\t" + list_slice1[10]
+                line = coord + "\t" + angles + "\t" + properties + "\n"
                 list_slice = self.list_coord[1:]
 
                 for value in list_slice:
                     coord = str('%.3f' %value[0]) + "\t" + str('%.3f' %value[1]) + "\t" + str('%.3f' %value[2])
-                    properties = str('%.3f' %value[3]) + "\t" + str('%.3f' %value[4]) + "\t" + str('%.3f' %value[5]) + "\t" + str('%.1f' %value[6]) + "\t" + value[7]
-                    line = line + coord + "\t" + properties + "\n"
+                    angles = str('%.3f' % value[3]) + "\t" + str('%.3f' % value[4]) + "\t" + str('%.3f' % value[5])
+                    properties = str('%.3f' %value[6]) + "\t" + str('%.3f' %value[7]) + "\t" + str('%.3f' %value[8]) + "\t" + str('%.1f' %value[9]) + "\t" + value[10]
+                    line = line + coord + "\t" + angles + "\t" +properties + "\n"
 
                 text_file.writelines(line)
                 text_file.close()
@@ -1004,7 +1098,8 @@ class MarkersPanel(wx.Panel):
         self.marker_ind += 1
 
         # List of lists with coordinates and properties of a marker
-        line = [coord[0], coord[1], coord[2], colour[0], colour[1], colour[2], self.marker_size, marker_id]
+
+        line = [coord[0], coord[1], coord[2], self.current_angle[0], self.current_angle[1], self.current_angle[2], colour[0], colour[1], colour[2], size, marker_id]
 
         # Adding current line to a list of all markers already created
         if not self.list_coord:

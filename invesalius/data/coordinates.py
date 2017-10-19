@@ -107,13 +107,7 @@ def PolhemusCoord(trck, trck_id, ref_mode):
 def PolhemusWrapperCoord(trck, trck_id, ref_mode):
 
     trck.Run()
-
-    if trck_id == 2:
-        # Fastrak default coordinates are in millimeters
-        scale = 10.0 * np.array([1., 1.0, -1.0])
-    else:
-        # Patriot and Isotrak coordinates are in inches
-        scale = 25.4 * np.array([1., 1.0, -1.0])
+    scale = 10.0 * np.array([1., 1., -1.])
 
     coord1 = np.array([float(trck.PositionTooltipX1)*scale[0], float(trck.PositionTooltipY1)*scale[1],
                       float(trck.PositionTooltipZ1)*scale[2],
@@ -130,25 +124,9 @@ def PolhemusWrapperCoord(trck, trck_id, ref_mode):
                            float(trck.AngleX3), float(trck.AngleY3), float(trck.AngleZ3)])
         coord = np.vstack([coord, coord3])
 
-    # if ref_mode:
-    #
-    #     reference = np.array([float(trck.PositionTooltipX2), float(trck.PositionTooltipY2),
-    #                       float(trck.PositionTooltipZ2), float(trck.AngleX2), float(trck.AngleY2),
-    #                       float(trck.AngleZ2)])
-    #
-    #     if probe.all() and reference.all():
-    #         coord = dynamic_reference(probe, reference)
-    #         coord = (coord[0] * scale[0], coord[1] * scale[1], coord[2] * scale[2], coord[3], coord[4], coord[5])
-    #
-    # else:
-    #     coord = np.array([float(trck.PositionTooltipX1) * scale[0], float(trck.PositionTooltipY1) * scale[1],
-    #                       float(trck.PositionTooltipZ1) * scale[2], float(trck.AngleX1), float(trck.AngleY1),
-    #                       float(trck.AngleZ1)])
-
     if trck.StylusButton:
         Publisher.sendMessage('PLH Stylus Button On')
 
-    # return coord, probe, reference
     return coord
 
 

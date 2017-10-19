@@ -306,7 +306,7 @@ import wx.lib.colourselect as csel
 
 import invesalius.constants as const
 
-[BUTTON_RAYCASTING, BUTTON_VIEW, BUTTON_SLICE_PLANE, BUTTON_3D_STEREO] = [wx.NewId() for num in xrange(4)]
+[BUTTON_RAYCASTING, BUTTON_VIEW, BUTTON_SLICE_PLANE, BUTTON_3D_STEREO, BUTTON_TARGET] = [wx.NewId() for num in xrange(5)]
 RAYCASTING_TOOLS = wx.NewId()
 
 ID_TO_NAME = {}
@@ -346,6 +346,9 @@ class VolumeToolPanel(wx.Panel):
         BMP_3D_STEREO = wx.Bitmap(os.path.join(const.ICON_DIR, "3D_glasses.png"),
                                     wx.BITMAP_TYPE_PNG)
 
+        BMP_TARGET = wx.Bitmap(os.path.join(const.ICON_DIR, "target.png"),
+                                    wx.BITMAP_TYPE_PNG)
+
 
         button_raycasting = pbtn.PlateButton(self, BUTTON_RAYCASTING,"",
                 BMP_RAYCASTING, style=pbtn.PB_STYLE_SQUARE,
@@ -358,6 +361,11 @@ class VolumeToolPanel(wx.Panel):
         button_slice_plane = self.button_slice_plane = pbtn.PlateButton(self, BUTTON_SLICE_PLANE,"",
         BMP_SLICE_PLANE, style=pbtn.PB_STYLE_SQUARE,
         size=(32,32))
+
+        button_target = self.button_target = pbtn.PlateButton(self, BUTTON_TARGET,"",
+        BMP_TARGET, style=pbtn.PB_STYLE_SQUARE|pbtn.PB_STYLE_TOGGLE,
+        size=(32,32))
+        self.button_target.Enable(0)
 
         self.button_raycasting = button_raycasting
         self.button_stereo = button_stereo
@@ -389,6 +397,7 @@ class VolumeToolPanel(wx.Panel):
         sizer.Add(button_view, 0, wx.TOP|wx.BOTTOM, 1)
         sizer.Add(button_slice_plane, 0, wx.TOP|wx.BOTTOM, 1)
         sizer.Add(button_stereo, 0, wx.TOP|wx.BOTTOM, 1)
+        sizer.Add(button_target, 0, wx.TOP | wx.BOTTOM, 1)
 
 
         sizer.Fit(self)
@@ -408,6 +417,7 @@ class VolumeToolPanel(wx.Panel):
         Publisher.subscribe(self.DisablePreset, 'Close project data')
         Publisher.subscribe(self.Uncheck, 'Uncheck image plane menu')
         Publisher.subscribe(self.DisableVolumeCutMenu, 'Disable volume cut menu')
+        Publisher.subscribe(self.DisableEnableCoilTracker, 'Disable or enable coil tracker')
         
     def DisablePreset(self, pubsub_evt):
         self.off_item.Check(1)
@@ -419,6 +429,7 @@ class VolumeToolPanel(wx.Panel):
         self.button_view.Bind(wx.EVT_LEFT_DOWN, self.OnButtonView)
         self.button_colour.Bind(csel.EVT_COLOURSELECT, self.OnSelectColour)
         self.button_stereo.Bind(wx.EVT_LEFT_DOWN, self.OnButtonStereo)
+        self.button_target.Bind(wx.EVT_LEFT_DOWN, self.OnButtonTarget)
 
     def OnButtonRaycasting(self, evt):
         # MENU RELATED TO RAYCASTING TYPES
@@ -432,6 +443,22 @@ class VolumeToolPanel(wx.Panel):
 
     def OnButtonSlicePlane(self, evt):
         self.button_slice_plane.PopupMenu(self.slice_plane_menu)
+
+    def DisableEnableCoilTracker(self, pubsub_evt):
+        status = pubsub_evt.data
+        if status:
+            self.button_target.Enable(1)
+        else:
+            self.button_target._pressed = False
+            self.button_target.Enable(0)
+
+    def OnButtonTarget(self, evt):
+        if not self.button_target.IsPressed():
+            self.button_target._pressed = True
+            Publisher.sendMessage('Target navigation mode', self.button_target._pressed)
+        else:
+            self.button_target._pressed = False
+            Publisher.sendMessage('Target navigation mode', self.button_target._pressed)
 
     def OnSavePreset(self, evt):
         d = wx.TextEntryDialog(self, _("Preset name"))

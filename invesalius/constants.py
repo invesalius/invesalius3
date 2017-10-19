@@ -56,6 +56,7 @@ STEREO_ANAGLYPH = _("Anaglyph")
 TEXT_SIZE_SMALL = 11
 TEXT_SIZE = 12
 TEXT_SIZE_LARGE = 16
+TEXT_SIZE_EXTRA_LARGE = 20
 TEXT_COLOUR = (1,1,1)
 
 (X,Y) = (0.03, 0.97)
@@ -732,4 +733,10 @@ TIPS_OBJ = [_("Select left object fiducial"),
 
 CAL_DIR = os.path.abspath(os.path.join(FILE_PATH, '..', 'navigation', 'mtc_files', 'CalibrationFiles'))
 MAR_DIR = os.path.abspath(os.path.join(FILE_PATH, '..', 'navigation', 'mtc_files', 'Markers'))
+
+#OBJECT TRACKING
 OBJ_DIR = os.path.abspath(os.path.join(FILE_PATH, '..', 'navigation', 'objects'))
+ARROW_SCALE = 3
+ARROW_UPPER_LIMIT = 30
+COIL_ANGLES_THRESHOLD = 3 * ARROW_SCALE
+COIL_COORD_THRESHOLD = 3
