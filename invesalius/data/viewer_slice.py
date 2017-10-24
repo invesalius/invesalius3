@@ -1244,7 +1244,7 @@ class Viewer(wx.Panel):
 
         # Removing all measures
         for i in cp_draw_list:
-            if not isinstance(i, (measures.AngularMeasure, measures.LinearMeasure, measures.CircleDensityMeasure)):
+            if not isinstance(i, (measures.AngularMeasure, measures.LinearMeasure, measures.CircleDensityMeasure, measures.PolygonDensityMeasure)):
                 self.canvas.draw_list.append(i)
 
         # Then add all needed measures

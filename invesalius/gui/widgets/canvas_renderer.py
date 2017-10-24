@@ -257,7 +257,7 @@ class CanvasRendererCTX:
         self.modified = False
         self._drawn = False
 
-    def draw_element_to_array(self, elements, flip=True):
+    def draw_element_to_array(self, elements, size=None, flip=True):
         """
         Draws the given elements to a array.
 
@@ -267,16 +267,21 @@ class CanvasRendererCTX:
             flip: indicates if it is necessary to flip. In this canvas the Y
                 coordinates starts in the bottom of the screen.
         """
-        size = self.canvas_renderer.GetSize()
+        if size is None:
+            size = self.canvas_renderer.GetSize()
         w, h = size
+        print "size", w, h
         image = wx.EmptyImage(w, h)
         image.Clear()
+        print "image size", image.GetSize()
 
         arr = np.zeros((h, w, 4), dtype=np.uint8)
 
         gc = wx.GraphicsContext.Create(image)
         if sys.platform != 'darwin':
             gc.SetAntialiasMode(0)
+
+        old_gc = self.gc
         self.gc = gc
 
         font = wx.SystemSettings.GetFont(wx.SYS_DEFAULT_GUI_FONT)
@@ -293,9 +298,10 @@ class CanvasRendererCTX:
             element.draw_to_canvas(gc, self)
 
         gc.Destroy()
-        self.gc = None
+        self.gc = old_gc
 
-        bitmap = self.image.ConvertToBitmap()
+        bitmap = image.ConvertToBitmap()
+        print 'bitmap size', bitmap.GetSize()
         bitmap.CopyToBuffer(arr, wx.BitmapBufferFormat_RGBA)
 
         if flip:
@@ -774,10 +780,17 @@ class Polygon(CanvasHandlerBase):
 
         self.fill = fill
         self.line_colour = line_colour
-        self.fill_colour = fill_colour
+
+        if self.fill:
+            self.fill_colour = fill_colour
+        else:
+            self.fill_colour = (0, 0, 0, 0)
+
         self.width = width
         self.interactive = interactive
         self.is_3d = is_3d
+
+        self._on_change_function = None
 
     def draw_to_canvas(self, gc, canvas):
         if self.points:
@@ -800,16 +813,22 @@ class Polygon(CanvasHandlerBase):
         self._ref_handlers[handler] = len(self.points) - 1
 
     def on_move_point(self, obj, evt):
-        px, py = obj.position
+        pos = obj.position
         handler = obj
         point = self._ref_handlers[handler]
-        self.points[point] = px, py
+        self.points[point] = pos
+
+        if self._on_change_function and self._on_change_function():
+            self._on_change_function()()
 
     def is_over(self, x, y):
         if self.interactive:
             for handler in self.handlers:
                 if handler.is_over(x, y):
                     return handler
+
+    def on_change(self, evt_function):
+        self._on_change_function = WeakMethod(evt_function)
 
 
 

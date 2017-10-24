@@ -15,7 +15,7 @@ import invesalius.project as prj
 import invesalius.session as ses
 import invesalius.utils as utils
 
-from invesalius.gui.widgets.canvas_renderer import TextBox, CircleHandler, Ellipse
+from invesalius.gui.widgets.canvas_renderer import TextBox, CircleHandler, Ellipse, Polygon
 from scipy.misc import imsave
 
 TYPE = {const.LINEAR: _(u"Linear"),
@@ -374,9 +374,13 @@ class MeasurementManager(object):
         m.index = len(self.measures)
         m.location = density_measure.location
         m.slice_number = density_measure.slice_number
+        print m.slice_number, m.location
         m.colour = density_measure.colour
         m.value = density_measure._mean
-        m.points = [density_measure.center, density_measure.point1, density_measure.point2]
+        if density_measure.format == 'ellipse':
+            m.points = [density_measure.center, density_measure.point1, density_measure.point2]
+        elif density_measure.format == 'polygon':
+            m.points = density_measure.points
         density_measure.index = m.index
 
         density_measure.set_measurement(m)
@@ -1011,6 +1015,8 @@ class CircleDensityMeasure(object):
         self.orientation = orientation
         self.slice_number = slice_number
 
+        self.format = 'ellipse'
+
         self.location = map_locations_id[self.orientation]
         self.index = 0
 
@@ -1222,3 +1228,162 @@ class CircleDensityMeasure(object):
 
         diff = tuple((i-j for i,j in zip(self.center, old_center)))
         self.text_box.position = tuple((i+j for i,j in zip(self.text_box.position, diff)))
+
+
+class PolygonDensityMeasure(object):
+    def __init__(self, orientation, slice_number, colour=(255, 0, 0, 255), interactive=True):
+        self.colour = colour
+        self.points = []
+
+        self.orientation = orientation
+        self.slice_number = slice_number
+
+        self.format = 'polygon'
+
+        self.location = map_locations_id[self.orientation]
+        self.index = 0
+
+        self._min = 0
+        self._max = 0
+        self._mean = 0
+        self._std = 0
+
+        self._measurement = None
+
+        self.polygon = Polygon(fill=False, line_colour=self.colour)
+        self.polygon.on_change(self.on_change_polygon)
+        self.text_box = None
+
+        self._need_calc = False
+        self.interactive = interactive
+
+        self.visible = True
+
+    def on_change_polygon(self):
+        self.points = self.polygon.points
+        self._need_calc = True
+
+    def draw_to_canvas(self, gc, canvas):
+        if self.visible:
+            self.polygon.draw_to_canvas(gc, canvas)
+            if self._need_calc:
+                self.calc_density(canvas)
+            if self.text_box:
+                print "GC", gc
+                self.text_box.draw_to_canvas(gc, canvas)
+
+    def insert_point(self, point):
+        print "insert points", len(self.points)
+        self.polygon.append_point(point)
+        self.points.append(point)
+        if len(self.points) >= 3:
+            self._need_calc = True
+
+    def calc_density(self, canvas):
+        print "Density"
+        from invesalius.data.slice_ import Slice
+
+        slc = Slice()
+        n = self.slice_number
+        orientation = self.orientation
+        img_slice = slc.get_image_slice(orientation, n)
+        dy, dx = img_slice.shape
+        spacing = slc.spacing
+
+        if orientation == 'AXIAL':
+            sx, sy = spacing[0], spacing[1]
+            n = slc.buffer_slices["AXIAL"].index + 1
+            m = slc.current_mask.matrix[n, 1:, 1:]
+            plg_points = [(x/sx, y/sy) for (x, y, z) in self.points]
+
+        elif orientation == 'CORONAL':
+            sx, sy = spacing[0], spacing[2]
+            n = slc.buffer_slices["CORONAL"].index + 1
+            m = slc.current_mask.matrix[1:, n, 1:]
+            plg_points = [(x/sx, z/sy) for (x, y, z) in self.points]
+
+        elif orientation == 'SAGITAL':
+            sx, sy = spacing[1], spacing[2]
+            n = slc.buffer_slices["SAGITAL"].index + 1
+            m = slc.current_mask.matrix[1:, 1:, n]
+
+            plg_points = [(y/sx, z/sy) for (x, y, z) in self.points]
+
+        plg_tmp = Polygon(plg_points, fill=True,
+                          line_colour=(0, 0, 0, 0),
+                          fill_colour=(255, 255, 255, 255), width=0,
+                          interactive=False, is_3d=False)
+        h, w = img_slice.shape
+        arr = canvas.draw_element_to_array([plg_tmp, ], size=(w, h), flip=False)
+        mask = (arr[:, :, 0] == 255)
+
+        try:
+            m[:] = 0
+            m[mask] = 254
+            slc.buffer_slices[self.orientation].discard_vtk_mask()
+            slc.buffer_slices[self.orientation].discard_mask()
+            Publisher.sendMessage('Reload actual slice')
+        except IndexError:
+                pass
+
+        values = img_slice[mask]
+
+        try:
+            _min = values.min()
+            _max = values.max()
+            _mean = values.mean()
+            _std = values.std()
+        except ValueError:
+            _min = 0
+            _max = 0
+            _mean = 0
+            _std = 0
+
+        self.set_density_values(_min, _max, _mean, _std)
+
+    def set_measurement(self, dm):
+        self._measurement = dm
+
+    def SetVisibility(self, value):
+        self.visible = value
+        self.polygon.visible = value
+
+    def is_over(self, x, y):
+        if self.interactive:
+            if self.polygon.is_over(x, y):
+                return self.polygon.is_over(x, y)
+            elif self.text_box.is_over(x, y):
+                return self.text_box.is_over(x, y)
+            return None
+
+    def set_density_values(self, _min, _max, _mean, _std):
+        self._min = _min
+        self._max = _max
+        self._mean = _mean
+        self._std = _std
+
+        text = _('Min: %.3f\n'
+                 'Max: %.3f\n'
+                 'Mean: %.3f\n'
+                 'Std: %.3f' % (self._min, self._max, self._mean, self._std))
+
+        if self.text_box is None:
+            self.text_box = TextBox(text, self.points[-1], MEASURE_TEXT_COLOUR, MEASURE_TEXTBOX_COLOUR)
+        else:
+            self.text_box.set_text(text)
+            self.text_box.position = self.points[-1]
+
+        if self._measurement:
+            self._measurement.value = self._mean
+            self._update_gui_info()
+
+    def _update_gui_info(self):
+        msg =  'Update measurement info in GUI',
+        print msg
+        if self._measurement:
+            m = self._measurement
+            Publisher.sendMessage(msg,
+                                  (m.index, m.name, m.colour,
+                                   self.orientation,
+                                   'Density',
+                                   '%.3f' % m.value))

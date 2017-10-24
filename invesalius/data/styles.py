@@ -43,7 +43,7 @@ from scipy.ndimage import watershed_ift, generate_binary_structure
 from skimage.morphology import watershed
 
 import invesalius.gui.dialogs as dialogs
-from invesalius.data.measures import MeasureData, CircleDensityMeasure
+from invesalius.data.measures import MeasureData, CircleDensityMeasure, PolygonDensityMeasure
 
 from . import floodfill
 
@@ -537,6 +537,10 @@ class DensityMeasureStyle(DefaultInteractorStyle):
 
         self.state_code = const.STATE_MEASURE_DENSITY
 
+        self.format = 'polygon'
+
+        self._last_measure = None
+
         self.viewer = viewer
         self.orientation = viewer.orientation
         self.slice_data = viewer.slice_data
@@ -594,20 +598,40 @@ class DensityMeasureStyle(DefaultInteractorStyle):
     def OnInsertPoint(self, evt):
         mouse_x, mouse_y = evt.position
         print 'OnInsertPoint', evt.position
-        pos = self.viewer.get_coordinate_cursor(mouse_x, mouse_y, self.picker)
-        pp1 = self.viewer.get_coordinate_cursor(mouse_x+50, mouse_y, self.picker)
-        pp2 = self.viewer.get_coordinate_cursor(mouse_x, mouse_y+50, self.picker)
-
         n = self.viewer.slice_data.number
+        pos = self.viewer.get_coordinate_cursor(mouse_x, mouse_y, self.picker)
 
-        m = CircleDensityMeasure(self.orientation, n)
-        m.set_center(pos)
-        m.set_point1(pp1)
-        m.set_point2(pp2)
-        m.calc_density()
+        if self.format == 'ellipse':
+            pp1 = self.viewer.get_coordinate_cursor(mouse_x+50, mouse_y, self.picker)
+            pp2 = self.viewer.get_coordinate_cursor(mouse_x, mouse_y+50, self.picker)
+
+            m = CircleDensityMeasure(self.orientation, n)
+            m.set_center(pos)
+            m.set_point1(pp1)
+            m.set_point2(pp2)
+            m.calc_density()
+            _new_measure = True
+        elif self.format == 'polygon':
+            if self._last_measure is None:
+                m = PolygonDensityMeasure(self.orientation, n)
+                self._last_measure = m
+                _new_measure = True
+            else:
+                m = self._last_measure
+                _new_measure = False
+                if m.slice_number != n:
+                    m = PolygonDensityMeasure(self.orientation, n)
+                    self._last_measure = m
+                    _new_measure = True
+
+            m.insert_point(pos)
+            #  m.calc_density()
+
 
         #  self.viewer.draw_by_slice_number[n].append(m)
-        Publisher.sendMessage("Add density measurement", m)
+        if _new_measure:
+            Publisher.sendMessage("Add density measurement", m)
+
         self.viewer.UpdateCanvas()
 
 
