@@ -135,7 +135,7 @@ def flip_x(point):
     return x, y, z
 
 
-def object_registration(fiducials, bases_coreg):
+def object_registration(fiducials):
     """
 
     :param fiducials:
@@ -143,12 +143,16 @@ def object_registration(fiducials, bases_coreg):
     :return:
     """
 
-    minv, n, q1, q2 = bases_coreg
+    # minv, n, q1, q2 = bases_coreg
 
     obj_center_trck = np.asmatrix(fiducials[3, :]).reshape([3, 1])
     obj_sensor_trck = np.asmatrix(fiducials[4, :]).reshape([3, 1])
-    obj_center = q1 + (minv * n) * (obj_center_trck - q2)
-    obj_center_img = obj_center[0, 0], obj_center[1, 0], obj_center[2, 0]
-    m_trck, q_trck, m_inv_trck = base_creation(fiducials)
+    # obj_center = q1 + (minv * n) * (obj_center_trck - q2)
+    # obj_sensor = q1 + (minv * n) * (obj_sensor_trck - q2)
+    # obj_center_img = obj_center[0, 0], obj_center[1, 0], obj_center[2, 0]
+    # obj_sensor_img = obj_sensor[0, 0], obj_sensor[1, 0], obj_sensor[2, 0]
+    fids = fiducials[0:4, :] - fiducials[4, :]
+    # m_trck, q_trck, m_inv_trck = base_creation(fiducials)
 
-    return obj_center_img, obj_sensor_trck, m_inv_trck, obj_center_trck
+    return obj_center_trck, obj_sensor_trck, fids
+    # return obj_center_img, obj_sensor_trck, m_inv_trck, obj_center_trck, obj_sensor_img

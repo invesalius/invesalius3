@@ -164,7 +164,7 @@ class InnerFoldPanel(wx.Panel):
         tooltip = wx.ToolTip(_("Update camera in volume"))
         checkcamera = wx.CheckBox(self, -1, _('Vol. camera'))
         checkcamera.SetToolTip(tooltip)
-        checkcamera.SetValue(True)
+        checkcamera.SetValue(const.CAM_MODE)
         checkcamera.Bind(wx.EVT_CHECKBOX, self.UpdateVolumeCamera)
         self.checkcamera = checkcamera
 
@@ -206,7 +206,7 @@ class InnerFoldPanel(wx.Panel):
         self.SetAutoLayout(1)
         
     def __bind_events(self):
-        Publisher.subscribe(self.OnCheckStatus, 'Navigation Status')
+        Publisher.subscribe(self.OnCheckStatus, 'Navigation status')
         Publisher.subscribe(self.UpdateVolumeCamera, 'Target navigation mode')
 
     def OnCheckStatus(self, pubsub_evt):
@@ -487,8 +487,8 @@ class NeuronavigationPanel(wx.Panel):
                      self.numctrls_coord[btn_id][2].GetValue()
 
         Publisher.sendMessage('Set ball reference position', (ux, uy, uz))
-        Publisher.sendMessage('Set camera in volume', (ux, uy, uz))
-        Publisher.sendMessage('Co-registered points', (ux, uy, uz))
+        # Publisher.sendMessage('Set camera in volume', (ux, uy, uz))
+        Publisher.sendMessage('Co-registered points', (None, (ux, uy, uz, 0., 0., 0.)))
         Publisher.sendMessage('Update cross position', (ux, uy, uz))
 
     def OnImageFiducials(self, evt):
@@ -535,6 +535,13 @@ class NeuronavigationPanel(wx.Panel):
         choice_ref = btn[2]
         txtctrl_fre = btn[3]
 
+        self.fiducials = np.array([[10.5, 109.2, 22.],
+                                   [171.9, 109.2, 22.],
+                                   [91.8, 5.3, 22.],
+                                   [-90.01125233, -68.99572909, -95.67216954],
+                                   [-78.32915385, 76.10023779, -92.9506228],
+                                   [6.00091345, 1.14540308, -61.00970923]])
+
         nav_id = btn_nav.GetValue()
         if nav_id:
             if np.isnan(self.fiducials).any():
@@ -572,7 +579,7 @@ class NeuronavigationPanel(wx.Panel):
                 if self.trigger_state:
                     self.trigger = trig.Trigger(nav_id)
 
-                Publisher.sendMessage("Navigation Status", True)
+                Publisher.sendMessage("Navigation status", True)
                 Publisher.sendMessage("Toggle Cross", const.SLICE_STATE_CROSS)
                 Publisher.sendMessage("Hide current mask")
 
@@ -582,20 +589,21 @@ class NeuronavigationPanel(wx.Panel):
                         obj_fiducials = self.obj_reg[0]
                         obj_orients = self.obj_reg[1]
                         obj_ref_id = self.obj_reg[2]
-                        obj_name = self.obj_reg[3]
 
-                        obj_center_img, obj_sensor_trck, m_inv_trck, obj_center_trck = db.object_registration(obj_fiducials,
-                                                                                                              bases_coreg)
+                        obj_center_trck, obj_sensor_trck, fiducials = db.object_registration(obj_fiducials)
+                        # obj_center_img, obj_sensor_trck, m_inv_trck, obj_center_trck, obj_sensor_img = db.object_registration(obj_fiducials, bases_coreg)
                         obj_sensor_orient = obj_orients[4, :]
-                        obj_mode = m_inv_trck, obj_center_trck, obj_sensor_trck, obj_ref_id
+                        obj_data = obj_center_trck, obj_sensor_trck, obj_ref_id, fiducials
 
                         # Only the m_inv is needed for change of basis
-                        Publisher.sendMessage('Update object initial orientation',
-                                              (m_inv_trck, obj_sensor_orient, obj_center_img, obj_name))
+                        # Publisher.sendMessage('Update object initial orientation',
+                        #                       (m_inv_trck, obj_sensor_orient, obj_center_img))
+                        # Publisher.sendMessage('Update object initial orientation',
+                        #                       (fiducials, obj_sensor_orient))
                         if self.ref_mode_id:
-                            self.correg = dcr.CoregistrationObjectDynamic(bases_coreg, nav_id, tracker_mode, obj_mode)
+                            self.correg = dcr.CoregistrationObjectDynamic(bases_coreg, nav_id, tracker_mode, obj_data)
                         else:
-                            self.correg = dcr.CoregistrationObjectStatic(bases_coreg, nav_id, tracker_mode, obj_mode)
+                            self.correg = dcr.CoregistrationObjectStatic(bases_coreg, nav_id, tracker_mode, obj_data)
                     else:
                         dlg.InvalidObjectRegistration()
 
@@ -604,7 +612,6 @@ class NeuronavigationPanel(wx.Panel):
                         self.correg = dcr.CoregistrationDynamic(bases_coreg, nav_id, tracker_mode)
                     else:
                         self.correg = dcr.CoregistrationStatic(bases_coreg, nav_id, tracker_mode)
-
 
         else:
             tooltip = wx.ToolTip(_("Start neuronavigation"))
@@ -621,7 +628,7 @@ class NeuronavigationPanel(wx.Panel):
 
             self.correg.stop()
 
-            Publisher.sendMessage("Navigation Status", False)
+            Publisher.sendMessage("Navigation status", False)
 
     def ResetTrackerFiducials(self):
         for m in range(3, 6):
@@ -735,7 +742,8 @@ class ObjectRegistrationPanel(wx.Panel):
                     self.obj_fiducials, self.obj_orients, self.obj_ref_mode, self.obj_name = dialog.GetValue()
                     if np.isfinite(self.obj_fiducials).all() and np.isfinite(self.obj_orients).all():
                         Publisher.sendMessage('Update object registration',
-                                              (self.obj_fiducials, self.obj_orients, self.obj_ref_mode, self.obj_name))
+                                              (self.obj_fiducials, self.obj_orients, self.obj_ref_mode))
+                        Publisher.sendMessage('Create object polydata', self.obj_name)
                         Publisher.sendMessage('Update status text in GUI', _("Ready"))
 
             except wx._core.PyAssertionError:  # TODO FIX: win64
@@ -760,7 +768,8 @@ class ObjectRegistrationPanel(wx.Panel):
             self.obj_ref_mode = int(header[-1])
 
             Publisher.sendMessage('Update object registration',
-                                  (self.obj_fiducials, self.obj_orients, self.obj_ref_mode, self.obj_name))
+                                  (self.obj_fiducials, self.obj_orients, self.obj_ref_mode))
+            Publisher.sendMessage('Create object polydata', self.obj_name)
             Publisher.sendMessage('Update status text in GUI', _("Ready"))
         else:
             wx.MessageBox(_("InVesalius was not able to import this registration file"), _("Import error"))
@@ -869,16 +878,16 @@ class MarkersPanel(wx.Panel):
 
     def __bind_events(self):
         Publisher.subscribe(self.UpdateCurrentCoord, 'Set ball reference position')
-        Publisher.subscribe(self.UpdateCurrentAngle, 'Update tracker angles')
+        Publisher.subscribe(self.UpdateCurrentAngle, 'Co-registered points')
         Publisher.subscribe(self.OnDeleteSingleMarker, 'Delete fiducial marker')
         Publisher.subscribe(self.OnCreateMarker, 'Create marker')
-        Publisher.subscribe(self.UpdateNavigationStatus, 'Navigation Status')
+        Publisher.subscribe(self.UpdateNavigationStatus, 'Navigation status')
 
     def UpdateCurrentCoord(self, pubsub_evt):
         self.current_coord = pubsub_evt.data
 
     def UpdateCurrentAngle(self, pubsub_evt):
-        self.current_angle = pubsub_evt.data
+        self.current_angle = pubsub_evt.data[1][3:]
 
     def UpdateNavigationStatus(self, pubsub_evt):
         if pubsub_evt.data is False:

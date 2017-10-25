@@ -20,11 +20,13 @@
 import threading
 from time import sleep
 
-from numpy import mat, asmatrix
+from numpy import mat, asmatrix, asarray, array
 import wx
 from wx.lib.pubsub import pub as Publisher
 
 import invesalius.data.coordinates as dco
+import invesalius.data.bases as db
+import invesalius.data.transformations as transf
 
 # TODO: Optimize navigation thread. Remove the infinite loop and optimize sleep.
 
@@ -61,18 +63,20 @@ class CoregistrationStatic(threading.Thread):
             # trck_coord, probe, reference = dco.GetCoordinates(trck_init, trck_id, trck_mode)
             coord_raw = dco.GetCoordinates(trck_init, trck_id, trck_mode)
 
-            trck_coord = coord_raw[0, ::]
+            trck_coord = coord_raw[0, :]
 
             trck_xyz = mat([[trck_coord[0]], [trck_coord[1]], [trck_coord[2]]])
             img = q1 + (m_inv*n)*(trck_xyz - q2)
 
             coord = (float(img[0]), float(img[1]), float(img[2]), trck_coord[3],
                      trck_coord[4], trck_coord[5])
+            angles = coord_raw[0, 3:6]
 
             # Tried several combinations and different locations to send the messages,
             # however only this one does not block the GUI during navigation.
             wx.CallAfter(Publisher.sendMessage, 'Co-registered points', coord[0:3])
             wx.CallAfter(Publisher.sendMessage, 'Set camera in volume', coord)
+            wx.CallAfter(Publisher.sendMessage, 'Update tracker angles', angles)
 
             # TODO: Optimize the value of sleep for each tracking device.
             # Debug tracker is not working with 0.175 so changed to 0.2
@@ -116,19 +120,20 @@ class CoregistrationDynamic(threading.Thread):
             # trck_coord, probe, reference = dco.GetCoordinates(trck_init, trck_id, trck_mode)
             coord_raw = dco.GetCoordinates(trck_init, trck_id, trck_mode)
 
-            trck_coord = dco.dynamic_reference(coord_raw[0, ::], coord_raw[1, ::])
+            trck_coord = dco.dynamic_reference(coord_raw[0, :], coord_raw[1, :])
 
             trck_xyz = mat([[trck_coord[0]], [trck_coord[1]], [trck_coord[2]]])
             img = q1 + (m_inv * n) * (trck_xyz - q2)
 
             coord = (float(img[0]), float(img[1]), float(img[2]), trck_coord[3],
                      trck_coord[4], trck_coord[5])
+            angles = coord_raw[0, 3:6]
 
             # Tried several combinations and different locations to send the messages,
             # however only this one does not block the GUI during navigation.
             wx.CallAfter(Publisher.sendMessage, 'Co-registered points', coord[0:3])
-            # wx.CallAfter(Publisher.sendMessage, 'Set camera in volume', coord[0:3])
             wx.CallAfter(Publisher.sendMessage, 'Set camera in volume', coord)
+            wx.CallAfter(Publisher.sendMessage, 'Update tracker angles', angles)
 
             # TODO: Optimize the value of sleep for each tracking device.
             # Debug tracker is not working with 0.175 so changed to 0.2
@@ -191,7 +196,6 @@ class CoregistrationObjectStatic(threading.Thread):
             # Tried several combinations and different locations to send the messages,
             # however only this one does not block the GUI during navigation.
             wx.CallAfter(Publisher.sendMessage, 'Co-registered points', coord[0:3])
-            # wx.CallAfter(Publisher.sendMessage, 'Set camera in volume', coord[0:3])
             wx.CallAfter(Publisher.sendMessage, 'Set camera in volume', coord)
             wx.CallAfter(Publisher.sendMessage, 'Update object orientation',
                          (m_inv_trck, angles, coord[0:3]))
@@ -215,12 +219,12 @@ class CoregistrationObjectDynamic(threading.Thread):
     for better real-time navigation
     """
 
-    def __init__(self, bases, nav_id, trck_info, coil_info):
+    def __init__(self, bases, nav_id, trck_info, obj_data):
         threading.Thread.__init__(self)
         self.bases = bases
         self.nav_id = nav_id
         self.trck_info = trck_info
-        self.coil_info = coil_info
+        self.obj_data = obj_data
         self._pause_ = False
         self.start()
 
@@ -236,10 +240,15 @@ class CoregistrationObjectDynamic(threading.Thread):
         trck_id = self.trck_info[1]
         trck_mode = self.trck_info[2]
 
-        m_inv_trck = self.coil_info[0]
-        obj_center_trck = self.coil_info[1]
-        obj_sensor_trck = self.coil_info[2]
-        obj_ref_id = self.coil_info[3]
+        # m_inv_trck = self.obj_data[0]
+        # obj_center_trck = self.obj_data[1]
+        # obj_sensor_trck = self.obj_data[2]
+        # obj_ref_id = self.obj_data[3]
+
+        obj_center_trck = self.obj_data[0]
+        obj_sensor_trck = self.obj_data[1]
+        obj_ref_id = self.obj_data[2]
+        fiducials = self.obj_data[3]
 
         while self.nav_id:
             coord_raw = dco.GetCoordinates(trck_init, trck_id, trck_mode)
@@ -249,28 +258,43 @@ class CoregistrationObjectDynamic(threading.Thread):
             else:
                 trck_coord = dco.dynamic_reference(coord_raw[0, :], coord_raw[1, :])
 
+            coord_2 = asarray(trck_coord[0:3]).squeeze()
+            v1 = fiducials[0:3, :] + coord_2
+            # v1 = fiducials[0:4, :]
+            # m_trck, q_trck, m_inv_trck = db.base_creation(fiducials)
+            v0 = array([[1, 0, 0], [0, 1, 0], [0, 0, 1]])
+            ma = transf.superimposition_matrix(asarray(v1), v0)
+            scale, shear, angles, trans, persp = transf.decompose_matrix(ma)
+            m_eul = transf.euler_matrix(*angles)
+
             trck_xyz = asmatrix(trck_coord[0:3]).reshape([3, 1]) + (obj_center_trck - obj_sensor_trck)
+
+            # cn = np.asarray(bn).reshape([1, 3]).squeeze()
 
             img = q1 + (m_inv * n) * (trck_xyz - q2)
 
-            coord = (float(img[0]), float(img[1]), float(img[2]), trck_coord[3],
-                     trck_coord[4], trck_coord[5])
-            angles = coord_raw[0, 3:6]
+            # coord = (float(img[0]), float(img[1]), float(img[2]), trck_coord[3],
+            #          trck_coord[4], trck_coord[5])
+            coord = (float(img[0]), float(img[1]), float(img[2]), coord_raw[0, 3],
+                     coord_raw[0, 4], coord_raw[0, 5])
+            # angles = coord_raw[0, 3:6]
 
             # Tried several combinations and different locations to send the messages,
             # however only this one does not block the GUI during navigation.
-            wx.CallAfter(Publisher.sendMessage, 'Co-registered points', coord[0:3])
-            # wx.CallAfter(Publisher.sendMessage, 'Set camera in volume', coord[0:3])
-            wx.CallAfter(Publisher.sendMessage, 'Set camera in volume', coord)
-            wx.CallAfter(Publisher.sendMessage, 'Update object orientation',
-                         (m_inv_trck, angles, coord[0:3]))
-            wx.CallAfter(Publisher.sendMessage, 'Update tracker angles', angles)
+            # wx.CallAfter(Publisher.sendMessage, 'Co-registered points', coord[0:3])
+            # wx.CallAfter(Publisher.sendMessage, 'Co-registered points', (m_inv_trck, coord))
+            wx.CallAfter(Publisher.sendMessage, 'Co-registered points', (m_eul, coord))
+            # wx.CallAfter(Publisher.sendMessage, 'Set camera in volume', coord)
+            # wx.CallAfter(Publisher.sendMessage, 'Update object orientation',
+            #              (m_inv_trck, coord))
+            # wx.CallAfter(Publisher.sendMessage, 'Update tracker angles', angles)
 
             # TODO: Optimize the value of sleep for each tracking device.
             # Debug tracker is not working with 0.175 so changed to 0.2
             # However, 0.2 is too low update frequency ~5 Hz. Need optimization URGENTLY.
-            # sleep(.3)
-            sleep(0.175)
+            sleep(.3)
+            # sleep(0.175)
+            # sleep(1.)
 
             if self._pause_:
                 return

@@ -934,7 +934,7 @@ class Viewer(wx.Panel):
 
     def UpdateSlicesNavigation(self, pubsub_evt):
         # Get point from base change
-        ux, uy, uz = pubsub_evt.data
+        ux, uy, uz = pubsub_evt.data[1][:3]
         px, py = self.get_slice_pixel_coord_by_world_pos(ux, uy, uz)
         coord = self.calcultate_scroll_position(px, py)
 

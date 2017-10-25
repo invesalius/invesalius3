@@ -238,7 +238,7 @@ class CrossInteractorStyle(DefaultInteractorStyle):
         Publisher.sendMessage('Update cross position', (wx, wy, wz))
         self.ScrollSlice(coord)
         Publisher.sendMessage('Set ball reference position', (wx, wy, wz))
-        Publisher.sendMessage('Set camera in volume', (wx, wy, wz))
+        Publisher.sendMessage('Co-registered points', (None, (wx, wy, wz, 0., 0., 0.)))
 
         iren.Render()
 

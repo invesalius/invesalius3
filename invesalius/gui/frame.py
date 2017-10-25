@@ -707,7 +707,7 @@ class MenuBar(wx.MenuBar):
         sub(self.OnEnableState, "Enable state project")
         sub(self.OnEnableUndo, "Enable undo")
         sub(self.OnEnableRedo, "Enable redo")
-        sub(self.OnEnableNavigation, "Navigation Status")
+        sub(self.OnEnableNavigation, "Navigation status")
 
         sub(self.OnAddMask, "Add mask")
         sub(self.OnRemoveMasks, "Remove masks")

@@ -258,7 +258,8 @@ def dynamic_reference(probe, reference):
     coord_rot = m_rot.T * vet
     coord_rot = np.squeeze(np.asarray(coord_rot))
 
-    return coord_rot[0], coord_rot[1], coord_rot[2], probe[3], probe[4], probe[5]
+    return coord_rot[0], coord_rot[1], coord_rot[2],\
+           probe[3] - reference[3], probe[4] - reference[4], probe[5] - reference[5]
 
 
 def str2float(data):
