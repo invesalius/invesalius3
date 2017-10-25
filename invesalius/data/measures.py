@@ -134,8 +134,6 @@ class MeasurementManager(object):
         for i in dict:
             m = dict[i]
 
-            print m
-
             if isinstance(m, DensityMeasurement):
                 mr = CircleDensityMeasure(map_id_locations[m.location],
                                           m.slice_number,
@@ -1269,7 +1267,6 @@ class PolygonDensityMeasure(object):
             if self._need_calc:
                 self.calc_density(canvas)
             if self.text_box:
-                print "GC", gc
                 self.text_box.draw_to_canvas(gc, canvas)
 
     def insert_point(self, point):
@@ -1280,7 +1277,6 @@ class PolygonDensityMeasure(object):
             self._need_calc = True
 
     def calc_density(self, canvas):
-        print "Density"
         from invesalius.data.slice_ import Slice
 
         slc = Slice()
@@ -1310,12 +1306,12 @@ class PolygonDensityMeasure(object):
             plg_points = [(y/sx, z/sy) for (x, y, z) in self.points]
 
         plg_tmp = Polygon(plg_points, fill=True,
-                          line_colour=(0, 0, 0, 0),
-                          fill_colour=(255, 255, 255, 255), width=0,
+                          line_colour=(255, 255, 255, 255),
+                          fill_colour=(255, 255, 255, 255), width=1,
                           interactive=False, is_3d=False)
         h, w = img_slice.shape
         arr = canvas.draw_element_to_array([plg_tmp, ], size=(w, h), flip=False)
-        mask = (arr[:, :, 0] == 255)
+        mask = arr[:, :, 0] == 255
 
         try:
             m[:] = 0
@@ -1341,6 +1337,8 @@ class PolygonDensityMeasure(object):
 
         self.set_density_values(_min, _max, _mean, _std)
 
+        self._need_calc = False
+
     def set_measurement(self, dm):
         self._measurement = dm
 
@@ -1352,8 +1350,9 @@ class PolygonDensityMeasure(object):
         if self.interactive:
             if self.polygon.is_over(x, y):
                 return self.polygon.is_over(x, y)
-            elif self.text_box.is_over(x, y):
-                return self.text_box.is_over(x, y)
+            if self.text_box is not None:
+                if self.text_box.is_over(x, y):
+                    return self.text_box.is_over(x, y)
             return None
 
     def set_density_values(self, _min, _max, _mean, _std):

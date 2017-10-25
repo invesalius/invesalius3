@@ -270,10 +270,8 @@ class CanvasRendererCTX:
         if size is None:
             size = self.canvas_renderer.GetSize()
         w, h = size
-        print "size", w, h
         image = wx.EmptyImage(w, h)
         image.Clear()
-        print "image size", image.GetSize()
 
         arr = np.zeros((h, w, 4), dtype=np.uint8)
 
@@ -301,7 +299,6 @@ class CanvasRendererCTX:
         self.gc = old_gc
 
         bitmap = image.ConvertToBitmap()
-        print 'bitmap size', bitmap.GetSize()
         bitmap.CopyToBuffer(arr, wx.BitmapBufferFormat_RGBA)
 
         if flip:
@@ -684,9 +681,7 @@ class TextBox(CanvasHandlerBase):
                                               txt_colour=self.text_colour,
                                               bg_colour=self.box_colour)
             if self._highlight:
-                print 'highlight'
                 rw, rh = canvas.evt_renderer.GetSize()
-                print (rw, rh), (x, y), (px, py)
                 canvas.draw_rectangle((px, py), w, h,
                                       (255, 0, 0, 25),
                                       (255, 0, 0, 25))
@@ -705,8 +700,6 @@ class TextBox(CanvasHandlerBase):
         mx, my = evt.position
         x, y, z = evt.viewer.get_coordinate_cursor(mx, my)
         self.position = [i - j + k  for (i, j, k) in zip((x, y, z), self._last_position, self.position)]
-
-        print self.position
 
         self._last_position = (x, y, z)
 
@@ -813,10 +806,13 @@ class Polygon(CanvasHandlerBase):
         self._ref_handlers[handler] = len(self.points) - 1
 
     def on_move_point(self, obj, evt):
-        pos = obj.position
-        handler = obj
-        point = self._ref_handlers[handler]
-        self.points[point] = pos
+        #  pos = obj.position
+        #  handler = obj
+        #  point = self._ref_handlers[handler]
+        #  self.points[point] = pos
+        self.points = []
+        for handler in self.handlers:
+            self.points.append(handler.position)
 
         if self._on_change_function and self._on_change_function():
             self._on_change_function()()
