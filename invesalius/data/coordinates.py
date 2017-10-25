@@ -242,8 +242,8 @@ def dynamic_reference(probe, reference):
     """
     a, b, g = np.radians(reference[3:6])
 
-    vet = probe[0:3] - reference[0:3]
-    vet = np.mat(vet.reshape(3, 1))
+    vet = np.asmatrix(probe[0:3] - reference[0:3])
+    # vet = np.mat(vet.reshape(3, 1))
 
     # Attitude matrix given by Patriot manual
     # a: rotation of plane (X, Y) around Z axis (azimuth)
@@ -255,7 +255,8 @@ def dynamic_reference(probe, reference):
                     cos(g) * sin(b) * sin(a) - sin(g) * cos(a)],
                    [-sin(b), sin(g) * cos(b), cos(b) * cos(g)]])
 
-    coord_rot = m_rot.T * vet
+    # coord_rot = m_rot.T * vet
+    coord_rot = vet*m_rot
     coord_rot = np.squeeze(np.asarray(coord_rot))
 
     return coord_rot[0], coord_rot[1], coord_rot[2],\
