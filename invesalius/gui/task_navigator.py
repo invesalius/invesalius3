@@ -712,11 +712,38 @@ class ObjectRegistrationPanel(wx.Panel):
         line_save = wx.BoxSizer(wx.HORIZONTAL)
         line_save.Add(btn_save, 1, wx.LEFT| wx.TOP | wx.RIGHT, 4)
 
+        # Change angles threshold
+        text_angles = wx.StaticText(self, -1, _("Angle threshold [degrees]:"))
+        spin_size_angles = wx.SpinCtrl(self, -1, "", size=wx.Size(40, 23))
+        spin_size_angles.SetRange(1, 99)
+        spin_size_angles.SetValue(const.COIL_ANGLES_THRESHOLD)
+        spin_size_angles.Bind(wx.EVT_TEXT, partial(self.OnSelectAngleThreshold, ctrl=spin_size_angles))
+        spin_size_angles.Bind(wx.EVT_SPINCTRL, partial(self.OnSelectAngleThreshold, ctrl=spin_size_angles))
+
+        # Change dist threshold
+        text_dist = wx.StaticText(self, -1, _("Distance threshold [mm]:"))
+        spin_size_dist = wx.SpinCtrl(self, -1, "", size=wx.Size(40, 23))
+        spin_size_dist.SetRange(1, 99)
+        spin_size_dist.SetValue(const.COIL_ANGLES_THRESHOLD)
+        spin_size_dist.Bind(wx.EVT_TEXT, partial(self.OnSelectDistThreshold, ctrl=spin_size_dist))
+        spin_size_dist.Bind(wx.EVT_SPINCTRL, partial(self.OnSelectDistThreshold, ctrl=spin_size_dist))
+
+        # Create a horizontal sizer to threshold configs
+        line_angle_threshold = wx.BoxSizer(wx.HORIZONTAL)
+        line_angle_threshold.AddMany([(text_angles, 1, wx.EXPAND | wx.GROW | wx.TOP| wx.RIGHT | wx.LEFT, 5),
+                                      (spin_size_angles, 0, wx.ALL | wx.EXPAND | wx.GROW, 5)])
+
+        line_dist_threshold = wx.BoxSizer(wx.HORIZONTAL)
+        line_dist_threshold.AddMany([(text_dist, 1, wx.EXPAND | wx.GROW | wx.TOP| wx.RIGHT | wx.LEFT, 5),
+                                      (spin_size_dist, 0, wx.ALL | wx.EXPAND | wx.GROW, 5)])
+
         # Add line sizers into main sizer
         main_sizer = wx.BoxSizer(wx.VERTICAL)
         main_sizer.Add(line_new, 0, wx.GROW | wx.EXPAND | wx.LEFT | wx.RIGHT | wx.TOP, 5)
         main_sizer.Add(line_import, 0, wx.GROW | wx.EXPAND | wx.LEFT | wx.RIGHT | wx.TOP, 5)
         main_sizer.Add(line_save, 0, wx.LEFT | wx.RIGHT | wx.TOP, 5)
+        main_sizer.Add(line_angle_threshold, 0, wx.GROW | wx.EXPAND | wx.LEFT | wx.RIGHT | wx.TOP, 5)
+        main_sizer.Add(line_dist_threshold, 0, wx.GROW | wx.EXPAND | wx.LEFT | wx.RIGHT | wx.TOP, 5)
         main_sizer.Fit(self)
 
         self.SetSizer(main_sizer)
@@ -727,6 +754,12 @@ class ObjectRegistrationPanel(wx.Panel):
 
     def UpdateTrackerInit(self, pubsub_evt):
         self.nav_prop = pubsub_evt.data
+
+    def OnSelectAngleThreshold(self, evt, ctrl):
+        Publisher.sendMessage('Update angle threshold', ctrl.GetValue())
+
+    def OnSelectDistThreshold(self, evt, ctrl):
+        Publisher.sendMessage('Update dist threshold', ctrl.GetValue())
 
     def OnComboCoil(self, evt):
         # coil_name = evt.GetString()
