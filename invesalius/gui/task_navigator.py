@@ -38,6 +38,7 @@ import invesalius.data.coordinates as dco
 import invesalius.data.coregistration as dcr
 import invesalius.data.trackers as dt
 import invesalius.data.trigger as trig
+import invesalius.data.record_coords as rec
 import invesalius.gui.dialogs as dlg
 
 BTN_NEW = wx.NewId()
@@ -737,6 +738,14 @@ class ObjectRegistrationPanel(wx.Panel):
         line_dist_threshold.AddMany([(text_dist, 1, wx.EXPAND | wx.GROW | wx.TOP| wx.RIGHT | wx.LEFT, 5),
                                       (spin_size_dist, 0, wx.ALL | wx.EXPAND | wx.GROW, 5)])
 
+        # Check box for trigger monitoring to create markers from serial port
+        checkrecordcoords = wx.CheckBox(self, -1, _('Record coordinates'))
+        checkrecordcoords.SetToolTip(tooltip)
+        checkrecordcoords.SetValue(False)
+        checkrecordcoords.Enable(0)
+        checkrecordcoords.Bind(wx.EVT_CHECKBOX, partial(self.RecordCoords, ctrl=checkrecordcoords))
+        self.checkrecordcoords = checkrecordcoords
+
         # Add line sizers into main sizer
         main_sizer = wx.BoxSizer(wx.VERTICAL)
         main_sizer.Add(line_new, 0, wx.GROW | wx.EXPAND | wx.LEFT | wx.RIGHT | wx.TOP, 5)
@@ -744,6 +753,7 @@ class ObjectRegistrationPanel(wx.Panel):
         main_sizer.Add(line_save, 0, wx.LEFT | wx.RIGHT | wx.TOP, 5)
         main_sizer.Add(line_angle_threshold, 0, wx.GROW | wx.EXPAND | wx.LEFT | wx.RIGHT | wx.TOP, 5)
         main_sizer.Add(line_dist_threshold, 0, wx.GROW | wx.EXPAND | wx.LEFT | wx.RIGHT | wx.TOP, 5)
+        main_sizer.Add(checkrecordcoords, 0, wx.GROW | wx.EXPAND | wx.LEFT | wx.RIGHT | wx.TOP, 10)
         main_sizer.Fit(self)
 
         self.SetSizer(main_sizer)
@@ -751,15 +761,35 @@ class ObjectRegistrationPanel(wx.Panel):
 
     def __bind_events(self):
         Publisher.subscribe(self.UpdateTrackerInit, 'Update tracker initializer')
+        Publisher.subscribe(self.UpdateNavigationStatus, 'Navigation status')
 
     def UpdateTrackerInit(self, pubsub_evt):
         self.nav_prop = pubsub_evt.data
+
+    def UpdateNavigationStatus(self, pubsub_evt):
+        nav_status = pubsub_evt.data
+        if nav_status:
+            self.checkrecordcoords.Enable(1)
+        else:
+            self.RecordCoords(nav_status, self.checkrecordcoords)
+            self.checkrecordcoords.SetValue(False)
+            self.checkrecordcoords.Enable(0)
 
     def OnSelectAngleThreshold(self, evt, ctrl):
         Publisher.sendMessage('Update angle threshold', ctrl.GetValue())
 
     def OnSelectDistThreshold(self, evt, ctrl):
         Publisher.sendMessage('Update dist threshold', ctrl.GetValue())
+
+    def RecordCoords(self, evt, ctrl):
+        if ctrl.GetValue() and evt:
+            self.thr_record = rec.Record(ctrl.GetValue())
+        elif ctrl.GetValue() and not evt:
+            self.thr_record.stop()
+        elif not ctrl.GetValue() and evt:
+            self.thr_record.stop()
+        elif not ctrl.GetValue() and not evt:
+            None
 
     def OnComboCoil(self, evt):
         # coil_name = evt.GetString()

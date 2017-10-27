@@ -481,6 +481,36 @@ def ShowSaveMarkersDialog(default_filename=None):
     os.chdir(current_dir)
     return filename
 
+def ShowSaveCoordsDialog(default_filename=None):
+    current_dir = os.path.abspath(".")
+    dlg = wx.FileDialog(None,
+                        _("Save coords as..."),  # title
+                        "",  # last used directory
+                        default_filename,
+                        _("Coordinates files (*.csv)|*.csv"),
+                        wx.SAVE | wx.OVERWRITE_PROMPT)
+    # dlg.SetFilterIndex(0) # default is VTI
+
+    filename = None
+    try:
+        if dlg.ShowModal() == wx.ID_OK:
+            filename = dlg.GetPath()
+            ok = 1
+        else:
+            ok = 0
+    except(wx._core.PyAssertionError):  # TODO: fix win64
+        filename = dlg.GetPath()
+        ok = 1
+
+    if (ok):
+        extension = "csv"
+        if sys.platform != 'win32':
+            if filename.split(".")[-1] != extension:
+                filename = filename + "." + extension
+
+    os.chdir(current_dir)
+    return filename
+
 
 def ShowLoadMarkersDialog():
     current_dir = os.path.abspath(".")
