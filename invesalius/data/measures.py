@@ -1248,7 +1248,7 @@ class PolygonDensityMeasure(object):
 
         self._measurement = None
 
-        self.polygon = Polygon(fill=False, line_colour=self.colour)
+        self.polygon = Polygon(fill=False, closed=False, line_colour=self.colour)
         self.polygon.on_change(self.on_change_polygon)
         self.text_box = None
 
@@ -1273,8 +1273,11 @@ class PolygonDensityMeasure(object):
         print "insert points", len(self.points)
         self.polygon.append_point(point)
         self.points.append(point)
-        if len(self.points) >= 3:
-            self._need_calc = True
+
+    def complete_polygon(self):
+        #  if len(self.points) >= 3:
+        self.polygon.closed = True
+        self._need_calc = True
 
     def calc_density(self, canvas):
         from invesalius.data.slice_ import Slice

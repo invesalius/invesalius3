@@ -78,6 +78,7 @@ class CanvasRendererCTX:
         self._callback_events = {
             'LeftButtonPressEvent': [],
             'LeftButtonReleaseEvent': [],
+            'LeftButtonDoubleClickEvent': [],
             'MouseMoveEvent': [],
         }
 
@@ -88,6 +89,7 @@ class CanvasRendererCTX:
         iren.Bind(wx.EVT_MOTION, self.OnMouseMove)
         iren.Bind(wx.EVT_LEFT_DOWN, self.OnLeftButtonPress)
         iren.Bind(wx.EVT_LEFT_UP, self.OnLeftButtonRelease)
+        iren.Bind(wx.EVT_LEFT_DCLICK, self.OnDoubleClick)
         self.canvas_renderer.AddObserver("StartEvent", self.OnPaint)
 
     def subscribe_event(self, event, callback):
@@ -203,6 +205,19 @@ class CanvasRendererCTX:
     def OnLeftButtonRelease(self, evt):
         self._over_obj = None
         self._drag_obj = None
+        evt.Skip()
+
+    def OnDoubleClick(self, evt):
+        x, y = evt.GetPosition()
+        y = self.viewer.interactor.GetSize()[1] - y
+        evt_obj = CanvasEvent('double_left_click', (x, y), self.viewer, self.evt_renderer,
+                              control_down=evt.ControlDown(),
+                              alt_down=evt.AltDown(),
+                              shift_down=evt.ShiftDown())
+        for cb in self._callback_events['LeftButtonDoubleClickEvent']:
+            if cb() is not None:
+                cb()(evt_obj)
+                break
         evt.Skip()
 
     def OnPaint(self, evt, obj):
@@ -609,7 +624,7 @@ class CanvasRendererCTX:
         gc.StrokePath(path)
         self._drawn = True
 
-    def draw_polygon(self, points, fill=True, line_colour=(255, 255, 255, 255),
+    def draw_polygon(self, points, fill=True, closed=False, line_colour=(255, 255, 255, 255),
                      fill_colour=(255, 255, 255, 255), width=2):
 
         if self.gc is None:
@@ -628,8 +643,9 @@ class CanvasRendererCTX:
                 px, py = point
                 path.AddLineToPoint((px, -py))
 
-            px, py = points[0]
-            path.AddLineToPoint((px, -py))
+            if closed:
+                px, py = points[0]
+                path.AddLineToPoint((px, -py))
 
             gc.StrokePath(path)
             gc.FillPath(path)
@@ -758,6 +774,7 @@ class CircleHandler(CanvasHandlerBase):
 class Polygon(CanvasHandlerBase):
     def __init__(self, points=None,
                  fill=True,
+                 closed=True,
                  line_colour=(255, 255, 255, 255),
                  fill_colour=(255, 255, 255, 128), width=2,
                  interactive=True, is_3d=True):
@@ -772,6 +789,7 @@ class Polygon(CanvasHandlerBase):
         self._ref_handlers = {}
 
         self.fill = fill
+        self.closed = closed
         self.line_colour = line_colour
 
         if self.fill:
@@ -791,7 +809,7 @@ class Polygon(CanvasHandlerBase):
                 points = [self._3d_to_2d(canvas.evt_renderer, p) for p in self.points]
             else:
                 points = self.points
-            canvas.draw_polygon(points, self.fill, self.line_colour, self.fill_colour, self.width)
+            canvas.draw_polygon(points, self.fill, self.closed, self.line_colour, self.fill_colour, self.width)
 
         if self.interactive:
             for handler in self.handlers:

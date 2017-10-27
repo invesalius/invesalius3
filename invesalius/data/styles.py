@@ -558,6 +558,7 @@ class DensityMeasureStyle(DefaultInteractorStyle):
         #  self.AddObserver("MouseMoveEvent", self.OnMoveMeasurePoint)
         #  self.AddObserver("LeaveEvent", self.OnLeaveMeasureInteractor)
         self.viewer.canvas.subscribe_event('LeftButtonPressEvent', self.OnInsertPoint)
+        self.viewer.canvas.subscribe_event('LeftButtonDoubleClickEvent', self.OnInsertPolygon)
 
     def SetUp(self):
         for n in self.viewer.draw_by_slice_number:
@@ -633,6 +634,14 @@ class DensityMeasureStyle(DefaultInteractorStyle):
             Publisher.sendMessage("Add density measurement", m)
 
         self.viewer.UpdateCanvas()
+
+    def OnInsertPolygon(self, evt):
+        if self._last_measure:
+            m = self._last_measure
+            if len(m.points) >= 3:
+                m.complete_polygon()
+                self._last_measure = None
+                self.viewer.UpdateCanvas()
 
 
 class PanMoveInteractorStyle(DefaultInteractorStyle):
