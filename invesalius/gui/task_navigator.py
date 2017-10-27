@@ -651,57 +651,22 @@ class ObjectRegistrationPanel(wx.Panel):
         self.obj_orients = None
         self.obj_ref_mode = None
         self.obj_name = None
+        self.timestamp = const.TIMESTAMP
 
         self.SetAutoLayout(1)
         self.__bind_events()
 
         # Button for creating new coil
-        BMP_ADD = wx.Bitmap(os.path.join(const.ICON_DIR, "object_add.png"), wx.BITMAP_TYPE_PNG)
-        btn_new_obj = pbtn.PlateButton(self, BTN_NEW, "", BMP_ADD,
-                                           style=pbtn.PB_STYLE_SQUARE | pbtn.PB_STYLE_DEFAULT)
-        btn_new_obj.SetBackgroundColour(self.GetBackgroundColour())
-        self.Bind(wx.EVT_BUTTON, self.OnLinkCreate, btn_new_obj)
-
-        # Fixed hyperlink items
         tooltip = wx.ToolTip(_("Create new coil"))
-        link_new_obj = hl.HyperLinkCtrl(self, -1, _("Create new coil"))
-        link_new_obj.SetUnderlines(False, False, False)
-        link_new_obj.SetBold(True)
-        link_new_obj.SetColours("BLACK", "BLACK", "BLACK")
-        link_new_obj.SetBackgroundColour(self.GetBackgroundColour())
+        link_new_obj = wx.Button(self, -1, _("New"), size=wx.Size(65, 23))
         link_new_obj.SetToolTip(tooltip)
-        link_new_obj.AutoBrowse(False)
-        link_new_obj.UpdateLink()
-        link_new_obj.Bind(hl.EVT_HYPERLINK_LEFT, self.OnLinkCreate)
+        link_new_obj.Bind(wx.EVT_BUTTON, self.OnLinkCreate)
 
-        # Create horizontal sizers to represent lines in the panel
-        line_new = wx.BoxSizer(wx.HORIZONTAL)
-        line_new.Add(link_new_obj, 1, wx.EXPAND|wx.GROW| wx.TOP|wx.RIGHT, 4)
-        line_new.Add(btn_new_obj, 0, wx.ALL|wx.EXPAND|wx.GROW, 0)
-
-        # Button for import coil
-        BMP_LOAD = wx.Bitmap(os.path.join(const.ICON_DIR, "file_import.png"), wx.BITMAP_TYPE_PNG)
-        btn_load_reg = pbtn.PlateButton(self, BTN_IMPORT_LOCAL, "", BMP_LOAD,
-                                        style=pbtn.PB_STYLE_SQUARE | pbtn.PB_STYLE_DEFAULT)
-        btn_load_reg.SetBackgroundColour(self.GetBackgroundColour())
-        self.Bind(wx.EVT_BUTTON, self.OnLinkLoad, btn_load_reg)
-
-        # Fixed hyperlink items
+        # Button for import config coil file
         tooltip = wx.ToolTip(_("Load coil configuration file"))
-        link_load_obj = hl.HyperLinkCtrl(self, -1, _("Load coil configuration"))
-        link_load_obj.SetUnderlines(False, False, False)
-        link_load_obj.SetBold(True)
-        link_load_obj.SetColours("BLACK", "BLACK", "BLACK")
-        link_load_obj.SetBackgroundColour(self.GetBackgroundColour())
+        link_load_obj = wx.Button(self, -1, _("Load"), size=wx.Size(65, 23))
         link_load_obj.SetToolTip(tooltip)
-        link_load_obj.AutoBrowse(False)
-        link_load_obj.UpdateLink()
-        link_load_obj.Bind(hl.EVT_HYPERLINK_LEFT, self.OnLinkLoad)
-
-        # Create horizontal sizers to represent lines in the panel
-        line_import = wx.BoxSizer(wx.HORIZONTAL)
-        line_import.Add(link_load_obj, 1, wx.EXPAND|wx.GROW| wx.TOP|wx.RIGHT, 4)
-        line_import.Add(btn_load_reg, 0, wx.ALL|wx.EXPAND|wx.GROW, 0)
+        link_load_obj.Bind(wx.EVT_BUTTON, self.OnLinkLoad)
 
         # Save button for object registration
         tooltip = wx.ToolTip(_(u"Save object registration file"))
@@ -711,11 +676,13 @@ class ObjectRegistrationPanel(wx.Panel):
 
         # Create a horizontal sizer to represent button save
         line_save = wx.BoxSizer(wx.HORIZONTAL)
-        line_save.Add(btn_save, 1, wx.LEFT| wx.TOP | wx.RIGHT, 4)
+        line_save.Add(link_new_obj, 1, wx.LEFT| wx.TOP | wx.RIGHT, 4)
+        line_save.Add(link_load_obj, 1, wx.LEFT | wx.TOP | wx.RIGHT, 4)
+        line_save.Add(btn_save, 1, wx.LEFT | wx.TOP | wx.RIGHT, 4)
 
         # Change angles threshold
         text_angles = wx.StaticText(self, -1, _("Angle threshold [degrees]:"))
-        spin_size_angles = wx.SpinCtrl(self, -1, "", size=wx.Size(40, 23))
+        spin_size_angles = wx.SpinCtrl(self, -1, "", size=wx.Size(50, 23))
         spin_size_angles.SetRange(1, 99)
         spin_size_angles.SetValue(const.COIL_ANGLES_THRESHOLD)
         spin_size_angles.Bind(wx.EVT_TEXT, partial(self.OnSelectAngleThreshold, ctrl=spin_size_angles))
@@ -723,11 +690,20 @@ class ObjectRegistrationPanel(wx.Panel):
 
         # Change dist threshold
         text_dist = wx.StaticText(self, -1, _("Distance threshold [mm]:"))
-        spin_size_dist = wx.SpinCtrl(self, -1, "", size=wx.Size(40, 23))
+        spin_size_dist = wx.SpinCtrl(self, -1, "", size=wx.Size(50, 23))
         spin_size_dist.SetRange(1, 99)
         spin_size_dist.SetValue(const.COIL_ANGLES_THRESHOLD)
         spin_size_dist.Bind(wx.EVT_TEXT, partial(self.OnSelectDistThreshold, ctrl=spin_size_dist))
         spin_size_dist.Bind(wx.EVT_SPINCTRL, partial(self.OnSelectDistThreshold, ctrl=spin_size_dist))
+
+        # Change timestamp interval
+        text_timestamp = wx.StaticText(self, -1, _("Timestamp interval [s]:"))
+        spin_timestamp_dist = wx.SpinCtrlDouble(self, -1, "", size=wx.Size(50, 23), inc = 0.1)
+        spin_timestamp_dist.SetRange(0.5, 60.0)
+        spin_timestamp_dist.SetValue(self.timestamp)
+        spin_timestamp_dist.Bind(wx.EVT_TEXT, partial(self.OnSelectTimestamp, ctrl=spin_timestamp_dist))
+        spin_timestamp_dist.Bind(wx.EVT_SPINCTRL, partial(self.OnSelectTimestamp, ctrl=spin_timestamp_dist))
+        self.spin_timestamp_dist = spin_timestamp_dist
 
         # Create a horizontal sizer to threshold configs
         line_angle_threshold = wx.BoxSizer(wx.HORIZONTAL)
@@ -738,9 +714,12 @@ class ObjectRegistrationPanel(wx.Panel):
         line_dist_threshold.AddMany([(text_dist, 1, wx.EXPAND | wx.GROW | wx.TOP| wx.RIGHT | wx.LEFT, 5),
                                       (spin_size_dist, 0, wx.ALL | wx.EXPAND | wx.GROW, 5)])
 
+        line_timestamp = wx.BoxSizer(wx.HORIZONTAL)
+        line_timestamp.AddMany([(text_timestamp, 1, wx.EXPAND | wx.GROW | wx.TOP| wx.RIGHT | wx.LEFT, 5),
+                                      (spin_timestamp_dist, 0, wx.ALL | wx.EXPAND | wx.GROW, 5)])
+
         # Check box for trigger monitoring to create markers from serial port
         checkrecordcoords = wx.CheckBox(self, -1, _('Record coordinates'))
-        checkrecordcoords.SetToolTip(tooltip)
         checkrecordcoords.SetValue(False)
         checkrecordcoords.Enable(0)
         checkrecordcoords.Bind(wx.EVT_CHECKBOX, partial(self.RecordCoords, ctrl=checkrecordcoords))
@@ -748,12 +727,11 @@ class ObjectRegistrationPanel(wx.Panel):
 
         # Add line sizers into main sizer
         main_sizer = wx.BoxSizer(wx.VERTICAL)
-        main_sizer.Add(line_new, 0, wx.GROW | wx.EXPAND | wx.LEFT | wx.RIGHT | wx.TOP, 5)
-        main_sizer.Add(line_import, 0, wx.GROW | wx.EXPAND | wx.LEFT | wx.RIGHT | wx.TOP, 5)
-        main_sizer.Add(line_save, 0, wx.LEFT | wx.RIGHT | wx.TOP, 5)
+        main_sizer.Add(line_save, 0, wx.LEFT | wx.RIGHT | wx.TOP | wx.ALIGN_CENTER_HORIZONTAL, 5)
         main_sizer.Add(line_angle_threshold, 0, wx.GROW | wx.EXPAND | wx.LEFT | wx.RIGHT | wx.TOP, 5)
         main_sizer.Add(line_dist_threshold, 0, wx.GROW | wx.EXPAND | wx.LEFT | wx.RIGHT | wx.TOP, 5)
-        main_sizer.Add(checkrecordcoords, 0, wx.GROW | wx.EXPAND | wx.LEFT | wx.RIGHT | wx.TOP, 10)
+        main_sizer.Add(line_timestamp, 0, wx.GROW | wx.EXPAND | wx.LEFT | wx.RIGHT | wx.TOP, 5)
+        main_sizer.Add(checkrecordcoords, 0, wx.GROW | wx.EXPAND | wx.LEFT | wx.RIGHT, 10)
         main_sizer.Fit(self)
 
         self.SetSizer(main_sizer)
@@ -781,12 +759,15 @@ class ObjectRegistrationPanel(wx.Panel):
     def OnSelectDistThreshold(self, evt, ctrl):
         Publisher.sendMessage('Update dist threshold', ctrl.GetValue())
 
+    def OnSelectTimestamp(self, evt, ctrl):
+        self.timestamp = ctrl.GetValue()
+
     def RecordCoords(self, evt, ctrl):
         if ctrl.GetValue() and evt:
-            self.thr_record = rec.Record(ctrl.GetValue())
-        elif ctrl.GetValue() and not evt:
-            self.thr_record.stop()
-        elif not ctrl.GetValue() and evt:
+            self.spin_timestamp_dist.Enable(0)
+            self.thr_record = rec.Record(ctrl.GetValue(), self.timestamp)
+        elif (not ctrl.GetValue() and evt) or (ctrl.GetValue() and not evt) :
+            self.spin_timestamp_dist.Enable(1)
             self.thr_record.stop()
         elif not ctrl.GetValue() and not evt:
             None
@@ -834,17 +815,16 @@ class ObjectRegistrationPanel(wx.Panel):
                                   (self.obj_fiducials, self.obj_orients, self.obj_ref_mode))
             Publisher.sendMessage('Create object polydata', self.obj_name)
             Publisher.sendMessage('Update status text in GUI', _("Ready"))
-        else:
-            wx.MessageBox(_("InVesalius was not able to import this registration file"), _("Import error"))
 
     def ShowSaveObjectDialog(self, evt):
         if np.isnan(self.obj_fiducials).any() or np.isnan(self.obj_orients).any():
             wx.MessageBox(_("Digitize all object fiducials before saving"), _("Save error"))
         else:
             filename = dlg.ShowSaveRegistrationDialog("object_registration.obr")
-            hdr = 'Object' + "\t" + self.obj_name + "\t" + 'Reference' + "\t" + str('%d' % self.obj_ref_mode)
-            data = np.hstack([self.obj_fiducials, self.obj_orients])
-            np.savetxt(filename, data, fmt='%.4f', delimiter='\t', newline='\n', header=hdr)
+            if filename:
+                hdr = 'Object' + "\t" + self.obj_name + "\t" + 'Reference' + "\t" + str('%d' % self.obj_ref_mode)
+                data = np.hstack([self.obj_fiducials, self.obj_orients])
+                np.savetxt(filename, data, fmt='%.4f', delimiter='\t', newline='\n', header=hdr)
 
 
 class MarkersPanel(wx.Panel):

@@ -31,10 +31,11 @@ class Record(threading.Thread):
     Thread created to save obj coords with software during neuronavigation
     """
 
-    def __init__(self, nav_id):
+    def __init__(self, nav_id, timestamp):
         threading.Thread.__init__(self)
         self.nav_id = nav_id
         self.coord = None
+        self.timestamp = timestamp
         self.coord_list = array([])
         self.__bind_events()
         self._pause_ = False
@@ -57,7 +58,7 @@ class Record(threading.Thread):
         initial_time = time.time()
         while self.nav_id:
             relative_time = asarray(time.time() - initial_time)
-            time.sleep(2)
+            time.sleep(self.timestamp)
             if self.coord_list.size == 0:
                 self.coord_list = hstack((relative_time, self.coord))
             else:
