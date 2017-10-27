@@ -1,5 +1,6 @@
 from math import sqrt
 import numpy as np
+import invesalius.data.coordinates as dco
 
 
 def angle_calculation(ap_axis, coil_axis):
@@ -135,24 +136,20 @@ def flip_x(point):
     return x, y, z
 
 
-def object_registration(fiducials):
+def object_registration(fiducials, orients):
     """
 
     :param fiducials:
-    :param bases_coreg:
+    :param orients:
     :return:
     """
 
-    # minv, n, q1, q2 = bases_coreg
+    coords = np.hstack((fiducials, orients))
+    fids_1 = np.zeros([3, 3])
 
-    obj_center_trck = np.asmatrix(fiducials[3, :]).reshape([3, 1])
-    obj_sensor_trck = np.asmatrix(fiducials[4, :]).reshape([3, 1])
-    # obj_center = q1 + (minv * n) * (obj_center_trck - q2)
-    # obj_sensor = q1 + (minv * n) * (obj_sensor_trck - q2)
-    # obj_center_img = obj_center[0, 0], obj_center[1, 0], obj_center[2, 0]
-    # obj_sensor_img = obj_sensor[0, 0], obj_sensor[1, 0], obj_sensor[2, 0]
-    fids = fiducials[0:4, :] - fiducials[4, :]
-    # m_trck, q_trck, m_inv_trck = base_creation(fiducials)
+    for ic in range(0, 3):
+        fids_1[ic, :] = dco.dynamic_reference(coords[0, :], coords[4, :])[:3]
 
-    return obj_center_trck, obj_sensor_trck, fids
-    # return obj_center_img, obj_sensor_trck, m_inv_trck, obj_center_trck, obj_sensor_img
+    obj_center_trck = fiducials[3, :] - fiducials[4, :]
+
+    return obj_center_trck, fids_1

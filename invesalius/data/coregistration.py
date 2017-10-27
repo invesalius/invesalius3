@@ -19,8 +19,9 @@
 
 import threading
 from time import sleep
+from math import cos, sin
 
-from numpy import mat, asmatrix, asarray, array
+from numpy import mat, asmatrix, radians
 import wx
 from wx.lib.pubsub import pub as Publisher
 
@@ -246,44 +247,44 @@ class CoregistrationObjectDynamic(threading.Thread):
         # obj_ref_id = self.obj_data[3]
 
         obj_center_trck = self.obj_data[0]
-        obj_sensor_trck = self.obj_data[1]
-        obj_ref_id = self.obj_data[2]
-        fiducials = self.obj_data[3]
+        m_obj = self.obj_data[1]
+        m_inv_obj = self.obj_data[2]
 
         while self.nav_id:
             coord_raw = dco.GetCoordinates(trck_init, trck_id, trck_mode)
 
-            if obj_ref_id:
-                trck_coord = dco.dynamic_reference(coord_raw[2, :], coord_raw[1, :])
-            else:
-                trck_coord = dco.dynamic_reference(coord_raw[0, :], coord_raw[1, :])
+            coord_raw[0, :3] += obj_center_trck
 
-            coord_2 = asarray(trck_coord[0:3]).squeeze()
-            v1 = fiducials[0:3, :] + coord_2
-            # v1 = fiducials[0:4, :]
-            # m_trck, q_trck, m_inv_trck = db.base_creation(fiducials)
-            v0 = array([[1, 0, 0], [0, 1, 0], [0, 0, 1]])
-            ma = transf.superimposition_matrix(asarray(v1), v0)
-            scale, shear, angles, trans, persp = transf.decompose_matrix(ma)
-            m_eul = transf.euler_matrix(*angles)
+            trck_coord = dco.dynamic_reference(coord_raw[0, :], coord_raw[1, :])
 
-            trck_xyz = asmatrix(trck_coord[0:3]).reshape([3, 1]) + (obj_center_trck - obj_sensor_trck)
+            img = q1 + (m_inv * n) * (asmatrix(trck_coord[:3]).reshape([3, 1]) - q2)
 
-            # cn = np.asarray(bn).reshape([1, 3]).squeeze()
+            a, b, g = radians(trck_coord[3:6])
 
-            img = q1 + (m_inv * n) * (trck_xyz - q2)
+            m_rot = mat([[cos(a) * cos(b), sin(b) * sin(g) * cos(a) - cos(g) * sin(a),
+                          cos(a) * sin(b) * cos(g) + sin(a) * sin(g)],
+                         [cos(b) * sin(a), sin(b) * sin(g) * sin(a) + cos(g) * cos(a),
+                          cos(g) * sin(b) * sin(a) - sin(g) * cos(a)],
+                         [-sin(b), sin(g) * cos(b), cos(b) * cos(g)]])
 
-            # coord = (float(img[0]), float(img[1]), float(img[2]), trck_coord[3],
-            #          trck_coord[4], trck_coord[5])
+            a, b, g = radians(coord_raw[1, 3:6])
+
+            m_rot_sensor = mat([[cos(a) * cos(b), sin(b) * sin(g) * cos(a) - cos(g) * sin(a),
+                          cos(a) * sin(b) * cos(g) + sin(a) * sin(g)],
+                         [cos(b) * sin(a), sin(b) * sin(g) * sin(a) + cos(g) * cos(a),
+                          cos(g) * sin(b) * sin(a) - sin(g) * cos(a)],
+                         [-sin(b), sin(g) * cos(b), cos(b) * cos(g)]])
+
+            m_rot_obj = m_obj*m_rot_sensor.T*m_rot*m_inv_obj
+
             coord = (float(img[0]), float(img[1]), float(img[2]), coord_raw[0, 3],
                      coord_raw[0, 4], coord_raw[0, 5])
-            # angles = coord_raw[0, 3:6]
 
             # Tried several combinations and different locations to send the messages,
             # however only this one does not block the GUI during navigation.
             # wx.CallAfter(Publisher.sendMessage, 'Co-registered points', coord[0:3])
             # wx.CallAfter(Publisher.sendMessage, 'Co-registered points', (m_inv_trck, coord))
-            wx.CallAfter(Publisher.sendMessage, 'Co-registered points', (m_eul, coord))
+            wx.CallAfter(Publisher.sendMessage, 'Co-registered points', (m_rot_obj, coord))
             # wx.CallAfter(Publisher.sendMessage, 'Set camera in volume', coord)
             # wx.CallAfter(Publisher.sendMessage, 'Update object orientation',
             #              (m_inv_trck, coord))

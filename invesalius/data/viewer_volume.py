@@ -1079,15 +1079,16 @@ class Viewer(wx.Panel):
         """
 
         transform = vtk.vtkTransform()
+        transform.Scale(1, -1, -1)
         # transform.RotateY(180)
         # transform.RotateZ(-90)
 
-        m_rot = np.matrix([[1.0, 0.0, 0.0, 0.0],
-                           [0.0, -1.0, 0.0, 0.0],
-                           [0.0, 0.0, -1.0, 0.0],
-                           [0.0, 0.0, 0.0, 1.0]])
-        m_rot_vtk = self.array_to_vtkmatrix4x4(m_rot)
-        transform.SetMatrix(m_rot_vtk)
+        # m_rot = np.matrix([[1.0, 0.0, 0.0, 0.0],
+        #                    [0.0, -1.0, 0.0, 0.0],
+        #                    [0.0, 0.0, -1.0, 0.0],
+        #                    [0.0, 0.0, 0.0, 1.0]])
+        # m_rot_vtk = self.array_to_vtkmatrix4x4(m_rot)
+        # transform.SetMatrix(m_rot_vtk)
 
         transform_filt = vtk.vtkTransformPolyDataFilter()
         transform_filt.SetTransform(transform)
@@ -1095,7 +1096,8 @@ class Viewer(wx.Panel):
         transform_filt.Update()
 
         normals = vtk.vtkPolyDataNormals()
-        normals.SetInputData(transform_filt.GetOutput())
+        # normals.SetInputData(transform_filt.GetOutput())
+        normals.SetInputData(self.obj_polydata)
         normals.SetFeatureAngle(80)
         normals.AutoOrientNormalsOn()
         normals.Update()
@@ -1107,7 +1109,7 @@ class Viewer(wx.Panel):
 
         self.obj_actor = vtk.vtkActor()
         self.obj_actor.SetMapper(obj_mapper)
-        self.obj_actor.GetProperty().SetOpacity(1.)
+        self.obj_actor.GetProperty().SetOpacity(0.8)
         # self.obj_actor.GetProperty().SetColor()
         # self.obj_actor.SetVisibility(0)
 
@@ -1121,7 +1123,7 @@ class Viewer(wx.Panel):
 
         self.ren.AddActor(self.obj_actor)
         # self.ren.AddActor(self.obj_axes)
-        self.Refresh()
+        # self.Refresh()
 
     # def UpdateObjectOrientation(self, pubsub_evt):
     #     minv_trck = pubsub_evt.data[0]
@@ -1170,18 +1172,19 @@ class Viewer(wx.Panel):
     #     self.Refresh()
 
     def UpdateObjectOrientation(self, pubsub_evt):
-        m_eul = pubsub_evt.data[0]
+        m_rot_obj = pubsub_evt.data[0]
         # a, b, g = np.radians(pubsub_evt.data[1])
         coord = pubsub_evt.data[1]
         # self.OnUpdateObjectTargetGuide(coord)
 
         x, y, z = 0., 0., 0.
+        # x, y, z = coord[:3]
 
-        # pad = np.array([0.0, 0.0, 0.0])
-        # trans = np.array([[x], [y], [z], [1]])
-        # m_rot_affine = np.vstack([m_eul, pad])
-        # m_rot_affine = np.hstack([m_rot_affine, trans])
-        m_rot_vtk = self.array_to_vtkmatrix4x4(m_eul)
+        pad = np.array([0.0, 0.0, 0.0])
+        trans = np.array([[x], [y], [z], [1]])
+        m_rot_affine = np.vstack([m_rot_obj, pad])
+        m_rot_affine = np.hstack([m_rot_affine, trans])
+        m_rot_vtk = self.array_to_vtkmatrix4x4(m_rot_affine)
 
         # m_id = np.identity(3)
         # m_id_affine = np.vstack([m_id, pad])
@@ -1189,6 +1192,7 @@ class Viewer(wx.Panel):
         # m_id_vtk = self.array_to_vtkmatrix4x4(m_id_affine)
 
         self.obj_actor.SetUserMatrix(m_rot_vtk)
+        self.obj_actor.SetPosition(coord[:3])
         # self.obj_axes.SetUserMatrix(m_id_vtk)
 
         self.Refresh()

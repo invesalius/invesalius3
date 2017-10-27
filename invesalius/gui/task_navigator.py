@@ -30,6 +30,7 @@ from wx.lib.pubsub import pub as Publisher
 import wx.lib.colourselect as csel
 import wx.lib.platebtn as pbtn
 
+from math import cos, sin
 from time import sleep
 
 import invesalius.constants as const
@@ -589,15 +590,26 @@ class NeuronavigationPanel(wx.Panel):
                         obj_fiducials = self.obj_reg[0]
                         obj_orients = self.obj_reg[1]
                         obj_ref_id = self.obj_reg[2]
+                        fids_1 = np.zeros([3, 3])
 
-                        obj_center_trck, obj_sensor_trck, fiducials = db.object_registration(obj_fiducials)
-                        # obj_center_img, obj_sensor_trck, m_inv_trck, obj_center_trck, obj_sensor_img = db.object_registration(obj_fiducials, bases_coreg)
-                        obj_sensor_orient = obj_orients[4, :]
-                        obj_data = obj_center_trck, obj_sensor_trck, obj_ref_id, fiducials
+                        obj_center_trck, fids_0 = db.object_registration(obj_fiducials, obj_orients)
+
+                        if self.trk_init and self.tracker_id:
+                            coord_raw = dco.GetCoordinates(self.trk_init, self.tracker_id, self.ref_mode_id)
+                            if self.ref_mode_id:
+                                for ic in range(0, 3):
+                                    coord_raw[0, :3] += fids_0[ic, :]
+                                    fids_1[ic, :] = dco.dynamic_reference(coord_raw[0, :],
+                                                                          coord_raw[1, :])[:3]
+                                m_obj, q_obj, m_inv_obj = db.base_creation(fids_1)
+
+                        else:
+                            dlg.NavigationTrackerWarning(0, 'choose')
+
+                        obj_data = obj_center_trck, m_obj, m_inv_obj
 
                         # Only the m_inv is needed for change of basis
-                        # Publisher.sendMessage('Update object initial orientation',
-                        #                       (m_inv_trck, obj_sensor_orient, obj_center_img))
+                        # Publisher.sendMessage('Update object initial orientation', obj_data)
                         # Publisher.sendMessage('Update object initial orientation',
                         #                       (fiducials, obj_sensor_orient))
                         if self.ref_mode_id:
@@ -629,6 +641,16 @@ class NeuronavigationPanel(wx.Panel):
             self.correg.stop()
 
             Publisher.sendMessage("Navigation status", False)
+
+    def object_registration_update(self, obj_orient):
+        a, b, g = obj_orient
+        m_rot = np.mat([[cos(a) * cos(b), sin(b) * sin(g) * cos(a) - cos(g) * sin(a),
+                        cos(a) * sin(b) * cos(g) + sin(a) * sin(g)],
+                       [cos(b) * sin(a), sin(b) * sin(g) * sin(a) + cos(g) * cos(a),
+                        cos(g) * sin(b) * sin(a) - sin(g) * cos(a)],
+                       [-sin(b), sin(g) * cos(b), cos(b) * cos(g)]])
+
+
 
     def ResetTrackerFiducials(self):
         for m in range(3, 6):
