@@ -591,8 +591,9 @@ class NeuronavigationPanel(wx.Panel):
                         obj_orients = self.obj_reg[1]
                         obj_ref_id = self.obj_reg[2]
                         fids_1 = np.zeros([3, 3])
+                        m_obj_2 = np.zeros([3, 3])
 
-                        obj_center_trck, fids_0 = db.object_registration(obj_fiducials, obj_orients)
+                        obj_center_trck, fids_0, sensor_fixed_obj = db.object_registration(obj_fiducials, obj_orients)
 
                         if self.trk_init and self.tracker_id:
                             coord_raw = dco.GetCoordinates(self.trk_init, self.tracker_id, self.ref_mode_id)
@@ -602,6 +603,18 @@ class NeuronavigationPanel(wx.Panel):
                                     fids_1[ic, :] = dco.dynamic_reference(coord_raw[0, :],
                                                                           coord_raw[1, :])[:3]
                                 m_obj, q_obj, m_inv_obj = db.base_creation(fids_1)
+                                m_obj_2[0, :] = m_obj[2, :]
+                                m_obj_2[1, :] = m_obj[1, :]
+                                m_obj_2[2, :] = m_obj[0, :]
+                                m_obj_inv_2 = np.asmatrix(m_obj_2).I
+
+                                q_obj_arr = np.asarray(q_obj.reshape([1, 3])).squeeze()
+                                print q_obj_arr
+                                print sensor_fixed_obj
+
+                                obj_center_trck = q_obj_arr
+
+                                print obj_center_trck
 
                         else:
                             dlg.NavigationTrackerWarning(0, 'choose')

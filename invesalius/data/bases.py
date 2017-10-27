@@ -150,6 +150,8 @@ def object_registration(fiducials, orients):
     for ic in range(0, 3):
         fids_1[ic, :] = dco.dynamic_reference(coords[0, :], coords[4, :])[:3]
 
+    sensor_fixed_obj = dco.dynamic_reference(coords[4, :], coords[4, :])[:3]
+
     obj_center_trck = fiducials[3, :] - fiducials[4, :]
 
-    return obj_center_trck, fids_1
+    return obj_center_trck, fids_1, fiducials[4, :]

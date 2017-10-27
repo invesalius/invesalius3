@@ -138,6 +138,7 @@ class Viewer(wx.Panel):
         self.ball_actor = None
         self.obj_polydata = None
         self.obj_actor = None
+        self.obj_axes = None
         self.obj_state = None
         self.obj_actor_list = None
         self.arrow_actor_list = None
@@ -1079,7 +1080,7 @@ class Viewer(wx.Panel):
         """
 
         transform = vtk.vtkTransform()
-        transform.Scale(1, -1, -1)
+        # transform.Scale(1, -1, -1)
         # transform.RotateY(180)
         # transform.RotateZ(-90)
 
@@ -1113,16 +1114,16 @@ class Viewer(wx.Panel):
         # self.obj_actor.GetProperty().SetColor()
         # self.obj_actor.SetVisibility(0)
 
-        # self.obj_axes = vtk.vtkAxesActor()
-        # self.obj_axes.SetShaftTypeToCylinder()
-        # self.obj_axes.SetXAxisLabelText("x")
-        # self.obj_axes.SetYAxisLabelText("y")
-        # self.obj_axes.SetZAxisLabelText("z")
-        # self.obj_axes.SetTotalLength(50.0, 50.0, 50.0)
+        self.obj_axes = vtk.vtkAxesActor()
+        self.obj_axes.SetShaftTypeToCylinder()
+        self.obj_axes.SetXAxisLabelText("x")
+        self.obj_axes.SetYAxisLabelText("y")
+        self.obj_axes.SetZAxisLabelText("z")
+        self.obj_axes.SetTotalLength(50.0, 50.0, 50.0)
         # self.obj_axes.SetVisibility(0)
 
         self.ren.AddActor(self.obj_actor)
-        # self.ren.AddActor(self.obj_axes)
+        self.ren.AddActor(self.obj_axes)
         # self.Refresh()
 
     # def UpdateObjectOrientation(self, pubsub_evt):
@@ -1177,8 +1178,8 @@ class Viewer(wx.Panel):
         coord = pubsub_evt.data[1]
         # self.OnUpdateObjectTargetGuide(coord)
 
-        x, y, z = 0., 0., 0.
-        # x, y, z = coord[:3]
+        # x, y, z = 0., 0., 0.
+        x, y, z = bases.flip_x(coord[:3])
 
         pad = np.array([0.0, 0.0, 0.0])
         trans = np.array([[x], [y], [z], [1]])
@@ -1186,14 +1187,13 @@ class Viewer(wx.Panel):
         m_rot_affine = np.hstack([m_rot_affine, trans])
         m_rot_vtk = self.array_to_vtkmatrix4x4(m_rot_affine)
 
-        # m_id = np.identity(3)
-        # m_id_affine = np.vstack([m_id, pad])
-        # m_id_affine = np.hstack([m_id_affine, trans])
-        # m_id_vtk = self.array_to_vtkmatrix4x4(m_id_affine)
+        m_id = np.identity(3)
+        m_id_affine = np.vstack([m_id, pad])
+        m_id_affine = np.hstack([m_id_affine, trans])
+        m_id_vtk = self.array_to_vtkmatrix4x4(m_id_affine)
 
         self.obj_actor.SetUserMatrix(m_rot_vtk)
-        self.obj_actor.SetPosition(coord[:3])
-        # self.obj_axes.SetUserMatrix(m_id_vtk)
+        self.obj_axes.SetUserMatrix(m_id_vtk)
 
         self.Refresh()
 

@@ -275,7 +275,7 @@ class CoregistrationObjectDynamic(threading.Thread):
                           cos(g) * sin(b) * sin(a) - sin(g) * cos(a)],
                          [-sin(b), sin(g) * cos(b), cos(b) * cos(g)]])
 
-            m_rot_obj = m_obj*m_rot_sensor.T*m_rot*m_inv_obj
+            m_rot_obj = m_inv_obj*m_rot_sensor.T*m_rot*m_obj
 
             coord = (float(img[0]), float(img[1]), float(img[2]), coord_raw[0, 3],
                      coord_raw[0, 4], coord_raw[0, 5])
