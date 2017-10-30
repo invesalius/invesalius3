@@ -563,18 +563,23 @@ class DensityMeasureStyle(DefaultInteractorStyle):
     def SetUp(self):
         for n in self.viewer.draw_by_slice_number:
             for i in self.viewer.draw_by_slice_number[n]:
-                if isinstance(i, CircleDensityMeasure):
+                if isinstance(i, PolygonDensityMeasure):
                     i.set_interactive(True)
         self.viewer.canvas.Refresh()
 
     def CleanUp(self):
         self.viewer.canvas.unsubscribe_event('LeftButtonPressEvent', self.OnInsertPoint)
+        old_list = self.viewer.draw_by_slice_number
+        self.viewer.draw_by_slice_number.clear()
+        for n in old_list:
+            for i in old_list[n]:
+                if isinstance(i, PolygonDensityMeasure):
+                    if i.complete:
+                        self.viewer.draw_by_slice_number[n].append(i)
+                else:
+                    self.viewer.draw_by_slice_number[n].append(i)
 
-        for n in self.viewer.draw_by_slice_number:
-            for i in self.viewer.draw_by_slice_number[n]:
-                if isinstance(i, CircleDensityMeasure):
-                    i.set_interactive(False)
-        self.viewer.canvas.Refresh()
+        self.viewer.UpdateCanvas()
 
     def _2d_to_3d(self, pos):
         mx, my = pos
@@ -621,17 +626,17 @@ class DensityMeasureStyle(DefaultInteractorStyle):
                 m = self._last_measure
                 _new_measure = False
                 if m.slice_number != n:
+                    self.viewer.draw_by_slice_number[m.slice_number].remove(m)
+                    del m
                     m = PolygonDensityMeasure(self.orientation, n)
                     self._last_measure = m
                     _new_measure = True
 
             m.insert_point(pos)
+
+            if _new_measure:
+                self.viewer.draw_by_slice_number[n].append(m)
             #  m.calc_density()
-
-
-        #  self.viewer.draw_by_slice_number[n].append(m)
-        if _new_measure:
-            Publisher.sendMessage("Add density measurement", m)
 
         self.viewer.UpdateCanvas()
 
@@ -639,8 +644,12 @@ class DensityMeasureStyle(DefaultInteractorStyle):
         if self._last_measure:
             m = self._last_measure
             if len(m.points) >= 3:
+                n = self.viewer.slice_data.number
+                print self.viewer.draw_by_slice_number[n], m
+                self.viewer.draw_by_slice_number[n].remove(m)
                 m.complete_polygon()
                 self._last_measure = None
+                Publisher.sendMessage("Add density measurement", m)
                 self.viewer.UpdateCanvas()
 
 

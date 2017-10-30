@@ -272,7 +272,7 @@ class CanvasRendererCTX:
         self.modified = False
         self._drawn = False
 
-    def draw_element_to_array(self, elements, size=None, flip=True):
+    def draw_element_to_array(self, elements, size=None, antialiasing=False, flip=True):
         """
         Draws the given elements to a array.
 
@@ -291,7 +291,7 @@ class CanvasRendererCTX:
         arr = np.zeros((h, w, 4), dtype=np.uint8)
 
         gc = wx.GraphicsContext.Create(image)
-        if sys.platform != 'darwin':
+        if antialiasing:
             gc.SetAntialiasMode(0)
 
         old_gc = self.gc

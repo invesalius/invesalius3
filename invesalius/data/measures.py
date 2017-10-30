@@ -1236,6 +1236,8 @@ class PolygonDensityMeasure(object):
         self.orientation = orientation
         self.slice_number = slice_number
 
+        self.complete = False
+
         self.format = 'polygon'
 
         self.location = map_locations_id[self.orientation]
@@ -1278,6 +1280,7 @@ class PolygonDensityMeasure(object):
         #  if len(self.points) >= 3:
         self.polygon.closed = True
         self._need_calc = True
+        self.complete = False
 
     def calc_density(self, canvas):
         from invesalius.data.slice_ import Slice
@@ -1309,12 +1312,12 @@ class PolygonDensityMeasure(object):
             plg_points = [(y/sx, z/sy) for (x, y, z) in self.points]
 
         plg_tmp = Polygon(plg_points, fill=True,
-                          line_colour=(255, 255, 255, 255),
+                          line_colour=(0, 0, 0, 0),
                           fill_colour=(255, 255, 255, 255), width=1,
                           interactive=False, is_3d=False)
         h, w = img_slice.shape
         arr = canvas.draw_element_to_array([plg_tmp, ], size=(w, h), flip=False)
-        mask = arr[:, :, 0] == 255
+        mask = arr[:, :, 0] >= 128
 
         try:
             m[:] = 0
