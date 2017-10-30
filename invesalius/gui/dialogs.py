@@ -3198,22 +3198,43 @@ class ObjectCalibrationDialog(wx.Dialog):
         self.SetSizer(main_sizer)
         main_sizer.Fit(self)
 
+    def ObjectImportDialog(self):
+        msg = _("Do you would like to use InVesalius default object?")
+        if sys.platform == 'darwin':
+            dlg = wx.MessageDialog(None, "", msg,
+                                   wx.ICON_QUESTION | wx.YES_NO)
+        else:
+            dlg = wx.MessageDialog(None, msg,
+                                   "InVesalius 3",
+                                   wx.ICON_QUESTION | wx.YES_NO)
+        answer = dlg.ShowModal()
+        dlg.Destroy()
+
+        if answer == wx.ID_YES:
+            return 1
+        else:  # answer == wx.ID_NO:
+            return 0
+
     def LoadObject(self):
+        default = self.ObjectImportDialog()
+        if not default:
+            filename = ShowImportMeshFilesDialog()
 
-        filename = ShowImportMeshFilesDialog()
-
-        if filename:
-            if filename.lower().endswith('.stl'):
-                reader = vtk.vtkSTLReader()
-            elif filename.lower().endswith('.ply'):
-                reader = vtk.vtkPLYReader()
-            elif filename.lower().endswith('.obj'):
-                reader = vtk.vtkOBJReader()
-            elif filename.lower().endswith('.vtp'):
-                reader = vtk.vtkXMLPolyDataReader()
+            if filename:
+                if filename.lower().endswith('.stl'):
+                    reader = vtk.vtkSTLReader()
+                elif filename.lower().endswith('.ply'):
+                    reader = vtk.vtkPLYReader()
+                elif filename.lower().endswith('.obj'):
+                    reader = vtk.vtkOBJReader()
+                elif filename.lower().endswith('.vtp'):
+                    reader = vtk.vtkXMLPolyDataReader()
+                else:
+                    wx.MessageBox(_("File format not reconized by InVesalius"), _("Import surface error"))
+                    return
             else:
-                wx.MessageBox(_("File format not reconized by InVesalius"), _("Import surface error"))
-                return
+                filename = os.path.join(const.OBJ_DIR, "magstim_fig8_coil.stl")
+                reader = vtk.vtkSTLReader()
         else:
             filename = os.path.join(const.OBJ_DIR, "magstim_fig8_coil.stl")
             reader = vtk.vtkSTLReader()

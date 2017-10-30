@@ -815,6 +815,7 @@ class ObjectRegistrationPanel(wx.Panel):
                                   (self.obj_fiducials, self.obj_orients, self.obj_ref_mode))
             Publisher.sendMessage('Create object polydata', self.obj_name)
             Publisher.sendMessage('Update status text in GUI', _("Ready"))
+            wx.MessageBox(_("Object file successfully loaded"), _("Load"))
 
     def ShowSaveObjectDialog(self, evt):
         if np.isnan(self.obj_fiducials).any() or np.isnan(self.obj_orients).any():
@@ -825,6 +826,7 @@ class ObjectRegistrationPanel(wx.Panel):
                 hdr = 'Object' + "\t" + self.obj_name + "\t" + 'Reference' + "\t" + str('%d' % self.obj_ref_mode)
                 data = np.hstack([self.obj_fiducials, self.obj_orients])
                 np.savetxt(filename, data, fmt='%.4f', delimiter='\t', newline='\n', header=hdr)
+                wx.MessageBox(_("Object file successfully saved"), _("Save"))
 
 
 class MarkersPanel(wx.Panel):
