@@ -619,18 +619,18 @@ class Viewer(wx.Panel):
 
             obj_roll = vtk.vtkActor()
             obj_roll.SetMapper(mapper)
-            obj_roll.SetPosition(0, 20, 0)
+            obj_roll.SetPosition(0, 25, -30)
             obj_roll.RotateX(-60)
             obj_roll.RotateZ(180)
 
             obj_yaw = vtk.vtkActor()
             obj_yaw.SetMapper(mapper)
-            obj_yaw.SetPosition(0, -120, 0)
+            obj_yaw.SetPosition(0, -115, 5)
             obj_yaw.RotateZ(180)
 
             obj_pitch = vtk.vtkActor()
             obj_pitch.SetMapper(mapper)
-            obj_pitch.SetPosition(0, -270, 0)
+            obj_pitch.SetPosition(5, -265, 5)
             obj_pitch.RotateY(90)
             obj_pitch.RotateZ(180)
 

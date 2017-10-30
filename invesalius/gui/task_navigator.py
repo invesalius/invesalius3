@@ -903,7 +903,7 @@ class MarkersPanel(wx.Panel):
         self.lc.SetColumnWidth(1, 50)
         self.lc.SetColumnWidth(2, 50)
         self.lc.SetColumnWidth(3, 50)
-        self.lc.SetColumnWidth(4, 50)
+        self.lc.SetColumnWidth(4, 60)
         self.lc.Bind(wx.EVT_LIST_ITEM_RIGHT_CLICK, self.OnMouseRightDown)
         self.lc.Bind(wx.EVT_LIST_ITEM_ACTIVATED, self.OnItemBlink)
         self.lc.Bind(wx.EVT_LIST_ITEM_DESELECTED, self.OnStopItemBlink)
