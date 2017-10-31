@@ -20,6 +20,8 @@
 from math import sin, cos
 import numpy as np
 
+import invesalius.data.transformations as tr
+
 from time import sleep
 from random import uniform
 from wx.lib.pubsub import pub as Publisher
@@ -107,7 +109,7 @@ def PolhemusCoord(trck, trck_id, ref_mode):
 def PolhemusWrapperCoord(trck, trck_id, ref_mode):
 
     trck.Run()
-    scale = 10.0 * np.array([1., 1., -1.])
+    scale = 10.0 * np.array([1., 1., 1.])
 
     coord1 = np.array([float(trck.PositionTooltipX1)*scale[0], float(trck.PositionTooltipY1)*scale[1],
                       float(trck.PositionTooltipZ1)*scale[2],
@@ -259,7 +261,34 @@ def dynamic_reference(probe, reference):
     coord_rot = vet*m_rot
     coord_rot = np.squeeze(np.asarray(coord_rot))
 
-    return coord_rot[0], coord_rot[1], coord_rot[2], probe[3], probe[4], probe[5]
+    return coord_rot[0], coord_rot[1], -coord_rot[2], probe[3], probe[4], probe[5]
+
+
+def dynamic_reference_m(probe, reference):
+    """
+    Apply dynamic reference correction to probe coordinates. Uses the alpha, beta and gama
+    rotation angles of reference to rotate the probe coordinate and returns the x, y, z
+    difference between probe and reference. Angles sequences and equation was extracted from
+    Polhemus manual and Attitude matrix in Wikipedia.
+    General equation is:
+    coord = Mrot * (probe - reference)
+    :param probe: sensor one defined as probe
+    :param reference: sensor two defined as reference
+    :return: rotated and translated coordinates
+    """
+
+    a, b, g = np.radians(reference[3:6])
+
+    T = tr.translation_matrix(reference[:3])
+    R = tr.euler_matrix(a, b, g, 'rzyx')
+    M = np.asmatrix(tr.concatenate_matrices(T, R))
+    # M = tr.compose_matrix(angles=np.radians(reference[3:6]), translate=reference[:3])
+    # print M
+    probe_4 = np.vstack((np.asmatrix(probe[:3]).reshape([3, 1]), 1.))
+    coord_rot = M.I * probe_4
+    coord_rot = np.squeeze(np.asarray(coord_rot))
+
+    return coord_rot[0], coord_rot[1], -coord_rot[2], probe[3], probe[4], probe[5]
 
 
 def str2float(data):

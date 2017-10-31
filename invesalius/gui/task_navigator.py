@@ -33,6 +33,7 @@ import wx.lib.platebtn as pbtn
 from math import cos, sin
 from time import sleep
 
+import invesalius.data.transformations as tr
 import invesalius.constants as const
 import invesalius.data.bases as db
 import invesalius.data.coordinates as dco
@@ -517,7 +518,7 @@ class NeuronavigationPanel(wx.Panel):
         if self.trk_init and self.tracker_id:
             coord_raw = dco.GetCoordinates(self.trk_init, self.tracker_id, self.ref_mode_id)
             if self.ref_mode_id:
-                coord = dco.dynamic_reference(coord_raw[0, :], coord_raw[1, :])
+                coord = dco.dynamic_reference_m(coord_raw[0, :], coord_raw[1, :])
             else:
                 coord = coord_raw[0, :]
 
@@ -536,12 +537,12 @@ class NeuronavigationPanel(wx.Panel):
         choice_ref = btn[2]
         txtctrl_fre = btn[3]
 
-        self.fiducials = np.array([[10.5, 109.2, 22.],
-                                   [171.9, 109.2, 22.],
-                                   [91.8, 5.3, 22.],
-                                   [-90.01125233, -68.99572909, -95.67216954],
-                                   [-78.32915385, 76.10023779, -92.9506228],
-                                   [6.00091345, 1.14540308, -61.00970923]])
+        # self.fiducials = np.array([[10.5, 109.2, 22.],
+        #                            [171.9, 109.2, 22.],
+        #                            [91.8, 5.3, 22.],
+        #                            [-90.01125233, -68.99572909, -95.67216954],
+        #                            [-78.32915385, 76.10023779, -92.9506228],
+        #                            [6.00091345, 1.14540308, -61.00970923]])
 
         nav_id = btn_nav.GetValue()
         if nav_id:
@@ -565,6 +566,8 @@ class NeuronavigationPanel(wx.Panel):
                 m, q1, minv = db.base_creation(self.fiducials[0:3, :])
                 n, q2, ninv = db.base_creation(self.fiducials[3::, :])
                 bases_coreg = (minv, n, q1, q2)
+
+                m_change = tr.superimposition_matrix(self.fiducials[3:, :].T, self.fiducials[:3, :].T)
 
                 tracker_mode = self.trk_init, self.tracker_id, self.ref_mode_id
                 # FIXME: FRE is taking long to calculate so it updates on GUI delayed to navigation - I think its fixed
@@ -591,50 +594,70 @@ class NeuronavigationPanel(wx.Panel):
                         obj_orients = self.obj_reg[1]
                         obj_ref_id = self.obj_reg[2]
                         fids_1 = np.zeros([3, 3])
+                        fids_aux = np.zeros([3, 6])
                         m_obj_2 = np.zeros([3, 3])
 
-                        obj_center_trck, fids_0, sensor_fixed_obj = db.object_registration(obj_fiducials, obj_orients)
+                        obj_center_trck, fids_0, q_obj_center, coords = db.object_registration(obj_fiducials, obj_orients)
+                        fixed_sensor = coords[4, :]
 
                         if self.trk_init and self.tracker_id:
                             coord_raw = dco.GetCoordinates(self.trk_init, self.tracker_id, self.ref_mode_id)
                             if self.ref_mode_id:
                                 for ic in range(0, 3):
-                                    coord_raw[0, :3] += fids_0[ic, :]
-                                    fids_1[ic, :] = dco.dynamic_reference(coord_raw[0, :],
+                                    fids_aux[ic, :3] = coord_raw[0, :3] + fids_0[ic, :]
+                                    # print fids_aux
+                                    fids_1[ic, :] = dco.dynamic_reference(fids_aux[ic, :],
                                                                           coord_raw[1, :])[:3]
+                                # print fids_1
+
                                 m_obj, q_obj, m_inv_obj = db.base_creation(fids_1)
+                                m_obj_0, q_obj_0, m_inv_obj_0 = db.base_creation(fids_0)
                                 m_obj_2[0, :] = m_obj[2, :]
                                 m_obj_2[1, :] = m_obj[1, :]
                                 m_obj_2[2, :] = m_obj[0, :]
-                                m_obj_inv_2 = np.asmatrix(m_obj_2).I
+                                m_inv_obj_2 = np.asmatrix(m_obj_2).I
 
-                                q_obj_arr = np.asarray(q_obj.reshape([1, 3])).squeeze()
-                                print q_obj_arr
-                                print sensor_fixed_obj
+                                v0 = [[1, 0, 0], [0, 1, 0], [0, 0, 1], [0, 0, 0]]
+                                v1_1 = -np.asarray(m_obj)[2, :]
+                                v1_2 = -np.asarray(m_obj)[1, :]
+                                v1_3 = np.asarray(m_obj)[0, :]
+                                v1 = [v1_1, v1_2, v1_3, q_obj]
+                                m_transf = tr.superimposition_matrix(v0, v1, scale=False)
+                                scale, shear, angles, trans, persp = tr.decompose_matrix(m_transf)
+                                r_obj = tr.euler_matrix(*angles)
+                                # print angles
 
-                                obj_center_trck = q_obj_arr
+                                # q_obj_arr = np.asarray(q_obj.reshape([1, 3])).squeeze()
+                                # print q_obj
+                                # print sensor_fixed_obj
 
-                                print obj_center_trck
+                                # obj_center_trck_2 = q_obj
+
+                                # print obj_center_trck_2
 
                         else:
                             dlg.NavigationTrackerWarning(0, 'choose')
 
-                        obj_data = obj_center_trck, m_obj, m_inv_obj
+                        # Publisher.sendMessage('Create marker', (coord, marker_id))
+
+                        # obj_data = np.hstack((q_obj_center, np.zeros((1, 3)).squeeze())), m_obj_2, m_inv_obj_2, np.asmatrix(r_obj[:3, :3]), fixed_sensor
 
                         # Only the m_inv is needed for change of basis
                         # Publisher.sendMessage('Update object initial orientation', obj_data)
                         # Publisher.sendMessage('Update object initial orientation',
                         #                       (fiducials, obj_sensor_orient))
                         if self.ref_mode_id:
-                            self.correg = dcr.CoregistrationObjectDynamic(bases_coreg, nav_id, tracker_mode, obj_data)
-                        else:
-                            self.correg = dcr.CoregistrationObjectStatic(bases_coreg, nav_id, tracker_mode, obj_data)
+                            # self.correg = dcr.CoregistrationObjectDynamic(bases_coreg, nav_id, tracker_mode, obj_data)
+                            self.correg = dcr.CoregistrationDynamic_m(m_change, nav_id, tracker_mode)
+                        # else:
+                        #     self.correg = dcr.CoregistrationObjectStatic(bases_coreg, nav_id, tracker_mode, obj_data)
                     else:
                         dlg.InvalidObjectRegistration()
 
                 else:
                     if self.ref_mode_id:
-                        self.correg = dcr.CoregistrationDynamic(bases_coreg, nav_id, tracker_mode)
+                        # self.correg = dcr.CoregistrationDynamic(bases_coreg, nav_id, tracker_mode)
+                        self.correg = dcr.CoregistrationDynamic_m(m_change, nav_id, tracker_mode)
                     else:
                         self.correg = dcr.CoregistrationStatic(bases_coreg, nav_id, tracker_mode)
 

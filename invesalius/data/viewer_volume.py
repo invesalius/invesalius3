@@ -244,7 +244,7 @@ class Viewer(wx.Panel):
         Publisher.subscribe(self.StopBlinkMarker, 'Stop Blink Marker')
 
         # Related to object tracking during neuronavigation
-        Publisher.subscribe(self.UpdateObjectOrientation, 'Co-registered points')
+        # Publisher.subscribe(self.UpdateObjectOrientation, 'Co-registered points')
         Publisher.subscribe(self.UpdateObjectInitial, 'Update object initial orientation')
         Publisher.subscribe(self.UpdateObjectState, 'Update object tracking state')
 
