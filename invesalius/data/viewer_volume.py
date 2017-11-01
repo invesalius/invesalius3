@@ -1082,8 +1082,8 @@ class Viewer(wx.Panel):
 
         transform = vtk.vtkTransform()
         # transform.Scale(1, -1, -1)
-        transform.RotateY(180)
-        transform.RotateZ(-90)
+        # transform.RotateY(180)
+        transform.RotateZ(90)
 
         # m_rot = np.matrix([[1.0, 0.0, 0.0, 0.0],
         #                    [0.0, -1.0, 0.0, 0.0],
@@ -1098,8 +1098,8 @@ class Viewer(wx.Panel):
         transform_filt.Update()
 
         normals = vtk.vtkPolyDataNormals()
-        # normals.SetInputData(transform_filt.GetOutput())
-        normals.SetInputData(self.obj_polydata)
+        normals.SetInputData(transform_filt.GetOutput())
+        # normals.SetInputData(self.obj_polydata)
         normals.SetFeatureAngle(80)
         normals.AutoOrientNormalsOn()
         normals.Update()

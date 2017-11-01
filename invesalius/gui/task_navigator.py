@@ -614,8 +614,9 @@ class NeuronavigationPanel(wx.Panel):
 
                                 m_obj, q_obj, minv_obj = db.base_creation(obj_fids_dyn[:3, :3])
                                 q_obj_all = np.hstack((q_obj, np.array([0., 0., 0.])))
+                                t_q_obj = tr.translation_matrix(q_obj)
 
-                                obj_img = np.array([[1., 0., 0.], [-1., 0., 0.], [0., -1., 0.]])
+                                obj_img = np.array([[0., 1., 0.], [0., -1., 0.], [0., 1., 0.]])
 
                                 m_transf = tr.affine_matrix_from_points(fids_stylus.T, obj_img.T,
                                                                         shear=False, scale=False)

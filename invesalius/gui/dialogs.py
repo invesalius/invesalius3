@@ -3200,8 +3200,24 @@ class ObjectCalibrationDialog(wx.Dialog):
         if polydata.GetNumberOfPoints() == 0:
             wx.MessageBox(_("InVesalius was not able to import this surface"), _("Import surface error"))
 
+        transform = vtk.vtkTransform()
+        transform.RotateZ(90)
+
+        transform_filt = vtk.vtkTransformPolyDataFilter()
+        transform_filt.SetTransform(transform)
+        transform_filt.SetInputData(polydata)
+        transform_filt.Update()
+
+        normals = vtk.vtkPolyDataNormals()
+        normals.SetInputData(transform_filt.GetOutput())
+        normals.SetFeatureAngle(80)
+        normals.AutoOrientNormalsOn()
+        normals.Update()
+
         mapper = vtk.vtkPolyDataMapper()
-        mapper.SetInputData(polydata)
+        mapper.SetInputData(normals.GetOutput())
+        mapper.ScalarVisibilityOff()
+        mapper.ImmediateModeRenderingOn()
 
         obj_actor = vtk.vtkActor()
         obj_actor.SetMapper(mapper)

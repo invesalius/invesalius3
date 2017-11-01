@@ -1,6 +1,7 @@
-from math import sqrt
+from math import sqrt, pi
 import numpy as np
 import invesalius.data.coordinates as dco
+import invesalius.data.transformations as tr
 
 
 def angle_calculation(ap_axis, coil_axis):
@@ -137,6 +138,31 @@ def flip_x(point):
     x, y, z = point_rot.tolist()[0][:3]
 
     return x, y, z
+
+
+def flip_x_m(point):
+    """
+    Rotate coordinates of a vector by pi around X axis in static reference frame.
+
+    InVesalius also require to multiply the z coordinate by (-1). Possibly
+    because the origin of coordinate system of imagedata is
+    located in superior left corner and the origin of VTK scene coordinate
+    system (polygonal surface) is in the interior left corner. Second
+    possibility is the order of slice stacking
+
+    :param point: list of coordinates x, y and z
+    :return: rotated coordinates
+    """
+
+    point_4 = np.matrix(point + (0,)).reshape([4, 1])
+    point_4[2, 0] = -point_4[2, 0]
+
+    m_rot = np.asmatrix(tr.euler_matrix(pi, 0, 0))
+    # m_rot_y = np.asmatrix(tr.euler_matrix(0, pi, 0))
+
+    point_rot = m_rot*point_4
+
+    return point_rot[0, 0], point_rot[1, 0], point_rot[2, 0]
 
 
 def object_registration(fiducials, orients):

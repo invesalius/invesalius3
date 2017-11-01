@@ -434,7 +434,7 @@ class CoregistrationObjectDynamic_m(threading.Thread):
                      coord_raw[0, 4], coord_raw[0, 5])
 
             coord_img = float(img[0]), float(img[1]), float(img[2])
-            coord_img_f = db.flip_x(coord_img)
+            coord_img_f = db.flip_x_m(coord_img)
             m_translate = asmatrix(tr.translation_matrix(coord_img_f))
 
             R_obj_change = R_obj.I*R_reference.I*R_stylus*R_obj
