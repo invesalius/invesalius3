@@ -19,15 +19,15 @@
 
 import threading
 from time import sleep
-from math import cos, sin
+from math import cos, sin, pi
 
-from numpy import asmatrix, mat, vstack, radians, identity
+from numpy import asmatrix, mat, vstack, radians, identity, asarray, squeeze, hstack
 import wx
 from wx.lib.pubsub import pub as Publisher
 
 import invesalius.data.coordinates as dco
-# import invesalius.data.bases as db
-# import invesalius.data.transformations as tr
+import invesalius.data.bases as db
+import invesalius.data.transformations as tr
 
 # TODO: Optimize navigation thread. Remove the infinite loop and optimize sleep.
 
@@ -352,6 +352,105 @@ class CoregistrationObjectDynamic(threading.Thread):
             # wx.CallAfter(Publisher.sendMessage, 'Update object orientation',
             #              (m_inv_trck, coord))
             # wx.CallAfter(Publisher.sendMessage, 'Update tracker angles', angles)
+
+            # TODO: Optimize the value of sleep for each tracking device.
+            # Debug tracker is not working with 0.175 so changed to 0.2
+            # However, 0.2 is too low update frequency ~5 Hz. Need optimization URGENTLY.
+            sleep(.3)
+            # sleep(0.175)
+            # sleep(1.)
+
+            if self._pause_:
+                return
+
+
+class CoregistrationObjectDynamic_m(threading.Thread):
+    """
+    Thread to update the coordinates with the fiducial points
+    co-registration method while the Navigation Button is pressed.
+    Sleep function in run method is used to avoid blocking GUI and
+    for better real-time navigation
+    """
+
+    def __init__(self, bases, nav_id, trck_info):
+        threading.Thread.__init__(self)
+        self.bases = bases
+        self.nav_id = nav_id
+        self.trck_info = trck_info
+        # self.obj_data = obj_data
+        self._pause_ = False
+        self.start()
+
+    def stop(self):
+        self._pause_ = True
+
+    def run(self):
+        m_change = self.bases[0]
+        R_obj = self.bases[1]
+        obj_fids = self.bases[2]
+        q_obj = self.bases[3]
+
+        trck_init = self.trck_info[0]
+        trck_id = self.trck_info[1]
+        trck_mode = self.trck_info[2]
+
+        # m_inv_trck = self.obj_data[0]
+        # obj_center_trck = self.obj_data[1]
+        # obj_sensor_trck = self.obj_data[2]
+        # obj_ref_id = self.obj_data[3]
+
+        # obj_center_trck = self.obj_data[0]
+        # m_obj = self.obj_data[1]
+        # m_inv_obj = self.obj_data[2]
+        # r_obj = self.obj_data[3]
+        # fixed_sensor = self.obj_data[4]
+
+        while self.nav_id:
+            coord_raw = dco.GetCoordinates(trck_init, trck_id, trck_mode)
+
+            q_obj_ref = asarray(dco.dynamic_reference_m(q_obj, coord_raw[1, :])[:3])
+            fix_obj_ref = asarray(dco.dynamic_reference_m(obj_fids[4, :], coord_raw[1, :])[:3])
+            v_obj = vstack((asmatrix(q_obj_ref[:3] - fix_obj_ref[:3]).reshape([3, 1]), 0.))
+
+            trck_coord = dco.dynamic_reference_m(coord_raw[0, :], coord_raw[1, :])
+            trck_coord_2 = vstack((asmatrix(trck_coord[0:3]).reshape([3, 1]), 1.))
+            # img = m_change * (trck_coord_2 + v_obj)
+            img = m_change * trck_coord_2
+
+            as1, bs1, gs1 = radians(coord_raw[0, 3:])
+            R_stylus = asmatrix(tr.euler_matrix(as1, bs1, gs1, 'rzyx'))
+            T_stylus = asmatrix(tr.translation_matrix(coord_raw[0, :3]))
+            M_stylus = asmatrix(tr.concatenate_matrices(T_stylus, R_stylus))
+
+            a, b, g = radians(coord_raw[1, 3:])
+            R_reference = asmatrix(tr.euler_matrix(a, b, g, 'rzyx'))
+            T_reference = asmatrix(tr.translation_matrix(coord_raw[1, :3]))
+            M_reference = asmatrix(tr.concatenate_matrices(T_reference, R_reference))
+
+            # a, b, g = pi/2, 0., 0.
+            # R_return = asmatrix(tr.euler_matrix(a, b, g, 'rzyx'))
+
+            coord = (float(img[0]), float(img[1]), float(img[2]), coord_raw[0, 3],
+                     coord_raw[0, 4], coord_raw[0, 5])
+
+            coord_img = float(img[0]), float(img[1]), float(img[2])
+            coord_img_f = db.flip_x(coord_img)
+            m_translate = asmatrix(tr.translation_matrix(coord_img_f))
+
+            R_obj_change = R_obj.I*R_reference.I*R_stylus*R_obj
+            M_final = m_translate*R_obj_change
+
+            # trying to compose all transformations in one single matrix
+            # M_final_2 = M_reference.I*M_stylus
+            # M_final_2[2, -1] = -M_final_2[2, -1]
+            # coord_final = squeeze(asarray(M_final_2[:3, -1]).reshape([1, 3]))
+            # print coord_final
+            # coord_final_f = db.flip_x((coord_final[0], coord_final[1], coord_final[2]))
+            # M_final_2[0, -1] = coord_final_f[0]
+            # M_final_2[1, -1] = coord_final_f[1]
+            # M_final_2[2, -1] = coord_final_f[2]
+
+            wx.CallAfter(Publisher.sendMessage, 'Co-registered points', (M_final, coord))
 
             # TODO: Optimize the value of sleep for each tracking device.
             # Debug tracker is not working with 0.175 so changed to 0.2

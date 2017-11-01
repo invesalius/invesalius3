@@ -567,7 +567,10 @@ class NeuronavigationPanel(wx.Panel):
                 n, q2, ninv = db.base_creation(self.fiducials[3::, :])
                 bases_coreg = (minv, n, q1, q2)
 
-                m_change = tr.superimposition_matrix(self.fiducials[3:, :].T, self.fiducials[:3, :].T)
+                # m_change = np.asmatrix(tr.superimposition_matrix(self.fiducials[3:, :].T, self.fiducials[:3, :].T))
+
+                m_change = tr.affine_matrix_from_points(self.fiducials[3:, :].T, self.fiducials[:3, :].T,
+                                                        shear=False, scale=False)
 
                 tracker_mode = self.trk_init, self.tracker_id, self.ref_mode_id
                 # FIXME: FRE is taking long to calculate so it updates on GUI delayed to navigation - I think its fixed
@@ -593,47 +596,34 @@ class NeuronavigationPanel(wx.Panel):
                         obj_fiducials = self.obj_reg[0]
                         obj_orients = self.obj_reg[1]
                         obj_ref_id = self.obj_reg[2]
-                        fids_1 = np.zeros([3, 3])
-                        fids_aux = np.zeros([3, 6])
-                        m_obj_2 = np.zeros([3, 3])
+                        fids_stylus = np.zeros([3, 3])
+                        obj_fids_dyn = np.zeros([5, 6])
+                        obj_coords = np.hstack((obj_fiducials, obj_orients))
 
                         obj_center_trck, fids_0, q_obj_center, coords = db.object_registration(obj_fiducials, obj_orients)
-                        fixed_sensor = coords[4, :]
+                        fixed_sensor = obj_coords[4, :]
 
                         if self.trk_init and self.tracker_id:
                             coord_raw = dco.GetCoordinates(self.trk_init, self.tracker_id, self.ref_mode_id)
                             if self.ref_mode_id:
+                                for ic in range(0, 5):
+                                    obj_fids_dyn[ic, :] = dco.dynamic_reference_m(obj_coords[ic, :], coord_raw[1, :])
+
                                 for ic in range(0, 3):
-                                    fids_aux[ic, :3] = coord_raw[0, :3] + fids_0[ic, :]
-                                    # print fids_aux
-                                    fids_1[ic, :] = dco.dynamic_reference(fids_aux[ic, :],
-                                                                          coord_raw[1, :])[:3]
-                                # print fids_1
+                                    fids_stylus[ic, :] = dco.dynamic_reference_m(obj_fids_dyn[ic, :], obj_fids_dyn[4, :])[:3]
 
-                                m_obj, q_obj, m_inv_obj = db.base_creation(fids_1)
-                                m_obj_0, q_obj_0, m_inv_obj_0 = db.base_creation(fids_0)
-                                m_obj_2[0, :] = m_obj[2, :]
-                                m_obj_2[1, :] = m_obj[1, :]
-                                m_obj_2[2, :] = m_obj[0, :]
-                                m_inv_obj_2 = np.asmatrix(m_obj_2).I
+                                m_obj, q_obj, minv_obj = db.base_creation(obj_fids_dyn[:3, :3])
+                                q_obj_all = np.hstack((q_obj, np.array([0., 0., 0.])))
 
-                                v0 = [[1, 0, 0], [0, 1, 0], [0, 0, 1], [0, 0, 0]]
-                                v1_1 = -np.asarray(m_obj)[2, :]
-                                v1_2 = -np.asarray(m_obj)[1, :]
-                                v1_3 = np.asarray(m_obj)[0, :]
-                                v1 = [v1_1, v1_2, v1_3, q_obj]
-                                m_transf = tr.superimposition_matrix(v0, v1, scale=False)
+                                obj_img = np.array([[1., 0., 0.], [-1., 0., 0.], [0., -1., 0.]])
+
+                                m_transf = tr.affine_matrix_from_points(fids_stylus.T, obj_img.T,
+                                                                        shear=False, scale=False)
+
                                 scale, shear, angles, trans, persp = tr.decompose_matrix(m_transf)
-                                r_obj = tr.euler_matrix(*angles)
-                                # print angles
-
-                                # q_obj_arr = np.asarray(q_obj.reshape([1, 3])).squeeze()
-                                # print q_obj
-                                # print sensor_fixed_obj
-
-                                # obj_center_trck_2 = q_obj
-
-                                # print obj_center_trck_2
+                                r_obj = np.asmatrix(tr.euler_matrix(*angles))
+                                # t_obj = np.asmatrix(tr.translation_matrix(trans))
+                                # M_obj = np.asmatrix(tr.concatenate_matrices(t_obj, r_obj))
 
                         else:
                             dlg.NavigationTrackerWarning(0, 'choose')
@@ -648,7 +638,7 @@ class NeuronavigationPanel(wx.Panel):
                         #                       (fiducials, obj_sensor_orient))
                         if self.ref_mode_id:
                             # self.correg = dcr.CoregistrationObjectDynamic(bases_coreg, nav_id, tracker_mode, obj_data)
-                            self.correg = dcr.CoregistrationDynamic_m(m_change, nav_id, tracker_mode)
+                            self.correg = dcr.CoregistrationObjectDynamic_m((m_change, r_obj, obj_coords, q_obj_all), nav_id, tracker_mode)
                         # else:
                         #     self.correg = dcr.CoregistrationObjectStatic(bases_coreg, nav_id, tracker_mode, obj_data)
                     else:

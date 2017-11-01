@@ -244,7 +244,7 @@ class Viewer(wx.Panel):
         Publisher.subscribe(self.StopBlinkMarker, 'Stop Blink Marker')
 
         # Related to object tracking during neuronavigation
-        # Publisher.subscribe(self.UpdateObjectOrientation, 'Co-registered points')
+        Publisher.subscribe(self.UpdateObjectOrientation, 'Co-registered points')
         Publisher.subscribe(self.UpdateObjectInitial, 'Update object initial orientation')
         Publisher.subscribe(self.UpdateObjectState, 'Update object tracking state')
 
@@ -1033,6 +1033,7 @@ class Viewer(wx.Panel):
 
             coord = pubsub_evt.data
             x, y, z = bases.flip_x(coord)
+            # x, y, z = coord
             self.ball_actor.SetPosition(x, y, z)
 
         else:
@@ -1081,8 +1082,8 @@ class Viewer(wx.Panel):
 
         transform = vtk.vtkTransform()
         # transform.Scale(1, -1, -1)
-        # transform.RotateY(180)
-        # transform.RotateZ(-90)
+        transform.RotateY(180)
+        transform.RotateZ(-90)
 
         # m_rot = np.matrix([[1.0, 0.0, 0.0, 0.0],
         #                    [0.0, -1.0, 0.0, 0.0],
@@ -1178,16 +1179,18 @@ class Viewer(wx.Panel):
         coord = pubsub_evt.data[1]
         # self.OnUpdateObjectTargetGuide(coord)
 
+        m_id = np.identity(3)
+
         # x, y, z = 0., 0., 0.
         x, y, z = bases.flip_x(coord[:3])
-
+        #
         pad = np.array([0.0, 0.0, 0.0])
         trans = np.array([[x], [y], [z], [1]])
-        m_rot_affine = np.vstack([m_rot_obj, pad])
+        m_rot_affine = np.vstack([m_id, pad])
         m_rot_affine = np.hstack([m_rot_affine, trans])
-        m_rot_vtk = self.array_to_vtkmatrix4x4(m_rot_affine)
+        m_rot_vtk = self.array_to_vtkmatrix4x4(m_rot_obj)
 
-        m_id = np.identity(3)
+        # m_id = np.identity(3)
         m_id_affine = np.vstack([m_id, pad])
         m_id_affine = np.hstack([m_id_affine, trans])
         m_id_vtk = self.array_to_vtkmatrix4x4(m_id_affine)
