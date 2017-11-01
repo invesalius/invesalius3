@@ -1352,6 +1352,10 @@ class PolygonDensityMeasure(object):
         self.visible = value
         self.polygon.visible = value
 
+    def set_interactive(self, value):
+        self.interactive = bool(value)
+        self.polygon.interactive = self.interactive
+
     def is_over(self, x, y):
         if self.interactive:
             if self.polygon.is_over(x, y):

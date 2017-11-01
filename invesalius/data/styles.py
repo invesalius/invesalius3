@@ -620,7 +620,6 @@ class DensityMeasureStyle(DefaultInteractorStyle):
         elif self.format == 'polygon':
             if self._last_measure is None:
                 m = PolygonDensityMeasure(self.orientation, n)
-                self._last_measure = m
                 _new_measure = True
             else:
                 m = self._last_measure
@@ -629,13 +628,17 @@ class DensityMeasureStyle(DefaultInteractorStyle):
                     self.viewer.draw_by_slice_number[m.slice_number].remove(m)
                     del m
                     m = PolygonDensityMeasure(self.orientation, n)
-                    self._last_measure = m
                     _new_measure = True
 
             m.insert_point(pos)
 
             if _new_measure:
                 self.viewer.draw_by_slice_number[n].append(m)
+
+                if self._last_measure:
+                    self._last_measure.set_interactive(False)
+
+                self._last_measure = m
             #  m.calc_density()
 
         self.viewer.UpdateCanvas()
