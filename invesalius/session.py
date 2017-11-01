@@ -201,7 +201,10 @@ class Session(object):
                             '.invesalius', 'config.cfg')
 
         configfile = codecs.open(path, 'wb', SESSION_ENCODING)
-        config.write(configfile)
+        try:
+            config.write(configfile)
+        except UnicodeDecodeError:
+            pass
         configfile.close()
 
     def __add_to_list(self, item):
