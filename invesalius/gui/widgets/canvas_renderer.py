@@ -631,7 +631,7 @@ class CanvasRendererCTX:
             return None
         gc = self.gc
 
-        gc.SetPen(wx.Pen(wx.Colour(*line_colour)))
+        gc.SetPen(wx.Pen(wx.Colour(*line_colour), width, wx.SOLID))
         gc.SetBrush(wx.Brush(wx.Colour(*fill_colour), wx.SOLID))
 
         if points:
@@ -816,7 +816,7 @@ class Polygon(CanvasHandlerBase):
                 handler.draw_to_canvas(gc, canvas)
 
     def append_point(self, point):
-        handler = CircleHandler(point, is_3d=self.is_3d)
+        handler = CircleHandler(point, is_3d=self.is_3d, fill_colour=(255, 0, 0, 255))
         handler.on_move(self.on_move_point)
         self.handlers.append(handler)
         self.points.append(point)

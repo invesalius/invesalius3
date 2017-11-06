@@ -561,6 +561,7 @@ class DensityMeasureStyle(DefaultInteractorStyle):
         self.viewer.canvas.subscribe_event('LeftButtonDoubleClickEvent', self.OnInsertPolygon)
 
     def SetUp(self):
+        print 'SETUP', self.orientation
         for n in self.viewer.draw_by_slice_number:
             for i in self.viewer.draw_by_slice_number[n]:
                 if isinstance(i, PolygonDensityMeasure):
@@ -568,6 +569,7 @@ class DensityMeasureStyle(DefaultInteractorStyle):
         self.viewer.canvas.Refresh()
 
     def CleanUp(self):
+        print 'CLEANUP', self.orientation
         self.viewer.canvas.unsubscribe_event('LeftButtonPressEvent', self.OnInsertPoint)
         old_list = self.viewer.draw_by_slice_number
         self.viewer.draw_by_slice_number.clear()
@@ -617,6 +619,7 @@ class DensityMeasureStyle(DefaultInteractorStyle):
             m.set_point2(pp2)
             m.calc_density()
             _new_measure = True
+            Publisher.sendMessage("Add density measurement", m)
         elif self.format == 'polygon':
             if self._last_measure is None:
                 m = PolygonDensityMeasure(self.orientation, n)
@@ -644,7 +647,7 @@ class DensityMeasureStyle(DefaultInteractorStyle):
         self.viewer.UpdateCanvas()
 
     def OnInsertPolygon(self, evt):
-        if self._last_measure:
+        if self.format == 'polygon' and self._last_measure:
             m = self._last_measure
             if len(m.points) >= 3:
                 n = self.viewer.slice_data.number
@@ -654,6 +657,20 @@ class DensityMeasureStyle(DefaultInteractorStyle):
                 self._last_measure = None
                 Publisher.sendMessage("Add density measurement", m)
                 self.viewer.UpdateCanvas()
+
+
+class DensityMeasureEllipseStyle(DensityMeasureStyle):
+    def __init__(self, viewer):
+        DensityMeasureStyle.__init__(self, viewer)
+        self.state_code = const.STATE_MEASURE_DENSITY_ELLIPSE
+        self.format = 'ellipse'
+
+
+class DensityMeasurePolygonStyle(DensityMeasureStyle):
+    def __init__(self, viewer):
+        DensityMeasureStyle.__init__(self, viewer)
+        self.state_code = const.STATE_MEASURE_DENSITY_POLYGON
+        self.format = 'polygon'
 
 
 class PanMoveInteractorStyle(DefaultInteractorStyle):
@@ -2465,7 +2482,8 @@ def get_style(style):
         const.STATE_WL: WWWLInteractorStyle,
         const.STATE_MEASURE_DISTANCE: LinearMeasureInteractorStyle,
         const.STATE_MEASURE_ANGLE: AngularMeasureInteractorStyle,
-        const.STATE_MEASURE_DENSITY: DensityMeasureStyle,
+        const.STATE_MEASURE_DENSITY_ELLIPSE: DensityMeasureEllipseStyle,
+        const.STATE_MEASURE_DENSITY_POLYGON: DensityMeasurePolygonStyle,
         const.STATE_PAN: PanMoveInteractorStyle,
         const.STATE_SPIN: SpinInteractorStyle,
         const.STATE_ZOOM: ZoomInteractorStyle,

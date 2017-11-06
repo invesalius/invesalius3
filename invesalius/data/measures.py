@@ -1261,7 +1261,7 @@ class PolygonDensityMeasure(object):
 
     def on_change_polygon(self):
         self.points = self.polygon.points
-        self._need_calc = True
+        self._need_calc = self.complete
 
     def draw_to_canvas(self, gc, canvas):
         if self.visible:
@@ -1280,7 +1280,7 @@ class PolygonDensityMeasure(object):
         #  if len(self.points) >= 3:
         self.polygon.closed = True
         self._need_calc = True
-        self.complete = False
+        self.complete = True
 
     def calc_density(self, canvas):
         from invesalius.data.slice_ import Slice
