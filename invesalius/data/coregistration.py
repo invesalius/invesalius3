@@ -385,10 +385,11 @@ class CoregistrationObjectDynamic_m(threading.Thread):
         self._pause_ = True
 
     def run(self):
-        m_change = self.bases[0]
-        R_obj = self.bases[1]
-        obj_fids = self.bases[2]
-        q_obj = self.bases[3]
+        M_change = self.bases[0]
+        M_obj_rot = self.bases[1]
+        M_obj_trans = self.bases[2]
+        # obj_fids = self.bases[2]
+        # q_obj = self.bases[3]
 
         trck_init = self.trck_info[0]
         trck_id = self.trck_info[1]
@@ -408,23 +409,23 @@ class CoregistrationObjectDynamic_m(threading.Thread):
         while self.nav_id:
             coord_raw = dco.GetCoordinates(trck_init, trck_id, trck_mode)
 
-            q_obj_ref = asarray(dco.dynamic_reference_m(q_obj, coord_raw[1, :])[:3])
-            fix_obj_ref = asarray(dco.dynamic_reference_m(obj_fids[4, :], coord_raw[1, :])[:3])
-            v_obj = vstack((asmatrix(q_obj_ref[:3] - fix_obj_ref[:3]).reshape([3, 1]), 0.))
+            # q_obj_ref = asarray(dco.dynamic_reference_m(q_obj, coord_raw[1, :])[:3])
+            # fix_obj_ref = asarray(dco.dynamic_reference_m(obj_fids[4, :], coord_raw[1, :])[:3])
+            # v_obj = vstack((asmatrix(q_obj_ref[:3] - fix_obj_ref[:3]).reshape([3, 1]), 0.))
 
             trck_coord = dco.dynamic_reference_m(coord_raw[0, :], coord_raw[1, :])
             trck_coord_2 = vstack((asmatrix(trck_coord[0:3]).reshape([3, 1]), 1.))
             # img = m_change * (trck_coord_2 + v_obj)
-            img = m_change * trck_coord_2
+            img = M_change * trck_coord_2
 
             as1, bs1, gs1 = radians(coord_raw[0, 3:])
-            R_stylus = asmatrix(tr.euler_matrix(as1, bs1, gs1, 'rzyx'))
-            T_stylus = asmatrix(tr.translation_matrix(coord_raw[0, :3]))
+            R_stylus = tr.euler_matrix(as1, bs1, gs1, 'rzyx')
+            T_stylus = tr.translation_matrix(coord_raw[0, :3])
             M_stylus = asmatrix(tr.concatenate_matrices(T_stylus, R_stylus))
 
             a, b, g = radians(coord_raw[1, 3:])
-            R_reference = asmatrix(tr.euler_matrix(a, b, g, 'rzyx'))
-            T_reference = asmatrix(tr.translation_matrix(coord_raw[1, :3]))
+            R_reference = tr.euler_matrix(a, b, g, 'rzyx')
+            T_reference = tr.translation_matrix(coord_raw[1, :3])
             M_reference = asmatrix(tr.concatenate_matrices(T_reference, R_reference))
 
             # a, b, g = pi/2, 0., 0.
@@ -433,12 +434,24 @@ class CoregistrationObjectDynamic_m(threading.Thread):
             coord = (float(img[0]), float(img[1]), float(img[2]), coord_raw[0, 3],
                      coord_raw[0, 4], coord_raw[0, 5])
 
-            coord_img = float(img[0]), float(img[1]), float(img[2])
-            coord_img_f = db.flip_x_m(coord_img)
-            m_translate = asmatrix(tr.translation_matrix(coord_img_f))
+            # coord_img = float(img[0]), float(img[1]), float(img[2])
+            # coord_img_f = db.flip_x_m(coord_img)
+            # m_translate = asmatrix(tr.translation_matrix(coord_img_f))
 
-            R_obj_change = R_obj.I*R_reference.I*R_stylus*R_obj
-            M_final = m_translate*R_obj_change
+            # R_obj_change = R_obj.I*R_reference.I*R_stylus*R_obj
+            # M_final = m_translate*R_obj_change
+            # M_final = m_translate * m_change * M_reference.I * m_obj * M_stylus
+            M_dyn = M_reference.I * M_obj_rot * M_stylus * M_obj_rot
+            M_dyn[2, -1] = -M_dyn[2, -1]
+
+            # print "M_dyn: ", M_dyn
+            # print "trck_coord: ", trck_coord
+
+            # M_final = M_change * M_obj * M_dyn
+            M_final = M_change * M_dyn
+
+            ddd = M_final[0, -1], M_final[1, -1], M_final[2, -1]
+            M_final[:3, -1] = asmatrix(db.flip_x_m(ddd)).reshape([3, 1])
 
             # trying to compose all transformations in one single matrix
             # M_final_2 = M_reference.I*M_stylus
@@ -455,8 +468,8 @@ class CoregistrationObjectDynamic_m(threading.Thread):
             # TODO: Optimize the value of sleep for each tracking device.
             # Debug tracker is not working with 0.175 so changed to 0.2
             # However, 0.2 is too low update frequency ~5 Hz. Need optimization URGENTLY.
-            sleep(.3)
-            # sleep(0.175)
+            # sleep(.3)
+            sleep(0.175)
             # sleep(1.)
 
             if self._pause_:

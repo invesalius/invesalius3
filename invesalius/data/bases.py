@@ -165,7 +165,7 @@ def flip_x_m(point):
     return point_rot[0, 0], point_rot[1, 0], point_rot[2, 0]
 
 
-def object_registration(fiducials, orients):
+def object_registration(fiducials, orients, coord_raw):
     """
 
     :param fiducials:
@@ -174,18 +174,38 @@ def object_registration(fiducials, orients):
     """
 
     coords = np.hstack((fiducials, orients))
-    fids_1 = np.zeros([3, 3])
+    fids_0 = np.zeros([3, 3])
+    fids_aux = np.zeros([4, 6])
 
+    # for ic in range(0, 3):
+    #     fids_aux[ic, :] = dco.dynamic_reference_m2(coords[ic, :], coord_raw[1, :])
+    # fids_aux[3, :] = dco.dynamic_reference_m2(coords[4, :], coord_raw[1, :])
+    # fids_aux[:, 2] = -fids_aux[:, 2]
+    # 
+    # for ic in range(0, 3):
+    #     fids_0[ic, :] = dco.dynamic_reference_m2(fids_aux[ic, :], fids_aux[3, :])[:3]
+        
     for ic in range(0, 3):
-        # fids_1[ic, :] = dco.dynamic_reference(coords[ic, :], coords[4, :])[:3]
-        fids_1[ic, :] = (coords[ic, :] - coords[4, :])[:3]
+        fids_0[ic, :] = dco.dynamic_reference_m2(coords[ic, :], coords[4, :])[:3]
+
+    fids_aux[3, :] = coords[4, :]
+
+    s0_trans = tr.translation_matrix(fids_aux[3, :3])
+    s0_rot = tr.euler_matrix(np.radians(fids_aux[3, 3]), np.radians(fids_aux[3, 4]),
+                             np.radians(fids_aux[3, 5]), 'rzyx')
+    S0 = tr.concatenate_matrices(s0_trans, s0_rot)
+
+    # for ic in range(0, 3):
+    #     fids_1[ic, :] = (coords[ic, :] - coords[4, :])[:3]
 
      # sensor_fixed_obj = dco.dynamic_reference(coords[4, :], coords[4, :])[:3]
 
-    obj_center_trck = fiducials[3, :] - fiducials[4, :]
+    # obj_center_trck = fiducials[3, :] - fiducials[4, :]
 
-    m_obj, q_obj, m_inv_obj = base_creation(fiducials[:3, :])
-    q_obj_center = q_obj
+    # m_obj, q_obj, m_inv_obj = base_creation(fiducials[:3, :])
+    # m_obj, q_obj, m_inv_obj = base_creation(fids_1)
+    # q_obj_center = q_obj
     # q_obj_center = q_obj - fiducials[4, :]
 
-    return obj_center_trck, fids_1, q_obj_center, coords
+    return fids_0, np.asmatrix(S0)
+    # return obj_center_trck, fids_1, q_obj_center, m_obj

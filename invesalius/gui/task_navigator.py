@@ -600,29 +600,70 @@ class NeuronavigationPanel(wx.Panel):
                         obj_fids_dyn = np.zeros([5, 6])
                         obj_coords = np.hstack((obj_fiducials, obj_orients))
 
-                        obj_center_trck, fids_0, q_obj_center, coords = db.object_registration(obj_fiducials, obj_orients)
-                        fixed_sensor = obj_coords[4, :]
+                        # obj_fiducials[:, -1] = -obj_fiducials[:, -1]
+
+                        # obj_center_trck, fids_0, q_obj_center, m_obj = db.object_registration(obj_fiducials, obj_orients)
+                        # fids_0, S0 = db.object_registration(obj_fiducials, obj_orients)
+                        # fixed_sensor = obj_coords[4, :]
 
                         if self.trk_init and self.tracker_id:
                             coord_raw = dco.GetCoordinates(self.trk_init, self.tracker_id, self.ref_mode_id)
+                            fids_0, S0 = db.object_registration(obj_fiducials, obj_orients, coord_raw)
                             if self.ref_mode_id:
-                                for ic in range(0, 5):
-                                    obj_fids_dyn[ic, :] = dco.dynamic_reference_m(obj_coords[ic, :], coord_raw[1, :])
+                            #     for ic in range(0, 5):
+                            #         obj_fids_dyn[ic, :] = dco.dynamic_reference_m(obj_coords[ic, :], coord_raw[1, :])
+                            #
+                            #     for ic in range(0, 3):
+                            #         fids_stylus[ic, :] = dco.dynamic_reference_m(obj_fids_dyn[ic, :], obj_fids_dyn[4, :])[:3]
+                            #     for ic in range(0, 3):
+                            #         fids_stylus[ic, :] = dco.dynamic_reference_m(obj_fids_dyn[ic, :], coord_raw[1, :])[:3]
+                            #
+                            #     m_obj, q_obj, minv_obj = db.base_creation(obj_fids_dyn[:3, :3])
 
-                                for ic in range(0, 3):
-                                    fids_stylus[ic, :] = dco.dynamic_reference_m(obj_fids_dyn[ic, :], obj_fids_dyn[4, :])[:3]
+                                m_obj, q_obj, m_inv_obj = db.base_creation(fids_0)
+                                # m_obj_2 = np.zeros([3, 3])
+                                m_obj_2 = np.asmatrix(np.identity(4))
+                                m_obj_3 = np.asmatrix(np.identity(4))
+                                m_obj_2[0, :3] = m_obj[1, :]
+                                m_obj_2[1, :3] = -m_obj[2, :]
+                                m_obj_2[2, :3] = m_obj[0, :]
+                                # m_obj_2[:3, 0] = m_inv_obj[:, 1]
+                                # m_obj_2[:3, 1] = -m_inv_obj[:, 2]
+                                # m_obj_2[:3, 2] = m_inv_obj[:, 0]
+                                # m_obj_2[:3, -1] = q_obj.reshape([3, 1])
+                                # m_obj_2[0, -1] = q_obj[0]
+                                # m_obj_2[1, -1] = q_obj[1]
+                                # m_obj_2[2, -1] = q_obj[2]
 
-                                m_obj, q_obj, minv_obj = db.base_creation(obj_fids_dyn[:3, :3])
-                                q_obj_all = np.hstack((q_obj, np.array([0., 0., 0.])))
-                                t_q_obj = tr.translation_matrix(q_obj)
+                                m_obj_3[0, -1] = q_obj[0]
+                                m_obj_3[1, -1] = q_obj[1]
+                                m_obj_3[2, -1] = q_obj[2]
 
-                                obj_img = np.array([[0., 1., 0.], [0., -1., 0.], [0., 1., 0.]])
+                                # M_obj = m_obj_2
+                                M_obj_rot = m_obj_2
+                                M_obj_trans = S0 * m_obj_3 * S0.I
+                                print "m_obj_2: ", m_obj_2
+                                print "m_obj_3: ", m_obj_3
+                                print "S0: ", S0
+                                print "m_inv_obj: ", S0.I
+                                print "M_obj: ", M_obj_rot
 
-                                m_transf = tr.affine_matrix_from_points(fids_stylus.T, obj_img.T,
-                                                                        shear=False, scale=False)
+                            # q_obj_all = np.hstack((q_obj, np.array([0., 0., 0.])))
+                            # x, y, z = q_obj
+                            # pad = np.array([0.0, 0.0, 0.0])
+                            # m_obj_2 = np.identity(3)
+                            # trans = np.array([[x], [y], [z], [1]])
+                            # m_obj_t = np.vstack([m_obj_2, pad])
+                            # m_obj_t = np.hstack([m_obj_t, trans])
+                                # t_q_obj = tr.translation_matrix(q_obj)
 
-                                scale, shear, angles, trans, persp = tr.decompose_matrix(m_transf)
-                                r_obj = np.asmatrix(tr.euler_matrix(*angles))
+                                # obj_img = np.array([[0., 1., 0.], [0., -1., 0.], [0., 1., 0.]])
+                                #
+                                # m_transf = tr.affine_matrix_from_points(fids_stylus.T, obj_img.T,
+                                #                                         shear=False, scale=False)
+                                #
+                                # scale, shear, angles, trans, persp = tr.decompose_matrix(m_transf)
+                                # r_obj = np.asmatrix(tr.euler_matrix(*angles))
                                 # t_obj = np.asmatrix(tr.translation_matrix(trans))
                                 # M_obj = np.asmatrix(tr.concatenate_matrices(t_obj, r_obj))
 
@@ -639,7 +680,8 @@ class NeuronavigationPanel(wx.Panel):
                         #                       (fiducials, obj_sensor_orient))
                         if self.ref_mode_id:
                             # self.correg = dcr.CoregistrationObjectDynamic(bases_coreg, nav_id, tracker_mode, obj_data)
-                            self.correg = dcr.CoregistrationObjectDynamic_m((m_change, r_obj, obj_coords, q_obj_all), nav_id, tracker_mode)
+                            # self.correg = dcr.CoregistrationObjectDynamic_m((m_change, r_obj, obj_coords, q_obj_all), nav_id, tracker_mode)
+                            self.correg = dcr.CoregistrationObjectDynamic_m((m_change, M_obj_rot, M_obj_trans), nav_id, tracker_mode)
                         # else:
                         #     self.correg = dcr.CoregistrationObjectStatic(bases_coreg, nav_id, tracker_mode, obj_data)
                     else:

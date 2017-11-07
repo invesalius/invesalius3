@@ -35,6 +35,7 @@ from scipy.spatial import distance
 
 import invesalius.constants as const
 import invesalius.data.bases as bases
+import invesalius.data.transformations as tr
 import invesalius.data.vtk_utils as vtku
 import invesalius.project as prj
 import invesalius.style as st
@@ -1179,23 +1180,40 @@ class Viewer(wx.Panel):
         coord = pubsub_evt.data[1]
         # self.OnUpdateObjectTargetGuide(coord)
 
+        # scale, shear, angles, trans, persp = tr.decompose_matrix(m_rot_obj)
+        # r_obj_sxyz = tr.euler_matrix(angles[0], angles[1], angles[2], 'sxyz')
+        # al, bl, gl = np.degrees(tr.euler_from_matrix(r_obj_sxyz, 'rzxy'))
+        # r_obj_ryxz = np.asmatrix(tr.euler_matrix(al, bl, gl, 'ryxz'))
+
+        # print np.allclose(r_obj_sxyz, r_obj_ryxz)
+
+        # m_rot_obj[:3, :3] = r_obj_ryxz[:3, :3]
+
         m_id = np.identity(3)
 
         # x, y, z = 0., 0., 0.
-        x, y, z = bases.flip_x(coord[:3])
+        x, y, z = bases.flip_x_m(coord[:3])
         #
         pad = np.array([0.0, 0.0, 0.0])
         trans = np.array([[x], [y], [z], [1]])
         m_rot_affine = np.vstack([m_id, pad])
         m_rot_affine = np.hstack([m_rot_affine, trans])
+
         m_rot_vtk = self.array_to_vtkmatrix4x4(m_rot_obj)
+        # m_rot_vtk = self.array_to_vtkmatrix4x4(m_rot_obj)
+
+        # transf = vtk.vtkTransform()
+        # transf.SetMatrix(m_rot_vtk)
 
         # m_id = np.identity(3)
         m_id_affine = np.vstack([m_id, pad])
         m_id_affine = np.hstack([m_id_affine, trans])
         m_id_vtk = self.array_to_vtkmatrix4x4(m_id_affine)
 
+        # self.obj_actor.SetOrientation(bl, gl, al)
+        # self.obj_actor.SetPosition(x, y, z)
         self.obj_actor.SetUserMatrix(m_rot_vtk)
+        # self.obj_actor.SetUserTransform(transf)
         self.obj_axes.SetUserMatrix(m_id_vtk)
 
         self.Refresh()
