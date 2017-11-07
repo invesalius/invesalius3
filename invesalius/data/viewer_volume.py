@@ -97,13 +97,13 @@ class Viewer(wx.Panel):
         self.text.SetValue("")
         self.ren.AddActor(self.text.actor)
 
-        axes = vtk.vtkAxesActor()
-        axes.SetXAxisLabelText('x')
-        axes.SetYAxisLabelText('y')
-        axes.SetZAxisLabelText('z')
-        axes.SetTotalLength(50, 50, 50)
-
-        self.ren.AddActor(axes)
+        # axes = vtk.vtkAxesActor()
+        # axes.SetXAxisLabelText('x')
+        # axes.SetYAxisLabelText('y')
+        # axes.SetZAxisLabelText('z')
+        # axes.SetTotalLength(50, 50, 50)
+        #
+        # self.ren.AddActor(axes)
 
 
         self.slice_plane = None
@@ -245,14 +245,14 @@ class Viewer(wx.Panel):
         Publisher.subscribe(self.StopBlinkMarker, 'Stop Blink Marker')
 
         # Related to object tracking during neuronavigation
-        Publisher.subscribe(self.UpdateObjectOrientation, 'Co-registered points')
+        Publisher.subscribe(self.UpdateObjectOrientation, 'Update object orientation')
         Publisher.subscribe(self.UpdateObjectInitial, 'Update object initial orientation')
         Publisher.subscribe(self.UpdateObjectState, 'Update object tracking state')
 
         Publisher.subscribe(self.CreateObjectPolyData, 'Create object polydata')
 
         Publisher.subscribe(self.ActivateTargetMode, 'Target navigation mode')
-        Publisher.subscribe(self.OnUpdateObjectTargetGuide, 'Update tracker angles')
+        Publisher.subscribe(self.OnUpdateObjectTargetGuide, 'Co-registered points')
         Publisher.subscribe(self.OnUpdateTargetCoordinates, 'Update target')
         Publisher.subscribe(self.OnRemoveTarget, 'Disable or enable coil tracker')
         # Publisher.subscribe(self.UpdateObjectTargetView, 'Co-registered points')
@@ -606,6 +606,8 @@ class Viewer(wx.Panel):
             self.ren2.SetViewport(0.75, 0, 1, 1)
             self.CreateTextDistance()
 
+            if not self.obj_polydata:
+                self.CreateObjectPolyData(None)
             normals = vtk.vtkPolyDataNormals()
             normals.SetInputData(self.obj_polydata)
             normals.SetFeatureAngle(80)
@@ -685,8 +687,8 @@ class Viewer(wx.Panel):
         else:
             self.DisableCoilTracker()
 
-    def OnUpdateObjectTargetGuide(self, coord):
-
+    def OnUpdateObjectTargetGuide(self, pubsub_evt):
+        coord = pubsub_evt.data
         if self.target_coord and self.target_mode:
 
             target_dist = distance.euclidean(coord[0:3],
@@ -1052,7 +1054,10 @@ class Viewer(wx.Panel):
         """
         Coil for navigation rendered in volume viewer.
         """
-        filename = pubsub_evt.data
+        if isinstance(pubsub_evt, int):
+            filename = pubsub_evt.data
+        else:
+            filename = None
         if filename:
             if filename.lower().endswith('.stl'):
                 reader = vtk.vtkSTLReader()
@@ -1082,7 +1087,7 @@ class Viewer(wx.Panel):
             wx.MessageBox(_("InVesalius was not able to import this surface"), _("Import surface error"))
             self.obj_polydata = None
 
-        self.AddObjectActor()
+        #self.AddObjectActor()
 
     def AddObjectActor(self):
         """
@@ -1431,7 +1436,7 @@ class Viewer(wx.Panel):
     def SetVolumeCamera(self, pubsub_evt):
         if self.camera_state:
             #TODO: exclude dependency on initial focus
-            cam_focus = np.array(bases.flip_x(pubsub_evt.data[1][:3]))
+            cam_focus = np.array(bases.flip_x(pubsub_evt.data[:3]))
             cam = self.ren.GetActiveCamera()
 
             if self.initial_focus is None:

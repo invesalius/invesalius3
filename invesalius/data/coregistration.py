@@ -131,7 +131,7 @@ class CoregistrationDynamic(threading.Thread):
 
             # Tried several combinations and different locations to send the messages,
             # however only this one does not block the GUI during navigation.
-            wx.CallAfter(Publisher.sendMessage, 'Co-registered points', coord[0:3])
+            wx.CallAfter(Publisher.sendMessage, 'Co-registered points', coord)
             wx.CallAfter(Publisher.sendMessage, 'Set camera in volume', coord)
             wx.CallAfter(Publisher.sendMessage, 'Update tracker angles', angles)
 
@@ -283,7 +283,9 @@ class CoregistrationObjectDynamic(threading.Thread):
             # however only this one does not block the GUI during navigation.
             # wx.CallAfter(Publisher.sendMessage, 'Co-registered points', coord[0:3])
             # wx.CallAfter(Publisher.sendMessage, 'Co-registered points', (m_inv_trck, coord))
-            wx.CallAfter(Publisher.sendMessage, 'Co-registered points', (m_eul, coord))
+            wx.CallAfter(Publisher.sendMessage, 'Co-registered points', coord)
+            wx.CallAfter(Publisher.sendMessage, 'Update object orientation', (m_eul, coord))
+
             # wx.CallAfter(Publisher.sendMessage, 'Set camera in volume', coord)
             # wx.CallAfter(Publisher.sendMessage, 'Update object orientation',
             #              (m_inv_trck, coord))

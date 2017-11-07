@@ -489,7 +489,7 @@ class NeuronavigationPanel(wx.Panel):
 
         Publisher.sendMessage('Set ball reference position', (ux, uy, uz))
         # Publisher.sendMessage('Set camera in volume', (ux, uy, uz))
-        Publisher.sendMessage('Co-registered points', (None, (ux, uy, uz, 0., 0., 0.)))
+        Publisher.sendMessage('Co-registered points', (ux, uy, uz, 0., 0., 0.))
         Publisher.sendMessage('Update cross position', (ux, uy, uz))
 
     def OnImageFiducials(self, evt):
@@ -536,12 +536,12 @@ class NeuronavigationPanel(wx.Panel):
         choice_ref = btn[2]
         txtctrl_fre = btn[3]
 
-        self.fiducials = np.array([[10.5, 109.2, 22.],
-                                   [171.9, 109.2, 22.],
-                                   [91.8, 5.3, 22.],
-                                   [-90.01125233, -68.99572909, -95.67216954],
-                                   [-78.32915385, 76.10023779, -92.9506228],
-                                   [6.00091345, 1.14540308, -61.00970923]])
+        # self.fiducials = np.array([[10.5, 109.2, 22.],
+        #                            [171.9, 109.2, 22.],
+        #                            [91.8, 5.3, 22.],
+        #                            [-90.01125233, -68.99572909, -95.67216954],
+        #                            [-78.32915385, 76.10023779, -92.9506228],
+        #                            [6.00091345, 1.14540308, -61.00970923]])
 
         nav_id = btn_nav.GetValue()
         if nav_id:
@@ -602,9 +602,11 @@ class NeuronavigationPanel(wx.Panel):
                         # Publisher.sendMessage('Update object initial orientation',
                         #                       (fiducials, obj_sensor_orient))
                         if self.ref_mode_id:
-                            self.correg = dcr.CoregistrationObjectDynamic(bases_coreg, nav_id, tracker_mode, obj_data)
+                            self.correg = dcr.CoregistrationDynamic(bases_coreg, nav_id, tracker_mode)
+                            #self.correg = dcr.CoregistrationObjectDynamic(bases_coreg, nav_id, tracker_mode, obj_data)
                         else:
-                            self.correg = dcr.CoregistrationObjectStatic(bases_coreg, nav_id, tracker_mode, obj_data)
+                            self.correg = dcr.CoregistrationStatic(bases_coreg, nav_id, tracker_mode)
+                            #self.correg = dcr.CoregistrationObjectStatic(bases_coreg, nav_id, tracker_mode, obj_data)
                     else:
                         dlg.InvalidObjectRegistration()
 
@@ -660,18 +662,21 @@ class ObjectRegistrationPanel(wx.Panel):
         tooltip = wx.ToolTip(_("Create new coil"))
         link_new_obj = wx.Button(self, -1, _("New"), size=wx.Size(65, 23))
         link_new_obj.SetToolTip(tooltip)
+        link_new_obj.Enable(0)
         link_new_obj.Bind(wx.EVT_BUTTON, self.OnLinkCreate)
 
         # Button for import config coil file
         tooltip = wx.ToolTip(_("Load coil configuration file"))
         link_load_obj = wx.Button(self, -1, _("Load"), size=wx.Size(65, 23))
         link_load_obj.SetToolTip(tooltip)
+        link_load_obj.Enable(0)
         link_load_obj.Bind(wx.EVT_BUTTON, self.OnLinkLoad)
 
         # Save button for object registration
         tooltip = wx.ToolTip(_(u"Save object registration file"))
         btn_save = wx.Button(self, -1, _(u"Save"), size=wx.Size(65, 23))
         btn_save.SetToolTip(tooltip)
+        btn_save.Enable(0)
         btn_save.Bind(wx.EVT_BUTTON, self.ShowSaveObjectDialog)
 
         # Create a horizontal sizer to represent button save
@@ -932,7 +937,8 @@ class MarkersPanel(wx.Panel):
         self.current_coord = pubsub_evt.data
 
     def UpdateCurrentAngle(self, pubsub_evt):
-        self.current_angle = pubsub_evt.data[1][3:]
+        self.current_coord = pubsub_evt.data[:3]
+        self.current_angle = pubsub_evt.data[3:]
 
     def UpdateNavigationStatus(self, pubsub_evt):
         if pubsub_evt.data is False:
