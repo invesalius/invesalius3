@@ -620,13 +620,11 @@ class NeuronavigationPanel(wx.Panel):
                             #
                             #     m_obj, q_obj, minv_obj = db.base_creation(obj_fids_dyn[:3, :3])
 
-                                m_obj, q_obj, m_inv_obj = db.base_creation(fids_0)
+                                m_obj, q_obj, m_inv_obj = db.base_creation_object(fids_0)
                                 # m_obj_2 = np.zeros([3, 3])
-                                m_obj_2 = np.asmatrix(np.identity(4))
-                                m_obj_3 = np.asmatrix(np.identity(4))
-                                m_obj_2[0, :3] = m_obj[1, :]
-                                m_obj_2[1, :3] = -m_obj[2, :]
-                                m_obj_2[2, :3] = m_obj[0, :]
+                                m_obj_rot = np.asmatrix(np.identity(4))
+                                m_obj_trans = np.asmatrix(np.identity(4))
+                                m_obj_rot[:3, :3] = m_obj[:3, :3]
                                 # m_obj_2[:3, 0] = m_inv_obj[:, 1]
                                 # m_obj_2[:3, 1] = -m_inv_obj[:, 2]
                                 # m_obj_2[:3, 2] = m_inv_obj[:, 0]
@@ -635,15 +633,20 @@ class NeuronavigationPanel(wx.Panel):
                                 # m_obj_2[1, -1] = q_obj[1]
                                 # m_obj_2[2, -1] = q_obj[2]
 
-                                m_obj_3[0, -1] = q_obj[0]
-                                m_obj_3[1, -1] = q_obj[1]
-                                m_obj_3[2, -1] = q_obj[2]
+                                # m_obj_2[0, -1] = q_obj[0]
+                                # m_obj_2[1, -1] = q_obj[1]
+                                # m_obj_2[2, -1] = q_obj[2]
+
+                                # this is the translation that is working
+                                m_obj_trans[0, -1] = q_obj[0]
+                                m_obj_trans[1, -1] = q_obj[1]
+                                m_obj_trans[2, -1] = q_obj[2]
 
                                 # M_obj = m_obj_2
-                                M_obj_rot = m_obj_2
-                                M_obj_trans = S0 * m_obj_3 * S0.I
-                                print "m_obj_2: ", m_obj_2
-                                print "m_obj_3: ", m_obj_3
+                                M_obj_rot = m_obj_rot.I
+                                M_obj_trans = S0 * m_obj_trans * S0.I
+                                print "m_obj_2: ", m_obj_rot
+                                print "m_obj_3: ", m_obj_trans
                                 print "S0: ", S0
                                 print "m_inv_obj: ", S0.I
                                 print "M_obj: ", M_obj_rot
@@ -681,7 +684,7 @@ class NeuronavigationPanel(wx.Panel):
                         if self.ref_mode_id:
                             # self.correg = dcr.CoregistrationObjectDynamic(bases_coreg, nav_id, tracker_mode, obj_data)
                             # self.correg = dcr.CoregistrationObjectDynamic_m((m_change, r_obj, obj_coords, q_obj_all), nav_id, tracker_mode)
-                            self.correg = dcr.CoregistrationObjectDynamic_m((m_change, M_obj_rot, M_obj_trans), nav_id, tracker_mode)
+                            self.correg = dcr.CoregistrationObjectDynamic_m((m_change, m_obj_rot, m_obj_trans, S0), nav_id, tracker_mode)
                         # else:
                         #     self.correg = dcr.CoregistrationObjectStatic(bases_coreg, nav_id, tracker_mode, obj_data)
                     else:

@@ -388,6 +388,7 @@ class CoregistrationObjectDynamic_m(threading.Thread):
         M_change = self.bases[0]
         M_obj_rot = self.bases[1]
         M_obj_trans = self.bases[2]
+        S0 = self.bases[3]
         # obj_fids = self.bases[2]
         # q_obj = self.bases[3]
 
@@ -419,11 +420,13 @@ class CoregistrationObjectDynamic_m(threading.Thread):
             img = M_change * trck_coord_2
 
             as1, bs1, gs1 = radians(coord_raw[0, 3:])
+            # as1, bs1, gs1 = 0., 0., 0.
             R_stylus = tr.euler_matrix(as1, bs1, gs1, 'rzyx')
             T_stylus = tr.translation_matrix(coord_raw[0, :3])
             M_stylus = asmatrix(tr.concatenate_matrices(T_stylus, R_stylus))
 
             a, b, g = radians(coord_raw[1, 3:])
+            # a, b, g = 0., 0., 0.
             R_reference = tr.euler_matrix(a, b, g, 'rzyx')
             T_reference = tr.translation_matrix(coord_raw[1, :3])
             M_reference = asmatrix(tr.concatenate_matrices(T_reference, R_reference))
@@ -441,7 +444,15 @@ class CoregistrationObjectDynamic_m(threading.Thread):
             # R_obj_change = R_obj.I*R_reference.I*R_stylus*R_obj
             # M_final = m_translate*R_obj_change
             # M_final = m_translate * m_change * M_reference.I * m_obj * M_stylus
-            M_dyn = M_reference.I * M_obj_rot * M_stylus * M_obj_rot
+
+            # M_dyn = M_reference.I * M_stylus * S0.I * M_obj_rot.I * S0
+
+            M_dyn = S0 * M_obj_trans * S0.I * M_reference.I * M_stylus * M_obj_rot
+
+            # this combined with object registration in source coordinates rotate the object in correct alligned axis
+            # but does not have correct initial orientation and changes the initial acoording to reference position in
+            # different coregistrations
+            # M_dyn = M_reference.I * S0 * M_obj_trans * S0.I * M_stylus * M_obj_rot
             M_dyn[2, -1] = -M_dyn[2, -1]
 
             # print "M_dyn: ", M_dyn
@@ -449,6 +460,8 @@ class CoregistrationObjectDynamic_m(threading.Thread):
 
             # M_final = M_change * M_obj * M_dyn
             M_final = M_change * M_dyn
+
+            M_final[:3, :3] = asmatrix(db.flip_x_m2(M_final[:3, :3]))[:3, :3]
 
             ddd = M_final[0, -1], M_final[1, -1], M_final[2, -1]
             M_final[:3, -1] = asmatrix(db.flip_x_m(ddd)).reshape([3, 1])
