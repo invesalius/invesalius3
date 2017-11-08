@@ -652,6 +652,8 @@ class CanvasRendererCTX:
 
             self._drawn = True
 
+        return path
+
 
 class CanvasHandlerBase(object):
     def _3d_to_2d(self, renderer, pos):
@@ -792,6 +794,8 @@ class Polygon(CanvasHandlerBase):
         self.closed = closed
         self.line_colour = line_colour
 
+        self._path = None
+
         if self.fill:
             self.fill_colour = fill_colour
         else:
@@ -809,7 +813,14 @@ class Polygon(CanvasHandlerBase):
                 points = [self._3d_to_2d(canvas.evt_renderer, p) for p in self.points]
             else:
                 points = self.points
-            canvas.draw_polygon(points, self.fill, self.closed, self.line_colour, self.fill_colour, self.width)
+            self._path = canvas.draw_polygon(points, self.fill, self.closed, self.line_colour, self.fill_colour, self.width)
+
+            #  if self.closed:
+                #  U, L = self.convex_hull(points, merge=False)
+                #  canvas.draw_polygon(U, self.fill, self.closed, self.line_colour, (0, 255, 0, 255), self.width)
+                #  canvas.draw_polygon(L, self.fill, self.closed, self.line_colour, (0, 0, 255, 255), self.width)
+                #  for p0, p1 in self.get_all_antipodal_pairs(points):
+                    #  canvas.draw_line(p0, p1)
 
         if self.interactive:
             for handler in self.handlers:
@@ -840,10 +851,77 @@ class Polygon(CanvasHandlerBase):
             for handler in self.handlers:
                 if handler.is_over(x, y):
                     return handler
+        if self.closed and self._path and self._path.Contains(x, -y):
+            return self
+
+    def mouse_move(self, evt):
+        mx, my = evt.position
+        if self.is_3d:
+            x, y, z = evt.viewer.get_coordinate_cursor(mx, my)
+            new_pos = (x, y, z)
+        else:
+            new_pos = mx, my
+
+        diff = [i-j for i,j in zip(new_pos, self._last_position)]
+
+        for n, point in enumerate(self.points):
+            self.points[n] = tuple((i+j for i,j in zip(diff, point)))
+            self.handlers[n].position = self.points[n]
+
+        self._last_position = new_pos
+
+        if self._on_change_function and self._on_change_function():
+            self._on_change_function()()
+
+        return True
 
     def on_change(self, evt_function):
         self._on_change_function = WeakMethod(evt_function)
 
+    def on_select(self, evt):
+        mx, my = evt.position
+        if self.is_3d:
+            x, y, z = evt.viewer.get_coordinate_cursor(mx, my)
+            self._last_position = (x, y, z)
+        else:
+            self._last_position = (mx, my)
+
+    def convex_hull(self, points, merge=True):
+        spoints = sorted(points)
+        U = []
+        L = []
+
+        _dir = lambda o, a, b:  (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0])
+
+        for p in spoints:
+            while len(L) >= 2 and _dir(L[-2], L[-1], p) <= 0:
+                L.pop()
+            L.append(p)
+
+        for p in reversed(spoints):
+            while len(U) >= 2 and _dir(U[-2], U[-1], p) <= 0:
+                U.pop()
+            U.append(p)
+
+        if merge:
+            return U + L
+        return U, L
+
+    def get_all_antipodal_pairs(self, points):
+        U, L = self.convex_hull(points, merge=False)
+        i = 0
+        j = len(L) - 1
+        while i < len(U) - 1 or j > 0:
+            yield U[i], L[j]
+
+            if i == len(U) - 1:
+                j -=  1
+            elif j == 0:
+                i += 1
+            elif (U[i+1][1]-U[i][1])*(L[j][0]-L[j-1][0]) > (L[j][1]-L[j-1][1])*(U[i+1][0]-U[i][0]):
+                i += 1
+            else:
+                j -= 1
 
 
 class Ellipse(CanvasHandlerBase):
