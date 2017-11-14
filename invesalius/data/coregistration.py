@@ -21,7 +21,7 @@ import threading
 from time import sleep
 from math import cos, sin, pi
 
-from numpy import asmatrix, mat, vstack, radians, identity, asarray, squeeze, hstack
+from numpy import asmatrix, mat, vstack, radians, identity, zeros
 import wx
 from wx.lib.pubsub import pub as Publisher
 
@@ -372,12 +372,12 @@ class CoregistrationObjectDynamic_m(threading.Thread):
     for better real-time navigation
     """
 
-    def __init__(self, bases, nav_id, trck_info):
+    def __init__(self, bases, nav_id, trck_info, coreg):
         threading.Thread.__init__(self)
         self.bases = bases
         self.nav_id = nav_id
         self.trck_info = trck_info
-        # self.obj_data = obj_data
+        self.coreg = coreg
         self._pause_ = False
         self.start()
 
@@ -388,13 +388,32 @@ class CoregistrationObjectDynamic_m(threading.Thread):
         M_change = self.bases[0]
         M_obj_rot = self.bases[1]
         M_obj_trans = self.bases[2]
-        S0 = self.bases[3]
-        # obj_fids = self.bases[2]
-        # q_obj = self.bases[3]
+        M_obj_base = self.bases[3]
+        S0 = self.bases[4]
+        obj_fids = self.bases[5]
+        obj_orients = self.bases[6]
+        S0_rot = self.bases[7]
+        S0_trans = self.bases[8]
+        R_change = self.bases[9]
+        T_change = self.bases[10]
+        M_obj_trans_0 = self.bases[11]
+        M_obj_rot_0 = self.bases[12]
+        M_obj_base_0 = self.bases[13]
+        M_obj_trans_raw = self.bases[14]
+        M_obj_rot_raw = self.bases[15]
+        S0_raw = self.bases[16]
+        S0_rot_raw = self.bases[17]
+        T_obj_dyn = self.bases[18]
+        R_obj_dyn = self.bases[19]
+        S0_dyn = self.bases[20]
+        S0_rot_dyn = self.bases[21]
 
         trck_init = self.trck_info[0]
         trck_id = self.trck_info[1]
         trck_mode = self.trck_info[2]
+
+        M_vtk = self.coreg[0]
+        M_vtk_pi = self.coreg[1]
 
         # m_inv_trck = self.obj_data[0]
         # obj_center_trck = self.obj_data[1]
@@ -406,6 +425,15 @@ class CoregistrationObjectDynamic_m(threading.Thread):
         # m_inv_obj = self.obj_data[2]
         # r_obj = self.obj_data[3]
         # fixed_sensor = self.obj_data[4]
+
+        M_f0 = zeros([4, 4, 4])
+
+        for ic in range(0, 4):
+            af0, bf0, gf0 = radians(obj_orients[ic, :])
+            # as1, bs1, gs1 = 0., 0., 0.
+            R_f0 = tr.euler_matrix(af0, bf0, gf0, 'rzyx')
+            T_f0 = tr.translation_matrix(obj_fids[ic, :])
+            M_f0[:, :, ic] = tr.concatenate_matrices(T_f0, R_f0)
 
         while self.nav_id:
             coord_raw = dco.GetCoordinates(trck_init, trck_id, trck_mode)
@@ -421,14 +449,14 @@ class CoregistrationObjectDynamic_m(threading.Thread):
 
             as1, bs1, gs1 = radians(coord_raw[0, 3:])
             # as1, bs1, gs1 = 0., 0., 0.
-            R_stylus = tr.euler_matrix(as1, bs1, gs1, 'rzyx')
-            T_stylus = tr.translation_matrix(coord_raw[0, :3])
+            R_stylus = asmatrix(tr.euler_matrix(as1, bs1, gs1, 'rzyx'))
+            T_stylus = asmatrix(tr.translation_matrix(coord_raw[0, :3]))
             M_stylus = asmatrix(tr.concatenate_matrices(T_stylus, R_stylus))
 
             a, b, g = radians(coord_raw[1, 3:])
             # a, b, g = 0., 0., 0.
-            R_reference = tr.euler_matrix(a, b, g, 'rzyx')
-            T_reference = tr.translation_matrix(coord_raw[1, :3])
+            R_reference = asmatrix(tr.euler_matrix(a, b, g, 'rzyx'))
+            T_reference = asmatrix(tr.translation_matrix(coord_raw[1, :3]))
             M_reference = asmatrix(tr.concatenate_matrices(T_reference, R_reference))
 
             # a, b, g = pi/2, 0., 0.
@@ -447,24 +475,82 @@ class CoregistrationObjectDynamic_m(threading.Thread):
 
             # M_dyn = M_reference.I * M_stylus * S0.I * M_obj_rot.I * S0
 
-            M_dyn = S0 * M_obj_trans * S0.I * M_reference.I * M_stylus * M_obj_rot
+            # this works with dynamic registration of object
+            # M_dyn = S0 * M_obj_trans * S0.I * M_reference.I * M_stylus
+            # M_dyn_rot = M_reference.I * M_stylus * M_obj_rot
+
+            # M_dyn = M_reference.I * M_stylus
+            # M_dyn_rot = M_reference.I * M_stylus * M_obj_rot
 
             # this combined with object registration in source coordinates rotate the object in correct alligned axis
             # but does not have correct initial orientation and changes the initial acoording to reference position in
             # different coregistrations
             # M_dyn = M_reference.I * S0 * M_obj_trans * S0.I * M_stylus * M_obj_rot
+            # M_dyn[2, -1] = -M_dyn[2, -1]
+
+            # translation component
+            #
+            # T_dyn = M_reference.I * T_stylus
+            # T_dyn[2, -1] = -T_dyn[2, -1]
+            # T_dyn_ch = M_change * T_dyn
+            # ddd = T_dyn_ch[0, -1], T_dyn_ch[1, -1], T_dyn_ch[2, -1]
+            # T_dyn_ch[:3, -1] = asmatrix(db.flip_x_m(ddd)).reshape([3, 1])
+            # # T_final = T_dyn_ch
+            # T_final = T_dyn_ch * M_obj_rot_0
+
+            M_fly = T_stylus
+            M_dyn = M_reference.I * M_fly
+
+            # M_dyn = M_reference.I * M_stylus
             M_dyn[2, -1] = -M_dyn[2, -1]
+            M_dyn_ch = M_change * M_dyn
+            ddd = M_dyn_ch[0, -1], M_dyn_ch[1, -1], M_dyn_ch[2, -1]
+            M_dyn_ch[:3, -1] = asmatrix(db.flip_x_m(ddd)).reshape([3, 1])
+            # M_final = S0 * M_obj_base_0 * S0.I * M_dyn_ch
+            # M_final = S0 * M_obj_trans_0 * S0.I * M_dyn_ch * M_obj_rot_0
+            M_final = S0 * M_obj_trans_0 * S0.I * M_dyn_ch
+
+            # rotation component
+            # this equation provides correct initial alignment but wrong correspondence between axis of rotation
+            # and depends on the position of reference probe
+            # R_dyn = R_change * R_reference.I * R_stylus * M_obj_rot_0
+
+            # this equation provides correct axis of rotations and and  does not depends on the position of
+            # reference probe, but wrong alignment
+            # R_dyn = R_change * R_reference.I * R_stylus * M_obj_rot_raw
+
+            # R_dyn = S0_dyn * R_reference.I * R_stylus * M_obj_rot_raw
+            # R_dyn = R_obj_dyn.I * R_reference.I * R_stylus * M_obj_rot_raw
+            # this works for static reference
+            # R_dyn = M_vtk * M_obj_rot_raw.I * S0_rot_raw.I * R_stylus * M_obj_rot_raw
+            # this works for dynamic reference in rotation but not in translation
+            R_dyn = M_vtk * M_obj_rot_raw.I * S0_rot_dyn.I * R_reference.I * R_stylus * M_obj_rot_raw
+            # R_final = db.object_registration_m4(obj_fids, obj_orients, R_dyn, M_change, M_reference)
+            # R_dyn_ch = R_change * R_dyn
+            # R_final = R_dyn_ch
+
+            # R_dyn = asmatrix(identity(4))
+
+            M_final[:3, :3] = R_dyn[:3, :3]
+
+            # M_dyn = M_reference.I * M_stylus
+            # M_dyn[2, -1] = -M_dyn[2, -1]
+            # M_dyn_ch = M_change * M_dyn
+            #
+            # M_final = S0_rot.I * M_dyn_ch
 
             # print "M_dyn: ", M_dyn
             # print "trck_coord: ", trck_coord
 
             # M_final = M_change * M_obj * M_dyn
-            M_final = M_change * M_dyn
+            # M_final = M_change * M_dyn_ch
 
-            M_final[:3, :3] = asmatrix(db.flip_x_m2(M_final[:3, :3]))[:3, :3]
+            # an attempt to flip coordinates and match initial orientation. Did not work well.
+            # M_final[:3, :3] = asmatrix(db.flip_x_m2(M_final[:3, :3]))[:3, :3]
+            # M_final[:3, :3] = M_dyn_rot[:3, :3]
 
-            ddd = M_final[0, -1], M_final[1, -1], M_final[2, -1]
-            M_final[:3, -1] = asmatrix(db.flip_x_m(ddd)).reshape([3, 1])
+            # ddd = M_final[0, -1], M_final[1, -1], M_final[2, -1]
+            # M_final[:3, -1] = asmatrix(db.flip_x_m(ddd)).reshape([3, 1])
 
             # trying to compose all transformations in one single matrix
             # M_final_2 = M_reference.I*M_stylus

@@ -1074,9 +1074,7 @@ class Viewer(wx.Panel):
             wx.MessageBox(_("InVesalius was not able to import this surface"), _("Import surface error"))
             self.obj_polydata = None
 
-        self.AddObjectActor()
-
-    def AddObjectActor(self):
+    def AddObjectActor(self, m_base):
         """
         Coil for navigation rendered in volume viewer.
         """
@@ -1084,7 +1082,12 @@ class Viewer(wx.Panel):
         transform = vtk.vtkTransform()
         # transform.Scale(1, -1, -1)
         # transform.RotateY(180)
+        # transform.Concatenate(m_base)
         transform.RotateZ(90)
+        # transform.RotateZ(angles[0])
+        # transform.RotateX(angles[1])
+        # transform.RotateY(angles[2])
+
 
         # m_rot = np.matrix([[1.0, 0.0, 0.0, 0.0],
         #                    [0.0, -1.0, 0.0, 0.0],
@@ -1180,6 +1183,10 @@ class Viewer(wx.Panel):
         coord = pubsub_evt.data[1]
         # self.OnUpdateObjectTargetGuide(coord)
 
+        # vtkmat = self.obj_actor.GetMatrix()
+        # print vtkmat
+
+
         # scale, shear, angles, trans, persp = tr.decompose_matrix(m_rot_obj)
         # r_obj_sxyz = tr.euler_matrix(angles[0], angles[1], angles[2], 'sxyz')
         # al, bl, gl = np.degrees(tr.euler_from_matrix(r_obj_sxyz, 'rzxy'))
@@ -1202,6 +1209,8 @@ class Viewer(wx.Panel):
         m_rot_vtk = self.array_to_vtkmatrix4x4(m_rot_obj)
         # m_rot_vtk = self.array_to_vtkmatrix4x4(m_rot_obj)
 
+        # print m_rot_vtk
+
         # transf = vtk.vtkTransform()
         # transf.SetMatrix(m_rot_vtk)
 
@@ -1214,51 +1223,38 @@ class Viewer(wx.Panel):
         # self.obj_actor.SetPosition(x, y, z)
         self.obj_actor.SetUserMatrix(m_rot_vtk)
         # self.obj_actor.SetUserTransform(transf)
-        self.obj_axes.SetUserMatrix(m_id_vtk)
+        self.obj_axes.SetUserMatrix(m_rot_vtk)
 
         self.Refresh()
 
     def UpdateObjectInitial(self, pubsub_evt):
-        minv_trck = pubsub_evt.data[0]
-        # a, g, b = np.radians(pubsub_evt.data[1])
-        angles = pubsub_evt.data[1]
-        # angles[1] = -angles[1]
-        # angles[0] = angles[0] + 90
-        a, b, g = np.radians((angles[0], -angles[1], angles[2]))
-        a, b, g = np.radians(pubsub_evt.data[1])
-        # coord = pubsub_evt.data[2]
-        # self.obj_name = pubsub_evt.data[3]
+        m_change = pubsub_evt.data[0]
+        m_obj_rot = pubsub_evt.data[1]
+        m_obj_trans = pubsub_evt.data[2]
+        m_obj_base = pubsub_evt.data[3]
+
+        # angles = np.degrees(tr.euler_from_matrix(m_obj_base, 'rzxy'))
+        # coords = tr.translation_from_matrix(m_obj_base)
+
+        m_id = np.identity(4)
+
+        # m_obj_vtk = self.array_to_vtkmatrix4x4(m_id)
+        m_obj_vtk = self.array_to_vtkmatrix4x4(m_obj_rot)
 
         if self.obj_state and not self.obj_actor:
-            # self.AddObject(self.obj_name)
-            # self.CreateObjectPolyData(self.obj_name)
-            self.AddObjectActor()
+            self.AddObjectActor(m_obj_vtk)
 
-        # Flip the Y axis
-        minv_trck[1, :] = -minv_trck[1, :]
+        # m_rot_vtk = self.array_to_vtkmatrix4x4(m_obj_base)
+        # transf = vtk.vtkTransform()
+        # transf.SetMatrix(m_rot_vtk)
 
-        # x, y, z = bases.flip_x(coord)
-        x, y, z = 0., 0., 0.
-
-        m_rot = np.mat([[cos(a) * cos(b), sin(b) * sin(g) * cos(a) - cos(g) * sin(a),
-                        cos(a) * sin(b) * cos(g) + sin(a) * sin(g)],
-                       [cos(b) * sin(a), sin(b) * sin(g) * sin(a) + cos(g) * cos(a),
-                        cos(g) * sin(b) * sin(a) - sin(g) * cos(a)],
-                       [-sin(b), sin(g) * cos(b), cos(b) * cos(g)]])
-
-        # seems to work with some things inverted (everything is inverted on Z axis, even coil becomes black)
-        # m_rot_img = minv_trck * m_rot
-        m_rot_img = m_rot * minv_trck
-
-        pad = np.array([0.0, 0.0, 0.0])
-        trans = np.array([[x], [y], [z], [1]])
-        m_rot_affine = np.vstack([m_rot_img, pad])
-        m_rot_affine = np.hstack([m_rot_affine, trans])
-        m_rot_vtk = self.array_to_vtkmatrix4x4(m_rot_affine)
-
-        self.obj_actor.SetUserMatrix(m_rot_vtk)
+        # self.obj_actor.SetUserMatrix(m_rot_vtk)
+        # # self.obj_actor.RotateY(-90)
+        # # self.obj_actor.SetUserTransform(transf)
+        # self.obj_actor.SetPosition(coords[0], coords[1], coords[2])
+        # print self.obj_actor.GetOrientation()
         # self.obj_axes.SetUserMatrix(m_rot_vtk)
-        # self.Refresh()
+        self.Refresh()
 
     def array_to_vtkmatrix4x4(self, mrot4x4):
 

@@ -332,6 +332,48 @@ def dynamic_reference_m2(probe, reference):
 
     return coord_rot[0], coord_rot[1], coord_rot[2], np.degrees(al), np.degrees(be), np.degrees(ga)
 
+# def dynamic_reference_m3(probe, reference):
+#     """
+#     Apply dynamic reference correction to probe coordinates. Uses the alpha, beta and gama
+#     rotation angles of reference to rotate the probe coordinate and returns the x, y, z
+#     difference between probe and reference. Angles sequences and equation was extracted from
+#     Polhemus manual and Attitude matrix in Wikipedia.
+#     General equation is:
+#     coord = Mrot * (probe - reference)
+#     :param probe: sensor one defined as probe
+#     :param reference: sensor two defined as reference
+#     :return: rotated and translated coordinates
+#     """
+#
+#     a, b, g = np.radians(reference[3:6])
+#     a_p, b_p, g_p = np.radians(probe[3:6])
+#
+#     T = tr.translation_matrix(reference[:3])
+#     T_p = tr.translation_matrix(probe[:3])
+#     R = tr.euler_matrix(a, b, g, 'rzyx')
+#     R_p = tr.euler_matrix(a_p, b_p, g_p, 'rzyx')
+#     M = np.asmatrix(tr.concatenate_matrices(T, R))
+#     M_p = np.asmatrix(tr.concatenate_matrices(T_p, R_p))
+#     # M = tr.compose_matrix(angles=np.radians(reference[3:6]), translate=reference[:3])
+#     # print M
+#
+#     M_dyn = M.I * M_p
+#
+#     # al, be, ga = tr.euler_from_matrix(M_dyn, 'rzyx')
+#     # coord_rot = tr.translation_from_matrix(M_dyn)
+#     #
+#     # coord_rot = np.squeeze(coord_rot)
+#
+#     # probe_4 = np.vstack((np.asmatrix(probe[:3]).reshape([3, 1]), 1.))
+#     # coord_rot_test = M.I * probe_4
+#     # coord_rot_test = np.squeeze(np.asarray(coord_rot_test))
+#     #
+#     # print "coord_rot: ", coord_rot
+#     # print "coord_rot_test: ", coord_rot_test
+#     # print "test: ", np.allclose(coord_rot, coord_rot_test[:3])
+#
+#     return M_dyn
+
 
 def str2float(data):
     """
