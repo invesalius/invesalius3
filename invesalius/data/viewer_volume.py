@@ -1181,6 +1181,7 @@ class Viewer(wx.Panel):
         m_rot_obj = pubsub_evt.data[0]
         # a, b, g = np.radians(pubsub_evt.data[1])
         coord = pubsub_evt.data[1]
+        m_fly = pubsub_evt.data[2]
         # self.OnUpdateObjectTargetGuide(coord)
 
         # vtkmat = self.obj_actor.GetMatrix()

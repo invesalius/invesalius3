@@ -617,11 +617,12 @@ class NeuronavigationPanel(wx.Panel):
                         if self.trk_init and self.tracker_id:
                             if self.ref_mode_id:
                                 coord_raw = dco.GetCoordinates(self.trk_init, self.tracker_id, self.ref_mode_id)
-                                fids_s0, fids_img, S0, m_obj_rot, m_obj_trans, m_obj_base, s0_rot, s0_trans, m_obj_trans_0, m_obj_rot_0, m_obj_base_0, m_obj_trans_raw, m_obj_rot_raw, S0_raw, s0_rot_raw, t_obj_dyn, r_obj_dyn, S0_dyn, s0_rot_dyn = db.object_registration_m3(obj_fiducials, obj_orients, coord_raw, m_change)
+                                fids_s0, fids_img, S0, m_obj_rot, m_obj_trans, m_obj_base, s0_rot, s0_trans, m_obj_trans_0, m_obj_rot_0, m_obj_base_0, m_obj_trans_raw, m_obj_rot_raw, S0_raw, s0_rot_raw, t_obj_dyn, r_obj_dyn, S0_dyn, s0_rot_dyn, s0_trans_dyn, m_obj_base_dyn, m_obj_base_raw = db.object_registration_m3(obj_fiducials, obj_orients, coord_raw, m_change)
                                 obj_data = m_change, m_obj_rot, m_obj_trans, m_obj_base, S0,\
                                            obj_fiducials, obj_orients, s0_rot, s0_trans, r_change, t_change,\
                                            m_obj_trans_0, m_obj_rot_0, m_obj_base_0, m_obj_trans_raw, m_obj_rot_raw,\
-                                           S0_raw, s0_rot_raw,t_obj_dyn, r_obj_dyn, S0_dyn, s0_rot_dyn
+                                           S0_raw, s0_rot_raw, t_obj_dyn, r_obj_dyn, S0_dyn, s0_rot_dyn, s0_trans_dyn,\
+                                           m_obj_base_dyn, m_obj_base_raw
 
                         else:
                             dlg.NavigationTrackerWarning(0, 'choose')
