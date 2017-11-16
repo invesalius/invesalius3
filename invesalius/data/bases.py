@@ -375,6 +375,7 @@ def object_registration_m3(fiducials, orients, coord_raw, m_change):
     coords = coords_aux[mask]
 
     fids_s0 = np.zeros([3, 3])
+    fids_s0_dyn = np.zeros([3, 3])
     fids_dyn = np.zeros([4, 6])
     fids_img = np.zeros([4, 6])
     fids_raw = np.zeros([3, 3])
@@ -399,6 +400,15 @@ def object_registration_m3(fiducials, orients, coord_raw, m_change):
         fids_dyn[ic, :] = dco.dynamic_reference_m2(coords[ic, :], coord_raw[1, :])
 
     fids_dyn[:, 2] = -fids_dyn[:, 2]
+
+    for ic in range(0, 3):
+        fids_s0_dyn[ic, :] = dco.dynamic_reference_m2(fids_dyn[ic, :], fids_dyn[3, :])[:3]
+
+    m_obj_dyn_0, q_obj_dyn_0, m_inv_obj_dyn_0 = base_creation_object(fids_s0_dyn[:3, :3])
+    r_obj_dyn_0 = np.asmatrix(np.identity(4))
+    r_obj_dyn_0[:3, :3] = m_obj_dyn_0[:3, :3]
+    t_obj_dyn_0 = np.asmatrix(tr.translation_matrix(q_obj_dyn_0))
+    m_obj_base_dyn_0 = np.asmatrix(tr.concatenate_matrices(t_obj_dyn_0, r_obj_dyn_0))
 
     s0_trans_dyn = np.asmatrix(tr.translation_matrix(fids_dyn[3, :3]))
     s0_rot_dyn = np.asmatrix(tr.euler_matrix(np.radians(fids_dyn[3, 3]), np.radians(fids_dyn[3, 4]),
@@ -451,7 +461,8 @@ def object_registration_m3(fiducials, orients, coord_raw, m_change):
     return fids_s0, fids_img, S0, r_obj, t_obj, m_obj_base, np.asmatrix(s0_rot),\
            np.asmatrix(s0_trans), t_obj_0, r_obj_0, m_obj_base_0,\
            t_obj_raw, r_obj_raw, S0_raw, s0_rot_raw, t_obj_dyn, r_obj_dyn, S0_dyn,\
-           s0_rot_dyn, s0_trans_dyn, m_obj_base_dyn, m_obj_base_raw
+           s0_rot_dyn, s0_trans_dyn, m_obj_base_dyn, m_obj_base_raw,\
+           m_obj_base_dyn_0, t_obj_dyn_0, r_obj_dyn_0
 
 
 def object_registration_m4(fiducials, orients, m_dyn, m_change, m_ref):

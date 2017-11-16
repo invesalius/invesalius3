@@ -140,6 +140,7 @@ class Viewer(wx.Panel):
         self.obj_polydata = None
         self.obj_actor = None
         self.obj_axes = None
+        self.obj_axes_center = None
         self.obj_state = None
         self.obj_actor_list = None
         self.arrow_actor_list = None
@@ -1115,7 +1116,7 @@ class Viewer(wx.Panel):
 
         self.obj_actor = vtk.vtkActor()
         self.obj_actor.SetMapper(obj_mapper)
-        self.obj_actor.GetProperty().SetOpacity(0.8)
+        self.obj_actor.GetProperty().SetOpacity(0.9)
         # self.obj_actor.GetProperty().SetColor()
         # self.obj_actor.SetVisibility(0)
 
@@ -1125,10 +1126,18 @@ class Viewer(wx.Panel):
         self.obj_axes.SetYAxisLabelText("y")
         self.obj_axes.SetZAxisLabelText("z")
         self.obj_axes.SetTotalLength(50.0, 50.0, 50.0)
-        # self.obj_axes.SetVisibility(0)
+
+        self.obj_axes_center = vtk.vtkAxesActor()
+        self.obj_axes_center.SetShaftTypeToCylinder()
+        self.obj_axes_center.SetXAxisLabelText("w")
+        self.obj_axes_center.SetYAxisLabelText("u")
+        self.obj_axes_center.SetZAxisLabelText("v")
+        self.obj_axes_center.SetTotalLength(50.0, 50.0, 50.0)
+        # self.obj_axes_center.SetVisibility(0)
 
         self.ren.AddActor(self.obj_actor)
         self.ren.AddActor(self.obj_axes)
+        self.ren.AddActor(self.obj_axes_center)
         # self.Refresh()
 
     # def UpdateObjectOrientation(self, pubsub_evt):
@@ -1221,6 +1230,7 @@ class Viewer(wx.Panel):
         m_id_vtk = self.array_to_vtkmatrix4x4(m_id_affine)
 
         # self.obj_actor.SetOrientation(bl, gl, al)
+        self.obj_axes_center.SetUserMatrix(m_id_vtk)
         # self.obj_actor.SetPosition(x, y, z)
         self.obj_actor.SetUserMatrix(m_rot_vtk)
         # self.obj_actor.SetUserTransform(transf)

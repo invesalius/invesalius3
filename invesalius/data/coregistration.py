@@ -410,6 +410,9 @@ class CoregistrationObjectDynamic_m(threading.Thread):
         S0_trans_dyn = self.bases[22]
         M_obj_dyn = self.bases[23]
         M_obj_raw = self.bases[24]
+        M_obj_dyn_0 = self.bases[25]
+        T_obj_dyn_0 = self.bases[26]
+        R_obj_dyn_0 = self.bases[27]
 
         trck_init = self.trck_info[0]
         trck_id = self.trck_info[1]
@@ -449,7 +452,11 @@ class CoregistrationObjectDynamic_m(threading.Thread):
             as1, bs1, gs1 = radians(coord_raw[0, 3:])
             # as1, bs1, gs1 = 0., 0., 0.
             R_stylus = asmatrix(tr.euler_matrix(as1, bs1, gs1, 'rzyx'))
-            T_stylus = asmatrix(tr.translation_matrix(coord_raw[0, :3]))
+            T_stylus_raw = asmatrix(tr.translation_matrix(coord_raw[0, :3]))
+            trans_new = S0_rot_raw.I * R_stylus * M_obj_trans_raw
+            trans_id = asmatrix(identity(4))
+            trans_id[:, -1] = trans_new[:, -1]
+            T_stylus = S0_raw * trans_id * S0_raw.I * T_stylus_raw
             M_stylus = asmatrix(tr.concatenate_matrices(T_stylus, R_stylus))
 
             a, b, g = radians(coord_raw[1, 3:])
@@ -473,23 +480,37 @@ class CoregistrationObjectDynamic_m(threading.Thread):
             # M_dyn_ch[:3, -1] = asmatrix(db.flip_x_m(ddd)).reshape([3, 1])
             # M_final = S0 * M_obj_trans_0 * S0.I * M_dyn_ch
 
-            R_offset = M_vtk * M_obj_rot_raw.I * S0_rot_dyn.I * R_reference.I * R_stylus * M_obj_rot_raw
+            # R_offset = M_vtk * M_obj_rot_raw.I * S0_rot_dyn.I * R_reference.I * R_stylus * M_obj_rot_raw
             M_fly = M_reference.I * M_stylus
             M_fly[2, -1] = -M_fly[2, -1]
-            M_offset = R_offset * S0 * M_obj_trans_0 * S0.I
-            M_dyn_ch = M_change * M_fly
-            ddd = M_dyn_ch[0, -1], M_dyn_ch[1, -1], M_dyn_ch[2, -1]
-            M_dyn_ch[:3, -1] = asmatrix(db.flip_x_m(ddd)).reshape([3, 1])
-            M_final = M_offset * M_dyn_ch
+            # M_offset = R_offset * S0 * M_obj_trans_0 * S0.I
+            # M_dyn_ch = M_change * M_fly
+            # ddd = M_dyn_ch[0, -1], M_dyn_ch[1, -1], M_dyn_ch[2, -1]
+            # M_dyn_ch[:3, -1] = asmatrix(db.flip_x_m(ddd)).reshape([3, 1])
+            # M_final = M_dyn_ch
 
             # this works for static reference
             # R_dyn = M_vtk * M_obj_rot_raw.I * S0_rot_raw.I * R_stylus * M_obj_rot_raw
             # this works for dynamic reference in rotation but not in translation
             # R_dyn = M_vtk * M_obj_rot_raw.I * S0_rot_dyn.I * R_reference.I * R_stylus * M_obj_rot_raw
+            R_offset = M_vtk * M_obj_rot_raw.I * S0_rot_dyn.I * R_reference.I * R_stylus * M_obj_rot_raw
+            M_offset = S0_dyn * T_obj_dyn_0 * S0_dyn.I
+            M_dyn_ch = M_change * M_fly
+            ddd = M_dyn_ch[0, -1], M_dyn_ch[1, -1], M_dyn_ch[2, -1]
+            M_dyn_ch[:3, -1] = asmatrix(db.flip_x_m(ddd)).reshape([3, 1])
+            M_offset_rot = M_dyn_ch
+            R_dyn = M_vtk * M_obj_raw.I * S0_dyn.I * M_fly * M_obj_raw * M_obj_trans_raw
 
-            R_dyn = asmatrix(identity(4))
+            R_4 = asmatrix(identity(4))
+            R_4[:3, :3] = R_dyn[:3, :3]
 
-            M_final[:3, :3] = R_dyn[:3, :3]
+            T_4 = asmatrix(identity(4))
+            T_4[:3, -1] = M_offset_rot[:3, -1]
+
+            # R_dyn = asmatrix(identity(4))
+            M_final = T_4*R_4
+
+            # M_final[:3, :3] = R_dyn[:3, :3]
 
             wx.CallAfter(Publisher.sendMessage, 'Co-registered points', (M_final, coord, M_fly))
 
