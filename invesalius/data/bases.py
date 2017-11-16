@@ -21,7 +21,7 @@ def angle_calculation(ap_axis, coil_axis):
     return float(angle)
 
 
-def base_creation(fiducials):
+def base_creation_old(fiducials):
     """
     Calculate the origin and matrix for coordinate system
     transformation.
@@ -57,16 +57,12 @@ def base_creation(fiducials):
                    [g2[0], g2[1], g2[2]],
                    [g3[0], g3[1], g3[2]]])
 
-    # q.shape = (3, 1)
-    # q = np.matrix(q.copy())
     m_inv = m.I
-
-    # print"M: ", m
-    # print"q: ", q
 
     return m, q, m_inv
 
-def base_creation_object(fiducials):
+
+def base_creation(fiducials):
     """
     Calculate the origin and matrix for coordinate system
     transformation.
@@ -89,8 +85,8 @@ def base_creation_object(fiducials):
     g1 = p3 - q
     g2 = p1 - q
 
-    # if not g1.any():
-    #     g1 = p2 - q
+    if not g1.any():
+        g1 = p2 - q
 
     g3 = np.cross(g1, g2)
 
@@ -102,12 +98,7 @@ def base_creation_object(fiducials):
                    [g1[1], g2[1], g3[1]],
                    [g1[2], g2[2], g3[2]]])
 
-    # q.shape = (3, 1)
-    # q = np.matrix(q.copy())
     m_inv = m.I
-
-    # print"M: ", m
-    # print"q: ", q
 
     return m, q, m_inv
 
@@ -200,168 +191,16 @@ def flip_x_m(point):
     """
 
     point_4 = np.hstack((point, 1.)).reshape([4, 1])
-    # point_4 = np.matrix(point + (0,)).reshape([4, 1])
     point_4[2, 0] = -point_4[2, 0]
 
     m_rot = np.asmatrix(tr.euler_matrix(pi, 0, 0))
-    # m_rot_y = np.asmatrix(tr.euler_matrix(0, pi, 0))
 
     point_rot = m_rot*point_4
 
     return point_rot[0, 0], point_rot[1, 0], point_rot[2, 0]
 
 
-def flip_x_m2(point):
-    """
-    Rotate coordinates of a vector by pi around X axis in static reference frame.
-
-    InVesalius also require to multiply the z coordinate by (-1). Possibly
-    because the origin of coordinate system of imagedata is
-    located in superior left corner and the origin of VTK scene coordinate
-    system (polygonal surface) is in the interior left corner. Second
-    possibility is the order of slice stacking
-
-    :param point: list of coordinates x, y and z
-    :return: rotated coordinates
-    """
-
-    m_4 = np.asmatrix(np.identity(4))
-    m_4[:3, :3] = point[:3, :3]
-    # point_4 = np.matrix(point + (0,)).reshape([4, 1])
-    # point_4[2, 0] = -point_4[2, 0]
-
-    m_rot = np.asmatrix(tr.euler_matrix(pi, 0, 0))
-    m_rot_z = np.asmatrix(tr.euler_matrix(0, 0, -pi/2))
-    # m_rot_y = np.asmatrix(tr.euler_matrix(0, pi, 0))
-
-    point_rot = m_rot_z*m_rot*m_4
-
-    return point_rot
-
-
-def object_registration(fiducials, orients, coord_raw, m_change):
-    """
-
-    :param fiducials:
-    :param orients:
-    :return:
-    """
-
-    coords = np.hstack((fiducials, orients))
-    fids_s0 = np.zeros([3, 3])
-    fids_dyn = np.zeros([4, 6])
-    fids_img = np.zeros([4, 6])
-
-    # this block is to compute object coordinates in reference frame
-    for ic in range(0, 3):
-        fids_dyn[ic, :] = dco.dynamic_reference_m2(coords[ic, :], coord_raw[1, :])
-
-    fids_dyn[3, :] = dco.dynamic_reference_m2(coords[4, :], coord_raw[1, :])
-    fids_dyn[:, 2] = -fids_dyn[:, 2]
-
-    for ic in range(0, 4):
-        a, b, g = np.radians(fids_dyn[ic, 3:])
-        T_p = tr.translation_matrix(fids_dyn[ic, :3])
-        R_p = tr.euler_matrix(a, b, g, 'rzyx')
-        M_p = np.asmatrix(tr.concatenate_matrices(T_p, R_p))
-        M_img = np.asmatrix(m_change) * M_p
-
-        angles = np.degrees(np.asarray(tr.euler_from_matrix(M_img, 'rzyx')))
-        coords = np.asarray(flip_x_m(tr.translation_from_matrix(M_img)))
-
-        fids_img[ic, :] = np.hstack((coords, angles))
-
-    for ic in range(0, 3):
-        fids_s0[ic, :] = dco.dynamic_reference_m2(fids_img[ic, :], fids_img[3, :])[:3]
-
-    # this block is to compute object coordinates in source frame
-    # for ic in range(0, 3):
-    #     fids_raw[ic, :] = dco.dynamic_reference_m2(coords[ic, :], coords[4, :])[:3]
-    #
-    # fids_raw[3, :] = coords[4, :]
-
-    s0_trans = tr.translation_matrix(fids_img[3, :3])
-    s0_rot = tr.euler_matrix(np.radians(fids_img[3, 3]), np.radians(fids_img[3, 4]),
-                             np.radians(fids_img[3, 5]), 'rzyx')
-    S0 = np.asmatrix(tr.concatenate_matrices(s0_trans, s0_rot))
-
-    m_obj_0, q_obj_0, m_inv_obj_0 = base_creation_object(fids_s0[:3, :3])
-    m_obj_rot_0 = np.asmatrix(np.identity(4))
-    m_obj_rot_0[:3, :3] = m_obj_0[:3, :3]
-    m_obj_trans_0 = np.asmatrix(tr.translation_matrix(q_obj_0))
-    m_obj_base_0 = np.asmatrix(tr.concatenate_matrices(m_obj_trans_0, m_obj_rot_0))
-
-    # obj_img = np.array([[0., 0., 1.], [0., 0., -1.], [1., 0., 0.]])
-    # m_obj_all = tr.affine_matrix_from_points(fids_img[:3, :3].T, obj_img.T,
-    #                                          shear=False, scale=False)
-    # scale_all, shear_all, angles_all, trans_all, persp_all = tr.decompose_matrix(m_obj_all)
-    # rotate_all = tr.euler_matrix(*angles_all)
-
-    m_obj, q_obj, m_inv_obj = base_creation_object(fids_img[:3, :3])
-    m_obj_rot = np.asmatrix(np.identity(4))
-    m_obj_rot[:3, :3] = m_obj[:3, :3]
-    m_obj_trans = np.asmatrix(tr.translation_matrix(q_obj))
-    m_obj_base = np.asmatrix(tr.concatenate_matrices(m_obj_trans, m_obj_rot))
-
-    # print "m_obj: ", m_obj
-    # print "m_obj_all: ", m_obj_all
-    # print "q_obj: ", q_obj
-    # print "rotate_all: ", rotate_all
-
-    return fids_s0, fids_img, S0, m_obj_rot, m_obj_trans, m_obj_base, np.asmatrix(s0_rot), np.asmatrix(s0_trans), m_obj_trans_0, m_obj_rot_0, m_obj_base_0
-
-
-def object_registration_m(fiducials, orients, coord_raw, m_change):
-    """
-
-    :param fiducials:
-    :param orients:
-    :return:
-    """
-
-    coords = np.hstack((fiducials, orients))
-    fids_s0 = np.zeros([3, 3])
-    fids_raw = np.zeros([4, 6])
-    fids_img = np.zeros([4, 6])
-
-    # this block is to compute object coordinates in source frame
-    for ic in range(0, 3):
-        fids_s0[ic, :] = dco.dynamic_reference_m2(coords[ic, :], coords[4, :])[:3]
-
-    # fids_raw[3, :] = coords[4, :]
-
-    s0_trans = tr.translation_matrix(coords[4, :3])
-    s0_rot = tr.euler_matrix(np.radians(coords[3, 3]), np.radians(coords[3, 4]),
-                             np.radians(coords[3, 5]), 'rzyx')
-    S0 = np.asmatrix(tr.concatenate_matrices(s0_trans, s0_rot))
-
-    m_obj_0, q_obj_0, m_inv_obj_0 = base_creation_object(fids_s0[:3, :3])
-    m_obj_rot_0 = np.asmatrix(np.identity(4))
-    m_obj_rot_0[:3, :3] = m_obj_0[:3, :3]
-    m_obj_trans_0 = np.asmatrix(tr.translation_matrix(q_obj_0))
-    m_obj_base_0 = np.asmatrix(tr.concatenate_matrices(m_obj_trans_0, m_obj_rot_0))
-
-    # obj_img = np.array([[0., 0., 1.], [0., 0., -1.], [1., 0., 0.]])
-    # m_obj_all = tr.affine_matrix_from_points(fids_img[:3, :3].T, obj_img.T,
-    #                                          shear=False, scale=False)
-    # scale_all, shear_all, angles_all, trans_all, persp_all = tr.decompose_matrix(m_obj_all)
-    # rotate_all = tr.euler_matrix(*angles_all)
-
-    # m_obj, q_obj, m_inv_obj = base_creation_object(fids_img[:3, :3])
-    # m_obj_rot = np.asmatrix(np.identity(4))
-    # m_obj_rot[:3, :3] = m_obj[:3, :3]
-    # m_obj_trans = np.asmatrix(tr.translation_matrix(q_obj))
-    # m_obj_base = np.asmatrix(tr.concatenate_matrices(m_obj_trans, m_obj_rot))
-
-    # print "m_obj: ", m_obj
-    # print "m_obj_all: ", m_obj_all
-    # print "q_obj: ", q_obj
-    # print "rotate_all: ", rotate_all
-
-    return fids_s0, fids_img, S0, None, None, None, np.asmatrix(s0_rot), np.asmatrix(s0_trans), m_obj_trans_0, m_obj_rot_0, m_obj_base_0
-
-
-def object_registration_m3(fiducials, orients, coord_raw, m_change):
+def object_registration(fiducials, orients, coord_raw):
     """
 
     :param fiducials:
@@ -374,26 +213,23 @@ def object_registration_m3(fiducials, orients, coord_raw, m_change):
     mask[[3]] = False
     coords = coords_aux[mask]
 
-    fids_s0 = np.zeros([3, 3])
-    fids_s0_dyn = np.zeros([3, 3])
     fids_dyn = np.zeros([4, 6])
-    fids_img = np.zeros([4, 6])
     fids_raw = np.zeros([3, 3])
 
     # this block is to compute object coordinates in source frame
     for ic in range(0, 3):
         fids_raw[ic, :] = dco.dynamic_reference_m2(coords[ic, :], coords[3, :])[:3]
 
-    s0_trans_raw = np.asmatrix(tr.translation_matrix(coords[3, :3]))
-    s0_rot_raw = np.asmatrix(tr.euler_matrix(np.radians(coords[3, 3]), np.radians(coords[3, 4]),
+    t_s0_raw = np.asmatrix(tr.translation_matrix(coords[3, :3]))
+    r_s0_raw = np.asmatrix(tr.euler_matrix(np.radians(coords[3, 3]), np.radians(coords[3, 4]),
                              np.radians(coords[3, 5]), 'rzyx'))
-    S0_raw = np.asmatrix(tr.concatenate_matrices(s0_trans_raw, s0_rot_raw))
+    s0_raw = np.asmatrix(tr.concatenate_matrices(t_s0_raw, r_s0_raw))
 
-    m_obj_raw, q_obj_raw, m_inv_obj_raw = base_creation_object(fids_raw[:3, :3])
+    base_obj_raw, q_obj_raw, base_inv_obj_raw = base_creation(fids_raw[:3, :3])
     r_obj_raw = np.asmatrix(np.identity(4))
-    r_obj_raw[:3, :3] = m_obj_raw[:3, :3]
+    r_obj_raw[:3, :3] = base_obj_raw[:3, :3]
     t_obj_raw = np.asmatrix(tr.translation_matrix(q_obj_raw))
-    m_obj_base_raw = np.asmatrix(tr.concatenate_matrices(t_obj_raw, r_obj_raw))
+    m_obj_raw = np.asmatrix(tr.concatenate_matrices(t_obj_raw, r_obj_raw))
 
     # this block is to compute object coordinates in reference frame
     for ic in range(0, 4):
@@ -401,71 +237,15 @@ def object_registration_m3(fiducials, orients, coord_raw, m_change):
 
     fids_dyn[:, 2] = -fids_dyn[:, 2]
 
-    for ic in range(0, 3):
-        fids_s0_dyn[ic, :] = dco.dynamic_reference_m2(fids_dyn[ic, :], fids_dyn[3, :])[:3]
-
-    m_obj_dyn_0, q_obj_dyn_0, m_inv_obj_dyn_0 = base_creation_object(fids_s0_dyn[:3, :3])
-    r_obj_dyn_0 = np.asmatrix(np.identity(4))
-    r_obj_dyn_0[:3, :3] = m_obj_dyn_0[:3, :3]
-    t_obj_dyn_0 = np.asmatrix(tr.translation_matrix(q_obj_dyn_0))
-    m_obj_base_dyn_0 = np.asmatrix(tr.concatenate_matrices(t_obj_dyn_0, r_obj_dyn_0))
-
     s0_trans_dyn = np.asmatrix(tr.translation_matrix(fids_dyn[3, :3]))
     s0_rot_dyn = np.asmatrix(tr.euler_matrix(np.radians(fids_dyn[3, 3]), np.radians(fids_dyn[3, 4]),
                                              np.radians(fids_dyn[3, 5]), 'rzyx'))
-    S0_dyn = np.asmatrix(tr.concatenate_matrices(s0_trans_dyn, s0_rot_dyn))
+    s0_dyn = np.asmatrix(tr.concatenate_matrices(s0_trans_dyn, s0_rot_dyn))
 
-    m_obj_dyn, q_obj_dyn, m_inv_obj_dyn = base_creation_object(fids_dyn[:3, :3])
-    r_obj_dyn = np.asmatrix(np.identity(4))
-    r_obj_dyn[:3, :3] = m_obj_dyn[:3, :3]
-    t_obj_dyn = np.asmatrix(tr.translation_matrix(q_obj_dyn))
-    m_obj_base_dyn = np.asmatrix(tr.concatenate_matrices(t_obj_dyn, r_obj_dyn))
-
-    for ic in range(0, 4):
-        a, b, g = np.radians(fids_dyn[ic, 3:])
-        T_p = tr.translation_matrix(fids_dyn[ic, :3])
-        R_p = tr.euler_matrix(a, b, g, 'rzyx')
-        M_p = np.asmatrix(tr.concatenate_matrices(T_p, R_p))
-        M_img = np.asmatrix(m_change) * M_p
-
-        angles_img = np.degrees(np.asarray(tr.euler_from_matrix(M_img, 'rzyx')))
-        coords_img = np.asarray(flip_x_m(tr.translation_from_matrix(M_img)))
-
-        fids_img[ic, :] = np.hstack((coords_img, angles_img))
-
-    for ic in range(0, 3):
-        fids_s0[ic, :] = dco.dynamic_reference_m2(fids_img[ic, :], fids_img[3, :])[:3]
-
-    s0_trans = tr.translation_matrix(fids_img[3, :3])
-    s0_rot = tr.euler_matrix(np.radians(fids_img[3, 3]), np.radians(fids_img[3, 4]),
-                             np.radians(fids_img[3, 5]), 'rzyx')
-    S0 = np.asmatrix(tr.concatenate_matrices(s0_trans, s0_rot))
-
-    m_obj_0, q_obj_0, m_inv_obj_0 = base_creation_object(fids_s0[:3, :3])
-    r_obj_0 = np.asmatrix(np.identity(4))
-    r_obj_0[:3, :3] = m_obj_0[:3, :3]
-    t_obj_0 = np.asmatrix(tr.translation_matrix(q_obj_0))
-    m_obj_base_0 = np.asmatrix(tr.concatenate_matrices(t_obj_0, r_obj_0))
-
-    m_obj, q_obj, m_inv_obj = base_creation_object(fids_img[:3, :3])
-    r_obj = np.asmatrix(np.identity(4))
-    r_obj[:3, :3] = m_obj[:3, :3]
-    t_obj = np.asmatrix(tr.translation_matrix(q_obj))
-    m_obj_base = np.asmatrix(tr.concatenate_matrices(t_obj, r_obj))
-
-    # print "m_obj: ", m_obj
-    # print "m_obj_all: ", m_obj_all
-    # print "q_obj: ", q_obj
-    # print "rotate_all: ", rotate_all
-
-    return fids_s0, fids_img, S0, r_obj, t_obj, m_obj_base, np.asmatrix(s0_rot),\
-           np.asmatrix(s0_trans), t_obj_0, r_obj_0, m_obj_base_0,\
-           t_obj_raw, r_obj_raw, S0_raw, s0_rot_raw, t_obj_dyn, r_obj_dyn, S0_dyn,\
-           s0_rot_dyn, s0_trans_dyn, m_obj_base_dyn, m_obj_base_raw,\
-           m_obj_base_dyn_0, t_obj_dyn_0, r_obj_dyn_0
+    return t_obj_raw, s0_raw, r_s0_raw, s0_dyn, m_obj_raw
 
 
-def object_registration_m4(fiducials, orients, m_dyn, m_change, m_ref):
+def object_registration_static(fiducials, orients):
     """
 
     :param fiducials:
@@ -473,38 +253,38 @@ def object_registration_m4(fiducials, orients, m_dyn, m_change, m_ref):
     :return:
     """
 
+    coords_aux = np.hstack((fiducials, orients))
+    mask = np.ones(len(coords_aux), dtype=bool)
+    mask[[3]] = False
+    coords = coords_aux[mask]
+
     fids_dyn = np.zeros([4, 6])
-    fids_img = np.zeros([4, 6])
-    fids_rot = np.asmatrix(np.ones([4, 5]))
-    fids_rot_fin = np.asmatrix(np.ones([4, 5]))
+    fids_raw = np.zeros([3, 3])
 
     # this block is to compute object coordinates in source frame
-    for ic in range(0, 5):
-        fids_rot[:3, ic] = np.asarray(fiducials[ic, :]).reshape([3, 1])
-        fids_rot_fin[:, ic] = m_ref.I * m_dyn * fids_rot[:, ic]
+    for ic in range(0, 3):
+        fids_raw[ic, :] = dco.dynamic_reference_m2(coords[ic, :], coords[3, :])[:3]
 
-    fids_rot_fin[2, :] = -fids_rot_fin[2, :]
+    t_s0_raw = np.asmatrix(tr.translation_matrix(coords[3, :3]))
+    r_s0_raw = np.asmatrix(tr.euler_matrix(np.radians(coords[3, 3]), np.radians(coords[3, 4]),
+                             np.radians(coords[3, 5]), 'rzyx'))
+    s0_raw = np.asmatrix(tr.concatenate_matrices(t_s0_raw, r_s0_raw))
+
+    base_obj_raw, q_obj_raw, base_inv_obj_raw = base_creation(fids_raw[:3, :3])
+    r_obj_raw = np.asmatrix(np.identity(4))
+    r_obj_raw[:3, :3] = base_obj_raw[:3, :3]
+    t_obj_raw = np.asmatrix(tr.translation_matrix(q_obj_raw))
+    m_obj_raw = np.asmatrix(tr.concatenate_matrices(t_obj_raw, r_obj_raw))
 
     # this block is to compute object coordinates in reference frame
-    for ic in range(0, 3):
-        fids_dyn[ic, :3] = fids_rot_fin[:3, ic].T
+    for ic in range(0, 4):
+        fids_dyn[ic, :] = coords[ic, :]
 
-    for ic in range(0, 3):
-        a, b, g = np.radians(fids_dyn[ic, 3:])
-        T_p = tr.translation_matrix(fids_dyn[ic, :3])
-        R_p = tr.euler_matrix(a, b, g, 'rzyx')
-        M_p = np.asmatrix(tr.concatenate_matrices(T_p, R_p))
-        M_img = np.asmatrix(m_change) * M_p
+    # fids_dyn[:, 2] = -fids_dyn[:, 2]
 
-        angles = np.degrees(np.asarray(tr.euler_from_matrix(M_img, 'rzyx')))
-        coords = np.asarray(flip_x_m(tr.translation_from_matrix(M_img)))
+    s0_trans_dyn = np.asmatrix(tr.translation_matrix(fids_dyn[3, :3]))
+    s0_rot_dyn = np.asmatrix(tr.euler_matrix(np.radians(fids_dyn[3, 3]), np.radians(fids_dyn[3, 4]),
+                                             np.radians(fids_dyn[3, 5]), 'rzyx'))
+    s0_dyn = np.asmatrix(tr.concatenate_matrices(s0_trans_dyn, s0_rot_dyn))
 
-        fids_img[ic, :] = np.hstack((coords, angles))
-
-    m_obj, q_obj, m_inv_obj = base_creation_object(fids_img[:3, :3])
-    m_obj_rot = np.asmatrix(np.identity(4))
-    m_obj_rot[:3, :3] = m_obj[:3, :3]
-    m_obj_trans = np.asmatrix(tr.translation_matrix(q_obj))
-    m_obj_base = np.asmatrix(tr.concatenate_matrices(m_obj_trans, m_obj_rot))
-
-    return m_obj_rot
+    return t_obj_raw, s0_raw, r_s0_raw, s0_dyn, m_obj_raw

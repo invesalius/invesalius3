@@ -183,6 +183,7 @@ class InnerFoldPanel(wx.Panel):
         checkobj = wx.CheckBox(self, -1, _('Show coil'))
         checkobj.SetToolTip(tooltip)
         checkobj.SetValue(False)
+        checkobj.Disable()
         checkobj.Bind(wx.EVT_CHECKBOX, partial(self.UpdateShowObject, ctrl=checkobj))
         self.checkobj = checkobj
 
@@ -203,12 +204,15 @@ class InnerFoldPanel(wx.Panel):
         sizer.Add(line_sizer, 1, wx.GROW | wx.EXPAND)
         sizer.Fit(self)
 
+        self.obj_name = False
+
         self.SetSizer(sizer)
         self.Update()
         self.SetAutoLayout(1)
         
     def __bind_events(self):
         Publisher.subscribe(self.OnCheckStatus, 'Navigation status')
+        Publisher.subscribe(self.OnCheckObjectStatus, 'Update object registration')
         Publisher.subscribe(self.UpdateVolumeCamera, 'Target navigation mode')
 
     def OnCheckStatus(self, pubsub_evt):
@@ -220,11 +224,18 @@ class InnerFoldPanel(wx.Panel):
             self.checktrigger.Enable(True)
             self.checkobj.Enable(True)
 
+    def OnCheckObjectStatus(self, pubsub_evt):
+        self.checkobj.Enable(True)
+        self.checkobj.SetValue(True)
+        self.obj_name = pubsub_evt.data[3]
+        Publisher.sendMessage('Update object tracking state', (self.checkobj.GetValue(),
+                                                               self.obj_name))
+
     def UpdateExternalTrigger(self, evt, ctrl):
         Publisher.sendMessage('Update trigger state', ctrl.GetValue())
 
     def UpdateShowObject(self, evt, ctrl):
-        Publisher.sendMessage('Update object tracking state', ctrl.GetValue())
+        Publisher.sendMessage('Update object tracking state', (ctrl.GetValue(), self.obj_name))
 
     def UpdateVolumeCamera(self, evt):
         if hasattr(evt, 'data'):
@@ -268,6 +279,7 @@ class NeuronavigationPanel(wx.Panel):
         choice_trck.SetToolTip(tooltip)
         choice_trck.SetSelection(const.DEFAULT_TRACKER)
         choice_trck.Bind(wx.EVT_COMBOBOX, partial(self.OnChoiceTracker, ctrl=choice_trck))
+        self.choice_trck = choice_trck
 
         # ComboBox for tracker reference mode
         tooltip = wx.ToolTip(_("Choose the navigation reference mode"))
@@ -313,12 +325,13 @@ class NeuronavigationPanel(wx.Panel):
         txtctrl_fre.SetBackgroundColour('WHITE')
         txtctrl_fre.SetEditable(0)
         txtctrl_fre.SetToolTip(tooltip)
+        self.txtctrl_fre = txtctrl_fre
 
         # Toggle button for neuronavigation
         tooltip = wx.ToolTip(_("Start navigation"))
         btn_nav = wx.ToggleButton(self, -1, _("Navigate"), size=wx.Size(80, -1))
         btn_nav.SetToolTip(tooltip)
-        btn_nav.Bind(wx.EVT_TOGGLEBUTTON, partial(self.OnNavigate, btn=(btn_nav, choice_trck, choice_ref, txtctrl_fre)))
+        btn_nav.Bind(wx.EVT_TOGGLEBUTTON, partial(self.OnNavigate, btn=(btn_nav, choice_trck, choice_ref)))
 
         # Image and tracker coordinates number controls
         for m in range(0, 7):
@@ -368,6 +381,7 @@ class NeuronavigationPanel(wx.Panel):
         Publisher.subscribe(self.UpdateImageCoordinates, 'Set ball reference position')
         Publisher.subscribe(self.OnDisconnectTracker, 'Disconnect tracker')
         Publisher.subscribe(self.UpdateObjectRegistration, 'Update object registration')
+        Publisher.subscribe(self.OnCloseProject, 'Close project data')
 
     def LoadImageFiducials(self, pubsub_evt):
         marker_id = pubsub_evt.data[0]
@@ -387,19 +401,19 @@ class NeuronavigationPanel(wx.Panel):
         for m in [0, 1, 2, 6]:
             if m == 6 and self.btns_coord[m].IsEnabled():
                 for n in [0, 1, 2]:
-                    self.numctrls_coord[m][n].SetValue(self.current_coord[n])
+                    self.numctrls_coord[m][n].SetValue(float(self.current_coord[n]))
             elif m != 6 and not self.btns_coord[m].GetValue():
                 # btn_state = self.btns_coord[m].GetValue()
                 # if not btn_state:
                 for n in [0, 1, 2]:
-                    self.numctrls_coord[m][n].SetValue(self.current_coord[n])
+                    self.numctrls_coord[m][n].SetValue(float(self.current_coord[n]))
 
     def UpdateObjectRegistration(self, pubsub_evt):
         self.obj_reg = pubsub_evt.data
         self.obj_reg_status = True
 
     def UpdateObjectState(self, pubsub_evt):
-        self.obj_show = pubsub_evt.data
+        self.obj_show = pubsub_evt.data[0]
 
     def UpdateTriggerState(self, pubsub_evt):
         self.trigger_state = pubsub_evt.data
@@ -506,7 +520,7 @@ class NeuronavigationPanel(wx.Panel):
             Publisher.sendMessage('Create marker', (coord, marker_id))
         else:
             for n in [0, 1, 2]:
-                self.numctrls_coord[btn_id][n].SetValue(self.current_coord[n])
+                self.numctrls_coord[btn_id][n].SetValue(float(self.current_coord[n]))
 
             self.fiducials[btn_id, :] = np.nan
             Publisher.sendMessage('Delete fiducial marker', marker_id)
@@ -521,6 +535,7 @@ class NeuronavigationPanel(wx.Panel):
                 coord = dco.dynamic_reference_m(coord_raw[0, :], coord_raw[1, :])
             else:
                 coord = coord_raw[0, :]
+                coord[2] = -coord[2]
 
         else:
             dlg.NavigationTrackerWarning(0, 'choose')
@@ -535,15 +550,6 @@ class NeuronavigationPanel(wx.Panel):
         btn_nav = btn[0]
         choice_trck = btn[1]
         choice_ref = btn[2]
-        txtctrl_fre = btn[3]
-        fids_obj_img = np.zeros([3, 3])
-
-        # self.fiducials = np.array([[10.5, 109.2, 22.],
-        #                            [171.9, 109.2, 22.],
-        #                            [91.8, 5.3, 22.],
-        #                            [-90.01125233, -68.99572909, -95.67216954],
-        #                            [-78.32915385, 76.10023779, -92.9506228],
-        #                            [6.00091345, 1.14540308, -61.00970923]])
 
         nav_id = btn_nav.GetValue()
         if nav_id:
@@ -564,42 +570,32 @@ class NeuronavigationPanel(wx.Panel):
                 for btn_c in self.btns_coord:
                     btn_c.Enable(False)
 
-                # obj_img = np.array([[0., 1., 0.], [0., -1., 0.], [1., 0., 0.]])
-                # m_obj_all = tr.affine_matrix_from_points(obj_img.T, self.fiducials[:3, :].T,
-                #                                          shear=False, scale=False)
-                # scale_obj, shear_obj, angles_obj, trans_obj, persp_obj = tr.decompose_matrix(m_obj_all)
-                # M_inv = np.asmatrix(tr.euler_matrix(*angles_obj))
-
+                fids_head_img = np.zeros([3, 3])
                 for ic in range(0, 3):
-                    fids_obj_img[ic, :] = np.asarray(db.flip_x_m(self.fiducials[ic, :]))
+                    fids_head_img[ic, :] = np.asarray(db.flip_x_m(self.fiducials[ic, :]))
 
-                m_vtk, q_vtk, m_inv_vtk = db.base_creation_object(fids_obj_img)
-                m_vtk_all = np.asmatrix(np.identity(4))
-                m_vtk_all[:3, :3] = m_vtk[:3, :3]
+                m_head_aux, q_head_aux, m_inv_head_aux = db.base_creation(fids_head_img)
+                m_head = np.asmatrix(np.identity(4))
+                m_head[:3, :3] = m_head_aux[:3, :3]
 
-                m, q1, minv = db.base_creation(self.fiducials[:3, :])
-                n, q2, ninv = db.base_creation(self.fiducials[3:, :])
-
-                bases_coreg = (m_vtk_all, n, q1, q2)
-
-                # m_change = np.asmatrix(tr.superimposition_matrix(self.fiducials[3:, :].T, self.fiducials[:3, :].T))
+                m, q1, minv = db.base_creation_old(self.fiducials[:3, :])
+                n, q2, ninv = db.base_creation_old(self.fiducials[3:, :])
 
                 m_change = tr.affine_matrix_from_points(self.fiducials[3:, :].T, self.fiducials[:3, :].T,
                                                         shear=False, scale=False)
-                scale_ch, shear_ch, angles_ch, trans_ch, persp_ch = tr.decompose_matrix(m_change)
-                r_change = np.asmatrix(tr.euler_matrix(*angles_ch))
-                t_change = np.asmatrix(tr.translation_matrix(trans_ch))
+
+                coreg_data = [m_change, m_head]
 
                 tracker_mode = self.trk_init, self.tracker_id, self.ref_mode_id
                 # FIXME: FRE is taking long to calculate so it updates on GUI delayed to navigation - I think its fixed
                 # TODO: Exhibit FRE in a warning dialog and only starts navigation after user clicks ok
                 fre = db.calculate_fre(self.fiducials, minv, n, q1, q2)
 
-                txtctrl_fre.SetValue(str(round(fre, 2)))
+                self.txtctrl_fre.SetValue(str(round(fre, 2)))
                 if fre <= 3:
-                    txtctrl_fre.SetBackgroundColour('GREEN')
+                    self.txtctrl_fre.SetBackgroundColour('GREEN')
                 else:
-                    txtctrl_fre.SetBackgroundColour('RED')
+                    self.txtctrl_fre.SetBackgroundColour('RED')
 
                 if self.trigger_state:
                     self.trigger = trig.Trigger(nav_id)
@@ -613,46 +609,36 @@ class NeuronavigationPanel(wx.Panel):
                         # obj_reg[0] is object 3x3 fiducial matrix and obj_reg[1] is 3x3 orientation matrix
                         obj_fiducials = self.obj_reg[0]
                         obj_orients = self.obj_reg[1]
+                        obj_ref_mode = self.obj_reg[2]
+                        obj_name = self.obj_reg[3]
 
                         if self.trk_init and self.tracker_id:
+                            Publisher.sendMessage('Update object tracking state', (True, obj_name))
+
                             if self.ref_mode_id:
                                 coord_raw = dco.GetCoordinates(self.trk_init, self.tracker_id, self.ref_mode_id)
-                                fids_s0, fids_img, S0, m_obj_rot, m_obj_trans, m_obj_base, s0_rot, s0_trans, m_obj_trans_0, m_obj_rot_0, m_obj_base_0, m_obj_trans_raw, m_obj_rot_raw, S0_raw, s0_rot_raw, t_obj_dyn, r_obj_dyn, S0_dyn, s0_rot_dyn, s0_trans_dyn, m_obj_base_dyn, m_obj_base_raw, m_obj_base_dyn_0, t_obj_dyn_0, r_obj_dyn_0 = db.object_registration_m3(obj_fiducials, obj_orients, coord_raw, m_change)
-                                obj_data = m_change, m_obj_rot, m_obj_trans, m_obj_base, S0,\
-                                           obj_fiducials, obj_orients, s0_rot, s0_trans, r_change, t_change,\
-                                           m_obj_trans_0, m_obj_rot_0, m_obj_base_0, m_obj_trans_raw, m_obj_rot_raw,\
-                                           S0_raw, s0_rot_raw, t_obj_dyn, r_obj_dyn, S0_dyn, s0_rot_dyn, s0_trans_dyn,\
-                                           m_obj_base_dyn, m_obj_base_raw, m_obj_base_dyn_0, t_obj_dyn_0, r_obj_dyn_0
+                                obj_data = db.object_registration(obj_fiducials, obj_orients, coord_raw)
+                                coreg_data.extend(obj_data)
+
+                                self.correg = dcr.CoregistrationObjectDynamic(coreg_data, nav_id, tracker_mode)
+                            else:
+                                obj_data = db.object_registration_static(obj_fiducials, obj_orients)
+                                coreg_data.extend(obj_data)
+
+                                self.correg = dcr.CoregistrationObjectStatic(coreg_data, nav_id, tracker_mode)
 
                         else:
                             dlg.NavigationTrackerWarning(0, 'choose')
 
-                        for ib in range(0, fids_img.shape[0]):
-                            # coord_trans = np.asarray(m_obj_trans.I*np.asmatrix(np.vstack((fids_img[ib, :3].reshape([3, 1]), 1.))))[:3].squeeze()
-                            coord_flip = db.flip_x_m((fids_img[ib, 0], fids_img[ib, 1], fids_img[ib, 2]))
-                            # Publisher.sendMessage('Create marker', (coord_flip, 'fid'))
-                            # Publisher.sendMessage('Create marker', ((coord_trans[0], coord_trans[1], coord_trans[2]), 'fid'))
-                        # Only the m_inv is needed for change of basis
-                        Publisher.sendMessage('Update object initial orientation', obj_data)
-
-                        if self.ref_mode_id:
-                            # self.correg = dcr.CoregistrationObjectDynamic(bases_coreg, nav_id, tracker_mode, obj_data)
-                            # self.correg = dcr.CoregistrationObjectDynamic_m((m_change, r_obj, obj_coords, q_obj_all), nav_id, tracker_mode)
-
-                            # using this now
-                            self.correg = dcr.CoregistrationObjectDynamic_m(obj_data, nav_id, tracker_mode, bases_coreg)
-                            # print "No navigation"
-                        # else:
-                        #     self.correg = dcr.CoregistrationObjectStatic(bases_coreg, nav_id, tracker_mode, obj_data)
                     else:
                         dlg.InvalidObjectRegistration()
 
                 else:
                     if self.ref_mode_id:
                         # self.correg = dcr.CoregistrationDynamic(bases_coreg, nav_id, tracker_mode)
-                        self.correg = dcr.CoregistrationDynamic_m(m_change, nav_id, tracker_mode)
+                        self.correg = dcr.CoregistrationDynamic_m(coreg_data, nav_id, tracker_mode)
                     else:
-                        self.correg = dcr.CoregistrationStatic(bases_coreg, nav_id, tracker_mode)
+                        self.correg = dcr.CoregistrationStatic(coreg_data, nav_id, tracker_mode)
 
         else:
             tooltip = wx.ToolTip(_("Start neuronavigation"))
@@ -671,21 +657,32 @@ class NeuronavigationPanel(wx.Panel):
 
             Publisher.sendMessage("Navigation status", False)
 
-    def object_registration_update(self, obj_orient):
-        a, b, g = obj_orient
-        m_rot = np.mat([[cos(a) * cos(b), sin(b) * sin(g) * cos(a) - cos(g) * sin(a),
-                        cos(a) * sin(b) * cos(g) + sin(a) * sin(g)],
-                       [cos(b) * sin(a), sin(b) * sin(g) * sin(a) + cos(g) * cos(a),
-                        cos(g) * sin(b) * sin(a) - sin(g) * cos(a)],
-                       [-sin(b), sin(g) * cos(b), cos(b) * cos(g)]])
+    def ResetImageFiducials(self):
+        for m in range(0, 3):
+            self.btns_coord[m].SetValue(False)
+            self.fiducials[m, :] = [np.nan, np.nan, np.nan]
+            for n in range(0, 3):
+                self.numctrls_coord[m][n].SetValue(0.0)
 
-
+        for n in range(0, 3):
+            self.numctrls_coord[6][n].SetValue(0.0)
 
     def ResetTrackerFiducials(self):
         for m in range(3, 6):
             self.fiducials[m, :] = [np.nan, np.nan, np.nan]
             for n in range(0, 3):
                 self.numctrls_coord[m][n].SetValue(0.0)
+
+        self.txtctrl_fre.SetValue('')
+        self.txtctrl_fre.SetBackgroundColour('WHITE')
+
+    def OnCloseProject(self, pubsub_evt):
+        self.CloseProject()
+
+    def CloseProject(self):
+        self.ResetTrackerFiducials()
+        self.ResetImageFiducials()
+        self.OnChoiceTracker(False, self.choice_trck)
 
 
 class ObjectRegistrationPanel(wx.Panel):
@@ -793,8 +790,7 @@ class ObjectRegistrationPanel(wx.Panel):
                     self.obj_fiducials, self.obj_orients, self.obj_ref_mode, self.obj_name = dialog.GetValue()
                     if np.isfinite(self.obj_fiducials).all() and np.isfinite(self.obj_orients).all():
                         Publisher.sendMessage('Update object registration',
-                                              (self.obj_fiducials, self.obj_orients, self.obj_ref_mode))
-                        Publisher.sendMessage('Create object polydata', self.obj_name)
+                                              (self.obj_fiducials, self.obj_orients, self.obj_ref_mode, self.obj_name))
                         Publisher.sendMessage('Update status text in GUI', _("Ready"))
 
             except wx._core.PyAssertionError:  # TODO FIX: win64
@@ -819,8 +815,7 @@ class ObjectRegistrationPanel(wx.Panel):
             self.obj_ref_mode = int(header[-1])
 
             Publisher.sendMessage('Update object registration',
-                                  (self.obj_fiducials, self.obj_orients, self.obj_ref_mode))
-            Publisher.sendMessage('Create object polydata', self.obj_name)
+                                  (self.obj_fiducials, self.obj_orients, self.obj_ref_mode, self.obj_name))
             Publisher.sendMessage('Update status text in GUI', _("Ready"))
         else:
             wx.MessageBox(_("InVesalius was not able to import this registration file"), _("Import error"))

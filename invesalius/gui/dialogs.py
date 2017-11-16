@@ -3248,8 +3248,8 @@ class ObjectCalibrationDialog(wx.Dialog):
 
         # Update text controls with tracker coordinates
         if coord is not None or np.sum(coord) != 0.0:
-            self.obj_fiducials[btn_id, :] = coord[0:3]
-            self.obj_orients[btn_id, :] = coord[3:6]
+            self.obj_fiducials[btn_id, :] = coord[:3]
+            self.obj_orients[btn_id, :] = coord[3:]
             for n in [0, 1, 2]:
                 self.txt_coord[btn_id][n].SetLabel(str(round(coord[n], 1)))
         else:
