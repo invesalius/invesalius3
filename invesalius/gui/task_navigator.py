@@ -697,6 +697,9 @@ class NeuronavigationPanel(wx.Panel):
         self.ResetImageFiducials()
         self.OnChoiceTracker(False, self.choice_trck)
         Publisher.sendMessage('Update object registration', False)
+        Publisher.sendMessage('Delete all markers')
+        # TODO: Reset camera initial focus
+        Publisher.sendMessage('Reset cam clipping range')
 
 
 class ObjectRegistrationPanel(wx.Panel):
@@ -719,29 +722,29 @@ class ObjectRegistrationPanel(wx.Panel):
 
         # Button for creating new coil
         tooltip = wx.ToolTip(_("Create new coil"))
-        link_new_obj = wx.Button(self, -1, _("New"), size=wx.Size(65, 23))
-        link_new_obj.SetToolTip(tooltip)
-        link_new_obj.Enable(0)
-        link_new_obj.Bind(wx.EVT_BUTTON, self.OnLinkCreate)
+        btn_new = wx.Button(self, -1, _("New"), size=wx.Size(65, 23))
+        btn_new.SetToolTip(tooltip)
+        btn_new.Enable(1)
+        btn_new.Bind(wx.EVT_BUTTON, self.OnLinkCreate)
 
         # Button for import config coil file
         tooltip = wx.ToolTip(_("Load coil configuration file"))
-        link_load_obj = wx.Button(self, -1, _("Load"), size=wx.Size(65, 23))
-        link_load_obj.SetToolTip(tooltip)
-        link_load_obj.Enable(0)
-        link_load_obj.Bind(wx.EVT_BUTTON, self.OnLinkLoad)
+        btn_load = wx.Button(self, -1, _("Load"), size=wx.Size(65, 23))
+        btn_load.SetToolTip(tooltip)
+        btn_load.Enable(1)
+        btn_load.Bind(wx.EVT_BUTTON, self.OnLinkLoad)
 
         # Save button for object registration
         tooltip = wx.ToolTip(_(u"Save object registration file"))
         btn_save = wx.Button(self, -1, _(u"Save"), size=wx.Size(65, 23))
         btn_save.SetToolTip(tooltip)
-        btn_save.Enable(0)
+        btn_save.Enable(1)
         btn_save.Bind(wx.EVT_BUTTON, self.ShowSaveObjectDialog)
 
         # Create a horizontal sizer to represent button save
         line_save = wx.BoxSizer(wx.HORIZONTAL)
-        line_save.Add(link_new_obj, 1, wx.LEFT| wx.TOP | wx.RIGHT, 4)
-        line_save.Add(link_load_obj, 1, wx.LEFT | wx.TOP | wx.RIGHT, 4)
+        line_save.Add(btn_new, 1, wx.LEFT | wx.TOP | wx.RIGHT, 4)
+        line_save.Add(btn_load, 1, wx.LEFT | wx.TOP | wx.RIGHT, 4)
         line_save.Add(btn_save, 1, wx.LEFT | wx.TOP | wx.RIGHT, 4)
 
         # Change angles threshold
@@ -987,6 +990,7 @@ class MarkersPanel(wx.Panel):
         Publisher.subscribe(self.UpdateCurrentCoord, 'Set ball reference position')
         Publisher.subscribe(self.UpdateCurrentAngle, 'Co-registered points')
         Publisher.subscribe(self.OnDeleteSingleMarker, 'Delete fiducial marker')
+        Publisher.subscribe(self.OnDeleteAllMarkers, 'Delete all markers')
         Publisher.subscribe(self.OnCreateMarker, 'Create marker')
         Publisher.subscribe(self.UpdateNavigationStatus, 'Navigation status')
 
@@ -1063,19 +1067,22 @@ class MarkersPanel(wx.Panel):
         self.tgt_flag = True
         dlg.NewTarget()
 
-    def OnDeleteAllMarkers(self, pubsub_evt):
-        result = dlg.DeleteAllMarkers()
-        if result == wx.ID_OK:
-            self.list_coord = []
-            self.marker_ind = 0
-            Publisher.sendMessage('Remove all markers', self.lc.GetItemCount())
-            self.lc.DeleteAllItems()
-            Publisher.sendMessage('Stop Blink Marker', 'DeleteAll')
+    def OnDeleteAllMarkers(self, evt):
 
-            if self.tgt_flag:
-                self.tgt_flag = self.tgt_index = None
-                Publisher.sendMessage('Disable or enable coil tracker', False)
-                dlg.DeleteTarget()
+        if self.list_coord:
+            result = dlg.DeleteAllMarkers()
+
+            if result == wx.ID_OK:
+                self.list_coord = []
+                self.marker_ind = 0
+                Publisher.sendMessage('Remove all markers', self.lc.GetItemCount())
+                self.lc.DeleteAllItems()
+                Publisher.sendMessage('Stop Blink Marker', 'DeleteAll')
+
+                if self.tgt_flag:
+                    self.tgt_flag = self.tgt_index = None
+                    Publisher.sendMessage('Disable or enable coil tracker', False)
+                    dlg.DeleteTarget()
 
     def OnDeleteSingleMarker(self, evt):
         # OnDeleteSingleMarker is used for both pubsub and button click events
