@@ -3199,7 +3199,7 @@ class ObjectCalibrationDialog(wx.Dialog):
         main_sizer.Fit(self)
 
     def ObjectImportDialog(self):
-        msg = _("Do you would like to use InVesalius default object?")
+        msg = _("Would like to use InVesalius default object?")
         if sys.platform == 'darwin':
             dlg = wx.MessageDialog(None, "", msg,
                                    wx.ICON_QUESTION | wx.YES_NO)
@@ -3308,7 +3308,16 @@ class ObjectCalibrationDialog(wx.Dialog):
 
     def OnChoiceRefMode(self, evt):
         # When ref mode is changed the tracker coordinates are set to nan
-        self.obj_ref_id = evt.GetSelection()
+        # This is for Polhemus FASTRAK wrapper, where the sensor attached to the object can be the stylus (Static
+        # reference - Selection 0 - index 0 for coordinates) or can be a 3rd sensor (Dynamic reference - Selection 1 -
+        # index 2 for coordinates)
+        # I use the index 2 directly here to send to the coregistration module where it is possible to access without
+        # any conditional statement the correct index of coordinates.
+
+        if evt.GetSelection():
+            self.obj_ref_id = 2
+        else:
+            self.obj_ref_id = 0
         for m in range(0, 5):
             self.obj_fiducials[m, :] = np.full([1, 3], np.nan)
             self.obj_orients[m, :] = np.full([1, 3], np.nan)

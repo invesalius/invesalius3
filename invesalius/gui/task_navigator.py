@@ -168,7 +168,7 @@ class InnerFoldPanel(wx.Panel):
         checkcamera = wx.CheckBox(self, -1, _('Vol. camera'))
         checkcamera.SetToolTip(tooltip)
         checkcamera.SetValue(const.CAM_MODE)
-        checkcamera.Bind(wx.EVT_CHECKBOX, self.UpdateVolumeCamera)
+        checkcamera.Bind(wx.EVT_CHECKBOX, self.OnVolumeCamera)
         self.checkcamera = checkcamera
 
         # Check box for trigger monitoring to create markers from serial port
@@ -176,7 +176,7 @@ class InnerFoldPanel(wx.Panel):
         checktrigger = wx.CheckBox(self, -1, _('Ext. trigger'))
         checktrigger.SetToolTip(tooltip)
         checktrigger.SetValue(False)
-        checktrigger.Bind(wx.EVT_CHECKBOX, partial(self.UpdateExternalTrigger, ctrl=checktrigger))
+        checktrigger.Bind(wx.EVT_CHECKBOX, partial(self.OnExternalTrigger, ctrl=checktrigger))
         self.checktrigger = checktrigger
 
         # Check box for object position and orientation update in volume rendering during navigation
@@ -185,7 +185,7 @@ class InnerFoldPanel(wx.Panel):
         checkobj.SetToolTip(tooltip)
         checkobj.SetValue(False)
         checkobj.Disable()
-        checkobj.Bind(wx.EVT_CHECKBOX, partial(self.UpdateShowObject, ctrl=checkobj))
+        checkobj.Bind(wx.EVT_CHECKBOX, self.OnShowObject)
         self.checkobj = checkobj
 
         if sys.platform != 'win32':
@@ -205,7 +205,7 @@ class InnerFoldPanel(wx.Panel):
         sizer.Add(line_sizer, 1, wx.GROW | wx.EXPAND)
         sizer.Fit(self)
 
-        self.obj_name = False
+        self.track_obj = False
 
         self.SetSizer(sizer)
         self.Update()
@@ -213,8 +213,8 @@ class InnerFoldPanel(wx.Panel):
         
     def __bind_events(self):
         Publisher.subscribe(self.OnCheckStatus, 'Navigation status')
-        Publisher.subscribe(self.OnCheckObjectStatus, 'Update object registration')
-        Publisher.subscribe(self.UpdateVolumeCamera, 'Target navigation mode')
+        Publisher.subscribe(self.OnShowObject, 'Update track object state')
+        Publisher.subscribe(self.OnVolumeCamera, 'Target navigation mode')
 
     def OnCheckStatus(self, pubsub_evt):
         status = pubsub_evt.data
@@ -223,27 +223,25 @@ class InnerFoldPanel(wx.Panel):
             self.checkobj.Enable(False)
         else:
             self.checktrigger.Enable(True)
-            self.checkobj.Enable(True)
+            if self.track_obj:
+                self.checkobj.Enable(True)
 
-    def OnCheckObjectStatus(self, pubsub_evt):
-        if pubsub_evt.data:
-            self.checkobj.Enable(True)
-            self.checkobj.SetValue(True)
-            self.obj_name = pubsub_evt.data[3]
-            Publisher.sendMessage('Update object tracking state', (self.checkobj.GetValue(),
-                                                               self.obj_name))
-        else:
-            self.checkobj.Enable(False)
-            self.checkobj.SetValue(False)
-            Publisher.sendMessage('Update object tracking state', False)
-
-    def UpdateExternalTrigger(self, evt, ctrl):
+    def OnExternalTrigger(self, evt, ctrl):
         Publisher.sendMessage('Update trigger state', ctrl.GetValue())
 
-    def UpdateShowObject(self, evt, ctrl):
-        Publisher.sendMessage('Update object tracking state', (ctrl.GetValue(), self.obj_name))
+    def OnShowObject(self, evt):
+        if hasattr(evt, 'data'):
+            if evt.data[0]:
+                self.checkobj.Enable(True)
+                self.track_obj = True
+            else:
+                self.checkobj.Enable(False)
+                self.checkobj.SetValue(False)
+                self.track_obj = False
 
-    def UpdateVolumeCamera(self, evt):
+        Publisher.sendMessage('Update show object state', self.checkobj.GetValue())
+
+    def OnVolumeCamera(self, evt):
         if hasattr(evt, 'data'):
             if evt.data is True:
                 self.checkcamera.SetValue(0)
@@ -267,9 +265,9 @@ class NeuronavigationPanel(wx.Panel):
         self.trk_init = None
         self.trigger = None
         self.trigger_state = False
-        self.obj_show = False
         self.obj_reg = None
         self.obj_reg_status = False
+        self.track_obj = False
 
         self.tracker_id = const.DEFAULT_TRACKER
         self.ref_mode_id = const.DEFAULT_REF_MODE
@@ -383,7 +381,7 @@ class NeuronavigationPanel(wx.Panel):
     def __bind_events(self):
         Publisher.subscribe(self.LoadImageFiducials, 'Load image fiducials')
         Publisher.subscribe(self.UpdateTriggerState, 'Update trigger state')
-        Publisher.subscribe(self.UpdateObjectState, 'Update object tracking state')
+        Publisher.subscribe(self.UpdateTrackObjectState, 'Update track object state')
         Publisher.subscribe(self.UpdateImageCoordinates, 'Set ball reference position')
         Publisher.subscribe(self.OnDisconnectTracker, 'Disconnect tracker')
         Publisher.subscribe(self.UpdateObjectRegistration, 'Update object registration')
@@ -422,11 +420,11 @@ class NeuronavigationPanel(wx.Panel):
             self.obj_reg = None
             self.obj_reg_status = False
 
-    def UpdateObjectState(self, pubsub_evt):
-        if pubsub_evt.data:
-            self.obj_show = pubsub_evt.data[0]
+    def UpdateTrackObjectState(self, pubsub_evt):
+        if pubsub_evt.data[0]:
+            self.track_obj = pubsub_evt.data[0]
         else:
-            self.obj_show = False
+            self.track_obj = False
 
     def UpdateTriggerState(self, pubsub_evt):
         self.trigger_state = pubsub_evt.data
@@ -617,26 +615,26 @@ class NeuronavigationPanel(wx.Panel):
                 Publisher.sendMessage("Toggle Cross", const.SLICE_STATE_CROSS)
                 Publisher.sendMessage("Hide current mask")
 
-                if self.obj_show:
+                if self.track_obj:
                     if self.obj_reg_status:
                         # obj_reg[0] is object 3x3 fiducial matrix and obj_reg[1] is 3x3 orientation matrix
                         obj_fiducials = self.obj_reg[0]
                         obj_orients = self.obj_reg[1]
                         obj_ref_mode = self.obj_reg[2]
-                        obj_name = self.obj_reg[3]
 
                         if self.trk_init and self.tracker_id:
-                            Publisher.sendMessage('Update object tracking state', (True, obj_name))
 
                             if self.ref_mode_id:
                                 coord_raw = dco.GetCoordinates(self.trk_init, self.tracker_id, self.ref_mode_id)
                                 obj_data = db.object_registration(obj_fiducials, obj_orients, coord_raw)
                                 coreg_data.extend(obj_data)
+                                coreg_data.append(obj_ref_mode)
 
                                 self.correg = dcr.CoregistrationObjectDynamic(coreg_data, nav_id, tracker_mode)
                             else:
                                 obj_data = db.object_registration_static(obj_fiducials, obj_orients)
                                 coreg_data.extend(obj_data)
+                                coreg_data.append(obj_ref_mode)
 
                                 self.correg = dcr.CoregistrationObjectStatic(coreg_data, nav_id, tracker_mode)
 
@@ -647,6 +645,8 @@ class NeuronavigationPanel(wx.Panel):
                         dlg.InvalidObjectRegistration()
 
                 else:
+                    obj_ref_mode = 0
+                    coreg_data.append(obj_ref_mode)
                     if self.ref_mode_id:
                         # self.correg = dcr.CoregistrationDynamic_old(bases_coreg, nav_id, tracker_mode)
                         self.correg = dcr.CoregistrationDynamic(coreg_data, nav_id, tracker_mode)
@@ -697,6 +697,7 @@ class NeuronavigationPanel(wx.Panel):
         self.ResetImageFiducials()
         self.OnChoiceTracker(False, self.choice_trck)
         Publisher.sendMessage('Update object registration', False)
+        Publisher.sendMessage('Update track object state', (False, False))
         Publisher.sendMessage('Delete all markers')
         # TODO: Reset camera initial focus
         Publisher.sendMessage('Reset cam clipping range')
@@ -789,8 +790,19 @@ class ObjectRegistrationPanel(wx.Panel):
         checkrecordcoords = wx.CheckBox(self, -1, _('Record coordinates'))
         checkrecordcoords.SetValue(False)
         checkrecordcoords.Enable(0)
-        checkrecordcoords.Bind(wx.EVT_CHECKBOX, partial(self.RecordCoords, ctrl=checkrecordcoords))
+        checkrecordcoords.Bind(wx.EVT_CHECKBOX, partial(self.OnRecordCoords, ctrl=checkrecordcoords))
         self.checkrecordcoords = checkrecordcoords
+
+        # Check box to track object or simply the stylus
+        checktrack = wx.CheckBox(self, -1, _('Track object'))
+        checktrack.SetValue(False)
+        checktrack.Enable(0)
+        checktrack.Bind(wx.EVT_CHECKBOX, partial(self.OnTrackObject, ctrl=checktrack))
+        self.checktrack = checktrack
+
+        line_checks = wx.BoxSizer(wx.HORIZONTAL)
+        line_checks.Add(checkrecordcoords, 0, wx.ALIGN_LEFT | wx.RIGHT | wx.LEFT, 5)
+        line_checks.Add(checktrack, 0, wx.ALIGN_RIGHT | wx.RIGHT | wx.LEFT, 5)
 
         # Add line sizers into main sizer
         main_sizer = wx.BoxSizer(wx.VERTICAL)
@@ -798,7 +810,7 @@ class ObjectRegistrationPanel(wx.Panel):
         main_sizer.Add(line_angle_threshold, 0, wx.GROW | wx.EXPAND | wx.LEFT | wx.RIGHT | wx.TOP, 5)
         main_sizer.Add(line_dist_threshold, 0, wx.GROW | wx.EXPAND | wx.LEFT | wx.RIGHT | wx.TOP, 5)
         main_sizer.Add(line_timestamp, 0, wx.GROW | wx.EXPAND | wx.LEFT | wx.RIGHT | wx.TOP, 5)
-        main_sizer.Add(checkrecordcoords, 0, wx.GROW | wx.EXPAND | wx.LEFT | wx.RIGHT, 10)
+        main_sizer.Add(line_checks, 0, wx.GROW | wx.EXPAND | wx.LEFT | wx.RIGHT | wx.TOP | wx.BOTTOM, 10)
         main_sizer.Fit(self)
 
         self.SetSizer(main_sizer)
@@ -807,6 +819,7 @@ class ObjectRegistrationPanel(wx.Panel):
     def __bind_events(self):
         Publisher.subscribe(self.UpdateTrackerInit, 'Update tracker initializer')
         Publisher.subscribe(self.UpdateNavigationStatus, 'Navigation status')
+        Publisher.subscribe(self.OnCloseProject, 'Close project data')
 
     def UpdateTrackerInit(self, pubsub_evt):
         self.nav_prop = pubsub_evt.data
@@ -815,10 +828,12 @@ class ObjectRegistrationPanel(wx.Panel):
         nav_status = pubsub_evt.data
         if nav_status:
             self.checkrecordcoords.Enable(1)
+            self.checktrack.Enable(0)
         else:
-            self.RecordCoords(nav_status, self.checkrecordcoords)
+            self.OnRecordCoords(nav_status, self.checkrecordcoords)
             self.checkrecordcoords.SetValue(False)
             self.checkrecordcoords.Enable(0)
+            self.checktrack.Enable(1)
 
     def OnSelectAngleThreshold(self, evt, ctrl):
         Publisher.sendMessage('Update angle threshold', ctrl.GetValue())
@@ -829,7 +844,7 @@ class ObjectRegistrationPanel(wx.Panel):
     def OnSelectTimestamp(self, evt, ctrl):
         self.timestamp = ctrl.GetValue()
 
-    def RecordCoords(self, evt, ctrl):
+    def OnRecordCoords(self, evt, ctrl):
         if ctrl.GetValue() and evt:
             self.spin_timestamp_dist.Enable(0)
             self.thr_record = rec.Record(ctrl.GetValue(), self.timestamp)
@@ -838,6 +853,9 @@ class ObjectRegistrationPanel(wx.Panel):
             self.thr_record.stop()
         elif not ctrl.GetValue() and not evt:
             None
+
+    def OnTrackObject(self, evt, ctrl):
+        Publisher.sendMessage('Update track object state', (evt.GetSelection(), self.obj_name))
 
     def OnComboCoil(self, evt):
         # coil_name = evt.GetString()
@@ -852,6 +870,7 @@ class ObjectRegistrationPanel(wx.Panel):
                 if dialog.ShowModal() == wx.ID_OK:
                     self.obj_fiducials, self.obj_orients, self.obj_ref_mode, self.obj_name = dialog.GetValue()
                     if np.isfinite(self.obj_fiducials).all() and np.isfinite(self.obj_orients).all():
+                        self.checktrack.Enable(1)
                         Publisher.sendMessage('Update object registration',
                                               (self.obj_fiducials, self.obj_orients, self.obj_ref_mode, self.obj_name))
                         Publisher.sendMessage('Update status text in GUI', _("Ready"))
@@ -877,6 +896,7 @@ class ObjectRegistrationPanel(wx.Panel):
             self.obj_name = header[1]
             self.obj_ref_mode = int(header[-1])
 
+            self.checktrack.Enable(1)
             Publisher.sendMessage('Update object registration',
                                   (self.obj_fiducials, self.obj_orients, self.obj_ref_mode, self.obj_name))
             Publisher.sendMessage('Update status text in GUI', _("Ready"))
@@ -892,6 +912,19 @@ class ObjectRegistrationPanel(wx.Panel):
                 data = np.hstack([self.obj_fiducials, self.obj_orients])
                 np.savetxt(filename, data, fmt='%.4f', delimiter='\t', newline='\n', header=hdr)
                 wx.MessageBox(_("Object file successfully saved"), _("Save"))
+
+    def OnCloseProject(self, pubsub_evt):
+        self.checkrecordcoords.SetValue(False)
+        self.checkrecordcoords.Enable(0)
+        self.checktrack.SetValue(False)
+        self.checktrack.Enable(0)
+
+        self.nav_prop = None
+        self.obj_fiducials = None
+        self.obj_orients = None
+        self.obj_ref_mode = None
+        self.obj_name = None
+        self.timestamp = const.TIMESTAMP
 
 
 class MarkersPanel(wx.Panel):

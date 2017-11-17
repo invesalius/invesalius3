@@ -248,7 +248,8 @@ class Viewer(wx.Panel):
 
         # Related to object tracking during neuronavigation
         Publisher.subscribe(self.UpdateObjectOrientation, 'Update object matrix')
-        Publisher.subscribe(self.UpdateObjectState, 'Update object tracking state')
+        Publisher.subscribe(self.UpdateTrackObjectState, 'Update track object state')
+        Publisher.subscribe(self.UpdateShowObjectState, 'Update show object state')
 
         Publisher.subscribe(self.ActivateTargetMode, 'Target navigation mode')
         Publisher.subscribe(self.OnUpdateObjectTargetGuide, 'Co-registered points')
@@ -1144,31 +1145,27 @@ class Viewer(wx.Panel):
 
         self.Refresh()
 
-    def UpdateObjectState(self, pubsub_evt):
-        if pubsub_evt.data:
-            self.obj_state = pubsub_evt.data[0]
+    def UpdateTrackObjectState(self, pubsub_evt):
+        if pubsub_evt.data[0]:
             self.obj_name = pubsub_evt.data[1]
 
-            if self.obj_state:
-                if not self.obj_actor:
-                    self.AddObjectActor(self.obj_name)
-                else:
-                    self.obj_actor.SetVisibility(1)
+            if not self.obj_actor:
+                self.AddObjectActor(self.obj_name)
 
-            if not self.obj_state and self.obj_actor:
-                self.ren.RemoveActor(self.obj_actor)
-                self.obj_actor = None
-                # self.ren.RemoveActor(self.obj_axes)
-                # self.obj_axes = None
-                # self.ren.RemoveActor(self.obj_axes)
-                # self.obj_axes = None
         else:
             if self.obj_actor:
                 self.ren.RemoveActor(self.obj_actor)
                 self.obj_actor = None
-            self.obj_state = False
 
         self.Refresh()
+
+    def UpdateShowObjectState(self, pubsub_evt):
+        self.obj_state = pubsub_evt.data
+
+        if self.obj_actor:
+            self.obj_actor.SetVisibility(self.obj_state)
+            if not self.obj_state:
+                self.Refresh()
 
     def __bind_events_wx(self):
         #self.Bind(wx.EVT_SIZE, self.OnSize)
