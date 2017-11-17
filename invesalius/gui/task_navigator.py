@@ -690,9 +690,6 @@ class NeuronavigationPanel(wx.Panel):
         self.txtctrl_fre.SetBackgroundColour('WHITE')
 
     def OnCloseProject(self, pubsub_evt):
-        self.CloseProject()
-
-    def CloseProject(self):
         self.ResetTrackerFiducials()
         self.ResetImageFiducials()
         self.OnChoiceTracker(False, self.choice_trck)
@@ -727,6 +724,7 @@ class ObjectRegistrationPanel(wx.Panel):
         btn_new.SetToolTip(tooltip)
         btn_new.Enable(1)
         btn_new.Bind(wx.EVT_BUTTON, self.OnLinkCreate)
+        self.btn_new = btn_new
 
         # Button for import config coil file
         tooltip = wx.ToolTip(_("Load coil configuration file"))
@@ -734,6 +732,7 @@ class ObjectRegistrationPanel(wx.Panel):
         btn_load.SetToolTip(tooltip)
         btn_load.Enable(1)
         btn_load.Bind(wx.EVT_BUTTON, self.OnLinkLoad)
+        self.btn_load = btn_load
 
         # Save button for object registration
         tooltip = wx.ToolTip(_(u"Save object registration file"))
@@ -741,6 +740,7 @@ class ObjectRegistrationPanel(wx.Panel):
         btn_save.SetToolTip(tooltip)
         btn_save.Enable(1)
         btn_save.Bind(wx.EVT_BUTTON, self.ShowSaveObjectDialog)
+        self.btn_save = btn_save
 
         # Create a horizontal sizer to represent button save
         line_save = wx.BoxSizer(wx.HORIZONTAL)
@@ -829,11 +829,18 @@ class ObjectRegistrationPanel(wx.Panel):
         if nav_status:
             self.checkrecordcoords.Enable(1)
             self.checktrack.Enable(0)
+            self.btn_save.Enable(0)
+            self.btn_new.Enable(0)
+            self.btn_load.Enable(0)
         else:
             self.OnRecordCoords(nav_status, self.checkrecordcoords)
             self.checkrecordcoords.SetValue(False)
             self.checkrecordcoords.Enable(0)
-            self.checktrack.Enable(1)
+            self.btn_save.Enable(1)
+            self.btn_new.Enable(1)
+            self.btn_load.Enable(1)
+            if np.isfinite(self.obj_fiducials).all() and np.isfinite(self.obj_orients).all():
+                self.checktrack.Enable(1)
 
     def OnSelectAngleThreshold(self, evt, ctrl):
         Publisher.sendMessage('Update angle threshold', ctrl.GetValue())
@@ -1020,24 +1027,20 @@ class MarkersPanel(wx.Panel):
         self.Update()
 
     def __bind_events(self):
-        Publisher.subscribe(self.UpdateCurrentCoord, 'Set ball reference position')
-        Publisher.subscribe(self.UpdateCurrentAngle, 'Co-registered points')
+        Publisher.subscribe(self.UpdateCurrentCoord, 'Co-registered points')
         Publisher.subscribe(self.OnDeleteSingleMarker, 'Delete fiducial marker')
         Publisher.subscribe(self.OnDeleteAllMarkers, 'Delete all markers')
         Publisher.subscribe(self.OnCreateMarker, 'Create marker')
         Publisher.subscribe(self.UpdateNavigationStatus, 'Navigation status')
 
     def UpdateCurrentCoord(self, pubsub_evt):
-        self.current_coord = pubsub_evt.data
-
-    def UpdateCurrentAngle(self, pubsub_evt):
-        self.current_coord = pubsub_evt.data[1][:3]
-        self.current_angle = pubsub_evt.data[1][3:]
+        self.current_coord = pubsub_evt.data[1][:]
+        #self.current_angle = pubsub_evt.data[1][3:]
 
     def UpdateNavigationStatus(self, pubsub_evt):
         if pubsub_evt.data is False:
             sleep(0.5)
-            self.current_angle = 0, 0, 0
+            #self.current_coord[3:] = 0, 0, 0
             self.nav_status = False
         else:
             self.nav_status = True
@@ -1093,6 +1096,7 @@ class MarkersPanel(wx.Panel):
 
         self.tgt_index = self.lc.GetFocusedItem()
         self.lc.SetItemBackgroundColour(self.tgt_index, 'RED')
+        print self.list_coord[self.tgt_index]
         Publisher.sendMessage('Update target', self.list_coord[self.tgt_index])
         Publisher.sendMessage('Set target transparency', [True, self.tgt_index])
         Publisher.sendMessage('Disable or enable coil tracker', True)
@@ -1101,7 +1105,6 @@ class MarkersPanel(wx.Panel):
         dlg.NewTarget()
 
     def OnDeleteAllMarkers(self, evt):
-
         if self.list_coord:
             result = dlg.DeleteAllMarkers()
 
@@ -1177,7 +1180,7 @@ class MarkersPanel(wx.Panel):
                     target = None
                     line = [s for s in data.split()]
                     if len(line) > 8:
-                        coord = float(line[0]), float(line[1]), float(line[2])
+                        coord = float(line[0]), float(line[1]), float(line[2]), float(line[3]), float(line[4]), float(line[5])
                         colour = float(line[6]), float(line[7]), float(line[8])
                         size = float(line[9])
 
@@ -1250,13 +1253,13 @@ class MarkersPanel(wx.Panel):
         # TODO: Use matrix coordinates and not world coordinates as current method.
         # This makes easier for inter-software comprehension.
 
-        Publisher.sendMessage('Add marker', (self.marker_ind, size, colour,  coord))
+        Publisher.sendMessage('Add marker', (self.marker_ind, size, colour,  coord[0:3]))
 
         self.marker_ind += 1
 
         # List of lists with coordinates and properties of a marker
 
-        line = [coord[0], coord[1], coord[2], self.current_angle[0], self.current_angle[1], self.current_angle[2], colour[0], colour[1], colour[2], size, marker_id]
+        line = [coord[0], coord[1], coord[2], coord[3], coord[4], coord[5], colour[0], colour[1], colour[2], size, marker_id]
 
         # Adding current line to a list of all markers already created
         if not self.list_coord:

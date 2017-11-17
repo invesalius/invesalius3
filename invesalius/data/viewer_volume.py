@@ -158,6 +158,7 @@ class Viewer(wx.Panel):
 
         self.target_coord = None
         self.aim_actor = None
+        self.dummy_coil_actor = None
         self.target_mode = False
         self.anglethreshold = const.COIL_ANGLES_THRESHOLD
         self.distthreshold = const.COIL_COORD_THRESHOLD
@@ -252,7 +253,7 @@ class Viewer(wx.Panel):
         Publisher.subscribe(self.UpdateShowObjectState, 'Update show object state')
 
         Publisher.subscribe(self.ActivateTargetMode, 'Target navigation mode')
-        Publisher.subscribe(self.OnUpdateObjectTargetGuide, 'Co-registered points')
+        Publisher.subscribe(self.OnUpdateObjectTargetGuide, 'Update object matrix')
         Publisher.subscribe(self.OnUpdateTargetCoordinates, 'Update target')
         Publisher.subscribe(self.OnRemoveTarget, 'Disable or enable coil tracker')
         # Publisher.subscribe(self.UpdateObjectTargetView, 'Co-registered points')
@@ -704,18 +705,20 @@ class Viewer(wx.Panel):
             self.ren.GetActiveCamera().Zoom((-0.0404 * target_dist) + 5.0404)
 
             if target_dist <= self.distthreshold:
+                thrdist = True
                 self.aim_actor.GetProperty().SetColor(0, 1, 0)
             else:
+                thrdist = False
                 self.aim_actor.GetProperty().SetColor(1, 1, 1)
 
-            coordx = self.target_coord[4] - coord[4]
+            coordx = self.target_coord[3] - coord[3]
             if coordx > const.ARROW_UPPER_LIMIT:
                 coordx = const.ARROW_UPPER_LIMIT
             elif coordx < -const.ARROW_UPPER_LIMIT:
                 coordx = -const.ARROW_UPPER_LIMIT
             coordx = const.ARROW_SCALE * coordx
 
-            coordy = self.target_coord[3] - coord[3]
+            coordy = self.target_coord[4] - coord[4]
             if coordy > const.ARROW_UPPER_LIMIT:
                 coordy = const.ARROW_UPPER_LIMIT
             elif coordy < -const.ARROW_UPPER_LIMIT:
@@ -732,61 +735,72 @@ class Viewer(wx.Panel):
             for ind in self.arrow_actor_list:
                 self.ren2.RemoveActor(ind)
 
-            if self.anglethreshold * const.ARROW_SCALE > coordz > -self.anglethreshold * const.ARROW_SCALE:
+            if self.anglethreshold * const.ARROW_SCALE > coordx > -self.anglethreshold * const.ARROW_SCALE:
+                thrcoordx = True
                 self.obj_actor_list[0].GetProperty().SetColor(0, 1, 0)
             else:
+                thrcoordx = False
                 self.obj_actor_list[0].GetProperty().SetColor(1, 1, 1)
 
             offset = 5
 
-            arrow_roll_z1 = self.CreateArrowActor([-55, -35, offset], [-55, -35, offset + coordz])
-            arrow_roll_z1.RotateX(-60)
-            arrow_roll_z1.RotateZ(180)
-            arrow_roll_z1.GetProperty().SetColor(1, 1, 0)
+            arrow_roll_x1 = self.CreateArrowActor([-55, -35, offset], [-55, -35, offset + coordx])
+            arrow_roll_x1.RotateX(-60)
+            arrow_roll_x1.RotateZ(180)
+            arrow_roll_x1.GetProperty().SetColor(1, 1, 0)
 
-            arrow_roll_z2 = self.CreateArrowActor([55, -35, offset], [55, -35, offset - coordz])
-            arrow_roll_z2.RotateX(-60)
-            arrow_roll_z2.RotateZ(180)
-            arrow_roll_z2.GetProperty().SetColor(1, 1, 0)
+            arrow_roll_x2 = self.CreateArrowActor([55, -35, offset], [55, -35, offset - coordx])
+            arrow_roll_x2.RotateX(-60)
+            arrow_roll_x2.RotateZ(180)
+            arrow_roll_x2.GetProperty().SetColor(1, 1, 0)
 
-            if self.anglethreshold * const.ARROW_SCALE > coordy > -self.anglethreshold * const.ARROW_SCALE:
+            if self.anglethreshold * const.ARROW_SCALE > coordz > -self.anglethreshold * const.ARROW_SCALE:
+                thrcoordz = True
                 self.obj_actor_list[1].GetProperty().SetColor(0, 1, 0)
             else:
+                thrcoordz = False
                 self.obj_actor_list[1].GetProperty().SetColor(1, 1, 1)
 
             offset = -35
 
-            arrow_yaw_y1 = self.CreateArrowActor([-55, offset, 0], [-55, offset + coordy, 0])
-            arrow_yaw_y1.SetPosition(0, -150, 0)
-            arrow_yaw_y1.RotateZ(180)
-            arrow_yaw_y1.GetProperty().SetColor(0, 1, 0)
+            arrow_yaw_z1 = self.CreateArrowActor([-55, offset, 0], [-55, offset + coordz, 0])
+            arrow_yaw_z1.SetPosition(0, -150, 0)
+            arrow_yaw_z1.RotateZ(180)
+            arrow_yaw_z1.GetProperty().SetColor(0, 1, 0)
 
-            arrow_yaw_y2 = self.CreateArrowActor([55, offset, 0], [55, offset - coordy, 0])
-            arrow_yaw_y2.SetPosition(0, -150, 0)
-            arrow_yaw_y2.RotateZ(180)
-            arrow_yaw_y2.GetProperty().SetColor(0, 1, 0)
+            arrow_yaw_z2 = self.CreateArrowActor([55, offset, 0], [55, offset - coordz, 0])
+            arrow_yaw_z2.SetPosition(0, -150, 0)
+            arrow_yaw_z2.RotateZ(180)
+            arrow_yaw_z2.GetProperty().SetColor(0, 1, 0)
 
-            if self.anglethreshold * const.ARROW_SCALE > coordx > -self.anglethreshold * const.ARROW_SCALE:
+            if self.anglethreshold * const.ARROW_SCALE > coordy > -self.anglethreshold * const.ARROW_SCALE:
+                thrcoordy = True
                 self.obj_actor_list[2].GetProperty().SetColor(0, 1, 0)
             else:
+                thrcoordy = False
                 self.obj_actor_list[2].GetProperty().SetColor(1, 1, 1)
 
             offset = 38
-            arrow_pitch_x1 = self.CreateArrowActor([0, 65, offset], [0, 65, offset + coordx])
-            arrow_pitch_x1.SetPosition(0, -300, 0)
-            arrow_pitch_x1.RotateY(90)
-            arrow_pitch_x1.RotateZ(180)
-            arrow_pitch_x1.GetProperty().SetColor(1, 0, 0)
+            arrow_pitch_y1 = self.CreateArrowActor([0, 65, offset], [0, 65, offset + coordy])
+            arrow_pitch_y1.SetPosition(0, -300, 0)
+            arrow_pitch_y1.RotateY(90)
+            arrow_pitch_y1.RotateZ(180)
+            arrow_pitch_y1.GetProperty().SetColor(1, 0, 0)
 
             offset = 5
-            arrow_pitch_x2 = self.CreateArrowActor([0, -55, offset], [0, -55, offset - coordx])
-            arrow_pitch_x2.SetPosition(0, -300, 0)
-            arrow_pitch_x2.RotateY(90)
-            arrow_pitch_x2.RotateZ(180)
-            arrow_pitch_x2.GetProperty().SetColor(1, 0, 0)
+            arrow_pitch_y2 = self.CreateArrowActor([0, -55, offset], [0, -55, offset - coordy])
+            arrow_pitch_y2.SetPosition(0, -300, 0)
+            arrow_pitch_y2.RotateY(90)
+            arrow_pitch_y2.RotateZ(180)
+            arrow_pitch_y2.GetProperty().SetColor(1, 0, 0)
 
-            self.arrow_actor_list = arrow_roll_z1, arrow_roll_z2, arrow_yaw_y1, arrow_yaw_y2,\
-                                    arrow_pitch_x1, arrow_pitch_x2
+            if thrdist and thrcoordx and thrcoordy and thrcoordz:
+                self.dummy_coil_actor.GetProperty().SetColor(0, 1, 0)
+            else:
+                self.dummy_coil_actor.GetProperty().SetColor(1, 1, 1)
+
+            self.arrow_actor_list = arrow_roll_x1, arrow_roll_x2, arrow_yaw_z1, arrow_yaw_z2, \
+                                    arrow_pitch_y1, arrow_pitch_y2
 
             for ind in self.arrow_actor_list:
                 self.ren2.AddActor(ind)
@@ -813,14 +827,16 @@ class Viewer(wx.Panel):
 
         self.pTarget = self.CenterOfMass()
 
-        v3, M_plane_inv = self.Plane(self.target_coord[0:3], self.pTarget)
+        a, b, g = np.radians(self.target_coord[3:])
+        r_ref = tr.euler_matrix(a, b, g, 'sxyz')
+        t_ref = tr.translation_matrix(self.target_coord[:3])
+        m_img = np.asmatrix(tr.concatenate_matrices(t_ref, r_ref))
 
-        mat4x4 = vtk.vtkMatrix4x4()
-        for i in range(4):
-            mat4x4.SetElement(i, 0, M_plane_inv[i][0])
-            mat4x4.SetElement(i, 1, M_plane_inv[i][1])
-            mat4x4.SetElement(i, 2, M_plane_inv[i][2])
-            mat4x4.SetElement(i, 3, M_plane_inv[i][3])
+        m_img_vtk = vtk.vtkMatrix4x4()
+
+        for row in range(0, 4):
+            for col in range(0, 4):
+                m_img_vtk.SetElement(row, col, m_img[row, col])
 
         filename = os.path.join(const.OBJ_DIR, "aim.stl")
 
@@ -831,7 +847,7 @@ class Viewer(wx.Panel):
 
         # Transform the polydata
         transform = vtk.vtkTransform()
-        transform.SetMatrix(mat4x4)
+        transform.SetMatrix(m_img_vtk)
         transformPD = vtk.vtkTransformPolyDataFilter()
         transformPD.SetTransform(transform)
         transformPD.SetInputConnection(reader.GetOutputPort())
@@ -842,9 +858,38 @@ class Viewer(wx.Panel):
         aim_actor = vtk.vtkActor()
         aim_actor.SetMapper(mapper)
         aim_actor.GetProperty().SetColor(1, 1, 1)
-        aim_actor.GetProperty().SetOpacity(0.4)
+        aim_actor.GetProperty().SetOpacity(0.6)
         self.aim_actor = aim_actor
         self.ren.AddActor(aim_actor)
+
+        obj_polydata = self.CreateObjectPolyData(os.path.join(const.OBJ_DIR, "magstim_fig8_coil_no_handle.stl"))
+
+        transform = vtk.vtkTransform()
+        transform.RotateZ(90)
+
+        transform_filt = vtk.vtkTransformPolyDataFilter()
+        transform_filt.SetTransform(transform)
+        transform_filt.SetInputData(obj_polydata)
+        transform_filt.Update()
+
+        normals = vtk.vtkPolyDataNormals()
+        normals.SetInputData(transform_filt.GetOutput())
+        normals.SetFeatureAngle(80)
+        normals.AutoOrientNormalsOn()
+        normals.Update()
+
+        obj_mapper = vtk.vtkPolyDataMapper()
+        obj_mapper.SetInputData(normals.GetOutput())
+        obj_mapper.ScalarVisibilityOff()
+        obj_mapper.ImmediateModeRenderingOn()  # improve performance
+
+        self.dummy_coil_actor = vtk.vtkActor()
+        self.dummy_coil_actor.SetMapper(obj_mapper)
+        self.dummy_coil_actor.GetProperty().SetOpacity(0.4)
+        self.dummy_coil_actor.SetUserMatrix(m_img_vtk)
+
+        self.ren.AddActor(self.dummy_coil_actor)
+
         self.Refresh()
 
     def RemoveTargetAim(self):
