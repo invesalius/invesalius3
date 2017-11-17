@@ -225,11 +225,16 @@ class InnerFoldPanel(wx.Panel):
             self.checkobj.Enable(True)
 
     def OnCheckObjectStatus(self, pubsub_evt):
-        self.checkobj.Enable(True)
-        self.checkobj.SetValue(True)
-        self.obj_name = pubsub_evt.data[3]
-        Publisher.sendMessage('Update object tracking state', (self.checkobj.GetValue(),
+        if pubsub_evt.data:
+            self.checkobj.Enable(True)
+            self.checkobj.SetValue(True)
+            self.obj_name = pubsub_evt.data[3]
+            Publisher.sendMessage('Update object tracking state', (self.checkobj.GetValue(),
                                                                self.obj_name))
+        else:
+            self.checkobj.Enable(False)
+            self.checkobj.SetValue(False)
+            Publisher.sendMessage('Update object tracking state', False)
 
     def UpdateExternalTrigger(self, evt, ctrl):
         Publisher.sendMessage('Update trigger state', ctrl.GetValue())
@@ -409,11 +414,18 @@ class NeuronavigationPanel(wx.Panel):
                     self.numctrls_coord[m][n].SetValue(float(self.current_coord[n]))
 
     def UpdateObjectRegistration(self, pubsub_evt):
-        self.obj_reg = pubsub_evt.data
-        self.obj_reg_status = True
+        if pubsub_evt.data:
+            self.obj_reg = pubsub_evt.data
+            self.obj_reg_status = True
+        else:
+            self.obj_reg = None
+            self.obj_reg_status = False
 
     def UpdateObjectState(self, pubsub_evt):
-        self.obj_show = pubsub_evt.data[0]
+        if pubsub_evt.data:
+            self.obj_show = pubsub_evt.data[0]
+        else:
+            self.obj_show = False
 
     def UpdateTriggerState(self, pubsub_evt):
         self.trigger_state = pubsub_evt.data
@@ -424,10 +436,10 @@ class NeuronavigationPanel(wx.Panel):
 
     def OnChoiceTracker(self, evt, ctrl):
         Publisher.sendMessage('Update status text in GUI', _("Configuring tracker ..."))
-        if evt:
+        if hasattr(evt, 'GetSelection'):
             choice = evt.GetSelection()
         else:
-            choice = self.tracker_id
+            choice = 6
 
         if self.trk_init:
             trck = self.trk_init[0]
@@ -683,6 +695,7 @@ class NeuronavigationPanel(wx.Panel):
         self.ResetTrackerFiducials()
         self.ResetImageFiducials()
         self.OnChoiceTracker(False, self.choice_trck)
+        Publisher.sendMessage('Update object registration', False)
 
 
 class ObjectRegistrationPanel(wx.Panel):
