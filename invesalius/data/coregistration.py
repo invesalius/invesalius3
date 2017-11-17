@@ -77,7 +77,7 @@ class CoregistrationStatic(threading.Thread):
                 return
 
 
-class CoregistrationDynamic(threading.Thread):
+class CoregistrationDynamic_old(threading.Thread):
     """
     Thread to update the coordinates with the fiducial points
     co-registration method while the Navigation Button is pressed.
@@ -120,7 +120,7 @@ class CoregistrationDynamic(threading.Thread):
 
             # Tried several combinations and different locations to send the messages,
             # however only this one does not block the GUI during navigation.
-            wx.CallAfter(Publisher.sendMessage, 'Co-registered points', coord[0:3])
+            wx.CallAfter(Publisher.sendMessage, 'Co-registered points', coord)
             wx.CallAfter(Publisher.sendMessage, 'Set camera in volume', coord)
             wx.CallAfter(Publisher.sendMessage, 'Update tracker angles', angles)
 
@@ -134,7 +134,7 @@ class CoregistrationDynamic(threading.Thread):
                 return
 
 
-class CoregistrationDynamic_m(threading.Thread):
+class CoregistrationDynamic(threading.Thread):
     """
     Thread to update the coordinates with the fiducial points
     co-registration method while the Navigation Button is pressed.

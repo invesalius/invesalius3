@@ -481,6 +481,36 @@ def ShowSaveMarkersDialog(default_filename=None):
     os.chdir(current_dir)
     return filename
 
+def ShowSaveCoordsDialog(default_filename=None):
+    current_dir = os.path.abspath(".")
+    dlg = wx.FileDialog(None,
+                        _("Save coords as..."),  # title
+                        "",  # last used directory
+                        default_filename,
+                        _("Coordinates files (*.csv)|*.csv"),
+                        wx.SAVE | wx.OVERWRITE_PROMPT)
+    # dlg.SetFilterIndex(0) # default is VTI
+
+    filename = None
+    try:
+        if dlg.ShowModal() == wx.ID_OK:
+            filename = dlg.GetPath()
+            ok = 1
+        else:
+            ok = 0
+    except(wx._core.PyAssertionError):  # TODO: fix win64
+        filename = dlg.GetPath()
+        ok = 1
+
+    if (ok):
+        extension = "csv"
+        if sys.platform != 'win32':
+            if filename.split(".")[-1] != extension:
+                filename = filename + "." + extension
+
+    os.chdir(current_dir)
+    return filename
+
 
 def ShowLoadMarkersDialog():
     current_dir = os.path.abspath(".")
@@ -3168,22 +3198,43 @@ class ObjectCalibrationDialog(wx.Dialog):
         self.SetSizer(main_sizer)
         main_sizer.Fit(self)
 
+    def ObjectImportDialog(self):
+        msg = _("Do you would like to use InVesalius default object?")
+        if sys.platform == 'darwin':
+            dlg = wx.MessageDialog(None, "", msg,
+                                   wx.ICON_QUESTION | wx.YES_NO)
+        else:
+            dlg = wx.MessageDialog(None, msg,
+                                   "InVesalius 3",
+                                   wx.ICON_QUESTION | wx.YES_NO)
+        answer = dlg.ShowModal()
+        dlg.Destroy()
+
+        if answer == wx.ID_YES:
+            return 1
+        else:  # answer == wx.ID_NO:
+            return 0
+
     def LoadObject(self):
+        default = self.ObjectImportDialog()
+        if not default:
+            filename = ShowImportMeshFilesDialog()
 
-        filename = ShowImportMeshFilesDialog()
-
-        if filename:
-            if filename.lower().endswith('.stl'):
-                reader = vtk.vtkSTLReader()
-            elif filename.lower().endswith('.ply'):
-                reader = vtk.vtkPLYReader()
-            elif filename.lower().endswith('.obj'):
-                reader = vtk.vtkOBJReader()
-            elif filename.lower().endswith('.vtp'):
-                reader = vtk.vtkXMLPolyDataReader()
+            if filename:
+                if filename.lower().endswith('.stl'):
+                    reader = vtk.vtkSTLReader()
+                elif filename.lower().endswith('.ply'):
+                    reader = vtk.vtkPLYReader()
+                elif filename.lower().endswith('.obj'):
+                    reader = vtk.vtkOBJReader()
+                elif filename.lower().endswith('.vtp'):
+                    reader = vtk.vtkXMLPolyDataReader()
+                else:
+                    wx.MessageBox(_("File format not reconized by InVesalius"), _("Import surface error"))
+                    return
             else:
-                wx.MessageBox(_("File format not reconized by InVesalius"), _("Import surface error"))
-                return
+                filename = os.path.join(const.OBJ_DIR, "magstim_fig8_coil.stl")
+                reader = vtk.vtkSTLReader()
         else:
             filename = os.path.join(const.OBJ_DIR, "magstim_fig8_coil.stl")
             reader = vtk.vtkSTLReader()

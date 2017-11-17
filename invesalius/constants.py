@@ -738,7 +738,9 @@ MAR_DIR = os.path.abspath(os.path.join(FILE_PATH, '..', 'navigation', 'mtc_files
 OBJ_DIR = os.path.abspath(os.path.join(FILE_PATH, '..', 'navigation', 'objects'))
 ARROW_SCALE = 3
 ARROW_UPPER_LIMIT = 30
-COIL_ANGLES_THRESHOLD = 3 * ARROW_SCALE
+#COIL_ANGLES_THRESHOLD = 3 * ARROW_SCALE
+COIL_ANGLES_THRESHOLD = 3
 COIL_COORD_THRESHOLD = 3
+TIMESTAMP = 2.0
 
 CAM_MODE = False

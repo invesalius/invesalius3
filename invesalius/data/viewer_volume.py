@@ -98,13 +98,13 @@ class Viewer(wx.Panel):
         self.text.SetValue("")
         self.ren.AddActor(self.text.actor)
 
-        axes = vtk.vtkAxesActor()
-        axes.SetXAxisLabelText('x')
-        axes.SetYAxisLabelText('y')
-        axes.SetZAxisLabelText('z')
-        axes.SetTotalLength(50, 50, 50)
-
-        self.ren.AddActor(axes)
+        # axes = vtk.vtkAxesActor()
+        # axes.SetXAxisLabelText('x')
+        # axes.SetYAxisLabelText('y')
+        # axes.SetZAxisLabelText('z')
+        # axes.SetTotalLength(50, 50, 50)
+        #
+        # self.ren.AddActor(axes)
 
 
         self.slice_plane = None
@@ -159,6 +159,8 @@ class Viewer(wx.Panel):
         self.target_coord = None
         self.aim_actor = None
         self.target_mode = False
+        self.anglethreshold = const.COIL_ANGLES_THRESHOLD
+        self.distthreshold = const.COIL_COORD_THRESHOLD
 
     def __bind_events(self):
         Publisher.subscribe(self.LoadActor,
@@ -249,11 +251,13 @@ class Viewer(wx.Panel):
         Publisher.subscribe(self.UpdateObjectState, 'Update object tracking state')
 
         Publisher.subscribe(self.ActivateTargetMode, 'Target navigation mode')
-        Publisher.subscribe(self.OnUpdateObjectTargetGuide, 'Update tracker angles')
+        Publisher.subscribe(self.OnUpdateObjectTargetGuide, 'Co-registered points')
         Publisher.subscribe(self.OnUpdateTargetCoordinates, 'Update target')
         Publisher.subscribe(self.OnRemoveTarget, 'Disable or enable coil tracker')
         # Publisher.subscribe(self.UpdateObjectTargetView, 'Co-registered points')
         Publisher.subscribe(self.OnTargetMarkerTransparency, 'Set target transparency')
+        Publisher.subscribe(self.OnUpdateAngleThreshold, 'Update angle threshold')
+        Publisher.subscribe(self.OnUpdateDistThreshold, 'Update dist threshold')
 
     def SetStereoMode(self, pubsub_evt):
         mode = pubsub_evt.data
@@ -581,6 +585,12 @@ class Viewer(wx.Panel):
         else:
             self.staticballs[index].GetProperty().SetOpacity(1)
 
+    def OnUpdateAngleThreshold(self, pubsub_evt):
+        self.anglethreshold = pubsub_evt.data
+
+    def OnUpdateDistThreshold(self, pubsub_evt):
+        self.distthreshold = pubsub_evt.data
+
     def ActivateTargetMode(self, pubsub_evt):
         self.target_mode = pubsub_evt.data
         if self.target_coord and self.target_mode:
@@ -610,17 +620,18 @@ class Viewer(wx.Panel):
 
             obj_roll = vtk.vtkActor()
             obj_roll.SetMapper(mapper)
+            obj_roll.SetPosition(0, 25, -30)
             obj_roll.RotateX(-60)
             obj_roll.RotateZ(180)
 
             obj_yaw = vtk.vtkActor()
             obj_yaw.SetMapper(mapper)
-            obj_yaw.SetPosition(0, -150, 0)
+            obj_yaw.SetPosition(0, -115, 5)
             obj_yaw.RotateZ(180)
 
             obj_pitch = vtk.vtkActor()
             obj_pitch.SetMapper(mapper)
-            obj_pitch.SetPosition(0, -300, 0)
+            obj_pitch.SetPosition(5, -265, 5)
             obj_pitch.RotateY(90)
             obj_pitch.RotateZ(180)
 
@@ -675,8 +686,8 @@ class Viewer(wx.Panel):
         else:
             self.DisableCoilTracker()
 
-    def OnUpdateObjectTargetGuide(self, coord):
-
+    def OnUpdateObjectTargetGuide(self, pubsub_evt):
+        coord = pubsub_evt.data[1]
         if self.target_coord and self.target_mode:
 
             target_dist = distance.euclidean(coord[0:3],
@@ -691,7 +702,7 @@ class Viewer(wx.Panel):
             # the distance between 1 and 100 mm
             self.ren.GetActiveCamera().Zoom((-0.0404 * target_dist) + 5.0404)
 
-            if target_dist <= const.COIL_COORD_THRESHOLD:
+            if target_dist <= self.distthreshold:
                 self.aim_actor.GetProperty().SetColor(0, 1, 0)
             else:
                 self.aim_actor.GetProperty().SetColor(1, 1, 1)
@@ -720,7 +731,7 @@ class Viewer(wx.Panel):
             for ind in self.arrow_actor_list:
                 self.ren2.RemoveActor(ind)
 
-            if const.COIL_ANGLES_THRESHOLD > coordz > -const.COIL_ANGLES_THRESHOLD:
+            if self.anglethreshold * const.ARROW_SCALE > coordz > -self.anglethreshold * const.ARROW_SCALE:
                 self.obj_actor_list[0].GetProperty().SetColor(0, 1, 0)
             else:
                 self.obj_actor_list[0].GetProperty().SetColor(1, 1, 1)
@@ -737,7 +748,7 @@ class Viewer(wx.Panel):
             arrow_roll_z2.RotateZ(180)
             arrow_roll_z2.GetProperty().SetColor(1, 1, 0)
 
-            if const.COIL_ANGLES_THRESHOLD > coordy > -const.COIL_ANGLES_THRESHOLD:
+            if self.anglethreshold * const.ARROW_SCALE > coordy > -self.anglethreshold * const.ARROW_SCALE:
                 self.obj_actor_list[1].GetProperty().SetColor(0, 1, 0)
             else:
                 self.obj_actor_list[1].GetProperty().SetColor(1, 1, 1)
@@ -754,7 +765,7 @@ class Viewer(wx.Panel):
             arrow_yaw_y2.RotateZ(180)
             arrow_yaw_y2.GetProperty().SetColor(0, 1, 0)
 
-            if const.COIL_ANGLES_THRESHOLD > coordx > -const.COIL_ANGLES_THRESHOLD:
+            if self.anglethreshold * const.ARROW_SCALE > coordx > -self.anglethreshold * const.ARROW_SCALE:
                 self.obj_actor_list[2].GetProperty().SetColor(0, 1, 0)
             else:
                 self.obj_actor_list[2].GetProperty().SetColor(1, 1, 1)
