@@ -839,7 +839,7 @@ class ObjectRegistrationPanel(wx.Panel):
             self.btn_save.Enable(1)
             self.btn_new.Enable(1)
             self.btn_load.Enable(1)
-            if np.isfinite(self.obj_fiducials).all() and np.isfinite(self.obj_orients).all():
+            if self.obj_fiducials:
                 self.checktrack.Enable(1)
 
     def OnSelectAngleThreshold(self, evt, ctrl):
@@ -1198,7 +1198,7 @@ class MarkersPanel(wx.Panel):
                             self.OnMenuSetTarget(target)
 
                     else:
-                        coord = float(line[0]), float(line[1]), float(line[2])
+                        coord = float(line[0]), float(line[1]), float(line[2]), 0, 0, 0
                         colour = float(line[3]), float(line[4]), float(line[5])
                         size = float(line[6])
 

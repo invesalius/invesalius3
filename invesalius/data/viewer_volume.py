@@ -894,6 +894,7 @@ class Viewer(wx.Panel):
 
     def RemoveTargetAim(self):
         self.ren.RemoveActor(self.aim_actor)
+        self.ren.RemoveActor(self.dummy_coil_actor)
         self.Refresh()
 
     def UpdateObjectTargetView(self, pubsub_evt):
