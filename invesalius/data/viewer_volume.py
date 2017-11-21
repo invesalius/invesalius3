@@ -744,12 +744,12 @@ class Viewer(wx.Panel):
 
             offset = 5
 
-            arrow_roll_x1 = self.CreateArrowActor([-55, -35, offset], [-55, -35, offset + coordx])
+            arrow_roll_x1 = self.CreateArrowActor([-55, -35, offset], [-55, -35, offset - coordx])
             arrow_roll_x1.RotateX(-60)
             arrow_roll_x1.RotateZ(180)
             arrow_roll_x1.GetProperty().SetColor(1, 1, 0)
 
-            arrow_roll_x2 = self.CreateArrowActor([55, -35, offset], [55, -35, offset - coordx])
+            arrow_roll_x2 = self.CreateArrowActor([55, -35, offset], [55, -35, offset + coordx])
             arrow_roll_x2.RotateX(-60)
             arrow_roll_x2.RotateZ(180)
             arrow_roll_x2.GetProperty().SetColor(1, 1, 0)
@@ -763,12 +763,12 @@ class Viewer(wx.Panel):
 
             offset = -35
 
-            arrow_yaw_z1 = self.CreateArrowActor([-55, offset, 0], [-55, offset + coordz, 0])
+            arrow_yaw_z1 = self.CreateArrowActor([-55, offset, 0], [-55, offset - coordz, 0])
             arrow_yaw_z1.SetPosition(0, -150, 0)
             arrow_yaw_z1.RotateZ(180)
             arrow_yaw_z1.GetProperty().SetColor(0, 1, 0)
 
-            arrow_yaw_z2 = self.CreateArrowActor([55, offset, 0], [55, offset - coordz, 0])
+            arrow_yaw_z2 = self.CreateArrowActor([55, offset, 0], [55, offset + coordz, 0])
             arrow_yaw_z2.SetPosition(0, -150, 0)
             arrow_yaw_z2.RotateZ(180)
             arrow_yaw_z2.GetProperty().SetColor(0, 1, 0)
@@ -827,6 +827,14 @@ class Viewer(wx.Panel):
 
         self.pTarget = self.CenterOfMass()
 
+        # v3, M_plane_inv = self.Plane(self.target_coord[0:3], self.pTarget)
+        # mat4x4 = vtk.vtkMatrix4x4()
+        # for i in range(4):
+        #     mat4x4.SetElement(i, 0, M_plane_inv[i][0])
+        #     mat4x4.SetElement(i, 1, M_plane_inv[i][1])
+        #     mat4x4.SetElement(i, 2, M_plane_inv[i][2])
+        #     mat4x4.SetElement(i, 3, M_plane_inv[i][3])
+
         a, b, g = np.radians(self.target_coord[3:])
         r_ref = tr.euler_matrix(a, b, g, 'sxyz')
         t_ref = tr.translation_matrix(self.target_coord[:3])
@@ -848,6 +856,7 @@ class Viewer(wx.Panel):
         # Transform the polydata
         transform = vtk.vtkTransform()
         transform.SetMatrix(m_img_vtk)
+        #transform.SetMatrix(mat4x4)
         transformPD = vtk.vtkTransformPolyDataFilter()
         transformPD.SetTransform(transform)
         transformPD.SetInputConnection(reader.GetOutputPort())
@@ -886,6 +895,7 @@ class Viewer(wx.Panel):
         self.dummy_coil_actor = vtk.vtkActor()
         self.dummy_coil_actor.SetMapper(obj_mapper)
         self.dummy_coil_actor.GetProperty().SetOpacity(0.4)
+        self.dummy_coil_actor.SetVisibility(1)
         self.dummy_coil_actor.SetUserMatrix(m_img_vtk)
 
         self.ren.AddActor(self.dummy_coil_actor)

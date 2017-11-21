@@ -3143,6 +3143,8 @@ class ObjectCalibrationDialog(wx.Dialog):
 
         # Initialize list of buttons and txtctrls for wx objects
         self.btns_coord = [None] * 5
+        self.text_actors = [None] * 5
+        self.ball_actors = [None] * 5
         self.txt_coord = [list(), list(), list(), list(), list()]
 
         # ComboBox for tracker reference mode
@@ -3273,17 +3275,40 @@ class ObjectCalibrationDialog(wx.Dialog):
         obj_actor = vtk.vtkActor()
         obj_actor.SetMapper(mapper)
 
-        obj_axes = vtk.vtkAxesActor()
-        obj_axes.SetShaftTypeToCylinder()
-        obj_axes.SetXAxisLabelText("x")
-        obj_axes.SetYAxisLabelText("y")
-        obj_axes.SetZAxisLabelText("z")
-        obj_axes.SetTotalLength(50.0, 50.0, 50.0)
+        self.ball_actors[0], self.text_actors[0] = self.OnCreateObjectText('Left', (0,55,0))
+        self.ball_actors[1], self.text_actors[1] = self.OnCreateObjectText('Right', (0,-55,0))
+        self.ball_actors[2], self.text_actors[2] = self.OnCreateObjectText('Anterior', (23,0,0))
 
         self.ren.AddActor(obj_actor)
-        self.ren.AddActor(obj_axes)
+        self.ren.ResetCamera()
 
         self.interactor.Render()
+
+    def OnCreateObjectText(self, name, coord):
+        ball_source = vtk.vtkSphereSource()
+        ball_source.SetRadius(3)
+        mapper = vtk.vtkPolyDataMapper()
+        mapper.SetInputConnection(ball_source.GetOutputPort())
+        ball_actor = vtk.vtkActor()
+        ball_actor.SetMapper(mapper)
+        ball_actor.SetPosition(coord)
+        ball_actor.GetProperty().SetColor(1, 0, 0)
+
+        textSource = vtk.vtkVectorText()
+        textSource.SetText(name)
+
+        mapper = vtk.vtkPolyDataMapper()
+        mapper.SetInputConnection(textSource.GetOutputPort())
+        tactor = vtk.vtkFollower()
+        tactor.SetMapper(mapper)
+        tactor.GetProperty().SetColor(1.0, 0.0, 0.0)
+        tactor.SetScale(5)
+        ball_position = ball_actor.GetPosition()
+        tactor.SetPosition(ball_position[0]+5, ball_position[1]+5, ball_position[2]+10)
+        self.ren.AddActor(tactor)
+        tactor.SetCamera(self.ren.GetActiveCamera())
+        self.ren.AddActor(ball_actor)
+        return ball_actor, tactor
 
     def OnGetObjectFiducials(self, evt):
         btn_id = const.BTNS_OBJ[evt.GetId()].keys()[0]
@@ -3303,6 +3328,10 @@ class ObjectCalibrationDialog(wx.Dialog):
             self.obj_orients[btn_id, :] = coord[3:]
             for n in [0, 1, 2]:
                 self.txt_coord[btn_id][n].SetLabel(str(round(coord[n], 1)))
+                if self.text_actors[btn_id]:
+                    self.text_actors[btn_id].GetProperty().SetColor(0.0, 1.0, 0.0)
+                    self.ball_actors[btn_id].GetProperty().SetColor(0.0, 1.0, 0.0)
+            self.Refresh()
         else:
             NavigationTrackerWarning(0, 'choose')
 
