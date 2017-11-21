@@ -583,13 +583,13 @@ class NeuronavigationPanel(wx.Panel):
                 for btn_c in self.btns_coord:
                     btn_c.Enable(False)
 
-                fids_head_img = np.zeros([3, 3])
-                for ic in range(0, 3):
-                    fids_head_img[ic, :] = np.asarray(db.flip_x_m(self.fiducials[ic, :]))
-
-                m_head_aux, q_head_aux, m_inv_head_aux = db.base_creation(fids_head_img)
-                m_head = np.asmatrix(np.identity(4))
-                m_head[:3, :3] = m_head_aux[:3, :3]
+                # fids_head_img = np.zeros([3, 3])
+                # for ic in range(0, 3):
+                #     fids_head_img[ic, :] = np.asarray(db.flip_x_m(self.fiducials[ic, :]))
+                #
+                # m_head_aux, q_head_aux, m_inv_head_aux = db.base_creation(fids_head_img)
+                # m_head = np.asmatrix(np.identity(4))
+                # m_head[:3, :3] = m_head_aux[:3, :3]
 
                 m, q1, minv = db.base_creation_old(self.fiducials[:3, :])
                 n, q2, ninv = db.base_creation_old(self.fiducials[3:, :])
@@ -597,7 +597,7 @@ class NeuronavigationPanel(wx.Panel):
                 m_change = tr.affine_matrix_from_points(self.fiducials[3:, :].T, self.fiducials[:3, :].T,
                                                         shear=False, scale=False)
 
-                coreg_data = [m_change, m_head]
+                # coreg_data = [m_change, m_head]
 
                 tracker_mode = self.trk_init, self.tracker_id, self.ref_mode_id
                 # FIXME: FRE is taking long to calculate so it updates on GUI delayed to navigation - I think its fixed
@@ -620,23 +620,22 @@ class NeuronavigationPanel(wx.Panel):
                 if self.track_obj:
                     if self.obj_reg_status:
                         # obj_reg[0] is object 3x3 fiducial matrix and obj_reg[1] is 3x3 orientation matrix
-                        obj_fiducials = self.obj_reg[0]
-                        obj_orients = self.obj_reg[1]
-                        obj_ref_mode = self.obj_reg[2]
+                        obj_fiducials, obj_orients, obj_ref_mode, obj_name = self.obj_reg
 
                         if self.trk_init and self.tracker_id:
 
+                            coreg_data = [m_change, obj_ref_mode]
+
                             if self.ref_mode_id:
                                 coord_raw = dco.GetCoordinates(self.trk_init, self.tracker_id, self.ref_mode_id)
-                                obj_data = db.object_registration(obj_fiducials, obj_orients, coord_raw)
+                                obj_data = db.object_registration(obj_fiducials, obj_orients, coord_raw, m_change)
                                 coreg_data.extend(obj_data)
-                                coreg_data.append(obj_ref_mode)
 
                                 self.correg = dcr.CoregistrationObjectDynamic(coreg_data, nav_id, tracker_mode)
                             else:
-                                obj_data = db.object_registration_static(obj_fiducials, obj_orients)
+                                coord_raw = np.array([None])
+                                obj_data = db.object_registration(obj_fiducials, obj_orients, coord_raw, m_change)
                                 coreg_data.extend(obj_data)
-                                coreg_data.append(obj_ref_mode)
 
                                 self.correg = dcr.CoregistrationObjectStatic(coreg_data, nav_id, tracker_mode)
 
@@ -647,8 +646,7 @@ class NeuronavigationPanel(wx.Panel):
                         dlg.InvalidObjectRegistration()
 
                 else:
-                    obj_ref_mode = 0
-                    coreg_data.append(obj_ref_mode)
+                    coreg_data = [m_change, 0]
                     if self.ref_mode_id:
                         # self.correg = dcr.CoregistrationDynamic_old(bases_coreg, nav_id, tracker_mode)
                         self.correg = dcr.CoregistrationDynamic(coreg_data, nav_id, tracker_mode)

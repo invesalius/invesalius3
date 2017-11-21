@@ -200,11 +200,13 @@ def flip_x_m(point):
     return point_rot[0, 0], point_rot[1, 0], point_rot[2, 0]
 
 
-def object_registration(fiducials, orients, coord_raw):
+def object_registration(fiducials, orients, coord_raw, m_change):
     """
 
-    :param fiducials:
-    :param orients:
+    :param fiducials: 3x3 array of fiducials translations
+    :param orients: 3x3 array of fiducials orientations in degrees
+    :param coord_raw: nx6 array of coordinates from tracking device where n = 1 is the reference attached to the head
+    :param m_change: 3x3 array representing change of basis from head in tracking system to vtk head system
     :return:
     """
 
@@ -214,77 +216,56 @@ def object_registration(fiducials, orients, coord_raw):
     coords = coords_aux[mask]
 
     fids_dyn = np.zeros([4, 6])
+    fids_img = np.zeros([4, 6])
     fids_raw = np.zeros([3, 3])
 
-    # this block is to compute object coordinates in source frame
+    # compute fiducials of object with reference to the fixed probe in source frame
     for ic in range(0, 3):
         fids_raw[ic, :] = dco.dynamic_reference_m2(coords[ic, :], coords[3, :])[:3]
 
+    # compute initial alignment of probe fixed in the object in source frame
     t_s0_raw = np.asmatrix(tr.translation_matrix(coords[3, :3]))
     r_s0_raw = np.asmatrix(tr.euler_matrix(np.radians(coords[3, 3]), np.radians(coords[3, 4]),
                              np.radians(coords[3, 5]), 'rzyx'))
     s0_raw = np.asmatrix(tr.concatenate_matrices(t_s0_raw, r_s0_raw))
 
+    # compute change of basis for object fiducials in source frame
     base_obj_raw, q_obj_raw, base_inv_obj_raw = base_creation(fids_raw[:3, :3])
     r_obj_raw = np.asmatrix(np.identity(4))
     r_obj_raw[:3, :3] = base_obj_raw[:3, :3]
     t_obj_raw = np.asmatrix(tr.translation_matrix(q_obj_raw))
     m_obj_raw = np.asmatrix(tr.concatenate_matrices(t_obj_raw, r_obj_raw))
 
-    # this block is to compute object coordinates in reference frame
     for ic in range(0, 4):
-        fids_dyn[ic, :] = dco.dynamic_reference_m2(coords[ic, :], coord_raw[1, :])
+        if coord_raw.any():
+            # compute object fiducials in reference frame
+            fids_dyn[ic, :] = dco.dynamic_reference_m2(coords[ic, :], coord_raw[1, :])
+            fids_dyn[ic, 2] = -fids_dyn[ic, 2]
+        else:
+            # compute object fiducials in source frame
+            fids_dyn[ic, :] = coords[ic, :]
 
-    fids_dyn[:, 2] = -fids_dyn[:, 2]
+        # compute object fiducials in vtk head frame
+        a, b, g = np.radians(fids_dyn[ic, 3:])
+        T_p = tr.translation_matrix(fids_dyn[ic, :3])
+        R_p = tr.euler_matrix(a, b, g, 'rzyx')
+        M_p = np.asmatrix(tr.concatenate_matrices(T_p, R_p))
+        M_img = np.asmatrix(m_change) * M_p
 
+        angles_img = np.degrees(np.asarray(tr.euler_from_matrix(M_img, 'rzyx')))
+        coord_img = np.asarray(flip_x_m(tr.translation_from_matrix(M_img)))
+
+        fids_img[ic, :] = np.hstack((coord_img, angles_img))
+
+    # compute object base change in vtk head frame
+    base_obj_img, q_obj_img, base_inv_obj_img = base_creation(fids_img[:3, :3])
+    r_obj_img = np.asmatrix(np.identity(4))
+    r_obj_img[:3, :3] = base_obj_img[:3, :3]
+
+    # compute initial alignment of probe fixed in the object in reference (or static) frame
     s0_trans_dyn = np.asmatrix(tr.translation_matrix(fids_dyn[3, :3]))
     s0_rot_dyn = np.asmatrix(tr.euler_matrix(np.radians(fids_dyn[3, 3]), np.radians(fids_dyn[3, 4]),
                                              np.radians(fids_dyn[3, 5]), 'rzyx'))
     s0_dyn = np.asmatrix(tr.concatenate_matrices(s0_trans_dyn, s0_rot_dyn))
 
-    return t_obj_raw, s0_raw, r_s0_raw, s0_dyn, m_obj_raw
-
-
-def object_registration_static(fiducials, orients):
-    """
-
-    :param fiducials:
-    :param orients:
-    :return:
-    """
-
-    coords_aux = np.hstack((fiducials, orients))
-    mask = np.ones(len(coords_aux), dtype=bool)
-    mask[[3]] = False
-    coords = coords_aux[mask]
-
-    fids_dyn = np.zeros([4, 6])
-    fids_raw = np.zeros([3, 3])
-
-    # this block is to compute object coordinates in source frame
-    for ic in range(0, 3):
-        fids_raw[ic, :] = dco.dynamic_reference_m2(coords[ic, :], coords[3, :])[:3]
-
-    t_s0_raw = np.asmatrix(tr.translation_matrix(coords[3, :3]))
-    r_s0_raw = np.asmatrix(tr.euler_matrix(np.radians(coords[3, 3]), np.radians(coords[3, 4]),
-                             np.radians(coords[3, 5]), 'rzyx'))
-    s0_raw = np.asmatrix(tr.concatenate_matrices(t_s0_raw, r_s0_raw))
-
-    base_obj_raw, q_obj_raw, base_inv_obj_raw = base_creation(fids_raw[:3, :3])
-    r_obj_raw = np.asmatrix(np.identity(4))
-    r_obj_raw[:3, :3] = base_obj_raw[:3, :3]
-    t_obj_raw = np.asmatrix(tr.translation_matrix(q_obj_raw))
-    m_obj_raw = np.asmatrix(tr.concatenate_matrices(t_obj_raw, r_obj_raw))
-
-    # this block is to compute object coordinates in reference frame
-    for ic in range(0, 4):
-        fids_dyn[ic, :] = coords[ic, :]
-
-    # fids_dyn[:, 2] = -fids_dyn[:, 2]
-
-    s0_trans_dyn = np.asmatrix(tr.translation_matrix(fids_dyn[3, :3]))
-    s0_rot_dyn = np.asmatrix(tr.euler_matrix(np.radians(fids_dyn[3, 3]), np.radians(fids_dyn[3, 4]),
-                                             np.radians(fids_dyn[3, 5]), 'rzyx'))
-    s0_dyn = np.asmatrix(tr.concatenate_matrices(s0_trans_dyn, s0_rot_dyn))
-
-    return t_obj_raw, s0_raw, r_s0_raw, s0_dyn, m_obj_raw
+    return t_obj_raw, s0_raw, r_s0_raw, s0_dyn, m_obj_raw, r_obj_img
