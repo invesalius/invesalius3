@@ -234,10 +234,12 @@ class InnerFoldPanel(wx.Panel):
             if evt.data[0]:
                 self.checkobj.Enable(True)
                 self.track_obj = True
+                Publisher.sendMessage('Status target button', True)
             else:
                 self.checkobj.Enable(False)
                 self.checkobj.SetValue(False)
                 self.track_obj = False
+                Publisher.sendMessage('Status target button', False)
 
         Publisher.sendMessage('Update show object state', self.checkobj.GetValue())
 
@@ -839,8 +841,9 @@ class ObjectRegistrationPanel(wx.Panel):
             self.btn_save.Enable(1)
             self.btn_new.Enable(1)
             self.btn_load.Enable(1)
-            if self.obj_fiducials:
+            if self.obj_fiducials is not None:
                 self.checktrack.Enable(1)
+                Publisher.sendMessage('Enable target button', True)
 
     def OnSelectAngleThreshold(self, evt, ctrl):
         Publisher.sendMessage('Update angle threshold', ctrl.GetValue())

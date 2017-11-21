@@ -399,6 +399,9 @@ class VolumeToolPanel(wx.Panel):
         sizer.Add(button_stereo, 0, wx.TOP|wx.BOTTOM, 1)
         sizer.Add(button_target, 0, wx.TOP | wx.BOTTOM, 1)
 
+        self.navigation_status = False
+        self.status_target_select = False
+        self.status_obj_tracker = False
 
         sizer.Fit(self)
 
@@ -417,7 +420,9 @@ class VolumeToolPanel(wx.Panel):
         Publisher.subscribe(self.DisablePreset, 'Close project data')
         Publisher.subscribe(self.Uncheck, 'Uncheck image plane menu')
         Publisher.subscribe(self.DisableVolumeCutMenu, 'Disable volume cut menu')
-        Publisher.subscribe(self.DisableEnableCoilTracker, 'Disable or enable coil tracker')
+        Publisher.subscribe(self.StatusTargetSelect, 'Disable or enable coil tracker')
+        Publisher.subscribe(self.StatusObjTracker, 'Status target button')
+        Publisher.subscribe(self.StatusNavigation, 'Navigation status')
         
     def DisablePreset(self, pubsub_evt):
         self.off_item.Check(1)
@@ -444,16 +449,26 @@ class VolumeToolPanel(wx.Panel):
     def OnButtonSlicePlane(self, evt):
         self.button_slice_plane.PopupMenu(self.slice_plane_menu)
 
-    def DisableEnableCoilTracker(self, pubsub_evt):
-        status = pubsub_evt.data
-        if status:
+    def StatusObjTracker(self, pubsub_evt):
+        self.status_obj_tracker = pubsub_evt.data
+        self.StatusNavigation(None)
+
+    def StatusTargetSelect(self, pubsub_evt):
+        self.status_target_select = pubsub_evt.data
+        self.StatusNavigation(None)
+
+    def StatusNavigation(self, pubsub_evt):
+        if hasattr(pubsub_evt, 'data'):
+            self.navigation_status = pubsub_evt.data
+
+        if self.status_target_select and self.status_obj_tracker and self.navigation_status:
             self.button_target.Enable(1)
         else:
-            self.button_target._pressed = False
+            self.OnButtonTarget(False)
             self.button_target.Enable(0)
 
     def OnButtonTarget(self, evt):
-        if not self.button_target.IsPressed():
+        if not self.button_target.IsPressed() and evt is not False:
             self.button_target._pressed = True
             Publisher.sendMessage('Target navigation mode', self.button_target._pressed)
         else:
