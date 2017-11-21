@@ -50,12 +50,15 @@ class CoregistrationStatic(threading.Thread):
         self._pause_ = True
 
     def run(self):
-        m_change = self.coreg_data[0]
-        obj_ref_mode = self.coreg_data[2]
+        # m_change = self.coreg_data[0]
+        # obj_ref_mode = self.coreg_data[2]
+        #
+        # trck_init = self.trck_info[0]
+        # trck_id = self.trck_info[1]
+        # trck_mode = self.trck_info[2]
 
-        trck_init = self.trck_info[0]
-        trck_id = self.trck_info[1]
-        trck_mode = self.trck_info[2]
+        m_change, obj_ref_mode = self.coreg_data
+        trck_init, trck_id, trck_mode = self.trck_info
 
         while self.nav_id:
             coord_raw = dco.GetCoordinates(trck_init, trck_id, trck_mode)
@@ -98,12 +101,8 @@ class CoregistrationDynamic(threading.Thread):
         self._pause_ = True
 
     def run(self):
-        m_change = self.coreg_data[0]
-        obj_ref_mode = self.coreg_data[2]
-
-        trck_init = self.trck_info[0]
-        trck_id = self.trck_info[1]
-        trck_mode = self.trck_info[2]
+        m_change, obj_ref_mode = self.coreg_data
+        trck_init, trck_id, trck_mode = self.trck_info
 
         while self.nav_id:
             coord_raw = dco.GetCoordinates(trck_init, trck_id, trck_mode)
@@ -214,18 +213,21 @@ class CoregistrationObjectStatic(threading.Thread):
         self._pause_ = True
 
     def run(self):
-        m_change = self.coreg_data[0]
-        m_head = self.coreg_data[1]
-        t_obj_raw = self.coreg_data[2]
-        s0_raw = self.coreg_data[3]
-        r_s0_raw = self.coreg_data[4]
-        s0_dyn = self.coreg_data[5]
-        m_obj_raw = self.coreg_data[6]
-        obj_ref_mode = self.coreg_data[7]
+        # m_change = self.coreg_data[0]
+        # t_obj_raw = self.coreg_data[1]
+        # s0_raw = self.coreg_data[2]
+        # r_s0_raw = self.coreg_data[3]
+        # s0_dyn = self.coreg_data[4]
+        # m_obj_raw = self.coreg_data[5]
+        # r_obj_img = self.coreg_data[6]
+        # obj_ref_mode = self.coreg_data[7]
+        #
+        # trck_init = self.trck_info[0]
+        # trck_id = self.trck_info[1]
+        # trck_mode = self.trck_info[2]
 
-        trck_init = self.trck_info[0]
-        trck_id = self.trck_info[1]
-        trck_mode = self.trck_info[2]
+        m_change, obj_ref_mode, t_obj_raw, s0_raw, r_s0_raw, s0_dyn, m_obj_raw, r_obj_img = self.coreg_data
+        trck_init, trck_id, trck_mode = self.trck_info
 
         while self.nav_id:
             coord_raw = dco.GetCoordinates(trck_init, trck_id, trck_mode)
@@ -242,7 +244,7 @@ class CoregistrationObjectStatic(threading.Thread):
             m_probe[2, -1] = -m_probe[2, -1]
 
             m_img = m_change * m_probe
-            r_obj = m_head * m_obj_raw.I * s0_dyn.I * m_probe * m_obj_raw
+            r_obj = r_obj_img * m_obj_raw.I * s0_dyn.I * m_probe * m_obj_raw
 
             m_img[:3, :3] = r_obj[:3, :3]
 
@@ -299,18 +301,9 @@ class CoregistrationObjectDynamic(threading.Thread):
         self._pause_ = True
 
     def run(self):
-        m_change = self.coreg_data[0]
-        m_head = self.coreg_data[1]
-        t_obj_raw = self.coreg_data[2]
-        s0_raw = self.coreg_data[3]
-        r_s0_raw = self.coreg_data[4]
-        s0_dyn = self.coreg_data[5]
-        m_obj_raw = self.coreg_data[6]
-        obj_ref_mode = self.coreg_data[7]
 
-        trck_init = self.trck_info[0]
-        trck_id = self.trck_info[1]
-        trck_mode = self.trck_info[2]
+        m_change, obj_ref_mode, t_obj_raw, s0_raw, r_s0_raw, s0_dyn, m_obj_raw, r_obj_img = self.coreg_data
+        trck_init, trck_id, trck_mode = self.trck_info
 
         while self.nav_id:
             coord_raw = dco.GetCoordinates(trck_init, trck_id, trck_mode)
@@ -333,7 +326,7 @@ class CoregistrationObjectDynamic(threading.Thread):
             m_dyn[2, -1] = -m_dyn[2, -1]
 
             m_img = m_change * m_dyn
-            r_obj = m_head * m_obj_raw.I * s0_dyn.I * m_dyn * m_obj_raw
+            r_obj = r_obj_img * m_obj_raw.I * s0_dyn.I * m_dyn * m_obj_raw
 
             m_img[:3, :3] = r_obj[:3, :3]
 
