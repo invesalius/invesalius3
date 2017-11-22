@@ -583,7 +583,8 @@ class Viewer(wx.Panel):
         status = pubsub_evt.data[0]
         index = pubsub_evt.data[1]
         if status:
-            self.staticballs[index].GetProperty().SetOpacity(0.4)
+            self.staticballs[index].GetProperty().SetOpacity(1)
+            # self.staticballs[index].GetProperty().SetOpacity(0.4)
         else:
             self.staticballs[index].GetProperty().SetOpacity(1)
 
@@ -596,7 +597,6 @@ class Viewer(wx.Panel):
     def ActivateTargetMode(self, pubsub_evt):
         self.target_mode = pubsub_evt.data
         if self.target_coord and self.target_mode:
-
             self.CreateTargetAim()
 
             # Create a line
@@ -677,8 +677,8 @@ class Viewer(wx.Panel):
                 self.ren2.AddActor(ind)
 
             self.ren.ResetCamera()
-            self.SetCamera()
-            self.ren.GetActiveCamera().Zoom(4)
+            self.SetCameraTarget()
+            #self.ren.GetActiveCamera().Zoom(4)
 
             self.ren2.ResetCamera()
             self.ren2.GetActiveCamera().Zoom(2)
@@ -695,9 +695,10 @@ class Viewer(wx.Panel):
             target_dist = distance.euclidean(coord[0:3],
                                              (self.target_coord[0], -self.target_coord[1], self.target_coord[2]))
 
-            self.txt.SetCoilDistanceValue(target_dist)
+            # self.txt.SetCoilDistanceValue(target_dist)
+            self.textSource.SetText('Dist: ' + str("{:06.2f}".format(target_dist)) + ' mm')
             self.ren.ResetCamera()
-            self.SetCamera()
+            self.SetCameraTarget()
             if target_dist > 100:
                 target_dist = 100
             # ((-0.0404*dst) + 5.0404) is the linear equation to normalize the zoom between 1 and 5 times with
@@ -825,6 +826,18 @@ class Viewer(wx.Panel):
             self.RemoveTargetAim()
             self.aim_actor = None
 
+        self.textSource = vtk.vtkVectorText()
+        mapper = vtk.vtkPolyDataMapper()
+        mapper.SetInputConnection(self.textSource.GetOutputPort())
+        tactor = vtk.vtkFollower()
+        tactor.SetMapper(mapper)
+        tactor.GetProperty().SetColor(1.0, 0.25, 0.0)
+        tactor.SetScale(5)
+        tactor.SetPosition(self.target_coord[0]+10, self.target_coord[1]+30, self.target_coord[2]+20)
+        self.ren.AddActor(tactor)
+        self.tactor = tactor
+        tactor.SetCamera(self.ren.GetActiveCamera())
+
         self.pTarget = self.CenterOfMass()
 
         # v3, M_plane_inv = self.Plane(self.target_coord[0:3], self.pTarget)
@@ -845,6 +858,8 @@ class Viewer(wx.Panel):
         for row in range(0, 4):
             for col in range(0, 4):
                 m_img_vtk.SetElement(row, col, m_img[row, col])
+
+        self.m_img_vtk = m_img_vtk
 
         filename = os.path.join(const.OBJ_DIR, "aim.stl")
 
@@ -905,27 +920,8 @@ class Viewer(wx.Panel):
     def RemoveTargetAim(self):
         self.ren.RemoveActor(self.aim_actor)
         self.ren.RemoveActor(self.dummy_coil_actor)
+        self.ren.RemoveActor(self.tactor)
         self.Refresh()
-
-    def UpdateObjectTargetView(self, pubsub_evt):
-        if self.target_mode:
-            coord = pubsub_evt.data
-            dst = distance.euclidean(coord, (self.target_coord[0], -self.target_coord[1], self.target_coord[2]))
-            self.txt.SetCoilDistanceValue(dst)
-            self.ren.ResetCamera()
-            self.SetCamera()
-            if dst > 100:
-                dst = 100
-            # ((-0.0404*dst) + 5.0404) is the linear equation to normalize the zoom between 1 and 5 times with
-            # the distance between 1 and 100 mm
-            self.ren.GetActiveCamera().Zoom((-0.0404*dst) + 5.0404)
-
-            if dst <= const.COIL_COORD_THRESHOLD:
-                self.aim_actor.GetProperty().SetColor(0, 1, 0)
-            else:
-                self.aim_actor.GetProperty().SetColor(1, 1, 1)
-
-            self.Refresh()
 
     def CreateTextDistance(self):
         txt = vtku.Text()
@@ -1039,22 +1035,36 @@ class Viewer(wx.Panel):
 
         return v3, M_plane_inv
 
-    def SetCamera(self):
+    def SetCameraTarget(self):
         cam_focus = self.target_coord[0:3]
         cam = self.ren.GetActiveCamera()
+
+        oldcamVTK = vtk.vtkMatrix4x4()
+        oldcamVTK.DeepCopy(cam.GetViewTransformMatrix())
+
+        newvtk = vtk.vtkMatrix4x4()
+        newvtk.Multiply4x4(self.m_img_vtk, oldcamVTK, newvtk)
+
+        transform = vtk.vtkTransform()
+        transform.SetMatrix(newvtk)
+        transform.Update()
+        cam.ApplyTransform(transform)
+
+        cam.Roll(90)
 
         cam_pos0 = np.array(cam.GetPosition())
         cam_focus0 = np.array(cam.GetFocalPoint())
         v0 = cam_pos0 - cam_focus0
         v0n = np.sqrt(inner1d(v0, v0))
 
-        v1 = (cam_focus[0] - self.pTarget[0], cam_focus[1] - self.pTarget[1], cam_focus[2] - self.pTarget[2])
+        v1 = (cam_focus[0] - cam_focus0[0], cam_focus[1] - cam_focus0[1], cam_focus[2] - cam_focus0[2])
         v1n = np.sqrt(inner1d(v1, v1))
         if not v1n:
             v1n = 1.0
         cam_pos = (v1 / v1n) * v0n + cam_focus
         cam.SetFocalPoint(cam_focus)
         cam.SetPosition(cam_pos)
+
 
     def CreateBallReference(self):
         """
