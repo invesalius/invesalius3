@@ -841,7 +841,6 @@ class Viewer(wx.Panel):
         self.tactor = tactor
         tactor.SetCamera(self.ren.GetActiveCamera())
 
-        self.pTarget = self.CenterOfMass()
 
         # v3, M_plane_inv = self.Plane(self.target_coord[0:3], self.pTarget)
         # mat4x4 = vtk.vtkMatrix4x4()
@@ -939,6 +938,7 @@ class Viewer(wx.Panel):
         try:
             self.ren.SetViewport(0, 0, 1, 1)
             self.interactor.GetRenderWindow().RemoveRenderer(self.ren2)
+            self.SetViewAngle(const.VOL_FRONT)
             self.ren.RemoveActor(self.txt.actor)
             self.CreateTargetAim()
             self.interactor.Render()
@@ -1200,6 +1200,7 @@ class Viewer(wx.Panel):
 
     def OnNavigationStatus(self, pubsub_evt):
         self.nav_status = pubsub_evt.data
+        self.pTarget = self.CenterOfMass()
         if self.obj_actor and self.nav_status:
             self.obj_actor.SetVisibility(self.obj_state)
             if not self.obj_state:
@@ -1409,7 +1410,7 @@ class Viewer(wx.Panel):
 
     def SetVolumeCamera(self, pubsub_evt):
         if self.camera_state:
-            #TODO: exclude dependency on initial focus
+            # TODO: exclude dependency on initial focus
             cam_focus = np.array(bases.flip_x(pubsub_evt.data[1][:3]))
             cam = self.ren.GetActiveCamera()
 
@@ -1418,11 +1419,14 @@ class Viewer(wx.Panel):
 
             cam_pos0 = np.array(cam.GetPosition())
             cam_focus0 = np.array(cam.GetFocalPoint())
-
             v0 = cam_pos0 - cam_focus0
             v0n = np.sqrt(inner1d(v0, v0))
 
-            v1 = (cam_focus - self.initial_focus)
+            if self.obj_state:
+                v1 = (cam_focus[0] - self.pTarget[0], cam_focus[1] - self.pTarget[1], cam_focus[2] - self.pTarget[2])
+            else:
+                v1 = (cam_focus - self.initial_focus)
+
             v1n = np.sqrt(inner1d(v1, v1))
             if not v1n:
                 v1n = 1.0

@@ -1098,7 +1098,7 @@ class MarkersPanel(wx.Panel):
 
         self.tgt_index = self.lc.GetFocusedItem()
         self.lc.SetItemBackgroundColour(self.tgt_index, 'RED')
-        print self.list_coord[self.tgt_index]
+
         Publisher.sendMessage('Update target', self.list_coord[self.tgt_index])
         Publisher.sendMessage('Set target transparency', [True, self.tgt_index])
         Publisher.sendMessage('Disable or enable coil tracker', True)
