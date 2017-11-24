@@ -472,7 +472,8 @@ class NeuronavigationPanel(wx.Panel):
                 Publisher.sendMessage('Remove sensors ID')
                 self.trk_init = dt.TrackerConnection(self.tracker_id, trck, 'disconnect')
                 if not self.trk_init[0]:
-                    dlg.NavigationTrackerWarning(self.tracker_id, 'disconnect')
+                    if evt is not False:
+                        dlg.NavigationTrackerWarning(self.tracker_id, 'disconnect')
                     self.tracker_id = 0
                     ctrl.SetSelection(self.tracker_id)
                     Publisher.sendMessage('Update status text in GUI', _("Tracker disconnected"))
@@ -695,7 +696,7 @@ class NeuronavigationPanel(wx.Panel):
         self.OnChoiceTracker(False, self.choice_trck)
         Publisher.sendMessage('Update object registration', False)
         Publisher.sendMessage('Update track object state', (False, False))
-        Publisher.sendMessage('Delete all markers')
+        Publisher.sendMessage('Delete all markers', 'close')
         # TODO: Reset camera initial focus
         Publisher.sendMessage('Reset cam clipping range')
 
@@ -1107,7 +1108,10 @@ class MarkersPanel(wx.Panel):
 
     def OnDeleteAllMarkers(self, evt):
         if self.list_coord:
-            result = dlg.DeleteAllMarkers()
+            if hasattr(evt, 'data'):
+                result = wx.ID_OK
+            else:
+                result = dlg.DeleteAllMarkers()
 
             if result == wx.ID_OK:
                 self.list_coord = []
@@ -1119,7 +1123,8 @@ class MarkersPanel(wx.Panel):
                 if self.tgt_flag:
                     self.tgt_flag = self.tgt_index = None
                     Publisher.sendMessage('Disable or enable coil tracker', False)
-                    dlg.DeleteTarget()
+                    if not hasattr(evt, 'data'):
+                        dlg.DeleteTarget()
 
     def OnDeleteSingleMarker(self, evt):
         # OnDeleteSingleMarker is used for both pubsub and button click events
