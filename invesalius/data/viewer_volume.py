@@ -940,6 +940,7 @@ class Viewer(wx.Panel):
             self.ren.SetViewport(0, 0, 1, 1)
             self.interactor.GetRenderWindow().RemoveRenderer(self.ren2)
             self.ren.RemoveActor(self.txt.actor)
+            self.CreateTargetAim()
             self.interactor.Render()
         except:
             None
