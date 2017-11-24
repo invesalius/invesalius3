@@ -136,6 +136,8 @@ class Viewer(wx.Panel):
 
         self.camera_state = const.CAM_MODE
 
+        self.nav_status = False
+
         self.ball_actor = None
         self.obj_actor = None
         self.obj_axes = None
@@ -248,6 +250,7 @@ class Viewer(wx.Panel):
         Publisher.subscribe(self.StopBlinkMarker, 'Stop Blink Marker')
 
         # Related to object tracking during neuronavigation
+        Publisher.subscribe(self.OnNavigationStatus, 'Navigation status')
         Publisher.subscribe(self.UpdateObjectOrientation, 'Update object matrix')
         Publisher.subscribe(self.UpdateTrackObjectState, 'Update track object state')
         Publisher.subscribe(self.UpdateShowObjectState, 'Update show object state')
@@ -1194,6 +1197,13 @@ class Viewer(wx.Panel):
 
         # self.ren.AddActor(self.obj_axes)
 
+    def OnNavigationStatus(self, pubsub_evt):
+        self.nav_status = pubsub_evt.data
+        if self.obj_actor and self.nav_status:
+            self.obj_actor.SetVisibility(self.obj_state)
+            if not self.obj_state:
+                self.Refresh()
+
     def UpdateObjectOrientation(self, pubsub_evt):
 
         m_img = pubsub_evt.data[0]
@@ -1227,11 +1237,9 @@ class Viewer(wx.Panel):
 
     def UpdateShowObjectState(self, pubsub_evt):
         self.obj_state = pubsub_evt.data
-
-        if self.obj_actor:
+        if self.obj_actor and not self.obj_state:
             self.obj_actor.SetVisibility(self.obj_state)
-            if not self.obj_state:
-                self.Refresh()
+            self.Refresh()
 
     def __bind_events_wx(self):
         #self.Bind(wx.EVT_SIZE, self.OnSize)

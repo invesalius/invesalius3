@@ -527,7 +527,7 @@ class NeuronavigationPanel(wx.Panel):
         if self.btns_coord[btn_id].GetValue():
             coord = self.numctrls_coord[btn_id][0].GetValue(),\
                     self.numctrls_coord[btn_id][1].GetValue(),\
-                    self.numctrls_coord[btn_id][2].GetValue()
+                    self.numctrls_coord[btn_id][2].GetValue(), 0, 0, 0
 
             self.fiducials[btn_id, :] = coord[0:3]
             Publisher.sendMessage('Create marker', (coord, marker_id))
