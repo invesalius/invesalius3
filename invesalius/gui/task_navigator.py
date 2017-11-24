@@ -945,7 +945,7 @@ class MarkersPanel(wx.Panel):
 
         self.__bind_events()
 
-        self.current_coord = 0, 0, 0
+        self.current_coord = 0, 0, 0, 0, 0, 0
         self.current_angle = 0, 0, 0
         self.list_coord = []
         self.marker_ind = 0
