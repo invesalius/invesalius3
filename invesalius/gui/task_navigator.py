@@ -169,7 +169,6 @@ class InnerFoldPanel(wx.Panel):
         checkcamera.SetToolTip(tooltip)
         checkcamera.SetValue(const.CAM_MODE)
         checkcamera.Bind(wx.EVT_CHECKBOX, self.OnVolumeCamera)
-        checkcamera.SetValue(1)
         self.checkcamera = checkcamera
 
         # Check box for trigger monitoring to create markers from serial port

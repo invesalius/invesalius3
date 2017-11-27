@@ -471,7 +471,7 @@ class VolumeToolPanel(wx.Panel):
         if not self.button_target.IsPressed() and evt is not False:
             self.button_target._pressed = True
             Publisher.sendMessage('Target navigation mode', self.button_target._pressed)
-        else:
+        elif self.button_target.IsPressed() and evt:
             self.button_target._pressed = False
             Publisher.sendMessage('Target navigation mode', self.button_target._pressed)
 
