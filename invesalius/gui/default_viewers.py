@@ -422,7 +422,6 @@ class VolumeToolPanel(wx.Panel):
         Publisher.subscribe(self.DisableVolumeCutMenu, 'Disable volume cut menu')
         Publisher.subscribe(self.StatusTargetSelect, 'Disable or enable coil tracker')
         Publisher.subscribe(self.StatusObjTracker, 'Status target button')
-        Publisher.subscribe(self.StatusNavigation, 'Navigation status')
         
     def DisablePreset(self, pubsub_evt):
         self.off_item.Check(1)
@@ -451,17 +450,14 @@ class VolumeToolPanel(wx.Panel):
 
     def StatusObjTracker(self, pubsub_evt):
         self.status_obj_tracker = pubsub_evt.data
-        self.StatusNavigation(None)
+        self.StatusNavigation()
 
     def StatusTargetSelect(self, pubsub_evt):
         self.status_target_select = pubsub_evt.data
-        self.StatusNavigation(None)
+        self.StatusNavigation()
 
-    def StatusNavigation(self, pubsub_evt):
-        if hasattr(pubsub_evt, 'data'):
-            self.navigation_status = pubsub_evt.data
-
-        if self.status_target_select and self.status_obj_tracker and self.navigation_status:
+    def StatusNavigation(self):
+        if self.status_target_select and self.status_obj_tracker:
             self.button_target.Enable(1)
         else:
             self.OnButtonTarget(False)
@@ -471,7 +467,7 @@ class VolumeToolPanel(wx.Panel):
         if not self.button_target.IsPressed() and evt is not False:
             self.button_target._pressed = True
             Publisher.sendMessage('Target navigation mode', self.button_target._pressed)
-        elif self.button_target.IsPressed() and evt:
+        elif self.button_target.IsPressed() or evt is False:
             self.button_target._pressed = False
             Publisher.sendMessage('Target navigation mode', self.button_target._pressed)
 
