@@ -56,7 +56,10 @@ class ComboBoxLanguage:
         # Find out OS locale
         self.os_locale = i18n.GetLocaleOS()
        
-        os_lang = self.os_locale[0:2]
+        try:
+            os_lang = self.os_locale[0:2]
+        except TypeError:
+            os_lang = None
 
         # Default selection will be English
         selection = self.locales_key.index('en')
@@ -70,7 +73,7 @@ class ComboBoxLanguage:
             # Add bitmap and info to Combo
             bitmapCmb.Append(dict_locales[key], bmp, key)
             # Set default combo item if available on the list
-            if key.startswith(os_lang):
+            if os_lang and key.startswith(os_lang):
                 selection = self.locales_key.index(key)
                 bitmapCmb.SetSelection(selection)
 
