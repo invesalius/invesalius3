@@ -97,6 +97,7 @@ SURFACE = 5
 LINEAR = 6
 ANGULAR = 7
 DENSITY_ELLIPSE = 8
+DENSITY_POLYGON = 9
 
 # Colour representing each orientation
 ORIENTATION_COLOUR = {'AXIAL': (1,0,0), # Red

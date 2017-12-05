@@ -21,6 +21,7 @@ from scipy.misc import imsave
 TYPE = {const.LINEAR: _(u"Linear"),
         const.ANGULAR: _(u"Angular"),
         const.DENSITY_ELLIPSE: _(u"Density Ellipse"),
+        const.DENSITY_POLYGON: _(u"Density Polygon"),
         }
 
 LOCATION = {const.SURFACE: _(u"3D"),
@@ -135,13 +136,24 @@ class MeasurementManager(object):
             m = dict[i]
 
             if isinstance(m, DensityMeasurement):
-                mr = CircleDensityMeasure(map_id_locations[m.location],
-                                          m.slice_number,
-                                          m.colour)
-                mr.set_center(m.points[0])
-                mr.set_point1(m.points[1])
-                mr.set_point2(m.points[2])
+                if m.type == const.DENSITY_ELLIPSE:
+                    mr = CircleDensityMeasure(map_id_locations[m.location],
+                                              m.slice_number,
+                                              m.colour)
+                    mr.set_center(m.points[0])
+                    mr.set_point1(m.points[1])
+                    mr.set_point2(m.points[2])
+                elif m.type == const.DENSITY_POLYGON:
+                    mr = PolygonDensityMeasure(map_id_locations[m.location],
+                                              m.slice_number,
+                                              m.colour)
+                    for p in m.points:
+                        mr.insert_point(p)
+                    mr.complete_polygon()
 
+                mr.set_density_values(m.min, m.max, m.mean, m.std)
+                print m.min, m.max, m.mean, m.std
+                mr._need_calc = False
                 self.measures.append((m, mr))
                 mr.set_measurement(m)
 
@@ -372,13 +384,18 @@ class MeasurementManager(object):
         m.index = len(self.measures)
         m.location = density_measure.location
         m.slice_number = density_measure.slice_number
-        print m.slice_number, m.location
         m.colour = density_measure.colour
         m.value = density_measure._mean
+        m.mean = density_measure._mean
+        m.min = density_measure._min
+        m.max = density_measure._max
+        m.std = density_measure._std
         if density_measure.format == 'ellipse':
             m.points = [density_measure.center, density_measure.point1, density_measure.point2]
+            m.type = const.DENSITY_ELLIPSE
         elif density_measure.format == 'polygon':
             m.points = density_measure.points
+            m.type = const.DENSITY_POLYGON
         density_measure.index = m.index
 
         density_measure.set_measurement(m)
@@ -423,6 +440,20 @@ class Measurement():
         self.points = info["points"]
         self.visible = info["visible"]
 
+    def get_as_dict(self):
+        d = {
+            'index': self.index,
+            'name': self.name,
+            'colour': self.colour,
+            'value': self.value,
+            'location': self.location,
+            'type': self.type,
+            'slice_number': self.slice_number,
+            'points': self.points,
+            'visible': self.visible,
+        }
+        return d
+
 
 class DensityMeasurement():
     general_index = -1
@@ -434,6 +465,7 @@ class DensityMeasurement():
         self.min = 0
         self.max = 0
         self.mean = 0
+        self.std = 0
         self.location = const.AXIAL
         self.type = const.DENSITY_ELLIPSE
         self.slice_number = 0
@@ -450,6 +482,28 @@ class DensityMeasurement():
         self.slice_number = info["slice_number"]
         self.points = info["points"]
         self.visible = info["visible"]
+        self.min = info["min"]
+        self.max = info["max"]
+        self.mean = info["mean"]
+        self.std = info["std"]
+
+    def get_as_dict(self):
+        d = {
+            'index': self.index,
+            'name': self.name,
+            'colour': self.colour,
+            'value': self.value,
+            'location': self.location,
+            'type': self.type,
+            'slice_number': self.slice_number,
+            'points': self.points,
+            'visible': self.visible,
+            'min': self.min,
+            'max': self.max,
+            'mean': self.mean,
+            'std': self.std,
+        }
+        return d
 
 
 class CirclePointRepresentation(object):
@@ -1216,6 +1270,14 @@ class CircleDensityMeasure(object):
             _mean = 0
             _std = 0
 
+        if self._measurement:
+            self._measurement.points = [self.center, self.point1, self.point2]
+            self._measurement.value = float(_mean)
+            self._measurement.mean = float(_mean)
+            self._measurement.min = float(_min)
+            self._measurement.max = float(_max)
+            self._measurement.std = float(_std)
+
         self.set_density_values(_min, _max, _mean, _std)
 
     def on_change_ellipse(self):
@@ -1226,6 +1288,17 @@ class CircleDensityMeasure(object):
 
         diff = tuple((i-j for i,j in zip(self.center, old_center)))
         self.text_box.position = tuple((i+j for i,j in zip(self.text_box.position, diff)))
+
+        if self._measurement:
+            self._measurement.points = [self.center, self.point1, self.point2]
+            self._measurement.value = self._mean
+            self._measurement.mean = self._mean
+            self._measurement.min = self._min
+            self._measurement.max = self._max
+            self._measurement.std = self._std
+
+        session = ses.Session()
+        session.ChangeProject()
 
 
 class PolygonDensityMeasure(object):
@@ -1262,6 +1335,12 @@ class PolygonDensityMeasure(object):
     def on_change_polygon(self):
         self.points = self.polygon.points
         self._need_calc = self.complete
+
+        if self._measurement:
+            self._measurement.points = self.points
+
+        session = ses.Session()
+        session.ChangeProject()
 
     def draw_to_canvas(self, gc, canvas):
         if self.visible:
@@ -1340,6 +1419,14 @@ class PolygonDensityMeasure(object):
             _max = 0
             _mean = 0
             _std = 0
+
+        if self._measurement:
+            self._measurement.points = self.points
+            self._measurement.value = float(_mean)
+            self._measurement.mean = float(_mean)
+            self._measurement.min = float(_min)
+            self._measurement.max = float(_max)
+            self._measurement.std = float(_std)
 
         self.set_density_values(_min, _max, _mean, _std)
 

@@ -45,6 +45,7 @@ BTN_NEW, BTN_REMOVE, BTN_DUPLICATE, BTN_OPEN = [wx.NewId() for i in xrange(4)]
 TYPE = {const.LINEAR: _(u"Linear"),
         const.ANGULAR: _(u"Angular"),
         const.DENSITY_ELLIPSE: _(u"Density Ellipse"),
+        const.DENSITY_POLYGON: _(u"Density Polygon"),
         }
 
 LOCATION = {const.SURFACE: _(u"3D"),

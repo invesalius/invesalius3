@@ -189,17 +189,7 @@ class Project(object):
         d = self.measurement_dict
         for i in d:
             m = d[i]
-            item = {}
-            item["index"] = m.index
-            item["name"] = m.name
-            item["colour"] = m.colour
-            item["value"] = m.value
-            item["location"] = m.location
-            item["type"] = m.type
-            item["slice_number"] = m.slice_number
-            item["points"] = m.points
-            item["visible"] = m.visible
-            measures[str(m.index)] = item
+            measures[str(m.index)] = m.get_as_dict()
         return measures
 
     def SavePlistProject(self, dir_, filename):
@@ -333,7 +323,7 @@ class Project(object):
         measurements = plistlib.readPlist(os.path.join(dirpath,
                                                        project["measurements"]))
         for index in measurements:
-            if measurements[index]["type"] == const.DENSITY_ELLIPSE:
+            if measurements[index]["type"] in (const.DENSITY_ELLIPSE, const.DENSITY_POLYGON):
                 measure = ms.DensityMeasurement()
             else:
                 measure = ms.Measurement()
