@@ -1144,7 +1144,7 @@ class CircleDensityMeasure(object):
             Publisher.sendMessage(msg,
                                   (m.index, m.name, m.colour,
                                    self.orientation,
-                                   'Density',
+                                   _('Density Ellipse'),
                                    '%.3f' % m.value))
 
     def set_measurement(self, dm):
@@ -1481,5 +1481,5 @@ class PolygonDensityMeasure(object):
             Publisher.sendMessage(msg,
                                   (m.index, m.name, m.colour,
                                    self.orientation,
-                                   'Density',
+                                   _('Density Polygon'),
                                    '%.3f' % m.value))
