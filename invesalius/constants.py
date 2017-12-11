@@ -56,6 +56,7 @@ STEREO_ANAGLYPH = _("Anaglyph")
 TEXT_SIZE_SMALL = 11
 TEXT_SIZE = 12
 TEXT_SIZE_LARGE = 16
+TEXT_SIZE_EXTRA_LARGE = 20
 TEXT_COLOUR = (1,1,1)
 
 (X,Y) = (0.03, 0.97)
@@ -678,6 +679,10 @@ DYNAMIC_REF = 1
 DEFAULT_REF_MODE = DYNAMIC_REF
 REF_MODE = [_("Static ref."), _("Dynamic ref.")]
 
+DEFAULT_COIL = SELECT
+COIL = [_("Select coil:"), _("Neurosoft Figure-8"),
+           _("Magstim 70 mm"), _("Nexstim")]
+
 IR1 = wx.NewId()
 IR2 = wx.NewId()
 IR3 = wx.NewId()
@@ -708,5 +713,34 @@ TIPS_TRK = [_("Select left ear with spatial tracker"),
             _("Select nasion with spatial tracker"),
             _("Show set coordinates in image")]
 
+OBJL = wx.NewId()
+OBJR = wx.NewId()
+OBJA = wx.NewId()
+OBJC = wx.NewId()
+OBJF = wx.NewId()
+
+BTNS_OBJ = {OBJL: {0: _('Left')},
+            OBJR: {1: _('Right')},
+            OBJA: {2: _('Anterior')},
+            OBJC: {3: _('Center')},
+            OBJF: {4: _('Fixed')}}
+
+TIPS_OBJ = [_("Select left object fiducial"),
+            _("Select right object fiducial"),
+            _("Select anterior object fiducial"),
+            _("Select object center"),
+            _("Attach sensor to object")]
+
 CAL_DIR = os.path.abspath(os.path.join(FILE_PATH, '..', 'navigation', 'mtc_files', 'CalibrationFiles'))
 MAR_DIR = os.path.abspath(os.path.join(FILE_PATH, '..', 'navigation', 'mtc_files', 'Markers'))
+
+#OBJECT TRACKING
+OBJ_DIR = os.path.abspath(os.path.join(FILE_PATH, '..', 'navigation', 'objects'))
+ARROW_SCALE = 3
+ARROW_UPPER_LIMIT = 30
+#COIL_ANGLES_THRESHOLD = 3 * ARROW_SCALE
+COIL_ANGLES_THRESHOLD = 3
+COIL_COORD_THRESHOLD = 3
+TIMESTAMP = 2.0
+
+CAM_MODE = True

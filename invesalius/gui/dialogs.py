@@ -18,9 +18,19 @@
 #    PARTICULAR. Consulte a Licenca Publica Geral GNU para obter mais
 #    detalhes.
 #--------------------------------------------------------------------------
+
 import os
 import random
 import sys
+
+if sys.platform == 'win32':
+    try:
+        import win32api
+        _has_win32api = True
+    except ImportError:
+        _has_win32api = False
+else:
+    _has_win32api = False
 
 import vtk
 import wx
@@ -33,6 +43,7 @@ from wx.lib.wordwrap import wordwrap
 from wx.lib.pubsub import pub as Publisher
 
 import invesalius.constants as const
+import invesalius.data.coordinates as dco
 import invesalius.gui.widgets.gradient as grad
 import invesalius.session as ses
 import invesalius.utils as utils
@@ -470,6 +481,36 @@ def ShowSaveMarkersDialog(default_filename=None):
     os.chdir(current_dir)
     return filename
 
+def ShowSaveCoordsDialog(default_filename=None):
+    current_dir = os.path.abspath(".")
+    dlg = wx.FileDialog(None,
+                        _("Save coords as..."),  # title
+                        "",  # last used directory
+                        default_filename,
+                        _("Coordinates files (*.csv)|*.csv"),
+                        wx.SAVE | wx.OVERWRITE_PROMPT)
+    # dlg.SetFilterIndex(0) # default is VTI
+
+    filename = None
+    try:
+        if dlg.ShowModal() == wx.ID_OK:
+            filename = dlg.GetPath()
+            ok = 1
+        else:
+            ok = 0
+    except(wx._core.PyAssertionError):  # TODO: fix win64
+        filename = dlg.GetPath()
+        ok = 1
+
+    if (ok):
+        extension = "csv"
+        if sys.platform != 'win32':
+            if filename.split(".")[-1] != extension:
+                filename = filename + "." + extension
+
+    os.chdir(current_dir)
+    return filename
+
 
 def ShowLoadMarkersDialog():
     current_dir = os.path.abspath(".")
@@ -478,6 +519,66 @@ def ShowLoadMarkersDialog():
                         defaultDir="",
                         defaultFile="",
                         wildcard=_("Markers files (*.mks)|*.mks"),
+                        style=wx.OPEN|wx.CHANGE_DIR)
+
+    # inv3 filter is default
+    dlg.SetFilterIndex(0)
+
+    # Show the dialog and retrieve the user response. If it is the OK response,
+    # process the data.
+    filepath = None
+    try:
+        if dlg.ShowModal() == wx.ID_OK:
+            # This returns a Python list of files that were selected.
+            filepath = dlg.GetPath()
+    except(wx._core.PyAssertionError):  # FIX: win64
+        filepath = dlg.GetPath()
+
+    # Destroy the dialog. Don't do this until you are done with it!
+    # BAD things can happen otherwise!
+    dlg.Destroy()
+    os.chdir(current_dir)
+    return filepath
+
+
+def ShowSaveRegistrationDialog(default_filename=None):
+    current_dir = os.path.abspath(".")
+    dlg = wx.FileDialog(None,
+                        _("Save object registration as..."),  # title
+                        "",  # last used directory
+                        default_filename,
+                        _("Registration files (*.obr)|*.obr"),
+                        wx.SAVE | wx.OVERWRITE_PROMPT)
+    # dlg.SetFilterIndex(0) # default is VTI
+
+    filename = None
+    try:
+        if dlg.ShowModal() == wx.ID_OK:
+            filename = dlg.GetPath()
+            ok = 1
+        else:
+            ok = 0
+    except(wx._core.PyAssertionError):  # TODO: fix win64
+        filename = dlg.GetPath()
+        ok = 1
+
+    if (ok):
+        extension = "obr"
+        if sys.platform != 'win32':
+            if filename.split(".")[-1] != extension:
+                filename = filename + "." + extension
+
+    os.chdir(current_dir)
+    return filename
+
+
+def ShowLoadRegistrationDialog():
+    current_dir = os.path.abspath(".")
+
+    dlg = wx.FileDialog(None, message=_("Load object registration"),
+                        defaultDir="",
+                        defaultFile="",
+                        wildcard=_("Registration files (*.obr)|*.obr"),
                         style=wx.OPEN|wx.CHANGE_DIR)
 
     # inv3 filter is default
@@ -729,7 +830,19 @@ def SurfaceSelectionRequiredForDuplication():
 
 # Dialogs for neuronavigation mode
 def InvalidFiducials():
-    msg = _("Fiducials are invalid. Select six coordinates.")
+    msg = _("Fiducials are invalid. Select all coordinates.")
+    if sys.platform == 'darwin':
+        dlg = wx.MessageDialog(None, "", msg,
+                               wx.ICON_INFORMATION | wx.OK)
+    else:
+        dlg = wx.MessageDialog(None, msg, "InVesalius 3 - Neuronavigator",
+                               wx.ICON_INFORMATION | wx.OK)
+    dlg.ShowModal()
+    dlg.Destroy()
+
+
+def InvalidObjectRegistration():
+    msg = _("Perform coil registration before navigation.")
     if sys.platform == 'darwin':
         dlg = wx.MessageDialog(None, "", msg,
                                wx.ICON_INFORMATION | wx.OK)
@@ -793,6 +906,7 @@ def NoMarkerSelected():
     dlg.ShowModal()
     dlg.Destroy()
 
+
 def DeleteAllMarkers():
     msg = _("Do you really want to delete all markers?")
     if sys.platform == 'darwin':
@@ -805,6 +919,38 @@ def DeleteAllMarkers():
     dlg.Destroy()
     return result
 
+def DeleteTarget():
+    msg = _("Target deleted")
+    if sys.platform == 'darwin':
+        dlg = wx.MessageDialog(None, "", msg,
+                                wx.ICON_INFORMATION | wx.OK)
+    else:
+        dlg = wx.MessageDialog(None, msg, "InVesalius 3 - Neuronavigator",
+                                wx.ICON_INFORMATION | wx.OK)
+    dlg.ShowModal()
+    dlg.Destroy()
+
+def NewTarget():
+    msg = _("New target selected")
+    if sys.platform == 'darwin':
+        dlg = wx.MessageDialog(None, "", msg,
+                                wx.ICON_INFORMATION | wx.OK)
+    else:
+        dlg = wx.MessageDialog(None, msg, "InVesalius 3 - Neuronavigator",
+                                wx.ICON_INFORMATION | wx.OK)
+    dlg.ShowModal()
+    dlg.Destroy()
+
+def InvalidTargetID():
+    msg = _("Sorry, you cannot use 'TARGET' ID")
+    if sys.platform == 'darwin':
+        dlg = wx.MessageDialog(None, "", msg,
+                                wx.ICON_INFORMATION | wx.OK)
+    else:
+        dlg = wx.MessageDialog(None, msg, "InVesalius 3 - Neuronavigator",
+                                wx.ICON_INFORMATION | wx.OK)
+    dlg.ShowModal()
+    dlg.Destroy()
 
 def EnterMarkerID(default):
     msg = _("Edit marker ID")
@@ -2967,3 +3113,246 @@ class FillHolesAutoDialog(wx.Dialog):
         else:
             self.panel3dcon.Enable(1)
             self.panel2dcon.Enable(0)
+
+
+class ObjectCalibrationDialog(wx.Dialog):
+
+    def __init__(self, nav_prop):
+
+        self.tracker_id = nav_prop[0]
+        self.trk_init = nav_prop[1]
+        self.obj_ref_id = 0
+        self.obj_name = None
+
+        self.obj_fiducials = np.full([5, 3], np.nan)
+        self.obj_orients = np.full([5, 3], np.nan)
+
+        pre = wx.PreDialog()
+        pre.Create(wx.GetApp().GetTopWindow(), -1, _(u"Object calibration"), size=(450, 440),
+                   style=wx.DEFAULT_DIALOG_STYLE | wx.FRAME_FLOAT_ON_PARENT)
+        self.PostCreate(pre)
+
+        self._init_gui()
+        self.LoadObject()
+
+    def _init_gui(self):
+        self.interactor = wxVTKRenderWindowInteractor(self, -1, size=self.GetSize())
+        self.interactor.Enable(1)
+        self.ren = vtk.vtkRenderer()
+        self.interactor.GetRenderWindow().AddRenderer(self.ren)
+
+        # Initialize list of buttons and txtctrls for wx objects
+        self.btns_coord = [None] * 5
+        self.text_actors = [None] * 5
+        self.ball_actors = [None] * 5
+        self.txt_coord = [list(), list(), list(), list(), list()]
+
+        # ComboBox for tracker reference mode
+        tooltip = wx.ToolTip(_(u"Choose the object reference mode"))
+        choice_ref = wx.ComboBox(self, -1, "", size=wx.Size(90, 23),
+                                 choices=const.REF_MODE, style=wx.CB_DROPDOWN | wx.CB_READONLY)
+        choice_ref.SetSelection(self.obj_ref_id)
+        choice_ref.SetToolTip(tooltip)
+        choice_ref.Bind(wx.EVT_COMBOBOX, self.OnChoiceRefMode)
+        choice_ref.Enable(0)
+
+        # Buttons to finish or cancel object registration
+        tooltip = wx.ToolTip(_(u"Registration done"))
+        # btn_ok = wx.Button(self, -1, _(u"Done"), size=wx.Size(90, 30))
+        btn_ok = wx.Button(self, wx.ID_OK, _(u"Done"), size=wx.Size(90, 30))
+        btn_ok.SetToolTip(tooltip)
+
+        extra_sizer = wx.FlexGridSizer(rows=2, cols=1, hgap=5, vgap=30)
+        extra_sizer.AddMany([choice_ref,
+                             btn_ok])
+
+        # Push buttons for object fiducials
+        btns_obj = const.BTNS_OBJ
+        tips_obj = const.TIPS_OBJ
+
+        for k in btns_obj:
+            n = btns_obj[k].keys()[0]
+            lab = btns_obj[k].values()[0]
+            self.btns_coord[n] = wx.Button(self, k, label=lab, size=wx.Size(60, 23))
+            self.btns_coord[n].SetToolTip(wx.ToolTip(tips_obj[n]))
+            self.btns_coord[n].Bind(wx.EVT_BUTTON, self.OnGetObjectFiducials)
+
+        for m in range(0, 5):
+            for n in range(0, 3):
+                self.txt_coord[m].append(wx.StaticText(self, -1, label='-',
+                                                       style=wx.ALIGN_RIGHT, size=wx.Size(40, 23)))
+
+        coord_sizer = wx.GridBagSizer(hgap=20, vgap=5)
+
+        for m in range(0, 5):
+            coord_sizer.Add(self.btns_coord[m], pos=wx.GBPosition(m, 0))
+            for n in range(0, 3):
+                coord_sizer.Add(self.txt_coord[m][n], pos=wx.GBPosition(m, n + 1), flag=wx.TOP, border=5)
+
+        group_sizer = wx.FlexGridSizer(rows=1, cols=2, hgap=50, vgap=5)
+        group_sizer.AddMany([(coord_sizer, 0, wx.LEFT, 20),
+                             (extra_sizer, 0, wx.LEFT, 10)])
+
+        main_sizer = wx.BoxSizer(wx.VERTICAL)
+        main_sizer.Add(self.interactor, 0, wx.EXPAND)
+        main_sizer.Add(group_sizer, 0,
+                       wx.EXPAND|wx.GROW|wx.LEFT|wx.TOP|wx.RIGHT|wx.BOTTOM|wx.ALIGN_CENTER_HORIZONTAL, 10)
+
+        self.SetSizer(main_sizer)
+        main_sizer.Fit(self)
+
+    def ObjectImportDialog(self):
+        msg = _("Would like to use InVesalius default object?")
+        if sys.platform == 'darwin':
+            dlg = wx.MessageDialog(None, "", msg,
+                                   wx.ICON_QUESTION | wx.YES_NO)
+        else:
+            dlg = wx.MessageDialog(None, msg,
+                                   "InVesalius 3",
+                                   wx.ICON_QUESTION | wx.YES_NO)
+        answer = dlg.ShowModal()
+        dlg.Destroy()
+
+        if answer == wx.ID_YES:
+            return 1
+        else:  # answer == wx.ID_NO:
+            return 0
+
+    def LoadObject(self):
+        default = self.ObjectImportDialog()
+        if not default:
+            filename = ShowImportMeshFilesDialog()
+
+            if filename:
+                if filename.lower().endswith('.stl'):
+                    reader = vtk.vtkSTLReader()
+                elif filename.lower().endswith('.ply'):
+                    reader = vtk.vtkPLYReader()
+                elif filename.lower().endswith('.obj'):
+                    reader = vtk.vtkOBJReader()
+                elif filename.lower().endswith('.vtp'):
+                    reader = vtk.vtkXMLPolyDataReader()
+                else:
+                    wx.MessageBox(_("File format not reconized by InVesalius"), _("Import surface error"))
+                    return
+            else:
+                filename = os.path.join(const.OBJ_DIR, "magstim_fig8_coil.stl")
+                reader = vtk.vtkSTLReader()
+        else:
+            filename = os.path.join(const.OBJ_DIR, "magstim_fig8_coil.stl")
+            reader = vtk.vtkSTLReader()
+
+        if _has_win32api:
+            self.obj_name = win32api.GetShortPathName(filename).encode(const.FS_ENCODE)
+        else:
+            self.obj_name = filename.encode(const.FS_ENCODE)
+
+        reader.SetFileName(self.obj_name)
+        reader.Update()
+        polydata = reader.GetOutput()
+
+        if polydata.GetNumberOfPoints() == 0:
+            wx.MessageBox(_("InVesalius was not able to import this surface"), _("Import surface error"))
+
+        transform = vtk.vtkTransform()
+        transform.RotateZ(90)
+
+        transform_filt = vtk.vtkTransformPolyDataFilter()
+        transform_filt.SetTransform(transform)
+        transform_filt.SetInputData(polydata)
+        transform_filt.Update()
+
+        normals = vtk.vtkPolyDataNormals()
+        normals.SetInputData(transform_filt.GetOutput())
+        normals.SetFeatureAngle(80)
+        normals.AutoOrientNormalsOn()
+        normals.Update()
+
+        mapper = vtk.vtkPolyDataMapper()
+        mapper.SetInputData(normals.GetOutput())
+        mapper.ScalarVisibilityOff()
+        mapper.ImmediateModeRenderingOn()
+
+        obj_actor = vtk.vtkActor()
+        obj_actor.SetMapper(mapper)
+
+        self.ball_actors[0], self.text_actors[0] = self.OnCreateObjectText('Left', (0,55,0))
+        self.ball_actors[1], self.text_actors[1] = self.OnCreateObjectText('Right', (0,-55,0))
+        self.ball_actors[2], self.text_actors[2] = self.OnCreateObjectText('Anterior', (23,0,0))
+
+        self.ren.AddActor(obj_actor)
+        self.ren.ResetCamera()
+
+        self.interactor.Render()
+
+    def OnCreateObjectText(self, name, coord):
+        ball_source = vtk.vtkSphereSource()
+        ball_source.SetRadius(3)
+        mapper = vtk.vtkPolyDataMapper()
+        mapper.SetInputConnection(ball_source.GetOutputPort())
+        ball_actor = vtk.vtkActor()
+        ball_actor.SetMapper(mapper)
+        ball_actor.SetPosition(coord)
+        ball_actor.GetProperty().SetColor(1, 0, 0)
+
+        textSource = vtk.vtkVectorText()
+        textSource.SetText(name)
+
+        mapper = vtk.vtkPolyDataMapper()
+        mapper.SetInputConnection(textSource.GetOutputPort())
+        tactor = vtk.vtkFollower()
+        tactor.SetMapper(mapper)
+        tactor.GetProperty().SetColor(1.0, 0.0, 0.0)
+        tactor.SetScale(5)
+        ball_position = ball_actor.GetPosition()
+        tactor.SetPosition(ball_position[0]+5, ball_position[1]+5, ball_position[2]+10)
+        self.ren.AddActor(tactor)
+        tactor.SetCamera(self.ren.GetActiveCamera())
+        self.ren.AddActor(ball_actor)
+        return ball_actor, tactor
+
+    def OnGetObjectFiducials(self, evt):
+        btn_id = const.BTNS_OBJ[evt.GetId()].keys()[0]
+
+        if self.trk_init and self.tracker_id:
+            coord_raw = dco.GetCoordinates(self.trk_init, self.tracker_id, self.obj_ref_id)
+            if self.obj_ref_id and btn_id == 4:
+                coord = coord_raw[2, :]
+            else:
+                coord = coord_raw[0, :]
+        else:
+            NavigationTrackerWarning(0, 'choose')
+
+        # Update text controls with tracker coordinates
+        if coord is not None or np.sum(coord) != 0.0:
+            self.obj_fiducials[btn_id, :] = coord[:3]
+            self.obj_orients[btn_id, :] = coord[3:]
+            for n in [0, 1, 2]:
+                self.txt_coord[btn_id][n].SetLabel(str(round(coord[n], 1)))
+                if self.text_actors[btn_id]:
+                    self.text_actors[btn_id].GetProperty().SetColor(0.0, 1.0, 0.0)
+                    self.ball_actors[btn_id].GetProperty().SetColor(0.0, 1.0, 0.0)
+            self.Refresh()
+        else:
+            NavigationTrackerWarning(0, 'choose')
+
+    def OnChoiceRefMode(self, evt):
+        # When ref mode is changed the tracker coordinates are set to nan
+        # This is for Polhemus FASTRAK wrapper, where the sensor attached to the object can be the stylus (Static
+        # reference - Selection 0 - index 0 for coordinates) or can be a 3rd sensor (Dynamic reference - Selection 1 -
+        # index 2 for coordinates)
+        # I use the index 2 directly here to send to the coregistration module where it is possible to access without
+        # any conditional statement the correct index of coordinates.
+
+        if evt.GetSelection():
+            self.obj_ref_id = 2
+        else:
+            self.obj_ref_id = 0
+        for m in range(0, 5):
+            self.obj_fiducials[m, :] = np.full([1, 3], np.nan)
+            self.obj_orients[m, :] = np.full([1, 3], np.nan)
+            for n in range(0, 3):
+                self.txt_coord[m][n].SetLabel('-')
+
+    def GetValue(self):
+        return self.obj_fiducials, self.obj_orients, self.obj_ref_id, self.obj_name

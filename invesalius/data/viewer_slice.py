@@ -934,13 +934,13 @@ class Viewer(wx.Panel):
 
     def UpdateSlicesNavigation(self, pubsub_evt):
         # Get point from base change
-        wx, wy, wz = pubsub_evt.data
-        px, py = self.get_slice_pixel_coord_by_world_pos(wx, wy, wz)
+        ux, uy, uz = pubsub_evt.data[1][:3]
+        px, py = self.get_slice_pixel_coord_by_world_pos(ux, uy, uz)
         coord = self.calcultate_scroll_position(px, py)
 
-        self.cross.SetFocalPoint((wx, wy, wz))
+        self.cross.SetFocalPoint((ux, uy, uz))
         self.ScrollSlice(coord)
-        Publisher.sendMessage('Set ball reference position', (wx, wy, wz))
+        Publisher.sendMessage('Set ball reference position', (ux, uy, uz))
 
     def ScrollSlice(self, coord):
         if self.orientation == "AXIAL":

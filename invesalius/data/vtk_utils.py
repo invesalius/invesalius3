@@ -124,6 +124,9 @@ class Text(object):
     def ShadowOff(self):
         self.property.ShadowOff()
 
+    def BoldOn(self):
+        self.property.BoldOn()
+
     def SetSize(self, size):
         self.property.SetFontSize(size)
 
@@ -135,11 +138,28 @@ class Text(object):
         # With some encoding in some dicom fields (like name) raises a
         # UnicodeEncodeError because they have non-ascii characters. To avoid
         # that we encode in utf-8.
-        
+
 	if sys.platform == 'win32':
-            self.mapper.SetInput(value.encode("utf-8"))  
+            self.mapper.SetInput(value.encode("utf-8"))
         else:
 	    try:
+                self.mapper.SetInput(value.encode("latin-1"))
+            except(UnicodeEncodeError):
+                self.mapper.SetInput(value.encode("utf-8"))
+
+    def SetCoilDistanceValue(self, value):
+        if isinstance(value, int) or isinstance(value, float):
+            value = 'Dist: ' + str("{:06.2f}".format(value)) + ' mm'
+            if sys.platform == 'win32':
+                value += ""  # Otherwise 0 is not shown under win32
+                # With some encoding in some dicom fields (like name) raises a
+                # UnicodeEncodeError because they have non-ascii characters. To avoid
+                # that we encode in utf-8.
+
+        if sys.platform == 'win32':
+            self.mapper.SetInput(value.encode("utf-8"))
+        else:
+            try:
                 self.mapper.SetInput(value.encode("latin-1"))
             except(UnicodeEncodeError):
                 self.mapper.SetInput(value.encode("utf-8"))
