@@ -221,6 +221,13 @@ class ProgressDialog(object):
 
 
 # ---------
+
+INV_COMPRESSED = 0
+INV_NON_COMPRESSED = 1
+
+WILDCARD_INV_SAVE = _("InVesalius project compressed (*.inv3)|*.inv3") + "|" + \
+                    _("InVesalius project (*.inv3)|*.inv3")
+
 WILDCARD_OPEN = "InVesalius 3 project (*.inv3)|*.inv3|" \
                 "All files (*.*)|*.*"
 
@@ -425,7 +432,7 @@ def ShowSaveAsProjectDialog(default_filename=None):
                         _("Save project as..."), # title
                         "", # last used directory
                         default_filename,
-                        _("InVesalius project (*.inv3)|*.inv3"),
+                        WILDCARD_INV_SAVE,
                         wx.FD_SAVE|wx.FD_OVERWRITE_PROMPT)
     #dlg.SetFilterIndex(0) # default is VTI
 
@@ -446,8 +453,9 @@ def ShowSaveAsProjectDialog(default_filename=None):
             if filename.split(".")[-1] != extension:
                 filename = filename + "." + extension
 
+    wildcard = dlg.GetFilterIndex()
     os.chdir(current_dir)
-    return filename
+    return filename, wildcard == INV_COMPRESSED
 
 
 # Dialog for neuronavigation markers
