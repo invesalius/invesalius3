@@ -222,11 +222,11 @@ class ProgressDialog(object):
 
 # ---------
 
-INV_COMPRESSED = 0
-INV_NON_COMPRESSED = 1
+INV_NON_COMPRESSED = 0
+INV_COMPRESSED = 1
 
-WILDCARD_INV_SAVE = _("InVesalius project compressed (*.inv3)|*.inv3") + "|" + \
-                    _("InVesalius project (*.inv3)|*.inv3")
+WILDCARD_INV_SAVE = _("InVesalius project (*.inv3)|*.inv3") + "|" + \
+                    _("InVesalius project compressed (*.inv3)|*.inv3")
 
 WILDCARD_OPEN = "InVesalius 3 project (*.inv3)|*.inv3|" \
                 "All files (*.*)|*.*"

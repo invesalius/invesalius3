@@ -240,6 +240,8 @@ class Controller():
             else:
                 return
         else:
+            proj = prj.Project()
+            compress = proj.compress
             dirpath, filename = session.project_path
             filepath = os.path.join(dirpath, filename)
 
