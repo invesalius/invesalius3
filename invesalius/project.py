@@ -214,7 +214,7 @@ class Project(object):
 
         project = {
                    # Format info
-                   "format_version": 1,
+                   "format_version": const.INVESALIUS_ACTUAL_FORMAT_VERSION,
                    "invesalius_version": const.INVESALIUS_VERSION,
                    "date": datetime.datetime.now().isoformat(),
                    "compress": self.compress,
