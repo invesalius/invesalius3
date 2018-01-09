@@ -77,7 +77,7 @@ class Surface():
         self.filename = None
 
     def SavePlist(self, dir_temp, filelist):
-        if self.filename:
+        if self.filename and os.path.exists(self.filename):
             filename = u'surface_%d' % self.index
             vtp_filename = filename + u'.vtp'
             vtp_filepath = self.filename
