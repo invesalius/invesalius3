@@ -735,6 +735,15 @@ def ImportEmptyDirectory(dirpath):
     dlg.Destroy()
 
 
+def ImportOldFormatInvFile():
+    msg = _("File was created in a newer InVesalius version. Some functionalities may not work correctly.")
+    dlg = wx.MessageDialog(None, msg,
+                           "InVesalius 3",
+                           wx.ICON_INFORMATION | wx.OK)
+    dlg.ShowModal()
+    dlg.Destroy()
+
+
 def ImportInvalidFiles(ftype="DICOM"):
     if ftype == "Bitmap":
         msg =  _("There are no Bitmap, JPEG, PNG or TIFF files in the selected folder.")

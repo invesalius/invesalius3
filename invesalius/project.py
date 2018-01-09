@@ -300,6 +300,11 @@ class Project(object):
         main_plist =  os.path.join(dirpath ,'main.plist')
         project = plistlib.readPlist(main_plist)
 
+        format_version = project["format_version"]
+        if format_version > const.INVESALIUS_ACTUAL_FORMAT_VERSION:
+            from invesalius.gui.dialogs import ImportOldFormatInvFile
+            ImportOldFormatInvFile()
+
         # case info
         self.name = project["name"]
         self.modality = project["modality"]
