@@ -493,6 +493,9 @@ class Frame(wx.Frame):
         elif id == const.ID_CROP_MASK:
             self.OnCropMask()
 
+        elif id == const.ID_CREATE_SURFACE:
+            Publisher.sendMessage('Open create surface dialog')
+
     def OnInterpolatedSlices(self, status):
         Publisher.sendMessage('Set interpolated slices', status)
 
@@ -689,7 +692,8 @@ class MenuBar(wx.MenuBar):
                              const.ID_MANUAL_SEGMENTATION,
                              const.ID_WATERSHED_SEGMENTATION,
                              const.ID_THRESHOLD_SEGMENTATION,
-                             const.ID_FLOODFILL_SEGMENTATION,]
+                             const.ID_FLOODFILL_SEGMENTATION,
+                             const.ID_CREATE_SURFACE,]
         self.__init_items()
         self.__bind_events()
 
@@ -738,7 +742,7 @@ class MenuBar(wx.MenuBar):
         file_menu.AppendMenu(const.ID_IMPORT_OTHERS_FILES, _("Import other files..."), others_file_menu)
         app(const.ID_PROJECT_OPEN, _("Open project...\tCtrl+O"))
         app(const.ID_PROJECT_SAVE, _("Save project\tCtrl+S"))
-        app(const.ID_PROJECT_SAVE_AS, _("Save project as..."))
+        app(const.ID_PROJECT_SAVE_AS, _("Save project as...\tCtrl+Shift+S"))
         app(const.ID_PROJECT_CLOSE, _("Close project"))
         file_menu.AppendSeparator()
         #app(const.ID_PROJECT_INFO, _("Project Information..."))
@@ -788,18 +792,18 @@ class MenuBar(wx.MenuBar):
 
         mask_menu.AppendSeparator()
 
-        self.fill_hole_mask_menu = mask_menu.Append(const.ID_FLOODFILL_MASK, _(u"Fill holes manually"))
+        self.fill_hole_mask_menu = mask_menu.Append(const.ID_FLOODFILL_MASK, _(u"Fill holes manually\tCtrl+Shift+H"))
         self.fill_hole_mask_menu.Enable(False)
 
-        self.fill_hole_auto_menu = mask_menu.Append(const.ID_FILL_HOLE_AUTO, _(u"Fill holes automatically"))
+        self.fill_hole_auto_menu = mask_menu.Append(const.ID_FILL_HOLE_AUTO, _(u"Fill holes automatically\tCtrl+Shift+J"))
         self.fill_hole_mask_menu.Enable(False)
 
         mask_menu.AppendSeparator()
 
-        self.remove_mask_part_menu = mask_menu.Append(const.ID_REMOVE_MASK_PART, _(u"Remove parts"))
+        self.remove_mask_part_menu = mask_menu.Append(const.ID_REMOVE_MASK_PART, _(u"Remove parts\tCtrl+Shift+K"))
         self.remove_mask_part_menu.Enable(False)
 
-        self.select_mask_part_menu = mask_menu.Append(const.ID_SELECT_MASK_PART, _(u"Select parts"))
+        self.select_mask_part_menu = mask_menu.Append(const.ID_SELECT_MASK_PART, _(u"Select parts\tCtrl+Shift+L"))
         self.select_mask_part_menu.Enable(False)
 
         mask_menu.AppendSeparator()
@@ -809,11 +813,16 @@ class MenuBar(wx.MenuBar):
 
         # Segmentation Menu
         segmentation_menu = wx.Menu()
-        self.threshold_segmentation = segmentation_menu.Append(const.ID_THRESHOLD_SEGMENTATION, _(u"Threshold"))
-        self.manual_segmentation = segmentation_menu.Append(const.ID_MANUAL_SEGMENTATION, _(u"Manual segmentation"))
-        self.watershed_segmentation = segmentation_menu.Append(const.ID_WATERSHED_SEGMENTATION, _(u"Watershed"))
-        self.ffill_segmentation = segmentation_menu.Append(const.ID_FLOODFILL_SEGMENTATION, _(u"Region growing"))
+        self.threshold_segmentation = segmentation_menu.Append(const.ID_THRESHOLD_SEGMENTATION, _(u"Threshold\tCtrl+Shift+T"))
+        self.manual_segmentation = segmentation_menu.Append(const.ID_MANUAL_SEGMENTATION, _(u"Manual segmentation\tCtrl+Shift+M"))
+        self.watershed_segmentation = segmentation_menu.Append(const.ID_WATERSHED_SEGMENTATION, _(u"Watershed\tCtrl+Shift+W"))
+        self.ffill_segmentation = segmentation_menu.Append(const.ID_FLOODFILL_SEGMENTATION, _(u"Region growing\tCtrl+Shift+G"))
         self.ffill_segmentation.Enable(False)
+
+        # Surface Menu
+        surface_menu = wx.Menu()
+        self.create_surface = surface_menu.Append(const.ID_CREATE_SURFACE, (u"Create surface\tCtrl+Shift+C"))
+        self.create_surface.Enable(False)
 
         # Image menu
         image_menu = wx.Menu()
@@ -837,7 +846,8 @@ class MenuBar(wx.MenuBar):
         reorient_menu.Enable(False)
         tools_menu.AppendMenu(-1, _(u'Image'), image_menu)
         tools_menu.AppendMenu(-1,  _(u"Mask"), mask_menu)
-        tools_menu.AppendMenu(-1, _("Segmentation"), segmentation_menu)
+        tools_menu.AppendMenu(-1, _(u"Segmentation"), segmentation_menu)
+        tools_menu.AppendMenu(-1, _(u"Surface"), surface_menu)
 
 
         #View
@@ -1289,7 +1299,7 @@ class ObjectToolBar(AuiToolBar):
                              const.STATE_SPIN, const.STATE_ZOOM_SL,
                              const.STATE_ZOOM,
                              const.STATE_MEASURE_DISTANCE,
-                             const.STATE_MEASURE_ANGLE,]
+                             const.STATE_MEASURE_ANGLE]
                              #const.STATE_ANNOTATE]
         self.__init_items()
         self.__bind_events()

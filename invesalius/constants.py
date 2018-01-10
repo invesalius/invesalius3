@@ -542,6 +542,7 @@ ID_WATERSHED_SEGMENTATION = wx.NewId()
 ID_THRESHOLD_SEGMENTATION = wx.NewId()
 ID_FLOODFILL_SEGMENTATION = wx.NewId()
 ID_CROP_MASK = wx.NewId()
+ID_CREATE_SURFACE = wx.NewId()
 
 #---------------------------------------------------------
 STATE_DEFAULT = 1000

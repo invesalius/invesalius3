@@ -1363,7 +1363,7 @@ class Viewer(wx.Panel):
         state = pubsub_evt.data
         self.SetInteractorStyle(state)
 
-        if (state != const.SLICE_STATE_EDITOR):
+        if (state not in [const.SLICE_STATE_EDITOR, const.SLICE_STATE_WATERSHED]):
             Publisher.sendMessage('Set interactor default cursor')
 
     def __bind_events_wx(self):

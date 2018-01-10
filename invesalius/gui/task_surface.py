@@ -96,6 +96,7 @@ class InnerTaskPanel(wx.Panel):
         link_new_surface.UpdateLink()
         link_new_surface.Bind(hl.EVT_HYPERLINK_LEFT, self.OnLinkNewSurface)
 
+        Publisher.subscribe(self.OnLinkNewSurface, 'Open create surface dialog')
         # Create horizontal sizers to represent lines in the panel
         line_new = wx.BoxSizer(wx.HORIZONTAL)
         line_new.Add(link_new_surface, 1, wx.EXPAND|wx.GROW| wx.TOP|wx.RIGHT, 4)
@@ -135,6 +136,15 @@ class InnerTaskPanel(wx.Panel):
             evt.Skip()
 
     def OnLinkNewSurface(self, evt=None):
+        
+        is_pubsub = True
+
+        try:
+            evt = evt.data
+            evt = None
+        except:
+            pass
+        
         #import invesalius.gui.dialogs as dlg
         sl = slice_.Slice()
         dialog = dlg.SurfaceCreationDialog(None, -1,
@@ -174,6 +184,7 @@ class InnerTaskPanel(wx.Panel):
 
             Publisher.sendMessage('Create surface from index', surface_options)
         dialog.Destroy()
+        
         if evt:
             evt.Skip()
 

@@ -756,10 +756,27 @@ class EditorInteractorStyle(DefaultInteractorStyle):
         self._set_cursor()
         self.viewer.slice_data.cursor.Show(0)
 
+    def SetUp(self):
+         
+        x, y = self.viewer.interactor.ScreenToClient(wx.GetMousePosition())
+        if self.viewer.interactor.HitTestXY(x, y) == wx.HT_WINDOW_INSIDE:
+            self.viewer.slice_data.cursor.Show()
+            
+            y = self.viewer.interactor.GetSize()[1] - y
+            w_x, w_y, w_z = self.viewer.get_coordinate_cursor(x, y, self.picker)
+            self.viewer.slice_data.cursor.SetPosition((w_x, w_y, w_z))
+            
+            self.viewer.interactor.SetCursor(wx.StockCursor(wx.CURSOR_BLANK))
+            self.viewer.interactor.Render()
+
     def CleanUp(self):
         Publisher.unsubscribe(self.set_bsize, 'Set edition brush size')
         Publisher.unsubscribe(self.set_bformat, 'Set brush format')
         Publisher.unsubscribe(self.set_boperation, 'Set edition operation')
+
+        self.viewer.slice_data.cursor.Show(0)
+        self.viewer.interactor.SetCursor(wx.StockCursor(wx.CURSOR_DEFAULT))
+        self.viewer.interactor.Render()
 
     def set_bsize(self, pubsub_evt):
         size = pubsub_evt.data
@@ -1045,10 +1062,22 @@ class WaterShedInteractorStyle(DefaultInteractorStyle):
         self.viewer.slice_data.cursor.Show(0)
 
     def SetUp(self):
+
         mask = self.viewer.slice_.current_mask.matrix
         self._create_mask()
         self.viewer.slice_.to_show_aux = 'watershed'
         self.viewer.OnScrollBar()
+
+        x, y = self.viewer.interactor.ScreenToClient(wx.GetMousePosition())
+        if self.viewer.interactor.HitTestXY(x, y) == wx.HT_WINDOW_INSIDE:
+            self.viewer.slice_data.cursor.Show()
+            
+            y = self.viewer.interactor.GetSize()[1] - y
+            w_x, w_y, w_z = self.viewer.get_coordinate_cursor(x, y, self.picker)
+            self.viewer.slice_data.cursor.SetPosition((w_x, w_y, w_z))
+            
+            self.viewer.interactor.SetCursor(wx.StockCursor(wx.CURSOR_BLANK))
+            self.viewer.interactor.Render()
 
     def CleanUp(self):
         #self._remove_mask()
@@ -1058,6 +1087,10 @@ class WaterShedInteractorStyle(DefaultInteractorStyle):
         self.RemoveAllObservers()
         self.viewer.slice_.to_show_aux = ''
         self.viewer.OnScrollBar()
+
+        self.viewer.slice_data.cursor.Show(0)
+        self.viewer.interactor.SetCursor(wx.StockCursor(wx.CURSOR_DEFAULT))
+        self.viewer.interactor.Render()
 
     def _create_mask(self):
         if self.matrix is None:
