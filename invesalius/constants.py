@@ -26,6 +26,8 @@ import itertools
 #from invesalius.project import Project
 INVESALIUS_VERSION = "3.1.1"
 
+INVESALIUS_ACTUAL_FORMAT_VERSION = 1.1
+
 #---------------
 
 # Measurements

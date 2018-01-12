@@ -233,17 +233,19 @@ class Controller():
         session = ses.Session()
         if saveas or session.temp_item:
             proj = prj.Project()
-            filepath = dialog.ShowSaveAsProjectDialog(proj.name)
+            filepath, compress = dialog.ShowSaveAsProjectDialog(proj.name)
             if filepath:
                 #session.RemoveTemp()
                 session.OpenProject(filepath)
             else:
                 return
         else:
+            proj = prj.Project()
+            compress = proj.compress
             dirpath, filename = session.project_path
             filepath = os.path.join(dirpath, filename)
 
-        self.SaveProject(filepath)
+        self.SaveProject(filepath, compress)
 
 
     def ShowDialogCloseProject(self):
@@ -335,7 +337,7 @@ class Controller():
         path = pubsub_evt.data
         self.SaveProject(path)
 
-    def SaveProject(self, path=None):
+    def SaveProject(self, path=None, compress=False):
         Publisher.sendMessage('Begin busy cursor')
         session = ses.Session()
         if path:
@@ -348,7 +350,7 @@ class Controller():
             filename = filename.decode(const.FS_ENCODE)
 
         proj = prj.Project()
-        prj.Project().SavePlistProject(dirpath, filename)
+        prj.Project().SavePlistProject(dirpath, filename, compress)
 
         session.SaveProject()
         Publisher.sendMessage('End busy cursor')

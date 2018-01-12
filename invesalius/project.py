@@ -71,6 +71,8 @@ class Project(object):
         # TODO: Future ++
         self.annotation_dict = {}
 
+        self.compress = False
+
         # InVesalius related data
         # So we can find bugs and reproduce user-related problems
         self.invesalius_version = version.get_svn_revision()    
@@ -202,17 +204,20 @@ class Project(object):
             measures[str(m.index)] = item
         return measures
 
-    def SavePlistProject(self, dir_, filename):
+    def SavePlistProject(self, dir_, filename, compress=False):
         dir_temp = tempfile.mkdtemp().decode(const.FS_ENCODE)
+
+        self.compress = compress
 
         filename_tmp = os.path.join(dir_temp, u'matrix.dat')
         filelist = {}
 
         project = {
                    # Format info
-                   "format_version": 1,
+                   "format_version": const.INVESALIUS_ACTUAL_FORMAT_VERSION,
                    "invesalius_version": const.INVESALIUS_VERSION,
                    "date": datetime.datetime.now().isoformat(),
+                   "compress": self.compress,
 
                    # case info
                    "name": self.name, # patient's name
@@ -267,7 +272,7 @@ class Project(object):
 
         # Compressing and generating the .inv3 file
         path = os.path.join(dir_,filename)
-        Compress(dir_temp, path, filelist)
+        Compress(dir_temp, path, filelist, compress)
 
         # Removing the temp folder.
         shutil.rmtree(dir_temp)
@@ -295,6 +300,11 @@ class Project(object):
         main_plist =  os.path.join(dirpath ,'main.plist')
         project = plistlib.readPlist(main_plist)
 
+        format_version = project["format_version"]
+        if format_version > const.INVESALIUS_ACTUAL_FORMAT_VERSION:
+            from invesalius.gui.dialogs import ImportOldFormatInvFile
+            ImportOldFormatInvFile()
+
         # case info
         self.name = project["name"]
         self.modality = project["modality"]
@@ -303,6 +313,8 @@ class Project(object):
         self.level = project["window_level"]
         self.threshold_range = project["scalar_range"]
         self.spacing = project["spacing"]
+
+        self.compress = project.get("compress", True)
 
         # Opening the matrix containing the slices
         filepath = os.path.join(dirpath, project["matrix"]["filename"])
@@ -337,7 +349,7 @@ class Project(object):
             measure.Load(measurements[index])
             self.measurement_dict[int(index)] = measure
 
-def Compress(folder, filename, filelist):
+def Compress(folder, filename, filelist, compress=False):
     tmpdir, tmpdir_ = os.path.split(folder)
     current_dir = os.path.abspath(".")
     temp_inv3 = tempfile.mktemp()
@@ -348,7 +360,10 @@ def Compress(folder, filename, filelist):
     temp_inv3 = temp_inv3.decode(const.FS_ENCODE)
     #os.chdir(tmpdir)
     #file_list = glob.glob(os.path.join(tmpdir_,"*"))
-    tar = tarfile.open(temp_inv3, "w:gz")
+    if compress:
+        tar = tarfile.open(temp_inv3, "w:gz")
+    else:
+        tar = tarfile.open(temp_inv3, "w")
     for name in filelist:
         tar.add(name, arcname=os.path.join(tmpdir_, filelist[name]))
     tar.close()
@@ -361,7 +376,7 @@ def Extract(filename, folder):
         folder = win32api.GetShortPathName(folder)
     folder = folder.decode(const.FS_ENCODE)
 
-    tar = tarfile.open(filename, "r:gz")
+    tar = tarfile.open(filename, "r")
     idir = os.path.split(tar.getnames()[0])[0].decode('utf8')
     os.mkdir(os.path.join(folder, idir))
     filelist = []

@@ -74,11 +74,19 @@ class Surface():
         else:
             self.name = name
 
+        self.filename = None
+
     def SavePlist(self, dir_temp, filelist):
-        filename = u'surface_%d' % self.index
-        vtp_filename = filename + u'.vtp'
-        vtp_filepath = os.path.join(dir_temp, vtp_filename)
-        pu.Export(self.polydata, vtp_filepath, bin=True)
+        if self.filename and os.path.exists(self.filename):
+            filename = u'surface_%d' % self.index
+            vtp_filename = filename + u'.vtp'
+            vtp_filepath = self.filename
+        else:
+            filename = u'surface_%d' % self.index
+            vtp_filename = filename + u'.vtp'
+            vtp_filepath = tempfile.mktemp()
+            pu.Export(self.polydata, vtp_filepath, bin=True)
+            self.filename = vtp_filepath
 
         filelist[vtp_filepath] = vtp_filename
 
