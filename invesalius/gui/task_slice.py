@@ -93,6 +93,8 @@ class InnerTaskPanel(wx.Panel):
         link_new_mask.AutoBrowse(False)
         link_new_mask.UpdateLink()
         link_new_mask.Bind(hl.EVT_HYPERLINK_LEFT, self.OnLinkNewMask)
+        
+        Publisher.subscribe(self.OnLinkNewMask, 'New mask from shortcut')
 
         # Create horizontal sizers to represent lines in the panel
         line_new = wx.BoxSizer(wx.HORIZONTAL)
@@ -186,6 +188,13 @@ class InnerTaskPanel(wx.Panel):
             dlg.InexistentMask()
 
     def OnLinkNewMask(self, evt=None):
+
+        try:
+            evt.data
+            evt = None
+        except:
+            pass
+
         dialog = dlg.NewMask()
 
         try:

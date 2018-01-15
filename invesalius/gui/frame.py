@@ -496,6 +496,9 @@ class Frame(wx.Frame):
         elif id == const.ID_CREATE_SURFACE:
             Publisher.sendMessage('Open create surface dialog')
 
+        elif id == const.ID_CREATE_MASK:
+            Publisher.sendMessage('New mask from shortcut')
+
     def OnInterpolatedSlices(self, status):
         Publisher.sendMessage('Set interpolated slices', status)
 
@@ -693,7 +696,8 @@ class MenuBar(wx.MenuBar):
                              const.ID_WATERSHED_SEGMENTATION,
                              const.ID_THRESHOLD_SEGMENTATION,
                              const.ID_FLOODFILL_SEGMENTATION,
-                             const.ID_CREATE_SURFACE,]
+                             const.ID_CREATE_SURFACE,
+                             const.ID_CREATE_MASK]
         self.__init_items()
         self.__bind_events()
 
@@ -784,7 +788,11 @@ class MenuBar(wx.MenuBar):
 
         # Mask Menu
         mask_menu = wx.Menu()
-        self.bool_op_menu = mask_menu.Append(const.ID_BOOLEAN_MASK, _(u"Boolean operations"))
+
+        self.new_mask_menu = mask_menu.Append(const.ID_CREATE_MASK, _(u"New\tCtrl+Shift+M"))
+        self.new_mask_menu.Enable(False)
+
+        self.bool_op_menu = mask_menu.Append(const.ID_BOOLEAN_MASK, _(u"Boolean operations\tCtrl+Shift+B"))
         self.bool_op_menu.Enable(False)
 
         self.clean_mask_menu = mask_menu.Append(const.ID_CLEAN_MASK, _(u"Clean Mask\tCtrl+Shift+A"))
@@ -814,14 +822,14 @@ class MenuBar(wx.MenuBar):
         # Segmentation Menu
         segmentation_menu = wx.Menu()
         self.threshold_segmentation = segmentation_menu.Append(const.ID_THRESHOLD_SEGMENTATION, _(u"Threshold\tCtrl+Shift+T"))
-        self.manual_segmentation = segmentation_menu.Append(const.ID_MANUAL_SEGMENTATION, _(u"Manual segmentation\tCtrl+Shift+M"))
+        self.manual_segmentation = segmentation_menu.Append(const.ID_MANUAL_SEGMENTATION, _(u"Manual segmentation\tCtrl+Shift+E"))
         self.watershed_segmentation = segmentation_menu.Append(const.ID_WATERSHED_SEGMENTATION, _(u"Watershed\tCtrl+Shift+W"))
         self.ffill_segmentation = segmentation_menu.Append(const.ID_FLOODFILL_SEGMENTATION, _(u"Region growing\tCtrl+Shift+G"))
         self.ffill_segmentation.Enable(False)
 
         # Surface Menu
         surface_menu = wx.Menu()
-        self.create_surface = surface_menu.Append(const.ID_CREATE_SURFACE, (u"Create surface\tCtrl+Shift+C"))
+        self.create_surface = surface_menu.Append(const.ID_CREATE_SURFACE, (u"New\tCtrl+Shift+C"))
         self.create_surface.Enable(False)
 
         # Image menu
