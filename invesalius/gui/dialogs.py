@@ -49,7 +49,6 @@ import invesalius.session as ses
 import invesalius.utils as utils
 from invesalius.gui.widgets import clut_imagedata
 from invesalius.gui.widgets.clut_imagedata import CLUTImageDataWidget, EVT_CLUT_NODE_CHANGED
-
 import numpy as np
 
 try:
@@ -1563,6 +1562,7 @@ class SurfaceCreationOptionsPanel(wx.Panel):
         import invesalius.constants as const
         import invesalius.data.surface as surface
         import invesalius.project as prj
+        import invesalius.data.slice_ as slc
 
         wx.Panel.__init__(self, parent, ID)
 
@@ -1585,11 +1585,14 @@ class SurfaceCreationOptionsPanel(wx.Panel):
         index_list = project.mask_dict.keys()
         index_list.sort()
         self.mask_list = [project.mask_dict[index].name for index in index_list]
+        
+        active_mask = slc.Slice().current_mask.index
+        #active_mask = len(self.mask_list)-1
 
         # Mask selection combo
         combo_mask = wx.ComboBox(self, -1, "", choices= self.mask_list,
                                      style=wx.CB_DROPDOWN|wx.CB_READONLY)
-        combo_mask.SetSelection(len(self.mask_list)-1)
+        combo_mask.SetSelection(active_mask)
         combo_mask.Bind(wx.EVT_COMBOBOX, self.OnSetMask)
         if sys.platform != 'win32':
             combo_mask.SetWindowVariant(wx.WINDOW_VARIANT_SMALL)
@@ -1625,7 +1628,7 @@ class SurfaceCreationOptionsPanel(wx.Panel):
 
         # LINES 4 and 5: Checkboxes
         check_box_holes = wx.CheckBox(self, -1, _("Fill holes"))
-        check_box_holes.SetValue(True)
+        check_box_holes.SetValue(False)
         self.check_box_holes = check_box_holes
         check_box_largest = wx.CheckBox(self, -1, _("Keep largest region"))
         self.check_box_largest = check_box_largest

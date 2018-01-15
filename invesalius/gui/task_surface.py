@@ -147,6 +147,11 @@ class InnerTaskPanel(wx.Panel):
         
         #import invesalius.gui.dialogs as dlg
         sl = slice_.Slice()
+
+        if sl.current_mask == None:
+            dlg.InexistentMask()
+            return
+
         dialog = dlg.SurfaceCreationDialog(None, -1,
                             _('New surface'),
                             mask_edited=sl.current_mask.was_edited)
