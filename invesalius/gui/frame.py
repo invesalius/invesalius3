@@ -544,6 +544,7 @@ class Frame(wx.Frame):
             ses.Session().surface_interpolation = values[const.SURFACE_INTERPOLATION]
             ses.Session().language = values[const.LANGUAGE]
             ses.Session().slice_interpolation = values[const.SLICE_INTERPOLATION]
+            ses.Session().WriteSessionFile()
 
             Publisher.sendMessage('Remove Volume')
             Publisher.sendMessage('Reset Reaycasting')
