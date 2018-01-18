@@ -100,12 +100,12 @@ class BitmapData:
 
     def RemoveFileByPath(self, path):
         for d in self.data:
-            if path.encode('utf-8') in d:
+            if path.encode(const.FS_ENCODE) in d:
                 self.data.remove(d)
 
     def GetIndexByPath(self, path):
         for i, v in enumerate(self.data):
-            if path.encode('utf-8') in v:
+            if path.encode(const.FS_ENCODE) in v:
                 return i
 
 class BitmapFiles:
@@ -223,7 +223,7 @@ def yGetBitmaps(directory, recursive=True, gui=True):
     if recursive:
         for dirpath, dirnames, filenames in os.walk(directory):
             for name in filenames:
-                filepath = os.path.join(dirpath, name)
+                filepath = os.path.join(dirpath, name).encode(const.FS_ENCODE)
                 counter += 1
                 if gui:
                     yield (counter,nfiles)
@@ -231,7 +231,7 @@ def yGetBitmaps(directory, recursive=True, gui=True):
     else:
         dirpath, dirnames, filenames = os.walk(directory)
         for name in filenames:
-            filepath = str(os.path.join(dirpath, name))
+            filepath = str(os.path.join(dirpath, name)).encode(const.FS_ENCODE)
             counter += 1
             if gui:
                 yield (counter,nfiles)
@@ -323,10 +323,8 @@ def VtkRead(filepath, t):
     else:
         return False
 
-    print ">>>> bmp reader", type(filepath)
-
     reader.AddObserver("ErrorEvent", VtkErrorToPy)
-    reader.SetFileName(filepath.encode(const.FS_ENCODE))
+    reader.SetFileName(filepath)
     reader.Update()
     
     if no_error:
