@@ -404,8 +404,9 @@ class Controller():
                     Publisher.sendMessage('Begin busy cursor')
         else:
             #Is None if user canceled the load
-            self.progress_dialog.Close()
-            self.progress_dialog = None
+            if self.progress_dialog is not None:
+                self.progress_dialog.Close()
+                self.progress_dialog = None
 
     def OnLoadImportPanel(self, evt):
         patient_series = evt.data

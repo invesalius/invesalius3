@@ -362,12 +362,14 @@ class ProgressDicomReader:
 
         y = yGetDicomGroups(path, recursive)
         for value_progress in y:
+            print ">>>>", value_progress
             if not self.running:
                 break
             if isinstance(value_progress, tuple):
                 self.UpdateLoadFileProgress(value_progress)
             else:
                 self.EndLoadFile(value_progress)
+        self.UpdateLoadFileProgress(None)
 
         #Is necessary in the case user cancel
         #the load, ensure that dicomdialog is closed
