@@ -1154,8 +1154,20 @@ class Parser():
         if (data):
             return int(data)
         return ""
-    
-    
+
+    def GetNumberOfFrames(self):
+        """
+        Number of frames in a multi-frame image.
+
+        DICOM standard tag (0x0028, 0x0008) was used.
+        """
+        try:
+            data = self.data_image[str(0x028)][str(0x0008)]
+        except KeyError:
+            return 1
+        return int(data)
+
+
     def GetPatientBirthDate(self):
         """
         Return string containing the patient's birth date using the
@@ -1953,6 +1965,8 @@ class Image(object):
         #self.imagedata = parser.GetImageData()
         self.bits_allocad = parser._GetBitsAllocated()
         self.thumbnail_path = parser.thumbnail_path
+
+        self.number_of_frames = parser.GetNumberOfFrames()
 
         if (parser.GetImageThickness()):
             try:

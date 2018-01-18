@@ -587,6 +587,29 @@ def dcm2memmap(files, slice_size, orientation, resolution_percentage):
     return matrix, scalar_range, temp_file
 
 
+def dcmmf2memmap(dcm_file, orientation):
+    r = vtkgdcm.vtkGDCMImageReader()
+    r.SetFileName(dcm_file)
+    r.Update()
+
+    temp_file = tempfile.mktemp()
+
+    o = r.GetOutput()
+    x, y, z = o.GetDimensions()
+    spacing = o.GetSpacing()
+
+    matrix = numpy.memmap(temp_file, mode='w+', dtype='int16', shape=(z, y, x))
+
+    d = numpy_support.vtk_to_numpy(o.GetPointData().GetScalars())
+    d.shape = z, y, x
+    matrix[:] = d
+    matrix.flush()
+
+    scalar_range = matrix.min(), matrix.max()
+
+    return matrix, spacing, scalar_range, temp_file
+
+
 def img2memmap(group):
     """
     From a nibabel image data creates a memmap file in the temp folder and
