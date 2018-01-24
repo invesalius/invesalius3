@@ -36,6 +36,8 @@ import invesalius.session as session
 import glob
 import invesalius.utils as utils
 
+from invesalius.data import imagedata_utils
+
 import plistlib
 
 if sys.platform == 'win32':
@@ -187,45 +189,22 @@ class LoadDicom:
 
 
             # -------------- To Create DICOM Thumbnail -----------
-            rvtk = vtkgdcm.vtkGDCMImageReader()
 
-            if _has_win32api:
-                print 'dicom', win32api.GetShortPathName(self.filepath)
-                rvtk.SetFileName(win32api.GetShortPathName(self.filepath).encode(const.FS_ENCODE))
-            else:
-                rvtk.SetFileName(self.filepath)
-            rvtk.Update()
-            
+
             try:
                 data = data_dict[str(0x028)][str(0x1050)]
                 level = [float(value) for value in data.split('\\')][0]
                 data = data_dict[str(0x028)][str(0x1051)]
                 window =  [float(value) for value in data.split('\\')][0]
             except(KeyError, ValueError):
-                level = 300.0
-                window = 2000.0 
-     
-            colorer = vtk.vtkImageMapToWindowLevelColors()
-            colorer.SetInputConnection(rvtk.GetOutputPort())
-            colorer.SetWindow(float(window))
-            colorer.SetLevel(float(level))
-            colorer.SetOutputFormatToRGB()
-            colorer.Update()           
-            
-            resample = vtk.vtkImageResample()
-            resample.SetInputConnection(colorer.GetOutputPort())
-            resample.SetAxisMagnificationFactor ( 0, 0.25 )
-            resample.SetAxisMagnificationFactor ( 1, 0.25 )
-            resample.SetAxisMagnificationFactor ( 2, 1 )    
-            resample.Update()
+                level = None
+                window = None
 
-            thumbnail_path = tempfile.mktemp()
+            if _has_win32api:
+                thumbnail_path = imagedata_utils.create_dicom_thumbnails(win32api.GetShortPathName(self.filepath).encode(const.FS_ENCODE), window, level)
+            else:
+                thumbnail_path = imagedata_utils.create_dicom_thumbnails(self.filepath, window, level)
 
-            write_png = vtk.vtkPNGWriter()
-            write_png.SetInputConnection(resample.GetOutputPort())
-            write_png.SetFileName(thumbnail_path)
-            write_png.Write()
-            
             #------ Verify the orientation --------------------------------
 
             img = reader.GetImage()

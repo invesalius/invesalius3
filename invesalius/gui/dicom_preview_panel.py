@@ -115,7 +115,7 @@ class DicomInfo(object):
     """
     Keep the informations and the image used by preview.
     """
-    def __init__(self, id, dicom, title, subtitle):
+    def __init__(self, id, dicom, title, subtitle, n=0):
         self.id = id
         self.dicom = dicom
         self.title = title
@@ -123,12 +123,15 @@ class DicomInfo(object):
         self._preview = None
         self.selected = False
         self.filename = ""
+        self._slice = n
 
     @property
     def preview(self):
-        
         if not self._preview:
-            bmp = wx.Bitmap(self.dicom.image.thumbnail_path, wx.BITMAP_TYPE_PNG)
+            if isinstance(self.dicom.image.thumbnail_path, list):
+                bmp = wx.Bitmap(self.dicom.image.thumbnail_path[self._slice], wx.BITMAP_TYPE_PNG)
+            else:
+                bmp = wx.Bitmap(self.dicom.image.thumbnail_path, wx.BITMAP_TYPE_PNG)
             self._preview = bmp.ConvertToImage()
         return self._preview
         
@@ -539,11 +542,22 @@ class DicomPreviewSlice(wx.Panel):
         dicom_files = group.GetHandSortedList()
         n = 0
         for dicom in dicom_files:
-            info = DicomInfo(n, dicom,
-                             _("Image %d") % (dicom.image.number),
-                             "%.2f" % (dicom.image.position[2]))
-            self.files.append(info)
-            n+=1
+            if isinstance(dicom.image.thumbnail_path, list):
+                _slice = 0
+                for thumbnail in dicom.image.thumbnail_path:
+                    print thumbnail
+                    info = DicomInfo(n, dicom,
+                                     _("Image %d") % (dicom.image.number),
+                                     "%.2f" % (dicom.image.position[2]), _slice)
+                    self.files.append(info)
+                    n+=1
+                    _slice += 1
+            else:
+                info = DicomInfo(n, dicom,
+                                 _("Image %d") % (dicom.image.number),
+                                 "%.2f" % (dicom.image.position[2]))
+                self.files.append(info)
+                n+=1
 
         scroll_range = len(self.files)/NCOLS
         if scroll_range * NCOLS < len(self.files):
@@ -560,12 +574,23 @@ class DicomPreviewSlice(wx.Panel):
         dicom_files = group.GetHandSortedList()
         n = 0
         for dicom in dicom_files:
-            info = DicomInfo(n, dicom,
-                             _("Image %d") % (dicom.image.number),
-                             "%.2f" % (dicom.image.position[2]),
-                            )
-            self.files.append(info)
-            n+=1
+            if isinstance(dicom.image.thumbnail_path, list):
+                _slice = 0
+                for thumbnail in dicom.image.thumbnail_path:
+                    print thumbnail
+                    info = DicomInfo(n, dicom,
+                                     _("Image %d") % int(dicom.image.number),
+                                     "%.2f" % (dicom.image.position[2]), _slice)
+                    self.files.append(info)
+                    n+=1
+                    _slice += 1
+            else:
+                info = DicomInfo(n, dicom,
+                                 _("Image %d") % int(dicom.image.number),
+                                 "%.2f" % (dicom.image.position[2]),
+                                )
+                self.files.append(info)
+                n+=1
 
         scroll_range = len(self.files)/NCOLS
         if scroll_range * NCOLS < len(self.files):

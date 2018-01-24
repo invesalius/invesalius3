@@ -1510,11 +1510,11 @@ class Parser():
         try:
             data = self.data_image[str(0x0020)][str(0x0013)]
         except(KeyError):
-            return ""
+            return 0
 
         if (data):
             return int(data)
-        return ""
+        return 0
 
     def GetStudyDescription(self):
         """
