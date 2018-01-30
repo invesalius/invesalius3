@@ -835,7 +835,10 @@ class SingleImagePreview(wx.Panel):
         self.ShowSlice()
 
     def ShowSlice(self, index = 0):
-        dicom = self.dicom_list[index]
+        try:
+            dicom = self.dicom_list[index]
+        except IndexError:
+            dicom = self.dicom_list[0]
 
         # UPDATE GUI
         ## Text related to size
@@ -870,28 +873,41 @@ class SingleImagePreview(wx.Panel):
                             dicom.acquisition.time)
         self.text_acquisition.SetValue(value)
 
-        rdicom = vtkgdcm.vtkGDCMImageReader()
-        if _has_win32api:
-            rdicom.SetFileName(win32api.GetShortPathName(dicom.image.file).encode(const.FS_ENCODE))
-        else:
-            rdicom.SetFileName(dicom.image.file)
-        rdicom.Update()
+        if isinstance(dicom.image.thumbnail_path, list):
+            reader = vtk.vtkPNGReader()
+            if _has_win32api:
+                reader.SetFileName(win32api.GetShortPathName(dicom.image.thumbnail_path[index]).encode(const.FS_ENCODE))
+            else:
+                reader.SetFileName(dicom.image.thumbnail_path[index])
+            reader.Update()
 
-        # ADJUST CONTRAST
-        window_level = dicom.image.level
-        window_width = dicom.image.window
-        colorer = vtk.vtkImageMapToWindowLevelColors()
-        colorer.SetInputConnection(rdicom.GetOutputPort())
-        colorer.SetWindow(float(window_width))
-        colorer.SetLevel(float(window_level))
-        colorer.Update()
+            image = reader.GetOutput()
+
+        else:
+            rdicom = vtkgdcm.vtkGDCMImageReader()
+            if _has_win32api:
+                rdicom.SetFileName(win32api.GetShortPathName(dicom.image.file).encode(const.FS_ENCODE))
+            else:
+                rdicom.SetFileName(dicom.image.file)
+            rdicom.Update()
+
+            # ADJUST CONTRAST
+            window_level = dicom.image.level
+            window_width = dicom.image.window
+            colorer = vtk.vtkImageMapToWindowLevelColors()
+            colorer.SetInputConnection(rdicom.GetOutputPort())
+            colorer.SetWindow(float(window_width))
+            colorer.SetLevel(float(window_level))
+            colorer.Update()
+
+            image = colorer.GetOutput()
 
         if self.actor is None:
             self.actor = vtk.vtkImageActor()
             self.renderer.AddActor(self.actor)
 
         # PLOT IMAGE INTO VIEWER
-        self.actor.SetInputData(colorer.GetOutput())
+        self.actor.SetInputData(image)
         self.renderer.ResetCamera()
         self.interactor.Render()
 
