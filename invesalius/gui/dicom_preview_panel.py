@@ -547,7 +547,7 @@ class DicomPreviewSlice(wx.Panel):
                 for thumbnail in dicom.image.thumbnail_path:
                     print thumbnail
                     info = DicomInfo(n, dicom,
-                                     _("Image %d") % (dicom.image.number),
+                                     _("Image %d") % (n),
                                      "%.2f" % (dicom.image.position[2]), _slice)
                     self.files.append(info)
                     n+=1
@@ -579,7 +579,7 @@ class DicomPreviewSlice(wx.Panel):
                 for thumbnail in dicom.image.thumbnail_path:
                     print thumbnail
                     info = DicomInfo(n, dicom,
-                                     _("Image %d") % int(dicom.image.number),
+                                     _("Image %d") % int(n),
                                      "%.2f" % (dicom.image.position[2]), _slice)
                     self.files.append(info)
                     n+=1
@@ -828,7 +828,10 @@ class SingleImagePreview(wx.Panel):
     def SetDicomGroup(self, group):
         self.dicom_list = group.GetHandSortedList()
         self.current_index = 0
-        self.nimages = len(self.dicom_list)
+        if len(self.dicom_list) > 1:
+            self.nimages = len(self.dicom_list)
+        else:
+            self.nimages = self.dicom_list[0].image.number_of_frames
         # GUI
         self.slider.SetMax(self.nimages-1)
         self.slider.SetValue(0)
