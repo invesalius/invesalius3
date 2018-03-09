@@ -681,10 +681,21 @@ def dcmmf2memmap(dcm_file, orientation):
 
     d = numpy_support.vtk_to_numpy(o.GetPointData().GetScalars())
     d.shape = z, y, x
-    matrix[:] = d
-    matrix.flush()
+    if orientation == 'CORONAL':
+        matrix.shape = y, z, x
+        for n in xrange(z):
+            matrix[:, n, :] = d[n]
+    elif orientation == 'SAGITTAL':
+        matrix.shape = x, z, y
+        for n in xrange(z):
+            matrix[:, :, n] = d[n]
+    else:
+        matrix[:] = d
 
+    matrix.flush()
     scalar_range = matrix.min(), matrix.max()
+
+    print "ORIENTATION", orientation
 
     return matrix, spacing, scalar_range, temp_file
 
