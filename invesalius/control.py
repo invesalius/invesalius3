@@ -404,8 +404,9 @@ class Controller():
                     Publisher.sendMessage('Begin busy cursor')
         else:
             #Is None if user canceled the load
-            self.progress_dialog.Close()
-            self.progress_dialog = None
+            if self.progress_dialog is not None:
+                self.progress_dialog.Close()
+                self.progress_dialog = None
 
     def OnLoadImportPanel(self, evt):
         patient_series = evt.data
@@ -795,47 +796,53 @@ class Controller():
         xyspacing = dicom.image.spacing
         orientation = dicom.image.orientation_label
 
+        wl = float(dicom.image.level)
+        ww = float(dicom.image.window)
+
         if sop_class_uid == '1.2.840.10008.5.1.4.1.1.7': #Secondary Capture Image Storage
             use_dcmspacing = 1
         else:
             use_dcmspacing = 0
 
         imagedata = None
-        
-        sx, sy = size
-        n_slices = len(filelist)
-        resolution_percentage = utils.calculate_resizing_tofitmemory(int(sx), int(sy), n_slices, bits/8)
-        
-        if resolution_percentage < 1.0 and gui:
-            re_dialog = dialog.ResizeImageDialog()
-            re_dialog.SetValue(int(resolution_percentage*100))
-            re_dialog_value = re_dialog.ShowModal()
-            re_dialog.Close() 
-            
-            if re_dialog_value == wx.ID_OK:
-                percentage = re_dialog.GetValue()
-                resolution_percentage = percentage / 100.0
-            else:
-                return
 
-            xyspacing = xyspacing[0] / resolution_percentage, xyspacing[1] / resolution_percentage
-       
- 
-        wl = float(dicom.image.level)
-        ww = float(dicom.image.window)
-        self.matrix, scalar_range, self.filename = image_utils.dcm2memmap(filelist, size,
-                                                                    orientation, resolution_percentage)
+        if dicom.image.number_of_frames == 1:
+            sx, sy = size
+            n_slices = len(filelist)
+            resolution_percentage = utils.calculate_resizing_tofitmemory(int(sx), int(sy), n_slices, bits/8)
+
+            if resolution_percentage < 1.0 and gui:
+                re_dialog = dialog.ResizeImageDialog()
+                re_dialog.SetValue(int(resolution_percentage*100))
+                re_dialog_value = re_dialog.ShowModal()
+                re_dialog.Close() 
+
+                if re_dialog_value == wx.ID_OK:
+                    percentage = re_dialog.GetValue()
+                    resolution_percentage = percentage / 100.0
+                else:
+                    return
+
+                xyspacing = xyspacing[0] / resolution_percentage, xyspacing[1] / resolution_percentage
+
+            self.matrix, scalar_range, self.filename = image_utils.dcm2memmap(filelist, size,
+                                                                        orientation, resolution_percentage)
+
+            print xyspacing, zspacing
+            if orientation == 'AXIAL':
+                spacing = xyspacing[0], xyspacing[1], zspacing
+            elif orientation == 'CORONAL':
+                spacing = xyspacing[0], zspacing, xyspacing[1]
+            elif orientation == 'SAGITTAL':
+                spacing = zspacing, xyspacing[1], xyspacing[0]
+        else:
+            self.matrix, spacing, scalar_range, self.filename = image_utils.dcmmf2memmap(filelist[0], orientation)
 
         self.Slice = sl.Slice()
         self.Slice.matrix = self.matrix
         self.Slice.matrix_filename = self.filename
 
-        if orientation == 'AXIAL':
-            self.Slice.spacing = xyspacing[0], xyspacing[1], zspacing
-        elif orientation == 'CORONAL':
-            self.Slice.spacing = xyspacing[0], zspacing, xyspacing[1]
-        elif orientation == 'SAGITTAL':
-            self.Slice.spacing = zspacing, xyspacing[1], xyspacing[0]
+        self.Slice.spacing = spacing
 
         # 1(a): Fix gantry tilt, if any
         tilt_value = dicom.acquisition.tilt

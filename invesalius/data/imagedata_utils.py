@@ -19,6 +19,7 @@
 
 import math
 import os
+import sys
 import tempfile
 
 import gdcm
@@ -35,6 +36,16 @@ from invesalius.data import vtk_utils as vtk_utils
 import invesalius.reader.bitmap_reader as bitmap_reader
 import invesalius.utils as utils
 import invesalius.data.converters as converters
+
+if sys.platform == 'win32':
+    try:
+        import win32api
+        _has_win32api = True
+    except ImportError:
+        _has_win32api = False
+else:
+    _has_win32api = False
+
 # TODO: Test cases which are originally in sagittal/coronal orientation
 # and have gantry
 
@@ -246,10 +257,78 @@ def ExtractVOI(imagedata,xi,xf,yi,yf,zi,zf):
     """
     voi = vtk.vtkExtractVOI()
     voi.SetVOI(xi,xf,yi,yf,zi,zf)
-    voi.SetInput(imagedata)
+    voi.SetInputData(imagedata)
     voi.SetSampleRate(1, 1, 1)
     voi.Update()
     return voi.GetOutput()
+
+
+def create_dicom_thumbnails(filename, window=None, level=None):
+    rvtk = vtkgdcm.vtkGDCMImageReader()
+    rvtk.SetFileName(filename)
+    rvtk.Update()
+
+    img = rvtk.GetOutput()
+    if window is None or level is None:
+        _min, _max = img.GetScalarRange()
+        window = _max - _min
+        level = _min + window / 2
+
+    dx, dy, dz = img.GetDimensions()
+
+    if dz > 1:
+        thumbnail_paths = []
+        for i in xrange(dz):
+            img_slice = ExtractVOI(img, 0, dx-1, 0, dy-1, i, i+1)
+
+            colorer = vtk.vtkImageMapToWindowLevelColors()
+            colorer.SetInputData(img_slice)
+            colorer.SetWindow(window)
+            colorer.SetLevel(level)
+            colorer.SetOutputFormatToRGB()
+            colorer.Update()
+
+            resample = vtk.vtkImageResample()
+            resample.SetInputData(colorer.GetOutput())
+            resample.SetAxisMagnificationFactor ( 0, 0.25 )
+            resample.SetAxisMagnificationFactor ( 1, 0.25 )
+            resample.SetAxisMagnificationFactor ( 2, 1 )
+            resample.Update()
+
+            thumbnail_path = tempfile.mktemp()
+
+            write_png = vtk.vtkPNGWriter()
+            write_png.SetInputData(resample.GetOutput())
+            write_png.SetFileName(thumbnail_path)
+            write_png.Write()
+
+            thumbnail_paths.append(thumbnail_path)
+
+        return thumbnail_paths
+    else:
+        colorer = vtk.vtkImageMapToWindowLevelColors()
+        colorer.SetInputData(img)
+        colorer.SetWindow(window)
+        colorer.SetLevel(level)
+        colorer.SetOutputFormatToRGB()
+        colorer.Update()
+
+        resample = vtk.vtkImageResample()
+        resample.SetInputData(colorer.GetOutput())
+        resample.SetAxisMagnificationFactor ( 0, 0.25 )
+        resample.SetAxisMagnificationFactor ( 1, 0.25 )
+        resample.SetAxisMagnificationFactor ( 2, 1 )
+        resample.Update()
+
+        thumbnail_path = tempfile.mktemp()
+
+        write_png = vtk.vtkPNGWriter()
+        write_png.SetInputData(resample.GetOutput())
+        write_png.SetFileName(thumbnail_path)
+        write_png.Write()
+
+        return thumbnail_path
+
 
 def CreateImageData(filelist, zspacing, xyspacing,size,
                                 bits, use_dcmspacing):
@@ -585,6 +664,29 @@ def dcm2memmap(files, slice_size, orientation, resolution_percentage):
     scalar_range = matrix.min(), matrix.max()
 
     return matrix, scalar_range, temp_file
+
+
+def dcmmf2memmap(dcm_file, orientation):
+    r = vtkgdcm.vtkGDCMImageReader()
+    r.SetFileName(dcm_file)
+    r.Update()
+
+    temp_file = tempfile.mktemp()
+
+    o = r.GetOutput()
+    x, y, z = o.GetDimensions()
+    spacing = o.GetSpacing()
+
+    matrix = numpy.memmap(temp_file, mode='w+', dtype='int16', shape=(z, y, x))
+
+    d = numpy_support.vtk_to_numpy(o.GetPointData().GetScalars())
+    d.shape = z, y, x
+    matrix[:] = d
+    matrix.flush()
+
+    scalar_range = matrix.min(), matrix.max()
+
+    return matrix, spacing, scalar_range, temp_file
 
 
 def img2memmap(group):

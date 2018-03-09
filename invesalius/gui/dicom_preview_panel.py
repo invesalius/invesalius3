@@ -115,7 +115,7 @@ class DicomInfo(object):
     """
     Keep the informations and the image used by preview.
     """
-    def __init__(self, id, dicom, title, subtitle):
+    def __init__(self, id, dicom, title, subtitle, n=0):
         self.id = id
         self.dicom = dicom
         self.title = title
@@ -123,12 +123,15 @@ class DicomInfo(object):
         self._preview = None
         self.selected = False
         self.filename = ""
+        self._slice = n
 
     @property
     def preview(self):
-        
         if not self._preview:
-            bmp = wx.Bitmap(self.dicom.image.thumbnail_path, wx.BITMAP_TYPE_PNG)
+            if isinstance(self.dicom.image.thumbnail_path, list):
+                bmp = wx.Bitmap(self.dicom.image.thumbnail_path[self._slice], wx.BITMAP_TYPE_PNG)
+            else:
+                bmp = wx.Bitmap(self.dicom.image.thumbnail_path, wx.BITMAP_TYPE_PNG)
             self._preview = bmp.ConvertToImage()
         return self._preview
         
@@ -539,11 +542,22 @@ class DicomPreviewSlice(wx.Panel):
         dicom_files = group.GetHandSortedList()
         n = 0
         for dicom in dicom_files:
-            info = DicomInfo(n, dicom,
-                             _("Image %d") % (dicom.image.number),
-                             "%.2f" % (dicom.image.position[2]))
-            self.files.append(info)
-            n+=1
+            if isinstance(dicom.image.thumbnail_path, list):
+                _slice = 0
+                for thumbnail in dicom.image.thumbnail_path:
+                    print thumbnail
+                    info = DicomInfo(n, dicom,
+                                     _("Image %d") % (n),
+                                     "%.2f" % (dicom.image.position[2]), _slice)
+                    self.files.append(info)
+                    n+=1
+                    _slice += 1
+            else:
+                info = DicomInfo(n, dicom,
+                                 _("Image %d") % (dicom.image.number),
+                                 "%.2f" % (dicom.image.position[2]))
+                self.files.append(info)
+                n+=1
 
         scroll_range = len(self.files)/NCOLS
         if scroll_range * NCOLS < len(self.files):
@@ -560,12 +574,23 @@ class DicomPreviewSlice(wx.Panel):
         dicom_files = group.GetHandSortedList()
         n = 0
         for dicom in dicom_files:
-            info = DicomInfo(n, dicom,
-                             _("Image %d") % (dicom.image.number),
-                             "%.2f" % (dicom.image.position[2]),
-                            )
-            self.files.append(info)
-            n+=1
+            if isinstance(dicom.image.thumbnail_path, list):
+                _slice = 0
+                for thumbnail in dicom.image.thumbnail_path:
+                    print thumbnail
+                    info = DicomInfo(n, dicom,
+                                     _("Image %d") % int(n),
+                                     "%.2f" % (dicom.image.position[2]), _slice)
+                    self.files.append(info)
+                    n+=1
+                    _slice += 1
+            else:
+                info = DicomInfo(n, dicom,
+                                 _("Image %d") % int(dicom.image.number),
+                                 "%.2f" % (dicom.image.position[2]),
+                                )
+                self.files.append(info)
+                n+=1
 
         scroll_range = len(self.files)/NCOLS
         if scroll_range * NCOLS < len(self.files):
@@ -803,14 +828,20 @@ class SingleImagePreview(wx.Panel):
     def SetDicomGroup(self, group):
         self.dicom_list = group.GetHandSortedList()
         self.current_index = 0
-        self.nimages = len(self.dicom_list)
+        if len(self.dicom_list) > 1:
+            self.nimages = len(self.dicom_list)
+        else:
+            self.nimages = self.dicom_list[0].image.number_of_frames
         # GUI
         self.slider.SetMax(self.nimages-1)
         self.slider.SetValue(0)
         self.ShowSlice()
 
     def ShowSlice(self, index = 0):
-        dicom = self.dicom_list[index]
+        try:
+            dicom = self.dicom_list[index]
+        except IndexError:
+            dicom = self.dicom_list[0]
 
         # UPDATE GUI
         ## Text related to size
@@ -845,28 +876,41 @@ class SingleImagePreview(wx.Panel):
                             dicom.acquisition.time)
         self.text_acquisition.SetValue(value)
 
-        rdicom = vtkgdcm.vtkGDCMImageReader()
-        if _has_win32api:
-            rdicom.SetFileName(win32api.GetShortPathName(dicom.image.file).encode(const.FS_ENCODE))
-        else:
-            rdicom.SetFileName(dicom.image.file)
-        rdicom.Update()
+        if isinstance(dicom.image.thumbnail_path, list):
+            reader = vtk.vtkPNGReader()
+            if _has_win32api:
+                reader.SetFileName(win32api.GetShortPathName(dicom.image.thumbnail_path[index]).encode(const.FS_ENCODE))
+            else:
+                reader.SetFileName(dicom.image.thumbnail_path[index])
+            reader.Update()
 
-        # ADJUST CONTRAST
-        window_level = dicom.image.level
-        window_width = dicom.image.window
-        colorer = vtk.vtkImageMapToWindowLevelColors()
-        colorer.SetInputConnection(rdicom.GetOutputPort())
-        colorer.SetWindow(float(window_width))
-        colorer.SetLevel(float(window_level))
-        colorer.Update()
+            image = reader.GetOutput()
+
+        else:
+            rdicom = vtkgdcm.vtkGDCMImageReader()
+            if _has_win32api:
+                rdicom.SetFileName(win32api.GetShortPathName(dicom.image.file).encode(const.FS_ENCODE))
+            else:
+                rdicom.SetFileName(dicom.image.file)
+            rdicom.Update()
+
+            # ADJUST CONTRAST
+            window_level = dicom.image.level
+            window_width = dicom.image.window
+            colorer = vtk.vtkImageMapToWindowLevelColors()
+            colorer.SetInputConnection(rdicom.GetOutputPort())
+            colorer.SetWindow(float(window_width))
+            colorer.SetLevel(float(window_level))
+            colorer.Update()
+
+            image = colorer.GetOutput()
 
         if self.actor is None:
             self.actor = vtk.vtkImageActor()
             self.renderer.AddActor(self.actor)
 
         # PLOT IMAGE INTO VIEWER
-        self.actor.SetInputData(colorer.GetOutput())
+        self.actor.SetInputData(image)
         self.renderer.ResetCamera()
         self.interactor.Render()
 
