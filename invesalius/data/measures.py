@@ -15,6 +15,7 @@ import invesalius.project as prj
 import invesalius.session as ses
 import invesalius.utils as utils
 
+from invesalius import math_utils
 from invesalius.gui.widgets.canvas_renderer import TextBox, CircleHandler, Ellipse, Polygon
 from scipy.misc import imsave
 
@@ -51,6 +52,8 @@ else:
     MEASURE_LINE_COLOUR = (255, 0, 0, 128)
     MEASURE_TEXT_COLOUR = (0, 0, 0)
     MEASURE_TEXTBOX_COLOUR = (255, 255, 165, 255)
+
+
 
 class MeasureData:
     """
@@ -151,7 +154,7 @@ class MeasurementManager(object):
                         mr.insert_point(p)
                     mr.complete_polygon()
 
-                mr.set_density_values(m.min, m.max, m.mean, m.std)
+                mr.set_density_values(m.min, m.max, m.mean, m.std, m.area)
                 print m.min, m.max, m.mean, m.std
                 mr._need_calc = False
                 self.measures.append((m, mr))
@@ -386,6 +389,7 @@ class MeasurementManager(object):
         m.slice_number = density_measure.slice_number
         m.colour = density_measure.colour
         m.value = density_measure._mean
+        m.area = density_measure._area
         m.mean = density_measure._mean
         m.min = density_measure._min
         m.max = density_measure._max
@@ -462,6 +466,7 @@ class DensityMeasurement():
         self.index = DensityMeasurement.general_index
         self.name = const.MEASURE_NAME_PATTERN %(self.index+1)
         self.colour = const.MEASURE_COLOUR.next()
+        self.area = 0
         self.min = 0
         self.max = 0
         self.mean = 0
@@ -482,6 +487,7 @@ class DensityMeasurement():
         self.slice_number = info["slice_number"]
         self.points = info["points"]
         self.visible = info["visible"]
+        self.area = info['area']
         self.min = info["min"]
         self.max = info["max"]
         self.mean = info["mean"]
@@ -498,6 +504,7 @@ class DensityMeasurement():
             'slice_number': self.slice_number,
             'points': self.points,
             'visible': self.visible,
+            'area': self.area,
             'min': self.min,
             'max': self.max,
             'mean': self.mean,
@@ -1072,6 +1079,7 @@ class CircleDensityMeasure(object):
         self.location = map_locations_id[self.orientation]
         self.index = 0
 
+        self._area = 0
         self._min = 0
         self._max = 0
         self._mean = 0
@@ -1113,16 +1121,18 @@ class CircleDensityMeasure(object):
         if self._measurement:
             self._measurement.points = [self.center, self.point1, self.point2]
 
-    def set_density_values(self, _min, _max, _mean, _std):
+    def set_density_values(self, _min, _max, _mean, _std, _area):
         self._min = _min
         self._max = _max
         self._mean = _mean
         self._std = _std
+        self._area = _area
 
-        text = _('Min: %.3f\n'
+        text = _('Area: %.3f\n'
+                 'Min: %.3f\n'
                  'Max: %.3f\n'
                  'Mean: %.3f\n'
-                 'Std: %.3f' % (self._min, self._max, self._mean, self._std))
+                 'Std: %.3f' % (self._area, self._min, self._max, self._mean, self._std))
 
         if self.text_box is None:
             self.text_box = TextBox(text, self.point1, MEASURE_TEXT_COLOUR, MEASURE_TEXTBOX_COLOUR)
@@ -1198,6 +1208,21 @@ class CircleDensityMeasure(object):
         self.text_box.draw_to_canvas(gc, canvas)
         #  self.handle_tl.draw_to_canvas(gc, canvas)
 
+    def calc_area(self):
+        if self.orientation == 'AXIAL':
+            a = abs(self.point1[0] - self.center[0])
+            b = abs(self.point2[1] - self.center[1])
+
+        elif self.orientation == 'CORONAL':
+            a = abs(self.point1[0] - self.center[0])
+            b = abs(self.point2[2] - self.center[2])
+
+        elif self.orientation == 'SAGITAL':
+            a = abs(self.point1[1] - self.center[1])
+            b = abs(self.point2[2] - self.center[2])
+
+        return math_utils.calc_ellipse_area(a, b)
+
     def calc_density(self):
         from invesalius.data.slice_ import Slice
         slc = Slice()
@@ -1270,6 +1295,8 @@ class CircleDensityMeasure(object):
             _mean = 0
             _std = 0
 
+        _area = self.calc_area()
+
         if self._measurement:
             self._measurement.points = [self.center, self.point1, self.point2]
             self._measurement.value = float(_mean)
@@ -1277,8 +1304,9 @@ class CircleDensityMeasure(object):
             self._measurement.min = float(_min)
             self._measurement.max = float(_max)
             self._measurement.std = float(_std)
+            self._measurement.area = float(_area)
 
-        self.set_density_values(_min, _max, _mean, _std)
+        self.set_density_values(_min, _max, _mean, _std, _area)
 
     def on_change_ellipse(self):
         old_center = self.center
@@ -1316,6 +1344,7 @@ class PolygonDensityMeasure(object):
         self.location = map_locations_id[self.orientation]
         self.index = 0
 
+        self._area = 0
         self._min = 0
         self._max = 0
         self._mean = 0
@@ -1420,6 +1449,8 @@ class PolygonDensityMeasure(object):
             _mean = 0
             _std = 0
 
+        _area = self.calc_area()
+
         if self._measurement:
             self._measurement.points = self.points
             self._measurement.value = float(_mean)
@@ -1427,10 +1458,40 @@ class PolygonDensityMeasure(object):
             self._measurement.min = float(_min)
             self._measurement.max = float(_max)
             self._measurement.std = float(_std)
+            self._measurement.area = float(_area)
 
-        self.set_density_values(_min, _max, _mean, _std)
+        self.set_density_values(_min, _max, _mean, _std, _area)
+        self.calc_area()
 
         self._need_calc = False
+
+    def calc_area(self):
+        if self.orientation == 'AXIAL':
+            points = [(x, y) for (x, y, z) in self.points]
+        elif self.orientation == 'CORONAL':
+            points = [(x, z) for (x, y, z) in self.points]
+        elif self.orientation == 'SAGITAL':
+            points = [(y, z) for (x, y, z) in self.points]
+        area = math_utils.calc_polygon_area(points)
+        print 'Points', points
+        print 'xv = %s;' % [i[0] for i in points]
+        print 'yv = %s;' % [i[1] for i in points]
+        print 'Area', area
+        return area
+
+    def get_bounds(self):
+        min_x = min(self.points, key=lambda x: x[0])[0]
+        max_x = max(self.points, key=lambda x: x[0])[0]
+
+        min_y = min(self.points, key=lambda x: x[1])[1]
+        max_y = max(self.points, key=lambda x: x[1])[1]
+
+        min_z = min(self.points, key=lambda x: x[2])[2]
+        max_z = max(self.points, key=lambda x: x[2])[2]
+
+        print self.points
+
+        return (min_x, min_y, min_z, max_x, max_y, max_z)
 
     def set_measurement(self, dm):
         self._measurement = dm
@@ -1452,22 +1513,31 @@ class PolygonDensityMeasure(object):
                     return self.text_box.is_over(x, y)
             return None
 
-    def set_density_values(self, _min, _max, _mean, _std):
+    def set_density_values(self, _min, _max, _mean, _std, _area):
         self._min = _min
         self._max = _max
         self._mean = _mean
         self._std = _std
+        self._area = _area
 
-        text = _('Min: %.3f\n'
+        text = _('Area: %.3f\n'
+                 'Min: %.3f\n'
                  'Max: %.3f\n'
                  'Mean: %.3f\n'
-                 'Std: %.3f' % (self._min, self._max, self._mean, self._std))
+                 'Std: %.3f' % (self._area, self._min, self._max, self._mean, self._std))
 
+        bounds = self.get_bounds()
+        p = [bounds[3], bounds[4], bounds[5]]
         if self.text_box is None:
-            self.text_box = TextBox(text, self.points[-1], MEASURE_TEXT_COLOUR, MEASURE_TEXTBOX_COLOUR)
+            p[0] += 5
+            self.text_box = TextBox(text, p, MEASURE_TEXT_COLOUR, MEASURE_TEXTBOX_COLOUR)
         else:
+            dx = self.text_box.position[0] - p[0]
+            dy = self.text_box.position[1] - p[1]
+            p[0] += dx
+            p[1] += dy
             self.text_box.set_text(text)
-            self.text_box.position = self.points[-1]
+            self.text_box.position = p
 
         if self._measurement:
             self._measurement.value = self._mean

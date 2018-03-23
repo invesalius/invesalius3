@@ -647,6 +647,7 @@ class DensityMeasureStyle(DefaultInteractorStyle):
         self.viewer.UpdateCanvas()
 
     def OnInsertPolygon(self, evt):
+        print "Double Click", self.format, self._last_measure
         if self.format == 'polygon' and self._last_measure:
             m = self._last_measure
             if len(m.points) >= 3:
