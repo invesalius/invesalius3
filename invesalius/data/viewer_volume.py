@@ -692,7 +692,7 @@ class Viewer(wx.Panel):
             self.style = style  
 
             # Check each event available for each mode
-            for event in action[state]:
+            for event in action.get(state, []):
                 # Bind event
                 style.AddObserver(event,action[state][event])
 

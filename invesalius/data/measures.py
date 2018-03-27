@@ -1308,6 +1308,9 @@ class CircleDensityMeasure(object):
 
         self.set_density_values(_min, _max, _mean, _std, _area)
 
+    def IsComplete(self):
+        return True
+
     def on_change_ellipse(self):
         old_center = self.center
         self.center = self.ellipse.center
@@ -1492,6 +1495,9 @@ class PolygonDensityMeasure(object):
         print self.points
 
         return (min_x, min_y, min_z, max_x, max_y, max_z)
+
+    def IsComplete(self):
+        return self.complete
 
     def set_measurement(self, dm):
         self._measurement = dm

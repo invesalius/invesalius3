@@ -561,8 +561,6 @@ class DensityMeasureStyle(DefaultInteractorStyle):
         self.viewer.canvas.subscribe_event('LeftButtonDoubleClickEvent', self.OnInsertPolygon)
 
     def SetUp(self):
-        if self.orientation == 'AXIAL':
-            print "Setup", self.format, id(self)
         for n in self.viewer.draw_by_slice_number:
             for i in self.viewer.draw_by_slice_number[n]:
                 if isinstance(i, PolygonDensityMeasure):
@@ -570,8 +568,6 @@ class DensityMeasureStyle(DefaultInteractorStyle):
         self.viewer.canvas.Refresh()
 
     def CleanUp(self):
-        if self.orientation == 'AXIAL':
-            print "Cleanup", self.format, id(self)
         self.viewer.canvas.unsubscribe_event('LeftButtonPressEvent', self.OnInsertPoint)
         self.viewer.canvas.unsubscribe_event('LeftButtonDoubleClickEvent', self.OnInsertPolygon)
         old_list = self.viewer.draw_by_slice_number
@@ -650,8 +646,6 @@ class DensityMeasureStyle(DefaultInteractorStyle):
         self.viewer.UpdateCanvas()
 
     def OnInsertPolygon(self, evt):
-        if self.orientation == 'AXIAL':
-            print "Double Click", self.format, self._last_measure, id(self)
         if self.format == 'polygon' and self._last_measure:
             m = self._last_measure
             if len(m.points) >= 3:
