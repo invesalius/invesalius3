@@ -72,8 +72,9 @@ class CanvasRendererCTX:
         self._drawn = False
         self._init_canvas()
 
-        self._over_obj = None
+        self._over_objs = None
         self._drag_obj = None
+        self._selected_obj = None
 
         self._callback_events = {
             'LeftButtonPressEvent': [],
@@ -149,12 +150,12 @@ class CanvasRendererCTX:
         for i in self.draw_list:
             try:
                 obj = i.is_over(x, y)
-                self._over_obj = obj
+                self._over_objs = obj
                 if obj:
-                    redraw = True
-                    break
+                    return True
             except AttributeError:
                 pass
+        return False
 
     def Refresh(self):
         print 'Refresh'
@@ -174,7 +175,30 @@ class CanvasRendererCTX:
                                   shift_down=evt.ShiftDown())
             self._drag_obj.mouse_move(evt_obj)
         else:
-            self.get_over_mouse_obj(x, y)
+            was_over = self._over_objs
+            redraw = self.get_over_mouse_obj(x, y) or was_over
+
+            if was_over and was_over != self._over_objs:
+                try:
+                    evt_obj = CanvasEvent('mouse_leave', (x, y), self.viewer,
+                                          self.evt_renderer,
+                                          control_down=evt.ControlDown(),
+                                          alt_down=evt.AltDown(),
+                                          shift_down=evt.ShiftDown())
+                    was_over.on_mouse_leave(evt_obj)
+                except AttributeError:
+                    pass
+
+            if self._over_objs:
+                try:
+                    evt_obj = CanvasEvent('mouse_enter', (x, y), self.viewer,
+                                          self.evt_renderer,
+                                          control_down=evt.ControlDown(),
+                                          alt_down=evt.AltDown(),
+                                          shift_down=evt.ShiftDown())
+                    self._over_objs.on_mouse_enter(evt_obj)
+                except AttributeError:
+                    pass
 
         if redraw:
             #  Publisher.sendMessage('Redraw canvas %s' % self.orientation)
@@ -189,21 +213,32 @@ class CanvasRendererCTX:
                               control_down=evt.ControlDown(),
                               alt_down=evt.AltDown(),
                               shift_down=evt.ShiftDown())
-        if self._over_obj and hasattr(self._over_obj, 'mouse_move'):
-            self._drag_obj = self._over_obj
-            if hasattr(self._over_obj, 'on_select'):
-                self._over_obj.on_select(evt_obj)
+        if self._over_objs and hasattr(self._over_objs, 'mouse_move'):
+            if hasattr(self._over_objs, 'on_select'):
+                try:
+                    self._selected_obj.on_deselect(evt_obj)
+                except AttributeError:
+                    pass
+                self._over_objs.on_select(evt_obj)
+                self._selected_obj = self._over_objs
+                self.Refresh()
+            self._drag_obj = self._over_objs
         else:
             self.get_over_mouse_obj(x, y)
-            if not self._over_obj:
+            if not self._over_objs:
                 for cb in self._callback_events['LeftButtonPressEvent']:
                     if cb() is not None:
                         cb()(evt_obj)
                         break
+                try:
+                    if self._selected_obj.on_deselect():
+                        self.Refresh()
+                except AttributeError:
+                    pass
         evt.Skip()
 
     def OnLeftButtonRelease(self, evt):
-        self._over_obj = None
+        self._over_objs = None
         self._drag_obj = None
         evt.Skip()
 
@@ -257,7 +292,7 @@ class CanvasRendererCTX:
         gc.SetBrush(brush)
         gc.Scale(1, -1)
 
-        for d in self.draw_list:
+        for d in sorted(self.draw_list, key=lambda x: x.layer if hasattr(x, 'layer') else 0):
             d.draw_to_canvas(gc, self)
 
         gc.Destroy()
@@ -478,7 +513,7 @@ class CanvasRendererCTX:
         xi = cx - width/2.0
         xf = cx + width/2.0
         yi = cy - height/2.0
-        yf = cy + width/2.0
+        yf = cy + height/2.0
 
         cx -= width/2.0
         cy += height/2.0
@@ -669,7 +704,7 @@ class CanvasHandlerBase(object):
         xi, yi, xf, yf = self.bbox
         if xi <= x <= xf and yi <= y <= yf:
             print "is_over"
-            return self
+            return [self,]
         return None
 
 class TextBox(CanvasHandlerBase):
@@ -682,6 +717,8 @@ class TextBox(CanvasHandlerBase):
         self.position = position
 
         self.bbox = (0, 0, 0, 0)
+
+        self.layer = 0
 
         self.visible = True
         self._highlight = False
@@ -709,9 +746,7 @@ class TextBox(CanvasHandlerBase):
     def is_over(self, x, y):
         xi, yi, xf, yf = self.bbox
         if xi <= x <= xf and yi <= y <= yf:
-            self._highlight = True
-            return self
-        self._highlight = False
+            return [self,]
         return None
 
     def mouse_move(self, evt):
@@ -722,6 +757,14 @@ class TextBox(CanvasHandlerBase):
         self._last_position = (x, y, z)
 
         return True
+
+    def on_mouse_enter(self, evt):
+        self.layer = 99
+        self._highlight = True
+
+    def on_mouse_leave(self, evt):
+        self.layer = 0
+        self._highlight = False
 
     def on_select(self, evt):
         mx, my = evt.position
@@ -789,6 +832,8 @@ class Polygon(CanvasHandlerBase):
         self.handlers = []
 
         self._ref_handlers = {}
+
+        self.layer = 0
 
         self.fill = fill
         self.closed = closed
@@ -875,16 +920,31 @@ class Polygon(CanvasHandlerBase):
 
         return True
 
+    def on_mouse_enter(self, evt):
+        print 'on enter'
+        #  self.interactive = True
+        self.layer = 99
+
+    def on_mouse_leave(self, evt):
+        #  self.interactive = False
+        self.layer = 0
+
     def on_change(self, evt_function):
         self._on_change_function = WeakMethod(evt_function)
 
     def on_select(self, evt):
         mx, my = evt.position
+        self.interactive = True
+        print "on_select", self.interactive
         if self.is_3d:
             x, y, z = evt.viewer.get_coordinate_cursor(mx, my)
             self._last_position = (x, y, z)
         else:
             self._last_position = (mx, my)
+
+    def on_deselect(self, evt):
+        self.interactive = False
+        return True
 
     def convex_hull(self, points, merge=True):
         spoints = sorted(points)
@@ -930,7 +990,7 @@ class Ellipse(CanvasHandlerBase):
                  fill=True,
                  line_colour=(255, 255, 255, 255),
                  fill_colour=(255, 255, 255, 128), width=2,
-                 interactive=True, is_3d=True):
+                 interactive=False, is_3d=True):
 
         self.center = center
         self.point1 = point1
@@ -972,11 +1032,10 @@ class Ellipse(CanvasHandlerBase):
             width = abs(p1x - cx) * 2.0
             height = abs(p2y - cy) * 2.0
 
-            self.bbox = canvas.draw_ellipse((cx, cy), width, height,
-                                            self.width,
+            self.bbox = canvas.draw_ellipse((cx, cy), width,
+                                            height, self.width,
                                             self.line_colour,
                                             self.fill_colour)
-
             if self.interactive:
                 self.handler_1.draw_to_canvas(gc, canvas)
                 self.handler_2.draw_to_canvas(gc, canvas)
@@ -1036,15 +1095,25 @@ class Ellipse(CanvasHandlerBase):
         if self._on_change_function and self._on_change_function():
             self._on_change_function()()
 
-    def is_over(self, x, y):
-        if self.interactive:
-            xi, yi, xf, yf = self.bbox
+    def on_mouse_enter(self, evt):
+        #  self.interactive = True
+        pass
 
+    def on_mouse_leave(self, evt):
+        #  self.interactive = False
+        pass
+
+    def is_over(self, x, y):
+        xi, yi, xf, yf = self.bbox
+        if self.interactive:
             if self.handler_1.is_over(x, y):
                 return self.handler_1
             elif self.handler_2.is_over(x, y):
                 return self.handler_2
             elif xi <= x <= xf and yi <= y <= yf:
+                return self
+        else:
+            if xi <= x <= xf and yi <= y <= yf:
                 return self
 
     def mouse_move(self, evt):
@@ -1069,9 +1138,14 @@ class Ellipse(CanvasHandlerBase):
         return True
 
     def on_select(self, evt):
+        self.interactive = True
         mx, my = evt.position
         if self.is_3d:
             x, y, z = evt.viewer.get_coordinate_cursor(mx, my)
             self._last_position = (x, y, z)
         else:
             self._last_position = (mx, my)
+
+    def on_deselect(self, evt):
+        self.interactive = False
+        return True

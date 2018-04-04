@@ -1075,6 +1075,7 @@ class CircleDensityMeasure(object):
         self.slice_number = slice_number
 
         self.format = 'ellipse'
+        self.layer = 0
 
         self.location = map_locations_id[self.orientation]
         self.index = 0
@@ -1344,6 +1345,8 @@ class PolygonDensityMeasure(object):
 
         self.format = 'polygon'
 
+        self.layer = 0
+
         self.location = map_locations_id[self.orientation]
         self.index = 0
 
@@ -1352,6 +1355,8 @@ class PolygonDensityMeasure(object):
         self._max = 0
         self._mean = 0
         self._std = 0
+
+        self._dist_tbox = (0, 0)
 
         self._measurement = None
 
@@ -1380,7 +1385,10 @@ class PolygonDensityMeasure(object):
             if self._need_calc:
                 self.calc_density(canvas)
             if self.text_box:
+                bounds = self.get_bounds()
+                p = [bounds[3], bounds[4], bounds[5]]
                 self.text_box.draw_to_canvas(gc, canvas)
+                self._dist_tbox = [j-i for i,j in zip(p, self.text_box.position)]
 
     def insert_point(self, point):
         print "insert points", len(self.points)
