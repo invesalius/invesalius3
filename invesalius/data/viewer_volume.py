@@ -109,7 +109,7 @@ class Viewer(wx.Panel):
         self.text.SetPosition(const.TEXT_POS_LEFT_UP)
         #  self.ren.AddActor(self.text.actor)
 
-        self.polygon = Polygon(is_3d=False)
+        self.polygon = Polygon(None, is_3d=False)
 
         self.canvas = CanvasRendererCTX(self, self.ren, self.canvas_renderer, 'AXIAL')
         self.canvas.draw_list.append(self.text)

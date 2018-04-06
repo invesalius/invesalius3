@@ -16,7 +16,7 @@ import invesalius.session as ses
 import invesalius.utils as utils
 
 from invesalius import math_utils
-from invesalius.gui.widgets.canvas_renderer import TextBox, CircleHandler, Ellipse, Polygon
+from invesalius.gui.widgets.canvas_renderer import TextBox, CircleHandler, Ellipse, Polygon, CanvasHandlerBase
 from scipy.misc import imsave
 
 TYPE = {const.LINEAR: _(u"Linear"),
@@ -1064,8 +1064,10 @@ class AngularMeasure(object):
         self.Remove()
 
 
-class CircleDensityMeasure(object):
+class CircleDensityMeasure(CanvasHandlerBase):
     def __init__(self, orientation, slice_number, colour=(255, 0, 0, 255), interactive=True):
+        self.parent = None
+        self.children = []
         self.colour = colour
         self.center = (0.0, 0.0, 0.0)
         self.point1 = (0.0, 0.0, 0.0)
@@ -1088,9 +1090,10 @@ class CircleDensityMeasure(object):
 
         self._measurement = None
 
-        self.ellipse = Ellipse(self.center, self.point1, self.point2, fill=False,
-                               line_colour=self.colour)
+        self.ellipse = Ellipse(self, self.center, self.point1, self.point2,
+                               fill=False, line_colour=self.colour)
         self.ellipse.on_change(self.on_change_ellipse)
+        self.add_child(self.ellipse)
         self.text_box = None
 
         self._need_calc = True
@@ -1136,7 +1139,8 @@ class CircleDensityMeasure(object):
                  'Std: %.3f' % (self._area, self._min, self._max, self._mean, self._std))
 
         if self.text_box is None:
-            self.text_box = TextBox(text, self.point1, MEASURE_TEXT_COLOUR, MEASURE_TEXTBOX_COLOUR)
+            self.text_box = TextBox(self, text, self.point1, MEASURE_TEXT_COLOUR, MEASURE_TEXTBOX_COLOUR)
+            self.add_child(self.text_box)
 
             #  self.handle_tl = CircleHandler(self.point1)
             #  self.handle_tl.on_move(self._on_move)
@@ -1194,20 +1198,19 @@ class CircleDensityMeasure(object):
             gc: is a wx.GraphicsContext
             canvas: the canvas it's being drawn.
         """
-        cx, cy = self._3d_to_2d(canvas.evt_renderer, self.center)
-        px, py = self._3d_to_2d(canvas.evt_renderer, self.point1)
-        radius = ((px - cx)**2 + (py - cy)**2)**0.5
-
+        #  cx, cy = self._3d_to_2d(canvas.evt_renderer, self.center)
+        #  px, py = self._3d_to_2d(canvas.evt_renderer, self.point1)
+        #  radius = ((px - cx)**2 + (py - cy)**2)**0.5
         if self._need_calc:
             self._need_calc = False
             self.calc_density()
 
         #  canvas.draw_circle((cx, cy), radius, line_colour=self.colour)
-        self.ellipse.draw_to_canvas(gc, canvas)
+        #  self.ellipse.draw_to_canvas(gc, canvas)
 
-        #  canvas.draw_text_box(text, (px, py), )
-        self.text_box.draw_to_canvas(gc, canvas)
-        #  self.handle_tl.draw_to_canvas(gc, canvas)
+        #  #  canvas.draw_text_box(text, (px, py), )
+        #  self.text_box.draw_to_canvas(gc, canvas)
+        #  #  self.handle_tl.draw_to_canvas(gc, canvas)
 
     def calc_area(self):
         if self.orientation == 'AXIAL':
@@ -1333,8 +1336,10 @@ class CircleDensityMeasure(object):
         session.ChangeProject()
 
 
-class PolygonDensityMeasure(object):
+class PolygonDensityMeasure(CanvasHandlerBase):
     def __init__(self, orientation, slice_number, colour=(255, 0, 0, 255), interactive=True):
+        self.parent = None
+        self.children = []
         self.colour = colour
         self.points = []
 
@@ -1360,8 +1365,10 @@ class PolygonDensityMeasure(object):
 
         self._measurement = None
 
-        self.polygon = Polygon(fill=False, closed=False, line_colour=self.colour)
+        self.polygon = Polygon(self, fill=False, closed=False, line_colour=self.colour)
         self.polygon.on_change(self.on_change_polygon)
+        self.add_child(self.polygon)
+
         self.text_box = None
 
         self._need_calc = False
@@ -1380,15 +1387,17 @@ class PolygonDensityMeasure(object):
         session.ChangeProject()
 
     def draw_to_canvas(self, gc, canvas):
-        if self.visible:
-            self.polygon.draw_to_canvas(gc, canvas)
-            if self._need_calc:
-                self.calc_density(canvas)
-            if self.text_box:
-                bounds = self.get_bounds()
-                p = [bounds[3], bounds[4], bounds[5]]
-                self.text_box.draw_to_canvas(gc, canvas)
-                self._dist_tbox = [j-i for i,j in zip(p, self.text_box.position)]
+        if self._need_calc:
+            self.calc_density(canvas)
+        #  if self.visible:
+            #  self.polygon.draw_to_canvas(gc, canvas)
+            #  if self._need_calc:
+                #  self.calc_density(canvas)
+            #  if self.text_box:
+                #  bounds = self.get_bounds()
+                #  p = [bounds[3], bounds[4], bounds[5]]
+                #  self.text_box.draw_to_canvas(gc, canvas)
+                #  self._dist_tbox = [j-i for i,j in zip(p, self.text_box.position)]
 
     def insert_point(self, point):
         print "insert points", len(self.points)
@@ -1400,6 +1409,13 @@ class PolygonDensityMeasure(object):
         self.polygon.closed = True
         self._need_calc = True
         self.complete = True
+
+        bounds = self.get_bounds()
+        p = [bounds[3], bounds[4], bounds[5]]
+        if self.text_box is None:
+            p[0] += 5
+            self.text_box = TextBox(self, '', p, MEASURE_TEXT_COLOUR, MEASURE_TEXTBOX_COLOUR)
+            self.add_child(self.text_box)
 
     def calc_density(self, canvas):
         from invesalius.data.slice_ import Slice
@@ -1430,13 +1446,15 @@ class PolygonDensityMeasure(object):
 
             plg_points = [(y/sx, z/sy) for (x, y, z) in self.points]
 
-        plg_tmp = Polygon(plg_points, fill=True,
+        plg_tmp = Polygon(None, plg_points, fill=True,
                           line_colour=(0, 0, 0, 0),
                           fill_colour=(255, 255, 255, 255), width=1,
                           interactive=False, is_3d=False)
         h, w = img_slice.shape
         arr = canvas.draw_element_to_array([plg_tmp, ], size=(w, h), flip=False)
         mask = arr[:, :, 0] >= 128
+
+        print "mask sum", mask.sum()
 
         try:
             m[:] = 0
@@ -1542,16 +1560,13 @@ class PolygonDensityMeasure(object):
 
         bounds = self.get_bounds()
         p = [bounds[3], bounds[4], bounds[5]]
-        if self.text_box is None:
-            p[0] += 5
-            self.text_box = TextBox(text, p, MEASURE_TEXT_COLOUR, MEASURE_TEXTBOX_COLOUR)
-        else:
-            dx = self.text_box.position[0] - p[0]
-            dy = self.text_box.position[1] - p[1]
-            p[0] += dx
-            p[1] += dy
-            self.text_box.set_text(text)
-            self.text_box.position = p
+
+        dx = self.text_box.position[0] - p[0]
+        dy = self.text_box.position[1] - p[1]
+        p[0] += dx
+        p[1] += dy
+        self.text_box.set_text(text)
+        self.text_box.position = p
 
         if self._measurement:
             self._measurement.value = self._mean

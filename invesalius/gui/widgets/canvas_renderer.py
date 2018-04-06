@@ -231,7 +231,7 @@ class CanvasRendererCTX:
                         cb()(evt_obj)
                         break
                 try:
-                    if self._selected_obj.on_deselect():
+                    if self._selected_obj.on_deselect(evt_obj):
                         self.Refresh()
                 except AttributeError:
                     pass
@@ -292,7 +292,7 @@ class CanvasRendererCTX:
         gc.SetBrush(brush)
         gc.Scale(1, -1)
 
-        for d in sorted(self.draw_list, key=lambda x: x.layer if hasattr(x, 'layer') else 0):
+        for d in self._follow_draw_list():#sorted(self.draw_list, key=lambda x: x.layer if hasattr(x, 'layer') else 0):
             d.draw_to_canvas(gc, self)
 
         gc.Destroy()
@@ -306,6 +306,22 @@ class CanvasRendererCTX:
         self._cv_image.Modified()
         self.modified = False
         self._drawn = False
+
+    def _follow_draw_list(self):
+        out = []
+        def loop(node):
+            for child in node.children:
+                loop(child)
+                out.append(child)
+
+        for element in self.draw_list:
+            out.append(element)
+            print 'element', element
+            if hasattr(element, 'children'):
+                loop(element)
+
+        return out
+
 
     def draw_element_to_array(self, elements, size=None, antialiasing=False, flip=True):
         """
@@ -691,11 +707,18 @@ class CanvasRendererCTX:
 
 
 class CanvasHandlerBase(object):
+    def __init__(self, parent):
+        self.parent = parent
+        self.children = []
+
     def _3d_to_2d(self, renderer, pos):
         coord = vtk.vtkCoordinate()
         coord.SetValue(pos)
         px, py = coord.GetComputedDoubleDisplayValue(renderer)
         return px, py
+
+    def add_child(self, child):
+        self.children.append(child)
 
     def draw_to_canvas(self, gc, canvas):
         pass
@@ -708,13 +731,18 @@ class CanvasHandlerBase(object):
         return None
 
 class TextBox(CanvasHandlerBase):
-    def __init__(self, text, position=(0, 0, 0),
+    def __init__(self, parent,
+                 text, position=(0, 0, 0),
                  text_colour=(0, 0, 0, 255),
                  box_colour=(255, 255, 255, 255)):
+
+        self.parent = parent
         self.text = text
         self.text_colour = text_colour
         self.box_colour = box_colour
         self.position = position
+
+        self.children = []
 
         self.bbox = (0, 0, 0, 0)
 
@@ -773,16 +801,19 @@ class TextBox(CanvasHandlerBase):
 
 
 class CircleHandler(CanvasHandlerBase):
-    def __init__(self, position, radius=5,
+    def __init__(self, parent, position, radius=5,
                  line_colour=(255, 255, 255, 255),
                  fill_colour=(0, 0, 0, 0), is_3d=True):
 
+        self.parent = parent
         self.position = position
         self.radius = radius
         self.line_colour = line_colour
         self.fill_colour = fill_colour
         self.bbox = (0, 0, 0, 0)
         self.is_3d = is_3d
+
+        self.children = []
 
         self.visible = True
         self._on_move_function = None
@@ -817,12 +848,17 @@ class CircleHandler(CanvasHandlerBase):
 
 
 class Polygon(CanvasHandlerBase):
-    def __init__(self, points=None,
+    def __init__(self, parent,
+                 points=None,
                  fill=True,
                  closed=True,
                  line_colour=(255, 255, 255, 255),
                  fill_colour=(255, 255, 255, 128), width=2,
                  interactive=True, is_3d=True):
+
+        self.parent = parent
+
+        self.children = []
 
         if points is None:
             self.points = []
@@ -867,12 +903,13 @@ class Polygon(CanvasHandlerBase):
                 #  for p0, p1 in self.get_all_antipodal_pairs(points):
                     #  canvas.draw_line(p0, p1)
 
-        if self.interactive:
-            for handler in self.handlers:
-                handler.draw_to_canvas(gc, canvas)
+        #  if self.interactive:
+            #  for handler in self.handlers:
+                #  handler.draw_to_canvas(gc, canvas)
 
     def append_point(self, point):
-        handler = CircleHandler(point, is_3d=self.is_3d, fill_colour=(255, 0, 0, 255))
+        handler = CircleHandler(self, point, is_3d=self.is_3d, fill_colour=(255, 0, 0, 255))
+        self.add_child(handler)
         handler.on_move(self.on_move_point)
         self.handlers.append(handler)
         self.points.append(point)
@@ -985,12 +1022,16 @@ class Polygon(CanvasHandlerBase):
 
 
 class Ellipse(CanvasHandlerBase):
-    def __init__(self, center,
+    def __init__(self, parent,
+                 center,
                  point1, point2,
                  fill=True,
                  line_colour=(255, 255, 255, 255),
                  fill_colour=(255, 255, 255, 128), width=2,
                  interactive=False, is_3d=True):
+
+        self.parent = parent
+        self.children = []
 
         self.center = center
         self.point1 = point1
@@ -1008,8 +1049,11 @@ class Ellipse(CanvasHandlerBase):
         self.interactive = interactive
         self.is_3d = is_3d
 
-        self.handler_1 = CircleHandler(self.point1, is_3d=is_3d, fill_colour=(255, 0, 0, 255))
-        self.handler_2 = CircleHandler(self.point2, is_3d=is_3d, fill_colour=(255, 0, 0, 255))
+        self.handler_1 = CircleHandler(self, self.point1, is_3d=is_3d, fill_colour=(255, 0, 0, 255))
+        self.handler_2 = CircleHandler(self, self.point2, is_3d=is_3d, fill_colour=(255, 0, 0, 255))
+
+        self.add_child(self.handler_1)
+        self.add_child(self.handler_2)
 
         self.handler_1.on_move(self.on_move_p1)
         self.handler_2.on_move(self.on_move_p2)
@@ -1036,9 +1080,9 @@ class Ellipse(CanvasHandlerBase):
                                             height, self.width,
                                             self.line_colour,
                                             self.fill_colour)
-            if self.interactive:
-                self.handler_1.draw_to_canvas(gc, canvas)
-                self.handler_2.draw_to_canvas(gc, canvas)
+            #  if self.interactive:
+                #  self.handler_1.draw_to_canvas(gc, canvas)
+                #  self.handler_2.draw_to_canvas(gc, canvas)
 
     def set_point1(self, pos):
         self.point1 = pos
