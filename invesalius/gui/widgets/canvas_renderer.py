@@ -104,6 +104,13 @@ class CanvasRendererCTX:
                 self._callback_events[event].pop(n)
                 return
 
+    def propagate_event(self, root, callback_name):
+        node = root
+        while node:
+            if hasattr(node, callback_name):
+                getattr(node, callback_name, [])
+            node = node.parent
+
     def _init_canvas(self):
         w, h = self._size
         self._array = np.zeros((h, w, 4), dtype=np.uint8)
@@ -292,8 +299,12 @@ class CanvasRendererCTX:
         gc.SetBrush(brush)
         gc.Scale(1, -1)
 
-        for d in self._follow_draw_list():#sorted(self.draw_list, key=lambda x: x.layer if hasattr(x, 'layer') else 0):
+        print ">>>>>>"
+        self._ordered_draw_list = sorted(self._follow_draw_list())
+        for l, d in self._ordered_draw_list: #sorted(self.draw_list, key=lambda x: x.layer if hasattr(x, 'layer') else 0):
+            print l, d
             d.draw_to_canvas(gc, self)
+        print "<<<<<<"
 
         gc.Destroy()
 
@@ -309,16 +320,15 @@ class CanvasRendererCTX:
 
     def _follow_draw_list(self):
         out = []
-        def loop(node):
+        def loop(node, layer):
             for child in node.children:
-                loop(child)
-                out.append(child)
+                loop(child, layer + child.layer)
+                out.append((layer + child.layer, child))
 
         for element in self.draw_list:
-            out.append(element)
-            print 'element', element
+            out.append((element.layer, element))
             if hasattr(element, 'children'):
-                loop(element)
+                loop(element,element.layer)
 
         return out
 
@@ -710,6 +720,7 @@ class CanvasHandlerBase(object):
     def __init__(self, parent):
         self.parent = parent
         self.children = []
+        self.layer = 0
 
     def _3d_to_2d(self, renderer, pos):
         coord = vtk.vtkCoordinate()
@@ -737,6 +748,7 @@ class TextBox(CanvasHandlerBase):
                  box_colour=(255, 255, 255, 255)):
 
         self.parent = parent
+        self.layer = 0
         self.text = text
         self.text_colour = text_colour
         self.box_colour = box_colour
@@ -745,8 +757,6 @@ class TextBox(CanvasHandlerBase):
         self.children = []
 
         self.bbox = (0, 0, 0, 0)
-
-        self.layer = 0
 
         self.visible = True
         self._highlight = False
@@ -787,11 +797,11 @@ class TextBox(CanvasHandlerBase):
         return True
 
     def on_mouse_enter(self, evt):
-        self.layer = 99
+        #  self.layer = 99
         self._highlight = True
 
     def on_mouse_leave(self, evt):
-        self.layer = 0
+        #  self.layer = 0
         self._highlight = False
 
     def on_select(self, evt):
@@ -806,6 +816,7 @@ class CircleHandler(CanvasHandlerBase):
                  fill_colour=(0, 0, 0, 0), is_3d=True):
 
         self.parent = parent
+        self.layer = 0
         self.position = position
         self.radius = radius
         self.line_colour = line_colour
@@ -857,7 +868,7 @@ class Polygon(CanvasHandlerBase):
                  interactive=True, is_3d=True):
 
         self.parent = parent
-
+        self.layer = 0
         self.children = []
 
         if points is None:
@@ -868,8 +879,6 @@ class Polygon(CanvasHandlerBase):
         self.handlers = []
 
         self._ref_handlers = {}
-
-        self.layer = 0
 
         self.fill = fill
         self.closed = closed
@@ -909,6 +918,7 @@ class Polygon(CanvasHandlerBase):
 
     def append_point(self, point):
         handler = CircleHandler(self, point, is_3d=self.is_3d, fill_colour=(255, 0, 0, 255))
+        handler.layer = 0
         self.add_child(handler)
         handler.on_move(self.on_move_point)
         self.handlers.append(handler)
@@ -958,13 +968,14 @@ class Polygon(CanvasHandlerBase):
         return True
 
     def on_mouse_enter(self, evt):
-        print 'on enter'
+        pass
         #  self.interactive = True
-        self.layer = 99
+        #  self.layer = 99
 
     def on_mouse_leave(self, evt):
+        pass
         #  self.interactive = False
-        self.layer = 0
+        #  self.layer = 0
 
     def on_change(self, evt_function):
         self._on_change_function = WeakMethod(evt_function)
@@ -1032,6 +1043,7 @@ class Ellipse(CanvasHandlerBase):
 
         self.parent = parent
         self.children = []
+        self.layer = 0
 
         self.center = center
         self.point1 = point1
@@ -1050,7 +1062,9 @@ class Ellipse(CanvasHandlerBase):
         self.is_3d = is_3d
 
         self.handler_1 = CircleHandler(self, self.point1, is_3d=is_3d, fill_colour=(255, 0, 0, 255))
+        self.handler_1.layer = 0
         self.handler_2 = CircleHandler(self, self.point2, is_3d=is_3d, fill_colour=(255, 0, 0, 255))
+        self.handler_2.layer = 0
 
         self.add_child(self.handler_1)
         self.add_child(self.handler_2)

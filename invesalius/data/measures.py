@@ -621,6 +621,7 @@ class LinearMeasure(object):
         self.line_actor = None
         self.text_actor = None
         self.renderer = None
+        self.layer = 0
         if not representation:
             representation = CirclePointRepresentation(colour)
         self.representation = representation
@@ -801,6 +802,7 @@ class AngularMeasure(object):
         self.point_actor3 = None
         self.line_actor = None
         self.text_actor = None
+        self.layer = 0
         if not representation:
             representation = CirclePointRepresentation(colour)
         self.representation = representation
@@ -1068,6 +1070,8 @@ class CircleDensityMeasure(CanvasHandlerBase):
     def __init__(self, orientation, slice_number, colour=(255, 0, 0, 255), interactive=True):
         self.parent = None
         self.children = []
+        self.layer = 0
+
         self.colour = colour
         self.center = (0.0, 0.0, 0.0)
         self.point1 = (0.0, 0.0, 0.0)
@@ -1077,7 +1081,6 @@ class CircleDensityMeasure(CanvasHandlerBase):
         self.slice_number = slice_number
 
         self.format = 'ellipse'
-        self.layer = 0
 
         self.location = map_locations_id[self.orientation]
         self.index = 0
@@ -1092,6 +1095,7 @@ class CircleDensityMeasure(CanvasHandlerBase):
 
         self.ellipse = Ellipse(self, self.center, self.point1, self.point2,
                                fill=False, line_colour=self.colour)
+        self.ellipse.layer = 1
         self.ellipse.on_change(self.on_change_ellipse)
         self.add_child(self.ellipse)
         self.text_box = None
@@ -1140,6 +1144,7 @@ class CircleDensityMeasure(CanvasHandlerBase):
 
         if self.text_box is None:
             self.text_box = TextBox(self, text, self.point1, MEASURE_TEXT_COLOUR, MEASURE_TEXTBOX_COLOUR)
+            self.text_box.layer = 2
             self.add_child(self.text_box)
 
             #  self.handle_tl = CircleHandler(self.point1)
@@ -1340,6 +1345,8 @@ class PolygonDensityMeasure(CanvasHandlerBase):
     def __init__(self, orientation, slice_number, colour=(255, 0, 0, 255), interactive=True):
         self.parent = None
         self.children = []
+        self.layer = 0
+
         self.colour = colour
         self.points = []
 
@@ -1349,8 +1356,6 @@ class PolygonDensityMeasure(CanvasHandlerBase):
         self.complete = False
 
         self.format = 'polygon'
-
-        self.layer = 0
 
         self.location = map_locations_id[self.orientation]
         self.index = 0
@@ -1366,6 +1371,7 @@ class PolygonDensityMeasure(CanvasHandlerBase):
         self._measurement = None
 
         self.polygon = Polygon(self, fill=False, closed=False, line_colour=self.colour)
+        self.polygon.layer = 1
         self.polygon.on_change(self.on_change_polygon)
         self.add_child(self.polygon)
 
@@ -1415,6 +1421,7 @@ class PolygonDensityMeasure(CanvasHandlerBase):
         if self.text_box is None:
             p[0] += 5
             self.text_box = TextBox(self, '', p, MEASURE_TEXT_COLOUR, MEASURE_TEXTBOX_COLOUR)
+            self.text_box.layer = 2
             self.add_child(self.text_box)
 
     def calc_density(self, canvas):
