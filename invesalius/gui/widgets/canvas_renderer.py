@@ -32,8 +32,9 @@ from wx.lib.pubsub import pub as Publisher
 
 
 class CanvasEvent:
-    def __init__(self, event_name, pos, viewer, renderer,
+    def __init__(self, event_name, root_event_obj, pos, viewer, renderer,
                  control_down=False, alt_down=False, shift_down=False):
+        self.root_event_obj = root_event_obj
         self.event_name = event_name
         self.position = pos
         self.viewer = viewer
@@ -65,6 +66,7 @@ class CanvasRendererCTX:
         self.evt_renderer = evt_renderer
         self._size = self.canvas_renderer.GetSize()
         self.draw_list = []
+        self._ordered_draw_list = []
         self.orientation = orientation
         self.gc = None
         self.last_cam_modif_time = -1
@@ -72,7 +74,7 @@ class CanvasRendererCTX:
         self._drawn = False
         self._init_canvas()
 
-        self._over_objs = None
+        self._over_obj = None
         self._drag_obj = None
         self._selected_obj = None
 
@@ -104,11 +106,15 @@ class CanvasRendererCTX:
                 self._callback_events[event].pop(n)
                 return
 
-    def propagate_event(self, root, callback_name):
+    def propagate_event(self, root, event):
+        print 'propagating', event.event_name, 'from', root
         node = root
+        callback_name = 'on_%s' % event.event_name
         while node:
-            if hasattr(node, callback_name):
-                getattr(node, callback_name, [])
+            try:
+                getattr(node, callback_name)(event)
+            except AttributeError, e:
+                print 'errror', node, e
             node = node.parent
 
     def _init_canvas(self):
@@ -154,11 +160,12 @@ class CanvasRendererCTX:
         self.evt_renderer.RemoveObservers("StartEvent")
 
     def get_over_mouse_obj(self, x, y):
-        for i in self.draw_list:
+        for n, i in self._ordered_draw_list[::-1]:
             try:
                 obj = i.is_over(x, y)
-                self._over_objs = obj
+                self._over_obj = obj
                 if obj:
+                    print "is over at", n, i
                     return True
             except AttributeError:
                 pass
@@ -176,18 +183,19 @@ class CanvasRendererCTX:
 
         if self._drag_obj:
             redraw = True
-            evt_obj = CanvasEvent('mouse_move', (x, y), self.viewer, self.evt_renderer,
+            evt_obj = CanvasEvent('mouse_move', self._drag_obj, (x, y), self.viewer, self.evt_renderer,
                                   control_down=evt.ControlDown(),
                                   alt_down=evt.AltDown(),
                                   shift_down=evt.ShiftDown())
-            self._drag_obj.mouse_move(evt_obj)
+            self.propagate_event(self._drag_obj, evt_obj)
+            #  self._drag_obj.mouse_move(evt_obj)
         else:
-            was_over = self._over_objs
+            was_over = self._over_obj
             redraw = self.get_over_mouse_obj(x, y) or was_over
 
-            if was_over and was_over != self._over_objs:
+            if was_over and was_over != self._over_obj:
                 try:
-                    evt_obj = CanvasEvent('mouse_leave', (x, y), self.viewer,
+                    evt_obj = CanvasEvent('mouse_leave', was_over, (x, y), self.viewer,
                                           self.evt_renderer,
                                           control_down=evt.ControlDown(),
                                           alt_down=evt.AltDown(),
@@ -196,14 +204,14 @@ class CanvasRendererCTX:
                 except AttributeError:
                     pass
 
-            if self._over_objs:
+            if self._over_obj:
                 try:
-                    evt_obj = CanvasEvent('mouse_enter', (x, y), self.viewer,
+                    evt_obj = CanvasEvent('mouse_enter', self._over_obj, (x, y), self.viewer,
                                           self.evt_renderer,
                                           control_down=evt.ControlDown(),
                                           alt_down=evt.AltDown(),
                                           shift_down=evt.ShiftDown())
-                    self._over_objs.on_mouse_enter(evt_obj)
+                    self._over_obj.on_mouse_enter(evt_obj)
                 except AttributeError:
                     pass
 
@@ -216,28 +224,46 @@ class CanvasRendererCTX:
     def OnLeftButtonPress(self, evt):
         x, y = evt.GetPosition()
         y = self.viewer.interactor.GetSize()[1] - y
-        evt_obj = CanvasEvent('left_click', (x, y), self.viewer, self.evt_renderer,
-                              control_down=evt.ControlDown(),
-                              alt_down=evt.AltDown(),
-                              shift_down=evt.ShiftDown())
-        if self._over_objs and hasattr(self._over_objs, 'mouse_move'):
-            if hasattr(self._over_objs, 'on_select'):
+        if self._over_obj and hasattr(self._over_obj, 'on_mouse_move'):
+            if hasattr(self._over_obj, 'on_select'):
                 try:
+                    evt_obj = CanvasEvent('deselect', self._over_obj, (x, y), self.viewer,
+                                          self.evt_renderer,
+                                          control_down=evt.ControlDown(),
+                                          alt_down=evt.AltDown(),
+                                          shift_down=evt.ShiftDown())
                     self._selected_obj.on_deselect(evt_obj)
                 except AttributeError:
                     pass
-                self._over_objs.on_select(evt_obj)
-                self._selected_obj = self._over_objs
+                evt_obj = CanvasEvent('select', self._over_obj, (x, y), self.viewer,
+                                      self.evt_renderer,
+                                      control_down=evt.ControlDown(),
+                                      alt_down=evt.AltDown(),
+                                      shift_down=evt.ShiftDown())
+                self._over_obj.on_select(evt_obj)
+                self._selected_obj = self._over_obj
                 self.Refresh()
-            self._drag_obj = self._over_objs
+            self._drag_obj = self._over_obj
         else:
             self.get_over_mouse_obj(x, y)
-            if not self._over_objs:
+            if not self._over_obj:
+                evt_obj = CanvasEvent('leftclick', None, (x, y), self.viewer,
+                                      self.evt_renderer,
+                                      control_down=evt.ControlDown(),
+                                      alt_down=evt.AltDown(),
+                                      shift_down=evt.ShiftDown())
+                #  self._selected_obj.on_deselect(evt_obj)
                 for cb in self._callback_events['LeftButtonPressEvent']:
                     if cb() is not None:
                         cb()(evt_obj)
                         break
                 try:
+                    evt_obj = CanvasEvent('deselect', self._over_obj, (x, y), self.viewer,
+                                          self.evt_renderer,
+                                          control_down=evt.ControlDown(),
+                                          alt_down=evt.AltDown(),
+                                          shift_down=evt.ShiftDown())
+                    #  self._selected_obj.on_deselect(evt_obj)
                     if self._selected_obj.on_deselect(evt_obj):
                         self.Refresh()
                 except AttributeError:
@@ -245,14 +271,14 @@ class CanvasRendererCTX:
         evt.Skip()
 
     def OnLeftButtonRelease(self, evt):
-        self._over_objs = None
+        self._over_obj = None
         self._drag_obj = None
         evt.Skip()
 
     def OnDoubleClick(self, evt):
         x, y = evt.GetPosition()
         y = self.viewer.interactor.GetSize()[1] - y
-        evt_obj = CanvasEvent('double_left_click', (x, y), self.viewer, self.evt_renderer,
+        evt_obj = CanvasEvent('double_left_click', None, (x, y), self.viewer, self.evt_renderer,
                               control_down=evt.ControlDown(),
                               alt_down=evt.AltDown(),
                               shift_down=evt.ShiftDown())
@@ -299,12 +325,9 @@ class CanvasRendererCTX:
         gc.SetBrush(brush)
         gc.Scale(1, -1)
 
-        print ">>>>>>"
         self._ordered_draw_list = sorted(self._follow_draw_list())
         for l, d in self._ordered_draw_list: #sorted(self.draw_list, key=lambda x: x.layer if hasattr(x, 'layer') else 0):
-            print l, d
             d.draw_to_canvas(gc, self)
-        print "<<<<<<"
 
         gc.Destroy()
 
@@ -737,8 +760,7 @@ class CanvasHandlerBase(object):
     def is_over(self, x, y):
         xi, yi, xf, yf = self.bbox
         if xi <= x <= xf and yi <= y <= yf:
-            print "is_over"
-            return [self,]
+            return self
         return None
 
 class TextBox(CanvasHandlerBase):
@@ -784,10 +806,10 @@ class TextBox(CanvasHandlerBase):
     def is_over(self, x, y):
         xi, yi, xf, yf = self.bbox
         if xi <= x <= xf and yi <= y <= yf:
-            return [self,]
+            return self
         return None
 
-    def mouse_move(self, evt):
+    def on_mouse_move(self, evt):
         mx, my = evt.position
         x, y, z = evt.viewer.get_coordinate_cursor(mx, my)
         self.position = [i - j + k  for (i, j, k) in zip((x, y, z), self._last_position, self.position)]
@@ -843,7 +865,7 @@ class CircleHandler(CanvasHandlerBase):
                                             fill_colour=self.fill_colour)
             self.bbox = (x - w/2, y - h/2, x + w/2, y + h/2)
 
-    def mouse_move(self, evt):
+    def on_mouse_move(self, evt):
         mx, my = evt.position
         if self.is_3d:
             x, y, z = evt.viewer.get_coordinate_cursor(mx, my)
@@ -918,35 +940,27 @@ class Polygon(CanvasHandlerBase):
 
     def append_point(self, point):
         handler = CircleHandler(self, point, is_3d=self.is_3d, fill_colour=(255, 0, 0, 255))
-        handler.layer = 0
+        handler.layer = 1
         self.add_child(handler)
-        handler.on_move(self.on_move_point)
+        #  handler.on_move(self.on_move_point)
         self.handlers.append(handler)
         self.points.append(point)
 
         self._ref_handlers[handler] = len(self.points) - 1
 
-    def on_move_point(self, obj, evt):
-        #  pos = obj.position
-        #  handler = obj
-        #  point = self._ref_handlers[handler]
-        #  self.points[point] = pos
-        self.points = []
-        for handler in self.handlers:
-            self.points.append(handler.position)
-
-        if self._on_change_function and self._on_change_function():
-            self._on_change_function()()
+    def on_mouse_move(self, evt):
+        if evt.root_event_obj is self:
+            self.on_mouse_move2(evt)
+        else:
+            self.points = []
+            for handler in self.handlers:
+                self.points.append(handler.position)
 
     def is_over(self, x, y):
-        if self.interactive:
-            for handler in self.handlers:
-                if handler.is_over(x, y):
-                    return handler
         if self.closed and self._path and self._path.Contains(x, -y):
             return self
 
-    def mouse_move(self, evt):
+    def on_mouse_move2(self, evt):
         mx, my = evt.position
         if self.is_3d:
             x, y, z = evt.viewer.get_coordinate_cursor(mx, my)
@@ -962,8 +976,8 @@ class Polygon(CanvasHandlerBase):
 
         self._last_position = new_pos
 
-        if self._on_change_function and self._on_change_function():
-            self._on_change_function()()
+        #  if self._on_change_function and self._on_change_function():
+            #  self._on_change_function()()
 
         return True
 
@@ -1062,15 +1076,12 @@ class Ellipse(CanvasHandlerBase):
         self.is_3d = is_3d
 
         self.handler_1 = CircleHandler(self, self.point1, is_3d=is_3d, fill_colour=(255, 0, 0, 255))
-        self.handler_1.layer = 0
+        self.handler_1.layer = 1
         self.handler_2 = CircleHandler(self, self.point2, is_3d=is_3d, fill_colour=(255, 0, 0, 255))
-        self.handler_2.layer = 0
+        self.handler_2.layer = 1
 
         self.add_child(self.handler_1)
         self.add_child(self.handler_2)
-
-        self.handler_1.on_move(self.on_move_p1)
-        self.handler_2.on_move(self.on_move_p2)
 
         self._on_change_function = None
 
@@ -1109,8 +1120,15 @@ class Ellipse(CanvasHandlerBase):
     def on_change(self, evt_function):
         self._on_change_function = WeakMethod(evt_function)
 
-    def on_move_p1(self, obj, evt):
-        pos = obj.position
+    def on_mouse_move(self, evt):
+        if evt.root_event_obj is self:
+            self.on_mouse_move2(evt)
+        else:
+            self.move_p1(evt)
+            self.move_p2(evt)
+
+    def move_p1(self, evt):
+        pos = self.handler_1.position
         if evt.viewer.orientation == 'AXIAL':
             pos = pos[0], self.point1[1], self.point1[2]
         elif evt.viewer.orientation == 'CORONAL':
@@ -1131,8 +1149,8 @@ class Ellipse(CanvasHandlerBase):
         if self._on_change_function and self._on_change_function():
             self._on_change_function()()
 
-    def on_move_p2(self, obj, evt):
-        pos = obj.position
+    def move_p2(self, evt):
+        pos = self.handler_2.position
         if evt.viewer.orientation == 'AXIAL':
             pos = self.point2[0], pos[1], self.point2[2]
         elif evt.viewer.orientation == 'CORONAL':
@@ -1150,8 +1168,8 @@ class Ellipse(CanvasHandlerBase):
 
             self.set_point1(tuple(point1))
 
-        if self._on_change_function and self._on_change_function():
-            self._on_change_function()()
+        #  if self._on_change_function and self._on_change_function():
+            #  self._on_change_function()()
 
     def on_mouse_enter(self, evt):
         #  self.interactive = True
@@ -1163,18 +1181,10 @@ class Ellipse(CanvasHandlerBase):
 
     def is_over(self, x, y):
         xi, yi, xf, yf = self.bbox
-        if self.interactive:
-            if self.handler_1.is_over(x, y):
-                return self.handler_1
-            elif self.handler_2.is_over(x, y):
-                return self.handler_2
-            elif xi <= x <= xf and yi <= y <= yf:
-                return self
-        else:
-            if xi <= x <= xf and yi <= y <= yf:
-                return self
+        if xi <= x <= xf and yi <= y <= yf:
+            return self
 
-    def mouse_move(self, evt):
+    def on_mouse_move2(self, evt):
         mx, my = evt.position
         if self.is_3d:
             x, y, z = evt.viewer.get_coordinate_cursor(mx, my)

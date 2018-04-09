@@ -1096,7 +1096,7 @@ class CircleDensityMeasure(CanvasHandlerBase):
         self.ellipse = Ellipse(self, self.center, self.point1, self.point2,
                                fill=False, line_colour=self.colour)
         self.ellipse.layer = 1
-        self.ellipse.on_change(self.on_change_ellipse)
+        #  self.ellipse.on_change(self.on_change_ellipse)
         self.add_child(self.ellipse)
         self.text_box = None
 
@@ -1181,12 +1181,13 @@ class CircleDensityMeasure(CanvasHandlerBase):
         return cx, cy
 
     def is_over(self, x, y):
-        if self.interactive:
-            if self.ellipse.is_over(x, y):
-                return self.ellipse.is_over(x, y)
-            elif self.text_box.is_over(x, y):
-                return self.text_box.is_over(x, y)
-            return None
+        return None
+        #  if self.interactive:
+            #  if self.ellipse.is_over(x, y):
+                #  return self.ellipse.is_over(x, y)
+            #  elif self.text_box.is_over(x, y):
+                #  return self.text_box.is_over(x, y)
+            #  return None
 
     def _on_move(self, obj):
         self.set_point1(obj.position)
@@ -1320,7 +1321,7 @@ class CircleDensityMeasure(CanvasHandlerBase):
     def IsComplete(self):
         return True
 
-    def on_change_ellipse(self):
+    def on_mouse_move(self, evt):
         old_center = self.center
         self.center = self.ellipse.center
         self.set_point1(self.ellipse.point1)
@@ -1366,13 +1367,13 @@ class PolygonDensityMeasure(CanvasHandlerBase):
         self._mean = 0
         self._std = 0
 
-        self._dist_tbox = (0, 0)
+        self._dist_tbox = (0, 0, 0)
 
         self._measurement = None
 
         self.polygon = Polygon(self, fill=False, closed=False, line_colour=self.colour)
         self.polygon.layer = 1
-        self.polygon.on_change(self.on_change_polygon)
+        #  self.polygon.on_change(self.on_change_polygon)
         self.add_child(self.polygon)
 
         self.text_box = None
@@ -1382,12 +1383,21 @@ class PolygonDensityMeasure(CanvasHandlerBase):
 
         self.visible = True
 
-    def on_change_polygon(self):
+    def on_mouse_move(self, evt):
         self.points = self.polygon.points
         self._need_calc = self.complete
 
         if self._measurement:
             self._measurement.points = self.points
+
+        if self.text_box:
+            bounds = self.get_bounds()
+            p = [bounds[3], bounds[4], bounds[5]]
+            if evt.root_event_obj is self.text_box:
+                self._dist_tbox = [i-j for i,j in zip(self.text_box.position, p)]
+            else:
+                self.text_box.position = [i+j for i,j in zip(self._dist_tbox, p)]
+                print "text box position", self.text_box.position
 
         session = ses.Session()
         session.ChangeProject()
@@ -1544,13 +1554,14 @@ class PolygonDensityMeasure(CanvasHandlerBase):
         self.polygon.interactive = self.interactive
 
     def is_over(self, x, y):
-        if self.interactive:
-            if self.polygon.is_over(x, y):
-                return self.polygon.is_over(x, y)
-            if self.text_box is not None:
-                if self.text_box.is_over(x, y):
-                    return self.text_box.is_over(x, y)
-            return None
+        None
+        #  if self.interactive:
+            #  if self.polygon.is_over(x, y):
+                #  return self.polygon.is_over(x, y)
+            #  if self.text_box is not None:
+                #  if self.text_box.is_over(x, y):
+                    #  return self.text_box.is_over(x, y)
+            #  return None
 
     def set_density_values(self, _min, _max, _mean, _std, _area):
         self._min = _min
