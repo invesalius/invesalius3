@@ -65,9 +65,9 @@ if sys.platform == 'win32':
     try:
         USER_DIR = expand_user()
     except:
-        USER_DIR = os.path.expanduser('~').decode(FS_ENCODE)
+        USER_DIR = utils.decode(os.path.expanduser('~'), FS_ENCODE)
 else:
-    USER_DIR = os.path.expanduser('~').decode(FS_ENCODE)
+    USER_DIR = utils.decode(os.path.expanduser('~'),FS_ENCODE)
 
 USER_INV_DIR = os.path.join(USER_DIR, u'.invesalius')
 USER_PRESET_DIR = os.path.join(USER_INV_DIR, u'presets')
@@ -112,7 +112,7 @@ class InVesalius(wx.App):
 
 # ------------------------------------------------------------------
 
-class SplashScreen(wx.SplashScreen):
+class SplashScreen(wx.adv.SplashScreen):
     """
     Splash screen to be shown in InVesalius initialization.
     """
@@ -350,14 +350,14 @@ def use_cmd_optargs(options, args):
     else:
         for arg in reversed(args):
 
-            file = arg.decode(FS_ENCODE)
+            file = utils.decode(arg, FS_ENCODE)
             if os.path.isfile(file):
                 path = os.path.abspath(file)
                 Publisher.sendMessage('Open project', path)
                 check_for_export(options)
                 return True
             
-            file = arg.decode(sys.stdin.encoding)
+            file = utils.decode(arg, sys.stdin.encoding)
             if os.path.isfile(file):
                 path = os.path.abspath(file)
                 Publisher.sendMessage('Open project', path)

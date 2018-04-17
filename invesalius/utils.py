@@ -442,3 +442,10 @@ def vtkarray_to_numpy(m):
 def touch(fname):
     with open(fname, 'a'):
         pass
+
+
+def decode(text, encoding):
+    try:
+        return text.decode(encoding)
+    except AttributeError:
+        return text

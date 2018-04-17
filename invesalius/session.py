@@ -33,7 +33,7 @@ import codecs
 from wx.lib.pubsub import pub as Publisher
 import wx
 
-from invesalius.utils import Singleton, debug
+from invesalius.utils import Singleton, debug, decode
 from random import randint
 
 FS_ENCODE = sys.getfilesystemencoding()
@@ -43,9 +43,9 @@ if sys.platform == 'win32':
     try:
         USER_DIR = expand_user()
     except:
-        USER_DIR = os.path.expanduser('~').decode(FS_ENCODE)
+        USER_DIR = decode(os.path.expanduser('~'), FS_ENCODE)
 else:
-    USER_DIR = os.path.expanduser('~').decode(FS_ENCODE)
+    USER_DIR = decode(os.path.expanduser('~'), FS_ENCODE)
 
 USER_INV_DIR = os.path.join(USER_DIR, u'.invesalius')
 USER_PRESET_DIR = os.path.join(USER_INV_DIR, u'presets')
