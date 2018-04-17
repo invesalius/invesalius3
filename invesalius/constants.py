@@ -23,6 +23,8 @@ import sys
 import wx
 import itertools
 
+from invesalius import utils
+
 #from invesalius.project import Project
 INVESALIUS_VERSION = "3.1.1"
 
@@ -332,15 +334,15 @@ if sys.platform == 'win32':
     try:
         USER_DIR = expand_user()
     except:
-        USER_DIR = os.path.expanduser('~').decode(FS_ENCODE)
+        USER_DIR = utils.decode(os.path.expanduser('~'), FS_ENCODE)
 else:
-    USER_DIR = os.path.expanduser('~').decode(FS_ENCODE)
+    USER_DIR = utils.decode(os.path.expanduser('~'), FS_ENCODE)
 
 USER_INV_DIR = os.path.join(USER_DIR, u'.invesalius')
 USER_PRESET_DIR = os.path.join(USER_INV_DIR, u'presets')
 USER_LOG_DIR = os.path.join(USER_INV_DIR, u'logs')
 
-FILE_PATH = os.path.split(__file__)[0].decode(FS_ENCODE)
+FILE_PATH = utils.decode(os.path.split(__file__)[0], FS_ENCODE)
 
 if hasattr(sys,"frozen") and (sys.frozen == "windows_exe"\
                             or sys.frozen == "console_exe"):

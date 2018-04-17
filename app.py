@@ -203,8 +203,8 @@ class SplashScreen(wx.adv.SplashScreen):
 				
             bmp = wx.Image(path).ConvertToBitmap()
 
-            style = wx.SPLASH_TIMEOUT | wx.SPLASH_CENTRE_ON_SCREEN
-            wx.SplashScreen.__init__(self,
+            style = wx.adv.SPLASH_TIMEOUT | wx.adv.SPLASH_CENTRE_ON_SCREEN
+            wx.adv.SplashScreen.__init__(self,
                                      bitmap=bmp,
                                      splashStyle=style,
                                      milliseconds=1500,

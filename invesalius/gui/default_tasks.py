@@ -239,7 +239,7 @@ class UpperTaskPanel(wx.Panel):
         self.overwrite = False
 
         session = ses.Session()
-        print "session mode: ", session.mode
+        print("session mode: ", session.mode)
         if int(session.mode) == const.MODE_RP:
             tasks = [(_("Load data"), importer.TaskPanel),
                      (_("Select region of interest"), slice_.TaskPanel),
