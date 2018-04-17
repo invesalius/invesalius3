@@ -239,13 +239,13 @@ def calculate_resizing_tofitmemory(x_size,y_size,n_slices,byte):
             ram_total = psutil.phymem_usage().total
             swap_free = psutil.virtmem_usage().free
     except:
-        print "Exception! psutil version < 0.3 (not recommended)"
+        print("Exception! psutil version < 0.3 (not recommended)")
         ram_total = psutil.TOTAL_PHYMEM  # this is for psutil < 0.3
         ram_free = 0.8 * psutil.TOTAL_PHYMEM 
         swap_free = psutil.avail_virtmem()
                     
-    print "RAM_FREE=", ram_free
-    print "RAM_TOTAL=", ram_total
+    print("RAM_FREE=", ram_free)
+    print( "RAM_TOTAL=", ram_total)
 
     if (sys.platform == 'win32'):
         if (platform.architecture()[0] == '32bit'):
@@ -385,7 +385,7 @@ def UpdateCheck():
         msgdlg.Show()
         #msgdlg.Destroy()
 
-    print "Checking updates..."
+    print("Checking updates...")
     
     # Check if there is a language set
     #import invesalius.i18n as i18n    import invesalius.session as ses
@@ -427,7 +427,7 @@ def UpdateCheck():
             return
 
         if last_ver > actual_ver:
-            print "  ...New update found!!! -> version:", last #, ", url=",url
+            print("  ...New update found!!! -> version:", last) #, ", url=",url
             wx.CallAfter(wx.CallLater, 1000, _show_update_info)
 
 

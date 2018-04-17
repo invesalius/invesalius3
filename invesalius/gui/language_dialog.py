@@ -20,7 +20,10 @@
 import os
 import sys
 import wx
-import wx.combo
+try:
+    from wx.adv import BitmapComboBox
+except ImportError:
+    from wx.combo import BitmapComboBox
 
 import invesalius.i18n as i18n
 
@@ -65,7 +68,7 @@ class ComboBoxLanguage:
         selection = self.locales_key.index('en')
 
         # Create bitmap combo
-        self.bitmapCmb = bitmapCmb = wx.combo.BitmapComboBox(parent, style=wx.CB_READONLY)
+        self.bitmapCmb = bitmapCmb = BitmapComboBox(parent, style=wx.CB_READONLY)
         for key in self.locales_key:
             # Based on composed flag filename, get bitmap
             filepath =  os.path.join(ICON_DIR, "%s.bmp"%(key))
@@ -117,7 +120,7 @@ class LanguageDialog(wx.Dialog):
     #    selection = self.locales_key.index('en')
 
     #    # Create bitmap combo
-    #    self.bitmapCmb = bitmapCmb = wx.combo.BitmapComboBox(self, style=wx.CB_READONLY)
+    #    self.bitmapCmb = bitmapCmb = BitmapComboBox(self, style=wx.CB_READONLY)
     #    for key in self.locales_key:
     #        # Based on composed flag filename, get bitmap
     #        filepath =  os.path.join(ICON_DIR, "%s.bmp"%(key))
