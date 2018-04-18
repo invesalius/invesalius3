@@ -23,11 +23,10 @@ import os
 import wx
 
 try:
-    from wx.adv import HyperlinkCtrl
-    from wx.adv import EVT_HYPERLINK as EVT_HYPERLINK_LEFT
+    import wx.lib.agw.hyperlink as hl
     import wx.lib.agw.foldpanelbar as fpb
 except ImportError:
-    from wx.lib.hyperlink import HyperlinkCtrl, EVT_HYPERLINK_LEFT
+    import wx.lib.hyperlink as hl
     import wx.lib.foldpanelbar as fpb
 
 import wx.lib.platebtn as pbtn
@@ -91,7 +90,7 @@ class InnerTaskPanel(wx.Panel):
 
         # Fixed hyperlink items
         tooltip = wx.ToolTip(_("Create mask for slice segmentation and editing"))
-        link_new_mask = HyperLinkCtrl(self, -1, _("Create new mask"))
+        link_new_mask = hl.HyperLinkCtrl(self, -1, _("Create new mask"))
         link_new_mask.SetUnderlines(False, False, False)
         link_new_mask.SetBold(True)
         link_new_mask.SetColours("BLACK", "BLACK", "BLACK")
@@ -99,7 +98,7 @@ class InnerTaskPanel(wx.Panel):
         link_new_mask.SetToolTip(tooltip)
         link_new_mask.AutoBrowse(False)
         link_new_mask.UpdateLink()
-        link_new_mask.Bind(EVT_HYPERLINK_LEFT, self.OnLinkNewMask)
+        link_new_mask.Bind(hl.EVT_HYPERLINK_LEFT, self.OnLinkNewMask)
         
         Publisher.subscribe(self.OnLinkNewMask, 'New mask from shortcut')
 
@@ -117,7 +116,10 @@ class InnerTaskPanel(wx.Panel):
         #print wx.SystemSettings_GetColour(wx.SYS_COLOUR_MENUBAR)
         #print wx.SystemSettings_GetColour(wx.SYS_COLOUR_SCROLLBAR)
         #print wx.SystemSettings_GetColour(wx.SYS_COLOUR_MENUHILIGHT)
-        default_colour = wx.SystemSettings_GetColour(wx.SYS_COLOUR_MENUBAR)
+        try:
+            default_colour = wx.SystemSettings.GetColour(wx.SYS_COLOUR_MENUBAR)
+        except AttributeError:
+            default_colour = wx.SystemSettings_GetColour(wx.SYS_COLOUR_MENUBAR)
         fold_panel = FoldPanel(self)
         fold_panel.SetBackgroundColour(default_colour)
         self.fold_panel = fold_panel
@@ -245,7 +247,10 @@ class FoldPanel(wx.Panel):
 class InnerFoldPanel(wx.Panel):
     def __init__(self, parent):
         wx.Panel.__init__(self, parent)
-        default_colour = wx.SystemSettings_GetColour(wx.SYS_COLOUR_MENUBAR)
+        try:
+            default_colour = wx.SystemSettings.GetColour(wx.SYS_COLOUR_MENUBAR)
+        except AttributeError:
+            default_colour = wx.SystemSettings_GetColour(wx.SYS_COLOUR_MENUBAR)
         self.SetBackgroundColour(default_colour)
 
         # Fold panel and its style settings
@@ -673,7 +678,10 @@ class MaskProperties(wx.Panel):
 class EditionTools(wx.Panel):
     def __init__(self, parent):
         wx.Panel.__init__(self, parent)
-        default_colour = wx.SystemSettings_GetColour(wx.SYS_COLOUR_MENUBAR)
+        try:
+            default_colour = wx.SystemSettings.GetColour(wx.SYS_COLOUR_MENUBAR)
+        except AttributeError:
+            default_colour = wx.SystemSettings_GetColour(wx.SYS_COLOUR_MENUBAR)
         self.SetBackgroundColour(default_colour)
 
         ## LINE 1
@@ -837,7 +845,10 @@ class EditionTools(wx.Panel):
 class WatershedTool(EditionTools):
     def __init__(self, parent):
         wx.Panel.__init__(self, parent)
-        default_colour = wx.SystemSettings_GetColour(wx.SYS_COLOUR_MENUBAR)
+        try:
+            default_colour = wx.SystemSettings.GetColour(wx.SYS_COLOUR_MENUBAR)
+        except AttributeError:
+            default_colour = wx.SystemSettings_GetColour(wx.SYS_COLOUR_MENUBAR)
         self.SetBackgroundColour(default_colour)
 
         ## LINE 1

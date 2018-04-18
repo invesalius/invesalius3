@@ -23,12 +23,12 @@ import os
 
 import numpy as np
 import wx
+
 try:
-    from wx.adv import HyperlinkCtrl
-    from wx.adv import EVT_HYPERLINK as EVT_HYPERLINK_LEFT
+    import wx.lib.agw.hyperlink as hl
     import wx.lib.agw.foldpanelbar as fpb
 except ImportError:
-    from wx.lib.hyperlink import HyperlinkCtrl, EVT_HYPERLINK_LEFT
+    import wx.lib.hyperlink as hl
     import wx.lib.foldpanelbar as fpb
 
 import wx.lib.masked.numctrl
