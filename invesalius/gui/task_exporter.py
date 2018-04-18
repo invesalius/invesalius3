@@ -21,7 +21,11 @@ import os
 import sys
 
 import wx
-import wx.lib.hyperlink as hl
+try:
+    from wx.adv import HyperlinkCtrl
+    from wx.adv import EVT_HYPERLINK as EVT_HYPERLINK_LEFT
+except ImportError:
+    from wx.lib.hyperlink import HyperlinkCtrl, EVT_HYPERLINK_LEFT
 import wx.lib.platebtn as pbtn
 from wx.lib.pubsub import pub as Publisher
 
@@ -107,7 +111,7 @@ class InnerTaskPanel(wx.Panel):
 
         # Fixed hyperlink items
         tooltip = wx.ToolTip(_("Export InVesalius screen to an image file"))
-        link_export_picture = hl.HyperLinkCtrl(self, -1,
+        link_export_picture = HyperLinkCtrl(self, -1,
                                             _("Export picture..."))
         link_export_picture.SetUnderlines(False, False, False)
         link_export_picture.SetBold(True)
@@ -116,11 +120,11 @@ class InnerTaskPanel(wx.Panel):
         link_export_picture.SetToolTip(tooltip)
         link_export_picture.AutoBrowse(False)
         link_export_picture.UpdateLink()
-        link_export_picture.Bind(hl.EVT_HYPERLINK_LEFT,
+        link_export_picture.Bind(EVT_HYPERLINK_LEFT,
                                  self.OnLinkExportPicture)
 
         tooltip = wx.ToolTip(_("Export 3D surface"))
-        link_export_surface = hl.HyperLinkCtrl(self, -1,_("Export 3D surface..."))
+        link_export_surface = HyperLinkCtrl(self, -1,_("Export 3D surface..."))
         link_export_surface.SetUnderlines(False, False, False)
         link_export_surface.SetBold(True)
         link_export_surface.SetColours("BLACK", "BLACK", "BLACK")
@@ -128,37 +132,37 @@ class InnerTaskPanel(wx.Panel):
         link_export_surface.SetToolTip(tooltip)
         link_export_surface.AutoBrowse(False)
         link_export_surface.UpdateLink()
-        link_export_surface.Bind(hl.EVT_HYPERLINK_LEFT,
+        link_export_surface.Bind(EVT_HYPERLINK_LEFT,
                               self.OnLinkExportSurface)
 
         #tooltip = wx.ToolTip(_("Export 3D mask (voxels)"))
-        #link_export_mask = hl.HyperLinkCtrl(self, -1,_("Export mask..."))
+        #link_export_mask = HyperLinkCtrl(self, -1,_("Export mask..."))
         #link_export_mask.SetUnderlines(False, False, False)
         #link_export_mask.SetColours("BLACK", "BLACK", "BLACK")
         #link_export_mask.SetToolTip(tooltip)
         #link_export_mask.AutoBrowse(False)
         #link_export_mask.UpdateLink()
-        #link_export_mask.Bind(hl.EVT_HYPERLINK_LEFT,
+        #link_export_mask.Bind(EVT_HYPERLINK_LEFT,
         #                      self.OnLinkExportMask)
 
 
         #tooltip = wx.ToolTip("Request rapid prototyping services")
-        #link_request_rp = hl.HyperLinkCtrl(self,-1,"Request rapid prototyping...")
+        #link_request_rp = HyperLinkCtrl(self,-1,"Request rapid prototyping...")
         #link_request_rp.SetUnderlines(False, False, False)
         #link_request_rp.SetColours("BLACK", "BLACK", "BLACK")
         #link_request_rp.SetToolTip(tooltip)
         #link_request_rp.AutoBrowse(False)
         #link_request_rp.UpdateLink()
-        #link_request_rp.Bind(hl.EVT_HYPERLINK_LEFT, self.OnLinkRequestRP)
+        #link_request_rp.Bind(EVT_HYPERLINK_LEFT, self.OnLinkRequestRP)
 
         #tooltip = wx.ToolTip("Open report tool...")
-        #link_report = hl.HyperLinkCtrl(self,-1,"Open report tool...")
+        #link_report = HyperLinkCtrl(self,-1,"Open report tool...")
         #link_report.SetUnderlines(False, False, False)
         #link_report.SetColours("BLACK", "BLACK", "BLACK")
         #link_report.SetToolTip(tooltip)
         #link_report.AutoBrowse(False)
         #link_report.UpdateLink()
-        #link_report.Bind(hl.EVT_HYPERLINK_LEFT, self.OnLinkReport)
+        #link_report.Bind(EVT_HYPERLINK_LEFT, self.OnLinkReport)
 
 
         # Image(s) for buttons

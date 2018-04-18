@@ -21,7 +21,11 @@ import sys
 import os
 
 import wx
-import wx.lib.hyperlink as hl
+try:
+    from wx.adv import HyperlinkCtrl
+    from wx.adv import EVT_HYPERLINK as EVT_HYPERLINK_LEFT
+except ImportError:
+    from wx.lib.hyperlink import HyperlinkCtrl, EVT_HYPERLINK_LEFT
 import wx.lib.platebtn as pbtn
 import wx.lib.foldpanelbar as fpb
 import wx.lib.colourselect as csel
@@ -84,7 +88,7 @@ class InnerTaskPanel(wx.Panel):
 
         # Fixed hyperlink items
         tooltip = wx.ToolTip(_("Create mask for slice segmentation and editing"))
-        link_new_mask = hl.HyperLinkCtrl(self, -1, _("Create new mask"))
+        link_new_mask = HyperLinkCtrl(self, -1, _("Create new mask"))
         link_new_mask.SetUnderlines(False, False, False)
         link_new_mask.SetBold(True)
         link_new_mask.SetColours("BLACK", "BLACK", "BLACK")
@@ -92,7 +96,7 @@ class InnerTaskPanel(wx.Panel):
         link_new_mask.SetToolTip(tooltip)
         link_new_mask.AutoBrowse(False)
         link_new_mask.UpdateLink()
-        link_new_mask.Bind(hl.EVT_HYPERLINK_LEFT, self.OnLinkNewMask)
+        link_new_mask.Bind(EVT_HYPERLINK_LEFT, self.OnLinkNewMask)
         
         Publisher.subscribe(self.OnLinkNewMask, 'New mask from shortcut')
 
