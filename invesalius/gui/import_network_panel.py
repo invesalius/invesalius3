@@ -568,7 +568,8 @@ class HostFindPanel(wx.Panel):
         splitter.SetOrientation(wx.HORIZONTAL)
         self.splitter = splitter
 
-        splitter.ContainingSizer = wx.BoxSizer(wx.HORIZONTAL)
+        # TODO: Rever isso
+        #  splitter.ContainingSizer = wx.BoxSizer(wx.HORIZONTAL)
 
         sizer = wx.BoxSizer(wx.HORIZONTAL)
         sizer.Add(splitter, 1, wx.EXPAND)

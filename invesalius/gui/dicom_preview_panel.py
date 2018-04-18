@@ -778,7 +778,7 @@ class SingleImagePreview(wx.Panel):
                             maxValue=99,
                             style=wx.SL_HORIZONTAL|wx.SL_AUTOTICKS)
         slider.SetWindowVariant(wx.WINDOW_VARIANT_SMALL)
-        slider.SetTickFreq(1, 1)
+        slider.SetTickFreq(1)
         self.slider = slider
 
         checkbox = wx.CheckBox(self, -1, _("Auto-play"))
