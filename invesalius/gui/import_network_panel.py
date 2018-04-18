@@ -230,7 +230,7 @@ class TextPanel(wx.Panel):
                                    wx.TR_DEFAULT_STYLE
                                    | wx.TR_HIDE_ROOT
                                    | wx.TR_ROW_LINES
-                                   | wx.TR_COLUMN_LINES
+                                   #  | wx.TR_COLUMN_LINES
                                    | wx.TR_FULL_ROW_HIGHLIGHT
                                    | wx.TR_SINGLE
                                   )
@@ -674,7 +674,7 @@ class NodesPanel(wx.Panel):
         self.tree_node.SetColumnWidth(4, 80)
 
         self.hosts[0] = [True, "localhost", "", "invesalius"]
-        index = self.tree_node.InsertStringItem(sys.maxint, "")
+        index = self.tree_node.InsertStringItem(sys.maxsize, "")
         self.tree_node.SetStringItem(index, 1, "localhost")
         self.tree_node.SetStringItem(index, 2, "")
         self.tree_node.SetStringItem(index, 3, "invesalius")
@@ -729,7 +729,7 @@ class NodesPanel(wx.Panel):
 
     def OnButtonAdd(self, evt):
         #adiciona vazio a coluna de check
-        index = self.tree_node.InsertStringItem(sys.maxint, "")
+        index = self.tree_node.InsertStringItem(sys.maxsize, "")
 
         self.hosts[index] = [True, "localhost", "80", ""]
         self.tree_node.SetStringItem(index, 1, "localhost")
