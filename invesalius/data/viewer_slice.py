@@ -206,7 +206,7 @@ class CanvasRendererCTX:
         self.alpha = np.zeros((h, w, 1), dtype=np.uint8)
 
         self.bitmap = wx.EmptyBitmapRGBA(w, h)
-        self.image = wx.ImageFromBuffer(w, h, self.rgb, self.alpha)
+        self.image = wx.Image(w, h, self.rgb, self.alpha)
 
     def _resize_canvas(self, w, h):
         self._array = np.zeros((h, w, 4), dtype=np.uint8)
@@ -218,7 +218,7 @@ class CanvasRendererCTX:
         self.alpha = np.zeros((h, w, 1), dtype=np.uint8)
 
         self.bitmap = wx.EmptyBitmapRGBA(w, h)
-        self.image = wx.ImageFromBuffer(w, h, self.rgb, self.alpha)
+        self.image = wx.Image(w, h, self.rgb, self.alpha)
 
         self.modified = True
 

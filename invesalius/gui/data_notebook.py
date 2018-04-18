@@ -903,12 +903,14 @@ class SurfacesListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
 
     def UpdateItemInfo(self, index=0, label="Surface 1", volume="0 mm3",
                        area="0 mm2", transparency="0%%", colour=None):
-        self.SetStringItem(index, 1, label,
-                            imageId = self.surface_list_index[index])
-        self.SetStringItem(index, 2, volume)
-        self.SetStringItem(index, 3, area)
-        self.SetStringItem(index, 4, transparency)
-        self.SetItemImage(index, 1)
+        print("UpdateItemInfo", index)
+        # TODO: Retornar esse codigo
+        #  self.SetStringItem(index, 1, label,
+                            #  imageId = self.surface_list_index[index])
+        #  self.SetStringItem(index, 2, volume)
+        #  self.SetStringItem(index, 3, area)
+        #  self.SetStringItem(index, 4, transparency)
+        #  self.SetItemImage(index, 1)
 
     def CreateColourBitmap(self, colour):
         """

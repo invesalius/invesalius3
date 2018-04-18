@@ -893,7 +893,7 @@ class Controller():
         proj = prj.Project()
 
         thresh_modes =  proj.threshold_modes.keys()
-        thresh_modes.sort()
+        thresh_modes = sorted(thresh_modes)
         default_threshold = const.THRESHOLD_PRESETS_INDEX
         if proj.mask_dict:
             keys = proj.mask_dict.keys()
