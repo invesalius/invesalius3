@@ -371,8 +371,14 @@ def get_system_encoding():
 
 
 def UpdateCheck():
-    import urllib
-    import urllib2
+    try:
+        from urllib.parse import urlencode
+        from urllib.request import urlopen, Request
+        from urllib.error import HTTPError
+    except ImportError:
+        from urllib import urlencode
+        from urllib2 import urlopen, Request, HTTPError
+
     import wx
     import invesalius.session as ses
     def _show_update_info():
@@ -411,14 +417,14 @@ def UpdateCheck():
                 'architecture' : platform.architecture()[0],
                 'language' : lang,
                 'random_id' : random_id }
-        data = urllib.urlencode(data)
-        req = urllib2.Request(url, data, headers)
+        data = urlencode(data).encode('utf8')
+        req = Request(url, data, headers)
         try:
-            response = urllib2.urlopen(req, timeout=10)
-        except:
+            response = urlopen(req, timeout=10)
+        except HTTPError:
             return
-        last = response.readline().rstrip()
-        url = response.readline().rstrip()
+        last = response.readline().rstrip().decode('utf8')
+        url = response.readline().rstrip().decode('utf8')
 
         try:
             last_ver = LooseVersion(last)
