@@ -55,7 +55,7 @@ class Preferences(wx.Dialog):
 
         btnsizer.Realize()
 
-        sizer.AddSizer(btnsizer, 10, wx.GROW|wx.ALIGN_CENTER_VERTICAL|wx.RIGHT|wx.TOP|wx.BOTTOM, 5)
+        sizer.Add(btnsizer, 10, wx.GROW|wx.ALIGN_CENTER_VERTICAL|wx.RIGHT|wx.TOP|wx.BOTTOM, 5)
 
         self.SetSizer(sizer)
         sizer.Fit(self)

@@ -297,10 +297,10 @@ class BitmapPreviewSeries(wx.Panel):
         self.grid = wx.GridSizer(rows=NROWS, cols=NCOLS, vgap=3, hgap=3)
 
         sizer = wx.BoxSizer(wx.HORIZONTAL)
-        sizer.AddSizer(self.grid, 1, wx.EXPAND|wx.GROW|wx.ALL, 2)
+        sizer.Add(self.grid, 1, wx.EXPAND|wx.GROW|wx.ALL, 2)
 
         background_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        background_sizer.AddSizer(sizer, 1, wx.EXPAND|wx.GROW|wx.ALL, 2)
+        background_sizer.Add(sizer, 1, wx.EXPAND|wx.GROW|wx.ALL, 2)
         background_sizer.Add(scroll, 0, wx.EXPAND|wx.GROW)
         self.SetSizer(background_sizer)
         background_sizer.Fit(self)

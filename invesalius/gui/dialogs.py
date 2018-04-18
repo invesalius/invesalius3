@@ -152,12 +152,12 @@ class ResizeImageDialog(wx.Dialog):
 
         sizer_itens = wx.BoxSizer(wx.VERTICAL)
         sizer_itens.Add(lbl_message, 0, wx.EXPAND|wx.ALL, 5)
-        sizer_itens.AddSizer(sizer_percent, 0, wx.EXPAND|wx.ALL, 5)
+        sizer_itens.Add(sizer_percent, 0, wx.EXPAND|wx.ALL, 5)
         sizer_itens.Add(btn_sizer, 0, wx.EXPAND|wx.ALL, 5)
 
         sizer_general = wx.BoxSizer(wx.HORIZONTAL)
         sizer_general.Add(bmp, 0, wx.ALIGN_CENTRE|wx.ALL, 10)
-        sizer_general.AddSizer(sizer_itens, 0, wx.ALL , 5)
+        sizer_general.Add(sizer_itens, 0, wx.ALL , 5)
 
         #self.SetAutoLayout(True)
         self.SetSizer(sizer_general)
@@ -2258,13 +2258,13 @@ class ImportBitmapParameters(wx.Dialog):
         gbs_button.Add(btn_cancel, (1,2))
         gbs_button.Add(btn_ok, (1,3))
 
-        gbs_principal.AddSizer(gbs, (0,0), flag = wx.ALL|wx.EXPAND)
-        gbs_principal.AddSizer(gbs_spacing, (1,0),  flag=wx.ALL|wx.EXPAND)
+        gbs_principal.Add(gbs, (0,0), flag = wx.ALL|wx.EXPAND)
+        gbs_principal.Add(gbs_spacing, (1,0),  flag=wx.ALL|wx.EXPAND)
         gbs_principal.AddStretchSpacer((2,0))
-        gbs_principal.AddSizer(gbs_button, (3,0), flag = wx.ALIGN_RIGHT)
+        gbs_principal.Add(gbs_button, (3,0), flag = wx.ALIGN_RIGHT)
 
         box = wx.BoxSizer()
-        box.AddSizer(gbs_principal, 1, wx.ALL|wx.EXPAND, 10)
+        box.Add(gbs_principal, 1, wx.ALL|wx.EXPAND, 10)
         
         p.SetSizer(box)
         box.Fit(self)
@@ -2703,7 +2703,7 @@ class SelectPartsOptionsDialog(wx.Dialog):
         btn_sizer.Add(self.btn_ok, 0, flag=wx.ALIGN_RIGHT, border=5)
         btn_sizer.Add(self.btn_cancel, 0, flag=wx.LEFT|wx.ALIGN_RIGHT, border=5)
 
-        sizer.AddSizer(btn_sizer, 0, flag=wx.ALIGN_RIGHT|wx.LEFT|wx.RIGHT, border=5)
+        sizer.Add(btn_sizer, 0, flag=wx.ALIGN_RIGHT|wx.LEFT|wx.RIGHT, border=5)
         sizer.AddSpacer(5)
 
         self.SetSizer(sizer)
@@ -3003,13 +3003,13 @@ class CropOptionsDialog(wx.Dialog):
         gbs_button.Add(btn_cancel, (0,0))
         gbs_button.Add(btn_ok, (0,1))
 
-        gbs_principal.AddSizer(gbs, (0,0), flag = wx.ALL|wx.EXPAND)
+        gbs_principal.Add(gbs, (0,0), flag = wx.ALL|wx.EXPAND)
         gbs_principal.AddStretchSpacer((1,0))
         gbs_principal.AddStretchSpacer((2,0))
-        gbs_principal.AddSizer(gbs_button, (3,0), flag = wx.ALIGN_RIGHT)
+        gbs_principal.Add(gbs_button, (3,0), flag = wx.ALIGN_RIGHT)
 
         box = wx.BoxSizer()
-        box.AddSizer(gbs_principal, 1, wx.ALL|wx.EXPAND, 10)
+        box.Add(gbs_principal, 1, wx.ALL|wx.EXPAND, 10)
 
         p.SetSizer(box)
         box.Fit(p)
@@ -3092,7 +3092,7 @@ class FillHolesAutoDialog(wx.Dialog):
         btn_sizer.Add(self.apply_btn, 0, flag=wx.ALIGN_RIGHT, border=5)
         btn_sizer.Add(self.close_btn, 0, flag=wx.LEFT|wx.ALIGN_RIGHT, border=5)
 
-        sizer.AddSizer(btn_sizer, 0, flag=wx.ALIGN_RIGHT|wx.LEFT|wx.RIGHT, border=5)
+        sizer.Add(btn_sizer, 0, flag=wx.ALIGN_RIGHT|wx.LEFT|wx.RIGHT, border=5)
 
         sizer.AddSpacer(5)
 

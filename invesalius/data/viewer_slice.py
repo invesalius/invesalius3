@@ -600,7 +600,7 @@ class Viewer(wx.Panel):
         sizer.Add(scroll, 0, wx.EXPAND|wx.GROW)
 
         background_sizer = wx.BoxSizer(wx.VERTICAL)
-        background_sizer.AddSizer(sizer, 1, wx.EXPAND|wx.GROW|wx.ALL, 2)
+        background_sizer.Add(sizer, 1, wx.EXPAND|wx.GROW|wx.ALL, 2)
         #background_sizer.Add(self.mip_ctrls, 0, wx.EXPAND|wx.GROW|wx.ALL, 2)
         self.SetSizer(background_sizer)
         background_sizer.Fit(self)
