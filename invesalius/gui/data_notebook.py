@@ -29,7 +29,11 @@ except ImportError:
 
 import wx
 import wx.grid
-import wx.lib.flatnotebook as fnb
+try:
+    import wx.lib.agw.flatnotebook as fnb
+except ImportError:
+    import wx.lib.flatnotebook as fnb
+
 import wx.lib.platebtn as pbtn
 from wx.lib.pubsub import pub as Publisher
 
@@ -1301,9 +1305,9 @@ class AnnotationsListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
     def OnCheckItem(self, index, flag):
         # TODO: use pubsub to communicate to models
         if flag:
-            print "checked, ", index
+            print("checked, ", index)
         else:
-            print "unchecked, ", index
+            print("unchecked, ", index)
 
     def InsertNewItem(self, index=0, name="Axial 1", type_="2d",
                       value="bla", colour=None):

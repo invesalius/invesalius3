@@ -695,7 +695,7 @@ def dcmmf2memmap(dcm_file, orientation):
     matrix.flush()
     scalar_range = matrix.min(), matrix.max()
 
-    print "ORIENTATION", orientation
+    print("ORIENTATION", orientation)
 
     return matrix, spacing, scalar_range, temp_file
 
