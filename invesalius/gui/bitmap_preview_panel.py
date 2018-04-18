@@ -218,7 +218,10 @@ class Preview(wx.Panel):
 
     def OnEnter(self, evt):
         if not self.select_on:
-            c = wx.SystemSettings_GetColour(wx.SYS_COLOUR_BTNFACE)
+            try:
+                c = wx.SystemSettings.GetColour(wx.SYS_COLOUR_BTNFACE)
+            except AttributeError:
+                c = wx.SystemSettings_GetColour(wx.SYS_COLOUR_BTNFACE)
             self.SetBackgroundColour(c)
 
     def OnLeave(self, evt):
@@ -257,7 +260,10 @@ class Preview(wx.Panel):
 
     def Select(self, on=True):
         if self.select_on:
-            c = wx.SystemSettings_GetColour(wx.SYS_COLOUR_HIGHLIGHT)
+            try:
+                c = wx.SystemSettings.GetColour(wx.SYS_COLOUR_HIGHLIGHT)
+            except AttributeError:
+                c = wx.SystemSettings_GetColour(wx.SYS_COLOUR_HIGHLIGHT)
         else:
             c = (PREVIEW_BACKGROUND)
         self.SetBackgroundColour(c)
