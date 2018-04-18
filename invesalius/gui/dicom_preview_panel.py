@@ -374,8 +374,8 @@ class DicomPreviewSeries(wx.Panel):
 
     def _Add_Panels_Preview(self):
         self.previews = []
-        for i in xrange(NROWS):
-            for j in xrange(NCOLS):
+        for i in range(NROWS):
+            for j in range(NCOLS):
                 p = Preview(self)
                 p.Bind(EVT_PREVIEW_CLICK, self.OnSelect)
                 #if (i == j == 0):
@@ -432,7 +432,7 @@ class DicomPreviewSeries(wx.Panel):
         initial = self.displayed_position * NCOLS
         final = initial + NUM_PREVIEWS
         if len(self.files) < final:
-            for i in xrange(final-len(self.files)):
+            for i in range(final-len(self.files)):
                 try:
                     self.previews[-i-1].Hide()
                 except IndexError:
@@ -441,7 +441,7 @@ class DicomPreviewSeries(wx.Panel):
             self.nhidden_last_display = final-len(self.files)
         else:
             if self.nhidden_last_display:
-                for i in xrange(self.nhidden_last_display):
+                for i in range(self.nhidden_last_display):
                     try:
                         self.previews[-i-1].Show()
                     except IndexError:
@@ -511,8 +511,8 @@ class DicomPreviewSlice(wx.Panel):
 
     def _Add_Panels_Preview(self):
         self.previews = []
-        for i in xrange(NROWS):
-            for j in xrange(NCOLS):
+        for i in range(NROWS):
+            for j in range(NCOLS):
                 p = Preview(self)
                 p.Bind(EVT_PREVIEW_CLICK, self.OnPreviewClick)
                 #p.Hide()
@@ -545,7 +545,7 @@ class DicomPreviewSlice(wx.Panel):
             if isinstance(dicom.image.thumbnail_path, list):
                 _slice = 0
                 for thumbnail in dicom.image.thumbnail_path:
-                    print thumbnail
+                    print(thumbnail)
                     info = DicomInfo(n, dicom,
                                      _("Image %d") % (n),
                                      "%.2f" % (dicom.image.position[2]), _slice)
@@ -577,7 +577,7 @@ class DicomPreviewSlice(wx.Panel):
             if isinstance(dicom.image.thumbnail_path, list):
                 _slice = 0
                 for thumbnail in dicom.image.thumbnail_path:
-                    print thumbnail
+                    print(thumbnail)
                     info = DicomInfo(n, dicom,
                                      _("Image %d") % int(n),
                                      "%.2f" % (dicom.image.position[2]), _slice)
@@ -603,7 +603,7 @@ class DicomPreviewSlice(wx.Panel):
         initial = self.displayed_position * NCOLS
         final = initial + NUM_PREVIEWS
         if len(self.files) < final:
-            for i in xrange(final-len(self.files)):
+            for i in range(final-len(self.files)):
                 try:
                     self.previews[-i-1].Hide()
                 except IndexError:
@@ -611,7 +611,7 @@ class DicomPreviewSlice(wx.Panel):
             self.nhidden_last_display = final-len(self.files)
         else:
             if self.nhidden_last_display:
-                for i in xrange(self.nhidden_last_display):
+                for i in range(self.nhidden_last_display):
                     try:
                         self.previews[-i-1].Show()
                     except IndexError:
@@ -648,7 +648,7 @@ class DicomPreviewSlice(wx.Panel):
             self.first_selection = dicom_id
             self.last_selection = dicom_id
 
-            for i in xrange(len(self.files)):
+            for i in range(len(self.files)):
             
                 if i == dicom_id:
                     self.files[i].selected = True
@@ -666,7 +666,7 @@ class DicomPreviewSlice(wx.Panel):
             self.selected_panel.select_on = self.selected_panel is evt.GetEventObject()
             
             if self.first_selection != self.last_selection:
-                for i in xrange(len(self.files)):
+                for i in range(len(self.files)):
                     if i >= self.first_selection and i <= self.last_selection:
                         self.files[i].selected = True
                     else:

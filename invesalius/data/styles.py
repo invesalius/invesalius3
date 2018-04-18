@@ -226,7 +226,7 @@ class CrossInteractorStyle(DefaultInteractorStyle):
     def OnCrossMove(self, obj, evt):
         # The user moved the mouse with left button pressed
         if self.left_pressed:
-            print "OnCrossMove interactor style"
+            print("OnCrossMove interactor style")
             iren = obj.GetInteractor()
             self.ChangeCrossPosition(iren)
 
@@ -1104,7 +1104,7 @@ class WaterShedInteractorStyle(DefaultInteractorStyle):
         if self.matrix is not None:
             self.matrix = None
             os.remove(self.temp_file)
-            print "deleting", self.temp_file
+            print("deleting", self.temp_file)
 
     def _set_cursor(self):
         if self.config.cursor_type == const.BRUSH_SQUARE:
@@ -2225,7 +2225,7 @@ class FloodFillSegmentInteractorStyle(DefaultInteractorStyle):
 
             elif self.config.method == 'dynamic':
                 if self.config.use_ww_wl:
-                    print "Using WW&WL"
+                    print("Using WW&WL")
                     ww = self.viewer.slice_.window_width
                     wl = self.viewer.slice_.window_level
                     image = get_LUT_value_255(image, ww, wl)
@@ -2282,7 +2282,7 @@ class FloodFillSegmentInteractorStyle(DefaultInteractorStyle):
 
             elif self.config.method == 'dynamic':
                 if self.config.use_ww_wl:
-                    print "Using WW&WL"
+                    print("Using WW&WL")
                     ww = self.viewer.slice_.window_width
                     wl = self.viewer.slice_.window_level
                     image = get_LUT_value_255(image, ww, wl)
@@ -2335,18 +2335,18 @@ class FloodFillSegmentInteractorStyle(DefaultInteractorStyle):
         bool_mask = np.zeros_like(mask, dtype='bool')
         out_mask = np.zeros_like(mask)
 
-        for k in xrange(int(z-1), int(z+2)):
+        for k in range(int(z-1), int(z+2)):
             if k < 0 or k >= bool_mask.shape[0]:
                 continue
-            for j in xrange(int(y-1), int(y+2)):
+            for j in range(int(y-1), int(y+2)):
                 if j < 0 or j >= bool_mask.shape[1]:
                     continue
-                for i in xrange(int(x-1), int(x+2)):
+                for i in range(int(x-1), int(x+2)):
                     if i < 0 or i >= bool_mask.shape[2]:
                         continue
                     bool_mask[k, j, i] = True
 
-        for i in xrange(self.config.confid_iters):
+        for i in range(self.config.confid_iters):
             var = np.std(image[bool_mask])
             mean = np.mean(image[bool_mask])
 

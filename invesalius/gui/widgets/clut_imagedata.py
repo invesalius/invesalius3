@@ -147,7 +147,7 @@ class CLUTImageDataWidget(wx.Panel):
         prop_y = (h) * 1.0 / (y_end - y_init)
 
         self._d_hist = []
-        for i in xrange(w):
+        for i in range(w):
             x = i / prop_x + x_init - 1
             if self.i_init <= x < self.i_end:
                 try:

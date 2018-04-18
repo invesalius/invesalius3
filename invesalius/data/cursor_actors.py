@@ -319,7 +319,7 @@ class CursorRectangle(CursorBase):
         """
         Function to plot the Retangle
         """
-        print "Building rectangle cursor", self.orientation
+        print("Building rectangle cursor", self.orientation)
         r = self.radius
         sx, sy, sz = self.spacing
         if self.orientation == 'AXIAL':
