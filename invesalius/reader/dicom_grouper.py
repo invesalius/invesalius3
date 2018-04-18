@@ -132,7 +132,7 @@ class DicomGroup:
                         self.slices_dict.values()]
        
         # Sort slices using GDCM
-        if (self.dicom.image.orientation_label <> "CORONAL"):
+        if (self.dicom.image.orientation_label != "CORONAL"):
             #Organize reversed image
             sorter = gdcm.IPPSorter()
             sorter.SetComputeZSpacing(True)
@@ -306,7 +306,7 @@ class PatientGroup:
 
             # 3rd STEP: CHECK DIFFERENCES
             axis = ORIENT_MAP[group_key[0]] # based on orientation
-            for index in xrange(len(sorted_list)-1):
+            for index in range(len(sorted_list)-1):
                 current = sorted_list[index]
                 next = sorted_list[index+1]
 

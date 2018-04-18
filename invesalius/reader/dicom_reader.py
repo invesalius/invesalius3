@@ -17,7 +17,6 @@
 #    detalhes.
 #--------------------------------------------------------------------------
 import os
-import Queue
 import threading
 import tempfile
 import sys
@@ -79,7 +78,7 @@ def SelectLargerDicomGroup(patient_group):
 def SortFiles(filelist, dicom):
     # Sort slices
     # FIXME: Coronal Crash. necessary verify
-    if (dicom.image.orientation_label <> "CORONAL"):
+    if (dicom.image.orientation_label != "CORONAL"):
         ##Organize reversed image
         sorter = gdcm.IPPSorter()
         sorter.SetComputeZSpacing(True)
@@ -341,7 +340,7 @@ class ProgressDicomReader:
 
         y = yGetDicomGroups(path, recursive)
         for value_progress in y:
-            print ">>>>", value_progress
+            print(">>>>", value_progress)
             if not self.running:
                 break
             if isinstance(value_progress, tuple):

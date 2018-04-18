@@ -165,14 +165,14 @@ class DicomNet:
         const char *call=NULL, 
         const char *outputdir=NULL)"""
 
-        print ">>>>>", self.address, int(self.port), theQuery, 11112, self.aetitle,\
-                  self.aetitle_call, "/home/phamorim/Desktop/output/"
+        print(">>>>>", self.address, int(self.port), theQuery, 11112, self.aetitle,
+                  self.aetitle_call, "/home/phamorim/Desktop/output/")
 
 
         cnf.CMove(self.address, int(self.port), theQuery, 11112, self.aetitle,\
                   self.aetitle_call, "/home/phamorim/Desktop/")
 
-        print "BAIXOUUUUUUUU"
+        print("BAIXOUUUUUUUU")
         #ret = gdcm.DataSetArrayType()
 
         #cnf.CFind(self.address, int(self.port), theQuery, ret, self.aetitle,\
