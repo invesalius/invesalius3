@@ -1199,12 +1199,13 @@ class MeasuresListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
 
     def UpdateItemInfo(self, index=0, label="Measurement 1", colour=None,
                       location="SURFACE", type_="LINEAR", value="0 mm"):
-        self.SetStringItem(index, 1, label,
-                            imageId = self._list_index[index])
-        self.SetStringItem(index, 2, location)
-        self.SetStringItem(index, 3, type_)
-        self.SetStringItem(index, 4, value)
-        self.SetItemImage(index, 1)
+        # TODO: Retornar isso
+        #  self.SetStringItem(index, 1, label,
+                            #  imageId = self._list_index[index])
+        #  self.SetStringItem(index, 2, location)
+        #  self.SetStringItem(index, 3, type_)
+        #  self.SetStringItem(index, 4, value)
+        #  self.SetItemImage(index, 1)
         self.Refresh()
 
     def CreateColourBitmap(self, colour):

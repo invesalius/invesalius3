@@ -521,7 +521,7 @@ class CanvasRendererCTX:
             ea = a0
 
         path = gc.CreatePath()
-        path.AddArc((c[0], c[1]), min(s0, s1), sa, ea)
+        path.AddArc(float(c[0]), float(c[1]), float(min(s0, s1)), float(sa), float(ea), True)
         gc.StrokePath(path)
         self._drawn = True
 

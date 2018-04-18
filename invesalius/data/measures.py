@@ -359,7 +359,7 @@ class Measurement():
         Measurement.general_index += 1
         self.index = Measurement.general_index
         self.name = const.MEASURE_NAME_PATTERN %(self.index+1)
-        self.colour = const.MEASURE_COLOUR.next()
+        self.colour = next(const.MEASURE_COLOUR)
         self.value = 0
         self.location = const.SURFACE # AXIAL, CORONAL, SAGITTAL
         self.type = const.LINEAR # ANGULAR
