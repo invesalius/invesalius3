@@ -38,7 +38,7 @@ FPB_DEFAULT_STYLE = 2621440
 
 def GetCollapsedIconData():
     return \
-'\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x10\x00\x00\x00\x10\x08\x06\
+b'\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x10\x00\x00\x00\x10\x08\x06\
 \x00\x00\x00\x1f\xf3\xffa\x00\x00\x00\x04sBIT\x08\x08\x08\x08|\x08d\x88\x00\
 \x00\x01\x8eIDAT8\x8d\xa5\x93-n\xe4@\x10\x85?g\x03\n6lh)\xc4\xd2\x12\xc3\x81\
 \xd6\xa2I\x90\x154\xb9\x81\x8f1G\xc8\x11\x16\x86\xcd\xa0\x99F\xb3A\x91\xa1\
@@ -61,13 +61,13 @@ def GetCollapsedIconBitmap():
     return wx.BitmapFromImage(GetCollapsedIconImage())
 
 def GetCollapsedIconImage():
-    import cStringIO
-    stream = cStringIO.StringIO(GetCollapsedIconData())
+    from io import BytesIO
+    stream = BytesIO(GetCollapsedIconData())
     return wx.ImageFromStream(stream)
 
 def GetExpandedIconData():
     return \
-'\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x10\x00\x00\x00\x10\x08\x06\
+b'\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x10\x00\x00\x00\x10\x08\x06\
 \x00\x00\x00\x1f\xf3\xffa\x00\x00\x00\x04sBIT\x08\x08\x08\x08|\x08d\x88\x00\
 \x00\x01\x9fIDAT8\x8d\x95\x93\xa1\x8e\xdc0\x14EO\xb2\xc4\xd0\xd2\x12\xb7(mI\
 \xa4%V\xd1lQT4[4-\x9a\xfe\xc1\xc2|\xc6\xc2~BY\x83:A3E\xd3\xa0*\xa4\xd2\x90H!\
@@ -92,8 +92,8 @@ def GetExpandedIconBitmap():
     return wx.BitmapFromImage(GetExpandedIconImage())
 
 def GetExpandedIconImage():
-    import cStringIO
-    stream = cStringIO.StringIO(GetExpandedIconData())
+    from io import BytesIO
+    stream = BytesIO(GetExpandedIconData())
     return wx.ImageFromStream(stream)
 
 
