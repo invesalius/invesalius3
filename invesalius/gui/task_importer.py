@@ -20,8 +20,13 @@ import os
 import sys
 
 import wx
-import wx.lib.hyperlink as hl
+try:
+    from wx.adv import HyperlinkCtrl
+    from wx.adv import EVT_HYPERLINK as EVT_HYPERLINK_LEFT
+except ImportError:
+    from wx.lib.hyperlink import HyperlinkCtrl, EVT_HYPERLINK_LEFT
 import wx.lib.platebtn as pbtn
+
 from wx.lib.pubsub import pub as Publisher
 
 import invesalius.constants as const
@@ -65,7 +70,7 @@ class InnerTaskPanel(wx.Panel):
 
         # Fixed hyperlink items
         tooltip = wx.ToolTip(_("Select DICOM, Analyze, NIfTI or REC/PAR files to be reconstructed"))
-        link_import_local = hl.HyperLinkCtrl(self, -1, _("Import medical images..."))
+        link_import_local = HyperLinkCtrl(self, -1, _("Import medical images..."))
         link_import_local.SetUnderlines(False, False, False)
         link_import_local.SetBold(True)
         link_import_local.SetColours("BLACK", "BLACK", "BLACK")
@@ -73,19 +78,19 @@ class InnerTaskPanel(wx.Panel):
         link_import_local.SetToolTip(tooltip)
         link_import_local.AutoBrowse(False)
         link_import_local.UpdateLink()
-        link_import_local.Bind(hl.EVT_HYPERLINK_LEFT, self.OnLinkImport)
+        link_import_local.Bind(EVT_HYPERLINK_LEFT, self.OnLinkImport)
 
         #tooltip = wx.ToolTip("Import DICOM files from PACS server")
-        #link_import_pacs = hl.HyperLinkCtrl(self, -1,"Load from PACS server...")
+        #link_import_pacs = HyperLinkCtrl(self, -1,"Load from PACS server...")
         #link_import_pacs.SetUnderlines(False, False, False)
         #link_import_pacs.SetColours("BLACK", "BLACK", "BLACK")
         #link_import_pacs.SetToolTip(tooltip)
         #link_import_pacs.AutoBrowse(False)
         #link_import_pacs.UpdateLink()
-        #link_import_pacs.Bind(hl.EVT_HYPERLINK_LEFT, self.OnLinkImportPACS)
+        #link_import_pacs.Bind(EVT_HYPERLINK_LEFT, self.OnLinkImportPACS)
 
         tooltip = wx.ToolTip(_("Open an existing InVesalius project..."))
-        link_open_proj = hl.HyperLinkCtrl(self,-1,_("Open an existing project..."))
+        link_open_proj = HyperLinkCtrl(self,-1,_("Open an existing project..."))
         link_open_proj.SetUnderlines(False, False, False)
         link_open_proj.SetBold(True)
         link_open_proj.SetColours("BLACK", "BLACK", "BLACK")
@@ -93,7 +98,7 @@ class InnerTaskPanel(wx.Panel):
         link_open_proj.SetToolTip(tooltip)
         link_open_proj.AutoBrowse(False)
         link_open_proj.UpdateLink()
-        link_open_proj.Bind(hl.EVT_HYPERLINK_LEFT, self.OnLinkOpenProject)
+        link_open_proj.Bind(EVT_HYPERLINK_LEFT, self.OnLinkOpenProject)
 
         # Image(s) for buttons
         BMP_IMPORT = wx.Bitmap(os.path.join(const.ICON_DIR, "file_import.png"), wx.BITMAP_TYPE_PNG)
@@ -191,13 +196,13 @@ class InnerTaskPanel(wx.Panel):
             label = "     "+str(self.proj_count)+". "+proj_name
 
             # Create corresponding hyperlink
-            proj_link = hl.HyperLinkCtrl(self, -1, label)
+            proj_link = HyperLinkCtrl(self, -1, label)
             proj_link.SetUnderlines(False, False, False)
             proj_link.SetColours("BLACK", "BLACK", "BLACK")
             proj_link.SetBackgroundColour(self.GetBackgroundColour())
             proj_link.AutoBrowse(False)
             proj_link.UpdateLink()
-            proj_link.Bind(hl.EVT_HYPERLINK_LEFT,
+            proj_link.Bind(EVT_HYPERLINK_LEFT,
                        lambda e: self.OpenProject(proj_path))
 
             # Add to existing frame
@@ -222,7 +227,7 @@ class InnerTaskPanel(wx.Panel):
 
 
     def ImportPACS(self):
-        print "TODO: Send Signal - Import DICOM files from PACS"
+        print("TODO: Send Signal - Import DICOM files from PACS")
 
 
 #######
@@ -264,7 +269,7 @@ class InnerTaskPanel(wx.Panel):
         """
 
         # Remove each project from sizer
-        for i in xrange(0, self.proj_count):
+        for i in range(0, self.proj_count):
             self.sizer.Remove(self.float_hyper_list[i])
 
         # Delete hyperlinks

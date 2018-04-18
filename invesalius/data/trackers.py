@@ -50,10 +50,10 @@ def DefaultTracker(tracker_id):
     trck_init = None
     try:
         # import spatial tracker library
-        print 'Connect to default tracking device.'
+        print('Connect to default tracking device.')
 
     except:
-        print 'Could not connect to default tracker.'
+        print('Could not connect to default tracker.')
 
     # return tracker initialization variable and type of connection
     return trck_init, 'wrapper'
@@ -78,13 +78,13 @@ def ClaronTracker(tracker_id):
 
         if trck_init.GetIdentifyingCamera():
             trck_init.Run()
-            print "MicronTracker camera identified."
+            print("MicronTracker camera identified.")
         else:
             trck_init = None
 
     except ImportError:
         lib_mode = 'error'
-        print 'The ClaronTracker library is not installed.'
+        print('The ClaronTracker library is not installed.')
 
     return trck_init, lib_mode
 
@@ -94,24 +94,24 @@ def PolhemusTracker(tracker_id):
         trck_init = PlhWrapperConnection(tracker_id)
         lib_mode = 'wrapper'
         if not trck_init:
-            print 'Could not connect with Polhemus wrapper, trying USB connection...'
+            print('Could not connect with Polhemus wrapper, trying USB connection...')
             trck_init = PlhUSBConnection(tracker_id)
             lib_mode = 'usb'
             if not trck_init:
-                print 'Could not connect with Polhemus USB, trying serial connection...'
+                print('Could not connect with Polhemus USB, trying serial connection...')
                 trck_init = PlhSerialConnection(tracker_id)
                 lib_mode = 'serial'
     except:
         trck_init = None
         lib_mode = 'error'
-        print 'Could not connect to Polhemus.'
+        print('Could not connect to Polhemus.')
 
     return trck_init, lib_mode
 
 
 def DebugTracker(tracker_id):
     trck_init = True
-    print 'Debug device started.'
+    print('Debug device started.')
     return trck_init, 'debug'
 
 
@@ -134,10 +134,10 @@ def PlhWrapperConnection(tracker_id):
                 sleep(0.175)
         else:
             trck_init = None
-            print 'Could not connect to Polhemus via wrapper without error.'
+            print('Could not connect to Polhemus via wrapper without error.')
     except:
         trck_init = None
-        print 'Could not connect to Polhemus via wrapper with error.'
+        print('Could not connect to Polhemus via wrapper with error.')
 
     return trck_init
 
@@ -163,11 +163,11 @@ def PlhSerialConnection(tracker_id):
 
         if not data:
             trck_init = None
-            print 'Could not connect to Polhemus serial without error.'
+            print('Could not connect to Polhemus serial without error.')
 
     except:
         trck_init = None
-        print 'Could not connect to Polhemus serial with error.'
+        print('Could not connect to Polhemus serial with error.')
 
     return trck_init
 
@@ -198,10 +198,10 @@ def PlhUSBConnection(tracker_id):
                               endpoint.wMaxPacketSize)
         if not data:
             trck_init = None
-            print 'Could not connect to Polhemus USB without error.'
+            print('Could not connect to Polhemus USB without error.')
 
     except:
-        print 'Could not connect to Polhemus USB with error.'
+        print('Could not connect to Polhemus USB with error.')
 
     return trck_init
 
@@ -217,16 +217,16 @@ def DisconnectTracker(tracker_id, trck_init):
     if tracker_id == 5:
         trck_init = False
         lib_mode = 'debug'
-        print 'Debug tracker disconnected.'
+        print('Debug tracker disconnected.')
     else:
         try:
             trck_init.Close()
             trck_init = False
             lib_mode = 'wrapper'
-            print 'Tracker disconnected.'
+            print('Tracker disconnected.')
         except:
             trck_init = True
             lib_mode = 'error'
-            print 'The tracker could not be disconnected.'
+            print('The tracker could not be disconnected.')
 
     return trck_init, lib_mode

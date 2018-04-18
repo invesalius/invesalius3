@@ -21,13 +21,16 @@ import sys
 import os
 
 import wx
+
 try:
     from wx.adv import HyperlinkCtrl
     from wx.adv import EVT_HYPERLINK as EVT_HYPERLINK_LEFT
+    import wx.lib.agw.foldpanelbar as fpb
 except ImportError:
     from wx.lib.hyperlink import HyperlinkCtrl, EVT_HYPERLINK_LEFT
+    import wx.lib.foldpanelbar as fpb
+
 import wx.lib.platebtn as pbtn
-import wx.lib.foldpanelbar as fpb
 import wx.lib.colourselect as csel
 from wx.lib.pubsub import pub as Publisher
 

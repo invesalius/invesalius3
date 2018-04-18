@@ -23,9 +23,15 @@ import os
 
 import numpy as np
 import wx
-import wx.lib.hyperlink as hl
+try:
+    from wx.adv import HyperlinkCtrl
+    from wx.adv import EVT_HYPERLINK as EVT_HYPERLINK_LEFT
+    import wx.lib.agw.foldpanelbar as fpb
+except ImportError:
+    from wx.lib.hyperlink import HyperlinkCtrl, EVT_HYPERLINK_LEFT
+    import wx.lib.foldpanelbar as fpb
+
 import wx.lib.masked.numctrl
-import wx.lib.foldpanelbar as fpb
 from wx.lib.pubsub import pub as Publisher
 import wx.lib.colourselect as csel
 import wx.lib.platebtn as pbtn
@@ -461,11 +467,11 @@ class NeuronavigationPanel(wx.Panel):
                 if not self.trk_init[0]:
                     dlg.NavigationTrackerWarning(self.tracker_id, self.trk_init[1])
                     ctrl.SetSelection(0)
-                    print "Tracker not connected!"
+                    print("Tracker not connected!")
                 else:
                     Publisher.sendMessage('Update status text in GUI', _("Ready"))
                     ctrl.SetSelection(self.tracker_id)
-                    print "Tracker connected!"
+                    print("Tracker connected!")
         elif choice == 6:
             if trck:
                 Publisher.sendMessage('Update status text in GUI', _("Disconnecting tracker ..."))
@@ -477,10 +483,10 @@ class NeuronavigationPanel(wx.Panel):
                     self.tracker_id = 0
                     ctrl.SetSelection(self.tracker_id)
                     Publisher.sendMessage('Update status text in GUI', _("Tracker disconnected"))
-                    print "Tracker disconnected!"
+                    print("Tracker disconnected!")
                 else:
                     Publisher.sendMessage('Update status text in GUI', _("Tracker still connected"))
-                    print "Tracker still connected!"
+                    print("Tracker still connected!")
             else:
                 ctrl.SetSelection(self.tracker_id)
 
@@ -506,7 +512,7 @@ class NeuronavigationPanel(wx.Panel):
         # TODO: Improve the restarting of trackers after changing reference mode
         # self.OnChoiceTracker(None, ctrl)
         Publisher.sendMessage('Update tracker initializer', (self.tracker_id, self.trk_init, self.ref_mode_id))
-        print "Reference mode changed!"
+        print("Reference mode changed!")
 
     def OnSetImageCoordinates(self, evt):
         # FIXME: Cross does not update in last clicked slice, only on the other two
