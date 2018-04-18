@@ -458,7 +458,7 @@ class Controller():
     def ImportMedicalImages(self, directory, gui=True):
         patients_groups = dcm.GetDicomGroups(directory)
         name = directory.rpartition('\\')[-1].split('.')
-        print "patients: ", patients_groups
+        print("patients: ", patients_groups)
 
         if len(patients_groups):
             # OPTION 1: DICOM
@@ -828,7 +828,7 @@ class Controller():
             self.matrix, scalar_range, self.filename = image_utils.dcm2memmap(filelist, size,
                                                                         orientation, resolution_percentage)
 
-            print xyspacing, zspacing
+            print(xyspacing, zspacing)
             if orientation == 'AXIAL':
                 spacing = xyspacing[0], xyspacing[1], zspacing
             elif orientation == 'CORONAL':

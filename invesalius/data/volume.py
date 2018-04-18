@@ -161,22 +161,22 @@ class Volume():
         self.LoadVolume()
 
     def OnHideVolume(self, pubsub_evt):
-        print 'Hide Volume'
+        print('Hide Volume')
         self.volume.SetVisibility(0)
         if (self.plane and self.plane_on):
             self.plane.Disable()
         Publisher.sendMessage('Render volume viewer')
 
     def OnShowVolume(self, pubsub_evt = None):
-        print 'Show volume'
+        print('Show volume')
         if self.exist:
-            print 'Volume exists'
+            print('Volume exists')
             self.volume.SetVisibility(1)
             if (self.plane and self.plane_on):
                 self.plane.Enable()
             Publisher.sendMessage('Render volume viewer')
         else:
-            print 'Volume doesnt exit'
+            print('Volume doesnt exit')
             Publisher.sendMessage('Load raycasting preset', const.RAYCASTING_LABEL)
             self.LoadConfig()
             self.LoadVolume()
@@ -222,7 +222,7 @@ class Volume():
             Publisher.sendMessage('Render volume viewer')
 
     def OnFlipVolume(self, pubsub_evt):
-        print "Flipping Volume"
+        print("Flipping Volume")
         self.loaded_image = False
         del self.image
         self.image = None
@@ -363,7 +363,7 @@ class Volume():
             colors = zip(r,g,b)
         else:
             # Grayscale from black to white
-            colors = [(i, i, i) for i in xrange(256)]
+            colors = [(i, i, i) for i in range(256)]
 
         ww = self.config['ww']
         wl = self.TranslateScale(scale, self.config['wl'])

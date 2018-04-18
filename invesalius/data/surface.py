@@ -361,7 +361,7 @@ class SurfaceManager():
             area =  measured_polydata.GetSurfaceArea()
             surface.volume = volume
             surface.area = area
-            print ">>>>", surface.volume
+            print(">>>>", surface.volume)
         else:
             surface.volume = volume
             surface.area = area
@@ -521,7 +521,7 @@ class SurfaceManager():
         q_out = multiprocessing.Queue()
 
         p = []
-        for i in xrange(n_processors):
+        for i in range(n_processors):
             sp = surface_process.SurfaceProcess(pipe_in, filename_img,
                                                 matrix.shape, matrix.dtype,
                                                 mask.temp_file,
@@ -539,12 +539,12 @@ class SurfaceManager():
             p.append(sp)
             sp.start()
 
-        for i in xrange(n_pieces):
+        for i in range(n_pieces):
             init = i * piece_size
             end = init + piece_size + o_piece
             roi = slice(init, end)
             q_in.put(roi)
-            print "new_piece", roi
+            print("new_piece", roi)
 
         for i in p:
             q_in.put(None)
@@ -664,7 +664,7 @@ class SurfaceManager():
 
 
         if decimate_reduction:
-            print "Decimating", decimate_reduction
+            print("Decimating", decimate_reduction)
             decimation = vtk.vtkQuadricDecimation()
             #  decimation.ReleaseDataFlagOn()
             decimation.SetInputData(polydata)
