@@ -133,9 +133,9 @@ def Export(polydata, filename, bin=False):
 
 def Import(filename):
     reader = vtk.vtkXMLPolyDataReader()
-    if isinstance(filename, unicode):
+    try:
         reader.SetFileName(filename.encode(wx.GetDefaultPyEncoding()))
-    else:
+    except AttributeError:
         reader.SetFileName(filename)
     reader.Update()
     return reader.GetOutput()

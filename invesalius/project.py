@@ -35,7 +35,7 @@ import vtk
 import invesalius.constants as const
 import invesalius.data.polydata_utils as pu
 from invesalius.presets import Presets 
-from invesalius.utils import Singleton, debug, touch
+from invesalius.utils import Singleton, debug, touch, decode
 import invesalius.version as version
 
 if sys.platform == 'win32':
@@ -374,16 +374,16 @@ def Compress(folder, filename, filelist, compress=False):
 def Extract(filename, folder):
     if _has_win32api:
         folder = win32api.GetShortPathName(folder)
-    folder = folder.decode(const.FS_ENCODE)
+    folder = decode(folder, const.FS_ENCODE)
 
     tar = tarfile.open(filename, "r")
-    idir = os.path.split(tar.getnames()[0])[0].decode('utf8')
+    idir = decode(os.path.split(tar.getnames()[0])[0], 'utf8')
     os.mkdir(os.path.join(folder, idir))
     filelist = []
     for t in tar.getmembers():
         fsrc = tar.extractfile(t)
-        fname = os.path.join(folder, t.name.decode('utf-8'))
-        fdst = file(fname, 'wb')
+        fname = os.path.join(folder, decode(t.name, 'utf-8'))
+        fdst = open(fname, 'wb')
         shutil.copyfileobj(fsrc, fdst)
         filelist.append(fname)
         fsrc.close()
