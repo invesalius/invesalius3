@@ -157,7 +157,7 @@ class LoadDicom:
                         data_dict[group] = {}
 
                     if not(utils.VerifyInvalidPListCharacter(data[1])):
-                        data_dict[group][field] = data[1].decode(encoding)
+                        data_dict[group][field] = utils.decode(data[1], encoding)
                     else:
                         data_dict[group][field] = "Invalid Character"
 
@@ -182,7 +182,7 @@ class LoadDicom:
                         data_dict[group] = {}
 
                     if not(utils.VerifyInvalidPListCharacter(data[1])):
-                        data_dict[group][field] = data[1].decode(encoding, 'replace')
+                        data_dict[group][field] = utils.decode(data[1], encoding, 'replace')
                     else:
                         data_dict[group][field] = "Invalid Character"
 
@@ -304,7 +304,7 @@ def yGetDicomGroups(directory, recursive=True, gui=True):
 
 
 def GetDicomGroups(directory, recursive=True):
-    return yGetDicomGroups(directory, recursive, gui=False).next()
+    return next(yGetDicomGroups(directory, recursive, gui=False))
 
 
 class ProgressDicomReader:

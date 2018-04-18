@@ -450,8 +450,8 @@ def touch(fname):
         pass
 
 
-def decode(text, encoding):
+def decode(text, encoding, *args):
     try:
-        return text.decode(encoding)
+        return text.decode(encoding, *args)
     except AttributeError:
         return text

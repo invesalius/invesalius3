@@ -141,7 +141,7 @@ class DicomGroup:
             filelist = sorter.GetFilenames()
 
         # for breast-CT of koning manufacturing (KBCT)
-        if self.slices_dict.values()[0].parser.GetManufacturerName() == "Koning":
+        if list(self.slices_dict.values())[0].parser.GetManufacturerName() == "Koning":
             filelist.sort()
         
         return filelist
@@ -149,7 +149,7 @@ class DicomGroup:
     def GetHandSortedList(self):
         # This will be used to fix problem 1, after merging
         # single DicomGroups of same study_id and orientation
-        list_ = self.slices_dict.values()
+        list_ = list(self.slices_dict.values())
         dicom = list_[0]
         axis = ORIENT_MAP[dicom.image.orientation_label]
         #list_ = sorted(list_, key = lambda dicom:dicom.image.position[axis])
@@ -173,7 +173,7 @@ class DicomGroup:
 
     def GetDicomSample(self):
         size = len(self.slices_dict)
-        dicom = self.GetHandSortedList()[size/2]
+        dicom = self.GetHandSortedList()[size//2]
         return dicom
             
 class PatientGroup:

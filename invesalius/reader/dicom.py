@@ -1240,7 +1240,7 @@ class Parser():
             encoding = self.GetEncoding()
             try:
                 # Returns a unicode decoded in the own dicom encoding
-                return name.decode(encoding, 'replace')
+                return utils.decode(name, encoding, 'replace')
             except(UnicodeEncodeError):
                 return name
 
@@ -1285,7 +1285,7 @@ class Parser():
             
             try:
                 # Returns a unicode decoded in the own dicom encoding
-                return name.decode(encoding, 'replace')
+                return utils.decode(name, encoding, 'replace')
             except(UnicodeEncodeError):
                 return name
 
@@ -1308,7 +1308,7 @@ class Parser():
             encoding = self.GetEncoding()
             # Returns a unicode decoded in the own dicom encoding
             try:
-                return data.decode(encoding, 'replace')
+                return utils.decode(data, encoding, 'replace')
             except(UnicodeEncodeError):
                 return data
         return ""
@@ -1526,10 +1526,8 @@ class Parser():
         try:
             data = self.data_image[str(0x0008)][str(0x1030)]
             if (data):
-                if isinstance(data, unicode):
-                    return data
                 encoding = self.GetEncoding()
-                return data.decode(encoding, 'replace')
+                return utils.decode(data, encoding, 'replace')
         except(KeyError):
             return ""
 
