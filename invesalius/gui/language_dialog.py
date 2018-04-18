@@ -51,7 +51,7 @@ class ComboBoxLanguage:
         
         # Retrieve locales names and sort them
         self.locales = dict_locales.values()
-        self.locales.sort()
+        #  self.locales.sort()
        
         # Retrieve locales keys (eg: pt_BR for Portuguese(Brazilian))
         self.locales_key = [dict_locales.get_key(value)[0] for value in self.locales]
