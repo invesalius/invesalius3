@@ -44,7 +44,7 @@ import invesalius.gui.widgets.listctrl as listmix
 import invesalius.utils as ul
 
 
-BTN_NEW, BTN_REMOVE, BTN_DUPLICATE, BTN_OPEN = [wx.NewId() for i in xrange(4)]
+BTN_NEW, BTN_REMOVE, BTN_DUPLICATE, BTN_OPEN = [wx.NewId() for i in range(4)]
 
 TYPE = {const.LINEAR: _(u"Linear"),
         const.ANGULAR: _(u"Angular"),
@@ -509,8 +509,8 @@ class MasksListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
         """
         image = self.image_gray
         new_image = Image.new("RGB", image.size)
-        for x in xrange(image.size[0]):
-            for y in xrange(image.size[1]):
+        for x in range(image.size[0]):
+            for y in range(image.size[1]):
                 pixel_colour = [int(i*image.getpixel((x,y)))
                                 for i in colour]
                 new_image.putpixel((x,y), tuple(pixel_colour))
@@ -917,8 +917,8 @@ class SurfacesListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
         """
         image = self.image_gray
         new_image = Image.new("RGB", image.size)
-        for x in xrange(image.size[0]):
-            for y in xrange(image.size[1]):
+        for x in range(image.size[0]):
+            for y in range(image.size[1]):
                 pixel_colour = [int(i*image.getpixel((x,y)))
                                 for i in colour]
                 new_image.putpixel((x,y), tuple(pixel_colour))
@@ -1212,8 +1212,8 @@ class MeasuresListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
         """
         image = self.image_gray
         new_image = Image.new("RGB", image.size)
-        for x in xrange(image.size[0]):
-            for y in xrange(image.size[1]):
+        for x in range(image.size[0]):
+            for y in range(image.size[1]):
                 pixel_colour = [int(i*image.getpixel((x,y)))
                                 for i in colour]
                 new_image.putpixel((x,y), tuple(pixel_colour))

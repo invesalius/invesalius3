@@ -78,7 +78,7 @@ def FillSurfaceHole(polydata):
     Fill holes in the given polydata.
     """
     # Filter used to detect and fill holes. Only fill
-    print "Filling polydata"
+    print("Filling polydata")
     filled_polydata = vtk.vtkFillHolesFilter()
     filled_polydata.SetInputData(polydata)
     filled_polydata.SetHoleSize(500)

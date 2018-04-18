@@ -46,7 +46,7 @@ class EditionHistoryNode(object):
 
     def _save_array(self, array):
         np.save(self.filename, array)
-        print "Saving history", self.index, self.orientation, self.filename, self.clean
+        print("Saving history", self.index, self.orientation, self.filename, self.clean)
 
     def commit_history(self, mvolume):
         array = np.load(self.filename)
@@ -65,10 +65,10 @@ class EditionHistoryNode(object):
         elif self.orientation == 'VOLUME':
             mvolume[:] = array
 
-        print "applying to", self.orientation, "at slice", self.index
+        print("applying to", self.orientation, "at slice", self.index)
 
     def __del__(self):
-        print "Removing", self.filename
+        print("Removing", self.filename)
         os.remove(self.filename)
 
 
@@ -99,7 +99,7 @@ class EditionHistory(object):
         self.history.append(node)
         self.index += 1
 
-        print "INDEX", self.index, len(self.history), self.history
+        print("INDEX", self.index, len(self.history), self.history)
         Publisher.sendMessage("Enable undo", True)
         Publisher.sendMessage("Enable redo", False)
 
@@ -128,7 +128,7 @@ class EditionHistory(object):
 
         if self.index == 0:
             Publisher.sendMessage("Enable undo", False)
-        print "AT", self.index, len(self.history), self.history[self.index].filename
+        print("AT", self.index, len(self.history), self.history[self.index].filename)
 
     def redo(self, mvolume, actual_slices=None):
         h = self.history
@@ -156,7 +156,7 @@ class EditionHistory(object):
 
         if self.index == len(h) - 1:
             Publisher.sendMessage("Enable redo", False)
-        print "AT", self.index, len(h), h[self.index].filename
+        print("AT", self.index, len(h), h[self.index].filename)
 
     def _reload_slice(self, index):
         Publisher.sendMessage(('Set scroll position', self.history[index].orientation),
@@ -289,13 +289,12 @@ class Mask():
     def OnSwapVolumeAxes(self, pubsub_evt):
         axis0, axis1 = pubsub_evt.data
         self.matrix = self.matrix.swapaxes(axis0, axis1)
-        print type(self.matrix)
 
     def _save_mask(self, filename):
         shutil.copyfile(self.temp_file, filename)
 
     def _open_mask(self, filename, shape, dtype='uint8'):
-        print ">>", filename, shape
+        print(">>", filename, shape)
         self.temp_file = filename
         self.matrix = np.memmap(filename, shape=shape, dtype=dtype, mode="r+")
 

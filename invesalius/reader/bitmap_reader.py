@@ -17,7 +17,6 @@
 #    detalhes.
 #--------------------------------------------------------------------------
 import os
-import Queue
 import threading
 import tempfile
 import sys
