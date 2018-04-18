@@ -22,11 +22,10 @@ import os
 import wx
 
 try:
-    from wx.adv import HyperlinkCtrl
-    from wx.adv import EVT_HYPERLINK as EVT_HYPERLINK_LEFT
+    import wx.lib.agw.hyperlink as hl
     import wx.lib.agw.foldpanelbar as fpb
 except ImportError:
-    from wx.lib.hyperlink import HyperlinkCtrl, EVT_HYPERLINK_LEFT
+    import wx.lib.hyperlink as hl
     import wx.lib.foldpanelbar as fpb
 
 from wx.lib.pubsub import pub as Publisher
@@ -93,7 +92,7 @@ class InnerTaskPanel(wx.Panel):
 
         # Fixed hyperlink items
         tooltip = wx.ToolTip(_("Create 3D surface based on a mask"))
-        link_new_surface = HyperLinkCtrl(self, -1, _("Create new 3D surface"))
+        link_new_surface = hl.HyperLinkCtrl(self, -1, _("Create new 3D surface"))
         link_new_surface.SetUnderlines(False, False, False)
         link_new_surface.SetBold(True)
         link_new_surface.SetColours("BLACK", "BLACK", "BLACK")
@@ -101,7 +100,7 @@ class InnerTaskPanel(wx.Panel):
         link_new_surface.SetToolTip(tooltip)
         link_new_surface.AutoBrowse(False)
         link_new_surface.UpdateLink()
-        link_new_surface.Bind(EVT_HYPERLINK_LEFT, self.OnLinkNewSurface)
+        link_new_surface.Bind(hl.EVT_HYPERLINK_LEFT, self.OnLinkNewSurface)
 
         Publisher.subscribe(self.OnLinkNewSurface, 'Open create surface dialog')
         # Create horizontal sizers to represent lines in the panel
@@ -302,31 +301,31 @@ class SurfaceTools(wx.Panel):
 
         # Fixed hyperlink items
         tooltip = wx.ToolTip(_("Automatically select largest disconnected region and create new surface"))
-        link_largest = HyperLinkCtrl(self, -1, _("Select largest surface"))
+        link_largest = hl.HyperLinkCtrl(self, -1, _("Select largest surface"))
         link_largest.SetUnderlines(False, False, False)
         link_largest.SetColours("BLACK", "BLACK", "BLACK")
         link_largest.SetToolTip(tooltip)
         link_largest.AutoBrowse(False)
         link_largest.UpdateLink()
-        link_largest.Bind(EVT_HYPERLINK_LEFT, self.OnLinkLargest)
+        link_largest.Bind(hl.EVT_HYPERLINK_LEFT, self.OnLinkLargest)
 
         tooltip = wx.ToolTip(_("Automatically select disconnected regions and create a new surface per region"))
-        link_split_all = HyperLinkCtrl(self, -1,_("Split all disconnected surfaces"))
+        link_split_all = hl.HyperLinkCtrl(self, -1,_("Split all disconnected surfaces"))
         link_split_all.SetUnderlines(False, False, False)
         link_split_all.SetColours("BLACK", "BLACK", "BLACK")
         link_split_all.SetToolTip(tooltip)
         link_split_all.AutoBrowse(False)
         link_split_all.UpdateLink()
-        link_split_all.Bind(EVT_HYPERLINK_LEFT, self.OnLinkSplit)
+        link_split_all.Bind(hl.EVT_HYPERLINK_LEFT, self.OnLinkSplit)
 
         tooltip = wx.ToolTip(_("Manually insert seeds of regions of interest and create a new surface"))
-        link_seeds = HyperLinkCtrl(self,-1,_("Select regions of interest..."))
+        link_seeds = hl.HyperLinkCtrl(self,-1,_("Select regions of interest..."))
         link_seeds.SetUnderlines(False, False, False)
         link_seeds.SetColours("BLACK", "BLACK", "BLACK")
         link_seeds.SetToolTip(tooltip)
         link_seeds.AutoBrowse(False)
         link_seeds.UpdateLink()
-        link_seeds.Bind(EVT_HYPERLINK_LEFT, self.OnLinkSeed)
+        link_seeds.Bind(hl.EVT_HYPERLINK_LEFT, self.OnLinkSeed)
 
         # Image(s) for buttons
         img_largest = wx.Image(os.path.join(const.ICON_DIR, "connectivity_largest.png"),

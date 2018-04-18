@@ -121,7 +121,7 @@ class InnerTaskPanel(wx.Panel):
         link_export_picture.SetToolTip(tooltip)
         link_export_picture.AutoBrowse(False)
         link_export_picture.UpdateLink()
-        link_export_picture.Bind(EVT_HYPERLINK_LEFT,
+        link_export_picture.Bind(hl.EVT_HYPERLINK_LEFT,
                                  self.OnLinkExportPicture)
 
         tooltip = wx.ToolTip(_("Export 3D surface"))
@@ -133,7 +133,7 @@ class InnerTaskPanel(wx.Panel):
         link_export_surface.SetToolTip(tooltip)
         link_export_surface.AutoBrowse(False)
         link_export_surface.UpdateLink()
-        link_export_surface.Bind(EVT_HYPERLINK_LEFT,
+        link_export_surface.Bind(hl.EVT_HYPERLINK_LEFT,
                               self.OnLinkExportSurface)
 
         #tooltip = wx.ToolTip(_("Export 3D mask (voxels)"))
@@ -143,7 +143,7 @@ class InnerTaskPanel(wx.Panel):
         #link_export_mask.SetToolTip(tooltip)
         #link_export_mask.AutoBrowse(False)
         #link_export_mask.UpdateLink()
-        #link_export_mask.Bind(EVT_HYPERLINK_LEFT,
+        #link_export_mask.Bind(hl.EVT_HYPERLINK_LEFT,
         #                      self.OnLinkExportMask)
 
 
@@ -154,7 +154,7 @@ class InnerTaskPanel(wx.Panel):
         #link_request_rp.SetToolTip(tooltip)
         #link_request_rp.AutoBrowse(False)
         #link_request_rp.UpdateLink()
-        #link_request_rp.Bind(EVT_HYPERLINK_LEFT, self.OnLinkRequestRP)
+        #link_request_rp.Bind(hl.EVT_HYPERLINK_LEFT, self.OnLinkRequestRP)
 
         #tooltip = wx.ToolTip("Open report tool...")
         #link_report = hl.HyperLinkCtrl(self,-1,"Open report tool...")
@@ -163,7 +163,7 @@ class InnerTaskPanel(wx.Panel):
         #link_report.SetToolTip(tooltip)
         #link_report.AutoBrowse(False)
         #link_report.UpdateLink()
-        #link_report.Bind(EVT_HYPERLINK_LEFT, self.OnLinkReport)
+        #link_report.Bind(hl.EVT_HYPERLINK_LEFT, self.OnLinkReport)
 
 
         # Image(s) for buttons
