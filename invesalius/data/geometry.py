@@ -18,6 +18,8 @@
 #    detalhes.
 #--------------------------------------------------------------------------
 
+from six import with_metaclass
+
 import numpy as np
 import math
 import vtk
@@ -27,13 +29,11 @@ import invesalius.utils as utils
 import invesalius.constants as const
 
 
-class Box(object):
+class Box(with_metaclass(utils.Singleton, object)):
     """
-    This class is a data structure for storing the 
+    This class is a data structure for storing the
     coordinates (min and max) of box used in crop-mask.
     """
-
-    __metaclass__= utils.Singleton
 
     def __init__(self):
         self.xi = None

@@ -16,6 +16,8 @@
 #    PARTICULAR. Consulte a Licenca Publica Geral GNU para obter mais
 #    detalhes.
 #--------------------------------------------------------------------------
+from six import with_metaclass
+
 import os
 import tempfile
 
@@ -72,12 +74,10 @@ class SliceBuffer(object):
         self.vtk_mask = None
 
 
-class Slice(object):
-    __metaclass__= utils.Singleton
-    # Only one slice will be initialized per time (despite several viewers
-    # show it from distinct perspectives).
-    # Therefore, we use Singleton design pattern for implementing it.
-
+# Only one slice will be initialized per time (despite several viewers
+# show it from distinct perspectives).
+# Therefore, we use Singleton design pattern for implementing it.
+class Slice(with_metaclass(utils.Singleton, object)):
     def __init__(self):
         self.current_mask = None
         self.blend_filter = None

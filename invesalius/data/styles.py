@@ -17,6 +17,8 @@
 #    detalhes.
 #--------------------------------------------------------------------------
 
+from six import with_metaclass
+
 import os
 import multiprocessing
 import tempfile
@@ -716,8 +718,7 @@ class ChangeSliceInteractorStyle(DefaultInteractorStyle):
         self.last_position = position[1]
 
 
-class EditorConfig(object):
-    __metaclass__= utils.Singleton
+class EditorConfig(with_metaclass(utils.Singleton, object)):
     def __init__(self):
         self.operation = const.BRUSH_THRESH
         self.cursor_type = const.BRUSH_CIRCLE
@@ -985,8 +986,7 @@ class WatershedProgressWindow(object):
         self.dlg.Destroy()
 
 
-class WatershedConfig(object):
-    __metaclass__= utils.Singleton
+class WatershedConfig(with_metaclass(utils.Singleton, object)):
     def __init__(self):
         self.algorithm = "Watershed"
         self.con_2d = 4
@@ -1767,8 +1767,7 @@ class ReorientImageInteractorStyle(DefaultInteractorStyle):
             buffer_.discard_image()
 
 
-class FFillConfig(object):
-    __metaclass__= utils.Singleton
+class FFillConfig(with_metaclass(utils.Singleton, object)):
     def __init__(self):
         self.dlg_visible = False
         self.target = "2D"
@@ -1904,8 +1903,7 @@ class RemoveMaskPartsInteractorStyle(FloodFillMaskInteractorStyle):
         self._progr_title = _(u"Remove part")
         self._progr_msg = _(u"Removing part ...")
 
-class CropMaskConfig(object):
-    __metaclass__= utils.Singleton
+class CropMaskConfig(with_metaclass(utils.Singleton, object)):
     def __init__(self):
         self.dlg_visible = False
 
@@ -2007,8 +2005,7 @@ class CropMaskInteractorStyle(DefaultInteractorStyle):
             Publisher.sendMessage('Reload actual slice')           
 
      
-class SelectPartConfig(object):
-    __metaclass__= utils.Singleton
+class SelectPartConfig(with_metaclass(utils.Singleton, object)):
     def __init__(self):
         self.mask = None
         self.con_3d = 6
@@ -2114,8 +2111,7 @@ class SelectMaskPartsInteractorStyle(DefaultInteractorStyle):
         self.config.mask = mask
 
 
-class FFillSegmentationConfig(object):
-    __metaclass__= utils.Singleton
+class FFillSegmentationConfig(with_metaclass(utils.Singleton, object)):
     def __init__(self):
         self.dlg_visible = False
         self.target = "2D"

@@ -17,6 +17,8 @@
 #    detalhes.
 #--------------------------------------------------------------------------
 
+from six import with_metaclass
+
 import datetime
 import glob
 import os
@@ -45,11 +47,9 @@ if sys.platform == 'win32':
 else:
     _has_win32api = False
 
-class Project(object):
-    # Only one project will be initialized per time. Therefore, we use
-    # Singleton design pattern for implementing it
-    __metaclass__= Singleton
-
+# Only one project will be initialized per time. Therefore, we use
+# Singleton design pattern for implementing it
+class Project(with_metaclass(Singleton, object)):
     def __init__(self):
         # Patient/ acquistion information
         self.name = ''

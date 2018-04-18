@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 
+from six import with_metaclass
+
 import math
 import random
 import sys
@@ -46,11 +48,10 @@ else:
     MEASURE_TEXT_COLOUR = (0, 0, 0)
     MEASURE_TEXTBOX_COLOUR = (255, 255, 165, 255)
 
-class MeasureData:
+class MeasureData(with_metaclass(utils.Singleton)):
     """
     Responsible to keep measures data.
     """
-    __metaclass__= utils.Singleton
     def __init__(self):
         self.measures = {const.SURFACE: {},
                          const.AXIAL:   {},

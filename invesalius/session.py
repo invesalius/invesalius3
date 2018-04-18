@@ -17,6 +17,8 @@
 #    detalhes.
 #--------------------------------------------------------------------------
 
+from six import with_metaclass
+
 try:
     import configparser as ConfigParser
 except(ImportError):
@@ -55,10 +57,9 @@ USER_INV_CFG_PATH = os.path.join(USER_INV_DIR, 'config.cfg')
 SESSION_ENCODING = 'utf8'
 
 
-class Session(object):
-    # Only one session will be initialized per time. Therefore, we use
-    # Singleton design pattern for implementing it
-    __metaclass__= Singleton
+# Only one session will be initialized per time. Therefore, we use
+# Singleton design pattern for implementing it
+class Session(with_metaclass(Singleton, object)):
 
     def __init__(self):
         self.temp_item = False
