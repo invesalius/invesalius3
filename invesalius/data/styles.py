@@ -760,7 +760,7 @@ class EditorInteractorStyle(DefaultInteractorStyle):
     def SetUp(self):
          
         x, y = self.viewer.interactor.ScreenToClient(wx.GetMousePosition())
-        if self.viewer.interactor.HitTestXY(x, y) == wx.HT_WINDOW_INSIDE:
+        if self.viewer.interactor.HitTest(x, y) == wx.HT_WINDOW_INSIDE:
             self.viewer.slice_data.cursor.Show()
             
             y = self.viewer.interactor.GetSize()[1] - y
@@ -1069,7 +1069,7 @@ class WaterShedInteractorStyle(DefaultInteractorStyle):
         self.viewer.OnScrollBar()
 
         x, y = self.viewer.interactor.ScreenToClient(wx.GetMousePosition())
-        if self.viewer.interactor.HitTestXY(x, y) == wx.HT_WINDOW_INSIDE:
+        if self.viewer.interactor.HitTest(x, y) == wx.HT_WINDOW_INSIDE:
             self.viewer.slice_data.cursor.Show()
             
             y = self.viewer.interactor.GetSize()[1] - y
