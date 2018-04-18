@@ -182,7 +182,7 @@ def get_wwwl_preset_colours(pfile):
     preset = plistlib.readPlist(pfile)
     ncolours = len(preset['Blue'])
     colours = []
-    for i in xrange(ncolours):
+    for i in range(ncolours):
         r = preset['Red'][i]
         g = preset['Green'][i]
         b = preset['Blue'][i]

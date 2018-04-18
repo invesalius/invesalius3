@@ -1230,7 +1230,7 @@ class Slice(with_metaclass(utils.Singleton, object)):
         """
         if mask is None:
             mask = self.current_mask
-        for n in xrange(1, mask.matrix.shape[0]):
+        for n in range(1, mask.matrix.shape[0]):
             if mask.matrix[n, 0, 0] == 0:
                 m = mask.matrix[n, 1:, 1:]
                 mask.matrix[n, 1:, 1:] = self.do_threshold_to_a_slice(self.matrix[n-1], m, mask.threshold_range)

@@ -520,10 +520,10 @@ class MaskProperties(wx.Panel):
 
     def CloseProject(self):
         n = self.combo_mask_name.GetCount()
-        for i in xrange(n-1, -1, -1):
+        for i in range(n-1, -1, -1):
             self.combo_mask_name.Delete(i)
         n = self.combo_thresh.GetCount()
-        for i in xrange(n-1, -1, -1):
+        for i in range(n-1, -1, -1):
             self.combo_thresh.Delete(i)
 
     def OnRemoveMasks(self, pubsub_evt):

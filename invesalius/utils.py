@@ -439,8 +439,8 @@ def UpdateCheck():
 
 def vtkarray_to_numpy(m):
     nm = np.zeros((4, 4))
-    for i in xrange(4):
-        for j in xrange(4):
+    for i in range(4):
+        for j in range(4):
             nm[i, j] = m.GetElement(i, j)
     return nm
 

@@ -1382,7 +1382,7 @@ class Viewer(wx.Panel):
         number_renderers = self.layout[0] * self.layout[1]
         diff = number_renderers - len(self.slice_data_list)
         if diff > 0:
-            for i in xrange(diff):
+            for i in range(diff):
                 slice_data = self.create_slice_window(imagedata)
                 self.slice_data_list.append(slice_data)
         elif diff < 0:
@@ -1400,8 +1400,8 @@ class Viewer(wx.Panel):
         w *= proportion_x
         h *= proportion_y
         n = 0
-        for j in xrange(self.layout[1]-1, -1, -1):
-            for i in xrange(self.layout[0]):
+        for j in range(self.layout[1]-1, -1, -1):
+            for i in range(self.layout[0]):
                 slice_xi = i*proportion_x
                 slice_xf = (i+1)*proportion_x
                 slice_yi = j*proportion_y

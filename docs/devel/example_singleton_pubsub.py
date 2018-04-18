@@ -52,7 +52,7 @@ p3 = Person("Andre ")
 people = [p1, p2, p3]
 
 print "Everyone eats 2 pieces:"
-for i in xrange(2):
+for i in range(2):
     for person in people:
         person.EatPieceOfPizza()
     

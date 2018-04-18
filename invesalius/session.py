@@ -222,7 +222,7 @@ class Session(with_metaclass(Singleton, object)):
 
         # Remove oldest projects from list
         if len(l)>const.PROJ_MAX:
-            for i in xrange(len(l)-const.PROJ_MAX):
+            for i in range(len(l)-const.PROJ_MAX):
                 l.pop()
 
     def GetLanguage(self):
