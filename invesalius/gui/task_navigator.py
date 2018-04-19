@@ -312,8 +312,8 @@ class NeuronavigationPanel(wx.Panel):
         tips_img = const.TIPS_IMG
 
         for k in btns_img:
-            n = btns_img[k].keys()[0]
-            lab = btns_img[k].values()[0]
+            n = list(btns_img[k].keys())[0]
+            lab = list(btns_img[k].values())[0]
             self.btns_coord[n] = wx.ToggleButton(self, k, label=lab, size=wx.Size(45, 23))
             self.btns_coord[n].SetToolTip(wx.ToolTip(tips_img[n]))
             self.btns_coord[n].Bind(wx.EVT_TOGGLEBUTTON, self.OnImageFiducials)
@@ -323,8 +323,8 @@ class NeuronavigationPanel(wx.Panel):
         tips_trk = const.TIPS_TRK
 
         for k in btns_trk:
-            n = btns_trk[k].keys()[0]
-            lab = btns_trk[k].values()[0]
+            n = list(btns_trk[k].keys())[0]
+            lab = list(btns_trk[k].values())[0]
             self.btns_coord[n] = wx.Button(self, k, label=lab, size=wx.Size(45, 23))
             self.btns_coord[n].SetToolTip(wx.ToolTip(tips_trk[n-3]))
             # Exception for event of button that set image coordinates
@@ -405,8 +405,8 @@ class NeuronavigationPanel(wx.Panel):
         marker_id = pubsub_evt.data[0]
         coord = pubsub_evt.data[1]
         for n in const.BTNS_IMG_MKS:
-            btn_id = const.BTNS_IMG_MKS[n].keys()[0]
-            fid_id = const.BTNS_IMG_MKS[n].values()[0]
+            btn_id = list(const.BTNS_IMG_MKS[n].keys())[0]
+            fid_id = list(const.BTNS_IMG_MKS[n].values())[0]
             if marker_id == fid_id and not self.btns_coord[btn_id].GetValue():
                 self.btns_coord[btn_id].SetValue(True)
                 self.fiducials[btn_id, :] = coord[0:3]
@@ -522,7 +522,7 @@ class NeuronavigationPanel(wx.Panel):
 
     def OnSetImageCoordinates(self, evt):
         # FIXME: Cross does not update in last clicked slice, only on the other two
-        btn_id = const.BTNS_TRK[evt.GetId()].keys()[0]
+        btn_id = list(const.BTNS_TRK[evt.GetId()].keys())[0]
 
         ux, uy, uz = self.numctrls_coord[btn_id][0].GetValue(),\
                      self.numctrls_coord[btn_id][1].GetValue(),\
@@ -534,8 +534,8 @@ class NeuronavigationPanel(wx.Panel):
         Publisher.sendMessage('Update cross position', (ux, uy, uz))
 
     def OnImageFiducials(self, evt):
-        btn_id = const.BTNS_IMG_MKS[evt.GetId()].keys()[0]
-        marker_id = const.BTNS_IMG_MKS[evt.GetId()].values()[0]
+        btn_id = list(const.BTNS_IMG_MKS[evt.GetId()].keys())[0]
+        marker_id = list(const.BTNS_IMG_MKS[evt.GetId()].values())[0]
 
         if self.btns_coord[btn_id].GetValue():
             coord = self.numctrls_coord[btn_id][0].GetValue(),\
@@ -552,7 +552,7 @@ class NeuronavigationPanel(wx.Panel):
             Publisher.sendMessage('Delete fiducial marker', marker_id)
 
     def OnTrackerFiducials(self, evt):
-        btn_id = const.BTNS_TRK[evt.GetId()].keys()[0]
+        btn_id = list(const.BTNS_TRK[evt.GetId()].keys())[0]
         coord = None
 
         if self.trk_init and self.tracker_id:
@@ -1155,7 +1155,7 @@ class MarkersPanel(wx.Panel):
                     item = self.lc.GetItem(id_n, 4)
                     if item.GetText() == marker_id:
                         for i in const.BTNS_IMG_MKS:
-                            if marker_id in const.BTNS_IMG_MKS[i].values()[0]:
+                            if marker_id in list(const.BTNS_IMG_MKS[i].values())[0]:
                                 self.lc.Focus(item.GetId())
                 index = [self.lc.GetFocusedItem()]
         else:
@@ -1210,7 +1210,7 @@ class MarkersPanel(wx.Panel):
 
                         if len(line) == 11:
                             for i in const.BTNS_IMG_MKS:
-                                if line[10] in const.BTNS_IMG_MKS[i].values()[0]:
+                                if line[10] in list(const.BTNS_IMG_MKS[i].values())[0]:
                                     Publisher.sendMessage('Load image fiducials', (line[10], coord))
                                 elif line[10] == 'TARGET':
                                     target = count_line
@@ -1228,7 +1228,7 @@ class MarkersPanel(wx.Panel):
 
                         if len(line) == 8:
                             for i in const.BTNS_IMG_MKS:
-                                if line[7] in const.BTNS_IMG_MKS[i].values()[0]:
+                                if line[7] in list(const.BTNS_IMG_MKS[i].values())[0]:
                                     Publisher.sendMessage('Load image fiducials', (line[7], coord))
                         else:
                             line.append("")
