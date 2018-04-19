@@ -330,7 +330,7 @@ class GradientCtrl(wx.Panel):
         self.max_range = maxRange
         self.minimun = minValue
         self.maximun = maxValue
-        self.colour = colour
+        self.colour = colour[:3]
         self.changed = False
         self._draw_controls()
         self._bind_events_wx()
@@ -436,7 +436,7 @@ class GradientCtrl(wx.Panel):
         self._GenerateEvent(myEVT_THRESHOLD_CHANGING)
 
     def SetColour(self, colour):
-        colour = list(colour) + [90,]
+        colour = list(colour[:3]) + [90,]
         self.colour = colour
         self.gradient_slider.SetColour(colour)
         self.gradient_slider.Refresh()

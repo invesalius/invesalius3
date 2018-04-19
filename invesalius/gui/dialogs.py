@@ -1326,8 +1326,7 @@ class NewSurfaceDialog(wx.Dialog):
 
         # Retrieve existing masks
         project = prj.Project()
-        index_list = project.mask_dict.keys()
-        index_list.sort()
+        index_list = sorted(project.mask_dict.keys())
         self.mask_list = [project.mask_dict[index].name for index in index_list]
 
 
@@ -1501,18 +1500,24 @@ class SurfaceCreationDialog(wx.Dialog):
         # so we can set an extra style that must be set before
         # creation, and then we create the GUI object using the Create
         # method.
-        pre = wx.PreDialog()
-        pre.SetExtraStyle(wx.DIALOG_EX_CONTEXTHELP)
-        pre.Create(parent, ID, title, pos, (500,300), style)
+        try:
+            pre = wx.PreDialog()
+            pre.SetExtraStyle(wx.DIALOG_EX_CONTEXTHELP)
+            pre.Create(parent, ID, title, pos, (500,300), style)
 
-        # This extra style can be set after the UI object has been created.
-        if 'wxMac' in wx.PlatformInfo and useMetal:
-            self.SetExtraStyle(wx.DIALOG_EX_METAL)
+            # This extra style can be set after the UI object has been created.
+            if 'wxMac' in wx.PlatformInfo and useMetal:
+                self.SetExtraStyle(wx.DIALOG_EX_METAL)
 
-        # This next step is the most important, it turns this Python
-        # object into the real wrapper of the dialog (instead of pre)
-        # as far as the wxPython extension is concerned.
-        self.PostCreate(pre)
+            # This next step is the most important, it turns this Python
+            # object into the real wrapper of the dialog (instead of pre)
+            # as far as the wxPython extension is concerned.
+            self.PostCreate(pre)
+        except AttributeError:
+            wx.Dialog.__init__(self, parent, ID, title, pos, size, style)
+            self.SetExtraStyle(wx.DIALOG_EX_CONTEXTHELP)
+            if 'wxMac' in wx.PlatformInfo and useMetal:
+                self.SetExtraStyle(wx.DIALOG_EX_METAL)
 
         self.CenterOnScreen()
 
@@ -1586,8 +1591,7 @@ class SurfaceCreationOptionsPanel(wx.Panel):
         #Retrieve existing masks
         project = prj.Project()
         index_list = project.mask_dict.keys()
-        index_list.sort()
-        self.mask_list = [project.mask_dict[index].name for index in index_list]
+        self.mask_list = [project.mask_dict[index].name for index in sorted(index_list)]
         
         active_mask = slc.Slice().current_mask.index
         #active_mask = len(self.mask_list)-1

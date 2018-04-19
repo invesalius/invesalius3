@@ -471,7 +471,7 @@ class SurfaceManager():
 
         mode = 'CONTOUR' # 'GRAYSCALE'
         min_value, max_value = mask.threshold_range
-        colour = mask.colour
+        colour = mask.colour[:3]
 
         try:
             overwrite = surface_parameters['options']['overwrite']
@@ -902,7 +902,7 @@ class SurfaceManager():
         """
         """
         index, colour = pubsub_evt.data
-        self.actors_dict[index].GetProperty().SetColor(colour)
+        self.actors_dict[index].GetProperty().SetColor(colour[:3])
         # Update value in project's surface_dict
         proj = prj.Project()
         proj.surface_dict[index].colour = colour

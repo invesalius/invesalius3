@@ -841,7 +841,7 @@ class Slice(with_metaclass(utils.Singleton, object)):
         proj = Project()
         proj.mask_dict[index].colour = colour
 
-        (r,g,b) = colour
+        (r,g,b) = colour[:3]
         colour_wx = [r*255, g*255, b*255]
         Publisher.sendMessage('Change mask colour in notebook',
                                     (index, (r,g,b)))
@@ -1260,7 +1260,7 @@ class Slice(with_metaclass(utils.Singleton, object)):
 
     def do_colour_mask(self, imagedata, opacity):
         scalar_range = int(imagedata.GetScalarRange()[1])
-        r, g, b = self.current_mask.colour
+        r, g, b = self.current_mask.colour[:3]
 
         # map scalar values into colors
         lut_mask = vtk.vtkLookupTable()
