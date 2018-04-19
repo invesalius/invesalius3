@@ -169,8 +169,8 @@ class CLUTRaycastingWidget(wx.Panel):
         pass
 
     def OnClick(self, evt):
-        x, y = evt.GetPositionTuple()
-        if self.save_button.HasClicked(evt.GetPositionTuple()):
+        x, y = evt.GetPosition()
+        if self.save_button.HasClicked((x, y)):
             print("Salvando")
             filename = dialog.ShowSavePresetDialog()
             if filename:
@@ -218,7 +218,7 @@ class CLUTRaycastingWidget(wx.Panel):
         """
         Used to change the colour of a point
         """
-        point = self._has_clicked_in_a_point(evt.GetPositionTuple())
+        point = self._has_clicked_in_a_point(evt.GetPosition())
         if point:
             i, j = point
             actual_colour = self.curves[i].nodes[j].colour
@@ -240,7 +240,7 @@ class CLUTRaycastingWidget(wx.Panel):
         """
         Used to remove a point
         """
-        point = self._has_clicked_in_a_point(evt.GetPositionTuple())
+        point = self._has_clicked_in_a_point(evt.GetPosition())
         if point:
             i, j = point
             print("RightClick", i, j)
@@ -249,7 +249,7 @@ class CLUTRaycastingWidget(wx.Panel):
             nevt = CLUTEvent(myEVT_CLUT_POINT_RELEASE, self.GetId(), i)
             self.GetEventHandler().ProcessEvent(nevt)
             return
-        n_curve = self._has_clicked_in_selection_curve(evt.GetPositionTuple())
+        n_curve = self._has_clicked_in_selection_curve(evt.GetPosition())
         if n_curve is not None:
             print("Removing a curve")
             self.RemoveCurve(n_curve)
