@@ -1526,7 +1526,7 @@ class Viewer(wx.Panel):
 
     def ChangeBackgroundColour(self, pubsub_evt):
         colour = pubsub_evt.data
-        self.ren.SetBackground(colour)
+        self.ren.SetBackground(colour[:3])
         self.UpdateRender()
 
     def LoadActor(self, pubsub_evt):
