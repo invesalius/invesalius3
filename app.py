@@ -212,7 +212,7 @@ class SplashScreen(wx.adv.SplashScreen):
                                      parent=None)
             self.Bind(wx.EVT_CLOSE, self.OnClose)
             wx.Yield()
-            wx.CallLater(200,self.Startup)
+            wx.CallLater(200, self.Startup)
 
     def Startup(self):
         # Importing takes sometime, therefore it will be done

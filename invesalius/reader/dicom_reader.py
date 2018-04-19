@@ -95,13 +95,11 @@ main_dict = {}
 dict_file = {}
 
 class LoadDicom:
-    
     def __init__(self, grouper, filepath):
         self.grouper = grouper
-        self.filepath = filepath
-        
+        self.filepath = utils.decode(filepath, const.FS_ENCODE)
         self.run()
-    
+
     def run(self):
         grouper = self.grouper
         reader = gdcm.ImageReader()
@@ -112,10 +110,8 @@ class LoadDicom:
 
         if (reader.Read()):
             file = reader.GetFile()
-             
             # Retrieve data set
             dataSet = file.GetDataSet()
-        
             # Retrieve header
             header = file.GetHeader()
             stf = gdcm.StringFilter()
@@ -210,10 +206,10 @@ class LoadDicom:
             direc_cosines = img.GetDirectionCosines()
             orientation = gdcm.Orientation()
             try:
-                type = orientation.GetType(tuple(direc_cosines))
+                _type = orientation.GetType(tuple(direc_cosines))
             except TypeError:
-                type = orientation.GetType(direc_cosines)
-            label = orientation.GetLabel(type)
+                _type = orientation.GetType(direc_cosines)
+            label = orientation.GetLabel(_type)
 
  
             # ----------   Refactory --------------------------------------
