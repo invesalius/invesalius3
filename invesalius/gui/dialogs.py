@@ -3087,9 +3087,12 @@ class FillHolesAutoDialog(wx.Dialog):
         self.panel2dcon = Panel2DConnectivity(self, show_orientation=True, style=border_style|wx.TAB_TRAVERSAL)
         self.panel3dcon = Panel3DConnectivity(self, style=border_style|wx.TAB_TRAVERSAL)
 
-        self.panel_target.target_2d.SetValue(1)
         self.panel2dcon.Enable(1)
         self.panel3dcon.Enable(0)
+
+        self.panel_target.target_2d.SetValue(1)
+        self.panel2dcon.conect2D_4.SetValue(1)
+        self.panel3dcon.conect3D_6.SetValue(1)
 
         self.apply_btn = wx.Button(self, wx.ID_APPLY)
         self.close_btn = wx.Button(self, wx.ID_CLOSE)
