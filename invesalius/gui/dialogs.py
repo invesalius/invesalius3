@@ -2932,13 +2932,16 @@ class FFillSegmentationOptionsDialog(wx.Dialog):
 
 class CropOptionsDialog(wx.Dialog):
     
-    def __init__(self, config):
+    def __init__(self, config, ID=-1, title=_(u"Crop mask"), style=wx.DEFAULT_DIALOG_STYLE|wx.FRAME_FLOAT_ON_PARENT):
         self.config = config
-        pre = wx.PreDialog()
+        try:
+            pre = wx.PreDialog()
 
-        pre.Create(wx.GetApp().GetTopWindow(), -1, _(u"Crop mask"),\
-                    style=wx.DEFAULT_DIALOG_STYLE|wx.FRAME_FLOAT_ON_PARENT)
-        self.PostCreate(pre)
+            pre.Create(wx.GetApp().GetTopWindow(), ID, title=title, style=style)
+            self.PostCreate(pre)
+        except AttributeError:
+            wx.Dialog.__init__(self, wx.GetApp().GetTopWindow(), ID, title=title, style=style)
+
 
         self._init_gui()
 
@@ -3014,8 +3017,8 @@ class CropOptionsDialog(wx.Dialog):
         gbs_button.Add(btn_ok, (0,1))
 
         gbs_principal.Add(gbs, (0,0), flag = wx.ALL|wx.EXPAND)
-        gbs_principal.AddStretchSpacer((1,0))
-        gbs_principal.AddStretchSpacer((2,0))
+        gbs_principal.Add(0, 0, (1,0))
+        gbs_principal.Add(0, 0, (2,0))
         gbs_principal.Add(gbs_button, (3,0), flag = wx.ALIGN_RIGHT)
 
         box = wx.BoxSizer()

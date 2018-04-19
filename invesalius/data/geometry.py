@@ -356,7 +356,7 @@ class DrawCrop2DRetangle():
             x_pos_sl = x_pos_sl_ * xs
             y_pos_sl = y_pos_sl_ * ys
 
-            for k, p in self.box.axial.iteritems():
+            for k, p in self.box.axial.items():
                 p0 = p[0]
                 p1 = p[1]
 
@@ -386,7 +386,7 @@ class DrawCrop2DRetangle():
             x_pos_sl = x_pos_sl_ * xs
             y_pos_sl = y_pos_sl_ * zs
             
-            for k, p in self.box.coronal.iteritems():
+            for k, p in self.box.coronal.items():
                 p0 = p[0]
                 p1 = p[1]
 
@@ -415,7 +415,7 @@ class DrawCrop2DRetangle():
             x_pos_sl = x_pos_sl_ * ys
             y_pos_sl = y_pos_sl_ * zs
 
-            for k, p in self.box.sagital.iteritems():
+            for k, p in self.box.sagital.items():
                 p0 = p[0]
                 p1 = p[1]
 
