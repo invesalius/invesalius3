@@ -347,7 +347,7 @@ class Controller():
             dirpath, filename = session.project_path
 
         if isinstance(filename, str):
-            filename = filename.decode(const.FS_ENCODE)
+            filename = utils.decode(filename, const.FS_ENCODE)
 
         proj = prj.Project()
         prj.Project().SavePlistProject(dirpath, filename, compress)

@@ -205,7 +205,7 @@ class Project(with_metaclass(Singleton, object)):
         return measures
 
     def SavePlistProject(self, dir_, filename, compress=False):
-        dir_temp = tempfile.mkdtemp().decode(const.FS_ENCODE)
+        dir_temp = decode(tempfile.mkdtemp(), const.FS_ENCODE)
 
         self.compress = compress
 
@@ -357,7 +357,7 @@ def Compress(folder, filename, filelist, compress=False):
         touch(temp_inv3)
         temp_inv3 = win32api.GetShortPathName(temp_inv3)
 
-    temp_inv3 = temp_inv3.decode(const.FS_ENCODE)
+    temp_inv3 = decode(temp_inv3, const.FS_ENCODE)
     #os.chdir(tmpdir)
     #file_list = glob.glob(os.path.join(tmpdir_,"*"))
     if compress:
