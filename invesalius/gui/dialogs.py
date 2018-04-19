@@ -996,18 +996,22 @@ class NewMask(wx.Dialog):
         import invesalius.data.mask as mask
         import invesalius.project as prj
 
-        # Instead of calling wx.Dialog.__init__ we precreate the dialog
-        # so we can set an extra style that must be set before
-        # creation, and then we create the GUI object using the Create
-        # method.
-        pre = wx.PreDialog()
-        pre.SetExtraStyle(wx.DIALOG_EX_CONTEXTHELP)
-        pre.Create(parent, ID, title, pos, (500,300), style)
+        try:
+            # Instead of calling wx.Dialog.__init__ we precreate the dialog
+            # so we can set an extra style that must be set before
+            # creation, and then we create the GUI object using the Create
+            # method.
+            pre = wx.PreDialog()
+            pre.SetExtraStyle(wx.DIALOG_EX_CONTEXTHELP)
+            pre.Create(parent, ID, title, pos, (500,300), style)
+            # This next step is the most important, it turns this Python
+            # object into the real wrapper of the dialog (instead of pre)
+            # as far as the wxPython extension is concerned.
+            self.PostCreate(pre)
+        except AttributeError:
+            wx.Dialog.__init__(self, parent, ID, title, pos, (500,300), style)
+            self.SetExtraStyle(wx.DIALOG_EX_CONTEXTHELP)
 
-        # This next step is the most important, it turns this Python
-        # object into the real wrapper of the dialog (instead of pre)
-        # as far as the wxPython extension is concerned.
-        self.PostCreate(pre)
 
         self.CenterOnScreen()
 
@@ -1034,8 +1038,7 @@ class NewMask(wx.Dialog):
 
         # Retrieve existing masks
         project = prj.Project()
-        thresh_list = project.threshold_modes.keys()
-        thresh_list.sort()
+        thresh_list = sorted(project.threshold_modes.keys())
         default_index = thresh_list.index(_("Bone"))
         self.thresh_list = thresh_list
 
