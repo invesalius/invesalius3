@@ -360,7 +360,7 @@ class Volume():
             r = p['Red']
             g = p['Green']
             b = p['Blue']
-            colors = zip(r,g,b)
+            colors = list(zip(r,g,b))
         else:
             # Grayscale from black to white
             colors = [(i, i, i) for i in range(256)]

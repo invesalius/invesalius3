@@ -649,7 +649,7 @@ class CLUTRaycastingWidget(wx.Panel):
         """
         for n, (point, colour) in enumerate(zip(self.points, self.colours)):
             point_colour = zip(point, colour)
-            point_colour.sort(key=lambda x: x[0]['x'])
+            point_colour = sorted(point_colour, key=lambda x: x[0]['x'])
             self.points[n] = [i[0] for i in point_colour]
             self.colours[n] = [i[1] for i in point_colour]
 
