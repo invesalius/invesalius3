@@ -1917,10 +1917,13 @@ class WatershedOptionsPanel(wx.Panel):
 
 
 class WatershedOptionsDialog(wx.Dialog):
-    def __init__(self, config):
-        pre = wx.PreDialog()
-        pre.Create(wx.GetApp().GetTopWindow(), -1, _(u'Watershed'), style=wx.DEFAULT_DIALOG_STYLE|wx.FRAME_FLOAT_ON_PARENT)
-        self.PostCreate(pre)
+    def __init__(self, config, ID=-1, title=_(u'Watershed'), style=wx.DEFAULT_DIALOG_STYLE|wx.FRAME_FLOAT_ON_PARENT):
+        try:
+            pre = wx.PreDialog()
+            pre.Create(wx.GetApp().GetTopWindow(), ID, title=title, style=style)
+            self.PostCreate(pre)
+        except AttributeError:
+            wx.Dialog.__init__(self, wx.GetApp().GetTopWindow(), ID, title=title, style=style)
 
         self.config = config
 
@@ -2319,10 +2322,10 @@ class PanelTargeFFill(wx.Panel):
 
         sizer = wx.GridBagSizer(5, 5)
 
-        sizer.AddStretchSpacer((0, 0))
+        sizer.Add(0, 0, (0, 0))
         sizer.Add(self.target_2d, (1, 0), (1, 6), flag=wx.LEFT, border=5)
         sizer.Add(self.target_3d, (2, 0), (1, 6), flag=wx.LEFT, border=5)
-        sizer.AddStretchSpacer((3, 0))
+        sizer.Add(0, 0, (3, 0))
 
         self.SetSizer(sizer)
         sizer.Fit(self)
@@ -2339,11 +2342,11 @@ class Panel2DConnectivity(wx.Panel):
 
         sizer = wx.GridBagSizer(5, 5)
 
-        sizer.AddStretchSpacer((0, 0))
+        sizer.Add(0, 0, (0, 0))
         sizer.Add(wx.StaticText(self, -1, _(u"2D Connectivity")), (1, 0), (1, 6), flag=wx.LEFT, border=5)
         sizer.Add(self.conect2D_4, (2, 0), flag=wx.LEFT, border=7)
         sizer.Add(self.conect2D_8, (2, 1), flag=wx.LEFT, border=7)
-        sizer.AddStretchSpacer((3, 0))
+        sizer.Add(0, 0, (3, 0))
 
         if show_orientation:
             self.cmb_orientation = wx.ComboBox(self, -1, choices=(_(u"Axial"), _(u"Coronal"), _(u"Sagital")), style=wx.CB_READONLY)
@@ -2351,7 +2354,7 @@ class Panel2DConnectivity(wx.Panel):
 
             sizer.Add(wx.StaticText(self, -1, _(u"Orientation")), (4, 0), (1, 6), flag=wx.LEFT|wx.RIGHT|wx.ALIGN_CENTER_VERTICAL, border=5)
             sizer.Add(self.cmb_orientation, (5, 0), (1, 10), flag=wx.LEFT|wx.RIGHT|wx.EXPAND, border=7)
-            sizer.AddStretchSpacer((6, 0))
+            sizer.Add(0, 0, (6, 0))
 
         self.SetSizer(sizer)
         sizer.Fit(self)
@@ -2385,12 +2388,12 @@ class Panel3DConnectivity(wx.Panel):
 
         sizer = wx.GridBagSizer(5, 5)
 
-        sizer.AddStretchSpacer((0, 0))
+        sizer.Add(0, 0, (0, 0))
         sizer.Add(wx.StaticText(self, -1, _(u"3D Connectivity")), (1, 0), (1, 6), flag=wx.LEFT, border=5)
         sizer.Add(self.conect3D_6, (2, 0), flag=wx.LEFT, border=9)
         sizer.Add(self.conect3D_18, (2, 1), flag=wx.LEFT, border=9)
         sizer.Add(self.conect3D_26, (2, 2), flag=wx.LEFT, border=9)
-        sizer.AddStretchSpacer((3, 0))
+        sizer.Add(0, 0, (3, 0))
 
         self.SetSizer(sizer)
         sizer.Fit(self)
@@ -2465,11 +2468,11 @@ class PanelFFillDynamic(wx.Panel):
 
         sizer = wx.GridBagSizer(5, 5)
 
-        sizer.AddStretchSpacer((0, 0))
+        sizer.Add(0, 0, (0, 0))
 
         sizer.Add(self.use_ww_wl, (1, 0), (1, 6), flag=wx.LEFT, border=5)
 
-        sizer.AddStretchSpacer((2, 0))
+        sizer.Add(0, 0, (2, 0))
 
         sizer.Add(wx.StaticText(self, -1, _(u"Deviation")), (3, 0), (1, 6), flag=wx.LEFT, border=5)
 
@@ -2479,7 +2482,7 @@ class PanelFFillDynamic(wx.Panel):
         sizer.Add(wx.StaticText(self, -1, _(u"Max:")), (4, 2), flag=wx.ALIGN_CENTER_VERTICAL|wx.LEFT, border=9)
         sizer.Add(self.deviation_max, (4, 3))
 
-        sizer.AddStretchSpacer((5, 0))
+        sizer.Add(0, 0, (5, 0))
 
         self.SetSizer(sizer)
         sizer.Fit(self)
@@ -2523,11 +2526,11 @@ class PanelFFillConfidence(wx.Panel):
 
         sizer = wx.GridBagSizer(5, 5)
 
-        sizer.AddStretchSpacer((0, 0))
+        sizer.Add(0, 0, (0, 0))
 
         sizer.Add(self.use_ww_wl, (1, 0), (1, 6), flag=wx.LEFT, border=5)
 
-        sizer.AddStretchSpacer((2, 0))
+        sizer.Add(0, 0, (2, 0))
 
         sizer.Add(wx.StaticText(self, -1, _(u"Multiplier")), (3, 0), (1, 3), flag=wx.ALIGN_CENTER_VERTICAL|wx.LEFT, border=5)
         sizer.Add(self.spin_mult, (3, 3), (1, 2))
@@ -2535,7 +2538,7 @@ class PanelFFillConfidence(wx.Panel):
         sizer.Add(wx.StaticText(self, -1, _(u"Iterations")), (4, 0), (1, 3), flag=wx.ALIGN_CENTER_VERTICAL|wx.LEFT, border=5)
         sizer.Add(self.spin_iters, (4, 3), (1, 2))
 
-        sizer.AddStretchSpacer((5, 0))
+        sizer.Add(0, 0, (5, 0))
 
         self.SetSizer(sizer)
         sizer.Fit(self)
@@ -2748,10 +2751,13 @@ class SelectPartsOptionsDialog(wx.Dialog):
         self.Destroy()
 
 class FFillSegmentationOptionsDialog(wx.Dialog):
-    def __init__(self, config):
-        pre = wx.PreDialog()
-        pre.Create(wx.GetApp().GetTopWindow(), -1, _(u"Region growing"), style=wx.DEFAULT_DIALOG_STYLE|wx.FRAME_FLOAT_ON_PARENT)
-        self.PostCreate(pre)
+    def __init__(self, config, ID=-1, title=_(u"Region growing"), style=wx.DEFAULT_DIALOG_STYLE|wx.FRAME_FLOAT_ON_PARENT):
+        try:
+            pre = wx.PreDialog()
+            pre.Create(wx.GetApp().GetTopWindow(), ID, title=title, style=style)
+            self.PostCreate(pre)
+        except AttributeError:
+            wx.Dialog.__init__(self, wx.GetApp().GetTopWindow(), ID, title=title, style=style)
 
         self.config = config
 
@@ -2823,20 +2829,20 @@ class FFillSegmentationOptionsDialog(wx.Dialog):
         # Sizer
         sizer = wx.GridBagSizer(2, 2)
 
-        sizer.AddStretchSpacer((0, 0))
+        sizer.Add(0, 0, (0, 0))
         sizer.Add(wx.StaticText(self, -1, _(u"Parameters")), (1, 0), (1, 6), flag=wx.LEFT, border=5)
-        sizer.AddStretchSpacer((2, 0))
+        sizer.Add(0, 0, (2, 0))
         sizer.Add(self.panel_target, (3, 0), (1, 6), flag=wx.LEFT|wx.RIGHT|wx.EXPAND, border=7)
-        sizer.AddStretchSpacer((4, 0))
+        sizer.Add(0, 0, (4, 0))
         sizer.Add(self.panel2dcon, (5, 0), (1, 6), flag=wx.LEFT|wx.RIGHT|wx.EXPAND, border=7)
-        sizer.AddStretchSpacer((6, 0))
+        sizer.Add(0, 0, (6, 0))
         sizer.Add(self.panel3dcon, (7, 0), (1, 6), flag=wx.LEFT|wx.RIGHT|wx.EXPAND, border=7)
-        sizer.AddStretchSpacer((8, 0))
+        sizer.Add(0, 0, (8, 0))
 
         sizer.Add(wx.StaticText(self, -1, _(u"Method")), (9, 0), (1, 1), flag=wx.LEFT|wx.ALIGN_CENTER_VERTICAL, border=7)
         sizer.Add(self.cmb_method, (9, 1), (1, 5), flag=wx.LEFT|wx.RIGHT|wx.EXPAND, border=7)
 
-        sizer.AddStretchSpacer((10, 0))
+        sizer.Add(0, 0, (10, 0))
 
         if self.config.method == 'dynamic':
             self.cmb_method.SetSelection(0)
@@ -2852,9 +2858,9 @@ class FFillSegmentationOptionsDialog(wx.Dialog):
             sizer.Add(self.panel_ffill_threshold, (11, 0), (1, 6), flag=wx.LEFT|wx.RIGHT|wx.EXPAND, border=7)
             self.config.method = 'threshold'
 
-        sizer.AddStretchSpacer((12, 0))
+        sizer.Add(0, 0, (12, 0))
         sizer.Add(self.close_btn, (13, 0), (1, 6), flag=wx.ALIGN_RIGHT|wx.RIGHT, border=5)
-        sizer.AddStretchSpacer((14, 0))
+        sizer.Add(0, 0, (14, 0))
 
         self.SetSizer(sizer)
         sizer.Fit(self)
