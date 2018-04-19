@@ -421,7 +421,7 @@ def UpdateCheck():
         req = Request(url, data, headers)
         try:
             response = urlopen(req, timeout=10)
-        except HTTPError:
+        except:
             return
         last = response.readline().rstrip().decode('utf8')
         url = response.readline().rstrip().decode('utf8')
