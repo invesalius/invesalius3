@@ -135,7 +135,7 @@ class LoadBitmap:
 
     def __init__(self, bmp_file, filepath):
         self.bmp_file = bmp_file
-        self.filepath = filepath
+        self.filepath = utils.decode(filepath, const.FS_ENCODE)
         
         self.run()
     

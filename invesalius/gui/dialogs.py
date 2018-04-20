@@ -2171,22 +2171,25 @@ class ImportBitmapParameters(wx.Dialog):
     from os import sys
 
     def __init__(self):
-        pre = wx.PreDialog()
-
         if sys.platform == 'win32':
             size=wx.Size(380,180)
         else:
             size=wx.Size(380,210)
 
-        pre.Create(wx.GetApp().GetTopWindow(), -1, _(u"Create project from bitmap"),size=size,\
-                                style=wx.DEFAULT_DIALOG_STYLE|wx.FRAME_FLOAT_ON_PARENT|wx.STAY_ON_TOP)
+        try:
+            pre = wx.PreDialog()
+            pre.Create(wx.GetApp().GetTopWindow(), -1, _(u"Create project from bitmap"),size=size,
+                                    style=wx.DEFAULT_DIALOG_STYLE|wx.FRAME_FLOAT_ON_PARENT|wx.STAY_ON_TOP)
+            self.PostCreate(pre)
+        except AttributeError:
+            wx.Dialog.__init__(self, wx.GetApp().GetTopWindow(), -1,
+                               _(u"Create project from bitmap"),
+                               size=size,
+                               style=wx.DEFAULT_DIALOG_STYLE|wx.FRAME_FLOAT_ON_PARENT|wx.STAY_ON_TOP)
 
         self.interval = 0
-        
-        self.PostCreate(pre)
 
         self._init_gui()
-
         self.bind_evts()
         self.CenterOnScreen()
 
@@ -2217,13 +2220,13 @@ class ImportBitmapParameters(wx.Dialog):
 
         gbs.Add(stx_name, (0,0), flag=flag_labels)
         gbs.Add(tx_name, (0,1))
-        gbs.AddStretchSpacer((1,0))
+        gbs.Add(0, 0, (1,0))
 
         gbs.Add(stx_orientation, (2,0), flag=flag_labels)
         gbs.Add(cb_orientation, (2,1))
 
         gbs.Add(stx_spacing, (3,0))
-        gbs.AddStretchSpacer((4,0))
+        gbs.Add(0, 0, (4,0))
 
         #--- spacing --------------
         gbs_spacing = wx.GridBagSizer(2, 6)
@@ -2273,13 +2276,13 @@ class ImportBitmapParameters(wx.Dialog):
 
         btn_cancel = wx.Button(p, wx.ID_CANCEL)
 
-        gbs_button.AddStretchSpacer((0,2))
+        gbs_button.Add(0, 0, (0,2))
         gbs_button.Add(btn_cancel, (1,2))
         gbs_button.Add(btn_ok, (1,3))
 
         gbs_principal.Add(gbs, (0,0), flag = wx.ALL|wx.EXPAND)
         gbs_principal.Add(gbs_spacing, (1,0),  flag=wx.ALL|wx.EXPAND)
-        gbs_principal.AddStretchSpacer((2,0))
+        gbs_principal.Add(0, 0, (2,0))
         gbs_principal.Add(gbs_button, (3,0), flag = wx.ALIGN_RIGHT)
 
         box = wx.BoxSizer()
