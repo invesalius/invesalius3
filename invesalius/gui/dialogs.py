@@ -1820,9 +1820,12 @@ class SurfaceMethodPanel(wx.Panel):
 
 class ClutImagedataDialog(wx.Dialog):
     def __init__(self, histogram, init, end, nodes=None):
-        pre = wx.PreDialog()
-        pre.Create(wx.GetApp().GetTopWindow(), -1, style=wx.DEFAULT_DIALOG_STYLE|wx.FRAME_FLOAT_ON_PARENT)
-        self.PostCreate(pre)
+        try:
+            pre = wx.PreDialog()
+            pre.Create(wx.GetApp().GetTopWindow(), -1, style=wx.DEFAULT_DIALOG_STYLE|wx.FRAME_FLOAT_ON_PARENT)
+            self.PostCreate(pre)
+        except AttributeError:
+            wx.Dialog.__init__(self, wx.GetApp().GetTopWindow(), -1, style=wx.DEFAULT_DIALOG_STYLE|wx.FRAME_FLOAT_ON_PARENT)
 
         self.histogram = histogram
         self.init = init
