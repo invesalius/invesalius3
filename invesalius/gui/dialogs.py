@@ -120,11 +120,16 @@ class NumberDialog(wx.Dialog):
 class ResizeImageDialog(wx.Dialog):
 
     def __init__(self):#, message, value=0):
-        pre = self.pre = wx.PreDialog()
-        pre.Create(None, -1, "InVesalius 3", size=wx.DefaultSize,
-                   pos=wx.DefaultPosition,
-                   style=wx.DEFAULT_DIALOG_STYLE)
-        self.PostCreate(pre)
+        try:
+            pre = self.pre = wx.PreDialog()
+            pre.Create(None, -1, "InVesalius 3", size=wx.DefaultSize,
+                       pos=wx.DefaultPosition,
+                       style=wx.DEFAULT_DIALOG_STYLE)
+            self.PostCreate(pre)
+        except AttributeError:
+            wx.Dialog.__init__(self, None, -1, "InVesalius 3", size=wx.DefaultSize,
+                              pos=wx.DefaultPosition,
+                              style=wx.DEFAULT_DIALOG_STYLE)
 
         lbl_message = wx.StaticText(self, -1, _("InVesalius is running on a 32-bit operating system or has insufficient memory. \nIf you want to work with 3D surfaces or volume rendering, \nit is recommended to reduce the medical images resolution."))
         icon = wx.ArtProvider.GetBitmap(wx.ART_WARNING, wx.ART_MESSAGE_BOX, (32,32))
@@ -172,7 +177,7 @@ class ResizeImageDialog(wx.Dialog):
         return self.num_ctrl_porcent.GetValue()
 
     def Close(self):
-        self.pre.Destroy()
+        self.Destroy()
 
 def ShowNumberDialog(message, value=0):
     dlg = NumberDialog(message, value)
