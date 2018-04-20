@@ -1451,9 +1451,9 @@ class Viewer(wx.Panel):
             if _has_win32api:
                 utils.touch(filename)
                 win_filename = win32api.GetShortPathName(filename)
-                self._export_surface(win_filename.encode(const.FS_ENCODE), filetype)
+                self._export_surface(win_filename, filetype)
             else:
-                self._export_surface(filename.encode(const.FS_ENCODE), filetype)
+                self._export_surface(filename, filetype)
 
     def _export_surface(self, filename, filetype):
         fileprefix = filename.split(".")[-2]
