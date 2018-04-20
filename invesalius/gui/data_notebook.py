@@ -885,11 +885,17 @@ class SurfacesListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
             self.surface_list_index[index] = image_index
 
             if (index in index_list) and index_list:
-                self.UpdateItemInfo(index, name, volume, area, transparency, colour)
+                try:
+                    self.UpdateItemInfo(index, name, volume, area, transparency, colour)
+                except wx._core.wxAssertionError:
+                    self.InsertNewItem(index, name, volume, area, transparency, colour)
             else:
                 self.InsertNewItem(index, name, volume, area, transparency, colour)
         else:
-            self.UpdateItemInfo(index, name, volume, area, transparency, colour)
+            try:
+                self.UpdateItemInfo(index, name, volume, area, transparency, colour)
+            except wx._core.wxAssertionError:
+                self.InsertNewItem(index, name, volume, area, transparency, colour)
 
     def InsertNewItem(self, index=0, label="Surface 1", volume="0 mm3",
                       area="0 mm2", transparency="0%%", colour=None):
@@ -905,12 +911,12 @@ class SurfacesListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
                        area="0 mm2", transparency="0%%", colour=None):
         print("UpdateItemInfo", index)
         # TODO: Retornar esse codigo
-        #  self.SetStringItem(index, 1, label,
-                            #  imageId = self.surface_list_index[index])
-        #  self.SetStringItem(index, 2, volume)
-        #  self.SetStringItem(index, 3, area)
-        #  self.SetStringItem(index, 4, transparency)
-        #  self.SetItemImage(index, 1)
+        self.SetStringItem(index, 1, label,
+                            imageId = self.surface_list_index[index])
+        self.SetStringItem(index, 2, volume)
+        self.SetStringItem(index, 3, area)
+        self.SetStringItem(index, 4, transparency)
+        self.SetItemImage(index, 1)
 
     def CreateColourBitmap(self, colour):
         """
@@ -1178,11 +1184,17 @@ class MeasuresListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
             self._list_index[index] = image_index
 
             if (index in index_list) and index_list:
-                self.UpdateItemInfo(index, name, colour, location, type_, value)
+                try:
+                    self.UpdateItemInfo(index, name, colour, location, type_, value)
+                except wx._core.wxAssertionError:
+                    self.InsertNewItem(index, name, colour, location, type_, value)
             else:
                 self.InsertNewItem(index, name, colour, location, type_, value)
         else:
-            self.UpdateItemInfo(index, name, colour, location, type_, value)
+            try:
+                self.UpdateItemInfo(index, name, colour, location, type_, value)
+            except wx._core.wxAssertionError:
+                self.InsertNewItem(index, name, colour, location, type_, value)
 
 
 
@@ -1199,13 +1211,12 @@ class MeasuresListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
 
     def UpdateItemInfo(self, index=0, label="Measurement 1", colour=None,
                       location="SURFACE", type_="LINEAR", value="0 mm"):
-        # TODO: Retornar isso
-        #  self.SetStringItem(index, 1, label,
-                            #  imageId = self._list_index[index])
-        #  self.SetStringItem(index, 2, location)
-        #  self.SetStringItem(index, 3, type_)
-        #  self.SetStringItem(index, 4, value)
-        #  self.SetItemImage(index, 1)
+        self.SetStringItem(index, 1, label,
+                            imageId = self._list_index[index])
+        self.SetStringItem(index, 2, location)
+        self.SetStringItem(index, 3, type_)
+        self.SetStringItem(index, 4, value)
+        self.SetItemImage(index, 1)
         self.Refresh()
 
     def CreateColourBitmap(self, colour):
