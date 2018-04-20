@@ -925,7 +925,7 @@ class SurfaceManager():
                 temp_file = win32api.GetShortPathName(temp_file)
                 os.remove(_temp_file)
 
-            temp_file = temp_file.decode(const.FS_ENCODE)
+            temp_file = utl.decode(temp_file, const.FS_ENCODE)
             self._export_surface(temp_file, filetype)
 
             shutil.move(temp_file, filename)
