@@ -70,11 +70,16 @@ EVT_MASK_SET = wx.PyEventBinder(myEVT_MASK_SET, 1)
 
 class NumberDialog(wx.Dialog):
     def __init__(self, message, value=0):
-        pre = wx.PreDialog()
-        pre.Create(None, -1, "InVesalius 3", size=wx.DefaultSize,
-                   pos=wx.DefaultPosition,
-                   style=wx.DEFAULT_DIALOG_STYLE)
-        self.PostCreate(pre)
+        try:
+            pre = wx.PreDialog()
+            pre.Create(None, -1, "InVesalius 3", size=wx.DefaultSize,
+                       pos=wx.DefaultPosition,
+                       style=wx.DEFAULT_DIALOG_STYLE)
+            self.PostCreate(pre)
+        except AttributeError:
+            wx.Dialog.__init__(self, None, -1, "InVesalius 3", size=wx.DefaultSize,
+                               pos=wx.DefaultPosition,
+                               style=wx.DEFAULT_DIALOG_STYLE)
 
         # Static text which contains message to user
         label = wx.StaticText(self, -1, message)
@@ -618,10 +623,14 @@ def ShowLoadRegistrationDialog():
 
 class MessageDialog(wx.Dialog):
     def __init__(self, message):
-        pre = wx.PreDialog()
-        pre.Create(None, -1, "InVesalius 3",  size=(360, 370), pos=wx.DefaultPosition,
-                    style=wx.DEFAULT_DIALOG_STYLE|wx.ICON_INFORMATION)
-        self.PostCreate(pre)
+        try:
+            pre = wx.PreDialog()
+            pre.Create(None, -1, "InVesalius 3",  size=(360, 370), pos=wx.DefaultPosition,
+                        style=wx.DEFAULT_DIALOG_STYLE|wx.ICON_INFORMATION)
+            self.PostCreate(pre)
+        except AttributeError:
+            wx.Dialog.__init__(self, None, -1, "InVesalius 3",  size=(360, 370), pos=wx.DefaultPosition,
+                        style=wx.DEFAULT_DIALOG_STYLE|wx.ICON_INFORMATION)
 
         # Static text which contains message to user
         label = wx.StaticText(self, -1, message)
@@ -660,10 +669,14 @@ class UpdateMessageDialog(wx.Dialog):
         title=_("Invesalius Update")
         self.url = url
 
-        pre = wx.PreDialog()
-        pre.Create(None, -1, title,  size=(360, 370), pos=wx.DefaultPosition,
-                    style=wx.DEFAULT_DIALOG_STYLE|wx.ICON_INFORMATION)
-        self.PostCreate(pre)
+        try:
+            pre = wx.PreDialog()
+            pre.Create(None, -1, title,  size=(360, 370), pos=wx.DefaultPosition,
+                        style=wx.DEFAULT_DIALOG_STYLE|wx.ICON_INFORMATION)
+            self.PostCreate(pre)
+        except AttributeError:
+            wx.Dialog.__init__(self, None, -1, title,  size=(360, 370), pos=wx.DefaultPosition,
+                        style=wx.DEFAULT_DIALOG_STYLE|wx.ICON_INFORMATION)
 
         # Static text which contains message to user
         label = wx.StaticText(self, -1, msg)
@@ -1296,18 +1309,22 @@ class NewSurfaceDialog(wx.Dialog):
         import invesalius.data.surface as surface
         import invesalius.project as prj
 
-        # Instead of calling wx.Dialog.__init__ we precreate the dialog
-        # so we can set an extra style that must be set before
-        # creation, and then we create the GUI object using the Create
-        # method.
-        pre = wx.PreDialog()
-        pre.SetExtraStyle(wx.DIALOG_EX_CONTEXTHELP)
-        pre.Create(parent, ID, title, pos, (500,300), style)
+        try:
+            # Instead of calling wx.Dialog.__init__ we precreate the dialog
+            # so we can set an extra style that must be set before
+            # creation, and then we create the GUI object using the Create
+            # method.
+            pre = wx.PreDialog()
+            pre.SetExtraStyle(wx.DIALOG_EX_CONTEXTHELP)
+            pre.Create(parent, ID, title, pos, (500,300), style)
 
-        # This next step is the most important, it turns this Python
-        # object into the real wrapper of the dialog (instead of pre)
-        # as far as the wxPython extension is concerned.
-        self.PostCreate(pre)
+            # This next step is the most important, it turns this Python
+            # object into the real wrapper of the dialog (instead of pre)
+            # as far as the wxPython extension is concerned.
+            self.PostCreate(pre)
+        except AttributeError:
+            wx.Dialog.__init__(self, parent, ID, title, pos, (500,300), style)
+            self.SetExtraStyle(wx.DIALOG_EX_CONTEXTHELP)
 
         self.CenterOnScreen()
 
@@ -3195,10 +3212,14 @@ class ObjectCalibrationDialog(wx.Dialog):
         self.obj_fiducials = np.full([5, 3], np.nan)
         self.obj_orients = np.full([5, 3], np.nan)
 
-        pre = wx.PreDialog()
-        pre.Create(wx.GetApp().GetTopWindow(), -1, _(u"Object calibration"), size=(450, 440),
-                   style=wx.DEFAULT_DIALOG_STYLE | wx.FRAME_FLOAT_ON_PARENT)
-        self.PostCreate(pre)
+        try:
+            pre = wx.PreDialog()
+            pre.Create(wx.GetApp().GetTopWindow(), -1, _(u"Object calibration"), size=(450, 440),
+                       style=wx.DEFAULT_DIALOG_STYLE | wx.FRAME_FLOAT_ON_PARENT)
+            self.PostCreate(pre)
+        except AttributeError:
+            wx.Dialog.__init__(self, wx.GetApp().GetTopWindow(), -1, _(u"Object calibration"), size=(450, 440),
+                       style=wx.DEFAULT_DIALOG_STYLE | wx.FRAME_FLOAT_ON_PARENT)
 
         self._init_gui()
         self.LoadObject()
