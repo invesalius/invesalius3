@@ -1455,7 +1455,7 @@ class WaterShedInteractorStyle(DefaultInteractorStyle):
             del wp
 
             w_x, w_y = wx.GetMousePosition()
-            x, y = self.viewer.ScreenToClientXY(w_x, w_y)
+            x, y = self.viewer.ScreenToClient(w_x, w_y)
             flag = self.viewer.interactor.HitTest((x, y))
 
             if flag == wx.HT_WINDOW_INSIDE:
