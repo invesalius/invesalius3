@@ -2359,10 +2359,16 @@ class PanelTargeFFill(wx.Panel):
 
         sizer = wx.GridBagSizer(5, 5)
 
-        sizer.Add(0, 0, (0, 0))
+        try:
+            sizer.Add(0, 0, (0, 0))
+        except TypeError:
+            sizer.AddStretchSpacer((0, 0))
         sizer.Add(self.target_2d, (1, 0), (1, 6), flag=wx.LEFT, border=5)
         sizer.Add(self.target_3d, (2, 0), (1, 6), flag=wx.LEFT, border=5)
-        sizer.Add(0, 0, (3, 0))
+        try:
+            sizer.Add(0, 0, (3, 0))
+        except TypeError:
+            sizer.AddStretchSpacer((3, 0))
 
         self.SetSizer(sizer)
         sizer.Fit(self)
@@ -2379,11 +2385,17 @@ class Panel2DConnectivity(wx.Panel):
 
         sizer = wx.GridBagSizer(5, 5)
 
-        sizer.Add(0, 0, (0, 0))
+        try:
+            sizer.Add(0, 0, (0, 0))
+        except TypeError:
+            sizer.AddStretchSpacer((0, 0))
         sizer.Add(wx.StaticText(self, -1, _(u"2D Connectivity")), (1, 0), (1, 6), flag=wx.LEFT, border=5)
         sizer.Add(self.conect2D_4, (2, 0), flag=wx.LEFT, border=7)
         sizer.Add(self.conect2D_8, (2, 1), flag=wx.LEFT, border=7)
-        sizer.Add(0, 0, (3, 0))
+        try:
+            sizer.Add(0, 0, (3, 0))
+        except TypeError:
+            sizer.AddStretchSpacer((3, 0))
 
         if show_orientation:
             self.cmb_orientation = wx.ComboBox(self, -1, choices=(_(u"Axial"), _(u"Coronal"), _(u"Sagital")), style=wx.CB_READONLY)
@@ -2425,12 +2437,18 @@ class Panel3DConnectivity(wx.Panel):
 
         sizer = wx.GridBagSizer(5, 5)
 
-        sizer.Add(0, 0, (0, 0))
+        try:
+            sizer.Add(0, 0, (0, 0))
+        except TypeError:
+            sizer.AddStretchSpacer((0, 0))
         sizer.Add(wx.StaticText(self, -1, _(u"3D Connectivity")), (1, 0), (1, 6), flag=wx.LEFT, border=5)
         sizer.Add(self.conect3D_6, (2, 0), flag=wx.LEFT, border=9)
         sizer.Add(self.conect3D_18, (2, 1), flag=wx.LEFT, border=9)
         sizer.Add(self.conect3D_26, (2, 2), flag=wx.LEFT, border=9)
-        sizer.Add(0, 0, (3, 0))
+        try:
+            sizer.Add(0, 0, (3, 0))
+        except TypeError:
+            sizer.AddStretchSpacer((3, 0))
 
         self.SetSizer(sizer)
         sizer.Fit(self)
