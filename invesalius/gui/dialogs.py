@@ -3081,8 +3081,12 @@ class CropOptionsDialog(wx.Dialog):
         gbs_button.Add(btn_ok, (0,1))
 
         gbs_principal.Add(gbs, (0,0), flag = wx.ALL|wx.EXPAND)
-        gbs_principal.Add(0, 0, (1,0))
-        gbs_principal.Add(0, 0, (2,0))
+        try:
+            gbs_principal.Add(0, 0, (1, 0))
+            gbs_principal.Add(0, 0, (2, 0))
+        except TypeError:
+            gbs_principal.AddStretchSpacer((1, 0))
+            gbs_principal.AddStretchSpacer((2, 0))
         gbs_principal.Add(gbs_button, (3,0), flag = wx.ALIGN_RIGHT)
 
         box = wx.BoxSizer()
