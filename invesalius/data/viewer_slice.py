@@ -337,7 +337,7 @@ class CanvasRendererCTX:
         p0y = -p0y
         p1y = -p1y
 
-        pen = wx.Pen(wx.Colour(*colour), width, wx.SOLID)
+        pen = wx.Pen(wx.Colour(*[int(c) for c in colour]), width, wx.SOLID)
         pen.SetCap(wx.CAP_BUTT)
         gc.SetPen(pen)
 
@@ -508,7 +508,7 @@ class CanvasRendererCTX:
         if self.gc is None:
             return None
         gc = self.gc
-        pen = wx.Pen(wx.Colour(*line_colour), width, wx.SOLID)
+        pen = wx.Pen(wx.Colour(*[int(c) for c in line_colour]), width, wx.SOLID)
         gc.SetPen(pen)
 
         c = np.array(center)
