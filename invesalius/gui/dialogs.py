@@ -2403,7 +2403,10 @@ class Panel2DConnectivity(wx.Panel):
 
             sizer.Add(wx.StaticText(self, -1, _(u"Orientation")), (4, 0), (1, 6), flag=wx.LEFT|wx.RIGHT|wx.ALIGN_CENTER_VERTICAL, border=5)
             sizer.Add(self.cmb_orientation, (5, 0), (1, 10), flag=wx.LEFT|wx.RIGHT|wx.EXPAND, border=7)
-            sizer.Add(0, 0, (6, 0))
+            try:
+                sizer.Add(0, 0, (6, 0))
+            except TypeError:
+                sizer.AddStretchSpacer((6, 0))
 
         self.SetSizer(sizer)
         sizer.Fit(self)
