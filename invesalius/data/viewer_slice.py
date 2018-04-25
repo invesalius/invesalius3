@@ -105,10 +105,16 @@ class ContourMIPConfig(wx.Panel):
         sizer = wx.BoxSizer(wx.HORIZONTAL)
         sizer.Add(txt_mip_size, 0, wx.EXPAND | wx.ALL, 2)
         sizer.Add(self.mip_size_spin, 0, wx.EXPAND)
-        sizer.Add(10, 0)
+        try:
+            sizer.Add(10, 0)
+        except TypeError:
+            sizer.Add((10, 0))
         sizer.Add(self.txt_mip_border, 0, wx.EXPAND | wx.ALL, 2)
         sizer.Add(self.border_spin, 0, wx.EXPAND)
-        sizer.Add(10, 0)
+        try:
+            sizer.Add(10, 0)
+        except TypeError:
+            sizer.Add((10, 0))
         sizer.Add(self.inverted, 0, wx.EXPAND)
         self.SetSizer(sizer)
         sizer.Fit(self)
@@ -206,7 +212,10 @@ class CanvasRendererCTX:
         self.alpha = np.zeros((h, w, 1), dtype=np.uint8)
 
         self.bitmap = wx.EmptyBitmapRGBA(w, h)
-        self.image = wx.Image(w, h, self.rgb, self.alpha)
+        try:
+            self.image = wx.Image(w, h, self.rgb, self.alpha)
+        except TypeError:
+            self.image = wx.ImageFromBuffer(w, h, self.rgb, self.alpha)
 
     def _resize_canvas(self, w, h):
         self._array = np.zeros((h, w, 4), dtype=np.uint8)
@@ -218,7 +227,10 @@ class CanvasRendererCTX:
         self.alpha = np.zeros((h, w, 1), dtype=np.uint8)
 
         self.bitmap = wx.EmptyBitmapRGBA(w, h)
-        self.image = wx.Image(w, h, self.rgb, self.alpha)
+        try:
+            self.image = wx.Image(w, h, self.rgb, self.alpha)
+        except TypeError:
+            self.image = wx.ImageFromBuffer(w, h, self.rgb, self.alpha)
 
         self.modified = True
 

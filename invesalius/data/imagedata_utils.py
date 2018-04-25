@@ -265,7 +265,7 @@ def ExtractVOI(imagedata,xi,xf,yi,yf,zi,zf):
 
 def create_dicom_thumbnails(filename, window=None, level=None):
     rvtk = vtkgdcm.vtkGDCMImageReader()
-    rvtk.SetFileName(filename)
+    rvtk.SetFileName(utils.encode(filename, const.FS_ENCODE))
     rvtk.Update()
 
     img = rvtk.GetOutput()

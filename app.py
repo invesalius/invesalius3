@@ -31,14 +31,18 @@ import re
 
 if sys.platform == 'win32':
     import _winreg
-else:
-    if sys.platform != 'darwin':
-        import wxversion
-        #wxversion.ensureMinimal('2.8-unicode', optionsRequired=True)
-        #wxversion.select('2.8-unicode', optionsRequired=True)
-        wxversion.ensureMinimal('3.0')
+#  else:
+    #  if sys.platform != 'darwin':
+        #  import wxversion
+        #  #wxversion.ensureMinimal('2.8-unicode', optionsRequired=True)
+        #  #wxversion.select('2.8-unicode', optionsRequired=True)
+        #  #  wxversion.ensureMinimal('4.0')
         
 import wx
+try:
+    from wx.adv import SplashScreen
+except ImportError:
+    from wx import SplashScreen
 #from wx.lib.pubsub import setupv1 #new wx
 from wx.lib.pubsub import setuparg1# as psv1
 #from wx.lib.pubsub import Publisher 
@@ -76,6 +80,8 @@ USER_LOG_DIR = os.path.join(USER_INV_DIR, u'logs')
 
 # ------------------------------------------------------------------
 
+wx.GetXDisplay = lambda: None
+
 
 class InVesalius(wx.App):
     """
@@ -90,7 +96,7 @@ class InVesalius(wx.App):
         freeze_support()
 
         self.SetAppName("InVesalius 3")
-        self.splash = SplashScreen()
+        self.splash = Inv3SplashScreen()
         self.splash.Show()
         wx.CallLater(1000,self.Startup2)
 
@@ -112,7 +118,7 @@ class InVesalius(wx.App):
 
 # ------------------------------------------------------------------
 
-class SplashScreen(wx.adv.SplashScreen):
+class Inv3SplashScreen(SplashScreen):
     """
     Splash screen to be shown in InVesalius initialization.
     """
@@ -203,13 +209,17 @@ class SplashScreen(wx.adv.SplashScreen):
 				
             bmp = wx.Image(path).ConvertToBitmap()
 
-            style = wx.adv.SPLASH_TIMEOUT | wx.adv.SPLASH_CENTRE_ON_SCREEN
-            wx.adv.SplashScreen.__init__(self,
-                                     bitmap=bmp,
-                                     splashStyle=style,
-                                     milliseconds=1500,
-                                     id=-1,
-                                     parent=None)
+            try:
+                style = wx.adv.SPLASH_TIMEOUT | wx.adv.SPLASH_CENTRE_ON_SCREEN
+            except AttributeError:
+                style = wx.SPLASH_TIMEOUT | wx.SPLASH_CENTRE_ON_SCREEN
+
+            SplashScreen.__init__(self,
+                                  bitmap=bmp,
+                                  splashStyle=style,
+                                  milliseconds=1500,
+                                  id=-1,
+                                  parent=None)
             self.Bind(wx.EVT_CLOSE, self.OnClose)
             wx.Yield()
             wx.CallLater(200, self.Startup)

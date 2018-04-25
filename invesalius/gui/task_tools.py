@@ -20,11 +20,11 @@
 import wx
 import os
 import wx.lib.embeddedimage as emb
+
 try:
-    from wx.adv import HyperlinkCtrl
-    from wx.adv import EVT_HYPERLINK as EVT_HYPERLINK_LEFT
+    import wx.lib.agw.hyperlink as hl
 except ImportError:
-    from wx.lib.hyperlink import HyperlinkCtrl, EVT_HYPERLINK_LEFT
+    import wx.lib.hyperlink as hl
 
 import wx.lib.platebtn as pbtn
 from wx.lib.pubsub import pub as Publisher
@@ -69,13 +69,13 @@ class InnerTaskPanel(wx.Panel):
         txt_measure.SetToolTip(tooltip)
 
         tooltip = wx.ToolTip(_("Add text annotations"))
-        txt_annotation = HyperLinkCtrl(self, -1,_("Add text annotations"))
+        txt_annotation = hl.HyperLinkCtrl(self, -1,_("Add text annotations"))
         txt_annotation.SetUnderlines(False, False, False)
         txt_annotation.SetColours("BLACK", "BLACK", "BLACK")
         txt_annotation.SetToolTip(tooltip)
         txt_annotation.AutoBrowse(False)
         txt_annotation.UpdateLink()
-        txt_annotation.Bind(EVT_HYPERLINK_LEFT, self.OnTextAnnotation)
+        txt_annotation.Bind(hl.EVT_HYPERLINK_LEFT, self.OnTextAnnotation)
 
         # Image(s) for buttons
         BMP_ANNOTATE = wx.Bitmap(os.path.join(const.ICON_DIR, "annotation.png"), wx.BITMAP_TYPE_PNG)

@@ -392,6 +392,7 @@ class Frame(wx.Frame):
         s = ses.Session()
         if not s.IsOpen() or not s.project_path:
             Publisher.sendMessage('Exit')
+        self.aui_manager.UnInit()
 
     def OnMenuClick(self, evt):
         """

@@ -124,7 +124,7 @@ class DicomGroup:
         # (interpolated)
 
         if _has_win32api:
-            filelist = [win32api.GetShortPathName(dicom.image.file).encode(const.FS_ENCODE)
+            filelist = [win32api.GetShortPathName(dicom.image.file)
                         for dicom in
                         self.slices_dict.values()]
         else:
@@ -137,7 +137,7 @@ class DicomGroup:
             sorter = gdcm.IPPSorter()
             sorter.SetComputeZSpacing(True)
             sorter.SetZSpacingTolerance(1e-10)
-            sorter.Sort(filelist)
+            sorter.Sort([utils.encode(i, const.FS_ENCODE) for i in filelist])
             filelist = sorter.GetFilenames()
 
         # for breast-CT of koning manufacturing (KBCT)

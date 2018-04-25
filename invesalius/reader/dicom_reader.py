@@ -104,9 +104,10 @@ class LoadDicom:
         grouper = self.grouper
         reader = gdcm.ImageReader()
         if _has_win32api:
-            reader.SetFileName(win32api.GetShortPathName(self.filepath).encode(const.FS_ENCODE))
+            reader.SetFileName(utils.encode(win32api.GetShortPathName(self.filepath),
+                                            const.FS_ENCODE))
         else:
-            reader.SetFileName(self.filepath)
+            reader.SetFileName(utils.encode(self.filepath, const.FS_ENCODE))
 
         if (reader.Read()):
             file = reader.GetFile()
@@ -196,7 +197,7 @@ class LoadDicom:
                 window = None
 
             if _has_win32api:
-                thumbnail_path = imagedata_utils.create_dicom_thumbnails(win32api.GetShortPathName(self.filepath).encode(const.FS_ENCODE), window, level)
+                thumbnail_path = imagedata_utils.create_dicom_thumbnails(win32api.GetShortPathName(self.filepath), window, level)
             else:
                 thumbnail_path = imagedata_utils.create_dicom_thumbnails(self.filepath, window, level)
 
@@ -328,7 +329,7 @@ class ProgressDicomReader:
     def GetDicomGroups(self, path, recursive):
 
         if not const.VTK_WARNING:
-            log_path = os.path.join(const.USER_LOG_DIR, 'vtkoutput.txt').encode(const.FS_ENCODE)
+            log_path = utils.encode(os.path.join(const.USER_LOG_DIR, 'vtkoutput.txt'), const.FS_ENCODE)
             fow = vtk.vtkFileOutputWindow()
             fow.SetFileName(log_path)
             ow = vtk.vtkOutputWindow()

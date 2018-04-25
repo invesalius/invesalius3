@@ -455,3 +455,10 @@ def decode(text, encoding, *args):
         return text.decode(encoding, *args)
     except AttributeError:
         return text
+
+
+def encode(text, encoding, *args):
+    try:
+        return text.encode(encoding, *args)
+    except AttributeError:
+        return text
