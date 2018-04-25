@@ -2242,13 +2242,19 @@ class ImportBitmapParameters(wx.Dialog):
 
         gbs.Add(stx_name, (0,0), flag=flag_labels)
         gbs.Add(tx_name, (0,1))
-        gbs.Add(0, 0, (1,0))
+        try:
+            gbs.Add(0, 0, (1,0))
+        except TypeError:
+            gbs.AddStretchSpacer((1,0))
 
         gbs.Add(stx_orientation, (2,0), flag=flag_labels)
         gbs.Add(cb_orientation, (2,1))
 
         gbs.Add(stx_spacing, (3,0))
-        gbs.Add(0, 0, (4,0))
+        try:
+            gbs.Add(0, 0, (4,0))
+        except TypeError:
+            gbs.AddStretchSpacer((4,0))
 
         #--- spacing --------------
         gbs_spacing = wx.GridBagSizer(2, 6)
@@ -2298,13 +2304,19 @@ class ImportBitmapParameters(wx.Dialog):
 
         btn_cancel = wx.Button(p, wx.ID_CANCEL)
 
-        gbs_button.Add(0, 0, (0,2))
+        try:
+            gbs_button.Add(0, 0, (0,2))
+        except TypeError:
+            gbs_button.AddStretchSpacer((0,2))
         gbs_button.Add(btn_cancel, (1,2))
         gbs_button.Add(btn_ok, (1,3))
 
         gbs_principal.Add(gbs, (0,0), flag = wx.ALL|wx.EXPAND)
         gbs_principal.Add(gbs_spacing, (1,0),  flag=wx.ALL|wx.EXPAND)
-        gbs_principal.Add(0, 0, (2,0))
+        try:
+            gbs_principal.Add(0, 0, (2,0))
+        except TypeError:
+            gbs_principal.AddStretchSpacer((2,0))
         gbs_principal.Add(gbs_button, (3,0), flag = wx.ALIGN_RIGHT)
 
         box = wx.BoxSizer()
@@ -2526,11 +2538,17 @@ class PanelFFillDynamic(wx.Panel):
 
         sizer = wx.GridBagSizer(5, 5)
 
-        sizer.Add(0, 0, (0, 0))
+        try:
+            sizer.Add(0, 0, (0, 0))
+        except TypeError:
+            sizer.AddStretchSpacer((0, 0))
 
         sizer.Add(self.use_ww_wl, (1, 0), (1, 6), flag=wx.LEFT, border=5)
 
-        sizer.Add(0, 0, (2, 0))
+        try:
+            sizer.Add(0, 0, (2, 0))
+        except TypeError:
+            sizer.AddStretchSpacer((2, 0))
 
         sizer.Add(wx.StaticText(self, -1, _(u"Deviation")), (3, 0), (1, 6), flag=wx.LEFT, border=5)
 
@@ -2540,7 +2558,10 @@ class PanelFFillDynamic(wx.Panel):
         sizer.Add(wx.StaticText(self, -1, _(u"Max:")), (4, 2), flag=wx.ALIGN_CENTER_VERTICAL|wx.LEFT, border=9)
         sizer.Add(self.deviation_max, (4, 3))
 
-        sizer.Add(0, 0, (5, 0))
+        try:
+            sizer.Add(0, 0, (5, 0))
+        except TypeError:
+            sizer.AddStretchSpacer((5, 0))
 
         self.SetSizer(sizer)
         sizer.Fit(self)
@@ -2584,19 +2605,28 @@ class PanelFFillConfidence(wx.Panel):
 
         sizer = wx.GridBagSizer(5, 5)
 
-        sizer.Add(0, 0, (0, 0))
+        try:
+            sizer.Add(0, 0, (0, 0))
+        except TypeError:
+            sizer.AddStretchSpacer((0, 0))
 
         sizer.Add(self.use_ww_wl, (1, 0), (1, 6), flag=wx.LEFT, border=5)
 
-        sizer.Add(0, 0, (2, 0))
+        try:
+            sizer.Add(0, 0, (2, 0))
+        except TypeError:
+            sizer.AddStretchSpacer((2, 0))
 
         sizer.Add(wx.StaticText(self, -1, _(u"Multiplier")), (3, 0), (1, 3), flag=wx.ALIGN_CENTER_VERTICAL|wx.LEFT, border=5)
-        sizer.Add(self.spin_mult, (3, 3), (1, 2))
+        sizer.Add(self.spin_mult, (3, 3), (1, 3))
 
         sizer.Add(wx.StaticText(self, -1, _(u"Iterations")), (4, 0), (1, 3), flag=wx.ALIGN_CENTER_VERTICAL|wx.LEFT, border=5)
         sizer.Add(self.spin_iters, (4, 3), (1, 2))
 
-        sizer.Add(0, 0, (5, 0))
+        try:
+            sizer.Add(0, 0, (5, 0))
+        except TypeError:
+            sizer.AddStretchSpacer((5, 0))
 
         self.SetSizer(sizer)
         sizer.Fit(self)
@@ -2893,20 +2923,38 @@ class FFillSegmentationOptionsDialog(wx.Dialog):
         # Sizer
         sizer = wx.GridBagSizer(2, 2)
 
-        sizer.Add(0, 0, (0, 0))
+        try:
+            sizer.Add(0, 0, (0, 0))
+        except TypeError:
+            sizer.AddStretchSpacer((0, 0))
         sizer.Add(wx.StaticText(self, -1, _(u"Parameters")), (1, 0), (1, 6), flag=wx.LEFT, border=5)
-        sizer.Add(0, 0, (2, 0))
+        try:
+            sizer.Add(0, 0, (2, 0))
+        except TypeError:
+            sizer.AddStretchSpacer((2, 0))
         sizer.Add(self.panel_target, (3, 0), (1, 6), flag=wx.LEFT|wx.RIGHT|wx.EXPAND, border=7)
-        sizer.Add(0, 0, (4, 0))
+        try:
+            sizer.Add(0, 0, (4, 0))
+        except TypeError:
+            sizer.AddStretchSpacer((4, 0))
         sizer.Add(self.panel2dcon, (5, 0), (1, 6), flag=wx.LEFT|wx.RIGHT|wx.EXPAND, border=7)
-        sizer.Add(0, 0, (6, 0))
+        try:
+            sizer.Add(0, 0, (6, 0))
+        except TypeError:
+            sizer.AddStretchSpacer((6, 0))
         sizer.Add(self.panel3dcon, (7, 0), (1, 6), flag=wx.LEFT|wx.RIGHT|wx.EXPAND, border=7)
-        sizer.Add(0, 0, (8, 0))
+        try:
+            sizer.Add(0, 0, (8, 0))
+        except TypeError:
+            sizer.AddStretchSpacer((8, 0))
 
         sizer.Add(wx.StaticText(self, -1, _(u"Method")), (9, 0), (1, 1), flag=wx.LEFT|wx.ALIGN_CENTER_VERTICAL, border=7)
         sizer.Add(self.cmb_method, (9, 1), (1, 5), flag=wx.LEFT|wx.RIGHT|wx.EXPAND, border=7)
 
-        sizer.Add(0, 0, (10, 0))
+        try:
+            sizer.Add(0, 0, (10, 0))
+        except TypeError:
+            sizer.AddStretchSpacer((10, 0))
 
         if self.config.method == 'dynamic':
             self.cmb_method.SetSelection(0)
@@ -2922,9 +2970,15 @@ class FFillSegmentationOptionsDialog(wx.Dialog):
             sizer.Add(self.panel_ffill_threshold, (11, 0), (1, 6), flag=wx.LEFT|wx.RIGHT|wx.EXPAND, border=7)
             self.config.method = 'threshold'
 
-        sizer.Add(0, 0, (12, 0))
+        try:
+            sizer.Add(0, 0, (12, 0))
+        except TypeError:
+            sizer.AddStretchSpacer((12, 0))
         sizer.Add(self.close_btn, (13, 0), (1, 6), flag=wx.ALIGN_RIGHT|wx.RIGHT, border=5)
-        sizer.Add(0, 0, (14, 0))
+        try:
+            sizer.Add(0, 0, (14, 0))
+        except TypeError:
+            sizer.AddStretchSpacer((14, 0))
 
         self.SetSizer(sizer)
         sizer.Fit(self)
