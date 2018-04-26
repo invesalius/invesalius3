@@ -80,7 +80,14 @@ USER_LOG_DIR = os.path.join(USER_INV_DIR, u'logs')
 
 # ------------------------------------------------------------------
 
-wx.GetXDisplay = lambda: None
+if sys.platform == 'linux2':
+    try:
+        tmp_var = wx.GetXDisplay
+    except AttributeError:
+        # A workaround to make InVesalius run with wxPython4 from Ubuntu 18.04
+        wx.GetXDisplay = lambda: None
+    else:
+        del tmp_var
 
 
 class InVesalius(wx.App):
