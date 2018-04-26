@@ -1068,6 +1068,7 @@ class AngularMeasure(object):
 
 class CircleDensityMeasure(CanvasHandlerBase):
     def __init__(self, orientation, slice_number, colour=(255, 0, 0, 255), interactive=True):
+        super(CircleDensityMeasure, self).__init__(None)
         self.parent = None
         self.children = []
         self.layer = 0
@@ -1096,14 +1097,11 @@ class CircleDensityMeasure(CanvasHandlerBase):
         self.ellipse = Ellipse(self, self.center, self.point1, self.point2,
                                fill=False, line_colour=self.colour)
         self.ellipse.layer = 1
-        #  self.ellipse.on_change(self.on_change_ellipse)
         self.add_child(self.ellipse)
         self.text_box = None
 
         self._need_calc = True
         self.interactive = interactive
-
-        self.visible = True
 
     def set_center(self, pos):
         self.center = pos
@@ -1146,9 +1144,6 @@ class CircleDensityMeasure(CanvasHandlerBase):
             self.text_box = TextBox(self, text, self.point1, MEASURE_TEXT_COLOUR, MEASURE_TEXTBOX_COLOUR)
             self.text_box.layer = 2
             self.add_child(self.text_box)
-
-            #  self.handle_tl = CircleHandler(self.point1)
-            #  self.handle_tl.on_move(self._on_move)
         else:
             self.text_box.set_text(text)
 
@@ -1188,9 +1183,6 @@ class CircleDensityMeasure(CanvasHandlerBase):
             #  elif self.text_box.is_over(x, y):
                 #  return self.text_box.is_over(x, y)
             #  return None
-
-    def _on_move(self, obj):
-        self.set_point1(obj.position)
 
     def set_interactive(self, value):
         self.interactive = bool(value)
@@ -1341,9 +1333,16 @@ class CircleDensityMeasure(CanvasHandlerBase):
         session = ses.Session()
         session.ChangeProject()
 
+    def on_select(self, evt):
+        self.layer = 50
+
+    def on_deselect(self, evt):
+        self.layer = 0
+
 
 class PolygonDensityMeasure(CanvasHandlerBase):
     def __init__(self, orientation, slice_number, colour=(255, 0, 0, 255), interactive=True):
+        super(PolygonDensityMeasure, self).__init__(None)
         self.parent = None
         self.children = []
         self.layer = 0
@@ -1373,7 +1372,6 @@ class PolygonDensityMeasure(CanvasHandlerBase):
 
         self.polygon = Polygon(self, fill=False, closed=False, line_colour=self.colour)
         self.polygon.layer = 1
-        #  self.polygon.on_change(self.on_change_polygon)
         self.add_child(self.polygon)
 
         self.text_box = None
@@ -1381,7 +1379,6 @@ class PolygonDensityMeasure(CanvasHandlerBase):
         self._need_calc = False
         self.interactive = interactive
 
-        self.visible = True
 
     def on_mouse_move(self, evt):
         self.points = self.polygon.points

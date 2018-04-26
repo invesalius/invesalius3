@@ -232,7 +232,8 @@ class CanvasRendererCTX:
                                           control_down=evt.ControlDown(),
                                           alt_down=evt.AltDown(),
                                           shift_down=evt.ShiftDown())
-                    self._selected_obj.on_deselect(evt_obj)
+                    #  self._selected_obj.on_deselect(evt_obj)
+                    self.propagate_event(self._selected_obj, evt_obj)
                 except AttributeError:
                     pass
                 evt_obj = CanvasEvent('select', self._over_obj, (x, y), self.viewer,
@@ -240,7 +241,8 @@ class CanvasRendererCTX:
                                       control_down=evt.ControlDown(),
                                       alt_down=evt.AltDown(),
                                       shift_down=evt.ShiftDown())
-                self._over_obj.on_select(evt_obj)
+                #  self._over_obj.on_select(evt_obj)
+                self.propagate_event(self._over_obj, evt_obj)
                 self._selected_obj = self._over_obj
                 self.Refresh()
             self._drag_obj = self._over_obj
@@ -744,6 +746,17 @@ class CanvasHandlerBase(object):
         self.parent = parent
         self.children = []
         self.layer = 0
+        self._visible = True
+
+    @property
+    def visible(self):
+        return self._visible
+
+    @visible.setter
+    def visible(self, value):
+        self._visible = value
+        for child in self.children:
+            child.visible = value
 
     def _3d_to_2d(self, renderer, pos):
         coord = vtk.vtkCoordinate()
@@ -768,8 +781,8 @@ class TextBox(CanvasHandlerBase):
                  text, position=(0, 0, 0),
                  text_colour=(0, 0, 0, 255),
                  box_colour=(255, 255, 255, 255)):
+        super(TextBox, self).__init__(parent)
 
-        self.parent = parent
         self.layer = 0
         self.text = text
         self.text_colour = text_colour
@@ -780,7 +793,6 @@ class TextBox(CanvasHandlerBase):
 
         self.bbox = (0, 0, 0, 0)
 
-        self.visible = True
         self._highlight = False
 
         self._last_position = (0, 0, 0)
@@ -837,7 +849,8 @@ class CircleHandler(CanvasHandlerBase):
                  line_colour=(255, 255, 255, 255),
                  fill_colour=(0, 0, 0, 0), is_3d=True):
 
-        self.parent = parent
+        super(CircleHandler, self).__init__(parent)
+
         self.layer = 0
         self.position = position
         self.radius = radius
@@ -848,7 +861,6 @@ class CircleHandler(CanvasHandlerBase):
 
         self.children = []
 
-        self.visible = True
         self._on_move_function = None
 
     def on_move(self, evt_function):
@@ -889,7 +901,8 @@ class Polygon(CanvasHandlerBase):
                  fill_colour=(255, 255, 255, 128), width=2,
                  interactive=True, is_3d=True):
 
-        self.parent = parent
+        super(Polygon, self).__init__(parent)
+
         self.layer = 0
         self.children = []
 
@@ -899,8 +912,6 @@ class Polygon(CanvasHandlerBase):
             self.points = points
 
         self.handlers = []
-
-        self._ref_handlers = {}
 
         self.fill = fill
         self.closed = closed
@@ -914,13 +925,21 @@ class Polygon(CanvasHandlerBase):
             self.fill_colour = (0, 0, 0, 0)
 
         self.width = width
-        self.interactive = interactive
+        self._interactive = interactive
         self.is_3d = is_3d
 
-        self._on_change_function = None
+    @property
+    def interactive(self):
+        return self._interactive
+
+    @interactive.setter
+    def interactive(self, value):
+        self._interactive = value
+        for handler in self.handlers:
+            handler.visible = value
 
     def draw_to_canvas(self, gc, canvas):
-        if self.points:
+        if self.visible and self.points:
             if self.is_3d:
                 points = [self._3d_to_2d(canvas.evt_renderer, p) for p in self.points]
             else:
@@ -945,8 +964,6 @@ class Polygon(CanvasHandlerBase):
         #  handler.on_move(self.on_move_point)
         self.handlers.append(handler)
         self.points.append(point)
-
-        self._ref_handlers[handler] = len(self.points) - 1
 
     def on_mouse_move(self, evt):
         if evt.root_event_obj is self:
@@ -976,9 +993,6 @@ class Polygon(CanvasHandlerBase):
 
         self._last_position = new_pos
 
-        #  if self._on_change_function and self._on_change_function():
-            #  self._on_change_function()()
-
         return True
 
     def on_mouse_enter(self, evt):
@@ -990,9 +1004,6 @@ class Polygon(CanvasHandlerBase):
         pass
         #  self.interactive = False
         #  self.layer = 0
-
-    def on_change(self, evt_function):
-        self._on_change_function = WeakMethod(evt_function)
 
     def on_select(self, evt):
         mx, my = evt.position
@@ -1053,9 +1064,10 @@ class Ellipse(CanvasHandlerBase):
                  fill=True,
                  line_colour=(255, 255, 255, 255),
                  fill_colour=(255, 255, 255, 128), width=2,
-                 interactive=False, is_3d=True):
+                 interactive=True, is_3d=True):
 
-        self.parent = parent
+        super(Ellipse, self).__init__(parent)
+
         self.children = []
         self.layer = 0
 
@@ -1072,7 +1084,7 @@ class Ellipse(CanvasHandlerBase):
         else:
             self.fill_colour = (0, 0, 0, 0)
         self.width = width
-        self.interactive = interactive
+        self._interactive = interactive
         self.is_3d = is_3d
 
         self.handler_1 = CircleHandler(self, self.point1, is_3d=is_3d, fill_colour=(255, 0, 0, 255))
@@ -1083,9 +1095,15 @@ class Ellipse(CanvasHandlerBase):
         self.add_child(self.handler_1)
         self.add_child(self.handler_2)
 
-        self._on_change_function = None
+    @property
+    def interactive(self):
+        return self._interactive
 
-        self.visible = True
+    @interactive.setter
+    def interactive(self, value):
+        self._interactive = value
+        self.handler_1.visible = value
+        self.handler_2.visible = value
 
     def draw_to_canvas(self, gc, canvas):
         if self.visible:
@@ -1117,9 +1135,6 @@ class Ellipse(CanvasHandlerBase):
         self.point2 = pos
         self.handler_2.position = pos
 
-    def on_change(self, evt_function):
-        self._on_change_function = WeakMethod(evt_function)
-
     def on_mouse_move(self, evt):
         if evt.root_event_obj is self:
             self.on_mouse_move2(evt)
@@ -1146,9 +1161,6 @@ class Ellipse(CanvasHandlerBase):
 
             self.set_point2(tuple(point2))
 
-        if self._on_change_function and self._on_change_function():
-            self._on_change_function()()
-
     def move_p2(self, evt):
         pos = self.handler_2.position
         if evt.viewer.orientation == 'AXIAL':
@@ -1167,9 +1179,6 @@ class Ellipse(CanvasHandlerBase):
             point1 = np.array(self.center) + vec * dist
 
             self.set_point1(tuple(point1))
-
-        #  if self._on_change_function and self._on_change_function():
-            #  self._on_change_function()()
 
     def on_mouse_enter(self, evt):
         #  self.interactive = True
@@ -1199,9 +1208,6 @@ class Ellipse(CanvasHandlerBase):
         self.set_point2(tuple((i+j for i,j in zip(diff, self.point2))))
 
         self._last_position = new_pos
-
-        if self._on_change_function and self._on_change_function():
-            self._on_change_function()()
 
         return True
 
