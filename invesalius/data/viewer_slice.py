@@ -105,10 +105,16 @@ class ContourMIPConfig(wx.Panel):
         sizer = wx.BoxSizer(wx.HORIZONTAL)
         sizer.Add(txt_mip_size, 0, wx.EXPAND | wx.ALL, 2)
         sizer.Add(self.mip_size_spin, 0, wx.EXPAND)
-        sizer.AddSpacer((10, 0))
+        try:
+            sizer.Add(10, 0)
+        except TypeError:
+            sizer.Add((10, 0))
         sizer.Add(self.txt_mip_border, 0, wx.EXPAND | wx.ALL, 2)
         sizer.Add(self.border_spin, 0, wx.EXPAND)
-        sizer.AddSpacer((10, 0))
+        try:
+            sizer.Add(10, 0)
+        except TypeError:
+            sizer.Add((10, 0))
         sizer.Add(self.inverted, 0, wx.EXPAND)
         self.SetSizer(sizer)
         sizer.Fit(self)
@@ -206,7 +212,10 @@ class CanvasRendererCTX:
         self.alpha = np.zeros((h, w, 1), dtype=np.uint8)
 
         self.bitmap = wx.EmptyBitmapRGBA(w, h)
-        self.image = wx.ImageFromBuffer(w, h, self.rgb, self.alpha)
+        try:
+            self.image = wx.Image(w, h, self.rgb, self.alpha)
+        except TypeError:
+            self.image = wx.ImageFromBuffer(w, h, self.rgb, self.alpha)
 
     def _resize_canvas(self, w, h):
         self._array = np.zeros((h, w, 4), dtype=np.uint8)
@@ -218,7 +227,10 @@ class CanvasRendererCTX:
         self.alpha = np.zeros((h, w, 1), dtype=np.uint8)
 
         self.bitmap = wx.EmptyBitmapRGBA(w, h)
-        self.image = wx.ImageFromBuffer(w, h, self.rgb, self.alpha)
+        try:
+            self.image = wx.Image(w, h, self.rgb, self.alpha)
+        except TypeError:
+            self.image = wx.ImageFromBuffer(w, h, self.rgb, self.alpha)
 
         self.modified = True
 
@@ -325,7 +337,7 @@ class CanvasRendererCTX:
         p0y = -p0y
         p1y = -p1y
 
-        pen = wx.Pen(wx.Colour(*colour), width, wx.SOLID)
+        pen = wx.Pen(wx.Colour(*[int(c) for c in colour]), width, wx.SOLID)
         pen.SetCap(wx.CAP_BUTT)
         gc.SetPen(pen)
 
@@ -496,7 +508,7 @@ class CanvasRendererCTX:
         if self.gc is None:
             return None
         gc = self.gc
-        pen = wx.Pen(wx.Colour(*line_colour), width, wx.SOLID)
+        pen = wx.Pen(wx.Colour(*[int(c) for c in line_colour]), width, wx.SOLID)
         gc.SetPen(pen)
 
         c = np.array(center)
@@ -521,7 +533,7 @@ class CanvasRendererCTX:
             ea = a0
 
         path = gc.CreatePath()
-        path.AddArc((c[0], c[1]), min(s0, s1), sa, ea)
+        path.AddArc(float(c[0]), float(c[1]), float(min(s0, s1)), float(sa), float(ea), True)
         gc.StrokePath(path)
         self._drawn = True
 
@@ -600,7 +612,7 @@ class Viewer(wx.Panel):
         sizer.Add(scroll, 0, wx.EXPAND|wx.GROW)
 
         background_sizer = wx.BoxSizer(wx.VERTICAL)
-        background_sizer.AddSizer(sizer, 1, wx.EXPAND|wx.GROW|wx.ALL, 2)
+        background_sizer.Add(sizer, 1, wx.EXPAND|wx.GROW|wx.ALL, 2)
         #background_sizer.Add(self.mip_ctrls, 0, wx.EXPAND|wx.GROW|wx.ALL, 2)
         self.SetSizer(background_sizer)
         background_sizer.Fit(self)
@@ -1382,7 +1394,7 @@ class Viewer(wx.Panel):
         number_renderers = self.layout[0] * self.layout[1]
         diff = number_renderers - len(self.slice_data_list)
         if diff > 0:
-            for i in xrange(diff):
+            for i in range(diff):
                 slice_data = self.create_slice_window(imagedata)
                 self.slice_data_list.append(slice_data)
         elif diff < 0:
@@ -1400,8 +1412,8 @@ class Viewer(wx.Panel):
         w *= proportion_x
         h *= proportion_y
         n = 0
-        for j in xrange(self.layout[1]-1, -1, -1):
-            for i in xrange(self.layout[0]):
+        for j in range(self.layout[1]-1, -1, -1):
+            for i in range(self.layout[0]):
                 slice_xi = i*proportion_x
                 slice_xf = (i+1)*proportion_x
                 slice_yi = j*proportion_y

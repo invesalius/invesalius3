@@ -205,7 +205,7 @@ class CursorBase(object):
 
     def _set_colour(self, imagedata, colour):
         scalar_range = int(imagedata.GetScalarRange()[1])
-        r, g, b = colour
+        r, g, b = colour[:3]
 
         # map scalar values into colors
         lut_mask = vtk.vtkLookupTable()
@@ -319,7 +319,7 @@ class CursorRectangle(CursorBase):
         """
         Function to plot the Retangle
         """
-        print "Building rectangle cursor", self.orientation
+        print("Building rectangle cursor", self.orientation)
         r = self.radius
         sx, sy, sz = self.spacing
         if self.orientation == 'AXIAL':

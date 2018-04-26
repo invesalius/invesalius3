@@ -140,11 +140,10 @@ class Text(object):
         # With some encoding in some dicom fields (like name) raises a
         # UnicodeEncodeError because they have non-ascii characters. To avoid
         # that we encode in utf-8.
-
-	if sys.platform == 'win32':
+        if sys.platform == 'win32':
             self.mapper.SetInput(value.encode("utf-8"))
         else:
-	    try:
+            try:
                 self.mapper.SetInput(value.encode("latin-1"))
             except(UnicodeEncodeError):
                 self.mapper.SetInput(value.encode("utf-8"))

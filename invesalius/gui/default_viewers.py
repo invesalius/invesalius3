@@ -306,7 +306,7 @@ import wx.lib.colourselect as csel
 
 import invesalius.constants as const
 
-[BUTTON_RAYCASTING, BUTTON_VIEW, BUTTON_SLICE_PLANE, BUTTON_3D_STEREO, BUTTON_TARGET] = [wx.NewId() for num in xrange(5)]
+[BUTTON_RAYCASTING, BUTTON_VIEW, BUTTON_SLICE_PLANE, BUTTON_3D_STEREO, BUTTON_TARGET] = [wx.NewId() for num in range(5)]
 RAYCASTING_TOOLS = wx.NewId()
 
 ID_TO_NAME = {}

@@ -1,3 +1,4 @@
+import functools
 import math
 import wx
 
@@ -33,6 +34,7 @@ myEVT_CLUT_NODE_CHANGED = wx.NewEventType()
 EVT_CLUT_NODE_CHANGED = wx.PyEventBinder(myEVT_CLUT_NODE_CHANGED, 1)
 
 
+@functools.total_ordering
 class Node(object):
     def __init__(self, value, colour):
         self.value = value
@@ -40,6 +42,12 @@ class Node(object):
 
     def __cmp__(self, o):
         return cmp(self.value, o.value)
+
+    def __lt__(self, other):
+        return self.value < other.value
+
+    def __eq__(self, other):
+        return self.value == other.value
 
     def __repr__(self):
         return "(%d %s)" % (self.value, self.colour)
@@ -147,7 +155,7 @@ class CLUTImageDataWidget(wx.Panel):
         prop_y = (h) * 1.0 / (y_end - y_init)
 
         self._d_hist = []
-        for i in xrange(w):
+        for i in range(w):
             x = i / prop_x + x_init - 1
             if self.i_init <= x < self.i_end:
                 try:
@@ -218,7 +226,7 @@ class CLUTImageDataWidget(wx.Panel):
         self.middle_pressed = False
 
     def OnClick(self, evt):
-        px, py = evt.GetPositionTuple()
+        px, py = evt.GetPosition()
         self.left_pressed = True
         self.selected_node = self.get_node_clicked(px, py)
         self.last_selected = self.selected_node
@@ -231,7 +239,7 @@ class CLUTImageDataWidget(wx.Panel):
 
     def OnDoubleClick(self, evt):
         w, h = self.GetVirtualSize()
-        px, py = evt.GetPositionTuple()
+        px, py = evt.GetPosition()
 
         # Verifying if the user double-click in a node-colour.
         selected_node = self.get_node_clicked(px, py)
@@ -240,7 +248,7 @@ class CLUTImageDataWidget(wx.Panel):
             # option to change the color from this node.
             colour_dialog = wx.GetColourFromUser(self, (0, 0, 0))
             if colour_dialog.IsOk():
-                r, g, b = colour_dialog.Get()
+                r, g, b = colour_dialog.Get()[:3]
                 selected_node.colour = r, g, b
                 self._generate_event()
         else:
@@ -255,7 +263,7 @@ class CLUTImageDataWidget(wx.Panel):
 
     def OnRightClick(self, evt):
         w, h = self.GetVirtualSize()
-        px, py = evt.GetPositionTuple()
+        px, py = evt.GetPosition()
         selected_node = self.get_node_clicked(px, py)
 
         if selected_node:

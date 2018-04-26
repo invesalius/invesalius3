@@ -239,13 +239,13 @@ def calculate_resizing_tofitmemory(x_size,y_size,n_slices,byte):
             ram_total = psutil.phymem_usage().total
             swap_free = psutil.virtmem_usage().free
     except:
-        print "Exception! psutil version < 0.3 (not recommended)"
+        print("Exception! psutil version < 0.3 (not recommended)")
         ram_total = psutil.TOTAL_PHYMEM  # this is for psutil < 0.3
         ram_free = 0.8 * psutil.TOTAL_PHYMEM 
         swap_free = psutil.avail_virtmem()
                     
-    print "RAM_FREE=", ram_free
-    print "RAM_TOTAL=", ram_total
+    print("RAM_FREE=", ram_free)
+    print( "RAM_TOTAL=", ram_total)
 
     if (sys.platform == 'win32'):
         if (platform.architecture()[0] == '32bit'):
@@ -371,8 +371,14 @@ def get_system_encoding():
 
 
 def UpdateCheck():
-    import urllib
-    import urllib2
+    try:
+        from urllib.parse import urlencode
+        from urllib.request import urlopen, Request
+        from urllib.error import HTTPError
+    except ImportError:
+        from urllib import urlencode
+        from urllib2 import urlopen, Request, HTTPError
+
     import wx
     import invesalius.session as ses
     def _show_update_info():
@@ -385,7 +391,7 @@ def UpdateCheck():
         msgdlg.Show()
         #msgdlg.Destroy()
 
-    print "Checking updates..."
+    print("Checking updates...")
     
     # Check if there is a language set
     #import invesalius.i18n as i18n    import invesalius.session as ses
@@ -411,14 +417,14 @@ def UpdateCheck():
                 'architecture' : platform.architecture()[0],
                 'language' : lang,
                 'random_id' : random_id }
-        data = urllib.urlencode(data)
-        req = urllib2.Request(url, data, headers)
+        data = urlencode(data).encode('utf8')
+        req = Request(url, data, headers)
         try:
-            response = urllib2.urlopen(req, timeout=10)
+            response = urlopen(req, timeout=10)
         except:
             return
-        last = response.readline().rstrip()
-        url = response.readline().rstrip()
+        last = response.readline().rstrip().decode('utf8')
+        url = response.readline().rstrip().decode('utf8')
 
         try:
             last_ver = LooseVersion(last)
@@ -427,14 +433,14 @@ def UpdateCheck():
             return
 
         if last_ver > actual_ver:
-            print "  ...New update found!!! -> version:", last #, ", url=",url
+            print("  ...New update found!!! -> version:", last) #, ", url=",url
             wx.CallAfter(wx.CallLater, 1000, _show_update_info)
 
 
 def vtkarray_to_numpy(m):
     nm = np.zeros((4, 4))
-    for i in xrange(4):
-        for j in xrange(4):
+    for i in range(4):
+        for j in range(4):
             nm[i, j] = m.GetElement(i, j)
     return nm
 
@@ -442,3 +448,17 @@ def vtkarray_to_numpy(m):
 def touch(fname):
     with open(fname, 'a'):
         pass
+
+
+def decode(text, encoding, *args):
+    try:
+        return text.decode(encoding, *args)
+    except AttributeError:
+        return text
+
+
+def encode(text, encoding, *args):
+    try:
+        return text.encode(encoding, *args)
+    except AttributeError:
+        return text

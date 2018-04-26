@@ -17,6 +17,8 @@
 #    detalhes.
 #--------------------------------------------------------------------------
 
+from six import with_metaclass
+
 try:
     import configparser as ConfigParser
 except(ImportError):
@@ -33,7 +35,7 @@ import codecs
 from wx.lib.pubsub import pub as Publisher
 import wx
 
-from invesalius.utils import Singleton, debug
+from invesalius.utils import Singleton, debug, decode
 from random import randint
 
 FS_ENCODE = sys.getfilesystemencoding()
@@ -43,9 +45,9 @@ if sys.platform == 'win32':
     try:
         USER_DIR = expand_user()
     except:
-        USER_DIR = os.path.expanduser('~').decode(FS_ENCODE)
+        USER_DIR = decode(os.path.expanduser('~'), FS_ENCODE)
 else:
-    USER_DIR = os.path.expanduser('~').decode(FS_ENCODE)
+    USER_DIR = decode(os.path.expanduser('~'), FS_ENCODE)
 
 USER_INV_DIR = os.path.join(USER_DIR, u'.invesalius')
 USER_PRESET_DIR = os.path.join(USER_INV_DIR, u'presets')
@@ -55,10 +57,9 @@ USER_INV_CFG_PATH = os.path.join(USER_INV_DIR, 'config.cfg')
 SESSION_ENCODING = 'utf8'
 
 
-class Session(object):
-    # Only one session will be initialized per time. Therefore, we use
-    # Singleton design pattern for implementing it
-    __metaclass__= Singleton
+# Only one session will be initialized per time. Therefore, we use
+# Singleton design pattern for implementing it
+class Session(with_metaclass(Singleton, object)):
 
     def __init__(self):
         self.temp_item = False
@@ -221,7 +222,7 @@ class Session(object):
 
         # Remove oldest projects from list
         if len(l)>const.PROJ_MAX:
-            for i in xrange(len(l)-const.PROJ_MAX):
+            for i in range(len(l)-const.PROJ_MAX):
                 l.pop()
 
     def GetLanguage(self):

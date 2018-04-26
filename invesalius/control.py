@@ -347,7 +347,7 @@ class Controller():
             dirpath, filename = session.project_path
 
         if isinstance(filename, str):
-            filename = filename.decode(const.FS_ENCODE)
+            filename = utils.decode(filename, const.FS_ENCODE)
 
         proj = prj.Project()
         prj.Project().SavePlistProject(dirpath, filename, compress)
@@ -458,7 +458,7 @@ class Controller():
     def ImportMedicalImages(self, directory, gui=True):
         patients_groups = dcm.GetDicomGroups(directory)
         name = directory.rpartition('\\')[-1].split('.')
-        print "patients: ", patients_groups
+        print("patients: ", patients_groups)
 
         if len(patients_groups):
             # OPTION 1: DICOM
@@ -760,7 +760,7 @@ class Controller():
         Publisher.sendMessage("Enable state project", True)
 
     def OnOpenOtherFiles(self, pubsub_evt):
-        filepath = pubsub_evt.data
+        filepath = utils.decode(pubsub_evt.data, const.FS_ENCODE)
         if not(filepath) == None:
             name = filepath.rpartition('\\')[-1].split('.')
 
@@ -785,7 +785,7 @@ class Controller():
             utils.debug("Not used the IPPSorter")
             filelist = [i.image.file for i in dicom_group.GetHandSortedList()[::interval]]
         
-        if file_range != None and file_range[1] > file_range[0]:
+        if file_range is not None and file_range[0] is not None and file_range[1] > file_range[0]:
             filelist = filelist[file_range[0]:file_range[1] + 1]
 
         zspacing = dicom_group.zspacing * interval
@@ -828,7 +828,7 @@ class Controller():
             self.matrix, scalar_range, self.filename = image_utils.dcm2memmap(filelist, size,
                                                                         orientation, resolution_percentage)
 
-            print xyspacing, zspacing
+            print(xyspacing, zspacing)
             if orientation == 'AXIAL':
                 spacing = xyspacing[0], xyspacing[1], zspacing
             elif orientation == 'CORONAL':
@@ -893,7 +893,7 @@ class Controller():
         proj = prj.Project()
 
         thresh_modes =  proj.threshold_modes.keys()
-        thresh_modes.sort()
+        thresh_modes = sorted(thresh_modes)
         default_threshold = const.THRESHOLD_PRESETS_INDEX
         if proj.mask_dict:
             keys = proj.mask_dict.keys()

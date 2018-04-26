@@ -1240,7 +1240,7 @@ class Parser():
             encoding = self.GetEncoding()
             try:
                 # Returns a unicode decoded in the own dicom encoding
-                return name.decode(encoding, 'replace')
+                return utils.decode(name, encoding, 'replace')
             except(UnicodeEncodeError):
                 return name
 
@@ -1285,7 +1285,7 @@ class Parser():
             
             try:
                 # Returns a unicode decoded in the own dicom encoding
-                return name.decode(encoding, 'replace')
+                return utils.decode(name, encoding, 'replace')
             except(UnicodeEncodeError):
                 return name
 
@@ -1308,7 +1308,7 @@ class Parser():
             encoding = self.GetEncoding()
             # Returns a unicode decoded in the own dicom encoding
             try:
-                return data.decode(encoding, 'replace')
+                return utils.decode(data, encoding, 'replace')
             except(UnicodeEncodeError):
                 return data
         return ""
@@ -1526,10 +1526,8 @@ class Parser():
         try:
             data = self.data_image[str(0x0008)][str(0x1030)]
             if (data):
-                if isinstance(data, unicode):
-                    return data
                 encoding = self.GetEncoding()
-                return data.decode(encoding, 'replace')
+                return utils.decode(data, encoding, 'replace')
         except(KeyError):
             return ""
 
@@ -1843,31 +1841,31 @@ if __name__ == "__main__":
     fail_count = 0
     total = 48
 
-    for i in xrange(1,total+1):
+    for i in range(1,total+1):
         filename = "..//data//"+str(i)+".dcm"
 
         parser = Parser()
         if parser.SetFileName(filename):
-            print "p:", parser.GetPatientName()
-            print "l:", parser.GetImageLocation()
-            print "o:", parser.GetImagePatientOrientation()
-            print "t:", parser.GetImageThickness()
-            print "s:", parser.GetPixelSpacing()
-            print "x:", parser.GetDimensionX()
-            print "y:", parser.GetDimensionY()
-            print "z:", parser.GetDimensionZ()
+            print("p:", parser.GetPatientName())
+            print("l:", parser.GetImageLocation())
+            print("o:", parser.GetImagePatientOrientation())
+            print("t:", parser.GetImageThickness())
+            print("s:", parser.GetPixelSpacing())
+            print("x:", parser.GetDimensionX())
+            print("y:", parser.GetDimensionY())
+            print("z:", parser.GetDimensionZ())
         else:
-            print "--------------------------------------------------"
+            print("--------------------------------------------------")
             total-=1
             fail_count+=1
 
-    print "\nREPORT:"
-    print "failed: ", fail_count
-    print "sucess: ", total
+    print("\nREPORT:")
+    print("failed: ", fail_count)
+    print("sucess: ", total)
 
     # Example of how to use auxiliary functions
     total = 38
-    for i in xrange(1,total+1):
+    for i in range(1,total+1):
         if (i==8) or (i==9) or (i==13):
             pass
         else:

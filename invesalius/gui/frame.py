@@ -24,6 +24,12 @@ import sys
 import webbrowser
 
 import wx
+
+try:
+    from wx.adv import TaskBarIcon as wx_TaskBarIcon
+except ImportError:
+    from wx import TaskBarIcon as wx_TaskBarIcon
+
 import wx.aui
 from wx.lib.pubsub import pub as Publisher
 import wx.lib.agw.toasterbox as TB
@@ -386,6 +392,7 @@ class Frame(wx.Frame):
         s = ses.Session()
         if not s.IsOpen() or not s.project_path:
             Publisher.sendMessage('Exit')
+        self.aui_manager.UnInit()
 
     def OnMenuClick(self, evt):
         """
@@ -1127,7 +1134,7 @@ class StatusBar(wx.StatusBar):
 # ------------------------------------------------------------------
 # ------------------------------------------------------------------
 
-class TaskBarIcon(wx.TaskBarIcon):
+class TaskBarIcon(wx_TaskBarIcon):
     """
     TaskBarIcon has different behaviours according to the platform:
         - win32:  Show icon on "Notification Area" (near clock)
@@ -1135,7 +1142,7 @@ class TaskBarIcon(wx.TaskBarIcon):
         - linux2: Show icon on "Notification Area" (near clock)
     """
     def __init__(self, parent=None):
-        wx.TaskBarIcon.__init__(self)
+        wx_TaskBarIcon.__init__(self)
         self.frame = parent
 
         icon = wx.Icon(os.path.join(const.ICON_DIR, "invesalius.ico"),

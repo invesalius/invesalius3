@@ -47,7 +47,7 @@ def GetCoordinates(trck_init, trck_id, ref_mode):
                     5: DebugCoord}
         coord = getcoord[trck_id](trck_init, trck_id, ref_mode)
     else:
-        print "Select Tracker"
+        print("Select Tracker")
 
     return coord
 
@@ -70,7 +70,7 @@ def ClaronCoord(trck_init, trck_id, ref_mode):
                 k = 30
             except AttributeError:
                 k += 1
-                print "wait, collecting coordinates ..."
+                print("wait, collecting coordinates ...")
         if k == 30:
             coord = dynamic_reference(probe, reference)
             coord = (coord[0] * scale[0], coord[1] * scale[1], coord[2] * scale[2], coord[3], coord[4], coord[5])
@@ -84,7 +84,7 @@ def ClaronCoord(trck_init, trck_id, ref_mode):
                 k = 30
             except AttributeError:
                 k += 1
-                print "wait, collecting coordinates ..."
+                print("wait, collecting coordinates ...")
 
     Publisher.sendMessage('Sensors ID', [trck.probeID, trck.refID])
 
@@ -180,7 +180,7 @@ def PolhemusSerialCoord(trck_init, trck_id, ref_mode):
     coord = None
 
     if lines[0][0] != '0':
-        print "The Polhemus is not connected!"
+        print("The Polhemus is not connected!")
     else:
         for s in lines:
             if s[1] == '1':
@@ -198,7 +198,7 @@ def PolhemusSerialCoord(trck_init, trck_id, ref_mode):
                     plh1 = [float(s) for s in data[1:len(data)]]
                     j = 1
                 except:
-                    print "error!!"
+                    print("error!!")
 
             coord = data[0:6]
     return coord

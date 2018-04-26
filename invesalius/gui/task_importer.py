@@ -20,8 +20,12 @@ import os
 import sys
 
 import wx
-import wx.lib.hyperlink as hl
+try:
+    import wx.lib.agw.hyperlink as hl
+except ImportError:
+    import wx.lib.hyperlink as hl
 import wx.lib.platebtn as pbtn
+
 from wx.lib.pubsub import pub as Publisher
 
 import invesalius.constants as const
@@ -222,7 +226,7 @@ class InnerTaskPanel(wx.Panel):
 
 
     def ImportPACS(self):
-        print "TODO: Send Signal - Import DICOM files from PACS"
+        print("TODO: Send Signal - Import DICOM files from PACS")
 
 
 #######
@@ -264,7 +268,7 @@ class InnerTaskPanel(wx.Panel):
         """
 
         # Remove each project from sizer
-        for i in xrange(0, self.proj_count):
+        for i in range(0, self.proj_count):
             self.sizer.Remove(self.float_hyper_list[i])
 
         # Delete hyperlinks

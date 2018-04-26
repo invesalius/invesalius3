@@ -43,7 +43,7 @@ class Presets():
             _("Fat Tissue (Child)"):(-212,-72),
             _("Skin Tissue (Adult)"):(-718,-177),
             _("Skin Tissue (Child)"):(-766,-202), 
-            _("Custom"):('', '')
+            _("Custom"):(0, 0)
         })
 
         self.thresh_mri = TwoWaysDictionary({
@@ -61,7 +61,7 @@ class Presets():
             _("Fat Tissue (Child)"):(812,952),
             _("Skin Tissue (Adult)"):(306,847),
             _("Skin Tissue (Child)"):(258,822), 
-            _("Custom"):('', '')
+            _("Custom"):(0, 0)
         })
         self.__bind_events()
         
@@ -78,6 +78,7 @@ class Presets():
             for key in presets:
                 (t_min, t_max) = presets[key]
 
+                print(key, t_min, t_max)
 
                 if (t_min is None) or (t_max is None): # setting custom preset
                     t_min = thresh_min
@@ -181,7 +182,7 @@ def get_wwwl_preset_colours(pfile):
     preset = plistlib.readPlist(pfile)
     ncolours = len(preset['Blue'])
     colours = []
-    for i in xrange(ncolours):
+    for i in range(ncolours):
         r = preset['Red'][i]
         g = preset['Green'][i]
         b = preset['Blue'][i]

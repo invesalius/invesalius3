@@ -78,7 +78,7 @@ def FillSurfaceHole(polydata):
     Fill holes in the given polydata.
     """
     # Filter used to detect and fill holes. Only fill
-    print "Filling polydata"
+    print("Filling polydata")
     filled_polydata = vtk.vtkFillHolesFilter()
     filled_polydata.SetInputData(polydata)
     filled_polydata.SetHoleSize(500)
@@ -133,9 +133,9 @@ def Export(polydata, filename, bin=False):
 
 def Import(filename):
     reader = vtk.vtkXMLPolyDataReader()
-    if isinstance(filename, unicode):
+    try:
         reader.SetFileName(filename.encode(wx.GetDefaultPyEncoding()))
-    else:
+    except AttributeError:
         reader.SetFileName(filename)
     reader.Update()
     return reader.GetOutput()
@@ -198,7 +198,7 @@ def SplitDisconectedParts(polydata):
     if progress:
         UpdateProgress = vu.ShowProgress(progress)
 
-    for region in xrange(nregions):
+    for region in range(nregions):
         conn.InitializeSpecifiedRegionList()
         conn.AddSpecifiedRegion(region)
         conn.Update()

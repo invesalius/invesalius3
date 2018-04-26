@@ -23,9 +23,15 @@ import os
 
 import numpy as np
 import wx
-import wx.lib.hyperlink as hl
+
+try:
+    import wx.lib.agw.hyperlink as hl
+    import wx.lib.agw.foldpanelbar as fpb
+except ImportError:
+    import wx.lib.hyperlink as hl
+    import wx.lib.foldpanelbar as fpb
+
 import wx.lib.masked.numctrl
-import wx.lib.foldpanelbar as fpb
 from wx.lib.pubsub import pub as Publisher
 import wx.lib.colourselect as csel
 import wx.lib.platebtn as pbtn
@@ -42,6 +48,7 @@ import invesalius.data.trackers as dt
 import invesalius.data.trigger as trig
 import invesalius.data.record_coords as rec
 import invesalius.gui.dialogs as dlg
+from invesalius import utils
 
 BTN_NEW = wx.NewId()
 BTN_IMPORT_LOCAL = wx.NewId()
@@ -114,7 +121,10 @@ class FoldPanel(wx.Panel):
 class InnerFoldPanel(wx.Panel):
     def __init__(self, parent):
         wx.Panel.__init__(self, parent)
-        default_colour = wx.SystemSettings_GetColour(wx.SYS_COLOUR_MENUBAR)
+        try:
+            default_colour = wx.SystemSettings.GetColour(wx.SYS_COLOUR_MENUBAR)
+        except AttributeError:
+            default_colour = wx.SystemSettings_GetColour(wx.SYS_COLOUR_MENUBAR)
         self.SetBackgroundColour(default_colour)
 
         self.__bind_events()
@@ -253,7 +263,10 @@ class InnerFoldPanel(wx.Panel):
 class NeuronavigationPanel(wx.Panel):
     def __init__(self, parent):
         wx.Panel.__init__(self, parent)
-        default_colour = wx.SystemSettings_GetColour(wx.SYS_COLOUR_MENUBAR)
+        try:
+            default_colour = wx.SystemSettings.GetColour(wx.SYS_COLOUR_MENUBAR)
+        except AttributeError:
+            default_colour = wx.SystemSettings_GetColour(wx.SYS_COLOUR_MENUBAR)
         self.SetBackgroundColour(default_colour)
 
         self.SetAutoLayout(1)
@@ -300,8 +313,8 @@ class NeuronavigationPanel(wx.Panel):
         tips_img = const.TIPS_IMG
 
         for k in btns_img:
-            n = btns_img[k].keys()[0]
-            lab = btns_img[k].values()[0]
+            n = list(btns_img[k].keys())[0]
+            lab = list(btns_img[k].values())[0]
             self.btns_coord[n] = wx.ToggleButton(self, k, label=lab, size=wx.Size(45, 23))
             self.btns_coord[n].SetToolTip(wx.ToolTip(tips_img[n]))
             self.btns_coord[n].Bind(wx.EVT_TOGGLEBUTTON, self.OnImageFiducials)
@@ -311,8 +324,8 @@ class NeuronavigationPanel(wx.Panel):
         tips_trk = const.TIPS_TRK
 
         for k in btns_trk:
-            n = btns_trk[k].keys()[0]
-            lab = btns_trk[k].values()[0]
+            n = list(btns_trk[k].keys())[0]
+            lab = list(btns_trk[k].values())[0]
             self.btns_coord[n] = wx.Button(self, k, label=lab, size=wx.Size(45, 23))
             self.btns_coord[n].SetToolTip(wx.ToolTip(tips_trk[n-3]))
             # Exception for event of button that set image coordinates
@@ -393,8 +406,8 @@ class NeuronavigationPanel(wx.Panel):
         marker_id = pubsub_evt.data[0]
         coord = pubsub_evt.data[1]
         for n in const.BTNS_IMG_MKS:
-            btn_id = const.BTNS_IMG_MKS[n].keys()[0]
-            fid_id = const.BTNS_IMG_MKS[n].values()[0]
+            btn_id = list(const.BTNS_IMG_MKS[n].keys())[0]
+            fid_id = list(const.BTNS_IMG_MKS[n].values())[0]
             if marker_id == fid_id and not self.btns_coord[btn_id].GetValue():
                 self.btns_coord[btn_id].SetValue(True)
                 self.fiducials[btn_id, :] = coord[0:3]
@@ -461,11 +474,11 @@ class NeuronavigationPanel(wx.Panel):
                 if not self.trk_init[0]:
                     dlg.NavigationTrackerWarning(self.tracker_id, self.trk_init[1])
                     ctrl.SetSelection(0)
-                    print "Tracker not connected!"
+                    print("Tracker not connected!")
                 else:
                     Publisher.sendMessage('Update status text in GUI', _("Ready"))
                     ctrl.SetSelection(self.tracker_id)
-                    print "Tracker connected!"
+                    print("Tracker connected!")
         elif choice == 6:
             if trck:
                 Publisher.sendMessage('Update status text in GUI', _("Disconnecting tracker ..."))
@@ -477,10 +490,10 @@ class NeuronavigationPanel(wx.Panel):
                     self.tracker_id = 0
                     ctrl.SetSelection(self.tracker_id)
                     Publisher.sendMessage('Update status text in GUI', _("Tracker disconnected"))
-                    print "Tracker disconnected!"
+                    print("Tracker disconnected!")
                 else:
                     Publisher.sendMessage('Update status text in GUI', _("Tracker still connected"))
-                    print "Tracker still connected!"
+                    print("Tracker still connected!")
             else:
                 ctrl.SetSelection(self.tracker_id)
 
@@ -506,11 +519,11 @@ class NeuronavigationPanel(wx.Panel):
         # TODO: Improve the restarting of trackers after changing reference mode
         # self.OnChoiceTracker(None, ctrl)
         Publisher.sendMessage('Update tracker initializer', (self.tracker_id, self.trk_init, self.ref_mode_id))
-        print "Reference mode changed!"
+        print("Reference mode changed!")
 
     def OnSetImageCoordinates(self, evt):
         # FIXME: Cross does not update in last clicked slice, only on the other two
-        btn_id = const.BTNS_TRK[evt.GetId()].keys()[0]
+        btn_id = list(const.BTNS_TRK[evt.GetId()].keys())[0]
 
         ux, uy, uz = self.numctrls_coord[btn_id][0].GetValue(),\
                      self.numctrls_coord[btn_id][1].GetValue(),\
@@ -518,12 +531,12 @@ class NeuronavigationPanel(wx.Panel):
 
         Publisher.sendMessage('Set ball reference position', (ux, uy, uz))
         # Publisher.sendMessage('Set camera in volume', (ux, uy, uz))
-        Publisher.sendMessage('Co-registered points', (ux, uy, uz, 0., 0., 0.))
+        Publisher.sendMessage('Co-registered points', ((ux, uy, uz), (0., 0., 0.)))
         Publisher.sendMessage('Update cross position', (ux, uy, uz))
 
     def OnImageFiducials(self, evt):
-        btn_id = const.BTNS_IMG_MKS[evt.GetId()].keys()[0]
-        marker_id = const.BTNS_IMG_MKS[evt.GetId()].values()[0]
+        btn_id = list(const.BTNS_IMG_MKS[evt.GetId()].keys())[0]
+        marker_id = list(const.BTNS_IMG_MKS[evt.GetId()].values())[0]
 
         if self.btns_coord[btn_id].GetValue():
             coord = self.numctrls_coord[btn_id][0].GetValue(),\
@@ -540,7 +553,7 @@ class NeuronavigationPanel(wx.Panel):
             Publisher.sendMessage('Delete fiducial marker', marker_id)
 
     def OnTrackerFiducials(self, evt):
-        btn_id = const.BTNS_TRK[evt.GetId()].keys()[0]
+        btn_id = list(const.BTNS_TRK[evt.GetId()].keys())[0]
         coord = None
 
         if self.trk_init and self.tracker_id:
@@ -704,7 +717,10 @@ class NeuronavigationPanel(wx.Panel):
 class ObjectRegistrationPanel(wx.Panel):
     def __init__(self, parent):
         wx.Panel.__init__(self, parent)
-        default_colour = wx.SystemSettings_GetColour(wx.SYS_COLOUR_MENUBAR)
+        try:
+            default_colour = wx.SystemSettings.GetColour(wx.SYS_COLOUR_MENUBAR)
+        except AttributeError:
+            default_colour = wx.SystemSettings_GetColour(wx.SYS_COLOUR_MENUBAR)
         self.SetBackgroundColour(default_colour)
 
         self.coil_list = const.COIL
@@ -917,7 +933,7 @@ class ObjectRegistrationPanel(wx.Panel):
         else:
             filename = dlg.ShowSaveRegistrationDialog("object_registration.obr")
             if filename:
-                hdr = 'Object' + "\t" + self.obj_name + "\t" + 'Reference' + "\t" + str('%d' % self.obj_ref_mode)
+                hdr = 'Object' + "\t" + utils.decode(self.obj_name, const.FS_ENCODE) + "\t" + 'Reference' + "\t" + str('%d' % self.obj_ref_mode)
                 data = np.hstack([self.obj_fiducials, self.obj_orients])
                 np.savetxt(filename, data, fmt='%.4f', delimiter='\t', newline='\n', header=hdr)
                 wx.MessageBox(_("Object file successfully saved"), _("Save"))
@@ -939,7 +955,10 @@ class ObjectRegistrationPanel(wx.Panel):
 class MarkersPanel(wx.Panel):
     def __init__(self, parent):
         wx.Panel.__init__(self, parent)
-        default_colour = wx.SystemSettings_GetColour(wx.SYS_COLOUR_MENUBAR)
+        try:
+            default_colour = wx.SystemSettings.GetColour(wx.SYS_COLOUR_MENUBAR)
+        except AttributeError:
+            default_colour = wx.SystemSettings_GetColour(wx.SYS_COLOUR_MENUBAR)
         self.SetBackgroundColour(default_colour)
 
         self.SetAutoLayout(1)
@@ -1137,7 +1156,7 @@ class MarkersPanel(wx.Panel):
                     item = self.lc.GetItem(id_n, 4)
                     if item.GetText() == marker_id:
                         for i in const.BTNS_IMG_MKS:
-                            if marker_id in const.BTNS_IMG_MKS[i].values()[0]:
+                            if marker_id in list(const.BTNS_IMG_MKS[i].values())[0]:
                                 self.lc.Focus(item.GetId())
                 index = [self.lc.GetFocusedItem()]
         else:
@@ -1192,7 +1211,7 @@ class MarkersPanel(wx.Panel):
 
                         if len(line) == 11:
                             for i in const.BTNS_IMG_MKS:
-                                if line[10] in const.BTNS_IMG_MKS[i].values()[0]:
+                                if line[10] in list(const.BTNS_IMG_MKS[i].values())[0]:
                                     Publisher.sendMessage('Load image fiducials', (line[10], coord))
                                 elif line[10] == 'TARGET':
                                     target = count_line
@@ -1210,7 +1229,7 @@ class MarkersPanel(wx.Panel):
 
                         if len(line) == 8:
                             for i in const.BTNS_IMG_MKS:
-                                if line[7] in const.BTNS_IMG_MKS[i].values()[0]:
+                                if line[7] in list(const.BTNS_IMG_MKS[i].values())[0]:
                                     Publisher.sendMessage('Load image fiducials', (line[7], coord))
                         else:
                             line.append("")

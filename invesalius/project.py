@@ -17,6 +17,8 @@
 #    detalhes.
 #--------------------------------------------------------------------------
 
+from six import with_metaclass
+
 import datetime
 import glob
 import os
@@ -33,7 +35,7 @@ import vtk
 import invesalius.constants as const
 import invesalius.data.polydata_utils as pu
 from invesalius.presets import Presets 
-from invesalius.utils import Singleton, debug, touch
+from invesalius.utils import Singleton, debug, touch, decode
 import invesalius.version as version
 
 if sys.platform == 'win32':
@@ -45,11 +47,9 @@ if sys.platform == 'win32':
 else:
     _has_win32api = False
 
-class Project(object):
-    # Only one project will be initialized per time. Therefore, we use
-    # Singleton design pattern for implementing it
-    __metaclass__= Singleton
-
+# Only one project will be initialized per time. Therefore, we use
+# Singleton design pattern for implementing it
+class Project(with_metaclass(Singleton, object)):
     def __init__(self):
         # Patient/ acquistion information
         self.name = ''
@@ -205,7 +205,7 @@ class Project(object):
         return measures
 
     def SavePlistProject(self, dir_, filename, compress=False):
-        dir_temp = tempfile.mkdtemp().decode(const.FS_ENCODE)
+        dir_temp = decode(tempfile.mkdtemp(), const.FS_ENCODE)
 
         self.compress = compress
 
@@ -357,7 +357,7 @@ def Compress(folder, filename, filelist, compress=False):
         touch(temp_inv3)
         temp_inv3 = win32api.GetShortPathName(temp_inv3)
 
-    temp_inv3 = temp_inv3.decode(const.FS_ENCODE)
+    temp_inv3 = decode(temp_inv3, const.FS_ENCODE)
     #os.chdir(tmpdir)
     #file_list = glob.glob(os.path.join(tmpdir_,"*"))
     if compress:
@@ -374,16 +374,16 @@ def Compress(folder, filename, filelist, compress=False):
 def Extract(filename, folder):
     if _has_win32api:
         folder = win32api.GetShortPathName(folder)
-    folder = folder.decode(const.FS_ENCODE)
+    folder = decode(folder, const.FS_ENCODE)
 
     tar = tarfile.open(filename, "r")
-    idir = os.path.split(tar.getnames()[0])[0].decode('utf8')
+    idir = decode(os.path.split(tar.getnames()[0])[0], 'utf8')
     os.mkdir(os.path.join(folder, idir))
     filelist = []
     for t in tar.getmembers():
         fsrc = tar.extractfile(t)
-        fname = os.path.join(folder, t.name.decode('utf-8'))
-        fdst = file(fname, 'wb')
+        fname = os.path.join(folder, decode(t.name, 'utf-8'))
+        fdst = open(fname, 'wb')
         shutil.copyfileobj(fsrc, fdst)
         filelist.append(fname)
         fsrc.close()

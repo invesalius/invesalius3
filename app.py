@@ -18,6 +18,7 @@
 #    detalhes.
 #-------------------------------------------------------------------------
 
+from __future__ import print_function
 
 import multiprocessing
 import optparse as op
@@ -30,14 +31,18 @@ import re
 
 if sys.platform == 'win32':
     import _winreg
-else:
-    if sys.platform != 'darwin':
-        import wxversion
-        #wxversion.ensureMinimal('2.8-unicode', optionsRequired=True)
-        #wxversion.select('2.8-unicode', optionsRequired=True)
-        wxversion.ensureMinimal('3.0')
+#  else:
+    #  if sys.platform != 'darwin':
+        #  import wxversion
+        #  #wxversion.ensureMinimal('2.8-unicode', optionsRequired=True)
+        #  #wxversion.select('2.8-unicode', optionsRequired=True)
+        #  #  wxversion.ensureMinimal('4.0')
         
 import wx
+try:
+    from wx.adv import SplashScreen
+except ImportError:
+    from wx import SplashScreen
 #from wx.lib.pubsub import setupv1 #new wx
 from wx.lib.pubsub import setuparg1# as psv1
 #from wx.lib.pubsub import Publisher 
@@ -64,9 +69,9 @@ if sys.platform == 'win32':
     try:
         USER_DIR = expand_user()
     except:
-        USER_DIR = os.path.expanduser('~').decode(FS_ENCODE)
+        USER_DIR = utils.decode(os.path.expanduser('~'), FS_ENCODE)
 else:
-    USER_DIR = os.path.expanduser('~').decode(FS_ENCODE)
+    USER_DIR = utils.decode(os.path.expanduser('~'),FS_ENCODE)
 
 USER_INV_DIR = os.path.join(USER_DIR, u'.invesalius')
 USER_PRESET_DIR = os.path.join(USER_INV_DIR, u'presets')
@@ -74,6 +79,15 @@ USER_RAYCASTING_PRESETS_DIRECTORY = os.path.join(USER_PRESET_DIR, u'raycasting')
 USER_LOG_DIR = os.path.join(USER_INV_DIR, u'logs')
 
 # ------------------------------------------------------------------
+
+if sys.platform == 'linux2':
+    try:
+        tmp_var = wx.GetXDisplay
+    except AttributeError:
+        # A workaround to make InVesalius run with wxPython4 from Ubuntu 18.04
+        wx.GetXDisplay = lambda: None
+    else:
+        del tmp_var
 
 
 class InVesalius(wx.App):
@@ -89,7 +103,7 @@ class InVesalius(wx.App):
         freeze_support()
 
         self.SetAppName("InVesalius 3")
-        self.splash = SplashScreen()
+        self.splash = Inv3SplashScreen()
         self.splash.Show()
         wx.CallLater(1000,self.Startup2)
 
@@ -111,7 +125,7 @@ class InVesalius(wx.App):
 
 # ------------------------------------------------------------------
 
-class SplashScreen(wx.SplashScreen):
+class Inv3SplashScreen(SplashScreen):
     """
     Splash screen to be shown in InVesalius initialization.
     """
@@ -202,16 +216,20 @@ class SplashScreen(wx.SplashScreen):
 				
             bmp = wx.Image(path).ConvertToBitmap()
 
-            style = wx.SPLASH_TIMEOUT | wx.SPLASH_CENTRE_ON_SCREEN
-            wx.SplashScreen.__init__(self,
-                                     bitmap=bmp,
-                                     splashStyle=style,
-                                     milliseconds=1500,
-                                     id=-1,
-                                     parent=None)
+            try:
+                style = wx.adv.SPLASH_TIMEOUT | wx.adv.SPLASH_CENTRE_ON_SCREEN
+            except AttributeError:
+                style = wx.SPLASH_TIMEOUT | wx.SPLASH_CENTRE_ON_SCREEN
+
+            SplashScreen.__init__(self,
+                                  bitmap=bmp,
+                                  splashStyle=style,
+                                  milliseconds=1500,
+                                  id=-1,
+                                  parent=None)
             self.Bind(wx.EVT_CLOSE, self.OnClose)
             wx.Yield()
-            wx.CallLater(200,self.Startup)
+            wx.CallLater(200, self.Startup)
 
     def Startup(self):
         # Importing takes sometime, therefore it will be done
@@ -349,14 +367,14 @@ def use_cmd_optargs(options, args):
     else:
         for arg in reversed(args):
 
-            file = arg.decode(FS_ENCODE)
+            file = utils.decode(arg, FS_ENCODE)
             if os.path.isfile(file):
                 path = os.path.abspath(file)
                 Publisher.sendMessage('Open project', path)
                 check_for_export(options)
                 return True
             
-            file = arg.decode(sys.stdin.encoding)
+            file = utils.decode(arg, sys.stdin.encoding)
             if os.path.isfile(file):
                 path = os.path.abspath(file)
                 Publisher.sendMessage('Open project', path)

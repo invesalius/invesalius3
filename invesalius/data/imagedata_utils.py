@@ -265,7 +265,7 @@ def ExtractVOI(imagedata,xi,xf,yi,yf,zi,zf):
 
 def create_dicom_thumbnails(filename, window=None, level=None):
     rvtk = vtkgdcm.vtkGDCMImageReader()
-    rvtk.SetFileName(filename)
+    rvtk.SetFileName(utils.encode(filename, const.FS_ENCODE))
     rvtk.Update()
 
     img = rvtk.GetOutput()
@@ -278,7 +278,7 @@ def create_dicom_thumbnails(filename, window=None, level=None):
 
     if dz > 1:
         thumbnail_paths = []
-        for i in xrange(dz):
+        for i in range(dz):
             img_slice = ExtractVOI(img, 0, dx-1, 0, dy-1, i, i+1)
 
             colorer = vtk.vtkImageMapToWindowLevelColors()
@@ -355,7 +355,7 @@ def CreateImageData(filelist, zspacing, xyspacing,size,
         update_progress= vtk_utils.ShowProgress(1, dialog_type = "ProgressDialog")
 
         array = vtk.vtkStringArray()
-        for x in xrange(len(filelist)):
+        for x in range(len(filelist)):
             array.InsertValue(x,filelist[x])
 
         reader = vtkgdcm.vtkGDCMImageReader()
@@ -385,7 +385,7 @@ def CreateImageData(filelist, zspacing, xyspacing,size,
 
 
         # Reformat each slice
-        for x in xrange(len(filelist)):
+        for x in range(len(filelist)):
             # TODO: We need to check this automatically according
             # to each computer's architecture
             # If the resolution of the matrix is too large
@@ -459,7 +459,7 @@ class ImageCreator:
             update_progress= vtk_utils.ShowProgress(1, dialog_type = "ProgressDialog")
 
             array = vtk.vtkStringArray()
-            for x in xrange(len(filelist)):
+            for x in range(len(filelist)):
                 if not self.running:
                     return False
                 array.InsertValue(x,filelist[x])
@@ -491,7 +491,7 @@ class ImageCreator:
 
 
             # Reformat each slice
-            for x in xrange(len(filelist)):
+            for x in range(len(filelist)):
                 # TODO: We need to check this automatically according
                 # to each computer's architecture
                 # If the resolution of the matrix is too large
@@ -683,11 +683,11 @@ def dcmmf2memmap(dcm_file, orientation):
     d.shape = z, y, x
     if orientation == 'CORONAL':
         matrix.shape = y, z, x
-        for n in xrange(z):
+        for n in range(z):
             matrix[:, n, :] = d[n]
     elif orientation == 'SAGITTAL':
         matrix.shape = x, z, y
-        for n in xrange(z):
+        for n in range(z):
             matrix[:, :, n] = d[n]
     else:
         matrix[:] = d
@@ -695,7 +695,7 @@ def dcmmf2memmap(dcm_file, orientation):
     matrix.flush()
     scalar_range = matrix.min(), matrix.max()
 
-    print "ORIENTATION", orientation
+    print("ORIENTATION", orientation)
 
     return matrix, spacing, scalar_range, temp_file
 

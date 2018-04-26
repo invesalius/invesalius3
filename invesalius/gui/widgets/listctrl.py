@@ -63,7 +63,7 @@ class ColumnSorterMixin:
         self.SetColumnCount(numColumns)
         list = self.GetListCtrl()
         if not list:
-            raise ValueError, "No wx.ListCtrl available"
+            raise ValueError("No wx.ListCtrl available")
         list.Bind(wx.EVT_LIST_COL_CLICK, self.__OnColClick, list)
 
 

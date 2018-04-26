@@ -17,6 +17,8 @@
 #    detalhes.
 #--------------------------------------------------------------------------
 
+from six import with_metaclass
+
 import os
 import multiprocessing
 import tempfile
@@ -226,7 +228,7 @@ class CrossInteractorStyle(DefaultInteractorStyle):
     def OnCrossMove(self, obj, evt):
         # The user moved the mouse with left button pressed
         if self.left_pressed:
-            print "OnCrossMove interactor style"
+            print("OnCrossMove interactor style")
             iren = obj.GetInteractor()
             self.ChangeCrossPosition(iren)
 
@@ -716,8 +718,7 @@ class ChangeSliceInteractorStyle(DefaultInteractorStyle):
         self.last_position = position[1]
 
 
-class EditorConfig(object):
-    __metaclass__= utils.Singleton
+class EditorConfig(with_metaclass(utils.Singleton, object)):
     def __init__(self):
         self.operation = const.BRUSH_THRESH
         self.cursor_type = const.BRUSH_CIRCLE
@@ -759,7 +760,7 @@ class EditorInteractorStyle(DefaultInteractorStyle):
     def SetUp(self):
          
         x, y = self.viewer.interactor.ScreenToClient(wx.GetMousePosition())
-        if self.viewer.interactor.HitTestXY(x, y) == wx.HT_WINDOW_INSIDE:
+        if self.viewer.interactor.HitTest((x, y)) == wx.HT_WINDOW_INSIDE:
             self.viewer.slice_data.cursor.Show()
             
             y = self.viewer.interactor.GetSize()[1] - y
@@ -985,8 +986,7 @@ class WatershedProgressWindow(object):
         self.dlg.Destroy()
 
 
-class WatershedConfig(object):
-    __metaclass__= utils.Singleton
+class WatershedConfig(with_metaclass(utils.Singleton, object)):
     def __init__(self):
         self.algorithm = "Watershed"
         self.con_2d = 4
@@ -1069,7 +1069,7 @@ class WaterShedInteractorStyle(DefaultInteractorStyle):
         self.viewer.OnScrollBar()
 
         x, y = self.viewer.interactor.ScreenToClient(wx.GetMousePosition())
-        if self.viewer.interactor.HitTestXY(x, y) == wx.HT_WINDOW_INSIDE:
+        if self.viewer.interactor.HitTest((x, y)) == wx.HT_WINDOW_INSIDE:
             self.viewer.slice_data.cursor.Show()
             
             y = self.viewer.interactor.GetSize()[1] - y
@@ -1104,7 +1104,7 @@ class WaterShedInteractorStyle(DefaultInteractorStyle):
         if self.matrix is not None:
             self.matrix = None
             os.remove(self.temp_file)
-            print "deleting", self.temp_file
+            print("deleting", self.temp_file)
 
     def _set_cursor(self):
         if self.config.cursor_type == const.BRUSH_SQUARE:
@@ -1249,7 +1249,7 @@ class WaterShedInteractorStyle(DefaultInteractorStyle):
             position = self.viewer.get_slice_pixel_coord_by_world_pos(*coord)
             radius = cursor.radius
 
-            if position < 0:
+            if isinstance(position, int) and position < 0:
                 position = viewer.calculate_matrix_position(coord)
 
             operation = self.config.operation
@@ -1455,7 +1455,7 @@ class WaterShedInteractorStyle(DefaultInteractorStyle):
             del wp
 
             w_x, w_y = wx.GetMousePosition()
-            x, y = self.viewer.ScreenToClientXY(w_x, w_y)
+            x, y = self.viewer.ScreenToClient((w_x, w_y))
             flag = self.viewer.interactor.HitTest((x, y))
 
             if flag == wx.HT_WINDOW_INSIDE:
@@ -1767,8 +1767,7 @@ class ReorientImageInteractorStyle(DefaultInteractorStyle):
             buffer_.discard_image()
 
 
-class FFillConfig(object):
-    __metaclass__= utils.Singleton
+class FFillConfig(with_metaclass(utils.Singleton, object)):
     def __init__(self):
         self.dlg_visible = False
         self.target = "2D"
@@ -1904,8 +1903,7 @@ class RemoveMaskPartsInteractorStyle(FloodFillMaskInteractorStyle):
         self._progr_title = _(u"Remove part")
         self._progr_msg = _(u"Removing part ...")
 
-class CropMaskConfig(object):
-    __metaclass__= utils.Singleton
+class CropMaskConfig(with_metaclass(utils.Singleton, object)):
     def __init__(self):
         self.dlg_visible = False
 
@@ -2007,8 +2005,7 @@ class CropMaskInteractorStyle(DefaultInteractorStyle):
             Publisher.sendMessage('Reload actual slice')           
 
      
-class SelectPartConfig(object):
-    __metaclass__= utils.Singleton
+class SelectPartConfig(with_metaclass(utils.Singleton, object)):
     def __init__(self):
         self.mask = None
         self.con_3d = 6
@@ -2114,8 +2111,7 @@ class SelectMaskPartsInteractorStyle(DefaultInteractorStyle):
         self.config.mask = mask
 
 
-class FFillSegmentationConfig(object):
-    __metaclass__= utils.Singleton
+class FFillSegmentationConfig(with_metaclass(utils.Singleton, object)):
     def __init__(self):
         self.dlg_visible = False
         self.target = "2D"
@@ -2225,7 +2221,7 @@ class FloodFillSegmentInteractorStyle(DefaultInteractorStyle):
 
             elif self.config.method == 'dynamic':
                 if self.config.use_ww_wl:
-                    print "Using WW&WL"
+                    print("Using WW&WL")
                     ww = self.viewer.slice_.window_width
                     wl = self.viewer.slice_.window_level
                     image = get_LUT_value_255(image, ww, wl)
@@ -2282,7 +2278,7 @@ class FloodFillSegmentInteractorStyle(DefaultInteractorStyle):
 
             elif self.config.method == 'dynamic':
                 if self.config.use_ww_wl:
-                    print "Using WW&WL"
+                    print("Using WW&WL")
                     ww = self.viewer.slice_.window_width
                     wl = self.viewer.slice_.window_level
                     image = get_LUT_value_255(image, ww, wl)
@@ -2335,18 +2331,18 @@ class FloodFillSegmentInteractorStyle(DefaultInteractorStyle):
         bool_mask = np.zeros_like(mask, dtype='bool')
         out_mask = np.zeros_like(mask)
 
-        for k in xrange(int(z-1), int(z+2)):
+        for k in range(int(z-1), int(z+2)):
             if k < 0 or k >= bool_mask.shape[0]:
                 continue
-            for j in xrange(int(y-1), int(y+2)):
+            for j in range(int(y-1), int(y+2)):
                 if j < 0 or j >= bool_mask.shape[1]:
                     continue
-                for i in xrange(int(x-1), int(x+2)):
+                for i in range(int(x-1), int(x+2)):
                     if i < 0 or i >= bool_mask.shape[2]:
                         continue
                     bool_mask[k, j, i] = True
 
-        for i in xrange(self.config.confid_iters):
+        for i in range(self.config.confid_iters):
             var = np.std(image[bool_mask])
             mean = np.mean(image[bool_mask])
 

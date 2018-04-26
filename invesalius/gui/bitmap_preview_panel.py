@@ -218,7 +218,10 @@ class Preview(wx.Panel):
 
     def OnEnter(self, evt):
         if not self.select_on:
-            c = wx.SystemSettings_GetColour(wx.SYS_COLOUR_BTNFACE)
+            try:
+                c = wx.SystemSettings.GetColour(wx.SYS_COLOUR_BTNFACE)
+            except AttributeError:
+                c = wx.SystemSettings_GetColour(wx.SYS_COLOUR_BTNFACE)
             self.SetBackgroundColour(c)
 
     def OnLeave(self, evt):
@@ -257,7 +260,10 @@ class Preview(wx.Panel):
 
     def Select(self, on=True):
         if self.select_on:
-            c = wx.SystemSettings_GetColour(wx.SYS_COLOUR_HIGHLIGHT)
+            try:
+                c = wx.SystemSettings.GetColour(wx.SYS_COLOUR_HIGHLIGHT)
+            except AttributeError:
+                c = wx.SystemSettings_GetColour(wx.SYS_COLOUR_HIGHLIGHT)
         else:
             c = (PREVIEW_BACKGROUND)
         self.SetBackgroundColour(c)
@@ -291,10 +297,10 @@ class BitmapPreviewSeries(wx.Panel):
         self.grid = wx.GridSizer(rows=NROWS, cols=NCOLS, vgap=3, hgap=3)
 
         sizer = wx.BoxSizer(wx.HORIZONTAL)
-        sizer.AddSizer(self.grid, 1, wx.EXPAND|wx.GROW|wx.ALL, 2)
+        sizer.Add(self.grid, 1, wx.EXPAND|wx.GROW|wx.ALL, 2)
 
         background_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        background_sizer.AddSizer(sizer, 1, wx.EXPAND|wx.GROW|wx.ALL, 2)
+        background_sizer.Add(sizer, 1, wx.EXPAND|wx.GROW|wx.ALL, 2)
         background_sizer.Add(scroll, 0, wx.EXPAND|wx.GROW)
         self.SetSizer(background_sizer)
         background_sizer.Fit(self)
@@ -311,8 +317,8 @@ class BitmapPreviewSeries(wx.Panel):
 
     def _Add_Panels_Preview(self):
         self.previews = []
-        for i in xrange(NROWS):
-            for j in xrange(NCOLS):
+        for i in range(NROWS):
+            for j in range(NCOLS):
                 p = Preview(self)
                 p.Bind(EVT_PREVIEW_CLICK, self.OnSelect)
 
@@ -387,7 +393,7 @@ class BitmapPreviewSeries(wx.Panel):
         initial = self.displayed_position * NCOLS
         final = initial + NUM_PREVIEWS
         if len(self.files) < final:
-            for i in xrange(final-len(self.files)):
+            for i in range(final-len(self.files)):
                 try:
                     self.previews[-i-1].Hide()
                 except IndexError:
@@ -396,7 +402,7 @@ class BitmapPreviewSeries(wx.Panel):
             self.nhidden_last_display = final-len(self.files)
         else:
             if self.nhidden_last_display:
-                for i in xrange(self.nhidden_last_display):
+                for i in range(self.nhidden_last_display):
                     try:
                         self.previews[-i-1].Show()
                     except IndexError:
@@ -504,7 +510,7 @@ class SingleImagePreview(wx.Panel):
                             maxValue=99,
                             style=wx.SL_HORIZONTAL|wx.SL_AUTOTICKS)
         slider.SetWindowVariant(wx.WINDOW_VARIANT_SMALL)
-        slider.SetTickFreq(1, 1)
+        slider.SetTickFreq(1)
         self.slider = slider
 
         checkbox = wx.CheckBox(self, -1, _("Auto-play"))

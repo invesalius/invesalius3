@@ -34,7 +34,10 @@ else:
 
 import vtk
 import wx
-import wx.combo
+try:
+    from wx.adv import BitmapComboBox
+except ImportError:
+    from wx.combo import BitmapComboBox
 
 from vtk.wx.wxVTKRenderWindowInteractor import wxVTKRenderWindowInteractor
 from wx.lib import masked
@@ -67,11 +70,16 @@ EVT_MASK_SET = wx.PyEventBinder(myEVT_MASK_SET, 1)
 
 class NumberDialog(wx.Dialog):
     def __init__(self, message, value=0):
-        pre = wx.PreDialog()
-        pre.Create(None, -1, "InVesalius 3", size=wx.DefaultSize,
-                   pos=wx.DefaultPosition,
-                   style=wx.DEFAULT_DIALOG_STYLE)
-        self.PostCreate(pre)
+        try:
+            pre = wx.PreDialog()
+            pre.Create(None, -1, "InVesalius 3", size=wx.DefaultSize,
+                       pos=wx.DefaultPosition,
+                       style=wx.DEFAULT_DIALOG_STYLE)
+            self.PostCreate(pre)
+        except AttributeError:
+            wx.Dialog.__init__(self, None, -1, "InVesalius 3", size=wx.DefaultSize,
+                               pos=wx.DefaultPosition,
+                               style=wx.DEFAULT_DIALOG_STYLE)
 
         # Static text which contains message to user
         label = wx.StaticText(self, -1, message)
@@ -117,11 +125,16 @@ class NumberDialog(wx.Dialog):
 class ResizeImageDialog(wx.Dialog):
 
     def __init__(self):#, message, value=0):
-        pre = self.pre = wx.PreDialog()
-        pre.Create(None, -1, "InVesalius 3", size=wx.DefaultSize,
-                   pos=wx.DefaultPosition,
-                   style=wx.DEFAULT_DIALOG_STYLE)
-        self.PostCreate(pre)
+        try:
+            pre = self.pre = wx.PreDialog()
+            pre.Create(None, -1, "InVesalius 3", size=wx.DefaultSize,
+                       pos=wx.DefaultPosition,
+                       style=wx.DEFAULT_DIALOG_STYLE)
+            self.PostCreate(pre)
+        except AttributeError:
+            wx.Dialog.__init__(self, None, -1, "InVesalius 3", size=wx.DefaultSize,
+                              pos=wx.DefaultPosition,
+                              style=wx.DEFAULT_DIALOG_STYLE)
 
         lbl_message = wx.StaticText(self, -1, _("InVesalius is running on a 32-bit operating system or has insufficient memory. \nIf you want to work with 3D surfaces or volume rendering, \nit is recommended to reduce the medical images resolution."))
         icon = wx.ArtProvider.GetBitmap(wx.ART_WARNING, wx.ART_MESSAGE_BOX, (32,32))
@@ -149,12 +162,12 @@ class ResizeImageDialog(wx.Dialog):
 
         sizer_itens = wx.BoxSizer(wx.VERTICAL)
         sizer_itens.Add(lbl_message, 0, wx.EXPAND|wx.ALL, 5)
-        sizer_itens.AddSizer(sizer_percent, 0, wx.EXPAND|wx.ALL, 5)
+        sizer_itens.Add(sizer_percent, 0, wx.EXPAND|wx.ALL, 5)
         sizer_itens.Add(btn_sizer, 0, wx.EXPAND|wx.ALL, 5)
 
         sizer_general = wx.BoxSizer(wx.HORIZONTAL)
         sizer_general.Add(bmp, 0, wx.ALIGN_CENTRE|wx.ALL, 10)
-        sizer_general.AddSizer(sizer_itens, 0, wx.ALL , 5)
+        sizer_general.Add(sizer_itens, 0, wx.ALL , 5)
 
         #self.SetAutoLayout(True)
         self.SetSizer(sizer_general)
@@ -169,7 +182,7 @@ class ResizeImageDialog(wx.Dialog):
         return self.num_ctrl_porcent.GetValue()
 
     def Close(self):
-        self.pre.Destroy()
+        self.Destroy()
 
 def ShowNumberDialog(message, value=0):
     dlg = NumberDialog(message, value)
@@ -465,7 +478,7 @@ def ShowSaveMarkersDialog(default_filename=None):
                         "",  # last used directory
                         default_filename,
                         _("Markers files (*.mks)|*.mks"),
-                        wx.SAVE | wx.OVERWRITE_PROMPT)
+                        wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT)
     # dlg.SetFilterIndex(0) # default is VTI
 
     filename = None
@@ -495,7 +508,7 @@ def ShowSaveCoordsDialog(default_filename=None):
                         "",  # last used directory
                         default_filename,
                         _("Coordinates files (*.csv)|*.csv"),
-                        wx.SAVE | wx.OVERWRITE_PROMPT)
+                        wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT)
     # dlg.SetFilterIndex(0) # default is VTI
 
     filename = None
@@ -526,7 +539,7 @@ def ShowLoadMarkersDialog():
                         defaultDir="",
                         defaultFile="",
                         wildcard=_("Markers files (*.mks)|*.mks"),
-                        style=wx.OPEN|wx.CHANGE_DIR)
+                        style=wx.FD_OPEN|wx.FD_CHANGE_DIR)
 
     # inv3 filter is default
     dlg.SetFilterIndex(0)
@@ -555,7 +568,7 @@ def ShowSaveRegistrationDialog(default_filename=None):
                         "",  # last used directory
                         default_filename,
                         _("Registration files (*.obr)|*.obr"),
-                        wx.SAVE | wx.OVERWRITE_PROMPT)
+                        wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT)
     # dlg.SetFilterIndex(0) # default is VTI
 
     filename = None
@@ -586,7 +599,7 @@ def ShowLoadRegistrationDialog():
                         defaultDir="",
                         defaultFile="",
                         wildcard=_("Registration files (*.obr)|*.obr"),
-                        style=wx.OPEN|wx.CHANGE_DIR)
+                        style=wx.FD_OPEN|wx.FD_CHANGE_DIR)
 
     # inv3 filter is default
     dlg.SetFilterIndex(0)
@@ -610,10 +623,14 @@ def ShowLoadRegistrationDialog():
 
 class MessageDialog(wx.Dialog):
     def __init__(self, message):
-        pre = wx.PreDialog()
-        pre.Create(None, -1, "InVesalius 3",  size=(360, 370), pos=wx.DefaultPosition,
-                    style=wx.DEFAULT_DIALOG_STYLE|wx.ICON_INFORMATION)
-        self.PostCreate(pre)
+        try:
+            pre = wx.PreDialog()
+            pre.Create(None, -1, "InVesalius 3",  size=(360, 370), pos=wx.DefaultPosition,
+                        style=wx.DEFAULT_DIALOG_STYLE|wx.ICON_INFORMATION)
+            self.PostCreate(pre)
+        except AttributeError:
+            wx.Dialog.__init__(self, None, -1, "InVesalius 3",  size=(360, 370), pos=wx.DefaultPosition,
+                        style=wx.DEFAULT_DIALOG_STYLE|wx.ICON_INFORMATION)
 
         # Static text which contains message to user
         label = wx.StaticText(self, -1, message)
@@ -652,10 +669,14 @@ class UpdateMessageDialog(wx.Dialog):
         title=_("Invesalius Update")
         self.url = url
 
-        pre = wx.PreDialog()
-        pre.Create(None, -1, title,  size=(360, 370), pos=wx.DefaultPosition,
-                    style=wx.DEFAULT_DIALOG_STYLE|wx.ICON_INFORMATION)
-        self.PostCreate(pre)
+        try:
+            pre = wx.PreDialog()
+            pre.Create(None, -1, title,  size=(360, 370), pos=wx.DefaultPosition,
+                        style=wx.DEFAULT_DIALOG_STYLE|wx.ICON_INFORMATION)
+            self.PostCreate(pre)
+        except AttributeError:
+            wx.Dialog.__init__(self, None, -1, title,  size=(360, 370), pos=wx.DefaultPosition,
+                        style=wx.DEFAULT_DIALOG_STYLE|wx.ICON_INFORMATION)
 
         # Static text which contains message to user
         label = wx.StaticText(self, -1, msg)
@@ -993,18 +1014,22 @@ class NewMask(wx.Dialog):
         import invesalius.data.mask as mask
         import invesalius.project as prj
 
-        # Instead of calling wx.Dialog.__init__ we precreate the dialog
-        # so we can set an extra style that must be set before
-        # creation, and then we create the GUI object using the Create
-        # method.
-        pre = wx.PreDialog()
-        pre.SetExtraStyle(wx.DIALOG_EX_CONTEXTHELP)
-        pre.Create(parent, ID, title, pos, (500,300), style)
+        try:
+            # Instead of calling wx.Dialog.__init__ we precreate the dialog
+            # so we can set an extra style that must be set before
+            # creation, and then we create the GUI object using the Create
+            # method.
+            pre = wx.PreDialog()
+            pre.SetExtraStyle(wx.DIALOG_EX_CONTEXTHELP)
+            pre.Create(parent, ID, title, pos, (500,300), style)
+            # This next step is the most important, it turns this Python
+            # object into the real wrapper of the dialog (instead of pre)
+            # as far as the wxPython extension is concerned.
+            self.PostCreate(pre)
+        except AttributeError:
+            wx.Dialog.__init__(self, parent, ID, title, pos, (500,300), style)
+            self.SetExtraStyle(wx.DIALOG_EX_CONTEXTHELP)
 
-        # This next step is the most important, it turns this Python
-        # object into the real wrapper of the dialog (instead of pre)
-        # as far as the wxPython extension is concerned.
-        self.PostCreate(pre)
 
         self.CenterOnScreen()
 
@@ -1031,8 +1056,7 @@ class NewMask(wx.Dialog):
 
         # Retrieve existing masks
         project = prj.Project()
-        thresh_list = project.threshold_modes.keys()
-        thresh_list.sort()
+        thresh_list = sorted(project.threshold_modes.keys())
         default_index = thresh_list.index(_("Bone"))
         self.thresh_list = thresh_list
 
@@ -1285,18 +1309,22 @@ class NewSurfaceDialog(wx.Dialog):
         import invesalius.data.surface as surface
         import invesalius.project as prj
 
-        # Instead of calling wx.Dialog.__init__ we precreate the dialog
-        # so we can set an extra style that must be set before
-        # creation, and then we create the GUI object using the Create
-        # method.
-        pre = wx.PreDialog()
-        pre.SetExtraStyle(wx.DIALOG_EX_CONTEXTHELP)
-        pre.Create(parent, ID, title, pos, (500,300), style)
+        try:
+            # Instead of calling wx.Dialog.__init__ we precreate the dialog
+            # so we can set an extra style that must be set before
+            # creation, and then we create the GUI object using the Create
+            # method.
+            pre = wx.PreDialog()
+            pre.SetExtraStyle(wx.DIALOG_EX_CONTEXTHELP)
+            pre.Create(parent, ID, title, pos, (500,300), style)
 
-        # This next step is the most important, it turns this Python
-        # object into the real wrapper of the dialog (instead of pre)
-        # as far as the wxPython extension is concerned.
-        self.PostCreate(pre)
+            # This next step is the most important, it turns this Python
+            # object into the real wrapper of the dialog (instead of pre)
+            # as far as the wxPython extension is concerned.
+            self.PostCreate(pre)
+        except AttributeError:
+            wx.Dialog.__init__(self, parent, ID, title, pos, (500,300), style)
+            self.SetExtraStyle(wx.DIALOG_EX_CONTEXTHELP)
 
         self.CenterOnScreen()
 
@@ -1323,8 +1351,7 @@ class NewSurfaceDialog(wx.Dialog):
 
         # Retrieve existing masks
         project = prj.Project()
-        index_list = project.mask_dict.keys()
-        index_list.sort()
+        index_list = sorted(project.mask_dict.keys())
         self.mask_list = [project.mask_dict[index].name for index in index_list]
 
 
@@ -1498,18 +1525,24 @@ class SurfaceCreationDialog(wx.Dialog):
         # so we can set an extra style that must be set before
         # creation, and then we create the GUI object using the Create
         # method.
-        pre = wx.PreDialog()
-        pre.SetExtraStyle(wx.DIALOG_EX_CONTEXTHELP)
-        pre.Create(parent, ID, title, pos, (500,300), style)
+        try:
+            pre = wx.PreDialog()
+            pre.SetExtraStyle(wx.DIALOG_EX_CONTEXTHELP)
+            pre.Create(parent, ID, title, pos, (500,300), style)
 
-        # This extra style can be set after the UI object has been created.
-        if 'wxMac' in wx.PlatformInfo and useMetal:
-            self.SetExtraStyle(wx.DIALOG_EX_METAL)
+            # This extra style can be set after the UI object has been created.
+            if 'wxMac' in wx.PlatformInfo and useMetal:
+                self.SetExtraStyle(wx.DIALOG_EX_METAL)
 
-        # This next step is the most important, it turns this Python
-        # object into the real wrapper of the dialog (instead of pre)
-        # as far as the wxPython extension is concerned.
-        self.PostCreate(pre)
+            # This next step is the most important, it turns this Python
+            # object into the real wrapper of the dialog (instead of pre)
+            # as far as the wxPython extension is concerned.
+            self.PostCreate(pre)
+        except AttributeError:
+            wx.Dialog.__init__(self, parent, ID, title, pos, size, style)
+            self.SetExtraStyle(wx.DIALOG_EX_CONTEXTHELP)
+            if 'wxMac' in wx.PlatformInfo and useMetal:
+                self.SetExtraStyle(wx.DIALOG_EX_METAL)
 
         self.CenterOnScreen()
 
@@ -1583,8 +1616,7 @@ class SurfaceCreationOptionsPanel(wx.Panel):
         #Retrieve existing masks
         project = prj.Project()
         index_list = project.mask_dict.keys()
-        index_list.sort()
-        self.mask_list = [project.mask_dict[index].name for index in index_list]
+        self.mask_list = [project.mask_dict[index].name for index in sorted(index_list)]
         
         active_mask = slc.Slice().current_mask.index
         #active_mask = len(self.mask_list)-1
@@ -1810,9 +1842,12 @@ class SurfaceMethodPanel(wx.Panel):
 
 class ClutImagedataDialog(wx.Dialog):
     def __init__(self, histogram, init, end, nodes=None):
-        pre = wx.PreDialog()
-        pre.Create(wx.GetApp().GetTopWindow(), -1, style=wx.DEFAULT_DIALOG_STYLE|wx.FRAME_FLOAT_ON_PARENT)
-        self.PostCreate(pre)
+        try:
+            pre = wx.PreDialog()
+            pre.Create(wx.GetApp().GetTopWindow(), -1, style=wx.DEFAULT_DIALOG_STYLE|wx.FRAME_FLOAT_ON_PARENT)
+            self.PostCreate(pre)
+        except AttributeError:
+            wx.Dialog.__init__(self, wx.GetApp().GetTopWindow(), -1, style=wx.DEFAULT_DIALOG_STYLE|wx.FRAME_FLOAT_ON_PARENT)
 
         self.histogram = histogram
         self.init = init
@@ -1910,10 +1945,13 @@ class WatershedOptionsPanel(wx.Panel):
 
 
 class WatershedOptionsDialog(wx.Dialog):
-    def __init__(self, config):
-        pre = wx.PreDialog()
-        pre.Create(wx.GetApp().GetTopWindow(), -1, _(u'Watershed'), style=wx.DEFAULT_DIALOG_STYLE|wx.FRAME_FLOAT_ON_PARENT)
-        self.PostCreate(pre)
+    def __init__(self, config, ID=-1, title=_(u'Watershed'), style=wx.DEFAULT_DIALOG_STYLE|wx.FRAME_FLOAT_ON_PARENT):
+        try:
+            pre = wx.PreDialog()
+            pre.Create(wx.GetApp().GetTopWindow(), ID, title=title, style=style)
+            self.PostCreate(pre)
+        except AttributeError:
+            wx.Dialog.__init__(self, wx.GetApp().GetTopWindow(), ID, title=title, style=style)
 
         self.config = config
 
@@ -1951,10 +1989,13 @@ class WatershedOptionsDialog(wx.Dialog):
         evt.Skip()
 
 class MaskBooleanDialog(wx.Dialog):
-    def __init__(self, masks):
-        pre = wx.PreDialog()
-        pre.Create(wx.GetApp().GetTopWindow(), -1, _(u"Boolean operations"),  style=wx.DEFAULT_DIALOG_STYLE|wx.FRAME_FLOAT_ON_PARENT|wx.STAY_ON_TOP)
-        self.PostCreate(pre)
+    def __init__(self, masks, ID=-1, title=_(u"Boolean operations"), style=wx.DEFAULT_DIALOG_STYLE|wx.FRAME_FLOAT_ON_PARENT|wx.STAY_ON_TOP):
+        try:
+            pre = wx.PreDialog()
+            pre.Create(wx.GetApp().GetTopWindow(), ID, title=title, style=style)
+            self.PostCreate(pre)
+        except AttributeError:
+            wx.Dialog.__init__(self, wx.GetApp().GetTopWindow(), ID, title=title, style=style)
 
         self._init_gui(masks)
         self.CenterOnScreen()
@@ -1980,7 +2021,7 @@ class MaskBooleanDialog(wx.Dialog):
                       (_(u"Difference"), const.BOOLEAN_DIFF, 'bool_difference.png'),
                       (_(u"Intersection"), const.BOOLEAN_AND, 'bool_intersection.png'),
                       (_(u"Exclusive disjunction"), const.BOOLEAN_XOR, 'bool_disjunction.png'))
-        self.op_boolean = wx.combo.BitmapComboBox(self, -1, op_choices[0][0], choices=[])
+        self.op_boolean = BitmapComboBox(self, -1, op_choices[0][0], choices=[])
 
         for n, i, f in op_choices:
             bmp = wx.Bitmap(os.path.join(icon_folder, f), wx.BITMAP_TYPE_PNG)
@@ -2031,10 +2072,13 @@ class MaskBooleanDialog(wx.Dialog):
 
 
 class ReorientImageDialog(wx.Dialog):
-    def __init__(self):
-        pre = wx.PreDialog()
-        pre.Create(wx.GetApp().GetTopWindow(), -1, _(u'Image reorientation'), style=wx.DEFAULT_DIALOG_STYLE|wx.FRAME_FLOAT_ON_PARENT)
-        self.PostCreate(pre)
+    def __init__(self, ID=-1, title=_(u'Image reorientation'), style=wx.DEFAULT_DIALOG_STYLE|wx.FRAME_FLOAT_ON_PARENT):
+        try:
+            pre = wx.PreDialog()
+            pre.Create(wx.GetApp().GetTopWindow(), ID, title=title, style=style)
+            self.PostCreate(pre)
+        except AttributeError:
+            wx.Dialog.__init__(self, wx.GetApp().GetTopWindow(), ID, title=title, style=style)
 
         self._closed = False
 
@@ -2149,22 +2193,25 @@ class ImportBitmapParameters(wx.Dialog):
     from os import sys
 
     def __init__(self):
-        pre = wx.PreDialog()
-
         if sys.platform == 'win32':
             size=wx.Size(380,180)
         else:
             size=wx.Size(380,210)
 
-        pre.Create(wx.GetApp().GetTopWindow(), -1, _(u"Create project from bitmap"),size=size,\
-                                style=wx.DEFAULT_DIALOG_STYLE|wx.FRAME_FLOAT_ON_PARENT|wx.STAY_ON_TOP)
+        try:
+            pre = wx.PreDialog()
+            pre.Create(wx.GetApp().GetTopWindow(), -1, _(u"Create project from bitmap"),size=size,
+                                    style=wx.DEFAULT_DIALOG_STYLE|wx.FRAME_FLOAT_ON_PARENT|wx.STAY_ON_TOP)
+            self.PostCreate(pre)
+        except AttributeError:
+            wx.Dialog.__init__(self, wx.GetApp().GetTopWindow(), -1,
+                               _(u"Create project from bitmap"),
+                               size=size,
+                               style=wx.DEFAULT_DIALOG_STYLE|wx.FRAME_FLOAT_ON_PARENT|wx.STAY_ON_TOP)
 
         self.interval = 0
-        
-        self.PostCreate(pre)
 
         self._init_gui()
-
         self.bind_evts()
         self.CenterOnScreen()
 
@@ -2195,13 +2242,19 @@ class ImportBitmapParameters(wx.Dialog):
 
         gbs.Add(stx_name, (0,0), flag=flag_labels)
         gbs.Add(tx_name, (0,1))
-        gbs.AddStretchSpacer((1,0))
+        try:
+            gbs.Add(0, 0, (1,0))
+        except TypeError:
+            gbs.AddStretchSpacer((1,0))
 
         gbs.Add(stx_orientation, (2,0), flag=flag_labels)
         gbs.Add(cb_orientation, (2,1))
 
         gbs.Add(stx_spacing, (3,0))
-        gbs.AddStretchSpacer((4,0))
+        try:
+            gbs.Add(0, 0, (4,0))
+        except TypeError:
+            gbs.AddStretchSpacer((4,0))
 
         #--- spacing --------------
         gbs_spacing = wx.GridBagSizer(2, 6)
@@ -2251,17 +2304,23 @@ class ImportBitmapParameters(wx.Dialog):
 
         btn_cancel = wx.Button(p, wx.ID_CANCEL)
 
-        gbs_button.AddStretchSpacer((0,2))
+        try:
+            gbs_button.Add(0, 0, (0,2))
+        except TypeError:
+            gbs_button.AddStretchSpacer((0,2))
         gbs_button.Add(btn_cancel, (1,2))
         gbs_button.Add(btn_ok, (1,3))
 
-        gbs_principal.AddSizer(gbs, (0,0), flag = wx.ALL|wx.EXPAND)
-        gbs_principal.AddSizer(gbs_spacing, (1,0),  flag=wx.ALL|wx.EXPAND)
-        gbs_principal.AddStretchSpacer((2,0))
-        gbs_principal.AddSizer(gbs_button, (3,0), flag = wx.ALIGN_RIGHT)
+        gbs_principal.Add(gbs, (0,0), flag = wx.ALL|wx.EXPAND)
+        gbs_principal.Add(gbs_spacing, (1,0),  flag=wx.ALL|wx.EXPAND)
+        try:
+            gbs_principal.Add(0, 0, (2,0))
+        except TypeError:
+            gbs_principal.AddStretchSpacer((2,0))
+        gbs_principal.Add(gbs_button, (3,0), flag = wx.ALIGN_RIGHT)
 
         box = wx.BoxSizer()
-        box.AddSizer(gbs_principal, 1, wx.ALL|wx.EXPAND, 10)
+        box.Add(gbs_principal, 1, wx.ALL|wx.EXPAND, 10)
         
         p.SetSizer(box)
         box.Fit(self)
@@ -2312,10 +2371,16 @@ class PanelTargeFFill(wx.Panel):
 
         sizer = wx.GridBagSizer(5, 5)
 
-        sizer.AddStretchSpacer((0, 0))
+        try:
+            sizer.Add(0, 0, (0, 0))
+        except TypeError:
+            sizer.AddStretchSpacer((0, 0))
         sizer.Add(self.target_2d, (1, 0), (1, 6), flag=wx.LEFT, border=5)
         sizer.Add(self.target_3d, (2, 0), (1, 6), flag=wx.LEFT, border=5)
-        sizer.AddStretchSpacer((3, 0))
+        try:
+            sizer.Add(0, 0, (3, 0))
+        except TypeError:
+            sizer.AddStretchSpacer((3, 0))
 
         self.SetSizer(sizer)
         sizer.Fit(self)
@@ -2332,11 +2397,17 @@ class Panel2DConnectivity(wx.Panel):
 
         sizer = wx.GridBagSizer(5, 5)
 
-        sizer.AddStretchSpacer((0, 0))
+        try:
+            sizer.Add(0, 0, (0, 0))
+        except TypeError:
+            sizer.AddStretchSpacer((0, 0))
         sizer.Add(wx.StaticText(self, -1, _(u"2D Connectivity")), (1, 0), (1, 6), flag=wx.LEFT, border=5)
         sizer.Add(self.conect2D_4, (2, 0), flag=wx.LEFT, border=7)
         sizer.Add(self.conect2D_8, (2, 1), flag=wx.LEFT, border=7)
-        sizer.AddStretchSpacer((3, 0))
+        try:
+            sizer.Add(0, 0, (3, 0))
+        except TypeError:
+            sizer.AddStretchSpacer((3, 0))
 
         if show_orientation:
             self.cmb_orientation = wx.ComboBox(self, -1, choices=(_(u"Axial"), _(u"Coronal"), _(u"Sagital")), style=wx.CB_READONLY)
@@ -2344,7 +2415,10 @@ class Panel2DConnectivity(wx.Panel):
 
             sizer.Add(wx.StaticText(self, -1, _(u"Orientation")), (4, 0), (1, 6), flag=wx.LEFT|wx.RIGHT|wx.ALIGN_CENTER_VERTICAL, border=5)
             sizer.Add(self.cmb_orientation, (5, 0), (1, 10), flag=wx.LEFT|wx.RIGHT|wx.EXPAND, border=7)
-            sizer.AddStretchSpacer((6, 0))
+            try:
+                sizer.Add(0, 0, (6, 0))
+            except TypeError:
+                sizer.AddStretchSpacer((6, 0))
 
         self.SetSizer(sizer)
         sizer.Fit(self)
@@ -2378,12 +2452,18 @@ class Panel3DConnectivity(wx.Panel):
 
         sizer = wx.GridBagSizer(5, 5)
 
-        sizer.AddStretchSpacer((0, 0))
+        try:
+            sizer.Add(0, 0, (0, 0))
+        except TypeError:
+            sizer.AddStretchSpacer((0, 0))
         sizer.Add(wx.StaticText(self, -1, _(u"3D Connectivity")), (1, 0), (1, 6), flag=wx.LEFT, border=5)
         sizer.Add(self.conect3D_6, (2, 0), flag=wx.LEFT, border=9)
         sizer.Add(self.conect3D_18, (2, 1), flag=wx.LEFT, border=9)
         sizer.Add(self.conect3D_26, (2, 2), flag=wx.LEFT, border=9)
-        sizer.AddStretchSpacer((3, 0))
+        try:
+            sizer.Add(0, 0, (3, 0))
+        except TypeError:
+            sizer.AddStretchSpacer((3, 0))
 
         self.SetSizer(sizer)
         sizer.Fit(self)
@@ -2434,7 +2514,7 @@ class PanelFFillThreshold(wx.Panel):
     def OnSlideChanged(self, evt):
         self.config.t0 = int(self.threshold.GetMinValue())
         self.config.t1 = int(self.threshold.GetMaxValue())
-        print self.config.t0, self.config.t1
+        print(self.config.t0, self.config.t1)
 
 
 class PanelFFillDynamic(wx.Panel):
@@ -2458,11 +2538,17 @@ class PanelFFillDynamic(wx.Panel):
 
         sizer = wx.GridBagSizer(5, 5)
 
-        sizer.AddStretchSpacer((0, 0))
+        try:
+            sizer.Add(0, 0, (0, 0))
+        except TypeError:
+            sizer.AddStretchSpacer((0, 0))
 
         sizer.Add(self.use_ww_wl, (1, 0), (1, 6), flag=wx.LEFT, border=5)
 
-        sizer.AddStretchSpacer((2, 0))
+        try:
+            sizer.Add(0, 0, (2, 0))
+        except TypeError:
+            sizer.AddStretchSpacer((2, 0))
 
         sizer.Add(wx.StaticText(self, -1, _(u"Deviation")), (3, 0), (1, 6), flag=wx.LEFT, border=5)
 
@@ -2472,7 +2558,10 @@ class PanelFFillDynamic(wx.Panel):
         sizer.Add(wx.StaticText(self, -1, _(u"Max:")), (4, 2), flag=wx.ALIGN_CENTER_VERTICAL|wx.LEFT, border=9)
         sizer.Add(self.deviation_max, (4, 3))
 
-        sizer.AddStretchSpacer((5, 0))
+        try:
+            sizer.Add(0, 0, (5, 0))
+        except TypeError:
+            sizer.AddStretchSpacer((5, 0))
 
         self.SetSizer(sizer)
         sizer.Fit(self)
@@ -2516,19 +2605,28 @@ class PanelFFillConfidence(wx.Panel):
 
         sizer = wx.GridBagSizer(5, 5)
 
-        sizer.AddStretchSpacer((0, 0))
+        try:
+            sizer.Add(0, 0, (0, 0))
+        except TypeError:
+            sizer.AddStretchSpacer((0, 0))
 
         sizer.Add(self.use_ww_wl, (1, 0), (1, 6), flag=wx.LEFT, border=5)
 
-        sizer.AddStretchSpacer((2, 0))
+        try:
+            sizer.Add(0, 0, (2, 0))
+        except TypeError:
+            sizer.AddStretchSpacer((2, 0))
 
         sizer.Add(wx.StaticText(self, -1, _(u"Multiplier")), (3, 0), (1, 3), flag=wx.ALIGN_CENTER_VERTICAL|wx.LEFT, border=5)
-        sizer.Add(self.spin_mult, (3, 3), (1, 2))
+        sizer.Add(self.spin_mult, (3, 3), (1, 3))
 
         sizer.Add(wx.StaticText(self, -1, _(u"Iterations")), (4, 0), (1, 3), flag=wx.ALIGN_CENTER_VERTICAL|wx.LEFT, border=5)
         sizer.Add(self.spin_iters, (4, 3), (1, 2))
 
-        sizer.AddStretchSpacer((5, 0))
+        try:
+            sizer.Add(0, 0, (5, 0))
+        except TypeError:
+            sizer.AddStretchSpacer((5, 0))
 
         self.SetSizer(sizer)
         sizer.Fit(self)
@@ -2550,9 +2648,12 @@ class PanelFFillConfidence(wx.Panel):
 
 class FFillOptionsDialog(wx.Dialog):
     def __init__(self, title, config):
-        pre = wx.PreDialog()
-        pre.Create(wx.GetApp().GetTopWindow(), -1, title, style=wx.DEFAULT_DIALOG_STYLE|wx.FRAME_FLOAT_ON_PARENT)
-        self.PostCreate(pre)
+        try:
+            pre = wx.PreDialog()
+            pre.Create(wx.GetApp().GetTopWindow(), -1, title, style=wx.DEFAULT_DIALOG_STYLE|wx.FRAME_FLOAT_ON_PARENT)
+            self.PostCreate(pre)
+        except AttributeError:
+            wx.Dialog.__init__(self, wx.GetApp().GetTopWindow(), -1, title, style=wx.DEFAULT_DIALOG_STYLE|wx.FRAME_FLOAT_ON_PARENT)
 
         self.config = config
 
@@ -2651,7 +2752,7 @@ class FFillOptionsDialog(wx.Dialog):
             self.config.con_3d = 26
 
     def OnClose(self, evt):
-        print "ONCLOSE"
+        print("ONCLOSE")
         if self.config.dlg_visible:
             Publisher.sendMessage('Disable style', const.SLICE_STATE_MASK_FFILL)
         evt.Skip()
@@ -2660,9 +2761,12 @@ class FFillOptionsDialog(wx.Dialog):
 
 class SelectPartsOptionsDialog(wx.Dialog):
     def __init__(self, config):
-        pre = wx.PreDialog()
-        pre.Create(wx.GetApp().GetTopWindow(), -1, _(u"Select mask parts"), style=wx.DEFAULT_DIALOG_STYLE|wx.FRAME_FLOAT_ON_PARENT)
-        self.PostCreate(pre)
+        try:
+            pre = wx.PreDialog()
+            pre.Create(wx.GetApp().GetTopWindow(), -1, _(u"Select mask parts"), style=wx.DEFAULT_DIALOG_STYLE|wx.FRAME_FLOAT_ON_PARENT)
+            self.PostCreate(pre)
+        except AttributeError:
+            wx.Dialog.__init__(self, wx.GetApp().GetTopWindow(), -1, _(u"Select mask parts"), style=wx.DEFAULT_DIALOG_STYLE|wx.FRAME_FLOAT_ON_PARENT)
 
         self.config = config
 
@@ -2700,7 +2804,7 @@ class SelectPartsOptionsDialog(wx.Dialog):
         btn_sizer.Add(self.btn_ok, 0, flag=wx.ALIGN_RIGHT, border=5)
         btn_sizer.Add(self.btn_cancel, 0, flag=wx.LEFT|wx.ALIGN_RIGHT, border=5)
 
-        sizer.AddSizer(btn_sizer, 0, flag=wx.ALIGN_RIGHT|wx.LEFT|wx.RIGHT, border=5)
+        sizer.Add(btn_sizer, 0, flag=wx.ALIGN_RIGHT|wx.LEFT|wx.RIGHT, border=5)
         sizer.AddSpacer(5)
 
         self.SetSizer(sizer)
@@ -2741,10 +2845,13 @@ class SelectPartsOptionsDialog(wx.Dialog):
         self.Destroy()
 
 class FFillSegmentationOptionsDialog(wx.Dialog):
-    def __init__(self, config):
-        pre = wx.PreDialog()
-        pre.Create(wx.GetApp().GetTopWindow(), -1, _(u"Region growing"), style=wx.DEFAULT_DIALOG_STYLE|wx.FRAME_FLOAT_ON_PARENT)
-        self.PostCreate(pre)
+    def __init__(self, config, ID=-1, title=_(u"Region growing"), style=wx.DEFAULT_DIALOG_STYLE|wx.FRAME_FLOAT_ON_PARENT):
+        try:
+            pre = wx.PreDialog()
+            pre.Create(wx.GetApp().GetTopWindow(), ID, title=title, style=style)
+            self.PostCreate(pre)
+        except AttributeError:
+            wx.Dialog.__init__(self, wx.GetApp().GetTopWindow(), ID, title=title, style=style)
 
         self.config = config
 
@@ -2816,20 +2923,38 @@ class FFillSegmentationOptionsDialog(wx.Dialog):
         # Sizer
         sizer = wx.GridBagSizer(2, 2)
 
-        sizer.AddStretchSpacer((0, 0))
+        try:
+            sizer.Add(0, 0, (0, 0))
+        except TypeError:
+            sizer.AddStretchSpacer((0, 0))
         sizer.Add(wx.StaticText(self, -1, _(u"Parameters")), (1, 0), (1, 6), flag=wx.LEFT, border=5)
-        sizer.AddStretchSpacer((2, 0))
+        try:
+            sizer.Add(0, 0, (2, 0))
+        except TypeError:
+            sizer.AddStretchSpacer((2, 0))
         sizer.Add(self.panel_target, (3, 0), (1, 6), flag=wx.LEFT|wx.RIGHT|wx.EXPAND, border=7)
-        sizer.AddStretchSpacer((4, 0))
+        try:
+            sizer.Add(0, 0, (4, 0))
+        except TypeError:
+            sizer.AddStretchSpacer((4, 0))
         sizer.Add(self.panel2dcon, (5, 0), (1, 6), flag=wx.LEFT|wx.RIGHT|wx.EXPAND, border=7)
-        sizer.AddStretchSpacer((6, 0))
+        try:
+            sizer.Add(0, 0, (6, 0))
+        except TypeError:
+            sizer.AddStretchSpacer((6, 0))
         sizer.Add(self.panel3dcon, (7, 0), (1, 6), flag=wx.LEFT|wx.RIGHT|wx.EXPAND, border=7)
-        sizer.AddStretchSpacer((8, 0))
+        try:
+            sizer.Add(0, 0, (8, 0))
+        except TypeError:
+            sizer.AddStretchSpacer((8, 0))
 
         sizer.Add(wx.StaticText(self, -1, _(u"Method")), (9, 0), (1, 1), flag=wx.LEFT|wx.ALIGN_CENTER_VERTICAL, border=7)
         sizer.Add(self.cmb_method, (9, 1), (1, 5), flag=wx.LEFT|wx.RIGHT|wx.EXPAND, border=7)
 
-        sizer.AddStretchSpacer((10, 0))
+        try:
+            sizer.Add(0, 0, (10, 0))
+        except TypeError:
+            sizer.AddStretchSpacer((10, 0))
 
         if self.config.method == 'dynamic':
             self.cmb_method.SetSelection(0)
@@ -2845,9 +2970,15 @@ class FFillSegmentationOptionsDialog(wx.Dialog):
             sizer.Add(self.panel_ffill_threshold, (11, 0), (1, 6), flag=wx.LEFT|wx.RIGHT|wx.EXPAND, border=7)
             self.config.method = 'threshold'
 
-        sizer.AddStretchSpacer((12, 0))
+        try:
+            sizer.Add(0, 0, (12, 0))
+        except TypeError:
+            sizer.AddStretchSpacer((12, 0))
         sizer.Add(self.close_btn, (13, 0), (1, 6), flag=wx.ALIGN_RIGHT|wx.RIGHT, border=5)
-        sizer.AddStretchSpacer((14, 0))
+        try:
+            sizer.Add(0, 0, (14, 0))
+        except TypeError:
+            sizer.AddStretchSpacer((14, 0))
 
         self.SetSizer(sizer)
         sizer.Fit(self)
@@ -2919,13 +3050,16 @@ class FFillSegmentationOptionsDialog(wx.Dialog):
 
 class CropOptionsDialog(wx.Dialog):
     
-    def __init__(self, config):
+    def __init__(self, config, ID=-1, title=_(u"Crop mask"), style=wx.DEFAULT_DIALOG_STYLE|wx.FRAME_FLOAT_ON_PARENT):
         self.config = config
-        pre = wx.PreDialog()
+        try:
+            pre = wx.PreDialog()
 
-        pre.Create(wx.GetApp().GetTopWindow(), -1, _(u"Crop mask"),\
-                    style=wx.DEFAULT_DIALOG_STYLE|wx.FRAME_FLOAT_ON_PARENT)
-        self.PostCreate(pre)
+            pre.Create(wx.GetApp().GetTopWindow(), ID, title=title, style=style)
+            self.PostCreate(pre)
+        except AttributeError:
+            wx.Dialog.__init__(self, wx.GetApp().GetTopWindow(), ID, title=title, style=style)
+
 
         self._init_gui()
 
@@ -3000,13 +3134,17 @@ class CropOptionsDialog(wx.Dialog):
         gbs_button.Add(btn_cancel, (0,0))
         gbs_button.Add(btn_ok, (0,1))
 
-        gbs_principal.AddSizer(gbs, (0,0), flag = wx.ALL|wx.EXPAND)
-        gbs_principal.AddStretchSpacer((1,0))
-        gbs_principal.AddStretchSpacer((2,0))
-        gbs_principal.AddSizer(gbs_button, (3,0), flag = wx.ALIGN_RIGHT)
+        gbs_principal.Add(gbs, (0,0), flag = wx.ALL|wx.EXPAND)
+        try:
+            gbs_principal.Add(0, 0, (1, 0))
+            gbs_principal.Add(0, 0, (2, 0))
+        except TypeError:
+            gbs_principal.AddStretchSpacer((1, 0))
+            gbs_principal.AddStretchSpacer((2, 0))
+        gbs_principal.Add(gbs_button, (3,0), flag = wx.ALIGN_RIGHT)
 
         box = wx.BoxSizer()
-        box.AddSizer(gbs_principal, 1, wx.ALL|wx.EXPAND, 10)
+        box.Add(gbs_principal, 1, wx.ALL|wx.EXPAND, 10)
 
         p.SetSizer(box)
         box.Fit(p)
@@ -3039,9 +3177,12 @@ class CropOptionsDialog(wx.Dialog):
 
 class FillHolesAutoDialog(wx.Dialog):
     def __init__(self, title):
-        pre = wx.PreDialog()
-        pre.Create(wx.GetApp().GetTopWindow(), -1, title, style=wx.DEFAULT_DIALOG_STYLE|wx.FRAME_FLOAT_ON_PARENT)
-        self.PostCreate(pre)
+        try:
+            pre = wx.PreDialog()
+            pre.Create(wx.GetApp().GetTopWindow(), -1, title, style=wx.DEFAULT_DIALOG_STYLE|wx.FRAME_FLOAT_ON_PARENT)
+            self.PostCreate(pre)
+        except AttributeError:
+            wx.Dialog.__init__(self, wx.GetApp().GetTopWindow(), -1, title, style=wx.DEFAULT_DIALOG_STYLE|wx.FRAME_FLOAT_ON_PARENT)
 
         self._init_gui()
 
@@ -3056,9 +3197,12 @@ class FillHolesAutoDialog(wx.Dialog):
         self.panel2dcon = Panel2DConnectivity(self, show_orientation=True, style=border_style|wx.TAB_TRAVERSAL)
         self.panel3dcon = Panel3DConnectivity(self, style=border_style|wx.TAB_TRAVERSAL)
 
-        self.panel_target.target_2d.SetValue(1)
         self.panel2dcon.Enable(1)
         self.panel3dcon.Enable(0)
+
+        self.panel_target.target_2d.SetValue(1)
+        self.panel2dcon.conect2D_4.SetValue(1)
+        self.panel3dcon.conect3D_6.SetValue(1)
 
         self.apply_btn = wx.Button(self, wx.ID_APPLY)
         self.close_btn = wx.Button(self, wx.ID_CLOSE)
@@ -3089,7 +3233,7 @@ class FillHolesAutoDialog(wx.Dialog):
         btn_sizer.Add(self.apply_btn, 0, flag=wx.ALIGN_RIGHT, border=5)
         btn_sizer.Add(self.close_btn, 0, flag=wx.LEFT|wx.ALIGN_RIGHT, border=5)
 
-        sizer.AddSizer(btn_sizer, 0, flag=wx.ALIGN_RIGHT|wx.LEFT|wx.RIGHT, border=5)
+        sizer.Add(btn_sizer, 0, flag=wx.ALIGN_RIGHT|wx.LEFT|wx.RIGHT, border=5)
 
         sizer.AddSpacer(5)
 
@@ -3147,10 +3291,14 @@ class ObjectCalibrationDialog(wx.Dialog):
         self.obj_fiducials = np.full([5, 3], np.nan)
         self.obj_orients = np.full([5, 3], np.nan)
 
-        pre = wx.PreDialog()
-        pre.Create(wx.GetApp().GetTopWindow(), -1, _(u"Object calibration"), size=(450, 440),
-                   style=wx.DEFAULT_DIALOG_STYLE | wx.FRAME_FLOAT_ON_PARENT)
-        self.PostCreate(pre)
+        try:
+            pre = wx.PreDialog()
+            pre.Create(wx.GetApp().GetTopWindow(), -1, _(u"Object calibration"), size=(450, 440),
+                       style=wx.DEFAULT_DIALOG_STYLE | wx.FRAME_FLOAT_ON_PARENT)
+            self.PostCreate(pre)
+        except AttributeError:
+            wx.Dialog.__init__(self, wx.GetApp().GetTopWindow(), -1, _(u"Object calibration"), size=(450, 440),
+                       style=wx.DEFAULT_DIALOG_STYLE | wx.FRAME_FLOAT_ON_PARENT)
 
         self._init_gui()
         self.LoadObject()
@@ -3191,8 +3339,8 @@ class ObjectCalibrationDialog(wx.Dialog):
         tips_obj = const.TIPS_OBJ
 
         for k in btns_obj:
-            n = btns_obj[k].keys()[0]
-            lab = btns_obj[k].values()[0]
+            n = list(btns_obj[k].keys())[0]
+            lab = list(btns_obj[k].values())[0]
             self.btns_coord[n] = wx.Button(self, k, label=lab, size=wx.Size(60, 23))
             self.btns_coord[n].SetToolTip(wx.ToolTip(tips_obj[n]))
             self.btns_coord[n].Bind(wx.EVT_BUTTON, self.OnGetObjectFiducials)
@@ -3332,7 +3480,7 @@ class ObjectCalibrationDialog(wx.Dialog):
         return ball_actor, tactor
 
     def OnGetObjectFiducials(self, evt):
-        btn_id = const.BTNS_OBJ[evt.GetId()].keys()[0]
+        btn_id = list(const.BTNS_OBJ[evt.GetId()].keys())[0]
 
         if self.trk_init and self.tracker_id:
             coord_raw = dco.GetCoordinates(self.trk_init, self.tracker_id, self.obj_ref_id)

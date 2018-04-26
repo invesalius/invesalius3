@@ -17,7 +17,6 @@
 #    detalhes.
 #--------------------------------------------------------------------------
 import os
-import Queue
 import threading
 import tempfile
 import sys
@@ -79,7 +78,7 @@ def SelectLargerDicomGroup(patient_group):
 def SortFiles(filelist, dicom):
     # Sort slices
     # FIXME: Coronal Crash. necessary verify
-    if (dicom.image.orientation_label <> "CORONAL"):
+    if (dicom.image.orientation_label != "CORONAL"):
         ##Organize reversed image
         sorter = gdcm.IPPSorter()
         sorter.SetComputeZSpacing(True)
@@ -96,27 +95,29 @@ main_dict = {}
 dict_file = {}
 
 class LoadDicom:
-    
     def __init__(self, grouper, filepath):
         self.grouper = grouper
-        self.filepath = filepath
-        
+        self.filepath = utils.decode(filepath, const.FS_ENCODE)
         self.run()
-    
+
     def run(self):
         grouper = self.grouper
         reader = gdcm.ImageReader()
         if _has_win32api:
-            reader.SetFileName(win32api.GetShortPathName(self.filepath).encode(const.FS_ENCODE))
+            try:
+                reader.SetFileName(utils.encode(win32api.GetShortPathName(self.filepath),
+                                                const.FS_ENCODE))
+            except TypeError:
+                reader.SetFileName(win32api.GetShortPathName(self.filepath))
         else:
-            reader.SetFileName(self.filepath)
-
+            try:
+                reader.SetFileName(utils.encode(self.filepath, const.FS_ENCODE))
+            except TypeError:
+                reader.SetFileName(self.filepath)
         if (reader.Read()):
             file = reader.GetFile()
-             
             # Retrieve data set
             dataSet = file.GetDataSet()
-        
             # Retrieve header
             header = file.GetHeader()
             stf = gdcm.StringFilter()
@@ -158,7 +159,7 @@ class LoadDicom:
                         data_dict[group] = {}
 
                     if not(utils.VerifyInvalidPListCharacter(data[1])):
-                        data_dict[group][field] = data[1].decode(encoding)
+                        data_dict[group][field] = utils.decode(data[1], encoding)
                     else:
                         data_dict[group][field] = "Invalid Character"
 
@@ -183,7 +184,7 @@ class LoadDicom:
                         data_dict[group] = {}
 
                     if not(utils.VerifyInvalidPListCharacter(data[1])):
-                        data_dict[group][field] = data[1].decode(encoding, 'replace')
+                        data_dict[group][field] = utils.decode(data[1], encoding, 'replace')
                     else:
                         data_dict[group][field] = "Invalid Character"
 
@@ -201,7 +202,7 @@ class LoadDicom:
                 window = None
 
             if _has_win32api:
-                thumbnail_path = imagedata_utils.create_dicom_thumbnails(win32api.GetShortPathName(self.filepath).encode(const.FS_ENCODE), window, level)
+                thumbnail_path = imagedata_utils.create_dicom_thumbnails(win32api.GetShortPathName(self.filepath), window, level)
             else:
                 thumbnail_path = imagedata_utils.create_dicom_thumbnails(self.filepath, window, level)
 
@@ -211,10 +212,10 @@ class LoadDicom:
             direc_cosines = img.GetDirectionCosines()
             orientation = gdcm.Orientation()
             try:
-                type = orientation.GetType(tuple(direc_cosines))
+                _type = orientation.GetType(tuple(direc_cosines))
             except TypeError:
-                type = orientation.GetType(direc_cosines)
-            label = orientation.GetLabel(type)
+                _type = orientation.GetType(direc_cosines)
+            label = orientation.GetLabel(_type)
 
  
             # ----------   Refactory --------------------------------------
@@ -305,7 +306,7 @@ def yGetDicomGroups(directory, recursive=True, gui=True):
 
 
 def GetDicomGroups(directory, recursive=True):
-    return yGetDicomGroups(directory, recursive, gui=False).next()
+    return next(yGetDicomGroups(directory, recursive, gui=False))
 
 
 class ProgressDicomReader:
@@ -333,7 +334,7 @@ class ProgressDicomReader:
     def GetDicomGroups(self, path, recursive):
 
         if not const.VTK_WARNING:
-            log_path = os.path.join(const.USER_LOG_DIR, 'vtkoutput.txt').encode(const.FS_ENCODE)
+            log_path = utils.encode(os.path.join(const.USER_LOG_DIR, 'vtkoutput.txt'), const.FS_ENCODE)
             fow = vtk.vtkFileOutputWindow()
             fow.SetFileName(log_path)
             ow = vtk.vtkOutputWindow()
@@ -341,7 +342,7 @@ class ProgressDicomReader:
 
         y = yGetDicomGroups(path, recursive)
         for value_progress in y:
-            print ">>>>", value_progress
+            print(">>>>", value_progress)
             if not self.running:
                 break
             if isinstance(value_progress, tuple):
