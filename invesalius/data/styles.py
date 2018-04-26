@@ -1249,7 +1249,7 @@ class WaterShedInteractorStyle(DefaultInteractorStyle):
             position = self.viewer.get_slice_pixel_coord_by_world_pos(*coord)
             radius = cursor.radius
 
-            if position < 0:
+            if isinstance(position, int) and position < 0:
                 position = viewer.calculate_matrix_position(coord)
 
             operation = self.config.operation

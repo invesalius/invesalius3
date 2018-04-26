@@ -478,7 +478,7 @@ def ShowSaveMarkersDialog(default_filename=None):
                         "",  # last used directory
                         default_filename,
                         _("Markers files (*.mks)|*.mks"),
-                        wx.SAVE | wx.OVERWRITE_PROMPT)
+                        wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT)
     # dlg.SetFilterIndex(0) # default is VTI
 
     filename = None
@@ -508,7 +508,7 @@ def ShowSaveCoordsDialog(default_filename=None):
                         "",  # last used directory
                         default_filename,
                         _("Coordinates files (*.csv)|*.csv"),
-                        wx.SAVE | wx.OVERWRITE_PROMPT)
+                        wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT)
     # dlg.SetFilterIndex(0) # default is VTI
 
     filename = None
@@ -539,7 +539,7 @@ def ShowLoadMarkersDialog():
                         defaultDir="",
                         defaultFile="",
                         wildcard=_("Markers files (*.mks)|*.mks"),
-                        style=wx.OPEN|wx.CHANGE_DIR)
+                        style=wx.FD_OPEN|wx.FD_CHANGE_DIR)
 
     # inv3 filter is default
     dlg.SetFilterIndex(0)
@@ -568,7 +568,7 @@ def ShowSaveRegistrationDialog(default_filename=None):
                         "",  # last used directory
                         default_filename,
                         _("Registration files (*.obr)|*.obr"),
-                        wx.SAVE | wx.OVERWRITE_PROMPT)
+                        wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT)
     # dlg.SetFilterIndex(0) # default is VTI
 
     filename = None
@@ -599,7 +599,7 @@ def ShowLoadRegistrationDialog():
                         defaultDir="",
                         defaultFile="",
                         wildcard=_("Registration files (*.obr)|*.obr"),
-                        style=wx.OPEN|wx.CHANGE_DIR)
+                        style=wx.FD_OPEN|wx.FD_CHANGE_DIR)
 
     # inv3 filter is default
     dlg.SetFilterIndex(0)
@@ -3339,8 +3339,8 @@ class ObjectCalibrationDialog(wx.Dialog):
         tips_obj = const.TIPS_OBJ
 
         for k in btns_obj:
-            n = btns_obj[k].keys()[0]
-            lab = btns_obj[k].values()[0]
+            n = list(btns_obj[k].keys())[0]
+            lab = list(btns_obj[k].values())[0]
             self.btns_coord[n] = wx.Button(self, k, label=lab, size=wx.Size(60, 23))
             self.btns_coord[n].SetToolTip(wx.ToolTip(tips_obj[n]))
             self.btns_coord[n].Bind(wx.EVT_BUTTON, self.OnGetObjectFiducials)
@@ -3480,7 +3480,7 @@ class ObjectCalibrationDialog(wx.Dialog):
         return ball_actor, tactor
 
     def OnGetObjectFiducials(self, evt):
-        btn_id = const.BTNS_OBJ[evt.GetId()].keys()[0]
+        btn_id = list(const.BTNS_OBJ[evt.GetId()].keys())[0]
 
         if self.trk_init and self.tracker_id:
             coord_raw = dco.GetCoordinates(self.trk_init, self.tracker_id, self.obj_ref_id)

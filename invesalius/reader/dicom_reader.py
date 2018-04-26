@@ -104,11 +104,16 @@ class LoadDicom:
         grouper = self.grouper
         reader = gdcm.ImageReader()
         if _has_win32api:
-            reader.SetFileName(utils.encode(win32api.GetShortPathName(self.filepath),
-                                            const.FS_ENCODE))
+            try:
+                reader.SetFileName(utils.encode(win32api.GetShortPathName(self.filepath),
+                                                const.FS_ENCODE))
+            except TypeError:
+                reader.SetFileName(win32api.GetShortPathName(self.filepath))
         else:
-            reader.SetFileName(utils.encode(self.filepath, const.FS_ENCODE))
-
+            try:
+                reader.SetFileName(utils.encode(self.filepath, const.FS_ENCODE))
+            except TypeError:
+                reader.SetFileName(self.filepath)
         if (reader.Read()):
             file = reader.GetFile()
             # Retrieve data set

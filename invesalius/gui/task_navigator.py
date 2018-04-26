@@ -48,6 +48,7 @@ import invesalius.data.trackers as dt
 import invesalius.data.trigger as trig
 import invesalius.data.record_coords as rec
 import invesalius.gui.dialogs as dlg
+from invesalius import utils
 
 BTN_NEW = wx.NewId()
 BTN_IMPORT_LOCAL = wx.NewId()
@@ -530,7 +531,7 @@ class NeuronavigationPanel(wx.Panel):
 
         Publisher.sendMessage('Set ball reference position', (ux, uy, uz))
         # Publisher.sendMessage('Set camera in volume', (ux, uy, uz))
-        Publisher.sendMessage('Co-registered points', (ux, uy, uz, 0., 0., 0.))
+        Publisher.sendMessage('Co-registered points', ((ux, uy, uz), (0., 0., 0.)))
         Publisher.sendMessage('Update cross position', (ux, uy, uz))
 
     def OnImageFiducials(self, evt):
@@ -932,7 +933,7 @@ class ObjectRegistrationPanel(wx.Panel):
         else:
             filename = dlg.ShowSaveRegistrationDialog("object_registration.obr")
             if filename:
-                hdr = 'Object' + "\t" + self.obj_name + "\t" + 'Reference' + "\t" + str('%d' % self.obj_ref_mode)
+                hdr = 'Object' + "\t" + utils.decode(self.obj_name, const.FS_ENCODE) + "\t" + 'Reference' + "\t" + str('%d' % self.obj_ref_mode)
                 data = np.hstack([self.obj_fiducials, self.obj_orients])
                 np.savetxt(filename, data, fmt='%.4f', delimiter='\t', newline='\n', header=hdr)
                 wx.MessageBox(_("Object file successfully saved"), _("Save"))

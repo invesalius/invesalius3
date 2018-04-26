@@ -354,8 +354,10 @@ def ReadBitmap(filepath):
         filepath = win32api.GetShortPathName(filepath)
 
     if t == False:
-        measures_info = GetPixelSpacingFromInfoFile(filepath)
-        
+        try:
+            measures_info = GetPixelSpacingFromInfoFile(filepath)
+        except UnicodeDecodeError:
+            measures_info = False
         if measures_info:
             Publisher.sendMessage('Set bitmap spacing', measures_info)
 
@@ -376,6 +378,9 @@ def ReadBitmap(filepath):
            
 
 def GetPixelSpacingFromInfoFile(filepath):
+    filepath = utils.decode(filepath, const.FS_ENCODE)
+    if filepath.endswith('.DS_Store'):
+        return False
     fi = open(filepath, 'r')
     lines = fi.readlines()
     measure_scale = 'mm'

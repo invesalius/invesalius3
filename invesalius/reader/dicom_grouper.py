@@ -137,7 +137,10 @@ class DicomGroup:
             sorter = gdcm.IPPSorter()
             sorter.SetComputeZSpacing(True)
             sorter.SetZSpacingTolerance(1e-10)
-            sorter.Sort([utils.encode(i, const.FS_ENCODE) for i in filelist])
+            try:
+                sorter.Sort([utils.encode(i, const.FS_ENCODE) for i in filelist])
+            except TypeError:
+                sorter.Sort(filelist)
             filelist = sorter.GetFilenames()
 
         # for breast-CT of koning manufacturing (KBCT)

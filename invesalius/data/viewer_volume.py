@@ -507,7 +507,7 @@ class Viewer(wx.Panel):
         """
         self.ball_id = pubsub_evt.data[0]
         ballsize = pubsub_evt.data[1]
-        ballcolour = pubsub_evt.data[2]
+        ballcolour = pubsub_evt.data[2][:3]
         coord = pubsub_evt.data[3]
         x, y, z = bases.flip_x(coord)
 
@@ -1124,7 +1124,7 @@ class Viewer(wx.Panel):
         """
         Coil for navigation rendered in volume viewer.
         """
-
+        filename = utils.decode(filename, const.FS_ENCODE)
         if filename:
             if filename.lower().endswith('.stl'):
                 reader = vtk.vtkSTLReader()
