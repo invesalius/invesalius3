@@ -90,7 +90,7 @@ class Surface():
 
         filelist[vtp_filepath] = vtp_filename
 
-        surface = {'colour': self.colour,
+        surface = {'colour': self.colour[:3],
                    'index': self.index,
                    'name': self.name,
                    'polydata': vtp_filename,
@@ -430,7 +430,7 @@ class SurfaceManager():
             actor.SetMapper(mapper)
 
             # Set actor colour and transparency
-            actor.GetProperty().SetColor(surface.colour)
+            actor.GetProperty().SetColor(surface.colour[:3])
             actor.GetProperty().SetOpacity(1-surface.transparency)
 
             self.actors_dict[surface.index] = actor

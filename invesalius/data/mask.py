@@ -236,7 +236,7 @@ class Mask():
 
         mask['index'] = self.index
         mask['name'] = self.name
-        mask['colour'] = self.colour
+        mask['colour'] = self.colour[:3]
         mask['opacity'] = self.opacity
         mask['threshold_range'] = self.threshold_range
         mask['edition_threshold_range'] = self.edition_threshold_range
