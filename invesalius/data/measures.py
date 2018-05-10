@@ -980,8 +980,11 @@ class AngularMeasure(object):
             if len(points) == 3:
                 txt = u"%.3f° / %.3f°" % (self.GetValue(), 360.0 - self.GetValue())
                 r, g, b = self.colour
-                canvas.draw_arc(points[1], points[0], points[2], line_colour=(r*255, g*255, b*255, 255))
-                canvas.draw_text_box(txt, (points[1][0], points[1][1]), txt_colour=MEASURE_TEXT_COLOUR, bg_colour=MEASURE_TEXTBOX_COLOUR)
+                canvas.draw_arc(points[1], points[0], points[2],
+                                line_colour=(int(r*255), int(g*255), int(b*255), 255))
+                canvas.draw_text_box(txt, (points[1][0], points[1][1]),
+                                     txt_colour=MEASURE_TEXT_COLOUR,
+                                     bg_colour=MEASURE_TEXTBOX_COLOUR)
 
     def GetNumberOfPoints(self):
         return self.number_of_points

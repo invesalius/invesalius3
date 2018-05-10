@@ -3285,9 +3285,13 @@ class FillHolesAutoDialog(wx.Dialog):
 
 class MaskDensityDialog(wx.Dialog):
     def __init__(self, title):
-        pre = wx.PreDialog()
-        pre.Create(wx.GetApp().GetTopWindow(), -1, _("Mask density"), style=wx.DEFAULT_DIALOG_STYLE|wx.FRAME_FLOAT_ON_PARENT)
-        self.PostCreate(pre)
+        try:
+            pre = wx.PreDialog()
+            pre.Create(wx.GetApp().GetTopWindow(), -1, _("Mask density"), style=wx.DEFAULT_DIALOG_STYLE|wx.FRAME_FLOAT_ON_PARENT)
+            self.PostCreate(pre)
+        except AttributeError:
+            wx.Dialog.__init__(self, wx.GetApp().GetTopWindow(), -1, _(u"Mask density"),
+                               style=wx.DEFAULT_DIALOG_STYLE | wx.FRAME_FLOAT_ON_PARENT)
 
         self._init_gui()
         self._bind_events()
