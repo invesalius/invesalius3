@@ -20,9 +20,12 @@
 from math import sin, cos
 import numpy as np
 
+import invesalius.data.transformations as tr
+
 from time import sleep
 from random import uniform
 from wx.lib.pubsub import pub as Publisher
+
 
 def GetCoordinates(trck_init, trck_id, ref_mode):
 
@@ -44,7 +47,7 @@ def GetCoordinates(trck_init, trck_id, ref_mode):
                     5: DebugCoord}
         coord = getcoord[trck_id](trck_init, trck_id, ref_mode)
     else:
-        print "Select Tracker"
+        print("Select Tracker")
 
     return coord
 
@@ -54,7 +57,7 @@ def ClaronCoord(trck_init, trck_id, ref_mode):
     scale = np.array([1.0, 1.0, -1.0])
     coord = None
     k = 0
-    # TODO: try to replace while and use some Claron internal computation
+    # TODO: try to replace 'while' and use some Claron internal computation
 
     if ref_mode:
         while k < 20:
@@ -67,7 +70,7 @@ def ClaronCoord(trck_init, trck_id, ref_mode):
                 k = 30
             except AttributeError:
                 k += 1
-                print "wait, collecting coordinates ..."
+                print("wait, collecting coordinates ...")
         if k == 30:
             coord = dynamic_reference(probe, reference)
             coord = (coord[0] * scale[0], coord[1] * scale[1], coord[2] * scale[2], coord[3], coord[4], coord[5])
@@ -77,10 +80,11 @@ def ClaronCoord(trck_init, trck_id, ref_mode):
                 trck.Run()
                 coord = np.array([trck.PositionTooltipX1 * scale[0], trck.PositionTooltipY1 * scale[1],
                                   trck.PositionTooltipZ1 * scale[2], trck.AngleX1, trck.AngleY1, trck.AngleZ1])
+
                 k = 30
             except AttributeError:
                 k += 1
-                print "wait, collecting coordinates ..."
+                print("wait, collecting coordinates ...")
 
     Publisher.sendMessage('Sensors ID', [trck.probeID, trck.refID])
 
@@ -104,27 +108,23 @@ def PolhemusCoord(trck, trck_id, ref_mode):
 
 def PolhemusWrapperCoord(trck, trck_id, ref_mode):
 
-    scale = 25.4 * np.array([1., 1.0, -1.0])
-    coord = None
+    trck.Run()
+    scale = 10.0 * np.array([1., 1., 1.])
 
-    if ref_mode:
-        trck.Run()
-        probe = np.array([float(trck.PositionTooltipX1), float(trck.PositionTooltipY1),
-                          float(trck.PositionTooltipZ1), float(trck.AngleX1), float(trck.AngleY1),
-                          float(trck.AngleZ1)])
-        reference = np.array([float(trck.PositionTooltipX2), float(trck.PositionTooltipY2),
-                          float(trck.PositionTooltipZ2), float(trck.AngleX2), float(trck.AngleY2),
-                          float(trck.AngleZ2)])
+    coord1 = np.array([float(trck.PositionTooltipX1)*scale[0], float(trck.PositionTooltipY1)*scale[1],
+                      float(trck.PositionTooltipZ1)*scale[2],
+                      float(trck.AngleX1), float(trck.AngleY1), float(trck.AngleZ1)])
 
-        if probe.all() and reference.all():
-            coord = dynamic_reference(probe, reference)
-            coord = (coord[0] * scale[0], coord[1] * scale[1], coord[2] * scale[2], coord[3], coord[4], coord[5])
+    coord2 = np.array([float(trck.PositionTooltipX2)*scale[0], float(trck.PositionTooltipY2)*scale[1],
+                       float(trck.PositionTooltipZ2)*scale[2],
+                       float(trck.AngleX2), float(trck.AngleY2), float(trck.AngleZ2)])
+    coord = np.vstack([coord1, coord2])
 
-    else:
-        trck.Run()
-        coord = np.array([float(trck.PositionTooltipX1) * scale[0], float(trck.PositionTooltipY1) * scale[1],
-                          float(trck.PositionTooltipZ1) * scale[2], float(trck.AngleX1), float(trck.AngleY1),
-                          float(trck.AngleZ1)])
+    if trck_id == 2:
+        coord3 = np.array([float(trck.PositionTooltipX3) * scale[0], float(trck.PositionTooltipY3) * scale[1],
+                           float(trck.PositionTooltipZ3) * scale[2],
+                           float(trck.AngleX3), float(trck.AngleY3), float(trck.AngleZ3)])
+        coord = np.vstack([coord, coord3])
 
     if trck.StylusButton:
         Publisher.sendMessage('PLH Stylus Button On')
@@ -180,7 +180,7 @@ def PolhemusSerialCoord(trck_init, trck_id, ref_mode):
     coord = None
 
     if lines[0][0] != '0':
-        print "The Polhemus is not connected!"
+        print("The Polhemus is not connected!")
     else:
         for s in lines:
             if s[1] == '1':
@@ -198,7 +198,7 @@ def PolhemusSerialCoord(trck_init, trck_id, ref_mode):
                     plh1 = [float(s) for s in data[1:len(data)]]
                     j = 1
                 except:
-                    print "error!!"
+                    print("error!!")
 
             coord = data[0:6]
     return coord
@@ -213,22 +213,21 @@ def DebugCoord(trk_init, trck_id, ref_mode):
     :param trck_id: id of tracking device
     :return: six coordinates x, y, z, alfa, beta and gama
     """
-    sleep(0.2)
-    if ref_mode:
-        probe = np.array([uniform(1, 200), uniform(1, 200), uniform(1, 200),
-                          uniform(1, 200), uniform(1, 200), uniform(1, 200)])
-        reference = np.array([uniform(1, 200), uniform(1, 200), uniform(1, 200),
-                              uniform(1, 200), uniform(1, 200), uniform(1, 200)])
 
-        coord = dynamic_reference(probe, reference)
+    sleep(0.05)
 
-    else:
-        coord = np.array([uniform(1, 200), uniform(1, 200), uniform(1, 200),
-                          uniform(1, 200), uniform(1, 200), uniform(1, 200)])
+    coord1 = np.array([uniform(1, 200), uniform(1, 200), uniform(1, 200),
+                      uniform(-180.0, 180.0), uniform(-180.0, 180.0), uniform(-180.0, 180.0)])
+
+    coord2 = np.array([uniform(1, 200), uniform(1, 200), uniform(1, 200),
+                       uniform(-180.0, 180.0), uniform(-180.0, 180.0), uniform(-180.0, 180.0)])
+
+    coord3 = np.array([uniform(1, 200), uniform(1, 200), uniform(1, 200),
+                       uniform(-180.0, 180.0), uniform(-180.0, 180.0), uniform(-180.0, 180.0)])
 
     Publisher.sendMessage('Sensors ID', [int(uniform(0, 5)), int(uniform(0, 5))])
 
-    return coord
+    return np.vstack([coord1, coord2, coord3])
 
 
 def dynamic_reference(probe, reference):
@@ -245,28 +244,143 @@ def dynamic_reference(probe, reference):
     """
     a, b, g = np.radians(reference[3:6])
 
-    vet = probe[0:3] - reference[0:3]
-    vet = np.mat(vet.reshape(3, 1))
+    vet = np.asmatrix(probe[0:3] - reference[0:3])
+    # vet = np.mat(vet.reshape(3, 1))
 
-    # Attitude Matrix given by Patriot Manual
-    Mrot = np.mat([[cos(a) * cos(b), sin(b) * sin(g) * cos(a) - cos(g) * sin(a),
-                       cos(a) * sin(b) * cos(g) + sin(a) * sin(g)],
-                      [cos(b) * sin(a), sin(b) * sin(g) * sin(a) + cos(g) * cos(a),
-                       cos(g) * sin(b) * sin(a) - sin(g) * cos(a)],
-                      [-sin(b), sin(g) * cos(b), cos(b) * cos(g)]])
+    # Attitude matrix given by Patriot manual
+    # a: rotation of plane (X, Y) around Z axis (azimuth)
+    # b: rotation of plane (X', Z) around Y' axis (elevation)
+    # a: rotation of plane (Y', Z') around X'' axis (roll)
+    m_rot = np.mat([[cos(a) * cos(b), sin(b) * sin(g) * cos(a) - cos(g) * sin(a),
+                    cos(a) * sin(b) * cos(g) + sin(a) * sin(g)],
+                   [cos(b) * sin(a), sin(b) * sin(g) * sin(a) + cos(g) * cos(a),
+                    cos(g) * sin(b) * sin(a) - sin(g) * cos(a)],
+                   [-sin(b), sin(g) * cos(b), cos(b) * cos(g)]])
 
-    coord_rot = Mrot.T * vet
+    # coord_rot = m_rot.T * vet
+    coord_rot = vet*m_rot
     coord_rot = np.squeeze(np.asarray(coord_rot))
 
-    return coord_rot[0], coord_rot[1], coord_rot[2], probe[3], probe[4], probe[5]
+    return coord_rot[0], coord_rot[1], -coord_rot[2], probe[3], probe[4], probe[5]
+
+
+def dynamic_reference_m(probe, reference):
+    """
+    Apply dynamic reference correction to probe coordinates. Uses the alpha, beta and gama
+    rotation angles of reference to rotate the probe coordinate and returns the x, y, z
+    difference between probe and reference. Angles sequences and equation was extracted from
+    Polhemus manual and Attitude matrix in Wikipedia.
+    General equation is:
+    coord = Mrot * (probe - reference)
+    :param probe: sensor one defined as probe
+    :param reference: sensor two defined as reference
+    :return: rotated and translated coordinates
+    """
+
+    a, b, g = np.radians(reference[3:6])
+
+    T = tr.translation_matrix(reference[:3])
+    R = tr.euler_matrix(a, b, g, 'rzyx')
+    M = np.asmatrix(tr.concatenate_matrices(T, R))
+    # M = tr.compose_matrix(angles=np.radians(reference[3:6]), translate=reference[:3])
+    # print M
+    probe_4 = np.vstack((np.asmatrix(probe[:3]).reshape([3, 1]), 1.))
+    coord_rot = M.I * probe_4
+    coord_rot = np.squeeze(np.asarray(coord_rot))
+
+    return coord_rot[0], coord_rot[1], -coord_rot[2], probe[3], probe[4], probe[5]
+
+def dynamic_reference_m2(probe, reference):
+    """
+    Apply dynamic reference correction to probe coordinates. Uses the alpha, beta and gama
+    rotation angles of reference to rotate the probe coordinate and returns the x, y, z
+    difference between probe and reference. Angles sequences and equation was extracted from
+    Polhemus manual and Attitude matrix in Wikipedia.
+    General equation is:
+    coord = Mrot * (probe - reference)
+    :param probe: sensor one defined as probe
+    :param reference: sensor two defined as reference
+    :return: rotated and translated coordinates
+    """
+
+    a, b, g = np.radians(reference[3:6])
+    a_p, b_p, g_p = np.radians(probe[3:6])
+
+    T = tr.translation_matrix(reference[:3])
+    T_p = tr.translation_matrix(probe[:3])
+    R = tr.euler_matrix(a, b, g, 'rzyx')
+    R_p = tr.euler_matrix(a_p, b_p, g_p, 'rzyx')
+    M = np.asmatrix(tr.concatenate_matrices(T, R))
+    M_p = np.asmatrix(tr.concatenate_matrices(T_p, R_p))
+    # M = tr.compose_matrix(angles=np.radians(reference[3:6]), translate=reference[:3])
+    # print M
+
+    M_dyn = M.I * M_p
+
+    al, be, ga = tr.euler_from_matrix(M_dyn, 'rzyx')
+    coord_rot = tr.translation_from_matrix(M_dyn)
+
+    coord_rot = np.squeeze(coord_rot)
+
+    # probe_4 = np.vstack((np.asmatrix(probe[:3]).reshape([3, 1]), 1.))
+    # coord_rot_test = M.I * probe_4
+    # coord_rot_test = np.squeeze(np.asarray(coord_rot_test))
+    #
+    # print "coord_rot: ", coord_rot
+    # print "coord_rot_test: ", coord_rot_test
+    # print "test: ", np.allclose(coord_rot, coord_rot_test[:3])
+
+    return coord_rot[0], coord_rot[1], coord_rot[2], np.degrees(al), np.degrees(be), np.degrees(ga)
+
+# def dynamic_reference_m3(probe, reference):
+#     """
+#     Apply dynamic reference correction to probe coordinates. Uses the alpha, beta and gama
+#     rotation angles of reference to rotate the probe coordinate and returns the x, y, z
+#     difference between probe and reference. Angles sequences and equation was extracted from
+#     Polhemus manual and Attitude matrix in Wikipedia.
+#     General equation is:
+#     coord = Mrot * (probe - reference)
+#     :param probe: sensor one defined as probe
+#     :param reference: sensor two defined as reference
+#     :return: rotated and translated coordinates
+#     """
+#
+#     a, b, g = np.radians(reference[3:6])
+#     a_p, b_p, g_p = np.radians(probe[3:6])
+#
+#     T = tr.translation_matrix(reference[:3])
+#     T_p = tr.translation_matrix(probe[:3])
+#     R = tr.euler_matrix(a, b, g, 'rzyx')
+#     R_p = tr.euler_matrix(a_p, b_p, g_p, 'rzyx')
+#     M = np.asmatrix(tr.concatenate_matrices(T, R))
+#     M_p = np.asmatrix(tr.concatenate_matrices(T_p, R_p))
+#     # M = tr.compose_matrix(angles=np.radians(reference[3:6]), translate=reference[:3])
+#     # print M
+#
+#     M_dyn = M.I * M_p
+#
+#     # al, be, ga = tr.euler_from_matrix(M_dyn, 'rzyx')
+#     # coord_rot = tr.translation_from_matrix(M_dyn)
+#     #
+#     # coord_rot = np.squeeze(coord_rot)
+#
+#     # probe_4 = np.vstack((np.asmatrix(probe[:3]).reshape([3, 1]), 1.))
+#     # coord_rot_test = M.I * probe_4
+#     # coord_rot_test = np.squeeze(np.asarray(coord_rot_test))
+#     #
+#     # print "coord_rot: ", coord_rot
+#     # print "coord_rot_test: ", coord_rot_test
+#     # print "test: ", np.allclose(coord_rot, coord_rot_test[:3])
+#
+#     return M_dyn
 
 
 def str2float(data):
     """
-    Converts string detected wth Polhemus device to float array of coordinates. THis method applies
+    Converts string detected wth Polhemus device to float array of coordinates. This method applies
     a correction for the minus sign in string that raises error while splitting the string into coordinates.
     :param data: string of coordinates read with Polhemus
-    :return: six float coordinates x, y, z, alfa, beta and gama
+    :return: six float coordinates x, y, z, alpha, beta and gamma
     """
 
     count = 0

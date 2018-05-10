@@ -20,9 +20,15 @@ import sys
 import os
 
 import wx
-import wx.lib.hyperlink as hl
+
+try:
+    import wx.lib.agw.hyperlink as hl
+    import wx.lib.agw.foldpanelbar as fpb
+except ImportError:
+    import wx.lib.hyperlink as hl
+    import wx.lib.foldpanelbar as fpb
+
 from wx.lib.pubsub import pub as Publisher
-import wx.lib.foldpanelbar as fpb
 import wx.lib.colourselect as csel
 
 import invesalius.constants as const
@@ -96,6 +102,7 @@ class InnerTaskPanel(wx.Panel):
         link_new_surface.UpdateLink()
         link_new_surface.Bind(hl.EVT_HYPERLINK_LEFT, self.OnLinkNewSurface)
 
+        Publisher.subscribe(self.OnLinkNewSurface, 'Open create surface dialog')
         # Create horizontal sizers to represent lines in the panel
         line_new = wx.BoxSizer(wx.HORIZONTAL)
         line_new.Add(link_new_surface, 1, wx.EXPAND|wx.GROW| wx.TOP|wx.RIGHT, 4)
@@ -135,8 +142,22 @@ class InnerTaskPanel(wx.Panel):
             evt.Skip()
 
     def OnLinkNewSurface(self, evt=None):
+        
+        is_pubsub = True
+
+        try:
+            evt = evt.data
+            evt = None
+        except:
+            pass
+        
         #import invesalius.gui.dialogs as dlg
         sl = slice_.Slice()
+
+        if sl.current_mask == None:
+            dlg.InexistentMask()
+            return
+
         dialog = dlg.SurfaceCreationDialog(None, -1,
                             _('New surface'),
                             mask_edited=sl.current_mask.was_edited)
@@ -174,6 +195,7 @@ class InnerTaskPanel(wx.Panel):
 
             Publisher.sendMessage('Create surface from index', surface_options)
         dialog.Destroy()
+        
         if evt:
             evt.Skip()
 
@@ -195,7 +217,10 @@ class FoldPanel(wx.Panel):
 class InnerFoldPanel(wx.Panel):
     def __init__(self, parent):
         wx.Panel.__init__(self, parent)
-        default_colour = wx.SystemSettings_GetColour(wx.SYS_COLOUR_MENUBAR)
+        try:
+            default_colour = wx.SystemSettings.GetColour(wx.SYS_COLOUR_MENUBAR)
+        except AttributeError:
+            default_colour = wx.SystemSettings_GetColour(wx.SYS_COLOUR_MENUBAR)
         self.SetBackgroundColour(default_colour)
 
         # Fold panel and its style settings
@@ -264,7 +289,10 @@ BTN_SEEDS = wx.NewId()
 class SurfaceTools(wx.Panel):
     def __init__(self, parent):
         wx.Panel.__init__(self, parent)
-        default_colour = wx.SystemSettings_GetColour(wx.SYS_COLOUR_MENUBAR)
+        try:
+            default_colour = wx.SystemSettings.GetColour(wx.SYS_COLOUR_MENUBAR)
+        except AttributeError:
+            default_colour = wx.SystemSettings_GetColour(wx.SYS_COLOUR_MENUBAR)
         self.SetBackgroundColour(default_colour)
 
         #self.SetBackgroundColour(wx.Colour(255,255,255))
@@ -395,12 +423,12 @@ class SurfaceTools(wx.Panel):
             self.EndSeeding()
 
     def StartSeeding(self):
-        print "Start Seeding"
+        print("Start Seeding")
         Publisher.sendMessage('Enable style', const.VOLUME_STATE_SEED)
         Publisher.sendMessage('Create surface by seeding - start')
 
     def EndSeeding(self):
-        print "End Seeding"
+        print("End Seeding")
         Publisher.sendMessage('Disable style', const.VOLUME_STATE_SEED)
         Publisher.sendMessage('Create surface by seeding - end')
 
@@ -409,7 +437,10 @@ class SurfaceTools(wx.Panel):
 class SurfaceProperties(wx.Panel):
     def __init__(self, parent):
         wx.Panel.__init__(self, parent)
-        default_colour = wx.SystemSettings_GetColour(wx.SYS_COLOUR_MENUBAR)
+        try:
+            default_colour = wx.SystemSettings.GetColour(wx.SYS_COLOUR_MENUBAR)
+        except AttributeError:
+            default_colour = wx.SystemSettings_GetColour(wx.SYS_COLOUR_MENUBAR)
         self.SetBackgroundColour(default_colour)
 
         self.surface_list = []
@@ -510,7 +541,7 @@ class SurfaceProperties(wx.Panel):
 
     def CloseProject(self):
         n = self.combo_surface_name.GetCount()
-        for i in xrange(n-1, -1, -1):
+        for i in range(n-1, -1, -1):
             self.combo_surface_name.Delete(i)
         self.surface_list = []
 
@@ -571,7 +602,10 @@ class QualityAdjustment(wx.Panel):
     def __init__(self, parent):
         import invesalius.constants as const
         wx.Panel.__init__(self, parent)
-        default_colour = wx.SystemSettings_GetColour(wx.SYS_COLOUR_MENUBAR)
+        try:
+            default_colour = wx.SystemSettings.GetColour(wx.SYS_COLOUR_MENUBAR)
+        except AttributeError:
+            default_colour = wx.SystemSettings_GetColour(wx.SYS_COLOUR_MENUBAR)
         self.SetBackgroundColour(default_colour)
 
         # LINE 1
@@ -627,7 +661,7 @@ class QualityAdjustment(wx.Panel):
         self.SetAutoLayout(1)
 
     def OnComboQuality(self, evt):
-        print "TODO: Send Signal - Change surface quality: %s" % (evt.GetString())
+        print("TODO: Send Signal - Change surface quality: %s" % (evt.GetString()))
 
     def OnDecimate(self, evt):
-        print "TODO: Send Signal - Decimate: %s" % float(self.spin.GetValue())/100
+        print("TODO: Send Signal - Decimate: %s" % float(self.spin.GetValue())/100)

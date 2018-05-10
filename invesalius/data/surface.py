@@ -74,15 +74,23 @@ class Surface():
         else:
             self.name = name
 
+        self.filename = None
+
     def SavePlist(self, dir_temp, filelist):
-        filename = u'surface_%d' % self.index
-        vtp_filename = filename + u'.vtp'
-        vtp_filepath = os.path.join(dir_temp, vtp_filename)
-        pu.Export(self.polydata, vtp_filepath, bin=True)
+        if self.filename and os.path.exists(self.filename):
+            filename = u'surface_%d' % self.index
+            vtp_filename = filename + u'.vtp'
+            vtp_filepath = self.filename
+        else:
+            filename = u'surface_%d' % self.index
+            vtp_filename = filename + u'.vtp'
+            vtp_filepath = tempfile.mktemp()
+            pu.Export(self.polydata, vtp_filepath, bin=True)
+            self.filename = vtp_filepath
 
         filelist[vtp_filepath] = vtp_filename
 
-        surface = {'colour': self.colour,
+        surface = {'colour': self.colour[:3],
                    'index': self.index,
                    'name': self.name,
                    'polydata': vtp_filename,
@@ -355,7 +363,7 @@ class SurfaceManager():
             area =  measured_polydata.GetSurfaceArea()
             surface.volume = volume
             surface.area = area
-            print ">>>>", surface.volume
+            print(">>>>", surface.volume)
         else:
             surface.volume = volume
             surface.area = area
@@ -424,7 +432,7 @@ class SurfaceManager():
             actor.SetMapper(mapper)
 
             # Set actor colour and transparency
-            actor.GetProperty().SetColor(surface.colour)
+            actor.GetProperty().SetColor(surface.colour[:3])
             actor.GetProperty().SetOpacity(1-surface.transparency)
 
             self.actors_dict[surface.index] = actor
@@ -465,7 +473,7 @@ class SurfaceManager():
 
         mode = 'CONTOUR' # 'GRAYSCALE'
         min_value, max_value = mask.threshold_range
-        colour = mask.colour
+        colour = mask.colour[:3]
 
         try:
             overwrite = surface_parameters['options']['overwrite']
@@ -515,7 +523,7 @@ class SurfaceManager():
         q_out = multiprocessing.Queue()
 
         p = []
-        for i in xrange(n_processors):
+        for i in range(n_processors):
             sp = surface_process.SurfaceProcess(pipe_in, filename_img,
                                                 matrix.shape, matrix.dtype,
                                                 mask.temp_file,
@@ -533,12 +541,12 @@ class SurfaceManager():
             p.append(sp)
             sp.start()
 
-        for i in xrange(n_pieces):
+        for i in range(n_pieces):
             init = i * piece_size
             end = init + piece_size + o_piece
             roi = slice(init, end)
             q_in.put(roi)
-            print "new_piece", roi
+            print("new_piece", roi)
 
         for i in p:
             q_in.put(None)
@@ -658,7 +666,7 @@ class SurfaceManager():
 
 
         if decimate_reduction:
-            print "Decimating", decimate_reduction
+            print("Decimating", decimate_reduction)
             decimation = vtk.vtkQuadricDecimation()
             #  decimation.ReleaseDataFlagOn()
             decimation.SetInputData(polydata)
@@ -900,7 +908,7 @@ class SurfaceManager():
         """
         """
         index, colour = pubsub_evt.data
-        self.actors_dict[index].GetProperty().SetColor(colour)
+        self.actors_dict[index].GetProperty().SetColor(colour[:3])
         # Update value in project's surface_dict
         proj = prj.Project()
         proj.surface_dict[index].colour = colour
@@ -923,7 +931,7 @@ class SurfaceManager():
                 temp_file = win32api.GetShortPathName(temp_file)
                 os.remove(_temp_file)
 
-            temp_file = temp_file.decode(const.FS_ENCODE)
+            temp_file = utl.decode(temp_file, const.FS_ENCODE)
             self._export_surface(temp_file, filetype)
 
             shutil.move(temp_file, filename)

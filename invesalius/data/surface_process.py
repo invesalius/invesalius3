@@ -206,7 +206,7 @@ class SurfaceProcess(multiprocessing.Process):
         writer.SetFileName(filename)
         writer.Write()
 
-        print "Writing piece", roi, "to", filename
+        print("Writing piece", roi, "to", filename)
         del polydata
         del writer
 

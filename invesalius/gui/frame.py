@@ -24,6 +24,12 @@ import sys
 import webbrowser
 
 import wx
+
+try:
+    from wx.adv import TaskBarIcon as wx_TaskBarIcon
+except ImportError:
+    from wx import TaskBarIcon as wx_TaskBarIcon
+
 import wx.aui
 from wx.lib.pubsub import pub as Publisher
 import wx.lib.agw.toasterbox as TB
@@ -386,6 +392,7 @@ class Frame(wx.Frame):
         s = ses.Session()
         if not s.IsOpen() or not s.project_path:
             Publisher.sendMessage('Exit')
+        self.aui_manager.UnInit()
 
     def OnMenuClick(self, evt):
         """
@@ -497,6 +504,12 @@ class Frame(wx.Frame):
         elif id == const.ID_CROP_MASK:
             self.OnCropMask()
 
+        elif id == const.ID_CREATE_SURFACE:
+            Publisher.sendMessage('Open create surface dialog')
+
+        elif id == const.ID_CREATE_MASK:
+            Publisher.sendMessage('New mask from shortcut')
+
     def OnInterpolatedSlices(self, status):
         Publisher.sendMessage('Set interpolated slices', status)
 
@@ -542,6 +555,7 @@ class Frame(wx.Frame):
             ses.Session().surface_interpolation = values[const.SURFACE_INTERPOLATION]
             ses.Session().language = values[const.LANGUAGE]
             ses.Session().slice_interpolation = values[const.SLICE_INTERPOLATION]
+            ses.Session().WriteSessionFile()
 
             Publisher.sendMessage('Remove Volume')
             Publisher.sendMessage('Reset Reaycasting')
@@ -695,7 +709,8 @@ class MenuBar(wx.MenuBar):
                              const.ID_THRESHOLD_SEGMENTATION,
                              const.ID_FLOODFILL_SEGMENTATION,
                              const.ID_MASK_DENSITY_MEASURE,
-                             ]
+                             const.ID_CREATE_SURFACE,
+                             const.ID_CREATE_MASK]
         self.__init_items()
         self.__bind_events()
 
@@ -713,7 +728,7 @@ class MenuBar(wx.MenuBar):
         sub(self.OnEnableState, "Enable state project")
         sub(self.OnEnableUndo, "Enable undo")
         sub(self.OnEnableRedo, "Enable redo")
-        sub(self.OnEnableNavigation, "Navigation Status")
+        sub(self.OnEnableNavigation, "Navigation status")
 
         sub(self.OnAddMask, "Add mask")
         sub(self.OnRemoveMasks, "Remove masks")
@@ -744,7 +759,7 @@ class MenuBar(wx.MenuBar):
         file_menu.AppendMenu(const.ID_IMPORT_OTHERS_FILES, _("Import other files..."), others_file_menu)
         app(const.ID_PROJECT_OPEN, _("Open project...\tCtrl+O"))
         app(const.ID_PROJECT_SAVE, _("Save project\tCtrl+S"))
-        app(const.ID_PROJECT_SAVE_AS, _("Save project as..."))
+        app(const.ID_PROJECT_SAVE_AS, _("Save project as...\tCtrl+Shift+S"))
         app(const.ID_PROJECT_CLOSE, _("Close project"))
         file_menu.AppendSeparator()
         #app(const.ID_PROJECT_INFO, _("Project Information..."))
@@ -786,7 +801,11 @@ class MenuBar(wx.MenuBar):
 
         # Mask Menu
         mask_menu = wx.Menu()
-        self.bool_op_menu = mask_menu.Append(const.ID_BOOLEAN_MASK, _(u"Boolean operations"))
+
+        self.new_mask_menu = mask_menu.Append(const.ID_CREATE_MASK, _(u"New\tCtrl+Shift+M"))
+        self.new_mask_menu.Enable(False)
+
+        self.bool_op_menu = mask_menu.Append(const.ID_BOOLEAN_MASK, _(u"Boolean operations\tCtrl+Shift+B"))
         self.bool_op_menu.Enable(False)
 
         self.clean_mask_menu = mask_menu.Append(const.ID_CLEAN_MASK, _(u"Clean Mask\tCtrl+Shift+A"))
@@ -794,18 +813,18 @@ class MenuBar(wx.MenuBar):
 
         mask_menu.AppendSeparator()
 
-        self.fill_hole_mask_menu = mask_menu.Append(const.ID_FLOODFILL_MASK, _(u"Fill holes manually"))
+        self.fill_hole_mask_menu = mask_menu.Append(const.ID_FLOODFILL_MASK, _(u"Fill holes manually\tCtrl+Shift+H"))
         self.fill_hole_mask_menu.Enable(False)
 
-        self.fill_hole_auto_menu = mask_menu.Append(const.ID_FILL_HOLE_AUTO, _(u"Fill holes automatically"))
+        self.fill_hole_auto_menu = mask_menu.Append(const.ID_FILL_HOLE_AUTO, _(u"Fill holes automatically\tCtrl+Shift+J"))
         self.fill_hole_mask_menu.Enable(False)
 
         mask_menu.AppendSeparator()
 
-        self.remove_mask_part_menu = mask_menu.Append(const.ID_REMOVE_MASK_PART, _(u"Remove parts"))
+        self.remove_mask_part_menu = mask_menu.Append(const.ID_REMOVE_MASK_PART, _(u"Remove parts\tCtrl+Shift+K"))
         self.remove_mask_part_menu.Enable(False)
 
-        self.select_mask_part_menu = mask_menu.Append(const.ID_SELECT_MASK_PART, _(u"Select parts"))
+        self.select_mask_part_menu = mask_menu.Append(const.ID_SELECT_MASK_PART, _(u"Select parts\tCtrl+Shift+L"))
         self.select_mask_part_menu.Enable(False)
 
         mask_menu.AppendSeparator()
@@ -815,11 +834,16 @@ class MenuBar(wx.MenuBar):
 
         # Segmentation Menu
         segmentation_menu = wx.Menu()
-        self.threshold_segmentation = segmentation_menu.Append(const.ID_THRESHOLD_SEGMENTATION, _(u"Threshold"))
-        self.manual_segmentation = segmentation_menu.Append(const.ID_MANUAL_SEGMENTATION, _(u"Manual segmentation"))
-        self.watershed_segmentation = segmentation_menu.Append(const.ID_WATERSHED_SEGMENTATION, _(u"Watershed"))
-        self.ffill_segmentation = segmentation_menu.Append(const.ID_FLOODFILL_SEGMENTATION, _(u"Region growing"))
+        self.threshold_segmentation = segmentation_menu.Append(const.ID_THRESHOLD_SEGMENTATION, _(u"Threshold\tCtrl+Shift+T"))
+        self.manual_segmentation = segmentation_menu.Append(const.ID_MANUAL_SEGMENTATION, _(u"Manual segmentation\tCtrl+Shift+E"))
+        self.watershed_segmentation = segmentation_menu.Append(const.ID_WATERSHED_SEGMENTATION, _(u"Watershed\tCtrl+Shift+W"))
+        self.ffill_segmentation = segmentation_menu.Append(const.ID_FLOODFILL_SEGMENTATION, _(u"Region growing\tCtrl+Shift+G"))
         self.ffill_segmentation.Enable(False)
+
+        # Surface Menu
+        surface_menu = wx.Menu()
+        self.create_surface = surface_menu.Append(const.ID_CREATE_SURFACE, (u"New\tCtrl+Shift+C"))
+        self.create_surface.Enable(False)
 
         # Image menu
         image_menu = wx.Menu()
@@ -844,7 +868,8 @@ class MenuBar(wx.MenuBar):
         reorient_menu.Enable(False)
         tools_menu.AppendMenu(-1, _(u'Image'), image_menu)
         tools_menu.AppendMenu(-1,  _(u"Mask"), mask_menu)
-        tools_menu.AppendMenu(-1, _("Segmentation"), segmentation_menu)
+        tools_menu.AppendMenu(-1, _(u"Segmentation"), segmentation_menu)
+        tools_menu.AppendMenu(-1, _(u"Surface"), surface_menu)
 
         #View
         self.view_menu = view_menu = wx.Menu()
@@ -1113,7 +1138,7 @@ class StatusBar(wx.StatusBar):
 # ------------------------------------------------------------------
 # ------------------------------------------------------------------
 
-class TaskBarIcon(wx.TaskBarIcon):
+class TaskBarIcon(wx_TaskBarIcon):
     """
     TaskBarIcon has different behaviours according to the platform:
         - win32:  Show icon on "Notification Area" (near clock)
@@ -1121,7 +1146,7 @@ class TaskBarIcon(wx.TaskBarIcon):
         - linux2: Show icon on "Notification Area" (near clock)
     """
     def __init__(self, parent=None):
-        wx.TaskBarIcon.__init__(self)
+        wx_TaskBarIcon.__init__(self)
         self.frame = parent
 
         icon = wx.Icon(os.path.join(const.ICON_DIR, "invesalius.ico"),
@@ -1296,8 +1321,9 @@ class ObjectToolBar(AuiToolBar):
                              const.STATE_MEASURE_DISTANCE,
                              const.STATE_MEASURE_ANGLE,
                              const.STATE_MEASURE_DENSITY_ELLIPSE,
-                             const.STATE_MEASURE_DENSITY_POLYGON,]
-                             #const.STATE_ANNOTATE]
+                             const.STATE_MEASURE_DENSITY_POLYGON,
+                             # const.STATE_ANNOTATE
+                             ]
         self.__init_items()
         self.__bind_events()
         self.__bind_events_wx()

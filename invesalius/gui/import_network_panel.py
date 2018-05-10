@@ -110,7 +110,7 @@ class InnerPanel(wx.Panel):
         self.combo_interval.SetSelection(0)
 
         inner_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        inner_sizer.AddSizer(btnsizer, 0, wx.LEFT|wx.TOP, 5)
+        inner_sizer.Add(btnsizer, 0, wx.LEFT|wx.TOP, 5)
         inner_sizer.Add(self.combo_interval, 0, wx.LEFT|wx.RIGHT|wx.TOP, 5)
         panel.SetSizer(inner_sizer)
         inner_sizer.Fit(panel)
@@ -230,7 +230,7 @@ class TextPanel(wx.Panel):
                                    wx.TR_DEFAULT_STYLE
                                    | wx.TR_HIDE_ROOT
                                    | wx.TR_ROW_LINES
-                                   | wx.TR_COLUMN_LINES
+                                   #  | wx.TR_COLUMN_LINES
                                    | wx.TR_FULL_ROW_HIGHLIGHT
                                    | wx.TR_SINGLE
                                   )
@@ -507,8 +507,8 @@ class FindPanel(wx.Panel):
         sizer_txt_find.Add(self.btn_find)
 
         self.sizer.Add((0, 5), 0, wx.EXPAND|wx.HORIZONTAL)
-        self.sizer.AddSizer(sizer_word_label)
-        self.sizer.AddSizer(sizer_txt_find)
+        self.sizer.Add(sizer_word_label)
+        self.sizer.Add(sizer_txt_find)
 
         #self.sizer.Add(self.serie_preview, 1, wx.EXPAND | wx.ALL, 5)
         #self.sizer.Add(self.dicom_preview, 1, wx.EXPAND | wx.ALL, 5)
@@ -568,7 +568,8 @@ class HostFindPanel(wx.Panel):
         splitter.SetOrientation(wx.HORIZONTAL)
         self.splitter = splitter
 
-        splitter.ContainingSizer = wx.BoxSizer(wx.HORIZONTAL)
+        # TODO: Rever isso
+        #  splitter.ContainingSizer = wx.BoxSizer(wx.HORIZONTAL)
 
         sizer = wx.BoxSizer(wx.HORIZONTAL)
         sizer.Add(splitter, 1, wx.EXPAND)
@@ -673,7 +674,7 @@ class NodesPanel(wx.Panel):
         self.tree_node.SetColumnWidth(4, 80)
 
         self.hosts[0] = [True, "localhost", "", "invesalius"]
-        index = self.tree_node.InsertStringItem(sys.maxint, "")
+        index = self.tree_node.InsertStringItem(sys.maxsize, "")
         self.tree_node.SetStringItem(index, 1, "localhost")
         self.tree_node.SetStringItem(index, 2, "")
         self.tree_node.SetStringItem(index, 3, "invesalius")
@@ -704,7 +705,7 @@ class NodesPanel(wx.Panel):
 
         sizer = wx.BoxSizer(wx.VERTICAL)
         sizer.Add(self.tree_node, 85, wx.GROW|wx.EXPAND)
-        sizer.AddSizer(sizer_btn, 15)
+        sizer.Add(sizer_btn, 15)
         sizer.Fit(self)
         self.SetSizer(sizer)
         self.Layout()
@@ -728,7 +729,7 @@ class NodesPanel(wx.Panel):
 
     def OnButtonAdd(self, evt):
         #adiciona vazio a coluna de check
-        index = self.tree_node.InsertStringItem(sys.maxint, "")
+        index = self.tree_node.InsertStringItem(sys.maxsize, "")
 
         self.hosts[index] = [True, "localhost", "80", ""]
         self.tree_node.SetStringItem(index, 1, "localhost")

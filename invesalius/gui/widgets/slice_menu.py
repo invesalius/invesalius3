@@ -183,17 +183,17 @@ class SliceMenu(wx.Menu):
     
     def FirstItemSelect(self, pusub_evt):
         item = self.ID_TO_TOOL_ITEM[self.id_wl_first]
-        item.Check(1)
+        item.Check(True)
         
         for i in self.pseudo_color_items:
             it = self.pseudo_color_items[i]
             if it.IsChecked():
-                it.Toggle()
+                it.Check(False)
         item = self.ID_TO_TOOL_ITEM[self.id_pseudo_first]
-        item.Check(1)
+        item.Check(True)
     
-        item = self.ID_TO_TOOL_ITEM[self.id_tiling_first]
-        item.Check(1)    
+        #  item = self.ID_TO_TOOL_ITEM[self.id_tiling_first]
+        #  item.Check(True)    
         
     def CheckWindowLevelOther(self, pubsub_evt):
         item = self.ID_TO_TOOL_ITEM[self.other_wl_id]

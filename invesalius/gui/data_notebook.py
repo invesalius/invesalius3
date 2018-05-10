@@ -29,7 +29,11 @@ except ImportError:
 
 import wx
 import wx.grid
-import wx.lib.flatnotebook as fnb
+try:
+    import wx.lib.agw.flatnotebook as fnb
+except ImportError:
+    import wx.lib.flatnotebook as fnb
+
 import wx.lib.platebtn as pbtn
 from wx.lib.pubsub import pub as Publisher
 
@@ -40,7 +44,7 @@ import invesalius.gui.widgets.listctrl as listmix
 import invesalius.utils as ul
 
 
-BTN_NEW, BTN_REMOVE, BTN_DUPLICATE, BTN_OPEN = [wx.NewId() for i in xrange(4)]
+BTN_NEW, BTN_REMOVE, BTN_DUPLICATE, BTN_OPEN = [wx.NewId() for i in range(4)]
 
 TYPE = {const.LINEAR: _(u"Linear"),
         const.ANGULAR: _(u"Angular"),
@@ -447,10 +451,12 @@ class MasksListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
                 self.SetItemImage(key, 0)
 
     def __hide_current_mask(self, pubsub_evt):
-        self.SetItemImage(self.current_index, 0)
+        if self.mask_list_index:
+            self.SetItemImage(self.current_index, 0)
 
     def __show_current_mask(self, pubsub_evt):
-        self.SetItemImage(self.current_index, 1)
+        if self.mask_list_index:
+            self.SetItemImage(self.current_index, 1)
 
     def __init_columns(self):
 
@@ -505,8 +511,8 @@ class MasksListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
         """
         image = self.image_gray
         new_image = Image.new("RGB", image.size)
-        for x in xrange(image.size[0]):
-            for y in xrange(image.size[1]):
+        for x in range(image.size[0]):
+            for y in range(image.size[1]):
                 pixel_colour = [int(i*image.getpixel((x,y)))
                                 for i in colour]
                 new_image.putpixel((x,y), tuple(pixel_colour))
@@ -881,11 +887,17 @@ class SurfacesListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
             self.surface_list_index[index] = image_index
 
             if (index in index_list) and index_list:
-                self.UpdateItemInfo(index, name, volume, area, transparency, colour)
+                try:
+                    self.UpdateItemInfo(index, name, volume, area, transparency, colour)
+                except wx._core.wxAssertionError:
+                    self.InsertNewItem(index, name, volume, area, transparency, colour)
             else:
                 self.InsertNewItem(index, name, volume, area, transparency, colour)
         else:
-            self.UpdateItemInfo(index, name, volume, area, transparency, colour)
+            try:
+                self.UpdateItemInfo(index, name, volume, area, transparency, colour)
+            except wx._core.wxAssertionError:
+                self.InsertNewItem(index, name, volume, area, transparency, colour)
 
     def InsertNewItem(self, index=0, label="Surface 1", volume="0 mm3",
                       area="0 mm2", transparency="0%%", colour=None):
@@ -899,6 +911,8 @@ class SurfacesListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
 
     def UpdateItemInfo(self, index=0, label="Surface 1", volume="0 mm3",
                        area="0 mm2", transparency="0%%", colour=None):
+        print("UpdateItemInfo", index)
+        # TODO: Retornar esse codigo
         self.SetStringItem(index, 1, label,
                             imageId = self.surface_list_index[index])
         self.SetStringItem(index, 2, volume)
@@ -913,8 +927,8 @@ class SurfacesListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
         """
         image = self.image_gray
         new_image = Image.new("RGB", image.size)
-        for x in xrange(image.size[0]):
-            for y in xrange(image.size[1]):
+        for x in range(image.size[0]):
+            for y in range(image.size[1]):
                 pixel_colour = [int(i*image.getpixel((x,y)))
                                 for i in colour]
                 new_image.putpixel((x,y), tuple(pixel_colour))
@@ -1174,11 +1188,17 @@ class MeasuresListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
             self._list_index[index] = image_index
 
             if (index in index_list) and index_list:
-                self.UpdateItemInfo(index, name, colour, location, type_, value)
+                try:
+                    self.UpdateItemInfo(index, name, colour, location, type_, value)
+                except wx._core.wxAssertionError:
+                    self.InsertNewItem(index, name, colour, location, type_, value)
             else:
                 self.InsertNewItem(index, name, colour, location, type_, value)
         else:
-            self.UpdateItemInfo(index, name, colour, location, type_, value)
+            try:
+                self.UpdateItemInfo(index, name, colour, location, type_, value)
+            except wx._core.wxAssertionError:
+                self.InsertNewItem(index, name, colour, location, type_, value)
 
 
 
@@ -1210,8 +1230,8 @@ class MeasuresListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
         """
         image = self.image_gray
         new_image = Image.new("RGB", image.size)
-        for x in xrange(image.size[0]):
-            for y in xrange(image.size[1]):
+        for x in range(image.size[0]):
+            for y in range(image.size[1]):
                 pixel_colour = [int(i*image.getpixel((x,y)))
                                 for i in colour]
                 new_image.putpixel((x,y), tuple(pixel_colour))
@@ -1303,9 +1323,9 @@ class AnnotationsListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
     def OnCheckItem(self, index, flag):
         # TODO: use pubsub to communicate to models
         if flag:
-            print "checked, ", index
+            print("checked, ", index)
         else:
-            print "unchecked, ", index
+            print("unchecked, ", index)
 
     def InsertNewItem(self, index=0, name="Axial 1", type_="2d",
                       value="bla", colour=None):

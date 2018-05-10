@@ -19,6 +19,7 @@
 
 import math
 import os
+import sys
 import tempfile
 
 import gdcm
@@ -27,7 +28,7 @@ import vtk
 import vtkgdcm
 from wx.lib.pubsub import pub as Publisher
 
-from scipy.ndimage import shift
+from scipy.ndimage import shift, zoom
 from vtk.util import numpy_support
 
 import invesalius.constants as const
@@ -35,6 +36,16 @@ from invesalius.data import vtk_utils as vtk_utils
 import invesalius.reader.bitmap_reader as bitmap_reader
 import invesalius.utils as utils
 import invesalius.data.converters as converters
+
+if sys.platform == 'win32':
+    try:
+        import win32api
+        _has_win32api = True
+    except ImportError:
+        _has_win32api = False
+else:
+    _has_win32api = False
+
 # TODO: Test cases which are originally in sagittal/coronal orientation
 # and have gantry
 
@@ -69,20 +80,20 @@ def ResampleImage2D(imagedata, px=None, py=None, resolution_percentage = None,
     dimensions = imagedata.GetDimensions()
 
     if resolution_percentage:
-        px = math.ceil(dimensions[0] * resolution_percentage)
-        py = math.ceil(dimensions[1] * resolution_percentage)
-
-    if abs(extent[1]-extent[3]) < abs(extent[3]-extent[5]):
-        f = extent[1]
-    elif abs(extent[1]-extent[5]) < abs(extent[1] - extent[3]):
-        f = extent[1]
-    elif abs(extent[3]-extent[5]) < abs(extent[1] - extent[3]):
-        f = extent[3]
+        factor_x = resolution_percentage
+        factor_y = resolution_percentage
     else:
-        f = extent[1]
+        if abs(extent[1]-extent[3]) < abs(extent[3]-extent[5]):
+            f = extent[1]
+        elif abs(extent[1]-extent[5]) < abs(extent[1] - extent[3]):
+            f = extent[1]
+        elif abs(extent[3]-extent[5]) < abs(extent[1] - extent[3]):
+            f = extent[3]
+        else:
+            f = extent[1]
 
-    factor_x = px/float(f+1)
-    factor_y = py/float(f+1)
+        factor_x = px/float(f+1)
+        factor_y = py/float(f+1)
 
     resample = vtk.vtkImageResample()
     resample.SetInputData(imagedata)
@@ -97,6 +108,35 @@ def ResampleImage2D(imagedata, px=None, py=None, resolution_percentage = None,
 
 
     return resample.GetOutput()
+
+
+def resize_slice(im_array, resolution_percentage):
+    """
+    Uses ndimage.zoom to resize a slice.
+
+    input:
+        im_array: slice as a numpy array.
+        resolution_percentage: percentage of resize.
+    """
+    out = zoom(im_array, resolution_percentage, im_array.dtype, order=2)
+    return out
+
+
+def read_dcm_slice_as_np(filename, resolution_percentage=1.0):
+    """
+    read a dicom slice file and return the slice as numpy ndarray
+    """
+    dcm_reader = vtkgdcm.vtkGDCMImageReader()
+    dcm_reader.SetFileName(filename)
+    dcm_reader.Update()
+    image = dcm_reader.GetOutput()
+    if resolution_percentage < 1.0:
+        image = ResampleImage2D(image, resolution_percentage=resolution_percentage)
+    dx, dy, dz = image.GetDimensions()
+    im_array = numpy_support.vtk_to_numpy(image.GetPointData().GetScalars())
+    im_array.shape = dy, dx
+    return im_array
+
 
 def FixGantryTilt(matrix, spacing, tilt):
     """
@@ -217,10 +257,78 @@ def ExtractVOI(imagedata,xi,xf,yi,yf,zi,zf):
     """
     voi = vtk.vtkExtractVOI()
     voi.SetVOI(xi,xf,yi,yf,zi,zf)
-    voi.SetInput(imagedata)
+    voi.SetInputData(imagedata)
     voi.SetSampleRate(1, 1, 1)
     voi.Update()
     return voi.GetOutput()
+
+
+def create_dicom_thumbnails(filename, window=None, level=None):
+    rvtk = vtkgdcm.vtkGDCMImageReader()
+    rvtk.SetFileName(utils.encode(filename, const.FS_ENCODE))
+    rvtk.Update()
+
+    img = rvtk.GetOutput()
+    if window is None or level is None:
+        _min, _max = img.GetScalarRange()
+        window = _max - _min
+        level = _min + window / 2
+
+    dx, dy, dz = img.GetDimensions()
+
+    if dz > 1:
+        thumbnail_paths = []
+        for i in range(dz):
+            img_slice = ExtractVOI(img, 0, dx-1, 0, dy-1, i, i+1)
+
+            colorer = vtk.vtkImageMapToWindowLevelColors()
+            colorer.SetInputData(img_slice)
+            colorer.SetWindow(window)
+            colorer.SetLevel(level)
+            colorer.SetOutputFormatToRGB()
+            colorer.Update()
+
+            resample = vtk.vtkImageResample()
+            resample.SetInputData(colorer.GetOutput())
+            resample.SetAxisMagnificationFactor ( 0, 0.25 )
+            resample.SetAxisMagnificationFactor ( 1, 0.25 )
+            resample.SetAxisMagnificationFactor ( 2, 1 )
+            resample.Update()
+
+            thumbnail_path = tempfile.mktemp()
+
+            write_png = vtk.vtkPNGWriter()
+            write_png.SetInputData(resample.GetOutput())
+            write_png.SetFileName(thumbnail_path)
+            write_png.Write()
+
+            thumbnail_paths.append(thumbnail_path)
+
+        return thumbnail_paths
+    else:
+        colorer = vtk.vtkImageMapToWindowLevelColors()
+        colorer.SetInputData(img)
+        colorer.SetWindow(window)
+        colorer.SetLevel(level)
+        colorer.SetOutputFormatToRGB()
+        colorer.Update()
+
+        resample = vtk.vtkImageResample()
+        resample.SetInputData(colorer.GetOutput())
+        resample.SetAxisMagnificationFactor ( 0, 0.25 )
+        resample.SetAxisMagnificationFactor ( 1, 0.25 )
+        resample.SetAxisMagnificationFactor ( 2, 1 )
+        resample.Update()
+
+        thumbnail_path = tempfile.mktemp()
+
+        write_png = vtk.vtkPNGWriter()
+        write_png.SetInputData(resample.GetOutput())
+        write_png.SetFileName(thumbnail_path)
+        write_png.Write()
+
+        return thumbnail_path
+
 
 def CreateImageData(filelist, zspacing, xyspacing,size,
                                 bits, use_dcmspacing):
@@ -247,7 +355,7 @@ def CreateImageData(filelist, zspacing, xyspacing,size,
         update_progress= vtk_utils.ShowProgress(1, dialog_type = "ProgressDialog")
 
         array = vtk.vtkStringArray()
-        for x in xrange(len(filelist)):
+        for x in range(len(filelist)):
             array.InsertValue(x,filelist[x])
 
         reader = vtkgdcm.vtkGDCMImageReader()
@@ -277,7 +385,7 @@ def CreateImageData(filelist, zspacing, xyspacing,size,
 
 
         # Reformat each slice
-        for x in xrange(len(filelist)):
+        for x in range(len(filelist)):
             # TODO: We need to check this automatically according
             # to each computer's architecture
             # If the resolution of the matrix is too large
@@ -351,7 +459,7 @@ class ImageCreator:
             update_progress= vtk_utils.ShowProgress(1, dialog_type = "ProgressDialog")
 
             array = vtk.vtkStringArray()
-            for x in xrange(len(filelist)):
+            for x in range(len(filelist)):
                 if not self.running:
                     return False
                 array.InsertValue(x,filelist[x])
@@ -383,7 +491,7 @@ class ImageCreator:
 
 
             # Reformat each slice
-            for x in xrange(len(filelist)):
+            for x in range(len(filelist)):
                 # TODO: We need to check this automatically according
                 # to each computer's architecture
                 # If the resolution of the matrix is too large
@@ -525,72 +633,71 @@ def dcm2memmap(files, slice_size, orientation, resolution_percentage):
     message = _("Generating multiplanar visualization...")
     update_progress= vtk_utils.ShowProgress(len(files) - 1, dialog_type = "ProgressDialog")
 
+    first_slice = read_dcm_slice_as_np(files[0], resolution_percentage)
+    slice_size = first_slice.shape[::-1]
+
     temp_file = tempfile.mktemp()
 
     if orientation == 'SAGITTAL':
-        if resolution_percentage == 1.0:
-            shape = slice_size[0], slice_size[1], len(files)
-        else:
-            shape = int(math.ceil(slice_size[0]*resolution_percentage)),\
-                    int(math.ceil(slice_size[1]*resolution_percentage)), len(files)
-
+        shape = slice_size[0], slice_size[1], len(files)
     elif orientation == 'CORONAL':
-        if resolution_percentage == 1.0:
-            shape = slice_size[1], len(files), slice_size[0]
-        else:
-            shape = int(math.ceil(slice_size[1]*resolution_percentage)), len(files),\
-                                        int(math.ceil(slice_size[0]*resolution_percentage))
+        shape = slice_size[1], len(files), slice_size[0]
     else:
-        if resolution_percentage == 1.0:
-            shape = len(files), slice_size[1], slice_size[0]
-        else:
-            shape = len(files), int(math.ceil(slice_size[1]*resolution_percentage)),\
-                                int(math.ceil(slice_size[0]*resolution_percentage))
+        shape = len(files), slice_size[1], slice_size[0]
 
     matrix = numpy.memmap(temp_file, mode='w+', dtype='int16', shape=shape)
-    dcm_reader = vtkgdcm.vtkGDCMImageReader()
-    cont = 0
-    max_scalar = None
-    min_scalar = None
-
     for n, f in enumerate(files):
-        dcm_reader.SetFileName(f)
-        dcm_reader.Update()
-        image = dcm_reader.GetOutput()
+        im_array = read_dcm_slice_as_np(f, resolution_percentage)
 
-        if resolution_percentage != 1.0:
-            image_resized = ResampleImage2D(image, px=None, py=None,\
-                                resolution_percentage = resolution_percentage, update_progress = None)
-
-            image = image_resized
-
-        min_aux, max_aux = image.GetScalarRange()
-        if min_scalar is None or min_aux < min_scalar:
-            min_scalar = min_aux
-
-        if max_scalar is None or max_aux > max_scalar:
-            max_scalar = max_aux
-
-        array = numpy_support.vtk_to_numpy(image.GetPointData().GetScalars())
         if orientation == 'CORONAL':
-            array.shape = matrix.shape[0], matrix.shape[2]
-            matrix[:, shape[1] - n - 1, :] = array
+            matrix[:, shape[1] - n - 1, :] = im_array
         elif orientation == 'SAGITTAL':
-            array.shape = matrix.shape[0], matrix.shape[1]
             # TODO: Verify if it's necessary to add the slices swapped only in
             # sagittal rmi or only in # Rasiane's case or is necessary in all
             # sagittal cases.
-            matrix[:, :, n] = array
+            matrix[:, :, n] = im_array
         else:
-            array.shape = matrix.shape[1], matrix.shape[2]
-            matrix[n] = array
-        update_progress(cont,message)
-        cont += 1
+            matrix[n] = im_array
+        update_progress(n, message)
 
     matrix.flush()
-    scalar_range = min_scalar, max_scalar
+    scalar_range = matrix.min(), matrix.max()
 
     return matrix, scalar_range, temp_file
+
+
+def dcmmf2memmap(dcm_file, orientation):
+    r = vtkgdcm.vtkGDCMImageReader()
+    r.SetFileName(dcm_file)
+    r.Update()
+
+    temp_file = tempfile.mktemp()
+
+    o = r.GetOutput()
+    x, y, z = o.GetDimensions()
+    spacing = o.GetSpacing()
+
+    matrix = numpy.memmap(temp_file, mode='w+', dtype='int16', shape=(z, y, x))
+
+    d = numpy_support.vtk_to_numpy(o.GetPointData().GetScalars())
+    d.shape = z, y, x
+    if orientation == 'CORONAL':
+        matrix.shape = y, z, x
+        for n in range(z):
+            matrix[:, n, :] = d[n]
+    elif orientation == 'SAGITTAL':
+        matrix.shape = x, z, y
+        for n in range(z):
+            matrix[:, :, n] = d[n]
+    else:
+        matrix[:] = d
+
+    matrix.flush()
+    scalar_range = matrix.min(), matrix.max()
+
+    print("ORIENTATION", orientation)
+
+    return matrix, spacing, scalar_range, temp_file
 
 
 def img2memmap(group):

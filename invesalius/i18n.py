@@ -83,6 +83,10 @@ def InstallLanguage(language):
 
     lang = gettext.translation('invesalius', language_dir,\
                                    languages=[language], codeset='utf8') 
-    # Using unicode 
-    lang.install(unicode=1) 
-    return lang.ugettext 
+    # Using unicode
+    try:
+        lang.install(unicode=1)
+        return lang.ugettext
+    except TypeError:
+        lang.install()
+        return lang.gettext

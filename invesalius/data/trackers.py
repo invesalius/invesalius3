@@ -21,18 +21,19 @@
 # TODO: Test if there are too many prints when connection fails
 
 
-def TrackerConnection(tracker_id, action):
+def TrackerConnection(tracker_id, trck_init, action):
     """
-    Initialize spatial trackers for coordinate detection during navigation.
+    Initialize or disconnect spatial trackers for coordinate detection during navigation.
 
     :param tracker_id: ID of tracking device.
+    :param trck_init: tracker initialization instance.
     :param action: string with to decide whether connect or disconnect the selected device.
     :return spatial tracker initialization instance or None if could not open device.
     """
 
     if action == 'connect':
         trck_fcn = {1: ClaronTracker,
-                    2: PolhemusTrackerFT,    # FASTRAK
+                    2: PolhemusTracker,    # FASTRAK
                     3: PolhemusTracker,    # ISOTRAK
                     4: PolhemusTracker,    # PATRIOT
                     5: DebugTracker}
@@ -40,7 +41,7 @@ def TrackerConnection(tracker_id, action):
         trck_init = trck_fcn[tracker_id](tracker_id)
 
     elif action == 'disconnect':
-        trck_init = DisconnectTracker(tracker_id)
+        trck_init = DisconnectTracker(tracker_id, trck_init)
 
     return trck_init
 
@@ -49,10 +50,10 @@ def DefaultTracker(tracker_id):
     trck_init = None
     try:
         # import spatial tracker library
-        print 'Connect to default tracking device.'
+        print('Connect to default tracking device.')
 
     except:
-        print 'Could not connect to default tracker.'
+        print('Could not connect to default tracker.')
 
     # return tracker initialization variable and type of connection
     return trck_init, 'wrapper'
@@ -77,76 +78,66 @@ def ClaronTracker(tracker_id):
 
         if trck_init.GetIdentifyingCamera():
             trck_init.Run()
-            print "MicronTracker camera identified."
+            print("MicronTracker camera identified.")
         else:
             trck_init = None
 
     except ImportError:
         lib_mode = 'error'
-        print 'The ClaronTracker library is not installed.'
+        print('The ClaronTracker library is not installed.')
 
     return trck_init, lib_mode
 
-def PolhemusTrackerFT(tracker_id):
-    trck_init = None
-    lib_mode = 'wrapper'
-    try:
-        import polhemusFT
-
-        trck_init = polhemusFT.polhemusFT()
-        trck_check = trck_init.Initialize()
-
-        if trck_check:
-            # First run is necessary to discard the first coord collection
-            trck_init.Run()
-        else:
-            trck_init = trck_check
-    except:
-        print 'Could not connect to Polhemus via wrapper.'
-
-    return trck_init, lib_mode
 
 def PolhemusTracker(tracker_id):
-    trck_init = None
     try:
-        trck_init = PlhWrapperConnection()
+        trck_init = PlhWrapperConnection(tracker_id)
         lib_mode = 'wrapper'
         if not trck_init:
-            print 'Could not connect with Polhemus wrapper, trying USB connection...'
+            print('Could not connect with Polhemus wrapper, trying USB connection...')
             trck_init = PlhUSBConnection(tracker_id)
             lib_mode = 'usb'
             if not trck_init:
-                print 'Could not connect with Polhemus USB, trying serial connection...'
+                print('Could not connect with Polhemus USB, trying serial connection...')
                 trck_init = PlhSerialConnection(tracker_id)
                 lib_mode = 'serial'
     except:
+        trck_init = None
         lib_mode = 'error'
-        print 'Could not connect to Polhemus.'
+        print('Could not connect to Polhemus.')
 
     return trck_init, lib_mode
 
 
 def DebugTracker(tracker_id):
     trck_init = True
-    print 'Debug device started.'
+    print('Debug device started.')
     return trck_init, 'debug'
 
 
-def PlhWrapperConnection():
-    trck_init = None
+def PlhWrapperConnection(tracker_id):
     try:
-        import polhemus
+        from time import sleep
+        if tracker_id == 2:
+            import polhemusFT
+            trck_init = polhemusFT.polhemusFT()
+        else:
+            import polhemus
+            trck_init = polhemus.polhemus()
 
-        trck_init = polhemus.polhemus()
         trck_check = trck_init.Initialize()
 
         if trck_check:
-            # First run is necessary to discard the first coord collection
-            trck_init.Run()
+            # Sequence of runs necessary to throw away unnecessary data
+            for n in range(0, 5):
+                trck_init.Run()
+                sleep(0.175)
         else:
-            trck_init = trck_check
+            trck_init = None
+            print('Could not connect to Polhemus via wrapper without error.')
     except:
-        print 'Could not connect to Polhemus via wrapper.'
+        trck_init = None
+        print('Could not connect to Polhemus via wrapper with error.')
 
     return trck_init
 
@@ -172,10 +163,11 @@ def PlhSerialConnection(tracker_id):
 
         if not data:
             trck_init = None
+            print('Could not connect to Polhemus serial without error.')
 
     except:
         trck_init = None
-        print 'Could not connect to Polhemus serial.'
+        print('Could not connect to Polhemus serial with error.')
 
     return trck_init
 
@@ -184,7 +176,10 @@ def PlhUSBConnection(tracker_id):
     trck_init = None
     try:
         import usb.core as uc
-        trck_init = uc.find(idVendor=0x0F44, idProduct=0x0003)
+        # Check the idProduct using the usbdeview software, the idProduct is unique for each
+        # device and connection fails when is incorrect
+        # trck_init = uc.find(idVendor=0x0F44, idProduct=0x0003) [used in a different device]
+        trck_init = uc.find(idVendor=0x0F44, idProduct=0xEF12)
         cfg = trck_init.get_active_configuration()
         for i in cfg:
             for x in i:
@@ -203,58 +198,35 @@ def PlhUSBConnection(tracker_id):
                               endpoint.wMaxPacketSize)
         if not data:
             trck_init = None
+            print('Could not connect to Polhemus USB without error.')
 
     except:
-        print 'Could not connect to Polhemus USB.'
+        print('Could not connect to Polhemus USB with error.')
 
     return trck_init
 
 
-def DisconnectTracker(tracker_id):
+def DisconnectTracker(tracker_id, trck_init):
     """
     Disconnect current spatial tracker
 
     :param tracker_id: ID of tracking device.
+    :param trck_init: Initialization variable of tracking device.
     """
-    from wx.lib.pubsub import pub as Publisher
-    Publisher.sendMessage('Update status text in GUI', _("Disconnecting tracker ..."))
-    Publisher.sendMessage('Remove sensors ID')
-    trck_init = None
-    # TODO: create individual functions to disconnect each other device, e.g. Polhemus.
-    if tracker_id == 1:
-        try:
-            import pyclaron
-            pyclaron.pyclaron().Close()
-            lib_mode = 'wrapper'
-            print 'Claron tracker disconnected.'
-        except ImportError:
-            lib_mode = 'error'
-            print 'The ClaronTracker library is not installed.'
 
-    elif tracker_id == 2:
-        try:
-            import polhemusFT
-            polhemusFT.polhemusFT().Close()
-            lib_mode = 'wrapper'
-            print 'Polhemus tracker disconnected.'
-        except ImportError:
-            lib_mode = 'error'
-            print 'The polhemus library is not installed.'
-
-    elif tracker_id == 4:
-        try:
-            import polhemus
-            polhemus.polhemus().Close()
-            lib_mode = 'wrapper'
-            print 'Polhemus tracker disconnected.'
-        except ImportError:
-            lib_mode = 'error'
-            print 'The polhemus library is not installed.'
-
-    elif tracker_id == 5:
-        print 'Debug tracker disconnected.'
+    if tracker_id == 5:
+        trck_init = False
         lib_mode = 'debug'
-
-    Publisher.sendMessage('Update status text in GUI', _("Ready"))
+        print('Debug tracker disconnected.')
+    else:
+        try:
+            trck_init.Close()
+            trck_init = False
+            lib_mode = 'wrapper'
+            print('Tracker disconnected.')
+        except:
+            trck_init = True
+            lib_mode = 'error'
+            print('The tracker could not be disconnected.')
 
     return trck_init, lib_mode

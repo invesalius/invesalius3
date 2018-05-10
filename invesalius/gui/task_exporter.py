@@ -21,7 +21,12 @@ import os
 import sys
 
 import wx
-import wx.lib.hyperlink as hl
+
+try:
+    import wx.lib.agw.hyperlink as hl
+except ImportError:
+    import wx.lib.hyperlink as hl
+
 import wx.lib.platebtn as pbtn
 from wx.lib.pubsub import pub as Publisher
 

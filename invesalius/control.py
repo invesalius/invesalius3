@@ -189,7 +189,6 @@ class Controller():
             dialog.ImportEmptyDirectory(dirpath)
         elif dirpath:
             self.StartImportPanel(dirpath)
-            Publisher.sendMessage("Load data to import panel", dirpath)
 
     def ShowDialogImportOtherFiles(self, id_type):
         # Offer to save current project if necessary
@@ -234,17 +233,19 @@ class Controller():
         session = ses.Session()
         if saveas or session.temp_item:
             proj = prj.Project()
-            filepath = dialog.ShowSaveAsProjectDialog(proj.name)
+            filepath, compress = dialog.ShowSaveAsProjectDialog(proj.name)
             if filepath:
                 #session.RemoveTemp()
                 session.OpenProject(filepath)
             else:
                 return
         else:
+            proj = prj.Project()
+            compress = proj.compress
             dirpath, filename = session.project_path
             filepath = os.path.join(dirpath, filename)
 
-        self.SaveProject(filepath)
+        self.SaveProject(filepath, compress)
 
 
     def ShowDialogCloseProject(self):
@@ -336,7 +337,7 @@ class Controller():
         path = pubsub_evt.data
         self.SaveProject(path)
 
-    def SaveProject(self, path=None):
+    def SaveProject(self, path=None, compress=False):
         Publisher.sendMessage('Begin busy cursor')
         session = ses.Session()
         if path:
@@ -346,10 +347,10 @@ class Controller():
             dirpath, filename = session.project_path
 
         if isinstance(filename, str):
-            filename = filename.decode(const.FS_ENCODE)
+            filename = utils.decode(filename, const.FS_ENCODE)
 
         proj = prj.Project()
-        prj.Project().SavePlistProject(dirpath, filename)
+        prj.Project().SavePlistProject(dirpath, filename, compress)
 
         session.SaveProject()
         Publisher.sendMessage('End busy cursor')
@@ -403,8 +404,9 @@ class Controller():
                     Publisher.sendMessage('Begin busy cursor')
         else:
             #Is None if user canceled the load
-            self.progress_dialog.Close()
-            self.progress_dialog = None
+            if self.progress_dialog is not None:
+                self.progress_dialog.Close()
+                self.progress_dialog = None
 
     def OnLoadImportPanel(self, evt):
         patient_series = evt.data
@@ -456,7 +458,7 @@ class Controller():
     def ImportMedicalImages(self, directory, gui=True):
         patients_groups = dcm.GetDicomGroups(directory)
         name = directory.rpartition('\\')[-1].split('.')
-        print "patients: ", patients_groups
+        print("patients: ", patients_groups)
 
         if len(patients_groups):
             # OPTION 1: DICOM
@@ -758,7 +760,7 @@ class Controller():
         Publisher.sendMessage("Enable state project", True)
 
     def OnOpenOtherFiles(self, pubsub_evt):
-        filepath = pubsub_evt.data
+        filepath = utils.decode(pubsub_evt.data, const.FS_ENCODE)
         if not(filepath) == None:
             name = filepath.rpartition('\\')[-1].split('.')
 
@@ -783,7 +785,7 @@ class Controller():
             utils.debug("Not used the IPPSorter")
             filelist = [i.image.file for i in dicom_group.GetHandSortedList()[::interval]]
         
-        if file_range != None and file_range[1] > file_range[0]:
+        if file_range is not None and file_range[0] is not None and file_range[1] > file_range[0]:
             filelist = filelist[file_range[0]:file_range[1] + 1]
 
         zspacing = dicom_group.zspacing * interval
@@ -794,47 +796,53 @@ class Controller():
         xyspacing = dicom.image.spacing
         orientation = dicom.image.orientation_label
 
+        wl = float(dicom.image.level)
+        ww = float(dicom.image.window)
+
         if sop_class_uid == '1.2.840.10008.5.1.4.1.1.7': #Secondary Capture Image Storage
             use_dcmspacing = 1
         else:
             use_dcmspacing = 0
 
         imagedata = None
-        
-        sx, sy = size
-        n_slices = len(filelist)
-        resolution_percentage = utils.calculate_resizing_tofitmemory(int(sx), int(sy), n_slices, bits/8)
-        
-        if resolution_percentage < 1.0 and gui:
-            re_dialog = dialog.ResizeImageDialog()
-            re_dialog.SetValue(int(resolution_percentage*100))
-            re_dialog_value = re_dialog.ShowModal()
-            re_dialog.Close() 
-            
-            if re_dialog_value == wx.ID_OK:
-                percentage = re_dialog.GetValue()
-                resolution_percentage = percentage / 100.0
-            else:
-                return
 
-            xyspacing = xyspacing[0] / resolution_percentage, xyspacing[1] / resolution_percentage
-       
- 
-        wl = float(dicom.image.level)
-        ww = float(dicom.image.window)
-        self.matrix, scalar_range, self.filename = image_utils.dcm2memmap(filelist, size,
-                                                                    orientation, resolution_percentage)
+        if dicom.image.number_of_frames == 1:
+            sx, sy = size
+            n_slices = len(filelist)
+            resolution_percentage = utils.calculate_resizing_tofitmemory(int(sx), int(sy), n_slices, bits/8)
+
+            if resolution_percentage < 1.0 and gui:
+                re_dialog = dialog.ResizeImageDialog()
+                re_dialog.SetValue(int(resolution_percentage*100))
+                re_dialog_value = re_dialog.ShowModal()
+                re_dialog.Close() 
+
+                if re_dialog_value == wx.ID_OK:
+                    percentage = re_dialog.GetValue()
+                    resolution_percentage = percentage / 100.0
+                else:
+                    return
+
+                xyspacing = xyspacing[0] / resolution_percentage, xyspacing[1] / resolution_percentage
+
+            self.matrix, scalar_range, self.filename = image_utils.dcm2memmap(filelist, size,
+                                                                        orientation, resolution_percentage)
+
+            print(xyspacing, zspacing)
+            if orientation == 'AXIAL':
+                spacing = xyspacing[0], xyspacing[1], zspacing
+            elif orientation == 'CORONAL':
+                spacing = xyspacing[0], zspacing, xyspacing[1]
+            elif orientation == 'SAGITTAL':
+                spacing = zspacing, xyspacing[1], xyspacing[0]
+        else:
+            self.matrix, spacing, scalar_range, self.filename = image_utils.dcmmf2memmap(filelist[0], orientation)
 
         self.Slice = sl.Slice()
         self.Slice.matrix = self.matrix
         self.Slice.matrix_filename = self.filename
 
-        if orientation == 'AXIAL':
-            self.Slice.spacing = xyspacing[0], xyspacing[1], zspacing
-        elif orientation == 'CORONAL':
-            self.Slice.spacing = xyspacing[0], zspacing, xyspacing[1]
-        elif orientation == 'SAGITTAL':
-            self.Slice.spacing = zspacing, xyspacing[1], xyspacing[0]
+        self.Slice.spacing = spacing
 
         # 1(a): Fix gantry tilt, if any
         tilt_value = dicom.acquisition.tilt
@@ -885,7 +893,7 @@ class Controller():
         proj = prj.Project()
 
         thresh_modes =  proj.threshold_modes.keys()
-        thresh_modes.sort()
+        thresh_modes = sorted(thresh_modes)
         default_threshold = const.THRESHOLD_PRESETS_INDEX
         if proj.mask_dict:
             keys = proj.mask_dict.keys()

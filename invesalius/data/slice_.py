@@ -16,6 +16,8 @@
 #    PARTICULAR. Consulte a Licenca Publica Geral GNU para obter mais
 #    detalhes.
 #--------------------------------------------------------------------------
+from six import with_metaclass
+
 import os
 import tempfile
 
@@ -74,12 +76,10 @@ class SliceBuffer(object):
         self.vtk_mask = None
 
 
-class Slice(object):
-    __metaclass__= utils.Singleton
-    # Only one slice will be initialized per time (despite several viewers
-    # show it from distinct perspectives).
-    # Therefore, we use Singleton design pattern for implementing it.
-
+# Only one slice will be initialized per time (despite several viewers
+# show it from distinct perspectives).
+# Therefore, we use Singleton design pattern for implementing it.
+class Slice(with_metaclass(utils.Singleton, object)):
     def __init__(self):
         self.current_mask = None
         self.blend_filter = None
@@ -843,7 +843,7 @@ class Slice(object):
         proj = Project()
         proj.mask_dict[index].colour = colour
 
-        (r,g,b) = colour
+        (r,g,b) = colour[:3]
         colour_wx = [r*255, g*255, b*255]
         Publisher.sendMessage('Change mask colour in notebook',
                                     (index, (r,g,b)))
@@ -1232,7 +1232,7 @@ class Slice(object):
         """
         if mask is None:
             mask = self.current_mask
-        for n in xrange(1, mask.matrix.shape[0]):
+        for n in range(1, mask.matrix.shape[0]):
             if mask.matrix[n, 0, 0] == 0:
                 m = mask.matrix[n, 1:, 1:]
                 mask.matrix[n, 1:, 1:] = self.do_threshold_to_a_slice(self.matrix[n-1], m, mask.threshold_range)
@@ -1262,7 +1262,7 @@ class Slice(object):
 
     def do_colour_mask(self, imagedata, opacity):
         scalar_range = int(imagedata.GetScalarRange()[1])
-        r, g, b = self.current_mask.colour
+        r, g, b = self.current_mask.colour[:3]
 
         # map scalar values into colors
         lut_mask = vtk.vtkLookupTable()
@@ -1452,7 +1452,9 @@ class Slice(object):
         self.center = [(s * d/2.0) for (d, s) in zip(self.matrix.shape[::-1], self.spacing)]
 
         self.__clean_current_mask(None)
-        self.current_mask.matrix[:] = 0
+        if self.current_mask:
+            self.current_mask.matrix[:] = 0
+            self.current_mask.was_edited = False
 
         for o in self.buffer_slices:
             self.buffer_slices[o].discard_buffer()

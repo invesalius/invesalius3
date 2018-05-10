@@ -102,19 +102,19 @@ class CanvasRendererCTX:
     def unsubscribe_event(self, event, callback):
         for n, cb in enumerate(self._callback_events[event]):
             if cb() == callback:
-                print 'removed'
+                print('removed')
                 self._callback_events[event].pop(n)
                 return
 
     def propagate_event(self, root, event):
-        print 'propagating', event.event_name, 'from', root
+        print('propagating', event.event_name, 'from', root)
         node = root
         callback_name = 'on_%s' % event.event_name
         while node:
             try:
                 getattr(node, callback_name)(event)
             except AttributeError, e:
-                print 'errror', node, e
+                print('errror', node, e)
             node = node.parent
 
     def _init_canvas(self):
@@ -139,7 +139,10 @@ class CanvasRendererCTX:
         self.alpha = np.zeros((h, w, 1), dtype=np.uint8)
 
         self.bitmap = wx.EmptyBitmapRGBA(w, h)
-        self.image = wx.ImageFromBuffer(w, h, self.rgb, self.alpha)
+        try:
+            self.image = wx.Image(w, h, self.rgb, self.alpha)
+        except TypeError:
+            self.image = wx.ImageFromBuffer(w, h, self.rgb, self.alpha)
 
     def _resize_canvas(self, w, h):
         self._array = np.zeros((h, w, 4), dtype=np.uint8)
@@ -151,7 +154,10 @@ class CanvasRendererCTX:
         self.alpha = np.zeros((h, w, 1), dtype=np.uint8)
 
         self.bitmap = wx.EmptyBitmapRGBA(w, h)
-        self.image = wx.ImageFromBuffer(w, h, self.rgb, self.alpha)
+        try:
+            self.image = wx.Image(w, h, self.rgb, self.alpha)
+        except TypeError:
+            self.image = wx.ImageFromBuffer(w, h, self.rgb, self.alpha)
 
         self.modified = True
 
@@ -165,14 +171,14 @@ class CanvasRendererCTX:
                 obj = i.is_over(x, y)
                 self._over_obj = obj
                 if obj:
-                    print "is over at", n, i
+                    print("is over at", n, i)
                     return True
             except AttributeError:
                 pass
         return False
 
     def Refresh(self):
-        print 'Refresh'
+        print('Refresh')
         self.modified = True
         self.viewer.interactor.Render()
 
@@ -460,7 +466,7 @@ class CanvasRendererCTX:
         p0y = -p0y
         p1y = -p1y
 
-        pen = wx.Pen(wx.Colour(*colour), width, wx.SOLID)
+        pen = wx.Pen(wx.Colour(*[int(c) for c in colour]), width, wx.SOLID)
         pen.SetCap(wx.CAP_BUTT)
         gc.SetPen(pen)
 
@@ -706,7 +712,7 @@ class CanvasRendererCTX:
             ea = a0
 
         path = gc.CreatePath()
-        path.AddArc((c[0], c[1]), min(s0, s1), sa, ea)
+        path.AddArc(float(c[0]), float(c[1]), float(min(s0, s1)), float(sa), float(ea), True)
         gc.StrokePath(path)
         self._drawn = True
 
@@ -1008,7 +1014,7 @@ class Polygon(CanvasHandlerBase):
     def on_select(self, evt):
         mx, my = evt.position
         self.interactive = True
-        print "on_select", self.interactive
+        print("on_select", self.interactive)
         if self.is_3d:
             x, y, z = evt.viewer.get_coordinate_cursor(mx, my)
             self._last_position = (x, y, z)

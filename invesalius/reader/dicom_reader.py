@@ -17,7 +17,6 @@
 #    detalhes.
 #--------------------------------------------------------------------------
 import os
-import Queue
 import threading
 import tempfile
 import sys
@@ -35,6 +34,8 @@ import invesalius.reader.dicom_grouper as dicom_grouper
 import invesalius.session as session
 import glob
 import invesalius.utils as utils
+
+from invesalius.data import imagedata_utils
 
 import plistlib
 
@@ -77,7 +78,7 @@ def SelectLargerDicomGroup(patient_group):
 def SortFiles(filelist, dicom):
     # Sort slices
     # FIXME: Coronal Crash. necessary verify
-    if (dicom.image.orientation_label <> "CORONAL"):
+    if (dicom.image.orientation_label != "CORONAL"):
         ##Organize reversed image
         sorter = gdcm.IPPSorter()
         sorter.SetComputeZSpacing(True)
@@ -94,34 +95,36 @@ main_dict = {}
 dict_file = {}
 
 class LoadDicom:
-    
     def __init__(self, grouper, filepath):
         self.grouper = grouper
-        self.filepath = filepath
-        
+        self.filepath = utils.decode(filepath, const.FS_ENCODE)
         self.run()
-    
+
     def run(self):
         grouper = self.grouper
         reader = gdcm.ImageReader()
         if _has_win32api:
-            reader.SetFileName(win32api.GetShortPathName(self.filepath).encode(const.FS_ENCODE))
+            try:
+                reader.SetFileName(utils.encode(win32api.GetShortPathName(self.filepath),
+                                                const.FS_ENCODE))
+            except TypeError:
+                reader.SetFileName(win32api.GetShortPathName(self.filepath))
         else:
-            reader.SetFileName(self.filepath)
-
+            try:
+                reader.SetFileName(utils.encode(self.filepath, const.FS_ENCODE))
+            except TypeError:
+                reader.SetFileName(self.filepath)
         if (reader.Read()):
             file = reader.GetFile()
-             
             # Retrieve data set
             dataSet = file.GetDataSet()
-        
             # Retrieve header
             header = file.GetHeader()
             stf = gdcm.StringFilter()
+            stf.SetFile(file)
 
             field_dict = {}
             data_dict = {}
-
 
             tag = gdcm.Tag(0x0008, 0x0005)
             ds = reader.GetFile().GetDataSet()
@@ -138,105 +141,81 @@ class LoadDicom:
             else:
                 encoding = "ISO_IR 100"
 
-
             # Iterate through the Header
             iterator = header.GetDES().begin()
             while (not iterator.equal(header.GetDES().end())):
                 dataElement = iterator.next()
-                stf.SetFile(file)
-                tag = dataElement.GetTag()
-                data = stf.ToStringPair(tag)
-                stag = tag.PrintAsPipeSeparatedString()
-                
-                group = str(tag.GetGroup())
-                field = str(tag.GetElement())
+                if not dataElement.IsUndefinedLength():
+                    tag = dataElement.GetTag()
+                    data = stf.ToStringPair(tag)
+                    stag = tag.PrintAsPipeSeparatedString()
 
-                tag_labels[stag] = data[0]
-                
-                if not group in data_dict.keys():
-                    data_dict[group] = {}
+                    group = str(tag.GetGroup())
+                    field = str(tag.GetElement())
 
-                if not(utils.VerifyInvalidPListCharacter(data[1])):
-                    data_dict[group][field] = data[1].decode(encoding)
-                else:
-                    data_dict[group][field] = "Invalid Character"
+                    tag_labels[stag] = data[0]
 
-            
+                    if not group in data_dict.keys():
+                        data_dict[group] = {}
+
+                    if not(utils.VerifyInvalidPListCharacter(data[1])):
+                        data_dict[group][field] = utils.decode(data[1], encoding)
+                    else:
+                        data_dict[group][field] = "Invalid Character"
+
             # Iterate through the Data set
             iterator = dataSet.GetDES().begin()
             while (not iterator.equal(dataSet.GetDES().end())):
                 dataElement = iterator.next()
-                
-                stf.SetFile(file)
-                tag = dataElement.GetTag()
-                data = stf.ToStringPair(tag)
-                stag = tag.PrintAsPipeSeparatedString()
+                if not dataElement.IsUndefinedLength():
+                    tag = dataElement.GetTag()
+                    #  if (tag.GetGroup() == 0x0009 and tag.GetElement() == 0x10e3) \
+                            #  or (tag.GetGroup() == 0x0043 and tag.GetElement() == 0x1027):
+                        #  continue
+                    data = stf.ToStringPair(tag)
+                    stag = tag.PrintAsPipeSeparatedString()
 
-                group = str(tag.GetGroup())
-                field = str(tag.GetElement())
+                    group = str(tag.GetGroup())
+                    field = str(tag.GetElement())
 
-                tag_labels[stag] = data[0]
+                    tag_labels[stag] = data[0]
 
-                if not group in data_dict.keys():
-                    data_dict[group] = {}
+                    if not group in data_dict.keys():
+                        data_dict[group] = {}
 
-                if not(utils.VerifyInvalidPListCharacter(data[1])):
-                    data_dict[group][field] = data[1].decode(encoding, 'replace')
-                else:
-                    data_dict[group][field] = "Invalid Character"
-            
+                    if not(utils.VerifyInvalidPListCharacter(data[1])):
+                        data_dict[group][field] = utils.decode(data[1], encoding, 'replace')
+                    else:
+                        data_dict[group][field] = "Invalid Character"
 
 
             # -------------- To Create DICOM Thumbnail -----------
-            rvtk = vtkgdcm.vtkGDCMImageReader()
 
-            if _has_win32api:
-                print 'dicom', win32api.GetShortPathName(self.filepath)
-                rvtk.SetFileName(win32api.GetShortPathName(self.filepath).encode(const.FS_ENCODE))
-            else:
-                rvtk.SetFileName(self.filepath)
-            rvtk.Update()
-            
+
             try:
                 data = data_dict[str(0x028)][str(0x1050)]
                 level = [float(value) for value in data.split('\\')][0]
                 data = data_dict[str(0x028)][str(0x1051)]
                 window =  [float(value) for value in data.split('\\')][0]
             except(KeyError, ValueError):
-                level = 300.0
-                window = 2000.0 
-     
-            colorer = vtk.vtkImageMapToWindowLevelColors()
-            colorer.SetInputConnection(rvtk.GetOutputPort())
-            colorer.SetWindow(float(window))
-            colorer.SetLevel(float(level))
-            colorer.SetOutputFormatToRGB()
-            colorer.Update()           
-            
-            resample = vtk.vtkImageResample()
-            resample.SetInputConnection(colorer.GetOutputPort())
-            resample.SetAxisMagnificationFactor ( 0, 0.25 )
-            resample.SetAxisMagnificationFactor ( 1, 0.25 )
-            resample.SetAxisMagnificationFactor ( 2, 1 )    
-            resample.Update()
+                level = None
+                window = None
 
-            thumbnail_path = tempfile.mktemp()
+            if _has_win32api:
+                thumbnail_path = imagedata_utils.create_dicom_thumbnails(win32api.GetShortPathName(self.filepath), window, level)
+            else:
+                thumbnail_path = imagedata_utils.create_dicom_thumbnails(self.filepath, window, level)
 
-            write_png = vtk.vtkPNGWriter()
-            write_png.SetInputConnection(resample.GetOutputPort())
-            write_png.SetFileName(thumbnail_path)
-            write_png.Write()
-            
             #------ Verify the orientation --------------------------------
 
             img = reader.GetImage()
             direc_cosines = img.GetDirectionCosines()
             orientation = gdcm.Orientation()
             try:
-                type = orientation.GetType(tuple(direc_cosines))
+                _type = orientation.GetType(tuple(direc_cosines))
             except TypeError:
-                type = orientation.GetType(direc_cosines)
-            label = orientation.GetLabel(type)
+                _type = orientation.GetType(direc_cosines)
+            label = orientation.GetLabel(_type)
 
  
             # ----------   Refactory --------------------------------------
@@ -327,7 +306,7 @@ def yGetDicomGroups(directory, recursive=True, gui=True):
 
 
 def GetDicomGroups(directory, recursive=True):
-    return yGetDicomGroups(directory, recursive, gui=False).next()
+    return next(yGetDicomGroups(directory, recursive, gui=False))
 
 
 class ProgressDicomReader:
@@ -355,7 +334,7 @@ class ProgressDicomReader:
     def GetDicomGroups(self, path, recursive):
 
         if not const.VTK_WARNING:
-            log_path = os.path.join(const.USER_LOG_DIR, 'vtkoutput.txt').encode(const.FS_ENCODE)
+            log_path = utils.encode(os.path.join(const.USER_LOG_DIR, 'vtkoutput.txt'), const.FS_ENCODE)
             fow = vtk.vtkFileOutputWindow()
             fow.SetFileName(log_path)
             ow = vtk.vtkOutputWindow()
@@ -363,12 +342,14 @@ class ProgressDicomReader:
 
         y = yGetDicomGroups(path, recursive)
         for value_progress in y:
+            print(">>>>", value_progress)
             if not self.running:
                 break
             if isinstance(value_progress, tuple):
                 self.UpdateLoadFileProgress(value_progress)
             else:
                 self.EndLoadFile(value_progress)
+        self.UpdateLoadFileProgress(None)
 
         #Is necessary in the case user cancel
         #the load, ensure that dicomdialog is closed

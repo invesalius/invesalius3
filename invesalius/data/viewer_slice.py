@@ -107,10 +107,16 @@ class ContourMIPConfig(wx.Panel):
         sizer = wx.BoxSizer(wx.HORIZONTAL)
         sizer.Add(txt_mip_size, 0, wx.EXPAND | wx.ALL, 2)
         sizer.Add(self.mip_size_spin, 0, wx.EXPAND)
-        sizer.AddSpacer((10, 0))
+        try:
+            sizer.Add(10, 0)
+        except TypeError:
+            sizer.Add((10, 0))
         sizer.Add(self.txt_mip_border, 0, wx.EXPAND | wx.ALL, 2)
         sizer.Add(self.border_spin, 0, wx.EXPAND)
-        sizer.AddSpacer((10, 0))
+        try:
+            sizer.Add(10, 0)
+        except TypeError:
+            sizer.Add((10, 0))
         sizer.Add(self.inverted, 0, wx.EXPAND)
         self.SetSizer(sizer)
         sizer.Fit(self)
@@ -234,7 +240,7 @@ class Viewer(wx.Panel):
         sizer.Add(scroll, 0, wx.EXPAND|wx.GROW)
 
         background_sizer = wx.BoxSizer(wx.VERTICAL)
-        background_sizer.AddSizer(sizer, 1, wx.EXPAND|wx.GROW|wx.ALL, 2)
+        background_sizer.Add(sizer, 1, wx.EXPAND|wx.GROW|wx.ALL, 2)
         #background_sizer.Add(self.mip_ctrls, 0, wx.EXPAND|wx.GROW|wx.ALL, 2)
         self.SetSizer(background_sizer)
         background_sizer.Fit(self)
@@ -568,13 +574,13 @@ class Viewer(wx.Panel):
 
     def UpdateSlicesNavigation(self, pubsub_evt):
         # Get point from base change
-        wx, wy, wz = pubsub_evt.data
-        px, py = self.get_slice_pixel_coord_by_world_pos(wx, wy, wz)
+        ux, uy, uz = pubsub_evt.data[1][:3]
+        px, py = self.get_slice_pixel_coord_by_world_pos(ux, uy, uz)
         coord = self.calcultate_scroll_position(px, py)
 
-        self.cross.SetFocalPoint((wx, wy, wz))
+        self.cross.SetFocalPoint((ux, uy, uz))
         self.ScrollSlice(coord)
-        Publisher.sendMessage('Set ball reference position', (wx, wy, wz))
+        Publisher.sendMessage('Set ball reference position', (ux, uy, uz))
 
     def ScrollSlice(self, coord):
         if self.orientation == "AXIAL":
@@ -999,7 +1005,7 @@ class Viewer(wx.Panel):
         state = pubsub_evt.data
         self.SetInteractorStyle(state)
 
-        if (state != const.SLICE_STATE_EDITOR):
+        if (state not in [const.SLICE_STATE_EDITOR, const.SLICE_STATE_WATERSHED]):
             Publisher.sendMessage('Set interactor default cursor')
 
     def __bind_events_wx(self):
@@ -1018,7 +1024,7 @@ class Viewer(wx.Panel):
         number_renderers = self.layout[0] * self.layout[1]
         diff = number_renderers - len(self.slice_data_list)
         if diff > 0:
-            for i in xrange(diff):
+            for i in range(diff):
                 slice_data = self.create_slice_window(imagedata)
                 self.slice_data_list.append(slice_data)
         elif diff < 0:
@@ -1036,8 +1042,8 @@ class Viewer(wx.Panel):
         w *= proportion_x
         h *= proportion_y
         n = 0
-        for j in xrange(self.layout[1]-1, -1, -1):
-            for i in xrange(self.layout[0]):
+        for j in range(self.layout[1]-1, -1, -1):
+            for i in range(self.layout[0]):
                 slice_xi = i*proportion_x
                 slice_xf = (i+1)*proportion_x
                 slice_yi = j*proportion_y

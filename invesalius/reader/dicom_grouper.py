@@ -94,22 +94,22 @@ class DicomGroup:
         if not self.dicom:
             self.dicom = dicom
 
-        pos = tuple(dicom.image.position) 
-        
+        pos = tuple(dicom.image.position)
+
         #Case to test: \other\higroma
-        #condition created, if any dicom with the same 
+        #condition created, if any dicom with the same
         #position, but 3D, leaving the same series.
         if not "DERIVED" in dicom.image.type:
             #if any dicom with the same position
             if pos not in self.slices_dict.keys():
                 self.slices_dict[pos] = dicom
-                self.nslices += 1
+                self.nslices += dicom.image.number_of_frames
                 return True
             else:
                 return False
         else:
             self.slices_dict[dicom.image.number] = dicom
-            self.nslices	 += 1
+            self.nslices += dicom.image.number_of_frames
             return True
 
     def GetList(self):
@@ -124,7 +124,7 @@ class DicomGroup:
         # (interpolated)
 
         if _has_win32api:
-            filelist = [win32api.GetShortPathName(dicom.image.file).encode(const.FS_ENCODE)
+            filelist = [win32api.GetShortPathName(dicom.image.file)
                         for dicom in
                         self.slices_dict.values()]
         else:
@@ -132,16 +132,19 @@ class DicomGroup:
                         self.slices_dict.values()]
        
         # Sort slices using GDCM
-        if (self.dicom.image.orientation_label <> "CORONAL"):
+        if (self.dicom.image.orientation_label != "CORONAL"):
             #Organize reversed image
             sorter = gdcm.IPPSorter()
             sorter.SetComputeZSpacing(True)
             sorter.SetZSpacingTolerance(1e-10)
-            sorter.Sort(filelist)
+            try:
+                sorter.Sort([utils.encode(i, const.FS_ENCODE) for i in filelist])
+            except TypeError:
+                sorter.Sort(filelist)
             filelist = sorter.GetFilenames()
 
         # for breast-CT of koning manufacturing (KBCT)
-        if self.slices_dict.values()[0].parser.GetManufacturerName() == "Koning":
+        if list(self.slices_dict.values())[0].parser.GetManufacturerName() == "Koning":
             filelist.sort()
         
         return filelist
@@ -149,7 +152,7 @@ class DicomGroup:
     def GetHandSortedList(self):
         # This will be used to fix problem 1, after merging
         # single DicomGroups of same study_id and orientation
-        list_ = self.slices_dict.values()
+        list_ = list(self.slices_dict.values())
         dicom = list_[0]
         axis = ORIENT_MAP[dicom.image.orientation_label]
         #list_ = sorted(list_, key = lambda dicom:dicom.image.position[axis])
@@ -173,7 +176,7 @@ class DicomGroup:
 
     def GetDicomSample(self):
         size = len(self.slices_dict)
-        dicom = self.GetHandSortedList()[size/2]
+        dicom = self.GetHandSortedList()[size//2]
         return dicom
             
 class PatientGroup:
@@ -306,7 +309,7 @@ class PatientGroup:
 
             # 3rd STEP: CHECK DIFFERENCES
             axis = ORIENT_MAP[group_key[0]] # based on orientation
-            for index in xrange(len(sorted_list)-1):
+            for index in range(len(sorted_list)-1):
                 current = sorted_list[index]
                 next = sorted_list[index+1]
 

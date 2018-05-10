@@ -23,8 +23,12 @@ import sys
 import wx
 import itertools
 
+from invesalius import utils
+
 #from invesalius.project import Project
 INVESALIUS_VERSION = "3.1.1"
+
+INVESALIUS_ACTUAL_FORMAT_VERSION = 1.1
 
 #---------------
 
@@ -56,6 +60,7 @@ STEREO_ANAGLYPH = _("Anaglyph")
 TEXT_SIZE_SMALL = 11
 TEXT_SIZE = 12
 TEXT_SIZE_LARGE = 16
+TEXT_SIZE_EXTRA_LARGE = 20
 TEXT_COLOUR = (1,1,1)
 
 (X,Y) = (0.03, 0.97)
@@ -331,15 +336,15 @@ if sys.platform == 'win32':
     try:
         USER_DIR = expand_user()
     except:
-        USER_DIR = os.path.expanduser('~').decode(FS_ENCODE)
+        USER_DIR = utils.decode(os.path.expanduser('~'), FS_ENCODE)
 else:
-    USER_DIR = os.path.expanduser('~').decode(FS_ENCODE)
+    USER_DIR = utils.decode(os.path.expanduser('~'), FS_ENCODE)
 
 USER_INV_DIR = os.path.join(USER_DIR, u'.invesalius')
 USER_PRESET_DIR = os.path.join(USER_INV_DIR, u'presets')
 USER_LOG_DIR = os.path.join(USER_INV_DIR, u'logs')
 
-FILE_PATH = os.path.split(__file__)[0].decode(FS_ENCODE)
+FILE_PATH = utils.decode(os.path.split(__file__)[0], FS_ENCODE)
 
 if hasattr(sys,"frozen") and (sys.frozen == "windows_exe"\
                             or sys.frozen == "console_exe"):
@@ -545,6 +550,8 @@ ID_FLOODFILL_SEGMENTATION = wx.NewId()
 ID_CROP_MASK = wx.NewId()
 ID_DENSITY_MEASURE = wx.NewId()
 ID_MASK_DENSITY_MEASURE = wx.NewId()
+ID_CREATE_SURFACE = wx.NewId()
+ID_CREATE_MASK = wx.NewId()
 
 #---------------------------------------------------------
 STATE_DEFAULT = 1000
@@ -695,6 +702,10 @@ DYNAMIC_REF = 1
 DEFAULT_REF_MODE = DYNAMIC_REF
 REF_MODE = [_("Static ref."), _("Dynamic ref.")]
 
+DEFAULT_COIL = SELECT
+COIL = [_("Select coil:"), _("Neurosoft Figure-8"),
+           _("Magstim 70 mm"), _("Nexstim")]
+
 IR1 = wx.NewId()
 IR2 = wx.NewId()
 IR3 = wx.NewId()
@@ -725,5 +736,34 @@ TIPS_TRK = [_("Select left ear with spatial tracker"),
             _("Select nasion with spatial tracker"),
             _("Show set coordinates in image")]
 
+OBJL = wx.NewId()
+OBJR = wx.NewId()
+OBJA = wx.NewId()
+OBJC = wx.NewId()
+OBJF = wx.NewId()
+
+BTNS_OBJ = {OBJL: {0: _('Left')},
+            OBJR: {1: _('Right')},
+            OBJA: {2: _('Anterior')},
+            OBJC: {3: _('Center')},
+            OBJF: {4: _('Fixed')}}
+
+TIPS_OBJ = [_("Select left object fiducial"),
+            _("Select right object fiducial"),
+            _("Select anterior object fiducial"),
+            _("Select object center"),
+            _("Attach sensor to object")]
+
 CAL_DIR = os.path.abspath(os.path.join(FILE_PATH, '..', 'navigation', 'mtc_files', 'CalibrationFiles'))
 MAR_DIR = os.path.abspath(os.path.join(FILE_PATH, '..', 'navigation', 'mtc_files', 'Markers'))
+
+#OBJECT TRACKING
+OBJ_DIR = os.path.abspath(os.path.join(FILE_PATH, '..', 'navigation', 'objects'))
+ARROW_SCALE = 3
+ARROW_UPPER_LIMIT = 30
+#COIL_ANGLES_THRESHOLD = 3 * ARROW_SCALE
+COIL_ANGLES_THRESHOLD = 3
+COIL_COORD_THRESHOLD = 3
+TIMESTAMP = 2.0
+
+CAM_MODE = True

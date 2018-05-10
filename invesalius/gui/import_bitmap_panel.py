@@ -101,7 +101,7 @@ class InnerPanel(wx.Panel):
         self.combo_interval.SetSelection(0)
 
         inner_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        inner_sizer.AddSizer(btnsizer, 0, wx.LEFT|wx.TOP, 5)
+        inner_sizer.Add(btnsizer, 0, wx.LEFT|wx.TOP, 5)
         inner_sizer.Add(self.combo_interval, 0, wx.LEFT|wx.RIGHT|wx.TOP, 5)
         panel.SetSizer(inner_sizer)
         inner_sizer.Fit(panel)
@@ -192,7 +192,7 @@ class TextPanel(wx.Panel):
                                    wx.TR_DEFAULT_STYLE
                                    | wx.TR_HIDE_ROOT
                                    | wx.TR_ROW_LINES
-                                   | wx.TR_COLUMN_LINES
+                                   #  | wx.TR_COLUMN_LINES
                                    | wx.TR_FULL_ROW_HIGHLIGHT
                                    | wx.TR_MULTIPLE
                                    | wx.TR_HIDE_ROOT
@@ -308,7 +308,8 @@ class ImagePanel(wx.Panel):
         splitter.SetOrientation(wx.HORIZONTAL)
         self.splitter = splitter
 
-        splitter.ContainingSizer = wx.BoxSizer(wx.HORIZONTAL)
+        # TODO: Rever isso
+        #  splitter.ContainingSizer = wx.BoxSizer(wx.HORIZONTAL)
 
         sizer = wx.BoxSizer(wx.HORIZONTAL)
         sizer.Add(splitter, 1, wx.EXPAND)

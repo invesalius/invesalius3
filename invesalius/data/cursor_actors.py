@@ -205,7 +205,7 @@ class CursorBase(object):
 
     def _set_colour(self, imagedata, colour):
         scalar_range = int(imagedata.GetScalarRange()[1])
-        r, g, b = colour
+        r, g, b = colour[:3]
 
         # map scalar values into colors
         lut_mask = vtk.vtkLookupTable()
@@ -319,21 +319,21 @@ class CursorRectangle(CursorBase):
         """
         Function to plot the Retangle
         """
-        print "Building rectangle cursor", self.orientation
+        print("Building rectangle cursor", self.orientation)
         r = self.radius
         sx, sy, sz = self.spacing
         if self.orientation == 'AXIAL':
-            x = math.floor(2*r/sx)
-            y = math.floor(2*r/sy)
+            x = int(math.floor(2*r/sx))
+            y = int(math.floor(2*r/sy))
             z = 1
         elif self.orientation == 'CORONAL':
-            x = math.floor(r/sx)
+            x = int(math.floor(r/sx))
             y = 1
-            z = math.floor(r/sz)
+            z = int(math.floor(r/sz))
         elif self.orientation == 'SAGITAL':
             x = 1
-            y = math.floor(r/sy)
-            z = math.floor(r/sz)
+            y = int(math.floor(r/sy))
+            z = int(math.floor(r/sz))
 
         rectangle_m = numpy.ones((z, y, x), dtype='uint8')
         rectangle_i = to_vtk(rectangle_m, self.spacing, 0, self.orientation)
@@ -353,13 +353,13 @@ class CursorRectangle(CursorBase):
         r = self.radius
         sx, sy, sz = self.spacing
         if self.orientation == 'AXIAL':
-            x = math.floor(2*r/sx)
-            y = math.floor(2*r/sy)
+            x = int(math.floor(2*r/sx))
+            y = int(math.floor(2*r/sy))
         elif self.orientation == 'CORONAL':
-            x = math.floor(r/sx)
-            y = math.floor(r/sz)
+            x = int(math.floor(r/sx))
+            y = int(math.floor(r/sz))
         elif self.orientation == 'SAGITAL':
-            x = math.floor(r/sy)
-            y = math.floor(r/sz)
+            x = int(math.floor(r/sy))
+            y = int(math.floor(r/sz))
 
         self.points = numpy.ones((y, x), dtype='bool')

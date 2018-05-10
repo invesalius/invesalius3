@@ -20,7 +20,10 @@
 import os
 import sys
 import wx
-import wx.combo
+try:
+    from wx.adv import BitmapComboBox
+except ImportError:
+    from wx.combo import BitmapComboBox
 
 import invesalius.i18n as i18n
 
@@ -48,7 +51,7 @@ class ComboBoxLanguage:
         
         # Retrieve locales names and sort them
         self.locales = dict_locales.values()
-        self.locales.sort()
+        self.locales = sorted(self.locales)
        
         # Retrieve locales keys (eg: pt_BR for Portuguese(Brazilian))
         self.locales_key = [dict_locales.get_key(value)[0] for value in self.locales]
@@ -56,13 +59,16 @@ class ComboBoxLanguage:
         # Find out OS locale
         self.os_locale = i18n.GetLocaleOS()
        
-        os_lang = self.os_locale[0:2]
+        try:
+            os_lang = self.os_locale[0:2]
+        except TypeError:
+            os_lang = None
 
         # Default selection will be English
         selection = self.locales_key.index('en')
 
         # Create bitmap combo
-        self.bitmapCmb = bitmapCmb = wx.combo.BitmapComboBox(parent, style=wx.CB_READONLY)
+        self.bitmapCmb = bitmapCmb = BitmapComboBox(parent, style=wx.CB_READONLY)
         for key in self.locales_key:
             # Based on composed flag filename, get bitmap
             filepath =  os.path.join(ICON_DIR, "%s.bmp"%(key))
@@ -70,7 +76,7 @@ class ComboBoxLanguage:
             # Add bitmap and info to Combo
             bitmapCmb.Append(dict_locales[key], bmp, key)
             # Set default combo item if available on the list
-            if key.startswith(os_lang):
+            if os_lang and key.startswith(os_lang):
                 selection = self.locales_key.index(key)
                 bitmapCmb.SetSelection(selection)
 
@@ -114,7 +120,7 @@ class LanguageDialog(wx.Dialog):
     #    selection = self.locales_key.index('en')
 
     #    # Create bitmap combo
-    #    self.bitmapCmb = bitmapCmb = wx.combo.BitmapComboBox(self, style=wx.CB_READONLY)
+    #    self.bitmapCmb = bitmapCmb = BitmapComboBox(self, style=wx.CB_READONLY)
     #    for key in self.locales_key:
     #        # Based on composed flag filename, get bitmap
     #        filepath =  os.path.join(ICON_DIR, "%s.bmp"%(key))

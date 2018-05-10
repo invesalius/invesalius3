@@ -20,7 +20,12 @@
 import wx
 import os
 import wx.lib.embeddedimage as emb
-import wx.lib.hyperlink as hl
+
+try:
+    import wx.lib.agw.hyperlink as hl
+except ImportError:
+    import wx.lib.hyperlink as hl
+
 import wx.lib.platebtn as pbtn
 from wx.lib.pubsub import pub as Publisher
 
@@ -120,7 +125,7 @@ class InnerTaskPanel(wx.Panel):
         self.sizer = main_sizer
 
     def OnTextAnnotation(self, evt=None):
-        print "TODO: Send Signal - Add text annotation (both 2d and 3d)"
+        print("TODO: Send Signal - Add text annotation (both 2d and 3d)")
 
     def OnLinkLinearMeasure(self):
         Publisher.sendMessage('Enable style',
