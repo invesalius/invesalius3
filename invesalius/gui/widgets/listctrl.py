@@ -644,19 +644,23 @@ class TextEditMixin:
 
         # give the derived class a chance to Allow/Veto this edit.
         evt = wx.ListEvent(wx.wxEVT_COMMAND_LIST_BEGIN_LABEL_EDIT, self.GetId())
-        evt.m_itemIndex = row
-        evt.m_col = col
+        try:
+            evt.SetIndex(row)
+            evt.SetColumn(col)
+        except AttributeError:
+            evt.m_itemIndex = row
+            evt.m_col = col
         item = self.GetItem(row, col)
-        evt.m_item.SetId(item.GetId()) 
-        evt.m_item.SetColumn(item.GetColumn()) 
-        evt.m_item.SetData(item.GetData()) 
-        evt.m_item.SetText(item.GetText()) 
+        evt.Item.SetId(item.GetId()) 
+        evt.Item.SetColumn(item.GetColumn()) 
+        evt.Item.SetData(item.GetData()) 
+        evt.Item.SetText(item.GetText()) 
         ret = self.GetEventHandler().ProcessEvent(evt)
         if ret and not evt.IsAllowed():
             return   # user code doesn't allow the edit.
 
-        if self.GetColumn(col).m_format != self.col_style:
-            self.make_editor(self.GetColumn(col).m_format)
+        if self.GetColumn(col).Align != self.col_style:
+            self.make_editor(self.GetColumn(col).Align)
     
         x0 = self.col_locs[col]
         x1 = self.col_locs[col+1] - x0
@@ -717,13 +721,17 @@ class TextEditMixin:
         # Event can be vetoed. It doesn't has SetEditCanceled(), what would 
         # require passing extra argument to CloseEditor() 
         evt = wx.ListEvent(wx.wxEVT_COMMAND_LIST_END_LABEL_EDIT, self.GetId())
-        evt.m_itemIndex = self.curRow
-        evt.m_col = self.curCol
+        try:
+            evt.SetIndex(self.curRow)
+            evt.SetColumn(self.curCol)
+        except AttributeError:
+            evt.m_itemIndex = self.curRow
+            evt.m_col = self.curCol
         item = self.GetItem(self.curRow, self.curCol)
-        evt.m_item.SetId(item.GetId()) 
-        evt.m_item.SetColumn(item.GetColumn()) 
-        evt.m_item.SetData(item.GetData()) 
-        evt.m_item.SetText(text) #should be empty string if editor was canceled
+        evt.Item.SetId(item.GetId()) 
+        evt.Item.SetColumn(item.GetColumn()) 
+        evt.Item.SetData(item.GetData()) 
+        evt.Item.SetText(text) #should be empty string if editor was canceled
         ret = self.GetEventHandler().ProcessEvent(evt)
         if not ret or evt.IsAllowed():
             if self.IsVirtual():
