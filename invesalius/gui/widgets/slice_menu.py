@@ -90,7 +90,7 @@ class SliceMenu(wx.Menu):
 
 
         #------------ Sub menu of the pseudo colors ----------------
-        if sys.platform == 'linux2':
+        if sys.platform.startswith('linux'):
             mkind = wx.ITEM_CHECK
         else:
             mkind = wx.ITEM_RADIO
@@ -166,7 +166,7 @@ class SliceMenu(wx.Menu):
         # It doesn't work in Linux
         self.Bind(wx.EVT_MENU, self.OnPopup)
         # In Linux the bind must be putted in the submenu
-        if sys.platform == 'linux2' or sys.platform == 'darwin':
+        if sys.platform.startswith('linux') or sys.platform == 'darwin':
             submenu_wl.Bind(wx.EVT_MENU, self.OnPopup)
             submenu_pseudo_colours.Bind(wx.EVT_MENU, self.OnPopup)
             submenu_image_tiling.Bind(wx.EVT_MENU, self.OnPopup)
@@ -226,7 +226,7 @@ class SliceMenu(wx.Menu):
             Publisher.sendMessage('Change colour table from background image', values)
             Publisher.sendMessage('Update slice viewer')
 
-            if sys.platform == 'linux2':
+            if sys.platform.startswith('linux'):
                 for i in self.pseudo_color_items:
                     it = self.pseudo_color_items[i]
                     if it.IsChecked():
@@ -241,7 +241,7 @@ class SliceMenu(wx.Menu):
             Publisher.sendMessage('Change colour table from background image from plist', values)
             Publisher.sendMessage('Update slice viewer')
 
-            if sys.platform == 'linux2':
+            if sys.platform.startswith('linux'):
                 for i in self.pseudo_color_items:
                     it = self.pseudo_color_items[i]
                     if it.IsChecked():
@@ -273,7 +273,7 @@ class SliceMenu(wx.Menu):
             else:
                 self.cdialog.Show(self._gen_event)
 
-            if sys.platform == 'linux2':
+            if sys.platform.startswith('linux'):
                 for i in self.pseudo_color_items:
                     it = self.pseudo_color_items[i]
                     if it.IsChecked():

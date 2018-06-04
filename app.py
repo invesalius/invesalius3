@@ -50,7 +50,7 @@ from wx.lib.pubsub import setuparg1# as psv1
 from wx.lib.pubsub import pub as Publisher
 
 #import wx.lib.agw.advancedsplash as agw
-#if sys.platform == 'linux2':
+#if sys.platform.startswith('linux'):
 #    _SplashScreen = agw.AdvancedSplash
 #else:
 #    if sys.platform != 'darwin':
@@ -80,7 +80,7 @@ USER_LOG_DIR = os.path.join(USER_INV_DIR, u'logs')
 
 # ------------------------------------------------------------------
 
-if sys.platform in ('linux2', 'win32'):
+if sys.platform in ('linux2', 'linux', 'win32'):
     try:
         tmp_var = wx.GetXDisplay
     except AttributeError:

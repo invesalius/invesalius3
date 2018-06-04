@@ -379,7 +379,7 @@ class VolumeToolPanel(wx.Panel):
         self.button_view = button_view
 
         # VOLUME COLOUR BUTTON
-        if sys.platform == 'linux2':
+        if sys.platform.startswith('linux'):
             size = (32,32)
             sp = 2
         else:

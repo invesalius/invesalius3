@@ -1264,7 +1264,7 @@ class Viewer(wx.Panel):
         self.interactor.SetCursor(wx.StockCursor(wx.CURSOR_SIZEWE))
 
     def SetSizeNWSECursor(self, pubsub_evt):
-        if sys.platform == 'linux2':
+        if sys.platform.startswith('linux'):
             self.interactor.SetCursor(wx.StockCursor(wx.CURSOR_SIZENWSE))
         else:
             self.interactor.SetCursor(wx.StockCursor(wx.CURSOR_SIZING))

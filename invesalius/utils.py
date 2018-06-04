@@ -254,7 +254,7 @@ def calculate_resizing_tofitmemory(x_size,y_size,n_slices,byte):
             if ram_total>1400000000:
                 ram_total=1400000000
 
-    if (sys.platform == 'linux2'):
+    if sys.platform.startswith('linux'):
         if (platform.architecture()[0] == '32bit'):
             if ram_free>3500000000:
                 ram_free=3500000000
@@ -313,7 +313,7 @@ def predict_memory(nfiles, x, y, p):
 
         return (x/porcent, y/porcent)
 
-    elif(sys.platform == 'linux2'):
+    elif sys.platform.startswith('linux'):
 
         if (platform.architecture()[0] == '32bit'):
             # 839000000 = 800 MB

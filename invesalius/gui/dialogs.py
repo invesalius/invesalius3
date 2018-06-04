@@ -292,7 +292,7 @@ def ShowOpenProjectDialog():
 def ShowImportDirDialog(self):
     current_dir = os.path.abspath(".")
 
-    if (sys.platform == 'win32') or (sys.platform == 'linux2'):
+    if sys.platform == 'win32' or sys.platform.startswith('linux'):
         session = ses.Session()
 
         if (session.GetLastDicomFolder()):
@@ -333,7 +333,7 @@ def ShowImportDirDialog(self):
 def ShowImportBitmapDirDialog(self):
     current_dir = os.path.abspath(".")
 
-    if (sys.platform == 'win32') or (sys.platform == 'linux2'):
+    if sys.platform == 'win32' or sys.platform.startswith('linux'):
         session = ses.Session()
 
         if (session.GetLastDicomFolder()):
@@ -1454,7 +1454,7 @@ def ExportPicture(type_=""):
     project = proj.Project()
 
     project_name = "%s_%s" % (project.name, type_)
-    if not sys.platform in ('win32', 'linux2'):
+    if not sys.platform in ('win32', 'linux2', 'linux'):
         project_name += ".jpg"
 
     dlg = wx.FileDialog(None,
