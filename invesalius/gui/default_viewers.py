@@ -43,6 +43,7 @@ class Panel(wx.Panel):
 
         self.__init_aui_manager()
         self.__bind_events_wx()
+        self.__bind_events()
         #self.__init_four_way_splitter()
         #self.__init_mix()
 
@@ -124,6 +125,9 @@ class Panel(wx.Panel):
         self.aui_manager.Bind(wx.aui.EVT_AUI_PANE_MAXIMIZE, self.OnMaximize)
         self.aui_manager.Bind(wx.aui.EVT_AUI_PANE_RESTORE, self.OnRestore)
 
+    def __bind_events(self):
+        Publisher.subscribe(self._Exit, 'Exit')
+
     def OnMaximize(self, evt):
         if evt.GetPane().name == self.s4.name:
             Publisher.sendMessage('Show raycasting widget', None)
@@ -152,6 +156,8 @@ class Panel(wx.Panel):
         p4 = volume_viewer.Viewer(self)
         splitter.AppendWindow(p4)
 
+    def _Exit(self, pubsub_evt):
+        self.aui_manager.UnInit()
 
     def __init_mix(self):
         aui_manager = wx.aui.AuiManager()
@@ -246,6 +252,7 @@ class VolumeInteraction(wx.Panel):
                                 'Refresh raycasting widget points')
         Publisher.subscribe(self.LoadHistogram,
                                 'Load histogram')
+        Publisher.subscribe(self._Exit, 'Exit')
 
     def __update_curve_wwwl_text(self, curve):
         ww, wl = self.clut_raycasting.GetCurveWWWl(curve)
@@ -298,6 +305,10 @@ class VolumeInteraction(wx.Panel):
     def RefreshPoints(self, pubsub_evt):
         self.clut_raycasting.CalculatePixelPoints()
         self.clut_raycasting.Refresh()
+
+    def _Exit(self, pubsub_evt):
+        self.aui_manager.UnInit()
+
 
 import wx.lib.platebtn as pbtn
 import wx.lib.buttons as btn
