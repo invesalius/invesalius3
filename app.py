@@ -30,7 +30,10 @@ import traceback
 import re
 
 if sys.platform == 'win32':
-    import _winreg
+    try:
+        import winreg
+    except ImportError:
+        import _winreg as winreg
 #  else:
     #  if sys.platform != 'darwin':
         #  import wxversion
@@ -472,10 +475,10 @@ if __name__ == '__main__':
     if hasattr(sys,"frozen") and sys.platform.startswith('win'):
 
         #Click in the .inv3 file support
-        root = _winreg.HKEY_CLASSES_ROOT
+        root = winreg.HKEY_CLASSES_ROOT
         key = "InVesalius 3.1\InstallationDir"
-        hKey = _winreg.OpenKey (root, key, 0, _winreg.KEY_READ)
-        value, type_ = _winreg.QueryValueEx (hKey, "")
+        hKey = winreg.OpenKey (root, key, 0, winreg.KEY_READ)
+        value, type_ = winreg.QueryValueEx (hKey, "")
         path = os.path.join(value,'dist')
 
         os.chdir(path)
