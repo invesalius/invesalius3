@@ -43,7 +43,7 @@ import invesalius.gui.default_viewers as viewers
 import invesalius.gui.dialogs as dlg
 import invesalius.gui.import_panel as imp
 import invesalius.gui.import_bitmap_panel as imp_bmp
-import invesalius.gui.import_network_panel as imp_net
+#  import invesalius.gui.import_network_panel as imp_net
 import invesalius.project as prj
 import invesalius.session as ses
 import invesalius.utils as utils
@@ -194,11 +194,11 @@ class Frame(wx.Frame):
                           MaximizeButton(False).Floatable(True).
                           Caption(caption).CaptionVisible(True))
 
-        ncaption = _("Retrieve DICOM from PACS")
-        aui_manager.AddPane(imp_net.Panel(self), wx.aui.AuiPaneInfo().
-                          Name("Retrieve").Centre().Hide().
-                          MaximizeButton(True).Floatable(True).
-                          Caption(ncaption).CaptionVisible(True))
+        #  ncaption = _("Retrieve DICOM from PACS")
+        #  aui_manager.AddPane(imp_net.Panel(self), wx.aui.AuiPaneInfo().
+                          #  Name("Retrieve").Centre().Hide().
+                          #  MaximizeButton(True).Floatable(True).
+                          #  Caption(ncaption).CaptionVisible(True))
 
         # Add toolbars to manager
         # This is pretty tricky -- order on win32 is inverted when
