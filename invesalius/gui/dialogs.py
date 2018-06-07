@@ -45,6 +45,11 @@ from wx.lib.agw import floatspin
 from wx.lib.wordwrap import wordwrap
 from wx.lib.pubsub import pub as Publisher
 
+try:
+    from wx.adv import AboutDialogInfo, AboutBox
+except ImportError:
+    from wx import AboutDialogInfo, AboutBox
+
 import invesalius.constants as const
 import invesalius.data.coordinates as dco
 import invesalius.gui.widgets.gradient as grad
@@ -1222,7 +1227,7 @@ def SaveChangesDialog2(filename):
 
 def ShowAboutDialog(parent):
 
-    info = wx.AboutDialogInfo()
+    info = AboutDialogInfo()
     info.Name = "InVesalius"
     info.Version = "3.1.1"
     info.Copyright = _("(c) 2007-2017 Center for Information Technology Renato Archer - CTI")
@@ -1283,8 +1288,8 @@ def ShowAboutDialog(parent):
 
     info.Artists = [u"Otavio Henrique Junqueira Amorim"]
 
-    # Then we call wx.AboutBox providing its info object
-    wx.AboutBox(info)
+    # Then we call AboutBox providing its info object
+    AboutBox(info)
 
 
 def ShowSavePresetDialog(default_filename="raycasting"):
