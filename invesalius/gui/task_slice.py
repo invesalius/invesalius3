@@ -591,7 +591,7 @@ class MaskProperties(wx.Panel):
         self.gradient.SetColour(colour)
         self.button_colour.SetColour(colour)
 
-    def AddMask(self, evt_pubsub):
+    def AddMask(self, pubsub_evt):
         if self.combo_mask_name.IsEmpty():
             self.Enable()
         mask_name = evt_pubsub.data[1]

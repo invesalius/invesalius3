@@ -98,7 +98,7 @@ class NotebookPanel(wx.Panel):
                                  'Fold mask page')
 
 
-    def _FoldSurface(self, pubusb_evt):
+    def _FoldSurface(self, pubsub_evt):
         """
         Fold surface notebook page.
         """

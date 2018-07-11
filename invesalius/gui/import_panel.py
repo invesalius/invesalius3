@@ -512,7 +512,7 @@ class SlicePanel(wx.Panel):
         self.sizer.Layout()
         self.Update()
 
-    def SetDicomSeries(self, evt):
+    def SetDicomSeries(self, pubsub_evt):
         group = evt.data
         self.dicom_preview.SetDicomGroup(group)
         self.sizer.Layout()

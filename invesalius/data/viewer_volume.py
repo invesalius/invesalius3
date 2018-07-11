@@ -436,11 +436,11 @@ class Viewer(wx.Panel):
         self.SetInteractorStyle(const.STATE_DEFAULT)
         self._last_state = const.STATE_DEFAULT
 
-    def OnHideText(self, pubsub_evt):
+    def OnHideText(self):
         self.text.Hide()
         self.interactor.Render()
 
-    def OnShowText(self, pubsub_evt):
+    def OnShowText(self):
         if self.on_wl:
             self.text.Show()
             self.interactor.Render()

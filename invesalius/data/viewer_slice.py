@@ -1340,10 +1340,10 @@ class Viewer(wx.Panel):
 
         Publisher.sendMessage('End busy cursor')
 
-    def OnShowText(self, pubsub_evt):
+    def OnShowText(self):
         self.ShowTextActors()
 
-    def OnHideText(self, pubsub_evt):
+    def OnHideText(self):
         self.HideTextActors()
 
     def OnCloseProject(self, pubsub_evt):
