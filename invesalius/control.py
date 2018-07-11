@@ -124,7 +124,7 @@ class Controller():
 ###########################
 ###########################
 
-    def OnShowDialogImportDirectory(self, pubsub_evt):
+    def OnShowDialogImportDirectory(self):
         self.ShowDialogImportDirectory()
 
     def OnShowDialogImportOtherFiles(self, pubsub_evt):
@@ -390,8 +390,7 @@ class Controller():
         reader.SetDirectoryPath(path)
         Publisher.sendMessage('End busy cursor')
 
-    def Progress(self, evt):
-        data = evt.data
+    def Progress(self, data):
         if (data):
             message = _("Loading file %d of %d ...")%(data[0],data[1])
             if not(self.progress_dialog):
