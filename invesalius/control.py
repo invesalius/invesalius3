@@ -112,7 +112,7 @@ class Controller():
         proj = prj.Project()
         proj.spacing = pubsub_evt.data
 
-    def OnCancelImport(self, pubsub_evt):
+    def OnCancelImport(self):
         #self.cancel_import = True
         Publisher.sendMessage('Hide import panel')
 

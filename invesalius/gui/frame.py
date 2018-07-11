@@ -312,7 +312,7 @@ class Frame(wx.Frame):
         else:
             self.SetTitle("%s - InVesalius 3"%(proj_name))
 
-    def _ShowContentPanel(self, evt_pubsub):
+    def _ShowContentPanel(self):
         """
         Show viewers and task, hide import panel.
         """
