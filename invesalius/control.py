@@ -407,16 +407,14 @@ class Controller():
                 self.progress_dialog.Close()
                 self.progress_dialog = None
 
-    def OnLoadImportPanel(self, evt):
-        patient_series = evt.data
+    def OnLoadImportPanel(self, patient_series):
         ok = self.LoadImportPanel(patient_series)
         if ok:
             Publisher.sendMessage('Show import panel')
             Publisher.sendMessage("Show import panel in frame")
             self.img_type = 1
 
-    def OnLoadImportBitmapPanel(self, evt):
-        data = evt.data
+    def OnLoadImportBitmapPanel(self, data):
         ok = self.LoadImportBitmapPanel(data)
         if ok:
             Publisher.sendMessage('Show import bitmap panel in frame')            
@@ -438,9 +436,9 @@ class Controller():
 
     def LoadImportPanel(self, patient_series):
         if patient_series and isinstance(patient_series, list):
-            Publisher.sendMessage("Load import panel", patient_series)
+            Publisher.sendMessage("Load import panel", dicom_groups=patient_series)
             first_patient = patient_series[0]
-            Publisher.sendMessage("Load dicom preview", first_patient)
+            Publisher.sendMessage("Load dicom preview", patient=first_patient)
             return True
         else:
             dialog.ImportInvalidFiles("DICOM")

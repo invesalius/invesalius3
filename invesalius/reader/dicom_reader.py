@@ -329,7 +329,7 @@ class ProgressDicomReader:
         Publisher.sendMessage("Update dicom load", data=cont_progress)
 
     def EndLoadFile(self, patient_list):
-        Publisher.sendMessage("End dicom load", patient_list)
+        Publisher.sendMessage("End dicom load", patient_series=patient_list)
 
     def GetDicomGroups(self, path, recursive):
 

@@ -141,8 +141,7 @@ class InnerPanel(wx.Panel):
         self.btn_cancel.Bind(wx.EVT_BUTTON, self.OnClickCancel)
         self.text_panel.Bind(EVT_SELECT_SERIE_TEXT, self.OnDblClickTextPanel)
 
-    def ShowDicomPreview(self, pubsub_evt):
-        dicom_groups = pubsub_evt.data
+    def ShowDicomPreview(self, dicom_groups):
         self.patients.extend(dicom_groups)
         self.text_panel.Populate(dicom_groups)
 
@@ -474,8 +473,7 @@ class SeriesPanel(wx.Panel):
         my_evt.SetItemData(evt.GetItemData())
         self.GetEventHandler().ProcessEvent(my_evt)
 
-    def ShowDicomSeries(self, pubsub_evt):
-        patient = pubsub_evt.data
+    def ShowDicomSeries(self, patient):
         if isinstance(patient, dcm.PatientGroup):
             self.serie_preview.SetPatientGroups(patient)
             self.dicom_preview.SetPatientGroups(patient)
@@ -518,8 +516,7 @@ class SlicePanel(wx.Panel):
         self.sizer.Layout()
         self.Update()
 
-    def ShowDicomSeries(self, pubsub_evt):
-        patient = pubsub_evt.data
+    def ShowDicomSeries(self, patient):
         group = patient.GetGroups()[0]
         self.dicom_preview.SetDicomGroup(group)
         self.sizer.Layout()

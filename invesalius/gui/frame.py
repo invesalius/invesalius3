@@ -248,14 +248,14 @@ class Frame(wx.Frame):
         # TODO: Allow saving and restoring perspectives
         self.perspective_all = aui_manager.SavePerspective()
 
-    def _BeginBusyCursor(self, pubsub_evt):
+    def _BeginBusyCursor(self):
         """
         Start busy cursor.
         Note: _EndBusyCursor should be called after.
         """
         wx.BeginBusyCursor()
 
-    def _EndBusyCursor(self, pubsub_evt):
+    def _EndBusyCursor(self):
         """
         End busy cursor.
         Note: _BeginBusyCursor should have been called previously.
@@ -358,7 +358,7 @@ class Frame(wx.Frame):
         self.mw.SetPosition(pos)
         self.mw.Show()
 
-    def _ShowImportPanel(self, evt_pubsub):
+    def _ShowImportPanel(self):
         """
         Show only DICOM import panel. as dicom        """
         Publisher.sendMessage("Set layout button data only")
@@ -1803,7 +1803,7 @@ class LayoutToolBar(AuiToolBar):
         """
         self.SetToolNormalBitmap(ID_LAYOUT,self.BMP_WITHOUT_MENU)
 
-    def _SetLayoutWithTask(self, pubsub_evt):
+    def _SetLayoutWithTask(self):
         """
         Set item bitmap to task panel shown.
         """
