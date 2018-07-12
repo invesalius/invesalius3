@@ -957,19 +957,19 @@ class Viewer(wx.Panel):
     def ScrollSlice(self, coord):
         if self.orientation == "AXIAL":
             Publisher.sendMessage(('Set scroll position', 'SAGITAL'),
-                                       coord[0])
+                                       index=coord[0])
             Publisher.sendMessage(('Set scroll position', 'CORONAL'),
-                                       coord[1])
+                                       index=coord[1])
         elif self.orientation == "SAGITAL":
             Publisher.sendMessage(('Set scroll position', 'AXIAL'),
-                                       coord[2])
+                                       index=coord[2])
             Publisher.sendMessage(('Set scroll position', 'CORONAL'),
-                                       coord[1])
+                                       index=coord[1])
         elif self.orientation == "CORONAL":
             Publisher.sendMessage(('Set scroll position', 'AXIAL'),
-                                       coord[2])
+                                       index=coord[2])
             Publisher.sendMessage(('Set scroll position', 'SAGITAL'),
-                                       coord[0])
+                                       index=coord[0])
 
     def get_slice_data(self, render):
         #for slice_data in self.slice_data_list:
@@ -1604,7 +1604,7 @@ class Viewer(wx.Panel):
         self.slice_data.actor.SetDisplayExtent(image.GetExtent())
         self.slice_data.renderer.ResetCameraClippingRange()
 
-    def UpdateRender(self, evt):
+    def UpdateRender(self):
         self.interactor.Render()
 
     def UpdateCanvas(self, evt=None):
@@ -1654,8 +1654,8 @@ class Viewer(wx.Panel):
     def UpdateSlice3D(self, pos):
         original_orientation = project.Project().original_orientation
         pos = self.scroll.GetThumbPosition()
-        Publisher.sendMessage('Change slice from slice plane',\
-                                   (self.orientation, pos))
+        Publisher.sendMessage('Change slice from slice plane',
+                              orientation=self.orientation, index=pos)
 
     def OnScrollBar(self, evt=None, update3D=True):
         pos = self.scroll.GetThumbPosition()
@@ -1830,8 +1830,7 @@ class Viewer(wx.Panel):
         self.__update_display_extent(image)
         self.cross.SetModelBounds(self.slice_data.actor.GetBounds())
 
-    def ChangeSliceNumber(self, pubsub_evt):
-        index = pubsub_evt.data
+    def ChangeSliceNumber(self, index):
         #self.set_slice_number(index)
         self.scroll.SetThumbPosition(index)
         pos = self.scroll.GetThumbPosition()

@@ -527,7 +527,7 @@ class Controller():
         Publisher.sendMessage('Load surface dict',
                                 surface_dict=proj.surface_dict)
         Publisher.sendMessage('Hide surface items',
-                                     proj.surface_dict)
+                              surface_dict=proj.surface_dict)
         self.LoadImagedataInfo() # TODO: where do we insert this <<<?
         
         Publisher.sendMessage('Show content panel')
@@ -536,13 +536,11 @@ class Controller():
         if len(proj.mask_dict):
             mask_index = len(proj.mask_dict) -1
             for m in proj.mask_dict.values():
-                Publisher.sendMessage('Add mask',
-                                           (m.index, m.name,
-                                            m.threshold_range, m.colour))
+                Publisher.sendMessage('Add mask', mask=m)
                 if m.is_shown:
                     self.Slice.current_mask = proj.mask_dict[mask_index]
-                    Publisher.sendMessage('Show mask', (m.index, True))
-                    Publisher.sendMessage('Change mask selected', m.index)
+                    Publisher.sendMessage('Show mask', index=m.index, value=True)
+                    Publisher.sendMessage('Change mask selected', index=m.index)
         else:
             mask_name = const.MASK_NAME_PATTERN % (1,)
 
@@ -553,14 +551,17 @@ class Controller():
 
             colour = const.MASK_COLOUR[0]
             Publisher.sendMessage('Create new mask',
-                                       (mask_name, thresh, colour))
+                                  mask_name=mask_name,
+                                  thresh=thresh,
+                                  colour=colour)
 
         Publisher.sendMessage('Load measurement dict',
-                                    (proj.measurement_dict, self.Slice.spacing))
+                              measurement_dict=proj.measurement_dict,
+                              spacing=self.Slice.spacing)
 
-        Publisher.sendMessage(('Set scroll position', 'AXIAL'),proj.matrix_shape[0]/2)
-        Publisher.sendMessage(('Set scroll position', 'SAGITAL'),proj.matrix_shape[1]/2)
-        Publisher.sendMessage(('Set scroll position', 'CORONAL'),proj.matrix_shape[2]/2)
+        Publisher.sendMessage(('Set scroll position', 'AXIAL'), index=proj.matrix_shape[0]/2)
+        Publisher.sendMessage(('Set scroll position', 'SAGITAL'),index=proj.matrix_shape[1]/2)
+        Publisher.sendMessage(('Set scroll position', 'CORONAL'),index=proj.matrix_shape[2]/2)
         
         Publisher.sendMessage('End busy cursor')
 
@@ -910,7 +911,8 @@ class Controller():
             [a,b] = default_threshold
             default_threshold = (a,b)
         Publisher.sendMessage('Set threshold modes',
-                                (thresh_modes,default_threshold))
+                              thresh_modes_names=thresh_modes,
+                              default_thresh=default_threshold)
 
     def LoadRaycastingPreset(self, pubsub_evt=None):
         if pubsub_evt:

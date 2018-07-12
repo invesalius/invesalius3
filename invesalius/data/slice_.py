@@ -234,7 +234,7 @@ class Slice(with_metaclass(utils.Singleton, object)):
                     buffer_.discard_vtk_mask()
                     buffer_.discard_mask()
 
-                Publisher.sendMessage('Show mask', (item, 0))
+                Publisher.sendMessage('Show mask', index=item, value=False)
                 Publisher.sendMessage('Reload actual slice')
 
     def OnDuplicateMasks(self, pubsub_evt):
@@ -322,18 +322,14 @@ class Slice(with_metaclass(utils.Singleton, object)):
         self.create_new_mask(name=mask_name)
         self.SetMaskColour(self.current_mask.index, self.current_mask.colour)
 
-    def __add_mask_thresh(self, pubsub_evt):
-        mask_name = pubsub_evt.data[0]
-        thresh = pubsub_evt.data[1]
-        colour = pubsub_evt.data[2]
+    def __add_mask_thresh(self, mask_name, thresh, colour):
         self.create_new_mask(name=mask_name, threshold_range=thresh, colour=colour)
         self.SetMaskColour(self.current_mask.index, self.current_mask.colour)
         self.SelectCurrentMask(self.current_mask.index)
         Publisher.sendMessage('Reload actual slice')
 
-    def __select_current_mask(self, pubsub_evt):
-        mask_index = pubsub_evt.data
-        self.SelectCurrentMask(mask_index)
+    def __select_current_mask(self, index):
+        self.SelectCurrentMask(index)
     
     def __set_current_mask_edition_threshold(self, evt_pubsub):
         if self.current_mask:
@@ -402,14 +398,13 @@ class Slice(with_metaclass(utils.Singleton, object)):
         index, name = pubsub_evt.data
         self.SetMaskName(index, name)
 
-    def __show_mask(self, pubsub_evt):
+    def __show_mask(self, index, value):
         # "if" is necessary because wx events are calling this before any mask
         # has been created
         if self.current_mask:
-            index, value = pubsub_evt.data
             self.ShowMask(index, value)
             if not value:
-                Publisher.sendMessage('Select mask name in combo', -1)
+                Publisher.sendMessage('Select mask name in combo', index=-1)
 
             if self._type_projection != const.PROJECTION_NORMAL:
                 self.SetTypeProjection(const.PROJECTION_NORMAL)
@@ -419,13 +414,13 @@ class Slice(with_metaclass(utils.Singleton, object)):
         if self.current_mask:
             index = self.current_mask.index
             value = False
-            Publisher.sendMessage('Show mask', (index, value))
+            Publisher.sendMessage('Show mask', index=index, value=value)
 
     def __show_current_mask(self, pubsub_evt):
         if self.current_mask:
             index = self.current_mask.index
             value = True
-            Publisher.sendMessage('Show mask', (index, value))
+            Publisher.sendMessage('Show mask', index=index, value=value)
 
     def __clean_current_mask(self, pubsub_evt):
         if self.current_mask:
@@ -843,8 +838,8 @@ class Slice(with_metaclass(utils.Singleton, object)):
         (r,g,b) = colour[:3]
         colour_wx = [r*255, g*255, b*255]
         Publisher.sendMessage('Change mask colour in notebook',
-                                    (index, (r,g,b)))
-        Publisher.sendMessage('Set GUI items colour', colour_wx)
+                                    index=index, colour=(r,g,b))
+        Publisher.sendMessage('Set GUI items colour', colour=colour_wx)
         if update:
             # Updating mask colour on vtkimagedata.
             for buffer_ in self.buffer_slices.values():
@@ -898,8 +893,8 @@ class Slice(with_metaclass(utils.Singleton, object)):
 
             # Update data notebook (GUI)
             Publisher.sendMessage('Set mask threshold in notebook',
-                                (self.current_mask.index,
-                                self.current_mask.threshold_range))
+                                  index=self.current_mask.index,
+                                  threshold_range=self.current_mask.threshold_range)
         else:
             proj = Project()
             proj.mask_dict[index].threshold_range = threshold_range
@@ -935,11 +930,11 @@ class Slice(with_metaclass(utils.Singleton, object)):
                               "SAGITAL": SliceBuffer()}
 
         Publisher.sendMessage('Set mask threshold in notebook',
-                                    (index,
-                                        self.current_mask.threshold_range))
+                              index=index,
+                              threshold_range=self.current_mask.threshold_range)
         Publisher.sendMessage('Set threshold values in gradient',
-                                    self.current_mask.threshold_range)
-        Publisher.sendMessage('Select mask name in combo', index)
+                              threshold_range=self.current_mask.threshold_range)
+        Publisher.sendMessage('Select mask name in combo', index=index)
         Publisher.sendMessage('Update slice viewer')
     #---------------------------------------------------------------------------
 
@@ -1122,15 +1117,12 @@ class Slice(with_metaclass(utils.Singleton, object)):
 
         ## update gui related to mask
         Publisher.sendMessage('Add mask',
-                                    (mask.index,
-                                     mask.name,
-                                     mask.threshold_range,
-                                     mask.colour))
+                              mask=mask)
 
         if show:
             self.current_mask = mask
-            Publisher.sendMessage('Show mask', (mask.index, 1))
-            Publisher.sendMessage('Change mask selected', mask.index)
+            Publisher.sendMessage('Show mask', index=mask.index, value=True)
+            Publisher.sendMessage('Change mask selected', index=mask.index)
             Publisher.sendMessage('Update slice viewer')
 
     def do_ww_wl(self, image):

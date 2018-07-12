@@ -317,7 +317,7 @@ class Frame(wx.Frame):
         Publisher.sendMessage("Set layout button full")
         aui_manager = self.aui_manager
         aui_manager.GetPane("Import").Show(0)
-        
+
         aui_manager.GetPane("ImportBMP").Show(0)
 
         aui_manager.GetPane("Data").Show(1)
@@ -373,7 +373,7 @@ class Frame(wx.Frame):
         self.aui_manager.GetPane("Tasks").Show()
         self.aui_manager.Update()
 
-    def _UpdateAUI(self, pubsub_evt):
+    def _UpdateAUI(self):
         """
         Refresh AUI panels/data.
         """
@@ -989,15 +989,13 @@ class MenuBar(wx.MenuBar):
         for item in self.enable_items:
             self.Enable(item, True)
 
-    def OnEnableUndo(self, pubsub_evt):
-        value = pubsub_evt.data
+    def OnEnableUndo(self, value):
         if value:
             self.FindItemById(wx.ID_UNDO).Enable(True)
         else:
             self.FindItemById(wx.ID_UNDO).Enable(False)
 
-    def OnEnableRedo(self, pubsub_evt):
-        value = pubsub_evt.data
+    def OnEnableRedo(self, value):
         if value:
             self.FindItemById(wx.ID_REDO).Enable(True)
         else:
@@ -1014,7 +1012,7 @@ class MenuBar(wx.MenuBar):
         else:
             self.FindItemById(const.ID_MODE_NAVIGATION).Enable(True)
 
-    def OnAddMask(self, pubsub_evt):
+    def OnAddMask(self, mask):
         self.num_masks += 1
         self.bool_op_menu.Enable(self.num_masks >= 2)
 
@@ -1022,8 +1020,7 @@ class MenuBar(wx.MenuBar):
         self.num_masks -= len(pubsub_evt.data)
         self.bool_op_menu.Enable(self.num_masks >= 2)
 
-    def OnShowMask(self, pubsub_evt):
-        index, value = pubsub_evt.data
+    def OnShowMask(self, index, value):
         self.clean_mask_menu.Enable(value)
         self.crop_mask_menu.Enable(value)
 
@@ -1790,7 +1787,7 @@ class LayoutToolBar(AuiToolBar):
             self.SetStateProjectClose()
         self.Refresh()
 
-    def _SetLayoutWithoutTask(self, pubsub_evt):
+    def _SetLayoutWithoutTask(self):
         """
         Set item bitmap to task panel hiden.
         """
@@ -2047,16 +2044,14 @@ class HistoryToolBar(AuiToolBar):
             Publisher.sendMessage('Update AUI')
             self.ontool_text = True
 
-    def OnEnableUndo(self, pubsub_evt):
-        value = pubsub_evt.data
+    def OnEnableUndo(self, value):
         if value:
             self.EnableTool(wx.ID_UNDO, True)
         else:
             self.EnableTool(wx.ID_UNDO, False)
         self.Refresh()
 
-    def OnEnableRedo(self, pubsub_evt):
-        value = pubsub_evt.data
+    def OnEnableRedo(self, value):
         if value:
             self.EnableTool(wx.ID_REDO, True)
         else:

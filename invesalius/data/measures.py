@@ -120,14 +120,9 @@ class MeasurementManager(object):
         Publisher.subscribe(self._change_measure_point_pos, 'Change measurement point position')
         Publisher.subscribe(self.OnCloseProject, 'Close project data')
 
-    def _load_measurements(self, pubsub_evt):
-        try:
-            dict, spacing = pubsub_evt.data
-        except ValueError:
-            dict = pubsub_evt.data
-            spacing = 1.0, 1.0, 1.0
-        for i in dict:
-            m = dict[i]
+    def _load_measurements(self, measurement_dict, spacing=(1.0, 1.0, 1.0)):
+        for i in measurement_dict:
+            m = measurement_dict[i]
 
             if m.location == const.AXIAL:
                 radius = min(spacing[1], spacing[2]) * const.PROP_MEASURE

@@ -421,8 +421,8 @@ class MasksListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
         if new_dict:
             if index == self.current_index:
                 self.SetItemImage(0, 1)
-                Publisher.sendMessage('Change mask selected', 0)
-                Publisher.sendMessage('Show mask', (0, 1))
+                Publisher.sendMessage('Change mask selected', index=0)
+                Publisher.sendMessage('Show mask', index=0, value=1)
                 Publisher.sendMessage('Refresh viewer')
                 for key in new_dict:
                     if key:
@@ -437,16 +437,15 @@ class MasksListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
         self.DeleteAllItems()
         self.mask_list_index = {}
 
-    def OnChangeCurrentMask(self, pubsub_evt):
-        mask_index = pubsub_evt.data
+    def OnChangeCurrentMask(self, index):
         try:
-            self.SetItemImage(mask_index, 1)
-            self.current_index = mask_index
+            self.SetItemImage(index, 1)
+            self.current_index = index
         except wx._core.PyAssertionError:
             #in SetItem(): invalid item index in SetItem
             pass
         for key in self.mask_list_index.keys():
-            if key != mask_index:
+            if key != index:
                 self.SetItemImage(key, 0)
 
     def __hide_current_mask(self, pubsub_evt):
@@ -499,9 +498,9 @@ class MasksListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
             for key in self.mask_list_index.keys():
                 if key != index:
                     self.SetItemImage(key, 0)
-            Publisher.sendMessage('Change mask selected',index)
+            Publisher.sendMessage('Change mask selected', index=index)
             self.current_index = index
-        Publisher.sendMessage('Show mask', (index, flag))
+        Publisher.sendMessage('Show mask', index=index, value=flag)
 
     def CreateColourBitmap(self, colour):
         """
@@ -536,19 +535,16 @@ class MasksListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
                 #  self.SetItemImage(key, 0)
         #  self.current_index = index
 
-    def AddMask(self, pubsub_evt):
-        index, mask_name, threshold_range, colour = pubsub_evt.data
-        image = self.CreateColourBitmap(colour)
+    def AddMask(self, mask):
+        image = self.CreateColourBitmap(mask.colour)
         image_index = self.imagelist.Add(image)
-        self.mask_list_index[index] = image_index
-        self.InsertNewItem(index, mask_name, str(threshold_range))
+        self.mask_list_index[mask.index] = image_index
+        self.InsertNewItem(mask.index, mask.name, str(mask.threshold_range))
 
-    def EditMaskThreshold(self, pubsub_evt):
-        index, threshold_range = pubsub_evt.data
+    def EditMaskThreshold(self, index, threshold_range):
         self.SetStringItem(index, 2, str(threshold_range))
 
-    def EditMaskColour(self, pubsub_evt):
-        index, colour = pubsub_evt.data
+    def EditMaskColour(self, index, colour):
         image = self.CreateColourBitmap(colour)
         image_index = self.mask_list_index[index]
         self.imagelist.Replace(image_index, image)
@@ -744,8 +740,7 @@ class SurfacesListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
         elif (keycode == wx.WXK_DELETE):
             self.RemoveSurfaces()
 
-    def OnHideSurface(self, pubsub_evt):
-        surface_dict = pubsub_evt.data
+    def OnHideSurface(self, surface_dict):
         for key in surface_dict:
             if not surface_dict[key].is_shown:
                 self.SetItemImage(key, False)
@@ -1144,13 +1139,9 @@ class MeasuresListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
             Publisher.sendMessage('Show measurement',
                                        (index, visibility))
 
-    def OnLoadData(self, pubsub_evt):
-        try:
-            items_dict, spacing = pubsub_evt.data
-        except ValueError:
-            items_dict = pubsub_evt.data
-        for i in items_dict:
-            m = items_dict[i]
+    def OnLoadData(self, measurement_dict, spacing=(1.0, 1.0, 1.0)):
+        for i in measurement_dict:
+            m = measurement_dict[i]
             image = self.CreateColourBitmap(m.colour)
             image_index = self.imagelist.Add(image)
 

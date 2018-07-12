@@ -78,8 +78,8 @@ class EditionHistory(object):
         self.index = -1
         self.size = size * 2
 
-        Publisher.sendMessage("Enable undo", False)
-        Publisher.sendMessage("Enable redo", False)
+        Publisher.sendMessage("Enable undo", value=False)
+        Publisher.sendMessage("Enable redo", value=False)
 
     def new_node(self, index, orientation, array, p_array, clean):
         # Saving the previous state, used to undo/redo correctly.
@@ -100,8 +100,8 @@ class EditionHistory(object):
         self.index += 1
 
         print("INDEX", self.index, len(self.history), self.history)
-        Publisher.sendMessage("Enable undo", True)
-        Publisher.sendMessage("Enable redo", False)
+        Publisher.sendMessage("Enable undo", value=True)
+        Publisher.sendMessage("Enable redo", value=False)
 
     def undo(self, mvolume, actual_slices=None):
         h = self.history
@@ -114,7 +114,7 @@ class EditionHistory(object):
                 self.index -= 1
                 h[self.index].commit_history(mvolume)
                 self._reload_slice(self.index)
-                Publisher.sendMessage("Enable redo", True)
+                Publisher.sendMessage("Enable redo", value=True)
             elif actual_slices and actual_slices[h[self.index - 1].orientation] != h[self.index - 1].index:
                 self._reload_slice(self.index - 1)
             else:
@@ -124,10 +124,10 @@ class EditionHistory(object):
                     self.index -= 1
                     h[self.index].commit_history(mvolume)
                 self._reload_slice(self.index)
-                Publisher.sendMessage("Enable redo", True)
+                Publisher.sendMessage("Enable redo", value=True)
 
         if self.index == 0:
-            Publisher.sendMessage("Enable undo", False)
+            Publisher.sendMessage("Enable undo", value=False)
         print("AT", self.index, len(self.history), self.history[self.index].filename)
 
     def redo(self, mvolume, actual_slices=None):
@@ -142,7 +142,7 @@ class EditionHistory(object):
                 self.index += 1
                 h[self.index].commit_history(mvolume)
                 self._reload_slice(self.index)
-                Publisher.sendMessage("Enable undo", True)
+                Publisher.sendMessage("Enable undo", value=True)
             elif actual_slices and actual_slices[h[self.index + 1].orientation] != h[self.index + 1].index:
                 self._reload_slice(self.index + 1)
             else:
@@ -152,15 +152,15 @@ class EditionHistory(object):
                     self.index += 1
                     h[self.index].commit_history(mvolume)
                 self._reload_slice(self.index)
-                Publisher.sendMessage("Enable undo", True)
+                Publisher.sendMessage("Enable undo", value=True)
 
         if self.index == len(h) - 1:
-            Publisher.sendMessage("Enable redo", False)
+            Publisher.sendMessage("Enable redo", value=False)
         print("AT", self.index, len(h), h[self.index].filename)
 
     def _reload_slice(self, index):
         Publisher.sendMessage(('Set scroll position', self.history[index].orientation),
-                              self.history[index].index)
+                              index=self.history[index].index)
 
     def _config_undo_redo(self, visible):
         v_undo = False
@@ -174,14 +174,14 @@ class EditionHistory(object):
             elif self.index == len(self.history) - 1:
                 v_redo = False
 
-        Publisher.sendMessage("Enable undo", v_undo)
-        Publisher.sendMessage("Enable redo", v_redo)
+        Publisher.sendMessage("Enable undo", value=v_undo)
+        Publisher.sendMessage("Enable redo", value=v_redo)
 
     def clear_history(self):
         self.history = []
         self.index = -1
-        Publisher.sendMessage("Enable undo", False)
-        Publisher.sendMessage("Enable redo", False)
+        Publisher.sendMessage("Enable undo", value=False)
+        Publisher.sendMessage("Enable redo", value=False)
 
 
 class Mask():

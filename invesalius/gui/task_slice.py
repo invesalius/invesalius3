@@ -543,8 +543,7 @@ class MaskProperties(wx.Panel):
         self.combo_mask_name.Bind(wx.EVT_COMBOBOX, self.OnComboName)
         self.button_colour.Bind(csel.EVT_COLOURSELECT, self.OnSelectColour)
 
-    def SelectMaskName(self, pubsub_evt):
-        index = pubsub_evt.data
+    def SelectMaskName(self, index):
         if index >= 0:
             self.combo_mask_name.SetSelection(index)
         else:
@@ -555,8 +554,8 @@ class MaskProperties(wx.Panel):
         self.combo_mask_name.SetString(index, name)
         self.combo_mask_name.Refresh()
 
-    def SetThresholdValues(self, pubsub_evt):
-        thresh_min, thresh_max = pubsub_evt.data
+    def SetThresholdValues(self, threshold_range):
+        thresh_min, thresh_max = threshold_range
         self.bind_evt_gradient = False
         self.gradient.SetMinValue(thresh_min)
         self.gradient.SetMaxValue(thresh_max)
@@ -586,17 +585,16 @@ class MaskProperties(wx.Panel):
             self.combo_thresh.SetSelection(index)
             Project().threshold_modes[_("Custom")] = (thresh_min, thresh_max)
 
-    def SetItemsColour(self, evt_pubsub):
-        colour = evt_pubsub.data
+    def SetItemsColour(self, colour):
         self.gradient.SetColour(colour)
         self.button_colour.SetColour(colour)
 
-    def AddMask(self, pubsub_evt):
+    def AddMask(self, mask):
         if self.combo_mask_name.IsEmpty():
             self.Enable()
-        mask_name = evt_pubsub.data[1]
-        mask_thresh = evt_pubsub.data[2]
-        mask_colour = [int(c*255) for c in evt_pubsub.data[3]]
+        mask_name = mask.name
+        mask_thresh = mask.threshold_range
+        mask_colour = [int(c*255) for c in mask.colour]
         index = self.combo_mask_name.Append(mask_name)
         #  self.combo_mask_name.SetSelection(index)
         #  self.button_colour.SetColour(mask_colour)
@@ -607,8 +605,7 @@ class MaskProperties(wx.Panel):
         x = self.combo_mask_name.GetSelection()
         return self.combo_mask_name.GetSelection()
 
-    def SetThresholdModes(self, pubsub_evt):
-        (thresh_modes_names, default_thresh) = pubsub_evt.data
+    def SetThresholdModes(self, thresh_modes_names, default_thresh):
         self.combo_thresh.SetItems(thresh_modes_names)
         self.threshold_modes_names = thresh_modes_names
         proj = Project()
@@ -644,8 +641,8 @@ class MaskProperties(wx.Panel):
     def OnComboName(self, evt):
         mask_name = evt.GetString()
         mask_index = evt.GetSelection()
-        Publisher.sendMessage('Change mask selected', mask_index)
-        Publisher.sendMessage('Show mask', (mask_index, True))
+        Publisher.sendMessage('Change mask selected', index=mask_index)
+        Publisher.sendMessage('Show mask', index=mask_index, value=True)
 
     def OnComboThresh(self, evt):
         (thresh_min, thresh_max) = Project().threshold_modes[evt.GetString()]
@@ -782,9 +779,8 @@ class EditionTools(wx.Panel):
         colour = pubsub_evt.data
         self.gradient_thresh.SetColour(colour)
 
-    def SetGradientColour(self, pubsub_evt):
-        vtk_colour = pubsub_evt.data[3]
-        wx_colour = [c*255 for c in vtk_colour]
+    def SetGradientColour(self, mask):
+        wx_colour = [c*255 for c in mask.colour]
         self.gradient_thresh.SetColour(wx_colour)
 
     def SetThresholdValues(self, pubsub_evt):

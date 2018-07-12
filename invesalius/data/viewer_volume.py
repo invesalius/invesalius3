@@ -1869,9 +1869,7 @@ class SlicePlane:
     def Render(self):
         Publisher.sendMessage('Render volume viewer')    
 
-    def ChangeSlice(self, pubsub_evt = None):
-        orientation, number = pubsub_evt.data
-
+    def ChangeSlice(self, orientation, index):
         if  orientation == "CORONAL" and self.plane_y.GetEnabled():
             Publisher.sendMessage('Update slice 3D',
                                   widget=self.plane_y,

@@ -247,19 +247,19 @@ class CrossInteractorStyle(DefaultInteractorStyle):
     def ScrollSlice(self, coord):
         if self.orientation == "AXIAL":
             Publisher.sendMessage(('Set scroll position', 'SAGITAL'),
-                                       coord[0])
+                                       index=coord[0])
             Publisher.sendMessage(('Set scroll position', 'CORONAL'),
-                                       coord[1])
+                                       index=coord[1])
         elif self.orientation == "SAGITAL":
             Publisher.sendMessage(('Set scroll position', 'AXIAL'),
-                                       coord[2])
+                                       index=coord[2])
             Publisher.sendMessage(('Set scroll position', 'CORONAL'),
-                                       coord[1])
+                                       index=coord[1])
         elif self.orientation == "CORONAL":
             Publisher.sendMessage(('Set scroll position', 'AXIAL'),
-                                       coord[2])
+                                       index=coord[2])
             Publisher.sendMessage(('Set scroll position', 'SAGITAL'),
-                                       coord[0])
+                                       index=coord[0])
 
 
 class WWWLInteractorStyle(DefaultInteractorStyle):
@@ -2068,7 +2068,7 @@ class SelectMaskPartsInteractorStyle(DefaultInteractorStyle):
                 self.config.mask.name = self.config.mask_name
                 self.viewer.slice_._add_mask_into_proj(self.config.mask)
                 self.viewer.slice_.SelectCurrentMask(self.config.mask.index)
-                Publisher.sendMessage('Change mask selected', self.config.mask.index)
+                Publisher.sendMessage('Change mask selected', index=self.config.mask.index)
 
             del self.viewer.slice_.aux_matrices['SELECT']
             self.viewer.slice_.to_show_aux = ''
