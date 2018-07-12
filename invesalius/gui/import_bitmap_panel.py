@@ -132,9 +132,9 @@ class InnerPanel(wx.Panel):
         #self.patients.extend(dicom_groups)
         self.text_panel.Populate(data)
 
-    def GetSelectedImages(self, pubsub_evt):
-        self.first_image_selection = pubsub_evt.data[0]
-        self.last_image_selection = pubsub_evt.data[1]
+    def GetSelectedImages(self, selection):
+        self.first_image_selection = selection[0]
+        self.last_image_selection = selection[1]
         
     def _bind_events(self):
         self.Bind(EVT_SELECT_SLICE, self.OnSelectSlice)
