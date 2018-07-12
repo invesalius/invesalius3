@@ -748,7 +748,7 @@ class CutPlane:
         plane_actor.GetProperty().SetOpacity(0)
         plane_widget.AddObserver("InteractionEvent", self.Update)
         Publisher.sendMessage('AppendActor', self.plane_actor)
-        Publisher.sendMessage('Set Widget Interactor', self.plane_widget)
+        Publisher.sendMessage('Set Widget Interactor', widget=self.plane_widget)
         plane_actor.SetVisibility(1)
         plane_widget.On() 
         self.plane = plane = vtk.vtkPlane()

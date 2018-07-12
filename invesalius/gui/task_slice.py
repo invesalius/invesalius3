@@ -572,8 +572,8 @@ class MaskProperties(wx.Panel):
             self.combo_thresh.SetSelection(index)
             Project().threshold_modes[_("Custom")] = (thresh_min, thresh_max)
 
-    def SetThresholdValues2(self, pubsub_evt):
-        thresh_min, thresh_max = pubsub_evt.data
+    def SetThresholdValues2(self, threshold_range):
+        thresh_min, thresh_max = threshold_range
         self.gradient.SetMinValue(thresh_min)
         self.gradient.SetMaxValue(thresh_max)
         thresh = (thresh_min, thresh_max)
@@ -635,9 +635,9 @@ class MaskProperties(wx.Panel):
         self.gradient.SetMinValue(thresh_min)
         self.gradient.SetMaxValue(thresh_max)
 
-    def SetThresholdBounds(self, pubsub_evt):
-        thresh_min = pubsub_evt.data[0]
-        thresh_max  = pubsub_evt.data[1]
+    def SetThresholdBounds(self, threshold_range):
+        thresh_min = threshold_range[0]
+        thresh_max = threshold_range[1]
         self.gradient.SetMinRange(thresh_min)
         self.gradient.SetMaxRange(thresh_max)
 
@@ -658,7 +658,7 @@ class MaskProperties(wx.Panel):
         thresh_min = self.gradient.GetMinValue()
         thresh_max = self.gradient.GetMaxValue()
         Publisher.sendMessage('Set threshold values',
-                                    (thresh_min, thresh_max))
+                              threshold_range=(thresh_min, thresh_max))
         session = ses.Session()
         session.ChangeProject()
 
@@ -794,9 +794,9 @@ class EditionTools(wx.Panel):
         self.gradient_thresh.SetMaxValue(thresh_max)
         self.bind_evt_gradient = True
 
-    def SetThresholdBounds(self, pubsub_evt):
-        thresh_min = pubsub_evt.data[0]
-        thresh_max  = pubsub_evt.data[1]
+    def SetThresholdBounds(self, threshold_range):
+        thresh_min = threshold_range[0]
+        thresh_max = threshold_range[1]
         self.gradient_thresh.SetMinRange(thresh_min)
         self.gradient_thresh.SetMaxRange(thresh_max)
         self.gradient_thresh.SetMinValue(thresh_min)

@@ -306,7 +306,8 @@ class WWWLInteractorStyle(DefaultInteractorStyle):
             self.last_x, self.last_y = mouse_x, mouse_y
 
             Publisher.sendMessage('Bright and contrast adjustment image',
-                (self.acum_achange_window, self.acum_achange_level))
+                                  window=self.acum_achange_window,
+                                  level=self.acum_achange_level)
 
             #self.SetWLText(self.acum_achange_level,
             #              self.acum_achange_window)
@@ -314,8 +315,9 @@ class WWWLInteractorStyle(DefaultInteractorStyle):
             const.WINDOW_LEVEL['Manual'] = (self.acum_achange_window,\
                                            self.acum_achange_level)
             Publisher.sendMessage('Check window and level other')
-            Publisher.sendMessage('Update window level value',(self.acum_achange_window,
-                                                                self.acum_achange_level))
+            Publisher.sendMessage('Update window level value',
+                                  window=self.acum_achange_window,
+                                  level= self.acum_achange_level)
             #Necessary update the slice plane in the volume case exists
             Publisher.sendMessage('Update slice viewer')
             Publisher.sendMessage('Render volume viewer')

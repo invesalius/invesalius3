@@ -211,10 +211,11 @@ class SliceMenu(wx.Menu):
         if(key in const.WINDOW_LEVEL.keys()):
             window, level = const.WINDOW_LEVEL[key]
             Publisher.sendMessage('Bright and contrast adjustment image',
-                    (window, level))
-            Publisher.sendMessage('Update window level value',\
-               (window, level))
-            Publisher.sendMessage('Update window and level text',\
+                    window=window, level=level)
+            Publisher.sendMessage('Update window level value',
+                                  window=window,
+                                  level=level)
+            Publisher.sendMessage('Update window and level text',
                            "WL: %d  WW: %d"%(level, window))
             Publisher.sendMessage('Update slice viewer')
 

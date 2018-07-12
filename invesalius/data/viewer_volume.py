@@ -1561,7 +1561,7 @@ class Viewer(wx.Panel):
         self.ren.RemoveAllProps()
         Publisher.sendMessage('Render volume viewer')
 
-    def LoadSlicePlane(self, pubsub_evt):
+    def LoadSlicePlane(self):
         self.slice_plane = SlicePlane()
 
     def LoadVolume(self, pubsub_evt):
@@ -1660,8 +1660,8 @@ class Viewer(wx.Panel):
     def UpdateRender(self, evt_pubsub=None):
         self.interactor.Render()
 
-    def SetWidgetInteractor(self, evt_pubsub=None):
-        evt_pubsub.data.SetInteractor(self.interactor._Iren)
+    def SetWidgetInteractor(self, widget=None):
+        widget.SetInteractor(self.interactor._Iren)
 
     def AppendActor(self, evt_pubsub=None):
         self.ren.AddActor(evt_pubsub.data)
@@ -1825,9 +1825,9 @@ class SlicePlane:
         selected_prop2 = plane_y.GetSelectedPlaneProperty()           
         selected_prop2.SetColor(0, 1, 0)
 
-        Publisher.sendMessage('Set Widget Interactor', plane_x)
-        Publisher.sendMessage('Set Widget Interactor', plane_y)
-        Publisher.sendMessage('Set Widget Interactor', plane_z)
+        Publisher.sendMessage('Set Widget Interactor', widget=plane_x)
+        Publisher.sendMessage('Set Widget Interactor', widget=plane_y)
+        Publisher.sendMessage('Set Widget Interactor', widget=plane_z)
 
         self.Render()
 
@@ -1873,19 +1873,31 @@ class SlicePlane:
         orientation, number = pubsub_evt.data
 
         if  orientation == "CORONAL" and self.plane_y.GetEnabled():
-            Publisher.sendMessage('Update slice 3D', (self.plane_y,orientation))
+            Publisher.sendMessage('Update slice 3D',
+                                  widget=self.plane_y,
+                                  orientation=orientation)
             self.Render()
         elif orientation == "SAGITAL" and self.plane_x.GetEnabled():
-            Publisher.sendMessage('Update slice 3D', (self.plane_x,orientation))
+            Publisher.sendMessage('Update slice 3D', 
+                                  widget=self.plane_x,
+                                  orientation=orientation)
             self.Render()
         elif orientation == 'AXIAL' and self.plane_z.GetEnabled() :
-            Publisher.sendMessage('Update slice 3D', (self.plane_z,orientation))
+            Publisher.sendMessage('Update slice 3D',
+                                  widget=self.plane_z,
+                                  orientation=orientation)
             self.Render()
 
-    def UpdateAllSlice(self, pubsub_evt):
-        Publisher.sendMessage('Update slice 3D', (self.plane_y,"CORONAL"))
-        Publisher.sendMessage('Update slice 3D', (self.plane_x,"SAGITAL"))
-        Publisher.sendMessage('Update slice 3D', (self.plane_z,"AXIAL"))
+    def UpdateAllSlice(self):
+        Publisher.sendMessage('Update slice 3D',
+                              widget=self.plane_y,
+                              orientation="CORONAL")
+        Publisher.sendMessage('Update slice 3D',
+                              widget=self.plane_x,
+                              orientation="SAGITAL")
+        Publisher.sendMessage('Update slice 3D',
+                              widget=self.plane_z,
+                              orientation="AXIAL")
                
 
     def DeletePlanes(self):

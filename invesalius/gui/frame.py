@@ -301,12 +301,10 @@ class Frame(wx.Frame):
         self.aui_manager.GetPane("Tasks").Hide()
         self.aui_manager.Update()
 
-    def _SetProjectName(self, pubsub_evt):
+    def _SetProjectName(self, proj_name=""):
         """
         Set project name into frame's title.
         """
-        proj_name = pubsub_evt.data
-
         if not(proj_name):
             self.SetTitle("InVesalius 3")
         else:
@@ -967,12 +965,11 @@ class MenuBar(wx.MenuBar):
         v = self.NavigationModeStatus()
         self.mode_menu.Check(const.ID_MODE_NAVIGATION, v)
 
-    def OnEnableState(self, pubsub_evt):
+    def OnEnableState(self, state):
         """
         Based on given state, enables or disables menu items which
         depend if project is open or not.
         """
-        state = pubsub_evt.data
         if state:
             self.SetStateProjectOpen()
         else:
@@ -1262,12 +1259,11 @@ class ProjectToolBar(AuiToolBar):
         #                   "Print medical image...",
         #                   BMP_PRINT)
 
-    def _EnableState(self, pubsub_evt):
+    def _EnableState(self, state):
         """
         Based on given state, enable or disable menu items which
         depend if project is open or not.
         """
-        state = pubsub_evt.data
         if state:
             self.SetStateProjectOpen()
         else:
@@ -1445,12 +1441,11 @@ class ObjectToolBar(AuiToolBar):
         #                bitmap = BMP_ANNOTATE,
         #                kind = wx.ITEM_CHECK)
 
-    def _EnableState(self, pubsub_evt):
+    def _EnableState(self, state):
         """
         Based on given state, enable or disable menu items which
         depend if project is open or not.
         """
-        state = pubsub_evt.data
         if state:
             self.SetStateProjectOpen()
         else:
@@ -1613,12 +1608,11 @@ class SliceToolBar(AuiToolBar):
         """
         self.Bind(wx.EVT_TOOL, self.OnToggle)
 
-    def _EnableState(self, pubsub_evt):
+    def _EnableState(self, state):
         """
         Based on given state, enable or disable menu items which
         depend if project is open or not.
         """
-        state = pubsub_evt.data
         if state:
             self.SetStateProjectOpen()
         else:
@@ -1785,12 +1779,11 @@ class LayoutToolBar(AuiToolBar):
                           wx.ITEM_NORMAL,
                           short_help_string= _("Hide text"))
 
-    def _EnableState(self, pubsub_evt):
+    def _EnableState(self, state):
         """
         Based on given state, enable or disable menu items which
         depend if project is open or not.
         """
-        state = pubsub_evt.data
         if state:
             self.SetStateProjectOpen()
         else:

@@ -310,9 +310,9 @@ class Slice(with_metaclass(utils.Singleton, object)):
 
         Publisher.sendMessage('Select first item from slice menu')
 
-    def __set_current_mask_threshold_limits(self, pubsub_evt):
-        thresh_min = pubsub_evt.data[0]
-        thresh_max  = pubsub_evt.data[1]
+    def __set_current_mask_threshold_limits(self, threshold_range):
+        thresh_min = threshold_range[0]
+        thresh_max = threshold_range[1]
         if self.current_mask:
             index = self.current_mask.index
             self.SetMaskEditionThreshold(index, (thresh_min, thresh_max))
@@ -341,8 +341,7 @@ class Slice(with_metaclass(utils.Singleton, object)):
             index = self.current_mask.index
             self.SetMaskEditionThreshold(index, threshold_range)
 
-    def __set_current_mask_threshold(self, evt_pubsub):
-        threshold_range = evt_pubsub.data
+    def __set_current_mask_threshold(self, threshold_range):
         index = self.current_mask.index
         self.num_gradient += 1
         self.current_mask.matrix[:] = 0
@@ -987,8 +986,7 @@ class Slice(with_metaclass(utils.Singleton, object)):
                 buffer_.discard_buffer()
             Publisher.sendMessage('Reload actual slice')
 
-    def UpdateWindowLevelBackground(self, pubsub_evt):
-        window, level = pubsub_evt.data
+    def UpdateWindowLevelBackground(self, window, level):
         self.window_width = window
         self.window_level = level
 
@@ -1045,8 +1043,7 @@ class Slice(with_metaclass(utils.Singleton, object)):
 
         Publisher.sendMessage('Reload actual slice')
 
-    def UpdateSlice3D(self, pubsub_evt):
-        widget, orientation = pubsub_evt.data
+    def UpdateSlice3D(self, widget, orientation):
         img = self.buffer_slices[orientation].vtk_image
         original_orientation = Project().original_orientation
         cast = vtk.vtkImageCast()

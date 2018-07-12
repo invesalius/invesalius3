@@ -693,8 +693,7 @@ class Viewer(wx.Panel):
 
         self.state = state
 
-    def UpdateWindowLevelValue(self, pubsub_evt):
-        window, level = pubsub_evt.data
+    def UpdateWindowLevelValue(self, window, level):
         self.acum_achange_window, self.acum_achange_level = (window, level)
         self.SetWLText(window, level)
 
@@ -715,7 +714,8 @@ class Viewer(wx.Panel):
                               evt.GetNodes())
         slc = sl.Slice()
         Publisher.sendMessage('Update window level value',
-                              (slc.window_width, slc.window_level))
+                              window=slc.window_width,
+                              level=slc.window_level)
 
     def SetWLText(self, window_width, window_level):
         value = STR_WL%(window_level, window_width)
@@ -1386,8 +1386,7 @@ class Viewer(wx.Panel):
         self.interactor.Bind(wx.EVT_RIGHT_UP, self.OnContextMenu)
         self.interactor.Bind(wx.EVT_SIZE, self.OnSize)
 
-    def LoadImagedata(self, pubsub_evt):
-        mask_dict = pubsub_evt.data
+    def LoadImagedata(self, mask_dict):
         self.SetInput(mask_dict)
 
     def LoadRenderers(self, imagedata):

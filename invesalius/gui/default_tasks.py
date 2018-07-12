@@ -204,8 +204,7 @@ class LowerTaskPanel(wx.Panel):
     def __bind_events(self):
         Publisher.subscribe(self.OnEnableState, "Enable state project")
 
-    def OnEnableState(self, pubsub_evt):
-        state = pubsub_evt.data
+    def OnEnableState(self, state):
         if state:
             self.SetStateProjectOpen()
         else:
@@ -315,8 +314,7 @@ class UpperTaskPanel(wx.Panel):
     def OnFoldExport(self, pubsub_evt):
         self.fold_panel.Expand(self.fold_panel.GetFoldPanel(3))
 
-    def OnEnableState(self, pubsub_evt):
-        state = pubsub_evt.data
+    def OnEnableState(self, state):
         if state:
             self.SetStateProjectOpen()
         else:

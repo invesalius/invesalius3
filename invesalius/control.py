@@ -155,7 +155,7 @@ class Controller():
             if answer:
                 self.ShowDialogSaveProject()
             self.CloseProject()
-            #Publisher.sendMessage("Enable state project", False)
+            #Publisher.sendMessage("Enable state project", state=False)
             Publisher.sendMessage('Set project name')
             Publisher.sendMessage("Stop Config Recording")
             Publisher.sendMessage("Set slice interaction style", const.STATE_DEFAULT)
@@ -179,7 +179,7 @@ class Controller():
             if answer:
                 self.ShowDialogSaveProject()
             self.CloseProject()
-            #Publisher.sendMessage("Enable state project", False)
+            #Publisher.sendMessage("Enable state project", state=False)
             Publisher.sendMessage('Set project name')
             Publisher.sendMessage("Stop Config Recording")
             Publisher.sendMessage("Set slice interaction style", const.STATE_DEFAULT)
@@ -200,7 +200,7 @@ class Controller():
             if answer:
                 self.ShowDialogSaveProject()
             self.CloseProject()
-            # Publisher.sendMessage("Enable state project", False)
+            # Publisher.sendMessage("Enable state project", state=False)
             Publisher.sendMessage('Set project name')
             Publisher.sendMessage("Stop Config Recording")
             Publisher.sendMessage("Set slice interaction style", const.STATE_DEFAULT)
@@ -265,21 +265,21 @@ class Controller():
                 if not answer:
                     utils.debug("Close without changes")
                     self.CloseProject()
-                    Publisher.sendMessage("Enable state project", False)
+                    Publisher.sendMessage("Enable state project", state=False)
                     Publisher.sendMessage('Set project name')
                     Publisher.sendMessage("Stop Config Recording")
                 elif answer == 1:
                     self.ShowDialogSaveProject()
                     utils.debug("Save changes and close")
                     self.CloseProject()
-                    Publisher.sendMessage("Enable state project", False)
+                    Publisher.sendMessage("Enable state project", state=False)
                     Publisher.sendMessage('Set project name')
                     Publisher.sendMessage("Stop Config Recording")
                 elif answer == -1:
                     utils.debug("Cancel")
             else:
                 self.CloseProject()
-                Publisher.sendMessage("Enable state project", False)
+                Publisher.sendMessage("Enable state project", state=False)
                 Publisher.sendMessage('Set project name')
                 Publisher.sendMessage("Stop Config Recording")
 
@@ -325,13 +325,13 @@ class Controller():
         self.Slice.window_width = proj.window
 
         Publisher.sendMessage('Update threshold limits list',
-                                   proj.threshold_range)
+                              threshold_range=proj.threshold_range)
 
         self.LoadProject()
 
         session = ses.Session()
         session.OpenProject(filepath)
-        Publisher.sendMessage("Enable state project", True)
+        Publisher.sendMessage("Enable state project", state=True)
 
     def OnSaveProject(self, pubsub_evt):
         path = pubsub_evt.data
@@ -481,7 +481,7 @@ class Controller():
             # OPTION 4: Nothing...
 
         self.LoadProject()
-        Publisher.sendMessage("Enable state project", True)
+        Publisher.sendMessage("Enable state project", state=True)
 
     def OnImportGroup(self, pubsub_evt):
         group = pubsub_evt.data['group']
@@ -493,7 +493,7 @@ class Controller():
         self.CreateDicomProject(dicom, matrix, matrix_filename)
 
         self.LoadProject()
-        Publisher.sendMessage("Enable state project", True)
+        Publisher.sendMessage("Enable state project", state=True)
 
     #-------------------------------------------------------------------------------------
 
@@ -511,19 +511,21 @@ class Controller():
         self.Slice.spacing = proj.spacing
 
         Publisher.sendMessage('Load slice to viewer',
-                        (proj.mask_dict))
+                              mask_dict=proj.mask_dict)
 
         
         Publisher.sendMessage('Load slice plane') 
 
-        Publisher.sendMessage('Bright and contrast adjustment image',\
-                                   (proj.window, proj.level))
-        Publisher.sendMessage('Update window level value',\
-                                    (proj.window, proj.level))
+        Publisher.sendMessage('Bright and contrast adjustment image',
+                              window=proj.window,
+                              level=proj.level)
+        Publisher.sendMessage('Update window level value',
+                              window=proj.window,
+                              level=proj.level)
 
-        Publisher.sendMessage('Set project name', proj.name)
+        Publisher.sendMessage('Set project name', proj_name=proj.name)
         Publisher.sendMessage('Load surface dict',
-                                    proj.surface_dict)
+                                surface_dict=proj.surface_dict)
         Publisher.sendMessage('Hide surface items',
                                      proj.surface_dict)
         self.LoadImagedataInfo() # TODO: where do we insert this <<<?
@@ -683,7 +685,7 @@ class Controller():
             self.CreateBitmapProject(bmp_data, rec_data, matrix, matrix_filename)
 
             self.LoadProject()
-            Publisher.sendMessage("Enable state project", True)
+            Publisher.sendMessage("Enable state project", state=True)
         else:
             dialogs.BitmapNotSameSize()
 
@@ -744,17 +746,17 @@ class Controller():
        self.Slice.window_width = float(self.matrix.max())
 
        scalar_range = int(self.matrix.min()), int(self.matrix.max())
-       Publisher.sendMessage('Update threshold limits list', scalar_range)
+       Publisher.sendMessage('Update threshold limits list',
+                             threshold_range=scalar_range)
 
        return self.matrix, self.filename#, dicom
 
 
-    def OnOpenDicomGroup(self, pubsub_evt):
-        group, interval, file_range = pubsub_evt.data
+    def OnOpenDicomGroup(self, group, interval, file_range):
         matrix, matrix_filename, dicom = self.OpenDicomGroup(group, interval, file_range, gui=True)
         self.CreateDicomProject(dicom, matrix, matrix_filename)
         self.LoadProject()
-        Publisher.sendMessage("Enable state project", True)
+        Publisher.sendMessage("Enable state project", state=True)
 
     def OnOpenOtherFiles(self, pubsub_evt):
         filepath = utils.decode(pubsub_evt.data, const.FS_ENCODE)
@@ -767,7 +769,7 @@ class Controller():
                 matrix, matrix_filename = self.OpenOtherFiles(group)
                 self.CreateOtherProject(str(name[0]), matrix, matrix_filename)
                 self.LoadProject()
-                Publisher.sendMessage("Enable state project", True)
+                Publisher.sendMessage("Enable state project", state=True)
             else:
                 dialog.ImportInvalidFiles(ftype="Others")
 
@@ -858,7 +860,8 @@ class Controller():
 
         scalar_range = int(self.matrix.min()), int(self.matrix.max())
 
-        Publisher.sendMessage('Update threshold limits list', scalar_range)
+        Publisher.sendMessage('Update threshold limits list',
+                              threshold_range=scalar_range)
 
         return self.matrix, self.filename, dicom
 
@@ -883,7 +886,8 @@ class Controller():
         self.Slice.window_width = ww
 
         scalar_range = int(scalar_range[0]), int(scalar_range[1])
-        Publisher.sendMessage('Update threshold limits list', scalar_range)
+        Publisher.sendMessage('Update threshold limits list',
+                              threshold_range=scalar_range)
         return self.matrix, self.filename
 
     def LoadImagedataInfo(self):

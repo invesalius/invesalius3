@@ -402,8 +402,7 @@ class SurfaceManager():
         #  if surface.is_shown:
         self.ShowActor(index, True)
 
-    def OnLoadSurfaceDict(self, pubsub_evt):
-        surface_dict = pubsub_evt.data
+    def OnLoadSurfaceDict(self, surface_dict):
         for key in surface_dict:
             surface = surface_dict[key]
 

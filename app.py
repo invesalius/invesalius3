@@ -428,7 +428,8 @@ def check_for_export(options, suffix='', remove_surfaces=False):
 def export(path_, threshold_range, remove_surface=False):
     import invesalius.constants as const
 
-    Publisher.sendMessage('Set threshold values', threshold_range)
+    Publisher.sendMessage('Set threshold values',
+                          threshold_range=threshold_range)
 
     surface_options = {
         'method': {
