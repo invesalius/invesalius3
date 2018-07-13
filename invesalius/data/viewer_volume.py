@@ -1529,8 +1529,7 @@ class Viewer(wx.Panel):
         self.ren.SetBackground(colour[:3])
         self.UpdateRender()
 
-    def LoadActor(self, pubsub_evt):
-        actor = pubsub_evt.data
+    def LoadActor(self, actor):
         self.added_actor = 1
         ren = self.ren
         ren.AddActor(actor)

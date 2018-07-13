@@ -449,7 +449,8 @@ class NeuronavigationPanel(wx.Panel):
             dt.TrackerConnection(self.tracker_id, self.trk_init[0], 'disconnect')
 
     def OnChoiceTracker(self, evt, ctrl):
-        Publisher.sendMessage('Update status text in GUI', _("Configuring tracker ..."))
+        Publisher.sendMessage('Update status text in GUI',
+                              label=_("Configuring tracker ..."))
         if hasattr(evt, 'GetSelection'):
             choice = evt.GetSelection()
         else:
@@ -464,24 +465,28 @@ class NeuronavigationPanel(wx.Panel):
         # has been initialized before
         if trck and choice != 6:
             self.ResetTrackerFiducials()
-            Publisher.sendMessage('Update status text in GUI', _("Disconnecting tracker..."))
+            Publisher.sendMessage('Update status text in GUI',
+                                  label=_("Disconnecting tracker..."))
             Publisher.sendMessage('Remove sensors ID')
             self.trk_init = dt.TrackerConnection(self.tracker_id, trck, 'disconnect')
             self.tracker_id = choice
             if not self.trk_init[0] and choice:
-                Publisher.sendMessage('Update status text in GUI', _("Tracker disconnected successfully"))
+                Publisher.sendMessage('Update status text in GUI',
+                                      label=_("Tracker disconnected successfully"))
                 self.trk_init = dt.TrackerConnection(self.tracker_id, None, 'connect')
                 if not self.trk_init[0]:
                     dlg.NavigationTrackerWarning(self.tracker_id, self.trk_init[1])
                     ctrl.SetSelection(0)
                     print("Tracker not connected!")
                 else:
-                    Publisher.sendMessage('Update status text in GUI', _("Ready"))
+                    Publisher.sendMessage('Update status text in GUI',
+                                          label=_("Ready"))
                     ctrl.SetSelection(self.tracker_id)
                     print("Tracker connected!")
         elif choice == 6:
             if trck:
-                Publisher.sendMessage('Update status text in GUI', _("Disconnecting tracker ..."))
+                Publisher.sendMessage('Update status text in GUI',
+                                      label=_("Disconnecting tracker ..."))
                 Publisher.sendMessage('Remove sensors ID')
                 self.trk_init = dt.TrackerConnection(self.tracker_id, trck, 'disconnect')
                 if not self.trk_init[0]:
@@ -489,10 +494,12 @@ class NeuronavigationPanel(wx.Panel):
                         dlg.NavigationTrackerWarning(self.tracker_id, 'disconnect')
                     self.tracker_id = 0
                     ctrl.SetSelection(self.tracker_id)
-                    Publisher.sendMessage('Update status text in GUI', _("Tracker disconnected"))
+                    Publisher.sendMessage('Update status text in GUI',
+                                          label=_("Tracker disconnected"))
                     print("Tracker disconnected!")
                 else:
-                    Publisher.sendMessage('Update status text in GUI', _("Tracker still connected"))
+                    Publisher.sendMessage('Update status text in GUI',
+                                          label=_("Tracker still connected"))
                     print("Tracker still connected!")
             else:
                 ctrl.SetSelection(self.tracker_id)
@@ -507,7 +514,8 @@ class NeuronavigationPanel(wx.Panel):
                     self.tracker_id = 0
                     ctrl.SetSelection(self.tracker_id)
                 else:
-                    Publisher.sendMessage('Update status text in GUI', _("Ready"))
+                    Publisher.sendMessage('Update status text in GUI',
+                                          label=_("Ready"))
 
         Publisher.sendMessage('Update tracker initializer', (self.tracker_id, self.trk_init, self.ref_mode_id))
 
@@ -898,7 +906,8 @@ class ObjectRegistrationPanel(wx.Panel):
                         self.checktrack.Enable(1)
                         Publisher.sendMessage('Update object registration',
                                               (self.obj_fiducials, self.obj_orients, self.obj_ref_mode, self.obj_name))
-                        Publisher.sendMessage('Update status text in GUI', _("Ready"))
+                        Publisher.sendMessage('Update status text in GUI',
+                                              label=_("Ready"))
 
             except wx._core.PyAssertionError:  # TODO FIX: win64
                 pass
@@ -924,7 +933,7 @@ class ObjectRegistrationPanel(wx.Panel):
             self.checktrack.Enable(1)
             Publisher.sendMessage('Update object registration',
                                   (self.obj_fiducials, self.obj_orients, self.obj_ref_mode, self.obj_name))
-            Publisher.sendMessage('Update status text in GUI', _("Ready"))
+            Publisher.sendMessage('Update status text in GUI', label=_("Ready"))
             wx.MessageBox(_("Object file successfully loaded"), _("Load"))
 
     def ShowSaveObjectDialog(self, evt):

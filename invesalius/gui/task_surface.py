@@ -550,11 +550,11 @@ class SurfaceProperties(wx.Panel):
         self.surface_list[index][0] = name
         self.combo_surface_name.SetString(index, name)
 
-    def InsertNewSurface(self, pubsub_evt):
+    def InsertNewSurface(self, surface):
         #not_update = len(pubsub_evt.data) == 5
-        index = pubsub_evt.data[0]
-        name = pubsub_evt.data[1]
-        colour = [value*255 for value in pubsub_evt.data[2]]
+        index = surface.index
+        name = surface.name
+        colour = [value*255 for value in surface.colour]
         i = 0
         try:
             i = self.surface_list.index([name, index])
@@ -570,10 +570,10 @@ class SurfaceProperties(wx.Panel):
 
         self.combo_surface_name.SetItems([n[0] for n in self.surface_list])
         self.combo_surface_name.SetSelection(i)
-        transparency = 100*pubsub_evt.data[5]
+        transparency = 100*surface.transparency
         self.button_colour.SetColour(colour)
         self.slider_transparency.SetValue(transparency)
-        Publisher.sendMessage('Update surface data', (index))
+        #  Publisher.sendMessage('Update surface data', (index))
 
     def OnComboName(self, evt):
         surface_name = evt.GetString()

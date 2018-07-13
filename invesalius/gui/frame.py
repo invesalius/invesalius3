@@ -1117,11 +1117,10 @@ class StatusBar(wx.StatusBar):
             except(wx._core.PyAssertionError):
                 utils.debug("wx._core.PyAssertionError")
 
-    def _SetProgressLabel(self, pubsub_evt):
+    def _SetProgressLabel(self, label):
         """
         Set text progress label.
         """
-        label = pubsub_evt.data
         self.SetStatusText(label, 0)
 
 # ------------------------------------------------------------------

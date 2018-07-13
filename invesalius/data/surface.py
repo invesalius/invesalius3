@@ -368,12 +368,9 @@ class SurfaceManager():
 
         self.last_surface_index = surface.index
 
-        Publisher.sendMessage('Load surface actor into viewer', actor)
+        Publisher.sendMessage('Load surface actor into viewer', actor=actor)
 
-        Publisher.sendMessage('Update surface info in GUI',
-                              (surface.index, surface.name,
-                               surface.colour, surface.volume,
-                               surface.area, surface.transparency))
+        Publisher.sendMessage('Update surface info in GUI', surface=surface)
         return surface.index
 
     def OnCloseProject(self, pubsub_evt):
@@ -394,10 +391,7 @@ class SurfaceManager():
         # self.actors_dict.
         proj = prj.Project()
         surface = proj.surface_dict[index]
-        Publisher.sendMessage('Update surface info in GUI',
-                              (index, surface.name,
-                               surface.colour, surface.volume,
-                               surface.area, surface.transparency))
+        Publisher.sendMessage('Update surface info in GUI', surface=surface)
         self.last_surface_index = index
         #  if surface.is_shown:
         self.ShowActor(index, True)
@@ -435,16 +429,13 @@ class SurfaceManager():
             self.actors_dict[surface.index] = actor
 
             # Send actor by pubsub to viewer's render
-            Publisher.sendMessage('Load surface actor into viewer', (actor))
+            Publisher.sendMessage('Load surface actor into viewer', actor=actor)
 
             Publisher.sendMessage('Update status text in GUI',
-                                        _("Ready"))
+                                  label=_("Ready"))
 
             # The following lines have to be here, otherwise all volumes disappear
-            Publisher.sendMessage('Update surface info in GUI',
-                                        (surface.index, surface.name,
-                                         surface.colour, surface.volume,
-                                         surface.area, surface.transparency))
+            Publisher.sendMessage('Update surface info in GUI', surface=surface)
             if not surface.is_shown:
                 self.ShowActor(key, False)
 
@@ -824,7 +815,7 @@ class SurfaceManager():
             del measured_polydata
             del to_measure
 
-            Publisher.sendMessage('Load surface actor into viewer', actor)
+            Publisher.sendMessage('Load surface actor into viewer', actor=actor)
 
             # Send actor by pubsub to viewer's render
             if overwrite and self.actors_dict.keys():
@@ -834,16 +825,12 @@ class SurfaceManager():
             # Save actor for future management tasks
             self.actors_dict[surface.index] = actor
 
-            Publisher.sendMessage('Update surface info in GUI',
-                                        (surface.index, surface.name,
-                                        surface.colour, surface.volume,
-                                        surface.area,
-                                        surface.transparency))
+            Publisher.sendMessage('Update surface info in GUI', surface=surface)
 
             #When you finalize the progress. The bar is cleaned.
             UpdateProgress = vu.ShowProgress(1)
             UpdateProgress(0, _("Ready"))
-            Publisher.sendMessage('Update status text in GUI', _("Ready"))
+            Publisher.sendMessage('Update status text in GUI', label=_("Ready"))
 
             Publisher.sendMessage('End busy cursor')
             del actor

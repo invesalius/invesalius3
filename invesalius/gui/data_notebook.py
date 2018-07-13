@@ -865,13 +865,13 @@ class SurfacesListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
             Publisher.sendMessage('Show surface',
                                        (index, visibility))
 
-    def AddSurface(self, pubsub_evt):
-        index = pubsub_evt.data[0]
-        name = pubsub_evt.data[1]
-        colour = pubsub_evt.data[2]
-        volume = "%.3f"%pubsub_evt.data[3]
-        area = "%.3f"%pubsub_evt.data[4]
-        transparency = "%d%%"%(int(100*pubsub_evt.data[5]))
+    def AddSurface(self, surface):
+        index = surface.index
+        name = surface.name
+        colour = surface.colour
+        volume = "%.3f" % surface.volume
+        area = "%.3f" % surface.area
+        transparency = "%d%%" % (int(100*surface.transparency))
 
         if index not in self.surface_list_index:
             image = self.CreateColourBitmap(colour)

@@ -131,7 +131,7 @@ class Controller():
         id_type = pubsub_evt.data
         self.ShowDialogImportOtherFiles(id_type)
 
-    def OnShowDialogOpenProject(self, pubsub_evt):
+    def OnShowDialogOpenProject(self):
         self.ShowDialogOpenProject()
 
     def OnShowDialogSaveProject(self, pubsub_evt):
@@ -292,9 +292,7 @@ class Controller():
         path = pubsub_evt.data
         self.OpenProject(path)
 
-    def OnOpenRecentProject(self, pubsub_evt):
-        filepath = pubsub_evt.data
-
+    def OnOpenRecentProject(self, filepath):
         if os.path.exists(filepath):
             session = ses.Session()
             st = session.project_status
