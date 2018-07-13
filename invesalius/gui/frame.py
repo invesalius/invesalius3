@@ -275,7 +275,7 @@ class Frame(wx.Frame):
         if hasattr(sys,"frozen") and sys.platform == 'darwin':
             sys.exit(0)
 
-    def _HideContentPanel(self, pubsub_evt):
+    def _HideContentPanel(self):
         """
         Hide data and tasks panels.
         """
@@ -284,7 +284,7 @@ class Frame(wx.Frame):
         aui_manager.GetPane("Tasks").Show(1)
         aui_manager.Update()
 
-    def _HideImportPanel(self, evt_pubsub):
+    def _HideImportPanel(self):
         """
         Hide import panel and show tasks.
         """
@@ -294,7 +294,7 @@ class Frame(wx.Frame):
         aui_manager.GetPane("Tasks").Show(1)
         aui_manager.Update()
 
-    def _HideTask(self, pubsub_evt):
+    def _HideTask(self):
         """
         Hide task panel.
         """
@@ -324,7 +324,7 @@ class Frame(wx.Frame):
         aui_manager.GetPane("Tasks").Show(1)
         aui_manager.Update()
 
-    def _ShowImportNetwork(self, evt_pubsub):
+    def _ShowImportNetwork(self):
         """
         Show viewers and task, hide import panel.
         """
@@ -366,7 +366,7 @@ class Frame(wx.Frame):
         aui_manager.GetPane("Tasks").Show(0)
         aui_manager.Update()
 
-    def _ShowTask(self, pubsub_evt):
+    def _ShowTask(self):
         """
         Show task panel.
         """
