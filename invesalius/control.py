@@ -108,16 +108,16 @@ class Controller():
 
         Publisher.subscribe(self.OnSaveProject, 'Save project')
 
-    def SetBitmapSpacing(self, pubsub_evt):
+    def SetBitmapSpacing(self, spacing):
         proj = prj.Project()
-        proj.spacing = pubsub_evt.data
+        proj.spacing = spacing
 
     def OnCancelImport(self):
         #self.cancel_import = True
         Publisher.sendMessage('Hide import panel')
 
 
-    def OnCancelImportBitmap(self, pubsub_evt):
+    def OnCancelImportBitmap(self):
         #self.cancel_import = True
         Publisher.sendMessage('Hide import bitmap panel')
 
@@ -140,7 +140,7 @@ class Controller():
     def OnShowDialogCloseProject(self, pubsub_evt):
         self.ShowDialogCloseProject()
 
-    def OnShowBitmapFile(self, pubsub_evt):
+    def OnShowBitmapFile(self):
         self.ShowDialogImportBitmapFile()
 ###########################
 
@@ -413,7 +413,7 @@ class Controller():
     def OnLoadImportBitmapPanel(self, data):
         ok = self.LoadImportBitmapPanel(data)
         if ok:
-            Publisher.sendMessage('Show import bitmap panel in frame')            
+            Publisher.sendMessage('Show import bitmap panel in frame')
             self.img_type = 2
             #Publisher.sendMessage("Show import panel in invesalius.gui.frame") as frame
 
@@ -423,7 +423,7 @@ class Controller():
             #first_patient = patient_series[0]
             #Publisher.sendMessage("Load bitmap preview", first_patient)
         if  data:
-            Publisher.sendMessage("Load import bitmap panel", data)
+            Publisher.sendMessage("Load import bitmap panel", data=data)
             return True
         else:
             dialog.ImportInvalidFiles("Bitmap")
@@ -669,8 +669,7 @@ class Controller():
 
         dirpath = session.CreateProject(filename)
 
-    def OnOpenBitmapFiles(self, pubsub_evt):
-        rec_data = pubsub_evt.data
+    def OnOpenBitmapFiles(self, rec_data):
         bmp_data = bmp.BitmapData()
 
         if bmp_data.IsAllBitmapSameSize():
@@ -685,7 +684,6 @@ class Controller():
             dialogs.BitmapNotSameSize()
 
     def OpenBitmapFiles(self, bmp_data, rec_data):
-
        name = rec_data[0]
        orientation = rec_data[1]
        sp_x = float(rec_data[2])

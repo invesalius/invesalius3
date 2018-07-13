@@ -2350,7 +2350,7 @@ class ImportBitmapParameters(wx.Dialog):
         values = [self.tx_name.GetValue(), orientation,\
                   self.fsp_spacing_x.GetValue(), self.fsp_spacing_y.GetValue(),\
                   self.fsp_spacing_z.GetValue(), self.interval]
-        Publisher.sendMessage('Open bitmap files', values)
+        Publisher.sendMessage('Open bitmap files', rec_data=values)
 
         self.Close()
         self.Destroy()

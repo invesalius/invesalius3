@@ -127,8 +127,7 @@ class InnerPanel(wx.Panel):
         Publisher.subscribe(self.ShowBitmapPreview, "Load import bitmap panel")
         Publisher.subscribe(self.GetSelectedImages ,"Selected Import Images")  
 
-    def ShowBitmapPreview(self, pubsub_evt):
-        data = pubsub_evt.data
+    def ShowBitmapPreview(self, data):
         #self.patients.extend(dicom_groups)
         self.text_panel.Populate(data)
 
@@ -230,18 +229,18 @@ class TextPanel(wx.Panel):
                     data_size = len(bpr.BitmapData().GetData())
                     
                     if index >= 0 and index < data_size:
-                        Publisher.sendMessage('Set bitmap in preview panel', index)
+                        Publisher.sendMessage('Set bitmap in preview panel', pos=index)
                     elif index == data_size and data_size > 0:
-                        Publisher.sendMessage('Set bitmap in preview panel', index - 1)
+                        Publisher.sendMessage('Set bitmap in preview panel', pos=index - 1)
                     elif data_size == 1:
-                        Publisher.sendMessage('Set bitmap in preview panel', 0)
+                        Publisher.sendMessage('Set bitmap in preview panel', pos=0)
                     else:
                         Publisher.sendMessage('Show black slice in single preview image')
                     
                     self.tree.Delete(selected_item)
                     self.tree.Update()
                     self.tree.Refresh()
-                    Publisher.sendMessage('Remove preview panel', text_item)
+                    Publisher.sendMessage('Remove preview panel', data=text_item)
 
         evt.Skip()
 
@@ -259,7 +258,7 @@ class TextPanel(wx.Panel):
         tree.Bind(wx.EVT_TREE_ITEM_ACTIVATED, self.OnActivate)
         tree.Bind(wx.EVT_TREE_SEL_CHANGED, self.OnSelChanged)
 
-        Publisher.sendMessage('Load bitmap into import panel', data)
+        Publisher.sendMessage('Load bitmap into import panel', data=data)
 
     def OnSelChanged(self, evt):
         self.selected_items = self.tree.GetSelections()
@@ -269,7 +268,7 @@ class TextPanel(wx.Panel):
 
             text_item = self.tree.GetItemText(item)
             index = bpr.BitmapData().GetIndexByPath(text_item)
-            Publisher.sendMessage('Set bitmap in preview panel', index)
+            Publisher.sendMessage('Set bitmap in preview panel', pos=index)
 
         evt.Skip()
 
@@ -369,14 +368,10 @@ class SeriesPanel(wx.Panel):
     def GetSelectedImagesRange(self):
         return [self.bitmap_preview.first_selected, self.dicom_preview_last_selection]
 
-    def SetBitmapFiles(self, pubsub_evt):
-
-
-        bitmap = pubsub_evt.data
+    def SetBitmapFiles(self, data):
+        bitmap = data
         self.thumbnail_preview.Show(1)
-
         self.thumbnail_preview.SetBitmapFiles(bitmap)
-
         self.Update()
 
     def OnSelectSerie(self, evt):
@@ -420,8 +415,7 @@ class SlicePanel(wx.Panel):
         self.SetAutoLayout(1)
         self.sizer = sizer
 
-    def SetBitmapFiles(self, pubsub_evt):
-        data = pubsub_evt.data
+    def SetBitmapFiles(self, data):
         self.bitmap_preview.SetBitmapFiles(data)
         self.sizer.Layout()
         self.Update()

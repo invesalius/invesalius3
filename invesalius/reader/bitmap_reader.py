@@ -242,12 +242,12 @@ class ProgressBitmapReader:
     def __init__(self):
         Publisher.subscribe(self.CancelLoad, "Cancel bitmap load")
 
-    def CancelLoad(self, evt_pubsub):
+    def CancelLoad(self):
         self.running = False
         self.stoped = True
 
     def SetWindowEvent(self, frame):
-        self.frame = frame          
+        self.frame = frame
 
     def SetDirectoryPath(self, path,recursive=True):
         self.running = True
@@ -255,10 +255,10 @@ class ProgressBitmapReader:
         self.GetBitmaps(path,recursive)
 
     def UpdateLoadFileProgress(self,cont_progress):
-        Publisher.sendMessage("Update bitmap load", cont_progress)
+        Publisher.sendMessage("Update bitmap load", data=cont_progress)
 
     def EndLoadFile(self, bitmap_list):
-        Publisher.sendMessage("End bitmap load", bitmap_list)
+        Publisher.sendMessage("End bitmap load", data=bitmap_list)
 
     def GetBitmaps(self, path, recursive):
 
@@ -359,7 +359,7 @@ def ReadBitmap(filepath):
         except UnicodeDecodeError:
             measures_info = False
         if measures_info:
-            Publisher.sendMessage('Set bitmap spacing', measures_info)
+            Publisher.sendMessage('Set bitmap spacing', spacing=measures_info)
 
         return False
 

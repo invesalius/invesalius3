@@ -336,7 +336,7 @@ class Frame(wx.Frame):
         aui_manager.GetPane("Import").Show(0)
         aui_manager.Update()
 
-    def _ShowImportBitmap(self, evt_pubsub):
+    def _ShowImportBitmap(self):
         """
         Show viewers and task, hide import panel.
         """
@@ -615,7 +615,7 @@ class Frame(wx.Frame):
         """
         Tiff, BMP, JPEG and PNG
         """
-        Publisher.sendMessage('Show bitmap dialog', True)
+        Publisher.sendMessage('Show bitmap dialog')
 
     def FlipVolume(self, axis):
         Publisher.sendMessage('Flip volume', axis)
