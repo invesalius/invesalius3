@@ -373,14 +373,14 @@ def use_cmd_optargs(options, args):
             file = utils.decode(arg, FS_ENCODE)
             if os.path.isfile(file):
                 path = os.path.abspath(file)
-                Publisher.sendMessage('Open project', path)
+                Publisher.sendMessage('Open project', filepath=path)
                 check_for_export(options)
                 return True
-            
+
             file = utils.decode(arg, sys.stdin.encoding)
             if os.path.isfile(file):
                 path = os.path.abspath(file)
-                Publisher.sendMessage('Open project', path)
+                Publisher.sendMessage('Open project', filepath=path)
                 check_for_export(options)
                 return True
 

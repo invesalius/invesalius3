@@ -288,9 +288,8 @@ class Controller():
 
 
 ###########################
-    def OnOpenProject(self, pubsub_evt):
-        path = pubsub_evt.data
-        self.OpenProject(path)
+    def OnOpenProject(self, filepath):
+        self.OpenProject(filepath)
 
     def OnOpenRecentProject(self, filepath):
         if os.path.exists(filepath):
