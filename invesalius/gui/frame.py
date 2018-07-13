@@ -594,7 +594,7 @@ class Frame(wx.Frame):
         """
         Show import Analyze, NiFTI1 or PAR/REC dialog.
         """
-        Publisher.sendMessage('Show import other files dialog', id_file)
+        Publisher.sendMessage('Show import other files dialog', id_type=id_file)
 
     def ShowRetrieveDicomPanel(self):
         Publisher.sendMessage('Show retrieve dicom panel')

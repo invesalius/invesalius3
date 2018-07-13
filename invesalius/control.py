@@ -127,8 +127,7 @@ class Controller():
     def OnShowDialogImportDirectory(self):
         self.ShowDialogImportDirectory()
 
-    def OnShowDialogImportOtherFiles(self, pubsub_evt):
-        id_type = pubsub_evt.data
+    def OnShowDialogImportOtherFiles(self, id_type):
         self.ShowDialogImportOtherFiles(id_type)
 
     def OnShowDialogOpenProject(self):
@@ -210,7 +209,7 @@ class Controller():
             dialog.ImportAnalyzeWarning()
 
         filepath = dialog.ShowImportOtherFilesDialog(id_type)
-        Publisher.sendMessage("Open other files", filepath)
+        Publisher.sendMessage("Open other files", filepath=filepath)
 
     def ShowDialogOpenProject(self):
         # Offer to save current project if necessary
@@ -754,8 +753,8 @@ class Controller():
         self.LoadProject()
         Publisher.sendMessage("Enable state project", state=True)
 
-    def OnOpenOtherFiles(self, pubsub_evt):
-        filepath = utils.decode(pubsub_evt.data, const.FS_ENCODE)
+    def OnOpenOtherFiles(self, filepath):
+        filepath = utils.decode(filepath, const.FS_ENCODE)
         if not(filepath) == None:
             name = filepath.rpartition('\\')[-1].split('.')
 
