@@ -447,10 +447,8 @@ class Controller():
 
     #----------- to import by command line ---------------------------------------------------
 
-    def OnImportMedicalImages(self, pubsub_evt):
-        directory = pubsub_evt.data['directory']
-        gui = pubsub_evt.data['gui']
-        self.ImportMedicalImages(directory, gui)
+    def OnImportMedicalImages(self, directory, use_gui):
+        self.ImportMedicalImages(directory, use_gui)
 
     def ImportMedicalImages(self, directory, gui=True):
         patients_groups = dcm.GetDicomGroups(directory)

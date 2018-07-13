@@ -347,7 +347,7 @@ def use_cmd_optargs(options, args):
     # If import DICOM argument...
     if options.dicom_dir:
         import_dir = options.dicom_dir
-        Publisher.sendMessage('Import directory', {'directory': import_dir, 'gui': not options.no_gui})
+        Publisher.sendMessage('Import directory', directory=import_dir, use_gui=not options.no_gui)
 
         if options.save:
             Publisher.sendMessage('Save project', os.path.abspath(options.save))
