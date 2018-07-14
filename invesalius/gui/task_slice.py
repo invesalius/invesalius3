@@ -371,23 +371,21 @@ class InnerFoldPanel(wx.Panel):
 
         if self.__id_editor == id:
             if closed:
-                Publisher.sendMessage('Disable style', const.SLICE_STATE_EDITOR)
+                Publisher.sendMessage('Disable style', style=const.SLICE_STATE_EDITOR)
                 self.last_style = None
             else:
-                Publisher.sendMessage('Enable style',
-                                      const.SLICE_STATE_EDITOR)
+                Publisher.sendMessage('Enable style', style=const.SLICE_STATE_EDITOR)
                 self.last_style = const.SLICE_STATE_EDITOR
         elif self.__id_watershed == id:
             if closed:
-                Publisher.sendMessage('Disable style',
-                                      const.SLICE_STATE_WATERSHED)
+                Publisher.sendMessage('Disable style', style=const.SLICE_STATE_WATERSHED)
                 self.last_style = None
             else:
-                Publisher.sendMessage('Enable style', const.SLICE_STATE_WATERSHED)
+                Publisher.sendMessage('Enable style', style=const.SLICE_STATE_WATERSHED)
                 Publisher.sendMessage('Show help message', 'Mark the object and the background')
                 self.last_style = const.SLICE_STATE_WATERSHED
         else:
-            Publisher.sendMessage('Disable style', const.SLICE_STATE_EDITOR)
+            Publisher.sendMessage('Disable style', style=const.SLICE_STATE_EDITOR)
             self.last_style = None
 
         evt.Skip()

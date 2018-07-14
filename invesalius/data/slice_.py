@@ -251,24 +251,22 @@ class Slice(with_metaclass(utils.Singleton, object)):
             copy_mask = original_mask.copy(new_name)
             self._add_mask_into_proj(copy_mask)
 
-    def OnEnableStyle(self, pubsub_evt):
-        state = pubsub_evt.data
-        if (state in const.SLICE_STYLES):
-            new_state = self.interaction_style.AddState(state)
+    def OnEnableStyle(self, style):
+        if (style in const.SLICE_STYLES):
+            new_state = self.interaction_style.AddState(style)
             Publisher.sendMessage('Set slice interaction style', style=new_state)
-        self.state = state
+        self.state = style
 
-    def OnDisableStyle(self, pubsub_evt):
-        state = pubsub_evt.data
-        if (state in const.SLICE_STYLES):
-            new_state = self.interaction_style.RemoveState(state)
+    def OnDisableStyle(self, style):
+        if (style in const.SLICE_STYLES):
+            new_state = self.interaction_style.RemoveState(style)
             Publisher.sendMessage('Set slice interaction style', style=new_state)
 
-            if (state == const.SLICE_STATE_EDITOR):
+            if (style == const.SLICE_STATE_EDITOR):
                 Publisher.sendMessage('Set interactor default cursor')
             self.state = new_state
 
-    def OnDisableActualStyle(self, pubsub_evt):
+    def OnDisableActualStyle(self):
         actual_state = self.interaction_style.GetActualState()
         if actual_state != const.STATE_DEFAULT:
             new_state = self.interaction_style.RemoveState(actual_state)

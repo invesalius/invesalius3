@@ -293,16 +293,14 @@ class Viewer(wx.Panel):
 
         self.interactor.Render()
 
-    def _check_ball_reference(self, pubsub_evt):
-        st = pubsub_evt.data
-        if st == const.SLICE_STATE_CROSS:
+    def _check_ball_reference(self, style):
+        if style == const.SLICE_STATE_CROSS:
             self._mode_cross = True
             self._check_and_set_ball_visibility()
             self.interactor.Render()
 
-    def _uncheck_ball_reference(self, pubsub_evt):
-        st = pubsub_evt.data
-        if st == const.SLICE_STATE_CROSS:
+    def _uncheck_ball_reference(self, style):
+        if style == const.SLICE_STATE_CROSS:
             self._mode_cross = False
             self.RemoveBallReference()
             self.interactor.Render()
@@ -1387,18 +1385,16 @@ class Viewer(wx.Panel):
         if const.RAYCASTING_WWWL_BLUR:
             self.style.EndZoom()
 
-    def OnEnableStyle(self, pubsub_evt):
-        state = pubsub_evt.data
-        if (state in const.VOLUME_STYLES):
-            new_state = self.interaction_style.AddState(state)
+    def OnEnableStyle(self, style):
+        if (style in const.VOLUME_STYLES):
+            new_state = self.interaction_style.AddState(style)
             self.SetInteractorStyle(new_state)
         else:
-            new_state = self.interaction_style.RemoveState(state)
+            new_state = self.interaction_style.RemoveState(style)
             self.SetInteractorStyle(new_state)
 
-    def OnDisableStyle(self, pubsub_evt):
-        state = pubsub_evt.data
-        new_state = self.interaction_style.RemoveState(state)
+    def OnDisableStyle(self, style):
+        new_state = self.interaction_style.RemoveState(style)
         self.SetInteractorStyle(new_state)
 
     def ResetCamClippingRange(self, pubsub_evt):
