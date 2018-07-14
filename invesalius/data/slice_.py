@@ -374,8 +374,7 @@ class Slice(with_metaclass(utils.Singleton, object)):
         if to_reload:
             Publisher.sendMessage('Reload actual slice')
 
-    def __set_current_mask_threshold_actual_slice(self, evt_pubsub):
-        threshold_range = evt_pubsub.data
+    def __set_current_mask_threshold_actual_slice(self, threshold_range):
         index = self.current_mask.index
         for orientation in self.buffer_slices:
             self.buffer_slices[orientation].discard_vtk_mask()

@@ -663,7 +663,7 @@ class MaskProperties(wx.Panel):
         thresh_min = self.gradient.GetMinValue()
         thresh_max = self.gradient.GetMaxValue()
         Publisher.sendMessage('Changing threshold values',
-                                    (thresh_min, thresh_max))
+                                    threshold_range=(thresh_min, thresh_max))
         session = ses.Session()
         session.ChangeProject()
 
