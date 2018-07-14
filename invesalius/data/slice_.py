@@ -329,9 +329,8 @@ class Slice(with_metaclass(utils.Singleton, object)):
     def __select_current_mask(self, index):
         self.SelectCurrentMask(index)
     
-    def __set_current_mask_edition_threshold(self, evt_pubsub):
+    def __set_current_mask_edition_threshold(self, threshold_range):
         if self.current_mask:
-            threshold_range = evt_pubsub.data
             index = self.current_mask.index
             self.SetMaskEditionThreshold(index, threshold_range)
 

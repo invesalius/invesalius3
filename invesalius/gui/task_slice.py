@@ -801,7 +801,7 @@ class EditionTools(wx.Panel):
         thresh_max = self.gradient_thresh.GetMaxValue()
         if self.bind_evt_gradient:
             Publisher.sendMessage('Set edition threshold values',
-                                     (thresh_min, thresh_max))
+                                  threshold_range=(thresh_min, thresh_max))
 
     def OnMenu(self, evt):
         SQUARE_BMP = wx.Bitmap(os.path.join(const.ICON_DIR, "brush_square.jpg"), wx.BITMAP_TYPE_JPEG)
@@ -814,22 +814,21 @@ class EditionTools(wx.Panel):
 
         self.btn_brush_format.SetBitmap(bitmap[evt.GetId()])
 
-        Publisher.sendMessage('Set brush format', brush[evt.GetId()])
+        Publisher.sendMessage('Set brush format', cursor_format=brush[evt.GetId()])
 
     def OnBrushSize(self, evt):
         """ """
         # FIXME: Using wx.EVT_SPINCTRL in MacOS it doesnt capture changes only
         # in the text ctrl - so we are capturing only changes on text
         # Strangelly this is being called twice
-        Publisher.sendMessage('Set edition brush size',self.spin.GetValue())
+        Publisher.sendMessage('Set edition brush size', size=self.spin.GetValue())
 
-    def _set_brush_size(self, pubsub_evt):
-        size = pubsub_evt.data
+    def _set_brush_size(self, size):
         self.spin.SetValue(size)
 
     def OnComboBrushOp(self, evt):
         brush_op_id = evt.GetSelection()
-        Publisher.sendMessage('Set edition operation', brush_op_id)
+        Publisher.sendMessage('Set edition operation', operation=brush_op_id)
         if brush_op_id == const.BRUSH_THRESH:
             self.gradient_thresh.Enable()
         else:

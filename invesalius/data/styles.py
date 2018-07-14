@@ -781,17 +781,16 @@ class EditorInteractorStyle(DefaultInteractorStyle):
         self.viewer.interactor.SetCursor(wx.StockCursor(wx.CURSOR_DEFAULT))
         self.viewer.interactor.Render()
 
-    def set_bsize(self, pubsub_evt):
-        size = pubsub_evt.data
+    def set_bsize(self, size):
         self.config.cursor_size = size
         self.viewer.slice_data.cursor.SetSize(size)
 
-    def set_bformat(self, pubsub_evt):
-        self.config.cursor_type = pubsub_evt.data
+    def set_bformat(self, cursor_format):
+        self.config.cursor_type = cursor_format
         self._set_cursor()
 
-    def set_boperation(self, pubsub_evt):
-        self.config.operation = pubsub_evt.data
+    def set_boperation(self, operation):
+        self.config.operation = operation
 
     def _set_cursor(self):
         if self.config.cursor_type == const.BRUSH_SQUARE:
@@ -938,7 +937,7 @@ class EditorInteractorStyle(DefaultInteractorStyle):
             size += 1
 
             if size <= 100:
-                Publisher.sendMessage('Set edition brush size', size)
+                Publisher.sendMessage('Set edition brush size', size=size)
                 cursor.SetPosition(cursor.position)
                 self.viewer.interactor.Render()
         else:
@@ -956,7 +955,7 @@ class EditorInteractorStyle(DefaultInteractorStyle):
             size -= 1
 
             if size > 0:
-                Publisher.sendMessage('Set edition brush size', size)
+                Publisher.sendMessage('Set edition brush size', size=size)
                 cursor.SetPosition(cursor.position)
                 self.viewer.interactor.Render()
         else:
