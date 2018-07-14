@@ -133,11 +133,10 @@ class Controller():
     def OnShowDialogOpenProject(self):
         self.ShowDialogOpenProject()
 
-    def OnShowDialogSaveProject(self, pubsub_evt):
-        saveas = pubsub_evt.data
-        self.ShowDialogSaveProject(saveas)
+    def OnShowDialogSaveProject(self, save_as):
+        self.ShowDialogSaveProject(save_as)
 
-    def OnShowDialogCloseProject(self, pubsub_evt):
+    def OnShowDialogCloseProject(self):
         self.ShowDialogCloseProject()
 
     def OnShowBitmapFile(self):
@@ -157,7 +156,7 @@ class Controller():
             #Publisher.sendMessage("Enable state project", state=False)
             Publisher.sendMessage('Set project name')
             Publisher.sendMessage("Stop Config Recording")
-            Publisher.sendMessage("Set slice interaction style", const.STATE_DEFAULT)
+            Publisher.sendMessage("Set slice interaction style", style=const.STATE_DEFAULT)
 
         # Import TIFF, BMP, JPEG or PNG
         dirpath = dialog.ShowImportBitmapDirDialog(self.frame)
@@ -181,7 +180,7 @@ class Controller():
             #Publisher.sendMessage("Enable state project", state=False)
             Publisher.sendMessage('Set project name')
             Publisher.sendMessage("Stop Config Recording")
-            Publisher.sendMessage("Set slice interaction style", const.STATE_DEFAULT)
+            Publisher.sendMessage("Set slice interaction style", style=const.STATE_DEFAULT)
         # Import project
         dirpath = dialog.ShowImportDirDialog(self.frame)
         if dirpath and not os.listdir(dirpath):
@@ -202,7 +201,7 @@ class Controller():
             # Publisher.sendMessage("Enable state project", state=False)
             Publisher.sendMessage('Set project name')
             Publisher.sendMessage("Stop Config Recording")
-            Publisher.sendMessage("Set slice interaction style", const.STATE_DEFAULT)
+            Publisher.sendMessage("Set slice interaction style", style=const.STATE_DEFAULT)
 
         # Warning for limited support to Analyze format
         if id_type == const.ID_ANALYZE_IMPORT:
@@ -352,7 +351,7 @@ class Controller():
         Publisher.sendMessage('End busy cursor')
 
     def CloseProject(self):
-        Publisher.sendMessage('Set slice interaction style', const.STATE_DEFAULT)
+        Publisher.sendMessage('Set slice interaction style', style=const.STATE_DEFAULT)
         Publisher.sendMessage('Hide content panel')
         Publisher.sendMessage('Close project data')
 

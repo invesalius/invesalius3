@@ -1251,19 +1251,19 @@ class Viewer(wx.Panel):
         Publisher.subscribe(self.UpdateInterpolatedSlice, "Update Slice Interpolation")
 
 
-    def RefreshViewer(self, pubsub_evt):
+    def RefreshViewer(self):
         self.Refresh()
 
-    def SetDefaultCursor(self, pusub_evt):
+    def SetDefaultCursor(self):
         self.interactor.SetCursor(wx.StockCursor(wx.CURSOR_DEFAULT))
 
-    def SetSizeNSCursor(self, pusub_evt):
+    def SetSizeNSCursor(self):
         self.interactor.SetCursor(wx.StockCursor(wx.CURSOR_SIZENS))
 
-    def SetSizeWECursor(self, pusub_evt):
+    def SetSizeWECursor(self):
         self.interactor.SetCursor(wx.StockCursor(wx.CURSOR_SIZEWE))
 
-    def SetSizeNWSECursor(self, pubsub_evt):
+    def SetSizeNWSECursor(self):
         if sys.platform.startswith('linux'):
             self.interactor.SetCursor(wx.StockCursor(wx.CURSOR_SIZENWSE))
         else:
@@ -1346,7 +1346,7 @@ class Viewer(wx.Panel):
     def OnHideText(self):
         self.HideTextActors()
 
-    def OnCloseProject(self, pubsub_evt):
+    def OnCloseProject(self):
         self.CloseProject()
 
     def CloseProject(self):
@@ -1371,11 +1371,10 @@ class Viewer(wx.Panel):
         self.wl_text = None
         self.pick = vtk.vtkWorldPointPicker()
 
-    def OnSetInteractorStyle(self, pubsub_evt):
-        state = pubsub_evt.data
-        self.SetInteractorStyle(state)
+    def OnSetInteractorStyle(self, style):
+        self.SetInteractorStyle(style)
 
-        if (state not in [const.SLICE_STATE_EDITOR, const.SLICE_STATE_WATERSHED]):
+        if (style not in [const.SLICE_STATE_EDITOR, const.SLICE_STATE_WATERSHED]):
             Publisher.sendMessage('Set interactor default cursor')
 
     def __bind_events_wx(self):

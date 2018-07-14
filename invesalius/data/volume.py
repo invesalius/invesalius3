@@ -120,7 +120,7 @@ class Volume():
             self.LoadVolume()
 
 
-    def OnCloseProject(self, pubsub_evt):
+    def OnCloseProject(self):
         self.CloseProject()
 
     def CloseProject(self):
@@ -134,7 +134,7 @@ class Volume():
 
         if self.exist:
             self.exist = None
-            Publisher.sendMessage('Remove surface actor from viewer', self.volume)
+            Publisher.sendMessage('Remove surface actor from viewer', actor=self.volume)
             Publisher.sendMessage('Disable volume cut menu')
             Publisher.sendMessage('Unload volume', self.volume)
 
@@ -802,7 +802,7 @@ class CutPlane:
         Publisher.sendMessage('Render volume viewer', None)  
         
     def DestroyObjs(self):
-        Publisher.sendMessage('Remove surface actor from viewer', self.plane_actor)
+        Publisher.sendMessage('Remove surface actor from viewer', actor=self.plane_actor)
         self.Disable()
         del self.plane_widget   
         del self.plane_source

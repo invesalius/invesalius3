@@ -207,7 +207,7 @@ class SurfaceManager():
                         if i > index:
                             new_dict[i-1] = old_dict[i]
                     old_dict = new_dict
-                    Publisher.sendMessage('Remove surface actor from viewer', actor)
+                    Publisher.sendMessage('Remove surface actor from viewer', actor=actor)
             self.actors_dict = new_dict
 
         if self.last_surface_index in selected_items:
@@ -373,12 +373,12 @@ class SurfaceManager():
         Publisher.sendMessage('Update surface info in GUI', surface=surface)
         return surface.index
 
-    def OnCloseProject(self, pubsub_evt):
+    def OnCloseProject(self):
         self.CloseProject()
 
     def CloseProject(self):
         for index in self.actors_dict:
-            Publisher.sendMessage('Remove surface actor from viewer', self.actors_dict[index])
+            Publisher.sendMessage('Remove surface actor from viewer', actor=self.actors_dict[index])
         del self.actors_dict
         self.actors_dict = {}
 
@@ -820,7 +820,7 @@ class SurfaceManager():
             # Send actor by pubsub to viewer's render
             if overwrite and self.actors_dict.keys():
                 old_actor = self.actors_dict[self.last_surface_index]
-                Publisher.sendMessage('Remove surface actor from viewer', old_actor)
+                Publisher.sendMessage('Remove surface actor from viewer', actor=old_actor)
 
             # Save actor for future management tasks
             self.actors_dict[surface.index] = actor
@@ -847,7 +847,7 @@ class SurfaceManager():
         """
         Remove actor, according to given actor index.
         """
-        Publisher.sendMessage('Remove surface actor from viewer', (index))
+        Publisher.sendMessage('Remove surface actor from viewer', actor=index)
         self.actors_dict.pop(index)
         # Remove surface from project's surface_dict
         proj = prj.Project()

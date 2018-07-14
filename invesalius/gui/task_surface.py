@@ -536,7 +536,7 @@ class SurfaceProperties(wx.Panel):
         if self.surface_list:
             self.combo_surface_name.SetSelection(ns)
 
-    def OnCloseProject(self, pubsub_evt):
+    def OnCloseProject(self):
         self.CloseProject()
 
     def CloseProject(self):

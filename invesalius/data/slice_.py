@@ -255,14 +255,14 @@ class Slice(with_metaclass(utils.Singleton, object)):
         state = pubsub_evt.data
         if (state in const.SLICE_STYLES):
             new_state = self.interaction_style.AddState(state)
-            Publisher.sendMessage('Set slice interaction style', new_state)
+            Publisher.sendMessage('Set slice interaction style', style=new_state)
         self.state = state
 
     def OnDisableStyle(self, pubsub_evt):
         state = pubsub_evt.data
         if (state in const.SLICE_STYLES):
             new_state = self.interaction_style.RemoveState(state)
-            Publisher.sendMessage('Set slice interaction style', new_state)
+            Publisher.sendMessage('Set slice interaction style', style=new_state)
 
             if (state == const.SLICE_STATE_EDITOR):
                 Publisher.sendMessage('Set interactor default cursor')
@@ -272,13 +272,13 @@ class Slice(with_metaclass(utils.Singleton, object)):
         actual_state = self.interaction_style.GetActualState()
         if actual_state != const.STATE_DEFAULT:
             new_state = self.interaction_style.RemoveState(actual_state)
-            Publisher.sendMessage('Set slice interaction style', new_state)
+            Publisher.sendMessage('Set slice interaction style', style=new_state)
 
             #  if (actual_state == const.SLICE_STATE_EDITOR):
                 #  Publisher.sendMessage('Set interactor default cursor')
             self.state = new_state
 
-    def OnCloseProject(self, pubsub_evt):
+    def OnCloseProject(self):
         self.CloseProject()
 
     def CloseProject(self):

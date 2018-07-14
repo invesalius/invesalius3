@@ -344,7 +344,7 @@ class MeasurementManager(object):
                 #  self.measures.pop()
             self.current = None
 
-    def OnCloseProject(self, pubsub_evt):
+    def OnCloseProject(self):
         self.measures.clean()
 
 

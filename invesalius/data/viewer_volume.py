@@ -419,7 +419,7 @@ class Viewer(wx.Panel):
                 wx.MessageBox(_("InVesalius was not able to export this picture"), _("Export picture error"))
 
 
-    def OnCloseProject(self, pubsub_evt):
+    def OnCloseProject(self):
         if self.raycasting_volume:
             self.raycasting_volume = False
 
@@ -1546,16 +1546,15 @@ class Viewer(wx.Panel):
         self._to_show_ball += 1
         self._check_and_set_ball_visibility()
 
-    def RemoveActor(self, pubsub_evt):
+    def RemoveActor(self, actor):
         utils.debug("RemoveActor")
-        actor = pubsub_evt.data
         ren = self.ren
         ren.RemoveActor(actor)
         self.interactor.Render()
         self._to_show_ball -= 1
         self._check_and_set_ball_visibility()
 
-    def RemoveAllActor(self, pubsub_evt):
+    def RemoveAllActor(self):
         utils.debug("RemoveAllActor")
         self.ren.RemoveAllProps()
         Publisher.sendMessage('Render volume viewer')

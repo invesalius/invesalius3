@@ -433,7 +433,7 @@ class MasksListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
                 self.SetItemImage(self.current_index, 1)
 
 
-    def OnCloseProject(self, pubsub_evt):
+    def OnCloseProject(self):
         self.DeleteAllItems()
         self.mask_list_index = {}
 
@@ -769,7 +769,7 @@ class SurfacesListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
         else:
            dlg.SurfaceSelectionRequiredForRemoval()
 
-    def OnCloseProject(self, pubsub_evt):
+    def OnCloseProject(self):
         self.DeleteAllItems()
         self.surface_list_index = {}
         self.surface_bmp_idx_to_name = {}
@@ -1041,7 +1041,7 @@ class MeasuresListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
            dlg.MeasureSelectionRequiredForRemoval()
 
 
-    def OnCloseProject(self, pubsub_evt):
+    def OnCloseProject(self):
         self.DeleteAllItems()
         self._list_index = {}
         self._bmp_idx_to_name = {}

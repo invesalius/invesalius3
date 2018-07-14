@@ -407,7 +407,7 @@ class InnerFoldPanel(wx.Panel):
         if (self.last_style == const.SLICE_STATE_EDITOR):
             Publisher.sendMessage('Disable style', const.SLICE_STATE_EDITOR)
 
-    def OnCloseProject(self, pubsub_evt):
+    def OnCloseProject(self):
         self.fold_panel.Expand(self.fold_panel.GetFoldPanel(0))
 
     def OnColapsePanel(self, pubsub_evt):
@@ -515,7 +515,7 @@ class MaskProperties(wx.Panel):
         Publisher.subscribe(self.OnCloseProject, 'Close project data')
         Publisher.subscribe(self.SetThresholdValues2, 'Set threshold values')
 
-    def OnCloseProject(self, pubsub_evt):
+    def OnCloseProject(self):
         self.CloseProject()
 
     def CloseProject(self):

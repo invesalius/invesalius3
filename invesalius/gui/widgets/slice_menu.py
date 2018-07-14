@@ -181,7 +181,7 @@ class SliceMenu(wx.Menu):
 
         Publisher.subscribe(self._check_projection_menu, 'Check projection menu')
     
-    def FirstItemSelect(self, pusub_evt):
+    def FirstItemSelect(self):
         item = self.ID_TO_TOOL_ITEM[self.id_wl_first]
         item.Check(True)
         
@@ -195,7 +195,7 @@ class SliceMenu(wx.Menu):
         #  item = self.ID_TO_TOOL_ITEM[self.id_tiling_first]
         #  item.Check(True)    
         
-    def CheckWindowLevelOther(self, pubsub_evt):
+    def CheckWindowLevelOther(self):
         item = self.ID_TO_TOOL_ITEM[self.other_wl_id]
         item.Check()
 
@@ -291,7 +291,7 @@ class SliceMenu(wx.Menu):
         if self.cdialog:
             self.cdialog.Hide()
 
-    def _close(self, pubsub_evt):
+    def _close(self):
         if self.cdialog:
             self.cdialog.Destroy()
             self.cdialog = None

@@ -711,7 +711,7 @@ class NeuronavigationPanel(wx.Panel):
         self.txtctrl_fre.SetValue('')
         self.txtctrl_fre.SetBackgroundColour('WHITE')
 
-    def OnCloseProject(self, pubsub_evt):
+    def OnCloseProject(self):
         self.ResetTrackerFiducials()
         self.ResetImageFiducials()
         self.OnChoiceTracker(False, self.choice_trck)
@@ -947,7 +947,7 @@ class ObjectRegistrationPanel(wx.Panel):
                 np.savetxt(filename, data, fmt='%.4f', delimiter='\t', newline='\n', header=hdr)
                 wx.MessageBox(_("Object file successfully saved"), _("Save"))
 
-    def OnCloseProject(self, pubsub_evt):
+    def OnCloseProject(self):
         self.checkrecordcoords.SetValue(False)
         self.checkrecordcoords.Enable(0)
         self.checktrack.SetValue(False)

@@ -240,10 +240,10 @@ class InnerTaskPanel(wx.Panel):
             Publisher.sendMessage('Show open project dialog')
 
     def SaveAsProject(self):
-        Publisher.sendMessage('Show save dialog', True)
+        Publisher.sendMessage('Show save dialog', save_as=True)
 
     def SaveProject(self):
-        Publisher.sendMessage('Show save dialog', False)
+        Publisher.sendMessage('Show save dialog', save_as=False)
 
     def CloseProject(self):
         Publisher.sendMessage('Close Project')

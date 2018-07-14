@@ -434,7 +434,7 @@ class VolumeToolPanel(wx.Panel):
         Publisher.subscribe(self.StatusTargetSelect, 'Disable or enable coil tracker')
         Publisher.subscribe(self.StatusObjTracker, 'Status target button')
         
-    def DisablePreset(self, pubsub_evt):
+    def DisablePreset(self):
         self.off_item.Check(1)
 
 
@@ -576,7 +576,7 @@ class VolumeToolPanel(wx.Panel):
         self.Fit()
         self.Update()
         
-    def DisableVolumeCutMenu(self, pusub_evt):
+    def DisableVolumeCutMenu(self):
         self.menu.Enable(RAYCASTING_TOOLS, 0)
         item = ID_TO_TOOL_ITEM[self.id_cutplane]
         item.Check(0)
@@ -606,7 +606,7 @@ class VolumeToolPanel(wx.Panel):
         Publisher.sendMessage('Set stereo mode', mode)
 
 
-    def Uncheck(self, pubsub_evt):        
+    def Uncheck(self):
         for item in self.slice_plane_menu.GetMenuItems():
             if (item.IsChecked()):
                 item.Check(0)

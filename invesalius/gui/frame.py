@@ -568,7 +568,7 @@ class Frame(wx.Frame):
         """
         Save project.
         """
-        Publisher.sendMessage('Show save dialog', False)
+        Publisher.sendMessage('Show save dialog', save_as=False)
 
     def ShowGettingStarted(self):
         """
@@ -609,7 +609,7 @@ class Frame(wx.Frame):
         """
         Show save as dialog.
         """
-        Publisher.sendMessage('Show save dialog', True)
+        Publisher.sendMessage('Show save dialog', save_as=True)
 
     def ShowBitmapImporter(self):
         """
