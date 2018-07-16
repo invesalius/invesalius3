@@ -442,11 +442,10 @@ class SurfaceManager():
     ####
     #(mask_index, surface_name, quality, fill_holes, keep_largest)
 
-    def AddNewActor(self, pubsub_evt):
+    def AddNewActor(self, slice_, mask, surface_parameters):
         """
         Create surface actor, save into project and send it to viewer.
         """
-        slice_, mask, surface_parameters = pubsub_evt.data
         matrix = slice_.matrix
         filename_img = slice_.matrix_filename
         spacing = slice_.spacing

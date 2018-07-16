@@ -190,7 +190,7 @@ class InnerTaskPanel(wx.Panel):
                                "overwrite": overwrite}
 
                 Publisher.sendMessage('Create surface from index',
-                                      {'method': method, 'options': srf_options})
+                                      surface_parameters={'method': method, 'options': srf_options})
                 Publisher.sendMessage('Fold surface task')
 
         else:

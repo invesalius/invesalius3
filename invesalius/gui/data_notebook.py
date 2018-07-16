@@ -674,7 +674,8 @@ class SurfaceButtonControlPanel(wx.Panel):
         if ok:
             surface_options = dialog.GetValue()
 
-            Publisher.sendMessage('Create surface from index', surface_options)
+            Publisher.sendMessage('Create surface from index',
+                                  surface_parameter=surface_options)
         dialog.Destroy()
 
     def OnRemove(self):

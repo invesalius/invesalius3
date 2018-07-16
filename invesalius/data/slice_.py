@@ -934,14 +934,14 @@ class Slice(with_metaclass(utils.Singleton, object)):
         Publisher.sendMessage('Update slice viewer')
     #---------------------------------------------------------------------------
 
-    def CreateSurfaceFromIndex(self, pubsub_evt):
-        surface_parameters = pubsub_evt.data
-
+    def CreateSurfaceFromIndex(self, surface_parameters):
         proj = Project()
         mask = proj.mask_dict[surface_parameters['options']['index']]
 
         self.do_threshold_to_all_slices(mask)
-        Publisher.sendMessage('Create surface', (self, mask, surface_parameters))
+        Publisher.sendMessage('Create surface',
+                              slice_=self, mask=mask,
+                              surface_parameters=surface_parameters)
 
     def GetOutput(self):
         return self.blend_filter.GetOutput()

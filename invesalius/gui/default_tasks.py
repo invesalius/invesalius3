@@ -304,8 +304,8 @@ class UpperTaskPanel(wx.Panel):
         Publisher.subscribe(self.OnFoldExport, 'Fold export task')
         Publisher.subscribe(self.SetNavigationMode, "Set navigation mode")
 
-    def OnOverwrite(self, pubsub_evt):
-        self.overwrite = pubsub_evt.data['options']['overwrite']
+    def OnOverwrite(self, surface_parameters):
+        self.overwrite = surface_parameters['options']['overwrite']
 
     def OnFoldSurface(self):
         if not self.overwrite:

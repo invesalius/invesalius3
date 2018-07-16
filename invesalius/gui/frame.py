@@ -1098,12 +1098,11 @@ class StatusBar(wx.StatusBar):
         sub(self._SetProgressValue, 'Update status in GUI')
         sub(self._SetProgressLabel, 'Update status text in GUI')
 
-    def _SetProgressValue(self, pubsub_evt):
+    def _SetProgressValue(self, value, label):
         """
         Set both percentage value in gauge and text progress label in
         status.
         """
-        value, label = pubsub_evt.data
         self.progress_bar.SetPercentage(value)
         self.SetStatusText(label, 0)
         if (int(value) >= 99):
