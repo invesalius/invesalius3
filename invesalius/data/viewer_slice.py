@@ -1861,34 +1861,32 @@ class Viewer(wx.Panel):
 
         self.slice_data.renderer.ResetCamera()
 
-    def AddActors(self, pubsub_evt):
+    def AddActors(self, actors, slice_number):
         "Inserting actors"
-        actors, n = pubsub_evt.data
         pos = self.scroll.GetThumbPosition()
         #try:
-            #renderer = self.renderers_by_slice_number[n]
+            #renderer = self.renderers_by_slice_number[slice_number]
             #for actor in actors:
                 #renderer.AddActor(actor)
         #except KeyError:
             #pass
-        if pos == n:
+        if pos == slice_number:
             for actor in actors:
                 self.slice_data.renderer.AddActor(actor)
 
-        self.actors_by_slice_number[n].extend(actors)
+        self.actors_by_slice_number[slice_number].extend(actors)
 
-    def RemoveActors(self, pubsub_evt):
+    def RemoveActors(self, actors, slice_number):
         "Remove a list of actors"
-        actors, n = pubsub_evt.data
         try:
-            renderer = self.renderers_by_slice_number[n]
+            renderer = self.renderers_by_slice_number[slice_number]
         except KeyError:
             for actor in actors:
-                self.actors_by_slice_number[n].remove(actor)
+                self.actors_by_slice_number[slice_number].remove(actor)
                 self.slice_data.renderer.RemoveActor(actor)
         else:
             for actor in actors:
                 # Remove the actor from the renderer
                 renderer.RemoveActor(actor)
                 # and remove the actor from the actor's list
-                self.actors_by_slice_number[n].remove(actor)
+                self.actors_by_slice_number[slice_number].remove(actor)

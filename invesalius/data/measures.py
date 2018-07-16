@@ -149,7 +149,7 @@ class MeasurementManager(object):
 
                 if m.location == const.SURFACE:
                     Publisher.sendMessage(("Add actors " + str(m.location)),
-                        (actors, m.slice_number))
+                        actors=actors)
             self.current = None
 
             if not m.visible:
@@ -159,28 +159,7 @@ class MeasurementManager(object):
                 else:
                     Publisher.sendMessage('Redraw canvas')
 
-    def _add_point(self, pubsub_evt):
-        position = pubsub_evt.data[0]
-        type = pubsub_evt.data[1] # Linear or Angular
-        location = pubsub_evt.data[2] # 3D, AXIAL, SAGITAL, CORONAL
-
-        if location == const.SURFACE:
-            slice_number = 0
-            try:
-                radius = pubsub_evt.data[3]
-            except IndexError:
-                radius = const.PROP_MEASURE
-        else:
-            try:
-                slice_number = pubsub_evt.data[3]
-            except IndexError:
-                slice_number = 0
-
-            try:
-                radius = pubsub_evt.data[4]
-            except IndexError:
-                radius = const.PROP_MEASURE
-
+    def _add_point(self, position, type, location, slice_number=0, radius=const.PROP_MEASURE):
         to_remove = False
         if self.current is None:
             to_create = True
@@ -228,8 +207,7 @@ class MeasurementManager(object):
         m.points.append(position)
 
         if m.location == const.SURFACE:
-            Publisher.sendMessage("Add actors " + str(location),
-                    (actors, m.slice_number))
+            Publisher.sendMessage("Add actors " + str(location), actors=actors)
 
         if self.current not in self.measures:
             self.measures.append(self.current)
@@ -249,14 +227,12 @@ class MeasurementManager(object):
 
             msg =  'Update measurement info in GUI',
             Publisher.sendMessage(msg,
-                                  (index, name, colour,
-                                   location,
-                                   type_,
-                                   value))
+                                  index=index, name=name,
+                                  colour=colour, location=location,
+                                  type_=type_, value=value)
             self.current = None
 
-    def _change_measure_point_pos(self, pubsub_evt):
-        index, npoint, pos = pubsub_evt.data
+    def _change_measure_point_pos(self, index, npoint, pos):
         m, mr = self.measures[index]
         x, y, z = pos
         if npoint == 0:
@@ -283,10 +259,9 @@ class MeasurementManager(object):
             value = u"%.3f°"% m.value
 
         Publisher.sendMessage('Update measurement info in GUI',
-                              (index, name, colour,
-                               location,
-                               type_,
-                               value))
+                              index=index, name=name, colour=colour,
+                              location=location, type_=type_,
+                              value=value)
 
     def _change_name(self, pubsub_evt):
         index, new_name = pubsub_evt.data
@@ -304,7 +279,8 @@ class MeasurementManager(object):
             prj.Project().RemoveMeasurement(index)
             if m.location == const.SURFACE:
                 Publisher.sendMessage(('Remove actors ' + str(m.location)),
-                        (mr.GetActors(), m.slice_number))
+                                      actors=mr.GetActors(),
+                                      slice_number=m.slice_number)
         Publisher.sendMessage('Redraw canvas')
         Publisher.sendMessage('Render volume viewer')
 
@@ -321,7 +297,7 @@ class MeasurementManager(object):
         else:
             Publisher.sendMessage('Redraw canvas')
 
-    def _rm_incomplete_measurements(self, pubsub_evt):
+    def _rm_incomplete_measurements(self):
         if self.current is None:
             return
 
@@ -334,7 +310,7 @@ class MeasurementManager(object):
             slice_number = self.current[0].slice_number
             if m.location == const.SURFACE:
                 Publisher.sendMessage(('Remove actors ' + str(self.current[0].location)),
-                                      (actors, slice_number))
+                                      actors=actors)
             if self.current[0].location == const.SURFACE:
                 Publisher.sendMessage('Render volume viewer')
             else:
@@ -645,7 +621,7 @@ class LinearMeasure(object):
 
     def Remove(self):
         actors = self.GetActors()
-        Publisher.sendMessage("Remove actors " + str(const.SURFACE), (actors,))
+        Publisher.sendMessage("Remove actors " + str(const.SURFACE), actors=actors)
 
     def __del__(self):
         self.Remove()
@@ -896,7 +872,7 @@ class AngularMeasure(object):
 
     def Remove(self):
         actors = self.GetActors()
-        Publisher.sendMessage("Remove actors " + str(const.SURFACE), (actors,))
+        Publisher.sendMessage("Remove actors " + str(const.SURFACE), actors=actors)
 
     def SetRenderer(self, renderer):
         if self.point_actor1:

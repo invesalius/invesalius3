@@ -214,12 +214,12 @@ class CrossInteractorStyle(DefaultInteractorStyle):
     def SetUp(self):
         self.viewer._set_cross_visibility(1)
         Publisher.sendMessage('Toggle toolbar item',
-                             (self.state_code, True))
+                              _id=self.state_code, value=True)
 
     def CleanUp(self):
         self.viewer._set_cross_visibility(0)
         Publisher.sendMessage('Toggle toolbar item',
-                             (self.state_code, False))
+                              _id=self.state_code, value=False)
 
     def OnCrossMouseClick(self, obj, evt):
         iren = obj.GetInteractor()
@@ -285,14 +285,14 @@ class WWWLInteractorStyle(DefaultInteractorStyle):
     def SetUp(self):
         self.viewer.on_wl = True
         Publisher.sendMessage('Toggle toolbar item',
-                             (self.state_code, True))
+                              _id=self.state_code, value=True)
         self.viewer.canvas.draw_list.append(self.viewer.wl_text)
         self.viewer.UpdateCanvas()
 
     def CleanUp(self):
         self.viewer.on_wl = False
         Publisher.sendMessage('Toggle toolbar item',
-                             (self.state_code, False))
+                              _id=self.state_code, value=False)
         if self.viewer.wl_text is not None:
             self.viewer.canvas.draw_list.remove(self.viewer.wl_text)
             self.viewer.UpdateCanvas()
@@ -376,11 +376,11 @@ class LinearMeasureInteractorStyle(DefaultInteractorStyle):
 
     def SetUp(self):
         Publisher.sendMessage('Toggle toolbar item',
-                             (self.state_code, True))
+                             _id=self.state_code, value=True)
 
     def CleanUp(self):
         Publisher.sendMessage('Toggle toolbar item',
-                             (self.state_code, False))
+                             _id=self.state_code, value=False)
         self.picker.PickFromListOff()
         Publisher.sendMessage("Remove incomplete measurements")
 
@@ -401,9 +401,9 @@ class LinearMeasureInteractorStyle(DefaultInteractorStyle):
                 self.viewer.scroll_enabled = True
             else:
                 Publisher.sendMessage("Add measurement point",
-                                      ((x, y, z), self._type,
-                                       ORIENTATIONS[self.orientation],
-                                       slice_number, self.radius))
+                                      position=(x, y, z), type=self._type,
+                                      location=ORIENTATIONS[self.orientation],
+                                      slice_number=slice_number, radius=self.radius)
                 n = len(m.points)-1
                 self.creating = n, m, mr
                 self.viewer.UpdateCanvas()
@@ -418,13 +418,15 @@ class LinearMeasureInteractorStyle(DefaultInteractorStyle):
             if self.picker.GetViewProp():
                 renderer = self.viewer.slice_data.renderer
                 Publisher.sendMessage("Add measurement point",
-                                      ((x, y, z), self._type,
-                                       ORIENTATIONS[self.orientation],
-                                       slice_number, self.radius))
+                                      position=(x, y, z), type=self._type,
+                                      location=ORIENTATIONS[self.orientation],
+                                      slice_number=slice_number,
+                                      radius=self.radius)
                 Publisher.sendMessage("Add measurement point",
-                                      ((x, y, z), self._type,
-                                       ORIENTATIONS[self.orientation],
-                                       slice_number, self.radius))
+                                      position=(x, y, z), type=self._type,
+                                      location=ORIENTATIONS[self.orientation],
+                                      slice_number=slice_number,
+                                      radius=self.radius)
 
                 n, (m, mr) =  1, self.measures.measures[self._ori][slice_number][-1]
                 self.creating = n, m, mr
@@ -436,7 +438,7 @@ class LinearMeasureInteractorStyle(DefaultInteractorStyle):
             n, m, mr = self.selected
             x, y, z = self._get_pos_clicked()
             idx = self.measures._list_measures.index((m, mr))
-            Publisher.sendMessage('Change measurement point position', (idx, n, (x, y, z)))
+            Publisher.sendMessage('Change measurement point position', index=idx, npoint=n, pos=(x, y, z))
             self.viewer.UpdateCanvas()
             self.selected = None
             self.viewer.scroll_enabled = True
@@ -446,13 +448,13 @@ class LinearMeasureInteractorStyle(DefaultInteractorStyle):
         if self.selected:
             n, m, mr = self.selected
             idx = self.measures._list_measures.index((m, mr))
-            Publisher.sendMessage('Change measurement point position', (idx, n, (x, y, z)))
+            Publisher.sendMessage('Change measurement point position', index=idx, npoint=n, pos=(x, y, z))
             self.viewer.UpdateCanvas()
 
         elif self.creating:
             n, m, mr = self.creating
             idx = self.measures._list_measures.index((m, mr))
-            Publisher.sendMessage('Change measurement point position', (idx, n, (x, y, z)))
+            Publisher.sendMessage('Change measurement point position', index=idx, npoint=n, pos=(x, y, z))
             self.viewer.UpdateCanvas()
 
         else:
@@ -541,12 +543,12 @@ class PanMoveInteractorStyle(DefaultInteractorStyle):
 
     def SetUp(self):
         Publisher.sendMessage('Toggle toolbar item',
-                             (self.state_code, True))
+                             _id=self.state_code, value=True)
 
     def CleanUp(self):
         self.viewer.interactor.Unbind(wx.EVT_LEFT_DCLICK)
         Publisher.sendMessage('Toggle toolbar item',
-                             (self.state_code, False))
+                             _id=self.state_code, value=False)
 
     def OnPanMove(self, obj, evt):
         if self.left_pressed:
@@ -577,12 +579,12 @@ class SpinInteractorStyle(DefaultInteractorStyle):
 
     def SetUp(self):
         Publisher.sendMessage('Toggle toolbar item',
-                             (self.state_code, True))
+                              _id=self.state_code, value=True)
 
     def CleanUp(self):
         self.viewer.interactor.Unbind(wx.EVT_LEFT_DCLICK)
         Publisher.sendMessage('Toggle toolbar item',
-                             (self.state_code, False))
+                              _id=self.state_code, value=False)
 
     def OnSpinMove(self, obj, evt):
         iren = obj.GetInteractor()
@@ -622,12 +624,12 @@ class ZoomInteractorStyle(DefaultInteractorStyle):
 
     def SetUp(self):
         Publisher.sendMessage('Toggle toolbar item',
-                             (self.state_code, True))
+                             _id=self.state_code, value=True)
 
     def CleanUp(self):
         self.viewer.interactor.Unbind(wx.EVT_LEFT_DCLICK)
         Publisher.sendMessage('Toggle toolbar item',
-                             (self.state_code, False))
+                              _id=self.state_code, value=False)
 
     def OnZoomMoveLeft(self, obj, evt):
         if self.left_pressed:
@@ -656,12 +658,12 @@ class ZoomSLInteractorStyle(vtk.vtkInteractorStyleRubberBandZoom):
 
     def SetUp(self):
         Publisher.sendMessage('Toggle toolbar item',
-                             (self.state_code, True))
+                              _id=self.state_code, value=True)
 
     def CleanUp(self):
         self.viewer.interactor.Unbind(wx.EVT_LEFT_DCLICK)
         Publisher.sendMessage('Toggle toolbar item',
-                             (self.state_code, False))
+                              _id=self.state_code, value=False)
 
     def OnUnZoom(self, evt):
         mouse_x, mouse_y = self.viewer.interactor.GetLastEventPosition()
@@ -689,11 +691,11 @@ class ChangeSliceInteractorStyle(DefaultInteractorStyle):
 
     def SetUp(self):
         Publisher.sendMessage('Toggle toolbar item',
-                             (self.state_code, True))
+                             _id=self.state_code, value=True)
 
     def CleanUp(self):
         Publisher.sendMessage('Toggle toolbar item',
-                             (self.state_code, False))
+                             _id=self.state_code, value=False)
 
     def OnChangeSliceMove(self, evt, obj):
         if self.left_pressed:

@@ -307,11 +307,11 @@ class UpperTaskPanel(wx.Panel):
     def OnOverwrite(self, pubsub_evt):
         self.overwrite = pubsub_evt.data['options']['overwrite']
 
-    def OnFoldSurface(self, pubsub_evt):
+    def OnFoldSurface(self):
         if not self.overwrite:
             self.fold_panel.Expand(self.fold_panel.GetFoldPanel(2))
 
-    def OnFoldExport(self, pubsub_evt):
+    def OnFoldExport(self):
         self.fold_panel.Expand(self.fold_panel.GetFoldPanel(3))
 
     def OnEnableState(self, state):

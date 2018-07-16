@@ -443,9 +443,8 @@ class Viewer(wx.Panel):
             self.text.Show()
             self.interactor.Render()
 
-    def AddActors(self, pubsub_evt):
+    def AddActors(self, actors):
         "Inserting actors"
-        actors = pubsub_evt.data[0]
         for actor in actors:
             self.ren.AddActor(actor)
 
@@ -457,9 +456,8 @@ class Viewer(wx.Panel):
             self._to_show_ball -= 1
             self._check_and_set_ball_visibility()
 
-    def RemoveActors(self, pubsub_evt):
+    def RemoveActors(self, actors):
         "Remove a list of actors"
-        actors = pubsub_evt.data[0]
         for actor in actors:
             self.ren.RemoveActor(actor)
 
@@ -1687,7 +1685,10 @@ class Viewer(wx.Panel):
                     # Publisher.sendMessage("Add measure to list",
                             # (u"3D", _(u"%.3f mm" % m.GetValue())))
             Publisher.sendMessage("Add measurement point",
-                    ((x, y,z), const.LINEAR, const.SURFACE, radius))
+                                  position=(x, y,z),
+                                  type=const.LINEAR,
+                                  location=const.SURFACE,
+                                  radius=radius)
             self.interactor.Render()
 
     def OnInsertAngularMeasurePoint(self, obj, evt):
@@ -1718,7 +1719,10 @@ class Viewer(wx.Panel):
                                                 # type_, location,
                                                 # value))
             Publisher.sendMessage("Add measurement point",
-                    ((x, y,z), const.ANGULAR, const.SURFACE, radius))
+                                  position=(x, y,z),
+                                  type=const.ANGULAR,
+                                  location=const.SURFACE,
+                                  radius=radius)
             self.interactor.Render()
 
     def Reposition3DPlane(self, evt_pubsub):

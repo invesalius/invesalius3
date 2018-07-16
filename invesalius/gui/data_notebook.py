@@ -98,20 +98,20 @@ class NotebookPanel(wx.Panel):
                                  'Fold mask page')
 
 
-    def _FoldSurface(self, pubsub_evt):
+    def _FoldSurface(self):
         """
         Fold surface notebook page.
         """
         self.book.SetSelection(1)
 
-    def _FoldMeasure(self, pubsub_evt):
+    def _FoldMeasure(self):
         """
         Fold measure notebook page.
         """
         self.book.SetSelection(2)
 
 
-    def _FoldMask(self, pubsub_evt):
+    def _FoldMask(self):
         """
         Fold mask notebook page.
         """
@@ -1160,14 +1160,7 @@ class MeasuresListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
             if not m.visible:
                 self.SetItemImage(i, False)
 
-    def AddItem_(self, pubsub_evt):
-        index = pubsub_evt.data[0]
-        name = pubsub_evt.data[1]
-        colour = pubsub_evt.data[2]
-        location = pubsub_evt.data[3]
-        type_ = pubsub_evt.data[4]
-        value = pubsub_evt.data[5]
-
+    def AddItem_(self, index, name, colour, location, type_, value):
         if index not in self._list_index:
             image = self.CreateColourBitmap(colour)
             image_index = self.imagelist.Add(image)

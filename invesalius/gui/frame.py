@@ -1499,10 +1499,10 @@ class ObjectToolBar(AuiToolBar):
             Publisher.sendMessage('Fold measure task')
 
         if state:
-            Publisher.sendMessage('Enable style', id)
+            Publisher.sendMessage('Enable style', style=id)
             Publisher.sendMessage('Untoggle slice toolbar items')
         else:
-            Publisher.sendMessage('Disable style', id)
+            Publisher.sendMessage('Disable style', style=id)
 
         for item in const.TOOL_STATES:
             state = self.GetToolToggled(item)
@@ -1510,8 +1510,7 @@ class ObjectToolBar(AuiToolBar):
                 self.ToggleTool(item, False)
         evt.Skip()
 
-    def ToggleItem(self, evt):
-        _id, value = evt.data
+    def ToggleItem(self, _id, value):
         if _id in self.enable_items:
             self.ToggleTool(_id, value)
             self.Refresh()
@@ -1616,7 +1615,7 @@ class SliceToolBar(AuiToolBar):
             self._UntoggleAllItems()
         self.Refresh()
 
-    def _UntoggleAllItems(self, pubsub_evt=None):
+    def _UntoggleAllItems(self):
         """
         Untoggle all items on toolbar.
         """
@@ -1629,7 +1628,7 @@ class SliceToolBar(AuiToolBar):
                     Publisher.sendMessage(msg, 0)
         self.Refresh()
 
-    def OnToggle(self, evt):
+    def OnToggle(self, evt=None, id=None):
         """
         Update status of other items on toolbar (only one item
         should be toggle each time).
@@ -1646,10 +1645,10 @@ class SliceToolBar(AuiToolBar):
         state = self.GetToolToggled(id)
 
         if state:
-            Publisher.sendMessage('Enable style', id)
+            Publisher.sendMessage('Enable style', style=id)
             Publisher.sendMessage('Untoggle object toolbar items')
         else:
-            Publisher.sendMessage('Disable style', id)
+            Publisher.sendMessage('Disable style', style=id)
 
         for item in self.enable_items:
             state = self.GetToolToggled(item)
@@ -1661,8 +1660,7 @@ class SliceToolBar(AuiToolBar):
         ##print ">>>", self.sst.IsToggled()
         #print ">>>", self.sst.GetState()
 
-    def ToggleItem(self, evt):
-        _id, value = evt.data
+    def ToggleItem(self, _id, value):
         if _id in self.enable_items:
             self.ToggleTool(_id, value)
             self.Refresh()
