@@ -1269,21 +1269,19 @@ class Viewer(wx.Panel):
         else:
             self.interactor.SetCursor(wx.StockCursor(wx.CURSOR_SIZING))
 
-    def OnExportPicture(self, pubsub_evt):
-        id, filename, filetype = pubsub_evt.data
-
+    def OnExportPicture(self, orientation, filename, filetype):
         dict = {"AXIAL": const.AXIAL,
                 "CORONAL": const.CORONAL,
                 "SAGITAL": const.SAGITAL}
 
-        if id == dict[self.orientation]:
+        if orientation == dict[self.orientation]:
             Publisher.sendMessage('Begin busy cursor')
             if _has_win32api:
                 utils.touch(filename)
                 win_filename = win32api.GetShortPathName(filename)
-                self._export_picture(id, win_filename, filetype)
+                self._export_picture(orientation, win_filename, filetype)
             else:
-                self._export_picture(id, filename, filetype)
+                self._export_picture(orientation, filename, filetype)
             Publisher.sendMessage('End busy cursor')
 
     def _export_picture(self, id, filename, filetype):

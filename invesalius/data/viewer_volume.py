@@ -366,16 +366,15 @@ class Viewer(wx.Panel):
         Publisher.sendMessage("Create surface from seeds",
                                     self.seed_points)
 
-    def OnExportPicture(self, pubsub_evt):
-        id, filename, filetype = pubsub_evt.data
-        if id == const.VOLUME:
+    def OnExportPicture(self, orientation, filename, filetype):
+        if orientation == const.VOLUME:
             Publisher.sendMessage('Begin busy cursor')
             if _has_win32api:
                 utils.touch(filename)
                 win_filename = win32api.GetShortPathName(filename)
-                self._export_picture(id, win_filename, filetype)
+                self._export_picture(orientation, win_filename, filetype)
             else:
-                self._export_picture(id, filename, filetype)
+                self._export_picture(orientation, filename, filetype)
             Publisher.sendMessage('End busy cursor')
 
     def _export_picture(self, id, filename, filetype):
@@ -1436,8 +1435,7 @@ class Viewer(wx.Panel):
         #self.interactor.Render()
         self.Refresh()
 
-    def OnExportSurface(self, pubsub_evt):
-        filename, filetype = pubsub_evt.data
+    def OnExportSurface(self, filename, filetype):
         if filetype not in (const.FILETYPE_STL,
                             const.FILETYPE_VTP,
                             const.FILETYPE_PLY,

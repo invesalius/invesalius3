@@ -399,11 +399,11 @@ class InnerFoldPanel(wx.Panel):
 
     def OnRetrieveStyle(self):
         if (self.last_style == const.SLICE_STATE_EDITOR):
-            Publisher.sendMessage('Enable style', const.SLICE_STATE_EDITOR)
+            Publisher.sendMessage('Enable style', style=const.SLICE_STATE_EDITOR)
 
     def OnDisableStyle(self):
         if (self.last_style == const.SLICE_STATE_EDITOR):
-            Publisher.sendMessage('Disable style', const.SLICE_STATE_EDITOR)
+            Publisher.sendMessage('Disable style', style=const.SLICE_STATE_EDITOR)
 
     def OnCloseProject(self):
         self.fold_panel.Expand(self.fold_panel.GetFoldPanel(0))

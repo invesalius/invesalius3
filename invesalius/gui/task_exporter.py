@@ -267,7 +267,7 @@ class InnerTaskPanel(wx.Panel):
         if value:
             filename, filetype = value
             Publisher.sendMessage('Export picture to file',
-                                       (id, filename, filetype))
+                                  orientation=id, filename=filename, filetype=filetype)
 
 
 
@@ -335,7 +335,7 @@ class InnerTaskPanel(wx.Panel):
                     if filename.split(".")[-1] != extension:
                         filename = filename + "."+ extension
                 Publisher.sendMessage('Export surface to file',
-                                            (filename, filetype))
+                                      filename=filename, filetype=filetype)
                 if not os.path.exists(filename):
                     dlg = wx.MessageDialog(None,
                                        _("It was not possible to save the surface."),

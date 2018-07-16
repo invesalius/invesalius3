@@ -890,8 +890,7 @@ class SurfaceManager():
         proj.surface_dict[index].colour = colour
         Publisher.sendMessage('Render volume viewer')
 
-    def OnExportSurface(self, pubsub_evt):
-        filename, filetype = pubsub_evt.data
+    def OnExportSurface(self, filename, filetype):
         ftype_prefix = {
             const.FILETYPE_STL: '.stl',
             const.FILETYPE_VTP: '.vtp',
