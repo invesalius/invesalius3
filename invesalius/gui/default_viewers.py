@@ -156,7 +156,7 @@ class Panel(wx.Panel):
         p4 = volume_viewer.Viewer(self)
         splitter.AppendWindow(p4)
 
-    def _Exit(self, pubsub_evt):
+    def _Exit(self):
         self.aui_manager.UnInit()
 
     def __init_mix(self):
@@ -306,7 +306,7 @@ class VolumeInteraction(wx.Panel):
         self.clut_raycasting.CalculatePixelPoints()
         self.clut_raycasting.Refresh()
 
-    def _Exit(self, pubsub_evt):
+    def _Exit(self):
         self.aui_manager.UnInit()
 
 

@@ -726,7 +726,7 @@ class UpdateMessageDialog(wx.Dialog):
         self.Close()
         self.Destroy()
 
-    def _OnCloseInV(self, pubsub_evt):
+    def _OnCloseInV(self):
         # Closes and destroy this dialog.
         self.Close()
         self.Destroy()

@@ -266,7 +266,7 @@ class Frame(wx.Frame):
             #no matching wxBeginBusyCursor() for wxEndBusyCursor()
             pass
 
-    def _Exit(self, pubsub_evt):
+    def _Exit(self):
         """
         Exit InVesalius.
         """
