@@ -397,11 +397,11 @@ class InnerFoldPanel(wx.Panel):
         self.fold_panel.SetMinSize((self.fold_panel.GetSize()[0], sizeNeeded ))
         self.fold_panel.SetSize((self.fold_panel.GetSize()[0], sizeNeeded))
 
-    def OnRetrieveStyle(self, pubsub_evt):
+    def OnRetrieveStyle(self):
         if (self.last_style == const.SLICE_STATE_EDITOR):
             Publisher.sendMessage('Enable style', const.SLICE_STATE_EDITOR)
 
-    def OnDisableStyle(self, pubsub_evt):
+    def OnDisableStyle(self):
         if (self.last_style == const.SLICE_STATE_EDITOR):
             Publisher.sendMessage('Disable style', const.SLICE_STATE_EDITOR)
 

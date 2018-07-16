@@ -515,8 +515,7 @@ class SurfaceProperties(wx.Panel):
         Publisher.subscribe(self.OnRemoveSurfaces, 'Remove surfaces')
 
 
-    def OnRemoveSurfaces(self, pubsub_evt):
-        list_index = pubsub_evt.data
+    def OnRemoveSurfaces(self, surface_indexes):
         s = self.combo_surface_name.GetSelection()
         ns = 0
 
@@ -524,7 +523,7 @@ class SurfaceProperties(wx.Panel):
         new_dict = []
         i = 0
         for n, (name, index) in enumerate(old_dict):
-            if n not in list_index:
+            if n not in surface_indexes:
                 new_dict.append([name, i])
                 if s == n:
                     ns = i

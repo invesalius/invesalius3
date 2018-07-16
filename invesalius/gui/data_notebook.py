@@ -675,7 +675,7 @@ class SurfaceButtonControlPanel(wx.Panel):
             surface_options = dialog.GetValue()
 
             Publisher.sendMessage('Create surface from index',
-                                  surface_parameter=surface_options)
+                                  surface_parameters=surface_options)
         dialog.Destroy()
 
     def OnRemove(self):
@@ -685,14 +685,14 @@ class SurfaceButtonControlPanel(wx.Panel):
     def OnDuplicate(self):
         selected_items = self.parent.listctrl.GetSelected()
         if selected_items:
-            Publisher.sendMessage('Duplicate surfaces', selected_items)
+            Publisher.sendMessage('Duplicate surfaces', surface_indexes=selected_items)
         else:
            dlg.SurfaceSelectionRequiredForDuplication()
 
     def OnOpenMesh(self):
         filename = dlg.ShowImportMeshFilesDialog()
         if filename:
-            Publisher.sendMessage('Import surface file', filename)
+            Publisher.sendMessage('Import surface file', filename=filename)
 
 
 class SurfacesListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
@@ -766,7 +766,7 @@ class SurfacesListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
                 old_dict = new_dict
             self.surface_list_index = new_dict
 
-            Publisher.sendMessage('Remove surfaces', selected_items)
+            Publisher.sendMessage('Remove surfaces', surface_indexes=selected_items)
         else:
            dlg.SurfaceSelectionRequiredForRemoval()
 

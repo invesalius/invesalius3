@@ -171,11 +171,10 @@ class SurfaceManager():
 
         Publisher.subscribe(self.OnImportSurfaceFile, 'Import surface file')
 
-    def OnDuplicate(self, pubsub_evt):
-        selected_items = pubsub_evt.data
+    def OnDuplicate(self, surface_indexes):
         proj = prj.Project()
         surface_dict = proj.surface_dict
-        for index in selected_items:
+        for index in surface_indexes:
             original_surface = surface_dict[index]
             # compute copy name
             name = original_surface.name
@@ -190,14 +189,13 @@ class SurfaceManager():
                                            volume = original_surface.volume,
                                            area = original_surface.area)
 
-    def OnRemove(self, pubsub_evt):
-        selected_items = pubsub_evt.data
+    def OnRemove(self, surface_indexes):
         proj = prj.Project()
 
         old_dict = self.actors_dict
         new_dict = {}
-        if selected_items:
-            for index in selected_items:
+        if surface_indexes:
+            for index in surface_indexes:
                 proj.RemoveSurface(index)
                 if index in old_dict:
                     actor = old_dict[index]
@@ -210,7 +208,7 @@ class SurfaceManager():
                     Publisher.sendMessage('Remove surface actor from viewer', actor=actor)
             self.actors_dict = new_dict
 
-        if self.last_surface_index in selected_items:
+        if self.last_surface_index in surface_indexes:
             if self.actors_dict:
                 self.last_surface_index = 0
             else:
@@ -263,11 +261,10 @@ class SurfaceManager():
         new_index = self.CreateSurfaceFromPolydata(new_polydata)
         Publisher.sendMessage('Show single surface', (new_index, True))
 
-    def OnImportSurfaceFile(self, pubsub_evt):
+    def OnImportSurfaceFile(self, filename):
         """
         Creates a new surface from a surface file (STL, PLY, OBJ or VTP)
         """
-        filename = pubsub_evt.data
         self.CreateSurfaceFromFile(filename)
 
     def CreateSurfaceFromFile(self, filename):
