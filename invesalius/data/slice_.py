@@ -418,7 +418,7 @@ class Slice(with_metaclass(utils.Singleton, object)):
             value = True
             Publisher.sendMessage('Show mask', index=index, value=value)
 
-    def __clean_current_mask(self, pubsub_evt):
+    def __clean_current_mask(self):
         if self.current_mask:
             self.current_mask.clean()
             for buffer_ in self.buffer_slices.values():
