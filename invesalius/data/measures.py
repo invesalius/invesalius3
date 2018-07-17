@@ -263,9 +263,8 @@ class MeasurementManager(object):
                               location=location, type_=type_,
                               value=value)
 
-    def _change_name(self, pubsub_evt):
-        index, new_name = pubsub_evt.data
-        self.measures[index].name = new_name
+    def _change_name(self, index, name):
+        self.measures[index][0].name = name
 
     def _remove_measurements(self, pubsub_evt):
         indexes = pubsub_evt.data

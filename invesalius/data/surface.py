@@ -849,8 +849,7 @@ class SurfaceManager():
         proj = prj.Project()
         proj.surface_dict.pop(index)
 
-    def OnChangeSurfaceName(self, pubsub_evt):
-        index, name = pubsub_evt.data
+    def OnChangeSurfaceName(self, index, name):
         proj = prj.Project()
         proj.surface_dict[index].name = name
 

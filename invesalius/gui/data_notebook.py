@@ -834,7 +834,7 @@ class SurfacesListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
         self.image_gray = Image.open(os.path.join(const.ICON_DIR, "object_colour.jpg"))
 
     def OnEditLabel(self, evt):
-        Publisher.sendMessage('Change surface name', (evt.GetIndex(), evt.GetLabel()))
+        Publisher.sendMessage('Change surface name', index=evt.GetIndex(), name=evt.GetLabel())
         evt.Skip()
 
     def OnItemActivated(self, evt):
@@ -1054,8 +1054,8 @@ class MeasuresListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
         # things will stop working, e.g.: OnCheckItem
 
         last_index = evt.Index
-        Publisher.sendMessage('Change measurement selected',
-                                    last_index)
+        #  Publisher.sendMessage('Change measurement selected',
+                                    #  last_index)
         evt.Skip()
 
     def GetSelected(self):
@@ -1107,7 +1107,7 @@ class MeasuresListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
 
 
     def OnEditLabel(self, evt):
-        Publisher.sendMessage('Change measurement name', (evt.GetIndex(), evt.GetLabel()))
+        Publisher.sendMessage('Change measurement name', index=evt.GetIndex(), name=evt.GetLabel())
         evt.Skip()
 
     def OnItemActivated(self, evt):
