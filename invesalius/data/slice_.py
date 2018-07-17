@@ -1440,7 +1440,7 @@ class Slice(with_metaclass(utils.Singleton, object)):
 
         Publisher.sendMessage('Reload actual slice')
 
-    def __undo_edition(self, pub_evt):
+    def __undo_edition(self):
         buffer_slices = self.buffer_slices
         actual_slices = {"AXIAL": buffer_slices["AXIAL"].index,
                          "CORONAL": buffer_slices["CORONAL"].index,
@@ -1452,7 +1452,7 @@ class Slice(with_metaclass(utils.Singleton, object)):
             self.buffer_slices[o].discard_vtk_mask()
         Publisher.sendMessage('Reload actual slice')
 
-    def __redo_edition(self, pub_evt):
+    def __redo_edition(self):
         buffer_slices = self.buffer_slices
         actual_slices = {"AXIAL": buffer_slices["AXIAL"].index,
                          "CORONAL": buffer_slices["CORONAL"].index,
