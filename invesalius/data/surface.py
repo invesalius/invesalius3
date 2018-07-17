@@ -853,9 +853,8 @@ class SurfaceManager():
         proj = prj.Project()
         proj.surface_dict[index].name = name
 
-    def OnShowSurface(self, pubsub_evt):
-        index, value = pubsub_evt.data
-        self.ShowActor(index, value)
+    def OnShowSurface(self, index, visibility):
+        self.ShowActor(index, visibility)
 
     def ShowActor(self, index, value):
         """

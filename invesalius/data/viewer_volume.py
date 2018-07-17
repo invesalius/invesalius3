@@ -350,9 +350,8 @@ class Viewer(wx.Panel):
             self.sen1 = self.sen2 = False
             self.interactor.Render()
 
-    def OnShowSurface(self, pubsub_evt):
-        index, value = pubsub_evt.data
-        if value:
+    def OnShowSurface(self, index, visibility):
+        if visibility:
             self._to_show_ball += 1
         else:
             self._to_show_ball -= 1

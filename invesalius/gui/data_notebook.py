@@ -842,7 +842,7 @@ class SurfacesListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
         evt.Skip()
 
     def OnCheckItem(self, index, flag):
-        Publisher.sendMessage('Show surface', (index, flag))
+        Publisher.sendMessage('Show surface', index=index, visibility=flag)
 
     def OnShowSingle(self, pubsub_evt):
         index, visibility = pubsub_evt.data
@@ -850,10 +850,10 @@ class SurfacesListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
             if key != index:
                 self.SetItemImage(key, not visibility)
                 Publisher.sendMessage('Show surface',
-                                            (key, not visibility))
+                                      index=key, visibility=not visibility)
         self.SetItemImage(index, visibility)
         Publisher.sendMessage('Show surface',
-                                   (index, visibility))
+                              index=index, visibility=visibility)
 
     def OnShowMultiple(self, pubsub_evt):
         index_list, visibility = pubsub_evt.data
@@ -861,11 +861,11 @@ class SurfacesListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
             if key not in index_list:
                 self.SetItemImage(key, not visibility)
                 Publisher.sendMessage('Show surface',
-                                            (key, not visibility))
+                                      index=key, visibility=not visibility)
         for index in index_list:
             self.SetItemImage(index, visibility)
             Publisher.sendMessage('Show surface',
-                                       (index, visibility))
+                                  index=index, visibility=visibility)
 
     def AddSurface(self, surface):
         index = surface.index
