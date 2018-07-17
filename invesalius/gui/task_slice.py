@@ -218,7 +218,9 @@ class InnerTaskPanel(wx.Panel):
             mask_name, thresh, colour = dialog.GetValue()
             if mask_name:
                 Publisher.sendMessage('Create new mask',
-                                            (mask_name, thresh, colour))
+                                      mask_name=mask_name,
+                                      thresh=thresh,
+                                      colour=colour)
         dialog.Destroy()
 
     def GetMaskSelected(self):
@@ -524,9 +526,8 @@ class MaskProperties(wx.Panel):
         for i in range(n-1, -1, -1):
             self.combo_thresh.Delete(i)
 
-    def OnRemoveMasks(self, pubsub_evt):
-        list_index = pubsub_evt.data
-        for i in list_index:
+    def OnRemoveMasks(self, mask_indexes):
+        for i in mask_indexes:
             self.combo_mask_name.Delete(i)
 
         if self.combo_mask_name.IsEmpty():

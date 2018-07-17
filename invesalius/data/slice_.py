@@ -219,10 +219,9 @@ class Slice(with_metaclass(utils.Singleton, object)):
             buffer_.discard_vtk_mask()
             buffer_.discard_mask()
 
-    def OnRemoveMasks(self, pubsub_evt):
-        selected_items = pubsub_evt.data
+    def OnRemoveMasks(self, mask_indexes):
         proj = Project()
-        for item in selected_items:
+        for item in mask_indexes:
             proj.RemoveMask(item)
 
             # if the deleted mask is the current mask, cleans the current mask
@@ -237,11 +236,10 @@ class Slice(with_metaclass(utils.Singleton, object)):
                 Publisher.sendMessage('Show mask', index=item, value=False)
                 Publisher.sendMessage('Reload actual slice')
 
-    def OnDuplicateMasks(self, pubsub_evt):
-        selected_items = pubsub_evt.data
+    def OnDuplicateMasks(self, mask_indexes):
         proj = Project()
         mask_dict = proj.mask_dict
-        for index in selected_items:
+        for index in mask_indexes:
             original_mask = mask_dict[index]
             # compute copy name
             name = original_mask.name

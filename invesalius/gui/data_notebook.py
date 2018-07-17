@@ -334,7 +334,8 @@ class ButtonControlPanel(wx.Panel):
             mask_name, thresh, colour = dialog.GetValue()
             if mask_name:
                 Publisher.sendMessage('Create new mask',
-                                            (mask_name, thresh, colour))
+                                      mask_name=mask_name,
+                                      thresh=thresh, colour=colour)
         dialog.Destroy()
 
     def OnRemove(self):
@@ -343,7 +344,7 @@ class ButtonControlPanel(wx.Panel):
     def OnDuplicate(self):
         selected_items = self.parent.listctrl.GetSelected()
         if selected_items:
-            Publisher.sendMessage('Duplicate masks', selected_items)
+            Publisher.sendMessage('Duplicate masks', mask_indexes=selected_items)
         else:
            dlg.MaskSelectionRequiredForDuplication()
 
@@ -398,7 +399,7 @@ class MasksListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
         selected_items = self.GetSelected()
 
         if selected_items:
-            Publisher.sendMessage('Remove masks', selected_items)
+            Publisher.sendMessage('Remove masks', mask_indexes=selected_items)
         else:
             dlg.MaskSelectionRequiredForRemoval()
             return

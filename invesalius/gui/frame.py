@@ -1016,8 +1016,8 @@ class MenuBar(wx.MenuBar):
         self.num_masks += 1
         self.bool_op_menu.Enable(self.num_masks >= 2)
 
-    def OnRemoveMasks(self, pubsub_evt):
-        self.num_masks -= len(pubsub_evt.data)
+    def OnRemoveMasks(self, mask_indexes):
+        self.num_masks -= len(mask_indexes)
         self.bool_op_menu.Enable(self.num_masks >= 2)
 
     def OnShowMask(self, index, value):
