@@ -937,9 +937,8 @@ class Viewer(wx.Panel):
             for slice_data in self.slice_data_list:
                 slice_data.cursor.SetColour(vtk_colour)
 
-    def SetBrushColour(self, pubsub_evt):
-        colour_wx = pubsub_evt.data
-        colour_vtk = [colour/float(255) for colour in colour_wx]
+    def SetBrushColour(self, colour):
+        colour_vtk = [colour/float(255) for colour in colour]
         self._brush_cursor_colour = colour_vtk
         if self.slice_data.cursor:
             self.slice_data.cursor.SetColour(colour_vtk)

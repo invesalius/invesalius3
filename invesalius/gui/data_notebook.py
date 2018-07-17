@@ -488,7 +488,7 @@ class MasksListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
 
     def OnEditLabel(self, evt):
         Publisher.sendMessage('Change mask name',
-                                   (evt.GetIndex(), evt.GetLabel()))
+                              index=evt.GetIndex(), name=evt.GetLabel())
         evt.Skip()
 
     def OnItemActivated(self, evt):

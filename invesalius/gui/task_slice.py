@@ -548,8 +548,7 @@ class MaskProperties(wx.Panel):
         else:
             self.combo_mask_name.SetValue('')
 
-    def ChangeMaskName(self, pubsub_evt):
-        index, name = pubsub_evt.data
+    def ChangeMaskName(self, index, name):
         self.combo_mask_name.SetString(index, name)
         self.combo_mask_name.Refresh()
 
@@ -669,7 +668,7 @@ class MaskProperties(wx.Panel):
     def OnSelectColour(self, evt):
         colour = evt.GetValue()[:3]
         self.gradient.SetColour(colour)
-        Publisher.sendMessage('Change mask colour', colour)
+        Publisher.sendMessage('Change mask colour', colour=colour)
 
 class EditionTools(wx.Panel):
     def __init__(self, parent):
@@ -774,8 +773,7 @@ class EditionTools(wx.Panel):
         Publisher.subscribe(self.SetGradientColour, 'Add mask')
         Publisher.subscribe(self._set_brush_size, 'Set edition brush size')
 
-    def ChangeMaskColour(self, pubsub_evt):
-        colour = pubsub_evt.data
+    def ChangeMaskColour(self, colour):
         self.gradient_thresh.SetColour(colour)
 
     def SetGradientColour(self, mask):

@@ -380,16 +380,14 @@ class Slice(with_metaclass(utils.Singleton, object)):
 
         Publisher.sendMessage('Reload actual slice')
 
-    def __set_current_mask_colour(self, pubsub_evt):
+    def __set_current_mask_colour(self, colour):
         # "if" is necessary because wx events are calling this before any mask
         # has been created
         if self.current_mask:
-            colour_wx = pubsub_evt.data
-            colour_vtk = [c/255.0 for c in colour_wx]
+            colour_vtk = [c/255.0 for c in colour]
             self.SetMaskColour(self.current_mask.index, colour_vtk)
 
-    def __set_mask_name(self, pubsub_evt):
-        index, name = pubsub_evt.data
+    def __set_mask_name(self, index, name):
         self.SetMaskName(index, name)
 
     def __show_mask(self, index, value):
