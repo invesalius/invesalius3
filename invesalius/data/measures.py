@@ -266,8 +266,7 @@ class MeasurementManager(object):
     def _change_name(self, index, name):
         self.measures[index][0].name = name
 
-    def _remove_measurements(self, pubsub_evt):
-        indexes = pubsub_evt.data
+    def _remove_measurements(self, indexes):
         for index in indexes:
             m, mr = self.measures.pop(index)
             try:
@@ -277,17 +276,15 @@ class MeasurementManager(object):
                 pass
             prj.Project().RemoveMeasurement(index)
             if m.location == const.SURFACE:
-                Publisher.sendMessage(('Remove actors ' + str(m.location)),
-                                      actors=mr.GetActors(),
-                                      slice_number=m.slice_number)
+                Publisher.sendMessage('Remove actors ' + str(m.location),
+                                      actors=mr.GetActors())
         Publisher.sendMessage('Redraw canvas')
         Publisher.sendMessage('Render volume viewer')
 
         session = ses.Session()
         session.ChangeProject()
 
-    def _set_visibility(self, pubsub_evt):
-        index, visibility = pubsub_evt.data
+    def _set_visibility(self, index, visibility):
         m, mr = self.measures[index]
         m.visible = visibility
         mr.SetVisibility(visibility)

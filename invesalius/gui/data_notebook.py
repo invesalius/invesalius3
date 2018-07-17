@@ -1038,7 +1038,7 @@ class MeasuresListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
                         new_dict[i-1] = old_dict[i]
                 old_dict = new_dict
             self._list_index = new_dict
-            Publisher.sendMessage('Remove measurements', selected_items)
+            Publisher.sendMessage('Remove measurements', indexes=selected_items)
         else:
            dlg.MeasureSelectionRequiredForRemoval()
 
@@ -1116,7 +1116,7 @@ class MeasuresListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
 
 
     def OnCheckItem(self, index, flag):
-        Publisher.sendMessage('Show measurement', (index, flag))
+        Publisher.sendMessage('Show measurement', index=index, visibility=flag)
 
     def OnShowSingle(self, pubsub_evt):
         index, visibility = pubsub_evt.data
@@ -1124,10 +1124,10 @@ class MeasuresListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
             if key != index:
                 self.SetItemImage(key, not visibility)
                 Publisher.sendMessage('Show measurement',
-                                            (key, not visibility))
+                                      index=key, visibility=not visibility)
         self.SetItemImage(index, visibility)
         Publisher.sendMessage('Show measurement',
-                                   (index, visibility))
+                              index=index, visibility=visibility)
 
     def OnShowMultiple(self, pubsub_evt):
         index_list, visibility = pubsub_evt.data
@@ -1135,11 +1135,11 @@ class MeasuresListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
             if key not in index_list:
                 self.SetItemImage(key, not visibility)
                 Publisher.sendMessage('Show measurement',
-                                            (key, not visibility))
+                                      index=key, visibility=not visibility)
         for index in index_list:
             self.SetItemImage(index, visibility)
             Publisher.sendMessage('Show measurement',
-                                       (index, visibility))
+                                  index=index, visibility=visibility)
 
     def OnLoadData(self, measurement_dict, spacing=(1.0, 1.0, 1.0)):
         for i in measurement_dict:
