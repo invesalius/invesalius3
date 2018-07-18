@@ -402,13 +402,13 @@ class Slice(with_metaclass(utils.Singleton, object)):
                 self.SetTypeProjection(const.PROJECTION_NORMAL)
                 Publisher.sendMessage('Reload actual slice')
 
-    def __hide_current_mask(self, pubsub_evt):
+    def __hide_current_mask(self):
         if self.current_mask:
             index = self.current_mask.index
             value = False
             Publisher.sendMessage('Show mask', index=index, value=value)
 
-    def __show_current_mask(self, pubsub_evt):
+    def __show_current_mask(self):
         if self.current_mask:
             index = self.current_mask.index
             value = True
@@ -942,9 +942,8 @@ class Slice(with_metaclass(utils.Singleton, object)):
     def GetOutput(self):
         return self.blend_filter.GetOutput()
 
-    def _set_projection_type(self, pubsub_evt):
-        tprojection = pubsub_evt.data
-        self.SetTypeProjection(tprojection)
+    def _set_projection_type(self, projection_id):
+        self.SetTypeProjection(projection_id)
 
     def _set_interpolation_method(self, pubsub_evt):
         interp_method = pubsub_evt.data
@@ -956,15 +955,15 @@ class Slice(with_metaclass(utils.Singleton, object)):
                 Publisher.sendMessage('Hide current mask')
 
             if tprojection == const.PROJECTION_NORMAL:
-                Publisher.sendMessage('Show MIP interface', False)
+                Publisher.sendMessage('Show MIP interface', flag=False)
             else:
-                Publisher.sendMessage('Show MIP interface', True)
+                Publisher.sendMessage('Show MIP interface', flag=True)
 
             self._type_projection = tprojection
             for buffer_ in self.buffer_slices.values():
                 buffer_.discard_buffer()
 
-            Publisher.sendMessage('Check projection menu', tprojection)
+            Publisher.sendMessage('Check projection menu', projection_id=tprojection)
 
     def SetInterpolationMethod(self, interp_method):
         if self.interp_method != interp_method:

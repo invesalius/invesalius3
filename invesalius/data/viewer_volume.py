@@ -1816,7 +1816,7 @@ class SlicePlane:
 
         self.Render()
 
-    def Enable(self, plane_label):
+    def Enable(self, plane_label=None):
         if plane_label:
             if(plane_label == "Axial"):
                 self.plane_z.On()
@@ -1833,7 +1833,7 @@ class SlicePlane:
                                   view=const.VOL_ISO)
         self.Render()
 
-    def Disable(self, plane_label):
+    def Disable(self, plane_label=None):
         if plane_label:
             if(plane_label == "Axial"):
                 self.plane_z.Off()

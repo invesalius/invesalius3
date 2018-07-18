@@ -1005,7 +1005,7 @@ class WatershedTool(EditionTools):
 
     def OnCheckOverwriteMask(self, evt):
         value = self.check_box.GetValue()
-        Publisher.sendMessage('Set overwrite mask', value)
+        Publisher.sendMessage('Set overwrite mask', flag=value)
 
     def OnCheckWWWL(self, evt):
         value = self.ww_wl_cbox.GetValue()

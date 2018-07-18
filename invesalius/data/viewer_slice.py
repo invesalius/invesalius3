@@ -132,29 +132,27 @@ class ContourMIPConfig(wx.Panel):
 
         Publisher.subscribe(self._set_projection_type, 'Set projection type')
 
-    def OnSetMIPSize(self, evt):
+    def OnSetMIPSize(self, number_slices):
         val = self.mip_size_spin.GetValue()
-        Publisher.sendMessage('Set MIP size %s' % self.orientation, val)
+        Publisher.sendMessage('Set MIP size %s' % self.orientation, number_slices=val)
 
     def OnSetMIPBorder(self, evt):
         val = self.border_spin.GetValue()
-        Publisher.sendMessage('Set MIP border %s' % self.orientation, val)
+        Publisher.sendMessage('Set MIP border %s' % self.orientation, border_size=val)
 
     def OnCheckInverted(self, evt):
         val = self.inverted.GetValue()
-        Publisher.sendMessage('Set MIP Invert %s' % self.orientation, val)
+        Publisher.sendMessage('Set MIP Invert %s' % self.orientation, invert=val)
 
-    def _set_projection_type(self, pubsub_evt):
-        tprojection = pubsub_evt.data
-
-        if tprojection in (const.PROJECTION_MIDA,
-                           const.PROJECTION_CONTOUR_MIDA):
+    def _set_projection_type(self, projection_id):
+        if projection_id in (const.PROJECTION_MIDA,
+                             const.PROJECTION_CONTOUR_MIDA):
             self.inverted.Enable()
         else:
             self.inverted.Disable()
 
-        if tprojection in (const.PROJECTION_CONTOUR_MIP,
-                           const.PROJECTION_CONTOUR_MIDA):
+        if projection_id in (const.PROJECTION_CONTOUR_MIP,
+                             const.PROJECTION_CONTOUR_MIDA):
             self.border_spin.Enable()
             self.txt_mip_border.Enable()
         else:
@@ -1716,7 +1714,7 @@ class Viewer(wx.Panel):
 
         elif evt.GetKeyCode() in projections:
             self.slice_.SetTypeProjection(projections[evt.GetKeyCode()])
-            Publisher.sendMessage('Set projection type', projections[evt.GetKeyCode()])
+            Publisher.sendMessage('Set projection type', projection_id=projections[evt.GetKeyCode()])
             Publisher.sendMessage('Reload actual slice')
             skip = False
 
@@ -1760,28 +1758,24 @@ class Viewer(wx.Panel):
             self.slice_data.SetSize((w, h))
         evt.Skip()
 
-    def OnSetMIPSize(self, pubsub_evt):
-        val = pubsub_evt.data
-        self.number_slices = val
+    def OnSetMIPSize(self, number_slices):
+        self.number_slices = number_slices
         self.ReloadActualSlice()
 
-    def OnSetMIPBorder(self, pubsub_evt):
-        val = pubsub_evt.data
-        self.slice_.n_border = val
+    def OnSetMIPBorder(self, border_size):
+        self.slice_.n_border = border_size
         buffer_ = self.slice_.buffer_slices[self.orientation]
         buffer_.discard_buffer()
         self.ReloadActualSlice()
 
-    def OnSetMIPInvert(self, pubsub_evt):
-        val = pubsub_evt.data
-        self._mip_inverted = val
+    def OnSetMIPInvert(self, invert):
+        self._mip_inverted = invert
         buffer_ = self.slice_.buffer_slices[self.orientation]
         buffer_.discard_buffer()
         self.ReloadActualSlice()
 
-    def OnShowMIPInterface(self, pubsub_evt):
-        value = pubsub_evt.data
-        if value:
+    def OnShowMIPInterface(self, flag):
+        if flag:
             if not self.mip_ctrls.Shown:
                 self.mip_ctrls.Show()
                 self.GetSizer().Add(self.mip_ctrls, 0, wx.EXPAND|wx.GROW|wx.ALL, 2)
@@ -1791,9 +1785,8 @@ class Viewer(wx.Panel):
             self.GetSizer().Detach(self.mip_ctrls)
             self.Layout()
 
-    def OnSetOverwriteMask(self, pubsub_evt):
-        value = pubsub_evt.data
-        self.overwrite_mask = value
+    def OnSetOverwriteMask(self, flag):
+        self.overwrite_mask = flag
 
     def set_slice_number(self, index):
         inverted = self.mip_ctrls.inverted.GetValue()

@@ -199,9 +199,8 @@ class SliceMenu(wx.Menu):
         item = self.ID_TO_TOOL_ITEM[self.other_wl_id]
         item.Check()
 
-    def _check_projection_menu(self, pubsub_evt):
-        p_id = pubsub_evt.data
-        item = self.projection_items[p_id]
+    def _check_projection_menu(self, projection_id):
+        item = self.projection_items[projection_id]
         item.Check()
 
     def OnPopup(self, evt):
@@ -259,7 +258,7 @@ class SliceMenu(wx.Menu):
 
         elif key in PROJECTIONS_ID:
             pid = PROJECTIONS_ID[key]
-            Publisher.sendMessage('Set projection type', pid)
+            Publisher.sendMessage('Set projection type', projection_id=pid)
             Publisher.sendMessage('Reload actual slice')
 
         elif key == _('Custom'):

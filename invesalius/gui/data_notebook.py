@@ -449,11 +449,11 @@ class MasksListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
             if key != index:
                 self.SetItemImage(key, 0)
 
-    def __hide_current_mask(self, pubsub_evt):
+    def __hide_current_mask(self):
         if self.mask_list_index:
             self.SetItemImage(self.current_index, 0)
 
-    def __show_current_mask(self, pubsub_evt):
+    def __show_current_mask(self):
         if self.mask_list_index:
             self.SetItemImage(self.current_index, 1)
 
