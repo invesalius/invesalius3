@@ -667,11 +667,10 @@ class Volume():
         del flip
         del cast
 
-    def OnEnableTool(self, pubsub_evt):
-        tool_name, enable = pubsub_evt.data
+    def OnEnableTool(self, tool_name, flag):
         if tool_name == _("Cut plane"):
             if self.plane:
-                if enable:
+                if flag:
                     self.plane_on = True
                     self.plane.Enable()
                 else:
@@ -748,7 +747,7 @@ class CutPlane:
         plane_actor.GetProperty().BackfaceCullingOn()
         plane_actor.GetProperty().SetOpacity(0)
         plane_widget.AddObserver("InteractionEvent", self.Update)
-        Publisher.sendMessage('AppendActor', self.plane_actor)
+        Publisher.sendMessage('AppendActor', actor=self.plane_actor)
         Publisher.sendMessage('Set Widget Interactor', widget=self.plane_widget)
         plane_actor.SetVisibility(1)
         plane_widget.On() 
@@ -778,19 +777,19 @@ class CutPlane:
         self.plane.SetOrigin(plane_source.GetOrigin())
         Publisher.sendMessage('Render volume viewer')
         
-    def Enable(self, evt_pubsub=None):
+    def Enable(self):
         self.plane_widget.On()
         self.plane_actor.VisibilityOn()
         self.volume_mapper.AddClippingPlane(self.plane)
         Publisher.sendMessage('Render volume viewer')
         
-    def Disable(self,evt_pubsub=None):
+    def Disable(self):
         self.plane_widget.Off() 
         self.plane_actor.VisibilityOff()
         self.volume_mapper.RemoveClippingPlane(self.plane)
         Publisher.sendMessage('Render volume viewer')
         
-    def Reset(self, evt_pubsub=None):
+    def Reset(self):
         plane_source = self.plane_source
         plane_widget = self.plane_widget
         plane_source.SetOrigin(self.origin)

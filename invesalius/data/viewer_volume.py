@@ -1644,8 +1644,8 @@ class Viewer(wx.Panel):
     def SetWidgetInteractor(self, widget=None):
         widget.SetInteractor(self.interactor._Iren)
 
-    def AppendActor(self, evt_pubsub=None):
-        self.ren.AddActor(evt_pubsub.data)
+    def AppendActor(self, actor):
+        self.ren.AddActor(actor)
 
     def OnInsertSeed(self, obj, evt):
         x,y = self.interactor.GetEventPosition()

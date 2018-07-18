@@ -637,12 +637,12 @@ class VolumeToolPanel(wx.Panel):
             #            i.Check(0)
             if not TOOL_STATE[id]:
                 Publisher.sendMessage('Enable raycasting tool',
-                                          [ID_TO_TOOL[id],1])
+                                      tool_name=ID_TO_TOOL[id], flag=1)
                 TOOL_STATE[id] = True
                 item.Check(1)
             else:
                 Publisher.sendMessage('Enable raycasting tool',
-                                            [ID_TO_TOOL[id],0])
+                                      tool_name=ID_TO_TOOL[id], flag=0)
                 TOOL_STATE[id] = False
                 item.Check(0)
 
