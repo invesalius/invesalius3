@@ -1714,18 +1714,17 @@ class Viewer(wx.Panel):
                                   radius=radius)
             self.interactor.Render()
 
-    def Reposition3DPlane(self, evt_pubsub):
-        position = evt_pubsub.data
+    def Reposition3DPlane(self, plane_label):
         if not(self.added_actor) and not(self.raycasting_volume):
-            if not(self.repositioned_axial_plan) and (position == 'Axial'):
+            if not(self.repositioned_axial_plan) and (plane_label == 'Axial'):
                 self.SetViewAngle(const.VOL_ISO)
                 self.repositioned_axial_plan = 1
 
-            elif not(self.repositioned_sagital_plan) and (position == 'Sagital'):
+            elif not(self.repositioned_sagital_plan) and (plane_label == 'Sagital'):
                 self.SetViewAngle(const.VOL_ISO)
                 self.repositioned_sagital_plan = 1
 
-            elif not(self.repositioned_coronal_plan) and (position == 'Coronal'):
+            elif not(self.repositioned_coronal_plan) and (plane_label == 'Coronal'):
                 self.SetViewAngle(const.VOL_ISO)
                 self.repositioned_coronal_plan = 1
 
@@ -1818,18 +1817,15 @@ class SlicePlane:
 
         self.Render()
 
-    def Enable(self, evt_pubsub=None):
-        if (evt_pubsub):
-            label = evt_pubsub.data
-            if(label == "Axial"):
+    def Enable(self, plane_label):
+        if plane_label:
+            if(plane_label == "Axial"):
                 self.plane_z.On()
-            elif(label == "Coronal"):
+            elif(plane_label == "Coronal"):
                 self.plane_y.On()
-            elif(label == "Sagital"):
+            elif(plane_label == "Sagital"):
                 self.plane_x.On()
-        
-            Publisher.sendMessage('Reposition 3D Plane', label)
-
+            Publisher.sendMessage('Reposition 3D Plane', plane_label=plane_label)
         else:
             self.plane_z.On()
             self.plane_x.On()
@@ -1838,14 +1834,13 @@ class SlicePlane:
                                   view=const.VOL_ISO)
         self.Render()
 
-    def Disable(self, evt_pubsub=None):
-        if (evt_pubsub):
-            label = evt_pubsub.data
-            if(label == "Axial"):
+    def Disable(self, plane_label):
+        if plane_label:
+            if(plane_label == "Axial"):
                 self.plane_z.Off()
-            elif(label == "Coronal"):
+            elif(plane_label == "Coronal"):
                 self.plane_y.Off()
-            elif(label == "Sagital"):
+            elif(plane_label == "Sagital"):
                 self.plane_x.Off()
         else:
             self.plane_z.Off()

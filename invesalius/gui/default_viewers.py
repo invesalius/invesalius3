@@ -594,9 +594,9 @@ class VolumeToolPanel(wx.Panel):
         label = item.GetLabel()
 
         if not (checked):
-            Publisher.sendMessage('Disable plane', label)
+            Publisher.sendMessage('Disable plane', plane_label=label)
         else:
-            Publisher.sendMessage('Enable plane', label)
+            Publisher.sendMessage('Enable plane', plane_label=label)
 
     def OnMenuStereo(self, evt):
         id = evt.GetId() 
