@@ -989,8 +989,7 @@ class Slice(with_metaclass(utils.Singleton, object)):
 
         Publisher.sendMessage('Reload actual slice')
 
-    def UpdateColourTableBackground(self, pubsub_evt):
-        values = pubsub_evt.data
+    def UpdateColourTableBackground(self, values):
         self.from_= OTHER
         self.number_of_colours= values[0]
         self.saturation_range = values[1]
@@ -1000,16 +999,16 @@ class Slice(with_metaclass(utils.Singleton, object)):
             buffer_.discard_vtk_image()
         Publisher.sendMessage('Reload actual slice')
 
-    def UpdateColourTableBackgroundPlist(self, pubsub_evt):
-        self.values = pubsub_evt.data
+    def UpdateColourTableBackgroundPlist(self, values):
+        self.values = values
         self.from_= PLIST
         for buffer_ in self.buffer_slices.values():
             buffer_.discard_vtk_image()
 
         Publisher.sendMessage('Reload actual slice')
 
-    def UpdateColourTableBackgroundWidget(self, pubsub_evt):
-        self.nodes = pubsub_evt.data
+    def UpdateColourTableBackgroundWidget(self, nodes):
+        self.nodes = nodes
         self.from_= WIDGET
         for buffer_ in self.buffer_slices.values():
             if self._type_projection in (const.PROJECTION_NORMAL,

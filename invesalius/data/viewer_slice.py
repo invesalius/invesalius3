@@ -703,15 +703,14 @@ class Viewer(wx.Panel):
         Publisher.sendMessage('Update all slice')
         Publisher.sendMessage('Update clut imagedata widget')
 
-    def UpdateWindowLevelText(self, pubsub_evt):
-        window, level = pubsub_evt.data
-        self.acum_achange_window, self.acum_achange_level = (window, level)
+    def UpdateWindowLevelText(self, window, level):
+        self.acum_achange_window, self.acum_achange_level = window, level
         self.SetWLText(window, level)
         self.interactor.Render()
 
     def OnClutChange(self, evt):
         Publisher.sendMessage('Change colour table from background image from widget',
-                              evt.GetNodes())
+                              nodes=evt.GetNodes())
         slc = sl.Slice()
         Publisher.sendMessage('Update window level value',
                               window=slc.window_width,

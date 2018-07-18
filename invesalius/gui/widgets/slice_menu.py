@@ -215,8 +215,8 @@ class SliceMenu(wx.Menu):
             Publisher.sendMessage('Update window level value',
                                   window=window,
                                   level=level)
-            Publisher.sendMessage('Update window and level text',
-                           "WL: %d  WW: %d"%(level, window))
+            #  Publisher.sendMessage('Update window and level text',
+                           #  "WL: %d  WW: %d"%(level, window))
             Publisher.sendMessage('Update slice viewer')
 
             #Necessary update the slice plane in the volume case exists
@@ -224,7 +224,7 @@ class SliceMenu(wx.Menu):
 
         elif(key in const.SLICE_COLOR_TABLE.keys()):
             values = const.SLICE_COLOR_TABLE[key]
-            Publisher.sendMessage('Change colour table from background image', values)
+            Publisher.sendMessage('Change colour table from background image', values=values)
             Publisher.sendMessage('Update slice viewer')
 
             if sys.platform.startswith('linux'):
@@ -239,7 +239,7 @@ class SliceMenu(wx.Menu):
 
         elif key in self.plist_presets:
             values = presets.get_wwwl_preset_colours(self.plist_presets[key])
-            Publisher.sendMessage('Change colour table from background image from plist', values)
+            Publisher.sendMessage('Change colour table from background image from plist', values=values)
             Publisher.sendMessage('Update slice viewer')
 
             if sys.platform.startswith('linux'):

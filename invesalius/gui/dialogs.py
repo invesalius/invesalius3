@@ -1880,10 +1880,10 @@ class ClutImagedataDialog(wx.Dialog):
 
     def OnClutChange(self, evt):
         Publisher.sendMessage('Change colour table from background image from widget',
-                              evt.GetNodes())
+                              nodes=evt.GetNodes())
         Publisher.sendMessage('Update window level text',
-                              (self.clut_widget.window_width,
-                               self.clut_widget.window_level))
+                              window=self.clut_widget.window_width,
+                              level=self.clut_widget.window_level)
 
     def _refresh_widget(self, pubsub_evt):
         self.clut_widget.Refresh()
