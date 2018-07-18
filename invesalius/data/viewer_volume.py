@@ -264,8 +264,7 @@ class Viewer(wx.Panel):
         Publisher.subscribe(self.OnUpdateAngleThreshold, 'Update angle threshold')
         Publisher.subscribe(self.OnUpdateDistThreshold, 'Update dist threshold')
 
-    def SetStereoMode(self, pubsub_evt):
-        mode = pubsub_evt.data
+    def SetStereoMode(self, mode):
         ren_win = self.interactor.GetRenderWindow()
 
         if mode == const.STEREO_OFF:

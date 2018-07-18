@@ -601,7 +601,7 @@ class VolumeToolPanel(wx.Panel):
     def OnMenuStereo(self, evt):
         id = evt.GetId() 
         mode = ID_TO_STEREO_NAME[id]
-        Publisher.sendMessage('Set stereo mode', mode)
+        Publisher.sendMessage('Set stereo mode', mode=mode)
 
 
     def Uncheck(self):
