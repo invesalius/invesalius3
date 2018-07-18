@@ -130,11 +130,11 @@ class Panel(wx.Panel):
 
     def OnMaximize(self, evt):
         if evt.GetPane().name == self.s4.name:
-            Publisher.sendMessage('Show raycasting widget', None)
+            Publisher.sendMessage('Show raycasting widget')
 
     def OnRestore(self, evt):
         if evt.GetPane().name == self.s4.name:
-            Publisher.sendMessage('Hide raycasting widget', None)
+            Publisher.sendMessage('Hide raycasting widget')
 
     def __init_four_way_splitter(self):
 
@@ -258,26 +258,26 @@ class VolumeInteraction(wx.Panel):
         ww, wl = self.clut_raycasting.GetCurveWWWl(curve)
         Publisher.sendMessage('Set raycasting wwwl', (ww, wl, curve))
 
-    def ShowRaycastingWidget(self, evt_pubsub=None):
+    def ShowRaycastingWidget(self):
         self.can_show_raycasting_widget = 1
         if self.clut_raycasting.to_draw_points:
             p = self.aui_manager.GetPane(self.clut_raycasting)
             p.Show()
             self.aui_manager.Update()
 
-    def HideRaycastingWidget(self, evt_pubsub=None):
+    def HideRaycastingWidget(self):
         self.can_show_raycasting_widget = 0
         p = self.aui_manager.GetPane(self.clut_raycasting)
         p.Hide()
         self.aui_manager.Update()
 
     def OnPointChanged(self, evt):
-        Publisher.sendMessage('Set raycasting refresh', None)
-        Publisher.sendMessage('Set raycasting curve', evt.GetCurve())
+        Publisher.sendMessage('Set raycasting refresh')
+        Publisher.sendMessage('Set raycasting curve', curve=evt.GetCurve())
         Publisher.sendMessage('Render volume viewer')
 
     def OnCurveSelected(self, evt):
-        Publisher.sendMessage('Set raycasting curve', evt.GetCurve())
+        Publisher.sendMessage('Set raycasting curve', curve=evt.GetCurve())
         Publisher.sendMessage('Render volume viewer')
 
     def OnChangeCurveWL(self, evt):
@@ -285,7 +285,7 @@ class VolumeInteraction(wx.Panel):
         self.__update_curve_wwwl_text(curve)
         Publisher.sendMessage('Render volume viewer')
 
-    def OnSetRaycastPreset(self, pubsub_evt):
+    def OnSetRaycastPreset(self):
         preset = project.Project().raycasting_preset
         p = self.aui_manager.GetPane(self.clut_raycasting)
         self.clut_raycasting.SetRaycastPreset(preset)
@@ -296,13 +296,11 @@ class VolumeInteraction(wx.Panel):
             p.Hide()
         self.aui_manager.Update()
 
-    def LoadHistogram(self, pubsub_evt):
-        histogram = pubsub_evt.data[0]
-        init, end = pubsub_evt.data[1]
+    def LoadHistogram(self, histogram, init, end):
         self.clut_raycasting.SetRange((init, end))
         self.clut_raycasting.SetHistogramArray(histogram, (init, end))
 
-    def RefreshPoints(self, pubsub_evt):
+    def RefreshPoints(self):
         self.clut_raycasting.CalculatePixelPoints()
         self.clut_raycasting.Refresh()
 
@@ -611,8 +609,8 @@ class VolumeToolPanel(wx.Panel):
             if (item.IsChecked()):
                 item.Check(0)
     
-    def ChangeButtonColour(self, pubsub_evt):
-        colour = [i*255 for i in pubsub_evt.data]
+    def ChangeButtonColour(self, colour):
+        colour = [i*255 for i in colour]
         self.button_colour.SetColour(colour)
 
     def OnMenuRaycasting(self, evt):
@@ -622,7 +620,7 @@ class VolumeToolPanel(wx.Panel):
             # Raycassting type was selected
             name = ID_TO_NAME[id]
             Publisher.sendMessage('Load raycasting preset',
-                                          ID_TO_NAME[id])
+                                  preset_name=ID_TO_NAME[id])
             # Enable or disable tools
             if name != const.RAYCASTING_OFF_LABEL:
  	            self.menu_raycasting.Enable(RAYCASTING_TOOLS, 1)
@@ -655,10 +653,10 @@ class VolumeToolPanel(wx.Panel):
         self.button_view.SetBitmapSelected(bmp)
 
         Publisher.sendMessage('Set volume view angle',
-                                   evt.GetId())
+                              view=evt.GetId())
         self.Refresh()
 
     def OnSelectColour(self, evt):
         colour = c = [i/255.0 for i in evt.GetValue()]
-        Publisher.sendMessage('Change volume viewer background colour', colour)
+        Publisher.sendMessage('Change volume viewer background colour', colour=colour)
 

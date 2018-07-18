@@ -1365,8 +1365,8 @@ class Viewer(wx.Panel):
             diff_y = mouse_y - self.last_y
             self.last_x, self.last_y = mouse_x, mouse_y
             Publisher.sendMessage('Set raycasting relative window and level',
-                (diff_x, diff_y))
-            Publisher.sendMessage('Refresh raycasting widget points', None)
+                                  diff_wl=diff_x, diff_ww=diff_y)
+            Publisher.sendMessage('Refresh raycasting widget points')
             self.interactor.Render()
 
     def OnWindowLevelClick(self, obj, evt):
@@ -1489,12 +1489,11 @@ class Viewer(wx.Panel):
         self.interactor.SetInteractorStyle(style)
         self.style = style
 
-    def OnSetWindowLevelText(self, pubsub_evt):
+    def OnSetWindowLevelText(self, ww, wl):
         if self.raycasting_volume:
-            ww, wl = pubsub_evt.data
             self.text.SetValue("WL: %d  WW: %d"%(wl, ww))
 
-    def OnShowRaycasting(self, pubsub_evt):
+    def OnShowRaycasting(self):
         if not self.raycasting_volume:
             self.raycasting_volume = True
             self._to_show_ball += 1
@@ -1515,8 +1514,7 @@ class Viewer(wx.Panel):
         self.interactor.Update()
         evt.Skip()
 
-    def ChangeBackgroundColour(self, pubsub_evt):
-        colour = pubsub_evt.data
+    def ChangeBackgroundColour(self, colour):
         self.ren.SetBackground(colour[:3])
         self.UpdateRender()
 
@@ -1553,13 +1551,9 @@ class Viewer(wx.Panel):
     def LoadSlicePlane(self):
         self.slice_plane = SlicePlane()
 
-    def LoadVolume(self, pubsub_evt):
+    def LoadVolume(self, volume, colour, ww, wl):
         self.raycasting_volume = True
         self._to_show_ball += 1
-
-        volume = pubsub_evt.data[0]
-        colour = pubsub_evt.data[1]
-        ww, wl = pubsub_evt.data[2]
 
         self.light = self.ren.GetLights().GetNextItem()
 
@@ -1582,16 +1576,14 @@ class Viewer(wx.Panel):
         self._check_and_set_ball_visibility()
         self.UpdateRender()
 
-    def UnloadVolume(self, pubsub_evt):
-        volume = pubsub_evt.data
+    def UnloadVolume(self, volume):
         self.ren.RemoveVolume(volume)
         del volume
         self.raycasting_volume = False
         self._to_show_ball -= 1
         self._check_and_set_ball_visibility()
 
-    def OnSetViewAngle(self, evt_pubsub):
-        view = evt_pubsub.data
+    def OnSetViewAngle(self, view):
         self.SetViewAngle(view)
 
     def SetViewAngle(self, view):
@@ -1646,7 +1638,7 @@ class Viewer(wx.Panel):
         orientation_widget.On()
         orientation_widget.InteractiveOff()
 
-    def UpdateRender(self, evt_pubsub=None):
+    def UpdateRender(self):
         self.interactor.Render()
 
     def SetWidgetInteractor(self, widget=None):
@@ -1842,7 +1834,8 @@ class SlicePlane:
             self.plane_z.On()
             self.plane_x.On()
             self.plane_y.On()
-            Publisher.sendMessage('Set volume view angle', const.VOL_ISO)
+            Publisher.sendMessage('Set volume view angle',
+                                  view=const.VOL_ISO)
         self.Render()
 
     def Disable(self, evt_pubsub=None):

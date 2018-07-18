@@ -905,22 +905,17 @@ class Controller():
                               thresh_modes_names=thresh_modes,
                               default_thresh=default_threshold)
 
-    def LoadRaycastingPreset(self, pubsub_evt=None):
-        if pubsub_evt:
-            label = pubsub_evt.data
-        else:
-            return
-        
-        if label != const.RAYCASTING_OFF_LABEL:
-            if label in const.RAYCASTING_FILES.keys():
+    def LoadRaycastingPreset(self, preset_name):
+        if preset_name != const.RAYCASTING_OFF_LABEL:
+            if preset_name in const.RAYCASTING_FILES.keys():
                 path = os.path.join(const.RAYCASTING_PRESETS_DIRECTORY,
-                                    const.RAYCASTING_FILES[label])
+                                    const.RAYCASTING_FILES[preset_name])
             else:
                 path = os.path.join(const.RAYCASTING_PRESETS_DIRECTORY,
-                                        label+".plist")
+                                        preset_name+".plist")
                 if not os.path.isfile(path):
                     path = os.path.join(const.USER_RAYCASTING_PRESETS_DIRECTORY,
-                                    label+".plist")
+                                    preset_name+".plist")
             preset = plistlib.readPlist(path)
             prj.Project().raycasting_preset = preset
             # Notify volume
