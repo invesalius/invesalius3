@@ -1560,8 +1560,8 @@ class Viewer(wx.Panel):
 
         return slice_data
 
-    def UpdateInterpolatedSlice(self, pub_sub):
-        if self.slice_actor != None:    
+    def UpdateInterpolatedSlice(self):
+        if self.slice_actor != None:
             if ses.Session().slice_interpolation:
                 self.slice_actor.InterpolateOff()
             else:

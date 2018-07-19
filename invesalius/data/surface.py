@@ -831,7 +831,7 @@ class SurfaceManager():
             Publisher.sendMessage('End busy cursor')
             del actor
 
-    def UpdateSurfaceInterpolation(self, pub_evt):
+    def UpdateSurfaceInterpolation(self):
         interpolation = int(ses.Session().surface_interpolation)
         key_actors = self.actors_dict.keys()
 

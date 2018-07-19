@@ -552,7 +552,7 @@ class Frame(wx.Frame):
             ses.Session().WriteSessionFile()
 
             Publisher.sendMessage('Remove Volume')
-            Publisher.sendMessage('Reset Reaycasting')
+            Publisher.sendMessage('Reset Raycasting')
             Publisher.sendMessage('Update Slice Interpolation')
             Publisher.sendMessage('Update Slice Interpolation MenuBar')
             Publisher.sendMessage('Update Navigation Mode MenuBar')
@@ -957,11 +957,11 @@ class MenuBar(wx.MenuBar):
         else:
             return False
 
-    def OnUpdateSliceInterpolation(self, pubsub_evt):
+    def OnUpdateSliceInterpolation(self):
         v = self.SliceInterpolationStatus()
         self.view_menu.Check(const.ID_VIEW_INTERPOLATED, v)
 
-    def OnUpdateNavigationMode(self, pubsub_evt):
+    def OnUpdateNavigationMode(self):
         v = self.NavigationModeStatus()
         self.mode_menu.Check(const.ID_MODE_NAVIGATION, v)
 

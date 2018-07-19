@@ -110,11 +110,11 @@ class Volume():
         Publisher.subscribe(self.ChangeBackgroundColour,
                         'Change volume viewer background colour')
 
-        Publisher.subscribe(self.ResetRayCasting, 'Reset Reaycasting')
+        Publisher.subscribe(self.ResetRayCasting, 'Reset Raycasting')
 
         Publisher.subscribe(self.OnFlipVolume, 'Flip volume')
 
-    def ResetRayCasting(self, pub_evt):
+    def ResetRayCasting(self):
         if self.exist:
             self.exist = None
             self.LoadVolume()

@@ -445,7 +445,7 @@ class Viewer(wx.Panel):
         for actor in actors:
             self.ren.AddActor(actor)
 
-    def RemoveVolume(self, pub_evt):
+    def RemoveVolume(self):
         volumes = self.ren.GetVolumes()
         if (volumes.GetNumberOfItems()):
             self.ren.RemoveVolume(volumes.GetLastProp())
