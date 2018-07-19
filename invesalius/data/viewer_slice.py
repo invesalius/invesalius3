@@ -1570,15 +1570,13 @@ class Viewer(wx.Panel):
             self.interactor.Render()
 
 
-    def SetInterpolatedSlices(self, pub_sub):
-        self.interpolation_slice_status = status = pub_sub.data
-        
+    def SetInterpolatedSlices(self, flag):
+        self.interpolation_slice_status = flag
         if self.slice_actor != None:
-            if status == True:
+            if self.interpolation_slice_status == True:
                 self.slice_actor.InterpolateOn()
             else:
                 self.slice_actor.InterpolateOff()
-            
             self.interactor.Render()
 
     def __update_camera(self):

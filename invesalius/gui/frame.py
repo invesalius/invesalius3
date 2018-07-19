@@ -505,7 +505,7 @@ class Frame(wx.Frame):
             Publisher.sendMessage('New mask from shortcut')
 
     def OnInterpolatedSlices(self, status):
-        Publisher.sendMessage('Set interpolated slices', status)
+        Publisher.sendMessage('Set interpolated slices', flag=status)
 
     def OnNavigationMode(self, status):
         if status and self._show_navigator_message and sys.platform != 'win32':
@@ -661,7 +661,7 @@ class Frame(wx.Frame):
         Publisher.sendMessage('Enable style', const.SLICE_STATE_FFILL_SEGMENTATION)
 
     def OnInterpolatedSlices(self, status):
-        Publisher.sendMessage('Set interpolated slices', status)
+        Publisher.sendMessage('Set interpolated slices', flag=status)
     
     def OnCropMask(self):
         Publisher.sendMessage('Enable style', const.SLICE_STATE_CROP_MASK)
