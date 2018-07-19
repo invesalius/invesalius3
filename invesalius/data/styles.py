@@ -1633,7 +1633,7 @@ class ReorientImageInteractorStyle(DefaultInteractorStyle):
         self.viewer.slice_.rotations = [0, 0, 0]
         self.viewer.slice_.q_orientation = np.array((1, 0, 0, 0))
 
-        Publisher.sendMessage('Update reorient angles', (0, 0, 0))
+        Publisher.sendMessage('Update reorient angles', angles=(0, 0, 0))
 
         self._discard_buffers()
         self.viewer.slice_.current_mask.clear_history()
@@ -1689,7 +1689,7 @@ class ReorientImageInteractorStyle(DefaultInteractorStyle):
         self.viewer.slice_.q_orientation = transformations.quaternion_multiply(self.viewer.slice_.q_orientation, transformations.quaternion_about_axis(angle, axis))
 
         az, ay, ax = transformations.euler_from_quaternion(self.viewer.slice_.q_orientation)
-        Publisher.sendMessage('Update reorient angles', (ax, ay, az))
+        Publisher.sendMessage('Update reorient angles', angles=(ax, ay, az))
 
         self._discard_buffers()
         if self.viewer.slice_.current_mask:
@@ -1715,8 +1715,8 @@ class ReorientImageInteractorStyle(DefaultInteractorStyle):
         #  print (z, y, x), tcoord
         return tcoord
 
-    def _set_reorientation_angles(self, pubsub_evt):
-        ax, ay, az = pubsub_evt.data
+    def _set_reorientation_angles(self, angles):
+        ax, ay, az = angles
         q = transformations.quaternion_from_euler(az, ay, ax)
         self.viewer.slice_.q_orientation = q
 

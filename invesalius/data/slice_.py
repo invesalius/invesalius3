@@ -945,8 +945,7 @@ class Slice(with_metaclass(utils.Singleton, object)):
     def _set_projection_type(self, projection_id):
         self.SetTypeProjection(projection_id)
 
-    def _set_interpolation_method(self, pubsub_evt):
-        interp_method = pubsub_evt.data
+    def _set_interpolation_method(self, interp_method):
         self.SetInterpolationMethod(interp_method)
 
     def SetTypeProjection(self, tprojection):
@@ -1428,7 +1427,7 @@ class Slice(with_metaclass(utils.Singleton, object)):
         self.q_orientation = np.array((1, 0, 0, 0))
         self.center = [(s * d/2.0) for (d, s) in zip(self.matrix.shape[::-1], self.spacing)]
 
-        self.__clean_current_mask(None)
+        self.__clean_current_mask()
         if self.current_mask:
             self.current_mask.matrix[:] = 0
             self.current_mask.was_edited = False

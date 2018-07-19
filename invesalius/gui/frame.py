@@ -640,31 +640,31 @@ class Frame(wx.Frame):
         Publisher.sendMessage('Reload actual slice')
 
     def OnReorientImg(self):
-        Publisher.sendMessage('Enable style', const.SLICE_STATE_REORIENT)
+        Publisher.sendMessage('Enable style', style=const.SLICE_STATE_REORIENT)
         rdlg = dlg.ReorientImageDialog()
         rdlg.Show()
 
     def OnFillHolesManually(self):
-        Publisher.sendMessage('Enable style', const.SLICE_STATE_MASK_FFILL)
+        Publisher.sendMessage('Enable style', style=const.SLICE_STATE_MASK_FFILL)
 
     def OnFillHolesAutomatically(self):
         fdlg = dlg.FillHolesAutoDialog(_(u"Fill holes automatically"))
         fdlg.Show()
 
     def OnRemoveMaskParts(self):
-        Publisher.sendMessage('Enable style', const.SLICE_STATE_REMOVE_MASK_PARTS)
+        Publisher.sendMessage('Enable style', style=const.SLICE_STATE_REMOVE_MASK_PARTS)
 
     def OnSelectMaskParts(self):
-        Publisher.sendMessage('Enable style', const.SLICE_STATE_SELECT_MASK_PARTS)
+        Publisher.sendMessage('Enable style', style=const.SLICE_STATE_SELECT_MASK_PARTS)
 
     def OnFFillSegmentation(self):
-        Publisher.sendMessage('Enable style', const.SLICE_STATE_FFILL_SEGMENTATION)
+        Publisher.sendMessage('Enable style', style=const.SLICE_STATE_FFILL_SEGMENTATION)
 
     def OnInterpolatedSlices(self, status):
         Publisher.sendMessage('Set interpolated slices', flag=status)
-    
+
     def OnCropMask(self):
-        Publisher.sendMessage('Enable style', const.SLICE_STATE_CROP_MASK)
+        Publisher.sendMessage('Enable style', style=const.SLICE_STATE_CROP_MASK)
 
 # ------------------------------------------------------------------
 # ------------------------------------------------------------------

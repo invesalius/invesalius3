@@ -937,5 +937,5 @@ class Controller():
         dlg = dialogs.MaskBooleanDialog(prj.Project().mask_dict)
         dlg.Show()
 
-    def ApplyReorientation(self, pubsub_evt):
+    def ApplyReorientation(self):
         self.Slice.apply_reorientation()

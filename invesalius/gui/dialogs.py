@@ -2152,13 +2152,13 @@ class ReorientImageDialog(wx.Dialog):
         self.btnapply.Bind(wx.EVT_BUTTON, self.apply_reorientation)
         self.Bind(wx.EVT_CLOSE, self.OnClose)
 
-    def _update_angles(self, pubsub_evt):
-        anglex, angley, anglez = pubsub_evt.data
+    def _update_angles(self, angles):
+        anglex, angley, anglez = angles
         self.anglex.SetValue("%.3f" % np.rad2deg(anglex))
         self.angley.SetValue("%.3f" % np.rad2deg(angley))
         self.anglez.SetValue("%.3f" % np.rad2deg(anglez))
 
-    def _close_dialog(self, pubsub_evt):
+    def _close_dialog(self):
         self.Destroy()
 
     def apply_reorientation(self, evt):
@@ -2167,13 +2167,13 @@ class ReorientImageDialog(wx.Dialog):
 
     def OnClose(self, evt):
         self._closed = True
-        Publisher.sendMessage('Disable style', const.SLICE_STATE_REORIENT)
-        Publisher.sendMessage('Enable style', const.STATE_DEFAULT)
+        Publisher.sendMessage('Disable style', style=const.SLICE_STATE_REORIENT)
+        Publisher.sendMessage('Enable style', style=const.STATE_DEFAULT)
         self.Destroy()
 
     def OnSelect(self, evt):
         im_code = self.interp_method.GetClientData(self.interp_method.GetSelection())
-        Publisher.sendMessage('Set interpolation method', im_code)
+        Publisher.sendMessage('Set interpolation method', interp_method=im_code)
 
     def OnSetFocus(self, evt):
         self._last_ax = self.anglex.GetValue()
@@ -2191,7 +2191,7 @@ class ReorientImageDialog(wx.Dialog):
                 self.angley.SetValue(self._last_ay)
                 self.anglez.SetValue(self._last_az)
                 return
-            Publisher.sendMessage('Set reorientation angles', (ax, ay, az))
+            Publisher.sendMessage('Set reorientation angles', angles=(ax, ay, az))
 
 
 class ImportBitmapParameters(wx.Dialog):
