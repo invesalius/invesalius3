@@ -1822,20 +1822,20 @@ class Viewer(wx.Panel):
         self.set_slice_number(pos)
         self.interactor.Render()
 
-    def ReloadActualSlice(self, pubsub_evt=None):
+    def ReloadActualSlice(self):
         pos = self.scroll.GetThumbPosition()
         self.set_slice_number(pos)
         self.interactor.Render()
 
-    def OnUpdateScroll(self, pubsub_evt):
+    def OnUpdateScroll(self):
         max_slice_number = sl.Slice().GetNumberOfSlices(self.orientation)
         self.scroll.SetScrollbar(wx.SB_VERTICAL, 1, max_slice_number,
                                  max_slice_number)
 
-    def OnSwapVolumeAxes(self, pubsub_evt):
+    def OnSwapVolumeAxes(self, axes):
         # Adjusting cursor spacing to match the spacing from the actual slice
         # orientation
-        axis0, axis1 = pubsub_evt.data
+        axis0, axis1 = axes
         cursor = self.slice_data.cursor
         spacing = cursor.spacing
         if (axis0, axis1) == (2, 1):

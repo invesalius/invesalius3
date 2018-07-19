@@ -222,7 +222,7 @@ class Volume():
             self.color_transfer = None
             Publisher.sendMessage('Render volume viewer')
 
-    def OnFlipVolume(self, pubsub_evt):
+    def OnFlipVolume(self, axis):
         print("Flipping Volume")
         self.loaded_image = False
         del self.image

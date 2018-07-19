@@ -273,8 +273,7 @@ class Mask():
         path = os.path.join(dirpath, mask_file)
         self._open_mask(path, tuple(shape))
 
-    def OnFlipVolume(self, pubsub_evt):
-        axis = pubsub_evt.data
+    def OnFlipVolume(self, axis):
         submatrix = self.matrix[1:, 1:, 1:]
         if axis == 0:
             submatrix[:] = submatrix[::-1]
@@ -286,8 +285,8 @@ class Mask():
             submatrix[:] = submatrix[:, :, ::-1]
             self.matrix[0, 0, 1::] = self.matrix[0, 0, :0:-1]
 
-    def OnSwapVolumeAxes(self, pubsub_evt):
-        axis0, axis1 = pubsub_evt.data
+    def OnSwapVolumeAxes(self, axes):
+        axis0, axis1 = axes
         self.matrix = self.matrix.swapaxes(axis0, axis1)
 
     def _save_mask(self, filename):

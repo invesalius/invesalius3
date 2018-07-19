@@ -618,11 +618,11 @@ class Frame(wx.Frame):
         Publisher.sendMessage('Show bitmap dialog')
 
     def FlipVolume(self, axis):
-        Publisher.sendMessage('Flip volume', axis)
+        Publisher.sendMessage('Flip volume', axis=axis)
         Publisher.sendMessage('Reload actual slice')
 
     def SwapAxes(self, axes):
-        Publisher.sendMessage('Swap volume axes', axes)
+        Publisher.sendMessage('Swap volume axes', axes=axes)
         Publisher.sendMessage('Update scroll')
         Publisher.sendMessage('Reload actual slice')
 

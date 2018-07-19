@@ -1465,8 +1465,7 @@ class Slice(with_metaclass(utils.Singleton, object)):
         self.matrix_filename = filename
         self.matrix = np.memmap(filename, shape=shape, dtype=dtype, mode='r+')
 
-    def OnFlipVolume(self, pubsub_evt):
-        axis = pubsub_evt.data
+    def OnFlipVolume(self, axis):
         if axis == 0:
             self.matrix[:] = self.matrix[::-1]
         elif axis == 1:
@@ -1477,8 +1476,8 @@ class Slice(with_metaclass(utils.Singleton, object)):
         for buffer_ in self.buffer_slices.values():
             buffer_.discard_buffer()
 
-    def OnSwapVolumeAxes(self, pubsub_evt):
-        axis0, axis1 = pubsub_evt.data
+    def OnSwapVolumeAxes(self, axes):
+        axis0, axis1 = axes
         self.matrix = self.matrix.swapaxes(axis0, axis1)
         if (axis0, axis1) == (2, 1):
             self.spacing = self.spacing[1], self.spacing[0], self.spacing[2]
