@@ -940,15 +940,15 @@ class Viewer(wx.Panel):
         if self.slice_data.cursor:
             self.slice_data.cursor.SetColour(colour_vtk)
 
-    def UpdateSlicesNavigation(self, pubsub_evt):
+    def UpdateSlicesNavigation(self, arg, position):
         # Get point from base change
-        ux, uy, uz = pubsub_evt.data[1][:3]
+        ux, uy, uz = position[:3]
         px, py = self.get_slice_pixel_coord_by_world_pos(ux, uy, uz)
         coord = self.calcultate_scroll_position(px, py)
 
         self.cross.SetFocalPoint((ux, uy, uz))
         self.ScrollSlice(coord)
-        Publisher.sendMessage('Set ball reference position', (ux, uy, uz))
+        Publisher.sendMessage('Set ball reference position', position=(ux, uy, uz))
 
     def ScrollSlice(self, coord):
         if self.orientation == "AXIAL":
@@ -1501,9 +1501,8 @@ class Viewer(wx.Panel):
 
         renderer.AddActor(cross_actor)
 
-    def __update_cross_position(self, pubsub_evt):
-        pos = pubsub_evt.data
-        self.cross.SetFocalPoint(pos)
+    def __update_cross_position(self, position):
+        self.cross.SetFocalPoint(position)
 
     def _set_cross_visibility(self, visibility):
         self.cross_actor.SetVisibility(visibility)
@@ -1657,7 +1656,7 @@ class Viewer(wx.Panel):
             # Update other slice's cross according to the new focal point from
             # the actual orientation.
             focal_point = self.cross.GetFocalPoint()
-            Publisher.sendMessage('Update cross position', focal_point)
+            Publisher.sendMessage('Update cross position', position=focal_point)
             Publisher.sendMessage('Update slice viewer')
         else:
             self.interactor.Render()

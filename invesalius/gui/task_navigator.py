@@ -414,9 +414,9 @@ class NeuronavigationPanel(wx.Panel):
                 for m in [0, 1, 2]:
                     self.numctrls_coord[btn_id][m].SetValue(coord[m])
 
-    def UpdateImageCoordinates(self, pubsub_evt):
+    def UpdateImageCoordinates(self, position):
         # TODO: Change from world coordinates to matrix coordinates. They are better for multi software communication.
-        self.current_coord = pubsub_evt.data
+        self.current_coord = position
         for m in [0, 1, 2, 6]:
             if m == 6 and self.btns_coord[m].IsEnabled():
                 for n in [0, 1, 2]:
@@ -537,10 +537,10 @@ class NeuronavigationPanel(wx.Panel):
                      self.numctrls_coord[btn_id][1].GetValue(),\
                      self.numctrls_coord[btn_id][2].GetValue()
 
-        Publisher.sendMessage('Set ball reference position', (ux, uy, uz))
+        Publisher.sendMessage('Set ball reference position', position=(ux, uy, uz))
         # Publisher.sendMessage('Set camera in volume', (ux, uy, uz))
-        Publisher.sendMessage('Co-registered points', ((ux, uy, uz), (0., 0., 0.)))
-        Publisher.sendMessage('Update cross position', (ux, uy, uz))
+        Publisher.sendMessage('Co-registered points', arg=(ux, uy, uz), position=(0., 0., 0.))
+        Publisher.sendMessage('Update cross position', position=(ux, uy, uz))
 
     def OnImageFiducials(self, evt):
         btn_id = list(const.BTNS_IMG_MKS[evt.GetId()].keys())[0]
@@ -1063,8 +1063,8 @@ class MarkersPanel(wx.Panel):
         Publisher.subscribe(self.OnCreateMarker, 'Create marker')
         Publisher.subscribe(self.UpdateNavigationStatus, 'Navigation status')
 
-    def UpdateCurrentCoord(self, pubsub_evt):
-        self.current_coord = pubsub_evt.data[1][:]
+    def UpdateCurrentCoord(self, arg, position):
+        self.current_coord = position[:]
         #self.current_angle = pubsub_evt.data[1][3:]
 
     def UpdateNavigationStatus(self, pubsub_evt):

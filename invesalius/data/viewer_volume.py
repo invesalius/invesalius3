@@ -1101,12 +1101,12 @@ class Viewer(wx.Panel):
             self.ren.RemoveActor(self.ball_actor)
             self.ball_actor = None
 
-    def SetBallReferencePosition(self, pubsub_evt):
+    def SetBallReferencePosition(self, position):
         if self._to_show_ball:
             if not self.ball_actor:
                 self.ActivateBallReference()
 
-            coord = pubsub_evt.data
+            coord = position
             x, y, z = bases.flip_x(coord)
             self.ball_actor.SetPosition(x, y, z)
 
@@ -1399,10 +1399,10 @@ class Viewer(wx.Panel):
     def SetVolumeCameraState(self, pubsub_evt):
         self.camera_state = pubsub_evt.data
 
-    def SetVolumeCamera(self, pubsub_evt):
+    def SetVolumeCamera(self, arg, position):
         if self.camera_state:
             # TODO: exclude dependency on initial focus
-            cam_focus = np.array(bases.flip_x(pubsub_evt.data[1][:3]))
+            cam_focus = np.array(bases.flip_x(position[:3]))
             cam = self.ren.GetActiveCamera()
 
             if self.initial_focus is None:

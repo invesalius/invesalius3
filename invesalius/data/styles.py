@@ -237,10 +237,10 @@ class CrossInteractorStyle(DefaultInteractorStyle):
         wx, wy, wz = self.viewer.get_coordinate_cursor(mouse_x, mouse_y, self.picker)
         px, py = self.viewer.get_slice_pixel_coord_by_world_pos(wx, wy, wz)
         coord = self.viewer.calcultate_scroll_position(px, py)
-        Publisher.sendMessage('Update cross position', (wx, wy, wz))
+        Publisher.sendMessage('Update cross position', position=(wx, wy, wz))
         self.ScrollSlice(coord)
-        Publisher.sendMessage('Set ball reference position', (wx, wy, wz))
-        Publisher.sendMessage('Co-registered points',  (None, (wx, wy, wz, 0., 0., 0.)))
+        Publisher.sendMessage('Set ball reference position', position=(wx, wy, wz))
+        Publisher.sendMessage('Co-registered points',  arg=None, position=(wx, wy, wz, 0., 0., 0.))
 
         iren.Render()
 

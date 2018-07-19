@@ -72,7 +72,7 @@ class CoregistrationStatic(threading.Thread):
 
             coord = m_img[0, -1], m_img[1, -1], m_img[2, -1], psi, theta, phi
 
-            wx.CallAfter(Publisher.sendMessage, 'Co-registered points', (m_img, coord))
+            wx.CallAfter(Publisher.sendMessage, 'Co-registered points', arg=m_img, position=coord)
 
             # TODO: Optimize the value of sleep for each tracking device.
             sleep(0.175)
@@ -127,7 +127,7 @@ class CoregistrationDynamic(threading.Thread):
             coord = m_img[0, -1], m_img[1, -1], m_img[2, -1], \
                     degrees(angles[0]), degrees(angles[1]), degrees(angles[2])
 
-            wx.CallAfter(Publisher.sendMessage, 'Co-registered points', (m_img, coord))
+            wx.CallAfter(Publisher.sendMessage, 'Co-registered points', arg=m_img, position=coord)
 
             # TODO: Optimize the value of sleep for each tracking device.
             sleep(0.175)
@@ -179,7 +179,7 @@ class CoregistrationDynamic_old(threading.Thread):
 
             # Tried several combinations and different locations to send the messages,
             # however only this one does not block the GUI during navigation.
-            wx.CallAfter(Publisher.sendMessage, 'Co-registered points', coord)
+            wx.CallAfter(Publisher.sendMessage, 'Co-registered points', arg=None, position=coord)
             wx.CallAfter(Publisher.sendMessage, 'Set camera in volume', coord)
             wx.CallAfter(Publisher.sendMessage, 'Update tracker angles', angles)
 
@@ -253,7 +253,7 @@ class CoregistrationObjectStatic(threading.Thread):
             coord = m_img[0, -1], m_img[1, -1], m_img[2, -1], \
                     degrees(angles[0]), degrees(angles[1]), degrees(angles[2])
 
-            wx.CallAfter(Publisher.sendMessage, 'Co-registered points', (m_img, coord))
+            wx.CallAfter(Publisher.sendMessage, 'Co-registered points', arg=m_img, position=coord)
             wx.CallAfter(Publisher.sendMessage, 'Update object matrix', (m_img, coord))
 
             # TODO: Optimize the value of sleep for each tracking device.
@@ -335,7 +335,7 @@ class CoregistrationObjectDynamic(threading.Thread):
             coord = m_img[0, -1], m_img[1, -1], m_img[2, -1],\
                     degrees(angles[0]), degrees(angles[1]), degrees(angles[2])
 
-            wx.CallAfter(Publisher.sendMessage, 'Co-registered points', (m_img, coord))
+            wx.CallAfter(Publisher.sendMessage, 'Co-registered points', arg=m_img, position=coord)
             wx.CallAfter(Publisher.sendMessage, 'Update object matrix', (m_img, coord))
 
             # TODO: Optimize the value of sleep for each tracking device.
