@@ -384,7 +384,7 @@ class InnerFoldPanel(wx.Panel):
                 self.last_style = None
             else:
                 Publisher.sendMessage('Enable style', style=const.SLICE_STATE_WATERSHED)
-                Publisher.sendMessage('Show help message', 'Mark the object and the background')
+                #  Publisher.sendMessage('Show help message', 'Mark the object and the background')
                 self.last_style = const.SLICE_STATE_WATERSHED
         else:
             Publisher.sendMessage('Disable style', style=const.SLICE_STATE_EDITOR)
@@ -986,22 +986,21 @@ class WatershedTool(EditionTools):
 
         self.btn_brush_format.SetBitmap(bitmap[evt.GetId()])
 
-        Publisher.sendMessage('Set watershed brush format', brush[evt.GetId()])
+        Publisher.sendMessage('Set watershed brush format', brush_format=brush[evt.GetId()])
 
     def OnBrushSize(self, evt):
         """ """
         # FIXME: Using wx.EVT_SPINCTRL in MacOS it doesnt capture changes only
         # in the text ctrl - so we are capturing only changes on text
         # Strangelly this is being called twice
-        Publisher.sendMessage('Set watershed brush size',self.spin.GetValue())
+        Publisher.sendMessage('Set watershed brush size', size=self.spin.GetValue())
 
-    def _set_brush_size(self, pubsub_evt):
-        size = pubsub_evt.data
+    def _set_brush_size(self, size):
         self.spin.SetValue(size)
 
     def OnComboBrushOp(self, evt):
         brush_op = self.combo_brush_op.GetValue()
-        Publisher.sendMessage('Set watershed operation', brush_op)
+        Publisher.sendMessage('Set watershed operation', operation=brush_op)
 
     def OnCheckOverwriteMask(self, evt):
         value = self.check_box.GetValue()
@@ -1009,7 +1008,7 @@ class WatershedTool(EditionTools):
 
     def OnCheckWWWL(self, evt):
         value = self.ww_wl_cbox.GetValue()
-        Publisher.sendMessage('Set use ww wl', value)
+        Publisher.sendMessage('Set use ww wl', use_ww_wl=value)
 
     def OnConfig(self, evt):
         from invesalius.data.styles import WatershedConfig

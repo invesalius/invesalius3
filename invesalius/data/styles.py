@@ -1008,11 +1008,11 @@ class WatershedConfig(with_metaclass(utils.Singleton, object)):
         Publisher.subscribe(self.set_3dcon, "Set watershed 3d con")
         Publisher.subscribe(self.set_gaussian_size, "Set watershed gaussian size")
 
-    def set_operation(self, pubsub_evt):
-        self.operation = WATERSHED_OPERATIONS[pubsub_evt.data]
+    def set_operation(self, operation):
+        self.operation = WATERSHED_OPERATIONS[operation]
 
-    def set_use_ww_wl(self, pubsub_evt):
-        self.use_ww_wl = pubsub_evt.data
+    def set_use_ww_wl(self, use_ww_wl):
+        self.use_ww_wl = use_ww_wl
 
     def set_algorithm(self, pubsub_evt):
         self.algorithm = pubsub_evt.data
@@ -1127,13 +1127,12 @@ class WaterShedInteractorStyle(DefaultInteractorStyle):
         cursor.SetSize(self.config.cursor_size)
         self.viewer.slice_data.SetCursor(cursor)
 
-    def set_bsize(self, pubsub_evt):
-        size = pubsub_evt.data
+    def set_bsize(self, size):
         self.config.cursor_size = size
         self.viewer.slice_data.cursor.SetSize(size)
 
-    def set_bformat(self, pubsub_evt):
-        self.config.cursor_type = pubsub_evt.data
+    def set_bformat(self, brush_format):
+        self.config.cursor_type = brush_format
         self._set_cursor()
 
     def OnEnterInteractor(self, obj, evt):
@@ -1160,7 +1159,7 @@ class WaterShedInteractorStyle(DefaultInteractorStyle):
             size -= 1
 
             if size > 0:
-                Publisher.sendMessage('Set watershed brush size', size)
+                Publisher.sendMessage('Set watershed brush size', size=size)
                 cursor.SetPosition(cursor.position)
                 self.viewer.interactor.Render()
         else:
@@ -1178,7 +1177,7 @@ class WaterShedInteractorStyle(DefaultInteractorStyle):
             size += 1
 
             if size <= 100:
-                Publisher.sendMessage('Set watershed brush size', size)
+                Publisher.sendMessage('Set watershed brush size', size=size)
                 cursor.SetPosition(cursor.position)
                 self.viewer.interactor.Render()
         else:
@@ -1426,7 +1425,7 @@ class WaterShedInteractorStyle(DefaultInteractorStyle):
         if roi_m.size:
             roi_m[index] = operation
 
-    def expand_watershed(self, pubsub_evt):
+    def expand_watershed(self):
         markers = self.matrix
         image = self.viewer.slice_.matrix
         self.viewer.slice_.do_threshold_to_all_slices()
