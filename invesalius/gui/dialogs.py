@@ -2760,7 +2760,7 @@ class FFillOptionsDialog(wx.Dialog):
     def OnClose(self, evt):
         print("ONCLOSE")
         if self.config.dlg_visible:
-            Publisher.sendMessage('Disable style', const.SLICE_STATE_MASK_FFILL)
+            Publisher.sendMessage('Disable style', style=const.SLICE_STATE_MASK_FFILL)
         evt.Skip()
         self.Destroy()
 
@@ -3261,14 +3261,14 @@ class FillHolesAutoDialog(wx.Dialog):
             conn = self.panel3dcon.GetConnSelected()
             orientation = 'VOLUME'
 
-        data = {
+        parameters = {
             'target': target,
             'conn': conn,
             'orientation': orientation,
             'size': self.spin_size.GetValue(),
         }
 
-        Publisher.sendMessage("Fill holes automatically", data)
+        Publisher.sendMessage("Fill holes automatically", parameters=parameters)
 
 
     def OnBtnClose(self, evt):

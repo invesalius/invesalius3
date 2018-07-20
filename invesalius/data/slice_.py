@@ -1496,12 +1496,11 @@ class Slice(with_metaclass(utils.Singleton, object)):
         #if (filetype == const.FILETYPE_IMAGEDATA):
             #iu.Export(imagedata, filename)
 
-    def _fill_holes_auto(self, pubsub_evt):
-        data = pubsub_evt.data
-        target = data['target']
-        conn = data['conn']
-        orientation = data['orientation']
-        size = data['size']
+    def _fill_holes_auto(self, parameters):
+        target = parameters['target']
+        conn = parameters['conn']
+        orientation = parameters['orientation']
+        size = parameters['size']
 
         if target == '2D':
             index = self.buffer_slices[orientation].index
