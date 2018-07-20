@@ -410,7 +410,7 @@ class InnerFoldPanel(wx.Panel):
     def OnCloseProject(self):
         self.fold_panel.Expand(self.fold_panel.GetFoldPanel(0))
 
-    def OnColapsePanel(self, pubsub_evt):
+    def OnColapsePanel(self, panel_id):
         panel_seg_id = {
             const.ID_THRESHOLD_SEGMENTATION: 0,
             const.ID_MANUAL_SEGMENTATION: 1,
@@ -418,7 +418,7 @@ class InnerFoldPanel(wx.Panel):
         }
 
         try:
-            _id = panel_seg_id[pubsub_evt.data]
+            _id = panel_seg_id[panel_id]
             self.fold_panel.Expand(self.fold_panel.GetFoldPanel(_id))
         except KeyError:
             pass

@@ -455,19 +455,19 @@ class Frame(wx.Frame):
             self.OnReorientImg()
 
         elif id == const.ID_THRESHOLD_SEGMENTATION:
-            Publisher.sendMessage("Show panel", const.ID_THRESHOLD_SEGMENTATION)
+            Publisher.sendMessage("Show panel", panel_id=const.ID_THRESHOLD_SEGMENTATION)
             Publisher.sendMessage('Disable actual style')
-            Publisher.sendMessage('Enable style', const.STATE_DEFAULT)
+            Publisher.sendMessage('Enable style', style=const.STATE_DEFAULT)
 
         elif id == const.ID_MANUAL_SEGMENTATION:
-            Publisher.sendMessage("Show panel", const.ID_MANUAL_SEGMENTATION)
+            Publisher.sendMessage("Show panel", panel_id=const.ID_MANUAL_SEGMENTATION)
             Publisher.sendMessage('Disable actual style')
-            Publisher.sendMessage('Enable style', const.SLICE_STATE_EDITOR)
+            Publisher.sendMessage('Enable style', style=const.SLICE_STATE_EDITOR)
 
         elif id == const.ID_WATERSHED_SEGMENTATION:
-            Publisher.sendMessage("Show panel", const.ID_WATERSHED_SEGMENTATION)
+            Publisher.sendMessage("Show panel", panel_id=const.ID_WATERSHED_SEGMENTATION)
             Publisher.sendMessage('Disable actual style')
-            Publisher.sendMessage('Enable style', const.SLICE_STATE_WATERSHED)
+            Publisher.sendMessage('Enable style', style=const.SLICE_STATE_WATERSHED)
 
         elif id == const.ID_FLOODFILL_MASK:
             self.OnFillHolesManually()
