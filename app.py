@@ -117,7 +117,7 @@ class InVesalius(wx.App):
         Open drag & drop files under darwin
         """
         path = os.path.abspath(filename)
-        Publisher.sendMessage('Open project', path)
+        Publisher.sendMessage('Open project', filepath=path)
 
     def Startup2(self):
         self.control = self.splash.control
@@ -350,7 +350,7 @@ def use_cmd_optargs(options, args):
         Publisher.sendMessage('Import directory', directory=import_dir, use_gui=not options.no_gui)
 
         if options.save:
-            Publisher.sendMessage('Save project', os.path.abspath(options.save))
+            Publisher.sendMessage('Save project', filepath=os.path.abspath(options.save))
             exit(0)
 
         check_for_export(options)
@@ -360,9 +360,11 @@ def use_cmd_optargs(options, args):
         import invesalius.reader.dicom_reader as dcm
         for patient in dcm.GetDicomGroups(options.import_all):
             for group in patient.GetGroups():
-                Publisher.sendMessage('Import group', {'group': group, 'gui': not options.no_gui})
+                Publisher.sendMessage('Import group',
+                                      group=group,
+                                      use_gui=not options.no_gui)
                 check_for_export(options, suffix=group.title, remove_surfaces=False)
-                Publisher.sendMessage('Remove masks', [0])
+                Publisher.sendMessage('Remove masks', mask_indexes=(0,))
         return True
 
     # Check if there is a file path somewhere in what the user wrote
@@ -444,10 +446,13 @@ def export(path_, threshold_range, remove_surface=False):
             'overwrite': False,
         }
     }
-    Publisher.sendMessage('Create surface from index', surface_options)
-    Publisher.sendMessage('Export surface to file', (path_, const.FILETYPE_STL))
+    Publisher.sendMessage('Create surface from index',
+                          surface_parameters=surface_options)
+    Publisher.sendMessage('Export surface to file',
+                          filename=path_, filetype=const.FILETYPE_STL)
     if remove_surface:
-        Publisher.sendMessage('Remove surfaces', [0])
+        Publisher.sendMessage('Remove surfaces',
+                              surface_indexes=(0,))
 
 
 def print_events(data):
