@@ -1314,9 +1314,8 @@ class Slice(with_metaclass(utils.Singleton, object)):
 
         return blend_imagedata.GetOutput()
 
-    def _do_boolean_op(self, pubsub_evt):
-        op, m1, m2 = pubsub_evt.data
-        self.do_boolean_op(op, m1, m2)
+    def _do_boolean_op(self, operation, mask1, mask2):
+        self.do_boolean_op(operation, mask1, mask2)
 
 
     def do_boolean_op(self, op, m1, m2):

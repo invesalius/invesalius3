@@ -2068,7 +2068,8 @@ class MaskBooleanDialog(wx.Dialog):
         m1 = self.mask1.GetClientData(self.mask1.GetSelection())
         m2 = self.mask2.GetClientData(self.mask2.GetSelection())
 
-        Publisher.sendMessage('Do boolean operation', (op, m1, m2))
+        Publisher.sendMessage('Do boolean operation',
+                              operation=op, mask1=m1, mask2=m2)
         Publisher.sendMessage('Reload actual slice')
         Publisher.sendMessage('Refresh viewer')
 

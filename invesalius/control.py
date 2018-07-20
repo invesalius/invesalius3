@@ -933,7 +933,7 @@ class Controller():
                                   preset_name + '.plist')
         plistlib.writePlist(preset, preset_dir)
 
-    def ShowBooleanOpDialog(self, pubsub_evt):
+    def ShowBooleanOpDialog(self):
         dlg = dialogs.MaskBooleanDialog(prj.Project().mask_dict)
         dlg.Show()
 
