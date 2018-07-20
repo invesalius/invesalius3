@@ -1970,9 +1970,8 @@ class CropMaskInteractorStyle(DefaultInteractorStyle):
         self.viewer.canvas.draw_list.remove(self.draw_retangle)
         Publisher.sendMessage('Redraw canvas')
 
-    def CropMask(self, pubsub_evt):
+    def CropMask(self):
         if self.viewer.orientation == "AXIAL":
-            
             xi, xf, yi, yf, zi, zf = self.draw_retangle.box.GetLimits()
 
             xi += 1
@@ -1980,7 +1979,7 @@ class CropMaskInteractorStyle(DefaultInteractorStyle):
 
             yi += 1
             yf += 1
-            
+
             zi += 1
             zf += 1
 
@@ -1988,13 +1987,13 @@ class CropMaskInteractorStyle(DefaultInteractorStyle):
             cp_mask = self.viewer.slice_.current_mask.matrix.copy()
 
             tmp_mask = self.viewer.slice_.current_mask.matrix[zi-1:zf+1, yi-1:yf+1, xi-1:xf+1].copy()
-            
+
             self.viewer.slice_.current_mask.matrix[:] = 1
 
             self.viewer.slice_.current_mask.matrix[zi-1:zf+1, yi-1:yf+1, xi-1:xf+1] = tmp_mask
 
             self.viewer.slice_.current_mask.save_history(0, 'VOLUME', self.viewer.slice_.current_mask.matrix.copy(), cp_mask)
-            
+
             self.viewer.slice_.buffer_slices['AXIAL'].discard_mask()
             self.viewer.slice_.buffer_slices['CORONAL'].discard_mask()
             self.viewer.slice_.buffer_slices['SAGITAL'].discard_mask()
@@ -2004,9 +2003,9 @@ class CropMaskInteractorStyle(DefaultInteractorStyle):
             self.viewer.slice_.buffer_slices['SAGITAL'].discard_vtk_mask()
 
             self.viewer.slice_.current_mask.was_edited = True
-            Publisher.sendMessage('Reload actual slice')           
+            Publisher.sendMessage('Reload actual slice')
 
-     
+
 class SelectPartConfig(with_metaclass(utils.Singleton, object)):
     def __init__(self):
         self.mask = None

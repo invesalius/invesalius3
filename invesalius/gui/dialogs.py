@@ -3069,14 +3069,8 @@ class CropOptionsDialog(wx.Dialog):
 
         self._init_gui()
 
-    def UpdateValues(self, pubsub_evt):
-
-        if type(pubsub_evt) == list:
-            data = pubsub_evt
-        else:
-            data = pubsub_evt.data
-
-        xi, xf, yi, yf, zi, zf = data
+    def UpdateValues(self, limits):
+        xi, xf, yi, yf, zi, zf = limits
 
         self.tx_axial_i.SetValue(str(zi))
         self.tx_axial_f.SetValue(str(zf))
@@ -3171,12 +3165,12 @@ class CropOptionsDialog(wx.Dialog):
     def OnOk(self, evt):
         self.config.dlg_visible = False
         Publisher.sendMessage('Crop mask')
-        Publisher.sendMessage('Disable style', const.SLICE_STATE_CROP_MASK)
+        Publisher.sendMessage('Disable style', style=const.SLICE_STATE_CROP_MASK)
         evt.Skip()
 
     def OnClose(self, evt):
         self.config.dlg_visible = False
-        Publisher.sendMessage('Disable style', const.SLICE_STATE_CROP_MASK)
+        Publisher.sendMessage('Disable style', style=const.SLICE_STATE_CROP_MASK)
         evt.Skip()
         self.Destroy()
 
