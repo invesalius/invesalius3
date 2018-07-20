@@ -2846,7 +2846,7 @@ class SelectPartsOptionsDialog(wx.Dialog):
 
     def OnClose(self, evt):
         if self.config.dlg_visible:
-            Publisher.sendMessage('Disable style', const.SLICE_STATE_SELECT_MASK_PARTS)
+            Publisher.sendMessage('Disable style', style=const.SLICE_STATE_SELECT_MASK_PARTS)
         evt.Skip()
         self.Destroy()
 
