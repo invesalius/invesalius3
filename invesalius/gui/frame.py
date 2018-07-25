@@ -1001,12 +1001,12 @@ class MenuBar(wx.MenuBar):
         else:
             self.FindItemById(wx.ID_REDO).Enable(False)
 
-    def OnEnableNavigation(self, pubsub_evt):
+    def OnEnableNavigation(self, status):
         """
         Disable mode menu when navigation is on.
-        :param pubsub_evt: Navigation status
+        :param status: Navigation status
         """
-        value = pubsub_evt.data
+        value = status
         if value:
             self.FindItemById(const.ID_MODE_NAVIGATION).Enable(False)
         else:
@@ -1632,8 +1632,7 @@ class SliceToolBar(AuiToolBar):
         Update status of other items on toolbar (only one item
         should be toggle each time).
         """
-        if hasattr(evt, 'data'):
-            id = evt.data
+        if id is not None:
             if not self.GetToolToggled(id):
                 self.ToggleTool(id, True)
                 self.Refresh()

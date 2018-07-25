@@ -1186,8 +1186,8 @@ class Viewer(wx.Panel):
 
         # self.ren.AddActor(self.obj_axes)
 
-    def OnNavigationStatus(self, pubsub_evt):
-        self.nav_status = pubsub_evt.data
+    def OnNavigationStatus(self, status):
+        self.nav_status = status
         self.pTarget = self.CenterOfMass()
         if self.obj_actor and self.nav_status:
             self.obj_actor.SetVisibility(self.obj_state)

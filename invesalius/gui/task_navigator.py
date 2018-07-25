@@ -220,14 +220,13 @@ class InnerFoldPanel(wx.Panel):
         self.SetSizer(sizer)
         self.Update()
         self.SetAutoLayout(1)
-        
+
     def __bind_events(self):
         Publisher.subscribe(self.OnCheckStatus, 'Navigation status')
         Publisher.subscribe(self.OnShowObject, 'Update track object state')
         Publisher.subscribe(self.OnVolumeCamera, 'Target navigation mode')
 
-    def OnCheckStatus(self, pubsub_evt):
-        status = pubsub_evt.data
+    def OnCheckStatus(self, status):
         if status:
             self.checktrigger.Enable(False)
             self.checkobj.Enable(False)
@@ -632,8 +631,8 @@ class NeuronavigationPanel(wx.Panel):
                 if self.trigger_state:
                     self.trigger = trig.Trigger(nav_id)
 
-                Publisher.sendMessage("Navigation status", True)
-                Publisher.sendMessage("Toggle Cross", const.SLICE_STATE_CROSS)
+                Publisher.sendMessage("Navigation status", status=True)
+                Publisher.sendMessage("Toggle Cross", id=const.SLICE_STATE_CROSS)
                 Publisher.sendMessage("Hide current mask")
 
                 if self.track_obj:
@@ -687,7 +686,7 @@ class NeuronavigationPanel(wx.Panel):
 
             self.correg.stop()
 
-            Publisher.sendMessage("Navigation status", False)
+            Publisher.sendMessage("Navigation status", status=False)
 
     def ResetImageFiducials(self):
         for m in range(0, 3):
@@ -846,8 +845,8 @@ class ObjectRegistrationPanel(wx.Panel):
     def UpdateTrackerInit(self, nav_prop):
         self.nav_prop = nav_prop
 
-    def UpdateNavigationStatus(self, pubsub_evt):
-        nav_status = pubsub_evt.data
+    def UpdateNavigationStatus(self, status):
+        nav_status = status
         if nav_status:
             self.checkrecordcoords.Enable(1)
             self.checktrack.Enable(0)
@@ -1064,8 +1063,8 @@ class MarkersPanel(wx.Panel):
         self.current_coord = position[:]
         #self.current_angle = pubsub_evt.data[1][3:]
 
-    def UpdateNavigationStatus(self, pubsub_evt):
-        if pubsub_evt.data is False:
+    def UpdateNavigationStatus(self, status):
+        if not status:
             sleep(0.5)
             #self.current_coord[3:] = 0, 0, 0
             self.nav_status = False
