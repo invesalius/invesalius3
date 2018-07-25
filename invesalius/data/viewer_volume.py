@@ -304,9 +304,7 @@ class Viewer(wx.Panel):
             self.RemoveBallReference()
             self.interactor.Render()
 
-    def OnSensors(self, pubsub_evt):
-        probe_id = pubsub_evt.data[0]
-        ref_id = pubsub_evt.data[1]
+    def OnSensors(self, probe_id, ref_id):
         if not self.sen1:
             self.CreateSensorID()
 
@@ -494,25 +492,22 @@ class Viewer(wx.Panel):
         actor = self.points_reference.pop(point)
         self.ren.RemoveActor(actor)
 
-    def AddMarker(self, pubsub_evt):
+    def AddMarker(self, ball_id, size, colour, coord):
         """
         Markers created by navigation tools and rendered in volume viewer.
         """
-        self.ball_id = pubsub_evt.data[0]
-        ballsize = pubsub_evt.data[1]
-        ballcolour = pubsub_evt.data[2][:3]
-        coord = pubsub_evt.data[3]
+        self.ball_id = ball_id
         x, y, z = bases.flip_x(coord)
 
         ball_ref = vtk.vtkSphereSource()
-        ball_ref.SetRadius(ballsize)
+        ball_ref.SetRadius(size)
         ball_ref.SetCenter(x, y, z)
 
         mapper = vtk.vtkPolyDataMapper()
         mapper.SetInputConnection(ball_ref.GetOutputPort())
 
         prop = vtk.vtkProperty()
-        prop.SetColor(ballcolour)
+        prop.SetColor(colour)
 
         #adding a new actor for the present ball
         self.staticballs.append(vtk.vtkActor())

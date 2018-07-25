@@ -86,7 +86,7 @@ def ClaronCoord(trck_init, trck_id, ref_mode):
                 k += 1
                 print("wait, collecting coordinates ...")
 
-    Publisher.sendMessage('Sensors ID', [trck.probeID, trck.refID])
+    Publisher.sendMessage('Sensors ID', probe_id=trck.probeID, ref_id=trck.refID)
 
     return coord
 
@@ -225,7 +225,7 @@ def DebugCoord(trk_init, trck_id, ref_mode):
     coord3 = np.array([uniform(1, 200), uniform(1, 200), uniform(1, 200),
                        uniform(-180.0, 180.0), uniform(-180.0, 180.0), uniform(-180.0, 180.0)])
 
-    Publisher.sendMessage('Sensors ID', [int(uniform(0, 5)), int(uniform(0, 5))])
+    Publisher.sendMessage('Sensors ID', probe_id=int(uniform(0, 5)), ref_id=int(uniform(0, 5)))
 
     return np.vstack([coord1, coord2, coord3])
 

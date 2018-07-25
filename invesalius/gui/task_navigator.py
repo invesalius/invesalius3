@@ -512,7 +512,8 @@ class NeuronavigationPanel(wx.Panel):
                     Publisher.sendMessage('Update status text in GUI',
                                           label=_("Ready"))
 
-        Publisher.sendMessage('Update tracker initializer', (self.tracker_id, self.trk_init, self.ref_mode_id))
+        Publisher.sendMessage('Update tracker initializer',
+                              nav_prop=(self.tracker_id, self.trk_init, self.ref_mode_id))
 
     def OnChoiceRefMode(self, evt, ctrl):
         # When ref mode is changed the tracker coordinates are set to zero
@@ -521,7 +522,8 @@ class NeuronavigationPanel(wx.Panel):
         # Some trackers do not accept restarting within this time window
         # TODO: Improve the restarting of trackers after changing reference mode
         # self.OnChoiceTracker(None, ctrl)
-        Publisher.sendMessage('Update tracker initializer', (self.tracker_id, self.trk_init, self.ref_mode_id))
+        Publisher.sendMessage('Update tracker initializer',
+                              nav_prop=(self.tracker_id, self.trk_init, self.ref_mode_id))
         print("Reference mode changed!")
 
     def OnSetImageCoordinates(self, evt):
@@ -547,7 +549,7 @@ class NeuronavigationPanel(wx.Panel):
                     self.numctrls_coord[btn_id][2].GetValue(), 0, 0, 0
 
             self.fiducials[btn_id, :] = coord[0:3]
-            Publisher.sendMessage('Create marker', (coord, marker_id))
+            Publisher.sendMessage('Create marker', coord=coord, marker_id=marker_id)
         else:
             for n in [0, 1, 2]:
                 self.numctrls_coord[btn_id][n].SetValue(float(self.current_coord[n]))
@@ -841,8 +843,8 @@ class ObjectRegistrationPanel(wx.Panel):
         Publisher.subscribe(self.UpdateNavigationStatus, 'Navigation status')
         Publisher.subscribe(self.OnCloseProject, 'Close project data')
 
-    def UpdateTrackerInit(self, pubsub_evt):
-        self.nav_prop = pubsub_evt.data
+    def UpdateTrackerInit(self, nav_prop):
+        self.nav_prop = nav_prop
 
     def UpdateNavigationStatus(self, pubsub_evt):
         nav_status = pubsub_evt.data
@@ -1187,12 +1189,12 @@ class MarkersPanel(wx.Panel):
             self.marker_ind -= 1
         Publisher.sendMessage('Remove marker', index)
 
-    def OnCreateMarker(self, evt):
+    def OnCreateMarker(self, evt=None, coord=None, marker_id=None):
         # OnCreateMarker is used for both pubsub and button click events
         # Pubsub is used for markers created with fiducial buttons, trigger and create marker button
-        if hasattr(evt, 'data'):
-            if evt.data is not None:
-                self.CreateMarker(evt.data[0], (0.0, 1.0, 0.0), self.marker_size, evt.data[1])
+        if evt is None:
+            if coord:
+                self.CreateMarker(coord, (0.0, 1.0, 0.0), self.marker_size, marker_id)
             else:
                 self.CreateMarker(self.current_coord, self.marker_colour, self.marker_size)
         else:
@@ -1282,7 +1284,7 @@ class MarkersPanel(wx.Panel):
         # TODO: Use matrix coordinates and not world coordinates as current method.
         # This makes easier for inter-software comprehension.
 
-        Publisher.sendMessage('Add marker', (self.marker_ind, size, colour,  coord[0:3]))
+        Publisher.sendMessage('Add marker', ball_id=self.marker_ind, size=size, colour=colour,  coord=coord[0:3])
 
         self.marker_ind += 1
 
