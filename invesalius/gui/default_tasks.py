@@ -320,8 +320,8 @@ class UpperTaskPanel(wx.Panel):
         else:
             self.SetStateProjectClose()
 
-    def SetNavigationMode(self, pubsub_evt):
-        self.navigation_mode_status = status = pubsub_evt.data
+    def SetNavigationMode(self, status):
+        self.navigation_mode_status = status
         name = _("Navigation system")
         panel = navigator.TaskPanel
         if status and (self.fold_panel.GetCount()<=4):

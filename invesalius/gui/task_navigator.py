@@ -239,24 +239,22 @@ class InnerFoldPanel(wx.Panel):
     def OnExternalTrigger(self, evt, ctrl):
         Publisher.sendMessage('Update trigger state', ctrl.GetValue())
 
-    def OnShowObject(self, evt):
-        if hasattr(evt, 'data'):
-            if evt.data[0]:
-                self.checkobj.Enable(True)
-                self.track_obj = True
-                Publisher.sendMessage('Status target button', True)
-            else:
-                self.checkobj.Enable(False)
-                self.checkobj.SetValue(False)
-                self.track_obj = False
-                Publisher.sendMessage('Status target button', False)
+    def OnShowObject(self, flag, obj_name):
+        if flag:
+            self.checkobj.Enable(True)
+            self.track_obj = True
+            Publisher.sendMessage('Status target button', True)
+        else:
+            self.checkobj.Enable(False)
+            self.checkobj.SetValue(False)
+            self.track_obj = False
+            Publisher.sendMessage('Status target button', False)
 
         Publisher.sendMessage('Update show object state', self.checkobj.GetValue())
 
-    def OnVolumeCamera(self, evt):
-        if hasattr(evt, 'data'):
-            if evt.data is True:
-                self.checkcamera.SetValue(0)
+    def OnVolumeCamera(self, evt=None, target_mode=None):
+        if target_mode is True:
+            self.checkcamera.SetValue(0)
         Publisher.sendMessage('Update volume camera state', self.checkcamera.GetValue())
 
 
@@ -435,11 +433,8 @@ class NeuronavigationPanel(wx.Panel):
             self.obj_reg = None
             self.obj_reg_status = False
 
-    def UpdateTrackObjectState(self, pubsub_evt):
-        if pubsub_evt.data[0]:
-            self.track_obj = pubsub_evt.data[0]
-        else:
-            self.track_obj = False
+    def UpdateTrackObjectState(self, flag, obj_name):
+        self.track_obj = flag
 
     def UpdateTriggerState(self, pubsub_evt):
         self.trigger_state = pubsub_evt.data
@@ -716,7 +711,7 @@ class NeuronavigationPanel(wx.Panel):
         self.ResetImageFiducials()
         self.OnChoiceTracker(False, self.choice_trck)
         Publisher.sendMessage('Update object registration', False)
-        Publisher.sendMessage('Update track object state', (False, False))
+        Publisher.sendMessage('Update track object state', flag=False, obj_name=False)
         Publisher.sendMessage('Delete all markers', 'close')
         # TODO: Reset camera initial focus
         Publisher.sendMessage('Reset cam clipping range')
@@ -888,7 +883,7 @@ class ObjectRegistrationPanel(wx.Panel):
             None
 
     def OnTrackObject(self, evt, ctrl):
-        Publisher.sendMessage('Update track object state', (evt.GetSelection(), self.obj_name))
+        Publisher.sendMessage('Update track object state', flag=evt.GetSelection(), obj_name=self.obj_name)
 
     def OnComboCoil(self, evt):
         # coil_name = evt.GetString()

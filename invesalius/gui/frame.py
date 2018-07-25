@@ -511,7 +511,7 @@ class Frame(wx.Frame):
         if status and self._show_navigator_message and sys.platform != 'win32':
             wx.MessageBox(_('Currently the Navigation mode is only working on Windows'), 'Info', wx.OK | wx.ICON_INFORMATION)
             self._show_navigator_message = False
-        Publisher.sendMessage('Set navigation mode', status)
+        Publisher.sendMessage('Set navigation mode', status=status)
         if not status:
             Publisher.sendMessage('Remove sensors ID')
 

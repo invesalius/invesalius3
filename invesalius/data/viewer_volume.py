@@ -342,7 +342,7 @@ class Viewer(wx.Panel):
 
         self.interactor.Render()
 
-    def OnRemoveSensorsID(self, pubsub_evt):
+    def OnRemoveSensorsID(self):
         if self.sen1:
             self.ren.RemoveActor(self.sen1.actor)
             self.ren.RemoveActor(self.sen2.actor)
@@ -590,8 +590,8 @@ class Viewer(wx.Panel):
     def OnUpdateDistThreshold(self, pubsub_evt):
         self.distthreshold = pubsub_evt.data
 
-    def ActivateTargetMode(self, pubsub_evt):
-        self.target_mode = pubsub_evt.data
+    def ActivateTargetMode(self, evt=None, target_mode=None):
+        self.target_mode = target_mode
         if self.target_coord and self.target_mode:
             self.CreateTargetAim()
 
@@ -1216,18 +1216,15 @@ class Viewer(wx.Panel):
 
         self.Refresh()
 
-    def UpdateTrackObjectState(self, pubsub_evt):
-        if pubsub_evt.data[0]:
-            self.obj_name = pubsub_evt.data[1]
-
+    def UpdateTrackObjectState(self, flag, obj_name):
+        if flag:
+            self.obj_name = obj_name
             if not self.obj_actor:
                 self.AddObjectActor(self.obj_name)
-
         else:
             if self.obj_actor:
                 self.ren.RemoveActor(self.obj_actor)
                 self.obj_actor = None
-
         self.Refresh()
 
     def UpdateShowObjectState(self, pubsub_evt):

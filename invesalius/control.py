@@ -328,9 +328,8 @@ class Controller():
         session.OpenProject(filepath)
         Publisher.sendMessage("Enable state project", state=True)
 
-    def OnSaveProject(self, pubsub_evt):
-        path = pubsub_evt.data
-        self.SaveProject(path)
+    def OnSaveProject(self, filepath):
+        self.SaveProject(filepath)
 
     def SaveProject(self, path=None, compress=False):
         Publisher.sendMessage('Begin busy cursor')
@@ -476,10 +475,8 @@ class Controller():
         self.LoadProject()
         Publisher.sendMessage("Enable state project", state=True)
 
-    def OnImportGroup(self, pubsub_evt):
-        group = pubsub_evt.data['group']
-        gui = pubsub_evt.data['gui']
-        self.ImportGroup(group, gui)
+    def OnImportGroup(self, group, use_gui):
+        self.ImportGroup(group, use_gui)
 
     def ImportGroup(self, group, gui=True):
         matrix, matrix_filename, dicom = self.OpenDicomGroup(group, 0, [0, 0], gui=gui)
