@@ -554,7 +554,7 @@ class NeuronavigationPanel(wx.Panel):
                 self.numctrls_coord[btn_id][n].SetValue(float(self.current_coord[n]))
 
             self.fiducials[btn_id, :] = np.nan
-            Publisher.sendMessage('Delete fiducial marker', marker_id)
+            Publisher.sendMessage('Delete fiducial marker', marker_id=marker_id)
 
     def OnTrackerFiducials(self, evt):
         btn_id = list(const.BTNS_TRK[evt.GetId()].keys())[0]
@@ -1150,12 +1150,11 @@ class MarkersPanel(wx.Panel):
                     if not hasattr(evt, 'data'):
                         dlg.DeleteTarget()
 
-    def OnDeleteSingleMarker(self, evt):
+    def OnDeleteSingleMarker(self, evt=None, marker_id=None):
         # OnDeleteSingleMarker is used for both pubsub and button click events
         # Pubsub is used for fiducial handle and button click for all others
 
-        if hasattr(evt, 'data'):
-            marker_id = evt.data
+        if marker_id is not None:
             if self.lc.GetItemCount():
                 for id_n in range(self.lc.GetItemCount()):
                     item = self.lc.GetItem(id_n, 4)
@@ -1186,7 +1185,7 @@ class MarkersPanel(wx.Panel):
             for n in range(0, self.lc.GetItemCount()):
                 self.lc.SetStringItem(n, 0, str(n+1))
             self.marker_ind -= 1
-        Publisher.sendMessage('Remove marker', index)
+        Publisher.sendMessage('Remove marker', index=index)
 
     def OnCreateMarker(self, evt=None, coord=None, marker_id=None):
         # OnCreateMarker is used for both pubsub and button click events

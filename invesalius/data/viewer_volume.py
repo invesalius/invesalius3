@@ -539,8 +539,7 @@ class Viewer(wx.Panel):
         self.staticballs = []
         self.UpdateRender()
 
-    def RemoveMarker(self, pubsub_evt):
-        index = pubsub_evt.data
+    def RemoveMarker(self, index):
         for i in reversed(index):
             self.ren.RemoveActor(self.staticballs[i])
             del self.staticballs[i]
