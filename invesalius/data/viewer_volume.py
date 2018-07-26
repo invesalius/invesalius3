@@ -1209,7 +1209,7 @@ class Viewer(wx.Panel):
 
         self.Refresh()
 
-    def UpdateTrackObjectState(self, flag, obj_name):
+    def UpdateTrackObjectState(self, evt=None, flag=None, obj_name=None):
         if flag:
             self.obj_name = obj_name
             if not self.obj_actor:
@@ -1221,7 +1221,7 @@ class Viewer(wx.Panel):
         self.Refresh()
 
     def UpdateShowObjectState(self, state):
-        self.obj_state = status
+        self.obj_state = state
         if self.obj_actor and not self.obj_state:
             self.obj_actor.SetVisibility(self.obj_state)
             self.Refresh()

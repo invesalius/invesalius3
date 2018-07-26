@@ -238,7 +238,7 @@ class InnerFoldPanel(wx.Panel):
     def OnExternalTrigger(self, evt, ctrl):
         Publisher.sendMessage('Update trigger state', trigger_state=ctrl.GetValue())
 
-    def OnShowObject(self, flag, obj_name):
+    def OnShowObject(self, evt=None, flag=None, obj_name=None):
         if flag:
             self.checkobj.Enable(True)
             self.track_obj = True
@@ -422,21 +422,21 @@ class NeuronavigationPanel(wx.Panel):
                 for n in [0, 1, 2]:
                     self.numctrls_coord[m][n].SetValue(float(self.current_coord[n]))
 
-    def UpdateObjectRegistration(self, pubsub_evt):
-        if pubsub_evt.data:
-            self.obj_reg = pubsub_evt.data
+    def UpdateObjectRegistration(self, data=None):
+        if data:
+            self.obj_reg = data
             self.obj_reg_status = True
         else:
             self.obj_reg = None
             self.obj_reg_status = False
 
-    def UpdateTrackObjectState(self, flag, obj_name):
+    def UpdateTrackObjectState(self, evt=None, flag=None, obj_name=None):
         self.track_obj = flag
 
     def UpdateTriggerState(self, trigger_state):
         self.trigger_state = trigger_state
 
-    def OnDisconnectTracker(self, pubsub_evt):
+    def OnDisconnectTracker(self):
         if self.tracker_id:
             dt.TrackerConnection(self.tracker_id, self.trk_init[0], 'disconnect')
 
@@ -709,9 +709,9 @@ class NeuronavigationPanel(wx.Panel):
         self.ResetTrackerFiducials()
         self.ResetImageFiducials()
         self.OnChoiceTracker(False, self.choice_trck)
-        Publisher.sendMessage('Update object registration', False)
+        Publisher.sendMessage('Update object registration')
         Publisher.sendMessage('Update track object state', flag=False, obj_name=False)
-        Publisher.sendMessage('Delete all markers', 'close')
+        Publisher.sendMessage('Delete all markers')
         # TODO: Reset camera initial focus
         Publisher.sendMessage('Reset cam clipping range')
 
@@ -899,7 +899,7 @@ class ObjectRegistrationPanel(wx.Panel):
                     if np.isfinite(self.obj_fiducials).all() and np.isfinite(self.obj_orients).all():
                         self.checktrack.Enable(1)
                         Publisher.sendMessage('Update object registration',
-                                              (self.obj_fiducials, self.obj_orients, self.obj_ref_mode, self.obj_name))
+                                              data=(self.obj_fiducials, self.obj_orients, self.obj_ref_mode, self.obj_name))
                         Publisher.sendMessage('Update status text in GUI',
                                               label=_("Ready"))
 
@@ -926,7 +926,7 @@ class ObjectRegistrationPanel(wx.Panel):
 
             self.checktrack.Enable(1)
             Publisher.sendMessage('Update object registration',
-                                  (self.obj_fiducials, self.obj_orients, self.obj_ref_mode, self.obj_name))
+                                  data=(self.obj_fiducials, self.obj_orients, self.obj_ref_mode, self.obj_name))
             Publisher.sendMessage('Update status text in GUI', label=_("Ready"))
             wx.MessageBox(_("Object file successfully loaded"), _("Load"))
 
@@ -1128,9 +1128,9 @@ class MarkersPanel(wx.Panel):
         self.tgt_flag = True
         dlg.NewTarget()
 
-    def OnDeleteAllMarkers(self, evt):
+    def OnDeleteAllMarkers(self, evt=None):
         if self.list_coord:
-            if hasattr(evt, 'data'):
+            if evt is None:
                 result = wx.ID_OK
             else:
                 result = dlg.DeleteAllMarkers()
@@ -1140,7 +1140,7 @@ class MarkersPanel(wx.Panel):
                 self.marker_ind = 0
                 Publisher.sendMessage('Remove all markers', indexes=self.lc.GetItemCount())
                 self.lc.DeleteAllItems()
-                Publisher.sendMessage('Stop Blink Marker', 'DeleteAll')
+                Publisher.sendMessage('Stop Blink Marker', index='DeleteAll')
 
                 if self.tgt_flag:
                     self.tgt_flag = self.tgt_index = None
