@@ -214,12 +214,12 @@ class SurfaceManager():
             else:
                 self.last_surface_index = None
 
-    def OnSeedSurface(self, pubsub_evt):
+    def OnSeedSurface(self, seeds):
         """
         Create a new surface, based on the last selected surface,
         using as reference seeds user add to surface of reference.
         """
-        points_id_list = pubsub_evt.data
+        points_id_list = seeds
         index = self.last_surface_index
         proj = prj.Project()
         surface = proj.surface_dict[index]
@@ -227,7 +227,7 @@ class SurfaceManager():
         new_polydata = pu.JoinSeedsParts(surface.polydata,
                                           points_id_list)
         index = self.CreateSurfaceFromPolydata(new_polydata)
-        Publisher.sendMessage('Show single surface', (index, True))
+        Publisher.sendMessage('Show single surface', index=index, visibility=True)
         #self.ShowActor(index, True)
 
     def OnSplitSurface(self, pubsub_evt):
@@ -246,7 +246,7 @@ class SurfaceManager():
             index_list.append(index)
             #self.ShowActor(index, True)
 
-        Publisher.sendMessage('Show multiple surfaces', (index_list, True))
+        Publisher.sendMessage('Show multiple surfaces', index_list=index_list, visibility=True)
 
     def OnLargestSurface(self, pubsub_evt):
         """
@@ -259,7 +259,7 @@ class SurfaceManager():
 
         new_polydata = pu.SelectLargestPart(surface.polydata)
         new_index = self.CreateSurfaceFromPolydata(new_polydata)
-        Publisher.sendMessage('Show single surface', (new_index, True))
+        Publisher.sendMessage('Show single surface', index=new_index, visibility=True)
 
     def OnImportSurfaceFile(self, filename):
         """

@@ -360,7 +360,7 @@ class Viewer(wx.Panel):
 
     def OnEndSeed(self, pubsub_evt):
         Publisher.sendMessage("Create surface from seeds",
-                                    self.seed_points)
+                              seeds=self.seed_points)
 
     def OnExportPicture(self, orientation, filename, filetype):
         if orientation == const.VOLUME:
@@ -520,20 +520,20 @@ class Viewer(wx.Panel):
         #self.UpdateRender()
         self.Refresh()
 
-    def HideAllMarkers(self, pubsub_evt):
-        ballid = pubsub_evt.data
+    def HideAllMarkers(self, indexes):
+        ballid = indexes
         for i in range(0, ballid):
             self.staticballs[i].SetVisibility(0)
         self.UpdateRender()
 
-    def ShowAllMarkers(self, pubsub_evt):
-        ballid = pubsub_evt.data
+    def ShowAllMarkers(self, indexes):
+        ballid = indexes
         for i in range(0, ballid):
             self.staticballs[i].SetVisibility(1)
         self.UpdateRender()
 
-    def RemoveAllMarkers(self, pubsub_evt):
-        ballid = pubsub_evt.data
+    def RemoveAllMarkers(self, indexes):
+        ballid = indexes
         for i in range(0, ballid):
             self.ren.RemoveActor(self.staticballs[i])
         self.staticballs = []
@@ -546,11 +546,11 @@ class Viewer(wx.Panel):
             self.ball_id = self.ball_id - 1
         self.UpdateRender()
 
-    def BlinkMarker(self, pubsub_evt):
+    def BlinkMarker(self, index):
         if self.timer:
             self.timer.Stop()
             self.staticballs[self.index].SetVisibility(1)
-        self.index = pubsub_evt.data
+        self.index = index
         self.timer = wx.Timer(self)
         self.Bind(wx.EVT_TIMER, self.OnBlinkMarker, self.timer)
         self.timer.Start(500)
@@ -561,10 +561,10 @@ class Viewer(wx.Panel):
         self.Refresh()
         self.timer_count += 1
 
-    def StopBlinkMarker(self, pubsub_evt):
+    def StopBlinkMarker(self, index=None):
         if self.timer:
             self.timer.Stop()
-            if pubsub_evt.data is None:
+            if index is None:
                 self.staticballs[self.index].SetVisibility(1)
                 self.Refresh()
             self.index = False
@@ -803,8 +803,7 @@ class Viewer(wx.Panel):
         self.target_coord[1] = -self.target_coord[1]
         self.CreateTargetAim()
 
-    def OnRemoveTarget(self, pubsub_evt):
-        status = pubsub_evt.data
+    def OnRemoveTarget(self, status):
         if not status:
             self.target_mode = None
             self.target_coord = None
@@ -1221,8 +1220,8 @@ class Viewer(wx.Panel):
                 self.obj_actor = None
         self.Refresh()
 
-    def UpdateShowObjectState(self, pubsub_evt):
-        self.obj_state = pubsub_evt.data
+    def UpdateShowObjectState(self, state):
+        self.obj_state = status
         if self.obj_actor and not self.obj_state:
             self.obj_actor.SetVisibility(self.obj_state)
             self.Refresh()
@@ -1387,8 +1386,8 @@ class Viewer(wx.Panel):
         self.ren.ResetCamera()
         self.ren.ResetCameraClippingRange()
 
-    def SetVolumeCameraState(self, pubsub_evt):
-        self.camera_state = pubsub_evt.data
+    def SetVolumeCameraState(self, camera_state):
+        self.camera_state = camera_state
 
     def SetVolumeCamera(self, arg, position):
         if self.camera_state:

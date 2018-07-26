@@ -457,12 +457,12 @@ class VolumeToolPanel(wx.Panel):
     def OnButtonSlicePlane(self, evt):
         self.button_slice_plane.PopupMenu(self.slice_plane_menu)
 
-    def StatusObjTracker(self, pubsub_evt):
-        self.status_obj_tracker = pubsub_evt.data
+    def StatusObjTracker(self, status):
+        self.status_obj_tracker = status
         self.StatusNavigation()
 
-    def StatusTargetSelect(self, pubsub_evt):
-        self.status_target_select = pubsub_evt.data
+    def StatusTargetSelect(self, status):
+        self.status_target_select = status
         self.StatusNavigation()
 
     def StatusNavigation(self):

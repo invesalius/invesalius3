@@ -844,8 +844,7 @@ class SurfacesListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
     def OnCheckItem(self, index, flag):
         Publisher.sendMessage('Show surface', index=index, visibility=flag)
 
-    def OnShowSingle(self, pubsub_evt):
-        index, visibility = pubsub_evt.data
+    def OnShowSingle(self, index, visibility):
         for key in self.surface_list_index.keys():
             if key != index:
                 self.SetItemImage(key, not visibility)
@@ -855,7 +854,7 @@ class SurfacesListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
         Publisher.sendMessage('Show surface',
                               index=index, visibility=visibility)
 
-    def OnShowMultiple(self, pubsub_evt):
+    def OnShowMultiple(self, index_list, visibility):
         index_list, visibility = pubsub_evt.data
         for key in self.surface_list_index.keys():
             if key not in index_list:
@@ -1118,8 +1117,7 @@ class MeasuresListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
     def OnCheckItem(self, index, flag):
         Publisher.sendMessage('Show measurement', index=index, visibility=flag)
 
-    def OnShowSingle(self, pubsub_evt):
-        index, visibility = pubsub_evt.data
+    def OnShowSingle(self, index, visibility):
         for key in self._list_index.keys():
             if key != index:
                 self.SetItemImage(key, not visibility)
@@ -1129,7 +1127,7 @@ class MeasuresListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
         Publisher.sendMessage('Show measurement',
                               index=index, visibility=visibility)
 
-    def OnShowMultiple(self, pubsub_evt):
+    def OnShowMultiple(self, index_list, visibility):
         index_list, visibility = pubsub_evt.data
         for key in self._list_index.keys():
             if key not in index_list:

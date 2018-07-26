@@ -236,25 +236,25 @@ class InnerFoldPanel(wx.Panel):
                 self.checkobj.Enable(True)
 
     def OnExternalTrigger(self, evt, ctrl):
-        Publisher.sendMessage('Update trigger state', ctrl.GetValue())
+        Publisher.sendMessage('Update trigger state', trigger_state=ctrl.GetValue())
 
     def OnShowObject(self, flag, obj_name):
         if flag:
             self.checkobj.Enable(True)
             self.track_obj = True
-            Publisher.sendMessage('Status target button', True)
+            Publisher.sendMessage('Status target button', status=True)
         else:
             self.checkobj.Enable(False)
             self.checkobj.SetValue(False)
             self.track_obj = False
-            Publisher.sendMessage('Status target button', False)
+            Publisher.sendMessage('Status target button', status=False)
 
-        Publisher.sendMessage('Update show object state', self.checkobj.GetValue())
+        Publisher.sendMessage('Update show object state', state=self.checkobj.GetValue())
 
     def OnVolumeCamera(self, evt=None, target_mode=None):
         if target_mode is True:
             self.checkcamera.SetValue(0)
-        Publisher.sendMessage('Update volume camera state', self.checkcamera.GetValue())
+        Publisher.sendMessage('Update volume camera state', camera_state=self.checkcamera.GetValue())
 
 
 class NeuronavigationPanel(wx.Panel):
@@ -399,9 +399,7 @@ class NeuronavigationPanel(wx.Panel):
         Publisher.subscribe(self.UpdateObjectRegistration, 'Update object registration')
         Publisher.subscribe(self.OnCloseProject, 'Close project data')
 
-    def LoadImageFiducials(self, pubsub_evt):
-        marker_id = pubsub_evt.data[0]
-        coord = pubsub_evt.data[1]
+    def LoadImageFiducials(self, marker_id, coord):
         for n in const.BTNS_IMG_MKS:
             btn_id = list(const.BTNS_IMG_MKS[n].keys())[0]
             fid_id = list(const.BTNS_IMG_MKS[n].values())[0]
@@ -435,8 +433,8 @@ class NeuronavigationPanel(wx.Panel):
     def UpdateTrackObjectState(self, flag, obj_name):
         self.track_obj = flag
 
-    def UpdateTriggerState(self, pubsub_evt):
-        self.trigger_state = pubsub_evt.data
+    def UpdateTriggerState(self, trigger_state):
+        self.trigger_state = trigger_state
 
     def OnDisconnectTracker(self, pubsub_evt):
         if self.tracker_id:
@@ -1085,7 +1083,7 @@ class MarkersPanel(wx.Panel):
         menu_id.Destroy()
 
     def OnItemBlink(self, evt):
-        Publisher.sendMessage('Blink Marker', self.lc.GetFocusedItem())
+        Publisher.sendMessage('Blink Marker', index=self.lc.GetFocusedItem())
 
     def OnStopItemBlink(self, evt):
         Publisher.sendMessage('Stop Blink Marker')
@@ -1125,7 +1123,7 @@ class MarkersPanel(wx.Panel):
 
         Publisher.sendMessage('Update target', self.list_coord[self.tgt_index])
         Publisher.sendMessage('Set target transparency', [True, self.tgt_index])
-        Publisher.sendMessage('Disable or enable coil tracker', True)
+        Publisher.sendMessage('Disable or enable coil tracker', status=True)
         self.OnMenuEditMarkerId('TARGET')
         self.tgt_flag = True
         dlg.NewTarget()
@@ -1140,13 +1138,13 @@ class MarkersPanel(wx.Panel):
             if result == wx.ID_OK:
                 self.list_coord = []
                 self.marker_ind = 0
-                Publisher.sendMessage('Remove all markers', self.lc.GetItemCount())
+                Publisher.sendMessage('Remove all markers', indexes=self.lc.GetItemCount())
                 self.lc.DeleteAllItems()
                 Publisher.sendMessage('Stop Blink Marker', 'DeleteAll')
 
                 if self.tgt_flag:
                     self.tgt_flag = self.tgt_index = None
-                    Publisher.sendMessage('Disable or enable coil tracker', False)
+                    Publisher.sendMessage('Disable or enable coil tracker', status=False)
                     if not hasattr(evt, 'data'):
                         dlg.DeleteTarget()
 
@@ -1172,7 +1170,7 @@ class MarkersPanel(wx.Panel):
         if index:
             if self.tgt_flag and self.tgt_index == index[0]:
                 self.tgt_flag = self.tgt_index = None
-                Publisher.sendMessage('Disable or enable coil tracker', False)
+                Publisher.sendMessage('Disable or enable coil tracker', status=False)
                 dlg.DeleteTarget()
             self.DeleteMarker(index)
         else:
@@ -1216,7 +1214,7 @@ class MarkersPanel(wx.Panel):
                         if len(line) == 11:
                             for i in const.BTNS_IMG_MKS:
                                 if line[10] in list(const.BTNS_IMG_MKS[i].values())[0]:
-                                    Publisher.sendMessage('Load image fiducials', (line[10], coord))
+                                    Publisher.sendMessage('Load image fiducials', marker_id=line[10], coord=coord)
                                 elif line[10] == 'TARGET':
                                     target = count_line
                         else:
@@ -1234,7 +1232,7 @@ class MarkersPanel(wx.Panel):
                         if len(line) == 8:
                             for i in const.BTNS_IMG_MKS:
                                 if line[7] in list(const.BTNS_IMG_MKS[i].values())[0]:
-                                    Publisher.sendMessage('Load image fiducials', (line[7], coord))
+                                    Publisher.sendMessage('Load image fiducials', marker_id=line[7], coord=coord)
                         else:
                             line.append("")
                         self.CreateMarker(coord, colour, size, line[7])
@@ -1245,10 +1243,10 @@ class MarkersPanel(wx.Panel):
     def OnMarkersVisibility(self, evt, ctrl):
 
         if ctrl.GetValue():
-            Publisher.sendMessage('Hide all markers',  self.lc.GetItemCount())
+            Publisher.sendMessage('Hide all markers',  indexes=self.lc.GetItemCount())
             ctrl.SetLabel('Show')
         else:
-            Publisher.sendMessage('Show all markers',  self.lc.GetItemCount())
+            Publisher.sendMessage('Show all markers',  indexes=self.lc.GetItemCount())
             ctrl.SetLabel('Hide')
 
     def OnSaveMarkers(self, evt):
