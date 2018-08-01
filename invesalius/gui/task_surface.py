@@ -424,12 +424,12 @@ class SurfaceTools(wx.Panel):
 
     def StartSeeding(self):
         print("Start Seeding")
-        Publisher.sendMessage('Enable style', const.VOLUME_STATE_SEED)
+        Publisher.sendMessage('Enable style', style=const.VOLUME_STATE_SEED)
         Publisher.sendMessage('Create surface by seeding - start')
 
     def EndSeeding(self):
         print("End Seeding")
-        Publisher.sendMessage('Disable style', const.VOLUME_STATE_SEED)
+        Publisher.sendMessage('Disable style', style=const.VOLUME_STATE_SEED)
         Publisher.sendMessage('Create surface by seeding - end')
 
 
@@ -576,13 +576,13 @@ class SurfaceProperties(wx.Panel):
     def OnComboName(self, evt):
         surface_name = evt.GetString()
         surface_index = evt.GetSelection()
-        Publisher.sendMessage('Change surface selected', self.surface_list[surface_index][1])
+        Publisher.sendMessage('Change surface selected', surface_index=self.surface_list[surface_index][1])
 
     def OnSelectColour(self, evt):
         colour = [value/255.0 for value in evt.GetValue()]
         Publisher.sendMessage('Set surface colour',
-                                    (self.combo_surface_name.GetSelection(),
-                                    colour))
+                              surface_index=self.combo_surface_name.GetSelection(),
+                              colour=colour)
 
     def OnTransparency(self, evt):
         transparency = evt.GetInt()/float(MAX_TRANSPARENCY)
@@ -592,8 +592,8 @@ class SurfaceProperties(wx.Panel):
         if (wx.Platform == "__WXMAC__"):
             transparency = evt.GetInt()/(0.96*float(MAX_TRANSPARENCY))
         Publisher.sendMessage('Set surface transparency',
-                                  (self.combo_surface_name.GetSelection(),
-                                  transparency))
+                              surface_index=self.combo_surface_name.GetSelection(),
+                              transparency=transparency)
 
 
 class QualityAdjustment(wx.Panel):

@@ -354,11 +354,10 @@ class Viewer(wx.Panel):
             self._to_show_ball -= 1
         self._check_and_set_ball_visibility()
 
-    def OnStartSeed(self, pubsub_evt):
-        index = pubsub_evt.data
+    def OnStartSeed(self):
         self.seed_points = []
 
-    def OnEndSeed(self, pubsub_evt):
+    def OnEndSeed(self):
         Publisher.sendMessage("Create surface from seeds",
                               seeds=self.seed_points)
 

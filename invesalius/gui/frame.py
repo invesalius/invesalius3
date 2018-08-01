@@ -1464,7 +1464,7 @@ class ObjectToolBar(AuiToolBar):
         """
         id = const.STATE_MEASURE_DISTANCE
         self.ToggleTool(id, True)
-        Publisher.sendMessage('Enable style', id)
+        Publisher.sendMessage('Enable style', style=id)
         Publisher.sendMessage('Untoggle slice toolbar items')
         for item in const.TOOL_STATES:
             state = self.GetToolToggled(item)
@@ -1479,7 +1479,7 @@ class ObjectToolBar(AuiToolBar):
         """
         id = const.STATE_MEASURE_ANGLE
         self.ToggleTool(id, True)
-        Publisher.sendMessage('Enable style', id)
+        Publisher.sendMessage('Enable style', style=id)
         Publisher.sendMessage('Untoggle slice toolbar items')
         for item in const.TOOL_STATES:
             state = self.GetToolToggled(item)

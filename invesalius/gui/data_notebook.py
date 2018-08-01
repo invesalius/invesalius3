@@ -783,7 +783,7 @@ class SurfacesListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
 
         last_surface_index = evt.Index
         Publisher.sendMessage('Change surface selected',
-                                    last_surface_index)
+                              surface_index=last_surface_index)
         evt.Skip()
 
     def GetSelected(self):
@@ -855,7 +855,6 @@ class SurfacesListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
                               index=index, visibility=visibility)
 
     def OnShowMultiple(self, index_list, visibility):
-        index_list, visibility = pubsub_evt.data
         for key in self.surface_list_index.keys():
             if key not in index_list:
                 self.SetItemImage(key, not visibility)
@@ -937,20 +936,18 @@ class SurfacesListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
 
         return wx.BitmapFromImage(wx_image.Scale(16, 16))
 
-    def EditSurfaceTransparency(self, pubsub_evt):
+    def EditSurfaceTransparency(self, surface_index, transparency):
         """
         Set actor transparency (oposite to opacity) according to given actor
         index and value.
         """
-        index, value = pubsub_evt.data
-        self.SetStringItem(index, 4, "%d%%"%(int(value*100)))
+        self.SetStringItem(surface_index, 4, "%d%%"%(int(transparency*100)))
 
-    def EditSurfaceColour(self, pubsub_evt):
+    def EditSurfaceColour(self, surface_index, colour):
         """
         """
-        index, colour = pubsub_evt.data
         image = self.CreateColourBitmap(colour)
-        image_index = self.surface_list_index[index]
+        image_index = self.surface_list_index[surface_index]
         self.imagelist.Replace(image_index, image)
         self.Refresh()
 

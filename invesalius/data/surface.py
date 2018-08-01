@@ -230,7 +230,7 @@ class SurfaceManager():
         Publisher.sendMessage('Show single surface', index=index, visibility=True)
         #self.ShowActor(index, True)
 
-    def OnSplitSurface(self, pubsub_evt):
+    def OnSplitSurface(self):
         """
         Create n new surfaces, based on the last selected surface,
         according to their connectivity.
@@ -248,7 +248,7 @@ class SurfaceManager():
 
         Publisher.sendMessage('Show multiple surfaces', index_list=index_list, visibility=True)
 
-    def OnLargestSurface(self, pubsub_evt):
+    def OnLargestSurface(self):
         """
         Create a new surface, based on largest part of the last
         selected surface.
@@ -382,16 +382,15 @@ class SurfaceManager():
         # restarting the surface index
         Surface.general_index = -1
 
-    def OnSelectSurface(self, pubsub_evt):
-        index = pubsub_evt.data
-        #self.last_surface_index = index
+    def OnSelectSurface(self, surface_index):
+        #self.last_surface_index = surface_index
         # self.actors_dict.
         proj = prj.Project()
-        surface = proj.surface_dict[index]
+        surface = proj.surface_dict[surface_index]
         Publisher.sendMessage('Update surface info in GUI', surface=surface)
-        self.last_surface_index = index
+        self.last_surface_index = surface_index
         #  if surface.is_shown:
-        self.ShowActor(index, True)
+        self.ShowActor(surface_index, True)
 
     def OnLoadSurfaceDict(self, surface_dict):
         for key in surface_dict:
@@ -866,26 +865,24 @@ class SurfaceManager():
         proj.surface_dict[index].is_shown = value
         Publisher.sendMessage('Render volume viewer')
 
-    def SetActorTransparency(self, pubsub_evt):
+    def SetActorTransparency(self, surface_index, transparency):
         """
         Set actor transparency (oposite to opacity) according to given actor
         index and value.
         """
-        index, value = pubsub_evt.data
-        self.actors_dict[index].GetProperty().SetOpacity(1-value)
+        self.actors_dict[surface_index].GetProperty().SetOpacity(1-transparency)
         # Update value in project's surface_dict
         proj = prj.Project()
-        proj.surface_dict[index].transparency = value
+        proj.surface_dict[surface_index].transparency = transparency
         Publisher.sendMessage('Render volume viewer')
 
-    def SetActorColour(self, pubsub_evt):
+    def SetActorColour(self, surface_index, colour):
         """
         """
-        index, colour = pubsub_evt.data
-        self.actors_dict[index].GetProperty().SetColor(colour[:3])
+        self.actors_dict[surface_index].GetProperty().SetColor(colour[:3])
         # Update value in project's surface_dict
         proj = prj.Project()
-        proj.surface_dict[index].colour = colour
+        proj.surface_dict[surface_index].colour = colour
         Publisher.sendMessage('Render volume viewer')
 
     def OnExportSurface(self, filename, filetype):
