@@ -348,11 +348,10 @@ class Frame(wx.Frame):
         aui_manager.GetPane("Import").Show(0)
         aui_manager.Update()
 
-    def _ShowHelpMessage(self, evt_pubsub):
+    def _ShowHelpMessage(self, message):
         aui_manager = self.aui_manager
         pos = aui_manager.GetPane("Data").window.GetScreenPosition()
-        msg =  evt_pubsub.data
-        self.mw = MessageWatershed(self, msg)
+        self.mw = MessageWatershed(self, message)
         self.mw.SetPosition(pos)
         self.mw.Show()
 
@@ -1048,7 +1047,7 @@ class ProgressBar(wx.Gauge):
         sub = Publisher.subscribe
         sub(self._Layout, 'ProgressBar Reposition')
 
-    def _Layout(self, evt_pubsub=None):
+    def _Layout(self):
         """
         Compute new size and position, according to parent resize
         """
