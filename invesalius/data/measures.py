@@ -301,7 +301,7 @@ class MeasurementManager(object):
         if not mr.IsComplete():
             idx = self.measures._list_measures.index((m, mr))
             self.measures.remove((m, mr))
-            Publisher.sendMessage("Remove GUI measurement", idx)
+            Publisher.sendMessage("Remove GUI measurement", measure_index=idx)
             actors = mr.GetActors()
             slice_number = self.current[0].slice_number
             if m.location == const.SURFACE:

@@ -1000,15 +1000,14 @@ class MeasuresListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
         elif (keycode == wx.WXK_DELETE):
             self.RemoveMeasurements()
 
-    def OnRemoveGUIMeasure(self, pubsub_evt):
-        idx = pubsub_evt.data
-        self.DeleteItem(idx)
+    def OnRemoveGUIMeasure(self, measure_index):
+        self.DeleteItem(measure_index)
 
         old_dict = self._list_index
         new_dict = {}
         j = 0
         for i in old_dict:
-            if i != idx:
+            if i != measure_index:
                 new_dict[j] = old_dict[i]
                 j+=1
         self._list_index = new_dict
@@ -1125,7 +1124,6 @@ class MeasuresListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
                               index=index, visibility=visibility)
 
     def OnShowMultiple(self, index_list, visibility):
-        index_list, visibility = pubsub_evt.data
         for key in self._list_index.keys():
             if key not in index_list:
                 self.SetItemImage(key, not visibility)
@@ -1222,12 +1220,11 @@ class MeasuresListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
             wx_image.SetData(new_image.tobytes())
         return wx.BitmapFromImage(wx_image.Scale(16, 16))
 
-    def EditItemColour(self, pubsub_evt):
+    def EditItemColour(self, measure_index, colour):
         """
         """
-        index, colour = pubsub_evt.data
         image = self.CreateColourBitmap(colour)
-        image_index = self._list_index[index]
+        image_index = self._list_index[measure_index]
         self.imagelist.Replace(image_index, image)
         self.Refresh()
 
