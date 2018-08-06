@@ -455,11 +455,11 @@ def export(path_, threshold_range, remove_surface=False):
                               surface_indexes=(0,))
 
 
-def print_events(data):
+def print_events(topic=Publisher.AUTO_TOPIC, **msg_data):
     """
     Print pubsub messages
     """
-    utils.debug(data.topic)
+    utils.debug("%s\n\tParameters: %s" % (topic, msg_data))
 
 def main():
     """
