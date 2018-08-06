@@ -780,8 +780,8 @@ class EditionTools(wx.Panel):
         wx_colour = [c*255 for c in mask.colour]
         self.gradient_thresh.SetColour(wx_colour)
 
-    def SetThresholdValues(self, pubsub_evt):
-        thresh_min, thresh_max = pubsub_evt.data
+    def SetThresholdValues(self, threshold_range):
+        thresh_min, thresh_max = threshold_range
         self.bind_evt_gradient = False
         self.gradient_thresh.SetMinValue(thresh_min)
         self.gradient_thresh.SetMaxValue(thresh_max)
@@ -951,25 +951,24 @@ class WatershedTool(EditionTools):
     def __bind_pubsub_evt(self):
         Publisher.subscribe(self._set_brush_size, 'Set watershed brush size')
 
-    def ChangeMaskColour(self, pubsub_evt):
-        colour = pubsub_evt.data
+    def ChangeMaskColour(self, colour):
         self.gradient_thresh.SetColour(colour)
 
-    def SetGradientColour(self, pubsub_evt):
-        vtk_colour = pubsub_evt.data[3]
+    def SetGradientColour(self, mask):
+        vtk_colour = mask.colour
         wx_colour = [c*255 for c in vtk_colour]
         self.gradient_thresh.SetColour(wx_colour)
 
-    def SetThresholdValues(self, pubsub_evt):
-        thresh_min, thresh_max = pubsub_evt.data
+    def SetThresholdValues(self, threshold_range):
+        thresh_min, thresh_max = threshold_range
         self.bind_evt_gradient = False
         self.gradient_thresh.SetMinValue(thresh_min)
         self.gradient_thresh.SetMaxValue(thresh_max)
         self.bind_evt_gradient = True
 
-    def SetThresholdBounds(self, pubsub_evt):
-        thresh_min = pubsub_evt.data[0]
-        thresh_max  = pubsub_evt.data[1]
+    def SetThresholdBounds(self, threshold_range):
+        thresh_min = threshold_range[0]
+        thresh_max  = threshold_range[1]
         self.gradient_thresh.SetMinRange(thresh_min)
         self.gradient_thresh.SetMaxRange(thresh_max)
         self.gradient_thresh.SetMinValue(thresh_min)
