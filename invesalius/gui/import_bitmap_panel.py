@@ -244,8 +244,8 @@ class TextPanel(wx.Panel):
 
         evt.Skip()
 
-    def SelectSeries(self, pubsub_evt):
-        group_index = pubsub_evt.data
+    def SelectSeries(self, group_index):
+        pass
 
     def Populate(self, data):
         tree = self.tree
