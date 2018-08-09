@@ -1446,7 +1446,7 @@ class ObjectToolBar(AuiToolBar):
             self.SetStateProjectClose()
         self.Refresh()
 
-    def _UntoggleAllItems(self, pubsub_evt=None):
+    def _UntoggleAllItems(self):
         """
         Untoggle all items on toolbar.
         """
@@ -1456,7 +1456,7 @@ class ObjectToolBar(AuiToolBar):
                 self.ToggleTool(id, False)
         self.Refresh()
 
-    def _ToggleLinearMeasure(self, pubsub_evt):
+    def _ToggleLinearMeasure(self):
         """
         Force measure distance tool to be toggled and bind pubsub
         events to other classes whici are interested on this.
@@ -1471,7 +1471,7 @@ class ObjectToolBar(AuiToolBar):
                 self.ToggleTool(item, False)
 
 
-    def _ToggleAngularMeasure(self, pubsub_evt):
+    def _ToggleAngularMeasure(self):
         """
         Force measure angle tool to be toggled and bind pubsub
         events to other classes which are interested on this.
@@ -1942,25 +1942,24 @@ class HistoryToolBar(AuiToolBar):
         self.EnableTool(wx.ID_UNDO, False)
         self.EnableTool(wx.ID_REDO, False)
 
-    def _EnableState(self, pubsub_evt):
+    def _EnableState(self, state):
         """
         Based on given state, enable or disable menu items which
         depend if project is open or not.
         """
-        state = pubsub_evt.data
         if state:
             self.SetStateProjectOpen()
         else:
             self.SetStateProjectClose()
         self.Refresh()
 
-    def _SetLayoutWithoutTask(self, pubsub_evt):
+    def _SetLayoutWithoutTask(self):
         """
         Set item bitmap to task panel hiden.
         """
         self.SetToolNormalBitmap(ID_LAYOUT,self.BMP_WITHOUT_MENU)
 
-    def _SetLayoutWithTask(self, pubsub_evt):
+    def _SetLayoutWithTask(self):
         """
         Set item bitmap to task panel shown.
         """
