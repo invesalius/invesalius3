@@ -299,7 +299,8 @@ class InnerTaskPanel(wx.Panel):
                     filename = filename + "."+ extension
             filetype = const.FILETYPE_IMAGEDATA
             Publisher.sendMessage('Export mask to file',
-                                            (filename, filetype))
+                                  filename=filename,
+                                  filetype=filetype)
 
 
     def OnLinkExportSurface(self, evt=None):

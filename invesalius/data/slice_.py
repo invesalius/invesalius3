@@ -313,8 +313,7 @@ class Slice(with_metaclass(utils.Singleton, object)):
             index = self.current_mask.index
             self.SetMaskEditionThreshold(index, (thresh_min, thresh_max))
 
-    def __add_mask(self, pubsub_evt):
-        mask_name = pubsub_evt.data
+    def __add_mask(self, mask_name):
         self.create_new_mask(name=mask_name)
         self.SetMaskColour(self.current_mask.index, self.current_mask.colour)
 
@@ -1488,13 +1487,11 @@ class Slice(with_metaclass(utils.Singleton, object)):
         for buffer_ in self.buffer_slices.values():
             buffer_.discard_buffer()
 
-    def OnExportMask(self, pubsub_evt):
-        pass
-        ##imagedata = self.current_mask.imagedata
-        #imagedata = self.imagedata
-        #filename, filetype = pubsub_evt.data
-        #if (filetype == const.FILETYPE_IMAGEDATA):
-            #iu.Export(imagedata, filename)
+    def OnExportMask(self, filename, filetype):
+        imagedata = self.current_mask.imagedata
+        #  imagedata = self.imagedata
+        if (filetype == const.FILETYPE_IMAGEDATA):
+            iu.Export(imagedata, filename)
 
     def _fill_holes_auto(self, parameters):
         target = parameters['target']

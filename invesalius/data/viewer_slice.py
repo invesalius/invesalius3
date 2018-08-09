@@ -662,8 +662,7 @@ class Viewer(wx.Panel):
         self.UpdateCanvas()
         self.on_text = True
 
-    def __set_layout(self, pubsub_evt):
-        layout = pubsub_evt.data
+    def __set_layout(self, layout):
         self.SetLayout(layout)
 
     def __config_interactor(self):
@@ -927,8 +926,8 @@ class Viewer(wx.Panel):
         ren.GetActiveCamera().Zoom(1.0)
         self.interactor.Render()
 
-    def ChangeBrushColour(self, pubsub_evt):
-        vtk_colour = pubsub_evt.data[3]
+    def ChangeBrushColour(self, colour):
+        vtk_colour = colour
         self._brush_cursor_colour = vtk_colour
         if (self.cursor):
             for slice_data in self.slice_data_list:

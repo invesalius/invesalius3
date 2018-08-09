@@ -253,7 +253,7 @@ class SliceMenu(wx.Menu):
 
         elif(key in const.IMAGE_TILING.keys()):
             values = const.IMAGE_TILING[key]
-            Publisher.sendMessage('Set slice viewer layout', values)
+            Publisher.sendMessage('Set slice viewer layout', layout=values)
             Publisher.sendMessage('Update slice viewer')
 
         elif key in PROJECTIONS_ID:
