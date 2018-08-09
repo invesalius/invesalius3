@@ -922,8 +922,7 @@ class Controller():
             prj.Project().raycasting_preset = 0
             Publisher.sendMessage('Update raycasting preset')
 
-    def SaveRaycastingPreset(self, pubsub_evt):
-        preset_name = pubsub_evt.data
+    def SaveRaycastingPreset(self, preset_name):
         preset = prj.Project().raycasting_preset
         preset['name'] = preset_name
         preset_dir = os.path.join(const.USER_RAYCASTING_PRESETS_DIRECTORY,
