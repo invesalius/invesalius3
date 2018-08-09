@@ -487,7 +487,7 @@ class VolumeToolPanel(wx.Panel):
             Publisher.sendMessage(_("Save raycasting preset"),
                                        preset_name)
 
-    def __init_menus(self, pubsub_evt=None):
+    def __init_menus(self):
         # MENU RELATED TO RAYCASTING TYPES
         menu = self.menu = wx.Menu()
         #print "\n\n"

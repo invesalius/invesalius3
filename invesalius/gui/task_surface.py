@@ -549,7 +549,6 @@ class SurfaceProperties(wx.Panel):
         self.combo_surface_name.SetString(index, name)
 
     def InsertNewSurface(self, surface):
-        #not_update = len(pubsub_evt.data) == 5
         index = surface.index
         name = surface.name
         colour = [value*255 for value in surface.colour]

@@ -1885,7 +1885,7 @@ class ClutImagedataDialog(wx.Dialog):
                               window=self.clut_widget.window_width,
                               level=self.clut_widget.window_level)
 
-    def _refresh_widget(self, pubsub_evt):
+    def _refresh_widget(self):
         self.clut_widget.Refresh()
 
     def Show(self, gen_evt=True, show=True):
