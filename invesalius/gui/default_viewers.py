@@ -484,8 +484,7 @@ class VolumeToolPanel(wx.Panel):
         d = wx.TextEntryDialog(self, _("Preset name"))
         if d.ShowModal() == wx.ID_OK:
             preset_name = d.GetValue()
-            Publisher.sendMessage(_("Save raycasting preset"),
-                                       preset_name)
+            Publisher.sendMessage("Save raycasting preset", preset_name=preset_name)
 
     def __init_menus(self):
         # MENU RELATED TO RAYCASTING TYPES

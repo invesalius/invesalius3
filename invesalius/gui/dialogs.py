@@ -3049,7 +3049,7 @@ class FFillSegmentationOptionsDialog(wx.Dialog):
 
     def OnClose(self, evt):
         if self.config.dlg_visible:
-            Publisher.sendMessage('Disable style', const.SLICE_STATE_MASK_FFILL)
+            Publisher.sendMessage('Disable style', style=const.SLICE_STATE_MASK_FFILL)
         evt.Skip()
         self.Destroy()
 
