@@ -64,14 +64,13 @@ class Presets():
             _("Custom"):(0, 0)
         })
         self.__bind_events()
-        
+
     def __bind_events(self):
         Publisher.subscribe(self.UpdateThresholdModes,
-                                'Update threshold limits list')
-        
-    def UpdateThresholdModes(self, evt):
-    
-        thresh_min, thresh_max = evt.data
+                            'Update threshold limits list')
+
+    def UpdateThresholdModes(self, threshold_range):
+        thresh_min, thresh_max = threshold_range
         presets_list = (self.thresh_ct, self.thresh_mri)
 
         for presets in presets_list:
@@ -87,7 +86,7 @@ class Presets():
                     t_min = thresh_min
                 if (t_max > thresh_max):
                     t_max = thresh_max
-                    
+
                 # This has happened in Analyze files
                 # TODO: find a good solution for presets in Analyze files
                 if (t_min > thresh_max):
@@ -96,9 +95,9 @@ class Presets():
                     t_max = thresh_max
 
                 presets[key] = (t_min, t_max)
-                    
-        Publisher.sendMessage('Update threshold limits', (thresh_min,     
-                                    thresh_max))
+
+        Publisher.sendMessage('Update threshold limits',
+                              threshold_range=(thresh_min, thresh_max))
 
     def SavePlist(self, filename):
         filename = "%s$%s" % (filename, 'presets.plist')

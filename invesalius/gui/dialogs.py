@@ -726,7 +726,7 @@ class UpdateMessageDialog(wx.Dialog):
         self.Close()
         self.Destroy()
 
-    def _OnCloseInV(self, pubsub_evt):
+    def _OnCloseInV(self):
         # Closes and destroy this dialog.
         self.Close()
         self.Destroy()
@@ -1880,12 +1880,12 @@ class ClutImagedataDialog(wx.Dialog):
 
     def OnClutChange(self, evt):
         Publisher.sendMessage('Change colour table from background image from widget',
-                              evt.GetNodes())
+                              nodes=evt.GetNodes())
         Publisher.sendMessage('Update window level text',
-                              (self.clut_widget.window_width,
-                               self.clut_widget.window_level))
+                              window=self.clut_widget.window_width,
+                              level=self.clut_widget.window_level)
 
-    def _refresh_widget(self, pubsub_evt):
+    def _refresh_widget(self):
         self.clut_widget.Refresh()
 
     def Show(self, gen_evt=True, show=True):
@@ -2068,7 +2068,8 @@ class MaskBooleanDialog(wx.Dialog):
         m1 = self.mask1.GetClientData(self.mask1.GetSelection())
         m2 = self.mask2.GetClientData(self.mask2.GetSelection())
 
-        Publisher.sendMessage('Do boolean operation', (op, m1, m2))
+        Publisher.sendMessage('Do boolean operation',
+                              operation=op, mask1=m1, mask2=m2)
         Publisher.sendMessage('Reload actual slice')
         Publisher.sendMessage('Refresh viewer')
 
@@ -2152,13 +2153,13 @@ class ReorientImageDialog(wx.Dialog):
         self.btnapply.Bind(wx.EVT_BUTTON, self.apply_reorientation)
         self.Bind(wx.EVT_CLOSE, self.OnClose)
 
-    def _update_angles(self, pubsub_evt):
-        anglex, angley, anglez = pubsub_evt.data
+    def _update_angles(self, angles):
+        anglex, angley, anglez = angles
         self.anglex.SetValue("%.3f" % np.rad2deg(anglex))
         self.angley.SetValue("%.3f" % np.rad2deg(angley))
         self.anglez.SetValue("%.3f" % np.rad2deg(anglez))
 
-    def _close_dialog(self, pubsub_evt):
+    def _close_dialog(self):
         self.Destroy()
 
     def apply_reorientation(self, evt):
@@ -2167,13 +2168,13 @@ class ReorientImageDialog(wx.Dialog):
 
     def OnClose(self, evt):
         self._closed = True
-        Publisher.sendMessage('Disable style', const.SLICE_STATE_REORIENT)
-        Publisher.sendMessage('Enable style', const.STATE_DEFAULT)
+        Publisher.sendMessage('Disable style', style=const.SLICE_STATE_REORIENT)
+        Publisher.sendMessage('Enable style', style=const.STATE_DEFAULT)
         self.Destroy()
 
     def OnSelect(self, evt):
         im_code = self.interp_method.GetClientData(self.interp_method.GetSelection())
-        Publisher.sendMessage('Set interpolation method', im_code)
+        Publisher.sendMessage('Set interpolation method', interp_method=im_code)
 
     def OnSetFocus(self, evt):
         self._last_ax = self.anglex.GetValue()
@@ -2191,7 +2192,7 @@ class ReorientImageDialog(wx.Dialog):
                 self.angley.SetValue(self._last_ay)
                 self.anglez.SetValue(self._last_az)
                 return
-            Publisher.sendMessage('Set reorientation angles', (ax, ay, az))
+            Publisher.sendMessage('Set reorientation angles', angles=(ax, ay, az))
 
 
 class ImportBitmapParameters(wx.Dialog):
@@ -2350,7 +2351,7 @@ class ImportBitmapParameters(wx.Dialog):
         values = [self.tx_name.GetValue(), orientation,\
                   self.fsp_spacing_x.GetValue(), self.fsp_spacing_y.GetValue(),\
                   self.fsp_spacing_z.GetValue(), self.interval]
-        Publisher.sendMessage('Open bitmap files', values)
+        Publisher.sendMessage('Open bitmap files', rec_data=values)
 
         self.Close()
         self.Destroy()
@@ -2759,7 +2760,7 @@ class FFillOptionsDialog(wx.Dialog):
     def OnClose(self, evt):
         print("ONCLOSE")
         if self.config.dlg_visible:
-            Publisher.sendMessage('Disable style', const.SLICE_STATE_MASK_FFILL)
+            Publisher.sendMessage('Disable style', style=const.SLICE_STATE_MASK_FFILL)
         evt.Skip()
         self.Destroy()
 
@@ -2845,7 +2846,7 @@ class SelectPartsOptionsDialog(wx.Dialog):
 
     def OnClose(self, evt):
         if self.config.dlg_visible:
-            Publisher.sendMessage('Disable style', const.SLICE_STATE_SELECT_MASK_PARTS)
+            Publisher.sendMessage('Disable style', style=const.SLICE_STATE_SELECT_MASK_PARTS)
         evt.Skip()
         self.Destroy()
 
@@ -3048,7 +3049,7 @@ class FFillSegmentationOptionsDialog(wx.Dialog):
 
     def OnClose(self, evt):
         if self.config.dlg_visible:
-            Publisher.sendMessage('Disable style', const.SLICE_STATE_MASK_FFILL)
+            Publisher.sendMessage('Disable style', style=const.SLICE_STATE_MASK_FFILL)
         evt.Skip()
         self.Destroy()
 
@@ -3068,14 +3069,8 @@ class CropOptionsDialog(wx.Dialog):
 
         self._init_gui()
 
-    def UpdateValues(self, pubsub_evt):
-
-        if type(pubsub_evt) == list:
-            data = pubsub_evt
-        else:
-            data = pubsub_evt.data
-
-        xi, xf, yi, yf, zi, zf = data
+    def UpdateValues(self, limits):
+        xi, xf, yi, yf, zi, zf = limits
 
         self.tx_axial_i.SetValue(str(zi))
         self.tx_axial_f.SetValue(str(zf))
@@ -3170,12 +3165,12 @@ class CropOptionsDialog(wx.Dialog):
     def OnOk(self, evt):
         self.config.dlg_visible = False
         Publisher.sendMessage('Crop mask')
-        Publisher.sendMessage('Disable style', const.SLICE_STATE_CROP_MASK)
+        Publisher.sendMessage('Disable style', style=const.SLICE_STATE_CROP_MASK)
         evt.Skip()
 
     def OnClose(self, evt):
         self.config.dlg_visible = False
-        Publisher.sendMessage('Disable style', const.SLICE_STATE_CROP_MASK)
+        Publisher.sendMessage('Disable style', style=const.SLICE_STATE_CROP_MASK)
         evt.Skip()
         self.Destroy()
 
@@ -3260,14 +3255,14 @@ class FillHolesAutoDialog(wx.Dialog):
             conn = self.panel3dcon.GetConnSelected()
             orientation = 'VOLUME'
 
-        data = {
+        parameters = {
             'target': target,
             'conn': conn,
             'orientation': orientation,
             'size': self.spin_size.GetValue(),
         }
 
-        Publisher.sendMessage("Fill holes automatically", data)
+        Publisher.sendMessage("Fill holes automatically", parameters=parameters)
 
 
     def OnBtnClose(self, evt):

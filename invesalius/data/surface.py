@@ -171,11 +171,10 @@ class SurfaceManager():
 
         Publisher.subscribe(self.OnImportSurfaceFile, 'Import surface file')
 
-    def OnDuplicate(self, pubsub_evt):
-        selected_items = pubsub_evt.data
+    def OnDuplicate(self, surface_indexes):
         proj = prj.Project()
         surface_dict = proj.surface_dict
-        for index in selected_items:
+        for index in surface_indexes:
             original_surface = surface_dict[index]
             # compute copy name
             name = original_surface.name
@@ -190,14 +189,13 @@ class SurfaceManager():
                                            volume = original_surface.volume,
                                            area = original_surface.area)
 
-    def OnRemove(self, pubsub_evt):
-        selected_items = pubsub_evt.data
+    def OnRemove(self, surface_indexes):
         proj = prj.Project()
 
         old_dict = self.actors_dict
         new_dict = {}
-        if selected_items:
-            for index in selected_items:
+        if surface_indexes:
+            for index in surface_indexes:
                 proj.RemoveSurface(index)
                 if index in old_dict:
                     actor = old_dict[index]
@@ -207,21 +205,21 @@ class SurfaceManager():
                         if i > index:
                             new_dict[i-1] = old_dict[i]
                     old_dict = new_dict
-                    Publisher.sendMessage('Remove surface actor from viewer', actor)
+                    Publisher.sendMessage('Remove surface actor from viewer', actor=actor)
             self.actors_dict = new_dict
 
-        if self.last_surface_index in selected_items:
+        if self.last_surface_index in surface_indexes:
             if self.actors_dict:
                 self.last_surface_index = 0
             else:
                 self.last_surface_index = None
 
-    def OnSeedSurface(self, pubsub_evt):
+    def OnSeedSurface(self, seeds):
         """
         Create a new surface, based on the last selected surface,
         using as reference seeds user add to surface of reference.
         """
-        points_id_list = pubsub_evt.data
+        points_id_list = seeds
         index = self.last_surface_index
         proj = prj.Project()
         surface = proj.surface_dict[index]
@@ -229,10 +227,10 @@ class SurfaceManager():
         new_polydata = pu.JoinSeedsParts(surface.polydata,
                                           points_id_list)
         index = self.CreateSurfaceFromPolydata(new_polydata)
-        Publisher.sendMessage('Show single surface', (index, True))
+        Publisher.sendMessage('Show single surface', index=index, visibility=True)
         #self.ShowActor(index, True)
 
-    def OnSplitSurface(self, pubsub_evt):
+    def OnSplitSurface(self):
         """
         Create n new surfaces, based on the last selected surface,
         according to their connectivity.
@@ -248,9 +246,9 @@ class SurfaceManager():
             index_list.append(index)
             #self.ShowActor(index, True)
 
-        Publisher.sendMessage('Show multiple surfaces', (index_list, True))
+        Publisher.sendMessage('Show multiple surfaces', index_list=index_list, visibility=True)
 
-    def OnLargestSurface(self, pubsub_evt):
+    def OnLargestSurface(self):
         """
         Create a new surface, based on largest part of the last
         selected surface.
@@ -261,13 +259,12 @@ class SurfaceManager():
 
         new_polydata = pu.SelectLargestPart(surface.polydata)
         new_index = self.CreateSurfaceFromPolydata(new_polydata)
-        Publisher.sendMessage('Show single surface', (new_index, True))
+        Publisher.sendMessage('Show single surface', index=new_index, visibility=True)
 
-    def OnImportSurfaceFile(self, pubsub_evt):
+    def OnImportSurfaceFile(self, filename):
         """
         Creates a new surface from a surface file (STL, PLY, OBJ or VTP)
         """
-        filename = pubsub_evt.data
         self.CreateSurfaceFromFile(filename)
 
     def CreateSurfaceFromFile(self, filename):
@@ -368,42 +365,34 @@ class SurfaceManager():
 
         self.last_surface_index = surface.index
 
-        Publisher.sendMessage('Load surface actor into viewer', actor)
+        Publisher.sendMessage('Load surface actor into viewer', actor=actor)
 
-        Publisher.sendMessage('Update surface info in GUI',
-                              (surface.index, surface.name,
-                               surface.colour, surface.volume,
-                               surface.area, surface.transparency))
+        Publisher.sendMessage('Update surface info in GUI', surface=surface)
         return surface.index
 
-    def OnCloseProject(self, pubsub_evt):
+    def OnCloseProject(self):
         self.CloseProject()
 
     def CloseProject(self):
         for index in self.actors_dict:
-            Publisher.sendMessage('Remove surface actor from viewer', self.actors_dict[index])
+            Publisher.sendMessage('Remove surface actor from viewer', actor=self.actors_dict[index])
         del self.actors_dict
         self.actors_dict = {}
 
         # restarting the surface index
         Surface.general_index = -1
 
-    def OnSelectSurface(self, pubsub_evt):
-        index = pubsub_evt.data
-        #self.last_surface_index = index
+    def OnSelectSurface(self, surface_index):
+        #self.last_surface_index = surface_index
         # self.actors_dict.
         proj = prj.Project()
-        surface = proj.surface_dict[index]
-        Publisher.sendMessage('Update surface info in GUI',
-                              (index, surface.name,
-                               surface.colour, surface.volume,
-                               surface.area, surface.transparency))
-        self.last_surface_index = index
+        surface = proj.surface_dict[surface_index]
+        Publisher.sendMessage('Update surface info in GUI', surface=surface)
+        self.last_surface_index = surface_index
         #  if surface.is_shown:
-        self.ShowActor(index, True)
+        self.ShowActor(surface_index, True)
 
-    def OnLoadSurfaceDict(self, pubsub_evt):
-        surface_dict = pubsub_evt.data
+    def OnLoadSurfaceDict(self, surface_dict):
         for key in surface_dict:
             surface = surface_dict[key]
 
@@ -436,27 +425,23 @@ class SurfaceManager():
             self.actors_dict[surface.index] = actor
 
             # Send actor by pubsub to viewer's render
-            Publisher.sendMessage('Load surface actor into viewer', (actor))
+            Publisher.sendMessage('Load surface actor into viewer', actor=actor)
 
             Publisher.sendMessage('Update status text in GUI',
-                                        _("Ready"))
+                                  label=_("Ready"))
 
             # The following lines have to be here, otherwise all volumes disappear
-            Publisher.sendMessage('Update surface info in GUI',
-                                        (surface.index, surface.name,
-                                         surface.colour, surface.volume,
-                                         surface.area, surface.transparency))
+            Publisher.sendMessage('Update surface info in GUI', surface=surface)
             if not surface.is_shown:
                 self.ShowActor(key, False)
 
     ####
     #(mask_index, surface_name, quality, fill_holes, keep_largest)
 
-    def AddNewActor(self, pubsub_evt):
+    def AddNewActor(self, slice_, mask, surface_parameters):
         """
         Create surface actor, save into project and send it to viewer.
         """
-        slice_, mask, surface_parameters = pubsub_evt.data
         matrix = slice_.matrix
         filename_img = slice_.matrix_filename
         spacing = slice_.spacing
@@ -825,31 +810,27 @@ class SurfaceManager():
             del measured_polydata
             del to_measure
 
-            Publisher.sendMessage('Load surface actor into viewer', actor)
+            Publisher.sendMessage('Load surface actor into viewer', actor=actor)
 
             # Send actor by pubsub to viewer's render
             if overwrite and self.actors_dict.keys():
                 old_actor = self.actors_dict[self.last_surface_index]
-                Publisher.sendMessage('Remove surface actor from viewer', old_actor)
+                Publisher.sendMessage('Remove surface actor from viewer', actor=old_actor)
 
             # Save actor for future management tasks
             self.actors_dict[surface.index] = actor
 
-            Publisher.sendMessage('Update surface info in GUI',
-                                        (surface.index, surface.name,
-                                        surface.colour, surface.volume,
-                                        surface.area,
-                                        surface.transparency))
+            Publisher.sendMessage('Update surface info in GUI', surface=surface)
 
             #When you finalize the progress. The bar is cleaned.
             UpdateProgress = vu.ShowProgress(1)
             UpdateProgress(0, _("Ready"))
-            Publisher.sendMessage('Update status text in GUI', _("Ready"))
+            Publisher.sendMessage('Update status text in GUI', label=_("Ready"))
 
             Publisher.sendMessage('End busy cursor')
             del actor
 
-    def UpdateSurfaceInterpolation(self, pub_evt):
+    def UpdateSurfaceInterpolation(self):
         interpolation = int(ses.Session().surface_interpolation)
         key_actors = self.actors_dict.keys()
 
@@ -861,20 +842,18 @@ class SurfaceManager():
         """
         Remove actor, according to given actor index.
         """
-        Publisher.sendMessage('Remove surface actor from viewer', (index))
+        Publisher.sendMessage('Remove surface actor from viewer', actor=index)
         self.actors_dict.pop(index)
         # Remove surface from project's surface_dict
         proj = prj.Project()
         proj.surface_dict.pop(index)
 
-    def OnChangeSurfaceName(self, pubsub_evt):
-        index, name = pubsub_evt.data
+    def OnChangeSurfaceName(self, index, name):
         proj = prj.Project()
         proj.surface_dict[index].name = name
 
-    def OnShowSurface(self, pubsub_evt):
-        index, value = pubsub_evt.data
-        self.ShowActor(index, value)
+    def OnShowSurface(self, index, visibility):
+        self.ShowActor(index, visibility)
 
     def ShowActor(self, index, value):
         """
@@ -886,30 +865,27 @@ class SurfaceManager():
         proj.surface_dict[index].is_shown = value
         Publisher.sendMessage('Render volume viewer')
 
-    def SetActorTransparency(self, pubsub_evt):
+    def SetActorTransparency(self, surface_index, transparency):
         """
         Set actor transparency (oposite to opacity) according to given actor
         index and value.
         """
-        index, value = pubsub_evt.data
-        self.actors_dict[index].GetProperty().SetOpacity(1-value)
+        self.actors_dict[surface_index].GetProperty().SetOpacity(1-transparency)
         # Update value in project's surface_dict
         proj = prj.Project()
-        proj.surface_dict[index].transparency = value
+        proj.surface_dict[surface_index].transparency = transparency
         Publisher.sendMessage('Render volume viewer')
 
-    def SetActorColour(self, pubsub_evt):
+    def SetActorColour(self, surface_index, colour):
         """
         """
-        index, colour = pubsub_evt.data
-        self.actors_dict[index].GetProperty().SetColor(colour[:3])
+        self.actors_dict[surface_index].GetProperty().SetColor(colour[:3])
         # Update value in project's surface_dict
         proj = prj.Project()
-        proj.surface_dict[index].colour = colour
+        proj.surface_dict[surface_index].colour = colour
         Publisher.sendMessage('Render volume viewer')
 
-    def OnExportSurface(self, pubsub_evt):
-        filename, filetype = pubsub_evt.data
+    def OnExportSurface(self, filename, filetype):
         ftype_prefix = {
             const.FILETYPE_STL: '.stl',
             const.FILETYPE_VTP: '.vtp',
