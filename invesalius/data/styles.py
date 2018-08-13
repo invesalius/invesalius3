@@ -1014,17 +1014,17 @@ class WatershedConfig(with_metaclass(utils.Singleton, object)):
     def set_use_ww_wl(self, use_ww_wl):
         self.use_ww_wl = use_ww_wl
 
-    def set_algorithm(self, pubsub_evt):
-        self.algorithm = pubsub_evt.data
+    def set_algorithm(self, algorithm):
+        self.algorithm = algorithm
 
-    def set_2dcon(self, pubsub_evt):
-        self.con_2d = pubsub_evt.data
+    def set_2dcon(self, con_2d):
+        self.con_2d = con_2d
 
-    def set_3dcon(self, pubsub_evt):
-        self.con_3d = pubsub_evt.data
+    def set_3dcon(self, con_3d):
+        self.con_3d = con_3d
 
-    def set_gaussian_size(self, pubsub_evt):
-        self.mg_size = pubsub_evt.data
+    def set_gaussian_size(self, size):
+        self.mg_size = size
 
 WALGORITHM = {"Watershed": watershed,
              "Watershed IFT": watershed_ift}
