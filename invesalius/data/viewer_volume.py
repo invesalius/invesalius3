@@ -1489,7 +1489,7 @@ class Viewer(wx.Panel):
             if self.on_wl:
                 self.text.Show()
 
-    def OnHideRaycasting(self, pubsub_evt):
+    def OnHideRaycasting(self):
         self.raycasting_volume = False
         self.text.Hide()
         self._to_show_ball -= 1

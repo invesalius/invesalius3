@@ -256,7 +256,7 @@ class VolumeInteraction(wx.Panel):
 
     def __update_curve_wwwl_text(self, curve):
         ww, wl = self.clut_raycasting.GetCurveWWWl(curve)
-        Publisher.sendMessage('Set raycasting wwwl', (ww, wl, curve))
+        Publisher.sendMessage('Set raycasting wwwl', ww=ww, wl=wl, curve=curve)
 
     def ShowRaycastingWidget(self):
         self.can_show_raycasting_widget = 1

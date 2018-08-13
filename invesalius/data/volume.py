@@ -155,19 +155,19 @@ class Volume():
             self.color_transfer = None
             Publisher.sendMessage('Render volume viewer')
 
-    def OnLoadVolume(self, pubsub_evt):
-        label = pubsub_evt.data
+    def OnLoadVolume(self, label):
+        label = label
         #self.LoadConfig(label)
         self.LoadVolume()
 
-    def OnHideVolume(self, pubsub_evt):
+    def OnHideVolume(self):
         print('Hide Volume')
         self.volume.SetVisibility(0)
         if (self.plane and self.plane_on):
             self.plane.Disable()
         Publisher.sendMessage('Render volume viewer')
 
-    def OnShowVolume(self, pubsub_evt = None):
+    def OnShowVolume(self):
         print('Show volume')
         if self.exist:
             print('Volume exists')
@@ -268,10 +268,9 @@ class Volume():
         self.ww = ww
         self.wl = wl
 
-    def OnSetWindowLevel(self, pubsub_evt):
-        ww, wl, n = pubsub_evt.data
-        self.curve = n
-        self.SetWWWL(ww,wl)
+    def OnSetWindowLevel(self, ww, wl, curve):
+        self.curve = curve
+        self.SetWWWL(ww, wl)
 
     def SetWWWL(self, ww, wl):
         if self.config['advancedCLUT']:
