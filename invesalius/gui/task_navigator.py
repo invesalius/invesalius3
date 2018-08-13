@@ -863,10 +863,10 @@ class ObjectRegistrationPanel(wx.Panel):
                 Publisher.sendMessage('Enable target button', True)
 
     def OnSelectAngleThreshold(self, evt, ctrl):
-        Publisher.sendMessage('Update angle threshold', ctrl.GetValue())
+        Publisher.sendMessage('Update angle threshold', angle=ctrl.GetValue())
 
     def OnSelectDistThreshold(self, evt, ctrl):
-        Publisher.sendMessage('Update dist threshold', ctrl.GetValue())
+        Publisher.sendMessage('Update dist threshold', dist_threshold=ctrl.GetValue())
 
     def OnSelectTimestamp(self, evt, ctrl):
         self.timestamp = ctrl.GetValue()
@@ -1110,7 +1110,7 @@ class MarkersPanel(wx.Panel):
 
         if self.tgt_flag:
             self.lc.SetItemBackgroundColour(self.tgt_index, 'white')
-            Publisher.sendMessage('Set target transparency', [False, self.tgt_index])
+            Publisher.sendMessage('Set target transparency', status=False, index=self.tgt_index)
             self.lc.SetStringItem(self.tgt_index, 4, '')
             # Add the new ID to exported list
             if len(self.list_coord[self.tgt_index]) > 8:
@@ -1121,8 +1121,8 @@ class MarkersPanel(wx.Panel):
         self.tgt_index = self.lc.GetFocusedItem()
         self.lc.SetItemBackgroundColour(self.tgt_index, 'RED')
 
-        Publisher.sendMessage('Update target', self.list_coord[self.tgt_index])
-        Publisher.sendMessage('Set target transparency', [True, self.tgt_index])
+        Publisher.sendMessage('Update target', coord=self.list_coord[self.tgt_index])
+        Publisher.sendMessage('Set target transparency', status=True, index=self.tgt_index)
         Publisher.sendMessage('Disable or enable coil tracker', status=True)
         self.OnMenuEditMarkerId('TARGET')
         self.tgt_flag = True

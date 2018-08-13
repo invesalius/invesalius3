@@ -568,20 +568,18 @@ class Viewer(wx.Panel):
                 self.Refresh()
             self.index = False
 
-    def OnTargetMarkerTransparency(self, pubsub_evt):
-        status = pubsub_evt.data[0]
-        index = pubsub_evt.data[1]
+    def OnTargetMarkerTransparency(self, status, index):
         if status:
             self.staticballs[index].GetProperty().SetOpacity(1)
             # self.staticballs[index].GetProperty().SetOpacity(0.4)
         else:
             self.staticballs[index].GetProperty().SetOpacity(1)
 
-    def OnUpdateAngleThreshold(self, pubsub_evt):
-        self.anglethreshold = pubsub_evt.data
+    def OnUpdateAngleThreshold(self, angle):
+        self.anglethreshold = angle
 
-    def OnUpdateDistThreshold(self, pubsub_evt):
-        self.distthreshold = pubsub_evt.data
+    def OnUpdateDistThreshold(self, dist_threshold):
+        self.distthreshold = dist_threshold
 
     def ActivateTargetMode(self, evt=None, target_mode=None):
         self.target_mode = target_mode
@@ -677,8 +675,7 @@ class Viewer(wx.Panel):
         else:
             self.DisableCoilTracker()
 
-    def OnUpdateObjectTargetGuide(self, pubsub_evt):
-        coord = pubsub_evt.data[1]
+    def OnUpdateObjectTargetGuide(self, m_img, coord):
         if self.target_coord and self.target_mode:
 
             target_dist = distance.euclidean(coord[0:3],
@@ -797,8 +794,8 @@ class Viewer(wx.Panel):
 
             self.Refresh()
 
-    def OnUpdateTargetCoordinates(self, pubsub_evt):
-        self.target_coord = pubsub_evt.data[0:6]
+    def OnUpdateTargetCoordinates(self, coord):
+        self.target_coord = coord
         self.target_coord[1] = -self.target_coord[1]
         self.CreateTargetAim()
 
@@ -1191,10 +1188,7 @@ class Viewer(wx.Panel):
             if not self.obj_state:
                 self.Refresh()
 
-    def UpdateObjectOrientation(self, pubsub_evt):
-
-        m_img = pubsub_evt.data[0]
-
+    def UpdateObjectOrientation(self, m_img, coord):
         m_img[:3, -1] = np.asmatrix(bases.flip_x_m((m_img[0, -1], m_img[1, -1], m_img[2, -1]))).reshape([3, 1])
 
         m_img_vtk = vtk.vtkMatrix4x4()
@@ -1381,7 +1375,7 @@ class Viewer(wx.Panel):
         new_state = self.interaction_style.RemoveState(style)
         self.SetInteractorStyle(new_state)
 
-    def ResetCamClippingRange(self, pubsub_evt):
+    def ResetCamClippingRange(self):
         self.ren.ResetCamera()
         self.ren.ResetCameraClippingRange()
 
@@ -1466,13 +1460,13 @@ class Viewer(wx.Panel):
             writer.SetInput(renwin)
             writer.Write()
 
-    def OnEnableBrightContrast(self, pubsub_evt):
+    def OnEnableBrightContrast(self):
         style = self.style
         style.AddObserver("MouseMoveEvent", self.OnMove)
         style.AddObserver("LeftButtonPressEvent", self.OnClick)
         style.AddObserver("LeftButtonReleaseEvent", self.OnRelease)
 
-    def OnDisableBrightContrast(self, pubsub_evt):
+    def OnDisableBrightContrast(self):
         style = vtk.vtkInteractorStyleTrackballCamera()
         self.interactor.SetInteractorStyle(style)
         self.style = style
