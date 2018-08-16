@@ -174,7 +174,7 @@ class CLUTRaycastingWidget(wx.Panel):
             print("Salvando")
             filename = dialog.ShowSavePresetDialog()
             if filename:
-                Publisher.sendMessage('Save raycasting preset', filename)
+                Publisher.sendMessage('Save raycasting preset', preset_name=filename)
         point = self._has_clicked_in_a_point((x, y))
         # A point has been selected. It can be dragged.
         if point:

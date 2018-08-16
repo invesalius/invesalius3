@@ -134,29 +134,27 @@ class ContourMIPConfig(wx.Panel):
 
         Publisher.subscribe(self._set_projection_type, 'Set projection type')
 
-    def OnSetMIPSize(self, evt):
+    def OnSetMIPSize(self, number_slices):
         val = self.mip_size_spin.GetValue()
-        Publisher.sendMessage('Set MIP size %s' % self.orientation, val)
+        Publisher.sendMessage('Set MIP size %s' % self.orientation, number_slices=val)
 
     def OnSetMIPBorder(self, evt):
         val = self.border_spin.GetValue()
-        Publisher.sendMessage('Set MIP border %s' % self.orientation, val)
+        Publisher.sendMessage('Set MIP border %s' % self.orientation, border_size=val)
 
     def OnCheckInverted(self, evt):
         val = self.inverted.GetValue()
-        Publisher.sendMessage('Set MIP Invert %s' % self.orientation, val)
+        Publisher.sendMessage('Set MIP Invert %s' % self.orientation, invert=val)
 
-    def _set_projection_type(self, pubsub_evt):
-        tprojection = pubsub_evt.data
-
-        if tprojection in (const.PROJECTION_MIDA,
-                           const.PROJECTION_CONTOUR_MIDA):
+    def _set_projection_type(self, projection_id):
+        if projection_id in (const.PROJECTION_MIDA,
+                             const.PROJECTION_CONTOUR_MIDA):
             self.inverted.Enable()
         else:
             self.inverted.Disable()
 
-        if tprojection in (const.PROJECTION_CONTOUR_MIP,
-                           const.PROJECTION_CONTOUR_MIDA):
+        if projection_id in (const.PROJECTION_CONTOUR_MIP,
+                             const.PROJECTION_CONTOUR_MIDA):
             self.border_spin.Enable()
             self.txt_mip_border.Enable()
         else:
@@ -292,8 +290,7 @@ class Viewer(wx.Panel):
         self.UpdateCanvas()
         self.on_text = True
 
-    def __set_layout(self, pubsub_evt):
-        layout = pubsub_evt.data
+    def __set_layout(self, layout):
         self.SetLayout(layout)
 
     def __config_interactor(self):
@@ -321,8 +318,7 @@ class Viewer(wx.Panel):
 
         self.state = state
 
-    def UpdateWindowLevelValue(self, pubsub_evt):
-        window, level = pubsub_evt.data
+    def UpdateWindowLevelValue(self, window, level):
         self.acum_achange_window, self.acum_achange_level = (window, level)
         self.SetWLText(window, level)
 
@@ -332,18 +328,18 @@ class Viewer(wx.Panel):
         Publisher.sendMessage('Update all slice')
         Publisher.sendMessage('Update clut imagedata widget')
 
-    def UpdateWindowLevelText(self, pubsub_evt):
-        window, level = pubsub_evt.data
-        self.acum_achange_window, self.acum_achange_level = (window, level)
+    def UpdateWindowLevelText(self, window, level):
+        self.acum_achange_window, self.acum_achange_level = window, level
         self.SetWLText(window, level)
         self.interactor.Render()
 
     def OnClutChange(self, evt):
         Publisher.sendMessage('Change colour table from background image from widget',
-                              evt.GetNodes())
+                              nodes=evt.GetNodes())
         slc = sl.Slice()
         Publisher.sendMessage('Update window level value',
-                              (slc.window_width, slc.window_level))
+                              window=slc.window_width,
+                              level=slc.window_level)
 
     def SetWLText(self, window_width, window_level):
         value = STR_WL%(window_level, window_width)
@@ -558,46 +554,45 @@ class Viewer(wx.Panel):
         ren.GetActiveCamera().Zoom(1.0)
         self.interactor.Render()
 
-    def ChangeBrushColour(self, pubsub_evt):
-        vtk_colour = pubsub_evt.data[3]
+    def ChangeBrushColour(self, colour):
+        vtk_colour = colour
         self._brush_cursor_colour = vtk_colour
         if (self.cursor):
             for slice_data in self.slice_data_list:
                 slice_data.cursor.SetColour(vtk_colour)
 
-    def SetBrushColour(self, pubsub_evt):
-        colour_wx = pubsub_evt.data
-        colour_vtk = [colour/float(255) for colour in colour_wx]
+    def SetBrushColour(self, colour):
+        colour_vtk = [colour/float(255) for colour in colour]
         self._brush_cursor_colour = colour_vtk
         if self.slice_data.cursor:
             self.slice_data.cursor.SetColour(colour_vtk)
 
-    def UpdateSlicesNavigation(self, pubsub_evt):
+    def UpdateSlicesNavigation(self, arg, position):
         # Get point from base change
-        ux, uy, uz = pubsub_evt.data[1][:3]
+        ux, uy, uz = position[:3]
         px, py = self.get_slice_pixel_coord_by_world_pos(ux, uy, uz)
         coord = self.calcultate_scroll_position(px, py)
 
         self.cross.SetFocalPoint((ux, uy, uz))
         self.ScrollSlice(coord)
-        Publisher.sendMessage('Set ball reference position', (ux, uy, uz))
+        Publisher.sendMessage('Set ball reference position', position=(ux, uy, uz))
 
     def ScrollSlice(self, coord):
         if self.orientation == "AXIAL":
             Publisher.sendMessage(('Set scroll position', 'SAGITAL'),
-                                       coord[0])
+                                       index=coord[0])
             Publisher.sendMessage(('Set scroll position', 'CORONAL'),
-                                       coord[1])
+                                       index=coord[1])
         elif self.orientation == "SAGITAL":
             Publisher.sendMessage(('Set scroll position', 'AXIAL'),
-                                       coord[2])
+                                       index=coord[2])
             Publisher.sendMessage(('Set scroll position', 'CORONAL'),
-                                       coord[1])
+                                       index=coord[1])
         elif self.orientation == "CORONAL":
             Publisher.sendMessage(('Set scroll position', 'AXIAL'),
-                                       coord[2])
+                                       index=coord[2])
             Publisher.sendMessage(('Set scroll position', 'SAGITAL'),
-                                       coord[0])
+                                       index=coord[0])
 
     def get_slice_data(self, render):
         #for slice_data in self.slice_data_list:
@@ -881,39 +876,37 @@ class Viewer(wx.Panel):
         Publisher.subscribe(self.UpdateInterpolatedSlice, "Update Slice Interpolation")
 
 
-    def RefreshViewer(self, pubsub_evt):
+    def RefreshViewer(self):
         self.Refresh()
 
-    def SetDefaultCursor(self, pusub_evt):
+    def SetDefaultCursor(self):
         self.interactor.SetCursor(wx.StockCursor(wx.CURSOR_DEFAULT))
 
-    def SetSizeNSCursor(self, pusub_evt):
+    def SetSizeNSCursor(self):
         self.interactor.SetCursor(wx.StockCursor(wx.CURSOR_SIZENS))
 
-    def SetSizeWECursor(self, pusub_evt):
+    def SetSizeWECursor(self):
         self.interactor.SetCursor(wx.StockCursor(wx.CURSOR_SIZEWE))
 
-    def SetSizeNWSECursor(self, pubsub_evt):
-        if sys.platform == 'linux2':
+    def SetSizeNWSECursor(self):
+        if sys.platform.startswith('linux'):
             self.interactor.SetCursor(wx.StockCursor(wx.CURSOR_SIZENWSE))
         else:
             self.interactor.SetCursor(wx.StockCursor(wx.CURSOR_SIZING))
 
-    def OnExportPicture(self, pubsub_evt):
-        id, filename, filetype = pubsub_evt.data
-
+    def OnExportPicture(self, orientation, filename, filetype):
         dict = {"AXIAL": const.AXIAL,
                 "CORONAL": const.CORONAL,
                 "SAGITAL": const.SAGITAL}
 
-        if id == dict[self.orientation]:
+        if orientation == dict[self.orientation]:
             Publisher.sendMessage('Begin busy cursor')
             if _has_win32api:
                 utils.touch(filename)
                 win_filename = win32api.GetShortPathName(filename)
-                self._export_picture(id, win_filename, filetype)
+                self._export_picture(orientation, win_filename, filetype)
             else:
-                self._export_picture(id, filename, filetype)
+                self._export_picture(orientation, filename, filetype)
             Publisher.sendMessage('End busy cursor')
 
     def _export_picture(self, id, filename, filetype):
@@ -970,13 +963,13 @@ class Viewer(wx.Panel):
 
         Publisher.sendMessage('End busy cursor')
 
-    def OnShowText(self, pubsub_evt):
+    def OnShowText(self):
         self.ShowTextActors()
 
-    def OnHideText(self, pubsub_evt):
+    def OnHideText(self):
         self.HideTextActors()
 
-    def OnCloseProject(self, pubsub_evt):
+    def OnCloseProject(self):
         self.CloseProject()
 
     def CloseProject(self):
@@ -1001,11 +994,10 @@ class Viewer(wx.Panel):
         self.wl_text = None
         self.pick = vtk.vtkWorldPointPicker()
 
-    def OnSetInteractorStyle(self, pubsub_evt):
-        state = pubsub_evt.data
-        self.SetInteractorStyle(state)
+    def OnSetInteractorStyle(self, style):
+        self.SetInteractorStyle(style)
 
-        if (state not in [const.SLICE_STATE_EDITOR, const.SLICE_STATE_WATERSHED]):
+        if (style not in [const.SLICE_STATE_EDITOR, const.SLICE_STATE_WATERSHED]):
             Publisher.sendMessage('Set interactor default cursor')
 
     def __bind_events_wx(self):
@@ -1016,8 +1008,7 @@ class Viewer(wx.Panel):
         self.interactor.Bind(wx.EVT_RIGHT_UP, self.OnContextMenu)
         self.interactor.Bind(wx.EVT_SIZE, self.OnSize)
 
-    def LoadImagedata(self, pubsub_evt):
-        mask_dict = pubsub_evt.data
+    def LoadImagedata(self, mask_dict):
         self.SetInput(mask_dict)
 
     def LoadRenderers(self, imagedata):
@@ -1139,9 +1130,8 @@ class Viewer(wx.Panel):
 
         renderer.AddActor(cross_actor)
 
-    def __update_cross_position(self, pubsub_evt):
-        pos = pubsub_evt.data
-        self.cross.SetFocalPoint(pos)
+    def __update_cross_position(self, position):
+        self.cross.SetFocalPoint(position)
 
     def _set_cross_visibility(self, visibility):
         self.cross_actor.SetVisibility(visibility)
@@ -1199,8 +1189,8 @@ class Viewer(wx.Panel):
 
         return slice_data
 
-    def UpdateInterpolatedSlice(self, pub_sub):
-        if self.slice_actor != None:    
+    def UpdateInterpolatedSlice(self):
+        if self.slice_actor != None:
             if ses.Session().slice_interpolation:
                 self.slice_actor.InterpolateOff()
             else:
@@ -1208,15 +1198,13 @@ class Viewer(wx.Panel):
             self.interactor.Render()
 
 
-    def SetInterpolatedSlices(self, pub_sub):
-        self.interpolation_slice_status = status = pub_sub.data
-        
+    def SetInterpolatedSlices(self, flag):
+        self.interpolation_slice_status = flag
         if self.slice_actor != None:
-            if status == True:
+            if self.interpolation_slice_status == True:
                 self.slice_actor.InterpolateOn()
             else:
                 self.slice_actor.InterpolateOff()
-            
             self.interactor.Render()
 
     def __update_camera(self):
@@ -1235,7 +1223,7 @@ class Viewer(wx.Panel):
         self.slice_data.actor.SetDisplayExtent(image.GetExtent())
         self.slice_data.renderer.ResetCameraClippingRange()
 
-    def UpdateRender(self, evt):
+    def UpdateRender(self):
         self.interactor.Render()
 
     def UpdateCanvas(self, evt=None):
@@ -1291,8 +1279,8 @@ class Viewer(wx.Panel):
     def UpdateSlice3D(self, pos):
         original_orientation = project.Project().original_orientation
         pos = self.scroll.GetThumbPosition()
-        Publisher.sendMessage('Change slice from slice plane',\
-                                   (self.orientation, pos))
+        Publisher.sendMessage('Change slice from slice plane',
+                              orientation=self.orientation, index=pos)
 
     def OnScrollBar(self, evt=None, update3D=True):
         pos = self.scroll.GetThumbPosition()
@@ -1303,7 +1291,7 @@ class Viewer(wx.Panel):
             # Update other slice's cross according to the new focal point from
             # the actual orientation.
             focal_point = self.cross.GetFocalPoint()
-            Publisher.sendMessage('Update cross position', focal_point)
+            Publisher.sendMessage('Update cross position', position=focal_point)
             Publisher.sendMessage('Update slice viewer')
         else:
             self.interactor.Render()
@@ -1358,7 +1346,7 @@ class Viewer(wx.Panel):
 
         elif evt.GetKeyCode() in projections:
             self.slice_.SetTypeProjection(projections[evt.GetKeyCode()])
-            Publisher.sendMessage('Set projection type', projections[evt.GetKeyCode()])
+            Publisher.sendMessage('Set projection type', projection_id=projections[evt.GetKeyCode()])
             Publisher.sendMessage('Reload actual slice')
             skip = False
 
@@ -1402,28 +1390,24 @@ class Viewer(wx.Panel):
             self.slice_data.SetSize((w, h))
         evt.Skip()
 
-    def OnSetMIPSize(self, pubsub_evt):
-        val = pubsub_evt.data
-        self.number_slices = val
+    def OnSetMIPSize(self, number_slices):
+        self.number_slices = number_slices
         self.ReloadActualSlice()
 
-    def OnSetMIPBorder(self, pubsub_evt):
-        val = pubsub_evt.data
-        self.slice_.n_border = val
+    def OnSetMIPBorder(self, border_size):
+        self.slice_.n_border = border_size
         buffer_ = self.slice_.buffer_slices[self.orientation]
         buffer_.discard_buffer()
         self.ReloadActualSlice()
 
-    def OnSetMIPInvert(self, pubsub_evt):
-        val = pubsub_evt.data
-        self._mip_inverted = val
+    def OnSetMIPInvert(self, invert):
+        self._mip_inverted = invert
         buffer_ = self.slice_.buffer_slices[self.orientation]
         buffer_.discard_buffer()
         self.ReloadActualSlice()
 
-    def OnShowMIPInterface(self, pubsub_evt):
-        value = pubsub_evt.data
-        if value:
+    def OnShowMIPInterface(self, flag):
+        if flag:
             if not self.mip_ctrls.Shown:
                 self.mip_ctrls.Show()
                 self.GetSizer().Add(self.mip_ctrls, 0, wx.EXPAND|wx.GROW|wx.ALL, 2)
@@ -1433,9 +1417,8 @@ class Viewer(wx.Panel):
             self.GetSizer().Detach(self.mip_ctrls)
             self.Layout()
 
-    def OnSetOverwriteMask(self, pubsub_evt):
-        value = pubsub_evt.data
-        self.overwrite_mask = value
+    def OnSetOverwriteMask(self, flag):
+        self.overwrite_mask = flag
 
     def set_slice_number(self, index):
         inverted = self.mip_ctrls.inverted.GetValue()
@@ -1469,28 +1452,27 @@ class Viewer(wx.Panel):
         self.cross.SetModelBounds(self.slice_data.actor.GetBounds())
         self._update_draw_list()
 
-    def ChangeSliceNumber(self, pubsub_evt):
-        index = pubsub_evt.data
+    def ChangeSliceNumber(self, index):
         #self.set_slice_number(index)
         self.scroll.SetThumbPosition(index)
         pos = self.scroll.GetThumbPosition()
         self.set_slice_number(pos)
         self.interactor.Render()
 
-    def ReloadActualSlice(self, pubsub_evt=None):
+    def ReloadActualSlice(self):
         pos = self.scroll.GetThumbPosition()
         self.set_slice_number(pos)
         self.interactor.Render()
 
-    def OnUpdateScroll(self, pubsub_evt):
+    def OnUpdateScroll(self):
         max_slice_number = sl.Slice().GetNumberOfSlices(self.orientation)
         self.scroll.SetScrollbar(wx.SB_VERTICAL, 1, max_slice_number,
                                  max_slice_number)
 
-    def OnSwapVolumeAxes(self, pubsub_evt):
+    def OnSwapVolumeAxes(self, axes):
         # Adjusting cursor spacing to match the spacing from the actual slice
         # orientation
-        axis0, axis1 = pubsub_evt.data
+        axis0, axis1 = axes
         cursor = self.slice_data.cursor
         spacing = cursor.spacing
         if (axis0, axis1) == (2, 1):
@@ -1502,34 +1484,32 @@ class Viewer(wx.Panel):
 
         self.slice_data.renderer.ResetCamera()
 
-    def AddActors(self, pubsub_evt):
+    def AddActors(self, actors, slice_number):
         "Inserting actors"
-        actors, n = pubsub_evt.data
         pos = self.scroll.GetThumbPosition()
         #try:
-            #renderer = self.renderers_by_slice_number[n]
+            #renderer = self.renderers_by_slice_number[slice_number]
             #for actor in actors:
                 #renderer.AddActor(actor)
         #except KeyError:
             #pass
-        if pos == n:
+        if pos == slice_number:
             for actor in actors:
                 self.slice_data.renderer.AddActor(actor)
 
-        self.actors_by_slice_number[n].extend(actors)
+        self.actors_by_slice_number[slice_number].extend(actors)
 
-    def RemoveActors(self, pubsub_evt):
+    def RemoveActors(self, actors, slice_number):
         "Remove a list of actors"
-        actors, n = pubsub_evt.data
         try:
-            renderer = self.renderers_by_slice_number[n]
+            renderer = self.renderers_by_slice_number[slice_number]
         except KeyError:
             for actor in actors:
-                self.actors_by_slice_number[n].remove(actor)
+                self.actors_by_slice_number[slice_number].remove(actor)
                 self.slice_data.renderer.RemoveActor(actor)
         else:
             for actor in actors:
                 # Remove the actor from the renderer
                 renderer.RemoveActor(actor)
                 # and remove the actor from the actor's list
-                self.actors_by_slice_number[n].remove(actor)
+                self.actors_by_slice_number[slice_number].remove(actor)

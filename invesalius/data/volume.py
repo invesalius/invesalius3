@@ -110,17 +110,17 @@ class Volume():
         Publisher.subscribe(self.ChangeBackgroundColour,
                         'Change volume viewer background colour')
 
-        Publisher.subscribe(self.ResetRayCasting, 'Reset Reaycasting')
+        Publisher.subscribe(self.ResetRayCasting, 'Reset Raycasting')
 
         Publisher.subscribe(self.OnFlipVolume, 'Flip volume')
 
-    def ResetRayCasting(self, pub_evt):
+    def ResetRayCasting(self):
         if self.exist:
             self.exist = None
             self.LoadVolume()
 
 
-    def OnCloseProject(self, pubsub_evt):
+    def OnCloseProject(self):
         self.CloseProject()
 
     def CloseProject(self):
@@ -134,9 +134,9 @@ class Volume():
 
         if self.exist:
             self.exist = None
-            Publisher.sendMessage('Remove surface actor from viewer', self.volume)
+            Publisher.sendMessage('Remove surface actor from viewer', actor=self.volume)
             Publisher.sendMessage('Disable volume cut menu')
-            Publisher.sendMessage('Unload volume', self.volume)
+            Publisher.sendMessage('Unload volume', volume=self.volume)
 
             del self.image
             del self.imagedata
@@ -155,19 +155,19 @@ class Volume():
             self.color_transfer = None
             Publisher.sendMessage('Render volume viewer')
 
-    def OnLoadVolume(self, pubsub_evt):
-        label = pubsub_evt.data
+    def OnLoadVolume(self, label):
+        label = label
         #self.LoadConfig(label)
         self.LoadVolume()
 
-    def OnHideVolume(self, pubsub_evt):
+    def OnHideVolume(self):
         print('Hide Volume')
         self.volume.SetVisibility(0)
         if (self.plane and self.plane_on):
             self.plane.Disable()
         Publisher.sendMessage('Render volume viewer')
 
-    def OnShowVolume(self, pubsub_evt = None):
+    def OnShowVolume(self):
         print('Show volume')
         if self.exist:
             print('Volume exists')
@@ -177,18 +177,19 @@ class Volume():
             Publisher.sendMessage('Render volume viewer')
         else:
             print('Volume doesnt exit')
-            Publisher.sendMessage('Load raycasting preset', const.RAYCASTING_LABEL)
+            Publisher.sendMessage('Load raycasting preset',
+                                  preset_name=const.RAYCASTING_LABEL)
             self.LoadConfig()
             self.LoadVolume()
             self.exist = 1
 
-    def OnUpdatePreset(self, pubsub_evt):
+    def OnUpdatePreset(self):
         self.__load_preset_config()
 
         if self.config:
             if self.to_reload:
                 self.exist = False
-                Publisher.sendMessage('Unload volume', self.volume)
+                Publisher.sendMessage('Unload volume', volume=self.volume)
                 
             if self.exist:
                 self.__load_preset()
@@ -200,10 +201,10 @@ class Volume():
                 self.exist = 1
                 
             colour = self.GetBackgroundColour()
-            Publisher.sendMessage('Change volume viewer background colour', colour)
-            Publisher.sendMessage('Change volume viewer gui colour', colour)
+            Publisher.sendMessage('Change volume viewer background colour', colour=colour)
+            Publisher.sendMessage('Change volume viewer gui colour', colour=colour)
         else:
-            Publisher.sendMessage('Unload volume', self.volume)
+            Publisher.sendMessage('Unload volume', volume=self.volume)
             del self.image
             del self.imagedata
             del self.final_imagedata
@@ -221,7 +222,7 @@ class Volume():
             self.color_transfer = None
             Publisher.sendMessage('Render volume viewer')
 
-    def OnFlipVolume(self, pubsub_evt):
+    def OnFlipVolume(self, axis):
         print("Flipping Volume")
         self.loaded_image = False
         del self.image
@@ -252,28 +253,24 @@ class Volume():
         self.SetShading()
         self.SetTypeRaycasting()
 
-    def OnSetCurve(self, pubsub_evt):
-        self.curve = pubsub_evt.data
+    def OnSetCurve(self, curve):
+        self.curve = curve
         self.CalculateWWWL()
         ww = self.ww
         wl = self.wl
-        Publisher.sendMessage('Set volume window and level text',
-                                   (ww, wl))
+        Publisher.sendMessage('Set volume window and level text', ww=ww, wl=wl)
 
-    def OnSetRelativeWindowLevel(self, pubsub_evt):
-        diff_wl, diff_ww = pubsub_evt.data
+    def OnSetRelativeWindowLevel(self, diff_wl, diff_ww):
         ww = self.ww + diff_ww
         wl = self.wl + diff_wl
-        Publisher.sendMessage('Set volume window and level text',
-                                   (ww, wl))
+        Publisher.sendMessage('Set volume window and level text', ww=ww, wl=wl)
         self.SetWWWL(ww, wl)
         self.ww = ww
         self.wl = wl
 
-    def OnSetWindowLevel(self, pubsub_evt):
-        ww, wl, n = pubsub_evt.data
-        self.curve = n
-        self.SetWWWL(ww,wl)
+    def OnSetWindowLevel(self, ww, wl, curve):
+        self.curve = curve
+        self.SetWWWL(ww, wl)
 
     def SetWWWL(self, ww, wl):
         if self.config['advancedCLUT']:
@@ -321,7 +318,7 @@ class Volume():
         self.ww = last_point - first_point
         self.wl = first_point + self.ww / 2.0
 
-    def Refresh(self, pubsub_evt):
+    def Refresh(self):
         self.__update_colour_table()
 
     def Create16bColorTable(self, scale):
@@ -445,11 +442,11 @@ class Volume():
                             self.config['backgroundColorBlueComponent'])
         return colour
 
-    def ChangeBackgroundColour(self, pubsub_evt):
+    def ChangeBackgroundColour(self, colour):
         if (self.config):
-            self.config['backgroundColorRedComponent'] = pubsub_evt.data[0] * 255
-            self.config['backgroundColorGreenComponent'] = pubsub_evt.data[1] * 255
-            self.config['backgroundColorBlueComponent'] = pubsub_evt.data[2] * 255
+            self.config['backgroundColorRedComponent'] = colour[0] * 255
+            self.config['backgroundColorGreenComponent'] = colour[1] * 255
+            self.config['backgroundColorBlueComponent'] = colour[2] * 255
 
     def BuildTable():
         curve_table = p['16bitClutCurves']
@@ -663,16 +660,16 @@ class Volume():
             self.plane.SetVolumeMapper(volume_mapper)
 
         Publisher.sendMessage('Load volume into viewer',
-                                    (volume, colour, (self.ww, self.wl)))
+                              volume=volume, colour=colour,
+                              ww=self.ww, wl=self.wl)
 
         del flip
         del cast
 
-    def OnEnableTool(self, pubsub_evt):
-        tool_name, enable = pubsub_evt.data
+    def OnEnableTool(self, tool_name, flag):
         if tool_name == _("Cut plane"):
             if self.plane:
-                if enable:
+                if flag:
                     self.plane_on = True
                     self.plane.Enable()
                 else:
@@ -695,8 +692,10 @@ class Volume():
         accumulate.Update()
         n_image = numpy_support.vtk_to_numpy(accumulate.GetOutput().GetPointData().GetScalars())
         del accumulate
-        Publisher.sendMessage('Load histogram', (n_image,
-                                                     image.GetScalarRange()))
+        init, end = image.GetScalarRange()
+        Publisher.sendMessage('Load histogram', histogram=n_image, init=init, end=end)
+
+                              
 
     def TranslateScale(self, scale, value):
         #if value < 0:
@@ -747,8 +746,8 @@ class CutPlane:
         plane_actor.GetProperty().BackfaceCullingOn()
         plane_actor.GetProperty().SetOpacity(0)
         plane_widget.AddObserver("InteractionEvent", self.Update)
-        Publisher.sendMessage('AppendActor', self.plane_actor)
-        Publisher.sendMessage('Set Widget Interactor', self.plane_widget)
+        Publisher.sendMessage('AppendActor', actor=self.plane_actor)
+        Publisher.sendMessage('Set Widget Interactor', widget=self.plane_widget)
         plane_actor.SetVisibility(1)
         plane_widget.On() 
         self.plane = plane = vtk.vtkPlane()
@@ -775,21 +774,21 @@ class CutPlane:
         self.plane_actor.VisibilityOn()
         self.plane.SetNormal(plane_source.GetNormal())
         self.plane.SetOrigin(plane_source.GetOrigin())
-        Publisher.sendMessage('Render volume viewer', None)
+        Publisher.sendMessage('Render volume viewer')
         
-    def Enable(self, evt_pubsub=None):
+    def Enable(self):
         self.plane_widget.On()
         self.plane_actor.VisibilityOn()
         self.volume_mapper.AddClippingPlane(self.plane)
-        Publisher.sendMessage('Render volume viewer', None)
+        Publisher.sendMessage('Render volume viewer')
         
-    def Disable(self,evt_pubsub=None):
+    def Disable(self):
         self.plane_widget.Off() 
         self.plane_actor.VisibilityOff()
         self.volume_mapper.RemoveClippingPlane(self.plane)
-        Publisher.sendMessage('Render volume viewer', None)
+        Publisher.sendMessage('Render volume viewer')
         
-    def Reset(self, evt_pubsub=None):
+    def Reset(self):
         plane_source = self.plane_source
         plane_widget = self.plane_widget
         plane_source.SetOrigin(self.origin)
@@ -799,10 +798,10 @@ class CutPlane:
         self.plane_actor.VisibilityOn() 
         self.plane.SetNormal(self.normal)
         self.plane.SetOrigin(self.origin)
-        Publisher.sendMessage('Render volume viewer', None)  
+        Publisher.sendMessage('Render volume viewer')  
         
     def DestroyObjs(self):
-        Publisher.sendMessage('Remove surface actor from viewer', self.plane_actor)
+        Publisher.sendMessage('Remove surface actor from viewer', actor=self.plane_actor)
         self.Disable()
         del self.plane_widget   
         del self.plane_source

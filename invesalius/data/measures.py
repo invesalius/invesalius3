@@ -128,14 +128,9 @@ class MeasurementManager(object):
         Publisher.subscribe(self._add_density_measure, "Add density measurement")
         Publisher.subscribe(self.OnCloseProject, 'Close project data')
 
-    def _load_measurements(self, pubsub_evt):
-        try:
-            dict, spacing = pubsub_evt.data
-        except ValueError:
-            dict = pubsub_evt.data
-            spacing = 1.0, 1.0, 1.0
-        for i in dict:
-            m = dict[i]
+    def _load_measurements(self, measurement_dict, spacing=(1.0, 1.0, 1.0)):
+        for i in measurement_dict:
+            m = measurement_dict[i]
 
             if isinstance(m, DensityMeasurement):
                 if m.type == const.DENSITY_ELLIPSE:
@@ -183,9 +178,10 @@ class MeasurementManager(object):
                     x, y, z = point
                     actors = mr.AddPoint(x, y, z)
 
-                    if m.location == const.SURFACE:
-                        Publisher.sendMessage(("Add actors " + str(m.location)),
-                            (actors, m.slice_number))
+                if m.location == const.SURFACE:
+                    Publisher.sendMessage(("Add actors " + str(m.location)),
+                        actors=actors)
+
             self.current = None
 
             if not m.visible:
@@ -195,28 +191,7 @@ class MeasurementManager(object):
                 else:
                     Publisher.sendMessage('Redraw canvas')
 
-    def _add_point(self, pubsub_evt):
-        position = pubsub_evt.data[0]
-        type = pubsub_evt.data[1] # Linear or Angular
-        location = pubsub_evt.data[2] # 3D, AXIAL, SAGITAL, CORONAL
-
-        if location == const.SURFACE:
-            slice_number = 0
-            try:
-                radius = pubsub_evt.data[3]
-            except IndexError:
-                radius = const.PROP_MEASURE
-        else:
-            try:
-                slice_number = pubsub_evt.data[3]
-            except IndexError:
-                slice_number = 0
-
-            try:
-                radius = pubsub_evt.data[4]
-            except IndexError:
-                radius = const.PROP_MEASURE
-
+    def _add_point(self, position, type, location, slice_number=0, radius=const.PROP_MEASURE):
         to_remove = False
         if self.current is None:
             to_create = True
@@ -264,8 +239,7 @@ class MeasurementManager(object):
         m.points.append(position)
 
         if m.location == const.SURFACE:
-            Publisher.sendMessage("Add actors " + str(location),
-                    (actors, m.slice_number))
+            Publisher.sendMessage("Add actors " + str(location), actors=actors)
 
         if self.current not in self.measures:
             self.measures.append(self.current)
@@ -285,14 +259,12 @@ class MeasurementManager(object):
 
             msg =  'Update measurement info in GUI',
             Publisher.sendMessage(msg,
-                                  (index, name, colour,
-                                   location,
-                                   type_,
-                                   value))
+                                  index=index, name=name,
+                                  colour=colour, location=location,
+                                  type_=type_, value=value)
             self.current = None
 
-    def _change_measure_point_pos(self, pubsub_evt):
-        index, npoint, pos = pubsub_evt.data
+    def _change_measure_point_pos(self, index, npoint, pos):
         m, mr = self.measures[index]
         x, y, z = pos
         if npoint == 0:
@@ -319,17 +291,14 @@ class MeasurementManager(object):
             value = u"%.3f°"% m.value
 
         Publisher.sendMessage('Update measurement info in GUI',
-                              (index, name, colour,
-                               location,
-                               type_,
-                               value))
+                              index=index, name=name, colour=colour,
+                              location=location, type_=type_,
+                              value=value)
 
-    def _change_name(self, pubsub_evt):
-        index, new_name = pubsub_evt.data
-        self.measures[index].name = new_name
+    def _change_name(self, index, name):
+        self.measures[index][0].name = name
 
-    def _remove_measurements(self, pubsub_evt):
-        indexes = pubsub_evt.data
+    def _remove_measurements(self, indexes):
         for index in indexes:
             m, mr = self.measures.pop(index)
             try:
@@ -339,16 +308,15 @@ class MeasurementManager(object):
                 pass
             prj.Project().RemoveMeasurement(index)
             if m.location == const.SURFACE:
-                Publisher.sendMessage(('Remove actors ' + str(m.location)),
-                        (mr.GetActors(), m.slice_number))
+                Publisher.sendMessage('Remove actors ' + str(m.location),
+                                      actors=mr.GetActors())
         Publisher.sendMessage('Redraw canvas')
         Publisher.sendMessage('Render volume viewer')
 
         session = ses.Session()
         session.ChangeProject()
 
-    def _set_visibility(self, pubsub_evt):
-        index, visibility = pubsub_evt.data
+    def _set_visibility(self, index, visibility):
         m, mr = self.measures[index]
         m.visible = visibility
         mr.SetVisibility(visibility)
@@ -357,7 +325,7 @@ class MeasurementManager(object):
         else:
             Publisher.sendMessage('Redraw canvas')
 
-    def _rm_incomplete_measurements(self, pubsub_evt):
+    def _rm_incomplete_measurements(self):
         if self.current is None:
             return
 
@@ -365,12 +333,12 @@ class MeasurementManager(object):
         if not mr.IsComplete():
             idx = self.measures._list_measures.index((m, mr))
             self.measures.remove((m, mr))
-            Publisher.sendMessage("Remove GUI measurement", idx)
+            Publisher.sendMessage("Remove GUI measurement", measure_index=idx)
             actors = mr.GetActors()
             slice_number = self.current[0].slice_number
             if m.location == const.SURFACE:
                 Publisher.sendMessage(('Remove actors ' + str(self.current[0].location)),
-                                      (actors, slice_number))
+                                      actors=actors)
             if self.current[0].location == const.SURFACE:
                 Publisher.sendMessage('Render volume viewer')
             else:
@@ -380,8 +348,7 @@ class MeasurementManager(object):
                 #  self.measures.pop()
             self.current = None
 
-    def _add_density_measure(self, pubsub_evt):
-        density_measure = pubsub_evt.data
+    def _add_density_measure(self, density_measure):
         m = DensityMeasurement()
         m.index = len(self.measures)
         m.location = density_measure.location
@@ -414,7 +381,7 @@ class MeasurementManager(object):
                                'Density',
                                '%.3f' % m.value))
 
-    def OnCloseProject(self, pubsub_evt):
+    def OnCloseProject(self):
         self.measures.clean()
 
 
@@ -785,7 +752,7 @@ class LinearMeasure(object):
 
     def Remove(self):
         actors = self.GetActors()
-        Publisher.sendMessage("Remove actors " + str(const.SURFACE), (actors,))
+        Publisher.sendMessage("Remove actors " + str(const.SURFACE), actors=actors)
 
     def __del__(self):
         self.Remove()
@@ -1039,7 +1006,7 @@ class AngularMeasure(object):
 
     def Remove(self):
         actors = self.GetActors()
-        Publisher.sendMessage("Remove actors " + str(const.SURFACE), (actors,))
+        Publisher.sendMessage("Remove actors " + str(const.SURFACE), actors=actors)
 
     def SetRenderer(self, renderer):
         if self.point_actor1:

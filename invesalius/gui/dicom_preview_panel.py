@@ -686,8 +686,8 @@ class DicomPreviewSlice(wx.Panel):
         self.selected_dicom = self.selected_panel.dicom_info
         self.GetEventHandler().ProcessEvent(my_evt)
 
-        Publisher.sendMessage("Selected Import Images", [self.first_selection, \
-                                                                 self.last_selection])  
+        Publisher.sendMessage("Selected Import Images",
+                              selection=(self.first_selection, self.last_selection))
 
     def OnScroll(self, evt=None):
         if evt:

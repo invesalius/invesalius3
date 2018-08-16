@@ -193,9 +193,9 @@ class InnerTaskPanel(wx.Panel):
 
             surface_options = dialog.GetValue()
 
-            Publisher.sendMessage('Create surface from index', surface_options)
+            Publisher.sendMessage('Create surface from index',
+                                  surface_parameters=surface_options)
         dialog.Destroy()
-        
         if evt:
             evt.Skip()
 
@@ -424,12 +424,12 @@ class SurfaceTools(wx.Panel):
 
     def StartSeeding(self):
         print("Start Seeding")
-        Publisher.sendMessage('Enable style', const.VOLUME_STATE_SEED)
+        Publisher.sendMessage('Enable style', style=const.VOLUME_STATE_SEED)
         Publisher.sendMessage('Create surface by seeding - start')
 
     def EndSeeding(self):
         print("End Seeding")
-        Publisher.sendMessage('Disable style', const.VOLUME_STATE_SEED)
+        Publisher.sendMessage('Disable style', style=const.VOLUME_STATE_SEED)
         Publisher.sendMessage('Create surface by seeding - end')
 
 
@@ -515,8 +515,7 @@ class SurfaceProperties(wx.Panel):
         Publisher.subscribe(self.OnRemoveSurfaces, 'Remove surfaces')
 
 
-    def OnRemoveSurfaces(self, pubsub_evt):
-        list_index = pubsub_evt.data
+    def OnRemoveSurfaces(self, surface_indexes):
         s = self.combo_surface_name.GetSelection()
         ns = 0
 
@@ -524,7 +523,7 @@ class SurfaceProperties(wx.Panel):
         new_dict = []
         i = 0
         for n, (name, index) in enumerate(old_dict):
-            if n not in list_index:
+            if n not in surface_indexes:
                 new_dict.append([name, i])
                 if s == n:
                     ns = i
@@ -536,7 +535,7 @@ class SurfaceProperties(wx.Panel):
         if self.surface_list:
             self.combo_surface_name.SetSelection(ns)
 
-    def OnCloseProject(self, pubsub_evt):
+    def OnCloseProject(self):
         self.CloseProject()
 
     def CloseProject(self):
@@ -545,16 +544,14 @@ class SurfaceProperties(wx.Panel):
             self.combo_surface_name.Delete(i)
         self.surface_list = []
 
-    def ChangeSurfaceName(self, pubsub_evt):
-        index, name = pubsub_evt.data
+    def ChangeSurfaceName(self, index, name):
         self.surface_list[index][0] = name
         self.combo_surface_name.SetString(index, name)
 
-    def InsertNewSurface(self, pubsub_evt):
-        #not_update = len(pubsub_evt.data) == 5
-        index = pubsub_evt.data[0]
-        name = pubsub_evt.data[1]
-        colour = [value*255 for value in pubsub_evt.data[2]]
+    def InsertNewSurface(self, surface):
+        index = surface.index
+        name = surface.name
+        colour = [value*255 for value in surface.colour]
         i = 0
         try:
             i = self.surface_list.index([name, index])
@@ -570,21 +567,21 @@ class SurfaceProperties(wx.Panel):
 
         self.combo_surface_name.SetItems([n[0] for n in self.surface_list])
         self.combo_surface_name.SetSelection(i)
-        transparency = 100*pubsub_evt.data[5]
+        transparency = 100*surface.transparency
         self.button_colour.SetColour(colour)
         self.slider_transparency.SetValue(transparency)
-        Publisher.sendMessage('Update surface data', (index))
+        #  Publisher.sendMessage('Update surface data', (index))
 
     def OnComboName(self, evt):
         surface_name = evt.GetString()
         surface_index = evt.GetSelection()
-        Publisher.sendMessage('Change surface selected', self.surface_list[surface_index][1])
+        Publisher.sendMessage('Change surface selected', surface_index=self.surface_list[surface_index][1])
 
     def OnSelectColour(self, evt):
         colour = [value/255.0 for value in evt.GetValue()]
         Publisher.sendMessage('Set surface colour',
-                                    (self.combo_surface_name.GetSelection(),
-                                    colour))
+                              surface_index=self.combo_surface_name.GetSelection(),
+                              colour=colour)
 
     def OnTransparency(self, evt):
         transparency = evt.GetInt()/float(MAX_TRANSPARENCY)
@@ -594,8 +591,8 @@ class SurfaceProperties(wx.Panel):
         if (wx.Platform == "__WXMAC__"):
             transparency = evt.GetInt()/(0.96*float(MAX_TRANSPARENCY))
         Publisher.sendMessage('Set surface transparency',
-                                  (self.combo_surface_name.GetSelection(),
-                                  transparency))
+                              surface_index=self.combo_surface_name.GetSelection(),
+                              transparency=transparency)
 
 
 class QualityAdjustment(wx.Panel):

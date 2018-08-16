@@ -204,8 +204,7 @@ class LowerTaskPanel(wx.Panel):
     def __bind_events(self):
         Publisher.subscribe(self.OnEnableState, "Enable state project")
 
-    def OnEnableState(self, pubsub_evt):
-        state = pubsub_evt.data
+    def OnEnableState(self, state):
         if state:
             self.SetStateProjectOpen()
         else:
@@ -305,25 +304,24 @@ class UpperTaskPanel(wx.Panel):
         Publisher.subscribe(self.OnFoldExport, 'Fold export task')
         Publisher.subscribe(self.SetNavigationMode, "Set navigation mode")
 
-    def OnOverwrite(self, pubsub_evt):
-        self.overwrite = pubsub_evt.data['options']['overwrite']
+    def OnOverwrite(self, surface_parameters):
+        self.overwrite = surface_parameters['options']['overwrite']
 
-    def OnFoldSurface(self, pubsub_evt):
+    def OnFoldSurface(self):
         if not self.overwrite:
             self.fold_panel.Expand(self.fold_panel.GetFoldPanel(2))
 
-    def OnFoldExport(self, pubsub_evt):
+    def OnFoldExport(self):
         self.fold_panel.Expand(self.fold_panel.GetFoldPanel(3))
 
-    def OnEnableState(self, pubsub_evt):
-        state = pubsub_evt.data
+    def OnEnableState(self, state):
         if state:
             self.SetStateProjectOpen()
         else:
             self.SetStateProjectClose()
 
-    def SetNavigationMode(self, pubsub_evt):
-        self.navigation_mode_status = status = pubsub_evt.data
+    def SetNavigationMode(self, status):
+        self.navigation_mode_status = status
         name = _("Navigation system")
         panel = navigator.TaskPanel
         if status and (self.fold_panel.GetCount()<=4):

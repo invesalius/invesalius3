@@ -249,7 +249,7 @@ class Preview(wx.Panel):
         my_evt.SetEventObject(self)
         self.GetEventHandler().ProcessEvent(my_evt)
 
-        Publisher.sendMessage('Set bitmap in preview panel', self.bitmap_info.pos)
+        Publisher.sendMessage('Set bitmap in preview panel', pos=self.bitmap_info.pos)
 
         evt.Skip()
 
@@ -369,15 +369,14 @@ class BitmapPreviewSeries(wx.Panel):
         self._display_previews()
 
 
-    def RemovePanel(self, pub_sub):
-        data = pub_sub.data
+    def RemovePanel(self, data):
         for p, f in zip(self.previews, self.files):
             if p.bitmap_info != None:
                 if data.encode('utf-8') in p.bitmap_info.data:
                     self.files.remove(f)
                     p.Hide()
                     self._display_previews()
-                    Publisher.sendMessage('Update max of slidebar in single preview image', len(self.files))
+                    Publisher.sendMessage('Update max of slidebar in single preview image', max_value=len(self.files))
 
                     self.Update()
                     self.Layout()
@@ -539,8 +538,7 @@ class SingleImagePreview(wx.Panel):
         Publisher.subscribe(self.UpdateMaxValueSliderBar, 'Update max of slidebar in single preview image')
         Publisher.subscribe(self.ShowBlackSlice, 'Show black slice in single preview image')
 
-    def ShowBitmapByPosition(self, evt):
-        pos = evt.data
+    def ShowBitmapByPosition(self, pos):
         if pos != None:
             self.ShowSlice(int(pos))
 
@@ -584,8 +582,8 @@ class SingleImagePreview(wx.Panel):
         self.slider.SetValue(0)
         self.ShowSlice()
 
-    def UpdateMaxValueSliderBar(self, pub_sub):
-        self.slider.SetMax(pub_sub.data - 1)
+    def UpdateMaxValueSliderBar(self, max_value):
+        self.slider.SetMax(max_value - 1)
         self.slider.Refresh()
         self.slider.Update()
 

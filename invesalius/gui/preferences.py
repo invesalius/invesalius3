@@ -81,7 +81,7 @@ class Preferences(wx.Dialog):
         
         return values
 
-    def LoadPreferences(self, pub_evt):
+    def LoadPreferences(self):
         se = ses.Session()
         
         values = {const.RENDERING:se.rendering,

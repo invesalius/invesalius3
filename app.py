@@ -30,7 +30,10 @@ import traceback
 import re
 
 if sys.platform == 'win32':
-    import _winreg
+    try:
+        import winreg
+    except ImportError:
+        import _winreg as winreg
 #  else:
     #  if sys.platform != 'darwin':
         #  import wxversion
@@ -44,13 +47,13 @@ try:
 except ImportError:
     from wx import SplashScreen
 #from wx.lib.pubsub import setupv1 #new wx
-from wx.lib.pubsub import setuparg1# as psv1
+#  from wx.lib.pubsub import setuparg1# as psv1
 #from wx.lib.pubsub import Publisher 
 #import wx.lib.pubsub as ps
 from wx.lib.pubsub import pub as Publisher
 
 #import wx.lib.agw.advancedsplash as agw
-#if sys.platform == 'linux2':
+#if sys.platform.startswith('linux'):
 #    _SplashScreen = agw.AdvancedSplash
 #else:
 #    if sys.platform != 'darwin':
@@ -80,7 +83,7 @@ USER_LOG_DIR = os.path.join(USER_INV_DIR, u'logs')
 
 # ------------------------------------------------------------------
 
-if sys.platform in ('linux2', 'win32'):
+if sys.platform in ('linux2', 'linux', 'win32'):
     try:
         tmp_var = wx.GetXDisplay
     except AttributeError:
@@ -114,7 +117,7 @@ class InVesalius(wx.App):
         Open drag & drop files under darwin
         """
         path = os.path.abspath(filename)
-        Publisher.sendMessage('Open project', path)
+        Publisher.sendMessage('Open project', filepath=path)
 
     def Startup2(self):
         self.control = self.splash.control
@@ -344,10 +347,10 @@ def use_cmd_optargs(options, args):
     # If import DICOM argument...
     if options.dicom_dir:
         import_dir = options.dicom_dir
-        Publisher.sendMessage('Import directory', {'directory': import_dir, 'gui': not options.no_gui})
+        Publisher.sendMessage('Import directory', directory=import_dir, use_gui=not options.no_gui)
 
         if options.save:
-            Publisher.sendMessage('Save project', os.path.abspath(options.save))
+            Publisher.sendMessage('Save project', filepath=os.path.abspath(options.save))
             exit(0)
 
         check_for_export(options)
@@ -357,9 +360,11 @@ def use_cmd_optargs(options, args):
         import invesalius.reader.dicom_reader as dcm
         for patient in dcm.GetDicomGroups(options.import_all):
             for group in patient.GetGroups():
-                Publisher.sendMessage('Import group', {'group': group, 'gui': not options.no_gui})
+                Publisher.sendMessage('Import group',
+                                      group=group,
+                                      use_gui=not options.no_gui)
                 check_for_export(options, suffix=group.title, remove_surfaces=False)
-                Publisher.sendMessage('Remove masks', [0])
+                Publisher.sendMessage('Remove masks', mask_indexes=(0,))
         return True
 
     # Check if there is a file path somewhere in what the user wrote
@@ -370,14 +375,14 @@ def use_cmd_optargs(options, args):
             file = utils.decode(arg, FS_ENCODE)
             if os.path.isfile(file):
                 path = os.path.abspath(file)
-                Publisher.sendMessage('Open project', path)
+                Publisher.sendMessage('Open project', filepath=path)
                 check_for_export(options)
                 return True
-            
+
             file = utils.decode(arg, sys.stdin.encoding)
             if os.path.isfile(file):
                 path = os.path.abspath(file)
-                Publisher.sendMessage('Open project', path)
+                Publisher.sendMessage('Open project', filepath=path)
                 check_for_export(options)
                 return True
 
@@ -425,7 +430,8 @@ def check_for_export(options, suffix='', remove_surfaces=False):
 def export(path_, threshold_range, remove_surface=False):
     import invesalius.constants as const
 
-    Publisher.sendMessage('Set threshold values', threshold_range)
+    Publisher.sendMessage('Set threshold values',
+                          threshold_range=threshold_range)
 
     surface_options = {
         'method': {
@@ -440,17 +446,20 @@ def export(path_, threshold_range, remove_surface=False):
             'overwrite': False,
         }
     }
-    Publisher.sendMessage('Create surface from index', surface_options)
-    Publisher.sendMessage('Export surface to file', (path_, const.FILETYPE_STL))
+    Publisher.sendMessage('Create surface from index',
+                          surface_parameters=surface_options)
+    Publisher.sendMessage('Export surface to file',
+                          filename=path_, filetype=const.FILETYPE_STL)
     if remove_surface:
-        Publisher.sendMessage('Remove surfaces', [0])
+        Publisher.sendMessage('Remove surfaces',
+                              surface_indexes=(0,))
 
 
-def print_events(data):
+def print_events(topic=Publisher.AUTO_TOPIC, **msg_data):
     """
     Print pubsub messages
     """
-    utils.debug(data.topic)
+    utils.debug("%s\n\tParameters: %s" % (topic, msg_data))
 
 def main():
     """
@@ -472,10 +481,10 @@ if __name__ == '__main__':
     if hasattr(sys,"frozen") and sys.platform.startswith('win'):
 
         #Click in the .inv3 file support
-        root = _winreg.HKEY_CLASSES_ROOT
+        root = winreg.HKEY_CLASSES_ROOT
         key = "InVesalius 3.1\InstallationDir"
-        hKey = _winreg.OpenKey (root, key, 0, _winreg.KEY_READ)
-        value, type_ = _winreg.QueryValueEx (hKey, "")
+        hKey = winreg.OpenKey (root, key, 0, winreg.KEY_READ)
+        value, type_ = winreg.QueryValueEx (hKey, "")
         path = os.path.join(value,'dist')
 
         os.chdir(path)

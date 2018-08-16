@@ -313,7 +313,7 @@ class ProgressDicomReader:
     def __init__(self):
         Publisher.subscribe(self.CancelLoad, "Cancel DICOM load")
 
-    def CancelLoad(self, evt_pubsub):
+    def CancelLoad(self):
         self.running = False
         self.stoped = True
 
@@ -326,10 +326,10 @@ class ProgressDicomReader:
         self.GetDicomGroups(path,recursive)
 
     def UpdateLoadFileProgress(self,cont_progress):
-        Publisher.sendMessage("Update dicom load", cont_progress)
+        Publisher.sendMessage("Update dicom load", data=cont_progress)
 
     def EndLoadFile(self, patient_list):
-        Publisher.sendMessage("End dicom load", patient_list)
+        Publisher.sendMessage("End dicom load", patient_series=patient_list)
 
     def GetDicomGroups(self, path, recursive):
 

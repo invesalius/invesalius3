@@ -8,7 +8,7 @@ import sys
 
 import numpy
 
-if sys.platform == 'linux2':
+if sys.platform.startswith('linux'):
     setup(
         cmdclass = {'build_ext': build_ext},
         ext_modules = cythonize([ Extension("invesalius.data.mips", ["invesalius/data/mips.pyx"],

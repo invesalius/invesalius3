@@ -220,14 +220,13 @@ class InnerFoldPanel(wx.Panel):
         self.SetSizer(sizer)
         self.Update()
         self.SetAutoLayout(1)
-        
+
     def __bind_events(self):
         Publisher.subscribe(self.OnCheckStatus, 'Navigation status')
         Publisher.subscribe(self.OnShowObject, 'Update track object state')
         Publisher.subscribe(self.OnVolumeCamera, 'Target navigation mode')
 
-    def OnCheckStatus(self, pubsub_evt):
-        status = pubsub_evt.data
+    def OnCheckStatus(self, status):
         if status:
             self.checktrigger.Enable(False)
             self.checkobj.Enable(False)
@@ -237,27 +236,25 @@ class InnerFoldPanel(wx.Panel):
                 self.checkobj.Enable(True)
 
     def OnExternalTrigger(self, evt, ctrl):
-        Publisher.sendMessage('Update trigger state', ctrl.GetValue())
+        Publisher.sendMessage('Update trigger state', trigger_state=ctrl.GetValue())
 
-    def OnShowObject(self, evt):
-        if hasattr(evt, 'data'):
-            if evt.data[0]:
-                self.checkobj.Enable(True)
-                self.track_obj = True
-                Publisher.sendMessage('Status target button', True)
-            else:
-                self.checkobj.Enable(False)
-                self.checkobj.SetValue(False)
-                self.track_obj = False
-                Publisher.sendMessage('Status target button', False)
+    def OnShowObject(self, evt=None, flag=None, obj_name=None):
+        if flag:
+            self.checkobj.Enable(True)
+            self.track_obj = True
+            Publisher.sendMessage('Status target button', status=True)
+        else:
+            self.checkobj.Enable(False)
+            self.checkobj.SetValue(False)
+            self.track_obj = False
+            Publisher.sendMessage('Status target button', status=False)
 
-        Publisher.sendMessage('Update show object state', self.checkobj.GetValue())
+        Publisher.sendMessage('Update show object state', state=self.checkobj.GetValue())
 
-    def OnVolumeCamera(self, evt):
-        if hasattr(evt, 'data'):
-            if evt.data is True:
-                self.checkcamera.SetValue(0)
-        Publisher.sendMessage('Update volume camera state', self.checkcamera.GetValue())
+    def OnVolumeCamera(self, evt=None, target_mode=None):
+        if target_mode is True:
+            self.checkcamera.SetValue(0)
+        Publisher.sendMessage('Update volume camera state', camera_state=self.checkcamera.GetValue())
 
 
 class NeuronavigationPanel(wx.Panel):
@@ -402,9 +399,7 @@ class NeuronavigationPanel(wx.Panel):
         Publisher.subscribe(self.UpdateObjectRegistration, 'Update object registration')
         Publisher.subscribe(self.OnCloseProject, 'Close project data')
 
-    def LoadImageFiducials(self, pubsub_evt):
-        marker_id = pubsub_evt.data[0]
-        coord = pubsub_evt.data[1]
+    def LoadImageFiducials(self, marker_id, coord):
         for n in const.BTNS_IMG_MKS:
             btn_id = list(const.BTNS_IMG_MKS[n].keys())[0]
             fid_id = list(const.BTNS_IMG_MKS[n].values())[0]
@@ -414,9 +409,9 @@ class NeuronavigationPanel(wx.Panel):
                 for m in [0, 1, 2]:
                     self.numctrls_coord[btn_id][m].SetValue(coord[m])
 
-    def UpdateImageCoordinates(self, pubsub_evt):
+    def UpdateImageCoordinates(self, position):
         # TODO: Change from world coordinates to matrix coordinates. They are better for multi software communication.
-        self.current_coord = pubsub_evt.data
+        self.current_coord = position
         for m in [0, 1, 2, 6]:
             if m == 6 and self.btns_coord[m].IsEnabled():
                 for n in [0, 1, 2]:
@@ -427,29 +422,27 @@ class NeuronavigationPanel(wx.Panel):
                 for n in [0, 1, 2]:
                     self.numctrls_coord[m][n].SetValue(float(self.current_coord[n]))
 
-    def UpdateObjectRegistration(self, pubsub_evt):
-        if pubsub_evt.data:
-            self.obj_reg = pubsub_evt.data
+    def UpdateObjectRegistration(self, data=None):
+        if data:
+            self.obj_reg = data
             self.obj_reg_status = True
         else:
             self.obj_reg = None
             self.obj_reg_status = False
 
-    def UpdateTrackObjectState(self, pubsub_evt):
-        if pubsub_evt.data[0]:
-            self.track_obj = pubsub_evt.data[0]
-        else:
-            self.track_obj = False
+    def UpdateTrackObjectState(self, evt=None, flag=None, obj_name=None):
+        self.track_obj = flag
 
-    def UpdateTriggerState(self, pubsub_evt):
-        self.trigger_state = pubsub_evt.data
+    def UpdateTriggerState(self, trigger_state):
+        self.trigger_state = trigger_state
 
-    def OnDisconnectTracker(self, pubsub_evt):
+    def OnDisconnectTracker(self):
         if self.tracker_id:
             dt.TrackerConnection(self.tracker_id, self.trk_init[0], 'disconnect')
 
     def OnChoiceTracker(self, evt, ctrl):
-        Publisher.sendMessage('Update status text in GUI', _("Configuring tracker ..."))
+        Publisher.sendMessage('Update status text in GUI',
+                              label=_("Configuring tracker ..."))
         if hasattr(evt, 'GetSelection'):
             choice = evt.GetSelection()
         else:
@@ -464,24 +457,28 @@ class NeuronavigationPanel(wx.Panel):
         # has been initialized before
         if trck and choice != 6:
             self.ResetTrackerFiducials()
-            Publisher.sendMessage('Update status text in GUI', _("Disconnecting tracker..."))
+            Publisher.sendMessage('Update status text in GUI',
+                                  label=_("Disconnecting tracker..."))
             Publisher.sendMessage('Remove sensors ID')
             self.trk_init = dt.TrackerConnection(self.tracker_id, trck, 'disconnect')
             self.tracker_id = choice
             if not self.trk_init[0] and choice:
-                Publisher.sendMessage('Update status text in GUI', _("Tracker disconnected successfully"))
+                Publisher.sendMessage('Update status text in GUI',
+                                      label=_("Tracker disconnected successfully"))
                 self.trk_init = dt.TrackerConnection(self.tracker_id, None, 'connect')
                 if not self.trk_init[0]:
                     dlg.NavigationTrackerWarning(self.tracker_id, self.trk_init[1])
                     ctrl.SetSelection(0)
                     print("Tracker not connected!")
                 else:
-                    Publisher.sendMessage('Update status text in GUI', _("Ready"))
+                    Publisher.sendMessage('Update status text in GUI',
+                                          label=_("Ready"))
                     ctrl.SetSelection(self.tracker_id)
                     print("Tracker connected!")
         elif choice == 6:
             if trck:
-                Publisher.sendMessage('Update status text in GUI', _("Disconnecting tracker ..."))
+                Publisher.sendMessage('Update status text in GUI',
+                                      label=_("Disconnecting tracker ..."))
                 Publisher.sendMessage('Remove sensors ID')
                 self.trk_init = dt.TrackerConnection(self.tracker_id, trck, 'disconnect')
                 if not self.trk_init[0]:
@@ -489,10 +486,12 @@ class NeuronavigationPanel(wx.Panel):
                         dlg.NavigationTrackerWarning(self.tracker_id, 'disconnect')
                     self.tracker_id = 0
                     ctrl.SetSelection(self.tracker_id)
-                    Publisher.sendMessage('Update status text in GUI', _("Tracker disconnected"))
+                    Publisher.sendMessage('Update status text in GUI',
+                                          label=_("Tracker disconnected"))
                     print("Tracker disconnected!")
                 else:
-                    Publisher.sendMessage('Update status text in GUI', _("Tracker still connected"))
+                    Publisher.sendMessage('Update status text in GUI',
+                                          label=_("Tracker still connected"))
                     print("Tracker still connected!")
             else:
                 ctrl.SetSelection(self.tracker_id)
@@ -507,9 +506,11 @@ class NeuronavigationPanel(wx.Panel):
                     self.tracker_id = 0
                     ctrl.SetSelection(self.tracker_id)
                 else:
-                    Publisher.sendMessage('Update status text in GUI', _("Ready"))
+                    Publisher.sendMessage('Update status text in GUI',
+                                          label=_("Ready"))
 
-        Publisher.sendMessage('Update tracker initializer', (self.tracker_id, self.trk_init, self.ref_mode_id))
+        Publisher.sendMessage('Update tracker initializer',
+                              nav_prop=(self.tracker_id, self.trk_init, self.ref_mode_id))
 
     def OnChoiceRefMode(self, evt, ctrl):
         # When ref mode is changed the tracker coordinates are set to zero
@@ -518,7 +519,8 @@ class NeuronavigationPanel(wx.Panel):
         # Some trackers do not accept restarting within this time window
         # TODO: Improve the restarting of trackers after changing reference mode
         # self.OnChoiceTracker(None, ctrl)
-        Publisher.sendMessage('Update tracker initializer', (self.tracker_id, self.trk_init, self.ref_mode_id))
+        Publisher.sendMessage('Update tracker initializer',
+                              nav_prop=(self.tracker_id, self.trk_init, self.ref_mode_id))
         print("Reference mode changed!")
 
     def OnSetImageCoordinates(self, evt):
@@ -529,10 +531,10 @@ class NeuronavigationPanel(wx.Panel):
                      self.numctrls_coord[btn_id][1].GetValue(),\
                      self.numctrls_coord[btn_id][2].GetValue()
 
-        Publisher.sendMessage('Set ball reference position', (ux, uy, uz))
+        Publisher.sendMessage('Set ball reference position', position=(ux, uy, uz))
         # Publisher.sendMessage('Set camera in volume', (ux, uy, uz))
-        Publisher.sendMessage('Co-registered points', ((ux, uy, uz), (0., 0., 0.)))
-        Publisher.sendMessage('Update cross position', (ux, uy, uz))
+        Publisher.sendMessage('Co-registered points', arg=(ux, uy, uz), position=(0., 0., 0.))
+        Publisher.sendMessage('Update cross position', position=(ux, uy, uz))
 
     def OnImageFiducials(self, evt):
         btn_id = list(const.BTNS_IMG_MKS[evt.GetId()].keys())[0]
@@ -544,13 +546,13 @@ class NeuronavigationPanel(wx.Panel):
                     self.numctrls_coord[btn_id][2].GetValue(), 0, 0, 0
 
             self.fiducials[btn_id, :] = coord[0:3]
-            Publisher.sendMessage('Create marker', (coord, marker_id))
+            Publisher.sendMessage('Create marker', coord=coord, marker_id=marker_id)
         else:
             for n in [0, 1, 2]:
                 self.numctrls_coord[btn_id][n].SetValue(float(self.current_coord[n]))
 
             self.fiducials[btn_id, :] = np.nan
-            Publisher.sendMessage('Delete fiducial marker', marker_id)
+            Publisher.sendMessage('Delete fiducial marker', marker_id=marker_id)
 
     def OnTrackerFiducials(self, evt):
         btn_id = list(const.BTNS_TRK[evt.GetId()].keys())[0]
@@ -627,8 +629,8 @@ class NeuronavigationPanel(wx.Panel):
                 if self.trigger_state:
                     self.trigger = trig.Trigger(nav_id)
 
-                Publisher.sendMessage("Navigation status", True)
-                Publisher.sendMessage("Toggle Cross", const.SLICE_STATE_CROSS)
+                Publisher.sendMessage("Navigation status", status=True)
+                Publisher.sendMessage("Toggle Cross", id=const.SLICE_STATE_CROSS)
                 Publisher.sendMessage("Hide current mask")
 
                 if self.track_obj:
@@ -682,7 +684,7 @@ class NeuronavigationPanel(wx.Panel):
 
             self.correg.stop()
 
-            Publisher.sendMessage("Navigation status", False)
+            Publisher.sendMessage("Navigation status", status=False)
 
     def ResetImageFiducials(self):
         for m in range(0, 3):
@@ -703,13 +705,13 @@ class NeuronavigationPanel(wx.Panel):
         self.txtctrl_fre.SetValue('')
         self.txtctrl_fre.SetBackgroundColour('WHITE')
 
-    def OnCloseProject(self, pubsub_evt):
+    def OnCloseProject(self):
         self.ResetTrackerFiducials()
         self.ResetImageFiducials()
         self.OnChoiceTracker(False, self.choice_trck)
-        Publisher.sendMessage('Update object registration', False)
-        Publisher.sendMessage('Update track object state', (False, False))
-        Publisher.sendMessage('Delete all markers', 'close')
+        Publisher.sendMessage('Update object registration')
+        Publisher.sendMessage('Update track object state', flag=False, obj_name=False)
+        Publisher.sendMessage('Delete all markers')
         # TODO: Reset camera initial focus
         Publisher.sendMessage('Reset cam clipping range')
 
@@ -838,11 +840,11 @@ class ObjectRegistrationPanel(wx.Panel):
         Publisher.subscribe(self.UpdateNavigationStatus, 'Navigation status')
         Publisher.subscribe(self.OnCloseProject, 'Close project data')
 
-    def UpdateTrackerInit(self, pubsub_evt):
-        self.nav_prop = pubsub_evt.data
+    def UpdateTrackerInit(self, nav_prop):
+        self.nav_prop = nav_prop
 
-    def UpdateNavigationStatus(self, pubsub_evt):
-        nav_status = pubsub_evt.data
+    def UpdateNavigationStatus(self, status):
+        nav_status = status
         if nav_status:
             self.checkrecordcoords.Enable(1)
             self.checktrack.Enable(0)
@@ -861,10 +863,10 @@ class ObjectRegistrationPanel(wx.Panel):
                 Publisher.sendMessage('Enable target button', True)
 
     def OnSelectAngleThreshold(self, evt, ctrl):
-        Publisher.sendMessage('Update angle threshold', ctrl.GetValue())
+        Publisher.sendMessage('Update angle threshold', angle=ctrl.GetValue())
 
     def OnSelectDistThreshold(self, evt, ctrl):
-        Publisher.sendMessage('Update dist threshold', ctrl.GetValue())
+        Publisher.sendMessage('Update dist threshold', dist_threshold=ctrl.GetValue())
 
     def OnSelectTimestamp(self, evt, ctrl):
         self.timestamp = ctrl.GetValue()
@@ -880,7 +882,7 @@ class ObjectRegistrationPanel(wx.Panel):
             None
 
     def OnTrackObject(self, evt, ctrl):
-        Publisher.sendMessage('Update track object state', (evt.GetSelection(), self.obj_name))
+        Publisher.sendMessage('Update track object state', flag=evt.GetSelection(), obj_name=self.obj_name)
 
     def OnComboCoil(self, evt):
         # coil_name = evt.GetString()
@@ -897,8 +899,9 @@ class ObjectRegistrationPanel(wx.Panel):
                     if np.isfinite(self.obj_fiducials).all() and np.isfinite(self.obj_orients).all():
                         self.checktrack.Enable(1)
                         Publisher.sendMessage('Update object registration',
-                                              (self.obj_fiducials, self.obj_orients, self.obj_ref_mode, self.obj_name))
-                        Publisher.sendMessage('Update status text in GUI', _("Ready"))
+                                              data=(self.obj_fiducials, self.obj_orients, self.obj_ref_mode, self.obj_name))
+                        Publisher.sendMessage('Update status text in GUI',
+                                              label=_("Ready"))
 
             except wx._core.PyAssertionError:  # TODO FIX: win64
                 pass
@@ -923,8 +926,8 @@ class ObjectRegistrationPanel(wx.Panel):
 
             self.checktrack.Enable(1)
             Publisher.sendMessage('Update object registration',
-                                  (self.obj_fiducials, self.obj_orients, self.obj_ref_mode, self.obj_name))
-            Publisher.sendMessage('Update status text in GUI', _("Ready"))
+                                  data=(self.obj_fiducials, self.obj_orients, self.obj_ref_mode, self.obj_name))
+            Publisher.sendMessage('Update status text in GUI', label=_("Ready"))
             wx.MessageBox(_("Object file successfully loaded"), _("Load"))
 
     def ShowSaveObjectDialog(self, evt):
@@ -938,7 +941,7 @@ class ObjectRegistrationPanel(wx.Panel):
                 np.savetxt(filename, data, fmt='%.4f', delimiter='\t', newline='\n', header=hdr)
                 wx.MessageBox(_("Object file successfully saved"), _("Save"))
 
-    def OnCloseProject(self, pubsub_evt):
+    def OnCloseProject(self):
         self.checkrecordcoords.SetValue(False)
         self.checkrecordcoords.Enable(0)
         self.checktrack.SetValue(False)
@@ -1054,12 +1057,12 @@ class MarkersPanel(wx.Panel):
         Publisher.subscribe(self.OnCreateMarker, 'Create marker')
         Publisher.subscribe(self.UpdateNavigationStatus, 'Navigation status')
 
-    def UpdateCurrentCoord(self, pubsub_evt):
-        self.current_coord = pubsub_evt.data[1][:]
+    def UpdateCurrentCoord(self, arg, position):
+        self.current_coord = position[:]
         #self.current_angle = pubsub_evt.data[1][3:]
 
-    def UpdateNavigationStatus(self, pubsub_evt):
-        if pubsub_evt.data is False:
+    def UpdateNavigationStatus(self, status):
+        if not status:
             sleep(0.5)
             #self.current_coord[3:] = 0, 0, 0
             self.nav_status = False
@@ -1080,7 +1083,7 @@ class MarkersPanel(wx.Panel):
         menu_id.Destroy()
 
     def OnItemBlink(self, evt):
-        Publisher.sendMessage('Blink Marker', self.lc.GetFocusedItem())
+        Publisher.sendMessage('Blink Marker', index=self.lc.GetFocusedItem())
 
     def OnStopItemBlink(self, evt):
         Publisher.sendMessage('Stop Blink Marker')
@@ -1107,7 +1110,7 @@ class MarkersPanel(wx.Panel):
 
         if self.tgt_flag:
             self.lc.SetItemBackgroundColour(self.tgt_index, 'white')
-            Publisher.sendMessage('Set target transparency', [False, self.tgt_index])
+            Publisher.sendMessage('Set target transparency', status=False, index=self.tgt_index)
             self.lc.SetStringItem(self.tgt_index, 4, '')
             # Add the new ID to exported list
             if len(self.list_coord[self.tgt_index]) > 8:
@@ -1118,16 +1121,16 @@ class MarkersPanel(wx.Panel):
         self.tgt_index = self.lc.GetFocusedItem()
         self.lc.SetItemBackgroundColour(self.tgt_index, 'RED')
 
-        Publisher.sendMessage('Update target', self.list_coord[self.tgt_index])
-        Publisher.sendMessage('Set target transparency', [True, self.tgt_index])
-        Publisher.sendMessage('Disable or enable coil tracker', True)
+        Publisher.sendMessage('Update target', coord=self.list_coord[self.tgt_index])
+        Publisher.sendMessage('Set target transparency', status=True, index=self.tgt_index)
+        Publisher.sendMessage('Disable or enable coil tracker', status=True)
         self.OnMenuEditMarkerId('TARGET')
         self.tgt_flag = True
         dlg.NewTarget()
 
-    def OnDeleteAllMarkers(self, evt):
+    def OnDeleteAllMarkers(self, evt=None):
         if self.list_coord:
-            if hasattr(evt, 'data'):
+            if evt is None:
                 result = wx.ID_OK
             else:
                 result = dlg.DeleteAllMarkers()
@@ -1135,22 +1138,21 @@ class MarkersPanel(wx.Panel):
             if result == wx.ID_OK:
                 self.list_coord = []
                 self.marker_ind = 0
-                Publisher.sendMessage('Remove all markers', self.lc.GetItemCount())
+                Publisher.sendMessage('Remove all markers', indexes=self.lc.GetItemCount())
                 self.lc.DeleteAllItems()
-                Publisher.sendMessage('Stop Blink Marker', 'DeleteAll')
+                Publisher.sendMessage('Stop Blink Marker', index='DeleteAll')
 
                 if self.tgt_flag:
                     self.tgt_flag = self.tgt_index = None
-                    Publisher.sendMessage('Disable or enable coil tracker', False)
+                    Publisher.sendMessage('Disable or enable coil tracker', status=False)
                     if not hasattr(evt, 'data'):
                         dlg.DeleteTarget()
 
-    def OnDeleteSingleMarker(self, evt):
+    def OnDeleteSingleMarker(self, evt=None, marker_id=None):
         # OnDeleteSingleMarker is used for both pubsub and button click events
         # Pubsub is used for fiducial handle and button click for all others
 
-        if hasattr(evt, 'data'):
-            marker_id = evt.data
+        if marker_id is not None:
             if self.lc.GetItemCount():
                 for id_n in range(self.lc.GetItemCount()):
                     item = self.lc.GetItem(id_n, 4)
@@ -1168,7 +1170,7 @@ class MarkersPanel(wx.Panel):
         if index:
             if self.tgt_flag and self.tgt_index == index[0]:
                 self.tgt_flag = self.tgt_index = None
-                Publisher.sendMessage('Disable or enable coil tracker', False)
+                Publisher.sendMessage('Disable or enable coil tracker', status=False)
                 dlg.DeleteTarget()
             self.DeleteMarker(index)
         else:
@@ -1181,14 +1183,14 @@ class MarkersPanel(wx.Panel):
             for n in range(0, self.lc.GetItemCount()):
                 self.lc.SetStringItem(n, 0, str(n+1))
             self.marker_ind -= 1
-        Publisher.sendMessage('Remove marker', index)
+        Publisher.sendMessage('Remove marker', index=index)
 
-    def OnCreateMarker(self, evt):
+    def OnCreateMarker(self, evt=None, coord=None, marker_id=None):
         # OnCreateMarker is used for both pubsub and button click events
         # Pubsub is used for markers created with fiducial buttons, trigger and create marker button
-        if hasattr(evt, 'data'):
-            if evt.data is not None:
-                self.CreateMarker(evt.data[0], (0.0, 1.0, 0.0), self.marker_size, evt.data[1])
+        if evt is None:
+            if coord:
+                self.CreateMarker(coord, (0.0, 1.0, 0.0), self.marker_size, marker_id)
             else:
                 self.CreateMarker(self.current_coord, self.marker_colour, self.marker_size)
         else:
@@ -1212,7 +1214,7 @@ class MarkersPanel(wx.Panel):
                         if len(line) == 11:
                             for i in const.BTNS_IMG_MKS:
                                 if line[10] in list(const.BTNS_IMG_MKS[i].values())[0]:
-                                    Publisher.sendMessage('Load image fiducials', (line[10], coord))
+                                    Publisher.sendMessage('Load image fiducials', marker_id=line[10], coord=coord)
                                 elif line[10] == 'TARGET':
                                     target = count_line
                         else:
@@ -1230,7 +1232,7 @@ class MarkersPanel(wx.Panel):
                         if len(line) == 8:
                             for i in const.BTNS_IMG_MKS:
                                 if line[7] in list(const.BTNS_IMG_MKS[i].values())[0]:
-                                    Publisher.sendMessage('Load image fiducials', (line[7], coord))
+                                    Publisher.sendMessage('Load image fiducials', marker_id=line[7], coord=coord)
                         else:
                             line.append("")
                         self.CreateMarker(coord, colour, size, line[7])
@@ -1241,10 +1243,10 @@ class MarkersPanel(wx.Panel):
     def OnMarkersVisibility(self, evt, ctrl):
 
         if ctrl.GetValue():
-            Publisher.sendMessage('Hide all markers',  self.lc.GetItemCount())
+            Publisher.sendMessage('Hide all markers',  indexes=self.lc.GetItemCount())
             ctrl.SetLabel('Show')
         else:
-            Publisher.sendMessage('Show all markers',  self.lc.GetItemCount())
+            Publisher.sendMessage('Show all markers',  indexes=self.lc.GetItemCount())
             ctrl.SetLabel('Hide')
 
     def OnSaveMarkers(self, evt):
@@ -1278,7 +1280,7 @@ class MarkersPanel(wx.Panel):
         # TODO: Use matrix coordinates and not world coordinates as current method.
         # This makes easier for inter-software comprehension.
 
-        Publisher.sendMessage('Add marker', (self.marker_ind, size, colour,  coord[0:3]))
+        Publisher.sendMessage('Add marker', ball_id=self.marker_ind, size=size, colour=colour,  coord=coord[0:3])
 
         self.marker_ind += 1
 

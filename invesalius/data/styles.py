@@ -221,12 +221,12 @@ class CrossInteractorStyle(DefaultInteractorStyle):
     def SetUp(self):
         self.viewer._set_cross_visibility(1)
         Publisher.sendMessage('Toggle toolbar item',
-                             (self.state_code, True))
+                              _id=self.state_code, value=True)
 
     def CleanUp(self):
         self.viewer._set_cross_visibility(0)
         Publisher.sendMessage('Toggle toolbar item',
-                             (self.state_code, False))
+                              _id=self.state_code, value=False)
 
     def OnCrossMouseClick(self, obj, evt):
         iren = obj.GetInteractor()
@@ -244,29 +244,29 @@ class CrossInteractorStyle(DefaultInteractorStyle):
         wx, wy, wz = self.viewer.get_coordinate_cursor(mouse_x, mouse_y, self.picker)
         px, py = self.viewer.get_slice_pixel_coord_by_world_pos(wx, wy, wz)
         coord = self.viewer.calcultate_scroll_position(px, py)
-        Publisher.sendMessage('Update cross position', (wx, wy, wz))
+        Publisher.sendMessage('Update cross position', position=(wx, wy, wz))
         self.ScrollSlice(coord)
-        Publisher.sendMessage('Set ball reference position', (wx, wy, wz))
-        Publisher.sendMessage('Co-registered points',  (None, (wx, wy, wz, 0., 0., 0.)))
+        Publisher.sendMessage('Set ball reference position', position=(wx, wy, wz))
+        Publisher.sendMessage('Co-registered points',  arg=None, position=(wx, wy, wz, 0., 0., 0.))
 
         iren.Render()
 
     def ScrollSlice(self, coord):
         if self.orientation == "AXIAL":
             Publisher.sendMessage(('Set scroll position', 'SAGITAL'),
-                                       coord[0])
+                                       index=coord[0])
             Publisher.sendMessage(('Set scroll position', 'CORONAL'),
-                                       coord[1])
+                                       index=coord[1])
         elif self.orientation == "SAGITAL":
             Publisher.sendMessage(('Set scroll position', 'AXIAL'),
-                                       coord[2])
+                                       index=coord[2])
             Publisher.sendMessage(('Set scroll position', 'CORONAL'),
-                                       coord[1])
+                                       index=coord[1])
         elif self.orientation == "CORONAL":
             Publisher.sendMessage(('Set scroll position', 'AXIAL'),
-                                       coord[2])
+                                       index=coord[2])
             Publisher.sendMessage(('Set scroll position', 'SAGITAL'),
-                                       coord[0])
+                                       index=coord[0])
 
 
 class WWWLInteractorStyle(DefaultInteractorStyle):
@@ -292,14 +292,14 @@ class WWWLInteractorStyle(DefaultInteractorStyle):
     def SetUp(self):
         self.viewer.on_wl = True
         Publisher.sendMessage('Toggle toolbar item',
-                             (self.state_code, True))
+                              _id=self.state_code, value=True)
         self.viewer.canvas.draw_list.append(self.viewer.wl_text)
         self.viewer.UpdateCanvas()
 
     def CleanUp(self):
         self.viewer.on_wl = False
         Publisher.sendMessage('Toggle toolbar item',
-                             (self.state_code, False))
+                              _id=self.state_code, value=False)
         if self.viewer.wl_text is not None:
             self.viewer.canvas.draw_list.remove(self.viewer.wl_text)
             self.viewer.UpdateCanvas()
@@ -313,7 +313,8 @@ class WWWLInteractorStyle(DefaultInteractorStyle):
             self.last_x, self.last_y = mouse_x, mouse_y
 
             Publisher.sendMessage('Bright and contrast adjustment image',
-                (self.acum_achange_window, self.acum_achange_level))
+                                  window=self.acum_achange_window,
+                                  level=self.acum_achange_level)
 
             #self.SetWLText(self.acum_achange_level,
             #              self.acum_achange_window)
@@ -321,8 +322,9 @@ class WWWLInteractorStyle(DefaultInteractorStyle):
             const.WINDOW_LEVEL['Manual'] = (self.acum_achange_window,\
                                            self.acum_achange_level)
             Publisher.sendMessage('Check window and level other')
-            Publisher.sendMessage('Update window level value',(self.acum_achange_window,
-                                                                self.acum_achange_level))
+            Publisher.sendMessage('Update window level value',
+                                  window=self.acum_achange_window,
+                                  level= self.acum_achange_level)
             #Necessary update the slice plane in the volume case exists
             Publisher.sendMessage('Update slice viewer')
             Publisher.sendMessage('Render volume viewer')
@@ -381,11 +383,11 @@ class LinearMeasureInteractorStyle(DefaultInteractorStyle):
 
     def SetUp(self):
         Publisher.sendMessage('Toggle toolbar item',
-                             (self.state_code, True))
+                             _id=self.state_code, value=True)
 
     def CleanUp(self):
         Publisher.sendMessage('Toggle toolbar item',
-                             (self.state_code, False))
+                             _id=self.state_code, value=False)
         self.picker.PickFromListOff()
         Publisher.sendMessage("Remove incomplete measurements")
 
@@ -406,9 +408,9 @@ class LinearMeasureInteractorStyle(DefaultInteractorStyle):
                 self.viewer.scroll_enabled = True
             else:
                 Publisher.sendMessage("Add measurement point",
-                                      ((x, y, z), self._type,
-                                       ORIENTATIONS[self.orientation],
-                                       slice_number, self.radius))
+                                      position=(x, y, z), type=self._type,
+                                      location=ORIENTATIONS[self.orientation],
+                                      slice_number=slice_number, radius=self.radius)
                 n = len(m.points)-1
                 self.creating = n, m, mr
                 self.viewer.UpdateCanvas()
@@ -423,13 +425,15 @@ class LinearMeasureInteractorStyle(DefaultInteractorStyle):
             if self.picker.GetViewProp():
                 renderer = self.viewer.slice_data.renderer
                 Publisher.sendMessage("Add measurement point",
-                                      ((x, y, z), self._type,
-                                       ORIENTATIONS[self.orientation],
-                                       slice_number, self.radius))
+                                      position=(x, y, z), type=self._type,
+                                      location=ORIENTATIONS[self.orientation],
+                                      slice_number=slice_number,
+                                      radius=self.radius)
                 Publisher.sendMessage("Add measurement point",
-                                      ((x, y, z), self._type,
-                                       ORIENTATIONS[self.orientation],
-                                       slice_number, self.radius))
+                                      position=(x, y, z), type=self._type,
+                                      location=ORIENTATIONS[self.orientation],
+                                      slice_number=slice_number,
+                                      radius=self.radius)
 
                 n, (m, mr) =  1, self.measures.measures[self._ori][slice_number][-1]
                 self.creating = n, m, mr
@@ -441,7 +445,7 @@ class LinearMeasureInteractorStyle(DefaultInteractorStyle):
             n, m, mr = self.selected
             x, y, z = self._get_pos_clicked()
             idx = self.measures._list_measures.index((m, mr))
-            Publisher.sendMessage('Change measurement point position', (idx, n, (x, y, z)))
+            Publisher.sendMessage('Change measurement point position', index=idx, npoint=n, pos=(x, y, z))
             self.viewer.UpdateCanvas()
             self.selected = None
             self.viewer.scroll_enabled = True
@@ -451,13 +455,13 @@ class LinearMeasureInteractorStyle(DefaultInteractorStyle):
         if self.selected:
             n, m, mr = self.selected
             idx = self.measures._list_measures.index((m, mr))
-            Publisher.sendMessage('Change measurement point position', (idx, n, (x, y, z)))
+            Publisher.sendMessage('Change measurement point position', index=idx, npoint=n, pos=(x, y, z))
             self.viewer.UpdateCanvas()
 
         elif self.creating:
             n, m, mr = self.creating
             idx = self.measures._list_measures.index((m, mr))
-            Publisher.sendMessage('Change measurement point position', (idx, n, (x, y, z)))
+            Publisher.sendMessage('Change measurement point position', index=idx, npoint=n, pos=(x, y, z))
             self.viewer.UpdateCanvas()
 
         else:
@@ -690,12 +694,12 @@ class PanMoveInteractorStyle(DefaultInteractorStyle):
 
     def SetUp(self):
         Publisher.sendMessage('Toggle toolbar item',
-                             (self.state_code, True))
+                             _id=self.state_code, value=True)
 
     def CleanUp(self):
         self.viewer.interactor.Unbind(wx.EVT_LEFT_DCLICK)
         Publisher.sendMessage('Toggle toolbar item',
-                             (self.state_code, False))
+                             _id=self.state_code, value=False)
 
     def OnPanMove(self, obj, evt):
         if self.left_pressed:
@@ -726,12 +730,12 @@ class SpinInteractorStyle(DefaultInteractorStyle):
 
     def SetUp(self):
         Publisher.sendMessage('Toggle toolbar item',
-                             (self.state_code, True))
+                              _id=self.state_code, value=True)
 
     def CleanUp(self):
         self.viewer.interactor.Unbind(wx.EVT_LEFT_DCLICK)
         Publisher.sendMessage('Toggle toolbar item',
-                             (self.state_code, False))
+                              _id=self.state_code, value=False)
 
     def OnSpinMove(self, obj, evt):
         iren = obj.GetInteractor()
@@ -771,12 +775,12 @@ class ZoomInteractorStyle(DefaultInteractorStyle):
 
     def SetUp(self):
         Publisher.sendMessage('Toggle toolbar item',
-                             (self.state_code, True))
+                             _id=self.state_code, value=True)
 
     def CleanUp(self):
         self.viewer.interactor.Unbind(wx.EVT_LEFT_DCLICK)
         Publisher.sendMessage('Toggle toolbar item',
-                             (self.state_code, False))
+                              _id=self.state_code, value=False)
 
     def OnZoomMoveLeft(self, obj, evt):
         if self.left_pressed:
@@ -805,12 +809,12 @@ class ZoomSLInteractorStyle(vtk.vtkInteractorStyleRubberBandZoom):
 
     def SetUp(self):
         Publisher.sendMessage('Toggle toolbar item',
-                             (self.state_code, True))
+                              _id=self.state_code, value=True)
 
     def CleanUp(self):
         self.viewer.interactor.Unbind(wx.EVT_LEFT_DCLICK)
         Publisher.sendMessage('Toggle toolbar item',
-                             (self.state_code, False))
+                              _id=self.state_code, value=False)
 
     def OnUnZoom(self, evt):
         mouse_x, mouse_y = self.viewer.interactor.GetLastEventPosition()
@@ -838,11 +842,11 @@ class ChangeSliceInteractorStyle(DefaultInteractorStyle):
 
     def SetUp(self):
         Publisher.sendMessage('Toggle toolbar item',
-                             (self.state_code, True))
+                             _id=self.state_code, value=True)
 
     def CleanUp(self):
         Publisher.sendMessage('Toggle toolbar item',
-                             (self.state_code, False))
+                             _id=self.state_code, value=False)
 
     def OnChangeSliceMove(self, evt, obj):
         if self.left_pressed:
@@ -930,17 +934,16 @@ class EditorInteractorStyle(DefaultInteractorStyle):
         self.viewer.interactor.SetCursor(wx.StockCursor(wx.CURSOR_DEFAULT))
         self.viewer.interactor.Render()
 
-    def set_bsize(self, pubsub_evt):
-        size = pubsub_evt.data
+    def set_bsize(self, size):
         self.config.cursor_size = size
         self.viewer.slice_data.cursor.SetSize(size)
 
-    def set_bformat(self, pubsub_evt):
-        self.config.cursor_type = pubsub_evt.data
+    def set_bformat(self, cursor_format):
+        self.config.cursor_type = cursor_format
         self._set_cursor()
 
-    def set_boperation(self, pubsub_evt):
-        self.config.operation = pubsub_evt.data
+    def set_boperation(self, operation):
+        self.config.operation = operation
 
     def _set_cursor(self):
         if self.config.cursor_type == const.BRUSH_SQUARE:
@@ -1087,7 +1090,7 @@ class EditorInteractorStyle(DefaultInteractorStyle):
             size += 1
 
             if size <= 100:
-                Publisher.sendMessage('Set edition brush size', size)
+                Publisher.sendMessage('Set edition brush size', size=size)
                 cursor.SetPosition(cursor.position)
                 self.viewer.interactor.Render()
         else:
@@ -1105,7 +1108,7 @@ class EditorInteractorStyle(DefaultInteractorStyle):
             size -= 1
 
             if size > 0:
-                Publisher.sendMessage('Set edition brush size', size)
+                Publisher.sendMessage('Set edition brush size', size=size)
                 cursor.SetPosition(cursor.position)
                 self.viewer.interactor.Render()
         else:
@@ -1156,23 +1159,23 @@ class WatershedConfig(with_metaclass(utils.Singleton, object)):
         Publisher.subscribe(self.set_3dcon, "Set watershed 3d con")
         Publisher.subscribe(self.set_gaussian_size, "Set watershed gaussian size")
 
-    def set_operation(self, pubsub_evt):
-        self.operation = WATERSHED_OPERATIONS[pubsub_evt.data]
+    def set_operation(self, operation):
+        self.operation = WATERSHED_OPERATIONS[operation]
 
-    def set_use_ww_wl(self, pubsub_evt):
-        self.use_ww_wl = pubsub_evt.data
+    def set_use_ww_wl(self, use_ww_wl):
+        self.use_ww_wl = use_ww_wl
 
-    def set_algorithm(self, pubsub_evt):
-        self.algorithm = pubsub_evt.data
+    def set_algorithm(self, algorithm):
+        self.algorithm = algorithm
 
-    def set_2dcon(self, pubsub_evt):
-        self.con_2d = pubsub_evt.data
+    def set_2dcon(self, con_2d):
+        self.con_2d = con_2d
 
-    def set_3dcon(self, pubsub_evt):
-        self.con_3d = pubsub_evt.data
+    def set_3dcon(self, con_3d):
+        self.con_3d = con_3d
 
-    def set_gaussian_size(self, pubsub_evt):
-        self.mg_size = pubsub_evt.data
+    def set_gaussian_size(self, size):
+        self.mg_size = size
 
 WALGORITHM = {"Watershed": watershed,
              "Watershed IFT": watershed_ift}
@@ -1275,13 +1278,12 @@ class WaterShedInteractorStyle(DefaultInteractorStyle):
         cursor.SetSize(self.config.cursor_size)
         self.viewer.slice_data.SetCursor(cursor)
 
-    def set_bsize(self, pubsub_evt):
-        size = pubsub_evt.data
+    def set_bsize(self, size):
         self.config.cursor_size = size
         self.viewer.slice_data.cursor.SetSize(size)
 
-    def set_bformat(self, pubsub_evt):
-        self.config.cursor_type = pubsub_evt.data
+    def set_bformat(self, brush_format):
+        self.config.cursor_type = brush_format
         self._set_cursor()
 
     def OnEnterInteractor(self, obj, evt):
@@ -1308,7 +1310,7 @@ class WaterShedInteractorStyle(DefaultInteractorStyle):
             size -= 1
 
             if size > 0:
-                Publisher.sendMessage('Set watershed brush size', size)
+                Publisher.sendMessage('Set watershed brush size', size=size)
                 cursor.SetPosition(cursor.position)
                 self.viewer.interactor.Render()
         else:
@@ -1326,7 +1328,7 @@ class WaterShedInteractorStyle(DefaultInteractorStyle):
             size += 1
 
             if size <= 100:
-                Publisher.sendMessage('Set watershed brush size', size)
+                Publisher.sendMessage('Set watershed brush size', size=size)
                 cursor.SetPosition(cursor.position)
                 self.viewer.interactor.Render()
         else:
@@ -1574,7 +1576,7 @@ class WaterShedInteractorStyle(DefaultInteractorStyle):
         if roi_m.size:
             roi_m[index] = operation
 
-    def expand_watershed(self, pubsub_evt):
+    def expand_watershed(self):
         markers = self.matrix
         image = self.viewer.slice_.matrix
         self.viewer.slice_.do_threshold_to_all_slices()
@@ -1782,7 +1784,7 @@ class ReorientImageInteractorStyle(DefaultInteractorStyle):
         self.viewer.slice_.rotations = [0, 0, 0]
         self.viewer.slice_.q_orientation = np.array((1, 0, 0, 0))
 
-        Publisher.sendMessage('Update reorient angles', (0, 0, 0))
+        Publisher.sendMessage('Update reorient angles', angles=(0, 0, 0))
 
         self._discard_buffers()
         self.viewer.slice_.current_mask.clear_history()
@@ -1838,7 +1840,7 @@ class ReorientImageInteractorStyle(DefaultInteractorStyle):
         self.viewer.slice_.q_orientation = transformations.quaternion_multiply(self.viewer.slice_.q_orientation, transformations.quaternion_about_axis(angle, axis))
 
         az, ay, ax = transformations.euler_from_quaternion(self.viewer.slice_.q_orientation)
-        Publisher.sendMessage('Update reorient angles', (ax, ay, az))
+        Publisher.sendMessage('Update reorient angles', angles=(ax, ay, az))
 
         self._discard_buffers()
         if self.viewer.slice_.current_mask:
@@ -1864,8 +1866,8 @@ class ReorientImageInteractorStyle(DefaultInteractorStyle):
         #  print (z, y, x), tcoord
         return tcoord
 
-    def _set_reorientation_angles(self, pubsub_evt):
-        ax, ay, az = pubsub_evt.data
+    def _set_reorientation_angles(self, angles):
+        ax, ay, az = angles
         q = transformations.quaternion_from_euler(az, ay, ax)
         self.viewer.slice_.q_orientation = q
 
@@ -2119,9 +2121,8 @@ class CropMaskInteractorStyle(DefaultInteractorStyle):
         self.viewer.canvas.draw_list.remove(self.draw_retangle)
         Publisher.sendMessage('Redraw canvas')
 
-    def CropMask(self, pubsub_evt):
+    def CropMask(self):
         if self.viewer.orientation == "AXIAL":
-            
             xi, xf, yi, yf, zi, zf = self.draw_retangle.box.GetLimits()
 
             xi += 1
@@ -2129,7 +2130,7 @@ class CropMaskInteractorStyle(DefaultInteractorStyle):
 
             yi += 1
             yf += 1
-            
+
             zi += 1
             zf += 1
 
@@ -2137,13 +2138,13 @@ class CropMaskInteractorStyle(DefaultInteractorStyle):
             cp_mask = self.viewer.slice_.current_mask.matrix.copy()
 
             tmp_mask = self.viewer.slice_.current_mask.matrix[zi-1:zf+1, yi-1:yf+1, xi-1:xf+1].copy()
-            
+
             self.viewer.slice_.current_mask.matrix[:] = 1
 
             self.viewer.slice_.current_mask.matrix[zi-1:zf+1, yi-1:yf+1, xi-1:xf+1] = tmp_mask
 
             self.viewer.slice_.current_mask.save_history(0, 'VOLUME', self.viewer.slice_.current_mask.matrix.copy(), cp_mask)
-            
+
             self.viewer.slice_.buffer_slices['AXIAL'].discard_mask()
             self.viewer.slice_.buffer_slices['CORONAL'].discard_mask()
             self.viewer.slice_.buffer_slices['SAGITAL'].discard_mask()
@@ -2153,9 +2154,9 @@ class CropMaskInteractorStyle(DefaultInteractorStyle):
             self.viewer.slice_.buffer_slices['SAGITAL'].discard_vtk_mask()
 
             self.viewer.slice_.current_mask.was_edited = True
-            Publisher.sendMessage('Reload actual slice')           
+            Publisher.sendMessage('Reload actual slice')
 
-     
+
 class SelectPartConfig(with_metaclass(utils.Singleton, object)):
     def __init__(self):
         self.mask = None
@@ -2217,7 +2218,7 @@ class SelectMaskPartsInteractorStyle(DefaultInteractorStyle):
                 self.config.mask.name = self.config.mask_name
                 self.viewer.slice_._add_mask_into_proj(self.config.mask)
                 self.viewer.slice_.SelectCurrentMask(self.config.mask.index)
-                Publisher.sendMessage('Change mask selected', self.config.mask.index)
+                Publisher.sendMessage('Change mask selected', index=self.config.mask.index)
 
             del self.viewer.slice_.aux_matrices['SELECT']
             self.viewer.slice_.to_show_aux = ''
