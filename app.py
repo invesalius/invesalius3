@@ -80,7 +80,7 @@ USER_LOG_DIR = os.path.join(USER_INV_DIR, u'logs')
 
 # ------------------------------------------------------------------
 
-if sys.platform == 'linux2':
+if sys.platform in ('linux2', 'win32'):
     try:
         tmp_var = wx.GetXDisplay
     except AttributeError:

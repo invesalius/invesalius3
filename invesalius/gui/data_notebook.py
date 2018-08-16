@@ -41,6 +41,7 @@ import invesalius.constants as const
 import invesalius.data.slice_ as slice_
 import invesalius.gui.dialogs as dlg
 import invesalius.gui.widgets.listctrl as listmix
+#  import wx.lib.mixins.listctrl as listmix
 import invesalius.utils as ul
 
 
@@ -493,7 +494,7 @@ class MasksListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
         evt.Skip()
 
     def OnItemActivated(self, evt):
-        self.ToggleItem(evt.m_itemIndex)
+        self.ToggleItem(evt.Index)
 
     def OnCheckItem(self, index, flag):
         if flag:
@@ -785,7 +786,7 @@ class SurfacesListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
         # Otherwise the parent's method will be overwritten and other
         # things will stop working, e.g.: OnCheckItem
 
-        last_surface_index = evt.m_itemIndex
+        last_surface_index = evt.Index
         Publisher.sendMessage('Change surface selected',
                                     last_surface_index)
         evt.Skip()
@@ -842,7 +843,7 @@ class SurfacesListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
         evt.Skip()
 
     def OnItemActivated(self, evt):
-        self.ToggleItem(evt.m_itemIndex)
+        self.ToggleItem(evt.Index)
         evt.Skip()
 
     def OnCheckItem(self, index, flag):
@@ -1057,7 +1058,7 @@ class MeasuresListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
         # Otherwise the parent's method will be overwritten and other
         # things will stop working, e.g.: OnCheckItem
 
-        last_index = evt.m_itemIndex
+        last_index = evt.Index
         Publisher.sendMessage('Change measurement selected',
                                     last_index)
         evt.Skip()
@@ -1115,7 +1116,7 @@ class MeasuresListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
         evt.Skip()
 
     def OnItemActivated(self, evt):
-        self.ToggleItem(evt.m_itemIndex)
+        self.ToggleItem(evt.Index)
         evt.Skip()
 
 
@@ -1318,7 +1319,7 @@ class AnnotationsListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
 
 
     def OnItemActivated(self, evt):
-        self.ToggleItem(evt.m_itemIndex)
+        self.ToggleItem(evt.Index)
 
     def OnCheckItem(self, index, flag):
         # TODO: use pubsub to communicate to models

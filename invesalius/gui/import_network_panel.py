@@ -674,7 +674,10 @@ class NodesPanel(wx.Panel):
         self.tree_node.SetColumnWidth(4, 80)
 
         self.hosts[0] = [True, "localhost", "", "invesalius"]
-        index = self.tree_node.InsertStringItem(sys.maxsize, "")
+        try:
+            index = self.tree_node.InsertStringItem(sys.maxsize, "")
+        except (OverflowError, AssertionError):
+            index = self.tree_node.InsertStringItem(sys.maxint, "")
         self.tree_node.SetStringItem(index, 1, "localhost")
         self.tree_node.SetStringItem(index, 2, "")
         self.tree_node.SetStringItem(index, 3, "invesalius")
