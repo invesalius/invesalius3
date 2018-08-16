@@ -376,10 +376,10 @@ class MeasurementManager(object):
 
         msg =  'Update measurement info in GUI',
         Publisher.sendMessage(msg,
-                              (m.index, m.name, m.colour,
-                               density_measure.orientation,
-                               'Density',
-                               '%.3f' % m.value))
+                              index=m.index, name=m.name, colour=m.colour,
+                              location=density_measure.orientation,
+                              type_='Density',
+                              value='%.3f' % m.value)
 
     def OnCloseProject(self):
         self.measures.clean()
@@ -1126,10 +1126,10 @@ class CircleDensityMeasure(CanvasHandlerBase):
         if self._measurement:
             m = self._measurement
             Publisher.sendMessage(msg,
-                                  (m.index, m.name, m.colour,
-                                   self.orientation,
-                                   _('Density Ellipse'),
-                                   '%.3f' % m.value))
+                                  index=m.index, name=m.name, colour=m.colour,
+                                  location= self.orientation,
+                                  type_=_('Density Ellipse'),
+                                  value='%.3f' % m.value)
 
     def set_measurement(self, dm):
         self._measurement = dm

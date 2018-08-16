@@ -624,7 +624,7 @@ class DensityMeasureStyle(DefaultInteractorStyle):
             m.set_point2(pp2)
             m.calc_density()
             _new_measure = True
-            Publisher.sendMessage("Add density measurement", m)
+            Publisher.sendMessage("Add density measurement", density_measure=m)
         elif self.format == 'polygon':
             if self._last_measure is None:
                 m = PolygonDensityMeasure(self.orientation, n)
