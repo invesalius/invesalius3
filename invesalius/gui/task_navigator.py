@@ -239,21 +239,23 @@ class InnerFoldPanel(wx.Panel):
         Publisher.sendMessage('Update trigger state', trigger_state=ctrl.GetValue())
 
     def OnShowObject(self, evt=None, flag=None, obj_name=None):
-        if flag:
-            self.checkobj.Enable(True)
-            self.track_obj = True
-            Publisher.sendMessage('Status target button', status=True)
-        else:
-            self.checkobj.Enable(False)
-            self.checkobj.SetValue(False)
-            self.track_obj = False
-            Publisher.sendMessage('Status target button', status=False)
+        if not evt:
+            if flag:
+                self.checkobj.Enable(True)
+                self.track_obj = True
+                Publisher.sendMessage('Status target button', status=True)
+            else:
+                self.checkobj.Enable(False)
+                self.checkobj.SetValue(False)
+                self.track_obj = False
+                Publisher.sendMessage('Status target button', status=False)
 
         Publisher.sendMessage('Update show object state', state=self.checkobj.GetValue())
 
     def OnVolumeCamera(self, evt=None, target_mode=None):
-        if target_mode is True:
-            self.checkcamera.SetValue(0)
+        if not evt:
+            if target_mode is True:
+                self.checkcamera.SetValue(0)
         Publisher.sendMessage('Update volume camera state', camera_state=self.checkcamera.GetValue())
 
 
@@ -860,7 +862,7 @@ class ObjectRegistrationPanel(wx.Panel):
             self.btn_load.Enable(1)
             if self.obj_fiducials is not None:
                 self.checktrack.Enable(1)
-                Publisher.sendMessage('Enable target button', True)
+                #Publisher.sendMessage('Enable target button', True)
 
     def OnSelectAngleThreshold(self, evt, ctrl):
         Publisher.sendMessage('Update angle threshold', angle=ctrl.GetValue())
@@ -1121,7 +1123,7 @@ class MarkersPanel(wx.Panel):
         self.tgt_index = self.lc.GetFocusedItem()
         self.lc.SetItemBackgroundColour(self.tgt_index, 'RED')
 
-        Publisher.sendMessage('Update target', coord=self.list_coord[self.tgt_index])
+        Publisher.sendMessage('Update target', coord=self.list_coord[self.tgt_index][:6])
         Publisher.sendMessage('Set target transparency', status=True, index=self.tgt_index)
         Publisher.sendMessage('Disable or enable coil tracker', status=True)
         self.OnMenuEditMarkerId('TARGET')
