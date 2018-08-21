@@ -660,7 +660,7 @@ class DensityMeasureStyle(DefaultInteractorStyle):
                 self.viewer.draw_by_slice_number[n].remove(m)
                 m.complete_polygon()
                 self._last_measure = None
-                Publisher.sendMessage("Add density measurement", m)
+                Publisher.sendMessage("Add density measurement", density_measure=m)
                 self.viewer.UpdateCanvas()
 
 
