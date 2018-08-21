@@ -1154,7 +1154,7 @@ class MarkersPanel(wx.Panel):
         # OnDeleteSingleMarker is used for both pubsub and button click events
         # Pubsub is used for fiducial handle and button click for all others
 
-        if marker_id is not None:
+        if not evt:
             if self.lc.GetItemCount():
                 for id_n in range(self.lc.GetItemCount()):
                     item = self.lc.GetItem(id_n, 4)
