@@ -52,7 +52,7 @@ class Trigger(threading.Thread):
     def __bind_events(self):
         Publisher.subscribe(self.OnStylusPLH, 'PLH Stylus Button On')
 
-    def OnStylusPLH(self, pubsuv_evt):
+    def OnStylusPLH(self):
         self.stylusplh = True
 
     def stop(self):
