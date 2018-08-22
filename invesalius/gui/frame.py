@@ -107,6 +107,7 @@ class Frame(wx.Frame):
 
         self.actived_interpolated_slices = main_menu.view_menu
         self.actived_navigation_mode = main_menu.mode_menu
+        self.actived_dbs_mode = main_menu.mode_dbs
 
         # Set menus, status and task bar
         self.SetMenuBar(main_menu)
@@ -494,8 +495,22 @@ class Frame(wx.Frame):
                 self.OnInterpolatedSlices(False)
 
         elif id == const.ID_MODE_NAVIGATION:
+            Publisher.sendMessage('Deactive dbs folder')
+            self.actived_dbs_mode.Check(0)
             st = self.actived_navigation_mode.IsChecked(const.ID_MODE_NAVIGATION)
             self.OnNavigationMode(st)
+
+        elif id == const.ID_MODE_DBS:
+            #
+
+            st = self.actived_dbs_mode.IsChecked()
+            if st:
+                self.OnNavigationMode(st)
+                Publisher.sendMessage('Active dbs folder')
+            else:
+                self.OnNavigationMode(st)
+                Publisher.sendMessage('Deactive dbs folder')
+            self.actived_navigation_mode.Check(const.ID_MODE_NAVIGATION,0)
 
         elif id == const.ID_CROP_MASK:
             self.OnCropMask()
@@ -910,7 +925,10 @@ class MenuBar(wx.MenuBar):
 
         #Mode
         self.mode_menu = mode_menu = wx.Menu()
-        mode_menu.Append(const.ID_MODE_NAVIGATION, _(u'Navigation mode'), "", wx.ITEM_CHECK)
+        nav_menu = wx.Menu()
+        nav_menu.Append(const.ID_MODE_NAVIGATION, _(u'Transcranial Magnetic Stimulation Mode'), "", wx.ITEM_CHECK)
+        self.mode_dbs = nav_menu.Append(const.ID_MODE_DBS, _(u'Deep Brian Stimulation Mode'), "", wx.ITEM_CHECK)
+        mode_menu.Append(-1,_('Navigation Mode'),nav_menu)
 
         v = self.NavigationModeStatus()
         self.mode_menu.Check(const.ID_MODE_NAVIGATION, v)
@@ -953,7 +971,6 @@ class MenuBar(wx.MenuBar):
 
     def NavigationModeStatus(self):
         status = int(ses.Session().mode)
-
         if status == 1:
             return True
         else:

@@ -172,6 +172,15 @@ class InnerFoldPanel(wx.Panel):
         fold_panel.AddFoldPanelWindow(item, mtw, spacing= 0,
                                       leftSpacing=0, rightSpacing=0)
 
+        # Fold 4 - DBS
+
+        self.dbs_item = fold_panel.AddFoldPanel(_("Deep Brain Stimulation"), collapsed=True)
+        dtw = DbsPanel(self.dbs_item) #Atribuir nova var, criar panel
+
+        fold_panel.ApplyCaptionStyle(self.dbs_item, style)
+        fold_panel.AddFoldPanelWindow(self.dbs_item, dtw, spacing= 0,
+                                      leftSpacing=0, rightSpacing=0)
+        self.dbs_item.Hide()
 
         # Check box for camera update in volume rendering during navigation
         tooltip = wx.ToolTip(_("Update camera in volume"))
@@ -220,11 +229,23 @@ class InnerFoldPanel(wx.Panel):
         self.SetSizer(sizer)
         self.Update()
         self.SetAutoLayout(1)
+
+
         
     def __bind_events(self):
         Publisher.subscribe(self.OnCheckStatus, 'Navigation status')
         Publisher.subscribe(self.OnShowObject, 'Update track object state')
         Publisher.subscribe(self.OnVolumeCamera, 'Target navigation mode')
+        Publisher.subscribe(self.teste, "Active dbs folder")
+        Publisher.subscribe(self.teste2, "Deactive dbs folder")
+
+    def teste(self, pubsub_evt): #APAGAR
+        self.dbs_item.Show()
+
+
+    def teste2(self, pubsub_evt): #APAGAR
+        self.dbs_item.Hide()
+
 
     def OnCheckStatus(self, pubsub_evt):
         status = pubsub_evt.data
@@ -258,7 +279,6 @@ class InnerFoldPanel(wx.Panel):
             if evt.data is True:
                 self.checkcamera.SetValue(0)
         Publisher.sendMessage('Update volume camera state', self.checkcamera.GetValue())
-
 
 class NeuronavigationPanel(wx.Panel):
     def __init__(self, parent):
@@ -1312,3 +1332,12 @@ class MarkersPanel(wx.Panel):
             index = self.lc.GetNextSelected(index)
             selection.append(index)
         return selection
+
+class DbsPanel(wx.Panel):
+    def __init__(self, parent):
+        wx.Panel.__init__(self, parent)
+        try:
+            default_colour = wx.SystemSettings.GetColour(wx.SYS_COLOUR_MENUBAR)
+        except AttributeError:
+            default_colour = wx.SystemSettings_GetColour(wx.SYS_COLOUR_MENUBAR)
+
