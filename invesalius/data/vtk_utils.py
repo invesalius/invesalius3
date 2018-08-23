@@ -81,8 +81,7 @@ def ShowProgress(number_of_filters = 1,
         progress[0] = progress[0] + ratio*difference
         # Tell GUI to update progress status value
         if (dialog_type == "GaugeProgress"):
-            Publisher.sendMessage('Update status in GUI',
-                                        (progress[0], label))
+            Publisher.sendMessage('Update status in GUI', value=progress[0], label=label)
         else:
             if (progress[0] >= 99.999):
                 progress[0] = 100

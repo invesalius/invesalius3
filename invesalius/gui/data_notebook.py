@@ -98,20 +98,20 @@ class NotebookPanel(wx.Panel):
                                  'Fold mask page')
 
 
-    def _FoldSurface(self, pubusb_evt):
+    def _FoldSurface(self):
         """
         Fold surface notebook page.
         """
         self.book.SetSelection(1)
 
-    def _FoldMeasure(self, pubsub_evt):
+    def _FoldMeasure(self):
         """
         Fold measure notebook page.
         """
         self.book.SetSelection(2)
 
 
-    def _FoldMask(self, pubsub_evt):
+    def _FoldMask(self):
         """
         Fold mask notebook page.
         """
@@ -334,7 +334,8 @@ class ButtonControlPanel(wx.Panel):
             mask_name, thresh, colour = dialog.GetValue()
             if mask_name:
                 Publisher.sendMessage('Create new mask',
-                                            (mask_name, thresh, colour))
+                                      mask_name=mask_name,
+                                      thresh=thresh, colour=colour)
         dialog.Destroy()
 
     def OnRemove(self):
@@ -343,7 +344,7 @@ class ButtonControlPanel(wx.Panel):
     def OnDuplicate(self):
         selected_items = self.parent.listctrl.GetSelected()
         if selected_items:
-            Publisher.sendMessage('Duplicate masks', selected_items)
+            Publisher.sendMessage('Duplicate masks', mask_indexes=selected_items)
         else:
            dlg.MaskSelectionRequiredForDuplication()
 
@@ -398,7 +399,7 @@ class MasksListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
         selected_items = self.GetSelected()
 
         if selected_items:
-            Publisher.sendMessage('Remove masks', selected_items)
+            Publisher.sendMessage('Remove masks', mask_indexes=selected_items)
         else:
             dlg.MaskSelectionRequiredForRemoval()
             return
@@ -421,8 +422,8 @@ class MasksListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
         if new_dict:
             if index == self.current_index:
                 self.SetItemImage(0, 1)
-                Publisher.sendMessage('Change mask selected', 0)
-                Publisher.sendMessage('Show mask', (0, 1))
+                Publisher.sendMessage('Change mask selected', index=0)
+                Publisher.sendMessage('Show mask', index=0, value=1)
                 Publisher.sendMessage('Refresh viewer')
                 for key in new_dict:
                     if key:
@@ -433,27 +434,26 @@ class MasksListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
                 self.SetItemImage(self.current_index, 1)
 
 
-    def OnCloseProject(self, pubsub_evt):
+    def OnCloseProject(self):
         self.DeleteAllItems()
         self.mask_list_index = {}
 
-    def OnChangeCurrentMask(self, pubsub_evt):
-        mask_index = pubsub_evt.data
+    def OnChangeCurrentMask(self, index):
         try:
-            self.SetItemImage(mask_index, 1)
-            self.current_index = mask_index
+            self.SetItemImage(index, 1)
+            self.current_index = index
         except wx._core.PyAssertionError:
             #in SetItem(): invalid item index in SetItem
             pass
         for key in self.mask_list_index.keys():
-            if key != mask_index:
+            if key != index:
                 self.SetItemImage(key, 0)
 
-    def __hide_current_mask(self, pubsub_evt):
+    def __hide_current_mask(self):
         if self.mask_list_index:
             self.SetItemImage(self.current_index, 0)
 
-    def __show_current_mask(self, pubsub_evt):
+    def __show_current_mask(self):
         if self.mask_list_index:
             self.SetItemImage(self.current_index, 1)
 
@@ -488,7 +488,7 @@ class MasksListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
 
     def OnEditLabel(self, evt):
         Publisher.sendMessage('Change mask name',
-                                   (evt.GetIndex(), evt.GetLabel()))
+                              index=evt.GetIndex(), name=evt.GetLabel())
         evt.Skip()
 
     def OnItemActivated(self, evt):
@@ -499,9 +499,9 @@ class MasksListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
             for key in self.mask_list_index.keys():
                 if key != index:
                     self.SetItemImage(key, 0)
-            Publisher.sendMessage('Change mask selected',index)
+            Publisher.sendMessage('Change mask selected', index=index)
             self.current_index = index
-        Publisher.sendMessage('Show mask', (index, flag))
+        Publisher.sendMessage('Show mask', index=index, value=flag)
 
     def CreateColourBitmap(self, colour):
         """
@@ -536,19 +536,16 @@ class MasksListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
                 #  self.SetItemImage(key, 0)
         #  self.current_index = index
 
-    def AddMask(self, pubsub_evt):
-        index, mask_name, threshold_range, colour = pubsub_evt.data
-        image = self.CreateColourBitmap(colour)
+    def AddMask(self, mask):
+        image = self.CreateColourBitmap(mask.colour)
         image_index = self.imagelist.Add(image)
-        self.mask_list_index[index] = image_index
-        self.InsertNewItem(index, mask_name, str(threshold_range))
+        self.mask_list_index[mask.index] = image_index
+        self.InsertNewItem(mask.index, mask.name, str(mask.threshold_range))
 
-    def EditMaskThreshold(self, pubsub_evt):
-        index, threshold_range = pubsub_evt.data
+    def EditMaskThreshold(self, index, threshold_range):
         self.SetStringItem(index, 2, str(threshold_range))
 
-    def EditMaskColour(self, pubsub_evt):
-        index, colour = pubsub_evt.data
+    def EditMaskColour(self, index, colour):
         image = self.CreateColourBitmap(colour)
         image_index = self.mask_list_index[index]
         self.imagelist.Replace(image_index, image)
@@ -678,7 +675,8 @@ class SurfaceButtonControlPanel(wx.Panel):
         if ok:
             surface_options = dialog.GetValue()
 
-            Publisher.sendMessage('Create surface from index', surface_options)
+            Publisher.sendMessage('Create surface from index',
+                                  surface_parameters=surface_options)
         dialog.Destroy()
 
     def OnRemove(self):
@@ -688,14 +686,14 @@ class SurfaceButtonControlPanel(wx.Panel):
     def OnDuplicate(self):
         selected_items = self.parent.listctrl.GetSelected()
         if selected_items:
-            Publisher.sendMessage('Duplicate surfaces', selected_items)
+            Publisher.sendMessage('Duplicate surfaces', surface_indexes=selected_items)
         else:
            dlg.SurfaceSelectionRequiredForDuplication()
 
     def OnOpenMesh(self):
         filename = dlg.ShowImportMeshFilesDialog()
         if filename:
-            Publisher.sendMessage('Import surface file', filename)
+            Publisher.sendMessage('Import surface file', filename=filename)
 
 
 class SurfacesListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
@@ -744,8 +742,7 @@ class SurfacesListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
         elif (keycode == wx.WXK_DELETE):
             self.RemoveSurfaces()
 
-    def OnHideSurface(self, pubsub_evt):
-        surface_dict = pubsub_evt.data
+    def OnHideSurface(self, surface_dict):
         for key in surface_dict:
             if not surface_dict[key].is_shown:
                 self.SetItemImage(key, False)
@@ -770,11 +767,11 @@ class SurfacesListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
                 old_dict = new_dict
             self.surface_list_index = new_dict
 
-            Publisher.sendMessage('Remove surfaces', selected_items)
+            Publisher.sendMessage('Remove surfaces', surface_indexes=selected_items)
         else:
            dlg.SurfaceSelectionRequiredForRemoval()
 
-    def OnCloseProject(self, pubsub_evt):
+    def OnCloseProject(self):
         self.DeleteAllItems()
         self.surface_list_index = {}
         self.surface_bmp_idx_to_name = {}
@@ -786,7 +783,7 @@ class SurfacesListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
 
         last_surface_index = evt.Index
         Publisher.sendMessage('Change surface selected',
-                                    last_surface_index)
+                              surface_index=last_surface_index)
         evt.Skip()
 
     def GetSelected(self):
@@ -837,7 +834,7 @@ class SurfacesListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
         self.image_gray = Image.open(os.path.join(const.ICON_DIR, "object_colour.jpg"))
 
     def OnEditLabel(self, evt):
-        Publisher.sendMessage('Change surface name', (evt.GetIndex(), evt.GetLabel()))
+        Publisher.sendMessage('Change surface name', index=evt.GetIndex(), name=evt.GetLabel())
         evt.Skip()
 
     def OnItemActivated(self, evt):
@@ -845,38 +842,36 @@ class SurfacesListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
         evt.Skip()
 
     def OnCheckItem(self, index, flag):
-        Publisher.sendMessage('Show surface', (index, flag))
+        Publisher.sendMessage('Show surface', index=index, visibility=flag)
 
-    def OnShowSingle(self, pubsub_evt):
-        index, visibility = pubsub_evt.data
+    def OnShowSingle(self, index, visibility):
         for key in self.surface_list_index.keys():
             if key != index:
                 self.SetItemImage(key, not visibility)
                 Publisher.sendMessage('Show surface',
-                                            (key, not visibility))
+                                      index=key, visibility=not visibility)
         self.SetItemImage(index, visibility)
         Publisher.sendMessage('Show surface',
-                                   (index, visibility))
+                              index=index, visibility=visibility)
 
-    def OnShowMultiple(self, pubsub_evt):
-        index_list, visibility = pubsub_evt.data
+    def OnShowMultiple(self, index_list, visibility):
         for key in self.surface_list_index.keys():
             if key not in index_list:
                 self.SetItemImage(key, not visibility)
                 Publisher.sendMessage('Show surface',
-                                            (key, not visibility))
+                                      index=key, visibility=not visibility)
         for index in index_list:
             self.SetItemImage(index, visibility)
             Publisher.sendMessage('Show surface',
-                                       (index, visibility))
+                                  index=index, visibility=visibility)
 
-    def AddSurface(self, pubsub_evt):
-        index = pubsub_evt.data[0]
-        name = pubsub_evt.data[1]
-        colour = pubsub_evt.data[2]
-        volume = "%.3f"%pubsub_evt.data[3]
-        area = "%.3f"%pubsub_evt.data[4]
-        transparency = "%d%%"%(int(100*pubsub_evt.data[5]))
+    def AddSurface(self, surface):
+        index = surface.index
+        name = surface.name
+        colour = surface.colour
+        volume = "%.3f" % surface.volume
+        area = "%.3f" % surface.area
+        transparency = "%d%%" % (int(100*surface.transparency))
 
         if index not in self.surface_list_index:
             image = self.CreateColourBitmap(colour)
@@ -941,20 +936,18 @@ class SurfacesListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
 
         return wx.BitmapFromImage(wx_image.Scale(16, 16))
 
-    def EditSurfaceTransparency(self, pubsub_evt):
+    def EditSurfaceTransparency(self, surface_index, transparency):
         """
         Set actor transparency (oposite to opacity) according to given actor
         index and value.
         """
-        index, value = pubsub_evt.data
-        self.SetStringItem(index, 4, "%d%%"%(int(value*100)))
+        self.SetStringItem(surface_index, 4, "%d%%"%(int(transparency*100)))
 
-    def EditSurfaceColour(self, pubsub_evt):
+    def EditSurfaceColour(self, surface_index, colour):
         """
         """
-        index, colour = pubsub_evt.data
         image = self.CreateColourBitmap(colour)
-        image_index = self.surface_list_index[index]
+        image_index = self.surface_list_index[surface_index]
         self.imagelist.Replace(image_index, image)
         self.Refresh()
 
@@ -1007,15 +1000,14 @@ class MeasuresListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
         elif (keycode == wx.WXK_DELETE):
             self.RemoveMeasurements()
 
-    def OnRemoveGUIMeasure(self, pubsub_evt):
-        idx = pubsub_evt.data
-        self.DeleteItem(idx)
+    def OnRemoveGUIMeasure(self, measure_index):
+        self.DeleteItem(measure_index)
 
         old_dict = self._list_index
         new_dict = {}
         j = 0
         for i in old_dict:
-            if i != idx:
+            if i != measure_index:
                 new_dict[j] = old_dict[i]
                 j+=1
         self._list_index = new_dict
@@ -1041,12 +1033,12 @@ class MeasuresListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
                         new_dict[i-1] = old_dict[i]
                 old_dict = new_dict
             self._list_index = new_dict
-            Publisher.sendMessage('Remove measurements', selected_items)
+            Publisher.sendMessage('Remove measurements', indexes=selected_items)
         else:
            dlg.MeasureSelectionRequiredForRemoval()
 
 
-    def OnCloseProject(self, pubsub_evt):
+    def OnCloseProject(self):
         self.DeleteAllItems()
         self._list_index = {}
         self._bmp_idx_to_name = {}
@@ -1057,8 +1049,8 @@ class MeasuresListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
         # things will stop working, e.g.: OnCheckItem
 
         last_index = evt.Index
-        Publisher.sendMessage('Change measurement selected',
-                                    last_index)
+        #  Publisher.sendMessage('Change measurement selected',
+                                    #  last_index)
         evt.Skip()
 
     def GetSelected(self):
@@ -1110,7 +1102,7 @@ class MeasuresListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
 
 
     def OnEditLabel(self, evt):
-        Publisher.sendMessage('Change measurement name', (evt.GetIndex(), evt.GetLabel()))
+        Publisher.sendMessage('Change measurement name', index=evt.GetIndex(), name=evt.GetLabel())
         evt.Skip()
 
     def OnItemActivated(self, evt):
@@ -1119,38 +1111,32 @@ class MeasuresListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
 
 
     def OnCheckItem(self, index, flag):
-        Publisher.sendMessage('Show measurement', (index, flag))
+        Publisher.sendMessage('Show measurement', index=index, visibility=flag)
 
-    def OnShowSingle(self, pubsub_evt):
-        index, visibility = pubsub_evt.data
+    def OnShowSingle(self, index, visibility):
         for key in self._list_index.keys():
             if key != index:
                 self.SetItemImage(key, not visibility)
                 Publisher.sendMessage('Show measurement',
-                                            (key, not visibility))
+                                      index=key, visibility=not visibility)
         self.SetItemImage(index, visibility)
         Publisher.sendMessage('Show measurement',
-                                   (index, visibility))
+                              index=index, visibility=visibility)
 
-    def OnShowMultiple(self, pubsub_evt):
-        index_list, visibility = pubsub_evt.data
+    def OnShowMultiple(self, index_list, visibility):
         for key in self._list_index.keys():
             if key not in index_list:
                 self.SetItemImage(key, not visibility)
                 Publisher.sendMessage('Show measurement',
-                                            (key, not visibility))
+                                      index=key, visibility=not visibility)
         for index in index_list:
             self.SetItemImage(index, visibility)
             Publisher.sendMessage('Show measurement',
-                                       (index, visibility))
+                                  index=index, visibility=visibility)
 
-    def OnLoadData(self, pubsub_evt):
-        try:
-            items_dict, spacing = pubsub_evt.data
-        except ValueError:
-            items_dict = pubsub_evt.data
-        for i in items_dict:
-            m = items_dict[i]
+    def OnLoadData(self, measurement_dict, spacing=(1.0, 1.0, 1.0)):
+        for i in measurement_dict:
+            m = measurement_dict[i]
             image = self.CreateColourBitmap(m.colour)
             image_index = self.imagelist.Add(image)
 
@@ -1169,14 +1155,7 @@ class MeasuresListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
             if not m.visible:
                 self.SetItemImage(i, False)
 
-    def AddItem_(self, pubsub_evt):
-        index = pubsub_evt.data[0]
-        name = pubsub_evt.data[1]
-        colour = pubsub_evt.data[2]
-        location = pubsub_evt.data[3]
-        type_ = pubsub_evt.data[4]
-        value = pubsub_evt.data[5]
-
+    def AddItem_(self, index, name, colour, location, type_, value):
         if index not in self._list_index:
             image = self.CreateColourBitmap(colour)
             image_index = self.imagelist.Add(image)
@@ -1241,12 +1220,11 @@ class MeasuresListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
             wx_image.SetData(new_image.tobytes())
         return wx.BitmapFromImage(wx_image.Scale(16, 16))
 
-    def EditItemColour(self, pubsub_evt):
+    def EditItemColour(self, measure_index, colour):
         """
         """
-        index, colour = pubsub_evt.data
         image = self.CreateColourBitmap(colour)
-        image_index = self._list_index[index]
+        image_index = self._list_index[measure_index]
         self.imagelist.Replace(image_index, image)
         self.Refresh()
 

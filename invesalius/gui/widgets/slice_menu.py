@@ -181,7 +181,7 @@ class SliceMenu(wx.Menu):
 
         Publisher.subscribe(self._check_projection_menu, 'Check projection menu')
     
-    def FirstItemSelect(self, pusub_evt):
+    def FirstItemSelect(self):
         item = self.ID_TO_TOOL_ITEM[self.id_wl_first]
         item.Check(True)
         
@@ -195,13 +195,12 @@ class SliceMenu(wx.Menu):
         #  item = self.ID_TO_TOOL_ITEM[self.id_tiling_first]
         #  item.Check(True)    
         
-    def CheckWindowLevelOther(self, pubsub_evt):
+    def CheckWindowLevelOther(self):
         item = self.ID_TO_TOOL_ITEM[self.other_wl_id]
         item.Check()
 
-    def _check_projection_menu(self, pubsub_evt):
-        p_id = pubsub_evt.data
-        item = self.projection_items[p_id]
+    def _check_projection_menu(self, projection_id):
+        item = self.projection_items[projection_id]
         item.Check()
 
     def OnPopup(self, evt):
@@ -211,11 +210,12 @@ class SliceMenu(wx.Menu):
         if(key in const.WINDOW_LEVEL.keys()):
             window, level = const.WINDOW_LEVEL[key]
             Publisher.sendMessage('Bright and contrast adjustment image',
-                    (window, level))
-            Publisher.sendMessage('Update window level value',\
-               (window, level))
-            Publisher.sendMessage('Update window and level text',\
-                           "WL: %d  WW: %d"%(level, window))
+                    window=window, level=level)
+            Publisher.sendMessage('Update window level value',
+                                  window=window,
+                                  level=level)
+            #  Publisher.sendMessage('Update window and level text',
+                           #  "WL: %d  WW: %d"%(level, window))
             Publisher.sendMessage('Update slice viewer')
 
             #Necessary update the slice plane in the volume case exists
@@ -223,7 +223,7 @@ class SliceMenu(wx.Menu):
 
         elif(key in const.SLICE_COLOR_TABLE.keys()):
             values = const.SLICE_COLOR_TABLE[key]
-            Publisher.sendMessage('Change colour table from background image', values)
+            Publisher.sendMessage('Change colour table from background image', values=values)
             Publisher.sendMessage('Update slice viewer')
 
             if sys.platform.startswith('linux'):
@@ -238,7 +238,7 @@ class SliceMenu(wx.Menu):
 
         elif key in self.plist_presets:
             values = presets.get_wwwl_preset_colours(self.plist_presets[key])
-            Publisher.sendMessage('Change colour table from background image from plist', values)
+            Publisher.sendMessage('Change colour table from background image from plist', values=values)
             Publisher.sendMessage('Update slice viewer')
 
             if sys.platform.startswith('linux'):
@@ -253,12 +253,12 @@ class SliceMenu(wx.Menu):
 
         elif(key in const.IMAGE_TILING.keys()):
             values = const.IMAGE_TILING[key]
-            Publisher.sendMessage('Set slice viewer layout', values)
+            Publisher.sendMessage('Set slice viewer layout', layout=values)
             Publisher.sendMessage('Update slice viewer')
 
         elif key in PROJECTIONS_ID:
             pid = PROJECTIONS_ID[key]
-            Publisher.sendMessage('Set projection type', pid)
+            Publisher.sendMessage('Set projection type', projection_id=pid)
             Publisher.sendMessage('Reload actual slice')
 
         elif key == _('Custom'):
@@ -290,7 +290,7 @@ class SliceMenu(wx.Menu):
         if self.cdialog:
             self.cdialog.Hide()
 
-    def _close(self, pubsub_evt):
+    def _close(self):
         if self.cdialog:
             self.cdialog.Destroy()
             self.cdialog = None

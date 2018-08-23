@@ -219,10 +219,9 @@ class Slice(with_metaclass(utils.Singleton, object)):
             buffer_.discard_vtk_mask()
             buffer_.discard_mask()
 
-    def OnRemoveMasks(self, pubsub_evt):
-        selected_items = pubsub_evt.data
+    def OnRemoveMasks(self, mask_indexes):
         proj = Project()
-        for item in selected_items:
+        for item in mask_indexes:
             proj.RemoveMask(item)
 
             # if the deleted mask is the current mask, cleans the current mask
@@ -234,14 +233,13 @@ class Slice(with_metaclass(utils.Singleton, object)):
                     buffer_.discard_vtk_mask()
                     buffer_.discard_mask()
 
-                Publisher.sendMessage('Show mask', (item, 0))
+                Publisher.sendMessage('Show mask', index=item, value=False)
                 Publisher.sendMessage('Reload actual slice')
 
-    def OnDuplicateMasks(self, pubsub_evt):
-        selected_items = pubsub_evt.data
+    def OnDuplicateMasks(self, mask_indexes):
         proj = Project()
         mask_dict = proj.mask_dict
-        for index in selected_items:
+        for index in mask_indexes:
             original_mask = mask_dict[index]
             # compute copy name
             name = original_mask.name
@@ -251,34 +249,32 @@ class Slice(with_metaclass(utils.Singleton, object)):
             copy_mask = original_mask.copy(new_name)
             self._add_mask_into_proj(copy_mask)
 
-    def OnEnableStyle(self, pubsub_evt):
-        state = pubsub_evt.data
-        if (state in const.SLICE_STYLES):
-            new_state = self.interaction_style.AddState(state)
-            Publisher.sendMessage('Set slice interaction style', new_state)
-        self.state = state
+    def OnEnableStyle(self, style):
+        if (style in const.SLICE_STYLES):
+            new_state = self.interaction_style.AddState(style)
+            Publisher.sendMessage('Set slice interaction style', style=new_state)
+        self.state = style
 
-    def OnDisableStyle(self, pubsub_evt):
-        state = pubsub_evt.data
-        if (state in const.SLICE_STYLES):
-            new_state = self.interaction_style.RemoveState(state)
-            Publisher.sendMessage('Set slice interaction style', new_state)
+    def OnDisableStyle(self, style):
+        if (style in const.SLICE_STYLES):
+            new_state = self.interaction_style.RemoveState(style)
+            Publisher.sendMessage('Set slice interaction style', style=new_state)
 
-            if (state == const.SLICE_STATE_EDITOR):
+            if (style == const.SLICE_STATE_EDITOR):
                 Publisher.sendMessage('Set interactor default cursor')
             self.state = new_state
 
-    def OnDisableActualStyle(self, pubsub_evt):
+    def OnDisableActualStyle(self):
         actual_state = self.interaction_style.GetActualState()
         if actual_state != const.STATE_DEFAULT:
             new_state = self.interaction_style.RemoveState(actual_state)
-            Publisher.sendMessage('Set slice interaction style', new_state)
+            Publisher.sendMessage('Set slice interaction style', style=new_state)
 
             #  if (actual_state == const.SLICE_STATE_EDITOR):
                 #  Publisher.sendMessage('Set interactor default cursor')
             self.state = new_state
 
-    def OnCloseProject(self, pubsub_evt):
+    def OnCloseProject(self):
         self.CloseProject()
 
     def CloseProject(self):
@@ -310,39 +306,32 @@ class Slice(with_metaclass(utils.Singleton, object)):
 
         Publisher.sendMessage('Select first item from slice menu')
 
-    def __set_current_mask_threshold_limits(self, pubsub_evt):
-        thresh_min = pubsub_evt.data[0]
-        thresh_max  = pubsub_evt.data[1]
+    def __set_current_mask_threshold_limits(self, threshold_range):
+        thresh_min = threshold_range[0]
+        thresh_max = threshold_range[1]
         if self.current_mask:
             index = self.current_mask.index
             self.SetMaskEditionThreshold(index, (thresh_min, thresh_max))
 
-    def __add_mask(self, pubsub_evt):
-        mask_name = pubsub_evt.data
+    def __add_mask(self, mask_name):
         self.create_new_mask(name=mask_name)
         self.SetMaskColour(self.current_mask.index, self.current_mask.colour)
 
-    def __add_mask_thresh(self, pubsub_evt):
-        mask_name = pubsub_evt.data[0]
-        thresh = pubsub_evt.data[1]
-        colour = pubsub_evt.data[2]
+    def __add_mask_thresh(self, mask_name, thresh, colour):
         self.create_new_mask(name=mask_name, threshold_range=thresh, colour=colour)
         self.SetMaskColour(self.current_mask.index, self.current_mask.colour)
         self.SelectCurrentMask(self.current_mask.index)
         Publisher.sendMessage('Reload actual slice')
 
-    def __select_current_mask(self, pubsub_evt):
-        mask_index = pubsub_evt.data
-        self.SelectCurrentMask(mask_index)
+    def __select_current_mask(self, index):
+        self.SelectCurrentMask(index)
     
-    def __set_current_mask_edition_threshold(self, evt_pubsub):
+    def __set_current_mask_edition_threshold(self, threshold_range):
         if self.current_mask:
-            threshold_range = evt_pubsub.data
             index = self.current_mask.index
             self.SetMaskEditionThreshold(index, threshold_range)
 
-    def __set_current_mask_threshold(self, evt_pubsub):
-        threshold_range = evt_pubsub.data
+    def __set_current_mask_threshold(self, threshold_range):
         index = self.current_mask.index
         self.num_gradient += 1
         self.current_mask.matrix[:] = 0
@@ -379,8 +368,7 @@ class Slice(with_metaclass(utils.Singleton, object)):
         if to_reload:
             Publisher.sendMessage('Reload actual slice')
 
-    def __set_current_mask_threshold_actual_slice(self, evt_pubsub):
-        threshold_range = evt_pubsub.data
+    def __set_current_mask_threshold_actual_slice(self, threshold_range):
         index = self.current_mask.index
         for orientation in self.buffer_slices:
             self.buffer_slices[orientation].discard_vtk_mask()
@@ -391,44 +379,41 @@ class Slice(with_metaclass(utils.Singleton, object)):
 
         Publisher.sendMessage('Reload actual slice')
 
-    def __set_current_mask_colour(self, pubsub_evt):
+    def __set_current_mask_colour(self, colour):
         # "if" is necessary because wx events are calling this before any mask
         # has been created
         if self.current_mask:
-            colour_wx = pubsub_evt.data
-            colour_vtk = [c/255.0 for c in colour_wx]
+            colour_vtk = [c/255.0 for c in colour]
             self.SetMaskColour(self.current_mask.index, colour_vtk)
 
-    def __set_mask_name(self, pubsub_evt):
-        index, name = pubsub_evt.data
+    def __set_mask_name(self, index, name):
         self.SetMaskName(index, name)
 
-    def __show_mask(self, pubsub_evt):
+    def __show_mask(self, index, value):
         # "if" is necessary because wx events are calling this before any mask
         # has been created
         if self.current_mask:
-            index, value = pubsub_evt.data
             self.ShowMask(index, value)
             if not value:
-                Publisher.sendMessage('Select mask name in combo', -1)
+                Publisher.sendMessage('Select mask name in combo', index=-1)
 
             if self._type_projection != const.PROJECTION_NORMAL:
                 self.SetTypeProjection(const.PROJECTION_NORMAL)
                 Publisher.sendMessage('Reload actual slice')
 
-    def __hide_current_mask(self, pubsub_evt):
+    def __hide_current_mask(self):
         if self.current_mask:
             index = self.current_mask.index
             value = False
-            Publisher.sendMessage('Show mask', (index, value))
+            Publisher.sendMessage('Show mask', index=index, value=value)
 
-    def __show_current_mask(self, pubsub_evt):
+    def __show_current_mask(self):
         if self.current_mask:
             index = self.current_mask.index
             value = True
-            Publisher.sendMessage('Show mask', (index, value))
+            Publisher.sendMessage('Show mask', index=index, value=value)
 
-    def __clean_current_mask(self, pubsub_evt):
+    def __clean_current_mask(self):
         if self.current_mask:
             self.current_mask.clean()
             for buffer_ in self.buffer_slices.values():
@@ -844,8 +829,8 @@ class Slice(with_metaclass(utils.Singleton, object)):
         (r,g,b) = colour[:3]
         colour_wx = [r*255, g*255, b*255]
         Publisher.sendMessage('Change mask colour in notebook',
-                                    (index, (r,g,b)))
-        Publisher.sendMessage('Set GUI items colour', colour_wx)
+                                    index=index, colour=(r,g,b))
+        Publisher.sendMessage('Set GUI items colour', colour=colour_wx)
         if update:
             # Updating mask colour on vtkimagedata.
             for buffer_ in self.buffer_slices.values():
@@ -899,8 +884,8 @@ class Slice(with_metaclass(utils.Singleton, object)):
 
             # Update data notebook (GUI)
             Publisher.sendMessage('Set mask threshold in notebook',
-                                (self.current_mask.index,
-                                self.current_mask.threshold_range))
+                                  index=self.current_mask.index,
+                                  threshold_range=self.current_mask.threshold_range)
         else:
             proj = Project()
             proj.mask_dict[index].threshold_range = threshold_range
@@ -936,32 +921,30 @@ class Slice(with_metaclass(utils.Singleton, object)):
                               "SAGITAL": SliceBuffer()}
 
         Publisher.sendMessage('Set mask threshold in notebook',
-                                    (index,
-                                        self.current_mask.threshold_range))
+                              index=index,
+                              threshold_range=self.current_mask.threshold_range)
         Publisher.sendMessage('Set threshold values in gradient',
-                                    self.current_mask.threshold_range)
-        Publisher.sendMessage('Select mask name in combo', index)
+                              threshold_range=self.current_mask.threshold_range)
+        Publisher.sendMessage('Select mask name in combo', index=index)
         Publisher.sendMessage('Update slice viewer')
     #---------------------------------------------------------------------------
 
-    def CreateSurfaceFromIndex(self, pubsub_evt):
-        surface_parameters = pubsub_evt.data
-
+    def CreateSurfaceFromIndex(self, surface_parameters):
         proj = Project()
         mask = proj.mask_dict[surface_parameters['options']['index']]
 
         self.do_threshold_to_all_slices(mask)
-        Publisher.sendMessage('Create surface', (self, mask, surface_parameters))
+        Publisher.sendMessage('Create surface',
+                              slice_=self, mask=mask,
+                              surface_parameters=surface_parameters)
 
     def GetOutput(self):
         return self.blend_filter.GetOutput()
 
-    def _set_projection_type(self, pubsub_evt):
-        tprojection = pubsub_evt.data
-        self.SetTypeProjection(tprojection)
+    def _set_projection_type(self, projection_id):
+        self.SetTypeProjection(projection_id)
 
-    def _set_interpolation_method(self, pubsub_evt):
-        interp_method = pubsub_evt.data
+    def _set_interpolation_method(self, interp_method):
         self.SetInterpolationMethod(interp_method)
 
     def SetTypeProjection(self, tprojection):
@@ -970,15 +953,15 @@ class Slice(with_metaclass(utils.Singleton, object)):
                 Publisher.sendMessage('Hide current mask')
 
             if tprojection == const.PROJECTION_NORMAL:
-                Publisher.sendMessage('Show MIP interface', False)
+                Publisher.sendMessage('Show MIP interface', flag=False)
             else:
-                Publisher.sendMessage('Show MIP interface', True)
+                Publisher.sendMessage('Show MIP interface', flag=True)
 
             self._type_projection = tprojection
             for buffer_ in self.buffer_slices.values():
                 buffer_.discard_buffer()
 
-            Publisher.sendMessage('Check projection menu', tprojection)
+            Publisher.sendMessage('Check projection menu', projection_id=tprojection)
 
     def SetInterpolationMethod(self, interp_method):
         if self.interp_method != interp_method:
@@ -987,8 +970,7 @@ class Slice(with_metaclass(utils.Singleton, object)):
                 buffer_.discard_buffer()
             Publisher.sendMessage('Reload actual slice')
 
-    def UpdateWindowLevelBackground(self, pubsub_evt):
-        window, level = pubsub_evt.data
+    def UpdateWindowLevelBackground(self, window, level):
         self.window_width = window
         self.window_level = level
 
@@ -1004,8 +986,7 @@ class Slice(with_metaclass(utils.Singleton, object)):
 
         Publisher.sendMessage('Reload actual slice')
 
-    def UpdateColourTableBackground(self, pubsub_evt):
-        values = pubsub_evt.data
+    def UpdateColourTableBackground(self, values):
         self.from_= OTHER
         self.number_of_colours= values[0]
         self.saturation_range = values[1]
@@ -1015,16 +996,16 @@ class Slice(with_metaclass(utils.Singleton, object)):
             buffer_.discard_vtk_image()
         Publisher.sendMessage('Reload actual slice')
 
-    def UpdateColourTableBackgroundPlist(self, pubsub_evt):
-        self.values = pubsub_evt.data
+    def UpdateColourTableBackgroundPlist(self, values):
+        self.values = values
         self.from_= PLIST
         for buffer_ in self.buffer_slices.values():
             buffer_.discard_vtk_image()
 
         Publisher.sendMessage('Reload actual slice')
 
-    def UpdateColourTableBackgroundWidget(self, pubsub_evt):
-        self.nodes = pubsub_evt.data
+    def UpdateColourTableBackgroundWidget(self, nodes):
+        self.nodes = nodes
         self.from_= WIDGET
         for buffer_ in self.buffer_slices.values():
             if self._type_projection in (const.PROJECTION_NORMAL,
@@ -1045,8 +1026,7 @@ class Slice(with_metaclass(utils.Singleton, object)):
 
         Publisher.sendMessage('Reload actual slice')
 
-    def UpdateSlice3D(self, pubsub_evt):
-        widget, orientation = pubsub_evt.data
+    def UpdateSlice3D(self, widget, orientation):
         img = self.buffer_slices[orientation].vtk_image
         original_orientation = Project().original_orientation
         cast = vtk.vtkImageCast()
@@ -1125,15 +1105,12 @@ class Slice(with_metaclass(utils.Singleton, object)):
 
         ## update gui related to mask
         Publisher.sendMessage('Add mask',
-                                    (mask.index,
-                                     mask.name,
-                                     mask.threshold_range,
-                                     mask.colour))
+                              mask=mask)
 
         if show:
             self.current_mask = mask
-            Publisher.sendMessage('Show mask', (mask.index, 1))
-            Publisher.sendMessage('Change mask selected', mask.index)
+            Publisher.sendMessage('Show mask', index=mask.index, value=True)
+            Publisher.sendMessage('Change mask selected', index=mask.index)
             Publisher.sendMessage('Update slice viewer')
 
     def do_ww_wl(self, image):
@@ -1336,9 +1313,8 @@ class Slice(with_metaclass(utils.Singleton, object)):
 
         return blend_imagedata.GetOutput()
 
-    def _do_boolean_op(self, pubsub_evt):
-        op, m1, m2 = pubsub_evt.data
-        self.do_boolean_op(op, m1, m2)
+    def _do_boolean_op(self, operation, mask1, mask2):
+        self.do_boolean_op(operation, mask1, mask2)
 
 
     def do_boolean_op(self, op, m1, m2):
@@ -1449,7 +1425,7 @@ class Slice(with_metaclass(utils.Singleton, object)):
         self.q_orientation = np.array((1, 0, 0, 0))
         self.center = [(s * d/2.0) for (d, s) in zip(self.matrix.shape[::-1], self.spacing)]
 
-        self.__clean_current_mask(None)
+        self.__clean_current_mask()
         if self.current_mask:
             self.current_mask.matrix[:] = 0
             self.current_mask.was_edited = False
@@ -1459,7 +1435,7 @@ class Slice(with_metaclass(utils.Singleton, object)):
 
         Publisher.sendMessage('Reload actual slice')
 
-    def __undo_edition(self, pub_evt):
+    def __undo_edition(self):
         buffer_slices = self.buffer_slices
         actual_slices = {"AXIAL": buffer_slices["AXIAL"].index,
                          "CORONAL": buffer_slices["CORONAL"].index,
@@ -1471,7 +1447,7 @@ class Slice(with_metaclass(utils.Singleton, object)):
             self.buffer_slices[o].discard_vtk_mask()
         Publisher.sendMessage('Reload actual slice')
 
-    def __redo_edition(self, pub_evt):
+    def __redo_edition(self):
         buffer_slices = self.buffer_slices
         actual_slices = {"AXIAL": buffer_slices["AXIAL"].index,
                          "CORONAL": buffer_slices["CORONAL"].index,
@@ -1487,8 +1463,7 @@ class Slice(with_metaclass(utils.Singleton, object)):
         self.matrix_filename = filename
         self.matrix = np.memmap(filename, shape=shape, dtype=dtype, mode='r+')
 
-    def OnFlipVolume(self, pubsub_evt):
-        axis = pubsub_evt.data
+    def OnFlipVolume(self, axis):
         if axis == 0:
             self.matrix[:] = self.matrix[::-1]
         elif axis == 1:
@@ -1499,8 +1474,8 @@ class Slice(with_metaclass(utils.Singleton, object)):
         for buffer_ in self.buffer_slices.values():
             buffer_.discard_buffer()
 
-    def OnSwapVolumeAxes(self, pubsub_evt):
-        axis0, axis1 = pubsub_evt.data
+    def OnSwapVolumeAxes(self, axes):
+        axis0, axis1 = axes
         self.matrix = self.matrix.swapaxes(axis0, axis1)
         if (axis0, axis1) == (2, 1):
             self.spacing = self.spacing[1], self.spacing[0], self.spacing[2]
@@ -1512,20 +1487,17 @@ class Slice(with_metaclass(utils.Singleton, object)):
         for buffer_ in self.buffer_slices.values():
             buffer_.discard_buffer()
 
-    def OnExportMask(self, pubsub_evt):
-        pass
-        ##imagedata = self.current_mask.imagedata
-        #imagedata = self.imagedata
-        #filename, filetype = pubsub_evt.data
-        #if (filetype == const.FILETYPE_IMAGEDATA):
-            #iu.Export(imagedata, filename)
+    def OnExportMask(self, filename, filetype):
+        imagedata = self.current_mask.imagedata
+        #  imagedata = self.imagedata
+        if (filetype == const.FILETYPE_IMAGEDATA):
+            iu.Export(imagedata, filename)
 
-    def _fill_holes_auto(self, pubsub_evt):
-        data = pubsub_evt.data
-        target = data['target']
-        conn = data['conn']
-        orientation = data['orientation']
-        size = data['size']
+    def _fill_holes_auto(self, parameters):
+        target = parameters['target']
+        conn = parameters['conn']
+        orientation = parameters['orientation']
+        size = parameters['size']
 
         if target == '2D':
             index = self.buffer_slices[orientation].index

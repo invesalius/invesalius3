@@ -136,7 +136,7 @@ class Box(with_metaclass(utils.Singleton, object)):
         self.axial[const.AXIAL_RIGHT] = [[self.xf + (self.xs/2), self.yi, self.zi],\
                                          [self.xf + (self.xs/2), self.yf, self.zf]]
 
-        Publisher.sendMessage('Update crop limits into gui', self.GetLimits())
+        Publisher.sendMessage('Update crop limits into gui', limits=self.GetLimits())
 
 
     def GetLimits(self):

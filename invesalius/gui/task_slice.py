@@ -190,7 +190,7 @@ class InnerTaskPanel(wx.Panel):
                                "overwrite": overwrite}
 
                 Publisher.sendMessage('Create surface from index',
-                                      {'method': method, 'options': srf_options})
+                                      surface_parameters={'method': method, 'options': srf_options})
                 Publisher.sendMessage('Fold surface task')
 
         else:
@@ -218,7 +218,9 @@ class InnerTaskPanel(wx.Panel):
             mask_name, thresh, colour = dialog.GetValue()
             if mask_name:
                 Publisher.sendMessage('Create new mask',
-                                            (mask_name, thresh, colour))
+                                      mask_name=mask_name,
+                                      thresh=thresh,
+                                      colour=colour)
         dialog.Destroy()
 
     def GetMaskSelected(self):
@@ -371,23 +373,21 @@ class InnerFoldPanel(wx.Panel):
 
         if self.__id_editor == id:
             if closed:
-                Publisher.sendMessage('Disable style', const.SLICE_STATE_EDITOR)
+                Publisher.sendMessage('Disable style', style=const.SLICE_STATE_EDITOR)
                 self.last_style = None
             else:
-                Publisher.sendMessage('Enable style',
-                                      const.SLICE_STATE_EDITOR)
+                Publisher.sendMessage('Enable style', style=const.SLICE_STATE_EDITOR)
                 self.last_style = const.SLICE_STATE_EDITOR
         elif self.__id_watershed == id:
             if closed:
-                Publisher.sendMessage('Disable style',
-                                      const.SLICE_STATE_WATERSHED)
+                Publisher.sendMessage('Disable style', style=const.SLICE_STATE_WATERSHED)
                 self.last_style = None
             else:
-                Publisher.sendMessage('Enable style', const.SLICE_STATE_WATERSHED)
-                Publisher.sendMessage('Show help message', 'Mark the object and the background')
+                Publisher.sendMessage('Enable style', style=const.SLICE_STATE_WATERSHED)
+                #  Publisher.sendMessage('Show help message', 'Mark the object and the background')
                 self.last_style = const.SLICE_STATE_WATERSHED
         else:
-            Publisher.sendMessage('Disable style', const.SLICE_STATE_EDITOR)
+            Publisher.sendMessage('Disable style', style=const.SLICE_STATE_EDITOR)
             self.last_style = None
 
         evt.Skip()
@@ -399,18 +399,18 @@ class InnerFoldPanel(wx.Panel):
         self.fold_panel.SetMinSize((self.fold_panel.GetSize()[0], sizeNeeded ))
         self.fold_panel.SetSize((self.fold_panel.GetSize()[0], sizeNeeded))
 
-    def OnRetrieveStyle(self, pubsub_evt):
+    def OnRetrieveStyle(self):
         if (self.last_style == const.SLICE_STATE_EDITOR):
-            Publisher.sendMessage('Enable style', const.SLICE_STATE_EDITOR)
+            Publisher.sendMessage('Enable style', style=const.SLICE_STATE_EDITOR)
 
-    def OnDisableStyle(self, pubsub_evt):
+    def OnDisableStyle(self):
         if (self.last_style == const.SLICE_STATE_EDITOR):
-            Publisher.sendMessage('Disable style', const.SLICE_STATE_EDITOR)
+            Publisher.sendMessage('Disable style', style=const.SLICE_STATE_EDITOR)
 
-    def OnCloseProject(self, pubsub_evt):
+    def OnCloseProject(self):
         self.fold_panel.Expand(self.fold_panel.GetFoldPanel(0))
 
-    def OnColapsePanel(self, pubsub_evt):
+    def OnColapsePanel(self, panel_id):
         panel_seg_id = {
             const.ID_THRESHOLD_SEGMENTATION: 0,
             const.ID_MANUAL_SEGMENTATION: 1,
@@ -418,7 +418,7 @@ class InnerFoldPanel(wx.Panel):
         }
 
         try:
-            _id = panel_seg_id[pubsub_evt.data]
+            _id = panel_seg_id[panel_id]
             self.fold_panel.Expand(self.fold_panel.GetFoldPanel(_id))
         except KeyError:
             pass
@@ -515,7 +515,7 @@ class MaskProperties(wx.Panel):
         Publisher.subscribe(self.OnCloseProject, 'Close project data')
         Publisher.subscribe(self.SetThresholdValues2, 'Set threshold values')
 
-    def OnCloseProject(self, pubsub_evt):
+    def OnCloseProject(self):
         self.CloseProject()
 
     def CloseProject(self):
@@ -526,9 +526,8 @@ class MaskProperties(wx.Panel):
         for i in range(n-1, -1, -1):
             self.combo_thresh.Delete(i)
 
-    def OnRemoveMasks(self, pubsub_evt):
-        list_index = pubsub_evt.data
-        for i in list_index:
+    def OnRemoveMasks(self, mask_indexes):
+        for i in mask_indexes:
             self.combo_mask_name.Delete(i)
 
         if self.combo_mask_name.IsEmpty():
@@ -543,20 +542,18 @@ class MaskProperties(wx.Panel):
         self.combo_mask_name.Bind(wx.EVT_COMBOBOX, self.OnComboName)
         self.button_colour.Bind(csel.EVT_COLOURSELECT, self.OnSelectColour)
 
-    def SelectMaskName(self, pubsub_evt):
-        index = pubsub_evt.data
+    def SelectMaskName(self, index):
         if index >= 0:
             self.combo_mask_name.SetSelection(index)
         else:
             self.combo_mask_name.SetValue('')
 
-    def ChangeMaskName(self, pubsub_evt):
-        index, name = pubsub_evt.data
+    def ChangeMaskName(self, index, name):
         self.combo_mask_name.SetString(index, name)
         self.combo_mask_name.Refresh()
 
-    def SetThresholdValues(self, pubsub_evt):
-        thresh_min, thresh_max = pubsub_evt.data
+    def SetThresholdValues(self, threshold_range):
+        thresh_min, thresh_max = threshold_range
         self.bind_evt_gradient = False
         self.gradient.SetMinValue(thresh_min)
         self.gradient.SetMaxValue(thresh_max)
@@ -572,8 +569,8 @@ class MaskProperties(wx.Panel):
             self.combo_thresh.SetSelection(index)
             Project().threshold_modes[_("Custom")] = (thresh_min, thresh_max)
 
-    def SetThresholdValues2(self, pubsub_evt):
-        thresh_min, thresh_max = pubsub_evt.data
+    def SetThresholdValues2(self, threshold_range):
+        thresh_min, thresh_max = threshold_range
         self.gradient.SetMinValue(thresh_min)
         self.gradient.SetMaxValue(thresh_max)
         thresh = (thresh_min, thresh_max)
@@ -586,17 +583,16 @@ class MaskProperties(wx.Panel):
             self.combo_thresh.SetSelection(index)
             Project().threshold_modes[_("Custom")] = (thresh_min, thresh_max)
 
-    def SetItemsColour(self, evt_pubsub):
-        colour = evt_pubsub.data
+    def SetItemsColour(self, colour):
         self.gradient.SetColour(colour)
         self.button_colour.SetColour(colour)
 
-    def AddMask(self, evt_pubsub):
+    def AddMask(self, mask):
         if self.combo_mask_name.IsEmpty():
             self.Enable()
-        mask_name = evt_pubsub.data[1]
-        mask_thresh = evt_pubsub.data[2]
-        mask_colour = [int(c*255) for c in evt_pubsub.data[3]]
+        mask_name = mask.name
+        mask_thresh = mask.threshold_range
+        mask_colour = [int(c*255) for c in mask.colour]
         index = self.combo_mask_name.Append(mask_name)
         #  self.combo_mask_name.SetSelection(index)
         #  self.button_colour.SetColour(mask_colour)
@@ -607,8 +603,7 @@ class MaskProperties(wx.Panel):
         x = self.combo_mask_name.GetSelection()
         return self.combo_mask_name.GetSelection()
 
-    def SetThresholdModes(self, pubsub_evt):
-        (thresh_modes_names, default_thresh) = pubsub_evt.data
+    def SetThresholdModes(self, thresh_modes_names, default_thresh):
         self.combo_thresh.SetItems(thresh_modes_names)
         self.threshold_modes_names = thresh_modes_names
         proj = Project()
@@ -635,17 +630,17 @@ class MaskProperties(wx.Panel):
         self.gradient.SetMinValue(thresh_min)
         self.gradient.SetMaxValue(thresh_max)
 
-    def SetThresholdBounds(self, pubsub_evt):
-        thresh_min = pubsub_evt.data[0]
-        thresh_max  = pubsub_evt.data[1]
+    def SetThresholdBounds(self, threshold_range):
+        thresh_min = threshold_range[0]
+        thresh_max = threshold_range[1]
         self.gradient.SetMinRange(thresh_min)
         self.gradient.SetMaxRange(thresh_max)
 
     def OnComboName(self, evt):
         mask_name = evt.GetString()
         mask_index = evt.GetSelection()
-        Publisher.sendMessage('Change mask selected', mask_index)
-        Publisher.sendMessage('Show mask', (mask_index, True))
+        Publisher.sendMessage('Change mask selected', index=mask_index)
+        Publisher.sendMessage('Show mask', index=mask_index, value=True)
 
     def OnComboThresh(self, evt):
         (thresh_min, thresh_max) = Project().threshold_modes[evt.GetString()]
@@ -658,7 +653,7 @@ class MaskProperties(wx.Panel):
         thresh_min = self.gradient.GetMinValue()
         thresh_max = self.gradient.GetMaxValue()
         Publisher.sendMessage('Set threshold values',
-                                    (thresh_min, thresh_max))
+                              threshold_range=(thresh_min, thresh_max))
         session = ses.Session()
         session.ChangeProject()
 
@@ -666,14 +661,14 @@ class MaskProperties(wx.Panel):
         thresh_min = self.gradient.GetMinValue()
         thresh_max = self.gradient.GetMaxValue()
         Publisher.sendMessage('Changing threshold values',
-                                    (thresh_min, thresh_max))
+                                    threshold_range=(thresh_min, thresh_max))
         session = ses.Session()
         session.ChangeProject()
 
     def OnSelectColour(self, evt):
         colour = evt.GetValue()[:3]
         self.gradient.SetColour(colour)
-        Publisher.sendMessage('Change mask colour', colour)
+        Publisher.sendMessage('Change mask colour', colour=colour)
 
 class EditionTools(wx.Panel):
     def __init__(self, parent):
@@ -778,25 +773,23 @@ class EditionTools(wx.Panel):
         Publisher.subscribe(self.SetGradientColour, 'Add mask')
         Publisher.subscribe(self._set_brush_size, 'Set edition brush size')
 
-    def ChangeMaskColour(self, pubsub_evt):
-        colour = pubsub_evt.data
+    def ChangeMaskColour(self, colour):
         self.gradient_thresh.SetColour(colour)
 
-    def SetGradientColour(self, pubsub_evt):
-        vtk_colour = pubsub_evt.data[3]
-        wx_colour = [c*255 for c in vtk_colour]
+    def SetGradientColour(self, mask):
+        wx_colour = [c*255 for c in mask.colour]
         self.gradient_thresh.SetColour(wx_colour)
 
-    def SetThresholdValues(self, pubsub_evt):
-        thresh_min, thresh_max = pubsub_evt.data
+    def SetThresholdValues(self, threshold_range):
+        thresh_min, thresh_max = threshold_range
         self.bind_evt_gradient = False
         self.gradient_thresh.SetMinValue(thresh_min)
         self.gradient_thresh.SetMaxValue(thresh_max)
         self.bind_evt_gradient = True
 
-    def SetThresholdBounds(self, pubsub_evt):
-        thresh_min = pubsub_evt.data[0]
-        thresh_max  = pubsub_evt.data[1]
+    def SetThresholdBounds(self, threshold_range):
+        thresh_min = threshold_range[0]
+        thresh_max = threshold_range[1]
         self.gradient_thresh.SetMinRange(thresh_min)
         self.gradient_thresh.SetMaxRange(thresh_max)
         self.gradient_thresh.SetMinValue(thresh_min)
@@ -807,7 +800,7 @@ class EditionTools(wx.Panel):
         thresh_max = self.gradient_thresh.GetMaxValue()
         if self.bind_evt_gradient:
             Publisher.sendMessage('Set edition threshold values',
-                                     (thresh_min, thresh_max))
+                                  threshold_range=(thresh_min, thresh_max))
 
     def OnMenu(self, evt):
         SQUARE_BMP = wx.Bitmap(os.path.join(const.ICON_DIR, "brush_square.jpg"), wx.BITMAP_TYPE_JPEG)
@@ -820,22 +813,21 @@ class EditionTools(wx.Panel):
 
         self.btn_brush_format.SetBitmap(bitmap[evt.GetId()])
 
-        Publisher.sendMessage('Set brush format', brush[evt.GetId()])
+        Publisher.sendMessage('Set brush format', cursor_format=brush[evt.GetId()])
 
     def OnBrushSize(self, evt):
         """ """
         # FIXME: Using wx.EVT_SPINCTRL in MacOS it doesnt capture changes only
         # in the text ctrl - so we are capturing only changes on text
         # Strangelly this is being called twice
-        Publisher.sendMessage('Set edition brush size',self.spin.GetValue())
+        Publisher.sendMessage('Set edition brush size', size=self.spin.GetValue())
 
-    def _set_brush_size(self, pubsub_evt):
-        size = pubsub_evt.data
+    def _set_brush_size(self, size):
         self.spin.SetValue(size)
 
     def OnComboBrushOp(self, evt):
         brush_op_id = evt.GetSelection()
-        Publisher.sendMessage('Set edition operation', brush_op_id)
+        Publisher.sendMessage('Set edition operation', operation=brush_op_id)
         if brush_op_id == const.BRUSH_THRESH:
             self.gradient_thresh.Enable()
         else:
@@ -959,25 +951,24 @@ class WatershedTool(EditionTools):
     def __bind_pubsub_evt(self):
         Publisher.subscribe(self._set_brush_size, 'Set watershed brush size')
 
-    def ChangeMaskColour(self, pubsub_evt):
-        colour = pubsub_evt.data
+    def ChangeMaskColour(self, colour):
         self.gradient_thresh.SetColour(colour)
 
-    def SetGradientColour(self, pubsub_evt):
-        vtk_colour = pubsub_evt.data[3]
+    def SetGradientColour(self, mask):
+        vtk_colour = mask.colour
         wx_colour = [c*255 for c in vtk_colour]
         self.gradient_thresh.SetColour(wx_colour)
 
-    def SetThresholdValues(self, pubsub_evt):
-        thresh_min, thresh_max = pubsub_evt.data
+    def SetThresholdValues(self, threshold_range):
+        thresh_min, thresh_max = threshold_range
         self.bind_evt_gradient = False
         self.gradient_thresh.SetMinValue(thresh_min)
         self.gradient_thresh.SetMaxValue(thresh_max)
         self.bind_evt_gradient = True
 
-    def SetThresholdBounds(self, pubsub_evt):
-        thresh_min = pubsub_evt.data[0]
-        thresh_max  = pubsub_evt.data[1]
+    def SetThresholdBounds(self, threshold_range):
+        thresh_min = threshold_range[0]
+        thresh_max  = threshold_range[1]
         self.gradient_thresh.SetMinRange(thresh_min)
         self.gradient_thresh.SetMaxRange(thresh_max)
         self.gradient_thresh.SetMinValue(thresh_min)
@@ -994,30 +985,29 @@ class WatershedTool(EditionTools):
 
         self.btn_brush_format.SetBitmap(bitmap[evt.GetId()])
 
-        Publisher.sendMessage('Set watershed brush format', brush[evt.GetId()])
+        Publisher.sendMessage('Set watershed brush format', brush_format=brush[evt.GetId()])
 
     def OnBrushSize(self, evt):
         """ """
         # FIXME: Using wx.EVT_SPINCTRL in MacOS it doesnt capture changes only
         # in the text ctrl - so we are capturing only changes on text
         # Strangelly this is being called twice
-        Publisher.sendMessage('Set watershed brush size',self.spin.GetValue())
+        Publisher.sendMessage('Set watershed brush size', size=self.spin.GetValue())
 
-    def _set_brush_size(self, pubsub_evt):
-        size = pubsub_evt.data
+    def _set_brush_size(self, size):
         self.spin.SetValue(size)
 
     def OnComboBrushOp(self, evt):
         brush_op = self.combo_brush_op.GetValue()
-        Publisher.sendMessage('Set watershed operation', brush_op)
+        Publisher.sendMessage('Set watershed operation', operation=brush_op)
 
     def OnCheckOverwriteMask(self, evt):
         value = self.check_box.GetValue()
-        Publisher.sendMessage('Set overwrite mask', value)
+        Publisher.sendMessage('Set overwrite mask', flag=value)
 
     def OnCheckWWWL(self, evt):
         value = self.ww_wl_cbox.GetValue()
-        Publisher.sendMessage('Set use ww wl', value)
+        Publisher.sendMessage('Set use ww wl', use_ww_wl=value)
 
     def OnConfig(self, evt):
         from invesalius.data.styles import WatershedConfig

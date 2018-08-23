@@ -266,8 +266,8 @@ class TextPanel(wx.Panel):
         self.root = tree.AddRoot(_("InVesalius Database"))
         self.tree = tree
 
-    def SelectSeries(self, pubsub_evt):
-        group_index = pubsub_evt.data
+    def SelectSeries(self, group_index):
+        pass
 
     def Populate(self, pubsub_evt):
         tree = self.tree

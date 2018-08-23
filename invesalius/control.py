@@ -108,40 +108,38 @@ class Controller():
 
         Publisher.subscribe(self.OnSaveProject, 'Save project')
 
-    def SetBitmapSpacing(self, pubsub_evt):
+    def SetBitmapSpacing(self, spacing):
         proj = prj.Project()
-        proj.spacing = pubsub_evt.data
+        proj.spacing = spacing
 
-    def OnCancelImport(self, pubsub_evt):
+    def OnCancelImport(self):
         #self.cancel_import = True
         Publisher.sendMessage('Hide import panel')
 
 
-    def OnCancelImportBitmap(self, pubsub_evt):
+    def OnCancelImportBitmap(self):
         #self.cancel_import = True
         Publisher.sendMessage('Hide import bitmap panel')
 
 ###########################
 ###########################
 
-    def OnShowDialogImportDirectory(self, pubsub_evt):
+    def OnShowDialogImportDirectory(self):
         self.ShowDialogImportDirectory()
 
-    def OnShowDialogImportOtherFiles(self, pubsub_evt):
-        id_type = pubsub_evt.data
+    def OnShowDialogImportOtherFiles(self, id_type):
         self.ShowDialogImportOtherFiles(id_type)
 
-    def OnShowDialogOpenProject(self, pubsub_evt):
+    def OnShowDialogOpenProject(self):
         self.ShowDialogOpenProject()
 
-    def OnShowDialogSaveProject(self, pubsub_evt):
-        saveas = pubsub_evt.data
-        self.ShowDialogSaveProject(saveas)
+    def OnShowDialogSaveProject(self, save_as):
+        self.ShowDialogSaveProject(save_as)
 
-    def OnShowDialogCloseProject(self, pubsub_evt):
+    def OnShowDialogCloseProject(self):
         self.ShowDialogCloseProject()
 
-    def OnShowBitmapFile(self, pubsub_evt):
+    def OnShowBitmapFile(self):
         self.ShowDialogImportBitmapFile()
 ###########################
 
@@ -155,10 +153,10 @@ class Controller():
             if answer:
                 self.ShowDialogSaveProject()
             self.CloseProject()
-            #Publisher.sendMessage("Enable state project", False)
+            #Publisher.sendMessage("Enable state project", state=False)
             Publisher.sendMessage('Set project name')
             Publisher.sendMessage("Stop Config Recording")
-            Publisher.sendMessage("Set slice interaction style", const.STATE_DEFAULT)
+            Publisher.sendMessage("Set slice interaction style", style=const.STATE_DEFAULT)
 
         # Import TIFF, BMP, JPEG or PNG
         dirpath = dialog.ShowImportBitmapDirDialog(self.frame)
@@ -179,10 +177,10 @@ class Controller():
             if answer:
                 self.ShowDialogSaveProject()
             self.CloseProject()
-            #Publisher.sendMessage("Enable state project", False)
+            #Publisher.sendMessage("Enable state project", state=False)
             Publisher.sendMessage('Set project name')
             Publisher.sendMessage("Stop Config Recording")
-            Publisher.sendMessage("Set slice interaction style", const.STATE_DEFAULT)
+            Publisher.sendMessage("Set slice interaction style", style=const.STATE_DEFAULT)
         # Import project
         dirpath = dialog.ShowImportDirDialog(self.frame)
         if dirpath and not os.listdir(dirpath):
@@ -200,17 +198,17 @@ class Controller():
             if answer:
                 self.ShowDialogSaveProject()
             self.CloseProject()
-            # Publisher.sendMessage("Enable state project", False)
+            # Publisher.sendMessage("Enable state project", state=False)
             Publisher.sendMessage('Set project name')
             Publisher.sendMessage("Stop Config Recording")
-            Publisher.sendMessage("Set slice interaction style", const.STATE_DEFAULT)
+            Publisher.sendMessage("Set slice interaction style", style=const.STATE_DEFAULT)
 
         # Warning for limited support to Analyze format
         if id_type == const.ID_ANALYZE_IMPORT:
             dialog.ImportAnalyzeWarning()
 
         filepath = dialog.ShowImportOtherFilesDialog(id_type)
-        Publisher.sendMessage("Open other files", filepath)
+        Publisher.sendMessage("Open other files", filepath=filepath)
 
     def ShowDialogOpenProject(self):
         # Offer to save current project if necessary
@@ -265,21 +263,21 @@ class Controller():
                 if not answer:
                     utils.debug("Close without changes")
                     self.CloseProject()
-                    Publisher.sendMessage("Enable state project", False)
+                    Publisher.sendMessage("Enable state project", state=False)
                     Publisher.sendMessage('Set project name')
                     Publisher.sendMessage("Stop Config Recording")
                 elif answer == 1:
                     self.ShowDialogSaveProject()
                     utils.debug("Save changes and close")
                     self.CloseProject()
-                    Publisher.sendMessage("Enable state project", False)
+                    Publisher.sendMessage("Enable state project", state=False)
                     Publisher.sendMessage('Set project name')
                     Publisher.sendMessage("Stop Config Recording")
                 elif answer == -1:
                     utils.debug("Cancel")
             else:
                 self.CloseProject()
-                Publisher.sendMessage("Enable state project", False)
+                Publisher.sendMessage("Enable state project", state=False)
                 Publisher.sendMessage('Set project name')
                 Publisher.sendMessage("Stop Config Recording")
 
@@ -288,13 +286,10 @@ class Controller():
 
 
 ###########################
-    def OnOpenProject(self, pubsub_evt):
-        path = pubsub_evt.data
-        self.OpenProject(path)
+    def OnOpenProject(self, filepath):
+        self.OpenProject(filepath)
 
-    def OnOpenRecentProject(self, pubsub_evt):
-        filepath = pubsub_evt.data
-
+    def OnOpenRecentProject(self, filepath):
         if os.path.exists(filepath):
             session = ses.Session()
             st = session.project_status
@@ -325,17 +320,16 @@ class Controller():
         self.Slice.window_width = proj.window
 
         Publisher.sendMessage('Update threshold limits list',
-                                   proj.threshold_range)
+                              threshold_range=proj.threshold_range)
 
         self.LoadProject()
 
         session = ses.Session()
         session.OpenProject(filepath)
-        Publisher.sendMessage("Enable state project", True)
+        Publisher.sendMessage("Enable state project", state=True)
 
-    def OnSaveProject(self, pubsub_evt):
-        path = pubsub_evt.data
-        self.SaveProject(path)
+    def OnSaveProject(self, filepath):
+        self.SaveProject(filepath)
 
     def SaveProject(self, path=None, compress=False):
         Publisher.sendMessage('Begin busy cursor')
@@ -356,7 +350,7 @@ class Controller():
         Publisher.sendMessage('End busy cursor')
 
     def CloseProject(self):
-        Publisher.sendMessage('Set slice interaction style', const.STATE_DEFAULT)
+        Publisher.sendMessage('Set slice interaction style', style=const.STATE_DEFAULT)
         Publisher.sendMessage('Hide content panel')
         Publisher.sendMessage('Close project data')
 
@@ -390,8 +384,7 @@ class Controller():
         reader.SetDirectoryPath(path)
         Publisher.sendMessage('End busy cursor')
 
-    def Progress(self, evt):
-        data = evt.data
+    def Progress(self, data):
         if (data):
             message = _("Loading file %d of %d ...")%(data[0],data[1])
             if not(self.progress_dialog):
@@ -408,19 +401,17 @@ class Controller():
                 self.progress_dialog.Close()
                 self.progress_dialog = None
 
-    def OnLoadImportPanel(self, evt):
-        patient_series = evt.data
+    def OnLoadImportPanel(self, patient_series):
         ok = self.LoadImportPanel(patient_series)
         if ok:
             Publisher.sendMessage('Show import panel')
             Publisher.sendMessage("Show import panel in frame")
             self.img_type = 1
 
-    def OnLoadImportBitmapPanel(self, evt):
-        data = evt.data
+    def OnLoadImportBitmapPanel(self, data):
         ok = self.LoadImportBitmapPanel(data)
         if ok:
-            Publisher.sendMessage('Show import bitmap panel in frame')            
+            Publisher.sendMessage('Show import bitmap panel in frame')
             self.img_type = 2
             #Publisher.sendMessage("Show import panel in invesalius.gui.frame") as frame
 
@@ -430,7 +421,7 @@ class Controller():
             #first_patient = patient_series[0]
             #Publisher.sendMessage("Load bitmap preview", first_patient)
         if  data:
-            Publisher.sendMessage("Load import bitmap panel", data)
+            Publisher.sendMessage("Load import bitmap panel", data=data)
             return True
         else:
             dialog.ImportInvalidFiles("Bitmap")
@@ -439,9 +430,9 @@ class Controller():
 
     def LoadImportPanel(self, patient_series):
         if patient_series and isinstance(patient_series, list):
-            Publisher.sendMessage("Load import panel", patient_series)
+            Publisher.sendMessage("Load import panel", dicom_groups=patient_series)
             first_patient = patient_series[0]
-            Publisher.sendMessage("Load dicom preview", first_patient)
+            Publisher.sendMessage("Load dicom preview", patient=first_patient)
             return True
         else:
             dialog.ImportInvalidFiles("DICOM")
@@ -450,10 +441,8 @@ class Controller():
 
     #----------- to import by command line ---------------------------------------------------
 
-    def OnImportMedicalImages(self, pubsub_evt):
-        directory = pubsub_evt.data['directory']
-        gui = pubsub_evt.data['gui']
-        self.ImportMedicalImages(directory, gui)
+    def OnImportMedicalImages(self, directory, use_gui):
+        self.ImportMedicalImages(directory, use_gui)
 
     def ImportMedicalImages(self, directory, gui=True):
         patients_groups = dcm.GetDicomGroups(directory)
@@ -484,19 +473,17 @@ class Controller():
             # OPTION 4: Nothing...
 
         self.LoadProject()
-        Publisher.sendMessage("Enable state project", True)
+        Publisher.sendMessage("Enable state project", state=True)
 
-    def OnImportGroup(self, pubsub_evt):
-        group = pubsub_evt.data['group']
-        gui = pubsub_evt.data['gui']
-        self.ImportGroup(group, gui)
+    def OnImportGroup(self, group, use_gui):
+        self.ImportGroup(group, use_gui)
 
     def ImportGroup(self, group, gui=True):
         matrix, matrix_filename, dicom = self.OpenDicomGroup(group, 0, [0, 0], gui=gui)
         self.CreateDicomProject(dicom, matrix, matrix_filename)
 
         self.LoadProject()
-        Publisher.sendMessage("Enable state project", True)
+        Publisher.sendMessage("Enable state project", state=True)
 
     #-------------------------------------------------------------------------------------
 
@@ -514,21 +501,23 @@ class Controller():
         self.Slice.spacing = proj.spacing
 
         Publisher.sendMessage('Load slice to viewer',
-                        (proj.mask_dict))
+                              mask_dict=proj.mask_dict)
 
         
         Publisher.sendMessage('Load slice plane') 
 
-        Publisher.sendMessage('Bright and contrast adjustment image',\
-                                   (proj.window, proj.level))
-        Publisher.sendMessage('Update window level value',\
-                                    (proj.window, proj.level))
+        Publisher.sendMessage('Bright and contrast adjustment image',
+                              window=proj.window,
+                              level=proj.level)
+        Publisher.sendMessage('Update window level value',
+                              window=proj.window,
+                              level=proj.level)
 
-        Publisher.sendMessage('Set project name', proj.name)
+        Publisher.sendMessage('Set project name', proj_name=proj.name)
         Publisher.sendMessage('Load surface dict',
-                                    proj.surface_dict)
+                                surface_dict=proj.surface_dict)
         Publisher.sendMessage('Hide surface items',
-                                     proj.surface_dict)
+                              surface_dict=proj.surface_dict)
         self.LoadImagedataInfo() # TODO: where do we insert this <<<?
         
         Publisher.sendMessage('Show content panel')
@@ -537,13 +526,11 @@ class Controller():
         if len(proj.mask_dict):
             mask_index = len(proj.mask_dict) -1
             for m in proj.mask_dict.values():
-                Publisher.sendMessage('Add mask',
-                                           (m.index, m.name,
-                                            m.threshold_range, m.colour))
+                Publisher.sendMessage('Add mask', mask=m)
                 if m.is_shown:
                     self.Slice.current_mask = proj.mask_dict[mask_index]
-                    Publisher.sendMessage('Show mask', (m.index, True))
-                    Publisher.sendMessage('Change mask selected', m.index)
+                    Publisher.sendMessage('Show mask', index=m.index, value=True)
+                    Publisher.sendMessage('Change mask selected', index=m.index)
         else:
             mask_name = const.MASK_NAME_PATTERN % (1,)
 
@@ -554,14 +541,17 @@ class Controller():
 
             colour = const.MASK_COLOUR[0]
             Publisher.sendMessage('Create new mask',
-                                       (mask_name, thresh, colour))
+                                  mask_name=mask_name,
+                                  thresh=thresh,
+                                  colour=colour)
 
         Publisher.sendMessage('Load measurement dict',
-                                    (proj.measurement_dict, self.Slice.spacing))
+                              measurement_dict=proj.measurement_dict,
+                              spacing=self.Slice.spacing)
 
-        Publisher.sendMessage(('Set scroll position', 'AXIAL'),proj.matrix_shape[0]/2)
-        Publisher.sendMessage(('Set scroll position', 'SAGITAL'),proj.matrix_shape[1]/2)
-        Publisher.sendMessage(('Set scroll position', 'CORONAL'),proj.matrix_shape[2]/2)
+        Publisher.sendMessage(('Set scroll position', 'AXIAL'), index=proj.matrix_shape[0]/2)
+        Publisher.sendMessage(('Set scroll position', 'SAGITAL'),index=proj.matrix_shape[1]/2)
+        Publisher.sendMessage(('Set scroll position', 'CORONAL'),index=proj.matrix_shape[2]/2)
         
         Publisher.sendMessage('End busy cursor')
 
@@ -675,8 +665,7 @@ class Controller():
 
         dirpath = session.CreateProject(filename)
 
-    def OnOpenBitmapFiles(self, pubsub_evt):
-        rec_data = pubsub_evt.data
+    def OnOpenBitmapFiles(self, rec_data):
         bmp_data = bmp.BitmapData()
 
         if bmp_data.IsAllBitmapSameSize():
@@ -686,12 +675,11 @@ class Controller():
             self.CreateBitmapProject(bmp_data, rec_data, matrix, matrix_filename)
 
             self.LoadProject()
-            Publisher.sendMessage("Enable state project", True)
+            Publisher.sendMessage("Enable state project", state=True)
         else:
             dialogs.BitmapNotSameSize()
 
     def OpenBitmapFiles(self, bmp_data, rec_data):
-
        name = rec_data[0]
        orientation = rec_data[1]
        sp_x = float(rec_data[2])
@@ -747,20 +735,20 @@ class Controller():
        self.Slice.window_width = float(self.matrix.max())
 
        scalar_range = int(self.matrix.min()), int(self.matrix.max())
-       Publisher.sendMessage('Update threshold limits list', scalar_range)
+       Publisher.sendMessage('Update threshold limits list',
+                             threshold_range=scalar_range)
 
        return self.matrix, self.filename#, dicom
 
 
-    def OnOpenDicomGroup(self, pubsub_evt):
-        group, interval, file_range = pubsub_evt.data
+    def OnOpenDicomGroup(self, group, interval, file_range):
         matrix, matrix_filename, dicom = self.OpenDicomGroup(group, interval, file_range, gui=True)
         self.CreateDicomProject(dicom, matrix, matrix_filename)
         self.LoadProject()
-        Publisher.sendMessage("Enable state project", True)
+        Publisher.sendMessage("Enable state project", state=True)
 
-    def OnOpenOtherFiles(self, pubsub_evt):
-        filepath = utils.decode(pubsub_evt.data, const.FS_ENCODE)
+    def OnOpenOtherFiles(self, filepath):
+        filepath = utils.decode(filepath, const.FS_ENCODE)
         if not(filepath) == None:
             name = filepath.rpartition('\\')[-1].split('.')
 
@@ -770,7 +758,7 @@ class Controller():
                 matrix, matrix_filename = self.OpenOtherFiles(group)
                 self.CreateOtherProject(str(name[0]), matrix, matrix_filename)
                 self.LoadProject()
-                Publisher.sendMessage("Enable state project", True)
+                Publisher.sendMessage("Enable state project", state=True)
             else:
                 dialog.ImportInvalidFiles(ftype="Others")
 
@@ -861,7 +849,8 @@ class Controller():
 
         scalar_range = int(self.matrix.min()), int(self.matrix.max())
 
-        Publisher.sendMessage('Update threshold limits list', scalar_range)
+        Publisher.sendMessage('Update threshold limits list',
+                              threshold_range=scalar_range)
 
         return self.matrix, self.filename, dicom
 
@@ -886,7 +875,8 @@ class Controller():
         self.Slice.window_width = ww
 
         scalar_range = int(scalar_range[0]), int(scalar_range[1])
-        Publisher.sendMessage('Update threshold limits list', scalar_range)
+        Publisher.sendMessage('Update threshold limits list',
+                              threshold_range=scalar_range)
         return self.matrix, self.filename
 
     def LoadImagedataInfo(self):
@@ -909,24 +899,20 @@ class Controller():
             [a,b] = default_threshold
             default_threshold = (a,b)
         Publisher.sendMessage('Set threshold modes',
-                                (thresh_modes,default_threshold))
+                              thresh_modes_names=thresh_modes,
+                              default_thresh=default_threshold)
 
-    def LoadRaycastingPreset(self, pubsub_evt=None):
-        if pubsub_evt:
-            label = pubsub_evt.data
-        else:
-            return
-        
-        if label != const.RAYCASTING_OFF_LABEL:
-            if label in const.RAYCASTING_FILES.keys():
+    def LoadRaycastingPreset(self, preset_name):
+        if preset_name != const.RAYCASTING_OFF_LABEL:
+            if preset_name in const.RAYCASTING_FILES.keys():
                 path = os.path.join(const.RAYCASTING_PRESETS_DIRECTORY,
-                                    const.RAYCASTING_FILES[label])
+                                    const.RAYCASTING_FILES[preset_name])
             else:
                 path = os.path.join(const.RAYCASTING_PRESETS_DIRECTORY,
-                                        label+".plist")
+                                        preset_name+".plist")
                 if not os.path.isfile(path):
                     path = os.path.join(const.USER_RAYCASTING_PRESETS_DIRECTORY,
-                                    label+".plist")
+                                    preset_name+".plist")
             preset = plistlib.readPlist(path)
             prj.Project().raycasting_preset = preset
             # Notify volume
@@ -936,17 +922,16 @@ class Controller():
             prj.Project().raycasting_preset = 0
             Publisher.sendMessage('Update raycasting preset')
 
-    def SaveRaycastingPreset(self, pubsub_evt):
-        preset_name = pubsub_evt.data
+    def SaveRaycastingPreset(self, preset_name):
         preset = prj.Project().raycasting_preset
         preset['name'] = preset_name
         preset_dir = os.path.join(const.USER_RAYCASTING_PRESETS_DIRECTORY,
                                   preset_name + '.plist')
         plistlib.writePlist(preset, preset_dir)
 
-    def ShowBooleanOpDialog(self, pubsub_evt):
+    def ShowBooleanOpDialog(self):
         dlg = dialogs.MaskBooleanDialog(prj.Project().mask_dict)
         dlg.Show()
 
-    def ApplyReorientation(self, pubsub_evt):
+    def ApplyReorientation(self):
         self.Slice.apply_reorientation()

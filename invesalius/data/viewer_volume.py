@@ -264,8 +264,7 @@ class Viewer(wx.Panel):
         Publisher.subscribe(self.OnUpdateAngleThreshold, 'Update angle threshold')
         Publisher.subscribe(self.OnUpdateDistThreshold, 'Update dist threshold')
 
-    def SetStereoMode(self, pubsub_evt):
-        mode = pubsub_evt.data
+    def SetStereoMode(self, mode):
         ren_win = self.interactor.GetRenderWindow()
 
         if mode == const.STEREO_OFF:
@@ -293,23 +292,19 @@ class Viewer(wx.Panel):
 
         self.interactor.Render()
 
-    def _check_ball_reference(self, pubsub_evt):
-        st = pubsub_evt.data
-        if st == const.SLICE_STATE_CROSS:
+    def _check_ball_reference(self, style):
+        if style == const.SLICE_STATE_CROSS:
             self._mode_cross = True
             self._check_and_set_ball_visibility()
             self.interactor.Render()
 
-    def _uncheck_ball_reference(self, pubsub_evt):
-        st = pubsub_evt.data
-        if st == const.SLICE_STATE_CROSS:
+    def _uncheck_ball_reference(self, style):
+        if style == const.SLICE_STATE_CROSS:
             self._mode_cross = False
             self.RemoveBallReference()
             self.interactor.Render()
 
-    def OnSensors(self, pubsub_evt):
-        probe_id = pubsub_evt.data[0]
-        ref_id = pubsub_evt.data[1]
+    def OnSensors(self, probe_id, ref_id):
         if not self.sen1:
             self.CreateSensorID()
 
@@ -345,39 +340,36 @@ class Viewer(wx.Panel):
 
         self.interactor.Render()
 
-    def OnRemoveSensorsID(self, pubsub_evt):
+    def OnRemoveSensorsID(self):
         if self.sen1:
             self.ren.RemoveActor(self.sen1.actor)
             self.ren.RemoveActor(self.sen2.actor)
             self.sen1 = self.sen2 = False
             self.interactor.Render()
 
-    def OnShowSurface(self, pubsub_evt):
-        index, value = pubsub_evt.data
-        if value:
+    def OnShowSurface(self, index, visibility):
+        if visibility:
             self._to_show_ball += 1
         else:
             self._to_show_ball -= 1
         self._check_and_set_ball_visibility()
 
-    def OnStartSeed(self, pubsub_evt):
-        index = pubsub_evt.data
+    def OnStartSeed(self):
         self.seed_points = []
 
-    def OnEndSeed(self, pubsub_evt):
+    def OnEndSeed(self):
         Publisher.sendMessage("Create surface from seeds",
-                                    self.seed_points)
+                              seeds=self.seed_points)
 
-    def OnExportPicture(self, pubsub_evt):
-        id, filename, filetype = pubsub_evt.data
-        if id == const.VOLUME:
+    def OnExportPicture(self, orientation, filename, filetype):
+        if orientation == const.VOLUME:
             Publisher.sendMessage('Begin busy cursor')
             if _has_win32api:
                 utils.touch(filename)
                 win_filename = win32api.GetShortPathName(filename)
-                self._export_picture(id, win_filename, filetype)
+                self._export_picture(orientation, win_filename, filetype)
             else:
-                self._export_picture(id, filename, filetype)
+                self._export_picture(orientation, filename, filetype)
             Publisher.sendMessage('End busy cursor')
 
     def _export_picture(self, id, filename, filetype):
@@ -419,7 +411,7 @@ class Viewer(wx.Panel):
                 wx.MessageBox(_("InVesalius was not able to export this picture"), _("Export picture error"))
 
 
-    def OnCloseProject(self, pubsub_evt):
+    def OnCloseProject(self):
         if self.raycasting_volume:
             self.raycasting_volume = False
 
@@ -436,22 +428,21 @@ class Viewer(wx.Panel):
         self.SetInteractorStyle(const.STATE_DEFAULT)
         self._last_state = const.STATE_DEFAULT
 
-    def OnHideText(self, pubsub_evt):
+    def OnHideText(self):
         self.text.Hide()
         self.interactor.Render()
 
-    def OnShowText(self, pubsub_evt):
+    def OnShowText(self):
         if self.on_wl:
             self.text.Show()
             self.interactor.Render()
 
-    def AddActors(self, pubsub_evt):
+    def AddActors(self, actors):
         "Inserting actors"
-        actors = pubsub_evt.data[0]
         for actor in actors:
             self.ren.AddActor(actor)
 
-    def RemoveVolume(self, pub_evt):
+    def RemoveVolume(self):
         volumes = self.ren.GetVolumes()
         if (volumes.GetNumberOfItems()):
             self.ren.RemoveVolume(volumes.GetLastProp())
@@ -459,9 +450,8 @@ class Viewer(wx.Panel):
             self._to_show_ball -= 1
             self._check_and_set_ball_visibility()
 
-    def RemoveActors(self, pubsub_evt):
+    def RemoveActors(self, actors):
         "Remove a list of actors"
-        actors = pubsub_evt.data[0]
         for actor in actors:
             self.ren.RemoveActor(actor)
 
@@ -501,25 +491,22 @@ class Viewer(wx.Panel):
         actor = self.points_reference.pop(point)
         self.ren.RemoveActor(actor)
 
-    def AddMarker(self, pubsub_evt):
+    def AddMarker(self, ball_id, size, colour, coord):
         """
         Markers created by navigation tools and rendered in volume viewer.
         """
-        self.ball_id = pubsub_evt.data[0]
-        ballsize = pubsub_evt.data[1]
-        ballcolour = pubsub_evt.data[2][:3]
-        coord = pubsub_evt.data[3]
+        self.ball_id = ball_id
         x, y, z = bases.flip_x(coord)
 
         ball_ref = vtk.vtkSphereSource()
-        ball_ref.SetRadius(ballsize)
+        ball_ref.SetRadius(size)
         ball_ref.SetCenter(x, y, z)
 
         mapper = vtk.vtkPolyDataMapper()
         mapper.SetInputConnection(ball_ref.GetOutputPort())
 
         prop = vtk.vtkProperty()
-        prop.SetColor(ballcolour)
+        prop.SetColor(colour)
 
         #adding a new actor for the present ball
         self.staticballs.append(vtk.vtkActor())
@@ -532,38 +519,37 @@ class Viewer(wx.Panel):
         #self.UpdateRender()
         self.Refresh()
 
-    def HideAllMarkers(self, pubsub_evt):
-        ballid = pubsub_evt.data
+    def HideAllMarkers(self, indexes):
+        ballid = indexes
         for i in range(0, ballid):
             self.staticballs[i].SetVisibility(0)
         self.UpdateRender()
 
-    def ShowAllMarkers(self, pubsub_evt):
-        ballid = pubsub_evt.data
+    def ShowAllMarkers(self, indexes):
+        ballid = indexes
         for i in range(0, ballid):
             self.staticballs[i].SetVisibility(1)
         self.UpdateRender()
 
-    def RemoveAllMarkers(self, pubsub_evt):
-        ballid = pubsub_evt.data
+    def RemoveAllMarkers(self, indexes):
+        ballid = indexes
         for i in range(0, ballid):
             self.ren.RemoveActor(self.staticballs[i])
         self.staticballs = []
         self.UpdateRender()
 
-    def RemoveMarker(self, pubsub_evt):
-        index = pubsub_evt.data
+    def RemoveMarker(self, index):
         for i in reversed(index):
             self.ren.RemoveActor(self.staticballs[i])
             del self.staticballs[i]
             self.ball_id = self.ball_id - 1
         self.UpdateRender()
 
-    def BlinkMarker(self, pubsub_evt):
+    def BlinkMarker(self, index):
         if self.timer:
             self.timer.Stop()
             self.staticballs[self.index].SetVisibility(1)
-        self.index = pubsub_evt.data
+        self.index = index
         self.timer = wx.Timer(self)
         self.Bind(wx.EVT_TIMER, self.OnBlinkMarker, self.timer)
         self.timer.Start(500)
@@ -574,31 +560,29 @@ class Viewer(wx.Panel):
         self.Refresh()
         self.timer_count += 1
 
-    def StopBlinkMarker(self, pubsub_evt):
+    def StopBlinkMarker(self, index=None):
         if self.timer:
             self.timer.Stop()
-            if pubsub_evt.data is None:
+            if index is None:
                 self.staticballs[self.index].SetVisibility(1)
                 self.Refresh()
             self.index = False
 
-    def OnTargetMarkerTransparency(self, pubsub_evt):
-        status = pubsub_evt.data[0]
-        index = pubsub_evt.data[1]
+    def OnTargetMarkerTransparency(self, status, index):
         if status:
             self.staticballs[index].GetProperty().SetOpacity(1)
             # self.staticballs[index].GetProperty().SetOpacity(0.4)
         else:
             self.staticballs[index].GetProperty().SetOpacity(1)
 
-    def OnUpdateAngleThreshold(self, pubsub_evt):
-        self.anglethreshold = pubsub_evt.data
+    def OnUpdateAngleThreshold(self, angle):
+        self.anglethreshold = angle
 
-    def OnUpdateDistThreshold(self, pubsub_evt):
-        self.distthreshold = pubsub_evt.data
+    def OnUpdateDistThreshold(self, dist_threshold):
+        self.distthreshold = dist_threshold
 
-    def ActivateTargetMode(self, pubsub_evt):
-        self.target_mode = pubsub_evt.data
+    def ActivateTargetMode(self, evt=None, target_mode=None):
+        self.target_mode = target_mode
         if self.target_coord and self.target_mode:
             self.CreateTargetAim()
 
@@ -691,8 +675,7 @@ class Viewer(wx.Panel):
         else:
             self.DisableCoilTracker()
 
-    def OnUpdateObjectTargetGuide(self, pubsub_evt):
-        coord = pubsub_evt.data[1]
+    def OnUpdateObjectTargetGuide(self, m_img, coord):
         if self.target_coord and self.target_mode:
 
             target_dist = distance.euclidean(coord[0:3],
@@ -811,13 +794,12 @@ class Viewer(wx.Panel):
 
             self.Refresh()
 
-    def OnUpdateTargetCoordinates(self, pubsub_evt):
-        self.target_coord = pubsub_evt.data[0:6]
+    def OnUpdateTargetCoordinates(self, coord):
+        self.target_coord = coord
         self.target_coord[1] = -self.target_coord[1]
         self.CreateTargetAim()
 
-    def OnRemoveTarget(self, pubsub_evt):
-        status = pubsub_evt.data
+    def OnRemoveTarget(self, status):
         if not status:
             self.target_mode = None
             self.target_coord = None
@@ -1108,12 +1090,12 @@ class Viewer(wx.Panel):
             self.ren.RemoveActor(self.ball_actor)
             self.ball_actor = None
 
-    def SetBallReferencePosition(self, pubsub_evt):
+    def SetBallReferencePosition(self, position):
         if self._to_show_ball:
             if not self.ball_actor:
                 self.ActivateBallReference()
 
-            coord = pubsub_evt.data
+            coord = position
             x, y, z = bases.flip_x(coord)
             self.ball_actor.SetPosition(x, y, z)
 
@@ -1198,18 +1180,15 @@ class Viewer(wx.Panel):
 
         # self.ren.AddActor(self.obj_axes)
 
-    def OnNavigationStatus(self, pubsub_evt):
-        self.nav_status = pubsub_evt.data
+    def OnNavigationStatus(self, status):
+        self.nav_status = status
         self.pTarget = self.CenterOfMass()
         if self.obj_actor and self.nav_status:
             self.obj_actor.SetVisibility(self.obj_state)
             if not self.obj_state:
                 self.Refresh()
 
-    def UpdateObjectOrientation(self, pubsub_evt):
-
-        m_img = pubsub_evt.data[0]
-
+    def UpdateObjectOrientation(self, m_img, coord):
         m_img[:3, -1] = np.asmatrix(bases.flip_x_m((m_img[0, -1], m_img[1, -1], m_img[2, -1]))).reshape([3, 1])
 
         m_img_vtk = vtk.vtkMatrix4x4()
@@ -1223,22 +1202,19 @@ class Viewer(wx.Panel):
 
         self.Refresh()
 
-    def UpdateTrackObjectState(self, pubsub_evt):
-        if pubsub_evt.data[0]:
-            self.obj_name = pubsub_evt.data[1]
-
+    def UpdateTrackObjectState(self, evt=None, flag=None, obj_name=None):
+        if flag:
+            self.obj_name = obj_name
             if not self.obj_actor:
                 self.AddObjectActor(self.obj_name)
-
         else:
             if self.obj_actor:
                 self.ren.RemoveActor(self.obj_actor)
                 self.obj_actor = None
-
         self.Refresh()
 
-    def UpdateShowObjectState(self, pubsub_evt):
-        self.obj_state = pubsub_evt.data
+    def UpdateShowObjectState(self, state):
+        self.obj_state = state
         if self.obj_actor and not self.obj_state:
             self.obj_actor.SetVisibility(self.obj_state)
             self.Refresh()
@@ -1371,8 +1347,8 @@ class Viewer(wx.Panel):
             diff_y = mouse_y - self.last_y
             self.last_x, self.last_y = mouse_x, mouse_y
             Publisher.sendMessage('Set raycasting relative window and level',
-                (diff_x, diff_y))
-            Publisher.sendMessage('Refresh raycasting widget points', None)
+                                  diff_wl=diff_x, diff_ww=diff_y)
+            Publisher.sendMessage('Refresh raycasting widget points')
             self.interactor.Render()
 
     def OnWindowLevelClick(self, obj, evt):
@@ -1387,31 +1363,29 @@ class Viewer(wx.Panel):
         if const.RAYCASTING_WWWL_BLUR:
             self.style.EndZoom()
 
-    def OnEnableStyle(self, pubsub_evt):
-        state = pubsub_evt.data
-        if (state in const.VOLUME_STYLES):
-            new_state = self.interaction_style.AddState(state)
+    def OnEnableStyle(self, style):
+        if (style in const.VOLUME_STYLES):
+            new_state = self.interaction_style.AddState(style)
             self.SetInteractorStyle(new_state)
         else:
-            new_state = self.interaction_style.RemoveState(state)
+            new_state = self.interaction_style.RemoveState(style)
             self.SetInteractorStyle(new_state)
 
-    def OnDisableStyle(self, pubsub_evt):
-        state = pubsub_evt.data
-        new_state = self.interaction_style.RemoveState(state)
+    def OnDisableStyle(self, style):
+        new_state = self.interaction_style.RemoveState(style)
         self.SetInteractorStyle(new_state)
 
-    def ResetCamClippingRange(self, pubsub_evt):
+    def ResetCamClippingRange(self):
         self.ren.ResetCamera()
         self.ren.ResetCameraClippingRange()
 
-    def SetVolumeCameraState(self, pubsub_evt):
-        self.camera_state = pubsub_evt.data
+    def SetVolumeCameraState(self, camera_state):
+        self.camera_state = camera_state
 
-    def SetVolumeCamera(self, pubsub_evt):
+    def SetVolumeCamera(self, arg, position):
         if self.camera_state:
             # TODO: exclude dependency on initial focus
-            cam_focus = np.array(bases.flip_x(pubsub_evt.data[1][:3]))
+            cam_focus = np.array(bases.flip_x(position[:3]))
             cam = self.ren.GetActiveCamera()
 
             if self.initial_focus is None:
@@ -1442,8 +1416,7 @@ class Viewer(wx.Panel):
         #self.interactor.Render()
         self.Refresh()
 
-    def OnExportSurface(self, pubsub_evt):
-        filename, filetype = pubsub_evt.data
+    def OnExportSurface(self, filename, filetype):
         if filetype not in (const.FILETYPE_STL,
                             const.FILETYPE_VTP,
                             const.FILETYPE_PLY,
@@ -1487,23 +1460,22 @@ class Viewer(wx.Panel):
             writer.SetInput(renwin)
             writer.Write()
 
-    def OnEnableBrightContrast(self, pubsub_evt):
+    def OnEnableBrightContrast(self):
         style = self.style
         style.AddObserver("MouseMoveEvent", self.OnMove)
         style.AddObserver("LeftButtonPressEvent", self.OnClick)
         style.AddObserver("LeftButtonReleaseEvent", self.OnRelease)
 
-    def OnDisableBrightContrast(self, pubsub_evt):
+    def OnDisableBrightContrast(self):
         style = vtk.vtkInteractorStyleTrackballCamera()
         self.interactor.SetInteractorStyle(style)
         self.style = style
 
-    def OnSetWindowLevelText(self, pubsub_evt):
+    def OnSetWindowLevelText(self, ww, wl):
         if self.raycasting_volume:
-            ww, wl = pubsub_evt.data
             self.text.SetValue("WL: %d  WW: %d"%(wl, ww))
 
-    def OnShowRaycasting(self, pubsub_evt):
+    def OnShowRaycasting(self):
         if not self.raycasting_volume:
             self.raycasting_volume = True
             self._to_show_ball += 1
@@ -1511,7 +1483,7 @@ class Viewer(wx.Panel):
             if self.on_wl:
                 self.text.Show()
 
-    def OnHideRaycasting(self, pubsub_evt):
+    def OnHideRaycasting(self):
         self.raycasting_volume = False
         self.text.Hide()
         self._to_show_ball -= 1
@@ -1524,13 +1496,11 @@ class Viewer(wx.Panel):
         self.interactor.Update()
         evt.Skip()
 
-    def ChangeBackgroundColour(self, pubsub_evt):
-        colour = pubsub_evt.data
+    def ChangeBackgroundColour(self, colour):
         self.ren.SetBackground(colour[:3])
         self.UpdateRender()
 
-    def LoadActor(self, pubsub_evt):
-        actor = pubsub_evt.data
+    def LoadActor(self, actor):
         self.added_actor = 1
         ren = self.ren
         ren.AddActor(actor)
@@ -1547,30 +1517,25 @@ class Viewer(wx.Panel):
         self._to_show_ball += 1
         self._check_and_set_ball_visibility()
 
-    def RemoveActor(self, pubsub_evt):
+    def RemoveActor(self, actor):
         utils.debug("RemoveActor")
-        actor = pubsub_evt.data
         ren = self.ren
         ren.RemoveActor(actor)
         self.interactor.Render()
         self._to_show_ball -= 1
         self._check_and_set_ball_visibility()
 
-    def RemoveAllActor(self, pubsub_evt):
+    def RemoveAllActor(self):
         utils.debug("RemoveAllActor")
         self.ren.RemoveAllProps()
         Publisher.sendMessage('Render volume viewer')
 
-    def LoadSlicePlane(self, pubsub_evt):
+    def LoadSlicePlane(self):
         self.slice_plane = SlicePlane()
 
-    def LoadVolume(self, pubsub_evt):
+    def LoadVolume(self, volume, colour, ww, wl):
         self.raycasting_volume = True
         self._to_show_ball += 1
-
-        volume = pubsub_evt.data[0]
-        colour = pubsub_evt.data[1]
-        ww, wl = pubsub_evt.data[2]
 
         self.light = self.ren.GetLights().GetNextItem()
 
@@ -1593,16 +1558,14 @@ class Viewer(wx.Panel):
         self._check_and_set_ball_visibility()
         self.UpdateRender()
 
-    def UnloadVolume(self, pubsub_evt):
-        volume = pubsub_evt.data
+    def UnloadVolume(self, volume):
         self.ren.RemoveVolume(volume)
         del volume
         self.raycasting_volume = False
         self._to_show_ball -= 1
         self._check_and_set_ball_visibility()
 
-    def OnSetViewAngle(self, evt_pubsub):
-        view = evt_pubsub.data
+    def OnSetViewAngle(self, view):
         self.SetViewAngle(view)
 
     def SetViewAngle(self, view):
@@ -1657,14 +1620,14 @@ class Viewer(wx.Panel):
         orientation_widget.On()
         orientation_widget.InteractiveOff()
 
-    def UpdateRender(self, evt_pubsub=None):
+    def UpdateRender(self):
         self.interactor.Render()
 
-    def SetWidgetInteractor(self, evt_pubsub=None):
-        evt_pubsub.data.SetInteractor(self.interactor._Iren)
+    def SetWidgetInteractor(self, widget=None):
+        widget.SetInteractor(self.interactor._Iren)
 
-    def AppendActor(self, evt_pubsub=None):
-        self.ren.AddActor(evt_pubsub.data)
+    def AppendActor(self, actor):
+        self.ren.AddActor(actor)
 
     def OnInsertSeed(self, obj, evt):
         x,y = self.interactor.GetEventPosition()
@@ -1693,7 +1656,10 @@ class Viewer(wx.Panel):
                     # Publisher.sendMessage("Add measure to list",
                             # (u"3D", _(u"%.3f mm" % m.GetValue())))
             Publisher.sendMessage("Add measurement point",
-                    ((x, y,z), const.LINEAR, const.SURFACE, radius))
+                                  position=(x, y,z),
+                                  type=const.LINEAR,
+                                  location=const.SURFACE,
+                                  radius=radius)
             self.interactor.Render()
 
     def OnInsertAngularMeasurePoint(self, obj, evt):
@@ -1724,21 +1690,23 @@ class Viewer(wx.Panel):
                                                 # type_, location,
                                                 # value))
             Publisher.sendMessage("Add measurement point",
-                    ((x, y,z), const.ANGULAR, const.SURFACE, radius))
+                                  position=(x, y,z),
+                                  type=const.ANGULAR,
+                                  location=const.SURFACE,
+                                  radius=radius)
             self.interactor.Render()
 
-    def Reposition3DPlane(self, evt_pubsub):
-        position = evt_pubsub.data
+    def Reposition3DPlane(self, plane_label):
         if not(self.added_actor) and not(self.raycasting_volume):
-            if not(self.repositioned_axial_plan) and (position == 'Axial'):
+            if not(self.repositioned_axial_plan) and (plane_label == 'Axial'):
                 self.SetViewAngle(const.VOL_ISO)
                 self.repositioned_axial_plan = 1
 
-            elif not(self.repositioned_sagital_plan) and (position == 'Sagital'):
+            elif not(self.repositioned_sagital_plan) and (plane_label == 'Sagital'):
                 self.SetViewAngle(const.VOL_ISO)
                 self.repositioned_sagital_plan = 1
 
-            elif not(self.repositioned_coronal_plan) and (position == 'Coronal'):
+            elif not(self.repositioned_coronal_plan) and (plane_label == 'Coronal'):
                 self.SetViewAngle(const.VOL_ISO)
                 self.repositioned_coronal_plan = 1
 
@@ -1825,39 +1793,36 @@ class SlicePlane:
         selected_prop2 = plane_y.GetSelectedPlaneProperty()           
         selected_prop2.SetColor(0, 1, 0)
 
-        Publisher.sendMessage('Set Widget Interactor', plane_x)
-        Publisher.sendMessage('Set Widget Interactor', plane_y)
-        Publisher.sendMessage('Set Widget Interactor', plane_z)
+        Publisher.sendMessage('Set Widget Interactor', widget=plane_x)
+        Publisher.sendMessage('Set Widget Interactor', widget=plane_y)
+        Publisher.sendMessage('Set Widget Interactor', widget=plane_z)
 
         self.Render()
 
-    def Enable(self, evt_pubsub=None):
-        if (evt_pubsub):
-            label = evt_pubsub.data
-            if(label == "Axial"):
+    def Enable(self, plane_label=None):
+        if plane_label:
+            if(plane_label == "Axial"):
                 self.plane_z.On()
-            elif(label == "Coronal"):
+            elif(plane_label == "Coronal"):
                 self.plane_y.On()
-            elif(label == "Sagital"):
+            elif(plane_label == "Sagital"):
                 self.plane_x.On()
-        
-            Publisher.sendMessage('Reposition 3D Plane', label)
-
+            Publisher.sendMessage('Reposition 3D Plane', plane_label=plane_label)
         else:
             self.plane_z.On()
             self.plane_x.On()
             self.plane_y.On()
-            Publisher.sendMessage('Set volume view angle', const.VOL_ISO)
+            Publisher.sendMessage('Set volume view angle',
+                                  view=const.VOL_ISO)
         self.Render()
 
-    def Disable(self, evt_pubsub=None):
-        if (evt_pubsub):
-            label = evt_pubsub.data
-            if(label == "Axial"):
+    def Disable(self, plane_label=None):
+        if plane_label:
+            if(plane_label == "Axial"):
                 self.plane_z.Off()
-            elif(label == "Coronal"):
+            elif(plane_label == "Coronal"):
                 self.plane_y.Off()
-            elif(label == "Sagital"):
+            elif(plane_label == "Sagital"):
                 self.plane_x.Off()
         else:
             self.plane_z.Off()
@@ -1869,23 +1834,33 @@ class SlicePlane:
     def Render(self):
         Publisher.sendMessage('Render volume viewer')    
 
-    def ChangeSlice(self, pubsub_evt = None):
-        orientation, number = pubsub_evt.data
-
+    def ChangeSlice(self, orientation, index):
         if  orientation == "CORONAL" and self.plane_y.GetEnabled():
-            Publisher.sendMessage('Update slice 3D', (self.plane_y,orientation))
+            Publisher.sendMessage('Update slice 3D',
+                                  widget=self.plane_y,
+                                  orientation=orientation)
             self.Render()
         elif orientation == "SAGITAL" and self.plane_x.GetEnabled():
-            Publisher.sendMessage('Update slice 3D', (self.plane_x,orientation))
+            Publisher.sendMessage('Update slice 3D', 
+                                  widget=self.plane_x,
+                                  orientation=orientation)
             self.Render()
         elif orientation == 'AXIAL' and self.plane_z.GetEnabled() :
-            Publisher.sendMessage('Update slice 3D', (self.plane_z,orientation))
+            Publisher.sendMessage('Update slice 3D',
+                                  widget=self.plane_z,
+                                  orientation=orientation)
             self.Render()
 
-    def UpdateAllSlice(self, pubsub_evt):
-        Publisher.sendMessage('Update slice 3D', (self.plane_y,"CORONAL"))
-        Publisher.sendMessage('Update slice 3D', (self.plane_x,"SAGITAL"))
-        Publisher.sendMessage('Update slice 3D', (self.plane_z,"AXIAL"))
+    def UpdateAllSlice(self):
+        Publisher.sendMessage('Update slice 3D',
+                              widget=self.plane_y,
+                              orientation="CORONAL")
+        Publisher.sendMessage('Update slice 3D',
+                              widget=self.plane_x,
+                              orientation="SAGITAL")
+        Publisher.sendMessage('Update slice 3D',
+                              widget=self.plane_z,
+                              orientation="AXIAL")
                
 
     def DeletePlanes(self):
