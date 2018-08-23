@@ -236,14 +236,14 @@ class InnerFoldPanel(wx.Panel):
         Publisher.subscribe(self.OnCheckStatus, 'Navigation status')
         Publisher.subscribe(self.OnShowObject, 'Update track object state')
         Publisher.subscribe(self.OnVolumeCamera, 'Target navigation mode')
-        Publisher.subscribe(self.teste, "Active dbs folder")
-        Publisher.subscribe(self.teste2, "Deactive dbs folder")
+        Publisher.subscribe(self.OnShowDbs, "Active dbs folder")
+        Publisher.subscribe(self.OnHideDbs, "Deactive dbs folder")
 
-    def teste(self, pubsub_evt): #APAGAR
+    def OnShowDbs(self, pubsub_evt):
         self.dbs_item.Show()
 
 
-    def teste2(self, pubsub_evt): #APAGAR
+    def OnHideDbs(self, pubsub_evt):
         self.dbs_item.Hide()
 
 

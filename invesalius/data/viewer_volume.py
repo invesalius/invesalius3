@@ -911,7 +911,7 @@ class Viewer(wx.Panel):
 
         self.dummy_coil_actor = vtk.vtkActor()
         self.dummy_coil_actor.SetMapper(obj_mapper)
-        self.dummy_coil_actor.GetProperty().SetOpacity(0.4)
+        self.dummy_coil_actor.GetProperty().SetOpacity(0.25)
         self.dummy_coil_actor.SetVisibility(1)
         self.dummy_coil_actor.SetUserMatrix(m_img_vtk)
 
