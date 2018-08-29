@@ -431,6 +431,8 @@ class VolumeToolPanel(wx.Panel):
         Publisher.subscribe(self.DisableVolumeCutMenu, 'Disable volume cut menu')
         Publisher.subscribe(self.StatusTargetSelect, 'Disable or enable coil tracker')
         Publisher.subscribe(self.StatusObjTracker, 'Status target button')
+        Publisher.subscribe(self.ActiveTarget, 'Active target button')
+        Publisher.subscribe(self.DeactiveTarget, 'Deactive target button')
         
     def DisablePreset(self):
         self.off_item.Check(1)
@@ -464,6 +466,12 @@ class VolumeToolPanel(wx.Panel):
     def StatusTargetSelect(self, status):
         self.status_target_select = status
         self.StatusNavigation()
+
+    def ActiveTarget(self):
+        self.button_target.Show()
+
+    def DeactiveTarget(self):
+        self.button_target.Hide()
 
     def StatusNavigation(self):
         if self.status_target_select and self.status_obj_tracker:

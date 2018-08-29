@@ -237,11 +237,11 @@ class InnerFoldPanel(wx.Panel):
         Publisher.subscribe(self.OnShowDbs, "Active dbs folder")
         Publisher.subscribe(self.OnHideDbs, "Deactive dbs folder")
 
-    def OnShowDbs(self, pubsub_evt):
+    def OnShowDbs(self):
         self.dbs_item.Show()
 
 
-    def OnHideDbs(self, pubsub_evt):
+    def OnHideDbs(self):
         self.dbs_item.Hide()
 
 

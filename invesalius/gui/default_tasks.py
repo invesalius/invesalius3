@@ -346,6 +346,7 @@ class UpperTaskPanel(wx.Panel):
             self.fold_panel.GetFoldPanel(4).Show()
 
         else:
+            Publisher.sendMessage('Deactive target button')
             self.fold_panel.GetFoldPanel(4).Hide()
         self.sizer.Layout()
 

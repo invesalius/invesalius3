@@ -491,23 +491,16 @@ class Frame(wx.Frame):
             else:
                 self.OnInterpolatedSlices(False)
 
+
         elif id == const.ID_MODE_NAVIGATION:
             Publisher.sendMessage('Deactive dbs folder')
+            Publisher.sendMessage('Active target button')
             self.actived_dbs_mode.Check(0)
             st = self.actived_navigation_mode.IsChecked(const.ID_MODE_NAVIGATION)
             self.OnNavigationMode(st)
 
         elif id == const.ID_MODE_DBS:
-            #
-
-            st = self.actived_dbs_mode.IsChecked()
-            if st:
-                self.OnNavigationMode(st)
-                Publisher.sendMessage('Active dbs folder')
-            else:
-                self.OnNavigationMode(st)
-                Publisher.sendMessage('Deactive dbs folder')
-            self.actived_navigation_mode.Check(const.ID_MODE_NAVIGATION,0)
+            self.OnDbsMode()
 
         elif id == const.ID_CROP_MASK:
             self.OnCropMask()
@@ -517,6 +510,17 @@ class Frame(wx.Frame):
 
         elif id == const.ID_CREATE_MASK:
             Publisher.sendMessage('New mask from shortcut')
+
+    def OnDbsMode(self):
+        st = self.actived_dbs_mode.IsChecked()
+        Publisher.sendMessage('Deactive target button')
+        if st:
+            self.OnNavigationMode(st)
+            Publisher.sendMessage('Active dbs folder')
+        else:
+            self.OnNavigationMode(st)
+            Publisher.sendMessage('Deactive dbs folder')
+        self.actived_navigation_mode.Check(const.ID_MODE_NAVIGATION,0)
 
     def OnInterpolatedSlices(self, status):
         Publisher.sendMessage('Set interpolated slices', flag=status)
@@ -923,8 +927,8 @@ class MenuBar(wx.MenuBar):
         #Mode
         self.mode_menu = mode_menu = wx.Menu()
         nav_menu = wx.Menu()
-        nav_menu.Append(const.ID_MODE_NAVIGATION, _(u'Transcranial Magnetic Stimulation Mode'), "", wx.ITEM_CHECK)
-        self.mode_dbs = nav_menu.Append(const.ID_MODE_DBS, _(u'Deep Brian Stimulation Mode'), "", wx.ITEM_CHECK)
+        nav_menu.Append(const.ID_MODE_NAVIGATION, _(u'Transcranial Magnetic Stimulation Mode\tCtrl+X'), "", wx.ITEM_CHECK)
+        self.mode_dbs = nav_menu.Append(const.ID_MODE_DBS, _(u'Deep Brian Stimulation Mode\tCtrl+Shift+X'), "", wx.ITEM_CHECK)
         mode_menu.Append(-1,_('Navigation Mode'),nav_menu)
 
         v = self.NavigationModeStatus()

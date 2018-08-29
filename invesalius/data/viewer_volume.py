@@ -818,7 +818,7 @@ class Viewer(wx.Panel):
         tactor.SetMapper(mapper)
         tactor.GetProperty().SetColor(1.0, 0.25, 0.0)
         tactor.SetScale(5)
-        tactor.SetPosition(self.target_coord[0]+10, self.target_coord[1]+30, self.target_coord[2]+20)
+        #tactor.SetPosition(self.target_coord[0]+10, self.target_coord[1]+30, self.target_coord[2]+20)
         self.ren.AddActor(tactor)
         self.tactor = tactor
         tactor.SetCamera(self.ren.GetActiveCamera())
@@ -893,7 +893,7 @@ class Viewer(wx.Panel):
 
         self.dummy_coil_actor = vtk.vtkActor()
         self.dummy_coil_actor.SetMapper(obj_mapper)
-        self.dummy_coil_actor.GetProperty().SetOpacity(0.25)
+        self.dummy_coil_actor.GetProperty().SetOpacity(0.15)
         self.dummy_coil_actor.SetVisibility(1)
         self.dummy_coil_actor.SetUserMatrix(m_img_vtk)
 
@@ -1098,6 +1098,8 @@ class Viewer(wx.Panel):
             coord = position
             x, y, z = bases.flip_x(coord)
             self.ball_actor.SetPosition(x, y, z)
+
+            self.tactor.SetPosition(x+10, y+30, z+20)
 
         else:
             self.RemoveBallReference()
@@ -1746,7 +1748,7 @@ class SlicePlane:
         plane_x.SetRightButtonAction(0)
         plane_x.SetMiddleButtonAction(0)
         cursor_property = plane_x.GetCursorProperty()
-        cursor_property.SetOpacity(0) 
+        cursor_property.SetOpacity(1)
 
         plane_y = self.plane_y = vtk.vtkImagePlaneWidget()
         plane_y.DisplayTextOff()
