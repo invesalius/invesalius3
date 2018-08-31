@@ -173,7 +173,7 @@ cdef class Mesh:
 
         Params:
             v_id: id of the vertex
-            dmax: the maximun distance.
+            dmax: the maximum distance.
         """
         cdef vector[vertex_id_t]* idfaces
         cdef vector[vertex_id_t]* near_vertices = new vector[vertex_id_t]()
@@ -230,7 +230,7 @@ cdef vector[weight_t]* calc_artifacts_weight(Mesh mesh, vector[vertex_id_t]& ver
         vertices_staircase: the identified staircase artifact vertices
         tmax: max distance the vertex must be to its nearest artifact vertex
               to considered to calculate the weight
-        bmin: The minimun weight.
+        bmin: The minimum weight.
     """
     cdef int vi_id, vj_id, nnv, n_ids, i, j
     cdef vector[vertex_id_t]* near_vertices
@@ -444,7 +444,7 @@ def ca_smoothing(Mesh mesh, double T, double tmax, double bmin, int n_iters):
            vertex a staircase artifact
         tmax: max distance the vertex must be to its nearest artifact vertex
               to considered to calculate the weight
-        bmin: The minimun weight
+        bmin: The minimum weight
         n_iters: Number of iterations.
     """
     cdef double[3] stack_orientation = [0.0, 0.0, 1.0]
