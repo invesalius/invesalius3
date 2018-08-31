@@ -149,7 +149,7 @@ class MeasurementManager(object):
                     mr.complete_polygon()
 
                 mr.set_density_values(m.min, m.max, m.mean, m.std, m.area)
-                print m.min, m.max, m.mean, m.std
+                print(m.min, m.max, m.mean, m.std)
                 mr._need_calc = False
                 self.measures.append((m, mr))
                 mr.set_measurement(m)
@@ -1122,7 +1122,7 @@ class CircleDensityMeasure(CanvasHandlerBase):
 
     def _update_gui_info(self):
         msg =  'Update measurement info in GUI',
-        print msg
+        print(msg)
         if self._measurement:
             m = self._measurement
             Publisher.sendMessage(msg,
@@ -1363,7 +1363,7 @@ class PolygonDensityMeasure(CanvasHandlerBase):
                 self._dist_tbox = [i-j for i,j in zip(self.text_box.position, p)]
             else:
                 self.text_box.position = [i+j for i,j in zip(self._dist_tbox, p)]
-                print "text box position", self.text_box.position
+                print("text box position", self.text_box.position)
 
         session = ses.Session()
         session.ChangeProject()
@@ -1382,7 +1382,7 @@ class PolygonDensityMeasure(CanvasHandlerBase):
                 #  self._dist_tbox = [j-i for i,j in zip(p, self.text_box.position)]
 
     def insert_point(self, point):
-        print "insert points", len(self.points)
+        print("insert points", len(self.points))
         self.polygon.append_point(point)
         self.points.append(point)
 
@@ -1437,7 +1437,7 @@ class PolygonDensityMeasure(CanvasHandlerBase):
         arr = canvas.draw_element_to_array([plg_tmp, ], size=(w, h), flip=False)
         mask = arr[:, :, 0] >= 128
 
-        print "mask sum", mask.sum()
+        print("mask sum", mask.sum())
 
         try:
             m[:] = 0
@@ -1485,10 +1485,10 @@ class PolygonDensityMeasure(CanvasHandlerBase):
         elif self.orientation == 'SAGITAL':
             points = [(y, z) for (x, y, z) in self.points]
         area = math_utils.calc_polygon_area(points)
-        print 'Points', points
-        print 'xv = %s;' % [i[0] for i in points]
-        print 'yv = %s;' % [i[1] for i in points]
-        print 'Area', area
+        print('Points', points)
+        print('xv = %s;' % [i[0] for i in points])
+        print('yv = %s;' % [i[1] for i in points])
+        print('Area', area)
         return area
 
     def get_bounds(self):
@@ -1501,7 +1501,7 @@ class PolygonDensityMeasure(CanvasHandlerBase):
         min_z = min(self.points, key=lambda x: x[2])[2]
         max_z = max(self.points, key=lambda x: x[2])[2]
 
-        print self.points
+        print(self.points)
 
         return (min_x, min_y, min_z, max_x, max_y, max_z)
 
@@ -1558,7 +1558,7 @@ class PolygonDensityMeasure(CanvasHandlerBase):
 
     def _update_gui_info(self):
         msg =  'Update measurement info in GUI',
-        print msg
+        print(msg)
         if self._measurement:
             m = self._measurement
             Publisher.sendMessage(msg,

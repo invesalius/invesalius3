@@ -311,7 +311,7 @@ class SurfaceManager():
         actor = vtk.vtkActor()
         actor.SetMapper(mapper)
 
-        print "BOunds", actor.GetBounds()
+        print("BOunds", actor.GetBounds())
 
         if overwrite:
             surface = Surface(index = self.last_surface_index)
@@ -808,8 +808,8 @@ class SurfaceManager():
             volume =  float(measured_polydata.GetVolume())
             area =  float(measured_polydata.GetSurfaceArea())
 
-            print "Volume", volume
-            print "Area", area
+            print("Volume", volume)
+            print("Area", area)
             surface.volume = volume
             surface.area = area
             self.last_surface_index = surface.index

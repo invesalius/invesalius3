@@ -19,13 +19,15 @@
 #--------------------------------------------------------------------------
 
 import sys
-import weakref
 
 import numpy as np
 import wx
 import vtk
 
-from weakrefmethod import WeakMethod
+try:
+    from weakref import WeakMethod
+except ModuleNotFoundError:
+    from weakrefmethod import WeakMethod
 
 from invesalius.data import converters
 from wx.lib.pubsub import pub as Publisher
@@ -113,7 +115,7 @@ class CanvasRendererCTX:
         while node:
             try:
                 getattr(node, callback_name)(event)
-            except AttributeError, e:
+            except AttributeError as e:
                 print('errror', node, e)
             node = node.parent
 

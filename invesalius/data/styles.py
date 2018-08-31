@@ -163,7 +163,7 @@ class DefaultInteractorStyle(BaseImageInteractorStyle):
         evt.StartDolly()
 
     def OnZoomRightRelease(self, evt, obj):
-        print 'EndDolly'
+        print('EndDolly')
         evt.OnRightButtonUp()
         #  evt.EndDolly()
         self.right_pressed = False
@@ -610,7 +610,7 @@ class DensityMeasureStyle(DefaultInteractorStyle):
 
     def OnInsertPoint(self, evt):
         mouse_x, mouse_y = evt.position
-        print 'OnInsertPoint', evt.position
+        print('OnInsertPoint', evt.position)
         n = self.viewer.slice_data.number
         pos = self.viewer.get_coordinate_cursor(mouse_x, mouse_y, self.picker)
 
@@ -656,7 +656,7 @@ class DensityMeasureStyle(DefaultInteractorStyle):
             m = self._last_measure
             if len(m.points) >= 3:
                 n = self.viewer.slice_data.number
-                print self.viewer.draw_by_slice_number[n], m
+                print(self.viewer.draw_by_slice_number[n], m)
                 self.viewer.draw_by_slice_number[n].remove(m)
                 m.complete_polygon()
                 self._last_measure = None
