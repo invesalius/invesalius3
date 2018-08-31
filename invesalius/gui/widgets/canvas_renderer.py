@@ -26,7 +26,7 @@ import vtk
 
 try:
     from weakref import WeakMethod
-except ModuleNotFoundError:
+except ImportError:
     from weakrefmethod import WeakMethod
 
 from invesalius.data import converters
@@ -335,7 +335,7 @@ class CanvasRendererCTX:
         gc.SetBrush(brush)
         gc.Scale(1, -1)
 
-        self._ordered_draw_list = sorted(self._follow_draw_list())
+        self._ordered_draw_list = sorted(self._follow_draw_list(), key=lambda x: x[0])
         for l, d in self._ordered_draw_list: #sorted(self.draw_list, key=lambda x: x.layer if hasattr(x, 'layer') else 0):
             d.draw_to_canvas(gc, self)
 

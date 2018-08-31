@@ -71,7 +71,7 @@ def calc_polygon_area(points):
     """
     area = 0.0
     j = len(points) - 1
-    for i in xrange(len(points)):
+    for i in range(len(points)):
         area += (points[j][0]+points[i][0]) * (points[j][1]-points[i][1])
         j = i
     area = abs(area / 2.0)

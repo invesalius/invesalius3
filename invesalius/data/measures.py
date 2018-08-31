@@ -431,7 +431,7 @@ class DensityMeasurement():
         DensityMeasurement.general_index += 1
         self.index = DensityMeasurement.general_index
         self.name = const.MEASURE_NAME_PATTERN %(self.index+1)
-        self.colour = const.MEASURE_COLOUR.next()
+        self.colour = next(const.MEASURE_COLOUR)
         self.area = 0
         self.min = 0
         self.max = 0
