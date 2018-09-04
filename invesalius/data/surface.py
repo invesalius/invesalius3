@@ -498,72 +498,46 @@ class SurfaceManager():
 
         pipe_in, pipe_out = multiprocessing.Pipe()
         o_piece = 1
-        piece_size = 2000
+        piece_size = 20
 
         n_pieces = int(round(matrix.shape[0] / piece_size + 0.5, 0))
 
-        q_in = multiprocessing.Queue()
-        q_out = multiprocessing.Queue()
-
-        p = []
-        for i in range(n_processors):
-            sp = surface_process.SurfaceProcess(pipe_in, filename_img,
-                                                matrix.shape, matrix.dtype,
-                                                mask.temp_file,
-                                                mask.matrix.shape,
-                                                mask.matrix.dtype,
-                                                spacing,
-                                                mode, min_value, max_value,
-                                                decimate_reduction,
-                                                smooth_relaxation_factor,
-                                                smooth_iterations, language,
-                                                flip_image, q_in, q_out,
-                                                algorithm != 'Default',
-                                                algorithm,
-                                                imagedata_resolution)
-            p.append(sp)
-            sp.start()
-
+        filenames = []
         for i in range(n_pieces):
             init = i * piece_size
             end = init + piece_size + o_piece
             roi = slice(init, end)
-            q_in.put(roi)
             print("new_piece", roi)
+            f = surface_process.create_surface_piece(filename_img,
+                                                 matrix.shape, matrix.dtype,
+                                                 mask.temp_file,
+                                                 mask.matrix.shape,
+                                                 mask.matrix.dtype,
+                                                 roi,
+                                                 spacing,
+                                                 mode, min_value, max_value,
+                                                 decimate_reduction,
+                                                 smooth_relaxation_factor,
+                                                 smooth_iterations, language,
+                                                 flip_image,
+                                                 algorithm != 'Default',
+                                                 algorithm,
+                                                 imagedata_resolution)
+            filenames.append(f)
+            #  UpdateProgress(msg[0]/(n_pieces * pipeline_size), msg[1])
 
-        for i in p:
-            q_in.put(None)
-
-        none_count = 1
-        while 1:
-            msg = pipe_out.recv()
-            if(msg is None):
-                none_count += 1
-            else:
-                UpdateProgress(msg[0]/(n_pieces * pipeline_size), msg[1])
-
-            if none_count > n_pieces:
-                break
 
         polydata_append = vtk.vtkAppendPolyData()
-        #  polydata_append.ReleaseDataFlagOn()
-        t = n_pieces
-        while t:
-            filename_polydata = q_out.get()
-
+        for f in filenames:
             reader = vtk.vtkXMLPolyDataReader()
-            reader.SetFileName(filename_polydata)
-            #  reader.ReleaseDataFlagOn()
+            reader.SetFileName(f)
             reader.Update()
-            #  reader.GetOutput().ReleaseDataFlagOn()
 
             polydata = reader.GetOutput()
-            #  polydata.SetSource(None)
 
             polydata_append.AddInputData(polydata)
             del reader
             del polydata
-            t -= 1
 
         polydata_append.Update()
         #  polydata_append.GetOutput().ReleaseDataFlagOn()

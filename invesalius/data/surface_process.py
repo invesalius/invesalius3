@@ -32,6 +32,94 @@ def ResampleImage3D(imagedata, value):
 
     return resample.GetOutput()
 
+
+def create_surface_piece(filename, shape, dtype, mask_filename, mask_shape,
+                         mask_dtype, roi, spacing, mode, min_value, max_value,
+                         decimate_reduction, smooth_relaxation_factor,
+                         smooth_iterations, language, flip_image,
+                         from_binary, algorithm, imagedata_resolution):
+        if from_binary:
+            mask = numpy.memmap(mask_filename, mode='r',
+                                     dtype=mask_dtype,
+                                     shape=mask_shape)
+            a_mask = numpy.array(mask[roi.start + 1: roi.stop + 1,
+                                           1:, 1:])
+            image =  converters.to_vtk(a_mask, spacing, roi.start,
+                                       "AXIAL")
+            del a_mask
+        else:
+            image = numpy.memmap(filename, mode='r', dtype=dtype,
+                                      shape=shape)
+            mask = numpy.memmap(mask_filename, mode='r',
+                                     dtype=mask_dtype,
+                                     shape=mask_shape)
+            a_image = numpy.array(image[roi])
+
+            if algorithm == u'InVesalius 3.b2':
+                a_mask = numpy.array(mask[roi.start + 1: roi.stop + 1,
+                                               1:, 1:])
+                a_image[a_mask == 1] = a_image.min() - 1
+                a_image[a_mask == 254] = (min_value + max_value) / 2.0
+
+                image =  converters.to_vtk(a_image, spacing, roi.start,
+                                           "AXIAL")
+
+                gauss = vtk.vtkImageGaussianSmooth()
+                gauss.SetInputData(image)
+                gauss.SetRadiusFactor(0.3)
+                gauss.ReleaseDataFlagOn()
+                gauss.Update()
+
+                del image
+                image = gauss.GetOutput()
+                del gauss
+                del a_mask
+            else:
+                image = converters.to_vtk(a_image, spacing, roi.start,
+                                           "AXIAL")
+            del a_image
+
+        if imagedata_resolution:
+            image = ResampleImage3D(image, imagedata_resolution)
+
+        flip = vtk.vtkImageFlip()
+        flip.SetInputData(image)
+        flip.SetFilteredAxis(1)
+        flip.FlipAboutOriginOn()
+        flip.ReleaseDataFlagOn()
+        flip.Update()
+
+        del image
+        image = flip.GetOutput()
+        del flip
+
+        contour = vtk.vtkContourFilter()
+        contour.SetInputData(image)
+        if from_binary:
+            contour.SetValue(0, 127) # initial threshold
+        else:
+            contour.SetValue(0, min_value) # initial threshold
+            contour.SetValue(1, max_value) # final threshold
+        contour.ComputeScalarsOn()
+        contour.ComputeGradientsOn()
+        contour.ComputeNormalsOn()
+        contour.ReleaseDataFlagOn()
+        contour.Update()
+
+        polydata = contour.GetOutput()
+        del image
+        del contour
+
+        filename = tempfile.mktemp()
+        writer = vtk.vtkXMLPolyDataWriter()
+        writer.SetInputData(polydata)
+        writer.SetFileName(filename)
+        writer.Write()
+
+        print("Writing piece", roi, "to", filename)
+        return filename
+
+
 class SurfaceProcess(multiprocessing.Process):
 
     def __init__(self, pipe, filename, shape, dtype, mask_filename,
