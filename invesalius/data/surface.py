@@ -26,6 +26,8 @@ import sys
 import tempfile
 import weakref
 
+from concurrent.futures import ProcessPoolExecutor as Pool
+
 import vtk
 import wx
 from wx.lib.pubsub import pub as Publisher
@@ -503,182 +505,35 @@ class SurfaceManager():
         n_pieces = int(round(matrix.shape[0] / piece_size + 0.5, 0))
 
         filenames = []
-        for i in range(n_pieces):
-            init = i * piece_size
-            end = init + piece_size + o_piece
-            roi = slice(init, end)
-            print("new_piece", roi)
-            f = surface_process.create_surface_piece(filename_img,
-                                                 matrix.shape, matrix.dtype,
-                                                 mask.temp_file,
-                                                 mask.matrix.shape,
-                                                 mask.matrix.dtype,
-                                                 roi,
-                                                 spacing,
-                                                 mode, min_value, max_value,
-                                                 decimate_reduction,
-                                                 smooth_relaxation_factor,
-                                                 smooth_iterations, language,
-                                                 flip_image,
-                                                 algorithm != 'Default',
-                                                 algorithm,
-                                                 imagedata_resolution)
-            filenames.append(f)
+
+        with Pool(max_workers=12) as executor:
+            for i in range(n_pieces):
+                init = i * piece_size
+                end = init + piece_size + o_piece
+                roi = slice(init, end)
+                print("new_piece", roi)
+                f = executor.submit(surface_process.create_surface_piece,
+                             filename_img, matrix.shape, matrix.dtype,
+                             mask.temp_file, mask.matrix.shape,
+                             mask.matrix.dtype, roi, spacing, mode,
+                             min_value, max_value, decimate_reduction,
+                             smooth_relaxation_factor, smooth_iterations,
+                             language, flip_image, algorithm != 'Default',
+                             algorithm, imagedata_resolution)
+                f.add_done_callback(lambda x: filenames.append(x.result()))
+                #  filenames.append(f)
             #  UpdateProgress(msg[0]/(n_pieces * pipeline_size), msg[1])
 
+            while len(filenames) != n_pieces:
+                pass
 
-        polydata_append = vtk.vtkAppendPolyData()
-        for f in filenames:
+            f = executor.submit(surface_process.join_process_surface, filenames, algorithm, smooth_iterations, smooth_relaxation_factor, decimate_reduction, keep_largest, fill_holes, options)
+
             reader = vtk.vtkXMLPolyDataReader()
-            reader.SetFileName(f)
+            reader.SetFileName(f.result())
             reader.Update()
 
             polydata = reader.GetOutput()
-
-            polydata_append.AddInputData(polydata)
-            del reader
-            del polydata
-
-        polydata_append.Update()
-        #  polydata_append.GetOutput().ReleaseDataFlagOn()
-        polydata = polydata_append.GetOutput()
-        #polydata.Register(None)
-        #  polydata.SetSource(None)
-        del polydata_append
-
-        if algorithm == 'ca_smoothing':
-            normals = vtk.vtkPolyDataNormals()
-            normals_ref = weakref.ref(normals)
-            normals_ref().AddObserver("ProgressEvent", lambda obj,evt:
-                                      UpdateProgress(normals_ref(), _("Creating 3D surface...")))
-            normals.SetInputData(polydata)
-            #  normals.ReleaseDataFlagOn()
-            #normals.SetFeatureAngle(80)
-            #normals.AutoOrientNormalsOn()
-            normals.ComputeCellNormalsOn()
-            #  normals.GetOutput().ReleaseDataFlagOn()
-            normals.Update()
-            del polydata
-            polydata = normals.GetOutput()
-            #  polydata.SetSource(None)
-            del normals
-
-            clean = vtk.vtkCleanPolyData()
-            #  clean.ReleaseDataFlagOn()
-            #  clean.GetOutput().ReleaseDataFlagOn()
-            clean_ref = weakref.ref(clean)
-            clean_ref().AddObserver("ProgressEvent", lambda obj,evt:
-                            UpdateProgress(clean_ref(), _("Creating 3D surface...")))
-            clean.SetInputData(polydata)
-            clean.PointMergingOn()
-            clean.Update()
-
-            del polydata
-            polydata = clean.GetOutput()
-            #  polydata.SetSource(None)
-            del clean
-
-            #  try:
-                #  polydata.BuildLinks()
-            #  except TypeError:
-                #  polydata.BuildLinks(0)
-            #  polydata = ca_smoothing.ca_smoothing(polydata, options['angle'],
-                                                 #  options['max distance'],
-                                                 #  options['min weight'],
-                                                 #  options['steps'])
-
-            mesh = cy_mesh.Mesh(polydata)
-            cy_mesh.ca_smoothing(mesh, options['angle'],
-                                 options['max distance'],
-                                 options['min weight'],
-                                 options['steps'])
-            #  polydata = mesh.to_vtk()
-
-            #  polydata.SetSource(None)
-            #  polydata.DebugOn()
-        else:
-            #smoother = vtk.vtkWindowedSincPolyDataFilter()
-            smoother = vtk.vtkSmoothPolyDataFilter()
-            smoother_ref = weakref.ref(smoother)
-            smoother_ref().AddObserver("ProgressEvent", lambda obj,evt:
-                            UpdateProgress(smoother_ref(), _("Creating 3D surface...")))
-            smoother.SetInputData(polydata)
-            smoother.SetNumberOfIterations(smooth_iterations)
-            smoother.SetRelaxationFactor(smooth_relaxation_factor)
-            smoother.SetFeatureAngle(80)
-            #smoother.SetEdgeAngle(90.0)
-            #smoother.SetPassBand(0.1)
-            smoother.BoundarySmoothingOn()
-            smoother.FeatureEdgeSmoothingOn()
-            #smoother.NormalizeCoordinatesOn()
-            #smoother.NonManifoldSmoothingOn()
-            #  smoother.ReleaseDataFlagOn()
-            #  smoother.GetOutput().ReleaseDataFlagOn()
-            smoother.Update()
-            del polydata
-            polydata = smoother.GetOutput()
-            #polydata.Register(None)
-            #  polydata.SetSource(None)
-            del smoother
-
-
-        if decimate_reduction:
-            print("Decimating", decimate_reduction)
-            decimation = vtk.vtkQuadricDecimation()
-            #  decimation.ReleaseDataFlagOn()
-            decimation.SetInputData(polydata)
-            decimation.SetTargetReduction(decimate_reduction)
-            decimation_ref = weakref.ref(decimation)
-            decimation_ref().AddObserver("ProgressEvent", lambda obj,evt:
-                            UpdateProgress(decimation_ref(), _("Creating 3D surface...")))
-            #decimation.PreserveTopologyOn()
-            #decimation.SplittingOff()
-            #decimation.BoundaryVertexDeletionOff()
-            #  decimation.GetOutput().ReleaseDataFlagOn()
-            decimation.Update()
-            del polydata
-            polydata = decimation.GetOutput()
-            #polydata.Register(None)
-            #  polydata.SetSource(None)
-            del decimation
-
-        #to_measure.Register(None)
-        #  to_measure.SetSource(None)
-
-        if keep_largest:
-            conn = vtk.vtkPolyDataConnectivityFilter()
-            conn.SetInputData(polydata)
-            conn.SetExtractionModeToLargestRegion()
-            conn_ref = weakref.ref(conn)
-            conn_ref().AddObserver("ProgressEvent", lambda obj,evt:
-                    UpdateProgress(conn_ref(), _("Creating 3D surface...")))
-            conn.Update()
-            #  conn.GetOutput().ReleaseDataFlagOn()
-            del polydata
-            polydata = conn.GetOutput()
-            #polydata.Register(None)
-            #  polydata.SetSource(None)
-            del conn
-
-        #Filter used to detect and fill holes. Only fill boundary edges holes.
-        #TODO: Hey! This piece of code is the same from
-        #polydata_utils.FillSurfaceHole, we need to review this.
-        if fill_holes:
-            filled_polydata = vtk.vtkFillHolesFilter()
-            #  filled_polydata.ReleaseDataFlagOn()
-            filled_polydata.SetInputData(polydata)
-            filled_polydata.SetHoleSize(300)
-            filled_polydata_ref = weakref.ref(filled_polydata)
-            filled_polydata_ref().AddObserver("ProgressEvent", lambda obj,evt:
-                    UpdateProgress(filled_polydata_ref(), _("Creating 3D surface...")))
-            filled_polydata.Update()
-            #  filled_polydata.GetOutput().ReleaseDataFlagOn()
-            del polydata
-            polydata = filled_polydata.GetOutput()
-            #polydata.Register(None)
-            #  polydata.SetSource(None)
-            #  polydata.DebugOn()
-            del filled_polydata
 
         to_measure = polydata
 
