@@ -3524,3 +3524,33 @@ class ObjectCalibrationDialog(wx.Dialog):
 
     def GetValue(self):
         return self.obj_fiducials, self.obj_orients, self.obj_ref_id, self.obj_name
+
+
+class SurfaceProgressWindow(object):
+    def __init__(self, processes):
+        self.processes = processes
+        self.title = "InVesalius 3"
+        self.msg = _("Applying watershed ...")
+        self.style = wx.PD_APP_MODAL | wx.PD_APP_MODAL | wx.PD_CAN_ABORT
+
+        self.canceled = False
+
+        self.dlg = wx.ProgressDialog(self.title,
+                                     self.msg,
+                                     parent = None,
+                                     style  = self.style)
+
+        self.dlg.Bind(wx.EVT_BUTTON, self.Cancel)
+        self.dlg.Show()
+
+    def Cancel(self, evt):
+        print("Canceling", self.processes.terminate())
+        self.canceled = True
+        #  for p in self.processes:
+            #  print("Canceling", p.terminate())
+
+    def Update(self):
+        self.dlg.Pulse()
+
+    def Close(self):
+        self.dlg.Destroy()

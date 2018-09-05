@@ -24,9 +24,11 @@ import random
 import shutil
 import sys
 import tempfile
+import time
 import weakref
 
-from concurrent.futures import ProcessPoolExecutor as Pool
+#  from concurrent.futures import ProcessPoolExecutor as Pool
+from multiprocessing import Pool
 
 import vtk
 import wx
@@ -49,6 +51,8 @@ import invesalius.session as ses
 import invesalius.data.surface_process as surface_process
 import invesalius.utils as utl
 import invesalius.data.vtk_utils as vu
+
+from invesalius.gui import dialogs
 
 from invesalius.data import cy_mesh
 # TODO: Verificar ReleaseDataFlagOn and SetSource 
@@ -506,36 +510,68 @@ class SurfaceManager():
 
         filenames = []
 
-        with Pool(max_workers=12) as executor:
+        with Pool(processes=12) as pool:
+            processes = []
             for i in range(n_pieces):
                 init = i * piece_size
                 end = init + piece_size + o_piece
                 roi = slice(init, end)
                 print("new_piece", roi)
-                f = executor.submit(surface_process.create_surface_piece,
-                             filename_img, matrix.shape, matrix.dtype,
-                             mask.temp_file, mask.matrix.shape,
-                             mask.matrix.dtype, roi, spacing, mode,
-                             min_value, max_value, decimate_reduction,
-                             smooth_relaxation_factor, smooth_iterations,
-                             language, flip_image, algorithm != 'Default',
-                             algorithm, imagedata_resolution)
-                f.add_done_callback(lambda x: filenames.append(x.result()))
+                f = pool.apply_async(surface_process.create_surface_piece,
+                                     args = (filename_img, matrix.shape, matrix.dtype,
+                                             mask.temp_file, mask.matrix.shape,
+                                             mask.matrix.dtype, roi, spacing, mode,
+                                             min_value, max_value, decimate_reduction,
+                                             smooth_relaxation_factor,
+                                             smooth_iterations, language, flip_image,
+                                             algorithm != 'Default', algorithm,
+                                             imagedata_resolution),
+                                     callback=lambda x: filenames.append(x))
+                processes.append(f)
+                #  f.add_done_callback(lambda x: filenames.append(x.result()))
                 #  filenames.append(f)
             #  UpdateProgress(msg[0]/(n_pieces * pipeline_size), msg[1])
 
-            while len(filenames) != n_pieces:
-                pass
+            sp = dialogs.SurfaceProgressWindow(pool)
 
-            f = executor.submit(surface_process.join_process_surface, filenames, algorithm, smooth_iterations, smooth_relaxation_factor, decimate_reduction, keep_largest, fill_holes, options)
+            while len(filenames) != n_pieces:
+                if sp.canceled:
+                    sp.Close()
+                    return
+
+                time.sleep(0.5)
+                sp.Update()
+                wx.Yield()
+
+            if sp.canceled:
+                sp.Close()
+                return
+
+            f = pool.apply_async(surface_process.join_process_surface,
+                                 args=(filenames, algorithm, smooth_iterations,
+                                       smooth_relaxation_factor,
+                                       decimate_reduction, keep_largest,
+                                       fill_holes, options))
+            processes.append(f)
+
+            while not f.ready():
+                if sp.canceled:
+                    sp.Close()
+                    return
+                time.sleep(0.5)
+                sp.Update()
+                wx.Yield()
 
             reader = vtk.vtkXMLPolyDataReader()
-            reader.SetFileName(f.result())
+            reader.SetFileName(f.get())
             reader.Update()
 
             polydata = reader.GetOutput()
 
         to_measure = polydata
+
+        sp.Close()
+        del sp
 
         # If InVesalius is running without GUI
         if wx.GetApp() is None:
