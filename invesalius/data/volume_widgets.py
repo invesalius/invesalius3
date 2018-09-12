@@ -65,7 +65,7 @@ class Plane():
         else:
             self.Update()
             if self.widget.GetEnabled():
-                print "send signal - update slice info in panel and in 2d"
+                print("send signal - update slice info in panel and in 2d")
                 
 
     def SetInput(self, imagedata):

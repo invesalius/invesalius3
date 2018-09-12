@@ -117,9 +117,7 @@ class Editor:
         #    a = (int(self.txtThresI.GetValue()), int(self.txtThresF.GetValue()))
         #    self.editor.SetOperationType(op, a)
             wx, wy, wz = self.From3dToImagePixel(pos, (x, y, z))
-            print "Comecei"
             self.DoOperation(wx, wy, wz)
-            print "Terminei"
             Publisher.sendMessage('Update images', self.image)
             Publisher.sendMessage('Update viewer', None)
 
@@ -135,7 +133,6 @@ class Editor:
         """
         x, y, z = pPos
         bounds = self.actor.GetBounds()
-        print bounds
 
         #c = vtk.vtkCoordinate()
         #c.SetCoordinateSystemToWorld()
@@ -228,15 +225,11 @@ class Editor:
         cursor = self.cursor
         b = [0,0,0,0,0,0]
         self.actor.GetDisplayBounds(b)
-        print "To Paint", xc, yc, zc
-        print "Bounds", b
-        print "dimensions", self.image.GetDimensions()
         xs, ys, zs = self.image.GetSpacing()
         try:
             zs = (b[-1]-b[-2]) / self.image.GetDimensions()[2]
         except ZeroDivisionError:
             pass
-        print xs, ys, zs
         if self.orientation == AXIAL:
             o = lambda x, y: (xc + x, y + yc, zc)
         elif self.orientation == CORONAL:
