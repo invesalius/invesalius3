@@ -448,6 +448,7 @@ class SurfaceManager():
         """
         Create surface actor, save into project and send it to viewer.
         """
+        t_init = time.time()
         matrix = slice_.matrix
         filename_img = slice_.matrix_filename
         spacing = slice_.spacing
@@ -590,38 +591,38 @@ class SurfaceManager():
 
         # With GUI
         else:
-            normals = vtk.vtkPolyDataNormals()
-            #  normals.ReleaseDataFlagOn()
-            normals_ref = weakref.ref(normals)
-            normals_ref().AddObserver("ProgressEvent", lambda obj,evt:
-                            UpdateProgress(normals_ref(), _("Creating 3D surface...")))
-            normals.SetInputData(polydata)
-            normals.SetFeatureAngle(80)
-            normals.AutoOrientNormalsOn()
-            #  normals.GetOutput().ReleaseDataFlagOn()
-            normals.Update()
-            del polydata
-            polydata = normals.GetOutput()
-            #polydata.Register(None)
-            #  polydata.SetSource(None)
-            del normals
+            #  normals = vtk.vtkPolyDataNormals()
+            #  #  normals.ReleaseDataFlagOn()
+            #  normals_ref = weakref.ref(normals)
+            #  normals_ref().AddObserver("ProgressEvent", lambda obj,evt:
+                            #  UpdateProgress(normals_ref(), _("Creating 3D surface...")))
+            #  normals.SetInputData(polydata)
+            #  normals.SetFeatureAngle(80)
+            #  normals.AutoOrientNormalsOn()
+            #  #  normals.GetOutput().ReleaseDataFlagOn()
+            #  normals.Update()
+            #  del polydata
+            #  polydata = normals.GetOutput()
+            #  #polydata.Register(None)
+            #  #  polydata.SetSource(None)
+            #  del normals
 
-            # Improve performance
-            stripper = vtk.vtkStripper()
-            #  stripper.ReleaseDataFlagOn()
-            stripper_ref = weakref.ref(stripper)
-            stripper_ref().AddObserver("ProgressEvent", lambda obj,evt:
-                            UpdateProgress(stripper_ref(), _("Creating 3D surface...")))
-            stripper.SetInputData(polydata)
-            stripper.PassThroughCellIdsOn()
-            stripper.PassThroughPointIdsOn()
-            #  stripper.GetOutput().ReleaseDataFlagOn()
-            stripper.Update()
-            del polydata
-            polydata = stripper.GetOutput()
-            #polydata.Register(None)
-            #  polydata.SetSource(None)
-            del stripper
+            #  # Improve performance
+            #  stripper = vtk.vtkStripper()
+            #  #  stripper.ReleaseDataFlagOn()
+            #  stripper_ref = weakref.ref(stripper)
+            #  stripper_ref().AddObserver("ProgressEvent", lambda obj,evt:
+                            #  UpdateProgress(stripper_ref(), _("Creating 3D surface...")))
+            #  stripper.SetInputData(polydata)
+            #  stripper.PassThroughCellIdsOn()
+            #  stripper.PassThroughPointIdsOn()
+            #  #  stripper.GetOutput().ReleaseDataFlagOn()
+            #  stripper.Update()
+            #  del polydata
+            #  polydata = stripper.GetOutput()
+            #  #polydata.Register(None)
+            #  #  polydata.SetSource(None)
+            #  del stripper
 
             # Map polygonal data (vtkPolyData) to graphics primitives.
             mapper = vtk.vtkPolyDataMapper()
@@ -694,6 +695,8 @@ class SurfaceManager():
 
             Publisher.sendMessage('End busy cursor')
             del actor
+            t_end = time.time()
+            print("Elapsed time - {}".format(t_end-t_init))
 
     def UpdateSurfaceInterpolation(self):
         interpolation = int(ses.Session().surface_interpolation)

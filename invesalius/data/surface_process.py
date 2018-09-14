@@ -292,6 +292,39 @@ def join_process_surface(filenames, algorithm, smooth_iterations, smooth_relaxat
         #  polydata.DebugOn()
         del filled_polydata
 
+    normals = vtk.vtkPolyDataNormals()
+    #  normals.ReleaseDataFlagOn()
+    #  normals_ref = weakref.ref(normals)
+    #  normals_ref().AddObserver("ProgressEvent", lambda obj,evt:
+                    #  UpdateProgress(normals_ref(), _("Creating 3D surface...")))
+    normals.SetInputData(polydata)
+    normals.SetFeatureAngle(80)
+    normals.AutoOrientNormalsOn()
+    #  normals.GetOutput().ReleaseDataFlagOn()
+    normals.Update()
+    del polydata
+    polydata = normals.GetOutput()
+    #polydata.Register(None)
+    #  polydata.SetSource(None)
+    del normals
+
+    # Improve performance
+    stripper = vtk.vtkStripper()
+    #  stripper.ReleaseDataFlagOn()
+    #  stripper_ref = weakref.ref(stripper)
+    #  stripper_ref().AddObserver("ProgressEvent", lambda obj,evt:
+                    #  UpdateProgress(stripper_ref(), _("Creating 3D surface...")))
+    stripper.SetInputData(polydata)
+    stripper.PassThroughCellIdsOn()
+    stripper.PassThroughPointIdsOn()
+    #  stripper.GetOutput().ReleaseDataFlagOn()
+    stripper.Update()
+    del polydata
+    polydata = stripper.GetOutput()
+    #polydata.Register(None)
+    #  polydata.SetSource(None)
+    del stripper
+
     filename = tempfile.mktemp(suffix='_full.vtp')
     writer = vtk.vtkXMLPolyDataWriter()
     writer.SetInputData(polydata)
