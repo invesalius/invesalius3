@@ -511,7 +511,61 @@ class SurfaceManager():
 
         filenames = []
 
-        with Pool(processes=12) as pool:
+        # If InVesalius is running without GUI
+        if wx.GetApp() is None:
+            pool = Pool(processes=min(n_pieces, n_processors))
+            processes = []
+            for i in range(n_pieces):
+                init = i * piece_size
+                end = init + piece_size + o_piece
+                roi = slice(init, end)
+                print("new_piece", roi)
+                f = pool.apply_async(surface_process.create_surface_piece,
+                                     args = (filename_img, matrix.shape, matrix.dtype,
+                                             mask.temp_file, mask.matrix.shape,
+                                             mask.matrix.dtype, roi, spacing, mode,
+                                             min_value, max_value, decimate_reduction,
+                                             smooth_relaxation_factor,
+                                             smooth_iterations, language, flip_image,
+                                             algorithm != 'Default', algorithm,
+                                             imagedata_resolution),
+                                     callback=lambda x: filenames.append(x))
+                processes.append(f)
+
+            while len(filenames) != n_pieces:
+                time.sleep(0.25)
+
+            f = pool.apply_async(surface_process.join_process_surface,
+                                 args=(filenames, algorithm, smooth_iterations,
+                                       smooth_relaxation_factor,
+                                       decimate_reduction, keep_largest,
+                                       fill_holes, options))
+
+            while not f.ready():
+                time.sleep(0.25)
+
+            reader = vtk.vtkXMLPolyDataReader()
+            reader.SetFileName(f.get())
+            reader.Update()
+
+            polydata = reader.GetOutput()
+
+            proj = prj.Project()
+            #Create Surface instance
+            if overwrite:
+                surface = Surface(index = self.last_surface_index)
+                proj.ChangeSurface(surface)
+            else:
+                surface = Surface(name=surface_name)
+                index = proj.AddSurface(surface)
+                surface.index = index
+                self.last_surface_index = index
+            surface.colour = colour
+            surface.polydata = polydata
+
+        # With GUI
+        else:
+            pool = Pool(processes=min(n_pieces, n_processors))
             processes = []
             for i in range(n_pieces):
                 init = i * piece_size
@@ -540,8 +594,8 @@ class SurfaceManager():
                     sp.Close()
                     return
 
-                time.sleep(0.5)
-                sp.Update()
+                time.sleep(0.25)
+                sp.Update(_("Creating 3D surface..."))
                 wx.Yield()
 
             if sp.canceled:
@@ -559,8 +613,8 @@ class SurfaceManager():
                 if sp.canceled:
                     sp.Close()
                     return
-                time.sleep(0.5)
-                sp.Update()
+                time.sleep(0.25)
+                sp.Update("Joining surfaces")
                 wx.Yield()
 
             reader = vtk.vtkXMLPolyDataReader()
@@ -569,28 +623,10 @@ class SurfaceManager():
 
             polydata = reader.GetOutput()
 
-        to_measure = polydata
+            to_measure = polydata
 
-        sp.Close()
-        del sp
-
-        # If InVesalius is running without GUI
-        if wx.GetApp() is None:
-            proj = prj.Project()
-            #Create Surface instance
-            if overwrite:
-                surface = Surface(index = self.last_surface_index)
-                proj.ChangeSurface(surface)
-            else:
-                surface = Surface(name=surface_name)
-                index = proj.AddSurface(surface)
-                surface.index = index
-                self.last_surface_index = index
-            surface.colour = colour
-            surface.polydata = polydata
-
-        # With GUI
-        else:
+            sp.Close()
+            del sp
             #  normals = vtk.vtkPolyDataNormals()
             #  #  normals.ReleaseDataFlagOn()
             #  normals_ref = weakref.ref(normals)

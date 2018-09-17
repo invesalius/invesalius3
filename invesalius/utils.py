@@ -24,6 +24,7 @@ import locale
 import math
 
 from distutils.version import LooseVersion
+from functools import wraps
 
 import numpy as np
 
@@ -462,3 +463,14 @@ def encode(text, encoding, *args):
         return text.encode(encoding, *args)
     except AttributeError:
         return text
+
+
+def timing(f):
+    @wraps(f)
+    def wrapper(*args, **kwargs):
+        start = time.time()
+        result = f(*args, **kwargs)
+        end = time.time()
+        print('{} elapsed time: {}'.format(f.__name__, end-start))
+        return result
+    return wrapper

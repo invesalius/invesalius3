@@ -3530,8 +3530,8 @@ class SurfaceProgressWindow(object):
     def __init__(self, processes):
         self.processes = processes
         self.title = "InVesalius 3"
-        self.msg = _("Applying watershed ...")
-        self.style = wx.PD_APP_MODAL | wx.PD_APP_MODAL | wx.PD_CAN_ABORT
+        self.msg = _("Creating 3D surface ...")
+        self.style = wx.PD_APP_MODAL | wx.PD_APP_MODAL | wx.PD_CAN_ABORT | wx.PD_ELAPSED_TIME
 
         self.canceled = False
 
@@ -3549,8 +3549,8 @@ class SurfaceProgressWindow(object):
         #  for p in self.processes:
             #  print("Canceling", p.terminate())
 
-    def Update(self):
-        self.dlg.Pulse()
+    def Update(self, msg, value=None):
+        self.dlg.Pulse(msg)
 
     def Close(self):
         self.dlg.Destroy()
