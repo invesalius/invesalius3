@@ -112,11 +112,11 @@ class Viewer(wx.Panel):
         self.text.SetPosition(const.TEXT_POS_LEFT_UP)
         #  self.ren.AddActor(self.text.actor)
 
-        self.polygon = Polygon(None, is_3d=False)
+        #  self.polygon = Polygon(None, is_3d=False)
 
-        self.canvas = CanvasRendererCTX(self, self.ren, self.canvas_renderer, 'AXIAL')
-        self.canvas.draw_list.append(self.text)
-        self.canvas.draw_list.append(self.polygon)
+        #  self.canvas = CanvasRendererCTX(self, self.ren, self.canvas_renderer, 'AXIAL')
+        #  self.canvas.draw_list.append(self.text)
+        #  self.canvas.draw_list.append(self.polygon)
         # axes = vtk.vtkAxesActor()
         # axes.SetXAxisLabelText('x')
         # axes.SetYAxisLabelText('y')
