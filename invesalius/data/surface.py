@@ -546,7 +546,7 @@ class SurfaceManager():
 
             surface_filename, surface_measures = f.get()
             reader = vtk.vtkXMLPolyDataReader()
-            reader.SetFileName(f.get())
+            reader.SetFileName(surface_filename)
             reader.Update()
 
             polydata = reader.GetOutput()
