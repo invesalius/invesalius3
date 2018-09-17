@@ -292,6 +292,8 @@ def join_process_surface(filenames, algorithm, smooth_iterations, smooth_relaxat
         #  polydata.DebugOn()
         del filled_polydata
 
+    to_measure = polydata
+
     normals = vtk.vtkPolyDataNormals()
     #  normals.ReleaseDataFlagOn()
     #  normals_ref = weakref.ref(normals)
@@ -307,6 +309,7 @@ def join_process_surface(filenames, algorithm, smooth_iterations, smooth_relaxat
     #polydata.Register(None)
     #  polydata.SetSource(None)
     del normals
+
 
     # Improve performance
     stripper = vtk.vtkStripper()
@@ -325,13 +328,18 @@ def join_process_surface(filenames, algorithm, smooth_iterations, smooth_relaxat
     #  polydata.SetSource(None)
     del stripper
 
+    measured_polydata = vtk.vtkMassProperties()
+    measured_polydata.SetInputData(to_measure)
+    volume =  float(measured_polydata.GetVolume())
+    area =  float(measured_polydata.GetSurfaceArea())
+
     filename = tempfile.mktemp(suffix='_full.vtp')
     writer = vtk.vtkXMLPolyDataWriter()
     writer.SetInputData(polydata)
     writer.SetFileName(filename)
     writer.Write()
 
-    return filename
+    return filename, {'volume': volume, 'area': area}
 
 
 class SurfaceProcess(multiprocessing.Process):

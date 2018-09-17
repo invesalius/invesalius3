@@ -505,7 +505,7 @@ class SurfaceManager():
 
         pipe_in, pipe_out = multiprocessing.Pipe()
         o_piece = 1
-        piece_size = 20
+        piece_size = 2000
 
         n_pieces = int(round(matrix.shape[0] / piece_size + 0.5, 0))
 
@@ -544,6 +544,7 @@ class SurfaceManager():
             while not f.ready():
                 time.sleep(0.25)
 
+            surface_filename, surface_measures = f.get()
             reader = vtk.vtkXMLPolyDataReader()
             reader.SetFileName(f.get())
             reader.Update()
@@ -560,8 +561,11 @@ class SurfaceManager():
                 index = proj.AddSurface(surface)
                 surface.index = index
                 self.last_surface_index = index
+
             surface.colour = colour
             surface.polydata = polydata
+            surface.volume = surface_measures['volume']
+            surface.area = surface_measures['area']
 
         # With GUI
         else:
@@ -617,48 +621,14 @@ class SurfaceManager():
                 sp.Update("Joining surfaces")
                 wx.Yield()
 
+            surface_filename, surface_measures = f.get()
             reader = vtk.vtkXMLPolyDataReader()
-            reader.SetFileName(f.get())
+            reader.SetFileName(surface_filename)
             reader.Update()
-
             polydata = reader.GetOutput()
-
-            to_measure = polydata
 
             sp.Close()
             del sp
-            #  normals = vtk.vtkPolyDataNormals()
-            #  #  normals.ReleaseDataFlagOn()
-            #  normals_ref = weakref.ref(normals)
-            #  normals_ref().AddObserver("ProgressEvent", lambda obj,evt:
-                            #  UpdateProgress(normals_ref(), _("Creating 3D surface...")))
-            #  normals.SetInputData(polydata)
-            #  normals.SetFeatureAngle(80)
-            #  normals.AutoOrientNormalsOn()
-            #  #  normals.GetOutput().ReleaseDataFlagOn()
-            #  normals.Update()
-            #  del polydata
-            #  polydata = normals.GetOutput()
-            #  #polydata.Register(None)
-            #  #  polydata.SetSource(None)
-            #  del normals
-
-            #  # Improve performance
-            #  stripper = vtk.vtkStripper()
-            #  #  stripper.ReleaseDataFlagOn()
-            #  stripper_ref = weakref.ref(stripper)
-            #  stripper_ref().AddObserver("ProgressEvent", lambda obj,evt:
-                            #  UpdateProgress(stripper_ref(), _("Creating 3D surface...")))
-            #  stripper.SetInputData(polydata)
-            #  stripper.PassThroughCellIdsOn()
-            #  stripper.PassThroughPointIdsOn()
-            #  #  stripper.GetOutput().ReleaseDataFlagOn()
-            #  stripper.Update()
-            #  del polydata
-            #  polydata = stripper.GetOutput()
-            #  #polydata.Register(None)
-            #  #  polydata.SetSource(None)
-            #  del stripper
 
             # Map polygonal data (vtkPolyData) to graphics primitives.
             mapper = vtk.vtkPolyDataMapper()
@@ -678,6 +648,8 @@ class SurfaceManager():
                 surface = Surface(name=surface_name)
             surface.colour = colour
             surface.polydata = polydata
+            surface.volume = surface_measures['volume']
+            surface.area = surface_measures['area']
             del polydata
 
             # Set actor colour and transparency
@@ -700,17 +672,6 @@ class SurfaceManager():
 
             session = ses.Session()
             session.ChangeProject()
-
-            measured_polydata = vtk.vtkMassProperties()
-            #  measured_polydata.ReleaseDataFlagOn()
-            measured_polydata.SetInputData(to_measure)
-            volume =  float(measured_polydata.GetVolume())
-            area =  float(measured_polydata.GetSurfaceArea())
-            surface.volume = volume
-            surface.area = area
-            self.last_surface_index = surface.index
-            del measured_polydata
-            del to_measure
 
             Publisher.sendMessage('Load surface actor into viewer', actor=actor)
 
