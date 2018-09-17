@@ -505,7 +505,7 @@ class SurfaceManager():
 
         pipe_in, pipe_out = multiprocessing.Pipe()
         o_piece = 1
-        piece_size = 2000
+        piece_size = 20
 
         n_pieces = int(round(matrix.shape[0] / piece_size + 0.5, 0))
 
