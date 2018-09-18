@@ -122,8 +122,15 @@ def create_surface_piece(filename, shape, dtype, mask_filename, mask_shape,
         return filename
 
 
-def join_process_surface(filenames, algorithm, smooth_iterations, smooth_relaxation_factor, decimate_reduction, keep_largest, fill_holes, options):
+def join_process_surface(filenames, algorithm, smooth_iterations, smooth_relaxation_factor, decimate_reduction, keep_largest, fill_holes, options, msg_queue):
     print("Appending polydata")
+    def send_message(msg):
+        try:
+            msg_queue.put_nowait(msg)
+        except Queue.Full as e:
+            print(e)
+
+    send_message('Joining surfaces ...')
     polydata_append = vtk.vtkAppendPolyData()
     for f in filenames:
         reader = vtk.vtkXMLPolyDataReader()
@@ -143,6 +150,7 @@ def join_process_surface(filenames, algorithm, smooth_iterations, smooth_relaxat
     #  polydata.SetSource(None)
     del polydata_append
 
+    send_message('Cleaning surface ...')
     clean = vtk.vtkCleanPolyData()
     #  clean.ReleaseDataFlagOn()
     #  clean.GetOutput().ReleaseDataFlagOn()
@@ -159,6 +167,7 @@ def join_process_surface(filenames, algorithm, smooth_iterations, smooth_relaxat
     del clean
 
     if algorithm == 'ca_smoothing':
+        send_message('Calculating normals ...')
         normals = vtk.vtkPolyDataNormals()
         normals_ref = weakref.ref(normals)
         #  normals_ref().AddObserver("ProgressEvent", lambda obj,evt:
@@ -199,6 +208,7 @@ def join_process_surface(filenames, algorithm, smooth_iterations, smooth_relaxat
                                              #  options['min weight'],
                                              #  options['steps'])
 
+        send_message('Context Aware smoothing ...')
         mesh = cy_mesh.Mesh(polydata)
         cy_mesh.ca_smoothing(mesh, options['angle'],
                              options['max distance'],
@@ -210,6 +220,7 @@ def join_process_surface(filenames, algorithm, smooth_iterations, smooth_relaxat
         #  polydata.DebugOn()
     else:
         #smoother = vtk.vtkWindowedSincPolyDataFilter()
+        send_message('Smoothing ...')
         smoother = vtk.vtkSmoothPolyDataFilter()
         smoother_ref = weakref.ref(smoother)
         #  smoother_ref().AddObserver("ProgressEvent", lambda obj,evt:
@@ -236,6 +247,7 @@ def join_process_surface(filenames, algorithm, smooth_iterations, smooth_relaxat
 
     if decimate_reduction:
         print("Decimating", decimate_reduction)
+        send_message('Decimating ...')
         decimation = vtk.vtkQuadricDecimation()
         #  decimation.ReleaseDataFlagOn()
         decimation.SetInputData(polydata)
@@ -258,6 +270,7 @@ def join_process_surface(filenames, algorithm, smooth_iterations, smooth_relaxat
     #  to_measure.SetSource(None)
 
     if keep_largest:
+        send_message('Finding the largest ...')
         conn = vtk.vtkPolyDataConnectivityFilter()
         conn.SetInputData(polydata)
         conn.SetExtractionModeToLargestRegion()
@@ -276,6 +289,7 @@ def join_process_surface(filenames, algorithm, smooth_iterations, smooth_relaxat
     #TODO: Hey! This piece of code is the same from
     #polydata_utils.FillSurfaceHole, we need to review this.
     if fill_holes:
+        send_message('Filling holes ...')
         filled_polydata = vtk.vtkFillHolesFilter()
         #  filled_polydata.ReleaseDataFlagOn()
         filled_polydata.SetInputData(polydata)
@@ -328,6 +342,7 @@ def join_process_surface(filenames, algorithm, smooth_iterations, smooth_relaxat
     #  polydata.SetSource(None)
     del stripper
 
+    send_message('Calculating area and volume ...')
     measured_polydata = vtk.vtkMassProperties()
     measured_polydata.SetInputData(to_measure)
     volume =  float(measured_polydata.GetVolume())

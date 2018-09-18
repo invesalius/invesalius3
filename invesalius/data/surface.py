@@ -26,9 +26,7 @@ import sys
 import tempfile
 import time
 import weakref
-
-#  from concurrent.futures import ProcessPoolExecutor as Pool
-from multiprocessing import Pool
+import Queue
 
 import vtk
 import wx
@@ -510,10 +508,12 @@ class SurfaceManager():
         n_pieces = int(round(matrix.shape[0] / piece_size + 0.5, 0))
 
         filenames = []
+        pool = multiprocessing.Pool(processes=min(n_pieces, n_processors))
+        manager = multiprocessing.Manager()
+        queue = manager.Queue(1)
 
         # If InVesalius is running without GUI
         if wx.GetApp() is None:
-            pool = Pool(processes=min(n_pieces, n_processors))
             processes = []
             for i in range(n_pieces):
                 init = i * piece_size
@@ -539,7 +539,7 @@ class SurfaceManager():
                                  args=(filenames, algorithm, smooth_iterations,
                                        smooth_relaxation_factor,
                                        decimate_reduction, keep_largest,
-                                       fill_holes, options))
+                                       fill_holes, options, queue))
 
             while not f.ready():
                 time.sleep(0.25)
@@ -569,7 +569,6 @@ class SurfaceManager():
 
         # With GUI
         else:
-            pool = Pool(processes=min(n_pieces, n_processors))
             processes = []
             for i in range(n_pieces):
                 init = i * piece_size
@@ -610,7 +609,7 @@ class SurfaceManager():
                                  args=(filenames, algorithm, smooth_iterations,
                                        smooth_relaxation_factor,
                                        decimate_reduction, keep_largest,
-                                       fill_holes, options))
+                                       fill_holes, options, queue))
             processes.append(f)
 
             while not f.ready():
@@ -618,7 +617,12 @@ class SurfaceManager():
                     sp.Close()
                     return
                 time.sleep(0.25)
-                sp.Update("Joining surfaces")
+                try:
+                    msg = queue.get_nowait()
+                    sp.Update(msg)
+                except:
+                    sp.Update(None)
+                    print("NONE")
                 wx.Yield()
 
             surface_filename, surface_measures = f.get()

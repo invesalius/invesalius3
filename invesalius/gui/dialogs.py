@@ -3549,8 +3549,11 @@ class SurfaceProgressWindow(object):
         #  for p in self.processes:
             #  print("Canceling", p.terminate())
 
-    def Update(self, msg, value=None):
-        self.dlg.Pulse(msg)
+    def Update(self, msg=None, value=None):
+        if msg is None:
+            self.dlg.Pulse()
+        else:
+            self.dlg.Pulse(msg)
 
     def Close(self):
         self.dlg.Destroy()
