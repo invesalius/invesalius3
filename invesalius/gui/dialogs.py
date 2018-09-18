@@ -3304,7 +3304,7 @@ class MaskDensityDialog(wx.Dialog):
         if project.mask_dict.values():
             for mask in project.mask_dict.values():
                 self.cmb_mask.Append(mask.name, mask)
-            self.cmb_mask.SetValue(project.mask_dict.values()[0].name)
+            self.cmb_mask.SetValue(list(project.mask_dict.values())[0].name)
 
         self.calc_button = wx.Button(self, -1, _(u'Calculate'))
 
