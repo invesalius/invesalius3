@@ -22,6 +22,7 @@ import sys
 import re
 import locale
 import math
+import traceback
 
 from distutils.version import LooseVersion
 from functools import wraps
@@ -474,3 +475,13 @@ def timing(f):
         print('{} elapsed time: {}'.format(f.__name__, end-start))
         return result
     return wrapper
+
+
+def log_traceback(ex):
+    if hasattr(ex, '__traceback__'):
+        ex_traceback = ex.__traceback__
+    else:
+        _, _, ex_traceback = sys.exc_info()
+    tb_lines = [line.rstrip('\n') for line in
+        traceback.format_exception(ex.__class__, ex, ex_traceback)]
+    return ''.join(tb_lines)

@@ -25,11 +25,18 @@ import shutil
 import sys
 import tempfile
 import time
+import traceback
 import weakref
-import Queue
+
+try:
+    import queue
+except ImportError:
+    import Queue as queue
 
 import vtk
 import wx
+import wx.lib.agw.genericmessagedialog as GMD
+
 from wx.lib.pubsub import pub as Publisher
 
 if sys.platform == 'win32':
@@ -475,9 +482,6 @@ class SurfaceManager():
             smooth_relaxation_factor = const.SURFACE_QUALITY[quality][2]
             decimate_reduction = const.SURFACE_QUALITY[quality][3]
 
-        #if imagedata_resolution:
-            #imagedata = iu.ResampleImage3D(imagedata, imagedata_resolution)
-
         pipeline_size = 4
         if decimate_reduction:
             pipeline_size += 1
@@ -488,10 +492,6 @@ class SurfaceManager():
         if keep_largest:
             pipeline_size += 1
 
-        ## Update progress value in GUI
-        UpdateProgress = vu.ShowProgress(pipeline_size)
-        UpdateProgress(0, _("Creating 3D surface..."))
-
         language = ses.Session().language
 
         if (prj.Project().original_orientation == const.CORONAL):
@@ -501,7 +501,6 @@ class SurfaceManager():
 
         n_processors = multiprocessing.cpu_count()
 
-        pipe_in, pipe_out = multiprocessing.Pipe()
         o_piece = 1
         piece_size = 20
 
@@ -510,7 +509,7 @@ class SurfaceManager():
         filenames = []
         pool = multiprocessing.Pool(processes=min(n_pieces, n_processors))
         manager = multiprocessing.Manager()
-        queue = manager.Queue(1)
+        msg_queue = manager.Queue(1)
 
         # If InVesalius is running without GUI
         if wx.GetApp() is None:
@@ -539,12 +538,18 @@ class SurfaceManager():
                                  args=(filenames, algorithm, smooth_iterations,
                                        smooth_relaxation_factor,
                                        decimate_reduction, keep_largest,
-                                       fill_holes, options, queue))
+                                       fill_holes, options, msg_queue))
 
             while not f.ready():
                 time.sleep(0.25)
 
-            surface_filename, surface_measures = f.get()
+            try:
+                surface_filename, surface_measures = f.get()
+            except Exception as e:
+                print(_("InVesalius was not able to create the surface"))
+                print(traceback.print_exc())
+                return
+
             reader = vtk.vtkXMLPolyDataReader()
             reader.SetFileName(surface_filename)
             reader.Update()
@@ -586,14 +591,12 @@ class SurfaceManager():
                                              imagedata_resolution),
                                      callback=lambda x: filenames.append(x))
                 processes.append(f)
-                #  f.add_done_callback(lambda x: filenames.append(x.result()))
-                #  filenames.append(f)
-            #  UpdateProgress(msg[0]/(n_pieces * pipeline_size), msg[1])
 
-            sp = dialogs.SurfaceProgressWindow(pool)
+            sp = dialogs.SurfaceProgressWindow()
 
             while len(filenames) != n_pieces:
-                if sp.canceled:
+                if sp.WasCancelled():
+                    pool.terminate()
                     sp.Close()
                     return
 
@@ -601,7 +604,8 @@ class SurfaceManager():
                 sp.Update(_("Creating 3D surface..."))
                 wx.Yield()
 
-            if sp.canceled:
+            if sp.WasCancelled():
+                pool.terminate()
                 sp.Close()
                 return
 
@@ -609,23 +613,33 @@ class SurfaceManager():
                                  args=(filenames, algorithm, smooth_iterations,
                                        smooth_relaxation_factor,
                                        decimate_reduction, keep_largest,
-                                       fill_holes, options, queue))
+                                       fill_holes, options, msg_queue))
             processes.append(f)
 
             while not f.ready():
-                if sp.canceled:
+                if sp.WasCancelled():
+                    pool.terminate()
                     sp.Close()
                     return
                 time.sleep(0.25)
                 try:
-                    msg = queue.get_nowait()
+                    msg = msg_queue.get_nowait()
                     sp.Update(msg)
                 except:
                     sp.Update(None)
-                    print("NONE")
                 wx.Yield()
 
-            surface_filename, surface_measures = f.get()
+            try:
+                surface_filename, surface_measures = f.get()
+            except Exception as e:
+                sp.Close()
+                del sp
+                msg = utl.log_traceback(e)
+                dlg = GMD.GenericMessageDialog(None, msg, "Exception!",
+                                               wx.OK|wx.ICON_ERROR)
+                dlg.ShowModal()
+                return
+
             reader = vtk.vtkXMLPolyDataReader()
             reader.SetFileName(surface_filename)
             reader.Update()
@@ -688,11 +702,6 @@ class SurfaceManager():
             self.actors_dict[surface.index] = actor
 
             Publisher.sendMessage('Update surface info in GUI', surface=surface)
-
-            #When you finalize the progress. The bar is cleaned.
-            UpdateProgress = vu.ShowProgress(1)
-            UpdateProgress(0, _("Ready"))
-            Publisher.sendMessage('Update status text in GUI', label=_("Ready"))
 
             Publisher.sendMessage('End busy cursor')
             del actor

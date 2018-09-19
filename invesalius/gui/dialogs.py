@@ -3527,27 +3527,19 @@ class ObjectCalibrationDialog(wx.Dialog):
 
 
 class SurfaceProgressWindow(object):
-    def __init__(self, processes):
-        self.processes = processes
+    def __init__(self):
         self.title = "InVesalius 3"
         self.msg = _("Creating 3D surface ...")
         self.style = wx.PD_APP_MODAL | wx.PD_APP_MODAL | wx.PD_CAN_ABORT | wx.PD_ELAPSED_TIME
-
-        self.canceled = False
-
         self.dlg = wx.ProgressDialog(self.title,
                                      self.msg,
-                                     parent = None,
-                                     style  = self.style)
-
-        self.dlg.Bind(wx.EVT_BUTTON, self.Cancel)
+                                     parent=None,
+                                     style=self.style)
         self.dlg.Show()
 
-    def Cancel(self, evt):
-        print("Canceling", self.processes.terminate())
-        self.canceled = True
-        #  for p in self.processes:
-            #  print("Canceling", p.terminate())
+    def WasCancelled(self):
+        print("Cancelled?", self.dlg.WasCancelled())
+        return self.dlg.WasCancelled()
 
     def Update(self, msg=None, value=None):
         if msg is None:
