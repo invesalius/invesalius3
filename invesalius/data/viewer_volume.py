@@ -1755,7 +1755,7 @@ class SlicePlane:
         plane_x.SetRightButtonAction(0)
         plane_x.SetMiddleButtonAction(0)
         cursor_property = plane_x.GetCursorProperty()
-        cursor_property.SetOpacity(1)
+        cursor_property.SetOpacity(0)
 
         plane_y = self.plane_y = vtk.vtkImagePlaneWidget()
         plane_y.DisplayTextOff()

@@ -927,8 +927,10 @@ class MenuBar(wx.MenuBar):
         #Mode
         self.mode_menu = mode_menu = wx.Menu()
         nav_menu = wx.Menu()
-        nav_menu.Append(const.ID_MODE_NAVIGATION, _(u'Transcranial Magnetic Stimulation Mode\tCtrl+X'), "", wx.ITEM_CHECK)
-        self.mode_dbs = nav_menu.Append(const.ID_MODE_DBS, _(u'Deep Brian Stimulation Mode\tCtrl+Shift+X'), "", wx.ITEM_CHECK)
+        nav_menu.Append(const.ID_MODE_NAVIGATION, _(u'Transcranial Magnetic Stimulation Mode\tCtrl+T'), "", wx.ITEM_CHECK)
+        #Under development
+        self.mode_dbs = nav_menu.Append(const.ID_MODE_DBS, _(u'Deep Brian Stimulation Mode\tCtrl+B'), "", wx.ITEM_CHECK)
+        self.mode_dbs.Enable(0)
         mode_menu.Append(-1,_('Navigation Mode'),nav_menu)
 
         v = self.NavigationModeStatus()
