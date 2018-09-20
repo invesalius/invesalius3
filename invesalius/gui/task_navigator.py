@@ -1098,6 +1098,9 @@ class MarkersPanel(wx.Panel):
         menu_id.Bind(wx.EVT_MENU, self.OnMenuEditMarkerId, edit_id)
         target_menu = menu_id.Append(1, _('Set as target'))
         menu_id.Bind(wx.EVT_MENU, self.OnMenuSetTarget, target_menu)
+        menu_id.AppendSeparator()
+        color_id = menu_id.Append(2, _('Set color'))
+        menu_id.Bind(wx.EVT_MENU, self.OnMenuSetColor, color_id)
         target_menu.Enable(status)
         self.PopupMenu(menu_id)
         menu_id.Destroy()
@@ -1147,6 +1150,26 @@ class MarkersPanel(wx.Panel):
         self.OnMenuEditMarkerId('TARGET')
         self.tgt_flag = True
         dlg.NewTarget()
+
+    def OnMenuSetColor(self, evt):
+        index = self.lc.GetFocusedItem()
+        cdata = wx.ColourData()
+        cdata.SetColour(wx.Colour(self.list_coord[index][6]*255,self.list_coord[index][7]*255,self.list_coord[index][8]*255))
+        dlg = wx.ColourDialog(self, data=cdata)
+        dlg.GetColourData().SetChooseFull(True)
+        if dlg.ShowModal() == wx.ID_OK:
+            self.r, self.g, self.b = dlg.GetColourData().GetColour().Get(includeAlpha=False)
+            r = float(self.r) / 255.0
+            g = float(self.g) / 255.0
+            b = float(self.b) / 255.0
+        dlg.Destroy()
+        color = [r,g,b]
+
+        Publisher.sendMessage('Set new color', index=index, color=color)
+
+        self.list_coord[index][6] = r
+        self.list_coord[index][7] = g
+        self.list_coord[index][8] = b
 
     def OnDeleteAllMarkers(self, evt=None):
         if self.list_coord:

@@ -248,6 +248,7 @@ class Viewer(wx.Panel):
         Publisher.subscribe(self.RemoveMarker, 'Remove marker')
         Publisher.subscribe(self.BlinkMarker, 'Blink Marker')
         Publisher.subscribe(self.StopBlinkMarker, 'Stop Blink Marker')
+        Publisher.subscribe(self.SetNewColor, 'Set new color')
 
         # Related to object tracking during neuronavigation
         Publisher.subscribe(self.OnNavigationStatus, 'Navigation status')
@@ -506,7 +507,7 @@ class Viewer(wx.Panel):
         mapper.SetInputConnection(ball_ref.GetOutputPort())
 
         prop = vtk.vtkProperty()
-        prop.SetColor(colour)
+        prop.SetColor(colour[0:3])
 
         #adding a new actor for the present ball
         self.staticballs.append(vtk.vtkActor())
@@ -567,6 +568,11 @@ class Viewer(wx.Panel):
                 self.staticballs[self.index].SetVisibility(1)
                 self.Refresh()
             self.index = False
+
+    def SetNewColor(self, index, color):
+        self.staticballs[index].GetProperty().SetColor(color)
+        self.Refresh()
+
 
     def OnTargetMarkerTransparency(self, status, index):
         if status:
@@ -791,6 +797,10 @@ class Viewer(wx.Panel):
 
             for ind in self.arrow_actor_list:
                 self.ren2.AddActor(ind)
+
+
+            x, y, z = bases.flip_x(coord[0:3])
+            self.tactor.SetPosition(x-20, y-30, z+20)
 
             self.Refresh()
 
@@ -1098,8 +1108,6 @@ class Viewer(wx.Panel):
             coord = position
             x, y, z = bases.flip_x(coord)
             self.ball_actor.SetPosition(x, y, z)
-
-            self.tactor.SetPosition(x+10, y+30, z+20)
 
         else:
             self.RemoveBallReference()
