@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 
 #--------------------------------------------------------------------------
@@ -229,10 +228,9 @@ class SliceMenu(wx.Menu):
             if sys.platform.startswith('linux'):
                 for i in self.pseudo_color_items:
                     it = self.pseudo_color_items[i]
-                    if it.IsChecked():
-                        it.Toggle()
+                    it.Check(False)
 
-                item.Toggle()
+                item.Check()
             self.HideClutDialog()
             self._gen_event = True
 
@@ -244,10 +242,9 @@ class SliceMenu(wx.Menu):
             if sys.platform.startswith('linux'):
                 for i in self.pseudo_color_items:
                     it = self.pseudo_color_items[i]
-                    if it.IsChecked():
-                        it.Toggle()
+                    it.Check(False)
 
-                item.Toggle()
+                item.Check()
             self.HideClutDialog()
             self._gen_event = True
 
@@ -276,10 +273,9 @@ class SliceMenu(wx.Menu):
             if sys.platform.startswith('linux'):
                 for i in self.pseudo_color_items:
                     it = self.pseudo_color_items[i]
-                    if it.IsChecked():
-                        it.Toggle()
+                    it.Check(False)
 
-                item.Toggle()
+                item.Check()
             item = self.ID_TO_TOOL_ITEM[evt.GetId()]
             item.Check(True)
             self._gen_event = False

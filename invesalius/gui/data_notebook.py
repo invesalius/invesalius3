@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #--------------------------------------------------------------------------
 # Software:     InVesalius - Software de Reconstrucao 3D de Imagens Medicas
@@ -1135,7 +1134,7 @@ class MeasuresListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
                                   index=index, visibility=visibility)
 
     def OnLoadData(self, measurement_dict, spacing=(1.0, 1.0, 1.0)):
-        for i in measurement_dict:
+        for i in sorted(measurement_dict):
             m = measurement_dict[i]
             image = self.CreateColourBitmap(m.colour)
             image_index = self.imagelist.Add(image)
