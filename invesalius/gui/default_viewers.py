@@ -36,6 +36,8 @@ from invesalius.gui.widgets.clut_raycasting import CLUTRaycastingWidget, \
 from invesalius.constants import ID_TO_BMP
 import invesalius.constants as const
 
+import invesalius.session as ses
+
 class Panel(wx.Panel):
     def __init__(self, parent):
         wx.Panel.__init__(self, parent, pos=wx.Point(0, 50),
@@ -120,6 +122,9 @@ class Panel(wx.Panel):
             self.aui_manager.AddPane(p1, s1)
 
         self.aui_manager.Update()
+
+        if int(ses.Session().mode) != 1:
+            Publisher.sendMessage('Deactive target button')
 
     def __bind_events_wx(self):
         self.aui_manager.Bind(wx.aui.EVT_AUI_PANE_MAXIMIZE, self.OnMaximize)
@@ -630,7 +635,7 @@ class VolumeToolPanel(wx.Panel):
                                   preset_name=ID_TO_NAME[id])
             # Enable or disable tools
             if name != const.RAYCASTING_OFF_LABEL:
- 	            self.menu_raycasting.Enable(RAYCASTING_TOOLS, 1)
+                self.menu_raycasting.Enable(RAYCASTING_TOOLS, 1)
             else:
                 self.menu_raycasting.Enable(RAYCASTING_TOOLS, 0)
 
