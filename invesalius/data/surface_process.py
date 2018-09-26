@@ -1,4 +1,5 @@
 import multiprocessing
+import os
 import tempfile
 import time
 
@@ -45,86 +46,87 @@ def create_surface_piece(filename, shape, dtype, mask_filename, mask_shape,
                          decimate_reduction, smooth_relaxation_factor,
                          smooth_iterations, language, flip_image,
                          from_binary, algorithm, imagedata_resolution):
-        if from_binary:
-            mask = numpy.memmap(mask_filename, mode='r',
-                                     dtype=mask_dtype,
-                                     shape=mask_shape)
+    if from_binary:
+        mask = numpy.memmap(mask_filename, mode='r',
+                                 dtype=mask_dtype,
+                                 shape=mask_shape)
+        a_mask = numpy.array(mask[roi.start + 1: roi.stop + 1,
+                                       1:, 1:])
+        image =  converters.to_vtk(a_mask, spacing, roi.start,
+                                   "AXIAL")
+        del a_mask
+    else:
+        image = numpy.memmap(filename, mode='r', dtype=dtype,
+                                  shape=shape)
+        mask = numpy.memmap(mask_filename, mode='r',
+                                 dtype=mask_dtype,
+                                 shape=mask_shape)
+        a_image = numpy.array(image[roi])
+
+        if algorithm == u'InVesalius 3.b2':
             a_mask = numpy.array(mask[roi.start + 1: roi.stop + 1,
                                            1:, 1:])
-            image =  converters.to_vtk(a_mask, spacing, roi.start,
+            a_image[a_mask == 1] = a_image.min() - 1
+            a_image[a_mask == 254] = (min_value + max_value) / 2.0
+
+            image =  converters.to_vtk(a_image, spacing, roi.start,
                                        "AXIAL")
+
+            gauss = vtk.vtkImageGaussianSmooth()
+            gauss.SetInputData(image)
+            gauss.SetRadiusFactor(0.3)
+            gauss.ReleaseDataFlagOn()
+            gauss.Update()
+
+            del image
+            image = gauss.GetOutput()
+            del gauss
             del a_mask
         else:
-            image = numpy.memmap(filename, mode='r', dtype=dtype,
-                                      shape=shape)
-            mask = numpy.memmap(mask_filename, mode='r',
-                                     dtype=mask_dtype,
-                                     shape=mask_shape)
-            a_image = numpy.array(image[roi])
+            image = converters.to_vtk(a_image, spacing, roi.start,
+                                       "AXIAL")
+        del a_image
 
-            if algorithm == u'InVesalius 3.b2':
-                a_mask = numpy.array(mask[roi.start + 1: roi.stop + 1,
-                                               1:, 1:])
-                a_image[a_mask == 1] = a_image.min() - 1
-                a_image[a_mask == 254] = (min_value + max_value) / 2.0
+    if imagedata_resolution:
+        image = ResampleImage3D(image, imagedata_resolution)
 
-                image =  converters.to_vtk(a_image, spacing, roi.start,
-                                           "AXIAL")
+    flip = vtk.vtkImageFlip()
+    flip.SetInputData(image)
+    flip.SetFilteredAxis(1)
+    flip.FlipAboutOriginOn()
+    flip.ReleaseDataFlagOn()
+    flip.Update()
 
-                gauss = vtk.vtkImageGaussianSmooth()
-                gauss.SetInputData(image)
-                gauss.SetRadiusFactor(0.3)
-                gauss.ReleaseDataFlagOn()
-                gauss.Update()
+    del image
+    image = flip.GetOutput()
+    del flip
 
-                del image
-                image = gauss.GetOutput()
-                del gauss
-                del a_mask
-            else:
-                image = converters.to_vtk(a_image, spacing, roi.start,
-                                           "AXIAL")
-            del a_image
+    contour = vtk.vtkContourFilter()
+    contour.SetInputData(image)
+    if from_binary:
+        contour.SetValue(0, 127) # initial threshold
+    else:
+        contour.SetValue(0, min_value) # initial threshold
+        contour.SetValue(1, max_value) # final threshold
+    #  contour.ComputeScalarsOn()
+    #  contour.ComputeGradientsOn()
+    #  contour.ComputeNormalsOn()
+    contour.ReleaseDataFlagOn()
+    contour.Update()
 
-        if imagedata_resolution:
-            image = ResampleImage3D(image, imagedata_resolution)
+    polydata = contour.GetOutput()
+    del image
+    del contour
 
-        flip = vtk.vtkImageFlip()
-        flip.SetInputData(image)
-        flip.SetFilteredAxis(1)
-        flip.FlipAboutOriginOn()
-        flip.ReleaseDataFlagOn()
-        flip.Update()
+    filename = tempfile.mktemp(suffix='_%d_%d.vtp' % (roi.start, roi.stop))
+    writer = vtk.vtkXMLPolyDataWriter()
+    writer.SetInputData(polydata)
+    writer.SetFileName(filename)
+    writer.Write()
 
-        del image
-        image = flip.GetOutput()
-        del flip
-
-        contour = vtk.vtkContourFilter()
-        contour.SetInputData(image)
-        if from_binary:
-            contour.SetValue(0, 127) # initial threshold
-        else:
-            contour.SetValue(0, min_value) # initial threshold
-            contour.SetValue(1, max_value) # final threshold
-        contour.ComputeScalarsOn()
-        contour.ComputeGradientsOn()
-        contour.ComputeNormalsOn()
-        contour.ReleaseDataFlagOn()
-        contour.Update()
-
-        polydata = contour.GetOutput()
-        del image
-        del contour
-
-        filename = tempfile.mktemp(suffix='_%d_%d.vtp' % (roi.start, roi.stop))
-        writer = vtk.vtkXMLPolyDataWriter()
-        writer.SetInputData(polydata)
-        writer.SetFileName(filename)
-        writer.Write()
-
-        print("Writing piece", roi, "to", filename)
-        return filename
+    print("Writing piece", roi, "to", filename)
+    print("MY PID MC", os.getpid())
+    return filename
 
 
 def join_process_surface(filenames, algorithm, smooth_iterations, smooth_relaxation_factor, decimate_reduction, keep_largest, fill_holes, options, msg_queue):
@@ -318,7 +320,8 @@ def join_process_surface(filenames, algorithm, smooth_iterations, smooth_relaxat
     #  normals_ref().AddObserver("ProgressEvent", lambda obj,evt:
                     #  UpdateProgress(normals_ref(), _("Creating 3D surface...")))
     normals.SetInputData(polydata)
-    normals.SetFeatureAngle(80)
+    #  normals.SetFeatureAngle(80)
+    normals.SplittingOff()
     normals.AutoOrientNormalsOn()
     #  normals.GetOutput().ReleaseDataFlagOn()
     normals.Update()
@@ -349,13 +352,17 @@ def join_process_surface(filenames, algorithm, smooth_iterations, smooth_relaxat
     send_message('Calculating area and volume ...')
     measured_polydata = vtk.vtkMassProperties()
     measured_polydata.SetInputData(to_measure)
+    measured_polydata.Update()
     volume =  float(measured_polydata.GetVolume())
     area =  float(measured_polydata.GetSurfaceArea())
+    del measured_polydata
 
     filename = tempfile.mktemp(suffix='_full.vtp')
     writer = vtk.vtkXMLPolyDataWriter()
     writer.SetInputData(polydata)
     writer.SetFileName(filename)
     writer.Write()
+    del writer
 
+    print("MY PID", os.getpid())
     return filename, {'volume': volume, 'area': area}

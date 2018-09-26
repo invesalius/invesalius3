@@ -17,6 +17,7 @@
 #    detalhes.
 #--------------------------------------------------------------------------
 
+import functools
 import multiprocessing
 import os
 import plistlib
@@ -61,6 +62,7 @@ from invesalius.gui import dialogs
 
 from invesalius.data import cy_mesh
 # TODO: Verificar ReleaseDataFlagOn and SetSource 
+
 
 class Surface():
     """
@@ -449,6 +451,71 @@ class SurfaceManager():
     ####
     #(mask_index, surface_name, quality, fill_holes, keep_largest)
 
+    def _on_complete_surface_creation(self, args, overwrite, surface_name, colour, dialog):
+        surface_filename, surface_measures = args
+        print(surface_filename, surface_measures)
+        reader = vtk.vtkXMLPolyDataReader()
+        reader.SetFileName(surface_filename)
+        reader.Update()
+        polydata = reader.GetOutput()
+
+        # Map polygonal data (vtkPolyData) to graphics primitives.
+        mapper = vtk.vtkPolyDataMapper()
+        mapper.SetInputData(polydata)
+        mapper.ScalarVisibilityOff()
+        #  mapper.ReleaseDataFlagOn()
+        mapper.ImmediateModeRenderingOn() # improve performance
+
+        # Represent an object (geometry & properties) in the rendered scene
+        actor = vtk.vtkActor()
+        actor.SetMapper(mapper)
+        del mapper
+        #Create Surface instance
+        if overwrite:
+            surface = Surface(index = self.last_surface_index)
+        else:
+            surface = Surface(name=surface_name)
+        surface.colour = colour
+        surface.polydata = polydata
+        surface.volume = surface_measures['volume']
+        surface.area = surface_measures['area']
+        del polydata
+
+        # Set actor colour and transparency
+        actor.GetProperty().SetColor(colour)
+        actor.GetProperty().SetOpacity(1-surface.transparency)
+
+        prop = actor.GetProperty()
+
+        interpolation = int(ses.Session().surface_interpolation)
+
+        prop.SetInterpolation(interpolation)
+
+        proj = prj.Project()
+        if overwrite:
+            proj.ChangeSurface(surface)
+        else:
+            index = proj.AddSurface(surface)
+            surface.index = index
+            self.last_surface_index = index
+
+        session = ses.Session()
+        session.ChangeProject()
+
+        Publisher.sendMessage('Load surface actor into viewer', actor=actor)
+
+        # Send actor by pubsub to viewer's render
+        if overwrite and self.actors_dict.keys():
+            old_actor = self.actors_dict[self.last_surface_index]
+            Publisher.sendMessage('Remove surface actor from viewer', actor=old_actor)
+
+        # Save actor for future management tasks
+        self.actors_dict[surface.index] = actor
+        Publisher.sendMessage('Update surface info in GUI', surface=surface)
+        Publisher.sendMessage('End busy cursor')
+
+        dialog.running = False
+
     def AddNewActor(self, slice_, mask, surface_parameters):
         """
         Create surface actor, save into project and send it to viewer.
@@ -513,7 +580,6 @@ class SurfaceManager():
 
         # If InVesalius is running without GUI
         if wx.GetApp() is None:
-            processes = []
             for i in range(n_pieces):
                 init = i * piece_size
                 end = init + piece_size + o_piece
@@ -529,7 +595,6 @@ class SurfaceManager():
                                              algorithm != 'Default', algorithm,
                                              imagedata_resolution),
                                      callback=lambda x: filenames.append(x))
-                processes.append(f)
 
             while len(filenames) != n_pieces:
                 time.sleep(0.25)
@@ -574,7 +639,6 @@ class SurfaceManager():
 
         # With GUI
         else:
-            processes = []
             for i in range(n_pieces):
                 init = i * piece_size
                 end = init + piece_size + o_piece
@@ -590,7 +654,6 @@ class SurfaceManager():
                                              algorithm != 'Default', algorithm,
                                              imagedata_resolution),
                                      callback=lambda x: filenames.append(x))
-                processes.append(f)
 
             sp = dialogs.SurfaceProgressWindow()
 
@@ -613,14 +676,14 @@ class SurfaceManager():
                                  args=(filenames, algorithm, smooth_iterations,
                                        smooth_relaxation_factor,
                                        decimate_reduction, keep_largest,
-                                       fill_holes, options, msg_queue))
-            processes.append(f)
+                                       fill_holes, options, msg_queue),
+                                 callback=functools.partial(self._on_complete_surface_creation, overwrite=overwrite, surface_name=surface_name, colour=colour, dialog=sp))
 
-            while not f.ready():
+            while sp.running:
                 if sp.WasCancelled():
                     pool.terminate()
                     sp.Close()
-                    return
+                    break
                 time.sleep(0.25)
                 try:
                     msg = msg_queue.get_nowait()
@@ -629,84 +692,29 @@ class SurfaceManager():
                     sp.Update(None)
                 wx.Yield()
 
-            try:
-                surface_filename, surface_measures = f.get()
-            except Exception as e:
-                sp.Close()
-                del sp
-                msg = utl.log_traceback(e)
-                dlg = GMD.GenericMessageDialog(None, msg, "Exception!",
-                                               wx.OK|wx.ICON_ERROR)
-                dlg.ShowModal()
-                return
-
-            reader = vtk.vtkXMLPolyDataReader()
-            reader.SetFileName(surface_filename)
-            reader.Update()
-            polydata = reader.GetOutput()
+            #  try:
+                #  surface_filename, surface_measures = f.get()
+            #  except Exception as e:
+                #  sp.Close()
+                #  del sp
+                #  msg = utl.log_traceback(e)
+                #  dlg = GMD.GenericMessageDialog(None, msg, "Exception!",
+                                               #  wx.OK|wx.ICON_ERROR)
+                #  dlg.ShowModal()
+                #  return
 
             sp.Close()
             del sp
-
-            # Map polygonal data (vtkPolyData) to graphics primitives.
-            mapper = vtk.vtkPolyDataMapper()
-            mapper.SetInputData(polydata)
-            mapper.ScalarVisibilityOff()
-            #  mapper.ReleaseDataFlagOn()
-            mapper.ImmediateModeRenderingOn() # improve performance
-
-            # Represent an object (geometry & properties) in the rendered scene
-            actor = vtk.vtkActor()
-            actor.SetMapper(mapper)
-            del mapper
-            #Create Surface instance
-            if overwrite:
-                surface = Surface(index = self.last_surface_index)
-            else:
-                surface = Surface(name=surface_name)
-            surface.colour = colour
-            surface.polydata = polydata
-            surface.volume = surface_measures['volume']
-            surface.area = surface_measures['area']
-            del polydata
-
-            # Set actor colour and transparency
-            actor.GetProperty().SetColor(colour)
-            actor.GetProperty().SetOpacity(1-surface.transparency)
-
-            prop = actor.GetProperty()
-
-            interpolation = int(ses.Session().surface_interpolation)
-
-            prop.SetInterpolation(interpolation)
-
-            proj = prj.Project()
-            if overwrite:
-                proj.ChangeSurface(surface)
-            else:
-                index = proj.AddSurface(surface)
-                surface.index = index
-                self.last_surface_index = index
-
-            session = ses.Session()
-            session.ChangeProject()
-
-            Publisher.sendMessage('Load surface actor into viewer', actor=actor)
-
-            # Send actor by pubsub to viewer's render
-            if overwrite and self.actors_dict.keys():
-                old_actor = self.actors_dict[self.last_surface_index]
-                Publisher.sendMessage('Remove surface actor from viewer', actor=old_actor)
-
-            # Save actor for future management tasks
-            self.actors_dict[surface.index] = actor
-
-            Publisher.sendMessage('Update surface info in GUI', surface=surface)
-
-            Publisher.sendMessage('End busy cursor')
-            del actor
             t_end = time.time()
             print("Elapsed time - {}".format(t_end-t_init))
+        print("Removing pool")
+        #  pool.join()
+        pool.terminate()
+        del pool
+        del manager
+        del msg_queue
+        import gc
+        gc.collect()
 
     def UpdateSurfaceInterpolation(self):
         interpolation = int(ses.Session().surface_interpolation)

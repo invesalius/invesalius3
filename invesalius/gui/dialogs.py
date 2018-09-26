@@ -3535,10 +3535,11 @@ class SurfaceProgressWindow(object):
                                      self.msg,
                                      parent=None,
                                      style=self.style)
+        self.running = True
         self.dlg.Show()
 
     def WasCancelled(self):
-        print("Cancelled?", self.dlg.WasCancelled())
+        #  print("Cancelled?", self.dlg.WasCancelled())
         return self.dlg.WasCancelled()
 
     def Update(self, msg=None, value=None):
