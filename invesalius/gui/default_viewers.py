@@ -34,7 +34,6 @@ from invesalius.gui.widgets.clut_raycasting import CLUTRaycastingWidget, \
         EVT_CLUT_CURVE_WL_CHANGE
 
 from invesalius.constants import ID_TO_BMP
-import invesalius.constants as const
 
 import invesalius.session as ses
 import invesalius.constants as const
