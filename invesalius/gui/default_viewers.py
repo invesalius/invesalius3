@@ -37,6 +37,7 @@ from invesalius.constants import ID_TO_BMP
 import invesalius.constants as const
 
 import invesalius.session as ses
+import invesalius.constants as const
 
 class Panel(wx.Panel):
     def __init__(self, parent):
@@ -123,7 +124,7 @@ class Panel(wx.Panel):
 
         self.aui_manager.Update()
 
-        if int(ses.Session().mode) != 1:
+        if int(ses.Session().mode) != const.MODE_NAVIGATOR:
             Publisher.sendMessage('Deactive target button')
 
     def __bind_events_wx(self):
@@ -317,8 +318,6 @@ import wx.lib.platebtn as pbtn
 import wx.lib.buttons as btn
 import wx.lib.pubsub as ps
 import wx.lib.colourselect as csel
-
-import invesalius.constants as const
 
 [BUTTON_RAYCASTING, BUTTON_VIEW, BUTTON_SLICE_PLANE, BUTTON_3D_STEREO, BUTTON_TARGET] = [wx.NewId() for num in range(5)]
 RAYCASTING_TOOLS = wx.NewId()
