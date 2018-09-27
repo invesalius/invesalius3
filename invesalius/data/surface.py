@@ -17,6 +17,7 @@
 #    detalhes.
 #--------------------------------------------------------------------------
 
+import functools
 import multiprocessing
 import os
 import plistlib
@@ -24,10 +25,19 @@ import random
 import shutil
 import sys
 import tempfile
+import time
+import traceback
 import weakref
+
+try:
+    import queue
+except ImportError:
+    import Queue as queue
 
 import vtk
 import wx
+import wx.lib.agw.genericmessagedialog as GMD
+
 from wx.lib.pubsub import pub as Publisher
 
 if sys.platform == 'win32':
@@ -48,8 +58,11 @@ import invesalius.data.surface_process as surface_process
 import invesalius.utils as utl
 import invesalius.data.vtk_utils as vu
 
+from invesalius.gui import dialogs
+
 from invesalius.data import cy_mesh
 # TODO: Verificar ReleaseDataFlagOn and SetSource 
+
 
 class Surface():
     """
@@ -438,10 +451,81 @@ class SurfaceManager():
     ####
     #(mask_index, surface_name, quality, fill_holes, keep_largest)
 
+    def _on_complete_surface_creation(self, args, overwrite, surface_name, colour, dialog):
+        surface_filename, surface_measures = args
+        print(surface_filename, surface_measures)
+        reader = vtk.vtkXMLPolyDataReader()
+        reader.SetFileName(surface_filename)
+        reader.Update()
+        polydata = reader.GetOutput()
+
+        # Map polygonal data (vtkPolyData) to graphics primitives.
+        mapper = vtk.vtkPolyDataMapper()
+        mapper.SetInputData(polydata)
+        mapper.ScalarVisibilityOff()
+        #  mapper.ReleaseDataFlagOn()
+        mapper.ImmediateModeRenderingOn() # improve performance
+
+        # Represent an object (geometry & properties) in the rendered scene
+        actor = vtk.vtkActor()
+        actor.SetMapper(mapper)
+        del mapper
+        #Create Surface instance
+        if overwrite:
+            surface = Surface(index = self.last_surface_index)
+        else:
+            surface = Surface(name=surface_name)
+        surface.colour = colour
+        surface.polydata = polydata
+        surface.volume = surface_measures['volume']
+        surface.area = surface_measures['area']
+        del polydata
+
+        # Set actor colour and transparency
+        actor.GetProperty().SetColor(colour)
+        actor.GetProperty().SetOpacity(1-surface.transparency)
+
+        prop = actor.GetProperty()
+
+        interpolation = int(ses.Session().surface_interpolation)
+
+        prop.SetInterpolation(interpolation)
+
+        proj = prj.Project()
+        if overwrite:
+            proj.ChangeSurface(surface)
+        else:
+            index = proj.AddSurface(surface)
+            surface.index = index
+            self.last_surface_index = index
+
+        session = ses.Session()
+        session.ChangeProject()
+
+        Publisher.sendMessage('Load surface actor into viewer', actor=actor)
+
+        # Send actor by pubsub to viewer's render
+        if overwrite and self.actors_dict.keys():
+            old_actor = self.actors_dict[self.last_surface_index]
+            Publisher.sendMessage('Remove surface actor from viewer', actor=old_actor)
+
+        # Save actor for future management tasks
+        self.actors_dict[surface.index] = actor
+        Publisher.sendMessage('Update surface info in GUI', surface=surface)
+        Publisher.sendMessage('End busy cursor')
+
+        dialog.running = False
+
+    def _on_callback_error(self, e, dialog=None):
+        dialog.running = False
+        msg = utl.log_traceback(e)
+        dialog.error = msg
+
     def AddNewActor(self, slice_, mask, surface_parameters):
         """
         Create surface actor, save into project and send it to viewer.
         """
+        t_init = time.time()
         matrix = slice_.matrix
         filename_img = slice_.matrix_filename
         spacing = slice_.spacing
@@ -470,9 +554,6 @@ class SurfaceManager():
             smooth_relaxation_factor = const.SURFACE_QUALITY[quality][2]
             decimate_reduction = const.SURFACE_QUALITY[quality][3]
 
-        #if imagedata_resolution:
-            #imagedata = iu.ResampleImage3D(imagedata, imagedata_resolution)
-
         pipeline_size = 4
         if decimate_reduction:
             pipeline_size += 1
@@ -483,10 +564,6 @@ class SurfaceManager():
         if keep_largest:
             pipeline_size += 1
 
-        ## Update progress value in GUI
-        UpdateProgress = vu.ShowProgress(pipeline_size)
-        UpdateProgress(0, _("Creating 3D surface..."))
-
         language = ses.Session().language
 
         if (prj.Project().original_orientation == const.CORONAL):
@@ -496,220 +573,59 @@ class SurfaceManager():
 
         n_processors = multiprocessing.cpu_count()
 
-        pipe_in, pipe_out = multiprocessing.Pipe()
         o_piece = 1
-        piece_size = 2000
+        piece_size = 20
 
         n_pieces = int(round(matrix.shape[0] / piece_size + 0.5, 0))
 
-        q_in = multiprocessing.Queue()
-        q_out = multiprocessing.Queue()
-
-        p = []
-        for i in range(n_processors):
-            sp = surface_process.SurfaceProcess(pipe_in, filename_img,
-                                                matrix.shape, matrix.dtype,
-                                                mask.temp_file,
-                                                mask.matrix.shape,
-                                                mask.matrix.dtype,
-                                                spacing,
-                                                mode, min_value, max_value,
-                                                decimate_reduction,
-                                                smooth_relaxation_factor,
-                                                smooth_iterations, language,
-                                                flip_image, q_in, q_out,
-                                                algorithm != 'Default',
-                                                algorithm,
-                                                imagedata_resolution)
-            p.append(sp)
-            sp.start()
-
-        for i in range(n_pieces):
-            init = i * piece_size
-            end = init + piece_size + o_piece
-            roi = slice(init, end)
-            q_in.put(roi)
-            print("new_piece", roi)
-
-        for i in p:
-            q_in.put(None)
-
-        none_count = 1
-        while 1:
-            msg = pipe_out.recv()
-            if(msg is None):
-                none_count += 1
-            else:
-                UpdateProgress(msg[0]/(n_pieces * pipeline_size), msg[1])
-
-            if none_count > n_pieces:
-                break
-
-        polydata_append = vtk.vtkAppendPolyData()
-        #  polydata_append.ReleaseDataFlagOn()
-        t = n_pieces
-        while t:
-            filename_polydata = q_out.get()
-
-            reader = vtk.vtkXMLPolyDataReader()
-            reader.SetFileName(filename_polydata)
-            #  reader.ReleaseDataFlagOn()
-            reader.Update()
-            #  reader.GetOutput().ReleaseDataFlagOn()
-
-            polydata = reader.GetOutput()
-            #  polydata.SetSource(None)
-
-            polydata_append.AddInputData(polydata)
-            del reader
-            del polydata
-            t -= 1
-
-        polydata_append.Update()
-        #  polydata_append.GetOutput().ReleaseDataFlagOn()
-        polydata = polydata_append.GetOutput()
-        #polydata.Register(None)
-        #  polydata.SetSource(None)
-        del polydata_append
-
-        if algorithm == 'ca_smoothing':
-            normals = vtk.vtkPolyDataNormals()
-            normals_ref = weakref.ref(normals)
-            normals_ref().AddObserver("ProgressEvent", lambda obj,evt:
-                                      UpdateProgress(normals_ref(), _("Creating 3D surface...")))
-            normals.SetInputData(polydata)
-            #  normals.ReleaseDataFlagOn()
-            #normals.SetFeatureAngle(80)
-            #normals.AutoOrientNormalsOn()
-            normals.ComputeCellNormalsOn()
-            #  normals.GetOutput().ReleaseDataFlagOn()
-            normals.Update()
-            del polydata
-            polydata = normals.GetOutput()
-            #  polydata.SetSource(None)
-            del normals
-
-            clean = vtk.vtkCleanPolyData()
-            #  clean.ReleaseDataFlagOn()
-            #  clean.GetOutput().ReleaseDataFlagOn()
-            clean_ref = weakref.ref(clean)
-            clean_ref().AddObserver("ProgressEvent", lambda obj,evt:
-                            UpdateProgress(clean_ref(), _("Creating 3D surface...")))
-            clean.SetInputData(polydata)
-            clean.PointMergingOn()
-            clean.Update()
-
-            del polydata
-            polydata = clean.GetOutput()
-            #  polydata.SetSource(None)
-            del clean
-
-            #  try:
-                #  polydata.BuildLinks()
-            #  except TypeError:
-                #  polydata.BuildLinks(0)
-            #  polydata = ca_smoothing.ca_smoothing(polydata, options['angle'],
-                                                 #  options['max distance'],
-                                                 #  options['min weight'],
-                                                 #  options['steps'])
-
-            mesh = cy_mesh.Mesh(polydata)
-            cy_mesh.ca_smoothing(mesh, options['angle'],
-                                 options['max distance'],
-                                 options['min weight'],
-                                 options['steps'])
-            #  polydata = mesh.to_vtk()
-
-            #  polydata.SetSource(None)
-            #  polydata.DebugOn()
-        else:
-            #smoother = vtk.vtkWindowedSincPolyDataFilter()
-            smoother = vtk.vtkSmoothPolyDataFilter()
-            smoother_ref = weakref.ref(smoother)
-            smoother_ref().AddObserver("ProgressEvent", lambda obj,evt:
-                            UpdateProgress(smoother_ref(), _("Creating 3D surface...")))
-            smoother.SetInputData(polydata)
-            smoother.SetNumberOfIterations(smooth_iterations)
-            smoother.SetRelaxationFactor(smooth_relaxation_factor)
-            smoother.SetFeatureAngle(80)
-            #smoother.SetEdgeAngle(90.0)
-            #smoother.SetPassBand(0.1)
-            smoother.BoundarySmoothingOn()
-            smoother.FeatureEdgeSmoothingOn()
-            #smoother.NormalizeCoordinatesOn()
-            #smoother.NonManifoldSmoothingOn()
-            #  smoother.ReleaseDataFlagOn()
-            #  smoother.GetOutput().ReleaseDataFlagOn()
-            smoother.Update()
-            del polydata
-            polydata = smoother.GetOutput()
-            #polydata.Register(None)
-            #  polydata.SetSource(None)
-            del smoother
-
-
-        if decimate_reduction:
-            print("Decimating", decimate_reduction)
-            decimation = vtk.vtkQuadricDecimation()
-            #  decimation.ReleaseDataFlagOn()
-            decimation.SetInputData(polydata)
-            decimation.SetTargetReduction(decimate_reduction)
-            decimation_ref = weakref.ref(decimation)
-            decimation_ref().AddObserver("ProgressEvent", lambda obj,evt:
-                            UpdateProgress(decimation_ref(), _("Creating 3D surface...")))
-            #decimation.PreserveTopologyOn()
-            #decimation.SplittingOff()
-            #decimation.BoundaryVertexDeletionOff()
-            #  decimation.GetOutput().ReleaseDataFlagOn()
-            decimation.Update()
-            del polydata
-            polydata = decimation.GetOutput()
-            #polydata.Register(None)
-            #  polydata.SetSource(None)
-            del decimation
-
-        #to_measure.Register(None)
-        #  to_measure.SetSource(None)
-
-        if keep_largest:
-            conn = vtk.vtkPolyDataConnectivityFilter()
-            conn.SetInputData(polydata)
-            conn.SetExtractionModeToLargestRegion()
-            conn_ref = weakref.ref(conn)
-            conn_ref().AddObserver("ProgressEvent", lambda obj,evt:
-                    UpdateProgress(conn_ref(), _("Creating 3D surface...")))
-            conn.Update()
-            #  conn.GetOutput().ReleaseDataFlagOn()
-            del polydata
-            polydata = conn.GetOutput()
-            #polydata.Register(None)
-            #  polydata.SetSource(None)
-            del conn
-
-        #Filter used to detect and fill holes. Only fill boundary edges holes.
-        #TODO: Hey! This piece of code is the same from
-        #polydata_utils.FillSurfaceHole, we need to review this.
-        if fill_holes:
-            filled_polydata = vtk.vtkFillHolesFilter()
-            #  filled_polydata.ReleaseDataFlagOn()
-            filled_polydata.SetInputData(polydata)
-            filled_polydata.SetHoleSize(300)
-            filled_polydata_ref = weakref.ref(filled_polydata)
-            filled_polydata_ref().AddObserver("ProgressEvent", lambda obj,evt:
-                    UpdateProgress(filled_polydata_ref(), _("Creating 3D surface...")))
-            filled_polydata.Update()
-            #  filled_polydata.GetOutput().ReleaseDataFlagOn()
-            del polydata
-            polydata = filled_polydata.GetOutput()
-            #polydata.Register(None)
-            #  polydata.SetSource(None)
-            #  polydata.DebugOn()
-            del filled_polydata
-
-        to_measure = polydata
+        filenames = []
+        pool = multiprocessing.Pool(processes=min(n_pieces, n_processors))
+        manager = multiprocessing.Manager()
+        msg_queue = manager.Queue(1)
 
         # If InVesalius is running without GUI
         if wx.GetApp() is None:
+            for i in range(n_pieces):
+                init = i * piece_size
+                end = init + piece_size + o_piece
+                roi = slice(init, end)
+                print("new_piece", roi)
+                f = pool.apply_async(surface_process.create_surface_piece,
+                                     args = (filename_img, matrix.shape, matrix.dtype,
+                                             mask.temp_file, mask.matrix.shape,
+                                             mask.matrix.dtype, roi, spacing, mode,
+                                             min_value, max_value, decimate_reduction,
+                                             smooth_relaxation_factor,
+                                             smooth_iterations, language, flip_image,
+                                             algorithm != 'Default', algorithm,
+                                             imagedata_resolution),
+                                     callback=lambda x: filenames.append(x))
+
+            while len(filenames) != n_pieces:
+                time.sleep(0.25)
+
+            f = pool.apply_async(surface_process.join_process_surface,
+                                 args=(filenames, algorithm, smooth_iterations,
+                                       smooth_relaxation_factor,
+                                       decimate_reduction, keep_largest,
+                                       fill_holes, options, msg_queue))
+
+            while not f.ready():
+                time.sleep(0.25)
+
+            try:
+                surface_filename, surface_measures = f.get()
+            except Exception as e:
+                print(_("InVesalius was not able to create the surface"))
+                print(traceback.print_exc())
+                return
+
+            reader = vtk.vtkXMLPolyDataReader()
+            reader.SetFileName(surface_filename)
+            reader.Update()
+
+            polydata = reader.GetOutput()
+
             proj = prj.Project()
             #Create Surface instance
             if overwrite:
@@ -720,115 +636,108 @@ class SurfaceManager():
                 index = proj.AddSurface(surface)
                 surface.index = index
                 self.last_surface_index = index
+
             surface.colour = colour
             surface.polydata = polydata
+            surface.volume = surface_measures['volume']
+            surface.area = surface_measures['area']
 
         # With GUI
         else:
-            normals = vtk.vtkPolyDataNormals()
-            #  normals.ReleaseDataFlagOn()
-            normals_ref = weakref.ref(normals)
-            normals_ref().AddObserver("ProgressEvent", lambda obj,evt:
-                            UpdateProgress(normals_ref(), _("Creating 3D surface...")))
-            normals.SetInputData(polydata)
-            normals.SetFeatureAngle(80)
-            normals.AutoOrientNormalsOn()
-            #  normals.GetOutput().ReleaseDataFlagOn()
-            normals.Update()
-            del polydata
-            polydata = normals.GetOutput()
-            #polydata.Register(None)
-            #  polydata.SetSource(None)
-            del normals
+            sp = dialogs.SurfaceProgressWindow()
+            for i in range(n_pieces):
+                init = i * piece_size
+                end = init + piece_size + o_piece
+                roi = slice(init, end)
+                print("new_piece", roi)
+                try:
+                    f = pool.apply_async(surface_process.create_surface_piece,
+                                         args = (filename_img, matrix.shape, matrix.dtype,
+                                                 mask.temp_file, mask.matrix.shape,
+                                                 mask.matrix.dtype, roi, spacing, mode,
+                                                 min_value, max_value, decimate_reduction,
+                                                 smooth_relaxation_factor,
+                                                 smooth_iterations, language, flip_image,
+                                                 algorithm != 'Default', algorithm,
+                                                 imagedata_resolution),
+                                         callback=lambda x: filenames.append(x),
+                                         error_callback=functools.partial(self._on_callback_error,
+                                                                          dialog=sp))
+                # python2
+                except TypeError:
+                    f = pool.apply_async(surface_process.create_surface_piece,
+                                         args = (filename_img, matrix.shape, matrix.dtype,
+                                                 mask.temp_file, mask.matrix.shape,
+                                                 mask.matrix.dtype, roi, spacing, mode,
+                                                 min_value, max_value, decimate_reduction,
+                                                 smooth_relaxation_factor,
+                                                 smooth_iterations, language, flip_image,
+                                                 algorithm != 'Default', algorithm,
+                                                 imagedata_resolution),
+                                         callback=lambda x: filenames.append(x))
 
-            # Improve performance
-            stripper = vtk.vtkStripper()
-            #  stripper.ReleaseDataFlagOn()
-            stripper_ref = weakref.ref(stripper)
-            stripper_ref().AddObserver("ProgressEvent", lambda obj,evt:
-                            UpdateProgress(stripper_ref(), _("Creating 3D surface...")))
-            stripper.SetInputData(polydata)
-            stripper.PassThroughCellIdsOn()
-            stripper.PassThroughPointIdsOn()
-            #  stripper.GetOutput().ReleaseDataFlagOn()
-            stripper.Update()
-            del polydata
-            polydata = stripper.GetOutput()
-            #polydata.Register(None)
-            #  polydata.SetSource(None)
-            del stripper
+            while len(filenames) != n_pieces:
+                if sp.WasCancelled() or not sp.running:
+                    break
+                time.sleep(0.25)
+                sp.Update(_("Creating 3D surface..."))
+                wx.Yield()
 
-            # Map polygonal data (vtkPolyData) to graphics primitives.
-            mapper = vtk.vtkPolyDataMapper()
-            mapper.SetInputData(polydata)
-            mapper.ScalarVisibilityOff()
-            #  mapper.ReleaseDataFlagOn()
-            mapper.ImmediateModeRenderingOn() # improve performance
+            if not sp.WasCancelled() or sp.running:
+                try:
+                    f = pool.apply_async(surface_process.join_process_surface,
+                                         args=(filenames, algorithm, smooth_iterations,
+                                               smooth_relaxation_factor,
+                                               decimate_reduction, keep_largest,
+                                               fill_holes, options, msg_queue),
+                                         callback=functools.partial(self._on_complete_surface_creation,
+                                                                    overwrite=overwrite,
+                                                                    surface_name=surface_name,
+                                                                    colour=colour,
+                                                                    dialog=sp),
+                                         error_callback=functools.partial(self._on_callback_error,
+                                                                          dialog=sp))
+                # python2
+                except TypeError:
+                    f = pool.apply_async(surface_process.join_process_surface,
+                                         args=(filenames, algorithm, smooth_iterations,
+                                               smooth_relaxation_factor,
+                                               decimate_reduction, keep_largest,
+                                               fill_holes, options, msg_queue),
+                                         callback=functools.partial(self._on_complete_surface_creation,
+                                                                    overwrite=overwrite,
+                                                                    surface_name=surface_name,
+                                                                    colour=colour,
+                                                                    dialog=sp))
 
-            # Represent an object (geometry & properties) in the rendered scene
-            actor = vtk.vtkActor()
-            actor.SetMapper(mapper)
-            del mapper
-            #Create Surface instance
-            if overwrite:
-                surface = Surface(index = self.last_surface_index)
-            else:
-                surface = Surface(name=surface_name)
-            surface.colour = colour
-            surface.polydata = polydata
-            del polydata
+                while sp.running:
+                    if sp.WasCancelled():
+                        break
+                    time.sleep(0.25)
+                    try:
+                        msg = msg_queue.get_nowait()
+                        sp.Update(msg)
+                    except:
+                        sp.Update(None)
+                    wx.Yield()
 
-            # Set actor colour and transparency
-            actor.GetProperty().SetColor(colour)
-            actor.GetProperty().SetOpacity(1-surface.transparency)
+            t_end = time.time()
+            print("Elapsed time - {}".format(t_end-t_init))
+            sp.Close()
+            if sp.error:
+                dlg = GMD.GenericMessageDialog(None, sp.error,
+                                               "Exception!",
+                                               wx.OK|wx.ICON_ERROR)
+                dlg.ShowModal()
+            del sp
 
-            prop = actor.GetProperty()
-
-            interpolation = int(ses.Session().surface_interpolation)
-
-            prop.SetInterpolation(interpolation)
-
-            proj = prj.Project()
-            if overwrite:
-                proj.ChangeSurface(surface)
-            else:
-                index = proj.AddSurface(surface)
-                surface.index = index
-                self.last_surface_index = index
-
-            session = ses.Session()
-            session.ChangeProject()
-
-            measured_polydata = vtk.vtkMassProperties()
-            #  measured_polydata.ReleaseDataFlagOn()
-            measured_polydata.SetInputData(to_measure)
-            volume =  float(measured_polydata.GetVolume())
-            area =  float(measured_polydata.GetSurfaceArea())
-            surface.volume = volume
-            surface.area = area
-            self.last_surface_index = surface.index
-            del measured_polydata
-            del to_measure
-
-            Publisher.sendMessage('Load surface actor into viewer', actor=actor)
-
-            # Send actor by pubsub to viewer's render
-            if overwrite and self.actors_dict.keys():
-                old_actor = self.actors_dict[self.last_surface_index]
-                Publisher.sendMessage('Remove surface actor from viewer', actor=old_actor)
-
-            # Save actor for future management tasks
-            self.actors_dict[surface.index] = actor
-
-            Publisher.sendMessage('Update surface info in GUI', surface=surface)
-
-            #When you finalize the progress. The bar is cleaned.
-            UpdateProgress = vu.ShowProgress(1)
-            UpdateProgress(0, _("Ready"))
-            Publisher.sendMessage('Update status text in GUI', label=_("Ready"))
-
-            Publisher.sendMessage('End busy cursor')
-            del actor
+        pool.close()
+        pool.terminate()
+        del pool
+        del manager
+        del msg_queue
+        import gc
+        gc.collect()
 
     def UpdateSurfaceInterpolation(self):
         interpolation = int(ses.Session().surface_interpolation)
