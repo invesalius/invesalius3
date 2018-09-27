@@ -321,8 +321,8 @@ def join_process_surface(filenames, algorithm, smooth_iterations, smooth_relaxat
                     #  UpdateProgress(normals_ref(), _("Creating 3D surface...")))
     normals.SetInputData(polydata)
     #  normals.SetFeatureAngle(80)
-    normals.SplittingOff()
-    normals.AutoOrientNormalsOn()
+    #  normals.SplittingOff()
+    #  normals.AutoOrientNormalsOn()
     #  normals.GetOutput().ReleaseDataFlagOn()
     normals.Update()
     del polydata

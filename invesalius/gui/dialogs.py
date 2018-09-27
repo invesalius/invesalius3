@@ -3536,6 +3536,7 @@ class SurfaceProgressWindow(object):
                                      parent=None,
                                      style=self.style)
         self.running = True
+        self.error = None
         self.dlg.Show()
 
     def WasCancelled(self):

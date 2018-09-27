@@ -516,6 +516,11 @@ class SurfaceManager():
 
         dialog.running = False
 
+    def _on_callback_error(self, e, dialog=None):
+        dialog.running = False
+        msg = utl.log_traceback(e)
+        dialog.error = msg
+
     def AddNewActor(self, slice_, mask, surface_parameters):
         """
         Create surface actor, save into project and send it to viewer.
@@ -639,6 +644,7 @@ class SurfaceManager():
 
         # With GUI
         else:
+            sp = dialogs.SurfaceProgressWindow()
             for i in range(n_pieces):
                 init = i * piece_size
                 end = init + piece_size + o_piece
@@ -653,63 +659,58 @@ class SurfaceManager():
                                              smooth_iterations, language, flip_image,
                                              algorithm != 'Default', algorithm,
                                              imagedata_resolution),
-                                     callback=lambda x: filenames.append(x))
-
-            sp = dialogs.SurfaceProgressWindow()
+                                     callback=lambda x: filenames.append(x),
+                                     error_callback=functools.partial(self._on_callback_error,
+                                                                      dialog=sp))
 
             while len(filenames) != n_pieces:
-                if sp.WasCancelled():
-                    pool.terminate()
-                    sp.Close()
-                    return
-
+                if sp.WasCancelled() or not sp.running:
+                    break
                 time.sleep(0.25)
                 sp.Update(_("Creating 3D surface..."))
                 wx.Yield()
 
-            if sp.WasCancelled():
-                pool.terminate()
-                sp.Close()
-                return
+            if not sp.WasCancelled() or sp.running:
+                f = pool.apply_async(surface_process.join_process_surface,
+                                     args=(filenames, algorithm, smooth_iterations,
+                                           smooth_relaxation_factor,
+                                           decimate_reduction, keep_largest,
+                                           fill_holes, options, msg_queue),
+                                     callback=functools.partial(self._on_complete_surface_creation,
+                                                                overwrite=overwrite,
+                                                                surface_name=surface_name,
+                                                                colour=colour,
+                                                                dialog=sp),
+                                     error_callback=functools.partial(self._on_callback_error,
+                                                                      dialog=sp))
 
-            f = pool.apply_async(surface_process.join_process_surface,
-                                 args=(filenames, algorithm, smooth_iterations,
-                                       smooth_relaxation_factor,
-                                       decimate_reduction, keep_largest,
-                                       fill_holes, options, msg_queue),
-                                 callback=functools.partial(self._on_complete_surface_creation, overwrite=overwrite, surface_name=surface_name, colour=colour, dialog=sp))
+                while sp.running:
+                    if sp.WasCancelled():
+                        break
+                    time.sleep(0.25)
+                    try:
+                        msg = msg_queue.get_nowait()
+                        sp.Update(msg)
+                    except:
+                        sp.Update(None)
+                    wx.Yield()
 
-            while sp.running:
-                if sp.WasCancelled():
-                    pool.terminate()
-                    sp.Close()
-                    break
-                time.sleep(0.25)
-                try:
-                    msg = msg_queue.get_nowait()
-                    sp.Update(msg)
-                except:
-                    sp.Update(None)
-                wx.Yield()
-
-            #  try:
-                #  surface_filename, surface_measures = f.get()
-            #  except Exception as e:
-                #  sp.Close()
-                #  del sp
-                #  msg = utl.log_traceback(e)
-                #  dlg = GMD.GenericMessageDialog(None, msg, "Exception!",
-                                               #  wx.OK|wx.ICON_ERROR)
-                #  dlg.ShowModal()
-                #  return
-
-            sp.Close()
-            del sp
             t_end = time.time()
             print("Elapsed time - {}".format(t_end-t_init))
-        print("Removing pool")
-        #  pool.join()
+            sp.Close()
+            print("Closing dialog")
+            if sp.error:
+                dlg = GMD.GenericMessageDialog(None, sp.error,
+                                               "Exception!",
+                                               wx.OK|wx.ICON_ERROR)
+                dlg.ShowModal()
+            del sp
+
+        print("Terminating pool")
+        pool.close()
+        print("Closed")
         pool.terminate()
+        print("Pool terminated")
         del pool
         del manager
         del msg_queue
