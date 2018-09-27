@@ -650,18 +650,31 @@ class SurfaceManager():
                 end = init + piece_size + o_piece
                 roi = slice(init, end)
                 print("new_piece", roi)
-                f = pool.apply_async(surface_process.create_surface_piece,
-                                     args = (filename_img, matrix.shape, matrix.dtype,
-                                             mask.temp_file, mask.matrix.shape,
-                                             mask.matrix.dtype, roi, spacing, mode,
-                                             min_value, max_value, decimate_reduction,
-                                             smooth_relaxation_factor,
-                                             smooth_iterations, language, flip_image,
-                                             algorithm != 'Default', algorithm,
-                                             imagedata_resolution),
-                                     callback=lambda x: filenames.append(x),
-                                     error_callback=functools.partial(self._on_callback_error,
-                                                                      dialog=sp))
+                try:
+                    f = pool.apply_async(surface_process.create_surface_piece,
+                                         args = (filename_img, matrix.shape, matrix.dtype,
+                                                 mask.temp_file, mask.matrix.shape,
+                                                 mask.matrix.dtype, roi, spacing, mode,
+                                                 min_value, max_value, decimate_reduction,
+                                                 smooth_relaxation_factor,
+                                                 smooth_iterations, language, flip_image,
+                                                 algorithm != 'Default', algorithm,
+                                                 imagedata_resolution),
+                                         callback=lambda x: filenames.append(x),
+                                         error_callback=functools.partial(self._on_callback_error,
+                                                                          dialog=sp))
+                # python2
+                except TypeError:
+                    f = pool.apply_async(surface_process.create_surface_piece,
+                                         args = (filename_img, matrix.shape, matrix.dtype,
+                                                 mask.temp_file, mask.matrix.shape,
+                                                 mask.matrix.dtype, roi, spacing, mode,
+                                                 min_value, max_value, decimate_reduction,
+                                                 smooth_relaxation_factor,
+                                                 smooth_iterations, language, flip_image,
+                                                 algorithm != 'Default', algorithm,
+                                                 imagedata_resolution),
+                                         callback=lambda x: filenames.append(x))
 
             while len(filenames) != n_pieces:
                 if sp.WasCancelled() or not sp.running:
@@ -671,18 +684,31 @@ class SurfaceManager():
                 wx.Yield()
 
             if not sp.WasCancelled() or sp.running:
-                f = pool.apply_async(surface_process.join_process_surface,
-                                     args=(filenames, algorithm, smooth_iterations,
-                                           smooth_relaxation_factor,
-                                           decimate_reduction, keep_largest,
-                                           fill_holes, options, msg_queue),
-                                     callback=functools.partial(self._on_complete_surface_creation,
-                                                                overwrite=overwrite,
-                                                                surface_name=surface_name,
-                                                                colour=colour,
-                                                                dialog=sp),
-                                     error_callback=functools.partial(self._on_callback_error,
-                                                                      dialog=sp))
+                try:
+                    f = pool.apply_async(surface_process.join_process_surface,
+                                         args=(filenames, algorithm, smooth_iterations,
+                                               smooth_relaxation_factor,
+                                               decimate_reduction, keep_largest,
+                                               fill_holes, options, msg_queue),
+                                         callback=functools.partial(self._on_complete_surface_creation,
+                                                                    overwrite=overwrite,
+                                                                    surface_name=surface_name,
+                                                                    colour=colour,
+                                                                    dialog=sp),
+                                         error_callback=functools.partial(self._on_callback_error,
+                                                                          dialog=sp))
+                # python2
+                except TypeError:
+                    f = pool.apply_async(surface_process.join_process_surface,
+                                         args=(filenames, algorithm, smooth_iterations,
+                                               smooth_relaxation_factor,
+                                               decimate_reduction, keep_largest,
+                                               fill_holes, options, msg_queue),
+                                         callback=functools.partial(self._on_complete_surface_creation,
+                                                                    overwrite=overwrite,
+                                                                    surface_name=surface_name,
+                                                                    colour=colour,
+                                                                    dialog=sp))
 
                 while sp.running:
                     if sp.WasCancelled():
@@ -698,7 +724,6 @@ class SurfaceManager():
             t_end = time.time()
             print("Elapsed time - {}".format(t_end-t_init))
             sp.Close()
-            print("Closing dialog")
             if sp.error:
                 dlg = GMD.GenericMessageDialog(None, sp.error,
                                                "Exception!",
@@ -706,11 +731,8 @@ class SurfaceManager():
                 dlg.ShowModal()
             del sp
 
-        print("Terminating pool")
         pool.close()
-        print("Closed")
         pool.terminate()
-        print("Pool terminated")
         del pool
         del manager
         del msg_queue
