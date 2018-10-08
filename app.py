@@ -193,12 +193,14 @@ class Inv3SplashScreen(SplashScreen):
         # Only after language was defined, splash screen will be
         # shown
         if lang:
-            #  print "LANG", lang, _, wx.Locale(), wx.GetLocale()
-            import locale
-            try:
-                locale.setlocale(locale.LC_ALL, '')
-            except locale.Error:
-                pass
+            
+            #import locale
+            #try:
+            #    locale.setlocale(locale.LC_ALL, '')
+            #except locale.Error:
+            #    pass
+            
+            
             # For pt_BR, splash_pt.png should be used
             if (lang.startswith('pt')):
                 icon_file = "splash_pt.png"
