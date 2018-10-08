@@ -61,7 +61,22 @@ def create_surface_piece(filename, shape, dtype, mask_filename, mask_shape,
         mask = numpy.memmap(mask_filename, mode='r',
                                  dtype=mask_dtype,
                                  shape=mask_shape)
-        a_image = numpy.array(image[roi])
+        z_iadd = 0
+        z_eadd = 0
+        if roi.start == 0:
+            z_iadd = 1
+        elif roi.stop >= shape[0]:
+            z_eadd = 1
+
+        new_shape = (min(roi.stop, shape[0]) - roi.start) + z_iadd + z_eadd, shape[1] + 2, shape[2] + 2
+        print(new_shape, roi.start,roi.stop, z_iadd, z_eadd)
+        a_image = numpy.empty(shape=new_shape, dtype=dtype)
+        a_image[:] = image.min()
+        a_image[z_iadd: z_iadd + new_shape[0] - z_eadd, 1:-1, 1:-1] = image[roi]
+        #  if z_iadd:
+            #  a_image[0, 1:-1, 1:-1] = image[0]
+        #  if z_eadd:
+            #  a_image[-1, 1:-1, 1:-1] = image[-1]
 
         if algorithm == u'InVesalius 3.b2':
             a_mask = numpy.array(mask[roi.start + 1: roi.stop + 1,
@@ -83,7 +98,11 @@ def create_surface_piece(filename, shape, dtype, mask_filename, mask_shape,
             del gauss
             del a_mask
         else:
-            image = converters.to_vtk(a_image, spacing, roi.start,
+            if z_iadd:
+                origin = -spacing[0], -spacing[1], -spacing[2]
+            else:
+                origin = 0, -spacing[1], -spacing[2]
+            image = converters.to_vtk(a_image, spacing, roi.start-z_iadd,
                                        "AXIAL")
         del a_image
 
@@ -110,7 +129,7 @@ def create_surface_piece(filename, shape, dtype, mask_filename, mask_shape,
         contour.SetValue(1, max_value) # final threshold
     #  contour.ComputeScalarsOn()
     #  contour.ComputeGradientsOn()
-    #  contour.ComputeNormalsOn()
+    contour.ComputeNormalsOn()
     contour.ReleaseDataFlagOn()
     contour.Update()
 
@@ -224,34 +243,34 @@ def join_process_surface(filenames, algorithm, smooth_iterations, smooth_relaxat
 
         #  polydata.SetSource(None)
         #  polydata.DebugOn()
-    else:
-        #smoother = vtk.vtkWindowedSincPolyDataFilter()
-        send_message('Smoothing ...')
-        smoother = vtk.vtkSmoothPolyDataFilter()
-        smoother_ref = weakref.ref(smoother)
-        #  smoother_ref().AddObserver("ProgressEvent", lambda obj,evt:
-                        #  UpdateProgress(smoother_ref(), _("Creating 3D surface...")))
-        smoother.SetInputData(polydata)
-        smoother.SetNumberOfIterations(smooth_iterations)
-        smoother.SetRelaxationFactor(smooth_relaxation_factor)
-        smoother.SetFeatureAngle(80)
-        #smoother.SetEdgeAngle(90.0)
-        #smoother.SetPassBand(0.1)
-        smoother.BoundarySmoothingOn()
-        smoother.FeatureEdgeSmoothingOn()
-        #smoother.NormalizeCoordinatesOn()
-        #smoother.NonManifoldSmoothingOn()
-        #  smoother.ReleaseDataFlagOn()
-        #  smoother.GetOutput().ReleaseDataFlagOn()
-        smoother.Update()
-        del polydata
-        polydata = smoother.GetOutput()
-        #polydata.Register(None)
-        #  polydata.SetSource(None)
-        del smoother
+    #  else:
+        #  #smoother = vtk.vtkWindowedSincPolyDataFilter()
+        #  send_message('Smoothing ...')
+        #  smoother = vtk.vtkSmoothPolyDataFilter()
+        #  smoother_ref = weakref.ref(smoother)
+        #  #  smoother_ref().AddObserver("ProgressEvent", lambda obj,evt:
+                        #  #  UpdateProgress(smoother_ref(), _("Creating 3D surface...")))
+        #  smoother.SetInputData(polydata)
+        #  smoother.SetNumberOfIterations(smooth_iterations)
+        #  smoother.SetRelaxationFactor(smooth_relaxation_factor)
+        #  smoother.SetFeatureAngle(80)
+        #  #smoother.SetEdgeAngle(90.0)
+        #  #smoother.SetPassBand(0.1)
+        #  smoother.BoundarySmoothingOn()
+        #  smoother.FeatureEdgeSmoothingOn()
+        #  #smoother.NormalizeCoordinatesOn()
+        #  #smoother.NonManifoldSmoothingOn()
+        #  #  smoother.ReleaseDataFlagOn()
+        #  #  smoother.GetOutput().ReleaseDataFlagOn()
+        #  smoother.Update()
+        #  del polydata
+        #  polydata = smoother.GetOutput()
+        #  #polydata.Register(None)
+        #  #  polydata.SetSource(None)
+        #  del smoother
 
 
-    if decimate_reduction:
+    if not decimate_reduction:
         print("Decimating", decimate_reduction)
         send_message('Decimating ...')
         decimation = vtk.vtkQuadricDecimation()
@@ -322,7 +341,7 @@ def join_process_surface(filenames, algorithm, smooth_iterations, smooth_relaxat
     normals.SetInputData(polydata)
     #  normals.SetFeatureAngle(80)
     #  normals.SplittingOff()
-    #  normals.AutoOrientNormalsOn()
+    normals.AutoOrientNormalsOn()
     #  normals.GetOutput().ReleaseDataFlagOn()
     normals.Update()
     del polydata
@@ -332,22 +351,22 @@ def join_process_surface(filenames, algorithm, smooth_iterations, smooth_relaxat
     del normals
 
 
-    # Improve performance
-    stripper = vtk.vtkStripper()
-    #  stripper.ReleaseDataFlagOn()
-    #  stripper_ref = weakref.ref(stripper)
-    #  stripper_ref().AddObserver("ProgressEvent", lambda obj,evt:
-                    #  UpdateProgress(stripper_ref(), _("Creating 3D surface...")))
-    stripper.SetInputData(polydata)
-    stripper.PassThroughCellIdsOn()
-    stripper.PassThroughPointIdsOn()
-    #  stripper.GetOutput().ReleaseDataFlagOn()
-    stripper.Update()
-    del polydata
-    polydata = stripper.GetOutput()
-    #polydata.Register(None)
-    #  polydata.SetSource(None)
-    del stripper
+    #  # Improve performance
+    #  stripper = vtk.vtkStripper()
+    #  #  stripper.ReleaseDataFlagOn()
+    #  #  stripper_ref = weakref.ref(stripper)
+    #  #  stripper_ref().AddObserver("ProgressEvent", lambda obj,evt:
+                    #  #  UpdateProgress(stripper_ref(), _("Creating 3D surface...")))
+    #  stripper.SetInputData(polydata)
+    #  stripper.PassThroughCellIdsOn()
+    #  stripper.PassThroughPointIdsOn()
+    #  #  stripper.GetOutput().ReleaseDataFlagOn()
+    #  stripper.Update()
+    #  del polydata
+    #  polydata = stripper.GetOutput()
+    #  #polydata.Register(None)
+    #  #  polydata.SetSource(None)
+    #  del stripper
 
     send_message('Calculating area and volume ...')
     measured_polydata = vtk.vtkMassProperties()

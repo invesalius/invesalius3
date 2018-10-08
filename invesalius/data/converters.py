@@ -21,7 +21,7 @@ import numpy
 import vtk
 from vtk.util import numpy_support
 
-def to_vtk(n_array, spacing, slice_number, orientation):
+def to_vtk(n_array, spacing, slice_number, orientation, origin=(0, 0, 0)):
 
     if orientation == "SAGITTAL":
         orientation = "SAGITAL"
@@ -45,7 +45,7 @@ def to_vtk(n_array, spacing, slice_number, orientation):
 
     # Generating the vtkImageData
     image = vtk.vtkImageData()
-    image.SetOrigin(0, 0, 0)
+    image.SetOrigin(origin)
     image.SetSpacing(spacing)
     image.SetDimensions(dx, dy, dz)
     # SetNumberOfScalarComponents and SetScalrType were replaced by
