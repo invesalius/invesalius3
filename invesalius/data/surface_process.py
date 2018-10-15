@@ -14,7 +14,7 @@ import vtk
 import invesalius.i18n as i18n
 import invesalius.data.converters as converters
 from invesalius.data import cy_mesh
-# import invesalius.data.imagedata_utils as iu
+import invesalius.data.imagedata_utils as iu
 
 import weakref
 from scipy import ndimage
@@ -46,12 +46,15 @@ def create_surface_piece(filename, shape, dtype, mask_filename, mask_shape,
                          decimate_reduction, smooth_relaxation_factor,
                          smooth_iterations, language, flip_image,
                          from_binary, algorithm, imagedata_resolution):
+
+    pad_bottom = (roi.start == 0)
+    pad_top = (roi.stop >= shape[0])
+
     if from_binary:
         mask = numpy.memmap(mask_filename, mode='r',
                                  dtype=mask_dtype,
                                  shape=mask_shape)
-        a_mask = numpy.array(mask[roi.start + 1: roi.stop + 1,
-                                       1:, 1:])
+        a_mask = iu.pad_image(mask[roi.start + 1: roi.stop + 1, 1:, 1:], 0, pad_bottom, pad_top)
         image =  converters.to_vtk(a_mask, spacing, roi.start,
                                    "AXIAL")
         del a_mask
@@ -61,26 +64,14 @@ def create_surface_piece(filename, shape, dtype, mask_filename, mask_shape,
         mask = numpy.memmap(mask_filename, mode='r',
                                  dtype=mask_dtype,
                                  shape=mask_shape)
-        z_iadd = 0
-        z_eadd = 0
-        if roi.start == 0:
-            z_iadd = 1
-        elif roi.stop >= shape[0]:
-            z_eadd = 1
-
-        new_shape = (min(roi.stop, shape[0]) - roi.start) + z_iadd + z_eadd, shape[1] + 2, shape[2] + 2
-        print(new_shape, roi.start,roi.stop, z_iadd, z_eadd)
-        a_image = numpy.empty(shape=new_shape, dtype=dtype)
-        a_image[:] = image.min()
-        a_image[z_iadd: z_iadd + new_shape[0] - z_eadd, 1:-1, 1:-1] = image[roi]
+        a_image = iu.pad_image(image[roi], min_value - 1, pad_bottom, pad_top)
         #  if z_iadd:
             #  a_image[0, 1:-1, 1:-1] = image[0]
         #  if z_eadd:
             #  a_image[-1, 1:-1, 1:-1] = image[-1]
 
         if algorithm == u'InVesalius 3.b2':
-            a_mask = numpy.array(mask[roi.start + 1: roi.stop + 1,
-                                           1:, 1:])
+            a_mask = numpy.array(mask[roi.start + 1: roi.stop + 1, 1:, 1:])
             a_image[a_mask == 1] = a_image.min() - 1
             a_image[a_mask == 254] = (min_value + max_value) / 2.0
 
@@ -98,11 +89,11 @@ def create_surface_piece(filename, shape, dtype, mask_filename, mask_shape,
             del gauss
             del a_mask
         else:
-            if z_iadd:
-                origin = -spacing[0], -spacing[1], -spacing[2]
-            else:
-                origin = 0, -spacing[1], -spacing[2]
-            image = converters.to_vtk(a_image, spacing, roi.start-z_iadd,
+            #  if z_iadd:
+                #  origin = -spacing[0], -spacing[1], -spacing[2]
+            #  else:
+                #  origin = 0, -spacing[1], -spacing[2]
+            image = converters.to_vtk(a_image, spacing, roi.start,
                                        "AXIAL")
         del a_image
 

@@ -751,3 +751,22 @@ def imgnormalize(data, srange=(0, 255)):
     datan = datan.astype(numpy.int16)
 
     return datan
+
+
+def pad_image(image, pad_value, pad_bottom, pad_top):
+    dz, dy, dx = image.shape
+    z_iadd = 0
+    z_eadd = 0
+    if pad_bottom:
+        z_iadd = 1
+        dz += 1
+    if pad_top:
+        z_eadd = 1
+        dz += 1
+    new_shape = dz, dy + 2, dx + 2
+
+    paded_image = numpy.empty(shape=new_shape, dtype=image.dtype)
+    paded_image[:] = pad_value
+    paded_image[z_iadd: z_iadd + new_shape[0] - z_eadd, 1:-1, 1:-1] = image
+
+    return paded_image
