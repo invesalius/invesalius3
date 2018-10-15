@@ -21,7 +21,7 @@ import numpy
 import vtk
 from vtk.util import numpy_support
 
-def to_vtk(n_array, spacing, slice_number, orientation, origin=(0, 0, 0)):
+def to_vtk(n_array, spacing, slice_number, orientation, origin=(0, 0, 0), padding=(0, 0, 0)):
 
     if orientation == "SAGITTAL":
         orientation = "SAGITAL"
@@ -32,16 +32,18 @@ def to_vtk(n_array, spacing, slice_number, orientation, origin=(0, 0, 0)):
         dy, dx = n_array.shape
         dz = 1
 
+    px, py, pz = padding
+
     v_image = numpy_support.numpy_to_vtk(n_array.flat)
 
     if orientation == 'AXIAL':
-        extent = (0, dx -1, 0, dy -1, slice_number, slice_number + dz - 1)
+        extent = (0 - px , dx -1 - px, 0 - py, dy - 1 - py, slice_number - pz, slice_number + dz - 1 - pz)
     elif orientation == 'SAGITAL':
         dx, dy, dz = dz, dx, dy
-        extent = (slice_number, slice_number + dx - 1, 0, dy - 1, 0, dz - 1)
+        extent = (slice_number - px, slice_number + dx - 1 - px, 0 - py, dy - 1 - py, 0 - pz, dz - 1 - pz)
     elif orientation == 'CORONAL':
         dx, dy, dz = dx, dz, dy
-        extent = (0, dx - 1, slice_number, slice_number + dy - 1, 0, dz - 1)
+        extent = (0 - px, dx - 1 - px, slice_number - py, slice_number + dy - 1 - py, 0 - pz, dz - 1 - pz)
 
     # Generating the vtkImageData
     image = vtk.vtkImageData()

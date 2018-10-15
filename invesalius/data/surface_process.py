@@ -55,8 +55,7 @@ def create_surface_piece(filename, shape, dtype, mask_filename, mask_shape,
                                  dtype=mask_dtype,
                                  shape=mask_shape)
         a_mask = iu.pad_image(mask[roi.start + 1: roi.stop + 1, 1:, 1:], 0, pad_bottom, pad_top)
-        image =  converters.to_vtk(a_mask, spacing, roi.start,
-                                   "AXIAL")
+        image =  converters.to_vtk(a_mask, spacing, roi.start, "AXIAL", padding=(1, 1, pad_bottom))
         del a_mask
     else:
         image = numpy.memmap(filename, mode='r', dtype=dtype,
@@ -64,7 +63,7 @@ def create_surface_piece(filename, shape, dtype, mask_filename, mask_shape,
         mask = numpy.memmap(mask_filename, mode='r',
                                  dtype=mask_dtype,
                                  shape=mask_shape)
-        a_image = iu.pad_image(image[roi], min_value - 1, pad_bottom, pad_top)
+        a_image = iu.pad_image(image[roi], numpy.iinfo(image.dtype).min, pad_bottom, pad_top)
         #  if z_iadd:
             #  a_image[0, 1:-1, 1:-1] = image[0]
         #  if z_eadd:
@@ -75,8 +74,7 @@ def create_surface_piece(filename, shape, dtype, mask_filename, mask_shape,
             a_image[a_mask == 1] = a_image.min() - 1
             a_image[a_mask == 254] = (min_value + max_value) / 2.0
 
-            image =  converters.to_vtk(a_image, spacing, roi.start,
-                                       "AXIAL")
+            image =  converters.to_vtk(a_image, spacing, roi.start, "AXIAL", padding=(1, 1, pad_bottom))
 
             gauss = vtk.vtkImageGaussianSmooth()
             gauss.SetInputData(image)
@@ -93,8 +91,7 @@ def create_surface_piece(filename, shape, dtype, mask_filename, mask_shape,
                 #  origin = -spacing[0], -spacing[1], -spacing[2]
             #  else:
                 #  origin = 0, -spacing[1], -spacing[2]
-            image = converters.to_vtk(a_image, spacing, roi.start,
-                                       "AXIAL")
+            image = converters.to_vtk(a_image, spacing, roi.start, "AXIAL", padding=(1, 1, pad_bottom))
         del a_image
 
     if imagedata_resolution:
