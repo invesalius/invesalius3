@@ -104,6 +104,11 @@ def create_surface_piece(filename, shape, dtype, mask_filename, mask_shape,
     flip.ReleaseDataFlagOn()
     flip.Update()
 
+    #  writer = vtk.vtkXMLImageDataWriter()
+    #  writer.SetFileName('/tmp/camboja.vti')
+    #  writer.SetInputData(flip.GetOutput())
+    #  writer.Write()
+
     del image
     image = flip.GetOutput()
     del flip
@@ -117,7 +122,7 @@ def create_surface_piece(filename, shape, dtype, mask_filename, mask_shape,
         contour.SetValue(1, max_value) # final threshold
     #  contour.ComputeScalarsOn()
     #  contour.ComputeGradientsOn()
-    contour.ComputeNormalsOn()
+    #  contour.ComputeNormalsOn()
     contour.ReleaseDataFlagOn()
     contour.Update()
 
@@ -327,9 +332,11 @@ def join_process_surface(filenames, algorithm, smooth_iterations, smooth_relaxat
     #  normals_ref().AddObserver("ProgressEvent", lambda obj,evt:
                     #  UpdateProgress(normals_ref(), _("Creating 3D surface...")))
     normals.SetInputData(polydata)
-    #  normals.SetFeatureAngle(80)
-    #  normals.SplittingOff()
+    normals.SetFeatureAngle(80)
+    normals.SplittingOn()
     normals.AutoOrientNormalsOn()
+    normals.NonManifoldTraversalOn()
+    normals.ComputeCellNormalsOn()
     #  normals.GetOutput().ReleaseDataFlagOn()
     normals.Update()
     del polydata

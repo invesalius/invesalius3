@@ -767,6 +767,6 @@ def pad_image(image, pad_value, pad_bottom, pad_top):
 
     paded_image = numpy.empty(shape=new_shape, dtype=image.dtype)
     paded_image[:] = pad_value
-    paded_image[z_iadd: z_iadd + new_shape[0] - z_eadd, 1:-1, 1:-1] = image
+    paded_image[z_iadd: z_iadd + image.shape[0], 1:-1, 1:-1] = image
 
     return paded_image
