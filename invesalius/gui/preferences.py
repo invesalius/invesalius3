@@ -15,7 +15,7 @@ except ImportError: # if it's not there locally, try the wxPython lib.
 class Preferences(wx.Dialog):
 
     def __init__( self, parent, id = ID, title = _("Preferences"), size=wx.DefaultSize,\
-                                pos=wx.DefaultPosition, style=wx.DEFAULT_DIALOG_STYLE):
+                                pos=wx.DefaultPosition, style=wx.DEFAULT_DIALOG_STYLE | wx.RESIZE_BORDER):
 
         try:
             pre = wx.PreDialog()
@@ -36,14 +36,16 @@ class Preferences(wx.Dialog):
         else:
             self.book = fnb.FlatNotebook(self, wx.ID_ANY, agwStyle=bookStyle)
 
-        sizer.Add(self.book, 80, wx.EXPAND|wx.ALL)
+        sizer.Add(self.book, 1, wx.EXPAND|wx.ALL)
 
         self.pnl_viewer2d = Viewer2D(self)
         self.pnl_viewer3d = Viewer3D(self)
+        self.pnl_surface = SurfaceCreation(self)
         self.pnl_language = Language(self)
 
         self.book.AddPage(self.pnl_viewer2d, _("2D Visualization"))
         self.book.AddPage(self.pnl_viewer3d, _("3D Visualization"))
+        self.book.AddPage(self.pnl_surface, _("Surface creation"))
         self.book.AddPage(self.pnl_language, _("Language"))
 
         line = wx.StaticLine(self, -1, size=(20,-1), style=wx.LI_HORIZONTAL)
@@ -59,7 +61,7 @@ class Preferences(wx.Dialog):
 
         btnsizer.Realize()
 
-        sizer.Add(btnsizer, 10, wx.GROW|wx.ALIGN_CENTER_VERTICAL|wx.RIGHT|wx.TOP|wx.BOTTOM, 5)
+        sizer.Add(btnsizer, 0, wx.GROW|wx.ALIGN_CENTER_VERTICAL|wx.RIGHT|wx.TOP|wx.BOTTOM, 5)
 
         self.SetSizer(sizer)
         sizer.Fit(self)
@@ -214,3 +216,21 @@ class Language(wx.Panel):
         locales = self.lg.GetLocalesKey()
         selection = locales.index(language)
         self.cmb_lang.SetSelection(int(selection))
+
+
+
+class SurfaceCreation(wx.Panel):
+    def __init__(self, parent):
+        wx.Panel.__init__(self, parent)
+        self.rb_fill_border = wx.RadioBox(self, -1, "Fill border holes", choices=[_('Yes'), _('No')])
+
+        sizer = wx.BoxSizer(wx.VERTICAL)
+        sizer.Add(self.rb_fill_border)
+
+        self.SetSizerAndFit(sizer)
+
+    def GetSelection(self):
+        return {}
+
+    def LoadSelection(self, values):
+        pass

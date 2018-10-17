@@ -538,6 +538,8 @@ class SurfaceManager():
         fill_holes = surface_parameters['options']['fill']
         keep_largest = surface_parameters['options']['keep_largest']
 
+        fill_border_holes = surface_parameters['options'].get('fill_border_holes', True)
+
         mode = 'CONTOUR' # 'GRAYSCALE'
         min_value, max_value = mask.threshold_range
         colour = mask.colour[:3]
@@ -598,7 +600,7 @@ class SurfaceManager():
                                              smooth_relaxation_factor,
                                              smooth_iterations, language, flip_image,
                                              algorithm != 'Default', algorithm,
-                                             imagedata_resolution),
+                                             imagedata_resolution, fill_border_holes),
                                      callback=lambda x: filenames.append(x))
 
             while len(filenames) != n_pieces:
@@ -659,7 +661,7 @@ class SurfaceManager():
                                                  smooth_relaxation_factor,
                                                  smooth_iterations, language, flip_image,
                                                  algorithm != 'Default', algorithm,
-                                                 imagedata_resolution),
+                                                 imagedata_resolution, fill_border_holes),
                                          callback=lambda x: filenames.append(x),
                                          error_callback=functools.partial(self._on_callback_error,
                                                                           dialog=sp))
@@ -673,7 +675,7 @@ class SurfaceManager():
                                                  smooth_relaxation_factor,
                                                  smooth_iterations, language, flip_image,
                                                  algorithm != 'Default', algorithm,
-                                                 imagedata_resolution),
+                                                 imagedata_resolution, fill_border_holes),
                                          callback=lambda x: filenames.append(x))
 
             while len(filenames) != n_pieces:
