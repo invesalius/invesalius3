@@ -174,33 +174,31 @@ def PolhemusSerialCoord(trck_init, trck_id, ref_mode):
     # aoflt -> 0:letter 1:x 2:y 3:z
     # this method is not optimized to work with all trackers, only with ISOTRAK
     # serial connection is obsolete, remove in future
-    trck_init.write("P")
+    trck_init.write(str.encode("P"))
+    scale = 10. * np.array([1., 1.0, 1.0])
     lines = trck_init.readlines()
 
-    coord = None
-
-    if lines[0][0] != '0':
+    if lines is None:
         print("The Polhemus is not connected!")
     else:
-        for s in lines:
-            if s[1] == '1':
-                data = s
-            elif s[1] == '2':
-                data = s
+        data = lines[0]
+        data = data.replace(str.encode('-'), str.encode(' -'))
+        data = [s for s in data.split()]
+        data = [float(s) for s in data[1:len(data)]]
+        probe = np.array([data[0] * scale[0], data[1] * scale[1], data[2] * scale[2], data[3], data[4], data[5]])
 
-        # single ref mode
-        if not ref_mode:
-            data = data.replace('-', ' -')
-            data = [s for s in data.split()]
-            j = 0
-            while j == 0:
-                try:
-                    plh1 = [float(s) for s in data[1:len(data)]]
-                    j = 1
-                except:
-                    print("error!!")
+        if ref_mode:
+            data2 = lines[1]
+            data2 = data2.replace(str.encode('-'), str.encode(' -'))
+            data2 = [s for s in data2.split()]
+            data2 = [float(s) for s in data2[1:len(data2)]]
+            reference = np.array(
+                [data2[0] * scale[0], data2[1] * scale[1], data2[2] * scale[2], data2[3], data2[4], data2[5]])
+        else:
+            reference = np.zeros(6)
 
-            coord = data[0:6]
+        coord = np.vstack([probe, reference])
+
     return coord
 
 

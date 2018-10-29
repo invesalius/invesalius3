@@ -247,6 +247,7 @@ class Viewer(wx.Panel):
         Publisher.subscribe(self.RemoveMarker, 'Remove marker')
         Publisher.subscribe(self.BlinkMarker, 'Blink Marker')
         Publisher.subscribe(self.StopBlinkMarker, 'Stop Blink Marker')
+        Publisher.subscribe(self.SetNewColor, 'Set new color')
 
         # Related to object tracking during neuronavigation
         Publisher.subscribe(self.OnNavigationStatus, 'Navigation status')
@@ -505,7 +506,7 @@ class Viewer(wx.Panel):
         mapper.SetInputConnection(ball_ref.GetOutputPort())
 
         prop = vtk.vtkProperty()
-        prop.SetColor(colour)
+        prop.SetColor(colour[0:3])
 
         #adding a new actor for the present ball
         self.staticballs.append(vtk.vtkActor())
@@ -566,6 +567,11 @@ class Viewer(wx.Panel):
                 self.staticballs[self.index].SetVisibility(1)
                 self.Refresh()
             self.index = False
+
+    def SetNewColor(self, index, color):
+        self.staticballs[index].GetProperty().SetColor(color)
+        self.Refresh()
+
 
     def OnTargetMarkerTransparency(self, status, index):
         if status:
@@ -791,6 +797,10 @@ class Viewer(wx.Panel):
             for ind in self.arrow_actor_list:
                 self.ren2.AddActor(ind)
 
+
+            x, y, z = bases.flip_x(coord[0:3])
+            self.tactor.SetPosition(x-20, y-30, z+20)
+
             self.Refresh()
 
     def OnUpdateTargetCoordinates(self, coord):
@@ -817,7 +827,7 @@ class Viewer(wx.Panel):
         tactor.SetMapper(mapper)
         tactor.GetProperty().SetColor(1.0, 0.25, 0.0)
         tactor.SetScale(5)
-        tactor.SetPosition(self.target_coord[0]+10, self.target_coord[1]+30, self.target_coord[2]+20)
+        #tactor.SetPosition(self.target_coord[0]+10, self.target_coord[1]+30, self.target_coord[2]+20)
         self.ren.AddActor(tactor)
         self.tactor = tactor
         tactor.SetCamera(self.ren.GetActiveCamera())
@@ -892,7 +902,7 @@ class Viewer(wx.Panel):
 
         self.dummy_coil_actor = vtk.vtkActor()
         self.dummy_coil_actor.SetMapper(obj_mapper)
-        self.dummy_coil_actor.GetProperty().SetOpacity(0.4)
+        self.dummy_coil_actor.GetProperty().SetOpacity(0.15)
         self.dummy_coil_actor.SetVisibility(1)
         self.dummy_coil_actor.SetUserMatrix(m_img_vtk)
 
@@ -1745,7 +1755,7 @@ class SlicePlane:
         plane_x.SetRightButtonAction(0)
         plane_x.SetMiddleButtonAction(0)
         cursor_property = plane_x.GetCursorProperty()
-        cursor_property.SetOpacity(0) 
+        cursor_property.SetOpacity(0)
 
         plane_y = self.plane_y = vtk.vtkImagePlaneWidget()
         plane_y.DisplayTextOff()

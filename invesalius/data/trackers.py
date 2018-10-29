@@ -143,31 +143,26 @@ def PlhWrapperConnection(tracker_id):
 
 
 def PlhSerialConnection(tracker_id):
-    try:
-        import serial
+    import serial
 
-        trck_init = serial.Serial('COM1', baudrate=115200, timeout=0.2)
+    trck_init = serial.Serial('COM1', baudrate=115200, timeout=0.03)
 
-        if tracker_id == 2:
-            # Polhemus FASTRAK needs configurations first
-            trck_init.write(0x02, "u")
-            trck_init.write(0x02, "F")
-        elif tracker_id == 3:
-            # Polhemus ISOTRAK needs to set tracking point from
-            # center to tip.
-            trck_init.write("F")
-            trck_init.write("Y")
+    if tracker_id == 2:
+        # Polhemus FASTRAK needs configurations first
+        trck_init.write(0x02, str.encode("u"))
+        trck_init.write(0x02, str.encode("F"))
+    elif tracker_id == 3:
+        # Polhemus ISOTRAK needs to set tracking point from
+        # center to tip.
+        trck_init.write(str.encode("u"))
+        trck_init.write(str.encode("F"))
+        trck_init.write(str.encode("Y"))
 
-        trck_init.write('P')
-        data = trck_init.readlines()
-
-        if not data:
-            trck_init = None
-            print('Could not connect to Polhemus serial without error.')
-
-    except:
+    trck_init.write(str.encode("P"))
+    data = trck_init.readlines()
+    if not data:
         trck_init = None
-        print('Could not connect to Polhemus serial with error.')
+        print('Could not connect to Polhemus serial without error.')
 
     return trck_init
 
