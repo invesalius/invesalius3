@@ -1662,7 +1662,10 @@ class SurfaceCreationOptionsPanel(wx.Panel):
                               (combo_quality, 0, flag_button, 0)])
 
 
-        # LINES 4 and 5: Checkboxes
+        # LINES 4, 5 and 6: Checkboxes
+        check_box_border_holes = wx.CheckBox(self, -1, _("Fill border holes"))
+        check_box_border_holes.SetValue(False)
+        self.check_box_border_holes = check_box_border_holes
         check_box_holes = wx.CheckBox(self, -1, _("Fill holes"))
         check_box_holes.SetValue(False)
         self.check_box_holes = check_box_holes
@@ -1673,6 +1676,7 @@ class SurfaceCreationOptionsPanel(wx.Panel):
         # Merge all sizers and checkboxes
         sizer = wx.BoxSizer(wx.VERTICAL)
         sizer.Add(fixed_sizer, 0, wx.TOP|wx.RIGHT|wx.LEFT|wx.GROW|wx.EXPAND, 5)
+        sizer.Add(check_box_border_holes, 0, wx.RIGHT|wx.LEFT, 5)
         sizer.Add(check_box_holes, 0, wx.RIGHT|wx.LEFT, 5)
         sizer.Add(check_box_largest, 0, wx.RIGHT|wx.LEFT, 5)
 
@@ -1687,11 +1691,13 @@ class SurfaceCreationOptionsPanel(wx.Panel):
         mask_index = self.combo_mask.GetSelection()
         surface_name = self.text.GetValue()
         quality = const.SURFACE_QUALITY_LIST[self.combo_quality.GetSelection()]
+        fill_border_holes = self.check_box_border_holes.GetValue()
         fill_holes = self.check_box_holes.GetValue()
         keep_largest = self.check_box_largest.GetValue()
         return {"index": mask_index,
                 "name": surface_name,
                 "quality": quality,
+                "fill_border_holes": fill_border_holes,
                 "fill": fill_holes,
                 "keep_largest": keep_largest,
                 "overwrite": False}

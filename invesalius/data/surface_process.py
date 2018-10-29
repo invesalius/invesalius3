@@ -14,7 +14,7 @@ import vtk
 import invesalius.i18n as i18n
 import invesalius.data.converters as converters
 from invesalius.data import cy_mesh
-# import invesalius.data.imagedata_utils as iu
+import invesalius.data.imagedata_utils as iu
 
 import weakref
 from scipy import ndimage
@@ -45,15 +45,25 @@ def create_surface_piece(filename, shape, dtype, mask_filename, mask_shape,
                          mask_dtype, roi, spacing, mode, min_value, max_value,
                          decimate_reduction, smooth_relaxation_factor,
                          smooth_iterations, language, flip_image,
-                         from_binary, algorithm, imagedata_resolution):
+                         from_binary, algorithm, imagedata_resolution, fill_border_holes):
+
+    pad_bottom = (roi.start == 0)
+    pad_top = (roi.stop >= shape[0])
+
+    if fill_border_holes:
+        padding = (1, 1, pad_bottom)
+    else:
+        padding = (0, 0, 0)
+
     if from_binary:
         mask = numpy.memmap(mask_filename, mode='r',
                                  dtype=mask_dtype,
                                  shape=mask_shape)
-        a_mask = numpy.array(mask[roi.start + 1: roi.stop + 1,
-                                       1:, 1:])
-        image =  converters.to_vtk(a_mask, spacing, roi.start,
-                                   "AXIAL")
+        if fill_border_holes:
+            a_mask = iu.pad_image(mask[roi.start + 1: roi.stop + 1, 1:, 1:], 0, pad_bottom, pad_top)
+        else:
+            a_mask = numpy.array(mask[roi.start + 1: roi.stop + 1, 1:, 1:])
+        image =  converters.to_vtk(a_mask, spacing, roi.start, "AXIAL", padding=padding)
         del a_mask
     else:
         image = numpy.memmap(filename, mode='r', dtype=dtype,
@@ -61,16 +71,21 @@ def create_surface_piece(filename, shape, dtype, mask_filename, mask_shape,
         mask = numpy.memmap(mask_filename, mode='r',
                                  dtype=mask_dtype,
                                  shape=mask_shape)
-        a_image = numpy.array(image[roi])
+        if fill_border_holes:
+            a_image = iu.pad_image(image[roi], numpy.iinfo(image.dtype).min, pad_bottom, pad_top)
+        else:
+            a_image = numpy.array(image[roi])
+        #  if z_iadd:
+            #  a_image[0, 1:-1, 1:-1] = image[0]
+        #  if z_eadd:
+            #  a_image[-1, 1:-1, 1:-1] = image[-1]
 
         if algorithm == u'InVesalius 3.b2':
-            a_mask = numpy.array(mask[roi.start + 1: roi.stop + 1,
-                                           1:, 1:])
+            a_mask = numpy.array(mask[roi.start + 1: roi.stop + 1, 1:, 1:])
             a_image[a_mask == 1] = a_image.min() - 1
             a_image[a_mask == 254] = (min_value + max_value) / 2.0
 
-            image =  converters.to_vtk(a_image, spacing, roi.start,
-                                       "AXIAL")
+            image =  converters.to_vtk(a_image, spacing, roi.start, "AXIAL", padding=padding)
 
             gauss = vtk.vtkImageGaussianSmooth()
             gauss.SetInputData(image)
@@ -83,8 +98,11 @@ def create_surface_piece(filename, shape, dtype, mask_filename, mask_shape,
             del gauss
             del a_mask
         else:
-            image = converters.to_vtk(a_image, spacing, roi.start,
-                                       "AXIAL")
+            #  if z_iadd:
+                #  origin = -spacing[0], -spacing[1], -spacing[2]
+            #  else:
+                #  origin = 0, -spacing[1], -spacing[2]
+            image = converters.to_vtk(a_image, spacing, roi.start, "AXIAL", padding=padding)
         del a_image
 
     if imagedata_resolution:
@@ -96,6 +114,11 @@ def create_surface_piece(filename, shape, dtype, mask_filename, mask_shape,
     flip.FlipAboutOriginOn()
     flip.ReleaseDataFlagOn()
     flip.Update()
+
+    #  writer = vtk.vtkXMLImageDataWriter()
+    #  writer.SetFileName('/tmp/camboja.vti')
+    #  writer.SetInputData(flip.GetOutput())
+    #  writer.Write()
 
     del image
     image = flip.GetOutput()
@@ -224,34 +247,34 @@ def join_process_surface(filenames, algorithm, smooth_iterations, smooth_relaxat
 
         #  polydata.SetSource(None)
         #  polydata.DebugOn()
-    else:
-        #smoother = vtk.vtkWindowedSincPolyDataFilter()
-        send_message('Smoothing ...')
-        smoother = vtk.vtkSmoothPolyDataFilter()
-        smoother_ref = weakref.ref(smoother)
-        #  smoother_ref().AddObserver("ProgressEvent", lambda obj,evt:
-                        #  UpdateProgress(smoother_ref(), _("Creating 3D surface...")))
-        smoother.SetInputData(polydata)
-        smoother.SetNumberOfIterations(smooth_iterations)
-        smoother.SetRelaxationFactor(smooth_relaxation_factor)
-        smoother.SetFeatureAngle(80)
-        #smoother.SetEdgeAngle(90.0)
-        #smoother.SetPassBand(0.1)
-        smoother.BoundarySmoothingOn()
-        smoother.FeatureEdgeSmoothingOn()
-        #smoother.NormalizeCoordinatesOn()
-        #smoother.NonManifoldSmoothingOn()
-        #  smoother.ReleaseDataFlagOn()
-        #  smoother.GetOutput().ReleaseDataFlagOn()
-        smoother.Update()
-        del polydata
-        polydata = smoother.GetOutput()
-        #polydata.Register(None)
-        #  polydata.SetSource(None)
-        del smoother
+    #  else:
+        #  #smoother = vtk.vtkWindowedSincPolyDataFilter()
+        #  send_message('Smoothing ...')
+        #  smoother = vtk.vtkSmoothPolyDataFilter()
+        #  smoother_ref = weakref.ref(smoother)
+        #  #  smoother_ref().AddObserver("ProgressEvent", lambda obj,evt:
+                        #  #  UpdateProgress(smoother_ref(), _("Creating 3D surface...")))
+        #  smoother.SetInputData(polydata)
+        #  smoother.SetNumberOfIterations(smooth_iterations)
+        #  smoother.SetRelaxationFactor(smooth_relaxation_factor)
+        #  smoother.SetFeatureAngle(80)
+        #  #smoother.SetEdgeAngle(90.0)
+        #  #smoother.SetPassBand(0.1)
+        #  smoother.BoundarySmoothingOn()
+        #  smoother.FeatureEdgeSmoothingOn()
+        #  #smoother.NormalizeCoordinatesOn()
+        #  #smoother.NonManifoldSmoothingOn()
+        #  #  smoother.ReleaseDataFlagOn()
+        #  #  smoother.GetOutput().ReleaseDataFlagOn()
+        #  smoother.Update()
+        #  del polydata
+        #  polydata = smoother.GetOutput()
+        #  #polydata.Register(None)
+        #  #  polydata.SetSource(None)
+        #  del smoother
 
 
-    if decimate_reduction:
+    if not decimate_reduction:
         print("Decimating", decimate_reduction)
         send_message('Decimating ...')
         decimation = vtk.vtkQuadricDecimation()
@@ -320,9 +343,11 @@ def join_process_surface(filenames, algorithm, smooth_iterations, smooth_relaxat
     #  normals_ref().AddObserver("ProgressEvent", lambda obj,evt:
                     #  UpdateProgress(normals_ref(), _("Creating 3D surface...")))
     normals.SetInputData(polydata)
-    #  normals.SetFeatureAngle(80)
-    #  normals.SplittingOff()
-    #  normals.AutoOrientNormalsOn()
+    normals.SetFeatureAngle(80)
+    normals.SplittingOn()
+    normals.AutoOrientNormalsOn()
+    normals.NonManifoldTraversalOn()
+    normals.ComputeCellNormalsOn()
     #  normals.GetOutput().ReleaseDataFlagOn()
     normals.Update()
     del polydata
@@ -332,22 +357,22 @@ def join_process_surface(filenames, algorithm, smooth_iterations, smooth_relaxat
     del normals
 
 
-    # Improve performance
-    stripper = vtk.vtkStripper()
-    #  stripper.ReleaseDataFlagOn()
-    #  stripper_ref = weakref.ref(stripper)
-    #  stripper_ref().AddObserver("ProgressEvent", lambda obj,evt:
-                    #  UpdateProgress(stripper_ref(), _("Creating 3D surface...")))
-    stripper.SetInputData(polydata)
-    stripper.PassThroughCellIdsOn()
-    stripper.PassThroughPointIdsOn()
-    #  stripper.GetOutput().ReleaseDataFlagOn()
-    stripper.Update()
-    del polydata
-    polydata = stripper.GetOutput()
-    #polydata.Register(None)
-    #  polydata.SetSource(None)
-    del stripper
+    #  # Improve performance
+    #  stripper = vtk.vtkStripper()
+    #  #  stripper.ReleaseDataFlagOn()
+    #  #  stripper_ref = weakref.ref(stripper)
+    #  #  stripper_ref().AddObserver("ProgressEvent", lambda obj,evt:
+                    #  #  UpdateProgress(stripper_ref(), _("Creating 3D surface...")))
+    #  stripper.SetInputData(polydata)
+    #  stripper.PassThroughCellIdsOn()
+    #  stripper.PassThroughPointIdsOn()
+    #  #  stripper.GetOutput().ReleaseDataFlagOn()
+    #  stripper.Update()
+    #  del polydata
+    #  polydata = stripper.GetOutput()
+    #  #polydata.Register(None)
+    #  #  polydata.SetSource(None)
+    #  del stripper
 
     send_message('Calculating area and volume ...')
     measured_polydata = vtk.vtkMassProperties()
