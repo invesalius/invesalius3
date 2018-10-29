@@ -40,12 +40,12 @@ class Preferences(wx.Dialog):
 
         self.pnl_viewer2d = Viewer2D(self)
         self.pnl_viewer3d = Viewer3D(self)
-        self.pnl_surface = SurfaceCreation(self)
+        #  self.pnl_surface = SurfaceCreation(self)
         self.pnl_language = Language(self)
 
         self.book.AddPage(self.pnl_viewer2d, _("2D Visualization"))
         self.book.AddPage(self.pnl_viewer3d, _("3D Visualization"))
-        self.book.AddPage(self.pnl_surface, _("Surface creation"))
+        #  self.book.AddPage(self.pnl_surface, _("Surface creation"))
         self.book.AddPage(self.pnl_language, _("Language"))
 
         line = wx.StaticLine(self, -1, size=(20,-1), style=wx.LI_HORIZONTAL)
