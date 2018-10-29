@@ -712,7 +712,7 @@ class Controller():
            else:
                return
 
-           xyspacing = xyspacing[0] / resolution_percentage, xyspacing[1] / resolution_percentage
+       xyspacing = xyspacing[0] / resolution_percentage, xyspacing[1] / resolution_percentage
  
 
        
@@ -811,7 +811,7 @@ class Controller():
                 else:
                     return
 
-                xyspacing = xyspacing[0] / resolution_percentage, xyspacing[1] / resolution_percentage
+            xyspacing = xyspacing[0] / resolution_percentage, xyspacing[1] / resolution_percentage
 
             self.matrix, scalar_range, self.filename = image_utils.dcm2memmap(filelist, size,
                                                                         orientation, resolution_percentage)
