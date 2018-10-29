@@ -159,6 +159,28 @@ class SurfaceManager():
         self.last_surface_index = 0
         self.__bind_events()
 
+        self._default_parameters = {
+            'algorithm': 'Default',
+            'quality': const.DEFAULT_SURFACE_QUALITY,
+            'fill_holes': False,
+            'keep_largest': False,
+            'fill_border_holes': True,
+        }
+
+        self._load_user_parameters()
+
+    def _load_user_parameters(self):
+        session = ses.Session()
+
+        if 'surface' in session:
+            self._default_parameters.update(session['surface'])
+        else:
+            session['surface'] = self._default_parameters
+            session.WriteSessionFile()
+
+        print('Session', session)
+
+
     def __bind_events(self):
         Publisher.subscribe(self.AddNewActor, 'Create surface')
         Publisher.subscribe(self.SetActorTransparency,
