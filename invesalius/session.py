@@ -31,6 +31,7 @@ from threading import Thread
 import time
 import codecs
 import collections
+import json
 
 #import wx.lib.pubsub as ps
 from wx.lib.pubsub import pub as Publisher
@@ -53,7 +54,8 @@ else:
 USER_INV_DIR = os.path.join(USER_DIR, u'.invesalius')
 USER_PRESET_DIR = os.path.join(USER_INV_DIR, u'presets')
 USER_LOG_DIR = os.path.join(USER_INV_DIR, u'logs')
-USER_INV_CFG_PATH = os.path.join(USER_INV_DIR, 'config.cfg')
+USER_INV_CFG_PATH = os.path.join(USER_INV_DIR, 'config.json')
+OLD_USER_INV_CFG_PATH = os.path.join(USER_INV_DIR, 'config.cfg')
 
 SESSION_ENCODING = 'utf8'
 
@@ -63,15 +65,20 @@ SESSION_ENCODING = 'utf8'
 class Session(with_metaclass(Singleton, object)):
 
     def __init__(self):
-        self.temp_item = False
         self.project_path = ()
-        # Initializing as project status closed.
-        # TODO: A better way to initialize project_status as closed (3)
-        #  self.project_status = 3
-        self._values = {'session': {
-                            'status': 3,
-                            },
-                       }
+        self.temp_item = False
+
+        self._values = {
+            'session': {
+                'status': 3,
+                'language': '',
+            },
+            'project': {
+            },
+
+            'paths': {
+            }
+        }
 
         self._map_attrs = {
             'mode': ('session', 'mode'),
@@ -88,57 +95,11 @@ class Session(with_metaclass(Singleton, object)):
             'last_dicom_folder': ('paths', 'last_dicom_folder'),
         }
 
-    def __contains__(self, key):
-        return key in self._values
-
-    def __getitem__(self, key):
-        return self._values[key]
-
-    def __setitem__(self, key, value):
-        self._values[key] = value
-
-    def __getattr__(self, name):
-        map_attrs = object.__getattribute__(self, '_map_attrs')
-        session, key = map_attrs[name]
-        return object.__getattribute__(self, '_values')[session][key]
-
-    def __setattr__(self, name, value):
-        try:
-            session, key = self._map_attrs
-            self._values[session][key] = value
-        except (AttributeError, ValueError):
-            return object.__setattr__(self, name, value)
-
-    def __str__(self):
-        #  tmp_dict = {
-            #  'session': {
-                #  'mode': self.mode,
-                #  'status': self.project_status,
-                #  'debug': self.debug,
-                #  'language': self.language,
-                #  'random_id': self.random_id,
-                #  'surface_interpolation': self.surface_interpolation,
-                #  'rendering': self.rendering,
-                #  'slice_interpolation': self.slice_interpolation,
-            #  },
-
-            #  'project': {
-                #  'recent_projects': self.recent_projects,
-            #  },
-
-            #  'paths': {
-                #  'homedir': self.homedir,
-                #  'tempdir': self.tempdir,
-                #  'last_dicom_folder': self.last_dicom_folder,
-            #  },
-        #  }
-        #  tmp_dict.update(self._values)
-        return self._values.__str__()
 
     def CreateItens(self):
         import invesalius.constants as const
-
-        tempdir = os.path.join(homedir, u".invesalius", u"temp")
+        homedir = USER_DIR
+        tempdir = os.path.join(USER_DIR, u".invesalius", u"temp")
         if not os.path.isdir(tempdir):
             os.makedirs(tempdir)
 
@@ -148,7 +109,7 @@ class Session(with_metaclass(Singleton, object)):
                 'status': const.PROJ_CLOSE,
                 'debug': False,
                 'language': "",
-                'random_id': randint(0,pow(10,16)),
+                'random_id': randint(0, pow(10,16)),
                 'surface_interpolation': 1,
                 'rendering': 0,
                 'slice_interpolation': 0,
@@ -164,32 +125,32 @@ class Session(with_metaclass(Singleton, object)):
                 'last_dicom_folder': '',
             },
         }
-        self.project_path = ()
-        #  self.debug = False
-        #  self.project_status = const.PROJ_CLOSE
-        #  # const.PROJ_NEW*, const.PROJ_OPEN, const.PROJ_CHANGE*,
-        #  # const.PROJ_CLOSE
 
-        #  self.mode = const.MODE_RP
-        #  # const.MODE_RP, const.MODE_NAVIGATOR, const.MODE_RADIOLOGY,
-        #  # const.MODE_ODONTOLOGY
+    def __contains__(self, key):
+        return key in self._values
 
-        #  # InVesalius default projects' directory
-        #  homedir = self.homedir = USER_DIR
-        #  self.tempdir = tempdir
+    def __getitem__(self, key):
+        return self._values[key]
 
-        #  # GUI language
-        #  self.language = "" # "pt_BR", "es"
+    def __setitem__(self, key, value):
+        self._values[key] = value
 
-        #  self.random_id = randint(0,pow(10,16))
+    def __getattr__(self, name):
+        map_attrs = object.__getattribute__(self, '_map_attrs')
+        if name not in map_attrs:
+            raise AttributeError(name)
+        session, key = map_attrs[name]
+        return object.__getattribute__(self, '_values')[session][key]
 
-        #  # Recent projects list
-        #  self.recent_projects = [(const.SAMPLE_DIR, u"Cranium.inv3")]
-        #  self.last_dicom_folder = ''
-        #  self.surface_interpolation = 1
-        #  self.slice_interpolation = 0
-        #  self.rendering = 0
-        self.WriteSessionFile()
+    def __setattr__(self, name, value):
+        if name in ("temp_item", "_map_attrs", "_values", "project_path"):
+            return object.__setattr__(self, name, value)
+        else:
+            session, key = self._map_attrs[name]
+            self._values[session][key] = value
+
+    def __str__(self):
+        return self._values.__str__()
 
     def IsOpen(self):
         import invesalius.constants as const
@@ -270,43 +231,49 @@ class Session(with_metaclass(Singleton, object)):
             self.temp_item = False
 
     def WriteSessionFile(self):
-        config = ConfigParser.RawConfigParser()
+        self._write_to_json(self._values, USER_INV_CFG_PATH)
+        #  config = ConfigParser.RawConfigParser()
 
-        #  config.add_section('session')
-        #  config.set('session', 'mode', self.mode)
-        #  config.set('session', 'status', self.project_status)
-        #  config.set('session','debug', self.debug)
-        #  config.set('session', 'language', self.language)
-        #  config.set('session', 'random_id', self.random_id)
-        #  config.set('session', 'surface_interpolation', self.surface_interpolation)
-        #  config.set('session', 'rendering', self.rendering)
-        #  config.set('session', 'slice_interpolation', self.slice_interpolation)
+        #  #  config.add_section('session')
+        #  #  config.set('session', 'mode', self.mode)
+        #  #  config.set('session', 'status', self.project_status)
+        #  #  config.set('session','debug', self.debug)
+        #  #  config.set('session', 'language', self.language)
+        #  #  config.set('session', 'random_id', self.random_id)
+        #  #  config.set('session', 'surface_interpolation', self.surface_interpolation)
+        #  #  config.set('session', 'rendering', self.rendering)
+        #  #  config.set('session', 'slice_interpolation', self.slice_interpolation)
 
-        #  config.add_section('project')
-        #  config.set('project', 'recent_projects', self.recent_projects)
+        #  #  config.add_section('project')
+        #  #  config.set('project', 'recent_projects', self.recent_projects)
 
-        #  config.add_section('paths')
-        #  config.set('paths','homedir',self.homedir)
-        #  config.set('paths','tempdir',self.tempdir)
-        #  config.set('paths','last_dicom_folder',self.last_dicom_folder)
+        #  #  config.add_section('paths')
+        #  #  config.set('paths','homedir',self.homedir)
+        #  #  config.set('paths','tempdir',self.tempdir)
+        #  #  config.set('paths','last_dicom_folder',self.last_dicom_folder)
 
-        #  for key in self._values:
-            #  config.add_section(key)
-            #  for sub_key in self._values[key]:
-                #  config.set(key, sub_key, self._values[key][sub_key])
+        #  #  for key in self._values:
+            #  #  config.add_section(key)
+            #  #  for sub_key in self._values[key]:
+                #  #  config.set(key, sub_key, self._values[key][sub_key])
 
-        print(self._values)
-        #  config.update(self._values)
-        self._update_cfg_from_dict(config, self._values)
-        path = os.path.join(self.homedir ,
-                            '.invesalius', 'config.cfg')
+        #  print(self._values)
+        #  print(dir(self))
+        #  #  config.update(self._values)
+        #  self._update_cfg_from_dict(config, self._values)
+        #  path = os.path.join(self.homedir ,
+                            #  '.invesalius', 'config.cfg')
 
-        configfile = codecs.open(path, 'wb', SESSION_ENCODING)
-        try:
-            config.write(configfile)
-        except UnicodeDecodeError:
-            pass
-        configfile.close()
+        #  configfile = codecs.open(path, 'wb', SESSION_ENCODING)
+        #  try:
+            #  config.write(configfile)
+        #  except UnicodeDecodeError:
+            #  print("ERROR")
+        #  configfile.close()
+
+    def _write_to_json(self, cfg_dict, cfg_filename):
+        with open(cfg_filename, 'w') as cfg_file:
+            json.dump(cfg_dict, cfg_file, sort_keys=True, indent=4)
 
     def __add_to_list(self, item):
         import invesalius.constants as const
@@ -344,38 +311,6 @@ class Session(with_metaclass(Singleton, object)):
         self.last_dicom_folder = folder
         self.WriteSessionFile()
 
-    def ReadLanguage(self):
-        config = ConfigParser.ConfigParser()
-        path = os.path.join(USER_INV_DIR, 'config.cfg')
-        try:
-            f = codecs.open(path, 'rb', SESSION_ENCODING)
-            config.readfp(f)
-            f.close()
-            self.language = config.get('session','language')
-            return self.language
-        except IOError:
-            return False
-        except (ConfigParser.NoSectionError,
-                  ConfigParser.NoOptionError,
-                  ConfigParser.MissingSectionHeaderError):
-            return False
-
-    def ReadRandomId(self):
-        config = ConfigParser.ConfigParser()
-        path = os.path.join(USER_INV_DIR, 'config.cfg')
-        try:
-            f = codecs.open(path, 'rb', SESSION_ENCODING)
-            config.readfp(f)
-            f.close()
-            self.random_id = config.get('session','random_id')
-            return self.random_id
-        except IOError:
-            return False
-        except (ConfigParser.NoSectionError,
-                  ConfigParser.NoOptionError,
-                  ConfigParser.MissingSectionHeaderError):
-            return False
-
     def _update_from_cfg_file(self, config):
         tmp_dict = {}
         for session in config:
@@ -395,56 +330,45 @@ class Session(with_metaclass(Singleton, object)):
                 for key in cfg_dict[session]:
                     config.set(session, key, cfg_dict[session][key])
 
-    def ReadSession(self):
+    def _read_cfg_from_json(self, json_filename):
+        with open(json_filename, 'r') as cfg_file:
+            cfg_dict = json.load(cfg_file)
+            self._values.update(cfg_dict)
+
+    def _read_cfg_from_ini(self, cfg_filename):
+        f = codecs.open(cfg_filename, 'rb', SESSION_ENCODING)
         config = ConfigParser.ConfigParser()
-        path = USER_INV_CFG_PATH
+        config.readfp(f)
+        f.close()
+
+        self.mode = config.get('session', 'mode')
+        # Do not reading project status from the config file, since there
+        # isn't a recover sessession tool in InVesalius
+        #self.project_status = int(config.get('session', 'status'))
+        self.debug = config.get('session','debug')
+        self.language = config.get('session','language')
+        self.recent_projects = eval(config.get('project','recent_projects'))
+        self.homedir = config.get('paths','homedir')
+        self.tempdir = config.get('paths','tempdir')
+        self.last_dicom_folder = config.get('paths','last_dicom_folder') 
+
+        #  if not(sys.platform == 'win32'):
+          #  self.last_dicom_folder = self.last_dicom_folder.decode('utf-8')
+
+        self.surface_interpolation = config.get('session', 'surface_interpolation')
+        self.slice_interpolation = config.get('session', 'slice_interpolation')
+
+        self.rendering = config.get('session', 'rendering')
+        self.random_id = config.get('session','random_id')
+
+    def ReadSession(self):
         try:
-            f = codecs.open(path, 'rb', SESSION_ENCODING)
-            config.readfp(f)
-            f.close()
-
-            self._update_from_cfg_file(config)
-            #  self.mode = config.get('session', 'mode')
-            #  # Do not reading project status from the config file, since there
-            #  # isn't a recover sessession tool in InVesalius
-            #  #self.project_status = int(config.get('session', 'status'))
-            #  self.debug = config.get('session','debug')
-            #  self.language = config.get('session','language')
-            #  self.recent_projects = eval(config.get('project','recent_projects'))
-            #  self.homedir = config.get('paths','homedir')
-            #  self.tempdir = config.get('paths','tempdir')
-            #  self.last_dicom_folder = config.get('paths','last_dicom_folder') 
-
-            #  #if not(sys.platform == 'win32'):
-            #  #    self.last_dicom_folder = self.last_dicom_folder.decode('utf-8')
-
-            #  self.surface_interpolation = config.get('session', 'surface_interpolation')
-            #  self.slice_interpolation = config.get('session', 'slice_interpolation')
-
-            #  self.rendering = config.get('session', 'rendering')
-            #  self.random_id = config.get('session','random_id')
-            return True
-
-        except IOError:
-            return False
-
-        except(ConfigParser.NoSectionError, ConfigParser.MissingSectionHeaderError, 
-                                                        ConfigParser.ParsingError):
-
-            if (self.RecoveryConfigFile()):
-                self.ReadSession()
-                return True
-            else:
-                return False
-
-        except(ConfigParser.NoOptionError):
-            #Added to fix new version compatibility
-            self.surface_interpolation = 0
-            self.slice_interpolation = 0
-            self.rendering = 0
-            self.random_id = randint(0,pow(10,16))  
+            self._read_cfg_from_json(USER_INV_CFG_PATH)
+        except Exception:
             try:
-                self.WriteSessionFile()
-            except AttributeError:
+                self._read_cfg_from_ini(OLD_USER_INV_CFG_PATH)
+            except Exception:
                 return False
-            return True
+
+        self.WriteSessionFile()
+        return True

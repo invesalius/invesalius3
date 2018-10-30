@@ -147,9 +147,8 @@ class Inv3SplashScreen(SplashScreen):
             create_session = True
 
         install_lang = 0
-        # Check if there is a language set (if session file exists
-        if session.ReadLanguage():
-            lang = session.GetLanguage()
+        lang = session.GetLanguage()
+        if lang:
             if (lang != "False"):
                 _ = i18n.InstallLanguage(lang)
                 install_lang = 1
@@ -187,7 +186,7 @@ class Inv3SplashScreen(SplashScreen):
             session.SetLanguage(lang)
             session.WriteSessionFile()
 
-        session.SaveConfigFileBackup()
+        #  session.SaveConfigFileBackup()
 
            
         # Only after language was defined, splash screen will be
