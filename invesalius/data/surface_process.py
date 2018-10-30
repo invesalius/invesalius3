@@ -14,7 +14,6 @@ import vtk
 import invesalius.i18n as i18n
 import invesalius.data.converters as converters
 from invesalius.data import cy_mesh
-import invesalius.data.imagedata_utils as iu
 
 import weakref
 from scipy import ndimage
@@ -41,6 +40,25 @@ def ResampleImage3D(imagedata, value):
     return resample.GetOutput()
 
 
+def pad_image(image, pad_value, pad_bottom, pad_top):
+    dz, dy, dx = image.shape
+    z_iadd = 0
+    z_eadd = 0
+    if pad_bottom:
+        z_iadd = 1
+        dz += 1
+    if pad_top:
+        z_eadd = 1
+        dz += 1
+    new_shape = dz, dy + 2, dx + 2
+
+    paded_image = numpy.empty(shape=new_shape, dtype=image.dtype)
+    paded_image[:] = pad_value
+    paded_image[z_iadd: z_iadd + image.shape[0], 1:-1, 1:-1] = image
+
+    return paded_image
+
+
 def create_surface_piece(filename, shape, dtype, mask_filename, mask_shape,
                          mask_dtype, roi, spacing, mode, min_value, max_value,
                          decimate_reduction, smooth_relaxation_factor,
@@ -60,7 +78,7 @@ def create_surface_piece(filename, shape, dtype, mask_filename, mask_shape,
                                  dtype=mask_dtype,
                                  shape=mask_shape)
         if fill_border_holes:
-            a_mask = iu.pad_image(mask[roi.start + 1: roi.stop + 1, 1:, 1:], 0, pad_bottom, pad_top)
+            a_mask = pad_image(mask[roi.start + 1: roi.stop + 1, 1:, 1:], 0, pad_bottom, pad_top)
         else:
             a_mask = numpy.array(mask[roi.start + 1: roi.stop + 1, 1:, 1:])
         image =  converters.to_vtk(a_mask, spacing, roi.start, "AXIAL", padding=padding)
@@ -72,7 +90,7 @@ def create_surface_piece(filename, shape, dtype, mask_filename, mask_shape,
                                  dtype=mask_dtype,
                                  shape=mask_shape)
         if fill_border_holes:
-            a_image = iu.pad_image(image[roi], numpy.iinfo(image.dtype).min, pad_bottom, pad_top)
+            a_image = pad_image(image[roi], numpy.iinfo(image.dtype).min, pad_bottom, pad_top)
         else:
             a_image = numpy.array(image[roi])
         #  if z_iadd:
