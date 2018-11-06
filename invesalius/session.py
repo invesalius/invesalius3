@@ -279,6 +279,7 @@ class Session(with_metaclass(Singleton, object)):
         import invesalius.constants as const
         # Last projects list
         l = self.recent_projects
+        item = list(item)
 
         # If item exists, remove it from list
         if l.count(item):
@@ -287,10 +288,11 @@ class Session(with_metaclass(Singleton, object)):
         # Add new item
         l.insert(0, item)
 
+        self.recent_projects = l[:const.PROJ_MAX]
         # Remove oldest projects from list
-        if len(l)>const.PROJ_MAX:
-            for i in range(len(l)-const.PROJ_MAX):
-                l.pop()
+        #  if len(l)>const.PROJ_MAX:
+            #  for i in range(len(l)-const.PROJ_MAX):
+                #  l.pop()
 
     def GetLanguage(self):
         return self.language
