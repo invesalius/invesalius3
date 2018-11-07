@@ -178,7 +178,9 @@ class Inv3SplashScreen(SplashScreen):
                     invdir = os.path.join(homedir, ".invesalius")
                     shutil.rmtree(invdir)
                     sys.exit()
-                    
+
+            dialog.Destroy()
+
         # Session file should be created... So we set the recent
         # choosen language
         if (create_session):
