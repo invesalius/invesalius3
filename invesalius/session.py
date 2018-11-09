@@ -341,7 +341,8 @@ class Session(with_metaclass(Singleton, object)):
         #self.project_status = int(config.get('session', 'status'))
         self.debug = config.getboolean('session','debug')
         self.language = config.get('session','language')
-        self.recent_projects = eval(config.get('project','recent_projects'))
+        recent_projects = eval(config.get('project','recent_projects'))
+        self.recent_projects = [list(rp) for rp in recent_projects]
         self.homedir = config.get('paths','homedir')
         self.tempdir = config.get('paths','tempdir')
         self.last_dicom_folder = config.get('paths','last_dicom_folder') 
