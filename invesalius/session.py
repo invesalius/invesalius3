@@ -313,18 +313,6 @@ class Session(with_metaclass(Singleton, object)):
         self.last_dicom_folder = folder
         self.WriteSessionFile()
 
-    def _update_from_cfg_file(self, config):
-        tmp_dict = {}
-        for session in config:
-            if config[session]:
-                tmp_dict[session] = {}
-                for key in config[session]:
-                    if key == 'recent_projects':
-                        tmp_dict[session][key] = eval(config[session][key])
-                    else:
-                        tmp_dict[session][key] = config[session][key]
-        self._values.update(tmp_dict)
-
     def _update_cfg_from_dict(self, config, cfg_dict):
         for session in cfg_dict:
             if cfg_dict[session] and isinstance(cfg_dict[session], dict):
@@ -339,7 +327,7 @@ class Session(with_metaclass(Singleton, object)):
 
         # Do not reading project status from the config file, since there
         # isn't a recover session tool in InVesalius yet.
-        self.project_status = const.PROJ_CLOSE
+        self.project_status = 3
 
     def _read_cfg_from_ini(self, cfg_filename):
         f = codecs.open(cfg_filename, 'rb', SESSION_ENCODING)
@@ -370,10 +358,12 @@ class Session(with_metaclass(Singleton, object)):
     def ReadSession(self):
         try:
             self._read_cfg_from_json(USER_INV_CFG_PATH)
-        except Exception:
+        except Exception as e1:
+            debug(e1)
             try:
                 self._read_cfg_from_ini(OLD_USER_INV_CFG_PATH)
-            except Exception:
+            except Exception as e2:
+                debug(e2)
                 return False
 
         self.WriteSessionFile()
