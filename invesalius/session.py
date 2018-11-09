@@ -337,6 +337,10 @@ class Session(with_metaclass(Singleton, object)):
             cfg_dict = json.load(cfg_file)
             self._values.update(cfg_dict)
 
+        # Do not reading project status from the config file, since there
+        # isn't a recover session tool in InVesalius yet.
+        self.project_status = const.PROJ_CLOSE
+
     def _read_cfg_from_ini(self, cfg_filename):
         f = codecs.open(cfg_filename, 'rb', SESSION_ENCODING)
         config = ConfigParser.ConfigParser()
