@@ -335,11 +335,11 @@ class Session(with_metaclass(Singleton, object)):
         config.readfp(f)
         f.close()
 
-        self.mode = config.get('session', 'mode')
+        self.mode = config.getint('session', 'mode')
         # Do not reading project status from the config file, since there
         # isn't a recover sessession tool in InVesalius
         #self.project_status = int(config.get('session', 'status'))
-        self.debug = config.get('session','debug')
+        self.debug = config.getboolean('session','debug')
         self.language = config.get('session','language')
         self.recent_projects = eval(config.get('project','recent_projects'))
         self.homedir = config.get('paths','homedir')
@@ -349,11 +349,11 @@ class Session(with_metaclass(Singleton, object)):
         #  if not(sys.platform == 'win32'):
           #  self.last_dicom_folder = self.last_dicom_folder.decode('utf-8')
 
-        self.surface_interpolation = config.get('session', 'surface_interpolation')
-        self.slice_interpolation = config.get('session', 'slice_interpolation')
+        self.surface_interpolation = config.getint('session', 'surface_interpolation')
+        self.slice_interpolation = config.getint('session', 'slice_interpolation')
 
-        self.rendering = config.get('session', 'rendering')
-        self.random_id = config.get('session','random_id')
+        self.rendering = config.getint('session', 'rendering')
+        self.random_id = config.getint('session','random_id')
 
     def ReadSession(self):
         try:
