@@ -232,44 +232,6 @@ class Session(with_metaclass(Singleton, object)):
 
     def WriteSessionFile(self):
         self._write_to_json(self._values, USER_INV_CFG_PATH)
-        #  config = ConfigParser.RawConfigParser()
-
-        #  #  config.add_section('session')
-        #  #  config.set('session', 'mode', self.mode)
-        #  #  config.set('session', 'status', self.project_status)
-        #  #  config.set('session','debug', self.debug)
-        #  #  config.set('session', 'language', self.language)
-        #  #  config.set('session', 'random_id', self.random_id)
-        #  #  config.set('session', 'surface_interpolation', self.surface_interpolation)
-        #  #  config.set('session', 'rendering', self.rendering)
-        #  #  config.set('session', 'slice_interpolation', self.slice_interpolation)
-
-        #  #  config.add_section('project')
-        #  #  config.set('project', 'recent_projects', self.recent_projects)
-
-        #  #  config.add_section('paths')
-        #  #  config.set('paths','homedir',self.homedir)
-        #  #  config.set('paths','tempdir',self.tempdir)
-        #  #  config.set('paths','last_dicom_folder',self.last_dicom_folder)
-
-        #  #  for key in self._values:
-            #  #  config.add_section(key)
-            #  #  for sub_key in self._values[key]:
-                #  #  config.set(key, sub_key, self._values[key][sub_key])
-
-        #  print(self._values)
-        #  print(dir(self))
-        #  #  config.update(self._values)
-        #  self._update_cfg_from_dict(config, self._values)
-        #  path = os.path.join(self.homedir ,
-                            #  '.invesalius', 'config.cfg')
-
-        #  configfile = codecs.open(path, 'wb', SESSION_ENCODING)
-        #  try:
-            #  config.write(configfile)
-        #  except UnicodeDecodeError:
-            #  print("ERROR")
-        #  configfile.close()
 
     def _write_to_json(self, cfg_dict, cfg_filename):
         with open(cfg_filename, 'w') as cfg_file:
@@ -287,12 +249,7 @@ class Session(with_metaclass(Singleton, object)):
 
         # Add new item
         l.insert(0, item)
-
         self.recent_projects = l[:const.PROJ_MAX]
-        # Remove oldest projects from list
-        #  if len(l)>const.PROJ_MAX:
-            #  for i in range(len(l)-const.PROJ_MAX):
-                #  l.pop()
 
     def GetLanguage(self):
         return self.language
