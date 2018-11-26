@@ -70,10 +70,11 @@ def ClaronTracker(tracker_id):
         trck_init = pyclaron.pyclaron()
         trck_init.CalibrationDir = const.CAL_DIR.encode(const.FS_ENCODE)
         trck_init.MarkerDir = const.MAR_DIR.encode(const.FS_ENCODE)
-        trck_init.NumberFramesProcessed = 10
+        trck_init.NumberFramesProcessed = 1
         trck_init.FramesExtrapolated = 0
-        trck_init.PROBE_NAME = "1Probe"
-        trck_init.REF_NAME = "5Ref"
+        trck_init.PROBE_NAME = const.PROBE_NAME.encode(const.FS_ENCODE)
+        trck_init.REF_NAME = const.REF_NAME.encode(const.FS_ENCODE)
+        trck_init.OBJ_NAME = const.OBJ_NAME.encode(const.FS_ENCODE)
         trck_init.Initialize()
 
         if trck_init.GetIdentifyingCamera():

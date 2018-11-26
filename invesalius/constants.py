@@ -739,6 +739,9 @@ TIPS_OBJ = [_("Select left object fiducial"),
 
 CAL_DIR = os.path.abspath(os.path.join(FILE_PATH, '..', 'navigation', 'mtc_files', 'CalibrationFiles'))
 MAR_DIR = os.path.abspath(os.path.join(FILE_PATH, '..', 'navigation', 'mtc_files', 'Markers'))
+PROBE_NAME = "1Probe"
+REF_NAME = "2Ref"
+OBJ_NAME = "3Coil"
 
 #OBJECT TRACKING
 OBJ_DIR = os.path.abspath(os.path.join(FILE_PATH, '..', 'navigation', 'objects'))

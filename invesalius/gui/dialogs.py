@@ -3327,7 +3327,8 @@ class ObjectCalibrationDialog(wx.Dialog):
         choice_ref.SetSelection(self.obj_ref_id)
         choice_ref.SetToolTip(tooltip)
         choice_ref.Bind(wx.EVT_COMBOBOX, self.OnChoiceRefMode)
-        choice_ref.Enable(0)
+        if self.tracker_id != const.MTC:
+            choice_ref.Enable(0)
 
         # Buttons to finish or cancel object registration
         tooltip = wx.ToolTip(_(u"Registration done"))
