@@ -216,10 +216,16 @@ def DisconnectTracker(tracker_id, trck_init):
         print('Debug tracker disconnected.')
     else:
         try:
-            trck_init.Close()
-            trck_init = False
-            lib_mode = 'wrapper'
-            print('Tracker disconnected.')
+            if tracker_id == 3:
+                trck_init.close()
+                trck_init = False
+                lib_mode = 'serial'
+                print('Tracker disconnected.')
+            else:
+                trck_init.Close()
+                trck_init = False
+                lib_mode = 'wrapper'
+                print('Tracker disconnected.')
         except:
             trck_init = True
             lib_mode = 'error'
