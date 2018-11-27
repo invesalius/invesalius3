@@ -497,6 +497,7 @@ class NeuronavigationPanel(wx.Panel):
                     print("Tracker connected!")
         elif choice == 6:
             if trck:
+                self.ResetTrackerFiducials()
                 Publisher.sendMessage('Update status text in GUI',
                                       label=_("Disconnecting tracker ..."))
                 Publisher.sendMessage('Remove sensors ID')

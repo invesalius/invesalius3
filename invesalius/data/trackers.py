@@ -70,10 +70,11 @@ def ClaronTracker(tracker_id):
         trck_init = pyclaron.pyclaron()
         trck_init.CalibrationDir = const.CAL_DIR.encode(const.FS_ENCODE)
         trck_init.MarkerDir = const.MAR_DIR.encode(const.FS_ENCODE)
-        trck_init.NumberFramesProcessed = 10
+        trck_init.NumberFramesProcessed = 1
         trck_init.FramesExtrapolated = 0
-        trck_init.PROBE_NAME = "1Probe"
-        trck_init.REF_NAME = "5Ref"
+        trck_init.PROBE_NAME = const.PROBE_NAME.encode(const.FS_ENCODE)
+        trck_init.REF_NAME = const.REF_NAME.encode(const.FS_ENCODE)
+        trck_init.OBJ_NAME = const.OBJ_NAME.encode(const.FS_ENCODE)
         trck_init.Initialize()
 
         if trck_init.GetIdentifyingCamera():
@@ -215,10 +216,16 @@ def DisconnectTracker(tracker_id, trck_init):
         print('Debug tracker disconnected.')
     else:
         try:
-            trck_init.Close()
-            trck_init = False
-            lib_mode = 'wrapper'
-            print('Tracker disconnected.')
+            if tracker_id == 3:
+                trck_init.close()
+                trck_init = False
+                lib_mode = 'serial'
+                print('Tracker disconnected.')
+            else:
+                trck_init.Close()
+                trck_init = False
+                lib_mode = 'wrapper'
+                print('Tracker disconnected.')
         except:
             trck_init = True
             lib_mode = 'error'
