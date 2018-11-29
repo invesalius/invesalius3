@@ -16,7 +16,7 @@
 #    PARTICULAR. Consulte a Licenca Publica Geral GNU para obter mais
 #    detalhes.
 #--------------------------------------------------------------------------
-
+import invesalius.constants as const
 # TODO: Disconnect tracker when a new one is connected
 # TODO: Test if there are too many prints when connection fails
 
@@ -32,11 +32,12 @@ def TrackerConnection(tracker_id, trck_init, action):
     """
 
     if action == 'connect':
-        trck_fcn = {1: ClaronTracker,
-                    2: PolhemusTracker,    # FASTRAK
-                    3: PolhemusTracker,    # ISOTRAK
-                    4: PolhemusTracker,    # PATRIOT
-                    5: DebugTracker}
+        trck_fcn = {const.MTC: ClaronTracker,
+                    const.FASTRAK: PolhemusTracker,    # FASTRAK
+                    const.ISOTRAKII: PolhemusTracker,    # ISOTRAK
+                    const.PATRIOT: PolhemusTracker,    # PATRIOT
+                    const.CAMERA: CameraTracker,      # CAMERA
+                    const.DEBUGTRACK: DebugTracker}
 
         trck_init = trck_fcn[tracker_id](tracker_id)
 
@@ -58,10 +59,21 @@ def DefaultTracker(tracker_id):
     # return tracker initialization variable and type of connection
     return trck_init, 'wrapper'
 
+def CameraTracker(tracker_id):
+    trck_init = None
+    try:
+        import invesalius.data.inv_wrapper as cam
+        trck_init = cam.camera()
+        trck_init.Initialize()
+        print('Connect to camera tracking device.')
+
+    except:
+        print('Could not connect to default tracker.')
+
+    # return tracker initialization variable and type of connection
+    return trck_init, 'wrapper'
 
 def ClaronTracker(tracker_id):
-    import invesalius.constants as const
-
     trck_init = None
     try:
         import pyclaron
@@ -210,13 +222,13 @@ def DisconnectTracker(tracker_id, trck_init):
     :param trck_init: Initialization variable of tracking device.
     """
 
-    if tracker_id == 5:
+    if tracker_id == const.DEBUGTRACK:
         trck_init = False
         lib_mode = 'debug'
         print('Debug tracker disconnected.')
     else:
         try:
-            if tracker_id == 3:
+            if tracker_id == const.ISOTRAKII:
                 trck_init.close()
                 trck_init = False
                 lib_mode = 'serial'

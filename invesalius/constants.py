@@ -671,14 +671,15 @@ MTC = 1
 FASTRAK = 2
 ISOTRAKII = 3
 PATRIOT = 4
-DEBUGTRACK = 5
-DISCTRACK = 6
+CAMERA = 5
+DEBUGTRACK = 6
+DISCTRACK = 7
 DEFAULT_TRACKER = SELECT
 
 TRACKER = [_("Select tracker:"), _("Claron MicronTracker"),
            _("Polhemus FASTRAK"), _("Polhemus ISOTRAK II"),
-           _("Polhemus PATRIOT"), _("Debug tracker"),
-           _("Disconnect tracker")]
+           _("Polhemus PATRIOT"), _("Camera tracker"),
+           _("Debug tracker"), _("Disconnect tracker")]
 
 STATIC_REF = 0
 DYNAMIC_REF = 1

@@ -21,6 +21,7 @@ from math import sin, cos
 import numpy as np
 
 import invesalius.data.transformations as tr
+import invesalius.constants as const
 
 from time import sleep
 from random import uniform
@@ -40,17 +41,24 @@ def GetCoordinates(trck_init, trck_id, ref_mode):
 
     coord = None
     if trck_id:
-        getcoord = {1: ClaronCoord,
-                    2: PolhemusCoord,
-                    3: PolhemusCoord,
-                    4: PolhemusCoord,
-                    5: DebugCoord}
+        getcoord = {const.MTC: ClaronCoord,
+                    const.FASTRAK: PolhemusCoord,
+                    const.ISOTRAKII: PolhemusCoord,
+                    const.PATRIOT: PolhemusCoord,
+                    const.CAMERA: CameraCoord,
+                    const.DEBUGTRACK: DebugCoord}
         coord = getcoord[trck_id](trck_init, trck_id, ref_mode)
     else:
         print("Select Tracker")
 
     return coord
 
+
+def CameraCoord(trck_init, trck_id, ref_mode):
+    trck = trck_init[0]
+    coord, probeID, refID = trck.Run()
+    Publisher.sendMessage('Sensors ID', probe_id=probeID, ref_id=refID)
+    return coord
 
 def ClaronCoord(trck_init, trck_id, ref_mode):
     trck = trck_init[0]

@@ -898,11 +898,12 @@ def NavigationTrackerWarning(trck_id, lib_mode):
     """
     Spatial Tracker connection error
     """
-    trck = {1: 'Claron MicronTracker',
-            2: 'Polhemus FASTRAK',
-            3: 'Polhemus ISOTRAK',
-            4: 'Polhemus PATRIOT',
-            5: 'Debug tracker device'}
+    trck = {const.MTC: 'Claron MicronTracker',
+            const.FASTRAK: 'Polhemus FASTRAK',
+            const.ISOTRAKII: 'Polhemus ISOTRAK',
+            const.PATRIOT: 'Polhemus PATRIOT',
+            const.CAMERA: 'CAMERA',
+            const.DEBUGTRACK: 'Debug tracker device'}
 
     if lib_mode == 'choose':
         msg = _('No tracking device selected')
