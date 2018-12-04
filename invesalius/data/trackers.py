@@ -62,7 +62,7 @@ def DefaultTracker(tracker_id):
 def CameraTracker(tracker_id):
     trck_init = None
     try:
-        import invesalius.data.inv_wrapper as cam
+        import invesalius.data.camera_tracker as cam
         trck_init = cam.camera()
         trck_init.Initialize()
         print('Connect to camera tracking device.')
