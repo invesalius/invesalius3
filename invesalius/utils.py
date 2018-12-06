@@ -394,21 +394,14 @@ def UpdateCheck():
         #msgdlg.Destroy()
 
     print("Checking updates...")
-    
+
     # Check if there is a language set
     #import invesalius.i18n as i18n    import invesalius.session as ses
     session = ses.Session()
     install_lang = 0
-    if session.ReadLanguage():
-        lang = session.GetLanguage()
-        #if (lang != "False"):
-            #_ = i18n.InstallLanguage(lang)
-            #install_lang = 1
-    #if (install_lang==0):
-        #return
-    if session.ReadRandomId():
-        random_id = session.GetRandomId()
-
+    lang = session.GetLanguage()
+    random_id = session.GetRandomId()
+    if lang:
         # Fetch update data from server
         import invesalius.constants as const
         url = "https://www.cti.gov.br/dt3d/invesalius/update/checkupdate.php"
