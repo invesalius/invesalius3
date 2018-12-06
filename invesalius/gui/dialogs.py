@@ -268,8 +268,10 @@ WILDCARD_MESH_FILES = "STL File format (*.stl)|*.stl|" \
 def ShowOpenProjectDialog():
     # Default system path
     current_dir = os.path.abspath(".")
+    session = ses.Session()
+    last_directory = session.get('paths', 'last_directory_inv3', '')
     dlg = wx.FileDialog(None, message=_("Open InVesalius 3 project..."),
-                        defaultDir="",
+                        defaultDir=last_directory,
                         defaultFile="", wildcard=WILDCARD_OPEN,
                         style=wx.FD_OPEN|wx.FD_CHANGE_DIR)
 
@@ -285,6 +287,10 @@ def ShowOpenProjectDialog():
             filepath = dlg.GetPath()
     except(wx._core.PyAssertionError):  # FIX: win64
         filepath = dlg.GetPath()
+
+    if filepath:
+        session['paths']['last_directory_inv3'] = os.path.split(filepath)[0]
+        session.WriteSessionFile()
 
     # Destroy the dialog. Don't do this until you are done with it!
     # BAD things can happen otherwise!
@@ -375,9 +381,10 @@ def ShowImportBitmapDirDialog(self):
 
 def ShowImportOtherFilesDialog(id_type):
     # Default system path
-    current_dir = os.path.abspath(".")
+    session = ses.Session()
+    last_directory = session.get('paths', 'last_directory_%d' % id_type, '')
     dlg = wx.FileDialog(None, message=_("Import Analyze 7.5 file"),
-                        defaultDir="",
+                        defaultDir=last_directory,
                         defaultFile="", wildcard=WILDCARD_ANALYZE,
                         style=wx.FD_OPEN | wx.FD_CHANGE_DIR)
 
@@ -407,10 +414,12 @@ def ShowImportOtherFilesDialog(id_type):
         if (dlg.GetPath()):
             filename = dlg.GetPath()
 
+    if filename:
+        session['paths']['last_directory_%d' % id_type] = os.path.split(dlg.GetPath())[0]
+        session.WriteSessionFile()
     # Destroy the dialog. Don't do this until you are done with it!
     # BAD things can happen otherwise!
     dlg.Destroy()
-    os.chdir(current_dir)
     return filename
 
 
@@ -444,9 +453,11 @@ def ShowImportMeshFilesDialog():
 
 def ShowSaveAsProjectDialog(default_filename=None):
     current_dir = os.path.abspath(".")
+    session = ses.Session()
+    last_directory = session.get('paths', 'last_directory_inv3', '')
     dlg = wx.FileDialog(None,
                         _("Save project as..."), # title
-                        "", # last used directory
+                        last_directory, # last used directory
                         default_filename,
                         WILDCARD_INV_SAVE,
                         wx.FD_SAVE|wx.FD_OVERWRITE_PROMPT)
@@ -468,6 +479,10 @@ def ShowSaveAsProjectDialog(default_filename=None):
         if sys.platform != 'win32':
             if filename.split(".")[-1] != extension:
                 filename = filename + "." + extension
+
+    if filename:
+        session['paths']['last_directory_inv3'] = os.path.split(filename)[0]
+        session.WriteSessionFile()
 
     wildcard = dlg.GetFilterIndex()
     os.chdir(current_dir)
