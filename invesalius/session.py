@@ -68,7 +68,7 @@ class Session(with_metaclass(Singleton, object)):
         self.project_path = ()
         self.temp_item = False
 
-        self._values = {
+        self._values = collections.defaultdict(dict, {
             'session': {
                 'status': 3,
                 'language': '',
@@ -78,7 +78,7 @@ class Session(with_metaclass(Singleton, object)):
 
             'paths': {
             }
-        }
+        })
 
         self._map_attrs = {
             'mode': ('session', 'mode'),
@@ -103,7 +103,7 @@ class Session(with_metaclass(Singleton, object)):
         if not os.path.isdir(tempdir):
             os.makedirs(tempdir)
 
-        self._values = {
+        self._values = collections.defaultdict(dict, {
             'session': {
                 'mode': const.MODE_RP,
                 'status': const.PROJ_CLOSE,
@@ -124,7 +124,7 @@ class Session(with_metaclass(Singleton, object)):
                 'tempdir': os.path.join(homedir, u".invesalius", u"temp"),
                 'last_dicom_folder': '',
             },
-        }
+        })
 
     def __contains__(self, key):
         return key in self._values
