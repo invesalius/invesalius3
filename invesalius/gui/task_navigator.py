@@ -172,6 +172,15 @@ class InnerFoldPanel(wx.Panel):
         fold_panel.AddFoldPanelWindow(item, mtw, spacing= 0,
                                       leftSpacing=0, rightSpacing=0)
 
+        # Fold 4 - DBS
+
+        self.dbs_item = fold_panel.AddFoldPanel(_("Deep Brain Stimulation"), collapsed=True)
+        dtw = DbsPanel(self.dbs_item) #Atribuir nova var, criar panel
+
+        fold_panel.ApplyCaptionStyle(self.dbs_item, style)
+        fold_panel.AddFoldPanelWindow(self.dbs_item, dtw, spacing= 0,
+                                      leftSpacing=0, rightSpacing=0)
+        self.dbs_item.Hide()
 
         # Check box for camera update in volume rendering during navigation
         tooltip = wx.ToolTip(_("Update camera in volume"))
@@ -220,11 +229,21 @@ class InnerFoldPanel(wx.Panel):
         self.SetSizer(sizer)
         self.Update()
         self.SetAutoLayout(1)
-
+        
     def __bind_events(self):
         Publisher.subscribe(self.OnCheckStatus, 'Navigation status')
         Publisher.subscribe(self.OnShowObject, 'Update track object state')
         Publisher.subscribe(self.OnVolumeCamera, 'Target navigation mode')
+        Publisher.subscribe(self.OnShowDbs, "Active dbs folder")
+        Publisher.subscribe(self.OnHideDbs, "Deactive dbs folder")
+
+    def OnShowDbs(self):
+        self.dbs_item.Show()
+
+
+    def OnHideDbs(self):
+        self.dbs_item.Hide()
+
 
     def OnCheckStatus(self, status):
         if status:
@@ -257,7 +276,6 @@ class InnerFoldPanel(wx.Panel):
             if target_mode is True:
                 self.checkcamera.SetValue(0)
         Publisher.sendMessage('Update volume camera state', camera_state=self.checkcamera.GetValue())
-
 
 class NeuronavigationPanel(wx.Panel):
     def __init__(self, parent):
@@ -479,6 +497,7 @@ class NeuronavigationPanel(wx.Panel):
                     print("Tracker connected!")
         elif choice == 6:
             if trck:
+                self.ResetTrackerFiducials()
                 Publisher.sendMessage('Update status text in GUI',
                                       label=_("Disconnecting tracker ..."))
                 Publisher.sendMessage('Remove sensors ID')
@@ -1078,8 +1097,12 @@ class MarkersPanel(wx.Panel):
         menu_id = wx.Menu()
         edit_id = menu_id.Append(0, _('Edit ID'))
         menu_id.Bind(wx.EVT_MENU, self.OnMenuEditMarkerId, edit_id)
+        color_id = menu_id.Append(2, _('Edit color'))
+        menu_id.Bind(wx.EVT_MENU, self.OnMenuSetColor, color_id)
+        menu_id.AppendSeparator()
         target_menu = menu_id.Append(1, _('Set as target'))
         menu_id.Bind(wx.EVT_MENU, self.OnMenuSetTarget, target_menu)
+
         target_menu.Enable(status)
         self.PopupMenu(menu_id)
         menu_id.Destroy()
@@ -1129,6 +1152,26 @@ class MarkersPanel(wx.Panel):
         self.OnMenuEditMarkerId('TARGET')
         self.tgt_flag = True
         dlg.NewTarget()
+
+    def OnMenuSetColor(self, evt):
+        index = self.lc.GetFocusedItem()
+        cdata = wx.ColourData()
+        cdata.SetColour(wx.Colour(self.list_coord[index][6]*255,self.list_coord[index][7]*255,self.list_coord[index][8]*255))
+        dlg = wx.ColourDialog(self, data=cdata)
+        dlg.GetColourData().SetChooseFull(True)
+        if dlg.ShowModal() == wx.ID_OK:
+            self.r, self.g, self.b = dlg.GetColourData().GetColour().Get(includeAlpha=False)
+            r = float(self.r) / 255.0
+            g = float(self.g) / 255.0
+            b = float(self.b) / 255.0
+        dlg.Destroy()
+        color = [r,g,b]
+
+        Publisher.sendMessage('Set new color', index=index, color=color)
+
+        self.list_coord[index][6] = r
+        self.list_coord[index][7] = g
+        self.list_coord[index][8] = b
 
     def OnDeleteAllMarkers(self, evt=None):
         if self.list_coord:
@@ -1316,3 +1359,12 @@ class MarkersPanel(wx.Panel):
             index = self.lc.GetNextSelected(index)
             selection.append(index)
         return selection
+
+class DbsPanel(wx.Panel):
+    def __init__(self, parent):
+        wx.Panel.__init__(self, parent)
+        try:
+            default_colour = wx.SystemSettings.GetColour(wx.SYS_COLOUR_MENUBAR)
+        except AttributeError:
+            default_colour = wx.SystemSettings_GetColour(wx.SYS_COLOUR_MENUBAR)
+

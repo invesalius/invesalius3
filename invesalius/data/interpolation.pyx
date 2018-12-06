@@ -4,7 +4,7 @@ import numpy as np
 cimport numpy as np
 cimport cython
 
-from libc.math cimport floor, ceil, sqrt, fabs, round, sin, M_PI
+from libc.math cimport floor, ceil, sqrt, fabs, sin, M_PI
 from cython.parallel import prange
 
 DEF LANCZOS_A = 4
@@ -81,7 +81,7 @@ cdef double[64][64] temp = [
 @cython.cdivision(True)
 @cython.wraparound(False)
 cdef double nearest_neighbour_interp(image_t[:, :, :] V, double x, double y, double z) nogil:
-    return V[<int>round(z), <int>round(y), <int>round(x)]
+    return V[<int>(z), <int>(y), <int>(x)]
 
 @cython.boundscheck(False) # turn of bounds-checking for entire function
 @cython.cdivision(True)

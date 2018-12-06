@@ -22,8 +22,10 @@ import sys
 import re
 import locale
 import math
+import traceback
 
 from distutils.version import LooseVersion
+from functools import wraps
 
 import numpy as np
 
@@ -392,21 +394,14 @@ def UpdateCheck():
         #msgdlg.Destroy()
 
     print("Checking updates...")
-    
+
     # Check if there is a language set
     #import invesalius.i18n as i18n    import invesalius.session as ses
     session = ses.Session()
     install_lang = 0
-    if session.ReadLanguage():
-        lang = session.GetLanguage()
-        #if (lang != "False"):
-            #_ = i18n.InstallLanguage(lang)
-            #install_lang = 1
-    #if (install_lang==0):
-        #return
-    if session.ReadRandomId():
-        random_id = session.GetRandomId()
-
+    lang = session.GetLanguage()
+    random_id = session.GetRandomId()
+    if lang:
         # Fetch update data from server
         import invesalius.constants as const
         url = "https://www.cti.gov.br/dt3d/invesalius/update/checkupdate.php"
@@ -462,3 +457,24 @@ def encode(text, encoding, *args):
         return text.encode(encoding, *args)
     except AttributeError:
         return text
+
+
+def timing(f):
+    @wraps(f)
+    def wrapper(*args, **kwargs):
+        start = time.time()
+        result = f(*args, **kwargs)
+        end = time.time()
+        print('{} elapsed time: {}'.format(f.__name__, end-start))
+        return result
+    return wrapper
+
+
+def log_traceback(ex):
+    if hasattr(ex, '__traceback__'):
+        ex_traceback = ex.__traceback__
+    else:
+        _, _, ex_traceback = sys.exc_info()
+    tb_lines = [line.rstrip('\n') for line in
+        traceback.format_exception(ex.__class__, ex, ex_traceback)]
+    return ''.join(tb_lines)

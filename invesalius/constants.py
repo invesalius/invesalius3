@@ -511,7 +511,7 @@ VTK_WARNING = 0
 ID_PROJECT_CLOSE, ID_PROJECT_INFO, ID_SAVE_SCREENSHOT, ID_DICOM_LOAD_NET,
 ID_PRINT_SCREENSHOT, ID_IMPORT_OTHERS_FILES, ID_PREFERENCES, ID_DICOM_NETWORK,
 ID_TIFF_JPG_PNG, ID_VIEW_INTERPOLATED, ID_MODE_NAVIGATION, ID_ANALYZE_IMPORT,
-ID_NIFTI_IMPORT, ID_PARREC_IMPORT] = [wx.NewId() for number in range(18)]
+ID_NIFTI_IMPORT, ID_PARREC_IMPORT, ID_MODE_DBS] = [wx.NewId() for number in range(19)]
 ID_EXIT = wx.ID_EXIT
 ID_ABOUT = wx.ID_ABOUT
 
@@ -756,6 +756,9 @@ TIPS_OBJ = [_("Select left object fiducial"),
 
 CAL_DIR = os.path.abspath(os.path.join(FILE_PATH, '..', 'navigation', 'mtc_files', 'CalibrationFiles'))
 MAR_DIR = os.path.abspath(os.path.join(FILE_PATH, '..', 'navigation', 'mtc_files', 'Markers'))
+PROBE_NAME = "1Probe"
+REF_NAME = "2Ref"
+OBJ_NAME = "3Coil"
 
 #OBJECT TRACKING
 OBJ_DIR = os.path.abspath(os.path.join(FILE_PATH, '..', 'navigation', 'objects'))

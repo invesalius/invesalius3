@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #--------------------------------------------------------------------------
 # Software:     InVesalius - Software de Reconstrucao 3D de Imagens Medicas
@@ -273,8 +272,10 @@ WILDCARD_MESH_FILES = "STL File format (*.stl)|*.stl|" \
 def ShowOpenProjectDialog():
     # Default system path
     current_dir = os.path.abspath(".")
+    session = ses.Session()
+    last_directory = session.get('paths', 'last_directory_inv3', '')
     dlg = wx.FileDialog(None, message=_("Open InVesalius 3 project..."),
-                        defaultDir="",
+                        defaultDir=last_directory,
                         defaultFile="", wildcard=WILDCARD_OPEN,
                         style=wx.FD_OPEN|wx.FD_CHANGE_DIR)
 
@@ -290,6 +291,10 @@ def ShowOpenProjectDialog():
             filepath = dlg.GetPath()
     except(wx._core.PyAssertionError):  # FIX: win64
         filepath = dlg.GetPath()
+
+    if filepath:
+        session['paths']['last_directory_inv3'] = os.path.split(filepath)[0]
+        session.WriteSessionFile()
 
     # Destroy the dialog. Don't do this until you are done with it!
     # BAD things can happen otherwise!
@@ -342,17 +347,19 @@ def ShowImportDirDialog(self):
 def ShowImportBitmapDirDialog(self):
     current_dir = os.path.abspath(".")
 
-    if sys.platform == 'win32' or sys.platform.startswith('linux'):
-        session = ses.Session()
+    #  if sys.platform == 'win32' or sys.platform.startswith('linux'):
+        #  session = ses.Session()
 
-        if (session.GetLastDicomFolder()):
-            folder = session.GetLastDicomFolder()
-        else:
-            folder = ''
-    else:
-        folder = ''
+        #  if (session.GetLastDicomFolder()):
+            #  folder = session.GetLastDicomFolder()
+        #  else:
+            #  folder = ''
+    #  else:
+        #  folder = ''
+    session = ses.Session()
+    last_directory = session.get('paths', 'last_directory_bitmap', '')
 
-    dlg = wx.DirDialog(self, _("Choose a folder with TIFF, BMP, JPG or PNG:"), folder,
+    dlg = wx.DirDialog(self, _("Choose a folder with TIFF, BMP, JPG or PNG:"), last_directory,
                         style=wx.DD_DEFAULT_STYLE
                         | wx.DD_DIR_MUST_EXIST
                         | wx.DD_CHANGE_DIR)
@@ -368,9 +375,13 @@ def ShowImportBitmapDirDialog(self):
          if (dlg.GetPath()):
              path = dlg.GetPath()
 
-    if (sys.platform != 'darwin'):
-        if (path):
-            session.SetLastDicomFolder(path)
+    #  if (sys.platform != 'darwin'):
+        #  if (path):
+            #  session.SetLastDicomFolder(path)
+
+    if path:
+        session['paths']['last_directory_bitmap'] = path
+        session.WriteSessionFile()
 
     # Only destroy a dialog after you're done with it.
     dlg.Destroy()
@@ -380,9 +391,10 @@ def ShowImportBitmapDirDialog(self):
 
 def ShowImportOtherFilesDialog(id_type):
     # Default system path
-    current_dir = os.path.abspath(".")
+    session = ses.Session()
+    last_directory = session.get('paths', 'last_directory_%d' % id_type, '')
     dlg = wx.FileDialog(None, message=_("Import Analyze 7.5 file"),
-                        defaultDir="",
+                        defaultDir=last_directory,
                         defaultFile="", wildcard=WILDCARD_ANALYZE,
                         style=wx.FD_OPEN | wx.FD_CHANGE_DIR)
 
@@ -412,17 +424,22 @@ def ShowImportOtherFilesDialog(id_type):
         if (dlg.GetPath()):
             filename = dlg.GetPath()
 
+    if filename:
+        session['paths']['last_directory_%d' % id_type] = os.path.split(dlg.GetPath())[0]
+        session.WriteSessionFile()
     # Destroy the dialog. Don't do this until you are done with it!
     # BAD things can happen otherwise!
     dlg.Destroy()
-    os.chdir(current_dir)
     return filename
 
 
 def ShowImportMeshFilesDialog():
     # Default system path
     current_dir = os.path.abspath(".")
+    session = ses.Session()
+    last_directory = session.get('paths', 'last_directory_surface_import', '')
     dlg = wx.FileDialog(None, message=_("Import surface file"),
+                        defaultDir=last_directory,
                         wildcard=WILDCARD_MESH_FILES,
                         style=wx.FD_OPEN | wx.FD_CHANGE_DIR)
 
@@ -440,6 +457,10 @@ def ShowImportMeshFilesDialog():
         if (dlg.GetPath()):
             filename = dlg.GetPath()
 
+    if filename:
+        session['paths']['last_directory_surface_import'] = os.path.split(filename)[0]
+        session.WriteSessionFile()
+
     # Destroy the dialog. Don't do this until you are done with it!
     # BAD things can happen otherwise!
     dlg.Destroy()
@@ -449,9 +470,11 @@ def ShowImportMeshFilesDialog():
 
 def ShowSaveAsProjectDialog(default_filename=None):
     current_dir = os.path.abspath(".")
+    session = ses.Session()
+    last_directory = session.get('paths', 'last_directory_inv3', '')
     dlg = wx.FileDialog(None,
                         _("Save project as..."), # title
-                        "", # last used directory
+                        last_directory, # last used directory
                         default_filename,
                         WILDCARD_INV_SAVE,
                         wx.FD_SAVE|wx.FD_OVERWRITE_PROMPT)
@@ -473,6 +496,10 @@ def ShowSaveAsProjectDialog(default_filename=None):
         if sys.platform != 'win32':
             if filename.split(".")[-1] != extension:
                 filename = filename + "." + extension
+
+    if filename:
+        session['paths']['last_directory_inv3'] = os.path.split(filename)[0]
+        session.WriteSessionFile()
 
     wildcard = dlg.GetFilterIndex()
     os.chdir(current_dir)
@@ -1462,13 +1489,16 @@ def ExportPicture(type_=""):
     utils.debug("ExportPicture")
     project = proj.Project()
 
+    session = ses.Session()
+    last_directory = session.get('paths', 'last_directory_screenshot', '')
+
     project_name = "%s_%s" % (project.name, type_)
     if not sys.platform in ('win32', 'linux2', 'linux'):
         project_name += ".jpg"
 
     dlg = wx.FileDialog(None,
                         "Save %s picture as..." %type_,
-                        "", # last used directory
+                        last_directory, # last used directory
                         project_name, # filename
                         WILDCARD_SAVE_PICTURE,
                         wx.FD_SAVE|wx.FD_OVERWRITE_PROMPT)
@@ -1479,6 +1509,8 @@ def ExportPicture(type_=""):
         filetype = INDEX_TO_TYPE[filetype_index]
         extension = INDEX_TO_EXTENSION[filetype_index]
         filename = dlg.GetPath()
+        session['paths']['last_directory_screenshot'] = os.path.split(filename)[0]
+        session.WriteSessionFile()
         if sys.platform != 'win32':
             if filename.split(".")[-1] != extension:
                 filename = filename + "."+ extension
@@ -1667,7 +1699,10 @@ class SurfaceCreationOptionsPanel(wx.Panel):
                               (combo_quality, 0, flag_button, 0)])
 
 
-        # LINES 4 and 5: Checkboxes
+        # LINES 4, 5 and 6: Checkboxes
+        check_box_border_holes = wx.CheckBox(self, -1, _("Fill border holes"))
+        check_box_border_holes.SetValue(False)
+        self.check_box_border_holes = check_box_border_holes
         check_box_holes = wx.CheckBox(self, -1, _("Fill holes"))
         check_box_holes.SetValue(False)
         self.check_box_holes = check_box_holes
@@ -1678,6 +1713,7 @@ class SurfaceCreationOptionsPanel(wx.Panel):
         # Merge all sizers and checkboxes
         sizer = wx.BoxSizer(wx.VERTICAL)
         sizer.Add(fixed_sizer, 0, wx.TOP|wx.RIGHT|wx.LEFT|wx.GROW|wx.EXPAND, 5)
+        sizer.Add(check_box_border_holes, 0, wx.RIGHT|wx.LEFT, 5)
         sizer.Add(check_box_holes, 0, wx.RIGHT|wx.LEFT, 5)
         sizer.Add(check_box_largest, 0, wx.RIGHT|wx.LEFT, 5)
 
@@ -1692,11 +1728,13 @@ class SurfaceCreationOptionsPanel(wx.Panel):
         mask_index = self.combo_mask.GetSelection()
         surface_name = self.text.GetValue()
         quality = const.SURFACE_QUALITY_LIST[self.combo_quality.GetSelection()]
+        fill_border_holes = self.check_box_border_holes.GetValue()
         fill_holes = self.check_box_holes.GetValue()
         keep_largest = self.check_box_largest.GetValue()
         return {"index": mask_index,
                 "name": surface_name,
                 "quality": quality,
+                "fill_border_holes": fill_border_holes,
                 "fill": fill_holes,
                 "keep_largest": keep_largest,
                 "overwrite": False}
@@ -3432,7 +3470,8 @@ class ObjectCalibrationDialog(wx.Dialog):
         choice_ref.SetSelection(self.obj_ref_id)
         choice_ref.SetToolTip(tooltip)
         choice_ref.Bind(wx.EVT_COMBOBOX, self.OnChoiceRefMode)
-        choice_ref.Enable(0)
+        if self.tracker_id != const.MTC:
+            choice_ref.Enable(0)
 
         # Buttons to finish or cancel object registration
         tooltip = wx.ToolTip(_(u"Registration done"))
@@ -3634,3 +3673,30 @@ class ObjectCalibrationDialog(wx.Dialog):
 
     def GetValue(self):
         return self.obj_fiducials, self.obj_orients, self.obj_ref_id, self.obj_name
+
+
+class SurfaceProgressWindow(object):
+    def __init__(self):
+        self.title = "InVesalius 3"
+        self.msg = _("Creating 3D surface ...")
+        self.style = wx.PD_APP_MODAL | wx.PD_APP_MODAL | wx.PD_CAN_ABORT | wx.PD_ELAPSED_TIME
+        self.dlg = wx.ProgressDialog(self.title,
+                                     self.msg,
+                                     parent=None,
+                                     style=self.style)
+        self.running = True
+        self.error = None
+        self.dlg.Show()
+
+    def WasCancelled(self):
+        #  print("Cancelled?", self.dlg.WasCancelled())
+        return self.dlg.WasCancelled()
+
+    def Update(self, msg=None, value=None):
+        if msg is None:
+            self.dlg.Pulse()
+        else:
+            self.dlg.Pulse(msg)
+
+    def Close(self):
+        self.dlg.Destroy()

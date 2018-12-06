@@ -34,7 +34,6 @@ class Orientation(object):
         extent = self.image.GetWholeExtent()
 
         if orientation == AXIAL:
-            print "AXIAL"
             cam.SetFocalPoint(0, 0, 0)
             cam.SetPosition(0, 0, 1)
             cam.ComputeViewPlaneNormal()
@@ -44,7 +43,6 @@ class Orientation(object):
             ys = extent[3] - extent[2] + 1
 
         elif orientation == CORONAL:
-            print "Coronal"
             cam.SetFocalPoint(0, 0, 0)
             cam.SetPosition(0, -1, 0)
             cam.ComputeViewPlaneNormal()
@@ -54,7 +52,6 @@ class Orientation(object):
             ys = extent[5] - extent[4] + 1
 
         elif orientation == SAGITAL:
-            print "Sagital"
             cam.SetFocalPoint(0, 0, 0)
             cam.SetPosition(1, 0, 0)
             cam.ComputeViewPlaneNormal()

@@ -54,37 +54,22 @@ def GetCoordinates(trck_init, trck_id, ref_mode):
 
 def ClaronCoord(trck_init, trck_id, ref_mode):
     trck = trck_init[0]
-    scale = np.array([1.0, 1.0, -1.0])
-    coord = None
-    k = 0
-    # TODO: try to replace 'while' and use some Claron internal computation
+    trck.Run()
+    scale = np.array([1.0, 1.0, 1.0])
 
-    if ref_mode:
-        while k < 20:
-            try:
-                trck.Run()
-                probe = np.array([trck.PositionTooltipX1, trck.PositionTooltipY1,
-                                  trck.PositionTooltipZ1, trck.AngleX1, trck.AngleY1, trck.AngleZ1])
-                reference = np.array([trck.PositionTooltipX2, trck.PositionTooltipY2,
-                                      trck.PositionTooltipZ2, trck.AngleZ2,  trck.AngleY2, trck.AngleX2])
-                k = 30
-            except AttributeError:
-                k += 1
-                print("wait, collecting coordinates ...")
-        if k == 30:
-            coord = dynamic_reference(probe, reference)
-            coord = (coord[0] * scale[0], coord[1] * scale[1], coord[2] * scale[2], coord[3], coord[4], coord[5])
-    else:
-        while k < 20:
-            try:
-                trck.Run()
-                coord = np.array([trck.PositionTooltipX1 * scale[0], trck.PositionTooltipY1 * scale[1],
-                                  trck.PositionTooltipZ1 * scale[2], trck.AngleX1, trck.AngleY1, trck.AngleZ1])
+    coord1 = np.array([float(trck.PositionTooltipX1)*scale[0], float(trck.PositionTooltipY1)*scale[1],
+                      float(trck.PositionTooltipZ1)*scale[2],
+                      float(trck.AngleZ1), float(trck.AngleY1), float(trck.AngleX1)])
 
-                k = 30
-            except AttributeError:
-                k += 1
-                print("wait, collecting coordinates ...")
+    coord2 = np.array([float(trck.PositionTooltipX2)*scale[0], float(trck.PositionTooltipY2)*scale[1],
+                       float(trck.PositionTooltipZ2)*scale[2],
+                       float(trck.AngleZ2), float(trck.AngleY2), float(trck.AngleX2)])
+
+    coord3 = np.array([float(trck.PositionTooltipX3) * scale[0], float(trck.PositionTooltipY3) * scale[1],
+                       float(trck.PositionTooltipZ3) * scale[2],
+                       float(trck.AngleZ3), float(trck.AngleY3), float(trck.AngleX3)])
+
+    coord = np.vstack([coord1, coord2, coord3])
 
     Publisher.sendMessage('Sensors ID', probe_id=trck.probeID, ref_id=trck.refID)
 
@@ -174,33 +159,31 @@ def PolhemusSerialCoord(trck_init, trck_id, ref_mode):
     # aoflt -> 0:letter 1:x 2:y 3:z
     # this method is not optimized to work with all trackers, only with ISOTRAK
     # serial connection is obsolete, remove in future
-    trck_init.write("P")
+    trck_init.write(str.encode("P"))
+    scale = 10. * np.array([1., 1.0, 1.0])
     lines = trck_init.readlines()
 
-    coord = None
-
-    if lines[0][0] != '0':
+    if lines is None:
         print("The Polhemus is not connected!")
     else:
-        for s in lines:
-            if s[1] == '1':
-                data = s
-            elif s[1] == '2':
-                data = s
+        data = lines[0]
+        data = data.replace(str.encode('-'), str.encode(' -'))
+        data = [s for s in data.split()]
+        data = [float(s) for s in data[1:len(data)]]
+        probe = np.array([data[0] * scale[0], data[1] * scale[1], data[2] * scale[2], data[3], data[4], data[5]])
 
-        # single ref mode
-        if not ref_mode:
-            data = data.replace('-', ' -')
-            data = [s for s in data.split()]
-            j = 0
-            while j == 0:
-                try:
-                    plh1 = [float(s) for s in data[1:len(data)]]
-                    j = 1
-                except:
-                    print("error!!")
+        if ref_mode:
+            data2 = lines[1]
+            data2 = data2.replace(str.encode('-'), str.encode(' -'))
+            data2 = [s for s in data2.split()]
+            data2 = [float(s) for s in data2[1:len(data2)]]
+            reference = np.array(
+                [data2[0] * scale[0], data2[1] * scale[1], data2[2] * scale[2], data2[3], data2[4], data2[5]])
+        else:
+            reference = np.zeros(6)
 
-            coord = data[0:6]
+        coord = np.vstack([probe, reference])
+
     return coord
 
 

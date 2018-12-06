@@ -34,6 +34,8 @@ from invesalius.gui.widgets.clut_raycasting import CLUTRaycastingWidget, \
         EVT_CLUT_CURVE_WL_CHANGE
 
 from invesalius.constants import ID_TO_BMP
+
+import invesalius.session as ses
 import invesalius.constants as const
 
 class Panel(wx.Panel):
@@ -120,6 +122,9 @@ class Panel(wx.Panel):
             self.aui_manager.AddPane(p1, s1)
 
         self.aui_manager.Update()
+
+        if int(ses.Session().mode) != const.MODE_NAVIGATOR:
+            Publisher.sendMessage('Deactive target button')
 
     def __bind_events_wx(self):
         self.aui_manager.Bind(wx.aui.EVT_AUI_PANE_MAXIMIZE, self.OnMaximize)
@@ -313,8 +318,6 @@ import wx.lib.buttons as btn
 import wx.lib.pubsub as ps
 import wx.lib.colourselect as csel
 
-import invesalius.constants as const
-
 [BUTTON_RAYCASTING, BUTTON_VIEW, BUTTON_SLICE_PLANE, BUTTON_3D_STEREO, BUTTON_TARGET] = [wx.NewId() for num in range(5)]
 RAYCASTING_TOOLS = wx.NewId()
 
@@ -431,6 +434,8 @@ class VolumeToolPanel(wx.Panel):
         Publisher.subscribe(self.DisableVolumeCutMenu, 'Disable volume cut menu')
         Publisher.subscribe(self.StatusTargetSelect, 'Disable or enable coil tracker')
         Publisher.subscribe(self.StatusObjTracker, 'Status target button')
+        Publisher.subscribe(self.ActiveTarget, 'Active target button')
+        Publisher.subscribe(self.DeactiveTarget, 'Deactive target button')
         
     def DisablePreset(self):
         self.off_item.Check(1)
@@ -464,6 +469,12 @@ class VolumeToolPanel(wx.Panel):
     def StatusTargetSelect(self, status):
         self.status_target_select = status
         self.StatusNavigation()
+
+    def ActiveTarget(self):
+        self.button_target.Show()
+
+    def DeactiveTarget(self):
+        self.button_target.Hide()
 
     def StatusNavigation(self):
         if self.status_target_select and self.status_obj_tracker:
@@ -622,7 +633,7 @@ class VolumeToolPanel(wx.Panel):
                                   preset_name=ID_TO_NAME[id])
             # Enable or disable tools
             if name != const.RAYCASTING_OFF_LABEL:
- 	            self.menu_raycasting.Enable(RAYCASTING_TOOLS, 1)
+                self.menu_raycasting.Enable(RAYCASTING_TOOLS, 1)
             else:
                 self.menu_raycasting.Enable(RAYCASTING_TOOLS, 0)
 
