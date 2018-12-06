@@ -152,6 +152,12 @@ class Session(with_metaclass(Singleton, object)):
     def __str__(self):
         return self._values.__str__()
 
+    def get(self, session, key, default_value):
+        try:
+            return self._values[session][key]
+        except KeyError:
+            return default_value
+
     def IsOpen(self):
         import invesalius.constants as const
         return self.project_status != const.PROJ_CLOSE
