@@ -61,6 +61,7 @@ class camera():
 
         self.ref = np.zeros(6)
         self.probe = np.zeros(6)
+
         self.cap.read()
 
         print("Initialization OK");
@@ -80,6 +81,9 @@ class camera():
             # lists of ids and the corners beloning to each id
             corners, ids, rejectedImgPoints = aruco.detectMarkers(gray, aruco_dict, parameters=parameters)
 
+            #tooltip is align with aruco marker along y axis. The distance is 21cm
+            translate_tooltip = np.array([0, 0.21, 0])
+
             if len(face_rects) > 0:
                 shape = self.predictor(frame, face_rects[0])
                 shape = face_utils.shape_to_np(shape)
@@ -93,7 +97,7 @@ class camera():
                 ref_id = 0
 
             if np.all(ids != None):
-                # 0.05 = 5cm do marcador
+                # 0.05 = 5cm marker size
                 rvec, tvec, _ = aruco.estimatePoseSingleMarkers(corners[0], 0.05, self.cam_matrix,
                                                                 self.dist_coeffs)  # Estimate pose of each marker and return the values rvet and tvec---different from camera coefficients
 
@@ -102,7 +106,9 @@ class camera():
                 pose_mat = cv2.hconcat((rotation_mat, np.transpose(tvec[0, 0])))
                 _, _, _, _, _, _, euler_angle = cv2.decomposeProjectionMatrix(pose_mat)
                 angles = np.array([euler_angle[2], euler_angle[1], euler_angle[0]])
-                self.probe = np.hstack([1000*tvec[0,0,:], angles[:, 0]])
+                #tooltip offset
+                tool_tip_position = np.dot(rotation_mat, np.transpose(translate_tooltip)) + np.transpose(tvec[0, 0])
+                self.probe = np.hstack([1000*tool_tip_position, angles[:, 0]])
                 probe_id = 1
             else:
                 probe_id = 0
