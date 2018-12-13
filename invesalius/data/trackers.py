@@ -146,7 +146,7 @@ def PlhWrapperConnection(tracker_id):
 def PlhSerialConnection(tracker_id):
     import serial
 
-    trck_init = serial.Serial('COM1', baudrate=115200, timeout=0.03)
+    trck_init = serial.Serial('COM3', baudrate=115200, timeout=0.03)
 
     if tracker_id == 2:
         # Polhemus FASTRAK needs configurations first

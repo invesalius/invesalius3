@@ -157,6 +157,7 @@ class SurfaceManager():
     def __init__(self):
         self.actors_dict = {}
         self.last_surface_index = 0
+        self.affine = None
         self.__bind_events()
 
     def __bind_events(self):
@@ -183,6 +184,8 @@ class SurfaceManager():
         Publisher.subscribe(self.UpdateSurfaceInterpolation, 'Update Surface Interpolation')
 
         Publisher.subscribe(self.OnImportSurfaceFile, 'Import surface file')
+
+        Publisher.subscribe(self.UpdateAffineMatrix, 'Update affine matrix')
 
     def OnDuplicate(self, surface_indexes):
         proj = prj.Project()
@@ -307,6 +310,9 @@ class SurfaceManager():
             name = os.path.splitext(os.path.split(filename)[-1])[0]
             self.CreateSurfaceFromPolydata(polydata, name=name)
 
+    def UpdateAffineMatrix(self, affine):
+        self.affine = affine
+
     def CreateSurfaceFromPolydata(self, polydata, overwrite=False,
                                   name=None, colour=None,
                                   transparency=None, volume=None, area=None):
@@ -316,9 +322,18 @@ class SurfaceManager():
         normals.AutoOrientNormalsOn()
         normals.Update()
 
+        transform = vtk.vtkTransform()
+        if self.affine.any():
+            transform.SetMatrix(self.affine)
+
+        transformFilter = vtk.vtkTransformPolyDataFilter()
+        transformFilter.SetTransform(transform)
+        transformFilter.SetInputConnection(normals.GetOutputPort())
+        transformFilter.Update()
+
         mapper = vtk.vtkPolyDataMapper()
-        mapper.SetInputData(normals.GetOutput())
-        mapper.ScalarVisibilityOff()
+        mapper.SetInputData(transformFilter.GetOutput())
+        mapper.ScalarVisibilityOn()
         mapper.ImmediateModeRenderingOn() # improve performance
 
         actor = vtk.vtkActor()

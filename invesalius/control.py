@@ -859,6 +859,13 @@ class Controller():
         self.matrix, scalar_range, self.filename = image_utils.img2memmap(group)
 
         hdr = group.header
+        if group.affine.any():
+            from numpy import hstack
+            from numpy.linalg import inv
+            affine = inv(group.affine)
+            affine[1, 3] = -affine[1, 3]
+            Publisher.sendMessage('Update affine matrix',
+                                  affine=hstack(affine))
         hdr.set_data_dtype('int16')
         dims = hdr.get_zooms()
         dimsf = tuple([float(s) for s in dims])
