@@ -998,7 +998,7 @@ def EnterMarkerID(default):
     if sys.platform == 'darwin':
         dlg = wx.TextEntryDialog(None, "", msg, defaultValue=default)
     else:
-        dlg = wx.TextEntryDialog(None, msg, "InVesalius 3", defaultValue=default)
+        dlg = wx.TextEntryDialog(None, msg, "InVesalius 3", value=default)
     dlg.ShowModal()
     result = dlg.GetValue()
     dlg.Destroy()
