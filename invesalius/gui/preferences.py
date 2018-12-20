@@ -222,7 +222,7 @@ class Language(wx.Panel):
 class SurfaceCreation(wx.Panel):
     def __init__(self, parent):
         wx.Panel.__init__(self, parent)
-        self.rb_fill_border = wx.RadioBox(self, -1, "Fill border holes", choices=[_('Yes'), _('No')], style=wx.RA_SPECIFY_COLS | wx.NO_BORDER)
+        self.rb_fill_border = wx.RadioBox(self, -1, _("Fill border holes"), choices=[_('Yes'), _('No')], style=wx.RA_SPECIFY_COLS | wx.NO_BORDER)
 
         sizer = wx.BoxSizer(wx.VERTICAL)
         sizer.Add(self.rb_fill_border)
