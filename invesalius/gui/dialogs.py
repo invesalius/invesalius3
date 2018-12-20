@@ -441,6 +441,22 @@ def ShowImportMeshFilesDialog():
     os.chdir(current_dir)
     return filename
 
+def ImportMeshCoordSystem():
+    msg = _("Is the imported mesh on InVesalius coordinate system?")
+    if sys.platform == 'darwin':
+        dlg = wx.MessageDialog(None, "", msg,
+                               wx.YES_NO)
+    else:
+        dlg = wx.MessageDialog(None, msg, "InVesalius 3",
+                               wx.YES_NO)
+
+    if dlg.ShowModal() == wx.ID_YES:
+        flag = False
+    else:
+        flag = True
+
+    dlg.Destroy()
+    return flag
 
 def ShowSaveAsProjectDialog(default_filename=None):
     current_dir = os.path.abspath(".")

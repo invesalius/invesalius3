@@ -186,6 +186,7 @@ class SurfaceManager():
         Publisher.subscribe(self.OnImportSurfaceFile, 'Import surface file')
 
         Publisher.subscribe(self.UpdateAffineMatrix, 'Update affine matrix')
+        Publisher.subscribe(self.UpdateconverttoInVflag, 'Update converttoInV flag')
 
     def OnDuplicate(self, surface_indexes):
         proj = prj.Project()
@@ -313,26 +314,29 @@ class SurfaceManager():
     def UpdateAffineMatrix(self, affine):
         self.affine = affine
 
+    def UpdateconverttoInVflag(self, converttoInV):
+        self.converttoInV = converttoInV
+
     def CreateSurfaceFromPolydata(self, polydata, overwrite=False,
                                   name=None, colour=None,
                                   transparency=None, volume=None, area=None):
-        normals = vtk.vtkPolyDataNormals()
-        normals.SetInputData(polydata)
-        normals.SetFeatureAngle(80)
-        normals.AutoOrientNormalsOn()
-        normals.Update()
-
         transform = vtk.vtkTransform()
-        if self.affine.any():
+        if self.converttoInV and self.affine is not None:
             transform.SetMatrix(self.affine)
 
         transformFilter = vtk.vtkTransformPolyDataFilter()
         transformFilter.SetTransform(transform)
-        transformFilter.SetInputConnection(normals.GetOutputPort())
+        transformFilter.SetInputData(polydata)
         transformFilter.Update()
 
+        normals = vtk.vtkPolyDataNormals()
+        normals.SetInputData(transformFilter.GetOutput())
+        normals.SetFeatureAngle(80)
+        normals.AutoOrientNormalsOn()
+        normals.Update()
+
         mapper = vtk.vtkPolyDataMapper()
-        mapper.SetInputData(transformFilter.GetOutput())
+        mapper.SetInputData(normals.GetOutput())
         mapper.ScalarVisibilityOn()
         mapper.ImmediateModeRenderingOn() # improve performance
 
