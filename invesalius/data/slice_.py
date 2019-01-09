@@ -162,6 +162,7 @@ class Slice(with_metaclass(utils.Singleton, object)):
         Publisher.subscribe(self.__clean_current_mask, 'Clean current mask')
 
         Publisher.subscribe(self.__export_slice, 'Export slice')
+        Publisher.subscribe(self.__export_actual_mask, 'Export actual mask')
 
         Publisher.subscribe(self.__set_current_mask_threshold_limits,
                                         'Update threshold limits')
@@ -432,6 +433,15 @@ class Slice(with_metaclass(utils.Singleton, object)):
         import h5py
         f = h5py.File(filename, 'w')
         f['data'] = self.matrix
+        f['spacing'] = self.spacing
+        f.flush()
+        f.close()
+
+    def __export_actual_mask(self, filename):
+        import h5py
+        f = h5py.File(filename, 'w')
+        self.do_threshold_to_all_slices()
+        f['data'] = self.current_mask.matrix[1:, 1:, 1:]
         f['spacing'] = self.spacing
         f.flush()
         f.close()

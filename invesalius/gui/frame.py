@@ -421,7 +421,9 @@ class Frame(wx.Frame):
         elif id == const.ID_PROJECT_SAVE_AS:
             self.ShowSaveAsProject()
         elif id == const.ID_EXPORT_SLICE:
-            self.ExportSlice()
+            self.ExportSlice(mask=False)
+        elif id == const.ID_EXPORT_MASK:
+            self.ExportSlice(mask=True)
         elif id == const.ID_PROJECT_CLOSE:
             self.CloseProject()
         elif id == const.ID_EXIT:
@@ -632,20 +634,28 @@ class Frame(wx.Frame):
         """
         Publisher.sendMessage('Show save dialog', save_as=True)
 
-    def ExportSlice(self):
+    def ExportSlice(self, mask=False):
         """
         Show save dialog to export slice.
         """
+        if mask:
+            _type = 'mask'
+        else:
+            _type = 'slice'
+
         p = prj.Project()
         dlg = wx.FileDialog(None,
                             "Export slice ...",
                             '', # last used directory
-                            '%s_slices' % p.name, # filename
+                            '%s_%s' % (p.name, _type), # filename
                             WILDCARD_EXPORT_SLICE,
                             wx.FD_SAVE|wx.FD_OVERWRITE_PROMPT)
         if dlg.ShowModal() == wx.ID_OK:
             filename = dlg.GetPath()
-            Publisher.sendMessage('Export slice', filename=filename)
+            if mask:
+                Publisher.sendMessage('Export actual mask', filename=filename)
+            else:
+                Publisher.sendMessage('Export slice', filename=filename)
 
 
     def ShowBitmapImporter(self):
