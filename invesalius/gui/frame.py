@@ -53,6 +53,7 @@ import invesalius.gui.preferences as preferences
 VIEW_TOOLS = [ID_LAYOUT, ID_TEXT] =\
                                 [wx.NewId() for number in range(2)]
 
+WILDCARD_EXPORT_SLICE = "HDF5 (*.hdf5)|*.hdf5"
 
 
 class MessageWatershed(wx.PopupWindow):
@@ -419,6 +420,8 @@ class Frame(wx.Frame):
                 self.SaveProject()
         elif id == const.ID_PROJECT_SAVE_AS:
             self.ShowSaveAsProject()
+        elif id == const.ID_EXPORT_SLICE:
+            self.ExportSlice()
         elif id == const.ID_PROJECT_CLOSE:
             self.CloseProject()
         elif id == const.ID_EXIT:
@@ -629,6 +632,22 @@ class Frame(wx.Frame):
         """
         Publisher.sendMessage('Show save dialog', save_as=True)
 
+    def ExportSlice(self):
+        """
+        Show save dialog to export slice.
+        """
+        p = prj.Project()
+        dlg = wx.FileDialog(None,
+                            "Export slice ...",
+                            '', # last used directory
+                            '%s_slices' % p.name, # filename
+                            WILDCARD_EXPORT_SLICE,
+                            wx.FD_SAVE|wx.FD_OVERWRITE_PROMPT)
+        if dlg.ShowModal() == wx.ID_OK:
+            filename = dlg.GetPath()
+            Publisher.sendMessage('Export slice', filename=filename)
+
+
     def ShowBitmapImporter(self):
         """
         Tiff, BMP, JPEG and PNG
@@ -702,6 +721,8 @@ class MenuBar(wx.MenuBar):
         # not. Eg. save should only be available if a project is open
         self.enable_items = [const.ID_PROJECT_SAVE,
                              const.ID_PROJECT_SAVE_AS,
+                             const.ID_EXPORT_SLICE,
+                             const.ID_EXPORT_MASK,
                              const.ID_PROJECT_CLOSE,
                              const.ID_REORIENT_IMG,
                              const.ID_FLOODFILL_MASK,
@@ -771,6 +792,8 @@ class MenuBar(wx.MenuBar):
         app(const.ID_PROJECT_OPEN, _("Open project...\tCtrl+O"))
         app(const.ID_PROJECT_SAVE, _("Save project\tCtrl+S"))
         app(const.ID_PROJECT_SAVE_AS, _("Save project as...\tCtrl+Shift+S"))
+        app(const.ID_EXPORT_SLICE, _("Export slices"))
+        app(const.ID_EXPORT_MASK, _("Export actual mask"))
         app(const.ID_PROJECT_CLOSE, _("Close project"))
         file_menu.AppendSeparator()
         #app(const.ID_PROJECT_INFO, _("Project Information..."))

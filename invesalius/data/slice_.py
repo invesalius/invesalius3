@@ -161,6 +161,8 @@ class Slice(with_metaclass(utils.Singleton, object)):
         Publisher.subscribe(self.__show_current_mask, 'Show current mask')
         Publisher.subscribe(self.__clean_current_mask, 'Clean current mask')
 
+        Publisher.subscribe(self.__export_slice, 'Export slice')
+
         Publisher.subscribe(self.__set_current_mask_threshold_limits,
                                         'Update threshold limits')
 
@@ -425,6 +427,14 @@ class Slice(with_metaclass(utils.Singleton, object)):
             # Marking the project as changed
             session = ses.Session()
             session.ChangeProject()
+
+    def __export_slice(self, filename):
+        import h5py
+        f = h5py.File(filename, 'w')
+        f['data'] = self.matrix
+        f['spacing'] = self.spacing
+        f.flush()
+        f.close()
 
     def create_temp_mask(self):
         temp_file = tempfile.mktemp()
