@@ -39,8 +39,8 @@ from wx.lib.pubsub import pub as Publisher
 import invesalius.constants as const
 import invesalius.data.slice_ as slice_
 import invesalius.gui.dialogs as dlg
-import invesalius.gui.widgets.listctrl as listmix
-#  import wx.lib.mixins.listctrl as listmix
+#  import invesalius.gui.widgets.listctrl as listmix
+import wx.lib.mixins.listctrl as listmix
 import invesalius.utils as ul
 
 
