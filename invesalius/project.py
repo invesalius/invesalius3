@@ -349,6 +349,19 @@ class Project(with_metaclass(Singleton, object)):
             measure.Load(measurements[index])
             self.measurement_dict[int(index)] = measure
 
+    def export_project_to_hdf5(self, filename):
+        import h5py
+        import invesalius.data.slice_ as slc
+        s = slc.Slice()
+        with h5py.File(filename, 'w') as f:
+            f['image'] = s.matrix
+            for index in self.mask_dict:
+                mask = self.mask_dict[index]
+                s.do_threshold_to_all_slices(mask)
+                key = 'mask_{}_{}'.format(index, mask.name)
+                f[key] = mask.matrix[1:, 1:, 1:]
+
+
 def Compress(folder, filename, filelist, compress=False):
     tmpdir, tmpdir_ = os.path.split(folder)
     current_dir = os.path.abspath(".")

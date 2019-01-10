@@ -652,10 +652,11 @@ class Frame(wx.Frame):
                             wx.FD_SAVE|wx.FD_OVERWRITE_PROMPT)
         if dlg.ShowModal() == wx.ID_OK:
             filename = dlg.GetPath()
-            if mask:
-                Publisher.sendMessage('Export actual mask', filename=filename)
-            else:
-                Publisher.sendMessage('Export slice', filename=filename)
+            p.export_project_to_hdf5(filename)
+            #  if mask:
+                #  Publisher.sendMessage('Export actual mask', filename=filename)
+            #  else:
+                #  Publisher.sendMessage('Export slice', filename=filename)
 
 
     def ShowBitmapImporter(self):
