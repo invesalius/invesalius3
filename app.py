@@ -435,7 +435,12 @@ def check_for_export(options, suffix='', remove_surfaces=False):
     if options.export_project:
         from invesalius.project import Project
         prj = Project()
-        prj.export_project_to_hdf5(options.export_project)
+        export_filename = options.export_project
+        if suffix:
+            export_filename, ext = os.path.splitext(export_filename)
+            export_filename = u'{}-{}{}'.format(export_filename, suffix, ext)
+
+        prj.export_project_to_hdf5(export_filename)
 
 
 def export(path_, threshold_range, remove_surface=False):
