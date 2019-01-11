@@ -336,6 +336,9 @@ def parse_comand_line():
     parser.add_option("-a", "--export-to-all",
                       help="Export to STL for all mask presets.")
 
+    parser.add_option("--export-project",
+                      help="Export slices and mask to a HDF5 file.")
+
     options, args = parser.parse_args()
     return options, args
 
@@ -428,6 +431,11 @@ def check_for_export(options, suffix='', remove_surfaces=False):
             traceback.print_exc()
         finally:
             exit(0)
+
+    if options.export_project:
+        from invesalius.project import Project
+        prj = Project()
+        prj.export_project_to_hdf5(options.export_project)
 
 
 def export(path_, threshold_range, remove_surface=False):
