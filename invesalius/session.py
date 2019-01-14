@@ -273,7 +273,7 @@ class Session(with_metaclass(Singleton, object)):
         return self.last_dicom_folder
 
     def SetLastDicomFolder(self, folder):
-        self.last_dicom_folder = folder
+        self.last_dicom_folder = decode(folder, FS_ENCODE)
         self.WriteSessionFile()
 
     def _update_cfg_from_dict(self, config, cfg_dict):

@@ -899,6 +899,10 @@ class Slice(with_metaclass(utils.Singleton, object)):
         proj.mask_dict[index].is_shown = value
         proj.mask_dict[index].on_show()
 
+        if value:
+            threshold_range = proj.mask_dict[index].threshold_range
+            Publisher.sendMessage('Set edition threshold gui', threshold_range=threshold_range)
+
         if (index == self.current_mask.index):
             for buffer_ in self.buffer_slices.values():
                 buffer_.discard_vtk_mask()

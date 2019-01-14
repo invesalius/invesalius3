@@ -772,6 +772,7 @@ class EditionTools(wx.Panel):
         Publisher.subscribe(self.ChangeMaskColour, 'Change mask colour')
         Publisher.subscribe(self.SetGradientColour, 'Add mask')
         Publisher.subscribe(self._set_brush_size, 'Set edition brush size')
+        Publisher.subscribe(self._set_threshold_range_gui, 'Set edition threshold gui')
 
     def ChangeMaskColour(self, colour):
         self.gradient_thresh.SetColour(colour)
@@ -821,6 +822,9 @@ class EditionTools(wx.Panel):
         # in the text ctrl - so we are capturing only changes on text
         # Strangelly this is being called twice
         Publisher.sendMessage('Set edition brush size', size=self.spin.GetValue())
+
+    def _set_threshold_range_gui(self, threshold_range):
+        self.SetThresholdValues(threshold_range)
 
     def _set_brush_size(self, size):
         self.spin.SetValue(size)
