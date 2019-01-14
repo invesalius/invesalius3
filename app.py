@@ -339,6 +339,10 @@ def parse_comand_line():
     parser.add_option("--export-project",
                       help="Export slices and mask to a HDF5 file.")
 
+    parser.add_option("--no-masks", action="store_false",
+                      dest="save_masks", default=True,
+                      help="Make InVesalius not export mask when exporting project.")
+
     options, args = parser.parse_args()
     return options, args
 
@@ -440,7 +444,8 @@ def check_for_export(options, suffix='', remove_surfaces=False):
             export_filename, ext = os.path.splitext(export_filename)
             export_filename = u'{}-{}{}'.format(export_filename, suffix, ext)
 
-        prj.export_project_to_hdf5(export_filename)
+        prj.export_project_to_hdf5(export_filename, save_masks=options.save_masks)
+        print("Saved {}".format(export_filename))
 
 
 def export(path_, threshold_range, remove_surface=False):

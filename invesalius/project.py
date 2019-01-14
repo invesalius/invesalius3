@@ -349,7 +349,7 @@ class Project(with_metaclass(Singleton, object)):
             measure.Load(measurements[index])
             self.measurement_dict[int(index)] = measure
 
-    def export_project_to_hdf5(self, filename):
+    def export_project_to_hdf5(self, filename, save_masks=True):
         import h5py
         import invesalius.data.slice_ as slc
         s = slc.Slice()
@@ -367,18 +367,19 @@ class Project(with_metaclass(Singleton, object)):
             f["window_level"] = self.level
             f["scalar_range"] = self.threshold_range
 
-            for index in self.mask_dict:
-                mask = self.mask_dict[index]
-                s.do_threshold_to_all_slices(mask)
-                key = 'masks/{}'.format(index)
-                f[key + '/name'] = mask.name
-                f[key + '/matrix'] = mask.matrix[1:, 1:, 1:]
-                f[key + '/colour'] = mask.colour[:3]
-                f[key + '/opacity'] = mask.opacity
-                f[key + '/threshold_range'] = mask.threshold_range
-                f[key + '/edition_threshold_range'] = mask.edition_threshold_range
-                f[key + '/visible'] = mask.is_shown
-                f[key + '/edited'] = mask.was_edited
+            if save_masks:
+                for index in self.mask_dict:
+                    mask = self.mask_dict[index]
+                    s.do_threshold_to_all_slices(mask)
+                    key = 'masks/{}'.format(index)
+                    f[key + '/name'] = mask.name
+                    f[key + '/matrix'] = mask.matrix[1:, 1:, 1:]
+                    f[key + '/colour'] = mask.colour[:3]
+                    f[key + '/opacity'] = mask.opacity
+                    f[key + '/threshold_range'] = mask.threshold_range
+                    f[key + '/edition_threshold_range'] = mask.edition_threshold_range
+                    f[key + '/visible'] = mask.is_shown
+                    f[key + '/edited'] = mask.was_edited
 
 
 def Compress(folder, filename, filelist, compress=False):
