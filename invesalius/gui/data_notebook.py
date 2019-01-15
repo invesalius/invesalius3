@@ -347,7 +347,7 @@ class ButtonControlPanel(wx.Panel):
         else:
            dlg.MaskSelectionRequiredForDuplication()
 
-class MasksListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
+class MasksListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin, listmix.CheckListCtrlMixin):
 
     def __init__(self, parent, ID=-1, pos=wx.DefaultPosition,
                  size=wx.DefaultSize, style=wx.LC_REPORT):
@@ -358,6 +358,7 @@ class MasksListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
 
         wx.ListCtrl.__init__(self, parent, ID, pos, size, style=wx.LC_REPORT)
         listmix.TextEditMixin.__init__(self)
+        listmix.CheckListCtrlMixin.__init__(self)
         self.mask_list_index = {}
         self.current_index = 0
         self.__init_columns()
@@ -367,6 +368,7 @@ class MasksListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
 
     def __bind_events_wx(self):
         self.Bind(wx.EVT_LIST_ITEM_ACTIVATED, self.OnItemActivated)
+        self.Bind(wx.EVT_LIST_BEGIN_LABEL_EDIT, self.OnBeginLabelEdit)
         self.Bind(wx.EVT_LIST_END_LABEL_EDIT, self.OnEditLabel)
         self.Bind(wx.EVT_KEY_UP, self.OnKeyEvent)
 
@@ -485,6 +487,12 @@ class MasksListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
 
         self.image_gray = Image.open(os.path.join(const.ICON_DIR, "object_colour.jpg"))
 
+    def OnBeginLabelEdit(self, evt):
+        if evt.GetColumn() == 1:
+            evt.Skip()
+        else:
+            evt.Veto()
+
     def OnEditLabel(self, evt):
         Publisher.sendMessage('Change mask name',
                               index=evt.GetIndex(), name=evt.GetLabel())
@@ -492,6 +500,7 @@ class MasksListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
 
     def OnItemActivated(self, evt):
         self.ToggleItem(evt.Index)
+        #  pass
 
     def OnCheckItem(self, index, flag):
         if flag:
@@ -695,7 +704,7 @@ class SurfaceButtonControlPanel(wx.Panel):
             Publisher.sendMessage('Import surface file', filename=filename)
 
 
-class SurfacesListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
+class SurfacesListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin, listmix.CheckListCtrlMixin):
 
     def __init__(self, parent, ID=-1, pos=wx.DefaultPosition,
                  size=wx.DefaultSize, style=wx.LC_REPORT):
@@ -706,6 +715,7 @@ class SurfacesListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
 
         wx.ListCtrl.__init__(self, parent, ID, pos, size, style=wx.LC_REPORT)
         listmix.TextEditMixin.__init__(self)
+        listmix.CheckListCtrlMixin.__init__(self)
 
         self.__init_columns()
         self.__init_image_list()
@@ -729,6 +739,7 @@ class SurfacesListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
 
     def __bind_events_wx(self):
         self.Bind(wx.EVT_LIST_ITEM_ACTIVATED, self.OnItemActivated)
+        self.Bind(wx.EVT_LIST_BEGIN_LABEL_EDIT, self.OnBeginLabelEdit)
         self.Bind(wx.EVT_LIST_END_LABEL_EDIT, self.OnEditLabel)
         #self.Bind(wx.EVT_LIST_ITEM_SELECTED, self.OnItemSelected_)
         self.Bind(wx.EVT_KEY_UP, self.OnKeyEvent)
@@ -831,6 +842,12 @@ class SurfacesListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
         self.SetImageList(self.imagelist,wx.IMAGE_LIST_SMALL)
 
         self.image_gray = Image.open(os.path.join(const.ICON_DIR, "object_colour.jpg"))
+
+    def OnBeginLabelEdit(self, evt):
+        if evt.GetColumn() == 1:
+            evt.Skip()
+        else:
+            evt.Veto()
 
     def OnEditLabel(self, evt):
         Publisher.sendMessage('Change surface name', index=evt.GetIndex(), name=evt.GetLabel())
@@ -954,7 +971,7 @@ class SurfacesListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
 #-------------------------------------------------
 #-------------------------------------------------
 
-class MeasuresListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
+class MeasuresListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin, listmix.CheckListCtrlMixin):
 
     def __init__(self, parent, ID=-1, pos=wx.DefaultPosition,
                  size=wx.DefaultSize, style=wx.LC_REPORT):
@@ -965,6 +982,7 @@ class MeasuresListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
 
         wx.ListCtrl.__init__(self, parent, ID, pos, size, style=wx.LC_REPORT)
         listmix.TextEditMixin.__init__(self)
+        listmix.CheckListCtrlMixin.__init__(self)
 
         self.__init_columns()
         self.__init_image_list()
@@ -986,6 +1004,7 @@ class MeasuresListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
 
     def __bind_events_wx(self):
         self.Bind(wx.EVT_LIST_ITEM_ACTIVATED, self.OnItemActivated)
+        self.Bind(wx.EVT_LIST_BEGIN_LABEL_EDIT, self.OnBeginLabelEdit)
         self.Bind(wx.EVT_LIST_END_LABEL_EDIT, self.OnEditLabel)
         self.Bind(wx.EVT_LIST_ITEM_SELECTED, self.OnItemSelected_)
         self.Bind(wx.EVT_KEY_UP, self.OnKeyEvent)
@@ -1099,6 +1118,11 @@ class MeasuresListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
 
         self.image_gray = Image.open(os.path.join(const.ICON_DIR, "object_colour.jpg"))
 
+    def OnBeginLabelEdit(self, evt):
+        if evt.GetColumn() == 1:
+            evt.Skip()
+        else:
+            evt.Veto()
 
     def OnEditLabel(self, evt):
         Publisher.sendMessage('Change measurement name', index=evt.GetIndex(), name=evt.GetLabel())
@@ -1233,7 +1257,7 @@ class MeasuresListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
 #*******************************************************************
 
 
-class AnnotationsListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
+class AnnotationsListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin, listmix.CheckListCtrlMixin):
     # TODO: Remove edimixin, allow only visible and invisible
     def __init__(self, parent, ID=-1, pos=wx.DefaultPosition,
                  size=wx.DefaultSize, style=wx.LC_REPORT):
@@ -1244,6 +1268,7 @@ class AnnotationsListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin):
 
         wx.ListCtrl.__init__(self, parent, ID, pos, size, style=wx.LC_REPORT)
         listmix.TextEditMixin.__init__(self)
+        listmix.CheckListCtrlMixin.__init__(self)
 
         self.__init_columns()
         self.__init_image_list()
