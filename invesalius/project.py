@@ -57,6 +57,7 @@ class Project(with_metaclass(Singleton, object)):
         self.original_orientation = ''
         self.window = ''
         self.level = ''
+        self.affine = ''
 
         # Masks (vtkImageData)
         self.mask_dict = {}
@@ -227,6 +228,7 @@ class Project(with_metaclass(Singleton, object)):
                    "window_level": self.level,
                    "scalar_range": self.threshold_range,
                    "spacing": self.spacing,
+                   "affine": self.affine,
                   }
 
         # Saving the matrix containing the slices
@@ -313,6 +315,10 @@ class Project(with_metaclass(Singleton, object)):
         self.level = project["window_level"]
         self.threshold_range = project["scalar_range"]
         self.spacing = project["spacing"]
+        if project.get("affine"):
+            self.affine = project["affine"]
+            Publisher.sendMessage('Update affine matrix',
+                                  affine=self.affine)
 
         self.compress = project.get("compress", True)
 
