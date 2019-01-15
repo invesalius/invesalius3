@@ -337,7 +337,7 @@ def parse_comand_line():
                       help="Export to STL for all mask presets.")
 
     parser.add_option("--export-project",
-                      help="Export slices and mask to a HDF5 file.")
+                      help="Export slices and mask to HDF5 or Nifti file.")
 
     parser.add_option("--no-masks", action="store_false",
                       dest="save_masks", default=True,
@@ -444,7 +444,7 @@ def check_for_export(options, suffix='', remove_surfaces=False):
             export_filename, ext = os.path.splitext(export_filename)
             export_filename = u'{}-{}{}'.format(export_filename, suffix, ext)
 
-        prj.export_project_to_hdf5(export_filename, save_masks=options.save_masks)
+        prj.export_project(export_filename, save_masks=options.save_masks)
         print("Saved {}".format(export_filename))
 
 

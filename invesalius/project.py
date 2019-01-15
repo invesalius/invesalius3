@@ -28,6 +28,7 @@ import sys
 import tarfile
 import tempfile
 
+import numpy as np
 import wx
 from wx.lib.pubsub import pub as Publisher
 import vtk
@@ -349,6 +350,12 @@ class Project(with_metaclass(Singleton, object)):
             measure.Load(measurements[index])
             self.measurement_dict[int(index)] = measure
 
+    def export_project(self, filename, save_masks):
+        if filename.endswith('.hdf5') or filename.endswith('.h5'):
+            self.export_project_to_hdf5(filename, save_masks)
+        elif filename.endswith('.nii'):
+            self.export_project_to_nifti(filename, save_masks)
+
     def export_project_to_hdf5(self, filename, save_masks=True):
         import h5py
         import invesalius.data.slice_ as slc
@@ -380,6 +387,23 @@ class Project(with_metaclass(Singleton, object)):
                     f[key + '/edition_threshold_range'] = mask.edition_threshold_range
                     f[key + '/visible'] = mask.is_shown
                     f[key + '/edited'] = mask.was_edited
+
+    def export_project_to_nifti(self, filename, save_masks=True):
+        import invesalius.data.slice_ as slc
+        import nibabel as nib
+        s = slc.Slice()
+        img_nifti = nib.Nifti1Image(s.matrix, np.eye(4))
+        img_nifti.header.set_zooms(s.spacing[::-1])
+        img_nifti.header.set_dim_info(slice=0)
+        nib.save(img_nifti, filename)
+        if save_masks:
+            for index in self.mask_dict:
+                mask = self.mask_dict[index]
+                s.do_threshold_to_all_slices(mask)
+                mask_nifti = nib.Nifti1Image(mask.matrix, np.eye(4))
+                mask_nifti.header.set_zooms(s.spacing[::-1])
+                basename, ext = os.path.splitext(filename)
+                nib.save(mask_nifti, "{}_mask_{}_{}.{}".format(basename, mask.index, mask.name, ext))
 
 
 def Compress(folder, filename, filelist, compress=False):
