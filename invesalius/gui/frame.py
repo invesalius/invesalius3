@@ -57,6 +57,12 @@ WILDCARD_EXPORT_SLICE = "HDF5 (*.hdf5)|*.hdf5|" \
     "NIfTI 1 (*.nii)|*.nii|" \
     "Compressed NIfTI (*.nii.gz)|*.nii.gz"
 
+IDX_EXT = {
+    0: '.hdf5',
+    1: '.nii',
+    2: '.nii.gz'
+}
+
 
 class MessageWatershed(wx.PopupWindow):
     def __init__(self, prnt, msg):
@@ -642,15 +648,17 @@ class Frame(wx.Frame):
 
         session = ses.Session()
         last_directory = session.get('paths', 'last_directory_export_prj', '')
-
         dlg = wx.FileDialog(None,
                             "Export slice ...",
                             last_directory, # last used directory
-                            p.name, # initial filename
+                            os.path.split(p.name)[-1], # initial filename
                             WILDCARD_EXPORT_SLICE,
                             wx.FD_SAVE|wx.FD_OVERWRITE_PROMPT)
         if dlg.ShowModal() == wx.ID_OK:
             filename = dlg.GetPath()
+            ext = IDX_EXT[dlg.GetFilterIndex()]
+            if not filename.endswith(ext):
+                filename += ext
             p.export_project(filename)
             session['paths']['last_directory_export_prj'] = os.path.split(filename)[0]
 

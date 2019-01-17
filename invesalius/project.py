@@ -351,9 +351,9 @@ class Project(with_metaclass(Singleton, object)):
             self.measurement_dict[int(index)] = measure
 
     def export_project(self, filename, save_masks=True):
-        if filename.endswith('.hdf5') or filename.endswith('.h5'):
+        if filename.lower().endswith('.hdf5') or filename.lower().endswith('.h5'):
             self.export_project_to_hdf5(filename, save_masks)
-        elif filename.endswith('.nii') or filename.endswith('.nii.gz'):
+        elif filename.lower().endswith('.nii') or filename.lower().endswith('.nii.gz'):
             self.export_project_to_nifti(filename, save_masks)
 
     def export_project_to_hdf5(self, filename, save_masks=True):
@@ -402,12 +402,15 @@ class Project(with_metaclass(Singleton, object)):
                 s.do_threshold_to_all_slices(mask)
                 mask_nifti = nib.Nifti1Image(np.swapaxes(mask.matrix, 0, 2), None)
                 mask_nifti.header.set_zooms(s.spacing)
-                if filename.endswith('.nii'):
-                    ext = '.nii'
+                if filename.lower().endswith('.nii'):
                     basename = filename[:-4]
-                elif filename.endswith('.nii.gz'):
-                    ext = '.nii.gz'
+                    ext = filename[-4::]
+                elif filename.lower().endswith('.nii.gz'):
                     basename = filename[:-7]
+                    ext = filename[-7::]
+                else:
+                    ext = '.nii'
+                    basename = filename
                 nib.save(mask_nifti, "{}_mask_{}_{}{}".format(basename, mask.index, mask.name, ext))
 
 
