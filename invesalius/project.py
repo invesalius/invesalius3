@@ -353,7 +353,7 @@ class Project(with_metaclass(Singleton, object)):
     def export_project(self, filename, save_masks=True):
         if filename.endswith('.hdf5') or filename.endswith('.h5'):
             self.export_project_to_hdf5(filename, save_masks)
-        elif filename.endswith('.nii'):
+        elif filename.endswith('.nii') or filename.endswith('.nii.gz'):
             self.export_project_to_nifti(filename, save_masks)
 
     def export_project_to_hdf5(self, filename, save_masks=True):
@@ -402,7 +402,12 @@ class Project(with_metaclass(Singleton, object)):
                 s.do_threshold_to_all_slices(mask)
                 mask_nifti = nib.Nifti1Image(np.swapaxes(mask.matrix, 0, 2), None)
                 mask_nifti.header.set_zooms(s.spacing)
-                basename, ext = os.path.splitext(filename)
+                if filename.endswith('.nii'):
+                    ext = '.nii'
+                    basename = filename[:-4]
+                elif filename.endswith('.nii.gz'):
+                    ext = '.nii.gz'
+                    basename = filename[:-7]
                 nib.save(mask_nifti, "{}_mask_{}_{}{}".format(basename, mask.index, mask.name, ext))
 
 
