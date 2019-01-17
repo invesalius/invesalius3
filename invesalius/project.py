@@ -392,16 +392,16 @@ class Project(with_metaclass(Singleton, object)):
         import invesalius.data.slice_ as slc
         import nibabel as nib
         s = slc.Slice()
-        img_nifti = nib.Nifti1Image(s.matrix, None)
-        img_nifti.header.set_zooms(s.spacing[::-1])
+        img_nifti = nib.Nifti1Image(np.swapaxes(s.matrix, 0, 2), None)
+        img_nifti.header.set_zooms(s.spacing)
         img_nifti.header.set_dim_info(slice=0)
         nib.save(img_nifti, filename)
         if save_masks:
             for index in self.mask_dict:
                 mask = self.mask_dict[index]
                 s.do_threshold_to_all_slices(mask)
-                mask_nifti = nib.Nifti1Image(mask.matrix, np.eye(4))
-                mask_nifti.header.set_zooms(s.spacing[::-1])
+                mask_nifti = nib.Nifti1Image(np.swapaxes(mask.matrix, 0, 2), None)
+                mask_nifti.header.set_zooms(s.spacing)
                 basename, ext = os.path.splitext(filename)
                 nib.save(mask_nifti, "{}_mask_{}_{}{}".format(basename, mask.index, mask.name, ext))
 
