@@ -141,12 +141,12 @@ class Text(object):
         # UnicodeEncodeError because they have non-ascii characters. To avoid
         # that we encode in utf-8.
         if sys.platform == 'win32':
-            self.mapper.SetInput(value.encode("utf-8"))
+            self.mapper.SetInput(value.encode("utf-8", errors='replace'))
         else:
             try:
                 self.mapper.SetInput(value.encode("latin-1"))
             except(UnicodeEncodeError):
-                self.mapper.SetInput(value.encode("utf-8"))
+                self.mapper.SetInput(value.encode("utf-8", errors='replace'))
 
     def SetCoilDistanceValue(self, value):
         if isinstance(value, int) or isinstance(value, float):
