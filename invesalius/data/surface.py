@@ -158,6 +158,7 @@ class SurfaceManager():
         self.actors_dict = {}
         self.last_surface_index = 0
         self.affine = None
+        self.converttoInV = None
         self.__bind_events()
 
         self._default_parameters = {
@@ -307,6 +308,7 @@ class SurfaceManager():
         self.CreateSurfaceFromFile(filename)
 
     def CreateSurfaceFromFile(self, filename):
+        scalar = False
         if filename.lower().endswith('.stl'):
             reader = vtk.vtkSTLReader()
         elif filename.lower().endswith('.ply'):
@@ -315,6 +317,7 @@ class SurfaceManager():
             reader = vtk.vtkOBJReader()
         elif filename.lower().endswith('.vtp'):
             reader = vtk.vtkXMLPolyDataReader()
+            scalar = True
         else:
             wx.MessageBox(_("File format not reconized by InVesalius"), _("Import surface error"))
             return
@@ -331,7 +334,7 @@ class SurfaceManager():
             wx.MessageBox(_("InVesalius was not able to import this surface"), _("Import surface error"))
         else:
             name = os.path.splitext(os.path.split(filename)[-1])[0]
-            self.CreateSurfaceFromPolydata(polydata, name=name)
+            self.CreateSurfaceFromPolydata(polydata, name=name, scalar=scalar)
 
     def UpdateAffineMatrix(self, affine):
         self.affine = affine
@@ -341,26 +344,29 @@ class SurfaceManager():
 
     def CreateSurfaceFromPolydata(self, polydata, overwrite=False,
                                   name=None, colour=None,
-                                  transparency=None, volume=None, area=None):
-        transform = vtk.vtkTransform()
+                                  transparency=None, volume=None, area=None, scalar=False):
         if self.converttoInV and self.affine is not None:
+            transform = vtk.vtkTransform()
             transform.SetMatrix(self.affine)
-
-        transformFilter = vtk.vtkTransformPolyDataFilter()
-        transformFilter.SetTransform(transform)
-        transformFilter.SetInputData(polydata)
-        transformFilter.Update()
-        polydata = transformFilter.GetOutput()
+            transformFilter = vtk.vtkTransformPolyDataFilter()
+            transformFilter.SetTransform(transform)
+            transformFilter.SetInputData(polydata)
+            transformFilter.Update()
+            polydata = transformFilter.GetOutput()
+            self.converttoInV = None
 
         normals = vtk.vtkPolyDataNormals()
-        normals.SetInputData(transformFilter.GetOutput())
+        normals.SetInputData(polydata)
         normals.SetFeatureAngle(80)
         normals.AutoOrientNormalsOn()
         normals.Update()
 
         mapper = vtk.vtkPolyDataMapper()
         mapper.SetInputData(normals.GetOutput())
-        mapper.ScalarVisibilityOn()
+        if scalar:
+            mapper.ScalarVisibilityOn()
+        else:
+            mapper.ScalarVisibilityOff()
         mapper.ImmediateModeRenderingOn() # improve performance
 
         actor = vtk.vtkActor()

@@ -464,7 +464,7 @@ def ShowImportMeshFilesDialog():
     return filename
 
 def ImportMeshCoordSystem():
-    msg = _("Was the imported mesh created in InVesalius?")
+    msg = _("Was the imported mesh created by InVesalius?")
     if sys.platform == 'darwin':
         dlg = wx.MessageDialog(None, "", msg,
                                wx.YES_NO)
