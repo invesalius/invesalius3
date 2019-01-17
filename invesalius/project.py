@@ -350,7 +350,7 @@ class Project(with_metaclass(Singleton, object)):
             measure.Load(measurements[index])
             self.measurement_dict[int(index)] = measure
 
-    def export_project(self, filename, save_masks):
+    def export_project(self, filename, save_masks=True):
         if filename.endswith('.hdf5') or filename.endswith('.h5'):
             self.export_project_to_hdf5(filename, save_masks)
         elif filename.endswith('.nii'):
@@ -392,7 +392,7 @@ class Project(with_metaclass(Singleton, object)):
         import invesalius.data.slice_ as slc
         import nibabel as nib
         s = slc.Slice()
-        img_nifti = nib.Nifti1Image(s.matrix, np.eye(4))
+        img_nifti = nib.Nifti1Image(s.matrix, None)
         img_nifti.header.set_zooms(s.spacing[::-1])
         img_nifti.header.set_dim_info(slice=0)
         nib.save(img_nifti, filename)
@@ -403,7 +403,7 @@ class Project(with_metaclass(Singleton, object)):
                 mask_nifti = nib.Nifti1Image(mask.matrix, np.eye(4))
                 mask_nifti.header.set_zooms(s.spacing[::-1])
                 basename, ext = os.path.splitext(filename)
-                nib.save(mask_nifti, "{}_mask_{}_{}.{}".format(basename, mask.index, mask.name, ext))
+                nib.save(mask_nifti, "{}_mask_{}_{}{}".format(basename, mask.index, mask.name, ext))
 
 
 def Compress(folder, filename, filelist, compress=False):

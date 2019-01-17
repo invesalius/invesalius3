@@ -53,7 +53,9 @@ import invesalius.gui.preferences as preferences
 VIEW_TOOLS = [ID_LAYOUT, ID_TEXT] =\
                                 [wx.NewId() for number in range(2)]
 
-WILDCARD_EXPORT_SLICE = "HDF5 (*.hdf5)|*.hdf5"
+WILDCARD_EXPORT_SLICE = "HDF5 (*.hdf5)|*.hdf5|" \
+    "NIfTI 1 (*.nii)|*.nii|" \
+    "Compressed NIfTI (*.nii.gz)|*.nii.gz"
 
 
 class MessageWatershed(wx.PopupWindow):
@@ -649,7 +651,7 @@ class Frame(wx.Frame):
                             wx.FD_SAVE|wx.FD_OVERWRITE_PROMPT)
         if dlg.ShowModal() == wx.ID_OK:
             filename = dlg.GetPath()
-            p.export_project_to_hdf5(filename)
+            p.export_project(filename)
             session['paths']['last_directory_export_prj'] = os.path.split(filename)[0]
 
     def ShowBitmapImporter(self):
