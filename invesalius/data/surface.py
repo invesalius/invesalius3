@@ -336,7 +336,7 @@ class SurfaceManager():
             name = os.path.splitext(os.path.split(filename)[-1])[0]
             self.CreateSurfaceFromPolydata(polydata, name=name, scalar=scalar)
 
-    def UpdateAffineMatrix(self, affine):
+    def UpdateAffineMatrix(self, affine, status):
         self.affine = affine
 
     def UpdateconverttoInVflag(self, converttoInV):
@@ -442,6 +442,9 @@ class SurfaceManager():
 
         # restarting the surface index
         Surface.general_index = -1
+
+        Publisher.sendMessage('Update affine matrix',
+                              affine=None, status=False)
 
     def OnSelectSurface(self, surface_index):
         #self.last_surface_index = surface_index

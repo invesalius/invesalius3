@@ -868,7 +868,7 @@ class Controller():
             affine[1, 3] = -affine[1, 3]
             self.affine = hstack(affine)
             Publisher.sendMessage('Update affine matrix',
-                                  affine=self.affine)
+                                  affine=self.affine, status=True)
         hdr.set_data_dtype('int16')
         dims = hdr.get_zooms()
         dimsf = tuple([float(s) for s in dims])

@@ -604,8 +604,13 @@ class SurfaceButtonControlPanel(wx.Panel):
         wx.Panel.__init__(self, parent, pos=wx.Point(0, 50),
                             size=wx.Size(256, 22))
         self.parent = parent
+        self.affinestatus = False
+        self.__init_evt()
         self.__init_gui()
 
+    def __init_evt(self):
+        Publisher.subscribe(self.AffineStatus,
+                                'Update affine matrix')
     def __init_gui(self):
 
         # Bitmaps to be used in plate buttons
@@ -701,10 +706,13 @@ class SurfaceButtonControlPanel(wx.Panel):
     def OnOpenMesh(self):
         filename = dlg.ShowImportMeshFilesDialog()
         if filename:
-            converttoInV = dlg.ImportMeshCoordSystem()
-            Publisher.sendMessage('Update converttoInV flag', converttoInV=converttoInV)
+            if self.affinestatus:
+                converttoInV = dlg.ImportMeshCoordSystem()
+                Publisher.sendMessage('Update converttoInV flag', converttoInV=converttoInV)
             Publisher.sendMessage('Import surface file', filename=filename)
 
+    def AffineStatus(self, affine, status):
+        self.affinestatus = status
 
 class SurfacesListCtrlPanel(wx.ListCtrl, listmix.TextEditMixin, listmix.CheckListCtrlMixin):
 
