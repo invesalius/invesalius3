@@ -392,7 +392,7 @@ class Project(with_metaclass(Singleton, object)):
         import invesalius.data.slice_ as slc
         import nibabel as nib
         s = slc.Slice()
-        img_nifti = nib.Nifti1Image(np.swapaxes(s.matrix, 0, 2), None)
+        img_nifti = nib.Nifti1Image(np.swapaxes(np.fliplr(s.matrix), 0, 2), None)
         img_nifti.header.set_zooms(s.spacing)
         img_nifti.header.set_dim_info(slice=0)
         nib.save(img_nifti, filename)
@@ -400,7 +400,7 @@ class Project(with_metaclass(Singleton, object)):
             for index in self.mask_dict:
                 mask = self.mask_dict[index]
                 s.do_threshold_to_all_slices(mask)
-                mask_nifti = nib.Nifti1Image(np.swapaxes(mask.matrix, 0, 2), None)
+                mask_nifti = nib.Nifti1Image(np.swapaxes(np.fliplr(mask.matrix), 0, 2), None)
                 mask_nifti.header.set_zooms(s.spacing)
                 if filename.lower().endswith('.nii'):
                     basename = filename[:-4]
