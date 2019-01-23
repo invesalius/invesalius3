@@ -336,6 +336,13 @@ def parse_comand_line():
     parser.add_option("-a", "--export-to-all",
                       help="Export to STL for all mask presets.")
 
+    parser.add_option("--export-project",
+                      help="Export slices and mask to HDF5 or Nifti file.")
+
+    parser.add_option("--no-masks", action="store_false",
+                      dest="save_masks", default=True,
+                      help="Make InVesalius not export mask when exporting project.")
+
     options, args = parser.parse_args()
     return options, args
 
@@ -428,6 +435,17 @@ def check_for_export(options, suffix='', remove_surfaces=False):
             traceback.print_exc()
         finally:
             exit(0)
+
+    if options.export_project:
+        from invesalius.project import Project
+        prj = Project()
+        export_filename = options.export_project
+        if suffix:
+            export_filename, ext = os.path.splitext(export_filename)
+            export_filename = u'{}-{}{}'.format(export_filename, suffix, ext)
+
+        prj.export_project(export_filename, save_masks=options.save_masks)
+        print("Saved {}".format(export_filename))
 
 
 def export(path_, threshold_range, remove_surface=False):

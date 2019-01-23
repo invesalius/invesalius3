@@ -28,6 +28,7 @@ import sys
 import tarfile
 import tempfile
 
+import numpy as np
 import wx
 from wx.lib.pubsub import pub as Publisher
 import vtk
@@ -341,6 +342,70 @@ class Project(with_metaclass(Singleton, object)):
                 measure = ms.Measurement()
             measure.Load(measurements[index])
             self.measurement_dict[int(index)] = measure
+
+    def export_project(self, filename, save_masks=True):
+        if filename.lower().endswith('.hdf5') or filename.lower().endswith('.h5'):
+            self.export_project_to_hdf5(filename, save_masks)
+        elif filename.lower().endswith('.nii') or filename.lower().endswith('.nii.gz'):
+            self.export_project_to_nifti(filename, save_masks)
+
+    def export_project_to_hdf5(self, filename, save_masks=True):
+        import h5py
+        import invesalius.data.slice_ as slc
+        s = slc.Slice()
+        with h5py.File(filename, 'w') as f:
+            f['image'] = s.matrix
+            f['spacing'] = s.spacing
+
+            f["invesalius_version"] = const.INVESALIUS_VERSION
+            f["date"] = datetime.datetime.now().isoformat()
+            f["compress"] = self.compress
+            f["name"] = self.name # patient's name
+            f["modality"] = self.modality # CT, RMI, ...
+            f["orientation"] = self.original_orientation
+            f["window_width"] = self.window
+            f["window_level"] = self.level
+            f["scalar_range"] = self.threshold_range
+
+            if save_masks:
+                for index in self.mask_dict:
+                    mask = self.mask_dict[index]
+                    s.do_threshold_to_all_slices(mask)
+                    key = 'masks/{}'.format(index)
+                    f[key + '/name'] = mask.name
+                    f[key + '/matrix'] = mask.matrix[1:, 1:, 1:]
+                    f[key + '/colour'] = mask.colour[:3]
+                    f[key + '/opacity'] = mask.opacity
+                    f[key + '/threshold_range'] = mask.threshold_range
+                    f[key + '/edition_threshold_range'] = mask.edition_threshold_range
+                    f[key + '/visible'] = mask.is_shown
+                    f[key + '/edited'] = mask.was_edited
+
+    def export_project_to_nifti(self, filename, save_masks=True):
+        import invesalius.data.slice_ as slc
+        import nibabel as nib
+        s = slc.Slice()
+        img_nifti = nib.Nifti1Image(np.swapaxes(np.fliplr(s.matrix), 0, 2), None)
+        img_nifti.header.set_zooms(s.spacing)
+        img_nifti.header.set_dim_info(slice=0)
+        nib.save(img_nifti, filename)
+        if save_masks:
+            for index in self.mask_dict:
+                mask = self.mask_dict[index]
+                s.do_threshold_to_all_slices(mask)
+                mask_nifti = nib.Nifti1Image(np.swapaxes(np.fliplr(mask.matrix), 0, 2), None)
+                mask_nifti.header.set_zooms(s.spacing)
+                if filename.lower().endswith('.nii'):
+                    basename = filename[:-4]
+                    ext = filename[-4::]
+                elif filename.lower().endswith('.nii.gz'):
+                    basename = filename[:-7]
+                    ext = filename[-7::]
+                else:
+                    ext = '.nii'
+                    basename = filename
+                nib.save(mask_nifti, "{}_mask_{}_{}{}".format(basename, mask.index, mask.name, ext))
+
 
 def Compress(folder, filename, filelist, compress=False):
     tmpdir, tmpdir_ = os.path.split(folder)
